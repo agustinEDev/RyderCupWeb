@@ -51,6 +51,9 @@ const HeaderAuth = ({ user }) => {
 
       <div className="flex flex-1 justify-end gap-8">
         <div className="hidden md:flex items-center gap-9">
+          <Link to="/dashboard" className="text-gray-900 text-sm font-medium leading-normal hover:text-primary transition-colors">
+            Dashboard
+          </Link>
           <Link to="/competitions" className="text-gray-900 text-sm font-medium leading-normal hover:text-primary transition-colors">
             My Competitions
           </Link>
