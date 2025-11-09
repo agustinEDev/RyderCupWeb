@@ -1,11 +1,14 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
 const HeaderAuth = ({ user }) => {
   const navigate = useNavigate();
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const dropdownRef = useRef(null);
 
   const handleProfileClick = () => {
     navigate('/profile');
+    setIsDropdownOpen(false);
   };
 
   const handleLogout = () => {
@@ -16,6 +19,24 @@ const HeaderAuth = ({ user }) => {
     // Redirect to home
     navigate('/');
   };
+
+  const toggleDropdown = () => {
+    setIsDropdownOpen(!isDropdownOpen);
+  };
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   // Get user initials for avatar fallback
   const getInitials = () => {
@@ -63,9 +84,9 @@ const HeaderAuth = ({ user }) => {
         </div>
 
         {/* Profile Dropdown */}
-        <div className="relative group">
+        <div className="relative" ref={dropdownRef}>
           <button
-            onClick={handleProfileClick}
+            onClick={toggleDropdown}
             className="flex items-center gap-2 hover:opacity-80 transition-opacity"
           >
             <div className="bg-primary bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10 flex items-center justify-center text-white font-bold">
@@ -74,20 +95,22 @@ const HeaderAuth = ({ user }) => {
           </button>
 
           {/* Dropdown Menu */}
-          <div className="hidden group-hover:block absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
-            <Link
-              to="/profile"
-              className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
-            >
-              View Profile
-            </Link>
-            <button
-              onClick={handleLogout}
-              className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
-            >
-              Logout
-            </button>
-          </div>
+          {isDropdownOpen && (
+            <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
+              <button
+                onClick={handleProfileClick}
+                className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+              >
+                View Profile
+              </button>
+              <button
+                onClick={handleLogout}
+                className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+              >
+                Logout
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </header>
