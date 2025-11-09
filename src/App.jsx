@@ -6,6 +6,7 @@ import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import Profile from './pages/Profile';
 import EditProfile from './pages/EditProfile';
+import Competitions from './pages/Competitions';
 import CreateCompetition from './pages/CreateCompetition';
 
 function App() {
@@ -21,10 +22,8 @@ function App() {
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/profile/edit" element={<EditProfile />} />
+        <Route path="/competitions" element={<Competitions />} />
         <Route path="/competitions/create" element={<CreateCompetition />} />
-
-        {/* TODO: Add more protected routes */}
-        {/* <Route path="/competitions" element={<Competitions />} /> */}
       </Routes>
     </Router>
   );
