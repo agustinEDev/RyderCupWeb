@@ -166,6 +166,23 @@ const EditProfile = () => {
 
   const fullName = `${user.first_name} ${user.last_name}`;
 
+  const formatDate = (dateString) => {
+    if (!dateString) return 'Never';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  const currentHandicap = user.handicap !== null && user.handicap !== undefined
+    ? user.handicap
+    : 'Not set';
+  const handicapUpdated = formatDate(user.handicap_updated_at);
+
   return (
     <div className="relative flex h-auto min-h-screen w-full flex-col bg-white">
       <div className="layout-container flex h-full grow flex-col">
@@ -281,6 +298,17 @@ const EditProfile = () => {
               {/* Handicap Section */}
               <div className="border border-gray-200 rounded-lg p-6">
                 <h3 className="text-gray-900 font-bold text-lg mb-4">Handicap Management</h3>
+
+                {/* Current Handicap Info */}
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+                  <p className="text-sm text-gray-700">
+                    <span className="font-semibold">Current Handicap:</span>{' '}
+                    <span className="text-primary font-bold text-lg">{currentHandicap}</span>
+                  </p>
+                  <p className="text-xs text-gray-600 mt-1">
+                    Last updated: {handicapUpdated}
+                  </p>
+                </div>
 
                 <form onSubmit={handleUpdateHandicapManually} className="space-y-4">
                   <div>
