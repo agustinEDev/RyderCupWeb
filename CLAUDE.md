@@ -12,287 +12,465 @@ Este archivo proporciona contexto a Claude Code (claude.ai/code) para trabajar e
 
 Este repositorio contiene **SOLO el Frontend Web**. La aplicación completa está dividida en repositorios separados:
 
-- **Frontend Web (este repo)**: Aplicación web React
+- **Frontend Web (este repo)**: Aplicación React SPA
   - Repository: `RyderCupWeb`
-  - Stack: React, Vite, Tailwind CSS, Axios
+  - Stack: React 18, Vite 5, Tailwind CSS 3
   - Comunicación: Consume API REST del backend
 
 - **Backend API** (repositorio separado): API REST con Clean Architecture
   - Repository: `RyderCupAm`
   - Stack: Python, FastAPI, PostgreSQL
-  - Comunicación: API REST (JSON)
-  - URL: `http://localhost:8000`
+  - Comunicación: Expone API REST (JSON)
 
-**Razón de separación**: Deploy independiente, ciclos de vida separados, frontend puede cambiar sin afectar backend.
+**Razón de separación**: Deploy independiente, ciclos de vida separados, escalabilidad futura.
+
+### Stack Tecnológico
+- **Framework**: React 18.2.0
+- **Build Tool**: Vite 5.0.8
+- **Styling**: Tailwind CSS 3.3.6
+- **Routing**: React Router DOM 6.21.1
+- **HTTP Client**: Fetch API (built-in)
+- **State Management**: React Hooks (useState, useEffect)
+
+### Estado de Implementación
+
+**Fase 1: Foundation** ✅ COMPLETADO
+- **Páginas Públicas**:
+  - Landing Page (Hero, Features, Footer)
+  - Register (Formulario con validación)
+  - Login (JWT authentication)
+
+- **Páginas Protegidas** (requieren autenticación):
+  - Dashboard (Welcome, Quick Actions)
+  - Profile (User info, handicap details)
+  - Edit Profile (Update handicap, email/password pendiente backend)
+  - My Competitions (Coming Soon)
+  - Create Competition (Coming Soon)
+
+- **Componentes Reutilizables**:
+  - Header (navegación pública)
+  - HeaderAuth (navegación autenticada con dropdown click-based)
+  - Footer
+  - ProfileCard
+
+**Fase 2: Competition Management** 🚧 PRÓXIMAMENTE
+- Competition creation wizard
+- Team management
+- Live scoring
+- Match tracking
+
+### Páginas Activas (8 páginas)
+```
+Públicas:
+/                     # Landing page
+/login                # Login con JWT
+/register             # Registro de usuario
+
+Protegidas:
+/dashboard            # Dashboard principal
+/profile              # Ver perfil
+/profile/edit         # Editar perfil + handicap
+/competitions         # Mis competiciones (Coming Soon)
+/competitions/create  # Crear competición (Coming Soon)
+```
+
+### API Integration
+
+**Base URL**: `http://localhost:8000` (configurable en `.env`)
+
+**Endpoints Consumidos**:
+```
+POST   /api/v1/auth/register           # Registro de usuario
+POST   /api/v1/auth/login              # Login (recibe JWT)
+POST   /api/v1/auth/logout             # Logout (en desarrollo)
+POST   /api/v1/handicaps/update        # Actualizar desde RFEG
+POST   /api/v1/handicaps/update-manual # Actualizar manualmente
+```
+
+**Autenticación**:
+- JWT almacenado en `localStorage` como `access_token`
+- User data almacenado en `localStorage` como `user` (JSON)
+- Header: `Authorization: Bearer {token}`
+- Validación en cada página protegida (redirect a `/login` si no hay token)
 
 ---
 
-## 🛠️ Stack Tecnológico Frontend
+## 🏗️ Arquitectura Frontend
 
-- **Framework**: React 18+ con Vite
-- **Routing**: React Router v6
-- **Styling**: Tailwind CSS
-- **HTTP Client**: Axios
-- **State Management**: Context API
-- **Forms**: React Hook Form (opcional)
-- **Icons**: Heroicons / Lucide React
-
----
-
-## 📁 Estructura de Proyecto
+### Estructura de Directorios
 
 ```
 src/
-├── assets/              # Imágenes, iconos, recursos
-├── components/          # Componentes reutilizables
-│   ├── common/         # Button, Card, Input, Modal
-│   ├── auth/           # LoginForm, RegisterForm
-│   ├── profile/        # ProfileCard, ProfileDetails
-│   └── layout/         # Header, Footer, Navbar
-├── pages/              # Páginas/Rutas
-│   ├── Landing.jsx     # Página pública inicial
-│   ├── Login.jsx
-│   ├── Register.jsx
-│   ├── Dashboard.jsx   # Página principal autenticada
-│   ├── Profile.jsx
-│   └── Competitions.jsx
-├── services/           # API calls
-│   ├── api.js         # Axios config + interceptors
-│   ├── authService.js # Login, Register, Logout
-│   └── userService.js # User operations
-├── hooks/              # Custom hooks
-│   ├── useAuth.js     # Autenticación
-│   └── useUser.js     # Usuario actual
-├── context/            # Estado global
-│   └── AuthContext.jsx
-├── utils/              # Utilidades
-│   ├── validators.js  # Validaciones
-│   └── constants.js   # Constantes
-├── App.jsx             # Rutas principales
-└── main.jsx            # Entry point
+├── pages/                  # Páginas principales
+│   ├── Landing.jsx         # Página de inicio
+│   ├── Login.jsx           # Autenticación
+│   ├── Register.jsx        # Registro
+│   ├── Dashboard.jsx       # Dashboard principal
+│   ├── Profile.jsx         # Ver perfil
+│   ├── EditProfile.jsx     # Editar perfil
+│   ├── Competitions.jsx    # Lista competiciones
+│   └── CreateCompetition.jsx  # Crear competición
+├── components/
+│   ├── layout/
+│   │   ├── Header.jsx      # Header público
+│   │   ├── HeaderAuth.jsx  # Header autenticado (dropdown click-based)
+│   │   └── Footer.jsx      # Footer reutilizable
+│   └── profile/
+│       └── ProfileCard.jsx # Tarjeta de perfil
+├── App.jsx                 # Router principal
+├── main.jsx                # Entry point
+└── index.css               # Estilos globales + Tailwind
+
+public/                     # Assets estáticos
+.env                        # Variables de entorno
 ```
 
----
+### Patrones y Convenciones
 
-## 🌐 Integración con Backend
-
-### Base URL
+**1. Component Structure**:
 ```javascript
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+
+const MyComponent = () => {
+  const navigate = useNavigate();
+  const [state, setState] = useState(initialValue);
+
+  useEffect(() => {
+    // Side effects (auth check, API calls)
+  }, [dependencies]);
+
+  return (/* JSX */);
+};
+
+export default MyComponent;
 ```
 
-### Endpoints Disponibles
-
-**Authentication**:
-- `POST /api/v1/auth/register` - Crear cuenta
-- `POST /api/v1/auth/login` - Iniciar sesión (devuelve JWT)
-- `POST /api/v1/auth/logout` - Cerrar sesión
-
-**Users**:
-- `GET /api/v1/users/search?email={email}` - Buscar por email
-- `GET /api/v1/users/search?full_name={name}` - Buscar por nombre
-
-**Handicaps**:
-- `POST /api/v1/handicaps/update` - Actualizar desde RFEG
-- `POST /api/v1/handicaps/update-manual` - Actualización manual
-- `POST /api/v1/handicaps/update-multiple` - Batch update
-
-**Documentación**: `http://localhost:8000/docs`
-
----
-
-## 🔐 Autenticación JWT
-
-### Flujo de Login
-1. Usuario envía credenciales → `POST /api/v1/auth/login`
-2. Backend devuelve: `{ access_token, token_type, user }`
-3. Frontend guarda en `localStorage`:
-   - `access_token`: Token JWT
-   - `user`: Datos del usuario
-4. Requests autenticadas incluyen header:
-   ```javascript
-   Authorization: Bearer {access_token}
-   ```
-
-### Protected Routes
-Rutas que requieren autenticación:
-- `/dashboard`
-- `/profile`
-- `/competitions/*`
-
-**Implementación**: Usar `ProtectedRoute` component que verifica token antes de renderizar.
-
----
-
-## 🎨 Guía de Estilo
-
-### Paleta de Colores (Tailwind)
+**2. Authentication Pattern** (en todas las páginas protegidas):
 ```javascript
-// tailwind.config.js
-colors: {
-  primary: '#2D7A3E',    // Verde golf
-  secondary: '#1E3A5F',  // Azul oscuro
-  accent: '#D4AF37',     // Dorado
-  gray: {
-    50: '#F8F9FA',
-    900: '#333333'
+useEffect(() => {
+  const token = localStorage.getItem('access_token');
+  const userData = localStorage.getItem('user');
+
+  if (!token || !userData) {
+    navigate('/login');
+    return;
   }
+
+  try {
+    const parsedUser = JSON.parse(userData);
+    setUser(parsedUser);
+  } catch (error) {
+    console.error('Error parsing user data:', error);
+    navigate('/login');
+  } finally {
+    setIsLoading(false);
+  }
+}, [navigate]);
+```
+
+**3. API Call Pattern**:
+```javascript
+const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+
+try {
+  const token = localStorage.getItem('access_token');
+  const response = await fetch(`${API_URL}/api/v1/endpoint`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify(data)
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.detail || 'Request failed');
+  }
+
+  const result = await response.json();
+  // Handle success
+} catch (error) {
+  console.error('Error:', error);
+  // Handle error
 }
 ```
 
-### Componentes UI
-- **Bordes**: `rounded-lg` (8px)
-- **Sombras**: `shadow-md` para cards
-- **Transiciones**: `transition-all duration-200`
-- **Hover**: Elevar cards, cambiar color de botones
-
-### Tipografía
-- **Headings**: `font-poppins` (importar de Google Fonts)
-- **Body**: `font-inter`
+**4. Logout Pattern**:
+```javascript
+const handleLogout = () => {
+  localStorage.removeItem('access_token');
+  localStorage.removeItem('user');
+  navigate('/');
+};
+```
 
 ---
 
 ## 💻 Comandos de Desarrollo
 
-### Setup Inicial
+### Instalación y Setup
 ```bash
-# Install dependencies
+# Instalar dependencias
 npm install
 
-# Setup environment
+# Copiar .env de ejemplo (si existe)
 cp .env.example .env
+
+# Editar .env con configuración local
+VITE_API_BASE_URL=http://localhost:8000
 ```
 
 ### Desarrollo
 ```bash
-npm run dev              # Dev server (port 5173)
-npm run build            # Production build
-npm run preview          # Preview production build
+# Iniciar dev server (hot reload en http://localhost:5173)
+npm run dev
+
+# Build para producción
+npm run build
+
+# Preview del build
+npm run preview
+
+# Lint (ESLint)
+npm run lint
 ```
 
-### Code Quality
+### Testing (Futuro)
 ```bash
-npm run lint             # ESLint
-npm run format           # Prettier
+# Tests unitarios (cuando se implementen)
+npm run test
+
+# Tests con coverage
+npm run test:coverage
 ```
 
 ---
 
-## 📋 Convenciones de Código
+## 🎨 Estilos y Diseño
 
-### Naming
-- **Componentes**: PascalCase (`LoginForm.jsx`)
-- **Funciones**: camelCase (`handleSubmit`)
-- **Constantes**: UPPER_SNAKE_CASE (`API_BASE_URL`)
-- **CSS**: Preferir Tailwind utilities
+### Tailwind Configuration
 
-### Estructura de Componentes
-```jsx
-// 1. Imports
-import React, { useState } from 'react';
+**Colores Principales** (`tailwind.config.js`):
+```javascript
+colors: {
+  primary: '#2d7b3e',      // Verde golf (Stitch design)
+  secondary: '#1E3A5F',    // Azul oscuro
+  accent: '#D4AF37',       // Dorado
+  gray: {
+    50: '#f8f9fa',
+    100: '#f1f3f2',
+    200: '#dee3df',
+    500: '#6b806f',
+    600: '#131613',
+    900: '#131613',
+  },
+}
+```
+
+**Fonts**:
+- Primary: Inter (Google Fonts)
+- Headings: Poppins (Google Fonts)
+
+**Custom Classes** (`index.css`):
+```css
+.btn-primary { /* Botón principal */ }
+.card { /* Tarjeta contenedor */ }
+.input-field { /* Input de formulario */ }
+```
+
+### Design System
+
+**Spacing**: Tailwind default (4px base)
+**Breakpoints**:
+- sm: 640px
+- md: 768px
+- lg: 1024px
+- xl: 1280px
+
+**Components Pattern**:
+- Responsive: Mobile-first approach
+- Layout: px-4 md:px-40 (padding adaptativo)
+- Max-width: max-w-[960px] (contenido centrado)
+
+---
+
+## 🔧 Workflow: Agregar Nueva Página
+
+### 1. Crear Componente de Página
+```bash
+# Crear archivo en src/pages/
+touch src/pages/NewPage.jsx
+```
+
+```javascript
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import HeaderAuth from '../components/layout/HeaderAuth';
 
-// 2. Component
-export const LoginForm = () => {
-  // 3. Hooks
-  const [email, setEmail] = useState('');
+const NewPage = () => {
   const navigate = useNavigate();
+  const [user, setUser] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // 4. Handlers
-  const handleSubmit = async (e) => {
-    // ...
-  };
+  // Auth check
+  useEffect(() => {
+    const token = localStorage.getItem('access_token');
+    const userData = localStorage.getItem('user');
+    if (!token || !userData) {
+      navigate('/login');
+      return;
+    }
+    try {
+      setUser(JSON.parse(userData));
+    } catch (error) {
+      navigate('/login');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [navigate]);
 
-  // 5. Render
+  if (isLoading) return <div>Loading...</div>;
+  if (!user) return null;
+
   return (
-    <form onSubmit={handleSubmit}>
-      {/* JSX */}
-    </form>
+    <div className="relative flex h-auto min-h-screen w-full flex-col bg-white">
+      <div className="layout-container flex h-full grow flex-col">
+        <HeaderAuth user={user} />
+        <div className="px-4 md:px-40 flex flex-1 justify-center py-5">
+          <div className="layout-content-container flex flex-col max-w-[960px] flex-1">
+            {/* Content here */}
+          </div>
+        </div>
+      </div>
+    </div>
   );
 };
+
+export default NewPage;
 ```
 
-### API Calls
+### 2. Agregar Ruta en App.jsx
 ```javascript
-// services/authService.js
-import api from './api';
+import NewPage from './pages/NewPage';
 
-export const login = async (email, password) => {
-  const response = await api.post('/api/v1/auth/login', {
-    email,
-    password
-  });
-  return response.data;
-};
+// En el Routes:
+<Route path="/new-page" element={<NewPage />} />
+```
+
+### 3. Agregar Navegación (si aplica)
+En `HeaderAuth.jsx`:
+```javascript
+<Link to="/new-page" className="text-gray-900 text-sm font-medium leading-normal hover:text-primary transition-colors">
+  New Page
+</Link>
 ```
 
 ---
 
-## 🧪 Testing (Futuro)
+## 🐛 Troubleshooting Común
 
-```bash
-npm run test              # Unit tests (Vitest)
-npm run test:coverage     # Con cobertura
-npm run test:e2e          # E2E (Playwright)
-```
+**CORS errors**:
+- Verificar que backend tenga CORS configurado para `http://localhost:5173`
+- Verificar que `VITE_API_BASE_URL` en `.env` sea correcto
+
+**Token inválido**:
+- Verificar que JWT no haya expirado (24h por defecto)
+- Limpiar localStorage: `localStorage.clear()` en DevTools
+
+**Página blanca después de build**:
+- Verificar rutas en `vite.config.js`
+- Verificar imports de componentes (case-sensitive)
+
+**Estilos no aplican**:
+- Verificar que clases Tailwind estén en el contenido escaneado por `tailwind.config.js`
+- Reiniciar dev server después de cambios en tailwind.config.js
+
+**Dropdown desaparece antes de hacer click**:
+- Ya corregido: HeaderAuth usa click-based toggle en lugar de hover
+- Dropdown permanece abierto hasta click outside o selección
 
 ---
 
-## 🚀 Deploy
+## 📋 Convenciones Importantes
 
-### Vercel (Recomendado)
-1. Push a GitHub
-2. Conectar repo en Vercel dashboard
-3. Configurar variables de entorno
-4. Deploy automático en cada push
+### Naming
+- **Componentes**: PascalCase (`UserProfile.jsx`, `HeaderAuth.jsx`)
+- **Páginas**: PascalCase (`Dashboard.jsx`, `EditProfile.jsx`)
+- **Variables/Functions**: camelCase (`handleLogin`, `isLoading`)
+- **CSS Classes**: kebab-case (`btn-primary`, `input-field`)
 
-### Variables de Entorno en Producción
-```env
-VITE_API_BASE_URL=https://api.rydercupmanager.com
-```
+### File Organization
+- **Páginas completas**: `src/pages/`
+- **Componentes reutilizables**: `src/components/`
+- **Layouts**: `src/components/layout/`
+- **Feature components**: `src/components/{feature}/`
+
+### Component Best Practices
+- Un componente por archivo
+- Export default al final
+- Props destructuring
+- PropTypes o TypeScript (futuro)
+- Hooks en orden: useState → useEffect → custom hooks
+
+### State Management
+- Local state: `useState` para estado de componente
+- Shared state: Props drilling o Context API (cuando sea necesario)
+- Server state: Fetch en useEffect + localStorage
+
+---
+
+## 📚 Referencias Rápidas
+
+**Documentación**:
+- [React 18 Docs](https://react.dev/)
+- [Vite Docs](https://vitejs.dev/)
+- [Tailwind CSS](https://tailwindcss.com/docs)
+- [React Router](https://reactrouter.com/)
+
+**Backend API**:
+- Documentación: `http://localhost:8000/docs`
+- Repository: `RyderCupAm`
+
+**Design**:
+- Stitch AI-generated designs (originales en HTML)
+- Color palette: Verde golf (#2d7b3e) como primario
 
 ---
 
 ## 🎓 Notas para Claude Code
 
 **Al empezar una sesión**:
-1. Este es el **frontend**, el backend está en otro repo
-2. Backend corre en `http://localhost:8000`
-3. Usar Tailwind CSS para styling
-4. Componentes reutilizables y modulares
-5. Mobile-first responsive design
+1. Frontend consume API REST del backend (`RyderCupAm`)
+2. Auth via JWT en localStorage
+3. CORS configurado en backend para localhost:5173
+4. Fase 1 completa (8 páginas), Fase 2 en desarrollo
+5. Tailwind CSS para todos los estilos (no CSS custom)
 
 **Cuando agregues features**:
-1. Crear componente en carpeta apropiada
-2. Usar hooks personalizados para lógica compleja
-3. Manejar loading states y errores
-4. Validar formularios antes de enviar al backend
-5. Responsive design siempre
+1. Seguir estructura de páginas existente
+2. Siempre incluir auth check en páginas protegidas
+3. Usar componentes de layout (HeaderAuth, Footer)
+4. Mantener consistency con design system (colores, spacing)
+5. Responsive mobile-first
 
-**API Integration**:
-1. Todas las llamadas API van a través de `services/`
-2. Usar `api.js` (Axios) con interceptors configurados
-3. Manejar errores 401 (redirigir a login)
-4. Mostrar feedback al usuario (loading, success, error)
+**Testing** (cuando se implemente):
+1. Jest + React Testing Library
+2. Tests unitarios para componentes
+3. Tests de integración para flujos completos
 
 **No hacer**:
-- ❌ Hardcodear URLs de API (usar env vars)
-- ❌ Guardar datos sensibles en localStorage sin encriptar
-- ❌ Componentes gigantes (dividir en componentes pequeños)
-- ❌ Lógica de negocio en componentes (usar hooks/services)
-- ❌ Inline styles (usar Tailwind)
+- ❌ CSS inline (usar Tailwind classes)
+- ❌ Hardcodear URLs de API (usar .env)
+- ❌ Ignorar auth checks en páginas protegidas
+- ❌ Commits sin probar en dev server
+- ❌ Modificar backend desde este repo (separación de responsabilidades)
 
----
-
-## 📚 Referencias
-
-- **Backend API**: [RyderCupAm](https://github.com/agustinEDev/RyderCupAm)
-- **API Docs**: `http://localhost:8000/docs`
-- **Design System**: Ver `STITCH_PROMPT.md` para mockups y diseño
-- **React Docs**: https://react.dev
-- **Vite Docs**: https://vitejs.dev
-- **Tailwind Docs**: https://tailwindcss.com
-
----
-
-Este frontend consume la API REST documentada en el backend. Siempre verificar que el backend esté corriendo antes de desarrollar en el frontend.
+**Estado actual**:
+- MVP funcional con autenticación completa
+- Gestión de handicaps (manual + RFEG)
+- Navegación fluida entre páginas
+- Dropdown estable con click-based toggle
+- Páginas de competiciones en "Coming Soon"
+- UserResponseDTO incluye handicap_updated_at
