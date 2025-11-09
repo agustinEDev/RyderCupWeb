@@ -5,6 +5,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import Profile from './pages/Profile';
+import CreateCompetition from './pages/CreateCompetition';
 
 function App() {
   return (
@@ -18,10 +19,10 @@ function App() {
         {/* Protected routes (auth check inside component) */}
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/profile" element={<Profile />} />
+        <Route path="/competitions/create" element={<CreateCompetition />} />
 
         {/* TODO: Add more protected routes */}
         {/* <Route path="/competitions" element={<Competitions />} /> */}
-        {/* <Route path="/competitions/create" element={<CreateCompetition />} /> */}
       </Routes>
     </Router>
   );
