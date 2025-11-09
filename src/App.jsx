@@ -5,6 +5,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import Profile from './pages/Profile';
+import EditProfile from './pages/EditProfile';
 import CreateCompetition from './pages/CreateCompetition';
 
 function App() {
@@ -19,6 +20,7 @@ function App() {
         {/* Protected routes (auth check inside component) */}
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/profile" element={<Profile />} />
+        <Route path="/profile/edit" element={<EditProfile />} />
         <Route path="/competitions/create" element={<CreateCompetition />} />
 
         {/* TODO: Add more protected routes */}

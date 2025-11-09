@@ -29,8 +29,7 @@ const Profile = () => {
   }, [navigate]);
 
   const handleEditProfile = () => {
-    // TODO: Implement edit profile functionality
-    alert('Edit profile functionality coming soon!');
+    navigate('/profile/edit');
   };
 
   const handleLogout = () => {
