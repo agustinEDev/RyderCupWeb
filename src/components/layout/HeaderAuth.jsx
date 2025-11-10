@@ -1,10 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import PropTypes from 'prop-types';
 
 const HeaderAuth = ({ user }) => {
   const navigate = useNavigate();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const dropdownRef = useRef(null);
+  const desktopDropdownRef = useRef(null);
+  const mobileDropdownRef = useRef(null);
 
   const handleProfileClick = () => {
     navigate('/profile');
@@ -27,7 +29,10 @@ const HeaderAuth = ({ user }) => {
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+      const isOutsideDesktop = desktopDropdownRef.current && !desktopDropdownRef.current.contains(event.target);
+      const isOutsideMobile = mobileDropdownRef.current && !mobileDropdownRef.current.contains(event.target);
+      
+      if (isOutsideDesktop && isOutsideMobile) {
         setIsDropdownOpen(false);
       }
     };
@@ -85,7 +90,7 @@ const HeaderAuth = ({ user }) => {
         </div>
 
         {/* Desktop Profile Dropdown */}
-        <div className="relative" ref={dropdownRef}>
+        <div className="relative" ref={desktopDropdownRef}>
           <button
             onClick={toggleDropdown}
             className="flex items-center gap-2 hover:opacity-80 transition-opacity"
@@ -116,7 +121,7 @@ const HeaderAuth = ({ user }) => {
       </div>
 
       {/* Mobile Menu */}
-      <div className="md:hidden relative" ref={dropdownRef}>
+      <div className="md:hidden relative" ref={mobileDropdownRef}>
         <button
           onClick={toggleDropdown}
           className="flex items-center justify-center w-10 h-10 rounded-lg hover:bg-gray-100 transition-colors"
@@ -196,6 +201,19 @@ const HeaderAuth = ({ user }) => {
       </div>
     </header>
   );
+};
+
+HeaderAuth.propTypes = {
+  user: PropTypes.shape({
+    id: PropTypes.string,
+    first_name: PropTypes.string,
+    last_name: PropTypes.string,
+    email: PropTypes.string,
+    handicap: PropTypes.number,
+    handicap_updated_at: PropTypes.string,
+    created_at: PropTypes.string,
+    updated_at: PropTypes.string,
+  }),
 };
 
 export default HeaderAuth;
