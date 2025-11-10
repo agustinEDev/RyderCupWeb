@@ -1,9 +1,33 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 
 const Header = () => {
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const mobileMenuRef = useRef(null);
+
+  const toggleMobileMenu = () => {
+    setIsMobileMenuOpen(!isMobileMenuOpen);
+  };
+
+  // Close mobile menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (mobileMenuRef.current && !mobileMenuRef.current.contains(event.target)) {
+        setIsMobileMenuOpen(false);
+      }
+    };
+
+    if (isMobileMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isMobileMenuOpen]);
+
   return (
-    <header className="flex items-center justify-between whitespace-nowrap border-b border-solid border-b-gray-200 px-10 py-3">
+    <header className="flex items-center justify-between whitespace-nowrap border-b border-solid border-b-gray-200 px-4 md:px-10 py-3">
       <div className="flex items-center gap-4 text-gray-900">
         <div className="size-4">
           <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -20,12 +44,14 @@ const Header = () => {
           </svg>
         </div>
         <Link to="/">
-          <h2 className="text-gray-900 text-lg font-bold leading-tight tracking-tight">
+          <h2 className="text-gray-900 text-base md:text-lg font-bold leading-tight tracking-tight">
             Ryder Cup Amateur Manager
           </h2>
         </Link>
       </div>
-      <div className="flex flex-1 justify-end gap-8">
+
+      {/* Desktop Menu */}
+      <div className="hidden md:flex flex-1 justify-end gap-8">
         <div className="flex items-center gap-9">
           <a className="text-gray-900 text-sm font-medium leading-normal" href="#features">
             Features
@@ -49,6 +75,73 @@ const Header = () => {
             </button>
           </Link>
         </div>
+      </div>
+
+      {/* Mobile Menu Button */}
+      <div className="md:hidden relative" ref={mobileMenuRef}>
+        <button
+          onClick={toggleMobileMenu}
+          className="flex items-center justify-center w-10 h-10 rounded-lg hover:bg-gray-100 transition-colors"
+          aria-label="Toggle menu"
+        >
+          <svg
+            className="w-6 h-6 text-gray-900"
+            fill="none"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="2"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            {isMobileMenuOpen ? (
+              <path d="M6 18L18 6M6 6l12 12" />
+            ) : (
+              <path d="M4 6h16M4 12h16M4 18h16" />
+            )}
+          </svg>
+        </button>
+
+        {/* Mobile Dropdown Menu */}
+        {isMobileMenuOpen && (
+          <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
+            <a
+              href="#features"
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="block px-4 py-2 text-sm text-gray-900 hover:bg-gray-100 transition-colors"
+            >
+              Features
+            </a>
+            <a
+              href="#pricing"
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="block px-4 py-2 text-sm text-gray-900 hover:bg-gray-100 transition-colors"
+            >
+              Pricing
+            </a>
+            <a
+              href="#support"
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="block px-4 py-2 text-sm text-gray-900 hover:bg-gray-100 transition-colors"
+            >
+              Support
+            </a>
+            <div className="border-t border-gray-200 my-2"></div>
+            <Link
+              to="/register"
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="block px-4 py-2 text-sm text-white bg-primary hover:bg-primary/90 transition-colors mx-2 rounded-lg text-center font-bold"
+            >
+              Register
+            </Link>
+            <Link
+              to="/login"
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="block px-4 py-2 text-sm text-gray-900 bg-gray-100 hover:bg-gray-200 transition-colors mx-2 mt-2 rounded-lg text-center font-bold"
+            >
+              Sign In
+            </Link>
+          </div>
+        )}
       </div>
     </header>
   );
