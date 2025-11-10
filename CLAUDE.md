@@ -95,6 +95,240 @@ POST   /api/v1/handicaps/update-manual # Actualizar manualmente
 
 ---
 
+## 🚀 Deployment en Render (Producción)
+
+### URLs de Producción
+
+**Frontend**: https://www.rydercupfriends.com
+**Backend API**: https://rydercup-api.onrender.com
+
+**Repositorios**:
+- Frontend: `github.com/agustinEDev/RyderCupWeb` (rama `develop`)
+- Backend: `github.com/agustinEDev/RyderCupAm` (rama `develop`)
+
+### Configuración de Render
+
+**Frontend - Static Site**:
+- **Service Name**: `rydercup-web`
+- **Runtime**: Static Site
+- **Branch**: `develop`
+- **Build Command**: `npm run build`
+- **Publish Directory**: `dist`
+- **Region**: Frankfurt (eu-central)
+- **Plan**: Free
+- **Auto-Deploy**: Activado (git push → deploy automático)
+
+**Backend - Web Service**:
+- **Service Name**: `rydercup-api`
+- **Runtime**: Docker
+- **Branch**: `develop`
+- **Region**: Frankfurt (eu-central)
+- **Plan**: Free
+- **Auto-Deploy**: Activado
+
+### Variables de Entorno en Render
+
+**Frontend (Environment Variables)**:
+```env
+VITE_API_BASE_URL=https://rydercup-api.onrender.com
+VITE_APP_NAME="Ryder Cup Manager"
+VITE_APP_VERSION=1.0.0
+```
+
+**Backend (Environment Variables)**:
+```env
+# Frontend origin para CORS
+FRONTEND_ORIGINS=https://www.rydercupfriends.com
+
+# Base de Datos (Internal Database URL de Render PostgreSQL)
+DATABASE_URL=postgresql+asyncpg://user:pass@host.frankfurt-postgres.render.com/db_name
+
+# JWT Security
+SECRET_KEY=<generated-key>
+ALGORITHM=HS256
+ACCESS_TOKEN_EXPIRE_MINUTES=60
+
+# API Docs Protection
+DOCS_USERNAME=admin
+DOCS_PASSWORD=<secure-password>
+
+# App Config
+PORT=8000
+ENVIRONMENT=production
+```
+
+### CORS Configuration
+
+El backend en `main.py:100-130` configura CORS dinámicamente:
+
+1. **Producción** (ENVIRONMENT=production):
+   - Lee orígenes desde variable `FRONTEND_ORIGINS`
+   - Solo permite: `https://www.rydercupfriends.com`
+   - No incluye localhost
+
+2. **Desarrollo** (ENVIRONMENT=development):
+   - Permite: `http://localhost:5173`, `http://127.0.0.1:5173`
+   - Más permisivo para dev local
+
+**Headers permitidos**:
+- Credentials: `true`
+- Methods: `GET, POST, PUT, PATCH, DELETE, OPTIONS`
+- Headers: `*` (incluye Authorization)
+- Max-Age: `3600` (1 hora)
+
+### Proceso de Deploy
+
+**Automático** (recomendado):
+```bash
+# Hacer cambios en código
+git add .
+git commit -m "feat: nueva funcionalidad"
+git push origin develop
+
+# Render detecta el push y redeploya automáticamente
+# Frontend: ~2-3 minutos
+# Backend: ~3-5 minutos (incluye migraciones DB)
+```
+
+**Manual** (desde Render Dashboard):
+1. Ir al servicio (`rydercup-web` o `rydercup-api`)
+2. Click en `Manual Deploy`
+3. Seleccionar `Deploy latest commit`
+
+### Verificar Deployment
+
+**Frontend**:
+```bash
+# Verificar que la app carga
+curl -I https://www.rydercupfriends.com
+
+# Debería retornar: 200 OK
+```
+
+**Backend**:
+```bash
+# Health check
+curl https://rydercup-api.onrender.com/
+
+# Respuesta esperada:
+{
+  "message": "Ryder Cup Manager API",
+  "version": "1.0.0",
+  "status": "running",
+  "docs": "Visita /docs para la documentacion interactiva",
+  "description": "API para gestion de torneos tipo Ryder Cup entre amigos"
+}
+```
+
+**API Docs** (protegida con HTTP Basic Auth):
+- URL: https://rydercup-api.onrender.com/docs
+- Username: (ver variable `DOCS_USERNAME`)
+- Password: (ver variable `DOCS_PASSWORD`)
+
+### Logs y Monitoreo
+
+**Ver logs en tiempo real**:
+1. Render Dashboard → Servicio → Pestaña `Logs`
+2. Útil para debugging de errores de producción
+
+**Métricas**:
+- Dashboard → `Metrics` → CPU, Memoria, Requests
+
+**Eventos**:
+- Dashboard → `Events` → Historial de deploys
+
+### Limitaciones del Plan Free
+
+**Cold Starts**:
+- Servicios se "duermen" tras 15 minutos de inactividad
+- Primera petición después de sleep: **30-60 segundos**
+- Peticiones siguientes: respuesta normal
+
+**Storage**:
+- PostgreSQL: 1GB, expira tras 90 días sin uso
+- Static Site: Sin límite
+
+**Build minutes**:
+- 750 horas/mes de runtime
+- Suficiente para desarrollo/testing
+
+### Troubleshooting en Producción
+
+**❌ CORS Error al hacer login/register**:
+
+**Causa**: Backend no permite origen del frontend
+
+**Solución**:
+1. Verificar `FRONTEND_ORIGINS` en backend incluye: `https://www.rydercupfriends.com`
+2. Verificar `ENVIRONMENT=production` en backend
+3. Ver logs del backend: debería mostrar `🔒 CORS allowed_origins: ['https://www.rydercupfriends.com']`
+4. Re-deploy backend si se cambió variable
+
+**❌ 404 en rutas React Router (ej: /dashboard)**:
+
+**Causa**: SPA necesita redirect de todas las rutas a `index.html`
+
+**Solución**:
+1. En Render Dashboard → Static Site → `Redirects/Rewrites`
+2. Agregar regla:
+   ```
+   Source: /*
+   Destination: /index.html
+   Status: 200 (Rewrite)
+   ```
+
+**❌ API devuelve 500 Internal Server Error**:
+
+**Causa**: Error en backend (DB connection, migrations, etc.)
+
+**Solución**:
+1. Ver logs del backend en Render
+2. Verificar `DATABASE_URL` correcta (debe usar `postgresql+asyncpg://`)
+3. Verificar que migraciones se ejecutaron: buscar `✅ Migraciones completadas` en logs
+4. Si falla, ejecutar manualmente desde Shell del servicio:
+   ```bash
+   alembic upgrade head
+   ```
+
+**❌ Token JWT inválido en producción**:
+
+**Causa**: `SECRET_KEY` cambió o no está configurada
+
+**Solución**:
+1. Verificar `SECRET_KEY` en variables de entorno del backend
+2. Debe ser la misma que generó los tokens
+3. Si se cambió: usuarios deben hacer login nuevamente
+
+**❌ Cold start muy lento (>60s)**:
+
+**Causa**: Plan Free duerme servicios
+
+**Solución temporal**:
+- Hacer peticiones periódicas cada 10-15 min (keep-alive)
+
+**Solución permanente**:
+- Upgrade a plan Starter ($7/mes) → sin sleep
+
+### Dominio Personalizado
+
+El frontend usa dominio custom: **www.rydercupfriends.com**
+
+**Configuración en Render**:
+1. Static Site → `Settings` → `Custom Domain`
+2. Agregar: `www.rydercupfriends.com`
+3. Render provee CNAME/ALIAS records
+4. Configurar DNS en registrar de dominio:
+   ```
+   Type: CNAME
+   Name: www
+   Value: rydercup-web.onrender.com
+   TTL: 3600
+   ```
+5. Esperar propagación DNS (5-60 minutos)
+6. Render automáticamente provisiona certificado SSL (Let's Encrypt)
+
+---
+
 ## 🏗️ Arquitectura Frontend
 
 ### Estructura de Directorios
@@ -215,26 +449,67 @@ const handleLogout = () => {
 # Instalar dependencias
 npm install
 
-# Copiar .env de ejemplo (si existe)
+# Copiar .env de ejemplo
 cp .env.example .env
 
-# Editar .env con configuración local
+# Editar .env con configuración local (desarrollo)
 VITE_API_BASE_URL=http://localhost:8000
 ```
 
-### Desarrollo
+### Desarrollo Local
 ```bash
 # Iniciar dev server (hot reload en http://localhost:5173)
 npm run dev
 
-# Build para producción
+# Build para producción (simula build de Render)
 npm run build
 
-# Preview del build
+# Preview del build local
 npm run preview
 
 # Lint (ESLint)
 npm run lint
+```
+
+### Deployment a Producción
+
+**Automático** (recomendado):
+```bash
+# 1. Probar cambios localmente
+npm run dev  # verificar funcionamiento
+
+# 2. Build local (opcional, para verificar)
+npm run build
+
+# 3. Commit y push a develop → auto-deploy
+git add .
+git commit -m "feat: descripción del cambio"
+git push origin develop
+
+# Render detecta el push y redeploya automáticamente
+# Ver progreso en: https://dashboard.render.com
+# Deploy tarda: ~2-3 minutos
+```
+
+**Verificar deployment**:
+```bash
+# Verificar que el sitio cargó correctamente
+curl -I https://www.rydercupfriends.com
+# Esperado: HTTP/2 200
+
+# Verificar API health
+curl https://rydercup-api.onrender.com/
+# Esperado: {"message": "Ryder Cup Manager API", ...}
+```
+
+**Rollback** (si algo sale mal):
+```bash
+# Opción 1: Revertir commit localmente y push
+git revert HEAD
+git push origin develop
+
+# Opción 2: Desde Render Dashboard
+# → Service → Events → "Redeploy" de commit anterior
 ```
 
 ### Testing (Futuro)
@@ -244,6 +519,9 @@ npm run test
 
 # Tests con coverage
 npm run test:coverage
+
+# Tests antes de deployment
+npm run test && npm run build
 ```
 
 ---
@@ -371,13 +649,18 @@ En `HeaderAuth.jsx`:
 
 ## 🐛 Troubleshooting Común
 
+### Desarrollo Local
+
 **CORS errors**:
 - Verificar que backend tenga CORS configurado para `http://localhost:5173`
-- Verificar que `VITE_API_BASE_URL` en `.env` sea correcto
+- Verificar que `VITE_API_BASE_URL` en `.env` sea correcto (`http://localhost:8000`)
+- Verificar que backend esté corriendo en puerto 8000
+- Verificar `ENVIRONMENT=development` en backend (permite localhost)
 
 **Token inválido**:
-- Verificar que JWT no haya expirado (24h por defecto)
+- Verificar que JWT no haya expirado (60 minutos por defecto)
 - Limpiar localStorage: `localStorage.clear()` en DevTools
+- Hacer login nuevamente
 
 **Página blanca después de build**:
 - Verificar rutas en `vite.config.js`
@@ -390,6 +673,17 @@ En `HeaderAuth.jsx`:
 **Dropdown desaparece antes de hacer click**:
 - Ya corregido: HeaderAuth usa click-based toggle en lugar de hover
 - Dropdown permanece abierto hasta click outside o selección
+
+### Producción (Render)
+
+**Ver sección completa**: [🚀 Deployment en Render (Producción)](#-deployment-en-render-producción) → Troubleshooting en Producción
+
+**Problemas comunes**:
+- **CORS errors**: Verificar `FRONTEND_ORIGINS` en backend y `ENVIRONMENT=production`
+- **404 en rutas**: Configurar Redirects/Rewrites en Render (`/* → /index.html`)
+- **Cold starts lentos**: Plan Free duerme tras 15min (primera petición: 30-60s)
+- **API 500 errors**: Revisar logs del backend, verificar DATABASE_URL y migraciones
+- **Token JWT inválido**: Verificar SECRET_KEY no haya cambiado en backend
 
 ---
 
@@ -428,10 +722,22 @@ En `HeaderAuth.jsx`:
 - [Vite Docs](https://vitejs.dev/)
 - [Tailwind CSS](https://tailwindcss.com/docs)
 - [React Router](https://reactrouter.com/)
+- [Render Docs](https://render.com/docs)
 
 **Backend API**:
-- Documentación: `http://localhost:8000/docs`
-- Repository: `RyderCupAm`
+- **Desarrollo**: `http://localhost:8000/docs`
+- **Producción**: `https://rydercup-api.onrender.com/docs` (requiere HTTP Basic Auth)
+- **Repository**: `RyderCupAm` (repositorio separado)
+- **Health Check**: GET `/` (público)
+
+**URLs del Proyecto**:
+- **Frontend Dev**: http://localhost:5173
+- **Frontend Prod**: https://www.rydercupfriends.com
+- **Backend Dev**: http://localhost:8000
+- **Backend Prod**: https://rydercup-api.onrender.com
+- **GitHub Frontend**: https://github.com/agustinEDev/RyderCupWeb
+- **GitHub Backend**: https://github.com/agustinEDev/RyderCupAm
+- **Render Dashboard**: https://dashboard.render.com
 
 **Design**:
 - Stitch AI-generated designs (originales en HTML)
@@ -444,9 +750,10 @@ En `HeaderAuth.jsx`:
 **Al empezar una sesión**:
 1. Frontend consume API REST del backend (`RyderCupAm`)
 2. Auth via JWT en localStorage
-3. CORS configurado en backend para localhost:5173
+3. CORS configurado en backend para localhost:5173 (dev) y www.rydercupfriends.com (prod)
 4. Fase 1 completa (8 páginas), Fase 2 en desarrollo
 5. Tailwind CSS para todos los estilos (no CSS custom)
+6. **Deployment**: Frontend y backend en Render (Frankfurt), rama `develop`, auto-deploy activado
 
 **Cuando agregues features**:
 1. Seguir estructura de páginas existente
@@ -454,6 +761,7 @@ En `HeaderAuth.jsx`:
 3. Usar componentes de layout (HeaderAuth, Footer)
 4. Mantener consistency con design system (colores, spacing)
 5. Responsive mobile-first
+6. Probar localmente antes de push (auto-deploy a producción)
 
 **Testing** (cuando se implemente):
 1. Jest + React Testing Library
@@ -462,10 +770,11 @@ En `HeaderAuth.jsx`:
 
 **No hacer**:
 - ❌ CSS inline (usar Tailwind classes)
-- ❌ Hardcodear URLs de API (usar .env)
+- ❌ Hardcodear URLs de API (usar .env y variables de entorno)
 - ❌ Ignorar auth checks en páginas protegidas
-- ❌ Commits sin probar en dev server
+- ❌ Commits sin probar en dev server (se despliega automáticamente a producción)
 - ❌ Modificar backend desde este repo (separación de responsabilidades)
+- ❌ Push a `develop` sin testing local (auto-deploy directo a prod)
 
 **Estado actual**:
 - MVP funcional con autenticación completa
@@ -474,3 +783,17 @@ En `HeaderAuth.jsx`:
 - Dropdown estable con click-based toggle
 - Páginas de competiciones en "Coming Soon"
 - UserResponseDTO incluye handicap_updated_at
+- **Producción**: Desplegado en www.rydercupfriends.com
+- **Backend API**: Desplegado en rydercup-api.onrender.com
+
+**Entornos**:
+
+| Entorno | Frontend | Backend | Branch | CORS |
+|---------|----------|---------|--------|------|
+| **Desarrollo** | http://localhost:5173 | http://localhost:8000 | local | localhost:5173 |
+| **Producción** | https://www.rydercupfriends.com | https://rydercup-api.onrender.com | develop | www.rydercupfriends.com |
+
+**Variables de entorno críticas**:
+- **Frontend**: `VITE_API_BASE_URL` (apunta al backend correcto según entorno)
+- **Backend**: `FRONTEND_ORIGINS` (permite peticiones desde frontend correcto)
+- **Backend**: `ENVIRONMENT` (controla comportamiento de CORS y otros settings)
