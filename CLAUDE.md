@@ -28,7 +28,7 @@ Este repositorio contiene **SOLO el Frontend Web**. La aplicaci√≥n completa est√
 - **Framework**: React 18.2.0
 - **Build Tool**: Vite 5.0.8
 - **Styling**: Tailwind CSS 3.3.6
-- **Routing**: React Router DOM 6.21.1
+- **Routing**: React Router DOM 6.20.0
 - **HTTP Client**: Fetch API (built-in)
 - **State Management**: React Hooks (useState, useEffect)
 
