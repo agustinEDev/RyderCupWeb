@@ -190,15 +190,19 @@ const EditProfile = () => {
       return;
     }
 
-    // Validate name lengths (must be at least 2 characters)
-    if (trimmedFirstName && trimmedFirstName.length < 2) {
-      setMessage({ type: 'error', text: 'First name must be at least 2 characters.' });
-      return;
+    // Validate name lengths (must be at least 2 characters if changed)
+    if (trimmedFirstName !== user.first_name) {
+      if (trimmedFirstName.length < 2) {
+        setMessage({ type: 'error', text: 'First name must be at least 2 characters.' });
+        return;
+      }
     }
 
-    if (trimmedLastName && trimmedLastName.length < 2) {
-      setMessage({ type: 'error', text: 'Last name must be at least 2 characters.' });
-      return;
+    if (trimmedLastName !== user.last_name) {
+      if (trimmedLastName.length < 2) {
+        setMessage({ type: 'error', text: 'Last name must be at least 2 characters.' });
+        return;
+      }
     }
 
     setIsSaving(true);
@@ -503,7 +507,7 @@ const EditProfile = () => {
                       name="email"
                       value={formData.email}
                       onChange={handleInputChange}
-                      placeholder="Leave empty to keep current email"
+                      placeholder="Enter new email to change"
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                     />
                     <p className="text-xs text-gray-500 mt-1">
