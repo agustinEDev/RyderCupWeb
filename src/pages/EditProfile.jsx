@@ -180,19 +180,23 @@ const EditProfile = () => {
     e.preventDefault();
     setMessage({ type: '', text: '' });
 
+    // Trim values before validation and comparison
+    const trimmedFirstName = formData.firstName.trim();
+    const trimmedLastName = formData.lastName.trim();
+
     // Validate that at least one field has changed
-    if (formData.firstName === user.first_name && formData.lastName === user.last_name) {
+    if (trimmedFirstName === user.first_name && trimmedLastName === user.last_name) {
       setMessage({ type: 'warning', text: 'No changes detected in name or last name.' });
       return;
     }
 
     // Validate name lengths (must be at least 2 characters)
-    if (formData.firstName && formData.firstName.trim().length < 2) {
+    if (trimmedFirstName && trimmedFirstName.length < 2) {
       setMessage({ type: 'error', text: 'First name must be at least 2 characters.' });
       return;
     }
 
-    if (formData.lastName && formData.lastName.trim().length < 2) {
+    if (trimmedLastName && trimmedLastName.length < 2) {
       setMessage({ type: 'error', text: 'Last name must be at least 2 characters.' });
       return;
     }
@@ -201,16 +205,23 @@ const EditProfile = () => {
 
     try {
       const token = localStorage.getItem('access_token');
+
+      // Build payload with only changed fields (avoid sending null)
+      const payload = {};
+      if (trimmedFirstName !== user.first_name) {
+        payload.first_name = trimmedFirstName;
+      }
+      if (trimmedLastName !== user.last_name) {
+        payload.last_name = trimmedLastName;
+      }
+
       const response = await fetch(`${API_URL}/api/v1/users/profile`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({
-          first_name: formData.firstName !== user.first_name ? formData.firstName : null,
-          last_name: formData.lastName !== user.last_name ? formData.lastName : null
-        })
+        body: JSON.stringify(payload)
       });
 
       if (!response.ok) {
@@ -261,8 +272,9 @@ const EditProfile = () => {
     }
 
     // Check if at least one security field is being updated
-    // Email changed only if it's different AND not empty
-    const isEmailChanged = formData.email.trim() !== '' && formData.email !== user.email;
+    // Trim email before validation and comparison
+    const trimmedEmail = formData.email.trim();
+    const isEmailChanged = trimmedEmail !== '' && trimmedEmail !== user.email;
     const isPasswordChanged = formData.newPassword !== '';
 
     if (!isEmailChanged && !isPasswordChanged) {
@@ -287,12 +299,18 @@ const EditProfile = () => {
 
     try {
       const token = localStorage.getItem('access_token');
+
+      // Build payload with only changed fields (avoid sending null)
       const requestBody = {
-        current_password: formData.currentPassword,
-        new_email: isEmailChanged ? formData.email : null,
-        new_password: isPasswordChanged ? formData.newPassword : null,
-        confirm_password: isPasswordChanged ? formData.confirmPassword : null
+        current_password: formData.currentPassword
       };
+      if (isEmailChanged) {
+        requestBody.new_email = trimmedEmail;
+      }
+      if (isPasswordChanged) {
+        requestBody.new_password = formData.newPassword;
+        requestBody.confirm_password = formData.confirmPassword;
+      }
 
       const response = await fetch(`${API_URL}/api/v1/users/security`, {
         method: 'PATCH',
