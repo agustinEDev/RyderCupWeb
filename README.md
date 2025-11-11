@@ -53,8 +53,8 @@ open http://localhost:5173
 ### ✅ Implementado (MVP)
 - 🏠 **Landing Page** - Hero section moderna con features
 - 🔐 **Autenticación** - Login y registro con JWT
-- 👤 **Gestión de Perfil** - Ver y editar perfil de usuario
-- ⛳ **Hándicap** - Visualización destacada del hándicap oficial
+- 👤 **Gestión de Perfil Completa** - Ver y editar nombre, apellido, email, password
+- ⛳ **Hándicap Management** - Actualización desde RFEG + manual con manejo de errores
 - 📊 **Dashboard** - Panel principal del usuario
 - 🎯 **Responsive Design** - Mobile, tablet y desktop
 
@@ -174,22 +174,24 @@ VITE_API_BASE_URL=http://localhost:8000
 
 #### Authentication
 ```javascript
-POST /api/v1/auth/register
-POST /api/v1/auth/login
-POST /api/v1/auth/logout
+POST /api/v1/auth/register         // Registro de usuario
+POST /api/v1/auth/login            // Login (JWT)
+POST /api/v1/auth/logout           // Logout con auditoría
 ```
 
-#### User Management
+#### User Profile Management
 ```javascript
+PATCH /api/v1/users/profile        // Actualizar nombre/apellido (sin password)
+PATCH /api/v1/users/security       // Actualizar email/password (requiere current_password)
 GET /api/v1/users/search?email={email}
 GET /api/v1/users/search?full_name={name}
 ```
 
 #### Handicap Management
 ```javascript
-POST /api/v1/handicaps/update
-POST /api/v1/handicaps/update-manual
-POST /api/v1/handicaps/update-multiple
+POST /api/v1/handicaps/update              // RFEG + fallback manual
+POST /api/v1/handicaps/update-manual       // Actualización manual directa
+POST /api/v1/handicaps/update-multiple     // Batch update
 ```
 
 **Documentación completa**: `http://localhost:8000/docs`
@@ -265,12 +267,18 @@ VITE_APP_VERSION=1.0.0
 
 ## 📊 Estado del Proyecto
 
-### Fase 1: MVP ✅ En Desarrollo
+### Fase 1: MVP ✅ COMPLETADO
 - Landing page moderna
-- Sistema de autenticación completo
+- Sistema de autenticación completo (Login/Logout con JWT)
 - Dashboard de usuario
-- Gestión de perfil
-- Integración con backend API
+- **Gestión de perfil completa**:
+  - Actualizar nombre y apellido sin password
+  - Actualizar email y password con verificación
+  - Validación inteligente y manejo de errores robusto
+- **Gestión de handicaps**:
+  - Actualización desde RFEG con fallback manual
+  - Manejo de errores: "Player not found" y "Service unavailable"
+- Integración con backend API (9 endpoints activos)
 
 ### Fase 2: Core Features 🚧 Planeado
 - CRUD de competiciones
