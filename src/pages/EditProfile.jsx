@@ -4,6 +4,13 @@ import HeaderAuth from '../components/layout/HeaderAuth';
 
 const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
+// Helper function to get message className
+const getMessageClassName = (type) => {
+  if (type === 'success') return 'bg-green-50 text-green-800 border border-green-200';
+  if (type === 'error') return 'bg-red-50 text-red-800 border border-red-200';
+  return 'bg-yellow-50 text-yellow-800 border border-yellow-200';
+};
+
 const EditProfile = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
@@ -38,7 +45,7 @@ const EditProfile = () => {
         currentPassword: '',
         newPassword: '',
         confirmPassword: '',
-        handicap: parsedUser.handicap !== null ? parsedUser.handicap.toString() : ''
+        handicap: parsedUser.handicap === null ? '' : parsedUser.handicap.toString()
       });
     } catch (error) {
       console.error('Error parsing user data:', error);
@@ -63,8 +70,8 @@ const EditProfile = () => {
     setMessage({ type: '', text: '' });
 
     // Validate handicap
-    const handicapValue = parseFloat(formData.handicap);
-    if (isNaN(handicapValue) || handicapValue < -10 || handicapValue > 54) {
+    const handicapValue = Number.parseFloat(formData.handicap);
+    if (Number.isNaN(handicapValue) || handicapValue < -10 || handicapValue > 54) {
       setMessage({ type: 'error', text: 'Handicap must be between -10.0 and 54.0' });
       return;
     }
@@ -119,7 +126,7 @@ const EditProfile = () => {
         },
         body: JSON.stringify({
           user_id: user.id,
-          manual_handicap: formData.handicap ? parseFloat(formData.handicap) : null
+          manual_handicap: formData.handicap ? Number.parseFloat(formData.handicap) : null
         })
       });
 
@@ -133,12 +140,20 @@ const EditProfile = () => {
       // Update localStorage and state
       localStorage.setItem('user', JSON.stringify(updatedUser));
       setUser(updatedUser);
-      setFormData(prev => ({ ...prev, handicap: updatedUser.handicap.toString() }));
+      
+      // Safely update handicap in form, handle null case
+      setFormData(prev => ({ 
+        ...prev, 
+        handicap: updatedUser.handicap === null ? '' : updatedUser.handicap.toString()
+      }));
 
       setMessage({ type: 'success', text: 'Handicap updated from RFEG successfully!' });
     } catch (error) {
       console.error('Error updating handicap from RFEG:', error);
-      setMessage({ type: 'error', text: error.message || 'Failed to update handicap from RFEG. Make sure your name is registered in RFEG.' });
+      setMessage({ 
+        type: 'error', 
+        text: error.message || 'Failed to update handicap from RFEG. Make sure your name is registered in RFEG.' 
+      });
     } finally {
       setIsUpdatingRFEG(false);
     }
@@ -199,11 +214,7 @@ const EditProfile = () => {
 
             {/* Message Display */}
             {message.text && (
-              <div className={`mx-4 mb-4 p-4 rounded-lg ${
-                message.type === 'success' ? 'bg-green-50 text-green-800 border border-green-200' :
-                message.type === 'error' ? 'bg-red-50 text-red-800 border border-red-200' :
-                'bg-yellow-50 text-yellow-800 border border-yellow-200'
-              }`}>
+              <div className={`mx-4 mb-4 p-4 rounded-lg ${getMessageClassName(message.type)}`}>
                 {message.text}
               </div>
             )}
@@ -230,10 +241,11 @@ const EditProfile = () => {
 
                 <form onSubmit={handleUpdateEmailPassword} className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
                       New Email
                     </label>
                     <input
+                      id="email"
                       type="email"
                       name="email"
                       value={formData.email}
@@ -244,10 +256,11 @@ const EditProfile = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="currentPassword" className="block text-sm font-medium text-gray-700 mb-1">
                       Current Password
                     </label>
                     <input
+                      id="currentPassword"
                       type="password"
                       name="currentPassword"
                       value={formData.currentPassword}
@@ -258,10 +271,11 @@ const EditProfile = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700 mb-1">
                       New Password
                     </label>
                     <input
+                      id="newPassword"
                       type="password"
                       name="newPassword"
                       value={formData.newPassword}
@@ -272,10 +286,11 @@ const EditProfile = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
                       Confirm New Password
                     </label>
                     <input
+                      id="confirmPassword"
                       type="password"
                       name="confirmPassword"
                       value={formData.confirmPassword}
@@ -312,10 +327,11 @@ const EditProfile = () => {
 
                 <form onSubmit={handleUpdateHandicapManually} className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="handicap" className="block text-sm font-medium text-gray-700 mb-1">
                       Handicap (Manual)
                     </label>
                     <input
+                      id="handicap"
                       type="number"
                       name="handicap"
                       value={formData.handicap}
