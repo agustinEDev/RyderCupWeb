@@ -20,6 +20,8 @@ const EditProfile = () => {
   const [message, setMessage] = useState({ type: '', text: '' });
 
   const [formData, setFormData] = useState({
+    firstName: '',
+    lastName: '',
     email: '',
     currentPassword: '',
     newPassword: '',
@@ -41,6 +43,8 @@ const EditProfile = () => {
       const parsedUser = JSON.parse(userData);
       setUser(parsedUser);
       setFormData({
+        firstName: parsedUser.first_name || '',
+        lastName: parsedUser.last_name || '',
         email: parsedUser.email || '',
         currentPassword: '',
         newPassword: '',
@@ -172,9 +176,173 @@ const EditProfile = () => {
     }
   };
 
-  const handleUpdateEmailPassword = async (e) => {
+  const handleUpdateProfile = async (e) => {
     e.preventDefault();
-    setMessage({ type: 'warning', text: 'Email and password updates are not yet implemented in the backend API.' });
+    setMessage({ type: '', text: '' });
+
+    // Validate that at least one field has changed
+    if (formData.firstName === user.first_name && formData.lastName === user.last_name) {
+      setMessage({ type: 'warning', text: 'No changes detected in name or last name.' });
+      return;
+    }
+
+    // Validate name lengths (must be at least 2 characters)
+    if (formData.firstName && formData.firstName.trim().length < 2) {
+      setMessage({ type: 'error', text: 'First name must be at least 2 characters.' });
+      return;
+    }
+
+    if (formData.lastName && formData.lastName.trim().length < 2) {
+      setMessage({ type: 'error', text: 'Last name must be at least 2 characters.' });
+      return;
+    }
+
+    setIsSaving(true);
+
+    try {
+      const token = localStorage.getItem('access_token');
+      const response = await fetch(`${API_URL}/api/v1/users/profile`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          first_name: formData.firstName !== user.first_name ? formData.firstName : null,
+          last_name: formData.lastName !== user.last_name ? formData.lastName : null
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        // Handle different error formats
+        let errorMessage = 'Failed to update profile';
+        if (errorData.detail) {
+          if (Array.isArray(errorData.detail)) {
+            errorMessage = errorData.detail.map(err => err.msg).join(', ');
+          } else if (typeof errorData.detail === 'string') {
+            errorMessage = errorData.detail;
+          } else if (typeof errorData.detail === 'object') {
+            errorMessage = JSON.stringify(errorData.detail);
+          }
+        }
+        throw new Error(errorMessage);
+      }
+
+      const data = await response.json();
+      const updatedUser = data.user;
+
+      // Update localStorage and state
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+      setUser(updatedUser);
+      setFormData(prev => ({
+        ...prev,
+        firstName: updatedUser.first_name,
+        lastName: updatedUser.last_name
+      }));
+
+      setMessage({ type: 'success', text: data.message || 'Profile updated successfully!' });
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      setMessage({ type: 'error', text: error.message || 'Failed to update profile' });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleUpdateSecurity = async (e) => {
+    e.preventDefault();
+    setMessage({ type: '', text: '' });
+
+    // Validate current password is provided
+    if (!formData.currentPassword) {
+      setMessage({ type: 'error', text: 'Current password is required to update security settings.' });
+      return;
+    }
+
+    // Check if at least one security field is being updated
+    // Email changed only if it's different AND not empty
+    const isEmailChanged = formData.email.trim() !== '' && formData.email !== user.email;
+    const isPasswordChanged = formData.newPassword !== '';
+
+    if (!isEmailChanged && !isPasswordChanged) {
+      setMessage({ type: 'warning', text: 'No changes detected in email or password.' });
+      return;
+    }
+
+    // If changing password, validate new password
+    if (isPasswordChanged) {
+      if (formData.newPassword.length < 8) {
+        setMessage({ type: 'error', text: 'New password must be at least 8 characters.' });
+        return;
+      }
+
+      if (formData.newPassword !== formData.confirmPassword) {
+        setMessage({ type: 'error', text: 'New password and confirmation do not match.' });
+        return;
+      }
+    }
+
+    setIsSaving(true);
+
+    try {
+      const token = localStorage.getItem('access_token');
+      const requestBody = {
+        current_password: formData.currentPassword,
+        new_email: isEmailChanged ? formData.email : null,
+        new_password: isPasswordChanged ? formData.newPassword : null,
+        confirm_password: isPasswordChanged ? formData.confirmPassword : null
+      };
+
+      const response = await fetch(`${API_URL}/api/v1/users/security`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(requestBody)
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        // Handle different error formats
+        let errorMessage = 'Failed to update security settings';
+        if (errorData.detail) {
+          // If detail is an array (Pydantic validation errors)
+          if (Array.isArray(errorData.detail)) {
+            errorMessage = errorData.detail.map(err => err.msg).join(', ');
+          } else if (typeof errorData.detail === 'string') {
+            errorMessage = errorData.detail;
+          } else if (typeof errorData.detail === 'object') {
+            errorMessage = JSON.stringify(errorData.detail);
+          }
+        }
+        throw new Error(errorMessage);
+      }
+
+      const data = await response.json();
+      const updatedUser = data.user;
+
+      // Update localStorage and state
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+      setUser(updatedUser);
+
+      // Clear all security fields after successful update
+      setFormData(prev => ({
+        ...prev,
+        email: updatedUser.email,  // Reset to current email
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: ''
+      }));
+
+      setMessage({ type: 'success', text: data.message || 'Security settings updated successfully!' });
+    } catch (error) {
+      console.error('Error updating security:', error);
+      setMessage({ type: 'error', text: error.message || 'Failed to update security settings' });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   if (isLoading) {
@@ -232,45 +400,66 @@ const EditProfile = () => {
               </div>
             )}
 
-            {/* User Info Display */}
-            <div className="p-4">
-              <div className="bg-gray-50 rounded-lg p-4 mb-6">
-                <p className="text-gray-700 text-sm mb-2">
-                  <span className="font-semibold">Name:</span> {fullName}
-                </p>
-                <p className="text-gray-700 text-sm">
-                  <span className="font-semibold">Current Email:</span> {user.email}
-                </p>
-              </div>
-            </div>
-
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 px-4">
-              {/* Email & Password Section */}
+              {/* Personal Profile Section */}
               <div className="border border-gray-200 rounded-lg p-6">
-                <h3 className="text-gray-900 font-bold text-lg mb-4">Account Settings</h3>
-                <p className="text-sm text-yellow-700 bg-yellow-50 p-3 rounded mb-4">
-                  ⚠️ Email and password updates are not yet implemented in the backend API.
+                <h3 className="text-gray-900 font-bold text-lg mb-4">Personal Information</h3>
+                <p className="text-sm text-gray-600 mb-4">
+                  Update your name and last name. No password required.
                 </p>
 
-                <form onSubmit={handleUpdateEmailPassword} className="space-y-4">
+                <form onSubmit={handleUpdateProfile} className="space-y-4">
                   <div>
-                    <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                      New Email
+                    <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-1">
+                      First Name
                     </label>
                     <input
-                      id="email"
-                      type="email"
-                      name="email"
-                      value={formData.email}
+                      id="firstName"
+                      type="text"
+                      name="firstName"
+                      value={formData.firstName}
                       onChange={handleInputChange}
-                      disabled
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-gray-100 cursor-not-allowed"
+                      placeholder="Enter your first name"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                     />
                   </div>
 
                   <div>
+                    <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-1">
+                      Last Name
+                    </label>
+                    <input
+                      id="lastName"
+                      type="text"
+                      name="lastName"
+                      value={formData.lastName}
+                      onChange={handleInputChange}
+                      placeholder="Enter your last name"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={isSaving}
+                    className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-2 px-4 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isSaving ? 'Updating...' : 'Update Personal Info'}
+                  </button>
+                </form>
+              </div>
+
+              {/* Security Settings Section */}
+              <div className="border border-gray-200 rounded-lg p-6">
+                <h3 className="text-gray-900 font-bold text-lg mb-4">Security Settings</h3>
+                <p className="text-sm text-gray-600 mb-4">
+                  Update your email and/or password. Current password required.
+                </p>
+
+                <form onSubmit={handleUpdateSecurity} className="space-y-4">
+                  <div>
                     <label htmlFor="currentPassword" className="block text-sm font-medium text-gray-700 mb-1">
-                      Current Password
+                      Current Password *
                     </label>
                     <input
                       id="currentPassword"
@@ -278,14 +467,35 @@ const EditProfile = () => {
                       name="currentPassword"
                       value={formData.currentPassword}
                       onChange={handleInputChange}
-                      disabled
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-gray-100 cursor-not-allowed"
+                      placeholder="Required to update security settings"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                     />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Enter your current password to authorize changes
+                    </p>
                   </div>
 
-                  <div>
+                  <div className="pt-3 border-t border-gray-200">
+                    <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                      New Email (optional)
+                    </label>
+                    <input
+                      id="email"
+                      type="email"
+                      name="email"
+                      value={formData.email}
+                      onChange={handleInputChange}
+                      placeholder="Leave empty to keep current email"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Current: <span className="font-medium">{user.email}</span>
+                    </p>
+                  </div>
+
+                  <div className="pt-3 border-t border-gray-200">
                     <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700 mb-1">
-                      New Password
+                      New Password (optional)
                     </label>
                     <input
                       id="newPassword"
@@ -293,9 +503,12 @@ const EditProfile = () => {
                       name="newPassword"
                       value={formData.newPassword}
                       onChange={handleInputChange}
-                      disabled
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-gray-100 cursor-not-allowed"
+                      placeholder="Leave empty to keep current password"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                     />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Must be at least 8 characters if changing
+                    </p>
                   </div>
 
                   <div>
@@ -308,22 +521,25 @@ const EditProfile = () => {
                       name="confirmPassword"
                       value={formData.confirmPassword}
                       onChange={handleInputChange}
-                      disabled
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-gray-100 cursor-not-allowed"
+                      placeholder="Confirm your new password"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                     />
                   </div>
 
                   <button
                     type="submit"
-                    disabled
-                    className="w-full bg-gray-300 text-gray-500 font-bold py-2 px-4 rounded-lg cursor-not-allowed"
+                    disabled={isSaving}
+                    className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Update Account (Coming Soon)
+                    {isSaving ? 'Updating...' : 'Update Security Settings'}
                   </button>
                 </form>
               </div>
 
-              {/* Handicap Section */}
+            </div>
+
+            {/* Handicap Section - Full Width Row */}
+            <div className="px-4 mt-6">
               <div className="border border-gray-200 rounded-lg p-6">
                 <h3 className="text-gray-900 font-bold text-lg mb-4">Handicap Management</h3>
 
