@@ -1,10 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import PropTypes from 'prop-types';
 
 const HeaderAuth = ({ user }) => {
   const navigate = useNavigate();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const dropdownRef = useRef(null);
+  const desktopDropdownRef = useRef(null);
+  const mobileDropdownRef = useRef(null);
 
   const handleProfileClick = () => {
     navigate('/profile');
@@ -27,7 +29,10 @@ const HeaderAuth = ({ user }) => {
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+      const isOutsideDesktop = !desktopDropdownRef.current || !desktopDropdownRef.current.contains(event.target);
+      const isOutsideMobile = !mobileDropdownRef.current || !mobileDropdownRef.current.contains(event.target);
+      
+      if (isOutsideDesktop && isOutsideMobile) {
         setIsDropdownOpen(false);
       }
     };
@@ -64,14 +69,15 @@ const HeaderAuth = ({ user }) => {
           </svg>
         </div>
         <Link to="/dashboard">
-          <h2 className="text-gray-900 text-lg font-bold leading-tight tracking-tight hover:text-primary transition-colors">
+          <h2 className="text-gray-900 text-base md:text-lg font-bold leading-tight tracking-tight hover:text-primary transition-colors">
             Ryder Cup Amateur Manager
           </h2>
         </Link>
       </div>
 
-      <div className="flex flex-1 justify-end gap-8">
-        <div className="hidden md:flex items-center gap-9">
+      {/* Desktop Navigation */}
+      <div className="hidden md:flex flex-1 justify-end gap-8">
+        <div className="flex items-center gap-9">
           <Link to="/dashboard" className="text-gray-900 text-sm font-medium leading-normal hover:text-primary transition-colors">
             Dashboard
           </Link>
@@ -83,8 +89,8 @@ const HeaderAuth = ({ user }) => {
           </Link>
         </div>
 
-        {/* Profile Dropdown */}
-        <div className="relative" ref={dropdownRef}>
+        {/* Desktop Profile Dropdown */}
+        <div className="relative" ref={desktopDropdownRef}>
           <button
             onClick={toggleDropdown}
             className="flex items-center gap-2 hover:opacity-80 transition-opacity"
@@ -94,7 +100,7 @@ const HeaderAuth = ({ user }) => {
             </div>
           </button>
 
-          {/* Dropdown Menu */}
+          {/* Desktop Dropdown Menu */}
           {isDropdownOpen && (
             <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
               <button
@@ -113,8 +119,101 @@ const HeaderAuth = ({ user }) => {
           )}
         </div>
       </div>
+
+      {/* Mobile Menu */}
+      <div className="md:hidden relative" ref={mobileDropdownRef}>
+        <button
+          onClick={toggleDropdown}
+          className="flex items-center justify-center w-10 h-10 rounded-lg hover:bg-gray-100 transition-colors"
+          aria-label="Toggle menu"
+        >
+          <svg
+            className="w-6 h-6 text-gray-900"
+            fill="none"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="2"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            {isDropdownOpen ? (
+              <path d="M6 18L18 6M6 6l12 12" />
+            ) : (
+              <path d="M4 6h16M4 12h16M4 18h16" />
+            )}
+          </svg>
+        </button>
+
+        {/* Mobile Dropdown Menu */}
+        {isDropdownOpen && (
+          <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
+            <div className="px-4 py-3 border-b border-gray-200">
+              <div className="flex items-center gap-3">
+                <div className="bg-primary bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10 flex items-center justify-center text-white font-bold text-sm">
+                  {getInitials()}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-900 truncate">
+                    {user?.first_name} {user?.last_name}
+                  </p>
+                  <p className="text-xs text-gray-500 truncate">
+                    {user?.email}
+                  </p>
+                </div>
+              </div>
+            </div>
+            <Link
+              to="/dashboard"
+              onClick={() => setIsDropdownOpen(false)}
+              className="block px-4 py-2 text-sm text-gray-900 hover:bg-gray-100 transition-colors"
+            >
+              Dashboard
+            </Link>
+            <Link
+              to="/competitions"
+              onClick={() => setIsDropdownOpen(false)}
+              className="block px-4 py-2 text-sm text-gray-900 hover:bg-gray-100 transition-colors"
+            >
+              My Competitions
+            </Link>
+            <Link
+              to="/competitions/create"
+              onClick={() => setIsDropdownOpen(false)}
+              className="block px-4 py-2 text-sm text-gray-900 hover:bg-gray-100 transition-colors"
+            >
+              Create Competition
+            </Link>
+            <div className="border-t border-gray-200 my-2"></div>
+            <button
+              onClick={handleProfileClick}
+              className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+            >
+              View Profile
+            </button>
+            <button
+              onClick={handleLogout}
+              className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+            >
+              Logout
+            </button>
+          </div>
+        )}
+      </div>
     </header>
   );
+};
+
+HeaderAuth.propTypes = {
+  user: PropTypes.shape({
+    id: PropTypes.string,
+    first_name: PropTypes.string,
+    last_name: PropTypes.string,
+    email: PropTypes.string,
+    handicap: PropTypes.number,
+    handicap_updated_at: PropTypes.string,
+    created_at: PropTypes.string,
+    updated_at: PropTypes.string,
+  }),
 };
 
 export default HeaderAuth;
