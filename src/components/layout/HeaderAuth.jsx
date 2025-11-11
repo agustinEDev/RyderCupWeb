@@ -29,8 +29,8 @@ const HeaderAuth = ({ user }) => {
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
-      const isOutsideDesktop = desktopDropdownRef.current && !desktopDropdownRef.current.contains(event.target);
-      const isOutsideMobile = mobileDropdownRef.current && !mobileDropdownRef.current.contains(event.target);
+      const isOutsideDesktop = !desktopDropdownRef.current || !desktopDropdownRef.current.contains(event.target);
+      const isOutsideMobile = !mobileDropdownRef.current || !mobileDropdownRef.current.contains(event.target);
       
       if (isOutsideDesktop && isOutsideMobile) {
         setIsDropdownOpen(false);

@@ -215,8 +215,8 @@ curl https://rydercup-api.onrender.com/
   "message": "Ryder Cup Manager API",
   "version": "1.0.0",
   "status": "running",
-  "docs": "Visita /docs para la documentacion interactiva",
-  "description": "API para gestion de torneos tipo Ryder Cup entre amigos"
+  "docs": "Visita /docs para la documentación interactiva",
+  "description": "API para gestión de torneos tipo Ryder Cup entre amigos"
 }
 ```
 
