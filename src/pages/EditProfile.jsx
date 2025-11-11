@@ -118,6 +118,7 @@ const EditProfile = () => {
 
     try {
       const token = localStorage.getItem('access_token');
+      
       const response = await fetch(`${API_URL}/api/v1/handicaps/update`, {
         method: 'POST',
         headers: {
@@ -125,13 +126,15 @@ const EditProfile = () => {
           'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
-          user_id: user.id,
-          manual_handicap: formData.handicap ? Number.parseFloat(formData.handicap) : null
+          user_id: user.id
+          // NOTE: Do NOT send manual_handicap when updating from RFEG
+          // Let the backend fetch from RFEG or return error if not found
         })
       });
 
       if (!response.ok) {
         const errorData = await response.json();
+        // Backend sends specific error messages (service unavailable, user not found, etc.)
         throw new Error(errorData.detail || 'Failed to update handicap from RFEG');
       }
 
@@ -147,12 +150,22 @@ const EditProfile = () => {
         handicap: updatedUser.handicap === null ? '' : updatedUser.handicap.toString()
       }));
 
-      setMessage({ type: 'success', text: 'Handicap updated from RFEG successfully!' });
+      // Success message
+      setMessage({ 
+        type: 'success', 
+        text: 'Handicap updated from RFEG successfully!' 
+      });
     } catch (error) {
       console.error('Error updating handicap from RFEG:', error);
+      
+      // Display the specific error message from backend
+      // Backend will send messages like:
+      // - "RFEG service is currently unavailable"
+      // - "User not found in RFEG database"
+      // - etc.
       setMessage({ 
         type: 'error', 
-        text: error.message || 'Failed to update handicap from RFEG. Make sure your name is registered in RFEG.' 
+        text: error.message || 'Failed to update handicap from RFEG. Please try again later.' 
       });
     } finally {
       setIsUpdatingRFEG(false);
