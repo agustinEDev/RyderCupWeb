@@ -45,3 +45,6 @@ build
 
 # Visual Studio Code settings
 .vscode
+
+# Claude files
+CLAUDE.md
