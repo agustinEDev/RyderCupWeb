@@ -9,8 +9,8 @@ const VerifyEmail = () => {
 
   const [status, setStatus] = useState('verifying'); // verifying | success | error | invalid
   const [message, setMessage] = useState('');
-  const [isVerifying, setIsVerifying] = useState(false);
   const redirectTimeoutRef = useRef(null);
+  const hasVerifiedRef = useRef(false); // Usar ref para prevenir doble ejecución
 
   // Cleanup timeout on unmount to prevent memory leaks
   useEffect(() => {
@@ -22,8 +22,9 @@ const VerifyEmail = () => {
   }, []);
 
   useEffect(() => {
-    // Prevenir ejecución múltiple (React Strict Mode en desarrollo ejecuta useEffect dos veces)
-    if (isVerifying) return;
+    // Prevenir ejecución múltiple usando ref (más confiable que state con React Strict Mode)
+    if (hasVerifiedRef.current) return;
+    hasVerifiedRef.current = true;
 
     const verifyEmail = async () => {
       // Validar que existe el token
@@ -32,8 +33,6 @@ const VerifyEmail = () => {
         setMessage('Verification token is missing or invalid.');
         return;
       }
-
-      setIsVerifying(true);
 
       try {
         const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
@@ -97,7 +96,7 @@ const VerifyEmail = () => {
     };
 
     verifyEmail();
-  }, [token, navigate, isVerifying]);
+  }, [token, navigate]);
 
   return (
     <div className="relative flex h-auto min-h-screen w-full flex-col bg-white">
