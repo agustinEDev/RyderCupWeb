@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import HeaderAuth from '../components/layout/HeaderAuth';
 import ProfileCard from '../components/profile/ProfileCard';
+import EmailVerificationBanner from '../components/EmailVerificationBanner';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -60,6 +61,13 @@ const Dashboard = () => {
                 Welcome, {firstName}
               </p>
             </div>
+
+            {/* Email Verification Banner */}
+            {user && !user.email_verified && (
+              <div className="px-4">
+                <EmailVerificationBanner userEmail={user.email} />
+              </div>
+            )}
 
             {/* Profile Card */}
             <ProfileCard user={user} />
