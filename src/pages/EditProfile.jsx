@@ -17,6 +17,7 @@ const EditProfile = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isUpdatingRFEG, setIsUpdatingRFEG] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
 
   const [formData, setFormData] = useState({
@@ -58,6 +59,49 @@ const EditProfile = () => {
       setIsLoading(false);
     }
   }, [navigate]);
+
+  const handleRefreshUserData = async () => {
+    setIsRefreshing(true);
+    setMessage({ type: '', text: '' });
+
+    try {
+      const token = localStorage.getItem('access_token');
+      const response = await fetch(`${API_URL}/api/v1/auth/current-user`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to refresh user data');
+      }
+
+      const refreshedUser = await response.json();
+
+      // Update localStorage
+      localStorage.setItem('user', JSON.stringify(refreshedUser));
+
+      // Update state
+      setUser(refreshedUser);
+      setFormData({
+        firstName: refreshedUser.first_name || '',
+        lastName: refreshedUser.last_name || '',
+        email: refreshedUser.email || '',
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: '',
+        handicap: refreshedUser.handicap === null ? '' : refreshedUser.handicap.toString()
+      });
+
+      setMessage({ type: 'success', text: 'Profile data refreshed successfully!' });
+    } catch (error) {
+      console.error('Error refreshing user data:', error);
+      setMessage({ type: 'error', text: 'Failed to refresh user data. Please try logging in again.' });
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -409,10 +453,21 @@ const EditProfile = () => {
         <div className="px-4 md:px-40 flex flex-1 justify-center py-5">
           <div className="layout-content-container flex flex-col max-w-[960px] flex-1">
             {/* Page Title */}
-            <div className="flex flex-wrap justify-between gap-3 p-4">
+            <div className="flex flex-wrap justify-between gap-3 p-4 items-center">
               <p className="text-gray-900 tracking-tight text-3xl md:text-[32px] font-bold leading-tight min-w-72">
                 Edit Profile
               </p>
+              <button
+                onClick={handleRefreshUserData}
+                disabled={isRefreshing}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Refresh profile data from server"
+              >
+                <svg className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                {isRefreshing ? 'Refreshing...' : 'Refresh Data'}
+              </button>
             </div>
 
             {/* Message Display */}

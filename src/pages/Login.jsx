@@ -80,6 +80,12 @@ const Login = () => {
       localStorage.setItem('access_token', data.access_token);
       localStorage.setItem('user', JSON.stringify(data.user));
 
+      // Check if email verification is required
+      if (data.email_verification_required) {
+        console.log('Email verification required for user:', data.user.email);
+        // User will see the verification banner in the dashboard
+      }
+
       // Redirect to dashboard
       navigate('/dashboard');
 
