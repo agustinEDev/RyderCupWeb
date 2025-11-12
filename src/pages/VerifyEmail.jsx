@@ -37,13 +37,17 @@ const VerifyEmail = () => {
           body: JSON.stringify({ token })
         });
 
+        // Guard against empty/non-JSON responses to avoid `Unexpected end of JSON input`
+        const contentType = response.headers.get('content-type') || '';
+        const hasJsonBody = response.status !== 204 && contentType.includes('application/json');
+
         if (!response.ok) {
-          const errorData = await response.json();
+          const errorData = hasJsonBody ? await response.json() : null;
           console.error('❌ Verification failed:', errorData);
-          throw new Error(errorData.detail || 'Verification failed');
+          throw new Error(errorData?.detail || 'Verification failed');
         }
 
-        const data = await response.json();
+        const data = hasJsonBody ? await response.json() : {};
         console.log('✅ Email verified successfully:', data);
 
         // Actualizar los datos del usuario en localStorage si está logueado

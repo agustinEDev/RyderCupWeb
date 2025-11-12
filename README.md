@@ -81,11 +81,9 @@ npm run preview # probar build
 - `src/pages/EditProfile.jsx` — lógica de actualización de hándicap (manual + RFEG) y refresco de usuario
 - `src/components/layout/HeaderAuth.jsx` — menú de usuario y logout
 
-Si quieres, aplico un commit con este README actualizado o lo dejamos sin commitear — dime tu preferencia.
-
 ---
 
-Contacto: Agustín Estévez — https://github.com/agustinEDev
+Contacto: [Agustín Estévez](https://github.com/agustinEDev)
 
 - **Frontend Repository**: [RyderCupWeb](https://github.com/agustinEDev/RyderCupWeb)
 
