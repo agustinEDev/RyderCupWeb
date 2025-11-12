@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Link } from 'react-router-dom';
 
@@ -10,6 +10,16 @@ const VerifyEmail = () => {
   const [status, setStatus] = useState('verifying'); // verifying | success | error | invalid
   const [message, setMessage] = useState('');
   const [isVerifying, setIsVerifying] = useState(false);
+  const redirectTimeoutRef = useRef(null);
+
+  // Cleanup timeout on unmount to prevent memory leaks
+  useEffect(() => {
+    return () => {
+      if (redirectTimeoutRef.current) {
+        clearTimeout(redirectTimeoutRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     // Prevenir ejecución múltiple (React Strict Mode en desarrollo ejecuta useEffect dos veces)
@@ -71,7 +81,7 @@ const VerifyEmail = () => {
 
         // Redirigir al dashboard después de 3 segundos
         console.log('⏱️ Redirecting to dashboard in 3 seconds...');
-        setTimeout(() => {
+        redirectTimeoutRef.current = setTimeout(() => {
           navigate('/dashboard');
         }, 3000);
 
