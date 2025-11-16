@@ -68,10 +68,10 @@ export const validatePassword = (password) => {
  * @returns {string} - Strength level name
  */
 export const getPasswordStrengthLabel = (strength) => {
-  if (strength >= 4) return 'Fuerte';
-  if (strength >= 3) return 'Media';
-  if (strength >= 2) return 'Débil';
-  return 'Muy débil';
+  if (strength >= 4) return 'Strong';
+  if (strength >= 3) return 'Medium';
+  if (strength >= 2) return 'Weak';
+  return 'Very weak';
 };
 
 /**
@@ -119,13 +119,13 @@ export const validatePasswordStrength = (password) => {
 
   // Generate feedback
   if (score === 1) {
-    feedback = 'Muy corta';
+    feedback = 'Too short';
   } else if (score === 2) {
-    feedback = 'Añade números o símbolos';
+    feedback = 'Add numbers or symbols';
   } else if (score === 3) {
-    feedback = 'Casi perfecta';
+    feedback = 'Almost perfect';
   } else if (score === 4) {
-    feedback = '¡Excelente!';
+    feedback = 'Excellent!';
   }
 
   return { score, feedback };

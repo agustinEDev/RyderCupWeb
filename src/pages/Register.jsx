@@ -32,12 +32,12 @@ const Register = () => {
   const validateForm = () => {
     const newErrors = {};
 
-    const firstNameValidation = validateName(formData.firstName, 'Nombre');
+    const firstNameValidation = validateName(formData.firstName, 'First name');
     if (!firstNameValidation.isValid) {
       newErrors.firstName = firstNameValidation.message;
     }
 
-    const lastNameValidation = validateName(formData.lastName, 'Apellido');
+    const lastNameValidation = validateName(formData.lastName, 'Last name');
     if (!lastNameValidation.isValid) {
       newErrors.lastName = lastNameValidation.message;
     }
@@ -89,19 +89,19 @@ const Register = () => {
       const data = await response.json();
 
       // Show success toast
-      toast.success('¡Cuenta creada exitosamente!');
+      toast.success('Account created successfully!');
 
       // Redirect to login with success message
       setTimeout(() => {
         navigate('/login', {
           state: {
-            message: 'Cuenta creada con éxito. Por favor inicia sesión.'
+            message: 'Account created successfully. Please sign in.'
           }
         });
       }, 1000);
 
     } catch (error) {
-      toast.error(error.message || 'Error al crear la cuenta');
+      toast.error(error.message || 'Error creating account');
     } finally {
       setIsLoading(false);
     }
@@ -126,7 +126,7 @@ const Register = () => {
 
             {/* Form Title */}
             <h2 className="text-gray-900 text-lg font-bold leading-tight tracking-tight px-4 text-center pb-2 pt-4">
-              Crear Cuenta
+              Create Account
             </h2>
 
             {/* Form */}
@@ -137,7 +137,7 @@ const Register = () => {
                   <input
                     type="text"
                     name="firstName"
-                    placeholder="Nombre"
+                    placeholder="First name"
                     value={formData.firstName}
                     onChange={handleChange}
                     className={`form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-gray-900 focus:outline-0 focus:ring-2 ${
@@ -157,7 +157,7 @@ const Register = () => {
                   <input
                     type="text"
                     name="lastName"
-                    placeholder="Apellido"
+                    placeholder="Last name"
                     value={formData.lastName}
                     onChange={handleChange}
                     className={`form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-gray-900 focus:outline-0 focus:ring-2 ${
@@ -177,7 +177,7 @@ const Register = () => {
                   <input
                     type="email"
                     name="email"
-                    placeholder="Correo electrónico"
+                    placeholder="Email address"
                     value={formData.email}
                     onChange={handleChange}
                     className={`form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-gray-900 focus:outline-0 focus:ring-2 ${
@@ -198,7 +198,7 @@ const Register = () => {
                     name="password"
                     value={formData.password}
                     onChange={handleChange}
-                    placeholder="Contraseña (mínimo 8 caracteres)"
+                    placeholder="Password (minimum 8 characters)"
                     error={!!errors.password}
                     disabled={isLoading}
                     label=""
@@ -225,7 +225,7 @@ const Register = () => {
                   }`}
                 >
                   <span className="truncate">
-                    {isLoading ? 'Creando cuenta...' : 'Crear Cuenta'}
+                    {isLoading ? 'Creating account...' : 'Create Account'}
                   </span>
                 </motion.button>
               </div>
@@ -234,7 +234,7 @@ const Register = () => {
               <div className="flex max-w-[480px] px-4">
                 <Link to="/login" className="w-full">
                   <p className="text-gray-500 text-sm font-normal leading-normal pb-3 pt-1 text-center underline hover:text-primary-600 transition-colors">
-                    ¿Ya tienes cuenta? Inicia sesión
+                    Already have an account? Sign in
                   </p>
                 </Link>
               </div>
@@ -244,7 +244,7 @@ const Register = () => {
             <div className="flex max-w-[480px] px-4 mt-4">
               <Link to="/" className="w-full">
                 <p className="text-gray-500 text-sm font-normal text-center hover:text-primary-600 transition-colors">
-                  ← Volver al inicio
+                  ← Back to home
                 </p>
               </Link>
             </div>
