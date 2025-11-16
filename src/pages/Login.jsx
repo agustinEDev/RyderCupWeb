@@ -56,7 +56,7 @@ const Login = () => {
     // Check rate limiting
     const rateLimit = checkRateLimit('login', 5, 300000); // 5 attempts per 5 minutes
     if (!rateLimit.allowed) {
-      toast.error(`Demasiados intentos. Por favor espera ${rateLimit.remainingTime} segundos.`, {
+      toast.error(`Too many attempts. Please wait ${rateLimit.remainingTime} seconds.`, {
         duration: 5000,
       });
       return;
@@ -113,7 +113,7 @@ const Login = () => {
 
     } catch (error) {
       safeLog('error', 'Login error', error);
-      toast.error(error.message || 'Email o contraseña incorrectos');
+      toast.error(error.message || 'Incorrect email or password');
     } finally {
       setIsLoading(false);
     }
@@ -151,7 +151,7 @@ const Login = () => {
 
             {/* Title */}
             <h1 className="text-gray-900 text-[22px] font-bold leading-tight tracking-tight px-4 text-center pb-3 pt-5">
-              Bienvenido
+              Welcome
             </h1>
 
             {/* Success Message */}
@@ -195,10 +195,10 @@ const Login = () => {
                     name="password"
                     value={formData.password}
                     onChange={handleChange}
-                    placeholder="Ingresa tu contraseña"
+                    placeholder="Enter your password"
                     error={!!errors.password}
                     disabled={isLoading}
-                    label="Contraseña"
+                    label="Password"
                     autoComplete="current-password"
                   />
                   {errors.password && (
@@ -219,7 +219,7 @@ const Login = () => {
                   }`}
                 >
                   <span className="truncate">
-                    {isLoading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
+                    {isLoading ? 'Signing in...' : 'Sign In'}
                   </span>
                 </motion.button>
               </div>
@@ -228,7 +228,7 @@ const Login = () => {
               <div className="flex max-w-[480px] px-4">
                 <Link to="/register" className="w-full">
                   <p className="text-gray-500 text-sm font-normal leading-normal pb-3 pt-1 text-center underline hover:text-primary-600 transition-colors">
-                    ¿No tienes cuenta? Regístrate
+                    Don't have an account? Sign up
                   </p>
                 </Link>
               </div>
@@ -238,7 +238,7 @@ const Login = () => {
             <div className="flex max-w-[480px] px-4 mt-4">
               <Link to="/" className="w-full">
                 <p className="text-gray-500 text-sm font-normal text-center hover:text-primary-600 transition-colors">
-                  ← Volver al inicio
+                  ← Back to home
                 </p>
               </Link>
             </div>

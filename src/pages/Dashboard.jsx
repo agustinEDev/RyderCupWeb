@@ -12,26 +12,18 @@ const Dashboard = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Check authentication
-    const token = localStorage.getItem('access_token');
+    // Fetch user data from localStorage (auth already verified by ProtectedRoute)
     const userData = localStorage.getItem('user');
-
-    if (!token || !userData) {
-      // Not authenticated, redirect to login
-      navigate('/login');
-      return;
-    }
 
     try {
       const parsedUser = JSON.parse(userData);
       setUser(parsedUser);
     } catch (error) {
       console.error('Error parsing user data:', error);
-      navigate('/login');
     } finally {
       setIsLoading(false);
     }
-  }, [navigate]);
+  }, []);
 
   if (isLoading) {
     return (
@@ -45,7 +37,7 @@ const Dashboard = () => {
   }
 
   if (!user) {
-    return null; // Will redirect in useEffect
+    return null;
   }
 
   const firstName = user.first_name || 'User';
@@ -66,10 +58,10 @@ const Dashboard = () => {
             >
               <div>
                 <p className="text-gray-900 tracking-tight text-3xl md:text-[32px] font-bold leading-tight">
-                  Bienvenido, {firstName}
+                  Welcome, {firstName}
                 </p>
                 <p className="text-gray-500 text-sm mt-1">
-                  Aquí está tu resumen de actividad
+                  Here's your activity summary
                 </p>
               </div>
             </motion.div>
@@ -89,61 +81,61 @@ const Dashboard = () => {
               className="p-4"
             >
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                {/* Stat Card 1 - Torneos */}
+                {/* Stat Card 1 - Tournaments */}
                 <div className="relative overflow-hidden bg-gradient-to-br from-primary-50 to-primary-100 p-6 rounded-xl border border-primary-200 hover:shadow-lg transition-all duration-300 group">
                   <div className="flex items-center justify-between mb-4">
                     <div className="p-3 bg-primary-500 rounded-lg shadow-md">
                       <Trophy className="w-6 h-6 text-white" />
                     </div>
                     <div className="text-right">
-                      <p className="text-sm text-primary-600 font-medium">Torneos</p>
+                      <p className="text-sm text-primary-600 font-medium">Tournaments</p>
                       <p className="text-3xl font-bold text-primary-700">0</p>
                     </div>
                   </div>
-                  <p className="text-xs text-primary-600">Próximamente podrás crear torneos</p>
+                  <p className="text-xs text-primary-600">Coming soon: create tournaments</p>
                   <div className="absolute -bottom-6 -right-6 opacity-10">
                     <Trophy className="w-32 h-32 text-primary-700" />
                   </div>
                 </div>
 
-                {/* Stat Card 2 - Hándicap */}
+                {/* Stat Card 2 - Handicap */}
                 <div className="relative overflow-hidden bg-gradient-to-br from-accent-50 via-amber-50 to-accent-100 p-6 rounded-xl border border-accent-200 hover:shadow-lg transition-all duration-300 group">
                   <div className="flex items-center justify-between mb-4">
                     <div className="p-3 bg-accent-500 rounded-lg shadow-md">
                       <TrendingUp className="w-6 h-6 text-white" />
                     </div>
                     <div className="text-right">
-                      <p className="text-sm text-amber-700 font-medium">Hándicap</p>
+                      <p className="text-sm text-amber-700 font-medium">Handicap</p>
                       <p className="text-3xl font-bold text-amber-800">
-                        {user.handicap ? user.handicap.toFixed(1) : '--'}
+                        {user.handicap != null ? user.handicap.toFixed(1) : '--'}
                       </p>
                     </div>
                   </div>
                   <p className="text-xs text-amber-700">
                     {user.handicap_updated_at
-                      ? `Actualizado ${new Date(user.handicap_updated_at).toLocaleDateString()}`
-                      : 'No actualizado'}
+                      ? `Updated ${new Date(user.handicap_updated_at).toLocaleDateString()}`
+                      : 'Not updated'}
                   </p>
                   <div className="absolute -bottom-6 -right-6 opacity-10">
                     <TrendingUp className="w-32 h-32 text-amber-700" />
                   </div>
                 </div>
 
-                {/* Stat Card 3 - Perfil */}
+                {/* Stat Card 3 - Profile */}
                 <div className="relative overflow-hidden bg-gradient-to-br from-blue-50 to-navy-100 p-6 rounded-xl border border-blue-200 hover:shadow-lg transition-all duration-300 group">
                   <div className="flex items-center justify-between mb-4">
                     <div className="p-3 bg-navy-800 rounded-lg shadow-md">
                       <Award className="w-6 h-6 text-white" />
                     </div>
                     <div className="text-right">
-                      <p className="text-sm text-navy-800 font-medium">Estado</p>
+                      <p className="text-sm text-navy-800 font-medium">Status</p>
                       <p className="text-lg font-bold text-navy-900">
-                        {user.email_verified ? '✓ Verificado' : '⚠ Pendiente'}
+                        {user.email_verified ? '✓ Verified' : '⚠ Pending'}
                       </p>
                     </div>
                   </div>
                   <p className="text-xs text-navy-700">
-                    Miembro desde {new Date(user.created_at).toLocaleDateString()}
+                    Member since {new Date(user.created_at).toLocaleDateString()}
                   </p>
                   <div className="absolute -bottom-6 -right-6 opacity-10">
                     <Award className="w-32 h-32 text-navy-700" />
@@ -162,7 +154,7 @@ const Dashboard = () => {
               transition={{ duration: 0.5, delay: 0.2 }}
               className="p-4 mt-4"
             >
-              <h2 className="text-gray-900 text-xl font-bold mb-4">Acciones Rápidas</h2>
+              <h2 className="text-gray-900 text-xl font-bold mb-4">Quick Actions</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Create Competition Card */}
                 <motion.button
@@ -176,9 +168,9 @@ const Dashboard = () => {
                   </div>
                   <div className="flex-1">
                     <h3 className="text-gray-900 font-bold text-lg group-hover:text-primary-600 transition-colors">
-                      Crear Torneo
+                      Create Tournament
                     </h3>
-                    <p className="text-gray-500 text-sm">Inicia un nuevo torneo Ryder Cup</p>
+                    <p className="text-gray-500 text-sm">Start a new Ryder Cup tournament</p>
                   </div>
                 </motion.button>
 
@@ -194,9 +186,9 @@ const Dashboard = () => {
                   </div>
                   <div className="flex-1">
                     <h3 className="text-gray-900 font-bold text-lg group-hover:text-accent-600 transition-colors">
-                      Mis Torneos
+                      My Tournaments
                     </h3>
-                    <p className="text-gray-500 text-sm">Ver y gestionar tus torneos</p>
+                    <p className="text-gray-500 text-sm">View and manage your tournaments</p>
                   </div>
                 </motion.button>
 
@@ -212,9 +204,9 @@ const Dashboard = () => {
                   </div>
                   <div className="flex-1">
                     <h3 className="text-gray-900 font-bold text-lg group-hover:text-navy-800 transition-colors">
-                      Mi Perfil
+                      My Profile
                     </h3>
-                    <p className="text-gray-500 text-sm">Ver y actualizar tu información</p>
+                    <p className="text-gray-500 text-sm">View and update your information</p>
                   </div>
                 </motion.button>
 
@@ -224,8 +216,8 @@ const Dashboard = () => {
                     <Calendar className="w-7 h-7 text-gray-400" />
                   </div>
                   <div className="flex-1">
-                    <h3 className="text-gray-400 font-bold text-lg">Estadísticas</h3>
-                    <p className="text-gray-400 text-sm">Próximamente...</p>
+                    <h3 className="text-gray-400 font-bold text-lg">Statistics</h3>
+                    <p className="text-gray-400 text-sm">Coming soon...</p>
                   </div>
                 </div>
               </div>

@@ -8,25 +8,18 @@ const Competitions = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Check authentication
-    const token = localStorage.getItem('access_token');
+    // Fetch user data from localStorage (auth already verified by ProtectedRoute)
     const userData = localStorage.getItem('user');
-
-    if (!token || !userData) {
-      navigate('/login');
-      return;
-    }
 
     try {
       const parsedUser = JSON.parse(userData);
       setUser(parsedUser);
     } catch (error) {
       console.error('Error parsing user data:', error);
-      navigate('/login');
     } finally {
       setIsLoading(false);
     }
-  }, [navigate]);
+  }, []);
 
   const handleBackToDashboard = () => {
     navigate('/dashboard');

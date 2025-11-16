@@ -13,6 +13,15 @@ export const isTokenExpired = (token) => {
 
   try {
     const payload = JSON.parse(atob(token.split('.')[1]));
+
+    // Validate that exp exists and is a finite number
+    if (!payload.exp || !Number.isFinite(Number(payload.exp))) {
+      if (import.meta.env.DEV) {
+        console.error('Token has invalid or missing exp claim:', payload.exp);
+      }
+      return true; // Treat as expired if exp is missing or invalid
+    }
+
     // Add 30 second buffer to account for clock skew
     return payload.exp * 1000 < (Date.now() + 30000);
   } catch (error) {
