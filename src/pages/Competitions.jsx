@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import HeaderAuth from '../components/layout/HeaderAuth';
+import { getUserData } from '../utils/secureAuth';
 
 const Competitions = () => {
   const navigate = useNavigate();
@@ -8,25 +9,11 @@ const Competitions = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Check authentication
-    const token = localStorage.getItem('access_token');
-    const userData = localStorage.getItem('user');
-
-    if (!token || !userData) {
-      navigate('/login');
-      return;
-    }
-
-    try {
-      const parsedUser = JSON.parse(userData);
-      setUser(parsedUser);
-    } catch (error) {
-      console.error('Error parsing user data:', error);
-      navigate('/login');
-    } finally {
-      setIsLoading(false);
-    }
-  }, [navigate]);
+    // Fetch user data from secure storage (auth already verified by ProtectedRoute)
+    const userData = getUserData();
+    setUser(userData);
+    setIsLoading(false);
+  }, []);
 
   const handleBackToDashboard = () => {
     navigate('/dashboard');

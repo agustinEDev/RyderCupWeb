@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import PropTypes from 'prop-types';
+import { clearAuthData } from '../../utils/secureAuth';
 
 const HeaderAuth = ({ user }) => {
   const navigate = useNavigate();
@@ -15,8 +16,7 @@ const HeaderAuth = ({ user }) => {
 
   const handleLogout = () => {
     // Clear auth data
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('user');
+    clearAuthData();
 
     // Redirect to home
     navigate('/');

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Link } from 'react-router-dom';
+import { getUserData, setUserData } from '../utils/secureAuth';
 
 const VerifyEmail = () => {
   const navigate = useNavigate();
@@ -59,17 +60,12 @@ const VerifyEmail = () => {
         const data = hasJsonBody ? await response.json() : {};
         console.log('✅ Email verified successfully:', data);
 
-        // Actualizar los datos del usuario en localStorage si está logueado
-        const userData = localStorage.getItem('user');
+        // Update user data in secure storage if logged in
+        const userData = getUserData();
         if (userData) {
-          try {
-            const user = JSON.parse(userData);
-            user.email_verified = true;
-            localStorage.setItem('user', JSON.stringify(user));
-            console.log('📝 LocalStorage updated with verified status');
-          } catch (e) {
-            console.error('Error updating user data:', e);
-          }
+          userData.email_verified = true;
+          setUserData(userData);
+          console.log('📝 Secure storage updated with verified status');
         }
 
         // Esperar 1.5 segundos con el spinner antes de mostrar el mensaje de éxito
