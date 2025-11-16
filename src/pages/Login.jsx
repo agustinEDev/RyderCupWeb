@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { validateEmail, checkRateLimit, resetRateLimit } from '../utils/validation';
+import { safeLog } from '../utils/auth';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -30,10 +32,9 @@ const Login = () => {
   const validateForm = () => {
     const newErrors = {};
 
-    if (!formData.email.trim()) {
-      newErrors.email = 'Email is required';
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = 'Email is invalid';
+    const emailValidation = validateEmail(formData.email);
+    if (!emailValidation.isValid) {
+      newErrors.email = emailValidation.message;
     }
 
     if (!formData.password) {
@@ -48,6 +49,13 @@ const Login = () => {
     e.preventDefault();
 
     if (!validateForm()) {
+      return;
+    }
+
+    // Check rate limiting
+    const rateLimit = checkRateLimit('login', 5, 300000); // 5 attempts per 5 minutes
+    if (!rateLimit.allowed) {
+      setServerError(`Too many login attempts. Please wait ${rateLimit.remainingTime} seconds.`);
       return;
     }
 
@@ -74,23 +82,27 @@ const Login = () => {
       }
 
       const data = await response.json();
-      console.log('Login successful:', data);
+      safeLog('info', 'Login successful', { email: data.user?.email });
 
       // Save token and user data
       localStorage.setItem('access_token', data.access_token);
       localStorage.setItem('user', JSON.stringify(data.user));
 
+      // Reset rate limit on successful login
+      resetRateLimit('login');
+
       // Check if email verification is required
       if (data.email_verification_required) {
-        console.log('Email verification required for user:', data.user.email);
+        safeLog('info', 'Email verification required');
         // User will see the verification banner in the dashboard
       }
 
-      // Redirect to dashboard
-      navigate('/dashboard');
+      // Redirect to dashboard or original location
+      const from = location.state?.from?.pathname || '/dashboard';
+      navigate(from, { replace: true });
 
     } catch (error) {
-      console.error('Login error:', error);
+      safeLog('error', 'Login error', error);
       setServerError(error.message || 'Invalid email or password. Please try again.');
     } finally {
       setIsLoading(false);

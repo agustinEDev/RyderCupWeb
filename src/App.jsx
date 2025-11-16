@@ -9,6 +9,7 @@ import Profile from './pages/Profile';
 import EditProfile from './pages/EditProfile';
 import Competitions from './pages/Competitions';
 import CreateCompetition from './pages/CreateCompetition';
+import ProtectedRoute from './components/auth/ProtectedRoute';
 
 function App() {
   return (
@@ -20,12 +21,12 @@ function App() {
         <Route path="/register" element={<Register />} />
         <Route path="/verify-email" element={<VerifyEmail />} />
 
-        {/* Protected routes (auth check inside component) */}
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/profile" element={<Profile />} />
-        <Route path="/profile/edit" element={<EditProfile />} />
-        <Route path="/competitions" element={<Competitions />} />
-        <Route path="/competitions/create" element={<CreateCompetition />} />
+        {/* Protected routes */}
+        <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+        <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+        <Route path="/profile/edit" element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />
+        <Route path="/competitions" element={<ProtectedRoute><Competitions /></ProtectedRoute>} />
+        <Route path="/competitions/create" element={<ProtectedRoute><CreateCompetition /></ProtectedRoute>} />
       </Routes>
     </Router>
   );
