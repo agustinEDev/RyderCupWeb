@@ -2,16 +2,16 @@ import React, { useState } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 
 /**
- * Componente de input de contraseña con toggle de visibilidad
- * @param {Object} props - Props del componente
- * @param {string} props.name - Nombre del input
- * @param {string} props.value - Valor del input
- * @param {function} props.onChange - Callback onChange
- * @param {string} props.placeholder - Placeholder del input
- * @param {boolean} props.error - Si hay error (para styling)
- * @param {boolean} props.disabled - Si está deshabilitado
- * @param {string} props.label - Label del input
- * @param {boolean} props.showStrength - Si mostrar indicador de fortaleza
+ * Password input component with visibility toggle
+ * @param {Object} props - Component props
+ * @param {string} props.name - Input name
+ * @param {string} props.value - Input value
+ * @param {function} props.onChange - onChange callback
+ * @param {string} props.placeholder - Input placeholder
+ * @param {boolean} props.error - Whether there's an error (for styling)
+ * @param {boolean} props.disabled - Whether it's disabled
+ * @param {string} props.label - Input label
+ * @param {boolean} props.showStrength - Whether to show strength indicator
  */
 const PasswordInput = ({
   name,
