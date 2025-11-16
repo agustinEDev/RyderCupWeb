@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import HeaderAuth from '../components/layout/HeaderAuth';
+import { getAuthToken, getUserData, setUserData } from '../utils/secureAuth';
 
 const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
@@ -31,26 +32,22 @@ const EditProfile = () => {
   });
 
   useEffect(() => {
-    // Fetch user data from localStorage (auth already verified by ProtectedRoute)
-    const userData = localStorage.getItem('user');
+    // Fetch user data from secure storage (auth already verified by ProtectedRoute)
+    const userData = getUserData();
 
-    try {
-      const parsedUser = JSON.parse(userData);
-      setUser(parsedUser);
+    if (userData) {
+      setUser(userData);
       setFormData({
-        firstName: parsedUser.first_name || '',
-        lastName: parsedUser.last_name || '',
-        email: parsedUser.email || '',
+        firstName: userData.first_name || '',
+        lastName: userData.last_name || '',
+        email: userData.email || '',
         currentPassword: '',
         newPassword: '',
         confirmPassword: '',
-        handicap: parsedUser.handicap === null ? '' : parsedUser.handicap.toString()
+        handicap: userData.handicap === null ? '' : userData.handicap.toString()
       });
-    } catch (error) {
-      console.error('Error parsing user data:', error);
-    } finally {
-      setIsLoading(false);
     }
+    setIsLoading(false);
   }, []);
 
   const handleRefreshUserData = async () => {
@@ -58,7 +55,7 @@ const EditProfile = () => {
     setMessage({ type: '', text: '' });
 
     try {
-      const token = localStorage.getItem('access_token');
+      const token = getAuthToken();
       const response = await fetch(`${API_URL}/api/v1/auth/current-user`, {
         method: 'GET',
         headers: {
@@ -72,8 +69,8 @@ const EditProfile = () => {
 
       const refreshedUser = await response.json();
 
-      // Update localStorage
-      localStorage.setItem('user', JSON.stringify(refreshedUser));
+      // Update secure storage
+      setUserData(refreshedUser);
 
       // Update state
       setUser(refreshedUser);
@@ -120,7 +117,7 @@ const EditProfile = () => {
     setIsSaving(true);
 
     try {
-      const token = localStorage.getItem('access_token');
+      const token = getAuthToken();
       const response = await fetch(`${API_URL}/api/v1/handicaps/update-manual`, {
         method: 'POST',
         headers: {
@@ -140,8 +137,8 @@ const EditProfile = () => {
 
       const updatedUser = await response.json();
 
-      // Update localStorage and state
-      localStorage.setItem('user', JSON.stringify(updatedUser));
+      // Update secure storage and state
+      setUserData(updatedUser);
       setUser(updatedUser);
 
       setMessage({ type: 'success', text: 'Handicap updated successfully!' });
@@ -158,8 +155,8 @@ const EditProfile = () => {
     setIsUpdatingRFEG(true);
 
     try {
-      const token = localStorage.getItem('access_token');
-      
+      const token = getAuthToken();
+
       const response = await fetch(`${API_URL}/api/v1/handicaps/update`, {
         method: 'POST',
         headers: {
@@ -181,8 +178,8 @@ const EditProfile = () => {
 
       const updatedUser = await response.json();
 
-      // Update localStorage and state
-      localStorage.setItem('user', JSON.stringify(updatedUser));
+      // Update secure storage and state
+      setUserData(updatedUser);
       setUser(updatedUser);
       
       // Safely update handicap in form, handle null case
@@ -245,7 +242,7 @@ const EditProfile = () => {
     setIsSaving(true);
 
     try {
-      const token = localStorage.getItem('access_token');
+      const token = getAuthToken();
 
       // Build payload with only changed fields (avoid sending null)
       const payload = {};
@@ -284,8 +281,8 @@ const EditProfile = () => {
       const data = await response.json();
       const updatedUser = data.user;
 
-      // Update localStorage and state
-      localStorage.setItem('user', JSON.stringify(updatedUser));
+      // Update secure storage and state
+      setUserData(updatedUser);
       setUser(updatedUser);
       setFormData(prev => ({
         ...prev,
@@ -339,7 +336,7 @@ const EditProfile = () => {
     setIsSaving(true);
 
     try {
-      const token = localStorage.getItem('access_token');
+      const token = getAuthToken();
 
       // Build payload with only changed fields (avoid sending null)
       const requestBody = {
@@ -382,8 +379,8 @@ const EditProfile = () => {
       const data = await response.json();
       const updatedUser = data.user;
 
-      // Update localStorage and state
-      localStorage.setItem('user', JSON.stringify(updatedUser));
+      // Update secure storage and state
+      setUserData(updatedUser);
       setUser(updatedUser);
 
       // Clear all security fields after successful update

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { getAuthToken } from '../utils/secureAuth';
 
 const EmailVerificationBanner = ({ userEmail }) => {
   const [isVisible, setIsVisible] = useState(true);
@@ -15,7 +16,7 @@ const EmailVerificationBanner = ({ userEmail }) => {
 
     try {
       const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
-      const token = localStorage.getItem('access_token');
+      const token = getAuthToken();
 
       // NOTE: Este endpoint aún no está implementado en el backend
       // Por ahora, solo mostraremos un mensaje informativo

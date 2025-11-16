@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import HeaderAuth from '../components/layout/HeaderAuth';
+import { getUserData } from '../utils/secureAuth';
 
 const CreateCompetition = () => {
   const navigate = useNavigate();
@@ -8,17 +9,10 @@ const CreateCompetition = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Fetch user data from localStorage (auth already verified by ProtectedRoute)
-    const userData = localStorage.getItem('user');
-
-    try {
-      const parsedUser = JSON.parse(userData);
-      setUser(parsedUser);
-    } catch (error) {
-      console.error('Error parsing user data:', error);
-    } finally {
-      setIsLoading(false);
-    }
+    // Fetch user data from secure storage (auth already verified by ProtectedRoute)
+    const userData = getUserData();
+    setUser(userData);
+    setIsLoading(false);
   }, []);
 
   const handleBackToDashboard = () => {

@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { validateEmail, checkRateLimit, resetRateLimit } from '../utils/validation';
 import { safeLog } from '../utils/auth';
+import { setAuthToken, setUserData } from '../utils/secureAuth';
 import PasswordInput from '../components/ui/PasswordInput';
 
 const Login = () => {
@@ -86,20 +87,21 @@ const Login = () => {
       const data = await response.json();
       safeLog('info', 'Login successful', { email: data.user?.email });
 
-      // Save token and user data
-      localStorage.setItem('access_token', data.access_token);
-      localStorage.setItem('user', JSON.stringify(data.user));
+      // Save token and user data using secure storage (sessionStorage)
+      // TODO: Remove when backend implements httpOnly cookies
+      setAuthToken(data.access_token);
+      setUserData(data.user);
 
       // Reset rate limit on successful login
       resetRateLimit('login');
 
       // Show success toast
-      toast.success(`¡Bienvenido, ${data.user.first_name}!`);
+      toast.success(`Welcome, ${data.user.first_name}!`);
 
       // Check if email verification is required
       if (data.email_verification_required) {
         safeLog('info', 'Email verification required');
-        toast('Por favor verifica tu email', {
+        toast('Please verify your email', {
           duration: 5000,
           icon: '⚠️',
         });

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import Landing from './pages/Landing';
@@ -11,8 +11,14 @@ import EditProfile from './pages/EditProfile';
 import Competitions from './pages/Competitions';
 import CreateCompetition from './pages/CreateCompetition';
 import ProtectedRoute from './components/auth/ProtectedRoute';
+import { migrateFromLocalStorage } from './utils/secureAuth';
 
 function App() {
+  // Migrate existing users from localStorage to sessionStorage
+  useEffect(() => {
+    migrateFromLocalStorage();
+  }, []);
+
   return (
     <Router>
       {/* Toast Notifications */}

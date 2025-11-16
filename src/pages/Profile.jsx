@@ -6,6 +6,7 @@ import {
   CheckCircle, AlertCircle, Edit, LogOut, ArrowLeft
 } from 'lucide-react';
 import HeaderAuth from '../components/layout/HeaderAuth';
+import { getUserData, clearAuthData } from '../utils/secureAuth';
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -13,17 +14,10 @@ const Profile = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Fetch user data from localStorage (auth already verified by ProtectedRoute)
-    const userData = localStorage.getItem('user');
-
-    try {
-      const parsedUser = JSON.parse(userData);
-      setUser(parsedUser);
-    } catch (error) {
-      console.error('Error parsing user data:', error);
-    } finally {
-      setIsLoading(false);
-    }
+    // Fetch user data from secure storage (auth already verified by ProtectedRoute)
+    const userData = getUserData();
+    setUser(userData);
+    setIsLoading(false);
   }, []);
 
   const handleEditProfile = () => {
@@ -31,8 +25,7 @@ const Profile = () => {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('user');
+    clearAuthData();
     navigate('/');
   };
 

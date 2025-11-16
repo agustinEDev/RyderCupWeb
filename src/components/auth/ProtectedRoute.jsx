@@ -1,5 +1,5 @@
 import { Navigate, useLocation } from 'react-router-dom';
-import { isAuthenticated } from '../../utils/auth';
+import { isAuthenticated } from '../../utils/secureAuth';
 
 /**
  * Protected Route Component
