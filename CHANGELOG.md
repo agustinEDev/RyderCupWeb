@@ -7,6 +7,33 @@ y este proyecto adhiere a [Versionado Semántico](https://semver.org/lang/es/).
 
 ## [Unreleased]
 
+## [1.2.0] - 2024-11-16
+
+### Added
+- Utilidades centralizadas de autenticación en `src/utils/secureAuth.js`
+- Sistema de migración automática de localStorage a sessionStorage
+- Documentación completa de migración a httpOnly cookies en `SECURITY_MIGRATION.md`
+- Funciones de gestión de autenticación: `getAuthToken()`, `setAuthToken()`, `getUserData()`, `setUserData()`, `clearAuthData()`
+- Validación de expiración de token con buffer de 30 segundos para clock skew
+
+### Changed
+- **BREAKING**: Migrado almacenamiento de JWT de localStorage a sessionStorage
+- Actualizados todos los componentes y páginas para usar utilidades de `secureAuth`
+- Centralizada la lógica de autenticación para mejor mantenibilidad
+- Mejorada la validación de tokens con verificación de claim `exp`
+
+### Security
+- **IMPORTANTE**: Reducido impacto de vulnerabilidades XSS mediante uso de sessionStorage
+- SessionStorage se limpia automáticamente al cerrar la pestaña/ventana
+- Almacenamiento aislado por pestaña (tab-scoped) para mejor seguridad
+- Tokens ya no persisten entre sesiones del navegador
+- Documentada ruta de migración completa a httpOnly cookies para seguridad máxima
+
+### Migration Notes
+- Los usuarios existentes se migran automáticamente de localStorage a sessionStorage
+- Se requiere re-autenticación después de actualizar (sesiones antiguas en localStorage se limpian)
+- Ver `SECURITY_MIGRATION.md` para plan de implementación de httpOnly cookies
+
 ## [1.1.0] - 2024-11-16
 
 ### Added
@@ -64,6 +91,7 @@ y este proyecto adhiere a [Versionado Semántico](https://semver.org/lang/es/).
 - Configuración de headers de seguridad (X-Content-Type-Options, X-Frame-Options, etc.)
 - Eliminación automática de console.log en builds de producción
 
-[Unreleased]: https://github.com/agustinEDev/RyderCupWeb/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/agustinEDev/RyderCupWeb/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/agustinEDev/RyderCupWeb/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/agustinEDev/RyderCupWeb/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/agustinEDev/RyderCupWeb/releases/tag/v1.0.0
