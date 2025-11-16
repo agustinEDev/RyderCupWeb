@@ -1,5 +1,10 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import toast from 'react-hot-toast';
+import { validateEmail, validateName, validatePassword } from '../utils/validation';
+import PasswordInput from '../components/ui/PasswordInput';
+import PasswordStrengthIndicator from '../components/ui/PasswordStrengthIndicator';
 
 const Register = () => {
   const navigate = useNavigate();
@@ -11,7 +16,6 @@ const Register = () => {
   });
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
-  const [serverError, setServerError] = useState('');
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -23,30 +27,29 @@ const Register = () => {
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }));
     }
-    setServerError('');
   };
 
   const validateForm = () => {
     const newErrors = {};
 
-    if (!formData.firstName.trim()) {
-      newErrors.firstName = 'First name is required';
+    const firstNameValidation = validateName(formData.firstName, 'Nombre');
+    if (!firstNameValidation.isValid) {
+      newErrors.firstName = firstNameValidation.message;
     }
 
-    if (!formData.lastName.trim()) {
-      newErrors.lastName = 'Last name is required';
+    const lastNameValidation = validateName(formData.lastName, 'Apellido');
+    if (!lastNameValidation.isValid) {
+      newErrors.lastName = lastNameValidation.message;
     }
 
-    if (!formData.email.trim()) {
-      newErrors.email = 'Email is required';
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = 'Email is invalid';
+    const emailValidation = validateEmail(formData.email);
+    if (!emailValidation.isValid) {
+      newErrors.email = emailValidation.message;
     }
 
-    if (!formData.password) {
-      newErrors.password = 'Password is required';
-    } else if (formData.password.length < 8) {
-      newErrors.password = 'Password must be at least 8 characters';
+    const passwordValidation = validatePassword(formData.password);
+    if (!passwordValidation.isValid) {
+      newErrors.password = passwordValidation.message;
     }
 
     setErrors(newErrors);
@@ -61,10 +64,8 @@ const Register = () => {
     }
 
     setIsLoading(true);
-    setServerError('');
 
     try {
-      // TODO: Replace with actual API call
       const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
       const response = await fetch(`${API_URL}/api/v1/auth/register`, {
@@ -86,18 +87,21 @@ const Register = () => {
       }
 
       const data = await response.json();
-      console.log('Registration successful:', data);
+
+      // Show success toast
+      toast.success('¡Cuenta creada exitosamente!');
 
       // Redirect to login with success message
-      navigate('/login', {
-        state: {
-          message: 'Account created successfully! Please sign in.'
-        }
-      });
+      setTimeout(() => {
+        navigate('/login', {
+          state: {
+            message: 'Cuenta creada con éxito. Por favor inicia sesión.'
+          }
+        });
+      }, 1000);
 
     } catch (error) {
-      console.error('Registration error:', error);
-      setServerError(error.message || 'Failed to create account. Please try again.');
+      toast.error(error.message || 'Error al crear la cuenta');
     } finally {
       setIsLoading(false);
     }
@@ -107,7 +111,12 @@ const Register = () => {
     <div className="relative flex h-auto min-h-screen w-full flex-col bg-white">
       <div className="layout-container flex h-full grow flex-col">
         <div className="px-4 md:px-40 flex flex-1 justify-center py-5">
-          <div className="layout-content-container flex flex-col w-full max-w-[512px] py-5">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="layout-content-container flex flex-col w-full max-w-[512px] py-5"
+          >
             {/* Logo/Title */}
             <Link to="/" className="text-center mb-2">
               <h2 className="text-gray-900 tracking-tight text-[28px] font-bold leading-tight px-4 pb-3 pt-5 hover:text-primary transition-colors">
@@ -117,15 +126,8 @@ const Register = () => {
 
             {/* Form Title */}
             <h2 className="text-gray-900 text-lg font-bold leading-tight tracking-tight px-4 text-center pb-2 pt-4">
-              Create Account
+              Crear Cuenta
             </h2>
-
-            {/* Server Error */}
-            {serverError && (
-              <div className="mx-4 my-3 p-3 bg-red-50 border border-red-200 rounded-lg">
-                <p className="text-red-600 text-sm">{serverError}</p>
-              </div>
-            )}
 
             {/* Form */}
             <form onSubmit={handleSubmit} className="flex flex-col">
@@ -135,11 +137,11 @@ const Register = () => {
                   <input
                     type="text"
                     name="firstName"
-                    placeholder="First Name"
+                    placeholder="Nombre"
                     value={formData.firstName}
                     onChange={handleChange}
                     className={`form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-gray-900 focus:outline-0 focus:ring-2 ${
-                      errors.firstName ? 'focus:ring-red-500 border-red-300' : 'focus:ring-primary'
+                      errors.firstName ? 'focus:ring-red-500 border-red-300' : 'focus:ring-primary-500'
                     } border-none bg-gray-100 h-14 placeholder:text-gray-500 p-4 text-base font-normal leading-normal transition-all`}
                     disabled={isLoading}
                   />
@@ -155,11 +157,11 @@ const Register = () => {
                   <input
                     type="text"
                     name="lastName"
-                    placeholder="Last Name"
+                    placeholder="Apellido"
                     value={formData.lastName}
                     onChange={handleChange}
                     className={`form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-gray-900 focus:outline-0 focus:ring-2 ${
-                      errors.lastName ? 'focus:ring-red-500 border-red-300' : 'focus:ring-primary'
+                      errors.lastName ? 'focus:ring-red-500 border-red-300' : 'focus:ring-primary-500'
                     } border-none bg-gray-100 h-14 placeholder:text-gray-500 p-4 text-base font-normal leading-normal transition-all`}
                     disabled={isLoading}
                   />
@@ -175,11 +177,11 @@ const Register = () => {
                   <input
                     type="email"
                     name="email"
-                    placeholder="Email"
+                    placeholder="Correo electrónico"
                     value={formData.email}
                     onChange={handleChange}
                     className={`form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-gray-900 focus:outline-0 focus:ring-2 ${
-                      errors.email ? 'focus:ring-red-500 border-red-300' : 'focus:ring-primary'
+                      errors.email ? 'focus:ring-red-500 border-red-300' : 'focus:ring-primary-500'
                     } border-none bg-gray-100 h-14 placeholder:text-gray-500 p-4 text-base font-normal leading-normal transition-all`}
                     disabled={isLoading}
                   />
@@ -191,47 +193,62 @@ const Register = () => {
 
               {/* Password */}
               <div className="flex max-w-[480px] flex-wrap items-end gap-4 px-4 py-3">
-                <label className="flex flex-col min-w-40 flex-1">
-                  <input
-                    type="password"
+                <div className="flex flex-col min-w-40 flex-1">
+                  <PasswordInput
                     name="password"
-                    placeholder="Password (min 8 characters)"
                     value={formData.password}
                     onChange={handleChange}
-                    className={`form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-gray-900 focus:outline-0 focus:ring-2 ${
-                      errors.password ? 'focus:ring-red-500 border-red-300' : 'focus:ring-primary'
-                    } border-none bg-gray-100 h-14 placeholder:text-gray-500 p-4 text-base font-normal leading-normal transition-all`}
+                    placeholder="Contraseña (mínimo 8 caracteres)"
+                    error={!!errors.password}
                     disabled={isLoading}
+                    label=""
+                    autoComplete="new-password"
+                    className="border-none bg-gray-100"
                   />
                   {errors.password && (
                     <span className="text-red-500 text-xs mt-1">{errors.password}</span>
                   )}
-                </label>
+                  {/* Password Strength Indicator */}
+                  <PasswordStrengthIndicator password={formData.password} />
+                </div>
               </div>
 
               {/* Submit Button */}
-              <div className="flex px-4 py-3">
-                <button
+              <div className="flex max-w-[480px] px-4 py-3">
+                <motion.button
                   type="submit"
                   disabled={isLoading}
-                  className={`flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 flex-1 bg-primary text-white text-sm font-bold leading-normal tracking-wide transition-all ${
-                    isLoading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-primary/90'
+                  whileHover={{ scale: isLoading ? 1 : 1.02 }}
+                  whileTap={{ scale: isLoading ? 1 : 0.98 }}
+                  className={`w-full cursor-pointer items-center justify-center overflow-hidden rounded-lg h-12 px-4 bg-primary-500 text-white text-sm font-bold leading-normal tracking-wide transition-all shadow-md ${
+                    isLoading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-primary-600 hover:shadow-lg'
                   }`}
                 >
                   <span className="truncate">
-                    {isLoading ? 'Creating Account...' : 'Create Account'}
+                    {isLoading ? 'Creando cuenta...' : 'Crear Cuenta'}
                   </span>
-                </button>
+                </motion.button>
               </div>
 
               {/* Sign In Link */}
-              <Link to="/login">
-                <p className="text-gray-500 text-sm font-normal leading-normal pb-3 pt-1 px-4 text-center underline hover:text-primary transition-colors">
-                  Already have an account? Sign in
+              <div className="flex max-w-[480px] px-4">
+                <Link to="/login" className="w-full">
+                  <p className="text-gray-500 text-sm font-normal leading-normal pb-3 pt-1 text-center underline hover:text-primary-600 transition-colors">
+                    ¿Ya tienes cuenta? Inicia sesión
+                  </p>
+                </Link>
+              </div>
+            </form>
+
+            {/* Back to Home */}
+            <div className="flex max-w-[480px] px-4 mt-4">
+              <Link to="/" className="w-full">
+                <p className="text-gray-500 text-sm font-normal text-center hover:text-primary-600 transition-colors">
+                  ← Volver al inicio
                 </p>
               </Link>
-            </form>
-          </div>
+            </div>
+          </motion.div>
         </div>
       </div>
     </div>

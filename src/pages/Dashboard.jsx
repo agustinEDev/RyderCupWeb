@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { Trophy, Users, User, TrendingUp, Calendar, Award } from 'lucide-react';
 import HeaderAuth from '../components/layout/HeaderAuth';
 import ProfileCard from '../components/profile/ProfileCard';
 import EmailVerificationBanner from '../components/EmailVerificationBanner';
@@ -56,11 +58,21 @@ const Dashboard = () => {
         <div className="px-4 md:px-40 flex flex-1 justify-center py-5">
           <div className="layout-content-container flex flex-col max-w-[960px] flex-1">
             {/* Welcome Message */}
-            <div className="flex flex-wrap justify-between gap-3 p-4">
-              <p className="text-gray-900 tracking-tight text-3xl md:text-[32px] font-bold leading-tight min-w-72">
-                Welcome, {firstName}
-              </p>
-            </div>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+              className="flex flex-wrap justify-between gap-3 p-4"
+            >
+              <div>
+                <p className="text-gray-900 tracking-tight text-3xl md:text-[32px] font-bold leading-tight">
+                  Bienvenido, {firstName}
+                </p>
+                <p className="text-gray-500 text-sm mt-1">
+                  Aquí está tu resumen de actividad
+                </p>
+              </div>
+            </motion.div>
 
             {/* Email Verification Banner */}
             {user && !user.email_verified && (
@@ -69,75 +81,155 @@ const Dashboard = () => {
               </div>
             )}
 
+            {/* Statistics Cards */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.1 }}
+              className="p-4"
+            >
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                {/* Stat Card 1 - Torneos */}
+                <div className="relative overflow-hidden bg-gradient-to-br from-primary-50 to-primary-100 p-6 rounded-xl border border-primary-200 hover:shadow-lg transition-all duration-300 group">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="p-3 bg-primary-500 rounded-lg shadow-md">
+                      <Trophy className="w-6 h-6 text-white" />
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm text-primary-600 font-medium">Torneos</p>
+                      <p className="text-3xl font-bold text-primary-700">0</p>
+                    </div>
+                  </div>
+                  <p className="text-xs text-primary-600">Próximamente podrás crear torneos</p>
+                  <div className="absolute -bottom-6 -right-6 opacity-10">
+                    <Trophy className="w-32 h-32 text-primary-700" />
+                  </div>
+                </div>
+
+                {/* Stat Card 2 - Hándicap */}
+                <div className="relative overflow-hidden bg-gradient-to-br from-accent-50 via-amber-50 to-accent-100 p-6 rounded-xl border border-accent-200 hover:shadow-lg transition-all duration-300 group">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="p-3 bg-accent-500 rounded-lg shadow-md">
+                      <TrendingUp className="w-6 h-6 text-white" />
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm text-amber-700 font-medium">Hándicap</p>
+                      <p className="text-3xl font-bold text-amber-800">
+                        {user.handicap ? user.handicap.toFixed(1) : '--'}
+                      </p>
+                    </div>
+                  </div>
+                  <p className="text-xs text-amber-700">
+                    {user.handicap_updated_at
+                      ? `Actualizado ${new Date(user.handicap_updated_at).toLocaleDateString()}`
+                      : 'No actualizado'}
+                  </p>
+                  <div className="absolute -bottom-6 -right-6 opacity-10">
+                    <TrendingUp className="w-32 h-32 text-amber-700" />
+                  </div>
+                </div>
+
+                {/* Stat Card 3 - Perfil */}
+                <div className="relative overflow-hidden bg-gradient-to-br from-blue-50 to-navy-100 p-6 rounded-xl border border-blue-200 hover:shadow-lg transition-all duration-300 group">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="p-3 bg-navy-800 rounded-lg shadow-md">
+                      <Award className="w-6 h-6 text-white" />
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm text-navy-800 font-medium">Estado</p>
+                      <p className="text-lg font-bold text-navy-900">
+                        {user.email_verified ? '✓ Verificado' : '⚠ Pendiente'}
+                      </p>
+                    </div>
+                  </div>
+                  <p className="text-xs text-navy-700">
+                    Miembro desde {new Date(user.created_at).toLocaleDateString()}
+                  </p>
+                  <div className="absolute -bottom-6 -right-6 opacity-10">
+                    <Award className="w-32 h-32 text-navy-700" />
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+
             {/* Profile Card */}
             <ProfileCard user={user} />
 
             {/* Quick Actions */}
-            <div className="p-4 mt-4">
-              <h2 className="text-gray-900 text-xl font-bold mb-4">Quick Actions</h2>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.2 }}
+              className="p-4 mt-4"
+            >
+              <h2 className="text-gray-900 text-xl font-bold mb-4">Acciones Rápidas</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Create Competition Card */}
-                <button
+                <motion.button
                   onClick={() => navigate('/competitions/create')}
-                  className="flex flex-col gap-3 p-6 bg-white border-2 border-gray-200 rounded-lg hover:border-primary hover:shadow-md transition-all text-left"
+                  whileHover={{ scale: 1.02, y: -2 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="flex items-center gap-4 p-6 bg-white border-2 border-gray-200 rounded-xl hover:border-primary-500 hover:shadow-lg transition-all text-left group"
                 >
-                  <div className="text-primary">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" viewBox="0 0 256 256">
-                      <path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm0,192a88,88,0,1,1,88-88A88.1,88.1,0,0,1,128,216Zm48-88a8,8,0,0,1-8,8H136v32a8,8,0,0,1-16,0V136H88a8,8,0,0,1,0-16h32V88a8,8,0,0,1,16,0v32h32A8,8,0,0,1,176,128Z" />
-                    </svg>
+                  <div className="p-3 bg-primary-100 rounded-lg group-hover:bg-primary-500 transition-colors">
+                    <Trophy className="w-7 h-7 text-primary-600 group-hover:text-white transition-colors" />
                   </div>
-                  <div>
-                    <h3 className="text-gray-900 font-bold text-lg">Create Competition</h3>
-                    <p className="text-gray-500 text-sm">Start a new Ryder Cup tournament</p>
+                  <div className="flex-1">
+                    <h3 className="text-gray-900 font-bold text-lg group-hover:text-primary-600 transition-colors">
+                      Crear Torneo
+                    </h3>
+                    <p className="text-gray-500 text-sm">Inicia un nuevo torneo Ryder Cup</p>
                   </div>
-                </button>
+                </motion.button>
 
                 {/* My Competitions Card */}
-                <button
+                <motion.button
                   onClick={() => navigate('/competitions')}
-                  className="flex flex-col gap-3 p-6 bg-white border-2 border-gray-200 rounded-lg hover:border-primary hover:shadow-md transition-all text-left"
+                  whileHover={{ scale: 1.02, y: -2 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="flex items-center gap-4 p-6 bg-white border-2 border-gray-200 rounded-xl hover:border-accent-500 hover:shadow-lg transition-all text-left group"
                 >
-                  <div className="text-primary">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" viewBox="0 0 256 256">
-                      <path d="M224,48H32a8,8,0,0,0-8,8V192a16,16,0,0,0,16,16H216a16,16,0,0,0,16-16V56A8,8,0,0,0,224,48Zm-96,85.15L52.57,64H203.43ZM98.71,128,40,181.81V74.19Zm11.84,10.85,12,11.05a8,8,0,0,0,10.82,0l12-11.05,58,53.15H52.57ZM157.29,128,216,74.18V181.82Z" />
-                    </svg>
+                  <div className="p-3 bg-accent-100 rounded-lg group-hover:bg-accent-500 transition-colors">
+                    <Users className="w-7 h-7 text-accent-600 group-hover:text-white transition-colors" />
                   </div>
-                  <div>
-                    <h3 className="text-gray-900 font-bold text-lg">My Competitions</h3>
-                    <p className="text-gray-500 text-sm">View and manage your tournaments</p>
+                  <div className="flex-1">
+                    <h3 className="text-gray-900 font-bold text-lg group-hover:text-accent-600 transition-colors">
+                      Mis Torneos
+                    </h3>
+                    <p className="text-gray-500 text-sm">Ver y gestionar tus torneos</p>
                   </div>
-                </button>
+                </motion.button>
 
                 {/* View Profile Card */}
-                <button
+                <motion.button
                   onClick={() => navigate('/profile')}
-                  className="flex flex-col gap-3 p-6 bg-white border-2 border-gray-200 rounded-lg hover:border-primary hover:shadow-md transition-all text-left"
+                  whileHover={{ scale: 1.02, y: -2 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="flex items-center gap-4 p-6 bg-white border-2 border-gray-200 rounded-xl hover:border-navy-800 hover:shadow-lg transition-all text-left group"
                 >
-                  <div className="text-primary">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" viewBox="0 0 256 256">
-                      <path d="M230.92,212c-15.23-26.33-38.7-45.21-66.09-54.16a72,72,0,1,0-73.66,0C63.78,166.78,40.31,185.66,25.08,212a8,8,0,1,0,13.85,8c18.84-32.56,52.14-52,89.07-52s70.23,19.44,89.07,52a8,8,0,1,0,13.85-8ZM72,96a56,56,0,1,1,56,56A56.06,56.06,0,0,1,72,96Z" />
-                    </svg>
+                  <div className="p-3 bg-blue-100 rounded-lg group-hover:bg-navy-800 transition-colors">
+                    <User className="w-7 h-7 text-navy-800 group-hover:text-white transition-colors" />
                   </div>
-                  <div>
-                    <h3 className="text-gray-900 font-bold text-lg">My Profile</h3>
-                    <p className="text-gray-500 text-sm">View and update your information</p>
+                  <div className="flex-1">
+                    <h3 className="text-gray-900 font-bold text-lg group-hover:text-navy-800 transition-colors">
+                      Mi Perfil
+                    </h3>
+                    <p className="text-gray-500 text-sm">Ver y actualizar tu información</p>
                   </div>
-                </button>
+                </motion.button>
 
                 {/* Coming Soon Card */}
-                <div className="flex flex-col gap-3 p-6 bg-gray-50 border-2 border-gray-200 rounded-lg opacity-60 text-left">
-                  <div className="text-gray-400">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" viewBox="0 0 256 256">
-                      <path d="M208,32H184V24a8,8,0,0,0-16,0v8H88V24a8,8,0,0,0-16,0v8H48A16,16,0,0,0,32,48V208a16,16,0,0,0,16,16H208a16,16,0,0,0,16-16V48A16,16,0,0,0,208,32ZM72,48v8a8,8,0,0,0,16,0V48h80v8a8,8,0,0,0,16,0V48h24V80H48V48ZM208,208H48V96H208V208Z" />
-                    </svg>
+                <div className="flex items-center gap-4 p-6 bg-gray-50 border-2 border-gray-200 rounded-xl opacity-60 text-left">
+                  <div className="p-3 bg-gray-200 rounded-lg">
+                    <Calendar className="w-7 h-7 text-gray-400" />
                   </div>
-                  <div>
-                    <h3 className="text-gray-400 font-bold text-lg">Statistics</h3>
-                    <p className="text-gray-400 text-sm">Coming soon...</p>
+                  <div className="flex-1">
+                    <h3 className="text-gray-400 font-bold text-lg">Estadísticas</h3>
+                    <p className="text-gray-400 text-sm">Próximamente...</p>
                   </div>
                 </div>
               </div>
-            </div>
+            </motion.div>
           </div>
         </div>
       </div>

@@ -87,6 +87,51 @@ export const getPasswordStrengthColor = (strength) => {
 };
 
 /**
+ * Validates password strength and returns detailed feedback
+ * Optimized for visual indicator component
+ * @param {string} password - Password to validate
+ * @returns {Object} - { score: number (1-4), feedback: string }
+ */
+export const validatePasswordStrength = (password) => {
+  if (!password) {
+    return { score: 0, feedback: '' };
+  }
+
+  const hasUpperCase = /[A-Z]/.test(password);
+  const hasLowerCase = /[a-z]/.test(password);
+  const hasNumbers = /\d/.test(password);
+  const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+
+  let score = 0;
+  let feedback = '';
+
+  // Base score on length
+  if (password.length >= 8) score++;
+  if (password.length >= 12) score++;
+
+  // Add score for character variety
+  if (hasUpperCase && hasLowerCase) score++;
+  if (hasNumbers) score++;
+  if (hasSpecialChar) score++;
+
+  // Cap at 4
+  score = Math.min(score, 4);
+
+  // Generate feedback
+  if (score === 1) {
+    feedback = 'Muy corta';
+  } else if (score === 2) {
+    feedback = 'Añade números o símbolos';
+  } else if (score === 3) {
+    feedback = 'Casi perfecta';
+  } else if (score === 4) {
+    feedback = '¡Excelente!';
+  }
+
+  return { score, feedback };
+};
+
+/**
  * Validates email format
  * @param {string} email - Email to validate
  * @returns {Object} - { isValid: boolean, message: string }

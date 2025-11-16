@@ -1,5 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import {
+  Mail, Shield, Calendar, TrendingUp, Award,
+  CheckCircle, AlertCircle, Edit, LogOut, ArrowLeft
+} from 'lucide-react';
 import HeaderAuth from '../components/layout/HeaderAuth';
 
 const Profile = () => {
@@ -81,134 +86,178 @@ const Profile = () => {
         <div className="px-4 md:px-40 flex flex-1 justify-center py-5">
           <div className="layout-content-container flex flex-col max-w-[960px] flex-1">
             {/* Page Title */}
-            <div className="flex flex-wrap justify-between gap-3 p-4">
-              <p className="text-gray-900 tracking-tight text-3xl md:text-[32px] font-bold leading-tight min-w-72">
-                My Profile
-              </p>
-            </div>
-
-            {/* Profile Card */}
-            <div className="p-4">
-              <div className="flex flex-col md:flex-row items-stretch justify-start rounded-lg gap-4">
-                {/* Profile Image */}
-                <div
-                  className="w-full md:w-1/2 bg-center bg-no-repeat aspect-video bg-cover rounded-lg"
-                  style={{
-                    backgroundImage: `url("https://lh3.googleusercontent.com/aida-public/AB6AXuDoUyo6mRguPuclutMb4i6btSypIeXd-5p3iG_1RiBcUKBaQtjY4LYLr68FvRLe94WawpYUccXI7v1ioeegoaZ9LW0Mpdnr9mqu2iKAkOmyoZRw6ld3nTqmxhT1YTMbM036UZF3jdxLGFh9jrAm-ngH392O4FWX_GBQOwUqZEfH-m-54E-tK7ARgScxbi3HDoWnen2RaB1D1FcC7MjLFol4d7pObsyKMeFUcOcZcUg5_i94cZavvbrw_wqSMjns76w5OwLrHqhIEcWR")`
-                  }}
-                ></div>
-
-                {/* Profile Info */}
-                <div className="flex w-full min-w-72 grow flex-col items-stretch justify-center gap-1 py-4 md:px-4">
-                  <p className="text-gray-900 text-lg font-bold leading-tight tracking-tight">
-                    {fullName}
-                  </p>
-
-                  <div className="flex flex-col md:flex-row items-start md:items-end gap-3 justify-between mt-2">
-                    <div className="flex flex-col gap-2">
-                      <p className="text-gray-500 text-base font-normal leading-normal">
-                        {email}
-                      </p>
-                      <p className="text-gray-500 text-base font-normal leading-normal">
-                        <span className="font-semibold text-primary">Handicap: {handicap}</span>
-                        {handicap !== 'Not set' && (
-                          <span className="text-sm"> (Updated: {handicapUpdated})</span>
-                        )}
-                      </p>
-                    </div>
-
-                    {/* Member Since Badge */}
-                    <div className="bg-primary text-white rounded-lg px-4 py-2 text-sm font-medium whitespace-nowrap">
-                      Member Since: {memberSince}
-                    </div>
-                  </div>
-                </div>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+              className="flex flex-wrap justify-between gap-3 p-4"
+            >
+              <div>
+                <p className="text-gray-900 tracking-tight text-3xl md:text-[32px] font-bold leading-tight">
+                  Mi Perfil
+                </p>
+                <p className="text-gray-500 text-sm mt-1">
+                  Información de tu cuenta y estadísticas
+                </p>
               </div>
-            </div>
+            </motion.div>
 
-            {/* Additional Info Cards */}
-            <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-              {/* Account Info Card */}
-              <div className="border border-gray-200 rounded-lg p-4">
-                <h3 className="text-gray-900 font-bold text-lg mb-3">Account Information</h3>
-                <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">User ID:</span>
-                    <span className="text-gray-900 font-mono text-sm">{user.id?.substring(0, 8)}...</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">Email Status:</span>
-                    {user.email_verified ? (
-                      <span className="text-green-600 font-semibold flex items-center gap-1">
-                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                        </svg>
-                        Verified
+            {/* Profile Header Card */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.1 }}
+              className="p-4"
+            >
+              <div className="relative overflow-hidden bg-gradient-to-br from-primary-50 to-blue-50 rounded-xl border border-primary-200 p-6 shadow-md">
+                {/* Background Pattern */}
+                <div className="absolute top-0 right-0 opacity-10">
+                  <Award className="w-48 h-48 text-primary-700" />
+                </div>
+
+                {/* Content */}
+                <div className="relative z-10">
+                  {/* Name and Badges */}
+                  <div className="mb-4">
+                    <h2 className="text-3xl font-bold text-gray-900 mb-2">{fullName}</h2>
+
+                    {/* Badges Row */}
+                    <div className="flex flex-wrap gap-2 mb-3">
+                      {user.email_verified ? (
+                        <span className="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-semibold">
+                          <CheckCircle className="w-3 h-3" />
+                          Email Verificado
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-xs font-semibold">
+                          <AlertCircle className="w-3 h-3" />
+                          Email Pendiente
+                        </span>
+                      )}
+
+                      <span className="inline-flex items-center gap-1 px-3 py-1 bg-primary-100 text-primary-700 rounded-full text-xs font-semibold">
+                        <Shield className="w-3 h-3" />
+                        Cuenta Activa
                       </span>
-                    ) : (
-                      <span className="text-yellow-600 font-semibold flex items-center gap-1">
-                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                        </svg>
-                        Not Verified
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">Status:</span>
-                    <span className="text-green-600 font-semibold">Active</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">Last Updated:</span>
-                    <span className="text-gray-900">{formatDate(user.updated_at)}</span>
-                  </div>
-                </div>
-              </div>
 
-              {/* Handicap Info Card */}
-              <div className="border border-gray-200 rounded-lg p-4">
-                <h3 className="text-gray-900 font-bold text-lg mb-3">Handicap Details</h3>
-                <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">Current:</span>
-                    <span className="text-primary font-bold text-xl">{handicap}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">Last Updated:</span>
-                    <span className="text-gray-900 text-sm">{handicapUpdated}</span>
-                  </div>
-                  {handicap === 'Not set' && (
-                    <div className="mt-3 p-2 bg-yellow-50 rounded text-sm text-yellow-700">
-                      Update your handicap to participate in competitions
+                      {handicap !== 'Not set' && (
+                        <span className="inline-flex items-center gap-1 px-3 py-1 bg-accent-100 text-accent-700 rounded-full text-xs font-semibold">
+                          <Award className="w-3 h-3" />
+                          Hándicap Registrado
+                        </span>
+                      )}
                     </div>
-                  )}
+
+                    {/* Email */}
+                    <div className="flex items-center gap-2 text-gray-600 mb-2">
+                      <Mail className="w-4 h-4" />
+                      <span className="text-sm">{email}</span>
+                    </div>
+
+                    {/* Member Since */}
+                    <div className="flex items-center gap-2 text-gray-600">
+                      <Calendar className="w-4 h-4" />
+                      <span className="text-sm">Miembro desde {memberSince}</span>
+                    </div>
+                  </div>
+
+                  {/* Stats */}
+                  <div className="grid grid-cols-2 gap-4 mt-6">
+                    <div className="bg-white/80 backdrop-blur rounded-lg p-4 border border-primary-200">
+                      <div className="flex items-center gap-2 mb-1">
+                        <TrendingUp className="w-5 h-5 text-accent-600" />
+                        <span className="text-xs text-gray-500 font-medium">Hándicap</span>
+                      </div>
+                      <p className="text-2xl font-bold text-gray-900">{handicap}</p>
+                      {handicap !== 'Not set' && (
+                        <p className="text-xs text-gray-500 mt-1">Actualizado: {handicapUpdated}</p>
+                      )}
+                    </div>
+
+                    <div className="bg-white/80 backdrop-blur rounded-lg p-4 border border-primary-200">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Award className="w-5 h-5 text-primary-600" />
+                        <span className="text-xs text-gray-500 font-medium">Torneos</span>
+                      </div>
+                      <p className="text-2xl font-bold text-gray-900">0</p>
+                      <p className="text-xs text-gray-500 mt-1">Próximamente</p>
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
+            </motion.div>
+
+            {/* Info Card */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.2 }}
+              className="p-4"
+            >
+              <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+                <h3 className="text-gray-900 font-bold text-lg mb-4 flex items-center gap-2">
+                  <Shield className="w-5 h-5 text-primary-600" />
+                  Información de la Cuenta
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <span className="text-gray-500 text-sm">ID de Usuario:</span>
+                    <p className="text-gray-900 font-mono text-sm mt-1">{user.id?.substring(0, 8)}...</p>
+                  </div>
+                  <div>
+                    <span className="text-gray-500 text-sm">Última Actualización:</span>
+                    <p className="text-gray-900 text-sm mt-1">{formatDate(user.updated_at)}</p>
+                  </div>
+                </div>
+
+                {handicap === 'Not set' && (
+                  <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-yellow-700 flex items-start gap-2">
+                    <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                    <span>Actualiza tu hándicap para participar en competiciones</span>
+                  </div>
+                )}
+              </div>
+            </motion.div>
 
             {/* Action Buttons */}
-            <div className="flex justify-stretch">
-              <div className="flex flex-1 gap-3 flex-wrap px-4 py-3 justify-end">
-                <button
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.3 }}
+              className="p-4"
+            >
+              <div className="flex flex-wrap gap-3 justify-end">
+                <motion.button
                   onClick={() => navigate('/dashboard')}
-                  className="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-gray-100 text-gray-900 text-sm font-bold leading-normal tracking-wide hover:bg-gray-200 transition-colors"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="flex items-center gap-2 px-5 py-2.5 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-colors"
                 >
-                  <span className="truncate">Back to Dashboard</span>
-                </button>
-                <button
+                  <ArrowLeft className="w-4 h-4" />
+                  <span>Volver al Dashboard</span>
+                </motion.button>
+
+                <motion.button
                   onClick={handleEditProfile}
-                  className="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-gray-100 text-gray-900 text-sm font-bold leading-normal tracking-wide hover:bg-gray-200 transition-colors"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="flex items-center gap-2 px-5 py-2.5 bg-primary-500 text-white rounded-lg font-medium hover:bg-primary-600 transition-colors shadow-md"
                 >
-                  <span className="truncate">Edit Profile</span>
-                </button>
-                <button
+                  <Edit className="w-4 h-4" />
+                  <span>Editar Perfil</span>
+                </motion.button>
+
+                <motion.button
                   onClick={handleLogout}
-                  className="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-primary text-white text-sm font-bold leading-normal tracking-wide hover:bg-primary/90 transition-colors"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="flex items-center gap-2 px-5 py-2.5 bg-red-500 text-white rounded-lg font-medium hover:bg-red-600 transition-colors shadow-md"
                 >
-                  <span className="truncate">Log Out</span>
-                </button>
+                  <LogOut className="w-4 h-4" />
+                  <span>Cerrar Sesión</span>
+                </motion.button>
               </div>
-            </div>
+            </motion.div>
           </div>
         </div>
       </div>
