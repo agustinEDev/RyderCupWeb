@@ -71,35 +71,25 @@ const Landing = () => {
                     {/* Large Logo */}
                     <div className="w-16 h-16 md:w-20 md:h-20 flex-shrink-0">
                       <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
-                        {/* Circular green background */}
+                        {/* Green circular background */}
                         <circle cx="32" cy="32" r="30" fill="url(#greenCircleGradientLanding)" stroke="#1a5a2a" strokeWidth="2.5"/>
 
-                        {/* Golfer silhouette in finish position */}
-                        <g fill="#D4AF37">
-                          {/* Head */}
-                          <circle cx="28" cy="18" r="3"/>
+                        {/* White golf ball */}
+                        <circle cx="32" cy="28" r="14" fill="white" stroke="#e5e5e5" strokeWidth="1"/>
 
-                          {/* Body - leaning back in finish */}
-                          <path d="M28 21 L27 26 L25 32 L24 38"/>
-                          <path d="M28 21 L29 26 L31 32 L32 38" strokeWidth="2.5" stroke="#D4AF37" strokeLinecap="round"/>
+                        {/* Simple dimples */}
+                        <circle cx="26" cy="22" r="1.2" fill="#d1d1d1"/>
+                        <circle cx="32" cy="21" r="1.2" fill="#d1d1d1"/>
+                        <circle cx="38" cy="22" r="1.2" fill="#d1d1d1"/>
+                        <circle cx="26" cy="28" r="1.2" fill="#d1d1d1"/>
+                        <circle cx="38" cy="28" r="1.2" fill="#d1d1d1"/>
+                        <circle cx="26" cy="34" r="1.2" fill="#d1d1d1"/>
+                        <circle cx="32" cy="35" r="1.2" fill="#d1d1d1"/>
+                        <circle cx="38" cy="34" r="1.2" fill="#d1d1d1"/>
 
-                          {/* Arms - club over shoulder */}
-                          <path d="M28 22 L32 20 L38 18 L42 16" strokeWidth="2.5" stroke="#D4AF37" strokeLinecap="round"/>
-                          <path d="M28 23 L26 24 L24 26" strokeWidth="2" stroke="#D4AF37" strokeLinecap="round"/>
-
-                          {/* Golf club */}
-                          <path d="M38 18 L44 14" strokeWidth="2" stroke="#D4AF37" strokeLinecap="round"/>
-                          <circle cx="44.5" cy="13.5" r="1.5" fill="#D4AF37"/>
-
-                          {/* Legs - classic finish pose */}
-                          <path d="M25 38 L24 44 L23 48" strokeWidth="2.5" stroke="#D4AF37" strokeLinecap="round"/>
-                          <path d="M32 38 L34 44 L36 48" strokeWidth="2.5" stroke="#D4AF37" strokeLinecap="round"/>
-
-                          {/* Front foot */}
-                          <ellipse cx="36" cy="48.5" rx="2.5" ry="1" fill="#D4AF37"/>
-                          {/* Back foot - on toe */}
-                          <ellipse cx="23" cy="48.5" rx="1.5" ry="1" fill="#D4AF37"/>
-                        </g>
+                        {/* Golden tee */}
+                        <path d="M30 42 L34 42 L33 48 L31 48 Z" fill="#D4AF37"/>
+                        <ellipse cx="32" cy="42" rx="3" ry="1.2" fill="#FFD700"/>
 
                         {/* RCF Text */}
                         <text x="32" y="58" fontSize="7" fontWeight="bold" fill="#D4AF37" textAnchor="middle" fontFamily="Arial, sans-serif">RCF</text>
