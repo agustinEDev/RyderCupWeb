@@ -56,61 +56,33 @@ const HeaderAuth = ({ user }) => {
       <Link to="/" className="flex items-center gap-3 text-gray-900 hover:opacity-80 transition-opacity">
         <div className="size-8 md:size-10">
           <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-            {/* Shield/Badge Background */}
-            <path d="M32 4 L54 12 L54 32 Q54 48 32 60 Q10 48 10 32 L10 12 Z" fill="url(#shieldGradient)" stroke="#1a5a2a" strokeWidth="2"/>
+            {/* Shield Background - Simple gradient */}
+            <path d="M32 6 L52 14 L52 32 Q52 46 32 58 Q12 46 12 32 L12 14 Z" fill="url(#shieldGradient)" stroke="#1a5a2a" strokeWidth="2.5"/>
 
-            {/* Inner gold accent border */}
-            <path d="M32 8 L50 15 L50 32 Q50 46 32 56 Q14 46 14 32 L14 15 Z" fill="none" stroke="#D4AF37" strokeWidth="1.2" opacity="0.7"/>
+            {/* Golf ball - White with strong contrast */}
+            <circle cx="32" cy="32" r="16" fill="white" stroke="#1a5a2a" strokeWidth="2.5"/>
 
-            {/* Central golf ball - White with strong border */}
-            <circle cx="32" cy="30" r="14" fill="white" stroke="#1a5a2a" strokeWidth="2.5"/>
+            {/* Simple dimples pattern */}
+            <circle cx="26" cy="26" r="2" fill="#2d7b3e" opacity="0.4"/>
+            <circle cx="32" cy="24" r="2" fill="#2d7b3e" opacity="0.4"/>
+            <circle cx="38" cy="26" r="2" fill="#2d7b3e" opacity="0.4"/>
+            <circle cx="24" cy="32" r="2" fill="#2d7b3e" opacity="0.4"/>
+            <circle cx="32" cy="32" r="2" fill="#2d7b3e" opacity="0.4"/>
+            <circle cx="40" cy="32" r="2" fill="#2d7b3e" opacity="0.4"/>
+            <circle cx="26" cy="38" r="2" fill="#2d7b3e" opacity="0.4"/>
+            <circle cx="32" cy="40" r="2" fill="#2d7b3e" opacity="0.4"/>
+            <circle cx="38" cy="38" r="2" fill="#2d7b3e" opacity="0.4"/>
 
-            {/* Dimples on ball - Hexagonal pattern for uniqueness */}
-            <circle cx="28" cy="24" r="1.5" fill="#2d7b3e" opacity="0.6"/>
-            <circle cx="32" cy="23" r="1.5" fill="#2d7b3e" opacity="0.6"/>
-            <circle cx="36" cy="24" r="1.5" fill="#2d7b3e" opacity="0.6"/>
-            <circle cx="26" cy="28" r="1.5" fill="#2d7b3e" opacity="0.6"/>
-            <circle cx="30" cy="27" r="1.5" fill="#2d7b3e" opacity="0.6"/>
-            <circle cx="34" cy="27" r="1.5" fill="#2d7b3e" opacity="0.6"/>
-            <circle cx="38" cy="28" r="1.5" fill="#2d7b3e" opacity="0.6"/>
-            <circle cx="28" cy="31" r="1.5" fill="#2d7b3e" opacity="0.6"/>
-            <circle cx="32" cy="30" r="1.5" fill="#2d7b3e" opacity="0.6"/>
-            <circle cx="36" cy="31" r="1.5" fill="#2d7b3e" opacity="0.6"/>
-            <circle cx="30" cy="34" r="1.5" fill="#2d7b3e" opacity="0.6"/>
-            <circle cx="34" cy="34" r="1.5" fill="#2d7b3e" opacity="0.6"/>
-            <circle cx="32" cy="37" r="1.5" fill="#2d7b3e" opacity="0.6"/>
+            {/* Golf flag - Simple and clean */}
+            <line x1="44" y1="24" x2="44" y2="40" stroke="#D4AF37" strokeWidth="2" strokeLinecap="round"/>
+            <path d="M44 24 L54 27 L54 33 L44 36 Z" fill="#D4AF37"/>
 
-            {/* Golf flag on the right side */}
-            <line x1="42" y1="22" x2="42" y2="38" stroke="#8B6914" strokeWidth="1.8" strokeLinecap="round"/>
-
-            {/* Waving flag - More prominent */}
-            <path d="M42 22 L52 25 L52 32 L42 35 Z" fill="#D4AF37" stroke="#8B6914" strokeWidth="0.8"/>
-            <path d="M52 25 Q54 28.5 52 32" fill="#FFD700" opacity="0.4"/>
-
-            {/* RCF letters on flag */}
-            <text x="45" y="30" fontSize="5" fontWeight="bold" fill="#1a5a2a" fontFamily="Arial, sans-serif">R</text>
-
-            {/* Golf tee at bottom of ball */}
-            <path d="M30 44 L34 44 L33 48 L31 48 Z" fill="#D4AF37" stroke="#8B6914" strokeWidth="0.5"/>
-            <ellipse cx="32" cy="44" rx="2.5" ry="0.8" fill="#FFD700"/>
-
-            {/* Shine effect on ball */}
-            <circle cx="28" cy="25" r="3" fill="white" opacity="0.6"/>
-            <circle cx="26" cy="23" r="1.2" fill="white" opacity="0.9"/>
-
-            {/* Bottom banner with RCF */}
-            <path d="M18 50 L46 50 L44 56 L20 56 Z" fill="#D4AF37" stroke="#8B6914" strokeWidth="0.8"/>
-            <text x="32" y="54.5" fontSize="4.5" fontWeight="bold" fill="#1a5a2a" textAnchor="middle" fontFamily="Arial, sans-serif">RCF</text>
-
-            {/* Decorative corner elements */}
-            <circle cx="32" cy="8" r="2" fill="#D4AF37"/>
-            <circle cx="18" cy="18" r="1.5" fill="#D4AF37" opacity="0.6"/>
-            <circle cx="46" cy="18" r="1.5" fill="#D4AF37" opacity="0.6"/>
+            {/* Shine on ball */}
+            <circle cx="26" cy="26" r="4" fill="white" opacity="0.5"/>
 
             <defs>
-              <linearGradient id="shieldGradient" x1="32" y1="4" x2="32" y2="60">
+              <linearGradient id="shieldGradient" x1="32" y1="6" x2="32" y2="58">
                 <stop offset="0%" stopColor="#3a9d4f"/>
-                <stop offset="50%" stopColor="#2d7b3e"/>
                 <stop offset="100%" stopColor="#1a5a2a"/>
               </linearGradient>
             </defs>

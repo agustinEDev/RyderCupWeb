@@ -67,12 +67,51 @@ const Landing = () => {
 
                 {/* Main Heading */}
                 <motion.div variants={fadeInUp} className="space-y-4">
-                  <h1 className="text-4xl md:text-5xl lg:text-6xl font-black leading-tight tracking-tight text-gray-900 font-poppins">
-                    Welcome to{' '}
-                    <span className="bg-gradient-to-r from-primary to-primary-600 bg-clip-text text-transparent">
-                      RyderCupFriends
-                    </span>
-                  </h1>
+                  <div className="flex items-center gap-4 md:gap-6">
+                    {/* Large Logo */}
+                    <div className="w-16 h-16 md:w-20 md:h-20 flex-shrink-0">
+                      <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
+                        {/* Shield Background - Simple gradient */}
+                        <path d="M32 6 L52 14 L52 32 Q52 46 32 58 Q12 46 12 32 L12 14 Z" fill="url(#shieldGradientLanding)" stroke="#1a5a2a" strokeWidth="2.5"/>
+
+                        {/* Golf ball - White with strong contrast */}
+                        <circle cx="32" cy="32" r="16" fill="white" stroke="#1a5a2a" strokeWidth="2.5"/>
+
+                        {/* Simple dimples pattern */}
+                        <circle cx="26" cy="26" r="2" fill="#2d7b3e" opacity="0.4"/>
+                        <circle cx="32" cy="24" r="2" fill="#2d7b3e" opacity="0.4"/>
+                        <circle cx="38" cy="26" r="2" fill="#2d7b3e" opacity="0.4"/>
+                        <circle cx="24" cy="32" r="2" fill="#2d7b3e" opacity="0.4"/>
+                        <circle cx="32" cy="32" r="2" fill="#2d7b3e" opacity="0.4"/>
+                        <circle cx="40" cy="32" r="2" fill="#2d7b3e" opacity="0.4"/>
+                        <circle cx="26" cy="38" r="2" fill="#2d7b3e" opacity="0.4"/>
+                        <circle cx="32" cy="40" r="2" fill="#2d7b3e" opacity="0.4"/>
+                        <circle cx="38" cy="38" r="2" fill="#2d7b3e" opacity="0.4"/>
+
+                        {/* Golf flag - Simple and clean */}
+                        <line x1="44" y1="24" x2="44" y2="40" stroke="#D4AF37" strokeWidth="2" strokeLinecap="round"/>
+                        <path d="M44 24 L54 27 L54 33 L44 36 Z" fill="#D4AF37"/>
+
+                        {/* Shine on ball */}
+                        <circle cx="26" cy="26" r="4" fill="white" opacity="0.5"/>
+
+                        <defs>
+                          <linearGradient id="shieldGradientLanding" x1="32" y1="6" x2="32" y2="58">
+                            <stop offset="0%" stopColor="#3a9d4f"/>
+                            <stop offset="100%" stopColor="#1a5a2a"/>
+                          </linearGradient>
+                        </defs>
+                      </svg>
+                    </div>
+
+                    {/* Title */}
+                    <h1 className="text-4xl md:text-5xl lg:text-6xl font-black leading-tight tracking-tight text-gray-900 font-poppins">
+                      Welcome to{' '}
+                      <span className="bg-gradient-to-r from-primary to-primary-600 bg-clip-text text-transparent">
+                        RyderCupFriends
+                      </span>
+                    </h1>
+                  </div>
                   <div className="flex items-center gap-3">
                     <div className="h-1 w-12 bg-accent rounded-full" />
                     <span className="text-xl md:text-2xl font-bold text-primary">RCF</span>
