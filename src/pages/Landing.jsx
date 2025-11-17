@@ -43,7 +43,7 @@ const Landing = () => {
 
         {/* Hero Section - Completely Redesigned */}
         <section className="relative overflow-hidden bg-gradient-to-br from-primary-50 via-white to-accent-50">
-          <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1535131749006-b7f58c99034b?q=80&w=2000')] bg-cover bg-center opacity-5" />
+          <div className="absolute inset-0 bg-[url('/images/golf-background.jpeg')] bg-cover bg-center opacity-5" />
 
           <div className="relative px-4 md:px-8 py-16 md:py-24 max-w-7xl mx-auto">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
@@ -140,7 +140,7 @@ const Landing = () => {
                   {/* Main Image Card */}
                   <div className="relative rounded-2xl overflow-hidden shadow-2xl">
                     <img
-                      src="https://images.unsplash.com/photo-1587174486073-ae5e5cff23aa?q=80&w=1000"
+                      src="/images/hero-tournament.jpeg"
                       alt="Golf Tournament"
                       className="w-full h-[500px] object-cover"
                     />
@@ -292,7 +292,7 @@ const Landing = () => {
               <motion.div variants={fadeInUp} className="relative">
                 <div className="rounded-2xl overflow-hidden shadow-2xl">
                   <img
-                    src="https://images.unsplash.com/photo-1593111774240-d529f12cf4bb?q=80&w=1000"
+                    src="/images/golf-friends.jpeg"
                     alt="Golf Friends"
                     className="w-full h-[400px] object-cover"
                   />
