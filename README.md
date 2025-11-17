@@ -76,18 +76,6 @@ npm run build   # producción
 npm run preview # probar build
 ```
 
-## Commit policy
-
-We follow Conventional Commits (in English). To enable hooks locally:
-
-```bash
-npm install
-npm run prepare    # sets up husky hooks
-```
-
-Then commits should use verbs like `fix:`, `chore:`, `feat:` (e.g. `fix(header): raise logo 1px to align with text`).
-
-
 ## Dónde mirar primero
 
 - `src/pages/EditProfile.jsx` — lógica de actualización de hándicap (manual + RFEG) y refresco de usuario
