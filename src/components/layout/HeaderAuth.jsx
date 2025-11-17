@@ -60,26 +60,27 @@ const HeaderAuth = ({ user }) => {
             <circle cx="32" cy="32" r="28" fill="#2d7b3e" opacity="0.1"/>
             <circle cx="32" cy="32" r="24" fill="url(#golfGradient)" stroke="#2d7b3e" strokeWidth="2"/>
 
-            {/* Dimples pattern */}
-            <circle cx="26" cy="26" r="1.5" fill="#2d7b3e" opacity="0.3"/>
+            {/* Dimples pattern - centered symmetrically */}
+            <circle cx="32" cy="32" r="1.5" fill="#2d7b3e" opacity="0.3"/>
             <circle cx="32" cy="24" r="1.5" fill="#2d7b3e" opacity="0.3"/>
+            <circle cx="32" cy="40" r="1.5" fill="#2d7b3e" opacity="0.3"/>
+            <circle cx="24" cy="32" r="1.5" fill="#2d7b3e" opacity="0.3"/>
+            <circle cx="40" cy="32" r="1.5" fill="#2d7b3e" opacity="0.3"/>
+            <circle cx="26" cy="26" r="1.5" fill="#2d7b3e" opacity="0.3"/>
+            <circle cx="38" cy="38" r="1.5" fill="#2d7b3e" opacity="0.3"/>
             <circle cx="38" cy="26" r="1.5" fill="#2d7b3e" opacity="0.3"/>
-            <circle cx="23" cy="32" r="1.5" fill="#2d7b3e" opacity="0.3"/>
-            <circle cx="29" cy="30" r="1.5" fill="#2d7b3e" opacity="0.3"/>
-            <circle cx="35" cy="30" r="1.5" fill="#2d7b3e" opacity="0.3"/>
-            <circle cx="41" cy="32" r="1.5" fill="#2d7b3e" opacity="0.3"/>
-            <circle cx="26" cy="36" r="1.5" fill="#2d7b3e" opacity="0.3"/>
-            <circle cx="32" cy="34" r="1.5" fill="#2d7b3e" opacity="0.3"/>
-            <circle cx="38" cy="36" r="1.5" fill="#2d7b3e" opacity="0.3"/>
-            <circle cx="29" cy="40" r="1.5" fill="#2d7b3e" opacity="0.3"/>
-            <circle cx="35" cy="40" r="1.5" fill="#2d7b3e" opacity="0.3"/>
+            <circle cx="26" cy="38" r="1.5" fill="#2d7b3e" opacity="0.3"/>
+            <circle cx="28" cy="30" r="1.5" fill="#2d7b3e" opacity="0.3"/>
+            <circle cx="36" cy="34" r="1.5" fill="#2d7b3e" opacity="0.3"/>
+            <circle cx="36" cy="30" r="1.5" fill="#2d7b3e" opacity="0.3"/>
+            <circle cx="28" cy="34" r="1.5" fill="#2d7b3e" opacity="0.3"/>
 
             {/* Golf tee */}
             <path d="M30 56 L34 56 L33 48 L31 48 Z" fill="#D4AF37"/>
             <ellipse cx="32" cy="48" rx="3" ry="1" fill="#D4AF37"/>
 
             {/* Accent shine */}
-            <circle cx="26" cy="26" r="4" fill="white" opacity="0.4"/>
+            <circle cx="28" cy="28" r="4" fill="white" opacity="0.4"/>
 
             <defs>
               <linearGradient id="golfGradient" x1="8" y1="8" x2="56" y2="56">
