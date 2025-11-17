@@ -25,7 +25,6 @@ const Login = () => {
       ...prev,
       [name]: value
     }));
-    // Clear error when user starts typing
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }));
     }
@@ -54,8 +53,7 @@ const Login = () => {
       return;
     }
 
-    // Check rate limiting
-    const rateLimit = checkRateLimit('login', 5, 300000); // 5 attempts per 5 minutes
+    const rateLimit = checkRateLimit('login', 5, 300000);
     if (!rateLimit.allowed) {
       toast.error(`Too many attempts. Please wait ${rateLimit.remainingTime} seconds.`, {
         duration: 5000,
@@ -87,18 +85,13 @@ const Login = () => {
       const data = await response.json();
       safeLog('info', 'Login successful', { email: data.user?.email });
 
-      // Save token and user data using secure storage (sessionStorage)
-      // TODO: Remove when backend implements httpOnly cookies
       setAuthToken(data.access_token);
       setUserData(data.user);
 
-      // Reset rate limit on successful login
       resetRateLimit('login');
 
-      // Show success toast
       toast.success(`Welcome, ${data.user.first_name}!`);
 
-      // Check if email verification is required
       if (data.email_verification_required) {
         safeLog('info', 'Email verification required');
         toast('Please verify your email', {
@@ -107,7 +100,6 @@ const Login = () => {
         });
       }
 
-      // Redirect to dashboard or original location
       const from = location.state?.from?.pathname || '/dashboard';
       setTimeout(() => {
         navigate(from, { replace: true });
@@ -122,77 +114,185 @@ const Login = () => {
   };
 
   return (
-    <div className="relative flex h-auto min-h-screen w-full flex-col bg-white">
-      <div className="layout-container flex h-full grow flex-col">
-        <div className="px-4 md:px-40 flex flex-1 justify-center py-5">
+    <div className="relative flex min-h-screen w-full bg-white">
+      <div className="flex w-full">
+
+        {/* Left Side - Hero Image/Brand (Hidden on Mobile) */}
+        <motion.div
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.6 }}
+          className="hidden lg:flex lg:w-1/2 relative bg-gradient-to-br from-primary via-primary-600 to-primary-700 overflow-hidden"
+        >
+          {/* Background Pattern */}
+          <div className="absolute inset-0 opacity-10">
+            <div className="absolute top-0 left-0 w-96 h-96 bg-white rounded-full -translate-x-1/2 -translate-y-1/2 blur-3xl" />
+            <div className="absolute bottom-0 right-0 w-96 h-96 bg-accent rounded-full translate-x-1/2 translate-y-1/2 blur-3xl" />
+          </div>
+
+          {/* Background Image */}
+          <div
+            className="absolute inset-0 bg-cover bg-center mix-blend-overlay opacity-20"
+            style={{
+              backgroundImage: `url("https://images.unsplash.com/photo-1535131749006-b7f58c99034b?q=80&w=2000")`
+            }}
+          />
+
+          {/* Content */}
+          <div className="relative z-10 flex flex-col justify-between p-12 text-white w-full">
+
+            {/* Logo */}
+            <Link to="/" className="flex items-center gap-3 group">
+              <div className="size-10">
+                <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path
+                    d="M13.8261 17.4264C16.7203 18.1174 20.2244 18.5217 24 18.5217C27.7756 18.5217 31.2797 18.1174 34.1739 17.4264C36.9144 16.7722 39.9967 15.2331 41.3563 14.1648L24.8486 40.6391C24.4571 41.267 23.5429 41.267 23.1514 40.6391L6.64374 14.1648C8.00331 15.2331 11.0856 16.7722 13.8261 17.4264Z"
+                    fill="white"
+                  />
+                </svg>
+              </div>
+              <div className="flex flex-col group-hover:opacity-80 transition-opacity">
+                <h1 className="text-2xl font-bold font-poppins">RyderCupFriends</h1>
+                <span className="text-sm font-semibold text-accent -mt-1">RCF</span>
+              </div>
+            </Link>
+
+            {/* Middle Content */}
+            <div className="space-y-6">
+              <div>
+                <h2 className="text-4xl font-black font-poppins mb-4 leading-tight">
+                  Welcome Back!
+                </h2>
+                <p className="text-xl text-white/90 leading-relaxed">
+                  Sign in to manage your tournaments and connect with your golf friends.
+                </p>
+              </div>
+
+              {/* Features */}
+              <div className="space-y-4 mt-8">
+                {[
+                  { icon: '🏆', text: 'Manage your tournaments' },
+                  { icon: '⛳', text: 'Track player statistics' },
+                  { icon: '📊', text: 'Live scoring updates' },
+                  { icon: '👥', text: 'Connect with friends' }
+                ].map((item, idx) => (
+                  <motion.div
+                    key={idx}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.2 + idx * 0.1 }}
+                    className="flex items-center gap-3"
+                  >
+                    <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center text-xl">
+                      {item.icon}
+                    </div>
+                    <span className="text-white/90">{item.text}</span>
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="text-white/70 text-sm">
+              © 2024 RyderCupFriends - RCF
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Right Side - Login Form */}
+        <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-gray-50">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
-            className="layout-content-container flex flex-col w-full max-w-[512px] py-5"
+            className="w-full max-w-md"
           >
 
-            {/* Logo/Title */}
-            <Link to="/" className="text-center mb-2">
-              <h2 className="text-gray-900 tracking-tight text-[28px] font-bold leading-tight px-4 pb-3 pt-5 hover:text-primary-600 transition-colors">
-                Ryder Cup Manager
-              </h2>
+            {/* Mobile Logo */}
+            <Link to="/" className="flex lg:hidden items-center gap-3 mb-8 justify-center group">
+              <div className="size-10">
+                <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path
+                    d="M13.8261 17.4264C16.7203 18.1174 20.2244 18.5217 24 18.5217C27.7756 18.5217 31.2797 18.1174 34.1739 17.4264C36.9144 16.7722 39.9967 15.2331 41.3563 14.1648L24.8486 40.6391C24.4571 41.267 23.5429 41.267 23.1514 40.6391L6.64374 14.1648C8.00331 15.2331 11.0856 16.7722 13.8261 17.4264Z"
+                    fill="#2d7b3e"
+                  />
+                </svg>
+              </div>
+              <div className="flex flex-col group-hover:opacity-80 transition-opacity">
+                <h1 className="text-2xl font-bold font-poppins text-gray-900">RyderCupFriends</h1>
+                <span className="text-sm font-semibold text-primary -mt-1">RCF</span>
+              </div>
             </Link>
 
-            {/* Hero Image */}
-            <div className="flex w-full grow bg-white p-4">
-              <div className="w-full gap-1 overflow-hidden bg-white aspect-[3/2] rounded-lg flex">
-                <div
-                  className="w-full bg-center bg-no-repeat bg-cover aspect-auto rounded-lg flex-1"
-                  style={{
-                    backgroundImage: `url("https://lh3.googleusercontent.com/aida-public/AB6AXuBEKpUrPx2XGI3pIeVYEhGE67MWwlqkGxzQCFLHcAYmLMbqWrsASBLpdXdxTTR-wqALQOk_dfjNfXsnfq-ptuTAuIShiWjVmnhFty7jBmuyC2KQVWocKaMe_WMAYFK2lvrVTVPLsHQFJXvobm_xgxr6CfPg7n1O9vKFCHS1-7X9S2i0zjK8uq7tD_hNJ0fDA4uA_c6LdwrTUYDKRtMQ3otWiC6Yb744TUMYWnDK7dRqcg9vz8cjJPlrK6-Ub3RTDdWRyyFEVpOF8uQC")`
-                  }}
-                ></div>
+            {/* Form Card */}
+            <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-200">
+
+              {/* Header */}
+              <div className="mb-8">
+                <h2 className="text-3xl font-black text-gray-900 font-poppins mb-2">
+                  Sign In
+                </h2>
+                <p className="text-gray-600">
+                  Enter your credentials to access your account
+                </p>
               </div>
-            </div>
 
-            {/* Title */}
-            <h1 className="text-gray-900 text-[22px] font-bold leading-tight tracking-tight px-4 text-center pb-3 pt-5">
-              Welcome
-            </h1>
+              {/* Success Message */}
+              {successMessage && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="mb-6 p-4 bg-green-50 border-l-4 border-green-500 rounded-lg"
+                >
+                  <div className="flex items-center gap-3">
+                    <svg className="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    </svg>
+                    <p className="text-green-700 text-sm font-medium">{successMessage}</p>
+                  </div>
+                </motion.div>
+              )}
 
-            {/* Success Message */}
-            {successMessage && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="mx-4 my-3 p-3 bg-green-50 border border-green-200 rounded-lg"
-              >
-                <p className="text-green-700 text-sm text-center">{successMessage}</p>
-              </motion.div>
-            )}
+              {/* Form */}
+              <form onSubmit={handleSubmit} className="space-y-5">
 
-            {/* Form */}
-            <form onSubmit={handleSubmit} className="flex flex-col">
-              {/* Email */}
-              <div className="flex max-w-[480px] flex-wrap items-end gap-4 px-4 py-3">
-                <label className="flex flex-col min-w-40 flex-1">
-                  <p className="text-gray-900 text-base font-medium leading-normal pb-2">Email</p>
+                {/* Email */}
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Email Address
+                  </label>
                   <input
                     type="email"
                     name="email"
-                    placeholder="Enter your email"
+                    placeholder="your.email@example.com"
                     value={formData.email}
                     onChange={handleChange}
-                    className={`form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-gray-900 focus:outline-0 focus:ring-2 ${
-                      errors.email ? 'focus:ring-red-500 border-red-300' : 'focus:ring-primary border-gray-200'
-                    } border bg-white h-14 placeholder:text-gray-500 p-[15px] text-base font-normal leading-normal transition-all`}
+                    className={`w-full px-4 py-3 rounded-lg border-2 transition-all duration-200 ${
+                      errors.email
+                        ? 'border-red-300 focus:border-red-500 focus:ring-2 focus:ring-red-200'
+                        : 'border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/20'
+                    } outline-none text-gray-900 placeholder:text-gray-400`}
                     disabled={isLoading}
                   />
                   {errors.email && (
-                    <span className="text-red-500 text-xs mt-1">{errors.email}</span>
+                    <motion.p
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="text-red-500 text-xs mt-2 flex items-center gap-1"
+                    >
+                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                      </svg>
+                      {errors.email}
+                    </motion.p>
                   )}
-                </label>
-              </div>
+                </div>
 
-              {/* Password */}
-              <div className="flex max-w-[480px] flex-wrap items-end gap-4 px-4 py-3">
-                <div className="flex flex-col min-w-40 flex-1">
+                {/* Password */}
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Password
+                  </label>
                   <PasswordInput
                     name="password"
                     value={formData.password}
@@ -200,52 +300,94 @@ const Login = () => {
                     placeholder="Enter your password"
                     error={!!errors.password}
                     disabled={isLoading}
-                    label="Password"
+                    label=""
                     autoComplete="current-password"
+                    className={`w-full px-4 py-3 rounded-lg border-2 transition-all duration-200 ${
+                      errors.password
+                        ? 'border-red-300 focus:border-red-500 focus:ring-2 focus:ring-red-200'
+                        : 'border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/20'
+                    } outline-none`}
                   />
                   {errors.password && (
-                    <span className="text-red-500 text-xs mt-1">{errors.password}</span>
+                    <motion.p
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="text-red-500 text-xs mt-2 flex items-center gap-1"
+                    >
+                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                      </svg>
+                      {errors.password}
+                    </motion.p>
                   )}
                 </div>
-              </div>
 
-              {/* Submit Button */}
-              <div className="flex max-w-[480px] px-4 py-3">
+                {/* Submit Button */}
                 <motion.button
                   type="submit"
                   disabled={isLoading}
                   whileHover={{ scale: isLoading ? 1 : 1.02 }}
                   whileTap={{ scale: isLoading ? 1 : 0.98 }}
-                  className={`w-full cursor-pointer items-center justify-center overflow-hidden rounded-lg h-12 px-6 bg-primary-500 text-white text-sm font-bold leading-normal tracking-wide transition-all shadow-md ${
-                    isLoading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-primary-600 hover:shadow-lg'
+                  className={`w-full py-3.5 rounded-lg font-bold text-white transition-all duration-300 shadow-lg ${
+                    isLoading
+                      ? 'bg-gray-400 cursor-not-allowed'
+                      : 'bg-gradient-to-r from-primary to-primary-600 hover:from-primary-600 hover:to-primary-700 hover:shadow-xl'
                   }`}
                 >
-                  <span className="truncate">
-                    {isLoading ? 'Signing in...' : 'Sign In'}
-                  </span>
+                  {isLoading ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Signing in...
+                    </span>
+                  ) : (
+                    'Sign In'
+                  )}
                 </motion.button>
+
+              </form>
+
+              {/* Divider */}
+              <div className="relative my-6">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-gray-200"></div>
+                </div>
+                <div className="relative flex justify-center text-sm">
+                  <span className="px-4 bg-white text-gray-500">or</span>
+                </div>
               </div>
 
               {/* Register Link */}
-              <div className="flex max-w-[480px] px-4">
-                <Link to="/register" className="w-full">
-                  <p className="text-gray-500 text-sm font-normal leading-normal pb-3 pt-1 text-center underline hover:text-primary-600 transition-colors">
-                    Don't have an account? Sign up
-                  </p>
-                </Link>
+              <div className="text-center">
+                <p className="text-gray-600 text-sm">
+                  Don't have an account?{' '}
+                  <Link
+                    to="/register"
+                    className="font-semibold text-primary hover:text-primary-600 transition-colors"
+                  >
+                    Create one now
+                  </Link>
+                </p>
               </div>
-            </form>
+
+            </div>
 
             {/* Back to Home */}
-            <div className="flex max-w-[480px] px-4 mt-4">
-              <Link to="/" className="w-full">
-                <p className="text-gray-500 text-sm font-normal text-center hover:text-primary-600 transition-colors">
-                  ← Back to home
-                </p>
-              </Link>
-            </div>
+            <Link
+              to="/"
+              className="flex items-center justify-center gap-2 mt-6 text-gray-600 hover:text-primary transition-colors group"
+            >
+              <svg className="w-4 h-4 group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              </svg>
+              <span className="text-sm font-medium">Back to home</span>
+            </Link>
+
           </motion.div>
         </div>
+
       </div>
     </div>
   );
