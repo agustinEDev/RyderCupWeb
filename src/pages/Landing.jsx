@@ -67,50 +67,12 @@ const Landing = () => {
 
                 {/* Main Heading */}
                 <motion.div variants={fadeInUp} className="space-y-4">
-                  <div className="flex items-center gap-4 md:gap-6">
-                    {/* Large Logo */}
-                    <div className="w-16 h-16 md:w-20 md:h-20 flex-shrink-0">
-                      <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
-                        {/* Green circular background */}
-                        <circle cx="32" cy="32" r="30" fill="url(#greenCircleGradientLanding)" stroke="#1a5a2a" strokeWidth="2.5"/>
-
-                        {/* White golf ball */}
-                        <circle cx="32" cy="28" r="14" fill="white" stroke="#e5e5e5" strokeWidth="1"/>
-
-                        {/* Simple dimples */}
-                        <circle cx="26" cy="22" r="1.2" fill="#d1d1d1"/>
-                        <circle cx="32" cy="21" r="1.2" fill="#d1d1d1"/>
-                        <circle cx="38" cy="22" r="1.2" fill="#d1d1d1"/>
-                        <circle cx="26" cy="28" r="1.2" fill="#d1d1d1"/>
-                        <circle cx="38" cy="28" r="1.2" fill="#d1d1d1"/>
-                        <circle cx="26" cy="34" r="1.2" fill="#d1d1d1"/>
-                        <circle cx="32" cy="35" r="1.2" fill="#d1d1d1"/>
-                        <circle cx="38" cy="34" r="1.2" fill="#d1d1d1"/>
-
-                        {/* Golden tee */}
-                        <path d="M30 42 L34 42 L33 48 L31 48 Z" fill="#D4AF37"/>
-                        <ellipse cx="32" cy="42" rx="3" ry="1.2" fill="#FFD700"/>
-
-                        {/* RCF Text */}
-                        <text x="32" y="58" fontSize="7" fontWeight="bold" fill="#D4AF37" textAnchor="middle" fontFamily="Arial, sans-serif">RCF</text>
-
-                        <defs>
-                          <linearGradient id="greenCircleGradientLanding" x1="32" y1="2" x2="32" y2="62">
-                            <stop offset="0%" stopColor="#3a9d4f"/>
-                            <stop offset="100%" stopColor="#1a5a2a"/>
-                          </linearGradient>
-                        </defs>
-                      </svg>
-                    </div>
-
-                    {/* Title */}
-                    <h1 className="text-4xl md:text-5xl lg:text-6xl font-black leading-tight tracking-tight text-gray-900 font-poppins">
-                      Welcome to{' '}
-                      <span className="bg-gradient-to-r from-primary to-primary-600 bg-clip-text text-transparent">
-                        RyderCupFriends
-                      </span>
-                    </h1>
-                  </div>
+                  <h1 className="text-4xl md:text-5xl lg:text-6xl font-black leading-tight tracking-tight text-gray-900 font-poppins">
+                    Welcome to{' '}
+                    <span className="bg-gradient-to-r from-primary to-primary-600 bg-clip-text text-transparent">
+                      RyderCupFriends
+                    </span>
+                  </h1>
                   <div className="flex items-center gap-3">
                     <div className="h-1 w-12 bg-accent rounded-full" />
                     <span className="text-xl md:text-2xl font-bold text-primary">RCF</span>
