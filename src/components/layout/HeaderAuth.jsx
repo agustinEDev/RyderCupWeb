@@ -57,25 +57,37 @@ const HeaderAuth = ({ user }) => {
         <div className="size-8 md:size-10">
           <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
             {/* Circular green background */}
-            <circle cx="32" cy="32" r="30" fill="url(#greenCircleGradient)" stroke="#1a5a2a" strokeWidth="2"/>
+            <circle cx="32" cy="32" r="30" fill="url(#greenCircleGradient)" stroke="#1a5a2a" strokeWidth="2.5"/>
 
-            {/* Ryder Cup Trophy - Golden outline */}
-            <g stroke="#D4AF37" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round">
-              {/* Trophy cup */}
-              <path d="M24 24 L24 26 Q24 30 28 32 L28 38 L36 38 L36 32 Q40 30 40 26 L40 24 Z" fill="#D4AF37" fillOpacity="0.3"/>
+            {/* Golfer silhouette in finish position */}
+            <g fill="#D4AF37">
+              {/* Head */}
+              <circle cx="28" cy="18" r="3"/>
 
-              {/* Trophy handles */}
-              <path d="M24 25 Q20 25 20 28 Q20 30 24 30"/>
-              <path d="M40 25 Q44 25 44 28 Q44 30 40 30"/>
+              {/* Body - leaning back in finish */}
+              <path d="M28 21 L27 26 L25 32 L24 38"/>
+              <path d="M28 21 L29 26 L31 32 L32 38" strokeWidth="2.5" stroke="#D4AF37" strokeLinecap="round"/>
 
-              {/* Trophy base */}
-              <rect x="26" y="38" width="12" height="2" fill="#D4AF37"/>
-              <path d="M28 40 L36 40 L38 44 L26 44 Z" fill="#D4AF37"/>
-              <rect x="25" y="44" width="14" height="2" fill="#D4AF37"/>
+              {/* Arms - club over shoulder */}
+              <path d="M28 22 L32 20 L38 18 L42 16" strokeWidth="2.5" stroke="#D4AF37" strokeLinecap="round"/>
+              <path d="M28 23 L26 24 L24 26" strokeWidth="2" stroke="#D4AF37" strokeLinecap="round"/>
+
+              {/* Golf club */}
+              <path d="M38 18 L44 14" strokeWidth="2" stroke="#D4AF37" strokeLinecap="round"/>
+              <circle cx="44.5" cy="13.5" r="1.5" fill="#D4AF37"/>
+
+              {/* Legs - classic finish pose */}
+              <path d="M25 38 L24 44 L23 48" strokeWidth="2.5" stroke="#D4AF37" strokeLinecap="round"/>
+              <path d="M32 38 L34 44 L36 48" strokeWidth="2.5" stroke="#D4AF37" strokeLinecap="round"/>
+
+              {/* Front foot */}
+              <ellipse cx="36" cy="48.5" rx="2.5" ry="1" fill="#D4AF37"/>
+              {/* Back foot - on toe */}
+              <ellipse cx="23" cy="48.5" rx="1.5" ry="1" fill="#D4AF37"/>
             </g>
 
             {/* RCF Text */}
-            <text x="32" y="54" fontSize="8" fontWeight="bold" fill="#D4AF37" textAnchor="middle" fontFamily="Arial, sans-serif">RCF</text>
+            <text x="32" y="58" fontSize="7" fontWeight="bold" fill="#D4AF37" textAnchor="middle" fontFamily="Arial, sans-serif">RCF</text>
 
             <defs>
               <linearGradient id="greenCircleGradient" x1="32" y1="2" x2="32" y2="62">
