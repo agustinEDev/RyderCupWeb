@@ -52,13 +52,13 @@ const HeaderAuth = ({ user }) => {
   };
 
   return (
-    <header className="flex items-center justify-between whitespace-nowrap border-b border-solid border-b-gray-200 px-4 md:px-10 py-3">
+    <header className="flex items-center justify-between whitespace-nowrap border-b border-solid border-b-gray-200 px-4 md:px-10 py-3 overflow-visible">
       <Link to="/" className="flex items-center gap-3 text-gray-900 hover:opacity-80 transition-opacity">
-        <div className="size-10 md:size-12">
+        <div className="h-10 w-10 md:h-12 md:w-12 flex-shrink-0 flex items-center justify-center overflow-visible">
           <img
             src="/images/rcf-monogram-green.jpeg"
             alt="RCF Logo"
-            className="w-full h-full object-contain"
+            className="block h-full w-auto object-contain transform -translate-y-[3px] md:-translate-y-[3px] scale-125 md:scale-150"
           />
         </div>
         <div className="flex flex-col">
@@ -89,7 +89,7 @@ const HeaderAuth = ({ user }) => {
             onClick={toggleDropdown}
             className="flex items-center gap-2 hover:opacity-80 transition-opacity"
           >
-            <div className="bg-primary bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10 flex items-center justify-center text-white font-bold">
+            <div className="bg-primary bg-center bg-no-repeat aspect-square bg-cover rounded-full h-8 w-8 md:h-10 md:w-10 flex items-center justify-center text-white font-bold text-sm md:text-base">
               {getInitials()}
             </div>
           </button>
@@ -143,7 +143,7 @@ const HeaderAuth = ({ user }) => {
           <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
             <div className="px-4 py-3 border-b border-gray-200">
               <div className="flex items-center gap-3">
-                <div className="bg-primary bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10 flex items-center justify-center text-white font-bold text-sm">
+                <div className="bg-primary bg-center bg-no-repeat aspect-square bg-cover rounded-full h-8 w-8 md:h-10 md:w-10 flex items-center justify-center text-white font-bold text-sm md:text-base">
                   {getInitials()}
                 </div>
                 <div className="flex-1 min-w-0">

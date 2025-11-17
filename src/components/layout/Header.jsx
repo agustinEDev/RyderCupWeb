@@ -27,13 +27,13 @@ const Header = () => {
   }, [isMobileMenuOpen]);
 
   return (
-    <header className="flex items-center justify-between whitespace-nowrap border-b border-solid border-b-gray-200 px-4 md:px-10 py-3">
+    <header className="flex items-center justify-between whitespace-nowrap border-b border-solid border-b-gray-200 px-4 md:px-10 py-3 overflow-visible">
       <Link to="/" className="flex items-center gap-3 text-gray-900 hover:opacity-80 transition-opacity">
-        <div className="size-10 md:size-12">
+        <div className="h-10 w-10 md:h-12 md:w-12 flex-shrink-0 flex items-center justify-center overflow-visible">
           <img
             src="/images/rcf-monogram-green.jpeg"
             alt="RCF Logo"
-            className="w-full h-full object-contain"
+            className="block h-full w-auto object-contain transform -translate-y-[3px] md:-translate-y-[3px] scale-125 md:scale-150"
           />
         </div>
         <div className="flex flex-col">
