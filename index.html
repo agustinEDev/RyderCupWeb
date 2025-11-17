@@ -6,9 +6,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
     <!-- Security: Content Security Policy -->
+    <!-- Note: frame-ancestors removed (not supported in meta tags, use HTTP headers instead) -->
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' https: data:; connect-src 'self' http://localhost:8000 https://lh3.googleusercontent.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self';"
+      content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' https: data:; connect-src 'self' https://rydercupam-euzt.onrender.com http://localhost:8000; base-uri 'self'; form-action 'self'; object-src 'none';"
     />
 
     <meta name="description" content="RyderCupFriends - The ultimate amateur golf tournament management platform. Connect with friends, create exciting Ryder Cup format competitions, and enjoy the spirit of friendly golf competition." />
