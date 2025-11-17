@@ -7,6 +7,66 @@ y este proyecto adhiere a [Versionado Semántico](https://semver.org/lang/es/).
 
 ## [Unreleased]
 
+## [1.4.0] - 2025-11-17
+
+### Added
+- Rediseño completo de página de Login con animaciones Framer Motion
+- Rediseño completo de página de Register con animaciones Framer Motion
+
+### Changed
+- **BREAKING**: Actualizado @vitejs/plugin-react de 4.2.1 a 4.7.0 para compatibilidad con Vite 7
+- Removido header X-XSS-Protection deprecado de vite.config.js (protección XSS ahora vía CSP)
+- Removido header X-XSS-Protection deprecado de public/_headers y vercel.json
+- Removido header HSTS de vite.config.js (ahora solo en producción vía Netlify/Vercel)
+- Migradas imágenes de Unsplash a assets locales en `/public/images/`
+  - `golf-background.jpeg` - Background del hero section
+  - `hero-tournament.jpeg` - Imagen principal del hero
+  - `golf-friends.jpeg` - Imagen de la sección de beneficios
+
+### Fixed
+- **CSP Critical Fix**: Actualizado `connect-src` para permitir conexiones a backend de Render
+  - Agregado `https://rydercupam-euzt.onrender.com` al CSP
+  - Agregado `http://localhost:8000` para desarrollo local
+  - Resuelto error: "Refused to connect to backend because it does not appear in connect-src"
+- **CSP Compatibility**: Agregado `'unsafe-inline'` a `script-src` y `style-src` para React y Tailwind
+- Corregida configuración de headers de seguridad para desarrollo local
+- HSTS ya no fuerza HTTPS en entorno de desarrollo (solo producción)
+- Eliminada dependencia de URLs externas de Unsplash (previene rate-limiting)
+
+### Security
+- **Headers Optimizados**: HSTS solo en producción (Netlify/_headers, vercel.json)
+- **XSS Protection**: Deprecado X-XSS-Protection removido, CSP provee protección
+- **CSP Actualizado**: Content Security Policy corregido para permitir backend API
+- **Assets Locales**: Imágenes locales eliminan dependencia de servicios externos
+- **Vite 7 Compatible**: Build tool actualizado con mejoras de seguridad
+- **Node.js >= 20.19**: Requisito cumplido (v25.1.0 instalado)
+
+### Performance
+- Imágenes locales mejoran tiempo de carga (sin redirecciones a CDN externo)
+- Build optimizado con Vite 7.2.2 (2.64s, 0 warnings)
+
+## [1.3.0] - 2025-11-17
+
+### Added
+- Meta tag CSP (Content Security Policy) en index.html para protección contra scripts maliciosos
+- Sanitización exhaustiva de todos los caracteres peligrosos en validaciones
+
+### Changed
+- Pulido de UI/UX en la landing page para mejor experiencia de usuario
+- Actualizado package.json y dependencias NPM (0 vulnerabilidades)
+- Mejorada función de escape en `src/utils/validation.js` con sanitización más completa
+- Actualizado `SECURITY_MIGRATION.md` con documentación extendida de mejoras de seguridad
+
+### Security
+- **AUDITORÍA COMPLETA**: Todas las dependencias NPM auditadas y actualizadas
+- **0 VULNERABILIDADES**: Ninguna vulnerabilidad detectada en las dependencias
+- **CSP Implementado**: Content Security Policy activo para prevenir XSS
+- **XSS Sanitization**: Escape completo de caracteres peligrosos: `< > " ' & / \ =`
+- Protección mejorada contra inyección de scripts en inputs de usuario
+
+### Documentation
+- Expandido `SECURITY_MIGRATION.md` con detalles de las mejoras implementadas
+
 ## [1.2.0] - 2024-11-16
 
 ### Added
@@ -91,7 +151,9 @@ y este proyecto adhiere a [Versionado Semántico](https://semver.org/lang/es/).
 - Configuración de headers de seguridad (X-Content-Type-Options, X-Frame-Options, etc.)
 - Eliminación automática de console.log en builds de producción
 
-[Unreleased]: https://github.com/agustinEDev/RyderCupWeb/compare/v1.2.0...HEAD
+[Unreleased]: https://github.com/agustinEDev/RyderCupWeb/compare/v1.4.0...HEAD
+[1.4.0]: https://github.com/agustinEDev/RyderCupWeb/compare/v1.3.0...v1.4.0
+[1.3.0]: https://github.com/agustinEDev/RyderCupWeb/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/agustinEDev/RyderCupWeb/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/agustinEDev/RyderCupWeb/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/agustinEDev/RyderCupWeb/releases/tag/v1.0.0
