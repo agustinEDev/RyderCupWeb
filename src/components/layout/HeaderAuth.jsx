@@ -52,46 +52,23 @@ const HeaderAuth = ({ user }) => {
   };
 
   return (
-    <header className="flex items-center justify-between whitespace-nowrap border-b border-solid border-b-gray-200 px-4 md:px-10 py-3">
+    <header className="flex items-center justify-between whitespace-nowrap border-b border-solid border-b-gray-200 px-4 md:px-10 py-3 overflow-visible">
       <Link to="/" className="flex items-center gap-3 text-gray-900 hover:opacity-80 transition-opacity">
-        <div className="size-8 md:size-10">
-          <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-            {/* Golf Ball with dimples */}
-            <circle cx="32" cy="32" r="28" fill="#2d7b3e" opacity="0.1"/>
-            <circle cx="32" cy="32" r="24" fill="url(#golfGradient)" stroke="#2d7b3e" strokeWidth="2"/>
-
-            {/* Dimples pattern */}
-            <circle cx="26" cy="26" r="1.5" fill="#2d7b3e" opacity="0.3"/>
-            <circle cx="32" cy="24" r="1.5" fill="#2d7b3e" opacity="0.3"/>
-            <circle cx="38" cy="26" r="1.5" fill="#2d7b3e" opacity="0.3"/>
-            <circle cx="23" cy="32" r="1.5" fill="#2d7b3e" opacity="0.3"/>
-            <circle cx="29" cy="30" r="1.5" fill="#2d7b3e" opacity="0.3"/>
-            <circle cx="35" cy="30" r="1.5" fill="#2d7b3e" opacity="0.3"/>
-            <circle cx="41" cy="32" r="1.5" fill="#2d7b3e" opacity="0.3"/>
-            <circle cx="26" cy="36" r="1.5" fill="#2d7b3e" opacity="0.3"/>
-            <circle cx="32" cy="34" r="1.5" fill="#2d7b3e" opacity="0.3"/>
-            <circle cx="38" cy="36" r="1.5" fill="#2d7b3e" opacity="0.3"/>
-            <circle cx="29" cy="40" r="1.5" fill="#2d7b3e" opacity="0.3"/>
-            <circle cx="35" cy="40" r="1.5" fill="#2d7b3e" opacity="0.3"/>
-
-            {/* Golf tee */}
-            <path d="M30 56 L34 56 L33 48 L31 48 Z" fill="#D4AF37"/>
-            <ellipse cx="32" cy="48" rx="3" ry="1" fill="#D4AF37"/>
-
-            {/* Accent shine */}
-            <circle cx="26" cy="26" r="4" fill="white" opacity="0.4"/>
-
-            <defs>
-              <linearGradient id="golfGradient" x1="8" y1="8" x2="56" y2="56">
-                <stop offset="0%" stopColor="white"/>
-                <stop offset="100%" stopColor="#f0f0f0"/>
-              </linearGradient>
-            </defs>
-          </svg>
+        <div className="h-10 w-10 md:h-12 md:w-12 flex-shrink-0 flex items-center justify-center overflow-visible">
+          <img
+            src="/images/rcf-monogram-green.jpeg"
+            alt="RCF Logo"
+            className="block h-full w-auto object-contain transform -translate-y-[1px] md:-translate-y-[1px] scale-105 md:scale-115"
+          />
         </div>
         <div className="flex flex-col">
-          <h2 className="text-gray-900 text-lg md:text-xl font-bold leading-tight tracking-tight font-poppins">
+          <h2 className="text-gray-900 text-lg md:text-xl font-bold leading-tight tracking-tight font-poppins flex items-center">
             RyderCupFriends
+            <img
+              src="/images/rcf-logo-green.jpeg"
+              alt="RCF"
+              className="inline-block h-5 md:h-6 ml-2 object-contain"
+            />
           </h2>
           <span className="text-primary text-xs md:text-sm font-semibold -mt-1">RCF</span>
         </div>
@@ -117,7 +94,7 @@ const HeaderAuth = ({ user }) => {
             onClick={toggleDropdown}
             className="flex items-center gap-2 hover:opacity-80 transition-opacity"
           >
-            <div className="bg-primary bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10 flex items-center justify-center text-white font-bold">
+            <div className="bg-primary bg-center bg-no-repeat aspect-square bg-cover rounded-full h-8 w-8 md:h-10 md:w-10 flex items-center justify-center text-white font-bold text-sm md:text-base">
               {getInitials()}
             </div>
           </button>
@@ -171,7 +148,7 @@ const HeaderAuth = ({ user }) => {
           <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
             <div className="px-4 py-3 border-b border-gray-200">
               <div className="flex items-center gap-3">
-                <div className="bg-primary bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10 flex items-center justify-center text-white font-bold text-sm">
+                <div className="bg-primary bg-center bg-no-repeat aspect-square bg-cover rounded-full h-8 w-8 md:h-10 md:w-10 flex items-center justify-center text-white font-bold text-sm md:text-base">
                   {getInitials()}
                 </div>
                 <div className="flex-1 min-w-0">
