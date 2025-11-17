@@ -56,32 +56,29 @@ const HeaderAuth = ({ user }) => {
       <Link to="/" className="flex items-center gap-3 text-gray-900 hover:opacity-80 transition-opacity">
         <div className="size-8 md:size-10">
           <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-            {/* Shield Background - Simple gradient */}
-            <path d="M32 6 L52 14 L52 32 Q52 46 32 58 Q12 46 12 32 L12 14 Z" fill="url(#shieldGradient)" stroke="#1a5a2a" strokeWidth="2.5"/>
+            {/* Circular green background */}
+            <circle cx="32" cy="32" r="30" fill="url(#greenCircleGradient)" stroke="#1a5a2a" strokeWidth="2"/>
 
-            {/* Golf ball - White with strong contrast */}
-            <circle cx="32" cy="32" r="16" fill="white" stroke="#1a5a2a" strokeWidth="2.5"/>
+            {/* Ryder Cup Trophy - Golden outline */}
+            <g stroke="#D4AF37" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round">
+              {/* Trophy cup */}
+              <path d="M24 24 L24 26 Q24 30 28 32 L28 38 L36 38 L36 32 Q40 30 40 26 L40 24 Z" fill="#D4AF37" fillOpacity="0.3"/>
 
-            {/* Simple dimples pattern */}
-            <circle cx="26" cy="26" r="2" fill="#2d7b3e" opacity="0.4"/>
-            <circle cx="32" cy="24" r="2" fill="#2d7b3e" opacity="0.4"/>
-            <circle cx="38" cy="26" r="2" fill="#2d7b3e" opacity="0.4"/>
-            <circle cx="24" cy="32" r="2" fill="#2d7b3e" opacity="0.4"/>
-            <circle cx="32" cy="32" r="2" fill="#2d7b3e" opacity="0.4"/>
-            <circle cx="40" cy="32" r="2" fill="#2d7b3e" opacity="0.4"/>
-            <circle cx="26" cy="38" r="2" fill="#2d7b3e" opacity="0.4"/>
-            <circle cx="32" cy="40" r="2" fill="#2d7b3e" opacity="0.4"/>
-            <circle cx="38" cy="38" r="2" fill="#2d7b3e" opacity="0.4"/>
+              {/* Trophy handles */}
+              <path d="M24 25 Q20 25 20 28 Q20 30 24 30"/>
+              <path d="M40 25 Q44 25 44 28 Q44 30 40 30"/>
 
-            {/* Golf flag - Simple and clean */}
-            <line x1="44" y1="24" x2="44" y2="40" stroke="#D4AF37" strokeWidth="2" strokeLinecap="round"/>
-            <path d="M44 24 L54 27 L54 33 L44 36 Z" fill="#D4AF37"/>
+              {/* Trophy base */}
+              <rect x="26" y="38" width="12" height="2" fill="#D4AF37"/>
+              <path d="M28 40 L36 40 L38 44 L26 44 Z" fill="#D4AF37"/>
+              <rect x="25" y="44" width="14" height="2" fill="#D4AF37"/>
+            </g>
 
-            {/* Shine on ball */}
-            <circle cx="26" cy="26" r="4" fill="white" opacity="0.5"/>
+            {/* RCF Text */}
+            <text x="32" y="54" fontSize="8" fontWeight="bold" fill="#D4AF37" textAnchor="middle" fontFamily="Arial, sans-serif">RCF</text>
 
             <defs>
-              <linearGradient id="shieldGradient" x1="32" y1="6" x2="32" y2="58">
+              <linearGradient id="greenCircleGradient" x1="32" y1="2" x2="32" y2="62">
                 <stop offset="0%" stopColor="#3a9d4f"/>
                 <stop offset="100%" stopColor="#1a5a2a"/>
               </linearGradient>
