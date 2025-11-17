@@ -58,7 +58,7 @@ const HeaderAuth = ({ user }) => {
           <img
             src="/images/rcf-monogram-green.jpeg"
             alt="RCF Logo"
-            className="block h-full w-auto object-contain transform -translate-y-[2px] md:-translate-y-[2px] scale-110 md:scale-125"
+            className="block h-full w-auto object-contain transform -translate-y-[1px] md:-translate-y-[1px] scale-105 md:scale-115"
           />
         </div>
         <div className="flex flex-col">
