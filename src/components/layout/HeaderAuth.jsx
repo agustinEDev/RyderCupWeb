@@ -60,24 +60,21 @@ const HeaderAuth = ({ user }) => {
             <circle cx="32" cy="32" r="30" fill="url(#greenCircleGradient)" stroke="#1a5a2a" strokeWidth="2.5"/>
 
             {/* White golf ball */}
-            <circle cx="32" cy="28" r="14" fill="white" stroke="#e5e5e5" strokeWidth="1"/>
+            <circle cx="32" cy="26" r="14" fill="white" stroke="#e5e5e5" strokeWidth="1"/>
 
             {/* Simple dimples */}
-            <circle cx="26" cy="22" r="1.2" fill="#d1d1d1"/>
-            <circle cx="32" cy="21" r="1.2" fill="#d1d1d1"/>
-            <circle cx="38" cy="22" r="1.2" fill="#d1d1d1"/>
-            <circle cx="26" cy="28" r="1.2" fill="#d1d1d1"/>
-            <circle cx="38" cy="28" r="1.2" fill="#d1d1d1"/>
-            <circle cx="26" cy="34" r="1.2" fill="#d1d1d1"/>
-            <circle cx="32" cy="35" r="1.2" fill="#d1d1d1"/>
-            <circle cx="38" cy="34" r="1.2" fill="#d1d1d1"/>
+            <circle cx="26" cy="20" r="1.2" fill="#d1d1d1"/>
+            <circle cx="32" cy="19" r="1.2" fill="#d1d1d1"/>
+            <circle cx="38" cy="20" r="1.2" fill="#d1d1d1"/>
+            <circle cx="26" cy="26" r="1.2" fill="#d1d1d1"/>
+            <circle cx="38" cy="26" r="1.2" fill="#d1d1d1"/>
+            <circle cx="26" cy="32" r="1.2" fill="#d1d1d1"/>
+            <circle cx="32" cy="33" r="1.2" fill="#d1d1d1"/>
+            <circle cx="38" cy="32" r="1.2" fill="#d1d1d1"/>
 
-            {/* Golden tee */}
-            <path d="M30 42 L34 42 L33 48 L31 48 Z" fill="#D4AF37"/>
-            <ellipse cx="32" cy="42" rx="3" ry="1.2" fill="#FFD700"/>
-
-            {/* RCF Text */}
-            <text x="32" y="58" fontSize="7" fontWeight="bold" fill="#D4AF37" textAnchor="middle" fontFamily="Arial, sans-serif">RCF</text>
+            {/* Golden tee - extended to bottom */}
+            <path d="M30 40 L34 40 L33 60 L31 60 Z" fill="#D4AF37"/>
+            <ellipse cx="32" cy="40" rx="3" ry="1.2" fill="#FFD700"/>
 
             <defs>
               <linearGradient id="greenCircleGradient" x1="32" y1="2" x2="32" y2="62">
