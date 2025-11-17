@@ -162,14 +162,25 @@ export const validateEmail = (email) => {
 
 /**
  * Sanitizes string input to prevent XSS
+ * Escapes HTML special characters to prevent injection attacks
  * @param {string} input - Input to sanitize
  * @returns {string} - Sanitized input
  */
 export const sanitizeInput = (input) => {
   if (typeof input !== 'string') return input;
 
+  // HTML entity encoding map
+  const htmlEntities = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#x27;',
+    '/': '&#x2F;'
+  };
+
   return input
-    .replace(/[<>]/g, '') // Remove < and >
+    .replace(/[&<>"'\/]/g, (char) => htmlEntities[char])
     .trim();
 };
 

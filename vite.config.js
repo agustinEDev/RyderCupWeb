@@ -2,11 +2,14 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
 // Security headers configuration
+// Note: HSTS is configured in production via Netlify (_headers) and Vercel (vercel.json)
+// to avoid forcing HTTPS in local development
+// Note: X-XSS-Protection is deprecated and removed (CSP in index.html provides XSS protection)
 const securityHeaders = {
   'X-Content-Type-Options': 'nosniff',
   'X-Frame-Options': 'DENY',
   'Referrer-Policy': 'strict-origin-when-cross-origin',
-  'Permissions-Policy': 'geolocation=(), microphone=(), camera=()'
+  'Permissions-Policy': 'geolocation=(), microphone=(), camera=()',
 }
 
 // https://vitejs.dev/config/
