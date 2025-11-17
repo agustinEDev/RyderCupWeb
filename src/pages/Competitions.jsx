@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Trophy, Users, BarChart3, Calendar, Star, Plus } from 'lucide-react';
 import HeaderAuth from '../components/layout/HeaderAuth';
 import { getUserData } from '../utils/secureAuth';
 
@@ -54,22 +55,20 @@ const Competitions = () => {
 
             {/* Under Construction Content */}
             <div className="flex flex-col px-4 py-6">
-              <div className="flex flex-col items-center gap-6">
-                {/* Under Construction Image */}
-                <div
-                  className="bg-center bg-no-repeat aspect-video bg-cover rounded-lg w-full max-w-[360px]"
-                  style={{
-                    backgroundImage: `url("https://lh3.googleusercontent.com/aida-public/AB6AXuBzHVz0eqUVYQp5FHtxLp5Oub8MX7RxZOzFzQ0K3pjHN3w7eJ-eR6WzPPqL3GqpH0u8rIFBfSfSwR3F_OUkTNdLHqzFm5Qr2yOvbqAFxKtXrxwRpqGMQqYjJb2cQxBYOLw8A8y9ZhZt")`
-                  }}
-                ></div>
+              <div className="flex flex-col items-center gap-6 mb-8">
+                {/* Coming Soon Badge */}
+                <div className="inline-flex items-center px-4 py-2 rounded-full bg-primary/10 border border-primary/20">
+                  <Star className="w-4 h-4 text-primary mr-2" />
+                  <span className="text-primary text-sm font-semibold">Coming Soon</span>
+                </div>
 
                 {/* Under Construction Text */}
-                <div className="flex max-w-[480px] flex-col items-center gap-2">
-                  <p className="text-gray-900 text-lg font-bold leading-tight tracking-tight text-center">
-                    Coming Soon
-                  </p>
-                  <p className="text-gray-900 text-sm font-normal leading-normal text-center">
-                    We're building the competitions management system. Soon you'll be able to view, manage, and track all your Ryder Cup tournaments in one place!
+                <div className="flex max-w-[560px] flex-col items-center gap-3">
+                  <h2 className="text-gray-900 text-2xl font-bold leading-tight tracking-tight text-center">
+                    Competition Management Dashboard
+                  </h2>
+                  <p className="text-gray-600 text-base font-normal leading-normal text-center">
+                    We're building a powerful competition management system. Soon you'll be able to view, manage, and track all your Ryder Cup tournaments in one centralized place!
                   </p>
                 </div>
 
@@ -85,6 +84,7 @@ const Competitions = () => {
                     onClick={handleCreateCompetition}
                     className="flex-1 flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-primary text-white text-sm font-bold leading-normal tracking-wide hover:bg-primary/90 transition-colors"
                   >
+                    <Plus className="w-4 h-4 mr-2" />
                     <span className="truncate">Create Competition</span>
                   </button>
                 </div>
@@ -93,39 +93,74 @@ const Competitions = () => {
 
             {/* Feature Preview Cards */}
             <div className="px-4 py-6">
-              <h3 className="text-gray-900 text-xl font-bold mb-4">What's Coming</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <h3 className="text-gray-900 text-xl font-bold mb-6 text-center md:text-left">
+                What's Coming to Your Dashboard
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {/* Feature 1 */}
-                <div className="border border-gray-200 rounded-lg p-4">
-                  <div className="text-primary mb-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 256 256">
-                      <path d="M224,48H32a8,8,0,0,0-8,8V192a16,16,0,0,0,16,16H216a16,16,0,0,0,16-16V56A8,8,0,0,0,224,48Zm-96,85.15L52.57,64H203.43ZM98.71,128,40,181.81V74.19Zm11.84,10.85,12,11.05a8,8,0,0,0,10.82,0l12-11.05,58,53.15H52.57ZM157.29,128,216,74.18V181.82Z" />
-                    </svg>
+                <div className="border border-gray-200 rounded-xl p-6 hover:shadow-lg hover:border-primary/30 transition-all duration-300">
+                  <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
+                    <Trophy className="w-6 h-6 text-primary" />
                   </div>
-                  <h4 className="text-gray-900 font-bold text-base mb-1">Competition List</h4>
-                  <p className="text-gray-500 text-sm">View all your active and past competitions</p>
+                  <h4 className="text-gray-900 font-bold text-base mb-2">Competition List</h4>
+                  <p className="text-gray-600 text-sm leading-relaxed">
+                    View all your active and past competitions with quick access to details and results
+                  </p>
                 </div>
 
                 {/* Feature 2 */}
-                <div className="border border-gray-200 rounded-lg p-4">
-                  <div className="text-primary mb-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 256 256">
-                      <path d="M230.92,212c-15.23-26.33-38.7-45.21-66.09-54.16a72,72,0,1,0-73.66,0C63.78,166.78,40.31,185.66,25.08,212a8,8,0,1,0,13.85,8c18.84-32.56,52.14-52,89.07-52s70.23,19.44,89.07,52a8,8,0,1,0,13.85-8ZM72,96a56,56,0,1,1,56,56A56.06,56.06,0,0,1,72,96Z" />
-                    </svg>
+                <div className="border border-gray-200 rounded-xl p-6 hover:shadow-lg hover:border-primary/30 transition-all duration-300">
+                  <div className="w-12 h-12 rounded-lg bg-accent/10 flex items-center justify-center mb-4">
+                    <Users className="w-6 h-6 text-accent" />
                   </div>
-                  <h4 className="text-gray-900 font-bold text-base mb-1">Team Management</h4>
-                  <p className="text-gray-500 text-sm">Organize teams and track player statistics</p>
+                  <h4 className="text-gray-900 font-bold text-base mb-2">Team Management</h4>
+                  <p className="text-gray-600 text-sm leading-relaxed">
+                    Organize teams, manage rosters, and track player statistics throughout tournaments
+                  </p>
                 </div>
 
                 {/* Feature 3 */}
-                <div className="border border-gray-200 rounded-lg p-4">
-                  <div className="text-primary mb-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 256 256">
-                      <path d="M208,32H184V24a8,8,0,0,0-16,0v8H88V24a8,8,0,0,0-16,0v8H48A16,16,0,0,0,32,48V208a16,16,0,0,0,16,16H208a16,16,0,0,0,16-16V48A16,16,0,0,0,208,32ZM72,48v8a8,8,0,0,0,16,0V48h80v8a8,8,0,0,0,16,0V48h24V80H48V48ZM208,208H48V96H208V208Z" />
-                    </svg>
+                <div className="border border-gray-200 rounded-xl p-6 hover:shadow-lg hover:border-primary/30 transition-all duration-300">
+                  <div className="w-12 h-12 rounded-lg bg-navy/10 flex items-center justify-center mb-4">
+                    <BarChart3 className="w-6 h-6 text-navy" />
                   </div>
-                  <h4 className="text-gray-900 font-bold text-base mb-1">Live Scoring</h4>
-                  <p className="text-gray-500 text-sm">Real-time score updates during matches</p>
+                  <h4 className="text-gray-900 font-bold text-base mb-2">Live Scoring</h4>
+                  <p className="text-gray-600 text-sm leading-relaxed">
+                    Real-time score updates during matches with live leaderboards and match results
+                  </p>
+                </div>
+
+                {/* Feature 4 */}
+                <div className="border border-gray-200 rounded-xl p-6 hover:shadow-lg hover:border-primary/30 transition-all duration-300">
+                  <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
+                    <Calendar className="w-6 h-6 text-primary" />
+                  </div>
+                  <h4 className="text-gray-900 font-bold text-base mb-2">Schedule Overview</h4>
+                  <p className="text-gray-600 text-sm leading-relaxed">
+                    See upcoming matches, tournament dates, and manage competition timelines
+                  </p>
+                </div>
+
+                {/* Feature 5 */}
+                <div className="border border-gray-200 rounded-xl p-6 hover:shadow-lg hover:border-primary/30 transition-all duration-300">
+                  <div className="w-12 h-12 rounded-lg bg-accent/10 flex items-center justify-center mb-4">
+                    <BarChart3 className="w-6 h-6 text-accent" />
+                  </div>
+                  <h4 className="text-gray-900 font-bold text-base mb-2">Statistics & Analytics</h4>
+                  <p className="text-gray-600 text-sm leading-relaxed">
+                    Deep dive into performance metrics, trends, and historical competition data
+                  </p>
+                </div>
+
+                {/* Feature 6 */}
+                <div className="border border-gray-200 rounded-xl p-6 hover:shadow-lg hover:border-primary/30 transition-all duration-300">
+                  <div className="w-12 h-12 rounded-lg bg-navy/10 flex items-center justify-center mb-4">
+                    <Star className="w-6 h-6 text-navy" />
+                  </div>
+                  <h4 className="text-gray-900 font-bold text-base mb-2">Achievements</h4>
+                  <p className="text-gray-600 text-sm leading-relaxed">
+                    Track milestones, awards, and highlights from all your tournaments
+                  </p>
                 </div>
               </div>
             </div>
@@ -133,7 +168,7 @@ const Competitions = () => {
             {/* Footer */}
             <footer className="flex flex-col gap-6 px-5 py-10 text-center">
               <p className="text-gray-500 text-base font-normal leading-normal">
-                @2024 Ryder Cup Amateur Manager
+                © 2025 RyderCupFriends
               </p>
             </footer>
           </div>

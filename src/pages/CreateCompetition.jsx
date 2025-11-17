@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Calendar, Users, Trophy, MapPin, Settings, Star } from 'lucide-react';
 import HeaderAuth from '../components/layout/HeaderAuth';
 import { getUserData } from '../utils/secureAuth';
 
@@ -50,22 +51,20 @@ const CreateCompetition = () => {
 
             {/* Coming Soon Content */}
             <div className="flex flex-col px-4 py-6">
-              <div className="flex flex-col items-center gap-6">
-                {/* Coming Soon Image */}
-                <div
-                  className="bg-center bg-no-repeat aspect-video bg-cover rounded-lg w-full max-w-[360px]"
-                  style={{
-                    backgroundImage: `url("https://lh3.googleusercontent.com/aida-public/AB6AXuCasR6uYzwHhjACskA61NhWhQgjns6Jq2SkVQx_izn2KYGW3dhJ8s7NWvx-NQPuBcSxnm27moOFAVECIXNUQWuYD2ZRDyyMY4CXvrUlmnYM708_GinaIQMThsgbtHNIvsXsRL7UgXlAqCP71aR9Z1nEu41hO_bbgs1t0YhcrB2CNs0GnaunCeZvvY6cSk-8H2cFdD8OEsGEECBJzzxata4S-cDl6fyEsKJDJB6M7t3ZuJ8zp9-Z6kAmY3yb_TsiUpO3IKxlfRPs9Z__")`
-                  }}
-                ></div>
+              <div className="flex flex-col items-center gap-6 mb-8">
+                {/* Coming Soon Badge */}
+                <div className="inline-flex items-center px-4 py-2 rounded-full bg-primary/10 border border-primary/20">
+                  <Star className="w-4 h-4 text-primary mr-2" />
+                  <span className="text-primary text-sm font-semibold">Coming Soon</span>
+                </div>
 
                 {/* Coming Soon Text */}
-                <div className="flex max-w-[480px] flex-col items-center gap-2">
-                  <p className="text-gray-900 text-lg font-bold leading-tight tracking-tight text-center">
-                    Coming Soon
-                  </p>
-                  <p className="text-gray-900 text-sm font-normal leading-normal text-center">
-                    We're working hard to bring you the ability to create and manage your own competitions. Stay tuned for updates!
+                <div className="flex max-w-[560px] flex-col items-center gap-3">
+                  <h2 className="text-gray-900 text-2xl font-bold leading-tight tracking-tight text-center">
+                    Competition Creator is Under Development
+                  </h2>
+                  <p className="text-gray-600 text-base font-normal leading-normal text-center">
+                    We're crafting an intuitive competition creation experience. Soon you'll be able to set up your own Ryder Cup tournaments with just a few clicks!
                   </p>
                 </div>
 
@@ -77,12 +76,86 @@ const CreateCompetition = () => {
                   <span className="truncate">Back to Dashboard</span>
                 </button>
               </div>
+
+              {/* Feature Preview Cards */}
+              <div className="px-0 py-4">
+                <h3 className="text-gray-900 text-xl font-bold mb-6 text-center md:text-left">
+                  What You'll Be Able to Configure
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {/* Feature 1 */}
+                  <div className="border border-gray-200 rounded-xl p-6 hover:shadow-lg hover:border-primary/30 transition-all duration-300">
+                    <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
+                      <Trophy className="w-6 h-6 text-primary" />
+                    </div>
+                    <h4 className="text-gray-900 font-bold text-base mb-2">Competition Details</h4>
+                    <p className="text-gray-600 text-sm leading-relaxed">
+                      Name your competition, set the format, and customize the tournament rules
+                    </p>
+                  </div>
+
+                  {/* Feature 2 */}
+                  <div className="border border-gray-200 rounded-xl p-6 hover:shadow-lg hover:border-primary/30 transition-all duration-300">
+                    <div className="w-12 h-12 rounded-lg bg-accent/10 flex items-center justify-center mb-4">
+                      <Calendar className="w-6 h-6 text-accent" />
+                    </div>
+                    <h4 className="text-gray-900 font-bold text-base mb-2">Schedule Setup</h4>
+                    <p className="text-gray-600 text-sm leading-relaxed">
+                      Define start dates, match schedules, and tournament duration
+                    </p>
+                  </div>
+
+                  {/* Feature 3 */}
+                  <div className="border border-gray-200 rounded-xl p-6 hover:shadow-lg hover:border-primary/30 transition-all duration-300">
+                    <div className="w-12 h-12 rounded-lg bg-navy/10 flex items-center justify-center mb-4">
+                      <Users className="w-6 h-6 text-navy" />
+                    </div>
+                    <h4 className="text-gray-900 font-bold text-base mb-2">Team Management</h4>
+                    <p className="text-gray-600 text-sm leading-relaxed">
+                      Add players, create teams, and assign captains for your competition
+                    </p>
+                  </div>
+
+                  {/* Feature 4 */}
+                  <div className="border border-gray-200 rounded-xl p-6 hover:shadow-lg hover:border-primary/30 transition-all duration-300">
+                    <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
+                      <MapPin className="w-6 h-6 text-primary" />
+                    </div>
+                    <h4 className="text-gray-900 font-bold text-base mb-2">Venue & Course</h4>
+                    <p className="text-gray-600 text-sm leading-relaxed">
+                      Select the golf course and specify the venue for your tournament
+                    </p>
+                  </div>
+
+                  {/* Feature 5 */}
+                  <div className="border border-gray-200 rounded-xl p-6 hover:shadow-lg hover:border-primary/30 transition-all duration-300">
+                    <div className="w-12 h-12 rounded-lg bg-accent/10 flex items-center justify-center mb-4">
+                      <Settings className="w-6 h-6 text-accent" />
+                    </div>
+                    <h4 className="text-gray-900 font-bold text-base mb-2">Scoring Rules</h4>
+                    <p className="text-gray-600 text-sm leading-relaxed">
+                      Configure point systems, match play formats, and scoring methods
+                    </p>
+                  </div>
+
+                  {/* Feature 6 */}
+                  <div className="border border-gray-200 rounded-xl p-6 hover:shadow-lg hover:border-primary/30 transition-all duration-300">
+                    <div className="w-12 h-12 rounded-lg bg-navy/10 flex items-center justify-center mb-4">
+                      <Star className="w-6 h-6 text-navy" />
+                    </div>
+                    <h4 className="text-gray-900 font-bold text-base mb-2">Invitations</h4>
+                    <p className="text-gray-600 text-sm leading-relaxed">
+                      Invite players via email and manage participant confirmations
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
 
             {/* Footer */}
             <footer className="flex flex-col gap-6 px-5 py-10 text-center">
               <p className="text-gray-500 text-base font-normal leading-normal">
-                @2024 Ryder Cup Amateur Manager
+                © 2025 RyderCupFriends
               </p>
             </footer>
           </div>
