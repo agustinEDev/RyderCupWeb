@@ -29,12 +29,11 @@ const Header = () => {
   return (
     <header className="flex items-center justify-between whitespace-nowrap border-b border-solid border-b-gray-200 px-4 md:px-10 py-3">
       <Link to="/" className="flex items-center gap-3 text-gray-900 hover:opacity-80 transition-opacity">
-        <div className="size-10 md:size-12 overflow-hidden">
+        <div className="size-10 md:size-12">
           <img
-            src="/images/logos.jpeg"
+            src="/images/rcf-monogram-green.jpeg"
             alt="RCF Logo"
-            className="w-[200%] h-[200%] object-cover object-[0%_0%]"
-            style={{ transform: 'scale(2)', transformOrigin: 'top left' }}
+            className="w-full h-full object-contain"
           />
         </div>
         <div className="flex flex-col">
