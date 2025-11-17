@@ -56,36 +56,30 @@ const HeaderAuth = ({ user }) => {
       <Link to="/" className="flex items-center gap-3 text-gray-900 hover:opacity-80 transition-opacity">
         <div className="size-8 md:size-10">
           <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-            {/* Golf Ball with dimples */}
-            <circle cx="32" cy="32" r="28" fill="#2d7b3e" opacity="0.1"/>
-            <circle cx="32" cy="32" r="24" fill="url(#golfGradient)" stroke="#2d7b3e" strokeWidth="2"/>
+            {/* Green circular background */}
+            <circle cx="32" cy="32" r="30" fill="url(#greenCircleGradient)" stroke="#1a5a2a" strokeWidth="2.5"/>
 
-            {/* Dimples pattern - centered symmetrically */}
-            <circle cx="32" cy="32" r="1.5" fill="#2d7b3e" opacity="0.3"/>
-            <circle cx="32" cy="24" r="1.5" fill="#2d7b3e" opacity="0.3"/>
-            <circle cx="32" cy="40" r="1.5" fill="#2d7b3e" opacity="0.3"/>
-            <circle cx="24" cy="32" r="1.5" fill="#2d7b3e" opacity="0.3"/>
-            <circle cx="40" cy="32" r="1.5" fill="#2d7b3e" opacity="0.3"/>
-            <circle cx="26" cy="26" r="1.5" fill="#2d7b3e" opacity="0.3"/>
-            <circle cx="38" cy="38" r="1.5" fill="#2d7b3e" opacity="0.3"/>
-            <circle cx="38" cy="26" r="1.5" fill="#2d7b3e" opacity="0.3"/>
-            <circle cx="26" cy="38" r="1.5" fill="#2d7b3e" opacity="0.3"/>
-            <circle cx="28" cy="30" r="1.5" fill="#2d7b3e" opacity="0.3"/>
-            <circle cx="36" cy="34" r="1.5" fill="#2d7b3e" opacity="0.3"/>
-            <circle cx="36" cy="30" r="1.5" fill="#2d7b3e" opacity="0.3"/>
-            <circle cx="28" cy="34" r="1.5" fill="#2d7b3e" opacity="0.3"/>
+            {/* White golf ball */}
+            <circle cx="32" cy="26" r="14" fill="white" stroke="#e5e5e5" strokeWidth="1"/>
 
-            {/* Golf tee */}
-            <path d="M30 56 L34 56 L33 48 L31 48 Z" fill="#D4AF37"/>
-            <ellipse cx="32" cy="48" rx="3" ry="1" fill="#D4AF37"/>
+            {/* Simple dimples */}
+            <circle cx="26" cy="20" r="1.2" fill="#d1d1d1"/>
+            <circle cx="32" cy="19" r="1.2" fill="#d1d1d1"/>
+            <circle cx="38" cy="20" r="1.2" fill="#d1d1d1"/>
+            <circle cx="26" cy="26" r="1.2" fill="#d1d1d1"/>
+            <circle cx="38" cy="26" r="1.2" fill="#d1d1d1"/>
+            <circle cx="26" cy="32" r="1.2" fill="#d1d1d1"/>
+            <circle cx="32" cy="33" r="1.2" fill="#d1d1d1"/>
+            <circle cx="38" cy="32" r="1.2" fill="#d1d1d1"/>
 
-            {/* Accent shine */}
-            <circle cx="28" cy="28" r="4" fill="white" opacity="0.4"/>
+            {/* Golden tee - extended to bottom */}
+            <path d="M30 40 L34 40 L33 60 L31 60 Z" fill="#D4AF37"/>
+            <ellipse cx="32" cy="40" rx="3" ry="1.2" fill="#FFD700"/>
 
             <defs>
-              <linearGradient id="golfGradient" x1="8" y1="8" x2="56" y2="56">
-                <stop offset="0%" stopColor="white"/>
-                <stop offset="100%" stopColor="#f0f0f0"/>
+              <linearGradient id="greenCircleGradient" x1="32" y1="2" x2="32" y2="62">
+                <stop offset="0%" stopColor="#3a9d4f"/>
+                <stop offset="100%" stopColor="#1a5a2a"/>
               </linearGradient>
             </defs>
           </svg>
