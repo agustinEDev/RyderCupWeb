@@ -62,8 +62,13 @@ const HeaderAuth = ({ user }) => {
           />
         </div>
         <div className="flex flex-col">
-          <h2 className="text-gray-900 text-lg md:text-xl font-bold leading-tight tracking-tight font-poppins">
+          <h2 className="text-gray-900 text-lg md:text-xl font-bold leading-tight tracking-tight font-poppins flex items-center">
             RyderCupFriends
+            <img
+              src="/images/rcf-logo-green.jpeg"
+              alt="RCF"
+              className="inline-block h-5 md:h-6 ml-2 object-contain"
+            />
           </h2>
           <span className="text-primary text-xs md:text-sm font-semibold -mt-1">RCF</span>
         </div>
