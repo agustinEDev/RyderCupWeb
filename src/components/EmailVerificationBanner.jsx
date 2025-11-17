@@ -18,24 +18,26 @@ const EmailVerificationBanner = ({ userEmail }) => {
       const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
       const token = getAuthToken();
 
-      // NOTE: Este endpoint aún no está implementado en el backend
-      // Por ahora, solo mostraremos un mensaje informativo
       const response = await fetch(`${API_URL}/api/v1/auth/resend-verification`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
-        }
+        },
+        body: JSON.stringify({
+          email: userEmail
+        })
       });
 
       if (!response.ok) {
-        throw new Error('Failed to resend verification email');
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Failed to resend verification email');
       }
 
-      setMessage('Verification email sent! Please check your inbox.');
+      setMessage('✅ Verification email sent! Please check your inbox.');
     } catch (error) {
       console.error('Error resending email:', error);
-      setMessage('Failed to resend email. The resend feature is not yet implemented.');
+      setMessage(`❌ Failed to resend email: ${error.message}`);
     } finally {
       setIsResending(false);
     }
