@@ -33,7 +33,7 @@ const Header = () => {
           <img
             src="/images/rcf-monogram-green.jpeg"
             alt="RCF Logo"
-            className="block h-full w-auto object-contain transform -translate-y-[3px] md:-translate-y-[3px] scale-125 md:scale-150"
+            className="block h-full w-auto object-contain transform -translate-y-[2px] md:-translate-y-[2px] scale-110 md:scale-125"
           />
         </div>
         <div className="flex flex-col">
