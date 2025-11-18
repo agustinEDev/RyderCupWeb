@@ -46,34 +46,27 @@ const CreateCompetition = () => {
       });
 
       if (!response.ok) {
-        // If API fails, use static fallback data
+        // If API fails, use static fallback data silently
         console.warn(`API returned ${response.status}, using fallback data with ${COUNTRIES_166.length} countries`);
         setCountries(COUNTRIES_166);
-        toast.success(`Loaded ${COUNTRIES_166.length} countries (fallback data)`);
         setLoadingCountries(false);
         return;
       }
 
       const data = await response.json();
 
-      // Ensure we have all 166 countries
+      // Handle API response
       if (Array.isArray(data)) {
         setCountries(data);
         console.log(`Loaded ${data.length} countries from API`);
-
-        if (data.length !== 166) {
-          console.warn(`Expected 166 countries but received ${data.length}`);
-        }
-        toast.success(`Loaded ${data.length} countries`);
       } else {
         throw new Error('Invalid countries data format');
       }
     } catch (error) {
       console.error('Error loading countries from API, using fallback:', error);
-      // Use static fallback data on error
+      // Use static fallback data on error (silent fallback)
       setCountries(COUNTRIES_166);
       console.log(`Using fallback data with ${COUNTRIES_166.length} countries`);
-      toast.success(`Loaded ${COUNTRIES_166.length} countries (fallback data)`);
     } finally {
       setLoadingCountries(false);
     }
