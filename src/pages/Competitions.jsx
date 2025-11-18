@@ -1,39 +1,80 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Trophy, Users, BarChart3, Calendar, Star, Plus } from 'lucide-react';
+import { motion } from 'framer-motion';
+import {
+  Trophy, Users, Calendar, MapPin, Star, Plus,
+  Filter, Search, AlertCircle, Loader
+} from 'lucide-react';
+import toast from 'react-hot-toast';
 import HeaderAuth from '../components/layout/HeaderAuth';
 import { getUserData } from '../utils/secureAuth';
+import {
+  getCompetitions,
+  getStatusColor,
+  formatDateRange
+} from '../services/competitions';
 
 const Competitions = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
+  const [competitions, setCompetitions] = useState([]);
+  const [filteredCompetitions, setFilteredCompetitions] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('ALL');
 
   useEffect(() => {
-    // Fetch user data from secure storage (auth already verified by ProtectedRoute)
     const userData = getUserData();
     setUser(userData);
-    setIsLoading(false);
+    loadCompetitions();
   }, []);
 
-  const handleBackToDashboard = () => {
-    navigate('/dashboard');
+  useEffect(() => {
+    applyFilters();
+  }, [competitions, searchQuery, statusFilter]);
+
+  const loadCompetitions = async () => {
+    setIsLoading(true);
+    try {
+      const data = await getCompetitions();
+      setCompetitions(data);
+    } catch (error) {
+      console.error('Error loading competitions:', error);
+      toast.error(error.message || 'Failed to load competitions');
+      setCompetitions([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const applyFilters = () => {
+    let filtered = [...competitions];
+
+    // Apply search filter
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(
+        (comp) =>
+          comp.name?.toLowerCase().includes(query) ||
+          comp.location?.toLowerCase().includes(query)
+      );
+    }
+
+    // Apply status filter
+    if (statusFilter !== 'ALL') {
+      filtered = filtered.filter((comp) => comp.status === statusFilter);
+    }
+
+    setFilteredCompetitions(filtered);
   };
 
   const handleCreateCompetition = () => {
     navigate('/competitions/create');
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
-        </div>
-      </div>
-    );
-  }
+  const handleViewCompetition = (competitionId) => {
+    navigate(`/competitions/${competitionId}`);
+  };
 
   if (!user) {
     return null;
@@ -46,123 +87,179 @@ const Competitions = () => {
 
         <div className="px-4 md:px-40 flex flex-1 justify-center py-5">
           <div className="layout-content-container flex flex-col max-w-[960px] flex-1">
-            {/* Page Title */}
-            <div className="flex flex-wrap justify-between gap-3 p-4">
-              <p className="text-gray-900 tracking-tight text-3xl md:text-[32px] font-bold leading-tight min-w-72">
-                My Competitions
-              </p>
-            </div>
-
-            {/* Under Construction Content */}
-            <div className="flex flex-col px-4 py-6">
-              <div className="flex flex-col items-center gap-6 mb-8">
-                {/* Coming Soon Badge */}
-                <div className="inline-flex items-center px-4 py-2 rounded-full bg-primary/10 border border-primary/20">
-                  <Star className="w-4 h-4 text-primary mr-2" />
-                  <span className="text-primary text-sm font-semibold">Coming Soon</span>
-                </div>
-
-                {/* Under Construction Text */}
-                <div className="flex max-w-[560px] flex-col items-center gap-3">
-                  <h2 className="text-gray-900 text-2xl font-bold leading-tight tracking-tight text-center">
-                    Competition Management Dashboard
-                  </h2>
-                  <p className="text-gray-600 text-base font-normal leading-normal text-center">
-                    We're building a powerful competition management system. Soon you'll be able to view, manage, and track all your Ryder Cup tournaments in one centralized place!
-                  </p>
-                </div>
-
-                {/* Action Buttons */}
-                <div className="flex flex-col sm:flex-row gap-3 w-full max-w-[480px]">
-                  <button
-                    onClick={handleBackToDashboard}
-                    className="flex-1 flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-gray-100 text-gray-900 text-sm font-bold leading-normal tracking-wide hover:bg-gray-200 transition-colors"
-                  >
-                    <span className="truncate">Back to Dashboard</span>
-                  </button>
-                  <button
-                    onClick={handleCreateCompetition}
-                    className="flex-1 flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-primary text-white text-sm font-bold leading-normal tracking-wide hover:bg-primary/90 transition-colors"
-                  >
-                    <Plus className="w-4 h-4 mr-2" />
-                    <span className="truncate">Create Competition</span>
-                  </button>
-                </div>
+            {/* Header */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+              className="flex flex-wrap justify-between items-center gap-3 p-4"
+            >
+              <div>
+                <p className="text-gray-900 tracking-tight text-3xl md:text-[32px] font-bold leading-tight">
+                  My Competitions
+                </p>
+                <p className="text-gray-500 text-sm mt-1">
+                  Manage your tournaments and track progress
+                </p>
               </div>
-            </div>
+              <motion.button
+                onClick={handleCreateCompetition}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className="flex items-center gap-2 px-5 py-2.5 bg-primary text-white rounded-lg font-medium hover:bg-primary/90 transition-colors shadow-md"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Create Competition</span>
+              </motion.button>
+            </motion.div>
 
-            {/* Feature Preview Cards */}
-            <div className="px-4 py-6">
-              <h3 className="text-gray-900 text-xl font-bold mb-6 text-center md:text-left">
-                What's Coming to Your Dashboard
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {/* Feature 1 */}
-                <div className="border border-gray-200 rounded-xl p-6 hover:shadow-lg hover:border-primary/30 transition-all duration-300">
-                  <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
-                    <Trophy className="w-6 h-6 text-primary" />
+            {/* Filters */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.1 }}
+              className="p-4"
+            >
+              <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+                <div className="flex flex-col md:flex-row gap-4">
+                  {/* Search */}
+                  <div className="flex-1">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                      <input
+                        type="text"
+                        placeholder="Search by name or location..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+                      />
+                    </div>
                   </div>
-                  <h4 className="text-gray-900 font-bold text-base mb-2">Competition List</h4>
-                  <p className="text-gray-600 text-sm leading-relaxed">
-                    View all your active and past competitions with quick access to details and results
-                  </p>
+
+                  {/* Status Filter */}
+                  <div className="md:w-48">
+                    <div className="relative">
+                      <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                      <select
+                        value={statusFilter}
+                        onChange={(e) => setStatusFilter(e.target.value)}
+                        className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all appearance-none bg-white cursor-pointer"
+                      >
+                        <option value="ALL">All Statuses</option>
+                        <option value="DRAFT">Draft</option>
+                        <option value="ACTIVE">Active</option>
+                        <option value="CLOSED">Closed</option>
+                        <option value="IN_PROGRESS">In Progress</option>
+                        <option value="COMPLETED">Completed</option>
+                        <option value="CANCELLED">Cancelled</option>
+                      </select>
+                    </div>
+                  </div>
                 </div>
 
-                {/* Feature 2 */}
-                <div className="border border-gray-200 rounded-xl p-6 hover:shadow-lg hover:border-primary/30 transition-all duration-300">
-                  <div className="w-12 h-12 rounded-lg bg-accent/10 flex items-center justify-center mb-4">
-                    <Users className="w-6 h-6 text-accent" />
+                {/* Results Count */}
+                {!isLoading && (
+                  <div className="mt-3 text-sm text-gray-500">
+                    Showing {filteredCompetitions.length} of {competitions.length} competitions
                   </div>
-                  <h4 className="text-gray-900 font-bold text-base mb-2">Team Management</h4>
-                  <p className="text-gray-600 text-sm leading-relaxed">
-                    Organize teams, manage rosters, and track player statistics throughout tournaments
-                  </p>
-                </div>
-
-                {/* Feature 3 */}
-                <div className="border border-gray-200 rounded-xl p-6 hover:shadow-lg hover:border-primary/30 transition-all duration-300">
-                  <div className="w-12 h-12 rounded-lg bg-navy/10 flex items-center justify-center mb-4">
-                    <BarChart3 className="w-6 h-6 text-navy" />
-                  </div>
-                  <h4 className="text-gray-900 font-bold text-base mb-2">Live Scoring</h4>
-                  <p className="text-gray-600 text-sm leading-relaxed">
-                    Real-time score updates during matches with live leaderboards and match results
-                  </p>
-                </div>
-
-                {/* Feature 4 */}
-                <div className="border border-gray-200 rounded-xl p-6 hover:shadow-lg hover:border-primary/30 transition-all duration-300">
-                  <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
-                    <Calendar className="w-6 h-6 text-primary" />
-                  </div>
-                  <h4 className="text-gray-900 font-bold text-base mb-2">Schedule Overview</h4>
-                  <p className="text-gray-600 text-sm leading-relaxed">
-                    See upcoming matches, tournament dates, and manage competition timelines
-                  </p>
-                </div>
-
-                {/* Feature 5 */}
-                <div className="border border-gray-200 rounded-xl p-6 hover:shadow-lg hover:border-primary/30 transition-all duration-300">
-                  <div className="w-12 h-12 rounded-lg bg-accent/10 flex items-center justify-center mb-4">
-                    <BarChart3 className="w-6 h-6 text-accent" />
-                  </div>
-                  <h4 className="text-gray-900 font-bold text-base mb-2">Statistics & Analytics</h4>
-                  <p className="text-gray-600 text-sm leading-relaxed">
-                    Deep dive into performance metrics, trends, and historical competition data
-                  </p>
-                </div>
-
-                {/* Feature 6 */}
-                <div className="border border-gray-200 rounded-xl p-6 hover:shadow-lg hover:border-primary/30 transition-all duration-300">
-                  <div className="w-12 h-12 rounded-lg bg-navy/10 flex items-center justify-center mb-4">
-                    <Star className="w-6 h-6 text-navy" />
-                  </div>
-                  <h4 className="text-gray-900 font-bold text-base mb-2">Achievements</h4>
-                  <p className="text-gray-600 text-sm leading-relaxed">
-                    Track milestones, awards, and highlights from all your tournaments
-                  </p>
-                </div>
+                )}
               </div>
+            </motion.div>
+
+            {/* Competitions List */}
+            <div className="p-4">
+              {isLoading ? (
+                <div className="flex flex-col items-center justify-center py-12">
+                  <Loader className="w-12 h-12 text-primary animate-spin mb-4" />
+                  <p className="text-gray-600">Loading competitions...</p>
+                </div>
+              ) : filteredCompetitions.length === 0 ? (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="flex flex-col items-center justify-center py-12 bg-gray-50 border border-gray-200 rounded-xl"
+                >
+                  <AlertCircle className="w-16 h-16 text-gray-400 mb-4" />
+                  <p className="text-gray-900 font-semibold text-lg mb-2">
+                    {searchQuery || statusFilter !== 'ALL'
+                      ? 'No competitions found'
+                      : 'No competitions yet'}
+                  </p>
+                  <p className="text-gray-500 text-sm mb-6 max-w-md text-center">
+                    {searchQuery || statusFilter !== 'ALL'
+                      ? 'Try adjusting your filters or search terms'
+                      : 'Create your first competition to get started'}
+                  </p>
+                  {(!searchQuery && statusFilter === 'ALL') && (
+                    <motion.button
+                      onClick={handleCreateCompetition}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      className="flex items-center gap-2 px-5 py-2.5 bg-primary text-white rounded-lg font-medium hover:bg-primary/90 transition-colors shadow-md"
+                    >
+                      <Plus className="w-4 h-4" />
+                      <span>Create Your First Competition</span>
+                    </motion.button>
+                  )}
+                </motion.div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {filteredCompetitions.map((competition, index) => (
+                    <motion.div
+                      key={competition.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.3, delay: index * 0.05 }}
+                      onClick={() => handleViewCompetition(competition.id)}
+                      className="bg-white border border-gray-200 rounded-xl p-5 hover:shadow-lg hover:border-primary/30 transition-all duration-300 cursor-pointer group"
+                    >
+                      {/* Header */}
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex-1">
+                          <h3 className="text-gray-900 font-bold text-lg mb-1 group-hover:text-primary transition-colors">
+                            {competition.name}
+                          </h3>
+                          <div className="flex items-center gap-2 text-gray-500 text-sm">
+                            <MapPin className="w-4 h-4" />
+                            <span>{competition.location || 'Location TBD'}</span>
+                          </div>
+                        </div>
+                        <span
+                          className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(
+                            competition.status
+                          )}`}
+                        >
+                          {competition.status}
+                        </span>
+                      </div>
+
+                      {/* Dates */}
+                      <div className="flex items-center gap-2 text-gray-600 text-sm mb-3">
+                        <Calendar className="w-4 h-4" />
+                        <span>
+                          {formatDateRange(competition.start_date, competition.end_date)}
+                        </span>
+                      </div>
+
+                      {/* Stats */}
+                      <div className="flex items-center gap-4 pt-3 border-t border-gray-100">
+                        <div className="flex items-center gap-1.5 text-gray-600 text-sm">
+                          <Users className="w-4 h-4" />
+                          <span>
+                            {competition.enrolled_count || 0} / {competition.max_players || '∞'}
+                          </span>
+                        </div>
+                        {competition.is_creator && (
+                          <div className="flex items-center gap-1.5 text-accent text-sm font-medium">
+                            <Star className="w-4 h-4 fill-current" />
+                            <span>Creator</span>
+                          </div>
+                        )}
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Footer */}

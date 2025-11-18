@@ -27,7 +27,6 @@ const CreateCompetition = () => {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    // Fetch user data from secure storage (auth already verified by ProtectedRoute)
     const userData = getUserData();
     setUser(userData);
     setIsLoading(false);
