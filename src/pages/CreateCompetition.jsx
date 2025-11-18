@@ -1,273 +1,130 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import {
-  Calendar, Users, Trophy, MapPin, Settings,
-  ArrowLeft, Save, AlertCircle, Plus, X
-} from 'lucide-react';
+import { Calendar, Users, Trophy, MapPin, Settings, Star, AlertCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import HeaderAuth from '../components/layout/HeaderAuth';
-import { getUserData } from '../utils/secureAuth';
-import { createCompetition } from '../services/competitions';
-import {
-  getCountries,
-  getAdjacentCountriesFallback,
-  formatCountryName
-} from '../services/countries';
-import CountryAutocomplete from '../components/ui/CountryAutocomplete';
+import { getUserData, authenticatedFetch } from '../utils/secureAuth';
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
 const CreateCompetition = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [errors, setErrors] = useState({});
-
-  // Countries data
+  const [isLoading, setIsLoading] = useState(true);
   const [countries, setCountries] = useState([]);
-  const [adjacentCountries, setAdjacentCountries] = useState([]);
-  const [tertiaryCountries, setTertiaryCountries] = useState([]);
-
-  // UI state
-  const [showSecondaryCountry, setShowSecondaryCountry] = useState(false);
-  const [showTertiaryCountry, setShowTertiaryCountry] = useState(false);
-
+  const [loadingCountries, setLoadingCountries] = useState(false);
+  const [countriesError, setCountriesError] = useState(null);
   const [formData, setFormData] = useState({
     name: '',
+    description: '',
     start_date: '',
     end_date: '',
-    country_code: '',
-    secondary_country_code: '',
-    tertiary_country_code: '',
-    max_players: '',
-    handicap_type: 'PERCENTAGE',
-    handicap_percentage: '100',
-    team_assignment: 'MANUAL',
+    country_id: '',
+    location: '',
+    venue: '',
+    format: 'ryder_cup'
   });
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     const userData = getUserData();
     setUser(userData);
+    setIsLoading(false);
+
+    // Load countries when component mounts
     loadCountries();
   }, []);
 
   const loadCountries = async () => {
+    setLoadingCountries(true);
+    setCountriesError(null);
+
     try {
-      const data = await getCountries();
-      setCountries(data);
+      const response = await authenticatedFetch(`${API_BASE_URL}/api/v1/countries`, {
+        method: 'GET'
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to load countries: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      // Ensure we have all 166 countries
+      if (Array.isArray(data)) {
+        setCountries(data);
+        console.log(`Loaded ${data.length} countries`);
+
+        if (data.length !== 166) {
+          console.warn(`Expected 166 countries but received ${data.length}`);
+        }
+      } else {
+        throw new Error('Invalid countries data format');
+      }
     } catch (error) {
       console.error('Error loading countries:', error);
+      setCountriesError(error.message);
+      toast.error('Failed to load countries. Please try again.');
+    } finally {
+      setLoadingCountries(false);
     }
   };
 
-  const handleChange = (e) => {
+  const handleBackToDashboard = () => {
+    navigate('/dashboard');
+  };
+
+  const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
+    setFormData(prev => ({
       ...prev,
-      [name]: value,
+      [name]: value
     }));
-    // Clear error when user starts typing
-    if (errors[name]) {
-      setErrors((prev) => ({ ...prev, [name]: '' }));
-    }
-
-    // Handle country selection changes
-    if (name === 'country_code' && value) {
-      handleCountryChange(value);
-    }
-
-    if (name === 'secondary_country_code' && value) {
-      handleSecondaryCountryChange(value);
-    }
-  };
-
-  // Handler for primary country changes (used by CountryAutocomplete)
-  const handleCountryChange = (value) => {
-    setFormData((prev) => ({
-      ...prev,
-      country_code: value,
-      secondary_country_code: '',
-      tertiary_country_code: '',
-    }));
-
-    // Clear error
-    if (errors.country_code) {
-      setErrors((prev) => ({ ...prev, country_code: '' }));
-    }
-
-    if (value) {
-      // Load adjacent countries for secondary selection
-      const adjacent = getAdjacentCountriesFallback(value);
-      setAdjacentCountries(adjacent);
-      // Reset secondary and tertiary if primary changes
-      setShowSecondaryCountry(false);
-      setShowTertiaryCountry(false);
-    }
-  };
-
-  // Handler for secondary country changes (used by CountryAutocomplete)
-  const handleSecondaryCountryChange = (value) => {
-    setFormData((prev) => ({
-      ...prev,
-      secondary_country_code: value,
-      tertiary_country_code: '',
-    }));
-
-    if (value) {
-      // Load countries adjacent to BOTH primary and secondary
-      const primaryAdjacent = getAdjacentCountriesFallback(formData.country_code);
-      const secondaryAdjacent = getAdjacentCountriesFallback(value);
-
-      // Find intersection
-      const primaryCodes = new Set(primaryAdjacent.map(c => c.code));
-      const common = secondaryAdjacent.filter(c => primaryCodes.has(c.code));
-      setTertiaryCountries(common);
-
-      // Reset tertiary if secondary changes
-      setShowTertiaryCountry(false);
-    }
-  };
-
-  // Handler for tertiary country changes (used by CountryAutocomplete)
-  const handleTertiaryCountryChange = (value) => {
-    setFormData((prev) => ({
-      ...prev,
-      tertiary_country_code: value,
-    }));
-  };
-
-  const handleAddSecondaryCountry = () => {
-    if (!formData.country_code) {
-      toast.error('Please select a primary country first');
-      return;
-    }
-    setShowSecondaryCountry(true);
-  };
-
-  const handleRemoveSecondaryCountry = () => {
-    setShowSecondaryCountry(false);
-    setShowTertiaryCountry(false);
-    setFormData((prev) => ({
-      ...prev,
-      secondary_country_code: '',
-      tertiary_country_code: '',
-    }));
-  };
-
-  const handleAddTertiaryCountry = () => {
-    if (!formData.secondary_country_code) {
-      toast.error('Please select a secondary country first');
-      return;
-    }
-    setShowTertiaryCountry(true);
-  };
-
-  const handleRemoveTertiaryCountry = () => {
-    setShowTertiaryCountry(false);
-    setFormData((prev) => ({
-      ...prev,
-      tertiary_country_code: '',
-    }));
-  };
-
-  const validateForm = () => {
-    const newErrors = {};
-
-    // Name validation
-    if (!formData.name.trim()) {
-      newErrors.name = 'Competition name is required';
-    } else if (formData.name.trim().length < 3) {
-      newErrors.name = 'Name must be at least 3 characters';
-    } else if (formData.name.trim().length > 100) {
-      newErrors.name = 'Name must not exceed 100 characters';
-    }
-
-    // Date validations
-    if (!formData.start_date) {
-      newErrors.start_date = 'Start date is required';
-    } else {
-      const startDate = new Date(formData.start_date);
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      if (startDate < today) {
-        newErrors.start_date = 'Start date must be in the future';
-      }
-    }
-
-    if (!formData.end_date) {
-      newErrors.end_date = 'End date is required';
-    } else if (formData.start_date && formData.end_date) {
-      const startDate = new Date(formData.start_date);
-      const endDate = new Date(formData.end_date);
-      if (endDate < startDate) {
-        newErrors.end_date = 'End date must be after start date';
-      }
-    }
-
-    // Country validation
-    if (!formData.country_code) {
-      newErrors.country_code = 'Primary country is required';
-    }
-
-    // Max players validation (optional)
-    if (formData.max_players && parseInt(formData.max_players) < 2) {
-      newErrors.max_players = 'Maximum players must be at least 2';
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!validateForm()) {
-      toast.error('Please fix the errors before submitting');
+    // Validate required fields
+    if (!formData.name || !formData.start_date || !formData.country_id || !formData.location) {
+      toast.error('Please fill in all required fields');
       return;
     }
 
-    setIsLoading(true);
+    setSubmitting(true);
 
     try {
-      // Prepare request data
-      const requestData = {
-        name: formData.name.trim(),
-        start_date: formData.start_date,
-        end_date: formData.end_date,
-        country_code: formData.country_code,
-        handicap_type: formData.handicap_type,
-        team_assignment: formData.team_assignment,
-      };
+      const response = await authenticatedFetch(`${API_BASE_URL}/api/v1/competitions`, {
+        method: 'POST',
+        body: JSON.stringify(formData)
+      });
 
-      // Add optional fields
-      if (formData.secondary_country_code) {
-        requestData.secondary_country_code = formData.secondary_country_code;
-      }
-      if (formData.tertiary_country_code) {
-        requestData.tertiary_country_code = formData.tertiary_country_code;
-      }
-      if (formData.max_players) {
-        requestData.max_players = parseInt(formData.max_players);
-      }
-      // Only send handicap_percentage if type is PERCENTAGE
-      if (formData.handicap_type === 'PERCENTAGE' && formData.handicap_percentage) {
-        requestData.handicap_percentage = parseFloat(formData.handicap_percentage);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Failed to create competition');
       }
 
-      const response = await createCompetition(requestData);
-
+      const competition = await response.json();
       toast.success('Competition created successfully!');
-      navigate(`/competitions/${response.id}`);
+      navigate(`/competitions/${competition.id}`);
     } catch (error) {
       console.error('Error creating competition:', error);
       toast.error(error.message || 'Failed to create competition');
     } finally {
-      setIsLoading(false);
+      setSubmitting(false);
     }
   };
 
-  const handleCancel = () => {
-    navigate('/competitions');
-  };
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!user) {
     return null;
@@ -280,405 +137,234 @@ const CreateCompetition = () => {
 
         <div className="px-4 md:px-40 flex flex-1 justify-center py-5">
           <div className="layout-content-container flex flex-col max-w-[960px] flex-1">
-            {/* Header */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
-              className="flex flex-wrap justify-between items-center gap-3 p-4"
-            >
-              <div>
-                <p className="text-gray-900 tracking-tight text-3xl md:text-[32px] font-bold leading-tight">
-                  Create Competition
-                </p>
-                <p className="text-gray-500 text-sm mt-1">
-                  Set up your Ryder Cup tournament
-                </p>
-              </div>
-            </motion.div>
+            {/* Page Title */}
+            <div className="flex flex-wrap justify-between gap-3 p-4">
+              <p className="text-gray-900 tracking-tight text-3xl md:text-[32px] font-bold leading-tight min-w-72">
+                Create your Competition
+              </p>
+            </div>
 
-            {/* Form */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.1 }}
-              className="p-4"
-            >
+            {/* Competition Form */}
+            <div className="flex flex-col px-4 py-6">
               <form onSubmit={handleSubmit} className="space-y-6">
-                {/* Basic Information */}
-                <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
-                  <div className="flex items-center gap-2 mb-4">
-                    <Trophy className="w-5 h-5 text-primary" />
-                    <h3 className="text-gray-900 font-bold text-lg">Basic Information</h3>
+                {/* Competition Details Section */}
+                <div className="border border-gray-200 rounded-xl p-6">
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                      <Trophy className="w-5 h-5 text-primary" />
+                    </div>
+                    <h3 className="text-gray-900 text-xl font-bold">Competition Details</h3>
                   </div>
 
                   <div className="space-y-4">
                     {/* Competition Name */}
                     <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        Competition Name <span className="text-red-500">*</span>
+                      <label htmlFor="name" className="block text-sm font-semibold text-gray-900 mb-2">
+                        Competition Name *
                       </label>
                       <input
                         type="text"
+                        id="name"
                         name="name"
                         value={formData.name}
-                        onChange={handleChange}
-                        placeholder="e.g., Europe vs USA 2025"
-                        className={`w-full px-4 py-3 rounded-lg border-2 transition-all ${
-                          errors.name
-                            ? 'border-red-300 focus:border-red-500 focus:ring-2 focus:ring-red-200'
-                            : 'border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/20'
-                        } outline-none`}
-                        disabled={isLoading}
+                        onChange={handleInputChange}
+                        required
+                        placeholder="e.g., Spring 2025 Ryder Cup"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
                       />
-                      {errors.name && (
-                        <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
-                          <AlertCircle className="w-3 h-3" />
-                          {errors.name}
-                        </p>
-                      )}
                     </div>
 
-                    {/* Dates */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {/* Start Date */}
-                      <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">
-                          Start Date <span className="text-red-500">*</span>
-                        </label>
-                        <input
-                          type="date"
-                          name="start_date"
-                          value={formData.start_date}
-                          onChange={handleChange}
-                          className={`w-full px-4 py-3 rounded-lg border-2 transition-all ${
-                            errors.start_date
-                              ? 'border-red-300 focus:border-red-500 focus:ring-2 focus:ring-red-200'
-                              : 'border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/20'
-                          } outline-none`}
-                          disabled={isLoading}
-                        />
-                        {errors.start_date && (
-                          <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
-                            <AlertCircle className="w-3 h-3" />
-                            {errors.start_date}
-                          </p>
-                        )}
-                      </div>
+                    {/* Description */}
+                    <div>
+                      <label htmlFor="description" className="block text-sm font-semibold text-gray-900 mb-2">
+                        Description
+                      </label>
+                      <textarea
+                        id="description"
+                        name="description"
+                        value={formData.description}
+                        onChange={handleInputChange}
+                        rows="3"
+                        placeholder="Describe your competition..."
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all resize-none"
+                      />
+                    </div>
 
-                      {/* End Date */}
-                      <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">
-                          End Date <span className="text-red-500">*</span>
-                        </label>
-                        <input
-                          type="date"
-                          name="end_date"
-                          value={formData.end_date}
-                          onChange={handleChange}
-                          className={`w-full px-4 py-3 rounded-lg border-2 transition-all ${
-                            errors.end_date
-                              ? 'border-red-300 focus:border-red-500 focus:ring-2 focus:ring-red-200'
-                              : 'border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/20'
-                          } outline-none`}
-                          disabled={isLoading}
-                        />
-                        {errors.end_date && (
-                          <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
-                            <AlertCircle className="w-3 h-3" />
-                            {errors.end_date}
-                          </p>
-                        )}
-                      </div>
+                    {/* Format */}
+                    <div>
+                      <label htmlFor="format" className="block text-sm font-semibold text-gray-900 mb-2">
+                        Format
+                      </label>
+                      <select
+                        id="format"
+                        name="format"
+                        value={formData.format}
+                        onChange={handleInputChange}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
+                      >
+                        <option value="ryder_cup">Ryder Cup</option>
+                        <option value="match_play">Match Play</option>
+                        <option value="stroke_play">Stroke Play</option>
+                      </select>
                     </div>
                   </div>
                 </div>
 
-                {/* Location */}
-                <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
-                  <div className="flex items-center gap-2 mb-4">
-                    <MapPin className="w-5 h-5 text-primary" />
-                    <h3 className="text-gray-900 font-bold text-lg">Location</h3>
-                  </div>
-
-                  <div className="space-y-4">
-                    <p className="text-sm text-gray-600">
-                      Select the primary country where the tournament will take place. You can optionally add adjacent countries if the tournament spans multiple locations.
-                    </p>
-
-                    {/* Primary Country */}
-                    <div>
-                      <CountryAutocomplete
-                        countries={countries}
-                        value={formData.country_code}
-                        onChange={handleCountryChange}
-                        placeholder="Search countries..."
-                        disabled={isLoading}
-                        error={!!errors.country_code}
-                        label="Primary Country"
-                        required={true}
-                        emptyMessage="No countries available"
-                      />
-                      {errors.country_code && (
-                        <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
-                          <AlertCircle className="w-3 h-3" />
-                          {errors.country_code}
-                        </p>
-                      )}
+                {/* Schedule Section */}
+                <div className="border border-gray-200 rounded-xl p-6">
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center">
+                      <Calendar className="w-5 h-5 text-accent" />
                     </div>
-
-                    {/* Add Secondary Country Button */}
-                    {!showSecondaryCountry && formData.country_code && (
-                      <button
-                        type="button"
-                        onClick={handleAddSecondaryCountry}
-                        className="flex items-center gap-2 px-4 py-2 text-sm text-primary hover:bg-primary/5 rounded-lg transition-colors"
-                        disabled={isLoading}
-                      >
-                        <Plus className="w-4 h-4" />
-                        <span>Add adjacent country</span>
-                      </button>
-                    )}
-
-                    {/* Secondary Country */}
-                    {showSecondaryCountry && (
-                      <div className="relative">
-                        <div className="flex gap-2 items-start">
-                          <div className="flex-1">
-                            <CountryAutocomplete
-                              countries={adjacentCountries}
-                              value={formData.secondary_country_code}
-                              onChange={handleSecondaryCountryChange}
-                              placeholder="Search adjacent countries..."
-                              disabled={isLoading}
-                              label="Secondary Country (Adjacent)"
-                              emptyMessage="No adjacent countries found"
-                            />
-                          </div>
-                          <button
-                            type="button"
-                            onClick={handleRemoveSecondaryCountry}
-                            className="px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors mt-8"
-                            disabled={isLoading}
-                            title="Remove secondary country"
-                          >
-                            <X className="w-5 h-5" />
-                          </button>
-                        </div>
-                        {adjacentCountries.length === 0 && (
-                          <p className="text-xs text-amber-600 mt-1">
-                            No adjacent countries found for the selected primary country
-                          </p>
-                        )}
-                      </div>
-                    )}
-
-                    {/* Add Tertiary Country Button */}
-                    {!showTertiaryCountry && showSecondaryCountry && formData.secondary_country_code && (
-                      <button
-                        type="button"
-                        onClick={handleAddTertiaryCountry}
-                        className="flex items-center gap-2 px-4 py-2 text-sm text-primary hover:bg-primary/5 rounded-lg transition-colors"
-                        disabled={isLoading}
-                      >
-                        <Plus className="w-4 h-4" />
-                        <span>Add third adjacent country</span>
-                      </button>
-                    )}
-
-                    {/* Tertiary Country */}
-                    {showTertiaryCountry && (
-                      <div className="relative">
-                        <div className="flex gap-2 items-start">
-                          <div className="flex-1">
-                            <CountryAutocomplete
-                              countries={tertiaryCountries}
-                              value={formData.tertiary_country_code}
-                              onChange={handleTertiaryCountryChange}
-                              placeholder="Search countries adjacent to both..."
-                              disabled={isLoading}
-                              label="Tertiary Country (Adjacent to both)"
-                              emptyMessage="No common adjacent countries found"
-                            />
-                          </div>
-                          <button
-                            type="button"
-                            onClick={handleRemoveTertiaryCountry}
-                            className="px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors mt-8"
-                            disabled={isLoading}
-                            title="Remove tertiary country"
-                          >
-                            <X className="w-5 h-5" />
-                          </button>
-                        </div>
-                        {tertiaryCountries.length === 0 && (
-                          <p className="text-xs text-amber-600 mt-1">
-                            No countries found that are adjacent to both selected countries
-                          </p>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Players & Teams */}
-                <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
-                  <div className="flex items-center gap-2 mb-4">
-                    <Users className="w-5 h-5 text-primary" />
-                    <h3 className="text-gray-900 font-bold text-lg">Players & Teams</h3>
+                    <h3 className="text-gray-900 text-xl font-bold">Schedule</h3>
                   </div>
 
-                  <div className="space-y-4">
-                    {/* Max Players */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Start Date */}
                     <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        Maximum Players (Optional)
+                      <label htmlFor="start_date" className="block text-sm font-semibold text-gray-900 mb-2">
+                        Start Date *
                       </label>
                       <input
-                        type="number"
-                        name="max_players"
-                        value={formData.max_players}
-                        onChange={handleChange}
-                        placeholder="Leave empty for unlimited"
-                        min="2"
-                        className={`w-full px-4 py-3 rounded-lg border-2 transition-all ${
-                          errors.max_players
-                            ? 'border-red-300 focus:border-red-500 focus:ring-2 focus:ring-red-200'
-                            : 'border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/20'
-                        } outline-none`}
-                        disabled={isLoading}
+                        type="date"
+                        id="start_date"
+                        name="start_date"
+                        value={formData.start_date}
+                        onChange={handleInputChange}
+                        required
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
                       />
-                      {errors.max_players && (
-                        <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
-                          <AlertCircle className="w-3 h-3" />
-                          {errors.max_players}
+                    </div>
+
+                    {/* End Date */}
+                    <div>
+                      <label htmlFor="end_date" className="block text-sm font-semibold text-gray-900 mb-2">
+                        End Date
+                      </label>
+                      <input
+                        type="date"
+                        id="end_date"
+                        name="end_date"
+                        value={formData.end_date}
+                        onChange={handleInputChange}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Venue & Location Section */}
+                <div className="border border-gray-200 rounded-xl p-6">
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                      <MapPin className="w-5 h-5 text-primary" />
+                    </div>
+                    <h3 className="text-gray-900 text-xl font-bold">Venue & Location</h3>
+                  </div>
+
+                  {/* Countries Loading/Error States */}
+                  {countriesError && (
+                    <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
+                      <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <p className="text-sm font-semibold text-red-900">Failed to load countries</p>
+                        <p className="text-sm text-red-700 mt-1">{countriesError}</p>
+                        <button
+                          type="button"
+                          onClick={loadCountries}
+                          className="mt-2 text-sm font-semibold text-red-600 hover:text-red-700 underline"
+                        >
+                          Try again
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="space-y-4">
+                    {/* Country Selection */}
+                    <div>
+                      <label htmlFor="country_id" className="block text-sm font-semibold text-gray-900 mb-2">
+                        Country *
+                      </label>
+                      <select
+                        id="country_id"
+                        name="country_id"
+                        value={formData.country_id}
+                        onChange={handleInputChange}
+                        required
+                        disabled={loadingCountries}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all disabled:bg-gray-100 disabled:cursor-not-allowed"
+                      >
+                        <option value="">
+                          {loadingCountries ? 'Loading countries...' : 'Select a country'}
+                        </option>
+                        {countries.map((country) => (
+                          <option key={country.id} value={country.id}>
+                            {country.name}
+                          </option>
+                        ))}
+                      </select>
+                      {!loadingCountries && countries.length > 0 && (
+                        <p className="mt-1 text-xs text-gray-500">
+                          {countries.length} countries available
                         </p>
                       )}
                     </div>
 
-                    {/* Team Assignment */}
+                    {/* Location/City */}
                     <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        Team Assignment <span className="text-red-500">*</span>
+                      <label htmlFor="location" className="block text-sm font-semibold text-gray-900 mb-2">
+                        City/Location *
                       </label>
-                      <select
-                        name="team_assignment"
-                        value={formData.team_assignment}
-                        onChange={handleChange}
-                        className="w-full px-4 py-3 rounded-lg border-2 border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none"
-                        disabled={isLoading}
-                      >
-                        <option value="MANUAL">Manual - I'll assign teams</option>
-                        <option value="AUTOMATIC">Automatic - Assign by handicap</option>
-                      </select>
-                      <p className="text-xs text-gray-500 mt-1">
-                        {formData.team_assignment === 'MANUAL'
-                          ? 'You will manually assign players to teams'
-                          : 'Players will be automatically assigned to balance teams by handicap'}
-                      </p>
+                      <input
+                        type="text"
+                        id="location"
+                        name="location"
+                        value={formData.location}
+                        onChange={handleInputChange}
+                        required
+                        placeholder="e.g., Rome, Paris, London"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
+                      />
+                    </div>
+
+                    {/* Venue/Course Name */}
+                    <div>
+                      <label htmlFor="venue" className="block text-sm font-semibold text-gray-900 mb-2">
+                        Venue/Course Name
+                      </label>
+                      <input
+                        type="text"
+                        id="venue"
+                        name="venue"
+                        value={formData.venue}
+                        onChange={handleInputChange}
+                        placeholder="e.g., Marco Simone Golf Club"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
+                      />
                     </div>
                   </div>
                 </div>
 
-                {/* Handicap Settings */}
-                <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
-                  <div className="flex items-center gap-2 mb-4">
-                    <Settings className="w-5 h-5 text-primary" />
-                    <h3 className="text-gray-900 font-bold text-lg">Handicap Settings</h3>
-                  </div>
-
-                  <div className="space-y-4">
-                    <p className="text-sm text-gray-600">
-                      As organizer, you can adjust player handicaps during the competition. Choose whether to use handicaps or play scratch.
-                    </p>
-
-                    {/* Handicap Type */}
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        Handicap Mode <span className="text-red-500">*</span>
-                      </label>
-                      <select
-                        name="handicap_type"
-                        value={formData.handicap_type}
-                        onChange={handleChange}
-                        className="w-full px-4 py-3 rounded-lg border-2 border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none"
-                        disabled={isLoading}
-                      >
-                        <option value="PERCENTAGE">With Handicap</option>
-                        <option value="SCRATCH">Scratch (No Handicap)</option>
-                      </select>
-                      <p className="text-xs text-gray-500 mt-1">
-                        {formData.handicap_type === 'SCRATCH'
-                          ? 'All players compete without handicap adjustments'
-                          : 'Apply handicap percentage to player scores'}
-                      </p>
-                    </div>
-
-                    {/* Handicap Percentage - Only show when PERCENTAGE is selected */}
-                    {formData.handicap_type === 'PERCENTAGE' && (
-                      <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">
-                          Handicap Percentage <span className="text-red-500">*</span>
-                        </label>
-                        <select
-                          name="handicap_percentage"
-                          value={formData.handicap_percentage}
-                          onChange={handleChange}
-                          className="w-full px-4 py-3 rounded-lg border-2 border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none"
-                          disabled={isLoading}
-                        >
-                          <option value="100">100% - Full Handicap</option>
-                          <option value="95">95% - Competitive</option>
-                          <option value="90">90% - Very Competitive</option>
-                        </select>
-                        <p className="text-xs text-gray-500 mt-1">
-                          Choose how much of the player's handicap to apply
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Action Buttons */}
-                <div className="flex flex-col sm:flex-row gap-3 justify-end pt-4">
-                  <motion.button
+                {/* Form Actions */}
+                <div className="flex flex-col sm:flex-row gap-3 pt-4">
+                  <button
                     type="button"
-                    onClick={handleCancel}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    className="flex items-center justify-center gap-2 px-6 py-3 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-colors"
-                    disabled={isLoading}
+                    onClick={handleBackToDashboard}
+                    className="flex-1 sm:flex-none px-6 py-3 border border-gray-300 rounded-lg text-gray-900 font-semibold hover:bg-gray-50 transition-colors"
                   >
-                    <ArrowLeft className="w-4 h-4" />
-                    <span>Cancel</span>
-                  </motion.button>
-
-                  <motion.button
+                    Cancel
+                  </button>
+                  <button
                     type="submit"
-                    whileHover={{ scale: isLoading ? 1 : 1.02 }}
-                    whileTap={{ scale: isLoading ? 1 : 0.98 }}
-                    className={`flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-medium transition-all shadow-md ${
-                      isLoading
-                        ? 'bg-gray-400 cursor-not-allowed text-white'
-                        : 'bg-primary text-white hover:bg-primary/90'
-                    }`}
-                    disabled={isLoading}
+                    disabled={submitting || loadingCountries}
+                    className="flex-1 sm:flex-none px-6 py-3 bg-primary text-white font-semibold rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {isLoading ? (
-                      <>
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                        <span>Creating...</span>
-                      </>
-                    ) : (
-                      <>
-                        <Save className="w-4 h-4" />
-                        <span>Create Competition</span>
-                      </>
-                    )}
-                  </motion.button>
+                    {submitting ? 'Creating...' : 'Create Competition'}
+                  </button>
                 </div>
               </form>
-            </motion.div>
+            </div>
 
             {/* Footer */}
             <footer className="flex flex-col gap-6 px-5 py-10 text-center">
