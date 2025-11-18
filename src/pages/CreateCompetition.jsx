@@ -317,6 +317,47 @@ const CreateCompetition = () => {
     }
   };
 
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    // Validate required fields
+    if (!formData.name || !formData.start_date || !formData.country_id || !formData.location) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+
+    setSubmitting(true);
+
+    try {
+      const response = await authenticatedFetch(`${API_BASE_URL}/api/v1/competitions`, {
+        method: 'POST',
+        body: JSON.stringify(formData)
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Failed to create competition');
+      }
+
+      const competition = await response.json();
+      toast.success('Competition created successfully!');
+      navigate(`/competitions/${competition.id}`);
+    } catch (error) {
+      console.error('Error creating competition:', error);
+      toast.error(error.message || 'Failed to create competition');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -686,6 +727,7 @@ const CreateCompetition = () => {
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                     />
                   </div>
+                </div>
 
                   {/* Team Assignment */}
                   <div>
