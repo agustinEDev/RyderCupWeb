@@ -50,14 +50,9 @@ const CreateCompetition = () => {
 
       const data = await response.json();
 
-      // Ensure we have all 166 countries
       if (Array.isArray(data)) {
         setCountries(data);
-        console.log(`Loaded ${data.length} countries`);
-
-        if (data.length !== 166) {
-          console.warn(`Expected 166 countries but received ${data.length}`);
-        }
+        console.log(`Loaded ${data.length} countries from API`);
       } else {
         throw new Error('Invalid countries data format');
       }
@@ -262,7 +257,7 @@ const CreateCompetition = () => {
                     <h3 className="text-gray-900 text-xl font-bold">Venue & Location</h3>
                   </div>
 
-                  {/* Countries Loading/Error States */}
+                  {/* Countries Loading Error */}
                   {countriesError && (
                     <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
                       <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
