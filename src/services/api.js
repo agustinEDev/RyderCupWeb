@@ -7,18 +7,18 @@ const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 /**
  * Get auth token from secure storage
  */
-const getAuthToken = () => {
-  try {
-    const encryptedToken = sessionStorage.getItem('authToken');
-    if (!encryptedToken) return null;
+  const getAuthToken = () => {
+    try {
+      const token = sessionStorage.getItem('auth_token');
+      if (!token) return null;
 
-    // Simple base64 decode (matching secureAuth.js pattern)
-    return atob(encryptedToken);
-  } catch (error) {
-    console.error('Error getting auth token:', error);
-    return null;
-  }
-};
+      // El token JWT ya viene en formato correcto del backend
+      return token;  // ✅ CORREGIDO
+    } catch (error) {
+      console.error('Error getting auth token:', error);
+      return null;
+    }
+  };
 
 /**
  * Make authenticated API request
