@@ -4,7 +4,6 @@ import { Calendar, Users, Trophy, MapPin, Settings, Star, AlertCircle } from 'lu
 import toast from 'react-hot-toast';
 import HeaderAuth from '../components/layout/HeaderAuth';
 import { getUserData, authenticatedFetch } from '../utils/secureAuth';
-import COUNTRIES_166 from '../data/countries';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
@@ -46,16 +45,11 @@ const CreateCompetition = () => {
       });
 
       if (!response.ok) {
-        // If API fails, use static fallback data silently
-        console.warn(`API returned ${response.status}, using fallback data with ${COUNTRIES_166.length} countries`);
-        setCountries(COUNTRIES_166);
-        setLoadingCountries(false);
-        return;
+        throw new Error(`Failed to load countries: ${response.status}`);
       }
 
       const data = await response.json();
 
-      // Handle API response
       if (Array.isArray(data)) {
         setCountries(data);
         console.log(`Loaded ${data.length} countries from API`);
@@ -63,10 +57,9 @@ const CreateCompetition = () => {
         throw new Error('Invalid countries data format');
       }
     } catch (error) {
-      console.error('Error loading countries from API, using fallback:', error);
-      // Use static fallback data on error (silent fallback)
-      setCountries(COUNTRIES_166);
-      console.log(`Using fallback data with ${COUNTRIES_166.length} countries`);
+      console.error('Error loading countries:', error);
+      setCountriesError(error.message);
+      toast.error('Failed to load countries. Please try again.');
     } finally {
       setLoadingCountries(false);
     }
@@ -263,6 +256,24 @@ const CreateCompetition = () => {
                     </div>
                     <h3 className="text-gray-900 text-xl font-bold">Venue & Location</h3>
                   </div>
+
+                  {/* Countries Loading Error */}
+                  {countriesError && (
+                    <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
+                      <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <p className="text-sm font-semibold text-red-900">Failed to load countries</p>
+                        <p className="text-sm text-red-700 mt-1">{countriesError}</p>
+                        <button
+                          type="button"
+                          onClick={loadCountries}
+                          className="mt-2 text-sm font-semibold text-red-600 hover:text-red-700 underline"
+                        >
+                          Try again
+                        </button>
+                      </div>
+                    </div>
+                  )}
 
                   <div className="space-y-4">
                     {/* Country Selection */}
