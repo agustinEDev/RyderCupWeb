@@ -3,18 +3,32 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   Calendar, Users, Trophy, MapPin, Settings,
-  ArrowLeft, Save, AlertCircle
+  ArrowLeft, Save, AlertCircle, Plus, X
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import HeaderAuth from '../components/layout/HeaderAuth';
 import { getUserData } from '../utils/secureAuth';
 import { createCompetition } from '../services/competitions';
+import {
+  getCountries,
+  getAdjacentCountriesFallback,
+  formatCountryName
+} from '../services/countries';
 
 const CreateCompetition = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState({});
+
+  // Countries data
+  const [countries, setCountries] = useState([]);
+  const [adjacentCountries, setAdjacentCountries] = useState([]);
+  const [tertiaryCountries, setTertiaryCountries] = useState([]);
+
+  // UI state
+  const [showSecondaryCountry, setShowSecondaryCountry] = useState(false);
+  const [showTertiaryCountry, setShowTertiaryCountry] = useState(false);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -24,15 +38,25 @@ const CreateCompetition = () => {
     secondary_country_code: '',
     tertiary_country_code: '',
     max_players: '',
-    handicap_type: 'OFFICIAL',
-    handicap_percentage: '',
+    handicap_type: 'PERCENTAGE',
+    handicap_percentage: '100',
     team_assignment: 'MANUAL',
   });
 
   useEffect(() => {
     const userData = getUserData();
     setUser(userData);
+    loadCountries();
   }, []);
+
+  const loadCountries = async () => {
+    try {
+      const data = await getCountries();
+      setCountries(data);
+    } catch (error) {
+      console.error('Error loading countries:', error);
+    }
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -44,6 +68,73 @@ const CreateCompetition = () => {
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: '' }));
     }
+
+    // Handle country selection changes
+    if (name === 'country_code' && value) {
+      // Load adjacent countries for secondary selection
+      const adjacent = getAdjacentCountriesFallback(value);
+      setAdjacentCountries(adjacent);
+      // Reset secondary and tertiary if primary changes
+      setFormData((prev) => ({
+        ...prev,
+        secondary_country_code: '',
+        tertiary_country_code: '',
+      }));
+      setShowSecondaryCountry(false);
+      setShowTertiaryCountry(false);
+    }
+
+    if (name === 'secondary_country_code' && value) {
+      // Load countries adjacent to BOTH primary and secondary
+      const primaryAdjacent = getAdjacentCountriesFallback(formData.country_code);
+      const secondaryAdjacent = getAdjacentCountriesFallback(value);
+
+      // Find intersection
+      const primaryCodes = new Set(primaryAdjacent.map(c => c.code));
+      const common = secondaryAdjacent.filter(c => primaryCodes.has(c.code));
+      setTertiaryCountries(common);
+
+      // Reset tertiary if secondary changes
+      setFormData((prev) => ({
+        ...prev,
+        tertiary_country_code: '',
+      }));
+      setShowTertiaryCountry(false);
+    }
+  };
+
+  const handleAddSecondaryCountry = () => {
+    if (!formData.country_code) {
+      toast.error('Please select a primary country first');
+      return;
+    }
+    setShowSecondaryCountry(true);
+  };
+
+  const handleRemoveSecondaryCountry = () => {
+    setShowSecondaryCountry(false);
+    setShowTertiaryCountry(false);
+    setFormData((prev) => ({
+      ...prev,
+      secondary_country_code: '',
+      tertiary_country_code: '',
+    }));
+  };
+
+  const handleAddTertiaryCountry = () => {
+    if (!formData.secondary_country_code) {
+      toast.error('Please select a secondary country first');
+      return;
+    }
+    setShowTertiaryCountry(true);
+  };
+
+  const handleRemoveTertiaryCountry = () => {
+    setShowTertiaryCountry(false);
+    setFormData((prev) => ({
+      ...prev,
+      tertiary_country_code: '',
+    }));
   };
 
   const validateForm = () => {
@@ -80,24 +171,14 @@ const CreateCompetition = () => {
       }
     }
 
-    // Country code validation
-    if (!formData.country_code.trim()) {
+    // Country validation
+    if (!formData.country_code) {
       newErrors.country_code = 'Primary country is required';
-    } else if (formData.country_code.trim().length !== 2) {
-      newErrors.country_code = 'Country code must be 2 characters (e.g., ES, FR, IT)';
     }
 
     // Max players validation (optional)
     if (formData.max_players && parseInt(formData.max_players) < 2) {
       newErrors.max_players = 'Maximum players must be at least 2';
-    }
-
-    // Handicap percentage validation
-    if (formData.handicap_percentage) {
-      const percentage = parseFloat(formData.handicap_percentage);
-      if (percentage < 0 || percentage > 100) {
-        newErrors.handicap_percentage = 'Percentage must be between 0 and 100';
-      }
     }
 
     setErrors(newErrors);
@@ -120,22 +201,23 @@ const CreateCompetition = () => {
         name: formData.name.trim(),
         start_date: formData.start_date,
         end_date: formData.end_date,
-        country_code: formData.country_code.trim().toUpperCase(),
+        country_code: formData.country_code,
         handicap_type: formData.handicap_type,
         team_assignment: formData.team_assignment,
       };
 
       // Add optional fields
-      if (formData.secondary_country_code?.trim()) {
-        requestData.secondary_country_code = formData.secondary_country_code.trim().toUpperCase();
+      if (formData.secondary_country_code) {
+        requestData.secondary_country_code = formData.secondary_country_code;
       }
-      if (formData.tertiary_country_code?.trim()) {
-        requestData.tertiary_country_code = formData.tertiary_country_code.trim().toUpperCase();
+      if (formData.tertiary_country_code) {
+        requestData.tertiary_country_code = formData.tertiary_country_code;
       }
       if (formData.max_players) {
         requestData.max_players = parseInt(formData.max_players);
       }
-      if (formData.handicap_percentage) {
+      // Only send handicap_percentage if type is PERCENTAGE
+      if (formData.handicap_type === 'PERCENTAGE' && formData.handicap_percentage) {
         requestData.handicap_percentage = parseFloat(formData.handicap_percentage);
       }
 
@@ -289,29 +371,32 @@ const CreateCompetition = () => {
 
                   <div className="space-y-4">
                     <p className="text-sm text-gray-600">
-                      Specify up to 3 adjacent countries where the tournament will take place.
-                      Use ISO 2-letter country codes (e.g., ES, FR, IT).
+                      Select the primary country where the tournament will take place. You can optionally add adjacent countries if the tournament spans multiple locations.
                     </p>
 
                     {/* Primary Country */}
                     <div>
                       <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        Primary Country Code <span className="text-red-500">*</span>
+                        Primary Country <span className="text-red-500">*</span>
                       </label>
-                      <input
-                        type="text"
+                      <select
                         name="country_code"
                         value={formData.country_code}
                         onChange={handleChange}
-                        placeholder="ES"
-                        maxLength={2}
-                        className={`w-full px-4 py-3 rounded-lg border-2 transition-all uppercase ${
+                        className={`w-full px-4 py-3 rounded-lg border-2 transition-all ${
                           errors.country_code
                             ? 'border-red-300 focus:border-red-500 focus:ring-2 focus:ring-red-200'
                             : 'border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/20'
                         } outline-none`}
                         disabled={isLoading}
-                      />
+                      >
+                        <option value="">Select a country...</option>
+                        {countries.map((country) => (
+                          <option key={country.code} value={country.code}>
+                            {country.name_en}
+                          </option>
+                        ))}
+                      </select>
                       {errors.country_code && (
                         <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
                           <AlertCircle className="w-3 h-3" />
@@ -320,40 +405,107 @@ const CreateCompetition = () => {
                       )}
                     </div>
 
-                    {/* Secondary & Tertiary Countries */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">
-                          Secondary Country Code (Optional)
-                        </label>
-                        <input
-                          type="text"
-                          name="secondary_country_code"
-                          value={formData.secondary_country_code}
-                          onChange={handleChange}
-                          placeholder="FR"
-                          maxLength={2}
-                          className="w-full px-4 py-3 rounded-lg border-2 border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none uppercase"
-                          disabled={isLoading}
-                        />
-                      </div>
+                    {/* Add Secondary Country Button */}
+                    {!showSecondaryCountry && formData.country_code && (
+                      <button
+                        type="button"
+                        onClick={handleAddSecondaryCountry}
+                        className="flex items-center gap-2 px-4 py-2 text-sm text-primary hover:bg-primary/5 rounded-lg transition-colors"
+                        disabled={isLoading}
+                      >
+                        <Plus className="w-4 h-4" />
+                        <span>Add adjacent country</span>
+                      </button>
+                    )}
 
-                      <div>
+                    {/* Secondary Country */}
+                    {showSecondaryCountry && (
+                      <div className="relative">
                         <label className="block text-sm font-semibold text-gray-700 mb-2">
-                          Tertiary Country Code (Optional)
+                          Secondary Country (Adjacent)
                         </label>
-                        <input
-                          type="text"
-                          name="tertiary_country_code"
-                          value={formData.tertiary_country_code}
-                          onChange={handleChange}
-                          placeholder="IT"
-                          maxLength={2}
-                          className="w-full px-4 py-3 rounded-lg border-2 border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none uppercase"
-                          disabled={isLoading}
-                        />
+                        <div className="flex gap-2">
+                          <select
+                            name="secondary_country_code"
+                            value={formData.secondary_country_code}
+                            onChange={handleChange}
+                            className="flex-1 px-4 py-3 rounded-lg border-2 border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none"
+                            disabled={isLoading}
+                          >
+                            <option value="">Select an adjacent country...</option>
+                            {adjacentCountries.map((country) => (
+                              <option key={country.code} value={country.code}>
+                                {country.name_en}
+                              </option>
+                            ))}
+                          </select>
+                          <button
+                            type="button"
+                            onClick={handleRemoveSecondaryCountry}
+                            className="px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                            disabled={isLoading}
+                          >
+                            <X className="w-5 h-5" />
+                          </button>
+                        </div>
+                        {adjacentCountries.length === 0 && (
+                          <p className="text-xs text-amber-600 mt-1">
+                            No adjacent countries found for the selected primary country
+                          </p>
+                        )}
                       </div>
-                    </div>
+                    )}
+
+                    {/* Add Tertiary Country Button */}
+                    {!showTertiaryCountry && showSecondaryCountry && formData.secondary_country_code && (
+                      <button
+                        type="button"
+                        onClick={handleAddTertiaryCountry}
+                        className="flex items-center gap-2 px-4 py-2 text-sm text-primary hover:bg-primary/5 rounded-lg transition-colors"
+                        disabled={isLoading}
+                      >
+                        <Plus className="w-4 h-4" />
+                        <span>Add third adjacent country</span>
+                      </button>
+                    )}
+
+                    {/* Tertiary Country */}
+                    {showTertiaryCountry && (
+                      <div className="relative">
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                          Tertiary Country (Adjacent to both)
+                        </label>
+                        <div className="flex gap-2">
+                          <select
+                            name="tertiary_country_code"
+                            value={formData.tertiary_country_code}
+                            onChange={handleChange}
+                            className="flex-1 px-4 py-3 rounded-lg border-2 border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none"
+                            disabled={isLoading}
+                          >
+                            <option value="">Select a country adjacent to both...</option>
+                            {tertiaryCountries.map((country) => (
+                              <option key={country.code} value={country.code}>
+                                {country.name_en}
+                              </option>
+                            ))}
+                          </select>
+                          <button
+                            type="button"
+                            onClick={handleRemoveTertiaryCountry}
+                            className="px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                            disabled={isLoading}
+                          >
+                            <X className="w-5 h-5" />
+                          </button>
+                        </div>
+                        {tertiaryCountries.length === 0 && (
+                          <p className="text-xs text-amber-600 mt-1">
+                            No countries found that are adjacent to both selected countries
+                          </p>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -424,10 +576,14 @@ const CreateCompetition = () => {
                   </div>
 
                   <div className="space-y-4">
+                    <p className="text-sm text-gray-600">
+                      As organizer, you can adjust player handicaps during the competition. Choose whether to use handicaps or play scratch.
+                    </p>
+
                     {/* Handicap Type */}
                     <div>
                       <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        Handicap Type <span className="text-red-500">*</span>
+                        Handicap Mode <span className="text-red-500">*</span>
                       </label>
                       <select
                         name="handicap_type"
@@ -436,54 +592,38 @@ const CreateCompetition = () => {
                         className="w-full px-4 py-3 rounded-lg border-2 border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none"
                         disabled={isLoading}
                       >
-                        <option value="OFFICIAL">Official Handicap</option>
-                        <option value="CUSTOM">Custom Handicap</option>
-                        <option value="MIXED">Mixed (Official + Custom)</option>
+                        <option value="PERCENTAGE">With Handicap</option>
+                        <option value="SCRATCH">Scratch (No Handicap)</option>
                       </select>
                       <p className="text-xs text-gray-500 mt-1">
-                        {formData.handicap_type === 'OFFICIAL' &&
-                          'Use official handicaps from player profiles'}
-                        {formData.handicap_type === 'CUSTOM' &&
-                          'Allow custom handicaps to be set for this competition'}
-                        {formData.handicap_type === 'MIXED' &&
-                          'Allow both official and custom handicaps'}
+                        {formData.handicap_type === 'SCRATCH'
+                          ? 'All players compete without handicap adjustments'
+                          : 'Apply handicap percentage to player scores'}
                       </p>
                     </div>
 
-                    {/* Handicap Percentage */}
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        Handicap Percentage (Optional)
-                      </label>
-                      <div className="flex items-center gap-3">
-                        <input
-                          type="number"
+                    {/* Handicap Percentage - Only show when PERCENTAGE is selected */}
+                    {formData.handicap_type === 'PERCENTAGE' && (
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                          Handicap Percentage <span className="text-red-500">*</span>
+                        </label>
+                        <select
                           name="handicap_percentage"
                           value={formData.handicap_percentage}
                           onChange={handleChange}
-                          placeholder="100"
-                          min="0"
-                          max="100"
-                          step="0.1"
-                          className={`flex-1 px-4 py-3 rounded-lg border-2 transition-all ${
-                            errors.handicap_percentage
-                              ? 'border-red-300 focus:border-red-500 focus:ring-2 focus:ring-red-200'
-                              : 'border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/20'
-                          } outline-none`}
+                          className="w-full px-4 py-3 rounded-lg border-2 border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none"
                           disabled={isLoading}
-                        />
-                        <span className="text-gray-700 font-medium">%</span>
-                      </div>
-                      {errors.handicap_percentage && (
-                        <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
-                          <AlertCircle className="w-3 h-3" />
-                          {errors.handicap_percentage}
+                        >
+                          <option value="100">100% - Full Handicap</option>
+                          <option value="95">95% - Competitive</option>
+                          <option value="90">90% - Very Competitive</option>
+                        </select>
+                        <p className="text-xs text-gray-500 mt-1">
+                          Choose how much of the player's handicap to apply
                         </p>
-                      )}
-                      <p className="text-xs text-gray-500 mt-1">
-                        Percentage of handicap to apply (e.g., 90% for competitive play)
-                      </p>
-                    </div>
+                      </div>
+                    )}
                   </div>
                 </div>
 

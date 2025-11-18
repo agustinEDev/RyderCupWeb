@@ -79,8 +79,8 @@ VITE_API_BASE_URL=http://localhost:8000
   "secondary_country_code": "FR",  // OPCIONAL
   "tertiary_country_code": "IT",   // OPCIONAL
   "max_players": 24,                // OPCIONAL (null = unlimited)
-  "handicap_type": "OFFICIAL",      // OFFICIAL | CUSTOM | MIXED
-  "handicap_percentage": 90.0,      // OPCIONAL (0-100)
+  "handicap_type": "PERCENTAGE",    // SCRATCH | PERCENTAGE
+  "handicap_percentage": 90.0,      // REQUIRED if handicap_type=PERCENTAGE (100, 95, or 90)
   "team_assignment": "MANUAL"       // MANUAL | AUTOMATIC
 }
 ```
@@ -89,13 +89,18 @@ VITE_API_BASE_URL=http://localhost:8000
 - `name`: 3-100 caracteres, requerido
 - `start_date`: fecha futura, requerido
 - `end_date`: >= start_date, requerido
-- `country_code`: 2 caracteres uppercase, requerido
-- `secondary_country_code`: 2 caracteres uppercase, opcional
-- `tertiary_country_code`: 2 caracteres uppercase, opcional
+- `country_code`: 2 caracteres uppercase, requerido (seleccionado de dropdown)
+- `secondary_country_code`: 2 caracteres uppercase, opcional (solo países adyacentes al primario)
+- `tertiary_country_code`: 2 caracteres uppercase, opcional (solo países adyacentes a ambos)
 - `max_players`: >= 2, opcional
-- `handicap_percentage`: 0-100, opcional
-- `handicap_type`: enum, requerido
-- `team_assignment`: enum, requerido
+- `handicap_type`: enum (SCRATCH | PERCENTAGE), requerido
+- `handicap_percentage`: 100, 95, or 90, requerido solo si handicap_type=PERCENTAGE
+- `team_assignment`: enum (MANUAL | AUTOMATIC), requerido
+
+**Notas importantes:**
+- Los códigos de país se seleccionan desde dropdowns con nombres completos, pero se envían como códigos ISO de 2 letras
+- El frontend valida que los países secundario y terciario sean adyacentes al primario
+- Si handicap_type es SCRATCH, NO se envía handicap_percentage
 
 **Response esperada (201 Created):**
 ```json
@@ -109,7 +114,7 @@ VITE_API_BASE_URL=http://localhost:8000
   "tertiary_country_code": "IT",
   "location": "Spain, France, Italy",
   "max_players": 24,
-  "handicap_type": "OFFICIAL",
+  "handicap_type": "PERCENTAGE",
   "handicap_percentage": 90.0,
   "team_assignment": "MANUAL",
   "status": "DRAFT",
@@ -509,6 +514,72 @@ VITE_API_BASE_URL=http://localhost:8000
   // Enrollment con custom_handicap actualizado
 }
 ```
+
+---
+
+### **4. Countries (Required for Location Dropdowns)**
+
+#### **4.1 Get All Countries**
+
+**Endpoint:** `GET /api/v1/countries`
+**Auth:** Required (JWT)
+**Descripción:** Obtiene lista de todos los países activos
+
+**Response esperada (200 OK):**
+```json
+[
+  {
+    "code": "ES",
+    "name_en": "Spain",
+    "name_es": "España",
+    "active": true
+  },
+  {
+    "code": "FR",
+    "name_en": "France",
+    "name_es": "Francia",
+    "active": true
+  }
+  // ... más países
+]
+```
+
+**Notas:**
+- El frontend muestra `name_en` en los dropdowns
+- Se almacena `code` para enviar en las peticiones de creación/actualización
+- Solo se devuelven países con `active=true`
+
+---
+
+#### **4.2 Get Adjacent Countries**
+
+**Endpoint:** `GET /api/v1/countries/{country_code}/adjacent`
+**Auth:** Required (JWT)
+**Descripción:** Obtiene países adyacentes a un país específico
+
+**Response esperada (200 OK):**
+```json
+[
+  {
+    "code": "FR",
+    "name_en": "France",
+    "name_es": "Francia",
+    "active": true
+  },
+  {
+    "code": "PT",
+    "name_en": "Portugal",
+    "name_es": "Portugal",
+    "active": true
+  }
+  // ... más países adyacentes
+]
+```
+
+**Notas:**
+- Usado para poblar el dropdown de países secundario y terciario
+- Solo se devuelven países adyacentes según la tabla `country_adjacencies`
+- El frontend calcula la intersección para el tercer país
 
 ---
 
