@@ -7,6 +7,18 @@ y este proyecto adhiere a [Versionado Semántico](https://semver.org/lang/es/).
 
 ## [Unreleased]
 
+### Added
+- Implementación de Clean Architecture para la funcionalidad de actualización de perfil de usuario. Esto incluye:
+  - Definición de la entidad `User` en la capa de dominio.
+  - Definición de la interfaz `IUserRepository` en la capa de dominio.
+  - Implementación del caso de uso `UpdateUserProfileUseCase` en la capa de aplicación.
+  - Implementación de `ApiUserRepository` en la capa de infraestructura para la comunicación con la API.
+  - Configuración del "composition root" en `src/composition/index.js` para la inyección de dependencias.
+
+### Changed
+- Refactorización de `EditProfile.jsx` para utilizar `UpdateUserProfileUseCase` y el sistema de notificaciones `react-hot-toast`.
+- Migración completa del sistema de mensajes local (`message` state y `getMessageClassName`) a `react-hot-toast` para una experiencia de usuario consistente y un código más limpio.
+
 ## [1.4.0] - 2025-11-17
 
 ### Added
