@@ -2,15 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import HeaderAuth from '../components/layout/HeaderAuth';
 import { getAuthToken, getUserData, setUserData } from '../utils/secureAuth';
+import toast from 'react-hot-toast'; // Nueva importación
+import { updateUserProfileUseCase } from '../composition'; // Nueva importación
 
 const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
-
-// Helper function to get message className
-const getMessageClassName = (type) => {
-  if (type === 'success') return 'bg-green-50 text-green-800 border border-green-200';
-  if (type === 'error') return 'bg-red-50 text-red-800 border border-red-200';
-  return 'bg-yellow-50 text-yellow-800 border border-yellow-200';
-};
 
 const EditProfile = () => {
   const navigate = useNavigate();
@@ -19,7 +14,6 @@ const EditProfile = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [isUpdatingRFEG, setIsUpdatingRFEG] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [message, setMessage] = useState({ type: '', text: '' });
 
   const [formData, setFormData] = useState({
     firstName: '',
@@ -52,8 +46,7 @@ const EditProfile = () => {
 
   const handleRefreshUserData = async () => {
     setIsRefreshing(true);
-    setMessage({ type: '', text: '' });
-
+    
     try {
       const token = getAuthToken();
       const response = await fetch(`${API_URL}/api/v1/auth/current-user`, {
@@ -84,10 +77,10 @@ const EditProfile = () => {
         handicap: refreshedUser.handicap === null ? '' : refreshedUser.handicap.toString()
       });
 
-      setMessage({ type: 'success', text: 'Profile data refreshed successfully!' });
+      toast.success('Profile data refreshed successfully!');
     } catch (error) {
       console.error('Error refreshing user data:', error);
-      setMessage({ type: 'error', text: 'Failed to refresh user data. Please try logging in again.' });
+      toast.error('Failed to refresh user data. Please try logging in again.');
     } finally {
       setIsRefreshing(false);
     }
@@ -99,18 +92,15 @@ const EditProfile = () => {
       ...prev,
       [name]: value
     }));
-    // Clear message when user types
-    if (message.text) setMessage({ type: '', text: '' });
   };
 
   const handleUpdateHandicapManually = async (e) => {
     e.preventDefault();
-    setMessage({ type: '', text: '' });
-
+    
     // Validate handicap
     const handicapValue = Number.parseFloat(formData.handicap);
     if (Number.isNaN(handicapValue) || handicapValue < -10 || handicapValue > 54) {
-      setMessage({ type: 'error', text: 'Handicap must be between -10.0 and 54.0' });
+      toast.error('Handicap must be between -10.0 and 54.0');
       return;
     }
 
@@ -141,17 +131,16 @@ const EditProfile = () => {
       setUserData(updatedUser);
       setUser(updatedUser);
 
-      setMessage({ type: 'success', text: 'Handicap updated successfully!' });
+      toast.success('Handicap updated successfully!');
     } catch (error) {
       console.error('Error updating handicap:', error);
-      setMessage({ type: 'error', text: error.message || 'Failed to update handicap' });
+      toast.error(error.message || 'Failed to update handicap');
     } finally {
       setIsSaving(false);
     }
   };
 
   const handleUpdateHandicapRFEG = async () => {
-    setMessage({ type: '', text: '' });
     setIsUpdatingRFEG(true);
 
     try {
@@ -172,7 +161,6 @@ const EditProfile = () => {
 
       if (!response.ok) {
         const errorData = await response.json();
-        // Backend sends specific error messages (service unavailable, user not found, etc.)
         throw new Error(errorData.detail || 'Failed to update handicap from RFEG');
       }
 
@@ -188,23 +176,10 @@ const EditProfile = () => {
         handicap: updatedUser.handicap === null ? '' : updatedUser.handicap.toString()
       }));
 
-      // Success message
-      setMessage({ 
-        type: 'success', 
-        text: 'Handicap updated from RFEG successfully!' 
-      });
+      toast.success('Handicap updated from RFEG successfully!');
     } catch (error) {
       console.error('Error updating handicap from RFEG:', error);
-      
-      // Display the specific error message from backend
-      // Backend will send messages like:
-      // - "RFEG service is currently unavailable"
-      // - "User not found in RFEG database"
-      // - etc.
-      setMessage({ 
-        type: 'error', 
-        text: error.message || 'Failed to update handicap from RFEG. Please try again later.' 
-      });
+      toast.error(error.message || 'Failed to update handicap from RFEG. Please try again later.');
     } finally {
       setIsUpdatingRFEG(false);
     }
@@ -212,88 +187,50 @@ const EditProfile = () => {
 
   const handleUpdateProfile = async (e) => {
     e.preventDefault();
-    setMessage({ type: '', text: '' });
 
-    // Trim values before validation and comparison
     const trimmedFirstName = formData.firstName.trim();
     const trimmedLastName = formData.lastName.trim();
 
-    // Validate that at least one field has changed
     if (trimmedFirstName === user.first_name && trimmedLastName === user.last_name) {
-      setMessage({ type: 'warning', text: 'No changes detected in name or last name.' });
+      toast.warn('No changes detected in name or last name.');
+      return;
+    }
+    
+    // Validaciones básicas de la UI
+    if (trimmedFirstName.length < 2) {
+      toast.error('First name must be at least 2 characters.');
+      return;
+    }
+    if (trimmedLastName.length < 2) {
+      toast.error('Last name must be at least 2 characters.');
       return;
     }
 
-    // Validate name lengths (must be at least 2 characters if changed)
-    if (trimmedFirstName !== user.first_name) {
-      if (trimmedFirstName.length < 2) {
-        setMessage({ type: 'error', text: 'First name must be at least 2 characters.' });
-        return;
-      }
-    }
-
-    if (trimmedLastName !== user.last_name) {
-      if (trimmedLastName.length < 2) {
-        setMessage({ type: 'error', text: 'Last name must be at least 2 characters.' });
-        return;
-      }
-    }
-
     setIsSaving(true);
-
     try {
-      const token = getAuthToken();
-
-      // Build payload with only changed fields (avoid sending null)
-      const payload = {};
-      if (trimmedFirstName !== user.first_name) {
-        payload.first_name = trimmedFirstName;
-      }
-      if (trimmedLastName !== user.last_name) {
-        payload.last_name = trimmedLastName;
-      }
-
-      const response = await fetch(`${API_URL}/api/v1/users/profile`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(payload)
+      // Llamada al caso de uso
+      const updatedUserEntity = await updateUserProfileUseCase.execute(user.id, {
+        firstName: trimmedFirstName,
+        lastName: trimmedLastName,
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        // Handle different error formats
-        let errorMessage = 'Failed to update profile';
-        if (errorData.detail) {
-          if (Array.isArray(errorData.detail)) {
-            errorMessage = errorData.detail.map(err => err.msg).join(', ');
-          } else if (typeof errorData.detail === 'string') {
-            errorMessage = errorData.detail;
-          } else if (typeof errorData.detail === 'object') {
-            errorMessage = JSON.stringify(errorData.detail);
-          }
-        }
-        throw new Error(errorMessage);
-      }
+      // Actualizar el almacenamiento seguro y el estado del componente
+      // Convertir la entidad de vuelta a un objeto plano compatible con `setUserData`
+      const updatedUserPlain = updatedUserEntity.toPersistence(); 
+      setUserData(updatedUserPlain);
 
-      const data = await response.json();
-      const updatedUser = data.user;
-
-      // Update secure storage and state
-      setUserData(updatedUser);
-      setUser(updatedUser);
+      setUser(updatedUserPlain); // Actualizar el estado `user` del componente
       setFormData(prev => ({
         ...prev,
-        firstName: updatedUser.first_name,
-        lastName: updatedUser.last_name
+        firstName: updatedUserEntity.firstName,
+        lastName: updatedUserEntity.lastName,
       }));
 
-      setMessage({ type: 'success', text: data.message || 'Profile updated successfully!' });
+      toast.success('Profile updated successfully!');
     } catch (error) {
       console.error('Error updating profile:', error);
-      setMessage({ type: 'error', text: error.message || 'Failed to update profile' });
+      // Aquí el error ya viene "limpio" del caso de uso o repositorio
+      toast.error(error.message || 'Failed to update profile');
     } finally {
       setIsSaving(false);
     }
@@ -301,11 +238,10 @@ const EditProfile = () => {
 
   const handleUpdateSecurity = async (e) => {
     e.preventDefault();
-    setMessage({ type: '', text: '' });
-
+    
     // Validate current password is provided
     if (!formData.currentPassword) {
-      setMessage({ type: 'error', text: 'Current password is required to update security settings.' });
+      toast.error('Current password is required to update security settings.');
       return;
     }
 
@@ -316,19 +252,19 @@ const EditProfile = () => {
     const isPasswordChanged = formData.newPassword !== '';
 
     if (!isEmailChanged && !isPasswordChanged) {
-      setMessage({ type: 'warning', text: 'No changes detected in email or password.' });
+      toast.warn('No changes detected in email or password.');
       return;
     }
 
     // If changing password, validate new password
     if (isPasswordChanged) {
       if (formData.newPassword.length < 8) {
-        setMessage({ type: 'error', text: 'New password must be at least 8 characters.' });
+        toast.error('New password must be at least 8 characters.');
         return;
       }
 
       if (formData.newPassword !== formData.confirmPassword) {
-        setMessage({ type: 'error', text: 'New password and confirmation do not match.' });
+        toast.error('New password and confirmation do not match.');
         return;
       }
     }
@@ -369,8 +305,6 @@ const EditProfile = () => {
             errorMessage = errorData.detail.map(err => err.msg).join(', ');
           } else if (typeof errorData.detail === 'string') {
             errorMessage = errorData.detail;
-          } else if (typeof errorData.detail === 'object') {
-            errorMessage = JSON.stringify(errorData.detail);
           }
         }
         throw new Error(errorMessage);
@@ -392,10 +326,10 @@ const EditProfile = () => {
         confirmPassword: ''
       }));
 
-      setMessage({ type: 'success', text: data.message || 'Security settings updated successfully!' });
+      toast.success(data.message || 'Security settings updated successfully!');
     } catch (error) {
       console.error('Error updating security:', error);
-      setMessage({ type: 'error', text: error.message || 'Failed to update security settings' });
+      toast.error(error.message || 'Failed to update security settings');
     } finally {
       setIsSaving(false);
     }
@@ -460,12 +394,7 @@ const EditProfile = () => {
               </button>
             </div>
 
-            {/* Message Display */}
-            {message.text && (
-              <div className={`mx-4 mb-4 p-4 rounded-lg ${getMessageClassName(message.type)}`}>
-                {message.text}
-              </div>
-            )}
+            {/* Message Display is now handled by react-hot-toast */}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 px-4">
               {/* Personal Profile Section */}
