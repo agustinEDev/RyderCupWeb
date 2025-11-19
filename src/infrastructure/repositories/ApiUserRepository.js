@@ -32,11 +32,14 @@ class ApiUserRepository extends IUserRepository {
   /**
    * @override
    */
-  async update(user) {
+  async update(userId, updateData) { // <-- Nueva firma
     const token = this.authTokenProvider.getToken();
     
-    // Mapeamos nuestra entidad de dominio a un objeto plano (DTO) para la API
-    const payload = user.toPersistence(); 
+    // El payload ahora es directamente los datos a actualizar, mapeados al formato de la API
+    const payload = {
+      first_name: updateData.firstName,
+      last_name: updateData.lastName
+    };
 
     const response = await fetch(`${API_URL}/api/v1/users/profile`, { // Endpoint del proyecto actual
       method: 'PATCH',
@@ -53,8 +56,7 @@ class ApiUserRepository extends IUserRepository {
     }
 
     const data = await response.json();
-    // La API puede devolver el usuario actualizado o un mensaje de éxito.
-    // Aquí asumimos que devuelve el usuario completo.
+    // La API devuelve el usuario completo con los cambios aplicados
     return new User(data.user); 
   }
 }
