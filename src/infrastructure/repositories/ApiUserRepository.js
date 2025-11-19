@@ -1,5 +1,5 @@
-import User from '../../../domain/entities/User.js';
-import IUserRepository from '../../../domain/repositories/IUserRepository.js';
+import User from '../../domain/entities/User.js';
+import IUserRepository from '../../domain/repositories/IUserRepository.js';
 
 const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
