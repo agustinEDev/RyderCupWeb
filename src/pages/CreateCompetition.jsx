@@ -22,6 +22,7 @@ const CreateCompetition = () => {
 
   // Countries data
   const [allCountries, setAllCountries] = useState([]);
+  const [isLoadingCountries, setIsLoadingCountries] = useState(false);
   const [countrySearch, setCountrySearch] = useState('');
   const [showCountryDropdown, setShowCountryDropdown] = useState(false);
   const [adjacentCountries1, setAdjacentCountries1] = useState([]);
@@ -78,27 +79,57 @@ const CreateCompetition = () => {
   }, []);
 
   const fetchCountries = async () => {
+    setIsLoadingCountries(true);
     try {
       const token = getAuthToken();
-      const response = await fetch(`${API_URL}/api/v1/countries`, {
+      console.log('Fetching countries from:', `${API_URL}/api/v1/countries`);
+      console.log('Auth token:', token ? 'Present' : 'Missing');
+      
+      const response = await fetch('/api/v1/countries', {
         headers: {
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
         }
       });
 
+      console.log('Countries response status:', response.status);
+
       if (response.ok) {
         const data = await response.json();
-        setAllCountries(data);
+        console.log('Countries data received:', data);
+        console.log('Number of countries:', Array.isArray(data) ? data.length : 'Not an array');
+        
+        // Map API response to expected structure
+        const validCountries = Array.isArray(data) 
+          ? data
+              .filter(c => c && c.code && (c.name_en || c.name_es))
+              .map(c => ({
+                id: c.code,
+                name: c.name_en || c.name_es,
+                code: c.code,
+                name_en: c.name_en,
+                name_es: c.name_es
+              }))
+          : [];
+        console.log('Valid countries after filter:', validCountries.length);
+        setAllCountries(validCountries);
+      } else {
+        const errorText = await response.text();
+        console.error('Failed to fetch countries:', response.status, errorText);
+        setAllCountries([]);
       }
     } catch (error) {
       console.error('Error fetching countries:', error);
+      setAllCountries([]);
+    } finally {
+      setIsLoadingCountries(false);
     }
   };
 
   const fetchAdjacentCountries = async (countryId, level) => {
     try {
       const token = getAuthToken();
-      const response = await fetch(`${API_URL}/api/v1/countries/${countryId}/adjacent`, {
+      const response = await fetch(`/api/v1/countries/${countryId}/adjacent`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -106,14 +137,27 @@ const CreateCompetition = () => {
 
       if (response.ok) {
         const data = await response.json();
+        // Map API response to expected structure
+        const mappedData = Array.isArray(data)
+          ? data
+              .filter(c => c && c.code && (c.name_en || c.name_es))
+              .map(c => ({
+                id: c.code,
+                name: c.name_en || c.name_es,
+                code: c.code,
+                name_en: c.name_en,
+                name_es: c.name_es
+              }))
+          : [];
+        
         if (level === 1) {
-          setAdjacentCountries1(data);
+          setAdjacentCountries1(mappedData);
         } else if (level === 2) {
           // For second adjacent, combine adjacents of both selected countries
-          const existingIds = new Set(adjacentCountries1.map(c => c.id));
+          const existingIds = new Set(adjacentCountries1.map(c => c.code));
           const combined = [...adjacentCountries1];
-          for (const country of data) {
-            if (!existingIds.has(country.id) && country.id !== formData.country?.id && country.id !== formData.adjacentCountry1) {
+          for (const country of mappedData) {
+            if (!existingIds.has(country.code) && country.code !== formData.country?.code && country.code !== formData.adjacentCountry1) {
               combined.push(country);
             }
           }
@@ -165,7 +209,7 @@ const CreateCompetition = () => {
     setAdjacentCountries2([]);
 
     // Fetch adjacent countries for this country
-    fetchAdjacentCountries(country.id, 1);
+    fetchAdjacentCountries(country.code, 1);
   };
 
   const handleAddAdjacentCountry1 = () => {
@@ -220,7 +264,7 @@ const CreateCompetition = () => {
   };
 
   const filteredCountries = allCountries.filter(country =>
-    country.name.toLowerCase().includes(countrySearch.toLowerCase())
+    country && country.name && country.name.toLowerCase().includes(countrySearch.toLowerCase())
   );
 
   const handleSubmit = async (e) => {
@@ -262,16 +306,21 @@ const CreateCompetition = () => {
 
     try {
       const token = getAuthToken();
+      console.log('Form data before sending:', formData);
 
-      // Build the countries array
-      const countries = [formData.country.id];
+      // Build the countries array and main_country
+      const countries = [];
       if (formData.adjacentCountry1) {
-        countries.push(parseInt(formData.adjacentCountry1));
+        countries.push(formData.adjacentCountry1);
       }
       if (formData.adjacentCountry2) {
-        countries.push(parseInt(formData.adjacentCountry2));
+        countries.push(formData.adjacentCountry2);
       }
 
+      console.log('Selected country:', formData.country);
+      console.log('Adjacent countries:', countries);
+
+      // Test with different values
       const payload = {
         name: formData.competitionName.trim(),
         description: formData.description.trim(),
@@ -279,15 +328,22 @@ const CreateCompetition = () => {
         team_two_name: formData.teamTwoName.trim(),
         start_date: formData.startDate,
         end_date: formData.endDate,
+        main_country: formData.country.code,
         countries: countries,
         handicap_type: formData.handicapType,
-        handicap_percentage: formData.handicapType === 'PERCENTAGE' ? parseInt(formData.handicapPercentage) : null,
         number_of_players: parseInt(formData.numberOfPlayers),
         team_assignment: formData.teamAssignment,
         player_handicap: formData.playerHandicap
       };
 
-      const response = await fetch(`${API_URL}/api/v1/competitions`, {
+      // Only add handicap_percentage if handicapType is PERCENTAGE
+      if (formData.handicapType === 'PERCENTAGE') {
+        payload.handicap_percentage = parseInt(formData.handicapPercentage);
+      }
+
+      console.log('Final payload being sent:', JSON.stringify(payload, null, 2));
+
+      const response = await fetch('/api/v1/competitions', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -298,7 +354,24 @@ const CreateCompetition = () => {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.detail || 'Failed to create competition');
+        console.error('Server error response:', errorData);
+        console.error('Payload sent:', payload);
+        
+        // Handle detail as array or string
+        let errorMessage = 'Failed to create competition';
+        if (errorData.detail) {
+          if (Array.isArray(errorData.detail)) {
+            errorMessage = errorData.detail.map(err => typeof err === 'string' ? err : JSON.stringify(err)).join(', ');
+          } else if (typeof errorData.detail === 'string') {
+            errorMessage = errorData.detail;
+          } else {
+            errorMessage = JSON.stringify(errorData.detail);
+          }
+        } else if (errorData.message) {
+          errorMessage = errorData.message;
+        }
+        
+        throw new Error(errorMessage);
       }
 
       const data = await response.json();
@@ -314,47 +387,6 @@ const CreateCompetition = () => {
       setMessage({ type: 'error', text: error.message || 'Failed to create competition' });
     } finally {
       setIsSubmitting(false);
-    }
-  };
-
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    // Validate required fields
-    if (!formData.name || !formData.start_date || !formData.country_id || !formData.location) {
-      toast.error('Please fill in all required fields');
-      return;
-    }
-
-    setSubmitting(true);
-
-    try {
-      const response = await authenticatedFetch(`${API_BASE_URL}/api/v1/competitions`, {
-        method: 'POST',
-        body: JSON.stringify(formData)
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || 'Failed to create competition');
-      }
-
-      const competition = await response.json();
-      toast.success('Competition created successfully!');
-      navigate(`/competitions/${competition.id}`);
-    } catch (error) {
-      console.error('Error creating competition:', error);
-      toast.error(error.message || 'Failed to create competition');
-    } finally {
-      setSubmitting(false);
     }
   };
 
@@ -534,18 +566,28 @@ const CreateCompetition = () => {
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                     />
 
-                    {showCountryDropdown && filteredCountries.length > 0 && (
+                    {showCountryDropdown && (
                       <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                        {filteredCountries.map(country => (
-                          <button
-                            key={country.id}
-                            type="button"
-                            onClick={() => handleCountrySelect(country)}
-                            className="w-full px-3 py-2 text-left hover:bg-gray-100 focus:bg-gray-100 focus:outline-none"
-                          >
-                            {country.name}
-                          </button>
-                        ))}
+                        {isLoadingCountries ? (
+                          <div className="px-3 py-2 text-sm text-gray-500 text-center">
+                            Loading countries...
+                          </div>
+                        ) : filteredCountries.length > 0 ? (
+                          filteredCountries.map(country => (
+                            <button
+                              key={country.id}
+                              type="button"
+                              onClick={() => handleCountrySelect(country)}
+                              className="w-full px-3 py-2 text-left hover:bg-gray-100 focus:bg-gray-100 focus:outline-none"
+                            >
+                              {country.name}
+                            </button>
+                          ))
+                        ) : (
+                          <div className="px-3 py-2 text-sm text-gray-500 text-center">
+                            {countrySearch ? 'No countries found' : 'No countries available'}
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
@@ -723,11 +765,10 @@ const CreateCompetition = () => {
                       value={formData.numberOfPlayers}
                       onChange={handleInputChange}
                       min="1"
-                      placeholder="Enter number of players per team"
+                      placeholder="Enter total number of players"
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                     />
                   </div>
-                </div>
 
                   {/* Team Assignment */}
                   <div>

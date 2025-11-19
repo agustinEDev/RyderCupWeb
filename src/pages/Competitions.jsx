@@ -36,7 +36,11 @@ const Competitions = () => {
   const loadCompetitions = async () => {
     setIsLoading(true);
     try {
-      const data = await getCompetitions();
+      console.log('Loading competitions...');
+      // Try loading competitions for current user
+      const data = await getCompetitions({ creator_id: user?.id });
+      console.log('Competitions loaded:', data);
+      console.log('Number of competitions:', Array.isArray(data) ? data.length : 'Not an array');
       setCompetitions(data);
     } catch (error) {
       console.error('Error loading competitions:', error);

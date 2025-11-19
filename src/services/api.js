@@ -45,7 +45,7 @@ export const apiRequest = async (endpoint, options = {}) => {
     },
   };
 
-  const url = `${API_URL}${endpoint}`;
+  const url = endpoint.startsWith('http') ? endpoint : `${API_URL}${endpoint}`;
 
   try {
     const response = await fetch(url, config);
