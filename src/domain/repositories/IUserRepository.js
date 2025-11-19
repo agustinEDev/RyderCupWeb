@@ -10,10 +10,11 @@ class IUserRepository {
 
   /**
    * Actualiza la información de un usuario.
-   * @param {User} user - El objeto User a actualizar.
-   * @returns {Promise<User>} El objeto User actualizado.
+   * @param {string} userId - El ID del usuario a actualizar.
+   * @param {Object} updateData - Un objeto con los campos a actualizar.
+   * @returns {Promise<import('../entities/User').default>} El objeto User actualizado.
    */
-  async update(user) {
+  async update(userId, updateData) {
     throw new Error('Method not implemented: update');
   }
 
@@ -26,4 +27,4 @@ class IUserRepository {
   // }
 }
 
-export default UserRepository;
+export default IUserRepository;
