@@ -47,7 +47,7 @@ Este documento describe los próximos pasos y las tareas planificadas para conti
 ### Tareas de Mejora (DDD y UI)
 
 1.  **Introducir "Value Objects" (DDD):**
-    *   **Estado:** Pendiente
+    *   **Estado:** Completado
     *   **Objetivo:** Mejorar la robustez del dominio con `ValueObjects`.
     *   **Pasos:**
         1.  Crear `Email.js` y `Password.js` como Value Objects.

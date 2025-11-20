@@ -7,6 +7,12 @@ y este proyecto adhiere a [Versionado Semántico](https://semver.org/lang/es/).
 
 ## [Unreleased]
 
+### Changed
+- **Refactor (DDD):** Introducidos `Email` y `Password` Value Objects para mejorar la robustez y seguridad del dominio.
+  - Refactorizados `User` entity, casos de uso de autenticación (`Login`, `Register`, `UpdateUserSecurity`) y repositorios para utilizar los nuevos Value Objects.
+  - Corregidos tests unitarios para alinearse con los nuevos contratos de los casos de uso.
+  - Corregida una regresión en la actualización de seguridad del perfil.
+
 ### Added
 - Implementación de Clean Architecture para el flujo de verificación de email, incluyendo:
   - Caso de uso `VerifyEmailUseCase`.
