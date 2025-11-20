@@ -54,7 +54,7 @@ Este documento describe los próximos pasos y las tareas planificadas para conti
         2.  Actualizar la entidad `User` y los Casos de Uso para que los utilicen.
 
 2.  **Crear Hook Personalizado `useEditProfile`:**
-    *   **Estado:** Pendiente
+    *   **Estado:** Completado
     *   **Objetivo:** Simplificar el componente `EditProfile.jsx`.
     *   **Pasos:**
         1.  Crear `useEditProfile.js` que encapsule `useState`, `useEffect` y los `handle...`.

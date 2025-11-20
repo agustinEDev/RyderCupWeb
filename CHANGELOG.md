@@ -8,6 +8,7 @@ y este proyecto adhiere a [Versionado Semántico](https://semver.org/lang/es/).
 ## [Unreleased]
 
 ### Changed
+- **Refactor (Profile):** Extraída la lógica del componente `EditProfile.jsx` a un hook personalizado `useEditProfile.js`. Esto simplifica el componente a una capa de presentación pura y centraliza el manejo del estado y los efectos secundarios. Se han añadido tests unitarios exhaustivos para el nuevo hook.
 - **Refactor (DDD):** Introducidos `Email` y `Password` Value Objects para mejorar la robustez y seguridad del dominio.
   - Refactorizados `User` entity, casos de uso de autenticación (`Login`, `Register`, `UpdateUserSecurity`) y repositorios para utilizar los nuevos Value Objects.
   - Corregidos tests unitarios para alinearse con los nuevos contratos de los casos de uso.
