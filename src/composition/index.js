@@ -8,10 +8,11 @@ import IHandicapRepository from '../domain/repositories/IHandicapRepository';
 import ApiHandicapRepository from '../infrastructure/repositories/ApiHandicapRepository';
 import UpdateManualHandicapUseCase from '../application/use_cases/UpdateManualHandicapUseCase';
 import UpdateRfegHandicapUseCase from '../application/use_cases/UpdateRfegHandicapUseCase';
-import IAuthRepository from '../domain/repositories/IAuthRepository'; // Nuevo
-import ApiAuthRepository from '../infrastructure/repositories/ApiAuthRepository'; // Nuevo
-import LoginUseCase from '../application/use_cases/LoginUseCase'; // Nuevo
-import RegisterUseCase from '../application/use_cases/RegisterUseCase'; // Nuevo
+import IAuthRepository from '../domain/repositories/IAuthRepository';
+import ApiAuthRepository from '../infrastructure/repositories/ApiAuthRepository';
+import LoginUseCase from '../application/use_cases/LoginUseCase';
+import RegisterUseCase from '../application/use_cases/RegisterUseCase';
+import VerifyEmailUseCase from '../application/use_cases/VerifyEmailUseCase'; // Nuevo
 
 
 // --- Providers de Infraestructura ---
@@ -22,15 +23,16 @@ const authTokenProvider = {
 // --- Repositorios (implementaciones concretas) ---
 const apiUserRepository = new ApiUserRepository({ authTokenProvider });
 const apiHandicapRepository = new ApiHandicapRepository({ authTokenProvider });
-const apiAuthRepository = new ApiAuthRepository(); // Nuevo
+const apiAuthRepository = new ApiAuthRepository();
 
 // --- Casos de Uso ---
 const updateUserProfileUseCase = new UpdateUserProfileUseCase({ userRepository: apiUserRepository });
 const updateUserSecurityUseCase = new UpdateUserSecurityUseCase({ userRepository: apiUserRepository });
 const updateManualHandicapUseCase = new UpdateManualHandicapUseCase({ handicapRepository: apiHandicapRepository });
 const updateRfegHandicapUseCase = new UpdateRfegHandicapUseCase({ handicapRepository: apiHandicapRepository });
-const loginUseCase = new LoginUseCase({ authRepository: apiAuthRepository }); // Nuevo
-const registerUseCase = new RegisterUseCase({ authRepository: apiAuthRepository }); // Nuevo
+const loginUseCase = new LoginUseCase({ authRepository: apiAuthRepository });
+const registerUseCase = new RegisterUseCase({ authRepository: apiAuthRepository });
+const verifyEmailUseCase = new VerifyEmailUseCase({ authRepository: apiAuthRepository }); // Nuevo
 
 
 // Exportar los casos de uso y otros servicios que la capa de presentación necesite
@@ -39,8 +41,9 @@ export {
   updateUserSecurityUseCase,
   updateManualHandicapUseCase,
   updateRfegHandicapUseCase,
-  loginUseCase,   // Nuevo
-  registerUseCase, // Nuevo
+  loginUseCase,
+  registerUseCase,
+  verifyEmailUseCase, // Nuevo
   // Otros casos de uso aquí
   // También podríamos exportar directamente las entidades si la UI las necesita para displays,
   // aunque la mejor práctica es que la UI reciba DTOs o ViewModels del caso de uso.

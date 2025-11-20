@@ -17,6 +17,15 @@ class IAuthRepository {
   async register(userData) {
     throw new Error('Method not implemented: register');
   }
+
+  /**
+   * Verifica el email de un usuario usando un token.
+   * @param {string} token - El token de verificación.
+   * @returns {Promise<import('../entities/User').default>} El objeto User con el email verificado.
+   */
+  async verifyEmail(token) {
+    throw new Error('Method not implemented: verifyEmail');
+  }
 }
 
 export default IAuthRepository;

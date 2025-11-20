@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Link } from 'react-router-dom';
 import { getUserData, setUserData } from '../utils/secureAuth';
+import { verifyEmailUseCase } from '../composition'; // Nuevo
+
 
 const VerifyEmail = () => {
   const navigate = useNavigate();
@@ -28,7 +30,6 @@ const VerifyEmail = () => {
     hasVerifiedRef.current = true;
 
     const verifyEmail = async () => {
-      // Validar que existe el token
       if (!token || token.trim() === '') {
         setStatus('invalid');
         setMessage('Verification token is missing or invalid.');
@@ -36,45 +37,22 @@ const VerifyEmail = () => {
       }
 
       try {
-        const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
-
         console.log('🔄 Verifying email with token...');
-        const response = await fetch(`${API_URL}/api/v1/auth/verify-email`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ token })
-        });
-
-        // Guard against empty/non-JSON responses to avoid `Unexpected end of JSON input`
-        const contentType = response.headers.get('content-type') || '';
-        const hasJsonBody = response.status !== 204 && contentType.includes('application/json');
-
-        if (!response.ok) {
-          const errorData = hasJsonBody ? await response.json() : null;
-          console.error('❌ Verification failed:', errorData);
-          throw new Error(errorData?.detail || 'Verification failed');
-        }
-
-        const data = hasJsonBody ? await response.json() : {};
-        console.log('✅ Email verified successfully:', data);
+        const updatedUserEntity = await verifyEmailUseCase.execute(token);
+        console.log('✅ Email verified successfully:', updatedUserEntity);
 
         // Update user data in secure storage if logged in
         const userData = getUserData();
-        if (userData) {
-          userData.email_verified = true;
-          setUserData(userData);
+        if (userData && userData.id === updatedUserEntity.id) {
+          const updatedUserPlain = updatedUserEntity.toPersistence();
+          setUserData(updatedUserPlain);
           console.log('📝 Secure storage updated with verified status');
         }
 
-        // Esperar 1.5 segundos con el spinner antes de mostrar el mensaje de éxito
         await new Promise(resolve => setTimeout(resolve, 1500));
-
         setStatus('success');
-        setMessage(data.message || 'Your email has been verified successfully!');
+        setMessage('Your email has been verified successfully!');
 
-        // Redirigir al dashboard después de 3 segundos
         console.log('⏱️ Redirecting to dashboard in 3 seconds...');
         redirectTimeoutRef.current = setTimeout(() => {
           navigate('/dashboard');
@@ -82,10 +60,7 @@ const VerifyEmail = () => {
 
       } catch (error) {
         console.error('❌ Verification error:', error);
-
-        // Esperar 1.5 segundos con el spinner antes de mostrar el mensaje de error
         await new Promise(resolve => setTimeout(resolve, 1500));
-
         setStatus('error');
         setMessage(error.message || 'Failed to verify email. The token may be invalid or expired.');
       }

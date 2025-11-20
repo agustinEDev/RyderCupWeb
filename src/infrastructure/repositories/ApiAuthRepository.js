@@ -69,6 +69,37 @@ class ApiAuthRepository extends IAuthRepository {
     const data = await response.json();
     return new User(data);
   }
+
+  /**
+   * @override
+   */
+  async verifyEmail(token) {
+    const response = await fetch(`${API_URL}/api/v1/auth/verify-email`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ token }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      let errorMessage = 'Failed to verify email';
+      if (errorData.detail) {
+        if (Array.isArray(errorData.detail)) {
+          errorMessage = errorData.detail.map(err => `${err.loc[1]}: ${err.msg}`).join('; ');
+        } else if (typeof errorData.detail === 'string') {
+          errorMessage = errorData.detail;
+        }
+      }
+      throw new Error(errorMessage);
+    }
+
+    const data = await response.json();
+    // Asumimos que la API devuelve el usuario actualizado
+    // Si solo devuelve un mensaje, habría que ajustar el caso de uso
+    return new User(data.user);
+  }
 }
 
 export default ApiAuthRepository;
