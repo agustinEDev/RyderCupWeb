@@ -1,3 +1,6 @@
+import Email from '../value_objects/Email';
+import Password from '../value_objects/Password'; // 1. Importar Password VO
+
 class User {
   constructor({
     id,
@@ -19,8 +22,9 @@ class User {
     }
 
     this.id = id;
-    this.email = email;
-    this.password = password; // Se asume que se pasa de forma segura
+    this.email = email instanceof Email ? email : new Email(email);
+    // 2. Modificar el password para que pueda ser una instancia de Password Value Object
+    this.password = password instanceof Password ? password : password; // Si no es un VO, se asume que es la cadena (hasheada)
     this.firstName = first_name;
     this.lastName = last_name;
     this.handicap = handicap;
@@ -55,8 +59,9 @@ class User {
   toPersistence() {
     return {
       id: this.id,
-      email: this.email,
-      password: this.password, // Precaución: no se debe enviar el password en texto plano
+      email: this.email.getValue(),
+      // 3. Obtener el valor del Password VO si es uno, o pasar la cadena directamente
+      password: this.password instanceof Password ? this.password.getValue() : this.password,
       first_name: this.firstName,
       last_name: this.lastName,
       handicap: this.handicap,

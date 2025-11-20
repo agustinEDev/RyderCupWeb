@@ -227,14 +227,14 @@ const EditProfile = () => {
     try {
       // Construir los datos de seguridad para el caso de uso
       const securityData = {
-        currentPassword: formData.currentPassword,
+        current_password: formData.currentPassword, // CORRECCIÓN: a snake_case
       };
       if (isEmailChanged) {
-        securityData.email = trimmedEmail;
+        securityData.new_email = trimmedEmail; // CORRECCIÓN: a new_email
       }
       if (isPasswordChanged) {
-        securityData.newPassword = formData.newPassword;
-        securityData.confirmPassword = formData.confirmPassword; // <-- CORRECCIÓN
+        securityData.new_password = formData.newPassword; // CORRECCIÓN: a snake_case
+        securityData.confirm_password = formData.confirmPassword; // CORRECCIÓN: a snake_case
       }
 
       // Llamada al caso de uso (la lógica de API y manejo de token está encapsulada)

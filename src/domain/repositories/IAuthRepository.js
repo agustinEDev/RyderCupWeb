@@ -1,8 +1,11 @@
+import Email from '../value_objects/Email';
+import Password from '../value_objects/Password'; // 1. Importar Password VO
+
 class IAuthRepository {
   /**
    * Autentica a un usuario.
-   * @param {string} email - El email del usuario.
-   * @param {string} password - La contraseña del usuario.
+   * @param {Email} email - El email del usuario como Value Object.
+   * @param {Password} password - La contraseña del usuario como Value Object. // <-- CAMBIO AQUÍ
    * @returns {Promise<{user: import('../entities/User').default, token: string}>} Un objeto con el usuario y el token.
    */
   async login(email, password) {
@@ -12,6 +15,10 @@ class IAuthRepository {
   /**
    * Registra un nuevo usuario.
    * @param {Object} userData - Los datos del nuevo usuario (firstName, lastName, email, password).
+   * @param {string} userData.firstName - El nombre del usuario.
+   * @param {string} userData.lastName - El apellido del usuario.
+   * @param {Email} userData.email - El email del usuario como Value Object.
+   * @param {Password} userData.password - La contraseña del usuario como Value Object. // <-- CAMBIO AQUÍ
    * @returns {Promise<import('../entities/User').default>} El objeto User recién creado.
    */
   async register(userData) {

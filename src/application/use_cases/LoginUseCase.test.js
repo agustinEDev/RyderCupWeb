@@ -2,6 +2,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import LoginUseCase from './LoginUseCase';
 import User from '../../domain/entities/User';
 import IAuthRepository from '../../domain/repositories/IAuthRepository';
+import Email from '../../domain/value_objects/Email'; // Importar Email
+import Password from '../../domain/value_objects/Password'; // Importar Password
 
 // Mock del módulo secureAuth
 vi.mock('../../utils/secureAuth', () => ({
@@ -52,8 +54,11 @@ describe('LoginUseCase', () => {
     const loggedInUser = await loginUseCase.execute(email, password);
 
     // Assert
-    // 1. Verificar que el método login del repositorio fue llamado con las credenciales correctas
-    expect(authRepository.login).toHaveBeenCalledWith(email, password);
+    // 1. Verificar que el método login del repositorio fue llamado con un Email VO y la contraseña
+    expect(authRepository.login).toHaveBeenCalledWith(
+      expect.objectContaining({ _value: email }),
+      expect.objectContaining({ _value: password })
+    );
 
     // 2. Verificar que el token fue guardado
     expect(setAuthToken).toHaveBeenCalledWith(mockToken);
@@ -67,12 +72,12 @@ describe('LoginUseCase', () => {
 
   it('should throw an error if email is not provided', async () => {
     // Act & Assert
-    await expect(loginUseCase.execute('', 'password123')).rejects.toThrow('Email and password are required for login');
+    await expect(loginUseCase.execute('', 'password123')).rejects.toThrow('Invalid email address.');
   });
 
   it('should throw an error if password is not provided', async () => {
     // Act & Assert
-    await expect(loginUseCase.execute('test@example.com', '')).rejects.toThrow('Email and password are required for login');
+    await expect(loginUseCase.execute('test@example.com', '')).rejects.toThrow('Password cannot be empty.');
   });
 
   it('should propagate errors from the auth repository', async () => {
@@ -85,6 +90,11 @@ describe('LoginUseCase', () => {
 
     // Act & Assert
     await expect(loginUseCase.execute(email, password)).rejects.toThrow('Invalid credentials from API');
+
+    expect(authRepository.login).toHaveBeenCalledWith(
+      expect.objectContaining({ _value: email }),
+      expect.objectContaining({ _value: password })
+    );
 
     // Verificar que setAuthToken y setUserData no fueron llamados en caso de error
     expect(setAuthToken).not.toHaveBeenCalled();

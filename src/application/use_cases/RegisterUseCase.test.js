@@ -2,6 +2,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import RegisterUseCase from './RegisterUseCase';
 import User from '../../domain/entities/User';
 import IAuthRepository from '../../domain/repositories/IAuthRepository';
+import Email from '../../domain/value_objects/Email'; // Importar Email
+import Password from '../../domain/value_objects/Password'; // Importar Password
 
 describe('RegisterUseCase', () => {
   let authRepository;
@@ -44,7 +46,11 @@ describe('RegisterUseCase', () => {
 
     // Assert
     // 1. Verificar que el método register del repositorio fue llamado con los datos correctos
-    expect(authRepository.register).toHaveBeenCalledWith(userData);
+    expect(authRepository.register).toHaveBeenCalledWith({
+      ...userData,
+      email: expect.objectContaining({ _value: userData.email }),
+      password: expect.objectContaining({ _value: userData.password }), // Comprobar VO de Password
+    });
 
     // 2. Verificar que el caso de uso devuelve la entidad User correcta
     expect(registeredUser).toEqual(mockNewUserEntity);
@@ -82,6 +88,10 @@ describe('RegisterUseCase', () => {
 
     // Act & Assert
     await expect(registerUseCase.execute(userData)).rejects.toThrow('Email already registered');
-    expect(authRepository.register).toHaveBeenCalledWith(userData); // Verify it was attempted
+    expect(authRepository.register).toHaveBeenCalledWith({
+      ...userData,
+      email: expect.objectContaining({ _value: userData.email }),
+      password: expect.objectContaining({ _value: userData.password }), // Comprobar VO de Password
+    });
   });
 });

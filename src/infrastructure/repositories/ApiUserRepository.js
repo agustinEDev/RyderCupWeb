@@ -1,5 +1,7 @@
 import User from '../../domain/entities/User.js';
 import IUserRepository from '../../domain/repositories/IUserRepository.js';
+import Email from '../../domain/value_objects/Email';
+import Password from '../../domain/value_objects/Password'; // 1. Importar Password VO
 
 const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
@@ -66,18 +68,23 @@ class ApiUserRepository extends IUserRepository {
   async updateSecurity(userId, securityData) {
     const token = this.authTokenProvider.getToken();
 
-    const payload = {
-      current_password: securityData.currentPassword,
-    };
+    const payload = {}; // Iniciar payload vacío y añadir propiedades condicionalmente
 
-    if (securityData.email) {
-      payload.new_email = securityData.email;
+    if (securityData.current_password) { // Usar snake_case
+      payload.current_password = securityData.current_password.getValue(); // <-- CAMBIO AQUÍ: Usar getValue()
     }
-    if (securityData.newPassword) {
-      payload.new_password = securityData.newPassword;
-      if (securityData.confirmPassword) {
-        payload.confirm_password = securityData.confirmPassword;
+
+    if (securityData.new_password) { // Usar snake_case
+      payload.new_password = securityData.new_password.getValue(); // <-- CAMBIO AQUÍ: Usar getValue()
+      // La API puede esperar confirm_password si se actualiza new_password
+      if (securityData.confirm_password) { // Si el caso de uso la pasa, que la pase como cadena
+        payload.confirm_password = securityData.confirm_password; 
       }
+    }
+    
+    // Si existe new_email, extraer su valor
+    if (securityData.new_email) {
+      payload.new_email = securityData.new_email.getValue();
     }
 
     const response = await fetch(`${API_URL}/api/v1/users/security`, {
