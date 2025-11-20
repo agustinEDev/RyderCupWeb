@@ -19,6 +19,9 @@ class UpdateUserProfileUseCase {
    * @returns {Promise<import('../../domain/entities/User').default>} El usuario actualizado.
    */
   async execute(userId, updateData) {
+    if (!userId || !updateData) {
+      throw new Error('User ID and update data are required');
+    }
     // Directamente llamar al repositorio para actualizar
     const updatedUser = await this.userRepository.update(userId, updateData);
 

@@ -37,6 +37,17 @@ export default defineConfig({
       }
     }
   ],
+  test: {
+    globals: true,
+    environment: 'jsdom',
+    setupFiles: './src/setupTests.js', // Se podría crear más tarde si es necesario.
+    css: {
+      modules: {
+        classNameStrategy: 'non-scoped',
+      },
+    },
+    exclude: ['**/node_modules/**', '**/dist/**', '**/e2e/**'], // Excluir directorios comunes de build y e2e
+  },
   server: {
     port: 5173,
     open: true,
