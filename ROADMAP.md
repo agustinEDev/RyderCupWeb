@@ -9,7 +9,7 @@ Este documento describe los próximos pasos y las tareas planificadas para conti
 ### Tareas de Refactorización (Clean Architecture)
 
 1.  **Refactorizar `handleUpdateSecurity` en `EditProfile.jsx`:**
-    *   **Estado:** Pendiente
+    *   **Estado:** Completado
     *   **Objetivo:** Extraer la lógica de actualización de seguridad (email/contraseña) a su propio caso de uso.
     *   **Pasos:**
         1.  Crear `UpdateUserSecurityUseCase.js`.
@@ -18,7 +18,7 @@ Este documento describe los próximos pasos y las tareas planificadas para conti
         4.  Refactorizar el `handleUpdateSecurity` en `EditProfile.jsx`.
 
 2.  **Refactorizar `handleUpdateHandicapManually` y `handleUpdateHandicapRFEG`:**
-    *   **Estado:** Pendiente
+    *   **Estado:** Completado
     *   **Objetivo:** Crear casos de uso específicos para la lógica de actualización de hándicap.
     *   **Pasos:**
         1.  Crear `UpdateManualHandicapUseCase.js` y `UpdateRfegHandicapUseCase.js`.
