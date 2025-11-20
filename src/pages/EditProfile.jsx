@@ -1,271 +1,29 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import HeaderAuth from '../components/layout/HeaderAuth';
-import { getAuthToken, getUserData, setUserData } from '../utils/secureAuth';
-import toast from 'react-hot-toast'; // Nueva importación
-import { updateUserProfileUseCase, updateUserSecurityUseCase, updateManualHandicapUseCase, updateRfegHandicapUseCase } from '../composition';
-
-const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+import { useEditProfile } from '../hooks/useEditProfile'; // <- ¡NUEVA IMPORTACIÓN!
 
 const EditProfile = () => {
+  // Toda la lógica ahora reside en el hook. Obtenemos todo lo que necesitamos de él.
+  const {
+    user,
+    formData,
+    isLoading,
+    isSaving,
+    isUpdatingRFEG,
+    isRefreshing,
+    handleInputChange,
+    handleUpdateProfile,
+    handleUpdateSecurity,
+    handleUpdateHandicapManually,
+    handleUpdateHandicapRFEG,
+    handleRefreshUserData
+  } = useEditProfile();
+
   const navigate = useNavigate();
-  const [user, setUser] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
-  const [isUpdatingRFEG, setIsUpdatingRFEG] = useState(false);
-  const [isRefreshing, setIsRefreshing] = useState(false);
 
-  const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
-    email: '',
-    currentPassword: '',
-    newPassword: '',
-    confirmPassword: '',
-    handicap: ''
-  });
-
-  useEffect(() => {
-    // Fetch user data from secure storage (auth already verified by ProtectedRoute)
-    const userData = getUserData();
-
-    if (userData) {
-      setUser(userData);
-      setFormData({
-        firstName: userData.first_name || '',
-        lastName: userData.last_name || '',
-        email: userData.email || '',
-        currentPassword: '',
-        newPassword: '',
-        confirmPassword: '',
-        handicap: userData.handicap === null ? '' : userData.handicap.toString()
-      });
-    }
-    setIsLoading(false);
-  }, []);
-
-  const handleRefreshUserData = async () => {
-    setIsRefreshing(true);
-    
-    try {
-      const token = getAuthToken();
-      const response = await fetch(`${API_URL}/api/v1/auth/current-user`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to refresh user data');
-      }
-
-      const refreshedUser = await response.json();
-
-      // Update secure storage
-      setUserData(refreshedUser);
-
-      // Update state
-      setUser(refreshedUser);
-      setFormData({
-        firstName: refreshedUser.first_name || '',
-        lastName: refreshedUser.last_name || '',
-        email: refreshedUser.email || '',
-        currentPassword: '',
-        newPassword: '',
-        confirmPassword: '',
-        handicap: refreshedUser.handicap === null ? '' : refreshedUser.handicap.toString()
-      });
-
-      toast.success('Profile data refreshed successfully!');
-    } catch (error) {
-      console.error('Error refreshing user data:', error);
-      toast.error('Failed to refresh user data. Please try logging in again.');
-    } finally {
-      setIsRefreshing(false);
-    }
-  };
-
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
-
-  const handleUpdateHandicapManually = async (e) => {
-    e.preventDefault();
-    setIsSaving(true);
-
-    try {
-      const updatedUserEntity = await updateManualHandicapUseCase.execute({
-        userId: user.id,
-        handicap: formData.handicap,
-      });
-
-      const updatedUserPlain = updatedUserEntity.toPersistence();
-      setUserData(updatedUserPlain);
-      setUser(updatedUserPlain);
-
-      toast.success('Handicap updated successfully!');
-    } catch (error) {
-      console.error('Error updating handicap:', error);
-      toast.error(error.message || 'Failed to update handicap');
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const handleUpdateHandicapRFEG = async () => {
-    setIsUpdatingRFEG(true);
-
-    try {
-      const updatedUserEntity = await updateRfegHandicapUseCase.execute({ userId: user.id });
-
-      const updatedUserPlain = updatedUserEntity.toPersistence();
-      setUserData(updatedUserPlain);
-      setUser(updatedUserPlain);
-      
-      setFormData(prev => ({ 
-        ...prev, 
-        handicap: updatedUserPlain.handicap === null ? '' : updatedUserPlain.handicap.toString()
-      }));
-
-      toast.success('Handicap updated from RFEG successfully!');
-    } catch (error) {
-      console.error('Error updating handicap from RFEG:', error);
-      toast.error(error.message || 'Failed to update handicap from RFEG. Please try again later.');
-    } finally {
-      setIsUpdatingRFEG(false);
-    }
-  };
-
-  const handleUpdateProfile = async (e) => {
-    e.preventDefault();
-
-    const trimmedFirstName = formData.firstName.trim();
-    const trimmedLastName = formData.lastName.trim();
-
-    if (trimmedFirstName === user.first_name && trimmedLastName === user.last_name) {
-      toast.warn('No changes detected in name or last name.');
-      return;
-    }
-    
-    // Validaciones básicas de la UI
-    if (trimmedFirstName.length < 2) {
-      toast.error('First name must be at least 2 characters.');
-      return;
-    }
-    if (trimmedLastName.length < 2) {
-      toast.error('Last name must be at least 2 characters.');
-      return;
-    }
-
-    setIsSaving(true);
-    try {
-      // Llamada al caso de uso
-      const updatedUserEntity = await updateUserProfileUseCase.execute(user.id, {
-        firstName: trimmedFirstName,
-        lastName: trimmedLastName,
-      });
-
-      // Actualizar el almacenamiento seguro y el estado del componente
-      // Convertir la entidad de vuelta a un objeto plano compatible con `setUserData`
-      const updatedUserPlain = updatedUserEntity.toPersistence(); 
-      setUserData(updatedUserPlain);
-
-      setUser(updatedUserPlain); // Actualizar el estado `user` del componente
-      setFormData(prev => ({
-        ...prev,
-        firstName: updatedUserEntity.firstName,
-        lastName: updatedUserEntity.lastName,
-      }));
-
-      toast.success('Profile updated successfully!');
-    } catch (error) {
-      console.error('Error updating profile:', error);
-      // Aquí el error ya viene "limpio" del caso de uso o repositorio
-      toast.error(error.message || 'Failed to update profile');
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const handleUpdateSecurity = async (e) => {
-    e.preventDefault();
-    
-    // Validaciones de UI (permanecen en el componente)
-    if (!formData.currentPassword) {
-      toast.error('Current password is required to update security settings.');
-      return;
-    }
-
-    const trimmedEmail = formData.email.trim();
-    const isEmailChanged = trimmedEmail !== '' && trimmedEmail !== user.email;
-    const isPasswordChanged = formData.newPassword !== '';
-
-    if (!isEmailChanged && !isPasswordChanged) {
-      toast.warn('No changes detected in email or password.');
-      return;
-    }
-
-    if (isPasswordChanged) {
-      if (formData.newPassword.length < 8) {
-        toast.error('New password must be at least 8 characters.');
-        return;
-      }
-
-      if (formData.newPassword !== formData.confirmPassword) {
-        toast.error('New password and confirmation do not match.');
-        return;
-      }
-    }
-
-    setIsSaving(true);
-
-    try {
-      // Construir los datos de seguridad para el caso de uso
-      const securityData = {
-        current_password: formData.currentPassword, // CORRECCIÓN: a snake_case
-      };
-      if (isEmailChanged) {
-        securityData.new_email = trimmedEmail; // CORRECCIÓN: a new_email
-      }
-      if (isPasswordChanged) {
-        securityData.new_password = formData.newPassword; // CORRECCIÓN: a snake_case
-        securityData.confirm_password = formData.confirmPassword; // CORRECCIÓN: a snake_case
-      }
-
-      // Llamada al caso de uso (la lógica de API y manejo de token está encapsulada)
-      const updatedUserEntity = await updateUserSecurityUseCase.execute({
-        userId: user.id,
-        securityData: securityData,
-      });
-
-      // Actualizar el almacenamiento seguro y el estado del componente
-      const updatedUserPlain = updatedUserEntity.toPersistence(); 
-      setUserData(updatedUserPlain);
-      setUser(updatedUserPlain);
-
-      // Limpiar campos de seguridad después de una actualización exitosa
-      setFormData(prev => ({
-        ...prev,
-        email: updatedUserPlain.email,  // Restablecer al email actual
-        currentPassword: '',
-        newPassword: '',
-        confirmPassword: ''
-      }));
-
-      toast.success('Security settings updated successfully!');
-    } catch (error) {
-      console.error('Error updating security:', error);
-      // El error ya viene "limpio" del caso de uso/repositorio
-      toast.error(error.message || 'Failed to update security settings');
-    } finally {
-      setIsSaving(false);
-    }
-  };
+  // --- LÓGICA DE RENDERIZADO ---
+  // (Esta parte no cambia, pero ahora es más fácil de razonar sobre ella)
 
   if (isLoading) {
     return (
@@ -281,8 +39,6 @@ const EditProfile = () => {
   if (!user) {
     return null;
   }
-
-  const fullName = `${user.first_name} ${user.last_name}`;
 
   const formatDate = (dateString) => {
     if (!dateString) return 'Never';
@@ -300,7 +56,9 @@ const EditProfile = () => {
     ? user.handicap
     : 'Not set';
   const handicapUpdated = formatDate(user.handicap_updated_at);
-
+  
+  // El JSX que sigue es idéntico al de antes, pero ahora consume los
+  // estados y manejadores del hook.
   return (
     <div className="relative flex h-auto min-h-screen w-full flex-col bg-white">
       <div className="layout-container flex h-full grow flex-col">
@@ -308,7 +66,6 @@ const EditProfile = () => {
 
         <div className="px-4 md:px-40 flex flex-1 justify-center py-5">
           <div className="layout-content-container flex flex-col max-w-[960px] flex-1">
-            {/* Page Title */}
             <div className="flex flex-wrap justify-between gap-3 p-4 items-center">
               <p className="text-gray-900 tracking-tight text-3xl md:text-[32px] font-bold leading-tight min-w-72">
                 Edit Profile
@@ -326,10 +83,7 @@ const EditProfile = () => {
               </button>
             </div>
 
-            {/* Message Display is now handled by react-hot-toast */}
-
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 px-4">
-              {/* Personal Profile Section */}
               <div className="border border-gray-200 rounded-lg p-6">
                 <h3 className="text-gray-900 font-bold text-lg mb-4">Personal Information</h3>
                 <p className="text-sm text-gray-600 mb-4">
@@ -377,7 +131,6 @@ const EditProfile = () => {
                 </form>
               </div>
 
-              {/* Security Settings Section */}
               <div className="border border-gray-200 rounded-lg p-6">
                 <h3 className="text-gray-900 font-bold text-lg mb-4">Security Settings</h3>
                 <p className="text-sm text-gray-600 mb-4">
@@ -463,15 +216,11 @@ const EditProfile = () => {
                   </button>
                 </form>
               </div>
-
             </div>
 
-            {/* Handicap Section - Full Width Row */}
             <div className="px-4 mt-6">
               <div className="border border-gray-200 rounded-lg p-6">
                 <h3 className="text-gray-900 font-bold text-lg mb-4">Handicap Management</h3>
-
-                {/* Current Handicap Info */}
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
                   <p className="text-sm text-gray-700">
                     <span className="font-semibold">Current Handicap:</span>{' '}
@@ -533,9 +282,8 @@ const EditProfile = () => {
               </div>
             </div>
 
-            {/* Action Buttons */}
             <div className="flex justify-stretch">
-              <div className="flex flex-1 gap-3 flex-wrap px-4 py-6 justify-end">
+              <div className="flex flex-1 gap-3 flex flex-wrap px-4 py-6 justify-end">
                 <button
                   onClick={() => navigate('/profile')}
                   className="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-gray-100 text-gray-900 text-sm font-bold leading-normal tracking-wide hover:bg-gray-200 transition-colors"
