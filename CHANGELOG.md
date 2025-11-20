@@ -8,6 +8,13 @@ y este proyecto adhiere a [Versionado Semántico](https://semver.org/lang/es/).
 ## [Unreleased]
 
 ### Added
+- Implementación de Clean Architecture para el flujo de verificación de email, incluyendo:
+  - Caso de uso `VerifyEmailUseCase`.
+  - Método `verifyEmail` en `IAuthRepository` y `ApiAuthRepository`.
+- Implementación del sistema de pruebas unitarias con Vitest:
+  - Configuración de Vitest, `jsdom`, `@testing-library/react`.
+  - Creación de `setupTests.js` para configuración global de tests.
+  - Creación de tests unitarios para `LoginUseCase`, `RegisterUseCase`, `UpdateUserSecurityUseCase`, `UpdateManualHandicapUseCase`, `UpdateRfegHandicapUseCase`, `UpdateUserProfileUseCase` y `VerifyEmailUseCase`.
 - Implementación de Clean Architecture para el flujo de autenticación (Login/Register), incluyendo:
   - Interfaz `IAuthRepository`.
   - Implementación `ApiAuthRepository`.
@@ -27,6 +34,7 @@ y este proyecto adhiere a [Versionado Semántico](https://semver.org/lang/es/).
   - Configuración del "composition root" en `src/composition/index.js` para la inyección de dependencias.
 
 ### Changed
+- Refactorización de `VerifyEmail.jsx` para utilizar `VerifyEmailUseCase`.
 - Refactorización de `Login.jsx` y `Register.jsx` para utilizar `LoginUseCase` y `RegisterUseCase`.
 - Manejo de errores mejorado en `ApiAuthRepository` para respuestas de la API (ej. errores 422 de validación).
 - Refactorización de `EditProfile.jsx` para utilizar `UpdateUserSecurityUseCase`, `UpdateManualHandicapUseCase` y `UpdateRfegHandicapUseCase`.
@@ -35,8 +43,10 @@ y este proyecto adhiere a [Versionado Semántico](https://semver.org/lang/es/).
 - Migración completa del sistema de mensajes local (`message` state y `getMessageClassName`) a `react-hot-toast` para una experiencia de usuario consistente y un código más limpio.
 
 ### Fixed
+- Corrección de un bug en `UpdateUserProfileUseCase` donde faltaba la validación de entrada (`userId`, `updateData`).
 - Corrección de un bug en el flujo de registro donde la estructura de la respuesta de la API era asumida incorrectamente, causando un error de "destructuring".
 - Corrección de un bug en la actualización de seguridad del usuario donde `confirm_password` no se enviaba al backend, causando un error de validación 422.
+
 
 
 

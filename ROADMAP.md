@@ -36,7 +36,7 @@ Este documento describe los próximos pasos y las tareas planificadas para conti
         4.  Refactorizar `Login.jsx` y `Register.jsx` para que usen los casos de uso, simplificando los componentes.
 
 4.  **Refactorizar Verificación de Email:**
-    *   **Estado:** Pendiente
+    *   **Estado:** Completado
     *   **Objetivo:** Mover la lógica de `VerifyEmail.jsx` a un caso de uso.
     *   **Pasos:**
         1.  Crear `VerifyEmailUseCase.js`.
@@ -112,7 +112,7 @@ Este documento describe los próximos pasos y las tareas planificadas para conti
 ## 🛠️ Tareas Transversales (Cross-Cutting Concerns)
 
 1.  **Implementar un Sistema de Pruebas Unitarias:**
-    *   **Estado:** Pendiente
+    *   **Estado:** Completado
     *   **Objetivo:** Asegurar la calidad y fiabilidad del código de negocio y aplicación.
     *   **Pasos:**
         1.  Configurar Jest o Vitest.
