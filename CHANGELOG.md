@@ -8,6 +8,10 @@ y este proyecto adhiere a [Versionado Semántico](https://semver.org/lang/es/).
 ## [Unreleased]
 
 ### Added
+- Implementación de Clean Architecture para el flujo de autenticación (Login/Register), incluyendo:
+  - Interfaz `IAuthRepository`.
+  - Implementación `ApiAuthRepository`.
+  - Casos de uso `LoginUseCase` y `RegisterUseCase`.
 - Implementación de Clean Architecture para la funcionalidad de actualización de seguridad del usuario (email/contraseña), incluyendo:
   - Caso de uso `UpdateUserSecurityUseCase`.
   - Método `updateSecurity` en `IUserRepository` y `ApiUserRepository`.
@@ -23,13 +27,17 @@ y este proyecto adhiere a [Versionado Semántico](https://semver.org/lang/es/).
   - Configuración del "composition root" en `src/composition/index.js` para la inyección de dependencias.
 
 ### Changed
+- Refactorización de `Login.jsx` y `Register.jsx` para utilizar `LoginUseCase` y `RegisterUseCase`.
+- Manejo de errores mejorado en `ApiAuthRepository` para respuestas de la API (ej. errores 422 de validación).
 - Refactorización de `EditProfile.jsx` para utilizar `UpdateUserSecurityUseCase`, `UpdateManualHandicapUseCase` y `UpdateRfegHandicapUseCase`.
 - Centralización y mejora del manejo de errores en `ApiUserRepository` y `ApiHandicapRepository` para respuestas de la API (ej. errores 422 de validación).
 - Refactorización de `EditProfile.jsx` para utilizar `UpdateUserProfileUseCase` y el sistema de notificaciones `react-hot-toast`.
 - Migración completa del sistema de mensajes local (`message` state y `getMessageClassName`) a `react-hot-toast` para una experiencia de usuario consistente y un código más limpio.
 
 ### Fixed
+- Corrección de un bug en el flujo de registro donde la estructura de la respuesta de la API era asumida incorrectamente, causando un error de "destructuring".
 - Corrección de un bug en la actualización de seguridad del usuario donde `confirm_password` no se enviaba al backend, causando un error de validación 422.
+
 
 
 ## [1.4.0] - 2025-11-17

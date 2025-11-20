@@ -27,7 +27,7 @@ Este documento describe los próximos pasos y las tareas planificadas para conti
         4.  Refactorizar los `handle...` en `EditProfile.jsx`.
 
 3.  **Refactorizar Flujo de Autenticación (Login/Register):**
-    *   **Estado:** Pendiente
+    *   **Estado:** Completado
     *   **Objetivo:** Aplicar Clean Architecture a las páginas de Login y Registro.
     *   **Pasos:**
         1.  Crear `LoginUseCase.js` y `RegisterUseCase.js`.
