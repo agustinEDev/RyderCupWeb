@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import { validateEmail, validateName, validatePassword } from '../utils/validation';
 import PasswordInput from '../components/ui/PasswordInput';
 import PasswordStrengthIndicator from '../components/ui/PasswordStrengthIndicator';
+import { registerUseCase } from '../composition'; // NUEVO import
 
 const Register = () => {
   const navigate = useNavigate();
@@ -65,27 +66,12 @@ const Register = () => {
     setIsLoading(true);
 
     try {
-      const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
-
-      const response = await fetch(`${API_URL}/api/v1/auth/register`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          first_name: formData.firstName,
-          last_name: formData.lastName,
-          email: formData.email,
-          password: formData.password
-        })
+      await registerUseCase.execute({
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        email: formData.email,
+        password: formData.password
       });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || 'Registration failed');
-      }
-
-      const data = await response.json();
 
       toast.success('Account created successfully!');
 

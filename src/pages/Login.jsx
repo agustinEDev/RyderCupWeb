@@ -6,6 +6,7 @@ import { validateEmail, checkRateLimit, resetRateLimit } from '../utils/validati
 import { safeLog } from '../utils/auth';
 import { setAuthToken, setUserData } from '../utils/secureAuth';
 import PasswordInput from '../components/ui/PasswordInput';
+import { loginUseCase } from '../composition'; // NUEVO import
 
 const Login = () => {
   const navigate = useNavigate();
@@ -64,35 +65,12 @@ const Login = () => {
     setIsLoading(true);
 
     try {
-      const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
-
-      const response = await fetch(`${API_URL}/api/v1/auth/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: formData.email,
-          password: formData.password
-        })
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || 'Login failed');
-      }
-
-      const data = await response.json();
-      safeLog('info', 'Login successful', { email: data.user?.email });
-
-      setAuthToken(data.access_token);
-      setUserData(data.user);
+      const authenticatedUser = await loginUseCase.execute(formData.email, formData.password);
 
       resetRateLimit('login');
+      toast.success(`Welcome, ${authenticatedUser.firstName}!`); // Usamos firstName de la entidad
 
-      toast.success(`Welcome, ${data.user.first_name}!`);
-
-      if (data.email_verification_required) {
+      if (!authenticatedUser.emailVerified) { // Usamos la propiedad de la entidad User
         safeLog('info', 'Email verification required');
         toast('Please verify your email', {
           duration: 5000,
