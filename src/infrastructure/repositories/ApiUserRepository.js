@@ -59,6 +59,53 @@ class ApiUserRepository extends IUserRepository {
     // La API devuelve el usuario completo con los cambios aplicados
     return new User(data.user); 
   }
+
+  /**
+   * @override
+   */
+  async updateSecurity(userId, securityData) {
+    const token = this.authTokenProvider.getToken();
+
+    const payload = {
+      current_password: securityData.currentPassword,
+    };
+
+    if (securityData.email) {
+      payload.new_email = securityData.email;
+    }
+    if (securityData.newPassword) {
+      payload.new_password = securityData.newPassword;
+      if (securityData.confirmPassword) {
+        payload.confirm_password = securityData.confirmPassword;
+      }
+    }
+
+    const response = await fetch(`${API_URL}/api/v1/users/security`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      let errorMessage = 'Failed to update security info';
+      
+      if (errorData.detail) {
+        if (Array.isArray(errorData.detail)) {
+          errorMessage = errorData.detail.map(err => `${err.loc[1]}: ${err.msg}`).join('; ');
+        } else if (typeof errorData.detail === 'string') {
+          errorMessage = errorData.detail;
+        }
+      }
+      throw new Error(errorMessage);
+    }
+
+    const data = await response.json();
+    return new User(data.user);
+  }
 }
 
 export default ApiUserRepository;

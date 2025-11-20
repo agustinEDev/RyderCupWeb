@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import HeaderAuth from '../components/layout/HeaderAuth';
 import { getAuthToken, getUserData, setUserData } from '../utils/secureAuth';
 import toast from 'react-hot-toast'; // Nueva importación
-import { updateUserProfileUseCase } from '../composition'; // Nueva importación
+import { updateUserProfileUseCase, updateUserSecurityUseCase, updateManualHandicapUseCase, updateRfegHandicapUseCase } from '../composition';
 
 const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
@@ -96,40 +96,17 @@ const EditProfile = () => {
 
   const handleUpdateHandicapManually = async (e) => {
     e.preventDefault();
-    
-    // Validate handicap
-    const handicapValue = Number.parseFloat(formData.handicap);
-    if (Number.isNaN(handicapValue) || handicapValue < -10 || handicapValue > 54) {
-      toast.error('Handicap must be between -10.0 and 54.0');
-      return;
-    }
-
     setIsSaving(true);
 
     try {
-      const token = getAuthToken();
-      const response = await fetch(`${API_URL}/api/v1/handicaps/update-manual`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          user_id: user.id,
-          handicap: handicapValue
-        })
+      const updatedUserEntity = await updateManualHandicapUseCase.execute({
+        userId: user.id,
+        handicap: formData.handicap,
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || 'Failed to update handicap');
-      }
-
-      const updatedUser = await response.json();
-
-      // Update secure storage and state
-      setUserData(updatedUser);
-      setUser(updatedUser);
+      const updatedUserPlain = updatedUserEntity.toPersistence();
+      setUserData(updatedUserPlain);
+      setUser(updatedUserPlain);
 
       toast.success('Handicap updated successfully!');
     } catch (error) {
@@ -144,36 +121,15 @@ const EditProfile = () => {
     setIsUpdatingRFEG(true);
 
     try {
-      const token = getAuthToken();
+      const updatedUserEntity = await updateRfegHandicapUseCase.execute({ userId: user.id });
 
-      const response = await fetch(`${API_URL}/api/v1/handicaps/update`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          user_id: user.id
-          // NOTE: Do NOT send manual_handicap when updating from RFEG
-          // Let the backend fetch from RFEG or return error if not found
-        })
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || 'Failed to update handicap from RFEG');
-      }
-
-      const updatedUser = await response.json();
-
-      // Update secure storage and state
-      setUserData(updatedUser);
-      setUser(updatedUser);
+      const updatedUserPlain = updatedUserEntity.toPersistence();
+      setUserData(updatedUserPlain);
+      setUser(updatedUserPlain);
       
-      // Safely update handicap in form, handle null case
       setFormData(prev => ({ 
         ...prev, 
-        handicap: updatedUser.handicap === null ? '' : updatedUser.handicap.toString()
+        handicap: updatedUserPlain.handicap === null ? '' : updatedUserPlain.handicap.toString()
       }));
 
       toast.success('Handicap updated from RFEG successfully!');
@@ -239,14 +195,12 @@ const EditProfile = () => {
   const handleUpdateSecurity = async (e) => {
     e.preventDefault();
     
-    // Validate current password is provided
+    // Validaciones de UI (permanecen en el componente)
     if (!formData.currentPassword) {
       toast.error('Current password is required to update security settings.');
       return;
     }
 
-    // Check if at least one security field is being updated
-    // Trim email before validation and comparison
     const trimmedEmail = formData.email.trim();
     const isEmailChanged = trimmedEmail !== '' && trimmedEmail !== user.email;
     const isPasswordChanged = formData.newPassword !== '';
@@ -256,7 +210,6 @@ const EditProfile = () => {
       return;
     }
 
-    // If changing password, validate new password
     if (isPasswordChanged) {
       if (formData.newPassword.length < 8) {
         toast.error('New password must be at least 8 characters.');
@@ -272,63 +225,42 @@ const EditProfile = () => {
     setIsSaving(true);
 
     try {
-      const token = getAuthToken();
-
-      // Build payload with only changed fields (avoid sending null)
-      const requestBody = {
-        current_password: formData.currentPassword
+      // Construir los datos de seguridad para el caso de uso
+      const securityData = {
+        currentPassword: formData.currentPassword,
       };
       if (isEmailChanged) {
-        requestBody.new_email = trimmedEmail;
+        securityData.email = trimmedEmail;
       }
       if (isPasswordChanged) {
-        requestBody.new_password = formData.newPassword;
-        requestBody.confirm_password = formData.confirmPassword;
+        securityData.newPassword = formData.newPassword;
+        securityData.confirmPassword = formData.confirmPassword; // <-- CORRECCIÓN
       }
 
-      const response = await fetch(`${API_URL}/api/v1/users/security`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(requestBody)
+      // Llamada al caso de uso (la lógica de API y manejo de token está encapsulada)
+      const updatedUserEntity = await updateUserSecurityUseCase.execute({
+        userId: user.id,
+        securityData: securityData,
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        // Handle different error formats
-        let errorMessage = 'Failed to update security settings';
-        if (errorData.detail) {
-          // If detail is an array (Pydantic validation errors)
-          if (Array.isArray(errorData.detail)) {
-            errorMessage = errorData.detail.map(err => err.msg).join(', ');
-          } else if (typeof errorData.detail === 'string') {
-            errorMessage = errorData.detail;
-          }
-        }
-        throw new Error(errorMessage);
-      }
+      // Actualizar el almacenamiento seguro y el estado del componente
+      const updatedUserPlain = updatedUserEntity.toPersistence(); 
+      setUserData(updatedUserPlain);
+      setUser(updatedUserPlain);
 
-      const data = await response.json();
-      const updatedUser = data.user;
-
-      // Update secure storage and state
-      setUserData(updatedUser);
-      setUser(updatedUser);
-
-      // Clear all security fields after successful update
+      // Limpiar campos de seguridad después de una actualización exitosa
       setFormData(prev => ({
         ...prev,
-        email: updatedUser.email,  // Reset to current email
+        email: updatedUserPlain.email,  // Restablecer al email actual
         currentPassword: '',
         newPassword: '',
         confirmPassword: ''
       }));
 
-      toast.success(data.message || 'Security settings updated successfully!');
+      toast.success('Security settings updated successfully!');
     } catch (error) {
       console.error('Error updating security:', error);
+      // El error ya viene "limpio" del caso de uso/repositorio
       toast.error(error.message || 'Failed to update security settings');
     } finally {
       setIsSaving(false);

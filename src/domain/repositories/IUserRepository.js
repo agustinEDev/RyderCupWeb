@@ -18,6 +18,16 @@ class IUserRepository {
     throw new Error('Method not implemented: update');
   }
 
+  /**
+   * Actualiza la información de seguridad de un usuario (ej. email, contraseña).
+   * @param {string} userId - El ID del usuario a actualizar.
+   * @param {Object} securityData - Datos de seguridad (ej. { email, currentPassword, newPassword }).
+   * @returns {Promise<import('../entities/User').default>} El objeto User actualizado.
+   */
+  async updateSecurity(userId, securityData) {
+    throw new Error('Method not implemented: updateSecurity');
+  }
+
   // Otros métodos que podríamos necesitar:
   // async save(user) {
   //   throw new Error('Method not implemented: save');
