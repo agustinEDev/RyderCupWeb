@@ -7,7 +7,21 @@ y este proyecto adhiere a [Versionado Semántico](https://semver.org/lang/es/).
 
 ## [Unreleased]
 
+### Added
+- **Dominio `Competition`**: Implementación completa de la capa de dominio para la gestión de competiciones, siguiendo principios de DDD.
+  - **Value Objects**: `CompetitionId`, `CompetitionStatus`, `CompetitionName`, `DateRange`, `Location` (compuesto), `HandicapSettings`, `TeamAssignment` y `CountryCode`.
+  - **Entidad**: `Competition` como Agregado Raíz, encapsulando lógica de negocio y transiciones de estado inmutables.
+  - **Repositorio**: Interfaz `ICompetitionRepository` para definir el contrato de persistencia.
+- **Tests Unitarios**: Cobertura de tests completa para todos los nuevos Value Objects y la entidad `Competition` para garantizar la robustez y el comportamiento esperado.
+- **Dashboard**: La tarjeta "Tournaments" ahora muestra dinámicamente el número total de competiciones obtenidas de la API.
+- **Dependencia**: Añadido el paquete `uuid` para la generación de identificadores únicos en el dominio.
+
+### Fixed
+- **Crear Competición**: Corregido un bug donde el número de jugadores no se guardaba. El campo enviado a la API ahora es `max_players` en lugar de `number_of_players`.
+- **Borrar Competición**: Corregido un bug crítico que impedía borrar competiciones. El servicio API ahora maneja correctamente las respuestas `204 No Content` del backend.
+
 ### Changed
+- **Refactor (Formulario)**: Eliminado el campo `description` del formulario de creación de competiciones para alinearlo con el modelo de dominio de la entidad `Competition`.
 - **Refactor (Profile):** Extraída la lógica del componente `EditProfile.jsx` a un hook personalizado `useEditProfile.js`. Esto simplifica el componente a una capa de presentación pura y centraliza el manejo del estado y los efectos secundarios. Se han añadido tests unitarios exhaustivos para el nuevo hook.
 - **Refactor (DDD):** Introducidos `Email` y `Password` Value Objects para mejorar la robustez y seguridad del dominio.
   - Refactorizados `User` entity, casos de uso de autenticación (`Login`, `Register`, `UpdateUserSecurity`) y repositorios para utilizar los nuevos Value Objects.

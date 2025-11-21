@@ -67,7 +67,7 @@ Este documento describe los próximos pasos y las tareas planificadas para conti
 ### Tareas de Refactorización (Clean Architecture)
 
 1.  **Definir Entidades y Repositorios del Dominio de Competición:**
-    *   **Estado:** Pendiente
+    *   **Estado:** Completado
     *   **Objetivo:** Crear las bases del dominio para las competiciones.
     *   **Pasos:**
         1.  Crear la entidad `Competition.js` en `src/domain/entities`.
@@ -75,7 +75,7 @@ Este documento describe los próximos pasos y las tareas planificadas para conti
         3.  Crear la interfaz `ICompetitionRepository` en `src/domain/repositories`.
 
 2.  **Refactorizar Creación de Competiciones:**
-    *   **Estado:** Pendiente
+    *   **Estado:** Siguiente
     *   **Objetivo:** Mover la lógica de `CreateCompetition.jsx` a un caso de uso.
     *   **Pasos:**
         1.  Crear `CreateCompetitionUseCase.js`.
