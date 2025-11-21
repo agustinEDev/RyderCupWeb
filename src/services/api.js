@@ -58,10 +58,14 @@ export const apiRequest = async (endpoint, options = {}) => {
       throw new Error('Session expired. Please login again.');
     }
 
-    // Parse error response
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       throw new Error(errorData.detail || `HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    // Handle no content responses (e.g., 204 from DELETE)
+    if (response.status === 204) {
+      return null;
     }
 
     // Return parsed JSON
