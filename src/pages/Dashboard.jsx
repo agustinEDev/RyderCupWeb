@@ -6,18 +6,40 @@ import HeaderAuth from '../components/layout/HeaderAuth';
 import ProfileCard from '../components/profile/ProfileCard';
 import EmailVerificationBanner from '../components/EmailVerificationBanner';
 import { getUserData } from '../utils/secureAuth';
+import { getCompetitions } from '../services/competitions'; // Import the service
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
+  const [competitions, setCompetitions] = useState([]); // State for competitions
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Fetch user data from secure storage (auth already verified by ProtectedRoute)
-    const userData = getUserData();
-    setUser(userData);
-    setIsLoading(false);
-  }, []);
+    const loadDashboardData = async () => {
+      setIsLoading(true);
+      try {
+        // Fetch user data from secure storage
+        const userData = getUserData();
+        if (!userData) {
+          navigate('/login');
+          return;
+        }
+        setUser(userData);
+
+        // Fetch competitions
+        const competitionsData = await getCompetitions();
+        setCompetitions(competitionsData);
+
+      } catch (error) {
+        console.error("Failed to load dashboard data:", error);
+        // Silently fail for now, or show a toast
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadDashboardData();
+  }, [navigate]);
 
   if (isLoading) {
     return (
@@ -83,10 +105,10 @@ const Dashboard = () => {
                     </div>
                     <div className="text-right">
                       <p className="text-sm text-primary-600 font-medium">Tournaments</p>
-                      <p className="text-3xl font-bold text-primary-700">0</p>
+                      <p className="text-3xl font-bold text-primary-700">{competitions.length}</p>
                     </div>
                   </div>
-                  <p className="text-xs text-primary-600">Coming soon: create tournaments</p>
+                  <p className="text-xs text-primary-600">View your active and past tournaments</p>
                   <div className="absolute -bottom-6 -right-6 opacity-10">
                     <Trophy className="w-32 h-32 text-primary-700" />
                   </div>
