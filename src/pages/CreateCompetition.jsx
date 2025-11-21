@@ -33,7 +33,6 @@ const CreateCompetition = () => {
   const [formData, setFormData] = useState({
     // Competition Details
     competitionName: '',
-    description: '',
     teamOneName: 'Europe',
     teamTwoName: 'USA',
 
@@ -297,8 +296,9 @@ const CreateCompetition = () => {
       return;
     }
 
-    if (!formData.numberOfPlayers || formData.numberOfPlayers < 1) {
-      setMessage({ type: 'error', text: 'Number of players must be at least 1' });
+    const numPlayers = parseInt(formData.numberOfPlayers, 10);
+    if (isNaN(numPlayers) || numPlayers < 2) {
+      setMessage({ type: 'error', text: 'Number of players must be at least 2' });
       return;
     }
 
@@ -323,7 +323,6 @@ const CreateCompetition = () => {
       // Test with different values
       const payload = {
         name: formData.competitionName.trim(),
-        description: formData.description.trim(),
         team_one_name: formData.teamOneName.trim(),
         team_two_name: formData.teamTwoName.trim(),
         start_date: formData.startDate,
@@ -331,7 +330,7 @@ const CreateCompetition = () => {
         main_country: formData.country.code,
         countries: countries,
         handicap_type: formData.handicapType,
-        number_of_players: parseInt(formData.numberOfPlayers),
+        max_players: numPlayers,
         team_assignment: formData.teamAssignment,
         player_handicap: formData.playerHandicap
       };
@@ -452,20 +451,6 @@ const CreateCompetition = () => {
                     />
                   </div>
 
-                  <div>
-                    <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
-                      Description
-                    </label>
-                    <textarea
-                      id="description"
-                      name="description"
-                      value={formData.description}
-                      onChange={handleInputChange}
-                      placeholder="Enter competition description"
-                      rows={3}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary resize-none"
-                    />
-                  </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
