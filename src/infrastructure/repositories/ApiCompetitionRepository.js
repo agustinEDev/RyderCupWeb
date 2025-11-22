@@ -29,8 +29,22 @@ class ApiCompetitionRepository extends ICompetitionRepository {
       throw new Error(errorMessage);
     }
 
-    const createdCompetitionData = await response.json();
-    return new Competition(createdCompetitionData);
+    const apiData = await response.json();
+
+    // Map API response (snake_case) to what the UI needs
+    // Note: We're NOT creating a full Competition entity because that would require
+    // constructing all the Value Objects (Location, DateRange, HandicapSettings, etc.)
+    // For now, we return a simple object with the essential fields
+    return {
+      id: apiData.id,
+      name: apiData.name,
+      team_one_name: apiData.team_one_name,
+      team_two_name: apiData.team_two_name,
+      start_date: apiData.start_date,
+      end_date: apiData.end_date,
+      status: apiData.status,
+      creator_id: apiData.creator_id
+    };
   }
 }
 
