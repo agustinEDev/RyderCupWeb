@@ -1,5 +1,5 @@
 import { ICompetitionRepository } from '../../domain/repositories/ICompetitionRepository';
-import Competition from '../../domain/entities/Competition';
+import CompetitionMapper from '../mappers/CompetitionMapper';
 import { getAuthToken } from '../../utils/secureAuth';
 
 const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
@@ -8,7 +8,7 @@ class ApiCompetitionRepository extends ICompetitionRepository {
   /**
    * Creates a new competition via the API.
    * @override
-   * @param {Object} competitionData - The data for the new competition.
+   * @param {Object} competitionData - The data for the new competition (API DTO format).
    * @returns {Promise<Competition>} - The newly created competition entity.
    */
   async save(competitionData) {
@@ -31,20 +31,10 @@ class ApiCompetitionRepository extends ICompetitionRepository {
 
     const apiData = await response.json();
 
-    // Map API response (snake_case) to what the UI needs
-    // Note: We're NOT creating a full Competition entity because that would require
-    // constructing all the Value Objects (Location, DateRange, HandicapSettings, etc.)
-    // For now, we return a simple object with the essential fields
-    return {
-      id: apiData.id,
-      name: apiData.name,
-      team_one_name: apiData.team_one_name,
-      team_two_name: apiData.team_two_name,
-      start_date: apiData.start_date,
-      end_date: apiData.end_date,
-      status: apiData.status,
-      creator_id: apiData.creator_id
-    };
+    // Map API response to Competition domain entity
+    const competition = CompetitionMapper.toDomain(apiData);
+
+    return competition;
   }
 }
 

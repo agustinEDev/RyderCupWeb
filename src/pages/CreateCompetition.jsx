@@ -311,7 +311,7 @@ const CreateCompetition = () => {
       setMessage({ type: 'success', text: 'Competition created successfully!' });
 
       setTimeout(() => {
-        navigate(`/competitions/${createdCompetition.id.toString()}`);
+        navigate(`/competitions/${createdCompetition.id}`);
       }, 1500);
 
     } catch (error) {

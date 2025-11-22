@@ -1,11 +1,23 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import CreateCompetitionUseCase from './CreateCompetitionUseCase';
 import { ICompetitionRepository } from '../../domain/repositories/ICompetitionRepository';
-import Competition from '../../domain/entities/Competition'; // Assuming default export now
 
-// Mockear el repositorio
-vi.mock('../../domain/repositories/ICompetitionRepository');
-vi.mock('../../domain/entities/Competition'); // Mockear la entidad si no queremos la implementación real
+// Mock the CompetitionMapper
+vi.mock('../../infrastructure/mappers/CompetitionMapper', () => ({
+  default: {
+    toSimpleDTO: vi.fn((competition) => ({
+      id: competition.id,
+      name: competition.name,
+      team1Name: competition.team1Name,
+      team2Name: competition.team2Name,
+      startDate: competition.startDate,
+      endDate: competition.endDate,
+      status: competition.status,
+      maxPlayers: competition.maxPlayers,
+      creatorId: competition.creatorId
+    }))
+  }
+}));
 
 describe('CreateCompetitionUseCase', () => {
   let competitionRepository;
@@ -23,7 +35,7 @@ describe('CreateCompetitionUseCase', () => {
     createCompetitionUseCase = new CreateCompetitionUseCase({ competitionRepository });
   });
 
-  it('should successfully create a competition and return the new competition entity', async () => {
+  it('should successfully create a competition and return a simple DTO', async () => {
     // Arrange
     const competitionData = {
       name: 'Ryder Cup Test',
@@ -39,20 +51,44 @@ describe('CreateCompetitionUseCase', () => {
       player_handicap: 'user',
     };
 
-    const mockCreatedCompetition = { id: 'comp-123', name: 'Ryder Cup Test' };
+    // Mock competition entity returned by repository
+    const mockCompetitionEntity = {
+      id: 'comp-123',
+      name: 'Ryder Cup Test',
+      team1Name: 'Team A',
+      team2Name: 'Team B',
+      startDate: '2025-01-01',
+      endDate: '2025-01-05',
+      status: 'DRAFT',
+      maxPlayers: 24,
+      creatorId: 'user-456'
+    };
 
-    // Configurar el mock del repositorio para que devuelva la competición creada
-    competitionRepository.save.mockResolvedValue(mockCreatedCompetition);
+    // Expected simple DTO (what the UI will receive)
+    const expectedDTO = {
+      id: 'comp-123',
+      name: 'Ryder Cup Test',
+      team1Name: 'Team A',
+      team2Name: 'Team B',
+      startDate: '2025-01-01',
+      endDate: '2025-01-05',
+      status: 'DRAFT',
+      maxPlayers: 24,
+      creatorId: 'user-456'
+    };
+
+    // Configure repository mock to return the competition entity
+    competitionRepository.save.mockResolvedValue(mockCompetitionEntity);
 
     // Act
-    const newCompetition = await createCompetitionUseCase.execute(competitionData);
+    const result = await createCompetitionUseCase.execute(competitionData);
 
     // Assert
-    // 1. Verificar que el método save del repositorio fue llamado con los datos correctos
+    // 1. Verify repository.save was called with correct data
     expect(competitionRepository.save).toHaveBeenCalledWith(competitionData);
 
-    // 2. Verificar que el caso de uso devuelve la competición creada
-    expect(newCompetition).toEqual(mockCreatedCompetition);
+    // 2. Verify the use case returns the DTO (not the entity)
+    expect(result).toEqual(expectedDTO);
   });
 
   // TODO: Add more tests for validation, error handling, etc.
