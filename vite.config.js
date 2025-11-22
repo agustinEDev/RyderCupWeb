@@ -46,7 +46,7 @@ export default defineConfig({
         classNameStrategy: 'non-scoped',
       },
     },
-    exclude: ['**/node_modules/**', '**/dist/**', '**/e2e/**'], // Excluir directorios comunes de build y e2e
+    exclude: ['**/node_modules/**', '**/dist/**', '**/e2e/**', '**/tests/**'], // Excluir directorios comunes de build, e2e y playwright
   },
   server: {
     port: 5173,

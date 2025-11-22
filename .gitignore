@@ -32,7 +32,10 @@ dist-ssr
 .env.test.local
 
 # Testing
-coverage
+# Test results
+/test-results/
+/playwright-report/
+/coverage/
 *.lcov
 
 # Build
