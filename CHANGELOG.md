@@ -15,6 +15,12 @@ y este proyecto adhiere a [Versionado Semántico](https://semver.org/lang/es/).
   - `toDTO()`: Convierte entidades del dominio a DTOs para persistencia.
   - `toSimpleDTO()`: Convierte entidades a DTOs simples optimizados para la UI.
   - Protege el dominio de cambios en la estructura de la API externa.
+- **ListUserCompetitionsUseCase (Application Layer)**: Nuevo caso de uso para listar competiciones del usuario:
+  - Valida entrada (userId requerido).
+  - Llama a `repository.findByCreator()` para obtener entidades del dominio.
+  - Convierte entidades a DTOs simples para la UI.
+  - Incluye 5 tests unitarios exhaustivos (validación, filtros, errores, casos vacíos).
+- **findByCreator() en ICompetitionRepository**: Nuevo método de interfaz para consultar competiciones por creador/usuario.
 
 ### Changed
 - **Refactor `CreateCompetition`**: Refactorizada la página de creación de competiciones para seguir los principios de Clean Architecture, extrayendo la lógica de negocio a `CreateCompetitionUseCase` y `ApiCompetitionRepository`.
@@ -27,6 +33,14 @@ y este proyecto adhiere a [Versionado Semántico](https://semver.org/lang/es/).
   - **DTO Pattern**: La UI recibe DTOs optimizados sin depender de Value Objects complejos.
   - **Dependency Inversion**: La infraestructura depende del dominio, no al revés.
 - **CreateCompetitionUseCase.test.js**: Test actualizado para mockear `CompetitionMapper` y verificar que el caso de uso devuelve DTOs en lugar de entidades.
+- **Refactor `Competitions.jsx`**: Refactorizada la página de listado de competiciones para usar Clean Architecture:
+  - Reemplazado llamada directa al servicio `getCompetitions()` por `listUserCompetitionsUseCase.execute()`.
+  - Ahora recibe DTOs simples (camelCase) del caso de uso en lugar de datos de API (snake_case).
+  - Eliminada dependencia del servicio para obtención de datos (solo se usa para helpers de UI).
+- **ApiCompetitionRepository.findByCreator()**: Implementación del método para obtener competiciones de un usuario:
+  - Construye query params con `creator_id` y filtros opcionales.
+  - Mapea respuestas de API a entidades del dominio usando `CompetitionMapper.toDomain()`.
+  - Devuelve array de entidades `Competition`.
 
 ### Fixed
 - **Vite Test Configuration**: Corregida la configuración de Vitest para que ignore los tests de Playwright, permitiendo que ambos corredores de tests funcionen de forma independiente.

@@ -88,15 +88,18 @@ Este documento describe los próximos pasos y las tareas planificadas para conti
         8.  ✅ Corregir filtrado de países adyacentes.
 
 3.  **Refactorizar Listado de Competiciones:**
-    *   **Estado:** Siguiente
-    *   **Objetivo:** Mover la lógica de `Competitions.jsx` a un caso de uso.
+    *   **Estado:** Completado ✅
+    *   **Objetivo:** Mover la lógica de `Competitions.jsx` a un caso de uso siguiendo Clean Architecture y DDD.
     *   **Pasos:**
-        1.  Crear `ListUserCompetitionsUseCase.js`.
-        2.  Implementar `findUserCompetitions` en `ICompetitionRepository` y `ApiCompetitionRepository`.
-        3.  Refactorizar `Competitions.jsx` para que use el caso de uso.
+        1.  ✅ Crear `ListUserCompetitionsUseCase.js`.
+        2.  ✅ Añadir `findByCreator()` a `ICompetitionRepository`.
+        3.  ✅ Implementar `findByCreator()` en `ApiCompetitionRepository` usando `CompetitionMapper`.
+        4.  ✅ Refactorizar `Competitions.jsx` para que use el caso de uso.
+        5.  ✅ Crear tests unitarios completos (5 test cases).
+        6.  ✅ Integrar en composition root.
 
 4.  **Refactorizar Detalle de Competición y Gestión de Estado:**
-    *   **Estado:** Pendiente
+    *   **Estado:** Siguiente
     *   **Objetivo:** Mover la lógica de `CompetitionDetail.jsx` a casos de uso.
     *   **Pasos:**
         1.  Crear `GetCompetitionDetailUseCase.js`.
