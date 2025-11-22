@@ -38,6 +38,44 @@ class ApiCompetitionRepository extends ICompetitionRepository {
   }
 
   /**
+   * Finds a competition by its unique ID.
+   * @override
+   * @param {string} competitionId - The ID of the competition to find.
+   * @returns {Promise<Competition>} - The competition entity.
+   * @throws {Error} If the competition is not found or the request fails.
+   */
+  async findById(competitionId) {
+    const token = getAuthToken();
+
+    const response = await fetch(`${API_URL}/api/v1/competitions/${competitionId}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        throw new Error('Competition not found');
+      }
+      const errorData = await response.json();
+      const errorMessage = errorData.detail || 'Failed to fetch competition';
+      throw new Error(errorMessage);
+    }
+
+    const apiData = await response.json();
+
+    // Map API response to Competition domain entity
+    const competition = CompetitionMapper.toDomain(apiData);
+
+    // Attach original API data for mapper to use (for location names, etc.)
+    competition._apiData = apiData;
+
+    return competition;
+  }
+
+  /**
    * Finds all competitions for a specific user (creator).
    * @override
    * @param {string} userId - The ID of the user/creator.
@@ -70,7 +108,14 @@ class ApiCompetitionRepository extends ICompetitionRepository {
     const apiDataArray = await response.json();
 
     // Map each API response to Competition domain entity
-    return apiDataArray.map(apiData => CompetitionMapper.toDomain(apiData));
+    // Attach original API data for mapper to use
+    const competitions = apiDataArray.map((apiData) => {
+      const competition = CompetitionMapper.toDomain(apiData);
+      competition._apiData = apiData;
+      return competition;
+    });
+
+    return competitions;
   }
 }
 

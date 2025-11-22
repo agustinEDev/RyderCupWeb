@@ -26,8 +26,8 @@ class ListUserCompetitionsUseCase {
     const competitions = await this.competitionRepository.findByCreator(userId, filters);
 
     // Convert domain entities to simple DTOs for UI
-    // This prevents the UI from depending on complex domain Value Objects
-    return competitions.map(competition => CompetitionMapper.toSimpleDTO(competition));
+    // Pass original API data for location names parsing
+    return competitions.map(competition => CompetitionMapper.toSimpleDTO(competition, competition._apiData));
   }
 }
 

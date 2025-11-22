@@ -10,14 +10,16 @@ import toast from 'react-hot-toast';
 import HeaderAuth from '../components/layout/HeaderAuth';
 import { getUserData } from '../utils/secureAuth';
 import {
-  getCompetitionById,
+  getCompetitionDetailUseCase,
+  activateCompetitionUseCase,
+  closeEnrollmentsUseCase,
+  startCompetitionUseCase,
+  completeCompetitionUseCase,
+  cancelCompetitionUseCase,
+} from '../composition';
+import {
   updateCompetition,
   deleteCompetition,
-  activateCompetition,
-  closeEnrollments,
-  startCompetition,
-  completeCompetition,
-  cancelCompetition,
   getEnrollments,
   requestEnrollment,
   getStatusColor,
@@ -43,7 +45,8 @@ const CompetitionDetail = () => {
   const loadCompetition = async () => {
     setIsLoading(true);
     try {
-      const data = await getCompetitionById(id);
+      // Use GetCompetitionDetailUseCase instead of direct service call
+      const data = await getCompetitionDetailUseCase.execute(id);
       setCompetition(data);
 
       // Load enrollments
@@ -65,32 +68,38 @@ const CompetitionDetail = () => {
 
     setIsProcessing(true);
     try {
-      let response;
+      let result;
       switch (action) {
         case 'activate':
-          response = await activateCompetition(id);
+          result = await activateCompetitionUseCase.execute(id);
           toast.success('Competition activated!');
           break;
         case 'close-enrollments':
-          response = await closeEnrollments(id);
+          result = await closeEnrollmentsUseCase.execute(id);
           toast.success('Enrollments closed!');
           break;
         case 'start':
-          response = await startCompetition(id);
+          result = await startCompetitionUseCase.execute(id);
           toast.success('Competition started!');
           break;
         case 'complete':
-          response = await completeCompetition(id);
+          result = await completeCompetitionUseCase.execute(id);
           toast.success('Competition completed!');
           break;
         case 'cancel':
-          response = await cancelCompetition(id);
+          result = await cancelCompetitionUseCase.execute(id);
           toast.success('Competition cancelled!');
           break;
         default:
           throw new Error('Invalid action');
       }
-      setCompetition(response);
+
+      // Update only the changed fields (status and updatedAt)
+      setCompetition(prev => ({
+        ...prev,
+        status: result.status,
+        updatedAt: result.updatedAt
+      }));
     } catch (error) {
       console.error(`Error ${action}:`, error);
       toast.error(error.message || `Failed to ${action} competition`);
@@ -145,7 +154,7 @@ const CompetitionDetail = () => {
     return null;
   }
 
-  const isCreator = competition.creator_id === user.id;
+  const isCreator = competition.creatorId === user.id;
   const canEdit = isCreator && competition.status === 'DRAFT';
   const canDelete = isCreator && competition.status === 'DRAFT';
   const userEnrollment = enrollments.find((e) => e.user_id === user.id);
@@ -197,21 +206,14 @@ const CompetitionDetail = () => {
                 </div>
 
                 {/* Quick Stats */}
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="flex items-center gap-2 text-gray-700">
                     <Calendar className="w-5 h-5" />
                     <div>
                       <p className="text-xs text-gray-500">Dates</p>
                       <p className="text-sm font-medium">
-                        {formatDateRange(competition.start_date, competition.end_date)}
+                        {formatDateRange(competition.startDate, competition.endDate)}
                       </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 text-gray-700">
-                    <MapPin className="w-5 h-5" />
-                    <div>
-                      <p className="text-xs text-gray-500">Location</p>
-                      <p className="text-sm font-medium">{competition.location || 'TBD'}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2 text-gray-700">
@@ -220,11 +222,34 @@ const CompetitionDetail = () => {
                       <p className="text-xs text-gray-500">Players</p>
                       <p className="text-sm font-medium">
                         {enrollments.filter((e) => e.status === 'APPROVED').length} /{' '}
-                        {competition.max_players || '∞'}
+                        {competition.maxPlayers || '∞'}
                       </p>
                     </div>
                   </div>
                 </div>
+
+                {/* Countries Badges */}
+                {competition.countries && competition.countries.length > 0 && (
+                  <div className="mt-4 pt-4 border-t border-primary-200">
+                    <div className="flex items-start gap-2">
+                      <MapPin className="w-5 h-5 text-gray-700 mt-0.5" />
+                      <div className="flex-1">
+                        <p className="text-xs text-gray-500 mb-2">Countries</p>
+                        <div className="flex flex-wrap gap-2">
+                          {competition.countries.map((country, index) => (
+                            <span
+                              key={index}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 text-primary rounded-full text-sm font-medium border border-primary/20"
+                            >
+                              <span className="text-lg">{country.flag}</span>
+                              <span>{country.name}</span>
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </motion.div>
 
@@ -374,23 +399,31 @@ const CompetitionDetail = () => {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <span className="text-gray-500 text-sm">Handicap Type:</span>
-                    <p className="text-gray-900 font-medium">{competition.handicap_type}</p>
+                    <span className="text-gray-500 text-sm">Team 1:</span>
+                    <p className="text-gray-900 font-medium">{competition.team1Name}</p>
                   </div>
-                  {competition.handicap_percentage && (
+                  <div>
+                    <span className="text-gray-500 text-sm">Team 2:</span>
+                    <p className="text-gray-900 font-medium">{competition.team2Name}</p>
+                  </div>
+                  <div>
+                    <span className="text-gray-500 text-sm">Handicap Type:</span>
+                    <p className="text-gray-900 font-medium">{competition.handicapType}</p>
+                  </div>
+                  {competition.handicapPercentage && (
                     <div>
                       <span className="text-gray-500 text-sm">Handicap Percentage:</span>
-                      <p className="text-gray-900 font-medium">{competition.handicap_percentage}%</p>
+                      <p className="text-gray-900 font-medium">{competition.handicapPercentage}%</p>
                     </div>
                   )}
                   <div>
                     <span className="text-gray-500 text-sm">Team Assignment:</span>
-                    <p className="text-gray-900 font-medium">{competition.team_assignment}</p>
+                    <p className="text-gray-900 font-medium">{competition.teamAssignment}</p>
                   </div>
                   <div>
                     <span className="text-gray-500 text-sm">Created:</span>
                     <p className="text-gray-900 font-medium">
-                      {new Date(competition.created_at).toLocaleDateString()}
+                      {new Date(competition.createdAt).toLocaleDateString()}
                     </p>
                   </div>
                 </div>

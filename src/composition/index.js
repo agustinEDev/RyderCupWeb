@@ -17,6 +17,12 @@ import { ICompetitionRepository } from '../domain/repositories/ICompetitionRepos
 import ApiCompetitionRepository from '../infrastructure/repositories/ApiCompetitionRepository';
 import CreateCompetitionUseCase from '../application/use_cases/CreateCompetitionUseCase';
 import ListUserCompetitionsUseCase from '../application/use_cases/ListUserCompetitionsUseCase';
+import GetCompetitionDetailUseCase from '../application/use_cases/GetCompetitionDetailUseCase';
+import ActivateCompetitionUseCase from '../application/use_cases/ActivateCompetitionUseCase';
+import CloseEnrollmentsUseCase from '../application/use_cases/CloseEnrollmentsUseCase';
+import StartCompetitionUseCase from '../application/use_cases/StartCompetitionUseCase';
+import CompleteCompetitionUseCase from '../application/use_cases/CompleteCompetitionUseCase';
+import CancelCompetitionUseCase from '../application/use_cases/CancelCompetitionUseCase';
 
 
 // --- Providers de Infraestructura ---
@@ -40,6 +46,12 @@ const registerUseCase = new RegisterUseCase({ authRepository: apiAuthRepository 
 const verifyEmailUseCase = new VerifyEmailUseCase({ authRepository: apiAuthRepository });
 const createCompetitionUseCase = new CreateCompetitionUseCase({ competitionRepository: apiCompetitionRepository });
 const listUserCompetitionsUseCase = new ListUserCompetitionsUseCase({ competitionRepository: apiCompetitionRepository });
+const getCompetitionDetailUseCase = new GetCompetitionDetailUseCase({ competitionRepository: apiCompetitionRepository });
+const activateCompetitionUseCase = new ActivateCompetitionUseCase();
+const closeEnrollmentsUseCase = new CloseEnrollmentsUseCase();
+const startCompetitionUseCase = new StartCompetitionUseCase();
+const completeCompetitionUseCase = new CompleteCompetitionUseCase();
+const cancelCompetitionUseCase = new CancelCompetitionUseCase();
 
 
 // Exportar los casos de uso y otros servicios que la capa de presentación necesite
@@ -53,9 +65,13 @@ export {
   verifyEmailUseCase,
   createCompetitionUseCase,
   listUserCompetitionsUseCase,
-  // Otros casos de uso aquí
+  getCompetitionDetailUseCase,
+  activateCompetitionUseCase,
+  closeEnrollmentsUseCase,
+  startCompetitionUseCase,
+  completeCompetitionUseCase,
+  cancelCompetitionUseCase,
   // También podríamos exportar directamente las entidades si la UI las necesita para displays,
   // aunque la mejor práctica es que la UI reciba DTOs o ViewModels del caso de uso.
-  // Por ahora, para simplificar el mapeo inicial, la UI seguirá trabajando con la estructura de UserEntity
   UserEntity, // Exportamos la entidad User para que la UI pueda crear instancias o manipularla.
 };

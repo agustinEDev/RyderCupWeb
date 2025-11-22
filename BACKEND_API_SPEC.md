@@ -1,764 +1,1438 @@
-# 📋 Frontend-Backend Integration Spec: Competition Module
+# 🌐 API Reference
 
-> Especificación técnica de lo implementado en el frontend y requisitos para el backend API
+**Base URL**: `http://localhost:8000`
+**Docs**: `/docs` (Swagger UI)
+**Total Endpoints**: 32 active
+**Version**: v1.6.4
+**Last Updated**: 22 Nov 2025
 
-**Fecha:** 18 de Noviembre de 2025
-**Versión Frontend:** 1.0.0 (Competition Module)
-**Branch:** `claude/adapt-frontend-competitions-01HrXTbj77c5WWJnsGGh31gn`
+## Quick Reference
 
----
-
-## 📦 Resumen de Implementación Frontend
-
-El frontend ha implementado **completamente** la interfaz de usuario para el módulo Competition, incluyendo:
-
-- ✅ Servicios API para todas las operaciones CRUD
-- ✅ Página de listado de competiciones con filtros y búsqueda
-- ✅ Formulario completo de creación de competiciones
-- ✅ Página de detalle con gestión de estados
-- ✅ Sistema de inscripciones (enrollments)
-- ✅ Validaciones alineadas con los DTOs del backend
-
-**Archivos clave:**
-- `src/services/api.js` - Cliente HTTP base
-- `src/services/competitions.js` - Servicio de competiciones
-- `src/pages/Competitions.jsx` - Listado
-- `src/pages/CreateCompetition.jsx` - Formulario creación
-- `src/pages/CompetitionDetail.jsx` - Detalle y gestión
-
----
-
-## 🔐 Autenticación
-
-**Método:** JWT Bearer Token
-**Header requerido:**
 ```
-Authorization: Bearer <token>
-```
+Authentication (6 endpoints)
+├── POST /api/v1/auth/register           # User registration
+├── POST /api/v1/auth/login              # JWT authentication
+├── GET  /api/v1/auth/current-user       # Get authenticated user info
+├── POST /api/v1/auth/logout             # Session logout
+├── POST /api/v1/auth/verify-email       # Email verification
+└── POST /api/v1/auth/resend-verification # Resend verification email
 
-El frontend obtiene el token del endpoint `/api/v1/auth/login` y lo envía automáticamente en todas las peticiones protegidas.
+User Management (3 endpoints)
+├── GET   /api/v1/users/search           # Search users by email/name
+├── PATCH /api/v1/users/profile          # Update profile (name/surname)
+└── PATCH /api/v1/users/security         # Update security (email/password)
 
-**Manejo de errores de autenticación:**
-- Si el backend responde con **401 Unauthorized**, el frontend automáticamente:
-  1. Limpia el sessionStorage
-  2. Redirige al usuario a `/login`
-  3. Muestra mensaje: "Session expired. Please login again."
+Handicap Management (3 endpoints)
+├── POST /api/v1/handicaps/update        # Update single user handicap (RFEG)
+├── POST /api/v1/handicaps/update-multiple # Batch handicap updates
+└── POST /api/v1/handicaps/update-manual # Manual handicap update
 
----
+Competition Management (10 endpoints)
+├── POST /api/v1/competitions            # Create competition
+├── GET  /api/v1/competitions            # List competitions with filters
+├── GET  /api/v1/competitions/{id}       # Get competition details
+├── PUT  /api/v1/competitions/{id}       # Update competition (DRAFT only)
+├── DELETE /api/v1/competitions/{id}     # Delete competition (DRAFT only)
+├── POST /api/v1/competitions/{id}/activate         # DRAFT → ACTIVE
+├── POST /api/v1/competitions/{id}/close-enrollments # ACTIVE → CLOSED
+├── POST /api/v1/competitions/{id}/start            # CLOSED → IN_PROGRESS
+├── POST /api/v1/competitions/{id}/complete         # IN_PROGRESS → COMPLETED
+└── POST /api/v1/competitions/{id}/cancel           # Any state → CANCELLED
 
-## 🌐 Base URL
+Enrollment Management (8 endpoints)
+├── POST /api/v1/competitions/{id}/enrollments      # Request enrollment
+├── POST /api/v1/competitions/{id}/enrollments/direct # Direct enroll (creator only)
+├── GET  /api/v1/competitions/{id}/enrollments      # List enrollments
+├── POST /api/v1/enrollments/{id}/approve           # Approve enrollment
+├── POST /api/v1/enrollments/{id}/reject            # Reject enrollment
+├── POST /api/v1/enrollments/{id}/cancel            # Cancel enrollment
+├── POST /api/v1/enrollments/{id}/withdraw          # Withdraw from competition
+└── PUT  /api/v1/enrollments/{id}/handicap          # Set custom handicap
 
-```javascript
-const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
-```
-
-**Variable de entorno esperada:**
-```bash
-VITE_API_BASE_URL=http://localhost:8000
+Country Management (2 endpoints)
+├── GET  /api/v1/countries               # List all countries
+└── GET  /api/v1/countries/{code}/adjacent # List adjacent countries
 ```
 
----
+## Authentication
 
-## 📡 Endpoints Requeridos
+### Register User
+```http
+POST /api/v1/auth/register
 
-### **1. Competition CRUD**
-
-#### **1.1 Create Competition**
-
-**Endpoint:** `POST /api/v1/competitions`
-**Auth:** Required (JWT)
-**Descripción:** Crea una nueva competición en estado DRAFT
-
-**Request Body:**
-```json
+Request:
 {
-  "name": "Europe vs USA 2025",
-  "start_date": "2025-06-15",
-  "end_date": "2025-06-17",
-  "country_code": "ES",
-  "secondary_country_code": "FR",  // OPCIONAL
-  "tertiary_country_code": "IT",   // OPCIONAL
-  "max_players": 24,                // OPCIONAL (null = unlimited)
-  "handicap_type": "PERCENTAGE",    // SCRATCH | PERCENTAGE
-  "handicap_percentage": 90.0,      // REQUIRED if handicap_type=PERCENTAGE (100, 95, or 90)
-  "team_assignment": "MANUAL"       // MANUAL | AUTOMATIC
+  "first_name": "John",
+  "last_name": "Doe",
+  "email": "john@example.com",
+  "password": "SecurePass123!"
+}
+
+Response: 201 Created
+{
+  "id": "uuid",
+  "email": "john@example.com",
+  "first_name": "John",
+  "last_name": "Doe",
+  "handicap": null,
+  "email_verified": false,
+  "created_at": "2025-11-09T10:00:00Z",
+  "updated_at": "2025-11-09T10:00:00Z"
+}
+
+Notes:
+- A verification email is automatically sent to the user's email
+- The user must verify their email by clicking the link in the email
+- email_verified will be false until verification is completed
+```
+
+### Login User
+```http
+POST /api/v1/auth/login
+
+Request:
+{
+  "email": "john@example.com",
+  "password": "SecurePass123!"
+}
+
+Response: 200 OK
+{
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "token_type": "bearer",
+  "user": {
+    "id": "uuid",
+    "email": "john@example.com",
+    "first_name": "John",
+    "last_name": "Doe",
+    "handicap": 15.5,
+    "email_verified": true,
+    "created_at": "2025-11-09T10:00:00Z",
+    "updated_at": "2025-11-09T10:00:00Z"
+  }
+}
+
+Errors:
+401 Unauthorized - Invalid credentials
+```
+
+### Get Current User
+```http
+GET /api/v1/auth/current-user
+Authorization: Bearer {token}
+
+Response: 200 OK
+{
+  "id": "uuid",
+  "email": "john@example.com",
+  "first_name": "John",
+  "last_name": "Doe",
+  "handicap": 15.5,
+  "email_verified": true,
+  "created_at": "2025-11-09T10:00:00Z",
+  "updated_at": "2025-11-09T10:00:00Z"
+}
+
+Errors:
+401 Unauthorized - Invalid or missing token
+```
+
+### Logout User
+```http
+POST /api/v1/auth/logout
+Authorization: Bearer {token}
+
+Request:
+{
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."  // Optional
+}
+
+Response: 200 OK
+{
+  "message": "Logout exitoso",
+  "logged_out_at": "2025-11-09T10:00:00Z"
+}
+
+Errors:
+401 Unauthorized - Invalid or missing token
+404 Not Found - User not found
+```
+
+### Verify Email
+```http
+POST /api/v1/auth/verify-email
+
+Request:
+{
+  "token": "verification-token-from-email"
+}
+
+Response: 200 OK
+{
+  "message": "Email verificado exitosamente",
+  "email_verified": true
+}
+
+Errors:
+400 Bad Request - Token inválido o no encontrado
+
+Notes:
+- Los tokens no expiran actualmente (sin TTL implementado)
+- El email enviado es bilingüe (Español/Inglés)
+- El usuario puede usar la app sin verificar, pero algunas funcionalidades estarán limitadas en el futuro
+```
+
+### Resend Verification Email
+```http
+POST /api/v1/auth/resend-verification
+
+Request:
+{
+  "email": "john@example.com"
+}
+
+Response: 200 OK
+{
+  "message": "Email de verificación reenviado exitosamente"
+}
+
+Notes:
+- Siempre retorna 200 OK con mensaje genérico (independiente del resultado)
+- No revela si el email existe en el sistema (previene user enumeration)
+- No revela si el email ya está verificado
+```
+
+## User Management
+
+### Search Users
+```http
+GET /api/v1/users/search?email=john@example.com&full_name=John%20Doe
+Authorization: Bearer {token}
+
+Response: 200 OK
+{
+  "id": "uuid",
+  "email": "john@example.com",
+  "first_name": "John",
+  "last_name": "Doe"
+}
+
+Errors:
+400 Bad Request - At least one search parameter required
+```
+
+### Update Profile
+```http
+PATCH /api/v1/users/profile
+Authorization: Bearer {token}
+
+Request:
+{
+  "first_name": "John",
+  "last_name": "Doe"
+}
+
+Response: 200 OK
+{
+  "id": "uuid",
+  "email": "john@example.com",
+  "first_name": "John",
+  "last_name": "Doe",
+  "handicap": 15.5,
+  "email_verified": true,
+  "created_at": "2025-11-09T10:00:00Z",
+  "updated_at": "2025-11-09T10:00:00Z"
+}
+
+Errors:
+400 Bad Request - Validation error
+401 Unauthorized - Invalid token
+```
+
+### Update Security
+```http
+PATCH /api/v1/users/security
+Authorization: Bearer {token}
+
+Request:
+{
+  "current_password": "OldPass123!",
+  "new_email": "newemail@example.com",
+  "new_password": "NewSecurePass123!",
+  "confirm_password": "NewSecurePass123!"
+}
+
+Response: 200 OK
+{
+  "id": "uuid",
+  "email": "newemail@example.com",
+  "first_name": "John",
+  "last_name": "Doe",
+  "handicap": 15.5,
+  "email_verified": false,
+  "created_at": "2025-11-09T10:00:00Z",
+  "updated_at": "2025-11-09T10:00:00Z"
+}
+
+Notes:
+- current_password is always required
+- At least one of new_email or new_password must be provided
+- If changing password, confirm_password must match new_password
+- Email verification will be required for new email addresses
+```
+
+## Handicap Management
+
+### Update Handicap (RFEG)
+```http
+POST /api/v1/handicaps/update
+Authorization: Bearer {token}
+
+Request:
+{
+  "user_email": "john@example.com",
+  "manual_handicap": 15.5  // Optional fallback
+}
+
+Response: 200 OK
+{
+  "id": "uuid",
+  "email": "john@example.com",
+  "first_name": "John",
+  "last_name": "Doe",
+  "handicap": 15.5,
+  "email_verified": true,
+  "created_at": "2025-11-09T10:00:00Z",
+  "updated_at": "2025-11-09T10:00:00Z"
+}
+
+Notes:
+- Queries RFEG for current handicap
+- If user not found in RFEG and manual_handicap provided, uses manual value
+- If user not found in RFEG and no manual_handicap, returns error
+```
+
+### Update Multiple Handicaps
+```http
+POST /api/v1/handicaps/update-multiple
+Authorization: Bearer {token}
+
+Request:
+{
+  "user_emails": ["john@example.com", "jane@example.com"]
+}
+
+Response: 200 OK
+{
+  "updated_users": [
+    {
+      "id": "uuid",
+      "email": "john@example.com",
+      "first_name": "John",
+      "last_name": "Doe",
+      "handicap": 15.5
+    }
+  ],
+  "failed_updates": [
+    {
+      "email": "jane@example.com",
+      "error": "User not found in RFEG"
+    }
+  ]
 }
 ```
 
-**Validaciones Frontend:**
-- `name`: 3-100 caracteres, requerido
-- `start_date`: fecha futura, requerido
-- `end_date`: >= start_date, requerido
-- `country_code`: 2 caracteres uppercase, requerido (seleccionado de dropdown)
-- `secondary_country_code`: 2 caracteres uppercase, opcional (solo países adyacentes al primario)
-- `tertiary_country_code`: 2 caracteres uppercase, opcional (solo países adyacentes a ambos)
-- `max_players`: >= 2, opcional
-- `handicap_type`: enum (SCRATCH | PERCENTAGE), requerido
-- `handicap_percentage`: 100, 95, or 90, requerido solo si handicap_type=PERCENTAGE
-- `team_assignment`: enum (MANUAL | AUTOMATIC), requerido
+### Update Handicap Manually
+```http
+POST /api/v1/handicaps/update-manual
+Authorization: Bearer {token}
 
-**Notas importantes:**
-- Los códigos de país se seleccionan desde dropdowns con nombres completos, pero se envían como códigos ISO de 2 letras
-- El frontend valida que los países secundario y terciario sean adyacentes al primario
-- Si handicap_type es SCRATCH, NO se envía handicap_percentage
-
-**Response esperada (201 Created):**
-```json
+Request:
 {
-  "id": "550e8400-e29b-41d4-a716-446655440000",
-  "name": "Europe vs USA 2025",
-  "start_date": "2025-06-15",
-  "end_date": "2025-06-17",
+  "user_email": "john@example.com",
+  "handicap": 15.5
+}
+
+Response: 200 OK
+{
+  "id": "uuid",
+  "email": "john@example.com",
+  "first_name": "John",
+  "last_name": "Doe",
+  "handicap": 15.5,
+  "email_verified": true,
+  "created_at": "2025-11-09T10:00:00Z",
+  "updated_at": "2025-11-09T10:00:00Z"
+}
+
+Notes:
+- Does NOT query RFEG, directly sets the provided handicap value
+- Useful for administrators or non-federated players
+```
+
+## Competition Management
+
+### Create Competition
+```http
+POST /api/v1/competitions
+Authorization: Bearer {token}
+
+Request:
+{
+  "name": "Ryder Cup 2025",
+  "start_date": "2025-10-01",
+  "end_date": "2025-10-03",
+  "main_country": "ES",
+  "adjacent_country_1": "FR",
+  "adjacent_country_2": "PT",
+  "handicap_type": "PERCENTAGE",
+  "handicap_percentage": 95,
+  "max_players": 24,
+  "team_assignment": "MANUAL"
+}
+
+Alternative Request Format (Frontend Compatible):
+{
+  "name": "Ryder Cup 2025",
+  "start_date": "2025-10-01",
+  "end_date": "2025-10-03",
+  "main_country": "ES",
+  "countries": ["FR", "PT"],
+  "handicap_type": "PERCENTAGE",
+  "handicap_percentage": 95,
+  "number_of_players": 24,
+  "team_assignment": "manual"
+}
+
+Response: 201 Created
+{
+  "id": "uuid",
+  "creator_id": "uuid",
+  "name": "Ryder Cup 2025",
+  "status": "DRAFT",
+  "start_date": "2025-10-01",
+  "end_date": "2025-10-03",
   "country_code": "ES",
   "secondary_country_code": "FR",
-  "tertiary_country_code": "IT",
-  "location": "Spain, France, Italy",
-  "max_players": 24,
+  "tertiary_country_code": "PT",
+  "location": "Spain, France, Portugal",
+  "countries": [
+    {
+      "code": "ES",
+      "name_en": "Spain",
+      "name_es": "España"
+    },
+    {
+      "code": "FR",
+      "name_en": "France",
+      "name_es": "Francia"
+    },
+    {
+      "code": "PT",
+      "name_en": "Portugal",
+      "name_es": "Portugal"
+    }
+  ],
   "handicap_type": "PERCENTAGE",
-  "handicap_percentage": 90.0,
+  "handicap_percentage": 95,
+  "max_players": 24,
   "team_assignment": "MANUAL",
-  "status": "DRAFT",
-  "creator_id": "user-uuid",
-  "enrolled_count": 0,
   "is_creator": true,
-  "created_at": "2025-11-18T10:00:00Z",
-  "updated_at": "2025-11-18T10:00:00Z"
+  "enrolled_count": 0,
+  "created_at": "2025-11-19T10:00:00.000Z",
+  "updated_at": "2025-11-19T10:00:00.000Z"
 }
+
+Notes:
+- Competition is created in DRAFT state.
+- Only the creator can modify a DRAFT competition.
+- The API accepts both legacy format (adjacent_country_1/2) and frontend format (countries array, number_of_players alias).
+- Countries are automatically validated for existence and adjacency.
 ```
 
-**Errores esperados:**
-- `400 Bad Request`: Validación fallida (ej: países no adyacentes, fechas inválidas)
-- `401 Unauthorized`: Token inválido o expirado
-- `409 Conflict`: Competición con mismo nombre ya existe para este usuario
+### List Competitions
+```http
+GET /api/v1/competitions?status=DRAFT&limit=10&offset=0
+Authorization: Bearer {token}
 
----
-
-#### **1.2 List Competitions**
-
-**Endpoint:** `GET /api/v1/competitions`
-**Auth:** Required (JWT)
-**Descripción:** Lista todas las competiciones (creadas + inscritas)
-
-**Query Parameters (todos opcionales):**
-```
-?status=ACTIVE           // Filtrar por estado
-?creator_id=uuid         // Solo competiciones creadas por usuario
-?enrolled_user_id=uuid   // Solo competiciones donde el usuario está inscrito
-```
-
-**Response esperada (200 OK):**
-```json
+Response: 200 OK
 [
   {
     "id": "uuid",
-    "name": "Competition Name",
-    "start_date": "2025-06-15",
-    "end_date": "2025-06-17",
-    "location": "Spain, France",
-    "max_players": 24,
-    "status": "ACTIVE",
     "creator_id": "uuid",
-    "enrolled_count": 12,
-    "is_creator": true,
-    "created_at": "2025-11-18T10:00:00Z"
+    "name": "Ryder Cup 2025",
+    "status": "DRAFT",
+    "start_date": "2025-12-01",
+    "end_date": "2025-12-03",
+    "country_code": "ES",
+    "secondary_country_code": "FR",
+    "tertiary_country_code": "PT",
+    "location": "Spain, France, Portugal",
+    "countries": [
+      {
+        "code": "ES",
+        "name_en": "Spain",
+        "name_es": "España"
+      },
+      {
+        "code": "FR",
+        "name_en": "France",
+        "name_es": "Francia"
+      },
+      {
+        "code": "PT",
+        "name_en": "Portugal",
+        "name_es": "Portugal"
+      }
+    ],
+    "handicap_type": "PERCENTAGE",
+    "handicap_percentage": 95,
+    "max_players": 24,
+    "team_assignment": "MANUAL",
+    "is_creator": false,
+    "enrolled_count": 0,
+    "created_at": "2025-11-09T10:00:00Z",
+    "updated_at": "2025-11-09T10:00:00Z"
   }
-  // ... más competiciones
 ]
+
+Query Parameters:
+- status: Filter by competition status (DRAFT, ACTIVE, CLOSED, IN_PROGRESS, COMPLETED, CANCELLED)
+- limit: Maximum number of results (default: 50)
+- offset: Pagination offset (default: 0)
 ```
 
-**Campos esperados:**
-- `is_creator`: boolean (true si el usuario autenticado es el creador)
-- `enrolled_count`: número de jugadores con status APPROVED
-- `location`: string formateado con nombres de países
+### Get Competition
+```http
+GET /api/v1/competitions/{competition_id}
+Authorization: Bearer {token}
 
----
-
-#### **1.3 Get Competition by ID**
-
-**Endpoint:** `GET /api/v1/competitions/{competition_id}`
-**Auth:** Required (JWT)
-**Descripción:** Obtiene detalle completo de una competición
-
-**Response esperada (200 OK):**
-```json
+Response: 200 OK
 {
   "id": "uuid",
-  "name": "Europe vs USA 2025",
-  "start_date": "2025-06-15",
-  "end_date": "2025-06-17",
+  "creator_id": "uuid",
+  "name": "Ryder Cup 2025",
+  "status": "DRAFT",
+  "start_date": "2025-12-01",
+  "end_date": "2025-12-03",
+  "country_code": "ES",
+  "secondary_country_code": "FR",
+  "tertiary_country_code": "PT",
+  "location": "Spain, France, Portugal",
+  "countries": [
+    {
+      "code": "ES",
+      "name_en": "Spain",
+      "name_es": "España"
+    },
+    {
+      "code": "FR",
+      "name_en": "France",
+      "name_es": "Francia"
+    },
+    {
+      "code": "PT",
+      "name_en": "Portugal",
+      "name_es": "Portugal"
+    }
+  ],
+  "handicap_type": "PERCENTAGE",
+  "handicap_percentage": 95,
+  "max_players": 24,
+  "team_assignment": "MANUAL",
+  "is_creator": false,
+  "enrolled_count": 0,
+  "created_at": "2025-11-09T10:00:00Z",
+  "updated_at": "2025-11-09T10:00:00Z"
+}
+```
+
+### Update Competition
+```http
+PUT /api/v1/competitions/{competition_id}
+Authorization: Bearer {token}
+
+Request:
+{
+  "name": "Updated Ryder Cup 2025",
+  "start_date": "2025-12-01",
+  "end_date": "2025-12-03",
+  "main_country": "ES",
+  "adjacent_country_1": "FR",
+  "adjacent_country_2": "PT",
+  "handicap_type": "PERCENTAGE",
+  "handicap_percentage": 95,
+  "max_players": 20,
+  "team_assignment": "MANUAL"
+}
+
+Response: 200 OK
+{
+  "id": "uuid",
+  "creator_id": "uuid",
+  "name": "Updated Ryder Cup 2025",
+  "status": "DRAFT",
+  "start_date": "2025-12-01",
+  "end_date": "2025-12-03",
+  "country_code": "ES",
+  "secondary_country_code": "FR",
+  "tertiary_country_code": "PT",
+  "location": "Spain, France, Portugal",
+  "countries": [
+    {
+      "code": "ES",
+      "name_en": "Spain",
+      "name_es": "España"
+    },
+    {
+      "code": "FR",
+      "name_en": "France",
+      "name_es": "Francia"
+    },
+    {
+      "code": "PT",
+      "name_en": "Portugal",
+      "name_es": "Portugal"
+    }
+  ],
+  "handicap_type": "PERCENTAGE",
+  "handicap_percentage": 95,
+  "max_players": 20,
+  "team_assignment": "MANUAL",
+  "is_creator": true,
+  "enrolled_count": 0,
+  "created_at": "2025-11-09T10:00:00Z",
+  "updated_at": "2025-11-09T10:00:00Z"
+}
+
+Notes:
+- Only competitions in DRAFT status can be updated
+- Only the creator can update the competition
+- Updatable fields: name, dates, countries, handicap settings, max_players, team_assignment
+```
+
+### Delete Competition
+```http
+DELETE /api/v1/competitions/{competition_id}
+Authorization: Bearer {token}
+
+Response: 204 No Content
+
+Notes:
+- Only competitions in DRAFT status can be deleted
+- Only the creator can delete the competition
+- Physical deletion (not soft delete)
+```
+
+### State Transitions
+
+#### Activate Competition (DRAFT → ACTIVE)
+```http
+POST /api/v1/competitions/{competition_id}/activate
+Authorization: Bearer {token}
+
+Response: 200 OK
+{
+  "id": "uuid",
+  "name": "Ryder Cup 2025",
+  "status": "ACTIVE",
+  "updated_at": "2025-11-09T10:00:00Z"
+}
+
+Notes:
+- Opens competition for enrollments
+- Only creator can activate
+- Competition must be in DRAFT status
+```
+
+#### Close Enrollments (ACTIVE → CLOSED)
+```http
+POST /api/v1/competitions/{competition_id}/close-enrollments
+Authorization: Bearer {token}
+
+Response: 200 OK
+{
+  "id": "uuid",
+  "name": "Ryder Cup 2025",
+  "status": "CLOSED",
+  "updated_at": "2025-11-09T10:00:00Z"
+}
+
+Notes:
+- Closes enrollment period
+- Only creator can close enrollments
+- Competition must be in ACTIVE status
+```
+
+#### Start Competition (CLOSED → IN_PROGRESS)
+```http
+POST /api/v1/competitions/{competition_id}/start
+Authorization: Bearer {token}
+
+Response: 200 OK
+{
+  "id": "uuid",
+  "name": "Ryder Cup 2025",
+  "status": "IN_PROGRESS",
+  "updated_at": "2025-11-09T10:00:00Z"
+}
+
+Notes:
+- Begins the tournament
+- Only creator can start
+- Competition must be in CLOSED status
+```
+
+#### Complete Competition (IN_PROGRESS → COMPLETED)
+```http
+POST /api/v1/competitions/{competition_id}/complete
+Authorization: Bearer {token}
+
+Response: 200 OK
+{
+  "id": "uuid",
+  "name": "Ryder Cup 2025",
+  "status": "COMPLETED",
+  "updated_at": "2025-11-09T10:00:00Z"
+}
+
+Notes:
+- Finalizes the tournament
+- Only creator can complete
+- Competition must be in IN_PROGRESS status
+```
+
+#### Cancel Competition (Any State → CANCELLED)
+```http
+POST /api/v1/competitions/{competition_id}/cancel
+Authorization: Bearer {token}
+
+Response: 200 OK
+{
+  "id": "uuid",
+  "name": "Ryder Cup 2025",
+  "status": "CANCELLED",
+  "updated_at": "2025-11-09T10:00:00Z"
+}
+
+Notes:
+- Can be called from any status
+- Only creator can cancel
+- Competition becomes permanently cancelled
+```
+
+## Enrollment Management
+
+### Request Enrollment
+```http
+POST /api/v1/competitions/{competition_id}/enrollments
+Authorization: Bearer {token}
+
+Response: 201 Created
+{
+  "id": "uuid",
+  "competition_id": "uuid",
+  "user_id": "uuid",
+  "status": "REQUESTED",
+  "custom_handicap": null,
+  "created_at": "2025-11-09T10:00:00Z",
+  "updated_at": "2025-11-09T10:00:00Z"
+}
+
+Notes:
+- Current user enrolls themselves
+- Status starts as REQUESTED
+- Creator approval may be required
+```
+
+### Direct Enroll Player
+```http
+POST /api/v1/competitions/{competition_id}/enrollments/direct
+Authorization: Bearer {token}
+
+Request:
+{
+  "user_email": "john@example.com"
+}
+
+Response: 201 Created
+{
+  "id": "uuid",
+  "competition_id": "uuid",
+  "user_id": "uuid",
+  "status": "APPROVED",
+  "custom_handicap": null,
+  "created_at": "2025-11-09T10:00:00Z",
+  "updated_at": "2025-11-09T10:00:00Z"
+}
+
+Notes:
+- Only competition creator can use this endpoint
+- Player is directly approved (status: APPROVED)
+- Bypasses the approval process
+```
+
+### List Enrollments
+```http
+GET /api/v1/competitions/{competition_id}/enrollments?status=APPROVED
+Authorization: Bearer {token}
+
+Response: 200 OK
+[
+  {
+    "id": "uuid",
+    "competition_id": "uuid",
+    "user": {
+      "id": "uuid",
+      "email": "john@example.com",
+      "first_name": "John",
+      "last_name": "Doe",
+      "handicap": 15.5
+    },
+    "status": "APPROVED",
+    "custom_handicap": null,
+    "created_at": "2025-11-09T10:00:00Z",
+    "updated_at": "2025-11-09T10:00:00Z"
+  }
+]
+
+Query Parameters:
+- status: Filter by enrollment status (REQUESTED, APPROVED, REJECTED, CANCELLED, WITHDRAWN)
+```
+
+### Approve Enrollment
+```http
+POST /api/v1/enrollments/{enrollment_id}/approve
+Authorization: Bearer {token}
+
+Response: 200 OK
+{
+  "id": "uuid",
+  "competition_id": "uuid",
+  "user_id": "uuid",
+  "status": "APPROVED",
+  "updated_at": "2025-11-09T10:00:00Z"
+}
+
+Notes:
+- Only competition creator can approve
+- Changes status from REQUESTED to APPROVED
+```
+
+### Reject Enrollment
+```http
+POST /api/v1/enrollments/{enrollment_id}/reject
+Authorization: Bearer {token}
+
+Response: 200 OK
+{
+  "id": "uuid",
+  "competition_id": "uuid",
+  "user_id": "uuid",
+  "status": "REJECTED",
+  "updated_at": "2025-11-09T10:00:00Z"
+}
+
+Notes:
+- Only competition creator can reject
+- Changes status from REQUESTED to REJECTED
+```
+
+### Cancel Enrollment
+```http
+POST /api/v1/enrollments/{enrollment_id}/cancel?reason=Cannot%20attend
+Authorization: Bearer {token}
+
+Response: 200 OK
+{
+  "id": "uuid",
+  "competition_id": "uuid",
+  "user_id": "uuid",
+  "status": "CANCELLED",
+  "updated_at": "2025-11-09T10:00:00Z"
+}
+
+Notes:
+- Only enrollment owner can cancel
+- Valid from REQUESTED or INVITED status
+- Optional reason parameter
+```
+
+### Withdraw from Competition
+```http
+POST /api/v1/enrollments/{enrollment_id}/withdraw?reason=Injury
+Authorization: Bearer {token}
+
+Response: 200 OK
+{
+  "id": "uuid",
+  "competition_id": "uuid",
+  "user_id": "uuid",
+  "status": "WITHDRAWN",
+  "updated_at": "2025-11-09T10:00:00Z"
+}
+
+Notes:
+- Only enrollment owner can withdraw
+- Valid only from APPROVED status
+- Optional reason parameter
+```
+
+### Set Custom Handicap
+```http
+PUT /api/v1/enrollments/{enrollment_id}/handicap
+Authorization: Bearer {token}
+
+Request:
+{
+  "custom_handicap": 18.5
+}
+
+Response: 200 OK
+{
+  "id": "uuid",
+  "competition_id": "uuid",
+  "user_id": "uuid",
+  "status": "APPROVED",
+  "custom_handicap": 18.5,
+  "updated_at": "2025-11-09T10:00:00Z"
+}
+
+Notes:
+- Only competition creator can set custom handicaps
+- Value must be between -10.0 and 54.0
+- Overrides the player's default handicap for this competition
+```
+
+## Country Management
+
+### List Countries
+```http
+GET /api/v1/countries?language=en
+
+Response: 200 OK
+[
+  {
+    "code": "ES",
+    "name": "Spain",
+    "flag": "🇪🇸"
+  },
+  {
+    "code": "FR",
+    "name": "France",
+    "flag": "🇫🇷"
+  }
+]
+
+Query Parameters:
+- language: Language for sorting (en/es, default: en)
+```
+
+### List Adjacent Countries
+```http
+GET /api/v1/countries/{country_code}/adjacent
+
+Response: 200 OK
+[
+  {
+    "code": "FR",
+    "name": "France",
+    "flag": "🇫🇷"
+  },
+  {
+    "code": "PT",
+    "name": "Portugal",
+    "flag": "🇵🇹"
+  }
+]
+
+Notes:
+- Returns countries that share borders with the specified country
+- Used for populating secondary/tertiary country selectors in competition forms
+```
+
+## Using Authenticated Endpoints
+```http
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+```
+
+## Error Codes
+
+- `400`: Bad Request (validation errors)
+- `401`: Unauthorized (invalid credentials or missing token)
+- `403`: Forbidden (insufficient permissions)
+- `404`: Not Found (resource doesn't exist)
+- `409`: Conflict (duplicate email, invalid state transition, etc.)
+- `422`: Unprocessable Entity (Pydantic validation: invalid email format, etc.)
+- `503`: Service Unavailable (external service down, e.g., RFEG API)
+- `500`: Internal Server Error
+
+## Session Management
+
+**Current Implementation**: Phase 1 - Client-side logout
+- JWT tokens remain valid until expiration (24h)
+- Client should remove token locally on logout
+- Server registers logout events for auditing
+
+**Future Implementation**: Phase 2 - Token blacklist
+- Immediate token invalidation
+- "Logout from all devices" functionality
+- See [ADR-015](architecture/decisions/ADR-015-session-management-progressive-strategy.md)
+
+## Authentication
+
+### Register User
+```http
+POST /api/v1/auth/register
+
+Request:
+{
+  "first_name": "John",
+  "last_name": "Doe",
+  "email": "john@example.com",
+  "password": "SecurePass123!"
+}
+
+Response: 201 Created
+{
+  "id": "uuid",
+  "email": "john@example.com",
+  "first_name": "John",
+  "last_name": "Doe",
+  "handicap": null,
+  "email_verified": false,
+  "created_at": "2025-11-09T10:00:00Z",
+  "updated_at": "2025-11-09T10:00:00Z"
+}
+
+Notes:
+- A verification email is automatically sent to the user's email
+- The user must verify their email by clicking the link in the email
+- email_verified will be false until verification is completed
+```
+
+### Login User
+```http
+POST /api/v1/auth/login
+
+Request:
+{
+  "email": "john@example.com",
+  "password": "SecurePass123!"
+}
+
+Response: 200 OK
+{
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "token_type": "bearer",
+  "user": {
+    "id": "uuid",
+    "email": "john@example.com",
+    "first_name": "John",
+    "last_name": "Doe",
+    "handicap": 15.5,
+    "email_verified": true,
+    "created_at": "2025-11-09T10:00:00Z",
+    "updated_at": "2025-11-09T10:00:00Z"
+  }
+}
+
+Errors:
+401 Unauthorized - Invalid credentials
+```
+
+### Logout User
+```http
+POST /api/v1/auth/logout
+Authorization: Bearer {token}
+
+Request:
+{
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."  // Optional
+}
+
+Response: 200 OK
+{
+  "message": "Logout exitoso",
+  "logged_out_at": "2025-11-09T10:00:00Z"
+}
+
+Errors:
+401 Unauthorized - Invalid or missing token
+404 Not Found - User not found
+```
+
+### Verify Email
+```http
+POST /api/v1/auth/verify-email
+
+Request:
+{
+  "token": "verification-token-from-email"
+}
+
+Response: 200 OK
+{
+  "message": "Email verificado exitosamente",
+  "email_verified": true
+}
+
+Errors:
+400 Bad Request - Token inválido o no encontrado
+
+Notes:
+- Los tokens no expiran actualmente (sin TTL implementado)
+- El email enviado es bilingüe (Español/Inglés)
+- El usuario puede usar la app sin verificar, pero algunas funcionalidades estarán limitadas en el futuro
+```
+
+**Flow:**
+1. User registers → Receives verification email
+2. User clicks link in email → Frontend extracts token from URL
+3. Frontend calls this endpoint with token → Email verified
+
+**Link format**: `{FRONTEND_URL}/verify-email?token={token}`
+
+### Using Authenticated Endpoints
+```http
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+```
+
+## Handicap Management
+
+### Update Handicap (RFEG)
+```http
+POST /api/v1/handicaps/update
+Authorization: Bearer {token}
+
+Request:
+{
+  "user_id": "uuid",
+  "manual_handicap": 15.5  // Optional fallback if RFEG returns no data
+}
+
+Response: 200 OK
+{
+  "id": "uuid",
+  "handicap": 15.5,
+  "handicap_updated_at": "2025-11-09T10:00:00Z",
+  ...
+}
+
+Errors:
+404 Not Found - User not found OR Player not found in RFEG (without manual_handicap)
+503 Service Unavailable - RFEG service is down
+```
+
+**Behavior:**
+- Searches player in RFEG database by full name
+- If found: Updates handicap with RFEG value
+- If NOT found and `manual_handicap` provided: Uses manual value
+- If NOT found and NO `manual_handicap`: Returns 404 with clear error message
+
+### Update Handicap (Manual)
+```http
+POST /api/v1/handicaps/update-manual
+
+Request:
+{
+  "user_id": "uuid",
+  "handicap": 15.5
+}
+```
+
+### Batch Update
+```http
+POST /api/v1/handicaps/update-multiple
+
+Request:
+{
+  "user_ids": ["uuid1", "uuid2", ...]
+}
+
+Response: 200 OK
+{
+  "total": 10,
+  "updated": 7,
+  "not_found": 1,
+  "no_handicap_found": 1,
+  "errors": 1
+}
+```
+
+## Handicap Management
+
+### Update Handicap (RFEG)
+```http
+POST /api/v1/handicaps/update
+Authorization: Bearer {token}
+
+Request:
+{
+  "user_id": "uuid",
+  "manual_handicap": 15.5  // Optional fallback if RFEG returns no data
+}
+
+Response: 200 OK
+{
+  "id": "uuid",
+  "handicap": 15.5,
+  "handicap_updated_at": "2025-11-09T10:00:00Z",
+  ...
+}
+
+Errors:
+404 Not Found - User not found OR Player not found in RFEG (without manual_handicap)
+503 Service Unavailable - RFEG service is down
+```
+
+**Behavior:**
+- Searches player in RFEG database by full name
+- If found: Updates handicap with RFEG value
+- If NOT found and `manual_handicap` provided: Uses manual value
+- If NOT found and NO `manual_handicap`: Returns 404 with clear error message
+
+### Update Handicap (Manual)
+```http
+POST /api/v1/handicaps/update-manual
+
+Request:
+{
+  "user_id": "uuid",
+  "handicap": 15.5
+}
+```
+
+### Batch Update
+```http
+POST /api/v1/handicaps/update-multiple
+
+Request:
+{
+  "user_ids": ["uuid1", "uuid2", ...]
+}
+
+Response: 200 OK
+{
+  "total": 10,
+  "updated": 7,
+  "not_found": 1,
+  "no_handicap_found": 1,
+  "errors": 1
+}
+```
+
+## Competition Management
+
+### Create Competition
+```http
+POST /api/v1/competitions
+Authorization: Bearer {token}
+
+Request:
+{
+  "name": "Ryder Cup 2025",
+  "start_date": "2025-10-01",
+  "end_date": "2025-10-03",
+  "main_country": "ES",
+  "adjacent_country_1": "FR",
+  "handicap_type": "PERCENTAGE",
+  "handicap_percentage": 95,
+  "max_players": 24,
+  "team_assignment": "MANUAL"
+}
+
+Response: 201 Created
+{
+  "id": "uuid",
+  "creator_id": "uuid",
+  "name": "Ryder Cup 2025",
+  "status": "DRAFT",
+  "start_date": "2025-10-01",
+  "end_date": "2025-10-03",
   "country_code": "ES",
   "secondary_country_code": "FR",
   "tertiary_country_code": null,
   "location": "Spain, France",
+  "handicap_type": "PERCENTAGE",
+  "handicap_percentage": 95,
   "max_players": 24,
-  "handicap_type": "OFFICIAL",
-  "handicap_percentage": 90.0,
   "team_assignment": "MANUAL",
-  "status": "ACTIVE",
-  "creator_id": "uuid",
-  "enrolled_count": 12,
   "is_creator": true,
-  "created_at": "2025-11-18T10:00:00Z",
-  "updated_at": "2025-11-18T10:00:00Z"
+  "enrolled_count": 0,
+  "created_at": "2025-11-19T10:00:00.000Z",
+  "updated_at": "2025-11-19T10:00:00.000Z"
 }
+
+Notes:
+- Competition is created in DRAFT state.
+- Only the creator can modify a DRAFT competition.
 ```
 
-**Errores esperados:**
-- `404 Not Found`: Competición no existe
-- `401 Unauthorized`: Token inválido
+### Update Competition
+```http
+PUT /api/v1/competitions/{competition_id}
+Authorization: Bearer {token}
 
----
-
-#### **1.4 Update Competition**
-
-**Endpoint:** `PUT /api/v1/competitions/{competition_id}`
-**Auth:** Required (JWT - solo creador)
-**Descripción:** Actualiza competición (SOLO en estado DRAFT)
-
-**Request Body (todos los campos opcionales):**
-```json
+Request:
 {
-  "name": "New Competition Name",
-  "start_date": "2025-06-20",
-  "end_date": "2025-06-22",
-  "country_code": "IT",
-  "max_players": 30,
-  "handicap_percentage": 85.0
-  // ... cualquier campo excepto id, status, creator_id
+  "name": "Updated Ryder Cup Name",
+  "start_date": "2026-01-01",
+  "end_date": "2026-01-03",
+  "main_country": "US",
+  "adjacent_country_1": null,
+  "adjacent_country_2": null,
+  "handicap_type": "SCRATCH",
+  "handicap_percentage": null,
+  "max_players": 50,
+  "team_assignment": "AUTOMATIC",
+  "team_1_name": "Team USA",
+  "team_2_name": "Team World"
 }
-```
 
-**Response esperada (200 OK):**
-```json
+Response: 200 OK
 {
-  // Competición actualizada completa (mismo formato que GET)
+  "id": "uuid",
+  "creator_id": "uuid",
+  "name": "Updated Ryder Cup Name",
+  "status": "DRAFT",
+  "start_date": "2026-01-01",
+  "end_date": "2026-01-03",
+  "country_code": "US",
+  "secondary_country_code": null,
+  "tertiary_country_code": null,
+  "location": "United States",
+  "handicap_type": "SCRATCH",
+  "handicap_percentage": null,
+  "max_players": 50,
+  "team_assignment": "AUTOMATIC",
+  "is_creator": true,
+  "enrolled_count": 0,
+  "created_at": "2025-11-19T10:00:00.000Z",
+  "updated_at": "2025-11-19T10:00:00.000Z"
 }
+
+Notes:
+- Only DRAFT competitions can be updated.
+- Only the creator can update the competition.
+- All fields in the request body are optional for partial updates.
+- If updating dates, both `start_date` and `end_date` must be provided.
+- If updating `handicap_type` to PERCENTAGE, `handicap_percentage` is required. If to SCRATCH, `handicap_percentage` must be null.
 ```
 
-**Errores esperados:**
-- `400 Bad Request`: Validación fallida
-- `403 Forbidden`: Usuario no es el creador O competición no está en DRAFT
-- `404 Not Found`: Competición no existe
+## User Management
 
----
+### Update Profile
+```http
+PATCH /api/v1/users/profile
+Authorization: Bearer {token}
 
-#### **1.5 Delete Competition**
-
-**Endpoint:** `DELETE /api/v1/competitions/{competition_id}`
-**Auth:** Required (JWT - solo creador)
-**Descripción:** Elimina competición (SOLO en estado DRAFT)
-
-**Response esperada (204 No Content):**
-```
-(sin body)
-```
-
-**Errores esperados:**
-- `403 Forbidden`: Usuario no es el creador O competición no está en DRAFT
-- `404 Not Found`: Competición no existe
-
----
-
-### **2. Competition State Transitions**
-
-#### **2.1 Activate Competition**
-
-**Endpoint:** `POST /api/v1/competitions/{competition_id}/activate`
-**Auth:** Required (JWT - solo creador)
-**Descripción:** DRAFT → ACTIVE
-
-**Request Body:** `{}` (vacío)
-
-**Response esperada (200 OK):**
-```json
+Request:
 {
-  // Competición con status="ACTIVE"
+  "first_name": "Jane",      // Optional - only if changing
+  "last_name": "Smith"        // Optional - only if changing
 }
-```
 
-**Errores esperados:**
-- `400 Bad Request`: Transición inválida (ej: competición no está en DRAFT)
-- `403 Forbidden`: Usuario no es el creador
-
----
-
-#### **2.2 Close Enrollments**
-
-**Endpoint:** `POST /api/v1/competitions/{competition_id}/close-enrollments`
-**Auth:** Required (JWT - solo creador)
-**Descripción:** ACTIVE → CLOSED
-
-**Request Body:** `{}`
-
-**Response esperada (200 OK):**
-```json
+Response: 200 OK
 {
-  // Competición con status="CLOSED"
-}
-```
-
----
-
-#### **2.3 Start Competition**
-
-**Endpoint:** `POST /api/v1/competitions/{competition_id}/start`
-**Auth:** Required (JWT - solo creador)
-**Descripción:** CLOSED → IN_PROGRESS
-
-**Request Body:** `{}`
-
-**Response esperada (200 OK):**
-```json
-{
-  // Competición con status="IN_PROGRESS"
-}
-```
-
----
-
-#### **2.4 Complete Competition**
-
-**Endpoint:** `POST /api/v1/competitions/{competition_id}/complete`
-**Auth:** Required (JWT - solo creador)
-**Descripción:** IN_PROGRESS → COMPLETED
-
-**Request Body:** `{}`
-
-**Response esperada (200 OK):**
-```json
-{
-  // Competición con status="COMPLETED"
-}
-```
-
----
-
-#### **2.5 Cancel Competition**
-
-**Endpoint:** `POST /api/v1/competitions/{competition_id}/cancel`
-**Auth:** Required (JWT - solo creador)
-**Descripción:** Cualquier estado → CANCELLED
-
-**Request Body:** `{}`
-
-**Response esperada (200 OK):**
-```json
-{
-  // Competición con status="CANCELLED"
-}
-```
-
----
-
-### **3. Enrollments**
-
-#### **3.1 Request Enrollment**
-
-**Endpoint:** `POST /api/v1/competitions/{competition_id}/enrollments`
-**Auth:** Required (JWT)
-**Descripción:** Usuario solicita unirse a competición (ACTIVE)
-
-**Request Body:**
-```json
-{
-  // Vacío o puede incluir campos adicionales en el futuro
-}
-```
-
-**Response esperada (201 Created):**
-```json
-{
-  "id": "enrollment-uuid",
-  "competition_id": "competition-uuid",
-  "user_id": "user-uuid",
-  "user_name": "John Doe",
-  "user_email": "john@example.com",
-  "status": "REQUESTED",
-  "team": null,
-  "custom_handicap": null,
-  "created_at": "2025-11-18T10:00:00Z"
-}
-```
-
-**Errores esperados:**
-- `400 Bad Request`: Competición no está ACTIVE
-- `409 Conflict`: Usuario ya está inscrito
-
----
-
-#### **3.2 Get Enrollments**
-
-**Endpoint:** `GET /api/v1/competitions/{competition_id}/enrollments`
-**Auth:** Required (JWT)
-**Descripción:** Lista inscripciones de una competición
-
-**Query Parameters (opcionales):**
-```
-?status=APPROVED    // Filtrar por estado
-?team=A            // Filtrar por equipo
-```
-
-**Response esperada (200 OK):**
-```json
-[
-  {
-    "id": "enrollment-uuid",
-    "competition_id": "competition-uuid",
-    "user_id": "user-uuid",
-    "user_name": "John Doe",
-    "user_email": "john@example.com",
-    "status": "APPROVED",
-    "team": "A",
-    "custom_handicap": 15.5,
-    "created_at": "2025-11-18T10:00:00Z"
-  }
-  // ... más enrollments
-]
-```
-
----
-
-#### **3.3 Approve Enrollment**
-
-**Endpoint:** `POST /api/v1/competitions/{competition_id}/enrollments/{enrollment_id}/approve`
-**Auth:** Required (JWT - solo creador)
-**Descripción:** Aprueba una solicitud de inscripción
-
-**Request Body:**
-```json
-{
-  "team": "A"  // OPCIONAL: A o B
-}
-```
-
-**Response esperada (200 OK):**
-```json
-{
-  // Enrollment con status="APPROVED" y team asignado
-}
-```
-
-**Errores esperados:**
-- `403 Forbidden`: Usuario no es el creador
-- `400 Bad Request`: Enrollment no está en REQUESTED o INVITED
-
----
-
-#### **3.4 Reject Enrollment**
-
-**Endpoint:** `POST /api/v1/competitions/{competition_id}/enrollments/{enrollment_id}/reject`
-**Auth:** Required (JWT - solo creador)
-**Descripción:** Rechaza una solicitud de inscripción
-
-**Request Body:** `{}`
-
-**Response esperada (200 OK):**
-```json
-{
-  // Enrollment con status="REJECTED"
-}
-```
-
----
-
-#### **3.5 Cancel Enrollment**
-
-**Endpoint:** `POST /api/v1/competitions/{competition_id}/enrollments/{enrollment_id}/cancel`
-**Auth:** Required (JWT - jugador inscrito)
-**Descripción:** Jugador cancela su solicitud antes de ser aprobada
-
-**Request Body:** `{}`
-
-**Response esperada (200 OK):**
-```json
-{
-  // Enrollment con status="CANCELLED"
-}
-```
-
----
-
-#### **3.6 Withdraw from Competition**
-
-**Endpoint:** `POST /api/v1/competitions/{competition_id}/enrollments/{enrollment_id}/withdraw`
-**Auth:** Required (JWT - jugador inscrito)
-**Descripción:** Jugador se retira después de ser aprobado
-
-**Request Body:** `{}`
-
-**Response esperada (200 OK):**
-```json
-{
-  // Enrollment con status="WITHDRAWN"
-}
-```
-
----
-
-#### **3.7 Set Custom Handicap**
-
-**Endpoint:** `PUT /api/v1/competitions/{competition_id}/enrollments/{enrollment_id}/handicap`
-**Auth:** Required (JWT - solo creador)
-**Descripción:** Establece hándicap custom para un jugador
-
-**Request Body:**
-```json
-{
-  "custom_handicap": 15.5
-}
-```
-
-**Response esperada (200 OK):**
-```json
-{
-  // Enrollment con custom_handicap actualizado
-}
-```
-
----
-
-### **4. Countries (Required for Location Dropdowns)**
-
-#### **4.1 Get All Countries**
-
-**Endpoint:** `GET /api/v1/countries`
-**Auth:** Required (JWT)
-**Descripción:** Obtiene lista de todos los países activos
-
-**Response esperada (200 OK):**
-```json
-[
-  {
-    "code": "ES",
-    "name_en": "Spain",
-    "name_es": "España",
-    "active": true
+  "user": {
+    "id": "uuid",
+    "email": "john@example.com",
+    "first_name": "Jane",
+    "last_name": "Smith",
+    "handicap": 15.5
   },
-  {
-    "code": "FR",
-    "name_en": "France",
-    "name_es": "Francia",
-    "active": true
-  }
-  // ... más países
-]
-```
-
-**Notas:**
-- El frontend muestra `name_en` en los dropdowns
-- Se almacena `code` para enviar en las peticiones de creación/actualización
-- Solo se devuelven países con `active=true`
-
----
-
-#### **4.2 Get Adjacent Countries**
-
-**Endpoint:** `GET /api/v1/countries/{country_code}/adjacent`
-**Auth:** Required (JWT)
-**Descripción:** Obtiene países adyacentes a un país específico
-
-**Response esperada (200 OK):**
-```json
-[
-  {
-    "code": "FR",
-    "name_en": "France",
-    "name_es": "Francia",
-    "active": true
-  },
-  {
-    "code": "PT",
-    "name_en": "Portugal",
-    "name_es": "Portugal",
-    "active": true
-  }
-  // ... más países adyacentes
-]
-```
-
-**Notas:**
-- Usado para poblar el dropdown de países secundario y terciario
-- Solo se devuelven países adyacentes según la tabla `country_adjacencies`
-- El frontend calcula la intersección para el tercer país
-
----
-
-## 🎨 Estados (Status)
-
-### **Competition Status**
-```javascript
-DRAFT        // Creada, en edición
-ACTIVE       // Abierta a inscripciones
-CLOSED       // Inscripciones cerradas
-IN_PROGRESS  // Torneo en curso
-COMPLETED    // Finalizado
-CANCELLED    // Cancelado
-```
-
-### **Enrollment Status**
-```javascript
-REQUESTED    // Jugador solicitó unirse
-INVITED      // Creador invitó al jugador
-APPROVED     // Aprobado y asignado a equipo
-REJECTED     // Solicitud rechazada
-CANCELLED    // Jugador canceló antes de aprobación
-WITHDRAWN    // Jugador se retiró después de aprobación
-```
-
----
-
-## 🎨 Frontend Color Coding
-
-El frontend usa estos colores para los badges (Tailwind CSS):
-
-**Competition Status:**
-```javascript
-DRAFT:       bg-gray-100 text-gray-700
-ACTIVE:      bg-green-100 text-green-700
-CLOSED:      bg-yellow-100 text-yellow-700
-IN_PROGRESS: bg-blue-100 text-blue-700
-COMPLETED:   bg-purple-100 text-purple-700
-CANCELLED:   bg-red-100 text-red-700
-```
-
-**Enrollment Status:**
-```javascript
-REQUESTED: bg-yellow-100 text-yellow-700
-INVITED:   bg-blue-100 text-blue-700
-APPROVED:  bg-green-100 text-green-700
-REJECTED:  bg-red-100 text-red-700
-CANCELLED: bg-gray-100 text-gray-700
-WITHDRAWN: bg-orange-100 text-orange-700
-```
-
----
-
-## 🔒 Reglas de Autorización
-
-| Acción | Quién puede hacerlo |
-|--------|---------------------|
-| Create Competition | Cualquier usuario autenticado |
-| View Competition | Cualquier usuario autenticado |
-| Update Competition | Solo creador + status DRAFT |
-| Delete Competition | Solo creador + status DRAFT |
-| Activate/Close/Start/Complete | Solo creador |
-| Cancel Competition | Solo creador |
-| Request Enrollment | Cualquier usuario (excepto creador) |
-| Approve/Reject Enrollment | Solo creador |
-| Cancel Enrollment | Solo el usuario inscrito |
-| Withdraw | Solo el usuario inscrito |
-| Set Custom Handicap | Solo creador |
-
----
-
-## 🚨 Manejo de Errores
-
-**Formato de error esperado:**
-```json
-{
-  "detail": "Mensaje de error descriptivo"
+  "message": "Profile updated successfully"
 }
+
+Errors:
+401 Unauthorized - Missing or invalid token
+404 Not Found - User not found
+422 Unprocessable Entity - Validation error (name too short)
 ```
 
-El frontend muestra `error.detail` en toast notifications.
+### Update Security Settings
+```http
+PATCH /api/v1/users/security
+Authorization: Bearer {token}
 
-**Códigos HTTP esperados:**
-- `200 OK` - Operación exitosa
-- `201 Created` - Recurso creado
-- `204 No Content` - Eliminación exitosa
-- `400 Bad Request` - Validación fallida
-- `401 Unauthorized` - Sin autenticación o token expirado
-- `403 Forbidden` - Sin permisos para esta acción
-- `404 Not Found` - Recurso no existe
-- `409 Conflict` - Conflicto (ej: duplicado)
-- `500 Internal Server Error` - Error del servidor
+Request:
+{
+  "current_password": "OldPass123!",     // Required
+  "new_email": "newemail@example.com",   // Optional - only if changing email
+  "new_password": "NewPass456!",         // Optional - only if changing password
+  "confirm_password": "NewPass456!"      // Required if new_password provided
+}
 
----
+Response: 200 OK
+{
+  "user": {
+    "id": "uuid",
+    "email": "newemail@example.com",
+    "first_name": "Jane",
+    "last_name": "Smith",
+    "handicap": 15.5,
+    "email_verified": false  // Will be false if email was changed
+  },
+  "message": "Security settings updated successfully"
+}
 
-## 📝 Notas Importantes
-
-### **1. Campo `is_creator`**
-El backend debe calcular este campo dinámicamente basado en:
-```python
-is_creator = (competition.creator_id == current_user.id)
+Errors:
+401 Unauthorized - Missing or invalid token / Current password incorrect
+404 Not Found - User not found
+409 Conflict - Email already in use
+422 Unprocessable Entity - Validation error (password too short, etc.)
 ```
 
-### **2. Campo `enrolled_count`**
-Debe contar solo enrollments con `status == "APPROVED"`:
-```python
-enrolled_count = count(enrollments where status == "APPROVED")
+**Notes:**
+- **Profile Update**: Does NOT require password - only JWT authentication
+- **Security Update**: Requires current password for verification
+- **Email Change**: When email is updated:
+  - `email_verified` is set to `false`
+  - Verification email is sent to the NEW email address
+  - User must verify the new email to restore full access
+  - Frontend will show verification banner until email is verified
+- Both endpoints can update single or multiple fields
+- Leave fields as `null` or omit them to keep current values
+
+### Find User
+```http
+GET /api/v1/users/search?email=john@example.com
+GET /api/v1/users/search?full_name=John Doe
+Authorization: Bearer {token}
+
+Response: 200 OK
+{
+  "id": "uuid",
+  "email": "john@example.com",
+  "first_name": "John",
+  "last_name": "Doe",
+  "handicap": 15.5
+}
+
+Errors:
+401 Unauthorized - Missing or invalid token
+404 Not Found - User not found
 ```
 
-### **3. Campo `location`**
-Debe formatearse como string legible:
-```python
-# Si solo country_code:
-location = "Spain"
+## Error Codes
 
-# Si country_code + secondary_country_code:
-location = "Spain, France"
+- `400`: Bad Request (validación)
+- `401`: Unauthorized (credenciales inválidas o token missing)
+- `404`: Not Found (usuario no existe, jugador no en RFEG, etc.)
+- `409`: Conflict (email duplicado)
+- `422`: Unprocessable Entity (validación Pydantic: formato email inválido, password muy corto, etc.)
+- `503`: Service Unavailable (servicio externo RFEG caído)
+- `500`: Internal Server Error
 
-# Si los 3 países:
-location = "Spain, France, Italy"
-```
+## Session Management
 
-### **4. Validación de países adyacentes**
-El backend debe validar que los países especificados sean adyacentes usando la tabla `country_adjacencies`.
+**Current Implementation**: Phase 1 - Client-side logout
+- JWT tokens remain valid until expiration (24h)
+- Client should remove token locally on logout
+- Server registers logout events for auditing
 
-### **5. Transiciones de estado**
-El backend debe validar que las transiciones sean válidas según el estado actual (usar eventos de dominio).
-
-### **6. User Data en Enrollments**
-Los endpoints de enrollments deben incluir:
-- `user_name`: `"{first_name} {last_name}"`
-- `user_email`: email del usuario
-
-### **7. CORS**
-Asegurarse de que FastAPI tenga configurado CORS para:
-```python
-origins = [
-    "http://localhost:5173",  # Vite dev server
-    "http://localhost:3000",
-    # ... otros orígenes según sea necesario
-]
-```
-
----
-
-## 🧪 Testing Checklist
-
-Para verificar que el backend está correcto, probar:
-
-- [ ] Crear competición con datos mínimos
-- [ ] Crear competición con todos los campos opcionales
-- [ ] Listar competiciones vacío y con datos
-- [ ] Filtrar competiciones por estado
-- [ ] Obtener competición por ID (creador y no creador)
-- [ ] Actualizar competición en DRAFT
-- [ ] Intentar actualizar competición en ACTIVE (debe fallar 403)
-- [ ] Eliminar competición en DRAFT
-- [ ] Intentar eliminar competición en ACTIVE (debe fallar 403)
-- [ ] Transiciones de estado en orden correcto
-- [ ] Intentar transición inválida (debe fallar 400)
-- [ ] Solicitar inscripción en competición ACTIVE
-- [ ] Intentar inscripción duplicada (debe fallar 409)
-- [ ] Aprobar inscripción como creador
-- [ ] Rechazar inscripción como creador
-- [ ] Intentar aprobar inscripción como no-creador (debe fallar 403)
-- [ ] Cancelar inscripción como jugador
-- [ ] Retirarse después de aprobación
-- [ ] Establecer hándicap custom como creador
-- [ ] Token expirado (debe devolver 401)
-
----
-
-## 📞 Contacto
-
-Para dudas o aclaraciones sobre esta especificación:
-- **Frontend Branch:** `claude/adapt-frontend-competitions-01HrXTbj77c5WWJnsGGh31gn`
-- **Commit:** `a61c0bc - feat: integrate frontend with Competition module from backend`
-
----
-
-**Última actualización:** 18 de Noviembre de 2025
-**Versión:** 1.0.0
+**Future Implementation**: Phase 2 - Token blacklist
+- Immediate token invalidation
+- "Logout from all devices" functionality
+- See [ADR-015](architecture/decisions/ADR-015-session-management-progressive-strategy.md)

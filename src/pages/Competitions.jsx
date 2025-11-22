@@ -26,17 +26,25 @@ const Competitions = () => {
   useEffect(() => {
     const userData = getUserData();
     setUser(userData);
-    loadCompetitions();
   }, []);
+
+  useEffect(() => {
+    if (user?.id) {
+      loadCompetitions();
+    }
+  }, [user]);
 
   useEffect(() => {
     applyFilters();
   }, [competitions, searchQuery, statusFilter]);
 
   const loadCompetitions = async () => {
-    if (!user?.id) return;
+    if (!user?.id) {
+      return;
+    }
 
     setIsLoading(true);
+
     try {
       // Use the use case instead of direct service call
       const data = await listUserCompetitionsUseCase.execute(user.id);
@@ -240,7 +248,7 @@ const Competitions = () => {
                       <div className="flex items-center gap-2 text-gray-600 text-sm mb-3">
                         <Calendar className="w-4 h-4" />
                         <span>
-                          {formatDateRange(competition.start_date, competition.end_date)}
+                          {formatDateRange(competition.startDate, competition.endDate)}
                         </span>
                       </div>
 
@@ -249,10 +257,10 @@ const Competitions = () => {
                         <div className="flex items-center gap-1.5 text-gray-600 text-sm">
                           <Users className="w-4 h-4" />
                           <span>
-                            {competition.enrolled_count || 0} / {competition.max_players || '∞'}
+                            {competition.enrolledCount || 0} / {competition.maxPlayers || '∞'}
                           </span>
                         </div>
-                        {competition.is_creator && (
+                        {competition.isCreator && (
                           <div className="flex items-center gap-1.5 text-accent text-sm font-medium">
                             <Star className="w-4 h-4 fill-current" />
                             <span>Creator</span>

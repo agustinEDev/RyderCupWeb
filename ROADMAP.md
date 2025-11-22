@@ -99,13 +99,22 @@ Este documento describe los próximos pasos y las tareas planificadas para conti
         6.  ✅ Integrar en composition root.
 
 4.  **Refactorizar Detalle de Competición y Gestión de Estado:**
-    *   **Estado:** Siguiente
+    *   **Estado:** Completado ✅
     *   **Objetivo:** Mover la lógica de `CompetitionDetail.jsx` a casos de uso.
     *   **Pasos:**
-        1.  Crear `GetCompetitionDetailUseCase.js`.
-        2.  Crear casos de uso para cada transición de estado (ej. `ActivateCompetitionUseCase`, `StartCompetitionUseCase`, etc.).
-        3.  Implementar los métodos correspondientes en `ICompetitionRepository`.
-        4.  Refactorizar `CompetitionDetail.jsx` para que orqueste las llamadas a los diferentes casos de uso.
+        1.  ✅ Crear `GetCompetitionDetailUseCase.js`.
+        2.  ✅ Añadir `findById()` a `ICompetitionRepository`.
+        3.  ✅ Implementar `findById()` en `ApiCompetitionRepository`.
+        4.  ✅ Crear casos de uso para cada transición de estado:
+            - `ActivateCompetitionUseCase` (DRAFT → ACTIVE)
+            - `CloseEnrollmentsUseCase` (ACTIVE → CLOSED)
+            - `StartCompetitionUseCase` (CLOSED → IN_PROGRESS)
+            - `CompleteCompetitionUseCase` (IN_PROGRESS → COMPLETED)
+            - `CancelCompetitionUseCase` (Any → CANCELLED)
+        5.  ✅ Integrar casos de uso en composition root.
+        6.  ✅ Refactorizar `CompetitionDetail.jsx` para que use los casos de uso.
+        7.  ✅ Implementar soporte de países adyacentes con badges y banderas dinámicas.
+        8.  ✅ Actualizar `CompetitionMapper` para manejar campo `countries` del backend.
 
 5.  **Refactorizar Flujo de Inscripción (Enrollment):**
     *   **Estado:** Pendiente

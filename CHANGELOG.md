@@ -8,6 +8,47 @@ y este proyecto adhiere a [Versionado Semántico](https://semver.org/lang/es/).
 ## [Unreleased]
 
 ### Added
+- **GetCompetitionDetailUseCase (Application Layer)**: Nuevo caso de uso para obtener detalles de una competición:
+  - Valida entrada (competitionId requerido).
+  - Usa `repository.findById()` para obtener la entidad del dominio.
+  - Convierte la entidad a DTO simple para la UI usando `CompetitionMapper.toSimpleDTO()`.
+- **findById() en ICompetitionRepository**: Nuevo método de interfaz para consultar una competición por su ID.
+- **Casos de uso para transiciones de estado de competiciones**:
+  - `ActivateCompetitionUseCase`: DRAFT → ACTIVE
+  - `CloseEnrollmentsUseCase`: ACTIVE → CLOSED
+  - `StartCompetitionUseCase`: CLOSED → IN_PROGRESS
+  - `CompleteCompetitionUseCase`: IN_PROGRESS → COMPLETED
+  - `CancelCompetitionUseCase`: Any state → CANCELLED
+- **Utilidad de banderas dinámicas** (`countryUtils.js`): Generación de emojis de banderas usando Unicode Regional Indicators para cualquier código ISO de país.
+- **Soporte de países adyacentes con nombres bilingües**: Las competiciones ahora muestran países adyacentes con badges visuales que incluyen banderas y nombres completos en inglés/español.
+- **Tests unitarios completos para casos de uso de competiciones**: 6 nuevos archivos de test con cobertura exhaustiva:
+  - `GetCompetitionDetailUseCase.test.js` (6 test cases)
+  - `ActivateCompetitionUseCase.test.js` (7 test cases)
+  - `CloseEnrollmentsUseCase.test.js` (6 test cases)
+  - `StartCompetitionUseCase.test.js` (7 test cases)
+  - `CompleteCompetitionUseCase.test.js` (7 test cases)
+  - `CancelCompetitionUseCase.test.js` (9 test cases)
+  - Total: 248 tests pasando (todos los módulos).
+
+### Changed
+- **Refactor `CompetitionDetail.jsx`**: Refactorizada la página de detalle de competiciones para usar Clean Architecture:
+  - Reemplazadas llamadas directas a servicios por casos de uso (`getCompetitionDetailUseCase`, `activateCompetitionUseCase`, etc.).
+  - Simplificado el manejo de estado usando solo actualizaciones parciales en transiciones.
+  - Mejorada la UI con badges de países que muestran banderas dinámicas y nombres completos.
+- **CompetitionMapper actualizado**:
+  - Método `toDomain()` ahora maneja campos `secondary_country_code` y `tertiary_country_code` del backend.
+  - Método `toSimpleDTO()` genera array `countries` con objetos `{code, name, nameEn, nameEs, flag, isMain}` desde el backend.
+  - Soporte para fallback: si la API no devuelve nombres, usa códigos ISO.
+- **ApiCompetitionRepository.findById()**: Implementación del método para obtener una competición individual:
+  - Llama al endpoint `GET /api/v1/competitions/{id}`.
+  - Mapea respuesta de API a entidad del dominio usando `CompetitionMapper.toDomain()`.
+  - Adjunta datos originales de la API (`_apiData`) para uso del mapper.
+
+### Fixed
+- **Bug en CompetitionMapper**: Corregido error donde `teamAssignment.value` no se llamaba como función, causando renderizado de función en React.
+- **Race condition en Competitions.jsx**: Separado el `useEffect` en dos para evitar que `loadCompetitions()` se ejecute antes de que `setUser()` complete.
+
+###
 - **E2E Testing with Playwright**: Integrado el framework Playwright para tests End-to-End, incluyendo configuración, scripts y tests para el flujo de login.
 - **Unit Test for `CreateCompetitionUseCase`**: Añadido test unitario para el nuevo caso de uso, asegurando su lógica de negocio.
 - **CompetitionMapper (Infrastructure Layer)**: Nueva clase `CompetitionMapper` implementada como Anti-Corruption Layer:
