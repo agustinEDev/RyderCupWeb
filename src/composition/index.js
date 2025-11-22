@@ -12,7 +12,10 @@ import IAuthRepository from '../domain/repositories/IAuthRepository';
 import ApiAuthRepository from '../infrastructure/repositories/ApiAuthRepository';
 import LoginUseCase from '../application/use_cases/LoginUseCase';
 import RegisterUseCase from '../application/use_cases/RegisterUseCase';
-import VerifyEmailUseCase from '../application/use_cases/VerifyEmailUseCase'; // Nuevo
+import VerifyEmailUseCase from '../application/use_cases/VerifyEmailUseCase';
+import { ICompetitionRepository } from '../domain/repositories/ICompetitionRepository';
+import ApiCompetitionRepository from '../infrastructure/repositories/ApiCompetitionRepository';
+import CreateCompetitionUseCase from '../application/use_cases/CreateCompetitionUseCase';
 
 
 // --- Providers de Infraestructura ---
@@ -24,6 +27,7 @@ const authTokenProvider = {
 const apiUserRepository = new ApiUserRepository({ authTokenProvider });
 const apiHandicapRepository = new ApiHandicapRepository({ authTokenProvider });
 const apiAuthRepository = new ApiAuthRepository();
+const apiCompetitionRepository = new ApiCompetitionRepository();
 
 // --- Casos de Uso ---
 const updateUserProfileUseCase = new UpdateUserProfileUseCase({ userRepository: apiUserRepository });
@@ -32,7 +36,8 @@ const updateManualHandicapUseCase = new UpdateManualHandicapUseCase({ handicapRe
 const updateRfegHandicapUseCase = new UpdateRfegHandicapUseCase({ handicapRepository: apiHandicapRepository });
 const loginUseCase = new LoginUseCase({ authRepository: apiAuthRepository });
 const registerUseCase = new RegisterUseCase({ authRepository: apiAuthRepository });
-const verifyEmailUseCase = new VerifyEmailUseCase({ authRepository: apiAuthRepository }); // Nuevo
+const verifyEmailUseCase = new VerifyEmailUseCase({ authRepository: apiAuthRepository });
+const createCompetitionUseCase = new CreateCompetitionUseCase({ competitionRepository: apiCompetitionRepository });
 
 
 // Exportar los casos de uso y otros servicios que la capa de presentación necesite
@@ -43,7 +48,8 @@ export {
   updateRfegHandicapUseCase,
   loginUseCase,
   registerUseCase,
-  verifyEmailUseCase, // Nuevo
+  verifyEmailUseCase,
+  createCompetitionUseCase,
   // Otros casos de uso aquí
   // También podríamos exportar directamente las entidades si la UI las necesita para displays,
   // aunque la mejor práctica es que la UI reciba DTOs o ViewModels del caso de uso.

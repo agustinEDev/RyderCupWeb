@@ -19,6 +19,12 @@ class ApiAuthRepository extends IAuthRepository {
     });
 
     if (!response.ok) {
+      // Intercept 401 Unauthorized specifically to standardize the error message
+      if (response.status === 401) {
+        throw new Error('Incorrect email or password');
+      }
+
+      // Handle other errors (e.g., validation, server errors) as before
       const errorData = await response.json();
       let errorMessage = 'Failed to login';
       if (errorData.detail) {

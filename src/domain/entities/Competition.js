@@ -22,7 +22,7 @@ export class CompetitionStateError extends Error {
   }
 }
 
-export class Competition {
+export default class Competition {
   #id;
   #creatorId;
   #name;
