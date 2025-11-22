@@ -10,15 +10,31 @@ y este proyecto adhiere a [Versionado Semántico](https://semver.org/lang/es/).
 ### Added
 - **E2E Testing with Playwright**: Integrado el framework Playwright para tests End-to-End, incluyendo configuración, scripts y tests para el flujo de login.
 - **Unit Test for `CreateCompetitionUseCase`**: Añadido test unitario para el nuevo caso de uso, asegurando su lógica de negocio.
+- **CompetitionMapper (Infrastructure Layer)**: Nueva clase `CompetitionMapper` implementada como Anti-Corruption Layer:
+  - `toDomain()`: Convierte DTOs de la API (snake_case) a entidades del dominio (Competition).
+  - `toDTO()`: Convierte entidades del dominio a DTOs para persistencia.
+  - `toSimpleDTO()`: Convierte entidades a DTOs simples optimizados para la UI.
+  - Protege el dominio de cambios en la estructura de la API externa.
 
 ### Changed
 - **Refactor `CreateCompetition`**: Refactorizada la página de creación de competiciones para seguir los principios de Clean Architecture, extrayendo la lógica de negocio a `CreateCompetitionUseCase` y `ApiCompetitionRepository`.
 - **Error Message Standardization**: Estandarizado el mensaje de error para credenciales incorrectas (401) en `ApiAuthRepository` para que sea siempre en inglés.
+- **Clean Architecture & DDD Compliance**: Implementación completa de patrones arquitectónicos:
+  - **ApiCompetitionRepository**: Ahora devuelve entidades del dominio (Competition) en lugar de objetos planos.
+  - **CreateCompetitionUseCase**: Transforma entidades de dominio a DTOs simples para la UI usando `CompetitionMapper.toSimpleDTO()`.
+  - **Separation of Concerns**: Separación clara entre modelos de dominio, DTOs de API y DTOs de UI.
+  - **Repository Pattern**: El repositorio devuelve entidades del dominio, cumpliendo con el patrón.
+  - **DTO Pattern**: La UI recibe DTOs optimizados sin depender de Value Objects complejos.
+  - **Dependency Inversion**: La infraestructura depende del dominio, no al revés.
+- **CreateCompetitionUseCase.test.js**: Test actualizado para mockear `CompetitionMapper` y verificar que el caso de uso devuelve DTOs en lugar de entidades.
 
 ### Fixed
 - **Vite Test Configuration**: Corregida la configuración de Vitest para que ignore los tests de Playwright, permitiendo que ambos corredores de tests funcionen de forma independiente.
 - **Bundler Module Resolution**: Solucionado un error de arranque de la aplicación cambiando la exportación de la entidad `Competition` a una exportación por defecto para resolver un conflicto con el bundler de Vite.
 - **Syntax Errors**: Corregidos múltiples errores de sintaxis y de importación en `composition/index.js` y otros archivos introducidos durante la refactorización.
+- **Missing JSX in CreateCompetition**: Restaurado el JSX completo del formulario de creación de competiciones que fue accidentalmente reemplazado por un comentario en un commit anterior (854 líneas restauradas).
+- **API Response Mapping Error**: Corregido error crítico donde `ApiCompetitionRepository` intentaba crear una entidad Competition directamente con datos de la API en snake_case, causando el error "Team 1 name cannot be empty".
+- **Adjacent Country Filtering**: Corregido el filtro de países adyacentes que comparaba incorrectamente `parseInt(countryCode)` en lugar de comparar strings directamente. Ahora el país seleccionado en "Adjacent Country 1" se excluye correctamente de las opciones de "Adjacent Country 2".
 
 
 ### Added

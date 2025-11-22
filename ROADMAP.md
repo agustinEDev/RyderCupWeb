@@ -75,12 +75,17 @@ Este documento describe los próximos pasos y las tareas planificadas para conti
         3.  Crear la interfaz `ICompetitionRepository` en `src/domain/repositories`.
 
 2.  **Refactorizar Creación de Competiciones:**
-    *   **Estado:** Completado
-    *   **Objetivo:** Mover la lógica de `CreateCompetition.jsx` a un caso de uso.
+    *   **Estado:** Completado ✅
+    *   **Objetivo:** Mover la lógica de `CreateCompetition.jsx` a un caso de uso siguiendo Clean Architecture y DDD.
     *   **Pasos:**
-        1.  Crear `CreateCompetitionUseCase.js`.
-        2.  Implementar `create` en `ICompetitionRepository` y en su implementación concreta `ApiCompetitionRepository`.
-        3.  Refactorizar `CreateCompetition.jsx` para que use el caso de uso.
+        1.  ✅ Crear `CreateCompetitionUseCase.js`.
+        2.  ✅ Implementar `save()` en `ICompetitionRepository` y en `ApiCompetitionRepository`.
+        3.  ✅ Crear `CompetitionMapper` para mapear entre API DTOs y entidades de dominio.
+        4.  ✅ Implementar patrón DTO para la UI (toSimpleDTO).
+        5.  ✅ Refactorizar `CreateCompetition.jsx` para que use el caso de uso.
+        6.  ✅ Implementar Anti-Corruption Layer mediante el mapper.
+        7.  ✅ Corregir bug de JSX faltante en `CreateCompetition.jsx`.
+        8.  ✅ Corregir filtrado de países adyacentes.
 
 3.  **Refactorizar Listado de Competiciones:**
     *   **Estado:** Siguiente
