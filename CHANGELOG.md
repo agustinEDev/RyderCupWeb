@@ -8,6 +8,20 @@ y este proyecto adhiere a [Versionado Semántico](https://semver.org/lang/es/).
 ## [Unreleased]
 
 ### Added
+- **E2E Testing with Playwright**: Integrado el framework Playwright para tests End-to-End, incluyendo configuración, scripts y tests para el flujo de login.
+- **Unit Test for `CreateCompetitionUseCase`**: Añadido test unitario para el nuevo caso de uso, asegurando su lógica de negocio.
+
+### Changed
+- **Refactor `CreateCompetition`**: Refactorizada la página de creación de competiciones para seguir los principios de Clean Architecture, extrayendo la lógica de negocio a `CreateCompetitionUseCase` y `ApiCompetitionRepository`.
+- **Error Message Standardization**: Estandarizado el mensaje de error para credenciales incorrectas (401) en `ApiAuthRepository` para que sea siempre en inglés.
+
+### Fixed
+- **Vite Test Configuration**: Corregida la configuración de Vitest para que ignore los tests de Playwright, permitiendo que ambos corredores de tests funcionen de forma independiente.
+- **Bundler Module Resolution**: Solucionado un error de arranque de la aplicación cambiando la exportación de la entidad `Competition` a una exportación por defecto para resolver un conflicto con el bundler de Vite.
+- **Syntax Errors**: Corregidos múltiples errores de sintaxis y de importación en `composition/index.js` y otros archivos introducidos durante la refactorización.
+
+
+### Added
 - **Dominio `Competition`**: Implementación completa de la capa de dominio para la gestión de competiciones, siguiendo principios de DDD.
   - **Value Objects**: `CompetitionId`, `CompetitionStatus`, `CompetitionName`, `DateRange`, `Location` (compuesto), `HandicapSettings`, `TeamAssignment` y `CountryCode`.
   - **Entidad**: `Competition` como Agregado Raíz, encapsulando lógica de negocio y transiciones de estado inmutables.

@@ -75,7 +75,7 @@ Este documento describe los próximos pasos y las tareas planificadas para conti
         3.  Crear la interfaz `ICompetitionRepository` en `src/domain/repositories`.
 
 2.  **Refactorizar Creación de Competiciones:**
-    *   **Estado:** Siguiente
+    *   **Estado:** Completado
     *   **Objetivo:** Mover la lógica de `CreateCompetition.jsx` a un caso de uso.
     *   **Pasos:**
         1.  Crear `CreateCompetitionUseCase.js`.
@@ -83,7 +83,7 @@ Este documento describe los próximos pasos y las tareas planificadas para conti
         3.  Refactorizar `CreateCompetition.jsx` para que use el caso de uso.
 
 3.  **Refactorizar Listado de Competiciones:**
-    *   **Estado:** Pendiente
+    *   **Estado:** Siguiente
     *   **Objetivo:** Mover la lógica de `Competitions.jsx` a un caso de uso.
     *   **Pasos:**
         1.  Crear `ListUserCompetitionsUseCase.js`.
