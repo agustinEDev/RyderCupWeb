@@ -36,6 +36,42 @@ class ApiCompetitionRepository extends ICompetitionRepository {
 
     return competition;
   }
+
+  /**
+   * Finds all competitions for a specific user (creator).
+   * @override
+   * @param {string} userId - The ID of the user/creator.
+   * @param {object} filters - Optional filters (status, etc.)
+   * @returns {Promise<Competition[]>} - Array of competition entities.
+   */
+  async findByCreator(userId, filters = {}) {
+    const token = getAuthToken();
+
+    // Build query parameters
+    const queryParams = new URLSearchParams({
+      creator_id: userId,
+      ...filters
+    });
+
+    const response = await fetch(`${API_URL}/api/v1/competitions?${queryParams}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      const errorMessage = errorData.detail || 'Failed to fetch competitions';
+      throw new Error(errorMessage);
+    }
+
+    const apiDataArray = await response.json();
+
+    // Map each API response to Competition domain entity
+    return apiDataArray.map(apiData => CompetitionMapper.toDomain(apiData));
+  }
 }
 
 export default ApiCompetitionRepository;

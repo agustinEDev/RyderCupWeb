@@ -8,8 +8,8 @@ import {
 import toast from 'react-hot-toast';
 import HeaderAuth from '../components/layout/HeaderAuth';
 import { getUserData } from '../utils/secureAuth';
+import { listUserCompetitionsUseCase } from '../composition';
 import {
-  getCompetitions,
   getStatusColor,
   formatDateRange
 } from '../services/competitions';
@@ -34,13 +34,12 @@ const Competitions = () => {
   }, [competitions, searchQuery, statusFilter]);
 
   const loadCompetitions = async () => {
+    if (!user?.id) return;
+
     setIsLoading(true);
     try {
-      console.log('Loading competitions...');
-      // Try loading competitions for current user
-      const data = await getCompetitions({ creator_id: user?.id });
-      console.log('Competitions loaded:', data);
-      console.log('Number of competitions:', Array.isArray(data) ? data.length : 'Not an array');
+      // Use the use case instead of direct service call
+      const data = await listUserCompetitionsUseCase.execute(user.id);
       setCompetitions(data);
     } catch (error) {
       console.error('Error loading competitions:', error);

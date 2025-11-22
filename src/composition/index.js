@@ -16,6 +16,7 @@ import VerifyEmailUseCase from '../application/use_cases/VerifyEmailUseCase';
 import { ICompetitionRepository } from '../domain/repositories/ICompetitionRepository';
 import ApiCompetitionRepository from '../infrastructure/repositories/ApiCompetitionRepository';
 import CreateCompetitionUseCase from '../application/use_cases/CreateCompetitionUseCase';
+import ListUserCompetitionsUseCase from '../application/use_cases/ListUserCompetitionsUseCase';
 
 
 // --- Providers de Infraestructura ---
@@ -38,6 +39,7 @@ const loginUseCase = new LoginUseCase({ authRepository: apiAuthRepository });
 const registerUseCase = new RegisterUseCase({ authRepository: apiAuthRepository });
 const verifyEmailUseCase = new VerifyEmailUseCase({ authRepository: apiAuthRepository });
 const createCompetitionUseCase = new CreateCompetitionUseCase({ competitionRepository: apiCompetitionRepository });
+const listUserCompetitionsUseCase = new ListUserCompetitionsUseCase({ competitionRepository: apiCompetitionRepository });
 
 
 // Exportar los casos de uso y otros servicios que la capa de presentación necesite
@@ -50,6 +52,7 @@ export {
   registerUseCase,
   verifyEmailUseCase,
   createCompetitionUseCase,
+  listUserCompetitionsUseCase,
   // Otros casos de uso aquí
   // También podríamos exportar directamente las entidades si la UI las necesita para displays,
   // aunque la mejor práctica es que la UI reciba DTOs o ViewModels del caso de uso.

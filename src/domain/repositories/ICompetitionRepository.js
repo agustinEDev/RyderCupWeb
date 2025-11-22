@@ -56,4 +56,15 @@ export class ICompetitionRepository {
   async findByStatus(status) {
     throw new Error('ICompetitionRepository.findByStatus must be implemented');
   }
+
+  /**
+   * Finds all competitions for a specific user (creator).
+   * @param {string} userId The ID of the user/creator.
+   * @param {object} filters Optional filters (status, etc.)
+   * @returns {Promise<Competition[]>} A list of competitions created by the user.
+   * @throws {Error} If the method is not implemented.
+   */
+  async findByCreator(userId, filters = {}) {
+    throw new Error('ICompetitionRepository.findByCreator must be implemented');
+  }
 }
