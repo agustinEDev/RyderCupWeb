@@ -23,6 +23,8 @@ import CloseEnrollmentsUseCase from '../application/use_cases/CloseEnrollmentsUs
 import StartCompetitionUseCase from '../application/use_cases/StartCompetitionUseCase';
 import CompleteCompetitionUseCase from '../application/use_cases/CompleteCompetitionUseCase';
 import CancelCompetitionUseCase from '../application/use_cases/CancelCompetitionUseCase';
+import BrowseJoinableCompetitionsUseCase from '../application/use-cases/competition/BrowseJoinableCompetitionsUseCase';
+import BrowseExploreCompetitionsUseCase from '../application/use-cases/competition/BrowseExploreCompetitionsUseCase';
 
 
 // --- Providers de Infraestructura ---
@@ -55,6 +57,8 @@ const closeEnrollmentsUseCase = new CloseEnrollmentsUseCase();
 const startCompetitionUseCase = new StartCompetitionUseCase();
 const completeCompetitionUseCase = new CompleteCompetitionUseCase();
 const cancelCompetitionUseCase = new CancelCompetitionUseCase();
+const browseJoinableCompetitionsUseCase = new BrowseJoinableCompetitionsUseCase(apiCompetitionRepository);
+const browseExploreCompetitionsUseCase = new BrowseExploreCompetitionsUseCase(apiCompetitionRepository);
 
 
 // Exportar los casos de uso y otros servicios que la capa de presentación necesite
@@ -74,6 +78,8 @@ export {
   startCompetitionUseCase,
   completeCompetitionUseCase,
   cancelCompetitionUseCase,
+  browseJoinableCompetitionsUseCase,
+  browseExploreCompetitionsUseCase,
   // También podríamos exportar directamente las entidades si la UI las necesita para displays,
   // aunque la mejor práctica es que la UI reciba DTOs o ViewModels del caso de uso.
   UserEntity, // Exportamos la entidad User para que la UI pueda crear instancias o manipularla.
