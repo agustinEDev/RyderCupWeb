@@ -35,14 +35,16 @@ Este documento describe los próximos pasos y las tareas planificadas para conti
         3.  Crear `ApiAuthRepository` en la infraestructura.
         4.  Refactorizar `Login.jsx` y `Register.jsx` para que usen los casos de uso, simplificando los componentes.
 
-4.  **Refactorizar Verificación de Email:**
-    *   **Estado:** Completado
-    *   **Objetivo:** Mover la lógica de `VerifyEmail.jsx` a un caso de uso.
+4.  **Refactorizar Verificación de Email con Auto-Login:**
+    *   **Estado:** ✅ Completado (23 Nov 2025)
+    *   **Objetivo:** Mover la lógica de `VerifyEmail.jsx` a un caso de uso e implementar autenticación automática.
     *   **Pasos:**
-        1.  Crear `VerifyEmailUseCase.js`.
-        2.  Añadir el método `verifyEmail(token)` a `IAuthRepository`.
-        3.  Implementar el método en `ApiAuthRepository`.
-        4.  Refactorizar `VerifyEmail.jsx`.
+        1.  ✅ Crear `VerifyEmailUseCase.js`.
+        2.  ✅ Añadir el método `verifyEmail(token)` a `IAuthRepository`.
+        3.  ✅ Implementar el método en `ApiAuthRepository` para retornar `{ user, token }`.
+        4.  ✅ Refactorizar `VerifyEmail.jsx` para usar `setAuthToken()` de `secureAuth`.
+        5.  ✅ Coordinar con backend para que `/api/v1/auth/verify-email` devuelva JWT token.
+    *   **Mejora:** Los usuarios ahora son autenticados automáticamente tras verificar email, mejorando la UX (no requieren login manual).
 
 ### Tareas de Mejora (DDD y UI)
 
@@ -59,6 +61,100 @@ Este documento describe los próximos pasos y las tareas planificadas para conti
     *   **Pasos:**
         1.  Crear `useEditProfile.js` que encapsule `useState`, `useEffect` y los `handle...`.
         2.  Hacer que `EditProfile.jsx` consuma este hook, convirtiéndolo en un componente de presentación casi puro.
+
+3.  **Sistema de Nacionalidad del Usuario:**
+    *   **Estado:** ✅ Completado (23 Nov 2025)
+    *   **Objetivo:** Registrar la nacionalidad del usuario para condicionar la funcionalidad de actualización de hándicap desde RFEG.
+    *   **Descripción:** Solo usuarios españoles pueden actualizar su hándicap desde la RFEG (Real Federación Española de Golf). Los usuarios de otras nacionalidades solo podrán usar actualización manual de hándicap.
+    *   **Regla de Negocio Clave:**
+        - Campo `country_code` **OPCIONAL** en registro ✅
+        - Si el usuario NO selecciona país → puede registrarse sin problemas ✅
+        - Si el usuario selecciona país `ES` (España) → Habilitar opción RFEG en perfil ✅
+        - Si el usuario selecciona otro país → Solo actualización manual de hándicap ✅
+    *   **Dependencias Backend:**
+        - ✅ **Completado:** Campo `country_code` agregado al modelo `User` (nullable/optional)
+        - ✅ **Completado:** Campo `country_code` **OPCIONAL** en registro (`POST /api/v1/auth/register`)
+        - ✅ **Completado:** `country_code` incluido en respuestas de usuario (puede ser `null`)
+        - ✅ **Disponible:** Endpoint `GET /api/v1/countries?language=en` para listar países
+    *   **Implementación - Frontend:**
+        1.  **Domain Layer:** ✅
+            - Reutilizado `CountryCode.js` Value Object existente (del módulo Competition)
+            - Actualizada entidad `User` para incluir `countryCode: CountryCode | null`
+        2.  **Application Layer:** ✅
+            - `RegisterUseCase` acepta `countryCode` opcional
+            - `UpdateRfegHandicapUseCase` valida nacionalidad española (`country_code === 'ES'`)
+        3.  **Infrastructure Layer:** ✅
+            - `ApiAuthRepository.register()` envía `country_code` al backend (null si no se especifica)
+            - `ApiUserRepository.getById()` usa endpoint correcto `/api/v1/auth/current-user`
+        4.  **Presentation Layer:** ✅
+            - `Register.jsx`: Selector de países OPCIONAL con búsqueda, banderas y nombres en inglés
+            - `Profile.jsx`: Visualización de nacionalidad con badge y auto-sync con backend
+            - `EditProfile.jsx`: Botón RFEG condicional basado en nacionalidad
+        5.  **Utils Layer:** ✅
+            - Helper `canUseRFEG()` en `countryUtils.js` para verificar elegibilidad RFEG
+        6.  **Tests:** ✅
+            - 66 tests creados y pasando (100% pass rate)
+            - Cobertura completa de Domain, Application, Infrastructure y Utils layers
+              * Usuario español (`country_code: 'ES'`) → ✅ Permitir
+              * Usuario no español (`country_code: 'FR'`) → ❌ Rechazar
+              * Usuario sin país (`country_code: null`) → ❌ Rechazar
+            - Test UI condicional en `EditProfile`
+    *   **Estructura del Request de Registro:**
+        ```javascript
+        // Opción 1: Usuario selecciona país
+        POST /api/v1/auth/register
+        {
+          "email": "juan@example.com",
+          "password": "SecurePass123!",
+          "first_name": "Juan",
+          "last_name": "García",
+          "country_code": "ES"  // Opcional
+        }
+
+        // Opción 2: Usuario NO selecciona país
+        POST /api/v1/auth/register
+        {
+          "email": "john@example.com",
+          "password": "SecurePass123!",
+          "first_name": "John",
+          "last_name": "Doe"
+          // country_code no enviado o null
+        }
+        ```
+    *   **Respuesta de Usuario:**
+        ```javascript
+        // Usuario español
+        {
+          "id": "uuid",
+          "email": "juan@example.com",
+          "first_name": "Juan",
+          "last_name": "García",
+          "country_code": "ES",  // Puede ser null
+          "handicap": 15.5,
+          "email_verified": true
+        }
+
+        // Usuario sin país especificado
+        {
+          "id": "uuid",
+          "email": "john@example.com",
+          "first_name": "John",
+          "last_name": "Doe",
+          "country_code": null,  // No especificado
+          "handicap": 12.0,
+          "email_verified": true
+        }
+        ```
+    *   **Mensajes de Usuario:**
+        - Registro: "Nationality (Optional)" - "Select Spain to enable RFEG handicap updates"
+        - Perfil sin país: "Nationality: Not specified"
+        - Perfil con país: "Nationality: 🇪🇸 Spain"
+        - Error RFEG (sin país): "RFEG updates require Spanish nationality. Update your profile to continue."
+        - Error RFEG (otro país): "RFEG updates are only available for Spanish players."
+    *   **Mejoras Futuras:**
+        - Permitir actualizar nacionalidad desde el perfil
+        - Integrar con otras federaciones nacionales
+        - Sugerir país basado en IP/localización
 
 ---
 
@@ -117,12 +213,115 @@ Este documento describe los próximos pasos y las tareas planificadas para conti
         8.  ✅ Actualizar `CompetitionMapper` para manejar campo `countries` del backend.
 
 5.  **Refactorizar Flujo de Inscripción (Enrollment):**
-    *   **Estado:** Pendiente
-    *   **Objetivo:** Mover la lógica de inscripción a casos de uso.
+    *   **Estado:** 🔄 En Progreso
+    *   **Objetivo:** Implementar sistema completo de inscripciones con Clean Architecture y DDD.
     *   **Pasos:**
-        1.  Crear `RequestEnrollmentUseCase.js`, `ApproveEnrollmentUseCase.js`, etc.
-        2.  Implementar los métodos en `ICompetitionRepository` (o un `IEnrollmentRepository` separado si se justifica).
-        3.  Refactorizar los componentes de UI relacionados.
+        1.  **Domain Layer:**
+            - ✅ Crear `EnrollmentStatus.js` Value Object con validación de transiciones
+            - ✅ Crear `EnrollmentId.js` Value Object
+            - ✅ Crear entidad `Enrollment.js` con factory methods (`request()`, `invite()`, `directEnroll()`)
+            - ✅ Crear interfaz `IEnrollmentRepository.js`
+        2.  **Infrastructure Layer:**
+            - ✅ Crear `EnrollmentMapper.js` (Anti-Corruption Layer)
+            - ✅ Implementar `ApiEnrollmentRepository.js` con todos los métodos
+        3.  **Application Layer - Casos de Uso:**
+            - ✅ `RequestEnrollmentUseCase.js` - Solicitar inscripción
+            - ✅ `DirectEnrollUseCase.js` - Inscripción directa por creador
+            - ✅ `ApproveEnrollmentUseCase.js` - Aprobar solicitud
+            - ✅ `RejectEnrollmentUseCase.js` - Rechazar solicitud
+            - ✅ `CancelEnrollmentUseCase.js` - Cancelar solicitud (usuario)
+            - ✅ `WithdrawEnrollmentUseCase.js` - Retirarse de competición
+            - ✅ `ListEnrollmentsUseCase.js` - Listar inscripciones
+            - ✅ `SetCustomHandicapUseCase.js` - Establecer handicap personalizado
+        4.  **Testing:**
+            - ✅ Tests de Value Objects (`EnrollmentStatus.test.js`, `EnrollmentId.test.js`)
+            - ✅ Tests de entidad (`Enrollment.test.js`)
+            - ✅ Tests de casos de uso (8 archivos de test)
+        5.  **Integration:**
+            - ✅ Integrar en `composition/index.js`
+            - ✅ Refactorizar `CompetitionDetail.jsx` para usar casos de uso
+            - ✅ Eliminar llamadas directas a servicios
+
+6.  **Página "Discover Competitions" (Explorar competiciones públicas):**
+    *   **Estado:** Pendiente
+    *   **Objetivo:** Permitir a los usuarios buscar y unirse a competiciones públicas.
+    *   **Descripción:** Nueva página para explorar competiciones ACTIVE (abiertas a inscripciones), con búsqueda por nombre y funcionalidad de solicitar inscripción.
+    *   **Dependencias Backend:**
+        - ⚠️ **Crítico:** Agregar objeto `creator` nested en `GET /api/v1/competitions` y `GET /api/v1/competitions/{id}`
+        - 🔶 **Opcional:** Agregar parámetro `?search=` para búsqueda por nombre (alternativa: búsqueda client-side)
+    *   **Pasos:**
+        1.  Crear página `/competitions/discover` (o `/browse-competitions`)
+        2.  Crear `DiscoverCompetitions.jsx` con:
+            - Lista de competiciones filtradas por `status=ACTIVE`
+            - Barra de búsqueda por nombre
+            - Card para cada competición mostrando:
+              * Nombre, fechas, ubicación
+              * Creador (nombre completo + handicap)
+              * Players count: `X / max_players`
+              * Botón "Request to Join"
+        3.  Usar `ListEnrollmentsUseCase` para verificar si el usuario ya está inscrito
+        4.  Usar `RequestEnrollmentUseCase` para solicitar inscripción
+        5.  Agregar link en navegación principal y Dashboard
+    *   **Casos de Uso a Reutilizar:**
+        - `ListUserCompetitionsUseCase` (adaptar para filtrar por status=ACTIVE)
+        - `RequestEnrollmentUseCase`
+    *   **Mejoras Futuras:**
+        - Filtros avanzados (fecha, país, handicap type)
+        - Paginación
+        - Ordenamiento (fecha, inscritos, etc.)
+
+---
+
+## 👤 Módulo de Perfil de Usuario (User Profile)
+
+### Tareas de Mejora de UI/UX
+
+1.  **Mejorar Página "My Profile":**
+    *   **Estado:** Pendiente
+    *   **Objetivo:** Simplificar y mejorar la presentación de información del perfil.
+    *   **Pasos:**
+        1.  Mover campo `Last Updated` a la tarjeta principal del perfil (ProfileCard)
+        2.  Eliminar tarjeta redundante "Account Information"
+        3.  Mejorar jerarquía visual de la información
+    *   **Tiempo Estimado:** 10-15 minutos
+
+2.  **Sistema de Foto de Perfil (Avatar):**
+    *   **Estado:** Bloqueado (requiere backend)
+    *   **Objetivo:** Permitir a los usuarios personalizar su foto de perfil.
+    *   **Descripción:** Sistema completo de gestión de avatares con galería predefinida, upload de archivos y captura de cámara.
+    *   **Dependencias Backend:**
+        - ⚠️ **Crítico:** Agregar campo `avatar_url` al modelo `User`
+        - ⚠️ **Crítico:** Crear endpoint `PUT /api/v1/users/avatar` (multipart/form-data)
+        - ⚠️ **Crítico:** Crear endpoint `DELETE /api/v1/users/avatar`
+        - ⚠️ **Crítico:** Configurar almacenamiento (S3, Cloudinary, o local)
+        - Validaciones: tipo de archivo (JPG, PNG, WEBP), tamaño máximo (5MB)
+        - Redimensionamiento automático a 200x200px
+    *   **Pasos - Fase 1 (Temporal - Solo Frontend):**
+        1.  Crear galería de imágenes predefinidas (golf-themed) en `/public/avatars/`
+        2.  Guardar selección en `localStorage` como `user_avatar_url`
+        3.  Mostrar avatar en Dashboard, Header, Profile
+        4.  ⚠️ **Limitación:** No persiste en backend (se pierde al cambiar de dispositivo)
+    *   **Pasos - Fase 2 (Implementación Real - Requiere Backend):**
+        1.  Crear `UploadAvatarUseCase.js` en Application Layer
+        2.  Agregar método `uploadAvatar(file)` a `IUserRepository`
+        3.  Implementar en `ApiUserRepository` con `FormData` y `multipart/form-data`
+        4.  Crear componente `AvatarUploader.jsx` con:
+            - Galería predefinida (grid de imágenes)
+            - Upload desde archivo (input type="file")
+            - Captura de cámara (MediaDevices API)
+            - Preview antes de subir
+            - Crop/resize opcional
+        5.  Integrar en página `/profile/edit`
+        6.  Actualizar `getUserData()` para incluir `avatar_url`
+        7.  Mostrar avatar en todos los componentes relevantes
+    *   **Casos de Uso Nuevos:**
+        - `UploadAvatarUseCase.js`
+        - `DeleteAvatarUseCase.js`
+    *   **Testing:**
+        - Tests de casos de uso
+        - Tests de componente `AvatarUploader`
+        - Validación de tipos de archivo
+        - Manejo de errores (archivo muy grande, tipo inválido, etc.)
 
 ---
 

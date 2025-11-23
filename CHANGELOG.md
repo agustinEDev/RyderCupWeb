@@ -7,7 +7,36 @@ y este proyecto adhiere a [Versionado Semántico](https://semver.org/lang/es/).
 
 ## [Unreleased]
 
+### Fixed
+- **Email Verification Auto-Login Flow**: Corregido el flujo de verificación de email para autenticar automáticamente al usuario:
+  - `ApiAuthRepository.verifyEmail()` ahora retorna `{ user, token }` igual que el login
+  - `VerifyEmailUseCase` simplificado para retornar el resultado de autenticación directamente
+  - `VerifyEmail.jsx` ahora usa `setAuthToken()` en lugar de `localStorage` directamente
+  - Agregado `country_code` a `secureAuth.setUserData()` para completar el perfil de usuario
+  - Los usuarios ahora son redirigidos al dashboard después de verificar el email (no requieren login manual)
+  - El backend devuelve JWT token en `/api/v1/auth/verify-email` para autenticación automática
+
 ### Added
+- **Sistema de Nacionalidad del Usuario (User Nationality System)**: Implementación completa del sistema de nacionalidad opcional para usuarios:
+  - **Domain Layer**: Campo `countryCode` agregado a la entidad `User` (opcional, nullable)
+  - **Value Object**: Reutilización del `CountryCode` VO existente del módulo Competition
+  - **RegisterUseCase**: Actualizado para aceptar `countryCode` opcional durante el registro
+  - **UpdateRfegHandicapUseCase**: Validación añadida para permitir RFEG solo a usuarios españoles (`country_code === 'ES'`)
+  - **Helper `canUseRFEG()`**: Nueva función utilitaria en `countryUtils.js` para verificar elegibilidad RFEG
+  - **Register.jsx**: Selector de países OPCIONAL con búsqueda, banderas y nombres en inglés
+  - **Profile.jsx**: Visualización de nacionalidad con badge azul mostrando bandera y nombre completo del país
+  - **EditProfile.jsx**: Lógica condicional para mostrar/ocultar botón "Update from RFEG" basado en nacionalidad
+  - **Auto-sync de datos**: Profile.jsx ahora consulta automáticamente el backend para mantener datos actualizados
+- **Inyección de dependencias actualizada**: `UpdateRfegHandicapUseCase` ahora recibe `userRepository` para validar nacionalidad
+- **Tests exhaustivos para Sistema de Nacionalidad (66 tests - 100% pass rate)**:
+  - `UpdateRfegHandicapUseCase.test.js`: 7 tests (validación de nacionalidad española)
+  - `countryUtils.test.js`: 31 tests (canUseRFEG, getCountryFlag, getCountryInfo, getCountriesInfo)
+  - `User.test.js`: 17 tests (constructor, country_code field, toPersistence, business methods)
+  - `ApiUserRepository.test.js`: 11 tests (getById con endpoint correcto, update, updateSecurity)
+- **Auto-sync en useEditProfile hook**: Implementado fetch automático de datos frescos del backend al montar EditProfile
+- **Logs de depuración**: Agregados logs comprensivos en UpdateRfegHandicapUseCase, ApiUserRepository, y canUseRFEG para facilitar debugging
+
+###
 - **GetCompetitionDetailUseCase (Application Layer)**: Nuevo caso de uso para obtener detalles de una competición:
   - Valida entrada (competitionId requerido).
   - Usa `repository.findById()` para obtener la entidad del dominio.
@@ -31,6 +60,19 @@ y este proyecto adhiere a [Versionado Semántico](https://semver.org/lang/es/).
   - Total: 248 tests pasando (todos los módulos).
 
 ### Changed
+- **Profile.jsx mejorado**:
+  - Agregado campo "Last Updated" en tarjeta principal de usuario
+  - Agregado campo "Nationality" con badge azul mostrando bandera y nombre del país en inglés
+  - Eliminada tarjeta redundante "Account Information"
+  - Implementado auto-sync con backend para mantener datos actualizados en cada visita
+- **ApiAuthRepository.register()**: Actualizado para enviar `country_code` al backend (con valor `null` si no se especifica)
+- **composition/index.js**: Actualizada inyección de dependencias para `UpdateRfegHandicapUseCase` (ahora incluye `userRepository`)
+- **ApiUserRepository.getById()**: Cambiado endpoint de `/api/v1/users/{userId}` a `/api/v1/auth/current-user` (el userId se obtiene del JWT token automáticamente)
+- **useEditProfile hook**: Refactorizado para hacer auto-sync con backend al montar, similar al patrón usado en Profile.jsx
+- **CreateCompetition.jsx payload**: Corregido para coincidir con BACKEND_API_SPEC.md:
+  - Eliminados campos no válidos: `team_one_name`, `team_two_name`, `player_handicap`
+  - Convertidos a UPPERCASE: `handicap_type` y `team_assignment`
+- **ApiCompetitionRepository.findByCreator()**: Eliminado parámetro `creator_id` (el backend filtra automáticamente por usuario autenticado del JWT)
 - **Refactor `CompetitionDetail.jsx`**: Refactorizada la página de detalle de competiciones para usar Clean Architecture:
   - Reemplazadas llamadas directas a servicios por casos de uso (`getCompetitionDetailUseCase`, `activateCompetitionUseCase`, etc.).
   - Simplificado el manejo de estado usando solo actualizaciones parciales en transiciones.
@@ -47,6 +89,13 @@ y este proyecto adhiere a [Versionado Semántico](https://semver.org/lang/es/).
 ### Fixed
 - **Bug en CompetitionMapper**: Corregido error donde `teamAssignment.value` no se llamaba como función, causando renderizado de función en React.
 - **Race condition en Competitions.jsx**: Separado el `useEffect` en dos para evitar que `loadCompetitions()` se ejecute antes de que `setUser()` complete.
+- **Error 404 en ApiUserRepository.getById()**: Corregido endpoint inexistente `/api/v1/users/{userId}` a `/api/v1/auth/current-user` que sí existe en el backend
+- **Datos obsoletos en EditProfile**: Corregido problema donde EditProfile mostraba datos obsoletos del localStorage sin sincronizar con el backend
+- **RFEG no funcionaba para usuarios españoles**: Corregido error donde el repositorio intentaba obtener usuario de endpoint inexistente, impidiendo validación de nacionalidad
+- **Error 500 al crear competiciones**: Corregido payload enviando campos no válidos (`team_one_name`, `team_two_name`, `player_handicap`) que el backend no acepta
+- **Error 500 al listar competiciones**: Corregido envío de parámetro `creator_id` que el backend no acepta (usa JWT automáticamente)
+- **Case sensitivity en enums**: Corregido envío de `handicap_type` y `team_assignment` en lowercase cuando el backend espera UPPERCASE
+- **Mejor manejo de errores 500**: Agregado logging detallado y mensajes más claros cuando el backend responde con error 500
 
 ###
 - **E2E Testing with Playwright**: Integrado el framework Playwright para tests End-to-End, incluyendo configuración, scripts y tests para el flujo de login.
