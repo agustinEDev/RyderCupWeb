@@ -133,6 +133,104 @@ class ApiCompetitionRepository extends ICompetitionRepository {
 
     return competitions;
   }
+
+  /**
+   * Finds public competitions with optional filters.
+   * @override
+   * @param {object} filters - Optional filters for the search.
+   * @param {string|string[]} filters.status - Competition status (e.g., 'ACTIVE', ['CLOSED', 'IN_PROGRESS'])
+   * @param {string} filters.searchName - Search by competition name (partial match)
+   * @param {string} filters.searchCreator - Search by creator name (partial match)
+   * @param {boolean} filters.excludeMyCompetitions - If true, excludes competitions where user is creator or enrolled
+   * @param {number} filters.limit - Maximum number of results
+   * @param {number} filters.offset - Pagination offset
+   * @returns {Promise<Competition[]>} - Array of public competition entities.
+   */
+  async findPublic(filters = {}) {
+    const token = getAuthToken();
+
+    // Build query parameters
+    const queryParams = new URLSearchParams();
+
+    // Handle status filter (can be string or array)
+    if (filters.status) {
+      if (Array.isArray(filters.status)) {
+        // Multiple statuses: add each one as a separate query param
+        filters.status.forEach(status => {
+          queryParams.append('status', status);
+        });
+      } else {
+        // Single status
+        queryParams.append('status', filters.status);
+      }
+    }
+
+    // Handle search filters
+    if (filters.searchName) {
+      queryParams.append('search_name', filters.searchName);
+    }
+
+    if (filters.searchCreator) {
+      queryParams.append('search_creator', filters.searchCreator);
+    }
+
+    // Handle my_competitions filter
+    if (filters.excludeMyCompetitions) {
+      queryParams.append('my_competitions', 'false');
+    }
+
+    // Handle pagination
+    if (filters.limit !== undefined) {
+      queryParams.append('limit', filters.limit.toString());
+    }
+
+    if (filters.offset !== undefined) {
+      queryParams.append('offset', filters.offset.toString());
+    }
+
+    const url = `${API_URL}/api/v1/competitions${queryParams.toString() ? '?' + queryParams : ''}`;
+    console.log('🔍 [ApiCompetitionRepository.findPublic] Fetching public competitions from:', url);
+
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    if (!response.ok) {
+      console.error('❌ [ApiCompetitionRepository.findPublic] HTTP Error:', response.status, response.statusText);
+
+      let errorMessage = 'Failed to fetch public competitions';
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData.detail || errorMessage;
+        console.error('❌ [ApiCompetitionRepository.findPublic] Error details:', errorData);
+      } catch (parseError) {
+        console.error('❌ [ApiCompetitionRepository.findPublic] Could not parse error response');
+      }
+
+      if (response.status === 500) {
+        errorMessage = 'Server error while fetching public competitions. Please check the backend logs.';
+      }
+
+      throw new Error(errorMessage);
+    }
+
+    const apiDataArray = await response.json();
+
+    // Map each API response to Competition domain entity
+    const competitions = apiDataArray.map((apiData) => {
+      const competition = CompetitionMapper.toDomain(apiData);
+      competition._apiData = apiData;
+      return competition;
+    });
+
+    console.log('✅ [ApiCompetitionRepository.findPublic] Found', competitions.length, 'public competitions');
+
+    return competitions;
+  }
 }
 
 export default ApiCompetitionRepository;

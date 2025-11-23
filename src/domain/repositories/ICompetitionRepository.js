@@ -67,4 +67,22 @@ export class ICompetitionRepository {
   async findByCreator(userId, filters = {}) {
     throw new Error('ICompetitionRepository.findByCreator must be implemented');
   }
+
+  /**
+   * Finds public competitions with optional filters.
+   * This method is used to browse competitions that are publicly visible.
+   *
+   * @param {object} filters Optional filters for the search.
+   * @param {string|string[]} filters.status Competition status (e.g., 'ACTIVE', ['CLOSED', 'IN_PROGRESS'])
+   * @param {string} filters.searchName Search by competition name (partial match)
+   * @param {string} filters.searchCreator Search by creator name (partial match)
+   * @param {boolean} filters.excludeMyCompetitions If true, excludes competitions where user is creator or enrolled
+   * @param {number} filters.limit Maximum number of results
+   * @param {number} filters.offset Pagination offset
+   * @returns {Promise<Competition[]>} A list of public competitions matching the filters.
+   * @throws {Error} If the method is not implemented.
+   */
+  async findPublic(filters = {}) {
+    throw new Error('ICompetitionRepository.findPublic must be implemented');
+  }
 }
