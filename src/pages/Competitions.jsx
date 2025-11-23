@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   Users, Calendar, MapPin, Star, Plus,
-  Filter, Search, AlertCircle, Loader
+  Filter, Search, AlertCircle, Loader, Crown
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import HeaderAuth from '../components/layout/HeaderAuth';
@@ -72,15 +72,46 @@ const Competitions = () => {
               {/* Header */}
               <div className="flex items-start justify-between mb-3">
                 <div className="flex-1">
-                  <h3 className="text-gray-900 font-bold text-lg mb-1 group-hover:text-primary transition-colors">
+                  <h3 className="text-gray-900 font-bold text-lg mb-1 group-hover:text-primary transition-colors flex items-center gap-2">
                     {competition.name}
+                    {competition.creatorId === user?.id && (
+                      <Crown className="w-4 h-4 text-accent flex-shrink-0" title="You are the creator" />
+                    )}
                   </h3>
-                  <div className="flex items-center gap-2 text-gray-500 text-sm">
-                    {/* Aquí puedes agregar más detalles de la competición si es necesario */}
+                </div>
+                <span
+                  className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(
+                    competition.status
+                  )}`}
+                >
+                  {competition.status?.replace('_', ' ')}
+                </span>
+              </div>
+
+              {/* Details */}
+              <div className="space-y-2">
+                {/* Dates */}
+                <div className="flex items-center gap-2 text-gray-600 text-sm">
+                  <Calendar className="w-4 h-4" />
+                  <span>{formatDateRange(competition.startDate, competition.endDate)}</span>
+                </div>
+
+                {/* Location */}
+                {competition.location && (
+                  <div className="flex items-center gap-2 text-gray-600 text-sm">
+                    <MapPin className="w-4 h-4" />
+                    <span>{competition.location}</span>
                   </div>
+                )}
+
+                {/* Players */}
+                <div className="flex items-center gap-2 text-gray-600 text-sm">
+                  <Users className="w-4 h-4" />
+                  <span>
+                    {competition.enrolledCount || 0} / {competition.maxPlayers} players
+                  </span>
                 </div>
               </div>
-              {/* Aquí puedes agregar más contenido de la tarjeta */}
             </motion.div>
           ))}
         </div>
@@ -155,7 +186,7 @@ const Competitions = () => {
   };
 
   const handleViewCompetition = (competitionId) => {
-    navigate(`/competitions/${competitionId}`);
+    navigate(`/competitions/${competitionId}`, { state: { from: 'my-competitions' } });
   };
 
   if (!user) {

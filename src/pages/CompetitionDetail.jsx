@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   Trophy, Users, Calendar, MapPin, Settings, ArrowLeft,
@@ -29,12 +29,18 @@ import {
 
 const CompetitionDetail = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { id } = useParams();
   const [user, setUser] = useState(null);
   const [competition, setCompetition] = useState(null);
   const [enrollments, setEnrollments] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
+
+  // Determine where user came from (browse or my competitions)
+  const fromBrowse = location.state?.from === 'browse';
+  const backLink = fromBrowse ? '/browse-competitions' : '/competitions';
+  const backText = fromBrowse ? 'Back to Browse' : 'Back to Competitions';
 
   useEffect(() => {
     const userData = getUserData();
@@ -174,11 +180,11 @@ const CompetitionDetail = () => {
               className="p-4"
             >
               <button
-                onClick={() => navigate('/competitions')}
+                onClick={() => navigate(backLink)}
                 className="flex items-center gap-2 text-gray-600 hover:text-primary transition-colors mb-4"
               >
                 <ArrowLeft className="w-4 h-4" />
-                <span className="text-sm font-medium">Back to Competitions</span>
+                <span className="text-sm font-medium">{backText}</span>
               </button>
 
               <div className="bg-gradient-to-br from-primary-50 to-blue-50 rounded-xl border border-primary-200 p-6 shadow-md">
