@@ -86,12 +86,14 @@ class ApiCompetitionRepository extends ICompetitionRepository {
     const token = getAuthToken();
 
     // Build query parameters
-    const queryParams = new URLSearchParams({
-      creator_id: userId,
-      ...filters
-    });
+    // Note: Backend automatically filters by authenticated user from JWT token
+    // No need to send creator_id explicitly
+    const queryParams = new URLSearchParams(filters);
 
-    const response = await fetch(`${API_URL}/api/v1/competitions?${queryParams}`, {
+    const url = `${API_URL}/api/v1/competitions${queryParams.toString() ? '?' + queryParams : ''}`;
+    console.log('🔍 [ApiCompetitionRepository.findByCreator] Fetching competitions from:', url);
+
+    const response = await fetch(url, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -100,8 +102,22 @@ class ApiCompetitionRepository extends ICompetitionRepository {
     });
 
     if (!response.ok) {
-      const errorData = await response.json();
-      const errorMessage = errorData.detail || 'Failed to fetch competitions';
+      console.error('❌ [ApiCompetitionRepository.findByCreator] HTTP Error:', response.status, response.statusText);
+
+      let errorMessage = 'Failed to fetch competitions';
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData.detail || errorMessage;
+        console.error('❌ [ApiCompetitionRepository.findByCreator] Error details:', errorData);
+      } catch (parseError) {
+        console.error('❌ [ApiCompetitionRepository.findByCreator] Could not parse error response');
+      }
+
+      // Add more context for 500 errors
+      if (response.status === 500) {
+        errorMessage = 'Server error while fetching competitions. Please check the backend logs.';
+      }
+
       throw new Error(errorMessage);
     }
 

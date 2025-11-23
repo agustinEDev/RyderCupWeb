@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Calendar, Users, Trophy, MapPin, Settings, Plus, X, ChevronDown } from 'lucide-react';
+import { Calendar, Trophy, MapPin, Settings, Plus, X, ChevronDown } from 'lucide-react';
 import HeaderAuth from '../components/layout/HeaderAuth';
-import { getUserData, getAuthToken } from '../utils/secureAuth';
+import { getUserData } from '../utils/secureAuth';
 import { createCompetitionUseCase } from '../composition';
 
 const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
@@ -15,6 +15,33 @@ const getMessageClassName = (type) => {
 };
 
 const CreateCompetition = () => {
+    // Renderiza el contenido del dropdown de países
+    const renderCountryDropdownContent = () => {
+      if (isLoadingCountries) {
+        return [
+          <div key="loading" className="px-3 py-2 text-sm text-gray-500 text-center">
+            Loading countries...
+          </div>
+        ];
+      }
+      if (filteredCountries.length > 0) {
+        return filteredCountries.map(country => (
+          <button
+            key={country.id}
+            type="button"
+            onClick={() => handleCountrySelect(country)}
+            className="w-full px-3 py-2 text-left hover:bg-gray-100 focus:bg-gray-100 focus:outline-none"
+          >
+            {country.name}
+          </button>
+        ));
+      }
+      return [
+        <div key="empty" className="px-3 py-2 text-sm text-gray-500 text-center">
+          {countrySearch ? 'No countries found' : 'No countries available'}
+        </div>
+      ];
+    };
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -51,7 +78,7 @@ const CreateCompetition = () => {
     // RyderCup Settings
     handicapType: 'SCRATCH',
     handicapPercentage: '100',
-    numberOfPlayers: '',
+    numberOfPlayers: undefined,
     teamAssignment: 'manual',
     playerHandicap: 'user'
   });
@@ -92,7 +119,7 @@ const CreateCompetition = () => {
         const data = await response.json();
         const validCountries = Array.isArray(data)
           ? data
-              .filter(c => c && c.code && (c.name_en || c.name_es))
+              .filter(c => c?.code && (c?.name_en || c?.name_es))
               .map(c => ({
                 id: c.code,
                 name: c.name_en || c.name_es,
@@ -122,7 +149,7 @@ const CreateCompetition = () => {
         const data = await response.json();
         const mappedData = Array.isArray(data)
           ? data
-              .filter(c => c && c.code && (c.name_en || c.name_es))
+              .filter(c => c?.code && (c?.name_en || c?.name_es))
               .map(c => ({
                 id: c.code,
                 name: c.name_en || c.name_es,
@@ -237,7 +264,7 @@ const CreateCompetition = () => {
   };
 
   const filteredCountries = allCountries.filter(country =>
-    country && country.name && country.name.toLowerCase().includes(countrySearch.toLowerCase())
+    country?.name?.toLowerCase().includes(countrySearch.toLowerCase())
   );
 
   const handleSubmit = async (e) => {
@@ -270,8 +297,8 @@ const CreateCompetition = () => {
       return;
     }
 
-    const numPlayers = parseInt(formData.numberOfPlayers, 10);
-    if (isNaN(numPlayers) || numPlayers < 2) {
+    const numPlayers = Number.parseInt(formData.numberOfPlayers, 10);
+    if (Number.isNaN(numPlayers) || numPlayers < 2) {
       setMessage({ type: 'error', text: 'Number of players must be at least 2' });
       return;
     }
@@ -289,21 +316,20 @@ const CreateCompetition = () => {
 
       const payload = {
         name: formData.competitionName.trim(),
-        team_one_name: formData.teamOneName.trim(),
-        team_two_name: formData.teamTwoName.trim(),
         start_date: formData.startDate,
         end_date: formData.endDate,
-        main_country: formData.country.code,
+        main_country: formData.country?.code,
         countries: countries,
-        handicap_type: formData.handicapType,
+        handicap_type: formData.handicapType.toUpperCase(),
         max_players: numPlayers,
-        team_assignment: formData.teamAssignment,
-        player_handicap: formData.playerHandicap
+        team_assignment: formData.teamAssignment.toUpperCase()
       };
 
       if (formData.handicapType === 'PERCENTAGE') {
-        payload.handicap_percentage = parseInt(formData.handicapPercentage);
+        payload.handicap_percentage = Number.parseInt(formData.handicapPercentage);
       }
+
+      console.log('📤 [CreateCompetition] Sending payload to backend:', JSON.stringify(payload, null, 2));
 
       // Use the use case instead of direct API call
       const createdCompetition = await createCompetitionUseCase.execute(payload);
@@ -486,26 +512,7 @@ const CreateCompetition = () => {
 
                     {showCountryDropdown && (
                       <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                        {isLoadingCountries ? (
-                          <div className="px-3 py-2 text-sm text-gray-500 text-center">
-                            Loading countries...
-                          </div>
-                        ) : filteredCountries.length > 0 ? (
-                          filteredCountries.map(country => (
-                            <button
-                              key={country.id}
-                              type="button"
-                              onClick={() => handleCountrySelect(country)}
-                              className="w-full px-3 py-2 text-left hover:bg-gray-100 focus:bg-gray-100 focus:outline-none"
-                            >
-                              {country.name}
-                            </button>
-                          ))
-                        ) : (
-                          <div className="px-3 py-2 text-sm text-gray-500 text-center">
-                            {countrySearch ? 'No countries found' : 'No countries available'}
-                          </div>
-                        )}
+                        {renderCountryDropdownContent()}
                       </div>
                     )}
                   </div>
@@ -618,30 +625,32 @@ const CreateCompetition = () => {
                 <div className="space-y-4">
                   {/* Handicap Type */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <span className="block text-sm font-medium text-gray-700 mb-2">
                       Handicap Type *
-                    </label>
+                    </span>
                     <div className="flex gap-4">
-                      <label className="flex items-center gap-2 cursor-pointer">
-                        <input
-                          type="radio"
-                          name="handicapType"
-                          value="SCRATCH"
-                          checked={formData.handicapType === 'SCRATCH'}
-                          onChange={handleInputChange}
-                          className="w-4 h-4 text-primary focus:ring-primary"
-                        />
+                      <input
+                        id="handicapType-scratch"
+                        type="radio"
+                        name="handicapType"
+                        value="SCRATCH"
+                        checked={formData.handicapType === 'SCRATCH'}
+                        onChange={handleInputChange}
+                        className="w-4 h-4 text-primary focus:ring-primary"
+                      />
+                      <label htmlFor="handicapType-scratch" className="flex items-center gap-2 cursor-pointer">
                         <span className="text-sm text-gray-700">Scratch</span>
                       </label>
-                      <label className="flex items-center gap-2 cursor-pointer">
-                        <input
-                          type="radio"
-                          name="handicapType"
-                          value="PERCENTAGE"
-                          checked={formData.handicapType === 'PERCENTAGE'}
-                          onChange={handleInputChange}
-                          className="w-4 h-4 text-primary focus:ring-primary"
-                        />
+                      <input
+                        id="handicapType-percentage"
+                        type="radio"
+                        name="handicapType"
+                        value="PERCENTAGE"
+                        checked={formData.handicapType === 'PERCENTAGE'}
+                        onChange={handleInputChange}
+                        className="w-4 h-4 text-primary focus:ring-primary"
+                      />
+                      <label htmlFor="handicapType-percentage" className="flex items-center gap-2 cursor-pointer">
                         <span className="text-sm text-gray-700">Percentage</span>
                       </label>
                     </div>
@@ -650,13 +659,14 @@ const CreateCompetition = () => {
                   {/* Handicap Percentage (only when PERCENTAGE is selected) */}
                   {formData.handicapType === 'PERCENTAGE' && (
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <span className="block text-sm font-medium text-gray-700 mb-2">
                         Handicap Percentage
-                      </label>
+                      </span>
                       <div className="flex gap-4">
                         {['100', '95', '90'].map(percentage => (
-                          <label key={percentage} className="flex items-center gap-2 cursor-pointer">
+                          <React.Fragment key={percentage}>
                             <input
+                              id={`handicapPercentage-${percentage}`}
                               type="radio"
                               name="handicapPercentage"
                               value={percentage}
@@ -664,8 +674,10 @@ const CreateCompetition = () => {
                               onChange={handleInputChange}
                               className="w-4 h-4 text-primary focus:ring-primary"
                             />
-                            <span className="text-sm text-gray-700">{percentage}%</span>
-                          </label>
+                            <label htmlFor={`handicapPercentage-${percentage}`} className="flex items-center gap-2 cursor-pointer">
+                              <span className="text-sm text-gray-700">{percentage}%</span>
+                            </label>
+                          </React.Fragment>
                         ))}
                       </div>
                     </div>
@@ -680,7 +692,7 @@ const CreateCompetition = () => {
                       id="numberOfPlayers"
                       type="number"
                       name="numberOfPlayers"
-                      value={formData.numberOfPlayers}
+                      value={formData.numberOfPlayers === undefined ? '' : formData.numberOfPlayers}
                       onChange={handleInputChange}
                       min="1"
                       placeholder="Enter total number of players"
@@ -690,30 +702,32 @@ const CreateCompetition = () => {
 
                   {/* Team Assignment */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <span className="block text-sm font-medium text-gray-700 mb-2">
                       Team Assignment *
-                    </label>
+                    </span>
                     <div className="flex gap-4">
-                      <label className="flex items-center gap-2 cursor-pointer">
-                        <input
-                          type="radio"
-                          name="teamAssignment"
-                          value="manual"
-                          checked={formData.teamAssignment === 'manual'}
-                          onChange={handleInputChange}
-                          className="w-4 h-4 text-primary focus:ring-primary"
-                        />
+                      <input
+                        id="teamAssignment-manual"
+                        type="radio"
+                        name="teamAssignment"
+                        value="manual"
+                        checked={formData.teamAssignment === 'manual'}
+                        onChange={handleInputChange}
+                        className="w-4 h-4 text-primary focus:ring-primary"
+                      />
+                      <label htmlFor="teamAssignment-manual" className="flex items-center gap-2 cursor-pointer">
                         <span className="text-sm text-gray-700">Manual</span>
                       </label>
-                      <label className="flex items-center gap-2 cursor-pointer">
-                        <input
-                          type="radio"
-                          name="teamAssignment"
-                          value="automatic"
-                          checked={formData.teamAssignment === 'automatic'}
-                          onChange={handleInputChange}
-                          className="w-4 h-4 text-primary focus:ring-primary"
-                        />
+                      <input
+                        id="teamAssignment-automatic"
+                        type="radio"
+                        name="teamAssignment"
+                        value="automatic"
+                        checked={formData.teamAssignment === 'automatic'}
+                        onChange={handleInputChange}
+                        className="w-4 h-4 text-primary focus:ring-primary"
+                      />
+                      <label htmlFor="teamAssignment-automatic" className="flex items-center gap-2 cursor-pointer">
                         <span className="text-sm text-gray-700">Automatic</span>
                       </label>
                     </div>
@@ -721,30 +735,32 @@ const CreateCompetition = () => {
 
                   {/* Player Handicap Source */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <span className="block text-sm font-medium text-gray-700 mb-2">
                       Player Handicap *
-                    </label>
+                    </span>
                     <div className="flex flex-col sm:flex-row gap-4">
-                      <label className="flex items-center gap-2 cursor-pointer">
-                        <input
-                          type="radio"
-                          name="playerHandicap"
-                          value="custom"
-                          checked={formData.playerHandicap === 'custom'}
-                          onChange={handleInputChange}
-                          className="w-4 h-4 text-primary focus:ring-primary"
-                        />
+                      <input
+                        id="playerHandicap-custom"
+                        type="radio"
+                        name="playerHandicap"
+                        value="custom"
+                        checked={formData.playerHandicap === 'custom'}
+                        onChange={handleInputChange}
+                        className="w-4 h-4 text-primary focus:ring-primary"
+                      />
+                      <label htmlFor="playerHandicap-custom" className="flex items-center gap-2 cursor-pointer">
                         <span className="text-sm text-gray-700">Custom by competition creator</span>
                       </label>
-                      <label className="flex items-center gap-2 cursor-pointer">
-                        <input
-                          type="radio"
-                          name="playerHandicap"
-                          value="user"
-                          checked={formData.playerHandicap === 'user'}
-                          onChange={handleInputChange}
-                          className="w-4 h-4 text-primary focus:ring-primary"
-                        />
+                      <input
+                        id="playerHandicap-user"
+                        type="radio"
+                        name="playerHandicap"
+                        value="user"
+                        checked={formData.playerHandicap === 'user'}
+                        onChange={handleInputChange}
+                        className="w-4 h-4 text-primary focus:ring-primary"
+                      />
+                      <label htmlFor="playerHandicap-user" className="flex items-center gap-2 cursor-pointer">
                         <span className="text-sm text-gray-700">User handicap</span>
                       </label>
                     </div>
