@@ -15,20 +15,40 @@ class ApiUserRepository extends IUserRepository {
    * @override
    */
   async getById(userId) {
+    console.log('🔍 [ApiUserRepository.getById] Fetching user:', userId);
     const token = this.authTokenProvider.getToken();
-    const response = await fetch(`${API_URL}/api/v1/users/${userId}`, { // Asumiendo este endpoint
+
+    // Usar current-user en lugar de /users/{userId}
+    // El userId se ignora porque obtenemos el usuario del token JWT
+    const response = await fetch(`${API_URL}/api/v1/auth/current-user`, {
       headers: {
         'Authorization': `Bearer ${token}`,
       },
     });
 
     if (!response.ok) {
-      if (response.status === 404) return null;
-      throw new Error(`Failed to fetch user with id ${userId}`);
+      console.error('❌ [ApiUserRepository.getById] Failed to fetch user:', response.status);
+      if (response.status === 404 || response.status === 401) return null;
+      throw new Error(`Failed to fetch current user`);
     }
 
     const data = await response.json();
-    return new User(data); // Mapeamos el DTO de la API a nuestra entidad de dominio
+    console.log('🔍 [ApiUserRepository.getById] API response data:', {
+      userId: data.id,
+      hasCountryCode: 'country_code' in data,
+      countryCodeValue: data.country_code,
+      countryCodeType: typeof data.country_code,
+      allKeys: Object.keys(data)
+    });
+
+    const userEntity = new User(data);
+    console.log('🔍 [ApiUserRepository.getById] User entity created:', {
+      hasCountryCode: !!userEntity.countryCode,
+      countryCodeType: userEntity.countryCode ? typeof userEntity.countryCode : 'undefined',
+      countryCodeValue: userEntity.countryCode?.value ? userEntity.countryCode.value() : 'no value() method'
+    });
+
+    return userEntity; // Mapeamos el DTO de la API a nuestra entidad de dominio
   }
 
   /**
