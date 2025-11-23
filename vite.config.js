@@ -21,17 +21,17 @@ export default defineConfig({
       name: 'security-headers',
       configureServer(server) {
         server.middlewares.use((req, res, next) => {
-          Object.entries(securityHeaders).forEach(([key, value]) => {
+          for (const [key, value] of Object.entries(securityHeaders)) {
             res.setHeader(key, value)
-          })
+          }
           next()
         })
       },
       configurePreviewServer(server) {
         server.middlewares.use((req, res, next) => {
-          Object.entries(securityHeaders).forEach(([key, value]) => {
+          for (const [key, value] of Object.entries(securityHeaders)) {
             res.setHeader(key, value)
-          })
+          }
           next()
         })
       }

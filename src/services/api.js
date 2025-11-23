@@ -54,7 +54,7 @@ export const apiRequest = async (endpoint, options = {}) => {
     if (response.status === 401) {
       // Clear auth data and redirect to login
       sessionStorage.clear();
-      window.location.href = '/login';
+      globalThis.location.href = '/login';
       throw new Error('Session expired. Please login again.');
     }
 

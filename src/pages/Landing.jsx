@@ -22,11 +22,6 @@ const Landing = () => {
     transition: { duration: 0.6 }
   };
 
-  const fadeIn = {
-    initial: { opacity: 0 },
-    animate: { opacity: 1 },
-    transition: { duration: 0.8 }
-  };
 
   const staggerContainer = {
     animate: {
@@ -329,9 +324,9 @@ const Landing = () => {
                     { title: 'Mobile Friendly', desc: 'Manage your tournament from anywhere, on any device.' },
                     { title: 'Fair Competition', desc: 'Advanced handicap system ensures everyone has a chance to win.' },
                     { title: 'Community Focused', desc: 'Connect with fellow golf enthusiasts and build lasting friendships.' }
-                  ].map((benefit, idx) => (
+                  ].map((benefit) => (
                     <motion.div
-                      key={idx}
+                      key={benefit.title}
                       variants={fadeInUp}
                       className="flex gap-4 items-start"
                     >
@@ -382,7 +377,7 @@ const Landing = () => {
                   Start Free Today
                 </button>
                 <button
-                  onClick={() => window.location.href = '#features'}
+                  onClick={() => globalThis.location.href = '#features'}
                   className="px-8 py-4 bg-transparent text-white text-base font-bold rounded-lg border-2 border-white hover:bg-white/10 transition-all duration-300"
                 >
                   Learn More
