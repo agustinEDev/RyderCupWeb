@@ -79,3 +79,46 @@ export const getCountriesInfo = (countryCodes) => {
     .map(code => getCountryInfo(code))
     .filter(info => info !== null);
 };
+
+/**
+ * Check if a user can use RFEG (Real Federación Española de Golf) handicap updates
+ * Only users with Spanish nationality (ES) can update their handicap from RFEG
+ *
+ * Business Rule: RFEG is only available for Spanish players
+ *
+ * @param {Object} user - User object from localStorage or API
+ * @param {string|null} user.country_code - User's country code (ISO 3166-1 alpha-2)
+ * @returns {boolean} - true if user can use RFEG, false otherwise
+ *
+ * Examples:
+ *   canUseRFEG({ country_code: 'ES' }) → true
+ *   canUseRFEG({ country_code: 'FR' }) → false
+ *   canUseRFEG({ country_code: null }) → false
+ *   canUseRFEG(null) → false
+ */
+export const canUseRFEG = (user) => {
+  console.log('🔍 [canUseRFEG] Checking RFEG eligibility:', {
+    hasUser: !!user,
+    userType: typeof user,
+    hasCountryCode: !!(user?.country_code),
+    countryCode: user?.country_code,
+    countryCodeType: typeof user?.country_code
+  });
+
+  // Validate user object exists
+  if (!user || typeof user !== 'object') {
+    console.log('❌ [canUseRFEG] User object invalid');
+    return false;
+  }
+
+  // User must have a country_code defined
+  if (!user.country_code) {
+    console.log('❌ [canUseRFEG] User has no country_code');
+    return false;
+  }
+
+  // Only Spanish users (ES) can use RFEG
+  const isSpanish = user.country_code.toUpperCase() === 'ES';
+  console.log(isSpanish ? '✅ [canUseRFEG] User is Spanish' : '❌ [canUseRFEG] User is not Spanish:', user.country_code);
+  return isSpanish;
+};
