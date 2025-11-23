@@ -40,7 +40,10 @@ const apiCompetitionRepository = new ApiCompetitionRepository();
 const updateUserProfileUseCase = new UpdateUserProfileUseCase({ userRepository: apiUserRepository });
 const updateUserSecurityUseCase = new UpdateUserSecurityUseCase({ userRepository: apiUserRepository });
 const updateManualHandicapUseCase = new UpdateManualHandicapUseCase({ handicapRepository: apiHandicapRepository });
-const updateRfegHandicapUseCase = new UpdateRfegHandicapUseCase({ handicapRepository: apiHandicapRepository });
+const updateRfegHandicapUseCase = new UpdateRfegHandicapUseCase({
+  handicapRepository: apiHandicapRepository,
+  userRepository: apiUserRepository
+});
 const loginUseCase = new LoginUseCase({ authRepository: apiAuthRepository });
 const registerUseCase = new RegisterUseCase({ authRepository: apiAuthRepository });
 const verifyEmailUseCase = new VerifyEmailUseCase({ authRepository: apiAuthRepository });

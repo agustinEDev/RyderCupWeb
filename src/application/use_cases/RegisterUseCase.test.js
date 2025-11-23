@@ -46,11 +46,16 @@ describe('RegisterUseCase', () => {
 
     // Assert
     // 1. Verificar que el método register del repositorio fue llamado con los datos correctos
-    expect(authRepository.register).toHaveBeenCalledWith({
-      ...userData,
-      email: expect.objectContaining({ _value: userData.email }),
-      password: expect.objectContaining({ _value: userData.password }), // Comprobar VO de Password
-    });
+    // Comprobar que se pasan instancias de Email y Password con el valor correcto
+    const callArg = authRepository.register.mock.calls[0][0];
+    expect(callArg.firstName).toBe(userData.firstName);
+    expect(callArg.lastName).toBe(userData.lastName);
+    expect(callArg.email).toBeInstanceOf(Email);
+    expect(callArg.email._value).toBe(userData.email);
+    expect(callArg.password).toBeInstanceOf(Password);
+    expect(callArg.password._value).toBe(userData.password);
+    // countryCode puede ser null o instancia
+    expect(callArg.countryCode === null || typeof callArg.countryCode === 'object').toBe(true);
 
     // 2. Verificar que el caso de uso devuelve la entidad User correcta
     expect(registeredUser).toEqual(mockNewUserEntity);
@@ -88,10 +93,13 @@ describe('RegisterUseCase', () => {
 
     // Act & Assert
     await expect(registerUseCase.execute(userData)).rejects.toThrow('Email already registered');
-    expect(authRepository.register).toHaveBeenCalledWith({
-      ...userData,
-      email: expect.objectContaining({ _value: userData.email }),
-      password: expect.objectContaining({ _value: userData.password }), // Comprobar VO de Password
-    });
+    const callArg = authRepository.register.mock.calls[0][0];
+    expect(callArg.firstName).toBe(userData.firstName);
+    expect(callArg.lastName).toBe(userData.lastName);
+    expect(callArg.email).toBeInstanceOf(Email);
+    expect(callArg.email._value).toBe(userData.email);
+    expect(callArg.password).toBeInstanceOf(Password);
+    expect(callArg.password._value).toBe(userData.password);
+    expect(callArg.countryCode === null || typeof callArg.countryCode === 'object').toBe(true);
   });
 });
