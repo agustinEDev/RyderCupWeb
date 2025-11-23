@@ -34,22 +34,69 @@ export const useEditProfile = () => {
   });
 
   useEffect(() => {
-    // Fetch user data from secure storage (auth already verified by ProtectedRoute)
-    const userData = getUserData();
+    const fetchUserData = async () => {
+      try {
+        // First get local data to show immediately
+        const localUserData = getUserData();
 
-    if (userData) {
-      setUser(userData);
-      setFormData({
-        firstName: userData.first_name || '',
-        lastName: userData.last_name || '',
-        email: userData.email || '',
-        currentPassword: '',
-        newPassword: '',
-        confirmPassword: '',
-        handicap: userData.handicap === null ? '' : userData.handicap.toString()
-      });
-    }
-    setIsLoading(false);
+        if (localUserData) {
+          setUser(localUserData);
+          setFormData({
+            firstName: localUserData.first_name || '',
+            lastName: localUserData.last_name || '',
+            email: localUserData.email || '',
+            currentPassword: '',
+            newPassword: '',
+            confirmPassword: '',
+            handicap: localUserData.handicap === null ? '' : localUserData.handicap.toString()
+          });
+        }
+
+        // Then fetch fresh data from backend
+        const token = getAuthToken();
+        if (token) {
+          console.log('🔄 [useEditProfile] Fetching fresh user data from backend...');
+          const response = await fetch(`${API_URL}/api/v1/auth/current-user`, {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          });
+
+          if (response.ok) {
+            const freshUserData = await response.json();
+            console.log('✅ [useEditProfile] Fresh user data received:', {
+              userId: freshUserData.id,
+              hasCountryCode: 'country_code' in freshUserData,
+              countryCode: freshUserData.country_code
+            });
+
+            // Update localStorage with fresh data
+            setUserData(freshUserData);
+            setUser(freshUserData);
+
+            // Update form with fresh data
+            setFormData({
+              firstName: freshUserData.first_name || '',
+              lastName: freshUserData.last_name || '',
+              email: freshUserData.email || '',
+              currentPassword: '',
+              newPassword: '',
+              confirmPassword: '',
+              handicap: freshUserData.handicap === null ? '' : freshUserData.handicap.toString()
+            });
+          } else {
+            console.warn('⚠️ [useEditProfile] Failed to fetch fresh user data, using cached data');
+          }
+        }
+      } catch (error) {
+        console.error('❌ [useEditProfile] Error fetching user data:', error);
+        // Keep using local data if fetch fails
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchUserData();
   }, []); // El array vacío asegura que esto solo se ejecute una vez
 
   const handleInputChange = (e) => {

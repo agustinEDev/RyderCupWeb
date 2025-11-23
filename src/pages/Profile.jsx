@@ -3,21 +3,71 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   Mail, Shield, Calendar, TrendingUp, Award,
-  CheckCircle, AlertCircle, Edit, LogOut, ArrowLeft
+  CheckCircle, AlertCircle, Edit, LogOut, ArrowLeft, Globe, Clock
 } from 'lucide-react';
 import HeaderAuth from '../components/layout/HeaderAuth';
-import { getUserData, clearAuthData } from '../utils/secureAuth';
+import { getUserData, clearAuthData, getAuthToken, setUserData } from '../utils/secureAuth';
+import { getCountryFlag } from '../utils/countryUtils';
+
+const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
 const Profile = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [countryName, setCountryName] = useState(null);
 
   useEffect(() => {
-    // Fetch user data from secure storage (auth already verified by ProtectedRoute)
-    const userData = getUserData();
-    setUser(userData);
-    setIsLoading(false);
+    const fetchUserData = async () => {
+      try {
+        // First get local data
+        const localUserData = getUserData();
+        setUser(localUserData); // Show local data immediately
+
+        // Then fetch fresh data from backend
+        const token = getAuthToken();
+        if (token) {
+          const response = await fetch(`${API_URL}/api/v1/auth/current-user`, {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          });
+
+          if (response.ok) {
+            const freshUserData = await response.json();
+            console.log('✅ Fresh user data from backend:', freshUserData);
+            console.log('🌍 Country code:', freshUserData?.country_code);
+
+            // Update localStorage with fresh data
+            setUserData(freshUserData);
+            setUser(freshUserData);
+
+            // Fetch country name if user has country_code
+            if (freshUserData.country_code) {
+              try {
+                const countriesResponse = await fetch(`${API_URL}/api/v1/countries?language=en`);
+                if (countriesResponse.ok) {
+                  const countries = await countriesResponse.json();
+                  const country = countries.find(c => c.code === freshUserData.country_code);
+                  if (country) {
+                    setCountryName(country.name_en || country.name);
+                  }
+                }
+              } catch (error) {
+                console.error('Error fetching country name:', error);
+              }
+            }
+          }
+        }
+      } catch (error) {
+        console.error('❌ Error fetching user data:', error);
+        // Keep using local data if fetch fails
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchUserData();
   }, []);
 
   const handleEditProfile = () => {
@@ -141,9 +191,33 @@ const Profile = () => {
                     </div>
 
                     {/* Member Since */}
-                    <div className="flex items-center gap-2 text-gray-600">
+                    <div className="flex items-center gap-2 text-gray-600 mb-2">
                       <Calendar className="w-4 h-4" />
                       <span className="text-sm">Member since {memberSince}</span>
+                    </div>
+
+                    {/* Last Updated */}
+                    <div className="flex items-center gap-2 text-gray-600 mb-2">
+                      <Clock className="w-4 h-4" />
+                      <span className="text-sm">Last updated {formatDate(user.updated_at)}</span>
+                    </div>
+
+                    {/* Nationality */}
+                    <div className="flex items-center gap-2 text-gray-600">
+                      <Globe className="w-4 h-4" />
+                      {user.country_code ? (
+                        <span className="text-sm flex items-center gap-2">
+                          <span>Nationality</span>
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-xs font-semibold border border-blue-200">
+                            <span className="text-base leading-none">{getCountryFlag(user.country_code)}</span>
+                            <span>{countryName || user.country_code}</span>
+                          </span>
+                        </span>
+                      ) : (
+                        <span className="text-sm text-gray-400">
+                          Nationality: Not specified
+                        </span>
+                      )}
                     </div>
                   </div>
 
@@ -170,38 +244,6 @@ const Profile = () => {
                     </div>
                   </div>
                 </div>
-              </div>
-            </motion.div>
-
-            {/* Info Card */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-              className="p-4"
-            >
-              <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
-                <h3 className="text-gray-900 font-bold text-lg mb-4 flex items-center gap-2">
-                  <Shield className="w-5 h-5 text-primary-600" />
-                  Account Information
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <span className="text-gray-500 text-sm">User ID:</span>
-                    <p className="text-gray-900 font-mono text-sm mt-1">{user.id?.substring(0, 8)}...</p>
-                  </div>
-                  <div>
-                    <span className="text-gray-500 text-sm">Last Updated:</span>
-                    <p className="text-gray-900 text-sm mt-1">{formatDate(user.updated_at)}</p>
-                  </div>
-                </div>
-
-                {handicap === 'Not set' && (
-                  <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-yellow-700 flex items-start gap-2">
-                    <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                    <span>Update your handicap to participate in competitions</span>
-                  </div>
-                )}
               </div>
             </motion.div>
 

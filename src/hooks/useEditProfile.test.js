@@ -1,8 +1,7 @@
 import { renderHook, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { useEditProfile } from './useEditProfile';
-// import { User } from '../domain/entities/User'; // Eliminado
-import toast from 'react-hot-toast'; // Agregado
+import toast from 'react-hot-toast';
 
 // Mockear (simular) las dependencias externas del hook
 vi.mock('../composition', () => ({
@@ -104,6 +103,7 @@ describe('useEditProfile Hook', () => {
 
   it('debería llamar a updateUserProfileUseCase y actualizar el estado al llamar a handleUpdateProfile', async () => {
     // Importar dinámicamente el módulo User REAL
+    // eslint-disable-next-line no-unused-vars
     const { default: User } = await vi.importActual('../domain/entities/User');
 
     // 1. Arrange: Preparar el escenario del test
@@ -152,7 +152,8 @@ describe('useEditProfile Hook', () => {
     const newPassword = 'NewSecurePassword123';
     const currentPassword = 'CurrentPassword123';
 
-    // Importar dinámicamente el módulo User REAL para la entidad actualizada
+    // Importar dinámicamente el módulo User REAL
+    // eslint-disable-next-line no-unused-vars
     const { default: User } = await vi.importActual('../domain/entities/User');
     const updatedUserEntity = new User({ 
       id: '1', 
@@ -212,7 +213,8 @@ describe('useEditProfile Hook', () => {
     const mockUserPlain = { id: '1', first_name: 'John', last_name: 'Doe', email: 'a@a.com', handicap: 10 };
     const newHandicap = 12.5;
 
-    // Importar dinámicamente el módulo User REAL para la entidad actualizada
+    // Importar dinámicamente el módulo User REAL
+    // eslint-disable-next-line no-unused-vars
     const { default: User } = await vi.importActual('../domain/entities/User');
     const updatedUserEntity = new User({ 
       id: '1', 
@@ -257,7 +259,8 @@ describe('useEditProfile Hook', () => {
     const mockUserPlain = { id: '1', first_name: 'John', last_name: 'Doe', email: 'a@a.com', handicap: 10 };
     const rfegHandicap = 8.2;
 
-    // Importar dinámicamente el módulo User REAL para la entidad actualizada
+    // Importar dinámicamente el módulo User REAL
+    // eslint-disable-next-line no-unused-vars
     const { default: User } = await vi.importActual('../domain/entities/User');
     const updatedUserEntity = new User({ 
       id: '1', 
@@ -298,7 +301,7 @@ describe('useEditProfile Hook', () => {
     const refreshedUserPlain = { id: '1', first_name: 'NewName', last_name: 'NewLastName', email: 'new@example.com', handicap: 12, handicap_updated_at: new Date().toISOString() };
     
     // Mockear fetch para simular la llamada a la API
-    global.fetch = vi.fn(() =>
+    globalThis.fetch = vi.fn(() =>
       Promise.resolve({
         ok: true,
         json: () => Promise.resolve(refreshedUserPlain),
@@ -317,8 +320,8 @@ describe('useEditProfile Hook', () => {
     });
 
     // Assert
-    expect(secureAuth.getAuthToken).toHaveBeenCalledTimes(1);
-    expect(global.fetch).toHaveBeenCalledWith(
+    expect(secureAuth.getAuthToken).toHaveBeenCalled();
+    expect(globalThis.fetch).toHaveBeenCalledWith(
       expect.stringContaining('/api/v1/auth/current-user'), // Verificar la URL parcial
       expect.objectContaining({
         method: 'GET',
