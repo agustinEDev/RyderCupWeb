@@ -64,6 +64,7 @@ export const setUserData = (user) => {
     email_verified: user.email_verified,
     handicap: user.handicap,
     handicap_updated_at: user.handicap_updated_at,
+    country_code: user.country_code,
     created_at: user.created_at,
     updated_at: user.updated_at
   };

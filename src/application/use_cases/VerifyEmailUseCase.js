@@ -12,19 +12,18 @@ class VerifyEmailUseCase {
   /**
    * Ejecuta el caso de uso para verificar el email.
    * @param {string} token - El token de verificación.
-   * @returns {Promise<import('../../domain/entities/User').default>} El usuario con el email verificado.
+   * @returns {Promise<{user: import('../../domain/entities/User').default, token: string}>} El usuario autenticado y su token JWT.
    */
   async execute(token) {
     if (!token) {
       throw new Error('Verification token is required');
     }
 
-    const updatedUser = await this.authRepository.verifyEmail(token);
+    // La API ahora devuelve { user: User, token: string }
+    // Igual que el login - verifica el email Y genera un JWT
+    const result = await this.authRepository.verifyEmail(token);
 
-    // Podríamos añadir lógica aquí, como actualizar los datos del usuario en secureStorage si ya hay una sesión activa.
-    // Por ahora, el componente de la UI lo maneja, pero podría centralizarse aquí.
-
-    return updatedUser;
+    return result;
   }
 }
 

@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Link } from 'react-router-dom';
-import { getUserData, setUserData } from '../utils/secureAuth';
+import { useNavigate, useSearchParams, Link } from 'react-router-dom';
+import { getUserData, setUserData, setAuthToken } from '../utils/secureAuth';
 import { verifyEmailUseCase } from '../composition'; // Nuevo
 
 
@@ -38,16 +37,15 @@ const VerifyEmail = () => {
 
       try {
         console.log('🔄 Verifying email with token...');
-        const updatedUserEntity = await verifyEmailUseCase.execute(token);
-        console.log('✅ Email verified successfully:', updatedUserEntity);
+        const result = await verifyEmailUseCase.execute(token);
+        console.log('✅ Email verified successfully:', result);
 
-        // Update user data in secure storage if logged in
-        const userData = getUserData();
-        if (userData && userData.id === updatedUserEntity.id) {
-          const updatedUserPlain = updatedUserEntity.toPersistence();
-          setUserData(updatedUserPlain);
-          console.log('📝 Secure storage updated with verified status');
-        }
+        // Guardar el token y el usuario en el almacenamiento seguro
+        // El backend ahora devuelve { user: User, token: string }
+        const userPlain = result.user.toPersistence();
+        setAuthToken(result.token); // Usar setAuthToken en lugar de localStorage
+        setUserData(userPlain);
+        console.log('📝 User authenticated and stored in secure storage');
 
         await new Promise(resolve => setTimeout(resolve, 1500));
         setStatus('success');
@@ -136,16 +134,16 @@ const VerifyEmail = () => {
                   </p>
                   <div className="flex flex-col gap-3 items-center">
                     <Link
-                      to="/dashboard"
+                      to="/login"
                       className="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-primary text-white text-sm font-bold leading-normal tracking-wide hover:bg-primary/90 transition-all"
                     >
-                      Go to Dashboard
+                      Go to Login
                     </Link>
                     <Link
-                      to="/profile"
+                      to="/"
                       className="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-gray-100 text-gray-900 text-sm font-bold leading-normal tracking-wide hover:bg-gray-200 transition-all"
                     >
-                      Go to Profile
+                      Go to Home
                     </Link>
                   </div>
                 </>

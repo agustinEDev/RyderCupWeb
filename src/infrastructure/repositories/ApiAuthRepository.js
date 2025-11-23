@@ -48,17 +48,22 @@ class ApiAuthRepository extends IAuthRepository {
    * @override
    */
   async register(userData) {
+    // Construir el payload con todos los campos
+    // Backend acepta country_code como opcional (puede ser null)
+    const payload = {
+      first_name: userData.firstName,
+      last_name: userData.lastName,
+      email: userData.email.getValue(),
+      password: userData.password.getValue(),
+      country_code: userData.countryCode ? userData.countryCode.value() : null,
+    };
+
     const response = await fetch(`${API_URL}/api/v1/auth/register`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        first_name: userData.firstName,
-        last_name: userData.lastName,
-        email: userData.email.getValue(),
-        password: userData.password.getValue(), // <-- CAMBIO AQUÍ: Usar userData.password.getValue()
-      }),
+      body: JSON.stringify(payload),
     });
 
     if (!response.ok) {
@@ -78,7 +83,39 @@ class ApiAuthRepository extends IAuthRepository {
     return new User(data);
   }
 
-  // ... verifyEmail method
+  /**
+   * @override
+   */
+  async verifyEmail(token) {
+    const response = await fetch(`${API_URL}/api/v1/auth/verify-email`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ token }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      let errorMessage = 'Failed to verify email';
+      if (errorData.detail) {
+        if (Array.isArray(errorData.detail)) {
+          errorMessage = errorData.detail.map(err => `${err.loc[1]}: ${err.msg}`).join('; ');
+        } else if (typeof errorData.detail === 'string') {
+          errorMessage = errorData.detail;
+        }
+      }
+      throw new Error(errorMessage);
+    }
+
+    const data = await response.json();
+    // La API ahora devuelve { access_token, token_type, user: {...} }
+    // Igual que el endpoint de login
+    return {
+      user: new User(data.user),
+      token: data.access_token,
+    };
+  }
 }
 
 export default ApiAuthRepository;
