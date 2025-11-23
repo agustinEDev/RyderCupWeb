@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Trophy, Users, User, TrendingUp, Calendar, Award } from 'lucide-react';
+import { Trophy, Users, User, TrendingUp, Calendar, Award, Search } from 'lucide-react';
 import HeaderAuth from '../components/layout/HeaderAuth';
 import ProfileCard from '../components/profile/ProfileCard';
 import EmailVerificationBanner from '../components/EmailVerificationBanner';
@@ -226,16 +226,23 @@ const Dashboard = () => {
                   </div>
                 </motion.button>
 
-                {/* Coming Soon Card */}
-                <div className="flex items-center gap-4 p-6 bg-gray-50 border-2 border-gray-200 rounded-xl opacity-60 text-left">
-                  <div className="p-3 bg-gray-200 rounded-lg">
-                    <Calendar className="w-7 h-7 text-gray-400" />
+                {/* Browse Competitions Card */}
+                <motion.button
+                  onClick={() => navigate('/browse-competitions')}
+                  whileHover={{ scale: 1.02, y: -2 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="flex items-center gap-4 p-6 bg-white border-2 border-gray-200 rounded-xl hover:border-green-500 hover:shadow-lg transition-all text-left group"
+                >
+                  <div className="p-3 bg-green-100 rounded-lg group-hover:bg-green-500 transition-colors">
+                    <Search className="w-7 h-7 text-green-600 group-hover:text-white transition-colors" />
                   </div>
                   <div className="flex-1">
-                    <h3 className="text-gray-400 font-bold text-lg">Statistics</h3>
-                    <p className="text-gray-400 text-sm">Coming soon...</p>
+                    <h3 className="text-gray-900 font-bold text-lg group-hover:text-green-600 transition-colors">
+                      Browse Competitions
+                    </h3>
+                    <p className="text-gray-500 text-sm">Discover tournaments to join</p>
                   </div>
-                </div>
+                </motion.button>
               </div>
             </motion.div>
           </div>

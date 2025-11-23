@@ -11,6 +11,7 @@ import EditProfile from './pages/EditProfile';
 import Competitions from './pages/Competitions';
 import CreateCompetition from './pages/CreateCompetition';
 import CompetitionDetail from './pages/CompetitionDetail';
+import BrowseCompetitions from './pages/BrowseCompetitions';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import { migrateFromLocalStorage } from './utils/secureAuth';
 
@@ -64,6 +65,7 @@ function App() {
         <Route path="/competitions" element={<ProtectedRoute><Competitions /></ProtectedRoute>} />
         <Route path="/competitions/create" element={<ProtectedRoute><CreateCompetition /></ProtectedRoute>} />
         <Route path="/competitions/:id" element={<ProtectedRoute><CompetitionDetail /></ProtectedRoute>} />
+        <Route path="/browse-competitions" element={<ProtectedRoute><BrowseCompetitions /></ProtectedRoute>} />
       </Routes>
     </Router>
   );

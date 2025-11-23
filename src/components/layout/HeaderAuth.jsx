@@ -75,6 +75,9 @@ const HeaderAuth = ({ user }) => {
           <Link to="/dashboard" className="text-gray-900 text-sm font-medium leading-normal hover:text-primary transition-colors">
             Dashboard
           </Link>
+          <Link to="/browse-competitions" className="text-gray-900 text-sm font-medium leading-normal hover:text-primary transition-colors">
+            Browse Competitions
+          </Link>
           <Link to="/competitions" className="text-gray-900 text-sm font-medium leading-normal hover:text-primary transition-colors">
             My Competitions
           </Link>
@@ -162,6 +165,13 @@ const HeaderAuth = ({ user }) => {
               className="block px-4 py-2 text-sm text-gray-900 hover:bg-gray-100 transition-colors"
             >
               Dashboard
+            </Link>
+            <Link
+              to="/browse-competitions"
+              onClick={() => setIsDropdownOpen(false)}
+              className="block px-4 py-2 text-sm text-gray-900 hover:bg-gray-100 transition-colors"
+            >
+              Browse Competitions
             </Link>
             <Link
               to="/competitions"
