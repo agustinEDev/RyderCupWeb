@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
-  Users, Calendar, MapPin, Star, Plus,
+  Users, Calendar, MapPin, Plus,
   Filter, Search, AlertCircle, Loader, Crown
 } from 'lucide-react';
 import toast from 'react-hot-toast';

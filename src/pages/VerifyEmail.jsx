@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
-import { getUserData, setUserData, setAuthToken } from '../utils/secureAuth';
+import { setUserData, setAuthToken } from '../utils/secureAuth';
 import { verifyEmailUseCase } from '../composition'; // Nuevo
 
 
