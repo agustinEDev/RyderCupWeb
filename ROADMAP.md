@@ -242,33 +242,48 @@ Este documento describe los próximos pasos y las tareas planificadas para conti
             - ✅ Refactorizar `CompetitionDetail.jsx` para usar casos de uso
             - ✅ Eliminar llamadas directas a servicios
 
-6.  **Página "Discover Competitions" (Explorar competiciones públicas):**
-    *   **Estado:** Pendiente
-    *   **Objetivo:** Permitir a los usuarios buscar y unirse a competiciones públicas.
-    *   **Descripción:** Nueva página para explorar competiciones ACTIVE (abiertas a inscripciones), con búsqueda por nombre y funcionalidad de solicitar inscripción.
-    *   **Dependencias Backend:**
-        - ⚠️ **Crítico:** Agregar objeto `creator` nested en `GET /api/v1/competitions` y `GET /api/v1/competitions/{id}`
-        - 🔶 **Opcional:** Agregar parámetro `?search=` para búsqueda por nombre (alternativa: búsqueda client-side)
-    *   **Pasos:**
-        1.  Crear página `/competitions/discover` (o `/browse-competitions`)
-        2.  Crear `DiscoverCompetitions.jsx` con:
-            - Lista de competiciones filtradas por `status=ACTIVE`
-            - Barra de búsqueda por nombre
-            - Card para cada competición mostrando:
-              * Nombre, fechas, ubicación
-              * Creador (nombre completo + handicap)
-              * Players count: `X / max_players`
-              * Botón "Request to Join"
-        3.  Usar `ListEnrollmentsUseCase` para verificar si el usuario ya está inscrito
-        4.  Usar `RequestEnrollmentUseCase` para solicitar inscripción
-        5.  Agregar link en navegación principal y Dashboard
-    *   **Casos de Uso a Reutilizar:**
-        - `ListUserCompetitionsUseCase` (adaptar para filtrar por status=ACTIVE)
-        - `RequestEnrollmentUseCase`
-    *   **Mejoras Futuras:**
+6.  **Página "Browse Competitions" (Explorar competiciones públicas):**
+    *   **Estado:** ✅ Completado (23 Nov 2025)
+    *   **Objetivo:** Permitir a los usuarios buscar y explorar competiciones públicas.
+    *   **Descripción:** Nueva página completa con dos secciones independientes: "Join a Competition" (ACTIVE) para solicitar inscripción, y "Explore Competitions" (CLOSED, IN_PROGRESS, COMPLETED) para visualización.
+    *   **Implementación:**
+        1.  ✅ Creada página `/browse-competitions` con ruta protegida
+        2.  ✅ Creado `BrowseCompetitions.jsx` con:
+            - **Sección "Join a Competition":**
+              * Lista de competiciones ACTIVE
+              * Excluye competiciones propias (auto-enrolled al crear)
+              * Barra de búsqueda independiente (nombre o creador)
+              * Cards con botón "Request to Join" (TODO: integrar RequestEnrollmentUseCase)
+              * Optimistic UI (card desaparece al solicitar)
+            - **Sección "Explore Competitions":**
+              * Lista de competiciones CLOSED, IN_PROGRESS, COMPLETED
+              * Incluye competiciones propias y ajenas (modo lectura)
+              * Barra de búsqueda independiente (nombre o creador)
+              * Cards con botón "View Details"
+        3.  ✅ Implementado método `findPublic(filters)` en `ICompetitionRepository` y `ApiCompetitionRepository`
+        4.  ✅ Creados dos casos de uso dedicados:
+            - `BrowseJoinableCompetitionsUseCase`: Filtra ACTIVE + excluye propias
+            - `BrowseExploreCompetitionsUseCase`: Filtra [CLOSED, IN_PROGRESS, COMPLETED] + incluye todas
+        5.  ✅ Agregado link en `HeaderAuth` (desktop + mobile) y `Dashboard`
+        6.  ✅ Implementada detección de origen en `CompetitionDetail`:
+            - "Back to Browse" si viene de `/browse-competitions`
+            - "Back to Competitions" si viene de `/competitions`
+        7.  ✅ Creados 19 tests unitarios (100% pass rate)
+    *   **Casos de Uso Creados:**
+        - `BrowseJoinableCompetitionsUseCase.js`
+        - `BrowseExploreCompetitionsUseCase.js`
+    *   **Tests:**
+        - ✅ `BrowseJoinableCompetitionsUseCase.test.js` (9 tests)
+        - ✅ `BrowseExploreCompetitionsUseCase.test.js` (10 tests)
+    *   **Pendiente (Futuro):**
+        - Integrar `RequestEnrollmentUseCase` (actualmente simulado con TODO)
         - Filtros avanzados (fecha, país, handicap type)
-        - Paginación
+        - Paginación server-side
         - Ordenamiento (fecha, inscritos, etc.)
+    *   **Mejoras Futuras:**
+        - Badge de enrollment status si ya está inscrito
+        - Indicador visual si competición está llena (enrolledCount >= maxPlayers)
+        - Mostrar país del creador con bandera
 
 ---
 

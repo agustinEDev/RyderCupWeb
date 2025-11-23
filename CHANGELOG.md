@@ -7,6 +7,36 @@ y este proyecto adhiere a [Versionado Semántico](https://semver.org/lang/es/).
 
 ## [Unreleased]
 
+### Added
+- **Browse Competitions Feature**: Nueva página completa para descubrir y explorar competiciones públicas:
+  - **Dos secciones independientes**:
+    - **"Join a Competition"**: Lista competiciones ACTIVE donde el usuario puede solicitar unirse (excluye competiciones propias)
+    - **"Explore Competitions"**: Lista competiciones en estado CLOSED, IN_PROGRESS, o COMPLETED para visualización (incluye propias y ajenas)
+  - **Domain Layer**: Agregado método `findPublic(filters)` a `ICompetitionRepository` para obtener competiciones públicas con filtros
+  - **Infrastructure Layer**: Implementación completa en `ApiCompetitionRepository.findPublic()` con soporte para:
+    - Filtrado por status (único o múltiple)
+    - Búsqueda por nombre de competición (`searchName`)
+    - Búsqueda por nombre/email del creador (`searchCreator`)
+    - Exclusión de competiciones propias (`excludeMyCompetitions`)
+    - Paginación (`limit`, `offset`)
+  - **Application Layer**: Dos casos de uso dedicados con responsabilidad única:
+    - `BrowseJoinableCompetitionsUseCase`: Filtra ACTIVE + excluye competiciones propias
+    - `BrowseExploreCompetitionsUseCase`: Filtra [CLOSED, IN_PROGRESS, COMPLETED] + incluye todas
+  - **Presentation Layer** (`BrowseCompetitions.jsx`):
+    - Búsqueda independiente en cada sección (client-side filtering)
+    - Componente reutilizable `CompetitionCard` con modo 'joinable' o 'explore'
+    - Botón "Request to Join" con optimistic UI (card desaparece al solicitar)
+    - Botón "View Details" para competiciones explorables
+    - Skeleton states y manejo de errores
+    - Integración con `secureAuth` para autenticación
+  - **Navegación mejorada**:
+    - Links agregados en `HeaderAuth` (desktop + mobile) y `Dashboard`
+    - Ruta protegida `/browse-competitions` en `App.jsx`
+    - Detección de origen en `CompetitionDetail`: "Back to Browse" o "Back to Competitions" según procedencia
+  - **Tests unitarios completos (19 tests - 100% pass rate)**:
+    - `BrowseJoinableCompetitionsUseCase.test.js`: 9 tests (filtros, status ACTIVE, excludeMyCompetitions)
+    - `BrowseExploreCompetitionsUseCase.test.js`: 10 tests (filtros, múltiples statuses, incluye todas)
+
 ### Fixed
 - **Email Verification Auto-Login Flow**: Corregido el flujo de verificación de email para autenticar automáticamente al usuario:
   - `ApiAuthRepository.verifyEmail()` ahora retorna `{ user, token }` igual que el login
