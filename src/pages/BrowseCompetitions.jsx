@@ -88,8 +88,15 @@ const BrowseCompetitions = () => {
     loadExploreCompetitions();
   }, [user]);
 
-  // Filter joinable competitions by search
+  // Filter joinable competitions by search AND exclude user's own competitions
   const filteredJoinableCompetitions = joinableCompetitions.filter((comp) => {
+    // CRITICAL: Exclude competitions where current user is the creator (client-side safety filter)
+    // Backend should already exclude these via my_competitions=false, but this is a safety net
+    if (comp.creatorId === user?.id) {
+      return false;
+    }
+
+    // Apply search filter
     if (!joinableSearch) return true;
 
     const searchLower = joinableSearch.toLowerCase();

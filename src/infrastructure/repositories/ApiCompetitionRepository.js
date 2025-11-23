@@ -76,7 +76,7 @@ class ApiCompetitionRepository extends ICompetitionRepository {
   }
 
   /**
-   * Finds all competitions for a specific user (creator).
+   * Finds all competitions for a specific user (creator OR enrolled).
    * @override
    * @param {string} userId - The ID of the user/creator.
    * @param {object} filters - Optional filters (status, etc.)
@@ -90,8 +90,11 @@ class ApiCompetitionRepository extends ICompetitionRepository {
     // No need to send creator_id explicitly
     const queryParams = new URLSearchParams(filters);
 
+    // CRITICAL: Add my_competitions=true to get competitions where user is creator OR enrolled
+    queryParams.append('my_competitions', 'true');
+
     const url = `${API_URL}/api/v1/competitions${queryParams.toString() ? '?' + queryParams : ''}`;
-    console.log('🔍 [ApiCompetitionRepository.findByCreator] Fetching competitions from:', url);
+    console.log('🔍 [ApiCompetitionRepository.findByCreator] Fetching MY competitions from:', url);
 
     const response = await fetch(url, {
       method: 'GET',
