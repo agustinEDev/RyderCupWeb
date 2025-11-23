@@ -52,3 +52,4 @@ build
 # Claude Code configuration (local only)
 .claude/
 CLAUDE.md
+BACKEND_API_SPEC.md
