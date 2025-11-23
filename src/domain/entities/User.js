@@ -1,5 +1,6 @@
 import Email from '../value_objects/Email';
 import Password from '../value_objects/Password'; // 1. Importar Password VO
+import { CountryCode } from '../value_objects/CountryCode';
 
 class User {
   constructor({
@@ -14,6 +15,7 @@ class User {
     updated_at = null,
     email_verified = false, // Valor por defecto para bool
     verification_token = null,
+    country_code = null, // Nacionalidad opcional del usuario
     domain_events = [], // Array vacío por defecto para List
   }) {
     // Validaciones básicas de la entidad
@@ -33,6 +35,10 @@ class User {
     this.updatedAt = updated_at; // Mantener como string de fecha o null
     this.emailVerified = email_verified;
     this.verificationToken = verification_token;
+    // Country code es opcional: puede ser null, string o CountryCode VO
+    this.countryCode = country_code
+      ? (country_code instanceof CountryCode ? country_code : new CountryCode(country_code))
+      : null;
     this.domainEvents = domain_events;
   }
 
@@ -70,6 +76,7 @@ class User {
       updated_at: this.updatedAt,
       email_verified: this.emailVerified,
       verification_token: this.verificationToken,
+      country_code: this.countryCode ? this.countryCode.value() : null,
       // domain_events no se persistirían directamente
     };
   }
