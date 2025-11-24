@@ -132,7 +132,7 @@ describe('useEditProfile Hook', () => {
       await result.current.handleUpdateProfile({ preventDefault: vi.fn() });
     });
 
-    // 3. Assert: Verificar que todo ocurrió como se esperaba
+    // 3. Assert: Verificar que la prueba ocurrió como se esperaba
     expect(composition.updateUserProfileUseCase.execute).toHaveBeenCalledTimes(1);
     expect(composition.updateUserProfileUseCase.execute).toHaveBeenCalledWith(
       mockUserPlain.id,
