@@ -8,6 +8,62 @@ y este proyecto adhiere a [Versionado Semántico](https://semver.org/lang/es/).
 ## [Unreleased]
 
 ### Added
+- **Multiple Competition Status Filter**: Backend ahora acepta múltiples valores de `status` en el endpoint de listado de competiciones:
+  - Modificado parámetro `status_filter` de `Optional[str]` a `Optional[List[str]]` en `list_competitions()`
+  - Actualizada lógica en `_get_user_competitions()` para iterar sobre múltiples status
+  - Implementada deduplicación de competiciones cuando se consultan múltiples status
+  - Permite consultas como `?status=CLOSED&status=IN_PROGRESS&status=COMPLETED`
+- **Pending Enrollments Badge**: Indicador visual en "My Competitions" para creadores:
+  - Badge naranja con contador de solicitudes pendientes (estado REQUESTED)
+  - Aparece solo en competiciones donde el usuario es creador
+  - Incluye animación de pulso para llamar la atención
+  - Backend calcula `pending_enrollments_count` usando `EnrollmentStatus.REQUESTED`
+  - Frontend mapper agregado campo `pending_enrollments_count` al DTO
+- **Enhanced CompetitionDetail for Creators**: Reorganización completa de la sección de enrollments:
+  - **Approved Players Section**: Grid de 2 columnas con jugadores aprobados
+    - Muestra nombre, handicap (HCP: X.X) y equipo asignado
+    - Fondo verde claro y ordenación por equipo y handicap
+  - **Pending Requests Section**: Lista de solicitudes con acciones
+    - Fondo naranja para destacar
+    - Botones de Approve/Reject directamente visibles
+  - **Rejected Enrollments Section**: Colapsable para no ocupar espacio innecesariamente
+- **Smart Competition Filtering for Rejected Enrollments**:
+  - Competiciones rechazadas se mantienen en "My Competitions" si están ACTIVE
+  - Se ocultan automáticamente si la competición está en CLOSED, IN_PROGRESS, COMPLETED o CANCELLED
+  - Permite al usuario ver rechazos mientras aún hay posibilidad de cambio
+  - Implementado en `_get_user_competitions()` con validación `EnrollmentStatus.REJECTED`
+- **Creator Information in Browse Cards**: Mapeo completo de datos del creador:
+  - Agregado campo `creator` al CompetitionMapper con conversión snake_case → camelCase
+  - Muestra nombre completo del creador: "Created by: [Nombre] [Apellido]"
+  - Incluye datos completos: id, firstName, lastName, email, handicap, countryCode
+
+### Changed
+- **Dashboard Tournaments Counter**: Ahora usa `listUserCompetitionsUseCase` en lugar de `getCompetitions()`:
+  - Garantiza consistencia con la página "My Competitions"
+  - Cuenta solo competiciones del usuario (creadas O inscritas)
+  - Usa el mismo filtro `my_competitions=true` del backend
+
+### Testing
+- **Test Suite Update**: Corregidos tests de `useEditProfile` para incluir campo `countryCode`:
+  - Actualizado estado inicial de formData con campo `countryCode: ''`
+  - Total: **419 tests pasando** en **35 archivos**
+  - Cobertura completa de Domain Layer (Value Objects, Entities)
+  - Cobertura completa de Application Layer (Use Cases)
+  - Tests de hooks personalizados (useEditProfile)
+  - Tests de utilidades (countryUtils, validation)
+
+### Fixed
+- **IN_PROGRESS Competitions Not Showing**: Corregido filtro de estados múltiples en backend:
+  - Frontend enviaba array `['CLOSED', 'IN_PROGRESS', 'COMPLETED']`
+  - Backend solo aceptaba un valor único de status
+  - Ahora procesa correctamente múltiples status en "Explore Competitions"
+- **Creator Name Missing in Browse Cards**: Corregido mapeo de datos del creador:
+  - El backend enviaba `creator` con campos en snake_case
+  - Frontend no estaba mapeando el campo `creator` en CompetitionMapper
+  - Ahora convierte correctamente: `first_name` → `firstName`, `last_name` → `lastName`
+- **Handicap Display Removed from Browse Cards**: Eliminado HCP del creador para tarjetas más compactas
+
+### Added
 - **Browse Competitions Feature**: Nueva página completa para descubrir y explorar competiciones públicas:
   - **Dos secciones independientes**:
     - **"Join a Competition"**: Lista competiciones ACTIVE donde el usuario puede solicitar unirse (excluye competiciones propias)

@@ -209,7 +209,15 @@ class ApiEnrollmentRepository extends IEnrollmentRepository {
       return [];
     }
 
-    return EnrollmentMapper.toDomainMany(apiDataArray);
+    // Convertir a entidades del dominio y guardar apiData original
+    const enrollments = EnrollmentMapper.toDomainMany(apiDataArray);
+
+    // Adjuntar _apiData a cada enrollment para preservar campos extra (user, etc.)
+    enrollments.forEach((enrollment, index) => {
+      enrollment._apiData = apiDataArray[index];
+    });
+
+    return enrollments;
   }
 
   /**
@@ -277,7 +285,7 @@ class ApiEnrollmentRepository extends IEnrollmentRepository {
     const body = teamId ? { team_id: teamId } : {};
 
     const apiData = await this.#request(
-      `/api/v1/competitions/${competitionId}/enrollments/${enrollmentId}/approve`,
+      `/api/v1/enrollments/${enrollmentId}/approve`,
       {
         method: 'POST',
         body: JSON.stringify(body),
@@ -296,7 +304,7 @@ class ApiEnrollmentRepository extends IEnrollmentRepository {
    */
   async reject(competitionId, enrollmentId) {
     const apiData = await this.#request(
-      `/api/v1/competitions/${competitionId}/enrollments/${enrollmentId}/reject`,
+      `/api/v1/enrollments/${enrollmentId}/reject`,
       {
         method: 'POST',
       }

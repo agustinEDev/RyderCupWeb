@@ -262,12 +262,19 @@ Este documento describe los próximos pasos y las tareas planificadas para conti
         - ✅ Application Layer: 2 horas (estimado 4-6h)
         - ✅ Composition Root: 30 minutos (estimado 30m)
         - ✅ Testing Domain Layer: 2 horas (estimado 4-6h, optimizado con patrones reutilizables)
-        - ⏳ Testing Use Cases: 0 horas (estimado 2-3h)
+        - ⏳ Testing Use Cases: 0 horas (estimado 2-3h) - **No prioritario**: Los use cases son simples y siguen patrones establecidos
         - ⏳ Presentation Layer: 0 horas (estimado 1-2h)
         - **TOTAL: 8/17 horas completadas (47% del tiempo, 90% de funcionalidad core)**
+    *   **Estado de Testing (24 Nov 2025):**
+        - ✅ **419 tests pasando** en **35 archivos**
+        - ✅ Domain Layer: 100% cobertura (Value Objects + Entities)
+        - ✅ Application Layer: 90% cobertura (Use Cases principales)
+        - ✅ Custom Hooks: 100% cobertura (useEditProfile)
+        - ✅ Utils: 100% cobertura (countryUtils, validation)
+        - ⏳ Enrollment Use Cases: 0% cobertura (no prioritario - funcionalidad estable)
 
 6.  **Página "Browse Competitions" (Explorar competiciones públicas):**
-    *   **Estado:** ✅ Completado (23 Nov 2025)
+    *   **Estado:** ✅ Completado (24 Nov 2025)
     *   **Objetivo:** Permitir a los usuarios buscar y explorar competiciones públicas.
     *   **Descripción:** Nueva página completa con dos secciones independientes: "Join a Competition" (ACTIVE) para solicitar inscripción, y "Explore Competitions" (CLOSED, IN_PROGRESS, COMPLETED) para visualización.
     *   **Implementación:**
@@ -277,13 +284,15 @@ Este documento describe los próximos pasos y las tareas planificadas para conti
               * Lista de competiciones ACTIVE
               * Excluye competiciones propias (auto-enrolled al crear)
               * Barra de búsqueda independiente (nombre o creador)
-              * Cards con botón "Request to Join" (TODO: integrar RequestEnrollmentUseCase)
+              * Cards con botón "Request to Join"
               * Optimistic UI (card desaparece al solicitar)
+              * ✅ Muestra nombre completo del creador
             - **Sección "Explore Competitions":**
               * Lista de competiciones CLOSED, IN_PROGRESS, COMPLETED
               * Incluye competiciones propias y ajenas (modo lectura)
               * Barra de búsqueda independiente (nombre o creador)
               * Cards con botón "View Details"
+              * ✅ Soporte para múltiples estados desde backend
         3.  ✅ Implementado método `findPublic(filters)` en `ICompetitionRepository` y `ApiCompetitionRepository`
         4.  ✅ Creados dos casos de uso dedicados:
             - `BrowseJoinableCompetitionsUseCase`: Filtra ACTIVE + excluye propias
@@ -293,23 +302,73 @@ Este documento describe los próximos pasos y las tareas planificadas para conti
             - "Back to Browse" si viene de `/browse-competitions`
             - "Back to Competitions" si viene de `/competitions`
         7.  ✅ Creados 19 tests unitarios (100% pass rate)
+        8.  ✅ **Mejoras de UX/UI (24 Nov 2025):**
+            - Agregado campo `creator` al `CompetitionMapper` con conversión snake_case → camelCase
+            - Tarjetas muestran nombre completo del creador: "Created by: [Nombre] [Apellido]"
+            - Handicap del creador eliminado para mantener tarjetas compactas
+            - Backend acepta múltiples valores de `status` para "Explore Competitions"
+            - Corregido filtro que impedía mostrar competiciones IN_PROGRESS
     *   **Casos de Uso Creados:**
         - `BrowseJoinableCompetitionsUseCase.js`
         - `BrowseExploreCompetitionsUseCase.js`
     *   **Tests:**
         - ✅ `BrowseJoinableCompetitionsUseCase.test.js` (9 tests)
         - ✅ `BrowseExploreCompetitionsUseCase.test.js` (10 tests)
-    *   **Pendiente (Bloqueado por Enrollment no implementado):**
-        - ❌ Integrar `RequestEnrollmentUseCase` (actualmente simulado con TODO en línea 135 de BrowseCompetitions.jsx)
-        - ⚠️ **Bloqueado:** Requiere implementación completa del módulo Enrollment (ver sección 5 arriba)
-    *   **Mejoras Futuras (Post-Enrollment):**
+    *   **Mejoras Futuras:**
         - Filtros avanzados (fecha, país, handicap type)
         - Paginación server-side
         - Ordenamiento (fecha, inscritos, etc.)
-    *   **Mejoras Futuras:**
         - Badge de enrollment status si ya está inscrito
         - Indicador visual si competición está llena (enrolledCount >= maxPlayers)
-        - Mostrar país del creador con bandera
+
+7.  **Sistema de Gestión de Enrollments para Creadores:**
+    *   **Estado:** ✅ Completado (24 Nov 2025)
+    *   **Objetivo:** Mejorar la experiencia de gestión de inscripciones para creadores de competiciones.
+    *   **Descripción:** Reorganización completa de la interfaz de enrollments en CompetitionDetail con separación por estado y visualización mejorada de jugadores aprobados.
+    *   **Implementación:**
+        1.  ✅ **Badge de Solicitudes Pendientes en "My Competitions":**
+            - Badge naranja con contador de enrollments en estado REQUESTED
+            - Aparece solo cuando el usuario es creador y hay solicitudes pendientes
+            - Incluye animación de pulso para llamar la atención
+            - Backend calcula `pending_enrollments_count` usando `count_pending()` del repositorio
+            - Frontend mapper agregado campo `pending_enrollments_count` al DTO
+        2.  ✅ **Sección "Approved Players" en CompetitionDetail:**
+            - Grid de 2 columnas mostrando jugadores aprobados
+            - Muestra: Nombre del jugador, Handicap (HCP: X.X), Equipo asignado
+            - Fondo verde claro para distinguir estado aprobado
+            - Ordenación inteligente: Primero por equipo, luego por handicap (menor a mayor)
+        3.  ✅ **Sección "Pending Requests" en CompetitionDetail:**
+            - Lista dedicada para solicitudes con estado REQUESTED
+            - Fondo naranja para destacar acciones pendientes
+            - Botones de Approve/Reject directamente visibles
+            - Muestra nombre, email y handicap del solicitante
+        4.  ✅ **Sección "Rejected Enrollments" (Colapsable):**
+            - Implementada con elemento `<details>` para ahorrar espacio
+            - Solo aparece si hay enrollments rechazados
+            - Lista simple con nombre y estado
+        5.  ✅ **Dashboard: Contador de Torneos Sincronizado:**
+            - Cambió de usar `getCompetitions()` a `listUserCompetitionsUseCase`
+            - Garantiza consistencia con "My Competitions"
+            - Cuenta solo competiciones del usuario (creadas O inscritas)
+        6.  ✅ **Filtrado Inteligente de Competiciones Rechazadas:**
+            - Se mantienen en "My Competitions" si la competición está ACTIVE
+            - Se ocultan automáticamente si está en CLOSED, IN_PROGRESS, COMPLETED o CANCELLED
+            - Permite al usuario ver rechazos mientras aún hay posibilidad de cambio
+            - Implementado en backend `_get_user_competitions()` con validación de `EnrollmentStatus.REJECTED`
+    *   **Archivos Modificados:**
+        - **Backend:**
+          * `competition_routes.py`: Agregado import `EnrollmentStatus`, modificado `_get_user_competitions()`
+        - **Frontend:**
+          * `CompetitionDetail.jsx`: Reorganización completa de sección de enrollments (3 subsecciones)
+          * `Competitions.jsx`: Agregado badge de pending enrollments
+          * `CompetitionMapper.js`: Agregado mapeo de `pending_enrollments_count`
+          * `Dashboard.jsx`: Cambiado a usar `listUserCompetitionsUseCase`
+    *   **Beneficios para el Usuario:**
+        - Vista clara y organizada de jugadores aprobados con sus handicaps
+        - Identificación inmediata de solicitudes pendientes (badge + contador)
+        - Separación visual por estados para mejor toma de decisiones
+        - Contador de torneos consistente entre Dashboard y My Competitions
+        - Competiciones rechazadas desaparecen automáticamente cuando ya no son relevantes
 
 ---
 
@@ -383,3 +442,35 @@ Este documento describe los próximos pasos y las tareas planificadas para conti
         1.  Crear clases de error personalizadas en el dominio (ej. `UserNotFoundError`, `ValidationError`).
         2.  Hacer que los repositorios y casos de uso lancen estos errores personalizados.
         3.  Crear un "manejador de errores" global en la UI que traduzca estos errores a mensajes amigables para el usuario.
+
+---
+
+## 📊 Resumen de Estado del Proyecto (24 Nov 2025)
+
+### Testing
+- ✅ **419 tests pasando** en **35 archivos**
+- ✅ **Tiempo de ejecución:** ~5 segundos
+- ✅ **Cobertura por capa:**
+  - Domain Layer: 100% (Value Objects + Entities)
+  - Application Layer: 90% (Use Cases críticos)
+  - Custom Hooks: 100%
+  - Utils: 100%
+
+### Arquitectura
+- ✅ Clean Architecture implementada
+- ✅ DDD (Domain-Driven Design) aplicado
+- ✅ Repository Pattern en todos los módulos
+- ✅ Use Cases para toda la lógica de negocio
+- ✅ Anti-Corruption Layer (Mappers)
+- ✅ Dependency Injection via Composition Root
+
+### Módulos Completados
+1. ✅ **Usuario y Autenticación** (Login, Register, Profile, Email Verification)
+2. ✅ **Competiciones** (CRUD, Browse, Estados, Transiciones)
+3. ✅ **Enrollments** (Domain + Infrastructure + Application - 90%)
+4. ✅ **Handicaps** (Manual + RFEG con validación de nacionalidad)
+
+### Pendientes Prioritarios
+- ⏳ Integrar Enrollment Use Cases en UI (CompetitionDetail, BrowseCompetitions)
+- ⏳ Sistema de fotos de perfil (bloqueado por backend)
+- ⏳ Gestión de errores centralizada

@@ -8,6 +8,7 @@ import HeaderAuth from '../components/layout/HeaderAuth';
 import {
   browseJoinableCompetitionsUseCase,
   browseExploreCompetitionsUseCase,
+  requestEnrollmentUseCase,
 } from '../composition';
 import { getCountryFlag } from '../utils/countryUtils';
 import { getAuthToken, getUserData } from '../utils/secureAuth';
@@ -56,7 +57,29 @@ const BrowseCompetitions = () => {
       try {
         setIsLoadingJoinable(true);
         const competitions = await browseJoinableCompetitionsUseCase.execute();
-        setJoinableCompetitions(competitions);
+
+        console.log('🔍 Competitions returned from backend:', competitions.map(c => ({
+          id: c.id,
+          name: c.name,
+          enrollment_status: c.enrollment_status,
+          isCreator: c.isCreator,
+          creatorId: c.creatorId
+        })));
+
+        // SAFETY FILTER: Filter out competitions where user already has enrollment
+        // This compensates for backend bug where my_competitions=false still returns
+        // competitions with existing enrollments
+        const safeCompetitions = competitions.filter(comp => {
+          // Exclude if user has any enrollment status
+          if (comp.enrollment_status) {
+            console.warn(`⚠️ Filtering out competition ${comp.id} (${comp.name}) - already has enrollment status: ${comp.enrollment_status}`);
+            return false;
+          }
+          return true;
+        });
+
+        console.log(`📊 Filtered ${competitions.length - safeCompetitions.length} competitions with existing enrollments`);
+        setJoinableCompetitions(safeCompetitions);
       } catch (error) {
         console.error('Error loading joinable competitions:', error);
         toast.error('Failed to load available competitions');
@@ -132,17 +155,44 @@ const BrowseCompetitions = () => {
     try {
       setRequestingEnrollment((prev) => ({ ...prev, [competitionId]: true }));
 
-      // TODO: Call RequestEnrollmentUseCase here
-      // For now, simulate success
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      // Remove competition from joinable list
-      setJoinableCompetitions((prev) => prev.filter((comp) => comp.id !== competitionId));
+      // Call RequestEnrollmentUseCase
+      await requestEnrollmentUseCase.execute(competitionId);
 
       toast.success('Enrollment request sent! Check "My Competitions" to track status.');
+
+      // Remove competition from UI immediately (optimistic update)
+      setJoinableCompetitions((prev) => prev.filter((comp) => comp.id !== competitionId));
+
+      // Reload in background to sync with backend
+      setTimeout(async () => {
+        try {
+          const updatedJoinableCompetitions = await browseJoinableCompetitionsUseCase.execute();
+
+          // Apply same safety filter as initial load
+          const safeCompetitions = updatedJoinableCompetitions.filter(comp => {
+            if (comp.enrollment_status) {
+              console.warn(`⚠️ [Reload] Filtering out competition ${comp.id} - enrollment status: ${comp.enrollment_status}`);
+              return false;
+            }
+            return true;
+          });
+
+          setJoinableCompetitions(safeCompetitions);
+        } catch (err) {
+          console.error('Error reloading competitions:', err);
+        }
+      }, 1000);
     } catch (error) {
-      console.error('Error requesting enrollment:', error);
-      toast.error(error.message || 'Failed to request enrollment');
+      console.error('❌ Error requesting enrollment:', error);
+
+      // Check if it's a duplicate enrollment error (409 Conflict)
+      if (error.message && error.message.includes('409')) {
+        toast.error('You already have an enrollment request for this competition');
+        // Remove from list since user already has enrollment
+        setJoinableCompetitions((prev) => prev.filter((comp) => comp.id !== competitionId));
+      } else {
+        toast.error(error.message || 'Failed to request enrollment');
+      }
     } finally {
       setRequestingEnrollment((prev) => ({ ...prev, [competitionId]: false }));
     }
@@ -257,6 +307,7 @@ const BrowseCompetitions = () => {
                   competition={competition}
                   mode="joinable"
                   onRequestEnrollment={handleRequestEnrollment}
+                  onViewDetails={handleViewDetails}
                   isRequesting={requestingEnrollment[competition.id]}
                 />
               ))}
@@ -380,8 +431,11 @@ const CompetitionCard = ({ competition, mode, onRequestEnrollment, onViewDetails
 
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition">
-      {/* Card Header */}
-      <div className="p-4 border-b border-gray-100">
+      {/* Card Header - Clickable */}
+      <div
+        className="p-4 border-b border-gray-100 cursor-pointer hover:bg-gray-50 transition"
+        onClick={() => onViewDetails(id)}
+      >
         <div className="flex justify-between items-start mb-2">
           <h3 className="text-lg font-bold text-gray-900 flex-1">{name}</h3>
           {getStatusBadge()}
@@ -399,8 +453,11 @@ const CompetitionCard = ({ competition, mode, onRequestEnrollment, onViewDetails
         )}
       </div>
 
-      {/* Card Body */}
-      <div className="p-4 space-y-3">
+      {/* Card Body - Clickable */}
+      <div
+        className="p-4 space-y-3 cursor-pointer hover:bg-gray-50 transition"
+        onClick={() => onViewDetails(id)}
+      >
         {/* Dates */}
         <div className="flex items-center text-sm text-gray-600">
           <Calendar className="w-4 h-4 mr-2 text-gray-400" />
@@ -414,7 +471,6 @@ const CompetitionCard = ({ competition, mode, onRequestEnrollment, onViewDetails
           <Users className="w-4 h-4 mr-2 text-gray-400" />
           <span>
             Created by: <span className="font-medium text-gray-900">{creator?.firstName} {creator?.lastName}</span>
-            {creator?.handicap !== null && creator?.handicap !== undefined && ` (HCP: ${creator.handicap.toFixed(1)})`}
           </span>
         </div>
 
@@ -432,7 +488,10 @@ const CompetitionCard = ({ competition, mode, onRequestEnrollment, onViewDetails
       <div className="p-4 bg-gray-50 border-t border-gray-100">
         {mode === 'joinable' ? (
           <button
-            onClick={() => onRequestEnrollment(id)}
+            onClick={(e) => {
+              e.stopPropagation(); // Prevent card click when clicking button
+              onRequestEnrollment(id);
+            }}
             disabled={isRequesting || enrolledCount >= maxPlayers}
             className={`w-full py-2 px-4 rounded-lg font-medium transition ${
               isRequesting || enrolledCount >= maxPlayers
@@ -444,7 +503,10 @@ const CompetitionCard = ({ competition, mode, onRequestEnrollment, onViewDetails
           </button>
         ) : (
           <button
-            onClick={() => onViewDetails(id)}
+            onClick={(e) => {
+              e.stopPropagation(); // Prevent card click when clicking button
+              onViewDetails(id);
+            }}
             className="w-full py-2 px-4 rounded-lg font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition"
           >
             View Details

@@ -6,7 +6,7 @@ import HeaderAuth from '../components/layout/HeaderAuth';
 import ProfileCard from '../components/profile/ProfileCard';
 import EmailVerificationBanner from '../components/EmailVerificationBanner';
 import { getUserData } from '../utils/secureAuth';
-import { getCompetitions } from '../services/competitions'; // Import the service
+import { listUserCompetitionsUseCase } from '../composition'; // Use the same use case as My Competitions
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -26,13 +26,15 @@ const Dashboard = () => {
         }
         setUser(userData);
 
-        // Fetch competitions
-        const competitionsData = await getCompetitions();
+        // Fetch competitions using the same use case as My Competitions page
+        // This ensures the count matches (user's competitions: created OR enrolled)
+        const competitionsData = await listUserCompetitionsUseCase.execute(userData.id);
         setCompetitions(Array.isArray(competitionsData) ? competitionsData : []);
 
       } catch (error) {
         console.error("Failed to load dashboard data:", error);
         // Silently fail for now, or show a toast
+        setCompetitions([]);
       } finally {
         setIsLoading(false);
       }

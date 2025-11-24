@@ -22,6 +22,8 @@ export const useEditProfile = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [isUpdatingRFEG, setIsUpdatingRFEG] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [countries, setCountries] = useState([]);
+  const [isLoadingCountries, setIsLoadingCountries] = useState(false);
 
   const [formData, setFormData] = useState({
     firstName: '',
@@ -30,7 +32,8 @@ export const useEditProfile = () => {
     currentPassword: '',
     newPassword: '',
     confirmPassword: '',
-    handicap: ''
+    handicap: '',
+    countryCode: ''
   });
 
   useEffect(() => {
@@ -48,7 +51,8 @@ export const useEditProfile = () => {
             currentPassword: '',
             newPassword: '',
             confirmPassword: '',
-            handicap: localUserData.handicap === null ? '' : localUserData.handicap.toString()
+            handicap: localUserData.handicap === null ? '' : localUserData.handicap.toString(),
+            countryCode: localUserData.country_code || ''
           });
         }
 
@@ -82,7 +86,8 @@ export const useEditProfile = () => {
               currentPassword: '',
               newPassword: '',
               confirmPassword: '',
-              handicap: freshUserData.handicap === null ? '' : freshUserData.handicap.toString()
+              handicap: freshUserData.handicap === null ? '' : freshUserData.handicap.toString(),
+              countryCode: freshUserData.country_code || ''
             });
           } else {
             console.warn('⚠️ [useEditProfile] Failed to fetch fresh user data, using cached data');
@@ -98,6 +103,29 @@ export const useEditProfile = () => {
 
     fetchUserData();
   }, []); // El array vacío asegura que esto solo se ejecute una vez
+
+  // Cargar lista de países al montar el componente
+  useEffect(() => {
+    const fetchCountries = async () => {
+      setIsLoadingCountries(true);
+      try {
+        const response = await fetch(`${API_URL}/api/v1/countries?language=en`);
+        if (response.ok) {
+          const data = await response.json();
+          console.log('🌍 Countries loaded:', data.length, 'countries');
+          setCountries(data);
+        } else {
+          console.error('❌ Failed to load countries, status:', response.status);
+        }
+      } catch (error) {
+        console.error('❌ Error loading countries:', error);
+      } finally {
+        setIsLoadingCountries(false);
+      }
+    };
+
+    fetchCountries();
+  }, []);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -137,7 +165,8 @@ export const useEditProfile = () => {
         currentPassword: '',
         newPassword: '',
         confirmPassword: '',
-        handicap: refreshedUser.handicap === null ? '' : refreshedUser.handicap.toString()
+        handicap: refreshedUser.handicap === null ? '' : refreshedUser.handicap.toString(),
+        countryCode: refreshedUser.country_code || ''
       });
 
       toast.success('Profile data refreshed successfully!');
@@ -201,12 +230,17 @@ export const useEditProfile = () => {
 
     const trimmedFirstName = formData.firstName.trim();
     const trimmedLastName = formData.lastName.trim();
+    const trimmedCountryCode = formData.countryCode.trim();
 
-    if (trimmedFirstName === user.first_name && trimmedLastName === user.last_name) {
-      toast.warn('No changes detected in name or last name.');
+    // Detectar si hay cambios
+    const isNameChanged = trimmedFirstName !== user.first_name || trimmedLastName !== user.last_name;
+    const isCountryChanged = trimmedCountryCode !== (user.country_code || '');
+
+    if (!isNameChanged && !isCountryChanged) {
+      toast.warn('No changes detected in profile.');
       return;
     }
-    
+
     // Validaciones básicas de la UI
     if (trimmedFirstName.length < 2) {
       toast.error('First name must be at least 2 characters.');
@@ -219,15 +253,24 @@ export const useEditProfile = () => {
 
     setIsSaving(true);
     try {
-      // Llamada al caso de uso
-      const updatedUserEntity = await updateUserProfileUseCase.execute(user.id, {
+      // Construir updateData solo con campos que cambiaron
+      const updateData = {
         firstName: trimmedFirstName,
         lastName: trimmedLastName,
-      });
+      };
+
+      // Solo incluir countryCode si cambió
+      if (isCountryChanged) {
+        // Enviar null si el usuario limpia el selector, o el código seleccionado
+        updateData.countryCode = trimmedCountryCode === '' ? null : trimmedCountryCode;
+      }
+
+      // Llamada al caso de uso
+      const updatedUserEntity = await updateUserProfileUseCase.execute(user.id, updateData);
 
       // Actualizar el almacenamiento seguro y el estado del componente
       // Convertir la entidad de vuelta a un objeto plano compatible con `setUserData`
-      const updatedUserPlain = updatedUserEntity.toPersistence(); 
+      const updatedUserPlain = updatedUserEntity.toPersistence();
       setUserData(updatedUserPlain);
 
       setUser(updatedUserPlain); // Actualizar el estado `user` del hook
@@ -235,6 +278,7 @@ export const useEditProfile = () => {
         ...prev,
         firstName: updatedUserEntity.firstName,
         lastName: updatedUserEntity.lastName,
+        countryCode: updatedUserPlain.country_code || ''
       }));
 
       toast.success('Profile updated successfully!');
@@ -326,9 +370,11 @@ export const useEditProfile = () => {
     isSaving,
     isUpdatingRFEG,
     isRefreshing,
+    countries,
+    isLoadingCountries,
     // También necesitamos los setters para que el resto de la lógica funcione
     setUser,
-    setFormData, 
+    setFormData,
     setIsLoading,
     setIsSaving,
     setIsUpdatingRFEG,

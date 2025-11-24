@@ -56,8 +56,10 @@ class ListEnrollmentsUseCase {
       filters
     );
 
-    // Convertir a DTOs simples para la UI
-    return enrollments.map((enrollment) => EnrollmentMapper.toSimpleDTO(enrollment));
+    // Convertir a DTOs simples para la UI, preservando campos extra de la API
+    return enrollments.map((enrollment) =>
+      EnrollmentMapper.toSimpleDTO(enrollment, enrollment._apiData)
+    );
   }
 }
 

@@ -56,12 +56,22 @@ class ApiUserRepository extends IUserRepository {
    */
   async update(userId, updateData) { // <-- Nueva firma
     const token = this.authTokenProvider.getToken();
-    
+
     // El payload ahora es directamente los datos a actualizar, mapeados al formato de la API
-    const payload = {
-      first_name: updateData.firstName,
-      last_name: updateData.lastName
-    };
+    const payload = {};
+
+    // Solo agregar campos que están presentes en updateData
+    if (updateData.firstName !== undefined) {
+      payload.first_name = updateData.firstName;
+    }
+    if (updateData.lastName !== undefined) {
+      payload.last_name = updateData.lastName;
+    }
+    if (updateData.countryCode !== undefined) {
+      // Convertir a snake_case para la API
+      // Si countryCode es null, se envía null (permitir limpiar la nacionalidad)
+      payload.country_code = updateData.countryCode;
+    }
 
     const response = await fetch(`${API_URL}/api/v1/users/profile`, { // Endpoint del proyecto actual
       method: 'PATCH',
@@ -79,7 +89,7 @@ class ApiUserRepository extends IUserRepository {
 
     const data = await response.json();
     // La API devuelve el usuario completo con los cambios aplicados
-    return new User(data.user); 
+    return new User(data.user);
   }
 
   /**

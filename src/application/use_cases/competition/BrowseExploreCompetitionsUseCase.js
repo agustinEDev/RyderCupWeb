@@ -63,7 +63,7 @@ class BrowseExploreCompetitionsUseCase {
 
     // Convert domain entities to simple DTOs for the UI
     const competitionDTOs = competitions.map((competition) => {
-      return CompetitionMapper.toSimpleDTO(competition);
+      return CompetitionMapper.toSimpleDTO(competition, competition._apiData);
     });
 
     return competitionDTOs;

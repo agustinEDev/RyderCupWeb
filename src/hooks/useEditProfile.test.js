@@ -61,7 +61,8 @@ describe('useEditProfile Hook', () => {
       currentPassword: '',
       newPassword: '',
       confirmPassword: '',
-      handicap: ''
+      handicap: '',
+      countryCode: ''
     });
   });
 
@@ -98,6 +99,7 @@ describe('useEditProfile Hook', () => {
       newPassword: '',
       confirmPassword: '',
       handicap: mockUserPlain.handicap.toString(), // El hándicap se convierte a string
+      countryCode: ''
     });
   });
 

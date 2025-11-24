@@ -144,8 +144,21 @@ class CompetitionMapper {
         enrolledCount: apiData?.enrolled_count || 0, // From API, not in domain
         isCreator: apiData?.is_creator || false, // From API, not in domain
         creatorId: competition.creatorId,
+        // Map creator from API data (convert snake_case to camelCase)
+        creator: apiData?.creator ? {
+          id: apiData.creator.id,
+          firstName: apiData.creator.first_name,
+          lastName: apiData.creator.last_name,
+          email: apiData.creator.email,
+          handicap: apiData.creator.handicap,
+          countryCode: apiData.creator.country_code
+        } : null,
         createdAt: competition.createdAt.toISOString(),
         updatedAt: competition.updatedAt.toISOString(),
+        // Enrollment status (for competitions where user is enrolled, not creator)
+        enrollment_status: apiData?.user_enrollment_status || null, // PENDING, APPROVED, REJECTED, etc.
+        // Pending enrollments count (for creators to see incoming requests)
+        pending_enrollments_count: apiData?.pending_enrollments_count || 0,
         // Additional fields from domain
         handicapType: competition.handicapSettings.type(),
         handicapPercentage: competition.handicapSettings.percentage(),

@@ -16,6 +16,7 @@ class UpdateUserProfileUseCase {
    * @param {Object} updateData - Los datos a actualizar.
    * @param {string} [updateData.firstName] - El nuevo nombre.
    * @param {string} [updateData.lastName] - El nuevo apellido.
+   * @param {string} [updateData.countryCode] - El código de país (ISO 3166-1 alpha-2).
    * @returns {Promise<import('../../../domain/entities/User').default>} El usuario actualizado.
    */
   async execute(userId, updateData) {
@@ -23,6 +24,7 @@ class UpdateUserProfileUseCase {
       throw new Error('User ID and update data are required');
     }
     // Directamente llamar al repositorio para actualizar
+    // El repositorio se encarga de mapear countryCode al formato de la API
     const updatedUser = await this.userRepository.update(userId, updateData);
 
     return updatedUser;

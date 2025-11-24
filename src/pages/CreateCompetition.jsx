@@ -316,6 +316,8 @@ const CreateCompetition = () => {
 
       const payload = {
         name: formData.competitionName.trim(),
+        team_1_name: formData.teamOneName.trim(),
+        team_2_name: formData.teamTwoName.trim(),
         start_date: formData.startDate,
         end_date: formData.endDate,
         main_country: formData.country?.code,

@@ -16,12 +16,14 @@ import {
   startCompetitionUseCase,
   completeCompetitionUseCase,
   cancelCompetitionUseCase,
+  listEnrollmentsUseCase,
+  requestEnrollmentUseCase,
+  approveEnrollmentUseCase,
+  rejectEnrollmentUseCase,
 } from '../composition';
 import {
   updateCompetition,
   deleteCompetition,
-  getEnrollments,
-  requestEnrollment,
   getStatusColor,
   getEnrollmentStatusColor,
   formatDateRange,
@@ -55,9 +57,12 @@ const CompetitionDetail = () => {
       const data = await getCompetitionDetailUseCase.execute(id);
       setCompetition(data);
 
-      // Load enrollments
-      const enrollmentsData = await getEnrollments(id);
-      setEnrollments(enrollmentsData);
+      // Load enrollments only if user is the creator (for optimization)
+      const userData = getUserData();
+      if (userData && data.creatorId === userData.id) {
+        const enrollmentsData = await listEnrollmentsUseCase.execute(id);
+        setEnrollments(enrollmentsData);
+      }
     } catch (error) {
       console.error('Error loading competition:', error);
       toast.error(error.message || 'Failed to load competition');
@@ -134,7 +139,7 @@ const CompetitionDetail = () => {
   const handleEnroll = async () => {
     setIsProcessing(true);
     try {
-      await requestEnrollment(id);
+      await requestEnrollmentUseCase.execute(id);
       toast.success('Enrollment request sent!');
       await loadCompetition();
     } catch (error) {
@@ -142,6 +147,38 @@ const CompetitionDetail = () => {
       toast.error(error.message || 'Failed to enroll');
     } finally {
       setIsProcessing(false);
+    }
+  };
+
+  const handleApproveEnrollment = async (enrollmentId) => {
+    console.log('🔍 Approving enrollment with ID:', enrollmentId, 'Type:', typeof enrollmentId);
+    try {
+      // ApproveEnrollmentUseCase expects (competitionId, enrollmentId, teamId?)
+      await approveEnrollmentUseCase.execute(competition.id, enrollmentId);
+      toast.success('Enrollment approved!');
+      // Reload enrollments to update the list
+      const enrollmentsData = await listEnrollmentsUseCase.execute(competition.id);
+      setEnrollments(enrollmentsData);
+    } catch (error) {
+      console.error('Error approving enrollment:', error);
+      toast.error(error.message || 'Failed to approve enrollment');
+    }
+  };
+
+  const handleRejectEnrollment = async (enrollmentId) => {
+    if (!window.confirm('Are you sure you want to reject this enrollment?')) {
+      return;
+    }
+    try {
+      // RejectEnrollmentUseCase expects (competitionId, enrollmentId)
+      await rejectEnrollmentUseCase.execute(competition.id, enrollmentId);
+      toast.success('Enrollment rejected');
+      // Reload enrollments to update the list
+      const enrollmentsData = await listEnrollmentsUseCase.execute(competition.id);
+      setEnrollments(enrollmentsData);
+    } catch (error) {
+      console.error('Error rejecting enrollment:', error);
+      toast.error(error.message || 'Failed to reject enrollment');
     }
   };
 
@@ -163,7 +200,22 @@ const CompetitionDetail = () => {
   const isCreator = competition.creatorId === user.id;
   const canEdit = isCreator && competition.status === 'DRAFT';
   const canDelete = isCreator && competition.status === 'DRAFT';
+
+  // Check for user enrollment from two sources:
+  // 1. From enrollments list (when loaded from detail page)
+  // 2. From competition.enrollment_status (mapped from backend's user_enrollment_status)
   const userEnrollment = enrollments.find((e) => e.user_id === user.id);
+  const hasEnrollment = userEnrollment || competition.enrollment_status;
+
+  // Debug logs
+  console.log('🔍 CompetitionDetail Debug:', {
+    competitionId: competition.id,
+    competitionName: competition.name,
+    userEnrollment,
+    enrollment_status: competition.enrollment_status,
+    hasEnrollment,
+    enrollmentsCount: enrollments.length
+  });
 
   return (
     <div className="relative flex h-auto min-h-screen w-full flex-col bg-white">
@@ -348,7 +400,7 @@ const CompetitionDetail = () => {
             )}
 
             {/* Enrollment Button for Non-Creators */}
-            {!isCreator && competition.status === 'ACTIVE' && !userEnrollment && (
+            {!isCreator && competition.status === 'ACTIVE' && !hasEnrollment && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -367,7 +419,7 @@ const CompetitionDetail = () => {
             )}
 
             {/* User Enrollment Status */}
-            {userEnrollment && (
+            {hasEnrollment && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -380,10 +432,10 @@ const CompetitionDetail = () => {
                     <span className="text-blue-900 font-medium">Your enrollment status:</span>
                     <span
                       className={`px-3 py-1 rounded-full text-xs font-semibold ${getEnrollmentStatusColor(
-                        userEnrollment.status
+                        userEnrollment?.status || competition.enrollment_status
                       )}`}
                     >
-                      {userEnrollment.status}
+                      {userEnrollment?.status || competition.enrollment_status}
                     </span>
                   </div>
                 </div>
@@ -436,55 +488,153 @@ const CompetitionDetail = () => {
               </div>
             </motion.div>
 
-            {/* Enrollments List */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.3 }}
-              className="p-4"
-            >
-              <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
-                <h3 className="text-gray-900 font-bold text-lg mb-4 flex items-center gap-2">
-                  <Users className="w-5 h-5 text-primary" />
-                  Enrollments ({enrollments.length})
-                </h3>
+            {/* Enrollments List - Only visible to creator */}
+            {isCreator && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.3 }}
+                className="p-4 space-y-4"
+              >
+                {/* Approved Players Section */}
+                <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+                  <h3 className="text-gray-900 font-bold text-lg mb-4 flex items-center gap-2">
+                    <Users className="w-5 h-5 text-green-600" />
+                    Approved Players ({enrollments.filter(e => e.status === 'APPROVED').length})
+                  </h3>
 
-                {enrollments.length === 0 ? (
-                  <div className="text-center py-8 text-gray-500">
-                    <Users className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                    <p>No enrollments yet</p>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {enrollments.map((enrollment) => (
-                      <div
-                        key={enrollment.id}
-                        className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
-                      >
-                        <div className="flex-1">
-                          <p className="text-gray-900 font-medium">{enrollment.user_name}</p>
-                          <p className="text-gray-500 text-sm">{enrollment.user_email}</p>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          {enrollment.team && (
-                            <span className="px-3 py-1 bg-primary/10 text-primary rounded-full text-xs font-semibold">
-                              Team {enrollment.team}
-                            </span>
-                          )}
-                          <span
-                            className={`px-3 py-1 rounded-full text-xs font-semibold ${getEnrollmentStatusColor(
-                              enrollment.status
-                            )}`}
+                  {enrollments.filter(e => e.status === 'APPROVED').length === 0 ? (
+                    <div className="text-center py-8 text-gray-500">
+                      <Users className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                      <p>No approved players yet</p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {enrollments
+                        .filter(e => e.status === 'APPROVED')
+                        .sort((a, b) => {
+                          // Sort by team first, then by handicap
+                          if (a.team && b.team && a.team !== b.team) {
+                            return a.team.localeCompare(b.team);
+                          }
+                          return (a.userHandicap || 999) - (b.userHandicap || 999);
+                        })
+                        .map((enrollment) => (
+                          <div
+                            key={enrollment.id}
+                            className="flex items-center justify-between p-4 border border-gray-200 rounded-lg bg-green-50 hover:bg-green-100 transition-colors"
                           >
-                            {enrollment.status}
-                          </span>
-                        </div>
-                      </div>
-                    ))}
+                            <div className="flex-1">
+                              <p className="text-gray-900 font-semibold">
+                                {enrollment.userName || 'Unknown User'}
+                              </p>
+                              <div className="flex items-center gap-2 mt-1">
+                                {enrollment.userHandicap !== null && enrollment.userHandicap !== undefined ? (
+                                  <span className="text-green-700 text-sm font-medium">
+                                    HCP: {Number(enrollment.userHandicap).toFixed(1)}
+                                  </span>
+                                ) : (
+                                  <span className="text-gray-500 text-sm">No handicap</span>
+                                )}
+                              </div>
+                            </div>
+                            {enrollment.team && (
+                              <span className="px-3 py-1.5 bg-primary text-white rounded-lg text-sm font-semibold">
+                                {enrollment.team}
+                              </span>
+                            )}
+                          </div>
+                        ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Pending Requests Section */}
+                {enrollments.filter(e => e.status === 'REQUESTED').length > 0 && (
+                  <div className="bg-white border border-orange-200 rounded-xl p-6 shadow-sm">
+                    <h3 className="text-gray-900 font-bold text-lg mb-4 flex items-center gap-2">
+                      <AlertCircle className="w-5 h-5 text-orange-600" />
+                      Pending Requests ({enrollments.filter(e => e.status === 'REQUESTED').length})
+                    </h3>
+
+                    <div className="space-y-3">
+                      {enrollments
+                        .filter(e => e.status === 'REQUESTED')
+                        .map((enrollment) => (
+                          <div
+                            key={enrollment.id}
+                            className="flex items-center justify-between p-4 border border-orange-200 rounded-lg bg-orange-50 hover:bg-orange-100 transition-colors"
+                          >
+                            <div className="flex-1">
+                              <p className="text-gray-900 font-semibold">
+                                {enrollment.userName || 'Unknown User'}
+                              </p>
+                              <p className="text-gray-600 text-sm">
+                                {enrollment.userEmail || 'No email'}
+                              </p>
+                              {enrollment.userHandicap !== null && enrollment.userHandicap !== undefined && (
+                                <p className="text-gray-500 text-sm mt-1">
+                                  HCP: {Number(enrollment.userHandicap).toFixed(1)}
+                                </p>
+                              )}
+                            </div>
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => handleApproveEnrollment(enrollment.id)}
+                                className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors shadow-sm"
+                                title="Approve enrollment"
+                              >
+                                ✓ Approve
+                              </button>
+                              <button
+                                onClick={() => handleRejectEnrollment(enrollment.id)}
+                                className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 transition-colors shadow-sm"
+                                title="Reject enrollment"
+                              >
+                                ✗ Reject
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                    </div>
                   </div>
                 )}
-              </div>
-            </motion.div>
+
+                {/* Rejected Enrollments Section - Collapsible */}
+                {enrollments.filter(e => e.status === 'REJECTED').length > 0 && (
+                  <details className="bg-white border border-gray-200 rounded-xl shadow-sm">
+                    <summary className="p-6 cursor-pointer hover:bg-gray-50 transition-colors">
+                      <h3 className="text-gray-700 font-semibold text-md inline-flex items-center gap-2">
+                        <XCircle className="w-5 h-5 text-red-600" />
+                        Rejected Enrollments ({enrollments.filter(e => e.status === 'REJECTED').length})
+                      </h3>
+                    </summary>
+                    <div className="px-6 pb-6 space-y-3">
+                      {enrollments
+                        .filter(e => e.status === 'REJECTED')
+                        .map((enrollment) => (
+                          <div
+                            key={enrollment.id}
+                            className="flex items-center justify-between p-4 border border-gray-200 rounded-lg bg-gray-50"
+                          >
+                            <div className="flex-1">
+                              <p className="text-gray-700 font-medium">
+                                {enrollment.userName || 'Unknown User'}
+                              </p>
+                              <p className="text-gray-500 text-sm">
+                                {enrollment.userEmail || 'No email'}
+                              </p>
+                            </div>
+                            <span className="px-3 py-1 bg-red-100 text-red-800 rounded-full text-xs font-semibold">
+                              REJECTED
+                            </span>
+                          </div>
+                        ))}
+                    </div>
+                  </details>
+                )}
+              </motion.div>
+            )}
 
             {/* Footer */}
             <footer className="flex flex-col gap-6 px-5 py-10 text-center">

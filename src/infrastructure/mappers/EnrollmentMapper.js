@@ -149,6 +149,7 @@ class EnrollmentMapper {
 
     // Si hay datos de la API, incluir campos adicionales (joins)
     if (apiData) {
+      // Caso 1: user_name/user_email directos (backward compatibility)
       if (apiData.user_name) {
         simpleDTO.userName = apiData.user_name;
       }
@@ -157,6 +158,14 @@ class EnrollmentMapper {
       }
       if (apiData.user_handicap !== undefined) {
         simpleDTO.userHandicap = apiData.user_handicap;
+      }
+
+      // Caso 2: objeto user anidado (nuevo formato del backend)
+      if (apiData.user) {
+        simpleDTO.userName = `${apiData.user.first_name} ${apiData.user.last_name}`;
+        simpleDTO.userEmail = apiData.user.email;
+        simpleDTO.userHandicap = apiData.user.handicap;
+        simpleDTO.userCountryCode = apiData.user.country_code;
       }
     }
 
