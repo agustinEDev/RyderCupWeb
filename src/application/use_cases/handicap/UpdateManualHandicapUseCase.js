@@ -16,16 +16,22 @@ class UpdateManualHandicapUseCase {
    * @param {number} params.handicap - El valor del hándicap.
    * @returns {Promise<import('../../../domain/entities/User').default>} El usuario actualizado.
    */
-  async execute({ userId, handicap }) {
+  async execute(params = {}) {
+    const { userId, handicap } = params;
+
     if (!userId || handicap === undefined || handicap === null) {
       throw new Error('User ID and handicap value are required');
     }
 
-    // Lógica de negocio: Validar el rango del hándicap.
-    // Esta regla pertenece aquí, en la capa de aplicación, porque es una regla
-    // de negocio que debe cumplirse sin importar la UI.
-    const handicapValue = Number.parseFloat(handicap);
-    if (Number.isNaN(handicapValue) || handicapValue < -10 || handicapValue > 54) {
+    // Convert to number and validate it's a finite number.
+    // This rejects non-pure-numeric strings like "10a".
+    const handicapValue = Number(handicap);
+    if (!Number.isFinite(handicapValue)) {
+      throw new Error('Invalid handicap value. Must be a valid number.');
+    }
+
+    // Business logic: Validate handicap range.
+    if (handicapValue < -10 || handicapValue > 54) {
       throw new Error('Invalid handicap value. Must be between -10.0 and 54.0');
     }
 

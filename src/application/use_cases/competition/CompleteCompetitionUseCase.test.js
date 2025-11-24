@@ -96,6 +96,19 @@ describe('CompleteCompetitionUseCase', () => {
       );
     });
 
+    it('should throw generic error if API response is not valid JSON', async () => {
+      global.fetch.mockResolvedValue({
+        ok: false,
+        json: async () => {
+          throw new SyntaxError('Unexpected token < in JSON at position 0');
+        },
+      });
+
+      await expect(useCase.execute('comp-123')).rejects.toThrow(
+        'Failed to complete competition'
+      );
+    });
+
     it('should handle network errors', async () => {
       global.fetch.mockRejectedValue(new Error('Network error'));
 

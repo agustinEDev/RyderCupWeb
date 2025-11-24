@@ -1,4 +1,4 @@
-import { getAuthToken } from '../../../utils/secureAuth';
+import { getAuthToken, authenticatedFetch } from '../../../utils/secureAuth';
 
 const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
@@ -21,18 +21,34 @@ class StartCompetitionUseCase {
 
     const token = getAuthToken();
 
-    const response = await fetch(`${API_URL}/api/v1/competitions/${competitionId}/start`, {
+    if (!token) {
+      throw new Error('Authentication required. Please login again.');
+    }
+
+    const response = await authenticatedFetch(`${API_URL}/api/v1/competitions/${competitionId}/start`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
+        // Content-Type is already set to application/json by default in authenticatedFetch
+        // No need to manually add Authorization header as authenticatedFetch handles it
       }
     });
 
     if (!response.ok) {
-      const errorData = await response.json();
-      const errorMessage = errorData.detail || 'Failed to start competition';
-      throw new Error(errorMessage);
+      const clonedResponse = response.clone();
+      let errorDetail;
+
+      try {
+        const errorData = await response.json();
+        errorDetail = errorData.detail || 'No detail provided.';
+      } catch (jsonError) {
+        try {
+          errorDetail = await clonedResponse.text();
+        } catch (textError) {
+          errorDetail = 'Could not read error response body.';
+        }
+      }
+
+      throw new Error(`API Error (${response.status} ${response.statusText}): ${errorDetail || 'Empty response body'}`);
     }
 
     const data = await response.json();

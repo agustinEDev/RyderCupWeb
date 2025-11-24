@@ -3,7 +3,7 @@
  * Handles country data and adjacency queries
  */
 
-import apiRequest from './api';
+import { apiRequest } from './api';
 
 /**
  * Get all active countries

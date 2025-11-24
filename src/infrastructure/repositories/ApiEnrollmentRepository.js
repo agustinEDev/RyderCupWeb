@@ -92,7 +92,8 @@ class ApiEnrollmentRepository extends IEnrollmentRepository {
 
       // Manejar errores HTTP
       if (!response.ok) {
-        const errorMessage = data?.detail || data?.message || `HTTP ${response.status}`;
+        const detailMessage = data?.detail || data?.message || 'Unknown error';
+        const errorMessage = `API Error (${response.status} ${response.statusText}): ${detailMessage}`;
         throw new Error(errorMessage);
       }
 
@@ -273,7 +274,7 @@ class ApiEnrollmentRepository extends IEnrollmentRepository {
    * @returns {Promise<Enrollment>}
    */
   async approve(competitionId, enrollmentId, teamId = null) {
-    const body = teamId ? { team: teamId } : {};
+    const body = teamId ? { team_id: teamId } : {};
 
     const apiData = await this.#request(
       `/api/v1/competitions/${competitionId}/enrollments/${enrollmentId}/approve`,

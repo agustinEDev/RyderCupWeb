@@ -1,13 +1,16 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import StartCompetitionUseCase from './StartCompetitionUseCase';
+import { getAuthToken, authenticatedFetch } from '../../../utils/secureAuth'; // Import getAuthToken and authenticatedFetch
 
-// Mock fetch globally
-global.fetch = vi.fn();
-
-// Mock auth utils
-vi.mock('../../../utils/secureAuth', () => ({
-  getAuthToken: vi.fn(() => 'test-token')
-}));
+// Mock secureAuth module to control authenticatedFetch and getAuthToken
+vi.mock('../../../utils/secureAuth', async (importOriginal) => {
+  const actual = await importOriginal();
+  return {
+    ...actual,
+    getAuthToken: vi.fn(() => 'test-token'), // Mock getAuthToken for explicit token presence checks
+    authenticatedFetch: vi.fn(), // Mock authenticatedFetch itself
+  };
+});
 
 describe('StartCompetitionUseCase', () => {
   let useCase;
@@ -15,6 +18,11 @@ describe('StartCompetitionUseCase', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    // Default mock for authenticatedFetch to return a successful response
+    authenticatedFetch.mockResolvedValue({
+      ok: true,
+      json: async () => ({}) // Default empty JSON response
+    });
     useCase = new StartCompetitionUseCase();
   });
 
@@ -27,21 +35,18 @@ describe('StartCompetitionUseCase', () => {
         updated_at: '2025-11-22T10:00:00Z'
       };
 
-      global.fetch.mockResolvedValue({
+      authenticatedFetch.mockResolvedValue({
         ok: true,
         json: async () => mockResponse
       });
 
       const result = await useCase.execute('comp-123');
 
-      expect(global.fetch).toHaveBeenCalledWith(
+      expect(authenticatedFetch).toHaveBeenCalledWith(
         `${API_URL}/api/v1/competitions/comp-123/start`,
         {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer test-token'
-          }
+          headers: {} // authenticatedFetch adds Content-Type and Authorization headers internally
         }
       );
 
@@ -55,49 +60,78 @@ describe('StartCompetitionUseCase', () => {
 
     it('should throw error if competitionId is not provided', async () => {
       await expect(useCase.execute()).rejects.toThrow('Competition ID is required');
-      expect(global.fetch).not.toHaveBeenCalled();
+      expect(authenticatedFetch).not.toHaveBeenCalled();
     });
 
     it('should throw error if competitionId is empty string', async () => {
       await expect(useCase.execute('')).rejects.toThrow('Competition ID is required');
-      expect(global.fetch).not.toHaveBeenCalled();
+      expect(authenticatedFetch).not.toHaveBeenCalled();
     });
 
     it('should throw error if competition is not in CLOSED status', async () => {
-      global.fetch.mockResolvedValue({
+      const mockResponse = {
         ok: false,
-        json: async () => ({ detail: 'Competition must be in CLOSED status to start' })
-      });
+        status: 409,
+        statusText: 'Conflict',
+        json: async () => ({ detail: 'Competition must be in CLOSED status to start' }),
+        clone: () => mockResponse,
+      };
+      authenticatedFetch.mockResolvedValue(mockResponse);
 
       await expect(useCase.execute('comp-123')).rejects.toThrow(
-        'Competition must be in CLOSED status to start'
+        'API Error (409 Conflict): Competition must be in CLOSED status to start'
       );
     });
 
     it('should throw error if user is not the creator', async () => {
-      global.fetch.mockResolvedValue({
+      const mockResponse = {
         ok: false,
-        json: async () => ({ detail: 'Only the creator can start the competition' })
-      });
+        status: 403,
+        statusText: 'Forbidden',
+        json: async () => ({ detail: 'Only the creator can start the competition' }),
+        clone: () => mockResponse,
+      };
+      authenticatedFetch.mockResolvedValue(mockResponse);
 
       await expect(useCase.execute('comp-123')).rejects.toThrow(
-        'Only the creator can start the competition'
+        'API Error (403 Forbidden): Only the creator can start the competition'
       );
     });
 
     it('should throw generic error if API error has no detail', async () => {
-      global.fetch.mockResolvedValue({
+      const mockResponse = {
         ok: false,
-        json: async () => ({})
-      });
+        status: 500,
+        statusText: 'Internal Server Error',
+        json: async () => ({}),
+        clone: () => mockResponse,
+      };
+      authenticatedFetch.mockResolvedValue(mockResponse);
 
       await expect(useCase.execute('comp-123')).rejects.toThrow(
-        'Failed to start competition'
+        `API Error (500 Internal Server Error): No detail provided.`
+      );
+    });
+
+    it('should throw error with text content if API response is not JSON', async () => {
+      const mockHtmlError = '<html><body><h1>500 Internal Server Error</h1></body></html>';
+      const mockResponse = {
+        ok: false,
+        status: 500,
+        statusText: 'Internal Server Error',
+        json: async () => { throw new SyntaxError('Unexpected token < in JSON at position 0'); },
+        text: async () => mockHtmlError,
+        clone: () => mockResponse,
+      };
+      authenticatedFetch.mockResolvedValue(mockResponse);
+
+      await expect(useCase.execute('comp-123')).rejects.toThrow(
+        `API Error (500 Internal Server Error): ${mockHtmlError}`
       );
     });
 
     it('should handle network errors', async () => {
-      global.fetch.mockRejectedValue(new Error('Network error'));
+      authenticatedFetch.mockRejectedValue(new Error('Network error'));
 
       await expect(useCase.execute('comp-123')).rejects.toThrow('Network error');
     });

@@ -82,6 +82,14 @@ describe('GetCompetitionDetailUseCase', () => {
       expect(mockRepository.findById).toHaveBeenCalledWith('comp-123');
     });
 
+    it('should throw "Competition not found" error if repository returns null', async () => {
+      mockRepository.findById.mockResolvedValue(null);
+
+      await expect(useCase.execute('comp-123')).rejects.toThrow('Competition not found');
+      expect(mockRepository.findById).toHaveBeenCalledWith('comp-123');
+      expect(CompetitionMapper.toSimpleDTO).not.toHaveBeenCalled();
+    });
+
     it('should propagate mapper errors', async () => {
       CompetitionMapper.toSimpleDTO.mockImplementation(() => {
         throw new Error('Mapping error');

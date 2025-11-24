@@ -21,6 +21,10 @@ class CloseEnrollmentsUseCase {
 
     const token = getAuthToken();
 
+    if (!token) {
+      throw new Error('Authentication required. Please login again.');
+    }
+
     const response = await fetch(`${API_URL}/api/v1/competitions/${competitionId}/close-enrollments`, {
       method: 'POST',
       headers: {
@@ -30,7 +34,7 @@ class CloseEnrollmentsUseCase {
     });
 
     if (!response.ok) {
-      const errorData = await response.json();
+      const errorData = await response.json().catch(() => ({}));
       const errorMessage = errorData.detail || 'Failed to close enrollments';
       throw new Error(errorMessage);
     }

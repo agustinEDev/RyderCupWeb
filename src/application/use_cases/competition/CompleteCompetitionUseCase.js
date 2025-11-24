@@ -21,6 +21,10 @@ class CompleteCompetitionUseCase {
 
     const token = getAuthToken();
 
+    if (!token) {
+      throw new Error('Authentication required. Please login again.');
+    }
+
     const response = await fetch(`${API_URL}/api/v1/competitions/${competitionId}/complete`, {
       method: 'POST',
       headers: {
@@ -30,8 +34,17 @@ class CompleteCompetitionUseCase {
     });
 
     if (!response.ok) {
-      const errorData = await response.json();
-      const errorMessage = errorData.detail || 'Failed to complete competition';
+      let errorMessage = 'Failed to complete competition';
+      try {
+        const errorData = await response.json();
+        if (errorData && errorData.detail) {
+          errorMessage = errorData.detail;
+        }
+      } catch (e) {
+        // The response body is not valid JSON.
+        // The failed call to response.json() has already consumed the body.
+        // We will use the generic error message.
+      }
       throw new Error(errorMessage);
     }
 

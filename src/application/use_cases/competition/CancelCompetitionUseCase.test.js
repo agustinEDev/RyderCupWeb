@@ -131,11 +131,13 @@ describe('CancelCompetitionUseCase', () => {
     it('should throw generic error if API error has no detail', async () => {
       global.fetch.mockResolvedValue({
         ok: false,
+        status: 400,
+        statusText: 'Bad Request',
         json: async () => ({})
       });
 
       await expect(useCase.execute('comp-123')).rejects.toThrow(
-        'Failed to cancel competition'
+        'Competition cancellation error: HTTP 400: Bad Request'
       );
     });
 

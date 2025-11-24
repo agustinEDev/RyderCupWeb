@@ -162,7 +162,7 @@ describe('UpdateRfegHandicapUseCase', () => {
       first_name: 'Test',
       last_name: 'User',
       email: 'test@example.com',
-      country_code: 'ES' // Usuario español
+      country_code: 'es' // Usuario español (lowercase to test case-insensitivity)
     });
 
     const mockUpdatedUserEntity = new User({

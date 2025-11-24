@@ -3,7 +3,7 @@
  * Handles all competition-related API calls
  */
 
-import apiRequest from './api';
+import { apiRequest } from './api';
 
 /**
  * Competition endpoints

@@ -33,6 +33,11 @@ class GetCompetitionDetailUseCase {
     // Fetch competition from repository (returns domain entity)
     const competition = await this.competitionRepository.findById(competitionId);
 
+    // If competition is not found, throw an error
+    if (!competition) {
+      throw new Error('Competition not found');
+    }
+
     // Convert domain entity to simple DTO for UI
     // Pass original API data for location names parsing
     return CompetitionMapper.toSimpleDTO(competition, competition._apiData);

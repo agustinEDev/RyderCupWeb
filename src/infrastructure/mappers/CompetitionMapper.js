@@ -87,11 +87,11 @@ class CompetitionMapper {
       end_date: competition.dates.endDate.toISOString().split('T')[0],
       main_country: competition.location.mainCountry.code,
       countries: competition.location.adjacentCountries.map(c => c.code),
-      handicap_type: competition.handicapSettings.type,
-      handicap_percentage: competition.handicapSettings.percentage,
+      handicap_type: competition.handicapSettings.type(),
+      handicap_percentage: competition.handicapSettings.percentage(),
       player_handicap: competition.handicapSettings.source,
       max_players: competition.maxPlayers,
-      team_assignment: competition.teamAssignment.value,
+      team_assignment: competition.teamAssignment.value(),
       status: competition.status.value,
       creator_id: competition.creatorId
     };

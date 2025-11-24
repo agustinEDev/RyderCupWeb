@@ -28,7 +28,7 @@ const Dashboard = () => {
 
         // Fetch competitions
         const competitionsData = await getCompetitions();
-        setCompetitions(competitionsData);
+        setCompetitions(Array.isArray(competitionsData) ? competitionsData : []);
 
       } catch (error) {
         console.error("Failed to load dashboard data:", error);
@@ -105,7 +105,7 @@ const Dashboard = () => {
                     </div>
                     <div className="text-right">
                       <p className="text-sm text-primary-600 font-medium">Tournaments</p>
-                      <p className="text-3xl font-bold text-primary-700">{competitions.length}</p>
+                      <p className="text-3xl font-bold text-primary-700">{Array.isArray(competitions) ? competitions.length : 0}</p>
                     </div>
                   </div>
                   <p className="text-xs text-primary-600">View your active and past tournaments</p>

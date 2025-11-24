@@ -67,9 +67,24 @@ describe('UpdateManualHandicapUseCase', () => {
       .rejects.toThrow('Invalid handicap value. Must be between -10.0 and 54.0');
   });
 
-  it('should throw an error if handicap is not a number', async () => {
+  it('should throw an error if no parameters are provided', async () => {
+    await expect(updateManualHandicapUseCase.execute())
+      .rejects.toThrow('User ID and handicap value are required');
+  });
+
+  it('should throw an error if handicap is not a valid number', async () => {
     await expect(updateManualHandicapUseCase.execute({ userId: 'user-123', handicap: 'invalid' }))
-      .rejects.toThrow('Invalid handicap value. Must be between -10.0 and 54.0');
+      .rejects.toThrow('Invalid handicap value. Must be a valid number.');
+  });
+
+  it('should throw an error if handicap is a non-pure numeric string', async () => {
+    await expect(updateManualHandicapUseCase.execute({ userId: 'user-123', handicap: '15a' }))
+      .rejects.toThrow('Invalid handicap value. Must be a valid number.');
+  });
+
+  it('should throw an error for Infinity', async () => {
+    await expect(updateManualHandicapUseCase.execute({ userId: 'user-123', handicap: Infinity }))
+      .rejects.toThrow('Invalid handicap value. Must be a valid number.');
   });
 
   it('should propagate errors from the handicap repository', async () => {

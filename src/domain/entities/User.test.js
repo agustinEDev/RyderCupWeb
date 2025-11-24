@@ -25,7 +25,7 @@ describe('User Entity', () => {
     it('should throw error if required fields are missing', () => {
       const userData = {
         email: 'test@example.com',
-        first_name: 'John'
+        first_name: 'John',
         // missing id and last_name
       };
 
@@ -85,7 +85,7 @@ describe('User Entity', () => {
         id: 'user-123',
         email: 'test@example.com',
         first_name: 'John',
-        last_name: 'Doe'
+        last_name: 'Doe',
         // country_code not provided
       };
 
