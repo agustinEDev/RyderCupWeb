@@ -2,29 +2,46 @@ import { getAuthToken } from '../utils/secureAuth';
 import { default as UserEntity } from '../domain/entities/User';
 import IUserRepository from '../domain/repositories/IUserRepository';
 import ApiUserRepository from '../infrastructure/repositories/ApiUserRepository';
-import UpdateUserProfileUseCase from '../application/use_cases/UpdateUserProfileUseCase';
-import UpdateUserSecurityUseCase from '../application/use_cases/UpdateUserSecurityUseCase';
-import IHandicapRepository from '../domain/repositories/IHandicapRepository';
-import ApiHandicapRepository from '../infrastructure/repositories/ApiHandicapRepository';
-import UpdateManualHandicapUseCase from '../application/use_cases/UpdateManualHandicapUseCase';
-import UpdateRfegHandicapUseCase from '../application/use_cases/UpdateRfegHandicapUseCase';
+// User Use Cases
+import UpdateUserProfileUseCase from '../application/use_cases/user/UpdateUserProfileUseCase';
+import UpdateUserSecurityUseCase from '../application/use_cases/user/UpdateUserSecurityUseCase';
 import IAuthRepository from '../domain/repositories/IAuthRepository';
 import ApiAuthRepository from '../infrastructure/repositories/ApiAuthRepository';
-import LoginUseCase from '../application/use_cases/LoginUseCase';
-import RegisterUseCase from '../application/use_cases/RegisterUseCase';
-import VerifyEmailUseCase from '../application/use_cases/VerifyEmailUseCase';
+import LoginUseCase from '../application/use_cases/user/LoginUseCase';
+import RegisterUseCase from '../application/use_cases/user/RegisterUseCase';
+import VerifyEmailUseCase from '../application/use_cases/user/VerifyEmailUseCase';
+
+// Handicap Use Cases
+import IHandicapRepository from '../domain/repositories/IHandicapRepository';
+import ApiHandicapRepository from '../infrastructure/repositories/ApiHandicapRepository';
+import UpdateManualHandicapUseCase from '../application/use_cases/handicap/UpdateManualHandicapUseCase';
+import UpdateRfegHandicapUseCase from '../application/use_cases/handicap/UpdateRfegHandicapUseCase';
+
+// Competition Use Cases
 import { ICompetitionRepository } from '../domain/repositories/ICompetitionRepository';
 import ApiCompetitionRepository from '../infrastructure/repositories/ApiCompetitionRepository';
-import CreateCompetitionUseCase from '../application/use_cases/CreateCompetitionUseCase';
-import ListUserCompetitionsUseCase from '../application/use_cases/ListUserCompetitionsUseCase';
-import GetCompetitionDetailUseCase from '../application/use_cases/GetCompetitionDetailUseCase';
-import ActivateCompetitionUseCase from '../application/use_cases/ActivateCompetitionUseCase';
-import CloseEnrollmentsUseCase from '../application/use_cases/CloseEnrollmentsUseCase';
-import StartCompetitionUseCase from '../application/use_cases/StartCompetitionUseCase';
-import CompleteCompetitionUseCase from '../application/use_cases/CompleteCompetitionUseCase';
-import CancelCompetitionUseCase from '../application/use_cases/CancelCompetitionUseCase';
-import BrowseJoinableCompetitionsUseCase from '../application/use-cases/competition/BrowseJoinableCompetitionsUseCase';
-import BrowseExploreCompetitionsUseCase from '../application/use-cases/competition/BrowseExploreCompetitionsUseCase';
+import CreateCompetitionUseCase from '../application/use_cases/competition/CreateCompetitionUseCase';
+import ListUserCompetitionsUseCase from '../application/use_cases/competition/ListUserCompetitionsUseCase';
+import GetCompetitionDetailUseCase from '../application/use_cases/competition/GetCompetitionDetailUseCase';
+import ActivateCompetitionUseCase from '../application/use_cases/competition/ActivateCompetitionUseCase';
+import CloseEnrollmentsUseCase from '../application/use_cases/competition/CloseEnrollmentsUseCase';
+import StartCompetitionUseCase from '../application/use_cases/competition/StartCompetitionUseCase';
+import CompleteCompetitionUseCase from '../application/use_cases/competition/CompleteCompetitionUseCase';
+import CancelCompetitionUseCase from '../application/use_cases/competition/CancelCompetitionUseCase';
+import BrowseJoinableCompetitionsUseCase from '../application/use_cases/competition/BrowseJoinableCompetitionsUseCase';
+import BrowseExploreCompetitionsUseCase from '../application/use_cases/competition/BrowseExploreCompetitionsUseCase';
+
+// Enrollment Use Cases
+import IEnrollmentRepository from '../domain/repositories/IEnrollmentRepository';
+import ApiEnrollmentRepository from '../infrastructure/repositories/ApiEnrollmentRepository';
+import RequestEnrollmentUseCase from '../application/use_cases/enrollment/RequestEnrollmentUseCase';
+import ListEnrollmentsUseCase from '../application/use_cases/enrollment/ListEnrollmentsUseCase';
+import ApproveEnrollmentUseCase from '../application/use_cases/enrollment/ApproveEnrollmentUseCase';
+import RejectEnrollmentUseCase from '../application/use_cases/enrollment/RejectEnrollmentUseCase';
+import CancelEnrollmentUseCase from '../application/use_cases/enrollment/CancelEnrollmentUseCase';
+import WithdrawEnrollmentUseCase from '../application/use_cases/enrollment/WithdrawEnrollmentUseCase';
+import SetCustomHandicapUseCase from '../application/use_cases/enrollment/SetCustomHandicapUseCase';
+import DirectEnrollUseCase from '../application/use_cases/enrollment/DirectEnrollUseCase';
 
 
 // --- Providers de Infraestructura ---
@@ -37,6 +54,7 @@ const apiUserRepository = new ApiUserRepository({ authTokenProvider });
 const apiHandicapRepository = new ApiHandicapRepository({ authTokenProvider });
 const apiAuthRepository = new ApiAuthRepository();
 const apiCompetitionRepository = new ApiCompetitionRepository();
+const apiEnrollmentRepository = new ApiEnrollmentRepository({ authTokenProvider });
 
 // --- Casos de Uso ---
 const updateUserProfileUseCase = new UpdateUserProfileUseCase({ userRepository: apiUserRepository });
@@ -60,6 +78,16 @@ const cancelCompetitionUseCase = new CancelCompetitionUseCase();
 const browseJoinableCompetitionsUseCase = new BrowseJoinableCompetitionsUseCase(apiCompetitionRepository);
 const browseExploreCompetitionsUseCase = new BrowseExploreCompetitionsUseCase(apiCompetitionRepository);
 
+// Enrollment Use Cases
+const requestEnrollmentUseCase = new RequestEnrollmentUseCase(apiEnrollmentRepository);
+const listEnrollmentsUseCase = new ListEnrollmentsUseCase(apiEnrollmentRepository);
+const approveEnrollmentUseCase = new ApproveEnrollmentUseCase(apiEnrollmentRepository);
+const rejectEnrollmentUseCase = new RejectEnrollmentUseCase(apiEnrollmentRepository);
+const userCancelEnrollmentUseCase = new CancelEnrollmentUseCase(apiEnrollmentRepository);
+const withdrawEnrollmentUseCase = new WithdrawEnrollmentUseCase(apiEnrollmentRepository);
+const setCustomHandicapUseCase = new SetCustomHandicapUseCase(apiEnrollmentRepository);
+const directEnrollUseCase = new DirectEnrollUseCase(apiEnrollmentRepository);
+
 
 // Exportar los casos de uso y otros servicios que la capa de presentación necesite
 export {
@@ -80,6 +108,15 @@ export {
   cancelCompetitionUseCase,
   browseJoinableCompetitionsUseCase,
   browseExploreCompetitionsUseCase,
+  // Enrollment Use Cases
+  requestEnrollmentUseCase,
+  listEnrollmentsUseCase,
+  approveEnrollmentUseCase,
+  rejectEnrollmentUseCase,
+  userCancelEnrollmentUseCase, // Usuario cancela su solicitud (diferente de cancelCompetitionUseCase)
+  withdrawEnrollmentUseCase,
+  setCustomHandicapUseCase,
+  directEnrollUseCase,
   // También podríamos exportar directamente las entidades si la UI las necesita para displays,
   // aunque la mejor práctica es que la UI reciba DTOs o ViewModels del caso de uso.
   UserEntity, // Exportamos la entidad User para que la UI pueda crear instancias o manipularla.

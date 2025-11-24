@@ -213,34 +213,58 @@ Este documento describe los próximos pasos y las tareas planificadas para conti
         8.  ✅ Actualizar `CompetitionMapper` para manejar campo `countries` del backend.
 
 5.  **Refactorizar Flujo de Inscripción (Enrollment):**
-    *   **Estado:** 🔄 En Progreso
+    *   **Estado:** 🔄 EN PROGRESO (90% Completado - 24 Nov 2025)
     *   **Objetivo:** Implementar sistema completo de inscripciones con Clean Architecture y DDD.
+    *   **Estado Actual (24 Nov 2025):**
+        - ✅ **Domain Layer completado** - Value Objects, Entity, Repository Interface
+        - ✅ **Infrastructure Layer completado** - Mapper, Repository con 13 métodos
+        - ✅ **Application Layer completado** - 8 casos de uso implementados
+        - ✅ **Composition Root completado** - Inyección de dependencias configurada
+        - ✅ **Testing Domain Layer completado** - 83 tests pasando (100% coverage)
+        - ⚠️ **Servicios legacy siguen existiendo** en `src/services/competitions.js` (para compatibilidad temporal)
+        - ⏳ **Presentation Layer pendiente** - Las páginas aún llaman a servicios directamente
     *   **Pasos:**
-        1.  **Domain Layer:**
-            - ✅ Crear `EnrollmentStatus.js` Value Object con validación de transiciones
-            - ✅ Crear `EnrollmentId.js` Value Object
-            - ✅ Crear entidad `Enrollment.js` con factory methods (`request()`, `invite()`, `directEnroll()`)
-            - ✅ Crear interfaz `IEnrollmentRepository.js`
-        2.  **Infrastructure Layer:**
-            - ✅ Crear `EnrollmentMapper.js` (Anti-Corruption Layer)
-            - ✅ Implementar `ApiEnrollmentRepository.js` con todos los métodos
-        3.  **Application Layer - Casos de Uso:**
-            - ✅ `RequestEnrollmentUseCase.js` - Solicitar inscripción
-            - ✅ `DirectEnrollUseCase.js` - Inscripción directa por creador
-            - ✅ `ApproveEnrollmentUseCase.js` - Aprobar solicitud
-            - ✅ `RejectEnrollmentUseCase.js` - Rechazar solicitud
-            - ✅ `CancelEnrollmentUseCase.js` - Cancelar solicitud (usuario)
-            - ✅ `WithdrawEnrollmentUseCase.js` - Retirarse de competición
-            - ✅ `ListEnrollmentsUseCase.js` - Listar inscripciones
-            - ✅ `SetCustomHandicapUseCase.js` - Establecer handicap personalizado
-        4.  **Testing:**
-            - ✅ Tests de Value Objects (`EnrollmentStatus.test.js`, `EnrollmentId.test.js`)
-            - ✅ Tests de entidad (`Enrollment.test.js`)
-            - ✅ Tests de casos de uso (8 archivos de test)
-        5.  **Integration:**
-            - ✅ Integrar en `composition/index.js`
-            - ✅ Refactorizar `CompetitionDetail.jsx` para usar casos de uso
-            - ✅ Eliminar llamadas directas a servicios
+        1.  **Domain Layer:** ✅ **COMPLETADO**
+            - ✅ `EnrollmentStatus.js` (287 líneas) - Value Object con 6 estados y validación de transiciones
+            - ✅ `EnrollmentId.js` (75 líneas) - Value Object con UUID v4
+            - ✅ `Enrollment.js` (541 líneas) - Entidad con factory methods (`request()`, `invite()`, `directEnroll()`)
+            - ✅ `IEnrollmentRepository.js` (187 líneas) - Interfaz con 13 métodos
+        2.  **Infrastructure Layer:** ✅ **COMPLETADO**
+            - ✅ `EnrollmentMapper.js` (164 líneas) - Anti-Corruption Layer (API ↔ Domain ↔ UI)
+            - ✅ `ApiEnrollmentRepository.js` (385 líneas) - Implementación completa con fetch API
+        3.  **Application Layer - Casos de Uso:** ✅ **COMPLETADO**
+            - ✅ `RequestEnrollmentUseCase.js` (2.4 KB) - Solicitar inscripción
+            - ✅ `DirectEnrollUseCase.js` (3.5 KB) - Inscripción directa por creador
+            - ✅ `ApproveEnrollmentUseCase.js` (2.3 KB) - Aprobar solicitud
+            - ✅ `RejectEnrollmentUseCase.js` (2.1 KB) - Rechazar solicitud
+            - ✅ `CancelEnrollmentUseCase.js` (2.3 KB) - Cancelar solicitud (usuario)
+            - ✅ `WithdrawEnrollmentUseCase.js` (2.3 KB) - Retirarse de competición
+            - ✅ `ListEnrollmentsUseCase.js` (2.0 KB) - Listar inscripciones
+            - ✅ `SetCustomHandicapUseCase.js` (2.9 KB) - Establecer handicap personalizado
+        4.  **Testing Domain Layer:** ✅ **COMPLETADO** (24 Nov 2025)
+            - ✅ `EnrollmentId.test.js` (109 líneas) - 11 tests: factory methods, validación UUID, equals, immutability
+            - ✅ `EnrollmentStatus.test.js` (254 líneas) - 32 tests: 6 estados, transiciones válidas/inválidas, state checkers
+            - ✅ `Enrollment.test.js` (583 líneas) - 40 tests: factory methods, transiciones, handicaps, equipos, immutability
+            - ✅ **Total:** 83 tests pasando en 16ms, build compilado exitosamente
+            - ⏳ **Pendiente:** Tests de casos de uso (8 archivos)
+        5.  **Integration:** ✅ **COMPLETADO**
+            - ✅ Integrado en `composition/index.js` (8 casos de uso exportados)
+            - ✅ Inyección de dependencias configurada (`apiEnrollmentRepository` con authTokenProvider)
+            - ✅ Build compilado exitosamente sin errores
+        6.  **Presentation Layer:** ⏳ **PENDIENTE**
+            - ❌ Refactorizar `CompetitionDetail.jsx` para usar casos de uso
+            - ❌ Refactorizar `BrowseCompetitions.jsx` para usar `requestEnrollmentUseCase`
+            - ❌ Eliminar llamadas directas a servicios legacy
+            - **Estimación:** 1-2 horas
+    *   **Tiempo Invertido vs Estimado:**
+        - ✅ Domain Layer: 2 horas (estimado 2-3h)
+        - ✅ Infrastructure Layer: 1.5 horas (estimado 2-3h)
+        - ✅ Application Layer: 2 horas (estimado 4-6h)
+        - ✅ Composition Root: 30 minutos (estimado 30m)
+        - ✅ Testing Domain Layer: 2 horas (estimado 4-6h, optimizado con patrones reutilizables)
+        - ⏳ Testing Use Cases: 0 horas (estimado 2-3h)
+        - ⏳ Presentation Layer: 0 horas (estimado 1-2h)
+        - **TOTAL: 8/17 horas completadas (47% del tiempo, 90% de funcionalidad core)**
 
 6.  **Página "Browse Competitions" (Explorar competiciones públicas):**
     *   **Estado:** ✅ Completado (23 Nov 2025)
@@ -275,8 +299,10 @@ Este documento describe los próximos pasos y las tareas planificadas para conti
     *   **Tests:**
         - ✅ `BrowseJoinableCompetitionsUseCase.test.js` (9 tests)
         - ✅ `BrowseExploreCompetitionsUseCase.test.js` (10 tests)
-    *   **Pendiente (Futuro):**
-        - Integrar `RequestEnrollmentUseCase` (actualmente simulado con TODO)
+    *   **Pendiente (Bloqueado por Enrollment no implementado):**
+        - ❌ Integrar `RequestEnrollmentUseCase` (actualmente simulado con TODO en línea 135 de BrowseCompetitions.jsx)
+        - ⚠️ **Bloqueado:** Requiere implementación completa del módulo Enrollment (ver sección 5 arriba)
+    *   **Mejoras Futuras (Post-Enrollment):**
         - Filtros avanzados (fecha, país, handicap type)
         - Paginación server-side
         - Ordenamiento (fecha, inscritos, etc.)
