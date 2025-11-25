@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import CompleteCompetitionUseCase from './CompleteCompetitionUseCase';
 
 // Mock fetch globally
-global.fetch = vi.fn();
+globalThis.fetch = vi.fn();
 
 // Mock auth utils
 vi.mock('../../../utils/secureAuth', () => ({
@@ -27,14 +27,14 @@ describe('CompleteCompetitionUseCase', () => {
         updated_at: '2025-11-22T10:00:00Z'
       };
 
-      global.fetch.mockResolvedValue({
+      globalThis.fetch.mockResolvedValue({
         ok: true,
         json: async () => mockResponse
       });
 
       const result = await useCase.execute('comp-123');
 
-      expect(global.fetch).toHaveBeenCalledWith(
+      expect(globalThis.fetch).toHaveBeenCalledWith(
         `${API_URL}/api/v1/competitions/comp-123/complete`,
         {
           method: 'POST',
@@ -55,16 +55,16 @@ describe('CompleteCompetitionUseCase', () => {
 
     it('should throw error if competitionId is not provided', async () => {
       await expect(useCase.execute()).rejects.toThrow('Competition ID is required');
-      expect(global.fetch).not.toHaveBeenCalled();
+      expect(globalThis.fetch).not.toHaveBeenCalled();
     });
 
     it('should throw error if competitionId is empty string', async () => {
       await expect(useCase.execute('')).rejects.toThrow('Competition ID is required');
-      expect(global.fetch).not.toHaveBeenCalled();
+      expect(globalThis.fetch).not.toHaveBeenCalled();
     });
 
     it('should throw error if competition is not in IN_PROGRESS status', async () => {
-      global.fetch.mockResolvedValue({
+      globalThis.fetch.mockResolvedValue({
         ok: false,
         json: async () => ({ detail: 'Competition must be in IN_PROGRESS status to complete' })
       });
@@ -75,7 +75,7 @@ describe('CompleteCompetitionUseCase', () => {
     });
 
     it('should throw error if user is not the creator', async () => {
-      global.fetch.mockResolvedValue({
+      globalThis.fetch.mockResolvedValue({
         ok: false,
         json: async () => ({ detail: 'Only the creator can complete the competition' })
       });
@@ -86,7 +86,7 @@ describe('CompleteCompetitionUseCase', () => {
     });
 
     it('should throw generic error if API error has no detail', async () => {
-      global.fetch.mockResolvedValue({
+      globalThis.fetch.mockResolvedValue({
         ok: false,
         json: async () => ({})
       });
@@ -97,7 +97,7 @@ describe('CompleteCompetitionUseCase', () => {
     });
 
     it('should throw generic error if API response is not valid JSON', async () => {
-      global.fetch.mockResolvedValue({
+      globalThis.fetch.mockResolvedValue({
         ok: false,
         json: async () => {
           throw new SyntaxError('Unexpected token < in JSON at position 0');
@@ -110,7 +110,7 @@ describe('CompleteCompetitionUseCase', () => {
     });
 
     it('should handle network errors', async () => {
-      global.fetch.mockRejectedValue(new Error('Network error'));
+      globalThis.fetch.mockRejectedValue(new Error('Network error'));
 
       await expect(useCase.execute('comp-123')).rejects.toThrow('Network error');
     });
