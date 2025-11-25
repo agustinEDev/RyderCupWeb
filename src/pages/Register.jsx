@@ -434,7 +434,7 @@ const Register = () => {
                     {/* Mostrar bandera del país seleccionado */}
                     {formData.countryCode && (
                       <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                        <CountryFlag countryCode={formData.countryCode} className="w-6 h-6" />
+                        <CountryFlag countryCode={formData.countryCode} style={{ width: '24px', height: 'auto' }} />
                       </div>
                     )}
                   </div>

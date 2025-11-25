@@ -137,7 +137,7 @@ const EditProfile = () => {
                         value={formData.countryCode}
                         onChange={handleInputChange}
                         className={`w-full py-2 px-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary bg-white disabled:bg-gray-50 disabled:cursor-not-allowed appearance-none pr-10 ${
-                          formData.countryCode ? 'pl-10' : 'pl-3'
+                          formData.countryCode ? 'pl-12' : 'pl-3'
                         }`}
                         disabled={isSaving || isLoadingCountries}
                       >
@@ -157,7 +157,7 @@ const EditProfile = () => {
                       {/* Show flag if country is selected */}
                       {formData.countryCode && (
                         <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                          <CountryFlag countryCode={formData.countryCode} className="w-5 h-5" />
+                          <CountryFlag countryCode={formData.countryCode} style={{ width: '24px', height: 'auto' }} />
                         </div>
                       )}
                     </div>

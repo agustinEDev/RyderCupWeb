@@ -4,6 +4,7 @@ import { Calendar, Trophy, MapPin, Settings, Plus, X, ChevronDown } from 'lucide
 import HeaderAuth from '../components/layout/HeaderAuth';
 import { getUserData } from '../utils/secureAuth';
 import { createCompetitionUseCase } from '../composition';
+import { CountryFlag } from '../utils/countryUtils';
 
 const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
@@ -15,33 +16,6 @@ const getMessageClassName = (type) => {
 };
 
 const CreateCompetition = () => {
-    // Renderiza el contenido del dropdown de países
-    const renderCountryDropdownContent = () => {
-      if (isLoadingCountries) {
-        return [
-          <div key="loading" className="px-3 py-2 text-sm text-gray-500 text-center">
-            Loading countries...
-          </div>
-        ];
-      }
-      if (filteredCountries.length > 0) {
-        return filteredCountries.map(country => (
-          <button
-            key={country.id}
-            type="button"
-            onClick={() => handleCountrySelect(country)}
-            className="w-full px-3 py-2 text-left hover:bg-gray-100 focus:bg-gray-100 focus:outline-none"
-          >
-            {country.name}
-          </button>
-        ));
-      }
-      return [
-        <div key="empty" className="px-3 py-2 text-sm text-gray-500 text-center">
-          {countrySearch ? 'No countries found' : 'No countries available'}
-        </div>
-      ];
-    };
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -51,11 +25,8 @@ const CreateCompetition = () => {
   // Countries data
   const [allCountries, setAllCountries] = useState([]);
   const [isLoadingCountries, setIsLoadingCountries] = useState(false);
-  const [countrySearch, setCountrySearch] = useState('');
-  const [showCountryDropdown, setShowCountryDropdown] = useState(false);
   const [adjacentCountries1, setAdjacentCountries1] = useState([]);
   const [adjacentCountries2, setAdjacentCountries2] = useState([]);
-  const countryInputRef = useRef(null);
 
   // Form data
   const [formData, setFormData] = useState({
@@ -93,18 +64,6 @@ const CreateCompetition = () => {
     // eslint-disable-next-line sonar/todo-tag
     // TODO: Move country fetching logic to its own use case
     fetchCountries();
-  }, []);
-
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (countryInputRef.current && !countryInputRef.current.contains(event.target)) {
-        setShowCountryDropdown(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
   const fetchCountries = async () => {
@@ -196,11 +155,6 @@ const CreateCompetition = () => {
     }
   };
 
-  const handleCountrySearch = (e) => {
-    setCountrySearch(e.target.value);
-    setShowCountryDropdown(true);
-  };
-
   const handleCountrySelect = (country) => {
     setFormData(prev => ({
       ...prev,
@@ -210,8 +164,6 @@ const CreateCompetition = () => {
       showAdjacentCountry1: false,
       showAdjacentCountry2: false
     }));
-    setCountrySearch(country.name);
-    setShowCountryDropdown(false);
     setAdjacentCountries1([]);
     setAdjacentCountries2([]);
     fetchAdjacentCountries(country.code, 1);
@@ -263,10 +215,6 @@ const CreateCompetition = () => {
       showAdjacentCountry2: false
     }));
   };
-
-  const filteredCountries = allCountries.filter(country =>
-    country?.name?.toLowerCase().includes(countrySearch.toLowerCase())
-  );
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -498,26 +446,50 @@ const CreateCompetition = () => {
                 </div>
 
                 <div className="space-y-4">
-                  {/* Country Search */}
-                  <div ref={countryInputRef} className="relative">
-                    <label htmlFor="countrySearch" className="block text-sm font-medium text-gray-700 mb-1">
+                  {/* Country Select */}
+                  <div>
+                    <label htmlFor="country" className="block text-sm font-medium text-gray-700 mb-1">
                       Country *
                     </label>
-                    <input
-                      id="countrySearch"
-                      type="text"
-                      value={countrySearch}
-                      onChange={handleCountrySearch}
-                      onFocus={() => setShowCountryDropdown(true)}
-                      placeholder="Search for a country..."
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-                    />
-
-                    {showCountryDropdown && (
-                      <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                        {renderCountryDropdownContent()}
-                      </div>
-                    )}
+                    <div className="relative">
+                      <select
+                        id="country"
+                        name="country"
+                        value={formData.country?.code || ''}
+                        onChange={(e) => {
+                          const selectedCountry = allCountries.find(c => c.code === e.target.value);
+                          if (selectedCountry) {
+                            handleCountrySelect(selectedCountry);
+                          } else {
+                            setFormData(prev => ({
+                              ...prev,
+                              country: null,
+                              adjacentCountry1: '',
+                              adjacentCountry2: '',
+                              showAdjacentCountry1: false,
+                              showAdjacentCountry2: false
+                            }));
+                          }
+                        }}
+                        className={`w-full py-2 px-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary bg-white appearance-none pr-10 ${
+                          formData.country ? 'pl-12' : 'pl-3'
+                        }`}
+                      >
+                        <option value="">Select a country</option>
+                        {allCountries.map((country) => (
+                          <option key={country.code} value={country.code}>
+                            {country.name}
+                          </option>
+                        ))}
+                      </select>
+                      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
+                      {/* Show flag if country is selected */}
+                      {formData.country && (
+                        <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                          <CountryFlag countryCode={formData.country.code} style={{ width: '24px', height: 'auto' }} />
+                        </div>
+                      )}
+                    </div>
                   </div>
 
                   {/* Adjacent Country 1 */}
@@ -544,7 +516,9 @@ const CreateCompetition = () => {
                             name="adjacentCountry1"
                             value={formData.adjacentCountry1}
                             onChange={handleAdjacentCountry1Change}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary appearance-none"
+                            className={`w-full py-2 px-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary appearance-none pr-10 ${
+                              formData.adjacentCountry1 ? 'pl-12' : 'pl-3'
+                            }`}
                           >
                             <option value="">Select adjacent country</option>
                             {adjacentCountries1.map(country => (
@@ -554,6 +528,12 @@ const CreateCompetition = () => {
                             ))}
                           </select>
                           <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
+                          {/* Show flag if country is selected */}
+                          {formData.adjacentCountry1 && (
+                            <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                              <CountryFlag countryCode={formData.adjacentCountry1} style={{ width: '24px', height: 'auto' }} />
+                            </div>
+                          )}
                         </div>
                       </div>
                       <button
@@ -590,7 +570,9 @@ const CreateCompetition = () => {
                             name="adjacentCountry2"
                             value={formData.adjacentCountry2}
                             onChange={handleInputChange}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary appearance-none"
+                            className={`w-full py-2 px-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary appearance-none pr-10 ${
+                              formData.adjacentCountry2 ? 'pl-12' : 'pl-3'
+                            }`}
                           >
                             <option value="">Select third country</option>
                             {adjacentCountries2
@@ -602,6 +584,12 @@ const CreateCompetition = () => {
                               ))}
                           </select>
                           <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
+                          {/* Show flag if country is selected */}
+                          {formData.adjacentCountry2 && (
+                            <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                              <CountryFlag countryCode={formData.adjacentCountry2} style={{ width: '24px', height: 'auto' }} />
+                            </div>
+                          )}
                         </div>
                       </div>
                       <button
