@@ -5,6 +5,7 @@ import { useEditProfile } from '../hooks/useEditProfile'; // <- ¡NUEVA IMPORTAC
 import { canUseRFEG, CountryFlag } from '../utils/countryUtils';
 
 const EditProfile = () => {
+  // eslint-disable-next-line sonar/todo-tag
   // Toda la lógica ahora reside en el hook. Obtenemos todo lo que necesitamos de él.
   const {
     user,

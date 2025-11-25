@@ -14,6 +14,20 @@ import {
   formatDateRange
 } from '../services/competitions';
 
+// Helper function to get enrollment status classes
+const getEnrollmentStatusClasses = (status) => {
+  switch (status) {
+    case 'APPROVED':
+      return 'bg-green-100 text-green-800 border border-green-200';
+    case 'PENDING':
+      return 'bg-yellow-100 text-yellow-800 border border-yellow-200';
+    case 'REJECTED':
+      return 'bg-red-100 text-red-800 border border-red-200';
+    default:
+      return 'bg-gray-100 text-gray-800 border border-gray-200';
+  }
+};
+
 const Competitions = () => {
     // Renderiza el contenido de la lista de competiciones
     const renderCompetitionsList = () => {
@@ -83,7 +97,7 @@ const Competitions = () => {
                     <div className="mt-1">
                       <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-orange-100 text-orange-800 border border-orange-200">
                         <span className="w-2 h-2 bg-orange-500 rounded-full mr-1.5 animate-pulse"></span>
-                        {competition.pending_enrollments_count} pending request{competition.pending_enrollments_count !== 1 ? 's' : ''}
+                        {competition.pending_enrollments_count} pending request{competition.pending_enrollments_count === 1 ? '' : 's'}
                       </span>
                     </div>
                   )}
@@ -91,15 +105,7 @@ const Competitions = () => {
                   {competition.creatorId !== user?.id && competition.enrollment_status && (
                     <div className="mt-1">
                       <span
-                        className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${
-                          competition.enrollment_status === 'APPROVED'
-                            ? 'bg-green-100 text-green-800'
-                            : competition.enrollment_status === 'PENDING'
-                            ? 'bg-yellow-100 text-yellow-800'
-                            : competition.enrollment_status === 'REJECTED'
-                            ? 'bg-red-100 text-red-800'
-                            : 'bg-gray-100 text-gray-800'
-                        }`}
+                        className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${getEnrollmentStatusClasses(competition.enrollment_status)}`}
                       >
                         {competition.enrollment_status === 'APPROVED' && '✓ '}
                         {competition.enrollment_status === 'PENDING' && '⏳ '}
