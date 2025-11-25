@@ -467,7 +467,7 @@ const CreateCompetition = () => {
                       name="startDate"
                       value={formData.startDate}
                       onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                      className="w-full max-w-md mx-auto px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                     />
                   </div>
 
@@ -481,7 +481,7 @@ const CreateCompetition = () => {
                       name="endDate"
                       value={formData.endDate}
                       onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                      className="w-full max-w-md mx-auto px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                     />
                   </div>
                 </div>
@@ -707,31 +707,18 @@ const CreateCompetition = () => {
                     <span className="block text-sm font-medium text-gray-700 mb-2">
                       Team Assignment *
                     </span>
-                    <div className="flex gap-4">
-                      <input
-                        id="teamAssignment-manual"
-                        type="radio"
+                    <div className="relative">
+                      <select
+                        id="teamAssignment"
                         name="teamAssignment"
-                        value="manual"
-                        checked={formData.teamAssignment === 'manual'}
+                        value={formData.teamAssignment}
                         onChange={handleInputChange}
-                        className="w-4 h-4 text-primary focus:ring-primary"
-                      />
-                      <label htmlFor="teamAssignment-manual" className="flex items-center gap-2 cursor-pointer">
-                        <span className="text-sm text-gray-700">Manual</span>
-                      </label>
-                      <input
-                        id="teamAssignment-automatic"
-                        type="radio"
-                        name="teamAssignment"
-                        value="automatic"
-                        checked={formData.teamAssignment === 'automatic'}
-                        onChange={handleInputChange}
-                        className="w-4 h-4 text-primary focus:ring-primary"
-                      />
-                      <label htmlFor="teamAssignment-automatic" className="flex items-center gap-2 cursor-pointer">
-                        <span className="text-sm text-gray-700">Automatic</span>
-                      </label>
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary appearance-none"
+                      >
+                        <option value="manual">Manual</option>
+                        <option value="automatic">Automatic</option>
+                      </select>
+                      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
                     </div>
                   </div>
 
@@ -740,31 +727,18 @@ const CreateCompetition = () => {
                     <span className="block text-sm font-medium text-gray-700 mb-2">
                       Player Handicap *
                     </span>
-                    <div className="flex flex-col sm:flex-row gap-4">
-                      <input
-                        id="playerHandicap-custom"
-                        type="radio"
+                    <div className="relative">
+                      <select
+                        id="playerHandicap"
                         name="playerHandicap"
-                        value="custom"
-                        checked={formData.playerHandicap === 'custom'}
+                        value={formData.playerHandicap}
                         onChange={handleInputChange}
-                        className="w-4 h-4 text-primary focus:ring-primary"
-                      />
-                      <label htmlFor="playerHandicap-custom" className="flex items-center gap-2 cursor-pointer">
-                        <span className="text-sm text-gray-700">Custom by competition creator</span>
-                      </label>
-                      <input
-                        id="playerHandicap-user"
-                        type="radio"
-                        name="playerHandicap"
-                        value="user"
-                        checked={formData.playerHandicap === 'user'}
-                        onChange={handleInputChange}
-                        className="w-4 h-4 text-primary focus:ring-primary"
-                      />
-                      <label htmlFor="playerHandicap-user" className="flex items-center gap-2 cursor-pointer">
-                        <span className="text-sm text-gray-700">User handicap</span>
-                      </label>
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary appearance-none"
+                      >
+                        <option value="custom">Custom by competition creator</option>
+                        <option value="user">User handicap</option>
+                      </select>
+                      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
                     </div>
                   </div>
                 </div>

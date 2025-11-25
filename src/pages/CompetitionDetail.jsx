@@ -563,7 +563,7 @@ const CompetitionDetail = () => {
                         .map((enrollment) => (
                           <div
                             key={enrollment.id}
-                            className="flex items-center justify-between p-4 border border-orange-200 rounded-lg bg-orange-50 hover:bg-orange-100 transition-colors"
+                            className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 border border-orange-200 rounded-lg bg-orange-50 hover:bg-orange-100 transition-colors"
                           >
                             <div className="flex-1">
                               <p className="text-gray-900 font-semibold">
@@ -578,7 +578,7 @@ const CompetitionDetail = () => {
                                 </p>
                               )}
                             </div>
-                            <div className="flex gap-2">
+                            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
                               <button
                                 onClick={() => handleApproveEnrollment(enrollment.id)}
                                 className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors shadow-sm"
