@@ -11,6 +11,9 @@
     "test": "vitest"
   },
   "dependencies": {
+    "@sentry/react": "^7.120.4",
+    "@sentry/replay": "^7.116.0",
+    "@sentry/tracing": "^7.120.4",
     "axios": "^1.6.2",
     "clsx": "^2.1.1",
     "country-flag-icons": "^1.6.4",

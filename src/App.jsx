@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import * as Sentry from '@sentry/react'; // Import Sentry
 import { Toaster } from 'react-hot-toast';
 import Landing from './pages/Landing';
 import Login from './pages/Login';
@@ -15,6 +16,7 @@ import BrowseCompetitions from './pages/BrowseCompetitions';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import { migrateFromLocalStorage } from './utils/secureAuth';
 
+
 function App() {
   // Migrate existing users from localStorage to sessionStorage
   useEffect(() => {
@@ -23,6 +25,7 @@ function App() {
 
   return (
     <Router>
+
       {/* Toast Notifications */}
       <Toaster
         position="top-right"
@@ -71,4 +74,4 @@ function App() {
   );
 }
 
-export default App;
+export default Sentry.withProfiler(App);
