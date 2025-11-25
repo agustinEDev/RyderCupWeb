@@ -110,6 +110,7 @@ describe('useEditProfile Hook', () => {
 
     // 1. Arrange: Preparar el escenario del test
     const mockUserPlain = { id: '1', first_name: 'John', last_name: 'Doe', email: 'a@a.com', handicap: 10 };
+    // eslint-disable-next-line sonar/constructor-for-side-effects
     const updatedUserEntity = new User({ id: '1', first_name: 'Johnny', last_name: 'Doe', email: 'a@a.com', handicap: 10, email_verified: true });
 
     // Configurar mocks
@@ -157,6 +158,7 @@ describe('useEditProfile Hook', () => {
     // Importar dinámicamente el módulo User REAL
     // eslint-disable-next-line no-unused-vars
     const { default: User } = await vi.importActual('../domain/entities/User');
+    // eslint-disable-next-line sonar/constructor-for-side-effects
     const updatedUserEntity = new User({ 
       id: '1', 
       first_name: 'John', 
@@ -218,6 +220,7 @@ describe('useEditProfile Hook', () => {
     // Importar dinámicamente el módulo User REAL
     // eslint-disable-next-line no-unused-vars
     const { default: User } = await vi.importActual('../domain/entities/User');
+    // eslint-disable-next-line sonar/constructor-for-side-effects
     const updatedUserEntity = new User({ 
       id: '1', 
       first_name: 'John', 
@@ -264,6 +267,7 @@ describe('useEditProfile Hook', () => {
     // Importar dinámicamente el módulo User REAL
     // eslint-disable-next-line no-unused-vars
     const { default: User } = await vi.importActual('../domain/entities/User');
+    // eslint-disable-next-line sonar/constructor-for-side-effects
     const updatedUserEntity = new User({ 
       id: '1', 
       first_name: 'John', 

@@ -3,7 +3,7 @@ import ApiUserRepository from './ApiUserRepository';
 import User from '../../domain/entities/User';
 
 // Mock global fetch
-global.fetch = vi.fn();
+globalThis.fetch = vi.fn();
 
 describe('ApiUserRepository', () => {
   let authTokenProvider;
@@ -42,7 +42,7 @@ describe('ApiUserRepository', () => {
         updated_at: '2025-11-23T10:00:00Z'
       };
 
-      global.fetch.mockResolvedValueOnce({
+      globalThis.fetch.mockResolvedValueOnce({
         ok: true,
         json: async () => mockUserData
       });
@@ -52,7 +52,7 @@ describe('ApiUserRepository', () => {
 
       // Assert
       expect(authTokenProvider.getToken).toHaveBeenCalled();
-      expect(global.fetch).toHaveBeenCalledWith(
+      expect(globalThis.fetch).toHaveBeenCalledWith(
         `${API_URL}/api/v1/auth/current-user`,
         {
           headers: {
@@ -78,7 +78,7 @@ describe('ApiUserRepository', () => {
         handicap: 12.3
       };
 
-      global.fetch.mockResolvedValueOnce({
+      globalThis.fetch.mockResolvedValueOnce({
         ok: true,
         json: async () => mockUserData
       });
@@ -103,7 +103,7 @@ describe('ApiUserRepository', () => {
         country_code: null
       };
 
-      global.fetch.mockResolvedValueOnce({
+      globalThis.fetch.mockResolvedValueOnce({
         ok: true,
         json: async () => mockUserData
       });
@@ -120,7 +120,7 @@ describe('ApiUserRepository', () => {
       // Arrange
       const userId = 'user-123';
 
-      global.fetch.mockResolvedValueOnce({
+      globalThis.fetch.mockResolvedValueOnce({
         ok: false,
         status: 404
       });
@@ -130,7 +130,7 @@ describe('ApiUserRepository', () => {
 
       // Assert
       expect(user).toBeNull();
-      expect(global.fetch).toHaveBeenCalledWith(
+      expect(globalThis.fetch).toHaveBeenCalledWith(
         `${API_URL}/api/v1/auth/current-user`,
         expect.any(Object)
       );
@@ -140,7 +140,7 @@ describe('ApiUserRepository', () => {
       // Arrange
       const userId = 'user-123';
 
-      global.fetch.mockResolvedValueOnce({
+      globalThis.fetch.mockResolvedValueOnce({
         ok: false,
         status: 401
       });
@@ -156,7 +156,7 @@ describe('ApiUserRepository', () => {
       // Arrange
       const userId = 'user-123';
 
-      global.fetch.mockResolvedValueOnce({
+      globalThis.fetch.mockResolvedValueOnce({
         ok: false,
         status: 500
       });
@@ -179,7 +179,7 @@ describe('ApiUserRepository', () => {
         last_name: 'Doe'
       };
 
-      global.fetch.mockResolvedValueOnce({
+      globalThis.fetch.mockResolvedValueOnce({
         ok: true,
         json: async () => mockUserData
       });
@@ -188,7 +188,7 @@ describe('ApiUserRepository', () => {
       await apiUserRepository.getById(userId);
 
       // Assert
-      expect(global.fetch).toHaveBeenCalledWith(
+      expect(globalThis.fetch).toHaveBeenCalledWith(
         expect.any(String),
         {
           headers: {
@@ -211,7 +211,7 @@ describe('ApiUserRepository', () => {
         country_code: 'ES'
       };
 
-      global.fetch.mockResolvedValue({
+      globalThis.fetch.mockResolvedValue({
         ok: true,
         json: async () => mockUserData
       });
@@ -222,9 +222,9 @@ describe('ApiUserRepository', () => {
 
       // Assert
       // Both calls should hit the same endpoint
-      expect(global.fetch).toHaveBeenCalledTimes(2);
-      expect(global.fetch).toHaveBeenNthCalledWith(1, `${API_URL}/api/v1/auth/current-user`, expect.any(Object));
-      expect(global.fetch).toHaveBeenNthCalledWith(2, `${API_URL}/api/v1/auth/current-user`, expect.any(Object));
+      expect(globalThis.fetch).toHaveBeenCalledTimes(2);
+      expect(globalThis.fetch).toHaveBeenNthCalledWith(1, `${API_URL}/api/v1/auth/current-user`, expect.any(Object));
+      expect(globalThis.fetch).toHaveBeenNthCalledWith(2, `${API_URL}/api/v1/auth/current-user`, expect.any(Object));
 
       // Both should return the same user (current user from token)
       expect(user1.id).toBe('current-user-id');
@@ -251,7 +251,7 @@ describe('ApiUserRepository', () => {
         }
       };
 
-      global.fetch.mockResolvedValueOnce({
+      globalThis.fetch.mockResolvedValueOnce({
         ok: true,
         json: async () => mockUpdatedUser
       });
@@ -260,7 +260,7 @@ describe('ApiUserRepository', () => {
       const user = await apiUserRepository.update(userId, updateData);
 
       // Assert
-      expect(global.fetch).toHaveBeenCalledWith(
+      expect(globalThis.fetch).toHaveBeenCalledWith(
         `${API_URL}/api/v1/users/profile`,
         {
           method: 'PATCH',
@@ -287,7 +287,7 @@ describe('ApiUserRepository', () => {
         lastName: 'Smith'
       };
 
-      global.fetch.mockResolvedValueOnce({
+      globalThis.fetch.mockResolvedValueOnce({
         ok: false,
         json: async () => ({ detail: 'Update failed' })
       });
@@ -324,7 +324,7 @@ describe('ApiUserRepository', () => {
         }
       };
 
-      global.fetch.mockResolvedValueOnce({
+      globalThis.fetch.mockResolvedValueOnce({
         ok: true,
         json: async () => mockUpdatedUser
       });
@@ -333,8 +333,8 @@ describe('ApiUserRepository', () => {
       const user = await apiUserRepository.updateSecurity(userId, securityData);
 
       // Assert
-      expect(global.fetch).toHaveBeenCalledTimes(1);
-      const [[url, options]] = global.fetch.mock.calls;
+      expect(globalThis.fetch).toHaveBeenCalledTimes(1);
+      const [[url, options]] = globalThis.fetch.mock.calls;
 
       expect(url).toBe(`${API_URL}/api/v1/users/security`);
       expect(options.method).toBe('PATCH');

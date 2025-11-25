@@ -90,6 +90,7 @@ const CreateCompetition = () => {
     setIsLoading(false);
 
     // Fetch all countries
+    // eslint-disable-next-line sonar/todo-tag
     // TODO: Move country fetching logic to its own use case
     fetchCountries();
   }, []);

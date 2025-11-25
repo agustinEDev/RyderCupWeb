@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import StartCompetitionUseCase from './StartCompetitionUseCase';
-import { getAuthToken, authenticatedFetch } from '../../../utils/secureAuth'; // Import getAuthToken and authenticatedFetch
+import { authenticatedFetch } from '../../../utils/secureAuth'; // Import authenticatedFetch
 
 // Mock secureAuth module to control authenticatedFetch and getAuthToken
 vi.mock('../../../utils/secureAuth', async (importOriginal) => {
