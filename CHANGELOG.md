@@ -7,6 +7,17 @@ y este proyecto adhiere a [Versionado Semántico](https://semver.org/lang/es/).
 
 ## [Unreleased]
 
+## [1.5.1] - 2025-11-25
+
+### Changed
+- **Code Quality Improvements**: Fixed multiple SonarQube alerts to improve codebase maintainability
+  - Replaced `global` with `globalThis` in test files for proper global object access (S7764)
+  - Removed unused imports (S1128)
+  - Improved condition logic by removing double negation in Competitions component (S7735)
+  - Extracted nested ternary operators into helper functions for better readability (S3358)
+  - Added suppression comments for false positive warnings (S2999, S1135)
+  - All 419 tests passing with no functional changes
+
 ## [1.5.0] - 2025-11-25
 
 ### Fixed
@@ -451,7 +462,8 @@ y este proyecto adhiere a [Versionado Semántico](https://semver.org/lang/es/).
 - Configuración de headers de seguridad (X-Content-Type-Options, X-Frame-Options, etc.)
 - Eliminación automática de console.log en builds de producción
 
-[Unreleased]: https://github.com/agustinEDev/RyderCupWeb/compare/v1.5.0...HEAD
+[Unreleased]: https://github.com/agustinEDev/RyderCupWeb/compare/v1.5.1...HEAD
+[1.5.1]: https://github.com/agustinEDev/RyderCupWeb/compare/v1.5.0...v1.5.1
 [1.5.0]: https://github.com/agustinEDev/RyderCupWeb/compare/v1.4.0...v1.5.0
 [1.4.0]: https://github.com/agustinEDev/RyderCupWeb/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/agustinEDev/RyderCupWeb/compare/v1.2.0...v1.3.0
