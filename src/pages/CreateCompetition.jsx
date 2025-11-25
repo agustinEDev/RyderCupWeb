@@ -109,7 +109,7 @@ const CreateCompetition = () => {
   const fetchCountries = async () => {
     setIsLoadingCountries(true);
     try {
-      const response = await fetch('/api/v1/countries', {
+      const response = await fetch(`${API_URL}/api/v1/countries`, {
         headers: {
           'Content-Type': 'application/json'
         }
@@ -143,7 +143,7 @@ const CreateCompetition = () => {
 
   const fetchAdjacentCountries = async (countryId, level) => {
     try {
-      const response = await fetch(`/api/v1/countries/${countryId}/adjacent`);
+      const response = await fetch(`${API_URL}/api/v1/countries/${countryId}/adjacent`);
 
       if (response.ok) {
         const data = await response.json();
