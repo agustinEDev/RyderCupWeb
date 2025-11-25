@@ -7,14 +7,21 @@ y este proyecto adhiere a [Versionado Semántico](https://semver.org/lang/es/).
 
 ## [Unreleased]
 
+## [1.5.0] - 2025-11-25
+
+### Fixed
+- **Country Flags Rendering in Chrome/Windows**: Fixed flag display issues where Unicode Regional Indicator emojis rendered as boxes or letters
+  - Migrated from Unicode emojis to SVG flags using `country-flag-icons` library
+  - Created `CountryFlag` React component with static imports (Vite-compatible)
+  - Updated 5 components: Register, Profile, EditProfile, CompetitionDetail, BrowseCompetitions
+  - Flags now render consistently across all browsers and operating systems
+- **Responsive Design in Competition Detail**: Corregido desbordamiento horizontal en la sección "Pending Requests" en la vista de detalle de competición para el creador en dispositivos móviles.
+- **Responsive Design in Create Competition**: Ajustado el ancho de los campos de fecha ("Start Date" y "End Date") en la página de creación de competiciones para evitar que se desborden en pantallas móviles.
+
 ### Changed
 - **Create Competition UI**:
   - Reemplazados los radio buttons de "Team Assignment" por un selector desplegable para mejorar la UX.
   - Reemplazados los radio buttons de "Player Handicap" por un selector desplegable.
-
-### Fixed
-- **Responsive Design in Competition Detail**: Corregido desbordamiento horizontal en la sección "Pending Requests" en la vista de detalle de competición para el creador en dispositivos móviles.
-- **Responsive Design in Create Competition**: Ajustado el ancho de los campos de fecha ("Start Date" y "End Date") en la página de creación de competiciones para evitar que se desborden en pantallas móviles.
 
 ### Added
 - **Multiple Competition Status Filter**: Backend ahora acepta múltiples valores de `status` en el endpoint de listado de competiciones:
@@ -444,7 +451,8 @@ y este proyecto adhiere a [Versionado Semántico](https://semver.org/lang/es/).
 - Configuración de headers de seguridad (X-Content-Type-Options, X-Frame-Options, etc.)
 - Eliminación automática de console.log en builds de producción
 
-[Unreleased]: https://github.com/agustinEDev/RyderCupWeb/compare/v1.4.0...HEAD
+[Unreleased]: https://github.com/agustinEDev/RyderCupWeb/compare/v1.5.0...HEAD
+[1.5.0]: https://github.com/agustinEDev/RyderCupWeb/compare/v1.4.0...v1.5.0
 [1.4.0]: https://github.com/agustinEDev/RyderCupWeb/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/agustinEDev/RyderCupWeb/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/agustinEDev/RyderCupWeb/compare/v1.1.0...v1.2.0

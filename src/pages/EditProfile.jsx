@@ -2,7 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import HeaderAuth from '../components/layout/HeaderAuth';
 import { useEditProfile } from '../hooks/useEditProfile'; // <- ¡NUEVA IMPORTACIÓN!
-import { canUseRFEG, getCountryFlag } from '../utils/countryUtils';
+import { canUseRFEG, CountryFlag } from '../utils/countryUtils';
 
 const EditProfile = () => {
   // Toda la lógica ahora reside en el hook. Obtenemos todo lo que necesitamos de él.
@@ -155,8 +155,8 @@ const EditProfile = () => {
                       </div>
                       {/* Show flag if country is selected */}
                       {formData.countryCode && (
-                        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-lg pointer-events-none">
-                          {getCountryFlag(formData.countryCode)}
+                        <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                          <CountryFlag countryCode={formData.countryCode} className="w-5 h-5" />
                         </div>
                       )}
                     </div>
