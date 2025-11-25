@@ -10,7 +10,7 @@ import {
   browseExploreCompetitionsUseCase,
   requestEnrollmentUseCase,
 } from '../composition';
-import { getCountryFlag } from '../utils/countryUtils';
+import { CountryFlag } from '../utils/countryUtils';
 import { getAuthToken, getUserData } from '../utils/secureAuth';
 
 const BrowseCompetitions = () => {
@@ -445,8 +445,8 @@ const CompetitionCard = ({ competition, mode, onRequestEnrollment, onViewDetails
         {countries && countries.length > 0 && (
           <div className="flex gap-1 flex-wrap">
             {countries.map((country) => (
-              <span key={country.code} className="text-sm">
-                {getCountryFlag(country.code)}
+              <span key={country.code} className="inline-flex">
+                <CountryFlag countryCode={country.code} className="w-5 h-5" />
               </span>
             ))}
           </div>

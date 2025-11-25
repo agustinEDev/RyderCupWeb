@@ -6,7 +6,7 @@ import { validateEmail, validateName, validatePassword } from '../utils/validati
 import PasswordInput from '../components/ui/PasswordInput';
 import PasswordStrengthIndicator from '../components/ui/PasswordStrengthIndicator';
 import { registerUseCase } from '../composition'; // NUEVO import
-import { getCountryFlag } from '../utils/countryUtils';
+import { CountryFlag } from '../utils/countryUtils';
 
 const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
@@ -433,8 +433,8 @@ const Register = () => {
                     </div>
                     {/* Mostrar bandera del país seleccionado */}
                     {formData.countryCode && (
-                      <div className="absolute left-3 top-1/2 -translate-y-1/2 text-xl pointer-events-none">
-                        {getCountryFlag(formData.countryCode)}
+                      <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                        <CountryFlag countryCode={formData.countryCode} className="w-6 h-6" />
                       </div>
                     )}
                   </div>

@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import HeaderAuth from '../components/layout/HeaderAuth';
 import { getUserData, clearAuthData, getAuthToken, setUserData } from '../utils/secureAuth';
-import { getCountryFlag } from '../utils/countryUtils';
+import { CountryFlag } from '../utils/countryUtils';
 
 const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
@@ -209,7 +209,7 @@ const Profile = () => {
                         <span className="text-sm flex items-center gap-2">
                           <span>Nationality</span>
                           <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-xs font-semibold border border-blue-200">
-                            <span className="text-base leading-none">{getCountryFlag(user.country_code)}</span>
+                            <CountryFlag countryCode={user.country_code} className="w-4 h-4" />
                             <span>{countryName || user.country_code}</span>
                           </span>
                         </span>
