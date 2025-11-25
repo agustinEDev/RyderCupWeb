@@ -113,6 +113,8 @@ export const useEditProfile = () => {
         if (response.ok) {
           const data = await response.json();
           console.log('🌍 Countries loaded:', data.length, 'countries');
+          console.log('📋 Sample country:', data[0]); // Ver estructura de datos
+          console.log('📋 All countries:', data); // Ver todos los países
           setCountries(data);
         } else {
           console.error('❌ Failed to load countries, status:', response.status);
