@@ -4,7 +4,13 @@
  *
  * Uses Unicode Regional Indicator Symbols to generate flag emojis dynamically
  * for ANY ISO 3166-1 alpha-2 country code (works for all ~195 countries)
+ *
+ * UPDATE (Nov 2025): Added SVG flag support using country-flag-icons
+ * to fix rendering issues in Chrome/Windows
  */
+
+import React from 'react';
+import * as flags from 'country-flag-icons/react/3x2';
 
 /**
  * Converts a country code to its flag emoji
@@ -121,4 +127,45 @@ export const canUseRFEG = (user) => {
   const isSpanish = user.country_code.toUpperCase() === 'ES';
   console.log(isSpanish ? '✅ [canUseRFEG] User is Spanish' : '❌ [canUseRFEG] User is not Spanish:', user.country_code);
   return isSpanish;
+};
+
+/**
+ * Get SVG flag component for a country code
+ * Uses country-flag-icons library for consistent rendering across all browsers
+ * Fixes Chrome/Windows rendering issues with Unicode flag emojis
+ *
+ * @param {string} countryCode - ISO 3166-1 alpha-2 code (e.g., 'ES', 'FR', 'US')
+ * @param {Object} props - Optional props for the SVG (className, style, etc.)
+ * @returns {JSX.Element|null} - React SVG component or null if invalid
+ *
+ * Examples:
+ *   <CountryFlag countryCode="ES" className="w-6 h-6" />
+ *   <CountryFlag countryCode="FR" style={{ width: '24px', height: '24px' }} />
+ */
+export const CountryFlag = ({ countryCode, className = '', style = {} }) => {
+  if (!countryCode || typeof countryCode !== 'string') {
+    return null;
+  }
+
+  const code = countryCode.trim().toUpperCase();
+
+  // Validate: must be exactly 2 letters A-Z
+  if (!/^[A-Z]{2}$/.test(code)) {
+    return null;
+  }
+
+  // Get the flag component from the flags object
+  // The country code becomes the key (e.g., 'ES', 'FR', 'US')
+  const FlagComponent = flags[code];
+
+  if (!FlagComponent) {
+    // If flag doesn't exist, log warning and return null
+    console.warn(`⚠️ SVG flag not found for country code: ${code}`);
+    return null;
+  }
+
+  return React.createElement(FlagComponent, {
+    className,
+    style: { display: 'inline-block', verticalAlign: 'middle', ...style }
+  });
 };
