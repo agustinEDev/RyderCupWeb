@@ -7,6 +7,12 @@ y este proyecto adhiere a [Versionado Semántico](https://semver.org/lang/es/).
 
 ## [Unreleased]
 
+### Added
+- **Sentry Error and Performance Monitoring**: Implemented Sentry.io integration for comprehensive error tracking, performance monitoring, and session replay capabilities.
+  - Configured Sentry DSN, BrowserTracing, and Replay integrations.
+  - Ensured early initialization in `main.jsx` and main `App` component profiling.
+  - Updated dependencies and Content Security Policy to support Sentry communication.
+
 ## [1.5.1] - 2025-11-25
 
 ### Changed
@@ -190,7 +196,7 @@ y este proyecto adhiere a [Versionado Semántico](https://semver.org/lang/es/).
   - Reemplazadas llamadas directas a servicios por casos de uso (`getCompetitionDetailUseCase`, `activateCompetitionUseCase`, etc.).
   - Simplificado el manejo de estado usando solo actualizaciones parciales en transiciones.
   - Mejorada la UI con badges de países que muestran banderas dinámicas y nombres completos.
-- **CompetitionMapper actualizado**:
+  - **CompetitionMapper actualizado**:
   - Método `toDomain()` ahora maneja campos `secondary_country_code` y `tertiary_country_code` del backend.
   - Método `toSimpleDTO()` genera array `countries` con objetos `{code, name, nameEn, nameEs, flag, isMain}` desde el backend.
   - Soporte para fallback: si la API no devuelve nombres, usa códigos ISO.
