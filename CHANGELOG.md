@@ -7,6 +7,15 @@ y este proyecto adhiere a [Versionado Semántico](https://semver.org/lang/es/).
 
 ## [Unreleased]
 
+### Changed
+- **Create Competition UI**:
+  - Reemplazados los radio buttons de "Team Assignment" por un selector desplegable para mejorar la UX.
+  - Reemplazados los radio buttons de "Player Handicap" por un selector desplegable.
+
+### Fixed
+- **Responsive Design in Competition Detail**: Corregido desbordamiento horizontal en la sección "Pending Requests" en la vista de detalle de competición para el creador en dispositivos móviles.
+- **Responsive Design in Create Competition**: Ajustado el ancho de los campos de fecha ("Start Date" y "End Date") en la página de creación de competiciones para evitar que se desborden en pantallas móviles.
+
 ### Added
 - **Multiple Competition Status Filter**: Backend ahora acepta múltiples valores de `status` en el endpoint de listado de competiciones:
   - Modificado parámetro `status_filter` de `Optional[str]` a `Optional[List[str]]` en `list_competitions()`
