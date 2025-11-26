@@ -7,6 +7,8 @@ y este proyecto adhiere a [Versionado Semántico](https://semver.org/lang/es/).
 
 ## [Unreleased]
 
+## [1.6.0] - 2025-11-25
+
 ### Added
 - **Sentry Error and Performance Monitoring**: Implemented Sentry.io integration for comprehensive error tracking, performance monitoring, and session replay capabilities.
   - Configured Sentry DSN, BrowserTracing, and Replay integrations.
@@ -468,7 +470,8 @@ y este proyecto adhiere a [Versionado Semántico](https://semver.org/lang/es/).
 - Configuración de headers de seguridad (X-Content-Type-Options, X-Frame-Options, etc.)
 - Eliminación automática de console.log en builds de producción
 
-[Unreleased]: https://github.com/agustinEDev/RyderCupWeb/compare/v1.5.1...HEAD
+[Unreleased]: https://github.com/agustinEDev/RyderCupWeb/compare/v1.6.0...HEAD
+[1.6.0]: https://github.com/agustinEDev/RyderCupWeb/compare/v1.5.1...v1.6.0
 [1.5.1]: https://github.com/agustinEDev/RyderCupWeb/compare/v1.5.0...v1.5.1
 [1.5.0]: https://github.com/agustinEDev/RyderCupWeb/compare/v1.4.0...v1.5.0
 [1.4.0]: https://github.com/agustinEDev/RyderCupWeb/compare/v1.3.0...v1.4.0
