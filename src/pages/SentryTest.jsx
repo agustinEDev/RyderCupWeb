@@ -18,26 +18,28 @@ const SentryTest = () => {
     try {
       throw new Error('Manual Exception Test');
     } catch (error) {
-      Sentry.captureException(error);
-      console.log('✅ Excepción capturada y enviada a Sentry');
+      console.log('🔍 Error capturado:', error);
+      const eventId = Sentry.captureException(error);
+      console.log('✅ Excepción capturada y enviada a Sentry. Event ID:', eventId);
     }
   };
 
   const testCaptureMessage = () => {
     console.log('📨 Enviando mensaje a Sentry...');
-    Sentry.captureMessage('Test Message - Verificación de Sentry', 'info');
-    console.log('✅ Mensaje enviado a Sentry');
+    const eventId = Sentry.captureMessage('Test Message - Verificación de Sentry', 'info');
+    console.log('✅ Mensaje enviado a Sentry. Event ID:', eventId);
   };
 
   const testWithContext = () => {
     console.log('🏷️ Enviando error con contexto...');
+    let eventId;
     Sentry.withScope((scope) => {
       scope.setTag('test_type', 'context_test');
       scope.setExtra('test_data', { foo: 'bar', timestamp: Date.now() });
       scope.setLevel('warning');
-      Sentry.captureMessage('Test with Context');
+      eventId = Sentry.captureMessage('Test with Context');
     });
-    console.log('✅ Error con contexto enviado a Sentry');
+    console.log('✅ Error con contexto enviado a Sentry. Event ID:', eventId);
   };
 
   const testBreadcrumb = () => {
