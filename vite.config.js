@@ -70,6 +70,24 @@ export default defineConfig({
         drop_console: true, // Remove console.* statements in production
         drop_debugger: true // Remove debugger statements
       }
+    },
+    // Increase chunk size warning limit
+    chunkSizeWarningLimit: 1000, // 1000 KB (default is 500 KB)
+
+    // Manual chunk splitting for better caching and performance
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // React core and router in separate chunk
+          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+
+          // Sentry in separate chunk (large library)
+          'sentry': ['@sentry/react'],
+
+          // UI libraries in separate chunk
+          'ui-vendor': ['react-hot-toast'],
+        }
+      }
     }
   }
 })

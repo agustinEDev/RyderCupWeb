@@ -1,21 +1,23 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation, useNavigationType, createRoutesFromChildren, matchRoutes } from 'react-router-dom';
 import * as Sentry from '@sentry/react';
 import { Toaster } from 'react-hot-toast';
-import Landing from './pages/Landing';
-import Login from './pages/Login';
-import Register from './pages/Register';
-import VerifyEmail from './pages/VerifyEmail';
-import Dashboard from './pages/Dashboard';
-import Profile from './pages/Profile';
-import EditProfile from './pages/EditProfile';
-import Competitions from './pages/Competitions';
-import CreateCompetition from './pages/CreateCompetition';
-import CompetitionDetail from './pages/CompetitionDetail';
-import BrowseCompetitions from './pages/BrowseCompetitions';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import { migrateFromLocalStorage, getUserData } from './utils/secureAuth';
 import { setUserContext } from './utils/sentryHelpers';
+
+// Lazy loading de páginas para reducir bundle inicial
+const Landing = lazy(() => import('./pages/Landing'));
+const Login = lazy(() => import('./pages/Login'));
+const Register = lazy(() => import('./pages/Register'));
+const VerifyEmail = lazy(() => import('./pages/VerifyEmail'));
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const Profile = lazy(() => import('./pages/Profile'));
+const EditProfile = lazy(() => import('./pages/EditProfile'));
+const Competitions = lazy(() => import('./pages/Competitions'));
+const CreateCompetition = lazy(() => import('./pages/CreateCompetition'));
+const CompetitionDetail = lazy(() => import('./pages/CompetitionDetail'));
+const BrowseCompetitions = lazy(() => import('./pages/BrowseCompetitions'));
 
 // ============================================
 // SENTRY ROUTING INSTRUMENTATION
@@ -125,22 +127,35 @@ function App() {
         }}
       />
 
-      <SentryRoutes>
-        {/* Public routes */}
-        <Route path="/" element={<Landing />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        <Route path="/verify-email" element={<VerifyEmail />} />
+      <Suspense fallback={
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          height: '100vh',
+          fontFamily: 'system-ui, sans-serif',
+          color: '#6b7280'
+        }}>
+          Loading...
+        </div>
+      }>
+        <SentryRoutes>
+          {/* Public routes */}
+          <Route path="/" element={<Landing />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/verify-email" element={<VerifyEmail />} />
 
-        {/* Protected routes */}
-        <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-        <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-        <Route path="/profile/edit" element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />
-        <Route path="/competitions" element={<ProtectedRoute><Competitions /></ProtectedRoute>} />
-        <Route path="/competitions/create" element={<ProtectedRoute><CreateCompetition /></ProtectedRoute>} />
-        <Route path="/competitions/:id" element={<ProtectedRoute><CompetitionDetail /></ProtectedRoute>} />
-        <Route path="/browse-competitions" element={<ProtectedRoute><BrowseCompetitions /></ProtectedRoute>} />
-      </SentryRoutes>
+          {/* Protected routes */}
+          <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+          <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+          <Route path="/profile/edit" element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />
+          <Route path="/competitions" element={<ProtectedRoute><Competitions /></ProtectedRoute>} />
+          <Route path="/competitions/create" element={<ProtectedRoute><CreateCompetition /></ProtectedRoute>} />
+          <Route path="/competitions/:id" element={<ProtectedRoute><CompetitionDetail /></ProtectedRoute>} />
+          <Route path="/browse-competitions" element={<ProtectedRoute><BrowseCompetitions /></ProtectedRoute>} />
+        </SentryRoutes>
+      </Suspense>
     </Router>
     </Sentry.ErrorBoundary>
   );
