@@ -7,6 +7,53 @@ y este proyecto adhiere a [Versionado Semántico](https://semver.org/lang/es/).
 
 ## [Unreleased]
 
+## [1.7.0] - 2025-11-26
+
+### Added
+- **Advanced Sentry Configuration**: Comprehensive environment-based Sentry setup with all monitoring parameters configured
+  - Created `src/utils/sentryHelpers.js` with 15+ utility functions for user context, tags, breadcrumbs, and performance tracking
+  - Created `RENDER_SETUP.md` with step-by-step guide for configuring environment variables in Render
+  - Created `SENTRY_IMPLEMENTATION_SUMMARY.md` with complete implementation documentation and best practices
+  - Added 10 new environment variables for granular Sentry control (DSN, environment, debug, sample rates, etc.)
+  - Implemented Browser Tracing Integration with Web Vitals tracking (LCP, FID, CLS, INP)
+  - Implemented Replay Integration with privacy settings (mask `.sensitive`, block `.private`)
+  - Implemented optional Feedback Integration widget for user reports
+  - Added ErrorBoundary with elegant fallback UI and "Try Again" recovery option
+  - Added routing instrumentation with `SentryRoutes` for automatic navigation tracking
+  - Added automatic user context establishment on app mount
+  - Configured environment-specific sample rates (100% dev, 10-5% prod)
+  - Implemented sensitive data filtering (passwords, tokens, cookies)
+  - Added error filtering (browser extensions, timeouts, fast transactions)
+  - Added URL sanitization and privacy controls
+  - Configured auto session tracking and stack trace attachment
+
+### Changed
+- **Sentry Configuration Rewrite**: Complete rewrite of `src/infrastructure/sentry.ts` (250+ lines)
+  - Migrated from hardcoded values to environment-based configuration
+  - Added validation (doesn't initialize without DSN)
+  - Added `beforeSend`, `beforeSendTransaction`, and `beforeBreadcrumb` hooks
+  - Added comprehensive initialization logs with ASCII table
+  - Configured automatic release tracking from package.json version
+- **App.jsx Enhancement**: Integrated Sentry ErrorBoundary and routing instrumentation
+  - Wrapped app with `Sentry.ErrorBoundary` for React error catching
+  - Added automatic user context setup on mount
+  - Created `SentryRoutes` with `withSentryReactRouterV6Routing` for navigation tracking
+  - Maintained existing `Sentry.withProfiler` for React component profiling
+- **Environment Variables**: Updated `.env.example` with 10 new Sentry variables and comprehensive documentation
+
+### Security
+- Automatic filtering of sensitive data (passwords, access_token, refresh_token)
+- Automatic removal of sensitive headers (Authorization, Cookie)
+- URL sanitization (tokens replaced with [REDACTED])
+- Browser extension errors ignored to prevent false positives
+- Privacy-first replay configuration with element masking
+
+### Documentation
+- Complete Sentry section added to CLAUDE.md (260+ lines)
+- Render setup guide with troubleshooting (RENDER_SETUP.md, 300+ lines)
+- Implementation summary with KPIs and best practices (SENTRY_IMPLEMENTATION_SUMMARY.md, 800+ lines)
+- All helper functions documented with JSDoc comments and usage examples
+
 ## [1.6.0] - 2025-11-25
 
 ### Added
