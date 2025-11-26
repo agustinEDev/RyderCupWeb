@@ -13,6 +13,7 @@ import Competitions from './pages/Competitions';
 import CreateCompetition from './pages/CreateCompetition';
 import CompetitionDetail from './pages/CompetitionDetail';
 import BrowseCompetitions from './pages/BrowseCompetitions';
+import SentryTest from './pages/SentryTest';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import { migrateFromLocalStorage, getUserData } from './utils/secureAuth';
 import { setUserContext } from './utils/sentryHelpers';
@@ -140,6 +141,9 @@ function App() {
         <Route path="/competitions/create" element={<ProtectedRoute><CreateCompetition /></ProtectedRoute>} />
         <Route path="/competitions/:id" element={<ProtectedRoute><CompetitionDetail /></ProtectedRoute>} />
         <Route path="/browse-competitions" element={<ProtectedRoute><BrowseCompetitions /></ProtectedRoute>} />
+
+        {/* Debug/Testing route (remove in production) */}
+        <Route path="/sentry-test" element={<ProtectedRoute><SentryTest /></ProtectedRoute>} />
       </SentryRoutes>
     </Router>
     </Sentry.ErrorBoundary>
