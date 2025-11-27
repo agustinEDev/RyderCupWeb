@@ -1,476 +1,320 @@
-# Roadmap - Evolución de la Arquitectura del Frontend
+# 🗺️ Roadmap - RyderCupFriends Frontend
 
-Este documento describe los próximos pasos y las tareas planificadas para continuar la refactorización y alineación del frontend con los principios de Clean Architecture y Domain-Driven Design (DDD).
-
----
-
-## 🎯 Módulo de Usuario y Autenticación (User & Auth Bounded Context)
-
-### Tareas de Refactorización (Clean Architecture)
-
-1.  **Refactorizar `handleUpdateSecurity` en `EditProfile.jsx`:**
-    *   **Estado:** Completado
-    *   **Objetivo:** Extraer la lógica de actualización de seguridad (email/contraseña) a su propio caso de uso.
-    *   **Pasos:**
-        1.  Crear `UpdateUserSecurityUseCase.js`.
-        2.  Ajustar `IUserRepository` para incluir `updateSecurity(userId, securityData)`.
-        3.  Implementar `updateSecurity` en `ApiUserRepository`.
-        4.  Refactorizar el `handleUpdateSecurity` en `EditProfile.jsx`.
-
-2.  **Refactorizar `handleUpdateHandicapManually` y `handleUpdateHandicapRFEG`:**
-    *   **Estado:** Completado
-    *   **Objetivo:** Crear casos de uso específicos para la lógica de actualización de hándicap.
-    *   **Pasos:**
-        1.  Crear `UpdateManualHandicapUseCase.js` y `UpdateRfegHandicapUseCase.js`.
-        2.  Crear una nueva interfaz `IHandicapRepository` en el dominio.
-        3.  Crear `ApiHandicapRepository` en la infraestructura.
-        4.  Refactorizar los `handle...` en `EditProfile.jsx`.
-
-3.  **Refactorizar Flujo de Autenticación (Login/Register):**
-    *   **Estado:** Completado
-    *   **Objetivo:** Aplicar Clean Architecture a las páginas de Login y Registro.
-    *   **Pasos:**
-        1.  Crear `LoginUseCase.js` y `RegisterUseCase.js`.
-        2.  Crear `IAuthRepository` en el dominio.
-        3.  Crear `ApiAuthRepository` en la infraestructura.
-        4.  Refactorizar `Login.jsx` y `Register.jsx` para que usen los casos de uso, simplificando los componentes.
-
-4.  **Refactorizar Verificación de Email con Auto-Login:**
-    *   **Estado:** ✅ Completado (23 Nov 2025)
-    *   **Objetivo:** Mover la lógica de `VerifyEmail.jsx` a un caso de uso e implementar autenticación automática.
-    *   **Pasos:**
-        1.  ✅ Crear `VerifyEmailUseCase.js`.
-        2.  ✅ Añadir el método `verifyEmail(token)` a `IAuthRepository`.
-        3.  ✅ Implementar el método en `ApiAuthRepository` para retornar `{ user, token }`.
-        4.  ✅ Refactorizar `VerifyEmail.jsx` para usar `setAuthToken()` de `secureAuth`.
-        5.  ✅ Coordinar con backend para que `/api/v1/auth/verify-email` devuelva JWT token.
-    *   **Mejora:** Los usuarios ahora son autenticados automáticamente tras verificar email, mejorando la UX (no requieren login manual).
-
-### Tareas de Mejora (DDD y UI)
-
-1.  **Introducir "Value Objects" (DDD):**
-    *   **Estado:** Completado
-    *   **Objetivo:** Mejorar la robustez del dominio con `ValueObjects`.
-    *   **Pasos:**
-        1.  Crear `Email.js` y `Password.js` como Value Objects.
-        2.  Actualizar la entidad `User` y los Casos de Uso para que los utilicen.
-
-2.  **Crear Hook Personalizado `useEditProfile`:**
-    *   **Estado:** Completado
-    *   **Objetivo:** Simplificar el componente `EditProfile.jsx`.
-    *   **Pasos:**
-        1.  Crear `useEditProfile.js` que encapsule `useState`, `useEffect` y los `handle...`.
-        2.  Hacer que `EditProfile.jsx` consuma este hook, convirtiéndolo en un componente de presentación casi puro.
-
-3.  **Sistema de Nacionalidad del Usuario:**
-    *   **Estado:** ✅ Completado (23 Nov 2025)
-    *   **Objetivo:** Registrar la nacionalidad del usuario para condicionar la funcionalidad de actualización de hándicap desde RFEG.
-    *   **Descripción:** Solo usuarios españoles pueden actualizar su hándicap desde la RFEG (Real Federación Española de Golf). Los usuarios de otras nacionalidades solo podrán usar actualización manual de hándicap.
-    *   **Regla de Negocio Clave:**
-        - Campo `country_code` **OPCIONAL** en registro ✅
-        - Si el usuario NO selecciona país → puede registrarse sin problemas ✅
-        - Si el usuario selecciona país `ES` (España) → Habilitar opción RFEG en perfil ✅
-        - Si el usuario selecciona otro país → Solo actualización manual de hándicap ✅
-    *   **Dependencias Backend:**
-        - ✅ **Completado:** Campo `country_code` agregado al modelo `User` (nullable/optional)
-        - ✅ **Completado:** Campo `country_code` **OPCIONAL** en registro (`POST /api/v1/auth/register`)
-        - ✅ **Completado:** `country_code` incluido en respuestas de usuario (puede ser `null`)
-        - ✅ **Disponible:** Endpoint `GET /api/v1/countries?language=en` para listar países
-    *   **Implementación - Frontend:**
-        1.  **Domain Layer:** ✅
-            - Reutilizado `CountryCode.js` Value Object existente (del módulo Competition)
-            - Actualizada entidad `User` para incluir `countryCode: CountryCode | null`
-        2.  **Application Layer:** ✅
-            - `RegisterUseCase` acepta `countryCode` opcional
-            - `UpdateRfegHandicapUseCase` valida nacionalidad española (`country_code === 'ES'`)
-        3.  **Infrastructure Layer:** ✅
-            - `ApiAuthRepository.register()` envía `country_code` al backend (null si no se especifica)
-            - `ApiUserRepository.getById()` usa endpoint correcto `/api/v1/auth/current-user`
-        4.  **Presentation Layer:** ✅
-            - `Register.jsx`: Selector de países OPCIONAL con búsqueda, banderas y nombres en inglés
-            - `Profile.jsx`: Visualización de nacionalidad con badge y auto-sync con backend
-            - `EditProfile.jsx`: Botón RFEG condicional basado en nacionalidad
-        5.  **Utils Layer:** ✅
-            - Helper `canUseRFEG()` en `countryUtils.js` para verificar elegibilidad RFEG
-        6.  **Tests:** ✅
-            - 66 tests creados y pasando (100% pass rate)
-            - Cobertura completa de Domain, Application, Infrastructure y Utils layers
-              * Usuario español (`country_code: 'ES'`) → ✅ Permitir
-              * Usuario no español (`country_code: 'FR'`) → ❌ Rechazar
-              * Usuario sin país (`country_code: null`) → ❌ Rechazar
-            - Test UI condicional en `EditProfile`
-    *   **Estructura del Request de Registro:**
-        ```javascript
-        // Opción 1: Usuario selecciona país
-        POST /api/v1/auth/register
-        {
-          "email": "juan@example.com",
-          "password": "SecurePass123!",
-          "first_name": "Juan",
-          "last_name": "García",
-          "country_code": "ES"  // Opcional
-        }
-
-        // Opción 2: Usuario NO selecciona país
-        POST /api/v1/auth/register
-        {
-          "email": "john@example.com",
-          "password": "SecurePass123!",
-          "first_name": "John",
-          "last_name": "Doe"
-          // country_code no enviado o null
-        }
-        ```
-    *   **Respuesta de Usuario:**
-        ```javascript
-        // Usuario español
-        {
-          "id": "uuid",
-          "email": "juan@example.com",
-          "first_name": "Juan",
-          "last_name": "García",
-          "country_code": "ES",  // Puede ser null
-          "handicap": 15.5,
-          "email_verified": true
-        }
-
-        // Usuario sin país especificado
-        {
-          "id": "uuid",
-          "email": "john@example.com",
-          "first_name": "John",
-          "last_name": "Doe",
-          "country_code": null,  // No especificado
-          "handicap": 12.0,
-          "email_verified": true
-        }
-        ```
-    *   **Mensajes de Usuario:**
-        - Registro: "Nationality (Optional)" - "Select Spain to enable RFEG handicap updates"
-        - Perfil sin país: "Nationality: Not specified"
-        - Perfil con país: "Nationality: 🇪🇸 Spain"
-        - Error RFEG (sin país): "RFEG updates require Spanish nationality. Update your profile to continue."
-        - Error RFEG (otro país): "RFEG updates are only available for Spanish players."
-    *   **Mejoras Futuras:**
-        - Permitir actualizar nacionalidad desde el perfil
-        - Integrar con otras federaciones nacionales
-        - Sugerir país basado en IP/localización
+> **Versión:** 1.7.0
+> **Última actualización:** 27 Nov 2025
+> **Estado general:** ✅ Producción
 
 ---
 
-## 🏆 Módulo de Competiciones (Competition Bounded Context)
+## 📊 Resumen Ejecutivo
 
-### Tareas de Refactorización (Clean Architecture)
+### ✅ Completado (v1.0.0 - v1.7.0)
 
-1.  **Definir Entidades y Repositorios del Dominio de Competición:**
-    *   **Estado:** Completado
-    *   **Objetivo:** Crear las bases del dominio para las competiciones.
-    *   **Pasos:**
-        1.  Crear la entidad `Competition.js` en `src/domain/entities`.
-        2.  Crear la entidad `Enrollment.js` en `src/domain/entities`.
-        3.  Crear la interfaz `ICompetitionRepository` en `src/domain/repositories`.
+| Componente | Estado | Descripción |
+|-----------|--------|-------------|
+| **Clean Architecture** | ✅ 100% | Domain, Application, Infrastructure, Presentation |
+| **Testing** | ✅ 419 tests | 35 archivos, ~5s ejecución, cobertura 90%+ |
+| **Autenticación** | ✅ Completo | Login, Register, Email Verification, JWT |
+| **Competiciones** | ✅ Completo | CRUD, Estados, Transiciones, Browse |
+| **Enrollments** | ✅ 90% | Domain + Application completo, UI pendiente |
+| **Handicaps** | ✅ Completo | Manual + RFEG (validación por país) |
+| **Sentry** | ✅ Operacional | Error tracking, Performance, Session Replay |
+| **Performance** | ✅ Optimizado | Code splitting, Lazy loading (-95% bundle) |
 
-2.  **Refactorizar Creación de Competiciones:**
-    *   **Estado:** Completado ✅
-    *   **Objetivo:** Mover la lógica de `CreateCompetition.jsx` a un caso de uso siguiendo Clean Architecture y DDD.
-    *   **Pasos:**
-        1.  ✅ Crear `CreateCompetitionUseCase.js`.
-        2.  ✅ Implementar `save()` en `ICompetitionRepository` y en `ApiCompetitionRepository`.
-        3.  ✅ Crear `CompetitionMapper` para mapear entre API DTOs y entidades de dominio.
-        4.  ✅ Implementar patrón DTO para la UI (toSimpleDTO).
-        5.  ✅ Refactorizar `CreateCompetition.jsx` para que use el caso de uso.
-        6.  ✅ Implementar Anti-Corruption Layer mediante el mapper.
-        7.  ✅ Corregir bug de JSX faltante en `CreateCompetition.jsx`.
-        8.  ✅ Corregir filtrado de países adyacentes.
+### 📈 Métricas Clave
 
-3.  **Refactorizar Listado de Competiciones:**
-    *   **Estado:** Completado ✅
-    *   **Objetivo:** Mover la lógica de `Competitions.jsx` a un caso de uso siguiendo Clean Architecture y DDD.
-    *   **Pasos:**
-        1.  ✅ Crear `ListUserCompetitionsUseCase.js`.
-        2.  ✅ Añadir `findByCreator()` a `ICompetitionRepository`.
-        3.  ✅ Implementar `findByCreator()` en `ApiCompetitionRepository` usando `CompetitionMapper`.
-        4.  ✅ Refactorizar `Competitions.jsx` para que use el caso de uso.
-        5.  ✅ Crear tests unitarios completos (5 test cases).
-        6.  ✅ Integrar en composition root.
-
-4.  **Refactorizar Detalle de Competición y Gestión de Estado:**
-    *   **Estado:** Completado ✅
-    *   **Objetivo:** Mover la lógica de `CompetitionDetail.jsx` a casos de uso.
-    *   **Pasos:**
-        1.  ✅ Crear `GetCompetitionDetailUseCase.js`.
-        2.  ✅ Añadir `findById()` a `ICompetitionRepository`.
-        3.  ✅ Implementar `findById()` en `ApiCompetitionRepository`.
-        4.  ✅ Crear casos de uso para cada transición de estado:
-            - `ActivateCompetitionUseCase` (DRAFT → ACTIVE)
-            - `CloseEnrollmentsUseCase` (ACTIVE → CLOSED)
-            - `StartCompetitionUseCase` (CLOSED → IN_PROGRESS)
-            - `CompleteCompetitionUseCase` (IN_PROGRESS → COMPLETED)
-            - `CancelCompetitionUseCase` (Any → CANCELLED)
-        5.  ✅ Integrar casos de uso en composition root.
-        6.  ✅ Refactorizar `CompetitionDetail.jsx` para que use los casos de uso.
-        7.  ✅ Implementar soporte de países adyacentes con badges y banderas dinámicas.
-        8.  ✅ Actualizar `CompetitionMapper` para manejar campo `countries` del backend.
-
-5.  **Refactorizar Flujo de Inscripción (Enrollment):**
-    *   **Estado:** 🔄 EN PROGRESO (90% Completado - 24 Nov 2025)
-    *   **Objetivo:** Implementar sistema completo de inscripciones con Clean Architecture y DDD.
-    *   **Estado Actual (24 Nov 2025):**
-        - ✅ **Domain Layer completado** - Value Objects, Entity, Repository Interface
-        - ✅ **Infrastructure Layer completado** - Mapper, Repository con 13 métodos
-        - ✅ **Application Layer completado** - 8 casos de uso implementados
-        - ✅ **Composition Root completado** - Inyección de dependencias configurada
-        - ✅ **Testing Domain Layer completado** - 83 tests pasando (100% coverage)
-        - ⚠️ **Servicios legacy siguen existiendo** en `src/services/competitions.js` (para compatibilidad temporal)
-        - ⏳ **Presentation Layer pendiente** - Las páginas aún llaman a servicios directamente
-    *   **Pasos:**
-        1.  **Domain Layer:** ✅ **COMPLETADO**
-            - ✅ `EnrollmentStatus.js` (287 líneas) - Value Object con 6 estados y validación de transiciones
-            - ✅ `EnrollmentId.js` (75 líneas) - Value Object con UUID v4
-            - ✅ `Enrollment.js` (541 líneas) - Entidad con factory methods (`request()`, `invite()`, `directEnroll()`)
-            - ✅ `IEnrollmentRepository.js` (187 líneas) - Interfaz con 13 métodos
-        2.  **Infrastructure Layer:** ✅ **COMPLETADO**
-            - ✅ `EnrollmentMapper.js` (164 líneas) - Anti-Corruption Layer (API ↔ Domain ↔ UI)
-            - ✅ `ApiEnrollmentRepository.js` (385 líneas) - Implementación completa con fetch API
-        3.  **Application Layer - Casos de Uso:** ✅ **COMPLETADO**
-            - ✅ `RequestEnrollmentUseCase.js` (2.4 KB) - Solicitar inscripción
-            - ✅ `DirectEnrollUseCase.js` (3.5 KB) - Inscripción directa por creador
-            - ✅ `ApproveEnrollmentUseCase.js` (2.3 KB) - Aprobar solicitud
-            - ✅ `RejectEnrollmentUseCase.js` (2.1 KB) - Rechazar solicitud
-            - ✅ `CancelEnrollmentUseCase.js` (2.3 KB) - Cancelar solicitud (usuario)
-            - ✅ `WithdrawEnrollmentUseCase.js` (2.3 KB) - Retirarse de competición
-            - ✅ `ListEnrollmentsUseCase.js` (2.0 KB) - Listar inscripciones
-            - ✅ `SetCustomHandicapUseCase.js` (2.9 KB) - Establecer handicap personalizado
-        4.  **Testing Domain Layer:** ✅ **COMPLETADO** (24 Nov 2025)
-            - ✅ `EnrollmentId.test.js` (109 líneas) - 11 tests: factory methods, validación UUID, equals, immutability
-            - ✅ `EnrollmentStatus.test.js` (254 líneas) - 32 tests: 6 estados, transiciones válidas/inválidas, state checkers
-            - ✅ `Enrollment.test.js` (583 líneas) - 40 tests: factory methods, transiciones, handicaps, equipos, immutability
-            - ✅ **Total:** 83 tests pasando en 16ms, build compilado exitosamente
-            - ⏳ **Pendiente:** Tests de casos de uso (8 archivos)
-        5.  **Integration:** ✅ **COMPLETADO**
-            - ✅ Integrado en `composition/index.js` (8 casos de uso exportados)
-            - ✅ Inyección de dependencias configurada (`apiEnrollmentRepository` con authTokenProvider)
-            - ✅ Build compilado exitosamente sin errores
-        6.  **Presentation Layer:** ⏳ **PENDIENTE**
-            - ❌ Refactorizar `CompetitionDetail.jsx` para usar casos de uso
-            - ❌ Refactorizar `BrowseCompetitions.jsx` para usar `requestEnrollmentUseCase`
-            - ❌ Eliminar llamadas directas a servicios legacy
-            - **Estimación:** 1-2 horas
-    *   **Tiempo Invertido vs Estimado:**
-        - ✅ Domain Layer: 2 horas (estimado 2-3h)
-        - ✅ Infrastructure Layer: 1.5 horas (estimado 2-3h)
-        - ✅ Application Layer: 2 horas (estimado 4-6h)
-        - ✅ Composition Root: 30 minutos (estimado 30m)
-        - ✅ Testing Domain Layer: 2 horas (estimado 4-6h, optimizado con patrones reutilizables)
-        - ⏳ Testing Use Cases: 0 horas (estimado 2-3h) - **No prioritario**: Los use cases son simples y siguen patrones establecidos
-        - ⏳ Presentation Layer: 0 horas (estimado 1-2h)
-        - **TOTAL: 8/17 horas completadas (47% del tiempo, 90% de funcionalidad core)**
-    *   **Estado de Testing (24 Nov 2025):**
-        - ✅ **419 tests pasando** en **35 archivos**
-        - ✅ Domain Layer: 100% cobertura (Value Objects + Entities)
-        - ✅ Application Layer: 90% cobertura (Use Cases principales)
-        - ✅ Custom Hooks: 100% cobertura (useEditProfile)
-        - ✅ Utils: 100% cobertura (countryUtils, validation)
-        - ⏳ Enrollment Use Cases: 0% cobertura (no prioritario - funcionalidad estable)
-
-6.  **Página "Browse Competitions" (Explorar competiciones públicas):**
-    *   **Estado:** ✅ Completado (24 Nov 2025)
-    *   **Objetivo:** Permitir a los usuarios buscar y explorar competiciones públicas.
-    *   **Descripción:** Nueva página completa con dos secciones independientes: "Join a Competition" (ACTIVE) para solicitar inscripción, y "Explore Competitions" (CLOSED, IN_PROGRESS, COMPLETED) para visualización.
-    *   **Implementación:**
-        1.  ✅ Creada página `/browse-competitions` con ruta protegida
-        2.  ✅ Creado `BrowseCompetitions.jsx` con:
-            - **Sección "Join a Competition":**
-              * Lista de competiciones ACTIVE
-              * Excluye competiciones propias (auto-enrolled al crear)
-              * Barra de búsqueda independiente (nombre o creador)
-              * Cards con botón "Request to Join"
-              * Optimistic UI (card desaparece al solicitar)
-              * ✅ Muestra nombre completo del creador
-            - **Sección "Explore Competitions":**
-              * Lista de competiciones CLOSED, IN_PROGRESS, COMPLETED
-              * Incluye competiciones propias y ajenas (modo lectura)
-              * Barra de búsqueda independiente (nombre o creador)
-              * Cards con botón "View Details"
-              * ✅ Soporte para múltiples estados desde backend
-        3.  ✅ Implementado método `findPublic(filters)` en `ICompetitionRepository` y `ApiCompetitionRepository`
-        4.  ✅ Creados dos casos de uso dedicados:
-            - `BrowseJoinableCompetitionsUseCase`: Filtra ACTIVE + excluye propias
-            - `BrowseExploreCompetitionsUseCase`: Filtra [CLOSED, IN_PROGRESS, COMPLETED] + incluye todas
-        5.  ✅ Agregado link en `HeaderAuth` (desktop + mobile) y `Dashboard`
-        6.  ✅ Implementada detección de origen en `CompetitionDetail`:
-            - "Back to Browse" si viene de `/browse-competitions`
-            - "Back to Competitions" si viene de `/competitions`
-        7.  ✅ Creados 19 tests unitarios (100% pass rate)
-        8.  ✅ **Mejoras de UX/UI (24 Nov 2025):**
-            - Agregado campo `creator` al `CompetitionMapper` con conversión snake_case → camelCase
-            - Tarjetas muestran nombre completo del creador: "Created by: [Nombre] [Apellido]"
-            - Handicap del creador eliminado para mantener tarjetas compactas
-            - Backend acepta múltiples valores de `status` para "Explore Competitions"
-            - Corregido filtro que impedía mostrar competiciones IN_PROGRESS
-    *   **Casos de Uso Creados:**
-        - `BrowseJoinableCompetitionsUseCase.js`
-        - `BrowseExploreCompetitionsUseCase.js`
-    *   **Tests:**
-        - ✅ `BrowseJoinableCompetitionsUseCase.test.js` (9 tests)
-        - ✅ `BrowseExploreCompetitionsUseCase.test.js` (10 tests)
-    *   **Mejoras Futuras:**
-        - Filtros avanzados (fecha, país, handicap type)
-        - Paginación server-side
-        - Ordenamiento (fecha, inscritos, etc.)
-        - Badge de enrollment status si ya está inscrito
-        - Indicador visual si competición está llena (enrolledCount >= maxPlayers)
-
-7.  **Sistema de Gestión de Enrollments para Creadores:**
-    *   **Estado:** ✅ Completado (24 Nov 2025)
-    *   **Objetivo:** Mejorar la experiencia de gestión de inscripciones para creadores de competiciones.
-    *   **Descripción:** Reorganización completa de la interfaz de enrollments en CompetitionDetail con separación por estado y visualización mejorada de jugadores aprobados.
-    *   **Implementación:**
-        1.  ✅ **Badge de Solicitudes Pendientes en "My Competitions":**
-            - Badge naranja con contador de enrollments en estado REQUESTED
-            - Aparece solo cuando el usuario es creador y hay solicitudes pendientes
-            - Incluye animación de pulso para llamar la atención
-            - Backend calcula `pending_enrollments_count` usando `count_pending()` del repositorio
-            - Frontend mapper agregado campo `pending_enrollments_count` al DTO
-        2.  ✅ **Sección "Approved Players" en CompetitionDetail:**
-            - Grid de 2 columnas mostrando jugadores aprobados
-            - Muestra: Nombre del jugador, Handicap (HCP: X.X), Equipo asignado
-            - Fondo verde claro para distinguir estado aprobado
-            - Ordenación inteligente: Primero por equipo, luego por handicap (menor a mayor)
-        3.  ✅ **Sección "Pending Requests" en CompetitionDetail:**
-            - Lista dedicada para solicitudes con estado REQUESTED
-            - Fondo naranja para destacar acciones pendientes
-            - Botones de Approve/Reject directamente visibles
-            - Muestra nombre, email y handicap del solicitante
-        4.  ✅ **Sección "Rejected Enrollments" (Colapsable):**
-            - Implementada con elemento `<details>` para ahorrar espacio
-            - Solo aparece si hay enrollments rechazados
-            - Lista simple con nombre y estado
-        5.  ✅ **Dashboard: Contador de Torneos Sincronizado:**
-            - Cambió de usar `getCompetitions()` a `listUserCompetitionsUseCase`
-            - Garantiza consistencia con "My Competitions"
-            - Cuenta solo competiciones del usuario (creadas O inscritas)
-        6.  ✅ **Filtrado Inteligente de Competiciones Rechazadas:**
-            - Se mantienen en "My Competitions" si la competición está ACTIVE
-            - Se ocultan automáticamente si está en CLOSED, IN_PROGRESS, COMPLETED o CANCELLED
-            - Permite al usuario ver rechazos mientras aún hay posibilidad de cambio
-            - Implementado en backend `_get_user_competitions()` con validación de `EnrollmentStatus.REJECTED`
-    *   **Archivos Modificados:**
-        - **Backend:**
-          * `competition_routes.py`: Agregado import `EnrollmentStatus`, modificado `_get_user_competitions()`
-        - **Frontend:**
-          * `CompetitionDetail.jsx`: Reorganización completa de sección de enrollments (3 subsecciones)
-          * `Competitions.jsx`: Agregado badge de pending enrollments
-          * `CompetitionMapper.js`: Agregado mapeo de `pending_enrollments_count`
-          * `Dashboard.jsx`: Cambiado a usar `listUserCompetitionsUseCase`
-    *   **Beneficios para el Usuario:**
-        - Vista clara y organizada de jugadores aprobados con sus handicaps
-        - Identificación inmediata de solicitudes pendientes (badge + contador)
-        - Separación visual por estados para mejor toma de decisiones
-        - Contador de torneos consistente entre Dashboard y My Competitions
-        - Competiciones rechazadas desaparecen automáticamente cuando ya no son relevantes
+- **419 tests pasando** (100% pass rate)
+- **Bundle inicial:** 47 KB (reducido de 978 KB)
+- **Páginas:** 11 rutas (5 públicas, 6 protegidas)
+- **Cobertura de tests:** Domain 100%, Application 90%, Utils 100%
 
 ---
 
-## 👤 Módulo de Perfil de Usuario (User Profile)
+## 🔐 SEGURIDAD - Mejoras Prioritarias
 
-### Tareas de Mejora de UI/UX
+### 🔴 Prioridad CRÍTICA
 
-1.  **Mejorar Página "My Profile":**
-    *   **Estado:** Pendiente
-    *   **Objetivo:** Simplificar y mejorar la presentación de información del perfil.
-    *   **Pasos:**
-        1.  Mover campo `Last Updated` a la tarjeta principal del perfil (ProfileCard)
-        2.  Eliminar tarjeta redundante "Account Information"
-        3.  Mejorar jerarquía visual de la información
-    *   **Tiempo Estimado:** 10-15 minutos
+#### 1. Migrar a httpOnly Cookies (Tokens)
+**Problema Actual:**
+```javascript
+// ❌ VULNERABLE: Tokens en sessionStorage
+sessionStorage.setItem(TOKEN_KEY, token);
+```
 
-2.  **Sistema de Foto de Perfil (Avatar):**
-    *   **Estado:** Bloqueado (requiere backend)
-    *   **Objetivo:** Permitir a los usuarios personalizar su foto de perfil.
-    *   **Descripción:** Sistema completo de gestión de avatares con galería predefinida, upload de archivos y captura de cámara.
-    *   **Dependencias Backend:**
-        - ⚠️ **Crítico:** Agregar campo `avatar_url` al modelo `User`
-        - ⚠️ **Crítico:** Crear endpoint `PUT /api/v1/users/avatar` (multipart/form-data)
-        - ⚠️ **Crítico:** Crear endpoint `DELETE /api/v1/users/avatar`
-        - ⚠️ **Crítico:** Configurar almacenamiento (S3, Cloudinary, o local)
-        - Validaciones: tipo de archivo (JPG, PNG, WEBP), tamaño máximo (5MB)
-        - Redimensionamiento automático a 200x200px
-    *   **Pasos - Fase 1 (Temporal - Solo Frontend):**
-        1.  Crear galería de imágenes predefinidas (golf-themed) en `/public/avatars/`
-        2.  Guardar selección en `localStorage` como `user_avatar_url`
-        3.  Mostrar avatar en Dashboard, Header, Profile
-        4.  ⚠️ **Limitación:** No persiste en backend (se pierde al cambiar de dispositivo)
-    *   **Pasos - Fase 2 (Implementación Real - Requiere Backend):**
-        1.  Crear `UploadAvatarUseCase.js` en Application Layer
-        2.  Agregar método `uploadAvatar(file)` a `IUserRepository`
-        3.  Implementar en `ApiUserRepository` con `FormData` y `multipart/form-data`
-        4.  Crear componente `AvatarUploader.jsx` con:
-            - Galería predefinida (grid de imágenes)
-            - Upload desde archivo (input type="file")
-            - Captura de cámara (MediaDevices API)
-            - Preview antes de subir
-            - Crop/resize opcional
-        5.  Integrar en página `/profile/edit`
-        6.  Actualizar `getUserData()` para incluir `avatar_url`
-        7.  Mostrar avatar en todos los componentes relevantes
-    *   **Casos de Uso Nuevos:**
-        - `UploadAvatarUseCase.js`
-        - `DeleteAvatarUseCase.js`
-    *   **Testing:**
-        - Tests de casos de uso
-        - Tests de componente `AvatarUploader`
-        - Validación de tipos de archivo
-        - Manejo de errores (archivo muy grande, tipo inválido, etc.)
+**Solución:**
+- Backend debe enviar tokens en `Set-Cookie` header
+- Cookies con flags: `httponly`, `secure`, `samesite=lax`
+- Frontend eliminar manejo de tokens (automático via cookies)
+
+**Archivos a Modificar:**
+- `src/utils/secureAuth.js` - Eliminar setAuthToken/getAuthToken
+- `src/infrastructure/auth/ApiAuthRepository.js` - Cambiar a `credentials: 'include'`
+- `src/infrastructure/user/ApiUserRepository.js` - Cambiar a `credentials: 'include'`
+
+**Backend Requerido:**
+```python
+# FastAPI - Set httpOnly cookie
+response.set_cookie(
+    key="access_token",
+    value=token,
+    httponly=True,  # ✅ No accesible desde JavaScript
+    secure=True,    # ✅ Solo HTTPS
+    samesite="lax", # ✅ Protección CSRF básica
+    max_age=3600
+)
+```
+
+**Impacto:** Elimina riesgo XSS para robo de tokens
 
 ---
 
-## 🛠️ Tareas Transversales (Cross-Cutting Concerns)
+#### 2. Implementar CSRF Tokens
+**Problema Actual:**
+- No hay validación CSRF en endpoints críticos
+- Solo CORS como protección parcial
 
-1.  **Implementar un Sistema de Pruebas Unitarias:**
-    *   **Estado:** Completado
-    *   **Objetivo:** Asegurar la calidad y fiabilidad del código de negocio y aplicación.
-    *   **Pasos:**
-        1.  Configurar Jest o Vitest.
-        2.  Escribir tests unitarios para `ValueObjects`.
-        3.  Escribir tests unitarios para Casos de Uso con repositorios "mockeados".
+**Solución:**
+```python
+# Backend - Generar token CSRF
+from fastapi_csrf_protect import CsrfProtect
 
-2.  **Definir un Patrón para la Gestión de Errores:**
-    *   **Estado:** Pendiente
-    *   **Objetivo:** Estandarizar cómo los errores de la API se propagan y se presentan al usuario.
-    *   **Pasos:**
-        1.  Crear clases de error personalizadas en el dominio (ej. `UserNotFoundError`, `ValidationError`).
-        2.  Hacer que los repositorios y casos de uso lancen estos errores personalizados.
-        3.  Crear un "manejador de errores" global en la UI que traduzca estos errores a mensajes amigables para el usuario.
+@app.post("/api/v1/competitions/")
+async def create_competition(
+    csrf_protect: CsrfProtect = Depends()
+):
+    csrf_protect.validate_csrf(request)
+    # ...
+```
+
+```javascript
+// Frontend - Incluir token en requests
+fetch(url, {
+    headers: {
+        'X-CSRF-Token': getCsrfToken()  // Desde cookie o meta tag
+    }
+})
+```
+
+**Archivos a Crear/Modificar:**
+- `src/utils/csrf.js` - Helper para obtener CSRF token
+- Todos los repositories - Agregar header CSRF
+
+**Impacto:** Protección contra ataques CSRF
 
 ---
 
-## 📊 Resumen de Estado del Proyecto (24 Nov 2025)
+### 🟡 Prioridad ALTA
 
-### Testing
-- ✅ **419 tests pasando** en **35 archivos**
-- ✅ **Tiempo de ejecución:** ~5 segundos
-- ✅ **Cobertura por capa:**
-  - Domain Layer: 100% (Value Objects + Entities)
-  - Application Layer: 90% (Use Cases críticos)
-  - Custom Hooks: 100%
-  - Utils: 100%
+#### 3. Mejorar Content Security Policy
+**Problema Actual:**
+```html
+<!-- ⚠️ 'unsafe-inline' reduce protección XSS -->
+script-src 'self' 'unsafe-inline';
+style-src 'self' 'unsafe-inline';
+```
 
-### Arquitectura
-- ✅ Clean Architecture implementada
-- ✅ DDD (Domain-Driven Design) aplicado
-- ✅ Repository Pattern en todos los módulos
-- ✅ Use Cases para toda la lógica de negocio
-- ✅ Anti-Corruption Layer (Mappers)
-- ✅ Dependency Injection via Composition Root
+**Solución:**
+```html
+<!-- ✅ Usar nonces en lugar de 'unsafe-inline' -->
+<meta http-equiv="Content-Security-Policy"
+      content="script-src 'self' 'nonce-{random}'; style-src 'self' 'nonce-{random}';" />
+```
 
-### Módulos Completados
-1. ✅ **Usuario y Autenticación** (Login, Register, Profile, Email Verification)
-2. ✅ **Competiciones** (CRUD, Browse, Estados, Transiciones)
-3. ✅ **Enrollments** (Domain + Infrastructure + Application - 90%)
-4. ✅ **Handicaps** (Manual + RFEG con validación de nacionalidad)
+**Archivos a Modificar:**
+- `index.html` - Actualizar CSP
+- Backend - Generar nonces dinámicos
 
-### Pendientes Prioritarios
-- ⏳ Integrar Enrollment Use Cases en UI (CompetitionDetail, BrowseCompetitions)
-- ⏳ Sistema de fotos de perfil (bloqueado por backend)
-- ⏳ Gestión de errores centralizada
+**Impacto:** Mejor protección contra XSS
+
+---
+
+#### 4. Rate Limiting en Backend
+**Problema Actual:**
+- Rate limiting solo en frontend (fácil de bypassear)
+- Sin protección en backend
+
+**Solución Backend:**
+```python
+from slowapi import Limiter
+
+limiter = Limiter(key_func=get_remote_address)
+
+@app.post("/api/v1/auth/login")
+@limiter.limit("5/minute")  # 5 intentos por minuto
+async def login(...):
+    # ...
+```
+
+**Endpoints Críticos a Proteger:**
+- `/api/v1/auth/login` - 5/minute
+- `/api/v1/auth/register` - 3/hour
+- `/api/v1/competitions/` POST - 10/hour
+- `/api/v1/enrollments/` POST - 20/hour
+
+**Impacto:** Prevención de brute force y DoS
+
+---
+
+### 🟢 Prioridad MEDIA
+
+#### 5. Configurar HSTS en Render
+**Acción:**
+- Configurar header `Strict-Transport-Security` en Render
+- Valor recomendado: `max-age=31536000; includeSubDomains`
+
+**Impacto:** Forzar HTTPS en todas las conexiones
+
+---
+
+#### 6. Implementar Sentry en Backend
+**Acción:**
+- Instalar `sentry-sdk[fastapi]`
+- Configurar integraciones (FastAPI, SQLAlchemy)
+- Capturar errores de RFEG, DB, API
+
+**Impacto:** Monitoreo de ataques y errores server-side
+
+---
+
+#### 7. Input Sanitization Adicional
+**Acción:**
+- Validar longitudes máximas en frontend
+- Agregar DOMPurify si se introduce rich text
+- Validar formatos (email, URLs, etc.)
+
+**Impacto:** Defensa en profundidad contra XSS
+
+---
+
+## 🛠️ Desarrollo - Tareas Pendientes
+
+### Módulo de Enrollments
+
+#### Integrar Use Cases en UI (2-3 horas)
+**Estado:** ⏳ Pendiente
+**Archivos a Modificar:**
+- `src/pages/CompetitionDetail.jsx` - Reemplazar llamadas a servicios
+- `src/pages/BrowseCompetitions.jsx` - Usar `requestEnrollmentUseCase`
+
+**Use Cases Disponibles:**
+- `RequestEnrollmentUseCase`
+- `ApproveEnrollmentUseCase`
+- `RejectEnrollmentUseCase`
+- `CancelEnrollmentUseCase`
+- `WithdrawEnrollmentUseCase`
+- `SetCustomHandicapUseCase`
+
+---
+
+### Módulo de Perfil
+
+#### Sistema de Foto de Perfil (Bloqueado)
+**Estado:** 🔒 Bloqueado por backend
+**Requiere:**
+- Campo `avatar_url` en modelo User (backend)
+- Endpoint `PUT /api/v1/users/avatar` (multipart/form-data)
+- Almacenamiento (S3, Cloudinary, o local)
+
+**Frontend Listo para:**
+- Galería de avatares predefinidos
+- Upload de archivos
+- Preview y crop
+
+---
+
+### Cross-Cutting Concerns
+
+#### Gestión de Errores Centralizada
+**Estado:** ⏳ Pendiente
+**Objetivo:** Estandarizar manejo de errores
+
+**Pasos:**
+1. Crear clases de error custom en `src/domain/errors/`
+2. Wrapper global en `src/utils/errorHandler.js`
+3. Traducción a mensajes user-friendly
+
+---
+
+## 🧪 Testing
+
+### Estado Actual
+- ✅ **419 tests pasando** (100% success rate)
+- ✅ Domain Layer: 100% cobertura
+- ✅ Application Layer: 90% cobertura
+- ⏳ Enrollment Use Cases: 0% (no prioritario)
+
+### Próximos Tests
+- Tests E2E con Playwright (no iniciado)
+- Tests de integración de Enrollments UI
+- Tests de seguridad (CSRF, XSS)
+
+---
+
+## 📦 Optimización
+
+### Completado
+- ✅ Code splitting (manual chunks)
+- ✅ Lazy loading de rutas
+- ✅ Bundle reducido 95% (978 KB → 47 KB)
+- ✅ Suspense con loading fallback
+
+### Futuras Optimizaciones
+- Preload de rutas críticas
+- Service Worker para offline
+- Image optimization (AVIF/WebP)
+
+---
+
+## 🚀 Roadmap de Versiones
+
+### v1.8.0 (Próxima - Seguridad)
+- 🔐 Migración a httpOnly cookies
+- 🔐 CSRF tokens
+- 🔐 Rate limiting backend
+- 🔐 CSP mejorado
+
+### v1.9.0 (Funcionalidad)
+- 👤 Sistema de avatares
+- 📝 Gestión de errores centralizada
+- 🎨 UI de enrollments refactorizada
+
+### v2.0.0 (Mayor - Futuro)
+- 🔐 Autenticación de dos factores (2FA)
+- 📱 Progressive Web App (PWA)
+- 🌍 Internacionalización (i18n)
+- 🎮 Sistema de equipos y torneos
+
+---
+
+## 📝 Notas de Migración
+
+### Para Desarrolladores
+
+**Antes de empezar cualquier tarea:**
+1. Leer auditoría de seguridad completa
+2. Revisar tests existentes
+3. Seguir patrones establecidos (Use Cases + Repositories)
+
+**Al implementar seguridad:**
+1. Backend primero (httpOnly cookies, CSRF)
+2. Frontend después (adaptar a nuevas APIs)
+3. Testing exhaustivo (intentar bypassear protecciones)
+
+**Al agregar features:**
+1. Domain Layer → Application Layer → Infrastructure → Presentation
+2. Tests unitarios primero
+3. Integración en Composition Root
+
+---
+
+## 🔗 Referencias
+
+- [CLAUDE.md](./CLAUDE.md) - Contexto del proyecto para Claude AI
+- [SECURITY_MIGRATION.md](./SECURITY_MIGRATION.md) - Guía de migración a httpOnly cookies
+- [SENTRY_IMPLEMENTATION_SUMMARY.md](./docs/SENTRY_IMPLEMENTATION_SUMMARY.md) - Documentación Sentry
+- [RENDER_SETUP.md](./docs/RENDER_SETUP.md) - Configuración de producción
+
+---
+
+**Última revisión:** 27 Nov 2025
+**Próxima revisión:** Después de v1.8.0 (Security Release)
