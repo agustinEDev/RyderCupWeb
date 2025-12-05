@@ -239,7 +239,9 @@ export const useEditProfile = () => {
     const isCountryChanged = trimmedCountryCode !== (user.country_code || '');
 
     if (!isNameChanged && !isCountryChanged) {
-      toast.warn('No changes detected in profile.');
+      toast('No changes detected in profile.', {
+        icon: '⚠️',
+      });
       return;
     }
 
@@ -307,7 +309,9 @@ export const useEditProfile = () => {
     const isPasswordChanged = formData.newPassword !== '';
 
     if (!isEmailChanged && !isPasswordChanged) {
-      toast.warn('No changes detected in email or password.');
+      toast('No changes detected in email or password.', {
+        icon: '⚠️',
+      });
       return;
     }
 
