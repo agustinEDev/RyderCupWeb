@@ -49,6 +49,10 @@ class CompetitionMapper {
     // Map team assignment
     const teamAssignment = new TeamAssignment(apiData.team_assignment || 'MANUAL');
 
+    // Bidirectional mapping for maxPlayers/number_of_players
+    // Prefer number_of_players (current API contract), fallback to max_players (legacy)
+    const maxPlayers = apiData.number_of_players ?? apiData.max_players ?? 24;
+
     // Create Competition entity
     return new Competition({
       id: new CompetitionId(apiData.id),
@@ -56,10 +60,10 @@ class CompetitionMapper {
       name: new CompetitionName(apiData.name),
       dates,
       location,
-      team1Name: apiData.team_1_name || apiData.team_one_name || apiData.team1_name || 'Team 1',
+      team1Name: apiData.team_1_name || apiData.team_one_name || apiData.team1_Name || 'Team 1',
       team2Name: apiData.team_2_name || apiData.team_two_name || apiData.team2_name || 'Team 2',
       handicapSettings,
-      maxPlayers: apiData.max_players || 24,
+      maxPlayers,
       teamAssignment,
       status: new CompetitionStatus(apiData.status || 'DRAFT'),
       createdAt: new Date(apiData.created_at),
@@ -89,7 +93,7 @@ class CompetitionMapper {
       countries: competition.location.getAllCountries().slice(1).map(c => c.value()),
       handicap_type: competition.handicapSettings.type(),
       handicap_percentage: competition.handicapSettings.percentage(),
-      max_players: competition.maxPlayers,
+      number_of_players: competition.maxPlayers, // Use API contract field name
       team_assignment: competition.teamAssignment.value(),
       status: competition.status.value,
       creator_id: competition.creatorId

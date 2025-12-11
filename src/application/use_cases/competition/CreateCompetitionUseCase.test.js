@@ -46,7 +46,7 @@ describe('CreateCompetitionUseCase', () => {
       main_country: 'US',
       countries: ['US'],
       handicap_type: 'SCRATCH',
-      max_players: 24,
+      number_of_players: 24,  // API field name (matches backend DTO alias)
       team_assignment: 'manual',
       player_handicap: 'user',
     };

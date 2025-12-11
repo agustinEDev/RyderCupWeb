@@ -138,7 +138,7 @@ export const setModuleContext = (moduleName, action = null) => {
  *   id: 'comp-123',
  *   name: 'Summer Tournament',
  *   status: 'ACTIVE',
- *   max_players: 20,
+ *   maxPlayers: 20,  // Domain property name
  *   enrolled_count: 15
  * });
  */
