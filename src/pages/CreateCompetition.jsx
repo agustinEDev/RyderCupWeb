@@ -272,7 +272,7 @@ const CreateCompetition = () => {
         main_country: formData.country?.code,
         countries: countries,
         handicap_type: formData.handicapType.toUpperCase(),
-        max_players: numPlayers,
+        number_of_players: numPlayers,
         team_assignment: formData.teamAssignment.toUpperCase()
       };
 
