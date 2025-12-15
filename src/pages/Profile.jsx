@@ -16,6 +16,7 @@ const Profile = () => {
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [countryName, setCountryName] = useState(null);
+  const [competitionsCount, setCompetitionsCount] = useState(0);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -56,6 +57,37 @@ const Profile = () => {
               } catch (error) {
                 console.error('Error fetching country name:', error);
               }
+            }
+
+            // Fetch user's competitions count
+            try {
+              const competitionsResponse = await fetch(`${API_URL}/api/v1/competitions?my_competitions=true`, {
+                headers: {
+                  'Authorization': `Bearer ${token}`
+                }
+              });
+
+              if (!competitionsResponse.ok) {
+                console.error('❌ Failed to fetch competitions:', competitionsResponse.status, competitionsResponse.statusText);
+                setCompetitionsCount(0);
+                return;
+              }
+
+              const competitionsData = await competitionsResponse.json();
+
+              // Handle different response formats: array or object with results array
+              let list = [];
+              if (Array.isArray(competitionsData)) {
+                list = competitionsData;
+              } else if (competitionsData && Array.isArray(competitionsData.results)) {
+                list = competitionsData.results;
+              }
+
+              setCompetitionsCount(list.length);
+              console.log('✅ User competitions count:', list.length);
+            } catch (error) {
+              console.error('❌ Error fetching competitions count:', error);
+              setCompetitionsCount(0);
             }
           }
         }
@@ -239,8 +271,11 @@ const Profile = () => {
                         <Award className="w-5 h-5 text-primary-600" />
                         <span className="text-xs text-gray-500 font-medium">Tournaments</span>
                       </div>
-                      <p className="text-2xl font-bold text-gray-900">0</p>
-                      <p className="text-xs text-gray-500 mt-1">Coming soon</p>
+                      <p className="text-2xl font-bold text-gray-900">{competitionsCount}</p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {competitionsCount === 0 ? 'Not enrolled yet' : 
+                         competitionsCount === 1 ? 'Competition' : 'Competitions'}
+                      </p>
                     </div>
                   </div>
                 </div>
