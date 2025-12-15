@@ -66,13 +66,28 @@ const Profile = () => {
                   'Authorization': `Bearer ${token}`
                 }
               });
-              if (competitionsResponse.ok) {
-                const competitions = await competitionsResponse.json();
-                setCompetitionsCount(competitions.length);
-                console.log('✅ User competitions count:', competitions.length);
+
+              if (!competitionsResponse.ok) {
+                console.error('❌ Failed to fetch competitions:', competitionsResponse.status, competitionsResponse.statusText);
+                setCompetitionsCount(0);
+                return;
               }
+
+              const competitionsData = await competitionsResponse.json();
+
+              // Handle different response formats: array or object with results array
+              let list = [];
+              if (Array.isArray(competitionsData)) {
+                list = competitionsData;
+              } else if (competitionsData && Array.isArray(competitionsData.results)) {
+                list = competitionsData.results;
+              }
+
+              setCompetitionsCount(list.length);
+              console.log('✅ User competitions count:', list.length);
             } catch (error) {
-              console.error('Error fetching competitions count:', error);
+              console.error('❌ Error fetching competitions count:', error);
+              setCompetitionsCount(0);
             }
           }
         }
