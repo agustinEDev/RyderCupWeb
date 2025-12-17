@@ -147,6 +147,8 @@
 
 **Semana 2: httpOnly Cookies + Refresh Tokens**
 - [ ] **4. Migrar a httpOnly Cookies** - 4-6h (CRÍTICO)
+  - ⚠️ **Coordinación con Backend:** Requiere backend v1.8.0 desplegado (tarea backend: "Frontend: migración a cookies")
+  - ⚠️ **Pre-requisito:** Endpoints `/logout` y `/refresh-token` deben estar disponibles
   - **ELIMINAR:** `src/utils/secureAuth.js` completamente
   - Agregar `credentials: 'include'` en todos los repositories:
     - `src/infrastructure/auth/ApiAuthRepository.js`
@@ -184,11 +186,14 @@
   - Usar nonces o hashes para scripts inline
   - Verificar con securityheaders.com
   - **Puntuación esperada:** 9.0/10 → 9.2/10 (+0.2)
-- [ ] **9. Auditoría de Dependencias** - 2h
-  - Ejecutar `npm audit`
-  - Ejecutar `npm outdated`
+- [ ] **9. Auditoría de Dependencias** - 2-3h
+  - Ejecutar `npm audit` y `npm outdated`
   - Actualizar dependencias críticas (React, Vite, Sentry)
   - Testing exhaustivo después de updates
+  - **Automatización (NUEVO):** Configurar GitHub Actions para auditoría semanal
+    - Crear workflow `.github/workflows/security-audit.yml`
+    - Ejecutar `npm audit` automáticamente
+    - Alertas de Dependabot habilitadas
   - **Puntuación esperada:** Mantiene 9.2/10
 
 **Semana 4: Testing + Documentación**
@@ -202,13 +207,23 @@
   - Testing de refresh token flow (401 → refresh → retry)
   - Testing de validaciones (backend rechaza inputs inválidos)
   - Testing E2E manual (flujo completo)
+- [ ] **11.1 Security Tests Suite** - 2-3h (NUEVO)
+  - Tests de XSS attempts (verificar React auto-escaping)
+  - Tests de CSRF protection (SameSite cookies)
+  - Tests de validación con inputs maliciosos:
+    - HTML injection attempts (`<script>alert('xss')</script>`)
+    - SQL injection patterns (aunque backend protege)
+    - Path traversal attempts (`../../etc/passwd`)
+  - Tests de CSP violations (intentar ejecutar inline scripts)
+  - Tests de authentication bypass attempts
+  - Tests de rate limiting (coordinado con backend)
 - [ ] **12. Actualizar Documentación** - 1-2h
   - Actualizar CHANGELOG.md con cambios de v1.8.0
   - Actualizar CLAUDE.md con nuevas validaciones
   - Documentar cambios breaking (httpOnly cookies)
   - Crear ADR-006: Input Validation Standards
 
-**Total estimado:** 25-35 horas
+**Total estimado:** 28-39 horas
 
 **OWASP Categories Addressed:**
 - ✅ A01: Broken Access Control (httpOnly cookies, refresh tokens)
@@ -339,7 +354,7 @@ Incluye:
 
 **Objetivo:** Securizar el frontend contra ataques comunes (OWASP Top 10 2021)
 
-**Tareas (12):**
+**Tareas (13):**
 1. [ ] Actualizar password mínimo a 12 caracteres - 30 min
 2. [ ] Agregar límites de longitud máxima - 1-2h
 3. [ ] Mejorar validación de nombres - 30 min
@@ -348,12 +363,13 @@ Incluye:
 6. [ ] Logout por Inactividad - 2h
 7. [ ] Broadcast Channel (Logout Multi-Tab) - 1-2h
 8. [ ] Mejorar CSP (eliminar unsafe-inline) - 2-3h
-9. [ ] Auditoría de Dependencias - 2h
+9. [ ] Auditoría de Dependencias + Automatización - 2-3h
 10. [ ] Tests Unitarios de Validaciones - 2-3h
 11. [ ] Tests de Integración con Backend v1.8.0 - 3-4h
+11.1. [ ] Security Tests Suite - 2-3h (NUEVO)
 12. [ ] Actualizar Documentación - 1-2h
 
-**Total estimado:** 25-35 horas de desarrollo
+**Total estimado:** 28-39 horas de desarrollo
 
 **OWASP Categories Addressed (6/10):**
 - ✅ A01: Broken Access Control
