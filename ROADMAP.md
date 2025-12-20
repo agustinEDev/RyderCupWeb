@@ -74,8 +74,8 @@
 > **Puntuación General Frontend:** 7.5/10 ✅
 > **Puntuación General Backend:** 9.6/10 ✅
 >
-> **✨ PROGRESO v1.8.0:** 0/12 tareas completadas (pendiente sincronización con backend)
-> **⚠️ SIGUIENTE:** Validaciones de inputs (password 12 chars + límites longitud)
+> **✨ PROGRESO v1.8.0:** 3/12 tareas completadas (Fase 1: Validaciones ✅)
+> **⚠️ SIGUIENTE:** httpOnly Cookies + Refresh Tokens (Fase 2 - requiere backend desplegado)
 
 ### Estado de Protecciones OWASP
 
@@ -197,11 +197,11 @@
   - **Puntuación esperada:** Mantiene 9.2/10
 
 **Semana 4: Testing + Documentación**
-- [ ] **10. Tests Unitarios de Validaciones** - 2-3h
-  - Tests de password (12 chars, 128 max)
-  - Tests de límites de longitud
-  - Tests de nombres con acentos
-  - Cobertura >95% en validation.js
+- [x] **10. Tests Unitarios de Validaciones** - ✅ COMPLETADO (20 Dic 2025)
+  - ✅ Tests de password (12 chars min, 128 max, complejidad)
+  - ✅ Tests de límites de longitud (email 254, nombres 100)
+  - ✅ Tests de nombres con acentos
+  - ✅ 38 tests pasando (100% pass rate), cobertura >90%
 - [ ] **11. Tests de Integración con Backend v1.8.0** - 3-4h
   - Testing de httpOnly cookies (login, requests, logout)
   - Testing de refresh token flow (401 → refresh → retry)
@@ -350,14 +350,16 @@ Incluye:
 
 ## 🚀 Roadmap de Versiones
 
-### v1.8.0 (Próxima - Security Release) - Estimado: 3-4 semanas
+### v1.8.0 (En Progreso - Security Release) - Estimado: 3-4 semanas
 
 **Objetivo:** Securizar el frontend contra ataques comunes (OWASP Top 10 2021)
 
+**Progreso:** 3/12 tareas completadas (25%) - Fase 1 ✅
+
 **Tareas (13):**
-1. [ ] Actualizar password mínimo a 12 caracteres - 30 min
-2. [ ] Agregar límites de longitud máxima - 1-2h
-3. [ ] Mejorar validación de nombres - 30 min
+1. [x] Actualizar password mínimo a 12 caracteres - ✅ COMPLETADO
+2. [x] Agregar límites de longitud máxima - ✅ COMPLETADO
+3. [x] Tests unitarios de validaciones - ✅ COMPLETADO
 4. [ ] Migrar a httpOnly Cookies - 4-6h (CRÍTICO)
 5. [ ] Implementar Refresh Token Flow - 3-4h
 6. [ ] Logout por Inactividad - 2h

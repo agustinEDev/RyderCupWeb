@@ -279,6 +279,7 @@ const Register = () => {
                       placeholder="John"
                       value={formData.firstName}
                       onChange={handleChange}
+                      maxLength={100}
                       className={`w-full px-4 py-3 rounded-lg border-2 transition-all duration-200 ${
                         errors.firstName
                           ? 'border-red-300 focus:border-red-500 focus:ring-2 focus:ring-red-200'
@@ -311,6 +312,7 @@ const Register = () => {
                       placeholder="Doe"
                       value={formData.lastName}
                       onChange={handleChange}
+                      maxLength={100}
                       className={`w-full px-4 py-3 rounded-lg border-2 transition-all duration-200 ${
                         errors.lastName
                           ? 'border-red-300 focus:border-red-500 focus:ring-2 focus:ring-red-200'
@@ -344,6 +346,7 @@ const Register = () => {
                     placeholder="your.email@example.com"
                     value={formData.email}
                     onChange={handleChange}
+                    maxLength={254}
                     className={`w-full px-4 py-3 rounded-lg border-2 transition-all duration-200 ${
                       errors.email
                         ? 'border-red-300 focus:border-red-500 focus:ring-2 focus:ring-red-200'
@@ -374,7 +377,8 @@ const Register = () => {
                     name="password"
                     value={formData.password}
                     onChange={handleChange}
-                    placeholder="Minimum 8 characters"
+                    placeholder="Minimum 12 characters"
+                    maxLength={128}
                     error={!!errors.password}
                     disabled={isLoading}
                     label=""
