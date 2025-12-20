@@ -47,7 +47,7 @@
 |---|-----------------|----------------|------------------|-----------|
 | **1** | Rate Limiting (SlowAPI) | ✅ Completado | ✅ Sin cambios | 🟢 Baja |
 | **2** | Security Headers | ✅ Completado | ✅ Sin cambios | 🟢 Baja |
-| **3** | Password Policy (12 chars) | ✅ Completado | ⚠️ **REQUIERE UPDATE** | 🔴 Crítica |
+| **3** | Password Policy (12 chars) | ✅ Completado | ✅ **SINCRONIZADO** | 🟢 Baja |
 | **4** | httpOnly Cookies (JWT) | ✅ Completado | ⚠️ **REQUIERE UPDATE** | 🔴 Crítica |
 | **5** | Session Timeout + Refresh | ✅ Completado | ⚠️ **REQUIERE UPDATE** | 🔴 Crítica |
 | **6** | CORS Configuration | ✅ Completado | ✅ Sin cambios | 🟢 Baja |
@@ -61,7 +61,7 @@
 | **first_name** | 2-50 chars, con acentos | 2-100 chars, **con acentos** ✅ | ⚠️ Cambiar límite max de 50 a 100 |
 | **last_name** | 2-50 chars, con acentos | 2-100 chars, **con acentos** ✅ | ⚠️ Cambiar límite max de 50 a 100 |
 | **email** | Sin límite max | **254 chars** (RFC 5321) | ⚠️ Agregar `maxLength={254}` |
-| **password** | **8-sin límite** | **12-128 chars** | ⚠️ Cambiar min a 12, max a 128 |
+| **password** | **12-128 chars** ✅ | **12-128 chars** | ✅ Sincronizado |
 | **Tokens** | sessionStorage | **httpOnly cookies** | ⚠️ Migrar a cookies + `credentials: 'include'` |
 | **Access Token** | 60 min | **15 min** | ⚠️ Implementar refresh token flow |
 | **Refresh Token** | ❌ No existe | **7 días** (cookie httpOnly) | ⚠️ Nuevo endpoint `/refresh-token` |
@@ -74,7 +74,7 @@
 > **Puntuación General Frontend:** 7.5/10 ✅
 > **Puntuación General Backend:** 9.6/10 ✅
 >
-> **✨ PROGRESO v1.8.0:** 3/12 tareas completadas (Fase 1: Validaciones ✅)
+> **✨ PROGRESO v1.8.0:** 4/12 tareas completadas (33%) - Fase 1: Validaciones ✅
 > **⚠️ SIGUIENTE:** httpOnly Cookies + Refresh Tokens (Fase 2 - requiere backend desplegado)
 
 ### Estado de Protecciones OWASP
@@ -99,7 +99,7 @@
 | React Auto-Escaping | ✅ Nativo | - | A03 |
 | Security Headers (CSP, HSTS, etc.) | ✅ Implementado | - | A03, A05 |
 | Tokens en sessionStorage | ❌ **VULNERABLE** | 🔴 Crítica | A01, A02 |
-| Password Policy (8 chars) | ⚠️ Mínimo 8 (debe ser 12) | 🔴 Crítica | A07 |
+| Password Policy (12 chars) | ✅ **IMPLEMENTADO** | - | A07 |
 | httpOnly Cookies | ❌ NO implementado | 🔴 Crítica | A01, A02 |
 | Refresh Tokens | ❌ NO implementado | 🔴 Crítica | A01, A02, A07 |
 | Input Validation | ⚠️ Parcial (sin límites max) | 🟠 Alta | A03 |
@@ -113,7 +113,7 @@
 ### Vulnerabilidades Críticas Detectadas
 
 1. ❌ **Tokens en sessionStorage** - Vulnerable a XSS (A01, A02) - **Backend resuelto con httpOnly cookies**
-2. ⚠️ **Password mínimo 8 caracteres** - OWASP recomienda 12 (A07) - **Backend implementado, frontend pendiente**
+2. ✅ **Password mínimo 12 caracteres** - OWASP compliant (A07) - **✅ COMPLETADO (20 Dic 2025)**
 3. ❌ **No hay refresh tokens** - Sesiones largas (60 min) inseguras (A02, A07) - **Backend implementado (15min + refresh 7 días)**
 4. ❌ **No hay MFA/2FA** - Vulnerable a credential stuffing (A07)
 5. ⚠️ **Sin límites de longitud** - Email, password sin max length (A03, A04)
@@ -126,23 +126,23 @@
 ### Plan de Implementación (v1.8.0 - 3-4 semanas)
 
 **Semana 1: Validaciones de Inputs (Quick Wins)**
-- [ ] **1. Actualizar password mínimo a 12 caracteres** - 30 min
-  - Actualizar `src/utils/validation.js:34` (mínimo 8 → 12)
-  - Agregar máximo 128 caracteres
-  - Actualizar mensajes en Register.jsx y EditProfile.jsx
-  - Tests unitarios
+- [x] **1. Actualizar password mínimo a 12 caracteres** - ✅ COMPLETADO (20 Dic 2025)
+  - ✅ Actualizar `src/utils/validation.js:34` (mínimo 8 → 12)
+  - ✅ Agregar máximo 128 caracteres
+  - ✅ Actualizar mensajes en Register.jsx y EditProfile.jsx
+  - ✅ Tests unitarios
   - **Puntuación esperada:** 7.5/10 → 7.7/10 (+0.2)
-- [ ] **2. Agregar límites de longitud máxima** - 1-2h
-  - Email: 254 chars (RFC 5321)
-  - Nombres: 100 chars (aumentar de 50 a 100)
-  - Password: 128 chars
-  - Agregar `maxLength` en todos los inputs
-  - Actualizar validation.js con límites
+- [x] **2. Agregar límites de longitud máxima** - ✅ COMPLETADO (20 Dic 2025)
+  - ✅ Email: 254 chars (RFC 5321)
+  - ✅ Nombres: 100 chars (aumentar de 50 a 100)
+  - ✅ Password: 128 chars
+  - ✅ Agregar `maxLength` en todos los inputs
+  - ✅ Actualizar validation.js con límites
   - **Puntuación esperada:** 7.7/10 → 7.9/10 (+0.2)
-- [ ] **3. Mejorar validación de nombres** - 30 min
-  - Verificar regex acepta acentos (ya implementado ✅)
-  - Asegurar que rechaza números (ya implementado ✅)
-  - Tests unitarios adicionales
+- [x] **3. Mejorar validación de nombres** - ✅ COMPLETADO (20 Dic 2025)
+  - ✅ Verificar regex acepta acentos (ya implementado ✅)
+  - ✅ Asegurar que rechaza números (ya implementado ✅)
+  - ✅ Tests unitarios adicionales
   - **Puntuación esperada:** Mantiene 7.9/10
 
 **Semana 2: httpOnly Cookies + Refresh Tokens**
@@ -354,24 +354,24 @@ Incluye:
 
 **Objetivo:** Securizar el frontend contra ataques comunes (OWASP Top 10 2021)
 
-**Progreso:** 3/12 tareas completadas (25%) - Fase 1 ✅
+**Progreso:** 4/12 tareas completadas (33%) - Fase 1 ✅
 
-**Tareas (13):**
-1. [x] Actualizar password mínimo a 12 caracteres - ✅ COMPLETADO
-2. [x] Agregar límites de longitud máxima - ✅ COMPLETADO
-3. [x] Tests unitarios de validaciones - ✅ COMPLETADO
-4. [ ] Migrar a httpOnly Cookies - 4-6h (CRÍTICO)
-5. [ ] Implementar Refresh Token Flow - 3-4h
-6. [ ] Logout por Inactividad - 2h
-7. [ ] Broadcast Channel (Logout Multi-Tab) - 1-2h
-8. [ ] Mejorar CSP (eliminar unsafe-inline) - 2-3h
-9. [ ] Auditoría de Dependencias + Automatización - 2-3h
-10. [ ] Tests Unitarios de Validaciones - 2-3h
+**Tareas (12):**
+1. [x] Actualizar password mínimo a 12 caracteres - ✅ COMPLETADO (20 Dic 2025)
+2. [x] Agregar límites de longitud máxima - ✅ COMPLETADO (20 Dic 2025)
+3. [x] Mejorar validación de nombres - ✅ COMPLETADO (20 Dic 2025)
+4. [x] Tests unitarios de validaciones - ✅ COMPLETADO (20 Dic 2025)
+5. [ ] Migrar a httpOnly Cookies - 4-6h (CRÍTICO)
+6. [ ] Implementar Refresh Token Flow - 3-4h
+7. [ ] Logout por Inactividad - 2h
+8. [ ] Broadcast Channel (Logout Multi-Tab) - 1-2h
+9. [ ] Mejorar CSP (eliminar unsafe-inline) - 2-3h
+10. [ ] Auditoría de Dependencias + Automatización - 2-3h
 11. [ ] Tests de Integración con Backend v1.8.0 - 3-4h
-11.1. [ ] Security Tests Suite - 2-3h (NUEVO)
-12. [ ] Actualizar Documentación - 1-2h
+12. [ ] Security Tests Suite - 2-3h
+13. [ ] Actualizar Documentación - 1-2h
 
-**Total estimado:** 28-39 horas de desarrollo
+**Total estimado:** 20-31 horas de desarrollo (restantes)
 
 **OWASP Categories Addressed (6/10):**
 - ✅ A01: Broken Access Control
@@ -456,11 +456,11 @@ Ver plan detallado en sección [🔐 SEGURIDAD](#-seguridad---mejoras-prioritari
 
 ### Orden Recomendado de Implementación (v1.8.0)
 
-**Semana 1: Validaciones (Quick Wins)**
-1. Actualizar password mínimo a 12 caracteres
-2. Agregar límites de longitud máxima
-3. Mejorar validación de nombres
-4. Tests unitarios
+**Semana 1: Validaciones (Quick Wins) - ✅ COMPLETADO (20 Dic 2025)**
+1. ✅ Actualizar password mínimo a 12 caracteres
+2. ✅ Agregar límites de longitud máxima
+3. ✅ Mejorar validación de nombres
+4. ✅ Tests unitarios
 
 **Semana 2: httpOnly Cookies**
 1. Eliminar `src/utils/secureAuth.js`
