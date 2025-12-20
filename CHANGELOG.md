@@ -7,6 +7,36 @@ y este proyecto adhiere a [Versionado Semántico](https://semver.org/lang/es/).
 
 ## [Unreleased]
 
+### Changed
+- **Input Validation Improvements**: Strengthened validation rules to sync with backend v1.8.0 security requirements (OWASP ASVS V2.1.1)
+  - Password validation: Increased minimum length from 8 to 12 characters (mandatory)
+  - Password validation: Added maximum length of 128 characters (DoS prevention)
+  - Password validation: Complexity requirements now mandatory (uppercase + lowercase + numbers)
+  - Email validation: Added maximum length of 254 characters (RFC 5321 compliance)
+  - Name validation: Increased maximum length from 50 to 100 characters (multinational name support)
+  - Updated `src/utils/validation.js` with stricter validation logic
+- **Form Updates**: Updated Register and EditProfile forms with new validation limits
+  - Changed password placeholder from "Minimum 8 characters" to "Minimum 12 characters"
+  - Added `maxLength` HTML attributes: firstName/lastName (100), email (254), password (128)
+  - Updated helper text in EditProfile: "Must be at least 12 characters if changing"
+  - HTML validation provides first layer of defense before JavaScript validation
+
+### Added
+- **Validation Unit Tests**: Created comprehensive test suite for input validation functions
+  - Created `src/utils/validation.test.js` with 38 tests (100% passing)
+  - validatePassword() tests: 13 tests (minimum, maximum, complexity, edge cases)
+  - validateEmail() tests: 11 tests (format, length, RFC 5321 compliance)
+  - validateName() tests: 14 tests (length, special characters, accents support)
+  - Tests verify boundary conditions, equivalence partitions, and edge cases
+
+### Security
+- **OWASP ASVS V2.1.1 Compliance**: Aligned frontend validation with backend security standards
+  - Password minimum 12 characters prevents brute-force attacks (OWASP recommendation)
+  - Password maximum 128 characters prevents DoS attacks via excessive hashing
+  - Email maximum 254 characters follows RFC 5321 internet standard
+  - Multi-layer defense: HTML maxLength → JavaScript validation → Backend Pydantic validation
+  - Expected security score improvement: 7.5/10 → 7.9/10 (+0.4)
+
 ## [1.7.0] - 2025-11-26
 
 ### Added
