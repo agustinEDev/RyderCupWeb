@@ -106,6 +106,7 @@ const EditProfile = () => {
                       value={formData.firstName}
                       onChange={handleInputChange}
                       placeholder="Enter your first name"
+                      maxLength={100}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                     />
                   </div>
@@ -121,6 +122,7 @@ const EditProfile = () => {
                       value={formData.lastName}
                       onChange={handleInputChange}
                       placeholder="Enter your last name"
+                      maxLength={100}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                     />
                   </div>
@@ -215,6 +217,7 @@ const EditProfile = () => {
                       value={formData.email}
                       onChange={handleInputChange}
                       placeholder="Enter new email to change"
+                      maxLength={254}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                     />
                     <p className="text-xs text-gray-500 mt-1">
@@ -233,10 +236,11 @@ const EditProfile = () => {
                       value={formData.newPassword}
                       onChange={handleInputChange}
                       placeholder="Leave empty to keep current password"
+                      maxLength={128}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                     />
                     <p className="text-xs text-gray-500 mt-1">
-                      Must be at least 8 characters if changing
+                      Must be at least 12 characters if changing
                     </p>
                   </div>
 

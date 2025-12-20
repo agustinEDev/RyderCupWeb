@@ -16,13 +16,14 @@ export const validatePassword = (password) => {
     };
   }
 
-  const minLength = 12;
+  const minLength = 12; // OWASP ASVS V2.1.1 requirement
+  const maxLength = 128; // Prevent DoS attacks via excessive hashing
   const hasUpperCase = /[A-Z]/.test(password);
   const hasLowerCase = /[a-z]/.test(password);
   const hasNumbers = /\d/.test(password);
   const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
 
-  // Calculate strength (0-4)
+  // Calculate strength (0-5)
   let strength = 0;
   if (password.length >= 8) strength++;
   if (password.length >= 12) strength++;
@@ -30,27 +31,29 @@ export const validatePassword = (password) => {
   if (hasNumbers) strength++;
   if (hasSpecialChar) strength++;
 
-  // Validation
-  if (password.length < 8) {
-    return {
-      isValid: false,
-      message: 'Password must be at least 8 characters',
-      strength
-    };
-  }
-
+  // Validation: Check minimum length (12 characters required)
   if (password.length < minLength) {
     return {
-      isValid: true, // Minimum for now, but warn
-      message: 'Consider using at least 12 characters for better security',
+      isValid: false,
+      message: `Password must be at least ${minLength} characters`,
       strength
     };
   }
 
+  // Validation: Check maximum length (128 characters)
+  if (password.length > maxLength) {
+    return {
+      isValid: false,
+      message: `Password must not exceed ${maxLength} characters`,
+      strength
+    };
+  }
+
+  // Validation: Check complexity (uppercase + lowercase + numbers required)
   if (!(hasUpperCase && hasLowerCase && hasNumbers)) {
     return {
-      isValid: true, // Minimum for now
-      message: 'Stronger password recommended (use uppercase, lowercase, and numbers)',
+      isValid: false,
+      message: 'Password must contain uppercase, lowercase, and numbers',
       strength
     };
   }
@@ -89,8 +92,9 @@ export const getPasswordStrengthColor = (strength) => {
 /**
  * Validates password strength and returns detailed feedback
  * Optimized for visual indicator component
+ * Updated for v1.8.0: Passwords <12 chars cannot reach green/blue (score 3-4)
  * @param {string} password - Password to validate
- * @returns {Object} - { score: number (1-4), feedback: string }
+ * @returns {Object} - { score: number (0-4), feedback: string }
  */
 export const validatePasswordStrength = (password) => {
   if (!password) {
@@ -105,9 +109,18 @@ export const validatePasswordStrength = (password) => {
   let score = 0;
   let feedback = '';
 
-  // Base score on length
-  if (password.length >= 8) score++;
-  if (password.length >= 12) score++;
+  // CRITICAL: Passwords <12 chars are INVALID (OWASP ASVS V2.1.1)
+  // Don't show green/blue for invalid passwords
+  if (password.length < 12) {
+    // Score capped at 2 (yellow) for passwords <12 chars
+    if (password.length >= 8) score = 1;
+    if (password.length >= 10) score = 2; // Slightly better if approaching 12
+    feedback = `Need ${12 - password.length} more character${12 - password.length !== 1 ? 's' : ''}`;
+    return { score, feedback };
+  }
+
+  // For passwords >= 12 chars, calculate full score
+  score = 2; // Base score for meeting minimum length
 
   // Add score for character variety
   if (hasUpperCase && hasLowerCase) score++;
@@ -117,13 +130,11 @@ export const validatePasswordStrength = (password) => {
   // Cap at 4
   score = Math.min(score, 4);
 
-  // Generate feedback
-  if (score === 1) {
-    feedback = 'Too short';
-  } else if (score === 2) {
-    feedback = 'Add numbers or symbols';
+  // Generate feedback for valid passwords (>= 12 chars)
+  if (score === 2) {
+    feedback = 'Add uppercase, lowercase, and numbers';
   } else if (score === 3) {
-    feedback = 'Almost perfect';
+    feedback = 'Good! Add special characters';
   } else if (score === 4) {
     feedback = 'Excellent!';
   }
@@ -141,6 +152,16 @@ export const validateEmail = (email) => {
     return {
       isValid: false,
       message: 'Email is required'
+    };
+  }
+
+  const maxLength = 254; // RFC 5321 maximum email address length
+
+  // Check maximum length
+  if (email.length > maxLength) {
+    return {
+      isValid: false,
+      message: `Email must not exceed ${maxLength} characters`
     };
   }
 
@@ -231,21 +252,24 @@ export const validateName = (name, fieldName = 'Name') => {
     };
   }
 
-  if (trimmed.length < 2) {
+  const minLength = 2;
+  const maxLength = 100; // Increased from 50 to match backend v1.8.0
+
+  if (trimmed.length < minLength) {
     return {
       isValid: false,
-      message: `${fieldName} must be at least 2 characters`
+      message: `${fieldName} must be at least ${minLength} characters`
     };
   }
 
-  if (trimmed.length > 50) {
+  if (trimmed.length > maxLength) {
     return {
       isValid: false,
-      message: `${fieldName} must not exceed 50 characters`
+      message: `${fieldName} must not exceed ${maxLength} characters`
     };
   }
 
-  // Allow only letters, spaces, hyphens, and apostrophes
+  // Allow only letters, spaces, hyphens, and apostrophes (with accents)
   const nameRegex = /^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s'-]+$/;
   if (!nameRegex.test(trimmed)) {
     return {
