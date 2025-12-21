@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import PropTypes from 'prop-types';
-import { clearAuthData } from '../../utils/secureAuth';
+import { logout } from '../../utils/secureAuth';
 
 const HeaderAuth = ({ user }) => {
   const navigate = useNavigate();
@@ -14,9 +14,9 @@ const HeaderAuth = ({ user }) => {
     setIsDropdownOpen(false);
   };
 
-  const handleLogout = () => {
-    // Clear auth data
-    clearAuthData();
+  const handleLogout = async () => {
+    // Call backend logout and clear local auth data
+    await logout();
 
     // Redirect to home
     navigate('/');
