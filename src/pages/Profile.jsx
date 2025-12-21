@@ -6,7 +6,7 @@ import {
   CheckCircle, AlertCircle, Edit, LogOut, ArrowLeft, Globe, Clock
 } from 'lucide-react';
 import HeaderAuth from '../components/layout/HeaderAuth';
-import { getUserData, clearAuthData, getAuthToken, setUserData } from '../utils/secureAuth';
+import { getUserData, clearAuthData, getAuthToken, setUserData, logout } from '../utils/secureAuth';
 import { CountryFlag } from '../utils/countryUtils';
 
 const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
@@ -106,8 +106,8 @@ const Profile = () => {
     navigate('/profile/edit');
   };
 
-  const handleLogout = () => {
-    clearAuthData();
+  const handleLogout = async () => {
+    await logout();
     navigate('/');
   };
 

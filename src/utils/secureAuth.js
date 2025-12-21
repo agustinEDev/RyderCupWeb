@@ -166,15 +166,35 @@ export const authenticatedFetch = async (url, options = {}) => {
 
 /**
  * Logout user
- * TODO: Call backend /logout endpoint when implemented
+ * Calls backend to invalidate session and clears local auth data
  */
 export const logout = async () => {
-  // FUTURE: Call backend logout endpoint to clear httpOnly cookie
-  // await fetch(`${API_URL}/api/v1/auth/logout`, {
-  //   method: 'POST',
-  //   credentials: 'include'
-  // });
+  const token = getAuthToken();
+  
+  // Call backend logout endpoint to invalidate token
+  if (token) {
+    try {
+      const API_URL = window.APP_CONFIG?.API_BASE_URL || 
+                      (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_BASE_URL) || 
+                      'http://localhost:8000';
+      
+      await fetch(`${API_URL}/api/v1/auth/logout`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ token })
+      });
+      
+      console.log('✅ Backend logout successful');
+    } catch (error) {
+      console.error('❌ Backend logout failed:', error);
+      // Continue with local cleanup even if backend fails
+    }
+  }
 
+  // Always clear local auth data
   clearAuthData();
 };
 
