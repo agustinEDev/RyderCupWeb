@@ -10,13 +10,14 @@ import {
   updateRfegHandicapUseCase
 } from '../composition';
 
-// Importar utilidades de autenticación segura
-import { getAuthToken, getUserData, setUserData } from '../utils/secureAuth';
+// Importar el nuevo hook de autenticación
+import { useAuth } from './useAuth';
 
 const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
 export const useEditProfile = () => {
   const navigate = useNavigate();
+  const { user: authUser, loading: isLoadingAuth, refetch: refetchUser } = useAuth();
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -39,70 +40,40 @@ export const useEditProfile = () => {
   useEffect(() => {
     const fetchUserData = async () => {
       try {
-        // First get local data to show immediately
-        const localUserData = getUserData();
-
-        if (localUserData) {
-          setUser(localUserData);
-          setFormData({
-            firstName: localUserData.first_name || '',
-            lastName: localUserData.last_name || '',
-            email: localUserData.email || '',
-            currentPassword: '',
-            newPassword: '',
-            confirmPassword: '',
-            handicap: localUserData.handicap === null ? '' : localUserData.handicap.toString(),
-            countryCode: localUserData.country_code || ''
-          });
+        if (!authUser) {
+          setIsLoading(false);
+          return;
         }
 
-        // Then fetch fresh data from backend
-        const token = getAuthToken();
-        if (token) {
-          console.log('🔄 [useEditProfile] Fetching fresh user data from backend...');
-          const response = await fetch(`${API_URL}/api/v1/auth/current-user`, {
-            headers: {
-              'Authorization': `Bearer ${token}`
-            }
-          });
+        // Use data from httpOnly cookie authentication
+        console.log('✅ [useEditProfile] User data from httpOnly cookie:', {
+          userId: authUser.id,
+          hasCountryCode: 'country_code' in authUser,
+          countryCode: authUser.country_code
+        });
 
-          if (response.ok) {
-            const freshUserData = await response.json();
-            console.log('✅ [useEditProfile] Fresh user data received:', {
-              userId: freshUserData.id,
-              hasCountryCode: 'country_code' in freshUserData,
-              countryCode: freshUserData.country_code
-            });
+        setUser(authUser);
 
-            // Update localStorage with fresh data
-            setUserData(freshUserData);
-            setUser(freshUserData);
-
-            // Update form with fresh data
-            setFormData({
-              firstName: freshUserData.first_name || '',
-              lastName: freshUserData.last_name || '',
-              email: freshUserData.email || '',
-              currentPassword: '',
-              newPassword: '',
-              confirmPassword: '',
-              handicap: freshUserData.handicap === null ? '' : freshUserData.handicap.toString(),
-              countryCode: freshUserData.country_code || ''
-            });
-          } else {
-            console.warn('⚠️ [useEditProfile] Failed to fetch fresh user data, using cached data');
-          }
-        }
+        // Update form with user data
+        setFormData({
+          firstName: authUser.first_name || '',
+          lastName: authUser.last_name || '',
+          email: authUser.email || '',
+          currentPassword: '',
+          newPassword: '',
+          confirmPassword: '',
+          handicap: authUser.handicap === null ? '' : authUser.handicap.toString(),
+          countryCode: authUser.country_code || ''
+        });
       } catch (error) {
         console.error('❌ [useEditProfile] Error fetching user data:', error);
-        // Keep using local data if fetch fails
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchUserData();
-  }, []); // El array vacío asegura que esto solo se ejecute una vez
+  }, [authUser]);
 
   // Cargar lista de países al montar el componente
   useEffect(() => {
@@ -141,35 +112,8 @@ export const useEditProfile = () => {
     setIsRefreshing(true);
     
     try {
-      const token = getAuthToken();
-      const response = await fetch(`${API_URL}/api/v1/auth/current-user`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to refresh user data');
-      }
-
-      const refreshedUser = await response.json();
-
-      // Actualizar el almacenamiento seguro
-      setUserData(refreshedUser);
-
-      // Actualizar el estado del hook
-      setUser(refreshedUser);
-      setFormData({
-        firstName: refreshedUser.first_name || '',
-        lastName: refreshedUser.last_name || '',
-        email: refreshedUser.email || '',
-        currentPassword: '',
-        newPassword: '',
-        confirmPassword: '',
-        handicap: refreshedUser.handicap === null ? '' : refreshedUser.handicap.toString(),
-        countryCode: refreshedUser.country_code || ''
-      });
+      // Refetch user data from backend (via httpOnly cookie)
+      await refetchUser();
 
       toast.success('Profile data refreshed successfully!');
     } catch (error) {
@@ -190,9 +134,8 @@ export const useEditProfile = () => {
         handicap: formData.handicap,
       });
 
-      const updatedUserPlain = updatedUserEntity.toPersistence();
-      setUserData(updatedUserPlain);
-      setUser(updatedUserPlain);
+      // Refetch user data to get updated handicap
+      await refetchUser();
 
       toast.success('Handicap updated successfully!');
     } catch (error) {
@@ -209,10 +152,10 @@ export const useEditProfile = () => {
     try {
       const updatedUserEntity = await updateRfegHandicapUseCase.execute({ userId: user.id });
 
-      const updatedUserPlain = updatedUserEntity.toPersistence();
-      setUserData(updatedUserPlain);
-      setUser(updatedUserPlain);
+      // Refetch user data to get updated handicap
+      await refetchUser();
       
+      const updatedUserPlain = updatedUserEntity.toPersistence();
       setFormData(prev => ({ 
         ...prev, 
         handicap: updatedUserPlain.handicap === null ? '' : updatedUserPlain.handicap.toString()
@@ -272,16 +215,14 @@ export const useEditProfile = () => {
       // Llamada al caso de uso
       const updatedUserEntity = await updateUserProfileUseCase.execute(user.id, updateData);
 
-      // Actualizar el almacenamiento seguro y el estado del componente
-      // Convertir la entidad de vuelta a un objeto plano compatible con `setUserData`
-      const updatedUserPlain = updatedUserEntity.toPersistence();
-      setUserData(updatedUserPlain);
+      // Refetch user data to get fresh data from backend
+      await refetchUser();
 
-      setUser(updatedUserPlain); // Actualizar el estado `user` del hook
+      const updatedUserPlain = updatedUserEntity.toPersistence();
       setFormData(prev => ({
         ...prev,
-        firstName: updatedUserEntity.firstName,
-        lastName: updatedUserEntity.lastName,
+        firstName: updatedUserPlain.first_name,
+        lastName: updatedUserPlain.last_name,
         countryCode: updatedUserPlain.country_code || ''
       }));
 
@@ -347,9 +288,10 @@ export const useEditProfile = () => {
         securityData: securityData,
       });
 
+      // Refetch user data to get fresh data from backend
+      await refetchUser();
+
       const updatedUserPlain = updatedUserEntity.toPersistence(); 
-      setUserData(updatedUserPlain);
-      setUser(updatedUserPlain);
 
       // Limpiar campos de seguridad después de una actualización exitosa
       setFormData(prev => ({

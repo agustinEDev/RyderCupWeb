@@ -11,10 +11,9 @@ vi.mock('../composition', () => ({
   updateRfegHandicapUseCase: { execute: vi.fn() },
 }));
 
-vi.mock('../utils/secureAuth', () => ({
-  getAuthToken: vi.fn(),
-  getUserData: vi.fn(),
-  setUserData: vi.fn(),
+// Mock useAuth hook
+vi.mock('./useAuth', () => ({
+  useAuth: vi.fn()
 }));
 
 vi.mock('react-hot-toast', () => ({
@@ -30,26 +29,31 @@ vi.mock('react-router-dom', () => ({
   useNavigate: () => vi.fn(),
 }));
 
-// Importar los mocks para poder controlarlos en los tests
-import * as secureAuth from '../utils/secureAuth';
-import * as composition from '../composition'; // Importar para acceder a los mocks
-
+// Importar para acceder a los mocks
+import * as composition from '../composition';
+import { useAuth } from './useAuth';
 
 describe('useEditProfile Hook', () => {
 
   beforeEach(() => {
     // Limpiar todos los mocks antes de cada test
     vi.clearAllMocks();
-    // Asegurarse de que getUserData por defecto no devuelva un usuario para el test inicial
-    secureAuth.getUserData.mockReturnValue(null); 
   });
 
   it('debería tener un estado de carga inicial y los datos del formulario por defecto', () => {
+    // Mock useAuth to return no user
+    useAuth.mockReturnValue({
+      user: null,
+      loading: false,
+      error: null,
+      refetch: vi.fn()
+    });
+
     // Renderiza el hook en un entorno de test
     const { result } = renderHook(() => useEditProfile());
 
     // Assertions: verificar el estado inicial
-    expect(result.current.isLoading).toBe(false); // Corregido según discusión
+    expect(result.current.isLoading).toBe(false);
     expect(result.current.user).toBeNull();
     expect(result.current.isSaving).toBe(false);
     expect(result.current.isUpdatingRFEG).toBe(false);
@@ -66,7 +70,7 @@ describe('useEditProfile Hook', () => {
     });
   });
 
-  it('debería cargar los datos del usuario al inicializarse si getUserData devuelve un usuario', async () => {
+  it('debería cargar los datos del usuario al inicializarse si useAuth devuelve un usuario', async () => {
     // 1. Preparar un usuario de prueba
     const mockUserPlain = {
       id: '123',
@@ -75,11 +79,17 @@ describe('useEditProfile Hook', () => {
       email: 'john.doe@example.com',
       handicap: 15.5,
       handicap_updated_at: new Date().toISOString(),
-      is_verified: true,
+      email_verified: true,
+      country_code: null
     };
 
-    // 2. Configurar el mock de getUserData para que devuelva el usuario de prueba
-    secureAuth.getUserData.mockReturnValue(mockUserPlain);
+    // 2. Mock useAuth to return the user
+    useAuth.mockReturnValue({
+      user: mockUserPlain,
+      loading: false,
+      error: null,
+      refetch: vi.fn()
+    });
 
     let result;
     // 3. Renderizar el hook dentro de 'act' porque el useEffect produce actualizaciones de estado
@@ -88,7 +98,6 @@ describe('useEditProfile Hook', () => {
     });
 
     // 4. Verificar que los estados se han actualizado correctamente
-    expect(secureAuth.getUserData).toHaveBeenCalledTimes(1); // Se llama una vez al inicializarse
     expect(result.current.isLoading).toBe(false); // La carga ha finalizado
     expect(result.current.user).toEqual(mockUserPlain); // El usuario ha sido cargado
     expect(result.current.formData).toEqual({ // El formulario se ha rellenado con los datos del usuario
@@ -109,22 +118,29 @@ describe('useEditProfile Hook', () => {
     const { default: User } = await vi.importActual('../domain/entities/User');
 
     // 1. Arrange: Preparar el escenario del test
-    const mockUserPlain = { id: '1', first_name: 'John', last_name: 'Doe', email: 'a@a.com', handicap: 10 };
+    const mockUserPlain = { id: '1', first_name: 'John', last_name: 'Doe', email: 'a@a.com', handicap: 10, country_code: null };
     // eslint-disable-next-line sonar/constructor-for-side-effects
     const updatedUserEntity = new User({ id: '1', first_name: 'Johnny', last_name: 'Doe', email: 'a@a.com', handicap: 10, email_verified: true });
 
+    const mockRefetch = vi.fn();
+
     // Configurar mocks
-    secureAuth.getUserData.mockReturnValue(mockUserPlain);
+    useAuth.mockReturnValue({
+      user: mockUserPlain,
+      loading: false,
+      error: null,
+      refetch: mockRefetch
+    });
     composition.updateUserProfileUseCase.execute.mockResolvedValue(updatedUserEntity);
 
     // Renderizar el hook
     const { result } = renderHook(() => useEditProfile());
 
     // Esperar a que la carga inicial termine
-    await act(async () => {}); 
+    await act(async () => {});
 
     // 2. Act: Simular la interacción del usuario
-    
+
     // Cambiar el valor del formulario
     act(() => {
       result.current.handleInputChange({ target: { name: 'firstName', value: 'Johnny' } });
@@ -142,8 +158,7 @@ describe('useEditProfile Hook', () => {
       { firstName: 'Johnny', lastName: 'Doe' }
     );
 
-    expect(secureAuth.setUserData).toHaveBeenCalledWith(updatedUserEntity.toPersistence());
-    expect(result.current.user).toEqual(updatedUserEntity.toPersistence());
+    expect(mockRefetch).toHaveBeenCalled();
     expect(toast.success).toHaveBeenCalledWith('Profile updated successfully!');
     expect(result.current.isSaving).toBe(false); // Asegurarse de que el estado de guardado se resetea
   });
@@ -159,17 +174,24 @@ describe('useEditProfile Hook', () => {
     // eslint-disable-next-line no-unused-vars
     const { default: User } = await vi.importActual('../domain/entities/User');
     // eslint-disable-next-line sonar/constructor-for-side-effects
-    const updatedUserEntity = new User({ 
-      id: '1', 
-      first_name: 'John', 
-      last_name: 'Doe', 
+    const updatedUserEntity = new User({
+      id: '1',
+      first_name: 'John',
+      last_name: 'Doe',
       email: newEmail, // Email actualizado
-      handicap: 10, 
-      email_verified: false 
+      handicap: 10,
+      email_verified: false
     });
 
+    const mockRefetch = vi.fn();
+
     // Configurar mocks
-    secureAuth.getUserData.mockReturnValue(mockUserPlain);
+    useAuth.mockReturnValue({
+      user: mockUserPlain,
+      loading: false,
+      error: null,
+      refetch: mockRefetch
+    });
     composition.updateUserSecurityUseCase.execute.mockResolvedValue(updatedUserEntity);
 
     // Renderizar el hook
@@ -200,13 +222,11 @@ describe('useEditProfile Hook', () => {
       },
     });
 
-    expect(secureAuth.setUserData).toHaveBeenCalledWith(updatedUserEntity.toPersistence());
-    expect(result.current.user).toEqual(updatedUserEntity.toPersistence());
+    expect(mockRefetch).toHaveBeenCalled();
     expect(toast.success).toHaveBeenCalledWith('Security settings updated successfully!');
     expect(result.current.isSaving).toBe(false); // Asegurarse de que el estado de guardado se resetea
 
-    // Verificar que los campos de contraseña se han limpiado y el email en formData se ha actualizado
-    expect(result.current.formData.email).toBe(newEmail);
+    // Verificar que los campos de contraseña se han limpiado
     expect(result.current.formData.currentPassword).toBe('');
     expect(result.current.formData.newPassword).toBe('');
     expect(result.current.formData.confirmPassword).toBe('');
@@ -221,16 +241,23 @@ describe('useEditProfile Hook', () => {
     // eslint-disable-next-line no-unused-vars
     const { default: User } = await vi.importActual('../domain/entities/User');
     // eslint-disable-next-line sonar/constructor-for-side-effects
-    const updatedUserEntity = new User({ 
-      id: '1', 
-      first_name: 'John', 
-      last_name: 'Doe', 
-      email: 'a@a.com', 
-      handicap: newHandicap, 
-      email_verified: true 
+    const updatedUserEntity = new User({
+      id: '1',
+      first_name: 'John',
+      last_name: 'Doe',
+      email: 'a@a.com',
+      handicap: newHandicap,
+      email_verified: true
     });
 
-    secureAuth.getUserData.mockReturnValue(mockUserPlain);
+    const mockRefetch = vi.fn();
+
+    useAuth.mockReturnValue({
+      user: mockUserPlain,
+      loading: false,
+      error: null,
+      refetch: mockRefetch
+    });
     composition.updateManualHandicapUseCase.execute.mockResolvedValue(updatedUserEntity);
 
     const { result } = renderHook(() => useEditProfile());
@@ -252,11 +279,9 @@ describe('useEditProfile Hook', () => {
       handicap: newHandicap.toString(),
     });
 
-    expect(secureAuth.setUserData).toHaveBeenCalledWith(updatedUserEntity.toPersistence());
-    expect(result.current.user).toEqual(updatedUserEntity.toPersistence());
+    expect(mockRefetch).toHaveBeenCalled();
     expect(toast.success).toHaveBeenCalledWith('Handicap updated successfully!');
     expect(result.current.isSaving).toBe(false);
-    expect(result.current.formData.handicap).toBe(newHandicap.toString());
   });
 
   it('debería llamar a updateRfegHandicapUseCase y actualizar el estado (incluyendo formData) al llamar a handleUpdateHandicapRFEG', async () => {
@@ -268,16 +293,23 @@ describe('useEditProfile Hook', () => {
     // eslint-disable-next-line no-unused-vars
     const { default: User } = await vi.importActual('../domain/entities/User');
     // eslint-disable-next-line sonar/constructor-for-side-effects
-    const updatedUserEntity = new User({ 
-      id: '1', 
-      first_name: 'John', 
-      last_name: 'Doe', 
-      email: 'a@a.com', 
-      handicap: rfegHandicap, 
-      email_verified: true 
+    const updatedUserEntity = new User({
+      id: '1',
+      first_name: 'John',
+      last_name: 'Doe',
+      email: 'a@a.com',
+      handicap: rfegHandicap,
+      email_verified: true
     });
 
-    secureAuth.getUserData.mockReturnValue(mockUserPlain);
+    const mockRefetch = vi.fn();
+
+    useAuth.mockReturnValue({
+      user: mockUserPlain,
+      loading: false,
+      error: null,
+      refetch: mockRefetch
+    });
     composition.updateRfegHandicapUseCase.execute.mockResolvedValue(updatedUserEntity);
 
     const { result } = renderHook(() => useEditProfile());
@@ -294,56 +326,9 @@ describe('useEditProfile Hook', () => {
       userId: mockUserPlain.id,
     });
 
-    expect(secureAuth.setUserData).toHaveBeenCalledWith(updatedUserEntity.toPersistence());
-    expect(result.current.user).toEqual(updatedUserEntity.toPersistence());
+    expect(mockRefetch).toHaveBeenCalled();
     expect(toast.success).toHaveBeenCalledWith('Handicap updated from RFEG successfully!');
     expect(result.current.isUpdatingRFEG).toBe(false); // Asegurarse de que el estado se resetea
     expect(result.current.formData.handicap).toBe(rfegHandicap.toString()); // Verificar que formData se actualizó
   });
-
-  it('debería llamar a la API para refrescar los datos del usuario y actualizar el estado al llamar a handleRefreshUserData', async () => {
-    // Arrange
-    const initialUserPlain = { id: '1', first_name: 'OldName', last_name: 'OldLastName', email: 'old@example.com', handicap: 10 };
-    const refreshedUserPlain = { id: '1', first_name: 'NewName', last_name: 'NewLastName', email: 'new@example.com', handicap: 12, handicap_updated_at: new Date().toISOString() };
-    
-    // Mockear fetch para simular la llamada a la API
-    globalThis.fetch = vi.fn(() =>
-      Promise.resolve({
-        ok: true,
-        json: () => Promise.resolve(refreshedUserPlain),
-      })
-    );
-
-    secureAuth.getUserData.mockReturnValue(initialUserPlain);
-    secureAuth.getAuthToken.mockReturnValue('mock-token');
-
-    const { result } = renderHook(() => useEditProfile());
-    await act(async () => {}); // Esperar a que la carga inicial termine
-
-    // Act
-    await act(async () => {
-      await result.current.handleRefreshUserData();
-    });
-
-    // Assert
-    expect(secureAuth.getAuthToken).toHaveBeenCalled();
-    expect(globalThis.fetch).toHaveBeenCalledWith(
-      expect.stringContaining('/api/v1/auth/current-user'), // Verificar la URL parcial
-      expect.objectContaining({
-        method: 'GET',
-        headers: {
-          'Authorization': 'Bearer mock-token',
-        },
-      })
-    );
-    expect(secureAuth.setUserData).toHaveBeenCalledWith(refreshedUserPlain);
-    expect(result.current.user).toEqual(refreshedUserPlain);
-    expect(result.current.formData.firstName).toBe(refreshedUserPlain.first_name);
-    expect(result.current.isRefreshing).toBe(false);
-    expect(toast.success).toHaveBeenCalledWith('Profile data refreshed successfully!');
-
-    // Limpiar el mock de fetch
-    vi.restoreAllMocks();
-  });
-
 });

@@ -1,7 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import PropTypes from 'prop-types';
-import { logout } from '../../utils/secureAuth';
+import { broadcastLogout } from '../../utils/broadcastAuth';
+
+const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
 const HeaderAuth = ({ user }) => {
   const navigate = useNavigate();
@@ -15,11 +17,41 @@ const HeaderAuth = ({ user }) => {
   };
 
   const handleLogout = async () => {
-    // Call backend logout and clear local auth data
-    await logout();
+    console.log('🚀 LOGOUT FUNCTION CALLED');
 
-    // Redirect to home
-    navigate('/');
+    // 📡 Broadcast logout event to all other tabs FIRST
+    broadcastLogout();
+
+    try {
+      console.log('🚀 About to call backend logout...');
+      // Call backend logout endpoint
+      const response = await fetch(`${API_URL}/api/v1/auth/logout`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({}) // ✅ FIX: Enviar body vacío para LogoutRequestDTO
+      });
+
+      console.log('🔍 Logout response status:', response.status);
+      console.log('🔍 Logout response ok:', response.ok);
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        console.error('❌ Logout failed with status:', response.status);
+        console.error('❌ Error details:', errorData);
+
+        // Continue with logout anyway to clear frontend state
+      } else {
+        console.log('✅ Backend logout successful');
+      }
+    } catch (error) {
+      console.error('❌ Backend logout error:', error);
+    }
+
+    // Force full page reload to clear all state
+    window.location.href = '/';
   };
 
   const toggleDropdown = () => {

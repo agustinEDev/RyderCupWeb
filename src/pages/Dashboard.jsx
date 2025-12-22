@@ -5,43 +5,42 @@ import { Trophy, Users, User, TrendingUp, Calendar, Award, Search } from 'lucide
 import HeaderAuth from '../components/layout/HeaderAuth';
 import ProfileCard from '../components/profile/ProfileCard';
 import EmailVerificationBanner from '../components/EmailVerificationBanner';
-import { getUserData } from '../utils/secureAuth';
+import { useAuth } from '../hooks/useAuth';
 import { listUserCompetitionsUseCase } from '../composition'; // Use the same use case as My Competitions
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const [user, setUser] = useState(null);
-  const [competitions, setCompetitions] = useState([]); // State for competitions
-  const [isLoading, setIsLoading] = useState(true);
+  const { user, loading: isLoadingUser } = useAuth();
+  const [competitions, setCompetitions] = useState([]);
+  const [isLoadingCompetitions, setIsLoadingCompetitions] = useState(true);
 
   useEffect(() => {
     const loadDashboardData = async () => {
-      setIsLoading(true);
+      if (!user) {
+        setIsLoadingCompetitions(false);
+        return;
+      }
+      
+      setIsLoadingCompetitions(true);
       try {
-        // Fetch user data from secure storage
-        const userData = getUserData();
-        if (!userData) {
-          navigate('/login');
-          return;
-        }
-        setUser(userData);
 
         // Fetch competitions using the same use case as My Competitions page
         // This ensures the count matches (user's competitions: created OR enrolled)
-        const competitionsData = await listUserCompetitionsUseCase.execute(userData.id);
+        const competitionsData = await listUserCompetitionsUseCase.execute(user.id);
         setCompetitions(Array.isArray(competitionsData) ? competitionsData : []);
 
       } catch (error) {
         console.error("Failed to load dashboard data:", error);
-        // Silently fail for now, or show a toast
         setCompetitions([]);
       } finally {
-        setIsLoading(false);
+        setIsLoadingCompetitions(false);
       }
     };
 
     loadDashboardData();
-  }, [navigate]);
+  }, [user]);
+
+  const isLoading = isLoadingUser || isLoadingCompetitions;
 
   if (isLoading) {
     return (

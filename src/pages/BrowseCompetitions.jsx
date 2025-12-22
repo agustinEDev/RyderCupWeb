@@ -11,14 +11,13 @@ import {
   requestEnrollmentUseCase,
 } from '../composition';
 import { CountryFlag } from '../utils/countryUtils';
-import { getAuthToken, getUserData } from '../utils/secureAuth';
+import { useAuth } from '../hooks/useAuth';
 
 const BrowseCompetitions = () => {
   const navigate = useNavigate();
 
   // User state
-  const [user, setUser] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const { user, loading: isLoading } = useAuth();
 
   // Joinable competitions state
   const [joinableCompetitions, setJoinableCompetitions] = useState([]);
@@ -34,20 +33,6 @@ const BrowseCompetitions = () => {
 
   // Request enrollment state
   const [requestingEnrollment, setRequestingEnrollment] = useState({});
-
-  // Check authentication
-  useEffect(() => {
-    const token = getAuthToken();
-    const userData = getUserData();
-
-    if (!token || !userData) {
-      navigate('/login');
-      return;
-    }
-
-    setUser(userData);
-    setIsLoading(false);
-  }, [navigate]);
 
   // Load joinable competitions
   useEffect(() => {

@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
-import { setUserData, setAuthToken } from '../utils/secureAuth';
-import { verifyEmailUseCase } from '../composition'; // Nuevo
+import { verifyEmailUseCase } from '../composition';
 
 
 const VerifyEmail = () => {
@@ -40,12 +39,9 @@ const VerifyEmail = () => {
         const result = await verifyEmailUseCase.execute(token);
         console.log('✅ Email verified successfully:', result);
 
-        // Guardar el token y el usuario en el almacenamiento seguro
-        // El backend ahora devuelve { user: User, token: string }
-        const userPlain = result.user.toPersistence();
-        setAuthToken(result.token); // Usar setAuthToken en lugar de localStorage
-        setUserData(userPlain);
-        console.log('📝 User authenticated and stored in secure storage');
+        // El backend establece automáticamente la cookie httpOnly
+        // No necesitamos guardar nada en el frontend
+        console.log('✅ User authenticated via httpOnly cookie');
 
         await new Promise(resolve => setTimeout(resolve, 1500));
         setStatus('success');

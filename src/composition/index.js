@@ -1,4 +1,3 @@
-import { getAuthToken } from '../utils/secureAuth';
 import { default as UserEntity } from '../domain/entities/User';
 import IUserRepository from '../domain/repositories/IUserRepository';
 import ApiUserRepository from '../infrastructure/repositories/ApiUserRepository';
@@ -44,17 +43,13 @@ import SetCustomHandicapUseCase from '../application/use_cases/enrollment/SetCus
 import DirectEnrollUseCase from '../application/use_cases/enrollment/DirectEnrollUseCase';
 
 
-// --- Providers de Infraestructura ---
-const authTokenProvider = {
-  getToken: () => getAuthToken(),
-};
-
 // --- Repositorios (implementaciones concretas) ---
-const apiUserRepository = new ApiUserRepository({ authTokenProvider });
-const apiHandicapRepository = new ApiHandicapRepository({ authTokenProvider });
+// Con httpOnly cookies ya no necesitamos authTokenProvider
+const apiUserRepository = new ApiUserRepository();
+const apiHandicapRepository = new ApiHandicapRepository();
 const apiAuthRepository = new ApiAuthRepository();
 const apiCompetitionRepository = new ApiCompetitionRepository();
-const apiEnrollmentRepository = new ApiEnrollmentRepository({ authTokenProvider });
+const apiEnrollmentRepository = new ApiEnrollmentRepository();
 
 // --- Casos de Uso ---
 const updateUserProfileUseCase = new UpdateUserProfileUseCase({ userRepository: apiUserRepository });

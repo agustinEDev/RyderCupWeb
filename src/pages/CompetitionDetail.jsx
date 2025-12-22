@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import HeaderAuth from '../components/layout/HeaderAuth';
-import { getUserData } from '../utils/secureAuth';
+import { useAuth } from '../hooks/useAuth';
 import { CountryFlag } from '../utils/countryUtils';
 import {
   getCompetitionDetailUseCase,
@@ -34,10 +34,10 @@ const CompetitionDetail = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { id } = useParams();
-  const [user, setUser] = useState(null);
+  const { user, loading: isLoadingUser } = useAuth();
   const [competition, setCompetition] = useState(null);
   const [enrollments, setEnrollments] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingCompetition, setIsLoadingCompetition] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
 
   // Determine where user came from (browse or my competitions)
@@ -46,21 +46,24 @@ const CompetitionDetail = () => {
   const backText = fromBrowse ? 'Back to Browse' : 'Back to Competitions';
 
   useEffect(() => {
-    const userData = getUserData();
-    setUser(userData);
-    loadCompetition();
-  }, [id]);
+    if (user) {
+      loadCompetition();
+    }
+  }, [id, user]);
+
+  const isLoading = isLoadingUser || isLoadingCompetition;
 
   const loadCompetition = async () => {
-    setIsLoading(true);
+    if (!user) return;
+    
+    setIsLoadingCompetition(true);
     try {
       // Use GetCompetitionDetailUseCase instead of direct service call
       const data = await getCompetitionDetailUseCase.execute(id);
       setCompetition(data);
 
       // Load enrollments only if user is the creator (for optimization)
-      const userData = getUserData();
-      if (userData && data.creatorId === userData.id) {
+      if (user && data.creatorId === user.id) {
         const enrollmentsData = await listEnrollmentsUseCase.execute(id);
         setEnrollments(enrollmentsData);
       }
@@ -69,7 +72,7 @@ const CompetitionDetail = () => {
       toast.error(error.message || 'Failed to load competition');
       navigate('/competitions');
     } finally {
-      setIsLoading(false);
+      setIsLoadingCompetition(false);
     }
   };
 

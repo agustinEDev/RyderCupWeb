@@ -4,7 +4,6 @@ import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { validateEmail, checkRateLimit, resetRateLimit } from '../utils/validation';
 import { safeLog } from '../utils/auth';
-import { setAuthToken, setUserData } from '../utils/secureAuth';
 import PasswordInput from '../components/ui/PasswordInput';
 import { loginUseCase } from '../composition'; // NUEVO import
 
@@ -79,9 +78,9 @@ const Login = () => {
       }
 
       const from = location.state?.from?.pathname || '/dashboard';
-      setTimeout(() => {
-        navigate(from, { replace: true });
-      }, 500);
+      
+      // Forzar recarga completa para que useAuth detecte la nueva cookie
+      window.location.href = from;
 
     } catch (error) {
       safeLog('error', 'Login error', error);

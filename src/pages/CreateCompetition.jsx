@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Calendar, Trophy, MapPin, Settings, Plus, X, ChevronDown } from 'lucide-react';
 import HeaderAuth from '../components/layout/HeaderAuth';
-import { getUserData } from '../utils/secureAuth';
+import { useAuth } from '../hooks/useAuth';
 import { createCompetitionUseCase } from '../composition';
 import { CountryFlag } from '../utils/countryUtils';
 
@@ -17,8 +17,7 @@ const getMessageClassName = (type) => {
 
 const CreateCompetition = () => {
   const navigate = useNavigate();
-  const [user, setUser] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const { user, loading: isLoading } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
 
@@ -55,11 +54,6 @@ const CreateCompetition = () => {
   });
 
   useEffect(() => {
-    // Fetch user data from secure storage
-    const userData = getUserData();
-    setUser(userData);
-    setIsLoading(false);
-
     // Fetch all countries
     // eslint-disable-next-line sonar/todo-tag
     // TODO: Move country fetching logic to its own use case

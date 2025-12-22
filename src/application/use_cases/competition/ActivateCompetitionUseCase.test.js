@@ -4,11 +4,6 @@ import ActivateCompetitionUseCase from './ActivateCompetitionUseCase';
 // Mock fetch globally
 globalThis.fetch = vi.fn();
 
-// Mock auth utils
-vi.mock('../../../utils/secureAuth', () => ({
-  getAuthToken: vi.fn(() => 'test-token')
-}));
-
 describe('ActivateCompetitionUseCase', () => {
   let useCase;
   const API_URL = 'http://localhost:8000';
@@ -39,9 +34,9 @@ describe('ActivateCompetitionUseCase', () => {
         {
           method: 'POST',
           headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer test-token'
-          }
+            'Content-Type': 'application/json'
+          },
+          credentials: 'include'
         }
       );
 

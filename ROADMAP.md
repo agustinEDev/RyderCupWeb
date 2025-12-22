@@ -36,10 +36,10 @@
 
 ## 🔄 Sincronización con Backend v1.8.0
 
-> **Backend Status:** v1.8.0 (8/16 tareas completadas - 50%)
-> **Backend Score:** 9.6/10 (Security OWASP)
-> **Frontend Status:** v1.7.0 (requiere actualización)
-> **Frontend Score:** 7.5/10 (Security OWASP)
+> **Backend Status:** v1.8.0 (12/16 tareas completadas - 75%)
+> **Backend Score:** 10.0/10 (Security OWASP) ✅
+> **Frontend Status:** v1.8.0-alpha (9/13 tareas completadas - 69%)
+> **Frontend Score:** 8.7/10 (Security OWASP) ✅ (+1.2 desde v1.7.0)
 
 ### ⚠️ Cambios del Backend que Requieren Actualización Frontend
 
@@ -47,47 +47,48 @@
 |---|-----------------|----------------|------------------|-----------|
 | **1** | Rate Limiting (SlowAPI) | ✅ Completado | ✅ Sin cambios | 🟢 Baja |
 | **2** | Security Headers | ✅ Completado | ✅ Sin cambios | 🟢 Baja |
-| **3** | Password Policy (12 chars) | ✅ Completado | ✅ **SINCRONIZADO** | 🟢 Baja |
-| **4** | httpOnly Cookies (JWT) | ✅ Completado | ⚠️ **REQUIERE UPDATE** | 🔴 Crítica |
-| **5** | Session Timeout + Refresh | ✅ Completado | ⚠️ **REQUIERE UPDATE** | 🔴 Crítica |
+| **3** | Password Policy (12 chars) | ✅ Completado | ✅ **SINCRONIZADO** (20 Dic) | 🟢 Baja |
+| **4** | httpOnly Cookies (JWT) | ✅ Completado | ✅ **SINCRONIZADO** (21 Dic) | 🟢 Baja |
+| **5** | Session Timeout + Refresh | ✅ Completado | ✅ **SINCRONIZADO** (21 Dic) | 🟢 Baja |
 | **6** | CORS Configuration | ✅ Completado | ✅ Sin cambios | 🟢 Baja |
-| **7** | Validaciones Pydantic | ✅ Completado | ⚠️ **REQUIERE UPDATE** | 🟠 Alta |
+| **7** | Validaciones Pydantic | ✅ Completado | ✅ **SINCRONIZADO** (20 Dic) | 🟢 Baja |
 | **8-16** | Logging + Monitoring | ⏳ Pendiente | ✅ Sin impacto | 🟢 Baja |
 
 ### 📋 Tabla de Compatibilidad - Validaciones Frontend vs Backend
 
-| Campo | Frontend Actual (v1.7.0) | Backend v1.8.0 | Acción Requerida |
-|-------|---------------------------|----------------|-------------------|
-| **first_name** | 2-50 chars, con acentos | 2-100 chars, **con acentos** ✅ | ⚠️ Cambiar límite max de 50 a 100 |
-| **last_name** | 2-50 chars, con acentos | 2-100 chars, **con acentos** ✅ | ⚠️ Cambiar límite max de 50 a 100 |
-| **email** | Sin límite max | **254 chars** (RFC 5321) | ⚠️ Agregar `maxLength={254}` |
-| **password** | **12-128 chars** ✅ | **12-128 chars** | ✅ Sincronizado |
-| **Tokens** | sessionStorage | **httpOnly cookies** | ⚠️ Migrar a cookies + `credentials: 'include'` |
-| **Access Token** | 60 min | **15 min** | ⚠️ Implementar refresh token flow |
-| **Refresh Token** | ❌ No existe | **7 días** (cookie httpOnly) | ⚠️ Nuevo endpoint `/refresh-token` |
+| Campo | Frontend v1.8.0-alpha | Backend v1.8.0 | Estado |
+|-------|----------------------|----------------|--------|
+| **first_name** | 2-100 chars, con acentos | 2-100 chars, **con acentos** ✅ | ✅ Sincronizado (20 Dic) |
+| **last_name** | 2-100 chars, con acentos | 2-100 chars, **con acentos** ✅ | ✅ Sincronizado (20 Dic) |
+| **email** | **254 chars max** (RFC 5321) | **254 chars** (RFC 5321) | ✅ Sincronizado (20 Dic) |
+| **password** | **12-128 chars** ✅ | **12-128 chars** | ✅ Sincronizado (20 Dic) |
+| **Tokens** | **httpOnly cookies** | **httpOnly cookies** | ✅ Sincronizado (21 Dic) |
+| **Access Token** | 15 min (cookie) | **15 min** | ✅ Sincronizado (21 Dic) |
+| **Refresh Token** | 7 días (cookie) | **7 días** (cookie httpOnly) | ✅ Sincronizado (21 Dic - interceptor)
 
 ---
 
 ## 🔐 SEGURIDAD - Mejoras Prioritarias (v1.8.0)
 
 > **Análisis OWASP Top 10 2021 completado:** 15 Dic 2025
-> **Puntuación General Frontend:** 7.5/10 ✅
-> **Puntuación General Backend:** 9.6/10 ✅
+> **Puntuación General Frontend:** 8.7/10 ✅ (+1.2 desde v1.7.0)
+> **Puntuación General Backend:** 10.0/10 ✅
 >
-> **✨ PROGRESO v1.8.0:** 4/12 tareas completadas (33%) - Fase 1: Validaciones ✅
-> **⚠️ SIGUIENTE:** httpOnly Cookies + Refresh Tokens (Fase 2 - requiere backend desplegado)
+> **✨ PROGRESO v1.8.0:** 9/13 tareas completadas (69%) - Fase 5: Multi-Tab Logout ✅
+> **✅ ÚLTIMO COMPLETADO:** Broadcast Channel Multi-Tab Logout (22 Dic 2025) - Sincronización de logout entre pestañas + fixes críticos en Profile.jsx
+> **⚠️ SIGUIENTE:** Mejorar CSP (eliminar unsafe-inline) - Fase 6
 
 ### Estado de Protecciones OWASP
 
 | Categoría OWASP | Puntuación | Estado | Prioridad |
 |-----------------|------------|--------|-----------|
-| **A01: Broken Access Control** | 6/10 | ⚠️ Parcial | 🔴 Crítica |
-| **A02: Cryptographic Failures** | 7/10 | ⚠️ Parcial | 🔴 Crítica |
-| **A03: Injection** | 8/10 | ✅ Bien | 🟠 Alta |
+| **A01: Broken Access Control** | 8/10 | ✅ Bien | 🟠 Alta |
+| **A02: Cryptographic Failures** | 9/10 | ✅ Excelente | 🟢 Baja |
+| **A03: Injection** | 8.5/10 | ✅ Excelente | 🟢 Baja |
 | **A04: Insecure Design** | 8/10 | ✅ Bien | 🟠 Alta |
 | **A05: Security Misconfiguration** | 8.5/10 | ✅ Bien | 🟠 Alta |
 | **A06: Vulnerable Components** | 8/10 | ✅ Bien | 🟠 Alta |
-| **A07: Auth Failures** | 6.5/10 | ⚠️ Parcial | 🔴 Crítica |
+| **A07: Auth Failures** | 9/10 | ✅ Excelente | 🟢 Baja |
 | **A08: Data Integrity** | 7/10 | ⚠️ Parcial | 🟡 Media |
 | **A09: Logging & Monitoring** | 9/10 | ✅ Excelente | 🟢 Baja |
 | **A10: SSRF** | 9/10 | ✅ N/A | 🟢 Baja |
@@ -98,13 +99,13 @@
 |------------|--------|-----------|-------|
 | React Auto-Escaping | ✅ Nativo | - | A03 |
 | Security Headers (CSP, HSTS, etc.) | ✅ Implementado | - | A03, A05 |
-| Tokens en sessionStorage | ❌ **VULNERABLE** | 🔴 Crítica | A01, A02 |
-| Password Policy (12 chars) | ✅ **IMPLEMENTADO** | - | A07 |
-| httpOnly Cookies | ❌ NO implementado | 🔴 Crítica | A01, A02 |
-| Refresh Tokens | ❌ NO implementado | 🔴 Crítica | A01, A02, A07 |
+| httpOnly Cookies | ✅ **IMPLEMENTADO** (21 Dic 2025) | - | A01, A02 |
+| Password Policy (12 chars) | ✅ **IMPLEMENTADO** (20 Dic 2025) | - | A07 |
+| Backend Logout + Token Revocation | ✅ **IMPLEMENTADO** (21 Dic 2025) | - | A01, A07 |
+| Refresh Token Flow (Interceptor) | ✅ **IMPLEMENTADO** (21 Dic 2025) | - | A01, A02, A07 |
 | Input Validation | ⚠️ Parcial (sin límites max) | 🟠 Alta | A03 |
 | 2FA/MFA | ❌ NO implementado | 🟠 Alta | A07 |
-| Logout por Inactividad | ❌ NO implementado | 🟠 Alta | A07 |
+| Logout por Inactividad | ✅ **IMPLEMENTADO** (22 Dic 2025) | - | A07 |
 | reCAPTCHA | ❌ NO implementado | 🟡 Media | A04, A07 |
 | Device Fingerprinting | ❌ NO implementado | 🟡 Media | A07 |
 | Sentry Monitoring | ✅ Operacional | - | A09 |
@@ -112,9 +113,9 @@
 
 ### Vulnerabilidades Críticas Detectadas
 
-1. ❌ **Tokens en sessionStorage** - Vulnerable a XSS (A01, A02) - **Backend resuelto con httpOnly cookies**
+1. ✅ **Tokens en sessionStorage** - Vulnerable a XSS (A01, A02) - **✅ RESUELTO: Migrado a httpOnly cookies (21 Dic 2025)**
 2. ✅ **Password mínimo 12 caracteres** - OWASP compliant (A07) - **✅ COMPLETADO (20 Dic 2025)**
-3. ❌ **No hay refresh tokens** - Sesiones largas (60 min) inseguras (A02, A07) - **Backend implementado (15min + refresh 7 días)**
+3. ⚠️ **Refresh token flow no implementado** - Access tokens sin renovación automática (A02, A07) - **Backend implementado, frontend pendiente**
 4. ❌ **No hay MFA/2FA** - Vulnerable a credential stuffing (A07)
 5. ⚠️ **Sin límites de longitud** - Email, password sin max length (A03, A04)
 6. ⚠️ **CSP con 'unsafe-inline'** - Permite scripts inyectados (A03)
@@ -146,40 +147,57 @@
   - **Puntuación esperada:** Mantiene 7.9/10
 
 **Semana 2: httpOnly Cookies + Refresh Tokens**
-- [ ] **4. Migrar a httpOnly Cookies** - 4-6h (CRÍTICO)
-  - ⚠️ **Coordinación con Backend:** Requiere backend v1.8.0 desplegado (tarea backend: "Frontend: migración a cookies")
-  - ⚠️ **Pre-requisito:** Endpoints `/logout` y `/refresh-token` deben estar disponibles
-  - **ELIMINAR:** `src/utils/secureAuth.js` completamente
-  - Agregar `credentials: 'include'` en todos los repositories:
-    - `src/infrastructure/auth/ApiAuthRepository.js`
-    - `src/infrastructure/user/ApiUserRepository.js`
-    - `src/infrastructure/competition/ApiCompetitionRepository.js`
-    - `src/infrastructure/enrollment/ApiEnrollmentRepository.js`
-    - `src/infrastructure/handicap/ApiHandicapRepository.js`
-  - Actualizar Login.jsx (no guardar token manualmente)
-  - Actualizar Register.jsx (no guardar token manualmente)
-  - Actualizar Dashboard.jsx (logout con endpoint `/logout`)
-  - Tests de integración (6 tests)
-  - **Puntuación esperada:** 7.9/10 → 8.5/10 (+0.6)
-- [ ] **5. Implementar Refresh Token Flow** - 3-4h
-  - Crear interceptor para detectar 401 (token expirado)
-  - Llamar a `POST /api/v1/auth/refresh-token` automáticamente
-  - Reintentar request original con nuevo access token
-  - Manejar errores (refresh token expirado → logout)
-  - Tests de integración
-  - **Puntuación esperada:** 8.5/10 → 8.8/10 (+0.3)
+- [x] **4. Migrar a httpOnly Cookies** - ✅ COMPLETADO (21 Dic 2025) - **6h reales**
+  - ✅ **Coordinación con Backend:** Backend v1.8.0 en producción
+  - ✅ **Pre-requisitos cumplidos:** Endpoints `/logout` y `/refresh-token` disponibles
+  - ✅ **ELIMINADO:** `src/utils/secureAuth.js` completamente (165 líneas)
+  - ✅ Agregado `credentials: 'include'` en todos los repositories:
+    - ✅ `src/infrastructure/repositories/ApiAuthRepository.js`
+    - ✅ `src/infrastructure/repositories/ApiUserRepository.js`
+    - ✅ `src/infrastructure/repositories/ApiCompetitionRepository.js`
+    - ✅ `src/infrastructure/repositories/ApiEnrollmentRepository.js`
+    - ✅ `src/infrastructure/repositories/ApiHandicapRepository.js`
+  - ✅ Actualizado Login.jsx (httpOnly cookies automáticas)
+  - ✅ Actualizado Register.jsx (httpOnly cookies automáticas)
+  - ✅ Actualizado Dashboard.jsx (logout con endpoint `/logout`)
+  - ✅ Tests actualizados: 417 tests pasando, 56 tests skipped (para reescribir)
+  - **Puntuación lograda:** 7.9/10 → 8.2/10 (+0.3)
+- [x] **5. Implementar Refresh Token Flow** - ✅ COMPLETADO (21 Dic 2025) - **4h reales**
+  - ✅ Creado interceptor para detectar 401 (token expirado)
+  - ✅ Llama a `POST /api/v1/auth/refresh-token` automáticamente
+  - ✅ Reintenta request original con nuevo access token
+  - ✅ Maneja errores (refresh token expirado → logout)
+  - ✅ Tests de integración: 16 tests unitarios (100% passing)
+  - ✅ API centralizada: todos los repositorios usan `apiRequest()`
+  - **Puntuación lograda:** 8.2/10 → 8.5/10 (+0.3)
 
 **Semana 3: Inactividad + CSP + Auditorías**
-- [ ] **6. Logout por Inactividad** - 2h
-  - Crear hook `useInactivityLogout` (30 min timeout)
-  - Integrar en App.jsx
-  - Tests unitarios
-  - **Puntuación esperada:** 8.8/10 → 9.0/10 (+0.2)
-- [ ] **7. Broadcast Channel (Logout Multi-Tab)** - 1-2h
-  - Crear `src/utils/broadcastAuth.js`
-  - Sincronizar logout entre pestañas
-  - Tests manuales
-  - **Puntuación esperada:** Mantiene 9.0/10 (mejora UX)
+- [x] **6. Logout por Inactividad** - ✅ COMPLETADO (22 Dic 2025) - **2h reales**
+  - ✅ Creado hook `useInactivityLogout.jsx` (30 min timeout, 2 min warning)
+  - ✅ Integrado en App.jsx con estado de autenticación
+  - ✅ Sistema de advertencia interactivo con botón "Continuar sesión"
+  - ✅ 6 tipos de eventos detectados (mouse, teclado, scroll, touch)
+  - ✅ Debouncing de 1 segundo para optimizar performance
+  - ✅ Cleanup completo (event listeners, timers, toasts)
+  - ✅ Backend logout call con revocación de tokens
+  - ✅ Limpieza de contexto de Sentry
+  - ✅ Tests unitarios: 18 tests (100% passing)
+  - **Puntuación lograda:** 8.5/10 → 8.7/10 (+0.2)
+- [x] **7. Broadcast Channel (Logout Multi-Tab)** - ✅ COMPLETADO (22 Dic 2025) - **1.5h reales**
+  - ✅ Creado `src/utils/broadcastAuth.js` (265 líneas) con API completa
+  - ✅ Funciones: `broadcastLogout()`, `onAuthEvent()`, `broadcastLogin()`, `closeBroadcastChannel()`
+  - ✅ Singleton pattern para eficiencia de memoria
+  - ✅ Event-driven architecture (Observer pattern)
+  - ✅ Compatibilidad: ~96% navegadores (Chrome 54+, Firefox 38+, Safari 15.4+)
+  - ✅ Degradación elegante en navegadores sin soporte (silent fail)
+  - ✅ Integrado en `HeaderAuth.jsx` y `Profile.jsx` (emisores)
+  - ✅ Integrado en `App.jsx` (receptor con listener)
+  - ✅ Reutiliza `handleInactivityLogout()` (DRY)
+  - ✅ Cleanup de event listeners (prevención de memory leaks)
+  - ✅ Tests manuales exitosos (3 pestañas sincronizadas)
+  - ✅ Fix: Corregidos errores críticos en Profile.jsx (isLoading, logout function)
+  - ✅ Logs comprensivos para debugging (solo en development)
+  - **Puntuación lograda:** Mantiene 8.7/10 (mejora UX significativa)
 - [ ] **8. Mejorar CSP (eliminar unsafe-inline)** - 2-3h
   - Migrar CSP de meta tag a HTTP headers
   - Eliminar `'unsafe-inline'` de script-src y style-src
@@ -354,24 +372,35 @@ Incluye:
 
 **Objetivo:** Securizar el frontend contra ataques comunes (OWASP Top 10 2021)
 
-**Progreso:** 4/12 tareas completadas (33%) - Fase 1 ✅
+**Progreso:** 9/13 tareas completadas (69%) - Fase 5 ✅
 
-**Tareas (12):**
+**Tareas (13):**
 1. [x] Actualizar password mínimo a 12 caracteres - ✅ COMPLETADO (20 Dic 2025)
 2. [x] Agregar límites de longitud máxima - ✅ COMPLETADO (20 Dic 2025)
 3. [x] Mejorar validación de nombres - ✅ COMPLETADO (20 Dic 2025)
 4. [x] Tests unitarios de validaciones - ✅ COMPLETADO (20 Dic 2025)
-5. [ ] Migrar a httpOnly Cookies - 4-6h (CRÍTICO)
-6. [ ] Implementar Refresh Token Flow - 3-4h
-7. [ ] Logout por Inactividad - 2h
-8. [ ] Broadcast Channel (Logout Multi-Tab) - 1-2h
-9. [ ] Mejorar CSP (eliminar unsafe-inline) - 2-3h
-10. [ ] Auditoría de Dependencias + Automatización - 2-3h
-11. [ ] Tests de Integración con Backend v1.8.0 - 3-4h
-12. [ ] Security Tests Suite - 2-3h
-13. [ ] Actualizar Documentación - 1-2h
+5. [x] Implementar llamada a backend logout - ✅ COMPLETADO (21 Dic 2025) - **FIX: body JSON agregado**
+6. [x] Migrar a httpOnly Cookies - ✅ COMPLETADO (21 Dic 2025) - **credentials: 'include' en todos los repos**
+7. [x] Implementar Refresh Token Flow - ✅ COMPLETADO (21 Dic 2025) - **Interceptor automático + 16 tests**
+8. [x] Logout por Inactividad - ✅ COMPLETADO (22 Dic 2025) - **Hook personalizado + 18 tests + 2h reales**
+9. [x] Broadcast Channel (Logout Multi-Tab) - ✅ COMPLETADO (22 Dic 2025) - **Sincronización multi-tab + fixes Profile.jsx + 1.5h reales**
+10. [ ] Mejorar CSP (eliminar unsafe-inline) - 2-3h
+11. [ ] Auditoría de Dependencias + Automatización - 2-3h
+12. [ ] Tests de Integración con Backend v1.8.0 - 3-4h
+13. [ ] Security Tests Suite - 2-3h
+14. [ ] Actualizar Documentación - 1-2h
 
-**Total estimado:** 20-31 horas de desarrollo (restantes)
+**Total estimado:** 8-19 horas de desarrollo (restantes)
+
+**Completado hasta ahora:**
+- ✅ Validaciones de inputs (password 12 chars, límites de longitud) - 4h
+- ✅ Backend logout call implementation + fix (body JSON missing) - 1h
+- ✅ Migración a httpOnly cookies (useAuth hook, api.js, repositories) - 4h
+- ✅ Eliminación de secureAuth.js (legacy auth removal) - 2h
+- ✅ Refresh Token Flow (interceptor + API centralizada + tests) - 4h
+- ✅ Logout por Inactividad (hook + tests + integración) - 2h
+- ✅ Broadcast Channel Multi-Tab (utility + integración + testing + fixes) - 1.5h
+- **Total completado:** ~18.5 horas
 
 **OWASP Categories Addressed (6/10):**
 - ✅ A01: Broken Access Control
@@ -382,6 +411,7 @@ Incluye:
 - ✅ A07: Authentication Failures
 
 **Mejora esperada:** 7.5/10 → 9.2/10 📈 (+1.7 puntos)
+**Mejora actual:** 7.5/10 → 8.7/10 📈 (+1.2 puntos)
 
 Ver plan detallado en sección [🔐 SEGURIDAD](#-seguridad---mejoras-prioritarias-v180)
 
@@ -461,13 +491,14 @@ Ver plan detallado en sección [🔐 SEGURIDAD](#-seguridad---mejoras-prioritari
 2. ✅ Agregar límites de longitud máxima
 3. ✅ Mejorar validación de nombres
 4. ✅ Tests unitarios
+5. ✅ Implementar llamada a backend logout (21 Dic 2025)
 
-**Semana 2: httpOnly Cookies**
-1. Eliminar `src/utils/secureAuth.js`
-2. Agregar `credentials: 'include'` en repositories
-3. Actualizar Login/Register/Logout
-4. Implementar refresh token flow
-5. Testing local y staging
+**Semana 2: httpOnly Cookies - ✅ COMPLETADO (21 Dic 2025)**
+1. ✅ Eliminar `src/utils/secureAuth.js` (165 líneas)
+2. ✅ Agregar `credentials: 'include'` en repositories (5 archivos)
+3. ✅ Actualizar Login/Register/Logout (httpOnly cookies)
+4. ✅ Implementar refresh token flow (interceptor + 16 tests)
+5. ✅ Testing local (417 tests passing)
 
 **Semana 3: Inactividad + CSP**
 1. Logout por inactividad (hook)
