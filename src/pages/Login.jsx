@@ -67,9 +67,9 @@ const Login = () => {
       const authenticatedUser = await loginUseCase.execute(formData.email, formData.password);
 
       resetRateLimit('login');
-      toast.success(`Welcome, ${authenticatedUser.firstName}!`); // Usamos firstName de la entidad
+      toast.success(`Welcome, ${authenticatedUser.firstName}!`);
 
-      if (!authenticatedUser.emailVerified) { // Usamos la propiedad de la entidad User
+      if (!authenticatedUser.emailVerified) {
         safeLog('info', 'Email verification required');
         toast('Please verify your email', {
           duration: 5000,
@@ -79,12 +79,21 @@ const Login = () => {
 
       const from = location.state?.from?.pathname || '/dashboard';
       
-      // Forzar recarga completa para que useAuth detecte la nueva cookie
-      window.location.href = from;
+      // Navegar sin forzar recarga - useAuth detectará la cookie automáticamente
+      navigate(from, { replace: true });
 
     } catch (error) {
-      safeLog('error', 'Login error', error);
-      toast.error(error.message || 'Incorrect email or password');
+      console.error('Login error:', error);
+      
+      // Limpiar el password por seguridad (OWASP A07 - Authentication Failures)
+      setFormData(prev => ({
+        ...prev,
+        password: ''
+      }));
+      
+      toast.error(error.message || 'Incorrect email or password', {
+        duration: 5000,
+      });
     } finally {
       setIsLoading(false);
     }

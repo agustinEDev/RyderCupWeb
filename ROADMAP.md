@@ -1,7 +1,7 @@
 # 🗺️ Roadmap - RyderCupFriends Frontend
 
 > **Versión:** 1.7.0
-> **Última actualización:** 17 Dic 2025
+> **Última actualización:** 22 Dic 2025
 > **Estado general:** ✅ Producción
 > **Framework:** React 18 + Vite 7
 > **Arquitectura:** Clean Architecture + DDD
@@ -38,8 +38,8 @@
 
 > **Backend Status:** v1.8.0 (12/16 tareas completadas - 75%)
 > **Backend Score:** 10.0/10 (Security OWASP) ✅
-> **Frontend Status:** v1.8.0-alpha (9/13 tareas completadas - 69%)
-> **Frontend Score:** 8.7/10 (Security OWASP) ✅ (+1.2 desde v1.7.0)
+> **Frontend Status:** v1.8.0-alpha (10/14 tareas completadas - 71%)
+> **Frontend Score:** 8.9/10 (Security OWASP) ✅ (+1.4 desde v1.7.0)
 
 ### ⚠️ Cambios del Backend que Requieren Actualización Frontend
 
@@ -71,12 +71,12 @@
 ## 🔐 SEGURIDAD - Mejoras Prioritarias (v1.8.0)
 
 > **Análisis OWASP Top 10 2021 completado:** 15 Dic 2025
-> **Puntuación General Frontend:** 8.7/10 ✅ (+1.2 desde v1.7.0)
+> **Puntuación General Frontend:** 8.9/10 ✅ (+1.4 desde v1.7.0)
 > **Puntuación General Backend:** 10.0/10 ✅
 >
-> **✨ PROGRESO v1.8.0:** 9/13 tareas completadas (69%) - Fase 5: Multi-Tab Logout ✅
-> **✅ ÚLTIMO COMPLETADO:** Broadcast Channel Multi-Tab Logout (22 Dic 2025) - Sincronización de logout entre pestañas + fixes críticos en Profile.jsx
-> **⚠️ SIGUIENTE:** Mejorar CSP (eliminar unsafe-inline) - Fase 6
+> **✨ PROGRESO v1.8.0:** 10/14 tareas completadas (71%) - Fase 6: CSP Estricto ✅
+> **✅ ÚLTIMO COMPLETADO:** Content Security Policy sin unsafe-inline (22 Dic 2025) - Headers HTTP + Build limpio
+> **⚠️ SIGUIENTE:** Auditoría de Dependencias + Automatización - Fase 7
 
 ### Estado de Protecciones OWASP
 
@@ -169,6 +169,8 @@
   - ✅ Maneja errores (refresh token expirado → logout)
   - ✅ Tests de integración: 16 tests unitarios (100% passing)
   - ✅ API centralizada: todos los repositorios usan `apiRequest()`
+  - ✅ **Fix (23 Dic):** Corregido bug donde interceptor redirigía en `/auth/login` 401
+  - ✅ **Fix (23 Dic):** Login con credenciales incorrectas ahora muestra toast correctamente
   - **Puntuación lograda:** 8.2/10 → 8.5/10 (+0.3)
 
 **Semana 3: Inactividad + CSP + Auditorías**
@@ -198,12 +200,19 @@
   - ✅ Fix: Corregidos errores críticos en Profile.jsx (isLoading, logout function)
   - ✅ Logs comprensivos para debugging (solo en development)
   - **Puntuación lograda:** Mantiene 8.7/10 (mejora UX significativa)
-- [ ] **8. Mejorar CSP (eliminar unsafe-inline)** - 2-3h
-  - Migrar CSP de meta tag a HTTP headers
-  - Eliminar `'unsafe-inline'` de script-src y style-src
-  - Usar nonces o hashes para scripts inline
-  - Verificar con securityheaders.com
-  - **Puntuación esperada:** 9.0/10 → 9.2/10 (+0.2)
+- [x] **8. Mejorar CSP (eliminar unsafe-inline)** - ✅ COMPLETADO (22-23 Dic 2025) - **3h reales**
+  - ✅ Eliminado CSP del meta tag en index.html (usar headers HTTP)
+  - ✅ Actualizado _headers con CSP sin 'unsafe-inline'
+  - ✅ Actualizado vercel.json con CSP sin 'unsafe-inline'
+  - ✅ Actualizado nginx.conf con CSP sin 'unsafe-inline'
+  - ✅ Configurado vite.config.js con CSP diferenciado (dev permisivo / prod estricto)
+  - ✅ Build exitoso sin scripts inline
+  - ✅ Verificación local: sin errores de CSP en consola
+  - ✅ Creado script verify-csp.js para testing
+  - ✅ **Fix (23 Dic):** Corregido bug de tokenRefreshInterceptor que causaba recarga de página
+  - ✅ **Mejora (23 Dic):** Password se limpia automáticamente tras login fallido (OWASP A07)
+  - ⏳ Pendiente: Verificar en producción con securityheaders.com (post-deploy)
+  - **Puntuación lograda:** 8.7/10 → 8.9/10 (+0.2)
 - [ ] **9. Auditoría de Dependencias** - 2-3h
   - Ejecutar `npm audit` y `npm outdated`
   - Actualizar dependencias críticas (React, Vite, Sentry)
@@ -372,9 +381,9 @@ Incluye:
 
 **Objetivo:** Securizar el frontend contra ataques comunes (OWASP Top 10 2021)
 
-**Progreso:** 9/13 tareas completadas (69%) - Fase 5 ✅
+**Progreso:** 10/14 tareas completadas (71%) - Fase 6 ✅
 
-**Tareas (13):**
+**Tareas (14):**
 1. [x] Actualizar password mínimo a 12 caracteres - ✅ COMPLETADO (20 Dic 2025)
 2. [x] Agregar límites de longitud máxima - ✅ COMPLETADO (20 Dic 2025)
 3. [x] Mejorar validación de nombres - ✅ COMPLETADO (20 Dic 2025)
@@ -384,13 +393,13 @@ Incluye:
 7. [x] Implementar Refresh Token Flow - ✅ COMPLETADO (21 Dic 2025) - **Interceptor automático + 16 tests**
 8. [x] Logout por Inactividad - ✅ COMPLETADO (22 Dic 2025) - **Hook personalizado + 18 tests + 2h reales**
 9. [x] Broadcast Channel (Logout Multi-Tab) - ✅ COMPLETADO (22 Dic 2025) - **Sincronización multi-tab + fixes Profile.jsx + 1.5h reales**
-10. [ ] Mejorar CSP (eliminar unsafe-inline) - 2-3h
+10. [x] Mejorar CSP (eliminar unsafe-inline) - ✅ COMPLETADO (22 Dic 2025) - **CSP estricto sin unsafe-inline + 2h reales**
 11. [ ] Auditoría de Dependencias + Automatización - 2-3h
 12. [ ] Tests de Integración con Backend v1.8.0 - 3-4h
 13. [ ] Security Tests Suite - 2-3h
 14. [ ] Actualizar Documentación - 1-2h
 
-**Total estimado:** 8-19 horas de desarrollo (restantes)
+**Total estimado:** 8-12 horas de desarrollo (restantes)
 
 **Completado hasta ahora:**
 - ✅ Validaciones de inputs (password 12 chars, límites de longitud) - 4h
@@ -400,9 +409,10 @@ Incluye:
 - ✅ Refresh Token Flow (interceptor + API centralizada + tests) - 4h
 - ✅ Logout por Inactividad (hook + tests + integración) - 2h
 - ✅ Broadcast Channel Multi-Tab (utility + integración + testing + fixes) - 1.5h
-- **Total completado:** ~18.5 horas
+- ✅ CSP sin unsafe-inline (headers HTTP + vite config + testing) - 2h
+- **Total completado:** ~20.5 horas
 
-**OWASP Categories Addressed (6/10):**
+**OWASP Categories Addressed (7/10):**
 - ✅ A01: Broken Access Control
 - ✅ A02: Cryptographic Failures
 - ✅ A03: Injection

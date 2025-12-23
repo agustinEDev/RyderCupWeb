@@ -113,6 +113,12 @@ export const fetchWithTokenRefresh = async (url, options = {}) => {
       return response;
     }
 
+    // Special case: Don't retry login endpoint - let it fail naturally
+    if (url.includes('/auth/login')) {
+      console.log('🚫 [TokenRefresh] Login endpoint returned 401. Invalid credentials - not retrying.');
+      return response;
+    }
+
     console.log('⚠️ [TokenRefresh] Received 401 Unauthorized. Attempting token refresh...');
 
     // If a refresh is already in progress, queue this request

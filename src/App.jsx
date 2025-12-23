@@ -1,7 +1,6 @@
 import React, { useEffect, lazy, Suspense, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation, useNavigationType, createRoutesFromChildren, matchRoutes, useNavigate } from 'react-router-dom';
 import * as Sentry from '@sentry/react';
-import { Toaster } from 'react-hot-toast';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import { getUserData } from './hooks/useAuth';
 import { setUserContext, clearUserContext } from './utils/sentryHelpers';
@@ -120,34 +119,6 @@ function AppContent() {
 
   return (
     <>
-      {/* Toast Notifications */}
-      <Toaster
-        position="top-right"
-        toastOptions={{
-          duration: 4000,
-          style: {
-            background: '#fff',
-            color: '#131613',
-            border: '1px solid #dee3df',
-            borderRadius: '0.5rem',
-            padding: '16px',
-            fontSize: '14px',
-          },
-          success: {
-            iconTheme: {
-              primary: '#2d7b3e',
-              secondary: '#fff',
-            },
-          },
-          error: {
-            iconTheme: {
-              primary: '#ef4444',
-              secondary: '#fff',
-            },
-          },
-        }}
-      />
-
       <Suspense fallback={
         <div style={{
           display: 'flex',
