@@ -1,7 +1,7 @@
 # 🗺️ Roadmap - RyderCupFriends Frontend
 
 > **Versión:** 1.7.0
-> **Última actualización:** 22 Dic 2025
+> **Última actualización:** 23 Dic 2025
 > **Estado general:** ✅ Producción
 > **Framework:** React 18 + Vite 7
 > **Arquitectura:** Clean Architecture + DDD
@@ -23,6 +23,7 @@
 | **Sentry** | ✅ Operacional | Error tracking, Performance, Session Replay |
 | **Performance** | ✅ Optimizado | Code splitting, Lazy loading (-95% bundle) |
 | **React Auto-Escaping** | ✅ Nativo | XSS protection por defecto |
+| **CI/CD Pipeline** | ✅ Profesional | GitHub Actions (CI + Security + E2E) |
 
 ### 📈 Métricas Clave
 
@@ -31,6 +32,7 @@
 - **Páginas:** 11 rutas (5 públicas, 6 protegidas)
 - **Cobertura:** Domain 100%, Application 90%, Utils 100%
 - **Deployment:** Render.com (Static Site)
+- **CI/CD:** 3 workflows automáticos (CI, Security, E2E)
 
 ---
 
@@ -39,7 +41,7 @@
 > **Backend Status:** v1.8.0 (12/16 tareas completadas - 75%)
 > **Backend Score:** 10.0/10 (Security OWASP) ✅
 > **Frontend Status:** v1.8.0-alpha (10/14 tareas completadas - 71%)
-> **Frontend Score:** 8.9/10 (Security OWASP) ✅ (+1.4 desde v1.7.0)
+> **Frontend Score:** 9.3/10 (Security OWASP) ✅ (+1.8 desde v1.7.0)
 
 ### ⚠️ Cambios del Backend que Requieren Actualización Frontend
 
@@ -71,12 +73,12 @@
 ## 🔐 SEGURIDAD - Mejoras Prioritarias (v1.8.0)
 
 > **Análisis OWASP Top 10 2021 completado:** 15 Dic 2025
-> **Puntuación General Frontend:** 8.9/10 ✅ (+1.4 desde v1.7.0)
+> **Puntuación General Frontend:** 9.3/10 ✅ (+1.8 desde v1.7.0)
 > **Puntuación General Backend:** 10.0/10 ✅
 >
-> **✨ PROGRESO v1.8.0:** 10/14 tareas completadas (71%) - Fase 6: CSP Estricto ✅
-> **✅ ÚLTIMO COMPLETADO:** Content Security Policy sin unsafe-inline (22 Dic 2025) - Headers HTTP + Build limpio
-> **⚠️ SIGUIENTE:** Auditoría de Dependencias + Automatización - Fase 7
+> **✨ PROGRESO v1.8.0:** 10/14 tareas completadas (71%) - Fase 7: CI/CD Pipeline ✅
+> **✅ ÚLTIMO COMPLETADO:** CI/CD Pipeline Profesional (23 Dic 2025) - GitHub Actions
+> **⚠️ SIGUIENTE:** Tests de Integración con Backend v1.8.0 - Fase 8
 
 ### Estado de Protecciones OWASP
 
@@ -86,8 +88,8 @@
 | **A02: Cryptographic Failures** | 9/10 | ✅ Excelente | 🟢 Baja |
 | **A03: Injection** | 8.5/10 | ✅ Excelente | 🟢 Baja |
 | **A04: Insecure Design** | 8/10 | ✅ Bien | 🟠 Alta |
-| **A05: Security Misconfiguration** | 8.5/10 | ✅ Bien | 🟠 Alta |
-| **A06: Vulnerable Components** | 8/10 | ✅ Bien | 🟠 Alta |
+| **A05: Security Misconfiguration** | 9.5/10 | ✅ Excelente | 🟢 Baja |
+| **A06: Vulnerable Components** | 9/10 | ✅ Excelente | 🟢 Baja |
 | **A07: Auth Failures** | 9/10 | ✅ Excelente | 🟢 Baja |
 | **A08: Data Integrity** | 7/10 | ⚠️ Parcial | 🟡 Media |
 | **A09: Logging & Monitoring** | 9/10 | ✅ Excelente | 🟢 Baja |
@@ -98,6 +100,7 @@
 | Protección | Estado | Prioridad | OWASP |
 |------------|--------|-----------|-------|
 | React Auto-Escaping | ✅ Nativo | - | A03 |
+| CI/CD Pipeline | ✅ Profesional | - | A05, A06 |
 | Security Headers (CSP, HSTS, etc.) | ✅ Implementado | - | A03, A05 |
 | httpOnly Cookies | ✅ **IMPLEMENTADO** (21 Dic 2025) | - | A01, A02 |
 | Password Policy (12 chars) | ✅ **IMPLEMENTADO** (20 Dic 2025) | - | A07 |
@@ -213,15 +216,31 @@
   - ✅ **Mejora (23 Dic):** Password se limpia automáticamente tras login fallido (OWASP A07)
   - ⏳ Pendiente: Verificar en producción con securityheaders.com (post-deploy)
   - **Puntuación lograda:** 8.7/10 → 8.9/10 (+0.2)
-- [ ] **9. Auditoría de Dependencias** - 2-3h
-  - Ejecutar `npm audit` y `npm outdated`
-  - Actualizar dependencias críticas (React, Vite, Sentry)
-  - Testing exhaustivo después de updates
-  - **Automatización (NUEVO):** Configurar GitHub Actions para auditoría semanal
-    - Crear workflow `.github/workflows/security-audit.yml`
-    - Ejecutar `npm audit` automáticamente
-    - Alertas de Dependabot habilitadas
-  - **Puntuación esperada:** Mantiene 9.2/10
+- [x] **9. Auditoría de Dependencias + CI/CD Pipeline** - ✅ COMPLETADO (23 Dic 2025) - **3h reales**
+  - ✅ Ejecutar `npm audit`: **0 vulnerabilidades encontradas** ✅
+  - ✅ Ejecutar `npm outdated`: 20 paquetes con actualizaciones disponibles
+  - ✅ **CI/CD Pipeline Profesional Implementado:**
+    - ✅ `.github/workflows/ci.yml` - Pipeline principal:
+      - Linting (ESLint) en cada commit
+      - Tests unitarios (Vitest) con coverage
+      - Build verification
+      - Type checking (TypeScript)
+      - Code quality checks
+      - Bundle size analysis
+    - ✅ `.github/workflows/security.yml` - Seguridad automatizada:
+      - npm audit (semanal + PRs a main)
+      - Dependency outdated check
+      - License compliance
+      - Secret scanning
+      - CSP headers validation
+    - ✅ `.github/workflows/e2e.yml` - Tests E2E:
+      - Playwright en Chromium, Firefox, WebKit
+      - Solo en PRs a main
+      - Test reports y traces automáticos
+    - ✅ Documentación completa en `docs/BRANCH_PROTECTION.md`
+    - ✅ Badges de estado en README.md
+  - ⏳ **Pendiente:** Actualizar dependencias críticas (ver sección de updates)
+  - **Puntuación lograda:** 8.9/10 → 9.3/10 (+0.4 por CI/CD automation)
 
 **Semana 4: Testing + Documentación**
 - [x] **10. Tests Unitarios de Validaciones** - ✅ COMPLETADO (20 Dic 2025)

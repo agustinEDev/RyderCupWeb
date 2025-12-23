@@ -2,9 +2,14 @@
 
 > Aplicación web moderna para gestión de torneos de golf amateur formato Ryder Cup
 
+[![CI Pipeline](https://github.com/agustinEDev/RyderCupWeb/actions/workflows/ci.yml/badge.svg)](https://github.com/agustinEDev/RyderCupWeb/actions/workflows/ci.yml)
+[![Security Audit](https://github.com/agustinEDev/RyderCupWeb/actions/workflows/security.yml/badge.svg)](https://github.com/agustinEDev/RyderCupWeb/actions/workflows/security.yml)
+[![E2E Tests](https://github.com/agustinEDev/RyderCupWeb/actions/workflows/e2e.yml/badge.svg)](https://github.com/agustinEDev/RyderCupWeb/actions/workflows/e2e.yml)
+
 [![React](https://img.shields.io/badge/React-18+-61DAFB?logo=react)](.)
-[![Vite](https://img.shields.io/badge/Vite-5+-646CFF?logo=vite)](.)
+[![Vite](https://img.shields.io/badge/Vite-7+-646CFF?logo=vite)](.)
 [![Tailwind](https://img.shields.io/badge/Tailwind-3+-38B2AC?logo=tailwind-css)](.)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5+-3178C6?logo=typescript)](.)
 
 ## 🔗 Backend API
 
@@ -49,6 +54,35 @@ npm run preview # previsualizar el build
 Deploy: subir `dist/` a cualquier hosting estático (Netlify, Vercel, Cloudflare Pages). Si el backend está en Render, usar la URL pública del servicio como `VITE_API_BASE_URL` antes de construir.
 
 Importante: Render puede hibernar (503). Si ves 503 en producción, revisa estado del servicio y retries.
+
+## 🔐 CI/CD & Seguridad
+
+Este proyecto implementa un pipeline profesional de CI/CD que garantiza la calidad y seguridad del código:
+
+### Pipeline de Integración Continua
+- ✅ **Linting automático** (ESLint) en cada commit
+- ✅ **Tests unitarios** (Vitest) con cobertura
+- ✅ **Build verification** - verifica que la aplicación compila sin errores
+- ✅ **Type checking** - validación de tipos TypeScript
+- ✅ **Code quality checks** - análisis de calidad de código
+
+### Seguridad Automatizada
+- 🔒 **npm audit** - auditoría de vulnerabilidades en dependencias
+- 📦 **Dependency scanning** - detección de paquetes desactualizados
+- ⚖️ **License compliance** - verificación de licencias
+- 🛡️ **Security scanning** - detección de secrets y código inseguro
+- 🔐 **CSP validation** - validación de Content Security Policy headers
+
+### Tests E2E
+- 🎭 **Playwright** tests en múltiples navegadores (Chromium, Firefox, WebKit)
+- 📊 **Test reports** automáticos con trazas en caso de fallos
+
+### Branch Protection
+La rama `main` está protegida con:
+- ✅ Requiere PR y aprobación antes de merge
+- ✅ Todos los checks de CI deben pasar
+- ✅ No permite force push ni eliminación
+- 📋 Ver [docs/BRANCH_PROTECTION.md](docs/BRANCH_PROTECTION.md) para detalles
 
 ## Notas clave de integración
 

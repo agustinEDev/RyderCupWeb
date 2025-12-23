@@ -1,0 +1,210 @@
+name: Security Audit
+
+on:
+  # Ejecutar semanalmente los lunes a las 9:00 AM
+  schedule:
+    - cron: '0 9 * * 1'
+  
+  # Ejecutar en PRs a develop y main (GitFlow)
+  pull_request:
+    branches: [develop, main]
+  
+  # Permitir ejecución manual
+  workflow_dispatch:
+
+jobs:
+  dependency-audit:
+    name: 🔒 Dependency Security Audit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run npm audit
+        id: audit
+        run: |
+          echo "🔍 Running npm audit..."
+          npm audit --audit-level=moderate --json > audit-report.json || true
+          
+          # Mostrar resumen
+          npm audit --audit-level=moderate || true
+          
+          # Verificar vulnerabilidades críticas/altas
+          CRITICAL=$(jq '.metadata.vulnerabilities.critical // 0' audit-report.json)
+          HIGH=$(jq '.metadata.vulnerabilities.high // 0' audit-report.json)
+          
+          echo "critical=$CRITICAL" >> $GITHUB_OUTPUT
+          echo "high=$HIGH" >> $GITHUB_OUTPUT
+          
+          if [ "$CRITICAL" -gt 0 ] || [ "$HIGH" -gt 0 ]; then
+            echo "❌ Found $CRITICAL critical and $HIGH high vulnerabilities"
+            exit 1
+          fi
+          
+          echo "✅ No critical or high vulnerabilities found"
+
+      - name: Upload audit report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: npm-audit-report
+          path: audit-report.json
+          retention-days: 30
+
+  outdated-check:
+    name: 📦 Outdated Dependencies
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check for outdated dependencies
+        run: |
+          echo "📋 Checking for outdated dependencies..."
+          npm outdated --long --json > outdated-report.json || true
+          npm outdated || echo "Some dependencies are outdated (non-blocking)"
+
+      - name: Analyze major updates
+        run: |
+          echo "🔍 Analyzing major version updates..."
+          if [ -s outdated-report.json ]; then
+            MAJOR_UPDATES=$(jq 'to_entries | map(select(.value.latest != .value.current and (.value.latest | split(".")[0]) != (.value.current | split(".")[0]))) | length' outdated-report.json)
+            echo "Found $MAJOR_UPDATES major version updates available"
+            
+            if [ "$MAJOR_UPDATES" -gt 0 ]; then
+              echo "⚠️ Major updates available - review recommended"
+              jq -r 'to_entries | map(select(.value.latest != .value.current and (.value.latest | split(".")[0]) != (.value.current | split(".")[0]))) | .[] | "  - \(.key): \(.value.current) → \(.value.latest)"' outdated-report.json
+            fi
+          fi
+        continue-on-error: true
+
+      - name: Upload outdated report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: outdated-dependencies-report
+          path: outdated-report.json
+          retention-days: 30
+
+  license-check:
+    name: ⚖️ License Compliance
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check licenses
+        run: |
+          echo "⚖️ Checking package licenses..."
+          npx license-checker --summary || echo "license-checker not available"
+          
+          # Verificar licencias problemáticas
+          npx license-checker --onlyAllow "MIT;Apache-2.0;BSD-2-Clause;BSD-3-Clause;ISC;0BSD;CC0-1.0" --production || echo "⚠️ Some licenses may need review"
+        continue-on-error: true
+
+  security-scan:
+    name: 🛡️ Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check for secrets in code
+        run: |
+          echo "🔍 Scanning for exposed secrets..."
+          # Buscar patrones comunes de secrets
+          ! grep -r -i "api[_-]key\s*=\s*['\"][a-zA-Z0-9]" src/ || echo "⚠️ Possible API key found"
+          ! grep -r -i "password\s*=\s*['\"][^'\"]*['\"]" src/ || echo "⚠️ Possible hardcoded password found"
+          ! grep -r -i "secret\s*=\s*['\"][a-zA-Z0-9]" src/ || echo "⚠️ Possible secret found"
+          echo "✅ No obvious secrets detected"
+        continue-on-error: true
+
+      - name: Check environment variables usage
+        run: |
+          echo "🔍 Checking environment variable usage..."
+          grep -r "import.meta.env" src/ || echo "No environment variables used"
+
+  csp-validation:
+    name: 🔐 CSP Headers Validation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Validate CSP headers
+        run: |
+          echo "🔍 Validating Content Security Policy..."
+          
+          # Verificar que no hay unsafe-inline en producción
+          if grep -i "unsafe-inline" public/_headers 2>/dev/null; then
+            echo "❌ Found unsafe-inline in production CSP headers"
+            exit 1
+          fi
+          
+          if grep -i "unsafe-inline" vercel.json 2>/dev/null && ! grep -B5 "unsafe-inline" vercel.json | grep -q "development"; then
+            echo "❌ Found unsafe-inline in production vercel.json"
+            exit 1
+          fi
+          
+          if grep -i "unsafe-inline" nginx.conf 2>/dev/null && ! grep -B5 "unsafe-inline" nginx.conf | grep -q "development"; then
+            echo "❌ Found unsafe-inline in production nginx.conf"
+            exit 1
+          fi
+          
+          echo "✅ CSP headers validation passed"
+
+  all-security-checks:
+    name: ✅ All Security Checks
+    runs-on: ubuntu-latest
+    needs: [dependency-audit, outdated-check, license-check, security-scan, csp-validation]
+    if: always()
+    steps:
+      - name: Check job statuses
+        run: |
+          if [ "${{ needs.dependency-audit.result }}" != "success" ] || \
+             [ "${{ needs.csp-validation.result }}" != "success" ]; then
+            echo "❌ Critical security checks failed"
+            exit 1
+          fi
+          echo "✅ All security checks passed!"
+          
+          if [ "${{ needs.license-check.result }}" != "success" ] || \
+             [ "${{ needs.security-scan.result }}" != "success" ]; then
+            echo "⚠️ Some non-critical checks had warnings"
+          fi

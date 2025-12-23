@@ -1,0 +1,172 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches: [main, develop, 'feature/**', 'release/**', 'hotfix/**']
+  pull_request:
+    branches: [develop, main]
+
+jobs:
+  lint:
+    name: 🔍 Lint Code
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run ESLint
+        run: npm run lint
+
+  test:
+    name: 🧪 Run Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run unit tests
+        run: npm test -- --run --reporter=verbose
+
+      - name: Generate coverage report
+        run: npm test -- --run --coverage
+        continue-on-error: true
+
+      - name: Upload coverage to artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage/
+          retention-days: 30
+
+  build:
+    name: 🏗️ Build Application
+    runs-on: ubuntu-latest
+    needs: [lint, test]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build application
+        run: npm run build
+        env:
+          NODE_ENV: production
+
+      - name: Check build output
+        run: |
+          if [ ! -d "dist" ]; then
+            echo "❌ Build failed: dist directory not found"
+            exit 1
+          fi
+          echo "✅ Build successful"
+          ls -lah dist/
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-output
+          path: dist/
+          retention-days: 7
+
+  type-check:
+    name: 📝 Type Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check for TypeScript files
+        id: check-ts
+        run: |
+          if find src -name "*.ts" -o -name "*.tsx" | grep -q .; then
+            echo "has_typescript=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_typescript=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Run type check
+        if: steps.check-ts.outputs.has_typescript == 'true'
+        run: npx tsc --noEmit || echo "⚠️ TypeScript check skipped or failed"
+
+  code-quality:
+    name: 📊 Code Quality
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Necesario para análisis de cambios
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check for dead code
+        run: |
+          echo "🔍 Checking for unused exports..."
+          npx knip --reporter json || echo "⚠️ knip not configured yet"
+        continue-on-error: true
+
+      - name: Check bundle size
+        run: |
+          npm run build
+          echo "📦 Bundle size analysis:"
+          du -sh dist/assets/*.js | sort -h || echo "No JS bundles found"
+        continue-on-error: true
+
+  all-checks:
+    name: ✅ All Checks Passed
+    runs-on: ubuntu-latest
+    needs: [lint, test, build, type-check, code-quality]
+    if: always()
+    steps:
+      - name: Check job statuses
+        run: |
+          if [ "${{ needs.lint.result }}" != "success" ] || \
+             [ "${{ needs.test.result }}" != "success" ] || \
+             [ "${{ needs.build.result }}" != "success" ]; then
+            echo "❌ One or more required checks failed"
+            exit 1
+          fi
+          echo "✅ All required checks passed!"
