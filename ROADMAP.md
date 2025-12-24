@@ -40,7 +40,7 @@
 
 > **Backend Status:** v1.8.0 (12/16 tareas completadas - 75%)
 > **Backend Score:** 10.0/10 (Security OWASP) ✅
-> **Frontend Status:** v1.8.0-alpha (10/14 tareas completadas - 71%)
+> **Frontend Status:** v1.8.0-alpha (11/14 tareas completadas - 79%)
 > **Frontend Score:** 9.3/10 (Security OWASP) ✅ (+1.8 desde v1.7.0)
 
 ### ⚠️ Cambios del Backend que Requieren Actualización Frontend
@@ -49,11 +49,11 @@
 |---|-----------------|----------------|------------------|-----------|
 | **1** | Rate Limiting (SlowAPI) | ✅ Completado | ✅ Sin cambios | 🟢 Baja |
 | **2** | Security Headers | ✅ Completado | ✅ Sin cambios | 🟢 Baja |
-| **3** | Password Policy (12 chars) | ✅ Completado | ✅ **SINCRONIZADO** (20 Dic) | 🟢 Baja |
-| **4** | httpOnly Cookies (JWT) | ✅ Completado | ✅ **SINCRONIZADO** (21 Dic) | 🟢 Baja |
-| **5** | Session Timeout + Refresh | ✅ Completado | ✅ **SINCRONIZADO** (21 Dic) | 🟢 Baja |
+| **3** | Password Policy (12 chars) | ✅ Completado | ✅ **SINCRONIZADO + TESTED** (20-23 Dic) | 🟢 Baja |
+| **4** | httpOnly Cookies (JWT) | ✅ Completado | ✅ **SINCRONIZADO + TESTED** (21-23 Dic) | 🟢 Baja |
+| **5** | Session Timeout + Refresh | ✅ Completado | ✅ **SINCRONIZADO + TESTED** (21-23 Dic) | 🟢 Baja |
 | **6** | CORS Configuration | ✅ Completado | ✅ Sin cambios | 🟢 Baja |
-| **7** | Validaciones Pydantic | ✅ Completado | ✅ **SINCRONIZADO** (20 Dic) | 🟢 Baja |
+| **7** | Validaciones Pydantic | ✅ Completado | ✅ **SINCRONIZADO + TESTED** (20-23 Dic) | 🟢 Baja |
 | **8-16** | Logging + Monitoring | ⏳ Pendiente | ✅ Sin impacto | 🟢 Baja |
 
 ### 📋 Tabla de Compatibilidad - Validaciones Frontend vs Backend
@@ -248,11 +248,22 @@
   - ✅ Tests de límites de longitud (email 254, nombres 100)
   - ✅ Tests de nombres con acentos
   - ✅ 38 tests pasando (100% pass rate), cobertura >90%
-- [ ] **11. Tests de Integración con Backend v1.8.0** - 3-4h
-  - Testing de httpOnly cookies (login, requests, logout)
-  - Testing de refresh token flow (401 → refresh → retry)
-  - Testing de validaciones (backend rechaza inputs inválidos)
-  - Testing E2E manual (flujo completo)
+- [x] **11. Tests de Integración con Backend v1.8.0** - ✅ COMPLETADO (23 Dic 2025) - **2h reales**
+  - ✅ **15 tests E2E implementados** en `tests/integration.spec.js`:
+    - ✅ httpOnly Cookies (3 tests): storage, automatic sending, cleanup after logout
+    - ✅ Refresh Token Flow (2 tests): automatic refresh on 401, redirect on invalid token
+    - ✅ Backend Validations (6 tests): password, email, names, length limits, accents
+    - ✅ Complete E2E Flow (2 tests): full user journey, competitions flow
+    - ✅ Session Persistence (2 tests): page reload, tab close simulation
+  - ✅ Scripts npm agregados:
+    - `npm run test:e2e` - Ejecutar todos los tests E2E
+    - `npm run test:integration` - Solo tests de integración
+    - `npm run test:e2e:ui` - Modo interactivo
+    - `npm run test:e2e:headed` - Ver navegador
+  - ✅ Documentación completa en `docs/INTEGRATION_TESTS.md`
+  - ✅ Troubleshooting guide y configuración detallada
+  - ✅ **100% cobertura** de features del backend v1.8.0
+  - **Puntuación lograda:** Mantiene 9.3/10 (testing robusto)
 - [ ] **11.1 Security Tests Suite** - 2-3h (NUEVO)
   - Tests de XSS attempts (verificar React auto-escaping)
   - Tests de CSRF protection (SameSite cookies)
