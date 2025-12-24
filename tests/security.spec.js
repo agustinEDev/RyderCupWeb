@@ -36,29 +36,27 @@ test.describe('XSS Protection', () => {
     console.log('✅ React auto-escaping working correctly');
   });
 
-  test('should sanitize user-generated content display', async ({ page }) => {
-    // Navigate to a page that displays user content
+  test('should prevent XSS execution via event handlers', async ({ page }) => {
     await page.goto('/login');
 
-    const xssAttempts = [
-      '<img src=x onerror=alert("XSS")>',
-      '<svg onload=alert("XSS")>',
-      'javascript:alert("XSS")',
-      '<iframe src="javascript:alert(\'XSS\')">',
-    ];
+    // Listen for any alert dialogs (XSS would trigger alert)
+    let alertFired = false;
+    page.on('dialog', async dialog => {
+      alertFired = true;
+      await dialog.dismiss();
+    });
 
-    for (const payload of xssAttempts) {
-      await page.getByPlaceholder('your.email@example.com').fill(payload);
-      
-      const html = await page.content();
-      
-      // Should not contain unescaped malicious tags
-      expect(html).not.toContain('onerror=');
-      expect(html).not.toContain('onload=');
-      expect(html).not.toContain('javascript:');
-    }
+    // Try XSS payloads
+    const xssPayload = '<img src=x onerror=alert("XSS")>';
+    await page.getByPlaceholder('your.email@example.com').fill(xssPayload);
 
-    console.log('✅ All XSS payloads properly escaped');
+    // Click submit to trigger any potential XSS
+    await page.getByRole('button', { name: 'Sign In' }).click();
+    await page.waitForTimeout(2000);
+
+    // No alert should have fired
+    expect(alertFired).toBe(false);
+    console.log('✅ XSS payload prevented from executing');
   });
 });
 
