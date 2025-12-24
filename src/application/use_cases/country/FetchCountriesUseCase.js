@@ -3,7 +3,7 @@
  * Retrieves all active countries for competition creation
  */
 
-import { getCountries } from '../../services/countries.js';
+import { getCountries } from '../../../services/countries.js';
 
 class FetchCountriesUseCase {
   async execute() {
