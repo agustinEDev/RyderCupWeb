@@ -154,7 +154,6 @@ const CompetitionDetail = () => {
   };
 
   const handleApproveEnrollment = async (enrollmentId) => {
-    console.log('🔍 Approving enrollment with ID:', enrollmentId, 'Type:', typeof enrollmentId);
     try {
       // ApproveEnrollmentUseCase expects (competitionId, enrollmentId, teamId?)
       await approveEnrollmentUseCase.execute(competition.id, enrollmentId);
@@ -209,16 +208,6 @@ const CompetitionDetail = () => {
   // 2. From competition.enrollment_status (mapped from backend's user_enrollment_status)
   const userEnrollment = enrollments.find((e) => e.user_id === user.id);
   const hasEnrollment = userEnrollment || competition.enrollment_status;
-
-  // Debug logs
-  console.log('🔍 CompetitionDetail Debug:', {
-    competitionId: competition.id,
-    competitionName: competition.name,
-    userEnrollment,
-    enrollment_status: competition.enrollment_status,
-    hasEnrollment,
-    enrollmentsCount: enrollments.length
-  });
 
   return (
     <div className="relative flex h-auto min-h-screen w-full flex-col bg-white">

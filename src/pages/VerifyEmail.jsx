@@ -35,19 +35,14 @@ const VerifyEmail = () => {
       }
 
       try {
-        console.log('🔄 Verifying email with token...');
-        const result = await verifyEmailUseCase.execute(token);
-        console.log('✅ Email verified successfully:', result);
+        await verifyEmailUseCase.execute(token);
 
         // El backend establece automáticamente la cookie httpOnly
         // No necesitamos guardar nada en el frontend
-        console.log('✅ User authenticated via httpOnly cookie');
 
         await new Promise(resolve => setTimeout(resolve, 1500));
         setStatus('success');
         setMessage('Your email has been verified successfully!');
-
-        console.log('⏱️ Redirecting to dashboard in 3 seconds...');
         redirectTimeoutRef.current = setTimeout(() => {
           navigate('/dashboard');
         }, 3000);

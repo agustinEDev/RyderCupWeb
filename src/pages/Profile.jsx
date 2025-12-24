@@ -27,9 +27,6 @@ const Profile = () => {
       }
 
       try {
-        console.log('✅ User data from httpOnly cookie:', user);
-        console.log('🌍 Country code:', user?.country_code);
-
         // Fetch country name if user has country_code
         if (user.country_code) {
           try {
@@ -71,7 +68,6 @@ const Profile = () => {
           }
 
           setCompetitionsCount(list.length);
-          console.log('✅ User competitions count:', list.length);
         } catch (error) {
           console.error('❌ Error fetching competitions count:', error);
           setCompetitionsCount(0);

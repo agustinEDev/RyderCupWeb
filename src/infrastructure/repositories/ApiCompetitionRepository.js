@@ -57,7 +57,6 @@ class ApiCompetitionRepository extends ICompetitionRepository {
     queryParams.append('my_competitions', 'true');
 
     const endpoint = `/api/v1/competitions${queryParams.toString() ? '?' + queryParams : ''}`;
-    console.log('🔍 [ApiCompetitionRepository.findByCreator] Fetching MY competitions from:', endpoint);
 
     const apiDataArray = await apiRequest(endpoint);
 
@@ -125,7 +124,6 @@ class ApiCompetitionRepository extends ICompetitionRepository {
     }
 
     const endpoint = `/api/v1/competitions${queryParams.toString() ? '?' + queryParams : ''}`;
-    console.log('🔍 [ApiCompetitionRepository.findPublic] Fetching public competitions from:', endpoint);
 
     const apiDataArray = await apiRequest(endpoint);
 
@@ -135,8 +133,6 @@ class ApiCompetitionRepository extends ICompetitionRepository {
       competition._apiData = apiData;
       return competition;
     });
-
-    console.log('✅ [ApiCompetitionRepository.findPublic] Found', competitions.length, 'public competitions');
 
     return competitions;
   }

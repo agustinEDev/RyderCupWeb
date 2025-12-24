@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Calendar, Trophy, MapPin, Settings, Plus, X, ChevronDown } from 'lucide-react';
 import HeaderAuth from '../components/layout/HeaderAuth';
 import { useAuth } from '../hooks/useAuth';
-import { createCompetitionUseCase } from '../composition';
+import { createCompetitionUseCase, fetchCountriesUseCase } from '../composition';
 import { CountryFlag } from '../utils/countryUtils';
 
 const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
@@ -54,36 +54,24 @@ const CreateCompetition = () => {
 
   useEffect(() => {
     // Fetch all countries
-    // TODO: Move country fetching logic to its own use case
     fetchCountries();
   }, []);
 
   const fetchCountries = async () => {
     try {
-      const response = await fetch(`${API_URL}/api/v1/countries`, {
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        const validCountries = Array.isArray(data)
-          ? data
-              .filter(c => c?.code && (c?.name_en || c?.name_es))
-              .map(c => ({
-                id: c.code,
-                name: c.name_en || c.name_es,
-                code: c.code,
-                name_en: c.name_en,
-                name_es: c.name_es
-              }))
-          : [];
-        setAllCountries(validCountries);
-      } else {
-        console.error('Failed to fetch countries');
-        setAllCountries([]);
-      }
+      const data = await fetchCountriesUseCase.execute();
+      const validCountries = Array.isArray(data)
+        ? data
+            .filter(c => c?.code && (c?.name_en || c?.name_es))
+            .map(c => ({
+              id: c.code,
+              name: c.name_en || c.name_es,
+              code: c.code,
+              name_en: c.name_en,
+              name_es: c.name_es
+            }))
+        : [];
+      setAllCountries(validCountries);
     } catch (error) {
       console.error('Error fetching countries:', error);
       setAllCountries([]);
@@ -268,8 +256,6 @@ const CreateCompetition = () => {
       if (formData.handicapType === 'PERCENTAGE') {
         payload.handicap_percentage = Number.parseInt(formData.handicapPercentage);
       }
-
-      console.log('📤 [CreateCompetition] Sending payload to backend:', JSON.stringify(payload, null, 2));
 
       // Use the use case instead of direct API call
       const createdCompetition = await createCompetitionUseCase.execute(payload);

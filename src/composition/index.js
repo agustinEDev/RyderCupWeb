@@ -1,4 +1,4 @@
-import { default as UserEntity } from '../domain/entities/User';
+export { default as UserEntity } from '../domain/entities/User';
 import ApiUserRepository from '../infrastructure/repositories/ApiUserRepository';
 // User Use Cases
 import UpdateUserProfileUseCase from '../application/use_cases/user/UpdateUserProfileUseCase';
@@ -12,6 +12,9 @@ import VerifyEmailUseCase from '../application/use_cases/user/VerifyEmailUseCase
 import ApiHandicapRepository from '../infrastructure/repositories/ApiHandicapRepository';
 import UpdateManualHandicapUseCase from '../application/use_cases/handicap/UpdateManualHandicapUseCase';
 import UpdateRfegHandicapUseCase from '../application/use_cases/handicap/UpdateRfegHandicapUseCase';
+
+// Country Use Cases
+import FetchCountriesUseCase from '../application/use_cases/country/FetchCountriesUseCase';
 
 // Competition Use Cases
 import ApiCompetitionRepository from '../infrastructure/repositories/ApiCompetitionRepository';
@@ -67,6 +70,7 @@ const completeCompetitionUseCase = new CompleteCompetitionUseCase();
 const cancelCompetitionUseCase = new CancelCompetitionUseCase();
 const browseJoinableCompetitionsUseCase = new BrowseJoinableCompetitionsUseCase(apiCompetitionRepository);
 const browseExploreCompetitionsUseCase = new BrowseExploreCompetitionsUseCase(apiCompetitionRepository);
+const fetchCountriesUseCase = new FetchCountriesUseCase();
 
 // Enrollment Use Cases
 const requestEnrollmentUseCase = new RequestEnrollmentUseCase(apiEnrollmentRepository);
@@ -98,6 +102,8 @@ export {
   cancelCompetitionUseCase,
   browseJoinableCompetitionsUseCase,
   browseExploreCompetitionsUseCase,
+  // Country Use Cases
+  fetchCountriesUseCase,
   // Enrollment Use Cases
   requestEnrollmentUseCase,
   listEnrollmentsUseCase,
@@ -109,5 +115,4 @@ export {
   directEnrollUseCase,
   // También podríamos exportar directamente las entidades si la UI las necesita para displays,
   // aunque la mejor práctica es que la UI reciba DTOs o ViewModels del caso de uso.
-  UserEntity, // Exportamos la entidad User para que la UI pueda crear instancias o manipularla.
 };

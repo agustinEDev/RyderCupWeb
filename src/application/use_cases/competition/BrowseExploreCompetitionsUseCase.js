@@ -44,8 +44,6 @@ class BrowseExploreCompetitionsUseCase {
    * // Returns: [{ id, name, status, startDate, ... }]
    */
   async execute(filters = {}) {
-    console.log('🔍 [BrowseExploreCompetitionsUseCase] Executing with filters:', filters);
-
     // Build repository filters
     const repositoryFilters = {
       status: ['CLOSED', 'IN_PROGRESS', 'COMPLETED'], // Only competitions that are not accepting enrollments
@@ -58,8 +56,6 @@ class BrowseExploreCompetitionsUseCase {
 
     // Call repository to get domain entities
     const competitions = await this.competitionRepository.findPublic(repositoryFilters);
-
-    console.log('✅ [BrowseExploreCompetitionsUseCase] Found', competitions.length, 'explorable competitions');
 
     // Convert domain entities to simple DTOs for the UI
     const competitionDTOs = competitions.map((competition) => {

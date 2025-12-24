@@ -163,7 +163,7 @@ const Login = () => {
                   { icon: '👥', text: 'Connect with friends' }
                 ].map((item, idx) => (
                   <motion.div
-                    key={idx}
+                    key={item.text}
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.2 + idx * 0.1 }}
@@ -244,10 +244,11 @@ const Login = () => {
 
                 {/* Email */}
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  <label htmlFor="email" className="block text-sm font-semibold text-gray-700 mb-2">
                     Email Address
                   </label>
                   <input
+                    id="email"
                     type="email"
                     name="email"
                     placeholder="your.email@example.com"
@@ -276,7 +277,7 @@ const Login = () => {
 
                 {/* Password */}
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  <label htmlFor="password" className="block text-sm font-semibold text-gray-700 mb-2">
                     Password
                   </label>
                   <PasswordInput

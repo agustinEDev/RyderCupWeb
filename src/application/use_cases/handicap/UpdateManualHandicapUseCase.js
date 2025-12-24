@@ -25,7 +25,7 @@ class UpdateManualHandicapUseCase {
     // This rejects non-pure-numeric strings like "10a".
     const handicapValue = Number(handicap);
     if (!Number.isFinite(handicapValue)) {
-      throw new Error('Invalid handicap value. Must be a valid number.');
+      throw new TypeError('Invalid handicap value. Must be a valid number.');
     }
 
     // Business logic: Validate handicap range.

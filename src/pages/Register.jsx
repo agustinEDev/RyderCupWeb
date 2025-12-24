@@ -32,8 +32,6 @@ const Register = () => {
         const response = await fetch(`${API_URL}/api/v1/countries?language=en`);
         if (response.ok) {
           const data = await response.json();
-          console.log('🌍 Countries loaded:', data.length, 'countries');
-          console.log('📋 Sample country:', data[0]); // Ver estructura de datos
           setCountries(data);
         } else {
           console.error('❌ Failed to load countries, status:', response.status);
@@ -185,7 +183,7 @@ const Register = () => {
                   { icon: '🤝', text: 'Build Lasting Friendships' }
                 ].map((item, idx) => (
                   <motion.div
-                    key={idx}
+                    key={item.text}
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.2 + idx * 0.1 }}
@@ -268,10 +266,11 @@ const Register = () => {
                 <div className="grid grid-cols-2 gap-4">
                   {/* First Name */}
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    <label htmlFor="firstName" className="block text-sm font-semibold text-gray-700 mb-2">
                       First Name
                     </label>
                     <input
+                      id="firstName"
                       type="text"
                       name="firstName"
                       placeholder="John"
@@ -301,10 +300,11 @@ const Register = () => {
 
                   {/* Last Name */}
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    <label htmlFor="lastName" className="block text-sm font-semibold text-gray-700 mb-2">
                       Last Name
                     </label>
                     <input
+                      id="lastName"
                       type="text"
                       name="lastName"
                       placeholder="Doe"
@@ -335,10 +335,11 @@ const Register = () => {
 
                 {/* Email */}
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  <label htmlFor="email" className="block text-sm font-semibold text-gray-700 mb-2">
                     Email Address
                   </label>
                   <input
+                    id="email"
                     type="email"
                     name="email"
                     placeholder="your.email@example.com"
@@ -368,7 +369,7 @@ const Register = () => {
 
                 {/* Password */}
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  <label htmlFor="password" className="block text-sm font-semibold text-gray-700 mb-2">
                     Password
                   </label>
                   <PasswordInput
@@ -407,11 +408,12 @@ const Register = () => {
 
                 {/* Nationality (Optional) */}
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  <label htmlFor="countryCode" className="block text-sm font-semibold text-gray-700 mb-2">
                     Nationality <span className="text-gray-400 font-normal">(Optional)</span>
                   </label>
                   <div className="relative">
                     <select
+                      id="countryCode"
                       name="countryCode"
                       value={formData.countryCode}
                       onChange={handleChange}

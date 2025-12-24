@@ -1,8 +1,6 @@
 /* eslint-disable no-unused-vars */
 import User from '../../domain/entities/User.js';
 import IUserRepository from '../../domain/repositories/IUserRepository.js';
-import Email from '../../domain/value_objects/Email';
-import Password from '../../domain/value_objects/Password';
 import apiRequest from '../../services/api.js';
 
 class ApiUserRepository extends IUserRepository {
@@ -15,26 +13,11 @@ class ApiUserRepository extends IUserRepository {
    * @override
    */
   async getById(userId) {
-    console.log('🔍 [ApiUserRepository.getById] Fetching user:', userId);
-
     // Usar current-user en lugar de /users/{userId}
     // El userId se ignora porque obtenemos el usuario del token JWT
     const data = await apiRequest('/api/v1/auth/current-user');
 
-    console.log('🔍 [ApiUserRepository.getById] API response data:', {
-      userId: data.id,
-      hasCountryCode: 'country_code' in data,
-      countryCodeValue: data.country_code,
-      countryCodeType: typeof data.country_code,
-      allKeys: Object.keys(data)
-    });
-
     const userEntity = new User(data);
-    console.log('🔍 [ApiUserRepository.getById] User entity created:', {
-      hasCountryCode: !!userEntity.countryCode,
-      countryCodeType: userEntity.countryCode ? typeof userEntity.countryCode : 'undefined',
-      countryCodeValue: userEntity.countryCode?.value ? userEntity.countryCode.value() : 'no value() method'
-    });
 
     return userEntity; // Mapeamos el DTO de la API a nuestra entidad de dominio
   }

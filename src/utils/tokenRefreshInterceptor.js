@@ -13,7 +13,7 @@
  * @module tokenRefreshInterceptor
  */
 
-const API_URL = window.APP_CONFIG?.API_BASE_URL || import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+const API_URL = globalThis.APP_CONFIG?.API_BASE_URL || import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
 // State management for refresh token flow
 let isRefreshing = false;
@@ -171,6 +171,7 @@ export const fetchWithTokenRefresh = async (url, options = {}) => {
 
   } catch (error) {
     console.error('❌ [TokenRefresh] Error in fetch interceptor:', error);
+    // Re-throw to let the caller handle the error appropriately
     throw error;
   }
 };
