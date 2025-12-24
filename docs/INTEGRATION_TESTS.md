@@ -12,16 +12,16 @@
 **Tiempo de ejecución:** ~13.5 segundos  
 **Última ejecución exitosa:** 24 Dic 2025
 
-**⚠️ Importante - Rate Limiting:**
-- Backend tiene rate limiting activo (HTTP 429: Too Many Requests)
+**⚠️ Importante - Backend Mock:**
+- Tests utilizan servidor mock (Node.js + Express)
+- No requieren backend real ni base de datos
+- Simula respuestas del backend v1.8.0
 - Tests configurados para ejecutarse en serie (workers: 1)
-- Delay de 500ms entre tests para evitar límites
-- No ejecutar múltiples suites en paralelo
 
 **Para ejecutar estos tests necesitas:**
-1. ✅ Backend corriendo en `http://localhost:8000`
+1. ✅ Node.js 20+
 2. ✅ Usuario de prueba: `panetetrinx@gmail.com` / `Pruebas1234.`
-3. ✅ Base de datos inicializada
+3. ✅ Servidor mock se inicia automáticamente
 
 ## 📋 Suite de Tests Implementada
 

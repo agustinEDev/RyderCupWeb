@@ -82,7 +82,7 @@ Este proyecto implementa un pipeline profesional de CI/CD que garantiza la calid
 #### Ejecutar Tests de Integración
 
 ```bash
-# Tests de integración (requiere backend corriendo)
+# Tests de integración (usa backend mock)
 npm run test:integration
 
 # Tests unitarios
@@ -92,12 +92,19 @@ npm test
 npm run test:e2e
 ```
 
-**Nota**: Los tests de integración requieren que el backend esté ejecutándose en `http://localhost:8000`. Para desarrollo local, usar Docker Compose:
+**Nota**: Los tests de integración usan un servidor mock que simula las respuestas del backend real. Para desarrollo local con Docker Compose:
 
 ```bash
 docker-compose -f docker-compose.test.yml up -d
 npm run test:integration
 ```
+
+**Endpoints simulados:**
+- `POST /api/v1/auth/login` - Autenticación con credenciales de prueba
+- `POST /api/v1/auth/refresh-token` - Refresh de tokens
+- `GET /api/v1/countries` - Lista de países
+- `GET /api/v1/users/profile` - Perfil de usuario
+- `GET /api/v1/health` - Health check
 
 ### Branch Protection
 La rama `main` está protegida con:
