@@ -8,22 +8,22 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { refreshAccessToken, fetchWithTokenRefresh, isSessionValid } from './tokenRefreshInterceptor';
 
 // Mock global fetch
-global.fetch = vi.fn();
+globalThis.fetch = vi.fn();
 
 // Mock window.location
-delete global.window;
-global.window = { location: { href: '' } };
+delete globalThis.window;
+globalThis.window = { location: { href: '' } };
 globalThis.location = { href: '' };
 
 // Mock localStorage and sessionStorage
-global.localStorage = {
+globalThis.localStorage = {
   getItem: vi.fn(() => null),
   setItem: vi.fn(),
   removeItem: vi.fn(),
   clear: vi.fn(),
 };
 
-global.sessionStorage = {
+globalThis.sessionStorage = {
   getItem: vi.fn(() => null),
   setItem: vi.fn(),
   removeItem: vi.fn(),
@@ -44,7 +44,7 @@ describe('tokenRefreshInterceptor', () => {
   describe('refreshAccessToken', () => {
     it('should successfully refresh access token', async () => {
       // Mock successful refresh response
-      global.fetch.mockResolvedValueOnce({
+      globalThis.fetch.mockResolvedValueOnce({
         ok: true,
         status: 200,
         json: async () => ({ message: 'Token refreshed' }),
@@ -53,7 +53,7 @@ describe('tokenRefreshInterceptor', () => {
       const result = await refreshAccessToken();
 
       expect(result).toBe(true);
-      expect(global.fetch).toHaveBeenCalledWith(
+      expect(globalThis.fetch).toHaveBeenCalledWith(
         expect.stringContaining('/api/v1/auth/refresh-token'),
         expect.objectContaining({
           method: 'POST',
@@ -64,7 +64,7 @@ describe('tokenRefreshInterceptor', () => {
 
     it('should throw error when refresh token expired (401)', async () => {
       // Mock 401 response (refresh token expired)
-      global.fetch.mockResolvedValueOnce({
+      globalThis.fetch.mockResolvedValueOnce({
         ok: false,
         status: 401,
         statusText: 'Unauthorized',
@@ -75,7 +75,7 @@ describe('tokenRefreshInterceptor', () => {
 
     it('should throw error when refresh endpoint fails', async () => {
       // Mock 500 response
-      global.fetch.mockResolvedValueOnce({
+      globalThis.fetch.mockResolvedValueOnce({
         ok: false,
         status: 500,
         statusText: 'Internal Server Error',
@@ -86,7 +86,7 @@ describe('tokenRefreshInterceptor', () => {
 
     it('should throw error on network failure', async () => {
       // Mock network error
-      global.fetch.mockRejectedValueOnce(new Error('Network error'));
+      globalThis.fetch.mockRejectedValueOnce(new Error('Network error'));
 
       await expect(refreshAccessToken()).rejects.toThrow('Network error');
     });
@@ -100,24 +100,24 @@ describe('tokenRefreshInterceptor', () => {
         status: 200,
         json: async () => ({ data: 'test' }),
       };
-      global.fetch.mockResolvedValueOnce(mockResponse);
+      globalThis.fetch.mockResolvedValueOnce(mockResponse);
 
       const result = await fetchWithTokenRefresh('http://localhost:8000/api/v1/test');
 
       expect(result).toBe(mockResponse);
-      expect(global.fetch).toHaveBeenCalledTimes(1);
+      expect(globalThis.fetch).toHaveBeenCalledTimes(1);
     });
 
     it('should refresh token and retry request on 401', async () => {
       // First call: 401 (access token expired)
-      global.fetch.mockResolvedValueOnce({
+      globalThis.fetch.mockResolvedValueOnce({
         ok: false,
         status: 401,
         statusText: 'Unauthorized',
       });
 
       // Second call: successful refresh
-      global.fetch.mockResolvedValueOnce({
+      globalThis.fetch.mockResolvedValueOnce({
         ok: true,
         status: 200,
         json: async () => ({ message: 'Token refreshed' }),
@@ -129,12 +129,12 @@ describe('tokenRefreshInterceptor', () => {
         status: 200,
         json: async () => ({ data: 'test' }),
       };
-      global.fetch.mockResolvedValueOnce(mockSuccessResponse);
+      globalThis.fetch.mockResolvedValueOnce(mockSuccessResponse);
 
       const result = await fetchWithTokenRefresh('http://localhost:8000/api/v1/test');
 
       expect(result).toBe(mockSuccessResponse);
-      expect(global.fetch).toHaveBeenCalledTimes(3);
+      expect(globalThis.fetch).toHaveBeenCalledTimes(3);
       // First call: original request
       // Second call: refresh token
       // Third call: retry original request
@@ -142,14 +142,14 @@ describe('tokenRefreshInterceptor', () => {
 
     it('should redirect to login if refresh token also expired', async () => {
       // First call: 401 (access token expired)
-      global.fetch.mockResolvedValueOnce({
+      globalThis.fetch.mockResolvedValueOnce({
         ok: false,
         status: 401,
         statusText: 'Unauthorized',
       });
 
       // Second call: refresh fails with 401 (refresh token expired)
-      global.fetch.mockResolvedValueOnce({
+      globalThis.fetch.mockResolvedValueOnce({
         ok: false,
         status: 401,
         statusText: 'Unauthorized',
@@ -171,19 +171,19 @@ describe('tokenRefreshInterceptor', () => {
         status: 401,
         statusText: 'Unauthorized',
       };
-      global.fetch.mockResolvedValueOnce(mockResponse);
+      globalThis.fetch.mockResolvedValueOnce(mockResponse);
 
       const result = await fetchWithTokenRefresh('http://localhost:8000/api/v1/auth/refresh-token');
 
       // Should NOT attempt to refresh again (infinite loop prevention)
       expect(result).toBe(mockResponse);
-      expect(global.fetch).toHaveBeenCalledTimes(1);
+      expect(globalThis.fetch).toHaveBeenCalledTimes(1);
     });
 
     it('should queue multiple 401 requests and retry all after refresh', async () => {
       // Mock all fetch calls upfront
       // First two calls: 401 for both requests
-      global.fetch
+      globalThis.fetch
         .mockResolvedValueOnce({
           ok: false,
           status: 401,
@@ -228,12 +228,12 @@ describe('tokenRefreshInterceptor', () => {
       // 3. Refresh token (once)
       // 4. Retry request 1
       // 5. Retry request 2
-      expect(global.fetch).toHaveBeenCalledTimes(5);
+      expect(globalThis.fetch).toHaveBeenCalledTimes(5);
     });
 
     it('should always include credentials in requests', async () => {
       // Mock successful response
-      global.fetch.mockResolvedValueOnce({
+      globalThis.fetch.mockResolvedValueOnce({
         ok: true,
         status: 200,
         json: async () => ({ data: 'test' }),
@@ -244,7 +244,7 @@ describe('tokenRefreshInterceptor', () => {
         body: JSON.stringify({ test: 'data' }),
       });
 
-      expect(global.fetch).toHaveBeenCalledWith(
+      expect(globalThis.fetch).toHaveBeenCalledWith(
         'http://localhost:8000/api/v1/test',
         expect.objectContaining({
           credentials: 'include',
@@ -257,7 +257,7 @@ describe('tokenRefreshInterceptor', () => {
   describe('isSessionValid', () => {
     it('should return true if refresh succeeds', async () => {
       // Mock successful refresh
-      global.fetch.mockResolvedValueOnce({
+      globalThis.fetch.mockResolvedValueOnce({
         ok: true,
         status: 200,
         json: async () => ({ message: 'Token refreshed' }),
@@ -270,7 +270,7 @@ describe('tokenRefreshInterceptor', () => {
 
     it('should return false if refresh fails', async () => {
       // Mock failed refresh (will throw error)
-      global.fetch.mockRejectedValueOnce(new Error('Refresh failed'));
+      globalThis.fetch.mockRejectedValueOnce(new Error('Refresh failed'));
 
       const result = await isSessionValid();
 
@@ -281,7 +281,7 @@ describe('tokenRefreshInterceptor', () => {
   describe('Error handling', () => {
     it('should handle network errors gracefully', async () => {
       // Mock network error
-      global.fetch.mockRejectedValueOnce(new Error('Network request failed'));
+      globalThis.fetch.mockRejectedValueOnce(new Error('Network request failed'));
 
       // Expect the error to be thrown
       try {
@@ -296,7 +296,7 @@ describe('tokenRefreshInterceptor', () => {
     it('should preserve original error messages', async () => {
       // Mock error with specific message
       const errorMessage = 'Custom error message';
-      global.fetch.mockRejectedValueOnce(new Error(errorMessage));
+      globalThis.fetch.mockRejectedValueOnce(new Error(errorMessage));
 
       // Expect the error to be thrown
       try {
@@ -312,7 +312,7 @@ describe('tokenRefreshInterceptor', () => {
   describe('Security', () => {
     it('should always send httpOnly cookies with credentials: include', async () => {
       // Mock successful response
-      global.fetch.mockResolvedValueOnce({
+      globalThis.fetch.mockResolvedValueOnce({
         ok: true,
         status: 200,
         json: async () => ({ data: 'test' }),
@@ -321,7 +321,7 @@ describe('tokenRefreshInterceptor', () => {
       await fetchWithTokenRefresh('http://localhost:8000/api/v1/test');
 
       // Verify credentials: 'include' is always set
-      expect(global.fetch).toHaveBeenCalledWith(
+      expect(globalThis.fetch).toHaveBeenCalledWith(
         expect.any(String),
         expect.objectContaining({
           credentials: 'include',
@@ -331,7 +331,7 @@ describe('tokenRefreshInterceptor', () => {
 
     it('should not expose tokens in JavaScript (httpOnly cookies only)', async () => {
       // Mock successful refresh
-      global.fetch.mockResolvedValueOnce({
+      globalThis.fetch.mockResolvedValueOnce({
         ok: true,
         status: 200,
         json: async () => ({ message: 'Token refreshed' }),

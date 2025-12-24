@@ -3,6 +3,9 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { useEditProfile } from './useEditProfile';
 import toast from 'react-hot-toast';
 
+// Importar el hook useEditProfile
+// import duplicada eliminada
+
 // Mockear (simular) las dependencias externas del hook
 vi.mock('../composition', () => ({
   updateUserProfileUseCase: { execute: vi.fn() },

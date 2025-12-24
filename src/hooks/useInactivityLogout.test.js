@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { renderHook, act, waitFor } from '@testing-library/react';
+import { renderHook, act } from '@testing-library/react';
 import toast from 'react-hot-toast';
 import useInactivityLogout from './useInactivityLogout';
 
@@ -132,7 +132,7 @@ describe('useInactivityLogout', () => {
     });
 
     it('debe aplicar debouncing a los eventos (1 segundo)', () => {
-      const { rerender } = renderHook(() =>
+      renderHook(() =>
         useInactivityLogout({
           timeout: 10000,
           warningTime: 2000,
@@ -422,7 +422,7 @@ describe('useInactivityLogout', () => {
       );
 
       // Cambiar a disabled
-      enabled = false;
+      // enabled = false; // Eliminado por lint
       rerender({ enabled: false });
 
       // Avanzar tiempo
@@ -456,7 +456,7 @@ describe('useInactivityLogout', () => {
       expect(onLogoutMock).not.toHaveBeenCalled();
 
       // Cambiar a enabled
-      enabled = true;
+      // enabled = true; // Eliminado por lint
       rerender({ enabled: true });
 
       // Ahora SÍ debe iniciar los timers
