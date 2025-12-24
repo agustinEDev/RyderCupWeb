@@ -62,6 +62,7 @@ Este proyecto implementa un pipeline profesional de CI/CD que garantiza la calid
 ### Pipeline de Integración Continua
 - ✅ **Linting automático** (ESLint) en cada commit
 - ✅ **Tests unitarios** (Vitest) con cobertura
+- ✅ **Tests de integración** con backend real (Playwright)
 - ✅ **Build verification** - verifica que la aplicación compila sin errores
 - ✅ **Type checking** - validación de tipos TypeScript
 - ✅ **Code quality checks** - análisis de calidad de código
@@ -73,9 +74,30 @@ Este proyecto implementa un pipeline profesional de CI/CD que garantiza la calid
 - 🛡️ **Security scanning** - detección de secrets y código inseguro
 - 🔐 **CSP validation** - validación de Content Security Policy headers
 
-### Tests E2E
-- 🎭 **Playwright** tests en múltiples navegadores (Chromium, Firefox, WebKit)
-- 📊 **Test reports** automáticos con trazas en caso de fallos
+### Testing Strategy
+- 🧪 **Unit Tests** (Vitest) - lógica de componentes y utilidades
+- 🔗 **Integration Tests** - interacción con backend API (autenticación, cookies httpOnly)
+- 🎭 **E2E Tests** (Playwright) - flujos completos en múltiples navegadores
+
+#### Ejecutar Tests de Integración
+
+```bash
+# Tests de integración (requiere backend corriendo)
+npm run test:integration
+
+# Tests unitarios
+npm test
+
+# Tests E2E completos
+npm run test:e2e
+```
+
+**Nota**: Los tests de integración requieren que el backend esté ejecutándose en `http://localhost:8000`. Para desarrollo local, usar Docker Compose:
+
+```bash
+docker-compose -f docker-compose.test.yml up -d
+npm run test:integration
+```
 
 ### Branch Protection
 La rama `main` está protegida con:

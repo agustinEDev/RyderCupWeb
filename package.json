@@ -12,7 +12,8 @@
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:headed": "playwright test --headed",
-    "test:integration": "playwright test tests/integration.spec.js"
+    "test:integration": "playwright test tests/integration.spec.js",
+    "test:integration:ci": "playwright test tests/integration.spec.js --project=chromium --workers=1"
   },
   "dependencies": {
     "@sentry/react": "^7.120.4",
