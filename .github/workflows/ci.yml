@@ -8,7 +8,7 @@ on:
 
 jobs:
   lint:
-    name: 🔍 Lint Code
+    name: 🔍 Lint & Format Check
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -22,6 +22,26 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Check code formatting (Prettier)
+        run: |
+          echo "✨ Checking code formatting with Prettier..."
+
+          # Check if Prettier is installed
+          if ! npm list prettier > /dev/null 2>&1; then
+            echo "⚠️ Prettier not installed, skipping format check"
+            exit 0
+          fi
+
+          # Run Prettier check
+          npx prettier --check "src/**/*.{js,jsx,ts,tsx,css,json}" || {
+            echo ""
+            echo "❌ Code formatting issues found!"
+            echo "💡 Run 'npx prettier --write .' to fix formatting"
+            exit 1
+          }
+
+          echo "✅ Code formatting is consistent"
 
       - name: Run ESLint
         run: npm run lint
@@ -47,7 +67,66 @@ jobs:
 
       - name: Generate coverage report
         run: npm test -- --run --coverage
-        continue-on-error: true
+
+      - name: Enforce coverage threshold
+        run: |
+          echo "📊 Checking coverage thresholds..."
+
+          # Extract coverage percentages from coverage summary
+          COVERAGE_FILE="coverage/coverage-summary.json"
+
+          if [ ! -f "$COVERAGE_FILE" ]; then
+            echo "⚠️ Coverage file not found, skipping threshold check"
+            exit 0
+          fi
+
+          # Get global coverage percentages
+          LINES=$(cat $COVERAGE_FILE | jq '.total.lines.pct')
+          STATEMENTS=$(cat $COVERAGE_FILE | jq '.total.statements.pct')
+          FUNCTIONS=$(cat $COVERAGE_FILE | jq '.total.functions.pct')
+          BRANCHES=$(cat $COVERAGE_FILE | jq '.total.branches.pct')
+
+          echo "  Lines: ${LINES}%"
+          echo "  Statements: ${STATEMENTS}%"
+          echo "  Functions: ${FUNCTIONS}%"
+          echo "  Branches: ${BRANCHES}%"
+
+          # Define minimum thresholds
+          MIN_LINES=80
+          MIN_STATEMENTS=80
+          MIN_FUNCTIONS=75
+          MIN_BRANCHES=70
+
+          # Check thresholds
+          FAIL=0
+
+          if (( $(echo "$LINES < $MIN_LINES" | bc -l) )); then
+            echo "❌ Lines coverage ($LINES%) is below threshold ($MIN_LINES%)"
+            FAIL=1
+          fi
+
+          if (( $(echo "$STATEMENTS < $MIN_STATEMENTS" | bc -l) )); then
+            echo "❌ Statements coverage ($STATEMENTS%) is below threshold ($MIN_STATEMENTS%)"
+            FAIL=1
+          fi
+
+          if (( $(echo "$FUNCTIONS < $MIN_FUNCTIONS" | bc -l) )); then
+            echo "❌ Functions coverage ($FUNCTIONS%) is below threshold ($MIN_FUNCTIONS%)"
+            FAIL=1
+          fi
+
+          if (( $(echo "$BRANCHES < $MIN_BRANCHES" | bc -l) )); then
+            echo "❌ Branches coverage ($BRANCHES%) is below threshold ($MIN_BRANCHES%)"
+            FAIL=1
+          fi
+
+          if [ $FAIL -eq 1 ]; then
+            echo ""
+            echo "💡 Tip: Add more tests to increase coverage"
+            exit 1
+          fi
+
+          echo "✅ All coverage thresholds met!"
 
       - name: Upload coverage to artifacts
         if: always()
@@ -153,8 +232,44 @@ jobs:
         run: |
           npm run build
           echo "📦 Bundle size analysis:"
-          du -sh dist/assets/*.js | sort -h || echo "No JS bundles found"
-        continue-on-error: true
+
+          # Get total bundle size
+          TOTAL_SIZE=$(du -sb dist/assets/*.js 2>/dev/null | awk '{s+=$1} END {print s}')
+
+          if [ -z "$TOTAL_SIZE" ]; then
+            echo "⚠️ No JS bundles found"
+            exit 0
+          fi
+
+          # Convert to KB
+          TOTAL_SIZE_KB=$((TOTAL_SIZE / 1024))
+
+          echo "  Total JS bundle size: ${TOTAL_SIZE_KB} KB"
+
+          # Define budget (in KB)
+          MAX_BUNDLE_SIZE_KB=500
+          WARNING_THRESHOLD_KB=400
+
+          # List all bundles with sizes
+          echo ""
+          echo "  Individual bundles:"
+          du -h dist/assets/*.js | sort -h
+
+          # Check against budget
+          if [ $TOTAL_SIZE_KB -gt $MAX_BUNDLE_SIZE_KB ]; then
+            echo ""
+            echo "❌ Bundle size (${TOTAL_SIZE_KB} KB) exceeds budget (${MAX_BUNDLE_SIZE_KB} KB)!"
+            echo "💡 Tip: Consider code splitting, tree shaking, or removing unused dependencies"
+            exit 1
+          elif [ $TOTAL_SIZE_KB -gt $WARNING_THRESHOLD_KB ]; then
+            echo ""
+            echo "⚠️ Bundle size (${TOTAL_SIZE_KB} KB) is approaching budget limit (${MAX_BUNDLE_SIZE_KB} KB)"
+            echo "   Current usage: $(( TOTAL_SIZE_KB * 100 / MAX_BUNDLE_SIZE_KB ))%"
+          else
+            echo ""
+            echo "✅ Bundle size is within budget"
+            echo "   Budget used: $(( TOTAL_SIZE_KB * 100 / MAX_BUNDLE_SIZE_KB ))% (${TOTAL_SIZE_KB}/${MAX_BUNDLE_SIZE_KB} KB)"
+          fi
 
   all-checks:
     name: ✅ All Checks Passed

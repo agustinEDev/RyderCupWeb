@@ -23,7 +23,7 @@
 | **Sentry** | ✅ Operacional | Error tracking, Performance, Session Replay |
 | **Performance** | ✅ Optimizado | Code splitting, Lazy loading (-95% bundle) |
 | **React Auto-Escaping** | ✅ Nativo | XSS protection por defecto |
-| **CI/CD Pipeline** | ✅ Profesional | GitHub Actions (CI + Security + E2E) |
+| **CI/CD Pipeline** | ✅ Profesional | GitHub Actions (CI + Security + Quality Gates) |
 
 ### 📈 Métricas Clave
 
@@ -216,31 +216,24 @@
   - ✅ **Mejora (23 Dic):** Password se limpia automáticamente tras login fallido (OWASP A07)
   - ⏳ Pendiente: Verificar en producción con securityheaders.com (post-deploy)
   - **Puntuación lograda:** 8.7/10 → 8.9/10 (+0.2)
-- [x] **9. Auditoría de Dependencias + CI/CD Pipeline** - ✅ COMPLETADO (23 Dic 2025) - **3h reales**
+- [x] **9. Auditoría de Dependencias + CI/CD Pipeline** - ✅ COMPLETADO (23-24 Dic 2025) - **5h reales**
   - ✅ Ejecutar `npm audit`: **0 vulnerabilidades encontradas** ✅
-  - ✅ Ejecutar `npm outdated`: 20 paquetes con actualizaciones disponibles
-  - ✅ **CI/CD Pipeline Profesional Implementado:**
+  - ✅ **CI/CD Pipeline con Quality Gates:**
     - ✅ `.github/workflows/ci.yml` - Pipeline principal:
-      - Linting (ESLint) en cada commit
-      - Tests unitarios (Vitest) con coverage
-      - Build verification
+      - Linting (ESLint) + Prettier format check
+      - Tests unitarios con **coverage thresholds** (80/80/75/70)
+      - Build verification con **bundle size budget** (≤500 KB)
       - Type checking (TypeScript)
-      - Code quality checks
-      - Bundle size analysis
     - ✅ `.github/workflows/security.yml` - Seguridad automatizada:
       - npm audit (semanal + PRs a main)
-      - Dependency outdated check
+      - Secret scanning (TruffleHog)
       - License compliance
-      - Secret scanning
-      - CSP headers validation
-    - ✅ `.github/workflows/e2e.yml` - Tests E2E:
-      - Playwright en Chromium, Firefox, WebKit
-      - Solo en PRs a main
-      - Test reports y traces automáticos
-    - ✅ Documentación completa en `docs/BRANCH_PROTECTION.md`
-    - ✅ Badges de estado en README.md
-  - ⏳ **Pendiente:** Actualizar dependencias críticas (ver sección de updates)
-  - **Puntuación lograda:** 8.9/10 → 9.3/10 (+0.4 por CI/CD automation)
+      - Outdated dependencies check
+    - ✅ `.github/workflows/pr-checks.yml` - PR quality gates (NUEVO):
+      - **PR size check** (falla si >1000 cambios)
+      - **Conventional commits** validation
+    - ✅ Documentación: `docs/architecture/decisions/ADR-007-ci-cd-quality-gates.md`
+  - **Puntuación lograda:** 8.9/10 → 9.3/10 (+0.4 por automation + quality gates)
 
 **Semana 4: Testing + Documentación**
 - [x] **10. Tests Unitarios de Validaciones** - ✅ COMPLETADO (20 Dic 2025)

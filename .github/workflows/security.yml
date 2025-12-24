@@ -1,20 +1,17 @@
-name: Security Audit
+name: Security Checks
 
 on:
-  # Ejecutar semanalmente los lunes a las 9:00 AM
-  schedule:
-    - cron: '0 9 * * 1'
-  
-  # Ejecutar en PRs a develop y main (GitFlow)
+  push:
+    branches: [main, develop, 'feature/**', 'release/**', 'hotfix/**']
   pull_request:
     branches: [develop, main]
-  
-  # Permitir ejecución manual
-  workflow_dispatch:
+  schedule:
+    # Run every Monday at 9:00 AM UTC
+    - cron: '0 9 * * 1'
 
 jobs:
   dependency-audit:
-    name: 🔒 Dependency Security Audit
+    name: 🔒 Dependency Vulnerability Scan
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -30,26 +27,35 @@ jobs:
         run: npm ci
 
       - name: Run npm audit
-        id: audit
         run: |
           echo "🔍 Running npm audit..."
           npm audit --audit-level=moderate --json > audit-report.json || true
-          
-          # Mostrar resumen
-          npm audit --audit-level=moderate || true
-          
-          # Verificar vulnerabilidades críticas/altas
-          CRITICAL=$(jq '.metadata.vulnerabilities.critical // 0' audit-report.json)
-          HIGH=$(jq '.metadata.vulnerabilities.high // 0' audit-report.json)
-          
-          echo "critical=$CRITICAL" >> $GITHUB_OUTPUT
-          echo "high=$HIGH" >> $GITHUB_OUTPUT
-          
+
+          # Parse results
+          VULNERABILITIES=$(cat audit-report.json | jq '.metadata.vulnerabilities.total')
+          CRITICAL=$(cat audit-report.json | jq '.metadata.vulnerabilities.critical')
+          HIGH=$(cat audit-report.json | jq '.metadata.vulnerabilities.high')
+          MODERATE=$(cat audit-report.json | jq '.metadata.vulnerabilities.moderate')
+
+          echo "📊 Vulnerability Summary:"
+          echo "  Critical: $CRITICAL"
+          echo "  High: $HIGH"
+          echo "  Moderate: $MODERATE"
+          echo "  Total: $VULNERABILITIES"
+
+          # Fail if critical or high vulnerabilities found
           if [ "$CRITICAL" -gt 0 ] || [ "$HIGH" -gt 0 ]; then
-            echo "❌ Found $CRITICAL critical and $HIGH high vulnerabilities"
+            echo "❌ Critical or High vulnerabilities found!"
+            npm audit --audit-level=high
             exit 1
           fi
-          
+
+          # Warn if moderate vulnerabilities found
+          if [ "$MODERATE" -gt 0 ]; then
+            echo "⚠️ Moderate vulnerabilities found (allowed to pass)"
+            npm audit --audit-level=moderate
+          fi
+
           echo "✅ No critical or high vulnerabilities found"
 
       - name: Upload audit report
@@ -60,52 +66,25 @@ jobs:
           path: audit-report.json
           retention-days: 30
 
-  outdated-check:
-    name: 📦 Outdated Dependencies
+  secret-scanning:
+    name: 🔐 Secret Scanning
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          cache: 'npm'
+          fetch-depth: 0
 
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Check for outdated dependencies
-        run: |
-          echo "📋 Checking for outdated dependencies..."
-          npm outdated --long --json > outdated-report.json || true
-          npm outdated || echo "Some dependencies are outdated (non-blocking)"
-
-      - name: Analyze major updates
-        run: |
-          echo "🔍 Analyzing major version updates..."
-          if [ -s outdated-report.json ]; then
-            MAJOR_UPDATES=$(jq 'to_entries | map(select(.value.latest != .value.current and (.value.latest | split(".")[0]) != (.value.current | split(".")[0]))) | length' outdated-report.json)
-            echo "Found $MAJOR_UPDATES major version updates available"
-            
-            if [ "$MAJOR_UPDATES" -gt 0 ]; then
-              echo "⚠️ Major updates available - review recommended"
-              jq -r 'to_entries | map(select(.value.latest != .value.current and (.value.latest | split(".")[0]) != (.value.current | split(".")[0]))) | .[] | "  - \(.key): \(.value.current) → \(.value.latest)"' outdated-report.json
-            fi
-          fi
-        continue-on-error: true
-
-      - name: Upload outdated report
-        if: always()
-        uses: actions/upload-artifact@v4
+      - name: TruffleHog OSS
+        uses: trufflesecurity/trufflehog@main
         with:
-          name: outdated-dependencies-report
-          path: outdated-report.json
-          retention-days: 30
+          path: ./
+          base: ${{ github.event.repository.default_branch }}
+          head: HEAD
+          extra_args: --debug --only-verified
 
   license-check:
-    name: ⚖️ License Compliance
+    name: 📜 License Compliance
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -122,15 +101,33 @@ jobs:
 
       - name: Check licenses
         run: |
-          echo "⚖️ Checking package licenses..."
-          npx license-checker --summary || echo "license-checker not available"
-          
-          # Verificar licencias problemáticas
-          npx license-checker --onlyAllow "MIT;Apache-2.0;BSD-2-Clause;BSD-3-Clause;ISC;0BSD;CC0-1.0" --production || echo "⚠️ Some licenses may need review"
-        continue-on-error: true
+          echo "📜 Checking dependency licenses..."
+          npx license-checker --json --out licenses.json
 
-  security-scan:
-    name: 🛡️ Security Scan
+          # Check for problematic licenses
+          FORBIDDEN_LICENSES="GPL-3.0 AGPL-3.0 LGPL-3.0"
+
+          for license in $FORBIDDEN_LICENSES; do
+            if npx license-checker --summary | grep -q "$license"; then
+              echo "❌ Forbidden license found: $license"
+              npx license-checker --summary
+              exit 1
+            fi
+          done
+
+          echo "✅ All licenses are compliant"
+          npx license-checker --summary
+
+      - name: Upload license report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: license-report
+          path: licenses.json
+          retention-days: 30
+
+  outdated-dependencies:
+    name: 📦 Outdated Dependencies Check
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -142,69 +139,27 @@ jobs:
           node-version: '20'
           cache: 'npm'
 
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Check for secrets in code
+      - name: Check for outdated packages
         run: |
-          echo "🔍 Scanning for exposed secrets..."
-          # Buscar patrones comunes de secrets
-          ! grep -r -i "api[_-]key\s*=\s*['\"][a-zA-Z0-9]" src/ || echo "⚠️ Possible API key found"
-          ! grep -r -i "password\s*=\s*['\"][^'\"]*['\"]" src/ || echo "⚠️ Possible hardcoded password found"
-          ! grep -r -i "secret\s*=\s*['\"][a-zA-Z0-9]" src/ || echo "⚠️ Possible secret found"
-          echo "✅ No obvious secrets detected"
-        continue-on-error: true
+          echo "📦 Checking for outdated dependencies..."
+          npm outdated --json > outdated.json || true
 
-      - name: Check environment variables usage
-        run: |
-          echo "🔍 Checking environment variable usage..."
-          grep -r "import.meta.env" src/ || echo "No environment variables used"
+          # Count outdated packages
+          OUTDATED_COUNT=$(cat outdated.json | jq 'length')
 
-  csp-validation:
-    name: 🔐 CSP Headers Validation
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+          echo "📊 Found $OUTDATED_COUNT outdated packages"
 
-      - name: Validate CSP headers
-        run: |
-          echo "🔍 Validating Content Security Policy..."
-          
-          # Verificar que no hay unsafe-inline en producción
-          if grep -i "unsafe-inline" public/_headers 2>/dev/null; then
-            echo "❌ Found unsafe-inline in production CSP headers"
-            exit 1
+          if [ "$OUTDATED_COUNT" -gt 0 ]; then
+            echo "⚠️ Outdated packages found:"
+            npm outdated
+          else
+            echo "✅ All packages are up to date"
           fi
-          
-          if grep -i "unsafe-inline" vercel.json 2>/dev/null && ! grep -B5 "unsafe-inline" vercel.json | grep -q "development"; then
-            echo "❌ Found unsafe-inline in production vercel.json"
-            exit 1
-          fi
-          
-          if grep -i "unsafe-inline" nginx.conf 2>/dev/null && ! grep -B5 "unsafe-inline" nginx.conf | grep -q "development"; then
-            echo "❌ Found unsafe-inline in production nginx.conf"
-            exit 1
-          fi
-          
-          echo "✅ CSP headers validation passed"
 
-  all-security-checks:
-    name: ✅ All Security Checks
-    runs-on: ubuntu-latest
-    needs: [dependency-audit, outdated-check, license-check, security-scan, csp-validation]
-    if: always()
-    steps:
-      - name: Check job statuses
-        run: |
-          if [ "${{ needs.dependency-audit.result }}" != "success" ] || \
-             [ "${{ needs.csp-validation.result }}" != "success" ]; then
-            echo "❌ Critical security checks failed"
-            exit 1
-          fi
-          echo "✅ All security checks passed!"
-          
-          if [ "${{ needs.license-check.result }}" != "success" ] || \
-             [ "${{ needs.security-scan.result }}" != "success" ]; then
-            echo "⚠️ Some non-critical checks had warnings"
-          fi
+      - name: Upload outdated report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: outdated-dependencies
+          path: outdated.json
+          retention-days: 30

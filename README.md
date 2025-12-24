@@ -60,12 +60,12 @@ Importante: Render puede hibernar (503). Si ves 503 en producción, revisa estad
 Este proyecto implementa un pipeline profesional de CI/CD que garantiza la calidad y seguridad del código:
 
 ### Pipeline de Integración Continua
-- ✅ **Linting automático** (ESLint) en cada commit
-- ✅ **Tests unitarios** (Vitest) con cobertura
-- ✅ **Tests de integración** con backend real (Playwright)
-- ✅ **Build verification** - verifica que la aplicación compila sin errores
+- ✅ **Linting automático** (ESLint + Prettier) en cada commit
+- ✅ **Tests unitarios** (Vitest) con coverage enforcement (≥80%)
+- ✅ **Build verification** con bundle size budget (≤500 KB)
 - ✅ **Type checking** - validación de tipos TypeScript
-- ✅ **Code quality checks** - análisis de calidad de código
+- ✅ **PR size check** - bloquea PRs >1000 cambios
+- ✅ **Conventional commits** - valida formato de commits
 
 ### Seguridad Automatizada
 - 🔒 **npm audit** - auditoría de vulnerabilidades en dependencias
