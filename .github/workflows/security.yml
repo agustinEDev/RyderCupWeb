@@ -139,6 +139,9 @@ jobs:
           node-version: '20'
           cache: 'npm'
 
+      - name: Install dependencies
+        run: npm ci
+
       - name: Check for outdated packages
         run: |
           echo "📦 Checking for outdated dependencies..."
@@ -150,8 +153,8 @@ jobs:
           echo "📊 Found $OUTDATED_COUNT outdated packages"
 
           if [ "$OUTDATED_COUNT" -gt 0 ]; then
-            echo "⚠️ Outdated packages found:"
-            npm outdated
+            echo "⚠️ Outdated packages found (informational only, does not fail CI):"
+            npm outdated || true
           else
             echo "✅ All packages are up to date"
           fi
