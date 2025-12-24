@@ -1,27 +1,31 @@
 # Tests de Integración con Backend v1.8.0
 
-> **Tarea #11 del ROADMAP**  
-> **Fecha:** 23-24 Dic 2025  
-> **Estado:** ✅ COMPLETADO - 7/7 tests pasando (100%)  
+> **Tarea #11 del ROADMAP**
+> **Fecha:** 23-24 Dic 2025
+> **Estado:** ✅ DISPONIBLE - Solo para ejecución local manual
 > **Objetivo:** Verificar integración completa Frontend-Backend v1.8.0
+
+## ⚠️ IMPORTANTE
+
+**Los tests de integración NO se ejecutan en CI/CD.**
+
+Estos tests están disponibles solo para **ejecución local manual** cuando necesites validar la integración con el backend real.
+
+**Motivo:** La complejidad de mantener un mock backend en CI no justifica el beneficio, ya que:
+- Los tests unitarios cubren >90% del código
+- El backend real debe estar corriendo (no podemos garantizarlo en CI)
+- Los mocks agregan complejidad sin aportar confianza real en la integración
 
 ## ✅ Estado Actual
 
-**Tests implementados:** 7 tests E2E validados  
-**Tests pasando:** 7/7 (100%)  
-**Tiempo de ejecución:** ~13.5 segundos  
-**Última ejecución exitosa:** 24 Dic 2025
-
-**⚠️ Importante - Backend Mock:**
-- Tests utilizan servidor mock (Node.js + Express)
-- No requieren backend real ni base de datos
-- Simula respuestas del backend v1.8.0
-- Tests configurados para ejecutarse en serie (workers: 1)
+**Tests implementados:** 8 tests E2E
+**Ejecución:** Solo local (con backend real corriendo)
+**Tiempo de ejecución:** ~26 segundos
 
 **Para ejecutar estos tests necesitas:**
 1. ✅ Node.js 20+
-2. ✅ Usuario de prueba: `panetetrinx@gmail.com` / `Pruebas1234.`
-3. ✅ Servidor mock se inicia automáticamente
+2. ✅ Backend real corriendo en `http://localhost:8000`
+3. ✅ Usuario de prueba existente: `panetetrinx@gmail.com` / `Pruebas1234.`
 
 ## 📋 Suite de Tests Implementada
 
@@ -144,9 +148,9 @@ Verifica persistencia de sesión:
 npx playwright install chromium
 ```
 
-**2. Backend debe estar corriendo:**
+**2. Backend DEBE estar corriendo:**
 
-Los tests de integración requieren que el backend esté activo y accesible.
+⚠️ **CRÍTICO:** Los tests de integración requieren que el backend real esté activo.
 
 ```bash
 # En el repositorio del backend (RyderCupAm)
@@ -155,19 +159,21 @@ source venv/bin/activate  # o el entorno que uses
 uvicorn app.main:app --reload
 
 # Verificar que responde
-curl http://localhost:8000/health
+curl http://localhost:8000/api/v1/health
 ```
+
+**Importante:** Si el backend no está corriendo, los tests fallarán.
 
 **3. Usuario de pruebas debe existir:**
 
 Las credenciales por defecto son:
 - Email: `panetetrinx@gmail.com`
-- Password: `Prueba1234.`
+- Password: `Pruebas1234.`
 
-Si no existe este usuario, puedes:
-- Registrarlo manualmente en el frontend
-- Verificar el email
-- O actualizar las credenciales en `tests/integration.spec.js`
+Si no existe este usuario:
+1. Regístralo manualmente en el frontend
+2. Verifica el email
+3. O actualiza las credenciales en `tests/integration.spec.js`
 
 ### Todos los tests E2E
 
