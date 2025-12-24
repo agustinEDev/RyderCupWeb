@@ -41,7 +41,7 @@ test.describe('httpOnly Cookies Integration', () => {
     })));
   });
 
-  test('should send cookies automatically with authenticated requests', async ({ page, context }) => {
+  test('should send cookies automatically with authenticated requests', async ({ page }) => {
     // Login first
     await page.goto('/login');
     await page.getByPlaceholder('your.email@example.com').fill('panetetrinx@gmail.com');
@@ -96,7 +96,7 @@ test.describe('httpOnly Cookies Integration', () => {
 });
 
 test.describe('Refresh Token Flow', () => {
-  test('should automatically refresh expired access token on 401', async ({ page, context }) => {
+  test('should automatically refresh expired access token on 401', async ({ page }) => {
     // This test simulates token expiration scenario
     // Note: Actual implementation depends on backend behavior
     
@@ -266,7 +266,7 @@ test.describe('Backend Validation Integration', () => {
 });
 
 test.describe('Complete E2E Flow', () => {
-  test('should complete full user journey: login → dashboard → profile → edit → logout', async ({ page, context }) => {
+  test('should complete full user journey: login → dashboard → profile → edit → logout', async ({ page }) => {
     // Step 1: Login
     console.log('🔐 Step 1: Login');
     await page.goto('/login');
@@ -384,9 +384,6 @@ test.describe('Session Timeout & Inactivity', () => {
     await page.getByPlaceholder('Enter your password').fill('Pruebas1234.');
     await page.getByRole('button', { name: 'Sign In' }).click();
     await expect(page).toHaveURL('/dashboard', { timeout: 10000 });
-
-    // Store cookies
-    const cookies = await context.cookies();
 
     // Close page (simulate tab close)
     await page.close();

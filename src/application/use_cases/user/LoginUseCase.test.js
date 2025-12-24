@@ -1,9 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import LoginUseCase from './LoginUseCase';
 import User from '../../../domain/entities/User';
-import IAuthRepository from '../../../domain/repositories/IAuthRepository';
-import Email from '../../../domain/value_objects/Email'; // Importar Email
-import Password from '../../../domain/value_objects/Password'; // Importar Password
 
 // secureAuth.js has been removed (migrated to httpOnly cookies)
 // LoginUseCase no longer uses setAuthToken/setUserData - authentication is handled by httpOnly cookies

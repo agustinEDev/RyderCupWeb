@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Calendar, Trophy, MapPin, Settings, Plus, X, ChevronDown } from 'lucide-react';
 import HeaderAuth from '../components/layout/HeaderAuth';
@@ -23,7 +23,6 @@ const CreateCompetition = () => {
 
   // Countries data
   const [allCountries, setAllCountries] = useState([]);
-  const [isLoadingCountries, setIsLoadingCountries] = useState(false);
   const [adjacentCountries1, setAdjacentCountries1] = useState([]);
   const [adjacentCountries2, setAdjacentCountries2] = useState([]);
 
@@ -55,13 +54,11 @@ const CreateCompetition = () => {
 
   useEffect(() => {
     // Fetch all countries
-    // eslint-disable-next-line sonar/todo-tag
     // TODO: Move country fetching logic to its own use case
     fetchCountries();
   }, []);
 
   const fetchCountries = async () => {
-    setIsLoadingCountries(true);
     try {
       const response = await fetch(`${API_URL}/api/v1/countries`, {
         headers: {
@@ -90,8 +87,6 @@ const CreateCompetition = () => {
     } catch (error) {
       console.error('Error fetching countries:', error);
       setAllCountries([]);
-    } finally {
-      setIsLoadingCountries(false);
     }
   };
 
@@ -649,7 +644,7 @@ const CreateCompetition = () => {
                       </span>
                       <div className="flex gap-4">
                         {['100', '95', '90'].map(percentage => (
-                          <React.Fragment key={percentage}>
+                          <>
                             <input
                               id={`handicapPercentage-${percentage}`}
                               type="radio"
@@ -662,7 +657,7 @@ const CreateCompetition = () => {
                             <label htmlFor={`handicapPercentage-${percentage}`} className="flex items-center gap-2 cursor-pointer">
                               <span className="text-sm text-gray-700">{percentage}%</span>
                             </label>
-                          </React.Fragment>
+                          </>
                         ))}
                       </div>
                     </div>

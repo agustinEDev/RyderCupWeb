@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Trophy, Users, User, TrendingUp, Calendar, Award, Search } from 'lucide-react';
+import { Trophy, Users, User, TrendingUp, Award, Search } from 'lucide-react';
 import HeaderAuth from '../components/layout/HeaderAuth';
 import ProfileCard from '../components/profile/ProfileCard';
 import EmailVerificationBanner from '../components/EmailVerificationBanner';
@@ -78,7 +78,7 @@ const Dashboard = () => {
                   Welcome, {firstName}
                 </p>
                 <p className="text-gray-500 text-sm mt-1">
-                  Here's your activity summary
+                  Here&apos;s your activity summary
                 </p>
               </div>
             </motion.div>

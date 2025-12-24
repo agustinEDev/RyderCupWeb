@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import User from '../../domain/entities/User.js';
 import IUserRepository from '../../domain/repositories/IUserRepository.js';
 import Email from '../../domain/value_objects/Email';

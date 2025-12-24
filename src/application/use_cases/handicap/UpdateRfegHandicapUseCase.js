@@ -1,6 +1,3 @@
-import IHandicapRepository from '../../../domain/repositories/IHandicapRepository.js';
-import IUserRepository from '../../../domain/repositories/IUserRepository.js';
-
 class UpdateRfegHandicapUseCase {
   /**
    * @param {Object} dependencies - Objeto de dependencias.

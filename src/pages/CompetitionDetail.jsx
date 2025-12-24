@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
-  Trophy, Users, Calendar, MapPin, Settings, ArrowLeft,
+  Users, Calendar, MapPin, Settings, ArrowLeft,
   Edit, Trash2, Play, CheckCircle, XCircle, Pause,
   AlertCircle, Loader, UserPlus, Shield
 } from 'lucide-react';
@@ -23,7 +23,6 @@ import {
   rejectEnrollmentUseCase,
 } from '../composition';
 import {
-  updateCompetition,
   deleteCompetition,
   getStatusColor,
   getEnrollmentStatusColor,
@@ -45,15 +44,7 @@ const CompetitionDetail = () => {
   const backLink = fromBrowse ? '/browse-competitions' : '/competitions';
   const backText = fromBrowse ? 'Back to Browse' : 'Back to Competitions';
 
-  useEffect(() => {
-    if (user) {
-      loadCompetition();
-    }
-  }, [id, user]);
-
-  const isLoading = isLoadingUser || isLoadingCompetition;
-
-  const loadCompetition = async () => {
+  const loadCompetition = useCallback(async () => {
     if (!user) return;
     
     setIsLoadingCompetition(true);
@@ -74,7 +65,15 @@ const CompetitionDetail = () => {
     } finally {
       setIsLoadingCompetition(false);
     }
-  };
+  }, [id, user, navigate]);
+
+  useEffect(() => {
+    if (user) {
+      loadCompetition();
+    }
+  }, [id, user, loadCompetition]);
+
+  const isLoading = isLoadingUser || isLoadingCompetition;
 
   const handleStatusChange = async (action) => {
     if (!window.confirm(`Are you sure you want to ${action} this competition?`)) {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
@@ -7,7 +7,6 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import HeaderAuth from '../components/layout/HeaderAuth';
-import { useAuth } from '../hooks/useAuth';
 import { listUserCompetitionsUseCase } from '../composition';
 import {
   getStatusColor,
@@ -57,17 +56,7 @@ const Competitions = () => {
     loadUserData();
   }, []);
 
-  useEffect(() => {
-    if (user?.id) {
-      loadCompetitions();
-    }
-  }, [user]);
-
-  useEffect(() => {
-    applyFilters();
-  }, [competitions, searchQuery, statusFilter]);
-
-  const loadCompetitions = async () => {
+  const loadCompetitions = useCallback(async () => {
     if (!user?.id) {
       return;
     }
@@ -85,9 +74,9 @@ const Competitions = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [user]);
 
-  const applyFilters = () => {
+  const applyFilters = useCallback(() => {
     let filtered = [...competitions];
 
     // Apply search filter
@@ -106,7 +95,17 @@ const Competitions = () => {
     }
 
     setFilteredCompetitions(filtered);
-  };
+  }, [competitions, searchQuery, statusFilter]);
+
+  useEffect(() => {
+    if (user?.id) {
+      loadCompetitions();
+    }
+  }, [user, loadCompetitions]);
+
+  useEffect(() => {
+    applyFilters();
+  }, [competitions, searchQuery, statusFilter, applyFilters]);
 
   const handleCreateCompetition = () => {
     navigate('/competitions/create');

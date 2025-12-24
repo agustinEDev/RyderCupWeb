@@ -63,7 +63,6 @@ export const refreshAccessToken = async () => {
       throw new Error('Failed to refresh token');
     }
 
-    const data = await response.json();
     console.log('✅ [TokenRefresh] Access token refreshed successfully');
 
     // Backend sets new access_token cookie automatically (httpOnly)

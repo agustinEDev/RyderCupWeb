@@ -1,4 +1,3 @@
-import IAuthRepository from '../../../domain/repositories/IAuthRepository.js';
 import Email from '../../../domain/value_objects/Email';
 import Password from '../../../domain/value_objects/Password';
 

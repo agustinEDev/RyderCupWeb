@@ -1,5 +1,6 @@
-import React, { useEffect, lazy, Suspense, useState } from 'react';
-import { BrowserRouter as Router, Routes, Route, useLocation, useNavigationType, createRoutesFromChildren, matchRoutes, useNavigate } from 'react-router-dom';
+/* eslint-disable react-refresh/only-export-components */
+import { useEffect, lazy, Suspense, useState } from 'react';
+import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
 import * as Sentry from '@sentry/react';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import { getUserData } from './hooks/useAuth';

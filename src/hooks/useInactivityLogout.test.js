@@ -5,7 +5,7 @@ import useInactivityLogout from './useInactivityLogout';
 
 // Mock de react-hot-toast
 vi.mock('react-hot-toast', () => {
-  const toastFn = vi.fn((content, options) => 'toast-id-123');
+  const toastFn = vi.fn(() => 'toast-id-123');
   toastFn.error = vi.fn();
   toastFn.success = vi.fn();
   toastFn.dismiss = vi.fn();
@@ -408,8 +408,6 @@ describe('useInactivityLogout', () => {
     });
 
     it('debe manejar cambio de enabled de true a false', () => {
-      let enabled = true;
-
       const { rerender } = renderHook(
         ({ enabled }) =>
           useInactivityLogout({
@@ -422,7 +420,6 @@ describe('useInactivityLogout', () => {
       );
 
       // Cambiar a disabled
-      // enabled = false; // Eliminado por lint
       rerender({ enabled: false });
 
       // Avanzar tiempo
@@ -435,8 +432,6 @@ describe('useInactivityLogout', () => {
     });
 
     it('debe reiniciar timers al cambiar de disabled a enabled', () => {
-      let enabled = false;
-
       const { rerender } = renderHook(
         ({ enabled }) =>
           useInactivityLogout({

@@ -117,12 +117,10 @@ describe('useEditProfile Hook', () => {
 
   it('debería llamar a updateUserProfileUseCase y actualizar el estado al llamar a handleUpdateProfile', async () => {
     // Importar dinámicamente el módulo User REAL
-    // eslint-disable-next-line no-unused-vars
     const { default: User } = await vi.importActual('../domain/entities/User');
 
     // 1. Arrange: Preparar el escenario del test
     const mockUserPlain = { id: '1', first_name: 'John', last_name: 'Doe', email: 'a@a.com', handicap: 10, country_code: null };
-    // eslint-disable-next-line sonar/constructor-for-side-effects
     const updatedUserEntity = new User({ id: '1', first_name: 'Johnny', last_name: 'Doe', email: 'a@a.com', handicap: 10, email_verified: true });
 
     const mockRefetch = vi.fn();
@@ -174,9 +172,7 @@ describe('useEditProfile Hook', () => {
     const currentPassword = 'CurrentPassword123';
 
     // Importar dinámicamente el módulo User REAL
-    // eslint-disable-next-line no-unused-vars
     const { default: User } = await vi.importActual('../domain/entities/User');
-    // eslint-disable-next-line sonar/constructor-for-side-effects
     const updatedUserEntity = new User({
       id: '1',
       first_name: 'John',
@@ -241,9 +237,7 @@ describe('useEditProfile Hook', () => {
     const newHandicap = 12.5;
 
     // Importar dinámicamente el módulo User REAL
-    // eslint-disable-next-line no-unused-vars
     const { default: User } = await vi.importActual('../domain/entities/User');
-    // eslint-disable-next-line sonar/constructor-for-side-effects
     const updatedUserEntity = new User({
       id: '1',
       first_name: 'John',
@@ -293,9 +287,7 @@ describe('useEditProfile Hook', () => {
     const rfegHandicap = 8.2;
 
     // Importar dinámicamente el módulo User REAL
-    // eslint-disable-next-line no-unused-vars
     const { default: User } = await vi.importActual('../domain/entities/User');
-    // eslint-disable-next-line sonar/constructor-for-side-effects
     const updatedUserEntity = new User({
       id: '1',
       first_name: 'John',

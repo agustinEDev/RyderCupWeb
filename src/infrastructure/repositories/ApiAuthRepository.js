@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import IAuthRepository from '../../domain/repositories/IAuthRepository.js';
 import User from '../../domain/entities/User.js';
 import Email from '../../domain/value_objects/Email'; // Importar Email VO para tipado

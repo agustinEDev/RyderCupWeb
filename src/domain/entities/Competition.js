@@ -1,16 +1,6 @@
 // src/domain/entities/Competition.js
 
 import { CompetitionStatus } from '../value_objects/CompetitionStatus';
-import { InvalidLocationError } from '../value_objects/InvalidLocationError'; // Though not thrown here, good to be aware.
-
-// Assuming UserId exists in a shared or user-specific value_objects folder.
-// We might need to adjust this path later.
-// For now, let's create a placeholder to make the code work.
-class UserId {
-  constructor(value) { this.id = value; }
-  equals(other) { return other instanceof UserId && this.id === other.id; }
-}
-
 
 /**
  * Custom error for invalid state transitions in a Competition.

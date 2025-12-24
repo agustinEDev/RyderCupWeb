@@ -114,6 +114,7 @@ const useInactivityLogout = ({
         }
       }
     );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [warningTime]);
 
   /**

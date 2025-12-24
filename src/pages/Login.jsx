@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
@@ -348,7 +348,7 @@ const Login = () => {
               {/* Register Link */}
               <div className="text-center">
                 <p className="text-gray-600 text-sm">
-                  Don't have an account?{' '}
+                  Don&apos;t have an account?{' '}
                   <Link
                     to="/register"
                     className="font-semibold text-primary hover:text-primary-600 transition-colors"

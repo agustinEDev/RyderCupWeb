@@ -11,8 +11,6 @@ import {
 
 import { useAuth } from './useAuth';
 
-const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
-
 export const useEditProfile = () => {
   const navigate = useNavigate();
   const { user: authUser, refetch: refetchUser } = useAuth();

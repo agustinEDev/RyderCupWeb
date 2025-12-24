@@ -1,11 +1,9 @@
-import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import HeaderAuth from '../components/layout/HeaderAuth';
 import { useEditProfile } from '../hooks/useEditProfile'; // <- ¡NUEVA IMPORTACIÓN!
 import { canUseRFEG, CountryFlag } from '../utils/countryUtils';
 
 const EditProfile = () => {
-  // eslint-disable-next-line sonar/todo-tag
   // Toda la lógica ahora reside en el hook. Obtenemos todo lo que necesitamos de él.
   const {
     user,

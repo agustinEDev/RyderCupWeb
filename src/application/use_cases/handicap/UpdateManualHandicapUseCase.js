@@ -1,5 +1,3 @@
-import IHandicapRepository from '../../../domain/repositories/IHandicapRepository.js';
-
 class UpdateManualHandicapUseCase {
   /**
    * @param {Object} dependencies - Objeto de dependencias.

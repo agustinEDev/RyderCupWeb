@@ -30,10 +30,8 @@ import apiRequest from '../../services/api.js';
 class ApiEnrollmentRepository extends IEnrollmentRepository {
   /**
    * Constructor
-   *
-   * @param {Object} config - Configuración (opcional, por compatibilidad)
    */
-  constructor(config = {}) {
+  constructor() {
     super();
     // No necesitamos baseURL porque apiRequest lo maneja
   }

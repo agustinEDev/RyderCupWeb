@@ -1,9 +1,9 @@
 // src/pages/BrowseCompetitions.jsx
 
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { Search, Calendar, MapPin, Users, Target, TrendingUp } from 'lucide-react';
+import { Search, Calendar, Users, Target, TrendingUp } from 'lucide-react';
 import HeaderAuth from '../components/layout/HeaderAuth';
 import {
   browseJoinableCompetitionsUseCase,

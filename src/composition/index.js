@@ -1,23 +1,19 @@
 import { default as UserEntity } from '../domain/entities/User';
-import IUserRepository from '../domain/repositories/IUserRepository';
 import ApiUserRepository from '../infrastructure/repositories/ApiUserRepository';
 // User Use Cases
 import UpdateUserProfileUseCase from '../application/use_cases/user/UpdateUserProfileUseCase';
 import UpdateUserSecurityUseCase from '../application/use_cases/user/UpdateUserSecurityUseCase';
-import IAuthRepository from '../domain/repositories/IAuthRepository';
 import ApiAuthRepository from '../infrastructure/repositories/ApiAuthRepository';
 import LoginUseCase from '../application/use_cases/user/LoginUseCase';
 import RegisterUseCase from '../application/use_cases/user/RegisterUseCase';
 import VerifyEmailUseCase from '../application/use_cases/user/VerifyEmailUseCase';
 
 // Handicap Use Cases
-import IHandicapRepository from '../domain/repositories/IHandicapRepository';
 import ApiHandicapRepository from '../infrastructure/repositories/ApiHandicapRepository';
 import UpdateManualHandicapUseCase from '../application/use_cases/handicap/UpdateManualHandicapUseCase';
 import UpdateRfegHandicapUseCase from '../application/use_cases/handicap/UpdateRfegHandicapUseCase';
 
 // Competition Use Cases
-import { ICompetitionRepository } from '../domain/repositories/ICompetitionRepository';
 import ApiCompetitionRepository from '../infrastructure/repositories/ApiCompetitionRepository';
 import CreateCompetitionUseCase from '../application/use_cases/competition/CreateCompetitionUseCase';
 import ListUserCompetitionsUseCase from '../application/use_cases/competition/ListUserCompetitionsUseCase';
@@ -31,7 +27,6 @@ import BrowseJoinableCompetitionsUseCase from '../application/use_cases/competit
 import BrowseExploreCompetitionsUseCase from '../application/use_cases/competition/BrowseExploreCompetitionsUseCase';
 
 // Enrollment Use Cases
-import IEnrollmentRepository from '../domain/repositories/IEnrollmentRepository';
 import ApiEnrollmentRepository from '../infrastructure/repositories/ApiEnrollmentRepository';
 import RequestEnrollmentUseCase from '../application/use_cases/enrollment/RequestEnrollmentUseCase';
 import ListEnrollmentsUseCase from '../application/use_cases/enrollment/ListEnrollmentsUseCase';

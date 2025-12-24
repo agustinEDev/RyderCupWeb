@@ -1,4 +1,3 @@
-import { ICompetitionRepository } from '../../../domain/repositories/ICompetitionRepository';
 import CompetitionMapper from '../../../infrastructure/mappers/CompetitionMapper';
 
 /**
