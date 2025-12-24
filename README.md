@@ -62,7 +62,7 @@ Este proyecto implementa un pipeline profesional de CI/CD que garantiza la calid
 ### Pipeline de Integración Continua
 - ✅ **Linting automático** (ESLint + Prettier) en cada commit
 - ✅ **Tests unitarios** (Vitest) con coverage enforcement (≥80%)
-- ✅ **Build verification** con bundle size budget (≤500 KB)
+- ✅ **Build verification** con bundle size budget (≤1 MB)
 - ✅ **Type checking** - validación de tipos TypeScript
 - ✅ **PR size check** - bloquea PRs >1000 cambios
 - ✅ **Conventional commits** - valida formato de commits

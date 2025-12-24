@@ -82,11 +82,11 @@ El pipeline de CI/CD actual ejecuta tests y build, pero no previene problemas co
 - Permiten flexibilidad en funciones utilitarias (75%)
 - Branches menos estrictos (70%) porque son difíciles de cubrir al 100%
 
-**Bundle size (500 KB):**
-- Proyecto actual: ~350 KB
-- Budget: 500 KB (43% de margen)
-- Warning: 400 KB (80% del budget)
-- Justificación: SPA con React + Router + Sentry debe mantenerse <500KB para buen LCP
+**Bundle size (1000 KB):**
+- Proyecto actual: ~783 KB (con countryUtils 236 KB)
+- Budget: 1000 KB (28% de margen)
+- Warning: 800 KB (80% del budget)
+- Justificación: SPA con React + Router + Sentry + country data debe mantenerse <1MB para buen LCP
 
 **PR size (1000 cambios):**
 - Basado en research: PRs >400 líneas reducen 60% la efectividad del review

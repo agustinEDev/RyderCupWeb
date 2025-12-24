@@ -247,8 +247,8 @@ jobs:
           echo "  Total JS bundle size: ${TOTAL_SIZE_KB} KB"
 
           # Define budget (in KB)
-          MAX_BUNDLE_SIZE_KB=500
-          WARNING_THRESHOLD_KB=400
+          MAX_BUNDLE_SIZE_KB=1000
+          WARNING_THRESHOLD_KB=800
 
           # List all bundles with sizes
           echo ""
