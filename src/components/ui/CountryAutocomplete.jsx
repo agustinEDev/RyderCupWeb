@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { ChevronDown, Search, X } from 'lucide-react';
 
 /**
@@ -19,22 +19,20 @@ const CountryAutocomplete = ({
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [filteredCountries, setFilteredCountries] = useState(countries);
   const wrapperRef = useRef(null);
   const inputRef = useRef(null);
 
   // Get selected country object
   const selectedCountry = countries.find(c => c.code === value);
 
-  // Filter countries based on search query
-  useEffect(() => {
+  // Filter countries based on search query (using useMemo instead of useEffect)
+  const filteredCountries = useMemo(() => {
     if (!searchQuery.trim()) {
-      setFilteredCountries(countries);
-      return;
+      return countries;
     }
 
     const query = searchQuery.toLowerCase();
-    const filtered = countries.filter(country => {
+    return countries.filter(country => {
       const nameEn = country.name_en?.toLowerCase() || '';
       const nameEs = country.name_es?.toLowerCase() || '';
       const code = country.code?.toLowerCase() || '';
@@ -43,8 +41,6 @@ const CountryAutocomplete = ({
              nameEs.includes(query) ||
              code.includes(query);
     });
-
-    setFilteredCountries(filtered);
   }, [searchQuery, countries]);
 
   // Close dropdown when clicking outside
