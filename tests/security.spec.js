@@ -189,7 +189,7 @@ test.describe('Authentication Security', () => {
     console.log('✅ No sensitive information leaked in error messages');
   });
 
-  test('should clear sensitive data after logout', async ({ page, context }) => {
+  test('should clear sensitive data after logout', async ({ page }) => {
     await page.goto('/login');
 
     // Login
