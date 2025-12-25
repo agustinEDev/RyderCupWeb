@@ -1,0 +1,11 @@
+{
+  "version": "1.8.0-debug",
+  "commit": "3b80f08",
+  "branch": "main",
+  "features": [
+    "extensive-login-logging",
+    "5-second-delay-interceptor",
+    "navigate-instead-of-reload"
+  ],
+  "timestamp": "2025-12-25T13:30:00Z"
+}
