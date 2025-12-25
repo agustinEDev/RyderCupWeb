@@ -267,7 +267,7 @@
   - ✅ Workflow CI: `.github/workflows/security-tests.yml`
   - ✅ Script npm: `npm run test:security`
   - ✅ Documentación: ADR-008-security-testing-strategy.md
-  - **Estado:** 11/12 tests pasando (92%) - 1 test menor pendiente ajuste
+  - **Estado:** 12/12 tests pasando (100%) ✅
   - **Puntuación:** 9.3/10 → 9.5/10 (+0.2 por validación automatizada)
 - [ ] **12. Actualizar Documentación** - 1-2h
   - Actualizar CHANGELOG.md con cambios de v1.8.0
