@@ -84,24 +84,28 @@ describe('CompleteCompetitionUseCase', () => {
     it('should throw generic error if API error has no detail', async () => {
       globalThis.fetch.mockResolvedValue({
         ok: false,
+        status: 500,
+        statusText: 'Internal Server Error',
         json: async () => ({})
       });
 
       await expect(useCase.execute('comp-123')).rejects.toThrow(
-        'Failed to complete competition'
+        'HTTP 500: Internal Server Error'
       );
     });
 
     it('should throw generic error if API response is not valid JSON', async () => {
       globalThis.fetch.mockResolvedValue({
         ok: false,
+        status: 500,
+        statusText: 'Internal Server Error',
         json: async () => {
           throw new SyntaxError('Unexpected token < in JSON at position 0');
         },
       });
 
       await expect(useCase.execute('comp-123')).rejects.toThrow(
-        'Failed to complete competition'
+        'HTTP 500: Internal Server Error'
       );
     });
 

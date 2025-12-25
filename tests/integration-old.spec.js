@@ -70,10 +70,10 @@ test.describe('httpOnly Cookies Integration', () => {
     
     // Should load successfully without manual token handling
     await expect(page.getByRole('heading', { name: /profile/i })).toBeVisible({ timeout: 5000 });
-    
+
     // Verify user data is displayed (proves cookies were sent)
-    const { email } = getTestCredentials();
-    const emailRegex = new RegExp(email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+    const { email: userEmail } = getTestCredentials();
+    const emailRegex = new RegExp(userEmail.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
     await expect(page.locator(`text=${emailRegex}`)).toBeVisible();
   });
 
@@ -308,7 +308,6 @@ test.describe('Complete E2E Flow', () => {
     console.log('👤 Step 3: Profile');
     await page.goto('/profile');
     await expect(page.getByRole('heading', { name: /profile/i })).toBeVisible();
-    const { email } = getTestCredentials();
     const emailRegex = new RegExp(email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
     await expect(page.locator(`text=${emailRegex}`)).toBeVisible();
     console.log('✅ Profile page loaded');

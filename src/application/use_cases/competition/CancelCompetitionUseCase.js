@@ -21,21 +21,13 @@ class CancelCompetitionUseCase {
       method: 'POST'
     });
 
-      // Return simple DTO for UI
-      return {
-        id: data.id,
-        name: data.name,
-        status: data.status,
-        updatedAt: data.updated_at
-      };
-    } catch (error) {
-      // If error already has our prefix, rethrow as-is
-      if (error.message.startsWith('Competition cancellation error:')) {
-        throw error;
-      }
-      // Wrap network errors and other unexpected errors
-      throw new Error(`Competition cancellation error: ${error.message}`);
-    }
+    // Return simple DTO for UI
+    return {
+      id: data.id,
+      name: data.name,
+      status: data.status,
+      updatedAt: data.updated_at
+    };
   }
 }
 

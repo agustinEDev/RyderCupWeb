@@ -133,7 +133,7 @@ describe('CancelCompetitionUseCase', () => {
       });
 
       await expect(useCase.execute('comp-123')).rejects.toThrow(
-        'Competition cancellation error: HTTP 400: Bad Request'
+        'HTTP 400: Bad Request'
       );
     });
 

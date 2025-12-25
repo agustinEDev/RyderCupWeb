@@ -285,6 +285,7 @@ describe('useEditProfile Hook', () => {
     // Arrange
     const mockUserPlain = { id: '1', first_name: 'John', last_name: 'Doe', email: 'a@a.com', handicap: 10 };
     const rfegHandicap = 8.2;
+    const updatedUserPlain = { ...mockUserPlain, handicap: rfegHandicap };
 
     // Importar dinámicamente el módulo User REAL
     const { default: User } = await vi.importActual('../domain/entities/User');
@@ -297,8 +298,10 @@ describe('useEditProfile Hook', () => {
       email_verified: true
     });
 
+    // Mock refetch that updates the authUser
     const mockRefetch = vi.fn();
 
+    // Initial mock setup
     useAuth.mockReturnValue({
       user: mockUserPlain,
       loading: false,
@@ -307,12 +310,20 @@ describe('useEditProfile Hook', () => {
     });
     composition.updateRfegHandicapUseCase.execute.mockResolvedValue(updatedUserEntity);
 
-    const { result } = renderHook(() => useEditProfile());
+    const { result, rerender } = renderHook(() => useEditProfile());
     await act(async () => {}); // Esperar a que la carga inicial termine
 
     // Act
     await act(async () => {
+      // Update mock to return updated user after refetch
+      useAuth.mockReturnValue({
+        user: updatedUserPlain,
+        loading: false,
+        error: null,
+        refetch: mockRefetch
+      });
       await result.current.handleUpdateHandicapRFEG();
+      rerender(); // Trigger re-render to update with new authUser
     });
 
     // Assert

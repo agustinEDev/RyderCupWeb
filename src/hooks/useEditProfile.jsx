@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
 import {
@@ -12,7 +11,6 @@ import {
 import { useAuth } from './useAuth';
 
 export const useEditProfile = () => {
-  const navigate = useNavigate();
   const { user: authUser, refetch: refetchUser } = useAuth();
 
   const [user, setUser] = useState(null);
@@ -21,8 +19,8 @@ export const useEditProfile = () => {
   const [isUpdatingRFEG, setIsUpdatingRFEG] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  const [countries, setCountries] = useState([]);
-  const [isLoadingCountries, setIsLoadingCountries] = useState(false);
+  const [countries] = useState([]);
+  const [isLoadingCountries] = useState(false);
 
   const [formData, setFormData] = useState({
     firstName: '',

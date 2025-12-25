@@ -69,7 +69,7 @@ describe('StartCompetitionUseCase', () => {
       globalThis.fetch.mockResolvedValue(mockResponse);
 
       await expect(useCase.execute('comp-123')).rejects.toThrow(
-        'API Error (409 Conflict): Competition must be in CLOSED status to start'
+        'Competition must be in CLOSED status to start'
       );
     });
 
@@ -84,7 +84,7 @@ describe('StartCompetitionUseCase', () => {
       globalThis.fetch.mockResolvedValue(mockResponse);
 
       await expect(useCase.execute('comp-123')).rejects.toThrow(
-        'API Error (403 Forbidden): Only the creator can start the competition'
+        'Only the creator can start the competition'
       );
     });
 
@@ -99,24 +99,23 @@ describe('StartCompetitionUseCase', () => {
       globalThis.fetch.mockResolvedValue(mockResponse);
 
       await expect(useCase.execute('comp-123')).rejects.toThrow(
-        `API Error (500 Internal Server Error): No detail provided.`
+        'HTTP 500: Internal Server Error'
       );
     });
 
     it('should throw error with text content if API response is not JSON', async () => {
-      const mockHtmlError = '<html><body><h1>500 Internal Server Error</h1></body></html>';
       const mockResponse = {
         ok: false,
         status: 500,
         statusText: 'Internal Server Error',
         json: async () => { throw new SyntaxError('Unexpected token < in JSON at position 0'); },
-        text: async () => mockHtmlError,
+        text: async () => '<html><body><h1>500 Internal Server Error</h1></body></html>',
         clone: function() { return this; },
       };
       globalThis.fetch.mockResolvedValue(mockResponse);
 
       await expect(useCase.execute('comp-123')).rejects.toThrow(
-        `API Error (500 Internal Server Error): ${mockHtmlError}`
+        'HTTP 500: Internal Server Error'
       );
     });
 

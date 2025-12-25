@@ -83,11 +83,13 @@ describe('ActivateCompetitionUseCase', () => {
     it('should throw generic error if API error has no detail', async () => {
       globalThis.fetch.mockResolvedValue({
         ok: false,
+        status: 500,
+        statusText: 'Internal Server Error',
         json: async () => ({})
       });
 
       await expect(useCase.execute('comp-123')).rejects.toThrow(
-        'Failed to activate competition'
+        'HTTP 500: Internal Server Error'
       );
     });
 
