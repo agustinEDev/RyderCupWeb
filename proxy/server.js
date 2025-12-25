@@ -19,10 +19,10 @@ app.use('/api', createProxyMiddleware({
   logLevel: 'debug',
   secure: true,
   ws: true, // Enable WebSocket support
-  onProxyReq: (proxyReq, req, res) => {
+  onProxyReq: (proxyReq, req) => {
     console.log(`[PROXY API] ${req.method} ${req.url} → ${BACKEND_URL}${req.url}`);
   },
-  onProxyRes: (proxyRes, req, res) => {
+  onProxyRes: (proxyRes, req) => {
     console.log(`[PROXY API] Response ${proxyRes.statusCode} from ${req.url}`);
     // Log cookies being set
     const setCookie = proxyRes.headers['set-cookie'];
@@ -38,7 +38,7 @@ app.use('/', createProxyMiddleware({
   changeOrigin: true,
   logLevel: 'debug',
   secure: true,
-  onProxyReq: (proxyReq, req, res) => {
+  onProxyReq: (proxyReq, req) => {
     console.log(`[PROXY FRONTEND] ${req.method} ${req.url} → ${FRONTEND_URL}${req.url}`);
   }
 }));

@@ -7,7 +7,6 @@ globalThis.fetch = vi.fn();
 
 describe('CancelCompetitionUseCase', () => {
   let useCase;
-  const API_URL = 'http://localhost:8000';
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -31,7 +30,7 @@ describe('CancelCompetitionUseCase', () => {
       const result = await useCase.execute('comp-123');
 
       expect(globalThis.fetch).toHaveBeenCalledWith(
-        `${API_URL}/api/v1/competitions/comp-123/cancel`,
+        '/api/v1/competitions/comp-123/cancel',
         {
           method: 'POST',
           headers: {

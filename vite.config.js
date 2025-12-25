@@ -55,6 +55,10 @@ export default defineConfig(() => ({
       },
     },
     exclude: ['**/node_modules/**', '**/dist/**', '**/e2e/**', '**/tests/**'], // Excluir directorios comunes de build, e2e y playwright
+    env: {
+      // Configure empty API_BASE_URL in tests to use relative URLs (like production with proxy)
+      VITE_API_BASE_URL: ''
+    }
   },
   server: {
     port: 5173,
