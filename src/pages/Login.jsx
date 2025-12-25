@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { validateEmail, checkRateLimit, resetRateLimit } from '../utils/validation';
@@ -8,7 +8,6 @@ import PasswordInput from '../components/ui/PasswordInput';
 import { loginUseCase } from '../composition'; // NUEVO import
 
 const Login = () => {
-  const navigate = useNavigate();
   const location = useLocation();
   const successMessage = location.state?.message;
 
@@ -78,9 +77,11 @@ const Login = () => {
       }
 
       const from = location.state?.from?.pathname || '/dashboard';
-      
-      // Navegar sin forzar recarga - useAuth detectará la cookie automáticamente
-      navigate(from, { replace: true });
+
+      // Forzar recarga completa para garantizar que la cookie httpOnly esté disponible
+      // Esto resuelve race conditions en producción donde useAuth puede ejecutarse
+      // antes de que la cookie esté completamente establecida
+      window.location.href = from;
 
     } catch (error) {
       console.error('Login error:', error);
