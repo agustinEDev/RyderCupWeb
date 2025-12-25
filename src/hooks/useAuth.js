@@ -1,14 +1,13 @@
 /**
  * Custom hook for authentication
  * Provides access to the authenticated user via httpOnly cookies
- * 
+ *
  * This replaces the old getUserData() from sessionStorage approach.
  * Now we fetch user data from the backend which validates the httpOnly cookie.
  */
 
 import { useState, useEffect, useCallback } from 'react';
-
-const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+import apiRequest from '../services/api.js';
 
 /**
  * Hook to get the current authenticated user
@@ -26,29 +25,18 @@ export const useAuth = () => {
       setLoading(true);
       setError(null);
 
-      const response = await fetch(`${API_URL}/api/v1/auth/current-user`, {
-        credentials: 'include', // Incluir cookies httpOnly
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        if (response.status === 401 || response.status === 404) {
-          // Usuario no autenticado o endpoint no encontrado
-          setUser(null);
-          setError(null);
-          return;
-        }
-        throw new Error(`Failed to fetch user: ${response.status}`);
-      }
-
-      const userData = await response.json();
+      const userData = await apiRequest('/api/v1/auth/current-user');
       setUser(userData);
     } catch (err) {
-      console.error('Error fetching user:', err);
-      setError(err.message);
-      setUser(null);
+      // 401 or 404 means user is not authenticated
+      if (err.message.includes('401') || err.message.includes('404')) {
+        setUser(null);
+        setError(null);
+      } else {
+        console.error('Error fetching user:', err);
+        setError(err.message);
+        setUser(null);
+      }
     } finally {
       setLoading(false);
     }
@@ -69,25 +57,14 @@ export const useAuth = () => {
 /**
  * Function to get user data (for backwards compatibility)
  * Use the useAuth hook instead when possible
- * 
+ *
  * @returns {Promise<Object|null>} User object or null
  */
 export const getUserData = async () => {
   try {
-    const response = await fetch(`${API_URL}/api/v1/auth/current-user`, {
-      credentials: 'include',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      // Si no está autenticado o el endpoint no existe, retornar null
-      return null;
-    }
-
-    return await response.json();
+    return await apiRequest('/api/v1/auth/current-user');
   } catch (error) {
+    // Si no está autenticado o hay error, retornar null
     console.error('Error fetching user data:', error);
     return null;
   }
