@@ -75,7 +75,7 @@ export default defineConfig(() => ({
     minify: 'terser',
     terserOptions: {
       compress: {
-        drop_console: true, // Remove console.* statements in production
+        drop_console: false, // TEMPORARY: Keep console.* for debugging (was true)
         drop_debugger: true // Remove debugger statements
       }
     },
