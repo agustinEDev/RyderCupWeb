@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { validateEmail, checkRateLimit, resetRateLimit } from '../utils/validation';
@@ -8,6 +8,7 @@ import PasswordInput from '../components/ui/PasswordInput';
 import { loginUseCase } from '../composition'; // NUEVO import
 
 const Login = () => {
+  const navigate = useNavigate();
   const location = useLocation();
   const successMessage = location.state?.message;
 
@@ -85,13 +86,13 @@ const Login = () => {
         redirectTarget: from
       });
 
-      // Esperar 1 segundo para que el toast sea visible y las cookies se establezcan
+      // Esperar 500ms para que el toast sea visible
       console.log('🔄 [Login] Waiting before redirect to:', from);
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise(resolve => setTimeout(resolve, 500));
 
-      // Redirect usando window.location.href (más compatible cross-browser)
-      console.log('🚀 [Login] Executing redirect...');
-      window.location.href = from;
+      // Redirect usando React Router navigate (no causa page reload)
+      console.log('🚀 [Login] Navigating to:', from);
+      navigate(from, { replace: true });
 
       // No ejecutar setIsLoading(false) aquí porque vamos a redirigir
       // Mantener el loading state para mejor UX durante la redirección
