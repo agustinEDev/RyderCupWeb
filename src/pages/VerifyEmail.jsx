@@ -44,7 +44,8 @@ const VerifyEmail = () => {
         setStatus('success');
         setMessage('Your email has been verified successfully!');
         redirectTimeoutRef.current = setTimeout(() => {
-          navigate('/dashboard');
+          // Forzar recarga completa para garantizar que la cookie httpOnly esté disponible
+          window.location.href = '/dashboard';
         }, 3000);
 
       } catch (error) {
