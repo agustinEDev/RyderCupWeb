@@ -86,6 +86,10 @@ updates:
       prefix-development: "chore"
       include: "scope"
 
+    # Personalizar títulos de PR para cumplir con Conventional Commits (mayúscula)
+    pull-request-branch-name:
+      separator: "-"
+
   # Mantener GitHub Actions actualizadas
   - package-ecosystem: "github-actions"
     directory: "/"
@@ -98,3 +102,7 @@ updates:
       - "automated"
     commit-message:
       prefix: "ci"
+
+    # Personalizar títulos de PR para cumplir con Conventional Commits (mayúscula)
+    pull-request-branch-name:
+      separator: "-"
