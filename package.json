@@ -17,7 +17,7 @@
     "test:security": "playwright test tests/security.spec.js"
   },
   "dependencies": {
-    "@sentry/react": "^7.120.4",
+    "@sentry/react": "^10.32.1",
     "@sentry/replay": "^7.116.0",
     "@sentry/tracing": "^7.120.4",
     "axios": "^1.6.2",
