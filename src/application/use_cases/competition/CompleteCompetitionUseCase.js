@@ -1,5 +1,3 @@
-import { getAuthToken } from '../../../utils/secureAuth';
-
 const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
 /**
@@ -19,17 +17,11 @@ class CompleteCompetitionUseCase {
       throw new Error('Competition ID is required');
     }
 
-    const token = getAuthToken();
-
-    if (!token) {
-      throw new Error('Authentication required. Please login again.');
-    }
-
     const response = await fetch(`${API_URL}/api/v1/competitions/${competitionId}/complete`, {
       method: 'POST',
+      credentials: 'include',
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
+        'Content-Type': 'application/json'
       }
     });
 

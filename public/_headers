@@ -1,5 +1,6 @@
 # Security headers for production deployment
 # This file is used by Netlify, Vercel, and other static hosting platforms
+# Updated: 22 Dec 2025 - Removed 'unsafe-inline' from CSP (v1.8.0)
 
 /*
   X-Content-Type-Options: nosniff
@@ -7,4 +8,4 @@
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: geolocation=(), microphone=(), camera=()
   Strict-Transport-Security: max-age=31536000; includeSubDomains
-  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://rydercupam-euzt.onrender.com http://localhost:8000; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none';
+  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' https: data:; connect-src 'self' https://rydercupam-euzt.onrender.com http://localhost:8000 https://o4510427294662656.ingest.de.sentry.io https://*.ingest.sentry.io; worker-src 'self' blob:; child-src 'self' blob:; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'; upgrade-insecure-requests;

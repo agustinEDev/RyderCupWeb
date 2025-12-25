@@ -1,24 +1,22 @@
-import { getAuthToken } from '../utils/secureAuth';
-import { default as UserEntity } from '../domain/entities/User';
-import IUserRepository from '../domain/repositories/IUserRepository';
+export { default as UserEntity } from '../domain/entities/User';
 import ApiUserRepository from '../infrastructure/repositories/ApiUserRepository';
 // User Use Cases
 import UpdateUserProfileUseCase from '../application/use_cases/user/UpdateUserProfileUseCase';
 import UpdateUserSecurityUseCase from '../application/use_cases/user/UpdateUserSecurityUseCase';
-import IAuthRepository from '../domain/repositories/IAuthRepository';
 import ApiAuthRepository from '../infrastructure/repositories/ApiAuthRepository';
 import LoginUseCase from '../application/use_cases/user/LoginUseCase';
 import RegisterUseCase from '../application/use_cases/user/RegisterUseCase';
 import VerifyEmailUseCase from '../application/use_cases/user/VerifyEmailUseCase';
 
 // Handicap Use Cases
-import IHandicapRepository from '../domain/repositories/IHandicapRepository';
 import ApiHandicapRepository from '../infrastructure/repositories/ApiHandicapRepository';
 import UpdateManualHandicapUseCase from '../application/use_cases/handicap/UpdateManualHandicapUseCase';
 import UpdateRfegHandicapUseCase from '../application/use_cases/handicap/UpdateRfegHandicapUseCase';
 
+// Country Use Cases
+import FetchCountriesUseCase from '../application/use_cases/country/FetchCountriesUseCase';
+
 // Competition Use Cases
-import { ICompetitionRepository } from '../domain/repositories/ICompetitionRepository';
 import ApiCompetitionRepository from '../infrastructure/repositories/ApiCompetitionRepository';
 import CreateCompetitionUseCase from '../application/use_cases/competition/CreateCompetitionUseCase';
 import ListUserCompetitionsUseCase from '../application/use_cases/competition/ListUserCompetitionsUseCase';
@@ -32,7 +30,6 @@ import BrowseJoinableCompetitionsUseCase from '../application/use_cases/competit
 import BrowseExploreCompetitionsUseCase from '../application/use_cases/competition/BrowseExploreCompetitionsUseCase';
 
 // Enrollment Use Cases
-import IEnrollmentRepository from '../domain/repositories/IEnrollmentRepository';
 import ApiEnrollmentRepository from '../infrastructure/repositories/ApiEnrollmentRepository';
 import RequestEnrollmentUseCase from '../application/use_cases/enrollment/RequestEnrollmentUseCase';
 import ListEnrollmentsUseCase from '../application/use_cases/enrollment/ListEnrollmentsUseCase';
@@ -44,17 +41,13 @@ import SetCustomHandicapUseCase from '../application/use_cases/enrollment/SetCus
 import DirectEnrollUseCase from '../application/use_cases/enrollment/DirectEnrollUseCase';
 
 
-// --- Providers de Infraestructura ---
-const authTokenProvider = {
-  getToken: () => getAuthToken(),
-};
-
 // --- Repositorios (implementaciones concretas) ---
-const apiUserRepository = new ApiUserRepository({ authTokenProvider });
-const apiHandicapRepository = new ApiHandicapRepository({ authTokenProvider });
+// Con httpOnly cookies ya no necesitamos authTokenProvider
+const apiUserRepository = new ApiUserRepository();
+const apiHandicapRepository = new ApiHandicapRepository();
 const apiAuthRepository = new ApiAuthRepository();
 const apiCompetitionRepository = new ApiCompetitionRepository();
-const apiEnrollmentRepository = new ApiEnrollmentRepository({ authTokenProvider });
+const apiEnrollmentRepository = new ApiEnrollmentRepository();
 
 // --- Casos de Uso ---
 const updateUserProfileUseCase = new UpdateUserProfileUseCase({ userRepository: apiUserRepository });
@@ -77,6 +70,7 @@ const completeCompetitionUseCase = new CompleteCompetitionUseCase();
 const cancelCompetitionUseCase = new CancelCompetitionUseCase();
 const browseJoinableCompetitionsUseCase = new BrowseJoinableCompetitionsUseCase(apiCompetitionRepository);
 const browseExploreCompetitionsUseCase = new BrowseExploreCompetitionsUseCase(apiCompetitionRepository);
+const fetchCountriesUseCase = new FetchCountriesUseCase();
 
 // Enrollment Use Cases
 const requestEnrollmentUseCase = new RequestEnrollmentUseCase(apiEnrollmentRepository);
@@ -108,6 +102,8 @@ export {
   cancelCompetitionUseCase,
   browseJoinableCompetitionsUseCase,
   browseExploreCompetitionsUseCase,
+  // Country Use Cases
+  fetchCountriesUseCase,
   // Enrollment Use Cases
   requestEnrollmentUseCase,
   listEnrollmentsUseCase,
@@ -119,5 +115,4 @@ export {
   directEnrollUseCase,
   // También podríamos exportar directamente las entidades si la UI las necesita para displays,
   // aunque la mejor práctica es que la UI reciba DTOs o ViewModels del caso de uso.
-  UserEntity, // Exportamos la entidad User para que la UI pueda crear instancias o manipularla.
 };

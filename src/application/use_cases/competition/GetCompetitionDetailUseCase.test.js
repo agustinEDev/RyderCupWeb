@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import GetCompetitionDetailUseCase from './GetCompetitionDetailUseCase';
-import Competition from '../../../domain/entities/Competition';
 import CompetitionMapper from '../../../infrastructure/mappers/CompetitionMapper';
 
 // Mock del mapper

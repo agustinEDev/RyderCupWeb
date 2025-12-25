@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import UpdateUserSecurityUseCase from './UpdateUserSecurityUseCase';
 import User from '../../../domain/entities/User';
-import IUserRepository from '../../../domain/repositories/IUserRepository';
 
 describe('UpdateUserSecurityUseCase', () => {
   let userRepository;

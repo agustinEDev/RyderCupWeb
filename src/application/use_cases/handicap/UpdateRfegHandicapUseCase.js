@@ -1,6 +1,3 @@
-import IHandicapRepository from '../../../domain/repositories/IHandicapRepository.js';
-import IUserRepository from '../../../domain/repositories/IUserRepository.js';
-
 class UpdateRfegHandicapUseCase {
   /**
    * @param {Object} dependencies - Objeto de dependencias.
@@ -21,26 +18,13 @@ class UpdateRfegHandicapUseCase {
    * @throws {Error} Si el usuario no tiene nacionalidad española o no especificó país.
    */
   async execute({ userId }) {
-    console.log('🔍 [UpdateRfegHandicapUseCase] Starting RFEG update for userId:', userId);
-
     if (!userId) {
       throw new Error('User ID is required');
     }
 
     // REGLA DE NEGOCIO: Solo usuarios españoles pueden usar RFEG
     // Primero obtenemos los datos del usuario para verificar su nacionalidad
-    console.log('🔍 [UpdateRfegHandicapUseCase] Fetching user data from repository...');
     const user = await this.userRepository.getById(userId);
-
-    console.log('🔍 [UpdateRfegHandicapUseCase] User fetched:', {
-      userId: user?.id,
-      hasUser: !!user,
-      hasCountryCode: !!user?.countryCode,
-      countryCodeType: user?.countryCode ? typeof user.countryCode : 'undefined',
-      countryCodeValue: user?.countryCode?.value ? user.countryCode.value() : 'no value() method',
-      rawCountryCode: user?.country_code,
-      userKeys: user ? Object.keys(user) : []
-    });
 
     if (!user) {
       throw new Error('User not found');
@@ -55,7 +39,6 @@ class UpdateRfegHandicapUseCase {
     }
 
     const countryValue = user.countryCode.value();
-    console.log('🔍 [UpdateRfegHandicapUseCase] Country code value:', countryValue);
 
     if (countryValue !== 'ES') {
       console.error('❌ [UpdateRfegHandicapUseCase] User is not Spanish:', countryValue);
@@ -65,10 +48,8 @@ class UpdateRfegHandicapUseCase {
     }
 
     // Si llegamos aquí, el usuario es español y puede usar RFEG
-    console.log('✅ [UpdateRfegHandicapUseCase] User is Spanish, proceeding with RFEG update...');
     const updatedUser = await this.handicapRepository.updateFromRfeg(userId);
 
-    console.log('✅ [UpdateRfegHandicapUseCase] RFEG update successful');
     return updatedUser;
   }
 }

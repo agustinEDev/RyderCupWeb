@@ -2,9 +2,14 @@
 
 > Aplicación web moderna para gestión de torneos de golf amateur formato Ryder Cup
 
+[![CI Pipeline](https://github.com/agustinEDev/RyderCupWeb/actions/workflows/ci.yml/badge.svg)](https://github.com/agustinEDev/RyderCupWeb/actions/workflows/ci.yml)
+[![Security Audit](https://github.com/agustinEDev/RyderCupWeb/actions/workflows/security.yml/badge.svg)](https://github.com/agustinEDev/RyderCupWeb/actions/workflows/security.yml)
+[![E2E Tests](https://github.com/agustinEDev/RyderCupWeb/actions/workflows/e2e.yml/badge.svg)](https://github.com/agustinEDev/RyderCupWeb/actions/workflows/e2e.yml)
+
 [![React](https://img.shields.io/badge/React-18+-61DAFB?logo=react)](.)
-[![Vite](https://img.shields.io/badge/Vite-5+-646CFF?logo=vite)](.)
+[![Vite](https://img.shields.io/badge/Vite-7+-646CFF?logo=vite)](.)
 [![Tailwind](https://img.shields.io/badge/Tailwind-3+-38B2AC?logo=tailwind-css)](.)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5+-3178C6?logo=typescript)](.)
 
 ## 🔗 Backend API
 
@@ -49,6 +54,64 @@ npm run preview # previsualizar el build
 Deploy: subir `dist/` a cualquier hosting estático (Netlify, Vercel, Cloudflare Pages). Si el backend está en Render, usar la URL pública del servicio como `VITE_API_BASE_URL` antes de construir.
 
 Importante: Render puede hibernar (503). Si ves 503 en producción, revisa estado del servicio y retries.
+
+## 🔐 CI/CD & Seguridad
+
+Este proyecto implementa un pipeline profesional de CI/CD que garantiza la calidad y seguridad del código:
+
+### Pipeline de Integración Continua
+- ✅ **Linting automático** (ESLint + Prettier) en cada commit
+- ✅ **Tests unitarios** (Vitest) con coverage enforcement (≥80%)
+- ✅ **Build verification** con bundle size budget (≤1 MB)
+- ✅ **Type checking** - validación de tipos TypeScript
+- ✅ **PR size check** - bloquea PRs >1000 cambios
+- ✅ **Conventional commits** - valida formato de commits
+
+### Seguridad Automatizada
+- 🔒 **npm audit** - auditoría de vulnerabilidades en dependencias
+- 📦 **Dependency scanning** - detección de paquetes desactualizados
+- ⚖️ **License compliance** - verificación de licencias
+- 🛡️ **Security scanning** - detección de secrets y código inseguro
+- 🔐 **CSP validation** - validación de Content Security Policy headers
+
+### Testing Strategy
+- 🧪 **Unit Tests** (Vitest) - lógica de componentes y utilidades
+- 🔗 **Integration Tests** - interacción con backend API (autenticación, cookies httpOnly)
+- 🎭 **E2E Tests** (Playwright) - flujos completos en múltiples navegadores
+
+#### Ejecutar Tests de Integración
+
+```bash
+# Tests de integración (usa backend mock)
+npm run test:integration
+
+# Tests unitarios
+npm test
+
+# Tests E2E completos
+npm run test:e2e
+```
+
+**Nota**: Los tests de integración usan un servidor mock que simula las respuestas del backend real. Para desarrollo local con Docker Compose:
+
+```bash
+docker-compose -f docker-compose.test.yml up -d
+npm run test:integration
+```
+
+**Endpoints simulados:**
+- `POST /api/v1/auth/login` - Autenticación con credenciales de prueba
+- `POST /api/v1/auth/refresh-token` - Refresh de tokens
+- `GET /api/v1/countries` - Lista de países
+- `GET /api/v1/users/profile` - Perfil de usuario
+- `GET /api/v1/health` - Health check
+
+### Branch Protection
+La rama `main` está protegida con:
+- ✅ Requiere PR y aprobación antes de merge
+- ✅ Todos los checks de CI deben pasar
+- ✅ No permite force push ni eliminación
+- 📋 Ver [docs/BRANCH_PROTECTION.md](docs/BRANCH_PROTECTION.md) para detalles
 
 ## Notas clave de integración
 

@@ -1,8 +1,6 @@
 import { ICompetitionRepository } from '../../domain/repositories/ICompetitionRepository';
 import CompetitionMapper from '../mappers/CompetitionMapper';
-import { getAuthToken } from '../../utils/secureAuth';
-
-const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+import apiRequest from '../../services/api.js';
 
 class ApiCompetitionRepository extends ICompetitionRepository {
   /**
@@ -12,24 +10,10 @@ class ApiCompetitionRepository extends ICompetitionRepository {
    * @returns {Promise<Competition>} - The newly created competition entity.
    */
   async save(competitionData) {
-    const token = getAuthToken();
-
-    const response = await fetch(`${API_URL}/api/v1/competitions`, {
+    const apiData = await apiRequest('/api/v1/competitions', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
       body: JSON.stringify(competitionData)
     });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      const errorMessage = errorData.detail || 'Failed to create competition';
-      throw new Error(errorMessage);
-    }
-
-    const apiData = await response.json();
 
     // Map API response to Competition domain entity
     const competition = CompetitionMapper.toDomain(apiData);
@@ -45,26 +29,7 @@ class ApiCompetitionRepository extends ICompetitionRepository {
    * @throws {Error} If the competition is not found or the request fails.
    */
   async findById(competitionId) {
-    const token = getAuthToken();
-
-    const response = await fetch(`${API_URL}/api/v1/competitions/${competitionId}`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      }
-    });
-
-    if (!response.ok) {
-      if (response.status === 404) {
-        throw new Error('Competition not found');
-      }
-      const errorData = await response.json();
-      const errorMessage = errorData.detail || 'Failed to fetch competition';
-      throw new Error(errorMessage);
-    }
-
-    const apiData = await response.json();
+    const apiData = await apiRequest(`/api/v1/competitions/${competitionId}`);
 
     // Map API response to Competition domain entity
     const competition = CompetitionMapper.toDomain(apiData);
@@ -83,8 +48,6 @@ class ApiCompetitionRepository extends ICompetitionRepository {
    * @returns {Promise<Competition[]>} - Array of competition entities.
    */
   async findByCreator(userId, filters = {}) {
-    const token = getAuthToken();
-
     // Build query parameters
     // Note: Backend automatically filters by authenticated user from JWT token
     // No need to send creator_id explicitly
@@ -93,38 +56,9 @@ class ApiCompetitionRepository extends ICompetitionRepository {
     // CRITICAL: Add my_competitions=true to get competitions where user is creator OR enrolled
     queryParams.append('my_competitions', 'true');
 
-    const url = `${API_URL}/api/v1/competitions${queryParams.toString() ? '?' + queryParams : ''}`;
-    console.log('🔍 [ApiCompetitionRepository.findByCreator] Fetching MY competitions from:', url);
+    const endpoint = `/api/v1/competitions${queryParams.toString() ? '?' + queryParams : ''}`;
 
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      }
-    });
-
-    if (!response.ok) {
-      console.error('❌ [ApiCompetitionRepository.findByCreator] HTTP Error:', response.status, response.statusText);
-
-      let errorMessage = 'Failed to fetch competitions';
-      try {
-        const errorData = await response.json();
-        errorMessage = errorData.detail || errorMessage;
-        console.error('❌ [ApiCompetitionRepository.findByCreator] Error details:', errorData);
-      } catch (parseError) {
-        console.error('❌ [ApiCompetitionRepository.findByCreator] Could not parse error response');
-      }
-
-      // Add more context for 500 errors
-      if (response.status === 500) {
-        errorMessage = 'Server error while fetching competitions. Please check the backend logs.';
-      }
-
-      throw new Error(errorMessage);
-    }
-
-    const apiDataArray = await response.json();
+    const apiDataArray = await apiRequest(endpoint);
 
     // Map each API response to Competition domain entity
     // Attach original API data for mapper to use
@@ -150,8 +84,6 @@ class ApiCompetitionRepository extends ICompetitionRepository {
    * @returns {Promise<Competition[]>} - Array of public competition entities.
    */
   async findPublic(filters = {}) {
-    const token = getAuthToken();
-
     // Build query parameters
     const queryParams = new URLSearchParams();
 
@@ -191,37 +123,9 @@ class ApiCompetitionRepository extends ICompetitionRepository {
       queryParams.append('offset', filters.offset.toString());
     }
 
-    const url = `${API_URL}/api/v1/competitions${queryParams.toString() ? '?' + queryParams : ''}`;
-    console.log('🔍 [ApiCompetitionRepository.findPublic] Fetching public competitions from:', url);
+    const endpoint = `/api/v1/competitions${queryParams.toString() ? '?' + queryParams : ''}`;
 
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      }
-    });
-
-    if (!response.ok) {
-      console.error('❌ [ApiCompetitionRepository.findPublic] HTTP Error:', response.status, response.statusText);
-
-      let errorMessage = 'Failed to fetch public competitions';
-      try {
-        const errorData = await response.json();
-        errorMessage = errorData.detail || errorMessage;
-        console.error('❌ [ApiCompetitionRepository.findPublic] Error details:', errorData);
-      } catch (parseError) {
-        console.error('❌ [ApiCompetitionRepository.findPublic] Could not parse error response');
-      }
-
-      if (response.status === 500) {
-        errorMessage = 'Server error while fetching public competitions. Please check the backend logs.';
-      }
-
-      throw new Error(errorMessage);
-    }
-
-    const apiDataArray = await response.json();
+    const apiDataArray = await apiRequest(endpoint);
 
     // Map each API response to Competition domain entity
     const competitions = apiDataArray.map((apiData) => {
@@ -229,8 +133,6 @@ class ApiCompetitionRepository extends ICompetitionRepository {
       competition._apiData = apiData;
       return competition;
     });
-
-    console.log('✅ [ApiCompetitionRepository.findPublic] Found', competitions.length, 'public competitions');
 
     return competitions;
   }

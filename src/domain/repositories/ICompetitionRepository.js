@@ -7,7 +7,9 @@
  * In JavaScript, interfaces are simulated by classes that throw errors
  * for methods that must be implemented by subclasses.
  */
-export class ICompetitionRepository {
+export /* eslint-disable no-unused-vars */
+
+class ICompetitionRepository {
   /**
    * Saves a competition (either creates a new one or updates an existing one).
    * @param {Competition} competition The competition entity to save.

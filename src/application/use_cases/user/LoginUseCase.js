@@ -1,7 +1,5 @@
-import IAuthRepository from '../../../domain/repositories/IAuthRepository.js';
-import { setUserData, setAuthToken } from '../../../utils/secureAuth'; // Para guardar user data y token
 import Email from '../../../domain/value_objects/Email';
-import Password from '../../../domain/value_objects/Password'; // 1. Importar Password VO
+import Password from '../../../domain/value_objects/Password';
 
 class LoginUseCase {
   /**
@@ -24,11 +22,10 @@ class LoginUseCase {
 
     // Llamada al repositorio para realizar la autenticación
     // Pasamos la instancia del Email y Password Value Object
-    const { user, token } = await this.authRepository.login(email, password);
+    const { user } = await this.authRepository.login(email, password);
 
-    // Lógica post-login: guardar token y user data
-    setAuthToken(token);
-    setUserData(user.toPersistence()); // Guardamos el User como un objeto plano
+    // El backend establece automáticamente la cookie httpOnly
+    // No necesitamos guardar nada en el frontend
 
     return user;
   }

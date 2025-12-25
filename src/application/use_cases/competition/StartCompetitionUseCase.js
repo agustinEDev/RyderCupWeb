@@ -1,5 +1,3 @@
-import { getAuthToken, authenticatedFetch } from '../../../utils/secureAuth';
-
 const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
 /**
@@ -19,18 +17,12 @@ class StartCompetitionUseCase {
       throw new Error('Competition ID is required');
     }
 
-    const token = getAuthToken();
-
-    if (!token) {
-      throw new Error('Authentication required. Please login again.');
-    }
-
-    const response = await authenticatedFetch(`${API_URL}/api/v1/competitions/${competitionId}/start`, {
+    const response = await fetch(`${API_URL}/api/v1/competitions/${competitionId}/start`, {
       method: 'POST',
       headers: {
-        // Content-Type is already set to application/json by default in authenticatedFetch
-        // No need to manually add Authorization header as authenticatedFetch handles it
-      }
+        'Content-Type': 'application/json'
+      },
+      credentials: 'include' // httpOnly cookie autenticación
     });
 
     if (!response.ok) {

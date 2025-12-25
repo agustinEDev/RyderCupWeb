@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import UpdateManualHandicapUseCase from './UpdateManualHandicapUseCase';
 import User from '../../../domain/entities/User';
-import IHandicapRepository from '../../../domain/repositories/IHandicapRepository';
 
 describe('UpdateManualHandicapUseCase', () => {
   let handicapRepository;
