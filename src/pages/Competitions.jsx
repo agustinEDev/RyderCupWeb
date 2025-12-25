@@ -39,7 +39,7 @@ const Competitions = () => {
   useEffect(() => {
     const loadUserData = async () => {
       try {
-        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'}/api/v1/auth/current-user`, {
+        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || ''}/api/v1/auth/current-user`, {
           credentials: 'include',
           headers: {
             'Content-Type': 'application/json',

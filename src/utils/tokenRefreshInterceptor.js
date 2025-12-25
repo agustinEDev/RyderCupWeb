@@ -13,7 +13,7 @@
  * @module tokenRefreshInterceptor
  */
 
-const API_URL = globalThis.APP_CONFIG?.API_BASE_URL || import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+const API_URL = globalThis.APP_CONFIG?.API_BASE_URL || import.meta.env.VITE_API_BASE_URL || '';
 
 // State management for refresh token flow
 let isRefreshing = false;

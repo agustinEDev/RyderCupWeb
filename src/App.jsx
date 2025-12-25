@@ -57,7 +57,7 @@ function AppContent() {
    * Wrapped in useCallback to prevent stale closures
    */
   const handleInactivityLogout = useCallback(async () => {
-    const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+    const API_URL = import.meta.env.VITE_API_BASE_URL || '';
 
     try {
       // Llamar al endpoint de logout del backend

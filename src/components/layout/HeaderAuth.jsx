@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import PropTypes from 'prop-types';
 import { broadcastLogout } from '../../utils/broadcastAuth';
 
-const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+const API_URL = import.meta.env.VITE_API_BASE_URL || '';
 
 const HeaderAuth = ({ user }) => {
   const navigate = useNavigate();

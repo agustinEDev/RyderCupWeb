@@ -8,7 +8,7 @@ import PasswordStrengthIndicator from '../components/ui/PasswordStrengthIndicato
 import { registerUseCase } from '../composition'; // NUEVO import
 import { CountryFlag } from '../utils/countryUtils';
 
-const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+const API_URL = import.meta.env.VITE_API_BASE_URL || '';
 
 const Register = () => {
   const navigate = useNavigate();
