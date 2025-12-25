@@ -20,7 +20,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        browser: [chromium, firefox, webkit]
+        browser: [chromium]  # Firefox and WebKit commented out (not installed in CI)
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -87,9 +87,9 @@ jobs:
           
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Browsers tested:" >> $GITHUB_STEP_SUMMARY
-          echo "- Chromium" >> $GITHUB_STEP_SUMMARY
-          echo "- Firefox" >> $GITHUB_STEP_SUMMARY
-          echo "- WebKit (Safari)" >> $GITHUB_STEP_SUMMARY
+          echo "- Chromium (Chrome/Edge)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "_Note: Firefox and WebKit disabled in CI (not installed)_" >> $GITHUB_STEP_SUMMARY
 
       - name: Check if tests passed
         run: |
