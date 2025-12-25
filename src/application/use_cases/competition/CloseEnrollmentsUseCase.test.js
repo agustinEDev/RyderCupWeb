@@ -4,11 +4,6 @@ import CloseEnrollmentsUseCase from './CloseEnrollmentsUseCase';
 // Mock fetch globally
 globalThis.fetch = vi.fn();
 
-// Mock auth utils
-vi.mock('../../../utils/secureAuth', () => ({
-  getAuthToken: vi.fn(() => 'test-token')
-}));
-
 describe('CloseEnrollmentsUseCase', () => {
   let useCase;
   const API_URL = 'http://localhost:8000';
@@ -39,9 +34,9 @@ describe('CloseEnrollmentsUseCase', () => {
         {
           method: 'POST',
           headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer test-token'
-          }
+            'Content-Type': 'application/json'
+          },
+          credentials: 'include'
         }
       );
 
@@ -88,11 +83,13 @@ describe('CloseEnrollmentsUseCase', () => {
     it('should throw generic error if API error has no detail', async () => {
       globalThis.fetch.mockResolvedValue({
         ok: false,
+        status: 500,
+        statusText: 'Internal Server Error',
         json: async () => ({})
       });
 
       await expect(useCase.execute('comp-123')).rejects.toThrow(
-        'Failed to close enrollments'
+        'HTTP 500: Internal Server Error'
       );
     });
   });

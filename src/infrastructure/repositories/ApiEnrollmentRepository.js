@@ -1,16 +1,16 @@
 import IEnrollmentRepository from '../../domain/repositories/IEnrollmentRepository';
 import EnrollmentMapper from '../mappers/EnrollmentMapper';
-import { getAuthToken } from '../../utils/secureAuth';
+import apiRequest from '../../services/api.js';
 
 /**
  * ApiEnrollmentRepository - Implementación del repositorio con API REST
  *
- * Implementa IEnrollmentRepository usando fetch API.
+ * Implementa IEnrollmentRepository usando API centralizada con refresh token automático.
  * Compatible con backend Python FastAPI.
  *
  * Responsabilidades:
- * - Realizar llamadas HTTP a la API REST
- * - Manejar autenticación con JWT Bearer token
+ * - Realizar llamadas HTTP a la API REST usando apiRequest centralizado
+ * - Manejar autenticación con httpOnly cookies
  * - Convertir respuestas de API a entidades del dominio usando EnrollmentMapper
  * - Manejar errores de red y de la API (404, 500, etc.)
  * - Construir URLs y query params correctamente
@@ -28,20 +28,12 @@ import { getAuthToken } from '../../utils/secureAuth';
  * - DELETE /api/v1/competitions/{competitionId}/enrollments/{enrollmentId}
  */
 class ApiEnrollmentRepository extends IEnrollmentRepository {
-  #baseURL;
-  #authTokenProvider;
-
   /**
    * Constructor
-   *
-   * @param {Object} config
-   * @param {string} config.baseURL - Base URL de la API (ej: "http://localhost:8000")
-   * @param {Object} config.authTokenProvider - Proveedor de tokens (opcional, usa secureAuth por defecto)
    */
-  constructor(config = {}) {
+  constructor() {
     super();
-    this.#baseURL = config.baseURL || import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
-    this.#authTokenProvider = config.authTokenProvider || { getToken: () => getAuthToken() };
+    // No necesitamos baseURL porque apiRequest lo maneja
   }
 
   // ===========================================
@@ -49,7 +41,8 @@ class ApiEnrollmentRepository extends IEnrollmentRepository {
   // ===========================================
 
   /**
-   * Realizar petición HTTP con manejo de errores
+   * Realizar petición HTTP usando API centralizada
+   * Ahora usa apiRequest que maneja automáticamente refresh tokens
    *
    * @param {string} endpoint - Ruta del endpoint (ej: "/api/v1/enrollments")
    * @param {Object} options - Opciones de fetch
@@ -57,51 +50,14 @@ class ApiEnrollmentRepository extends IEnrollmentRepository {
    * @private
    */
   async #request(endpoint, options = {}) {
-    const url = `${this.#baseURL}${endpoint}`;
-    const token = this.#authTokenProvider.getToken();
-
-    // Headers por defecto
-    const headers = {
-      'Content-Type': 'application/json',
-      ...(token && { Authorization: `Bearer ${token}` }),
-      ...options.headers,
-    };
-
     try {
-      const response = await fetch(url, {
-        ...options,
-        headers,
-      });
-
-      // Manejar respuestas sin contenido (204 No Content)
-      if (response.status === 204) {
-        return null;
-      }
-
-      // Intentar parsear JSON
-      let data;
-      try {
-        data = await response.json();
-      } catch (parseError) {
-        // Si no es JSON válido y la respuesta es OK, retornar null
-        if (response.ok) {
-          return null;
-        }
-        throw new Error(`Invalid JSON response from API: ${parseError.message}`);
-      }
-
-      // Manejar errores HTTP
-      if (!response.ok) {
-        const detailMessage = data?.detail || data?.message || 'Unknown error';
-        const errorMessage = `API Error (${response.status} ${response.statusText}): ${detailMessage}`;
-        throw new Error(errorMessage);
-      }
-
-      return data;
+      // Usar apiRequest centralizado que maneja refresh token automático
+      return await apiRequest(endpoint, options);
     } catch (error) {
-      // Re-lanzar con contexto adicional
-      if (error.message.includes('fetch')) {
-        throw new Error(`Network error: ${error.message}`);
+      // Si es 404, algunos métodos esperan null en lugar de error
+      if (error.message.includes('404')) {
+        // El llamador decidirá si lanzar o retornar null
+        throw error;
       }
       throw error;
     }

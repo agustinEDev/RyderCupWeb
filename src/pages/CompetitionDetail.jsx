@@ -1,14 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
-  Trophy, Users, Calendar, MapPin, Settings, ArrowLeft,
+  Users, Calendar, MapPin, Settings, ArrowLeft,
   Edit, Trash2, Play, CheckCircle, XCircle, Pause,
   AlertCircle, Loader, UserPlus, Shield
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import HeaderAuth from '../components/layout/HeaderAuth';
-import { getUserData } from '../utils/secureAuth';
+import { useAuth } from '../hooks/useAuth';
 import { CountryFlag } from '../utils/countryUtils';
 import {
   getCompetitionDetailUseCase,
@@ -23,7 +23,6 @@ import {
   rejectEnrollmentUseCase,
 } from '../composition';
 import {
-  updateCompetition,
   deleteCompetition,
   getStatusColor,
   getEnrollmentStatusColor,
@@ -34,10 +33,10 @@ const CompetitionDetail = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { id } = useParams();
-  const [user, setUser] = useState(null);
+  const { user, loading: isLoadingUser } = useAuth();
   const [competition, setCompetition] = useState(null);
   const [enrollments, setEnrollments] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingCompetition, setIsLoadingCompetition] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
 
   // Determine where user came from (browse or my competitions)
@@ -45,22 +44,17 @@ const CompetitionDetail = () => {
   const backLink = fromBrowse ? '/browse-competitions' : '/competitions';
   const backText = fromBrowse ? 'Back to Browse' : 'Back to Competitions';
 
-  useEffect(() => {
-    const userData = getUserData();
-    setUser(userData);
-    loadCompetition();
-  }, [id]);
-
-  const loadCompetition = async () => {
-    setIsLoading(true);
+  const loadCompetition = useCallback(async () => {
+    if (!user) return;
+    
+    setIsLoadingCompetition(true);
     try {
       // Use GetCompetitionDetailUseCase instead of direct service call
       const data = await getCompetitionDetailUseCase.execute(id);
       setCompetition(data);
 
       // Load enrollments only if user is the creator (for optimization)
-      const userData = getUserData();
-      if (userData && data.creatorId === userData.id) {
+      if (user && data.creatorId === user.id) {
         const enrollmentsData = await listEnrollmentsUseCase.execute(id);
         setEnrollments(enrollmentsData);
       }
@@ -69,9 +63,17 @@ const CompetitionDetail = () => {
       toast.error(error.message || 'Failed to load competition');
       navigate('/competitions');
     } finally {
-      setIsLoading(false);
+      setIsLoadingCompetition(false);
     }
-  };
+  }, [id, user, navigate]);
+
+  useEffect(() => {
+    if (user) {
+      loadCompetition();
+    }
+  }, [id, user, loadCompetition]);
+
+  const isLoading = isLoadingUser || isLoadingCompetition;
 
   const handleStatusChange = async (action) => {
     if (!window.confirm(`Are you sure you want to ${action} this competition?`)) {
@@ -152,7 +154,6 @@ const CompetitionDetail = () => {
   };
 
   const handleApproveEnrollment = async (enrollmentId) => {
-    console.log('🔍 Approving enrollment with ID:', enrollmentId, 'Type:', typeof enrollmentId);
     try {
       // ApproveEnrollmentUseCase expects (competitionId, enrollmentId, teamId?)
       await approveEnrollmentUseCase.execute(competition.id, enrollmentId);
@@ -207,16 +208,6 @@ const CompetitionDetail = () => {
   // 2. From competition.enrollment_status (mapped from backend's user_enrollment_status)
   const userEnrollment = enrollments.find((e) => e.user_id === user.id);
   const hasEnrollment = userEnrollment || competition.enrollment_status;
-
-  // Debug logs
-  console.log('🔍 CompetitionDetail Debug:', {
-    competitionId: competition.id,
-    competitionName: competition.name,
-    userEnrollment,
-    enrollment_status: competition.enrollment_status,
-    hasEnrollment,
-    enrollmentsCount: enrollments.length
-  });
 
   return (
     <div className="relative flex h-auto min-h-screen w-full flex-col bg-white">

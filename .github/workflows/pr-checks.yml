@@ -1,0 +1,46 @@
+name: PR Checks
+
+on:
+  pull_request:
+    branches: [develop, main]
+    types: [opened, synchronize, reopened]
+
+jobs:
+  pr-size:
+    name: 📏 PR Size Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check PR size
+        run: |
+          echo "📊 PR Statistics (from GitHub API):"
+          echo "This job requires GitHub API access which is better done via GitHub Actions script"
+          echo "For now, this is a placeholder that can be enhanced with actual PR size checking"
+
+  pr-conventional-commits:
+    name: 📝 Conventional Commits Check
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Check PR title
+        uses: amannn/action-semantic-pull-request@v5
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          types: |
+            feat
+            fix
+            docs
+            style
+            refactor
+            perf
+            test
+            build
+            ci
+            chore
+            revert
+          requireScope: false
+          subjectPattern: ^[A-Z].+$
+          subjectPatternError: |
+            The subject found in the pull request title
+            didn't match the configured pattern. Please ensure that the subject
+            starts with an uppercase character.

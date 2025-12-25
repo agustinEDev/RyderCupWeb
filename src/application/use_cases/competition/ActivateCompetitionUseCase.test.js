@@ -4,11 +4,6 @@ import ActivateCompetitionUseCase from './ActivateCompetitionUseCase';
 // Mock fetch globally
 globalThis.fetch = vi.fn();
 
-// Mock auth utils
-vi.mock('../../../utils/secureAuth', () => ({
-  getAuthToken: vi.fn(() => 'test-token')
-}));
-
 describe('ActivateCompetitionUseCase', () => {
   let useCase;
   const API_URL = 'http://localhost:8000';
@@ -39,9 +34,9 @@ describe('ActivateCompetitionUseCase', () => {
         {
           method: 'POST',
           headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer test-token'
-          }
+            'Content-Type': 'application/json'
+          },
+          credentials: 'include'
         }
       );
 
@@ -88,11 +83,13 @@ describe('ActivateCompetitionUseCase', () => {
     it('should throw generic error if API error has no detail', async () => {
       globalThis.fetch.mockResolvedValue({
         ok: false,
+        status: 500,
+        statusText: 'Internal Server Error',
         json: async () => ({})
       });
 
       await expect(useCase.execute('comp-123')).rejects.toThrow(
-        'Failed to activate competition'
+        'HTTP 500: Internal Server Error'
       );
     });
 

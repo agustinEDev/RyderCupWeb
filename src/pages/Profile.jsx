@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
@@ -6,109 +6,110 @@ import {
   CheckCircle, AlertCircle, Edit, LogOut, ArrowLeft, Globe, Clock
 } from 'lucide-react';
 import HeaderAuth from '../components/layout/HeaderAuth';
-import { getUserData, clearAuthData, getAuthToken, setUserData, logout } from '../utils/secureAuth';
+import { useAuth } from '../hooks/useAuth';
 import { CountryFlag } from '../utils/countryUtils';
+import { broadcastLogout } from '../utils/broadcastAuth';
 
 const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
 const Profile = () => {
   const navigate = useNavigate();
-  const [user, setUser] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const { user, loading: isLoadingUser } = useAuth();
   const [countryName, setCountryName] = useState(null);
   const [competitionsCount, setCompetitionsCount] = useState(0);
+  const [isLoadingData, setIsLoadingData] = useState(true);
 
   useEffect(() => {
     const fetchUserData = async () => {
-      try {
-        // First get local data
-        const localUserData = getUserData();
-        setUser(localUserData); // Show local data immediately
+      if (!user) {
+        setIsLoadingData(false);
+        return;
+      }
 
-        // Then fetch fresh data from backend
-        const token = getAuthToken();
-        if (token) {
-          const response = await fetch(`${API_URL}/api/v1/auth/current-user`, {
-            headers: {
-              'Authorization': `Bearer ${token}`
+      try {
+        // Fetch country name if user has country_code
+        if (user.country_code) {
+          try {
+            const countriesResponse = await fetch(`${API_URL}/api/v1/countries?language=en`, {
+              credentials: 'include'
+            });
+            if (countriesResponse.ok) {
+              const countries = await countriesResponse.json();
+              const country = countries.find(c => c.code === user.country_code);
+              if (country) {
+                setCountryName(country.name_en || country.name);
+              }
             }
+          } catch (error) {
+            console.error('Error fetching country name:', error);
+          }
+        }
+
+        // Fetch user's competitions count
+        try {
+          const competitionsResponse = await fetch(`${API_URL}/api/v1/competitions?my_competitions=true`, {
+            credentials: 'include'
           });
 
-          if (response.ok) {
-            const freshUserData = await response.json();
-            console.log('✅ Fresh user data from backend:', freshUserData);
-            console.log('🌍 Country code:', freshUserData?.country_code);
-
-            // Update localStorage with fresh data
-            setUserData(freshUserData);
-            setUser(freshUserData);
-
-            // Fetch country name if user has country_code
-            if (freshUserData.country_code) {
-              try {
-                const countriesResponse = await fetch(`${API_URL}/api/v1/countries?language=en`);
-                if (countriesResponse.ok) {
-                  const countries = await countriesResponse.json();
-                  const country = countries.find(c => c.code === freshUserData.country_code);
-                  if (country) {
-                    setCountryName(country.name_en || country.name);
-                  }
-                }
-              } catch (error) {
-                console.error('Error fetching country name:', error);
-              }
-            }
-
-            // Fetch user's competitions count
-            try {
-              const competitionsResponse = await fetch(`${API_URL}/api/v1/competitions?my_competitions=true`, {
-                headers: {
-                  'Authorization': `Bearer ${token}`
-                }
-              });
-
-              if (!competitionsResponse.ok) {
-                console.error('❌ Failed to fetch competitions:', competitionsResponse.status, competitionsResponse.statusText);
-                setCompetitionsCount(0);
-                return;
-              }
-
-              const competitionsData = await competitionsResponse.json();
-
-              // Handle different response formats: array or object with results array
-              let list = [];
-              if (Array.isArray(competitionsData)) {
-                list = competitionsData;
-              } else if (competitionsData && Array.isArray(competitionsData.results)) {
-                list = competitionsData.results;
-              }
-
-              setCompetitionsCount(list.length);
-              console.log('✅ User competitions count:', list.length);
-            } catch (error) {
-              console.error('❌ Error fetching competitions count:', error);
-              setCompetitionsCount(0);
-            }
+          if (!competitionsResponse.ok) {
+            console.error('❌ Failed to fetch competitions:', competitionsResponse.status, competitionsResponse.statusText);
+            setCompetitionsCount(0);
+            return;
           }
+
+          const competitionsData = await competitionsResponse.json();
+
+          // Handle different response formats: array or object with results array
+          let list = [];
+          if (Array.isArray(competitionsData)) {
+            list = competitionsData;
+          } else if (competitionsData && Array.isArray(competitionsData.results)) {
+            list = competitionsData.results;
+          }
+
+          setCompetitionsCount(list.length);
+        } catch (error) {
+          console.error('❌ Error fetching competitions count:', error);
+          setCompetitionsCount(0);
         }
       } catch (error) {
         console.error('❌ Error fetching user data:', error);
-        // Keep using local data if fetch fails
       } finally {
-        setIsLoading(false);
+        setIsLoadingData(false);
       }
     };
 
     fetchUserData();
-  }, []);
+  }, [user]);
 
   const handleEditProfile = () => {
     navigate('/profile/edit');
   };
 
   const handleLogout = async () => {
-    await logout();
-    navigate('/');
+    // 📡 Broadcast logout event to all other tabs FIRST
+    broadcastLogout();
+
+    try {
+      // Call backend logout endpoint
+      const response = await fetch(`${API_URL}/api/v1/auth/logout`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({})
+      });
+
+      if (!response.ok) {
+        console.error('Logout failed with status:', response.status);
+      }
+    } catch (error) {
+      console.error('Backend logout error:', error);
+    }
+
+    // Force full page reload to clear all state
+    window.location.href = '/';
   };
 
   const formatDate = (dateString) => {
@@ -121,7 +122,7 @@ const Profile = () => {
     });
   };
 
-  if (isLoading) {
+  if (isLoadingUser || isLoadingData) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">

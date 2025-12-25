@@ -1,10 +1,9 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { validateEmail, checkRateLimit, resetRateLimit } from '../utils/validation';
 import { safeLog } from '../utils/auth';
-import { setAuthToken, setUserData } from '../utils/secureAuth';
 import PasswordInput from '../components/ui/PasswordInput';
 import { loginUseCase } from '../composition'; // NUEVO import
 
@@ -68,9 +67,9 @@ const Login = () => {
       const authenticatedUser = await loginUseCase.execute(formData.email, formData.password);
 
       resetRateLimit('login');
-      toast.success(`Welcome, ${authenticatedUser.firstName}!`); // Usamos firstName de la entidad
+      toast.success(`Welcome, ${authenticatedUser.firstName}!`);
 
-      if (!authenticatedUser.emailVerified) { // Usamos la propiedad de la entidad User
+      if (!authenticatedUser.emailVerified) {
         safeLog('info', 'Email verification required');
         toast('Please verify your email', {
           duration: 5000,
@@ -79,13 +78,22 @@ const Login = () => {
       }
 
       const from = location.state?.from?.pathname || '/dashboard';
-      setTimeout(() => {
-        navigate(from, { replace: true });
-      }, 500);
+      
+      // Navegar sin forzar recarga - useAuth detectará la cookie automáticamente
+      navigate(from, { replace: true });
 
     } catch (error) {
-      safeLog('error', 'Login error', error);
-      toast.error(error.message || 'Incorrect email or password');
+      console.error('Login error:', error);
+      
+      // Limpiar el password por seguridad (OWASP A07 - Authentication Failures)
+      setFormData(prev => ({
+        ...prev,
+        password: ''
+      }));
+      
+      toast.error(error.message || 'Incorrect email or password', {
+        duration: 5000,
+      });
     } finally {
       setIsLoading(false);
     }
@@ -155,7 +163,7 @@ const Login = () => {
                   { icon: '👥', text: 'Connect with friends' }
                 ].map((item, idx) => (
                   <motion.div
-                    key={idx}
+                    key={item.text}
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.2 + idx * 0.1 }}
@@ -236,10 +244,11 @@ const Login = () => {
 
                 {/* Email */}
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  <label htmlFor="email" className="block text-sm font-semibold text-gray-700 mb-2">
                     Email Address
                   </label>
                   <input
+                    id="email"
                     type="email"
                     name="email"
                     placeholder="your.email@example.com"
@@ -268,7 +277,7 @@ const Login = () => {
 
                 {/* Password */}
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  <label htmlFor="password" className="block text-sm font-semibold text-gray-700 mb-2">
                     Password
                   </label>
                   <PasswordInput
@@ -340,7 +349,7 @@ const Login = () => {
               {/* Register Link */}
               <div className="text-center">
                 <p className="text-gray-600 text-sm">
-                  Don't have an account?{' '}
+                  Don&apos;t have an account?{' '}
                   <Link
                     to="/register"
                     className="font-semibold text-primary hover:text-primary-600 transition-colors"

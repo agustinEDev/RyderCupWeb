@@ -1,18 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import LoginUseCase from './LoginUseCase';
 import User from '../../../domain/entities/User';
-import IAuthRepository from '../../../domain/repositories/IAuthRepository';
-import Email from '../../../domain/value_objects/Email'; // Importar Email
-import Password from '../../../domain/value_objects/Password'; // Importar Password
 
-// Mock del módulo secureAuth
-vi.mock('../../../utils/secureAuth', () => ({
-  setAuthToken: vi.fn(),
-  setUserData: vi.fn(),
-}));
-
-// Importar las funciones mockeadas
-import { setAuthToken, setUserData } from '../../../utils/secureAuth';
+// secureAuth.js has been removed (migrated to httpOnly cookies)
+// LoginUseCase no longer uses setAuthToken/setUserData - authentication is handled by httpOnly cookies
 
 describe('LoginUseCase', () => {
   let authRepository;
@@ -60,13 +51,7 @@ describe('LoginUseCase', () => {
       expect.objectContaining({ _value: password })
     );
 
-    // 2. Verificar que el token fue guardado
-    expect(setAuthToken).toHaveBeenCalledWith(mockToken);
-
-    // 3. Verificar que los datos del usuario fueron guardados (en formato de persistencia)
-    expect(setUserData).toHaveBeenCalledWith(mockUserEntity.toPersistence());
-
-    // 4. Verificar que el caso de uso devuelve la entidad User correcta
+    // 2. Verificar que el caso de uso devuelve la entidad User correcta
     expect(loggedInUser).toEqual(mockUserEntity);
   });
 
@@ -96,8 +81,6 @@ describe('LoginUseCase', () => {
       expect.objectContaining({ _value: password })
     );
 
-    // Verificar que setAuthToken y setUserData no fueron llamados en caso de error
-    expect(setAuthToken).not.toHaveBeenCalled();
-    expect(setUserData).not.toHaveBeenCalled();
+    // Note: Token/user storage is now handled by httpOnly cookies (no manual storage needed)
   });
 });

@@ -1,5 +1,4 @@
-import React, { useState } from 'react';
-import { getAuthToken } from '../utils/secureAuth';
+import { useState } from 'react';
 
 const EmailVerificationBanner = ({ userEmail }) => {
   const [isVisible, setIsVisible] = useState(true);
@@ -16,13 +15,12 @@ const EmailVerificationBanner = ({ userEmail }) => {
 
     try {
       const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
-      const token = getAuthToken();
 
       const response = await fetch(`${API_URL}/api/v1/auth/resend-verification`, {
         method: 'POST',
+        credentials: 'include',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
           email: userEmail

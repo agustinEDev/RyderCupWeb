@@ -1,6 +1,4 @@
-import { getAuthToken } from '../../../utils/secureAuth';
-
-const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+import apiRequest from '../../../services/api.js';
 
 /**
  * Use Case: Activate Competition
@@ -19,27 +17,9 @@ class ActivateCompetitionUseCase {
       throw new Error('Competition ID is required');
     }
 
-    const token = getAuthToken();
-
-    if (!token) {
-      throw new Error('Authentication required. Please login again.');
-    }
-
-    const response = await fetch(`${API_URL}/api/v1/competitions/${competitionId}/activate`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      }
+    const data = await apiRequest(`/api/v1/competitions/${competitionId}/activate`, {
+      method: 'POST'
     });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      const errorMessage = errorData.detail || 'Failed to activate competition';
-      throw new Error(errorMessage);
-    }
-
-    const data = await response.json();
 
     // Return simple DTO for UI
     return {

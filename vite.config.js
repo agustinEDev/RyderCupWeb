@@ -2,18 +2,20 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
 // Security headers configuration
-// Note: HSTS is configured in production via Netlify (_headers) and Vercel (vercel.json)
+// Updated: 22 Dec 2025 - Added CSP without 'unsafe-inline' (v1.8.0)
+// Note: HSTS is configured in production via _headers, nginx.conf and vercel.json
 // to avoid forcing HTTPS in local development
-// Note: X-XSS-Protection is deprecated and removed (CSP in index.html provides XSS protection)
 const securityHeaders = {
   'X-Content-Type-Options': 'nosniff',
   'X-Frame-Options': 'DENY',
   'Referrer-Policy': 'strict-origin-when-cross-origin',
   'Permissions-Policy': 'geolocation=(), microphone=(), camera=()',
+  // Content Security Policy without 'unsafe-inline' (v1.8.0)
+  'Content-Security-Policy': "default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' https: data:; connect-src 'self' https://rydercupam-euzt.onrender.com http://localhost:8000 https://o4510427294662656.ingest.de.sentry.io https://*.ingest.sentry.io; worker-src 'self' blob:; child-src 'self' blob:; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none';"
 }
 
 // https://vitejs.dev/config/
-export default defineConfig({
+export default defineConfig(() => ({
   plugins: [
     react(),
     // Plugin to inject security headers in dev and preview
@@ -21,7 +23,12 @@ export default defineConfig({
       name: 'security-headers',
       configureServer(server) {
         server.middlewares.use((req, res, next) => {
-          for (const [key, value] of Object.entries(securityHeaders)) {
+          // CSP más permisivo en desarrollo para soportar HMR de Vite
+          const devHeaders = {
+            ...securityHeaders,
+            'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' https: data:; connect-src 'self' ws://localhost:* https://rydercupam-euzt.onrender.com http://localhost:8000 https://o4510427294662656.ingest.de.sentry.io https://*.ingest.sentry.io; worker-src 'self' blob:; child-src 'self' blob:; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none';"
+          }
+          for (const [key, value] of Object.entries(devHeaders)) {
             res.setHeader(key, value)
           }
           next()
@@ -29,6 +36,7 @@ export default defineConfig({
       },
       configurePreviewServer(server) {
         server.middlewares.use((req, res, next) => {
+          // En preview usamos el CSP estricto de producción
           for (const [key, value] of Object.entries(securityHeaders)) {
             res.setHeader(key, value)
           }
@@ -90,4 +98,4 @@ export default defineConfig({
       }
     }
   }
-})
+}))

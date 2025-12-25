@@ -1,5 +1,3 @@
-import IAuthRepository from '../../../domain/repositories/IAuthRepository.js';
-
 class VerifyEmailUseCase {
   /**
    * @param {Object} dependencies - Objeto de dependencias.

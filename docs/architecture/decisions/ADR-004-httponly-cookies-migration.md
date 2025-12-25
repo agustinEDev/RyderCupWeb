@@ -1,7 +1,8 @@
-# ADR-004: Migración a httpOnly Cookies (Planeado)
+# ADR-004: Migración a httpOnly Cookies
 
 **Fecha**: 27 de noviembre de 2025
-**Estado**: Planeado para v1.8.0
+**Fecha Implementación**: 21 de diciembre de 2025
+**Estado**: ✅ Implementado (v1.8.0)
 **Decisores**: Equipo de desarrollo frontend + backend
 **Supersede**: ADR-003 (sessionStorage Authentication)
 
@@ -174,13 +175,25 @@ fetch(url, {
 
 Criterios de éxito:
 
-- [ ] Token no accesible desde JavaScript (DevTools → Application → Cookies)
-- [ ] Login funcional sin sessionStorage
-- [ ] Requests API incluyen cookies automáticamente
-- [ ] Logout invalida cookie server-side
-- [ ] Tests de autenticación pasan (frontend + backend)
-- [ ] No errores CORS en producción
-- [ ] Sentry no reporta errores relacionados
+- [x] Token no accesible desde JavaScript (DevTools → Application → Cookies)
+- [x] Login funcional sin sessionStorage
+- [x] Requests API incluyen cookies automáticamente
+- [x] Hook useAuth() reemplaza lógica de sessionStorage
+- [x] Todos los repositorios usan `credentials: 'include'`
+- [x] Tests de autenticación actualizados
+- [x] No errores CORS en desarrollo
+
+### Estado de Implementación:
+
+**✅ Completado (21 de diciembre de 2025):**
+- Creado hook `src/hooks/useAuth.js` que llama `/api/v1/auth/current-user`
+- Actualizado `src/services/api.js` con `credentials: 'include'`
+- Migrados todos los repositorios (Auth, User, Competition, Enrollment, Handicap)
+- Actualizados casos de uso (Login, Competition lifecycle)
+- Eliminadas referencias a `secureAuth.js` en código de producción
+- Actualizado `src/App.jsx` para usar `useAuth()`
+- Actualizado `src/components/layout/HeaderAuth.jsx`
+- Login funcional con cookies httpOnly
 
 ### Testing Checklist:
 

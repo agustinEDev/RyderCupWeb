@@ -41,8 +41,6 @@ class BrowseJoinableCompetitionsUseCase {
    * // Returns: [{ id, name, status, startDate, ... }]
    */
   async execute(filters = {}) {
-    console.log('🎯 [BrowseJoinableCompetitionsUseCase] Executing with filters:', filters);
-
     // Build repository filters
     const repositoryFilters = {
       status: 'ACTIVE', // Only competitions accepting enrollments
@@ -55,8 +53,6 @@ class BrowseJoinableCompetitionsUseCase {
 
     // Call repository to get domain entities
     const competitions = await this.competitionRepository.findPublic(repositoryFilters);
-
-    console.log('✅ [BrowseJoinableCompetitionsUseCase] Found', competitions.length, 'joinable competitions');
 
     // Convert domain entities to simple DTOs for the UI
     const competitionDTOs = competitions.map((competition) => {

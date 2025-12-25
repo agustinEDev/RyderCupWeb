@@ -1,6 +1,4 @@
-import { getAuthToken } from '../../../utils/secureAuth';
-
-const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+import apiRequest from '../../../services/api.js';
 
 /**
  * Use Case: Complete Competition
@@ -19,36 +17,9 @@ class CompleteCompetitionUseCase {
       throw new Error('Competition ID is required');
     }
 
-    const token = getAuthToken();
-
-    if (!token) {
-      throw new Error('Authentication required. Please login again.');
-    }
-
-    const response = await fetch(`${API_URL}/api/v1/competitions/${competitionId}/complete`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      }
+    const data = await apiRequest(`/api/v1/competitions/${competitionId}/complete`, {
+      method: 'POST'
     });
-
-    if (!response.ok) {
-      let errorMessage = 'Failed to complete competition';
-      try {
-        const errorData = await response.json();
-        if (errorData && errorData.detail) {
-          errorMessage = errorData.detail;
-        }
-      } catch (e) {
-        // The response body is not valid JSON.
-        // The failed call to response.json() has already consumed the body.
-        // We will use the generic error message.
-      }
-      throw new Error(errorMessage);
-    }
-
-    const data = await response.json();
 
     // Return simple DTO for UI
     return {

@@ -1,0 +1,100 @@
+version: 2
+updates:
+  # Mantener npm dependencies actualizadas
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    open-pull-requests-limit: 10
+    reviewers:
+      - "agustinEDev"
+    labels:
+      - "dependencies"
+      - "automated"
+    
+    # Agrupar actualizaciones menores y patches
+    groups:
+      # Grupo para React y ecosistema
+      react:
+        patterns:
+          - "react*"
+          - "@types/react*"
+      
+      # Grupo para Vite y plugins
+      vite:
+        patterns:
+          - "vite*"
+          - "@vitejs/*"
+      
+      # Grupo para testing
+      testing:
+        patterns:
+          - "vitest*"
+          - "@testing-library/*"
+          - "@playwright/*"
+          - "jsdom"
+      
+      # Grupo para linting
+      linting:
+        patterns:
+          - "eslint*"
+      
+      # Grupo para Tailwind
+      tailwind:
+        patterns:
+          - "tailwindcss*"
+          - "@tailwindcss/*"
+          - "autoprefixer"
+          - "postcss"
+      
+      # Grupo para Sentry
+      sentry:
+        patterns:
+          - "@sentry/*"
+      
+      # Grupo para dependencias menores
+      minor-updates:
+        update-types:
+          - "minor"
+          - "patch"
+    
+    # Ignorar actualizaciones major automáticas (revisar manualmente)
+    ignore:
+      # React 19 requiere revisión cuidadosa
+      - dependency-name: "react"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "react-dom"
+        update-types: ["version-update:semver-major"]
+      
+      # React Router 7 tiene breaking changes
+      - dependency-name: "react-router-dom"
+        update-types: ["version-update:semver-major"]
+      
+      # ESLint 9 tiene cambios de configuración
+      - dependency-name: "eslint"
+        update-types: ["version-update:semver-major"]
+      
+      # Tailwind 4 está en beta
+      - dependency-name: "tailwindcss"
+        update-types: ["version-update:semver-major"]
+    
+    # Permitir actualizaciones solo si los tests pasan
+    commit-message:
+      prefix: "chore"
+      prefix-development: "chore"
+      include: "scope"
+
+  # Mantener GitHub Actions actualizadas
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    labels:
+      - "github-actions"
+      - "automated"
+    commit-message:
+      prefix: "ci"

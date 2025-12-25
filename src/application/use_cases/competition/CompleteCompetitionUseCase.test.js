@@ -4,10 +4,6 @@ import CompleteCompetitionUseCase from './CompleteCompetitionUseCase';
 // Mock fetch globally
 globalThis.fetch = vi.fn();
 
-// Mock auth utils
-vi.mock('../../../utils/secureAuth', () => ({
-  getAuthToken: vi.fn(() => 'test-token')
-}));
 
 describe('CompleteCompetitionUseCase', () => {
   let useCase;
@@ -39,9 +35,9 @@ describe('CompleteCompetitionUseCase', () => {
         {
           method: 'POST',
           headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer test-token'
-          }
+            'Content-Type': 'application/json'
+          },
+          credentials: 'include'
         }
       );
 
@@ -88,24 +84,28 @@ describe('CompleteCompetitionUseCase', () => {
     it('should throw generic error if API error has no detail', async () => {
       globalThis.fetch.mockResolvedValue({
         ok: false,
+        status: 500,
+        statusText: 'Internal Server Error',
         json: async () => ({})
       });
 
       await expect(useCase.execute('comp-123')).rejects.toThrow(
-        'Failed to complete competition'
+        'HTTP 500: Internal Server Error'
       );
     });
 
     it('should throw generic error if API response is not valid JSON', async () => {
       globalThis.fetch.mockResolvedValue({
         ok: false,
+        status: 500,
+        statusText: 'Internal Server Error',
         json: async () => {
           throw new SyntaxError('Unexpected token < in JSON at position 0');
         },
       });
 
       await expect(useCase.execute('comp-123')).rejects.toThrow(
-        'Failed to complete competition'
+        'HTTP 500: Internal Server Error'
       );
     });
 

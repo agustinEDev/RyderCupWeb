@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import VerifyEmailUseCase from './VerifyEmailUseCase';
 import User from '../../../domain/entities/User';
-import IAuthRepository from '../../../domain/repositories/IAuthRepository';
 
 describe('VerifyEmailUseCase', () => {
   let authRepository;
