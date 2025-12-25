@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { validateEmail, checkRateLimit, resetRateLimit } from '../utils/validation';
@@ -8,6 +8,7 @@ import PasswordInput from '../components/ui/PasswordInput';
 import { loginUseCase } from '../composition'; // NUEVO import
 
 const Login = () => {
+  const navigate = useNavigate();
   const location = useLocation();
   const successMessage = location.state?.message;
 
@@ -78,13 +79,14 @@ const Login = () => {
 
       const from = location.state?.from?.pathname || '/dashboard';
 
-      // Esperar 500ms para que el toast sea visible
-      console.log('🔄 [Login] Scheduling redirect to:', from);
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // DEBUG: Esperar para ver el toast y las trazas (evitar refresh inmediato)
+      console.log('🔄 [Login] Login successful! User:', authenticatedUser.firstName);
+      console.log('🔄 [Login] Scheduled redirect to:', from);
+
+      // Esperar para que el toast sea visible y podamos ver las trazas
+      await new Promise(resolve => setTimeout(resolve, 2000));
 
       // CRITICAL: Verificar que las cookies httpOnly estén establecidas ANTES de redirigir
-      // Esto previene race conditions en producción donde useAuth() en Dashboard
-      // podría ejecutarse antes de que la cookie esté disponible (causando 401)
       console.log('🔍 [Login] Verifying httpOnly cookies are ready...');
 
       try {
@@ -93,31 +95,36 @@ const Login = () => {
           headers: { 'Content-Type': 'application/json' },
         });
 
+        console.log('📡 [Login] Cookie verification response status:', verifyResponse.status);
+
         if (verifyResponse.ok) {
-          console.log('✅ [Login] Cookies verified. Safe to redirect.');
+          const userData = await verifyResponse.json();
+          console.log('✅ [Login] Cookies verified! User data:', userData);
+          console.log('🚀 [Login] Executing client-side navigation to:', from);
 
-          // Esperar un frame de navegador para asegurar que todo esté listo
-          await new Promise(resolve => requestAnimationFrame(resolve));
-
-          // Ahora sí redirigir
-          console.log('🚀 [Login] Executing redirect to:', from);
-          window.location.replace(from);
+          // CAMBIO CRÍTICO: Usar navigate() en lugar de window.location.replace()
+          // Esto evita el refresh de la página y mantiene las trazas visibles
+          navigate(from, { replace: true });
         } else {
-          console.warn('⚠️ [Login] Cookie verification failed with status:', verifyResponse.status);
-          console.log('🔄 [Login] Retrying redirect after additional delay...');
+          console.error('❌ [Login] Cookie verification failed with status:', verifyResponse.status);
+          const errorText = await verifyResponse.text();
+          console.error('❌ [Login] Error response:', errorText);
 
-          // Retry con delay adicional
-          await new Promise(resolve => setTimeout(resolve, 1000));
-          window.location.replace(from);
+          // Si falla, intentar redirigir de todos modos (para ver qué pasa en Dashboard)
+          console.log('⚠️ [Login] Redirecting anyway to see what happens...');
+          navigate(from, { replace: true });
         }
       } catch (err) {
         console.error('❌ [Login] Cookie verification error:', err);
-        console.log('🔄 [Login] Proceeding with redirect anyway...');
-        window.location.replace(from);
+        console.error('❌ [Login] Error stack:', err.stack);
+
+        // Intentar redirigir de todos modos
+        console.log('⚠️ [Login] Redirecting anyway despite error...');
+        navigate(from, { replace: true });
       }
 
-      // No ejecutar setIsLoading(false) aquí porque vamos a redirigir
-      // Mantener el loading state para mejor UX durante la redirección
+      // Mantener loading state durante la navegación
+      // setIsLoading(false) se ejecutará cuando el componente se desmonte
 
     } catch (error) {
       console.error('Login error:', error);

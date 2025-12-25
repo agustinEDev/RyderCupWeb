@@ -23,9 +23,12 @@ export const useAuth = () => {
 
   const fetchUser = useCallback(async () => {
     try {
+      console.log('🔍 [useAuth] Starting fetchUser...');
+      console.log('🔍 [useAuth] API_URL:', API_URL);
       setLoading(true);
       setError(null);
 
+      console.log('📡 [useAuth] Fetching /current-user with credentials: include');
       const response = await fetch(`${API_URL}/api/v1/auth/current-user`, {
         credentials: 'include', // Incluir cookies httpOnly
         headers: {
@@ -33,9 +36,13 @@ export const useAuth = () => {
         },
       });
 
+      console.log('📡 [useAuth] Response status:', response.status);
+      console.log('📡 [useAuth] Response ok:', response.ok);
+
       if (!response.ok) {
         if (response.status === 401 || response.status === 404) {
           // Usuario no autenticado o endpoint no encontrado
+          console.warn(`⚠️ [useAuth] ${response.status} - User not authenticated or endpoint not found`);
           setUser(null);
           setError(null);
           return;
@@ -44,13 +51,16 @@ export const useAuth = () => {
       }
 
       const userData = await response.json();
+      console.log('✅ [useAuth] User data fetched successfully:', userData);
       setUser(userData);
     } catch (err) {
-      console.error('Error fetching user:', err);
+      console.error('❌ [useAuth] Error fetching user:', err);
+      console.error('❌ [useAuth] Error stack:', err.stack);
       setError(err.message);
       setUser(null);
     } finally {
       setLoading(false);
+      console.log('🏁 [useAuth] fetchUser completed. Loading:', false);
     }
   }, []);
 
