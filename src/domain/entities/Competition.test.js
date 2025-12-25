@@ -8,7 +8,7 @@ import { DateRange } from '../value_objects/DateRange';
 import { Location } from '../value_objects/Location';
 import { CountryCode } from '../value_objects/CountryCode';
 import { HandicapSettings, HandicapType } from '../value_objects/HandicapSettings';
-import { TeamAssignment, TeamAssignmentEnum } from '../value_objects/TeamAssignment';
+import { TeamAssignment } from '../value_objects/TeamAssignment';
 import { CompetitionStatus } from '../value_objects/CompetitionStatus';
 
 // Mock UserId for testing purposes

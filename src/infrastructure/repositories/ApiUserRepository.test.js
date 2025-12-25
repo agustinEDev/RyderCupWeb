@@ -2,24 +2,23 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import ApiUserRepository from './ApiUserRepository';
 import User from '../../domain/entities/User';
 
-// Mock global fetch
-globalThis.fetch = vi.fn();
+// Mock del módulo api.js centralizado
+vi.mock('../../services/api.js', () => ({
+  default: vi.fn() // Mockear la función apiRequest
+}));
+
+// Importar el mock para poder usarlo en los tests
+import apiRequest from '../../services/api.js';
 
 describe('ApiUserRepository', () => {
-  let authTokenProvider;
   let apiUserRepository;
-  const mockToken = 'mock-jwt-token';
-  const API_URL = 'http://localhost:8000';
 
   beforeEach(() => {
     vi.clearAllMocks();
 
-    // Mock authTokenProvider
-    authTokenProvider = {
-      getToken: vi.fn().mockReturnValue(mockToken)
-    };
-
-    apiUserRepository = new ApiUserRepository({ authTokenProvider });
+    // Inicializar repositorio SIN authTokenProvider
+    // El constructor ya no recibe parámetros (cookies httpOnly manejan auth)
+    apiUserRepository = new ApiUserRepository();
   });
 
   afterEach(() => {
@@ -28,7 +27,7 @@ describe('ApiUserRepository', () => {
 
   describe('getById', () => {
     it('should fetch user from /api/v1/auth/current-user endpoint', async () => {
-      // Arrange
+      // Arrange: Preparar datos de prueba
       const userId = 'user-123';
       const mockUserData = {
         id: userId,
@@ -42,24 +41,15 @@ describe('ApiUserRepository', () => {
         updated_at: '2025-11-23T10:00:00Z'
       };
 
-      globalThis.fetch.mockResolvedValueOnce({
-        ok: true,
-        json: async () => mockUserData
-      });
+      // Configurar el mock para que retorne los datos
+      apiRequest.mockResolvedValueOnce(mockUserData);
 
-      // Act
+      // Act: Ejecutar el método que estamos testeando
       const user = await apiUserRepository.getById(userId);
 
-      // Assert
-      expect(authTokenProvider.getToken).toHaveBeenCalled();
-      expect(globalThis.fetch).toHaveBeenCalledWith(
-        `${API_URL}/api/v1/auth/current-user`,
-        {
-          headers: {
-            'Authorization': `Bearer ${mockToken}`
-          }
-        }
-      );
+      // Assert: Verificar que todo funcionó correctamente
+      expect(apiRequest).toHaveBeenCalledWith('/api/v1/auth/current-user');
+      expect(apiRequest).toHaveBeenCalledTimes(1);
       expect(user).toBeInstanceOf(User);
       expect(user.id).toBe(userId);
       expect(user.email.getValue()).toBe('test@example.com');
@@ -78,10 +68,7 @@ describe('ApiUserRepository', () => {
         handicap: 12.3
       };
 
-      globalThis.fetch.mockResolvedValueOnce({
-        ok: true,
-        json: async () => mockUserData
-      });
+      apiRequest.mockResolvedValueOnce(mockUserData);
 
       // Act
       const user = await apiUserRepository.getById(userId);
@@ -103,10 +90,7 @@ describe('ApiUserRepository', () => {
         country_code: null
       };
 
-      globalThis.fetch.mockResolvedValueOnce({
-        ok: true,
-        json: async () => mockUserData
-      });
+      apiRequest.mockResolvedValueOnce(mockUserData);
 
       // Act
       const user = await apiUserRepository.getById(userId);
@@ -116,90 +100,23 @@ describe('ApiUserRepository', () => {
       expect(user.countryCode).toBeNull();
     });
 
-    it('should return null if response status is 404', async () => {
+    it('should throw error if apiRequest fails', async () => {
       // Arrange
       const userId = 'user-123';
+      const errorMessage = 'HTTP 500: Internal Server Error';
 
-      globalThis.fetch.mockResolvedValueOnce({
-        ok: false,
-        status: 404
-      });
+      // Configurar el mock para que rechace (simular error de API)
+      apiRequest.mockRejectedValueOnce(new Error(errorMessage));
 
-      // Act
-      const user = await apiUserRepository.getById(userId);
-
-      // Assert
-      expect(user).toBeNull();
-      expect(globalThis.fetch).toHaveBeenCalledWith(
-        `${API_URL}/api/v1/auth/current-user`,
-        expect.any(Object)
-      );
-    });
-
-    it('should return null if response status is 401 (Unauthorized)', async () => {
-      // Arrange
-      const userId = 'user-123';
-
-      globalThis.fetch.mockResolvedValueOnce({
-        ok: false,
-        status: 401
-      });
-
-      // Act
-      const user = await apiUserRepository.getById(userId);
-
-      // Assert
-      expect(user).toBeNull();
-    });
-
-    it('should throw error for other HTTP error codes', async () => {
-      // Arrange
-      const userId = 'user-123';
-
-      globalThis.fetch.mockResolvedValueOnce({
-        ok: false,
-        status: 500
-      });
-
-      // Act & Assert
+      // Act & Assert: Verificar que el error se propaga
       await expect(apiUserRepository.getById(userId))
-        .rejects.toThrow('Failed to fetch current user');
-    });
+        .rejects.toThrow(errorMessage);
 
-    it('should use JWT token from authTokenProvider', async () => {
-      // Arrange
-      const userId = 'user-123';
-      const customToken = 'custom-token-xyz';
-      authTokenProvider.getToken.mockReturnValueOnce(customToken);
-
-      const mockUserData = {
-        id: userId,
-        email: 'test@example.com',
-        first_name: 'John',
-        last_name: 'Doe'
-      };
-
-      globalThis.fetch.mockResolvedValueOnce({
-        ok: true,
-        json: async () => mockUserData
-      });
-
-      // Act
-      await apiUserRepository.getById(userId);
-
-      // Assert
-      expect(globalThis.fetch).toHaveBeenCalledWith(
-        expect.any(String),
-        {
-          headers: {
-            'Authorization': `Bearer ${customToken}`
-          }
-        }
-      );
+      expect(apiRequest).toHaveBeenCalledWith('/api/v1/auth/current-user');
     });
 
     it('should ignore userId parameter and always fetch current user', async () => {
-      // Arrange
+      // Arrange: Preparar dos userId diferentes
       const userId1 = 'user-123';
       const userId2 = 'user-456';
 
@@ -211,22 +128,19 @@ describe('ApiUserRepository', () => {
         country_code: 'ES'
       };
 
-      globalThis.fetch.mockResolvedValue({
-        ok: true,
-        json: async () => mockUserData
-      });
+      // Configurar el mock para que SIEMPRE retorne el mismo usuario
+      apiRequest.mockResolvedValue(mockUserData);
 
-      // Act
+      // Act: Llamar dos veces con diferentes userId
       const user1 = await apiUserRepository.getById(userId1);
       const user2 = await apiUserRepository.getById(userId2);
 
-      // Assert
-      // Both calls should hit the same endpoint
-      expect(globalThis.fetch).toHaveBeenCalledTimes(2);
-      expect(globalThis.fetch).toHaveBeenNthCalledWith(1, `${API_URL}/api/v1/auth/current-user`, expect.any(Object));
-      expect(globalThis.fetch).toHaveBeenNthCalledWith(2, `${API_URL}/api/v1/auth/current-user`, expect.any(Object));
+      // Assert: Verificar que ambas llamadas fueron al mismo endpoint
+      expect(apiRequest).toHaveBeenCalledTimes(2);
+      expect(apiRequest).toHaveBeenNthCalledWith(1, '/api/v1/auth/current-user');
+      expect(apiRequest).toHaveBeenNthCalledWith(2, '/api/v1/auth/current-user');
 
-      // Both should return the same user (current user from token)
+      // Verificar que ambas retornan el MISMO usuario (el del token)
       expect(user1.id).toBe('current-user-id');
       expect(user2.id).toBe('current-user-id');
     });
@@ -251,23 +165,16 @@ describe('ApiUserRepository', () => {
         }
       };
 
-      globalThis.fetch.mockResolvedValueOnce({
-        ok: true,
-        json: async () => mockUpdatedUser
-      });
+      apiRequest.mockResolvedValueOnce(mockUpdatedUser);
 
       // Act
       const user = await apiUserRepository.update(userId, updateData);
 
       // Assert
-      expect(globalThis.fetch).toHaveBeenCalledWith(
-        `${API_URL}/api/v1/users/profile`,
+      expect(apiRequest).toHaveBeenCalledWith(
+        '/api/v1/users/profile',
         {
           method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${mockToken}`
-          },
           body: JSON.stringify({
             first_name: 'Jane',
             last_name: 'Smith'
@@ -287,10 +194,7 @@ describe('ApiUserRepository', () => {
         lastName: 'Smith'
       };
 
-      globalThis.fetch.mockResolvedValueOnce({
-        ok: false,
-        json: async () => ({ detail: 'Update failed' })
-      });
+      apiRequest.mockRejectedValueOnce(new Error('Update failed'));
 
       // Act & Assert
       await expect(apiUserRepository.update(userId, updateData))
@@ -324,26 +228,22 @@ describe('ApiUserRepository', () => {
         }
       };
 
-      globalThis.fetch.mockResolvedValueOnce({
-        ok: true,
-        json: async () => mockUpdatedUser
-      });
+      apiRequest.mockResolvedValueOnce(mockUpdatedUser);
 
       // Act
       const user = await apiUserRepository.updateSecurity(userId, securityData);
 
       // Assert
-      expect(globalThis.fetch).toHaveBeenCalledTimes(1);
-      const [[url, options]] = globalThis.fetch.mock.calls;
+      expect(apiRequest).toHaveBeenCalledWith(
+        '/api/v1/users/security',
+        expect.objectContaining({
+          method: 'PATCH',
+          body: expect.stringContaining('current_password')
+        })
+      );
 
-      expect(url).toBe(`${API_URL}/api/v1/users/security`);
-      expect(options.method).toBe('PATCH');
-      expect(options.headers).toEqual({
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${mockToken}`
-      });
-
-      // Parse and verify body content (order-independent)
+      // Verificar el contenido del body (sin importar el orden)
+      const [[, options]] = apiRequest.mock.calls;
       const bodyData = JSON.parse(options.body);
       expect(bodyData).toEqual(expect.objectContaining({
         current_password: 'OldPassword123!',
@@ -351,7 +251,6 @@ describe('ApiUserRepository', () => {
         new_password: 'NewPassword123!',
         confirm_password: 'NewPassword123!'
       }));
-
       expect(user).toBeInstanceOf(User);
       expect(user.email.getValue()).toBe('newemail@example.com');
     });

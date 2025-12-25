@@ -5,12 +5,8 @@
     <link rel="icon" type="image/svg+xml" href="/golf-icon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-    <!-- Security: Content Security Policy -->
-    <!-- Note: frame-ancestors removed (not supported in meta tags, use HTTP headers instead) -->
-    <meta
-      http-equiv="Content-Security-Policy"
-      content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' https: data:; connect-src 'self' https://rydercupam-euzt.onrender.com http://localhost:8000 https://o4510427294662656.ingest.de.sentry.io https://*.ingest.sentry.io; worker-src 'self' blob:; child-src 'self' blob:; base-uri 'self'; form-action 'self'; object-src 'none';"
-    />
+    <!-- Security: Content Security Policy is configured via HTTP headers in production (_headers, nginx.conf, vercel.json) -->
+    <!-- This approach is more secure as meta tags cannot set frame-ancestors and are easier to bypass -->
 
     <meta name="description" content="RyderCupFriends - The ultimate amateur golf tournament management platform. Connect with friends, create exciting Ryder Cup format competitions, and enjoy the spirit of friendly golf competition." />
     <meta name="keywords" content="golf, ryder cup, tournament, amateur golf, golf friends, RCF, competition, golf management" />

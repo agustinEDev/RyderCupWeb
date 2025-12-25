@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import Email from '../value_objects/Email';
 import Password from '../value_objects/Password'; // 1. Importar Password VO
 

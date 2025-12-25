@@ -4,10 +4,6 @@ import CancelCompetitionUseCase from './CancelCompetitionUseCase';
 // Mock fetch globally
 globalThis.fetch = vi.fn();
 
-// Mock auth utils
-vi.mock('../../../utils/secureAuth', () => ({
-  getAuthToken: vi.fn(() => 'test-token')
-}));
 
 describe('CancelCompetitionUseCase', () => {
   let useCase;
@@ -39,9 +35,9 @@ describe('CancelCompetitionUseCase', () => {
         {
           method: 'POST',
           headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer test-token'
-          }
+            'Content-Type': 'application/json'
+          },
+          credentials: 'include'
         }
       );
 
@@ -137,7 +133,7 @@ describe('CancelCompetitionUseCase', () => {
       });
 
       await expect(useCase.execute('comp-123')).rejects.toThrow(
-        'Competition cancellation error: HTTP 400: Bad Request'
+        'HTTP 400: Bad Request'
       );
     });
 

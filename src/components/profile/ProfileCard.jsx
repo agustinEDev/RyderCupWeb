@@ -1,5 +1,3 @@
-import React from 'react';
-
 const ProfileCard = ({ user }) => {
   const fullName = user ? `${user.first_name} ${user.last_name}` : 'User';
   const email = user?.email || 'No email';

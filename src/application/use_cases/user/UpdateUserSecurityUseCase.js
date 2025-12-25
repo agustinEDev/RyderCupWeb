@@ -1,6 +1,5 @@
-import IUserRepository from '../../../domain/repositories/IUserRepository.js';
 import Email from '../../../domain/value_objects/Email';
-import Password from '../../../domain/value_objects/Password'; // 1. Importar Password VO
+import Password from '../../../domain/value_objects/Password';
 
 class UpdateUserSecurityUseCase {
   /**

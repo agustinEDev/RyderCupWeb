@@ -1,9 +1,10 @@
 // src/pages/BrowseCompetitions.jsx
 
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { Search, Calendar, MapPin, Users, Target, TrendingUp } from 'lucide-react';
+import PropTypes from 'prop-types';
+import { Search, Calendar, Users, Target, TrendingUp } from 'lucide-react';
 import HeaderAuth from '../components/layout/HeaderAuth';
 import {
   browseJoinableCompetitionsUseCase,
@@ -11,14 +12,13 @@ import {
   requestEnrollmentUseCase,
 } from '../composition';
 import { CountryFlag } from '../utils/countryUtils';
-import { getAuthToken, getUserData } from '../utils/secureAuth';
+import { useAuth } from '../hooks/useAuth';
 
 const BrowseCompetitions = () => {
   const navigate = useNavigate();
 
   // User state
-  const [user, setUser] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const { user, loading: isLoading } = useAuth();
 
   // Joinable competitions state
   const [joinableCompetitions, setJoinableCompetitions] = useState([]);
@@ -35,20 +35,6 @@ const BrowseCompetitions = () => {
   // Request enrollment state
   const [requestingEnrollment, setRequestingEnrollment] = useState({});
 
-  // Check authentication
-  useEffect(() => {
-    const token = getAuthToken();
-    const userData = getUserData();
-
-    if (!token || !userData) {
-      navigate('/login');
-      return;
-    }
-
-    setUser(userData);
-    setIsLoading(false);
-  }, [navigate]);
-
   // Load joinable competitions
   useEffect(() => {
     if (!user) return;
@@ -58,27 +44,14 @@ const BrowseCompetitions = () => {
         setIsLoadingJoinable(true);
         const competitions = await browseJoinableCompetitionsUseCase.execute();
 
-        console.log('🔍 Competitions returned from backend:', competitions.map(c => ({
-          id: c.id,
-          name: c.name,
-          enrollment_status: c.enrollment_status,
-          isCreator: c.isCreator,
-          creatorId: c.creatorId
-        })));
-
         // SAFETY FILTER: Filter out competitions where user already has enrollment
         // This compensates for backend bug where my_competitions=false still returns
         // competitions with existing enrollments
         const safeCompetitions = competitions.filter(comp => {
           // Exclude if user has any enrollment status
-          if (comp.enrollment_status) {
-            console.warn(`⚠️ Filtering out competition ${comp.id} (${comp.name}) - already has enrollment status: ${comp.enrollment_status}`);
-            return false;
-          }
-          return true;
+          return !comp.enrollment_status;
         });
 
-        console.log(`📊 Filtered ${competitions.length - safeCompetitions.length} competitions with existing enrollments`);
         setJoinableCompetitions(safeCompetitions);
       } catch (error) {
         console.error('Error loading joinable competitions:', error);
@@ -186,7 +159,7 @@ const BrowseCompetitions = () => {
       console.error('❌ Error requesting enrollment:', error);
 
       // Check if it's a duplicate enrollment error (409 Conflict)
-      if (error.message && error.message.includes('409')) {
+      if (error.message?.includes('409')) {
         toast.error('You already have an enrollment request for this competition');
         // Remove from list since user already has enrollment
         setJoinableCompetitions((prev) => prev.filter((comp) => comp.id !== competitionId));
@@ -217,6 +190,84 @@ const BrowseCompetitions = () => {
 
   if (!user) {
     return null;
+  }
+
+  // Prepare content for joinable competitions
+  let joinableContent;
+  if (isLoadingJoinable) {
+    joinableContent = (
+      <div className="text-center py-12">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+        <p className="mt-4 text-gray-600">Loading available competitions...</p>
+      </div>
+    );
+  } else if (filteredJoinableCompetitions.length === 0) {
+    joinableContent = (
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
+        <Target className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+        <h3 className="text-xl font-semibold text-gray-900 mb-2">
+          {joinableSearch ? 'No competitions found' : 'No competitions available'}
+        </h3>
+        <p className="text-gray-600">
+          {joinableSearch
+            ? 'Try adjusting your search criteria'
+            : 'There are no active competitions available to join at the moment'}
+        </p>
+      </div>
+    );
+  } else {
+    joinableContent = (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {filteredJoinableCompetitions.map((competition) => (
+          <CompetitionCard
+            key={competition.id}
+            competition={competition}
+            mode="joinable"
+            onRequestEnrollment={handleRequestEnrollment}
+            onViewDetails={handleViewDetails}
+            isRequesting={requestingEnrollment[competition.id]}
+          />
+        ))}
+      </div>
+    );
+  }
+
+  // Prepare content for explore competitions
+  let exploreContent;
+  if (isLoadingExplore) {
+    exploreContent = (
+      <div className="text-center py-12">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+        <p className="mt-4 text-gray-600">Loading competitions...</p>
+      </div>
+    );
+  } else if (filteredExploreCompetitions.length === 0) {
+    exploreContent = (
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
+        <TrendingUp className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+        <h3 className="text-xl font-semibold text-gray-900 mb-2">
+          {exploreSearch ? 'No competitions found' : 'No competitions to explore'}
+        </h3>
+        <p className="text-gray-600">
+          {exploreSearch
+            ? 'Try adjusting your search criteria'
+            : 'There are no closed, ongoing, or completed competitions at the moment'}
+        </p>
+      </div>
+    );
+  } else {
+    exploreContent = (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {filteredExploreCompetitions.map((competition) => (
+          <CompetitionCard
+            key={competition.id}
+            competition={competition}
+            mode="explore"
+            onViewDetails={handleViewDetails}
+          />
+        ))}
+      </div>
+    );
   }
 
   return (
@@ -282,37 +333,7 @@ const BrowseCompetitions = () => {
           </div>
 
           {/* Competitions Grid - Joinable */}
-          {isLoadingJoinable ? (
-            <div className="text-center py-12">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-              <p className="mt-4 text-gray-600">Loading available competitions...</p>
-            </div>
-          ) : filteredJoinableCompetitions.length === 0 ? (
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
-              <Target className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                {joinableSearch ? 'No competitions found' : 'No competitions available'}
-              </h3>
-              <p className="text-gray-600">
-                {joinableSearch
-                  ? 'Try adjusting your search criteria'
-                  : 'There are no active competitions available to join at the moment'}
-              </p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredJoinableCompetitions.map((competition) => (
-                <CompetitionCard
-                  key={competition.id}
-                  competition={competition}
-                  mode="joinable"
-                  onRequestEnrollment={handleRequestEnrollment}
-                  onViewDetails={handleViewDetails}
-                  isRequesting={requestingEnrollment[competition.id]}
-                />
-              ))}
-            </div>
-          )}
+          {joinableContent}
         </div>
 
         {/* Divider */}
@@ -368,35 +389,7 @@ const BrowseCompetitions = () => {
           </div>
 
           {/* Competitions Grid - Explore */}
-          {isLoadingExplore ? (
-            <div className="text-center py-12">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-              <p className="mt-4 text-gray-600">Loading competitions...</p>
-            </div>
-          ) : filteredExploreCompetitions.length === 0 ? (
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
-              <TrendingUp className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                {exploreSearch ? 'No competitions found' : 'No competitions to explore'}
-              </h3>
-              <p className="text-gray-600">
-                {exploreSearch
-                  ? 'Try adjusting your search criteria'
-                  : 'There are no closed, ongoing, or completed competitions at the moment'}
-              </p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredExploreCompetitions.map((competition) => (
-                <CompetitionCard
-                  key={competition.id}
-                  competition={competition}
-                  mode="explore"
-                  onViewDetails={handleViewDetails}
-                />
-              ))}
-            </div>
-          )}
+          {exploreContent}
         </div>
       </div>
     </div>
@@ -432,8 +425,8 @@ const CompetitionCard = ({ competition, mode, onRequestEnrollment, onViewDetails
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition">
       {/* Card Header - Clickable */}
-      <div
-        className="p-4 border-b border-gray-100 cursor-pointer hover:bg-gray-50 transition"
+      <button
+        className="w-full p-4 border-b border-gray-100 cursor-pointer hover:bg-gray-50 transition text-left"
         onClick={() => onViewDetails(id)}
       >
         <div className="flex justify-between items-start mb-2">
@@ -451,11 +444,11 @@ const CompetitionCard = ({ competition, mode, onRequestEnrollment, onViewDetails
             ))}
           </div>
         )}
-      </div>
+      </button>
 
       {/* Card Body - Clickable */}
-      <div
-        className="p-4 space-y-3 cursor-pointer hover:bg-gray-50 transition"
+      <button
+        className="w-full p-4 space-y-3 cursor-pointer hover:bg-gray-50 transition text-left"
         onClick={() => onViewDetails(id)}
       >
         {/* Dates */}
@@ -482,7 +475,7 @@ const CompetitionCard = ({ competition, mode, onRequestEnrollment, onViewDetails
             {enrolledCount >= maxPlayers && <span className="ml-2 text-red-600 font-semibold">FULL</span>}
           </span>
         </div>
-      </div>
+      </button>
 
       {/* Card Footer */}
       <div className="p-4 bg-gray-50 border-t border-gray-100">
@@ -499,8 +492,13 @@ const CompetitionCard = ({ competition, mode, onRequestEnrollment, onViewDetails
                 : 'bg-primary text-white hover:bg-primary/90'
             }`}
           >
-            {isRequesting ? 'Requesting...' : enrolledCount >= maxPlayers ? 'Full' : 'Request to Join'}
-          </button>
+        {/* Get button text */}
+        {(() => {
+          if (isRequesting) return 'Requesting...';
+          if (enrolledCount >= maxPlayers) return 'Full';
+          return 'Request to Join';
+        })()}
+      </button>
         ) : (
           <button
             onClick={(e) => {
@@ -515,6 +513,31 @@ const CompetitionCard = ({ competition, mode, onRequestEnrollment, onViewDetails
       </div>
     </div>
   );
+};
+
+CompetitionCard.propTypes = {
+  competition: PropTypes.shape({
+    id: PropTypes.string.isRequired,
+    name: PropTypes.string.isRequired,
+    startDate: PropTypes.string.isRequired,
+    endDate: PropTypes.string.isRequired,
+    status: PropTypes.string.isRequired,
+    creator: PropTypes.shape({
+      firstName: PropTypes.string.isRequired,
+      lastName: PropTypes.string.isRequired,
+    }).isRequired,
+    enrolledCount: PropTypes.number.isRequired,
+    maxPlayers: PropTypes.number.isRequired,
+    countries: PropTypes.arrayOf(PropTypes.shape({
+      code: PropTypes.string.isRequired,
+      name_en: PropTypes.string,
+      name_es: PropTypes.string,
+    })).isRequired,
+  }).isRequired,
+  mode: PropTypes.oneOf(['joinable', 'explore']).isRequired,
+  onRequestEnrollment: PropTypes.func.isRequired,
+  onViewDetails: PropTypes.func.isRequired,
+  isRequesting: PropTypes.bool.isRequired,
 };
 
 export default BrowseCompetitions;

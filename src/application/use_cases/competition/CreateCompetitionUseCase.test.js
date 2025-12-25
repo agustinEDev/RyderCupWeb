@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import CreateCompetitionUseCase from './CreateCompetitionUseCase';
-import { ICompetitionRepository } from '../../../domain/repositories/ICompetitionRepository';
 
 // Mock the CompetitionMapper
 vi.mock('../../../infrastructure/mappers/CompetitionMapper', () => ({

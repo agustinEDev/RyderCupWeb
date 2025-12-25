@@ -1,9 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import RegisterUseCase from './RegisterUseCase';
 import User from '../../../domain/entities/User';
-import IAuthRepository from '../../../domain/repositories/IAuthRepository';
-import Email from '../../../domain/value_objects/Email'; // Importar Email
-import Password from '../../../domain/value_objects/Password'; // Importar Password
+import Email from '../../../domain/value_objects/Email';
+import Password from '../../../domain/value_objects/Password';
 
 describe('RegisterUseCase', () => {
   let authRepository;

@@ -1,0 +1,168 @@
+name: Security Checks
+
+on:
+  push:
+    branches: [main, develop, 'feature/**', 'release/**', 'hotfix/**']
+  pull_request:
+    branches: [develop, main]
+  schedule:
+    # Run every Monday at 9:00 AM UTC
+    - cron: '0 9 * * 1'
+
+jobs:
+  dependency-audit:
+    name: 🔒 Dependency Vulnerability Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run npm audit
+        run: |
+          echo "🔍 Running npm audit..."
+          npm audit --audit-level=moderate --json > audit-report.json || true
+
+          # Parse results
+          VULNERABILITIES=$(cat audit-report.json | jq '.metadata.vulnerabilities.total')
+          CRITICAL=$(cat audit-report.json | jq '.metadata.vulnerabilities.critical')
+          HIGH=$(cat audit-report.json | jq '.metadata.vulnerabilities.high')
+          MODERATE=$(cat audit-report.json | jq '.metadata.vulnerabilities.moderate')
+
+          echo "📊 Vulnerability Summary:"
+          echo "  Critical: $CRITICAL"
+          echo "  High: $HIGH"
+          echo "  Moderate: $MODERATE"
+          echo "  Total: $VULNERABILITIES"
+
+          # Fail if critical or high vulnerabilities found
+          if [ "$CRITICAL" -gt 0 ] || [ "$HIGH" -gt 0 ]; then
+            echo "❌ Critical or High vulnerabilities found!"
+            npm audit --audit-level=high
+            exit 1
+          fi
+
+          # Warn if moderate vulnerabilities found
+          if [ "$MODERATE" -gt 0 ]; then
+            echo "⚠️ Moderate vulnerabilities found (allowed to pass)"
+            npm audit --audit-level=moderate
+          fi
+
+          echo "✅ No critical or high vulnerabilities found"
+
+      - name: Upload audit report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: npm-audit-report
+          path: audit-report.json
+          retention-days: 30
+
+  secret-scanning:
+    name: 🔐 Secret Scanning
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: TruffleHog OSS
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: ${{ github.event.repository.default_branch }}
+          head: HEAD
+          extra_args: --debug --only-verified
+
+  license-check:
+    name: 📜 License Compliance
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check licenses
+        run: |
+          echo "📜 Checking dependency licenses..."
+          npx license-checker --json --out licenses.json
+
+          # Check for problematic licenses
+          FORBIDDEN_LICENSES="GPL-3.0 AGPL-3.0 LGPL-3.0"
+
+          for license in $FORBIDDEN_LICENSES; do
+            if npx license-checker --summary | grep -q "$license"; then
+              echo "❌ Forbidden license found: $license"
+              npx license-checker --summary
+              exit 1
+            fi
+          done
+
+          echo "✅ All licenses are compliant"
+          npx license-checker --summary
+
+      - name: Upload license report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: license-report
+          path: licenses.json
+          retention-days: 30
+
+  outdated-dependencies:
+    name: 📦 Outdated Dependencies Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check for outdated packages
+        run: |
+          echo "📦 Checking for outdated dependencies..."
+          npm outdated --json > outdated.json || true
+
+          # Count outdated packages
+          OUTDATED_COUNT=$(cat outdated.json | jq 'length')
+
+          echo "📊 Found $OUTDATED_COUNT outdated packages"
+
+          if [ "$OUTDATED_COUNT" -gt 0 ]; then
+            echo "⚠️ Outdated packages found (informational only, does not fail CI):"
+            npm outdated || true
+          else
+            echo "✅ All packages are up to date"
+          fi
+
+      - name: Upload outdated report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: outdated-dependencies
+          path: outdated.json
+          retention-days: 30

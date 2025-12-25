@@ -201,7 +201,7 @@ export const sanitizeInput = (input) => {
   };
 
   return input
-    .replace(/[&<>"'\/]/g, (char) => htmlEntities[char])
+    .replace(/[&<>"'/]/g, (char) => htmlEntities[char])
     .trim();
 };
 

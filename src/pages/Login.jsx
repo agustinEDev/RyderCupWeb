@@ -1,10 +1,9 @@
-import React, { useState } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { useState } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { validateEmail, checkRateLimit, resetRateLimit } from '../utils/validation';
 import { safeLog } from '../utils/auth';
-import { setAuthToken, setUserData } from '../utils/secureAuth';
 import PasswordInput from '../components/ui/PasswordInput';
 import { loginUseCase } from '../composition'; // NUEVO import
 
@@ -68,9 +67,9 @@ const Login = () => {
       const authenticatedUser = await loginUseCase.execute(formData.email, formData.password);
 
       resetRateLimit('login');
-      toast.success(`Welcome, ${authenticatedUser.firstName}!`); // Usamos firstName de la entidad
+      toast.success(`Welcome, ${authenticatedUser.firstName}!`);
 
-      if (!authenticatedUser.emailVerified) { // Usamos la propiedad de la entidad User
+      if (!authenticatedUser.emailVerified) {
         safeLog('info', 'Email verification required');
         toast('Please verify your email', {
           duration: 5000,
@@ -79,14 +78,67 @@ const Login = () => {
       }
 
       const from = location.state?.from?.pathname || '/dashboard';
-      setTimeout(() => {
+
+      // DEBUG: Esperar para ver el toast y las trazas (evitar refresh inmediato)
+      console.log('🔄 [Login] Login successful! User:', authenticatedUser.firstName);
+      console.log('🔄 [Login] Scheduled redirect to:', from);
+
+      // Esperar para que el toast sea visible y podamos ver las trazas
+      await new Promise(resolve => setTimeout(resolve, 2000));
+
+      // CRITICAL: Verificar que las cookies httpOnly estén establecidas ANTES de redirigir
+      console.log('🔍 [Login] Verifying httpOnly cookies are ready...');
+
+      try {
+        const verifyResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'}/api/v1/auth/current-user`, {
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+        });
+
+        console.log('📡 [Login] Cookie verification response status:', verifyResponse.status);
+
+        if (verifyResponse.ok) {
+          const userData = await verifyResponse.json();
+          console.log('✅ [Login] Cookies verified! User data:', userData);
+          console.log('🚀 [Login] Executing client-side navigation to:', from);
+
+          // CAMBIO CRÍTICO: Usar navigate() en lugar de window.location.replace()
+          // Esto evita el refresh de la página y mantiene las trazas visibles
+          navigate(from, { replace: true });
+        } else {
+          console.error('❌ [Login] Cookie verification failed with status:', verifyResponse.status);
+          const errorText = await verifyResponse.text();
+          console.error('❌ [Login] Error response:', errorText);
+
+          // Si falla, intentar redirigir de todos modos (para ver qué pasa en Dashboard)
+          console.log('⚠️ [Login] Redirecting anyway to see what happens...');
+          navigate(from, { replace: true });
+        }
+      } catch (err) {
+        console.error('❌ [Login] Cookie verification error:', err);
+        console.error('❌ [Login] Error stack:', err.stack);
+
+        // Intentar redirigir de todos modos
+        console.log('⚠️ [Login] Redirecting anyway despite error...');
         navigate(from, { replace: true });
-      }, 500);
+      }
+
+      // Mantener loading state durante la navegación
+      // setIsLoading(false) se ejecutará cuando el componente se desmonte
 
     } catch (error) {
-      safeLog('error', 'Login error', error);
-      toast.error(error.message || 'Incorrect email or password');
-    } finally {
+      console.error('Login error:', error);
+
+      // Limpiar el password por seguridad (OWASP A07 - Authentication Failures)
+      setFormData(prev => ({
+        ...prev,
+        password: ''
+      }));
+
+      toast.error(error.message || 'Incorrect email or password', {
+        duration: 5000,
+      });
+
       setIsLoading(false);
     }
   };
@@ -155,7 +207,7 @@ const Login = () => {
                   { icon: '👥', text: 'Connect with friends' }
                 ].map((item, idx) => (
                   <motion.div
-                    key={idx}
+                    key={item.text}
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.2 + idx * 0.1 }}
@@ -236,10 +288,11 @@ const Login = () => {
 
                 {/* Email */}
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  <label htmlFor="email" className="block text-sm font-semibold text-gray-700 mb-2">
                     Email Address
                   </label>
                   <input
+                    id="email"
                     type="email"
                     name="email"
                     placeholder="your.email@example.com"
@@ -268,7 +321,7 @@ const Login = () => {
 
                 {/* Password */}
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  <label htmlFor="password" className="block text-sm font-semibold text-gray-700 mb-2">
                     Password
                   </label>
                   <PasswordInput
@@ -340,7 +393,7 @@ const Login = () => {
               {/* Register Link */}
               <div className="text-center">
                 <p className="text-gray-600 text-sm">
-                  Don't have an account?{' '}
+                  Don&apos;t have an account?{' '}
                   <Link
                     to="/register"
                     className="font-semibold text-primary hover:text-primary-600 transition-colors"
