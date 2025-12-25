@@ -2,9 +2,9 @@
   "name": "rydercup-proxy",
   "version": "1.0.0",
   "description": "Reverse proxy to unify frontend and backend under same domain",
-  "main": "proxy-server.js",
+  "main": "server.js",
   "scripts": {
-    "start": "node proxy-server.js"
+    "start": "node server.js"
   },
   "dependencies": {
     "express": "^4.18.2",
