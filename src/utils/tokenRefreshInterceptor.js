@@ -164,8 +164,10 @@ export const fetchWithTokenRefresh = async (url, options = {}) => {
       console.error('🚪 [TokenRefresh] About to redirect to /login');
       console.error('🚪 [TokenRefresh] THIS WILL CAUSE PAGE REFRESH - CHECK COOKIES!');
 
-      // TEMPORARY: Add delay to see logs before refresh
-      await new Promise(resolve => setTimeout(resolve, 5000));
+      // TEMPORARY: Add delay to see logs before refresh (only in browser, not in tests)
+      if (import.meta.env.MODE !== 'test') {
+        await new Promise(resolve => setTimeout(resolve, 5000));
+      }
 
       // Redirect to login page
       console.log('🚪 [TokenRefresh] Executing redirect now...');
