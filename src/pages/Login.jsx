@@ -78,24 +78,30 @@ const Login = () => {
 
       const from = location.state?.from?.pathname || '/dashboard';
 
-      // Forzar recarga completa para garantizar que la cookie httpOnly esté disponible
+      // Esperar 500ms para que el toast sea visible antes de redirigir
+      // Luego forzar recarga completa para garantizar que la cookie httpOnly esté disponible
       // Esto resuelve race conditions en producción donde useAuth puede ejecutarse
       // antes de que la cookie esté completamente establecida
-      window.location.href = from;
+      setTimeout(() => {
+        window.location.href = from;
+      }, 500);
+
+      // No ejecutar setIsLoading(false) aquí porque vamos a redirigir
+      // Mantener el loading state para mejor UX durante la redirección
 
     } catch (error) {
       console.error('Login error:', error);
-      
+
       // Limpiar el password por seguridad (OWASP A07 - Authentication Failures)
       setFormData(prev => ({
         ...prev,
         password: ''
       }));
-      
+
       toast.error(error.message || 'Incorrect email or password', {
         duration: 5000,
       });
-    } finally {
+
       setIsLoading(false);
     }
   };
