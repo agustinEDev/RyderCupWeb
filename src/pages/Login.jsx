@@ -82,8 +82,18 @@ const Login = () => {
       // Luego forzar recarga completa para garantizar que la cookie httpOnly esté disponible
       // Esto resuelve race conditions en producción donde useAuth puede ejecutarse
       // antes de que la cookie esté completamente establecida
+      console.log('🔄 [Login] Scheduling redirect to:', from);
+
       setTimeout(() => {
-        window.location.href = from;
+        console.log('🔄 [Login] Executing redirect to:', from);
+        try {
+          // Usar window.location.replace() en lugar de .href para evitar problemas de navegación
+          window.location.replace(from);
+        } catch (err) {
+          console.error('❌ [Login] Redirect failed:', err);
+          // Fallback: intentar con assign
+          window.location.assign(from);
+        }
       }, 500);
 
       // No ejecutar setIsLoading(false) aquí porque vamos a redirigir
