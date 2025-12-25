@@ -10,14 +10,8 @@ const ProtectedRoute = ({ children }) => {
   const location = useLocation();
   const { user, loading } = useAuth();
 
-  console.log('🛡️ [ProtectedRoute] Checking authentication...');
-  console.log('🛡️ [ProtectedRoute] Location:', location.pathname);
-  console.log('🛡️ [ProtectedRoute] Loading:', loading);
-  console.log('🛡️ [ProtectedRoute] User:', user);
-
   // Show loading state while checking authentication
   if (loading) {
-    console.log('⏳ [ProtectedRoute] Still loading, showing spinner...');
     return (
       <div style={{
         display: 'flex',
@@ -34,11 +28,9 @@ const ProtectedRoute = ({ children }) => {
 
   // If no user, redirect to login
   if (!user) {
-    console.warn('⚠️ [ProtectedRoute] No user found! Redirecting to /login');
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  console.log('✅ [ProtectedRoute] User authenticated! Rendering protected content');
   return children;
 };
 

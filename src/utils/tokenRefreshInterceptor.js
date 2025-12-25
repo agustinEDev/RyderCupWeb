@@ -158,19 +158,7 @@ export const fetchWithTokenRefresh = async (url, options = {}) => {
       // Refresh failed - reject all queued requests
       processQueue(refreshError);
 
-      // DEBUG: Log detailed error before redirect
-      console.error('🚪 [TokenRefresh] Token refresh failed. Error:', refreshError);
-      console.error('🚪 [TokenRefresh] Original response status:', response.status);
-      console.error('🚪 [TokenRefresh] About to redirect to /login');
-      console.error('🚪 [TokenRefresh] THIS WILL CAUSE PAGE REFRESH - CHECK COOKIES!');
-
-      // TEMPORARY: Add delay to see logs before refresh (only in browser, not in tests)
-      if (import.meta.env.MODE !== 'test') {
-        await new Promise(resolve => setTimeout(resolve, 5000));
-      }
-
-      // Redirect to login page
-      console.log('🚪 [TokenRefresh] Executing redirect now...');
+      // Token refresh failed - redirect to login
       globalThis.location.href = '/login';
 
       // Return the original 401 response

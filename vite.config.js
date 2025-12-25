@@ -75,8 +75,8 @@ export default defineConfig(() => ({
     minify: 'terser',
     terserOptions: {
       compress: {
-        drop_console: false, // TEMPORARY: Keep console.* for debugging (was true)
-        drop_debugger: true // Remove debugger statements
+        drop_console: true,
+        drop_debugger: true
       }
     },
     // Increase chunk size warning limit

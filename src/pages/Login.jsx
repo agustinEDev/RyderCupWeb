@@ -78,53 +78,7 @@ const Login = () => {
       }
 
       const from = location.state?.from?.pathname || '/dashboard';
-
-      // DEBUG: Esperar para ver el toast y las trazas (evitar refresh inmediato)
-      console.log('🔄 [Login] Login successful! User:', authenticatedUser.firstName);
-      console.log('🔄 [Login] Scheduled redirect to:', from);
-
-      // Esperar para que el toast sea visible y podamos ver las trazas
-      await new Promise(resolve => setTimeout(resolve, 2000));
-
-      // CRITICAL: Verificar que las cookies httpOnly estén establecidas ANTES de redirigir
-      console.log('🔍 [Login] Verifying httpOnly cookies are ready...');
-
-      try {
-        const verifyResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'}/api/v1/auth/current-user`, {
-          credentials: 'include',
-          headers: { 'Content-Type': 'application/json' },
-        });
-
-        console.log('📡 [Login] Cookie verification response status:', verifyResponse.status);
-
-        if (verifyResponse.ok) {
-          const userData = await verifyResponse.json();
-          console.log('✅ [Login] Cookies verified! User data:', userData);
-          console.log('🚀 [Login] Executing client-side navigation to:', from);
-
-          // CAMBIO CRÍTICO: Usar navigate() en lugar de window.location.replace()
-          // Esto evita el refresh de la página y mantiene las trazas visibles
-          navigate(from, { replace: true });
-        } else {
-          console.error('❌ [Login] Cookie verification failed with status:', verifyResponse.status);
-          const errorText = await verifyResponse.text();
-          console.error('❌ [Login] Error response:', errorText);
-
-          // Si falla, intentar redirigir de todos modos (para ver qué pasa en Dashboard)
-          console.log('⚠️ [Login] Redirecting anyway to see what happens...');
-          navigate(from, { replace: true });
-        }
-      } catch (err) {
-        console.error('❌ [Login] Cookie verification error:', err);
-        console.error('❌ [Login] Error stack:', err.stack);
-
-        // Intentar redirigir de todos modos
-        console.log('⚠️ [Login] Redirecting anyway despite error...');
-        navigate(from, { replace: true });
-      }
-
-      // Mantener loading state durante la navegación
-      // setIsLoading(false) se ejecutará cuando el componente se desmonte
+      navigate(from, { replace: true });
 
     } catch (error) {
       console.error('Login error:', error);
