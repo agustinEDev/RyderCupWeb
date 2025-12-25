@@ -17,13 +17,14 @@ const HeaderAuth = ({ user }) => {
   };
 
   const handleLogout = async () => {
-    console.log('🚀 LOGOUT FUNCTION CALLED');
+    if (import.meta.env.DEV) {
+      console.log('🚀 [HeaderAuth] Logout initiated');
+    }
 
     // 📡 Broadcast logout event to all other tabs FIRST
     broadcastLogout();
 
     try {
-      console.log('🚀 About to call backend logout...');
       // Call backend logout endpoint
       const response = await fetch(`${API_URL}/api/v1/auth/logout`, {
         method: 'POST',
@@ -34,20 +35,21 @@ const HeaderAuth = ({ user }) => {
         body: JSON.stringify({}) // ✅ FIX: Enviar body vacío para LogoutRequestDTO
       });
 
-      console.log('🔍 Logout response status:', response.status);
-      console.log('🔍 Logout response ok:', response.ok);
-
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        console.error('❌ Logout failed with status:', response.status);
-        console.error('❌ Error details:', errorData);
-
+        if (import.meta.env.DEV) {
+          console.error('❌ [HeaderAuth] Logout failed:', response.status, errorData);
+        }
         // Continue with logout anyway to clear frontend state
       } else {
-        console.log('✅ Backend logout successful');
+        if (import.meta.env.DEV) {
+          console.log('✅ [HeaderAuth] Backend logout successful');
+        }
       }
     } catch (error) {
-      console.error('❌ Backend logout error:', error);
+      if (import.meta.env.DEV) {
+        console.error('❌ [HeaderAuth] Logout error:', error);
+      }
     }
 
     // Force full page reload to clear all state

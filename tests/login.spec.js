@@ -1,9 +1,23 @@
 import { test, expect } from '@playwright/test';
 
-test.describe('Login Flow', () => {
-  
+// Load test credentials from environment variables
+const getTestCredentials = () => {
+  const email = process.env.TEST_EMAIL;
+  const password = process.env.TEST_PASSWORD;
 
+  if (!email || !password) {
+    throw new Error(
+      'Missing test credentials. Please set TEST_EMAIL and TEST_PASSWORD environment variables.'
+    );
+  }
+
+  return { email, password };
+};
+
+test.describe('Login Flow', () => {
   test('should allow a user to log in successfully', async ({ page }) => {
+    const { email, password } = getTestCredentials();
+
     // 1. Arrange: Navigate to the login page
     await page.goto('/login');
 
@@ -11,8 +25,8 @@ test.describe('Login Flow', () => {
     await expect(page.getByRole('heading', { name: 'Sign In' })).toBeVisible();
 
     // 2. Act: Fill the form and submit
-    await page.getByPlaceholder('your.email@example.com').fill('panetetrinx@gmail.com');
-    await page.getByPlaceholder('Enter your password').fill('Prueba1234.');
+    await page.getByPlaceholder('your.email@example.com').fill(email);
+    await page.getByPlaceholder('Enter your password').fill(password);
     await page.getByRole('button', { name: 'Sign In' }).click();
 
     // 3. Assert: Verify the user is redirected to the dashboard

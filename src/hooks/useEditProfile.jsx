@@ -123,21 +123,12 @@ export const useEditProfile = () => {
 
     setIsUpdatingRFEG(true);
     try {
-      const updatedUserEntity = await updateRfegHandicapUseCase.execute({
+      await updateRfegHandicapUseCase.execute({
         userId: user.id,
       });
 
       await refetchUser();
-
-      const updatedUserPlain = updatedUserEntity.toPersistence();
-
-      setFormData((prev) => ({
-        ...prev,
-        handicap:
-          updatedUserPlain.handicap === null
-            ? ''
-            : updatedUserPlain.handicap.toString(),
-      }));
+      // refetchUser updates authUser, which triggers useEffect to update formData
 
       toast.success('Handicap updated from RFEG successfully!');
     } catch (error) {
@@ -198,21 +189,13 @@ export const useEditProfile = () => {
           trimmedCountryCode === '' ? null : trimmedCountryCode;
       }
 
-      const updatedUserEntity = await updateUserProfileUseCase.execute(
+      await updateUserProfileUseCase.execute(
         user.id,
         updateData,
       );
 
       await refetchUser();
-
-      const updatedUserPlain = updatedUserEntity.toPersistence();
-
-      setFormData((prev) => ({
-        ...prev,
-        firstName: updatedUserPlain.first_name,
-        lastName: updatedUserPlain.last_name,
-        countryCode: updatedUserPlain.country_code || '',
-      }));
+      // refetchUser updates authUser, which triggers useEffect to update formData
 
       toast.success('Profile updated successfully!');
     } catch (error) {
@@ -277,18 +260,17 @@ export const useEditProfile = () => {
         securityData.confirm_password = formData.confirmPassword;
       }
 
-      const updatedUserEntity = await updateUserSecurityUseCase.execute({
+      await updateUserSecurityUseCase.execute({
         userId: user.id,
         securityData,
       });
 
       await refetchUser();
+      // refetchUser updates authUser, which triggers useEffect to update formData
 
-      const updatedUserPlain = updatedUserEntity.toPersistence();
-
+      // Clear password fields manually (not part of user object)
       setFormData((prev) => ({
         ...prev,
-        email: updatedUserPlain.email,
         currentPassword: '',
         newPassword: '',
         confirmPassword: '',
@@ -306,6 +288,7 @@ export const useEditProfile = () => {
   };
 
   return {
+    // Public state
     user,
     formData,
     isLoading,
@@ -315,16 +298,7 @@ export const useEditProfile = () => {
     countries,
     isLoadingCountries,
 
-    setUser,
-    setFormData,
-    setIsLoading,
-    setIsSaving,
-    setIsUpdatingRFEG,
-    setIsRefreshing,
-    setCountries,
-    setIsLoadingCountries,
-
-    navigate,
+    // Public handlers
     handleInputChange,
     handleRefreshUserData,
     handleUpdateHandicapManually,

@@ -4,7 +4,7 @@
 
 [![CI Pipeline](https://github.com/agustinEDev/RyderCupWeb/actions/workflows/ci.yml/badge.svg)](https://github.com/agustinEDev/RyderCupWeb/actions/workflows/ci.yml)
 [![Security Audit](https://github.com/agustinEDev/RyderCupWeb/actions/workflows/security.yml/badge.svg)](https://github.com/agustinEDev/RyderCupWeb/actions/workflows/security.yml)
-[![E2E Tests](https://github.com/agustinEDev/RyderCupWeb/actions/workflows/e2e.yml/badge.svg)](https://github.com/agustinEDev/RyderCupWeb/actions/workflows/e2e.yml)
+[![Security Tests](https://github.com/agustinEDev/RyderCupWeb/actions/workflows/security-tests.yml/badge.svg)](https://github.com/agustinEDev/RyderCupWeb/actions/workflows/security-tests.yml)
 
 [![React](https://img.shields.io/badge/React-18+-61DAFB?logo=react)](.)
 [![Vite](https://img.shields.io/badge/Vite-7+-646CFF?logo=vite)](.)
@@ -81,30 +81,41 @@ Este proyecto implementa un pipeline profesional de CI/CD que garantiza la calid
 
 #### Ejecutar Tests de Integración
 
+⚠️ **Configuración de Credenciales de Prueba**
+
+Los tests de integración requieren credenciales de prueba configuradas como variables de entorno:
+
 ```bash
-# Tests de integración (usa backend mock)
+# 1. Copiar archivo de ejemplo
+cp .env.example .env
+
+# 2. Editar .env y configurar credenciales dedicadas para testing:
+TEST_EMAIL=tu-usuario-prueba@example.com
+TEST_PASSWORD=TuPasswordDePrueba123
+
+# 3. Ejecutar tests
+npm run test:integration
+```
+
+**🔒 Seguridad:** Las credenciales NUNCA deben estar hardcodeadas en el código. Usa credenciales dedicadas para testing (NO personales ni de producción).
+
+**Comandos de Testing:**
+
+```bash
+# Tests de integración (requiere backend real en localhost:8000)
 npm run test:integration
 
-# Tests unitarios
+# Tests unitarios con coverage
 npm test
 
 # Tests E2E completos
 npm run test:e2e
+
+# Tests de seguridad (OWASP validations)
+npm run test:security
 ```
 
-**Nota**: Los tests de integración usan un servidor mock que simula las respuestas del backend real. Para desarrollo local con Docker Compose:
-
-```bash
-docker-compose -f docker-compose.test.yml up -d
-npm run test:integration
-```
-
-**Endpoints simulados:**
-- `POST /api/v1/auth/login` - Autenticación con credenciales de prueba
-- `POST /api/v1/auth/refresh-token` - Refresh de tokens
-- `GET /api/v1/countries` - Lista de países
-- `GET /api/v1/users/profile` - Perfil de usuario
-- `GET /api/v1/health` - Health check
+**Nota**: Los tests de integración se ejecutan contra el backend real en `http://localhost:8000`. Para más detalles ver [`docs/INTEGRATION_TESTS.md`](docs/INTEGRATION_TESTS.md)
 
 ### Branch Protection
 La rama `main` está protegida con:
@@ -112,6 +123,65 @@ La rama `main` está protegida con:
 - ✅ Todos los checks de CI deben pasar
 - ✅ No permite force push ni eliminación
 - 📋 Ver [docs/BRANCH_PROTECTION.md](docs/BRANCH_PROTECTION.md) para detalles
+
+## 🔐 Mejores Prácticas de Seguridad
+
+### Variables de Entorno y Credenciales
+
+**🚫 NUNCA hacer:**
+- Hardcodear credenciales en el código fuente
+- Commit de archivos `.env` con datos sensibles
+- Usar credenciales personales/producción para testing
+- Compartir credenciales en canales públicos (issues, PRs, chat)
+
+**✅ SIEMPRE hacer:**
+- Usar variables de entorno para credenciales (`process.env.*`)
+- Mantener `.env` en `.gitignore`
+- Usar credenciales dedicadas para cada entorno (dev/test/prod)
+- Rotar credenciales regularmente
+- Validar presencia de variables de entorno con fail-fast
+
+**Ejemplo de implementación correcta:**
+
+```javascript
+// ✅ CORRECTO: Validación con fail-fast
+const getTestCredentials = () => {
+  const email = process.env.TEST_EMAIL;
+  const password = process.env.TEST_PASSWORD;
+
+  if (!email || !password) {
+    throw new Error('Missing TEST_EMAIL or TEST_PASSWORD environment variables');
+  }
+
+  return { email, password };
+};
+
+// ❌ INCORRECTO: Credenciales hardcodeadas
+const credentials = {
+  email: 'user@example.com',  // ¡NO HACER ESTO!
+  password: 'MyPassword123'   // ¡NO HACER ESTO!
+};
+```
+
+### Gestión de Secrets en CI/CD
+
+Para configurar credenciales en GitHub Actions:
+
+1. **Settings → Secrets and variables → Actions**
+2. **New repository secret:**
+   - `TEST_EMAIL` = credencial de prueba
+   - `TEST_PASSWORD` = credencial de prueba
+3. Los secrets se inyectan automáticamente como variables de entorno en workflows
+
+### Rotación de Credenciales
+
+Si las credenciales fueron comprometidas:
+
+1. **Inmediato:** Cambiar contraseña en el backend
+2. Rotar credenciales en todos los entornos (dev/test/prod)
+3. Actualizar secrets en CI/CD
+4. Revisar logs de acceso sospechoso
+5. Considerar limpiar historial de Git con `git-filter-repo` si fueron commiteadas
 
 ## Notas clave de integración
 

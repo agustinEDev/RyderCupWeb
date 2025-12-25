@@ -1,5 +1,5 @@
 /* eslint-disable react-refresh/only-export-components */
-import { useEffect, lazy, Suspense, useState } from 'react';
+import { useEffect, useCallback, lazy, Suspense, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
 import * as Sentry from '@sentry/react';
 import PropTypes from 'prop-types';
@@ -52,28 +52,11 @@ function AppContent() {
   }, []);
 
   /**
-   * Listener de eventos de broadcast para sincronización multi-tab
-   * Escucha eventos de logout desde otras pestañas y ejecuta logout local
-   */
-  useEffect(() => {
-    // Configurar listener de eventos de broadcast
-    const cleanup = onAuthEvent((event) => {
-      if (event.type === EVENTS.LOGOUT) {
-        // Ejecutar logout local (mismo que inactividad)
-        handleInactivityLogout();
-      }
-    });
-
-    // Cleanup: remover listener al desmontar
-    return cleanup;
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-  // Note: handleInactivityLogout es estable, no necesita estar en dependencies
-
-  /**
    * Función de logout que se ejecuta por inactividad
    * Llama al backend para revocar tokens y redirige a login
+   * Wrapped in useCallback to prevent stale closures
    */
-  const handleInactivityLogout = async () => {
+  const handleInactivityLogout = useCallback(async () => {
     const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
     try {
@@ -105,7 +88,24 @@ function AppContent() {
       // Redirigir a login
       navigate('/login', { replace: true });
     }
-  };
+  }, [navigate]); // Dependencies: navigate
+
+  /**
+   * Listener de eventos de broadcast para sincronización multi-tab
+   * Escucha eventos de logout desde otras pestañas y ejecuta logout local
+   */
+  useEffect(() => {
+    // Configurar listener de eventos de broadcast
+    const cleanup = onAuthEvent((event) => {
+      if (event.type === EVENTS.LOGOUT) {
+        // Ejecutar logout local (mismo que inactividad)
+        handleInactivityLogout();
+      }
+    });
+
+    // Cleanup: remover listener al desmontar
+    return cleanup;
+  }, [handleInactivityLogout]); // Dependencies: handleInactivityLogout (stable via useCallback)
 
   // Hook de logout por inactividad (solo activo si el usuario está autenticado)
   useInactivityLogout({

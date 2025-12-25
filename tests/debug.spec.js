@@ -26,10 +26,10 @@ test.describe('Debug Login', () => {
       }
     });
     
-    // Also listen to requests to see what we're sending
+    // Also listen to requests (avoid logging sensitive data)
     page.on('request', async request => {
       if (request.url().includes('/auth/login')) {
-        console.log('📤 Login request body:', request.postData());
+        console.log('📤 Login request sent to:', request.url());
       }
     });
     
@@ -64,13 +64,23 @@ test.describe('Debug Login', () => {
       console.log('🔒 Password placeholder:', await passwordInput.getAttribute('placeholder'));
     }
     
+    // Validate environment variables for test credentials
+    const testEmail = process.env.TEST_EMAIL;
+    const testPassword = process.env.TEST_PASSWORD;
+
+    if (!testEmail || !testPassword) {
+      throw new Error(
+        'Missing test credentials. Please set TEST_EMAIL and TEST_PASSWORD environment variables.'
+      );
+    }
+
     // Try to fill the form
     console.log('🔍 Attempting to fill email...');
-    await emailInput.fill('panetetrinx@gmail.com');
+    await emailInput.fill(testEmail);
     console.log('✅ Email filled');
-    
+
     console.log('🔍 Attempting to fill password...');
-    await passwordInput.fill('Pruebas1234.');
+    await passwordInput.fill(testPassword);
     console.log('✅ Password filled');
     
     // Take screenshot after filling

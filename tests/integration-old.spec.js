@@ -3,13 +3,27 @@ import { test, expect } from '@playwright/test';
 /**
  * Tests de Integración con Backend v1.8.0
  * Tarea #11 del ROADMAP
- * 
+ *
  * Objetivo: Verificar integración completa con backend v1.8.0
  * - httpOnly cookies
  * - Refresh token flow automático
  * - Validaciones del backend
  * - Flujo E2E completo
  */
+
+// Load test credentials from environment variables
+const getTestCredentials = () => {
+  const email = process.env.TEST_EMAIL;
+  const password = process.env.TEST_PASSWORD;
+
+  if (!email || !password) {
+    throw new Error(
+      'Missing test credentials. Please set TEST_EMAIL and TEST_PASSWORD environment variables.'
+    );
+  }
+
+  return { email, password };
+};
 
 test.describe('httpOnly Cookies Integration', () => {
   test('should store access and refresh tokens in httpOnly cookies after login', async ({ page, context }) => {
@@ -18,8 +32,9 @@ test.describe('httpOnly Cookies Integration', () => {
     await expect(page.getByRole('heading', { name: 'Sign In' })).toBeVisible();
 
     // Login with valid credentials
-    await page.getByPlaceholder('your.email@example.com').fill('panetetrinx@gmail.com');
-    await page.getByPlaceholder('Enter your password').fill('Pruebas1234.');
+    const { email, password } = getTestCredentials();
+    await page.getByPlaceholder('your.email@example.com').fill(email);
+    await page.getByPlaceholder('Enter your password').fill(password);
     await page.getByRole('button', { name: 'Sign In' }).click();
 
     // Wait for redirect to dashboard
@@ -44,8 +59,9 @@ test.describe('httpOnly Cookies Integration', () => {
   test('should send cookies automatically with authenticated requests', async ({ page }) => {
     // Login first
     await page.goto('/login');
-    await page.getByPlaceholder('your.email@example.com').fill('panetetrinx@gmail.com');
-    await page.getByPlaceholder('Enter your password').fill('Pruebas1234.');
+    const { email, password } = getTestCredentials();
+    await page.getByPlaceholder('your.email@example.com').fill(email);
+    await page.getByPlaceholder('Enter your password').fill(password);
     await page.getByRole('button', { name: 'Sign In' }).click();
     await expect(page).toHaveURL('/dashboard', { timeout: 10000 });
 
@@ -56,14 +72,17 @@ test.describe('httpOnly Cookies Integration', () => {
     await expect(page.getByRole('heading', { name: /profile/i })).toBeVisible({ timeout: 5000 });
     
     // Verify user data is displayed (proves cookies were sent)
-    await expect(page.locator('text=/panetetrinx@gmail.com/i')).toBeVisible();
+    const { email } = getTestCredentials();
+    const emailRegex = new RegExp(email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+    await expect(page.locator(`text=${emailRegex}`)).toBeVisible();
   });
 
   test('should clear cookies after logout', async ({ page, context }) => {
     // Login
     await page.goto('/login');
-    await page.getByPlaceholder('your.email@example.com').fill('panetetrinx@gmail.com');
-    await page.getByPlaceholder('Enter your password').fill('Pruebas1234.');
+    const { email, password } = getTestCredentials();
+    await page.getByPlaceholder('your.email@example.com').fill(email);
+    await page.getByPlaceholder('Enter your password').fill(password);
     await page.getByRole('button', { name: 'Sign In' }).click();
     await expect(page).toHaveURL('/dashboard', { timeout: 10000 });
 
@@ -102,8 +121,9 @@ test.describe('Refresh Token Flow', () => {
     
     // Login to get initial tokens
     await page.goto('/login');
-    await page.getByPlaceholder('your.email@example.com').fill('panetetrinx@gmail.com');
-    await page.getByPlaceholder('Enter your password').fill('Pruebas1234.');
+    const { email, password } = getTestCredentials();
+    await page.getByPlaceholder('your.email@example.com').fill(email);
+    await page.getByPlaceholder('Enter your password').fill(password);
     await page.getByRole('button', { name: 'Sign In' }).click();
     await expect(page).toHaveURL('/dashboard', { timeout: 10000 });
 
@@ -132,8 +152,9 @@ test.describe('Refresh Token Flow', () => {
   test('should redirect to login when refresh token is invalid', async ({ page, context }) => {
     // Login first
     await page.goto('/login');
-    await page.getByPlaceholder('your.email@example.com').fill('panetetrinx@gmail.com');
-    await page.getByPlaceholder('Enter your password').fill('Pruebas1234.');
+    const { email, password } = getTestCredentials();
+    await page.getByPlaceholder('your.email@example.com').fill(email);
+    await page.getByPlaceholder('Enter your password').fill(password);
     await page.getByRole('button', { name: 'Sign In' }).click();
     await expect(page).toHaveURL('/dashboard', { timeout: 10000 });
 
@@ -186,7 +207,8 @@ test.describe('Backend Validation Integration', () => {
   test('should reject login with incorrect password', async ({ page }) => {
     await page.goto('/login');
     
-    await page.getByPlaceholder('your.email@example.com').fill('panetetrinx@gmail.com');
+    const { email } = getTestCredentials();
+    await page.getByPlaceholder('your.email@example.com').fill(email);
     await page.getByPlaceholder('Enter your password').fill('WrongPassword123.');
     await page.getByRole('button', { name: 'Sign In' }).click();
 
@@ -270,8 +292,9 @@ test.describe('Complete E2E Flow', () => {
     // Step 1: Login
     console.log('🔐 Step 1: Login');
     await page.goto('/login');
-    await page.getByPlaceholder('your.email@example.com').fill('panetetrinx@gmail.com');
-    await page.getByPlaceholder('Enter your password').fill('Pruebas1234.');
+    const { email, password } = getTestCredentials();
+    await page.getByPlaceholder('your.email@example.com').fill(email);
+    await page.getByPlaceholder('Enter your password').fill(password);
     await page.getByRole('button', { name: 'Sign In' }).click();
     await expect(page).toHaveURL('/dashboard', { timeout: 10000 });
     console.log('✅ Login successful');
@@ -285,7 +308,9 @@ test.describe('Complete E2E Flow', () => {
     console.log('👤 Step 3: Profile');
     await page.goto('/profile');
     await expect(page.getByRole('heading', { name: /profile/i })).toBeVisible();
-    await expect(page.locator('text=/panetetrinx@gmail.com/i')).toBeVisible();
+    const { email } = getTestCredentials();
+    const emailRegex = new RegExp(email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+    await expect(page.locator(`text=${emailRegex}`)).toBeVisible();
     console.log('✅ Profile page loaded');
 
     // Step 4: Navigate to Edit Profile
@@ -328,8 +353,9 @@ test.describe('Complete E2E Flow', () => {
   test('should handle authentication throughout competitions flow', async ({ page }) => {
     // Login
     await page.goto('/login');
-    await page.getByPlaceholder('your.email@example.com').fill('panetetrinx@gmail.com');
-    await page.getByPlaceholder('Enter your password').fill('Pruebas1234.');
+    const { email, password } = getTestCredentials();
+    await page.getByPlaceholder('your.email@example.com').fill(email);
+    await page.getByPlaceholder('Enter your password').fill(password);
     await page.getByRole('button', { name: 'Sign In' }).click();
     await expect(page).toHaveURL('/dashboard', { timeout: 10000 });
 
@@ -354,8 +380,9 @@ test.describe('Session Timeout & Inactivity', () => {
   test('should maintain session across page reloads', async ({ page, context }) => {
     // Login
     await page.goto('/login');
-    await page.getByPlaceholder('your.email@example.com').fill('panetetrinx@gmail.com');
-    await page.getByPlaceholder('Enter your password').fill('Pruebas1234.');
+    const { email, password } = getTestCredentials();
+    await page.getByPlaceholder('your.email@example.com').fill(email);
+    await page.getByPlaceholder('Enter your password').fill(password);
     await page.getByRole('button', { name: 'Sign In' }).click();
     await expect(page).toHaveURL('/dashboard', { timeout: 10000 });
 
@@ -380,8 +407,9 @@ test.describe('Session Timeout & Inactivity', () => {
 
     // Login
     await page.goto('/login');
-    await page.getByPlaceholder('your.email@example.com').fill('panetetrinx@gmail.com');
-    await page.getByPlaceholder('Enter your password').fill('Pruebas1234.');
+    const { email, password } = getTestCredentials();
+    await page.getByPlaceholder('your.email@example.com').fill(email);
+    await page.getByPlaceholder('Enter your password').fill(password);
     await page.getByRole('button', { name: 'Sign In' }).click();
     await expect(page).toHaveURL('/dashboard', { timeout: 10000 });
 

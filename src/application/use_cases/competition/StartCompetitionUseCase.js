@@ -1,4 +1,4 @@
-const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+import apiRequest from '../../../services/api.js';
 
 /**
  * Use Case: Start Competition
@@ -17,33 +17,9 @@ class StartCompetitionUseCase {
       throw new Error('Competition ID is required');
     }
 
-    const response = await fetch(`${API_URL}/api/v1/competitions/${competitionId}/start`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      credentials: 'include' // httpOnly cookie autenticación
+    const data = await apiRequest(`/api/v1/competitions/${competitionId}/start`, {
+      method: 'POST'
     });
-
-    if (!response.ok) {
-      const clonedResponse = response.clone();
-      let errorDetail;
-
-      try {
-        const errorData = await response.json();
-        errorDetail = errorData.detail || 'No detail provided.';
-      } catch (jsonError) {
-        try {
-          errorDetail = await clonedResponse.text();
-        } catch (textError) {
-          errorDetail = 'Could not read error response body.';
-        }
-      }
-
-      throw new Error(`API Error (${response.status} ${response.statusText}): ${errorDetail || 'Empty response body'}`);
-    }
-
-    const data = await response.json();
 
     // Return simple DTO for UI
     return {

@@ -3,10 +3,24 @@ import { test, expect } from '@playwright/test';
 /**
  * Integration Tests - Backend v1.8.0
  * Simplified version focusing on critical backend validation
- * 
+ *
  * Note: Backend has rate limiting enabled. Tests run sequentially (workers: 1)
  * to avoid HTTP 429 errors. A small delay between tests helps prevent rate limit hits.
  */
+
+// Load test credentials from environment variables
+const getTestCredentials = () => {
+  const email = process.env.TEST_EMAIL;
+  const password = process.env.TEST_PASSWORD;
+
+  if (!email || !password) {
+    throw new Error(
+      'Missing test credentials. Please set TEST_EMAIL and TEST_PASSWORD environment variables.'
+    );
+  }
+
+  return { email, password };
+};
 
 // Add a small delay between tests to respect backend rate limits
 test.afterEach(async () => {
@@ -15,10 +29,11 @@ test.afterEach(async () => {
 
 test.describe('httpOnly Cookies - Basic Login', () => {
   test('should login successfully and receive cookies', async ({ page, context }) => {
+    const { email, password } = getTestCredentials();
     await page.goto('/login');
-    
-    await page.getByPlaceholder('your.email@example.com').fill('panetetrinx@gmail.com');
-    await page.getByPlaceholder('Enter your password').fill('Pruebas1234.');
+
+    await page.getByPlaceholder('your.email@example.com').fill(email);
+    await page.getByPlaceholder('Enter your password').fill(password);
     await page.getByRole('button', { name: 'Sign In' }).click();
 
     // Wait for redirect to dashboard
@@ -32,27 +47,31 @@ test.describe('httpOnly Cookies - Basic Login', () => {
   });
 
   test('should maintain authentication across navigation', async ({ page }) => {
+    const { email, password } = getTestCredentials();
+
     // Login
     await page.goto('/login');
-    await page.getByPlaceholder('your.email@example.com').fill('panetetrinx@gmail.com');
-    await page.getByPlaceholder('Enter your password').fill('Pruebas1234.');
+    await page.getByPlaceholder('your.email@example.com').fill(email);
+    await page.getByPlaceholder('Enter your password').fill(password);
     await page.getByRole('button', { name: 'Sign In' }).click();
     await expect(page).toHaveURL('/dashboard', { timeout: 10000 });
 
     // Navigate to profile
     await page.goto('/profile');
     await expect(page).toHaveURL('/profile');
-    
+
     // Should see user email (proves authentication works)
-    await expect(page.locator('text=/panetetrinx@gmail.com/i')).toBeVisible({ timeout: 5000 });
+    const emailRegex = new RegExp(email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+    await expect(page.locator(`text=${emailRegex}`)).toBeVisible({ timeout: 5000 });
   });
 });
 
 test.describe('Backend Validation - Login', () => {
   test('should reject login with incorrect password', async ({ page }) => {
+    const { email } = getTestCredentials();
     await page.goto('/login');
-    
-    await page.getByPlaceholder('your.email@example.com').fill('panetetrinx@gmail.com');
+
+    await page.getByPlaceholder('your.email@example.com').fill(email);
     await page.getByPlaceholder('Enter your password').fill('WrongPassword123.');
     await page.getByRole('button', { name: 'Sign In' }).click();
 
@@ -150,11 +169,13 @@ test.describe('Backend Validation - Registration', () => {
 
 test.describe('Complete E2E Flow', () => {
   test('should complete login → dashboard → profile flow', async ({ page }) => {
+    const { email, password } = getTestCredentials();
+
     // Step 1: Login
     console.log('🔐 Step 1: Login');
     await page.goto('/login');
-    await page.getByPlaceholder('your.email@example.com').fill('panetetrinx@gmail.com');
-    await page.getByPlaceholder('Enter your password').fill('Pruebas1234.');
+    await page.getByPlaceholder('your.email@example.com').fill(email);
+    await page.getByPlaceholder('Enter your password').fill(password);
     await page.getByRole('button', { name: 'Sign In' }).click();
     await expect(page).toHaveURL('/dashboard', { timeout: 10000 });
     console.log('✅ Login successful');
@@ -168,7 +189,8 @@ test.describe('Complete E2E Flow', () => {
     console.log('👤 Step 3: Profile');
     await page.goto('/profile');
     await expect(page).toHaveURL('/profile');
-    await expect(page.locator('text=/panetetrinx@gmail.com/i')).toBeVisible({ timeout: 5000 });
+    const emailRegex = new RegExp(email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+    await expect(page.locator(`text=${emailRegex}`)).toBeVisible({ timeout: 5000 });
     console.log('✅ Profile loaded with user data');
 
     // Step 4: Navigate to Competitions
@@ -181,10 +203,12 @@ test.describe('Complete E2E Flow', () => {
 
 test.describe('Session Persistence', () => {
   test('should maintain session across page reload', async ({ page, context }) => {
+    const { email, password } = getTestCredentials();
+
     // Login
     await page.goto('/login');
-    await page.getByPlaceholder('your.email@example.com').fill('panetetrinx@gmail.com');
-    await page.getByPlaceholder('Enter your password').fill('Pruebas1234.');
+    await page.getByPlaceholder('your.email@example.com').fill(email);
+    await page.getByPlaceholder('Enter your password').fill(password);
     await page.getByRole('button', { name: 'Sign In' }).click();
     await expect(page).toHaveURL('/dashboard', { timeout: 10000 });
 

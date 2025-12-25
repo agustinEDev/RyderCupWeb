@@ -25,7 +25,18 @@ Estos tests están disponibles solo para **ejecución local manual** cuando nece
 **Para ejecutar estos tests necesitas:**
 1. ✅ Node.js 20+
 2. ✅ Backend real corriendo en `http://localhost:8000`
-3. ✅ Usuario de prueba existente: `panetetrinx@gmail.com` / `Pruebas1234.`
+3. ✅ Variables de entorno configuradas: `TEST_EMAIL` y `TEST_PASSWORD`
+4. ✅ Usuario de prueba válido en el backend
+
+**Configuración de credenciales:**
+```bash
+# Opción 1: Archivo .env (recomendado)
+cp .env.example .env
+# Editar .env y configurar TEST_EMAIL y TEST_PASSWORD
+
+# Opción 2: Variables de entorno inline
+TEST_EMAIL=your-test@example.com TEST_PASSWORD=YourTestPassword123 npm run test:integration
+```
 
 ## 📋 Suite de Tests Implementada
 
@@ -164,16 +175,33 @@ curl http://localhost:8000/api/v1/health
 
 **Importante:** Si el backend no está corriendo, los tests fallarán.
 
-**3. Usuario de pruebas debe existir:**
+**3. Configurar credenciales de prueba:**
 
-Las credenciales por defecto son:
-- Email: `panetetrinx@gmail.com`
-- Password: `Pruebas1234.`
+⚠️ **IMPORTANTE:** Las credenciales se leen desde variables de entorno para mayor seguridad.
 
-Si no existe este usuario:
-1. Regístralo manualmente en el frontend
+```bash
+# Opción 1: Crear archivo .env (recomendado)
+cp .env.example .env
+
+# Editar .env y configurar:
+TEST_EMAIL=tu-usuario-prueba@example.com
+TEST_PASSWORD=TuPasswordDePrueba123
+
+# Opción 2: Exportar variables inline
+export TEST_EMAIL=tu-usuario-prueba@example.com
+export TEST_PASSWORD=TuPasswordDePrueba123
+npm run test:integration
+```
+
+**El usuario de prueba debe:**
+- Existir en tu backend de desarrollo/testing
+- Tener email verificado
+- Usar credenciales dedicadas (NO personales/producción)
+
+**Si no tienes usuario de prueba:**
+1. Regístralo manualmente en el frontend local
 2. Verifica el email
-3. O actualiza las credenciales en `tests/integration.spec.js`
+3. Configura esas credenciales en `.env`
 
 ### Todos los tests E2E
 
@@ -260,12 +288,21 @@ npx playwright test -g "Complete E2E Flow"
 
 ### User Credentials para Tests
 
+🔒 **Seguridad:** Las credenciales se cargan desde variables de entorno.
+
 ```javascript
-email: 'panetetrinx@gmail.com'
-password: 'Prueba1234.'
+// En tests/integration.spec.js
+const { email, password } = getTestCredentials();
+
+// getTestCredentials() lee de:
+// - process.env.TEST_EMAIL
+// - process.env.TEST_PASSWORD
 ```
 
-**⚠️ Importante:** Este usuario debe existir en el backend de pruebas y estar verificado.
+**⚠️ Importante:**
+- El usuario debe existir en el backend de pruebas y estar verificado
+- Las credenciales NUNCA deben estar hardcodeadas en el código
+- Usa credenciales dedicadas para testing (NO personales/producción)
 
 ### Timeout Considerations
 
@@ -338,14 +375,31 @@ npm run dev
 npx playwright test --config playwright.config.js
 ```
 
-### Error: User not found / Invalid credentials
+### Error: Missing test credentials
 
-**Problema:** Usuario de prueba no existe en backend.
+**Problema:** Variables de entorno `TEST_EMAIL` o `TEST_PASSWORD` no están configuradas.
+
+**Error mostrado:**
+```
+Missing test credentials. Please set TEST_EMAIL and TEST_PASSWORD environment variables.
+```
 
 **Solución:**
-1. Registrar usuario manualmente en el frontend
-2. Verificar email
-3. O actualizar credenciales en `integration.spec.js`
+```bash
+# Crear archivo .env con credenciales
+cp .env.example .env
+# Editar .env y configurar TEST_EMAIL y TEST_PASSWORD
+```
+
+### Error: User not found / Invalid credentials
+
+**Problema:** Usuario de prueba no existe en backend o credenciales incorrectas.
+
+**Solución:**
+1. Verificar que el usuario existe en el backend
+2. Verificar que el email está verificado
+3. Registrar nuevo usuario si es necesario
+4. Actualizar credenciales en `.env`
 
 ### Tests fallan en CI pero pasan local
 
@@ -373,12 +427,13 @@ npx playwright test --config playwright.config.js
 
 **Estado de ejecución:**
 - ⚠️ **Requiere backend activo** en `http://localhost:8000`
-- ⚠️ **Requiere usuario de prueba** `panetetrinx@gmail.com` verificado
+- ⚠️ **Requiere variables de entorno** `TEST_EMAIL` y `TEST_PASSWORD` configuradas
+- ⚠️ **Requiere usuario de prueba** verificado en el backend
 - ✅ **Tests listos para CI/CD** una vez backend esté en producción
 - ✅ **Integración Frontend-Backend v1.8.0: 100% implementada** 
 
 **Próximos pasos sugeridos:**
-1. Configurar variables de entorno para credenciales de prueba
+1. ✅ ~~Configurar variables de entorno para credenciales de prueba~~ (Implementado)
 2. Crear usuario de prueba automáticamente en setup
 3. Considerar usar [MSW](https://mswjs.io/) para mock del backend en tests
 4. Ejecutar tests contra backend en CI/CD
