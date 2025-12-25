@@ -4,8 +4,9 @@
 
 import { fetchWithTokenRefresh } from '../utils/tokenRefreshInterceptor.js';
 
-// Prioridad: 1. Runtime config (window.APP_CONFIG) 2. Build-time env 3. Fallback localhost
-const API_URL = window.APP_CONFIG?.API_BASE_URL || import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+// Prioridad: 1. Runtime config (window.APP_CONFIG) 2. Build-time env 3. Empty string (relative URLs for proxy)
+// Si no hay API_URL configurado, usar '' para que las URLs sean relativas (/api/...)
+const API_URL = window.APP_CONFIG?.API_BASE_URL || import.meta.env.VITE_API_BASE_URL || '';
 
 /**
  * Make authenticated API request with httpOnly cookies and automatic token refresh

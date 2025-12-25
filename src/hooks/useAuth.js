@@ -8,7 +8,8 @@
 
 import { useState, useEffect, useCallback } from 'react';
 
-const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+// Use relative URL if no API_BASE_URL is set (for proxy setup)
+const API_URL = import.meta.env.VITE_API_BASE_URL || '';
 
 /**
  * Hook to get the current authenticated user
