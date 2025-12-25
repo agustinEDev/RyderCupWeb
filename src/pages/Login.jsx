@@ -78,23 +78,43 @@ const Login = () => {
 
       const from = location.state?.from?.pathname || '/dashboard';
 
-      // Esperar 500ms para que el toast sea visible antes de redirigir
-      // Luego forzar recarga completa para garantizar que la cookie httpOnly esté disponible
-      // Esto resuelve race conditions en producción donde useAuth puede ejecutarse
-      // antes de que la cookie esté completamente establecida
+      // Esperar 500ms para que el toast sea visible
       console.log('🔄 [Login] Scheduling redirect to:', from);
+      await new Promise(resolve => setTimeout(resolve, 500));
 
-      setTimeout(() => {
-        console.log('🔄 [Login] Executing redirect to:', from);
-        try {
-          // Usar window.location.replace() en lugar de .href para evitar problemas de navegación
+      // CRITICAL: Verificar que las cookies httpOnly estén establecidas ANTES de redirigir
+      // Esto previene race conditions en producción donde useAuth() en Dashboard
+      // podría ejecutarse antes de que la cookie esté disponible (causando 401)
+      console.log('🔍 [Login] Verifying httpOnly cookies are ready...');
+
+      try {
+        const verifyResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'}/api/v1/auth/current-user`, {
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+        });
+
+        if (verifyResponse.ok) {
+          console.log('✅ [Login] Cookies verified. Safe to redirect.');
+
+          // Esperar un frame de navegador para asegurar que todo esté listo
+          await new Promise(resolve => requestAnimationFrame(resolve));
+
+          // Ahora sí redirigir
+          console.log('🚀 [Login] Executing redirect to:', from);
           window.location.replace(from);
-        } catch (err) {
-          console.error('❌ [Login] Redirect failed:', err);
-          // Fallback: intentar con assign
-          window.location.assign(from);
+        } else {
+          console.warn('⚠️ [Login] Cookie verification failed with status:', verifyResponse.status);
+          console.log('🔄 [Login] Retrying redirect after additional delay...');
+
+          // Retry con delay adicional
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          window.location.replace(from);
         }
-      }, 500);
+      } catch (err) {
+        console.error('❌ [Login] Cookie verification error:', err);
+        console.log('🔄 [Login] Proceeding with redirect anyway...');
+        window.location.replace(from);
+      }
 
       // No ejecutar setIsLoading(false) aquí porque vamos a redirigir
       // Mantener el loading state para mejor UX durante la redirección
