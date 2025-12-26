@@ -448,6 +448,238 @@ Ver plan detallado en sección [🔐 SEGURIDAD](#-seguridad---mejoras-prioritari
 
 ---
 
+### v1.8.5 (Password Reset System) - En Progreso 🔥
+
+**Objetivo:** Implementar sistema completo de recuperación de contraseña
+
+**Coordinación con Backend:**
+- ✅ Backend v1.11.0 implementado (26 Dic 2025)
+- ✅ 3 endpoints REST disponibles
+- ✅ Security features completas (token 256-bit, rate limiting, anti-enumeración)
+
+**Progreso:** 0/8 fases completadas (0%)
+
+**Fases de Implementación:**
+
+#### FASE 1: Application Layer (3 Use Cases)
+**Estimación:** 1-2 horas
+**Estado:** ⏳ Pendiente
+
+- [ ] `RequestPasswordResetUseCase.js`
+  - Input: `{ email }`
+  - Valida email con `validateEmail()`
+  - Llama a `authRepository.requestPasswordReset(email)`
+  - Output: `{ success: boolean, message: string }`
+  - Tests: 6-8 tests (email válido/inválido, rate limiting, network error)
+
+- [ ] `ValidateResetTokenUseCase.js`
+  - Input: `{ token }`
+  - Llama a `authRepository.validateResetToken(token)`
+  - Output: `{ valid: boolean, message: string }`
+  - Tests: 5-7 tests (token válido/inválido/expirado)
+
+- [ ] `ResetPasswordUseCase.js`
+  - Input: `{ token, newPassword }`
+  - Valida password con `validatePassword()` (12+ chars, complejidad)
+  - Llama a `authRepository.resetPassword(token, newPassword)`
+  - Output: `{ success: boolean, message: string }`
+  - Tests: 8-10 tests (password válido/inválido, token expirado, rate limiting)
+
+**Archivos a crear:**
+- `src/application/use_cases/RequestPasswordResetUseCase.js`
+- `src/application/use_cases/ValidateResetTokenUseCase.js`
+- `src/application/use_cases/ResetPasswordUseCase.js`
+
+---
+
+#### FASE 2: Infrastructure Layer (Repository)
+**Estimación:** 30 min - 1 hora
+**Estado:** ⏳ Pendiente
+
+- [ ] Agregar 3 métodos a `ApiAuthRepository.js`:
+  - `requestPasswordReset(email)` → POST `/auth/forgot-password`
+  - `validateResetToken(token)` → GET `/auth/validate-reset-token/:token`
+  - `resetPassword(token, newPassword)` → POST `/auth/reset-password`
+
+- [ ] Reutilizar `apiRequest()` con interceptor
+- [ ] Manejo de errores HTTP (400, 422, 429, 500)
+- [ ] Tests: 8-10 tests (requests exitosos/fallidos, rate limiting)
+
+**Archivos a modificar:**
+- `src/infrastructure/repositories/ApiAuthRepository.js`
+
+---
+
+#### FASE 3: Presentation Layer - ForgotPasswordPage
+**Estimación:** 1.5-2 horas
+**Estado:** ⏳ Pendiente
+
+- [ ] Form con input email
+- [ ] Validación con `validateEmail()` de `utils/validation.js`
+- [ ] Botón "Enviar Enlace" con loading state
+- [ ] Mensaje de éxito genérico (anti-enumeración)
+- [ ] Manejo de rate limiting (429)
+- [ ] Link "Volver al Login"
+- [ ] Toast notifications (`react-hot-toast`)
+- [ ] Diseño consistente con Login.jsx/Register.jsx
+- [ ] Animaciones Framer Motion
+- [ ] Responsive (mobile, tablet, desktop)
+
+**Archivos a crear:**
+- `src/pages/ForgotPassword.jsx`
+
+---
+
+#### FASE 4: Presentation Layer - ResetPasswordPage
+**Estimación:** 1.5-2 horas
+**Estado:** ⏳ Pendiente
+
+- [ ] Obtiene token de query params (`?token=xxx`)
+- [ ] Pre-valida token al montar (useEffect)
+- [ ] Form con 2 inputs password (nueva + confirmar)
+- [ ] Reutilizar `PasswordInput` component (ya existe)
+- [ ] Reutilizar `PasswordStrengthIndicator` (ya existe)
+- [ ] Validación con `validatePassword()` (12+ chars, complejidad)
+- [ ] Lista de requisitos visible
+- [ ] Manejo de errores (token inválido, expirado, 429)
+- [ ] Redirección a `/login` tras éxito
+- [ ] Toast notifications
+- [ ] Loading states (validating, loading, success)
+- [ ] Responsive
+
+**Archivos a crear:**
+- `src/pages/ResetPassword.jsx`
+
+---
+
+#### FASE 5: Routing y Dependency Injection
+**Estimación:** 15-20 minutos
+**Estado:** ⏳ Pendiente
+
+- [ ] Agregar rutas públicas en `App.jsx`:
+  - `/forgot-password` → `<ForgotPassword />`
+  - `/reset-password` → `<ResetPassword />`
+
+- [ ] Agregar link en `Login.jsx`: "¿Olvidaste tu contraseña?" → `/forgot-password`
+
+- [ ] Actualizar `composition/index.js`:
+  - Importar 3 Use Cases
+  - Inyectar `authRepository`
+  - Exportar instancias
+
+**Archivos a modificar:**
+- `src/App.jsx`
+- `src/pages/Login.jsx`
+- `src/composition/index.js`
+
+---
+
+#### FASE 6: Testing Unitario (Use Cases + Repository)
+**Estimación:** 2-3 horas
+**Estado:** ⏳ Pendiente
+
+- [ ] Tests de Use Cases (3 archivos):
+  - `RequestPasswordResetUseCase.test.js` (6-8 tests)
+  - `ValidateResetTokenUseCase.test.js` (5-7 tests)
+  - `ResetPasswordUseCase.test.js` (8-10 tests)
+
+- [ ] Tests de Repository (1 archivo):
+  - `ApiAuthRepository.test.js` (agregar 8-10 tests)
+  - Mockear `apiRequest()`
+  - Validar requests correctos
+  - Validar manejo de errores
+
+**Total tests unitarios:** 25-30 tests nuevos
+
+**Archivos a crear:**
+- `tests/application/use_cases/RequestPasswordResetUseCase.test.js`
+- `tests/application/use_cases/ValidateResetTokenUseCase.test.js`
+- `tests/application/use_cases/ResetPasswordUseCase.test.js`
+
+**Archivos a modificar:**
+- `tests/infrastructure/repositories/ApiAuthRepository.test.js`
+
+---
+
+#### FASE 7: Testing E2E con Playwright
+**Estimación:** 2-3 horas
+**Estado:** ⏳ Pendiente
+
+- [ ] Tests E2E (6-8 tests):
+  - Flujo completo: solicitar → email → validar → resetear
+  - Email no existe → mensaje genérico (anti-enumeración)
+  - Token expirado → error
+  - Rate limiting → error 429
+  - Contraseña débil → error
+  - Navegación: Login → Forgot Password → Reset → Login
+
+- [ ] Mockear envío de email (sin servidor SMTP real)
+- [ ] Integración con CI/CD (workflow existente)
+
+**Archivos a crear:**
+- `tests/password-reset.spec.js`
+
+**Total tests E2E:** 6-8 tests
+
+---
+
+#### FASE 8: Documentación (CHANGELOG, ROADMAP, CLAUDE)
+**Estimación:** 30-45 minutos
+**Estado:** ⏳ Pendiente
+
+- [ ] Actualizar `CHANGELOG.md` (sección `[Unreleased]`):
+  - Added: Password Reset System completo
+  - Changed: Login.jsx (link "¿Olvidaste tu contraseña?")
+  - Changed: ApiAuthRepository (3 métodos nuevos)
+  - Tests: 30 unitarios + 8 E2E (100% passing)
+
+- [ ] Actualizar `ROADMAP.md`:
+  - Mover Password Reset de v1.9.0 a v1.8.5 (completado)
+
+- [ ] Actualizar `CLAUDE.md`:
+  - Rutas públicas: `/forgot-password`, `/reset-password`
+  - Backend integration: v1.11.0 (3 endpoints)
+
+**Archivos a modificar:**
+- `CHANGELOG.md`
+- `ROADMAP.md`
+- `CLAUDE.md`
+
+---
+
+**Resumen de Fases:**
+
+| Fase | Tarea | Estimación | Archivos | Tests |
+|------|-------|-----------|----------|-------|
+| 1 | Application Layer (3 Use Cases) | 1-2h | 3 nuevos | 20-25 tests |
+| 2 | Infrastructure Layer (Repository) | 0.5-1h | 1 modificado | 8-10 tests |
+| 3 | ForgotPasswordPage | 1.5-2h | 1 nuevo | - |
+| 4 | ResetPasswordPage | 1.5-2h | 1 nuevo | - |
+| 5 | Routing + DI | 0.25h | 3 modificados | - |
+| 6 | Testing Unitario | 2-3h | 4 archivos test | 25-30 tests |
+| 7 | Testing E2E | 2-3h | 1 archivo test | 6-8 tests |
+| 8 | Documentación | 0.5-0.75h | 3 documentos | - |
+| **TOTAL** | **Implementación completa** | **10-14.5h** | **13 archivos** | **~60 tests** |
+
+**OWASP Categories Addressed:**
+- ✅ A01: Broken Access Control (mensaje genérico anti-enumeración)
+- ✅ A02: Cryptographic Failures (token 256-bit del backend)
+- ✅ A03: Injection (validación email, password)
+- ✅ A04: Insecure Design (rate limiting 3/h)
+- ✅ A07: Authentication Failures (password policy, session invalidation)
+
+**Security Features (Backend):**
+- ✅ Token 256-bit seguro con expiración 24h
+- ✅ Rate limiting 3 intentos/hora
+- ✅ Anti-enumeración de usuarios
+- ✅ Timing attack prevention
+- ✅ Session invalidation automática
+- ✅ Email templates bilingües (ES/EN)
+
+**Mejora esperada:** Mantiene 9.5/10 (feature funcional, no security enhancement)
+
+---
+
 ### v1.9.0 (Security + Features) - 1-2 meses después
 
 **Objetivo:** Completar protecciones OWASP y funcionalidad core
@@ -467,11 +699,11 @@ Ver plan detallado en sección [🔐 SEGURIDAD](#-seguridad---mejoras-prioritari
 **Total estimado:** 40-55 horas de desarrollo
 
 **OWASP Categories Addressed (8/10):**
-- ✅ Todas las categorías de v1.8.0
+- ✅ Todas las categorías de v1.8.0 + v1.8.5
 - ✅ A04: Insecure Design (reCAPTCHA, 2FA)
 - ✅ A09: Logging & Monitoring (Error Boundaries mejorados)
 
-**Mejora esperada:** 9.2/10 → 9.5/10 🚀 (+0.3 puntos)
+**Mejora esperada:** 9.5/10 → 9.8/10 🚀 (+0.3 puntos)
 
 ---
 
