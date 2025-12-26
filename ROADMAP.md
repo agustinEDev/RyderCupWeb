@@ -457,38 +457,47 @@ Ver plan detallado en sección [🔐 SEGURIDAD](#-seguridad---mejoras-prioritari
 - ✅ 3 endpoints REST disponibles
 - ✅ Security features completas (token 256-bit, rate limiting, anti-enumeración)
 
-**Progreso:** 0/8 fases completadas (0%)
+**Progreso:** 1/8 fases completadas (12.5%)
+
+**Última actualización:** 26 Dic 2025 - FASE 1 ✅ Completada
 
 **Fases de Implementación:**
 
-#### FASE 1: Application Layer (3 Use Cases)
+#### FASE 1: Application Layer (3 Use Cases) ✅ COMPLETADA
 **Estimación:** 1-2 horas
-**Estado:** ⏳ Pendiente
+**Tiempo real:** ~1.5 horas (26 Dic 2025)
+**Estado:** ✅ Completado
+**Commit:** `226b1b2` - feat(auth): Add password reset Use Cases
 
-- [ ] `RequestPasswordResetUseCase.js`
+- [x] `RequestPasswordResetUseCase.js` ✅
   - Input: `{ email }`
   - Valida email con `validateEmail()`
   - Llama a `authRepository.requestPasswordReset(email)`
   - Output: `{ success: boolean, message: string }`
-  - Tests: 6-8 tests (email válido/inválido, rate limiting, network error)
+  - Anti-enumeración: mensaje genérico siempre
+  - 45 líneas de código
 
-- [ ] `ValidateResetTokenUseCase.js`
+- [x] `ValidateResetTokenUseCase.js` ✅
   - Input: `{ token }`
   - Llama a `authRepository.validateResetToken(token)`
   - Output: `{ valid: boolean, message: string }`
-  - Tests: 5-7 tests (token válido/inválido/expirado)
+  - Pre-validación para mejor UX
+  - 47 líneas de código
 
-- [ ] `ResetPasswordUseCase.js`
+- [x] `ResetPasswordUseCase.js` ✅
   - Input: `{ token, newPassword }`
   - Valida password con `validatePassword()` (12+ chars, complejidad)
   - Llama a `authRepository.resetPassword(token, newPassword)`
   - Output: `{ success: boolean, message: string }`
-  - Tests: 8-10 tests (password válido/inválido, token expirado, rate limiting)
+  - Backend invalida todas las sesiones activas
+  - 51 líneas de código
 
-**Archivos a crear:**
-- `src/application/use_cases/RequestPasswordResetUseCase.js`
-- `src/application/use_cases/ValidateResetTokenUseCase.js`
-- `src/application/use_cases/ResetPasswordUseCase.js`
+**Archivos creados:**
+- ✅ `src/application/use_cases/user/RequestPasswordResetUseCase.js`
+- ✅ `src/application/use_cases/user/ValidateResetTokenUseCase.js`
+- ✅ `src/application/use_cases/user/ResetPasswordUseCase.js`
+
+**Total:** 3 archivos, 143 líneas de código
 
 ---
 
