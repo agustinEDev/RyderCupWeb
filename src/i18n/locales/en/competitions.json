@@ -148,6 +148,15 @@
       "requesting": "Requesting...",
       "requestToJoin": "Request to Join",
       "viewDetails": "View Details"
+    },
+    "errors": {
+      "failedToLoadJoinable": "Failed to load available competitions",
+      "failedToLoadExplore": "Failed to load competitions",
+      "alreadyEnrolled": "You already have an enrollment request for this competition",
+      "failedToEnroll": "Failed to request enrollment"
+    },
+    "success": {
+      "enrollmentRequested": "Enrollment request sent! Check \"My Competitions\" to track status."
     }
   },
   "footer": "© 2025 RyderCupFriends"

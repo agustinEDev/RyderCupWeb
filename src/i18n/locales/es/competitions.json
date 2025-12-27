@@ -148,6 +148,15 @@
       "requesting": "Solicitando...",
       "requestToJoin": "Solicitar Unirse",
       "viewDetails": "Ver Detalles"
+    },
+    "errors": {
+      "failedToLoadJoinable": "Error al cargar competiciones disponibles",
+      "failedToLoadExplore": "Error al cargar competiciones",
+      "alreadyEnrolled": "Ya tienes una solicitud de inscripción para esta competición",
+      "failedToEnroll": "Error al solicitar inscripción"
+    },
+    "success": {
+      "enrollmentRequested": "¡Solicitud de inscripción enviada! Revisa \"Mis Competiciones\" para seguir el estado."
     }
   },
   "footer": "© 2025 RyderCupFriends"
