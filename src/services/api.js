@@ -48,8 +48,35 @@ export const apiRequest = async (endpoint, options = {}) => {
     const response = await fetchWithTokenRefresh(url, config);
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.detail || `HTTP ${response.status}: ${response.statusText}`);
+      // Try to parse error response from backend
+      let errorData = {};
+      try {
+        errorData = await response.json();
+      } catch (jsonError) {
+        // If parsing fails, errorData remains empty object
+        console.warn('Failed to parse error response as JSON:', jsonError);
+      }
+
+      // Extract error message with proper fallback chain
+      let errorMessage = '';
+
+      if (errorData.detail) {
+        // FastAPI returns errors in 'detail' field
+        errorMessage = typeof errorData.detail === 'string'
+          ? errorData.detail
+          : JSON.stringify(errorData.detail);
+      } else if (errorData.message) {
+        // Some APIs use 'message' field
+        errorMessage = errorData.message;
+      } else if (errorData.error) {
+        // Some APIs use 'error' field
+        errorMessage = errorData.error;
+      } else {
+        // Fallback to HTTP status text
+        errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+      }
+
+      throw new Error(errorMessage);
     }
 
     // Handle no content responses (e.g., 204 from DELETE)

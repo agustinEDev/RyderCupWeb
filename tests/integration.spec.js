@@ -13,14 +13,14 @@ const getTestCredentials = () => {
   const email = process.env.TEST_EMAIL;
   const password = process.env.TEST_PASSWORD;
 
-  if (!email || !password) {
-    throw new Error(
-      'Missing test credentials. Please set TEST_EMAIL and TEST_PASSWORD environment variables.'
-    );
-  }
-
-  return { email, password };
+  return { email, password, hasCredentials: !!(email && password) };
 };
+
+// Skip all tests in this file if credentials are missing
+test.beforeEach(() => {
+  const { hasCredentials } = getTestCredentials();
+  test.skip(!hasCredentials, 'Skipping integration tests: TEST_EMAIL and TEST_PASSWORD not set. See .env.example for setup instructions.');
+});
 
 // Add a small delay between tests to respect backend rate limits
 test.afterEach(async () => {

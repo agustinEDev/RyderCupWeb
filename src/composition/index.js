@@ -7,6 +7,9 @@ import ApiAuthRepository from '../infrastructure/repositories/ApiAuthRepository'
 import LoginUseCase from '../application/use_cases/user/LoginUseCase';
 import RegisterUseCase from '../application/use_cases/user/RegisterUseCase';
 import VerifyEmailUseCase from '../application/use_cases/user/VerifyEmailUseCase';
+import RequestPasswordResetUseCase from '../application/use_cases/user/RequestPasswordResetUseCase';
+import ValidateResetTokenUseCase from '../application/use_cases/user/ValidateResetTokenUseCase';
+import ResetPasswordUseCase from '../application/use_cases/user/ResetPasswordUseCase';
 
 // Handicap Use Cases
 import ApiHandicapRepository from '../infrastructure/repositories/ApiHandicapRepository';
@@ -60,6 +63,9 @@ const updateRfegHandicapUseCase = new UpdateRfegHandicapUseCase({
 const loginUseCase = new LoginUseCase({ authRepository: apiAuthRepository });
 const registerUseCase = new RegisterUseCase({ authRepository: apiAuthRepository });
 const verifyEmailUseCase = new VerifyEmailUseCase({ authRepository: apiAuthRepository });
+const requestPasswordResetUseCase = new RequestPasswordResetUseCase({ authRepository: apiAuthRepository });
+const validateResetTokenUseCase = new ValidateResetTokenUseCase({ authRepository: apiAuthRepository });
+const resetPasswordUseCase = new ResetPasswordUseCase({ authRepository: apiAuthRepository });
 const createCompetitionUseCase = new CreateCompetitionUseCase({ competitionRepository: apiCompetitionRepository });
 const listUserCompetitionsUseCase = new ListUserCompetitionsUseCase({ competitionRepository: apiCompetitionRepository });
 const getCompetitionDetailUseCase = new GetCompetitionDetailUseCase({ competitionRepository: apiCompetitionRepository });
@@ -92,6 +98,9 @@ export {
   loginUseCase,
   registerUseCase,
   verifyEmailUseCase,
+  requestPasswordResetUseCase,
+  validateResetTokenUseCase,
+  resetPasswordUseCase,
   createCompetitionUseCase,
   listUserCompetitionsUseCase,
   getCompetitionDetailUseCase,

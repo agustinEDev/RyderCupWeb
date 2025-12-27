@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
@@ -23,6 +23,21 @@ const Register = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [countries, setCountries] = useState([]);
   const [isLoadingCountries, setIsLoadingCountries] = useState(false);
+
+  // Ref para cleanup del timer de navegación (prevenir memory leak)
+  const navigationTimerRef = useRef(null);
+
+  /**
+   * Cleanup: limpiar timer de navegación al desmontar
+   * Previene memory leak si el componente se desmonta antes de que se ejecute setTimeout
+   */
+  useEffect(() => {
+    return () => {
+      if (navigationTimerRef.current) {
+        clearTimeout(navigationTimerRef.current);
+      }
+    };
+  }, []);
 
   // Cargar lista de países al montar el componente
   useEffect(() => {
@@ -104,7 +119,8 @@ const Register = () => {
 
       toast.success('Account created successfully!');
 
-      setTimeout(() => {
+      // Guardar timer ID para cleanup (prevenir memory leak)
+      navigationTimerRef.current = setTimeout(() => {
         navigate('/login', {
           state: {
             message: 'Account created successfully. Please sign in.'
