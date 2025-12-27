@@ -1,0 +1,110 @@
+{
+  "hero": {
+    "badge": "#1 Golf Tournament Platform",
+    "title": "Welcome to",
+    "brand": "RyderCupFriends",
+    "subtitle": "The ultimate platform for organizing amateur golf tournaments in Ryder Cup format. Connect with friends, create exciting competitions, and enjoy the spirit of friendly golf rivalry.",
+    "getStartedButton": "Get Started Free",
+    "viewDemoButton": "View Demo",
+    "stats": {
+      "tournaments": "Tournaments",
+      "players": "Players",
+      "satisfaction": "Satisfaction"
+    },
+    "nextTournament": "Next Tournament",
+    "springClassic": "Spring Classic 2024"
+  },
+  "features": {
+    "title": "Everything You Need to Run Your Tournament",
+    "subtitle": "Professional-grade tools designed for amateur golfers. Simple, powerful, and fun to use.",
+    "handicap": {
+      "title": "Handicap Management",
+      "description": "Automatically calculate and manage handicaps for all players to ensure fair and competitive play."
+    },
+    "format": {
+      "title": "Ryder Cup Format",
+      "description": "Easily set up the classic Ryder Cup format with foursomes, fourballs, and singles matches."
+    },
+    "team": {
+      "title": "Team Management",
+      "description": "Create balanced teams, track player statistics, and manage team rosters with ease."
+    },
+    "scoring": {
+      "title": "Live Scoring",
+      "description": "Real-time score updates keep everyone engaged and following the action as it happens."
+    }
+  },
+  "benefits": {
+    "verifiedBadge": "Verified Platform",
+    "title": "Why Golf Enthusiasts Love RyderCupFriends",
+    "subtitle": "Join thousands of amateur golfers who have transformed their tournament experience",
+    "easySetup": {
+      "title": "Quick & Easy Setup",
+      "description": "Create your first tournament in under 5 minutes"
+    },
+    "fairPlay": {
+      "title": "Fair Play Guaranteed",
+      "description": "Advanced handicap system ensures balanced competition"
+    },
+    "socialFun": {
+      "title": "Social & Fun",
+      "description": "Build lasting friendships through friendly rivalry"
+    }
+  },
+  "testimonials": {
+    "title": "What Our Community Says",
+    "subtitle": "Real feedback from real golfers",
+    "quote1": "RCF has completely changed how we organize our monthly tournaments. The handicap system is brilliant and everyone loves the Ryder Cup format!",
+    "author1": "Michael Chen",
+    "role1": "Tournament Organizer",
+    "quote2": "As someone new to organizing golf events, this platform made everything so simple. The team management tools are fantastic!",
+    "author2": "Sarah Johnson",
+    "role2": "Golf Enthusiast",
+    "quote3": "The live scoring feature keeps all our players engaged throughout the tournament. It's like having our own PGA Tour event!",
+    "author3": "David Martinez",
+    "role3": "Club Captain"
+  },
+  "pricing": {
+    "title": "Simple, Transparent Pricing",
+    "subtitle": "Choose the plan that fits your needs",
+    "free": {
+      "name": "Free",
+      "price": "$0",
+      "period": "/month",
+      "description": "Perfect for trying out RCF",
+      "feature1": "Up to 2 tournaments",
+      "feature2": "Basic scoring",
+      "feature3": "Email support",
+      "button": "Start Free"
+    },
+    "pro": {
+      "name": "Pro",
+      "price": "$9.99",
+      "period": "/month",
+      "description": "For regular tournament organizers",
+      "popular": "Most Popular",
+      "feature1": "Unlimited tournaments",
+      "feature2": "Advanced analytics",
+      "feature3": "Priority support",
+      "feature4": "Custom branding",
+      "button": "Get Pro"
+    },
+    "enterprise": {
+      "name": "Enterprise",
+      "price": "Custom",
+      "period": "",
+      "description": "For golf clubs and organizations",
+      "feature1": "Everything in Pro",
+      "feature2": "Dedicated support",
+      "feature3": "API access",
+      "feature4": "Custom integrations",
+      "button": "Contact Sales"
+    }
+  },
+  "cta": {
+    "title": "Ready to Transform Your Golf Tournaments?",
+    "subtitle": "Join thousands of golfers already using RyderCupFriends",
+    "button": "Start Your Free Trial",
+    "noCredit": "No credit card required"
+  }
+}

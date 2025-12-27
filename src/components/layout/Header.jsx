@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import LanguageSwitcher from '../ui/LanguageSwitcher';
 
 const Header = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -57,6 +58,10 @@ const Header = () => {
             Support
           </a>
         </div>
+
+        {/* Language Switcher */}
+        <LanguageSwitcher />
+
         <div className="flex gap-2">
           <Link to="/register">
             <button className="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-primary text-white text-sm font-bold leading-normal tracking-wide hover:bg-primary/90 transition-colors">
@@ -119,6 +124,13 @@ const Header = () => {
             >
               Support
             </a>
+            <div className="border-t border-gray-200 my-2"></div>
+
+            {/* Language Switcher - Mobile */}
+            <div className="px-4 py-2">
+              <LanguageSwitcher />
+            </div>
+
             <div className="border-t border-gray-200 my-2"></div>
             <Link
               to="/register"

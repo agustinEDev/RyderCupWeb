@@ -4,14 +4,14 @@ import { useTranslation } from 'react-i18next';
  * Language Switcher Component
  *
  * Permite al usuario cambiar entre inglés y español.
- * Usa banderas como indicadores visuales.
+ * Usa un dropdown/select para cambiar el idioma.
  * La selección se guarda en localStorage automáticamente.
  */
 const LanguageSwitcher = () => {
   const { i18n } = useTranslation();
 
-  const changeLanguage = (lng) => {
-    i18n.changeLanguage(lng);
+  const changeLanguage = (event) => {
+    i18n.changeLanguage(event.target.value);
   };
 
   const languages = [
@@ -19,30 +19,28 @@ const LanguageSwitcher = () => {
     { code: 'es', label: 'Español', flag: '🇪🇸' },
   ];
 
+  const currentLanguage = languages.find(lang => lang.code === i18n.language) || languages[0];
+
   return (
-    <div className="flex items-center gap-2">
-      {languages.map((lang) => (
-        <button
-          key={lang.code}
-          onClick={() => changeLanguage(lang.code)}
-          className={`
-            flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium
-            transition-all duration-200
-            ${
-              i18n.language === lang.code
-                ? 'bg-primary/10 text-primary border-2 border-primary'
-                : 'bg-gray-100 text-gray-700 border-2 border-transparent hover:bg-gray-200'
-            }
-          `}
-          aria-label={`Change language to ${lang.label}`}
-          title={lang.label}
-        >
-          <span className="text-lg" role="img" aria-label={lang.label}>
-            {lang.flag}
-          </span>
-          <span className="hidden sm:inline">{lang.label}</span>
-        </button>
-      ))}
+    <div className="relative">
+      <select
+        value={i18n.language}
+        onChange={changeLanguage}
+        className="appearance-none bg-white border-2 border-gray-200 rounded-lg px-3 py-2 pr-8 text-sm font-medium text-gray-700 hover:border-primary focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all cursor-pointer"
+        aria-label="Select language"
+      >
+        {languages.map((lang) => (
+          <option key={lang.code} value={lang.code}>
+            {lang.flag} {lang.label}
+          </option>
+        ))}
+      </select>
+      {/* Icono de dropdown personalizado */}
+      <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+        <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      </div>
     </div>
   );
 };
