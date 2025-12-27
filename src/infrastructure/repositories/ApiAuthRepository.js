@@ -67,6 +67,66 @@ class ApiAuthRepository extends IAuthRepository {
       token: data.access_token,
     };
   }
+
+  /**
+   * Request password reset email
+   * @override
+   * @param {string} email - User email address
+   * @returns {Promise<{message: string}>} Success message (always generic for anti-enumeration)
+   */
+  async requestPasswordReset(email) {
+    const data = await apiRequest('/api/v1/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    });
+
+    // Backend always returns 200 OK with generic message (anti-enumeration)
+    return {
+      message: data.message,
+    };
+  }
+
+  /**
+   * Validate password reset token
+   * @override
+   * @param {string} token - Reset token from email
+   * @returns {Promise<{valid: boolean, message: string}>} Token validation result
+   * @throws {Error} If token is invalid or expired (400 Bad Request)
+   */
+  async validateResetToken(token) {
+    const data = await apiRequest(`/api/v1/auth/validate-reset-token/${token}`, {
+      method: 'GET',
+    });
+
+    // If request succeeds (200 OK), token is valid
+    return {
+      valid: data.valid,
+      message: data.message,
+    };
+  }
+
+  /**
+   * Reset user password with token
+   * @override
+   * @param {string} token - Reset token from email
+   * @param {string} newPassword - New password (already validated by Use Case)
+   * @returns {Promise<{message: string}>} Success message
+   * @throws {Error} If token is invalid/expired or password doesn't meet requirements
+   */
+  async resetPassword(token, newPassword) {
+    const data = await apiRequest('/api/v1/auth/reset-password', {
+      method: 'POST',
+      body: JSON.stringify({
+        token,
+        new_password: newPassword,
+      }),
+    });
+
+    // Backend invalidates all refresh tokens (logout on all devices)
+    return {
+      message: data.message,
+    };
+  }
 }
 
 export default ApiAuthRepository;

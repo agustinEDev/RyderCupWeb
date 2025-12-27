@@ -275,9 +275,17 @@ const Login = () => {
 
                 {/* Password */}
                 <div>
-                  <label htmlFor="password" className="block text-sm font-semibold text-gray-700 mb-2">
-                    Password
-                  </label>
+                  <div className="flex items-center justify-between mb-2">
+                    <label htmlFor="password" className="block text-sm font-semibold text-gray-700">
+                      Password
+                    </label>
+                    <Link
+                      to="/forgot-password"
+                      className="text-xs font-medium text-primary hover:text-primary-600 transition-colors"
+                    >
+                      Forgot password?
+                    </Link>
+                  </div>
                   <PasswordInput
                     name="password"
                     value={formData.password}
