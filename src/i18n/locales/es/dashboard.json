@@ -1,0 +1,26 @@
+{
+  "welcome": "Bienvenido, {{name}}",
+  "activitySummary": "Aquí está tu resumen de actividad",
+  "statistics": {
+    "tournaments": "Torneos",
+    "viewTournaments": "Ver tus torneos activos y pasados",
+    "handicap": "Hándicap",
+    "updated": "Actualizado el {{date}}",
+    "notUpdated": "No actualizado",
+    "status": "Estado",
+    "verified": "Verificado",
+    "pending": "Pendiente",
+    "memberSince": "Miembro desde {{date}}"
+  },
+  "quickActions": {
+    "title": "Acciones Rápidas",
+    "createTournament": "Crear Torneo",
+    "createTournamentDesc": "Comenzar un nuevo torneo Ryder Cup",
+    "myTournaments": "Mis Torneos",
+    "myTournamentsDesc": "Ver y gestionar tus torneos",
+    "myProfile": "Mi Perfil",
+    "myProfileDesc": "Ver y actualizar tu información",
+    "browseCompetitions": "Explorar Competiciones",
+    "browseCompetitionsDesc": "Descubrir torneos para unirse"
+  }
+}

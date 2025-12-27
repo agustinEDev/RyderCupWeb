@@ -320,10 +320,10 @@ const Landing = () => {
 
                 <motion.div variants={fadeInUp} className="space-y-4">
                   {[
-                    { title: 'Simple & Intuitive', desc: 'No complicated setup. Get started in minutes.' },
-                    { title: 'Mobile Friendly', desc: 'Manage your tournament from anywhere, on any device.' },
-                    { title: 'Fair Competition', desc: 'Advanced handicap system ensures everyone has a chance to win.' },
-                    { title: 'Community Focused', desc: 'Connect with fellow golf enthusiasts and build lasting friendships.' }
+                    { title: t('benefits.simple.title'), desc: t('benefits.simple.description') },
+                    { title: t('benefits.mobile.title'), desc: t('benefits.mobile.description') },
+                    { title: t('benefits.fair.title'), desc: t('benefits.fair.description') },
+                    { title: t('benefits.community.title'), desc: t('benefits.community.description') }
                   ].map((benefit) => (
                     <motion.div
                       key={benefit.title}
@@ -380,7 +380,7 @@ const Landing = () => {
                   onClick={() => globalThis.location.href = '#features'}
                   className="px-8 py-4 bg-transparent text-white text-base font-bold rounded-lg border-2 border-white hover:bg-white/10 transition-all duration-300"
                 >
-                  Learn More
+                  {t('cta.learnMore')}
                 </button>
               </div>
             </div>

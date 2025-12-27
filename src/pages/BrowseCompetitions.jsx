@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import PropTypes from 'prop-types';
+import { useTranslation } from 'react-i18next';
 import { Search, Calendar, Users, Target, TrendingUp } from 'lucide-react';
 import HeaderAuth from '../components/layout/HeaderAuth';
 import {
@@ -16,6 +17,7 @@ import { useAuth } from '../hooks/useAuth';
 
 const BrowseCompetitions = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation('competitions');
 
   // User state
   const { user, loading: isLoading } = useAuth();
@@ -182,7 +184,7 @@ const BrowseCompetitions = () => {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
+          <p className="mt-4 text-gray-600">{t('common:loading')}</p>
         </div>
       </div>
     );
@@ -198,7 +200,7 @@ const BrowseCompetitions = () => {
     joinableContent = (
       <div className="text-center py-12">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-        <p className="mt-4 text-gray-600">Loading available competitions...</p>
+        <p className="mt-4 text-gray-600">{t('common:loading')}</p>
       </div>
     );
   } else if (filteredJoinableCompetitions.length === 0) {
@@ -206,12 +208,12 @@ const BrowseCompetitions = () => {
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
         <Target className="w-16 h-16 text-gray-300 mx-auto mb-4" />
         <h3 className="text-xl font-semibold text-gray-900 mb-2">
-          {joinableSearch ? 'No competitions found' : 'No competitions available'}
+          {joinableSearch ? t('browse.joinCompetition.noCompetitionsFound') : t('browse.joinCompetition.noCompetitionsAvailable')}
         </h3>
         <p className="text-gray-600">
           {joinableSearch
-            ? 'Try adjusting your search criteria'
-            : 'There are no active competitions available to join at the moment'}
+            ? t('browse.joinCompetition.tryAdjustingSearch')
+            : t('browse.joinCompetition.noActiveCompetitions')}
         </p>
       </div>
     );

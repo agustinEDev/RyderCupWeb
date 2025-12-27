@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Trophy, Users, User, TrendingUp, Award, Search } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import HeaderAuth from '../components/layout/HeaderAuth';
 import ProfileCard from '../components/profile/ProfileCard';
 import EmailVerificationBanner from '../components/EmailVerificationBanner';
@@ -10,6 +11,7 @@ import { listUserCompetitionsUseCase } from '../composition'; // Use the same us
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation('dashboard');
   const { user, loading: isLoadingUser } = useAuth();
   const [competitions, setCompetitions] = useState([]);
   const [isLoadingCompetitions, setIsLoadingCompetitions] = useState(true);
@@ -47,7 +49,7 @@ const Dashboard = () => {
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
+          <p className="text-gray-600">{t('common:loading')}</p>
         </div>
       </div>
     );
@@ -75,10 +77,10 @@ const Dashboard = () => {
             >
               <div>
                 <p className="text-gray-900 tracking-tight text-3xl md:text-[32px] font-bold leading-tight">
-                  Welcome, {firstName}
+                  {t('welcome', { name: firstName })}
                 </p>
                 <p className="text-gray-500 text-sm mt-1">
-                  Here&apos;s your activity summary
+                  {t('activitySummary')}
                 </p>
               </div>
             </motion.div>
@@ -105,11 +107,11 @@ const Dashboard = () => {
                       <Trophy className="w-6 h-6 text-white" />
                     </div>
                     <div className="text-right">
-                      <p className="text-sm text-primary-600 font-medium">Tournaments</p>
+                      <p className="text-sm text-primary-600 font-medium">{t('statistics.tournaments')}</p>
                       <p className="text-3xl font-bold text-primary-700">{Array.isArray(competitions) ? competitions.length : 0}</p>
                     </div>
                   </div>
-                  <p className="text-xs text-primary-600">View your active and past tournaments</p>
+                  <p className="text-xs text-primary-600">{t('statistics.viewTournaments')}</p>
                   <div className="absolute -bottom-6 -right-6 opacity-10">
                     <Trophy className="w-32 h-32 text-primary-700" />
                   </div>
@@ -122,7 +124,7 @@ const Dashboard = () => {
                       <TrendingUp className="w-6 h-6 text-white" />
                     </div>
                     <div className="text-right">
-                      <p className="text-sm text-amber-700 font-medium">Handicap</p>
+                      <p className="text-sm text-amber-700 font-medium">{t('statistics.handicap')}</p>
                       <p className="text-3xl font-bold text-amber-800">
                         {user.handicap != null ? user.handicap.toFixed(1) : '--'}
                       </p>
@@ -130,8 +132,8 @@ const Dashboard = () => {
                   </div>
                   <p className="text-xs text-amber-700">
                     {user.handicap_updated_at
-                      ? `Updated ${new Date(user.handicap_updated_at).toLocaleDateString()}`
-                      : 'Not updated'}
+                      ? t('statistics.updated', { date: new Date(user.handicap_updated_at).toLocaleDateString() })
+                      : t('statistics.notUpdated')}
                   </p>
                   <div className="absolute -bottom-6 -right-6 opacity-10">
                     <TrendingUp className="w-32 h-32 text-amber-700" />
@@ -145,14 +147,14 @@ const Dashboard = () => {
                       <Award className="w-6 h-6 text-white" />
                     </div>
                     <div className="text-right">
-                      <p className="text-sm text-navy-800 font-medium">Status</p>
+                      <p className="text-sm text-navy-800 font-medium">{t('statistics.status')}</p>
                       <p className="text-lg font-bold text-navy-900">
-                        {user.email_verified ? '✓ Verified' : '⚠ Pending'}
+                        {user.email_verified ? `✓ ${t('statistics.verified')}` : `⚠ ${t('statistics.pending')}`}
                       </p>
                     </div>
                   </div>
                   <p className="text-xs text-navy-700">
-                    Member since {new Date(user.created_at).toLocaleDateString()}
+                    {t('statistics.memberSince', { date: new Date(user.created_at).toLocaleDateString() })}
                   </p>
                   <div className="absolute -bottom-6 -right-6 opacity-10">
                     <Award className="w-32 h-32 text-navy-700" />
@@ -171,7 +173,7 @@ const Dashboard = () => {
               transition={{ duration: 0.5, delay: 0.2 }}
               className="p-4 mt-4"
             >
-              <h2 className="text-gray-900 text-xl font-bold mb-4">Quick Actions</h2>
+              <h2 className="text-gray-900 text-xl font-bold mb-4">{t('quickActions.title')}</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Create Competition Card */}
                 <motion.button
@@ -185,9 +187,9 @@ const Dashboard = () => {
                   </div>
                   <div className="flex-1">
                     <h3 className="text-gray-900 font-bold text-lg group-hover:text-primary-600 transition-colors">
-                      Create Tournament
+                      {t('quickActions.createTournament')}
                     </h3>
-                    <p className="text-gray-500 text-sm">Start a new Ryder Cup tournament</p>
+                    <p className="text-gray-500 text-sm">{t('quickActions.createTournamentDesc')}</p>
                   </div>
                 </motion.button>
 
@@ -203,9 +205,9 @@ const Dashboard = () => {
                   </div>
                   <div className="flex-1">
                     <h3 className="text-gray-900 font-bold text-lg group-hover:text-accent-600 transition-colors">
-                      My Tournaments
+                      {t('quickActions.myTournaments')}
                     </h3>
-                    <p className="text-gray-500 text-sm">View and manage your tournaments</p>
+                    <p className="text-gray-500 text-sm">{t('quickActions.myTournamentsDesc')}</p>
                   </div>
                 </motion.button>
 
@@ -221,9 +223,9 @@ const Dashboard = () => {
                   </div>
                   <div className="flex-1">
                     <h3 className="text-gray-900 font-bold text-lg group-hover:text-navy-800 transition-colors">
-                      My Profile
+                      {t('quickActions.myProfile')}
                     </h3>
-                    <p className="text-gray-500 text-sm">View and update your information</p>
+                    <p className="text-gray-500 text-sm">{t('quickActions.myProfileDesc')}</p>
                   </div>
                 </motion.button>
 
@@ -239,9 +241,9 @@ const Dashboard = () => {
                   </div>
                   <div className="flex-1">
                     <h3 className="text-gray-900 font-bold text-lg group-hover:text-green-600 transition-colors">
-                      Browse Competitions
+                      {t('quickActions.browseCompetitions')}
                     </h3>
-                    <p className="text-gray-500 text-sm">Discover tournaments to join</p>
+                    <p className="text-gray-500 text-sm">{t('quickActions.browseCompetitionsDesc')}</p>
                   </div>
                 </motion.button>
               </div>

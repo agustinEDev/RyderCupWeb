@@ -1,6 +1,8 @@
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 const Footer = () => {
+  const { t } = useTranslation('common');
   return (
     <footer className="bg-gray-50 border-t border-gray-200 mt-16">
       <div className="max-w-7xl mx-auto px-4 md:px-8 py-12">
@@ -24,7 +26,7 @@ const Footer = () => {
               </div>
             </div>
             <p className="text-gray-600 text-sm leading-relaxed max-w-sm">
-              The ultimate platform for managing amateur golf tournaments in Ryder Cup format. Connect with friends and enjoy the spirit of friendly competition.
+              {t('footer.description')}
             </p>
 
             {/* Social Media Links */}
@@ -78,26 +80,26 @@ const Footer = () => {
 
           {/* Quick Links */}
           <div>
-            <h4 className="text-gray-900 font-semibold mb-4 font-poppins">Quick Links</h4>
+            <h4 className="text-gray-900 font-semibold mb-4 font-poppins">{t('footer.quickLinks')}</h4>
             <ul className="space-y-3">
               <li>
                 <a href="#features" className="text-gray-600 text-sm hover:text-primary transition-colors">
-                  Features
+                  {t('footer.features')}
                 </a>
               </li>
               <li>
                 <a href="#pricing" className="text-gray-600 text-sm hover:text-primary transition-colors">
-                  Pricing
+                  {t('footer.pricing')}
                 </a>
               </li>
               <li>
                 <a href="#support" className="text-gray-600 text-sm hover:text-primary transition-colors">
-                  Support
+                  {t('footer.support')}
                 </a>
               </li>
               <li>
                 <Link to="/register" className="text-gray-600 text-sm hover:text-primary transition-colors">
-                  Get Started
+                  {t('footer.getStarted')}
                 </Link>
               </li>
             </ul>
@@ -105,26 +107,26 @@ const Footer = () => {
 
           {/* Legal */}
           <div>
-            <h4 className="text-gray-900 font-semibold mb-4 font-poppins">Legal</h4>
+            <h4 className="text-gray-900 font-semibold mb-4 font-poppins">{t('footer.legal')}</h4>
             <ul className="space-y-3">
               <li>
                 <a href="#terms" className="text-gray-600 text-sm hover:text-primary transition-colors">
-                  Terms of Service
+                  {t('footer.terms')}
                 </a>
               </li>
               <li>
                 <a href="#privacy" className="text-gray-600 text-sm hover:text-primary transition-colors">
-                  Privacy Policy
+                  {t('footer.privacy')}
                 </a>
               </li>
               <li>
                 <a href="#cookies" className="text-gray-600 text-sm hover:text-primary transition-colors">
-                  Cookie Policy
+                  {t('footer.cookies')}
                 </a>
               </li>
               <li>
                 <a href="#contact" className="text-gray-600 text-sm hover:text-primary transition-colors">
-                  Contact Us
+                  {t('footer.contact')}
                 </a>
               </li>
             </ul>
@@ -135,10 +137,10 @@ const Footer = () => {
         <div className="pt-8 border-t border-gray-200">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <p className="text-gray-500 text-sm">
-              © 2024 RyderCupFriends - RCF. All rights reserved.
+              {t('footer.copyright')}
             </p>
             <p className="text-gray-500 text-sm">
-              Made with <span className="text-red-500">♥</span> for golf enthusiasts
+              {t('footer.madeWith')} <span className="text-red-500">♥</span> {t('footer.forGolfers')}
             </p>
           </div>
         </div>

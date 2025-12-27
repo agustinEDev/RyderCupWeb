@@ -1,10 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Calendar, Trophy, MapPin, Settings, Plus, X, ChevronDown } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import HeaderAuth from '../components/layout/HeaderAuth';
 import { useAuth } from '../hooks/useAuth';
 import { createCompetitionUseCase, fetchCountriesUseCase } from '../composition';
 import { CountryFlag } from '../utils/countryUtils';
+import { formatCountryName } from '../services/countries';
 
 const API_URL = import.meta.env.VITE_API_BASE_URL || '';
 
@@ -17,6 +19,7 @@ const getMessageClassName = (type) => {
 
 const CreateCompetition = () => {
   const navigate = useNavigate();
+  const { t, i18n } = useTranslation('competitions');
   const { user, loading: isLoading } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
@@ -214,33 +217,33 @@ const CreateCompetition = () => {
 
     // UI Validation
     if (!formData.competitionName.trim()) {
-      setMessage({ type: 'error', text: 'Competition name is required' });
+      setMessage({ type: 'error', text: t('create.errors.nameRequired') });
       return;
     }
 
     if (!formData.teamOneName.trim() || !formData.teamTwoName.trim()) {
-      setMessage({ type: 'error', text: 'Both team names are required' });
+      setMessage({ type: 'error', text: t('create.errors.teamNamesRequired') });
       return;
     }
 
     if (!formData.startDate || !formData.endDate) {
-      setMessage({ type: 'error', text: 'Start and end dates are required' });
+      setMessage({ type: 'error', text: t('create.errors.datesRequired') });
       return;
     }
 
     if (new Date(formData.startDate) > new Date(formData.endDate)) {
-      setMessage({ type: 'error', text: 'End date must be after start date' });
+      setMessage({ type: 'error', text: t('create.errors.endDateAfterStart') });
       return;
     }
 
     if (!formData.country) {
-      setMessage({ type: 'error', text: 'Please select a country' });
+      setMessage({ type: 'error', text: t('create.errors.countryRequired') });
       return;
     }
 
     const numPlayers = Number.parseInt(formData.numberOfPlayers, 10);
     if (Number.isNaN(numPlayers) || numPlayers < 2) {
-      setMessage({ type: 'error', text: 'Number of players must be at least 2' });
+      setMessage({ type: 'error', text: t('create.errors.playersMinimum') });
       return;
     }
 
@@ -275,7 +278,7 @@ const CreateCompetition = () => {
       // Use the use case instead of direct API call
       const createdCompetition = await createCompetitionUseCase.execute(payload);
 
-      setMessage({ type: 'success', text: 'Competition created successfully!' });
+      setMessage({ type: 'success', text: t('create.success') });
 
       // Guardar timer ID para cleanup (prevenir memory leak)
       navigationTimerRef.current = setTimeout(() => {
@@ -295,7 +298,7 @@ const CreateCompetition = () => {
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
+          <p className="text-gray-600">{t('common:loading')}</p>
         </div>
       </div>
     );
@@ -315,7 +318,7 @@ const CreateCompetition = () => {
             {/* Page Title */}
             <div className="flex flex-wrap justify-between gap-3 p-4">
               <p className="text-gray-900 tracking-tight text-3xl md:text-[32px] font-bold leading-tight min-w-72">
-                Create Competition
+                {t('create.title')}
               </p>
             </div>
 
@@ -333,13 +336,13 @@ const CreateCompetition = () => {
                   <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
                     <Trophy className="w-5 h-5 text-primary" />
                   </div>
-                  <h3 className="text-gray-900 font-bold text-lg">Competition Details</h3>
+                  <h3 className="text-gray-900 font-bold text-lg">{t('create.competitionDetails')}</h3>
                 </div>
 
                 <div className="space-y-4">
                   <div>
                     <label htmlFor="competitionName" className="block text-sm font-medium text-gray-700 mb-1">
-                      Competition Name *
+                      {t('create.competitionName')}
                     </label>
                     <input
                       id="competitionName"
@@ -347,7 +350,7 @@ const CreateCompetition = () => {
                       name="competitionName"
                       value={formData.competitionName}
                       onChange={handleInputChange}
-                      placeholder="Enter competition name"
+                      placeholder={t('create.competitionNamePlaceholder')}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                     />
                   </div>
@@ -356,7 +359,7 @@ const CreateCompetition = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label htmlFor="teamOneName" className="block text-sm font-medium text-gray-700 mb-1">
-                        Team 1 Name *
+                        {t('create.teamOneName')}
                       </label>
                       <input
                         id="teamOneName"
@@ -364,14 +367,14 @@ const CreateCompetition = () => {
                         name="teamOneName"
                         value={formData.teamOneName}
                         onChange={handleInputChange}
-                        placeholder="e.g., Europe"
+                        placeholder={t('create.teamOneNamePlaceholder')}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                       />
                     </div>
 
                     <div>
                       <label htmlFor="teamTwoName" className="block text-sm font-medium text-gray-700 mb-1">
-                        Team 2 Name *
+                        {t('create.teamTwoName')}
                       </label>
                       <input
                         id="teamTwoName"
@@ -379,7 +382,7 @@ const CreateCompetition = () => {
                         name="teamTwoName"
                         value={formData.teamTwoName}
                         onChange={handleInputChange}
-                        placeholder="e.g., USA"
+                        placeholder={t('create.teamTwoNamePlaceholder')}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                       />
                     </div>
@@ -393,13 +396,13 @@ const CreateCompetition = () => {
                   <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center">
                     <Calendar className="w-5 h-5 text-accent" />
                   </div>
-                  <h3 className="text-gray-900 font-bold text-lg">Schedule</h3>
+                  <h3 className="text-gray-900 font-bold text-lg">{t('create.schedule')}</h3>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label htmlFor="startDate" className="block text-sm font-medium text-gray-700 mb-1">
-                      Start Date *
+                      {t('create.startDate')}
                     </label>
                     <input
                       id="startDate"
@@ -413,7 +416,7 @@ const CreateCompetition = () => {
 
                   <div>
                     <label htmlFor="endDate" className="block text-sm font-medium text-gray-700 mb-1">
-                      End Date *
+                      {t('create.endDate')}
                     </label>
                     <input
                       id="endDate"
@@ -433,14 +436,14 @@ const CreateCompetition = () => {
                   <div className="w-10 h-10 rounded-lg bg-navy/10 flex items-center justify-center">
                     <MapPin className="w-5 h-5 text-navy" />
                   </div>
-                  <h3 className="text-gray-900 font-bold text-lg">Location</h3>
+                  <h3 className="text-gray-900 font-bold text-lg">{t('create.location')}</h3>
                 </div>
 
                 <div className="space-y-4">
                   {/* Country Select */}
                   <div>
                     <label htmlFor="country" className="block text-sm font-medium text-gray-700 mb-1">
-                      Country *
+                      {t('create.country')}
                     </label>
                     <div className="relative">
                       <select
@@ -466,10 +469,10 @@ const CreateCompetition = () => {
                           formData.country ? 'pl-12' : 'pl-3'
                         }`}
                       >
-                        <option value="">Select a country</option>
+                        <option value="">{t('create.selectCountry')}</option>
                         {allCountries.map((country) => (
                           <option key={country.code} value={country.code}>
-                            {country.name}
+                            {formatCountryName(country, i18n.language)}
                           </option>
                         ))}
                       </select>
@@ -491,7 +494,7 @@ const CreateCompetition = () => {
                       className="flex items-center gap-2 text-sm text-primary hover:text-primary/80 font-medium"
                     >
                       <Plus className="w-4 h-4" />
-                      Add adjacent country
+                      {t('create.addAdjacentCountry')}
                     </button>
                   )}
 
@@ -499,7 +502,7 @@ const CreateCompetition = () => {
                     <div className="flex items-end gap-2">
                       <div className="flex-1">
                         <label htmlFor="adjacentCountry1" className="block text-sm font-medium text-gray-700 mb-1">
-                          Adjacent Country
+                          {t('create.adjacentCountry')}
                         </label>
                         <div className="relative">
                           <select
@@ -511,10 +514,10 @@ const CreateCompetition = () => {
                               formData.adjacentCountry1 ? 'pl-12' : 'pl-3'
                             }`}
                           >
-                            <option value="">Select adjacent country</option>
+                            <option value="">{t('create.selectAdjacentCountry')}</option>
                             {adjacentCountries1.map(country => (
                               <option key={country.id} value={country.id}>
-                                {country.name}
+                                {formatCountryName(country, i18n.language)}
                               </option>
                             ))}
                           </select>
@@ -545,7 +548,7 @@ const CreateCompetition = () => {
                       className="flex items-center gap-2 text-sm text-primary hover:text-primary/80 font-medium"
                     >
                       <Plus className="w-4 h-4" />
-                      Add third country
+                      {t('create.addThirdCountry')}
                     </button>
                   )}
 
@@ -553,7 +556,7 @@ const CreateCompetition = () => {
                     <div className="flex items-end gap-2">
                       <div className="flex-1">
                         <label htmlFor="adjacentCountry2" className="block text-sm font-medium text-gray-700 mb-1">
-                          Third Country
+                          {t('create.thirdCountry')}
                         </label>
                         <div className="relative">
                           <select
@@ -565,12 +568,12 @@ const CreateCompetition = () => {
                               formData.adjacentCountry2 ? 'pl-12' : 'pl-3'
                             }`}
                           >
-                            <option value="">Select third country</option>
+                            <option value="">{t('create.selectThirdCountry')}</option>
                             {adjacentCountries2
                               .filter(c => c.code !== formData.adjacentCountry1)
                               .map(country => (
                                 <option key={country.id} value={country.id}>
-                                  {country.name}
+                                  {formatCountryName(country, i18n.language)}
                                 </option>
                               ))}
                           </select>
@@ -601,14 +604,14 @@ const CreateCompetition = () => {
                   <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
                     <Settings className="w-5 h-5 text-primary" />
                   </div>
-                  <h3 className="text-gray-900 font-bold text-lg">RyderCup Settings</h3>
+                  <h3 className="text-gray-900 font-bold text-lg">{t('create.ryderCupSettings')}</h3>
                 </div>
 
                 <div className="space-y-4">
                   {/* Handicap Type */}
                   <div>
                     <span className="block text-sm font-medium text-gray-700 mb-2">
-                      Handicap Type *
+                      {t('create.handicapType')}
                     </span>
                     <div className="flex gap-4">
                       <input
@@ -621,7 +624,7 @@ const CreateCompetition = () => {
                         className="w-4 h-4 text-primary focus:ring-primary"
                       />
                       <label htmlFor="handicapType-scratch" className="flex items-center gap-2 cursor-pointer">
-                        <span className="text-sm text-gray-700">Scratch</span>
+                        <span className="text-sm text-gray-700">{t('create.scratch')}</span>
                       </label>
                       <input
                         id="handicapType-percentage"
@@ -633,7 +636,7 @@ const CreateCompetition = () => {
                         className="w-4 h-4 text-primary focus:ring-primary"
                       />
                       <label htmlFor="handicapType-percentage" className="flex items-center gap-2 cursor-pointer">
-                        <span className="text-sm text-gray-700">Percentage</span>
+                        <span className="text-sm text-gray-700">{t('create.percentage')}</span>
                       </label>
                     </div>
                   </div>
@@ -642,7 +645,7 @@ const CreateCompetition = () => {
                   {formData.handicapType === 'PERCENTAGE' && (
                     <div>
                       <span className="block text-sm font-medium text-gray-700 mb-2">
-                        Handicap Percentage
+                        {t('create.handicapPercentage')}
                       </span>
                       <div className="flex gap-4">
                         {['100', '95', '90'].map(percentage => (
@@ -668,7 +671,7 @@ const CreateCompetition = () => {
                   {/* Number of Players */}
                   <div>
                     <label htmlFor="numberOfPlayers" className="block text-sm font-medium text-gray-700 mb-1">
-                      Number of Players *
+                      {t('create.numberOfPlayers')}
                     </label>
                     <input
                       id="numberOfPlayers"
@@ -677,7 +680,7 @@ const CreateCompetition = () => {
                       value={formData.numberOfPlayers === undefined ? '' : formData.numberOfPlayers}
                       onChange={handleInputChange}
                       min="1"
-                      placeholder="Enter total number of players"
+                      placeholder={t('create.numberOfPlayersPlaceholder')}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                     />
                   </div>
@@ -685,7 +688,7 @@ const CreateCompetition = () => {
                   {/* Team Assignment */}
                   <div>
                     <span className="block text-sm font-medium text-gray-700 mb-2">
-                      Team Assignment *
+                      {t('create.teamAssignment')}
                     </span>
                     <div className="relative">
                       <select
@@ -695,8 +698,8 @@ const CreateCompetition = () => {
                         onChange={handleInputChange}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary appearance-none"
                       >
-                        <option value="manual">Manual</option>
-                        <option value="automatic">Automatic</option>
+                        <option value="manual">{t('create.manual')}</option>
+                        <option value="automatic">{t('create.automatic')}</option>
                       </select>
                       <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
                     </div>
@@ -705,7 +708,7 @@ const CreateCompetition = () => {
                   {/* Player Handicap Source */}
                   <div>
                     <span className="block text-sm font-medium text-gray-700 mb-2">
-                      Player Handicap *
+                      {t('create.playerHandicap')}
                     </span>
                     <div className="relative">
                       <select
@@ -715,8 +718,8 @@ const CreateCompetition = () => {
                         onChange={handleInputChange}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary appearance-none"
                       >
-                        <option value="custom">Custom by competition creator</option>
-                        <option value="user">User handicap</option>
+                        <option value="custom">{t('create.customByCreator')}</option>
+                        <option value="user">{t('create.userHandicap')}</option>
                       </select>
                       <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
                     </div>
@@ -731,14 +734,14 @@ const CreateCompetition = () => {
                   onClick={() => navigate('/competitions')}
                   className="px-6 py-2.5 bg-gray-100 text-gray-900 text-sm font-bold rounded-lg hover:bg-gray-200 transition-colors"
                 >
-                  Cancel
+                  {t('create.cancel')}
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
                   className="px-6 py-2.5 bg-primary text-white text-sm font-bold rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {isSubmitting ? 'Creating...' : 'Create Competition'}
+                  {isSubmitting ? t('create.creating') : t('create.createCompetition')}
                 </button>
               </div>
             </form>
@@ -746,7 +749,7 @@ const CreateCompetition = () => {
             {/* Footer */}
             <footer className="flex flex-col gap-6 px-5 py-10 text-center">
               <p className="text-gray-500 text-base font-normal leading-normal">
-                © 2025 RyderCupFriends
+                {t('footer')}
               </p>
             </footer>
           </div>

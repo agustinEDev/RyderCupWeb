@@ -7,7 +7,7 @@ import { apiRequest } from './api';
 
 /**
  * Get all active countries
- * @returns {Promise<array>} List of countries
+ * @returns {Promise<array>} List of countries with name_en and name_es
  */
 export const getCountries = async () => {
   try {
@@ -24,7 +24,7 @@ export const getCountries = async () => {
 /**
  * Get adjacent countries for a given country code
  * @param {string} countryCode - ISO country code (e.g., 'ES')
- * @returns {Promise<array>} List of adjacent countries
+ * @returns {Promise<array>} List of adjacent countries with name_en and name_es
  */
 export const getAdjacentCountries = async (countryCode) => {
   try {
@@ -43,7 +43,7 @@ export const getAdjacentCountries = async (countryCode) => {
  * Used for finding valid third country that's adjacent to both first and second
  * @param {string} countryCode1 - First country code
  * @param {string} countryCode2 - Second country code
- * @returns {Promise<array>} List of countries adjacent to both
+ * @returns {Promise<array>} List of countries adjacent to both with name_en and name_es
  */
 export const getCommonAdjacentCountries = async (countryCode1, countryCode2) => {
   try {
@@ -216,5 +216,15 @@ export const getAdjacentCountriesFallback = (countryCode) => {
  * @returns {string}
  */
 export const formatCountryName = (country, language = 'en') => {
-  return language === 'es' ? country.name_es : country.name_en;
+  if (!country) return '';
+  return language === 'es' ? (country.name_es || country.name_en || country.name) : (country.name_en || country.name);
+};
+
+/**
+ * Get country name field based on language
+ * @param {string} language - 'en' or 'es'
+ * @returns {string} - Field name to use ('name_en' or 'name_es')
+ */
+export const getCountryNameField = (language = 'en') => {
+  return language === 'es' ? 'name_es' : 'name_en';
 };

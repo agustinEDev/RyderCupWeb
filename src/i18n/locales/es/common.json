@@ -10,5 +10,28 @@
   "submit": "Enviar",
   "delete": "Eliminar",
   "edit": "Editar",
-  "close": "Cerrar"
+  "close": "Cerrar",
+  "header": {
+    "features": "Características",
+    "pricing": "Precios",
+    "support": "Soporte",
+    "register": "Registrarse",
+    "signIn": "Iniciar Sesión"
+  },
+  "footer": {
+    "description": "La plataforma definitiva para gestionar torneos de golf amateur en formato Ryder Cup. Conecta con amigos y disfruta del espíritu de la competencia amistosa.",
+    "quickLinks": "Enlaces Rápidos",
+    "features": "Características",
+    "pricing": "Precios",
+    "support": "Soporte",
+    "getStarted": "Comenzar",
+    "legal": "Legal",
+    "terms": "Términos de Servicio",
+    "privacy": "Política de Privacidad",
+    "cookies": "Política de Cookies",
+    "contact": "Contáctanos",
+    "copyright": "© 2024 RyderCupFriends - RCF. Todos los derechos reservados.",
+    "madeWith": "Hecho con",
+    "forGolfers": "para los entusiastas del golf"
+  }
 }

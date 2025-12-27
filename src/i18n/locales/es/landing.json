@@ -38,6 +38,22 @@
     "verifiedBadge": "Plataforma Verificada",
     "title": "Por qué los Entusiastas del Golf Aman RyderCupFriends",
     "subtitle": "Únete a miles de golfistas amateur que han transformado su experiencia de torneos",
+    "simple": {
+      "title": "Simple e Intuitivo",
+      "description": "Sin configuración complicada. Comienza en minutos."
+    },
+    "mobile": {
+      "title": "Amigable para Móviles",
+      "description": "Gestiona tu torneo desde cualquier lugar, en cualquier dispositivo."
+    },
+    "fair": {
+      "title": "Competencia Justa",
+      "description": "Sistema avanzado de handicap asegura que todos tengan oportunidad de ganar."
+    },
+    "community": {
+      "title": "Enfocado en la Comunidad",
+      "description": "Conecta con otros entusiastas del golf y construye amistades duraderas."
+    },
     "easySetup": {
       "title": "Configuración Rápida y Fácil",
       "description": "Crea tu primer torneo en menos de 5 minutos"
@@ -105,6 +121,7 @@
     "title": "¿Listo para Transformar tus Torneos de Golf?",
     "subtitle": "Únete a miles de golfistas que ya usan RyderCupFriends",
     "button": "Comienza tu Prueba Gratis",
+    "learnMore": "Saber Más",
     "noCredit": "No se requiere tarjeta de crédito"
   }
 }
