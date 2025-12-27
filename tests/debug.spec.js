@@ -69,9 +69,8 @@ test.describe('Debug Login', () => {
     const testPassword = process.env.TEST_PASSWORD;
 
     if (!testEmail || !testPassword) {
-      throw new Error(
-        'Missing test credentials. Please set TEST_EMAIL and TEST_PASSWORD environment variables.'
-      );
+      test.skip(true, 'Skipping: TEST_EMAIL and TEST_PASSWORD not set. See .env.example for setup instructions.');
+      return;
     }
 
     // Try to fill the form
