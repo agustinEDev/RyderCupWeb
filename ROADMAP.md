@@ -457,9 +457,9 @@ Ver plan detallado en sección [🔐 SEGURIDAD](#-seguridad---mejoras-prioritari
 - ✅ 3 endpoints REST disponibles
 - ✅ Security features completas (token 256-bit, rate limiting, anti-enumeración)
 
-**Progreso:** 2/8 fases completadas (25%)
+**Progreso:** 3/8 fases completadas (37.5%)
 
-**Última actualización:** 27 Dic 2025 - FASE 2 ✅ Completada
+**Última actualización:** 27 Dic 2025 - FASE 3 ✅ Completada
 
 **Fases de Implementación:**
 
@@ -527,23 +527,34 @@ Ver plan detallado en sección [🔐 SEGURIDAD](#-seguridad---mejoras-prioritari
 
 ---
 
-#### FASE 3: Presentation Layer - ForgotPasswordPage
+#### FASE 3: Presentation Layer - ForgotPasswordPage ✅ COMPLETADA
 **Estimación:** 1.5-2 horas
-**Estado:** ⏳ Pendiente
+**Tiempo real:** ~1.5 horas (27 Dic 2025)
+**Estado:** ✅ Completado
+**Commit:** `e4e9b21` - feat(auth): Add ForgotPasswordPage component with anti-enumeration
 
-- [ ] Form con input email
-- [ ] Validación con `validateEmail()` de `utils/validation.js`
-- [ ] Botón "Enviar Enlace" con loading state
-- [ ] Mensaje de éxito genérico (anti-enumeración)
-- [ ] Manejo de rate limiting (429)
-- [ ] Link "Volver al Login"
-- [ ] Toast notifications (`react-hot-toast`)
-- [ ] Diseño consistente con Login.jsx/Register.jsx
-- [ ] Animaciones Framer Motion
-- [ ] Responsive (mobile, tablet, desktop)
+- [x] Form con input email ✅
+- [x] Validación con `validateEmail()` de `utils/validation.js` ✅
+- [x] Botón "Enviar Enlace" con loading state ✅
+- [x] Mensaje de éxito genérico (anti-enumeración) ✅
+- [x] Manejo de rate limiting (429) ✅
+- [x] Link "Volver al Login" ✅
+- [x] Toast notifications (`react-hot-toast`) ✅
+- [x] Diseño consistente con Login.jsx/Register.jsx ✅
+- [x] Animaciones Framer Motion ✅
+- [x] Responsive (mobile, tablet, desktop) ✅
 
-**Archivos a crear:**
-- `src/pages/ForgotPassword.jsx`
+**Características implementadas:**
+- UI de 2 estados (formulario + confirmación)
+- Integración con `RequestPasswordResetUseCase`
+- Validación frontend con feedback visual
+- Rate limiting visual feedback (6000ms toast duration)
+- Mensajería anti-enumeración (OWASP A01)
+- Links de navegación (login, registro)
+- Layout 2-columnas responsive (imagen + form)
+
+**Archivos creados:**
+- ✅ `src/pages/ForgotPassword.jsx` (475 líneas)
 
 ---
 
@@ -666,17 +677,17 @@ Ver plan detallado en sección [🔐 SEGURIDAD](#-seguridad---mejoras-prioritari
 
 **Resumen de Fases:**
 
-| Fase | Tarea | Estimación | Archivos | Tests |
-|------|-------|-----------|----------|-------|
-| 1 | Application Layer (3 Use Cases) | 1-2h | 3 nuevos | 20-25 tests |
-| 2 | Infrastructure Layer (Repository) | 0.5-1h | 1 modificado | 8-10 tests |
-| 3 | ForgotPasswordPage | 1.5-2h | 1 nuevo | - |
-| 4 | ResetPasswordPage | 1.5-2h | 1 nuevo | - |
-| 5 | Routing + DI | 0.25h | 3 modificados | - |
-| 6 | Testing Unitario | 2-3h | 4 archivos test | 25-30 tests |
-| 7 | Testing E2E | 2-3h | 1 archivo test | 6-8 tests |
-| 8 | Documentación | 0.5-0.75h | 3 documentos | - |
-| **TOTAL** | **Implementación completa** | **10-14.5h** | **13 archivos** | **~60 tests** |
+| Fase | Tarea | Estimación | Real | Archivos | Tests | Estado |
+|------|-------|-----------|------|----------|-------|--------|
+| 1 | Application Layer (3 Use Cases) | 1-2h | 1.5h | 3 nuevos | 20-25 tests | ✅ |
+| 2 | Infrastructure Layer (Repository) | 0.5-1h | 0.5h | 1 modificado | 8-10 tests | ✅ |
+| 3 | ForgotPasswordPage | 1.5-2h | 1.5h | 1 nuevo | - | ✅ |
+| 4 | ResetPasswordPage | 1.5-2h | - | 1 nuevo | - | ⏳ |
+| 5 | Routing + DI | 0.25h | - | 3 modificados | - | ⏳ |
+| 6 | Testing Unitario | 2-3h | - | 4 archivos test | 25-30 tests | ⏳ |
+| 7 | Testing E2E | 2-3h | - | 1 archivo test | 6-8 tests | ⏳ |
+| 8 | Documentación | 0.5-0.75h | - | 3 documentos | - | ⏳ |
+| **TOTAL** | **Implementación completa** | **10-14.5h** | **3.5h** | **13 archivos** | **~60 tests** | **37.5%** |
 
 **OWASP Categories Addressed:**
 - ✅ A01: Broken Access Control (mensaje genérico anti-enumeración)
