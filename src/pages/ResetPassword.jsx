@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useSearchParams, useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
@@ -51,6 +51,21 @@ const ResetPassword = () => {
   });
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
+
+  // Ref para cleanup del timer de navegación (prevenir memory leak)
+  const navigationTimerRef = useRef(null);
+
+  /**
+   * Cleanup: limpiar timer de navegación al desmontar
+   * Previene memory leak si el componente se desmonta antes de que se ejecute setTimeout
+   */
+  useEffect(() => {
+    return () => {
+      if (navigationTimerRef.current) {
+        clearTimeout(navigationTimerRef.current);
+      }
+    };
+  }, []);
 
   /**
    * Pre-validación del token al montar el componente
@@ -136,7 +151,8 @@ const ResetPassword = () => {
       });
 
       // Redireccionar a login tras 2 segundos
-      setTimeout(() => {
+      // Guardar timer ID para cleanup (prevenir memory leak)
+      navigationTimerRef.current = setTimeout(() => {
         navigate('/login', {
           replace: true,
           state: { message: 'Your password has been changed. You can now sign in.' },
@@ -162,7 +178,7 @@ const ResetPassword = () => {
           duration: 5000,
         });
       }
-
+    } finally {
       setIsLoading(false);
     }
   };

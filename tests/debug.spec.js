@@ -1,16 +1,24 @@
 import { test } from '@playwright/test';
 
+// Check for required environment variables before defining tests
+const testEmail = process.env.TEST_EMAIL;
+const testPassword = process.env.TEST_PASSWORD;
+const missingEnvVars = !testEmail || !testPassword;
+
 test.describe('Debug Login', () => {
-  test('should show login form and attempt login with debug', async ({ page }) => {
+  // Conditionally skip if env vars are missing
+  const maybeTest = missingEnvVars ? test.skip : test;
+
+  maybeTest('should show login form and attempt login with debug', async ({ page }) => {
     // Listen to all network requests
     const responses = [];
     page.on('response', async response => {
       const url = response.url();
       const status = response.status();
       const ok = response.ok();
-      
+
       responses.push({ url, status, ok });
-      
+
       // If it's the login request, capture the response body
       if (url.includes('/auth/login')) {
         try {
@@ -25,52 +33,43 @@ test.describe('Debug Login', () => {
         }
       }
     });
-    
+
     // Also listen to requests (avoid logging sensitive data)
     page.on('request', async request => {
       if (request.url().includes('/auth/login')) {
         console.log('📤 Login request sent to:', request.url());
       }
     });
-    
+
     // Navigate to login
     await page.goto('/login');
-    
+
     // Wait a bit for page to load
     await page.waitForLoadState('networkidle');
-    
+
     // Take screenshot
     await page.screenshot({ path: 'debug-login-initial.png', fullPage: true });
-    
+
     // Check what we have on the page
     const heading = await page.locator('h1, h2, h3').allTextContents();
     console.log('📋 Headings found:', heading);
-    
+
     // Check for email input
     const emailInput = page.locator('input[type="email"]');
     const emailCount = await emailInput.count();
     console.log('📧 Email inputs found:', emailCount);
-    
+
     if (emailCount > 0) {
       console.log('📧 Email placeholder:', await emailInput.getAttribute('placeholder'));
     }
-    
+
     // Check for password input
     const passwordInput = page.locator('input[type="password"]');
     const passwordCount = await passwordInput.count();
     console.log('🔒 Password inputs found:', passwordCount);
-    
+
     if (passwordCount > 0) {
       console.log('🔒 Password placeholder:', await passwordInput.getAttribute('placeholder'));
-    }
-    
-    // Validate environment variables for test credentials
-    const testEmail = process.env.TEST_EMAIL;
-    const testPassword = process.env.TEST_PASSWORD;
-
-    if (!testEmail || !testPassword) {
-      test.skip(true, 'Skipping: TEST_EMAIL and TEST_PASSWORD not set. See .env.example for setup instructions.');
-      return;
     }
 
     // Try to fill the form

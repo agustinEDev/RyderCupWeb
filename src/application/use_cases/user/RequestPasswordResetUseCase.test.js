@@ -184,7 +184,7 @@ describe('RequestPasswordResetUseCase', () => {
 
       // Assert
       expect(result.success).toBe(true);
-      expect(result.message).toBe('Si el email existe, se ha enviado un enlace de recuperación');
+      expect(result.message).toBe('If the email exists, a recovery link has been sent');
     });
   });
 });

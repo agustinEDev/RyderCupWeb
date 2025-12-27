@@ -31,13 +31,13 @@ class ValidateResetTokenUseCase {
 
       return {
         valid: true,
-        message: result.message || 'Token válido. Puedes proceder a cambiar tu contraseña.'
+        message: result.message || 'Token is valid. You can proceed to change your password.'
       };
     } catch (error) {
-      // Si el backend retorna 400, el token es inválido o expirado
+      // If backend returns 400, token is invalid or expired
       return {
         valid: false,
-        message: error.message || 'El token es inválido o ha expirado'
+        message: error.message || 'The token is invalid or has expired'
       };
     }
   }

@@ -52,7 +52,7 @@ describe('ResetPasswordUseCase', () => {
       // Assert
       expect(result.success).toBe(true);
       expect(result.message).toBe(
-        'Contraseña cambiada exitosamente. Por favor, inicia sesión nuevamente.'
+        'Password changed successfully. Please log in again.'
       );
     });
   });
@@ -109,8 +109,8 @@ describe('ResetPasswordUseCase', () => {
     });
 
     it('should throw error if password is too long (>128 chars)', async () => {
-      // Arrange
-      const longPassword = 'A'.repeat(129) + '1a';
+      // Arrange: 129 characters (exceeds 128 limit)
+      const longPassword = 'A'.repeat(129);
 
       // Act & Assert
       await expect(resetPasswordUseCase.execute('valid_token', longPassword)).rejects.toThrow(

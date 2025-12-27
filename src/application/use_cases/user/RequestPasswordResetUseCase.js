@@ -33,7 +33,7 @@ class RequestPasswordResetUseCase {
 
     return {
       success: true,
-      message: result.message || 'Si el email existe, se ha enviado un enlace de recuperación'
+      message: result.message || 'If the email exists, a recovery link has been sent'
     };
   }
 }
