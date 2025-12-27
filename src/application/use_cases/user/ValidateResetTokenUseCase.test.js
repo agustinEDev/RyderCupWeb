@@ -52,7 +52,7 @@ describe('ValidateResetTokenUseCase', () => {
 
       // Assert
       expect(result.valid).toBe(true);
-      expect(result.message).toBe('Token válido. Puedes proceder a cambiar tu contraseña.');
+      expect(result.message).toBe('Token is valid. You can proceed to change your password.');
     });
   });
 
@@ -116,7 +116,7 @@ describe('ValidateResetTokenUseCase', () => {
 
       // Assert
       expect(result.valid).toBe(false);
-      expect(result.message).toBe('El token es inválido o ha expirado');
+      expect(result.message).toBe('The token is invalid or has expired');
     });
   });
 
@@ -223,7 +223,7 @@ describe('ValidateResetTokenUseCase', () => {
       expect(authRepository.validateResetToken).toHaveBeenCalledWith(token);
     });
 
-    it('should trim whitespace from token', async () => {
+    it('should pass tokens with whitespace as-is to repository', async () => {
       // Arrange
       const token = '  valid_token  ';
       const mockResponse = {
@@ -238,7 +238,7 @@ describe('ValidateResetTokenUseCase', () => {
 
       // Assert
       expect(result.valid).toBe(true);
-      // El token se envía tal cual (el trim ya lo hace el if)
+      // Token is sent unchanged - trim is only used for validation check
       expect(authRepository.validateResetToken).toHaveBeenCalledWith(token);
     });
   });

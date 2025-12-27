@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Calendar, Trophy, MapPin, Settings, Plus, X, ChevronDown } from 'lucide-react';
 import HeaderAuth from '../components/layout/HeaderAuth';
@@ -20,6 +20,9 @@ const CreateCompetition = () => {
   const { user, loading: isLoading } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
+
+  // Ref para cleanup del timer de navegación (prevenir memory leak)
+  const navigationTimerRef = useRef(null);
 
   // Countries data
   const [allCountries, setAllCountries] = useState([]);
@@ -51,6 +54,18 @@ const CreateCompetition = () => {
     teamAssignment: 'manual',
     playerHandicap: 'user'
   });
+
+  /**
+   * Cleanup: limpiar timer de navegación al desmontar
+   * Previene memory leak si el componente se desmonta antes de que se ejecute setTimeout
+   */
+  useEffect(() => {
+    return () => {
+      if (navigationTimerRef.current) {
+        clearTimeout(navigationTimerRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     // Fetch all countries
@@ -262,7 +277,8 @@ const CreateCompetition = () => {
 
       setMessage({ type: 'success', text: 'Competition created successfully!' });
 
-      setTimeout(() => {
+      // Guardar timer ID para cleanup (prevenir memory leak)
+      navigationTimerRef.current = setTimeout(() => {
         navigate(`/competitions/${createdCompetition.id}`);
       }, 1500);
 
