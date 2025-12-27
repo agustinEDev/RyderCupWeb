@@ -160,13 +160,13 @@ const CompetitionDetail = () => {
     try {
       // ApproveEnrollmentUseCase expects (competitionId, enrollmentId, teamId?)
       await approveEnrollmentUseCase.execute(competition.id, enrollmentId);
-      toast.success(t('detail.approve'));
+      toast.success(t('detail.enrollmentApproved'));
       // Reload enrollments to update the list
       const enrollmentsData = await listEnrollmentsUseCase.execute(competition.id);
       setEnrollments(enrollmentsData);
     } catch (error) {
       console.error('Error approving enrollment:', error);
-      toast.error(error.message || 'Failed to approve enrollment');
+      toast.error(error.message || t('detail.failedToApprove'));
     }
   };
 
@@ -177,13 +177,13 @@ const CompetitionDetail = () => {
     try {
       // RejectEnrollmentUseCase expects (competitionId, enrollmentId)
       await rejectEnrollmentUseCase.execute(competition.id, enrollmentId);
-      toast.success(t('detail.reject'));
+      toast.success(t('detail.enrollmentRejected'));
       // Reload enrollments to update the list
       const enrollmentsData = await listEnrollmentsUseCase.execute(competition.id);
       setEnrollments(enrollmentsData);
     } catch (error) {
       console.error('Error rejecting enrollment:', error);
-      toast.error(error.message || 'Failed to reject enrollment');
+      toast.error(error.message || t('detail.failedToReject'));
     }
   };
 
