@@ -457,9 +457,9 @@ Ver plan detallado en sección [🔐 SEGURIDAD](#-seguridad---mejoras-prioritari
 - ✅ 3 endpoints REST disponibles
 - ✅ Security features completas (token 256-bit, rate limiting, anti-enumeración)
 
-**Progreso:** 4/8 fases completadas (50%)
+**Progreso:** 5/8 fases completadas (62.5%)
 
-**Última actualización:** 27 Dic 2025 - FASE 4 ✅ Completada
+**Última actualización:** 27 Dic 2025 - FASE 5 ✅ Completada
 
 **Fases de Implementación:**
 
@@ -592,25 +592,39 @@ Ver plan detallado en sección [🔐 SEGURIDAD](#-seguridad---mejoras-prioritari
 
 ---
 
-#### FASE 5: Routing y Dependency Injection
+#### FASE 5: Routing y Dependency Injection ✅ COMPLETADA
 **Estimación:** 15-20 minutos
-**Estado:** ⏳ Pendiente
+**Tiempo real:** ~15 minutos (27 Dic 2025)
+**Estado:** ✅ Completado
+**Commit:** `a7b2ad0` - feat(auth): Add routing and dependency injection for password reset
 
-- [ ] Agregar rutas públicas en `App.jsx`:
-  - `/forgot-password` → `<ForgotPassword />`
-  - `/reset-password` → `<ResetPassword />`
+- [x] Agregar rutas públicas en `App.jsx`: ✅
+  - `/forgot-password` → `<ForgotPassword />` (con lazy loading)
+  - `/reset-password` → `<ResetPassword />` (con lazy loading)
+  - Integradas con Sentry tracking
 
-- [ ] Agregar link en `Login.jsx`: "¿Olvidaste tu contraseña?" → `/forgot-password`
+- [x] Agregar link en `Login.jsx`: "Forgot password?" → `/forgot-password` ✅
+  - Posicionado junto al label de password (flex layout)
+  - Styled con primary color y hover transition
 
-- [ ] Actualizar `composition/index.js`:
+- [x] Actualizar `composition/index.js`: ✅
   - Importar 3 Use Cases
-  - Inyectar `authRepository`
-  - Exportar instancias
+  - Inyectar `authRepository` en constructores
+  - Exportar instancias para presentación
 
-**Archivos a modificar:**
-- `src/App.jsx`
-- `src/pages/Login.jsx`
-- `src/composition/index.js`
+**Características implementadas:**
+- Clean Architecture DI pattern
+- Lazy loading para code splitting
+- Use Cases con dependency injection
+- Composition root centralizado
+- Sentry route tracking automático
+
+**Archivos modificados:**
+- ✅ `src/App.jsx` (+4 líneas)
+- ✅ `src/pages/Login.jsx` (+8 líneas)
+- ✅ `src/composition/index.js` (+12 líneas)
+
+**Total:** 3 archivos, +24 líneas
 
 ---
 
@@ -695,11 +709,11 @@ Ver plan detallado en sección [🔐 SEGURIDAD](#-seguridad---mejoras-prioritari
 | 2 | Infrastructure Layer (Repository) | 0.5-1h | 0.5h | 1 modificado | 8-10 tests | ✅ |
 | 3 | ForgotPasswordPage | 1.5-2h | 1.5h | 1 nuevo | - | ✅ |
 | 4 | ResetPasswordPage | 1.5-2h | 1.5h | 1 nuevo | - | ✅ |
-| 5 | Routing + DI | 0.25h | - | 3 modificados | - | ⏳ |
+| 5 | Routing + DI | 0.25h | 0.25h | 3 modificados | - | ✅ |
 | 6 | Testing Unitario | 2-3h | - | 4 archivos test | 25-30 tests | ⏳ |
 | 7 | Testing E2E | 2-3h | - | 1 archivo test | 6-8 tests | ⏳ |
 | 8 | Documentación | 0.5-0.75h | - | 3 documentos | - | ⏳ |
-| **TOTAL** | **Implementación completa** | **10-14.5h** | **5h** | **13 archivos** | **~60 tests** | **50%** |
+| **TOTAL** | **Implementación completa** | **10-14.5h** | **5.25h** | **13 archivos** | **~60 tests** | **62.5%** |
 
 **OWASP Categories Addressed:**
 - ✅ A01: Broken Access Control (mensaje genérico anti-enumeración)
