@@ -129,7 +129,7 @@ const ResetPassword = () => {
     setIsLoading(true);
 
     try {
-      const result = await resetPasswordUseCase.execute(token, formData.newPassword);
+      await resetPasswordUseCase.execute(token, formData.newPassword);
 
       toast.success('Password changed successfully! Please sign in.', {
         duration: 5000,

@@ -40,7 +40,7 @@ const ForgotPassword = () => {
     setIsLoading(true);
 
     try {
-      const result = await requestPasswordResetUseCase.execute(email);
+      await requestPasswordResetUseCase.execute(email);
 
       toast.success('Email sent! Check your inbox.');
       setSubmitted(true);
