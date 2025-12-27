@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
+import { useTranslation } from 'react-i18next';
 import { validateEmail, validateName, validatePassword } from '../utils/validation';
 import PasswordInput from '../components/ui/PasswordInput';
 import PasswordStrengthIndicator from '../components/ui/PasswordStrengthIndicator';
@@ -11,6 +12,7 @@ import { CountryFlag } from '../utils/countryUtils';
 const API_URL = import.meta.env.VITE_API_BASE_URL || '';
 
 const Register = () => {
+  const { t } = useTranslation('auth');
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     firstName: '',
@@ -117,19 +119,19 @@ const Register = () => {
         countryCode: formData.countryCode || null // Enviar countryCode si existe, sino null
       });
 
-      toast.success('Account created successfully!');
+      toast.success(t('register.success'));
 
       // Guardar timer ID para cleanup (prevenir memory leak)
       navigationTimerRef.current = setTimeout(() => {
         navigate('/login', {
           state: {
-            message: 'Account created successfully. Please sign in.'
+            message: t('register.successMessage')
           }
         });
       }, 1000);
 
     } catch (error) {
-      toast.error(error.message || 'Error creating account');
+      toast.error(error.message || t('register.error'));
     } finally {
       setIsLoading(false);
     }
@@ -183,20 +185,20 @@ const Register = () => {
             <div className="space-y-6">
               <div>
                 <h2 className="text-4xl font-black font-poppins mb-4 leading-tight">
-                  Join Our Community
+                  {t('register.heroTitle')}
                 </h2>
                 <p className="text-xl text-white/90 leading-relaxed">
-                  Create your account and start organizing amazing golf tournaments with your friends.
+                  {t('register.heroSubtitle')}
                 </p>
               </div>
 
               {/* Benefits */}
               <div className="space-y-4 mt-8">
                 {[
-                  { icon: '⚡', text: 'Quick & Easy Setup' },
-                  { icon: '🎯', text: 'Fair Handicap System' },
-                  { icon: '📱', text: 'Mobile Friendly' },
-                  { icon: '🤝', text: 'Build Lasting Friendships' }
+                  { icon: '⚡', text: t('register.benefits.quickSetup') },
+                  { icon: '🎯', text: t('register.benefits.fairHandicap') },
+                  { icon: '📱', text: t('register.benefits.mobileFriendly') },
+                  { icon: '🤝', text: t('register.benefits.friendships') }
                 ].map((item, idx) => (
                   <motion.div
                     key={item.text}
@@ -217,15 +219,15 @@ const Register = () => {
               <div className="grid grid-cols-3 gap-6 pt-8 mt-8 border-t border-white/20">
                 <div>
                   <div className="text-3xl font-bold font-poppins">500+</div>
-                  <div className="text-sm text-white/70 mt-1">Tournaments</div>
+                  <div className="text-sm text-white/70 mt-1">{t('register.stats.tournaments')}</div>
                 </div>
                 <div>
                   <div className="text-3xl font-bold font-poppins">2K+</div>
-                  <div className="text-sm text-white/70 mt-1">Players</div>
+                  <div className="text-sm text-white/70 mt-1">{t('register.stats.players')}</div>
                 </div>
                 <div>
                   <div className="text-3xl font-bold font-poppins">98%</div>
-                  <div className="text-sm text-white/70 mt-1">Satisfaction</div>
+                  <div className="text-sm text-white/70 mt-1">{t('register.stats.satisfaction')}</div>
                 </div>
               </div>
             </div>
@@ -268,10 +270,10 @@ const Register = () => {
               {/* Header */}
               <div className="mb-8">
                 <h2 className="text-3xl font-black text-gray-900 font-poppins mb-2">
-                  Create Account
+                  {t('register.title')}
                 </h2>
                 <p className="text-gray-600">
-                  Fill in your details to get started
+                  {t('register.subtitle')}
                 </p>
               </div>
 
@@ -283,13 +285,13 @@ const Register = () => {
                   {/* First Name */}
                   <div>
                     <label htmlFor="firstName" className="block text-sm font-semibold text-gray-700 mb-2">
-                      First Name
+                      {t('register.firstNameLabel')}
                     </label>
                     <input
                       id="firstName"
                       type="text"
                       name="firstName"
-                      placeholder="John"
+                      placeholder={t('register.firstNamePlaceholder')}
                       value={formData.firstName}
                       onChange={handleChange}
                       maxLength={100}
@@ -317,13 +319,13 @@ const Register = () => {
                   {/* Last Name */}
                   <div>
                     <label htmlFor="lastName" className="block text-sm font-semibold text-gray-700 mb-2">
-                      Last Name
+                      {t('register.lastNameLabel')}
                     </label>
                     <input
                       id="lastName"
                       type="text"
                       name="lastName"
-                      placeholder="Doe"
+                      placeholder={t('register.lastNamePlaceholder')}
                       value={formData.lastName}
                       onChange={handleChange}
                       maxLength={100}
@@ -352,13 +354,13 @@ const Register = () => {
                 {/* Email */}
                 <div>
                   <label htmlFor="email" className="block text-sm font-semibold text-gray-700 mb-2">
-                    Email Address
+                    {t('register.emailLabel')}
                   </label>
                   <input
                     id="email"
                     type="email"
                     name="email"
-                    placeholder="your.email@example.com"
+                    placeholder={t('register.emailPlaceholder')}
                     value={formData.email}
                     onChange={handleChange}
                     maxLength={254}
@@ -386,13 +388,13 @@ const Register = () => {
                 {/* Password */}
                 <div>
                   <label htmlFor="password" className="block text-sm font-semibold text-gray-700 mb-2">
-                    Password
+                    {t('register.passwordLabel')}
                   </label>
                   <PasswordInput
                     name="password"
                     value={formData.password}
                     onChange={handleChange}
-                    placeholder="Minimum 12 characters"
+                    placeholder={t('register.passwordPlaceholder')}
                     maxLength={128}
                     error={!!errors.password}
                     disabled={isLoading}
@@ -425,7 +427,7 @@ const Register = () => {
                 {/* Nationality (Optional) */}
                 <div>
                   <label htmlFor="countryCode" className="block text-sm font-semibold text-gray-700 mb-2">
-                    Nationality <span className="text-gray-400 font-normal">(Optional)</span>
+                    {t('register.countryLabel')} <span className="text-gray-400 font-normal">{t('register.countryOptional')}</span>
                   </label>
                   <div className="relative">
                     <select
@@ -438,7 +440,7 @@ const Register = () => {
                       }`}
                       disabled={isLoading || isLoadingCountries}
                     >
-                      <option value="">Select your country (optional)</option>
+                      <option value="">{t('register.countryPlaceholder')}</option>
                       {countries.map((country) => (
                         <option key={country.code} value={country.code}>
                           {country.name_en || country.name || country.code}
@@ -462,7 +464,7 @@ const Register = () => {
                     <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
                     </svg>
-                    Select Spain to enable RFEG handicap updates
+                    {t('register.countryHint')}
                   </p>
                 </div>
 
@@ -474,13 +476,13 @@ const Register = () => {
                     </svg>
                   </div>
                   <p className="text-xs text-gray-600">
-                    By creating an account, you agree to our{' '}
+                    {t('register.termsPrefix')}{' '}
                     <a href="#terms" className="text-primary hover:text-primary-600 font-semibold">
-                      Terms of Service
+                      {t('register.termsLink')}
                     </a>
-                    {' '}and{' '}
+                    {' '}{t('register.termsAnd')}{' '}
                     <a href="#privacy" className="text-primary hover:text-primary-600 font-semibold">
-                      Privacy Policy
+                      {t('register.privacyLink')}
                     </a>
                   </p>
                 </div>
@@ -503,10 +505,10 @@ const Register = () => {
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                       </svg>
-                      Creating account...
+                      {t('register.creatingAccount')}
                     </span>
                   ) : (
-                    'Create Account'
+                    t('register.createAccountButton')
                   )}
                 </motion.button>
 
@@ -525,12 +527,12 @@ const Register = () => {
               {/* Login Link */}
               <div className="text-center">
                 <p className="text-gray-600 text-sm">
-                  Already have an account?{' '}
+                  {t('register.alreadyHaveAccount')}{' '}
                   <Link
                     to="/login"
                     className="font-semibold text-primary hover:text-primary-600 transition-colors"
                   >
-                    Sign in
+                    {t('register.signInLink')}
                   </Link>
                 </p>
               </div>
@@ -545,7 +547,7 @@ const Register = () => {
               <svg className="w-4 h-4 group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
               </svg>
-              <span className="text-sm font-medium">Back to home</span>
+              <span className="text-sm font-medium">{t('register.backToHome')}</span>
             </Link>
 
           </motion.div>

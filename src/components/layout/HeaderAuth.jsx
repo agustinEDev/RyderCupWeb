@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import PropTypes from 'prop-types';
 import { broadcastLogout } from '../../utils/broadcastAuth';
+import LanguageSwitcher from '../ui/LanguageSwitcher';
 
 const API_URL = import.meta.env.VITE_API_BASE_URL || '';
 
@@ -120,6 +121,9 @@ const HeaderAuth = ({ user }) => {
           </Link>
         </div>
 
+        {/* Language Switcher */}
+        <LanguageSwitcher />
+
         {/* Desktop Profile Dropdown */}
         <div className="relative" ref={desktopDropdownRef}>
           <button
@@ -221,6 +225,10 @@ const HeaderAuth = ({ user }) => {
             >
               Create Competition
             </Link>
+            <div className="border-t border-gray-200 my-2"></div>
+            <div className="px-4 py-2">
+              <LanguageSwitcher />
+            </div>
             <div className="border-t border-gray-200 my-2"></div>
             <button
               onClick={handleProfileClick}
