@@ -56,7 +56,9 @@
     },
     "easySetup": {
       "title": "Quick & Easy Setup",
-      "description": "Create your first tournament in under 5 minutes"
+      "description": "Create your first tournament in under 5 minutes",
+      "shortTitle": "Easy Setup",
+      "shortDescription": "5 minutes to start"
     },
     "fairPlay": {
       "title": "Fair Play Guaranteed",

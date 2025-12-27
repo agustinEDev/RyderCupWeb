@@ -8,11 +8,12 @@ import PasswordInput from '../components/ui/PasswordInput';
 import PasswordStrengthIndicator from '../components/ui/PasswordStrengthIndicator';
 import { registerUseCase } from '../composition'; // NUEVO import
 import { CountryFlag } from '../utils/countryUtils';
+import { formatCountryName } from '../services/countries';
 
 const API_URL = import.meta.env.VITE_API_BASE_URL || '';
 
 const Register = () => {
-  const { t } = useTranslation('auth');
+  const { t, i18n } = useTranslation('auth');
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     firstName: '',
@@ -443,7 +444,7 @@ const Register = () => {
                       <option value="">{t('register.countryPlaceholder')}</option>
                       {countries.map((country) => (
                         <option key={country.code} value={country.code}>
-                          {country.name_en || country.name || country.code}
+                          {formatCountryName(country, i18n.language)}
                         </option>
                       ))}
                     </select>

@@ -16,7 +16,13 @@
     "pricing": "Precios",
     "support": "Soporte",
     "register": "Registrarse",
-    "signIn": "Iniciar Sesión"
+    "signIn": "Iniciar Sesión",
+    "dashboard": "Panel",
+    "browseCompetitions": "Explorar Competiciones",
+    "myCompetitions": "Mis Competiciones",
+    "createCompetition": "Crear Competición",
+    "viewProfile": "Ver Perfil",
+    "logout": "Cerrar Sesión"
   },
   "footer": {
     "description": "La plataforma definitiva para gestionar torneos de golf amateur en formato Ryder Cup. Conecta con amigos y disfruta del espíritu de la competencia amistosa.",

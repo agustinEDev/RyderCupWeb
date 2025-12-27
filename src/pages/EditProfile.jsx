@@ -3,9 +3,10 @@ import { useTranslation } from 'react-i18next';
 import HeaderAuth from '../components/layout/HeaderAuth';
 import { useEditProfile } from '../hooks/useEditProfile'; // <- ¡NUEVA IMPORTACIÓN!
 import { canUseRFEG, CountryFlag } from '../utils/countryUtils';
+import { formatCountryName } from '../services/countries';
 
 const EditProfile = () => {
-  const { t } = useTranslation('profile');
+  const { t, i18n } = useTranslation('profile');
   // Toda la lógica ahora reside en el hook. Obtenemos todo lo que necesitamos de él.
   const {
     user,
@@ -146,7 +147,7 @@ const EditProfile = () => {
                         <option value="">{t('edit.personalInfo.selectNationality')}</option>
                         {countries.map((country) => (
                           <option key={country.code} value={country.code}>
-                            {country.name_en || country.name || country.code}
+                            {formatCountryName(country, i18n.language)}
                           </option>
                         ))}
                       </select>

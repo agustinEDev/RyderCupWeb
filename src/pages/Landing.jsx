@@ -300,8 +300,8 @@ const Landing = () => {
                       </svg>
                     </div>
                     <div>
-                      <div className="font-bold text-gray-900">Easy Setup</div>
-                      <div className="text-sm text-gray-600">5 minutes to start</div>
+                      <div className="font-bold text-gray-900">{t('benefits.easySetup.shortTitle')}</div>
+                      <div className="text-sm text-gray-600">{t('benefits.easySetup.shortDescription')}</div>
                     </div>
                   </div>
                 </div>

@@ -69,11 +69,11 @@ const Login = () => {
       const authenticatedUser = await loginUseCase.execute(formData.email, formData.password);
 
       resetRateLimit('login');
-      toast.success(`Welcome, ${authenticatedUser.firstName}!`);
+      toast.success(t('login.welcomeMessage', { name: authenticatedUser.firstName }));
 
       if (!authenticatedUser.emailVerified) {
         safeLog('info', 'Email verification required');
-        toast('Please verify your email', {
+        toast(t('login.verifyEmailMessage'), {
           duration: 5000,
           icon: '⚠️',
         });
@@ -147,20 +147,20 @@ const Login = () => {
             <div className="space-y-6">
               <div>
                 <h2 className="text-4xl font-black font-poppins mb-4 leading-tight">
-                  Welcome Back!
+                  {t('login.welcomeBack')}
                 </h2>
                 <p className="text-xl text-white/90 leading-relaxed">
-                  Sign in to manage your tournaments and connect with your golf friends.
+                  {t('login.welcomeDescription')}
                 </p>
               </div>
 
               {/* Features */}
               <div className="space-y-4 mt-8">
                 {[
-                  { icon: '🏆', text: 'Manage your tournaments' },
-                  { icon: '⛳', text: 'Track player statistics' },
-                  { icon: '📊', text: 'Live scoring updates' },
-                  { icon: '👥', text: 'Connect with friends' }
+                  { icon: '🏆', text: t('login.features.tournaments') },
+                  { icon: '⛳', text: t('login.features.statistics') },
+                  { icon: '📊', text: t('login.features.liveScoring') },
+                  { icon: '👥', text: t('login.features.friends') }
                 ].map((item, idx) => (
                   <motion.div
                     key={item.text}

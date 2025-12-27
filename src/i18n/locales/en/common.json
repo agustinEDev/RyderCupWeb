@@ -16,7 +16,13 @@
     "pricing": "Pricing",
     "support": "Support",
     "register": "Register",
-    "signIn": "Sign In"
+    "signIn": "Sign In",
+    "dashboard": "Dashboard",
+    "browseCompetitions": "Browse Competitions",
+    "myCompetitions": "My Competitions",
+    "createCompetition": "Create Competition",
+    "viewProfile": "View Profile",
+    "logout": "Logout"
   },
   "footer": {
     "description": "The ultimate platform for managing amateur golf tournaments in Ryder Cup format. Connect with friends and enjoy the spirit of friendly competition.",

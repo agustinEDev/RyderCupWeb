@@ -6,6 +6,7 @@ import {
   updateUserSecurityUseCase,
   updateManualHandicapUseCase,
   updateRfegHandicapUseCase,
+  fetchCountriesUseCase,
 } from '../composition';
 
 import { useAuth } from './useAuth';
@@ -19,8 +20,8 @@ export const useEditProfile = () => {
   const [isUpdatingRFEG, setIsUpdatingRFEG] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  const [countries] = useState([]);
-  const [isLoadingCountries] = useState(false);
+  const [countries, setCountries] = useState([]);
+  const [isLoadingCountries, setIsLoadingCountries] = useState(true);
 
   const [formData, setFormData] = useState({
     firstName: '',
@@ -64,6 +65,24 @@ export const useEditProfile = () => {
 
     fetchUserData();
   }, [authUser]);
+
+  // Cargar países
+  useEffect(() => {
+    const loadCountries = async () => {
+      try {
+        setIsLoadingCountries(true);
+        const countriesData = await fetchCountriesUseCase.execute();
+        setCountries(countriesData || []);
+      } catch (error) {
+        console.error('❌ [useEditProfile] Error loading countries:', error);
+        setCountries([]);
+      } finally {
+        setIsLoadingCountries(false);
+      }
+    };
+
+    loadCountries();
+  }, []);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;

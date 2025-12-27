@@ -135,12 +135,9 @@ const Footer = () => {
 
         {/* Bottom Bar */}
         <div className="pt-8 border-t border-gray-200">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+          <div className="flex flex-col md:flex-row justify-center items-center gap-4">
             <p className="text-gray-500 text-sm">
               {t('footer.copyright')}
-            </p>
-            <p className="text-gray-500 text-sm">
-              {t('footer.madeWith')} <span className="text-red-500">♥</span> {t('footer.forGolfers')}
             </p>
           </div>
         </div>

@@ -56,7 +56,9 @@
     },
     "easySetup": {
       "title": "Configuración Rápida y Fácil",
-      "description": "Crea tu primer torneo en menos de 5 minutos"
+      "description": "Crea tu primer torneo en menos de 5 minutos",
+      "shortTitle": "Configuración Fácil",
+      "shortDescription": "5 minutos para comenzar"
     },
     "fairPlay": {
       "title": "Juego Justo Garantizado",

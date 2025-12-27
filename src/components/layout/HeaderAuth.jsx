@@ -1,12 +1,14 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import PropTypes from 'prop-types';
+import { useTranslation } from 'react-i18next';
 import { broadcastLogout } from '../../utils/broadcastAuth';
 import LanguageSwitcher from '../ui/LanguageSwitcher';
 
 const API_URL = import.meta.env.VITE_API_BASE_URL || '';
 
 const HeaderAuth = ({ user }) => {
+  const { t } = useTranslation('common');
   const navigate = useNavigate();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const desktopDropdownRef = useRef(null);
@@ -108,16 +110,16 @@ const HeaderAuth = ({ user }) => {
       <div className="hidden md:flex flex-1 justify-end gap-8">
         <div className="flex items-center gap-9">
           <Link to="/dashboard" className="text-gray-900 text-sm font-medium leading-normal hover:text-primary transition-colors">
-            Dashboard
+            {t('header.dashboard')}
           </Link>
           <Link to="/browse-competitions" className="text-gray-900 text-sm font-medium leading-normal hover:text-primary transition-colors">
-            Browse Competitions
+            {t('header.browseCompetitions')}
           </Link>
           <Link to="/competitions" className="text-gray-900 text-sm font-medium leading-normal hover:text-primary transition-colors">
-            My Competitions
+            {t('header.myCompetitions')}
           </Link>
           <Link to="/competitions/create" className="text-gray-900 text-sm font-medium leading-normal hover:text-primary transition-colors">
-            Create Competition
+            {t('header.createCompetition')}
           </Link>
         </div>
 
@@ -142,13 +144,13 @@ const HeaderAuth = ({ user }) => {
                 onClick={handleProfileClick}
                 className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
               >
-                View Profile
+                {t('header.viewProfile')}
               </button>
               <button
                 onClick={handleLogout}
                 className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
               >
-                Logout
+                {t('header.logout')}
               </button>
             </div>
           )}
@@ -202,28 +204,28 @@ const HeaderAuth = ({ user }) => {
               onClick={() => setIsDropdownOpen(false)}
               className="block px-4 py-2 text-sm text-gray-900 hover:bg-gray-100 transition-colors"
             >
-              Dashboard
+              {t('header.dashboard')}
             </Link>
             <Link
               to="/browse-competitions"
               onClick={() => setIsDropdownOpen(false)}
               className="block px-4 py-2 text-sm text-gray-900 hover:bg-gray-100 transition-colors"
             >
-              Browse Competitions
+              {t('header.browseCompetitions')}
             </Link>
             <Link
               to="/competitions"
               onClick={() => setIsDropdownOpen(false)}
               className="block px-4 py-2 text-sm text-gray-900 hover:bg-gray-100 transition-colors"
             >
-              My Competitions
+              {t('header.myCompetitions')}
             </Link>
             <Link
               to="/competitions/create"
               onClick={() => setIsDropdownOpen(false)}
               className="block px-4 py-2 text-sm text-gray-900 hover:bg-gray-100 transition-colors"
             >
-              Create Competition
+              {t('header.createCompetition')}
             </Link>
             <div className="border-t border-gray-200 my-2"></div>
             <div className="px-4 py-2">
@@ -234,13 +236,13 @@ const HeaderAuth = ({ user }) => {
               onClick={handleProfileClick}
               className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
             >
-              View Profile
+              {t('header.viewProfile')}
             </button>
             <button
               onClick={handleLogout}
               className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
             >
-              Logout
+              {t('header.logout')}
             </button>
           </div>
         )}
