@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams, useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { validatePassword } from '../utils/validation';
@@ -16,7 +16,7 @@ import {
  * Permite al usuario cambiar su contraseña usando un token de reset recibido por email.
  *
  * Flujo:
- * 1. Usuario llega con token en URL: /reset-password?token=xxx
+ * 1. Usuario llega con token en URL: /reset-password/:token o /reset-password?token=xxx
  * 2. Pre-validación automática del token (useEffect)
  * 3. Si token válido: muestra formulario
  * 4. Si token inválido/expirado: muestra error y link a /forgot-password
@@ -35,7 +35,10 @@ import {
 const ResetPassword = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const token = searchParams.get('token');
+  const params = useParams();
+
+  // Soportar ambos formatos: /reset-password/:token y /reset-password?token=xxx
+  const token = params.token || searchParams.get('token');
 
   // Estados del token
   const [tokenState, setTokenState] = useState('validating'); // 'validating' | 'valid' | 'invalid'
