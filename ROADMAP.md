@@ -457,9 +457,9 @@ Ver plan detallado en sección [🔐 SEGURIDAD](#-seguridad---mejoras-prioritari
 - ✅ 3 endpoints REST disponibles
 - ✅ Security features completas (token 256-bit, rate limiting, anti-enumeración)
 
-**Progreso:** 3/8 fases completadas (37.5%)
+**Progreso:** 4/8 fases completadas (50%)
 
-**Última actualización:** 27 Dic 2025 - FASE 3 ✅ Completada
+**Última actualización:** 27 Dic 2025 - FASE 4 ✅ Completada
 
 **Fases de Implementación:**
 
@@ -558,25 +558,37 @@ Ver plan detallado en sección [🔐 SEGURIDAD](#-seguridad---mejoras-prioritari
 
 ---
 
-#### FASE 4: Presentation Layer - ResetPasswordPage
+#### FASE 4: Presentation Layer - ResetPasswordPage ✅ COMPLETADA
 **Estimación:** 1.5-2 horas
-**Estado:** ⏳ Pendiente
+**Tiempo real:** ~1.5 horas (27 Dic 2025)
+**Estado:** ✅ Completado
+**Commit:** `d98be9b` - feat(auth): Add ResetPasswordPage with token pre-validation
 
-- [ ] Obtiene token de query params (`?token=xxx`)
-- [ ] Pre-valida token al montar (useEffect)
-- [ ] Form con 2 inputs password (nueva + confirmar)
-- [ ] Reutilizar `PasswordInput` component (ya existe)
-- [ ] Reutilizar `PasswordStrengthIndicator` (ya existe)
-- [ ] Validación con `validatePassword()` (12+ chars, complejidad)
-- [ ] Lista de requisitos visible
-- [ ] Manejo de errores (token inválido, expirado, 429)
-- [ ] Redirección a `/login` tras éxito
-- [ ] Toast notifications
-- [ ] Loading states (validating, loading, success)
-- [ ] Responsive
+- [x] Obtiene token de query params (`?token=xxx`) ✅
+- [x] Pre-valida token al montar (useEffect) ✅
+- [x] Form con 2 inputs password (nueva + confirmar) ✅
+- [x] Reutilizar `PasswordInput` component (ya existe) ✅
+- [x] Reutilizar `PasswordStrengthIndicator` (ya existe) ✅
+- [x] Validación con `validatePassword()` (12+ chars, complejidad) ✅
+- [x] Lista de requisitos visible ✅
+- [x] Manejo de errores (token inválido, expirado, 429) ✅
+- [x] Redirección a `/login` tras éxito ✅
+- [x] Toast notifications ✅
+- [x] Loading states (validating, loading, success) ✅
+- [x] Responsive ✅
 
-**Archivos a crear:**
-- `src/pages/ResetPassword.jsx`
+**Características implementadas:**
+- 3 estados UI: validating (spinner), valid (formulario), invalid (error + links)
+- Pre-validación automática del token (mejor UX)
+- Password strength indicator en tiempo real
+- Requisitos de contraseña visibles (OWASP ASVS V2.1)
+- Manejo específico de errores (429, token expirado)
+- Redirección con `location.state.message` a /login
+- Layout 2-columnas responsive (imagen + form)
+- Security tips visibles en sidebar
+
+**Archivos creados:**
+- ✅ `src/pages/ResetPassword.jsx` (580 líneas)
 
 ---
 
@@ -682,12 +694,12 @@ Ver plan detallado en sección [🔐 SEGURIDAD](#-seguridad---mejoras-prioritari
 | 1 | Application Layer (3 Use Cases) | 1-2h | 1.5h | 3 nuevos | 20-25 tests | ✅ |
 | 2 | Infrastructure Layer (Repository) | 0.5-1h | 0.5h | 1 modificado | 8-10 tests | ✅ |
 | 3 | ForgotPasswordPage | 1.5-2h | 1.5h | 1 nuevo | - | ✅ |
-| 4 | ResetPasswordPage | 1.5-2h | - | 1 nuevo | - | ⏳ |
+| 4 | ResetPasswordPage | 1.5-2h | 1.5h | 1 nuevo | - | ✅ |
 | 5 | Routing + DI | 0.25h | - | 3 modificados | - | ⏳ |
 | 6 | Testing Unitario | 2-3h | - | 4 archivos test | 25-30 tests | ⏳ |
 | 7 | Testing E2E | 2-3h | - | 1 archivo test | 6-8 tests | ⏳ |
 | 8 | Documentación | 0.5-0.75h | - | 3 documentos | - | ⏳ |
-| **TOTAL** | **Implementación completa** | **10-14.5h** | **3.5h** | **13 archivos** | **~60 tests** | **37.5%** |
+| **TOTAL** | **Implementación completa** | **10-14.5h** | **5h** | **13 archivos** | **~60 tests** | **50%** |
 
 **OWASP Categories Addressed:**
 - ✅ A01: Broken Access Control (mensaje genérico anti-enumeración)
