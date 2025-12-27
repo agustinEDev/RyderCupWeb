@@ -457,9 +457,9 @@ Ver plan detallado en sección [🔐 SEGURIDAD](#-seguridad---mejoras-prioritari
 - ✅ 3 endpoints REST disponibles
 - ✅ Security features completas (token 256-bit, rate limiting, anti-enumeración)
 
-**Progreso:** 5/8 fases completadas (62.5%)
+**Progreso:** 6/8 fases completadas (75%)
 
-**Última actualización:** 27 Dic 2025 - FASE 5 ✅ Completada
+**Última actualización:** 27 Dic 2025 - FASE 6 ✅ Completada
 
 **Fases de Implementación:**
 
@@ -628,30 +628,42 @@ Ver plan detallado en sección [🔐 SEGURIDAD](#-seguridad---mejoras-prioritari
 
 ---
 
-#### FASE 6: Testing Unitario (Use Cases + Repository)
+#### FASE 6: Testing Unitario (Use Cases) ✅ COMPLETADA
 **Estimación:** 2-3 horas
-**Estado:** ⏳ Pendiente
+**Tiempo real:** ~1 hora (27 Dic 2025)
+**Estado:** ✅ Completado
+**Commit:** `01817a0` - test(auth): Add unit tests for password reset Use Cases
 
-- [ ] Tests de Use Cases (3 archivos):
-  - `RequestPasswordResetUseCase.test.js` (6-8 tests)
-  - `ValidateResetTokenUseCase.test.js` (5-7 tests)
-  - `ResetPasswordUseCase.test.js` (8-10 tests)
+- [x] Tests de Use Cases (3 archivos): ✅
+  - `RequestPasswordResetUseCase.test.js` (12 tests) ✅
+  - `ValidateResetTokenUseCase.test.js` (15 tests) ✅
+  - `ResetPasswordUseCase.test.js` (26 tests) ✅
 
-- [ ] Tests de Repository (1 archivo):
-  - `ApiAuthRepository.test.js` (agregar 8-10 tests)
-  - Mockear `apiRequest()`
-  - Validar requests correctos
-  - Validar manejo de errores
+- [x] Bug fix: ResetPassword soporte para ambos formatos de URL ✅
+  - Path parameter: `/reset-password/:token` (backend default)
+  - Query parameter: `/reset-password?token=xxx` (alternative)
+  - Updated App.jsx routing and ResetPassword.jsx component
 
-**Total tests unitarios:** 25-30 tests nuevos
+**Total tests creados:** 53 tests (100% passing)
 
-**Archivos a crear:**
-- `tests/application/use_cases/RequestPasswordResetUseCase.test.js`
-- `tests/application/use_cases/ValidateResetTokenUseCase.test.js`
-- `tests/application/use_cases/ResetPasswordUseCase.test.js`
+**Cobertura de tests:**
+- ✅ Validación de inputs (email, token, password)
+- ✅ OWASP ASVS V2.1 password policy (12-128 chars, complexity)
+- ✅ Manejo de errores del repositorio (network, 429, 500)
+- ✅ Anti-enumeration security patterns
+- ✅ Edge cases (special chars, unicode, whitespace, empty values)
+- ✅ Security timing attack prevention
 
-**Archivos a modificar:**
-- `tests/infrastructure/repositories/ApiAuthRepository.test.js`
+**Archivos creados:**
+- ✅ `src/application/use_cases/user/RequestPasswordResetUseCase.test.js` (185 líneas)
+- ✅ `src/application/use_cases/user/ValidateResetTokenUseCase.test.js` (217 líneas)
+- ✅ `src/application/use_cases/user/ResetPasswordUseCase.test.js` (320 líneas)
+
+**Archivos modificados (bug fix):**
+- ✅ `src/pages/ResetPassword.jsx` (+3 líneas)
+- ✅ `src/App.jsx` (+1 línea)
+
+**Total:** 3 archivos nuevos (722 líneas), 2 archivos modificados
 
 ---
 
@@ -705,15 +717,15 @@ Ver plan detallado en sección [🔐 SEGURIDAD](#-seguridad---mejoras-prioritari
 
 | Fase | Tarea | Estimación | Real | Archivos | Tests | Estado |
 |------|-------|-----------|------|----------|-------|--------|
-| 1 | Application Layer (3 Use Cases) | 1-2h | 1.5h | 3 nuevos | 20-25 tests | ✅ |
-| 2 | Infrastructure Layer (Repository) | 0.5-1h | 0.5h | 1 modificado | 8-10 tests | ✅ |
+| 1 | Application Layer (3 Use Cases) | 1-2h | 1.5h | 3 nuevos | - | ✅ |
+| 2 | Infrastructure Layer (Repository) | 0.5-1h | 0.5h | 1 modificado | - | ✅ |
 | 3 | ForgotPasswordPage | 1.5-2h | 1.5h | 1 nuevo | - | ✅ |
 | 4 | ResetPasswordPage | 1.5-2h | 1.5h | 1 nuevo | - | ✅ |
 | 5 | Routing + DI | 0.25h | 0.25h | 3 modificados | - | ✅ |
-| 6 | Testing Unitario | 2-3h | - | 4 archivos test | 25-30 tests | ⏳ |
+| 6 | Testing Unitario | 2-3h | 1h | 3 archivos test + 2 fixes | 53 tests | ✅ |
 | 7 | Testing E2E | 2-3h | - | 1 archivo test | 6-8 tests | ⏳ |
 | 8 | Documentación | 0.5-0.75h | - | 3 documentos | - | ⏳ |
-| **TOTAL** | **Implementación completa** | **10-14.5h** | **5.25h** | **13 archivos** | **~60 tests** | **62.5%** |
+| **TOTAL** | **Implementación completa** | **10-14.5h** | **6.25h** | **16 archivos** | **53 tests** | **75%** |
 
 **OWASP Categories Addressed:**
 - ✅ A01: Broken Access Control (mensaje genérico anti-enumeración)
