@@ -246,7 +246,7 @@ const CompetitionDetail = () => {
                           competition.status
                         )}`}
                       >
-                        {competition.status}
+                        {competition.status && t(`status.${competition.status}`)}
                       </span>
                       {isCreator && (
                         <div className="flex items-center gap-1.5 text-accent text-sm font-medium">
@@ -430,7 +430,8 @@ const CompetitionDetail = () => {
                         userEnrollment?.status || competition.enrollment_status
                       )}`}
                     >
-                      {userEnrollment?.status || competition.enrollment_status}
+                      {(userEnrollment?.status || competition.enrollment_status) &&
+                        t(`enrollmentStatus.${userEnrollment?.status || competition.enrollment_status}`)}
                     </span>
                   </div>
                 </div>

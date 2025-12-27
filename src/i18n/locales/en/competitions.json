@@ -159,5 +159,19 @@
       "enrollmentRequested": "Enrollment request sent! Check \"My Competitions\" to track status."
     }
   },
-  "footer": "© 2025 RyderCupFriends"
+  "footer": "© 2025 RyderCupFriends",
+  "status": {
+    "DRAFT": "DRAFT",
+    "ACTIVE": "ACTIVE",
+    "CLOSED": "CLOSED",
+    "IN_PROGRESS": "IN PROGRESS",
+    "COMPLETED": "COMPLETED",
+    "CANCELLED": "CANCELLED"
+  },
+  "enrollmentStatus": {
+    "REQUESTED": "REQUESTED",
+    "PENDING": "PENDING",
+    "APPROVED": "APPROVED",
+    "REJECTED": "REJECTED"
+  }
 }

@@ -420,11 +420,13 @@ const CompetitionCard = ({ competition, mode, onRequestEnrollment, onViewDetails
       CLOSED: 'bg-yellow-100 text-yellow-800',
       IN_PROGRESS: 'bg-blue-100 text-blue-800',
       COMPLETED: 'bg-gray-100 text-gray-800',
+      DRAFT: 'bg-gray-100 text-gray-800',
+      CANCELLED: 'bg-red-100 text-red-800',
     };
 
     return (
       <span className={`inline-block px-2 py-1 rounded-full text-xs font-semibold ${badges[status] || 'bg-gray-100 text-gray-800'}`}>
-        {status?.replace('_', ' ')}
+        {status && t(`status.${status}`)}
       </span>
     );
   };

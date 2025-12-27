@@ -198,7 +198,7 @@ const Competitions = () => {
                       {competition.enrollment_status === 'APPROVED' && '✓ '}
                       {competition.enrollment_status === 'PENDING' && '⏳ '}
                       {competition.enrollment_status === 'REJECTED' && '✗ '}
-                      {t('myCompetitions.enrollmentStatus', { status: competition.enrollment_status })}
+                      {t('myCompetitions.enrollmentStatus', { status: t(`enrollmentStatus.${competition.enrollment_status}`) })}
                     </span>
                   </div>
                 )}
@@ -208,7 +208,7 @@ const Competitions = () => {
                   competition.status
                 )}`}
               >
-                {competition.status?.replace('_', ' ')}
+                {competition.status && t(`status.${competition.status}`)}
               </span>
             </div>
 
