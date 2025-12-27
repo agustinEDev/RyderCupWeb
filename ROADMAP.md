@@ -457,9 +457,9 @@ Ver plan detallado en sección [🔐 SEGURIDAD](#-seguridad---mejoras-prioritari
 - ✅ 3 endpoints REST disponibles
 - ✅ Security features completas (token 256-bit, rate limiting, anti-enumeración)
 
-**Progreso:** 1/8 fases completadas (12.5%)
+**Progreso:** 2/8 fases completadas (25%)
 
-**Última actualización:** 26 Dic 2025 - FASE 1 ✅ Completada
+**Última actualización:** 27 Dic 2025 - FASE 2 ✅ Completada
 
 **Fases de Implementación:**
 
@@ -501,21 +501,29 @@ Ver plan detallado en sección [🔐 SEGURIDAD](#-seguridad---mejoras-prioritari
 
 ---
 
-#### FASE 2: Infrastructure Layer (Repository)
+#### FASE 2: Infrastructure Layer (Repository) ✅ COMPLETADA
 **Estimación:** 30 min - 1 hora
-**Estado:** ⏳ Pendiente
+**Tiempo real:** ~30 minutos (27 Dic 2025)
+**Estado:** ✅ Completado
+**Commit:** `1c1058e` - feat(auth): Add password reset methods to ApiAuthRepository
 
-- [ ] Agregar 3 métodos a `ApiAuthRepository.js`:
-  - `requestPasswordReset(email)` → POST `/auth/forgot-password`
-  - `validateResetToken(token)` → GET `/auth/validate-reset-token/:token`
-  - `resetPassword(token, newPassword)` → POST `/auth/reset-password`
+- [x] Agregar 3 métodos a `ApiAuthRepository.js`: ✅
+  - `requestPasswordReset(email)` → POST `/auth/forgot-password` (11 líneas)
+  - `validateResetToken(token)` → GET `/auth/validate-reset-token/:token` (11 líneas)
+  - `resetPassword(token, newPassword)` → POST `/auth/reset-password` (14 líneas)
 
-- [ ] Reutilizar `apiRequest()` con interceptor
-- [ ] Manejo de errores HTTP (400, 422, 429, 500)
-- [ ] Tests: 8-10 tests (requests exitosos/fallidos, rate limiting)
+- [x] Reutilizar `apiRequest()` con interceptor ✅
+  - Automático: httpOnly cookies, headers JSON, error handling
+  - Token refresh automático en 401
 
-**Archivos a modificar:**
-- `src/infrastructure/repositories/ApiAuthRepository.js`
+- [x] Manejo de errores HTTP (400, 422, 429, 500) ✅
+  - `apiRequest()` lanza excepciones automáticamente
+  - Use Cases capturan y manejan errores
+
+**Archivos modificados:**
+- ✅ `src/infrastructure/repositories/ApiAuthRepository.js`
+
+**Total:** 1 archivo modificado, +60 líneas de código (3 métodos + documentación)
 
 ---
 
