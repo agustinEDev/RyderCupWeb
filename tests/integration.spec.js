@@ -32,9 +32,10 @@ test.describe('httpOnly Cookies - Basic Login', () => {
     const { email, password } = getTestCredentials();
     await page.goto('/login');
 
-    await page.getByPlaceholder('your.email@example.com').fill(email);
-    await page.getByPlaceholder('Enter your password').fill(password);
-    await page.getByRole('button', { name: 'Sign In' }).click();
+    // Use id/name selectors instead of placeholders (i18n-independent)
+    await page.locator('input[name="email"]').fill(email);
+    await page.locator('input[name="password"]').fill(password);
+    await page.getByRole('button', { name: /sign in/i }).click();
 
     // Wait for redirect to dashboard
     await expect(page).toHaveURL('/dashboard', { timeout: 10000 });
@@ -51,9 +52,9 @@ test.describe('httpOnly Cookies - Basic Login', () => {
 
     // Login
     await page.goto('/login');
-    await page.getByPlaceholder('your.email@example.com').fill(email);
-    await page.getByPlaceholder('Enter your password').fill(password);
-    await page.getByRole('button', { name: 'Sign In' }).click();
+    await page.locator('input[name="email"]').fill(email);
+    await page.locator('input[name="password"]').fill(password);
+    await page.getByRole('button', { name: /sign in/i }).click();
     await expect(page).toHaveURL('/dashboard', { timeout: 10000 });
 
     // Navigate to profile
@@ -71,9 +72,9 @@ test.describe('Backend Validation - Login', () => {
     const { email } = getTestCredentials();
     await page.goto('/login');
 
-    await page.getByPlaceholder('your.email@example.com').fill(email);
-    await page.getByPlaceholder('Enter your password').fill('WrongPassword123.');
-    await page.getByRole('button', { name: 'Sign In' }).click();
+    await page.locator('input[name="email"]').fill(email);
+    await page.locator('input[name="password"]').fill('WrongPassword123.');
+    await page.getByRole('button', { name: /sign in/i }).click();
 
     // Should remain on login page
     await expect(page).toHaveURL('/login');
@@ -88,10 +89,10 @@ test.describe('Backend Validation - Registration', () => {
     await page.goto('/register');
     await page.waitForLoadState('networkidle');
 
-    await page.getByPlaceholder('John').fill('Test');
-    await page.getByPlaceholder('Doe').fill('User');
-    await page.getByPlaceholder('your.email@example.com').fill('test@example.com');
-    await page.getByPlaceholder('Minimum 12 characters').fill('Short1.');
+    await page.locator('input[name="firstName"]').fill('Test');
+    await page.locator('input[name="lastName"]').fill('User');
+    await page.locator('input[name="email"]').fill('test@example.com');
+    await page.locator('input[name="password"]').fill('Short1.');
 
     await page.getByRole('button', { name: /create account|sign up/i }).click();
 
@@ -104,18 +105,18 @@ test.describe('Backend Validation - Registration', () => {
     await page.waitForLoadState('networkidle');
 
     // Verify form is present and functional
-    await expect(page.getByPlaceholder('John')).toBeVisible();
-    await expect(page.getByPlaceholder('Doe')).toBeVisible();
-    await expect(page.getByPlaceholder('your.email@example.com')).toBeVisible();
-    await expect(page.getByPlaceholder('Minimum 12 characters')).toBeVisible();
+    await expect(page.locator('input[name="firstName"]')).toBeVisible();
+    await expect(page.locator('input[name="lastName"]')).toBeVisible();
+    await expect(page.locator('input[name="email"]')).toBeVisible();
+    await expect(page.locator('input[name="password"]')).toBeVisible();
     await expect(page.getByRole('button', { name: /create account/i })).toBeVisible();
-    
+
     // Fill valid data
     const timestamp = Date.now();
-    await page.getByPlaceholder('John').fill('Integration');
-    await page.getByPlaceholder('Doe').fill('Test');
-    await page.getByPlaceholder('your.email@example.com').fill(`test${timestamp}@example.com`);
-    await page.getByPlaceholder('Minimum 12 characters').fill('ValidPassword123.');
+    await page.locator('input[name="firstName"]').fill('Integration');
+    await page.locator('input[name="lastName"]').fill('Test');
+    await page.locator('input[name="email"]').fill(`test${timestamp}@example.com`);
+    await page.locator('input[name="password"]').fill('ValidPassword123.');
 
     // Verify no frontend validation errors appear
     await page.waitForTimeout(500);
@@ -142,10 +143,10 @@ test.describe('Backend Validation - Registration', () => {
     await page.waitForLoadState('networkidle');
 
     const timestamp = Date.now();
-    await page.getByPlaceholder('John').fill('TestUser');
-    await page.getByPlaceholder('Doe').fill('Registration');
-    await page.getByPlaceholder('your.email@example.com').fill(`newuser${timestamp}@example.com`);
-    await page.getByPlaceholder('Minimum 12 characters').fill('ValidPassword123.');
+    await page.locator('input[name="firstName"]').fill('TestUser');
+    await page.locator('input[name="lastName"]').fill('Registration');
+    await page.locator('input[name="email"]').fill(`newuser${timestamp}@example.com`);
+    await page.locator('input[name="password"]').fill('ValidPassword123.');
 
     await page.getByRole('button', { name: /create account/i }).click();
     await page.waitForTimeout(3000);
@@ -174,9 +175,9 @@ test.describe('Complete E2E Flow', () => {
     // Step 1: Login
     console.log('🔐 Step 1: Login');
     await page.goto('/login');
-    await page.getByPlaceholder('your.email@example.com').fill(email);
-    await page.getByPlaceholder('Enter your password').fill(password);
-    await page.getByRole('button', { name: 'Sign In' }).click();
+    await page.locator('input[name="email"]').fill(email);
+    await page.locator('input[name="password"]').fill(password);
+    await page.getByRole('button', { name: /sign in/i }).click();
     await expect(page).toHaveURL('/dashboard', { timeout: 10000 });
     console.log('✅ Login successful');
 
@@ -207,9 +208,9 @@ test.describe('Session Persistence', () => {
 
     // Login
     await page.goto('/login');
-    await page.getByPlaceholder('your.email@example.com').fill(email);
-    await page.getByPlaceholder('Enter your password').fill(password);
-    await page.getByRole('button', { name: 'Sign In' }).click();
+    await page.locator('input[name="email"]').fill(email);
+    await page.locator('input[name="password"]').fill(password);
+    await page.getByRole('button', { name: /sign in/i }).click();
     await expect(page).toHaveURL('/dashboard', { timeout: 10000 });
 
     // Get cookies before reload

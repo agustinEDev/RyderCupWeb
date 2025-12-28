@@ -19,17 +19,22 @@ const LanguageSwitcher = () => {
     { code: 'es', label: 'Español', flag: '🇪🇸' },
   ];
 
+  // Normalizar idioma: extraer solo los primeros 2 caracteres (ej. "es-ES" → "es")
+  // Defensive fallback: si i18n.language es null/undefined, usar fallback seguro
+  const safeLanguage = i18n.language || i18n.options?.fallbackLng?.[0] || languages[0].code;
+  const currentLanguage = safeLanguage.split('-')[0];
+
   return (
     <div className="relative">
       <select
-        value={i18n.language}
+        value={currentLanguage}
         onChange={changeLanguage}
         className="appearance-none bg-white border-2 border-gray-200 rounded-lg px-3 py-2 pr-8 text-sm font-medium text-gray-700 hover:border-primary focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all cursor-pointer"
         aria-label="Select language"
       >
         {languages.map((lang) => (
           <option key={lang.code} value={lang.code}>
-            {lang.flag} {lang.label}
+            {lang.flag}
           </option>
         ))}
       </select>
