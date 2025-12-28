@@ -1,7 +1,7 @@
 # 🗺️ Roadmap - RyderCupFriends Frontend
 
-> **Versión:** 1.7.0
-> **Última actualización:** 23 Dic 2025
+> **Versión:** 1.11.0
+> **Última actualización:** 28 Dic 2025
 > **Estado general:** ✅ Producción
 > **Framework:** React 18 + Vite 7
 > **Arquitectura:** Clean Architecture + DDD
@@ -798,7 +798,7 @@ Documentación final pendiente para commit separado:
 
 **Features:**
 - 📱 Progressive Web App (PWA)
-- 🌍 Internacionalización (i18n) - Español/Inglés
+- ✅ 🌍 Internacionalización (i18n) - Español/Inglés ✅ **COMPLETADO (28 Dic 2025)**
 - 🎮 Sistema completo de equipos y torneos
 - 📊 Analytics y métricas de uso
 - 🔔 Sistema de notificaciones en tiempo real

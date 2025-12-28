@@ -7,6 +7,20 @@ y este proyecto adhiere a [Versionado Semántico](https://semver.org/lang/es/).
 
 ## [Unreleased]
 
+### Added
+- **Internationalization (i18n)**: Full bilingual support for Spanish and English
+  - Implemented react-i18next with language persistence in localStorage
+  - Language dropdown switcher with flag icons in header/footer
+  - Automatic browser language detection on first visit
+  - Translated all pages: Landing, Login, Register, ForgotPassword, ResetPassword, Dashboard, Profile, EditProfile, BrowseCompetitions, Competitions, CompetitionDetail, CreateCompetition
+  - Translated components: Header, HeaderAuth, Footer, ProfileCard
+  - Translation namespaces: common, auth, landing, dashboard, profile, competitions
+  - Dynamic country names using formatCountryName() helper (API returns both name_en and name_es)
+  - Competition statuses translated: DRAFT/BORRADOR, ACTIVE/ACTIVA, CLOSED/CERRADA, IN PROGRESS/EN PROGRESO, COMPLETED/COMPLETADA, CANCELLED/CANCELADA
+  - Enrollment statuses translated: REQUESTED/SOLICITADA, PENDING/PENDIENTE, APPROVED/APROBADA, REJECTED/RECHAZADA
+  - All toast messages translated for error and success notifications
+  - Search placeholders with dynamic interpolation based on search type
+
 ### Changed
 - **Input Validation Improvements**: Strengthened validation rules to sync with backend v1.8.0 security requirements (OWASP ASVS V2.1.1)
   - Password validation: Increased minimum length from 8 to 12 characters (mandatory)
