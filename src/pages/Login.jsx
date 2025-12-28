@@ -2,12 +2,14 @@ import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
+import { useTranslation } from 'react-i18next';
 import { validateEmail, checkRateLimit, resetRateLimit } from '../utils/validation';
 import { safeLog } from '../utils/auth';
 import PasswordInput from '../components/ui/PasswordInput';
 import { loginUseCase } from '../composition'; // NUEVO import
 
 const Login = () => {
+  const { t } = useTranslation('auth');
   const navigate = useNavigate();
   const location = useLocation();
   const successMessage = location.state?.message;
@@ -39,7 +41,7 @@ const Login = () => {
     }
 
     if (!formData.password) {
-      newErrors.password = 'Password is required';
+      newErrors.password = t('validation.passwordRequired');
     }
 
     setErrors(newErrors);
@@ -67,11 +69,11 @@ const Login = () => {
       const authenticatedUser = await loginUseCase.execute(formData.email, formData.password);
 
       resetRateLimit('login');
-      toast.success(`Welcome, ${authenticatedUser.firstName}!`);
+      toast.success(t('login.welcomeMessage', { name: authenticatedUser.firstName }));
 
       if (!authenticatedUser.emailVerified) {
         safeLog('info', 'Email verification required');
-        toast('Please verify your email', {
+        toast(t('login.verifyEmailMessage'), {
           duration: 5000,
           icon: '⚠️',
         });
@@ -89,7 +91,7 @@ const Login = () => {
         password: ''
       }));
 
-      toast.error(error.message || 'Incorrect email or password', {
+      toast.error(error.message || t('login.error'), {
         duration: 5000,
       });
 
@@ -145,20 +147,20 @@ const Login = () => {
             <div className="space-y-6">
               <div>
                 <h2 className="text-4xl font-black font-poppins mb-4 leading-tight">
-                  Welcome Back!
+                  {t('login.welcomeBack')}
                 </h2>
                 <p className="text-xl text-white/90 leading-relaxed">
-                  Sign in to manage your tournaments and connect with your golf friends.
+                  {t('login.welcomeDescription')}
                 </p>
               </div>
 
               {/* Features */}
               <div className="space-y-4 mt-8">
                 {[
-                  { icon: '🏆', text: 'Manage your tournaments' },
-                  { icon: '⛳', text: 'Track player statistics' },
-                  { icon: '📊', text: 'Live scoring updates' },
-                  { icon: '👥', text: 'Connect with friends' }
+                  { icon: '🏆', text: t('login.features.tournaments') },
+                  { icon: '⛳', text: t('login.features.statistics') },
+                  { icon: '📊', text: t('login.features.liveScoring') },
+                  { icon: '👥', text: t('login.features.friends') }
                 ].map((item, idx) => (
                   <motion.div
                     key={item.text}
@@ -214,10 +216,10 @@ const Login = () => {
               {/* Header */}
               <div className="mb-8">
                 <h2 className="text-3xl font-black text-gray-900 font-poppins mb-2">
-                  Sign In
+                  {t('login.title')}
                 </h2>
                 <p className="text-gray-600">
-                  Enter your credentials to access your account
+                  {t('login.subtitle')}
                 </p>
               </div>
 
@@ -243,13 +245,13 @@ const Login = () => {
                 {/* Email */}
                 <div>
                   <label htmlFor="email" className="block text-sm font-semibold text-gray-700 mb-2">
-                    Email Address
+                    {t('login.emailLabel')}
                   </label>
                   <input
                     id="email"
                     type="email"
                     name="email"
-                    placeholder="your.email@example.com"
+                    placeholder={t('login.emailPlaceholder')}
                     value={formData.email}
                     onChange={handleChange}
                     className={`w-full px-4 py-3 rounded-lg border-2 transition-all duration-200 ${
@@ -277,20 +279,20 @@ const Login = () => {
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <label htmlFor="password" className="block text-sm font-semibold text-gray-700">
-                      Password
+                      {t('login.passwordLabel')}
                     </label>
                     <Link
                       to="/forgot-password"
                       className="text-xs font-medium text-primary hover:text-primary-600 transition-colors"
                     >
-                      Forgot password?
+                      {t('login.forgotPassword')}
                     </Link>
                   </div>
                   <PasswordInput
                     name="password"
                     value={formData.password}
                     onChange={handleChange}
-                    placeholder="Enter your password"
+                    placeholder={t('login.passwordPlaceholder')}
                     error={!!errors.password}
                     disabled={isLoading}
                     label=""
@@ -333,10 +335,10 @@ const Login = () => {
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                       </svg>
-                      Signing in...
+                      {t('common.loading', { ns: 'common' })}
                     </span>
                   ) : (
-                    'Sign In'
+                    t('login.signInButton')
                   )}
                 </motion.button>
 
@@ -355,12 +357,12 @@ const Login = () => {
               {/* Register Link */}
               <div className="text-center">
                 <p className="text-gray-600 text-sm">
-                  Don&apos;t have an account?{' '}
+                  {t('login.noAccount')}{' '}
                   <Link
                     to="/register"
                     className="font-semibold text-primary hover:text-primary-600 transition-colors"
                   >
-                    Create one now
+                    {t('login.signUpLink')}
                   </Link>
                 </p>
               </div>

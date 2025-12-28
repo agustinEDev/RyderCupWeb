@@ -7,6 +7,7 @@ import {
   AlertCircle, Loader, UserPlus, Shield
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { useTranslation } from 'react-i18next';
 import HeaderAuth from '../components/layout/HeaderAuth';
 import { useAuth } from '../hooks/useAuth';
 import { CountryFlag } from '../utils/countryUtils';
@@ -33,6 +34,7 @@ const CompetitionDetail = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { id } = useParams();
+  const { t } = useTranslation('competitions');
   const { user, loading: isLoadingUser } = useAuth();
   const [competition, setCompetition] = useState(null);
   const [enrollments, setEnrollments] = useState([]);
@@ -42,7 +44,7 @@ const CompetitionDetail = () => {
   // Determine where user came from (browse or my competitions)
   const fromBrowse = location.state?.from === 'browse';
   const backLink = fromBrowse ? '/browse-competitions' : '/competitions';
-  const backText = fromBrowse ? 'Back to Browse' : 'Back to Competitions';
+  const backText = fromBrowse ? t('detail.backToBrowse') : t('detail.backToCompetitions');
 
   const loadCompetition = useCallback(async () => {
     if (!user) return;
@@ -76,7 +78,8 @@ const CompetitionDetail = () => {
   const isLoading = isLoadingUser || isLoadingCompetition;
 
   const handleStatusChange = async (action) => {
-    if (!window.confirm(`Are you sure you want to ${action} this competition?`)) {
+    const confirmationKey = `detail.confirmations.${action}`;
+    if (!window.confirm(t(confirmationKey))) {
       return;
     }
 
@@ -86,23 +89,23 @@ const CompetitionDetail = () => {
       switch (action) {
         case 'activate':
           result = await activateCompetitionUseCase.execute(id);
-          toast.success('Competition activated!');
+          toast.success(t('detail.actions.activate'));
           break;
         case 'close-enrollments':
           result = await closeEnrollmentsUseCase.execute(id);
-          toast.success('Enrollments closed!');
+          toast.success(t('detail.actions.closeEnrollments'));
           break;
         case 'start':
           result = await startCompetitionUseCase.execute(id);
-          toast.success('Competition started!');
+          toast.success(t('detail.actions.startCompetition'));
           break;
         case 'complete':
           result = await completeCompetitionUseCase.execute(id);
-          toast.success('Competition completed!');
+          toast.success(t('detail.actions.complete'));
           break;
         case 'cancel':
           result = await cancelCompetitionUseCase.execute(id);
-          toast.success('Competition cancelled!');
+          toast.success(t('detail.actions.cancel'));
           break;
         default:
           throw new Error('Invalid action');
@@ -123,14 +126,14 @@ const CompetitionDetail = () => {
   };
 
   const handleDelete = async () => {
-    if (!window.confirm('Are you sure you want to delete this competition? This action cannot be undone.')) {
+    if (!window.confirm(t('detail.confirmations.delete'))) {
       return;
     }
 
     setIsProcessing(true);
     try {
       await deleteCompetition(id);
-      toast.success('Competition deleted successfully');
+      toast.success(t('detail.actions.delete'));
       navigate('/competitions');
     } catch (error) {
       console.error('Error deleting competition:', error);
@@ -143,7 +146,7 @@ const CompetitionDetail = () => {
     setIsProcessing(true);
     try {
       await requestEnrollmentUseCase.execute(id);
-      toast.success('Enrollment request sent!');
+      toast.success(t('detail.actions.requestToJoin'));
       await loadCompetition();
     } catch (error) {
       console.error('Error enrolling:', error);
@@ -157,30 +160,30 @@ const CompetitionDetail = () => {
     try {
       // ApproveEnrollmentUseCase expects (competitionId, enrollmentId, teamId?)
       await approveEnrollmentUseCase.execute(competition.id, enrollmentId);
-      toast.success('Enrollment approved!');
+      toast.success(t('detail.enrollmentApproved'));
       // Reload enrollments to update the list
       const enrollmentsData = await listEnrollmentsUseCase.execute(competition.id);
       setEnrollments(enrollmentsData);
     } catch (error) {
       console.error('Error approving enrollment:', error);
-      toast.error(error.message || 'Failed to approve enrollment');
+      toast.error(error.message || t('detail.failedToApprove'));
     }
   };
 
   const handleRejectEnrollment = async (enrollmentId) => {
-    if (!window.confirm('Are you sure you want to reject this enrollment?')) {
+    if (!window.confirm(t('detail.confirmations.rejectEnrollment'))) {
       return;
     }
     try {
       // RejectEnrollmentUseCase expects (competitionId, enrollmentId)
       await rejectEnrollmentUseCase.execute(competition.id, enrollmentId);
-      toast.success('Enrollment rejected');
+      toast.success(t('detail.enrollmentRejected'));
       // Reload enrollments to update the list
       const enrollmentsData = await listEnrollmentsUseCase.execute(competition.id);
       setEnrollments(enrollmentsData);
     } catch (error) {
       console.error('Error rejecting enrollment:', error);
-      toast.error(error.message || 'Failed to reject enrollment');
+      toast.error(error.message || t('detail.failedToReject'));
     }
   };
 
@@ -189,7 +192,7 @@ const CompetitionDetail = () => {
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <Loader className="w-12 h-12 text-primary animate-spin mx-auto mb-4" />
-          <p className="text-gray-600">Loading competition...</p>
+          <p className="text-gray-600">{t('detail.loadingCompetition')}</p>
         </div>
       </div>
     );
@@ -243,12 +246,12 @@ const CompetitionDetail = () => {
                           competition.status
                         )}`}
                       >
-                        {competition.status}
+                        {competition.status && t(`status.${competition.status}`)}
                       </span>
                       {isCreator && (
                         <div className="flex items-center gap-1.5 text-accent text-sm font-medium">
                           <Shield className="w-4 h-4" />
-                          <span>Creator</span>
+                          <span>{t('detail.creator')}</span>
                         </div>
                       )}
                     </div>
@@ -260,7 +263,7 @@ const CompetitionDetail = () => {
                   <div className="flex items-center gap-2 text-gray-700">
                     <Calendar className="w-5 h-5" />
                     <div>
-                      <p className="text-xs text-gray-500">Dates</p>
+                      <p className="text-xs text-gray-500">{t('detail.dates')}</p>
                       <p className="text-sm font-medium">
                         {formatDateRange(competition.startDate, competition.endDate)}
                       </p>
@@ -269,7 +272,7 @@ const CompetitionDetail = () => {
                   <div className="flex items-center gap-2 text-gray-700">
                     <Users className="w-5 h-5" />
                     <div>
-                      <p className="text-xs text-gray-500">Players</p>
+                      <p className="text-xs text-gray-500">{t('detail.players')}</p>
                       <p className="text-sm font-medium">
                         {enrollments.filter((e) => e.status === 'APPROVED').length} /{' '}
                         {competition.maxPlayers || '∞'}
@@ -284,7 +287,7 @@ const CompetitionDetail = () => {
                     <div className="flex items-start gap-2">
                       <MapPin className="w-5 h-5 text-gray-700 mt-0.5" />
                       <div className="flex-1">
-                        <p className="text-xs text-gray-500 mb-2">Countries</p>
+                        <p className="text-xs text-gray-500 mb-2">{t('detail.countries')}</p>
                         <div className="flex flex-wrap gap-2">
                           {competition.countries.map((country, index) => (
                             <span
@@ -318,7 +321,7 @@ const CompetitionDetail = () => {
                       className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg font-medium hover:bg-primary/90 transition-colors shadow-md"
                     >
                       <Edit className="w-4 h-4" />
-                      <span>Edit</span>
+                      <span>{t('detail.actions.edit')}</span>
                     </button>
                   )}
 
@@ -329,7 +332,7 @@ const CompetitionDetail = () => {
                       className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors shadow-md disabled:opacity-50"
                     >
                       <Play className="w-4 h-4" />
-                      <span>Activate</span>
+                      <span>{t('detail.actions.activate')}</span>
                     </button>
                   )}
 
@@ -340,7 +343,7 @@ const CompetitionDetail = () => {
                       className="flex items-center gap-2 px-4 py-2 bg-yellow-600 text-white rounded-lg font-medium hover:bg-yellow-700 transition-colors shadow-md disabled:opacity-50"
                     >
                       <Pause className="w-4 h-4" />
-                      <span>Close Enrollments</span>
+                      <span>{t('detail.actions.closeEnrollments')}</span>
                     </button>
                   )}
 
@@ -351,7 +354,7 @@ const CompetitionDetail = () => {
                       className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors shadow-md disabled:opacity-50"
                     >
                       <Play className="w-4 h-4" />
-                      <span>Start Competition</span>
+                      <span>{t('detail.actions.startCompetition')}</span>
                     </button>
                   )}
 
@@ -362,7 +365,7 @@ const CompetitionDetail = () => {
                       className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700 transition-colors shadow-md disabled:opacity-50"
                     >
                       <CheckCircle className="w-4 h-4" />
-                      <span>Complete</span>
+                      <span>{t('detail.actions.complete')}</span>
                     </button>
                   )}
 
@@ -373,7 +376,7 @@ const CompetitionDetail = () => {
                       className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors shadow-md disabled:opacity-50"
                     >
                       <XCircle className="w-4 h-4" />
-                      <span>Cancel</span>
+                      <span>{t('detail.actions.cancel')}</span>
                     </button>
                   )}
 
@@ -384,7 +387,7 @@ const CompetitionDetail = () => {
                       className="flex items-center gap-2 px-4 py-2 bg-gray-700 text-white rounded-lg font-medium hover:bg-gray-800 transition-colors shadow-md disabled:opacity-50"
                     >
                       <Trash2 className="w-4 h-4" />
-                      <span>Delete</span>
+                      <span>{t('detail.actions.delete')}</span>
                     </button>
                   )}
                 </div>
@@ -405,7 +408,7 @@ const CompetitionDetail = () => {
                   className="flex items-center justify-center gap-2 w-full px-6 py-3 bg-primary text-white rounded-lg font-medium hover:bg-primary/90 transition-colors shadow-md disabled:opacity-50"
                 >
                   <UserPlus className="w-5 h-5" />
-                  <span>Request to Join</span>
+                  <span>{t('detail.actions.requestToJoin')}</span>
                 </button>
               </motion.div>
             )}
@@ -421,13 +424,14 @@ const CompetitionDetail = () => {
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                   <div className="flex items-center gap-2">
                     <AlertCircle className="w-5 h-5 text-blue-600" />
-                    <span className="text-blue-900 font-medium">Your enrollment status:</span>
+                    <span className="text-blue-900 font-medium">{t('detail.enrollmentStatus')}</span>
                     <span
                       className={`px-3 py-1 rounded-full text-xs font-semibold ${getEnrollmentStatusColor(
                         userEnrollment?.status || competition.enrollment_status
                       )}`}
                     >
-                      {userEnrollment?.status || competition.enrollment_status}
+                      {(userEnrollment?.status || competition.enrollment_status) &&
+                        t(`enrollmentStatus.${userEnrollment?.status || competition.enrollment_status}`)}
                     </span>
                   </div>
                 </div>
@@ -444,34 +448,34 @@ const CompetitionDetail = () => {
               <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
                 <h3 className="text-gray-900 font-bold text-lg mb-4 flex items-center gap-2">
                   <Settings className="w-5 h-5 text-primary" />
-                  Competition Settings
+                  {t('detail.settings.title')}
                 </h3>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <span className="text-gray-500 text-sm">Team 1:</span>
+                    <span className="text-gray-500 text-sm">{t('detail.settings.teamOne')}</span>
                     <p className="text-gray-900 font-medium">{competition.team1Name}</p>
                   </div>
                   <div>
-                    <span className="text-gray-500 text-sm">Team 2:</span>
+                    <span className="text-gray-500 text-sm">{t('detail.settings.teamTwo')}</span>
                     <p className="text-gray-900 font-medium">{competition.team2Name}</p>
                   </div>
                   <div>
-                    <span className="text-gray-500 text-sm">Handicap Type:</span>
+                    <span className="text-gray-500 text-sm">{t('detail.settings.handicapType')}</span>
                     <p className="text-gray-900 font-medium">{competition.handicapType}</p>
                   </div>
                   {competition.handicapPercentage && (
                     <div>
-                      <span className="text-gray-500 text-sm">Handicap Percentage:</span>
+                      <span className="text-gray-500 text-sm">{t('detail.settings.handicapPercentage')}</span>
                       <p className="text-gray-900 font-medium">{competition.handicapPercentage}%</p>
                     </div>
                   )}
                   <div>
-                    <span className="text-gray-500 text-sm">Team Assignment:</span>
+                    <span className="text-gray-500 text-sm">{t('detail.settings.teamAssignment')}</span>
                     <p className="text-gray-900 font-medium">{competition.teamAssignment}</p>
                   </div>
                   <div>
-                    <span className="text-gray-500 text-sm">Created:</span>
+                    <span className="text-gray-500 text-sm">{t('detail.settings.created')}</span>
                     <p className="text-gray-900 font-medium">
                       {new Date(competition.createdAt).toLocaleDateString()}
                     </p>
@@ -492,13 +496,13 @@ const CompetitionDetail = () => {
                 <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
                   <h3 className="text-gray-900 font-bold text-lg mb-4 flex items-center gap-2">
                     <Users className="w-5 h-5 text-green-600" />
-                    Approved Players ({enrollments.filter(e => e.status === 'APPROVED').length})
+                    {t('detail.approvedPlayers', { count: enrollments.filter(e => e.status === 'APPROVED').length })}
                   </h3>
 
                   {enrollments.filter(e => e.status === 'APPROVED').length === 0 ? (
                     <div className="text-center py-8 text-gray-500">
                       <Users className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                      <p>No approved players yet</p>
+                      <p>{t('detail.noApprovedPlayers')}</p>
                     </div>
                   ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -523,10 +527,10 @@ const CompetitionDetail = () => {
                               <div className="flex items-center gap-2 mt-1">
                                 {enrollment.userHandicap !== null && enrollment.userHandicap !== undefined ? (
                                   <span className="text-green-700 text-sm font-medium">
-                                    HCP: {Number(enrollment.userHandicap).toFixed(1)}
+                                    {t('detail.handicapLabel', { handicap: Number(enrollment.userHandicap).toFixed(1) })}
                                   </span>
                                 ) : (
-                                  <span className="text-gray-500 text-sm">No handicap</span>
+                                  <span className="text-gray-500 text-sm">{t('detail.noHandicap')}</span>
                                 )}
                               </div>
                             </div>
@@ -546,7 +550,7 @@ const CompetitionDetail = () => {
                   <div className="bg-white border border-orange-200 rounded-xl p-6 shadow-sm">
                     <h3 className="text-gray-900 font-bold text-lg mb-4 flex items-center gap-2">
                       <AlertCircle className="w-5 h-5 text-orange-600" />
-                      Pending Requests ({enrollments.filter(e => e.status === 'REQUESTED').length})
+                      {t('detail.pendingRequests', { count: enrollments.filter(e => e.status === 'REQUESTED').length })}
                     </h3>
 
                     <div className="space-y-3">
@@ -562,11 +566,11 @@ const CompetitionDetail = () => {
                                 {enrollment.userName || 'Unknown User'}
                               </p>
                               <p className="text-gray-600 text-sm">
-                                {enrollment.userEmail || 'No email'}
+                                {enrollment.userEmail || t('detail.noEmail')}
                               </p>
                               {enrollment.userHandicap !== null && enrollment.userHandicap !== undefined && (
                                 <p className="text-gray-500 text-sm mt-1">
-                                  HCP: {Number(enrollment.userHandicap).toFixed(1)}
+                                  {t('detail.handicapLabel', { handicap: Number(enrollment.userHandicap).toFixed(1) })}
                                 </p>
                               )}
                             </div>
@@ -576,14 +580,14 @@ const CompetitionDetail = () => {
                                 className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors shadow-sm"
                                 title="Approve enrollment"
                               >
-                                ✓ Approve
+                                ✓ {t('detail.approve')}
                               </button>
                               <button
                                 onClick={() => handleRejectEnrollment(enrollment.id)}
                                 className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 transition-colors shadow-sm"
                                 title="Reject enrollment"
                               >
-                                ✗ Reject
+                                ✗ {t('detail.reject')}
                               </button>
                             </div>
                           </div>
@@ -598,7 +602,7 @@ const CompetitionDetail = () => {
                     <summary className="p-6 cursor-pointer hover:bg-gray-50 transition-colors">
                       <h3 className="text-gray-700 font-semibold text-md inline-flex items-center gap-2">
                         <XCircle className="w-5 h-5 text-red-600" />
-                        Rejected Enrollments ({enrollments.filter(e => e.status === 'REJECTED').length})
+                        {t('detail.rejectedEnrollments', { count: enrollments.filter(e => e.status === 'REJECTED').length })}
                       </h3>
                     </summary>
                     <div className="px-6 pb-6 space-y-3">
@@ -614,11 +618,11 @@ const CompetitionDetail = () => {
                                 {enrollment.userName || 'Unknown User'}
                               </p>
                               <p className="text-gray-500 text-sm">
-                                {enrollment.userEmail || 'No email'}
+                                {enrollment.userEmail || t('detail.noEmail')}
                               </p>
                             </div>
                             <span className="px-3 py-1 bg-red-100 text-red-800 rounded-full text-xs font-semibold">
-                              REJECTED
+                              {t('detail.rejected')}
                             </span>
                           </div>
                         ))}
@@ -631,7 +635,7 @@ const CompetitionDetail = () => {
             {/* Footer */}
             <footer className="flex flex-col gap-6 px-5 py-10 text-center">
               <p className="text-gray-500 text-base font-normal leading-normal">
-                © 2025 RyderCupFriends
+                {t('footer')}
               </p>
             </footer>
           </div>

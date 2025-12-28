@@ -6,6 +6,7 @@ import {
   Filter, Search, AlertCircle, Loader, Crown
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { useTranslation } from 'react-i18next';
 import HeaderAuth from '../components/layout/HeaderAuth';
 import { listUserCompetitionsUseCase } from '../composition';
 import {
@@ -29,6 +30,7 @@ const getEnrollmentStatusClasses = (status) => {
 
 const Competitions = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation('competitions');
   const [user, setUser] = useState(null);
   const [competitions, setCompetitions] = useState([]);
   const [filteredCompetitions, setFilteredCompetitions] = useState([]);
@@ -121,7 +123,7 @@ const Competitions = () => {
       return (
         <div className="flex flex-col items-center justify-center py-12">
           <Loader className="w-12 h-12 text-primary animate-spin mb-4" />
-          <p className="text-gray-600">Loading competitions...</p>
+          <p className="text-gray-600">{t('myCompetitions.loadingCompetitions')}</p>
         </div>
       );
     }
@@ -135,13 +137,13 @@ const Competitions = () => {
           <AlertCircle className="w-16 h-16 text-gray-400 mb-4" />
           <p className="text-gray-900 font-semibold text-lg mb-2">
             {searchQuery || statusFilter !== 'ALL'
-              ? 'No competitions found'
-              : 'No competitions yet'}
+              ? t('myCompetitions.noCompetitionsFound')
+              : t('myCompetitions.noCompetitionsYet')}
           </p>
           <p className="text-gray-500 text-sm mb-6 max-w-md text-center">
             {searchQuery || statusFilter !== 'ALL'
-              ? 'Try adjusting your filters or search terms'
-              : 'Create your first competition to get started'}
+              ? t('myCompetitions.tryAdjustingFilters')
+              : t('myCompetitions.createFirstCompetition')}
           </p>
           {(!searchQuery && statusFilter === 'ALL') && (
             <motion.button
@@ -151,7 +153,7 @@ const Competitions = () => {
               className="flex items-center gap-2 px-5 py-2.5 bg-primary text-white rounded-lg font-medium hover:bg-primary/90 transition-colors shadow-md"
             >
               <Plus className="w-5 h-5" />
-              <span>Create Your First Competition</span>
+              <span>{t('myCompetitions.createYourFirstCompetition')}</span>
             </motion.button>
           )}
         </motion.div>
@@ -175,7 +177,7 @@ const Competitions = () => {
                 <h3 className="text-gray-900 font-bold text-lg mb-1 group-hover:text-primary transition-colors flex items-center gap-2">
                   {competition.name}
                   {competition.creatorId === user?.id && (
-                    <Crown className="w-4 h-4 text-accent flex-shrink-0" title="You are the creator" />
+                    <Crown className="w-4 h-4 text-accent flex-shrink-0" title={t('myCompetitions.youAreTheCreator')} />
                   )}
                 </h3>
                 {/* Show pending enrollment requests if user is creator */}
@@ -183,7 +185,7 @@ const Competitions = () => {
                   <div className="mt-1">
                     <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-orange-100 text-orange-800 border border-orange-200">
                       <span className="w-2 h-2 bg-orange-500 rounded-full mr-1.5 animate-pulse"></span>
-                      {competition.pending_enrollments_count} pending request{competition.pending_enrollments_count === 1 ? '' : 's'}
+                      {competition.pending_enrollments_count} {competition.pending_enrollments_count === 1 ? t('myCompetitions.pendingRequest') : t('myCompetitions.pendingRequests')}
                     </span>
                   </div>
                 )}
@@ -196,7 +198,7 @@ const Competitions = () => {
                       {competition.enrollment_status === 'APPROVED' && '✓ '}
                       {competition.enrollment_status === 'PENDING' && '⏳ '}
                       {competition.enrollment_status === 'REJECTED' && '✗ '}
-                      Enrollment: {competition.enrollment_status}
+                      {t('myCompetitions.enrollmentStatus', { status: t(`enrollmentStatus.${competition.enrollment_status}`) })}
                     </span>
                   </div>
                 )}
@@ -206,7 +208,7 @@ const Competitions = () => {
                   competition.status
                 )}`}
               >
-                {competition.status?.replace('_', ' ')}
+                {competition.status && t(`status.${competition.status}`)}
               </span>
             </div>
 
@@ -230,7 +232,7 @@ const Competitions = () => {
               <div className="flex items-center gap-2 text-gray-600 text-sm">
                 <Users className="w-4 h-4" />
                 <span>
-                  {competition.enrolledCount || 0} / {competition.maxPlayers} players
+                  {t('myCompetitions.players', { count: competition.enrolledCount || 0, max: competition.maxPlayers })}
                 </span>
               </div>
             </div>
@@ -259,10 +261,10 @@ const Competitions = () => {
             >
               <div>
                 <p className="text-gray-900 tracking-tight text-3xl md:text-[32px] font-bold leading-tight">
-                  My Competitions
+                  {t('myCompetitions.title')}
                 </p>
                 <p className="text-gray-500 text-sm mt-1">
-                  Manage your tournaments and track progress
+                  {t('myCompetitions.subtitle')}
                 </p>
               </div>
               <motion.button
@@ -272,7 +274,7 @@ const Competitions = () => {
                 className="flex items-center gap-2 px-5 py-2.5 bg-primary text-white rounded-lg font-medium hover:bg-primary/90 transition-colors shadow-md"
               >
                 <Plus className="w-4 h-4" />
-                <span>Create Competition</span>
+                <span>{t('myCompetitions.createCompetition')}</span>
               </motion.button>
             </motion.div>
             {/* Filters */}
@@ -290,7 +292,7 @@ const Competitions = () => {
                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                       <input
                         type="text"
-                        placeholder="Search by name or location..."
+                        placeholder={t('myCompetitions.searchPlaceholder')}
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all"
@@ -306,13 +308,13 @@ const Competitions = () => {
                         onChange={(e) => setStatusFilter(e.target.value)}
                         className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all appearance-none bg-white cursor-pointer"
                       >
-                        <option value="ALL">All Statuses</option>
-                        <option value="DRAFT">Draft</option>
-                        <option value="ACTIVE">Active</option>
-                        <option value="CLOSED">Closed</option>
-                        <option value="IN_PROGRESS">In Progress</option>
-                        <option value="COMPLETED">Completed</option>
-                        <option value="CANCELLED">Cancelled</option>
+                        <option value="ALL">{t('myCompetitions.allStatuses')}</option>
+                        <option value="DRAFT">{t('myCompetitions.draft')}</option>
+                        <option value="ACTIVE">{t('myCompetitions.active')}</option>
+                        <option value="CLOSED">{t('myCompetitions.closed')}</option>
+                        <option value="IN_PROGRESS">{t('myCompetitions.inProgress')}</option>
+                        <option value="COMPLETED">{t('myCompetitions.completed')}</option>
+                        <option value="CANCELLED">{t('myCompetitions.cancelled')}</option>
                       </select>
                     </div>
                   </div>
@@ -320,7 +322,7 @@ const Competitions = () => {
                 {/* Results Count */}
                 {!isLoading && (
                   <div className="mt-3 text-sm text-gray-500">
-                    Showing {filteredCompetitions.length} of {competitions.length} competitions
+                    {t('myCompetitions.showing', { filtered: filteredCompetitions.length, total: competitions.length })}
                   </div>
                 )}
               </div>
@@ -332,7 +334,7 @@ const Competitions = () => {
             {/* Footer */}
             <footer className="flex flex-col gap-6 px-5 py-10 text-center">
               <p className="text-gray-500 text-base font-normal leading-normal">
-                © 2025 RyderCupFriends
+                {t('footer')}
               </p>
             </footer>
           </div>

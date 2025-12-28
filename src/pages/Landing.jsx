@@ -1,9 +1,11 @@
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
 
 const Landing = () => {
+  const { t } = useTranslation('landing');
   const navigate = useNavigate();
 
   const handleCreateCompetition = () => {
@@ -55,16 +57,16 @@ const Landing = () => {
                     <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                       <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                     </svg>
-                    #1 Golf Tournament Platform
+                    {t('hero.badge')}
                   </span>
                 </motion.div>
 
                 {/* Main Heading */}
                 <motion.div variants={fadeInUp} className="space-y-4">
                   <h1 className="text-4xl md:text-5xl lg:text-6xl font-black leading-tight tracking-tight text-gray-900 font-poppins">
-                    Welcome to{' '}
+                    {t('hero.title')}{' '}
                     <span className="bg-gradient-to-r from-primary to-primary-600 bg-clip-text text-transparent">
-                      RyderCupFriends
+                      {t('hero.brand')}
                     </span>
                   </h1>
                   <div className="flex items-center gap-3">
@@ -78,8 +80,7 @@ const Landing = () => {
                   variants={fadeInUp}
                   className="text-lg md:text-xl text-gray-600 leading-relaxed max-w-xl"
                 >
-                  The ultimate platform for organizing amateur golf tournaments in Ryder Cup format.
-                  Connect with friends, create exciting competitions, and enjoy the spirit of friendly golf rivalry.
+                  {t('hero.subtitle')}
                 </motion.p>
 
                 {/* CTA Buttons */}
@@ -91,7 +92,7 @@ const Landing = () => {
                     onClick={handleGetStarted}
                     className="group relative px-8 py-4 bg-primary text-white text-base font-bold rounded-lg overflow-hidden transition-all duration-300 hover:bg-primary-600 hover:shadow-xl hover:scale-105"
                   >
-                    <span className="relative z-10">Get Started Free</span>
+                    <span className="relative z-10">{t('hero.getStartedButton')}</span>
                     <div className="absolute inset-0 bg-gradient-to-r from-primary-600 to-primary-700 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                   </button>
 
@@ -99,7 +100,7 @@ const Landing = () => {
                     onClick={handleCreateCompetition}
                     className="px-8 py-4 bg-white text-primary text-base font-bold rounded-lg border-2 border-primary hover:bg-primary-50 transition-all duration-300 hover:shadow-lg hover:scale-105"
                   >
-                    View Demo
+                    {t('hero.viewDemoButton')}
                   </button>
                 </motion.div>
 
@@ -110,15 +111,15 @@ const Landing = () => {
                 >
                   <div>
                     <div className="text-3xl font-bold text-primary font-poppins">500+</div>
-                    <div className="text-sm text-gray-600 mt-1">Tournaments</div>
+                    <div className="text-sm text-gray-600 mt-1">{t('hero.stats.tournaments')}</div>
                   </div>
                   <div>
                     <div className="text-3xl font-bold text-primary font-poppins">2K+</div>
-                    <div className="text-sm text-gray-600 mt-1">Players</div>
+                    <div className="text-sm text-gray-600 mt-1">{t('hero.stats.players')}</div>
                   </div>
                   <div>
                     <div className="text-3xl font-bold text-primary font-poppins">98%</div>
-                    <div className="text-sm text-gray-600 mt-1">Satisfaction</div>
+                    <div className="text-sm text-gray-600 mt-1">{t('hero.stats.satisfaction')}</div>
                   </div>
                 </motion.div>
               </motion.div>
@@ -149,11 +150,11 @@ const Landing = () => {
                     >
                       <div className="flex items-center justify-between">
                         <div>
-                          <div className="text-sm font-semibold text-gray-600">Next Tournament</div>
-                          <div className="text-lg font-bold text-gray-900">Spring Classic 2024</div>
+                          <div className="text-sm font-semibold text-gray-600">{t('hero.nextTournament')}</div>
+                          <div className="text-lg font-bold text-gray-900">{t('hero.springClassic')}</div>
                         </div>
                         <div className="text-right">
-                          <div className="text-sm text-gray-600">Players</div>
+                          <div className="text-sm text-gray-600">{t('hero.stats.players')}</div>
                           <div className="text-2xl font-bold text-primary">24</div>
                         </div>
                       </div>
@@ -189,10 +190,10 @@ const Landing = () => {
             {/* Section Header */}
             <motion.div variants={fadeInUp} className="text-center max-w-3xl mx-auto">
               <h2 className="text-3xl md:text-4xl font-black text-gray-900 mb-4 font-poppins">
-                Everything You Need to Run Your Tournament
+                {t('features.title')}
               </h2>
               <p className="text-lg text-gray-600">
-                Professional-grade tools designed for amateur golfers. Simple, powerful, and fun to use.
+                {t('features.subtitle')}
               </p>
             </motion.div>
 
@@ -212,9 +213,9 @@ const Landing = () => {
                     <path d="M232,64H208V56a16,16,0,0,0-16-16H64A16,16,0,0,0,48,56v8H24A16,16,0,0,0,8,80V96a40,40,0,0,0,40,40h3.65A80.13,80.13,0,0,0,120,191.61V216H96a8,8,0,0,0,0,16h64a8,8,0,0,0,0-16H136V191.58c31.94-3.23,58.44-25.64,68.08-55.58H208a40,40,0,0,0,40-40V80A16,16,0,0,0,232,64Z" />
                   </svg>
                 </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-2 font-poppins">Handicap Management</h3>
+                <h3 className="text-xl font-bold text-gray-900 mb-2 font-poppins">{t('features.handicap.title')}</h3>
                 <p className="text-gray-600 text-sm leading-relaxed">
-                  Automatically calculate and manage handicaps for all players to ensure fair and competitive play.
+                  {t('features.handicap.description')}
                 </p>
               </motion.div>
 
@@ -229,9 +230,9 @@ const Landing = () => {
                     <path d="M117.25,157.92a60,60,0,1,0-66.5,0A95.83,95.83,0,0,0,3.53,195.63a8,8,0,1,0,13.4,8.74,80,80,0,0,1,134.14,0,8,8,0,0,0,13.4-8.74A95.83,95.83,0,0,0,117.25,157.92ZM40,108a44,44,0,1,1,44,44A44.05,44.05,0,0,1,40,108Zm210.14,98.7a8,8,0,0,1-11.07-2.33A79.83,79.83,0,0,0,172,168a8,8,0,0,1,0-16,44,44,0,1,0-16.34-84.87,8,8,0,1,1-5.94-14.85,60,60,0,0,1,55.53,105.64,95.83,95.83,0,0,1,47.22,37.71A8,8,0,0,1,250.14,206.7Z" />
                   </svg>
                 </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-2 font-poppins">Ryder Cup Format</h3>
+                <h3 className="text-xl font-bold text-gray-900 mb-2 font-poppins">{t('features.format.title')}</h3>
                 <p className="text-gray-600 text-sm leading-relaxed">
-                  Easily set up the classic Ryder Cup format with foursomes, fourballs, and singles matches.
+                  {t('features.format.description')}
                 </p>
               </motion.div>
 
@@ -246,9 +247,9 @@ const Landing = () => {
                     <path d="M244.8,150.4a8,8,0,0,1-11.2-1.6A51.6,51.6,0,0,0,192,128a8,8,0,0,1-7.37-4.89,8,8,0,0,1,0-6.22A8,8,0,0,1,192,112a24,24,0,1,0-23.24-30,8,8,0,1,1-15.5-4A40,40,0,1,1,219,117.51a67.94,67.94,0,0,1,27.43,21.68A8,8,0,0,1,244.8,150.4Z" />
                   </svg>
                 </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-2 font-poppins">Team Management</h3>
+                <h3 className="text-xl font-bold text-gray-900 mb-2 font-poppins">{t('features.team.title')}</h3>
                 <p className="text-gray-600 text-sm leading-relaxed">
-                  Create balanced teams, track player statistics, and manage team rosters with ease.
+                  {t('features.team.description')}
                 </p>
               </motion.div>
 
@@ -263,9 +264,9 @@ const Landing = () => {
                     <path d="M216,40H136V24a8,8,0,0,0-16,0V40H40A16,16,0,0,0,24,56V176a16,16,0,0,0,16,16H79.36L57.75,219a8,8,0,0,0,12.5,10l29.59-37h56.32l29.59,37a8,8,0,1,0,12.5-10l-21.61-27H216a16,16,0,0,0,16-16V56A16,16,0,0,0,216,40Z" />
                   </svg>
                 </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-2 font-poppins">Live Scoring</h3>
+                <h3 className="text-xl font-bold text-gray-900 mb-2 font-poppins">{t('features.scoring.title')}</h3>
                 <p className="text-gray-600 text-sm leading-relaxed">
-                  Real-time score updates keep everyone engaged and following the action as it happens.
+                  {t('features.scoring.description')}
                 </p>
               </motion.div>
             </motion.div>
@@ -299,8 +300,8 @@ const Landing = () => {
                       </svg>
                     </div>
                     <div>
-                      <div className="font-bold text-gray-900">Easy Setup</div>
-                      <div className="text-sm text-gray-600">5 minutes to start</div>
+                      <div className="font-bold text-gray-900">{t('benefits.easySetup.shortTitle')}</div>
+                      <div className="text-sm text-gray-600">{t('benefits.easySetup.shortDescription')}</div>
                     </div>
                   </div>
                 </div>
@@ -310,19 +311,19 @@ const Landing = () => {
               <motion.div variants={staggerContainer} className="space-y-6">
                 <motion.div variants={fadeInUp}>
                   <h2 className="text-3xl md:text-4xl font-black text-gray-900 mb-4 font-poppins">
-                    Why Choose RyderCupFriends?
+                    {t('benefits.title')}
                   </h2>
                   <p className="text-lg text-gray-600">
-                    Built by golfers, for golfers. We understand what makes a great tournament experience.
+                    {t('benefits.subtitle')}
                   </p>
                 </motion.div>
 
                 <motion.div variants={fadeInUp} className="space-y-4">
                   {[
-                    { title: 'Simple & Intuitive', desc: 'No complicated setup. Get started in minutes.' },
-                    { title: 'Mobile Friendly', desc: 'Manage your tournament from anywhere, on any device.' },
-                    { title: 'Fair Competition', desc: 'Advanced handicap system ensures everyone has a chance to win.' },
-                    { title: 'Community Focused', desc: 'Connect with fellow golf enthusiasts and build lasting friendships.' }
+                    { title: t('benefits.simple.title'), desc: t('benefits.simple.description') },
+                    { title: t('benefits.mobile.title'), desc: t('benefits.mobile.description') },
+                    { title: t('benefits.fair.title'), desc: t('benefits.fair.description') },
+                    { title: t('benefits.community.title'), desc: t('benefits.community.description') }
                   ].map((benefit) => (
                     <motion.div
                       key={benefit.title}
@@ -363,23 +364,23 @@ const Landing = () => {
 
             <div className="relative z-10">
               <h2 className="text-3xl md:text-4xl font-black text-white mb-4 font-poppins">
-                Ready to Organize Your Next Tournament?
+                {t('cta.title')}
               </h2>
               <p className="text-xl text-white/90 mb-8 max-w-2xl mx-auto">
-                Join thousands of golfers already using RyderCupFriends to create unforgettable tournaments.
+                {t('cta.subtitle')}
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <button
                   onClick={handleGetStarted}
                   className="px-8 py-4 bg-white text-primary text-base font-bold rounded-lg hover:bg-gray-50 transition-all duration-300 hover:shadow-xl hover:scale-105"
                 >
-                  Start Free Today
+                  {t('cta.button')}
                 </button>
                 <button
                   onClick={() => globalThis.location.href = '#features'}
                   className="px-8 py-4 bg-transparent text-white text-base font-bold rounded-lg border-2 border-white hover:bg-white/10 transition-all duration-300"
                 >
-                  Learn More
+                  {t('cta.learnMore')}
                 </button>
               </div>
             </div>

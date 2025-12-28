@@ -2,10 +2,12 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
+import { useTranslation } from 'react-i18next';
 import { validateEmail } from '../utils/validation';
 import { requestPasswordResetUseCase } from '../composition';
 
 const ForgotPassword = () => {
+  const { t } = useTranslation('auth');
   const [email, setEmail] = useState('');
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
@@ -42,7 +44,7 @@ const ForgotPassword = () => {
     try {
       await requestPasswordResetUseCase.execute(email);
 
-      toast.success('Email sent! Check your inbox.');
+      toast.success(t('forgotPassword.success'));
       setSubmitted(true);
 
     } catch (error) {
@@ -50,11 +52,11 @@ const ForgotPassword = () => {
 
       // Manejo de rate limiting (429)
       if (error.message.includes('Rate limit') || error.message.includes('Too many')) {
-        toast.error('Too many attempts. Please wait 60 minutes.', {
+        toast.error(t('forgotPassword.rateLimitError'), {
           duration: 6000,
         });
       } else {
-        toast.error(error.message || 'An error occurred. Please try again.', {
+        toast.error(error.message || t('forgotPassword.error'), {
           duration: 5000,
         });
       }
@@ -113,10 +115,10 @@ const ForgotPassword = () => {
               <div className="space-y-6">
                 <div>
                   <h2 className="text-4xl font-black font-poppins mb-4 leading-tight">
-                    Check Your Email
+                    {t('forgotPassword.checkEmailTitle')}
                   </h2>
                   <p className="text-xl text-white/90 leading-relaxed">
-                    We&apos;ve sent you instructions to reset your password.
+                    {t('forgotPassword.checkEmailSubtitle')}
                   </p>
                 </div>
               </div>
@@ -168,11 +170,11 @@ const ForgotPassword = () => {
                 {/* Header */}
                 <div className="text-center mb-6">
                   <h2 className="text-2xl font-black text-gray-900 font-poppins mb-3">
-                    Email Sent!
+                    {t('forgotPassword.emailSentTitle')}
                   </h2>
                   <p className="text-gray-600 leading-relaxed">
-                    If an account exists for <strong className="text-gray-900">{email}</strong>,
-                    you will receive password reset instructions.
+                    {t('forgotPassword.emailSentMessage')} <strong className="text-gray-900">{email}</strong>,
+                    {' '}{t('forgotPassword.emailSentSuffix')}
                   </p>
                 </div>
 
@@ -183,11 +185,11 @@ const ForgotPassword = () => {
                       <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
                     </svg>
                     <div className="text-sm text-blue-700">
-                      <p className="font-medium mb-1">Next steps:</p>
+                      <p className="font-medium mb-1">{t('forgotPassword.nextStepsTitle')}</p>
                       <ul className="list-disc list-inside space-y-1 text-blue-600">
-                        <li>Check your email inbox (and spam folder)</li>
-                        <li>Click the reset link (expires in 24 hours)</li>
-                        <li>Create your new password</li>
+                        <li>{t('forgotPassword.nextStep1')}</li>
+                        <li>{t('forgotPassword.nextStep2')}</li>
+                        <li>{t('forgotPassword.nextStep3')}</li>
                       </ul>
                     </div>
                   </div>
@@ -200,7 +202,7 @@ const ForgotPassword = () => {
                       <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                     </svg>
                     <p className="text-sm text-yellow-700">
-                      <span className="font-medium">Didn&apos;t request this?</span> You can safely ignore this message.
+                      <span className="font-medium">{t('forgotPassword.securityWarning')}</span> {t('forgotPassword.securityWarningMessage')}
                     </p>
                   </div>
                 </div>
@@ -210,7 +212,7 @@ const ForgotPassword = () => {
                   to="/login"
                   className="block w-full py-3 text-center rounded-lg font-semibold text-primary border-2 border-primary hover:bg-primary hover:text-white transition-all duration-300"
                 >
-                  Back to Sign In
+                  {t('forgotPassword.backToLogin')}
                 </Link>
 
               </div>
@@ -221,7 +223,7 @@ const ForgotPassword = () => {
                   onClick={() => setSubmitted(false)}
                   className="text-sm text-gray-600 hover:text-primary transition-colors font-medium"
                 >
-                  Didn&apos;t receive the email? Try again
+                  {t('forgotPassword.didntReceive')}
                 </button>
               </div>
 
@@ -282,19 +284,19 @@ const ForgotPassword = () => {
             <div className="space-y-6">
               <div>
                 <h2 className="text-4xl font-black font-poppins mb-4 leading-tight">
-                  Forgot Your Password?
+                  {t('forgotPassword.heroTitle')}
                 </h2>
                 <p className="text-xl text-white/90 leading-relaxed">
-                  No worries! Enter your email and we&apos;ll send you reset instructions.
+                  {t('forgotPassword.heroSubtitle')}
                 </p>
               </div>
 
               {/* Security Features */}
               <div className="space-y-4 mt-8">
                 {[
-                  { icon: '🔒', text: 'Secure reset process' },
-                  { icon: '⏱️', text: 'Link expires in 24 hours' },
-                  { icon: '✉️', text: 'Check your inbox & spam' },
+                  { icon: '🔒', text: t('forgotPassword.features.secure') },
+                  { icon: '⏱️', text: t('forgotPassword.features.expires') },
+                  { icon: '✉️', text: t('forgotPassword.features.checkSpam') },
                 ].map((item, idx) => (
                   <motion.div
                     key={item.text}
@@ -350,10 +352,10 @@ const ForgotPassword = () => {
               {/* Header */}
               <div className="mb-8">
                 <h2 className="text-3xl font-black text-gray-900 font-poppins mb-2">
-                  Reset Password
+                  {t('forgotPassword.title')}
                 </h2>
                 <p className="text-gray-600">
-                  Enter your email address and we&apos;ll send you a link to reset your password
+                  {t('forgotPassword.subtitle')}
                 </p>
               </div>
 
@@ -363,13 +365,13 @@ const ForgotPassword = () => {
                 {/* Email */}
                 <div>
                   <label htmlFor="email" className="block text-sm font-semibold text-gray-700 mb-2">
-                    Email Address
+                    {t('forgotPassword.emailLabel')}
                   </label>
                   <input
                     id="email"
                     type="email"
                     name="email"
-                    placeholder="your.email@example.com"
+                    placeholder={t('forgotPassword.emailPlaceholder')}
                     value={email}
                     onChange={handleChange}
                     className={`w-full px-4 py-3 rounded-lg border-2 transition-all duration-200 ${
@@ -400,7 +402,7 @@ const ForgotPassword = () => {
                     <svg className="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
                     </svg>
-                    <span>Limit: 3 attempts per hour for security</span>
+                    <span>{t('forgotPassword.rateLimitNotice')}</span>
                   </p>
                 </div>
 
@@ -422,10 +424,10 @@ const ForgotPassword = () => {
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                       </svg>
-                      Sending...
+                      {t('forgotPassword.sending')}
                     </span>
                   ) : (
-                    'Send Reset Link'
+                    t('forgotPassword.sendLinkButton')
                   )}
                 </motion.button>
 
@@ -447,7 +449,7 @@ const ForgotPassword = () => {
                   to="/login"
                   className="text-sm font-semibold text-primary hover:text-primary-600 transition-colors"
                 >
-                  ← Back to Sign In
+                  {t('forgotPassword.backToLogin')}
                 </Link>
               </div>
 
@@ -461,7 +463,7 @@ const ForgotPassword = () => {
               <svg className="w-4 h-4 group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
               </svg>
-              <span className="text-sm font-medium">Back to home</span>
+              <span className="text-sm font-medium">{t('forgotPassword.backToHome')}</span>
             </Link>
 
           </motion.div>

@@ -1,0 +1,71 @@
+{
+  "title": "My Profile",
+  "subtitle": "Your account information and statistics",
+  "emailVerified": "Email Verified",
+  "emailPending": "Email Pending",
+  "activeAccount": "Active Account",
+  "handicapRegistered": "Handicap Registered",
+  "nationality": "Nationality",
+  "nationalityNotSpecified": "Nationality: Not specified",
+  "lastUpdated": "Last updated {{date}}",
+  "notEnrolledYet": "Not enrolled yet",
+  "competition": "Competition",
+  "competitions": "Competitions",
+  "actions": {
+    "backToDashboard": "Back to Dashboard",
+    "editProfile": "Edit Profile",
+    "logOut": "Log Out"
+  },
+  "edit": {
+    "title": "Edit Profile",
+    "refreshData": "Refresh Data",
+    "refreshing": "Refreshing...",
+    "personalInfo": {
+      "title": "Personal Information",
+      "subtitle": "Update your name and last name. No password required.",
+      "firstName": "First Name",
+      "lastName": "Last Name",
+      "nationality": "Nationality",
+      "nationalityOptional": "(Optional)",
+      "selectNationality": "No nationality selected",
+      "rfegInfo": "Select Spain (ES) to enable RFEG handicap updates",
+      "updating": "Updating...",
+      "update": "Update Personal Info"
+    },
+    "security": {
+      "title": "Security Settings",
+      "subtitle": "Update your email and/or password. Current password required.",
+      "currentPassword": "Current Password *",
+      "currentPasswordPlaceholder": "Required to update security settings",
+      "currentPasswordHelp": "Enter your current password to authorize changes",
+      "newEmail": "New Email (optional)",
+      "newEmailPlaceholder": "Enter new email to change",
+      "currentEmail": "Current: {{email}}",
+      "newPassword": "New Password (optional)",
+      "newPasswordPlaceholder": "Leave empty to keep current password",
+      "newPasswordHelp": "Must be at least 12 characters if changing",
+      "confirmPassword": "Confirm New Password",
+      "confirmPasswordPlaceholder": "Confirm your new password",
+      "updating": "Updating...",
+      "update": "Update Security Settings"
+    },
+    "handicap": {
+      "title": "Handicap Management",
+      "current": "Current Handicap:",
+      "lastUpdated": "Last updated: {{date}}",
+      "manual": "Handicap (Manual)",
+      "manualPlaceholder": "Enter handicap (-10.0 to 54.0)",
+      "manualHelp": "Range: -10.0 to 54.0 (RFEG/EGA standard)",
+      "updateManually": "Update Manually",
+      "updating": "Updating...",
+      "rfegUpdate": "Or update automatically from RFEG:",
+      "updateFromRFEG": "Update from RFEG",
+      "updatingFromRFEG": "Updating from RFEG...",
+      "rfegHelp": "This will look up your handicap using your registered name in the RFEG database. If not found, you can provide a manual fallback above.",
+      "rfegOnlySpanish": "RFEG updates only available for Spanish players",
+      "rfegInfoWithNationality": "Your nationality is set to {{countryCode}}. Only players with Spanish nationality can update their handicap from RFEG.",
+      "rfegInfoNoNationality": "To enable RFEG handicap updates, please set your nationality to Spain in your profile."
+    },
+    "cancel": "Cancel"
+  }
+}

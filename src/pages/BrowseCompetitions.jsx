@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import PropTypes from 'prop-types';
+import { useTranslation } from 'react-i18next';
 import { Search, Calendar, Users, Target, TrendingUp } from 'lucide-react';
 import HeaderAuth from '../components/layout/HeaderAuth';
 import {
@@ -16,6 +17,7 @@ import { useAuth } from '../hooks/useAuth';
 
 const BrowseCompetitions = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation('competitions');
 
   // User state
   const { user, loading: isLoading } = useAuth();
@@ -55,14 +57,14 @@ const BrowseCompetitions = () => {
         setJoinableCompetitions(safeCompetitions);
       } catch (error) {
         console.error('Error loading joinable competitions:', error);
-        toast.error('Failed to load available competitions');
+        toast.error(t('browse.errors.failedToLoadJoinable'));
       } finally {
         setIsLoadingJoinable(false);
       }
     };
 
     loadJoinableCompetitions();
-  }, [user]);
+  }, [user, t]);
 
   // Load explore competitions
   useEffect(() => {
@@ -75,14 +77,14 @@ const BrowseCompetitions = () => {
         setExploreCompetitions(competitions);
       } catch (error) {
         console.error('Error loading explore competitions:', error);
-        toast.error('Failed to load competitions');
+        toast.error(t('browse.errors.failedToLoadExplore'));
       } finally {
         setIsLoadingExplore(false);
       }
     };
 
     loadExploreCompetitions();
-  }, [user]);
+  }, [user, t]);
 
   // Filter joinable competitions by search AND exclude user's own competitions
   const filteredJoinableCompetitions = joinableCompetitions.filter((comp) => {
@@ -131,7 +133,7 @@ const BrowseCompetitions = () => {
       // Call RequestEnrollmentUseCase
       await requestEnrollmentUseCase.execute(competitionId);
 
-      toast.success('Enrollment request sent! Check "My Competitions" to track status.');
+      toast.success(t('browse.success.enrollmentRequested'));
 
       // Remove competition from UI immediately (optimistic update)
       setJoinableCompetitions((prev) => prev.filter((comp) => comp.id !== competitionId));
@@ -160,11 +162,11 @@ const BrowseCompetitions = () => {
 
       // Check if it's a duplicate enrollment error (409 Conflict)
       if (error.message?.includes('409')) {
-        toast.error('You already have an enrollment request for this competition');
+        toast.error(t('browse.errors.alreadyEnrolled'));
         // Remove from list since user already has enrollment
         setJoinableCompetitions((prev) => prev.filter((comp) => comp.id !== competitionId));
       } else {
-        toast.error(error.message || 'Failed to request enrollment');
+        toast.error(error.message || t('browse.errors.failedToEnroll'));
       }
     } finally {
       setRequestingEnrollment((prev) => ({ ...prev, [competitionId]: false }));
@@ -182,7 +184,7 @@ const BrowseCompetitions = () => {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
+          <p className="mt-4 text-gray-600">{t('common:loading')}</p>
         </div>
       </div>
     );
@@ -198,7 +200,7 @@ const BrowseCompetitions = () => {
     joinableContent = (
       <div className="text-center py-12">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-        <p className="mt-4 text-gray-600">Loading available competitions...</p>
+        <p className="mt-4 text-gray-600">{t('common:loading')}</p>
       </div>
     );
   } else if (filteredJoinableCompetitions.length === 0) {
@@ -206,12 +208,12 @@ const BrowseCompetitions = () => {
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
         <Target className="w-16 h-16 text-gray-300 mx-auto mb-4" />
         <h3 className="text-xl font-semibold text-gray-900 mb-2">
-          {joinableSearch ? 'No competitions found' : 'No competitions available'}
+          {joinableSearch ? t('browse.joinCompetition.noCompetitionsFound') : t('browse.joinCompetition.noCompetitionsAvailable')}
         </h3>
         <p className="text-gray-600">
           {joinableSearch
-            ? 'Try adjusting your search criteria'
-            : 'There are no active competitions available to join at the moment'}
+            ? t('browse.joinCompetition.tryAdjustingSearch')
+            : t('browse.joinCompetition.noActiveCompetitions')}
         </p>
       </div>
     );
@@ -238,7 +240,7 @@ const BrowseCompetitions = () => {
     exploreContent = (
       <div className="text-center py-12">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-        <p className="mt-4 text-gray-600">Loading competitions...</p>
+        <p className="mt-4 text-gray-600">{t('common:loading')}</p>
       </div>
     );
   } else if (filteredExploreCompetitions.length === 0) {
@@ -246,12 +248,12 @@ const BrowseCompetitions = () => {
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
         <TrendingUp className="w-16 h-16 text-gray-300 mx-auto mb-4" />
         <h3 className="text-xl font-semibold text-gray-900 mb-2">
-          {exploreSearch ? 'No competitions found' : 'No competitions to explore'}
+          {exploreSearch ? t('browse.joinCompetition.noCompetitionsFound') : t('browse.exploreCompetitions.noCompetitionsToExplore')}
         </h3>
         <p className="text-gray-600">
           {exploreSearch
-            ? 'Try adjusting your search criteria'
-            : 'There are no closed, ongoing, or completed competitions at the moment'}
+            ? t('browse.joinCompetition.tryAdjustingSearch')
+            : t('browse.exploreCompetitions.noOngoingCompetitions')}
         </p>
       </div>
     );
@@ -277,9 +279,9 @@ const BrowseCompetitions = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Page Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Browse Competitions</h1>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">{t('browse.title')}</h1>
           <p className="text-gray-600">
-            Discover tournaments to join or explore completed competitions
+            {t('browse.subtitle')}
           </p>
         </div>
 
@@ -287,11 +289,11 @@ const BrowseCompetitions = () => {
         <div className="mb-12">
           <div className="flex items-center gap-3 mb-6">
             <Target className="w-6 h-6 text-primary" />
-            <h2 className="text-2xl font-bold text-gray-900">Join a Competition</h2>
+            <h2 className="text-2xl font-bold text-gray-900">{t('browse.joinCompetition.title')}</h2>
           </div>
 
           <p className="text-gray-600 mb-4">
-            Find tournaments you can join and request enrollment
+            {t('browse.joinCompetition.description')}
           </p>
 
           {/* Search Bar - Joinable */}
@@ -301,7 +303,9 @@ const BrowseCompetitions = () => {
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                 <input
                   type="text"
-                  placeholder={`Search by ${joinableSearchType === 'name' ? 'competition name' : 'creator name'}...`}
+                  placeholder={t('browse.joinCompetition.searchPlaceholder', {
+                    type: joinableSearchType === 'name' ? t('browse.joinCompetition.searchByName') : t('browse.joinCompetition.searchByCreator')
+                  })}
                   value={joinableSearch}
                   onChange={(e) => setJoinableSearch(e.target.value)}
                   className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
@@ -316,7 +320,7 @@ const BrowseCompetitions = () => {
                       : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                   }`}
                 >
-                  By Name
+                  {t('browse.joinCompetition.byName')}
                 </button>
                 <button
                   onClick={() => setJoinableSearchType('creator')}
@@ -326,7 +330,7 @@ const BrowseCompetitions = () => {
                       : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                   }`}
                 >
-                  By Creator
+                  {t('browse.joinCompetition.byCreator')}
                 </button>
               </div>
             </div>
@@ -343,11 +347,11 @@ const BrowseCompetitions = () => {
         <div>
           <div className="flex items-center gap-3 mb-6">
             <TrendingUp className="w-6 h-6 text-primary" />
-            <h2 className="text-2xl font-bold text-gray-900">Explore Competitions</h2>
+            <h2 className="text-2xl font-bold text-gray-900">{t('browse.exploreCompetitions.title')}</h2>
           </div>
 
           <p className="text-gray-600 mb-4">
-            View ongoing tournaments and completed results
+            {t('browse.exploreCompetitions.description')}
           </p>
 
           {/* Search Bar - Explore */}
@@ -357,7 +361,9 @@ const BrowseCompetitions = () => {
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                 <input
                   type="text"
-                  placeholder={`Search by ${exploreSearchType === 'name' ? 'competition name' : 'creator name'}...`}
+                  placeholder={t('browse.joinCompetition.searchPlaceholder', {
+                    type: exploreSearchType === 'name' ? t('browse.joinCompetition.searchByName') : t('browse.joinCompetition.searchByCreator')
+                  })}
                   value={exploreSearch}
                   onChange={(e) => setExploreSearch(e.target.value)}
                   className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
@@ -372,7 +378,7 @@ const BrowseCompetitions = () => {
                       : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                   }`}
                 >
-                  By Name
+                  {t('browse.joinCompetition.byName')}
                 </button>
                 <button
                   onClick={() => setExploreSearchType('creator')}
@@ -382,7 +388,7 @@ const BrowseCompetitions = () => {
                       : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                   }`}
                 >
-                  By Creator
+                  {t('browse.joinCompetition.byCreator')}
                 </button>
               </div>
             </div>
@@ -398,6 +404,7 @@ const BrowseCompetitions = () => {
 
 // Competition Card Component
 const CompetitionCard = ({ competition, mode, onRequestEnrollment, onViewDetails, isRequesting }) => {
+  const { t } = useTranslation('competitions');
   const { id, name, startDate, endDate, status, creator, enrolledCount, maxPlayers, countries } = competition;
 
   // Format dates
@@ -413,11 +420,13 @@ const CompetitionCard = ({ competition, mode, onRequestEnrollment, onViewDetails
       CLOSED: 'bg-yellow-100 text-yellow-800',
       IN_PROGRESS: 'bg-blue-100 text-blue-800',
       COMPLETED: 'bg-gray-100 text-gray-800',
+      DRAFT: 'bg-gray-100 text-gray-800',
+      CANCELLED: 'bg-red-100 text-red-800',
     };
 
     return (
       <span className={`inline-block px-2 py-1 rounded-full text-xs font-semibold ${badges[status] || 'bg-gray-100 text-gray-800'}`}>
-        {status?.replace('_', ' ')}
+        {status && t(`status.${status}`)}
       </span>
     );
   };
@@ -463,7 +472,7 @@ const CompetitionCard = ({ competition, mode, onRequestEnrollment, onViewDetails
         <div className="flex items-center text-sm text-gray-600">
           <Users className="w-4 h-4 mr-2 text-gray-400" />
           <span>
-            Created by: <span className="font-medium text-gray-900">{creator?.firstName} {creator?.lastName}</span>
+            {t('browse.card.createdBy')} <span className="font-medium text-gray-900">{creator?.firstName} {creator?.lastName}</span>
           </span>
         </div>
 
@@ -471,8 +480,8 @@ const CompetitionCard = ({ competition, mode, onRequestEnrollment, onViewDetails
         <div className="flex items-center text-sm text-gray-600">
           <Users className="w-4 h-4 mr-2 text-gray-400" />
           <span>
-            Players: <span className="font-medium text-gray-900">{enrolledCount} / {maxPlayers}</span>
-            {enrolledCount >= maxPlayers && <span className="ml-2 text-red-600 font-semibold">FULL</span>}
+            {t('browse.card.players')} <span className="font-medium text-gray-900">{enrolledCount} / {maxPlayers}</span>
+            {enrolledCount >= maxPlayers && <span className="ml-2 text-red-600 font-semibold">{t('browse.card.full')}</span>}
           </span>
         </div>
       </button>
@@ -494,9 +503,9 @@ const CompetitionCard = ({ competition, mode, onRequestEnrollment, onViewDetails
           >
         {/* Get button text */}
         {(() => {
-          if (isRequesting) return 'Requesting...';
-          if (enrolledCount >= maxPlayers) return 'Full';
-          return 'Request to Join';
+          if (isRequesting) return t('browse.card.requesting');
+          if (enrolledCount >= maxPlayers) return t('browse.card.full');
+          return t('browse.card.requestToJoin');
         })()}
       </button>
         ) : (
@@ -507,7 +516,7 @@ const CompetitionCard = ({ competition, mode, onRequestEnrollment, onViewDetails
             }}
             className="w-full py-2 px-4 rounded-lg font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition"
           >
-            View Details
+            {t('browse.card.viewDetails')}
           </button>
         )}
       </div>

@@ -5,6 +5,7 @@ import {
   Mail, Shield, Calendar, TrendingUp, Award,
   CheckCircle, AlertCircle, Edit, LogOut, ArrowLeft, Globe, Clock
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import HeaderAuth from '../components/layout/HeaderAuth';
 import { useAuth } from '../hooks/useAuth';
 import { CountryFlag } from '../utils/countryUtils';
@@ -14,6 +15,7 @@ const API_URL = import.meta.env.VITE_API_BASE_URL || '';
 
 const Profile = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation('profile');
   const { user, loading: isLoadingUser } = useAuth();
   const [countryName, setCountryName] = useState(null);
   const [competitionsCount, setCompetitionsCount] = useState(0);
@@ -127,7 +129,7 @@ const Profile = () => {
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading profile...</p>
+          <p className="text-gray-600">{t('common:loading')}</p>
         </div>
       </div>
     );
@@ -163,10 +165,10 @@ const Profile = () => {
             >
               <div>
                 <p className="text-gray-900 tracking-tight text-3xl md:text-[32px] font-bold leading-tight">
-                  My Profile
+                  {t('title')}
                 </p>
                 <p className="text-gray-500 text-sm mt-1">
-                  Your account information and statistics
+                  {t('subtitle')}
                 </p>
               </div>
             </motion.div>
@@ -195,24 +197,24 @@ const Profile = () => {
                       {user.email_verified ? (
                         <span className="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-semibold">
                           <CheckCircle className="w-3 h-3" />
-                          Email Verified
+                          {t('emailVerified')}
                         </span>
                       ) : (
                         <span className="inline-flex items-center gap-1 px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-xs font-semibold">
                           <AlertCircle className="w-3 h-3" />
-                          Email Pending
+                          {t('emailPending')}
                         </span>
                       )}
 
                       <span className="inline-flex items-center gap-1 px-3 py-1 bg-primary-100 text-primary-700 rounded-full text-xs font-semibold">
                         <Shield className="w-3 h-3" />
-                        Active Account
+                        {t('activeAccount')}
                       </span>
 
                       {handicap !== 'Not set' && (
                         <span className="inline-flex items-center gap-1 px-3 py-1 bg-accent-100 text-accent-700 rounded-full text-xs font-semibold">
                           <Award className="w-3 h-3" />
-                          Handicap Registered
+                          {t('handicapRegistered')}
                         </span>
                       )}
                     </div>
@@ -232,7 +234,7 @@ const Profile = () => {
                     {/* Last Updated */}
                     <div className="flex items-center gap-2 text-gray-600 mb-2">
                       <Clock className="w-4 h-4" />
-                      <span className="text-sm">Last updated {formatDate(user.updated_at)}</span>
+                      <span className="text-sm">{t('lastUpdated', { date: formatDate(user.updated_at) })}</span>
                     </div>
 
                     {/* Nationality */}
@@ -240,7 +242,7 @@ const Profile = () => {
                       <Globe className="w-4 h-4" />
                       {user.country_code ? (
                         <span className="text-sm flex items-center gap-2">
-                          <span>Nationality</span>
+                          <span>{t('nationality')}</span>
                           <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-xs font-semibold border border-blue-200">
                             <CountryFlag countryCode={user.country_code} className="w-4 h-4" />
                             <span>{countryName || user.country_code}</span>
@@ -248,7 +250,7 @@ const Profile = () => {
                         </span>
                       ) : (
                         <span className="text-sm text-gray-400">
-                          Nationality: Not specified
+                          {t('nationalityNotSpecified')}
                         </span>
                       )}
                     </div>
@@ -274,8 +276,8 @@ const Profile = () => {
                       </div>
                       <p className="text-2xl font-bold text-gray-900">{competitionsCount}</p>
                       <p className="text-xs text-gray-500 mt-1">
-                        {competitionsCount === 0 ? 'Not enrolled yet' : 
-                         competitionsCount === 1 ? 'Competition' : 'Competitions'}
+                        {competitionsCount === 0 ? t('notEnrolledYet') :
+                         competitionsCount === 1 ? t('competition') : t('competitions')}
                       </p>
                     </div>
                   </div>
@@ -298,7 +300,7 @@ const Profile = () => {
                   className="flex items-center gap-2 px-5 py-2.5 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-colors"
                 >
                   <ArrowLeft className="w-4 h-4" />
-                  <span>Back to Dashboard</span>
+                  <span>{t('actions.backToDashboard')}</span>
                 </motion.button>
 
                 <motion.button
@@ -308,7 +310,7 @@ const Profile = () => {
                   className="flex items-center gap-2 px-5 py-2.5 bg-primary-500 text-white rounded-lg font-medium hover:bg-primary-600 transition-colors shadow-md"
                 >
                   <Edit className="w-4 h-4" />
-                  <span>Edit Profile</span>
+                  <span>{t('actions.editProfile')}</span>
                 </motion.button>
 
                 <motion.button
@@ -318,7 +320,7 @@ const Profile = () => {
                   className="flex items-center gap-2 px-5 py-2.5 bg-red-500 text-white rounded-lg font-medium hover:bg-red-600 transition-colors shadow-md"
                 >
                   <LogOut className="w-4 h-4" />
-                  <span>Log Out</span>
+                  <span>{t('actions.logOut')}</span>
                 </motion.button>
               </div>
             </motion.div>

@@ -1,0 +1,71 @@
+{
+  "title": "Mi Perfil",
+  "subtitle": "Información de tu cuenta y estadísticas",
+  "emailVerified": "Email Verificado",
+  "emailPending": "Email Pendiente",
+  "activeAccount": "Cuenta Activa",
+  "handicapRegistered": "Hándicap Registrado",
+  "nationality": "Nacionalidad",
+  "nationalityNotSpecified": "Nacionalidad: No especificada",
+  "lastUpdated": "Última actualización {{date}}",
+  "notEnrolledYet": "Aún no inscrito",
+  "competition": "Competición",
+  "competitions": "Competiciones",
+  "actions": {
+    "backToDashboard": "Volver al Panel",
+    "editProfile": "Editar Perfil",
+    "logOut": "Cerrar Sesión"
+  },
+  "edit": {
+    "title": "Editar Perfil",
+    "refreshData": "Actualizar Datos",
+    "refreshing": "Actualizando...",
+    "personalInfo": {
+      "title": "Información Personal",
+      "subtitle": "Actualiza tu nombre y apellido. No se requiere contraseña.",
+      "firstName": "Nombre",
+      "lastName": "Apellido",
+      "nationality": "Nacionalidad",
+      "nationalityOptional": "(Opcional)",
+      "selectNationality": "Ninguna nacionalidad seleccionada",
+      "rfegInfo": "Selecciona España (ES) para habilitar actualizaciones de hándicap RFEG",
+      "updating": "Actualizando...",
+      "update": "Actualizar Información Personal"
+    },
+    "security": {
+      "title": "Configuración de Seguridad",
+      "subtitle": "Actualiza tu email y/o contraseña. Se requiere contraseña actual.",
+      "currentPassword": "Contraseña Actual *",
+      "currentPasswordPlaceholder": "Requerida para actualizar configuración de seguridad",
+      "currentPasswordHelp": "Ingresa tu contraseña actual para autorizar cambios",
+      "newEmail": "Nuevo Email (opcional)",
+      "newEmailPlaceholder": "Ingresa nuevo email para cambiar",
+      "currentEmail": "Actual: {{email}}",
+      "newPassword": "Nueva Contraseña (opcional)",
+      "newPasswordPlaceholder": "Dejar vacío para mantener contraseña actual",
+      "newPasswordHelp": "Debe tener al menos 12 caracteres si se cambia",
+      "confirmPassword": "Confirmar Nueva Contraseña",
+      "confirmPasswordPlaceholder": "Confirma tu nueva contraseña",
+      "updating": "Actualizando...",
+      "update": "Actualizar Configuración de Seguridad"
+    },
+    "handicap": {
+      "title": "Gestión de Hándicap",
+      "current": "Hándicap Actual:",
+      "lastUpdated": "Última actualización: {{date}}",
+      "manual": "Hándicap (Manual)",
+      "manualPlaceholder": "Ingresa hándicap (-10.0 a 54.0)",
+      "manualHelp": "Rango: -10.0 a 54.0 (estándar RFEG/EGA)",
+      "updateManually": "Actualizar Manualmente",
+      "updating": "Actualizando...",
+      "rfegUpdate": "O actualizar automáticamente desde RFEG:",
+      "updateFromRFEG": "Actualizar desde RFEG",
+      "updatingFromRFEG": "Actualizando desde RFEG...",
+      "rfegHelp": "Esto buscará tu hándicap usando tu nombre registrado en la base de datos RFEG. Si no se encuentra, puedes proporcionar un valor manual arriba.",
+      "rfegOnlySpanish": "Actualizaciones RFEG solo disponibles para jugadores españoles",
+      "rfegInfoWithNationality": "Tu nacionalidad está configurada como {{countryCode}}. Solo los jugadores con nacionalidad española pueden actualizar su hándicap desde RFEG.",
+      "rfegInfoNoNationality": "Para habilitar actualizaciones de hándicap RFEG, por favor establece tu nacionalidad como España en tu perfil."
+    },
+    "cancel": "Cancelar"
+  }
+}

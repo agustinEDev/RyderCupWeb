@@ -1,7 +1,10 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import LanguageSwitcher from '../ui/LanguageSwitcher';
 
 const Header = () => {
+  const { t } = useTranslation('common');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const mobileMenuRef = useRef(null);
 
@@ -48,24 +51,28 @@ const Header = () => {
       <div className="hidden md:flex flex-1 justify-end gap-8">
         <div className="flex items-center gap-9">
           <a className="text-gray-900 text-sm font-medium leading-normal" href="#features">
-            Features
+            {t('header.features')}
           </a>
           <a className="text-gray-900 text-sm font-medium leading-normal" href="#pricing">
-            Pricing
+            {t('header.pricing')}
           </a>
           <a className="text-gray-900 text-sm font-medium leading-normal" href="#support">
-            Support
+            {t('header.support')}
           </a>
         </div>
+
+        {/* Language Switcher */}
+        <LanguageSwitcher />
+
         <div className="flex gap-2">
           <Link to="/register">
             <button className="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-primary text-white text-sm font-bold leading-normal tracking-wide hover:bg-primary/90 transition-colors">
-              <span className="truncate">Register</span>
+              <span className="truncate">{t('header.register')}</span>
             </button>
           </Link>
           <Link to="/login">
             <button className="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-gray-100 text-gray-900 text-sm font-bold leading-normal tracking-wide hover:bg-gray-200 transition-colors">
-              <span className="truncate">Sign In</span>
+              <span className="truncate">{t('header.signIn')}</span>
             </button>
           </Link>
         </div>
@@ -103,36 +110,43 @@ const Header = () => {
               onClick={() => setIsMobileMenuOpen(false)}
               className="block px-4 py-2 text-sm text-gray-900 hover:bg-gray-100 transition-colors"
             >
-              Features
+              {t('header.features')}
             </a>
             <a
               href="#pricing"
               onClick={() => setIsMobileMenuOpen(false)}
               className="block px-4 py-2 text-sm text-gray-900 hover:bg-gray-100 transition-colors"
             >
-              Pricing
+              {t('header.pricing')}
             </a>
             <a
               href="#support"
               onClick={() => setIsMobileMenuOpen(false)}
               className="block px-4 py-2 text-sm text-gray-900 hover:bg-gray-100 transition-colors"
             >
-              Support
+              {t('header.support')}
             </a>
+            <div className="border-t border-gray-200 my-2"></div>
+
+            {/* Language Switcher - Mobile */}
+            <div className="px-4 py-2">
+              <LanguageSwitcher />
+            </div>
+
             <div className="border-t border-gray-200 my-2"></div>
             <Link
               to="/register"
               onClick={() => setIsMobileMenuOpen(false)}
               className="block px-4 py-2 text-sm text-white bg-primary hover:bg-primary/90 transition-colors mx-2 rounded-lg text-center font-bold"
             >
-              Register
+              {t('header.register')}
             </Link>
             <Link
               to="/login"
               onClick={() => setIsMobileMenuOpen(false)}
               className="block px-4 py-2 text-sm text-gray-900 bg-gray-100 hover:bg-gray-200 transition-colors mx-2 mt-2 rounded-lg text-center font-bold"
             >
-              Sign In
+              {t('header.signIn')}
             </Link>
           </div>
         )}

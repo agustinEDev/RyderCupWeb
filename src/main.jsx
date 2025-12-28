@@ -4,6 +4,7 @@ import { Toaster } from 'react-hot-toast';
 import App from './App.jsx';
 import './index.css';
 import './infrastructure/sentry'; // Import Sentry initialization
+import './i18n'; // Import i18n initialization
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>

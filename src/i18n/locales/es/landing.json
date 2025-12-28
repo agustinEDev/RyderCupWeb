@@ -1,0 +1,129 @@
+{
+  "hero": {
+    "badge": "Plataforma #1 de Torneos de Golf",
+    "title": "Bienvenido a",
+    "brand": "RyderCupFriends",
+    "subtitle": "La plataforma definitiva para organizar torneos de golf amateur en formato Ryder Cup. Conecta con amigos, crea competiciones emocionantes y disfruta del espíritu de la rivalidad amistosa del golf.",
+    "getStartedButton": "Comenzar Gratis",
+    "viewDemoButton": "Ver Demo",
+    "stats": {
+      "tournaments": "Torneos",
+      "players": "Jugadores",
+      "satisfaction": "Satisfacción"
+    },
+    "nextTournament": "Próximo Torneo",
+    "springClassic": "Clásico de Primavera 2024"
+  },
+  "features": {
+    "title": "Todo lo que Necesitas para tu Torneo",
+    "subtitle": "Herramientas de nivel profesional diseñadas para golfistas amateur. Simples, potentes y divertidas de usar.",
+    "handicap": {
+      "title": "Gestión de Handicaps",
+      "description": "Calcula y gestiona automáticamente los handicaps de todos los jugadores para asegurar un juego justo y competitivo."
+    },
+    "format": {
+      "title": "Formato Ryder Cup",
+      "description": "Configura fácilmente el clásico formato Ryder Cup con foursomes, fourballs y partidos individuales."
+    },
+    "team": {
+      "title": "Gestión de Equipos",
+      "description": "Crea equipos equilibrados, rastrea estadísticas de jugadores y gestiona listas de equipos con facilidad."
+    },
+    "scoring": {
+      "title": "Puntuación en Vivo",
+      "description": "Actualizaciones de puntuación en tiempo real mantienen a todos comprometidos y siguiendo la acción."
+    }
+  },
+  "benefits": {
+    "verifiedBadge": "Plataforma Verificada",
+    "title": "Por qué los Entusiastas del Golf Aman RyderCupFriends",
+    "subtitle": "Únete a miles de golfistas amateur que han transformado su experiencia de torneos",
+    "simple": {
+      "title": "Simple e Intuitivo",
+      "description": "Sin configuración complicada. Comienza en minutos."
+    },
+    "mobile": {
+      "title": "Amigable para Móviles",
+      "description": "Gestiona tu torneo desde cualquier lugar, en cualquier dispositivo."
+    },
+    "fair": {
+      "title": "Competencia Justa",
+      "description": "Sistema avanzado de handicap asegura que todos tengan oportunidad de ganar."
+    },
+    "community": {
+      "title": "Enfocado en la Comunidad",
+      "description": "Conecta con otros entusiastas del golf y construye amistades duraderas."
+    },
+    "easySetup": {
+      "title": "Configuración Rápida y Fácil",
+      "description": "Crea tu primer torneo en menos de 5 minutos",
+      "shortTitle": "Configuración Fácil",
+      "shortDescription": "5 minutos para comenzar"
+    },
+    "fairPlay": {
+      "title": "Juego Justo Garantizado",
+      "description": "Sistema avanzado de handicap asegura competencia equilibrada"
+    },
+    "socialFun": {
+      "title": "Social y Divertido",
+      "description": "Construye amistades duraderas a través de la rivalidad amistosa"
+    }
+  },
+  "testimonials": {
+    "title": "Lo que Dice Nuestra Comunidad",
+    "subtitle": "Opiniones reales de golfistas reales",
+    "quote1": "RCF ha cambiado completamente cómo organizamos nuestros torneos mensuales. ¡El sistema de handicap es brillante y todos aman el formato Ryder Cup!",
+    "author1": "Michael Chen",
+    "role1": "Organizador de Torneos",
+    "quote2": "Como alguien nuevo en organizar eventos de golf, esta plataforma hizo todo tan simple. ¡Las herramientas de gestión de equipos son fantásticas!",
+    "author2": "Sarah Johnson",
+    "role2": "Entusiasta del Golf",
+    "quote3": "La función de puntuación en vivo mantiene a todos nuestros jugadores comprometidos durante el torneo. ¡Es como tener nuestro propio evento del PGA Tour!",
+    "author3": "David Martinez",
+    "role3": "Capitán del Club"
+  },
+  "pricing": {
+    "title": "Precios Simples y Transparentes",
+    "subtitle": "Elige el plan que se ajuste a tus necesidades",
+    "free": {
+      "name": "Gratis",
+      "price": "$0",
+      "period": "/mes",
+      "description": "Perfecto para probar RCF",
+      "feature1": "Hasta 2 torneos",
+      "feature2": "Puntuación básica",
+      "feature3": "Soporte por email",
+      "button": "Comenzar Gratis"
+    },
+    "pro": {
+      "name": "Pro",
+      "price": "$9.99",
+      "period": "/mes",
+      "description": "Para organizadores regulares de torneos",
+      "popular": "Más Popular",
+      "feature1": "Torneos ilimitados",
+      "feature2": "Análisis avanzado",
+      "feature3": "Soporte prioritario",
+      "feature4": "Marca personalizada",
+      "button": "Obtener Pro"
+    },
+    "enterprise": {
+      "name": "Empresarial",
+      "price": "Personalizado",
+      "period": "",
+      "description": "Para clubes de golf y organizaciones",
+      "feature1": "Todo en Pro",
+      "feature2": "Soporte dedicado",
+      "feature3": "Acceso API",
+      "feature4": "Integraciones personalizadas",
+      "button": "Contactar Ventas"
+    }
+  },
+  "cta": {
+    "title": "¿Listo para Transformar tus Torneos de Golf?",
+    "subtitle": "Únete a miles de golfistas que ya usan RyderCupFriends",
+    "button": "Comienza tu Prueba Gratis",
+    "learnMore": "Saber Más",
+    "noCredit": "No se requiere tarjeta de crédito"
+  }
+}
