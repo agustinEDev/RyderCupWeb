@@ -1,6 +1,6 @@
 # 🗺️ Roadmap - RyderCupFriends Frontend
 
-> **Versión:** 1.11.0
+> **Versión:** 1.11.1
 > **Última actualización:** 28 Dic 2025
 > **Estado general:** ✅ Producción
 > **Framework:** React 18 + Vite 7
