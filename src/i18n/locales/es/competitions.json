@@ -91,7 +91,7 @@
     },
     "confirmations": {
       "activate": "¿Estás seguro de que quieres activar esta competición?",
-      "closeEnrollments": "¿Estás seguro de que quieres cerrar-inscripciones esta competición?",
+      "closeEnrollments": "¿Estás seguro de que quieres cerrar las inscripciones de esta competición?",
       "start": "¿Estás seguro de que quieres iniciar esta competición?",
       "complete": "¿Estás seguro de que quieres completar esta competición?",
       "cancel": "¿Estás seguro de que quieres cancelar esta competición?",
