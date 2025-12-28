@@ -64,7 +64,7 @@ const BrowseCompetitions = () => {
     };
 
     loadJoinableCompetitions();
-  }, [user]);
+  }, [user, t]);
 
   // Load explore competitions
   useEffect(() => {
@@ -84,7 +84,7 @@ const BrowseCompetitions = () => {
     };
 
     loadExploreCompetitions();
-  }, [user]);
+  }, [user, t]);
 
   // Filter joinable competitions by search AND exclude user's own competitions
   const filteredJoinableCompetitions = joinableCompetitions.filter((comp) => {
