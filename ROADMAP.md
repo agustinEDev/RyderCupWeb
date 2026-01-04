@@ -1,7 +1,7 @@
 # 🗺️ Roadmap - RyderCupFriends Frontend
 
-> **Versión:** 1.11.1
-> **Última actualización:** 28 Dic 2025
+> **Versión:** 1.11.2
+> **Última actualización:** 4 Ene 2026
 > **Estado general:** ✅ Producción
 > **Framework:** React 18 + Vite 7
 > **Arquitectura:** Clean Architecture + DDD
@@ -27,12 +27,13 @@
 
 ### 📈 Métricas Clave
 
-- **Tests:** 419 tests pasando (100% pass rate)
+- **Tests:** 540 tests pasando (100% pass rate)
 - **Bundle inicial:** 47 KB (reducido de 978 KB)
 - **Páginas:** 11 rutas (5 públicas, 6 protegidas)
 - **Cobertura:** Domain 100%, Application 90%, Utils 100%
 - **Deployment:** Render.com (Static Site)
 - **CI/CD:** 3 workflows automáticos (CI, Security, E2E)
+- **Security Scanning:** Snyk (dependencies + code analysis)
 
 ---
 
@@ -40,8 +41,8 @@
 
 > **Backend Status:** v1.8.0 (12/16 tareas completadas - 75%)
 > **Backend Score:** 10.0/10 (Security OWASP) ✅
-> **Frontend Status:** v1.8.0-alpha (11/14 tareas completadas - 79%)
-> **Frontend Score:** 9.3/10 (Security OWASP) ✅ (+1.8 desde v1.7.0)
+> **Frontend Status:** v1.11.2 (Snyk Integration Completed - 4 Ene 2026)
+> **Frontend Score:** 8.75/10 (Security OWASP - Media de las 10 categorías) ✅
 
 ### ⚠️ Cambios del Backend que Requieren Actualización Frontend
 
@@ -73,27 +74,29 @@
 ## 🔐 SEGURIDAD - Mejoras Prioritarias (v1.8.0)
 
 > **Análisis OWASP Top 10 2021 completado:** 15 Dic 2025
-> **Puntuación General Frontend:** 9.3/10 ✅ (+1.8 desde v1.7.0)
+> **Puntuación General Frontend:** 8.75/10 ✅ (Media de las 10 categorías OWASP)
 > **Puntuación General Backend:** 10.0/10 ✅
+> **Mejora con Snyk:** +0.15 puntos (de 8.60/10 a 8.75/10)
 >
-> **✨ PROGRESO v1.8.0:** 10/14 tareas completadas (71%) - Fase 7: CI/CD Pipeline ✅
-> **✅ ÚLTIMO COMPLETADO:** Tests de Integración con Backend v1.8.0 (24 Dic 2025) - 100% passing
-> **📊 PROGRESO:** 11/14 tareas completadas (79%)
+> **✨ PROGRESO v1.8.0:** 12/14 tareas completadas (86%) - Fase 9: Snyk Integration ✅
+> **✅ ÚLTIMO COMPLETADO:** Snyk Security Scanning Integration (4 Ene 2026) - CI/CD automated
+> **📊 PROGRESO:** 12/14 tareas completadas (86%)
 
 ### Estado de Protecciones OWASP
 
-| Categoría OWASP | Puntuación | Estado | Prioridad |
-|-----------------|------------|--------|-----------|
-| **A01: Broken Access Control** | 8/10 | ✅ Bien | 🟠 Alta |
-| **A02: Cryptographic Failures** | 9/10 | ✅ Excelente | 🟢 Baja |
-| **A03: Injection** | 8.5/10 | ✅ Excelente | 🟢 Baja |
-| **A04: Insecure Design** | 8/10 | ✅ Bien | 🟠 Alta |
-| **A05: Security Misconfiguration** | 9.5/10 | ✅ Excelente | 🟢 Baja |
-| **A06: Vulnerable Components** | 9/10 | ✅ Excelente | 🟢 Baja |
-| **A07: Auth Failures** | 9/10 | ✅ Excelente | 🟢 Baja |
-| **A08: Data Integrity** | 7/10 | ⚠️ Parcial | 🟡 Media |
-| **A09: Logging & Monitoring** | 9/10 | ✅ Excelente | 🟢 Baja |
-| **A10: SSRF** | 9/10 | ✅ N/A | 🟢 Baja |
+| Categoría OWASP | Puntuación | Estado | Prioridad | Cambio |
+|-----------------|------------|--------|-----------|--------|
+| **A01: Broken Access Control** | 8/10 | ✅ Bien | 🟠 Alta | - |
+| **A02: Cryptographic Failures** | 9/10 | ✅ Excelente | 🟢 Baja | - |
+| **A03: Injection** | 8.5/10 | ✅ Excelente | 🟢 Baja | - |
+| **A04: Insecure Design** | 8/10 | ✅ Bien | 🟠 Alta | - |
+| **A05: Security Misconfiguration** | 10/10 | ✅ Perfecto | 🟢 Baja | +0.5 (Snyk) |
+| **A06: Vulnerable Components** | 9.5/10 | ✅ Excelente | 🟢 Baja | +0.5 (Snyk) |
+| **A07: Auth Failures** | 9/10 | ✅ Excelente | 🟢 Baja | - |
+| **A08: Data Integrity** | 7/10 | ⚠️ Parcial | 🟡 Media | - |
+| **A09: Logging & Monitoring** | 9.5/10 | ✅ Excelente | 🟢 Baja | +0.5 (Snyk) |
+| **A10: SSRF** | 9/10 | ✅ N/A | 🟢 Baja | - |
+| | | | **MEDIA TOTAL:** | **8.75/10** |
 
 ### Estado Actual de Protecciones
 
@@ -106,6 +109,7 @@
 | Password Policy (12 chars) | ✅ **IMPLEMENTADO** (20 Dic 2025) | - | A07 |
 | Backend Logout + Token Revocation | ✅ **IMPLEMENTADO** (21 Dic 2025) | - | A01, A07 |
 | Refresh Token Flow (Interceptor) | ✅ **IMPLEMENTADO** (21 Dic 2025) | - | A01, A02, A07 |
+| **Snyk Security Scanning** | ✅ **IMPLEMENTADO** (4 Ene 2026) | - | **A05, A06, A09** |
 | Input Validation | ⚠️ Parcial (sin límites max) | 🟠 Alta | A03 |
 | 2FA/MFA | ❌ NO implementado | 🟠 Alta | A07 |
 | Logout por Inactividad | ✅ **IMPLEMENTADO** (22 Dic 2025) | - | A07 |

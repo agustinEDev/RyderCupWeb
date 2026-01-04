@@ -8,6 +8,27 @@ y este proyecto adhiere a [Versionado Semántico](https://semver.org/lang/es/).
 ## [Unreleased]
 
 ### Added
+- **Snyk Security Integration**: Automated vulnerability scanning in CI/CD pipeline
+  - Added `snyk-security` job for npm dependency scanning (detects CVEs in node_modules)
+  - Added `snyk-code` job for static code analysis (detects XSS, injection, insecure APIs)
+  - Integrated with GitHub Security tab via SARIF reports
+  - Configured severity threshold: fails only on HIGH and CRITICAL vulnerabilities
+  - Executes on push to all branches, PRs to main/develop, and weekly schedule
+  - Reports retained as downloadable artifacts for 30 days
+  - Uses existing `SNYK_TOKEN` GitHub secret for authentication
+
+### Fixed
+- **i18n Loading Text Bug**: Fixed login button showing raw translation key "common.loading" instead of translated text
+  - Updated `useTranslation` hook in Login.jsx to support multiple namespaces: `['auth', 'common']`
+  - Corrected translation call from `t('common.loading', { ns: 'common' })` to `t('loading', { ns: 'common' })`
+  - Now correctly displays "Loading..." (English) or "Cargando..." (Spanish) during authentication
+
+### Changed
+- **Security Workflow Enhancement**: Extended `.github/workflows/security.yml` with Snyk integration (77 new lines)
+  - Maintains parallel execution with existing security checks (npm audit, TruffleHog, license check)
+  - Non-blocking configuration (`continue-on-error: true`) to prevent development workflow disruption
+
+### Added
 - **Internationalization (i18n)**: Full bilingual support for Spanish and English
   - Implemented react-i18next with language persistence in localStorage
   - Language dropdown switcher with flag icons in header/footer
