@@ -9,6 +9,10 @@ on:
     # Run every Monday at 9:00 AM UTC
     - cron: '0 9 * * 1'
 
+permissions:
+  contents: read
+  security-events: write
+
 jobs:
   dependency-audit:
     name: 🔒 Dependency Vulnerability Scan
@@ -170,6 +174,9 @@ jobs:
   snyk-security:
     name: 🐍 Snyk Security Scan
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -189,25 +196,28 @@ jobs:
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         with:
-          args: --severity-threshold=high --json-file-output=snyk-report.json
+          args: --severity-threshold=high --sarif-file-output=snyk-security.sarif
 
       - name: Upload Snyk report to GitHub Security
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         if: always()
         with:
-          sarif_file: snyk.sarif
+          sarif_file: snyk-security.sarif
 
-      - name: Upload Snyk JSON report
+      - name: Upload Snyk SARIF report artifact
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: snyk-security-report
-          path: snyk-report.json
+          path: snyk-security.sarif
           retention-days: 30
 
   snyk-code:
     name: 🔍 Snyk Code Analysis
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -231,7 +241,7 @@ jobs:
           args: --severity-threshold=high --sarif-file-output=snyk-code.sarif
 
       - name: Upload Snyk Code report to GitHub Security
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         if: always()
         with:
           sarif_file: snyk-code.sarif
