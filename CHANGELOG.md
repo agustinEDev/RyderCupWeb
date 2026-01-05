@@ -13,7 +13,7 @@ y este proyecto adhiere a [Versionado Semántico](https://semver.org/lang/es/).
     - Prevents race condition where validation runs before title is capitalized
     - Maintains strict Conventional Commits enforcement for all PRs
   - **Security Checks - Snyk SARIF Upload**: Fixed SARIF file generation and upload issues
-    - Corrected flag syntax: `--sarif-file-output=` → `--sarif-file-output` (space instead of equals)
+    - Corrected flag syntax: `--sarif-file-output snyk-security.sarif` → `--sarif-file-output=snyk-security.sarif` (added equals sign)
     - Added conditional file existence checks before upload steps
     - Prevents workflow failure when no vulnerabilities are found (SARIF not generated)
     - Added informative logs: "SARIF file generated successfully" or "SARIF file not generated (no vulnerabilities)"

@@ -206,7 +206,7 @@ jobs:
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         with:
-          args: --severity-threshold=high --sarif-file-output snyk-security.sarif
+          args: --severity-threshold=high --sarif-file-output=snyk-security.sarif
 
       - name: Check if SARIF file exists
         id: check_sarif
@@ -259,7 +259,7 @@ jobs:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         with:
           command: code test
-          args: --severity-threshold=high --sarif-file-output snyk-code.sarif
+          args: --severity-threshold=high --sarif-file-output=snyk-code.sarif
 
       - name: Check if SARIF file exists
         id: check_sarif_code
