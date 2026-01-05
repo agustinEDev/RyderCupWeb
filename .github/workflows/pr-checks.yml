@@ -21,6 +21,16 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
     steps:
+      # Wait for auto-fix to complete for Dependabot PRs
+      - name: Wait for auto-fix workflow
+        if: github.actor == 'dependabot[bot]' || github.actor == 'dependabot-preview[bot]'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            console.log('⏳ Waiting for auto-fix workflow to complete...');
+            await new Promise(resolve => setTimeout(resolve, 10000)); // Wait 10 seconds
+            console.log('✅ Proceeding with validation');
+
       - name: Check PR title
         uses: amannn/action-semantic-pull-request@v5
         env:

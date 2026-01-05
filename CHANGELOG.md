@@ -7,6 +7,24 @@ y este proyecto adhiere a [Versionado Semántico](https://semver.org/lang/es/).
 
 ## [Unreleased]
 
+### Fixed
+- **GitHub Actions Workflow Errors**: Corrected 3 critical failures in CI/CD pipeline
+  - **PR Checks - Conventional Commits**: Added 10-second delay for Dependabot PRs to wait for auto-fix workflow completion
+    - Prevents race condition where validation runs before title is capitalized
+    - Maintains strict Conventional Commits enforcement for all PRs
+  - **Security Checks - Snyk SARIF Upload**: Fixed SARIF file generation and upload issues
+    - Corrected flag syntax: `--sarif-file-output=` → `--sarif-file-output` (space instead of equals)
+    - Added conditional file existence checks before upload steps
+    - Prevents workflow failure when no vulnerabilities are found (SARIF not generated)
+    - Added informative logs: "SARIF file generated successfully" or "SARIF file not generated (no vulnerabilities)"
+  - **Security Checks - TruffleHog**: Fixed "BASE and HEAD commits are the same" error in Dependabot PRs
+    - Added conditional logic to detect Dependabot PRs (`github.actor == 'dependabot[bot]'`)
+    - Git diff scan for normal PRs (compares base and head commits)
+    - Filesystem scan for Dependabot PRs (scans all files without commit comparison)
+    - Maintains full secret scanning coverage across all PR types
+  - All workflows now pass successfully for both developer and Dependabot PRs
+  - Zero reduction in security coverage or quality gates
+
 ### Added
 - **Snyk Security Integration**: Automated vulnerability scanning in CI/CD pipeline
   - Added `snyk-security` job for npm dependency scanning (detects CVEs in node_modules)
