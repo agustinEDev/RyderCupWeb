@@ -79,19 +79,9 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: TruffleHog OSS
-        # Skip for Dependabot PRs to avoid "BASE and HEAD are the same" error
-        if: github.actor != 'dependabot[bot]' && github.actor != 'dependabot-preview[bot]'
-        uses: trufflesecurity/trufflehog@main
-        with:
-          path: ./
-          base: ${{ github.event.repository.default_branch }}
-          head: HEAD
-          extra_args: --debug --only-verified
-
-      - name: TruffleHog filesystem scan (Dependabot PRs)
-        # Alternative scan method for Dependabot PRs
-        if: github.actor == 'dependabot[bot]' || github.actor == 'dependabot-preview[bot]'
+      - name: TruffleHog OSS (Filesystem Scan)
+        # Use filesystem scan for all cases to avoid "BASE and HEAD are the same" errors
+        # This provides consistent secret scanning across all PR types and push events
         uses: trufflesecurity/trufflehog@main
         with:
           path: ./
