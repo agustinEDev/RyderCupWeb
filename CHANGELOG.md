@@ -17,11 +17,11 @@ y este proyecto adhiere a [Versionado Semántico](https://semver.org/lang/es/).
     - Added conditional file existence checks before upload steps
     - Prevents workflow failure when no vulnerabilities are found (SARIF not generated)
     - Added informative logs: "SARIF file generated successfully" or "SARIF file not generated (no vulnerabilities)"
-  - **Security Checks - TruffleHog**: Fixed "BASE and HEAD commits are the same" error in Dependabot PRs
-    - Added conditional logic to detect Dependabot PRs (`github.actor == 'dependabot[bot]'`)
-    - Git diff scan for normal PRs (compares base and head commits)
-    - Filesystem scan for Dependabot PRs (scans all files without commit comparison)
+  - **Security Checks - TruffleHog**: Fixed "BASE and HEAD commits are the same" error
+    - Switched to filesystem scan for all PR types and push events (more reliable than git diff)
+    - Eliminates "BASE and HEAD are the same" errors in release branches, merges, and Dependabot PRs
     - Maintains full secret scanning coverage across all PR types
+    - Consistent behavior regardless of PR source or branch type
   - All workflows now pass successfully for both developer and Dependabot PRs
   - Zero reduction in security coverage or quality gates
 
