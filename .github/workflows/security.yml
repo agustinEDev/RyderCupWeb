@@ -80,11 +80,21 @@ jobs:
           fetch-depth: 0
 
       - name: TruffleHog OSS
+        # Skip for Dependabot PRs to avoid "BASE and HEAD are the same" error
+        if: github.actor != 'dependabot[bot]' && github.actor != 'dependabot-preview[bot]'
         uses: trufflesecurity/trufflehog@main
         with:
           path: ./
           base: ${{ github.event.repository.default_branch }}
           head: HEAD
+          extra_args: --debug --only-verified
+
+      - name: TruffleHog filesystem scan (Dependabot PRs)
+        # Alternative scan method for Dependabot PRs
+        if: github.actor == 'dependabot[bot]' || github.actor == 'dependabot-preview[bot]'
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
           extra_args: --debug --only-verified
 
   license-check:
@@ -198,14 +208,25 @@ jobs:
         with:
           args: --severity-threshold=high --sarif-file-output=snyk-security.sarif
 
+      - name: Check if SARIF file exists
+        id: check_sarif
+        run: |
+          if [ -f "snyk-security.sarif" ]; then
+            echo "sarif_exists=true" >> $GITHUB_OUTPUT
+            echo "✅ SARIF file generated successfully"
+          else
+            echo "sarif_exists=false" >> $GITHUB_OUTPUT
+            echo "⚠️ SARIF file not generated (no vulnerabilities or Snyk error)"
+          fi
+
       - name: Upload Snyk report to GitHub Security
         uses: github/codeql-action/upload-sarif@v4
-        if: always()
+        if: steps.check_sarif.outputs.sarif_exists == 'true'
         with:
           sarif_file: snyk-security.sarif
 
       - name: Upload Snyk SARIF report artifact
-        if: always()
+        if: steps.check_sarif.outputs.sarif_exists == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: snyk-security-report
@@ -240,14 +261,25 @@ jobs:
           command: code test
           args: --severity-threshold=high --sarif-file-output=snyk-code.sarif
 
+      - name: Check if SARIF file exists
+        id: check_sarif_code
+        run: |
+          if [ -f "snyk-code.sarif" ]; then
+            echo "sarif_exists=true" >> $GITHUB_OUTPUT
+            echo "✅ SARIF file generated successfully"
+          else
+            echo "sarif_exists=false" >> $GITHUB_OUTPUT
+            echo "⚠️ SARIF file not generated (no vulnerabilities or Snyk error)"
+          fi
+
       - name: Upload Snyk Code report to GitHub Security
         uses: github/codeql-action/upload-sarif@v4
-        if: always()
+        if: steps.check_sarif_code.outputs.sarif_exists == 'true'
         with:
           sarif_file: snyk-code.sarif
 
       - name: Upload Snyk Code report artifact
-        if: always()
+        if: steps.check_sarif_code.outputs.sarif_exists == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: snyk-code-report
