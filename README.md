@@ -253,7 +253,7 @@ npm run preview # probar build
 - **CHANGELOG.md** - Historial detallado de cambios
 - **ADR-009** - Sistema RBAC (roles y permisos)
 - **ADR-010** - Arquitectura de Scoring (polling vs WebSocket)
-- **Backend:** `/Users/agustinestevezdominguez/Documents/RyderCupAm`
+- **Backend:** Ver [BACKEND_API_SPEC.md](BACKEND_API_SPEC.md) para la especificación completa del API
 - **API Docs:** http://localhost:8000/docs
 
 ---
