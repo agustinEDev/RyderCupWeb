@@ -252,8 +252,7 @@ npm run preview # probar build
 - **[CHANGELOG.md](CHANGELOG.md)** - Historial detallado de cambios
 - **[ADR-009](docs/architecture/decisions/ADR-009-rbac-system.md)** - Sistema RBAC (roles y permisos)
 - **[ADR-010](docs/architecture/decisions/ADR-010-realtime-scoring-architecture.md)** - Arquitectura de Scoring (polling vs WebSocket)
-- **Backend:** Ver [BACKEND_API_SPEC.md](BACKEND_API_SPEC.md) para la especificación completa del API
-- **API Docs:** [http://localhost:8000/docs](http://localhost:8000/docs)
+- **API Docs:** [http://localhost:8000/docs](http://localhost:8000/docs) - Documentación interactiva del backend
 
 ---
 
