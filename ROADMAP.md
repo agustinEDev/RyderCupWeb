@@ -358,12 +358,12 @@
 
 | Métrica | v1.11.4 | v2.1.0 Objetivo | Incremento |
 |---------|---------|-----------------|------------|
-| **Tests** | 540 | 900+ | +67% |
-| **Rutas** | 11 | 22+ | +100% |
-| **Cobertura Lines** | 80% | 85% | +5% |
-| **Bundle Size** | 47 KB | 150 KB | +103 KB (aceptable con code splitting) |
-| **Security Score** | 8.75/10 | 9.0/10 | +0.25 |
-| **API Endpoints** | 15 | 45+ | +200% |
+| **Tests** | 540 | 800-900 | +48-67% |
+| **Rutas** | 11 | 20-25 | +80-130% |
+| **Cobertura Lines** | 80% | 83-85% | +3-5% |
+| **Bundle Size** | 47 KB | 120-150 KB | +73-103 KB (con code splitting) |
+| **Security Score** | 8.75/10 | 8.9-9.0/10 | +0.15-0.25 |
+| **API Endpoints** | 15 | 35-45 | +130-200% |
 
 ---
 
@@ -417,8 +417,8 @@
 - **CHANGELOG.md** - Historial detallado de cambios
 - **CLAUDE.md** - Contexto para AI (instrucciones del proyecto)
 - **ADRs:** `docs/architecture/decisions/`
-- **Backend:** `/Users/agustinestevezdominguez/Documents/RyderCupAm`
-- **API Docs:** http://localhost:8000/docs
+- **Backend:** Configurar variable `BACKEND_PATH` con la ruta local del repositorio backend
+- **API Docs:** `http://localhost:{BACKEND_PORT}/docs` (por defecto puerto 8000)
 
 ---
 
