@@ -9,13 +9,21 @@
 [![React](https://img.shields.io/badge/React-18+-61DAFB?logo=react)](.)
 [![Vite](https://img.shields.io/badge/Vite-7+-646CFF?logo=vite)](.)
 [![Tailwind](https://img.shields.io/badge/Tailwind-3+-38B2AC?logo=tailwind-css)](.)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5+-3178C6?logo=typescript)](.)
+
+**Versión:** v1.11.4 → v2.1.0 (en desarrollo)
+
+## 🚀 Stack v2.1.0
+
+- **Core:** React 18 + Vite 7 + Tailwind CSS 3.4
+- **State:** Zustand v4 (global) + TanStack Query v5 (server)
+- **Routing:** React Router v6 con role guards
+- **Validation:** Zod
+- **i18n:** react-i18next (ES/EN)
+- **Testing:** Vitest + Playwright (900+ tests objetivo)
 
 ## 🔗 Backend API
 
-# 🏆 Ryder Cup Amateur Manager — Frontend (resumen)
-
-Aplicación web (React + Vite + Tailwind) para gestión de torneos de golf amateur.
+Aplicación web para gestión completa de torneos de golf amateur.
 
 Breve, útil y orientado a desarrolladores: cómo ejecutar, construir y desplegar.
 
@@ -183,23 +191,52 @@ Si las credenciales fueron comprometidas:
 4. Revisar logs de acceso sospechoso
 5. Considerar limpiar historial de Git con `git-filter-repo` si fueron commiteadas
 
-## Notas clave de integración
+## 📋 Funcionalidades v2.1.0
 
-- Backend: FastAPI (repositorio `RyderCupAm`). Endpoints principales: auth, users, handicaps.
-- Cuando pidas actualización desde RFEG, NO enviar `manual_handicap` — dejar que el backend consulte RFEG y devuelva el resultado o un error claro (ej.: "User not found in RFEG"). Esto evita resultados falsos-positivos.
-- `localStorage` contiene `access_token` y `user` (objeto usado por componentes protegidos).
+**Sistema de Roles:**
+- Admin: Gestión completa (usuarios, campos de golf, aprobaciones)
+- Creator: Crear torneos, planificar matches, invitar jugadores
+- Player: Participar en torneos, anotar scores
 
-## Problemas y correcciones relevantes (breve)
+**Gestión de Campos:**
+- CRUD completo con tees (6 max) y 18 hoyos
+- Sistema de aprobación (PENDING → APPROVED/REJECTED)
+- Plantillas predefinidas (Par 72, 71, 70)
 
-- Fix: dropdown de usuario (HeaderAuth) — se separaron refs para móvil/escritorio y se mejoró el manejo de clic fuera.
-- Fix: `EditProfile` — manejo seguro cuando `handicap` es null; ahora el formulario muestra cadena vacía y no lanza errores.
-- Se añadieron validaciones y ajustes para Sonar/ESLint (uso de Number.parseFloat, htmlFor en labels, PropTypes añadidos donde aplica).
+**Scheduling:**
+- Planificar rounds (Morning/Afternoon/Full Day)
+- Crear matches (Fourball, Foursomes, Singles, Greensome)
+- Asignar jugadores con tee individual
+- Playing Handicap auto-calculado (WHS)
 
-## Estructura (resumida)
+**Invitaciones:**
+- Invitar usuarios registrados o por email
+- Auto-inscripción al aceptar
+- Expiración 7 días
 
-- `src/pages/` — rutas: Landing, Login, Register, VerifyEmail, Dashboard, Profile, EditProfile, Competitions, CreateCompetition
-- `src/components/layout` — Header, HeaderAuth, Footer
-- `src/services/` — llamadas al API
+**Scoring en Tiempo Real:**
+- Anotación hoyo por hoyo (navegación libre)
+- Validación dual: ✅ coincide / ❌ discrepancia
+- 3 tabs: Input, Scorecard, Leaderboard
+- Polling cada 10s (React Query)
+
+**Leaderboard:**
+- Team standings en tiempo real
+- Match status (2 UP through 14)
+- Vista pública sin autenticación
+
+## 🏗️ Arquitectura
+
+```text
+src/
+├── domain/        # Entities, VOs, Repository Interfaces
+├── application/   # Use Cases (clean architecture)
+├── infrastructure/# API Repositories, Mappers
+├── pages/         # auth/, admin/, creator/, player/, public/
+├── components/    # UI components + guards (RoleGuard)
+├── store/         # Zustand: auth, competition, scoring, invitation
+└── hooks/         # useAuth, useScoring, useMatchPolling
+```
 
 ## Comandos útiles
 
@@ -209,19 +246,17 @@ npm run build   # producción
 npm run preview # probar build
 ```
 
-## Dónde mirar primero
+## 📚 Documentación
 
-- `src/pages/EditProfile.jsx` — lógica de actualización de hándicap (manual + RFEG) y refresco de usuario
-- `src/components/layout/HeaderAuth.jsx` — menú de usuario y logout
+- **[ROADMAP.md](ROADMAP.md)** - Planificación v2.1.0 (7 semanas, 5 sprints)
+- **[CHANGELOG.md](CHANGELOG.md)** - Historial detallado de cambios
+- **[ADR-009](docs/architecture/decisions/ADR-009-rbac-system.md)** - Sistema RBAC (roles y permisos)
+- **[ADR-010](docs/architecture/decisions/ADR-010-realtime-scoring-architecture.md)** - Arquitectura de Scoring (polling vs WebSocket)
+- **Backend:** Ver [BACKEND_API_SPEC.md](BACKEND_API_SPEC.md) para la especificación completa del API
+- **API Docs:** [http://localhost:8000/docs](http://localhost:8000/docs)
 
 ---
 
 Contacto: [Agustín Estévez](https://github.com/agustinEDev)
 
-- **Frontend Repository**: [RyderCupWeb](https://github.com/agustinEDev/RyderCupWeb)
-
----
-
-⭐ Si te resulta útil, dale una estrella en GitHub
-
-🏌️‍♂️ ¡Feliz desarrollo!
+⭐ [RyderCupWeb](https://github.com/agustinEDev/RyderCupWeb) | 🏌️‍♂️ ¡Feliz desarrollo!
