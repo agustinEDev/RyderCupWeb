@@ -19,6 +19,7 @@ const ResetPassword = lazy(() => import('./pages/ResetPassword'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const Profile = lazy(() => import('./pages/Profile'));
 const EditProfile = lazy(() => import('./pages/EditProfile'));
+const DeviceManagement = lazy(() => import('./pages/DeviceManagement'));
 const Competitions = lazy(() => import('./pages/Competitions'));
 const CreateCompetition = lazy(() => import('./pages/CreateCompetition'));
 const CompetitionDetail = lazy(() => import('./pages/CompetitionDetail'));
@@ -144,6 +145,7 @@ function AppContent() {
         <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
         <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
         <Route path="/profile/edit" element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />
+        <Route path="/profile/devices" element={<ProtectedRoute><DeviceManagement /></ProtectedRoute>} />
         <Route path="/competitions" element={<ProtectedRoute><Competitions /></ProtectedRoute>} />
         <Route path="/competitions/create" element={<ProtectedRoute><CreateCompetition /></ProtectedRoute>} />
         <Route path="/competitions/:id" element={<ProtectedRoute><CompetitionDetail /></ProtectedRoute>} />

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   Mail, Shield, Calendar, TrendingUp, Award,
-  CheckCircle, AlertCircle, Edit, LogOut, ArrowLeft, Globe, Clock
+  CheckCircle, AlertCircle, Edit, LogOut, ArrowLeft, Globe, Clock, Smartphone
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import HeaderAuth from '../components/layout/HeaderAuth';
@@ -311,6 +311,16 @@ const Profile = () => {
                 >
                   <Edit className="w-4 h-4" />
                   <span>{t('actions.editProfile')}</span>
+                </motion.button>
+
+                <motion.button
+                  onClick={() => navigate('/profile/devices')}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="flex items-center gap-2 px-5 py-2.5 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600 transition-colors shadow-md"
+                >
+                  <Smartphone className="w-4 h-4" />
+                  <span>Manage Devices</span>
                 </motion.button>
 
                 <motion.button
