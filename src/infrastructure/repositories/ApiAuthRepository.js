@@ -16,9 +16,11 @@ class ApiAuthRepository extends IAuthRepository {
         body: JSON.stringify({ email: email.getValue(), password: password.getValue() }),
       });
 
+      // v1.13.0: Backend now returns csrf_token for CSRF protection
       return {
         user: new User(data.user),
-        token: data.access_token,
+        token: data.access_token, // Legacy (httpOnly cookie is used)
+        csrfToken: data.csrf_token, // NEW: Required for POST/PUT/PATCH/DELETE requests
       };
     } catch (error) {
       // Standardize error message for 401
@@ -60,11 +62,12 @@ class ApiAuthRepository extends IAuthRepository {
       body: JSON.stringify({ token }),
     });
 
-    // La API ahora devuelve { access_token, token_type, user: {...} }
+    // La API ahora devuelve { access_token, token_type, user: {...}, csrf_token }
     // Igual que el endpoint de login
     return {
       user: new User(data.user),
       token: data.access_token,
+      csrfToken: data.csrf_token, // v1.13.0: CSRF token for email verification
     };
   }
 

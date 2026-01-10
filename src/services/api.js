@@ -1,8 +1,10 @@
 /**
  * Base API configuration and utilities
+ * v1.13.0: Added CSRF Protection for POST/PUT/PATCH/DELETE requests
  */
 
 import { fetchWithTokenRefresh } from '../utils/tokenRefreshInterceptor.js';
+import { getCsrfToken } from '../contexts/AuthContext'; // v1.13.0: CSRF Protection
 
 // Prioridad: 1. Runtime config (window.APP_CONFIG) 2. Build-time env 3. Empty string (relative URLs for proxy)
 // Si no hay API_URL configurado, usar '' para que las URLs sean relativas (/api/...)
@@ -31,6 +33,19 @@ export const apiRequest = async (endpoint, options = {}) => {
     'Content-Type': 'application/json',
   };
 
+  // v1.13.0: CSRF Protection - Add X-CSRF-Token header for state-changing requests
+  const method = (options.method || 'GET').toUpperCase();
+  const requiresCsrf = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method);
+
+  if (requiresCsrf) {
+    const csrfToken = getCsrfToken();
+    if (csrfToken) {
+      defaultHeaders['X-CSRF-Token'] = csrfToken;
+    } else {
+      console.warn(`CSRF token missing for ${method} ${endpoint}`);
+    }
+  }
+
   const config = {
     ...options,
     // CRITICAL: credentials: 'include' tells the browser to send httpOnly cookies
@@ -55,6 +70,15 @@ export const apiRequest = async (endpoint, options = {}) => {
       } catch (jsonError) {
         // If parsing fails, errorData remains empty object
         console.warn('Failed to parse error response as JSON:', jsonError);
+      }
+
+      // v1.13.0: Handle CSRF validation errors
+      if (response.status === 403 && errorData.error_code === 'CSRF_VALIDATION_FAILED') {
+        console.error('CSRF validation failed:', errorData.detail);
+        // Clear auth state and redirect to login
+        localStorage.removeItem('user');
+        window.location.href = '/login';
+        throw new Error('CSRF validation failed. Please log in again.');
       }
 
       // Extract error message with proper fallback chain
