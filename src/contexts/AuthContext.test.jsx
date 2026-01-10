@@ -3,10 +3,12 @@
  * v1.13.0: CSRF Protection
  */
 
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
-import { AuthProvider, useAuthContext, getCsrfToken, setCsrfTokenGlobal } from './AuthContext';
+import { AuthProvider } from './AuthContext';
+import { useAuthContext } from '../hooks/useAuthContext';
+import { getCsrfToken, setCsrfTokenGlobal } from './csrfTokenSync';
 
 // Mock localStorage
 const localStorageMock = (() => {

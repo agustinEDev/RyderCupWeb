@@ -14,7 +14,7 @@
  * @module tokenRefreshInterceptor
  */
 
-import { getCsrfToken, setCsrfTokenGlobal } from '../contexts/AuthContext'; // v1.13.0: CSRF Protection
+import { setCsrfTokenGlobal } from '../contexts/csrfTokenSync'; // v1.13.0: CSRF Protection
 
 const API_URL = globalThis.APP_CONFIG?.API_BASE_URL || import.meta.env.VITE_API_BASE_URL || '';
 

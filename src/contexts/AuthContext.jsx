@@ -7,6 +7,7 @@
 
 import { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import PropTypes from 'prop-types';
+import { setCsrfTokenGlobal } from './csrfTokenSync';
 
 // Create the context
 const AuthContext = createContext(null);
@@ -92,37 +93,6 @@ AuthProvider.propTypes = {
 };
 
 /**
- * Custom hook to access auth context
- * @returns {Object} Auth context value
- * @throws {Error} If used outside AuthProvider
- */
-export const useAuthContext = () => {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuthContext must be used within an AuthProvider');
-  }
-  return context;
-};
-
-/**
- * Get current CSRF token (synchronous)
- * Used by api.js interceptor to add X-CSRF-Token header
- *
- * NOTE: This is a workaround to access context outside React components.
- * A better approach would be to use axios interceptors with a closure,
- * but this works with our current fetch-based implementation.
- *
- * @returns {string|null} Current CSRF token or null
- */
-let currentCsrfToken = null;
-
-export const getCsrfToken = () => currentCsrfToken;
-
-export const setCsrfTokenGlobal = (token) => {
-  currentCsrfToken = token;
-};
-
-/**
  * Enhanced AuthProvider that syncs CSRF token to global variable
  * This allows api.js to access the token synchronously
  */
@@ -142,7 +112,7 @@ AuthProviderWithGlobalSync.propTypes = {
  * Internal component to sync CSRF token to global variable
  */
 const CsrfTokenSyncWrapper = ({ children }) => {
-  const { csrfToken } = useAuthContext();
+  const { csrfToken } = useContext(AuthContext);
 
   useEffect(() => {
     setCsrfTokenGlobal(csrfToken);

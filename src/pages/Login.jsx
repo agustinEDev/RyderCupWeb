@@ -7,7 +7,7 @@ import { validateEmail, checkRateLimit, resetRateLimit } from '../utils/validati
 import { safeLog } from '../utils/auth';
 import PasswordInput from '../components/ui/PasswordInput';
 import { loginUseCase } from '../composition';
-import { useAuthContext } from '../contexts/AuthContext'; // v1.13.0: CSRF Protection
+import { useAuthContext } from '../hooks/useAuthContext'; // v1.13.0: CSRF Protection
 
 const Login = () => {
   const { t } = useTranslation(['auth', 'common']);

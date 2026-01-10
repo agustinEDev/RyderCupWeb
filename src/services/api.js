@@ -4,7 +4,7 @@
  */
 
 import { fetchWithTokenRefresh } from '../utils/tokenRefreshInterceptor.js';
-import { getCsrfToken } from '../contexts/AuthContext'; // v1.13.0: CSRF Protection
+import { getCsrfToken } from '../contexts/csrfTokenSync'; // v1.13.0: CSRF Protection
 
 // Prioridad: 1. Runtime config (window.APP_CONFIG) 2. Build-time env 3. Empty string (relative URLs for proxy)
 // Si no hay API_URL configurado, usar '' para que las URLs sean relativas (/api/...)

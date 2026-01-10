@@ -5,11 +5,11 @@
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { apiRequest } from './api';
-import * as AuthContext from '../contexts/AuthContext';
+import * as CsrfTokenSync from '../contexts/csrfTokenSync';
 import * as TokenRefreshInterceptor from '../utils/tokenRefreshInterceptor';
 
 // Mock modules
-vi.mock('../contexts/AuthContext', () => ({
+vi.mock('../contexts/csrfTokenSync', () => ({
   getCsrfToken: vi.fn(),
 }));
 
@@ -31,7 +31,7 @@ describe('apiRequest - CSRF Protection', () => {
   describe('X-CSRF-Token header', () => {
     it('should include X-CSRF-Token header in POST requests', async () => {
       const mockCsrfToken = 'csrf-token-abc-123';
-      AuthContext.getCsrfToken.mockReturnValue(mockCsrfToken);
+      CsrfTokenSync.getCsrfToken.mockReturnValue(mockCsrfToken);
 
       const mockResponse = {
         ok: true,
@@ -58,7 +58,7 @@ describe('apiRequest - CSRF Protection', () => {
 
     it('should include X-CSRF-Token header in PUT requests', async () => {
       const mockCsrfToken = 'csrf-token-put-456';
-      AuthContext.getCsrfToken.mockReturnValue(mockCsrfToken);
+      CsrfTokenSync.getCsrfToken.mockReturnValue(mockCsrfToken);
 
       const mockResponse = {
         ok: true,
@@ -85,7 +85,7 @@ describe('apiRequest - CSRF Protection', () => {
 
     it('should include X-CSRF-Token header in PATCH requests', async () => {
       const mockCsrfToken = 'csrf-token-patch-789';
-      AuthContext.getCsrfToken.mockReturnValue(mockCsrfToken);
+      CsrfTokenSync.getCsrfToken.mockReturnValue(mockCsrfToken);
 
       const mockResponse = {
         ok: true,
@@ -112,7 +112,7 @@ describe('apiRequest - CSRF Protection', () => {
 
     it('should include X-CSRF-Token header in DELETE requests', async () => {
       const mockCsrfToken = 'csrf-token-delete-xyz';
-      AuthContext.getCsrfToken.mockReturnValue(mockCsrfToken);
+      CsrfTokenSync.getCsrfToken.mockReturnValue(mockCsrfToken);
 
       const mockResponse = {
         ok: true,
@@ -136,7 +136,7 @@ describe('apiRequest - CSRF Protection', () => {
     });
 
     it('should NOT include X-CSRF-Token header in GET requests', async () => {
-      AuthContext.getCsrfToken.mockReturnValue('should-not-be-included');
+      CsrfTokenSync.getCsrfToken.mockReturnValue('should-not-be-included');
 
       const mockResponse = {
         ok: true,
@@ -156,7 +156,7 @@ describe('apiRequest - CSRF Protection', () => {
 
     it('should handle case-insensitive method names', async () => {
       const mockCsrfToken = 'csrf-token-lowercase';
-      AuthContext.getCsrfToken.mockReturnValue(mockCsrfToken);
+      CsrfTokenSync.getCsrfToken.mockReturnValue(mockCsrfToken);
 
       const mockResponse = {
         ok: true,
@@ -182,7 +182,7 @@ describe('apiRequest - CSRF Protection', () => {
     });
 
     it('should warn when CSRF token is missing for POST request', async () => {
-      AuthContext.getCsrfToken.mockReturnValue(null);
+      CsrfTokenSync.getCsrfToken.mockReturnValue(null);
 
       const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
@@ -220,7 +220,7 @@ describe('apiRequest - CSRF Protection', () => {
     });
 
     it('should handle CSRF validation failure (403 with error_code)', async () => {
-      AuthContext.getCsrfToken.mockReturnValue('invalid-token');
+      CsrfTokenSync.getCsrfToken.mockReturnValue('invalid-token');
 
       const mockResponse = {
         ok: false,
@@ -252,7 +252,7 @@ describe('apiRequest - CSRF Protection', () => {
     });
 
     it('should NOT handle regular 403 errors as CSRF errors', async () => {
-      AuthContext.getCsrfToken.mockReturnValue('valid-token');
+      CsrfTokenSync.getCsrfToken.mockReturnValue('valid-token');
 
       const mockResponse = {
         ok: false,
@@ -279,7 +279,7 @@ describe('apiRequest - CSRF Protection', () => {
 
   describe('credentials: include', () => {
     it('should always include credentials for httpOnly cookies', async () => {
-      AuthContext.getCsrfToken.mockReturnValue('token-123');
+      CsrfTokenSync.getCsrfToken.mockReturnValue('token-123');
 
       const mockResponse = {
         ok: true,
@@ -305,7 +305,7 @@ describe('apiRequest - CSRF Protection', () => {
 
   describe('Response handling', () => {
     it('should return null for 204 No Content responses', async () => {
-      AuthContext.getCsrfToken.mockReturnValue('token-123');
+      CsrfTokenSync.getCsrfToken.mockReturnValue('token-123');
 
       const mockResponse = {
         ok: true,
@@ -322,7 +322,7 @@ describe('apiRequest - CSRF Protection', () => {
     });
 
     it('should parse JSON for successful responses', async () => {
-      AuthContext.getCsrfToken.mockReturnValue('token-123');
+      CsrfTokenSync.getCsrfToken.mockReturnValue('token-123');
 
       const mockData = { id: '123', name: 'Test' };
       const mockResponse = {
