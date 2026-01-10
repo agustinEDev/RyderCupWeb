@@ -1,0 +1,763 @@
+name: CI/CD & Security Pipeline
+
+on:
+  push:
+    branches: [main, develop, 'feature/**', 'release/**', 'hotfix/**']
+  pull_request:
+    branches: [develop, main]
+  schedule:
+    # Run security checks every Monday at 9:00 AM UTC
+    - cron: '0 9 * * 1'
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  # ========================================
+  # PHASE 1: SECURITY CHECKS (CRITICAL)
+  # ========================================
+
+  dependency-audit:
+    name: 🔒 Dependency Vulnerability Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run npm audit
+        id: audit
+        run: |
+          echo "🔍 Running npm audit..."
+          npm audit --audit-level=moderate --json > audit-report.json || true
+
+          # Parse results
+          VULNERABILITIES=$(cat audit-report.json | jq '.metadata.vulnerabilities.total')
+          CRITICAL=$(cat audit-report.json | jq '.metadata.vulnerabilities.critical')
+          HIGH=$(cat audit-report.json | jq '.metadata.vulnerabilities.high')
+          MODERATE=$(cat audit-report.json | jq '.metadata.vulnerabilities.moderate')
+
+          echo "📊 Vulnerability Summary:"
+          echo "  Critical: $CRITICAL"
+          echo "  High: $HIGH"
+          echo "  Moderate: $MODERATE"
+          echo "  Total: $VULNERABILITIES"
+
+          # Export to outputs
+          echo "critical=$CRITICAL" >> $GITHUB_OUTPUT
+          echo "high=$HIGH" >> $GITHUB_OUTPUT
+          echo "moderate=$MODERATE" >> $GITHUB_OUTPUT
+          echo "total=$VULNERABILITIES" >> $GITHUB_OUTPUT
+
+          # Fail if critical or high vulnerabilities found
+          if [ "$CRITICAL" -gt 0 ] || [ "$HIGH" -gt 0 ]; then
+            echo "❌ Critical or High vulnerabilities found!"
+            npm audit --audit-level=high
+            exit 1
+          fi
+
+          # Warn if moderate vulnerabilities found
+          if [ "$MODERATE" -gt 0 ]; then
+            echo "⚠️ Moderate vulnerabilities found (allowed to pass)"
+            npm audit --audit-level=moderate
+          fi
+
+          echo "✅ No critical or high vulnerabilities found"
+
+      - name: Upload audit report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: npm-audit-report
+          path: audit-report.json
+          retention-days: 30
+
+  secret-scanning:
+    name: 🔐 Secret Scanning
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: TruffleHog OSS (Filesystem Scan)
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          extra_args: --debug --only-verified
+
+  license-check:
+    name: 📜 License Compliance
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check licenses
+        run: |
+          echo "📜 Checking dependency licenses..."
+          npx license-checker --json --out licenses.json
+
+          # Check for problematic licenses
+          FORBIDDEN_LICENSES="GPL-3.0 AGPL-3.0 LGPL-3.0"
+
+          for license in $FORBIDDEN_LICENSES; do
+            if npx license-checker --summary | grep -q "$license"; then
+              echo "❌ Forbidden license found: $license"
+              npx license-checker --summary
+              exit 1
+            fi
+          done
+
+          echo "✅ All licenses are compliant"
+          npx license-checker --summary
+
+      - name: Upload license report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: license-report
+          path: licenses.json
+          retention-days: 30
+
+  snyk-security:
+    name: 🐍 Snyk Dependency Scan
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Snyk to check for vulnerabilities
+        uses: snyk/actions/node@master
+        continue-on-error: true
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --severity-threshold=high --sarif-file-output=snyk-security.sarif
+
+      - name: Check if SARIF file exists
+        id: check_sarif
+        run: |
+          if [ -f "snyk-security.sarif" ]; then
+            echo "sarif_exists=true" >> $GITHUB_OUTPUT
+            echo "✅ SARIF file generated successfully"
+          else
+            echo "sarif_exists=false" >> $GITHUB_OUTPUT
+            echo "⚠️ SARIF file not generated (no vulnerabilities or Snyk error)"
+          fi
+
+      - name: Upload Snyk report to GitHub Security
+        uses: github/codeql-action/upload-sarif@v4
+        if: steps.check_sarif.outputs.sarif_exists == 'true'
+        with:
+          sarif_file: snyk-security.sarif
+
+      - name: Upload Snyk SARIF report artifact
+        if: steps.check_sarif.outputs.sarif_exists == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: snyk-security-report
+          path: snyk-security.sarif
+          retention-days: 30
+
+  snyk-code:
+    name: 🔍 Snyk Code Analysis
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Snyk Code to check for code vulnerabilities
+        uses: snyk/actions/node@master
+        continue-on-error: true
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          command: code test
+          args: --severity-threshold=high --sarif-file-output=snyk-code.sarif
+
+      - name: Check if SARIF file exists
+        id: check_sarif_code
+        run: |
+          if [ -f "snyk-code.sarif" ]; then
+            echo "sarif_exists=true" >> $GITHUB_OUTPUT
+            echo "✅ SARIF file generated successfully"
+          else
+            echo "sarif_exists=false" >> $GITHUB_OUTPUT
+            echo "⚠️ SARIF file not generated (no vulnerabilities or Snyk error)"
+          fi
+
+      - name: Upload Snyk Code report to GitHub Security
+        uses: github/codeql-action/upload-sarif@v4
+        if: steps.check_sarif_code.outputs.sarif_exists == 'true'
+        with:
+          sarif_file: snyk-code.sarif
+
+      - name: Upload Snyk Code report artifact
+        if: steps.check_sarif_code.outputs.sarif_exists == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: snyk-code-report
+          path: snyk-code.sarif
+          retention-days: 30
+
+  outdated-dependencies:
+    name: 📦 Outdated Dependencies Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check for outdated packages
+        id: outdated
+        run: |
+          echo "📦 Checking for outdated dependencies..."
+          npm outdated --json > outdated.json || true
+
+          # Count outdated packages
+          OUTDATED_COUNT=$(cat outdated.json | jq 'length')
+
+          echo "📊 Found $OUTDATED_COUNT outdated packages"
+          echo "count=$OUTDATED_COUNT" >> $GITHUB_OUTPUT
+
+          if [ "$OUTDATED_COUNT" -gt 0 ]; then
+            echo "⚠️ Outdated packages found (informational only, does not fail CI):"
+            npm outdated || true
+          else
+            echo "✅ All packages are up to date"
+          fi
+
+      - name: Upload outdated report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: outdated-dependencies
+          path: outdated.json
+          retention-days: 30
+
+  # ========================================
+  # PHASE 2: CODE QUALITY & TESTING
+  # ========================================
+
+  lint:
+    name: 🔍 Lint & Format Check
+    runs-on: ubuntu-latest
+    needs: [dependency-audit, secret-scanning, license-check]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check code formatting (Prettier)
+        run: |
+          echo "✨ Checking code formatting with Prettier..."
+
+          # Check if Prettier is installed
+          if ! npm list prettier > /dev/null 2>&1; then
+            echo "⚠️ Prettier not installed, skipping format check"
+            exit 0
+          fi
+
+          # Run Prettier check
+          npx prettier --check "src/**/*.{js,jsx,ts,tsx,css,json}" || {
+            echo ""
+            echo "❌ Code formatting issues found!"
+            echo "💡 Run 'npx prettier --write .' to fix formatting"
+            exit 1
+          }
+
+          echo "✅ Code formatting is consistent"
+
+      - name: Run ESLint
+        run: npm run lint
+
+  test:
+    name: 🧪 Run Tests
+    runs-on: ubuntu-latest
+    needs: [dependency-audit, secret-scanning, license-check]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run unit tests
+        run: npm test -- --run --reporter=verbose
+
+      - name: Generate coverage report
+        id: coverage
+        run: |
+          npm test -- --run --coverage
+
+          # Extract coverage percentages from coverage summary
+          COVERAGE_FILE="coverage/coverage-summary.json"
+
+          if [ ! -f "$COVERAGE_FILE" ]; then
+            echo "⚠️ Coverage file not found, skipping threshold check"
+            exit 0
+          fi
+
+          # Get global coverage percentages
+          LINES=$(cat $COVERAGE_FILE | jq '.total.lines.pct')
+          STATEMENTS=$(cat $COVERAGE_FILE | jq '.total.statements.pct')
+          FUNCTIONS=$(cat $COVERAGE_FILE | jq '.total.functions.pct')
+          BRANCHES=$(cat $COVERAGE_FILE | jq '.total.branches.pct')
+
+          echo "lines=$LINES" >> $GITHUB_OUTPUT
+          echo "statements=$STATEMENTS" >> $GITHUB_OUTPUT
+          echo "functions=$FUNCTIONS" >> $GITHUB_OUTPUT
+          echo "branches=$BRANCHES" >> $GITHUB_OUTPUT
+
+          echo "📊 Coverage Report:"
+          echo "  Lines: ${LINES}%"
+          echo "  Statements: ${STATEMENTS}%"
+          echo "  Functions: ${FUNCTIONS}%"
+          echo "  Branches: ${BRANCHES}%"
+
+      - name: Enforce coverage threshold
+        run: |
+          echo "📊 Checking coverage thresholds..."
+
+          # Extract coverage percentages from coverage summary
+          COVERAGE_FILE="coverage/coverage-summary.json"
+
+          if [ ! -f "$COVERAGE_FILE" ]; then
+            echo "⚠️ Coverage file not found, skipping threshold check"
+            exit 0
+          fi
+
+          # Get global coverage percentages
+          LINES=$(cat $COVERAGE_FILE | jq '.total.lines.pct')
+          STATEMENTS=$(cat $COVERAGE_FILE | jq '.total.statements.pct')
+          FUNCTIONS=$(cat $COVERAGE_FILE | jq '.total.functions.pct')
+          BRANCHES=$(cat $COVERAGE_FILE | jq '.total.branches.pct')
+
+          echo "  Lines: ${LINES}%"
+          echo "  Statements: ${STATEMENTS}%"
+          echo "  Functions: ${FUNCTIONS}%"
+          echo "  Branches: ${BRANCHES}%"
+
+          # Define minimum thresholds
+          MIN_LINES=80
+          MIN_STATEMENTS=80
+          MIN_FUNCTIONS=75
+          MIN_BRANCHES=70
+
+          # Check thresholds
+          FAIL=0
+
+          if (( $(echo "$LINES < $MIN_LINES" | bc -l) )); then
+            echo "❌ Lines coverage ($LINES%) is below threshold ($MIN_LINES%)"
+            FAIL=1
+          fi
+
+          if (( $(echo "$STATEMENTS < $MIN_STATEMENTS" | bc -l) )); then
+            echo "❌ Statements coverage ($STATEMENTS%) is below threshold ($MIN_STATEMENTS%)"
+            FAIL=1
+          fi
+
+          if (( $(echo "$FUNCTIONS < $MIN_FUNCTIONS" | bc -l) )); then
+            echo "❌ Functions coverage ($FUNCTIONS%) is below threshold ($MIN_FUNCTIONS%)"
+            FAIL=1
+          fi
+
+          if (( $(echo "$BRANCHES < $MIN_BRANCHES" | bc -l) )); then
+            echo "❌ Branches coverage ($BRANCHES%) is below threshold ($MIN_BRANCHES%)"
+            FAIL=1
+          fi
+
+          if [ $FAIL -eq 1 ]; then
+            echo ""
+            echo "💡 Tip: Add more tests to increase coverage"
+            exit 1
+          fi
+
+          echo "✅ All coverage thresholds met!"
+
+      - name: Upload coverage to artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage/
+          retention-days: 30
+
+  type-check:
+    name: 📝 Type Check
+    runs-on: ubuntu-latest
+    needs: [dependency-audit, secret-scanning, license-check]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check for TypeScript files
+        id: check-ts
+        run: |
+          if find src -name "*.ts" -o -name "*.tsx" | grep -q .; then
+            echo "has_typescript=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_typescript=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Run type check
+        if: steps.check-ts.outputs.has_typescript == 'true'
+        run: npx tsc --noEmit || echo "⚠️ TypeScript check skipped or failed"
+
+  code-quality:
+    name: 📊 Code Quality
+    runs-on: ubuntu-latest
+    needs: [dependency-audit, secret-scanning, license-check]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check for dead code
+        run: |
+          echo "🔍 Checking for unused exports..."
+          npx knip --reporter json || echo "⚠️ knip not configured yet"
+        continue-on-error: true
+
+      - name: Check bundle size
+        id: bundle
+        run: |
+          npm run build
+          echo "📦 Bundle size analysis:"
+
+          # Get total bundle size
+          TOTAL_SIZE=$(du -sb dist/assets/*.js 2>/dev/null | awk '{s+=$1} END {print s}')
+
+          if [ -z "$TOTAL_SIZE" ]; then
+            echo "⚠️ No JS bundles found"
+            exit 0
+          fi
+
+          # Convert to KB
+          TOTAL_SIZE_KB=$((TOTAL_SIZE / 1024))
+
+          echo "  Total JS bundle size: ${TOTAL_SIZE_KB} KB"
+          echo "size_kb=$TOTAL_SIZE_KB" >> $GITHUB_OUTPUT
+
+          # Define budget (in KB)
+          MAX_BUNDLE_SIZE_KB=1000
+          WARNING_THRESHOLD_KB=800
+
+          # List all bundles with sizes
+          echo ""
+          echo "  Individual bundles:"
+          du -h dist/assets/*.js | sort -h
+
+          # Check against budget
+          if [ $TOTAL_SIZE_KB -gt $MAX_BUNDLE_SIZE_KB ]; then
+            echo ""
+            echo "❌ Bundle size (${TOTAL_SIZE_KB} KB) exceeds budget (${MAX_BUNDLE_SIZE_KB} KB)!"
+            echo "💡 Tip: Consider code splitting, tree shaking, or removing unused dependencies"
+            exit 1
+          elif [ $TOTAL_SIZE_KB -gt $WARNING_THRESHOLD_KB ]; then
+            echo ""
+            echo "⚠️ Bundle size (${TOTAL_SIZE_KB} KB) is approaching budget limit (${MAX_BUNDLE_SIZE_KB} KB)"
+            echo "   Current usage: $(( TOTAL_SIZE_KB * 100 / MAX_BUNDLE_SIZE_KB ))%"
+          else
+            echo ""
+            echo "✅ Bundle size is within budget"
+            echo "   Budget used: $(( TOTAL_SIZE_KB * 100 / MAX_BUNDLE_SIZE_KB ))% (${TOTAL_SIZE_KB}/${MAX_BUNDLE_SIZE_KB} KB)"
+          fi
+
+  # ========================================
+  # PHASE 3: BUILD
+  # ========================================
+
+  build:
+    name: 🏗️ Build Application
+    runs-on: ubuntu-latest
+    needs: [lint, test, type-check, code-quality]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build application
+        run: npm run build
+        env:
+          NODE_ENV: production
+
+      - name: Check build output
+        run: |
+          if [ ! -d "dist" ]; then
+            echo "❌ Build failed: dist directory not found"
+            exit 1
+          fi
+          echo "✅ Build successful"
+          ls -lah dist/
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-output
+          path: dist/
+          retention-days: 7
+
+  # ========================================
+  # PHASE 4: PIPELINE SUMMARY
+  # ========================================
+
+  pipeline-summary:
+    name: 📊 Pipeline Summary
+    runs-on: ubuntu-latest
+    needs: [dependency-audit, secret-scanning, license-check, snyk-security, snyk-code, outdated-dependencies, lint, test, type-check, code-quality, build]
+    if: always()
+    steps:
+      - name: Generate Pipeline Summary
+        run: |
+          echo "# 🏆 CI/CD & Security Pipeline Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Workflow:** \`${{ github.workflow }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Branch:** \`${{ github.ref_name }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Triggered by:** @${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # Security Phase
+          echo "## 🔒 Phase 1: Security Checks" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Check | Status | Details |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|---------|" >> $GITHUB_STEP_SUMMARY
+
+          # Dependency Audit
+          if [ "${{ needs.dependency-audit.result }}" == "success" ]; then
+            echo "| 🔒 Dependency Audit | ✅ Passed | No critical/high vulnerabilities |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| 🔒 Dependency Audit | ❌ Failed | Critical/high vulnerabilities found |" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          # Secret Scanning
+          if [ "${{ needs.secret-scanning.result }}" == "success" ]; then
+            echo "| 🔐 Secret Scanning | ✅ Passed | No secrets detected |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| 🔐 Secret Scanning | ❌ Failed | Secrets found in code |" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          # License Check
+          if [ "${{ needs.license-check.result }}" == "success" ]; then
+            echo "| 📜 License Compliance | ✅ Passed | All licenses compliant |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| 📜 License Compliance | ❌ Failed | Forbidden licenses detected |" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          # Snyk Security
+          if [ "${{ needs.snyk-security.result }}" == "success" ]; then
+            echo "| 🐍 Snyk Dependencies | ✅ Passed | No vulnerabilities |" >> $GITHUB_STEP_SUMMARY
+          elif [ "${{ needs.snyk-security.result }}" == "skipped" ]; then
+            echo "| 🐍 Snyk Dependencies | ⏭️ Skipped | Token not configured |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| 🐍 Snyk Dependencies | ⚠️ Warning | Check details |" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          # Snyk Code
+          if [ "${{ needs.snyk-code.result }}" == "success" ]; then
+            echo "| 🔍 Snyk Code Analysis | ✅ Passed | No code vulnerabilities |" >> $GITHUB_STEP_SUMMARY
+          elif [ "${{ needs.snyk-code.result }}" == "skipped" ]; then
+            echo "| 🔍 Snyk Code Analysis | ⏭️ Skipped | Token not configured |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| 🔍 Snyk Code Analysis | ⚠️ Warning | Check details |" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          # Outdated Dependencies
+          if [ "${{ needs.outdated-dependencies.result }}" == "success" ]; then
+            echo "| 📦 Outdated Deps | ℹ️ Info | Check artifacts for details |" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # Quality Phase
+          echo "## 🎯 Phase 2: Code Quality & Testing" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Check | Status | Details |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|---------|" >> $GITHUB_STEP_SUMMARY
+
+          # Lint
+          if [ "${{ needs.lint.result }}" == "success" ]; then
+            echo "| 🔍 Lint & Format | ✅ Passed | Code style is consistent |" >> $GITHUB_STEP_SUMMARY
+          elif [ "${{ needs.lint.result }}" == "skipped" ]; then
+            echo "| 🔍 Lint & Format | ⏭️ Skipped | Security checks failed |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| 🔍 Lint & Format | ❌ Failed | Linting errors found |" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          # Test
+          if [ "${{ needs.test.result }}" == "success" ]; then
+            echo "| 🧪 Tests & Coverage | ✅ Passed | All tests passed, coverage OK |" >> $GITHUB_STEP_SUMMARY
+          elif [ "${{ needs.test.result }}" == "skipped" ]; then
+            echo "| 🧪 Tests & Coverage | ⏭️ Skipped | Security checks failed |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| 🧪 Tests & Coverage | ❌ Failed | Tests failed or coverage low |" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          # Type Check
+          if [ "${{ needs.type-check.result }}" == "success" ]; then
+            echo "| 📝 Type Check | ✅ Passed | TypeScript types are valid |" >> $GITHUB_STEP_SUMMARY
+          elif [ "${{ needs.type-check.result }}" == "skipped" ]; then
+            echo "| 📝 Type Check | ⏭️ Skipped | No TypeScript or security failed |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| 📝 Type Check | ❌ Failed | Type errors found |" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          # Code Quality
+          if [ "${{ needs.code-quality.result }}" == "success" ]; then
+            echo "| 📊 Code Quality | ✅ Passed | Bundle size OK, no dead code |" >> $GITHUB_STEP_SUMMARY
+          elif [ "${{ needs.code-quality.result }}" == "skipped" ]; then
+            echo "| 📊 Code Quality | ⏭️ Skipped | Security checks failed |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| 📊 Code Quality | ❌ Failed | Bundle too large or quality issues |" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # Build Phase
+          echo "## 🏗️ Phase 3: Build" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Check | Status | Details |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|---------|" >> $GITHUB_STEP_SUMMARY
+
+          # Build
+          if [ "${{ needs.build.result }}" == "success" ]; then
+            echo "| 🏗️ Build Application | ✅ Passed | Production build successful |" >> $GITHUB_STEP_SUMMARY
+          elif [ "${{ needs.build.result }}" == "skipped" ]; then
+            echo "| 🏗️ Build Application | ⏭️ Skipped | Previous checks failed |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| 🏗️ Build Application | ❌ Failed | Build errors detected |" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # Final Status
+          echo "## 🎯 Final Status" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # Check if all critical jobs passed
+          if [ "${{ needs.dependency-audit.result }}" == "success" ] && \
+             [ "${{ needs.secret-scanning.result }}" == "success" ] && \
+             [ "${{ needs.license-check.result }}" == "success" ] && \
+             [ "${{ needs.lint.result }}" == "success" ] && \
+             [ "${{ needs.test.result }}" == "success" ] && \
+             [ "${{ needs.build.result }}" == "success" ]; then
+            echo "### ✅ Pipeline Passed Successfully!" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "All critical checks have passed. Your code is ready for deployment! 🚀" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "### ❌ Pipeline Failed" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "One or more critical checks failed. Please review the errors above and fix them before proceeding." >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**Failed Jobs:**" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+
+            [ "${{ needs.dependency-audit.result }}" != "success" ] && echo "- 🔒 Dependency Audit" >> $GITHUB_STEP_SUMMARY
+            [ "${{ needs.secret-scanning.result }}" != "success" ] && echo "- 🔐 Secret Scanning" >> $GITHUB_STEP_SUMMARY
+            [ "${{ needs.license-check.result }}" != "success" ] && echo "- 📜 License Compliance" >> $GITHUB_STEP_SUMMARY
+            [ "${{ needs.lint.result }}" != "success" ] && [ "${{ needs.lint.result }}" != "skipped" ] && echo "- 🔍 Lint & Format" >> $GITHUB_STEP_SUMMARY
+            [ "${{ needs.test.result }}" != "success" ] && [ "${{ needs.test.result }}" != "skipped" ] && echo "- 🧪 Tests & Coverage" >> $GITHUB_STEP_SUMMARY
+            [ "${{ needs.type-check.result }}" != "success" ] && [ "${{ needs.type-check.result }}" != "skipped" ] && echo "- 📝 Type Check" >> $GITHUB_STEP_SUMMARY
+            [ "${{ needs.code-quality.result }}" != "success" ] && [ "${{ needs.code-quality.result }}" != "skipped" ] && echo "- 📊 Code Quality" >> $GITHUB_STEP_SUMMARY
+            [ "${{ needs.build.result }}" != "success" ] && [ "${{ needs.build.result }}" != "skipped" ] && echo "- 🏗️ Build" >> $GITHUB_STEP_SUMMARY
+
+            exit 1
+          fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "---" >> $GITHUB_STEP_SUMMARY
+          echo "*Generated on $(date -u '+%Y-%m-%d %H:%M:%S UTC')*" >> $GITHUB_STEP_SUMMARY

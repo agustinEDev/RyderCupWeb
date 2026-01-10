@@ -1,0 +1,33 @@
+{
+  "title": "Dispositivos Activos",
+  "subtitle": "Gestiona los dispositivos con acceso a tu cuenta",
+  "loading": "Cargando dispositivos...",
+  "actions": {
+    "backToProfile": "Volver al Perfil",
+    "revoke": "Revocar"
+  },
+  "info": {
+    "title": "Acerca de la Gestión de Dispositivos",
+    "description": "Revocar un dispositivo cerrará inmediatamente todas las sesiones en ese dispositivo. El dispositivo necesitará iniciar sesión nuevamente para recuperar el acceso. Si ves un dispositivo desconocido, revócalo inmediatamente y cambia tu contraseña."
+  },
+  "confirmations": {
+    "revokeCurrent": "Este es tu dispositivo ACTUAL. Revocarlo te desconectará inmediatamente. ¿Estás seguro?",
+    "revokeOther": "¿Estás seguro de que quieres revocar este dispositivo? Todas las sesiones en este dispositivo se cerrarán."
+  },
+  "device": {
+    "current": "Dispositivo Actual",
+    "ip": "IP",
+    "lastUsed": "Último uso",
+    "firstSeen": "Visto por primera vez",
+    "never": "Nunca"
+  },
+  "empty": {
+    "title": "No se encontraron dispositivos activos",
+    "description": "Los dispositivos aparecerán aquí después de iniciar sesión"
+  },
+  "security": {
+    "title": "Consejo de Seguridad",
+    "description": "Si notas alguna actividad sospechosa o dispositivos desconocidos, revócalos inmediatamente y considera cambiar tu contraseña. Puedes hacerlo desde tu",
+    "profileSettings": "configuración de perfil"
+  }
+}
