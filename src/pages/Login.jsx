@@ -98,9 +98,17 @@ const Login = () => {
         password: ''
       }));
 
-      toast.error(error.message || t('login.error'), {
-        duration: 5000,
-      });
+      // v1.13.0: Handle Account Lockout (HTTP 423) with special UI treatment
+      if (error.message && error.message.includes('Account locked')) {
+        toast.error(error.message, {
+          duration: 10000, // Longer duration for important security message
+          icon: '🔒',
+        });
+      } else {
+        toast.error(error.message || t('login.error'), {
+          duration: 5000,
+        });
+      }
 
       setIsLoading(false);
     }

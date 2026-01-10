@@ -23,6 +23,11 @@ class ApiAuthRepository extends IAuthRepository {
         csrfToken: data.csrf_token, // NEW: Required for POST/PUT/PATCH/DELETE requests
       };
     } catch (error) {
+      // v1.13.0: Handle Account Lockout (HTTP 423)
+      if (error.message.includes('HTTP 423')) {
+        throw new Error('Account locked due to too many failed login attempts. Please try again after 30 minutes.');
+      }
+
       // Standardize error message for 401
       if (error.message.includes('401')) {
         throw new Error('Incorrect email or password');
