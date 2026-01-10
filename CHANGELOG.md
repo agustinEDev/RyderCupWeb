@@ -7,6 +7,25 @@ y este proyecto adhiere a [Versionado Semántico](https://semver.org/lang/es/).
 
 ## [Unreleased]
 
+### Added
+- **Security Features v1.13.0**: Complete integration with backend security hardening
+  - **Password History Validation**: Frontend detects and displays user-friendly error when users attempt to reuse any of their last 5 passwords
+    - Specific toast notification with 8-second duration and key icon
+    - Pattern matching detection for password history errors from backend
+    - Integrated in `useEditProfile` hook for profile security updates
+    - 4 comprehensive tests covering all scenarios (100% passing)
+  - **Device Management (Device Fingerprinting)**: Complete Clean Architecture implementation for managing active user sessions
+    - **Domain Layer**: Device entity with business logic, IDeviceRepository interface
+    - **Infrastructure Layer**: ApiDeviceRepository with GET/DELETE endpoints, automatic CSRF token integration
+    - **Application Layer**: GetActiveDevicesUseCase and RevokeDeviceUseCase with validation
+    - **Presentation Layer**: `/profile/devices` route with DeviceManagement page and useDeviceManagement hook
+    - Visual features: Current device detection, double confirmation for current device revocation, auto-redirect to login after self-revocation
+    - Security alerts and tips in UI, responsive design with Tailwind CSS
+    - 42 tests passing (15 entity + 10 repository + 17 use cases) - 100% coverage on new code
+  - **CORS Fix**: Added `X-CSRF-Token` to allowed headers in backend for proper CSRF protection (backend commit 1948d33)
+    - Resolves 403 Forbidden errors on POST/PUT/PATCH/DELETE requests
+    - Enables proper preflight OPTIONS handling for CSRF-protected endpoints
+
 ### Fixed
 - **GitHub Actions Workflow Errors**: Corrected 3 critical failures in CI/CD pipeline
   - **PR Checks - Conventional Commits**: Added 10-second delay for Dependabot PRs to wait for auto-fix workflow completion
