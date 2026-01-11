@@ -18,12 +18,23 @@ class GetActiveDevicesUseCase {
   /**
    * Executes the use case
    * @returns {Promise<{ devices: import('../../../domain/entities/Device').default[], total_count: number }>}
+   * @throws {Error} If repository response is invalid
    */
   async execute() {
     const result = await this.deviceRepository.getActiveDevices();
 
-    if (!result || !Array.isArray(result.devices) || typeof result.total_count !== 'number' || !isFinite(result.total_count)) {
-      throw new Error('Invalid response from device repository');
+    // Validate response structure
+    if (!result || typeof result !== 'object') {
+      throw new Error('Invalid response from device repository: expected object');
+    }
+
+    if (!Array.isArray(result.devices)) {
+      throw new Error('Invalid response from device repository: devices must be an array');
+    }
+
+    // Strict number validation: must be a number AND finite (excludes null, undefined, NaN, Infinity)
+    if (typeof result.total_count !== 'number' || !Number.isFinite(result.total_count)) {
+      throw new Error('Invalid response from device repository: total_count must be a finite number');
     }
 
     return result;

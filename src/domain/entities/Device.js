@@ -35,7 +35,7 @@ class Device {
 
   /**
    * Returns a formatted last used date
-   * @deprecated Use formatDateTime from utils/dateFormatters instead
+   * @deprecated since v1.13.0, will be removed in v2.0.0. Use formatDateTime from utils/dateFormatters instead
    * @returns {string}
    */
   getFormattedLastUsed() {
@@ -45,7 +45,7 @@ class Device {
 
   /**
    * Returns a formatted creation date
-   * @deprecated Use formatDateTime from utils/dateFormatters instead
+   * @deprecated since v1.13.0, will be removed in v2.0.0. Use formatDateTime from utils/dateFormatters instead
    * @returns {string}
    */
   getFormattedCreatedAt() {

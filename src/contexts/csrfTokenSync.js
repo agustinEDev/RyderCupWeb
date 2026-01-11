@@ -59,7 +59,15 @@ export const getCsrfToken = () => {
  * Called by AuthContext when token changes
  *
  * @param {string|null} token - New CSRF token
+ * @throws {Error} If the provided token is neither a string nor null
+ * @returns {string|null} The token that was set
  */
 export const setCsrfTokenGlobal = (token) => {
+  // Enforce the documented contract: token must be a string or null
+  if (token !== null && typeof token !== 'string') {
+    throw new Error('[CSRF] Failed to set global CSRF token: expected string or null');
+  }
+
   currentCsrfToken = token;
+  return currentCsrfToken;
 };
