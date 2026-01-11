@@ -8,7 +8,7 @@ import ApiAuthRepository from './ApiAuthRepository';
 import User from '../../domain/entities/User';
 import Email from '../../domain/value_objects/Email';
 import Password from '../../domain/value_objects/Password';
-import * as api from '../../services/api';
+import * as api from '../../services/api.js';
 
 // Mock api module
 vi.mock('../../services/api.js', () => ({

@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { useRef, useEffect } from 'react';
 import HeaderAuth from '../components/layout/HeaderAuth';
 import { useDeviceManagement } from '../hooks/useDeviceManagement';
 import { useAuth } from '../hooks/useAuth';
@@ -9,11 +10,12 @@ const DeviceManagement = () => {
   const { t } = useTranslation('devices');
   const { user } = useAuth();
   const navigate = useNavigate();
+  const timeoutRef = useRef(null);
 
   const {
     devices,
     isLoading,
-    isRevoking,
+    revokingDeviceIds,
     revokeDevice,
     isCurrentDevice,
   } = useDeviceManagement();
@@ -34,11 +36,24 @@ const DeviceManagement = () => {
 
     // If current device was revoked, redirect to login after brief delay
     if (success && isCurrent) {
-      setTimeout(() => {
+      // Clear any existing timer before setting a new one
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+      timeoutRef.current = setTimeout(() => {
         navigate('/login', { replace: true });
       }, 2000);
     }
   };
+
+  // Cleanup timeout on component unmount
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
 
 
   if (isLoading) {
@@ -157,7 +172,7 @@ const DeviceManagement = () => {
                           {/* Revoke Button */}
                           <button
                             onClick={() => handleRevokeClick(device)}
-                            disabled={isRevoking}
+                            disabled={revokingDeviceIds.has(device.id)}
                             className="flex items-center gap-2 px-4 py-2 bg-red-50 hover:bg-red-100 text-red-700 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
                           >
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

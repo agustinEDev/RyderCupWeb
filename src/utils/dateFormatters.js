@@ -38,7 +38,7 @@ export const formatDateTime = (dateString, fallbackText = 'Never') => {
 
 /**
  * Formats a date string to a full localized date (e.g., "January 10, 2025")
- * Always uses English locale (en-US) for consistency
+ * Uses the browser's locale for automatic localization
  *
  * @param {string|Date} dateString - ISO date string or Date object to format
  * @param {string} fallbackText - Text to display when date is invalid or null (default: 'N/A')
@@ -46,7 +46,8 @@ export const formatDateTime = (dateString, fallbackText = 'Never') => {
  *
  * @example
  * formatFullDate('2025-01-10T15:45:00Z')
- * // Returns: "January 10, 2025"
+ * // Returns: "January 10, 2025" (in English locale)
+ * // Returns: "10 de enero de 2025" (in Spanish locale)
  */
 export const formatFullDate = (dateString, fallbackText = 'N/A') => {
   if (!dateString) return fallbackText;
@@ -55,7 +56,7 @@ export const formatFullDate = (dateString, fallbackText = 'N/A') => {
     const date = new Date(dateString);
     if (isNaN(date.getTime())) return fallbackText;
 
-    return date.toLocaleDateString('en-US', {
+    return date.toLocaleDateString(undefined, {
       year: 'numeric',
       month: 'long',
       day: 'numeric'

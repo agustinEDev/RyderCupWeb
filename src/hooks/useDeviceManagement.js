@@ -13,7 +13,7 @@ import {
 export const useDeviceManagement = () => {
   const [devices, setDevices] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isRevoking, setIsRevoking] = useState(false);
+  const [revokingDeviceIds, setRevokingDeviceIds] = useState(new Set());
 
   // Fetch devices on mount
   useEffect(() => {
@@ -48,7 +48,9 @@ export const useDeviceManagement = () => {
     }
 
     try {
-      setIsRevoking(true);
+      // Add device ID to revoking set
+      setRevokingDeviceIds(prev => new Set(prev).add(deviceId));
+
       await revokeDeviceUseCase.execute(deviceId);
 
       // Remove device from local state
@@ -72,7 +74,12 @@ export const useDeviceManagement = () => {
 
       return false;
     } finally {
-      setIsRevoking(false);
+      // Remove device ID from revoking set
+      setRevokingDeviceIds(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(deviceId);
+        return newSet;
+      });
     }
   };
 
@@ -100,7 +107,7 @@ export const useDeviceManagement = () => {
     // State
     devices,
     isLoading,
-    isRevoking,
+    revokingDeviceIds,
 
     // Actions
     fetchDevices,
