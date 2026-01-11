@@ -168,6 +168,13 @@ describe('useEditProfile - Password History', () => {
     });
 
     it('should successfully update password when not reusing old passwords', async () => {
+      // Mock refetch before renderHook
+      const refetchMock = vi.fn();
+      useAuthHook.useAuth.mockReturnValue({
+        user: mockUser,
+        refetch: refetchMock,
+      });
+
       const { result } = renderHook(() => useEditProfile());
 
       await waitFor(() => {
@@ -176,12 +183,6 @@ describe('useEditProfile - Password History', () => {
 
       // Mock successful update
       composition.updateUserSecurityUseCase.execute.mockResolvedValue();
-
-      const refetchMock = vi.fn();
-      useAuthHook.useAuth.mockReturnValue({
-        user: mockUser,
-        refetch: refetchMock,
-      });
 
       act(() => {
         result.current.handleInputChange({
@@ -203,6 +204,7 @@ describe('useEditProfile - Password History', () => {
         'Security settings updated successfully!'
       );
       expect(toast.error).not.toHaveBeenCalled();
+      expect(refetchMock).toHaveBeenCalled();
     });
   });
 });

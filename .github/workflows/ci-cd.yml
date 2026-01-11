@@ -91,7 +91,7 @@ jobs:
           fetch-depth: 0
 
       - name: TruffleHog OSS (Filesystem Scan)
-        uses: trufflesecurity/trufflehog@v3.82.13
+        uses: trufflesecurity/trufflehog@v3.92.4
         with:
           path: ./
           extra_args: --debug --only-verified
@@ -477,7 +477,7 @@ jobs:
 
       - name: Run type check
         if: steps.check-ts.outputs.has_typescript == 'true'
-        run: npx tsc --noEmit || echo "⚠️ TypeScript check skipped or failed"
+        run: npx tsc --noEmit
 
   code-quality:
     name: 📊 Code Quality

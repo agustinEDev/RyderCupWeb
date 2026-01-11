@@ -23,7 +23,7 @@ export const formatDateTime = (dateString, fallbackText = 'Never') => {
     const date = new Date(dateString);
     if (isNaN(date.getTime())) return fallbackText;
 
-    return date.toLocaleDateString(undefined, {
+    return date.toLocaleString(undefined, {
       year: 'numeric',
       month: 'short',
       day: 'numeric',

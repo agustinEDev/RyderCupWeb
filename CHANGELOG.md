@@ -17,7 +17,7 @@ y este proyecto adhiere a [Versionado Semántico](https://semver.org/lang/es/).
   - **Visual Summary Report**: Automatic generation in GitHub Actions Summary tab
     - Table views for each phase with ✅/❌/⚠️/⏭️ status indicators
     - Detailed final status with list of failed jobs (if any)
-    - Professional markdown formatting with emojis and timestamps
+    - Professional Markdown formatting with emojis and timestamps
   - **Security Gates**: Quality checks only run if all security checks pass
   - **Documentation**: Added comprehensive README in `.github/workflows/` with diagrams
   - **Deprecation**: Old `ci.yml` and `security.yml` workflows should be removed

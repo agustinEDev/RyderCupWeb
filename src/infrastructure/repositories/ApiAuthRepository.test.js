@@ -30,10 +30,10 @@ describe('ApiAuthRepository - Account Lockout', () => {
       const email = new Email('locked@example.com');
       const password = new Password('Password123', { validateStrength: false });
 
-      // Mock apiRequest to throw HTTP 423 error
-      mockApiRequest.mockRejectedValue(
-        new Error('HTTP 423: Locked')
-      );
+      // Mock apiRequest to throw HTTP 423 error with status property
+      const error = new Error('Locked');
+      error.status = 423;
+      mockApiRequest.mockRejectedValue(error);
 
       await expect(repository.login(email, password)).rejects.toThrow(
         'Account locked due to too many failed login attempts. Please try again after 30 minutes.'
@@ -52,9 +52,9 @@ describe('ApiAuthRepository - Account Lockout', () => {
       const email = new Email('test@example.com');
       const password = new Password('Password123', { validateStrength: false });
 
-      mockApiRequest.mockRejectedValue(
-        new Error('HTTP 423: Account locked due to too many failed login attempts')
-      );
+      const error = new Error('Account locked due to too many failed login attempts');
+      error.status = 423;
+      mockApiRequest.mockRejectedValue(error);
 
       await expect(repository.login(email, password)).rejects.toThrow(
         'Account locked due to too many failed login attempts. Please try again after 30 minutes.'
@@ -65,10 +65,10 @@ describe('ApiAuthRepository - Account Lockout', () => {
       const email = new Email('wrong@example.com');
       const password = new Password('WrongPassword', { validateStrength: false });
 
-      // Mock 401 error (invalid credentials)
-      mockApiRequest.mockRejectedValue(
-        new Error('HTTP 401: Unauthorized')
-      );
+      // Mock 401 error (invalid credentials) with status property
+      const error = new Error('Unauthorized');
+      error.status = 401;
+      mockApiRequest.mockRejectedValue(error);
 
       await expect(repository.login(email, password)).rejects.toThrow(
         'Incorrect email or password'

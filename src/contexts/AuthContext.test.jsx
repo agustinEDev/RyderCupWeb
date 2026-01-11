@@ -49,14 +49,17 @@ describe('AuthContext', () => {
       consoleSpy.mockRestore();
     });
 
-    it('should provide initial state with null user and csrfToken', () => {
+    it('should provide initial state with null user and csrfToken', async () => {
       const { result } = renderHook(() => useAuthContext(), {
         wrapper: AuthProvider,
       });
 
       expect(result.current.user).toBeNull();
       expect(result.current.csrfToken).toBeNull();
-      expect(result.current.isInitialized).toBe(true);
+
+      await waitFor(() => {
+        expect(result.current.isInitialized).toBe(true);
+      });
     });
 
     it('should restore user from localStorage on mount', async () => {
@@ -215,7 +218,7 @@ describe('AuthContext', () => {
     });
 
     it('should set and get csrf token globally', () => {
-      const token = 'global-csrf-123';
+      const token = 'test-csrf-token-FAKE';
 
       setCsrfTokenGlobal(token);
 

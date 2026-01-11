@@ -24,12 +24,12 @@ class ApiAuthRepository extends IAuthRepository {
       };
     } catch (error) {
       // v1.13.0: Handle Account Lockout (HTTP 423)
-      if (error.message.includes('HTTP 423')) {
+      if (error.status === 423 || error.statusCode === 423) {
         throw new Error('Account locked due to too many failed login attempts. Please try again after 30 minutes.');
       }
 
       // Standardize error message for 401
-      if (error.message.includes('401')) {
+      if (error.status === 401 || error.statusCode === 401) {
         throw new Error('Incorrect email or password');
       }
       throw error;

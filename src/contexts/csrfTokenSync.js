@@ -15,10 +15,15 @@ let currentCsrfToken = null;
  * @returns {string|null} CSRF token from cookie or null
  */
 const getCsrfTokenFromCookie = () => {
-  const csrfToken = document.cookie
+  const cookieRow = document.cookie
     .split('; ')
-    .find(row => row.startsWith('csrf_token='))
-    ?.split('=')[1];
+    .find(row => row.startsWith('csrf_token='));
+
+  if (!cookieRow) return null;
+
+  // Capture everything after first '=' to preserve tokens with '=' padding
+  const firstEqualIndex = cookieRow.indexOf('=');
+  const csrfToken = cookieRow.substring(firstEqualIndex + 1);
 
   return csrfToken || null;
 };

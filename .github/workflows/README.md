@@ -4,7 +4,7 @@ Este directorio contiene los workflows de CI/CD y seguridad para el proyecto Ryd
 
 ## 📋 Workflows Disponibles
 
-### 🚀 CI/CD & Security Pipeline (`ci-unified.yml`)
+### 🚀 CI/CD & Security Pipeline (`ci-cd.yml`)
 
 **Workflow principal unificado** que combina todos los checks de seguridad, calidad de código, testing y build en un pipeline secuencial con dependencias.
 
@@ -132,7 +132,7 @@ permissions:
 
 ### 🗂️ Workflows Deprecados
 
-Los siguientes workflows han sido **unificados** en `ci-unified.yml`:
+Los siguientes workflows han sido **unificados** en `ci-cd.yml`:
 
 - ~~`ci.yml`~~ - CI Pipeline (deprecado)
 - ~~`security.yml`~~ - Security Checks (deprecado)

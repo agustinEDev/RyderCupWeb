@@ -95,10 +95,23 @@ export const useDeviceManagement = () => {
     const currentUA = navigator.userAgent;
     const deviceNameLower = device.deviceName.toLowerCase();
 
-    // Simple heuristic: check if browser name is in device_name
-    const browserMatch = currentUA.match(/(Chrome|Firefox|Safari|Edge|Opera)/i);
-    if (browserMatch) {
-      return deviceNameLower.includes(browserMatch[0].toLowerCase());
+    // Priority order: Edge/Opera first, then Chrome, then Firefox, then Safari
+    // This prevents Chrome from matching Safari (since Chrome UA contains "Safari")
+    if (currentUA.includes('Edg')) {
+      return deviceNameLower.includes('edge');
+    }
+    if (currentUA.includes('OPR') || currentUA.includes('Opera')) {
+      return deviceNameLower.includes('opera');
+    }
+    if (currentUA.includes('Chrome') || currentUA.includes('Chromium')) {
+      return deviceNameLower.includes('chrome');
+    }
+    if (currentUA.includes('Firefox')) {
+      return deviceNameLower.includes('firefox');
+    }
+    // Only match Safari if none of the above matched
+    if (currentUA.includes('Safari') && !currentUA.includes('Chrome')) {
+      return deviceNameLower.includes('safari');
     }
 
     return false;
