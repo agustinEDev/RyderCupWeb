@@ -1,8 +1,11 @@
 /**
  * Base API configuration and utilities
+ * v1.13.0: Added CSRF Protection for POST/PUT/PATCH/DELETE requests
  */
 
 import { fetchWithTokenRefresh } from '../utils/tokenRefreshInterceptor.js';
+import { getCsrfToken } from '../contexts/csrfTokenSync'; // v1.13.0: CSRF Protection
+import { handleCsrfLogout } from '../utils/csrfLogout'; // v1.13.0: Centralized CSRF logout
 
 // Prioridad: 1. Runtime config (window.APP_CONFIG) 2. Build-time env 3. Empty string (relative URLs for proxy)
 // Si no hay API_URL configurado, usar '' para que las URLs sean relativas (/api/...)
@@ -31,6 +34,19 @@ export const apiRequest = async (endpoint, options = {}) => {
     'Content-Type': 'application/json',
   };
 
+  // v1.13.0: CSRF Protection - Add X-CSRF-Token header for state-changing requests
+  const method = (options.method || 'GET').toUpperCase();
+  const requiresCsrf = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method);
+
+  if (requiresCsrf) {
+    const csrfToken = getCsrfToken();
+    if (csrfToken) {
+      defaultHeaders['X-CSRF-Token'] = csrfToken;
+    } else {
+      console.warn(`CSRF token missing for ${method} ${endpoint}`);
+    }
+  }
+
   const config = {
     ...options,
     // CRITICAL: credentials: 'include' tells the browser to send httpOnly cookies
@@ -57,6 +73,14 @@ export const apiRequest = async (endpoint, options = {}) => {
         console.warn('Failed to parse error response as JSON:', jsonError);
       }
 
+      // v1.13.0: Handle CSRF validation errors
+      if (response.status === 403 && errorData.error_code === 'CSRF_VALIDATION_FAILED') {
+        // Use centralized CSRF logout handler
+        handleCsrfLogout(errorData);
+        // Throw error after initiating logout (error will be caught by caller)
+        throw new Error('CSRF validation failed. Please log in again.');
+      }
+
       // Extract error message with proper fallback chain
       let errorMessage = '';
 
@@ -76,7 +100,12 @@ export const apiRequest = async (endpoint, options = {}) => {
         errorMessage = `HTTP ${response.status}: ${response.statusText}`;
       }
 
-      throw new Error(errorMessage);
+      // Create structured error with status code for better error handling
+      const error = new Error(errorMessage);
+      error.status = response.status;
+      error.statusCode = response.status; // Alias for compatibility
+      error.errorCode = errorData.error_code || null;
+      throw error;
     }
 
     // Handle no content responses (e.g., 204 from DELETE)

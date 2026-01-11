@@ -1,0 +1,33 @@
+{
+  "title": "Active Devices",
+  "subtitle": "Manage devices with access to your account",
+  "loading": "Loading devices...",
+  "actions": {
+    "backToProfile": "Back to Profile",
+    "revoke": "Revoke"
+  },
+  "info": {
+    "title": "About Device Management",
+    "description": "Revoking a device will immediately close all sessions on that device. The device will need to log in again to regain access. If you see an unfamiliar device, revoke it immediately and change your password."
+  },
+  "confirmations": {
+    "revokeCurrent": "This is your CURRENT device. Revoking it will log you out immediately. Are you sure?",
+    "revokeOther": "Are you sure you want to revoke this device? All sessions on this device will be closed."
+  },
+  "device": {
+    "current": "Current Device",
+    "ip": "IP",
+    "lastUsed": "Last used",
+    "firstSeen": "First seen",
+    "never": "Never"
+  },
+  "empty": {
+    "title": "No active devices found",
+    "description": "Devices will appear here after login"
+  },
+  "security": {
+    "title": "Security Tip",
+    "description": "If you notice any suspicious activity or unfamiliar devices, revoke them immediately and consider changing your password. You can do this from your",
+    "profileSettings": "profile settings"
+  }
+}

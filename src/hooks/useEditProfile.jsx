@@ -296,9 +296,21 @@ export const useEditProfile = () => {
       toast.success('Security settings updated successfully!');
     } catch (error) {
       console.error('Error updating security:', error);
-      toast.error(
-        error.message || 'Failed to update security settings',
-      );
+
+      // v1.13.0: Handle Password History error
+      if (error.message && error.message.includes('last 5 passwords')) {
+        toast.error(
+          'Cannot reuse any of your last 5 passwords. Please choose a different password.',
+          {
+            duration: 8000,
+            icon: '🔑',
+          }
+        );
+      } else {
+        toast.error(
+          error.message || 'Failed to update security settings',
+        );
+      }
     } finally {
       setIsSaving(false);
     }

@@ -6,13 +6,15 @@ import { useTranslation } from 'react-i18next';
 import { validateEmail, checkRateLimit, resetRateLimit } from '../utils/validation';
 import { safeLog } from '../utils/auth';
 import PasswordInput from '../components/ui/PasswordInput';
-import { loginUseCase } from '../composition'; // NUEVO import
+import { loginUseCase } from '../composition';
+import { useAuthContext } from '../hooks/useAuthContext'; // v1.13.0: CSRF Protection
 
 const Login = () => {
   const { t } = useTranslation(['auth', 'common']);
   const navigate = useNavigate();
   const location = useLocation();
   const successMessage = location.state?.message;
+  const { setUser, updateCsrfToken } = useAuthContext(); // v1.13.0: CSRF Protection
 
   const [formData, setFormData] = useState({
     email: '',
@@ -66,7 +68,12 @@ const Login = () => {
     setIsLoading(true);
 
     try {
-      const authenticatedUser = await loginUseCase.execute(formData.email, formData.password);
+      // v1.13.0: LoginUseCase now returns { user, csrfToken }
+      const { user: authenticatedUser, csrfToken } = await loginUseCase.execute(formData.email, formData.password);
+
+      // Update auth context with user and CSRF token
+      setUser(authenticatedUser);
+      updateCsrfToken(csrfToken);
 
       resetRateLimit('login');
       toast.success(t('login.welcomeMessage', { name: authenticatedUser.firstName }));
@@ -91,9 +98,17 @@ const Login = () => {
         password: ''
       }));
 
-      toast.error(error.message || t('login.error'), {
-        duration: 5000,
-      });
+      // v1.13.0: Handle Account Lockout (HTTP 423) with special UI treatment
+      if (error.message && error.message.includes('Account locked')) {
+        toast.error(error.message, {
+          duration: 10000, // Longer duration for important security message
+          icon: '🔒',
+        });
+      } else {
+        toast.error(error.message || t('login.error'), {
+          duration: 5000,
+        });
+      }
 
       setIsLoading(false);
     }

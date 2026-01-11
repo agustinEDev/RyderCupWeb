@@ -22,12 +22,12 @@ class LoginUseCase {
 
     // Llamada al repositorio para realizar la autenticación
     // Pasamos la instancia del Email y Password Value Object
-    const { user } = await this.authRepository.login(email, password);
+    const { user, csrfToken } = await this.authRepository.login(email, password);
 
     // El backend establece automáticamente la cookie httpOnly
     // No necesitamos guardar nada en el frontend
-
-    return user;
+    // v1.13.0: Return csrfToken for CSRF protection
+    return { user, csrfToken };
   }
 }
 

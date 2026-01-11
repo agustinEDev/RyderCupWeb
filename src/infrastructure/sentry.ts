@@ -102,6 +102,7 @@ if (!SENTRY_CONFIG.dsn) {
   // Feedback Integration (opcional) - Widget para que usuarios reporten problemas
   if (SENTRY_CONFIG.enableFeedback) {
     integrations.push(
+      // @ts-ignore - Feedback integration types are not fully compatible with Integration type
       feedbackIntegration({
         // Configuración del widget
         colorScheme: 'system', // 'light', 'dark', 'system'

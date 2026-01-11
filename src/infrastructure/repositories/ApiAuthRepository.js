@@ -16,13 +16,20 @@ class ApiAuthRepository extends IAuthRepository {
         body: JSON.stringify({ email: email.getValue(), password: password.getValue() }),
       });
 
+      // v1.13.0: Backend now returns csrf_token for CSRF protection
       return {
         user: new User(data.user),
-        token: data.access_token,
+        token: data.access_token, // Legacy (httpOnly cookie is used)
+        csrfToken: data.csrf_token, // NEW: Required for POST/PUT/PATCH/DELETE requests
       };
     } catch (error) {
+      // v1.13.0: Handle Account Lockout (HTTP 423)
+      if (error.status === 423 || error.statusCode === 423) {
+        throw new Error('Account locked due to too many failed login attempts. Please try again after 30 minutes.');
+      }
+
       // Standardize error message for 401
-      if (error.message.includes('401')) {
+      if (error.status === 401 || error.statusCode === 401) {
         throw new Error('Incorrect email or password');
       }
       throw error;
@@ -60,11 +67,12 @@ class ApiAuthRepository extends IAuthRepository {
       body: JSON.stringify({ token }),
     });
 
-    // La API ahora devuelve { access_token, token_type, user: {...} }
+    // La API ahora devuelve { access_token, token_type, user: {...}, csrf_token }
     // Igual que el endpoint de login
     return {
       user: new User(data.user),
       token: data.access_token,
+      csrfToken: data.csrf_token, // v1.13.0: CSRF token for email verification
     };
   }
 

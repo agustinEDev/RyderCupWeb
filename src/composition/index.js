@@ -19,6 +19,11 @@ import UpdateRfegHandicapUseCase from '../application/use_cases/handicap/UpdateR
 // Country Use Cases
 import FetchCountriesUseCase from '../application/use_cases/country/FetchCountriesUseCase';
 
+// Device Management Use Cases (v1.13.0)
+import ApiDeviceRepository from '../infrastructure/repositories/ApiDeviceRepository';
+import GetActiveDevicesUseCase from '../application/use_cases/device/GetActiveDevicesUseCase';
+import RevokeDeviceUseCase from '../application/use_cases/device/RevokeDeviceUseCase';
+
 // Competition Use Cases
 import ApiCompetitionRepository from '../infrastructure/repositories/ApiCompetitionRepository';
 import CreateCompetitionUseCase from '../application/use_cases/competition/CreateCompetitionUseCase';
@@ -51,6 +56,7 @@ const apiHandicapRepository = new ApiHandicapRepository();
 const apiAuthRepository = new ApiAuthRepository();
 const apiCompetitionRepository = new ApiCompetitionRepository();
 const apiEnrollmentRepository = new ApiEnrollmentRepository();
+const apiDeviceRepository = new ApiDeviceRepository();
 
 // --- Casos de Uso ---
 const updateUserProfileUseCase = new UpdateUserProfileUseCase({ userRepository: apiUserRepository });
@@ -88,6 +94,10 @@ const withdrawEnrollmentUseCase = new WithdrawEnrollmentUseCase(apiEnrollmentRep
 const setCustomHandicapUseCase = new SetCustomHandicapUseCase(apiEnrollmentRepository);
 const directEnrollUseCase = new DirectEnrollUseCase(apiEnrollmentRepository);
 
+// Device Management Use Cases (v1.13.0)
+const getActiveDevicesUseCase = new GetActiveDevicesUseCase({ deviceRepository: apiDeviceRepository });
+const revokeDeviceUseCase = new RevokeDeviceUseCase({ deviceRepository: apiDeviceRepository });
+
 
 // Exportar los casos de uso y otros servicios que la capa de presentación necesite
 export {
@@ -122,6 +132,9 @@ export {
   withdrawEnrollmentUseCase,
   setCustomHandicapUseCase,
   directEnrollUseCase,
+  // Device Management Use Cases (v1.13.0)
+  getActiveDevicesUseCase,
+  revokeDeviceUseCase,
   // También podríamos exportar directamente las entidades si la UI las necesita para displays,
   // aunque la mejor práctica es que la UI reciba DTOs o ViewModels del caso de uso.
 };

@@ -14,6 +14,8 @@ import profileEn from './locales/en/profile.json';
 import profileEs from './locales/es/profile.json';
 import competitionsEn from './locales/en/competitions.json';
 import competitionsEs from './locales/es/competitions.json';
+import devicesEn from './locales/en/devices.json';
+import devicesEs from './locales/es/devices.json';
 
 const resources = {
   en: {
@@ -23,6 +25,7 @@ const resources = {
     dashboard: dashboardEn,
     profile: profileEn,
     competitions: competitionsEn,
+    devices: devicesEn,
   },
   es: {
     auth: authEs,
@@ -31,6 +34,7 @@ const resources = {
     dashboard: dashboardEs,
     profile: profileEs,
     competitions: competitionsEs,
+    devices: devicesEs,
   },
 };
 
@@ -41,7 +45,7 @@ i18n
     resources,
     fallbackLng: 'en', // Idioma por defecto si no se detecta
     defaultNS: 'common', // Namespace por defecto
-    ns: ['common', 'auth', 'landing', 'dashboard', 'profile', 'competitions'], // Namespaces disponibles
+    ns: ['common', 'auth', 'landing', 'dashboard', 'profile', 'competitions', 'devices'], // Namespaces disponibles
 
     detection: {
       // Orden de detección: localStorage -> navigator
