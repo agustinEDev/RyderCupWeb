@@ -14,6 +14,7 @@
   "actions": {
     "backToDashboard": "Back to Dashboard",
     "editProfile": "Edit Profile",
+    "manageDevices": "Manage Devices",
     "logOut": "Log Out"
   },
   "edit": {

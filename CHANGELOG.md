@@ -7,46 +7,25 @@ y este proyecto adhiere a [Versionado Semántico](https://semver.org/lang/es/).
 
 ## [Unreleased]
 
-### Fixed
-- **GitHub Actions Workflow Errors**: Corrected 3 critical failures in CI/CD pipeline
-  - **PR Checks - Conventional Commits**: Added 10-second delay for Dependabot PRs to wait for auto-fix workflow completion
-    - Prevents race condition where validation runs before title is capitalized
-    - Maintains strict Conventional Commits enforcement for all PRs
-  - **Security Checks - Snyk SARIF Upload**: Fixed SARIF file generation and upload issues
-    - Corrected flag syntax: `--sarif-file-output snyk-security.sarif` → `--sarif-file-output=snyk-security.sarif` (added equals sign)
-    - Added conditional file existence checks before upload steps
-    - Prevents workflow failure when no vulnerabilities are found (SARIF not generated)
-    - Added informative logs: "SARIF file generated successfully" or "SARIF file not generated (no vulnerabilities)"
-  - **Security Checks - TruffleHog**: Fixed "BASE and HEAD commits are the same" error
-    - Switched to filesystem scan for all PR types and push events (more reliable than git diff)
-    - Eliminates "BASE and HEAD are the same" errors in release branches, merges, and Dependabot PRs
-    - Maintains full secret scanning coverage across all PR types
-    - Consistent behavior regardless of PR source or branch type
-  - All workflows now pass successfully for both developer and Dependabot PRs
-  - Zero reduction in security coverage or quality gates
-
 ### Added
-- **Snyk Security Integration**: Automated vulnerability scanning in CI/CD pipeline
-  - Added `snyk-security` job for npm dependency scanning (detects CVEs in node_modules)
-  - Added `snyk-code` job for static code analysis (detects XSS, injection, insecure APIs)
-  - Integrated with GitHub Security tab via SARIF reports
-  - Configured severity threshold: fails only on HIGH and CRITICAL vulnerabilities
-  - Executes on push to all branches, PRs to main/develop, and weekly schedule
-  - Reports retained as downloadable artifacts for 30 days
-  - Uses existing `SNYK_TOKEN` GitHub secret for authentication
-
-### Fixed
-- **i18n Loading Text Bug**: Fixed login button showing raw translation key "common.loading" instead of translated text
-  - Updated `useTranslation` hook in Login.jsx to support multiple namespaces: `['auth', 'common']`
-  - Corrected translation call from `t('common.loading', { ns: 'common' })` to `t('loading', { ns: 'common' })`
-  - Now correctly displays "Loading..." (English) or "Cargando..." (Spanish) during authentication
-
-### Changed
-- **Security Workflow Enhancement**: Extended `.github/workflows/security.yml` with Snyk integration (77 new lines)
-  - Maintains parallel execution with existing security checks (npm audit, TruffleHog, license check)
-  - Non-blocking configuration (`continue-on-error: true`) to prevent development workflow disruption
-
-### Added
+- **CI/CD Pipeline Unification**: Unified security and quality checks into single sequential pipeline
+  - **New Unified Workflow** (`ci-cd.yml`): Combines CI and security workflows with strict dependencies
+    - **Phase 1 - Security** (parallel): dependency-audit, secret-scanning, license-check, snyk (optional)
+    - **Phase 2 - Quality** (parallel, needs Phase 1): lint, test, type-check, code-quality
+    - **Phase 3 - Build** (needs Phase 2): production build with Vite
+    - **Phase 4 - Summary**: Visual markdown summary with tables, emojis, and status indicators
+  - **Visual Summary Report**: Automatic generation in GitHub Actions Summary tab
+    - Table views for each phase with ✅/❌/⚠️/⏭️ status indicators
+    - Detailed final status with list of failed jobs (if any)
+    - Professional Markdown formatting with emojis and timestamps
+  - **Security Gates**: Quality checks only run if all security checks pass
+  - **Documentation**: Added comprehensive README in `.github/workflows/` with diagrams
+  - **Deprecation**: Old `ci.yml` and `security.yml` workflows should be removed
+- **Internationalization (i18n)**: Added translations for Device Management page
+  - New namespace `devices` with ES/EN translations
+  - Updated `i18n/config.js` to include devices namespace
+  - Translated all UI strings: titles, buttons, confirmations, alerts, device info
+  - Consistent with project's i18n patterns using `useTranslation` hook
 - **Internationalization (i18n)**: Full bilingual support for Spanish and English
   - Implemented react-i18next with language persistence in localStorage
   - Language dropdown switcher with flag icons in header/footer
@@ -59,22 +38,31 @@ y este proyecto adhiere a [Versionado Semántico](https://semver.org/lang/es/).
   - Enrollment statuses translated: REQUESTED/SOLICITADA, PENDING/PENDIENTE, APPROVED/APROBADA, REJECTED/RECHAZADA
   - All toast messages translated for error and success notifications
   - Search placeholders with dynamic interpolation based on search type
-
-### Changed
-- **Input Validation Improvements**: Strengthened validation rules to sync with backend v1.8.0 security requirements (OWASP ASVS V2.1.1)
-  - Password validation: Increased minimum length from 8 to 12 characters (mandatory)
-  - Password validation: Added maximum length of 128 characters (DoS prevention)
-  - Password validation: Complexity requirements now mandatory (uppercase + lowercase + numbers)
-  - Email validation: Added maximum length of 254 characters (RFC 5321 compliance)
-  - Name validation: Increased maximum length from 50 to 100 characters (multinational name support)
-  - Updated `src/utils/validation.js` with stricter validation logic
-- **Form Updates**: Updated Register and EditProfile forms with new validation limits
-  - Changed password placeholder from "Minimum 8 characters" to "Minimum 12 characters"
-  - Added `maxLength` HTML attributes: firstName/lastName (100), email (254), password (128)
-  - Updated helper text in EditProfile: "Must be at least 12 characters if changing"
-  - HTML validation provides first layer of defense before JavaScript validation
-
-### Added
+- **Security Features v1.13.0**: Complete integration with backend security hardening
+  - **Password History Validation**: Frontend detects and displays user-friendly error when users attempt to reuse any of their last 5 passwords
+    - Specific toast notification with 8-second duration and key icon
+    - Pattern matching detection for password history errors from backend
+    - Integrated in `useEditProfile` hook for profile security updates
+    - 4 comprehensive tests covering all scenarios (100% passing)
+  - **Device Management (Device Fingerprinting)**: Complete Clean Architecture implementation for managing active user sessions
+    - **Domain Layer**: Device entity with business logic, IDeviceRepository interface
+    - **Infrastructure Layer**: ApiDeviceRepository with GET/DELETE endpoints, automatic CSRF token integration
+    - **Application Layer**: GetActiveDevicesUseCase and RevokeDeviceUseCase with validation
+    - **Presentation Layer**: `/profile/devices` route with DeviceManagement page and useDeviceManagement hook
+    - Visual features: Current device detection, double confirmation for current device revocation, auto-redirect to login after self-revocation
+    - Security alerts and tips in UI, responsive design with Tailwind CSS
+    - 42 tests passing (15 entity + 10 repository + 17 use cases) - 100% coverage on new code
+  - **CORS Fix**: Added `X-CSRF-Token` to allowed headers in backend for proper CSRF protection (backend commit 1948d33)
+    - Resolves 403 Forbidden errors on POST/PUT/PATCH/DELETE requests
+    - Enables proper preflight OPTIONS handling for CSRF-protected endpoints
+- **Snyk Security Integration**: Automated vulnerability scanning in CI/CD pipeline
+  - Added `snyk-security` job for npm dependency scanning (detects CVEs in node_modules)
+  - Added `snyk-code` job for static code analysis (detects XSS, injection, insecure APIs)
+  - Integrated with GitHub Security tab via SARIF reports
+  - Configured severity threshold: fails only on HIGH and CRITICAL vulnerabilities
+  - Executes on push to all branches, PRs to main/develop, and weekly schedule
+  - Reports retained as downloadable artifacts for 30 days
+  - Uses existing `SNYK_TOKEN` GitHub secret for authentication
 - **Validation Unit Tests**: Created comprehensive test suite for input validation functions
   - Created `src/utils/validation.test.js` with 38 tests (100% passing)
   - validatePassword() tests: 13 tests (minimum, maximum, complexity, edge cases)
@@ -160,7 +148,68 @@ y este proyecto adhiere a [Versionado Semántico](https://semver.org/lang/es/).
   - Documentation: `docs/architecture/decisions/ADR-008-security-testing-strategy.md`
   - Tests validate OWASP Top 10 2021 protections: A03 (Injection), A07 (Authentication)
 
+### Changed
+- **CI/CD Workflow Refactor**: Improved GitHub Actions configuration for better reliability and security
+  - Renamed `ci-unified.yml` to `ci-cd.yml` for clearer naming convention
+  - Pinned all GitHub Actions to specific commit SHAs to prevent supply chain attacks
+  - Added explicit permissions declarations (contents: read, security-events: write)
+  - Improved dependency installation caching for faster workflow execution
+  - Enhanced error handling and reporting in all workflow steps
+- **Date Formatting Refactor**: Centralized date formatting logic into reusable utilities
+  - Created `src/utils/dateFormatters.js` with three functions: `formatDateTime()`, `formatFullDate()`, `formatShortDate()`
+  - Standardized date formatting across Profile.jsx and DeviceManagement.jsx
+  - Added comprehensive JSDoc documentation with usage examples
+  - Improved error handling with try-catch blocks and fallback text support
+  - Enhanced i18n support with browser locale detection in formatDateTime()
+  - Reduced code duplication and improved maintainability
+- **Input Validation Improvements**: Strengthened validation rules to sync with backend v1.8.0 security requirements (OWASP ASVS V2.1.1)
+  - Password validation: Increased minimum length from 8 to 12 characters (mandatory)
+  - Password validation: Added maximum length of 128 characters (DoS prevention)
+  - Password validation: Complexity requirements now mandatory (uppercase + lowercase + numbers)
+  - Email validation: Added maximum length of 254 characters (RFC 5321 compliance)
+  - Name validation: Increased maximum length from 50 to 100 characters (multinational name support)
+  - Updated `src/utils/validation.js` with stricter validation logic
+- **Form Updates**: Updated Register and EditProfile forms with new validation limits
+  - Changed password placeholder from "Minimum 8 characters" to "Minimum 12 characters"
+  - Added `maxLength` HTML attributes: firstName/lastName (100), email (254), password (128)
+  - Updated helper text in EditProfile: "Must be at least 12 characters if changing"
+  - HTML validation provides first layer of defense before JavaScript validation
+- **Security Workflow Enhancement**: Extended `.github/workflows/security.yml` with Snyk integration (77 new lines)
+  - Maintains parallel execution with existing security checks (npm audit, TruffleHog, license check)
+  - Non-blocking configuration (`continue-on-error: true`) to prevent development workflow disruption
+
 ### Fixed
+- **CSRF Token Device Deletion**: Fixed critical bug preventing device revocation due to missing CSRF token in API requests
+  - **Problem**: Device deletion (DELETE /api/v1/users/me/devices/{id}) failed with 403 Forbidden
+  - **Root Cause**: `getCsrfToken()` returned null due to React context synchronization timing issues
+  - **Solution**: Implemented fallback mechanism in `src/contexts/csrfTokenSync.js`
+    - Priority 1: Read token from React context (synced via AuthProvider)
+    - Priority 2: Fallback to reading `csrf_token` cookie directly from `document.cookie`
+  - **Pattern**: Implements "Double-Submit Cookie Pattern" compatible with backend CSRF validation
+  - **Backend Compatibility**: Works with backend v1.13.0 CSRF middleware (csrf_config.py + csrf_middleware.py)
+  - **Impact**: Device management now fully functional - users can revoke active sessions
+  - **Security**: No security reduction - maintains CSRF protection integrity
+  - **File Changed**: `src/contexts/csrfTokenSync.js` (+30 lines, fallback function)
+- **GitHub Actions Workflow Errors**: Corrected 3 critical failures in CI/CD pipeline
+  - **PR Checks - Conventional Commits**: Added 10-second delay for Dependabot PRs to wait for auto-fix workflow completion
+    - Prevents race condition where validation runs before title is capitalized
+    - Maintains strict Conventional Commits enforcement for all PRs
+  - **Security Checks - Snyk SARIF Upload**: Fixed SARIF file generation and upload issues
+    - Corrected flag syntax: `--sarif-file-output snyk-security.sarif` → `--sarif-file-output=snyk-security.sarif` (added equals sign)
+    - Added conditional file existence checks before upload steps
+    - Prevents workflow failure when no vulnerabilities are found (SARIF not generated)
+    - Added informative logs: "SARIF file generated successfully" or "SARIF file not generated (no vulnerabilities)"
+  - **Security Checks - TruffleHog**: Fixed "BASE and HEAD commits are the same" error
+    - Switched to filesystem scan for all PR types and push events (more reliable than git diff)
+    - Eliminates "BASE and HEAD are the same" errors in release branches, merges, and Dependabot PRs
+    - Maintains full secret scanning coverage across all PR types
+    - Consistent behavior regardless of PR source or branch type
+  - All workflows now pass successfully for both developer and Dependabot PRs
+  - Zero reduction in security coverage or quality gates
+- **i18n Loading Text Bug**: Fixed login button showing raw translation key "common.loading" instead of translated text
+  - Updated `useTranslation` hook in Login.jsx to support multiple namespaces: `['auth', 'common']`
+  - Corrected translation call from `t('common.loading', { ns: 'common' })` to `t('loading', { ns: 'common' })`
+  - Now correctly displays "Loading..." (English) or "Cargando..." (Spanish) during authentication
 - **Profile Page Crashes**: Fixed critical errors in Profile.jsx that caused ErrorBoundary to trigger
   - Fixed undefined variable error: `isLoading` → `isLoadingUser || isLoadingData`
   - Fixed missing function error: Implemented `handleLogout()` with proper backend call and broadcast
@@ -239,47 +288,16 @@ y este proyecto adhiere a [Versionado Semántico](https://semver.org/lang/es/).
   - OWASP Impact:
     - A03: Injection: 9.0/10 → 9.5/10 (+0.5 from automated XSS/CSRF testing)
     - A07: Authentication Failures: 9.0/10 → 9.5/10 (+0.5 from auth bypass tests)
-
-## [1.7.0] - 2025-11-26
-
-### Added
-- **Advanced Sentry Configuration**: Comprehensive environment-based Sentry setup with all monitoring parameters configured
-  - Created `src/utils/sentryHelpers.js` with 15+ utility functions for user context, tags, breadcrumbs, and performance tracking
-  - Created `RENDER_SETUP.md` with step-by-step guide for configuring environment variables in Render
-  - Created `SENTRY_IMPLEMENTATION_SUMMARY.md` with complete implementation documentation and best practices
-  - Added 10 new environment variables for granular Sentry control (DSN, environment, debug, sample rates, etc.)
-  - Implemented Browser Tracing Integration with Web Vitals tracking (LCP, FID, CLS, INP)
-  - Implemented Replay Integration with privacy settings (mask `.sensitive`, block `.private`)
-  - Implemented optional Feedback Integration widget for user reports
-  - Added ErrorBoundary with elegant fallback UI and "Try Again" recovery option
-  - Added routing instrumentation with `SentryRoutes` for automatic navigation tracking
+- **Sentry Security Configuration**: Implemented privacy-first monitoring with sensitive data protection
+  - Automatic filtering of sensitive data (passwords, access_token, refresh_token)
+  - Automatic removal of sensitive headers (Authorization, Cookie)
+  - URL sanitization (tokens replaced with [REDACTED])
+  - Browser extension errors ignored to prevent false positives
+  - Privacy-first replay configuration with element masking
   - Added automatic user context establishment on app mount
   - Configured environment-specific sample rates (100% dev, 10-5% prod)
-  - Implemented sensitive data filtering (passwords, tokens, cookies)
   - Added error filtering (browser extensions, timeouts, fast transactions)
-  - Added URL sanitization and privacy controls
   - Configured auto session tracking and stack trace attachment
-
-### Changed
-- **Sentry Configuration Rewrite**: Complete rewrite of `src/infrastructure/sentry.ts` (250+ lines)
-  - Migrated from hardcoded values to environment-based configuration
-  - Added validation (doesn't initialize without DSN)
-  - Added `beforeSend`, `beforeSendTransaction`, and `beforeBreadcrumb` hooks
-  - Added comprehensive initialization logs with ASCII table
-  - Configured automatic release tracking from package.json version
-- **App.jsx Enhancement**: Integrated Sentry ErrorBoundary and routing instrumentation
-  - Wrapped app with `Sentry.ErrorBoundary` for React error catching
-  - Added automatic user context setup on mount
-  - Created `SentryRoutes` with `withSentryReactRouterV6Routing` for navigation tracking
-  - Maintained existing `Sentry.withProfiler` for React component profiling
-- **Environment Variables**: Updated `.env.example` with 10 new Sentry variables and comprehensive documentation
-
-### Security
-- Automatic filtering of sensitive data (passwords, access_token, refresh_token)
-- Automatic removal of sensitive headers (Authorization, Cookie)
-- URL sanitization (tokens replaced with [REDACTED])
-- Browser extension errors ignored to prevent false positives
-- Privacy-first replay configuration with element masking
 
 ### Documentation
 - Complete Sentry section added to CLAUDE.md (260+ lines)

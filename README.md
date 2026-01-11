@@ -82,6 +82,16 @@ Este proyecto implementa un pipeline profesional de CI/CD que garantiza la calid
 - 🛡️ **Security scanning** - detección de secrets y código inseguro
 - 🔐 **CSP validation** - validación de Content Security Policy headers
 
+### Security Features v1.13.0
+- 🛡️ **CSRF Protection** - X-CSRF-Token header en todos los requests POST/PUT/PATCH/DELETE
+- 🔒 **Account Lockout** - Manejo de HTTP 423 tras 10 intentos fallidos de login
+- 🔑 **Password History** - Prevención de reutilización de últimas 5 contraseñas
+- 📱 **Device Management** - Gestión de dispositivos activos con Clean Architecture
+  - Vista de dispositivos en `/profile/devices`
+  - Revocación remota de sesiones
+  - Detección de dispositivo actual
+  - 46 tests unitarios (100% coverage)
+
 ### Testing Strategy
 - 🧪 **Unit Tests** (Vitest) - lógica de componentes y utilidades
 - 🔗 **Integration Tests** - interacción con backend API (autenticación, cookies httpOnly)

@@ -9,9 +9,12 @@
  * - Automatically retries failed requests after refreshing
  * - Handles refresh token expiration with automatic logout
  * - Uses httpOnly cookies (XSS protection)
+ * - v1.13.0: Updates CSRF token after refresh
  *
  * @module tokenRefreshInterceptor
  */
+
+import { setCsrfTokenGlobal } from '../contexts/csrfTokenSync'; // v1.13.0: CSRF Protection
 
 const API_URL = globalThis.APP_CONFIG?.API_BASE_URL || import.meta.env.VITE_API_BASE_URL || '';
 
@@ -61,6 +64,13 @@ export const refreshAccessToken = async () => {
       }
 
       throw new Error('Failed to refresh token');
+    }
+
+    // v1.13.0: Backend now returns new csrf_token on refresh
+    const data = await response.json();
+    if (data.csrf_token) {
+      setCsrfTokenGlobal(data.csrf_token);
+      console.log('✅ [TokenRefresh] CSRF token updated');
     }
 
     console.log('✅ [TokenRefresh] Access token refreshed successfully');
