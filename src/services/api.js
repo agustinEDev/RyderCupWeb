@@ -100,7 +100,12 @@ export const apiRequest = async (endpoint, options = {}) => {
         errorMessage = `HTTP ${response.status}: ${response.statusText}`;
       }
 
-      throw new Error(errorMessage);
+      // Create structured error with status code for better error handling
+      const error = new Error(errorMessage);
+      error.status = response.status;
+      error.statusCode = response.status; // Alias for compatibility
+      error.errorCode = errorData.error_code || null;
+      throw error;
     }
 
     // Handle no content responses (e.g., 204 from DELETE)

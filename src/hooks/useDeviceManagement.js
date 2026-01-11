@@ -61,14 +61,15 @@ export const useDeviceManagement = () => {
     } catch (error) {
       console.error('❌ [useDeviceManagement] Error revoking device:', error);
 
-      // Handle specific errors
-      if (error.message && error.message.includes('403')) {
+      // Handle specific errors based on HTTP status code
+      if (error.status === 403 || error.statusCode === 403) {
         toast.error('CSRF validation failed. Please refresh the page.');
-      } else if (error.message && error.message.includes('409')) {
+      } else if (error.status === 409 || error.statusCode === 409) {
         toast.error('Device already revoked');
-      } else if (error.message && error.message.includes('404')) {
+      } else if (error.status === 404 || error.statusCode === 404) {
         toast.error('Device not found');
       } else {
+        // Use the actual error message from the backend
         toast.error(error.message || 'Failed to revoke device');
       }
 
