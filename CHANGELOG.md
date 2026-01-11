@@ -7,6 +7,19 @@ y este proyecto adhiere a [Versionado Semántico](https://semver.org/lang/es/).
 
 ## [Unreleased]
 
+### Fixed
+- **CSRF Token Device Deletion**: Fixed critical bug preventing device revocation due to missing CSRF token in API requests
+  - **Problem**: Device deletion (DELETE /api/v1/users/me/devices/{id}) failed with 403 Forbidden
+  - **Root Cause**: `getCsrfToken()` returned null due to React context synchronization timing issues
+  - **Solution**: Implemented fallback mechanism in `src/contexts/csrfTokenSync.js`
+    - Priority 1: Read token from React context (synced via AuthProvider)
+    - Priority 2: Fallback to reading `csrf_token` cookie directly from `document.cookie`
+  - **Pattern**: Implements "Double-Submit Cookie Pattern" compatible with backend CSRF validation
+  - **Backend Compatibility**: Works with backend v1.13.0 CSRF middleware (csrf_config.py + csrf_middleware.py)
+  - **Impact**: Device management now fully functional - users can revoke active sessions
+  - **Security**: No security reduction - maintains CSRF protection integrity
+  - **File Changed**: `src/contexts/csrfTokenSync.js` (+30 lines, fallback function)
+
 ### Added
 - **CI/CD Pipeline Unification**: Unified security and quality checks into single sequential pipeline
   - **New Unified Workflow** (`ci-unified.yml`): Combines CI and security workflows with strict dependencies
