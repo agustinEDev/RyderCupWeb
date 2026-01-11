@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import toast from 'react-hot-toast';
 
 import {
@@ -15,15 +15,10 @@ export const useDeviceManagement = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [revokingDeviceIds, setRevokingDeviceIds] = useState(new Set());
 
-  // Fetch devices on mount
-  useEffect(() => {
-    fetchDevices();
-  }, []);
-
   /**
    * Fetches all active devices for the current user
    */
-  const fetchDevices = async () => {
+  const fetchDevices = useCallback(async () => {
     try {
       setIsLoading(true);
       const result = await getActiveDevicesUseCase.execute();
@@ -34,7 +29,12 @@ export const useDeviceManagement = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []); // No external dependencies - uses stable setters and imported use case
+
+  // Fetch devices on mount
+  useEffect(() => {
+    fetchDevices();
+  }, [fetchDevices]);
 
   /**
    * Revokes a specific device
