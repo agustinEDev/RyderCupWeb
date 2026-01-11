@@ -39,7 +39,7 @@ class ApiDeviceRepository extends IDeviceRepository {
    * @returns {Promise<{ message: string, device_id: string }>}
    */
   async revokeDevice(deviceId) {
-    if (!deviceId) {
+    if (typeof deviceId !== 'string' || deviceId.trim() === '') {
       throw new Error('Device ID is required');
     }
 

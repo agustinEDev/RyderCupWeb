@@ -22,7 +22,7 @@ class GetActiveDevicesUseCase {
   async execute() {
     const result = await this.deviceRepository.getActiveDevices();
 
-    if (!result || !Array.isArray(result.devices)) {
+    if (!result || !Array.isArray(result.devices) || typeof result.total_count !== 'number' || !isFinite(result.total_count)) {
       throw new Error('Invalid response from device repository');
     }
 

@@ -22,7 +22,7 @@ y este proyecto adhiere a [Versionado Semántico](https://semver.org/lang/es/).
 
 ### Added
 - **CI/CD Pipeline Unification**: Unified security and quality checks into single sequential pipeline
-  - **New Unified Workflow** (`ci-unified.yml`): Combines CI and security workflows with strict dependencies
+  - **New Unified Workflow** (`ci-cd.yml`): Combines CI and security workflows with strict dependencies
     - **Phase 1 - Security** (parallel): dependency-audit, secret-scanning, license-check, snyk (optional)
     - **Phase 2 - Quality** (parallel, needs Phase 1): lint, test, type-check, code-quality
     - **Phase 3 - Build** (needs Phase 2): production build with Vite
@@ -39,8 +39,6 @@ y este proyecto adhiere a [Versionado Semántico](https://semver.org/lang/es/).
   - Updated `i18n/config.js` to include devices namespace
   - Translated all UI strings: titles, buttons, confirmations, alerts, device info
   - Consistent with project's i18n patterns using `useTranslation` hook
-
-### Added
 - **Security Features v1.13.0**: Complete integration with backend security hardening
   - **Password History Validation**: Frontend detects and displays user-friendly error when users attempt to reuse any of their last 5 passwords
     - Specific toast notification with 8-second duration and key icon
