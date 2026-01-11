@@ -11,7 +11,7 @@ import Password from '../../domain/value_objects/Password';
 import * as api from '../../services/api';
 
 // Mock api module
-vi.mock('../../services/api', () => ({
+vi.mock('../../services/api.js', () => ({
   default: vi.fn(),
 }));
 

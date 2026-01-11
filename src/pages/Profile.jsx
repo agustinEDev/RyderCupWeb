@@ -10,6 +10,7 @@ import HeaderAuth from '../components/layout/HeaderAuth';
 import { useAuth } from '../hooks/useAuth';
 import { CountryFlag } from '../utils/countryUtils';
 import { broadcastLogout } from '../utils/broadcastAuth';
+import { formatFullDate } from '../utils/dateFormatters';
 
 const API_URL = import.meta.env.VITE_API_BASE_URL || '';
 
@@ -114,15 +115,6 @@ const Profile = () => {
     window.location.href = '/';
   };
 
-  const formatDate = (dateString) => {
-    if (!dateString) return 'N/A';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-  };
 
   if (isLoadingUser || isLoadingData) {
     return (
@@ -145,9 +137,9 @@ const Profile = () => {
     ? user.handicap
     : 'Not set';
   const handicapUpdated = user.handicap_updated_at
-    ? formatDate(user.handicap_updated_at)
+    ? formatFullDate(user.handicap_updated_at)
     : 'Never';
-  const memberSince = formatDate(user.created_at);
+  const memberSince = formatFullDate(user.created_at);
 
   return (
     <div className="relative flex h-auto min-h-screen w-full flex-col bg-white">
@@ -234,7 +226,7 @@ const Profile = () => {
                     {/* Last Updated */}
                     <div className="flex items-center gap-2 text-gray-600 mb-2">
                       <Clock className="w-4 h-4" />
-                      <span className="text-sm">{t('lastUpdated', { date: formatDate(user.updated_at) })}</span>
+                      <span className="text-sm">{t('lastUpdated', { date: formatFullDate(user.updated_at) })}</span>
                     </div>
 
                     {/* Nationality */}
@@ -320,7 +312,7 @@ const Profile = () => {
                   className="flex items-center gap-2 px-5 py-2.5 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600 transition-colors shadow-md"
                 >
                   <Smartphone className="w-4 h-4" />
-                  <span>Manage Devices</span>
+                  <span>{t('actions.manageDevices')}</span>
                 </motion.button>
 
                 <motion.button
