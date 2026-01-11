@@ -5,6 +5,7 @@
 
 import { fetchWithTokenRefresh } from '../utils/tokenRefreshInterceptor.js';
 import { getCsrfToken } from '../contexts/csrfTokenSync'; // v1.13.0: CSRF Protection
+import { handleCsrfLogout } from '../utils/csrfLogout'; // v1.13.0: Centralized CSRF logout
 
 // Prioridad: 1. Runtime config (window.APP_CONFIG) 2. Build-time env 3. Empty string (relative URLs for proxy)
 // Si no hay API_URL configurado, usar '' para que las URLs sean relativas (/api/...)
@@ -74,10 +75,9 @@ export const apiRequest = async (endpoint, options = {}) => {
 
       // v1.13.0: Handle CSRF validation errors
       if (response.status === 403 && errorData.error_code === 'CSRF_VALIDATION_FAILED') {
-        console.error('CSRF validation failed:', errorData.detail);
-        // Clear auth state and redirect to login
-        localStorage.removeItem('user');
-        window.location.href = '/login';
+        // Use centralized CSRF logout handler
+        handleCsrfLogout(errorData);
+        // Throw error after initiating logout (error will be caught by caller)
         throw new Error('CSRF validation failed. Please log in again.');
       }
 
