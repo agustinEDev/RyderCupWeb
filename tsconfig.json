@@ -25,12 +25,6 @@
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
 
-    // Path Mapping (if needed in the future)
-    "baseUrl": ".",
-    "paths": {
-      "@/*": ["./src/*"]
-    },
-
     // Additional Options
     "forceConsistentCasingInFileNames": true
   },
