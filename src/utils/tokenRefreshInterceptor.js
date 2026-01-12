@@ -15,6 +15,7 @@
  */
 
 import { setCsrfTokenGlobal } from '../contexts/csrfTokenSync'; // v1.13.0: CSRF Protection
+import { isDeviceRevoked, handleDeviceRevocationLogout } from './deviceRevocationLogout'; // v1.13.1: Device Revocation
 
 const API_URL = globalThis.APP_CONFIG?.API_BASE_URL || import.meta.env.VITE_API_BASE_URL || '';
 
@@ -114,6 +115,22 @@ export const fetchWithTokenRefresh = async (url, options = {}) => {
     // If not 401, return response immediately
     if (response.status !== 401) {
       return response;
+    }
+
+    // Special case: Device Revocation (v1.13.1)
+    // Check if 401 is due to device revocation (before attempting refresh)
+    try {
+      const responseClone = response.clone();
+      const errorData = await responseClone.json();
+
+      if (isDeviceRevoked(response, errorData)) {
+        console.log('🚫 [TokenRefresh] Device revoked. Logging out...');
+        handleDeviceRevocationLogout(errorData);
+        return response; // Return original response (logout will redirect)
+      }
+    } catch (jsonError) {
+      // If JSON parsing fails, continue with normal refresh flow
+      console.log('⚠️ [TokenRefresh] Could not parse 401 response body, continuing with refresh');
     }
 
     // Special case: Don't retry refresh token endpoint itself
