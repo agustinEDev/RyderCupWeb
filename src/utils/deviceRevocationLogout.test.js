@@ -22,6 +22,8 @@ describe('deviceRevocationLogout utilities', () => {
     window.location = { href: '' };
     // Mock localStorage
     global.localStorage = {
+      getItem: vi.fn(),
+      setItem: vi.fn(),
       removeItem: vi.fn(),
     };
     // Mock Sentry

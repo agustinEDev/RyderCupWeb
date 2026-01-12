@@ -110,13 +110,11 @@ export const fetchWithTokenRefresh = async (url, options = {}) => {
 
   try {
     // TRACE: Interceptor entry point
-    debugger; // BREAKPOINT 1: Interceptor called
     console.log('🔵 [TRACE] fetchWithTokenRefresh CALLED:', url);
 
     // Execute original request
     const response = await fetch(url, fetchOptions);
 
-    debugger; // BREAKPOINT 2: Response received
     console.log('🔵 [TRACE] Response status:', response.status);
 
     // If not 401, return response immediately
@@ -137,13 +135,11 @@ export const fetchWithTokenRefresh = async (url, options = {}) => {
       errorData = await responseClone.json();
       console.log('🔵 [TRACE] 401 response body:', JSON.stringify(errorData));
 
-      debugger; // BREAKPOINT 3: About to check isDeviceRevoked
       console.log('🔵 [TRACE] Calling isDeviceRevoked...');
       const isRevoked = isDeviceRevoked(response, errorData);
       console.log('🔵 [TRACE] isDeviceRevoked result:', isRevoked);
 
       if (isRevoked) {
-        debugger; // BREAKPOINT 4: Device IS revoked
         console.log('🔵 [TRACE] Device IS revoked - calling handleDeviceRevocationLogout');
         handleDeviceRevocationLogout(errorData);
         return response; // Return original response (logout will redirect)
