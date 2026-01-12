@@ -1,9 +1,41 @@
 # 🗺️ Roadmap - RyderCupFriends Frontend
 
 > **Versión:** 1.11.4 → 2.1.0 (En Desarrollo)
-> **Última actualización:** 7 Ene 2026
+> **Última actualización:** 12 Ene 2026
 > **Estado:** 🚧 Preparando v2.1.0
 > **Stack:** React 18 + Vite 7 + Tailwind CSS 3.4 + TanStack Query + Zustand
+
+---
+
+## 🔥 Prioridad Inmediata (Hotfix Pendiente)
+
+### ❌ FIX: Safari iOS Device Detection (Bug Crítico en Producción)
+
+**Problema**: iOS Safari detecta dispositivos macOS Safari como "Dispositivo Actual"
+
+**Detalles**:
+- ✅ macOS Safari: Funciona correctamente (solo marca su propio dispositivo)
+- ❌ iOS Safari: Marca TAMBIÉN los dispositivos macOS como "Dispositivo Actual" (falso positivo)
+
+**Causa Probable**:
+- Backend puede estar enviando `deviceName` sin OS específico para iOS
+- Lógica de detección en frontend puede no estar validando correctamente el OS del navegador actual vs el OS del dispositivo
+
+**Investigación Necesaria**:
+1. Revisar qué `deviceName` envía el backend para dispositivos iOS Safari
+2. Verificar logs de desarrollo en dispositivo iOS real
+3. Comparar User-Agent de iOS vs lo que se guarda en backend
+4. Validar que la lógica no solo verifique "safari" sino que EXCLUYA si el OS no coincide
+
+**Archivos Involucrados**:
+- `src/hooks/useDeviceManagement.js` (líneas 92-165)
+- Backend: Device fingerprinting logic (verificar cómo se genera `device_name`)
+
+**Prioridad**: 🔴 ALTA - Afecta UX de seguridad en producción
+
+**Referencias**:
+- PR #92: Safari device detection initial fix
+- PR #93: Responsive improvements + flexible patterns
 
 ---
 
