@@ -15,7 +15,6 @@
  */
 
 import toast from 'react-hot-toast';
-import i18n from '../i18n/config';
 
 /**
  * Check if a response indicates device revocation
@@ -56,16 +55,15 @@ export const handleDeviceRevocationLogout = (errorData = {}) => {
     window.Sentry.setUser(null);
   }
 
-  // Show user-friendly toast with i18n message
+  // Show user-friendly toast message
   // Duration: 8 seconds (long enough to read)
-  // Fallback to English if i18n is not ready
-  let message;
-  try {
-    message = i18n.t('errors.deviceRevoked', { ns: 'auth' });
-  } catch (error) {
-    console.warn('[DeviceRevocation] i18n not ready, using fallback message');
-    message = 'Your session has been closed. This device was revoked from another device.';
-  }
+  // Use browser language to show appropriate message
+  const browserLang = navigator.language?.startsWith('es') ? 'es' : 'en';
+  const messages = {
+    es: 'Tu sesión ha sido cerrada. Este dispositivo fue revocado desde otro dispositivo.',
+    en: 'Your session has been closed. This device was revoked from another device.',
+  };
+  const message = messages[browserLang] || messages.en;
 
   toast.error(message, {
     duration: 8000,
