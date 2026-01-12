@@ -119,18 +119,22 @@ export const fetchWithTokenRefresh = async (url, options = {}) => {
 
     // Special case: Device Revocation (v1.13.1)
     // Check if 401 is due to device revocation (before attempting refresh)
+    // Clone response to avoid consuming the body
+    const responseClone = response.clone();
+    let errorData = {};
+
     try {
-      const responseClone = response.clone();
-      const errorData = await responseClone.json();
+      errorData = await responseClone.json();
+      console.log('🔍 [TokenRefresh] 401 response body:', errorData);
 
       if (isDeviceRevoked(response, errorData)) {
-        console.log('🚫 [TokenRefresh] Device revoked. Logging out...');
+        console.log('🚫 [TokenRefresh] Device revoked detected. Logging out...');
         handleDeviceRevocationLogout(errorData);
         return response; // Return original response (logout will redirect)
       }
     } catch (jsonError) {
       // If JSON parsing fails, continue with normal refresh flow
-      console.log('⚠️ [TokenRefresh] Could not parse 401 response body, continuing with refresh');
+      console.log('⚠️ [TokenRefresh] Could not parse 401 response body:', jsonError.message);
     }
 
     // Special case: Don't retry refresh token endpoint itself
