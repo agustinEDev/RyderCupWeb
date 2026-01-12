@@ -6,7 +6,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { isDeviceRevoked, handleDeviceRevocationLogout } from './deviceRevocationLogout';
 import toast from 'react-hot-toast';
-import i18n from '../i18n/config';
 
 // Mock toast
 vi.mock('react-hot-toast', () => ({
