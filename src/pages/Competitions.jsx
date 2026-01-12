@@ -13,6 +13,7 @@ import {
   getStatusColor,
   formatDateRange
 } from '../services/competitions';
+import { isDeviceRevoked, handleDeviceRevocationLogout } from '../utils/deviceRevocationLogout';
 
 // Helper function to get enrollment status classes
 const getEnrollmentStatusClasses = (status) => {
@@ -47,9 +48,22 @@ const Competitions = () => {
             'Content-Type': 'application/json',
           },
         });
+
         if (response.ok) {
           const userData = await response.json();
           setUser(userData);
+        } else if (response.status === 401) {
+          // Check if 401 is due to device revocation
+          try {
+            const errorData = await response.clone().json();
+            if (isDeviceRevoked(response, errorData)) {
+              // Device was revoked - handle logout
+              handleDeviceRevocationLogout(errorData);
+              return; // Logout handler will redirect
+            }
+          } catch (jsonError) {
+            // Could not parse response body, treat as normal 401
+          }
         }
       } catch (error) {
         console.error('Error loading user:', error);
