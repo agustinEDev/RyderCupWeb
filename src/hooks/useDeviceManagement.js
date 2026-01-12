@@ -109,9 +109,21 @@ export const useDeviceManagement = () => {
     if (currentUA.includes('Firefox')) {
       return deviceNameLower.includes('firefox');
     }
-    // Only match Safari if none of the above matched
+    // Safari: Match browser AND OS to distinguish macOS vs iOS
     if (currentUA.includes('Safari') && !currentUA.includes('Chrome')) {
-      return deviceNameLower.includes('safari');
+      if (!deviceNameLower.includes('safari')) return false;
+
+      // Distinguish between macOS Safari and iOS Safari
+      const isMacOS = currentUA.includes('Macintosh') || currentUA.includes('Mac OS X');
+      const isIOS = currentUA.includes('iPhone') || currentUA.includes('iPad') || currentUA.includes('iPod');
+
+      // Match macOS Safari
+      if (isMacOS && deviceNameLower.includes('macos')) return true;
+      // Match iOS Safari
+      if (isIOS && deviceNameLower.includes('ios')) return true;
+
+      // Fallback: If device name doesn't specify OS, don't mark as current
+      return false;
     }
 
     return false;

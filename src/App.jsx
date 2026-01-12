@@ -1,13 +1,15 @@
 /* eslint-disable react-refresh/only-export-components */
 import { useEffect, useCallback, lazy, Suspense, useState } from 'react';
-import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import * as Sentry from '@sentry/react';
 import PropTypes from 'prop-types';
 import ProtectedRoute from './components/auth/ProtectedRoute';
+import LazyLoadErrorBoundary from './components/errors/LazyLoadErrorBoundary';
 import { getUserData } from './hooks/useAuth';
-import { setUserContext, clearUserContext } from './utils/sentryHelpers';
+import { setUserContext } from './utils/sentryHelpers';
 import useInactivityLogout from './hooks/useInactivityLogout.jsx';
 import { onAuthEvent, EVENTS } from './utils/broadcastAuth';
+import { useLogout } from './hooks/useLogout';
 
 // Lazy loading de páginas para reducir bundle inicial
 const Landing = lazy(() => import('./pages/Landing'));
@@ -37,8 +39,8 @@ const SentryRoutes = Sentry.withSentryReactRouterV6Routing(Routes);
  * (necesita estar dentro de <Router> para usar useNavigate)
  */
 function AppContent() {
-  const navigate = useNavigate();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const { logout } = useLogout();
 
   // Establecer contexto de usuario en Sentry si está autenticado (via httpOnly cookie)
   useEffect(() => {
@@ -55,43 +57,13 @@ function AppContent() {
   }, []);
 
   /**
-   * Función de logout que se ejecuta por inactividad
-   * Llama al backend para revocar tokens y redirige a login
+   * Función de logout que se ejecuta por inactividad y broadcast
    * Wrapped in useCallback to prevent stale closures
    */
   const handleInactivityLogout = useCallback(async () => {
-    const API_URL = import.meta.env.VITE_API_BASE_URL || '';
-
-    try {
-      // Llamar al endpoint de logout del backend
-      const response = await fetch(`${API_URL}/api/v1/auth/logout`, {
-        method: 'POST',
-        credentials: 'include', // Enviar cookies httpOnly
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({}) // Backend espera body JSON
-      });
-
-      if (response.ok) {
-        // Logout successful
-      } else {
-        console.warn('⚠️ [App] Logout request failed, but proceeding with client-side logout');
-      }
-    } catch (error) {
-      console.error('❌ [App] Error during logout:', error);
-      // Continuar con logout del lado del cliente aunque falle el backend
-    } finally {
-      // Limpiar contexto de Sentry
-      clearUserContext();
-
-      // Actualizar estado local
-      setIsAuthenticated(false);
-
-      // Redirigir a login
-      navigate('/login', { replace: true });
-    }
-  }, [navigate]); // Dependencies: navigate
+    setIsAuthenticated(false);
+    await logout();
+  }, [logout]);
 
   /**
    * Listener de eventos de broadcast para sincronización multi-tab
@@ -119,19 +91,20 @@ function AppContent() {
   });
 
   return (
-    <Suspense fallback={
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        height: '100vh',
-        fontFamily: 'system-ui, sans-serif',
-        color: '#6b7280'
-      }}>
-        Loading...
-      </div>
-    }>
-      <SentryRoutes>
+    <LazyLoadErrorBoundary>
+      <Suspense fallback={
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          height: '100vh',
+          fontFamily: 'system-ui, sans-serif',
+          color: '#6b7280'
+        }}>
+          Loading...
+        </div>
+      }>
+        <SentryRoutes>
         {/* Public routes */}
         <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />
@@ -150,8 +123,9 @@ function AppContent() {
         <Route path="/competitions/create" element={<ProtectedRoute><CreateCompetition /></ProtectedRoute>} />
         <Route path="/competitions/:id" element={<ProtectedRoute><CompetitionDetail /></ProtectedRoute>} />
         <Route path="/browse-competitions" element={<ProtectedRoute><BrowseCompetitions /></ProtectedRoute>} />
-      </SentryRoutes>
-    </Suspense>
+        </SentryRoutes>
+      </Suspense>
+    </LazyLoadErrorBoundary>
   );
 }
 

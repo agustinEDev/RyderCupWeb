@@ -4,15 +4,15 @@ import { useRef, useEffect } from 'react';
 import HeaderAuth from '../components/layout/HeaderAuth';
 import { useDeviceManagement } from '../hooks/useDeviceManagement';
 import { useAuth } from '../hooks/useAuth';
-import { useAuthContext } from '../hooks/useAuthContext';
+import { useLogout } from '../hooks/useLogout';
 import { formatDateTime } from '../utils/dateFormatters';
 
 const DeviceManagement = () => {
   const { t } = useTranslation('devices');
   const { user } = useAuth();
-  const { clearAuth } = useAuthContext();
   const navigate = useNavigate();
   const timeoutRef = useRef(null);
+  const { logout } = useLogout();
 
   const {
     devices,
@@ -36,19 +36,16 @@ const DeviceManagement = () => {
 
     const success = await revokeDevice(device.id);
 
-    // If current device was revoked, clear auth and redirect to login
+    // If current device was revoked, logout after delay for toast visibility
     if (success && isCurrent) {
       // Clear any existing timer before setting a new one
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
       }
 
-      // Clear client auth state immediately
-      clearAuth();
-
-      // Navigate to login after brief delay for toast visibility
+      // Logout after brief delay for toast visibility
       timeoutRef.current = setTimeout(() => {
-        navigate('/login', { replace: true });
+        logout();
       }, 2000);
     }
   };
