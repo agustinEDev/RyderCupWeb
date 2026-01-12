@@ -95,6 +95,14 @@ export const useDeviceManagement = () => {
     const currentUA = navigator.userAgent;
     const deviceNameLower = device.deviceName.toLowerCase();
 
+    // Debug logging (only in development)
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[isCurrentDevice] Checking device:', {
+        deviceName: device.deviceName,
+        userAgent: currentUA,
+      });
+    }
+
     // Priority order: Edge/Opera first, then Chrome, then Firefox, then Safari
     // This prevents Chrome from matching Safari (since Chrome UA contains "Safari")
     if (currentUA.includes('Edg')) {
@@ -109,6 +117,7 @@ export const useDeviceManagement = () => {
     if (currentUA.includes('Firefox')) {
       return deviceNameLower.includes('firefox');
     }
+
     // Safari: Match browser AND OS to distinguish macOS vs iOS
     if (currentUA.includes('Safari') && !currentUA.includes('Chrome')) {
       if (!deviceNameLower.includes('safari')) return false;
@@ -117,12 +126,38 @@ export const useDeviceManagement = () => {
       const isMacOS = currentUA.includes('Macintosh') || currentUA.includes('Mac OS X');
       const isIOS = currentUA.includes('iPhone') || currentUA.includes('iPad') || currentUA.includes('iPod');
 
-      // Match macOS Safari
-      if (isMacOS && deviceNameLower.includes('macos')) return true;
-      // Match iOS Safari
-      if (isIOS && deviceNameLower.includes('ios')) return true;
+      // Check OS match with more flexible patterns
+      if (isMacOS) {
+        // Match if deviceName contains: 'macos', 'mac os', 'macintosh', or 'mac'
+        const isMacOSDevice =
+          deviceNameLower.includes('macos') ||
+          deviceNameLower.includes('mac os') ||
+          deviceNameLower.includes('macintosh') ||
+          (deviceNameLower.includes('mac') && !deviceNameLower.includes('iphone'));
 
-      // Fallback: If device name doesn't specify OS, don't mark as current
+        if (process.env.NODE_ENV === 'development') {
+          console.log('[isCurrentDevice] macOS Safari check:', { isMacOSDevice, deviceNameLower });
+        }
+
+        return isMacOSDevice;
+      }
+
+      if (isIOS) {
+        // Match if deviceName contains: 'ios', 'iphone', 'ipad', or 'ipod'
+        const isIOSDevice =
+          deviceNameLower.includes('ios') ||
+          deviceNameLower.includes('iphone') ||
+          deviceNameLower.includes('ipad') ||
+          deviceNameLower.includes('ipod');
+
+        if (process.env.NODE_ENV === 'development') {
+          console.log('[isCurrentDevice] iOS Safari check:', { isIOSDevice, deviceNameLower });
+        }
+
+        return isIOSDevice;
+      }
+
+      // Fallback: If we can't determine OS, don't mark as current
       return false;
     }
 
