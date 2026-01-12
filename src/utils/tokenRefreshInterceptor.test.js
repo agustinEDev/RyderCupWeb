@@ -30,6 +30,19 @@ globalThis.sessionStorage = {
   clear: vi.fn(),
 };
 
+// Helper to create mock response with clone() method
+const createMockResponse = (config) => {
+  const response = {
+    ok: config.ok ?? true,
+    status: config.status ?? 200,
+    statusText: config.statusText ?? 'OK',
+    json: config.json ?? (async () => ({})),
+    clone: vi.fn(() => createMockResponse(config)),
+    ...config,
+  };
+  return response;
+};
+
 describe('tokenRefreshInterceptor', () => {
   beforeEach(() => {
     // Reset mocks before each test
@@ -95,11 +108,11 @@ describe('tokenRefreshInterceptor', () => {
   describe('fetchWithTokenRefresh', () => {
     it('should return response directly if not 401', async () => {
       // Mock successful response (200)
-      const mockResponse = {
+      const mockResponse = createMockResponse({
         ok: true,
         status: 200,
         json: async () => ({ data: 'test' }),
-      };
+      });
       globalThis.fetch.mockResolvedValueOnce(mockResponse);
 
       const result = await fetchWithTokenRefresh('http://localhost:8000/api/v1/test');
@@ -110,25 +123,26 @@ describe('tokenRefreshInterceptor', () => {
 
     it('should refresh token and retry request on 401', async () => {
       // First call: 401 (access token expired)
-      globalThis.fetch.mockResolvedValueOnce({
+      globalThis.fetch.mockResolvedValueOnce(createMockResponse({
         ok: false,
         status: 401,
         statusText: 'Unauthorized',
-      });
+        json: async () => ({ detail: 'Token expired' }),
+      }));
 
       // Second call: successful refresh
-      globalThis.fetch.mockResolvedValueOnce({
+      globalThis.fetch.mockResolvedValueOnce(createMockResponse({
         ok: true,
         status: 200,
         json: async () => ({ message: 'Token refreshed' }),
-      });
+      }));
 
       // Third call: retry original request with new token (success)
-      const mockSuccessResponse = {
+      const mockSuccessResponse = createMockResponse({
         ok: true,
         status: 200,
         json: async () => ({ data: 'test' }),
-      };
+      });
       globalThis.fetch.mockResolvedValueOnce(mockSuccessResponse);
 
       const result = await fetchWithTokenRefresh('http://localhost:8000/api/v1/test');
@@ -142,18 +156,19 @@ describe('tokenRefreshInterceptor', () => {
 
     it('should redirect to login if refresh token also expired', async () => {
       // First call: 401 (access token expired)
-      globalThis.fetch.mockResolvedValueOnce({
+      globalThis.fetch.mockResolvedValueOnce(createMockResponse({
         ok: false,
         status: 401,
         statusText: 'Unauthorized',
-      });
+        json: async () => ({ detail: 'Token expired' }),
+      }));
 
       // Second call: refresh fails with 401 (refresh token expired)
-      globalThis.fetch.mockResolvedValueOnce({
+      globalThis.fetch.mockResolvedValueOnce(createMockResponse({
         ok: false,
         status: 401,
         statusText: 'Unauthorized',
-      });
+      }));
 
       const result = await fetchWithTokenRefresh('http://localhost:8000/api/v1/test');
 
@@ -166,11 +181,12 @@ describe('tokenRefreshInterceptor', () => {
 
     it('should not retry refresh endpoint itself', async () => {
       // Mock 401 response from refresh endpoint itself
-      const mockResponse = {
+      const mockResponse = createMockResponse({
         ok: false,
         status: 401,
         statusText: 'Unauthorized',
-      };
+        json: async () => ({ detail: 'Refresh token expired' }),
+      });
       globalThis.fetch.mockResolvedValueOnce(mockResponse);
 
       const result = await fetchWithTokenRefresh('http://localhost:8000/api/v1/auth/refresh-token');
@@ -184,33 +200,35 @@ describe('tokenRefreshInterceptor', () => {
       // Mock all fetch calls upfront
       // First two calls: 401 for both requests
       globalThis.fetch
-        .mockResolvedValueOnce({
+        .mockResolvedValueOnce(createMockResponse({
           ok: false,
           status: 401,
           statusText: 'Unauthorized',
-        })
-        .mockResolvedValueOnce({
+          json: async () => ({ detail: 'Token expired' }),
+        }))
+        .mockResolvedValueOnce(createMockResponse({
           ok: false,
           status: 401,
           statusText: 'Unauthorized',
-        })
+          json: async () => ({ detail: 'Token expired' }),
+        }))
         // Third call: successful refresh (should only happen once)
-        .mockResolvedValueOnce({
+        .mockResolvedValueOnce(createMockResponse({
           ok: true,
           status: 200,
           json: async () => ({ message: 'Token refreshed' }),
-        })
+        }))
         // Fourth and fifth calls: retry both original requests
-        .mockResolvedValueOnce({
+        .mockResolvedValueOnce(createMockResponse({
           ok: true,
           status: 200,
           json: async () => ({ data: 'test1' }),
-        })
-        .mockResolvedValueOnce({
+        }))
+        .mockResolvedValueOnce(createMockResponse({
           ok: true,
           status: 200,
           json: async () => ({ data: 'test2' }),
-        });
+        }));
 
       // Simulate multiple concurrent requests receiving 401
       const request1Promise = fetchWithTokenRefresh('http://localhost:8000/api/v1/test1');
@@ -233,11 +251,11 @@ describe('tokenRefreshInterceptor', () => {
 
     it('should always include credentials in requests', async () => {
       // Mock successful response
-      globalThis.fetch.mockResolvedValueOnce({
+      globalThis.fetch.mockResolvedValueOnce(createMockResponse({
         ok: true,
         status: 200,
         json: async () => ({ data: 'test' }),
-      });
+      }));
 
       await fetchWithTokenRefresh('http://localhost:8000/api/v1/test', {
         method: 'POST',
@@ -257,11 +275,11 @@ describe('tokenRefreshInterceptor', () => {
   describe('isSessionValid', () => {
     it('should return true if refresh succeeds', async () => {
       // Mock successful refresh
-      globalThis.fetch.mockResolvedValueOnce({
+      globalThis.fetch.mockResolvedValueOnce(createMockResponse({
         ok: true,
         status: 200,
         json: async () => ({ message: 'Token refreshed' }),
-      });
+      }));
 
       const result = await isSessionValid();
 
