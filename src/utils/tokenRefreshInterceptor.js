@@ -109,13 +109,22 @@ export const fetchWithTokenRefresh = async (url, options = {}) => {
   };
 
   try {
+    // TRACE: Interceptor entry point
+    debugger; // BREAKPOINT 1: Interceptor called
+    console.log('🔵 [TRACE] fetchWithTokenRefresh CALLED:', url);
+
     // Execute original request
     const response = await fetch(url, fetchOptions);
+
+    debugger; // BREAKPOINT 2: Response received
+    console.log('🔵 [TRACE] Response status:', response.status);
 
     // If not 401, return response immediately
     if (response.status !== 401) {
       return response;
     }
+
+    console.log('🔵 [TRACE] Got 401, checking for device revocation...');
 
     // Special case: Device Revocation (v1.13.1)
     // Check if 401 is due to device revocation (before attempting refresh)
@@ -124,17 +133,26 @@ export const fetchWithTokenRefresh = async (url, options = {}) => {
     let errorData = {};
 
     try {
+      console.log('🔵 [TRACE] Attempting to parse 401 response body...');
       errorData = await responseClone.json();
-      console.log('🔍 [TokenRefresh] 401 response body:', errorData);
+      console.log('🔵 [TRACE] 401 response body:', JSON.stringify(errorData));
 
-      if (isDeviceRevoked(response, errorData)) {
-        console.log('🚫 [TokenRefresh] Device revoked detected. Logging out...');
+      debugger; // BREAKPOINT 3: About to check isDeviceRevoked
+      console.log('🔵 [TRACE] Calling isDeviceRevoked...');
+      const isRevoked = isDeviceRevoked(response, errorData);
+      console.log('🔵 [TRACE] isDeviceRevoked result:', isRevoked);
+
+      if (isRevoked) {
+        debugger; // BREAKPOINT 4: Device IS revoked
+        console.log('🔵 [TRACE] Device IS revoked - calling handleDeviceRevocationLogout');
         handleDeviceRevocationLogout(errorData);
         return response; // Return original response (logout will redirect)
+      } else {
+        console.log('🔵 [TRACE] Device NOT revoked - continuing with normal refresh flow');
       }
     } catch (jsonError) {
       // If JSON parsing fails, continue with normal refresh flow
-      console.log('⚠️ [TokenRefresh] Could not parse 401 response body:', jsonError.message);
+      console.log('🔵 [TRACE] Could not parse 401 response body:', jsonError.message);
     }
 
     // Special case: Don't retry refresh token endpoint itself
@@ -146,6 +164,14 @@ export const fetchWithTokenRefresh = async (url, options = {}) => {
     // Special case: Don't retry login endpoint - let it fail naturally
     if (url.includes('/auth/login')) {
       console.log('🚫 [TokenRefresh] Login endpoint returned 401. Invalid credentials - not retrying.');
+      return response;
+    }
+
+    // Special case: If we're on public pages (login, register, etc), don't attempt refresh
+    const currentPath = globalThis.location?.pathname || '';
+    const isPublicPage = ['/login', '/register', '/forgot-password', '/reset-password', '/'].includes(currentPath);
+    if (isPublicPage && url.includes('/current-user')) {
+      console.log('🚫 [TokenRefresh] On public page, not attempting refresh for current-user check');
       return response;
     }
 

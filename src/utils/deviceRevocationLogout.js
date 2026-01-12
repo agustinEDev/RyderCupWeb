@@ -16,6 +16,17 @@
 
 import toast from 'react-hot-toast';
 
+// localStorage key to track if we've already handled device revocation
+const REVOCATION_HANDLED_KEY = 'device_revocation_handled';
+
+/**
+ * Clear the device revocation handled flag
+ * Should be called when user successfully authenticates
+ */
+export const clearDeviceRevocationFlag = () => {
+  localStorage.removeItem(REVOCATION_HANDLED_KEY);
+};
+
 /**
  * Check if a response indicates device revocation
  * @param {Object} response - Fetch response object
@@ -41,6 +52,24 @@ export const isDeviceRevoked = (response, errorData = {}) => {
  * @param {Object} errorData - Error data from backend (optional, for logging)
  */
 export const handleDeviceRevocationLogout = (errorData = {}) => {
+  const alreadyHandled = localStorage.getItem(REVOCATION_HANDLED_KEY);
+
+  // If already on login page and already handled, do nothing
+  if (alreadyHandled && window.location.pathname === '/login') {
+    console.log('🔵 [DeviceRevocation] Already on login page, skipping...');
+    return;
+  }
+
+  // If already handled but not on login, just redirect (no toast to avoid spam)
+  if (alreadyHandled) {
+    console.log('🔵 [DeviceRevocation] Already handled, redirecting to login...');
+    window.location.href = '/login';
+    return;
+  }
+
+  // First time handling - do full logout flow
+  localStorage.setItem(REVOCATION_HANDLED_KEY, 'true');
+
   if (import.meta.env.DEV) {
     console.warn('🚫 [DeviceRevocation] Device has been revoked');
     console.log('🚫 [DeviceRevocation] Backend message:', errorData.detail || 'No details');
