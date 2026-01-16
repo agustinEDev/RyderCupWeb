@@ -130,7 +130,7 @@
 ---
 
 #### **✅ Fix #6: Violación de Clean Architecture + i18n Error Handling** - COMPLETADO
-**Commit:** `[pending]` | **Tests:** 69/69 passing (+8 nuevos) | **Tiempo:** 3.5h
+**Commit:** `9984c0e` | **Tests:** 69/69 passing (+8 nuevos) | **Tiempo:** 3.5h
 
 **Archivos:** `ApiDeviceRepository.js` (refactorizado), `useDeviceManagement.js` (i18n), `devices.json` (ES/EN)
 **Problema resuelto:** Hook interpretaba códigos HTTP (responsabilidad del Repository) + errores sin i18n
