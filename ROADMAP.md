@@ -103,7 +103,7 @@
 ### 🟠 Sprint 2: Fixes Medios (Prioridad Media) - 1-2 días
 
 #### **✅ Fix #4: Validación Inconsistente en RevokeDeviceUseCase** - COMPLETADO
-**Commit:** `[pending]` | **Tests:** 23/23 passing (+13 nuevos) | **Tiempo:** 1.5h
+**Commit:** `7f9c163` | **Tests:** 23/23 passing (+13 nuevos) | **Tiempo:** 1.5h
 
 **Archivo:** `src/application/use_cases/device/RevokeDeviceUseCase.js:28-42`
 **Problema resuelto:** NO validaba respuesta (inconsistente con GetActiveDevicesUseCase)
