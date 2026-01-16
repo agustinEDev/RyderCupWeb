@@ -102,15 +102,30 @@
 
 ### 🟠 Sprint 2: Fixes Medios (Prioridad Media) - 1-2 días
 
-#### **Fix #4: Validación Inconsistente en RevokeDeviceUseCase**
-**Archivo:** `src/application/use_cases/device/RevokeDeviceUseCase.js:28`
-**Problema:** NO valida respuesta (inconsistente con GetActiveDevicesUseCase)
+#### **✅ Fix #4: Validación Inconsistente en RevokeDeviceUseCase** - COMPLETADO
+**Commit:** `[pending]` | **Tests:** 23/23 passing (+13 nuevos) | **Tiempo:** 1.5h
 
-**Solución:**
-- [ ] Agregar validación igual que GetActiveDevicesUseCase
-- [ ] Tests: Casos de error de respuesta inválida
+**Archivo:** `src/application/use_cases/device/RevokeDeviceUseCase.js:28-42`
+**Problema resuelto:** NO validaba respuesta (inconsistente con GetActiveDevicesUseCase)
 
-**Estimación:** 2h
+**Solución implementada:**
+- ✅ Validación de 3 capas: object (no array), message (string), device_id (string)
+- ✅ 13 tests nuevos de edge cases
+- ✅ Consistencia con GetActiveDevicesUseCase
+
+**Tests cubiertos:**
+- ✅ Repository returns null/undefined → throws error
+- ✅ Repository returns non-object (string, number, array) → throws error
+- ✅ message is missing/null/non-string → throws error
+- ✅ device_id is missing/null/non-string → throws error
+- ✅ Valid response with all required fields → success
+- ✅ Edge case: empty string message (valid) → success
+
+**Archivos modificados:**
+- `src/application/use_cases/device/RevokeDeviceUseCase.js` (+11 líneas validación)
+- `src/application/use_cases/device/RevokeDeviceUseCase.test.js` (+135 líneas tests)
+
+**Estimación:** 2h | **Real:** 1.5h
 
 ---
 
