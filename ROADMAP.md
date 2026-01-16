@@ -202,7 +202,7 @@
 ---
 
 #### **✅ Fix #8: Regex Matching with Word Boundaries** - COMPLETADO
-**Commit:** `[pending]` | **Tests:** 23/23 passing (+7 nuevos) | **Tiempo:** 2h
+**Commit:** `fba5c90` | **Tests:** 23/23 passing (+7 nuevos) | **Tiempo:** 2h
 
 **Archivo:** `src/hooks/useDeviceManagement.js:111-178` (refactorizado)
 **Problema resuelto:** `.includes()` causaba falsos positivos (chromatic→Chrome, SafariCom→Safari, operator→Opera)
