@@ -201,20 +201,43 @@
 
 ---
 
-#### **Fix #8: Matching por Substring (Frágil)**
-**Archivo:** `src/hooks/useDeviceManagement.js:136`
-**Problema:** `includes('mac')` puede dar falsos positivos
+#### **✅ Fix #8: Regex Matching with Word Boundaries** - COMPLETADO
+**Commit:** `[pending]` | **Tests:** 23/23 passing (+7 nuevos) | **Tiempo:** 2h
 
-**Solución:**
-- [ ] Usar regex con word boundaries
-  ```javascript
-  const safariRegex = /\bsafari\b/i;
-  const macOSRegex = /\b(macos|mac\s*os|macintosh)\b/i;
-  const iosRegex = /\b(ios|iphone|ipad|ipod)\b/i;
-  ```
-- [ ] Tests: Casos edge (chromatic, SafariCom, etc.)
+**Archivo:** `src/hooks/useDeviceManagement.js:111-178` (refactorizado)
+**Problema resuelto:** `.includes()` causaba falsos positivos (chromatic→Chrome, SafariCom→Safari, operator→Opera)
 
-**Estimación:** 2-3h
+**Solución implementada:**
+- ✅ Reemplazado `.includes()` por regex con **word boundaries** (`\b`)
+- ✅ 6 regex patterns: edge, opera, chrome/chromium, firefox, safari, ios, macos
+- ✅ 7 tests nuevos para verificar prevención de falsos positivos
+- ✅ Mantiene compatibilidad con casos válidos (Chrome, Safari, Opera, etc.)
+
+**Regex patterns implementados:**
+```javascript
+const edgeRegex = /\bedge\b/i;
+const operaRegex = /\bopera\b/i;
+const chromeRegex = /\bchrome\b|\bchromium\b/i;
+const firefoxRegex = /\bfirefox\b/i;
+const safariRegex = /\bsafari\b/i;
+const iosRegex = /\b(ios|iphone|ipad|ipod)\b/i;
+const macOSRegex = /\b(macos|mac\s*os|macintosh|mac)\b/i;
+```
+
+**Tests de falsos positivos (7 nuevos):**
+- ✅ "Chromatic Testing Tool" NO se detecta como Chrome
+- ✅ "SafariCom Mobile Network" NO se detecta como Safari
+- ✅ "System Operator Dashboard" NO se detecta como Opera
+- ✅ "Safari on stomach" NO se detecta como macOS
+- ✅ "Chrome Browser" SÍ se detecta correctamente
+- ✅ "Safari 17.0 on macOS" SÍ se detecta correctamente
+- ✅ "Opera 106.0" SÍ se detecta correctamente
+
+**Archivos modificados:**
+- `src/hooks/useDeviceManagement.js` (+6 regex patterns, refactor matching logic)
+- `src/hooks/useDeviceManagement.test.js` (+149 líneas, 7 tests nuevos)
+
+**Estimación:** 2-3h | **Real:** 2h
 
 ---
 

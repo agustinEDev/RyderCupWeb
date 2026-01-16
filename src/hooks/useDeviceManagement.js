@@ -90,6 +90,7 @@ export const useDeviceManagement = () => {
 
   /**
    * Checks if a device is the current one based on User-Agent
+   * Uses regex with word boundaries to prevent false positives
    * @param {Object} device - The device object
    * @returns {boolean}
    */
@@ -107,24 +108,32 @@ export const useDeviceManagement = () => {
       });
     }
 
+    // Regex patterns with word boundaries to prevent false positives
+    // \b ensures we match whole words, not substrings within other words
+    const edgeRegex = /\bedge\b/i;
+    const operaRegex = /\bopera\b/i;
+    const chromeRegex = /\bchrome\b|\bchromium\b/i;
+    const firefoxRegex = /\bfirefox\b/i;
+
     // Priority order: Edge/Opera first, then Chrome, then Firefox, then Safari
     // This prevents Chrome from matching Safari (since Chrome UA contains "Safari")
     if (currentUA.includes('Edg')) {
-      return deviceNameLower.includes('edge');
+      return edgeRegex.test(deviceNameLower);
     }
     if (currentUA.includes('OPR') || currentUA.includes('Opera')) {
-      return deviceNameLower.includes('opera');
+      return operaRegex.test(deviceNameLower);
     }
     if (currentUA.includes('Chrome') || currentUA.includes('Chromium')) {
-      return deviceNameLower.includes('chrome');
+      return chromeRegex.test(deviceNameLower);
     }
     if (currentUA.includes('Firefox')) {
-      return deviceNameLower.includes('firefox');
+      return firefoxRegex.test(deviceNameLower);
     }
 
     // Safari: Match browser AND OS to distinguish macOS vs iOS
     if (currentUA.includes('Safari') && !currentUA.includes('Chrome')) {
-      if (!deviceNameLower.includes('safari')) return false;
+      const safariRegex = /\bsafari\b/i;
+      if (!safariRegex.test(deviceNameLower)) return false;
 
       // Distinguish between macOS Safari and iOS Safari
       const isMacOS = currentUA.includes('Macintosh') || currentUA.includes('Mac OS X');
@@ -135,15 +144,14 @@ export const useDeviceManagement = () => {
                     // iPadOS 13+ identifies as Macintosh but has touch capabilities
                     (currentUA.includes('Macintosh') && navigator.maxTouchPoints > 1);
 
+      // Regex patterns for OS detection with word boundaries
+      const iosRegex = /\b(ios|iphone|ipad|ipod)\b/i;
+      const macOSRegex = /\b(macos|mac\s*os|macintosh|mac)\b/i;
+
       // Check OS match with more flexible patterns
       // IMPORTANT: Check iOS first, as iPadOS 13+ matches both isMacOS and isIOS
       if (isIOS) {
-        // Match if deviceName contains: 'ios', 'iphone', 'ipad', or 'ipod'
-        const isIOSDevice =
-          deviceNameLower.includes('ios') ||
-          deviceNameLower.includes('iphone') ||
-          deviceNameLower.includes('ipad') ||
-          deviceNameLower.includes('ipod');
+        const isIOSDevice = iosRegex.test(deviceNameLower);
 
         if (process.env.NODE_ENV === 'development') {
           console.log('[isCurrentDevice] iOS Safari check:', { isIOSDevice, deviceNameLower });
@@ -154,12 +162,9 @@ export const useDeviceManagement = () => {
 
       // Check macOS Safari (only if NOT iOS/iPadOS)
       if (isMacOS && !isIOS) {
-        // Match if deviceName contains: 'macos', 'mac os', 'macintosh', or 'mac'
-        const isMacOSDevice =
-          deviceNameLower.includes('macos') ||
-          deviceNameLower.includes('mac os') ||
-          deviceNameLower.includes('macintosh') ||
-          (deviceNameLower.includes('mac') && !deviceNameLower.includes('iphone'));
+        // Match macOS but NOT if it contains iPhone (prevents false positives)
+        const isMacOSDevice = macOSRegex.test(deviceNameLower) &&
+                              !deviceNameLower.includes('iphone');
 
         if (process.env.NODE_ENV === 'development') {
           console.log('[isCurrentDevice] macOS Safari check:', { isMacOSDevice, deviceNameLower });

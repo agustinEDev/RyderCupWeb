@@ -254,6 +254,157 @@ describe('useDeviceManagement', () => {
       });
     });
 
+    describe('Regex word boundary tests (prevents false positives)', () => {
+      it('should NOT match "chromatic" as Chrome', () => {
+        Object.defineProperty(navigator, 'userAgent', {
+          writable: true,
+          value: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        });
+
+        composition.getActiveDevicesUseCase.execute.mockResolvedValue({
+          devices: [],
+          total_count: 0,
+        });
+
+        const { result } = renderHook(() => useDeviceManagement());
+
+        const chromaticDevice = {
+          id: 'device-chromatic',
+          deviceName: 'Chromatic Testing Tool',
+        };
+
+        expect(result.current.isCurrentDevice(chromaticDevice)).toBe(false);
+      });
+
+      it('should NOT match "SafariCom" as Safari', () => {
+        Object.defineProperty(navigator, 'userAgent', {
+          writable: true,
+          value: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15',
+        });
+
+        composition.getActiveDevicesUseCase.execute.mockResolvedValue({
+          devices: [],
+          total_count: 0,
+        });
+
+        const { result } = renderHook(() => useDeviceManagement());
+
+        const safaricomDevice = {
+          id: 'device-safaricom',
+          deviceName: 'SafariCom Mobile Network',
+        };
+
+        expect(result.current.isCurrentDevice(safaricomDevice)).toBe(false);
+      });
+
+      it('should NOT match "operator" as Opera', () => {
+        Object.defineProperty(navigator, 'userAgent', {
+          writable: true,
+          value: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 OPR/106.0.0.0',
+        });
+
+        composition.getActiveDevicesUseCase.execute.mockResolvedValue({
+          devices: [],
+          total_count: 0,
+        });
+
+        const { result } = renderHook(() => useDeviceManagement());
+
+        const operatorDevice = {
+          id: 'device-operator',
+          deviceName: 'System Operator Dashboard',
+        };
+
+        expect(result.current.isCurrentDevice(operatorDevice)).toBe(false);
+      });
+
+      it('should MATCH "Chrome" with word boundary', () => {
+        Object.defineProperty(navigator, 'userAgent', {
+          writable: true,
+          value: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        });
+
+        composition.getActiveDevicesUseCase.execute.mockResolvedValue({
+          devices: [],
+          total_count: 0,
+        });
+
+        const { result } = renderHook(() => useDeviceManagement());
+
+        const chromeDevice = {
+          id: 'device-chrome',
+          deviceName: 'Chrome Browser 120.0',
+        };
+
+        expect(result.current.isCurrentDevice(chromeDevice)).toBe(true);
+      });
+
+      it('should MATCH "Safari" with word boundary', () => {
+        Object.defineProperty(navigator, 'userAgent', {
+          writable: true,
+          value: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15',
+        });
+
+        composition.getActiveDevicesUseCase.execute.mockResolvedValue({
+          devices: [],
+          total_count: 0,
+        });
+
+        const { result } = renderHook(() => useDeviceManagement());
+
+        const safariDevice = {
+          id: 'device-safari',
+          deviceName: 'Safari 17.0 on macOS',
+        };
+
+        expect(result.current.isCurrentDevice(safariDevice)).toBe(true);
+      });
+
+      it('should MATCH "Opera" with word boundary', () => {
+        Object.defineProperty(navigator, 'userAgent', {
+          writable: true,
+          value: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 OPR/106.0.0.0',
+        });
+
+        composition.getActiveDevicesUseCase.execute.mockResolvedValue({
+          devices: [],
+          total_count: 0,
+        });
+
+        const { result } = renderHook(() => useDeviceManagement());
+
+        const operaDevice = {
+          id: 'device-opera',
+          deviceName: 'Opera 106.0 on macOS',
+        };
+
+        expect(result.current.isCurrentDevice(operaDevice)).toBe(true);
+      });
+
+      it('should NOT match "stomach" as Mac', () => {
+        Object.defineProperty(navigator, 'userAgent', {
+          writable: true,
+          value: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15',
+        });
+
+        composition.getActiveDevicesUseCase.execute.mockResolvedValue({
+          devices: [],
+          total_count: 0,
+        });
+
+        const { result } = renderHook(() => useDeviceManagement());
+
+        const stomachDevice = {
+          id: 'device-stomach',
+          deviceName: 'Safari on stomach pain device',
+        };
+
+        // Should match Safari, but 'stomach' should not match as macOS
+        // This is a pathological case, but tests the regex is working
+        expect(result.current.isCurrentDevice(stomachDevice)).toBe(false);
+      });
+    });
+
     describe('Edge cases', () => {
       it('should return false for null device', () => {
         composition.getActiveDevicesUseCase.execute.mockResolvedValue({
