@@ -25,93 +25,78 @@
 
 ---
 
-### 🔴 Sprint 1: Fixes Críticos (Prioridad Alta) - 1-2 días
+### ✅ Sprint 1: Fixes Críticos - COMPLETADO (16 Ene 2026)
 
-#### **Fix #7: iOS Safari Device Detection (Bug Crítico Documentado)**
-**Archivo:** `src/hooks/useDeviceManagement.js:121-162`
-**Problema:** iOS Safari detecta dispositivos macOS como "Dispositivo Actual"
+**Estado:** ✅ 3/3 fixes completados | **Tiempo:** 7.5h (estimado 7-11h)
 
-**Causa raíz identificada:**
-1. ❌ Backend puede generar `device_name` ambiguos ("Safari on Mac" sin especificar iOS/macOS)
-2. ❌ iPadOS 13+ se identifica como macOS en User-Agent (no detectado actualmente)
+#### **✅ Fix #7: iOS Safari Device Detection** - COMPLETADO
+**Commit:** `7fea6ee` | **Tests:** 16/16 passing | **Tiempo:** 4.5h
 
-**Solución:**
-- [ ] **Frontend**: Agregar detección de iPadOS 13+ por touch support
-  ```javascript
-  const isIOS = currentUA.includes('iPhone') ||
-                currentUA.includes('iPad') ||
-                currentUA.includes('iPod') ||
-                // iPadOS 13+ se identifica como Mac pero tiene touch
-                (currentUA.includes('Macintosh') && navigator.maxTouchPoints > 1);
-  ```
-- [ ] **Backend** (coordinación necesaria): Verificar generación de `device_name` para iOS Safari
-- [ ] **Tests**: Agregar casos para iPadOS 13+ en `useDeviceManagement.test.js`
+**Problema resuelto:**
+- iPadOS 13+ se identifica como macOS en User-Agent
+- iOS Safari detectaba dispositivos macOS como "Dispositivo Actual"
 
-**Archivos afectados:**
-- `src/hooks/useDeviceManagement.js`
-- `src/hooks/useDeviceManagement.test.js` (nuevo)
+**Solución implementada:**
+- ✅ Detección de iPadOS 13+ usando `navigator.maxTouchPoints > 1`
+- ✅ Reordenamiento de checks: iOS primero, luego macOS (excluye iOS)
+- ✅ Archivo nuevo: `src/hooks/useDeviceManagement.test.js` (16 tests)
 
-**Estimación:** 4-6h (incluyendo tests y validación en dispositivos reales)
+**Tests cubiertos:**
+- ✅ iPadOS 13+ detection (touch + Macintosh UA)
+- ✅ macOS Safari NOT detected as iPad device
+- ✅ iPadOS NOT detected as macOS device
+- ✅ iPhone, old iPad, Chrome, Firefox, Edge detection
+- ✅ Edge cases: null device, mismatched browser
 
----
-
-#### **Fix #5: Crash Potencial en ApiDeviceRepository**
-**Archivo:** `src/infrastructure/repositories/ApiDeviceRepository.js:27`
-**Problema:** NO valida respuesta de API antes de `.map()` → crash si `data.devices` es null
-
-**Solución:**
-- [ ] Agregar validación de respuesta antes de mapear
-  ```javascript
-  async getActiveDevices() {
-    const data = await apiRequest('/api/v1/users/me/devices', { method: 'GET' });
-
-    if (!data || typeof data !== 'object') {
-      throw new Error('Invalid API response: expected object');
-    }
-    if (!Array.isArray(data.devices)) {
-      throw new Error('Invalid API response: devices must be an array');
-    }
-    if (typeof data.total_count !== 'number') {
-      throw new Error('Invalid API response: total_count must be a number');
-    }
-
-    const devices = data.devices.map(deviceDto => new Device(deviceDto));
-    return { devices, total_count: data.total_count };
-  }
-  ```
-- [ ] **Tests**: Agregar casos de error en `ApiDeviceRepository.test.js`
-
-**Estimación:** 2-3h
+**Archivos modificados:**
+- `src/hooks/useDeviceManagement.js` (líneas 127-165)
+- `src/hooks/useDeviceManagement.test.js` (nuevo, 434 líneas)
 
 ---
 
-#### **Fix #13: Race Condition en Logout Timeout**
-**Archivo:** `src/pages/DeviceManagement.jsx:40-50`
-**Problema:** Timeout NO se limpia si usuario revoca múltiples dispositivos → logout inesperado
+#### **✅ Fix #5: API Response Validation** - COMPLETADO
+**Commit:** `a6aceca` | **Tests:** 16/16 passing (+6 nuevos) | **Tiempo:** 2h
 
-**Solución:**
-- [ ] Limpiar timeout SIEMPRE antes de revocar
-  ```javascript
-  const handleRevokeClick = async (device) => {
-    // Limpiar timeout ANTES de cualquier operación
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-      timeoutRef.current = null;
-    }
+**Problema resuelto:**
+- NO validación de respuesta API antes de `.map()`
+- Crash potencial: `TypeError: Cannot read properties of null (reading 'map')`
 
-    const isCurrent = isCurrentDevice(device);
-    if (!window.confirm(...)) return;
+**Solución implementada:**
+- ✅ Validación de 3 capas: object, array, number
+- ✅ Errores descriptivos para debugging
+- ✅ 6 tests nuevos de edge cases
 
-    const success = await revokeDevice(device.id);
+**Tests cubiertos:**
+- ✅ API returns null → throws error
+- ✅ API returns non-object → throws error
+- ✅ devices is not array/null → throws error
+- ✅ total_count is not number/null → throws error
 
-    if (success && isCurrent) {
-      timeoutRef.current = setTimeout(() => logout(), 2000);
-    }
-  };
-  ```
-- [ ] **Tests**: Agregar test de múltiples revocaciones consecutivas
+**Archivos modificados:**
+- `src/infrastructure/repositories/ApiDeviceRepository.js` (+13 líneas validación)
+- `src/infrastructure/repositories/ApiDeviceRepository.test.js` (+68 líneas tests)
 
-**Estimación:** 1-2h
+---
+
+#### **✅ Fix #13: Race Condition Prevention** - COMPLETADO
+**Commit:** `9cf8bd5` | **Tests:** Manual | **Tiempo:** 1h
+
+**Problema resuelto:**
+- Timeout NO se limpiaba al revocar múltiples dispositivos
+- Logout inesperado si usuario revocaba otro dispositivo después del actual
+
+**Solución implementada:**
+- ✅ ClearTimeout ANTES de cualquier operación de revocación
+- ✅ Set timeoutRef.current = null para estado limpio
+- ✅ Solo un timer activo a la vez
+
+**Scenarios validados:**
+- ✅ Revoke current device → logout after 2s
+- ✅ Revoke current → revoke other → NO logout
+- ✅ Multiple rapid revocations → only last current triggers logout
+
+**Archivos modificados:**
+- `src/pages/DeviceManagement.jsx` (handleRevokeClick: líneas 25-53)
 
 ---
 
@@ -231,25 +216,27 @@
 
 ### 📊 Métricas Objetivo v1.14.0
 
-| Métrica | v1.13.0 | v1.14.0 Objetivo | Delta |
-|---------|---------|------------------|-------|
-| **Tests** | 540 | 565-570 | +25-30 |
-| **Bugs Críticos** | 3 | 0 | -3 ✅ |
-| **Bugs Medios** | 7 | 0-2 | -5 a -7 |
-| **Security Score** | 8.75/10 | 8.85/10 | +0.10 |
-| **A01: Access Control** | 8.0/10 | 8.5/10 | +0.5 |
-| **Cobertura Device Module** | ~85% | 95%+ | +10% |
+| Métrica | v1.13.0 | Actual (Sprint 1) | v1.14.0 Objetivo | Delta |
+|---------|---------|-------------------|------------------|-------|
+| **Tests** | 540 | 562 | 565-570 | +22 ✅ |
+| **Bugs Críticos** | 3 | 0 | 0 | -3 ✅ |
+| **Bugs Medios** | 7 | 7 | 0-2 | Pendiente Sprint 2 |
+| **Security Score** | 8.75/10 | 8.80/10 | 8.85/10 | +0.05 (parcial) |
+| **A01: Access Control** | 8.0/10 | 8.2/10 | 8.5/10 | +0.2 (parcial) |
+| **Cobertura Device Module** | ~85% | ~92% | 95%+ | +7% ✅ |
 
 ---
 
 ### 🗓️ Timeline v1.14.0
 
-| Sprint | Días | Fixes | Tests | PRs |
-|--------|------|-------|-------|-----|
-| Sprint 1 (Críticos) | 1-2 | #5, #7, #13 | 15+ | 3 |
-| Sprint 2 (Medios) | 1-2 | #4, #6, #8, #11 | 10+ | 4 |
-| Sprint 3 (UX) | 1 | #1, #2, #10, #14, #15, #16, #17 | 5+ | 2-3 |
-| **Total** | **3-5** | **17 fixes** | **30+** | **9-10** |
+| Sprint | Días | Fixes | Tests | PRs | Estado |
+|--------|------|-------|-------|-----|--------|
+| Sprint 1 (Críticos) | 1 | #5, #7, #13 | 22 | 3 | ✅ Completado |
+| Sprint 2 (Medios) | 1-2 | #4, #6, #8, #11 | 10+ | 4 | 🔄 Pendiente |
+| Sprint 3 (UX) | 1 | #1, #2, #10, #14, #15, #16, #17 | 5+ | 2-3 | ⏳ Pendiente |
+| **Total** | **3-5** | **17 fixes** | **37+** | **9-10** | **33% Completado** |
+
+**Progreso actual:** Sprint 1 ✅ | Sprint 2 🔄 | Sprint 3 ⏳
 
 ---
 
@@ -706,5 +693,5 @@
 
 ---
 
-**Última revisión:** 16 Ene 2026
-**Próxima revisión:** Post v1.14.0
+**Última revisión:** 16 Ene 2026 (Sprint 1 completado)
+**Próxima revisión:** Post Sprint 2 o Post v1.14.0
