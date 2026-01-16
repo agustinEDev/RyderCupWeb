@@ -124,24 +124,15 @@ export const useDeviceManagement = () => {
 
       // Distinguish between macOS Safari and iOS Safari
       const isMacOS = currentUA.includes('Macintosh') || currentUA.includes('Mac OS X');
-      const isIOS = currentUA.includes('iPhone') || currentUA.includes('iPad') || currentUA.includes('iPod');
+      // iOS detection including iPadOS 13+ (which identifies as Mac but has touch support)
+      const isIOS = currentUA.includes('iPhone') ||
+                    currentUA.includes('iPad') ||
+                    currentUA.includes('iPod') ||
+                    // iPadOS 13+ identifies as Macintosh but has touch capabilities
+                    (currentUA.includes('Macintosh') && navigator.maxTouchPoints > 1);
 
       // Check OS match with more flexible patterns
-      if (isMacOS) {
-        // Match if deviceName contains: 'macos', 'mac os', 'macintosh', or 'mac'
-        const isMacOSDevice =
-          deviceNameLower.includes('macos') ||
-          deviceNameLower.includes('mac os') ||
-          deviceNameLower.includes('macintosh') ||
-          (deviceNameLower.includes('mac') && !deviceNameLower.includes('iphone'));
-
-        if (process.env.NODE_ENV === 'development') {
-          console.log('[isCurrentDevice] macOS Safari check:', { isMacOSDevice, deviceNameLower });
-        }
-
-        return isMacOSDevice;
-      }
-
+      // IMPORTANT: Check iOS first, as iPadOS 13+ matches both isMacOS and isIOS
       if (isIOS) {
         // Match if deviceName contains: 'ios', 'iphone', 'ipad', or 'ipod'
         const isIOSDevice =
@@ -155,6 +146,22 @@ export const useDeviceManagement = () => {
         }
 
         return isIOSDevice;
+      }
+
+      // Check macOS Safari (only if NOT iOS/iPadOS)
+      if (isMacOS && !isIOS) {
+        // Match if deviceName contains: 'macos', 'mac os', 'macintosh', or 'mac'
+        const isMacOSDevice =
+          deviceNameLower.includes('macos') ||
+          deviceNameLower.includes('mac os') ||
+          deviceNameLower.includes('macintosh') ||
+          (deviceNameLower.includes('mac') && !deviceNameLower.includes('iphone'));
+
+        if (process.env.NODE_ENV === 'development') {
+          console.log('[isCurrentDevice] macOS Safari check:', { isMacOSDevice, deviceNameLower });
+        }
+
+        return isMacOSDevice;
       }
 
       // Fallback: If we can't determine OS, don't mark as current
