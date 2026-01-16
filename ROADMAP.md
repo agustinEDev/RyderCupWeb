@@ -167,18 +167,37 @@
 
 ---
 
-#### **Fix #11: Detección de Idioma No Usa i18n Configurado**
-**Archivo:** `src/utils/deviceRevocationLogout.js:90`
-**Problema:** Usa `navigator.language` en vez de `localStorage.getItem('i18nextLng')`
+#### **✅ Fix #11: i18n Language Priority in Device Revocation Logout** - COMPLETADO
+**Commit:** `[pending]` | **Tests:** 21/21 passing (+8 nuevos) | **Tiempo:** 45min
 
-**Solución:**
-- [ ] Leer idioma configurado antes de fallback a navegador
-  ```javascript
-  const storedLang = localStorage.getItem('i18nextLng');
-  const browserLang = (storedLang || navigator.language)?.startsWith('es') ? 'es' : 'en';
-  ```
+**Archivo:** `src/utils/deviceRevocationLogout.js:90-91` (refactorizado)
+**Problema resuelto:** Usaba `navigator.language` ignorando preferencia i18n del usuario
 
-**Estimación:** 1h
+**Solución implementada:**
+- ✅ Leer `i18nextLng` de localStorage PRIMERO (idioma configurado por usuario)
+- ✅ Fallback a `navigator.language` si no hay configuración
+- ✅ 8 tests nuevos para verificar prioridad de detección de idioma
+- ✅ Respeta preferencia del usuario sobre idioma del navegador
+
+**Lógica de detección (prioridad):**
+1. `localStorage.getItem('i18nextLng')` → Preferencia del usuario (ES/EN)
+2. `navigator.language` → Idioma del navegador (fallback)
+3. `'en'` → Inglés por defecto (ultimate fallback)
+
+**Tests cubiertos (8 nuevos):**
+- ✅ i18nextLng='es' → Mensaje en español (ignora navigator)
+- ✅ i18nextLng='en' → Mensaje en inglés (ignora navigator)
+- ✅ Sin i18nextLng + navigator='es-ES' → Español
+- ✅ Sin i18nextLng + navigator='fr-FR' → Inglés (fallback)
+- ✅ Manejo de códigos de región (es-ES, en-GB)
+- ✅ Prioridad correcta: i18nextLng > navigator.language
+- ✅ Fallback a inglés si ambos son null
+
+**Archivos modificados:**
+- `src/utils/deviceRevocationLogout.js` (+2 líneas, refactor lógica)
+- `src/utils/deviceRevocationLogout.test.js` (+129 líneas, 8 tests nuevos)
+
+**Estimación:** 1h | **Real:** 45min
 
 ---
 

@@ -86,13 +86,14 @@ export const handleDeviceRevocationLogout = (errorData = {}) => {
 
   // Show user-friendly toast message
   // Duration: 8 seconds (long enough to read)
-  // Use browser language to show appropriate message
-  const browserLang = navigator.language?.startsWith('es') ? 'es' : 'en';
+  // Use configured i18n language first, fallback to browser language
+  const storedLang = localStorage.getItem('i18nextLng');
+  const detectedLang = (storedLang || navigator.language)?.startsWith('es') ? 'es' : 'en';
   const messages = {
     es: 'Tu sesión ha sido cerrada. Este dispositivo fue revocado desde otro dispositivo.',
     en: 'Your session has been closed. This device was revoked from another device.',
   };
-  const message = messages[browserLang] || messages.en;
+  const message = messages[detectedLang] || messages.en;
 
   toast.error(message, {
     duration: 8000,

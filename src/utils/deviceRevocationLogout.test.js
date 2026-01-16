@@ -150,4 +150,133 @@ describe('deviceRevocationLogout utilities', () => {
       consoleLogSpy.mockRestore();
     });
   });
+
+  describe('handleDeviceRevocationLogout - i18n Language Detection', () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+      // Mock navigator.language
+      Object.defineProperty(window.navigator, 'language', {
+        writable: true,
+        configurable: true,
+        value: 'en-US',
+      });
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it('should use Spanish message when i18nextLng is "es" in localStorage', () => {
+      localStorage.getItem.mockImplementation((key) => {
+        if (key === 'i18nextLng') return 'es';
+        return null;
+      });
+
+      handleDeviceRevocationLogout();
+
+      expect(toast.error).toHaveBeenCalledWith(
+        'Tu sesión ha sido cerrada. Este dispositivo fue revocado desde otro dispositivo.',
+        expect.objectContaining({ duration: 8000, icon: '🔒' })
+      );
+    });
+
+    it('should use English message when i18nextLng is "en" in localStorage', () => {
+      localStorage.getItem.mockImplementation((key) => {
+        if (key === 'i18nextLng') return 'en';
+        return null;
+      });
+
+      handleDeviceRevocationLogout();
+
+      expect(toast.error).toHaveBeenCalledWith(
+        'Your session has been closed. This device was revoked from another device.',
+        expect.objectContaining({ duration: 8000, icon: '🔒' })
+      );
+    });
+
+    it('should fallback to navigator.language when i18nextLng is not in localStorage', () => {
+      localStorage.getItem.mockReturnValue(null);
+      window.navigator.language = 'es-ES';
+
+      handleDeviceRevocationLogout();
+
+      expect(toast.error).toHaveBeenCalledWith(
+        'Tu sesión ha sido cerrada. Este dispositivo fue revocado desde otro dispositivo.',
+        expect.objectContaining({ duration: 8000, icon: '🔒' })
+      );
+    });
+
+    it('should use English when i18nextLng is not in localStorage and navigator.language is not Spanish', () => {
+      localStorage.getItem.mockReturnValue(null);
+      window.navigator.language = 'fr-FR';
+
+      handleDeviceRevocationLogout();
+
+      expect(toast.error).toHaveBeenCalledWith(
+        'Your session has been closed. This device was revoked from another device.',
+        expect.objectContaining({ duration: 8000, icon: '🔒' })
+      );
+    });
+
+    it('should handle i18nextLng with region code (es-ES)', () => {
+      localStorage.getItem.mockImplementation((key) => {
+        if (key === 'i18nextLng') return 'es-ES';
+        return null;
+      });
+
+      handleDeviceRevocationLogout();
+
+      expect(toast.error).toHaveBeenCalledWith(
+        'Tu sesión ha sido cerrada. Este dispositivo fue revocado desde otro dispositivo.',
+        expect.objectContaining({ duration: 8000, icon: '🔒' })
+      );
+    });
+
+    it('should handle i18nextLng with region code (en-GB)', () => {
+      localStorage.getItem.mockImplementation((key) => {
+        if (key === 'i18nextLng') return 'en-GB';
+        return null;
+      });
+
+      handleDeviceRevocationLogout();
+
+      expect(toast.error).toHaveBeenCalledWith(
+        'Your session has been closed. This device was revoked from another device.',
+        expect.objectContaining({ duration: 8000, icon: '🔒' })
+      );
+    });
+
+    it('should prioritize i18nextLng over navigator.language', () => {
+      // User configured Spanish, but browser is English
+      localStorage.getItem.mockImplementation((key) => {
+        if (key === 'i18nextLng') return 'es';
+        return null;
+      });
+      window.navigator.language = 'en-US';
+
+      handleDeviceRevocationLogout();
+
+      // Should use Spanish (from i18nextLng), not English (from navigator)
+      expect(toast.error).toHaveBeenCalledWith(
+        'Tu sesión ha sido cerrada. Este dispositivo fue revocado desde otro dispositivo.',
+        expect.objectContaining({ duration: 8000, icon: '🔒' })
+      );
+    });
+
+    it('should use English as fallback when both i18nextLng and navigator.language are null', () => {
+      localStorage.getItem.mockReturnValue(null);
+      Object.defineProperty(window.navigator, 'language', {
+        writable: true,
+        configurable: true,
+        value: undefined,
+      });
+
+      handleDeviceRevocationLogout();
+
+      expect(toast.error).toHaveBeenCalledWith(
+        'Your session has been closed. This device was revoked from another device.',
+        expect.objectContaining({ duration: 8000, icon: '🔒' })
+      );
+    });
+  });
 });
