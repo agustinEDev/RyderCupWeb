@@ -84,6 +84,74 @@ describe('ApiDeviceRepository', () => {
 
       await expect(repository.getActiveDevices()).rejects.toThrow('Network error');
     });
+
+    it('should throw error if API returns null', async () => {
+      apiRequestMock.mockResolvedValue(null);
+
+      await expect(repository.getActiveDevices()).rejects.toThrow(
+        'Invalid API response: expected object'
+      );
+    });
+
+    it('should throw error if API returns non-object', async () => {
+      apiRequestMock.mockResolvedValue('not an object');
+
+      await expect(repository.getActiveDevices()).rejects.toThrow(
+        'Invalid API response: expected object'
+      );
+    });
+
+    it('should throw error if devices is not an array', async () => {
+      const mockApiResponse = {
+        devices: 'not-an-array',
+        total_count: 0,
+      };
+
+      apiRequestMock.mockResolvedValue(mockApiResponse);
+
+      await expect(repository.getActiveDevices()).rejects.toThrow(
+        'Invalid API response: devices must be an array'
+      );
+    });
+
+    it('should throw error if devices is null', async () => {
+      const mockApiResponse = {
+        devices: null,
+        total_count: 0,
+      };
+
+      apiRequestMock.mockResolvedValue(mockApiResponse);
+
+      await expect(repository.getActiveDevices()).rejects.toThrow(
+        'Invalid API response: devices must be an array'
+      );
+    });
+
+    it('should throw error if total_count is not a number', async () => {
+      const mockApiResponse = {
+        devices: [],
+        total_count: '5',
+      };
+
+      apiRequestMock.mockResolvedValue(mockApiResponse);
+
+      await expect(repository.getActiveDevices()).rejects.toThrow(
+        'Invalid API response: total_count must be a number'
+      );
+    });
+
+    it('should throw error if total_count is null', async () => {
+      const mockApiResponse = {
+        devices: [],
+        total_count: null,
+      };
+
+      apiRequestMock.mockResolvedValue(mockApiResponse);
+
+      await expect(repository.getActiveDevices()).rejects.toThrow(
+        'Invalid API response: total_count must be a number'
+      );
+    });
   });
 
   describe('revokeDevice', () => {

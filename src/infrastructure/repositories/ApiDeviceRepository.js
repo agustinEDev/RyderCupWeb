@@ -23,6 +23,19 @@ class ApiDeviceRepository extends IDeviceRepository {
       method: 'GET',
     });
 
+    // Validate response structure before mapping
+    if (!data || typeof data !== 'object') {
+      throw new Error('Invalid API response: expected object');
+    }
+
+    if (!Array.isArray(data.devices)) {
+      throw new Error('Invalid API response: devices must be an array');
+    }
+
+    if (typeof data.total_count !== 'number') {
+      throw new Error('Invalid API response: total_count must be a number');
+    }
+
     // Map API DTOs to Device entities
     const devices = data.devices.map(deviceDto => new Device(deviceDto));
 
