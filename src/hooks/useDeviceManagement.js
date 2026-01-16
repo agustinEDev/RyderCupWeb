@@ -38,7 +38,7 @@ export const useDeviceManagement = () => {
     } finally {
       setIsLoading(false);
     }
-  }, []); // No external dependencies - uses stable setters and imported use case
+  }, [t]); // Added 't' dependency for i18n translations
 
   // Fetch devices on mount
   useEffect(() => {
