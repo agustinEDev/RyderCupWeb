@@ -23,6 +23,13 @@ const DeviceManagement = () => {
   } = useDeviceManagement();
 
   const handleRevokeClick = async (device) => {
+    // Clear any existing logout timer BEFORE starting revoke operation
+    // This prevents race conditions when revoking multiple devices
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+
     const isCurrent = isCurrentDevice(device);
 
     // Double confirmation for current device
@@ -38,11 +45,6 @@ const DeviceManagement = () => {
 
     // If current device was revoked, logout after delay for toast visibility
     if (success && isCurrent) {
-      // Clear any existing timer before setting a new one
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
-
       // Logout after brief delay for toast visibility
       timeoutRef.current = setTimeout(() => {
         logout();
