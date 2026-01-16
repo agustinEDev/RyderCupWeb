@@ -168,7 +168,7 @@
 ---
 
 #### **✅ Fix #11: i18n Language Priority in Device Revocation Logout** - COMPLETADO
-**Commit:** `[pending]` | **Tests:** 21/21 passing (+8 nuevos) | **Tiempo:** 45min
+**Commit:** `ce49a38` | **Tests:** 21/21 passing (+8 nuevos) | **Tiempo:** 45min
 
 **Archivo:** `src/utils/deviceRevocationLogout.js:90-91` (refactorizado)
 **Problema resuelto:** Usaba `navigator.language` ignorando preferencia i18n del usuario
