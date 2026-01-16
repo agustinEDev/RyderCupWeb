@@ -129,16 +129,41 @@
 
 ---
 
-#### **Fix #6: Violación de Clean Architecture**
-**Archivo:** `src/hooks/useDeviceManagement.js:65-74`
-**Problema:** Hook interpreta códigos HTTP (responsabilidad del Repository)
+#### **✅ Fix #6: Violación de Clean Architecture + i18n Error Handling** - COMPLETADO
+**Commit:** `[pending]` | **Tests:** 69/69 passing (+8 nuevos) | **Tiempo:** 3.5h
 
-**Solución:**
-- [ ] Mover lógica de interpretación HTTP a `ApiDeviceRepository.revokeDevice()`
-- [ ] Hook solo maneja mensajes de error genéricos
-- [ ] Tests: Verificar transformación de errores HTTP a domain errors
+**Archivos:** `ApiDeviceRepository.js` (refactorizado), `useDeviceManagement.js` (i18n), `devices.json` (ES/EN)
+**Problema resuelto:** Hook interpretaba códigos HTTP (responsabilidad del Repository) + errores sin i18n
 
-**Estimación:** 3-4h
+**Solución implementada (Clean Architecture + i18n):**
+- ✅ Repository transforma HTTP → domain error codes (Infrastructure layer)
+- ✅ Hook traduce error codes usando `useTranslation` (Presentation layer)
+- ✅ 5 nuevas traducciones de errores (ES/EN) en `devices.json`
+- ✅ 8 tests actualizados para verificar error codes en vez de mensajes
+- ✅ Cumple Clean Architecture: Repository NO conoce i18n
+
+**Transformaciones HTTP → Error Codes:**
+- ✅ HTTP 403 → `CSRF_VALIDATION_FAILED`
+- ✅ HTTP 404 → `DEVICE_NOT_FOUND`
+- ✅ HTTP 409 → `DEVICE_ALREADY_REVOKED`
+- ✅ HTTP 401 → Propagate original (token refresh interceptor)
+- ✅ HTTP 500+ → `FAILED_TO_REVOKE_DEVICE` (+ originalMessage)
+
+**Traducciones agregadas (ES/EN):**
+- `errors.CSRF_VALIDATION_FAILED` - "Validación CSRF fallida..." / "CSRF validation failed..."
+- `errors.DEVICE_NOT_FOUND` - "Dispositivo no encontrado" / "Device not found"
+- `errors.DEVICE_ALREADY_REVOKED` - "Dispositivo ya revocado" / "Device already revoked"
+- `errors.FAILED_TO_REVOKE_DEVICE` - "Error al revocar..." / "Failed to revoke..."
+- `errors.FAILED_TO_LOAD_DEVICES` - "Error al cargar..." / "Failed to load..."
+
+**Archivos modificados:**
+- `src/infrastructure/repositories/ApiDeviceRepository.js` (+35 líneas error codes)
+- `src/infrastructure/repositories/ApiDeviceRepository.test.js` (tests actualizados)
+- `src/hooks/useDeviceManagement.js` (+useTranslation, error code translation)
+- `src/i18n/locales/es/devices.json` (+7 líneas errors)
+- `src/i18n/locales/en/devices.json` (+7 líneas errors)
+
+**Estimación:** 3-4h | **Real:** 3.5h
 
 ---
 

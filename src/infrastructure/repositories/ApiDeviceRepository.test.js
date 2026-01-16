@@ -250,4 +250,119 @@ describe('ApiDeviceRepository', () => {
       );
     });
   });
+
+  describe('revokeDevice - HTTP to Domain Error Transformation', () => {
+    it('should transform HTTP 403 to domain error code CSRF_VALIDATION_FAILED', async () => {
+      const deviceId = 'device-123';
+      const httpError = new Error('Forbidden');
+      httpError.status = 403;
+      httpError.statusCode = 403;
+
+      apiRequestMock.mockRejectedValue(httpError);
+
+      await expect(repository.revokeDevice(deviceId)).rejects.toMatchObject({
+        message: 'CSRF_VALIDATION_FAILED',
+        code: 'CSRF_VALIDATION_FAILED',
+      });
+    });
+
+    it('should transform HTTP 404 to domain error code DEVICE_NOT_FOUND', async () => {
+      const deviceId = 'device-456';
+      const httpError = new Error('Not Found');
+      httpError.status = 404;
+      httpError.statusCode = 404;
+
+      apiRequestMock.mockRejectedValue(httpError);
+
+      await expect(repository.revokeDevice(deviceId)).rejects.toMatchObject({
+        message: 'DEVICE_NOT_FOUND',
+        code: 'DEVICE_NOT_FOUND',
+      });
+    });
+
+    it('should transform HTTP 409 to domain error code DEVICE_ALREADY_REVOKED', async () => {
+      const deviceId = 'device-789';
+      const httpError = new Error('Conflict');
+      httpError.status = 409;
+      httpError.statusCode = 409;
+
+      apiRequestMock.mockRejectedValue(httpError);
+
+      await expect(repository.revokeDevice(deviceId)).rejects.toMatchObject({
+        message: 'DEVICE_ALREADY_REVOKED',
+        code: 'DEVICE_ALREADY_REVOKED',
+      });
+    });
+
+    it('should propagate HTTP 401 authentication errors unchanged', async () => {
+      const deviceId = 'device-999';
+      const authError = new Error('Unauthorized');
+      authError.status = 401;
+      authError.statusCode = 401;
+
+      apiRequestMock.mockRejectedValue(authError);
+
+      // Should propagate original error for token refresh interceptor
+      await expect(repository.revokeDevice(deviceId)).rejects.toThrow('Unauthorized');
+      await expect(repository.revokeDevice(deviceId)).rejects.toMatchObject({
+        status: 401,
+      });
+    });
+
+    it('should use backend error message for other HTTP status codes', async () => {
+      const deviceId = 'device-abc';
+      const httpError = new Error('Internal Server Error');
+      httpError.status = 500;
+      httpError.statusCode = 500;
+
+      apiRequestMock.mockRejectedValue(httpError);
+
+      await expect(repository.revokeDevice(deviceId)).rejects.toMatchObject({
+        message: 'Internal Server Error',
+        code: 'FAILED_TO_REVOKE_DEVICE',
+        originalMessage: 'Internal Server Error',
+      });
+    });
+
+    it('should use fallback error code if backend provides no message', async () => {
+      const deviceId = 'device-xyz';
+      const httpError = new Error('');
+      httpError.status = 500;
+      httpError.statusCode = 500;
+
+      apiRequestMock.mockRejectedValue(httpError);
+
+      await expect(repository.revokeDevice(deviceId)).rejects.toMatchObject({
+        message: 'FAILED_TO_REVOKE_DEVICE',
+        code: 'FAILED_TO_REVOKE_DEVICE',
+      });
+    });
+
+    it('should handle statusCode field (alias for status)', async () => {
+      const deviceId = 'device-def';
+      const httpError = new Error('Not Found');
+      httpError.statusCode = 404; // Only statusCode, no status
+
+      apiRequestMock.mockRejectedValue(httpError);
+
+      await expect(repository.revokeDevice(deviceId)).rejects.toMatchObject({
+        message: 'DEVICE_NOT_FOUND',
+        code: 'DEVICE_NOT_FOUND',
+      });
+    });
+
+    it('should handle errors without status codes', async () => {
+      const deviceId = 'device-ghi';
+      const networkError = new Error('Network timeout');
+      // No status/statusCode field
+
+      apiRequestMock.mockRejectedValue(networkError);
+
+      await expect(repository.revokeDevice(deviceId)).rejects.toMatchObject({
+        message: 'Network timeout',
+        code: 'FAILED_TO_REVOKE_DEVICE',
+        originalMessage: 'Network timeout',
+      });
+    });
+  });
 });

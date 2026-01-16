@@ -29,5 +29,12 @@
     "title": "Consejo de Seguridad",
     "description": "Si notas alguna actividad sospechosa o dispositivos desconocidos, revócalos inmediatamente y considera cambiar tu contraseña. Puedes hacerlo desde tu",
     "profileSettings": "configuración de perfil"
+  },
+  "errors": {
+    "CSRF_VALIDATION_FAILED": "Validación CSRF fallida. Por favor, actualiza la página.",
+    "DEVICE_NOT_FOUND": "Dispositivo no encontrado",
+    "DEVICE_ALREADY_REVOKED": "Dispositivo ya revocado",
+    "FAILED_TO_REVOKE_DEVICE": "Error al revocar dispositivo",
+    "FAILED_TO_LOAD_DEVICES": "Error al cargar dispositivos"
   }
 }

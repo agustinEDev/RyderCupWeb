@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 
 import {
@@ -9,8 +10,10 @@ import {
 /**
  * Custom hook for Device Management
  * v1.13.0: Device Fingerprinting feature
+ * v1.14.0: Added i18n error handling (Clean Architecture)
  */
 export const useDeviceManagement = () => {
+  const { t } = useTranslation('devices');
   const [devices, setDevices] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [revokingDeviceIds, setRevokingDeviceIds] = useState(new Set());
@@ -25,7 +28,13 @@ export const useDeviceManagement = () => {
       setDevices(result.devices || []);
     } catch (error) {
       console.error('❌ [useDeviceManagement] Error fetching devices:', error);
-      toast.error(error.message || 'Failed to load devices');
+
+      // Translate error code or use fallback
+      const errorMessage = error.code
+        ? t(`errors.${error.code}`, { defaultValue: t('errors.FAILED_TO_LOAD_DEVICES') })
+        : error.message || t('errors.FAILED_TO_LOAD_DEVICES');
+
+      toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -61,17 +70,12 @@ export const useDeviceManagement = () => {
     } catch (error) {
       console.error('❌ [useDeviceManagement] Error revoking device:', error);
 
-      // Handle specific errors based on HTTP status code
-      if (error.status === 403 || error.statusCode === 403) {
-        toast.error('CSRF validation failed. Please refresh the page.');
-      } else if (error.status === 409 || error.statusCode === 409) {
-        toast.error('Device already revoked');
-      } else if (error.status === 404 || error.statusCode === 404) {
-        toast.error('Device not found');
-      } else {
-        // Use the actual error message from the backend
-        toast.error(error.message || 'Failed to revoke device');
-      }
+      // Translate domain error code (Repository returns error codes, not messages)
+      const errorMessage = error.code
+        ? t(`errors.${error.code}`, { defaultValue: t('errors.FAILED_TO_REVOKE_DEVICE') })
+        : error.message || t('errors.FAILED_TO_REVOKE_DEVICE');
+
+      toast.error(errorMessage);
 
       return false;
     } finally {

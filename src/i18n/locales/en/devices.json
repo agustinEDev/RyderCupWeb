@@ -29,5 +29,12 @@
     "title": "Security Tip",
     "description": "If you notice any suspicious activity or unfamiliar devices, revoke them immediately and consider changing your password. You can do this from your",
     "profileSettings": "profile settings"
+  },
+  "errors": {
+    "CSRF_VALIDATION_FAILED": "CSRF validation failed. Please refresh the page.",
+    "DEVICE_NOT_FOUND": "Device not found",
+    "DEVICE_ALREADY_REVOKED": "Device already revoked",
+    "FAILED_TO_REVOKE_DEVICE": "Failed to revoke device",
+    "FAILED_TO_LOAD_DEVICES": "Failed to load devices"
   }
 }
