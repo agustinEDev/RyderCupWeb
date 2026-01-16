@@ -1,45 +1,275 @@
 # 🗺️ Roadmap - RyderCupFriends Frontend
 
-> **Versión:** 1.11.4 → 2.1.0 (En Desarrollo)
-> **Última actualización:** 12 Ene 2026
-> **Estado:** 🚧 Preparando v2.1.0
+> **Versión:** 1.13.0 → 1.14.0 → 2.1.0
+> **Última actualización:** 16 Ene 2026
+> **Estado:** 🚀 Próxima versión: v1.14.0 (Device Fingerprinting Improvements)
 > **Stack:** React 18 + Vite 7 + Tailwind CSS 3.4 + TanStack Query + Zustand
 
 ---
 
-## 🔥 Prioridad Inmediata (Hotfix Pendiente)
+## 🎯 Roadmap v1.14.0 - Device Fingerprinting Improvements
 
-### ❌ FIX: Safari iOS Device Detection (Bug Crítico en Producción)
-
-**Problema**: iOS Safari detecta dispositivos macOS Safari como "Dispositivo Actual"
-
-**Detalles**:
-- ✅ macOS Safari: Funciona correctamente (solo marca su propio dispositivo)
-- ❌ iOS Safari: Marca TAMBIÉN los dispositivos macOS como "Dispositivo Actual" (falso positivo)
-
-**Causa Probable**:
-- Backend puede estar enviando `deviceName` sin OS específico para iOS
-- Lógica de detección en frontend puede no estar validando correctamente el OS del navegador actual vs el OS del dispositivo
-
-**Investigación Necesaria**:
-1. Revisar qué `deviceName` envía el backend para dispositivos iOS Safari
-2. Verificar logs de desarrollo en dispositivo iOS real
-3. Comparar User-Agent de iOS vs lo que se guarda en backend
-4. Validar que la lógica no solo verifique "safari" sino que EXCLUYA si el OS no coincide
-
-**Archivos Involucrados**:
-- `src/hooks/useDeviceManagement.js` (líneas 92-165)
-- Backend: Device fingerprinting logic (verificar cómo se genera `device_name`)
-
-**Prioridad**: 🔴 ALTA - Afecta UX de seguridad en producción
-
-**Referencias**:
-- PR #92: Safari device detection initial fix
-- PR #93: Responsive improvements + flexible patterns
+> **Objetivo:** Resolver bugs críticos y mejorar robustez del sistema de device fingerprinting
+> **Duración:** 3-5 días (3 sprints: Críticos, Medios, UX)
+> **Tipo:** Bug fixes + Mejoras de arquitectura + UX improvements
+> **Análisis completado:** 16 Ene 2026
 
 ---
 
-## 📊 Estado Actual (v1.11.4)
+### 📊 Resumen del Análisis
+
+**Archivos analizados:** 12 archivos (6 producción + 6 tests)
+**Errores encontrados:** 17 (3 críticos, 7 medios, 7 bajos)
+**Impacto OWASP:** +0.10 (8.75 → 8.85)
+**Tests nuevos estimados:** +25-30 tests
+
+---
+
+### 🔴 Sprint 1: Fixes Críticos (Prioridad Alta) - 1-2 días
+
+#### **Fix #7: iOS Safari Device Detection (Bug Crítico Documentado)**
+**Archivo:** `src/hooks/useDeviceManagement.js:121-162`
+**Problema:** iOS Safari detecta dispositivos macOS como "Dispositivo Actual"
+
+**Causa raíz identificada:**
+1. ❌ Backend puede generar `device_name` ambiguos ("Safari on Mac" sin especificar iOS/macOS)
+2. ❌ iPadOS 13+ se identifica como macOS en User-Agent (no detectado actualmente)
+
+**Solución:**
+- [ ] **Frontend**: Agregar detección de iPadOS 13+ por touch support
+  ```javascript
+  const isIOS = currentUA.includes('iPhone') ||
+                currentUA.includes('iPad') ||
+                currentUA.includes('iPod') ||
+                // iPadOS 13+ se identifica como Mac pero tiene touch
+                (currentUA.includes('Macintosh') && navigator.maxTouchPoints > 1);
+  ```
+- [ ] **Backend** (coordinación necesaria): Verificar generación de `device_name` para iOS Safari
+- [ ] **Tests**: Agregar casos para iPadOS 13+ en `useDeviceManagement.test.js`
+
+**Archivos afectados:**
+- `src/hooks/useDeviceManagement.js`
+- `src/hooks/useDeviceManagement.test.js` (nuevo)
+
+**Estimación:** 4-6h (incluyendo tests y validación en dispositivos reales)
+
+---
+
+#### **Fix #5: Crash Potencial en ApiDeviceRepository**
+**Archivo:** `src/infrastructure/repositories/ApiDeviceRepository.js:27`
+**Problema:** NO valida respuesta de API antes de `.map()` → crash si `data.devices` es null
+
+**Solución:**
+- [ ] Agregar validación de respuesta antes de mapear
+  ```javascript
+  async getActiveDevices() {
+    const data = await apiRequest('/api/v1/users/me/devices', { method: 'GET' });
+
+    if (!data || typeof data !== 'object') {
+      throw new Error('Invalid API response: expected object');
+    }
+    if (!Array.isArray(data.devices)) {
+      throw new Error('Invalid API response: devices must be an array');
+    }
+    if (typeof data.total_count !== 'number') {
+      throw new Error('Invalid API response: total_count must be a number');
+    }
+
+    const devices = data.devices.map(deviceDto => new Device(deviceDto));
+    return { devices, total_count: data.total_count };
+  }
+  ```
+- [ ] **Tests**: Agregar casos de error en `ApiDeviceRepository.test.js`
+
+**Estimación:** 2-3h
+
+---
+
+#### **Fix #13: Race Condition en Logout Timeout**
+**Archivo:** `src/pages/DeviceManagement.jsx:40-50`
+**Problema:** Timeout NO se limpia si usuario revoca múltiples dispositivos → logout inesperado
+
+**Solución:**
+- [ ] Limpiar timeout SIEMPRE antes de revocar
+  ```javascript
+  const handleRevokeClick = async (device) => {
+    // Limpiar timeout ANTES de cualquier operación
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+
+    const isCurrent = isCurrentDevice(device);
+    if (!window.confirm(...)) return;
+
+    const success = await revokeDevice(device.id);
+
+    if (success && isCurrent) {
+      timeoutRef.current = setTimeout(() => logout(), 2000);
+    }
+  };
+  ```
+- [ ] **Tests**: Agregar test de múltiples revocaciones consecutivas
+
+**Estimación:** 1-2h
+
+---
+
+### 🟠 Sprint 2: Fixes Medios (Prioridad Media) - 1-2 días
+
+#### **Fix #4: Validación Inconsistente en RevokeDeviceUseCase**
+**Archivo:** `src/application/use_cases/device/RevokeDeviceUseCase.js:28`
+**Problema:** NO valida respuesta (inconsistente con GetActiveDevicesUseCase)
+
+**Solución:**
+- [ ] Agregar validación igual que GetActiveDevicesUseCase
+- [ ] Tests: Casos de error de respuesta inválida
+
+**Estimación:** 2h
+
+---
+
+#### **Fix #6: Violación de Clean Architecture**
+**Archivo:** `src/hooks/useDeviceManagement.js:65-74`
+**Problema:** Hook interpreta códigos HTTP (responsabilidad del Repository)
+
+**Solución:**
+- [ ] Mover lógica de interpretación HTTP a `ApiDeviceRepository.revokeDevice()`
+- [ ] Hook solo maneja mensajes de error genéricos
+- [ ] Tests: Verificar transformación de errores HTTP a domain errors
+
+**Estimación:** 3-4h
+
+---
+
+#### **Fix #11: Detección de Idioma No Usa i18n Configurado**
+**Archivo:** `src/utils/deviceRevocationLogout.js:90`
+**Problema:** Usa `navigator.language` en vez de `localStorage.getItem('i18nextLng')`
+
+**Solución:**
+- [ ] Leer idioma configurado antes de fallback a navegador
+  ```javascript
+  const storedLang = localStorage.getItem('i18nextLng');
+  const browserLang = (storedLang || navigator.language)?.startsWith('es') ? 'es' : 'en';
+  ```
+
+**Estimación:** 1h
+
+---
+
+#### **Fix #8: Matching por Substring (Frágil)**
+**Archivo:** `src/hooks/useDeviceManagement.js:136`
+**Problema:** `includes('mac')` puede dar falsos positivos
+
+**Solución:**
+- [ ] Usar regex con word boundaries
+  ```javascript
+  const safariRegex = /\bsafari\b/i;
+  const macOSRegex = /\b(macos|mac\s*os|macintosh)\b/i;
+  const iosRegex = /\b(ios|iphone|ipad|ipod)\b/i;
+  ```
+- [ ] Tests: Casos edge (chromatic, SafariCom, etc.)
+
+**Estimación:** 2-3h
+
+---
+
+### 🟡 Sprint 3: Mejoras de UX y Calidad (Prioridad Baja) - 1 día
+
+#### **Fix #1: Validación Débil en Device Entity**
+- [ ] Agregar validación de tipos en constructor
+- [ ] Tests: Casos con tipos incorrectos
+
+**Estimación:** 1-2h
+
+---
+
+#### **Fix #2: Métodos Deprecados Sin Warning**
+- [ ] Agregar `console.warn()` en desarrollo para métodos deprecados
+
+**Estimación:** 30min
+
+---
+
+#### **Fix #10: Logout Inmediato para Dispositivo Actual**
+- [ ] Cambiar timeout de 2000ms a logout inmediato (backend ya invalidó tokens)
+
+**Estimación:** 30min
+
+---
+
+#### **Fix #14: Reemplazar window.confirm() por Modal React**
+- [ ] Crear `ConfirmModal` component con i18n completo
+- [ ] Reemplazar `window.confirm()` en DeviceManagement.jsx
+
+**Estimación:** 2-3h
+
+---
+
+#### **Fix #15: Trackear Errores por Dispositivo**
+- [ ] Agregar `deviceErrors` state para mostrar errores inline
+- [ ] UI: Mostrar mensaje de error debajo de cada dispositivo fallido
+
+**Estimación:** 2h
+
+---
+
+#### **Fix #16: Accesibilidad - aria-label**
+- [ ] Agregar `aria-label` en botones con iconos
+- [ ] Tests a11y con Playwright
+
+**Estimación:** 1h
+
+---
+
+#### **Fix #17: Loading State Bloquea Header**
+- [ ] Cambiar a skeleton loader sin bloquear navegación
+
+**Estimación:** 1-2h
+
+---
+
+### 📊 Métricas Objetivo v1.14.0
+
+| Métrica | v1.13.0 | v1.14.0 Objetivo | Delta |
+|---------|---------|------------------|-------|
+| **Tests** | 540 | 565-570 | +25-30 |
+| **Bugs Críticos** | 3 | 0 | -3 ✅ |
+| **Bugs Medios** | 7 | 0-2 | -5 a -7 |
+| **Security Score** | 8.75/10 | 8.85/10 | +0.10 |
+| **A01: Access Control** | 8.0/10 | 8.5/10 | +0.5 |
+| **Cobertura Device Module** | ~85% | 95%+ | +10% |
+
+---
+
+### 🗓️ Timeline v1.14.0
+
+| Sprint | Días | Fixes | Tests | PRs |
+|--------|------|-------|-------|-----|
+| Sprint 1 (Críticos) | 1-2 | #5, #7, #13 | 15+ | 3 |
+| Sprint 2 (Medios) | 1-2 | #4, #6, #8, #11 | 10+ | 4 |
+| Sprint 3 (UX) | 1 | #1, #2, #10, #14, #15, #16, #17 | 5+ | 2-3 |
+| **Total** | **3-5** | **17 fixes** | **30+** | **9-10** |
+
+---
+
+### 🔗 Referencias del Análisis
+
+**Commits relacionados:**
+- `c05ce9f` - fix(devices): IMPROVE Safari device detection to distinguish macOS vs iOS
+- PR #92 - Safari device detection and logout fixes
+- PR #93 - Responsive improvements + flexible patterns
+
+**Archivos del módulo:**
+- Domain: `Device.js`, `IDeviceRepository.js`
+- Application: `GetActiveDevicesUseCase.js`, `RevokeDeviceUseCase.js`
+- Infrastructure: `ApiDeviceRepository.js`
+- Presentation: `DeviceManagement.jsx`, `useDeviceManagement.js`
+- Utils: `deviceRevocationLogout.js`
+
+---
+
+## 📊 Estado Actual (v1.13.0)
 
 ### Métricas Clave
 - **Tests:** 540 tests (100% pass rate)
@@ -90,13 +320,35 @@
 - ✅ Security Tests Suite (12 tests E2E)
 
 ### Pendientes (Alta Prioridad)
+- 🚧 Device Fingerprinting (v1.14.0 - En proceso)
 - ❌ 2FA/MFA (TOTP)
 - ❌ reCAPTCHA v3
-- ❌ Device Fingerprinting
 
 ---
 
 ## 🚀 Historial de Versiones
+
+### v1.13.0 (Actual) - Device Fingerprinting
+**Cambios:**
+- ✅ Sistema completo de Device Fingerprinting
+- ✅ Gestión de dispositivos activos (vista + revocación)
+- ✅ Detección de dispositivo actual por User-Agent
+- ✅ Logout automático al revocar dispositivo actual
+- ✅ Device Revocation Logout (manejo 401)
+- ⚠️ Bug conocido: iOS Safari detection (documentado en ROADMAP)
+
+**Archivos nuevos:**
+- Domain: `Device.js` (entity)
+- Application: `GetActiveDevicesUseCase.js`, `RevokeDeviceUseCase.js`
+- Infrastructure: `ApiDeviceRepository.js`
+- Presentation: `DeviceManagement.jsx`, `useDeviceManagement.js`
+- Utils: `deviceRevocationLogout.js`
+
+**Tests:** 540 tests (incluye 30+ tests de device fingerprinting)
+**PRs:** #91, #92, #93
+**Estado:** ✅ En producción con bug menor documentado
+
+---
 
 ### v1.11.4 (5 Ene 2026) - GitHub Actions Fixes
 **Cambios:**
@@ -388,13 +640,13 @@
 
 ## 📊 Métricas Objetivo v2.1.0
 
-| Métrica | v1.11.4 | v2.1.0 Objetivo | Incremento |
-|---------|---------|-----------------|------------|
-| **Tests** | 540 | 800-900 | +48-67% |
+| Métrica | v1.14.0 (Post-Fixes) | v2.1.0 Objetivo | Incremento |
+|---------|----------------------|-----------------|------------|
+| **Tests** | 565-570 | 800-900 | +41-58% |
 | **Rutas** | 11 | 20-25 | +80-130% |
-| **Cobertura Lines** | 80% | 83-85% | +3-5% |
+| **Cobertura Lines** | 82-83% | 85-87% | +3-4% |
 | **Bundle Size** | 47 KB | 120-150 KB | +73-103 KB (con code splitting) |
-| **Security Score** | 8.75/10 | 8.9-9.0/10 | +0.15-0.25 |
+| **Security Score** | 8.85/10 | 9.0-9.2/10 | +0.15-0.35 |
 | **API Endpoints** | 15 | 35-45 | +130-200% |
 
 ---
@@ -454,5 +706,5 @@
 
 ---
 
-**Última revisión:** 4 Ene 2026
-**Próxima revisión:** Post v1.12.0
+**Última revisión:** 16 Ene 2026
+**Próxima revisión:** Post v1.14.0
