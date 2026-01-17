@@ -74,18 +74,6 @@ const DeviceManagement = () => {
     };
   }, []);
 
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-gray-600">{t('loading')}</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="relative flex h-auto min-h-screen w-full flex-col bg-white">
       <div className="layout-container flex h-full grow flex-col">
@@ -131,7 +119,40 @@ const DeviceManagement = () => {
 
             {/* Devices List */}
             <div className="px-4">
-              {devices.length === 0 ? (
+              {isLoading ? (
+                // Skeleton Loader (v1.14.0)
+                <div className="space-y-4">
+                  {[1, 2, 3].map((skeleton) => (
+                    <div key={skeleton} className="border border-gray-200 rounded-lg p-4 md:p-5 animate-pulse">
+                      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+                        {/* Device Info Skeleton */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-2">
+                            <div className="w-5 h-5 bg-gray-300 rounded flex-shrink-0"></div>
+                            <div className="h-5 bg-gray-300 rounded w-48"></div>
+                          </div>
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-2">
+                              <div className="w-4 h-4 bg-gray-200 rounded flex-shrink-0"></div>
+                              <div className="h-4 bg-gray-200 rounded w-32"></div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <div className="w-4 h-4 bg-gray-200 rounded flex-shrink-0"></div>
+                              <div className="h-4 bg-gray-200 rounded w-40"></div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <div className="w-4 h-4 bg-gray-200 rounded flex-shrink-0"></div>
+                              <div className="h-4 bg-gray-200 rounded w-36"></div>
+                            </div>
+                          </div>
+                        </div>
+                        {/* Revoke Button Skeleton */}
+                        <div className="h-10 bg-gray-200 rounded-lg w-full sm:w-24 flex-shrink-0"></div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : devices.length === 0 ? (
                 <div className="text-center py-12 border border-gray-200 rounded-lg">
                   <svg className="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
