@@ -17,6 +17,7 @@ export const useDeviceManagement = () => {
   const [devices, setDevices] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [revokingDeviceIds, setRevokingDeviceIds] = useState(new Set());
+  const [deviceErrors, setDeviceErrors] = useState(new Map()); // v1.14.0: Track errors per device
 
   /**
    * Fetches all active devices for the current user
@@ -57,6 +58,13 @@ export const useDeviceManagement = () => {
     }
 
     try {
+      // Clear any previous error for this device
+      setDeviceErrors(prev => {
+        const newMap = new Map(prev);
+        newMap.delete(deviceId);
+        return newMap;
+      });
+
       // Add device ID to revoking set
       setRevokingDeviceIds(prev => new Set(prev).add(deviceId));
 
@@ -75,7 +83,15 @@ export const useDeviceManagement = () => {
         ? t(`errors.${error.code}`, { defaultValue: t('errors.FAILED_TO_REVOKE_DEVICE') })
         : error.message || t('errors.FAILED_TO_REVOKE_DEVICE');
 
+      // Show toast AND save error for inline display
       toast.error(errorMessage);
+
+      // Save error for this specific device (v1.14.0: Inline error display)
+      setDeviceErrors(prev => {
+        const newMap = new Map(prev);
+        newMap.set(deviceId, errorMessage);
+        return newMap;
+      });
 
       return false;
     } finally {
@@ -88,14 +104,28 @@ export const useDeviceManagement = () => {
     }
   };
 
+  /**
+   * Clears error for a specific device
+   * @param {string} deviceId - The device ID to clear error for
+   */
+  const clearDeviceError = useCallback((deviceId) => {
+    setDeviceErrors(prev => {
+      const newMap = new Map(prev);
+      newMap.delete(deviceId);
+      return newMap;
+    });
+  }, []);
+
   return {
     // State
     devices,
     isLoading,
     revokingDeviceIds,
+    deviceErrors, // v1.14.0: Per-device error tracking
 
     // Actions
     fetchDevices,
     revokeDevice,
+    clearDeviceError, // v1.14.0: Clear inline error
   };
 };
