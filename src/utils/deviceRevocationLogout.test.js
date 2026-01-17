@@ -56,9 +56,44 @@ describe('deviceRevocationLogout utilities', () => {
       expect(isDeviceRevoked(response, errorData)).toBe(true);
     });
 
-    it('should return false when response is 401 but detail does not mention revocation', () => {
+    it('should return true when response is 401 with Spanish refresh token revoked message', () => {
       const response = { status: 401 };
-      const errorData = { detail: 'Token inválido o expirado' };
+      const errorData = { detail: 'Refresh token inválido o expirado. Por favor, inicia sesión nuevamente.' };
+
+      expect(isDeviceRevoked(response, errorData)).toBe(true);
+    });
+
+    it('should return true when response is 401 with English refresh token revoked message', () => {
+      const response = { status: 401 };
+      const errorData = { detail: 'Refresh token invalid or expired. Please sign in again.' };
+
+      expect(isDeviceRevoked(response, errorData)).toBe(true);
+    });
+
+    it('should return true when response is 401 with generic refresh token invalid message (Spanish)', () => {
+      const response = { status: 401 };
+      const errorData = { detail: 'El refresh token es inválido' };
+
+      expect(isDeviceRevoked(response, errorData)).toBe(true);
+    });
+
+    it('should return true when response is 401 with generic refresh token expired message (English)', () => {
+      const response = { status: 401 };
+      const errorData = { detail: 'Refresh token has expired' };
+
+      expect(isDeviceRevoked(response, errorData)).toBe(true);
+    });
+
+    it('should return false when response is 401 with access token error (not refresh token)', () => {
+      const response = { status: 401 };
+      const errorData = { detail: 'Access token inválido o expirado' };
+
+      expect(isDeviceRevoked(response, errorData)).toBe(false);
+    });
+
+    it('should return false when response is 401 but detail does not mention revocation or refresh token', () => {
+      const response = { status: 401 };
+      const errorData = { detail: 'Credenciales inválidas' };
 
       expect(isDeviceRevoked(response, errorData)).toBe(false);
     });

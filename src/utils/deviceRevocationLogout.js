@@ -37,7 +37,26 @@ export const isDeviceRevoked = (response, errorData = {}) => {
   // Check for 401 status + specific message from backend
   if (response?.status === 401 && errorData?.detail) {
     const detail = String(errorData.detail).toLowerCase();
-    return detail.includes('dispositivo revocado') || detail.includes('device revoked');
+
+    // Scenario 1: Direct revocation (backend returns explicit message)
+    if (detail.includes('dispositivo revocado') || detail.includes('device revoked')) {
+      return true;
+    }
+
+    // Scenario 2: Refresh token revocation (indirect detection)
+    // Backend returns this message when refresh token was revoked from another device
+    // OR when refresh token expired naturally (both require re-login)
+    if (detail.includes('refresh token inválido o expirado') ||
+        detail.includes('refresh token invalid or expired')) {
+      return true;
+    }
+
+    // Fallback: Generic "refresh token" error message
+    if (detail.includes('refresh token') &&
+        (detail.includes('inválido') || detail.includes('invalid') ||
+         detail.includes('expirado') || detail.includes('expired'))) {
+      return true;
+    }
   }
   return false;
 };
@@ -48,32 +67,23 @@ export const isDeviceRevoked = (response, errorData = {}) => {
  * - Clears Sentry user context
  * - Shows translated toast message
  * - Redirects to login page
- *
- * @param {Object} errorData - Error data from backend (optional, for logging)
  */
-export const handleDeviceRevocationLogout = (errorData = {}) => {
+export const handleDeviceRevocationLogout = () => {
   const alreadyHandled = localStorage.getItem(REVOCATION_HANDLED_KEY);
 
   // If already on login page and already handled, do nothing
   if (alreadyHandled && window.location.pathname === '/login') {
-    console.log('🔵 [DeviceRevocation] Already on login page, skipping...');
     return;
   }
 
   // If already handled but not on login, just redirect (no toast to avoid spam)
   if (alreadyHandled) {
-    console.log('🔵 [DeviceRevocation] Already handled, redirecting to login...');
     window.location.href = '/login';
     return;
   }
 
   // First time handling - do full logout flow
   localStorage.setItem(REVOCATION_HANDLED_KEY, 'true');
-
-  if (import.meta.env.DEV) {
-    console.warn('🚫 [DeviceRevocation] Device has been revoked');
-    console.log('🚫 [DeviceRevocation] Backend message:', errorData.detail || 'No details');
-  }
 
   // Clear localStorage
   localStorage.removeItem('user');

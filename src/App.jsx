@@ -10,6 +10,7 @@ import { setUserContext } from './utils/sentryHelpers';
 import useInactivityLogout from './hooks/useInactivityLogout.jsx';
 import { onAuthEvent, EVENTS } from './utils/broadcastAuth';
 import { useLogout } from './hooks/useLogout';
+import { useDeviceRevocationMonitor } from './hooks/useDeviceRevocationMonitor';
 
 // Lazy loading de páginas para reducir bundle inicial
 const Landing = lazy(() => import('./pages/Landing'));
@@ -88,6 +89,13 @@ function AppContent() {
     warningTime: 2 * 60 * 1000, // 2 minutos de advertencia
     onLogout: handleInactivityLogout,
     enabled: isAuthenticated // Solo activo cuando hay usuario autenticado
+  });
+
+  // Hook de monitoreo de revocación de dispositivo (v1.14.0)
+  // Detecta cuando el dispositivo actual fue revocado desde otro navegador
+  // Solo activo cuando hay usuario autenticado
+  useDeviceRevocationMonitor({
+    enabled: isAuthenticated
   });
 
   return (
