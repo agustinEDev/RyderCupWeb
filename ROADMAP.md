@@ -305,7 +305,7 @@ const macOSRegex = /\b(macos|mac\s*os|macintosh|mac)\b/i;
 **Tests:** 711 → 699 (-12) - 76/76 passing ✅
 **Archivos:** `Device.js`, `Device.test.js`, `useDeviceManagement.js`, `useDeviceManagement.test.js`, `DeviceManagement.jsx`, `ApiDeviceRepository.test.js`
 **Tiempo real:** 1h
-**Commit:** `PENDING`
+**Commit:** `c837bfb`
 
 **Estimación:** 1h
 
