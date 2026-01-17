@@ -74,6 +74,306 @@ describe('Device Entity', () => {
     });
   });
 
+  describe('Constructor - Type Validations', () => {
+    describe('id type validation', () => {
+      it('should throw error if id is a number', () => {
+        const deviceData = {
+          ...validDeviceData,
+          id: 12345,
+        };
+
+        expect(() => new Device(deviceData)).toThrow(
+          'Device id must be a string'
+        );
+      });
+
+      it('should throw error if id is an object', () => {
+        const deviceData = {
+          ...validDeviceData,
+          id: { value: 'device-123' },
+        };
+
+        expect(() => new Device(deviceData)).toThrow(
+          'Device id must be a string'
+        );
+      });
+
+      it('should throw error if id is an array', () => {
+        const deviceData = {
+          ...validDeviceData,
+          id: ['device-123'],
+        };
+
+        expect(() => new Device(deviceData)).toThrow(
+          'Device id must be a string'
+        );
+      });
+
+      it('should throw error if id is a boolean', () => {
+        const deviceData = {
+          ...validDeviceData,
+          id: true,
+        };
+
+        expect(() => new Device(deviceData)).toThrow(
+          'Device id must be a string'
+        );
+      });
+    });
+
+    describe('device_name type validation', () => {
+      it('should throw error if device_name is a number', () => {
+        const deviceData = {
+          ...validDeviceData,
+          device_name: 123,
+        };
+
+        expect(() => new Device(deviceData)).toThrow(
+          'Device device_name must be a string'
+        );
+      });
+
+      it('should throw error if device_name is an object', () => {
+        const deviceData = {
+          ...validDeviceData,
+          device_name: { browser: 'Chrome' },
+        };
+
+        expect(() => new Device(deviceData)).toThrow(
+          'Device device_name must be a string'
+        );
+      });
+
+      it('should throw error if device_name is an array', () => {
+        const deviceData = {
+          ...validDeviceData,
+          device_name: ['Chrome', 'macOS'],
+        };
+
+        expect(() => new Device(deviceData)).toThrow(
+          'Device device_name must be a string'
+        );
+      });
+    });
+
+    describe('ip_address type validation', () => {
+      it('should throw error if ip_address is a number', () => {
+        const deviceData = {
+          ...validDeviceData,
+          ip_address: 192168001100,
+        };
+
+        expect(() => new Device(deviceData)).toThrow(
+          'Device ip_address must be a string'
+        );
+      });
+
+      it('should throw error if ip_address is an object', () => {
+        const deviceData = {
+          ...validDeviceData,
+          ip_address: { ipv4: '192.168.1.100' },
+        };
+
+        expect(() => new Device(deviceData)).toThrow(
+          'Device ip_address must be a string'
+        );
+      });
+
+      it('should throw error if ip_address is an array', () => {
+        const deviceData = {
+          ...validDeviceData,
+          ip_address: [192, 168, 1, 100],
+        };
+
+        expect(() => new Device(deviceData)).toThrow(
+          'Device ip_address must be a string'
+        );
+      });
+    });
+
+    describe('last_used_at type validation', () => {
+      it('should accept null for last_used_at', () => {
+        const deviceData = {
+          ...validDeviceData,
+          last_used_at: null,
+        };
+
+        const device = new Device(deviceData);
+
+        expect(device.lastUsedAt).toBeNull();
+      });
+
+      it('should accept undefined for last_used_at', () => {
+        const deviceData = {
+          ...validDeviceData,
+          last_used_at: undefined,
+        };
+
+        const device = new Device(deviceData);
+
+        expect(device.lastUsedAt).toBeUndefined();
+      });
+
+      it('should throw error if last_used_at is a number', () => {
+        const deviceData = {
+          ...validDeviceData,
+          last_used_at: 1673262600000,
+        };
+
+        expect(() => new Device(deviceData)).toThrow(
+          'Device last_used_at must be a string, null, or undefined'
+        );
+      });
+
+      it('should throw error if last_used_at is an object', () => {
+        const deviceData = {
+          ...validDeviceData,
+          last_used_at: { timestamp: '2026-01-09T10:30:00Z' },
+        };
+
+        expect(() => new Device(deviceData)).toThrow(
+          'Device last_used_at must be a string, null, or undefined'
+        );
+      });
+
+      it('should throw error if last_used_at is a boolean', () => {
+        const deviceData = {
+          ...validDeviceData,
+          last_used_at: true,
+        };
+
+        expect(() => new Device(deviceData)).toThrow(
+          'Device last_used_at must be a string, null, or undefined'
+        );
+      });
+    });
+
+    describe('created_at type validation', () => {
+      it('should accept null for created_at', () => {
+        const deviceData = {
+          ...validDeviceData,
+          created_at: null,
+        };
+
+        const device = new Device(deviceData);
+
+        expect(device.createdAt).toBeNull();
+      });
+
+      it('should accept undefined for created_at', () => {
+        const deviceData = {
+          ...validDeviceData,
+          created_at: undefined,
+        };
+
+        const device = new Device(deviceData);
+
+        expect(device.createdAt).toBeUndefined();
+      });
+
+      it('should throw error if created_at is a number', () => {
+        const deviceData = {
+          ...validDeviceData,
+          created_at: 1672563300000,
+        };
+
+        expect(() => new Device(deviceData)).toThrow(
+          'Device created_at must be a string, null, or undefined'
+        );
+      });
+
+      it('should throw error if created_at is an object', () => {
+        const deviceData = {
+          ...validDeviceData,
+          created_at: { timestamp: '2026-01-05T08:15:00Z' },
+        };
+
+        expect(() => new Device(deviceData)).toThrow(
+          'Device created_at must be a string, null, or undefined'
+        );
+      });
+
+      it('should throw error if created_at is an array', () => {
+        const deviceData = {
+          ...validDeviceData,
+          created_at: ['2026-01-05', '08:15:00'],
+        };
+
+        expect(() => new Device(deviceData)).toThrow(
+          'Device created_at must be a string, null, or undefined'
+        );
+      });
+    });
+
+    describe('is_active type validation', () => {
+      it('should accept true for is_active', () => {
+        const deviceData = {
+          ...validDeviceData,
+          is_active: true,
+        };
+
+        const device = new Device(deviceData);
+
+        expect(device.isActive).toBe(true);
+      });
+
+      it('should accept false for is_active', () => {
+        const deviceData = {
+          ...validDeviceData,
+          is_active: false,
+        };
+
+        const device = new Device(deviceData);
+
+        expect(device.isActive).toBe(false);
+      });
+
+      it('should throw error if is_active is a number', () => {
+        const deviceData = {
+          ...validDeviceData,
+          is_active: 1,
+        };
+
+        expect(() => new Device(deviceData)).toThrow(
+          'Device is_active must be a boolean'
+        );
+      });
+
+      it('should throw error if is_active is a string', () => {
+        const deviceData = {
+          ...validDeviceData,
+          is_active: 'true',
+        };
+
+        expect(() => new Device(deviceData)).toThrow(
+          'Device is_active must be a boolean'
+        );
+      });
+
+      it('should throw error if is_active is null', () => {
+        const deviceData = {
+          ...validDeviceData,
+          is_active: null,
+        };
+
+        expect(() => new Device(deviceData)).toThrow(
+          'Device is_active must be a boolean'
+        );
+      });
+
+      it('should throw error if is_active is an object', () => {
+        const deviceData = {
+          ...validDeviceData,
+          is_active: { value: true },
+        };
+
+        expect(() => new Device(deviceData)).toThrow(
+          'Device is_active must be a boolean'
+        );
+      });
+    });
+  });
+
   describe('isDeviceActive', () => {
     it('should return true for active device', () => {
       const device = new Device(validDeviceData);
