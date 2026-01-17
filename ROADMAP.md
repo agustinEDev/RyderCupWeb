@@ -666,6 +666,382 @@ const macOSRegex = /\b(macos|mac\s*os|macintosh|mac)\b/i;
 
 ---
 
+## 🎯 Roadmap v1.15.0 - Major Dependencies Update
+
+> **Objetivo:** Actualizar dependencias con breaking changes (React 19, Sentry 10, Router 7, etc.)
+> **Duración:** 2-3 semanas (4 sprints técnicos)
+> **Tipo:** Major version upgrades + Modernización del stack
+> **Estado:** 📋 Planificado (pendiente aprobación)
+
+---
+
+### 📊 Resumen Ejecutivo
+
+**Versión actual:** v1.14.1
+**Próxima versión:** v1.15.0
+**Dependencias a actualizar:** 11 paquetes (10 major + 1 minor crítico)
+**Tests afectados estimados:** ~100-150 tests (de 712 totales)
+**Riesgo:** MEDIO-ALTO (breaking changes documentados)
+
+**Motivación:**
+- React 19 trae mejoras de performance significativas (React Compiler)
+- Sentry 10.x tiene mejor integración con React 19
+- React Router 7 mejora type safety y data loading
+- Tailwind 4 reduce bundle size (~20% más ligero)
+- ESLint 9 mejora detección de errores
+
+**Beneficios esperados:**
+- ✅ Performance: +15-20% faster rendering (React Compiler)
+- ✅ Bundle size: -10-15% (Tailwind 4 + tree-shaking mejorado)
+- ✅ DX: Mejor type safety (Router 7)
+- ✅ Security: Últimas versiones con patches de seguridad
+- ✅ Soporte: Versiones LTS con soporte a largo plazo
+
+---
+
+### 📦 Dependencias a Actualizar (Agrupadas)
+
+#### **Grupo 1: React 19 Ecosystem (6 paquetes) - Sprint 1**
+
+| Paquete | Actual | Target | Breaking Changes |
+|---------|--------|--------|------------------|
+| react | 18.3.1 | **19.2.3** | New APIs, Suspense changes |
+| react-dom | 18.3.1 | **19.2.3** | createRoot required |
+| @types/react | 18.3.27 | **19.2.8** | Type definitions |
+| @types/react-dom | 18.3.7 | **19.2.3** | Type definitions |
+| @vitejs/plugin-react | 4.7.0 | **5.1.2** | React 19 support |
+| eslint-plugin-react-hooks | 4.6.2 | **7.0.1** | New hook rules |
+
+**Impacto estimado:** ALTO
+**Tests afectados:** 50-70 (componentes, hooks, contexts)
+**Tiempo estimado:** 2-3 días
+
+**Breaking changes clave:**
+1. ❌ `ReactDOM.render()` removido → usar `createRoot()`
+2. ⚠️ Suspense behavior cambios (auto-suspending)
+3. ⚠️ Hook rules más estrictas
+4. ✅ New: `use()` hook para promises
+5. ✅ New: `<form>` actions soporte nativo
+6. ✅ Performance: React Compiler automático
+
+---
+
+#### **Grupo 2: Monitoring & Routing (2 paquetes) - Sprint 2**
+
+| Paquete | Actual | Target | Breaking Changes |
+|---------|--------|--------|------------------|
+| @sentry/react | 7.120.4 | **10.34.0** | 3 major versions! API changes |
+| react-router-dom | 6.30.3 | **7.12.0** | Data loading, type safety |
+
+**Impacto estimado:** MEDIO
+**Tests afectados:** 30-40 (routing, error tracking)
+**Tiempo estimado:** 1.5-2 días
+
+**Breaking changes @sentry/react (7 → 10):**
+1. ❌ `Sentry.init()` config cambios
+2. ⚠️ Error boundary API actualizada
+3. ⚠️ Performance monitoring configuración
+4. ✅ Better React 19 integration
+5. ✅ Session Replay improvements
+
+**Breaking changes react-router-dom (6 → 7):**
+1. ⚠️ Data loading API (`loader`, `action`)
+2. ⚠️ Type safety improvements (TypeScript)
+3. ✅ Better error handling
+4. ✅ Improved nested routing
+
+---
+
+#### **Grupo 3: Build Tools & Styling (2 paquetes) - Sprint 3**
+
+| Paquete | Actual | Target | Breaking Changes |
+|---------|--------|--------|------------------|
+| tailwindcss | 3.4.19 | **4.1.18** | Config format, utilities |
+| eslint | 8.57.1 | **9.39.2** | Flat config required |
+
+**Impacto estimado:** MEDIO
+**Tests afectados:** 20-30 (styling, linting)
+**Tiempo estimado:** 1-1.5 días
+
+**Breaking changes Tailwind 4:**
+1. ❌ `tailwind.config.js` → nueva sintaxis
+2. ⚠️ Algunas utilidades renombradas
+3. ⚠️ JIT mode por defecto (siempre)
+4. ✅ Smaller bundle (~20% reduction)
+5. ✅ Better CSS variables support
+
+**Breaking changes ESLint 9:**
+1. ❌ `.eslintrc.js` → `eslint.config.js` (flat config)
+2. ⚠️ Algunas reglas deprecadas removidas
+3. ✅ Better performance
+4. ✅ Simplified configuration
+
+---
+
+#### **Grupo 4: Verificación Final (1 paquete) - Sprint 4**
+
+| Paquete | Actual | Target | Tipo |
+|---------|--------|--------|------|
+| @sentry/replay | 7.120.4 | **7.116.0** | Downgrade (peer dep fix) |
+
+**Impacto estimado:** BAJO
+**Tests afectados:** 0-5
+**Tiempo estimado:** 0.5 día
+
+---
+
+### 🗓️ Timeline v1.15.0 (Planificado)
+
+| Sprint | Duración | Grupo | Paquetes | Tests Est. | Riesgo |
+|--------|----------|-------|----------|------------|--------|
+| Sprint 1 | 2-3 días | React 19 | 6 | 50-70 | 🔴 Alto |
+| Sprint 2 | 1.5-2 días | Sentry + Router | 2 | 30-40 | 🟡 Medio |
+| Sprint 3 | 1-1.5 días | Tailwind + ESLint | 2 | 20-30 | 🟡 Medio |
+| Sprint 4 | 0.5 día | Verificación | 1 | 0-5 | 🟢 Bajo |
+| **Total** | **5-7 días** | **4 sprints** | **11** | **100-145** | 🟡 Medio |
+
+**Nota:** Días de trabajo efectivo (no calendario). Incluye buffer para testing exhaustivo.
+
+---
+
+### ✅ Sprint 1: React 19 Ecosystem
+
+**Objetivo:** Migrar a React 19 con todas sus dependencias
+
+#### **Tareas preparatorias (0.5 día):**
+- [ ] Leer changelog oficial de React 19 (blog.react.dev)
+- [ ] Revisar breaking changes en react-dom
+- [ ] Backup branch: `git checkout -b backup/v1.14.1`
+- [ ] Crear feature branch: `git checkout -b feature/react-19-upgrade`
+- [ ] Documentar componentes que usan Suspense (afectados)
+
+#### **Actualización de paquetes (0.5 día):**
+- [ ] `npm install react@19.2.3 react-dom@19.2.3`
+- [ ] `npm install -D @types/react@19.2.8 @types/react-dom@19.2.3`
+- [ ] `npm install -D @vitejs/plugin-react@5.1.2`
+- [ ] `npm install -D eslint-plugin-react-hooks@7.0.1`
+- [ ] Verificar package.json y package-lock.json
+
+#### **Migración de código (1-1.5 días):**
+- [ ] Buscar y reemplazar `ReactDOM.render` → `createRoot`
+  * Archivos: `src/main.jsx` (probablemente ya usa createRoot)
+  * Verificar tests que usen render directo
+- [ ] Actualizar componentes con Suspense
+  * Revisar `ErrorBoundary.jsx` si existe
+  * Actualizar lazy loading patterns
+- [ ] Actualizar hooks personalizados (nuevas reglas)
+  * `useAuth`, `useDeviceManagement`, etc.
+  * Verificar warnings de ESLint
+- [ ] Revisar context providers (behavior changes)
+  * `AuthContext`, `CompetitionContext`, etc.
+
+#### **Testing (0.5-1 día):**
+- [ ] Ejecutar tests: `npm test -- --run`
+- [ ] Fix tests fallidos relacionados con React 19
+- [ ] Testing manual de flujos críticos:
+  * Login/Logout
+  * Device Management
+  * Competition CRUD
+  * Enrollment flow
+- [ ] Verificar Suspense boundaries (loading states)
+- [ ] Verificar error boundaries (error handling)
+
+#### **Validación (0.5 día):**
+- [ ] `npm run lint` (0 warnings)
+- [ ] `npm run build` (exitoso)
+- [ ] Bundle analysis (comparar tamaño)
+- [ ] Performance testing (comparar render times)
+- [ ] Commit: `feat(deps): UPGRADE to React 19 ecosystem`
+
+---
+
+### ✅ Sprint 2: Sentry 10 + React Router 7
+
+**Objetivo:** Actualizar monitoring y routing
+
+#### **Sentry 10.x Migration (1 día):**
+- [ ] Leer migration guide: Sentry 7 → 10
+- [ ] `npm install @sentry/react@10.34.0`
+- [ ] Actualizar `src/utils/sentry.js`:
+  * Revisar `Sentry.init()` config
+  * Actualizar error boundary integration
+  * Verificar performance monitoring
+- [ ] Actualizar `ErrorBoundary` component (si aplica)
+- [ ] Testing:
+  * Provocar errores intencionalmente
+  * Verificar que lleguen a Sentry dashboard
+  * Verificar session replay funciona
+
+#### **React Router 7 Migration (0.5-1 día):**
+- [ ] Leer changelog Router 6 → 7
+- [ ] `npm install react-router-dom@7.12.0`
+- [ ] Revisar breaking changes en:
+  * `src/App.jsx` (Routes config)
+  * Route guards (`RoleGuard.jsx`)
+  * Navigation hooks (`useNavigate`)
+- [ ] Actualizar data loading (si usamos loaders)
+- [ ] Testing:
+  * Navegación entre rutas
+  * Guards (ADMIN, CREATOR, PLAYER)
+  * 404 handling
+  * Nested routes
+
+#### **Validación Sprint 2:**
+- [ ] Tests: 712/712 passing
+- [ ] Lint: 0 warnings
+- [ ] Build: exitoso
+- [ ] Manual testing de rutas críticas
+- [ ] Commit: `feat(deps): UPGRADE Sentry 10 + Router 7`
+
+---
+
+### ✅ Sprint 3: Tailwind 4 + ESLint 9
+
+**Objetivo:** Modernizar build tools y styling
+
+#### **Tailwind 4 Migration (0.5-1 día):**
+- [ ] Leer upgrade guide Tailwind 3 → 4
+- [ ] Backup: `cp tailwind.config.js tailwind.config.v3.backup.js`
+- [ ] `npm install -D tailwindcss@4.1.18`
+- [ ] Actualizar `tailwind.config.js` (nueva sintaxis)
+- [ ] Revisar utilidades deprecadas/renombradas
+- [ ] Testing visual:
+  * Landing page
+  * Dashboard
+  * Device Management
+  * Forms (Login, Register)
+  * Modals (ConfirmModal)
+- [ ] Bundle analysis (verificar reducción de tamaño)
+
+#### **ESLint 9 Migration (0.5 día):**
+- [ ] Leer flat config guide
+- [ ] Backup: `cp .eslintrc.cjs eslint.config.backup.cjs`
+- [ ] `npm install -D eslint@9.39.2`
+- [ ] Crear `eslint.config.js` (flat config)
+- [ ] Migrar reglas de `.eslintrc.cjs`
+- [ ] Eliminar `.eslintrc.cjs` (deprecated)
+- [ ] `npm run lint` (verificar 0 warnings)
+
+#### **Validación Sprint 3:**
+- [ ] Tests: 712/712 passing
+- [ ] Lint: 0 warnings (nuevo ESLint 9)
+- [ ] Build: exitoso (nuevo Tailwind 4)
+- [ ] Visual regression testing
+- [ ] Bundle size: verificar reducción
+- [ ] Commit: `feat(deps): UPGRADE Tailwind 4 + ESLint 9`
+
+---
+
+### ✅ Sprint 4: Verificación y Ajustes Finales
+
+**Objetivo:** Testing exhaustivo y corrección de edge cases
+
+#### **Regression Testing (0.25 día):**
+- [ ] Ejecutar suite completa: `npm test -- --run`
+- [ ] Verificar coverage no bajó:
+  * Lines: ≥85%
+  * Functions: ≥75%
+  * Branches: ≥70%
+- [ ] Testing manual de todos los flujos:
+  * ✅ Auth flow (login, logout, register, reset password)
+  * ✅ Device management (list, revoke, monitoring)
+  * ✅ Competition CRUD
+  * ✅ Enrollment flow
+  * ✅ Profile management
+  * ✅ i18n (ES/EN switching)
+
+#### **Downgrade @sentry/replay (0.25 día):**
+- [ ] `npm install @sentry/replay@7.116.0`
+- [ ] Verificar peer dependency warnings resueltos
+- [ ] Testing de Session Replay en Sentry
+
+#### **Documentation & Cleanup (0.25 día):**
+- [ ] Actualizar ROADMAP.md con resultados
+- [ ] Actualizar CHANGELOG.md (v1.15.0)
+- [ ] Eliminar archivos backup:
+  * `tailwind.config.v3.backup.js`
+  * `eslint.config.backup.cjs`
+- [ ] Revisar TODOs añadidos durante migración
+- [ ] Screenshots/videos de features funcionando
+
+#### **Final Validation (0.25 día):**
+- [ ] Build production: `npm run build`
+- [ ] Bundle analysis final
+- [ ] Performance benchmarks
+- [ ] Security audit: `npm audit`
+- [ ] Commit final: `docs(v1.15.0): UPDATE roadmap and changelog`
+
+---
+
+### 📊 Métricas Objetivo v1.15.0
+
+| Métrica | v1.14.1 | v1.15.0 Objetivo | Delta |
+|---------|---------|------------------|-------|
+| **Tests** | 712 | 712-720 | 0-8 nuevos |
+| **Bundle size (gzip)** | ~250 KB | ~210-225 KB | **-10-15%** ✅ |
+| **Render time** | baseline | baseline -15-20% | **+Performance** ✅ |
+| **Dependencies major** | 0 | 10 actualizados | **+Modernización** ✅ |
+| **ESLint warnings** | 0 | 0 | Mantener ✅ |
+| **Security Score** | 8.87/10 | 9.0/10 | **+0.13** ✅ |
+| **React version** | 18.3.1 | 19.2.3 | **Major upgrade** ✅ |
+
+---
+
+### ⚠️ Riesgos y Mitigaciones
+
+| Riesgo | Probabilidad | Impacto | Mitigación |
+|--------|--------------|---------|------------|
+| Tests masivos fallando | Media | Alto | Sprints graduales, backup branch |
+| Bundle size aumenta | Baja | Medio | Bundle analysis post-update |
+| Performance regresión | Baja | Alto | Benchmarks pre/post, rollback plan |
+| Breaking changes no documentados | Media | Medio | Testing exhaustivo, logs detallados |
+| Conflictos de peer dependencies | Alta | Bajo | Actualización gradual por grupos |
+
+**Plan de rollback:**
+1. Backup branch `backup/v1.14.1` disponible
+2. Git tags en cada sprint: `v1.15.0-sprint1`, `v1.15.0-sprint2`, etc.
+3. Rollback inmediato si tests < 95% passing
+4. Rollback si bundle > 300 KB (límite crítico)
+
+---
+
+### 🚀 Criterios de Éxito
+
+**Mínimos (Must Have):**
+- ✅ Tests: 95%+ passing (675/712 mínimo)
+- ✅ Lint: 0 warnings
+- ✅ Build: exitoso
+- ✅ Bundle: ≤ 300 KB total
+- ✅ Security: 0 vulnerabilities críticas
+
+**Deseables (Nice to Have):**
+- ✅ Tests: 100% passing (712/712)
+- ✅ Bundle: -10% size reduction
+- ✅ Performance: +15% faster rendering
+- ✅ Type coverage: +5%
+
+**Bloqueantes (Must NOT Have):**
+- ❌ Regresión de features existentes
+- ❌ Errores en producción post-deploy
+- ❌ Performance degradation > 5%
+- ❌ Bundle size > 300 KB
+
+---
+
+### 📅 Fechas Tentativas
+
+**Inicio estimado:** Por definir (post v1.14.1 release)
+**Duración:** 2-3 semanas (5-7 días efectivos)
+**Release estimado:** v1.15.0 - Febrero 2026
+
+**Prerrequisitos:**
+1. v1.14.1 deployed y estable en producción
+2. Monitoreo Sentry sin errores críticos (7 días)
+3. Aprobación de stakeholders para upgrade
+4. Tiempo disponible para testing exhaustivo
+
+---
+
 ### 🔗 Referencias del Análisis
 
 **Commits relacionados:**
