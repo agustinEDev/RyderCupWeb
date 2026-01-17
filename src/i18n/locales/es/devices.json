@@ -40,5 +40,8 @@
     "DEVICE_ALREADY_REVOKED": "Dispositivo ya revocado",
     "FAILED_TO_REVOKE_DEVICE": "Error al revocar dispositivo",
     "FAILED_TO_LOAD_DEVICES": "Error al cargar dispositivos"
+  },
+  "aria": {
+    "closeErrorMessage": "Cerrar mensaje de error"
   }
 }

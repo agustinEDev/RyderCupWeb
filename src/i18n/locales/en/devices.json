@@ -40,5 +40,8 @@
     "DEVICE_ALREADY_REVOKED": "Device already revoked",
     "FAILED_TO_REVOKE_DEVICE": "Failed to revoke device",
     "FAILED_TO_LOAD_DEVICES": "Failed to load devices"
+  },
+  "aria": {
+    "closeErrorMessage": "Close error message"
   }
 }
