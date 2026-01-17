@@ -14,6 +14,10 @@
     "revokeCurrent": "Este es tu dispositivo ACTUAL. Revocarlo te desconectará inmediatamente. ¿Estás seguro?",
     "revokeOther": "¿Estás seguro de que quieres revocar este dispositivo? Todas las sesiones en este dispositivo se cerrarán."
   },
+  "modals": {
+    "revokeCurrentTitle": "Revocar Dispositivo Actual",
+    "revokeOtherTitle": "Revocar Dispositivo"
+  },
   "device": {
     "current": "Dispositivo Actual",
     "ip": "IP",

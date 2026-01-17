@@ -3,7 +3,7 @@
  * v1.13.0: Device Fingerprinting feature
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import Device from './Device';
 
 describe('Device Entity', () => {

@@ -1,7 +1,8 @@
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import HeaderAuth from '../components/layout/HeaderAuth';
+import ConfirmModal from '../components/modals/ConfirmModal';
 import { useDeviceManagement } from '../hooks/useDeviceManagement';
 import { useAuth } from '../hooks/useAuth';
 import { useLogout } from '../hooks/useLogout';
@@ -13,6 +14,8 @@ const DeviceManagement = () => {
   const navigate = useNavigate();
   const timeoutRef = useRef(null);
   const { logout } = useLogout();
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [deviceToRevoke, setDeviceToRevoke] = useState(null);
 
   const {
     devices,
@@ -21,7 +24,14 @@ const DeviceManagement = () => {
     revokeDevice,
   } = useDeviceManagement();
 
-  const handleRevokeClick = async (device) => {
+  const handleRevokeClick = (device) => {
+    setDeviceToRevoke(device);
+    setIsModalOpen(true);
+  };
+
+  const handleConfirmRevoke = async () => {
+    if (!deviceToRevoke) return;
+
     // Clear any existing logout timer BEFORE starting revoke operation
     // This prevents race conditions when revoking multiple devices
     if (timeoutRef.current) {
@@ -30,18 +40,13 @@ const DeviceManagement = () => {
     }
 
     // Backend now tells us if this is the current device (100% accurate via device_id in token)
-    const isCurrent = device.isCurrentDevice;
+    const isCurrent = deviceToRevoke.isCurrentDevice;
 
-    // Double confirmation for current device
-    const confirmMessage = isCurrent
-      ? t('confirmations.revokeCurrent')
-      : t('confirmations.revokeOther');
+    const success = await revokeDevice(deviceToRevoke.id);
 
-    if (!window.confirm(confirmMessage)) {
-      return;
-    }
-
-    const success = await revokeDevice(device.id);
+    // Close modal
+    setIsModalOpen(false);
+    setDeviceToRevoke(null);
 
     // If current device was revoked, logout immediately
     // Backend already invalidated tokens, so logout is safe
@@ -51,6 +56,11 @@ const DeviceManagement = () => {
         logout();
       }, 500);
     }
+  };
+
+  const handleCancelRevoke = () => {
+    setIsModalOpen(false);
+    setDeviceToRevoke(null);
   };
 
   // Cleanup timeout on component unmount
@@ -225,6 +235,25 @@ const DeviceManagement = () => {
           </div>
         </div>
       </div>
+
+      {/* Confirm Revoke Modal */}
+      <ConfirmModal
+        isOpen={isModalOpen}
+        title={
+          deviceToRevoke?.isCurrentDevice
+            ? t('modals.revokeCurrentTitle')
+            : t('modals.revokeOtherTitle')
+        }
+        message={
+          deviceToRevoke?.isCurrentDevice
+            ? t('confirmations.revokeCurrent')
+            : t('confirmations.revokeOther')
+        }
+        onConfirm={handleConfirmRevoke}
+        onCancel={handleCancelRevoke}
+        isDestructive={true}
+        isLoading={deviceToRevoke ? revokingDeviceIds.has(deviceToRevoke.id) : false}
+      />
     </div>
   );
 };

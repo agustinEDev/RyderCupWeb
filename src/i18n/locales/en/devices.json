@@ -14,6 +14,10 @@
     "revokeCurrent": "This is your CURRENT device. Revoking it will log you out immediately. Are you sure?",
     "revokeOther": "Are you sure you want to revoke this device? All sessions on this device will be closed."
   },
+  "modals": {
+    "revokeCurrentTitle": "Revoke Current Device",
+    "revokeOtherTitle": "Revoke Device"
+  },
   "device": {
     "current": "Current Device",
     "ip": "IP",
