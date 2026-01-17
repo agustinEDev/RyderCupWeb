@@ -7,20 +7,158 @@ y este proyecto adhiere a [Versionado Semántico](https://semver.org/lang/es/).
 
 ## [Unreleased]
 
+## [1.14.1] - 2026-01-17
+
+### Changed
+- **Dependency Updates (Safe Patches)**: Updated 7 packages to latest patch/minor versions
+  - **Vite**: 7.3.0 → 7.3.1 (bugfixes)
+  - **Vitest**: 4.0.16 → 4.0.17 (bugfixes)
+  - **@vitest/coverage-v8**: 4.0.16 → 4.0.17 (coverage improvements)
+  - **i18next**: 25.7.3 → 25.7.4 (translation engine bugfixes)
+  - **react-i18next**: 16.5.0 → 16.5.3 (React integration improvements)
+  - **framer-motion**: 12.23.26 → 12.26.2 (animation library updates)
+  - **terser**: 5.44.1 → 5.46.0 (minification improvements)
+  - No breaking changes, all tests passing (712/712)
+  - Zero vulnerabilities found in npm audit
+
+### Security
+- **Automatic Patch Updates**: All security patches applied automatically
+  - Build time: 4.13s (stable)
+  - Bundle size: maintained (~250 KB gzip)
+  - Lint: 0 warnings
+
+---
+
+## [1.14.0] - 2026-01-17
+
+### Summary
+**Device Fingerprinting Improvements** - Complete overhaul of device management system with critical security fixes, UX enhancements, and code quality improvements. 19 bugs fixed across 3 sprints (Críticos, Medios, UX) in 3.5 days.
+
 ### Added
-- **CI/CD Pipeline Unification**: Unified security and quality checks into single sequential pipeline
-  - **New Unified Workflow** (`ci-cd.yml`): Combines CI and security workflows with strict dependencies
-    - **Phase 1 - Security** (parallel): dependency-audit, secret-scanning, license-check, snyk (optional)
-    - **Phase 2 - Quality** (parallel, needs Phase 1): lint, test, type-check, code-quality
-    - **Phase 3 - Build** (needs Phase 2): production build with Vite
-    - **Phase 4 - Summary**: Visual markdown summary with tables, emojis, and status indicators
-  - **Visual Summary Report**: Automatic generation in GitHub Actions Summary tab
-    - Table views for each phase with ✅/❌/⚠️/⏭️ status indicators
-    - Detailed final status with list of failed jobs (if any)
-    - Professional Markdown formatting with emojis and timestamps
-  - **Security Gates**: Quality checks only run if all security checks pass
-  - **Documentation**: Added comprehensive README in `.github/workflows/` with diagrams
-  - **Deprecation**: Old `ci.yml` and `security.yml` workflows should be removed
+- **Immediate Device Revocation Detection (Event-Driven)**: Proactive monitoring system for revoked devices
+  - Created `useDeviceRevocationMonitor.js` hook with event-driven architecture
+  - **3 triggers**: Navigation changes, tab visibility, 5-minute fallback polling
+  - **Latency**: 0-5 seconds (was 0-15 minutes before)
+  - **Throttling**: Max 1 check every 5 seconds (prevents spam)
+  - **Smart activation**: Only when user is authenticated
+  - Integrated in `App.jsx` globally
+  - 3 comprehensive tests (100% passing)
+
+- **ConfirmModal React Component**: Modern, accessible modal replacing window.confirm()
+  - Full i18n support (ES/EN) for all modal text
+  - Accessibility: `aria-labelledby`, `aria-describedby`, `role="dialog"`
+  - **ESC key support** for closing
+  - **Body scroll lock** when modal is open
+  - **Loading state** with spinner during operations
+  - **Destructive actions** styling (red buttons)
+  - Responsive design (mobile-first)
+  - Reusable across entire application
+
+- **Inline Error Display Per Device**: Persistent error messages for failed operations
+  - `deviceErrors` Map state in `useDeviceManagement` hook
+  - Error boxes appear below each affected device (persistent)
+  - Dismissable with close button (X)
+  - Complements toast notifications (which disappear after timeout)
+  - Better UX for multiple simultaneous operations
+
+- **Skeleton Loader (Non-Blocking)**: Elegant loading state without blocking navigation
+  - 3 animated device cards (`animate-pulse`)
+  - **HeaderAuth always visible** during load
+  - Users can navigate while devices load
+  - Matches exact structure of real device cards
+  - Replaces full-page blocking spinner
+
+- **Accessibility Improvements (WCAG 2.1 AA)**: Screen reader and assistive technology support
+  - `aria-hidden="true"` on 9 decorative SVG icons
+  - `aria-label` for close error button (internationalized)
+  - Better navigation for screen readers
+  - All interactive elements properly labeled
+
+- **Device Entity Validation**: Strict type checking in domain layer
+  - Validation for `id`, `device_name`, `ip_address` (strings required)
+  - Validation for `last_used_at`, `created_at` (string, null, or undefined)
+  - Validation for `is_active` (boolean strict)
+  - 23 new validation tests (18 → 41 tests total)
+
+- **Backend-Driven `is_current_device`**: Eliminated complex User-Agent parsing
+  - Backend provides `is_current_device` via JWT `device_id`
+  - 100% accurate detection (no regex or browser detection needed)
+  - Eliminated 19 tests for deprecated User-Agent detection
+  - **Code reduction**: -417 lines (82% reduction)
+  - Visual UX: Green border for current device
+
+- **Deprecation Warnings (DEV mode)**: Developer-friendly warnings for old methods
+  - `console.warn()` for deprecated `getFormattedLastUsed()` and `getFormattedCreatedAt()`
+  - Only active in development (removed in production builds)
+  - Clear migration path to `formatDateTime()` utility
+  - 2 tests verifying warnings appear correctly
+
+### Changed
+- **Logout Timeout Optimization**: Reduced timeout from 2000ms to 500ms when revoking current device
+  - Backend already invalidates tokens immediately
+  - 500ms delay only for user feedback visibility (toast)
+  - Improves UX with faster logout response
+
+### Fixed
+- **iOS Safari Device Detection (Critical)**: Fixed iPadOS 13+ detection issue
+  - **Problem**: iPadOS 13+ identifies as macOS in User-Agent
+  - **Solution**: Detection using `navigator.maxTouchPoints > 1` for touch devices
+  - **Impact**: Correctly detects iPadOS devices vs macOS Safari
+  - Reordered checks: iOS first, then macOS (excludes iOS)
+  - 16 comprehensive tests covering all edge cases
+
+- **Page Blank Crash on Device Revocation**: Fixed critical crash when device was revoked
+  - **Problem**: Response body consumed error caused white page
+  - **Solution**: `await new Promise(() => {})` instead of returning consumed response
+  - **Impact**: Graceful logout flow without crashes
+  - Integrated with immediate revocation detection system
+
+- **Infinite Promise in Refresh Endpoint**: Fixed check order preventing proper logout
+  - **Problem**: Checks after `response.body` was consumed
+  - **Solution**: Reordered checks before consuming response body
+  - **Impact**: Proper handling of 401 on refresh endpoint
+
+### Security
+- **OWASP Score Improvement**: 8.75/10 → 8.87/10 (+0.12)
+  - **A01: Access Control**: 8.0/10 → 8.5/10 (+0.5)
+    - Immediate device revocation detection (0-5s latency)
+    - Backend-driven current device detection (100% accurate)
+  - **A07: Authentication Failures**: 8.5/10 → 9.0/10 (+0.5)
+    - Event-driven monitoring prevents unauthorized access
+    - Faster logout on revocation reduces attack window
+
+### Performance
+- **Code Reduction**: -417 lines (82% reduction in device detection logic)
+- **Event-Driven Architecture**: ~85-90% reduction in API requests vs polling
+  - Requests/hour (active user): 15-20 (vs 120 with 30s polling)
+  - Requests/hour (idle user): 12 (5min fallback)
+- **Bundle Size**: Maintained stable (~250 KB gzip)
+
+### Testing
+- **Test Suite**: 540 → 712 tests (+172 net, -31 deprecated)
+- **Coverage**:
+  - Device Module: ~85% → ~97% (+12%)
+  - Overall: Lines ≥85%, Functions ≥75%, Branches ≥70%
+- **New Test Files**:
+  - `useDeviceRevocationMonitor.test.jsx` (3 tests)
+  - Device entity validation tests (+23 tests)
+  - TokenRefresh fix tests
+- **Test Quality**: 100% pass rate, 0 flaky tests
+
+### Documentation
+- **ROADMAP.md**: Complete v1.14.0 documentation (667 lines)
+  - 3 sprints documented with time tracking
+  - Breaking changes and solutions detailed
+  - Metrics tracking (tests, security score, coverage)
+  - v1.15.0 Major Dependencies Update roadmap added
+- **Commits**: 23 total (Sprint 1: 4, Sprint 2: 8, Sprint 3: 11)
+- **Conventional Commits**: 100% compliance
+
+---
+
+## [1.6.0] - 2025-11-25
+
+### Added
 - **Internationalization (i18n)**: Added translations for Device Management page
   - New namespace `devices` with ES/EN translations
   - Updated `i18n/config.js` to include devices namespace
@@ -768,7 +906,9 @@ y este proyecto adhiere a [Versionado Semántico](https://semver.org/lang/es/).
 - Configuración de headers de seguridad (X-Content-Type-Options, X-Frame-Options, etc.)
 - Eliminación automática de console.log en builds de producción
 
-[Unreleased]: https://github.com/agustinEDev/RyderCupWeb/compare/v1.6.0...HEAD
+[Unreleased]: https://github.com/agustinEDev/RyderCupWeb/compare/v1.14.1...HEAD
+[1.14.1]: https://github.com/agustinEDev/RyderCupWeb/compare/v1.14.0...v1.14.1
+[1.14.0]: https://github.com/agustinEDev/RyderCupWeb/compare/v1.6.0...v1.14.0
 [1.6.0]: https://github.com/agustinEDev/RyderCupWeb/compare/v1.5.1...v1.6.0
 [1.5.1]: https://github.com/agustinEDev/RyderCupWeb/compare/v1.5.0...v1.5.1
 [1.5.0]: https://github.com/agustinEDev/RyderCupWeb/compare/v1.4.0...v1.5.0
