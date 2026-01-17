@@ -14,6 +14,7 @@ describe('Device Entity', () => {
     last_used_at: '2026-01-09T10:30:00Z',
     created_at: '2026-01-05T08:15:00Z',
     is_active: true,
+    is_current_device: false,
   };
 
   describe('Constructor', () => {
@@ -26,6 +27,7 @@ describe('Device Entity', () => {
       expect(device.lastUsedAt).toBe('2026-01-09T10:30:00Z');
       expect(device.createdAt).toBe('2026-01-05T08:15:00Z');
       expect(device.isActive).toBe(true);
+      expect(device.isCurrentDevice).toBe(false);
     });
 
     it('should default is_active to true if not provided', () => {
@@ -372,6 +374,86 @@ describe('Device Entity', () => {
         );
       });
     });
+
+    describe('is_current_device type validation', () => {
+      it('should accept true for is_current_device', () => {
+        const deviceData = {
+          ...validDeviceData,
+          is_current_device: true,
+        };
+
+        const device = new Device(deviceData);
+
+        expect(device.isCurrentDevice).toBe(true);
+      });
+
+      it('should accept false for is_current_device', () => {
+        const deviceData = {
+          ...validDeviceData,
+          is_current_device: false,
+        };
+
+        const device = new Device(deviceData);
+
+        expect(device.isCurrentDevice).toBe(false);
+      });
+
+      it('should default to false if not provided', () => {
+        const deviceData = {
+          id: 'device-999',
+          device_name: 'Firefox on Linux',
+          ip_address: '10.0.0.1',
+        };
+
+        const device = new Device(deviceData);
+
+        expect(device.isCurrentDevice).toBe(false);
+      });
+
+      it('should throw error if is_current_device is a number', () => {
+        const deviceData = {
+          ...validDeviceData,
+          is_current_device: 1,
+        };
+
+        expect(() => new Device(deviceData)).toThrow(
+          'Device is_current_device must be a boolean'
+        );
+      });
+
+      it('should throw error if is_current_device is a string', () => {
+        const deviceData = {
+          ...validDeviceData,
+          is_current_device: 'true',
+        };
+
+        expect(() => new Device(deviceData)).toThrow(
+          'Device is_current_device must be a boolean'
+        );
+      });
+
+      it('should throw error if is_current_device is null', () => {
+        const deviceData = {
+          ...validDeviceData,
+          is_current_device: null,
+        };
+
+        expect(() => new Device(deviceData)).toThrow(
+          'Device is_current_device must be a boolean'
+        );
+      });
+
+      it('should throw error if is_current_device is an object', () => {
+        const deviceData = {
+          ...validDeviceData,
+          is_current_device: { value: true },
+        };
+
+        expect(() => new Device(deviceData)).toThrow(
+          'Device is_current_device must be a boolean'
+        );
+      });
+    });
   });
 
   describe('isDeviceActive', () => {
@@ -459,6 +541,7 @@ describe('Device Entity', () => {
         last_used_at: '2026-01-09T10:30:00Z',
         created_at: '2026-01-05T08:15:00Z',
         is_active: true,
+        is_current_device: false,
       });
     });
 

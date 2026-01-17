@@ -19,7 +19,6 @@ const DeviceManagement = () => {
     isLoading,
     revokingDeviceIds,
     revokeDevice,
-    isCurrentDevice,
   } = useDeviceManagement();
 
   const handleRevokeClick = async (device) => {
@@ -30,7 +29,8 @@ const DeviceManagement = () => {
       timeoutRef.current = null;
     }
 
-    const isCurrent = isCurrentDevice(device);
+    // Backend now tells us if this is the current device (100% accurate via device_id in token)
+    const isCurrent = device.isCurrentDevice;
 
     // Double confirmation for current device
     const confirmMessage = isCurrent
@@ -129,12 +129,16 @@ const DeviceManagement = () => {
               ) : (
                 <div className="space-y-4">
                   {devices.map((device) => {
-                    const isCurrent = isCurrentDevice(device);
+                    const isCurrent = device.isCurrentDevice;
 
                     return (
                       <div
                         key={device.id}
-                        className="border border-gray-200 rounded-lg p-4 md:p-5 hover:shadow-md transition-shadow"
+                        className={`border rounded-lg p-4 md:p-5 hover:shadow-md transition-shadow ${
+                          isCurrent
+                            ? 'border-green-300 bg-green-50'
+                            : 'border-gray-200'
+                        }`}
                       >
                         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                           {/* Device Info */}

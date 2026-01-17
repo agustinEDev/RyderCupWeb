@@ -11,6 +11,7 @@ class Device {
     last_used_at,
     created_at,
     is_active = true,
+    is_current_device = false,
   }) {
     // Validaciones de presencia
     if (!id || !device_name || !ip_address) {
@@ -40,6 +41,9 @@ class Device {
     if (typeof is_active !== 'boolean') {
       throw new Error('Device is_active must be a boolean');
     }
+    if (typeof is_current_device !== 'boolean') {
+      throw new Error('Device is_current_device must be a boolean');
+    }
 
     this.id = id;
     this.deviceName = device_name;
@@ -47,6 +51,7 @@ class Device {
     this.lastUsedAt = last_used_at;
     this.createdAt = created_at;
     this.isActive = is_active;
+    this.isCurrentDevice = is_current_device;
   }
 
   /**
@@ -89,6 +94,7 @@ class Device {
       last_used_at: this.lastUsedAt,
       created_at: this.createdAt,
       is_active: this.isActive,
+      is_current_device: this.isCurrentDevice,
     };
   }
 }

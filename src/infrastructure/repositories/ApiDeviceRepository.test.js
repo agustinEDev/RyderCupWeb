@@ -34,6 +34,7 @@ describe('ApiDeviceRepository', () => {
             last_used_at: '2026-01-09T10:30:00Z',
             created_at: '2026-01-05T08:15:00Z',
             is_active: true,
+            is_current_device: true,
           },
           {
             id: 'device-2',
@@ -42,6 +43,7 @@ describe('ApiDeviceRepository', () => {
             last_used_at: '2026-01-08T15:20:00Z',
             created_at: '2026-01-03T12:00:00Z',
             is_active: true,
+            is_current_device: false,
           },
         ],
         total_count: 2,
@@ -59,8 +61,10 @@ describe('ApiDeviceRepository', () => {
       expect(result.devices[0]).toBeInstanceOf(Device);
       expect(result.devices[0].id).toBe('device-1');
       expect(result.devices[0].deviceName).toBe('Chrome 120.0 on macOS');
+      expect(result.devices[0].isCurrentDevice).toBe(true);
       expect(result.devices[1]).toBeInstanceOf(Device);
       expect(result.devices[1].id).toBe('device-2');
+      expect(result.devices[1].isCurrentDevice).toBe(false);
       expect(result.total_count).toBe(2);
     });
 

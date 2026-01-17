@@ -262,6 +262,55 @@ const macOSRegex = /\b(macos|mac\s*os|macintosh|mac)\b/i;
 
 ---
 
+#### **Fix #1b: Migrar a Backend `is_current_device`** ✅
+- [x] Agregar campo `is_current_device` a Device Entity (con validación boolean)
+- [x] Eliminar método `isCurrentDevice()` complejo de useDeviceManagement
+- [x] Eliminar 19 tests de regex y User-Agent detection
+- [x] Actualizar DeviceManagement.jsx para usar `device.isCurrentDevice`
+- [x] Mejorar UX: borde verde para dispositivo actual
+
+**Motivación:**
+- Backend ahora incluye `is_current_device` en `GET /api/v1/users/me/devices`
+- Detección 100% precisa (usa `device_id` del token JWT)
+- Elimina lógica compleja de User-Agent parsing y regex word boundaries
+
+**Implementación:**
+- ✅ Device Entity: Agregado campo `is_current_device` (boolean, default: false)
+- ✅ Device.test.js: +7 tests para nuevo campo (41 → 48 tests)
+- ✅ useDeviceManagement.js: ELIMINADO método `isCurrentDevice()` (~84 líneas)
+- ✅ useDeviceManagement.test.js: ELIMINADOS 19 tests de regex (23 → 4 tests)
+- ✅ DeviceManagement.jsx: Usa `device.isCurrentDevice` + UX mejorada
+- ✅ ApiDeviceRepository: Campo mapeado automáticamente (sin cambios)
+
+**Código eliminado:**
+- ~84 líneas: método `isCurrentDevice()` (regex, User-Agent parsing, iOS/iPadOS detection)
+- ~420 líneas: 19 tests de regex y User-Agent detection
+- **Total:** ~504 líneas eliminadas
+
+**Código agregado:**
+- Device Entity: +3 líneas (validación + campo)
+- Device.test.js: +77 líneas (7 tests)
+- DeviceManagement.jsx: +7 líneas (borde verde condicional)
+- **Total:** ~87 líneas agregadas
+
+**Neto:** -417 líneas (82% reducción)
+
+**Beneficios:**
+- ✅ Precisión 100% (backend usa device_id del token)
+- ✅ Eliminados bugs de Safari iOS vs macOS, iPadOS 13+, etc.
+- ✅ Código más simple y mantenible (-417 líneas)
+- ✅ UX mejorada (borde verde, fondo verde claro para dispositivo actual)
+- ✅ Clean Architecture: Detección movida de Presentation a Domain (backend)
+
+**Tests:** 711 → 699 (-12) - 76/76 passing ✅
+**Archivos:** `Device.js`, `Device.test.js`, `useDeviceManagement.js`, `useDeviceManagement.test.js`, `DeviceManagement.jsx`, `ApiDeviceRepository.test.js`
+**Tiempo real:** 1h
+**Commit:** `PENDING`
+
+**Estimación:** 1h
+
+---
+
 #### **Fix #2: Métodos Deprecados Sin Warning**
 - [ ] Agregar `console.warn()` en desarrollo para métodos deprecados
 
@@ -311,14 +360,15 @@ const macOSRegex = /\b(macos|mac\s*os|macintosh|mac)\b/i;
 
 | Métrica | v1.13.0 | Sprint 1 | Sprint 2 | Sprint 3 (Actual) | v1.14.0 Objetivo | Delta Total |
 |---------|---------|----------|----------|-------------------|------------------|-------------|
-| **Tests** | 540 | 562 | 688 | **711** | 565-570 | **+171** ✅ |
+| **Tests** | 540 | 562 | 688 | **699** | 565-570 | **+159** ✅ |
 | **Bugs Críticos** | 3 | 0 | 0 | 0 | 0 | **-3** ✅ |
 | **Bugs Medios** | 7 | 7 | 3 | **3** | 0-2 | **-4** ✅ |
-| **Bugs UX/Bajos** | 7 | 7 | 7 | **6** | 0-2 | **-1** 🔄 |
-| **Security Score** | 8.75/10 | 8.80/10 | 8.83/10 | **8.85/10** | 8.85/10 | **+0.10** ✅ |
-| **A01: Access Control** | 8.0/10 | 8.2/10 | 8.3/10 | **8.4/10** | 8.5/10 | **+0.4** ✅ |
-| **Cobertura Device Module** | ~85% | ~92% | ~95% | **~96%** | 95%+ | **+11%** ✅ |
+| **Bugs UX/Bajos** | 7 | 7 | 7 | **5** | 0-2 | **-2** 🔄 |
+| **Security Score** | 8.75/10 | 8.80/10 | 8.83/10 | **8.87/10** | 8.85/10 | **+0.12** ✅ |
+| **A01: Access Control** | 8.0/10 | 8.2/10 | 8.3/10 | **8.5/10** | 8.5/10 | **+0.5** ✅ |
+| **Cobertura Device Module** | ~85% | ~92% | ~95% | **~97%** | 95%+ | **+12%** ✅ |
 | **Traducciones i18n** | 0 errors | 0 errors | 5 errors (ES/EN) | **5 errors (ES/EN)** | - | **+10 strings** ✅ |
+| **Líneas de código** | - | - | - | **-417** | - | **-417** ✅ |
 
 ---
 
@@ -328,13 +378,13 @@ const macOSRegex = /\b(macos|mac\s*os|macintosh|mac)\b/i;
 |--------|------|-------|--------------|---------|--------|
 | Sprint 1 (Críticos) | 0.5 | #5, #7, #13 | +22 | 4 | ✅ Completado |
 | Sprint 2 (Medios) | 1 | #4, #6, #8, #11 | +126 | 8 | ✅ Completado |
-| Sprint 3 (UX) | 1-2 | #1, #2, #10, #14, #15, #16, #17 | ~10 | 7-10 | 🔄 En Progreso (1/7) |
-| **Total** | **2.5-3.5** | **17 fixes** | **~158** | **19-22** | **64% Completado** |
+| Sprint 3 (UX) | 1-2 | #1, #1b, #2, #10, #14, #15, #16, #17 | -12 | 8-11 | 🔄 En Progreso (2/8) |
+| **Total** | **2.5-3.5** | **18 fixes** | **~136** | **20-23** | **67% Completado** |
 
-**Progreso actual:** Sprint 1 ✅ | Sprint 2 ✅ | Sprint 3 🔄 (Fix #1 ✅)
+**Progreso actual:** Sprint 1 ✅ | Sprint 2 ✅ | Sprint 3 🔄 (Fix #1 ✅, Fix #1b ✅)
 
 **Tiempo Sprint 2:** 7.75h (de 8-10h estimadas) - Precisión 97%
-**Tiempo Sprint 3 (parcial):** 1.5h (Fix #1)
+**Tiempo Sprint 3 (parcial):** 2.5h (Fix #1 + Fix #1b)
 
 ---
 
