@@ -131,6 +131,13 @@ export const fetchWithTokenRefresh = async (url, options = {}) => {
       return response;
     }
 
+    // Special case: Don't retry refresh token endpoint itself
+    // Must check BEFORE device revocation to avoid infinite promise
+    if (url.includes('/auth/refresh-token')) {
+      console.log('🚫 [TokenRefresh] Refresh endpoint itself returned 401. Session expired.');
+      return response;
+    }
+
     // Special case: Device Revocation (v1.13.1)
     // Check if 401 is due to device revocation (before attempting refresh)
     // Clone response to avoid consuming the body
@@ -149,12 +156,6 @@ export const fetchWithTokenRefresh = async (url, options = {}) => {
       }
     } catch (jsonError) {
       // If JSON parsing fails, continue with normal refresh flow
-    }
-
-    // Special case: Don't retry refresh token endpoint itself
-    if (url.includes('/auth/refresh-token')) {
-      console.log('🚫 [TokenRefresh] Refresh endpoint itself returned 401. Session expired.');
-      return response;
     }
 
     // Special case: Don't retry login endpoint - let it fail naturally
