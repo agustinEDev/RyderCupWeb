@@ -43,12 +43,13 @@ const DeviceManagement = () => {
 
     const success = await revokeDevice(device.id);
 
-    // If current device was revoked, logout after delay for toast visibility
+    // If current device was revoked, logout immediately
+    // Backend already invalidated tokens, so logout is safe
+    // 500ms delay only for toast visibility
     if (success && isCurrent) {
-      // Logout after brief delay for toast visibility
       timeoutRef.current = setTimeout(() => {
         logout();
-      }, 2000);
+      }, 500);
     }
   };
 
