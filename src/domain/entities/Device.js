@@ -68,6 +68,12 @@ class Device {
    * @returns {string}
    */
   getFormattedLastUsed() {
+    if (import.meta.env.DEV) {
+      console.warn(
+        '[DEPRECATED] Device.getFormattedLastUsed() is deprecated since v1.13.0 and will be removed in v2.0.0. ' +
+        'Use formatDateTime() from utils/dateFormatters instead.'
+      );
+    }
     if (!this.lastUsedAt) return 'Never';
     return new Date(this.lastUsedAt).toLocaleString();
   }
@@ -78,6 +84,12 @@ class Device {
    * @returns {string}
    */
   getFormattedCreatedAt() {
+    if (import.meta.env.DEV) {
+      console.warn(
+        '[DEPRECATED] Device.getFormattedCreatedAt() is deprecated since v1.13.0 and will be removed in v2.0.0. ' +
+        'Use formatDateTime() from utils/dateFormatters instead.'
+      );
+    }
     if (!this.createdAt) return 'Unknown';
     return new Date(this.createdAt).toLocaleString();
   }

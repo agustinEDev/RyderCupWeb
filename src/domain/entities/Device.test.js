@@ -3,7 +3,7 @@
  * v1.13.0: Device Fingerprinting feature
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import Device from './Device';
 
 describe('Device Entity', () => {
@@ -499,6 +499,25 @@ describe('Device Entity', () => {
 
       expect(device.getFormattedLastUsed()).toBe('Never');
     });
+
+    it('should warn about deprecation in development mode', () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const originalEnv = import.meta.env.DEV;
+      import.meta.env.DEV = true;
+
+      const device = new Device(validDeviceData);
+      device.getFormattedLastUsed();
+
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringContaining('[DEPRECATED] Device.getFormattedLastUsed()')
+      );
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Use formatDateTime() from utils/dateFormatters instead')
+      );
+
+      warnSpy.mockRestore();
+      import.meta.env.DEV = originalEnv;
+    });
   });
 
   describe('getFormattedCreatedAt', () => {
@@ -526,6 +545,25 @@ describe('Device Entity', () => {
       });
 
       expect(device.getFormattedCreatedAt()).toBe('Unknown');
+    });
+
+    it('should warn about deprecation in development mode', () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const originalEnv = import.meta.env.DEV;
+      import.meta.env.DEV = true;
+
+      const device = new Device(validDeviceData);
+      device.getFormattedCreatedAt();
+
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringContaining('[DEPRECATED] Device.getFormattedCreatedAt()')
+      );
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Use formatDateTime() from utils/dateFormatters instead')
+      );
+
+      warnSpy.mockRestore();
+      import.meta.env.DEV = originalEnv;
     });
   });
 
