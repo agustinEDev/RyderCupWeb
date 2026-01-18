@@ -142,14 +142,15 @@ describe('deviceRevocationLogout utilities', () => {
       expect(window.Sentry.setUser).toHaveBeenCalledWith(null);
     });
 
-    it('should show error toast with i18n message', () => {
+    it('should show error toast with neutral message when no errorData provided', () => {
       handleDeviceRevocationLogout();
 
+      // Without errorData, uses neutral "session ended" message with ⏱️ icon
       expect(toast.error).toHaveBeenCalledWith(
         expect.any(String),
         expect.objectContaining({
           duration: 8000,
-          icon: '🔒',
+          icon: '⏱️', // Neutral icon for session expiration
         })
       );
     });
@@ -209,9 +210,10 @@ describe('deviceRevocationLogout utilities', () => {
 
       handleDeviceRevocationLogout();
 
+      // No errorData -> neutral session expiration message
       expect(toast.error).toHaveBeenCalledWith(
-        'Tu sesión ha sido cerrada. Este dispositivo fue revocado desde otro dispositivo.',
-        expect.objectContaining({ duration: 8000, icon: '🔒' })
+        'Tu sesión ha terminado. Por favor, inicia sesión nuevamente.',
+        expect.objectContaining({ duration: 8000, icon: '⏱️' })
       );
     });
 
@@ -223,9 +225,10 @@ describe('deviceRevocationLogout utilities', () => {
 
       handleDeviceRevocationLogout();
 
+      // No errorData -> neutral session expiration message
       expect(toast.error).toHaveBeenCalledWith(
-        'Your session has been closed. This device was revoked from another device.',
-        expect.objectContaining({ duration: 8000, icon: '🔒' })
+        'Your session has ended. Please sign in again.',
+        expect.objectContaining({ duration: 8000, icon: '⏱️' })
       );
     });
 
@@ -235,9 +238,10 @@ describe('deviceRevocationLogout utilities', () => {
 
       handleDeviceRevocationLogout();
 
+      // No errorData -> neutral session expiration message
       expect(toast.error).toHaveBeenCalledWith(
-        'Tu sesión ha sido cerrada. Este dispositivo fue revocado desde otro dispositivo.',
-        expect.objectContaining({ duration: 8000, icon: '🔒' })
+        'Tu sesión ha terminado. Por favor, inicia sesión nuevamente.',
+        expect.objectContaining({ duration: 8000, icon: '⏱️' })
       );
     });
 
@@ -247,9 +251,10 @@ describe('deviceRevocationLogout utilities', () => {
 
       handleDeviceRevocationLogout();
 
+      // No errorData -> neutral session expiration message
       expect(toast.error).toHaveBeenCalledWith(
-        'Your session has been closed. This device was revoked from another device.',
-        expect.objectContaining({ duration: 8000, icon: '🔒' })
+        'Your session has ended. Please sign in again.',
+        expect.objectContaining({ duration: 8000, icon: '⏱️' })
       );
     });
 
@@ -261,9 +266,10 @@ describe('deviceRevocationLogout utilities', () => {
 
       handleDeviceRevocationLogout();
 
+      // No errorData -> neutral session expiration message
       expect(toast.error).toHaveBeenCalledWith(
-        'Tu sesión ha sido cerrada. Este dispositivo fue revocado desde otro dispositivo.',
-        expect.objectContaining({ duration: 8000, icon: '🔒' })
+        'Tu sesión ha terminado. Por favor, inicia sesión nuevamente.',
+        expect.objectContaining({ duration: 8000, icon: '⏱️' })
       );
     });
 
@@ -275,9 +281,10 @@ describe('deviceRevocationLogout utilities', () => {
 
       handleDeviceRevocationLogout();
 
+      // No errorData -> neutral session expiration message
       expect(toast.error).toHaveBeenCalledWith(
-        'Your session has been closed. This device was revoked from another device.',
-        expect.objectContaining({ duration: 8000, icon: '🔒' })
+        'Your session has ended. Please sign in again.',
+        expect.objectContaining({ duration: 8000, icon: '⏱️' })
       );
     });
 
@@ -292,9 +299,10 @@ describe('deviceRevocationLogout utilities', () => {
       handleDeviceRevocationLogout();
 
       // Should use Spanish (from i18nextLng), not English (from navigator)
+      // No errorData -> neutral session expiration message
       expect(toast.error).toHaveBeenCalledWith(
-        'Tu sesión ha sido cerrada. Este dispositivo fue revocado desde otro dispositivo.',
-        expect.objectContaining({ duration: 8000, icon: '🔒' })
+        'Tu sesión ha terminado. Por favor, inicia sesión nuevamente.',
+        expect.objectContaining({ duration: 8000, icon: '⏱️' })
       );
     });
 
@@ -308,8 +316,88 @@ describe('deviceRevocationLogout utilities', () => {
 
       handleDeviceRevocationLogout();
 
+      // No errorData -> neutral session expiration message
+      expect(toast.error).toHaveBeenCalledWith(
+        'Your session has ended. Please sign in again.',
+        expect.objectContaining({ duration: 8000, icon: '⏱️' })
+      );
+    });
+  });
+
+  describe('handleDeviceRevocationLogout - Message Differentiation', () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+      localStorage.getItem.mockImplementation((key) => {
+        if (key === 'i18nextLng') return 'en';
+        return null;
+      });
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it('should show explicit revocation message with 🔒 icon when errorData contains "revocado"', () => {
+      const errorData = { detail: 'Dispositivo revocado. Por favor, inicia sesión nuevamente.' };
+      handleDeviceRevocationLogout(errorData);
+
       expect(toast.error).toHaveBeenCalledWith(
         'Your session has been closed. This device was revoked from another device.',
+        expect.objectContaining({ duration: 8000, icon: '🔒' })
+      );
+    });
+
+    it('should show explicit revocation message with 🔒 icon when errorData contains "revoked"', () => {
+      const errorData = { detail: 'Device revoked. Please sign in again.' };
+      handleDeviceRevocationLogout(errorData);
+
+      expect(toast.error).toHaveBeenCalledWith(
+        'Your session has been closed. This device was revoked from another device.',
+        expect.objectContaining({ duration: 8000, icon: '🔒' })
+      );
+    });
+
+    it('should show neutral message with ⏱️ icon when errorData contains "expirado"', () => {
+      const errorData = { detail: 'Refresh token inválido o expirado' };
+      handleDeviceRevocationLogout(errorData);
+
+      expect(toast.error).toHaveBeenCalledWith(
+        'Your session has ended. Please sign in again.',
+        expect.objectContaining({ duration: 8000, icon: '⏱️' })
+      );
+    });
+
+    it('should show neutral message with ⏱️ icon when errorData contains "expired"', () => {
+      const errorData = { detail: 'Refresh token invalid or expired' };
+      handleDeviceRevocationLogout(errorData);
+
+      expect(toast.error).toHaveBeenCalledWith(
+        'Your session has ended. Please sign in again.',
+        expect.objectContaining({ duration: 8000, icon: '⏱️' })
+      );
+    });
+
+    it('should show neutral message with ⏱️ icon when errorData has no specific keywords', () => {
+      const errorData = { detail: 'Some generic error message' };
+      handleDeviceRevocationLogout(errorData);
+
+      expect(toast.error).toHaveBeenCalledWith(
+        'Your session has ended. Please sign in again.',
+        expect.objectContaining({ duration: 8000, icon: '⏱️' })
+      );
+    });
+
+    it('should use Spanish messages when language is Spanish', () => {
+      localStorage.getItem.mockImplementation((key) => {
+        if (key === 'i18nextLng') return 'es';
+        return null;
+      });
+
+      const errorData = { detail: 'Dispositivo revocado desde otro lugar' };
+      handleDeviceRevocationLogout(errorData);
+
+      expect(toast.error).toHaveBeenCalledWith(
+        'Tu sesión ha sido cerrada. Este dispositivo fue revocado desde otro dispositivo.',
         expect.objectContaining({ duration: 8000, icon: '🔒' })
       );
     });
