@@ -151,8 +151,11 @@ export const fetchWithTokenRefresh = async (url, options = {}) => {
       if (isRevoked) {
         handleDeviceRevocationLogout(errorData);
         // Don't return response (body already consumed by clone)
-        // Instead, wait indefinitely - redirect will happen in 500ms
-        await new Promise(() => {}); // Never resolves - redirect will interrupt
+        // Wait for redirect (happens in 500ms) with safety timeout
+        await Promise.race([
+          new Promise(() => {}), // Never resolves - redirect will interrupt
+          new Promise(resolve => setTimeout(resolve, 5000)) // Safety timeout (5s)
+        ]);
       }
     } catch (jsonError) {
       // If JSON parsing fails, continue with normal refresh flow
@@ -219,8 +222,11 @@ export const fetchWithTokenRefresh = async (url, options = {}) => {
         if (isRevoked) {
           handleDeviceRevocationLogout(refreshError.errorData);
           // Don't return response (would cause body parsing errors)
-          // Instead, wait indefinitely - redirect will happen in 500ms
-          await new Promise(() => {}); // Never resolves - redirect will interrupt
+          // Wait for redirect (happens in 500ms) with safety timeout
+          await Promise.race([
+            new Promise(() => {}), // Never resolves - redirect will interrupt
+            new Promise(resolve => setTimeout(resolve, 5000)) // Safety timeout (5s)
+          ]);
         }
       }
 
@@ -229,7 +235,10 @@ export const fetchWithTokenRefresh = async (url, options = {}) => {
 
       // Pause execution - redirect will interrupt
       // Don't return response (prevents race conditions and blank page)
-      await new Promise(() => {}); // Never resolves - redirect will interrupt
+      await Promise.race([
+        new Promise(() => {}), // Never resolves - redirect will interrupt
+        new Promise(resolve => setTimeout(resolve, 5000)) // Safety timeout (5s)
+      ]);
 
     } finally {
       isRefreshing = false;

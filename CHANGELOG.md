@@ -9,12 +9,13 @@ y este proyecto adhiere a [Versionado Semántico](https://semver.org/lang/es/).
 
 ### Fixed
 - **Blank Page on Expired Session Navigation**: Fixed critical bug causing blank page when navigating with expired session
-  - **Problem**: Race condition between redirect to `/login` and React Router render
-  - **Root cause**: `globalThis.location.href = '/login'` is asynchronous, code continued and returned consumed response
-  - **Solution 1**: Pause execution after redirect in `tokenRefreshInterceptor.js` (await indefinite Promise)
-  - **Solution 2**: Set `loading=false` immediately in `useAuth.js` on 401 to prevent ProtectedRoute hang
-  - **Impact**: Clean redirect to login without blank page, consistent UX with device revocation flow
-  - **Files modified**: `src/utils/tokenRefreshInterceptor.js`, `src/hooks/useAuth.js`
+  - **Root cause**: `useAuth()` hook was using `fetch` directly instead of `fetchWithTokenRefresh` interceptor
+  - **Problem**: When access token expired, no automatic refresh attempt → immediate 401 → redirect during navigation → blank page
+  - **Solution**: Changed `useAuth.js` and `Profile.jsx` to use `fetchWithTokenRefresh` for all protected endpoints
+  - **Flow now**: Access token expires → interceptor attempts refresh → success: retries request | failure: clean redirect to login
+  - **Safety timeout**: Added `Promise.race` with 5s timeout fallback in redirects (prevents indefinite hangs)
+  - **Impact**: Automatic token refresh on navigation, clean redirect only when refresh fails, no more blank pages
+  - **Files modified**: `src/hooks/useAuth.js`, `src/pages/Profile.jsx`, `src/utils/tokenRefreshInterceptor.js`, `ROADMAP.md`
 
 ## [1.14.1] - 2026-01-17
 

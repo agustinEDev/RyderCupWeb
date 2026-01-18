@@ -11,6 +11,7 @@ import { useAuth } from '../hooks/useAuth';
 import { CountryFlag } from '../utils/countryUtils';
 import { broadcastLogout } from '../utils/broadcastAuth';
 import { formatFullDate } from '../utils/dateFormatters';
+import { fetchWithTokenRefresh } from '../utils/tokenRefreshInterceptor';
 
 const API_URL = import.meta.env.VITE_API_BASE_URL || '';
 
@@ -33,7 +34,7 @@ const Profile = () => {
         // Fetch country name if user has country_code
         if (user.country_code) {
           try {
-            const countriesResponse = await fetch(`${API_URL}/api/v1/countries?language=en`, {
+            const countriesResponse = await fetchWithTokenRefresh(`${API_URL}/api/v1/countries?language=en`, {
               credentials: 'include'
             });
             if (countriesResponse.ok) {
@@ -50,7 +51,7 @@ const Profile = () => {
 
         // Fetch user's competitions count
         try {
-          const competitionsResponse = await fetch(`${API_URL}/api/v1/competitions?my_competitions=true`, {
+          const competitionsResponse = await fetchWithTokenRefresh(`${API_URL}/api/v1/competitions?my_competitions=true`, {
             credentials: 'include'
           });
 

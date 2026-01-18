@@ -8,6 +8,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { isDeviceRevoked, handleDeviceRevocationLogout, clearDeviceRevocationFlag } from '../utils/deviceRevocationLogout';
+import { fetchWithTokenRefresh } from '../utils/tokenRefreshInterceptor';
 
 // Use relative URL if no API_BASE_URL is set (for proxy setup)
 const API_URL = import.meta.env.VITE_API_BASE_URL || '';
@@ -28,7 +29,7 @@ export const useAuth = () => {
       setLoading(true);
       setError(null);
 
-      const response = await fetch(`${API_URL}/api/v1/auth/current-user`, {
+      const response = await fetchWithTokenRefresh(`${API_URL}/api/v1/auth/current-user`, {
         credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
@@ -100,7 +101,7 @@ export const useAuth = () => {
  */
 export const getUserData = async () => {
   try {
-    const response = await fetch(`${API_URL}/api/v1/auth/current-user`, {
+    const response = await fetchWithTokenRefresh(`${API_URL}/api/v1/auth/current-user`, {
       credentials: 'include',
       headers: {
         'Content-Type': 'application/json',

@@ -1,8 +1,8 @@
 # 🗺️ Roadmap - RyderCupFriends Frontend
 
 > **Versión:** 1.13.0 → 1.14.0 → 2.1.0
-> **Última actualización:** 17 Ene 2026
-> **Estado:** ✅ v1.14.0 Completada (Device Fingerprinting Improvements)
+> **Última actualización:** 18 Ene 2026
+> **Estado:** ✅ v1.14.0 Completada | 🔄 Post-fix #18 en progreso (Session Expiration)
 > **Stack:** React 18 + Vite 7 + Tailwind CSS 3.4 + TanStack Query + Zustand
 
 ---
