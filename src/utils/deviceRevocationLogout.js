@@ -28,10 +28,10 @@ export const clearDeviceRevocationFlag = () => {
 };
 
 /**
- * Check if a response indicates device revocation
+ * Check if a response indicates device revocation or session expiration
  * @param {Object} response - Fetch response object
  * @param {Object} errorData - Parsed error data from response
- * @returns {boolean} - True if device was revoked
+ * @returns {boolean} - True if device was revoked or session expired
  */
 export const isDeviceRevoked = (response, errorData = {}) => {
   // Check for 401 status + specific message from backend
@@ -43,9 +43,8 @@ export const isDeviceRevoked = (response, errorData = {}) => {
       return true;
     }
 
-    // Scenario 2: Refresh token revocation (indirect detection)
-    // Backend returns this message when refresh token was revoked from another device
-    // OR when refresh token expired naturally (both require re-login)
+    // Scenario 2: Refresh token issues (revocation OR expiration)
+    // Both require re-login, but message should differentiate
     if (detail.includes('refresh token inválido o expirado') ||
         detail.includes('refresh token invalid or expired')) {
       return true;
@@ -62,13 +61,15 @@ export const isDeviceRevoked = (response, errorData = {}) => {
 };
 
 /**
- * Handle device revocation logout
+ * Handle device revocation or session expiration logout
  * - Clears localStorage (user data)
  * - Clears Sentry user context
- * - Shows translated toast message
+ * - Shows translated toast message (differentiated by reason)
  * - Redirects to login page
+ *
+ * @param {Object} errorData - Optional error data to determine logout reason
  */
-export const handleDeviceRevocationLogout = () => {
+export const handleDeviceRevocationLogout = (errorData = null) => {
   const alreadyHandled = localStorage.getItem(REVOCATION_HANDLED_KEY);
 
   // If already on login page and already handled, do nothing
@@ -94,20 +95,46 @@ export const handleDeviceRevocationLogout = () => {
     window.Sentry.setUser(null);
   }
 
+  // Determine reason for logout based on error message
+  const detail = errorData?.detail ? String(errorData.detail).toLowerCase() : '';
+  const isExplicitRevocation = detail.includes('revocado') || detail.includes('revoked');
+  const isExpiredOrInvalid = !isExplicitRevocation &&
+    (detail.includes('expirado') || detail.includes('expired') ||
+     detail.includes('inválido') || detail.includes('invalid'));
+
   // Show user-friendly toast message
   // Duration: 8 seconds (long enough to read)
   // Use configured i18n language first, fallback to browser language
   const storedLang = localStorage.getItem('i18nextLng');
   const detectedLang = (storedLang || navigator.language)?.startsWith('es') ? 'es' : 'en';
-  const messages = {
-    es: 'Tu sesión ha sido cerrada. Este dispositivo fue revocado desde otro dispositivo.',
-    en: 'Your session has been closed. This device was revoked from another device.',
-  };
+
+  // Choose message based on reason
+  let messages;
+  if (isExplicitRevocation) {
+    // Explicit device revocation
+    messages = {
+      es: 'Tu sesión ha sido cerrada. Este dispositivo fue revocado desde otro dispositivo.',
+      en: 'Your session has been closed. This device was revoked from another device.',
+    };
+  } else if (isExpiredOrInvalid) {
+    // Session expired or invalid (neutral message)
+    messages = {
+      es: 'Tu sesión ha terminado. Por favor, inicia sesión nuevamente.',
+      en: 'Your session has ended. Please sign in again.',
+    };
+  } else {
+    // Fallback (unknown reason, use neutral message)
+    messages = {
+      es: 'Tu sesión ha terminado. Por favor, inicia sesión nuevamente.',
+      en: 'Your session has ended. Please sign in again.',
+    };
+  }
+
   const message = messages[detectedLang] || messages.en;
 
   toast.error(message, {
     duration: 8000,
-    icon: '🔒',
+    icon: isExplicitRevocation ? '🔒' : '⏱️',
   });
 
   // Redirect to login after a short delay (allow toast to be visible)

@@ -1,6 +1,6 @@
 import PropTypes from 'prop-types';
 import { useTranslation } from 'react-i18next';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 
 /**
  * Confirmation Modal Component
@@ -29,16 +29,23 @@ const ConfirmModal = ({
   isLoading = false,
 }) => {
   const { t } = useTranslation('common');
+  const prevOverflowRef = useRef(null);
 
   // Lock body scroll when modal is open
   useEffect(() => {
     if (isOpen) {
+      // Save current overflow value before modifying
+      prevOverflowRef.current = document.body.style.overflow || '';
       document.body.style.overflow = 'hidden';
     } else {
-      document.body.style.overflow = 'unset';
+      // Restore previous overflow value
+      document.body.style.overflow = prevOverflowRef.current || '';
     }
     return () => {
-      document.body.style.overflow = 'unset';
+      // Cleanup: restore previous overflow value
+      if (prevOverflowRef.current !== null) {
+        document.body.style.overflow = prevOverflowRef.current;
+      }
     };
   }, [isOpen]);
 

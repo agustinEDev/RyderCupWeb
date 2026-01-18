@@ -49,9 +49,11 @@ export const useAuth = () => {
             // Could not parse response body, treat as normal 401
           }
 
-          // Normal 401 (not device revocation) - just clear user
+          // Normal 401 (not device revocation) - clear user and stop
+          // Don't try to parse response if already redirecting to login
           setUser(null);
           setError(null);
+          setLoading(false); // Set loading to false immediately to prevent blank page
           return;
         }
 
@@ -118,6 +120,10 @@ export const getUserData = async () => {
         } catch (jsonError) {
           // Could not parse response body, treat as normal 401
         }
+
+        // Normal 401 (not device revocation) - return null immediately
+        // Don't try to parse response if already redirecting to login
+        return null;
       }
 
       // Si no está autenticado o el endpoint no existe, retornar null

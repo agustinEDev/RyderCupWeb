@@ -33,7 +33,8 @@ const THROTTLE_INTERVAL = 5 * 1000; // 5 seconds (prevent spam)
  */
 export const useDeviceRevocationMonitor = ({ enabled = true } = {}) => {
   const location = useLocation();
-  const lastCheckRef = useRef(Date.now());
+  // Initialize to 0 to allow first check to run immediately
+  const lastCheckRef = useRef(0);
   const fallbackTimerRef = useRef(null);
 
   /**
@@ -61,7 +62,15 @@ export const useDeviceRevocationMonitor = ({ enabled = true } = {}) => {
       lastCheckRef.current = now;
 
       const response = await apiRequest('/api/v1/users/me/devices');
-      const devices = response?.devices || [];
+
+      // Validate API response shape before processing
+      if (!response || !Array.isArray(response.devices)) {
+        // Malformed response - log for debugging but don't logout
+        console.warn('[DeviceMonitor] Malformed API response:', response);
+        return;
+      }
+
+      const devices = response.devices;
 
       // Look for current device in the list
       const currentDevice = devices.find(d => d.is_current_device === true);

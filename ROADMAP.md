@@ -631,6 +631,50 @@ const macOSRegex = /\b(macos|mac\s*os|macintosh|mac)\b/i;
 
 ---
 
+#### **Fix #18: Blank Page on Expired Session Navigation** ✅
+- [x] Fix race condition en tokenRefreshInterceptor.js (redirect + return response)
+- [x] Mejorar manejo de 401 en useAuth.js (setLoading false inmediato)
+
+**Problema:**
+- Cuando sesión expira (access + refresh tokens), navegar a otra página causa página en blanco
+- Race condition: redirect a `/login` mientras React Router intenta renderizar
+- ProtectedRoute queda en estado loading indefinidamente
+
+**Solución implementada:**
+- ✅ tokenRefreshInterceptor.js: Pausar ejecución después de redirect (await Promise indefinido)
+  * Evita retornar response consumido o en estado inconsistente
+  * Mismo patrón usado en device revocation (líneas 155, 223)
+  * Redirect interrumpe la promesa antes de que resuelva
+- ✅ useAuth.js: setLoading(false) inmediato en 401
+  * Previene que ProtectedRoute quede colgado en loading state
+  * Early exit sin intentar parsear response
+  * Aplicado en useAuth hook Y getUserData function
+
+**Root cause:**
+- `globalThis.location.href = '/login'` es asíncrono
+- Código continuaba y retornaba `response` (posiblemente consumido)
+- React Router intentaba renderizar mientras navegación en progreso
+- ProtectedRoute.loading=true → pantalla blanca
+
+**Mejoras UX:**
+- Redirect inmediato y limpio a login
+- No más pantalla en blanco intermedia
+- Experiencia consistente con device revocation flow
+
+**Archivos modificados:**
+- `src/utils/tokenRefreshInterceptor.js` (+2 líneas, pausa indefinida)
+- `src/hooks/useAuth.js` (+5 líneas, early exit + setLoading)
+
+**Tests:** Manual (flujo de expiración de sesión)
+**Lint:** Clean ✅
+**Build:** Pendiente
+**Commit:** Pendiente
+**Tiempo real:** 1h
+
+**Estimación:** 1h
+
+---
+
 ### 📊 Métricas Objetivo v1.14.0
 
 | Métrica | v1.13.0 | Sprint 1 | Sprint 2 | Sprint 3 (Actual) | v1.14.0 Objetivo | Delta Total |
@@ -654,15 +698,16 @@ const macOSRegex = /\b(macos|mac\s*os|macintosh|mac)\b/i;
 | Sprint 1 (Críticos) | 0.5 | #5, #7, #13 | +22 | 4 | ✅ Completado |
 | Sprint 2 (Medios) | 1 | #4, #6, #8, #11 | +126 | 8 | ✅ Completado |
 | Sprint 3 (UX) | 2 | #1, #1b, Critical, #2, #10, #14, #15, #16, #17 | -7 | 11 | ✅ Completado (9/9) |
-| **Total** | **3.5** | **19 fixes** | **+141** | **23** | **✅ 100% Completado** |
+| **Post v1.14.0** | **0.5** | **#18 (Blank Page Fix)** | **0** | **1** | **🔄 En progreso** |
+| **Total** | **4** | **20 fixes** | **+141** | **24** | **🔄 99% Completado** |
 
 **Progreso actual:** Sprint 1 ✅ | Sprint 2 ✅ | Sprint 3 ✅ (9/9 fixes completados)
 
 **Tiempo Sprint 2:** 7.75h (de 8-10h estimadas) - Precisión 97%
 **Tiempo Sprint 3:** 14h (de 9-12h estimadas) - Precisión 86%
-  - Fix #1: 1.5h + Fix #1b: 1h + Fix Crítico: 5h + Fix #2: 20min
-  - Fix #10: 15min + Fix #14: 2.5h + Fix #15: 1.5h
-  - Fix #16: 1h + Fix #17: 1h
+- Fix #1: 1.5h + Fix #1b: 1h + Fix Crítico: 5h + Fix #2: 20min
+- Fix #10: 15min + Fix #14: 2.5h + Fix #15: 1.5h
+- Fix #16: 1h + Fix #17: 1h
 
 ---
 
@@ -1107,9 +1152,9 @@ const macOSRegex = /\b(macos|mac\s*os|macintosh|mac)\b/i;
 - ✅ CSP sin unsafe-inline
 - ✅ Snyk Security Scanning (CI/CD)
 - ✅ Security Tests Suite (12 tests E2E)
+- ✅ Device Fingerprinting (v1.14.0 - Completado)
 
 ### Pendientes (Alta Prioridad)
-- 🚧 Device Fingerprinting (v1.14.0 - En proceso)
 - ❌ 2FA/MFA (TOTP)
 - ❌ reCAPTCHA v3
 
@@ -1495,5 +1540,5 @@ const macOSRegex = /\b(macos|mac\s*os|macintosh|mac)\b/i;
 
 ---
 
-**Última revisión:** 16 Ene 2026 (Sprint 1 completado)
-**Próxima revisión:** Post Sprint 2 o Post v1.14.0
+**Última revisión:** 18 Ene 2026 (v1.14.0 completado + Post-fix #18)
+**Próxima revisión:** Post v1.15.0 o Sprint siguiente

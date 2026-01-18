@@ -7,6 +7,15 @@ y este proyecto adhiere a [Versionado Semántico](https://semver.org/lang/es/).
 
 ## [Unreleased]
 
+### Fixed
+- **Blank Page on Expired Session Navigation**: Fixed critical bug causing blank page when navigating with expired session
+  - **Problem**: Race condition between redirect to `/login` and React Router render
+  - **Root cause**: `globalThis.location.href = '/login'` is asynchronous, code continued and returned consumed response
+  - **Solution 1**: Pause execution after redirect in `tokenRefreshInterceptor.js` (await indefinite Promise)
+  - **Solution 2**: Set `loading=false` immediately in `useAuth.js` on 401 to prevent ProtectedRoute hang
+  - **Impact**: Clean redirect to login without blank page, consistent UX with device revocation flow
+  - **Files modified**: `src/utils/tokenRefreshInterceptor.js`, `src/hooks/useAuth.js`
+
 ## [1.14.1] - 2026-01-17
 
 ### Changed

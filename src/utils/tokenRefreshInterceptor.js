@@ -149,7 +149,7 @@ export const fetchWithTokenRefresh = async (url, options = {}) => {
       const isRevoked = isDeviceRevoked(response, errorData);
 
       if (isRevoked) {
-        handleDeviceRevocationLogout();
+        handleDeviceRevocationLogout(errorData);
         // Don't return response (body already consumed by clone)
         // Instead, wait indefinitely - redirect will happen in 500ms
         await new Promise(() => {}); // Never resolves - redirect will interrupt
@@ -217,7 +217,7 @@ export const fetchWithTokenRefresh = async (url, options = {}) => {
         const isRevoked = isDeviceRevoked(refreshError.response, refreshError.errorData);
 
         if (isRevoked) {
-          handleDeviceRevocationLogout();
+          handleDeviceRevocationLogout(refreshError.errorData);
           // Don't return response (would cause body parsing errors)
           // Instead, wait indefinitely - redirect will happen in 500ms
           await new Promise(() => {}); // Never resolves - redirect will interrupt
@@ -227,8 +227,9 @@ export const fetchWithTokenRefresh = async (url, options = {}) => {
       // Token refresh failed (not revocation) - redirect to login
       globalThis.location.href = '/login';
 
-      // Return the original 401 response
-      return response;
+      // Pause execution - redirect will interrupt
+      // Don't return response (prevents race conditions and blank page)
+      await new Promise(() => {}); // Never resolves - redirect will interrupt
 
     } finally {
       isRefreshing = false;
