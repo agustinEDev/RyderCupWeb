@@ -151,10 +151,10 @@ export const fetchWithTokenRefresh = async (url, options = {}) => {
       if (isRevoked) {
         handleDeviceRevocationLogout(errorData);
         // Don't return response (body already consumed by clone)
-        // Wait for redirect (happens in 500ms) with safety timeout
+        // Wait for redirect (happens in 500ms) with safety timeout that rejects
         await Promise.race([
           new Promise(() => {}), // Never resolves - redirect will interrupt
-          new Promise(resolve => setTimeout(resolve, 5000)) // Safety timeout (5s)
+          new Promise((_, reject) => setTimeout(() => reject(new Error('Redirect timeout after device revocation')), 5000))
         ]);
       }
     } catch (jsonError) {
@@ -222,10 +222,10 @@ export const fetchWithTokenRefresh = async (url, options = {}) => {
         if (isRevoked) {
           handleDeviceRevocationLogout(refreshError.errorData);
           // Don't return response (would cause body parsing errors)
-          // Wait for redirect (happens in 500ms) with safety timeout
+          // Wait for redirect (happens in 500ms) with safety timeout that rejects
           await Promise.race([
             new Promise(() => {}), // Never resolves - redirect will interrupt
-            new Promise(resolve => setTimeout(resolve, 5000)) // Safety timeout (5s)
+            new Promise((_, reject) => setTimeout(() => reject(new Error('Redirect timeout after device revocation')), 5000))
           ]);
         }
       }
@@ -237,7 +237,7 @@ export const fetchWithTokenRefresh = async (url, options = {}) => {
       // Don't return response (prevents race conditions and blank page)
       await Promise.race([
         new Promise(() => {}), // Never resolves - redirect will interrupt
-        new Promise(resolve => setTimeout(resolve, 5000)) // Safety timeout (5s)
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Redirect timeout after session expiration')), 5000))
       ]);
 
     } finally {
