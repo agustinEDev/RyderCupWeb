@@ -1,9 +1,182 @@
 # 🗺️ Roadmap - RyderCupFriends Frontend
 
-> **Versión:** 1.13.0 → 1.14.0 → 1.15.0 → 2.1.0
-> **Última actualización:** 18 Ene 2026
-> **Estado:** ✅ v1.14.0 Completada | 🔄 Post-fix #18 en progreso (Session Expiration)
+> **Versión:** 1.13.0 → 1.14.2 → 1.15.0 → 2.1.0
+> **Última actualización:** 19 Ene 2026
+> **Estado:** ✅ v1.14.2 Completada | 🚀 v1.15.0 en progreso (Data Integrity)
 > **Stack:** React 18 + Vite 7 + Tailwind CSS 3.4 + TanStack Query + Zustand
+
+---
+
+## 🎯 Roadmap v1.15.0 - Data Integrity Improvements (A08)
+
+> **Objetivo:** Mejorar OWASP A08 (Data Integrity) de 7.0/10 a 8.7-9.0/10
+> **Duración:** 3-4h (Sprint único: Quick Wins)
+> **Tipo:** Security improvements + CI/CD enhancements
+> **Inicio:** 19 Ene 2026
+
+---
+
+### 📊 Análisis de Seguridad Actual
+
+**Score A08 actual:** 7.0/10
+**Score A08 objetivo:** 8.7-9.0/10
+**Mejoras propuestas:** 3 implementaciones
+
+#### **✅ Ya Implementado:**
+- ✅ Git commit signing (GPG local)
+- ✅ Dependency lock file (`package-lock.json` + `npm ci`)
+- ✅ CSP sin `unsafe-inline` (producción)
+- ✅ Vulnerability scanning (npm audit + Snyk + TruffleHog)
+- ✅ Build integrity verification
+- ✅ Bundle size checks (max 1000 KB)
+
+#### **❌ Pendiente de Implementar:**
+- ❌ **SRI (Subresource Integrity)** - No hay hashes de integridad en assets
+- ❌ **Commit signature verification en CI/CD** - CI no valida firmas GPG
+- ❌ **Package-lock integrity validation** - CI no verifica modificaciones
+
+---
+
+### 🚀 Sprint Único: Data Integrity Hardening (3-4h)
+
+#### **Tarea 1: Subresource Integrity (SRI) - 1.5h**
+**Impacto:** +0.8 puntos | **Prioridad:** 🔴 Alta
+
+**Implementación:**
+```bash
+# Instalar plugin
+npm install -D vite-plugin-sri
+
+# Configurar vite.config.js
+import { SriPlugin } from 'vite-plugin-sri';
+
+export default defineConfig({
+  plugins: [
+    react(),
+    SriPlugin({
+      algorithms: ['sha384'],
+    }),
+  ],
+})
+```
+
+**Resultado esperado:**
+```html
+<!-- Antes (sin SRI): -->
+<script src="/assets/index-abc123.js"></script>
+
+<!-- Después (con SRI): -->
+<script src="/assets/index-abc123.js"
+  integrity="sha384-oqVuAfXRKap7fdgcCY5uykM6+R9GqQ8K/ux..."
+  crossorigin="anonymous">
+</script>
+```
+
+**Tests:**
+- Build y verificar `grep -r "integrity=" dist/index.html`
+- Validar que assets no se pueden modificar sin romper integridad
+
+---
+
+#### **Tarea 2: CI/CD Commit Signature Verification - 1h**
+**Impacto:** +0.3 puntos | **Prioridad:** 🟡 Media
+
+**Archivo:** `.github/workflows/ci-cd.yml`
+
+**Implementación:**
+```yaml
+commit-verification:
+  name: 🔏 Verify Commit Signatures
+  runs-on: ubuntu-latest
+  steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 2
+
+    - name: Import GPG public keys
+      run: |
+        echo "${{ secrets.GPG_PUBLIC_KEYS }}" | gpg --import
+
+    - name: Verify commit signature
+      run: |
+        COMMIT=$(git rev-parse HEAD)
+
+        if git verify-commit $COMMIT 2>&1 | grep -q "Good signature"; then
+          echo "✅ Commit $COMMIT signature verified"
+        else
+          echo "❌ Commit $COMMIT is NOT signed"
+          exit 1
+        fi
+```
+
+**Configuración requerida:**
+- Agregar secret `GPG_PUBLIC_KEYS` en GitHub con claves públicas del equipo
+- Configurar job como dependency de otros jobs
+
+---
+
+#### **Tarea 3: Package-Lock Integrity Validation - 30min**
+**Impacto:** +0.2 puntos | **Prioridad:** 🟡 Media
+
+**Archivo:** `.github/workflows/ci-cd.yml`
+
+**Implementación:**
+```yaml
+# En job dependency-audit, DESPUÉS de npm ci:
+- name: Verify package-lock.json integrity
+  run: |
+    echo "🔒 Verifying package-lock.json was not modified..."
+
+    git diff --exit-code package-lock.json || {
+      echo "❌ package-lock.json was modified during npm ci!"
+      echo "Run 'npm install' locally and commit the updated package-lock.json."
+      exit 1
+    }
+
+    echo "✅ package-lock.json integrity verified"
+```
+
+**Beneficio:**
+- Previene dependency confusion attacks
+- Garantiza reproducibilidad de builds
+
+---
+
+### 📊 Métricas Esperadas v1.15.0
+
+| Métrica | v1.14.2 | v1.15.0 Objetivo | Delta |
+|---------|---------|------------------|-------|
+| **A08: Data Integrity** | 7.0/10 | **8.7-9.0/10** | **+1.7-2.0** ✅ |
+| **OWASP Score Global** | 8.75/10 | **9.0-9.2/10** | **+0.25-0.45** ✅ |
+| **Tests** | 712 | 712-715 | +0-3 |
+| **CI/CD Jobs** | 11 | 12 | +1 (commit verification) |
+| **Bundle Size** | ~250 KB | ~250 KB | Sin cambio |
+
+---
+
+### ✅ Checklist de Implementación
+
+**Sprint Único (3-4h):**
+- [ ] Instalar y configurar `vite-plugin-sri`
+- [ ] Build y verificar hashes de integridad en dist/
+- [ ] Crear job `commit-verification` en CI/CD
+- [ ] Configurar secret `GPG_PUBLIC_KEYS` en GitHub
+- [ ] Agregar validación de `package-lock.json` en dependency-audit
+- [ ] Testing: Verificar que CI falla con commits sin firmar
+- [ ] Testing: Verificar que CI falla si package-lock.json cambia
+- [ ] Actualizar CHANGELOG.md con v1.15.0
+- [ ] Commit firmado: `feat(security): IMPLEMENT SRI and CI/CD integrity checks`
+- [ ] Crear PR a develop
+
+---
+
+### 🔗 Referencias
+
+- **Análisis de seguridad:** Ver conversación del 19 Ene 2026
+- **OWASP A08:** Software and Data Integrity Failures
+- **Vite Plugin SRI:** https://github.com/ElMassimo/vite-plugin-sri
+- **Git Commit Signing:** https://docs.github.com/en/authentication/managing-commit-signature-verification
 
 ---
 
