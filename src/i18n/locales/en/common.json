@@ -11,6 +11,12 @@
   "delete": "Delete",
   "edit": "Edit",
   "close": "Close",
+  "modal": {
+    "confirm": "Confirm",
+    "ok": "OK",
+    "cancel": "Cancel",
+    "loading": "Loading..."
+  },
   "header": {
     "features": "Features",
     "pricing": "Pricing",

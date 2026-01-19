@@ -11,6 +11,12 @@
   "delete": "Eliminar",
   "edit": "Editar",
   "close": "Cerrar",
+  "modal": {
+    "confirm": "Confirmar",
+    "ok": "Aceptar",
+    "cancel": "Cancelar",
+    "loading": "Cargando..."
+  },
   "header": {
     "features": "Características",
     "pricing": "Precios",

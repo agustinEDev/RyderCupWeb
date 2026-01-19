@@ -11,10 +11,38 @@ class Device {
     last_used_at,
     created_at,
     is_active = true,
+    is_current_device = false,
   }) {
-    // Validaciones básicas de la entidad
+    // Validaciones de presencia
     if (!id || !device_name || !ip_address) {
       throw new Error('Device entity requires id, device_name, and ip_address');
+    }
+
+    // Validaciones de tipo - strings requeridos
+    if (typeof id !== 'string') {
+      throw new Error('Device id must be a string');
+    }
+    if (typeof device_name !== 'string') {
+      throw new Error('Device device_name must be a string');
+    }
+    if (typeof ip_address !== 'string') {
+      throw new Error('Device ip_address must be a string');
+    }
+
+    // Validaciones de tipo - timestamps opcionales (string, null, o undefined)
+    if (last_used_at !== null && last_used_at !== undefined && typeof last_used_at !== 'string') {
+      throw new Error('Device last_used_at must be a string, null, or undefined');
+    }
+    if (created_at !== null && created_at !== undefined && typeof created_at !== 'string') {
+      throw new Error('Device created_at must be a string, null, or undefined');
+    }
+
+    // Validación de tipo - boolean
+    if (typeof is_active !== 'boolean') {
+      throw new Error('Device is_active must be a boolean');
+    }
+    if (typeof is_current_device !== 'boolean') {
+      throw new Error('Device is_current_device must be a boolean');
     }
 
     this.id = id;
@@ -23,6 +51,7 @@ class Device {
     this.lastUsedAt = last_used_at;
     this.createdAt = created_at;
     this.isActive = is_active;
+    this.isCurrentDevice = is_current_device;
   }
 
   /**
@@ -39,6 +68,12 @@ class Device {
    * @returns {string}
    */
   getFormattedLastUsed() {
+    if (import.meta.env.DEV) {
+      console.warn(
+        '[DEPRECATED] Device.getFormattedLastUsed() is deprecated since v1.13.0 and will be removed in v2.0.0. ' +
+        'Use formatDateTime() from utils/dateFormatters instead.'
+      );
+    }
     if (!this.lastUsedAt) return 'Never';
     return new Date(this.lastUsedAt).toLocaleString();
   }
@@ -49,6 +84,12 @@ class Device {
    * @returns {string}
    */
   getFormattedCreatedAt() {
+    if (import.meta.env.DEV) {
+      console.warn(
+        '[DEPRECATED] Device.getFormattedCreatedAt() is deprecated since v1.13.0 and will be removed in v2.0.0. ' +
+        'Use formatDateTime() from utils/dateFormatters instead.'
+      );
+    }
     if (!this.createdAt) return 'Unknown';
     return new Date(this.createdAt).toLocaleString();
   }
@@ -65,6 +106,7 @@ class Device {
       last_used_at: this.lastUsedAt,
       created_at: this.createdAt,
       is_active: this.isActive,
+      is_current_device: this.isCurrentDevice,
     };
   }
 }

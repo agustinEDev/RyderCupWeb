@@ -14,6 +14,10 @@
     "revokeCurrent": "This is your CURRENT device. Revoking it will log you out immediately. Are you sure?",
     "revokeOther": "Are you sure you want to revoke this device? All sessions on this device will be closed."
   },
+  "modals": {
+    "revokeCurrentTitle": "Revoke Current Device",
+    "revokeOtherTitle": "Revoke Device"
+  },
   "device": {
     "current": "Current Device",
     "ip": "IP",
@@ -29,5 +33,15 @@
     "title": "Security Tip",
     "description": "If you notice any suspicious activity or unfamiliar devices, revoke them immediately and consider changing your password. You can do this from your",
     "profileSettings": "profile settings"
+  },
+  "errors": {
+    "CSRF_VALIDATION_FAILED": "CSRF validation failed. Please refresh the page.",
+    "DEVICE_NOT_FOUND": "Device not found",
+    "DEVICE_ALREADY_REVOKED": "Device already revoked",
+    "FAILED_TO_REVOKE_DEVICE": "Failed to revoke device",
+    "FAILED_TO_LOAD_DEVICES": "Failed to load devices"
+  },
+  "aria": {
+    "closeErrorMessage": "Close error message"
   }
 }
