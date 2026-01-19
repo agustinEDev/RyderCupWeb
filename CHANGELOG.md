@@ -469,14 +469,6 @@ y este proyecto adhiere a [Versionado Semántico](https://semver.org/lang/es/).
 - Implementation summary with KPIs and best practices (SENTRY_IMPLEMENTATION_SUMMARY.md, 800+ lines)
 - All helper functions documented with JSDoc comments and usage examples
 
-## [1.6.0] - 2025-11-25
-
-### Added
-- **Sentry Error and Performance Monitoring**: Implemented Sentry.io integration for comprehensive error tracking, performance monitoring, and session replay capabilities.
-  - Configured Sentry DSN, BrowserTracing, and Replay integrations.
-  - Ensured early initialization in `main.jsx` and main `App` component profiling.
-  - Updated dependencies and Content Security Policy to support Sentry communication.
-
 ## [1.5.1] - 2025-11-25
 
 ### Changed
