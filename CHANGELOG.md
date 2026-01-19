@@ -7,6 +7,8 @@ y este proyecto adhiere a [Versionado Semántico](https://semver.org/lang/es/).
 
 ## [Unreleased]
 
+## [1.14.2] - 2026-01-19
+
 ### Fixed
 - **Infinite Toast Loop on Logout/Revocation**: Fixed critical bug causing infinite loop of "Your session has ended" toast messages
   - **Problem**: After logout or device revocation, redirecting to `/login` triggered `getUserData()` → 401 → `handleDeviceRevocationLogout()` → redirect loop
@@ -32,6 +34,8 @@ y este proyecto adhiere a [Versionado Semántico](https://semver.org/lang/es/).
   - **Safety timeout**: Added `Promise.race` with 5s timeout fallback in redirects (prevents indefinite hangs)
   - **Impact**: Automatic token refresh on navigation, clean redirect only when refresh fails, no more blank pages
   - **Files modified**: `src/hooks/useAuth.js`, `src/pages/Profile.jsx`, `src/utils/tokenRefreshInterceptor.js`, `ROADMAP.md`
+
+---
 
 ## [1.14.1] - 2026-01-17
 
@@ -924,7 +928,8 @@ y este proyecto adhiere a [Versionado Semántico](https://semver.org/lang/es/).
 - Configuración de headers de seguridad (X-Content-Type-Options, X-Frame-Options, etc.)
 - Eliminación automática de console.log en builds de producción
 
-[Unreleased]: https://github.com/agustinEDev/RyderCupWeb/compare/v1.14.1...HEAD
+[Unreleased]: https://github.com/agustinEDev/RyderCupWeb/compare/v1.14.2...HEAD
+[1.14.2]: https://github.com/agustinEDev/RyderCupWeb/compare/v1.14.1...v1.14.2
 [1.14.1]: https://github.com/agustinEDev/RyderCupWeb/compare/v1.14.0...v1.14.1
 [1.14.0]: https://github.com/agustinEDev/RyderCupWeb/compare/v1.6.0...v1.14.0
 [1.6.0]: https://github.com/agustinEDev/RyderCupWeb/compare/v1.5.1...v1.6.0
