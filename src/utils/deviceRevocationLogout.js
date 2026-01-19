@@ -28,52 +28,63 @@ export const clearDeviceRevocationFlag = () => {
 };
 
 /**
- * Check if a response indicates device revocation
+ * Check if a response indicates device revocation or session expiration
  * @param {Object} response - Fetch response object
  * @param {Object} errorData - Parsed error data from response
- * @returns {boolean} - True if device was revoked
+ * @returns {boolean} - True if device was revoked or session expired
  */
 export const isDeviceRevoked = (response, errorData = {}) => {
   // Check for 401 status + specific message from backend
   if (response?.status === 401 && errorData?.detail) {
     const detail = String(errorData.detail).toLowerCase();
-    return detail.includes('dispositivo revocado') || detail.includes('device revoked');
+
+    // Scenario 1: Direct revocation (backend returns explicit message)
+    if (detail.includes('dispositivo revocado') || detail.includes('device revoked')) {
+      return true;
+    }
+
+    // Scenario 2: Refresh token issues (revocation OR expiration)
+    // Both require re-login, but message should differentiate
+    if (detail.includes('refresh token inválido o expirado') ||
+        detail.includes('refresh token invalid or expired')) {
+      return true;
+    }
+
+    // Fallback: Generic "refresh token" error message
+    if (detail.includes('refresh token') &&
+        (detail.includes('inválido') || detail.includes('invalid') ||
+         detail.includes('expirado') || detail.includes('expired'))) {
+      return true;
+    }
   }
   return false;
 };
 
 /**
- * Handle device revocation logout
+ * Handle device revocation or session expiration logout
  * - Clears localStorage (user data)
  * - Clears Sentry user context
- * - Shows translated toast message
+ * - Shows translated toast message (differentiated by reason)
  * - Redirects to login page
  *
- * @param {Object} errorData - Error data from backend (optional, for logging)
+ * @param {Object} errorData - Optional error data to determine logout reason
  */
-export const handleDeviceRevocationLogout = (errorData = {}) => {
+export const handleDeviceRevocationLogout = (errorData = null) => {
   const alreadyHandled = localStorage.getItem(REVOCATION_HANDLED_KEY);
 
   // If already on login page and already handled, do nothing
   if (alreadyHandled && window.location.pathname === '/login') {
-    console.log('🔵 [DeviceRevocation] Already on login page, skipping...');
     return;
   }
 
   // If already handled but not on login, just redirect (no toast to avoid spam)
   if (alreadyHandled) {
-    console.log('🔵 [DeviceRevocation] Already handled, redirecting to login...');
     window.location.href = '/login';
     return;
   }
 
   // First time handling - do full logout flow
   localStorage.setItem(REVOCATION_HANDLED_KEY, 'true');
-
-  if (import.meta.env.DEV) {
-    console.warn('🚫 [DeviceRevocation] Device has been revoked');
-    console.log('🚫 [DeviceRevocation] Backend message:', errorData.detail || 'No details');
-  }
 
   // Clear localStorage
   localStorage.removeItem('user');
@@ -84,19 +95,46 @@ export const handleDeviceRevocationLogout = (errorData = {}) => {
     window.Sentry.setUser(null);
   }
 
+  // Determine reason for logout based on error message
+  const detail = errorData?.detail ? String(errorData.detail).toLowerCase() : '';
+  const isExplicitRevocation = detail.includes('revocado') || detail.includes('revoked');
+  const isExpiredOrInvalid = !isExplicitRevocation &&
+    (detail.includes('expirado') || detail.includes('expired') ||
+     detail.includes('inválido') || detail.includes('invalid'));
+
   // Show user-friendly toast message
   // Duration: 8 seconds (long enough to read)
-  // Use browser language to show appropriate message
-  const browserLang = navigator.language?.startsWith('es') ? 'es' : 'en';
-  const messages = {
-    es: 'Tu sesión ha sido cerrada. Este dispositivo fue revocado desde otro dispositivo.',
-    en: 'Your session has been closed. This device was revoked from another device.',
-  };
-  const message = messages[browserLang] || messages.en;
+  // Use configured i18n language first, fallback to browser language
+  const storedLang = localStorage.getItem('i18nextLng');
+  const detectedLang = (storedLang || navigator.language)?.startsWith('es') ? 'es' : 'en';
+
+  // Choose message based on reason
+  let messages;
+  if (isExplicitRevocation) {
+    // Explicit device revocation
+    messages = {
+      es: 'Tu sesión ha sido cerrada. Este dispositivo fue revocado desde otro dispositivo.',
+      en: 'Your session has been closed. This device was revoked from another device.',
+    };
+  } else if (isExpiredOrInvalid) {
+    // Session expired or invalid (neutral message)
+    messages = {
+      es: 'Tu sesión ha terminado. Por favor, inicia sesión nuevamente.',
+      en: 'Your session has ended. Please sign in again.',
+    };
+  } else {
+    // Fallback (unknown reason, use neutral message)
+    messages = {
+      es: 'Tu sesión ha terminado. Por favor, inicia sesión nuevamente.',
+      en: 'Your session has ended. Please sign in again.',
+    };
+  }
+
+  const message = messages[detectedLang] || messages.en;
 
   toast.error(message, {
     duration: 8000,
-    icon: '🔒',
+    icon: isExplicitRevocation ? '🔒' : '⏱️',
   });
 
   // Redirect to login after a short delay (allow toast to be visible)

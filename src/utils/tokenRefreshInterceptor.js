@@ -59,12 +59,26 @@ export const refreshAccessToken = async () => {
     if (!response.ok) {
       console.error('❌ [TokenRefresh] Refresh failed:', response.status, response.statusText);
 
-      // Refresh token expired or invalid
-      if (response.status === 401) {
-        throw new Error('Refresh token expired. Please login again.');
+      // Parse error response to get detail message
+      let errorData = {};
+      try {
+        errorData = await response.json();
+      } catch (jsonError) {
+        // Ignore JSON parse errors
       }
 
-      throw new Error('Failed to refresh token');
+      // Refresh token expired or invalid
+      if (response.status === 401) {
+        const error = new Error(errorData.detail || 'Refresh token expired. Please login again.');
+        error.response = response;
+        error.errorData = errorData;
+        throw error;
+      }
+
+      const error = new Error('Failed to refresh token');
+      error.response = response;
+      error.errorData = errorData;
+      throw error;
     }
 
     // v1.13.0: Backend now returns new csrf_token on refresh
@@ -109,20 +123,20 @@ export const fetchWithTokenRefresh = async (url, options = {}) => {
   };
 
   try {
-    // TRACE: Interceptor entry point
-    console.log('🔵 [TRACE] fetchWithTokenRefresh CALLED:', url);
-
     // Execute original request
     const response = await fetch(url, fetchOptions);
-
-    console.log('🔵 [TRACE] Response status:', response.status);
 
     // If not 401, return response immediately
     if (response.status !== 401) {
       return response;
     }
 
-    console.log('🔵 [TRACE] Got 401, checking for device revocation...');
+    // Special case: Don't retry refresh token endpoint itself
+    // Must check BEFORE device revocation to avoid infinite promise
+    if (url.includes('/auth/refresh-token')) {
+      console.log('🚫 [TokenRefresh] Refresh endpoint itself returned 401. Session expired.');
+      return response;
+    }
 
     // Special case: Device Revocation (v1.13.1)
     // Check if 401 is due to device revocation (before attempting refresh)
@@ -131,30 +145,20 @@ export const fetchWithTokenRefresh = async (url, options = {}) => {
     let errorData = {};
 
     try {
-      console.log('🔵 [TRACE] Attempting to parse 401 response body...');
       errorData = await responseClone.json();
-      console.log('🔵 [TRACE] 401 response body:', JSON.stringify(errorData));
-
-      console.log('🔵 [TRACE] Calling isDeviceRevoked...');
       const isRevoked = isDeviceRevoked(response, errorData);
-      console.log('🔵 [TRACE] isDeviceRevoked result:', isRevoked);
 
       if (isRevoked) {
-        console.log('🔵 [TRACE] Device IS revoked - calling handleDeviceRevocationLogout');
         handleDeviceRevocationLogout(errorData);
-        return response; // Return original response (logout will redirect)
-      } else {
-        console.log('🔵 [TRACE] Device NOT revoked - continuing with normal refresh flow');
+        // Don't return response (body already consumed by clone)
+        // Wait for redirect (happens in 500ms) with safety timeout that rejects
+        await Promise.race([
+          new Promise(() => {}), // Never resolves - redirect will interrupt
+          new Promise((_, reject) => setTimeout(() => reject(new Error('Redirect timeout after device revocation')), 5000))
+        ]);
       }
     } catch (jsonError) {
       // If JSON parsing fails, continue with normal refresh flow
-      console.log('🔵 [TRACE] Could not parse 401 response body:', jsonError.message);
-    }
-
-    // Special case: Don't retry refresh token endpoint itself
-    if (url.includes('/auth/refresh-token')) {
-      console.log('🚫 [TokenRefresh] Refresh endpoint itself returned 401. Session expired.');
-      return response;
     }
 
     // Special case: Don't retry login endpoint - let it fail naturally
@@ -211,11 +215,30 @@ export const fetchWithTokenRefresh = async (url, options = {}) => {
       // Refresh failed - reject all queued requests
       processQueue(refreshError);
 
-      // Token refresh failed - redirect to login
+      // Check if refresh failed due to device revocation
+      if (refreshError.response && refreshError.errorData) {
+        const isRevoked = isDeviceRevoked(refreshError.response, refreshError.errorData);
+
+        if (isRevoked) {
+          handleDeviceRevocationLogout(refreshError.errorData);
+          // Don't return response (would cause body parsing errors)
+          // Wait for redirect (happens in 500ms) with safety timeout that rejects
+          await Promise.race([
+            new Promise(() => {}), // Never resolves - redirect will interrupt
+            new Promise((_, reject) => setTimeout(() => reject(new Error('Redirect timeout after device revocation')), 5000))
+          ]);
+        }
+      }
+
+      // Token refresh failed (not revocation) - redirect to login
       globalThis.location.href = '/login';
 
-      // Return the original 401 response
-      return response;
+      // Pause execution - redirect will interrupt
+      // Don't return response (prevents race conditions and blank page)
+      await Promise.race([
+        new Promise(() => {}), // Never resolves - redirect will interrupt
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Redirect timeout after session expiration')), 5000))
+      ]);
 
     } finally {
       isRefreshing = false;

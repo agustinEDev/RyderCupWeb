@@ -1,13 +1,1109 @@
 # 🗺️ Roadmap - RyderCupFriends Frontend
 
-> **Versión:** 1.11.4 → 2.1.0 (En Desarrollo)
-> **Última actualización:** 7 Ene 2026
-> **Estado:** 🚧 Preparando v2.1.0
+> **Versión:** 1.13.0 → 1.14.0 → 1.15.0 → 2.1.0
+> **Última actualización:** 18 Ene 2026
+> **Estado:** ✅ v1.14.0 Completada | 🔄 Post-fix #18 en progreso (Session Expiration)
 > **Stack:** React 18 + Vite 7 + Tailwind CSS 3.4 + TanStack Query + Zustand
 
 ---
 
-## 📊 Estado Actual (v1.11.4)
+## 🎯 Roadmap v1.14.0 - Device Fingerprinting Improvements
+
+> **Objetivo:** Resolver bugs críticos y mejorar robustez del sistema de device fingerprinting
+> **Duración:** 3-5 días (3 sprints: Críticos, Medios, UX)
+> **Tipo:** Bug fixes + Mejoras de arquitectura + UX improvements
+> **Análisis completado:** 16 Ene 2026
+
+---
+
+### 📊 Resumen del Análisis
+
+**Archivos analizados:** 12 archivos (6 producción + 6 tests)
+**Errores encontrados:** 17 (3 críticos, 7 medios, 7 bajos)
+**Impacto OWASP:** +0.10 (8.75 → 8.85)
+**Tests nuevos estimados:** +25-30 tests
+
+---
+
+### ✅ Sprint 1: Fixes Críticos - COMPLETADO (16 Ene 2026)
+
+**Estado:** ✅ 3/3 fixes completados | **Tiempo:** 7.5h (estimado 7-11h)
+
+#### **✅ Fix #7: iOS Safari Device Detection** - COMPLETADO
+**Commit:** `7fea6ee` | **Tests:** 16/16 passing | **Tiempo:** 4.5h
+
+**Problema resuelto:**
+- iPadOS 13+ se identifica como macOS en User-Agent
+- iOS Safari detectaba dispositivos macOS como "Dispositivo Actual"
+
+**Solución implementada:**
+- ✅ Detección de iPadOS 13+ usando `navigator.maxTouchPoints > 1`
+- ✅ Reordenamiento de checks: iOS primero, luego macOS (excluye iOS)
+- ✅ Archivo nuevo: `src/hooks/useDeviceManagement.test.js` (16 tests)
+
+**Tests cubiertos:**
+- ✅ iPadOS 13+ detection (touch + Macintosh UA)
+- ✅ macOS Safari NOT detected as iPad device
+- ✅ iPadOS NOT detected as macOS device
+- ✅ iPhone, old iPad, Chrome, Firefox, Edge detection
+- ✅ Edge cases: null device, mismatched browser
+
+**Archivos modificados:**
+- `src/hooks/useDeviceManagement.js` (líneas 127-165)
+- `src/hooks/useDeviceManagement.test.js` (nuevo, 434 líneas)
+
+---
+
+#### **✅ Fix #5: API Response Validation** - COMPLETADO
+**Commit:** `a6aceca` | **Tests:** 16/16 passing (+6 nuevos) | **Tiempo:** 2h
+
+**Problema resuelto:**
+- NO validación de respuesta API antes de `.map()`
+- Crash potencial: `TypeError: Cannot read properties of null (reading 'map')`
+
+**Solución implementada:**
+- ✅ Validación de 3 capas: object, array, number
+- ✅ Errores descriptivos para debugging
+- ✅ 6 tests nuevos de edge cases
+
+**Tests cubiertos:**
+- ✅ API returns null → throws error
+- ✅ API returns non-object → throws error
+- ✅ devices is not array/null → throws error
+- ✅ total_count is not number/null → throws error
+
+**Archivos modificados:**
+- `src/infrastructure/repositories/ApiDeviceRepository.js` (+13 líneas validación)
+- `src/infrastructure/repositories/ApiDeviceRepository.test.js` (+68 líneas tests)
+
+---
+
+#### **✅ Fix #13: Race Condition Prevention** - COMPLETADO
+**Commit:** `9cf8bd5` | **Tests:** Manual | **Tiempo:** 1h
+
+**Problema resuelto:**
+- Timeout NO se limpiaba al revocar múltiples dispositivos
+- Logout inesperado si usuario revocaba otro dispositivo después del actual
+
+**Solución implementada:**
+- ✅ ClearTimeout ANTES de cualquier operación de revocación
+- ✅ Set timeoutRef.current = null para estado limpio
+- ✅ Solo un timer activo a la vez
+
+**Scenarios validados:**
+- ✅ Revoke current device → logout after 2s
+- ✅ Revoke current → revoke other → NO logout
+- ✅ Multiple rapid revocations → only last current triggers logout
+
+**Archivos modificados:**
+- `src/pages/DeviceManagement.jsx` (handleRevokeClick: líneas 25-53)
+
+---
+
+### 🟠 Sprint 2: Fixes Medios (Prioridad Media) - 1-2 días
+
+#### **✅ Fix #4: Validación Inconsistente en RevokeDeviceUseCase** - COMPLETADO
+**Commit:** `7f9c163` | **Tests:** 23/23 passing (+13 nuevos) | **Tiempo:** 1.5h
+
+**Archivo:** `src/application/use_cases/device/RevokeDeviceUseCase.js:28-42`
+**Problema resuelto:** NO validaba respuesta (inconsistente con GetActiveDevicesUseCase)
+
+**Solución implementada:**
+- ✅ Validación de 3 capas: object (no array), message (string), device_id (string)
+- ✅ 13 tests nuevos de edge cases
+- ✅ Consistencia con GetActiveDevicesUseCase
+
+**Tests cubiertos:**
+- ✅ Repository returns null/undefined → throws error
+- ✅ Repository returns non-object (string, number, array) → throws error
+- ✅ message is missing/null/non-string → throws error
+- ✅ device_id is missing/null/non-string → throws error
+- ✅ Valid response with all required fields → success
+- ✅ Edge case: empty string message (valid) → success
+
+**Archivos modificados:**
+- `src/application/use_cases/device/RevokeDeviceUseCase.js` (+11 líneas validación)
+- `src/application/use_cases/device/RevokeDeviceUseCase.test.js` (+135 líneas tests)
+
+**Estimación:** 2h | **Real:** 1.5h
+
+---
+
+#### **✅ Fix #6: Violación de Clean Architecture + i18n Error Handling** - COMPLETADO
+**Commit:** `9984c0e` | **Tests:** 69/69 passing (+8 nuevos) | **Tiempo:** 3.5h
+
+**Archivos:** `ApiDeviceRepository.js` (refactorizado), `useDeviceManagement.js` (i18n), `devices.json` (ES/EN)
+**Problema resuelto:** Hook interpretaba códigos HTTP (responsabilidad del Repository) + errores sin i18n
+
+**Solución implementada (Clean Architecture + i18n):**
+- ✅ Repository transforma HTTP → domain error codes (Infrastructure layer)
+- ✅ Hook traduce error codes usando `useTranslation` (Presentation layer)
+- ✅ 5 nuevas traducciones de errores (ES/EN) en `devices.json`
+- ✅ 8 tests actualizados para verificar error codes en vez de mensajes
+- ✅ Cumple Clean Architecture: Repository NO conoce i18n
+
+**Transformaciones HTTP → Error Codes:**
+- ✅ HTTP 403 → `CSRF_VALIDATION_FAILED`
+- ✅ HTTP 404 → `DEVICE_NOT_FOUND`
+- ✅ HTTP 409 → `DEVICE_ALREADY_REVOKED`
+- ✅ HTTP 401 → Propagate original (token refresh interceptor)
+- ✅ HTTP 500+ → `FAILED_TO_REVOKE_DEVICE` (+ originalMessage)
+
+**Traducciones agregadas (ES/EN):**
+- `errors.CSRF_VALIDATION_FAILED` - "Validación CSRF fallida..." / "CSRF validation failed..."
+- `errors.DEVICE_NOT_FOUND` - "Dispositivo no encontrado" / "Device not found"
+- `errors.DEVICE_ALREADY_REVOKED` - "Dispositivo ya revocado" / "Device already revoked"
+- `errors.FAILED_TO_REVOKE_DEVICE` - "Error al revocar..." / "Failed to revoke..."
+- `errors.FAILED_TO_LOAD_DEVICES` - "Error al cargar..." / "Failed to load..."
+
+**Archivos modificados:**
+- `src/infrastructure/repositories/ApiDeviceRepository.js` (+35 líneas error codes)
+- `src/infrastructure/repositories/ApiDeviceRepository.test.js` (tests actualizados)
+- `src/hooks/useDeviceManagement.js` (+useTranslation, error code translation)
+- `src/i18n/locales/es/devices.json` (+7 líneas errors)
+- `src/i18n/locales/en/devices.json` (+7 líneas errors)
+
+**Estimación:** 3-4h | **Real:** 3.5h
+
+---
+
+#### **✅ Fix #11: i18n Language Priority in Device Revocation Logout** - COMPLETADO
+**Commit:** `ce49a38` | **Tests:** 21/21 passing (+8 nuevos) | **Tiempo:** 45min
+
+**Archivo:** `src/utils/deviceRevocationLogout.js:90-91` (refactorizado)
+**Problema resuelto:** Usaba `navigator.language` ignorando preferencia i18n del usuario
+
+**Solución implementada:**
+- ✅ Leer `i18nextLng` de localStorage PRIMERO (idioma configurado por usuario)
+- ✅ Fallback a `navigator.language` si no hay configuración
+- ✅ 8 tests nuevos para verificar prioridad de detección de idioma
+- ✅ Respeta preferencia del usuario sobre idioma del navegador
+
+**Lógica de detección (prioridad):**
+1. `localStorage.getItem('i18nextLng')` → Preferencia del usuario (ES/EN)
+2. `navigator.language` → Idioma del navegador (fallback)
+3. `'en'` → Inglés por defecto (ultimate fallback)
+
+**Tests cubiertos (8 nuevos):**
+- ✅ i18nextLng='es' → Mensaje en español (ignora navigator)
+- ✅ i18nextLng='en' → Mensaje en inglés (ignora navigator)
+- ✅ Sin i18nextLng + navigator='es-ES' → Español
+- ✅ Sin i18nextLng + navigator='fr-FR' → Inglés (fallback)
+- ✅ Manejo de códigos de región (es-ES, en-GB)
+- ✅ Prioridad correcta: i18nextLng > navigator.language
+- ✅ Fallback a inglés si ambos son null
+
+**Archivos modificados:**
+- `src/utils/deviceRevocationLogout.js` (+2 líneas, refactor lógica)
+- `src/utils/deviceRevocationLogout.test.js` (+129 líneas, 8 tests nuevos)
+
+**Estimación:** 1h | **Real:** 45min
+
+---
+
+#### **✅ Fix #8: Regex Matching with Word Boundaries** - COMPLETADO
+**Commit:** `fba5c90` | **Tests:** 23/23 passing (+7 nuevos) | **Tiempo:** 2h
+
+**Archivo:** `src/hooks/useDeviceManagement.js:111-178` (refactorizado)
+**Problema resuelto:** `.includes()` causaba falsos positivos (chromatic→Chrome, SafariCom→Safari, operator→Opera)
+
+**Solución implementada:**
+- ✅ Reemplazado `.includes()` por regex con **word boundaries** (`\b`)
+- ✅ 6 regex patterns: edge, opera, chrome/chromium, firefox, safari, ios, macos
+- ✅ 7 tests nuevos para verificar prevención de falsos positivos
+- ✅ Mantiene compatibilidad con casos válidos (Chrome, Safari, Opera, etc.)
+
+**Regex patterns implementados:**
+```javascript
+const edgeRegex = /\bedge\b/i;
+const operaRegex = /\bopera\b/i;
+const chromeRegex = /\bchrome\b|\bchromium\b/i;
+const firefoxRegex = /\bfirefox\b/i;
+const safariRegex = /\bsafari\b/i;
+const iosRegex = /\b(ios|iphone|ipad|ipod)\b/i;
+const macOSRegex = /\b(macos|mac\s*os|macintosh|mac)\b/i;
+```
+
+**Tests de falsos positivos (7 nuevos):**
+- ✅ "Chromatic Testing Tool" NO se detecta como Chrome
+- ✅ "SafariCom Mobile Network" NO se detecta como Safari
+- ✅ "System Operator Dashboard" NO se detecta como Opera
+- ✅ "Safari on stomach" NO se detecta como macOS
+- ✅ "Chrome Browser" SÍ se detecta correctamente
+- ✅ "Safari 17.0 on macOS" SÍ se detecta correctamente
+- ✅ "Opera 106.0" SÍ se detecta correctamente
+
+**Archivos modificados:**
+- `src/hooks/useDeviceManagement.js` (+6 regex patterns, refactor matching logic)
+- `src/hooks/useDeviceManagement.test.js` (+149 líneas, 7 tests nuevos)
+
+**Estimación:** 2-3h | **Real:** 2h
+
+---
+
+### ✅ Sprint 3: Mejoras de UX y Calidad (Prioridad Baja) - COMPLETADO (16-17 Ene 2026)
+
+**Estado:** ✅ 9/9 fixes completados | **Tiempo:** 14h (estimado 9-12h)
+
+#### **Fix #1: Validación Débil en Device Entity** ✅
+- [x] Agregar validación de tipos en constructor
+- [x] Tests: Casos con tipos incorrectos (23 nuevos tests)
+
+**Implementación:**
+- ✅ Validación de tipos para `id`, `device_name`, `ip_address` (strings requeridos)
+- ✅ Validación de tipos para `last_used_at`, `created_at` (string, null, o undefined)
+- ✅ Validación de tipos para `is_active` (boolean estricto)
+- ✅ 23 nuevos tests de validación (18 → 41 tests totales)
+
+**Tests:** 18 → 41 (+23) - 100% passing
+**Archivos:** `Device.js`, `Device.test.js`
+**Tiempo real:** 1.5h
+**Commit:** `b978e74`
+
+**Estimación:** 1-2h
+
+---
+
+#### **Fix #1b: Migrar a Backend `is_current_device`** ✅
+- [x] Agregar campo `is_current_device` a Device Entity (con validación boolean)
+- [x] Eliminar método `isCurrentDevice()` complejo de useDeviceManagement
+- [x] Eliminar 19 tests de regex y User-Agent detection
+- [x] Actualizar DeviceManagement.jsx para usar `device.isCurrentDevice`
+- [x] Mejorar UX: borde verde para dispositivo actual
+
+**Motivación:**
+- Backend ahora incluye `is_current_device` en `GET /api/v1/users/me/devices`
+- Detección 100% precisa (usa `device_id` del token JWT)
+- Elimina lógica compleja de User-Agent parsing y regex word boundaries
+
+**Implementación:**
+- ✅ Device Entity: Agregado campo `is_current_device` (boolean, default: false)
+- ✅ Device.test.js: +7 tests para nuevo campo (41 → 48 tests)
+- ✅ useDeviceManagement.js: ELIMINADO método `isCurrentDevice()` (~84 líneas)
+- ✅ useDeviceManagement.test.js: ELIMINADOS 19 tests de regex (23 → 4 tests)
+- ✅ DeviceManagement.jsx: Usa `device.isCurrentDevice` + UX mejorada
+- ✅ ApiDeviceRepository: Campo mapeado automáticamente (sin cambios)
+
+**Código eliminado:**
+- ~84 líneas: método `isCurrentDevice()` (regex, User-Agent parsing, iOS/iPadOS detection)
+- ~420 líneas: 19 tests de regex y User-Agent detection
+- **Total:** ~504 líneas eliminadas
+
+**Código agregado:**
+- Device Entity: +3 líneas (validación + campo)
+- Device.test.js: +77 líneas (7 tests)
+- DeviceManagement.jsx: +7 líneas (borde verde condicional)
+- **Total:** ~87 líneas agregadas
+
+**Neto:** -417 líneas (82% reducción)
+
+**Beneficios:**
+- ✅ Precisión 100% (backend usa device_id del token)
+- ✅ Eliminados bugs de Safari iOS vs macOS, iPadOS 13+, etc.
+- ✅ Código más simple y mantenible (-417 líneas)
+- ✅ UX mejorada (borde verde, fondo verde claro para dispositivo actual)
+- ✅ Clean Architecture: Detección movida de Presentation a Domain (backend)
+
+**Tests:** 711 → 699 (-12) - 76/76 passing ✅
+**Archivos:** `Device.js`, `Device.test.js`, `useDeviceManagement.js`, `useDeviceManagement.test.js`, `DeviceManagement.jsx`, `ApiDeviceRepository.test.js`
+**Tiempo real:** 1h
+**Commit:** `c837bfb`
+
+**Estimación:** 1h
+
+---
+
+#### **Fix Crítico: Immediate Device Revocation Detection** ✅
+- [x] Crear hook `useDeviceRevocationMonitor` con detección event-driven
+- [x] Fix: Page blank crash cuando dispositivo es revocado
+- [x] Integrar monitoring en App.jsx (solo cuando isAuthenticated)
+- [x] Cleanup: Eliminar todos los console.log de debugging
+
+**Problema resuelto:**
+- Safari no se deslogueaba inmediatamente cuando Chrome revocaba su dispositivo
+- Safari esperaba hasta que access_token expirara (0-15 min) para detectar revocación
+- Al detectar, página se quedaba en blanco (crash por response body consumido)
+
+**Solución implementada:**
+- ✅ Hook event-driven con 3 triggers: navigation, tab visibility, fallback polling (5min)
+- ✅ Throttling: max 1 check cada 5 segundos (prevenir spam)
+- ✅ Latencia: 0-5s (usuario activo) vs 0-15min antes
+- ✅ Fix crash: `await new Promise(() => {})` en lugar de retornar response consumido
+- ✅ Solo activo cuando usuario autenticado
+- ✅ Producción: Todos los console.log de debugging eliminados
+
+**Archivos creados:**
+- `src/hooks/useDeviceRevocationMonitor.js` (145 líneas)
+- `src/hooks/useDeviceRevocationMonitor.test.jsx` (77 líneas, 3 tests)
+
+**Archivos modificados:**
+- `src/App.jsx` - Integrado hook con enabled: isAuthenticated
+- `src/utils/tokenRefreshInterceptor.js` - Fix crash + cleanup logs
+- `src/utils/deviceRevocationLogout.js` - Cleanup logs + remove unused parameter
+
+**Detección triggers:**
+1. **Navigation**: Check al cambiar de página (React Router location)
+2. **Tab visibility**: Check cuando usuario regresa a la pestaña
+3. **Fallback polling**: Check cada 5 minutos (edge cases: usuario leyendo sin moverse)
+
+**Performance:**
+- Requests/hora (usuario activo navegando): ~15-20 (vs 120 con polling 30s)
+- Requests/hora (usuario leyendo sin moverse): 12
+- Backend load (100 usuarios): ~1,500 req/h
+- Impacto mínimo en servidor vs polling agresivo
+
+**Tests:** 699 → 702 (+3) - 100% passing ✅
+**Lint:** 0 warnings ✅
+**Build:** 4.74s ✅
+**Commits:** `a6bc42e` (implementation), `5524850` (test fix - reorder checks)
+**Tiempo real:** 5h (incluye debugging K8s, cleanup producción, test fix)
+
+**Estimación:** No estimado (fix emergente Sprint 3)
+
+---
+
+#### **Fix #2: Métodos Deprecados Sin Warning** ✅
+- [x] Agregar `console.warn()` en desarrollo para métodos deprecados
+
+**Problema:**
+- `getFormattedLastUsed()` y `getFormattedCreatedAt()` están marcados como @deprecated
+- Desarrolladores no reciben warnings al usarlos
+
+**Solución implementada:**
+- ✅ Agregar `console.warn()` en ambos métodos (solo en DEV mode)
+- ✅ Mensajes claros indicando alternativa: `formatDateTime()` from utils/dateFormatters
+- ✅ Production build elimina warnings automáticamente (Vite tree-shaking)
+- ✅ 2 tests nuevos para verificar warnings en DEV mode
+
+**Métodos deprecados (v1.13.0 → v2.0.0):**
+- `Device.getFormattedLastUsed()` → Use `formatDateTime()`
+- `Device.getFormattedCreatedAt()` → Use `formatDateTime()`
+
+**Archivos modificados:**
+- `src/domain/entities/Device.js` (+10 líneas warnings)
+- `src/domain/entities/Device.test.js` (+49 líneas, 2 tests)
+
+**Tests:** 48 → 50 (+2) - 100% passing ✅
+**Commit:** `2e51bd1`
+**Tiempo real:** 20min
+
+**Estimación:** 30min
+
+---
+
+#### **Fix #10: Logout Inmediato para Dispositivo Actual** ✅
+- [x] Cambiar timeout de 2000ms a 500ms (backend ya invalidó tokens)
+
+**Problema:**
+- Cuando usuario revoca su propio dispositivo actual, esperaba 2 segundos antes de logout
+- Backend ya invalida tokens inmediatamente, timeout era innecesario
+
+**Solución implementada:**
+- ✅ Reducir timeout de 2000ms a 500ms
+- ✅ Mantener delay mínimo solo para visibilidad del toast de éxito
+
+**Archivos modificados:**
+- `src/pages/DeviceManagement.jsx` (líneas 46-52)
+
+**Tests:** Manual (comportamiento visual)
+**Commit:** `913ed43`
+**Tiempo real:** 15min
+
+**Estimación:** 30min
+
+---
+
+#### **Fix #14: Reemplazar window.confirm() por Modal React** ✅
+- [x] Crear `ConfirmModal` component con i18n completo
+- [x] Reemplazar `window.confirm()` en DeviceManagement.jsx
+
+**Problema:**
+- Uso de `window.confirm()` nativo del navegador
+- Sin i18n, sin accesibilidad, sin control de estilo
+- UX inconsistente con el diseño de la aplicación
+
+**Solución implementada:**
+- ✅ Componente ConfirmModal reutilizable (174 líneas)
+  * i18n completo con traducciones ES/EN
+  * Accesibilidad: aria-labelledby, aria-describedby, role="dialog"
+  * Soporte ESC key para cerrar
+  * Body scroll lock cuando modal está abierto
+  * Loading state con spinner
+  * Destructive actions (botón rojo)
+  * Responsive design (mobile-first)
+
+- ✅ DeviceManagement.jsx actualizado
+  * Modal state (isModalOpen, deviceToRevoke)
+  * Títulos y mensajes dinámicos según dispositivo actual
+  * Loading state durante revocación
+
+- ✅ Traducciones agregadas (ES/EN)
+  * common.json: modal.confirm, modal.ok, modal.cancel, modal.loading
+  * devices.json: modals.revokeCurrentTitle, modals.revokeOtherTitle
+
+**Features:**
+- Click en overlay para cancelar (excepto si loading)
+- ESC para cancelar (excepto si loading)
+- Botones deshabilitados durante loading
+- Estilos diferentes para acciones destructivas vs normales
+- Navegación completa por teclado
+
+**Mejoras UX:**
+- Mejor feedback visual que window.confirm()
+- Estilos consistentes con diseño de la app
+- Mensajes más claros (título + cuerpo separados)
+- Indicador de loading muestra progreso
+- No se puede cerrar accidentalmente durante operación
+
+**Archivos creados:**
+- `src/components/modals/ConfirmModal.jsx` (174 líneas)
+
+**Archivos modificados:**
+- `src/pages/DeviceManagement.jsx` (+30 líneas estado y lógica)
+- `src/i18n/locales/es/common.json` (+4 traducciones)
+- `src/i18n/locales/en/common.json` (+4 traducciones)
+- `src/i18n/locales/es/devices.json` (+2 traducciones)
+- `src/i18n/locales/en/devices.json` (+2 traducciones)
+
+**Tests:** Manual (UX testing)
+**Lint:** Clean ✅
+**Build:** 4.49s ✅
+**Commit:** `d30a726`
+**Tiempo real:** 2.5h
+
+**Estimación:** 2-3h
+
+---
+
+#### **Fix #15: Trackear Errores por Dispositivo** ✅
+- [x] Agregar `deviceErrors` state para mostrar errores inline
+- [x] UI: Mostrar mensaje de error debajo de cada dispositivo fallido
+
+**Problema:**
+- Errores solo se muestran como toast global (desaparece después de timeout)
+- No queda claro qué dispositivo específico falló
+- Usuario no puede revisar el error después de que el toast desaparece
+
+**Solución implementada:**
+- ✅ `deviceErrors` Map state en useDeviceManagement hook
+  * Trackea errores por device ID (deviceId → errorMessage)
+  * Limpia error cuando se reintenta operación
+  * Guarda error en Map al fallar (además del toast)
+  * Función clearDeviceError() para dismiss errors
+
+- ✅ UI inline debajo de cada dispositivo
+  * Alert box roja con icono de error (X en círculo)
+  * Mensaje de error en texto rojo
+  * Botón dismiss (X) con aria-label
+  * Error persiste hasta que usuario lo cierra o reintenta
+
+**Features:**
+- Error icon (red X circle)
+- Red background (bg-red-50) + red border
+- Texto del error en rojo
+- Botón cerrar con accesibilidad
+- Auto-clear al reintentar operación
+
+**Flujo de error:**
+1. Usuario intenta revocar dispositivo → falla
+2. Toast muestra error (temporal, ~5s)
+3. Error inline aparece debajo del dispositivo (persistente)
+4. Usuario puede dismiss error o reintentar
+
+**Mejoras UX:**
+- Errores visibles directamente en dispositivo afectado
+- Errores persisten (no desaparecen como toasts)
+- Claro qué dispositivo falló y por qué
+- Fácil dismiss individual
+- Mejor para operaciones múltiples
+
+**Archivos modificados:**
+- `src/hooks/useDeviceManagement.js` (+31 líneas)
+- `src/pages/DeviceManagement.jsx` (+26 líneas UI)
+
+**Tests:** Manual (UX testing)
+**Lint:** Clean ✅
+**Build:** 5.22s ✅
+**Commit:** `64ba68c`
+**Tiempo real:** 1.5h
+
+**Estimación:** 2h
+
+---
+
+#### **Fix #16: Accesibilidad - aria-label** ✅
+- [x] Agregar `aria-hidden="true"` en SVG decorativos (9 iconos)
+- [x] Convertir aria-label hardcodeado a i18n
+
+**Problema:**
+- SVG decorativos sin `aria-hidden="true"` confunden screen readers
+- Botón de cerrar error tenía aria-label hardcodeado (sin i18n)
+- Accesibilidad incompleta para usuarios de tecnologías asistivas
+
+**Solución implementada:**
+- ✅ Agregado `aria-hidden="true"` a 9 SVG decorativos en DeviceManagement.jsx
+  * Back to Profile button icon
+  * Info alert icon
+  * Empty state icon
+  * Device card icon
+  * IP, Last Used, First Seen icons (3)
+  * Revoke button icon
+  * Error alert icon
+  * Error close button icon
+  * Security warning icon
+
+- ✅ Convertido aria-label del botón cerrar error a i18n
+  * `aria-label="Close error message"` → `aria-label={t('aria.closeErrorMessage')}`
+  * Traducciones agregadas en ES/EN
+
+**Mejoras de accesibilidad:**
+- Screen readers ahora omiten iconos decorativos
+- Todos los elementos interactivos tienen labels apropiados
+- Labels completamente internacionalizados
+- Mejor experiencia para usuarios con tecnologías asistivas
+
+**Archivos modificados:**
+- `src/pages/DeviceManagement.jsx` (+9 aria-hidden, +1 i18n aria-label)
+- `src/i18n/locales/en/devices.json` (+1 clave aria.closeErrorMessage)
+- `src/i18n/locales/es/devices.json` (+1 clave aria.closeErrorMessage)
+
+**Tests:** 712/712 passing ✅
+**Lint:** Clean ✅
+**Build:** 4.43s ✅
+**Commit:** `fb00f64`
+**Tiempo real:** 1h
+
+**Estimación:** 1h
+
+---
+
+#### **Fix #17: Loading State Bloquea Header** ✅
+- [x] Eliminar spinner bloqueante de página completa
+- [x] Implementar skeleton loader sin bloquear navegación
+
+**Problema:**
+- Loading spinner bloquea toda la página (incluyendo header)
+- Usuarios no pueden navegar mientras se cargan dispositivos
+- UX pobre durante carga inicial
+
+**Solución implementada:**
+- ✅ Eliminado return early con spinner bloqueante (líneas 78-87)
+- ✅ HeaderAuth siempre visible (navegación disponible durante carga)
+- ✅ Skeleton loader con 3 tarjetas animadas (Tailwind `animate-pulse`)
+  * Estructura idéntica a tarjetas reales de dispositivos
+  * Placeholders animados para icono, nombre, metadatos, botón
+  * Responsive design (mobile-first)
+
+**Estructura del skeleton:**
+- 3 tarjetas de dispositivos simuladas
+- Iconos: placeholders grises (w-5 h-5, w-4 h-4)
+- Nombre: placeholder gris (w-48)
+- Metadatos: 3 placeholders (IP, Last Used, First Seen)
+- Botón Revoke: placeholder gris (w-24)
+
+**Renderizado condicional:**
+```jsx
+{isLoading ? (
+  <Skeleton />
+) : devices.length === 0 ? (
+  <EmptyState />
+) : (
+  <DeviceList />
+)}
+```
+
+**Mejoras UX:**
+- Header siempre accesible (navegación durante carga)
+- Feedback visual elegante (no bloqueante)
+- Layout shift mínimo (estructura idéntica)
+- Performance: no blocking render
+
+**Archivos modificados:**
+- `src/pages/DeviceManagement.jsx` (+34 líneas skeleton, -13 spinner)
+
+**Tests:** 712/712 passing ✅
+**Lint:** Clean ✅
+**Build:** 3.97s ✅
+**Commit:** `dae6bf4`
+**Tiempo real:** 1h
+
+**Estimación:** 1-2h
+
+---
+
+#### **Fix #18: Blank Page on Expired Session Navigation** ✅
+- [x] Fix race condition en tokenRefreshInterceptor.js (redirect + return response)
+- [x] Mejorar manejo de 401 en useAuth.js (setLoading false inmediato)
+
+**Problema:**
+- Cuando sesión expira (access + refresh tokens), navegar a otra página causa página en blanco
+- Race condition: redirect a `/login` mientras React Router intenta renderizar
+- ProtectedRoute queda en estado loading indefinidamente
+
+**Solución implementada:**
+- ✅ tokenRefreshInterceptor.js: Pausar ejecución después de redirect (await Promise indefinido)
+  * Evita retornar response consumido o en estado inconsistente
+  * Mismo patrón usado en device revocation (líneas 155, 223)
+  * Redirect interrumpe la promesa antes de que resuelva
+- ✅ useAuth.js: setLoading(false) inmediato en 401
+  * Previene que ProtectedRoute quede colgado en loading state
+  * Early exit sin intentar parsear response
+  * Aplicado en useAuth hook Y getUserData function
+
+**Root cause:**
+- `globalThis.location.href = '/login'` es asíncrono
+- Código continuaba y retornaba `response` (posiblemente consumido)
+- React Router intentaba renderizar mientras navegación en progreso
+- ProtectedRoute.loading=true → pantalla blanca
+
+**Mejoras UX:**
+- Redirect inmediato y limpio a login
+- No más pantalla en blanco intermedia
+- Experiencia consistente con device revocation flow
+
+**Archivos modificados:**
+- `src/utils/tokenRefreshInterceptor.js` (+2 líneas, pausa indefinida)
+- `src/hooks/useAuth.js` (+5 líneas, early exit + setLoading)
+
+**Tests:** Manual (flujo de expiración de sesión)
+**Lint:** Clean ✅
+**Build:** Pendiente
+**Commit:** Pendiente
+**Tiempo real:** 1h
+
+**Estimación:** 1h
+
+---
+
+### 📊 Métricas Objetivo v1.14.0
+
+| Métrica | v1.13.0 | Sprint 1 | Sprint 2 | Sprint 3 (Actual) | v1.14.0 Objetivo | Delta Total |
+|---------|---------|----------|----------|-------------------|------------------|-------------|
+| **Tests** | 540 | 562 | 688 | **712** | 565-570 | **+172** ✅ |
+| **Bugs Críticos** | 3 | 0 | 0 | 0 | 0 | **-3** ✅ |
+| **Bugs Medios** | 7 | 7 | 3 | **3** | 0-2 | **-4** ✅ |
+| **Bugs UX/Bajos** | 7 | 7 | 7 | **5** | 0-2 | **-2** 🔄 |
+| **Security Score** | 8.75/10 | 8.80/10 | 8.83/10 | **8.87/10** | 8.85/10 | **+0.12** ✅ |
+| **A01: Access Control** | 8.0/10 | 8.2/10 | 8.3/10 | **8.5/10** | 8.5/10 | **+0.5** ✅ |
+| **Cobertura Device Module** | ~85% | ~92% | ~95% | **~97%** | 95%+ | **+12%** ✅ |
+| **Traducciones i18n** | 0 errors | 0 errors | 5 errors (ES/EN) | **5 errors (ES/EN)** | - | **+10 strings** ✅ |
+| **Líneas de código** | - | - | - | **-417** | - | **-417** ✅ |
+
+---
+
+### 🗓️ Timeline v1.14.0
+
+| Sprint | Días | Fixes | Tests Nuevos | Commits | Estado |
+|--------|------|-------|--------------|---------|--------|
+| Sprint 1 (Críticos) | 0.5 | #5, #7, #13 | +22 | 4 | ✅ Completado |
+| Sprint 2 (Medios) | 1 | #4, #6, #8, #11 | +126 | 8 | ✅ Completado |
+| Sprint 3 (UX) | 2 | #1, #1b, Critical, #2, #10, #14, #15, #16, #17 | -7 | 11 | ✅ Completado (9/9) |
+| **Post v1.14.0** | **0.5** | **#18 (Blank Page Fix)** | **0** | **1** | **🔄 En progreso** |
+| **Total** | **4** | **20 fixes** | **+141** | **24** | **🔄 99% Completado** |
+
+**Progreso actual:** Sprint 1 ✅ | Sprint 2 ✅ | Sprint 3 ✅ (9/9 fixes completados)
+
+**Tiempo Sprint 2:** 7.75h (de 8-10h estimadas) - Precisión 97%
+**Tiempo Sprint 3:** 14h (de 9-12h estimadas) - Precisión 86%
+- Fix #1: 1.5h + Fix #1b: 1h + Fix Crítico: 5h + Fix #2: 20min
+- Fix #10: 15min + Fix #14: 2.5h + Fix #15: 1.5h
+- Fix #16: 1h + Fix #17: 1h
+
+---
+
+## 🎯 Roadmap v1.15.0 - Major Dependencies Update
+
+> **Objetivo:** Actualizar dependencias con breaking changes (React 19, Sentry 10, Router 7, etc.)
+> **Duración:** 2-3 semanas (4 sprints técnicos)
+> **Tipo:** Major version upgrades + Modernización del stack
+> **Estado:** 📋 Planificado (pendiente aprobación)
+
+---
+
+### 📊 Resumen Ejecutivo
+
+**Versión actual:** v1.14.1
+**Próxima versión:** v1.15.0
+**Dependencias a actualizar:** 11 paquetes (10 major + 1 minor crítico)
+**Tests afectados estimados:** ~100-150 tests (de 712 totales)
+**Riesgo:** MEDIO-ALTO (breaking changes documentados)
+
+**Motivación:**
+- React 19 trae mejoras de performance significativas (React Compiler)
+- Sentry 10.x tiene mejor integración con React 19
+- React Router 7 mejora type safety y data loading
+- Tailwind 4 reduce bundle size (~20% más ligero)
+- ESLint 9 mejora detección de errores
+
+**Beneficios esperados:**
+- ✅ Performance: +15-20% faster rendering (React Compiler)
+- ✅ Bundle size: -10-15% (Tailwind 4 + tree-shaking mejorado)
+- ✅ DX: Mejor type safety (Router 7)
+- ✅ Security: Últimas versiones con patches de seguridad
+- ✅ Soporte: Versiones LTS con soporte a largo plazo
+
+---
+
+### 📦 Dependencias a Actualizar (Agrupadas)
+
+#### **Grupo 1: React 19 Ecosystem (6 paquetes) - Sprint 1**
+
+| Paquete | Actual | Target | Breaking Changes |
+|---------|--------|--------|------------------|
+| react | 18.3.1 | **19.2.3** | New APIs, Suspense changes |
+| react-dom | 18.3.1 | **19.2.3** | createRoot required |
+| @types/react | 18.3.27 | **19.2.8** | Type definitions |
+| @types/react-dom | 18.3.7 | **19.2.3** | Type definitions |
+| @vitejs/plugin-react | 4.7.0 | **5.1.2** | React 19 support |
+| eslint-plugin-react-hooks | 4.6.2 | **7.0.1** | New hook rules |
+
+**Impacto estimado:** ALTO
+**Tests afectados:** 50-70 (componentes, hooks, contexts)
+**Tiempo estimado:** 2-3 días
+
+**Breaking changes clave:**
+1. ❌ `ReactDOM.render()` removido → usar `createRoot()`
+2. ⚠️ Suspense behavior cambios (auto-suspending)
+3. ⚠️ Hook rules más estrictas
+4. ✅ New: `use()` hook para promises
+5. ✅ New: `<form>` actions soporte nativo
+6. ✅ Performance: React Compiler automático
+
+---
+
+#### **Grupo 2: Monitoring & Routing (2 paquetes) - Sprint 2**
+
+| Paquete | Actual | Target | Breaking Changes |
+|---------|--------|--------|------------------|
+| @sentry/react | 7.120.4 | **10.34.0** | 3 major versions! API changes |
+| react-router-dom | 6.30.3 | **7.12.0** | Data loading, type safety |
+
+**Impacto estimado:** MEDIO
+**Tests afectados:** 30-40 (routing, error tracking)
+**Tiempo estimado:** 1.5-2 días
+
+**Breaking changes @sentry/react (7 → 10):**
+1. ❌ `Sentry.init()` config cambios
+2. ⚠️ Error boundary API actualizada
+3. ⚠️ Performance monitoring configuración
+4. ✅ Better React 19 integration
+5. ✅ Session Replay improvements
+
+**Breaking changes react-router-dom (6 → 7):**
+1. ⚠️ Data loading API (`loader`, `action`)
+2. ⚠️ Type safety improvements (TypeScript)
+3. ✅ Better error handling
+4. ✅ Improved nested routing
+
+---
+
+#### **Grupo 3: Build Tools & Styling (2 paquetes) - Sprint 3**
+
+| Paquete | Actual | Target | Breaking Changes |
+|---------|--------|--------|------------------|
+| tailwindcss | 3.4.19 | **4.1.18** | Config format, utilities |
+| eslint | 8.57.1 | **9.39.2** | Flat config required |
+
+**Impacto estimado:** MEDIO
+**Tests afectados:** 20-30 (styling, linting)
+**Tiempo estimado:** 1-1.5 días
+
+**Breaking changes Tailwind 4:**
+1. ❌ `tailwind.config.js` → nueva sintaxis
+2. ⚠️ Algunas utilidades renombradas
+3. ⚠️ JIT mode por defecto (siempre)
+4. ✅ Smaller bundle (~20% reduction)
+5. ✅ Better CSS variables support
+
+**Breaking changes ESLint 9:**
+1. ❌ `.eslintrc.js` → `eslint.config.js` (flat config)
+2. ⚠️ Algunas reglas deprecadas removidas
+3. ✅ Better performance
+4. ✅ Simplified configuration
+
+---
+
+#### **Grupo 4: Verificación Final (1 paquete) - Sprint 4**
+
+| Paquete | Actual | Target | Tipo |
+|---------|--------|--------|------|
+| @sentry/replay | 7.120.4 | **7.116.0** | Downgrade (peer dep fix) |
+
+**Impacto estimado:** BAJO
+**Tests afectados:** 0-5
+**Tiempo estimado:** 0.5 día
+
+---
+
+### 🗓️ Timeline v1.15.0 (Planificado)
+
+| Sprint | Duración | Grupo | Paquetes | Tests Est. | Riesgo |
+|--------|----------|-------|----------|------------|--------|
+| Sprint 1 | 2-3 días | React 19 | 6 | 50-70 | 🔴 Alto |
+| Sprint 2 | 1.5-2 días | Sentry + Router | 2 | 30-40 | 🟡 Medio |
+| Sprint 3 | 1-1.5 días | Tailwind + ESLint | 2 | 20-30 | 🟡 Medio |
+| Sprint 4 | 0.5 día | Verificación | 1 | 0-5 | 🟢 Bajo |
+| **Total** | **5-7 días** | **4 sprints** | **11** | **100-145** | 🟡 Medio |
+
+**Nota:** Días de trabajo efectivo (no calendario). Incluye buffer para testing exhaustivo.
+
+---
+
+### ✅ Sprint 1: React 19 Ecosystem
+
+**Objetivo:** Migrar a React 19 con todas sus dependencias
+
+#### **Tareas preparatorias (0.5 día):**
+- [ ] Leer changelog oficial de React 19 (blog.react.dev)
+- [ ] Revisar breaking changes en react-dom
+- [ ] Backup branch: `git checkout -b backup/v1.14.1`
+- [ ] Crear feature branch: `git checkout -b feature/react-19-upgrade`
+- [ ] Documentar componentes que usan Suspense (afectados)
+
+#### **Actualización de paquetes (0.5 día):**
+- [ ] `npm install react@19.2.3 react-dom@19.2.3`
+- [ ] `npm install -D @types/react@19.2.8 @types/react-dom@19.2.3`
+- [ ] `npm install -D @vitejs/plugin-react@5.1.2`
+- [ ] `npm install -D eslint-plugin-react-hooks@7.0.1`
+- [ ] Verificar package.json y package-lock.json
+
+#### **Migración de código (1-1.5 días):**
+- [ ] Buscar y reemplazar `ReactDOM.render` → `createRoot`
+  * Archivos: `src/main.jsx` (probablemente ya usa createRoot)
+  * Verificar tests que usen render directo
+- [ ] Actualizar componentes con Suspense
+  * Revisar `ErrorBoundary.jsx` si existe
+  * Actualizar lazy loading patterns
+- [ ] Actualizar hooks personalizados (nuevas reglas)
+  * `useAuth`, `useDeviceManagement`, etc.
+  * Verificar warnings de ESLint
+- [ ] Revisar context providers (behavior changes)
+  * `AuthContext`, `CompetitionContext`, etc.
+
+#### **Testing (0.5-1 día):**
+- [ ] Ejecutar tests: `npm test -- --run`
+- [ ] Fix tests fallidos relacionados con React 19
+- [ ] Testing manual de flujos críticos:
+  * Login/Logout
+  * Device Management
+  * Competition CRUD
+  * Enrollment flow
+- [ ] Verificar Suspense boundaries (loading states)
+- [ ] Verificar error boundaries (error handling)
+
+#### **Validación (0.5 día):**
+- [ ] `npm run lint` (0 warnings)
+- [ ] `npm run build` (exitoso)
+- [ ] Bundle analysis (comparar tamaño)
+- [ ] Performance testing (comparar render times)
+- [ ] Commit: `feat(deps): UPGRADE to React 19 ecosystem`
+
+---
+
+### ✅ Sprint 2: Sentry 10 + React Router 7
+
+**Objetivo:** Actualizar monitoring y routing
+
+#### **Sentry 10.x Migration (1 día):**
+- [ ] Leer migration guide: Sentry 7 → 10
+- [ ] `npm install @sentry/react@10.34.0`
+- [ ] Actualizar `src/utils/sentry.js`:
+  * Revisar `Sentry.init()` config
+  * Actualizar error boundary integration
+  * Verificar performance monitoring
+- [ ] Actualizar `ErrorBoundary` component (si aplica)
+- [ ] Testing:
+  * Provocar errores intencionalmente
+  * Verificar que lleguen a Sentry dashboard
+  * Verificar session replay funciona
+
+#### **React Router 7 Migration (0.5-1 día):**
+- [ ] Leer changelog Router 6 → 7
+- [ ] `npm install react-router-dom@7.12.0`
+- [ ] Revisar breaking changes en:
+  * `src/App.jsx` (Routes config)
+  * Route guards (`RoleGuard.jsx`)
+  * Navigation hooks (`useNavigate`)
+- [ ] Actualizar data loading (si usamos loaders)
+- [ ] Testing:
+  * Navegación entre rutas
+  * Guards (ADMIN, CREATOR, PLAYER)
+  * 404 handling
+  * Nested routes
+
+#### **Validación Sprint 2:**
+- [ ] Tests: 712/712 passing
+- [ ] Lint: 0 warnings
+- [ ] Build: exitoso
+- [ ] Manual testing de rutas críticas
+- [ ] Commit: `feat(deps): UPGRADE Sentry 10 + Router 7`
+
+---
+
+### ✅ Sprint 3: Tailwind 4 + ESLint 9
+
+**Objetivo:** Modernizar build tools y styling
+
+#### **Tailwind 4 Migration (0.5-1 día):**
+- [ ] Leer upgrade guide Tailwind 3 → 4
+- [ ] Backup: `cp tailwind.config.js tailwind.config.v3.backup.js`
+- [ ] `npm install -D tailwindcss@4.1.18`
+- [ ] Actualizar `tailwind.config.js` (nueva sintaxis)
+- [ ] Revisar utilidades deprecadas/renombradas
+- [ ] Testing visual:
+  * Landing page
+  * Dashboard
+  * Device Management
+  * Forms (Login, Register)
+  * Modals (ConfirmModal)
+- [ ] Bundle analysis (verificar reducción de tamaño)
+
+#### **ESLint 9 Migration (0.5 día):**
+- [ ] Leer flat config guide
+- [ ] Backup: `cp .eslintrc.cjs eslint.config.backup.cjs`
+- [ ] `npm install -D eslint@9.39.2`
+- [ ] Crear `eslint.config.js` (flat config)
+- [ ] Migrar reglas de `.eslintrc.cjs`
+- [ ] Eliminar `.eslintrc.cjs` (deprecated)
+- [ ] `npm run lint` (verificar 0 warnings)
+
+#### **Validación Sprint 3:**
+- [ ] Tests: 712/712 passing
+- [ ] Lint: 0 warnings (nuevo ESLint 9)
+- [ ] Build: exitoso (nuevo Tailwind 4)
+- [ ] Visual regression testing
+- [ ] Bundle size: verificar reducción
+- [ ] Commit: `feat(deps): UPGRADE Tailwind 4 + ESLint 9`
+
+---
+
+### ✅ Sprint 4: Verificación y Ajustes Finales
+
+**Objetivo:** Testing exhaustivo y corrección de edge cases
+
+#### **Regression Testing (0.25 día):**
+- [ ] Ejecutar suite completa: `npm test -- --run`
+- [ ] Verificar coverage no bajó:
+  * Lines: ≥85%
+  * Functions: ≥75%
+  * Branches: ≥70%
+- [ ] Testing manual de todos los flujos:
+  * ✅ Auth flow (login, logout, register, reset password)
+  * ✅ Device management (list, revoke, monitoring)
+  * ✅ Competition CRUD
+  * ✅ Enrollment flow
+  * ✅ Profile management
+  * ✅ i18n (ES/EN switching)
+
+#### **Downgrade @sentry/replay (0.25 día):**
+- [ ] `npm install @sentry/replay@7.116.0`
+- [ ] Verificar peer dependency warnings resueltos
+- [ ] Testing de Session Replay en Sentry
+
+#### **Documentation & Cleanup (0.25 día):**
+- [ ] Actualizar ROADMAP.md con resultados
+- [ ] Actualizar CHANGELOG.md (v1.15.0)
+- [ ] Eliminar archivos backup:
+  * `tailwind.config.v3.backup.js`
+  * `eslint.config.backup.cjs`
+- [ ] Revisar TODOs añadidos durante migración
+- [ ] Screenshots/videos de features funcionando
+
+#### **Final Validation (0.25 día):**
+- [ ] Build production: `npm run build`
+- [ ] Bundle analysis final
+- [ ] Performance benchmarks
+- [ ] Security audit: `npm audit`
+- [ ] Commit final: `docs(v1.15.0): UPDATE roadmap and changelog`
+
+---
+
+### 📊 Métricas Objetivo v1.15.0
+
+| Métrica | v1.14.1 | v1.15.0 Objetivo | Delta |
+|---------|---------|------------------|-------|
+| **Tests** | 712 | 712-720 | 0-8 nuevos |
+| **Bundle size (gzip)** | ~250 KB | ~210-225 KB | **-10-15%** ✅ |
+| **Render time** | baseline | baseline -15-20% | **+Performance** ✅ |
+| **Dependencies major** | 0 | 10 actualizados | **+Modernización** ✅ |
+| **ESLint warnings** | 0 | 0 | Mantener ✅ |
+| **Security Score** | 8.87/10 | 9.0/10 | **+0.13** ✅ |
+| **React version** | 18.3.1 | 19.2.3 | **Major upgrade** ✅ |
+
+---
+
+### ⚠️ Riesgos y Mitigaciones
+
+| Riesgo | Probabilidad | Impacto | Mitigación |
+|--------|--------------|---------|------------|
+| Tests masivos fallando | Media | Alto | Sprints graduales, backup branch |
+| Bundle size aumenta | Baja | Medio | Bundle analysis post-update |
+| Performance regresión | Baja | Alto | Benchmarks pre/post, rollback plan |
+| Breaking changes no documentados | Media | Medio | Testing exhaustivo, logs detallados |
+| Conflictos de peer dependencies | Alta | Bajo | Actualización gradual por grupos |
+
+**Plan de rollback:**
+1. Backup branch `backup/v1.14.1` disponible
+2. Git tags en cada sprint: `v1.15.0-sprint1`, `v1.15.0-sprint2`, etc.
+3. Rollback inmediato si tests < 95% passing
+4. Rollback si bundle > 300 KB (límite crítico)
+
+---
+
+### 🚀 Criterios de Éxito
+
+**Mínimos (Must Have):**
+- ✅ Tests: 95%+ passing (675/712 mínimo)
+- ✅ Lint: 0 warnings
+- ✅ Build: exitoso
+- ✅ Bundle: ≤ 300 KB total
+- ✅ Security: 0 vulnerabilities críticas
+
+**Deseables (Nice to Have):**
+- ✅ Tests: 100% passing (712/712)
+- ✅ Bundle: -10% size reduction
+- ✅ Performance: +15% faster rendering
+- ✅ Type coverage: +5%
+
+**Bloqueantes (Must NOT Have):**
+- ❌ Regresión de features existentes
+- ❌ Errores en producción post-deploy
+- ❌ Performance degradation > 5%
+- ❌ Bundle size > 300 KB
+
+---
+
+### 📅 Fechas Tentativas
+
+**Inicio estimado:** Por definir (post v1.14.1 release)
+**Duración:** 2-3 semanas (5-7 días efectivos)
+**Release estimado:** v1.15.0 - Febrero 2026
+
+**Prerrequisitos:**
+1. v1.14.1 deployed y estable en producción
+2. Monitoreo Sentry sin errores críticos (7 días)
+3. Aprobación de stakeholders para upgrade
+4. Tiempo disponible para testing exhaustivo
+
+---
+
+### 🔗 Referencias del Análisis
+
+**Commits relacionados:**
+- `c05ce9f` - fix(devices): IMPROVE Safari device detection to distinguish macOS vs iOS
+- PR #92 - Safari device detection and logout fixes
+- PR #93 - Responsive improvements + flexible patterns
+
+**Archivos del módulo:**
+- Domain: `Device.js`, `IDeviceRepository.js`
+- Application: `GetActiveDevicesUseCase.js`, `RevokeDeviceUseCase.js`
+- Infrastructure: `ApiDeviceRepository.js`
+- Presentation: `DeviceManagement.jsx`, `useDeviceManagement.js`
+- Utils: `deviceRevocationLogout.js`
+
+---
+
+## 📊 Estado Actual (v1.13.0)
 
 ### Métricas Clave
 - **Tests:** 540 tests (100% pass rate)
@@ -56,15 +1152,37 @@
 - ✅ CSP sin unsafe-inline
 - ✅ Snyk Security Scanning (CI/CD)
 - ✅ Security Tests Suite (12 tests E2E)
+- ✅ Device Fingerprinting (v1.14.0 - Completado)
 
 ### Pendientes (Alta Prioridad)
 - ❌ 2FA/MFA (TOTP)
 - ❌ reCAPTCHA v3
-- ❌ Device Fingerprinting
 
 ---
 
 ## 🚀 Historial de Versiones
+
+### v1.13.0 (Actual) - Device Fingerprinting
+**Cambios:**
+- ✅ Sistema completo de Device Fingerprinting
+- ✅ Gestión de dispositivos activos (vista + revocación)
+- ✅ Detección de dispositivo actual por User-Agent
+- ✅ Logout automático al revocar dispositivo actual
+- ✅ Device Revocation Logout (manejo 401)
+- ⚠️ Bug conocido: iOS Safari detection (documentado en ROADMAP)
+
+**Archivos nuevos:**
+- Domain: `Device.js` (entity)
+- Application: `GetActiveDevicesUseCase.js`, `RevokeDeviceUseCase.js`
+- Infrastructure: `ApiDeviceRepository.js`
+- Presentation: `DeviceManagement.jsx`, `useDeviceManagement.js`
+- Utils: `deviceRevocationLogout.js`
+
+**Tests:** 540 tests (incluye 30+ tests de device fingerprinting)
+**PRs:** #91, #92, #93
+**Estado:** ✅ En producción con bug menor documentado
+
+---
 
 ### v1.11.4 (5 Ene 2026) - GitHub Actions Fixes
 **Cambios:**
@@ -356,13 +1474,13 @@
 
 ## 📊 Métricas Objetivo v2.1.0
 
-| Métrica | v1.11.4 | v2.1.0 Objetivo | Incremento |
-|---------|---------|-----------------|------------|
-| **Tests** | 540 | 800-900 | +48-67% |
+| Métrica | v1.14.0 (Post-Fixes) | v2.1.0 Objetivo | Incremento |
+|---------|----------------------|-----------------|------------|
+| **Tests** | 565-570 | 800-900 | +41-58% |
 | **Rutas** | 11 | 20-25 | +80-130% |
-| **Cobertura Lines** | 80% | 83-85% | +3-5% |
+| **Cobertura Lines** | 82-83% | 85-87% | +3-4% |
 | **Bundle Size** | 47 KB | 120-150 KB | +73-103 KB (con code splitting) |
-| **Security Score** | 8.75/10 | 8.9-9.0/10 | +0.15-0.25 |
+| **Security Score** | 8.85/10 | 9.0-9.2/10 | +0.15-0.35 |
 | **API Endpoints** | 15 | 35-45 | +130-200% |
 
 ---
@@ -422,5 +1540,5 @@
 
 ---
 
-**Última revisión:** 4 Ene 2026
-**Próxima revisión:** Post v1.12.0
+**Última revisión:** 18 Ene 2026 (v1.14.0 completado + Post-fix #18)
+**Próxima revisión:** Post v1.15.0 o Sprint siguiente

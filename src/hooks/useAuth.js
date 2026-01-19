@@ -8,6 +8,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { isDeviceRevoked, handleDeviceRevocationLogout, clearDeviceRevocationFlag } from '../utils/deviceRevocationLogout';
+import { fetchWithTokenRefresh } from '../utils/tokenRefreshInterceptor';
 
 // Use relative URL if no API_BASE_URL is set (for proxy setup)
 const API_URL = import.meta.env.VITE_API_BASE_URL || '';
@@ -28,7 +29,7 @@ export const useAuth = () => {
       setLoading(true);
       setError(null);
 
-      const response = await fetch(`${API_URL}/api/v1/auth/current-user`, {
+      const response = await fetchWithTokenRefresh(`${API_URL}/api/v1/auth/current-user`, {
         credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
@@ -49,9 +50,11 @@ export const useAuth = () => {
             // Could not parse response body, treat as normal 401
           }
 
-          // Normal 401 (not device revocation) - just clear user
+          // Normal 401 (not device revocation) - clear user and stop
+          // Don't try to parse response if already redirecting to login
           setUser(null);
           setError(null);
+          setLoading(false); // Set loading to false immediately to prevent blank page
           return;
         }
 
@@ -98,7 +101,7 @@ export const useAuth = () => {
  */
 export const getUserData = async () => {
   try {
-    const response = await fetch(`${API_URL}/api/v1/auth/current-user`, {
+    const response = await fetchWithTokenRefresh(`${API_URL}/api/v1/auth/current-user`, {
       credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
@@ -118,6 +121,10 @@ export const getUserData = async () => {
         } catch (jsonError) {
           // Could not parse response body, treat as normal 401
         }
+
+        // Normal 401 (not device revocation) - return null immediately
+        // Don't try to parse response if already redirecting to login
+        return null;
       }
 
       // Si no está autenticado o el endpoint no existe, retornar null

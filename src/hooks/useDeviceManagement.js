@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 
 import {
@@ -9,11 +10,14 @@ import {
 /**
  * Custom hook for Device Management
  * v1.13.0: Device Fingerprinting feature
+ * v1.14.0: Added i18n error handling (Clean Architecture)
  */
 export const useDeviceManagement = () => {
+  const { t } = useTranslation('devices');
   const [devices, setDevices] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [revokingDeviceIds, setRevokingDeviceIds] = useState(new Set());
+  const [deviceErrors, setDeviceErrors] = useState(new Map()); // v1.14.0: Track errors per device
 
   /**
    * Fetches all active devices for the current user
@@ -25,11 +29,17 @@ export const useDeviceManagement = () => {
       setDevices(result.devices || []);
     } catch (error) {
       console.error('❌ [useDeviceManagement] Error fetching devices:', error);
-      toast.error(error.message || 'Failed to load devices');
+
+      // Translate error code or use fallback
+      const errorMessage = error.code
+        ? t(`errors.${error.code}`, { defaultValue: t('errors.FAILED_TO_LOAD_DEVICES') })
+        : error.message || t('errors.FAILED_TO_LOAD_DEVICES');
+
+      toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }
-  }, []); // No external dependencies - uses stable setters and imported use case
+  }, [t]); // Added 't' dependency for i18n translations
 
   // Fetch devices on mount
   useEffect(() => {
@@ -48,6 +58,13 @@ export const useDeviceManagement = () => {
     }
 
     try {
+      // Clear any previous error for this device
+      setDeviceErrors(prev => {
+        const newMap = new Map(prev);
+        newMap.delete(deviceId);
+        return newMap;
+      });
+
       // Add device ID to revoking set
       setRevokingDeviceIds(prev => new Set(prev).add(deviceId));
 
@@ -61,17 +78,20 @@ export const useDeviceManagement = () => {
     } catch (error) {
       console.error('❌ [useDeviceManagement] Error revoking device:', error);
 
-      // Handle specific errors based on HTTP status code
-      if (error.status === 403 || error.statusCode === 403) {
-        toast.error('CSRF validation failed. Please refresh the page.');
-      } else if (error.status === 409 || error.statusCode === 409) {
-        toast.error('Device already revoked');
-      } else if (error.status === 404 || error.statusCode === 404) {
-        toast.error('Device not found');
-      } else {
-        // Use the actual error message from the backend
-        toast.error(error.message || 'Failed to revoke device');
-      }
+      // Translate domain error code (Repository returns error codes, not messages)
+      const errorMessage = error.code
+        ? t(`errors.${error.code}`, { defaultValue: t('errors.FAILED_TO_REVOKE_DEVICE') })
+        : error.message || t('errors.FAILED_TO_REVOKE_DEVICE');
+
+      // Show toast AND save error for inline display
+      toast.error(errorMessage);
+
+      // Save error for this specific device (v1.14.0: Inline error display)
+      setDeviceErrors(prev => {
+        const newMap = new Map(prev);
+        newMap.set(deviceId, errorMessage);
+        return newMap;
+      });
 
       return false;
     } finally {
@@ -85,94 +105,27 @@ export const useDeviceManagement = () => {
   };
 
   /**
-   * Checks if a device is the current one based on User-Agent
-   * @param {Object} device - The device object
-   * @returns {boolean}
+   * Clears error for a specific device
+   * @param {string} deviceId - The device ID to clear error for
    */
-  const isCurrentDevice = (device) => {
-    if (!device || !device.deviceName) return false;
-
-    const currentUA = navigator.userAgent;
-    const deviceNameLower = device.deviceName.toLowerCase();
-
-    // Debug logging (only in development)
-    if (process.env.NODE_ENV === 'development') {
-      console.log('[isCurrentDevice] Checking device:', {
-        deviceName: device.deviceName,
-        userAgent: currentUA,
-      });
-    }
-
-    // Priority order: Edge/Opera first, then Chrome, then Firefox, then Safari
-    // This prevents Chrome from matching Safari (since Chrome UA contains "Safari")
-    if (currentUA.includes('Edg')) {
-      return deviceNameLower.includes('edge');
-    }
-    if (currentUA.includes('OPR') || currentUA.includes('Opera')) {
-      return deviceNameLower.includes('opera');
-    }
-    if (currentUA.includes('Chrome') || currentUA.includes('Chromium')) {
-      return deviceNameLower.includes('chrome');
-    }
-    if (currentUA.includes('Firefox')) {
-      return deviceNameLower.includes('firefox');
-    }
-
-    // Safari: Match browser AND OS to distinguish macOS vs iOS
-    if (currentUA.includes('Safari') && !currentUA.includes('Chrome')) {
-      if (!deviceNameLower.includes('safari')) return false;
-
-      // Distinguish between macOS Safari and iOS Safari
-      const isMacOS = currentUA.includes('Macintosh') || currentUA.includes('Mac OS X');
-      const isIOS = currentUA.includes('iPhone') || currentUA.includes('iPad') || currentUA.includes('iPod');
-
-      // Check OS match with more flexible patterns
-      if (isMacOS) {
-        // Match if deviceName contains: 'macos', 'mac os', 'macintosh', or 'mac'
-        const isMacOSDevice =
-          deviceNameLower.includes('macos') ||
-          deviceNameLower.includes('mac os') ||
-          deviceNameLower.includes('macintosh') ||
-          (deviceNameLower.includes('mac') && !deviceNameLower.includes('iphone'));
-
-        if (process.env.NODE_ENV === 'development') {
-          console.log('[isCurrentDevice] macOS Safari check:', { isMacOSDevice, deviceNameLower });
-        }
-
-        return isMacOSDevice;
-      }
-
-      if (isIOS) {
-        // Match if deviceName contains: 'ios', 'iphone', 'ipad', or 'ipod'
-        const isIOSDevice =
-          deviceNameLower.includes('ios') ||
-          deviceNameLower.includes('iphone') ||
-          deviceNameLower.includes('ipad') ||
-          deviceNameLower.includes('ipod');
-
-        if (process.env.NODE_ENV === 'development') {
-          console.log('[isCurrentDevice] iOS Safari check:', { isIOSDevice, deviceNameLower });
-        }
-
-        return isIOSDevice;
-      }
-
-      // Fallback: If we can't determine OS, don't mark as current
-      return false;
-    }
-
-    return false;
-  };
+  const clearDeviceError = useCallback((deviceId) => {
+    setDeviceErrors(prev => {
+      const newMap = new Map(prev);
+      newMap.delete(deviceId);
+      return newMap;
+    });
+  }, []);
 
   return {
     // State
     devices,
     isLoading,
     revokingDeviceIds,
+    deviceErrors, // v1.14.0: Per-device error tracking
 
     // Actions
     fetchDevices,
     revokeDevice,
-    isCurrentDevice,
+    clearDeviceError, // v1.14.0: Clear inline error
   };
 };

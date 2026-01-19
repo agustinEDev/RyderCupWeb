@@ -119,4 +119,141 @@ describe('RevokeDeviceUseCase', () => {
       );
     });
   });
+
+  describe('Response Validation', () => {
+    const deviceId = 'device-123';
+
+    it('should throw error if repository returns null', async () => {
+      mockDeviceRepository.revokeDevice.mockResolvedValue(null);
+
+      await expect(useCase.execute(deviceId)).rejects.toThrow(
+        'Invalid response from device repository: expected object'
+      );
+    });
+
+    it('should throw error if repository returns undefined', async () => {
+      mockDeviceRepository.revokeDevice.mockResolvedValue(undefined);
+
+      await expect(useCase.execute(deviceId)).rejects.toThrow(
+        'Invalid response from device repository: expected object'
+      );
+    });
+
+    it('should throw error if repository returns a string', async () => {
+      mockDeviceRepository.revokeDevice.mockResolvedValue('success');
+
+      await expect(useCase.execute(deviceId)).rejects.toThrow(
+        'Invalid response from device repository: expected object'
+      );
+    });
+
+    it('should throw error if repository returns a number', async () => {
+      mockDeviceRepository.revokeDevice.mockResolvedValue(123);
+
+      await expect(useCase.execute(deviceId)).rejects.toThrow(
+        'Invalid response from device repository: expected object'
+      );
+    });
+
+    it('should throw error if repository returns an array', async () => {
+      mockDeviceRepository.revokeDevice.mockResolvedValue([]);
+
+      await expect(useCase.execute(deviceId)).rejects.toThrow(
+        'Invalid response from device repository: expected object'
+      );
+    });
+
+    it('should throw error if message is missing', async () => {
+      mockDeviceRepository.revokeDevice.mockResolvedValue({
+        device_id: deviceId,
+      });
+
+      await expect(useCase.execute(deviceId)).rejects.toThrow(
+        'Invalid response from device repository: message must be a string'
+      );
+    });
+
+    it('should throw error if message is null', async () => {
+      mockDeviceRepository.revokeDevice.mockResolvedValue({
+        message: null,
+        device_id: deviceId,
+      });
+
+      await expect(useCase.execute(deviceId)).rejects.toThrow(
+        'Invalid response from device repository: message must be a string'
+      );
+    });
+
+    it('should throw error if message is not a string', async () => {
+      mockDeviceRepository.revokeDevice.mockResolvedValue({
+        message: 123,
+        device_id: deviceId,
+      });
+
+      await expect(useCase.execute(deviceId)).rejects.toThrow(
+        'Invalid response from device repository: message must be a string'
+      );
+    });
+
+    it('should throw error if device_id is missing', async () => {
+      mockDeviceRepository.revokeDevice.mockResolvedValue({
+        message: 'Success',
+      });
+
+      await expect(useCase.execute(deviceId)).rejects.toThrow(
+        'Invalid response from device repository: device_id must be a string'
+      );
+    });
+
+    it('should throw error if device_id is null', async () => {
+      mockDeviceRepository.revokeDevice.mockResolvedValue({
+        message: 'Success',
+        device_id: null,
+      });
+
+      await expect(useCase.execute(deviceId)).rejects.toThrow(
+        'Invalid response from device repository: device_id must be a string'
+      );
+    });
+
+    it('should throw error if device_id is not a string', async () => {
+      mockDeviceRepository.revokeDevice.mockResolvedValue({
+        message: 'Success',
+        device_id: 123,
+      });
+
+      await expect(useCase.execute(deviceId)).rejects.toThrow(
+        'Invalid response from device repository: device_id must be a string'
+      );
+    });
+
+    it('should accept valid response with all required fields', async () => {
+      const validResponse = {
+        message: 'Dispositivo revocado exitosamente',
+        device_id: deviceId,
+      };
+
+      mockDeviceRepository.revokeDevice.mockResolvedValue(validResponse);
+
+      const result = await useCase.execute(deviceId);
+
+      expect(result).toEqual(validResponse);
+      expect(result.message).toBe('Dispositivo revocado exitosamente');
+      expect(result.device_id).toBe(deviceId);
+    });
+
+    it('should accept valid response with empty string message', async () => {
+      // Edge case: empty string is still a valid string type
+      const validResponse = {
+        message: '',
+        device_id: deviceId,
+      };
+
+      mockDeviceRepository.revokeDevice.mockResolvedValue(validResponse);
+
+      const result = await useCase.execute(deviceId);
+
+      expect(result).toEqual(validResponse);
+    });
+  });
 });

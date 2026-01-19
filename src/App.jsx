@@ -1,6 +1,6 @@
 /* eslint-disable react-refresh/only-export-components */
 import { useEffect, useCallback, lazy, Suspense, useState } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import * as Sentry from '@sentry/react';
 import PropTypes from 'prop-types';
 import ProtectedRoute from './components/auth/ProtectedRoute';
@@ -10,6 +10,7 @@ import { setUserContext } from './utils/sentryHelpers';
 import useInactivityLogout from './hooks/useInactivityLogout.jsx';
 import { onAuthEvent, EVENTS } from './utils/broadcastAuth';
 import { useLogout } from './hooks/useLogout';
+import { useDeviceRevocationMonitor } from './hooks/useDeviceRevocationMonitor';
 
 // Lazy loading de páginas para reducir bundle inicial
 const Landing = lazy(() => import('./pages/Landing'));
@@ -41,10 +42,32 @@ const SentryRoutes = Sentry.withSentryReactRouterV6Routing(Routes);
 function AppContent() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const { logout } = useLogout();
+  const location = useLocation();
+
+  // ============================================
+  // RUTAS PÚBLICAS (no requieren autenticación)
+  // ============================================
+  const PUBLIC_ROUTES = [
+    '/',
+    '/login',
+    '/register',
+    '/verify-email',
+    '/forgot-password',
+    '/reset-password',
+  ];
+
+  const isPublicRoute = PUBLIC_ROUTES.includes(location.pathname) ||
+                       location.pathname.startsWith('/reset-password/');
 
   // Establecer contexto de usuario en Sentry si está autenticado (via httpOnly cookie)
   useEffect(() => {
     const initUserContext = async () => {
+      // FIX: No verificar sesión en rutas públicas (previene bucle infinito en /login después de logout)
+      if (isPublicRoute) {
+        setIsAuthenticated(false);
+        return;
+      }
+
       const user = await getUserData();
       if (user) {
         setUserContext(user);
@@ -54,7 +77,7 @@ function AppContent() {
       }
     };
     initUserContext();
-  }, []);
+  }, [isPublicRoute]);
 
   /**
    * Función de logout que se ejecuta por inactividad y broadcast
@@ -88,6 +111,13 @@ function AppContent() {
     warningTime: 2 * 60 * 1000, // 2 minutos de advertencia
     onLogout: handleInactivityLogout,
     enabled: isAuthenticated // Solo activo cuando hay usuario autenticado
+  });
+
+  // Hook de monitoreo de revocación de dispositivo (v1.14.0)
+  // Detecta cuando el dispositivo actual fue revocado desde otro navegador
+  // Solo activo cuando hay usuario autenticado
+  useDeviceRevocationMonitor({
+    enabled: isAuthenticated
   });
 
   return (
