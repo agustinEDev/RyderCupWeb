@@ -8,6 +8,22 @@ y este proyecto adhiere a [Versionado Semántico](https://semver.org/lang/es/).
 ## [Unreleased]
 
 ### Fixed
+- **Infinite Toast Loop on Logout/Revocation**: Fixed critical bug causing infinite loop of "Your session has ended" toast messages
+  - **Problem**: After logout or device revocation, redirecting to `/login` triggered `getUserData()` → 401 → `handleDeviceRevocationLogout()` → redirect loop
+  - **Root Cause**: `App.jsx` called `getUserData()` on ALL routes (including public pages like `/login`), causing redundant session checks
+  - **Solution**: Added public routes detection in `App.jsx` - no session verification on public pages (`/login`, `/register`, etc.)
+  - **Benefit**: Prevents unnecessary API calls on public pages, improves performance, eliminates infinite redirect/toast loops
+  - **Files Modified**: `src/App.jsx` (added `PUBLIC_ROUTES` constant, `isPublicRoute` check, early return in `useEffect`)
+- **Ugly Refresh on Self-Revocation**: Fixed UX issue where success toast disappeared immediately due to page refresh
+  - **Problem 1**: Revoking own device showed toast but page refreshed instantly (monitor detected revocation → duplicate logout)
+  - **Problem 2**: After manual logout, backend `/logout` call returned 401 → triggered `handleDeviceRevocationLogout()` → second toast + page refresh
+  - **Solution**:
+    - Increased logout delay from 500ms to 2500ms (allows reading success toast)
+    - **Set** revocation flag before logout (not clear it) → prevents monitor from re-triggering `handleDeviceRevocationLogout()`
+    - Skip backend `/logout` call when revoking own device (tokens already invalidated) → added `skipBackendCall` option to `useLogout` hook
+    - Flag is cleared automatically on next successful login (see `useAuth.js:74`)
+  - **Benefit**: User can read the success toast for 2.5 seconds, then single clean redirect to login without duplicate toasts/refreshes
+  - **Files Modified**: `src/pages/DeviceManagement.jsx`, `src/hooks/useLogout.js` (added optional `skipBackendCall` parameter)
 - **Blank Page on Expired Session Navigation**: Fixed critical bug causing blank page when navigating with expired session
   - **Root cause**: `useAuth()` hook was using `fetch` directly instead of `fetchWithTokenRefresh` interceptor
   - **Problem**: When access token expired, no automatic refresh attempt → immediate 401 → redirect during navigation → blank page

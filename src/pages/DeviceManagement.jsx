@@ -50,13 +50,20 @@ const DeviceManagement = () => {
     setIsModalOpen(false);
     setDeviceToRevoke(null);
 
-    // If current device was revoked, logout immediately
-    // Backend already invalidated tokens, so logout is safe
-    // 500ms delay only for toast visibility
+    // If current device was revoked, logout after showing toast
+    // Backend already invalidated tokens during revocation, so we skip backend logout call
+    // 2500ms delay allows user to read the success toast
     if (success && isCurrent) {
+      // Set revocation flag to prevent monitor from triggering handleDeviceRevocationLogout() again
+      // This tells handleDeviceRevocationLogout() that we're already handling the logout gracefully
+      // Flag will be cleared on next successful login (see useAuth.js line 74)
+      localStorage.setItem('device_revocation_handled', 'true');
+
       timeoutRef.current = setTimeout(() => {
-        logout();
-      }, 500);
+        // Skip backend call because device is already revoked (tokens already invalidated)
+        // This prevents 401 response that would trigger handleDeviceRevocationLogout() again
+        logout({ skipBackendCall: true });
+      }, 2500);
     }
   };
 

@@ -1,6 +1,6 @@
 /* eslint-disable react-refresh/only-export-components */
 import { useEffect, useCallback, lazy, Suspense, useState } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import * as Sentry from '@sentry/react';
 import PropTypes from 'prop-types';
 import ProtectedRoute from './components/auth/ProtectedRoute';
@@ -42,10 +42,32 @@ const SentryRoutes = Sentry.withSentryReactRouterV6Routing(Routes);
 function AppContent() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const { logout } = useLogout();
+  const location = useLocation();
+
+  // ============================================
+  // RUTAS PÚBLICAS (no requieren autenticación)
+  // ============================================
+  const PUBLIC_ROUTES = [
+    '/',
+    '/login',
+    '/register',
+    '/verify-email',
+    '/forgot-password',
+    '/reset-password',
+  ];
+
+  const isPublicRoute = PUBLIC_ROUTES.includes(location.pathname) ||
+                       location.pathname.startsWith('/reset-password/');
 
   // Establecer contexto de usuario en Sentry si está autenticado (via httpOnly cookie)
   useEffect(() => {
     const initUserContext = async () => {
+      // FIX: No verificar sesión en rutas públicas (previene bucle infinito en /login después de logout)
+      if (isPublicRoute) {
+        setIsAuthenticated(false);
+        return;
+      }
+
       const user = await getUserData();
       if (user) {
         setUserContext(user);
@@ -55,7 +77,7 @@ function AppContent() {
       }
     };
     initUserContext();
-  }, []);
+  }, [isPublicRoute]);
 
   /**
    * Función de logout que se ejecuta por inactividad y broadcast
