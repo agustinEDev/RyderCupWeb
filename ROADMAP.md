@@ -143,6 +143,22 @@ commit-verification:
 
 ---
 
+### ✅ Tareas Adicionales: Actualización de Dependencias
+
+Además de las mejoras de integridad de datos, se han actualizado dependencias clave para mantener el proyecto seguro y al día:
+
+**NPM Dependencies (Merge de Dependabot):**
+- [x] `framer-motion`: Updated to v12.27.0
+- [x] `vite`: Updated to v7.3.1 (Security Patch)
+- [x] `i18next`: Updated to v25.7.4
+- [x] `react-i18next`: Updated to v16.5.2
+
+**GitHub Actions (CI/CD):**
+- [x] `snyk/actions/node`: Updated to v1.0.0 (Production Ready)
+- [x] `trufflesecurity/trufflehog`: Updated to v3.92.5
+
+---
+
 ### 📊 Métricas Esperadas v1.15.0
 
 | Métrica | v1.14.2 | v1.15.0 Objetivo | Delta |
@@ -1728,5 +1744,5 @@ const macOSRegex = /\b(macos|mac\s*os|macintosh|mac)\b/i;
 
 ---
 
-**Última revisión:** 18 Ene 2026 (v1.14.0 completado + Post-fix #18)
-**Próxima revisión:** Post v1.15.0 o Sprint siguiente
+**Última revisión:** 22 Ene 2026 (v1.15.0 Data Integrity + Deps Update)
+**Próxima revisión:** Post v1.15.0 release
