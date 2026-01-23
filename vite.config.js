@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import sri from 'vite-plugin-sri'
 
 // Security headers configuration
 // Updated: 22 Dec 2025 - Added CSP without 'unsafe-inline' (v1.8.0)
@@ -18,6 +19,10 @@ const securityHeaders = {
 export default defineConfig(() => ({
   plugins: [
     react(),
+    // Subresource Integrity (SRI) plugin - adds integrity hashes to assets (v1.15.0)
+    sri({
+      algorithms: ['sha384'],
+    }),
     // Plugin to inject security headers in dev and preview
     {
       name: 'security-headers',

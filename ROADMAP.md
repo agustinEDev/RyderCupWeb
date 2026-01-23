@@ -158,16 +158,31 @@ commit-verification:
 ### ✅ Checklist de Implementación
 
 **Sprint Único (3-4h):**
-- [ ] Instalar y configurar `vite-plugin-sri`
-- [ ] Build y verificar hashes de integridad en dist/
-- [ ] Crear job `commit-verification` en CI/CD
-- [ ] Configurar secret `GPG_PUBLIC_KEYS` en GitHub
-- [ ] Agregar validación de `package-lock.json` en dependency-audit
+- [x] Instalar y configurar `vite-plugin-sri` ✅
+- [x] Build y verificar hashes de integridad en dist/ ✅
+- [x] Crear job `commit-verification` en CI/CD ✅
+- [ ] Configurar secret `GPG_PUBLIC_KEYS` en GitHub (pendiente usuario)
+- [x] Agregar validación de `package-lock.json` en dependency-audit ✅
 - [ ] Testing: Verificar que CI falla con commits sin firmar
 - [ ] Testing: Verificar que CI falla si package-lock.json cambia
-- [ ] Actualizar CHANGELOG.md con v1.15.0
-- [ ] Commit firmado: `feat(security): IMPLEMENT SRI and CI/CD integrity checks`
+- [x] Actualizar CHANGELOG.md con v1.15.0
+- [x] Commit firmado: `feat(security): IMPLEMENT SRI and CI/CD integrity checks`
 - [ ] Crear PR a develop
+
+### 📝 Configuración Manual Requerida (Usuario)
+
+Después de mergear este PR, el usuario debe:
+
+1. **Configurar GPG_PUBLIC_KEYS secret en GitHub:**
+   - Ir a: `Settings → Secrets and variables → Actions`
+   - Crear nuevo secret: `GPG_PUBLIC_KEYS`
+   - Valor: Exportar claves públicas con `gpg --armor --export [KEY-ID]`
+   - Incluir todas las claves del equipo (separadas por newline)
+
+2. **Testing del workflow:**
+   - Crear commit SIN firmar → CI debe fallar ❌
+   - Crear commit firmado → CI debe pasar ✅
+   - Modificar package-lock.json manualmente → CI debe fallar ❌
 
 ---
 
