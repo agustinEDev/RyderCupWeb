@@ -18,6 +18,51 @@ jobs:
   # PHASE 1: SECURITY CHECKS (CRITICAL)
   # ========================================
 
+  commit-verification:
+    name: 🔏 Verify Commit Signatures
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Import GPG public keys
+        env:
+          GPG_KEYS: ${{ secrets.GPG_PUBLIC_KEYS }}
+        run: |
+          if [ -n "$GPG_KEYS" ]; then
+            echo "🔑 Importing team GPG keys..."
+            echo "$GPG_KEYS" | gpg --import
+          else
+            echo "⚠️ GPG_PUBLIC_KEYS secret not found. Skipping key import."
+          fi
+
+      - name: Verify commit signature
+        run: |
+          COMMIT=$(git rev-parse HEAD)
+
+          # Skip verification for GitHub's automatic merge commits (PR testing)
+          PARENT_COUNT=$(git rev-list --parents -n 1 $COMMIT | wc -w)
+          if [ $PARENT_COUNT -gt 2 ]; then
+            echo "⚠️ Skipping verification for GitHub merge commit $COMMIT (automatic PR merge)"
+            exit 0
+          fi
+
+          # Soft-fail check: Skip if keys are not configured yet (to avoid blocking user immediately)
+          if [ -z "${{ secrets.GPG_PUBLIC_KEYS }}" ]; then
+             echo "⚠️ GPG_PUBLIC_KEYS secret not configured. Skipping verification."
+             exit 0
+          fi
+
+          if git verify-commit $COMMIT 2>&1 | grep -q "Good signature"; then
+            echo "✅ Commit $COMMIT signature verified"
+          else
+            echo "❌ Commit $COMMIT is NOT signed or signature is invalid"
+            # Strict mode: Uncomment to fail build
+            exit 1
+          fi
+
   dependency-audit:
     name: 🔒 Dependency Vulnerability Scan
     runs-on: ubuntu-latest
@@ -33,6 +78,18 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Verify package-lock.json integrity
+        run: |
+          echo "🔒 Verifying package-lock.json was not modified..."
+
+          git diff --exit-code package-lock.json || {
+            echo "❌ package-lock.json was modified during npm ci!"
+            echo "Run 'npm install' locally and commit the updated package-lock.json."
+            exit 1
+          }
+
+          echo "✅ package-lock.json integrity verified"
 
       - name: Run npm audit
         id: audit
@@ -91,7 +148,7 @@ jobs:
           fetch-depth: 0
 
       - name: TruffleHog OSS (Filesystem Scan)
-        uses: trufflesecurity/trufflehog@v3.92.4
+        uses: trufflesecurity/trufflehog@v3.92.5
         with:
           path: ./
           extra_args: --debug --only-verified
@@ -159,7 +216,7 @@ jobs:
         run: npm ci
 
       - name: Run Snyk to check for vulnerabilities
-        uses: snyk/actions/node@0.4.0
+        uses: snyk/actions/node@v1.0.0
         continue-on-error: true
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
@@ -211,7 +268,7 @@ jobs:
         run: npm ci
 
       - name: Run Snyk Code to check for code vulnerabilities
-        uses: snyk/actions/node@0.4.0
+        uses: snyk/actions/node@v1.0.0
         continue-on-error: true
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
@@ -556,7 +613,7 @@ jobs:
   build:
     name: 🏗️ Build Application
     runs-on: ubuntu-latest
-    needs: [lint, test, type-check, code-quality]
+    needs: [commit-verification, lint, test, type-check, code-quality]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
