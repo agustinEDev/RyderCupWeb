@@ -1,8 +1,8 @@
 # 🗺️ Roadmap - RyderCupFriends Frontend
 
 > **Versión:** 1.13.0 → 1.14.2 → 1.15.0 → 2.1.0
-> **Última actualización:** 19 Ene 2026
-> **Estado:** ✅ v1.14.2 Completada | 🚀 v1.15.0 en progreso (Data Integrity)
+> **Última actualización:** 23 Ene 2026
+> **Estado:** ✅ v1.15.0 Completada | 📋 v2.1.0 Planificada (Competition Module)
 > **Stack:** React 18 + Vite 7 + Tailwind CSS 3.4 + TanStack Query + Zustand
 
 ---
@@ -48,14 +48,12 @@
 npm install -D vite-plugin-sri
 
 # Configurar vite.config.js
-import { SriPlugin } from 'vite-plugin-sri';
+import sri from 'vite-plugin-sri';
 
 export default defineConfig({
   plugins: [
     react(),
-    SriPlugin({
-      algorithms: ['sha384'],
-    }),
+    sri(),
   ],
 })
 ```
@@ -149,9 +147,9 @@ Además de las mejoras de integridad de datos, se han actualizado dependencias c
 
 **NPM Dependencies (Merge de Dependabot):**
 - [x] `framer-motion`: Updated to v12.27.0
-- [x] `vite`: Updated to v7.3.1 (Security Patch)
-- [x] `i18next`: Updated to v25.7.4
-- [x] `react-i18next`: Updated to v16.5.2
+- [x] `vite`: Updated to v7.3.0
+- [x] `i18next`: Updated to v25.7.3
+- [x] `react-i18next`: Updated to v16.5.0
 
 **GitHub Actions (CI/CD):**
 - [x] `snyk/actions/node`: Updated to v1.0.0 (Production Ready)
@@ -206,8 +204,8 @@ Después de mergear este PR, el usuario debe:
 
 - **Análisis de seguridad:** Ver conversación del 19 Ene 2026
 - **OWASP A08:** Software and Data Integrity Failures
-- **Vite Plugin SRI:** https://github.com/ElMassimo/vite-plugin-sri
-- **Git Commit Signing:** https://docs.github.com/en/authentication/managing-commit-signature-verification
+- **Vite Plugin SRI:** [https://github.com/ElMassimo/vite-plugin-sri](https://github.com/ElMassimo/vite-plugin-sri)
+- **Git Commit Signing:** [https://docs.github.com/en/authentication/managing-commit-signature-verification](https://docs.github.com/en/authentication/managing-commit-signature-verification)
 
 ---
 
@@ -1744,5 +1742,5 @@ const macOSRegex = /\b(macos|mac\s*os|macintosh|mac)\b/i;
 
 ---
 
-**Última revisión:** 22 Ene 2026 (v1.15.0 Data Integrity + Deps Update)
-**Próxima revisión:** Post v1.15.0 release
+**Última revisión:** 23 Ene 2026 (v1.15.0 Data Integrity Completada)
+**Próxima revisión:** Inicio v2.1.0 o próximo sprint

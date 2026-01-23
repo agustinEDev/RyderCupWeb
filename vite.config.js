@@ -20,9 +20,8 @@ export default defineConfig(() => ({
   plugins: [
     react(),
     // Subresource Integrity (SRI) plugin - adds integrity hashes to assets (v1.15.0)
-    sri({
-      algorithms: ['sha384'],
-    }),
+    // v0.0.2 uses hardcoded sha384, no config needed
+    sri(),
     // Plugin to inject security headers in dev and preview
     {
       name: 'security-headers',

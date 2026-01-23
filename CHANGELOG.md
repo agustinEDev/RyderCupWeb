@@ -957,7 +957,8 @@ y este proyecto adhiere a [Versionado Semántico](https://semver.org/lang/es/).
 - Configuración de headers de seguridad (X-Content-Type-Options, X-Frame-Options, etc.)
 - Eliminación automática de console.log en builds de producción
 
-[Unreleased]: https://github.com/agustinEDev/RyderCupWeb/compare/v1.14.2...HEAD
+[Unreleased]: https://github.com/agustinEDev/RyderCupWeb/compare/v1.15.0...HEAD
+[1.15.0]: https://github.com/agustinEDev/RyderCupWeb/compare/v1.14.2...v1.15.0
 [1.14.2]: https://github.com/agustinEDev/RyderCupWeb/compare/v1.14.1...v1.14.2
 [1.14.1]: https://github.com/agustinEDev/RyderCupWeb/compare/v1.14.0...v1.14.1
 [1.14.0]: https://github.com/agustinEDev/RyderCupWeb/compare/v1.6.0...v1.14.0
