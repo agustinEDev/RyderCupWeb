@@ -209,7 +209,7 @@ jobs:
         run: npm ci
 
       - name: Run Snyk to check for vulnerabilities
-        uses: snyk/actions/node@master
+        uses: snyk/actions/node@v1.0.0
         continue-on-error: true
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
@@ -261,7 +261,7 @@ jobs:
         run: npm ci
 
       - name: Run Snyk Code to check for code vulnerabilities
-        uses: snyk/actions/node@master
+        uses: snyk/actions/node@v1.0.0
         continue-on-error: true
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
