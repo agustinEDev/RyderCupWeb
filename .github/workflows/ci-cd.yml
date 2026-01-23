@@ -141,7 +141,7 @@ jobs:
           fetch-depth: 0
 
       - name: TruffleHog OSS (Filesystem Scan)
-        uses: trufflesecurity/trufflehog@v3.92.4
+        uses: trufflesecurity/trufflehog@v3.92.5
         with:
           path: ./
           extra_args: --debug --only-verified
@@ -209,7 +209,7 @@ jobs:
         run: npm ci
 
       - name: Run Snyk to check for vulnerabilities
-        uses: snyk/actions/node@0.4.0
+        uses: snyk/actions/node@1.0.0
         continue-on-error: true
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
@@ -261,7 +261,7 @@ jobs:
         run: npm ci
 
       - name: Run Snyk Code to check for code vulnerabilities
-        uses: snyk/actions/node@0.4.0
+        uses: snyk/actions/node@1.0.0
         continue-on-error: true
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
