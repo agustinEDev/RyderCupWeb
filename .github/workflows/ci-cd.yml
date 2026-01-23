@@ -41,7 +41,14 @@ jobs:
       - name: Verify commit signature
         run: |
           COMMIT=$(git rev-parse HEAD)
-          
+
+          # Skip verification for GitHub's automatic merge commits (PR testing)
+          PARENT_COUNT=$(git rev-list --parents -n 1 $COMMIT | wc -w)
+          if [ $PARENT_COUNT -gt 2 ]; then
+            echo "⚠️ Skipping verification for GitHub merge commit $COMMIT (automatic PR merge)"
+            exit 0
+          fi
+
           # Soft-fail check: Skip if keys are not configured yet (to avoid blocking user immediately)
           if [ -z "${{ secrets.GPG_PUBLIC_KEYS }}" ]; then
              echo "⚠️ GPG_PUBLIC_KEYS secret not configured. Skipping verification."
