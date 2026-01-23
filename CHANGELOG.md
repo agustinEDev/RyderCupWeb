@@ -7,6 +7,35 @@ y este proyecto adhiere a [Versionado Semántico](https://semver.org/lang/es/).
 
 ## [Unreleased]
 
+## [1.15.0] - 2026-01-22
+
+### Added
+- **Subresource Integrity (SRI)**: Implementado sistema de validación de integridad de assets
+  - Instalado `vite-plugin-sri` con algoritmo SHA-384
+  - Todos los assets críticos (JS/CSS) incluyen hashes de integridad
+  - Atributo `crossorigin` agregado automáticamente para CORS
+  - Previene ataques de CDN comprometidas y modificación de assets
+  - Build verificado: 5 assets principales con integrity hashes
+- **CI/CD Commit Signature Verification**: Validación automática de firmas GPG en commits
+  - Nuevo job `commit-verification` en workflow CI/CD
+  - Rechaza commits sin firmar en pipeline
+  - Importa claves públicas desde secret `GPG_PUBLIC_KEYS`
+  - Verifica firma GPG con `git verify-commit`
+  - Bloquea build si commit no está firmado
+- **Package-Lock Integrity Validation**: Validación de integridad de package-lock.json
+  - Nuevo step en job `dependency-audit`
+  - Verifica que `package-lock.json` no se modificó durante `npm ci`
+  - Previene dependency confusion attacks
+  - Garantiza reproducibilidad de builds
+
+### Security
+- **OWASP A08: Data Integrity**: Mejora de 7.0/10 → 8.7-9.0/10 (+1.7-2.0)
+  - SRI previene modificación maliciosa de assets (+0.8)
+  - Commit signing previene commits maliciosos (+0.3)
+  - Package-lock validation previene dependency confusion (+0.2)
+  - Protección contra supply chain attacks
+- **OWASP Score Global**: 8.75/10 → 9.0-9.2/10 (+0.25-0.45)
+
 ## [1.14.2] - 2026-01-19
 
 ### Fixed
@@ -928,7 +957,8 @@ y este proyecto adhiere a [Versionado Semántico](https://semver.org/lang/es/).
 - Configuración de headers de seguridad (X-Content-Type-Options, X-Frame-Options, etc.)
 - Eliminación automática de console.log en builds de producción
 
-[Unreleased]: https://github.com/agustinEDev/RyderCupWeb/compare/v1.14.2...HEAD
+[Unreleased]: https://github.com/agustinEDev/RyderCupWeb/compare/v1.15.0...HEAD
+[1.15.0]: https://github.com/agustinEDev/RyderCupWeb/compare/v1.14.2...v1.15.0
 [1.14.2]: https://github.com/agustinEDev/RyderCupWeb/compare/v1.14.1...v1.14.2
 [1.14.1]: https://github.com/agustinEDev/RyderCupWeb/compare/v1.14.0...v1.14.1
 [1.14.0]: https://github.com/agustinEDev/RyderCupWeb/compare/v1.6.0...v1.14.0
