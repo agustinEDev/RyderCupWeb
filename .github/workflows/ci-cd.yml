@@ -28,10 +28,15 @@ jobs:
           fetch-depth: 2
 
       - name: Import GPG public keys
-        if: ${{ secrets.GPG_PUBLIC_KEYS != '' }}
+        env:
+          GPG_KEYS: ${{ secrets.GPG_PUBLIC_KEYS }}
         run: |
-          echo "🔑 Importing team GPG keys..."
-          echo "${{ secrets.GPG_PUBLIC_KEYS }}" | gpg --import
+          if [ -n "$GPG_KEYS" ]; then
+            echo "🔑 Importing team GPG keys..."
+            echo "$GPG_KEYS" | gpg --import
+          else
+            echo "⚠️ GPG_PUBLIC_KEYS secret not found. Skipping key import."
+          fi
 
       - name: Verify commit signature
         run: |
