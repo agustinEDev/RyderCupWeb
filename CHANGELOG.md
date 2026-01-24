@@ -7,6 +7,25 @@ y este proyecto adhiere a [Versionado Semántico](https://semver.org/lang/es/).
 
 ## [Unreleased]
 
+## [1.16.0] - 2026-01-24
+
+### Changed - Sprint 3: Build Tools & Styling
+- **Build Tools**: Migrated to modern toolchain
+  - `tailwindcss`: 3.4.19 → 4.1.18 (CSS-first architecture, better build performance)
+  - `eslint`: 8.55.0 → 9.39.2 (flat config, -69 packages)
+  - Config migration: `.eslintrc.cjs` → `eslint.config.js` (flat config)
+  - Tailwind migration: `tailwind.config.js` → `@theme` in CSS
+  - PostCSS update: `tailwindcss` → `@tailwindcss/postcss` plugin
+
+### Added - Sprint 3
+- `@eslint/js`: v9.39.2 (required for ESLint 9 flat config)
+
+### Removed - Sprint 3
+- `.eslintrc.cjs` (replaced by `eslint.config.js`)
+- `tailwind.config.js` (replaced by CSS-first configuration)
+
+**Note:** Sprint 3 of 4 for v1.16.0 Major Dependencies Update.
+
 ## [1.15.0] - 2026-01-24
 
 ### Added
