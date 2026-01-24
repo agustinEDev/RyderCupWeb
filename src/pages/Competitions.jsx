@@ -61,7 +61,7 @@ const Competitions = () => {
               handleDeviceRevocationLogout(errorData);
               return; // Logout handler will redirect
             }
-          } catch (jsonError) {
+          } catch {
             // Could not parse response body, treat as normal 401
           }
         }

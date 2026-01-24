@@ -63,7 +63,7 @@ export const refreshAccessToken = async () => {
       let errorData = {};
       try {
         errorData = await response.json();
-      } catch (jsonError) {
+      } catch {
         // Ignore JSON parse errors
       }
 
@@ -157,7 +157,7 @@ export const fetchWithTokenRefresh = async (url, options = {}) => {
           new Promise((_, reject) => setTimeout(() => reject(new Error('Redirect timeout after device revocation')), 5000))
         ]);
       }
-    } catch (jsonError) {
+    } catch {
       // If JSON parsing fails, continue with normal refresh flow
     }
 
@@ -261,7 +261,7 @@ export const isSessionValid = async () => {
   try {
     await refreshAccessToken();
     return true;
-  } catch (error) {
+  } catch {
     return false;
   }
 };

@@ -55,23 +55,4 @@ const ToastContent = ({ message, type = 'info', toastId }) => {
   );
 };
 
-// Helper functions to show custom toasts
-export const showSuccessToast = (message) => {
-  toast.custom((t) => <ToastContent message={message} type="success" toastId={t.id} />, {
-    duration: 4000,
-  });
-};
-
-export const showErrorToast = (message) => {
-  toast.custom((t) => <ToastContent message={message} type="error" toastId={t.id} />, {
-    duration: 5000,
-  });
-};
-
-export const showInfoToast = (message) => {
-  toast.custom((t) => <ToastContent message={message} type="info" toastId={t.id} />, {
-    duration: 4000,
-  });
-};
-
 export default ToastContent;

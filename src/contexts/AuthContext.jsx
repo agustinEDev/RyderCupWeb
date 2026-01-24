@@ -20,26 +20,26 @@ const AuthContext = createContext(null);
  * - csrfToken: CSRF token from backend (required for POST/PUT/PATCH/DELETE)
  */
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
-  const [csrfToken, setCsrfToken] = useState(null);
-  const [isInitialized, setIsInitialized] = useState(false);
-
   /**
-   * Initialize auth state from localStorage (legacy compatibility)
-   * TODO: Remove localStorage dependency in future versions (use only httpOnly cookies)
+   * Initialize user from localStorage using lazy initializer
+   * This avoids calling setState in useEffect (better performance + no lint warning)
    */
-  useEffect(() => {
+  const [user, setUser] = useState(() => {
     const storedUser = localStorage.getItem('user');
     if (storedUser) {
       try {
-        setUser(JSON.parse(storedUser));
+        return JSON.parse(storedUser);
       } catch (error) {
         console.error('Failed to parse stored user:', error);
         localStorage.removeItem('user');
+        return null;
       }
     }
-    setIsInitialized(true);
-  }, []);
+    return null;
+  });
+
+  const [csrfToken, setCsrfToken] = useState(null);
+  const [isInitialized] = useState(true); // Always true since we use lazy initializer
 
   /**
    * Update user state

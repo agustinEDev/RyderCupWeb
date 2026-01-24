@@ -1,7 +1,6 @@
 import { renderHook, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { useEditProfile } from './useEditProfile';
-import toast from 'react-hot-toast';
 import customToast from '../utils/toast';
 
 // Importar el hook useEditProfile

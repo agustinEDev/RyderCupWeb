@@ -9,7 +9,6 @@ import { useEditProfile } from './useEditProfile';
 import customToast from '../utils/toast';
 import * as composition from '../composition';
 import * as useAuthHook from './useAuth';
-import toast from 'react-hot-toast';
 
 // Mock dependencies
 vi.mock('../composition', () => ({

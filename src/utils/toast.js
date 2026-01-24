@@ -21,7 +21,7 @@ const ToastContent = ({ message, type, toastId }) => {
     },
   };
 
-  const { Icon, className } = config[type] || config.info;
+  const { Icon } = config[type] || config.info;
 
   return createElement(
     'div',

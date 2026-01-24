@@ -79,7 +79,7 @@ export const useDeviceRevocationMonitor = ({ enabled = true } = {}) => {
         // Device was revoked → logout immediately
         handleDeviceRevocationLogout();
       }
-    } catch (error) {
+    } catch {
       // If 401, the token refresh interceptor will handle it
       // If refresh token was also revoked, isDeviceRevoked() will detect it
       // For other errors, silently fail (don't interrupt user experience)

@@ -24,10 +24,10 @@ test.describe('Debug Login', () => {
         try {
           const body = await response.json();
           console.log('🔐 Login response:', JSON.stringify(body, null, 2));
-        } catch (e) {
+        } catch {
           try {
             console.log('🔐 Login response (text):', await response.text());
-          } catch (e2) {
+          } catch {
             console.log('🔐 Could not read response body');
           }
         }

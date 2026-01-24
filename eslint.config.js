@@ -41,12 +41,18 @@ export default [
         fetch: 'readonly',
         localStorage: 'readonly',
         sessionStorage: 'readonly',
-        // Node globals (for config files)
+        URLSearchParams: 'readonly',
+        atob: 'readonly',
+        btoa: 'readonly',
+        BroadcastChannel: 'readonly',
+        MouseEvent: 'readonly',
+        // Node globals (for config files and tests)
         process: 'readonly',
         __dirname: 'readonly',
         __filename: 'readonly',
         module: 'readonly',
         require: 'readonly',
+        global: 'readonly',
         // Vitest globals
         describe: 'readonly',
         it: 'readonly',

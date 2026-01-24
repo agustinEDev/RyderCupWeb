@@ -111,8 +111,8 @@ test.describe('CSP Violations', () => {
         const script = document.createElement('script');
         script.innerHTML = 'console.log("Inline script executed")';
         document.body.appendChild(script);
-      } catch (e) {
-        console.log('CSP blocked inline script:', e.message);
+      } catch (error) {
+        console.log('CSP blocked inline script:', error.message);
       }
     });
 
@@ -224,7 +224,7 @@ test.describe('Authentication Security', () => {
           expect(hasTokenAfter).toBeFalsy();
           console.log('✅ Sensitive data cleared after logout');
         }
-      } catch (e) {
+      } catch {
         console.log('ℹ️ Could not test logout (user might not exist)');
       }
     }
