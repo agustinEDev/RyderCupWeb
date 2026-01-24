@@ -1,66 +1,25 @@
 # 🗺️ Roadmap - RyderCupFriends Frontend
 
-> **Versión Actual:** 1.15.0 (Data Integrity Improvements)
-> **Próxima Versión:** v1.16.0 (Major Dependencies) o v2.1.0 (Competition Module)
+> **Versión:** 1.15.0 → 1.16.0 → 2.1.0
 > **Última actualización:** 23 Ene 2026
+> **Estado:** ✅ v1.15.0 Completada | 📋 v1.16.0 en progreso (Major Dependencies)
 > **Stack:** React 18 + Vite 7 + Tailwind CSS 3.4 + TanStack Query + Zustand
 
 ---
 
-## 📊 Estado Actual del Proyecto (v1.15.0)
-
-### Métricas Clave
-- **Tests:** 717 tests (100% pass rate, 99.86% success)
-- **Cobertura:** Domain 100%, Application 90%+, Lines 82-83%
-- **Bundle inicial:** ~250 KB (gzip)
-- **Páginas:** 11 rutas (5 públicas, 6 protegidas)
-- **CI/CD:** 13 jobs (Quality Gates activos)
-
-### Features Implementadas
-- ✅ Clean Architecture + DDD
-- ✅ Autenticación (httpOnly cookies, refresh tokens)
-- ✅ Device Fingerprinting con revocación en tiempo real
-- ✅ CRUD Competiciones + Enrollments
-- ✅ Handicaps (Manual + RFEG)
-- ✅ Password Reset Flow
-- ✅ i18n (ES/EN)
-- ✅ Sentry Monitoring (Error tracking + Session replay)
-- ✅ Data Integrity (SRI, Signed Commits, Package-lock validation)
-- ✅ Security Scanning (Snyk, TruffleHog, License checks)
-
----
-
-## 🔐 Seguridad OWASP Top 10 2021
-
-| Categoría | Score | Estado | Prioridad |
-|-----------|-------|--------|-----------|
-| A01: Broken Access Control | 8.5/10 | ✅ Excelente | 🟢 Baja |
-| A02: Cryptographic Failures | 9.5/10 | ✅ Excelente | 🟢 Baja |
-| A03: Injection | 9.5/10 | ✅ Excelente | 🟢 Baja |
-| A04: Insecure Design | 8.5/10 | ✅ Excelente | 🟢 Baja |
-| A05: Security Misconfiguration | 10.0/10 | ✅ Perfecto | 🟢 Baja |
-| A06: Vulnerable Components | 9.5/10 | ✅ Excelente | 🟢 Baja |
-| A07: Auth Failures | 9.0/10 | ✅ Excelente | 🟢 Baja |
-| A08: Data Integrity | 9.0/10 | ✅ Excelente | 🟢 Baja |
-| A09: Logging & Monitoring | 9.5/10 | ✅ Excelente | 🟢 Baja |
-| A10: SSRF | 9.0/10 | ✅ N/A | 🟢 Baja |
-| **TOTAL (Media)** | **9.2/10** | | |
-
----
-
-## 📋 Próximas Versiones (Planificado)
+## 📋 Próximos Pasos (Planificado)
 
 ### 🎯 Roadmap v1.16.0 - Major Dependencies Update
 
 > **Objetivo:** Actualizar dependencias con breaking changes (React 19, Sentry 10, Router 7, etc.)
 > **Duración:** 2-3 semanas (4 sprints técnicos)
 > **Tipo:** Major version upgrades + Modernización del stack
-> **Estado:** 📋 Planificado (pendiente aprobación)
+> **Estado:** 🚀 En Progreso (Sprint 1 y 2 completados)
 
 #### 📊 Resumen Ejecutivo
 
 **Versión actual:** v1.15.0
-**Próxima versión:** v1.16.0 (Major Deps)
+**Próxima versión:** v1.16.0
 **Dependencias a actualizar:** 11 paquetes (10 major + 1 minor crítico)
 **Tests afectados estimados:** ~100-150 tests (de 712 totales)
 **Riesgo:** MEDIO-ALTO (breaking changes documentados)
@@ -211,7 +170,7 @@
 
 | Métrica | v1.15.0 | v2.1.0 Objetivo | Incremento |
 |---------|---------|-----------------|------------|
-| **Tests** | 712 | 800-900 | +12-26% |
+| **Tests** | 717 | 800-900 | +12-26% |
 | **Rutas** | 11 | 20-25 | +80-130% |
 | **Cobertura Lines** | 82-83% | 85-87% | +3-4% |
 | **Bundle Size** | ~250 KB | 300-350 KB | +50-100 KB |
@@ -280,11 +239,27 @@
 - ✅ SRI (Subresource Integrity) con `vite-plugin-sri` (SHA-384)
 - ✅ CI/CD Commit Verification (firmas GPG)
 - ✅ Package-Lock Validation
-- ✅ Actualización dependencias: `framer-motion`, `vite`, `i18next`
+- ✅ Actualización dependencias: `framer-motion` (v12.27.0), `vite` (v7.3.1), `i18next` (v25.7.4), `react-i18next` (v16.5.2).
+- ✅ Actualización Actions: `snyk/actions/node` (v1.0.0), `trufflesecurity/trufflehog` (v3.92.5).
+
+#### 📝 Configuración Manual Requerida (Usuario)
+
+1. **Configurar GPG_PUBLIC_KEYS secret en GitHub:**
+   - Ir a: `Settings → Secrets and variables → Actions`
+   - Crear nuevo secret: `GPG_PUBLIC_KEYS`
+   - Valor: Exportar claves públicas con `gpg --armor --export [KEY-ID]`
+   - Incluir todas las claves del equipo (separadas por newline)
+
+2. **Testing del workflow:**
+   - Crear commit SIN firmar → CI debe fallar ❌
+   - Crear commit firmado → CI debe pasar ✅
+   - Modificar package-lock.json manualmente → CI debe fallar ❌
+
+---
 
 ### v1.14.0 - Device Fingerprinting Improvements (17 Ene 2026)
 **Objetivo:** Resolver bugs críticos del sistema de device fingerprinting
-- ✅ Tests: 540 → 712 (+172 tests)
+- ✅ Tests: 540 → 712 (+172 netos)
 - ✅ Cobertura Device Module: 85% → 97%
 - ✅ 19 bugs resueltos (3 críticos, 7 medios, 9 UX)
 - ✅ Immediate Device Revocation Detection (event-driven)
@@ -292,10 +267,51 @@
 - ✅ Componentes: ConfirmModal, Skeleton Loader, Inline Errors
 - ✅ Mejoras Accessibility (WCAG 2.1 AA)
 
-### Versiones Anteriores (v1.0 - v1.13)
-Ver **CHANGELOG.md** para historial completo.
+---
+
+### Versiones Anteriores (Detalle)
+Ver **CHANGELOG.md** para historial completo de versiones anteriores.
+
+---
+
+**Estado General del Proyecto:**
+
+#### 📊 Métricas Clave
+- **Tests:** 717 tests (100% pass rate, 99.86% success)
+- **Cobertura:** Domain 100%, Application 90%+, Lines 82-83%
+- **Bundle inicial:** ~250 KB (gzip)
+- **Páginas:** 11 rutas (5 públicas, 6 protegidas)
+- **CI/CD:** 13 jobs (Quality Gates activos)
+
+#### ✅ Features Implementadas (General)
+- ✅ Clean Architecture + DDD
+- ✅ Autenticación (httpOnly cookies, refresh tokens)
+- ✅ Device Fingerprinting con revocación en tiempo real
+- ✅ CRUD Competiciones + Enrollments
+- ✅ Handicaps (Manual + RFEG)
+- ✅ Password Reset Flow
+- ✅ i18n (ES/EN)
+- ✅ Sentry Monitoring (Error tracking + Session replay)
+- ✅ Data Integrity (SRI, Signed Commits, Package-lock validation)
+- ✅ Security Scanning (Snyk, TruffleHog, License checks)
+
+#### 🔐 Seguridad OWASP Top 10 2021
+
+| Categoría | Score | Estado | Prioridad |
+|-----------|-------|--------|-----------|
+| A01: Broken Access Control | 8.5/10 | ✅ Excelente | 🟢 Baja |
+| A02: Cryptographic Failures | 9.5/10 | ✅ Excelente | 🟢 Baja |
+| A03: Injection | 9.5/10 | ✅ Excelente | 🟢 Baja |
+| A04: Insecure Design | 8.5/10 | ✅ Excelente | 🟢 Baja |
+| A05: Security Misconfiguration | 10.0/10 | ✅ Perfecto | 🟢 Baja |
+| A06: Vulnerable Components | 9.5/10 | ✅ Excelente | 🟢 Baja |
+| A07: Auth Failures | 9.0/10 | ✅ Excelente | 🟢 Baja |
+| A08: Data Integrity | 9.0/10 | ✅ Excelente | 🟢 Baja |
+| A09: Logging & Monitoring | 9.5/10 | ✅ Excelente | 🟢 Baja |
+| A10: SSRF | 9.0/10 | ✅ N/A | 🟢 Baja |
+| **TOTAL (Media)** | **9.2/10** | | |
 
 ---
 
 **Última revisión:** 24 Ene 2026
-**Próxima versión:** v1.16.0 (Major Dependencies) o v2.1.0 (Competition Module)
+**Próxima revisión:** v1.16.0 o próximo sprint
