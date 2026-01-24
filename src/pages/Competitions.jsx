@@ -5,7 +5,7 @@ import {
   Users, Calendar, MapPin, Plus,
   Filter, Search, AlertCircle, Loader, Crown
 } from 'lucide-react';
-import toast from 'react-hot-toast';
+import customToast from '../utils/toast';
 import { useTranslation } from 'react-i18next';
 import HeaderAuth from '../components/layout/HeaderAuth';
 import { listUserCompetitionsUseCase } from '../composition';
@@ -85,7 +85,7 @@ const Competitions = () => {
       setCompetitions(data);
     } catch (error) {
       console.error('Error loading competitions:', error);
-      toast.error(error.message || 'Failed to load competitions');
+      customToast.error(error.message || 'Failed to load competitions');
       setCompetitions([]);
     } finally {
       setIsLoading(false);

@@ -23,6 +23,8 @@ vi.mock('react-hot-toast', () => ({
   default: {
     error: vi.fn(),
     success: vi.fn(),
+    custom: vi.fn(),
+    dismiss: vi.fn(),
   },
 }));
 

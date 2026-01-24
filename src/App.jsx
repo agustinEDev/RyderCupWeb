@@ -2,7 +2,6 @@
 import { useEffect, useCallback, lazy, Suspense, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import * as Sentry from '@sentry/react';
-import PropTypes from 'prop-types';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import LazyLoadErrorBoundary from './components/errors/LazyLoadErrorBoundary';
 import { getUserData } from './hooks/useAuth';
@@ -219,12 +218,6 @@ const ErrorFallback = ({ error, componentStack, resetError }) => (
     )}
   </div>
 );
-
-ErrorFallback.propTypes = {
-  error: PropTypes.instanceOf(Error),
-  componentStack: PropTypes.string,
-  resetError: PropTypes.func.isRequired,
-};
 
 /**
  * Componente principal App con Router y ErrorBoundary

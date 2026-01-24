@@ -6,7 +6,6 @@
  */
 
 import { createContext, useContext, useState, useCallback, useEffect } from 'react';
-import PropTypes from 'prop-types';
 import { setCsrfTokenGlobal } from './csrfTokenSync';
 
 // Create the context
@@ -88,10 +87,6 @@ export const AuthProvider = ({ children }) => {
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
-AuthProvider.propTypes = {
-  children: PropTypes.node.isRequired,
-};
-
 /**
  * Enhanced AuthProvider that syncs CSRF token to global variable
  * This allows api.js to access the token synchronously
@@ -102,10 +97,6 @@ export const AuthProviderWithGlobalSync = ({ children }) => {
       <CsrfTokenSyncWrapper>{children}</CsrfTokenSyncWrapper>
     </AuthProvider>
   );
-};
-
-AuthProviderWithGlobalSync.propTypes = {
-  children: PropTypes.node.isRequired,
 };
 
 /**
@@ -119,10 +110,6 @@ const CsrfTokenSyncWrapper = ({ children }) => {
   }, [csrfToken]);
 
   return children;
-};
-
-CsrfTokenSyncWrapper.propTypes = {
-  children: PropTypes.node.isRequired,
 };
 
 export default AuthContext;

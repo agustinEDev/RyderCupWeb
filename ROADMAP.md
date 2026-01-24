@@ -2,34 +2,12 @@
 
 > **Versión:** 1.15.0 → 1.16.0 → 2.1.0
 > **Última actualización:** 24 Ene 2026
-> **Estado:** 🚀 v1.16.0 En Progreso (Sprint 4 pendiente) | 📋 v2.1.0 Planificada
+> **Estado:** ✅ v1.16.0 Completada (24 Ene 2026) | 📋 v2.1.0 Planificada
 > **Stack:** React 19 + Vite 7.3 + Tailwind CSS 4 + ESLint 9
 
 ---
 
 ## 📋 Próximos Pasos (Planificado)
-
-### 🎯 Roadmap v1.16.0 - Major Dependencies Update
-
-> **Objetivo:** Actualizar dependencias con breaking changes (React 19, Sentry 10, Router 7, etc.)
-> **Duración:** 2-3 semanas (4 sprints técnicos)
-> **Tipo:** Major version upgrades + Modernización del stack
-> **Estado:** ⏳ Sprint 4 Pendiente (Verificación)
-
-#### 📦 Dependencias Pendientes
-
-**Grupo 4: Verificación Final (1 paquete) - Sprint 4**
-| Paquete | Actual | Target | Tipo |
-|---------|--------|--------|------|
-| @sentry/replay | 7.120.4 | **7.116.0** | Downgrade (peer dep fix) |
-
-#### Tareas Sprint 4:
-- [ ] Downgrade `@sentry/replay` (si es necesario)
-- [ ] Ejecutar tests completos
-- [ ] Benchmarking de performance
-- [ ] Verificación final de seguridad
-
----
 
 ### 🚀 Roadmap v2.1.0 - Competition Module Evolution
 
@@ -37,16 +15,35 @@
 > **Duración:** 7 semanas (paralelo con backend v2.1.0)
 > **Backend compatible:** FastAPI v2.1.0 (RyderCupAm)
 
+#### 📦 Nuevas Dependencias Principales
+
+```json
+{
+  "@tanstack/react-query": "^5.x",      // Caching y data fetching
+  "zustand": "^4.x",                     // State management global
+  "zod": "^3.x",                         // Validación de schemas
+  "@dnd-kit/core": "^6.x",               // Drag & Drop para scheduling
+  "react-hot-toast": "^2.x"              // Ya instalado, uso intensivo
+}
+```
+
 *... (Se mantiene igual que la versión anterior) ...*
 
 ---
 
 ## ✅ Historial de Implementaciones (Completado)
 
-### 🎯 v1.16.0 - Major Dependencies Update (Sprints 1-3)
+### 🎯 v1.16.0 - Major Dependencies Update (Sprints 1-4)
 
-> **Estado:** ✅ Parcialmente Completado (24 Ene 2026)
+> **Estado:** ✅ Completado (24 Ene 2026)
 > **Objetivo:** Modernizar el stack tecnológico completo.
+
+#### ✅ Sprint 4: Verificación Final
+- `@sentry/replay`: downgrade a **7.116.0** (peer dependency fix)
+- Tests: 717 passed, 0 failed ✅
+- Security: 0 vulnerabilities ✅
+- Performance: Bundle 1318 KB (gzipped ~460 KB)
+- UI Fixes: Modal overlay opacity, toast positioning, cursor-pointer
 
 #### ✅ Sprint 3: Build Tools & Styling (Tailwind 4, ESLint 9)
 - `tailwindcss`: v3.4.19 → **v4.1.18** (CSS-first)
@@ -95,14 +92,16 @@
 
 ---
 
-## 📊 Estado Actual (v1.16.0-dev)
+## 📊 Estado Actual (v1.16.0 ✅)
 
 ### Métricas Clave
-- **Tests:** 717 tests (100% pass rate)
-- **Bundle inicial:** ~250 KB (gzip)
-- **Cobertura:** Domain 100%, Application 90%+
-- **Security Score (OWASP):** 9.0/10
-- **Stack:** React 19, Vite 7.3, Tailwind 4, ESLint 9
+
+- **Tests:** 717 passing, 1 skipped, 0 failed ✅
+- **Coverage:** ≥85% lines, ≥75% functions ✅
+- **Bundle:** 1318 KB (~460 KB gzipped) ⚠️ (target: ≤1000 KB)
+- **Build time:** 5.83s ⚡
+- **Security:** 0 vulnerabilities ✅
+- **OWASP Score:** 8.75/10 ✅
 
 ### Completado (v1.x)
 - ✅ Modern Build Stack (v1.16.0)
@@ -148,5 +147,5 @@
 
 ---
 
-**Última revisión:** 24 Ene 2026 (Sprint 3 Completado)
-**Próxima revisión:** Sprint 4 (Verificación Final)
+**Última revisión:** 24 Ene 2026 (v1.16.0 Completada)
+**Próxima revisión:** Inicio v2.1.0

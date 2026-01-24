@@ -6,7 +6,7 @@ import {
   Edit, Trash2, Play, CheckCircle, XCircle, Pause,
   AlertCircle, Loader, UserPlus, Shield
 } from 'lucide-react';
-import toast from 'react-hot-toast';
+import customToast from '../utils/toast';
 import { useTranslation } from 'react-i18next';
 import HeaderAuth from '../components/layout/HeaderAuth';
 import { useAuth } from '../hooks/useAuth';
@@ -62,7 +62,7 @@ const CompetitionDetail = () => {
       }
     } catch (error) {
       console.error('Error loading competition:', error);
-      toast.error(error.message || 'Failed to load competition');
+      customToast.error(error.message || 'Failed to load competition');
       navigate('/competitions');
     } finally {
       setIsLoadingCompetition(false);
@@ -89,23 +89,23 @@ const CompetitionDetail = () => {
       switch (action) {
         case 'activate':
           result = await activateCompetitionUseCase.execute(id);
-          toast.success(t('detail.actions.activate'));
+          customToast.success(t('detail.actions.activate'));
           break;
         case 'close-enrollments':
           result = await closeEnrollmentsUseCase.execute(id);
-          toast.success(t('detail.actions.closeEnrollments'));
+          customToast.success(t('detail.actions.closeEnrollments'));
           break;
         case 'start':
           result = await startCompetitionUseCase.execute(id);
-          toast.success(t('detail.actions.startCompetition'));
+          customToast.success(t('detail.actions.startCompetition'));
           break;
         case 'complete':
           result = await completeCompetitionUseCase.execute(id);
-          toast.success(t('detail.actions.complete'));
+          customToast.success(t('detail.actions.complete'));
           break;
         case 'cancel':
           result = await cancelCompetitionUseCase.execute(id);
-          toast.success(t('detail.actions.cancel'));
+          customToast.success(t('detail.actions.cancel'));
           break;
         default:
           throw new Error('Invalid action');
@@ -119,7 +119,7 @@ const CompetitionDetail = () => {
       }));
     } catch (error) {
       console.error(`Error ${action}:`, error);
-      toast.error(error.message || `Failed to ${action} competition`);
+      customToast.error(error.message || `Failed to ${action} competition`);
     } finally {
       setIsProcessing(false);
     }
@@ -133,11 +133,11 @@ const CompetitionDetail = () => {
     setIsProcessing(true);
     try {
       await deleteCompetition(id);
-      toast.success(t('detail.actions.delete'));
+      customToast.success(t('detail.actions.delete'));
       navigate('/competitions');
     } catch (error) {
       console.error('Error deleting competition:', error);
-      toast.error(error.message || 'Failed to delete competition');
+      customToast.error(error.message || 'Failed to delete competition');
       setIsProcessing(false);
     }
   };
@@ -146,11 +146,11 @@ const CompetitionDetail = () => {
     setIsProcessing(true);
     try {
       await requestEnrollmentUseCase.execute(id);
-      toast.success(t('detail.actions.requestToJoin'));
+      customToast.success(t('detail.actions.requestToJoin'));
       await loadCompetition();
     } catch (error) {
       console.error('Error enrolling:', error);
-      toast.error(error.message || 'Failed to enroll');
+      customToast.error(error.message || 'Failed to enroll');
     } finally {
       setIsProcessing(false);
     }
@@ -160,13 +160,13 @@ const CompetitionDetail = () => {
     try {
       // ApproveEnrollmentUseCase expects (competitionId, enrollmentId, teamId?)
       await approveEnrollmentUseCase.execute(competition.id, enrollmentId);
-      toast.success(t('detail.enrollmentApproved'));
+      customToast.success(t('detail.enrollmentApproved'));
       // Reload enrollments to update the list
       const enrollmentsData = await listEnrollmentsUseCase.execute(competition.id);
       setEnrollments(enrollmentsData);
     } catch (error) {
       console.error('Error approving enrollment:', error);
-      toast.error(error.message || t('detail.failedToApprove'));
+      customToast.error(error.message || t('detail.failedToApprove'));
     }
   };
 
@@ -177,13 +177,13 @@ const CompetitionDetail = () => {
     try {
       // RejectEnrollmentUseCase expects (competitionId, enrollmentId)
       await rejectEnrollmentUseCase.execute(competition.id, enrollmentId);
-      toast.success(t('detail.enrollmentRejected'));
+      customToast.success(t('detail.enrollmentRejected'));
       // Reload enrollments to update the list
       const enrollmentsData = await listEnrollmentsUseCase.execute(competition.id);
       setEnrollments(enrollmentsData);
     } catch (error) {
       console.error('Error rejecting enrollment:', error);
-      toast.error(error.message || t('detail.failedToReject'));
+      customToast.error(error.message || t('detail.failedToReject'));
     }
   };
 

@@ -1,6 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import PropTypes from 'prop-types';
 import { useTranslation } from 'react-i18next';
 import { broadcastLogout } from '../../utils/broadcastAuth';
 import LanguageSwitcher from '../ui/LanguageSwitcher';
@@ -95,7 +94,7 @@ const HeaderAuth = ({ user }) => {
           <img
             src="/images/rcf-monogram-green.jpeg"
             alt="RCF Logo"
-            className="block h-full w-auto object-contain transform -translate-y-[1px] md:-translate-y-[1px] scale-105 md:scale-115"
+            className="block h-full w-auto object-contain transform -translate-y-[1px] md:-translate-y-[1px] scale-105 md:scale-110"
           />
         </div>
         <div className="flex flex-col">
@@ -249,19 +248,6 @@ const HeaderAuth = ({ user }) => {
       </div>
     </header>
   );
-};
-
-HeaderAuth.propTypes = {
-  user: PropTypes.shape({
-    id: PropTypes.string,
-    first_name: PropTypes.string,
-    last_name: PropTypes.string,
-    email: PropTypes.string,
-    handicap: PropTypes.number,
-    handicap_updated_at: PropTypes.string,
-    created_at: PropTypes.string,
-    updated_at: PropTypes.string,
-  }),
 };
 
 export default HeaderAuth;

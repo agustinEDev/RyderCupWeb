@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import toast from 'react-hot-toast';
+import customToast from '../utils/toast';
 
 import {
   getActiveDevicesUseCase,
@@ -35,7 +35,7 @@ export const useDeviceManagement = () => {
         ? t(`errors.${error.code}`, { defaultValue: t('errors.FAILED_TO_LOAD_DEVICES') })
         : error.message || t('errors.FAILED_TO_LOAD_DEVICES');
 
-      toast.error(errorMessage);
+      customToast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -53,7 +53,7 @@ export const useDeviceManagement = () => {
    */
   const revokeDevice = async (deviceId) => {
     if (!deviceId) {
-      toast.error('Device ID is required');
+      customToast.error('Device ID is required');
       return false;
     }
 
@@ -73,7 +73,7 @@ export const useDeviceManagement = () => {
       // Remove device from local state
       setDevices(prevDevices => prevDevices.filter(d => d.id !== deviceId));
 
-      toast.success('Device revoked successfully');
+      customToast.success('Device revoked successfully');
       return true;
     } catch (error) {
       console.error('❌ [useDeviceManagement] Error revoking device:', error);
@@ -84,7 +84,7 @@ export const useDeviceManagement = () => {
         : error.message || t('errors.FAILED_TO_REVOKE_DEVICE');
 
       // Show toast AND save error for inline display
-      toast.error(errorMessage);
+      customToast.error(errorMessage);
 
       // Save error for this specific device (v1.14.0: Inline error display)
       setDeviceErrors(prev => {

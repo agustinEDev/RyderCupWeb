@@ -2,8 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import toast from 'react-hot-toast';
-import PropTypes from 'prop-types';
+import customToast from '../utils/toast';
 import { useTranslation } from 'react-i18next';
 import { Search, Calendar, Users, Target, TrendingUp } from 'lucide-react';
 import HeaderAuth from '../components/layout/HeaderAuth';
@@ -57,7 +56,7 @@ const BrowseCompetitions = () => {
         setJoinableCompetitions(safeCompetitions);
       } catch (error) {
         console.error('Error loading joinable competitions:', error);
-        toast.error(t('browse.errors.failedToLoadJoinable'));
+        customToast.error(t('browse.errors.failedToLoadJoinable'));
       } finally {
         setIsLoadingJoinable(false);
       }
@@ -77,7 +76,7 @@ const BrowseCompetitions = () => {
         setExploreCompetitions(competitions);
       } catch (error) {
         console.error('Error loading explore competitions:', error);
-        toast.error(t('browse.errors.failedToLoadExplore'));
+        customToast.error(t('browse.errors.failedToLoadExplore'));
       } finally {
         setIsLoadingExplore(false);
       }
@@ -133,7 +132,7 @@ const BrowseCompetitions = () => {
       // Call RequestEnrollmentUseCase
       await requestEnrollmentUseCase.execute(competitionId);
 
-      toast.success(t('browse.success.enrollmentRequested'));
+      customToast.success(t('browse.success.enrollmentRequested'));
 
       // Remove competition from UI immediately (optimistic update)
       setJoinableCompetitions((prev) => prev.filter((comp) => comp.id !== competitionId));
@@ -162,11 +161,11 @@ const BrowseCompetitions = () => {
 
       // Check if it's a duplicate enrollment error (409 Conflict)
       if (error.message?.includes('409')) {
-        toast.error(t('browse.errors.alreadyEnrolled'));
+        customToast.error(t('browse.errors.alreadyEnrolled'));
         // Remove from list since user already has enrollment
         setJoinableCompetitions((prev) => prev.filter((comp) => comp.id !== competitionId));
       } else {
-        toast.error(error.message || t('browse.errors.failedToEnroll'));
+        customToast.error(error.message || t('browse.errors.failedToEnroll'));
       }
     } finally {
       setRequestingEnrollment((prev) => ({ ...prev, [competitionId]: false }));
@@ -522,31 +521,6 @@ const CompetitionCard = ({ competition, mode, onRequestEnrollment, onViewDetails
       </div>
     </div>
   );
-};
-
-CompetitionCard.propTypes = {
-  competition: PropTypes.shape({
-    id: PropTypes.string.isRequired,
-    name: PropTypes.string.isRequired,
-    startDate: PropTypes.string.isRequired,
-    endDate: PropTypes.string.isRequired,
-    status: PropTypes.string.isRequired,
-    creator: PropTypes.shape({
-      firstName: PropTypes.string.isRequired,
-      lastName: PropTypes.string.isRequired,
-    }).isRequired,
-    enrolledCount: PropTypes.number.isRequired,
-    maxPlayers: PropTypes.number.isRequired,
-    countries: PropTypes.arrayOf(PropTypes.shape({
-      code: PropTypes.string.isRequired,
-      name_en: PropTypes.string,
-      name_es: PropTypes.string,
-    })).isRequired,
-  }).isRequired,
-  mode: PropTypes.oneOf(['joinable', 'explore']).isRequired,
-  onRequestEnrollment: PropTypes.func.isRequired,
-  onViewDetails: PropTypes.func.isRequired,
-  isRequesting: PropTypes.bool.isRequired,
 };
 
 export default BrowseCompetitions;

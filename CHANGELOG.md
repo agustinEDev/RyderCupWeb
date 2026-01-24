@@ -9,22 +9,68 @@ y este proyecto adhiere a [Versionado Semántico](https://semver.org/lang/es/).
 
 ## [1.16.0] - 2026-01-24
 
-### Changed - Sprint 3: Build Tools & Styling
-- **Build Tools**: Migrated to modern toolchain
-  - `tailwindcss`: 3.4.19 → 4.1.18 (CSS-first architecture, better build performance)
-  - `eslint`: 8.55.0 → 9.39.2 (flat config, -69 packages)
-  - Config migration: `.eslintrc.cjs` → `eslint.config.js` (flat config)
-  - Tailwind migration: `tailwind.config.js` → `@theme` in CSS
-  - PostCSS update: `tailwindcss` → `@tailwindcss/postcss` plugin
+### 🚀 Major Dependencies Update
 
-### Added - Sprint 3
-- `@eslint/js`: v9.39.2 (required for ESLint 9 flat config)
+Esta versión actualiza dependencias críticas con breaking changes, modernizando el stack tecnológico completo.
 
-### Removed - Sprint 3
-- `.eslintrc.cjs` (replaced by `eslint.config.js`)
-- `tailwind.config.js` (replaced by CSS-first configuration)
+### ⬆️ Updated
 
-**Note:** Sprint 3 of 4 for v1.16.0 Major Dependencies Update.
+#### Sprint 1: React 19 Ecosystem
+- **react** & **react-dom**: 18.2.0 → 19.2.3
+- **@vitejs/plugin-react**: 4.7.0 → 5.1.2
+- **vite**: 6.x → 7.3.1
+- Removed **prop-types** (incompatible con React 19)
+
+#### Sprint 2: Monitoring & Routing
+- **@sentry/react**: 7.120.4 → 10.34.0 (React 19 support)
+- **react-router-dom**: 6.20.0 → 7.12.0
+- Fixed Docker build con Sentry 10
+
+#### Sprint 3: Build Tools & Styling
+- **tailwindcss**: 3.4.19 → 4.1.18 (CSS-first config)
+- **eslint**: 8.55.0 → 9.39.2 (Flat config)
+- Migración completa a `@theme` inline syntax
+- Nueva configuración `eslint.config.js`
+
+#### Sprint 4: Verification & Fixes
+- **@sentry/replay**: → 7.116.0 (peer dependency fix)
+
+### ✨ Added
+- Custom toast wrapper con botón de cerrar (X)
+- Cursor pointer en botones de cierre de toasts
+- Método `dismiss` en customToast
+
+### 🐛 Fixed
+- Login: Fix import de toast no definido (línea 83)
+- useInactivityLogout: Añadido import de toast
+- Tests: Actualizados 5 archivos para customToast mocks
+- Modal overlay: Reducida opacidad de 50% a 30%
+- Toast positioning: Movidos a bottom-right
+
+### 🎯 Performance
+- Build time: 5.83s
+- Bundle size: 1318 KB (gzipped ~460 KB)
+- Code splitting: 40 chunks
+- Gzip compression: ~70% promedio
+
+### 🔒 Security
+- NPM Audit: 0 vulnerabilities
+- OWASP Score: 8.75/10
+  - A08 (Data Integrity): 9.0/10
+  - A07 (Authentication): 8.5/10
+
+### ✅ Tests
+- 717 tests passing
+- 1 test skipped
+- 0 tests failing
+- Coverage: ≥85% lines
+
+### 📊 Compatibility
+- Node.js: ≥18.x
+- NPM: ≥9.x
+- React: 19.2.3
+- Vite: 7.3.1
+- Tailwind CSS: 4.1.18
 
 ## [1.15.0] - 2026-01-24
 

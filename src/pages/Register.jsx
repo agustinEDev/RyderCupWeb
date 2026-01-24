@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import toast from 'react-hot-toast';
+import customToast from '../utils/toast';
 import { useTranslation } from 'react-i18next';
 import { validateEmail, validateName, validatePassword } from '../utils/validation';
 import PasswordInput from '../components/ui/PasswordInput';
@@ -120,7 +120,7 @@ const Register = () => {
         countryCode: formData.countryCode || null // Enviar countryCode si existe, sino null
       });
 
-      toast.success(t('register.success'));
+      customToast.success(t('register.success'));
 
       // Guardar timer ID para cleanup (prevenir memory leak)
       navigationTimerRef.current = setTimeout(() => {
@@ -132,7 +132,7 @@ const Register = () => {
       }, 1000);
 
     } catch (error) {
-      toast.error(error.message || t('register.error'));
+      customToast.error(error.message || t('register.error'));
     } finally {
       setIsLoading(false);
     }

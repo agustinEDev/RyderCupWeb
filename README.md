@@ -6,17 +6,17 @@
 [![Security Audit](https://github.com/agustinEDev/RyderCupWeb/actions/workflows/security.yml/badge.svg)](https://github.com/agustinEDev/RyderCupWeb/actions/workflows/security.yml)
 [![Security Tests](https://github.com/agustinEDev/RyderCupWeb/actions/workflows/security-tests.yml/badge.svg)](https://github.com/agustinEDev/RyderCupWeb/actions/workflows/security-tests.yml)
 
-[![React](https://img.shields.io/badge/React-18+-61DAFB?logo=react)](.)
-[![Vite](https://img.shields.io/badge/Vite-7+-646CFF?logo=vite)](.)
-[![Tailwind](https://img.shields.io/badge/Tailwind-3+-38B2AC?logo=tailwind-css)](.)
+[![React](https://img.shields.io/badge/React-19+-61DAFB?logo=react)](.)
+[![Vite](https://img.shields.io/badge/Vite-7.3.1-646CFF?logo=vite)](.)
+[![Tailwind](https://img.shields.io/badge/Tailwind-4+-38B2AC?logo=tailwind-css)](.)
 
-**Versión:** v1.11.4 → v2.1.0 (en desarrollo)
+**Versión:** v1.16.0 (en desarrollo)
 
-## 🚀 Stack v2.1.0
+## 🚀 Stack v1.16.0
 
-- **Core:** React 18 + Vite 7 + Tailwind CSS 3.4
+- **Core:** React 19 + Vite 7.3 + Tailwind CSS 4 + ESLint 9
 - **State:** Zustand v4 (global) + TanStack Query v5 (server)
-- **Routing:** React Router v6 con role guards
+- **Routing:** React Router v7
 - **Validation:** Zod
 - **i18n:** react-i18next (ES/EN)
 - **Testing:** Vitest + Playwright (900+ tests objetivo)
@@ -68,12 +68,14 @@ Importante: Render puede hibernar (503). Si ves 503 en producción, revisa estad
 Este proyecto implementa un pipeline profesional de CI/CD que garantiza la calidad y seguridad del código:
 
 ### Pipeline de Integración Continua
-- ✅ **Linting automático** (ESLint + Prettier) en cada commit
+- ✅ **Linting automático** (ESLint 9 + Prettier) en cada commit
 - ✅ **Tests unitarios** (Vitest) con coverage enforcement (≥80%)
 - ✅ **Build verification** con bundle size budget (≤1 MB)
 - ✅ **Type checking** - validación de tipos TypeScript
 - ✅ **PR size check** - bloquea PRs >1000 cambios
 - ✅ **Conventional commits** - valida formato de commits
+- ✅ **Verificación de firma GPG** en commits
+- ✅ **Validación de `package-lock.json`** integrity
 
 ### Seguridad Automatizada
 - 🔒 **npm audit** - auditoría de vulnerabilidades en dependencias
@@ -81,6 +83,7 @@ Este proyecto implementa un pipeline profesional de CI/CD que garantiza la calid
 - ⚖️ **License compliance** - verificación de licencias
 - 🛡️ **Security scanning** - detección de secrets y código inseguro
 - 🔐 **CSP validation** - validación de Content Security Policy headers
+- ✅ **SRI (Subresource Integrity)** para assets estáticos
 
 ### Security Features v1.13.0
 - 🛡️ **CSRF Protection** - X-CSRF-Token header en todos los requests POST/PUT/PATCH/DELETE
