@@ -2,9 +2,8 @@
 
 > Aplicación web moderna para gestión de torneos de golf amateur formato Ryder Cup
 
-[![CI Pipeline](https://github.com/agustinEDev/RyderCupWeb/actions/workflows/ci.yml/badge.svg)](https://github.com/agustinEDev/RyderCupWeb/actions/workflows/ci.yml)
-[![Security Audit](https://github.com/agustinEDev/RyderCupWeb/actions/workflows/security.yml/badge.svg)](https://github.com/agustinEDev/RyderCupWeb/actions/workflows/security.yml)
-[![Security Tests](https://github.com/agustinEDev/RyderCupWeb/actions/workflows/security-tests.yml/badge.svg)](https://github.com/agustinEDev/RyderCupWeb/actions/workflows/security-tests.yml)
+[![CI/CD Pipeline](https://github.com/agustinEDev/RyderCupWeb/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/agustinEDev/RyderCupWeb/actions/workflows/ci-cd.yml)
+[![PR Checks](https://github.com/agustinEDev/RyderCupWeb/actions/workflows/pr-checks.yml/badge.svg)](https://github.com/agustinEDev/RyderCupWeb/actions/workflows/pr-checks.yml)
 
 [![React](https://img.shields.io/badge/React-19+-61DAFB?logo=react)](.)
 [![Vite](https://img.shields.io/badge/Vite-7.3.1-646CFF?logo=vite)](.)
