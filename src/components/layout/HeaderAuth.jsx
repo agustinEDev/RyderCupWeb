@@ -94,15 +94,12 @@ const HeaderAuth = ({ user }) => {
           <img
             src="/images/rcf-monogram-green.jpeg"
             alt="RCF Logo"
-            className="block h-full w-auto object-contain transform -translate-y-[1px] md:-translate-y-[1px] scale-105 md:scale-110"
+            className="block h-full w-auto object-contain transform -translate-y-[2px] md:-translate-y-[2px] scale-105 md:scale-110"
           />
         </div>
-        <div className="flex flex-col">
-          <h2 className="text-gray-900 text-lg md:text-xl font-bold leading-tight tracking-tight font-poppins">
-            RyderCupFriends
-          </h2>
-          <span className="text-primary text-xs md:text-sm font-semibold -mt-1">RCF</span>
-        </div>
+        <h2 className="text-gray-900 text-lg md:text-xl font-bold leading-tight tracking-tight font-poppins">
+          RyderCupFriends
+        </h2>
       </Link>
 
       {/* Desktop Navigation */}

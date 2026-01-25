@@ -25,14 +25,21 @@ export const AuthProvider = ({ children }) => {
    * This avoids calling setState in useEffect (better performance + no lint warning)
    */
   const [user, setUser] = useState(() => {
-    const storedUser = localStorage.getItem('user');
-    if (storedUser) {
-      try {
+    // Guard for SSR and environments without localStorage
+    if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
+      return null;
+    }
+
+    try {
+      const storedUser = localStorage.getItem('user');
+      if (storedUser) {
         return JSON.parse(storedUser);
-      } catch (error) {
-        console.error('Failed to parse stored user:', error);
+      }
+    } catch (error) {
+      console.error('Failed to parse stored user:', error);
+      // Safe cleanup: only remove if localStorage is available
+      if (typeof localStorage !== 'undefined') {
         localStorage.removeItem('user');
-        return null;
       }
     }
     return null;
