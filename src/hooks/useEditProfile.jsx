@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import toast from 'react-hot-toast';
+import customToast from '../utils/toast';
 
 import {
   updateUserProfileUseCase,
@@ -101,7 +101,7 @@ export const useEditProfile = () => {
       // recargará user + formData.
     } catch (error) {
       console.error('Error refreshing user data:', error);
-      toast.error('Failed to refresh user data.');
+      customToast.error('Failed to refresh user data.');
     } finally {
       setIsRefreshing(false);
     }
@@ -111,7 +111,7 @@ export const useEditProfile = () => {
     if (e?.preventDefault) e.preventDefault();
 
     if (!user) {
-      toast.error('User not loaded.');
+      customToast.error('User not loaded.');
       return;
     }
 
@@ -123,10 +123,10 @@ export const useEditProfile = () => {
       });
 
       await refetchUser();
-      toast.success('Handicap updated successfully!');
+      customToast.success('Handicap updated successfully!');
     } catch (error) {
       console.error('Error updating handicap:', error);
-      toast.error(error.message || 'Failed to update handicap');
+      customToast.error(error.message || 'Failed to update handicap');
     } finally {
       setIsSaving(false);
     }
@@ -134,7 +134,7 @@ export const useEditProfile = () => {
 
   const handleUpdateHandicapRFEG = async () => {
     if (!user) {
-      toast.error('User not loaded.');
+      customToast.error('User not loaded.');
       return;
     }
 
@@ -147,10 +147,10 @@ export const useEditProfile = () => {
       await refetchUser();
       // refetchUser updates authUser, which triggers useEffect to update formData
 
-      toast.success('Handicap updated from RFEG successfully!');
+      customToast.success('Handicap updated from RFEG successfully!');
     } catch (error) {
       console.error('Error updating handicap from RFEG:', error);
-      toast.error(
+      customToast.error(
         error.message ||
           'Failed to update handicap from RFEG. Please try again later.',
       );
@@ -163,7 +163,7 @@ export const useEditProfile = () => {
     e.preventDefault();
 
     if (!user) {
-      toast.error('User not loaded.');
+      customToast.error('User not loaded.');
       return;
     }
 
@@ -178,19 +178,17 @@ export const useEditProfile = () => {
       trimmedCountryCode !== (user.country_code || '');
 
     if (!isNameChanged && !isCountryChanged) {
-      toast('No changes detected in profile.', {
-        icon: '⚠️',
-      });
+      customToast.info('No changes detected in profile.');
       return;
     }
 
     if (trimmedFirstName.length < 2) {
-      toast.error('First name must be at least 2 characters.');
+      customToast.error('First name must be at least 2 characters.');
       return;
     }
 
     if (trimmedLastName.length < 2) {
-      toast.error('Last name must be at least 2 characters.');
+      customToast.error('Last name must be at least 2 characters.');
       return;
     }
 
@@ -214,10 +212,10 @@ export const useEditProfile = () => {
       await refetchUser();
       // refetchUser updates authUser, which triggers useEffect to update formData
 
-      toast.success('Profile updated successfully!');
+      customToast.success('Profile updated successfully!');
     } catch (error) {
       console.error('Error updating profile:', error);
-      toast.error(error.message || 'Failed to update profile');
+      customToast.error(error.message || 'Failed to update profile');
     } finally {
       setIsSaving(false);
     }
@@ -227,12 +225,12 @@ export const useEditProfile = () => {
     e.preventDefault();
 
     if (!user) {
-      toast.error('User not loaded.');
+      customToast.error('User not loaded.');
       return;
     }
 
     if (!formData.currentPassword) {
-      toast.error(
+      customToast.error(
         'Current password is required to update security settings.',
       );
       return;
@@ -244,20 +242,18 @@ export const useEditProfile = () => {
     const isPasswordChanged = formData.newPassword !== '';
 
     if (!isEmailChanged && !isPasswordChanged) {
-      toast('No changes detected in email or password.', {
-        icon: '⚠️',
-      });
+      customToast.info('No changes detected in email or password.');
       return;
     }
 
     if (isPasswordChanged) {
       if (formData.newPassword.length < 8) {
-        toast.error('New password must be at least 8 characters.');
+        customToast.error('New password must be at least 8 characters.');
         return;
       }
 
       if (formData.newPassword !== formData.confirmPassword) {
-        toast.error('New password and confirmation do not match.');
+        customToast.error('New password and confirmation do not match.');
         return;
       }
     }
@@ -293,13 +289,13 @@ export const useEditProfile = () => {
         confirmPassword: '',
       }));
 
-      toast.success('Security settings updated successfully!');
+      customToast.success('Security settings updated successfully!');
     } catch (error) {
       console.error('Error updating security:', error);
 
       // v1.13.0: Handle Password History error
       if (error.message && error.message.includes('last 5 passwords')) {
-        toast.error(
+        customToast.error(
           'Cannot reuse any of your last 5 passwords. Please choose a different password.',
           {
             duration: 8000,
@@ -307,7 +303,7 @@ export const useEditProfile = () => {
           }
         );
       } else {
-        toast.error(
+        customToast.error(
           error.message || 'Failed to update security settings',
         );
       }

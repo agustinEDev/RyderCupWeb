@@ -64,13 +64,6 @@ if (!SENTRY_CONFIG.dsn) {
   const integrations = [
     // Browser Tracing - Monitoreo de rendimiento de navegación
     browserTracingIntegration({
-      // Propagación de traces a estas URLs
-      tracePropagationTargets: [
-        'localhost',
-        /^\//,
-        /^https?:\/\/.*\.onrender\.com/, // Backend en Render
-        import.meta.env.VITE_API_BASE_URL, // Backend desde .env
-      ],
       // Seguimiento de interacciones de usuario
       traceFetch: true,
       traceXHR: true,
@@ -86,8 +79,8 @@ if (!SENTRY_CONFIG.dsn) {
       blockAllMedia: false, // Bloquear imágenes/videos (recomendado en producción)
 
       // Configuración de privacidad
-      maskTextSelector: '.sensitive', // Enmascarar elementos con clase .sensitive
-      blockSelector: '.private', // Bloquear completamente elementos con clase .private
+      // Nota: maskTextSelector y blockSelector removidos en Sentry 10
+      // Usar maskAllText: true para enmascarar todo el texto si es necesario
 
       // Ignorar errores de red específicos
       networkDetailAllowUrls: [
@@ -139,8 +132,16 @@ if (!SENTRY_CONFIG.dsn) {
     replaysOnErrorSampleRate: SENTRY_CONFIG.replaysOnErrorSampleRate,
 
     // ===== CONFIGURACIÓN GENERAL =====
-    autoSessionTracking: SENTRY_CONFIG.autoSessionTracking,
+    // autoSessionTracking removido en Sentry 10
     attachStacktrace: SENTRY_CONFIG.attachStacktrace,
+
+    // Propagación de traces (movido desde browserTracingIntegration en v10)
+    tracePropagationTargets: [
+      'localhost',
+      /^\//,
+      /^https?:\/\/.*\.onrender\.com/,
+      import.meta.env.VITE_API_BASE_URL,
+    ],
 
     // Normalización de URLs (remover query strings con datos sensibles)
     normalizeDepth: 5,
@@ -172,8 +173,8 @@ if (!SENTRY_CONFIG.dsn) {
         delete event.request.headers?.Cookie;
 
         // Remover datos sensibles del cuerpo
-        if (event.request.data) {
-          const sanitized = { ...event.request.data };
+        if (event.request.data && typeof event.request.data === 'object') {
+          const sanitized = { ...(event.request.data as Record<string, unknown>) };
           delete sanitized.password;
           delete sanitized.access_token;
           delete sanitized.refresh_token;

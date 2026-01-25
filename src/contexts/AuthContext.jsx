@@ -6,7 +6,6 @@
  */
 
 import { createContext, useContext, useState, useCallback, useEffect } from 'react';
-import PropTypes from 'prop-types';
 import { setCsrfTokenGlobal } from './csrfTokenSync';
 
 // Create the context
@@ -21,26 +20,33 @@ const AuthContext = createContext(null);
  * - csrfToken: CSRF token from backend (required for POST/PUT/PATCH/DELETE)
  */
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
-  const [csrfToken, setCsrfToken] = useState(null);
-  const [isInitialized, setIsInitialized] = useState(false);
-
   /**
-   * Initialize auth state from localStorage (legacy compatibility)
-   * TODO: Remove localStorage dependency in future versions (use only httpOnly cookies)
+   * Initialize user from localStorage using lazy initializer
+   * This avoids calling setState in useEffect (better performance + no lint warning)
    */
-  useEffect(() => {
-    const storedUser = localStorage.getItem('user');
-    if (storedUser) {
-      try {
-        setUser(JSON.parse(storedUser));
-      } catch (error) {
-        console.error('Failed to parse stored user:', error);
+  const [user, setUser] = useState(() => {
+    // Guard for SSR and environments without localStorage
+    if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
+      return null;
+    }
+
+    try {
+      const storedUser = localStorage.getItem('user');
+      if (storedUser) {
+        return JSON.parse(storedUser);
+      }
+    } catch (error) {
+      console.error('Failed to parse stored user:', error);
+      // Safe cleanup: only remove if localStorage is available
+      if (typeof localStorage !== 'undefined') {
         localStorage.removeItem('user');
       }
     }
-    setIsInitialized(true);
-  }, []);
+    return null;
+  });
+
+  const [csrfToken, setCsrfToken] = useState(null);
+  const [isInitialized] = useState(true); // Always true since we use lazy initializer
 
   /**
    * Update user state
@@ -88,10 +94,6 @@ export const AuthProvider = ({ children }) => {
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
-AuthProvider.propTypes = {
-  children: PropTypes.node.isRequired,
-};
-
 /**
  * Enhanced AuthProvider that syncs CSRF token to global variable
  * This allows api.js to access the token synchronously
@@ -102,10 +104,6 @@ export const AuthProviderWithGlobalSync = ({ children }) => {
       <CsrfTokenSyncWrapper>{children}</CsrfTokenSyncWrapper>
     </AuthProvider>
   );
-};
-
-AuthProviderWithGlobalSync.propTypes = {
-  children: PropTypes.node.isRequired,
 };
 
 /**
@@ -119,10 +117,6 @@ const CsrfTokenSyncWrapper = ({ children }) => {
   }, [csrfToken]);
 
   return children;
-};
-
-CsrfTokenSyncWrapper.propTypes = {
-  children: PropTypes.node.isRequired,
 };
 
 export default AuthContext;

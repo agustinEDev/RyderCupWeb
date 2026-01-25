@@ -1,5 +1,4 @@
 import { Component } from 'react';
-import PropTypes from 'prop-types';
 
 /**
  * Error Boundary specifically for handling lazy loading failures
@@ -91,9 +90,5 @@ class LazyLoadErrorBoundary extends Component {
     return this.props.children;
   }
 }
-
-LazyLoadErrorBoundary.propTypes = {
-  children: PropTypes.node.isRequired,
-};
 
 export default LazyLoadErrorBoundary;

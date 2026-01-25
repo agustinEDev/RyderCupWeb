@@ -6,9 +6,9 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
 import { useEditProfile } from './useEditProfile';
+import customToast from '../utils/toast';
 import * as composition from '../composition';
 import * as useAuthHook from './useAuth';
-import toast from 'react-hot-toast';
 
 // Mock dependencies
 vi.mock('../composition', () => ({
@@ -28,6 +28,17 @@ vi.mock('react-hot-toast', () => ({
   default: {
     success: vi.fn(),
     error: vi.fn(),
+    custom: vi.fn(),
+    dismiss: vi.fn(),
+  },
+}));
+
+vi.mock('../utils/toast', () => ({
+  default: {
+    success: vi.fn(),
+    error: vi.fn(),
+    info: vi.fn(),
+    dismiss: vi.fn(),
   },
 }));
 
@@ -89,7 +100,7 @@ describe('useEditProfile - Password History', () => {
       });
 
       // Verify error toast was called with specific password history message
-      expect(toast.error).toHaveBeenCalledWith(
+      expect(customToast.error).toHaveBeenCalledWith(
         'Cannot reuse any of your last 5 passwords. Please choose a different password.',
         expect.objectContaining({
           duration: 8000,
@@ -126,7 +137,7 @@ describe('useEditProfile - Password History', () => {
         await result.current.handleUpdateSecurity({ preventDefault: vi.fn() });
       });
 
-      expect(toast.error).toHaveBeenCalledWith(
+      expect(customToast.error).toHaveBeenCalledWith(
         'Cannot reuse any of your last 5 passwords. Please choose a different password.',
         expect.objectContaining({
           duration: 8000,
@@ -164,7 +175,7 @@ describe('useEditProfile - Password History', () => {
       });
 
       // Should show generic error, not password history error
-      expect(toast.error).toHaveBeenCalledWith('Invalid current password');
+      expect(customToast.error).toHaveBeenCalledWith('Invalid current password');
     });
 
     it('should successfully update password when not reusing old passwords', async () => {
@@ -200,10 +211,10 @@ describe('useEditProfile - Password History', () => {
         await result.current.handleUpdateSecurity({ preventDefault: vi.fn() });
       });
 
-      expect(toast.success).toHaveBeenCalledWith(
+      expect(customToast.success).toHaveBeenCalledWith(
         'Security settings updated successfully!'
       );
-      expect(toast.error).not.toHaveBeenCalled();
+      expect(customToast.error).not.toHaveBeenCalled();
       expect(refetchMock).toHaveBeenCalled();
     });
   });

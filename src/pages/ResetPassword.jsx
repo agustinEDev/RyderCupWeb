@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useSearchParams, useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import toast from 'react-hot-toast';
+import customToast from '../utils/toast';
 import { useTranslation } from 'react-i18next';
 import { validatePassword } from '../utils/validation';
 import PasswordInput from '../components/ui/PasswordInput';
@@ -148,7 +148,7 @@ const ResetPassword = () => {
     try {
       await resetPasswordUseCase.execute(token, formData.newPassword);
 
-      toast.success(t('resetPassword.success'), {
+      customToast.success(t('resetPassword.success'), {
         duration: 5000,
       });
 
@@ -165,18 +165,18 @@ const ResetPassword = () => {
 
       // Manejo de errores específicos
       if (error.message.includes('Rate limit') || error.message.includes('Too many')) {
-        toast.error(t('resetPassword.rateLimitError'), {
+        customToast.error(t('resetPassword.rateLimitError'), {
           duration: 6000,
         });
       } else if (error.message.includes('invalid') || error.message.includes('expired')) {
-        toast.error(t('resetPassword.tokenInvalidMessage'), {
+        customToast.error(t('resetPassword.tokenInvalidMessage'), {
           duration: 6000,
         });
         // Marcar token como inválido para mostrar UI de error
         setTokenState('invalid');
         setTokenMessage(error.message);
       } else {
-        toast.error(error.message || t('resetPassword.error'), {
+        customToast.error(error.message || t('resetPassword.error'), {
           duration: 5000,
         });
       }

@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import toast from 'react-hot-toast';
+import customToast from '../utils/toast';
 import useInactivityLogout from './useInactivityLogout';
 
 // Mock de react-hot-toast
@@ -9,11 +10,22 @@ vi.mock('react-hot-toast', () => {
   toastFn.error = vi.fn();
   toastFn.success = vi.fn();
   toastFn.dismiss = vi.fn();
+  toastFn.custom = vi.fn();
 
   return {
     default: toastFn
   };
 });
+
+// Mock customToast
+vi.mock('../utils/toast', () => ({
+  default: {
+    success: vi.fn(),
+    error: vi.fn(),
+    info: vi.fn(),
+    dismiss: vi.fn(),
+  },
+}));
 
 describe('useInactivityLogout', () => {
   let onLogoutMock;
@@ -278,7 +290,7 @@ describe('useInactivityLogout', () => {
       });
 
       // Verificar toast de error
-      expect(toast.error).toHaveBeenCalledWith(
+      expect(customToast.error).toHaveBeenCalledWith(
         'Tu sesión ha expirado por inactividad',
         expect.objectContaining({
           duration: 4000,
@@ -306,7 +318,7 @@ describe('useInactivityLogout', () => {
       });
 
       // Verificar que toast.dismiss fue llamado (limpieza)
-      expect(toast.dismiss).toHaveBeenCalled();
+      expect(customToast.dismiss).toHaveBeenCalled();
     });
   });
 
@@ -380,7 +392,7 @@ describe('useInactivityLogout', () => {
       unmount();
 
       // Verificar que se llamó toast.dismiss
-      expect(toast.dismiss).toHaveBeenCalled();
+      expect(customToast.dismiss).toHaveBeenCalled();
     });
   });
 
