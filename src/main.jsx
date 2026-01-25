@@ -12,7 +12,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     <AuthProviderWithGlobalSync>
       {/* Toast Notifications - En el nivel más alto para que siempre esté disponible */}
       <Toaster
-        position="top-right"
+        position="bottom-right"
         toastOptions={{
           duration: 4000,
           style: {
@@ -22,6 +22,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
             borderRadius: '0.5rem',
             padding: '16px',
             fontSize: '14px',
+            boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
           },
           success: {
             iconTheme: {

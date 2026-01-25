@@ -1,7 +1,7 @@
 import { renderHook, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { useEditProfile } from './useEditProfile';
-import toast from 'react-hot-toast';
+import customToast from '../utils/toast';
 
 // Importar el hook useEditProfile
 // import duplicada eliminada
@@ -24,6 +24,17 @@ vi.mock('react-hot-toast', () => ({
     success: vi.fn(),
     error: vi.fn(),
     warn: vi.fn(),
+    custom: vi.fn(),
+    dismiss: vi.fn(),
+  },
+}));
+
+vi.mock('../utils/toast', () => ({
+  default: {
+    success: vi.fn(),
+    error: vi.fn(),
+    info: vi.fn(),
+    dismiss: vi.fn(),
   },
 }));
 
@@ -160,7 +171,7 @@ describe('useEditProfile Hook', () => {
     );
 
     expect(mockRefetch).toHaveBeenCalled();
-    expect(toast.success).toHaveBeenCalledWith('Profile updated successfully!');
+    expect(customToast.success).toHaveBeenCalledWith('Profile updated successfully!');
     expect(result.current.isSaving).toBe(false); // Asegurarse de que el estado de guardado se resetea
   });
 
@@ -222,7 +233,7 @@ describe('useEditProfile Hook', () => {
     });
 
     expect(mockRefetch).toHaveBeenCalled();
-    expect(toast.success).toHaveBeenCalledWith('Security settings updated successfully!');
+    expect(customToast.success).toHaveBeenCalledWith('Security settings updated successfully!');
     expect(result.current.isSaving).toBe(false); // Asegurarse de que el estado de guardado se resetea
 
     // Verificar que los campos de contraseña se han limpiado
@@ -277,7 +288,7 @@ describe('useEditProfile Hook', () => {
     });
 
     expect(mockRefetch).toHaveBeenCalled();
-    expect(toast.success).toHaveBeenCalledWith('Handicap updated successfully!');
+    expect(customToast.success).toHaveBeenCalledWith('Handicap updated successfully!');
     expect(result.current.isSaving).toBe(false);
   });
 
@@ -333,7 +344,7 @@ describe('useEditProfile Hook', () => {
     });
 
     expect(mockRefetch).toHaveBeenCalled();
-    expect(toast.success).toHaveBeenCalledWith('Handicap updated from RFEG successfully!');
+    expect(customToast.success).toHaveBeenCalledWith('Handicap updated from RFEG successfully!');
     expect(result.current.isUpdatingRFEG).toBe(false); // Asegurarse de que el estado se resetea
     expect(result.current.formData.handicap).toBe(rfegHandicap.toString()); // Verificar que formData se actualizó
   });

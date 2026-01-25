@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import toast from 'react-hot-toast';
+import customToast from '../utils/toast';
 import { useTranslation } from 'react-i18next';
 import { validateEmail, checkRateLimit, resetRateLimit } from '../utils/validation';
 import { safeLog } from '../utils/auth';
@@ -59,7 +59,7 @@ const Login = () => {
 
     const rateLimit = checkRateLimit('login', 5, 300000);
     if (!rateLimit.allowed) {
-      toast.error(`Too many attempts. Please wait ${rateLimit.remainingTime} seconds.`, {
+      customToast.error(`Too many attempts. Please wait ${rateLimit.remainingTime} seconds.`, {
         duration: 5000,
       });
       return;
@@ -76,13 +76,12 @@ const Login = () => {
       updateCsrfToken(csrfToken);
 
       resetRateLimit('login');
-      toast.success(t('login.welcomeMessage', { name: authenticatedUser.firstName }));
+      customToast.success(t('login.welcomeMessage', { name: authenticatedUser.firstName }));
 
       if (!authenticatedUser.emailVerified) {
         safeLog('info', 'Email verification required');
-        toast(t('login.verifyEmailMessage'), {
+        customToast.info(t('login.verifyEmailMessage'), {
           duration: 5000,
-          icon: '⚠️',
         });
       }
 
@@ -100,12 +99,12 @@ const Login = () => {
 
       // v1.13.0: Handle Account Lockout (HTTP 423) with special UI treatment
       if (error.message && error.message.includes('Account locked')) {
-        toast.error(error.message, {
+        customToast.error(error.message, {
           duration: 10000, // Longer duration for important security message
           icon: '🔒',
         });
       } else {
-        toast.error(error.message || t('login.error'), {
+        customToast.error(error.message || t('login.error'), {
           duration: 5000,
         });
       }

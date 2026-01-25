@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
+import { BarChart3, Trophy, Users, Zap } from 'lucide-react';
 import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
 
@@ -38,7 +39,7 @@ const Landing = () => {
         <Header />
 
         {/* Hero Section - Completely Redesigned */}
-        <section className="relative overflow-hidden bg-gradient-to-br from-primary-50 via-white to-accent-50">
+        <section className="relative overflow-hidden bg-gradient-to-br from-primary-50 via-white to-accent-50 pb-16">
           <div className="absolute inset-0 bg-[url('/images/golf-background.jpeg')] bg-cover bg-center opacity-5" />
 
           <div className="relative px-4 md:px-8 py-16 md:py-24 max-w-7xl mx-auto">
@@ -65,13 +66,12 @@ const Landing = () => {
                 <motion.div variants={fadeInUp} className="space-y-4">
                   <h1 className="text-4xl md:text-5xl lg:text-6xl font-black leading-tight tracking-tight text-gray-900 font-poppins">
                     {t('hero.title')}{' '}
-                    <span className="bg-gradient-to-r from-primary to-primary-600 bg-clip-text text-transparent">
+                    <span className="text-primary">
                       {t('hero.brand')}
                     </span>
                   </h1>
                   <div className="flex items-center gap-3">
                     <div className="h-1 w-12 bg-accent rounded-full" />
-                    <span className="text-xl md:text-2xl font-bold text-primary">RCF</span>
                   </div>
                 </motion.div>
 
@@ -171,7 +171,7 @@ const Landing = () => {
           </div>
 
           {/* Wave Divider */}
-          <div className="absolute bottom-0 left-0 right-0">
+          <div className="absolute bottom-0 left-0 right-0 z-0 pointer-events-none">
             <svg viewBox="0 0 1440 120" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full">
               <path d="M0 0L60 10C120 20 240 40 360 45C480 50 600 40 720 35C840 30 960 30 1080 35C1200 40 1320 50 1380 55L1440 60V120H1380C1320 120 1200 120 1080 120C960 120 840 120 720 120C600 120 480 120 360 120C240 120 120 120 60 120H0V0Z" fill="white"/>
             </svg>
@@ -179,7 +179,7 @@ const Landing = () => {
         </section>
 
         {/* Features Section - Redesigned */}
-        <section id="features" className="px-4 md:px-8 py-16 md:py-24 max-w-7xl mx-auto">
+        <section id="features" className="relative z-10 bg-white px-4 md:px-8 py-16 md:py-24 max-w-7xl mx-auto">
           <motion.div
             initial="initial"
             whileInView="animate"
@@ -202,16 +202,14 @@ const Landing = () => {
               variants={staggerContainer}
               className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"
             >
-              {/* Feature 1 */}
+              {/* Feature 1 - Handicap Management */}
               <motion.div
                 variants={fadeInUp}
                 whileHover={{ y: -8, transition: { duration: 0.2 } }}
                 className="group relative bg-white rounded-2xl p-6 border border-gray-200 hover:border-primary hover:shadow-xl transition-all duration-300"
               >
                 <div className="w-12 h-12 bg-primary-100 rounded-xl flex items-center justify-center mb-4 group-hover:bg-primary group-hover:scale-110 transition-all duration-300">
-                  <svg className="w-6 h-6 text-primary group-hover:text-white transition-colors" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 256 256">
-                    <path d="M232,64H208V56a16,16,0,0,0-16-16H64A16,16,0,0,0,48,56v8H24A16,16,0,0,0,8,80V96a40,40,0,0,0,40,40h3.65A80.13,80.13,0,0,0,120,191.61V216H96a8,8,0,0,0,0,16h64a8,8,0,0,0,0-16H136V191.58c31.94-3.23,58.44-25.64,68.08-55.58H208a40,40,0,0,0,40-40V80A16,16,0,0,0,232,64Z" />
-                  </svg>
+                  <BarChart3 className="w-6 h-6 text-primary group-hover:text-white transition-colors" />
                 </div>
                 <h3 className="text-xl font-bold text-gray-900 mb-2 font-poppins">{t('features.handicap.title')}</h3>
                 <p className="text-gray-600 text-sm leading-relaxed">
@@ -219,16 +217,14 @@ const Landing = () => {
                 </p>
               </motion.div>
 
-              {/* Feature 2 */}
+              {/* Feature 2 - Ryder Cup Format */}
               <motion.div
                 variants={fadeInUp}
                 whileHover={{ y: -8, transition: { duration: 0.2 } }}
                 className="group relative bg-white rounded-2xl p-6 border border-gray-200 hover:border-primary hover:shadow-xl transition-all duration-300"
               >
                 <div className="w-12 h-12 bg-accent-400/20 rounded-xl flex items-center justify-center mb-4 group-hover:bg-accent group-hover:scale-110 transition-all duration-300">
-                  <svg className="w-6 h-6 text-accent-600 group-hover:text-white transition-colors" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 256 256">
-                    <path d="M117.25,157.92a60,60,0,1,0-66.5,0A95.83,95.83,0,0,0,3.53,195.63a8,8,0,1,0,13.4,8.74,80,80,0,0,1,134.14,0,8,8,0,0,0,13.4-8.74A95.83,95.83,0,0,0,117.25,157.92ZM40,108a44,44,0,1,1,44,44A44.05,44.05,0,0,1,40,108Zm210.14,98.7a8,8,0,0,1-11.07-2.33A79.83,79.83,0,0,0,172,168a8,8,0,0,1,0-16,44,44,0,1,0-16.34-84.87,8,8,0,1,1-5.94-14.85,60,60,0,0,1,55.53,105.64,95.83,95.83,0,0,1,47.22,37.71A8,8,0,0,1,250.14,206.7Z" />
-                  </svg>
+                  <Trophy className="w-6 h-6 text-accent-600 group-hover:text-white transition-colors" />
                 </div>
                 <h3 className="text-xl font-bold text-gray-900 mb-2 font-poppins">{t('features.format.title')}</h3>
                 <p className="text-gray-600 text-sm leading-relaxed">
@@ -236,16 +232,14 @@ const Landing = () => {
                 </p>
               </motion.div>
 
-              {/* Feature 3 */}
+              {/* Feature 3 - Team Management */}
               <motion.div
                 variants={fadeInUp}
                 whileHover={{ y: -8, transition: { duration: 0.2 } }}
                 className="group relative bg-white rounded-2xl p-6 border border-gray-200 hover:border-primary hover:shadow-xl transition-all duration-300"
               >
                 <div className="w-12 h-12 bg-navy-800/10 rounded-xl flex items-center justify-center mb-4 group-hover:bg-navy-800 group-hover:scale-110 transition-all duration-300">
-                  <svg className="w-6 h-6 text-navy-800 group-hover:text-white transition-colors" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 256 256">
-                    <path d="M244.8,150.4a8,8,0,0,1-11.2-1.6A51.6,51.6,0,0,0,192,128a8,8,0,0,1-7.37-4.89,8,8,0,0,1,0-6.22A8,8,0,0,1,192,112a24,24,0,1,0-23.24-30,8,8,0,1,1-15.5-4A40,40,0,1,1,219,117.51a67.94,67.94,0,0,1,27.43,21.68A8,8,0,0,1,244.8,150.4Z" />
-                  </svg>
+                  <Users className="w-6 h-6 text-navy-800 group-hover:text-white transition-colors" />
                 </div>
                 <h3 className="text-xl font-bold text-gray-900 mb-2 font-poppins">{t('features.team.title')}</h3>
                 <p className="text-gray-600 text-sm leading-relaxed">
@@ -253,16 +247,14 @@ const Landing = () => {
                 </p>
               </motion.div>
 
-              {/* Feature 4 */}
+              {/* Feature 4 - Live Scoring */}
               <motion.div
                 variants={fadeInUp}
                 whileHover={{ y: -8, transition: { duration: 0.2 } }}
                 className="group relative bg-white rounded-2xl p-6 border border-gray-200 hover:border-primary hover:shadow-xl transition-all duration-300"
               >
                 <div className="w-12 h-12 bg-primary-100 rounded-xl flex items-center justify-center mb-4 group-hover:bg-primary group-hover:scale-110 transition-all duration-300">
-                  <svg className="w-6 h-6 text-primary group-hover:text-white transition-colors" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 256 256">
-                    <path d="M216,40H136V24a8,8,0,0,0-16,0V40H40A16,16,0,0,0,24,56V176a16,16,0,0,0,16,16H79.36L57.75,219a8,8,0,0,0,12.5,10l29.59-37h56.32l29.59,37a8,8,0,1,0,12.5-10l-21.61-27H216a16,16,0,0,0,16-16V56A16,16,0,0,0,216,40Z" />
-                  </svg>
+                  <Zap className="w-6 h-6 text-primary group-hover:text-white transition-colors" />
                 </div>
                 <h3 className="text-xl font-bold text-gray-900 mb-2 font-poppins">{t('features.scoring.title')}</h3>
                 <p className="text-gray-600 text-sm leading-relaxed">
@@ -354,12 +346,12 @@ const Landing = () => {
             whileInView="animate"
             viewport={{ once: true }}
             variants={fadeInUp}
-            className="max-w-4xl mx-auto text-center bg-gradient-to-br from-primary to-primary-700 rounded-3xl p-12 md:p-16 relative overflow-hidden"
+            className="max-w-4xl mx-auto text-center bg-gradient-to-r from-primary-600 to-primary-700 rounded-3xl p-12 md:p-16 relative overflow-hidden shadow-2xl"
           >
-            {/* Background Pattern */}
-            <div className="absolute inset-0 opacity-10">
-              <div className="absolute top-0 left-0 w-64 h-64 bg-white rounded-full -translate-x-1/2 -translate-y-1/2" />
-              <div className="absolute bottom-0 right-0 w-96 h-96 bg-white rounded-full translate-x-1/2 translate-y-1/2" />
+            {/* Background Pattern - Subtle */}
+            <div className="absolute inset-0 opacity-5">
+              <div className="absolute top-0 right-0 w-96 h-96 bg-white rounded-full translate-x-1/3 -translate-y-1/3" />
+              <div className="absolute bottom-0 left-0 w-80 h-80 bg-white rounded-full -translate-x-1/3 translate-y-1/3" />
             </div>
 
             <div className="relative z-10">

@@ -14,7 +14,7 @@
  * @see src/config/dependencies.py:576-583 (backend)
  */
 
-import toast from 'react-hot-toast';
+import customToast from './toast';
 
 // localStorage key to track if we've already handled device revocation
 const REVOCATION_HANDLED_KEY = 'device_revocation_handled';
@@ -132,7 +132,7 @@ export const handleDeviceRevocationLogout = (errorData = null) => {
 
   const message = messages[detectedLang] || messages.en;
 
-  toast.error(message, {
+  customToast.error(message, {
     duration: 8000,
     icon: isExplicitRevocation ? '🔒' : '⏱️',
   });

@@ -1,4 +1,3 @@
-import PropTypes from 'prop-types';
 import { useTranslation } from 'react-i18next';
 import { useEffect, useRef } from 'react';
 
@@ -74,7 +73,7 @@ const ConfirmModal = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4"
       onClick={isLoading ? undefined : onCancel}
       role="dialog"
       aria-modal="true"
@@ -161,18 +160,6 @@ const ConfirmModal = ({
       </div>
     </div>
   );
-};
-
-ConfirmModal.propTypes = {
-  isOpen: PropTypes.bool.isRequired,
-  title: PropTypes.string.isRequired,
-  message: PropTypes.string.isRequired,
-  onConfirm: PropTypes.func.isRequired,
-  onCancel: PropTypes.func.isRequired,
-  confirmText: PropTypes.string,
-  cancelText: PropTypes.string,
-  isDestructive: PropTypes.bool,
-  isLoading: PropTypes.bool,
 };
 
 export default ConfirmModal;

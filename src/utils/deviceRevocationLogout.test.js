@@ -5,12 +5,15 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { isDeviceRevoked, handleDeviceRevocationLogout } from './deviceRevocationLogout';
-import toast from 'react-hot-toast';
+import customToast from './toast';
 
-// Mock toast
-vi.mock('react-hot-toast', () => ({
+// Mock customToast
+vi.mock('./toast', () => ({
   default: {
     error: vi.fn(),
+    success: vi.fn(),
+    info: vi.fn(),
+    dismiss: vi.fn(),
   },
 }));
 
@@ -146,7 +149,7 @@ describe('deviceRevocationLogout utilities', () => {
       handleDeviceRevocationLogout();
 
       // Without errorData, uses neutral "session ended" message with ⏱️ icon
-      expect(toast.error).toHaveBeenCalledWith(
+      expect(customToast.error).toHaveBeenCalledWith(
         expect.any(String),
         expect.objectContaining({
           duration: 8000,
@@ -211,7 +214,7 @@ describe('deviceRevocationLogout utilities', () => {
       handleDeviceRevocationLogout();
 
       // No errorData -> neutral session expiration message
-      expect(toast.error).toHaveBeenCalledWith(
+      expect(customToast.error).toHaveBeenCalledWith(
         'Tu sesión ha terminado. Por favor, inicia sesión nuevamente.',
         expect.objectContaining({ duration: 8000, icon: '⏱️' })
       );
@@ -226,7 +229,7 @@ describe('deviceRevocationLogout utilities', () => {
       handleDeviceRevocationLogout();
 
       // No errorData -> neutral session expiration message
-      expect(toast.error).toHaveBeenCalledWith(
+      expect(customToast.error).toHaveBeenCalledWith(
         'Your session has ended. Please sign in again.',
         expect.objectContaining({ duration: 8000, icon: '⏱️' })
       );
@@ -239,7 +242,7 @@ describe('deviceRevocationLogout utilities', () => {
       handleDeviceRevocationLogout();
 
       // No errorData -> neutral session expiration message
-      expect(toast.error).toHaveBeenCalledWith(
+      expect(customToast.error).toHaveBeenCalledWith(
         'Tu sesión ha terminado. Por favor, inicia sesión nuevamente.',
         expect.objectContaining({ duration: 8000, icon: '⏱️' })
       );
@@ -252,7 +255,7 @@ describe('deviceRevocationLogout utilities', () => {
       handleDeviceRevocationLogout();
 
       // No errorData -> neutral session expiration message
-      expect(toast.error).toHaveBeenCalledWith(
+      expect(customToast.error).toHaveBeenCalledWith(
         'Your session has ended. Please sign in again.',
         expect.objectContaining({ duration: 8000, icon: '⏱️' })
       );
@@ -267,7 +270,7 @@ describe('deviceRevocationLogout utilities', () => {
       handleDeviceRevocationLogout();
 
       // No errorData -> neutral session expiration message
-      expect(toast.error).toHaveBeenCalledWith(
+      expect(customToast.error).toHaveBeenCalledWith(
         'Tu sesión ha terminado. Por favor, inicia sesión nuevamente.',
         expect.objectContaining({ duration: 8000, icon: '⏱️' })
       );
@@ -282,7 +285,7 @@ describe('deviceRevocationLogout utilities', () => {
       handleDeviceRevocationLogout();
 
       // No errorData -> neutral session expiration message
-      expect(toast.error).toHaveBeenCalledWith(
+      expect(customToast.error).toHaveBeenCalledWith(
         'Your session has ended. Please sign in again.',
         expect.objectContaining({ duration: 8000, icon: '⏱️' })
       );
@@ -300,7 +303,7 @@ describe('deviceRevocationLogout utilities', () => {
 
       // Should use Spanish (from i18nextLng), not English (from navigator)
       // No errorData -> neutral session expiration message
-      expect(toast.error).toHaveBeenCalledWith(
+      expect(customToast.error).toHaveBeenCalledWith(
         'Tu sesión ha terminado. Por favor, inicia sesión nuevamente.',
         expect.objectContaining({ duration: 8000, icon: '⏱️' })
       );
@@ -317,7 +320,7 @@ describe('deviceRevocationLogout utilities', () => {
       handleDeviceRevocationLogout();
 
       // No errorData -> neutral session expiration message
-      expect(toast.error).toHaveBeenCalledWith(
+      expect(customToast.error).toHaveBeenCalledWith(
         'Your session has ended. Please sign in again.',
         expect.objectContaining({ duration: 8000, icon: '⏱️' })
       );
@@ -341,7 +344,7 @@ describe('deviceRevocationLogout utilities', () => {
       const errorData = { detail: 'Dispositivo revocado. Por favor, inicia sesión nuevamente.' };
       handleDeviceRevocationLogout(errorData);
 
-      expect(toast.error).toHaveBeenCalledWith(
+      expect(customToast.error).toHaveBeenCalledWith(
         'Your session has been closed. This device was revoked from another device.',
         expect.objectContaining({ duration: 8000, icon: '🔒' })
       );
@@ -351,7 +354,7 @@ describe('deviceRevocationLogout utilities', () => {
       const errorData = { detail: 'Device revoked. Please sign in again.' };
       handleDeviceRevocationLogout(errorData);
 
-      expect(toast.error).toHaveBeenCalledWith(
+      expect(customToast.error).toHaveBeenCalledWith(
         'Your session has been closed. This device was revoked from another device.',
         expect.objectContaining({ duration: 8000, icon: '🔒' })
       );
@@ -361,7 +364,7 @@ describe('deviceRevocationLogout utilities', () => {
       const errorData = { detail: 'Refresh token inválido o expirado' };
       handleDeviceRevocationLogout(errorData);
 
-      expect(toast.error).toHaveBeenCalledWith(
+      expect(customToast.error).toHaveBeenCalledWith(
         'Your session has ended. Please sign in again.',
         expect.objectContaining({ duration: 8000, icon: '⏱️' })
       );
@@ -371,7 +374,7 @@ describe('deviceRevocationLogout utilities', () => {
       const errorData = { detail: 'Refresh token invalid or expired' };
       handleDeviceRevocationLogout(errorData);
 
-      expect(toast.error).toHaveBeenCalledWith(
+      expect(customToast.error).toHaveBeenCalledWith(
         'Your session has ended. Please sign in again.',
         expect.objectContaining({ duration: 8000, icon: '⏱️' })
       );
@@ -381,7 +384,7 @@ describe('deviceRevocationLogout utilities', () => {
       const errorData = { detail: 'Some generic error message' };
       handleDeviceRevocationLogout(errorData);
 
-      expect(toast.error).toHaveBeenCalledWith(
+      expect(customToast.error).toHaveBeenCalledWith(
         'Your session has ended. Please sign in again.',
         expect.objectContaining({ duration: 8000, icon: '⏱️' })
       );
@@ -396,7 +399,7 @@ describe('deviceRevocationLogout utilities', () => {
       const errorData = { detail: 'Dispositivo revocado desde otro lugar' };
       handleDeviceRevocationLogout(errorData);
 
-      expect(toast.error).toHaveBeenCalledWith(
+      expect(customToast.error).toHaveBeenCalledWith(
         'Tu sesión ha sido cerrada. Este dispositivo fue revocado desde otro dispositivo.',
         expect.objectContaining({ duration: 8000, icon: '🔒' })
       );

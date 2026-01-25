@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import toast from 'react-hot-toast';
+import customToast from '../utils/toast';
 import { useTranslation } from 'react-i18next';
 import { validateEmail } from '../utils/validation';
 import { requestPasswordResetUseCase } from '../composition';
@@ -44,7 +44,7 @@ const ForgotPassword = () => {
     try {
       await requestPasswordResetUseCase.execute(email);
 
-      toast.success(t('forgotPassword.success'));
+      customToast.success(t('forgotPassword.success'));
       setSubmitted(true);
 
     } catch (error) {
@@ -52,11 +52,11 @@ const ForgotPassword = () => {
 
       // Manejo de rate limiting (429)
       if (error.message.includes('Rate limit') || error.message.includes('Too many')) {
-        toast.error(t('forgotPassword.rateLimitError'), {
+        customToast.error(t('forgotPassword.rateLimitError'), {
           duration: 6000,
         });
       } else {
-        toast.error(error.message || t('forgotPassword.error'), {
+        customToast.error(error.message || t('forgotPassword.error'), {
           duration: 5000,
         });
       }

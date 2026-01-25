@@ -340,50 +340,44 @@ export const captureMessage = (message, level = 'info', extra = {}) => {
 // ============================================
 
 /**
- * Inicia una transacción personalizada para medir rendimiento
+ * ⚠️ DEPRECATED: startTransaction was removed in Sentry 10
  *
- * @param {string} name - Nombre de la transacción
- * @param {string} op - Operación (ej: 'http.request', 'db.query', 'task')
- * @returns {Transaction} - Objeto de transacción
+ * Sentry 10 uses automatic performance monitoring via browserTracingIntegration.
+ * For manual instrumentation, use Sentry.startSpan() instead.
  *
- * @example
- * const transaction = startTransaction('Load User Dashboard', 'navigation');
- * // ... realizar operaciones ...
+ * @see https://docs.sentry.io/platforms/javascript/guides/react/performance/instrumentation/custom-instrumentation/
+ *
+ * Migration example:
+ * ```
+ * // Old (Sentry 7):
+ * const transaction = Sentry.startTransaction({ name: 'myTransaction' });
  * transaction.finish();
- */
-export const startTransaction = (name, op = 'task') => {
-  return Sentry.startTransaction({
-    name,
-    op,
-  });
-};
-
-/**
- * Mide el rendimiento de una función asíncrona
  *
- * @param {string} transactionName - Nombre de la transacción
- * @param {Function} asyncFn - Función asíncrona a medir
- * @returns {Promise} - Resultado de la función
- *
- * @example
- * const result = await measurePerformance('Fetch Competitions', async () => {
- *   return await fetch('/api/v1/competitions');
+ * // New (Sentry 10):
+ * Sentry.startSpan({ name: 'mySpan', op: 'task' }, async (span) => {
+ *   // ... do work ...
  * });
+ * ```
  */
-export const measurePerformance = async (transactionName, asyncFn) => {
-  const transaction = startTransaction(transactionName);
 
-  try {
-    const result = await asyncFn();
-    transaction.setStatus('ok');
-    return result;
-  } catch (error) {
-    transaction.setStatus('internal_error');
-    throw error;
-  } finally {
-    transaction.finish();
-  }
-};
+// Commented out deprecated functions (not used in codebase)
+// export const startTransaction = (name, op = 'task') => {
+//   return Sentry.startTransaction({ name, op });
+// };
+
+// export const measurePerformance = async (transactionName, asyncFn) => {
+//   const transaction = startTransaction(transactionName);
+//   try {
+//     const result = await asyncFn();
+//     transaction.setStatus('ok');
+//     return result;
+//   } catch (error) {
+//     transaction.setStatus('internal_error');
+//     throw error;
+//   } finally {
+//     transaction.finish();
+//   }
+// };
 
 // ============================================
 // HELPERS PARA FILTRAR DATOS SENSIBLES
@@ -444,9 +438,9 @@ export default {
   captureError,
   captureMessage,
 
-  // Performance
-  startTransaction,
-  measurePerformance,
+  // Performance (deprecated in Sentry 10 - use Sentry.startSpan instead)
+  // startTransaction,
+  // measurePerformance,
 
   // Utilities
   sanitizeSensitiveData,

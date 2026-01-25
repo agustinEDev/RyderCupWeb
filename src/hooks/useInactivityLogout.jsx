@@ -1,5 +1,6 @@
 import { useEffect, useRef, useCallback } from 'react';
 import toast from 'react-hot-toast';
+import customToast from '../utils/toast';
 
 /**
  * Hook personalizado para detectar inactividad del usuario y ejecutar logout automático
@@ -43,7 +44,7 @@ const useInactivityLogout = ({
     }
     // Cerrar toast de advertencia si existe
     if (warningToastIdRef.current) {
-      toast.dismiss(warningToastIdRef.current);
+      customToast.dismiss(warningToastIdRef.current);
       warningToastIdRef.current = null;
     }
   }, []);
@@ -56,7 +57,7 @@ const useInactivityLogout = ({
     clearTimers();
 
     // Mostrar toast informativo
-    toast.error('Tu sesión ha expirado por inactividad', {
+    customToast.error('Tu sesión ha expirado por inactividad', {
       duration: 4000,
       icon: '⏰'
     });
@@ -75,7 +76,7 @@ const useInactivityLogout = ({
 
     // Cerrar advertencia anterior si existe
     if (warningToastIdRef.current) {
-      toast.dismiss(warningToastIdRef.current);
+      customToast.dismiss(warningToastIdRef.current);
     }
 
     // Mostrar toast con botón de continuar
@@ -95,9 +96,9 @@ const useInactivityLogout = ({
           </div>
           <button
             onClick={() => {
-              toast.dismiss(t.id);
+              customToast.dismiss(t.id);
               resetTimer();
-              toast.success('Sesión renovada', { duration: 2000 });
+              customToast.success('Sesión renovada', { duration: 2000 });
             }}
             className="w-full px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors font-medium"
           >

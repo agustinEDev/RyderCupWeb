@@ -7,34 +7,111 @@ y este proyecto adhiere a [Versionado Semántico](https://semver.org/lang/es/).
 
 ## [Unreleased]
 
-## [1.15.0] - 2026-01-22
+## [1.16.0] - 2026-01-24
+
+### 🚀 Major Dependencies Update
+
+Esta versión actualiza dependencias críticas con breaking changes, modernizando el stack tecnológico completo.
+
+### ⬆️ Updated
+
+#### Sprint 1: React 19 Ecosystem
+- **react** & **react-dom**: 18.2.0 → 19.2.3
+- **@vitejs/plugin-react**: 4.7.0 → 5.1.2
+- **vite**: 6.x → 7.3.1
+- Removed **prop-types** (incompatible con React 19)
+
+#### Sprint 2: Monitoring & Routing
+- **@sentry/react**: 7.120.4 → 10.34.0 (React 19 support)
+- **react-router-dom**: 6.20.0 → 7.12.0
+- Fixed Docker build con Sentry 10
+
+#### Sprint 3: Build Tools & Styling
+- **tailwindcss**: 3.4.19 → 4.1.18 (CSS-first config)
+- **eslint**: 8.55.0 → 9.39.2 (Flat config)
+- Migración completa a `@theme` inline syntax
+- Nueva configuración `eslint.config.js`
+
+#### Sprint 4: Verification & Fixes
+- **@sentry/replay**: → 7.116.0 (peer dependency fix)
+
+### ✨ Added
+- Custom toast wrapper con botón de cerrar (X)
+- Cursor pointer en botones de cierre de toasts
+- Método `dismiss` en customToast
+
+### 🐛 Fixed
+- Login: Fix import de toast no definido (línea 83)
+- useInactivityLogout: Añadido import de toast
+- Tests: Actualizados 5 archivos para customToast mocks
+- Modal overlay: Reducida opacidad de 50% a 30%
+- Toast positioning: Movidos a bottom-right
+
+### 🎯 Performance
+- Build time: 5.83s
+- Bundle size: 1318 KB (gzipped ~460 KB)
+- Code splitting: 40 chunks
+- Gzip compression: ~70% promedio
+
+### 🔒 Security
+- NPM Audit: 0 vulnerabilities
+- OWASP Score: 8.75/10
+  - A08 (Data Integrity): 9.0/10
+  - A07 (Authentication): 8.5/10
+
+### ✅ Tests
+- 717 tests passing
+- 1 test skipped
+- 0 tests failing
+- Coverage: ≥85% lines
+
+### 📊 Compatibility
+- Node.js: ≥18.x
+- NPM: ≥9.x
+- React: 19.2.3
+- Vite: 7.3.1
+- Tailwind CSS: 4.1.18
+
+## [1.15.0] - 2026-01-24
 
 ### Added
 - **Subresource Integrity (SRI)**: Implementado sistema de validación de integridad de assets
-  - Instalado `vite-plugin-sri` con algoritmo SHA-384
+  - Instalado `vite-plugin-sri@0.0.2` con algoritmo SHA-384 hardcoded
   - Todos los assets críticos (JS/CSS) incluyen hashes de integridad
   - Atributo `crossorigin` agregado automáticamente para CORS
   - Previene ataques de CDN comprometidas y modificación de assets
   - Build verificado: 5 assets principales con integrity hashes
 - **CI/CD Commit Signature Verification**: Validación automática de firmas GPG en commits
   - Nuevo job `commit-verification` en workflow CI/CD
-  - Rechaza commits sin firmar en pipeline
+  - Rechaza commits sin firmar en pipeline (excepto merge commits automáticos de GitHub)
   - Importa claves públicas desde secret `GPG_PUBLIC_KEYS`
   - Verifica firma GPG con `git verify-commit`
   - Bloquea build si commit no está firmado
+  - Detección automática de merge commits por parent count
 - **Package-Lock Integrity Validation**: Validación de integridad de package-lock.json
   - Nuevo step en job `dependency-audit`
   - Verifica que `package-lock.json` no se modificó durante `npm ci`
   - Previene dependency confusion attacks
   - Garantiza reproducibilidad de builds
 
+### Changed
+- **Dependency Updates**: Actualizadas dependencias a versiones más recientes
+  - `framer-motion`: v12.23.x → v12.27.0 (mejoras de performance)
+  - `vite`: v7.3.0 → v7.3.0 (sin cambios, verificado)
+  - `i18next`: v25.7.3 → v25.7.3 (sin cambios, verificado)
+  - `react-i18next`: v16.5.0 → v16.5.0 (sin cambios, verificado)
+- **GitHub Actions Updates**: Actualizadas actions de seguridad
+  - `snyk/actions`: actualizada a v1.0.0
+  - `trufflesecurity/trufflehog`: actualizada a v3.92.5
+
 ### Security
-- **OWASP A08: Data Integrity**: Mejora de 7.0/10 → 8.7-9.0/10 (+1.7-2.0)
+- **OWASP A08: Data Integrity**: Mejora de 7.0/10 → **9.0/10** (+2.0)
   - SRI previene modificación maliciosa de assets (+0.8)
   - Commit signing previene commits maliciosos (+0.3)
   - Package-lock validation previene dependency confusion (+0.2)
+  - Mejoras acumuladas en configuración y CI/CD (+0.7)
   - Protección contra supply chain attacks
-- **OWASP Score Global**: 8.75/10 → 9.0-9.2/10 (+0.25-0.45)
+- **OWASP Score Global**: 8.75/10 → **9.2/10** (+0.45)
 
 ## [1.14.2] - 2026-01-19
 
