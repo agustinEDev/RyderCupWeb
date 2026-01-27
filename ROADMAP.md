@@ -7,242 +7,111 @@
 
 ---
 
-## 📋 Próximos Pasos (Planificado)
-
-### 🚀 Roadmap v2.1.0 - Competition Module Evolution
+## 🎯 Roadmap v2.1.0 - Sincronización Frontend & Backend
 
 > **Objetivo:** Convertir la gestión básica de torneos en un sistema completo de planificación, scoring y leaderboards en tiempo real.
-> **Duración:** 7 semanas (paralelo con backend v2.1.0)
+> **Duración:** 7 semanas (27 Ene 2026 - 17 Mar 2026)
+> **Estado:** 🟢 **100% Sincronizado con Backend v2.1.0**
 > **Backend compatible:** FastAPI v2.1.0 (RyderCupAm)
 
-#### 📦 Nuevas Dependencias Principales
+---
 
-```json
-{
-  "@tanstack/react-query": "^5.x",      // Caching y data fetching
-  "zustand": "^4.x",                     // State management global
-  "zod": "^3.x",                         // Validación de schemas
-  "@dnd-kit/core": "^6.x",               // Drag & Drop para scheduling
-  "react-hot-toast": "^2.x"              // Ya instalado, uso intensivo
-}
-```
+### 📝 Resumen de Sincronización con Backend (v2.1.0)
+
+Tras la revisión del prompt del backend, hemos actualizado nuestro plan para reflejar una sincronización total.
+
+- **Endpoints:** Confirmados **30 endpoints** (26 originales + 4 nuevos).
+- **Tests:** Aceptada la estimación de **75+ tests** del backend, enfocados en cobertura pragmática.
+- **Sprints:** Adoptada la estructura de **5 sprints** con fechas y sync points idénticos.
+- **DTOs y Validación:** Se utilizarán los schemas Pydantic del backend como **fuente de la verdad**.
+- **Lógica de Dominio:** Confirmados los 3 `Domain Services` que impulsarán la UI (Handicaps, Scoring, Leaderboards).
+- **Protocolo de Handoff:** Aceptado el proceso de entregas semanales.
 
 ---
 
-#### 📅 Sprint Breakdown (7 semanas)
+### 📅 Sprint Breakdown (Sincronizado con Backend)
 
-> **Fechas estimadas:** 27 Ene 2026 - 17 Mar 2026
+> **Fechas:** 27 Ene 2026 - 17 Mar 2026
 > **Equipo:** 1 Frontend Dev + 1 Backend Dev (paralelo)
 
----
-
-### 📌 Sprint 1: RBAC Foundation & Golf Courses (1.5 semanas)
-
-**Fechas:** 27 Ene - 6 Feb 2026
-**Owner:** Frontend Dev
-**Dependencias:** Backend API v2.1.0 Sprint 1 (roles endpoints)
-
-#### Tareas
-
-| # | Tarea | Esfuerzo | Prioridad | Owner |
-|---|-------|----------|-----------|-------|
-| 1.1 | Instalar dependencias (@tanstack/react-query, zustand, zod) | 2h | P0 | Frontend |
-| 1.2 | Configurar React Query client + devtools | 3h | P0 | Frontend |
-| 1.3 | Crear zustand stores (authStore con roles) | 4h | P0 | Frontend |
-| 1.4 | Implementar RoleGuard component + tests | 5h | P0 | Frontend |
-| 1.5 | Crear página Admin: User Management (/admin/users) | 8h | P0 | Frontend |
-| 1.6 | Crear página Admin: Golf Courses Pending (/admin/golf-courses/pending) | 8h | P1 | Frontend |
-| 1.7 | Crear página Creator: Request Golf Course (/creator/golf-courses/new) | 12h | P1 | Frontend |
-| 1.8 | Implementar validaciones Zod para Golf Courses | 6h | P1 | Frontend |
-| 1.9 | Tests unitarios (Domain + Application) | 10h | P0 | Frontend |
-
-**Criterios de Aceptación:**
-- ✅ `useAuthStore` con método `hasRole(role)` funcional
-- ✅ `RoleGuard` bloquea acceso por rol (redirect a /dashboard)
-- ✅ Admin puede asignar/remover roles a usuarios
-- ✅ Admin puede aprobar/rechazar campos de golf pendientes
-- ✅ Creator puede solicitar nuevo campo (status: PENDING_APPROVAL)
-- ✅ Validación Zod: 18 hoyos, par 66-76, stroke index únicos
-- ✅ ≥80% test coverage en nuevos módulos
-
-**Estimación Total:** **58 horas** (~1.5 semanas)
+| Sprint   | Fechas          | Esfuerzo BE | Endpoints | Sync Point        |
+|----------|-----------------|-------------|-----------|-------------------|
+| Sprint 1 | 27 Ene - 6 Feb  | 60h         | 10        | 🔄 Viernes 31 Ene |
+| Sprint 2 | 7 Feb - 17 Feb  | 70h         | 10        | 🔄 Viernes 14 Feb |
+| Sprint 3 | 18 Feb - 24 Feb | 48h         | 5         | 🔄 Viernes 21 Feb |
+| Sprint 4 | 25 Feb - 10 Mar | 92h         | 4         | 🔄 Viernes 7 Mar  |
+| Sprint 5 | 11 Mar - 17 Mar | 60h         | 2         | 🔄 Viernes 14 Mar |
+| **TOTAL**| **7 semanas**   | **330h**    | **31**    |                   |
 
 ---
 
-### 📌 Sprint 2: Competition Scheduling & Drag-Drop (1.5 semanas)
+### 🔄 Plan de Handoffs por Sprint (Frontend/Backend)
 
-**Fechas:** 7 Feb - 17 Feb 2026
-**Owner:** Frontend Dev
-**Dependencias:** Backend API v2.1.0 Sprint 2 (schedule endpoints)
+| Sprint   | Backend Entrega                                                                                                         | Frontend Consume                                                                              | Sync Point     |
+|----------|-------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------|----------------|
+| Sprint 1 | `POST /admin/users/{id}/roles`<br>`GET /golf-courses`<br>`GET /golf-courses/{id}` ⭐                                        | User Management page<br>Golf Course selector<br>Golf Course detail modal                              | Viernes 31 Ene |
+| Sprint 2 | `POST /competitions/{id}/rounds`<br>`POST /rounds/{id}/matches`<br>`GET /matches/{id}` ⭐<br>`PUT /matches/{id}/status` ⭐<br>`POST /matches/{id}/walkover` ⭐ | Schedule drag-drop<br>Match creation wizard<br>Match detail modal<br>Manual status control<br>Walkover button | Viernes 14 Feb |
+| Sprint 3 | `POST /invitations/{id}/respond`                                                                                        | Invitation cards<br>Email notifications                                                           | Viernes 21 Feb |
+| Sprint 4 | `GET /matches/{id}/scoring-view`                                                                                        | Scoring 3 tabs<br>Real-time validation ✅/❌                                                        | Viernes 7 Mar  |
+| Sprint 5 | `GET /competitions/{id}/leaderboard`                                                                                    | Public leaderboard<br>Polling (30s)                                                               | Viernes 14 Mar |
 
-#### Tareas
-
-| # | Tarea | Esfuerzo | Prioridad | Owner |
-|---|-------|----------|-----------|-------|
-| 2.1 | Instalar @dnd-kit/core + configurar providers | 3h | P0 | Frontend |
-| 2.2 | Crear competitionStore (Zustand) para scheduling | 5h | P0 | Frontend |
-| 2.3 | Crear página Creator: Schedule (/creator/competitions/:id/schedule) | 16h | P0 | Frontend |
-| 2.4 | Implementar Drag & Drop para asignar jugadores a matches | 12h | P0 | Frontend |
-| 2.5 | Crear componentes: RoundCard, MatchCard, PlayerSearchBox | 10h | P0 | Frontend |
-| 2.6 | Implementar auto-cálculo de playing handicaps (backend retorna) | 6h | P1 | Frontend |
-| 2.7 | Validación Zod: Match format rules (SINGLES no requiere team_b_player_2) | 5h | P1 | Frontend |
-| 2.8 | Tests unitarios + integration (Drag & Drop behavior) | 12h | P0 | Frontend |
-
-**Criterios de Aceptación:**
-- ✅ Creator puede crear rounds con fecha + campo de golf
-- ✅ Creator puede crear matches (FOURBALL, FOURSOMES, SINGLES, GREENSOME)
-- ✅ Drag & Drop permite asignar jugadores a posiciones de match
-- ✅ Backend calcula automáticamente playing handicaps (frontend solo muestra)
-- ✅ Validación Zod: SINGLES solo requiere 1 jugador por equipo
-- ✅ UI responsive (mobile + desktop)
-- ✅ ≥80% test coverage
-
-**Estimación Total:** **69 horas** (~1.7 semanas)
+_⭐ = Endpoints nuevos añadidos por backend._
 
 ---
 
-### 📌 Sprint 3: Invitations System (1 semana)
+### ❓ Respuestas al Equipo Backend
 
-**Fechas:** 18 Feb - 24 Feb 2026
-**Owner:** Frontend Dev
-**Dependencias:** Backend API v2.1.0 Sprint 3 (invitations endpoints)
+Aquí están las confirmaciones y respuestas a vuestras preguntas:
 
-#### Tareas
+1.  **Endpoints Adicionales:**
+    -   **Confirmación:** ✅ Sí, los **4 nuevos endpoints** (`GET /golf-courses/{id}`, `GET /matches/{id}`, `PUT /matches/{id}/status`, `POST /matches/{id}/walkover`) cubren todas las necesidades de UX que habíamos identificado. No vemos necesidad de más endpoints por ahora.
 
-| # | Tarea | Esfuerzo | Prioridad | Owner |
-|---|-------|----------|-----------|-------|
-| 3.1 | Crear invitationStore (Zustand) | 4h | P0 | Frontend |
-| 3.2 | Crear página Creator: Invitations (/creator/competitions/:id/invitations) | 10h | P0 | Frontend |
-| 3.3 | Implementar envío de invitaciones (por email o user ID) | 8h | P0 | Frontend |
-| 3.4 | Crear página Player: My Invitations (/player/invitations) | 8h | P0 | Frontend |
-| 3.5 | Implementar respuesta a invitaciones (ACCEPTED, DECLINED) | 6h | P0 | Frontend |
-| 3.6 | Componentes: InvitationCard, InvitationBadge (status colors) | 6h | P1 | Frontend |
-| 3.7 | Tests unitarios (use cases + stores) | 8h | P0 | Frontend |
+2.  **Priorización de Testing:**
+    -   **Confirmación:** ✅ De acuerdo con la estimación de **75+ tests**.
+    -   **Casos Edge Críticos:** Nos gustaría asegurar que los siguientes casos estén cubiertos:
+        -   **Expiración de Tokens:** ¿Qué sucede si el token de un usuario expira a mitad de una operación de scoring? ¿La UI lo gestiona sin pérdida de datos?
+        -   **Eliminación de Entidades:** ¿Se puede eliminar un `match` que ya tiene scores? ¿O un `round` con `matches` ya jugados? Esperamos que el backend lo impida con un error 409 (Conflict).
 
-**Criterios de Aceptación:**
-- ✅ Creator puede invitar jugadores a competición (por email o ID)
-- ✅ Player ve lista de invitaciones pendientes
-- ✅ Player puede aceptar/rechazar invitaciones
-- ✅ Status badges con colores (PENDING: yellow, ACCEPTED: green, DECLINED: red)
-- ✅ Toasts de confirmación en todas las acciones
-- ✅ ≥80% test coverage
+3.  **Validaciones Pydantic:**
+    -   **Confirmación:** ✅ Las validaciones parecen alineadas. Usaremos los DTOs del `ROADMAP.md` del backend como fuente de la verdad para nuestros formularios con `Zod`. Cualquier discrepancia la comunicaremos durante los *Sync Points*.
 
-**Estimación Total:** **50 horas** (~1.25 semanas)
+4.  **Canal de Comunicación:**
+    -   **Preferencia:** ✅ **Slack**. Es el canal más ágil para notificaciones de despliegues y `curl` de ejemplo.
+
+5.  **Fórmula WHS:**
+    -   **Confirmación:** ✅ La fórmula `PH = (Handicap Index × Slope Rating / 113) + (Course Rating - Par)` es **correcta** según el estándar WHS. La hemos validado con calculadoras online y es la que esperamos.
 
 ---
 
-### 📌 Sprint 4: Scoring System (3 tabs) (2 semanas)
+### ✅ Acceptance Criteria Global (v2.1.0)
 
-**Fechas:** 25 Feb - 10 Mar 2026
-**Owner:** Frontend Dev
-**Dependencias:** Backend API v2.1.0 Sprint 4 (scoring endpoints)
+1.  **Funcionalidad:**
+    -   ✅ Admin gestiona usuarios y aprueba campos de golf.
+    -   ✅ Creator planifica torneos (rounds + matches) con drag & drop.
+    -   ✅ Creator invita jugadores por email o user ID.
+    -   ✅ Player anota scores en tiempo real con validación dual.
+    -   ✅ Leaderboard público actualiza cada 30s (solo si hay matches activos).
 
-#### Tareas
+2.  **Testing:**
+    -   ✅ ≥85% test coverage (lines) en frontend.
+    -   ✅ Backend mantiene ≥85% test coverage en su lógica de negocio.
+    -   ✅ E2E tests cubren flujo completo.
+    -   ✅ 0 tests failing en pipeline.
 
-| # | Tarea | Esfuerzo | Prioridad | Owner |
-|---|-------|----------|-----------|-------|
-| 4.1 | Crear scoringStore (Zustand) con current hole + scores | 6h | P0 | Frontend |
-| 4.2 | Crear página Player: Match Scoring (/player/matches/:id/scoring) | 4h | P0 | Frontend |
-| 4.3 | Implementar Tab 1: Input (score entry + validation) | 14h | P0 | Frontend |
-| 4.4 | Implementar Tab 2: Scorecard (tabla de hoyos completa) | 12h | P0 | Frontend |
-| 4.5 | Implementar Tab 3: Leaderboard (match standing) | 10h | P0 | Frontend |
-| 4.6 | Configurar React Query polling (refetchInterval: 10s) | 5h | P0 | Frontend |
-| 4.7 | Implementar validación dual (player vs marker) | 8h | P0 | Frontend |
-| 4.8 | Componentes: HoleInput, ScorecardTable, ValidationIcon | 10h | P1 | Frontend |
-| 4.9 | Implementar "Submit Scorecard" (solo cuando 18 hoyos completados) | 6h | P1 | Frontend |
-| 4.10 | Tests unitarios + E2E (scoring flow completo) | 16h | P0 | Frontend |
+3.  **Performance:**
+    -   ✅ Bundle size ≤1200 KB.
+    -   ✅ Build time ≤6s.
+    -   ✅ Polling optimizado (solo cuando necesario).
 
-**Criterios de Aceptación:**
-- ✅ Player puede anotar scores hoyo por hoyo
-- ✅ Marker anota independientemente en otro dispositivo
-- ✅ Validación dual: ✅ (match), ❌ (mismatch), ⚪ (pending)
-- ✅ Polling cada 10s actualiza scores del marcador
-- ✅ Scorecard muestra todos los 18 hoyos con estado
-- ✅ Leaderboard muestra standing del match en tiempo real
-- ✅ Submit solo habilitado cuando 18 hoyos validados
-- ✅ ≥85% test coverage
+4.  **Security:**
+    -   ✅ RoleGuard protege rutas por rol.
+    -   ✅ 0 vulnerabilities (npm audit).
+    -   ✅ OWASP Score ≥9.0/10.
 
-**Estimación Total:** **91 horas** (~2.3 semanas)
-
----
-
-### 📌 Sprint 5: Leaderboards & Polish (1 semana)
-
-**Fechas:** 11 Mar - 17 Mar 2026
-**Owner:** Frontend Dev
-**Dependencias:** Backend API v2.1.0 Sprint 5 (leaderboard endpoints)
-
-#### Tareas
-
-| # | Tarea | Esfuerzo | Prioridad | Owner |
-|---|-------|----------|-----------|-------|
-| 5.1 | Crear página pública: Leaderboard (/competitions/:id/leaderboard) | 12h | P0 | Frontend |
-| 5.2 | Configurar polling condicional (solo si hay matches activos) | 4h | P0 | Frontend |
-| 5.3 | Componentes: TeamStandingsBar, MatchSummaryCard | 10h | P0 | Frontend |
-| 5.4 | Implementar filtros (por round, por formato) | 6h | P1 | Frontend |
-| 5.5 | Polish UI/UX (animaciones Framer Motion, loading states) | 8h | P1 | Frontend |
-| 5.6 | Optimización de bundle (code splitting, lazy loading) | 6h | P1 | Frontend |
-| 5.7 | Tests E2E completos (Playwright: flujo completo creator → player) | 12h | P0 | Frontend |
-| 5.8 | Documentación (ADRs, README updates) | 6h | P1 | Frontend |
-
-**Criterios de Aceptación:**
-- ✅ Leaderboard público muestra standings de equipos
-- ✅ Polling cada 30s solo si hay matches IN_PROGRESS
-- ✅ Filtros por round y formato funcionales
-- ✅ Animaciones suaves (Framer Motion)
-- ✅ Bundle size ≤1200 KB (target: mantener <1318 KB actual)
-- ✅ E2E tests cover: create competition → schedule → invite → score → leaderboard
-- ✅ ≥85% test coverage global
-
-**Estimación Total:** **64 horas** (~1.6 semanas)
-
----
-
-#### 📊 Resumen de Esfuerzo v2.1.0
-
-| Sprint | Duración | Horas | Tareas | Prioridad |
-|--------|----------|-------|--------|-----------|
-| Sprint 1 | 1.5 sem | 58h | RBAC + Golf Courses | P0 |
-| Sprint 2 | 1.5 sem | 69h | Scheduling + Drag-Drop | P0 |
-| Sprint 3 | 1 sem | 50h | Invitations | P0 |
-| Sprint 4 | 2 sem | 91h | Scoring (3 tabs) | P0 |
-| Sprint 5 | 1 sem | 64h | Leaderboards + Polish | P0/P1 |
-| **TOTAL** | **7 sem** | **332h** | **49 tareas** | - |
-
-**Esfuerzo Promedio:** ~47 horas/semana (1.2 FTE)
-
----
-
-#### ✅ Acceptance Criteria Global (v2.1.0)
-
-1. **Funcionalidad:**
-   - ✅ Admin gestiona usuarios y aprueba campos de golf
-   - ✅ Creator planifica torneos (rounds + matches) con drag & drop
-   - ✅ Creator invita jugadores por email o user ID
-   - ✅ Player anota scores en tiempo real con validación dual
-   - ✅ Leaderboard público actualiza cada 30s (solo si hay matches activos)
-
-2. **Testing:**
-   - ✅ ≥85% test coverage (lines)
-   - ✅ ≥75% test coverage (functions)
-   - ✅ E2E tests cubren flujo completo
-   - ✅ 0 tests failing en pipeline
-
-3. **Performance:**
-   - ✅ Bundle size ≤1200 KB
-   - ✅ Build time ≤6s
-   - ✅ Polling optimizado (solo cuando necesario)
-
-4. **Security:**
-   - ✅ RoleGuard protege rutas por rol
-   - ✅ 0 vulnerabilities (npm audit)
-   - ✅ OWASP Score ≥9.0/10
-
-5. **Documentation:**
-   - ✅ ADRs actualizados (ADR-009, ADR-010)
-   - ✅ CHANGELOG.md con v2.1.0 completo
-   - ✅ CLAUDE.md actualizado con nuevas rutas/stores
-
+5.  **Documentation:**
+    -   ✅ ADRs actualizados (ADR-009, ADR-010).
+    -   ✅ CHANGELOG.md con v2.1.0 completo.
+    -   ✅ `ROADMAP.md` sincronizado entre frontend y backend.
 ---
 
 #### 🔄 Handoffs & Dependencies
