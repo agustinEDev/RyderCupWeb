@@ -25,7 +25,86 @@ Tras la revisión del prompt del backend, hemos actualizado nuestro plan para re
 - **Sprints:** Adoptada la estructura de **5 sprints** con fechas y sync points idénticos.
 - **DTOs y Validación:** Se utilizarán los schemas Pydantic del backend como **fuente de la verdad**.
 - **Lógica de Dominio:** Confirmados los 3 `Domain Services` que impulsarán la UI (Handicaps, Scoring, Leaderboards).
+- **RBAC Foundation v2.0.0 (Backend):**
+    - ✅ Endpoint `GET /api/v1/users/me/roles/{competition_id}` implementado.
+    - ✅ Authorization helpers implementados.
 - **Protocolo de Handoff:** Aceptado el proceso de entregas semanales.
+
+---
+
+### 🔑 RBAC Frontend Implementation Simplificada
+
+Con la fundación RBAC v2.0.0 implementada en el backend, el trabajo en el frontend se simplifica enormemente. Ya **no es necesario** implementar un sistema complejo de roles, sino consumir el endpoint provisto para adaptar la UX.
+
+#### 📝 Tareas Simplificadas de Frontend:
+
+1.  **Crear `useUserRoles(competitionId)` hook:**
+    *   Este hook custom consumirá el endpoint `GET /api/v1/users/me/roles/{competition_id}`.
+    *   Retornará el estado de los roles (`isAdmin`, `isCreator`, `isPlayer`) y el `loading` state.
+2.  **Implementar `<RoleBasedAccess>` componente:**
+    *   Un componente wrapper que utilizará `useUserRoles` para renderizar condicionalmente su `children` basado en los roles requeridos.
+3.  **Agregar condicionales en botones/vistas:**
+    *   Utilizar el hook `useUserRoles` directamente en componentes o las props del `<RoleBasedAccess>` para controlar la visibilidad de elementos UI (botones, secciones, navegación).
+
+#### 💡 Ejemplo de Implementación (Frontend):
+
+```javascript
+// Hook example (src/hooks/useUserRoles.js)
+import { useQuery } from '@tanstack/react-query';
+import { fetchUserRoles } from '../infrastructure/repositories/userRepository'; // Suponiendo una función de fetch
+
+export const useUserRoles = (competitionId) => {
+  const { data, isLoading, error } = useQuery(
+    ['userRoles', competitionId],
+    () => fetchUserRoles(competitionId),
+    {
+      enabled: !!competitionId, // Solo ejecutar si tenemos competitionId
+    }
+  );
+
+  return {
+    isAdmin: data?.is_admin || false,
+    isCreator: data?.is_creator || false,
+    isPlayer: data?.is_player || false,
+    isLoading,
+    error,
+  };
+};
+
+// Component usage example
+import { useUserRoles } from '../../hooks/useUserRoles';
+import { Button } from '../../components/ui/Button'; // Suponiendo un componente Button
+
+const CompetitionActions = ({ competitionId }) => {
+  const { isAdmin, isCreator, isLoading } = useUserRoles(competitionId);
+
+  if (isLoading) {
+    return <p>Cargando roles...</p>;
+  }
+
+  return (
+    <div>
+      {(isCreator || isAdmin) && (
+        <Button onClick={() => console.log('Editar Competición')}>
+          Editar Competición
+        </Button>
+      )}
+      {(isCreator || isAdmin) && (
+        <Button onClick={() => console.log('Gestionar Inscripciones')}>
+          Gestionar Inscripciones
+        </Button>
+      )}
+      {/* ... otros botones con lógica de rol ... */}
+    </div>
+  );
+};
+```
+
+#### ⚠️ Notas Importantes:
+
+*   **NO implementar autorización en frontend:** El frontend solo se encargará de mejorar la experiencia de usuario (UX) mostrando u ocultando elementos.
+*   **La autorización real se valida en backend:** Toda operación sensible debe ser validada por el backend, que es la única fuente de verdad para los permisos.
+*   **El endpoint es solo para UX:** El `GET /api/v1/users/me/roles/{competition_id}` se utiliza exclusivamente para adaptar la interfaz de usuario, no para aplicar reglas de seguridad.
 
 ---
 
