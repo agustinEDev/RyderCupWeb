@@ -1,0 +1,74 @@
+{
+  "form": {
+    "basicInfo": "Basic Information",
+    "name": "Course Name",
+    "namePlaceholder": "Pebble Beach Golf Links",
+    "countryCode": "Country Code",
+    "countryCodeHint": "ISO 3166-1 alpha-2 (e.g: ES, US, GB)",
+    "courseType": "Course Type",
+    "courseTypes": {
+      "STANDARD_18": "Standard 18 Holes",
+      "PITCH_AND_PUTT": "Pitch & Putt",
+      "EXECUTIVE": "Executive"
+    },
+    "tees": "Tees",
+    "tee": "Tee",
+    "addTee": "Add Tee",
+    "maxTeesReached": "Maximum 6 tees allowed",
+    "minTeesRequired": "Minimum 2 tees required",
+    "teeCategory": "Category",
+    "identifier": "Identifier",
+    "identifierPlaceholder": "Yellow, White, etc.",
+    "courseRating": "Course Rating",
+    "slopeRating": "Slope Rating",
+    "teeCategories": {
+      "CHAMPIONSHIP_MALE": "Championship Male",
+      "AMATEUR_MALE": "Amateur Male",
+      "FORWARD_MALE": "Forward Male",
+      "CHAMPIONSHIP_FEMALE": "Championship Female",
+      "AMATEUR_FEMALE": "Amateur Female",
+      "FORWARD_FEMALE": "Forward Female"
+    },
+    "holes": "Holes (18)",
+    "hole": "Hole",
+    "par": "Par",
+    "strokeIndex": "Stroke Index",
+    "totalPar": "Total Par",
+    "cancel": "Cancel",
+    "create": "Create Course",
+    "update": "Save Changes",
+    "submitting": "Saving...",
+    "errors": {
+      "nameRequired": "Course name must be at least 3 characters",
+      "countryCodeRequired": "Country code must be 2 characters (ISO 3166-1)",
+      "teesRange": "Course must have between 2 and 6 tees",
+      "teeIdentifierRequired": "Tee {{index}} identifier is required",
+      "courseRatingRange": "Tee {{index}} Course Rating must be between 50.0 and 90.0",
+      "slopeRatingRange": "Tee {{index}} Slope Rating must be between 55 and 155",
+      "uniqueStrokeIndices": "Each hole must have a unique stroke index (1-18)",
+      "totalParRange": "Total par must be between 66 and 76 (current: {{totalPar}})",
+      "submitFailed": "Failed to save golf course"
+    }
+  },
+  "table": {
+    "name": "Name",
+    "country": "Country",
+    "type": "Type",
+    "par": "Par",
+    "tees": "Tees",
+    "status": "Status",
+    "actions": "Actions",
+    "view": "View details",
+    "edit": "Edit",
+    "approve": "Approve",
+    "reject": "Reject",
+    "noCourses": "No golf courses",
+    "pendingUpdate": "Update pending",
+    "updateProposal": "Update proposal",
+    "statuses": {
+      "APPROVED": "Approved",
+      "PENDING_APPROVAL": "Pending",
+      "REJECTED": "Rejected"
+    }
+  }
+}

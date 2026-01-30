@@ -1,0 +1,74 @@
+{
+  "form": {
+    "basicInfo": "Información Básica",
+    "name": "Nombre del Campo",
+    "namePlaceholder": "Real Club de Golf El Prat",
+    "countryCode": "Código de País",
+    "countryCodeHint": "ISO 3166-1 alpha-2 (ej: ES, US, GB)",
+    "courseType": "Tipo de Campo",
+    "courseTypes": {
+      "STANDARD_18": "Estándar 18 Hoyos",
+      "PITCH_AND_PUTT": "Pitch & Putt",
+      "EXECUTIVE": "Ejecutivo"
+    },
+    "tees": "Tees",
+    "tee": "Tee",
+    "addTee": "Agregar Tee",
+    "maxTeesReached": "Máximo 6 tees permitidos",
+    "minTeesRequired": "Mínimo 2 tees requeridos",
+    "teeCategory": "Categoría",
+    "identifier": "Identificador",
+    "identifierPlaceholder": "Amarillo, Blanco, etc.",
+    "courseRating": "Course Rating",
+    "slopeRating": "Slope Rating",
+    "teeCategories": {
+      "CHAMPIONSHIP_MALE": "Campeonato Masculino",
+      "AMATEUR_MALE": "Amateur Masculino",
+      "FORWARD_MALE": "Adelantado Masculino",
+      "CHAMPIONSHIP_FEMALE": "Campeonato Femenino",
+      "AMATEUR_FEMALE": "Amateur Femenino",
+      "FORWARD_FEMALE": "Adelantado Femenino"
+    },
+    "holes": "Hoyos (18)",
+    "hole": "Hoyo",
+    "par": "Par",
+    "strokeIndex": "Stroke Index",
+    "totalPar": "Par Total",
+    "cancel": "Cancelar",
+    "create": "Crear Campo",
+    "update": "Guardar Cambios",
+    "submitting": "Guardando...",
+    "errors": {
+      "nameRequired": "El nombre del campo debe tener al menos 3 caracteres",
+      "countryCodeRequired": "El código de país debe tener 2 caracteres (ISO 3166-1)",
+      "teesRange": "El campo debe tener entre 2 y 6 tees",
+      "teeIdentifierRequired": "El identificador del tee {{index}} es requerido",
+      "courseRatingRange": "El Course Rating del tee {{index}} debe estar entre 50.0 y 90.0",
+      "slopeRatingRange": "El Slope Rating del tee {{index}} debe estar entre 55 y 155",
+      "uniqueStrokeIndices": "Cada hoyo debe tener un stroke index único (1-18)",
+      "totalParRange": "El par total debe estar entre 66 y 76 (actual: {{totalPar}})",
+      "submitFailed": "Error al guardar el campo de golf"
+    }
+  },
+  "table": {
+    "name": "Nombre",
+    "country": "País",
+    "type": "Tipo",
+    "par": "Par",
+    "tees": "Tees",
+    "status": "Estado",
+    "actions": "Acciones",
+    "view": "Ver detalles",
+    "edit": "Editar",
+    "approve": "Aprobar",
+    "reject": "Rechazar",
+    "noCourses": "No hay campos de golf",
+    "pendingUpdate": "Actualización pendiente",
+    "updateProposal": "Propuesta de actualización",
+    "statuses": {
+      "APPROVED": "Aprobado",
+      "PENDING_APPROVAL": "Pendiente",
+      "REJECTED": "Rechazado"
+    }
+  }
+}

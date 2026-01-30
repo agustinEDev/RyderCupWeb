@@ -16,6 +16,8 @@ import competitionsEn from './locales/en/competitions.json';
 import competitionsEs from './locales/es/competitions.json';
 import devicesEn from './locales/en/devices.json';
 import devicesEs from './locales/es/devices.json';
+import golfCoursesEn from './locales/en/golfCourses.json';
+import golfCoursesEs from './locales/es/golfCourses.json';
 
 const resources = {
   en: {
@@ -26,6 +28,7 @@ const resources = {
     profile: profileEn,
     competitions: competitionsEn,
     devices: devicesEn,
+    golfCourses: golfCoursesEn,
   },
   es: {
     auth: authEs,
@@ -35,6 +38,7 @@ const resources = {
     profile: profileEs,
     competitions: competitionsEs,
     devices: devicesEs,
+    golfCourses: golfCoursesEs,
   },
 };
 
@@ -45,7 +49,7 @@ i18n
     resources,
     fallbackLng: 'en', // Idioma por defecto si no se detecta
     defaultNS: 'common', // Namespace por defecto
-    ns: ['common', 'auth', 'landing', 'dashboard', 'profile', 'competitions', 'devices'], // Namespaces disponibles
+    ns: ['common', 'auth', 'landing', 'dashboard', 'profile', 'competitions', 'devices', 'golfCourses'], // Namespaces disponibles
 
     detection: {
       // Orden de detección: localStorage -> navigator
