@@ -20,6 +20,18 @@ import UpdateRfegHandicapUseCase from '../application/use_cases/handicap/UpdateR
 // Country Use Cases
 import FetchCountriesUseCase from '../application/use_cases/country/FetchCountriesUseCase';
 
+// Golf Course Use Cases (v2.1.0 - Sprint 1)
+import ApiGolfCourseRepository from '../infrastructure/repositories/ApiGolfCourseRepository';
+import ListGolfCoursesUseCase from '../application/use_cases/golf_course/ListGolfCoursesUseCase';
+import GetGolfCourseUseCase from '../application/use_cases/golf_course/GetGolfCourseUseCase';
+import CreateGolfCourseAdminUseCase from '../application/use_cases/golf_course/CreateGolfCourseAdminUseCase';
+import UpdateGolfCourseUseCase from '../application/use_cases/golf_course/UpdateGolfCourseUseCase';
+import ApproveGolfCourseUseCase from '../application/use_cases/golf_course/ApproveGolfCourseUseCase';
+import RejectGolfCourseUseCase from '../application/use_cases/golf_course/RejectGolfCourseUseCase';
+import ApproveGolfCourseUpdateUseCase from '../application/use_cases/golf_course/ApproveGolfCourseUpdateUseCase';
+import RejectGolfCourseUpdateUseCase from '../application/use_cases/golf_course/RejectGolfCourseUpdateUseCase';
+import ListPendingGolfCoursesUseCase from '../application/use_cases/golf_course/ListPendingGolfCoursesUseCase';
+
 // Device Management Use Cases (v1.13.0)
 import ApiDeviceRepository from '../infrastructure/repositories/ApiDeviceRepository';
 import GetActiveDevicesUseCase from '../application/use_cases/device/GetActiveDevicesUseCase';
@@ -58,6 +70,7 @@ const apiAuthRepository = new ApiAuthRepository();
 const apiCompetitionRepository = new ApiCompetitionRepository();
 const apiEnrollmentRepository = new ApiEnrollmentRepository();
 const apiDeviceRepository = new ApiDeviceRepository();
+const apiGolfCourseRepository = new ApiGolfCourseRepository();
 
 // --- Casos de Uso ---
 const updateUserProfileUseCase = new UpdateUserProfileUseCase({ userRepository: apiUserRepository });
@@ -100,6 +113,17 @@ const directEnrollUseCase = new DirectEnrollUseCase(apiEnrollmentRepository);
 const getActiveDevicesUseCase = new GetActiveDevicesUseCase({ deviceRepository: apiDeviceRepository });
 const revokeDeviceUseCase = new RevokeDeviceUseCase({ deviceRepository: apiDeviceRepository });
 
+// Golf Course Use Cases (v2.1.0 - Sprint 1)
+const listGolfCoursesUseCase = new ListGolfCoursesUseCase({ golfCourseRepository: apiGolfCourseRepository });
+const getGolfCourseUseCase = new GetGolfCourseUseCase({ golfCourseRepository: apiGolfCourseRepository });
+const createGolfCourseAdminUseCase = new CreateGolfCourseAdminUseCase({ golfCourseRepository: apiGolfCourseRepository });
+const updateGolfCourseUseCase = new UpdateGolfCourseUseCase({ golfCourseRepository: apiGolfCourseRepository });
+const approveGolfCourseUseCase = new ApproveGolfCourseUseCase({ golfCourseRepository: apiGolfCourseRepository });
+const rejectGolfCourseUseCase = new RejectGolfCourseUseCase({ golfCourseRepository: apiGolfCourseRepository });
+const approveGolfCourseUpdateUseCase = new ApproveGolfCourseUpdateUseCase({ golfCourseRepository: apiGolfCourseRepository });
+const rejectGolfCourseUpdateUseCase = new RejectGolfCourseUpdateUseCase({ golfCourseRepository: apiGolfCourseRepository });
+const listPendingGolfCoursesUseCase = new ListPendingGolfCoursesUseCase({ golfCourseRepository: apiGolfCourseRepository });
+
 // Exportar los casos de uso y otros servicios que la capa de presentación necesite
 export {
   updateUserProfileUseCase,
@@ -137,6 +161,16 @@ export {
   // Device Management Use Cases (v1.13.0)
   getActiveDevicesUseCase,
   revokeDeviceUseCase,
+  // Golf Course Use Cases (v2.1.0 - Sprint 1)
+  listGolfCoursesUseCase,
+  getGolfCourseUseCase,
+  createGolfCourseAdminUseCase,
+  updateGolfCourseUseCase,
+  approveGolfCourseUseCase,
+  rejectGolfCourseUseCase,
+  approveGolfCourseUpdateUseCase,
+  rejectGolfCourseUpdateUseCase,
+  listPendingGolfCoursesUseCase,
   // También podríamos exportar directamente las entidades si la UI las necesita para displays,
   // aunque la mejor práctica es que la UI reciba DTOs o ViewModels del caso de uso.
 };
