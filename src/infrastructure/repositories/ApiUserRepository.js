@@ -94,35 +94,6 @@ class ApiUserRepository extends IUserRepository {
       is_player: data.is_player,
     };
   }
-
-  /**
-   * @override
-   */
-  async assignRole(userId, roleName) {
-    await apiRequest(`/api/v1/admin/users/${userId}/roles`, {
-      method: 'POST',
-      body: JSON.stringify({ role_name: roleName }),
-    });
-  }
-
-  /**
-   * @override
-   */
-  async removeRole(userId, roleName) {
-    await apiRequest(`/api/v1/admin/users/${userId}/roles/${roleName}`, {
-      method: 'DELETE',
-    });
-  }
-
-  /**
-   * @override
-   */
-  async list() {
-    const data = await apiRequest('/api/v1/admin/users');
-
-    // Mapear cada usuario del array a una instancia de User
-    return data.users.map(userData => new User(userData));
-  }
 }
 
 export default ApiUserRepository;

@@ -4,11 +4,6 @@ import ApiUserRepository from '../infrastructure/repositories/ApiUserRepository'
 import UpdateUserProfileUseCase from '../application/use_cases/user/UpdateUserProfileUseCase';
 import UpdateUserSecurityUseCase from '../application/use_cases/user/UpdateUserSecurityUseCase';
 import GetUserRolesUseCase from '../application/use_cases/user/GetUserRolesUseCase';
-
-// Admin Use Cases (v2.1.0 - Sprint 1)
-import ListUsersUseCase from '../application/use_cases/admin/ListUsersUseCase';
-import AssignRoleUseCase from '../application/use_cases/admin/AssignRoleUseCase';
-import RemoveRoleUseCase from '../application/use_cases/admin/RemoveRoleUseCase';
 import ApiAuthRepository from '../infrastructure/repositories/ApiAuthRepository';
 import LoginUseCase from '../application/use_cases/user/LoginUseCase';
 import RegisterUseCase from '../application/use_cases/user/RegisterUseCase';
@@ -105,12 +100,6 @@ const directEnrollUseCase = new DirectEnrollUseCase(apiEnrollmentRepository);
 const getActiveDevicesUseCase = new GetActiveDevicesUseCase({ deviceRepository: apiDeviceRepository });
 const revokeDeviceUseCase = new RevokeDeviceUseCase({ deviceRepository: apiDeviceRepository });
 
-// Admin Use Cases (v2.1.0 - Sprint 1)
-const listUsersUseCase = new ListUsersUseCase({ userRepository: apiUserRepository });
-const assignRoleUseCase = new AssignRoleUseCase({ userRepository: apiUserRepository });
-const removeRoleUseCase = new RemoveRoleUseCase({ userRepository: apiUserRepository });
-
-
 // Exportar los casos de uso y otros servicios que la capa de presentación necesite
 export {
   updateUserProfileUseCase,
@@ -148,10 +137,6 @@ export {
   // Device Management Use Cases (v1.13.0)
   getActiveDevicesUseCase,
   revokeDeviceUseCase,
-  // Admin Use Cases (v2.1.0 - Sprint 1)
-  listUsersUseCase,
-  assignRoleUseCase,
-  removeRoleUseCase,
   // También podríamos exportar directamente las entidades si la UI las necesita para displays,
   // aunque la mejor práctica es que la UI reciba DTOs o ViewModels del caso de uso.
 };

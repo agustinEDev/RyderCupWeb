@@ -43,42 +43,6 @@ class IUserRepository {
   async getUserRoles(competitionId) {
     throw new Error('Method not implemented: getUserRoles');
   }
-
-  /**
-   * Asigna un rol a un usuario.
-   * @param {string} userId - El ID del usuario.
-   * @param {string} roleName - El nombre del rol ('ADMIN', 'CREATOR', 'PLAYER').
-   * @returns {Promise<void>}
-   */
-  async assignRole(userId, roleName) {
-    throw new Error('Method not implemented: assignRole');
-  }
-
-  /**
-   * Elimina un rol de un usuario.
-   * @param {string} userId - El ID del usuario.
-   * @param {string} roleName - El nombre del rol a eliminar.
-   * @returns {Promise<void>}
-   */
-  async removeRole(userId, roleName) {
-    throw new Error('Method not implemented: removeRole');
-  }
-
-  /**
-   * Lista todos los usuarios del sistema (solo admin).
-   * @returns {Promise<User[]>} Array de usuarios.
-   */
-  async list() {
-    throw new Error('Method not implemented: list');
-  }
-
-  // Otros métodos que podríamos necesitar:
-  // async save(user) {
-  //   throw new Error('Method not implemented: save');
-  // }
-  // async delete(id) {
-  //   throw new Error('Method not implemented: delete');
-  // }
 }
 
 export default IUserRepository;
