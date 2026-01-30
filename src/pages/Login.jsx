@@ -59,7 +59,7 @@ const Login = () => {
 
     const rateLimit = checkRateLimit('login', 5, 300000);
     if (!rateLimit.allowed) {
-      customToast.error(`Too many attempts. Please wait ${rateLimit.remainingTime} seconds.`, {
+      customToast.error(t('errors.rateLimitSeconds', { seconds: rateLimit.remainingTime }), {
         duration: 5000,
       });
       return;
@@ -122,7 +122,7 @@ const Login = () => {
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.6 }}
-          className="hidden lg:flex lg:w-1/2 relative bg-gradient-to-br from-primary via-primary-600 to-primary-700 overflow-hidden"
+          className="hidden lg:flex lg:w-1/2 relative bg-primary overflow-hidden"
         >
           {/* Background Pattern */}
           <div className="absolute inset-0 opacity-10">
@@ -340,7 +340,7 @@ const Login = () => {
                   className={`w-full py-3.5 rounded-lg font-bold text-white transition-all duration-300 shadow-lg ${
                     isLoading
                       ? 'bg-gray-400 cursor-not-allowed'
-                      : 'bg-gradient-to-r from-primary to-primary-600 hover:from-primary-600 hover:to-primary-700 hover:shadow-xl'
+                      : 'bg-primary hover:bg-primary-600 hover:shadow-xl'
                   }`}
                 >
                   {isLoading ? (

@@ -62,7 +62,7 @@ const CompetitionDetail = () => {
       }
     } catch (error) {
       console.error('Error loading competition:', error);
-      customToast.error(error.message || 'Failed to load competition');
+      customToast.error(error.message || t('detail.failedToLoadCompetition'));
       navigate('/competitions');
     } finally {
       setIsLoadingCompetition(false);
@@ -119,7 +119,7 @@ const CompetitionDetail = () => {
       }));
     } catch (error) {
       console.error(`Error ${action}:`, error);
-      customToast.error(error.message || `Failed to ${action} competition`);
+      customToast.error(error.message || t('detail.failedToUpdateCompetition'));
     } finally {
       setIsProcessing(false);
     }
@@ -137,7 +137,7 @@ const CompetitionDetail = () => {
       navigate('/competitions');
     } catch (error) {
       console.error('Error deleting competition:', error);
-      customToast.error(error.message || 'Failed to delete competition');
+      customToast.error(error.message || t('detail.failedToDeleteCompetition'));
       setIsProcessing(false);
     }
   };
@@ -150,7 +150,7 @@ const CompetitionDetail = () => {
       await loadCompetition();
     } catch (error) {
       console.error('Error enrolling:', error);
-      customToast.error(error.message || 'Failed to enroll');
+      customToast.error(error.message || t('detail.failedToEnroll'));
     } finally {
       setIsProcessing(false);
     }
@@ -234,7 +234,7 @@ const CompetitionDetail = () => {
                 <span className="text-sm font-medium">{backText}</span>
               </button>
 
-              <div className="bg-gradient-to-br from-primary-50 to-blue-50 rounded-xl border border-primary-200 p-6 shadow-md">
+              <div className="bg-primary-50 rounded-xl border border-primary-200 p-6 shadow-md">
                 <div className="flex flex-wrap justify-between items-start gap-4 mb-4">
                   <div className="flex-1">
                     <h1 className="text-gray-900 text-3xl md:text-4xl font-bold mb-2">

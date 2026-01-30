@@ -247,6 +247,11 @@ const CreateCompetition = () => {
       return;
     }
 
+    if (numPlayers > 100) {
+      setMessage({ type: 'error', text: t('create.errors.playersMaximum') });
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -679,7 +684,8 @@ const CreateCompetition = () => {
                       name="numberOfPlayers"
                       value={formData.numberOfPlayers === undefined ? '' : formData.numberOfPlayers}
                       onChange={handleInputChange}
-                      min="1"
+                      min="2"
+                      max="100"
                       placeholder={t('create.numberOfPlayersPlaceholder')}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                     />

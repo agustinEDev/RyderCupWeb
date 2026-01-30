@@ -67,12 +67,14 @@
       "datesRequired": "Se requieren las fechas de inicio y fin",
       "endDateAfterStart": "La fecha de fin debe ser posterior a la fecha de inicio",
       "countryRequired": "Por favor selecciona un país",
-      "playersMinimum": "El número de jugadores debe ser al menos 2"
+      "playersMinimum": "El número de jugadores debe ser al menos 2",
+      "playersMaximum": "El número de jugadores no puede exceder 100"
     },
     "success": "¡Competición creada exitosamente!"
   },
   "detail": {
     "loadingCompetition": "Cargando competición...",
+    "failedToLoadCompetition": "Error al cargar la competición",
     "backToCompetitions": "Volver a Competiciones",
     "backToBrowse": "Volver a Explorar",
     "creator": "Creador",
@@ -121,7 +123,11 @@
     "enrollmentApproved": "Inscripción aprobada",
     "enrollmentRejected": "Inscripción rechazada",
     "failedToApprove": "Error al aprobar la inscripción",
-    "failedToReject": "Error al rechazar la inscripción"
+    "failedToReject": "Error al rechazar la inscripción",
+    "failedToUpdateCompetition": "Error al actualizar la competición",
+    "failedToDeleteCompetition": "Error al eliminar la competición",
+    "failedToEnroll": "Error al solicitar inscripción",
+    "failedToLoadCompetitions": "Error al cargar las competiciones"
   },
   "browse": {
     "title": "Explorar Competiciones",

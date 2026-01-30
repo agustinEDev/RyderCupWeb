@@ -67,12 +67,14 @@
       "datesRequired": "Start and end dates are required",
       "endDateAfterStart": "End date must be after start date",
       "countryRequired": "Please select a country",
-      "playersMinimum": "Number of players must be at least 2"
+      "playersMinimum": "Number of players must be at least 2",
+      "playersMaximum": "Number of players cannot exceed 100"
     },
     "success": "Competition created successfully!"
   },
   "detail": {
     "loadingCompetition": "Loading competition...",
+    "failedToLoadCompetition": "Failed to load competition",
     "backToCompetitions": "Back to Competitions",
     "backToBrowse": "Back to Browse",
     "creator": "Creator",
@@ -121,7 +123,11 @@
     "enrollmentApproved": "Enrollment approved",
     "enrollmentRejected": "Enrollment rejected",
     "failedToApprove": "Failed to approve enrollment",
-    "failedToReject": "Failed to reject enrollment"
+    "failedToReject": "Failed to reject enrollment",
+    "failedToUpdateCompetition": "Failed to update competition",
+    "failedToDeleteCompetition": "Failed to delete competition",
+    "failedToEnroll": "Failed to enroll",
+    "failedToLoadCompetitions": "Failed to load competitions"
   },
   "browse": {
     "title": "Browse Competitions",

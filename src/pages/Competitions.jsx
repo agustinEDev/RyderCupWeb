@@ -85,7 +85,7 @@ const Competitions = () => {
       setCompetitions(data);
     } catch (error) {
       console.error('Error loading competitions:', error);
-      customToast.error(error.message || 'Failed to load competitions');
+      customToast.error(error.message || t('detail.failedToLoadCompetitions'));
       setCompetitions([]);
     } finally {
       setIsLoading(false);
