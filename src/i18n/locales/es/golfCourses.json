@@ -70,5 +70,47 @@
       "PENDING_APPROVAL": "Pendiente",
       "REJECTED": "Rechazado"
     }
+  },
+  "pages": {
+    "admin": {
+      "title": "Campos de Golf",
+      "subtitle": "Gestiona todos los campos de golf aprobados",
+      "createCourse": "Crear Campo",
+      "createCourseTitle": "Crear Nuevo Campo de Golf",
+      "editCourseTitle": "Editar Campo de Golf",
+      "totalCourses": "Total de Campos",
+      "errorLoading": "Error al cargar los campos de golf",
+      "createSuccess": "Campo de golf creado exitosamente",
+      "updateSuccess": "Campo de golf actualizado exitosamente",
+      "viewNotImplemented": "Vista de detalles próximamente"
+    },
+    "pending": {
+      "title": "Campos Pendientes",
+      "subtitle": "Aprueba o rechaza solicitudes de campos de golf",
+      "newRequests": "Solicitudes Nuevas",
+      "updateProposals": "Propuestas de Actualización",
+      "tabNew": "Nuevas",
+      "tabUpdates": "Actualizaciones",
+      "errorLoading": "Error al cargar campos pendientes",
+      "confirmApprove": "¿Aprobar el campo '{{name}}'?",
+      "confirmApproveUpdate": "¿Aprobar la actualización de '{{name}}'?",
+      "confirmRejectUpdate": "¿Rechazar la actualización de '{{name}}'?",
+      "approveSuccess": "Campo aprobado exitosamente",
+      "approveUpdateSuccess": "Actualización aprobada exitosamente",
+      "rejectSuccess": "Campo rechazado",
+      "rejectUpdateSuccess": "Actualización rechazada",
+      "approveFailed": "Error al aprobar el campo",
+      "approveUpdateFailed": "Error al aprobar la actualización",
+      "rejectFailed": "Error al rechazar el campo",
+      "rejectUpdateFailed": "Error al rechazar la actualización",
+      "rejectModalTitle": "Rechazar Campo de Golf",
+      "rejectModalMessage": "Vas a rechazar el campo '{{name}}'. Por favor, proporciona una razón.",
+      "rejectReason": "Razón del Rechazo",
+      "rejectReasonPlaceholder": "Explica por qué este campo no cumple con los requisitos...",
+      "rejectReasonTooShort": "La razón debe tener al menos 10 caracteres",
+      "characters": "caracteres",
+      "cancel": "Cancelar",
+      "confirmReject": "Rechazar Campo"
+    }
   }
 }

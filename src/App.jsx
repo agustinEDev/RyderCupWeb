@@ -27,6 +27,10 @@ const CreateCompetition = lazy(() => import('./pages/CreateCompetition'));
 const CompetitionDetail = lazy(() => import('./pages/CompetitionDetail'));
 const BrowseCompetitions = lazy(() => import('./pages/BrowseCompetitions'));
 
+// Admin pages (v2.1.0 - Sprint 1)
+const GolfCourses = lazy(() => import('./pages/admin/GolfCourses'));
+const PendingGolfCourses = lazy(() => import('./pages/admin/PendingGolfCourses'));
+
 // ============================================
 // SENTRY ROUTING INSTRUMENTATION
 // ============================================
@@ -152,6 +156,10 @@ function AppContent() {
         <Route path="/competitions/create" element={<ProtectedRoute><CreateCompetition /></ProtectedRoute>} />
         <Route path="/competitions/:id" element={<ProtectedRoute><CompetitionDetail /></ProtectedRoute>} />
         <Route path="/browse-competitions" element={<ProtectedRoute><BrowseCompetitions /></ProtectedRoute>} />
+
+        {/* Admin routes (v2.1.0 - Sprint 1) */}
+        <Route path="/admin/golf-courses" element={<ProtectedRoute><GolfCourses /></ProtectedRoute>} />
+        <Route path="/admin/golf-courses/pending" element={<ProtectedRoute><PendingGolfCourses /></ProtectedRoute>} />
         </SentryRoutes>
       </Suspense>
     </LazyLoadErrorBoundary>

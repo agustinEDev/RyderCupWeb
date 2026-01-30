@@ -70,5 +70,47 @@
       "PENDING_APPROVAL": "Pending",
       "REJECTED": "Rejected"
     }
+  },
+  "pages": {
+    "admin": {
+      "title": "Golf Courses",
+      "subtitle": "Manage all approved golf courses",
+      "createCourse": "Create Course",
+      "createCourseTitle": "Create New Golf Course",
+      "editCourseTitle": "Edit Golf Course",
+      "totalCourses": "Total Courses",
+      "errorLoading": "Error loading golf courses",
+      "createSuccess": "Golf course created successfully",
+      "updateSuccess": "Golf course updated successfully",
+      "viewNotImplemented": "Detail view coming soon"
+    },
+    "pending": {
+      "title": "Pending Courses",
+      "subtitle": "Approve or reject golf course requests",
+      "newRequests": "New Requests",
+      "updateProposals": "Update Proposals",
+      "tabNew": "New",
+      "tabUpdates": "Updates",
+      "errorLoading": "Error loading pending courses",
+      "confirmApprove": "Approve course '{{name}}'?",
+      "confirmApproveUpdate": "Approve update for '{{name}}'?",
+      "confirmRejectUpdate": "Reject update for '{{name}}'?",
+      "approveSuccess": "Course approved successfully",
+      "approveUpdateSuccess": "Update approved successfully",
+      "rejectSuccess": "Course rejected",
+      "rejectUpdateSuccess": "Update rejected",
+      "approveFailed": "Failed to approve course",
+      "approveUpdateFailed": "Failed to approve update",
+      "rejectFailed": "Failed to reject course",
+      "rejectUpdateFailed": "Failed to reject update",
+      "rejectModalTitle": "Reject Golf Course",
+      "rejectModalMessage": "You are about to reject '{{name}}'. Please provide a reason.",
+      "rejectReason": "Rejection Reason",
+      "rejectReasonPlaceholder": "Explain why this course doesn't meet the requirements...",
+      "rejectReasonTooShort": "Reason must be at least 10 characters",
+      "characters": "characters",
+      "cancel": "Cancel",
+      "confirmReject": "Reject Course"
+    }
   }
 }
