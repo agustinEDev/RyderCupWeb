@@ -35,6 +35,43 @@ class IUserRepository {
     throw new Error('Method not implemented: updateSecurity');
   }
 
+  /**
+   * Obtiene los roles de un usuario en una competición específica.
+   * @param {string} competitionId - El ID de la competición.
+   * @returns {Promise<{is_admin: boolean, is_creator: boolean, is_player: boolean}>} Objeto con los roles del usuario.
+   */
+  async getUserRoles(competitionId) {
+    throw new Error('Method not implemented: getUserRoles');
+  }
+
+  /**
+   * Asigna un rol a un usuario.
+   * @param {string} userId - El ID del usuario.
+   * @param {string} roleName - El nombre del rol ('ADMIN', 'CREATOR', 'PLAYER').
+   * @returns {Promise<void>}
+   */
+  async assignRole(userId, roleName) {
+    throw new Error('Method not implemented: assignRole');
+  }
+
+  /**
+   * Elimina un rol de un usuario.
+   * @param {string} userId - El ID del usuario.
+   * @param {string} roleName - El nombre del rol a eliminar.
+   * @returns {Promise<void>}
+   */
+  async removeRole(userId, roleName) {
+    throw new Error('Method not implemented: removeRole');
+  }
+
+  /**
+   * Lista todos los usuarios del sistema (solo admin).
+   * @returns {Promise<User[]>} Array de usuarios.
+   */
+  async list() {
+    throw new Error('Method not implemented: list');
+  }
+
   // Otros métodos que podríamos necesitar:
   // async save(user) {
   //   throw new Error('Method not implemented: save');
