@@ -10,6 +10,7 @@ import customToast from '../utils/toast';
 import { useTranslation } from 'react-i18next';
 import HeaderAuth from '../components/layout/HeaderAuth';
 import { useAuth } from '../hooks/useAuth';
+import { useUserRoles } from '../hooks/useUserRoles';
 import { CountryFlag } from '../utils/countryUtils';
 import {
   getCompetitionDetailUseCase,
@@ -36,6 +37,7 @@ const CompetitionDetail = () => {
   const { id } = useParams();
   const { t } = useTranslation('competitions');
   const { user, loading: isLoadingUser } = useAuth();
+  const { isAdmin, isCreator: hasCreatorRole, isLoading: isLoadingRoles } = useUserRoles(id);
   const [competition, setCompetition] = useState(null);
   const [enrollments, setEnrollments] = useState([]);
   const [isLoadingCompetition, setIsLoadingCompetition] = useState(true);
@@ -55,7 +57,9 @@ const CompetitionDetail = () => {
       const data = await getCompetitionDetailUseCase.execute(id);
       setCompetition(data);
 
-      // Load enrollments only if user is the creator (for optimization)
+      // Load enrollments only if user can manage the competition (for optimization)
+      // Note: isAdmin and hasCreatorRole might not be available yet during initial load,
+      // so we still check creatorId. The canManage logic will handle display permissions.
       if (user && data.creatorId === user.id) {
         const enrollmentsData = await listEnrollmentsUseCase.execute(id);
         setEnrollments(enrollmentsData);
@@ -75,7 +79,7 @@ const CompetitionDetail = () => {
     }
   }, [id, user, loadCompetition]);
 
-  const isLoading = isLoadingUser || isLoadingCompetition;
+  const isLoading = isLoadingUser || isLoadingCompetition || isLoadingRoles;
 
   const handleStatusChange = async (action) => {
     const confirmationKey = `detail.confirmations.${action}`;
@@ -202,9 +206,11 @@ const CompetitionDetail = () => {
     return null;
   }
 
+  // User is considered creator if they created the competition OR have CREATOR/ADMIN role
   const isCreator = competition.creatorId === user.id;
-  const canEdit = isCreator && competition.status === 'DRAFT';
-  const canDelete = isCreator && competition.status === 'DRAFT';
+  const canManage = isCreator || hasCreatorRole || isAdmin;
+  const canEdit = canManage && competition.status === 'DRAFT';
+  const canDelete = canManage && competition.status === 'DRAFT';
 
   // Check for user enrollment from two sources:
   // 1. From enrollments list (when loaded from detail page)
@@ -307,7 +313,7 @@ const CompetitionDetail = () => {
             </motion.div>
 
             {/* Action Buttons */}
-            {isCreator && (
+            {canManage && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -394,8 +400,8 @@ const CompetitionDetail = () => {
               </motion.div>
             )}
 
-            {/* Enrollment Button for Non-Creators */}
-            {!isCreator && competition.status === 'ACTIVE' && !hasEnrollment && (
+            {/* Enrollment Button for Regular Users (not creators/admins) */}
+            {!canManage && competition.status === 'ACTIVE' && !hasEnrollment && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -484,8 +490,8 @@ const CompetitionDetail = () => {
               </div>
             </motion.div>
 
-            {/* Enrollments List - Only visible to creator */}
-            {isCreator && (
+            {/* Enrollments List - Only visible to creator/admin */}
+            {canManage && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
