@@ -1,22 +1,22 @@
 # 🗺️ Roadmap - RyderCupFriends Frontend
 
-> **Versión:** 1.15.0 → 1.16.0 → 2.1.0
+> **Versión:** 1.15.0 → 1.16.0 → 2.0.0
 > **Última actualización:** 31 Ene 2026
-> **Estado:** ✅ v1.16.0 Completada (24 Ene 2026) | ✅ v2.1.0 Sprint 1 Completado (31 Ene 2026) | 🔄 Sprint 2 En Curso
+> **Estado:** ✅ v1.16.0 Completada (24 Ene 2026) | ✅ v2.0.0 Sprint 1 Completado (31 Ene 2026) | 🔄 Sprint 2 En Curso
 > **Stack:** React 19 + Vite 7.3 + Tailwind CSS 4 + ESLint 9
 
 ---
 
-## 🎯 Roadmap v2.1.0 - Sincronización Frontend & Backend
+## 🎯 Roadmap v2.0.0 - Sincronización Frontend & Backend
 
 > **Objetivo:** Convertir la gestión básica de torneos en un sistema completo de planificación, scoring y leaderboards en tiempo real.
 > **Duración:** 7 semanas (27 Ene 2026 - 17 Mar 2026)
-> **Estado:** 🟢 **100% Sincronizado con Backend v2.1.0**
-> **Backend compatible:** FastAPI v2.1.0 (RyderCupAm)
+> **Estado:** 🟢 **100% Sincronizado con Backend v2.0.0**
+> **Backend compatible:** FastAPI v2.0.0 (RyderCupAm)
 
 ---
 
-### 📝 Resumen de Sincronización con Backend (v2.1.0)
+### 📝 Resumen de Sincronización con Backend (v2.0.0)
 
 Tras la revisión del prompt del backend, hemos actualizado nuestro plan para reflejar una sincronización total.
 
@@ -116,7 +116,7 @@ const CompetitionActions = ({ competitionId }) => {
 | Sprint   | Fechas          | Esfuerzo BE | Endpoints | Sync Point        | Estado        |
 |----------|-----------------|-------------|-----------|-------------------|---------------|
 | Sprint 1 | 27 Ene - 6 Feb  | 60h         | 10        | ✅ Viernes 31 Ene | ✅ COMPLETADO |
-| Sprint 2 | 7 Feb - 17 Feb  | 70h         | 10        | 🔄 Viernes 14 Feb | 📋 Pendiente  |
+| Sprint 2 | 7 Feb - 17 Feb  | 70h         | 10        | 🔄 Viernes 14 Feb | 🔄 EN CURSO   |
 | Sprint 3 | 18 Feb - 24 Feb | 48h         | 5         | 🔄 Viernes 21 Feb | 📋 Pendiente  |
 | Sprint 4 | 25 Feb - 10 Mar | 92h         | 4         | 🔄 Viernes 7 Mar  | 📋 Pendiente  |
 | Sprint 5 | 11 Mar - 17 Mar | 60h         | 2         | 🔄 Viernes 14 Mar | 📋 Pendiente  |
@@ -253,7 +253,7 @@ Aquí están las confirmaciones y respuestas a vuestras preguntas:
 
 ---
 
-### ✅ Acceptance Criteria Global (v2.1.0)
+### ✅ Acceptance Criteria Global (v2.0.0)
 
 1.  **Funcionalidad:**
     -   ✅ Admin gestiona usuarios y aprueba campos de golf.
@@ -280,7 +280,7 @@ Aquí están las confirmaciones y respuestas a vuestras preguntas:
 
 5.  **Documentation:**
     -   ✅ ADRs actualizados (ADR-009, ADR-010).
-    -   ✅ CHANGELOG.md con v2.1.0 completo.
+    -   ✅ CHANGELOG.md con v2.0.0 completo.
     -   ✅ `ROADMAP.md` sincronizado entre frontend y backend.
 ---
 
@@ -414,5 +414,5 @@ Aquí están las confirmaciones y respuestas a vuestras preguntas:
 
 ---
 
-**Última revisión:** 24 Ene 2026 (v1.16.0 Completada)
-**Próxima revisión:** Inicio v2.1.0
+**Última revisión:** 31 Ene 2026 (v2.0.0 Sprint 1 Completado, Sprint 2 En Curso)
+**Próxima revisión:** Fin Sprint 2 (14 Feb 2026)
