@@ -21,6 +21,10 @@ class ApiGolfCourseRepository extends IGolfCourseRepository {
       queryParams.append('approval_status', filters.approvalStatus);
     }
 
+    if (filters.countryCode) {
+      queryParams.append('country_code', filters.countryCode);
+    }
+
     const queryString = queryParams.toString();
     const url = `/api/v1/golf-courses${queryString ? `?${queryString}` : ''}`;
 

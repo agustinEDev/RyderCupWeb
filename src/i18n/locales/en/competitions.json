@@ -45,6 +45,13 @@
     "selectAdjacentCountry": "Select adjacent country",
     "thirdCountry": "Third Country",
     "selectThirdCountry": "Select third country",
+    "golfCourses": "Golf Courses",
+    "golfCoursesSubtitle": "Add golf courses for each country (at least one per country)",
+    "golfCourse": "Golf Course",
+    "selectGolfCourse": "Select Golf Course *",
+    "selectedCourse": "Selected",
+    "coursesSelected": "courses selected",
+    "coursePendingApproval": "This course is pending approval. You won't be able to activate the competition until it's approved.",
     "ryderCupSettings": "RyderCup Settings",
     "handicapType": "Handicap Type *",
     "scratch": "Scratch",
@@ -67,6 +74,8 @@
       "datesRequired": "Start and end dates are required",
       "endDateAfterStart": "End date must be after start date",
       "countryRequired": "Please select a country",
+      "golfCourseRequired": "Please select a golf course",
+      "golfCoursesRequired": "Please select golf courses for: {{countries}}",
       "playersMinimum": "Number of players must be at least 2",
       "playersMaximum": "Number of players cannot exceed 100"
     },
@@ -99,6 +108,14 @@
       "cancel": "Are you sure you want to cancel this competition?",
       "delete": "Are you sure you want to delete this competition? This action cannot be undone.",
       "rejectEnrollment": "Are you sure you want to reject this enrollment?"
+    },
+    "errors": {
+      "golfCoursePendingApproval": "Cannot activate competition: Golf course is pending approval",
+      "golfCourseRejected": "Cannot activate competition: Golf course was rejected",
+      "noGolfCourse": "Cannot activate competition: No golf course selected",
+      "golfCoursesPendingApproval": "Cannot activate: These courses are pending approval: {{courses}}",
+      "golfCoursesRejected": "Cannot activate: These courses were rejected: {{courses}}",
+      "noGolfCourses": "Cannot activate: No golf courses selected"
     },
     "enrollmentStatus": "Your enrollment status:",
     "settings": {

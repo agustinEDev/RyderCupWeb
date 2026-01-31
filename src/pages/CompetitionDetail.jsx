@@ -83,6 +83,30 @@ const CompetitionDetail = () => {
   const isLoading = isLoadingUser || isLoadingCompetition || isLoadingRoles;
 
   const handleStatusChange = async (action) => {
+    // Validate golf courses approval status before activation
+    if (action === 'activate') {
+      const golfCourses = competition?.golfCourses || [];
+
+      if (golfCourses.length === 0) {
+        customToast.error(t('detail.errors.noGolfCourses'));
+        return;
+      }
+
+      const pendingCourses = golfCourses.filter(gc => gc.approvalStatus === 'PENDING_APPROVAL');
+      if (pendingCourses.length > 0) {
+        const courseNames = pendingCourses.map(gc => gc.name).join(', ');
+        customToast.error(t('detail.errors.golfCoursesPendingApproval', { courses: courseNames }));
+        return;
+      }
+
+      const rejectedCourses = golfCourses.filter(gc => gc.approvalStatus === 'REJECTED');
+      if (rejectedCourses.length > 0) {
+        const courseNames = rejectedCourses.map(gc => gc.name).join(', ');
+        customToast.error(t('detail.errors.golfCoursesRejected', { courses: courseNames }));
+        return;
+      }
+    }
+
     const confirmationKey = `detail.confirmations.${action}`;
     if (!window.confirm(t(confirmationKey))) {
       return;

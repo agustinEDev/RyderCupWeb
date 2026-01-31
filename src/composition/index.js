@@ -25,6 +25,7 @@ import ApiGolfCourseRepository from '../infrastructure/repositories/ApiGolfCours
 import ListGolfCoursesUseCase from '../application/use_cases/golf_course/ListGolfCoursesUseCase';
 import GetGolfCourseUseCase from '../application/use_cases/golf_course/GetGolfCourseUseCase';
 import CreateGolfCourseAdminUseCase from '../application/use_cases/golf_course/CreateGolfCourseAdminUseCase';
+import CreateGolfCourseRequestUseCase from '../application/use_cases/golf_course/CreateGolfCourseRequestUseCase';
 import UpdateGolfCourseUseCase from '../application/use_cases/golf_course/UpdateGolfCourseUseCase';
 import ApproveGolfCourseUseCase from '../application/use_cases/golf_course/ApproveGolfCourseUseCase';
 import RejectGolfCourseUseCase from '../application/use_cases/golf_course/RejectGolfCourseUseCase';
@@ -117,6 +118,7 @@ const revokeDeviceUseCase = new RevokeDeviceUseCase({ deviceRepository: apiDevic
 const listGolfCoursesUseCase = new ListGolfCoursesUseCase({ golfCourseRepository: apiGolfCourseRepository });
 const getGolfCourseUseCase = new GetGolfCourseUseCase({ golfCourseRepository: apiGolfCourseRepository });
 const createGolfCourseAdminUseCase = new CreateGolfCourseAdminUseCase({ golfCourseRepository: apiGolfCourseRepository });
+const createGolfCourseRequestUseCase = new CreateGolfCourseRequestUseCase({ golfCourseRepository: apiGolfCourseRepository });
 const updateGolfCourseUseCase = new UpdateGolfCourseUseCase({ golfCourseRepository: apiGolfCourseRepository });
 const approveGolfCourseUseCase = new ApproveGolfCourseUseCase({ golfCourseRepository: apiGolfCourseRepository });
 const rejectGolfCourseUseCase = new RejectGolfCourseUseCase({ golfCourseRepository: apiGolfCourseRepository });
@@ -165,6 +167,7 @@ export {
   listGolfCoursesUseCase,
   getGolfCourseUseCase,
   createGolfCourseAdminUseCase,
+  createGolfCourseRequestUseCase,
   updateGolfCourseUseCase,
   approveGolfCourseUseCase,
   rejectGolfCourseUseCase,

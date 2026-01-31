@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { validateEmail, validateName, validatePassword } from '../utils/validation';
 import PasswordInput from '../components/ui/PasswordInput';
 import PasswordRequirements from '../components/ui/PasswordRequirements';
+import PasswordStrengthMeter from '../components/ui/PasswordStrengthMeter';
 import { registerUseCase } from '../composition'; // NUEVO import
 import { CountryFlag } from '../utils/countryUtils';
 import { formatCountryName } from '../services/countries';
@@ -428,6 +429,8 @@ const Register = () => {
                   )}
                   {/* Password Requirements */}
                   <PasswordRequirements password={formData.password} />
+                  {/* Password Strength Meter */}
+                  <PasswordStrengthMeter password={formData.password} />
                 </div>
 
                 {/* Confirm Password */}

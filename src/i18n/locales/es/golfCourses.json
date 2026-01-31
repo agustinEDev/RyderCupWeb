@@ -71,6 +71,31 @@
       "REJECTED": "Rechazado"
     }
   },
+  "searchBox": {
+    "selectCountryFirst": "Selecciona un país primero...",
+    "searchPlaceholder": "Buscar campo de golf...",
+    "errorLoading": "Error al cargar campos de golf",
+    "tees": "tees",
+    "noCoursesFound": "No se encontraron campos de golf",
+    "tryDifferentSearch": "Prueba con otro término de búsqueda o solicita un nuevo campo",
+    "noCoursesInCountry": "Aún no hay campos aprobados en este país",
+    "requestNewCourse": "Solicitar nuevo campo de golf"
+  },
+  "requestModal": {
+    "title": "Solicitar Nuevo Campo de Golf",
+    "subtitle": "Tu solicitud será revisada por un administrador",
+    "successTitle": "¡Solicitud Enviada!",
+    "successMessage": "Tu solicitud de campo de golf ha sido enviada para aprobación.",
+    "errorTitle": "Error al enviar la solicitud",
+    "errorCreating": "Error al crear la solicitud de campo de golf",
+    "infoTitle": "Importante:",
+    "infoMessage": "Tu competición se guardará como BORRADOR hasta que este campo sea aprobado. No podrás activarla hasta la aprobación."
+  },
+  "courseTypes": {
+    "STANDARD_18": "Estándar 18 Hoyos",
+    "PITCH_AND_PUTT": "Pitch & Putt",
+    "EXECUTIVE": "Ejecutivo"
+  },
   "pages": {
     "admin": {
       "title": "Campos de Golf",

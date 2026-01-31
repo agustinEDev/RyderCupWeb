@@ -1,12 +1,14 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Calendar, Trophy, MapPin, Settings, Plus, X, ChevronDown } from 'lucide-react';
+import { Calendar, Trophy, MapPin, Settings, Plus, X, ChevronDown, Flag, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import HeaderAuth from '../components/layout/HeaderAuth';
 import { useAuth } from '../hooks/useAuth';
-import { createCompetitionUseCase, fetchCountriesUseCase } from '../composition';
+import { createCompetitionUseCase, fetchCountriesUseCase, createGolfCourseRequestUseCase } from '../composition';
 import { CountryFlag } from '../utils/countryUtils';
 import { formatCountryName } from '../services/countries';
+import GolfCourseSearchBox from '../components/golf_course/GolfCourseSearchBox';
+import GolfCourseRequestModal from '../components/golf_course/GolfCourseRequestModal';
 
 const API_URL = import.meta.env.VITE_API_BASE_URL || '';
 
@@ -50,6 +52,9 @@ const CreateCompetition = () => {
     showAdjacentCountry1: false,
     showAdjacentCountry2: false,
 
+    // Golf Courses (array of { countryCode, course })
+    golfCourses: [],
+
     // RyderCup Settings
     handicapType: 'SCRATCH',
     handicapPercentage: '100',
@@ -57,6 +62,10 @@ const CreateCompetition = () => {
     teamAssignment: 'manual',
     playerHandicap: 'user'
   });
+
+  // Golf Course Request Modal
+  const [showRequestModal, setShowRequestModal] = useState(false);
+  const [requestModalCountry, setRequestModalCountry] = useState(null);
 
   /**
    * Cleanup: limpiar timer de navegación al desmontar
@@ -151,14 +160,20 @@ const CreateCompetition = () => {
   };
 
   const handleCountrySelect = (country) => {
-    setFormData(prev => ({
-      ...prev,
-      country: country,
-      adjacentCountry1: '',
-      adjacentCountry2: '',
-      showAdjacentCountry1: false,
-      showAdjacentCountry2: false
-    }));
+    setFormData(prev => {
+      // Keep only golf courses for the main country
+      const newGolfCourses = prev.golfCourses.filter(gc => gc.countryCode === country.code);
+
+      return {
+        ...prev,
+        country: country,
+        adjacentCountry1: '',
+        adjacentCountry2: '',
+        showAdjacentCountry1: false,
+        showAdjacentCountry2: false,
+        golfCourses: newGolfCourses
+      };
+    });
     setAdjacentCountries1([]);
     setAdjacentCountries2([]);
     fetchAdjacentCountries(country.code, 1);
@@ -193,22 +208,75 @@ const CreateCompetition = () => {
   };
 
   const handleRemoveAdjacentCountry1 = () => {
-    setFormData(prev => ({
-      ...prev,
-      adjacentCountry1: '',
-      adjacentCountry2: '',
-      showAdjacentCountry1: false,
-      showAdjacentCountry2: false
-    }));
+    setFormData(prev => {
+      // Remove golf courses for both adjacent countries
+      const newGolfCourses = prev.golfCourses.filter(
+        gc => gc.countryCode !== prev.adjacentCountry1 && gc.countryCode !== prev.adjacentCountry2
+      );
+
+      return {
+        ...prev,
+        adjacentCountry1: '',
+        adjacentCountry2: '',
+        showAdjacentCountry1: false,
+        showAdjacentCountry2: false,
+        golfCourses: newGolfCourses
+      };
+    });
     setAdjacentCountries2([]);
   };
 
   const handleRemoveAdjacentCountry2 = () => {
+    setFormData(prev => {
+      // Remove golf courses for second adjacent country
+      const newGolfCourses = prev.golfCourses.filter(gc => gc.countryCode !== prev.adjacentCountry2);
+
+      return {
+        ...prev,
+        adjacentCountry2: '',
+        showAdjacentCountry2: false,
+        golfCourses: newGolfCourses
+      };
+    });
+  };
+
+  const handleGolfCourseSelect = (countryCode, course) => {
     setFormData(prev => ({
       ...prev,
-      adjacentCountry2: '',
-      showAdjacentCountry2: false
+      golfCourses: [...prev.golfCourses, { countryCode, course }]
     }));
+  };
+
+  const handleRemoveGolfCourse = (index) => {
+    setFormData(prev => ({
+      ...prev,
+      golfCourses: prev.golfCourses.filter((_, i) => i !== index)
+    }));
+  };
+
+  const handleRequestNewCourse = (countryCode) => {
+    setRequestModalCountry(countryCode);
+    setShowRequestModal(true);
+  };
+
+  const handleRequestModalClose = () => {
+    setShowRequestModal(false);
+    setRequestModalCountry(null);
+  };
+
+  const handleRequestSuccess = (createdCourse) => {
+    // Auto-select the newly requested course for its country
+    if (requestModalCountry) {
+      setFormData(prev => ({
+        ...prev,
+        golfCourses: [...prev.golfCourses, { countryCode: requestModalCountry, course: createdCourse }]
+      }));
+    }
+  };
+
+  // Get courses for a specific country
+  const getCoursesForCountry = (countryCode) => {
+    return formData.golfCourses.filter(gc => gc.countryCode === countryCode);
   };
 
   const handleSubmit = async (e) => {
@@ -241,6 +309,27 @@ const CreateCompetition = () => {
       return;
     }
 
+    // Validate golf courses for all countries
+    const selectedCountries = [formData.country?.code];
+    if (formData.adjacentCountry1) selectedCountries.push(formData.adjacentCountry1);
+    if (formData.adjacentCountry2) selectedCountries.push(formData.adjacentCountry2);
+
+    // Check that each country has at least one golf course
+    const missingCourses = selectedCountries.filter(code => {
+      return !formData.golfCourses.some(gc => gc.countryCode === code);
+    });
+
+    if (missingCourses.length > 0) {
+      const countryNames = missingCourses.map(code => {
+        const country = allCountries.find(c => c.code === code) ||
+                        adjacentCountries1.find(c => c.code === code) ||
+                        adjacentCountries2.find(c => c.code === code);
+        return formatCountryName(country, i18n.language);
+      }).join(', ');
+      setMessage({ type: 'error', text: t('create.errors.golfCoursesRequired', { countries: countryNames }) });
+      return;
+    }
+
     const numPlayers = Number.parseInt(formData.numberOfPlayers, 10);
     if (Number.isNaN(numPlayers) || numPlayers < 2) {
       setMessage({ type: 'error', text: t('create.errors.playersMinimum') });
@@ -263,6 +352,12 @@ const CreateCompetition = () => {
         countries.push(formData.adjacentCountry2);
       }
 
+      // Prepare golf courses array
+      const golfCourses = formData.golfCourses.map(gc => ({
+        country_code: gc.countryCode,
+        golf_course_id: gc.course.id
+      }));
+
       const payload = {
         name: formData.competitionName.trim(),
         team_1_name: formData.teamOneName.trim(),
@@ -271,6 +366,7 @@ const CreateCompetition = () => {
         end_date: formData.endDate,
         main_country: formData.country?.code,
         countries: countries,
+        golf_courses: golfCourses,
         handicap_type: formData.handicapType.toUpperCase(),
         number_of_players: numPlayers,
         team_assignment: formData.teamAssignment.toUpperCase()
@@ -603,7 +699,184 @@ const CreateCompetition = () => {
                 </div>
               </div>
 
-              {/* Section 4: RyderCup Settings */}
+              {/* Section 4: Golf Courses */}
+              <div className="border border-gray-200 rounded-xl p-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center">
+                    <Flag className="w-5 h-5 text-green-700" />
+                  </div>
+                  <div>
+                    <h3 className="text-gray-900 font-bold text-lg">{t('create.golfCourses')}</h3>
+                    <p className="text-sm text-gray-500">{t('create.golfCoursesSubtitle')}</p>
+                  </div>
+                </div>
+
+                <div className="space-y-6">
+                  {/* Main Country Golf Courses */}
+                  {formData.country && (
+                    <div className="border border-gray-200 rounded-lg p-4">
+                      <div className="flex items-center gap-2 mb-3">
+                        <CountryFlag countryCode={formData.country.code} style={{ width: '24px', height: 'auto' }} />
+                        <h4 className="text-base font-semibold text-gray-900">
+                          {formatCountryName(formData.country, i18n.language)}
+                        </h4>
+                        <span className="text-xs text-gray-500">
+                          ({getCoursesForCountry(formData.country.code).length} {t('create.coursesSelected')})
+                        </span>
+                      </div>
+
+                      {/* List of selected courses */}
+                      {getCoursesForCountry(formData.country.code).map((gc, index) => {
+                        const globalIndex = formData.golfCourses.findIndex(
+                          item => item.countryCode === gc.countryCode && item.course.id === gc.course.id
+                        );
+                        return (
+                          <div key={`${gc.course.id}-${index}`} className="mb-2 p-3 bg-gray-50 border border-gray-200 rounded-lg flex items-center justify-between">
+                            <div className="flex-1">
+                              <p className="text-sm font-medium text-gray-900">{gc.course.name}</p>
+                              {gc.course.approvalStatus === 'PENDING_APPROVAL' && (
+                                <p className="text-xs text-yellow-700 mt-1 flex items-center gap-1">
+                                  <span className="inline-block w-2 h-2 bg-yellow-500 rounded-full"></span>
+                                  {t('create.coursePendingApproval')}
+                                </p>
+                              )}
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveGolfCourse(globalIndex)}
+                              className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        );
+                      })}
+
+                      {/* Add course button/search */}
+                      <div className="mt-3">
+                        <GolfCourseSearchBox
+                          countryCode={formData.country.code}
+                          selectedCourse={null}
+                          onCourseSelect={(course) => handleGolfCourseSelect(formData.country.code, course)}
+                          onRequestNewCourse={() => handleRequestNewCourse(formData.country.code)}
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Adjacent Country 1 Golf Courses */}
+                  {formData.adjacentCountry1 && (
+                    <div className="border border-gray-200 rounded-lg p-4">
+                      <div className="flex items-center gap-2 mb-3">
+                        <CountryFlag countryCode={formData.adjacentCountry1} style={{ width: '24px', height: 'auto' }} />
+                        <h4 className="text-base font-semibold text-gray-900">
+                          {formatCountryName(
+                            allCountries.find(c => c.code === formData.adjacentCountry1) || adjacentCountries1.find(c => c.code === formData.adjacentCountry1),
+                            i18n.language
+                          )}
+                        </h4>
+                        <span className="text-xs text-gray-500">
+                          ({getCoursesForCountry(formData.adjacentCountry1).length} {t('create.coursesSelected')})
+                        </span>
+                      </div>
+
+                      {/* List of selected courses */}
+                      {getCoursesForCountry(formData.adjacentCountry1).map((gc, index) => {
+                        const globalIndex = formData.golfCourses.findIndex(
+                          item => item.countryCode === gc.countryCode && item.course.id === gc.course.id
+                        );
+                        return (
+                          <div key={`${gc.course.id}-${index}`} className="mb-2 p-3 bg-gray-50 border border-gray-200 rounded-lg flex items-center justify-between">
+                            <div className="flex-1">
+                              <p className="text-sm font-medium text-gray-900">{gc.course.name}</p>
+                              {gc.course.approvalStatus === 'PENDING_APPROVAL' && (
+                                <p className="text-xs text-yellow-700 mt-1 flex items-center gap-1">
+                                  <span className="inline-block w-2 h-2 bg-yellow-500 rounded-full"></span>
+                                  {t('create.coursePendingApproval')}
+                                </p>
+                              )}
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveGolfCourse(globalIndex)}
+                              className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        );
+                      })}
+
+                      {/* Add course button/search */}
+                      <div className="mt-3">
+                        <GolfCourseSearchBox
+                          countryCode={formData.adjacentCountry1}
+                          selectedCourse={null}
+                          onCourseSelect={(course) => handleGolfCourseSelect(formData.adjacentCountry1, course)}
+                          onRequestNewCourse={() => handleRequestNewCourse(formData.adjacentCountry1)}
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Adjacent Country 2 Golf Courses */}
+                  {formData.adjacentCountry2 && (
+                    <div className="border border-gray-200 rounded-lg p-4">
+                      <div className="flex items-center gap-2 mb-3">
+                        <CountryFlag countryCode={formData.adjacentCountry2} style={{ width: '24px', height: 'auto' }} />
+                        <h4 className="text-base font-semibold text-gray-900">
+                          {formatCountryName(
+                            allCountries.find(c => c.code === formData.adjacentCountry2) || adjacentCountries2.find(c => c.code === formData.adjacentCountry2),
+                            i18n.language
+                          )}
+                        </h4>
+                        <span className="text-xs text-gray-500">
+                          ({getCoursesForCountry(formData.adjacentCountry2).length} {t('create.coursesSelected')})
+                        </span>
+                      </div>
+
+                      {/* List of selected courses */}
+                      {getCoursesForCountry(formData.adjacentCountry2).map((gc, index) => {
+                        const globalIndex = formData.golfCourses.findIndex(
+                          item => item.countryCode === gc.countryCode && item.course.id === gc.course.id
+                        );
+                        return (
+                          <div key={`${gc.course.id}-${index}`} className="mb-2 p-3 bg-gray-50 border border-gray-200 rounded-lg flex items-center justify-between">
+                            <div className="flex-1">
+                              <p className="text-sm font-medium text-gray-900">{gc.course.name}</p>
+                              {gc.course.approvalStatus === 'PENDING_APPROVAL' && (
+                                <p className="text-xs text-yellow-700 mt-1 flex items-center gap-1">
+                                  <span className="inline-block w-2 h-2 bg-yellow-500 rounded-full"></span>
+                                  {t('create.coursePendingApproval')}
+                                </p>
+                              )}
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveGolfCourse(globalIndex)}
+                              className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        );
+                      })}
+
+                      {/* Add course button/search */}
+                      <div className="mt-3">
+                        <GolfCourseSearchBox
+                          countryCode={formData.adjacentCountry2}
+                          selectedCourse={null}
+                          onCourseSelect={(course) => handleGolfCourseSelect(formData.adjacentCountry2, course)}
+                          onRequestNewCourse={() => handleRequestNewCourse(formData.adjacentCountry2)}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Section 5: RyderCup Settings */}
               <div className="border border-gray-200 rounded-xl p-6">
                 <div className="flex items-center gap-3 mb-4">
                   <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
@@ -761,6 +1034,15 @@ const CreateCompetition = () => {
           </div>
         </div>
       </div>
+
+      {/* Golf Course Request Modal */}
+      <GolfCourseRequestModal
+        isOpen={showRequestModal}
+        onClose={handleRequestModalClose}
+        onSuccess={handleRequestSuccess}
+        countryCode={requestModalCountry}
+        createGolfCourseRequestUseCase={createGolfCourseRequestUseCase}
+      />
     </div>
   );
 };

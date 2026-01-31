@@ -71,6 +71,31 @@
       "REJECTED": "Rejected"
     }
   },
+  "searchBox": {
+    "selectCountryFirst": "Select a country first...",
+    "searchPlaceholder": "Search golf course...",
+    "errorLoading": "Error loading golf courses",
+    "tees": "tees",
+    "noCoursesFound": "No golf courses found",
+    "tryDifferentSearch": "Try a different search term or request a new course",
+    "noCoursesInCountry": "No approved courses in this country yet",
+    "requestNewCourse": "Request new golf course"
+  },
+  "requestModal": {
+    "title": "Request New Golf Course",
+    "subtitle": "Your request will be reviewed by an administrator",
+    "successTitle": "Request Submitted!",
+    "successMessage": "Your golf course request has been submitted for approval.",
+    "errorTitle": "Error submitting request",
+    "errorCreating": "Error creating golf course request",
+    "infoTitle": "Important:",
+    "infoMessage": "Your competition will be saved as DRAFT until this golf course is approved. You won't be able to activate it until approval."
+  },
+  "courseTypes": {
+    "STANDARD_18": "Standard 18 Holes",
+    "PITCH_AND_PUTT": "Pitch & Putt",
+    "EXECUTIVE": "Executive"
+  },
   "pages": {
     "admin": {
       "title": "Golf Courses",
