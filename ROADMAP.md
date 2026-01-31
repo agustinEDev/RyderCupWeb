@@ -1,8 +1,8 @@
 # 🗺️ Roadmap - RyderCupFriends Frontend
 
-> **Versión:** 1.15.0 → 1.16.0 → 2.0.0
+> **Versión:** 1.15.0 → 1.16.0 → 2.0.0 → 2.0.2 → 2.0.3 → 2.0.4 → 2.0.5
 > **Última actualización:** 31 Ene 2026
-> **Estado:** ✅ v1.16.0 Completada (24 Ene 2026) | ✅ v2.0.0 Sprint 1 Completado (31 Ene 2026) | 🔄 Sprint 2 En Curso
+> **Estado:** ✅ v1.16.0 Completada (24 Ene 2026) | ✅ v2.0.0 Sprint 1 Completado (31 Ene 2026) | 🔄 v2.0.2 Sprint 2 En Curso
 > **Stack:** React 19 + Vite 7.3 + Tailwind CSS 4 + ESLint 9
 
 ---
@@ -113,14 +113,14 @@ const CompetitionActions = ({ competitionId }) => {
 > **Fechas:** 27 Ene 2026 - 17 Mar 2026
 > **Equipo:** 1 Frontend Dev + 1 Backend Dev (paralelo)
 
-| Sprint   | Fechas          | Esfuerzo BE | Endpoints | Sync Point        | Estado        |
-|----------|-----------------|-------------|-----------|-------------------|---------------|
-| Sprint 1 | 27 Ene - 6 Feb  | 60h         | 10        | ✅ Viernes 31 Ene | ✅ COMPLETADO |
-| Sprint 2 | 7 Feb - 17 Feb  | 70h         | 10        | 🔄 Viernes 14 Feb | 🔄 EN CURSO   |
-| Sprint 3 | 18 Feb - 24 Feb | 48h         | 5         | 🔄 Viernes 21 Feb | 📋 Pendiente  |
-| Sprint 4 | 25 Feb - 10 Mar | 92h         | 4         | 🔄 Viernes 7 Mar  | 📋 Pendiente  |
-| Sprint 5 | 11 Mar - 17 Mar | 60h         | 2         | 🔄 Viernes 14 Mar | 📋 Pendiente  |
-| **TOTAL**| **7 semanas**   | **330h**    | **31**    |                   |               |
+| Sprint   | Fechas          | Esfuerzo BE | Endpoints | Sync Point        | Estado        | Versión  |
+|----------|-----------------|-------------|-----------|-------------------|---------------|----------|
+| Sprint 1 | 27 Ene - 6 Feb  | 60h         | 10        | ✅ Viernes 31 Ene | ✅ COMPLETADO | v2.0.0   |
+| Sprint 2 | 7 Feb - 17 Feb  | 70h         | 10        | 🔄 Viernes 14 Feb | 🔄 EN CURSO   | v2.0.2   |
+| Sprint 3 | 18 Feb - 24 Feb | 48h         | 5         | 🔄 Viernes 21 Feb | 📋 Pendiente  | v2.0.3   |
+| Sprint 4 | 25 Feb - 10 Mar | 92h         | 4         | 🔄 Viernes 7 Mar  | 📋 Pendiente  | v2.0.4   |
+| Sprint 5 | 11 Mar - 17 Mar | 60h         | 2         | 🔄 Viernes 14 Mar | 📋 Pendiente  | v2.0.5   |
+| **TOTAL**| **7 semanas**   | **330h**    | **31**    |                   |               |          |
 
 ---
 
