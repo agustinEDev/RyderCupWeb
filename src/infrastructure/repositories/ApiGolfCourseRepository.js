@@ -61,9 +61,6 @@ class ApiGolfCourseRepository extends IGolfCourseRepository {
   async createAsAdmin(golfCourseData) {
     const payload = this._mapToApiPayload(golfCourseData);
 
-    // Debug: Log payload to see what we're sending
-    console.log('📤 Creating golf course as admin - Payload:', JSON.stringify(payload, null, 2));
-
     const data = await apiRequest('/api/v1/golf-courses/admin', {
       method: 'POST',
       body: JSON.stringify(payload),
