@@ -1,0 +1,142 @@
+{
+  "form": {
+    "basicInfo": "Basic Information",
+    "name": "Course Name",
+    "namePlaceholder": "Pebble Beach Golf Links",
+    "countryCode": "Country Code",
+    "countryCodeHint": "ISO 3166-1 alpha-2 (e.g: ES, US, GB)",
+    "courseType": "Course Type",
+    "courseTypes": {
+      "STANDARD_18": "Standard 18 Holes",
+      "PITCH_AND_PUTT": "Pitch & Putt",
+      "EXECUTIVE": "Executive"
+    },
+    "tees": "Tees",
+    "tee": "Tee",
+    "addTee": "Add Tee",
+    "maxTeesReached": "Maximum 6 tees allowed",
+    "minTeesRequired": "Minimum 2 tees required",
+    "teeCategory": "Category",
+    "identifier": "Identifier",
+    "identifierPlaceholder": "Yellow, White, etc.",
+    "courseRating": "Course Rating",
+    "slopeRating": "Slope Rating",
+    "teeCategories": {
+      "CHAMPIONSHIP_MALE": "Championship Male",
+      "AMATEUR_MALE": "Amateur Male",
+      "SENIOR_MALE": "Senior Male",
+      "AMATEUR_FEMALE": "Amateur Female",
+      "SENIOR_FEMALE": "Senior Female",
+      "JUNIOR": "Junior"
+    },
+    "holes": "Holes (18)",
+    "hole": "Hole",
+    "par": "Par",
+    "strokeIndex": "Stroke Index",
+    "totalPar": "Total Par",
+    "cancel": "Cancel",
+    "create": "Create Course",
+    "update": "Save Changes",
+    "submitting": "Saving...",
+    "errors": {
+      "nameRequired": "Course name must be at least 3 characters",
+      "countryCodeRequired": "Country code must be 2 characters (ISO 3166-1)",
+      "teesRange": "Course must have between 2 and 6 tees",
+      "teeIdentifierRequired": "Tee {{index}} identifier is required",
+      "courseRatingRange": "Tee {{index}} Course Rating must be between 50.0 and 90.0",
+      "slopeRatingRange": "Tee {{index}} Slope Rating must be between 55 and 155",
+      "strokeIndexRange": "Hole {{index}} stroke index must be between 1 and 18",
+      "uniqueStrokeIndices": "Each hole must have a unique stroke index (1-18)",
+      "totalParRange": "Total par must be between 66 and 76 (current: {{totalPar}})",
+      "submitFailed": "Failed to save golf course"
+    }
+  },
+  "table": {
+    "name": "Name",
+    "country": "Country",
+    "type": "Type",
+    "par": "Par",
+    "tees": "Tees",
+    "status": "Status",
+    "actions": "Actions",
+    "view": "View details",
+    "edit": "Edit",
+    "approve": "Approve",
+    "reject": "Reject",
+    "noCourses": "No golf courses",
+    "pendingUpdate": "Update pending",
+    "updateProposal": "Update proposal",
+    "statuses": {
+      "APPROVED": "Approved",
+      "PENDING_APPROVAL": "Pending",
+      "REJECTED": "Rejected"
+    }
+  },
+  "searchBox": {
+    "selectCountryFirst": "Select a country first...",
+    "searchPlaceholder": "Search golf course...",
+    "errorLoading": "Error loading golf courses",
+    "tees": "tees",
+    "noCoursesFound": "No golf courses found",
+    "tryDifferentSearch": "Try a different search term or request a new course",
+    "noCoursesInCountry": "No approved courses in this country yet",
+    "requestNewCourse": "Request new golf course"
+  },
+  "requestModal": {
+    "title": "Request New Golf Course",
+    "subtitle": "Your request will be reviewed by an administrator",
+    "successTitle": "Request Submitted!",
+    "successMessage": "Your golf course request has been submitted for approval.",
+    "errorTitle": "Error submitting request",
+    "errorCreating": "Error creating golf course request",
+    "infoTitle": "Important:",
+    "infoMessage": "Your competition will be saved as DRAFT until this golf course is approved. You won't be able to activate it until approval."
+  },
+  "courseTypes": {
+    "STANDARD_18": "Standard 18 Holes",
+    "PITCH_AND_PUTT": "Pitch & Putt",
+    "EXECUTIVE": "Executive"
+  },
+  "pages": {
+    "admin": {
+      "title": "Golf Courses",
+      "subtitle": "Manage all approved golf courses",
+      "createCourse": "Create Course",
+      "createCourseTitle": "Create New Golf Course",
+      "editCourseTitle": "Edit Golf Course",
+      "totalCourses": "Total Courses",
+      "errorLoading": "Error loading golf courses",
+      "createSuccess": "Golf course created successfully",
+      "updateSuccess": "Golf course updated successfully",
+      "viewNotImplemented": "Detail view coming soon"
+    },
+    "pending": {
+      "title": "Pending Courses",
+      "subtitle": "Approve or reject golf course requests",
+      "newRequests": "New Requests",
+      "updateProposals": "Update Proposals",
+      "tabNew": "New",
+      "tabUpdates": "Updates",
+      "errorLoading": "Error loading pending courses",
+      "confirmApprove": "Approve course '{{name}}'?",
+      "confirmApproveUpdate": "Approve update for '{{name}}'?",
+      "confirmRejectUpdate": "Reject update for '{{name}}'?",
+      "approveSuccess": "Course approved successfully",
+      "approveUpdateSuccess": "Update approved successfully",
+      "rejectSuccess": "Course rejected",
+      "rejectUpdateSuccess": "Update rejected",
+      "approveFailed": "Failed to approve course",
+      "approveUpdateFailed": "Failed to approve update",
+      "rejectFailed": "Failed to reject course",
+      "rejectUpdateFailed": "Failed to reject update",
+      "rejectModalTitle": "Reject Golf Course",
+      "rejectModalMessage": "You are about to reject '{{name}}'. Please provide a reason.",
+      "rejectReason": "Rejection Reason",
+      "rejectReasonPlaceholder": "Explain why this course doesn't meet the requirements...",
+      "rejectReasonTooShort": "Reason must be at least 10 characters",
+      "characters": "characters",
+      "cancel": "Cancel",
+      "confirmReject": "Reject Course"
+    }
+  }
+}

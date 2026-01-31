@@ -35,13 +35,14 @@ class IUserRepository {
     throw new Error('Method not implemented: updateSecurity');
   }
 
-  // Otros métodos que podríamos necesitar:
-  // async save(user) {
-  //   throw new Error('Method not implemented: save');
-  // }
-  // async delete(id) {
-  //   throw new Error('Method not implemented: delete');
-  // }
+  /**
+   * Obtiene los roles de un usuario en una competición específica.
+   * @param {string} competitionId - El ID de la competición.
+   * @returns {Promise<{is_admin: boolean, is_creator: boolean, is_player: boolean}>} Objeto con los roles del usuario.
+   */
+  async getUserRoles(competitionId) {
+    throw new Error('Method not implemented: getUserRoles');
+  }
 }
 
 export default IUserRepository;

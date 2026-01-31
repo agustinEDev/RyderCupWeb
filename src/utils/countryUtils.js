@@ -7,6 +7,10 @@
  *
  * UPDATE (Nov 2025): Added SVG flag support using country-flag-icons
  * to fix rendering issues in Chrome/Windows
+ *
+ * UPDATE (Jan 2026): Using static imports for SVG flags. Tree-shaking includes
+ * all flags (~239 KB) but ensures consistent rendering across all browsers.
+ * Bundle size budget increased to accommodate this.
  */
 
 import React from 'react';

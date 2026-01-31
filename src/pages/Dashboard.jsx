@@ -101,7 +101,7 @@ const Dashboard = () => {
             >
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                 {/* Stat Card 1 - Tournaments */}
-                <div className="relative overflow-hidden bg-gradient-to-br from-primary-50 to-primary-100 p-6 rounded-xl border border-primary-200 hover:shadow-lg transition-all duration-300 group">
+                <div className="relative overflow-hidden bg-primary-50 p-6 rounded-xl border border-primary-200 hover:shadow-lg transition-all duration-300 group">
                   <div className="flex items-center justify-between mb-4">
                     <div className="p-3 bg-primary-500 rounded-lg shadow-md">
                       <Trophy className="w-6 h-6 text-white" />
@@ -118,7 +118,7 @@ const Dashboard = () => {
                 </div>
 
                 {/* Stat Card 2 - Handicap */}
-                <div className="relative overflow-hidden bg-gradient-to-br from-accent-50 via-amber-50 to-accent-100 p-6 rounded-xl border border-accent-200 hover:shadow-lg transition-all duration-300 group">
+                <div className="relative overflow-hidden bg-accent-50 p-6 rounded-xl border border-accent-200 hover:shadow-lg transition-all duration-300 group">
                   <div className="flex items-center justify-between mb-4">
                     <div className="p-3 bg-accent-500 rounded-lg shadow-md">
                       <TrendingUp className="w-6 h-6 text-white" />
@@ -141,7 +141,7 @@ const Dashboard = () => {
                 </div>
 
                 {/* Stat Card 3 - Profile */}
-                <div className="relative overflow-hidden bg-gradient-to-br from-blue-50 to-navy-100 p-6 rounded-xl border border-blue-200 hover:shadow-lg transition-all duration-300 group">
+                <div className="relative overflow-hidden bg-blue-50 p-6 rounded-xl border border-blue-200 hover:shadow-lg transition-all duration-300 group">
                   <div className="flex items-center justify-between mb-4">
                     <div className="p-3 bg-navy-800 rounded-lg shadow-md">
                       <Award className="w-6 h-6 text-white" />

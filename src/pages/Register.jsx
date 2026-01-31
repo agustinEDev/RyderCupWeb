@@ -5,7 +5,8 @@ import customToast from '../utils/toast';
 import { useTranslation } from 'react-i18next';
 import { validateEmail, validateName, validatePassword } from '../utils/validation';
 import PasswordInput from '../components/ui/PasswordInput';
-import PasswordStrengthIndicator from '../components/ui/PasswordStrengthIndicator';
+import PasswordRequirements from '../components/ui/PasswordRequirements';
+import PasswordStrengthMeter from '../components/ui/PasswordStrengthMeter';
 import { registerUseCase } from '../composition'; // NUEVO import
 import { CountryFlag } from '../utils/countryUtils';
 import { formatCountryName } from '../services/countries';
@@ -20,6 +21,7 @@ const Register = () => {
     lastName: '',
     email: '',
     password: '',
+    confirmPassword: '',
     countryCode: '' // Campo opcional para nacionalidad
   });
   const [errors, setErrors] = useState({});
@@ -98,6 +100,12 @@ const Register = () => {
       newErrors.password = passwordValidation.message;
     }
 
+    if (!formData.confirmPassword) {
+      newErrors.confirmPassword = t('validation.confirmPasswordRequired');
+    } else if (formData.password !== formData.confirmPassword) {
+      newErrors.confirmPassword = t('validation.passwordsDoNotMatch');
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -147,7 +155,7 @@ const Register = () => {
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.6 }}
-          className="hidden lg:flex lg:w-1/2 relative bg-gradient-to-br from-accent via-accent-600 to-primary overflow-hidden"
+          className="hidden lg:flex lg:w-1/2 relative bg-accent overflow-hidden"
         >
           {/* Background Pattern */}
           <div className="absolute inset-0 opacity-10">
@@ -419,10 +427,45 @@ const Register = () => {
                       {errors.password}
                     </motion.p>
                   )}
-                  {/* Password Strength Indicator */}
-                  <div className="mt-2">
-                    <PasswordStrengthIndicator password={formData.password} />
-                  </div>
+                  {/* Password Requirements */}
+                  <PasswordRequirements password={formData.password} />
+                  {/* Password Strength Meter */}
+                  <PasswordStrengthMeter password={formData.password} />
+                </div>
+
+                {/* Confirm Password */}
+                <div>
+                  <label htmlFor="confirmPassword" className="block text-sm font-semibold text-gray-700 mb-2">
+                    {t('register.confirmPasswordLabel')}
+                  </label>
+                  <PasswordInput
+                    name="confirmPassword"
+                    value={formData.confirmPassword}
+                    onChange={handleChange}
+                    placeholder={t('register.confirmPasswordPlaceholder')}
+                    maxLength={128}
+                    error={!!errors.confirmPassword}
+                    disabled={isLoading}
+                    label=""
+                    autoComplete="new-password"
+                    className={`w-full px-4 py-3 rounded-lg border-2 transition-all duration-200 ${
+                      errors.confirmPassword
+                        ? 'border-red-300 focus:border-red-500 focus:ring-2 focus:ring-red-200'
+                        : 'border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/20'
+                    } outline-none`}
+                  />
+                  {errors.confirmPassword && (
+                    <motion.p
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="text-red-500 text-xs mt-2 flex items-center gap-1"
+                    >
+                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                      </svg>
+                      {errors.confirmPassword}
+                    </motion.p>
+                  )}
                 </div>
 
                 {/* Nationality (Optional) */}
@@ -497,7 +540,7 @@ const Register = () => {
                   className={`w-full py-3.5 rounded-lg font-bold text-white transition-all duration-300 shadow-lg ${
                     isLoading
                       ? 'bg-gray-400 cursor-not-allowed'
-                      : 'bg-gradient-to-r from-accent to-accent-600 hover:from-accent-600 hover:to-primary hover:shadow-xl'
+                      : 'bg-accent hover:bg-accent-600 hover:shadow-xl'
                   }`}
                 >
                   {isLoading ? (

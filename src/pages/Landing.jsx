@@ -39,7 +39,7 @@ const Landing = () => {
         <Header />
 
         {/* Hero Section - Completely Redesigned */}
-        <section className="relative overflow-hidden bg-gradient-to-br from-primary-50 via-white to-accent-50 pb-16">
+        <section className="relative overflow-hidden bg-white pb-16">
           <div className="absolute inset-0 bg-[url('/images/golf-background.jpeg')] bg-cover bg-center opacity-5" />
 
           <div className="relative px-4 md:px-8 py-16 md:py-24 max-w-7xl mx-auto">
@@ -90,10 +90,9 @@ const Landing = () => {
                 >
                   <button
                     onClick={handleGetStarted}
-                    className="group relative px-8 py-4 bg-primary text-white text-base font-bold rounded-lg overflow-hidden transition-all duration-300 hover:bg-primary-600 hover:shadow-xl hover:scale-105"
+                    className="px-8 py-4 bg-primary text-white text-base font-bold rounded-lg transition-all duration-300 hover:bg-primary-600 hover:shadow-xl hover:scale-105"
                   >
-                    <span className="relative z-10">{t('hero.getStartedButton')}</span>
-                    <div className="absolute inset-0 bg-gradient-to-r from-primary-600 to-primary-700 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                    {t('hero.getStartedButton')}
                   </button>
 
                   <button
@@ -266,7 +265,7 @@ const Landing = () => {
         </section>
 
         {/* Benefits Section */}
-        <section className="bg-gradient-to-br from-primary-50 to-accent-50 py-16 md:py-24">
+        <section className="bg-gray-50 py-16 md:py-24">
           <div className="max-w-7xl mx-auto px-4 md:px-8">
             <motion.div
               initial="initial"
@@ -346,7 +345,7 @@ const Landing = () => {
             whileInView="animate"
             viewport={{ once: true }}
             variants={fadeInUp}
-            className="max-w-4xl mx-auto text-center bg-gradient-to-r from-primary-600 to-primary-700 rounded-3xl p-12 md:p-16 relative overflow-hidden shadow-2xl"
+            className="max-w-4xl mx-auto text-center bg-primary rounded-3xl p-12 md:p-16 relative overflow-hidden shadow-2xl"
           >
             {/* Background Pattern - Subtle */}
             <div className="absolute inset-0 opacity-5">

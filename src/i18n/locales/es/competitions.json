@@ -45,6 +45,13 @@
     "selectAdjacentCountry": "Selecciona país adyacente",
     "thirdCountry": "Tercer País",
     "selectThirdCountry": "Selecciona tercer país",
+    "golfCourses": "Campos de Golf",
+    "golfCoursesSubtitle": "Añade campos de golf para cada país (al menos uno por país)",
+    "golfCourse": "Campo de Golf",
+    "selectGolfCourse": "Selecciona Campo de Golf *",
+    "selectedCourse": "Seleccionado",
+    "coursesSelected": "campos seleccionados",
+    "coursePendingApproval": "Este campo está pendiente de aprobación. No podrás activar la competición hasta que sea aprobado.",
     "ryderCupSettings": "Configuración RyderCup",
     "handicapType": "Tipo de Hándicap *",
     "scratch": "Scratch",
@@ -67,12 +74,16 @@
       "datesRequired": "Se requieren las fechas de inicio y fin",
       "endDateAfterStart": "La fecha de fin debe ser posterior a la fecha de inicio",
       "countryRequired": "Por favor selecciona un país",
-      "playersMinimum": "El número de jugadores debe ser al menos 2"
+      "golfCourseRequired": "Por favor selecciona un campo de golf",
+      "golfCoursesRequired": "Por favor selecciona campos de golf para: {{countries}}",
+      "playersMinimum": "El número de jugadores debe ser al menos 2",
+      "playersMaximum": "El número de jugadores no puede exceder 100"
     },
     "success": "¡Competición creada exitosamente!"
   },
   "detail": {
     "loadingCompetition": "Cargando competición...",
+    "failedToLoadCompetition": "Error al cargar la competición",
     "backToCompetitions": "Volver a Competiciones",
     "backToBrowse": "Volver a Explorar",
     "creator": "Creador",
@@ -98,6 +109,14 @@
       "delete": "¿Estás seguro de que quieres eliminar esta competición? Esta acción no se puede deshacer.",
       "rejectEnrollment": "¿Estás seguro de que quieres rechazar esta inscripción?"
     },
+    "errors": {
+      "golfCoursePendingApproval": "No se puede activar la competición: El campo de golf está pendiente de aprobación",
+      "golfCourseRejected": "No se puede activar la competición: El campo de golf fue rechazado",
+      "noGolfCourse": "No se puede activar la competición: No se ha seleccionado ningún campo de golf",
+      "golfCoursesPendingApproval": "No se puede activar: Estos campos están pendientes de aprobación: {{courses}}",
+      "golfCoursesRejected": "No se puede activar: Estos campos fueron rechazados: {{courses}}",
+      "noGolfCourses": "No se puede activar: No se han seleccionado campos de golf"
+    },
     "enrollmentStatus": "Tu estado de inscripción:",
     "settings": {
       "title": "Configuración de la Competición",
@@ -121,7 +140,11 @@
     "enrollmentApproved": "Inscripción aprobada",
     "enrollmentRejected": "Inscripción rechazada",
     "failedToApprove": "Error al aprobar la inscripción",
-    "failedToReject": "Error al rechazar la inscripción"
+    "failedToReject": "Error al rechazar la inscripción",
+    "failedToUpdateCompetition": "Error al actualizar la competición",
+    "failedToDeleteCompetition": "Error al eliminar la competición",
+    "failedToEnroll": "Error al solicitar inscripción",
+    "failedToLoadCompetitions": "Error al cargar las competiciones"
   },
   "browse": {
     "title": "Explorar Competiciones",

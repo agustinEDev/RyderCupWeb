@@ -1,0 +1,142 @@
+{
+  "form": {
+    "basicInfo": "Información Básica",
+    "name": "Nombre del Campo",
+    "namePlaceholder": "Real Club de Golf El Prat",
+    "countryCode": "Código de País",
+    "countryCodeHint": "ISO 3166-1 alpha-2 (ej: ES, US, GB)",
+    "courseType": "Tipo de Campo",
+    "courseTypes": {
+      "STANDARD_18": "Estándar 18 Hoyos",
+      "PITCH_AND_PUTT": "Pitch & Putt",
+      "EXECUTIVE": "Ejecutivo"
+    },
+    "tees": "Tees",
+    "tee": "Tee",
+    "addTee": "Agregar Tee",
+    "maxTeesReached": "Máximo 6 tees permitidos",
+    "minTeesRequired": "Mínimo 2 tees requeridos",
+    "teeCategory": "Categoría",
+    "identifier": "Identificador",
+    "identifierPlaceholder": "Amarillo, Blanco, etc.",
+    "courseRating": "Course Rating",
+    "slopeRating": "Slope Rating",
+    "teeCategories": {
+      "CHAMPIONSHIP_MALE": "Campeonato Masculino",
+      "AMATEUR_MALE": "Amateur Masculino",
+      "SENIOR_MALE": "Senior Masculino",
+      "AMATEUR_FEMALE": "Amateur Femenino",
+      "SENIOR_FEMALE": "Senior Femenino",
+      "JUNIOR": "Juvenil"
+    },
+    "holes": "Hoyos (18)",
+    "hole": "Hoyo",
+    "par": "Par",
+    "strokeIndex": "Stroke Index",
+    "totalPar": "Par Total",
+    "cancel": "Cancelar",
+    "create": "Crear Campo",
+    "update": "Guardar Cambios",
+    "submitting": "Guardando...",
+    "errors": {
+      "nameRequired": "El nombre del campo debe tener al menos 3 caracteres",
+      "countryCodeRequired": "El código de país debe tener 2 caracteres (ISO 3166-1)",
+      "teesRange": "El campo debe tener entre 2 y 6 tees",
+      "teeIdentifierRequired": "El identificador del tee {{index}} es requerido",
+      "courseRatingRange": "El Course Rating del tee {{index}} debe estar entre 50.0 y 90.0",
+      "slopeRatingRange": "El Slope Rating del tee {{index}} debe estar entre 55 y 155",
+      "strokeIndexRange": "El stroke index del hoyo {{index}} debe estar entre 1 y 18",
+      "uniqueStrokeIndices": "Cada hoyo debe tener un stroke index único (1-18)",
+      "totalParRange": "El par total debe estar entre 66 y 76 (actual: {{totalPar}})",
+      "submitFailed": "Error al guardar el campo de golf"
+    }
+  },
+  "table": {
+    "name": "Nombre",
+    "country": "País",
+    "type": "Tipo",
+    "par": "Par",
+    "tees": "Tees",
+    "status": "Estado",
+    "actions": "Acciones",
+    "view": "Ver detalles",
+    "edit": "Editar",
+    "approve": "Aprobar",
+    "reject": "Rechazar",
+    "noCourses": "No hay campos de golf",
+    "pendingUpdate": "Actualización pendiente",
+    "updateProposal": "Propuesta de actualización",
+    "statuses": {
+      "APPROVED": "Aprobado",
+      "PENDING_APPROVAL": "Pendiente",
+      "REJECTED": "Rechazado"
+    }
+  },
+  "searchBox": {
+    "selectCountryFirst": "Selecciona un país primero...",
+    "searchPlaceholder": "Buscar campo de golf...",
+    "errorLoading": "Error al cargar campos de golf",
+    "tees": "tees",
+    "noCoursesFound": "No se encontraron campos de golf",
+    "tryDifferentSearch": "Prueba con otro término de búsqueda o solicita un nuevo campo",
+    "noCoursesInCountry": "Aún no hay campos aprobados en este país",
+    "requestNewCourse": "Solicitar nuevo campo de golf"
+  },
+  "requestModal": {
+    "title": "Solicitar Nuevo Campo de Golf",
+    "subtitle": "Tu solicitud será revisada por un administrador",
+    "successTitle": "¡Solicitud Enviada!",
+    "successMessage": "Tu solicitud de campo de golf ha sido enviada para aprobación.",
+    "errorTitle": "Error al enviar la solicitud",
+    "errorCreating": "Error al crear la solicitud de campo de golf",
+    "infoTitle": "Importante:",
+    "infoMessage": "Tu competición se guardará como BORRADOR hasta que este campo sea aprobado. No podrás activarla hasta la aprobación."
+  },
+  "courseTypes": {
+    "STANDARD_18": "Estándar 18 Hoyos",
+    "PITCH_AND_PUTT": "Pitch & Putt",
+    "EXECUTIVE": "Ejecutivo"
+  },
+  "pages": {
+    "admin": {
+      "title": "Campos de Golf",
+      "subtitle": "Gestiona todos los campos de golf aprobados",
+      "createCourse": "Crear Campo",
+      "createCourseTitle": "Crear Nuevo Campo de Golf",
+      "editCourseTitle": "Editar Campo de Golf",
+      "totalCourses": "Total de Campos",
+      "errorLoading": "Error al cargar los campos de golf",
+      "createSuccess": "Campo de golf creado exitosamente",
+      "updateSuccess": "Campo de golf actualizado exitosamente",
+      "viewNotImplemented": "Vista de detalles próximamente"
+    },
+    "pending": {
+      "title": "Campos Pendientes",
+      "subtitle": "Aprueba o rechaza solicitudes de campos de golf",
+      "newRequests": "Solicitudes Nuevas",
+      "updateProposals": "Propuestas de Actualización",
+      "tabNew": "Nuevas",
+      "tabUpdates": "Actualizaciones",
+      "errorLoading": "Error al cargar campos pendientes",
+      "confirmApprove": "¿Aprobar el campo '{{name}}'?",
+      "confirmApproveUpdate": "¿Aprobar la actualización de '{{name}}'?",
+      "confirmRejectUpdate": "¿Rechazar la actualización de '{{name}}'?",
+      "approveSuccess": "Campo aprobado exitosamente",
+      "approveUpdateSuccess": "Actualización aprobada exitosamente",
+      "rejectSuccess": "Campo rechazado",
+      "rejectUpdateSuccess": "Actualización rechazada",
+      "approveFailed": "Error al aprobar el campo",
+      "approveUpdateFailed": "Error al aprobar la actualización",
+      "rejectFailed": "Error al rechazar el campo",
+      "rejectUpdateFailed": "Error al rechazar la actualización",
+      "rejectModalTitle": "Rechazar Campo de Golf",
+      "rejectModalMessage": "Vas a rechazar el campo '{{name}}'. Por favor, proporciona una razón.",
+      "rejectReason": "Razón del Rechazo",
+      "rejectReasonPlaceholder": "Explica por qué este campo no cumple con los requisitos...",
+      "rejectReasonTooShort": "La razón debe tener al menos 10 caracteres",
+      "characters": "caracteres",
+      "cancel": "Cancelar",
+      "confirmReject": "Rechazar Campo"
+    }
+  }
+}

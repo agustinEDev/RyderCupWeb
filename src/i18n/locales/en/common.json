@@ -27,6 +27,8 @@
     "browseCompetitions": "Browse Competitions",
     "myCompetitions": "My Competitions",
     "createCompetition": "Create Competition",
+    "golfCourses": "Golf Courses",
+    "pendingCourses": "Pending Courses",
     "viewProfile": "View Profile",
     "logout": "Logout"
   },
