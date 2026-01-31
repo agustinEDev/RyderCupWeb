@@ -6,7 +6,7 @@ import reactRefresh from 'eslint-plugin-react-refresh';
 export default [
   // Ignore patterns (equivalent to ignorePatterns in old config)
   {
-    ignores: ['dist/**', 'playwright-report/**'],
+    ignores: ['dist/**', 'playwright-report/**', 'coverage/**'],
   },
 
   // Base ESLint recommended rules

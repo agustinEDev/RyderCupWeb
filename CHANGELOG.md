@@ -7,6 +7,217 @@ y este proyecto adhiere a [Versionado Semántico](https://semver.org/lang/es/).
 
 ## [Unreleased]
 
+### 🎯 v2.1.0 - Sprint 1: Golf Course Management System
+
+Sistema completo de gestión de campos de golf con arquitectura Clean Architecture + DDD.
+
+### ✨ Added
+
+#### Domain Layer
+- **Value Objects**:
+  - `Tee`: Representa posición de tee con validaciones WHS (World Handicap System)
+    - Categorías: CHAMPIONSHIP_MALE/FEMALE, AMATEUR_MALE/FEMALE, FORWARD_MALE/FEMALE
+    - Course Rating: 50.0-90.0
+    - Slope Rating: 55-155
+    - Gender: MALE/FEMALE
+  - `Hole`: Representa hoyo de golf con validaciones
+    - Hole Number: 1-18
+    - Par: 3-5
+    - Stroke Index: 1-18 (único)
+- **Entities**:
+  - `GolfCourse`: Entidad principal con métodos de negocio
+    - isClone(), hasPendingUpdate(), isApproved(), isPending(), isRejected()
+    - getStatusColor() para UI
+    - Soporte para workflow de clones (update proposals)
+- **Repository Interfaces**:
+  - `IGolfCourseRepository`: Contrato con 9 métodos (list, getById, create, createAsAdmin, update, approve, reject, approveUpdate, rejectUpdate, listPending)
+
+#### Infrastructure Layer
+- **Repositories**:
+  - `ApiGolfCourseRepository`: Implementación completa con 10 endpoints backend
+    - Mapeo domain ↔ API (snake_case/camelCase)
+    - Helper `_mapToApiPayload()` para conversión
+    - Manejo de errores con contexto
+
+#### Application Layer (8 Use Cases)
+- `ListGolfCoursesUseCase`: Listar campos con filtros (country, status, type)
+- `GetGolfCourseUseCase`: Obtener campo por ID
+- `CreateGolfCourseAdminUseCase`: Admin crea campo directamente APPROVED
+- `UpdateGolfCourseUseCase`: Smart workflow (admin in-place, creator crea clone)
+- `ApproveGolfCourseUseCase`: Aprobar nueva solicitud
+- `RejectGolfCourseUseCase`: Rechazar con razón (10-500 chars)
+- `ApproveGolfCourseUpdateUseCase`: Aprobar clone → merge a original
+- `RejectGolfCourseUpdateUseCase`: Rechazar clone → eliminar
+
+#### Presentation Layer
+- **Componentes**:
+  - `GolfCourseForm`: Formulario complejo (400+ líneas)
+    - 18 hoyos con par + stroke index
+    - 2-6 tees con course/slope rating
+    - Dropdown de países con banderas y nombres traducidos
+    - Validaciones en tiempo real (total par 66-76, stroke indices únicos)
+    - Modos: create/edit con initialData
+  - `GolfCourseTable`: Tabla reutilizable con acciones role-based
+    - Columnas: name, country, type, par, tees, status, actions
+    - Badges de status con colores
+    - Indicadores de pending updates
+  - `TeeCategoryBadge`: Badges visuales para 6 categorías de tees
+- **Páginas Admin**:
+  - `/admin/golf-courses`: CRUD de campos aprobados
+    - Lista todos los campos APPROVED
+    - Admin crea directamente APPROVED
+    - Admin edita in-place (sin clones)
+    - Modal create/edit con GolfCourseForm
+  - `/admin/golf-courses/pending`: Gestión de aprobaciones
+    - Tab "New Requests": Solicitudes nuevas (originalGolfCourseId === null)
+    - Tab "Update Proposals": Propuestas de actualización (clones)
+    - Aprobar/Rechazar con modal de razón
+    - Stats: contadores por tipo
+
+#### Navigation & Auth
+- Enlaces admin en HeaderAuth (desktop + mobile)
+  - Solo visible para usuarios con `is_admin=true`
+  - "Campos de Golf" → `/admin/golf-courses`
+  - "Campos Pendientes" → `/admin/golf-courses/pending`
+
+#### Internationalization
+- **Namespace**: `golfCourses` (300+ traducciones ES/EN)
+- **Secciones**:
+  - `form`: Campos, validaciones, errores, botones
+  - `table`: Columnas, acciones, estados
+  - `pages.admin`: Títulos, mensajes, toasts
+  - `pages.pending`: Tabs, confirmaciones, modales
+- **Common**: Añadidos `header.golfCourses` y `header.pendingCourses`
+
+#### Routing & Composition
+- Rutas protegidas con `<ProtectedRoute>`:
+  - `/admin/golf-courses`
+  - `/admin/golf-courses/pending`
+- Lazy loading con React.lazy()
+- Dependency injection en `composition/index.js`:
+  - `apiGolfCourseRepository`
+  - 8 use cases exportados
+
+### ✅ Tests (116 tests - 100% passing)
+
+#### Domain Layer (77 tests)
+- `Tee.test.js`: 20 tests
+  - Validaciones de rangos (courseRating 50-90, slopeRating 55-155)
+  - 6 categorías válidas
+  - Gender validation (MALE/FEMALE)
+  - DTO conversions (camelCase ↔ snake_case)
+  - Edge cases (whitespace trim, decimales)
+- `Hole.test.js`: 24 tests
+  - Validaciones (holeNumber 1-18, par 3-5, strokeIndex 1-18)
+  - Simulación completa de 18 hoyos con par 72
+  - Edge cases (typical par 3/5 holes)
+- `GolfCourse.test.js`: 33 tests
+  - Constructor con todos los campos
+  - Métodos de negocio (isClone, hasPendingUpdate, isApproved, isPending, isRejected)
+  - getStatusColor() con 4 estados
+  - toDTO() con conversión completa
+  - Workflows completos (new request, update proposal, rejection)
+
+#### Application Layer (39 tests)
+- `ListGolfCoursesUseCase.test.js`: 9 tests (filtros múltiples)
+- `GetGolfCourseUseCase.test.js`: 7 tests (error handling, not found)
+- `CreateGolfCourseAdminUseCase.test.js`: 8 tests
+  - Validaciones de totalPar (66-76)
+  - Tees range (2-6)
+  - Course types (STANDARD_18, EXECUTIVE, PITCH_AND_PUTT)
+- `ApproveRejectGolfCourse.test.js`: 15 tests
+  - 4 use cases: approve/reject new + approve/reject update
+  - Validación de rejection reason (10-500 chars)
+  - Clone ID validations
+
+### 🏗️ Architecture
+
+- **Pattern**: Clean Architecture + Domain-Driven Design (DDD)
+- **Layers**: Domain → Application → Infrastructure → Presentation
+- **Dependency Rule**: Outer layers depend on inner layers, never inverse
+- **Separation of Concerns**:
+  - Domain: Business logic pura (sin dependencias externas)
+  - Application: Orquestación de casos de uso
+  - Infrastructure: Implementación de repositorios (API)
+  - Presentation: UI components + pages
+- **Testability**: 116 tests con mocks de repositorios (no API directa)
+
+### 🔄 Workflows
+
+#### New Golf Course Request (Creator)
+1. Creator rellena GolfCourseForm
+2. Frontend → `createGolfCourseUseCase.execute()`
+3. Backend crea con status `PENDING_APPROVAL`
+4. Admin ve en tab "New Requests"
+5. Admin aprueba → status `APPROVED` (disponible para competiciones)
+6. Admin rechaza → status `REJECTED` + reason
+
+#### Golf Course Update Proposal (Creator)
+1. Creator edita campo APPROVED
+2. Frontend → `updateGolfCourseUseCase.execute()`
+3. Backend crea **clone** con `originalGolfCourseId` set
+4. Original marca `isPendingUpdate=true`
+5. Admin ve en tab "Update Proposals"
+6. Admin aprueba → merge clone → original, elimina clone, `isPendingUpdate=false`
+7. Admin rechaza → elimina clone, `isPendingUpdate=false`
+
+#### Admin Direct Creation
+1. Admin rellena GolfCourseForm
+2. Frontend → `createGolfCourseAdminUseCase.execute()`
+3. Backend crea directamente con status `APPROVED`
+4. Disponible inmediatamente para competiciones
+
+### 🎨 UX Improvements
+
+- **Country Dropdown**: Reemplazado input text por select con:
+  - Lista completa de países desde backend
+  - Banderas con `CountryFlag` component
+  - Nombres traducidos con `formatCountryName()`
+  - Preview de país seleccionado
+- **Real-time Validations**:
+  - Total par calculado automáticamente (debe ser 66-76)
+  - Stroke indices únicos (1-18 sin repetir)
+  - Tee ranges (courseRating, slopeRating) con hints WHS
+- **Visual Feedback**:
+  - Badges de status con colores (green/yellow/red/gray)
+  - Indicadores de "Update pending" en tabla
+  - Iconos en acciones (view, edit, approve, reject)
+  - Tabs con contadores (New 5, Updates 3)
+
+### 🔐 Security
+
+- Role-based visibility: Enlaces admin solo para `user.is_admin=true`
+- Protected routes: Solo autenticados acceden
+- Form validations: Multi-layer (HTML → Zod → Backend Pydantic)
+- Rejection reasons: Auditables (10-500 chars, stored in DB)
+
+### 📊 Statistics
+
+- **Files Created**: 30+
+- **Lines of Code**: ~3,500
+- **Translations**: 300+ (ES/EN)
+- **Tests**: 116 (100% passing)
+- **Use Cases**: 8
+- **Components**: 3
+- **Pages**: 2
+- **Value Objects**: 2
+- **Entities**: 1
+- **Repository Interfaces**: 1
+- **Repository Implementations**: 1
+
+### 🚀 Performance
+
+- Lazy loading de páginas admin con React.lazy()
+- Memoization potencial en GolfCourseTable (pendiente)
+- Bundle impact: ~45 KB (form + table + pages)
+
+### 📝 Documentation
+
+- JSDoc en todos los use cases
+- Comentarios en validaciones complejas (totalPar, stroke indices)
+- README actualizado con sección Golf Course Management
+- ROADMAP Sprint 1 marcado como COMPLETADO
+
 ## [1.16.0] - 2026-01-24
 
 ### 🚀 Major Dependencies Update

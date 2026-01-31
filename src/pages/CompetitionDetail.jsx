@@ -10,6 +10,7 @@ import customToast from '../utils/toast';
 import { useTranslation } from 'react-i18next';
 import HeaderAuth from '../components/layout/HeaderAuth';
 import { useAuth } from '../hooks/useAuth';
+import { useUserRoles } from '../hooks/useUserRoles';
 import { CountryFlag } from '../utils/countryUtils';
 import {
   getCompetitionDetailUseCase,
@@ -36,6 +37,7 @@ const CompetitionDetail = () => {
   const { id } = useParams();
   const { t } = useTranslation('competitions');
   const { user, loading: isLoadingUser } = useAuth();
+  const { isAdmin, isCreator: hasCreatorRole, isLoading: isLoadingRoles } = useUserRoles(id);
   const [competition, setCompetition] = useState(null);
   const [enrollments, setEnrollments] = useState([]);
   const [isLoadingCompetition, setIsLoadingCompetition] = useState(true);
@@ -55,18 +57,21 @@ const CompetitionDetail = () => {
       const data = await getCompetitionDetailUseCase.execute(id);
       setCompetition(data);
 
-      // Load enrollments only if user is the creator (for optimization)
+      // Load enrollments only if user can manage the competition (for optimization)
+      // Note: isAdmin and hasCreatorRole might not be available yet during initial load,
+      // so we still check creatorId. The canManage logic will handle display permissions.
       if (user && data.creatorId === user.id) {
         const enrollmentsData = await listEnrollmentsUseCase.execute(id);
         setEnrollments(enrollmentsData);
       }
     } catch (error) {
       console.error('Error loading competition:', error);
-      customToast.error(error.message || 'Failed to load competition');
+      customToast.error(error.message || t('detail.failedToLoadCompetition'));
       navigate('/competitions');
     } finally {
       setIsLoadingCompetition(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, user, navigate]);
 
   useEffect(() => {
@@ -75,9 +80,33 @@ const CompetitionDetail = () => {
     }
   }, [id, user, loadCompetition]);
 
-  const isLoading = isLoadingUser || isLoadingCompetition;
+  const isLoading = isLoadingUser || isLoadingCompetition || isLoadingRoles;
 
   const handleStatusChange = async (action) => {
+    // Validate golf courses approval status before activation
+    if (action === 'activate') {
+      const golfCourses = competition?.golfCourses || [];
+
+      if (golfCourses.length === 0) {
+        customToast.error(t('detail.errors.noGolfCourses'));
+        return;
+      }
+
+      const pendingCourses = golfCourses.filter(gc => gc.approvalStatus === 'PENDING_APPROVAL');
+      if (pendingCourses.length > 0) {
+        const courseNames = pendingCourses.map(gc => gc.name).join(', ');
+        customToast.error(t('detail.errors.golfCoursesPendingApproval', { courses: courseNames }));
+        return;
+      }
+
+      const rejectedCourses = golfCourses.filter(gc => gc.approvalStatus === 'REJECTED');
+      if (rejectedCourses.length > 0) {
+        const courseNames = rejectedCourses.map(gc => gc.name).join(', ');
+        customToast.error(t('detail.errors.golfCoursesRejected', { courses: courseNames }));
+        return;
+      }
+    }
+
     const confirmationKey = `detail.confirmations.${action}`;
     if (!window.confirm(t(confirmationKey))) {
       return;
@@ -119,7 +148,7 @@ const CompetitionDetail = () => {
       }));
     } catch (error) {
       console.error(`Error ${action}:`, error);
-      customToast.error(error.message || `Failed to ${action} competition`);
+      customToast.error(error.message || t('detail.failedToUpdateCompetition'));
     } finally {
       setIsProcessing(false);
     }
@@ -137,7 +166,7 @@ const CompetitionDetail = () => {
       navigate('/competitions');
     } catch (error) {
       console.error('Error deleting competition:', error);
-      customToast.error(error.message || 'Failed to delete competition');
+      customToast.error(error.message || t('detail.failedToDeleteCompetition'));
       setIsProcessing(false);
     }
   };
@@ -150,7 +179,7 @@ const CompetitionDetail = () => {
       await loadCompetition();
     } catch (error) {
       console.error('Error enrolling:', error);
-      customToast.error(error.message || 'Failed to enroll');
+      customToast.error(error.message || t('detail.failedToEnroll'));
     } finally {
       setIsProcessing(false);
     }
@@ -202,9 +231,11 @@ const CompetitionDetail = () => {
     return null;
   }
 
+  // User is considered creator if they created the competition OR have CREATOR/ADMIN role
   const isCreator = competition.creatorId === user.id;
-  const canEdit = isCreator && competition.status === 'DRAFT';
-  const canDelete = isCreator && competition.status === 'DRAFT';
+  const canManage = isCreator || hasCreatorRole || isAdmin;
+  const canEdit = canManage && competition.status === 'DRAFT';
+  const canDelete = canManage && competition.status === 'DRAFT';
 
   // Check for user enrollment from two sources:
   // 1. From enrollments list (when loaded from detail page)
@@ -234,7 +265,7 @@ const CompetitionDetail = () => {
                 <span className="text-sm font-medium">{backText}</span>
               </button>
 
-              <div className="bg-gradient-to-br from-primary-50 to-blue-50 rounded-xl border border-primary-200 p-6 shadow-md">
+              <div className="bg-primary-50 rounded-xl border border-primary-200 p-6 shadow-md">
                 <div className="flex flex-wrap justify-between items-start gap-4 mb-4">
                   <div className="flex-1">
                     <h1 className="text-gray-900 text-3xl md:text-4xl font-bold mb-2">
@@ -307,7 +338,7 @@ const CompetitionDetail = () => {
             </motion.div>
 
             {/* Action Buttons */}
-            {isCreator && (
+            {canManage && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -394,8 +425,8 @@ const CompetitionDetail = () => {
               </motion.div>
             )}
 
-            {/* Enrollment Button for Non-Creators */}
-            {!isCreator && competition.status === 'ACTIVE' && !hasEnrollment && (
+            {/* Enrollment Button for Regular Users (not creators/admins) */}
+            {!canManage && competition.status === 'ACTIVE' && !hasEnrollment && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -484,8 +515,8 @@ const CompetitionDetail = () => {
               </div>
             </motion.div>
 
-            {/* Enrollments List - Only visible to creator */}
-            {isCreator && (
+            {/* Enrollments List - Only visible to creator/admin */}
+            {canManage && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}

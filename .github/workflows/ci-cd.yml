@@ -582,8 +582,10 @@ jobs:
           echo "size_kb=$TOTAL_SIZE_KB" >> $GITHUB_OUTPUT
 
           # Define budget (in KB)
-          MAX_BUNDLE_SIZE_KB=1000
-          WARNING_THRESHOLD_KB=800
+          # Increased from 1000 KB to accommodate SVG country flags (~239 KB)
+          # which provide better cross-browser rendering than emoji flags
+          MAX_BUNDLE_SIZE_KB=1500
+          WARNING_THRESHOLD_KB=1400
 
           # List all bundles with sizes
           echo ""

@@ -2,50 +2,41 @@ import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import LanguageDetector from 'i18next-browser-languagedetector';
 
-import authEn from './locales/en/auth.json';
-import authEs from './locales/es/auth.json';
-import commonEn from './locales/en/common.json';
-import commonEs from './locales/es/common.json';
-import landingEn from './locales/en/landing.json';
-import landingEs from './locales/es/landing.json';
-import dashboardEn from './locales/en/dashboard.json';
-import dashboardEs from './locales/es/dashboard.json';
-import profileEn from './locales/en/profile.json';
-import profileEs from './locales/es/profile.json';
-import competitionsEn from './locales/en/competitions.json';
-import competitionsEs from './locales/es/competitions.json';
-import devicesEn from './locales/en/devices.json';
-import devicesEs from './locales/es/devices.json';
+// Custom backend para lazy loading de traducciones
+// Reduce bundle inicial de ~313 KB a ~40 KB (solo carga common en idioma detectado)
+class LazyBackend {
+  constructor() {
+    this.type = 'backend';
+  }
 
-const resources = {
-  en: {
-    auth: authEn,
-    common: commonEn,
-    landing: landingEn,
-    dashboard: dashboardEn,
-    profile: profileEn,
-    competitions: competitionsEn,
-    devices: devicesEn,
-  },
-  es: {
-    auth: authEs,
-    common: commonEs,
-    landing: landingEs,
-    dashboard: dashboardEs,
-    profile: profileEs,
-    competitions: competitionsEs,
-    devices: devicesEs,
-  },
-};
+  init() {
+    // No-op - required by i18next backend interface
+  }
+
+  read(language, namespace, callback) {
+    // Dynamic import solo del archivo necesario
+    import(`./locales/${language}/${namespace}.json`)
+      .then((module) => {
+        callback(null, module.default);
+      })
+      .catch((error) => {
+        console.warn(`Failed to load ${language}/${namespace}:`, error);
+        callback(error, null);
+      });
+  }
+}
 
 i18n
+  .use(LazyBackend) // Custom backend para lazy loading
   .use(LanguageDetector) // Detecta idioma del navegador
   .use(initReactI18next) // Pasa i18n a react-i18next
   .init({
-    resources,
     fallbackLng: 'en', // Idioma por defecto si no se detecta
     defaultNS: 'common', // Namespace por defecto
-    ns: ['common', 'auth', 'landing', 'dashboard', 'profile', 'competitions', 'devices'], // Namespaces disponibles
+    ns: ['common', 'auth', 'landing', 'dashboard', 'profile', 'competitions', 'devices', 'golfCourses'], // Namespaces disponibles
+
+    // Lazy loading configuration
+    partialBundledLanguages: true, // Permite cargar parcialmente los idiomas
 
     detection: {
       // Orden de detección: localStorage -> navigator

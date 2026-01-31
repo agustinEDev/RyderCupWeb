@@ -173,7 +173,7 @@ const Profile = () => {
               transition={{ duration: 0.5, delay: 0.1 }}
               className="p-4"
             >
-              <div className="relative overflow-hidden bg-gradient-to-br from-primary-50 to-blue-50 rounded-xl border border-primary-200 p-6 shadow-md">
+              <div className="relative overflow-hidden bg-primary-50 rounded-xl border border-primary-200 p-6 shadow-md">
                 {/* Background Pattern */}
                 <div className="absolute top-0 right-0 opacity-10">
                   <Award className="w-48 h-48 text-primary-700" />
