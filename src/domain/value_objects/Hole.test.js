@@ -125,7 +125,7 @@ describe('Hole', () => {
         holeNumber: null,
         par: 4,
         strokeIndex: 10
-      })).toThrow('Hole number must be between 1 and 18');
+      })).toThrow('Hole number is required');
     });
 
     it('should throw error for null par', () => {
@@ -133,7 +133,7 @@ describe('Hole', () => {
         holeNumber: 1,
         par: null,
         strokeIndex: 10
-      })).toThrow('Par must be between 3 and 5');
+      })).toThrow('Par is required');
     });
 
     it('should throw error for null stroke index', () => {
@@ -141,7 +141,7 @@ describe('Hole', () => {
         holeNumber: 1,
         par: 4,
         strokeIndex: null
-      })).toThrow('Stroke index must be between 1 and 18');
+      })).toThrow('Stroke index is required');
     });
   });
 

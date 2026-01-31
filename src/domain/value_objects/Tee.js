@@ -33,10 +33,18 @@ class Tee {
       throw new Error('Tee identifier is required');
     }
 
+    // Validate courseRating is a finite number
+    if (!Number.isFinite(this.courseRating)) {
+      throw new Error('Course rating must be a finite number');
+    }
     if (this.courseRating < 50.0 || this.courseRating > 90.0) {
       throw new Error('Course rating must be between 50.0 and 90.0');
     }
 
+    // Validate slopeRating is a finite number
+    if (!Number.isFinite(this.slopeRating)) {
+      throw new Error('Slope rating must be a finite number');
+    }
     if (this.slopeRating < 55 || this.slopeRating > 155) {
       throw new Error('Slope rating must be between 55 and 155');
     }

@@ -44,7 +44,7 @@ import { useUserRoles } from '../../hooks/useUserRoles';
  */
 const RoleBasedAccess = ({
   competitionId,
-  allowedRoles = [],
+  allowedRoles,
   children,
   fallback = null,
   requireAll = false,
@@ -54,6 +54,12 @@ const RoleBasedAccess = ({
   // Mientras carga, no mostrar nada (evita flash de contenido no autorizado)
   if (isLoading) {
     return null;
+  }
+
+  // Guard: deny access when allowedRoles is missing or empty
+  if (!Array.isArray(allowedRoles) || allowedRoles.length === 0) {
+    console.error('[RoleBasedAccess] allowedRoles is required and cannot be empty');
+    return fallback;
   }
 
   // Mapeo de roles a valores booleanos

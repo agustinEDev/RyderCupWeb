@@ -24,8 +24,57 @@ class CreateGolfCourseRequestUseCase {
       throw new Error('Golf course data is required');
     }
 
+    // Validate name
+    if (!golfCourseData.name || typeof golfCourseData.name !== 'string' || golfCourseData.name.trim().length === 0) {
+      throw new Error('Golf course name is required and must be a non-empty string');
+    }
+
+    // Validate country
+    if (!golfCourseData.country) {
+      throw new Error('Golf course country is required');
+    }
+
+    // Validate tees
+    if (!Array.isArray(golfCourseData.tees) || golfCourseData.tees.length === 0) {
+      throw new Error('Golf course must have at least one tee');
+    }
+
+    // Validate each tee has required fields
+    golfCourseData.tees.forEach((tee, index) => {
+      if (!tee.identifier || typeof tee.identifier !== 'string') {
+        throw new Error(`Tee ${index + 1} must have a valid identifier`);
+      }
+      if (!tee.category) {
+        throw new Error(`Tee ${index + 1} must have a category`);
+      }
+      if (typeof tee.slopeRating !== 'number') {
+        throw new Error(`Tee ${index + 1} must have a numeric slope rating`);
+      }
+      if (typeof tee.courseRating !== 'number') {
+        throw new Error(`Tee ${index + 1} must have a numeric course rating`);
+      }
+      if (!tee.gender) {
+        throw new Error(`Tee ${index + 1} must have a gender`);
+      }
+    });
+
+    // Validate holes
+    if (!Array.isArray(golfCourseData.holes) || golfCourseData.holes.length !== 18) {
+      throw new Error('Golf course must have exactly 18 holes');
+    }
+
+    // Validate each hole has numeric par within allowed range
+    golfCourseData.holes.forEach((hole, index) => {
+      if (typeof hole.par !== 'number') {
+        throw new Error(`Hole ${index + 1} must have a numeric par value`);
+      }
+      if (hole.par < 3 || hole.par > 5) {
+        throw new Error(`Hole ${index + 1} par must be between 3 and 5 (current: ${hole.par})`);
+      }
+    });
+
     // Validate total par (66-76 range)
-    const totalPar = golfCourseData.holes?.reduce((sum, hole) => sum + hole.par, 0) || 0;
+    const totalPar = golfCourseData.holes.reduce((sum, hole) => sum + hole.par, 0);
     if (totalPar < 66 || totalPar > 76) {
       throw new Error(`Total par must be between 66 and 76 (current: ${totalPar})`);
     }

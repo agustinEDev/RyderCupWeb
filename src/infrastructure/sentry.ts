@@ -27,7 +27,7 @@
  * - VITE_SENTRY_ENABLE_FEEDBACK
  */
 
-import { init, replayIntegration, browserTracingIntegration, feedbackIntegration } from '@sentry/react';
+import { init, replayIntegration, browserTracingIntegration, feedbackIntegration, getClient } from '@sentry/react';
 
 // ============================================
 // CONFIGURACIÓN DE VARIABLES DE ENTORNO
@@ -114,7 +114,29 @@ if (!SENTRY_CONFIG.dsn) {
   // INICIALIZACIÓN DE SENTRY
   // ============================================
 
-  init({
+  // Check if Sentry was already initialized (minimal init in main.jsx)
+  const existingClient = getClient();
+
+  if (existingClient) {
+    // Sentry is already initialized - add heavy integrations
+    console.log('📦 Adding heavy Sentry integrations to existing client...');
+
+    // Add integrations to existing client
+    integrations.forEach(integration => {
+      existingClient.addIntegration(integration);
+    });
+
+    // Update client options for performance tracking
+    const options = existingClient.getOptions();
+    options.tracesSampleRate = SENTRY_CONFIG.tracesSampleRate;
+    options.profilesSampleRate = SENTRY_CONFIG.profilesSampleRate;
+    options.replaysSessionSampleRate = SENTRY_CONFIG.replaysSessionSampleRate;
+    options.replaysOnErrorSampleRate = SENTRY_CONFIG.replaysOnErrorSampleRate;
+
+    console.log('✅ Heavy Sentry integrations added successfully');
+  } else {
+    // Sentry not initialized yet - do full initialization
+    init({
     dsn: SENTRY_CONFIG.dsn,
     environment: SENTRY_CONFIG.environment,
     release: RELEASE,
@@ -224,6 +246,7 @@ if (!SENTRY_CONFIG.dsn) {
       return breadcrumb;
     },
   });
+  }
 
   // ============================================
   // LOGS DE INICIALIZACIÓN

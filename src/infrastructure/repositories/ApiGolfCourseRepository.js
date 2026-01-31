@@ -83,6 +83,14 @@ class ApiGolfCourseRepository extends IGolfCourseRepository {
       body: JSON.stringify(payload),
     });
 
+    // Guard against missing data.golf_course
+    if (!data.golf_course) {
+      return {
+        golfCourse: null,
+        pendingUpdate: data.pending_update ? new GolfCourse(data.pending_update) : null,
+      };
+    }
+
     return {
       golfCourse: new GolfCourse(data.golf_course),
       pendingUpdate: data.pending_update ? new GolfCourse(data.pending_update) : null,

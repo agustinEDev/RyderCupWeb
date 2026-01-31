@@ -45,6 +45,7 @@
       "teeIdentifierRequired": "El identificador del tee {{index}} es requerido",
       "courseRatingRange": "El Course Rating del tee {{index}} debe estar entre 50.0 y 90.0",
       "slopeRatingRange": "El Slope Rating del tee {{index}} debe estar entre 55 y 155",
+      "strokeIndexRange": "El stroke index del hoyo {{index}} debe estar entre 1 y 18",
       "uniqueStrokeIndices": "Cada hoyo debe tener un stroke index único (1-18)",
       "totalParRange": "El par total debe estar entre 66 y 76 (actual: {{totalPar}})",
       "submitFailed": "Error al guardar el campo de golf"

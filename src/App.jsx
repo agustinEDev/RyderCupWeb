@@ -3,6 +3,7 @@ import { useEffect, useCallback, lazy, Suspense, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import * as Sentry from '@sentry/react';
 import ProtectedRoute from './components/auth/ProtectedRoute';
+import RoleGuard from './components/auth/RoleGuard';
 import LazyLoadErrorBoundary from './components/errors/LazyLoadErrorBoundary';
 import { getUserData } from './hooks/useAuth';
 import { setUserContext } from './utils/sentryHelpers';
@@ -30,6 +31,9 @@ const BrowseCompetitions = lazy(() => import('./pages/BrowseCompetitions'));
 // Admin pages (v2.1.0 - Sprint 1)
 const GolfCourses = lazy(() => import('./pages/admin/GolfCourses'));
 const PendingGolfCourses = lazy(() => import('./pages/admin/PendingGolfCourses'));
+
+// Error pages
+const Unauthorized = lazy(() => import('./pages/public/Unauthorized'));
 
 // ============================================
 // SENTRY ROUTING INSTRUMENTATION
@@ -157,9 +161,24 @@ function AppContent() {
         <Route path="/competitions/:id" element={<ProtectedRoute><CompetitionDetail /></ProtectedRoute>} />
         <Route path="/browse-competitions" element={<ProtectedRoute><BrowseCompetitions /></ProtectedRoute>} />
 
-        {/* Admin routes (v2.1.0 - Sprint 1) */}
-        <Route path="/admin/golf-courses" element={<ProtectedRoute><GolfCourses /></ProtectedRoute>} />
-        <Route path="/admin/golf-courses/pending" element={<ProtectedRoute><PendingGolfCourses /></ProtectedRoute>} />
+        {/* Admin routes (v2.1.0 - Sprint 1) - Protected by ADMIN role */}
+        <Route path="/admin/golf-courses" element={
+          <ProtectedRoute>
+            <RoleGuard allowedRoles="ADMIN">
+              <GolfCourses />
+            </RoleGuard>
+          </ProtectedRoute>
+        } />
+        <Route path="/admin/golf-courses/pending" element={
+          <ProtectedRoute>
+            <RoleGuard allowedRoles="ADMIN">
+              <PendingGolfCourses />
+            </RoleGuard>
+          </ProtectedRoute>
+        } />
+
+        {/* Error routes */}
+        <Route path="/unauthorized" element={<Unauthorized />} />
         </SentryRoutes>
       </Suspense>
     </LazyLoadErrorBoundary>

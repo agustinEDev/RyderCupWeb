@@ -182,7 +182,16 @@ const GolfCourseForm = ({ initialData = null, onSubmit, onCancel }) => {
       }
     }
 
-    // Validate holes
+    // Validate holes - check strokeIndex range first
+    for (let i = 0; i < holes.length; i++) {
+      const strokeIndex = parseInt(holes[i].strokeIndex, 10);
+      if (isNaN(strokeIndex) || strokeIndex < 1 || strokeIndex > 18) {
+        customToast.error(t('form.errors.strokeIndexRange', { index: i + 1 }));
+        return false;
+      }
+    }
+
+    // Validate holes - check uniqueness
     const strokeIndices = holes.map(h => h.strokeIndex);
     const uniqueIndices = new Set(strokeIndices);
     if (uniqueIndices.size !== 18) {

@@ -30,6 +30,11 @@ const PendingGolfCourses = () => {
   const [rejectReason, setRejectReason] = useState('');
   const [courseToReject, setCourseToReject] = useState(null);
 
+  // Derive isAdmin from authenticated user's roles
+  const isAdmin = user?.roles?.some(role =>
+    typeof role === 'string' ? role === 'ADMIN' : role.name === 'ADMIN'
+  ) || false;
+
   // Load pending courses
   const loadPendingCourses = async () => {
     setIsLoading(true);
@@ -235,7 +240,7 @@ const PendingGolfCourses = () => {
                   courses={currentCourses}
                   onApprove={activeTab === 'new' ? handleApproveNew : handleApproveUpdate}
                   onReject={activeTab === 'new' ? handleRejectNew : handleRejectUpdate}
-                  isAdmin={true}
+                  isAdmin={isAdmin}
                   showActions={true}
                 />
               </div>

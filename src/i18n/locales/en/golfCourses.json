@@ -45,6 +45,7 @@
       "teeIdentifierRequired": "Tee {{index}} identifier is required",
       "courseRatingRange": "Tee {{index}} Course Rating must be between 50.0 and 90.0",
       "slopeRatingRange": "Tee {{index}} Slope Rating must be between 55 and 155",
+      "strokeIndexRange": "Hole {{index}} stroke index must be between 1 and 18",
       "uniqueStrokeIndices": "Each hole must have a unique stroke index (1-18)",
       "totalParRange": "Total par must be between 66 and 76 (current: {{totalPar}})",
       "submitFailed": "Failed to save golf course"

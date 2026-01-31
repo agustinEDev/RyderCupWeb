@@ -28,6 +28,11 @@ const GolfCourses = () => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState(null);
 
+  // Derive isAdmin from authenticated user's roles
+  const isAdmin = user?.roles?.some(role =>
+    typeof role === 'string' ? role === 'ADMIN' : role.name === 'ADMIN'
+  ) || false;
+
   // Load approved courses
   const loadCourses = async () => {
     setIsLoading(true);
@@ -167,7 +172,7 @@ const GolfCourses = () => {
                   courses={courses}
                   onView={handleView}
                   onEdit={handleOpenEdit}
-                  isAdmin={true}
+                  isAdmin={isAdmin}
                   showActions={true}
                 />
               </div>
@@ -191,7 +196,7 @@ const GolfCourses = () => {
               <GolfCourseForm
                 onSubmit={handleCreate}
                 onCancel={() => setShowCreateModal(false)}
-                isAdmin={true}
+                isAdmin={isAdmin}
               />
             </div>
           </motion.div>
@@ -217,7 +222,7 @@ const GolfCourses = () => {
                   setShowEditModal(false);
                   setSelectedCourse(null);
                 }}
-                isAdmin={true}
+                isAdmin={isAdmin}
               />
             </div>
           </motion.div>
