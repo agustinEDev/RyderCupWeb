@@ -8,11 +8,13 @@
  * UPDATE (Nov 2025): Added SVG flag support using country-flag-icons
  * to fix rendering issues in Chrome/Windows
  *
- * UPDATE (Jan 2026): Optimized to use dynamic imports for flags to reduce bundle size
- * from 239 KB to ~2-5 KB per flag loaded on demand
+ * UPDATE (Jan 2026): Using static imports for SVG flags. Tree-shaking includes
+ * all flags (~239 KB) but ensures consistent rendering across all browsers.
+ * Bundle size budget increased to accommodate this.
  */
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
+import * as flags from 'country-flag-icons/react/3x2';
 
 /**
  * Converts a country code to its flag emoji
@@ -136,9 +138,6 @@ export const canUseRFEG = (user) => {
  * Uses country-flag-icons library for consistent rendering across all browsers
  * Fixes Chrome/Windows rendering issues with Unicode flag emojis
  *
- * OPTIMIZED: Uses dynamic imports to load only the specific flag needed,
- * reducing bundle size from 239 KB to ~2-5 KB per flag
- *
  * @param {string} countryCode - ISO 3166-1 alpha-2 code (e.g., 'ES', 'FR', 'US')
  * @param {Object} props - Optional props for the SVG (className, style, etc.)
  * @returns {JSX.Element|null} - React SVG component or null if invalid
@@ -148,38 +147,24 @@ export const canUseRFEG = (user) => {
  *   <CountryFlag countryCode="FR" style={{ width: '24px', height: '24px' }} />
  */
 export const CountryFlag = ({ countryCode, className = '', style = {} }) => {
-  const [FlagComponent, setFlagComponent] = useState(null);
-  const [loading, setLoading] = useState(true);
+  if (!countryCode || typeof countryCode !== 'string') {
+    return null;
+  }
 
-  useEffect(() => {
-    if (!countryCode || typeof countryCode !== 'string') {
-      setLoading(false);
-      return;
-    }
+  const code = countryCode.trim().toUpperCase();
 
-    const code = countryCode.trim().toUpperCase();
+  // Validate: must be exactly 2 letters A-Z
+  if (!/^[A-Z]{2}$/.test(code)) {
+    return null;
+  }
 
-    // Validate: must be exactly 2 letters A-Z
-    if (!/^[A-Z]{2}$/.test(code)) {
-      setLoading(false);
-      return;
-    }
+  // Get the flag component from the flags object
+  // The country code becomes the key (e.g., 'ES', 'FR', 'US')
+  const FlagComponent = flags[code];
 
-    // Dynamic import of the specific flag component
-    // This creates a separate chunk for each flag, loaded on demand
-    import(`country-flag-icons/react/3x2/${code}.js`)
-      .then((module) => {
-        setFlagComponent(() => module.default);
-        setLoading(false);
-      })
-      .catch((error) => {
-        console.warn(`⚠️ SVG flag not found for country code: ${code}`, error);
-        setLoading(false);
-      });
-  }, [countryCode]);
-
-  if (loading || !FlagComponent) {
-    // Return a placeholder while loading or if flag doesn't exist
+  if (!FlagComponent) {
+    // If flag doesn't exist, log warning and return null
+    console.warn(`⚠️ SVG flag not found for country code: ${code}`);
     return null;
   }
 
