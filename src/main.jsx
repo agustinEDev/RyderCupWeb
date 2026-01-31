@@ -19,8 +19,11 @@ if (sentryDsn) {
     release: `rydercup-web@${import.meta.env.VITE_APP_VERSION || '1.6.0'}`,
     // No integrations yet - will be added by lazy-loaded infrastructure/sentry
     integrations: [],
-    // Basic config for early error capture
-    tracesSampleRate: 0, // Disable performance tracking until heavy integrations load
+    // Configure sample rates from env (these cannot be changed after init)
+    tracesSampleRate: parseFloat(import.meta.env.VITE_SENTRY_TRACES_SAMPLE_RATE || '1.0'),
+    profilesSampleRate: parseFloat(import.meta.env.VITE_SENTRY_PROFILES_SAMPLE_RATE || '1.0'),
+    replaysSessionSampleRate: parseFloat(import.meta.env.VITE_SENTRY_REPLAYS_SESSION_SAMPLE_RATE || '0.1'),
+    replaysOnErrorSampleRate: parseFloat(import.meta.env.VITE_SENTRY_REPLAYS_ON_ERROR_SAMPLE_RATE || '1.0'),
     attachStacktrace: true,
   });
 }

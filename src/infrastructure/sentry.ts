@@ -126,12 +126,8 @@ if (!SENTRY_CONFIG.dsn) {
       existingClient.addIntegration(integration);
     });
 
-    // Update client options for performance tracking
-    const options = existingClient.getOptions();
-    options.tracesSampleRate = SENTRY_CONFIG.tracesSampleRate;
-    options.profilesSampleRate = SENTRY_CONFIG.profilesSampleRate;
-    options.replaysSessionSampleRate = SENTRY_CONFIG.replaysSessionSampleRate;
-    options.replaysOnErrorSampleRate = SENTRY_CONFIG.replaysOnErrorSampleRate;
+    // Note: Sample rates are set in main.jsx early init and cannot be modified here
+    // The client will use the rates configured during initialization
 
     console.log('✅ Heavy Sentry integrations added successfully');
   } else {
