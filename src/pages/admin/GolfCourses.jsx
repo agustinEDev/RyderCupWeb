@@ -46,6 +46,7 @@ const GolfCourses = () => {
     if (user) {
       loadCourses();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
   // Handle create
@@ -66,7 +67,7 @@ const GolfCourses = () => {
     if (!selectedCourse) return;
 
     try {
-      const result = await updateGolfCourseUseCase.execute(selectedCourse.id, formData);
+      await updateGolfCourseUseCase.execute(selectedCourse.id, formData);
 
       // Admin updates in-place, no clone created
       customToast.success(t('pages.admin.updateSuccess'));

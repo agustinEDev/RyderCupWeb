@@ -24,10 +24,10 @@
     "teeCategories": {
       "CHAMPIONSHIP_MALE": "Championship Male",
       "AMATEUR_MALE": "Amateur Male",
-      "FORWARD_MALE": "Forward Male",
-      "CHAMPIONSHIP_FEMALE": "Championship Female",
+      "SENIOR_MALE": "Senior Male",
       "AMATEUR_FEMALE": "Amateur Female",
-      "FORWARD_FEMALE": "Forward Female"
+      "SENIOR_FEMALE": "Senior Female",
+      "JUNIOR": "Junior"
     },
     "holes": "Holes (18)",
     "hole": "Hole",

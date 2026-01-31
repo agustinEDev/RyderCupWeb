@@ -24,10 +24,10 @@
     "teeCategories": {
       "CHAMPIONSHIP_MALE": "Campeonato Masculino",
       "AMATEUR_MALE": "Amateur Masculino",
-      "FORWARD_MALE": "Adelantado Masculino",
-      "CHAMPIONSHIP_FEMALE": "Campeonato Femenino",
+      "SENIOR_MALE": "Senior Masculino",
       "AMATEUR_FEMALE": "Amateur Femenino",
-      "FORWARD_FEMALE": "Adelantado Femenino"
+      "SENIOR_FEMALE": "Senior Femenino",
+      "JUNIOR": "Juvenil"
     },
     "holes": "Hoyos (18)",
     "hole": "Hoyo",

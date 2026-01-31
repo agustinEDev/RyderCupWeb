@@ -1,18 +1,21 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, Trash2, X } from 'lucide-react';
+import { Plus, Trash2, ChevronDown } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import customToast from '../../utils/toast';
+import { fetchCountriesUseCase } from '../../composition';
+import { CountryFlag } from '../../utils/countryUtils';
+import { formatCountryName } from '../../services/countries';
 
 const COURSE_TYPES = ['STANDARD_18', 'PITCH_AND_PUTT', 'EXECUTIVE'];
 
 const TEE_CATEGORIES = [
   'CHAMPIONSHIP_MALE',
   'AMATEUR_MALE',
-  'FORWARD_MALE',
-  'CHAMPIONSHIP_FEMALE',
+  'SENIOR_MALE',
   'AMATEUR_FEMALE',
-  'FORWARD_FEMALE',
+  'SENIOR_FEMALE',
+  'JUNIOR',
 ];
 
 /**
@@ -20,13 +23,16 @@ const TEE_CATEGORIES = [
  * Complex form for creating/editing golf courses
  * Handles 18 holes + 2-6 tees with validations
  */
-const GolfCourseForm = ({ initialData = null, onSubmit, onCancel, isAdmin = false }) => {
-  const { t } = useTranslation('golfCourses');
+const GolfCourseForm = ({ initialData = null, onSubmit, onCancel }) => {
+  const { t, i18n } = useTranslation('golfCourses');
 
   // Basic fields
   const [name, setName] = useState('');
   const [countryCode, setCountryCode] = useState('');
   const [courseType, setCourseType] = useState('STANDARD_18');
+
+  // Countries data
+  const [allCountries, setAllCountries] = useState([]);
 
   // Tees (2-6)
   const [tees, setTees] = useState([
@@ -44,6 +50,31 @@ const GolfCourseForm = ({ initialData = null, onSubmit, onCancel, isAdmin = fals
   );
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Load countries on mount
+  useEffect(() => {
+    const fetchCountries = async () => {
+      try {
+        const data = await fetchCountriesUseCase.execute();
+        const validCountries = Array.isArray(data)
+          ? data
+              .filter(c => c?.code && (c?.name_en || c?.name_es))
+              .map(c => ({
+                id: c.code,
+                name: c.name_en || c.name_es,
+                code: c.code,
+                name_en: c.name_en,
+                name_es: c.name_es
+              }))
+          : [];
+        setAllCountries(validCountries);
+      } catch (error) {
+        console.error('Error fetching countries:', error);
+        setAllCountries([]);
+      }
+    };
+    fetchCountries();
+  }, []);
 
   // Load initial data if editing
   useEffect(() => {
@@ -196,6 +227,8 @@ const GolfCourseForm = ({ initialData = null, onSubmit, onCancel, isAdmin = fals
         })),
       };
 
+      console.log('📝 Form Data before submit:', formData);
+
       await onSubmit(formData);
     } catch (error) {
       console.error('Error submitting form:', error);
@@ -237,17 +270,30 @@ const GolfCourseForm = ({ initialData = null, onSubmit, onCancel, isAdmin = fals
             <label className="block text-sm font-medium text-gray-700 mb-2">
               {t('form.countryCode')} *
             </label>
-            <input
-              type="text"
-              value={countryCode}
-              onChange={(e) => setCountryCode(e.target.value.toUpperCase())}
-              placeholder="ES"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary uppercase"
-              required
-              minLength={2}
-              maxLength={2}
-            />
-            <p className="text-xs text-gray-500 mt-1">{t('form.countryCodeHint')}</p>
+            <div className="relative">
+              <select
+                value={countryCode}
+                onChange={(e) => setCountryCode(e.target.value)}
+                className={`w-full py-2 px-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary bg-white appearance-none pr-10 ${
+                  countryCode ? 'pl-12' : 'pl-3'
+                }`}
+                required
+              >
+                <option value="">{t('form.selectCountry', 'Select country...')}</option>
+                {allCountries.map((country) => (
+                  <option key={country.code} value={country.code}>
+                    {formatCountryName(country, i18n.language)}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
+              {/* Show flag if country is selected */}
+              {countryCode && (
+                <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                  <CountryFlag countryCode={countryCode} style={{ width: '24px', height: 'auto' }} />
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Course Type */}

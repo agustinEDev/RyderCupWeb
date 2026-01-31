@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 import GolfCourse from '../../domain/entities/GolfCourse.js';
 import IGolfCourseRepository from '../../domain/repositories/IGolfCourseRepository.js';
 import apiRequest from '../../services/api.js';
@@ -58,7 +57,10 @@ class ApiGolfCourseRepository extends IGolfCourseRepository {
   async createAsAdmin(golfCourseData) {
     const payload = this._mapToApiPayload(golfCourseData);
 
-    const data = await apiRequest('/api/v1/admin/golf-courses', {
+    // Debug: Log payload to see what we're sending
+    console.log('📤 Creating golf course as admin - Payload:', JSON.stringify(payload, null, 2));
+
+    const data = await apiRequest('/api/v1/golf-courses/admin', {
       method: 'POST',
       body: JSON.stringify(payload),
     });
@@ -87,7 +89,7 @@ class ApiGolfCourseRepository extends IGolfCourseRepository {
    * @override
    */
   async approve(id) {
-    const data = await apiRequest(`/api/v1/admin/golf-courses/${id}/approve`, {
+    const data = await apiRequest(`/api/v1/golf-courses/admin/${id}/approve`, {
       method: 'PUT',
     });
 
@@ -98,7 +100,7 @@ class ApiGolfCourseRepository extends IGolfCourseRepository {
    * @override
    */
   async reject(id, reason) {
-    const data = await apiRequest(`/api/v1/admin/golf-courses/${id}/reject?reason=${encodeURIComponent(reason)}`, {
+    const data = await apiRequest(`/api/v1/golf-courses/admin/${id}/reject?reason=${encodeURIComponent(reason)}`, {
       method: 'PUT',
     });
 
@@ -109,7 +111,7 @@ class ApiGolfCourseRepository extends IGolfCourseRepository {
    * @override
    */
   async approveUpdate(cloneId) {
-    const data = await apiRequest(`/api/v1/admin/golf-courses/${cloneId}/approve-update`, {
+    const data = await apiRequest(`/api/v1/golf-courses/admin/${cloneId}/approve-update`, {
       method: 'PUT',
     });
 
@@ -120,7 +122,7 @@ class ApiGolfCourseRepository extends IGolfCourseRepository {
    * @override
    */
   async rejectUpdate(cloneId) {
-    const data = await apiRequest(`/api/v1/admin/golf-courses/${cloneId}/reject-update`, {
+    const data = await apiRequest(`/api/v1/golf-courses/admin/${cloneId}/reject-update`, {
       method: 'PUT',
     });
 
@@ -131,7 +133,7 @@ class ApiGolfCourseRepository extends IGolfCourseRepository {
    * @override
    */
   async listPending() {
-    const data = await apiRequest('/api/v1/admin/golf-courses/pending');
+    const data = await apiRequest('/api/v1/golf-courses/admin/pending');
     return data.golf_courses.map(courseData => new GolfCourse(courseData));
   }
 

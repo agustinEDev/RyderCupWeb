@@ -1,8 +1,8 @@
 # 🗺️ Roadmap - RyderCupFriends Frontend
 
 > **Versión:** 1.15.0 → 1.16.0 → 2.1.0
-> **Última actualización:** 24 Ene 2026
-> **Estado:** ✅ v1.16.0 Completada (24 Ene 2026) | 📋 v2.1.0 Planificada
+> **Última actualización:** 31 Ene 2026
+> **Estado:** ✅ v1.16.0 Completada (24 Ene 2026) | ✅ v2.1.0 Sprint 1 Completado (31 Ene 2026) | 🔄 Sprint 2 En Curso
 > **Stack:** React 19 + Vite 7.3 + Tailwind CSS 4 + ESLint 9
 
 ---
@@ -113,28 +113,119 @@ const CompetitionActions = ({ competitionId }) => {
 > **Fechas:** 27 Ene 2026 - 17 Mar 2026
 > **Equipo:** 1 Frontend Dev + 1 Backend Dev (paralelo)
 
-| Sprint   | Fechas          | Esfuerzo BE | Endpoints | Sync Point        |
-|----------|-----------------|-------------|-----------|-------------------|
-| Sprint 1 | 27 Ene - 6 Feb  | 60h         | 10        | 🔄 Viernes 31 Ene |
-| Sprint 2 | 7 Feb - 17 Feb  | 70h         | 10        | 🔄 Viernes 14 Feb |
-| Sprint 3 | 18 Feb - 24 Feb | 48h         | 5         | 🔄 Viernes 21 Feb |
-| Sprint 4 | 25 Feb - 10 Mar | 92h         | 4         | 🔄 Viernes 7 Mar  |
-| Sprint 5 | 11 Mar - 17 Mar | 60h         | 2         | 🔄 Viernes 14 Mar |
-| **TOTAL**| **7 semanas**   | **330h**    | **31**    |                   |
+| Sprint   | Fechas          | Esfuerzo BE | Endpoints | Sync Point        | Estado        |
+|----------|-----------------|-------------|-----------|-------------------|---------------|
+| Sprint 1 | 27 Ene - 6 Feb  | 60h         | 10        | ✅ Viernes 31 Ene | ✅ COMPLETADO |
+| Sprint 2 | 7 Feb - 17 Feb  | 70h         | 10        | 🔄 Viernes 14 Feb | 📋 Pendiente  |
+| Sprint 3 | 18 Feb - 24 Feb | 48h         | 5         | 🔄 Viernes 21 Feb | 📋 Pendiente  |
+| Sprint 4 | 25 Feb - 10 Mar | 92h         | 4         | 🔄 Viernes 7 Mar  | 📋 Pendiente  |
+| Sprint 5 | 11 Mar - 17 Mar | 60h         | 2         | 🔄 Viernes 14 Mar | 📋 Pendiente  |
+| **TOTAL**| **7 semanas**   | **330h**    | **31**    |                   |               |
 
 ---
 
 ### 🔄 Plan de Handoffs por Sprint (Frontend/Backend)
 
-| Sprint   | Backend Entrega                                                                                                         | Frontend Consume                                                                              | Sync Point     |
-|----------|-------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------|----------------|
-| Sprint 1 | `POST /admin/users/{id}/roles`<br>`GET /golf-courses`<br>`GET /golf-courses/{id}` ⭐                                        | User Management page<br>Golf Course selector<br>Golf Course detail modal                              | Viernes 31 Ene |
-| Sprint 2 | `POST /competitions/{id}/rounds`<br>`POST /rounds/{id}/matches`<br>`GET /matches/{id}` ⭐<br>`PUT /matches/{id}/status` ⭐<br>`POST /matches/{id}/walkover` ⭐ | Schedule drag-drop<br>Match creation wizard<br>Match detail modal<br>Manual status control<br>Walkover button | Viernes 14 Feb |
-| Sprint 3 | `POST /invitations/{id}/respond`                                                                                        | Invitation cards<br>Email notifications                                                           | Viernes 21 Feb |
-| Sprint 4 | `GET /matches/{id}/scoring-view`                                                                                        | Scoring 3 tabs<br>Real-time validation ✅/❌                                                        | Viernes 7 Mar  |
-| Sprint 5 | `GET /competitions/{id}/leaderboard`                                                                                    | Public leaderboard<br>Polling (30s)                                                               | Viernes 14 Mar |
+| Sprint   | Backend Entrega                                                                                                         | Frontend Consume                                                                              | Sync Point     | Estado |
+|----------|-------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------|----------------|--------|
+| Sprint 1 | ✅ `POST /admin/golf-courses`<br>✅ `PUT /admin/golf-courses/{id}/approve`<br>✅ `PUT /admin/golf-courses/{id}/reject`<br>✅ `GET /admin/golf-courses/pending`<br>✅ `PUT /admin/golf-courses/{id}/approve-update`<br>✅ `PUT /admin/golf-courses/{id}/reject-update`<br>✅ `PUT /golf-courses/{id}` (smart workflow)<br>✅ `GET /golf-courses`<br>✅ `GET /golf-courses/{id}`<br>✅ `POST /golf-courses/request` | ✅ `/admin/golf-courses` page (CRUD completo)<br>✅ `/admin/golf-courses/pending` page (2 tabs)<br>✅ GolfCourseForm component (400+ líneas)<br>✅ GolfCourseTable component<br>✅ TeeCategoryBadge component<br>✅ 116 tests (100% passing)<br>✅ i18n ES/EN (300+ traducciones)<br>✅ Navigation links (admin only) | ✅ 31 Ene 2026 | ✅ **COMPLETADO** |
+| Sprint 2 | `POST /competitions/{id}/rounds`<br>`POST /rounds/{id}/matches`<br>`GET /matches/{id}` ⭐<br>`PUT /matches/{id}/status` ⭐<br>`POST /matches/{id}/walkover` ⭐ | Schedule drag-drop<br>Match creation wizard<br>Match detail modal<br>Manual status control<br>Walkover button | Viernes 14 Feb | 📋 Pendiente |
+| Sprint 3 | `POST /invitations/{id}/respond`                                                                                        | Invitation cards<br>Email notifications                                                           | Viernes 21 Feb | 📋 Pendiente |
+| Sprint 4 | `GET /matches/{id}/scoring-view`                                                                                        | Scoring 3 tabs<br>Real-time validation ✅/❌                                                        | Viernes 7 Mar  | 📋 Pendiente |
+| Sprint 5 | `GET /competitions/{id}/leaderboard`                                                                                    | Public leaderboard<br>Polling (30s)                                                               | Viernes 14 Mar | 📋 Pendiente |
 
 _⭐ = Endpoints nuevos añadidos por backend._
+
+---
+
+### ✅ Sprint 1: Golf Course Management System (COMPLETADO)
+
+> **Estado:** ✅ Completado el 31 Ene 2026
+> **Esfuerzo Frontend:** ~50h
+> **Tests:** 116 tests (100% passing)
+
+#### 🎯 Objetivos Alcanzados
+
+1. **Sistema Completo de Gestión de Campos de Golf**
+   - CRUD completo con Clean Architecture + DDD
+   - Workflow de aprobación con sistema de clones
+   - 2 páginas admin (CRUD + Aprobaciones)
+   - 3 componentes reutilizables
+   - 8 use cases implementados
+
+2. **Arquitectura**
+   - Domain Layer: 2 value objects (Tee, Hole) + 1 entity (GolfCourse)
+   - Application Layer: 8 use cases con validaciones
+   - Infrastructure Layer: ApiGolfCourseRepository (10 endpoints)
+   - Presentation Layer: Pages + Components + i18n completo
+
+3. **Testing & Quality**
+   - 116 tests unitarios (100% passing)
+   - Coverage: Domain (77 tests), Application (39 tests)
+   - Tests de workflows completos (new request, update proposal, rejection)
+
+4. **UX/UI**
+   - Formulario complejo: 18 hoyos + 2-6 tees
+   - Validaciones WHS (World Handicap System)
+   - Dropdown de países con banderas
+   - Real-time validations (totalPar 66-76, stroke indices únicos)
+   - Tabs para separar "New Requests" y "Update Proposals"
+   - Modal de rechazo con razón auditable
+
+5. **Internationalization**
+   - 300+ traducciones (ES/EN)
+   - Namespace `golfCourses` completo
+   - Nombres de países traducidos
+
+#### 📊 Estadísticas del Sprint
+
+- **Archivos creados:** 30+
+- **Líneas de código:** ~3,500
+- **Componentes:** 3
+- **Páginas:** 2
+- **Use Cases:** 8
+- **Tests:** 116
+- **Traducciones:** 300+
+- **Value Objects:** 2
+- **Entities:** 1
+- **Repositories:** 1 interface + 1 implementation
+
+#### 🚀 Entregables
+
+- ✅ `/admin/golf-courses` - Lista y gestión de campos aprobados
+- ✅ `/admin/golf-courses/pending` - Aprobación/rechazo de solicitudes
+- ✅ `GolfCourseForm` - Formulario complejo con validaciones
+- ✅ `GolfCourseTable` - Tabla reutilizable con acciones role-based
+- ✅ `TeeCategoryBadge` - Badges visuales para categorías de tees
+- ✅ Clean Architecture completa (4 capas)
+- ✅ 116 tests unitarios
+- ✅ i18n ES/EN completo
+- ✅ Documentación actualizada (CHANGELOG.md + ROADMAP.md)
+
+#### 🔗 Backend Integration
+
+- ✅ Integración con 10 endpoints del backend v2.0.2
+- ✅ Smart update workflow (admin in-place, creator clone)
+- ✅ Mapeo domain ↔ API (camelCase ↔ snake_case)
+- ✅ Manejo de errores con contexto
+- ✅ Validaciones multi-capa (HTML → Zod → Backend Pydantic)
+
+#### 🎨 UX Improvements
+
+- Country dropdown con banderas (reemplaza input text)
+- Real-time totalPar calculation
+- Stroke index uniqueness validation
+- Tee category badges con colores
+- Status badges (APPROVED/PENDING/REJECTED)
+- Update pending indicators
+- Role-based navigation links
+
+#### 📝 Próximos Pasos
+
+- Sprint 2: Schedule & Match Management (7 Feb - 17 Feb)
+- Implementar drag-and-drop para planificación de rounds
+- Match creation wizard
+- Manual match status control
 
 ---
 

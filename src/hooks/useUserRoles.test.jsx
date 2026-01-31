@@ -7,7 +7,7 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { renderHook, waitFor } from '@testing-library/react';
+import { renderHook, waitFor, act } from '@testing-library/react';
 import { useUserRoles } from './useUserRoles';
 import { getUserRolesUseCase } from '../composition';
 
@@ -167,8 +167,10 @@ describe('useUserRoles', () => {
     expect(result.current.isCreator).toBe(true);
     expect(result.current.isAdmin).toBe(false);
 
-    // Refetch
-    await result.current.refetch();
+    // Refetch - wrap in act
+    await act(async () => {
+      await result.current.refetch();
+    });
 
     await waitFor(() => {
       expect(result.current.isLoading).toBe(false);

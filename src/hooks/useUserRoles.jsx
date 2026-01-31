@@ -70,6 +70,7 @@ export const useUserRoles = (competitionId) => {
 
   useEffect(() => {
     fetchRoles();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [competitionId]);
 
   return {

@@ -71,6 +71,7 @@ const CompetitionDetail = () => {
     } finally {
       setIsLoadingCompetition(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, user, navigate]);
 
   useEffect(() => {

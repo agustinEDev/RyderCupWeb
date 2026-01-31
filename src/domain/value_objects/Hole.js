@@ -23,6 +23,8 @@ class Hole {
     if (this.strokeIndex < 1 || this.strokeIndex > 18) {
       throw new Error('Stroke index must be between 1 and 18');
     }
+
+    return true;
   }
 
   toDTO() {
@@ -42,4 +44,5 @@ class Hole {
   }
 }
 
+export { Hole };
 export default Hole;

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Loader, CheckCircle, XCircle } from 'lucide-react';
+import { Loader } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import customToast from '../../utils/toast';
 import HeaderAuth from '../../components/layout/HeaderAuth';
@@ -12,7 +12,6 @@ import {
   rejectGolfCourseUseCase,
   approveGolfCourseUpdateUseCase,
   rejectGolfCourseUpdateUseCase,
-  getGolfCourseUseCase,
 } from '../../composition';
 
 /**
@@ -49,6 +48,7 @@ const PendingGolfCourses = () => {
     if (user) {
       loadPendingCourses();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
   // Separate new requests from update proposals

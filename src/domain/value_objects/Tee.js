@@ -3,11 +3,12 @@
  * Represents a tee position on a golf course
  */
 class Tee {
-  constructor({ teeCategory, identifier, courseRating, slopeRating }) {
+  constructor({ teeCategory, identifier, courseRating, slopeRating, gender }) {
     this.teeCategory = teeCategory;
-    this.identifier = identifier;
+    this.identifier = identifier?.trim();
     this.courseRating = courseRating;
     this.slopeRating = slopeRating;
+    this.gender = gender;
 
     this.validate();
   }
@@ -16,17 +17,19 @@ class Tee {
     const validCategories = [
       'CHAMPIONSHIP_MALE',
       'AMATEUR_MALE',
-      'FORWARD_MALE',
-      'CHAMPIONSHIP_FEMALE',
+      'SENIOR_MALE',
       'AMATEUR_FEMALE',
-      'FORWARD_FEMALE',
+      'SENIOR_FEMALE',
+      'JUNIOR',
     ];
+
+    const validGenders = ['MALE', 'FEMALE'];
 
     if (!validCategories.includes(this.teeCategory)) {
       throw new Error(`Invalid tee category: ${this.teeCategory}`);
     }
 
-    if (!this.identifier || this.identifier.trim().length === 0) {
+    if (!this.identifier || this.identifier.length === 0) {
       throw new Error('Tee identifier is required');
     }
 
@@ -37,6 +40,13 @@ class Tee {
     if (this.slopeRating < 55 || this.slopeRating > 155) {
       throw new Error('Slope rating must be between 55 and 155');
     }
+
+    // Gender is optional (not sent in creation payload, but returned by backend)
+    if (this.gender && !validGenders.includes(this.gender)) {
+      throw new Error(`Invalid gender: ${this.gender}`);
+    }
+
+    return true;
   }
 
   toDTO() {
@@ -45,6 +55,7 @@ class Tee {
       identifier: this.identifier,
       course_rating: this.courseRating,
       slope_rating: this.slopeRating,
+      gender: this.gender,
     };
   }
 
@@ -54,8 +65,10 @@ class Tee {
       identifier: dto.identifier,
       courseRating: dto.course_rating,
       slopeRating: dto.slope_rating,
+      gender: dto.gender,
     });
   }
 }
 
+export { Tee };
 export default Tee;

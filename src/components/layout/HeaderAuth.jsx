@@ -117,6 +117,18 @@ const HeaderAuth = ({ user }) => {
           <Link to="/competitions/create" className="text-gray-900 text-sm font-medium leading-normal hover:text-primary transition-colors">
             {t('header.createCompetition')}
           </Link>
+
+          {/* Admin Links (only visible to admins) */}
+          {user?.is_admin && (
+            <>
+              <Link to="/admin/golf-courses" className="text-gray-900 text-sm font-medium leading-normal hover:text-primary transition-colors">
+                {t('header.golfCourses')}
+              </Link>
+              <Link to="/admin/golf-courses/pending" className="text-gray-900 text-sm font-medium leading-normal hover:text-primary transition-colors">
+                {t('header.pendingCourses')}
+              </Link>
+            </>
+          )}
         </div>
 
         {/* Language Switcher */}
@@ -223,6 +235,27 @@ const HeaderAuth = ({ user }) => {
             >
               {t('header.createCompetition')}
             </Link>
+
+            {/* Admin Links (only visible to admins) */}
+            {user?.is_admin && (
+              <>
+                <div className="border-t border-gray-200 my-2"></div>
+                <Link
+                  to="/admin/golf-courses"
+                  onClick={() => setIsDropdownOpen(false)}
+                  className="block px-4 py-2 text-sm text-gray-900 hover:bg-gray-100 transition-colors"
+                >
+                  {t('header.golfCourses')}
+                </Link>
+                <Link
+                  to="/admin/golf-courses/pending"
+                  onClick={() => setIsDropdownOpen(false)}
+                  className="block px-4 py-2 text-sm text-gray-900 hover:bg-gray-100 transition-colors"
+                >
+                  {t('header.pendingCourses')}
+                </Link>
+              </>
+            )}
             <div className="border-t border-gray-200 my-2"></div>
             <div className="px-4 py-2">
               <LanguageSwitcher />
