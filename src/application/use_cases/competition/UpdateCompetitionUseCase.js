@@ -68,6 +68,15 @@ class UpdateCompetitionUseCase {
     const startDate = new Date(competitionData.start_date);
     const endDate = new Date(competitionData.end_date);
 
+    // Check for Invalid Date
+    if (isNaN(startDate.getTime())) {
+      throw new Error('Invalid start_date');
+    }
+
+    if (isNaN(endDate.getTime())) {
+      throw new Error('Invalid end_date');
+    }
+
     if (endDate <= startDate) {
       throw new Error('End date must be after start date');
     }

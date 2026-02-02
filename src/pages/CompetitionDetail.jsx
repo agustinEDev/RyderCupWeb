@@ -169,8 +169,7 @@ const CompetitionDetail = () => {
       }));
     } catch (error) {
       console.error(`Error ${action}:`, error);
-      console.error('Full error object:', JSON.stringify(error, null, 2));
-      console.error('Error message:', error.message);
+      console.error('Error details:', error.stack || error.message || String(error));
       customToast.error(error.message || t('detail.failedToUpdateCompetition'));
     } finally {
       setIsProcessing(false);

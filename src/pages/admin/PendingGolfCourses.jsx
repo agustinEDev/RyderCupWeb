@@ -325,7 +325,7 @@ const PendingGolfCourses = () => {
                   </div>
                   <div className="bg-gray-50 rounded-lg p-4">
                     <p className="text-xs text-gray-600 mb-1">{t('table.tees')}</p>
-                    <p className="font-semibold text-gray-900">{courseToView.tees.length}</p>
+                    <p className="font-semibold text-gray-900">{courseToView?.tees?.length ?? 0}</p>
                   </div>
                 </div>
               </div>
@@ -334,10 +334,10 @@ const PendingGolfCourses = () => {
               <div>
                 <h3 className="text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
                   <Flag className="w-5 h-5 text-primary" />
-                  {t('form.tees')} ({courseToView.tees.length})
+                  {t('form.tees')} ({courseToView?.tees?.length ?? 0})
                 </h3>
                 <div className="space-y-3">
-                  {courseToView.tees.map((tee, index) => (
+                  {(courseToView?.tees || []).map((tee, index) => (
                     <div key={index} className="bg-gray-50 rounded-lg p-4">
                       <div className="flex items-center justify-between mb-2">
                         <TeeCategoryBadge category={tee.teeCategory} identifier={tee.identifier} />
@@ -371,7 +371,7 @@ const PendingGolfCourses = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {courseToView.holes.map((hole, index) => (
+                      {(courseToView?.holes || []).map((hole, index) => (
                         <tr key={index} className="border-b border-gray-100">
                           <td className="text-center py-2 px-3 font-medium text-gray-900">{hole.holeNumber}</td>
                           <td className="text-center py-2 px-3 text-gray-700">{hole.par}</td>
