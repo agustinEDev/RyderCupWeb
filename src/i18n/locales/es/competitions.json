@@ -109,12 +109,12 @@
     "actions": {
       "edit": "Editar",
       "activate": "Activar",
-      "closeEnrollments": "Cerrar Inscripciones",
-      "startCompetition": "Iniciar Competición",
+      "close-enrollments": "Cerrar Inscripciones",
+      "start-competition": "Iniciar Competición",
       "complete": "Completar",
       "cancel": "Cancelar",
       "delete": "Eliminar",
-      "requestToJoin": "Solicitar Unirse"
+      "request-to-join": "Solicitar Unirse"
     },
     "confirmations": {
       "activate": "¿Estás seguro de que quieres activar esta competición?",
@@ -123,7 +123,7 @@
       "complete": "¿Estás seguro de que quieres completar esta competición?",
       "cancel": "¿Estás seguro de que quieres cancelar esta competición?",
       "delete": "¿Estás seguro de que quieres eliminar esta competición? Esta acción no se puede deshacer.",
-      "rejectEnrollment": "¿Estás seguro de que quieres rechazar esta inscripción?"
+      "reject-enrollment": "¿Estás seguro de que quieres rechazar esta inscripción?"
     },
     "errors": {
       "golfCoursePendingApproval": "No se puede activar la competición: El campo de golf está pendiente de aprobación",
@@ -211,12 +211,12 @@
       "noOngoingCompetitions": "No hay competiciones cerradas, en curso o completadas en este momento"
     },
     "card": {
-      "createdBy": "Creado por:",
+      "created-by": "Creado por:",
       "players": "Jugadores:",
       "full": "LLENO",
       "requesting": "Solicitando...",
-      "requestToJoin": "Solicitar Unirse",
-      "viewDetails": "Ver Detalles"
+      "request-to-join": "Solicitar Unirse",
+      "view-details": "Ver Detalles"
     },
     "errors": {
       "failedToLoadJoinable": "Error al cargar competiciones disponibles",

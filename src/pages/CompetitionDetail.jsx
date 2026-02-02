@@ -222,7 +222,7 @@ const CompetitionDetail = () => {
   };
 
   const handleRejectEnrollment = async (enrollmentId) => {
-    if (!window.confirm(t('detail.confirmations.rejectEnrollment'))) {
+    if (!window.confirm(t('detail.confirmations.reject-enrollment'))) {
       return;
     }
     try {
@@ -396,7 +396,7 @@ const CompetitionDetail = () => {
                       className="flex items-center gap-2 px-4 py-2 bg-yellow-600 text-white rounded-lg font-medium hover:bg-yellow-700 transition-colors shadow-md disabled:opacity-50"
                     >
                       <Pause className="w-4 h-4" />
-                      <span>{t('detail.actions.closeEnrollments')}</span>
+                      <span>{t('detail.actions.close-enrollments')}</span>
                     </button>
                   )}
 
@@ -407,7 +407,7 @@ const CompetitionDetail = () => {
                       className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors shadow-md disabled:opacity-50"
                     >
                       <Play className="w-4 h-4" />
-                      <span>{t('detail.actions.startCompetition')}</span>
+                      <span>{t('detail.actions.start-competition')}</span>
                     </button>
                   )}
 
@@ -461,7 +461,7 @@ const CompetitionDetail = () => {
                   className="flex items-center justify-center gap-2 w-full px-6 py-3 bg-primary text-white rounded-lg font-medium hover:bg-primary/90 transition-colors shadow-md disabled:opacity-50"
                 >
                   <UserPlus className="w-5 h-5" />
-                  <span>{t('detail.actions.requestToJoin')}</span>
+                  <span>{t('detail.actions.request-to-join')}</span>
                 </button>
               </motion.div>
             )}
