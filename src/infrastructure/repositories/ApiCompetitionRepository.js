@@ -136,6 +136,87 @@ class ApiCompetitionRepository extends ICompetitionRepository {
 
     return competitions;
   }
+
+  /**
+   * Adds a golf course to a competition.
+   * @override
+   * @param {string} competitionId - The ID of the competition.
+   * @param {string} golfCourseId - The ID of the golf course to add.
+   * @returns {Promise<object>} - The association details (competition_id, golf_course_id, display_order, added_at).
+   */
+  async addGolfCourse(competitionId, golfCourseId) {
+    const response = await apiRequest(`/api/v1/competitions/${competitionId}/golf-courses`, {
+      method: 'POST',
+      body: JSON.stringify({ golf_course_id: golfCourseId })
+    });
+
+    return response;
+  }
+
+  /**
+   * Removes a golf course from a competition.
+   * @override
+   * @param {string} competitionId - The ID of the competition.
+   * @param {string} golfCourseId - The ID of the golf course to remove.
+   * @returns {Promise<object>} - The removal confirmation (competition_id, golf_course_id, removed_at).
+   */
+  async removeGolfCourse(competitionId, golfCourseId) {
+    const response = await apiRequest(`/api/v1/competitions/${competitionId}/golf-courses/${golfCourseId}`, {
+      method: 'DELETE'
+    });
+
+    return response;
+  }
+
+  /**
+   * Reorders golf courses in a competition.
+   * @override
+   * @param {string} competitionId - The ID of the competition.
+   * @param {string[]} golfCourseIds - Array of golf course IDs in the new order.
+   * @returns {Promise<object>} - The reordered golf courses with display_order.
+   */
+  async reorderGolfCourses(competitionId, golfCourseIds) {
+    const response = await apiRequest(`/api/v1/competitions/${competitionId}/golf-courses/reorder`, {
+      method: 'PUT',
+      body: JSON.stringify({ golf_course_ids: golfCourseIds })
+    });
+
+    return response;
+  }
+
+  /**
+   * Gets all golf courses associated with a competition.
+   * @override
+   * @param {string} competitionId - The ID of the competition.
+   * @returns {Promise<object>} - Object containing competition_id and golf_courses array.
+   */
+  async getCompetitionGolfCourses(competitionId) {
+    const response = await apiRequest(`/api/v1/competitions/${competitionId}/golf-courses`);
+
+    return response;
+  }
+
+  /**
+   * Updates a competition.
+   * @override
+   * @param {string} competitionId - The ID of the competition to update.
+   * @param {object} competitionData - The updated competition data.
+   * @returns {Promise<Competition>} - The updated competition entity.
+   */
+  async updateCompetition(competitionId, competitionData) {
+    const apiData = await apiRequest(`/api/v1/competitions/${competitionId}`, {
+      method: 'PUT',
+      body: JSON.stringify(competitionData),
+    });
+
+    // Map API response to Competition domain entity
+    const competition = CompetitionMapper.toDomain(apiData);
+
+    // Attach original API data for mapper to use
+    competition._apiData = apiData;
+
+    return competition;
+  }
 }
 
 export default ApiCompetitionRepository;

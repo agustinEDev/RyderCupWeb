@@ -22,7 +22,11 @@
     "pendingRequest": "solicitud pendiente",
     "pendingRequests": "solicitudes pendientes",
     "enrollmentStatus": "Inscripción: {{status}}",
-    "players": "{{count}} / {{max}} jugadores"
+    "players": "{{count}} / {{max}} jugadores",
+    "golfCoursesCount": "{{count}} campo",
+    "golfCoursesCount_plural": "{{count}} campos",
+    "countriesCount": "{{count}} país",
+    "countriesCount_plural": "{{count}} países"
   },
   "create": {
     "title": "Crear Competición",
@@ -79,7 +83,19 @@
       "playersMinimum": "El número de jugadores debe ser al menos 2",
       "playersMaximum": "El número de jugadores no puede exceder 100"
     },
-    "success": "¡Competición creada exitosamente!"
+    "success": "¡Competición creada exitosamente!",
+    "partialSuccess": "Competición creada, pero {{failed}} campo(s) no se pudieron añadir: {{courses}}. Se añadieron {{success}} campo(s) correctamente.",
+    "errorAddingCourses": "Competición creada, pero no se pudieron añadir los campos de golf. Puedes añadirlos manualmente desde la página de detalle.",
+    "error": "Error al crear la competición"
+  },
+  "edit": {
+    "title": "Editar Competición",
+    "loading": "Cargando competición...",
+    "updating": "Actualizando...",
+    "updateCompetition": "Actualizar Competición",
+    "success": "¡Competición actualizada exitosamente!",
+    "error": "Error al actualizar la competición",
+    "errorLoading": "Error al cargar la competición"
   },
   "detail": {
     "loadingCompetition": "Cargando competición...",
@@ -93,21 +109,21 @@
     "actions": {
       "edit": "Editar",
       "activate": "Activar",
-      "closeEnrollments": "Cerrar Inscripciones",
-      "startCompetition": "Iniciar Competición",
+      "close-enrollments": "Cerrar Inscripciones",
+      "start-competition": "Iniciar Competición",
       "complete": "Completar",
       "cancel": "Cancelar",
       "delete": "Eliminar",
-      "requestToJoin": "Solicitar Unirse"
+      "request-to-join": "Solicitar Unirse"
     },
     "confirmations": {
       "activate": "¿Estás seguro de que quieres activar esta competición?",
-      "closeEnrollments": "¿Estás seguro de que quieres cerrar las inscripciones de esta competición?",
+      "close-enrollments": "¿Estás seguro de que quieres cerrar las inscripciones de esta competición?",
       "start": "¿Estás seguro de que quieres iniciar esta competición?",
       "complete": "¿Estás seguro de que quieres completar esta competición?",
       "cancel": "¿Estás seguro de que quieres cancelar esta competición?",
       "delete": "¿Estás seguro de que quieres eliminar esta competición? Esta acción no se puede deshacer.",
-      "rejectEnrollment": "¿Estás seguro de que quieres rechazar esta inscripción?"
+      "reject-enrollment": "¿Estás seguro de que quieres rechazar esta inscripción?"
     },
     "errors": {
       "golfCoursePendingApproval": "No se puede activar la competición: El campo de golf está pendiente de aprobación",
@@ -139,12 +155,38 @@
     "rejected": "RECHAZADO",
     "enrollmentApproved": "Inscripción aprobada",
     "enrollmentRejected": "Inscripción rechazada",
+    "success": {
+      "activated": "Competición activada correctamente",
+      "enrollmentsClosed": "Inscripciones cerradas correctamente",
+      "started": "Competición iniciada correctamente",
+      "completed": "Competición completada correctamente",
+      "cancelled": "Competición cancelada correctamente",
+      "deleted": "Competición eliminada correctamente",
+      "enrollmentRequested": "Solicitud de inscripción enviada correctamente"
+    },
     "failedToApprove": "Error al aprobar la inscripción",
     "failedToReject": "Error al rechazar la inscripción",
     "failedToUpdateCompetition": "Error al actualizar la competición",
     "failedToDeleteCompetition": "Error al eliminar la competición",
     "failedToEnroll": "Error al solicitar inscripción",
-    "failedToLoadCompetitions": "Error al cargar las competiciones"
+    "failedToLoadCompetitions": "Error al cargar las competiciones",
+    "golfCourses": {
+      "title": "Campos de Golf ({{count}})",
+      "addCourse": "Añadir Campo",
+      "selectCourse": "Seleccionar Campo de Golf",
+      "noCourses": "No hay campos de golf asociados a esta competición",
+      "errorLoading": "Error al cargar los campos de golf",
+      "courseAdded": "Campo de golf añadido exitosamente",
+      "errorAdding": "Error al añadir el campo de golf",
+      "confirmRemove": "¿Estás seguro de que quieres eliminar este campo de golf de la competición?",
+      "courseRemoved": "Campo de golf eliminado exitosamente",
+      "errorRemoving": "Error al eliminar el campo de golf",
+      "reordered": "Campos de golf reordenados exitosamente",
+      "errorReordering": "Error al reordenar los campos de golf",
+      "dragToReorder": "Arrastra para reordenar los campos",
+      "adding": "Añadiendo campo...",
+      "requestNotAvailable": "La solicitud de nuevos campos no está disponible en esta vista. Usa la página de creación de competiciones."
+    }
   },
   "browse": {
     "title": "Explorar Competiciones",
@@ -169,12 +211,12 @@
       "noOngoingCompetitions": "No hay competiciones cerradas, en curso o completadas en este momento"
     },
     "card": {
-      "createdBy": "Creado por:",
+      "created-by": "Creado por:",
       "players": "Jugadores:",
       "full": "LLENO",
       "requesting": "Solicitando...",
-      "requestToJoin": "Solicitar Unirse",
-      "viewDetails": "Ver Detalles"
+      "request-to-join": "Solicitar Unirse",
+      "view-details": "Ver Detalles"
     },
     "errors": {
       "failedToLoadJoinable": "Error al cargar competiciones disponibles",

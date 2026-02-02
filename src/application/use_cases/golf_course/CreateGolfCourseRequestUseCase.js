@@ -29,8 +29,8 @@ class CreateGolfCourseRequestUseCase {
       throw new Error('Golf course name is required and must be a non-empty string');
     }
 
-    // Validate country
-    if (!golfCourseData.country) {
+    // Validate country code
+    if (!golfCourseData.countryCode || typeof golfCourseData.countryCode !== 'string' || golfCourseData.countryCode.length !== 2) {
       throw new Error('Golf course country is required');
     }
 
@@ -44,7 +44,7 @@ class CreateGolfCourseRequestUseCase {
       if (!tee.identifier || typeof tee.identifier !== 'string') {
         throw new Error(`Tee ${index + 1} must have a valid identifier`);
       }
-      if (!tee.category) {
+      if (!tee.teeCategory) {
         throw new Error(`Tee ${index + 1} must have a category`);
       }
       if (typeof tee.slopeRating !== 'number') {
@@ -52,9 +52,6 @@ class CreateGolfCourseRequestUseCase {
       }
       if (typeof tee.courseRating !== 'number') {
         throw new Error(`Tee ${index + 1} must have a numeric course rating`);
-      }
-      if (!tee.gender) {
-        throw new Error(`Tee ${index + 1} must have a gender`);
       }
     });
 

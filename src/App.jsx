@@ -158,6 +158,7 @@ function AppContent() {
         <Route path="/profile/devices" element={<ProtectedRoute><DeviceManagement /></ProtectedRoute>} />
         <Route path="/competitions" element={<ProtectedRoute><Competitions /></ProtectedRoute>} />
         <Route path="/competitions/create" element={<ProtectedRoute><CreateCompetition /></ProtectedRoute>} />
+        <Route path="/competitions/:id/edit" element={<ProtectedRoute><CreateCompetition /></ProtectedRoute>} />
         <Route path="/competitions/:id" element={<ProtectedRoute><CompetitionDetail /></ProtectedRoute>} />
         <Route path="/browse-competitions" element={<ProtectedRoute><BrowseCompetitions /></ProtectedRoute>} />
 

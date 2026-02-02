@@ -12,8 +12,10 @@ import HeaderAuth from '../components/layout/HeaderAuth';
 import { useAuth } from '../hooks/useAuth';
 import { useUserRoles } from '../hooks/useUserRoles';
 import { CountryFlag } from '../utils/countryUtils';
+import CompetitionGolfCoursesSection from '../components/competition/CompetitionGolfCoursesSection';
 import {
   getCompetitionDetailUseCase,
+  getCompetitionGolfCoursesUseCase,
   activateCompetitionUseCase,
   closeEnrollmentsUseCase,
   startCompetitionUseCase,
@@ -50,11 +52,30 @@ const CompetitionDetail = () => {
 
   const loadCompetition = useCallback(async () => {
     if (!user) return;
-    
+
     setIsLoadingCompetition(true);
     try {
       // Use GetCompetitionDetailUseCase instead of direct service call
       const data = await getCompetitionDetailUseCase.execute(id);
+
+      // Fetch and add golf courses to competition object for activation validation
+      try {
+        const golfCoursesResult = await getCompetitionGolfCoursesUseCase.execute(id);
+
+        // Map the data structure for activation validation
+        const courses = Array.isArray(golfCoursesResult) ? golfCoursesResult : (golfCoursesResult.golf_courses || []);
+        data.golfCourses = courses.map(item => ({
+          id: item.golf_course?.id || item.golf_course_id,
+          name: item.golf_course?.name || 'Unknown',
+          approvalStatus: item.golf_course?.approval_status || 'APPROVED',
+          display_order: item.display_order
+        }));
+      } catch (error) {
+        console.error('Error loading golf courses:', error);
+        // Set empty array if fetch fails
+        data.golfCourses = [];
+      }
+
       setCompetition(data);
 
       // Load enrollments only if user can manage the competition (for optimization)
@@ -118,23 +139,23 @@ const CompetitionDetail = () => {
       switch (action) {
         case 'activate':
           result = await activateCompetitionUseCase.execute(id);
-          customToast.success(t('detail.actions.activate'));
+          customToast.success(t('detail.success.activated'));
           break;
         case 'close-enrollments':
           result = await closeEnrollmentsUseCase.execute(id);
-          customToast.success(t('detail.actions.closeEnrollments'));
+          customToast.success(t('detail.success.enrollmentsClosed'));
           break;
         case 'start':
           result = await startCompetitionUseCase.execute(id);
-          customToast.success(t('detail.actions.startCompetition'));
+          customToast.success(t('detail.success.started'));
           break;
         case 'complete':
           result = await completeCompetitionUseCase.execute(id);
-          customToast.success(t('detail.actions.complete'));
+          customToast.success(t('detail.success.completed'));
           break;
         case 'cancel':
           result = await cancelCompetitionUseCase.execute(id);
-          customToast.success(t('detail.actions.cancel'));
+          customToast.success(t('detail.success.cancelled'));
           break;
         default:
           throw new Error('Invalid action');
@@ -148,6 +169,7 @@ const CompetitionDetail = () => {
       }));
     } catch (error) {
       console.error(`Error ${action}:`, error);
+      console.error('Error details:', error.stack || error.message || String(error));
       customToast.error(error.message || t('detail.failedToUpdateCompetition'));
     } finally {
       setIsProcessing(false);
@@ -162,7 +184,7 @@ const CompetitionDetail = () => {
     setIsProcessing(true);
     try {
       await deleteCompetition(id);
-      customToast.success(t('detail.actions.delete'));
+      customToast.success(t('detail.success.deleted'));
       navigate('/competitions');
     } catch (error) {
       console.error('Error deleting competition:', error);
@@ -175,7 +197,7 @@ const CompetitionDetail = () => {
     setIsProcessing(true);
     try {
       await requestEnrollmentUseCase.execute(id);
-      customToast.success(t('detail.actions.requestToJoin'));
+      customToast.success(t('detail.success.enrollmentRequested'));
       await loadCompetition();
     } catch (error) {
       console.error('Error enrolling:', error);
@@ -200,7 +222,7 @@ const CompetitionDetail = () => {
   };
 
   const handleRejectEnrollment = async (enrollmentId) => {
-    if (!window.confirm(t('detail.confirmations.rejectEnrollment'))) {
+    if (!window.confirm(t('detail.confirmations.reject-enrollment'))) {
       return;
     }
     try {
@@ -374,7 +396,7 @@ const CompetitionDetail = () => {
                       className="flex items-center gap-2 px-4 py-2 bg-yellow-600 text-white rounded-lg font-medium hover:bg-yellow-700 transition-colors shadow-md disabled:opacity-50"
                     >
                       <Pause className="w-4 h-4" />
-                      <span>{t('detail.actions.closeEnrollments')}</span>
+                      <span>{t('detail.actions.close-enrollments')}</span>
                     </button>
                   )}
 
@@ -385,7 +407,7 @@ const CompetitionDetail = () => {
                       className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors shadow-md disabled:opacity-50"
                     >
                       <Play className="w-4 h-4" />
-                      <span>{t('detail.actions.startCompetition')}</span>
+                      <span>{t('detail.actions.start-competition')}</span>
                     </button>
                   )}
 
@@ -425,8 +447,8 @@ const CompetitionDetail = () => {
               </motion.div>
             )}
 
-            {/* Enrollment Button for Regular Users (not creators/admins) */}
-            {!canManage && competition.status === 'ACTIVE' && !hasEnrollment && (
+            {/* Enrollment Button - Show if competition is ACTIVE, user is not enrolled, and user is not the creator */}
+            {!isCreator && competition.status === 'ACTIVE' && !hasEnrollment && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -439,7 +461,7 @@ const CompetitionDetail = () => {
                   className="flex items-center justify-center gap-2 w-full px-6 py-3 bg-primary text-white rounded-lg font-medium hover:bg-primary/90 transition-colors shadow-md disabled:opacity-50"
                 >
                   <UserPlus className="w-5 h-5" />
-                  <span>{t('detail.actions.requestToJoin')}</span>
+                  <span>{t('detail.actions.request-to-join')}</span>
                 </button>
               </motion.div>
             )}
@@ -513,6 +535,18 @@ const CompetitionDetail = () => {
                   </div>
                 </div>
               </div>
+            </motion.div>
+
+            {/* Golf Courses Section */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.25 }}
+            >
+              <CompetitionGolfCoursesSection
+                competition={competition}
+                canManage={canManage}
+              />
             </motion.div>
 
             {/* Enrollments List - Only visible to creator/admin */}
