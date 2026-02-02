@@ -1,14 +1,23 @@
 import { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { Calendar, Trophy, MapPin, Settings, Plus, X, ChevronDown, Flag, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import HeaderAuth from '../components/layout/HeaderAuth';
 import { useAuth } from '../hooks/useAuth';
-import { createCompetitionUseCase, fetchCountriesUseCase, createGolfCourseRequestUseCase } from '../composition';
+import {
+  createCompetitionUseCase,
+  updateCompetitionUseCase,
+  getCompetitionDetailUseCase,
+  getCompetitionGolfCoursesUseCase,
+  fetchCountriesUseCase,
+  createGolfCourseRequestUseCase,
+  addGolfCourseToCompetitionUseCase
+} from '../composition';
 import { CountryFlag } from '../utils/countryUtils';
 import { formatCountryName } from '../services/countries';
 import GolfCourseSearchBox from '../components/golf_course/GolfCourseSearchBox';
 import GolfCourseRequestModal from '../components/golf_course/GolfCourseRequestModal';
+import customToast from '../utils/toast';
 
 const API_URL = import.meta.env.VITE_API_BASE_URL || '';
 
@@ -21,9 +30,12 @@ const getMessageClassName = (type) => {
 
 const CreateCompetition = () => {
   const navigate = useNavigate();
+  const { id: competitionId } = useParams();
   const { t, i18n } = useTranslation('competitions');
   const { user, loading: isLoading } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [loadingCompetition, setLoadingCompetition] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
 
   // Ref para cleanup del timer de navegación (prevenir memory leak)
@@ -83,6 +95,100 @@ const CreateCompetition = () => {
     // Fetch all countries
     fetchCountries();
   }, []);
+
+  /**
+   * Load competition data when in edit mode
+   */
+  useEffect(() => {
+    const loadCompetitionData = async () => {
+      if (!competitionId || !allCountries.length) return;
+
+      setIsEditMode(true);
+      setLoadingCompetition(true);
+
+      try {
+        // Fetch competition details
+        const competition = await getCompetitionDetailUseCase.execute(competitionId);
+
+        // Extract main country code from location
+        // The mapper returns location as a string or we need to extract from countries array
+        let mainCountryCode = null;
+        if (competition.countries && competition.countries.length > 0) {
+          // First country in array is the main country
+          mainCountryCode = competition.countries[0].code;
+        }
+
+        // Find main country object from allCountries
+        const mainCountry = allCountries.find(c => c.code === mainCountryCode);
+
+        // Prepare adjacent countries (all countries except the first one)
+        const adjacentCountriesArray = competition.countries?.slice(1) || [];
+        const adjacentCountry1 = adjacentCountriesArray[0]?.code || '';
+        const adjacentCountry2 = adjacentCountriesArray[1]?.code || '';
+
+        // Fetch adjacent countries lists if needed
+        if (mainCountryCode) {
+          await fetchAdjacentCountries(mainCountryCode, 1);
+        }
+        if (adjacentCountry1) {
+          await fetchAdjacentCountries(adjacentCountry1, 2);
+        }
+
+        // Fetch golf courses for this competition
+        let golfCoursesData = [];
+        try {
+          const coursesResult = await getCompetitionGolfCoursesUseCase.execute(competitionId);
+
+          // Map the result to the format expected by formData
+          if (Array.isArray(coursesResult)) {
+            golfCoursesData = coursesResult.map(item => ({
+              countryCode: item.golf_course?.country_code || competition.main_country,
+              course: {
+                id: item.golf_course?.id || item.golf_course_id,
+                name: item.golf_course?.name || 'Unknown',
+                approvalStatus: item.golf_course?.approval_status || 'APPROVED'
+              }
+            }));
+          }
+        } catch (error) {
+          console.error('Error loading golf courses:', error);
+        }
+
+        // Populate form with competition data
+        // NOTE: The mapper returns camelCase, not snake_case
+        const formDataToSet = {
+          competitionName: competition.name || '',
+          teamOneName: competition.team1Name || 'Europe',
+          teamTwoName: competition.team2Name || 'USA',
+          startDate: competition.startDate || '',
+          endDate: competition.endDate || '',
+          country: mainCountry || null,
+          adjacentCountry1: adjacentCountry1,
+          adjacentCountry2: adjacentCountry2,
+          showAdjacentCountry1: !!adjacentCountry1,
+          showAdjacentCountry2: !!adjacentCountry2,
+          golfCourses: golfCoursesData,
+          handicapType: competition.handicapType || 'SCRATCH',
+          handicapPercentage: competition.handicapPercentage?.toString() || '100',
+          numberOfPlayers: competition.maxPlayers || undefined,
+          teamAssignment: competition.teamAssignment?.toLowerCase() || 'manual',
+          playerHandicap: 'user' // Default value, not stored in competition
+        };
+
+        setFormData(formDataToSet);
+
+      } catch (error) {
+        console.error('Error loading competition:', error);
+        customToast.error(t('edit.errorLoading') || 'Error loading competition');
+        navigate('/competitions');
+      } finally {
+        setLoadingCompetition(false);
+      }
+    };
+
+    loadCompetitionData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [competitionId, allCountries]);
 
   const fetchCountries = async () => {
     try {
@@ -352,12 +458,6 @@ const CreateCompetition = () => {
         countries.push(formData.adjacentCountry2);
       }
 
-      // Prepare golf courses array
-      const golfCourses = formData.golfCourses.map(gc => ({
-        country_code: gc.countryCode,
-        golf_course_id: gc.course.id
-      }));
-
       const payload = {
         name: formData.competitionName.trim(),
         team_1_name: formData.teamOneName.trim(),
@@ -366,7 +466,6 @@ const CreateCompetition = () => {
         end_date: formData.endDate,
         main_country: formData.country?.code,
         countries: countries,
-        golf_courses: golfCourses,
         handicap_type: formData.handicapType.toUpperCase(),
         number_of_players: numPlayers,
         team_assignment: formData.teamAssignment.toUpperCase()
@@ -376,30 +475,75 @@ const CreateCompetition = () => {
         payload.handicap_percentage = Number.parseInt(formData.handicapPercentage);
       }
 
-      // Use the use case instead of direct API call
-      const createdCompetition = await createCompetitionUseCase.execute(payload);
+      if (isEditMode) {
+        // EDIT MODE: Update existing competition
+        await updateCompetitionUseCase.execute(competitionId, payload);
 
-      setMessage({ type: 'success', text: t('create.success') });
+        customToast.success(t('edit.success') || 'Competition updated successfully');
 
-      // Guardar timer ID para cleanup (prevenir memory leak)
-      navigationTimerRef.current = setTimeout(() => {
-        navigate(`/competitions/${createdCompetition.id}`);
-      }, 1500);
+        // Navigate to competition detail
+        navigationTimerRef.current = setTimeout(() => {
+          navigate(`/competitions/${competitionId}`);
+        }, 1000);
+
+      } else {
+        // CREATE MODE: Create new competition
+        // STEP 1: Create competition
+        const createdCompetition = await createCompetitionUseCase.execute(payload);
+
+        // STEP 2: Associate each golf course one by one
+        let successCount = 0;
+        let failedCourses = [];
+
+        for (const gc of formData.golfCourses) {
+          try {
+            await addGolfCourseToCompetitionUseCase.execute(
+              createdCompetition.id,
+              gc.course.id
+            );
+            successCount++;
+          } catch (courseError) {
+            console.error(`Error adding golf course ${gc.course.name}:`, courseError);
+            failedCourses.push(gc.course.name);
+          }
+        }
+
+        // Show appropriate message based on results
+        if (failedCourses.length === 0) {
+          customToast.success(t('create.success'));
+        } else if (successCount > 0) {
+          customToast.warning(
+            t('create.partialSuccess', {
+              success: successCount,
+              failed: failedCourses.length,
+              courses: failedCourses.join(', ')
+            })
+          );
+        } else {
+          customToast.error(t('create.errorAddingCourses'));
+        }
+
+        // Navigate to competition detail
+        navigationTimerRef.current = setTimeout(() => {
+          navigate(`/competitions/${createdCompetition.id}`);
+        }, 1500);
+      }
 
     } catch (error) {
-      console.error('Error creating competition:', error);
-      setMessage({ type: 'error', text: error.message || 'Failed to create competition' });
+      console.error(`Error ${isEditMode ? 'updating' : 'creating'} competition:`, error);
+      customToast.error(error.message || t(isEditMode ? 'edit.error' : 'create.error'));
+      setMessage({ type: 'error', text: error.message || t(isEditMode ? 'edit.error' : 'create.error') });
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  if (isLoading) {
+  if (isLoading || loadingCompetition) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-gray-600">{t('common:loading')}</p>
+          <p className="text-gray-600">{loadingCompetition ? (t('edit.loading') || 'Loading competition...') : t('common:loading')}</p>
         </div>
       </div>
     );
@@ -419,7 +563,7 @@ const CreateCompetition = () => {
             {/* Page Title */}
             <div className="flex flex-wrap justify-between gap-3 p-4">
               <p className="text-gray-900 tracking-tight text-3xl md:text-[32px] font-bold leading-tight min-w-72">
-                {t('create.title')}
+                {isEditMode ? (t('edit.title') || 'Edit Competition') : t('create.title')}
               </p>
             </div>
 
@@ -699,7 +843,8 @@ const CreateCompetition = () => {
                 </div>
               </div>
 
-              {/* Section 4: Golf Courses */}
+              {/* Section 4: Golf Courses - Hidden in edit mode */}
+              {!isEditMode && (
               <div className="border border-gray-200 rounded-xl p-6">
                 <div className="flex items-center gap-3 mb-4">
                   <div className="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center">
@@ -875,6 +1020,7 @@ const CreateCompetition = () => {
                   )}
                 </div>
               </div>
+              )}
 
               {/* Section 5: RyderCup Settings */}
               <div className="border border-gray-200 rounded-xl p-6">
@@ -1020,7 +1166,10 @@ const CreateCompetition = () => {
                   disabled={isSubmitting}
                   className="px-6 py-2.5 bg-primary text-white text-sm font-bold rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {isSubmitting ? t('create.creating') : t('create.createCompetition')}
+                  {isSubmitting
+                    ? (isEditMode ? (t('edit.updating') || 'Updating...') : t('create.creating'))
+                    : (isEditMode ? (t('edit.updateCompetition') || 'Update Competition') : t('create.createCompetition'))
+                  }
                 </button>
               </div>
             </form>

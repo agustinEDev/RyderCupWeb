@@ -22,7 +22,11 @@
     "pendingRequest": "pending request",
     "pendingRequests": "pending requests",
     "enrollmentStatus": "Enrollment: {{status}}",
-    "players": "{{count}} / {{max}} players"
+    "players": "{{count}} / {{max}} players",
+    "golfCoursesCount": "{{count}} golf course",
+    "golfCoursesCount_plural": "{{count}} golf courses",
+    "countriesCount": "{{count}} country",
+    "countriesCount_plural": "{{count}} countries"
   },
   "create": {
     "title": "Create Competition",
@@ -79,7 +83,19 @@
       "playersMinimum": "Number of players must be at least 2",
       "playersMaximum": "Number of players cannot exceed 100"
     },
-    "success": "Competition created successfully!"
+    "success": "Competition created successfully!",
+    "partialSuccess": "Competition created, but {{failed}} course(s) could not be added: {{courses}}. {{success}} course(s) were added successfully.",
+    "errorAddingCourses": "Competition created, but golf courses could not be added. You can add them manually from the detail page.",
+    "error": "Failed to create competition"
+  },
+  "edit": {
+    "title": "Edit Competition",
+    "loading": "Loading competition...",
+    "updating": "Updating...",
+    "updateCompetition": "Update Competition",
+    "success": "Competition updated successfully!",
+    "error": "Failed to update competition",
+    "errorLoading": "Failed to load competition"
   },
   "detail": {
     "loadingCompetition": "Loading competition...",
@@ -102,7 +118,7 @@
     },
     "confirmations": {
       "activate": "Are you sure you want to activate this competition?",
-      "closeEnrollments": "Are you sure you want to close-enrollments this competition?",
+      "close-enrollments": "Are you sure you want to close enrollments for this competition?",
       "start": "Are you sure you want to start this competition?",
       "complete": "Are you sure you want to complete this competition?",
       "cancel": "Are you sure you want to cancel this competition?",
@@ -139,12 +155,38 @@
     "rejected": "REJECTED",
     "enrollmentApproved": "Enrollment approved",
     "enrollmentRejected": "Enrollment rejected",
+    "success": {
+      "activated": "Competition activated successfully",
+      "enrollmentsClosed": "Enrollments closed successfully",
+      "started": "Competition started successfully",
+      "completed": "Competition completed successfully",
+      "cancelled": "Competition cancelled successfully",
+      "deleted": "Competition deleted successfully",
+      "enrollmentRequested": "Enrollment request sent successfully"
+    },
     "failedToApprove": "Failed to approve enrollment",
     "failedToReject": "Failed to reject enrollment",
     "failedToUpdateCompetition": "Failed to update competition",
     "failedToDeleteCompetition": "Failed to delete competition",
     "failedToEnroll": "Failed to enroll",
-    "failedToLoadCompetitions": "Failed to load competitions"
+    "failedToLoadCompetitions": "Failed to load competitions",
+    "golfCourses": {
+      "title": "Golf Courses ({{count}})",
+      "addCourse": "Add Course",
+      "selectCourse": "Select Golf Course",
+      "noCourses": "No golf courses associated with this competition",
+      "errorLoading": "Failed to load golf courses",
+      "courseAdded": "Golf course added successfully",
+      "errorAdding": "Failed to add golf course",
+      "confirmRemove": "Are you sure you want to remove this golf course from the competition?",
+      "courseRemoved": "Golf course removed successfully",
+      "errorRemoving": "Failed to remove golf course",
+      "reordered": "Golf courses reordered successfully",
+      "errorReordering": "Failed to reorder golf courses",
+      "dragToReorder": "Drag to reorder courses",
+      "adding": "Adding course...",
+      "requestNotAvailable": "Requesting new courses is not available in this view. Use the competition creation page."
+    }
   },
   "browse": {
     "title": "Browse Competitions",

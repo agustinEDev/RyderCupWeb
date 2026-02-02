@@ -51,7 +51,7 @@ const GolfCourseForm = ({ initialData = null, onSubmit, onCancel }) => {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Load countries on mount
+  // Load countries on mount (only once)
   useEffect(() => {
     const fetchCountries = async () => {
       try {
@@ -61,7 +61,6 @@ const GolfCourseForm = ({ initialData = null, onSubmit, onCancel }) => {
               .filter(c => c?.code && (c?.name_en || c?.name_es))
               .map(c => ({
                 id: c.code,
-                name: c.name_en || c.name_es,
                 code: c.code,
                 name_en: c.name_en,
                 name_es: c.name_es
@@ -236,8 +235,6 @@ const GolfCourseForm = ({ initialData = null, onSubmit, onCancel }) => {
         })),
       };
 
-      console.log('📝 Form Data before submit:', formData);
-
       await onSubmit(formData);
     } catch (error) {
       console.error('Error submitting form:', error);
@@ -288,7 +285,7 @@ const GolfCourseForm = ({ initialData = null, onSubmit, onCancel }) => {
                 }`}
                 required
               >
-                <option value="">{t('form.selectCountry', 'Select country...')}</option>
+                <option value="">{t('form.selectCountry')}</option>
                 {allCountries.map((country) => (
                   <option key={country.code} value={country.code}>
                     {formatCountryName(country, i18n.language)}

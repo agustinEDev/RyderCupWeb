@@ -41,6 +41,7 @@ import RevokeDeviceUseCase from '../application/use_cases/device/RevokeDeviceUse
 // Competition Use Cases
 import ApiCompetitionRepository from '../infrastructure/repositories/ApiCompetitionRepository';
 import CreateCompetitionUseCase from '../application/use_cases/competition/CreateCompetitionUseCase';
+import UpdateCompetitionUseCase from '../application/use_cases/competition/UpdateCompetitionUseCase';
 import ListUserCompetitionsUseCase from '../application/use_cases/competition/ListUserCompetitionsUseCase';
 import GetCompetitionDetailUseCase from '../application/use_cases/competition/GetCompetitionDetailUseCase';
 import ActivateCompetitionUseCase from '../application/use_cases/competition/ActivateCompetitionUseCase';
@@ -50,6 +51,10 @@ import CompleteCompetitionUseCase from '../application/use_cases/competition/Com
 import CancelCompetitionUseCase from '../application/use_cases/competition/CancelCompetitionUseCase';
 import BrowseJoinableCompetitionsUseCase from '../application/use_cases/competition/BrowseJoinableCompetitionsUseCase';
 import BrowseExploreCompetitionsUseCase from '../application/use_cases/competition/BrowseExploreCompetitionsUseCase';
+import AddGolfCourseToCompetitionUseCase from '../application/use_cases/competition/AddGolfCourseToCompetitionUseCase';
+import RemoveGolfCourseFromCompetitionUseCase from '../application/use_cases/competition/RemoveGolfCourseFromCompetitionUseCase';
+import ReorderGolfCoursesUseCase from '../application/use_cases/competition/ReorderGolfCoursesUseCase';
+import GetCompetitionGolfCoursesUseCase from '../application/use_cases/competition/GetCompetitionGolfCoursesUseCase';
 
 // Enrollment Use Cases
 import ApiEnrollmentRepository from '../infrastructure/repositories/ApiEnrollmentRepository';
@@ -89,6 +94,7 @@ const requestPasswordResetUseCase = new RequestPasswordResetUseCase({ authReposi
 const validateResetTokenUseCase = new ValidateResetTokenUseCase({ authRepository: apiAuthRepository });
 const resetPasswordUseCase = new ResetPasswordUseCase({ authRepository: apiAuthRepository });
 const createCompetitionUseCase = new CreateCompetitionUseCase({ competitionRepository: apiCompetitionRepository });
+const updateCompetitionUseCase = new UpdateCompetitionUseCase({ competitionRepository: apiCompetitionRepository });
 const listUserCompetitionsUseCase = new ListUserCompetitionsUseCase({ competitionRepository: apiCompetitionRepository });
 const getCompetitionDetailUseCase = new GetCompetitionDetailUseCase({ competitionRepository: apiCompetitionRepository });
 const activateCompetitionUseCase = new ActivateCompetitionUseCase();
@@ -98,6 +104,10 @@ const completeCompetitionUseCase = new CompleteCompetitionUseCase();
 const cancelCompetitionUseCase = new CancelCompetitionUseCase();
 const browseJoinableCompetitionsUseCase = new BrowseJoinableCompetitionsUseCase(apiCompetitionRepository);
 const browseExploreCompetitionsUseCase = new BrowseExploreCompetitionsUseCase(apiCompetitionRepository);
+const addGolfCourseToCompetitionUseCase = new AddGolfCourseToCompetitionUseCase({ competitionRepository: apiCompetitionRepository });
+const removeGolfCourseFromCompetitionUseCase = new RemoveGolfCourseFromCompetitionUseCase({ competitionRepository: apiCompetitionRepository });
+const reorderGolfCoursesUseCase = new ReorderGolfCoursesUseCase({ competitionRepository: apiCompetitionRepository });
+const getCompetitionGolfCoursesUseCase = new GetCompetitionGolfCoursesUseCase({ competitionRepository: apiCompetitionRepository });
 const fetchCountriesUseCase = new FetchCountriesUseCase();
 
 // Enrollment Use Cases
@@ -140,6 +150,7 @@ export {
   validateResetTokenUseCase,
   resetPasswordUseCase,
   createCompetitionUseCase,
+  updateCompetitionUseCase,
   listUserCompetitionsUseCase,
   getCompetitionDetailUseCase,
   activateCompetitionUseCase,
@@ -149,6 +160,10 @@ export {
   cancelCompetitionUseCase,
   browseJoinableCompetitionsUseCase,
   browseExploreCompetitionsUseCase,
+  addGolfCourseToCompetitionUseCase,
+  removeGolfCourseFromCompetitionUseCase,
+  reorderGolfCoursesUseCase,
+  getCompetitionGolfCoursesUseCase,
   // Country Use Cases
   fetchCountriesUseCase,
   // Enrollment Use Cases

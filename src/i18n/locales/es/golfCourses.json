@@ -4,6 +4,7 @@
     "name": "Nombre del Campo",
     "namePlaceholder": "Real Club de Golf El Prat",
     "countryCode": "Código de País",
+    "selectCountry": "Selecciona un país...",
     "countryCodeHint": "ISO 3166-1 alpha-2 (ej: ES, US, GB)",
     "courseType": "Tipo de Campo",
     "courseTypes": {

@@ -68,10 +68,23 @@ const RoleGuard = ({
   }
 
   // Extract user's role names
-  // Handle both structures: user.roles = [{ name: 'ADMIN' }] or user.roles = ['ADMIN']
-  const userRoleNames = user.roles?.map(role =>
-    typeof role === 'string' ? role : role.name
-  ) || [];
+  // Support multiple backend formats (RBAC simplified - see ROADMAP.md):
+  // 1. user.is_admin = true (current backend format for global admin access)
+  // 2. user.roles = [{ name: 'ADMIN' }] or ['ADMIN'] (future format)
+  let userRoleNames = [];
+
+  // Check for global admin flag (current backend implementation)
+  if (user.is_admin === true) {
+    userRoleNames.push('ADMIN');
+  }
+
+  // Check for roles array (future implementation)
+  if (user.roles && Array.isArray(user.roles)) {
+    const rolesFromArray = user.roles.map(role =>
+      typeof role === 'string' ? role : role.name
+    );
+    userRoleNames = [...new Set([...userRoleNames, ...rolesFromArray])];
+  }
 
   // Check if user has required role(s)
   const hasAccess = requireAll

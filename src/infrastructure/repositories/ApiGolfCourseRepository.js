@@ -151,7 +151,7 @@ class ApiGolfCourseRepository extends IGolfCourseRepository {
    * @private
    */
   _mapToApiPayload(golfCourseData) {
-    return {
+    const payload = {
       name: golfCourseData.name,
       country_code: golfCourseData.countryCode || golfCourseData.country_code,
       course_type: golfCourseData.courseType || golfCourseData.course_type,
@@ -167,6 +167,8 @@ class ApiGolfCourseRepository extends IGolfCourseRepository {
         stroke_index: hole.strokeIndex || hole.stroke_index,
       })),
     };
+
+    return payload;
   }
 }
 

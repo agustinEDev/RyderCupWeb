@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   Users, Calendar, MapPin, Plus,
-  Filter, Search, AlertCircle, Loader, Crown
+  Filter, Search, AlertCircle, Loader, Crown, Flag
 } from 'lucide-react';
 import customToast from '../utils/toast';
 import { useTranslation } from 'react-i18next';
@@ -14,6 +14,7 @@ import {
   formatDateRange
 } from '../services/competitions';
 import { isDeviceRevoked, handleDeviceRevocationLogout } from '../utils/deviceRevocationLogout';
+import { CountryFlag } from '../utils/countryUtils';
 
 // Helper function to get enrollment status classes
 const getEnrollmentStatusClasses = (status) => {
@@ -250,6 +251,38 @@ const Competitions = () => {
                   {t('myCompetitions.players', { count: competition.enrolledCount || 0, max: competition.maxPlayers })}
                 </span>
               </div>
+
+              {/* Golf Courses / Countries */}
+              {competition.countries && competition.countries.length > 0 && (
+                <div className="flex items-center gap-2 text-gray-600 text-sm">
+                  <Flag className="w-4 h-4" />
+                  <div className="flex items-center gap-1.5">
+                    {/* Show country flags */}
+                    {competition.countries.slice(0, 3).map((country, index) => (
+                      <CountryFlag
+                        key={country.code || index}
+                        countryCode={country.code}
+                        style={{ width: '20px', height: 'auto' }}
+                        title={country.name || country.nameEn || country.code}
+                      />
+                    ))}
+                    {/* Show count text only if golf_courses_count is available */}
+                    {competition.golf_courses_count !== undefined && competition.golf_courses_count > 0 && (
+                      <span className="ml-1">
+                        {competition.golf_courses_count === 1
+                          ? t('myCompetitions.golfCoursesCount', { count: competition.golf_courses_count })
+                          : t('myCompetitions.golfCoursesCount_plural', { count: competition.golf_courses_count })}
+                      </span>
+                    )}
+                    {/* Show +N if more than 3 countries */}
+                    {competition.countries.length > 3 && (
+                      <span className="text-xs text-gray-500">
+                        +{competition.countries.length - 3}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           </motion.div>
         ))}
