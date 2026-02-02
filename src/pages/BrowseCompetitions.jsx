@@ -471,7 +471,7 @@ const CompetitionCard = ({ competition, mode, onRequestEnrollment, onViewDetails
         <div className="flex items-center text-sm text-gray-600">
           <Users className="w-4 h-4 mr-2 text-gray-400" />
           <span>
-            {t('browse.card.createdBy')} <span className="font-medium text-gray-900">{creator?.firstName} {creator?.lastName}</span>
+            {t('browse.card.created-by')} <span className="font-medium text-gray-900">{creator?.firstName} {creator?.lastName}</span>
           </span>
         </div>
 
@@ -504,7 +504,7 @@ const CompetitionCard = ({ competition, mode, onRequestEnrollment, onViewDetails
         {(() => {
           if (isRequesting) return t('browse.card.requesting');
           if (enrolledCount >= maxPlayers) return t('browse.card.full');
-          return t('browse.card.requestToJoin');
+          return t('browse.card.request-to-join');
         })()}
       </button>
         ) : (
@@ -515,7 +515,7 @@ const CompetitionCard = ({ competition, mode, onRequestEnrollment, onViewDetails
             }}
             className="w-full py-2 px-4 rounded-lg font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition"
           >
-            {t('browse.card.viewDetails')}
+            {t('browse.card.view-details')}
           </button>
         )}
       </div>

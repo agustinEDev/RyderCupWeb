@@ -87,4 +87,67 @@ class ICompetitionRepository {
   async findPublic(filters = {}) {
     throw new Error('ICompetitionRepository.findPublic must be implemented');
   }
+
+  /**
+   * Adds a golf course to a competition.
+   * Only allowed when competition status is DRAFT.
+   *
+   * @param {string} competitionId The ID of the competition.
+   * @param {string} golfCourseId The ID of the golf course to add.
+   * @returns {Promise<object>} The association details (competition_id, golf_course_id, display_order, added_at).
+   * @throws {Error} If the method is not implemented.
+   */
+  async addGolfCourse(competitionId, golfCourseId) {
+    throw new Error('ICompetitionRepository.addGolfCourse must be implemented');
+  }
+
+  /**
+   * Removes a golf course from a competition.
+   * Only allowed when competition status is DRAFT.
+   *
+   * @param {string} competitionId The ID of the competition.
+   * @param {string} golfCourseId The ID of the golf course to remove.
+   * @returns {Promise<object>} The removal confirmation (competition_id, golf_course_id, removed_at).
+   * @throws {Error} If the method is not implemented.
+   */
+  async removeGolfCourse(competitionId, golfCourseId) {
+    throw new Error('ICompetitionRepository.removeGolfCourse must be implemented');
+  }
+
+  /**
+   * Reorders golf courses in a competition.
+   * Only allowed when competition status is DRAFT.
+   *
+   * @param {string} competitionId The ID of the competition.
+   * @param {string[]} golfCourseIds Array of golf course IDs in the new order.
+   * @returns {Promise<object>} The reordered golf courses with display_order.
+   * @throws {Error} If the method is not implemented.
+   */
+  async reorderGolfCourses(competitionId, golfCourseIds) {
+    throw new Error('ICompetitionRepository.reorderGolfCourses must be implemented');
+  }
+
+  /**
+   * Gets all golf courses associated with a competition.
+   *
+   * @param {string} competitionId The ID of the competition.
+   * @returns {Promise<object>} Object containing competition_id and golf_courses array.
+   * @throws {Error} If the method is not implemented.
+   */
+  async getCompetitionGolfCourses(competitionId) {
+    throw new Error('ICompetitionRepository.getCompetitionGolfCourses must be implemented');
+  }
+
+  /**
+   * Updates a competition.
+   * Only allowed when competition status is DRAFT and user is the creator.
+   *
+   * @param {string} competitionId The ID of the competition to update.
+   * @param {object} competitionData The updated competition data.
+   * @returns {Promise<Competition>} The updated competition entity.
+   * @throws {Error} If the method is not implemented.
+   */
+  async updateCompetition(competitionId, competitionData) {
+    throw new Error('ICompetitionRepository.updateCompetition must be implemented');
+  }
 }

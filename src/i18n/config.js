@@ -4,14 +4,12 @@ import LanguageDetector from 'i18next-browser-languagedetector';
 
 // Custom backend para lazy loading de traducciones
 // Reduce bundle inicial de ~313 KB a ~40 KB (solo carga common en idioma detectado)
-class LazyBackend {
-  constructor() {
-    this.type = 'backend';
-  }
+const LazyBackend = {
+  type: 'backend',
 
   init() {
     // No-op - required by i18next backend interface
-  }
+  },
 
   read(language, namespace, callback) {
     // Dynamic import solo del archivo necesario
@@ -24,7 +22,7 @@ class LazyBackend {
         callback(error, null);
       });
   }
-}
+};
 
 i18n
   .use(LazyBackend) // Custom backend para lazy loading

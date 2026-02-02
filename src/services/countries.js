@@ -212,12 +212,21 @@ export const getAdjacentCountriesFallback = (countryCode) => {
 /**
  * Format country name based on user's language preference
  * @param {object} country - Country object with name_en and name_es
- * @param {string} language - 'en' or 'es'
+ * @param {string} language - 'en', 'es', 'en-US', 'es-ES', etc.
  * @returns {string}
  */
 export const formatCountryName = (country, language = 'en') => {
   if (!country) return '';
-  return language === 'es' ? (country.name_es || country.name_en || country.name) : (country.name_en || country.name);
+
+  // Normalize language to base code (es-ES -> es, en-US -> en)
+  const baseLang = language ? language.toLowerCase().split('-')[0] : 'en';
+
+  // Always prefer the requested language, fallback to the other language
+  if (baseLang === 'es') {
+    return country.name_es || country.name_en || country.name || '';
+  }
+
+  return country.name_en || country.name_es || country.name || '';
 };
 
 /**
