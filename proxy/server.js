@@ -19,15 +19,24 @@ app.use('/api', createProxyMiddleware({
   logLevel: 'debug',
   secure: true,
   ws: true, // Enable WebSocket support
+  cookieDomainRewrite: {
+    'rydercupam-euzt.onrender.com': 'www.rydercupfriends.com',
+    '.onrender.com': '.rydercupfriends.com',
+    '*': '' // Remove domain for other cookies
+  },
+  cookiePathRewrite: {
+    '*': '/' // All cookies available at root
+  },
   onProxyReq: (proxyReq, req) => {
     console.log(`[PROXY API] ${req.method} ${req.url} → ${BACKEND_URL}${req.url}`);
   },
   onProxyRes: (proxyRes, req) => {
     console.log(`[PROXY API] Response ${proxyRes.statusCode} from ${req.url}`);
-    // Log cookies being set
+    // Log cookies being set (after rewrite)
     const setCookie = proxyRes.headers['set-cookie'];
     if (setCookie) {
-      console.log(`[PROXY API] Set-Cookie:`, setCookie);
+      console.log(`[PROXY API] Set-Cookie (rewritten):`, setCookie);
+      console.log(`[PROXY API] Cookie domain rewrite: .onrender.com → .rydercupfriends.com`);
     }
   }
 }));
