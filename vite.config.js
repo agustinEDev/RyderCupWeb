@@ -13,7 +13,7 @@ const securityHeaders = {
   'Permissions-Policy': 'geolocation=(), microphone=(), camera=()',
   // Content Security Policy without 'unsafe-inline' (v1.8.0)
   // Updated: 03 Feb 2026 - Added api.rydercupfriends.com for subdomain architecture
-  'Content-Security-Policy': "default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' https: data:; connect-src 'self' https://api.rydercupfriends.com https://rydercupam-euzt.onrender.com http://localhost:8000 https://o4510427294662656.ingest.de.sentry.io https://*.ingest.sentry.io; worker-src 'self' blob:; child-src 'self' blob:; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none';"
+  'Content-Security-Policy': "default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' https: data:; connect-src 'self' https://api.rydercupfriends.com http://localhost:8000 https://o4510427294662656.ingest.de.sentry.io https://*.ingest.sentry.io; worker-src 'self' blob:; child-src 'self' blob:; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none';"
 }
 
 // https://vitejs.dev/config/
@@ -34,7 +34,7 @@ export default defineConfig(({ mode }) => ({
           // CSP más permisivo en desarrollo para soportar HMR de Vite
           const devHeaders = {
             ...securityHeaders,
-            'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' https: data:; connect-src 'self' ws://localhost:* https://api.rydercupfriends.com https://rydercupam-euzt.onrender.com http://localhost:8000 https://o4510427294662656.ingest.de.sentry.io https://*.ingest.sentry.io; worker-src 'self' blob:; child-src 'self' blob:; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none';"
+            'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' https: data:; connect-src 'self' ws://localhost:* https://api.rydercupfriends.com http://localhost:8000 https://o4510427294662656.ingest.de.sentry.io https://*.ingest.sentry.io; worker-src 'self' blob:; child-src 'self' blob:; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none';"
           }
           for (const [key, value] of Object.entries(devHeaders)) {
             res.setHeader(key, value)
@@ -64,7 +64,7 @@ export default defineConfig(({ mode }) => ({
     },
     exclude: ['**/node_modules/**', '**/dist/**', '**/e2e/**', '**/tests/**'], // Excluir directorios comunes de build, e2e y playwright
     env: {
-      // Configure empty API_BASE_URL in tests to use relative URLs (like production with proxy)
+      // Configure empty API_BASE_URL in tests (uses localhost:8000 proxy in dev)
       VITE_API_BASE_URL: ''
     }
   },
