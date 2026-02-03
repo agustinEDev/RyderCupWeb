@@ -17,7 +17,7 @@ const securityHeaders = {
 }
 
 // https://vitejs.dev/config/
-export default defineConfig(({ mode }) => ({
+export default defineConfig(() => ({
   // Ensure environment variables are properly loaded
   // Vite automatically loads .env files and exposes VITE_* variables
   // In Render, VITE_API_BASE_URL is set as environment variable
