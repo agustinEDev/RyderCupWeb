@@ -12,11 +12,15 @@ const securityHeaders = {
   'Referrer-Policy': 'strict-origin-when-cross-origin',
   'Permissions-Policy': 'geolocation=(), microphone=(), camera=()',
   // Content Security Policy without 'unsafe-inline' (v1.8.0)
-  'Content-Security-Policy': "default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' https: data:; connect-src 'self' https://rydercupam-euzt.onrender.com http://localhost:8000 https://o4510427294662656.ingest.de.sentry.io https://*.ingest.sentry.io; worker-src 'self' blob:; child-src 'self' blob:; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none';"
+  // Updated: 03 Feb 2026 - Added api.rydercupfriends.com for subdomain architecture
+  'Content-Security-Policy': "default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' https: data:; connect-src 'self' https://api.rydercupfriends.com https://rydercupam-euzt.onrender.com http://localhost:8000 https://o4510427294662656.ingest.de.sentry.io https://*.ingest.sentry.io; worker-src 'self' blob:; child-src 'self' blob:; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none';"
 }
 
 // https://vitejs.dev/config/
-export default defineConfig(() => ({
+export default defineConfig(({ mode }) => ({
+  // Ensure environment variables are properly loaded
+  // Vite automatically loads .env files and exposes VITE_* variables
+  // In Render, VITE_API_BASE_URL is set as environment variable
   plugins: [
     react(),
     // Subresource Integrity (SRI) plugin - adds integrity hashes to assets (v1.15.0)
@@ -30,7 +34,7 @@ export default defineConfig(() => ({
           // CSP más permisivo en desarrollo para soportar HMR de Vite
           const devHeaders = {
             ...securityHeaders,
-            'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' https: data:; connect-src 'self' ws://localhost:* https://rydercupam-euzt.onrender.com http://localhost:8000 https://o4510427294662656.ingest.de.sentry.io https://*.ingest.sentry.io; worker-src 'self' blob:; child-src 'self' blob:; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none';"
+            'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' https: data:; connect-src 'self' ws://localhost:* https://api.rydercupfriends.com https://rydercupam-euzt.onrender.com http://localhost:8000 https://o4510427294662656.ingest.de.sentry.io https://*.ingest.sentry.io; worker-src 'self' blob:; child-src 'self' blob:; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none';"
           }
           for (const [key, value] of Object.entries(devHeaders)) {
             res.setHeader(key, value)
