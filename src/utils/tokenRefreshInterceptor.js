@@ -15,7 +15,12 @@
  */
 
 import { setCsrfTokenGlobal } from '../contexts/csrfTokenSync'; // v1.13.0: CSRF Protection
-import { isDeviceRevoked, handleDeviceRevocationLogout } from './deviceRevocationLogout'; // v1.13.1: Device Revocation
+import {
+  isDeviceRevoked,
+  isSessionExpired,
+  handleDeviceRevocationLogout,
+  handleSessionExpiredLogout
+} from './deviceRevocationLogout'; // v1.13.1: Device Revocation, v2.0.4: Separated expiration
 
 const API_URL = globalThis.APP_CONFIG?.API_BASE_URL || import.meta.env.VITE_API_BASE_URL || '';
 
@@ -215,28 +220,38 @@ export const fetchWithTokenRefresh = async (url, options = {}) => {
       // Refresh failed - reject all queued requests
       processQueue(refreshError);
 
-      // Check if refresh failed due to device revocation
+      // v2.0.4: Properly differentiate between device revocation and session expiration
       if (refreshError.response && refreshError.errorData) {
-        const isRevoked = isDeviceRevoked(refreshError.response, refreshError.errorData);
-
-        if (isRevoked) {
+        // Check if refresh failed due to EXPLICIT device revocation
+        if (isDeviceRevoked(refreshError.response, refreshError.errorData)) {
+          console.log('🔒 [TokenRefresh] Device was revoked - logging out with revocation message');
           handleDeviceRevocationLogout(refreshError.errorData);
-          // Don't return response (would cause body parsing errors)
-          // Wait for redirect (happens in 500ms) with safety timeout that rejects
+          // Wait for redirect (happens in 500ms) with safety timeout
           await Promise.race([
-            new Promise(() => {}), // Never resolves - redirect will interrupt
+            new Promise(() => {}),
             new Promise((_, reject) => setTimeout(() => reject(new Error('Redirect timeout after device revocation')), 5000))
+          ]);
+        }
+
+        // Check if refresh failed due to session expiration (refresh token expired)
+        if (isSessionExpired(refreshError.response, refreshError.errorData)) {
+          console.log('⏱️ [TokenRefresh] Session expired - logging out with expiration message');
+          handleSessionExpiredLogout(refreshError.errorData);
+          // Wait for redirect (happens in 500ms) with safety timeout
+          await Promise.race([
+            new Promise(() => {}),
+            new Promise((_, reject) => setTimeout(() => reject(new Error('Redirect timeout after session expiration')), 5000))
           ]);
         }
       }
 
-      // Token refresh failed (not revocation) - redirect to login
-      globalThis.location.href = '/login';
+      // Fallback: Token refresh failed for unknown reason - use generic expiration message
+      console.log('❓ [TokenRefresh] Refresh failed for unknown reason - logging out');
+      handleSessionExpiredLogout(refreshError.errorData || null);
 
       // Pause execution - redirect will interrupt
-      // Don't return response (prevents race conditions and blank page)
       await Promise.race([
-        new Promise(() => {}), // Never resolves - redirect will interrupt
+        new Promise(() => {}),
         new Promise((_, reject) => setTimeout(() => reject(new Error('Redirect timeout after session expiration')), 5000))
       ]);
 
