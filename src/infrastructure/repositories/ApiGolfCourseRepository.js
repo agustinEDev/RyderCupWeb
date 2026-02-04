@@ -4,7 +4,7 @@ import apiRequest from '../../services/api.js';
 
 /**
  * API Implementation of Golf Course Repository
- * Consumes backend Golf Course API v2.0.2
+ * Consumes backend Golf Course API v2.0.0
  */
 class ApiGolfCourseRepository extends IGolfCourseRepository {
   constructor() {

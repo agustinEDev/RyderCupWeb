@@ -1,9 +1,10 @@
 # 🗺️ Roadmap - RyderCupFriends Frontend
 
-> **Versión:** 1.15.0 → 1.16.0 → 2.0.0 → 2.0.2 → 2.0.3 → 2.0.4 → 2.0.5
-> **Última actualización:** 31 Ene 2026
-> **Estado:** ✅ v1.16.0 Completada (24 Ene 2026) | ✅ v2.0.0 Sprint 1 Completado (31 Ene 2026) | 🔄 v2.0.2 Sprint 2 En Curso
+> **Versión:** 1.15.0 → 1.16.0 → 2.0.0 → 2.0.1 → 2.0.2 → 2.0.3 → 2.0.4 (Sprint 5)
+> **Última actualización:** 4 Feb 2026
+> **Estado:** ✅ v2.0.0 Sprint 1 Completado | 🔄 v2.0.1 Sprint 2 + Infra En Curso
 > **Stack:** React 19 + Vite 7.3 + Tailwind CSS 4 + ESLint 9
+> **Arquitectura:** Subdomain (www + api) con Cloudflare Proxy (ADR-011)
 
 ---
 
@@ -115,11 +116,11 @@ const CompetitionActions = ({ competitionId }) => {
 
 | Sprint   | Fechas          | Esfuerzo BE | Endpoints | Sync Point        | Estado        | Versión  |
 |----------|-----------------|-------------|-----------|-------------------|---------------|----------|
-| Sprint 1 | 27 Ene - 6 Feb  | 60h         | 10        | ✅ Viernes 31 Ene | ✅ COMPLETADO | v2.0.0   |
-| Sprint 2 | 7 Feb - 17 Feb  | 70h         | 10        | 🔄 Viernes 14 Feb | 🔄 EN CURSO   | v2.0.2   |
-| Sprint 3 | 18 Feb - 24 Feb | 48h         | 5         | 🔄 Viernes 21 Feb | 📋 Pendiente  | v2.0.3   |
-| Sprint 4 | 25 Feb - 10 Mar | 92h         | 4         | 🔄 Viernes 7 Mar  | 📋 Pendiente  | v2.0.4   |
-| Sprint 5 | 11 Mar - 17 Mar | 60h         | 2         | 🔄 Viernes 14 Mar | 📋 Pendiente  | v2.0.5   |
+| Sprint 1 | 27 Ene - 6 Feb  | 60h         | 10        | ✅ Viernes 30 Ene | ✅ COMPLETADO | v2.0.0   |
+| Sprint 2 | 3 Feb - 17 Feb  | 70h         | 10        | 🔄 Viernes 13 Feb | 🔄 EN CURSO   | v2.0.1   |
+| Sprint 3 | 18 Feb - 24 Feb | 48h         | 5         | 🔄 Viernes 20 Feb | 📋 Pendiente  | v2.0.2   |
+| Sprint 4 | 25 Feb - 10 Mar | 92h         | 4         | 🔄 Viernes 6 Mar  | 📋 Pendiente  | v2.0.3   |
+| Sprint 5 | 11 Mar - 17 Mar | 60h         | 2         | 🔄 Viernes 13 Mar | 📋 Pendiente  | v2.0.4   |
 | **TOTAL**| **7 semanas**   | **330h**    | **31**    |                   |               |          |
 
 ---
@@ -226,6 +227,43 @@ _⭐ = Endpoints nuevos añadidos por backend._
 - Implementar drag-and-drop para planificación de rounds
 - Match creation wizard
 - Manual match status control
+
+---
+
+### 🏗️ v2.0.1 - Infrastructure: API Subdomain Migration (incluido en Sprint 2)
+
+> **Estado:** ✅ Completado el 3 Feb 2026
+> **Tipo:** Hotfix de infraestructura
+> **ADR:** ADR-011
+
+#### 🎯 Objetivo
+
+Migrar de arquitectura de proxy inverso a subdominios directos para mejorar rendimiento y reducir costes.
+
+#### 🔧 Cambios Implementados
+
+| Antes | Después |
+|-------|---------|
+| `www.rydercupfriends.com/api/*` → Proxy → Backend | `api.rydercupfriends.com` → Backend directo |
+| Latencia: +50-100ms (hop proxy) | Latencia: Directa |
+| Coste: +$7/mes (servicio proxy) | Coste: $0 |
+| Cookies: Domain rewrite manual | Cookies: `.rydercupfriends.com` nativo |
+
+#### ✅ Entregables
+
+- ✅ PR #114: Cookie domain rewrite fix
+- ✅ PR #115: Upgrade http-proxy-middleware v3.0.3
+- ✅ PR #116: Full subdomain migration
+- ✅ ADR-011: Documentación de arquitectura
+- ✅ Cloudflare Page Rules configuradas
+- ✅ Backend CORS actualizado
+
+#### 📊 Impacto
+
+- **Performance:** -50-100ms latencia
+- **Coste:** -$7/mes (33% reducción)
+- **Fiabilidad:** Eliminado single point of failure
+- **Device Fingerprinting:** IPs reales via `CF-Connecting-IP`
 
 ---
 

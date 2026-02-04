@@ -5,6 +5,7 @@
 **Estado**: ✅ Implementado (v1.8.0)
 **Decisores**: Equipo de desarrollo frontend + backend
 **Supersede**: ADR-003 (sessionStorage Authentication)
+**Extendido por**: ADR-011 (Subdomain Architecture with Cloudflare) - Cookie domain actualizado a `.rydercupfriends.com` para cross-subdomain support
 
 ## Contexto y Problema
 
