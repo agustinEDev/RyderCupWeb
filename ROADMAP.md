@@ -1,8 +1,8 @@
 # 🗺️ Roadmap - RyderCupFriends Frontend
 
-> **Versión:** 1.15.0 → 1.16.0 → 2.0.0 → 2.0.1 → 2.0.2 → 2.0.3 → 2.0.4 (Sprint 5)
+> **Versión:** 1.15.0 → 1.16.0 → 2.0.0 → 2.0.4 (sincronizado con backend)
 > **Última actualización:** 4 Feb 2026
-> **Estado:** ✅ v2.0.0 Sprint 1 Completado | 🔄 v2.0.1 Sprint 2 + Infra En Curso
+> **Estado:** ✅ v2.0.0 Sprint 1 Completado | ✅ v2.0.4 Sprint 2 + Infra Completado
 > **Stack:** React 19 + Vite 7.3 + Tailwind CSS 4 + ESLint 9
 > **Arquitectura:** Subdomain (www + api) con Cloudflare Proxy (ADR-011)
 
@@ -117,10 +117,10 @@ const CompetitionActions = ({ competitionId }) => {
 | Sprint   | Fechas          | Esfuerzo BE | Endpoints | Sync Point        | Estado        | Versión  |
 |----------|-----------------|-------------|-----------|-------------------|---------------|----------|
 | Sprint 1 | 27 Ene - 6 Feb  | 60h         | 10        | ✅ Viernes 30 Ene | ✅ COMPLETADO | v2.0.0   |
-| Sprint 2 | 3 Feb - 17 Feb  | 70h         | 10        | 🔄 Viernes 13 Feb | 🔄 EN CURSO   | v2.0.1   |
-| Sprint 3 | 18 Feb - 24 Feb | 48h         | 5         | 🔄 Viernes 20 Feb | 📋 Pendiente  | v2.0.2   |
-| Sprint 4 | 25 Feb - 10 Mar | 92h         | 4         | 🔄 Viernes 6 Mar  | 📋 Pendiente  | v2.0.3   |
-| Sprint 5 | 11 Mar - 17 Mar | 60h         | 2         | 🔄 Viernes 13 Mar | 📋 Pendiente  | v2.0.4   |
+| Sprint 2 | 3 Feb - 17 Feb  | 70h         | 10        | ✅ Viernes 4 Feb  | ✅ COMPLETADO | v2.0.4   |
+| Sprint 3 | 18 Feb - 24 Feb | 48h         | 5         | 🔄 Viernes 20 Feb | 📋 Pendiente  | v2.0.5   |
+| Sprint 4 | 25 Feb - 10 Mar | 92h         | 4         | 🔄 Viernes 6 Mar  | 📋 Pendiente  | v2.0.6   |
+| Sprint 5 | 11 Mar - 17 Mar | 60h         | 2         | 🔄 Viernes 13 Mar | 📋 Pendiente  | v2.0.7   |
 | **TOTAL**| **7 semanas**   | **330h**    | **31**    |                   |               |          |
 
 ---
@@ -205,7 +205,7 @@ _⭐ = Endpoints nuevos añadidos por backend._
 
 #### 🔗 Backend Integration
 
-- ✅ Integración con 10 endpoints del backend v2.0.2
+- ✅ Integración con 10 endpoints del backend v2.0.0
 - ✅ Smart update workflow (admin in-place, creator clone)
 - ✅ Mapeo domain ↔ API (camelCase ↔ snake_case)
 - ✅ Manejo de errores con contexto
@@ -230,7 +230,7 @@ _⭐ = Endpoints nuevos añadidos por backend._
 
 ---
 
-### 🏗️ v2.0.1 - Infrastructure: API Subdomain Migration (incluido en Sprint 2)
+### 🏗️ v2.0.4 - Infrastructure + Security (Sprint 2)
 
 > **Estado:** ✅ Completado el 3 Feb 2026
 > **Tipo:** Hotfix de infraestructura
@@ -452,5 +452,5 @@ Aquí están las confirmaciones y respuestas a vuestras preguntas:
 
 ---
 
-**Última revisión:** 31 Ene 2026 (v2.0.0 Sprint 1 Completado, Sprint 2 En Curso)
+**Última revisión:** 4 Feb 2026 (v2.0.4 Sprint 2 Completado)
 **Próxima revisión:** Fin Sprint 2 (14 Feb 2026)

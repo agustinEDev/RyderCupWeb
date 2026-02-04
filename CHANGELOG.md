@@ -7,33 +7,57 @@ y este proyecto adhiere a [Versionado Semántico](https://semver.org/lang/es/).
 
 ## [Unreleased]
 
-### ✨ Added
-- **Tee Categories**: Añadida categoría `CHAMPIONSHIP_FEMALE` al formulario de campos de golf
-  - Actualizado array `TEE_CATEGORIES` en `GolfCourseForm.jsx`
-  - Añadidas traducciones ES/EN en namespace `golfCourses`
-
 ---
 
-## [2.0.3] - 2026-02-03
+## [2.0.4] - 2026-02-04
 
-### 🏗️ Infrastructure - API Subdomain Migration
+### 🎯 Sprint 2: Security Enhancements + Infrastructure Migration
 
-Migración de arquitectura de proxy inverso a subdominios con Cloudflare para mejorar rendimiento y reducir costes.
+Mejoras de seguridad OWASP A07:2021 (Authentication Failures) y migración de infraestructura a subdominios.
 
 ### ✨ Added
+
+#### Security (OWASP A07:2021 Compliance)
+- **Proactive Token Refresh**: Nuevo hook `useProactiveTokenRefresh` que refresca tokens antes de expirar
+  - Monitorea actividad del usuario (keydown, mousemove, click, scroll, touch)
+  - Refresca token ~1 minuto antes de expirar si el usuario está activo
+  - Previene "sesión expirada" mientras el usuario está usando la app
+  - Mantiene TTL de 5 minutos (OWASP compliant)
+- **Separated Session Handling**: Separación clara de revocación vs expiración
+  - `isDeviceRevoked()`: Solo retorna true para revocación EXPLÍCITA de dispositivo
+  - `isSessionExpired()`: Maneja expiración de refresh token (separado de revocación)
+  - `handleDeviceRevocationLogout()`: Mensaje con icono 🔒 para revocación
+  - `handleSessionExpiredLogout()`: Mensaje con icono ⏱️ para expiración
+  - Mejor UX: usuarios entienden por qué fueron deslogueados
+
+#### Infrastructure
 - **ADR-011**: Documentación de arquitectura de subdominios con Cloudflare Proxy
   - Frontend: `www.rydercupfriends.com`
   - Backend API: `api.rydercupfriends.com`
   - Cookie domain: `.rydercupfriends.com` (cross-subdomain)
 
+#### Features
+- **Tee Categories**: Añadida categoría `CHAMPIONSHIP_FEMALE` al formulario de campos de golf
+  - Actualizado array `TEE_CATEGORIES` en `GolfCourseForm.jsx`
+  - Añadidas traducciones ES/EN en namespace `golfCourses`
+- **Competition Edit**: Funcionalidad completa de edición de competiciones
+- **Golf Course Management**: Mejoras en gestión de campos de golf dentro de competiciones
+
 ### 🔧 Changed
 - **vite.config.js**: Actualizado CSP para incluir `api.rydercupfriends.com` en `connect-src`
 - **.env.example**: Actualizada documentación para migración a API subdomain
 - **Proxy Middleware**: Actualizado a `http-proxy-middleware` v3.0.3 para soporte de cookie rewrite
+- **i18n Keys**: Estandarización de claves de traducción a convención `kebab-case`
+- **tokenRefreshInterceptor.js**: Ahora diferencia correctamente entre revocación y expiración
 
 ### 🗑️ Removed
 - Servicio de proxy inverso (ahorro de $7/mes)
 - Backend URL hardcodeado en security headers
+
+### 🐛 Fixed
+- **Competitions**: Añadida programación defensiva y mejoras en validación de fechas
+- **Date Validation**: Mejoras en manejo de fechas inválidas
+- **Session Messages**: Usuarios ya no ven "dispositivo revocado" cuando su sesión simplemente expiró
 
 ### 🚀 Performance
 - Latencia: -50-100ms (eliminado hop de proxy)
@@ -41,37 +65,21 @@ Migración de arquitectura de proxy inverso a subdominios con Cloudflare para me
 - Fiabilidad: Eliminado single point of failure
 
 ### 🔐 Security
-- OWASP Score: 9.5/10 mantenido
+- OWASP Score: 9.2/10 mantenido
 - DDoS protection via Cloudflare
 - Real IPs via `CF-Connecting-IP` header (fixes device fingerprinting accuracy)
+- Proactive token refresh previene sesiones huérfanas
+
+### ✅ Tests
+- 849 tests passing (100% pass rate)
+- Nuevos tests para `useProactiveTokenRefresh`
+- Tests actualizados para separación revocación/expiración
 
 ### 📚 References
 - PR #114: `hotfix/proxy-cookie-domain` - Cookie domain rewrite
 - PR #115: `hotfix/proxy-middleware-version` - Upgrade http-proxy-middleware v3.0.3
 - PR #116: `hotfix/migrate-to-api-subdomain` - Full subdomain migration
-
----
-
-## [2.0.2] - 2026-02-03
-
-### 🎯 Sprint 2: Schedule & Matches (Partial)
-
-Inicio del Sprint 2 con mejoras en competiciones y estandarización de i18n.
-
-### ✨ Added
-- **Competition Edit**: Funcionalidad completa de edición de competiciones
-- **Golf Course Management**: Mejoras en gestión de campos de golf dentro de competiciones
-
-### 🔧 Changed
-- **i18n Keys**: Estandarización de claves de traducción a convención `kebab-case`
-
-### 🐛 Fixed
-- **Competitions**: Añadida programación defensiva y mejoras en validación de fechas
-- **Date Validation**: Mejoras en manejo de fechas inválidas
-
-### 📚 References
-- PR #111: `feature/sprint-2-schedule-matches`
-- PR #113: `release/v2.0.2`
+- PR #117: `feature/sprint-2-security-fixes` - Security enhancements
 
 ---
 
@@ -1315,7 +1323,10 @@ Esta versión actualiza dependencias críticas con breaking changes, modernizand
 - Configuración de headers de seguridad (X-Content-Type-Options, X-Frame-Options, etc.)
 - Eliminación automática de console.log en builds de producción
 
-[Unreleased]: https://github.com/agustinEDev/RyderCupWeb/compare/v1.15.0...HEAD
+[Unreleased]: https://github.com/agustinEDev/RyderCupWeb/compare/v2.0.4...HEAD
+[2.0.4]: https://github.com/agustinEDev/RyderCupWeb/compare/v2.0.0...v2.0.4
+[2.0.0]: https://github.com/agustinEDev/RyderCupWeb/compare/v1.16.0...v2.0.0
+[1.16.0]: https://github.com/agustinEDev/RyderCupWeb/compare/v1.15.0...v1.16.0
 [1.15.0]: https://github.com/agustinEDev/RyderCupWeb/compare/v1.14.2...v1.15.0
 [1.14.2]: https://github.com/agustinEDev/RyderCupWeb/compare/v1.14.1...v1.14.2
 [1.14.1]: https://github.com/agustinEDev/RyderCupWeb/compare/v1.14.0...v1.14.1

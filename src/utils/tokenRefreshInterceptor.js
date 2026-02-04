@@ -20,7 +20,7 @@ import {
   isSessionExpired,
   handleDeviceRevocationLogout,
   handleSessionExpiredLogout
-} from './deviceRevocationLogout'; // v1.13.1: Device Revocation, v2.0.1: Separated expiration
+} from './deviceRevocationLogout'; // v1.13.1: Device Revocation, v2.0.4: Separated expiration
 
 const API_URL = globalThis.APP_CONFIG?.API_BASE_URL || import.meta.env.VITE_API_BASE_URL || '';
 
@@ -220,7 +220,7 @@ export const fetchWithTokenRefresh = async (url, options = {}) => {
       // Refresh failed - reject all queued requests
       processQueue(refreshError);
 
-      // v2.0.1: Properly differentiate between device revocation and session expiration
+      // v2.0.4: Properly differentiate between device revocation and session expiration
       if (refreshError.response && refreshError.errorData) {
         // Check if refresh failed due to EXPLICIT device revocation
         if (isDeviceRevoked(refreshError.response, refreshError.errorData)) {

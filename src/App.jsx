@@ -128,7 +128,7 @@ function AppContent() {
     enabled: isAuthenticated
   });
 
-  // Hook de refresh proactivo de token (v2.0.1)
+  // Hook de refresh proactivo de token (v2.0.4)
   // Refresca el token ANTES de que expire si el usuario está activo
   // Previene "sesión expirada" mientras el usuario está usando la app
   useProactiveTokenRefresh({
