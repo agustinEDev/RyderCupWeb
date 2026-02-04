@@ -18,7 +18,7 @@ class GolfCourse {
     this.createdAt = data.created_at || data.createdAt;
     this.updatedAt = data.updated_at || data.updatedAt;
 
-    // New fields v2.0.2
+    // New fields v2.0.0 (Sprint 1: Golf Course Management)
     this.originalGolfCourseId = data.original_golf_course_id || data.originalGolfCourseId || null;
     this.isPendingUpdate = data.is_pending_update || data.isPendingUpdate || false;
 

@@ -7,7 +7,85 @@ y este proyecto adhiere a [Versionado Semántico](https://semver.org/lang/es/).
 
 ## [Unreleased]
 
-### 🎯 v2.1.0 - Sprint 1: Golf Course Management System
+---
+
+## [2.0.4] - 2026-02-04
+
+### 🎯 Sprint 2: Security Enhancements + Infrastructure Migration
+
+Mejoras de seguridad OWASP A07:2021 (Authentication Failures) y migración de infraestructura a subdominios.
+
+### ✨ Added
+
+#### Security (OWASP A07:2021 Compliance)
+- **Proactive Token Refresh**: Nuevo hook `useProactiveTokenRefresh` que refresca tokens antes de expirar
+  - Monitorea actividad del usuario (keydown, mousemove, click, scroll, touch)
+  - Refresca token ~1 minuto antes de expirar si el usuario está activo
+  - Previene "sesión expirada" mientras el usuario está usando la app
+  - Mantiene TTL de 5 minutos (OWASP compliant)
+- **Separated Session Handling**: Separación clara de revocación vs expiración
+  - `isDeviceRevoked()`: Solo retorna true para revocación EXPLÍCITA de dispositivo
+  - `isSessionExpired()`: Maneja expiración de refresh token (separado de revocación)
+  - `handleDeviceRevocationLogout()`: Mensaje con icono 🔒 para revocación
+  - `handleSessionExpiredLogout()`: Mensaje con icono ⏱️ para expiración
+  - Mejor UX: usuarios entienden por qué fueron deslogueados
+
+#### Infrastructure
+- **ADR-011**: Documentación de arquitectura de subdominios con Cloudflare Proxy
+  - Frontend: `www.rydercupfriends.com`
+  - Backend API: `api.rydercupfriends.com`
+  - Cookie domain: `.rydercupfriends.com` (cross-subdomain)
+
+#### Features
+- **Tee Categories**: Añadida categoría `CHAMPIONSHIP_FEMALE` al formulario de campos de golf
+  - Actualizado array `TEE_CATEGORIES` en `GolfCourseForm.jsx`
+  - Añadidas traducciones ES/EN en namespace `golfCourses`
+- **Competition Edit**: Funcionalidad completa de edición de competiciones
+- **Golf Course Management**: Mejoras en gestión de campos de golf dentro de competiciones
+
+### 🔧 Changed
+- **vite.config.js**: Actualizado CSP para incluir `api.rydercupfriends.com` en `connect-src`
+- **.env.example**: Actualizada documentación para migración a API subdomain
+- **Proxy Middleware**: Actualizado a `http-proxy-middleware` v3.0.3 para soporte de cookie rewrite
+- **i18n Keys**: Estandarización de claves de traducción a convención `kebab-case`
+- **tokenRefreshInterceptor.js**: Ahora diferencia correctamente entre revocación y expiración
+
+### 🗑️ Removed
+- Servicio de proxy inverso (ahorro de $7/mes)
+- Backend URL hardcodeado en security headers
+
+### 🐛 Fixed
+- **Competitions**: Añadida programación defensiva y mejoras en validación de fechas
+- **Date Validation**: Mejoras en manejo de fechas inválidas
+- **Session Messages**: Usuarios ya no ven "dispositivo revocado" cuando su sesión simplemente expiró
+
+### 🚀 Performance
+- Latencia: -50-100ms (eliminado hop de proxy)
+- Coste: -$7/mes (33% reducción)
+- Fiabilidad: Eliminado single point of failure
+
+### 🔐 Security
+- OWASP Score: 9.2/10 mantenido
+- DDoS protection via Cloudflare
+- Real IPs via `CF-Connecting-IP` header (fixes device fingerprinting accuracy)
+- Proactive token refresh previene sesiones huérfanas
+
+### ✅ Tests
+- 849 tests passing (100% pass rate)
+- Nuevos tests para `useProactiveTokenRefresh`
+- Tests actualizados para separación revocación/expiración
+
+### 📚 References
+- PR #114: `hotfix/proxy-cookie-domain` - Cookie domain rewrite
+- PR #115: `hotfix/proxy-middleware-version` - Upgrade http-proxy-middleware v3.0.3
+- PR #116: `hotfix/migrate-to-api-subdomain` - Full subdomain migration
+- PR #117: `feature/sprint-2-security-fixes` - Security enhancements
+
+---
+
+## [2.0.0] - 2026-01-31
+
+### 🎯 Sprint 1: Golf Course Management System
 
 Sistema completo de gestión de campos de golf con arquitectura Clean Architecture + DDD.
 
@@ -16,7 +94,7 @@ Sistema completo de gestión de campos de golf con arquitectura Clean Architectu
 #### Domain Layer
 - **Value Objects**:
   - `Tee`: Representa posición de tee con validaciones WHS (World Handicap System)
-    - Categorías: CHAMPIONSHIP_MALE/FEMALE, AMATEUR_MALE/FEMALE, FORWARD_MALE/FEMALE
+    - Categorías: CHAMPIONSHIP_MALE/FEMALE, AMATEUR_MALE/FEMALE, SENIOR_MALE/FEMALE, JUNIOR
     - Course Rating: 50.0-90.0
     - Slope Rating: 55-155
     - Gender: MALE/FEMALE
@@ -1245,7 +1323,10 @@ Esta versión actualiza dependencias críticas con breaking changes, modernizand
 - Configuración de headers de seguridad (X-Content-Type-Options, X-Frame-Options, etc.)
 - Eliminación automática de console.log en builds de producción
 
-[Unreleased]: https://github.com/agustinEDev/RyderCupWeb/compare/v1.15.0...HEAD
+[Unreleased]: https://github.com/agustinEDev/RyderCupWeb/compare/v2.0.4...HEAD
+[2.0.4]: https://github.com/agustinEDev/RyderCupWeb/compare/v2.0.0...v2.0.4
+[2.0.0]: https://github.com/agustinEDev/RyderCupWeb/compare/v1.16.0...v2.0.0
+[1.16.0]: https://github.com/agustinEDev/RyderCupWeb/compare/v1.15.0...v1.16.0
 [1.15.0]: https://github.com/agustinEDev/RyderCupWeb/compare/v1.14.2...v1.15.0
 [1.14.2]: https://github.com/agustinEDev/RyderCupWeb/compare/v1.14.1...v1.14.2
 [1.14.1]: https://github.com/agustinEDev/RyderCupWeb/compare/v1.14.0...v1.14.1

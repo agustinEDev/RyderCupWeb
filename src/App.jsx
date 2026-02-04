@@ -8,6 +8,7 @@ import LazyLoadErrorBoundary from './components/errors/LazyLoadErrorBoundary';
 import { getUserData } from './hooks/useAuth';
 import { setUserContext } from './utils/sentryHelpers';
 import useInactivityLogout from './hooks/useInactivityLogout.jsx';
+import useProactiveTokenRefresh from './hooks/useProactiveTokenRefresh';
 import { onAuthEvent, EVENTS } from './utils/broadcastAuth';
 import { useLogout } from './hooks/useLogout';
 import { useDeviceRevocationMonitor } from './hooks/useDeviceRevocationMonitor';
@@ -124,6 +125,15 @@ function AppContent() {
   // Detecta cuando el dispositivo actual fue revocado desde otro navegador
   // Solo activo cuando hay usuario autenticado
   useDeviceRevocationMonitor({
+    enabled: isAuthenticated
+  });
+
+  // Hook de refresh proactivo de token (v2.0.4)
+  // Refresca el token ANTES de que expire si el usuario está activo
+  // Previene "sesión expirada" mientras el usuario está usando la app
+  useProactiveTokenRefresh({
+    tokenTTL: 5 * 60 * 1000,       // 5 minutos (OWASP compliant)
+    refreshBefore: 1 * 60 * 1000,  // Refrescar 1 minuto antes de expirar
     enabled: isAuthenticated
   });
 
