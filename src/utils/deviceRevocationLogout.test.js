@@ -1,6 +1,6 @@
 /**
  * Unit tests for Device Revocation Logout utilities
- * v2.0.4: Updated tests for separated revocation vs expiration handling
+ * v2.0.1: Updated tests for separated revocation vs expiration handling
  * @see deviceRevocationLogout.js
  */
 
@@ -70,7 +70,7 @@ describe('deviceRevocationLogout utilities', () => {
       expect(isDeviceRevoked(response, errorData)).toBe(true);
     });
 
-    // v2.0.4: Refresh token errors are now handled by isSessionExpired, NOT isDeviceRevoked
+    // v2.0.1: Refresh token errors are now handled by isSessionExpired, NOT isDeviceRevoked
     it('should return false when response has refresh token expired message (handled by isSessionExpired)', () => {
       const response = { status: 401 };
       const errorData = { detail: 'Refresh token inválido o expirado. Por favor, inicia sesión nuevamente.' };

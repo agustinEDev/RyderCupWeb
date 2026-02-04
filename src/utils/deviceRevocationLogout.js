@@ -12,7 +12,7 @@
  * - Shows user-friendly toast with i18n message
  * - Redirects to login page
  *
- * IMPORTANT: v2.0.4 refactor - Separated device revocation from session expiration
+ * IMPORTANT: v2.0.1 refactor - Separated device revocation from session expiration
  * - isDeviceRevoked() now returns true ONLY for explicit device revocation
  * - isSessionExpired() handles refresh token expiration
  * - Different messages and icons for each scenario

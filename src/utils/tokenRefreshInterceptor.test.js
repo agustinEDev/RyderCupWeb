@@ -8,7 +8,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { refreshAccessToken, fetchWithTokenRefresh, isSessionValid } from './tokenRefreshInterceptor';
 
 // Mock deviceRevocationLogout module
-// v2.0.4: Now uses separate handlers for revocation vs expiration
+// v2.0.1: Now uses separate handlers for revocation vs expiration
 vi.mock('./deviceRevocationLogout', () => ({
   isDeviceRevoked: vi.fn(() => false),
   isSessionExpired: vi.fn(() => false),
