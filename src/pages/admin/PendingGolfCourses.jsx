@@ -37,8 +37,9 @@ const PendingGolfCourses = () => {
   const [courseToView, setCourseToView] = useState(null);
   const [allCountries, setAllCountries] = useState([]);
 
-  // Derive isAdmin from authenticated user's roles
-  const isAdmin = user?.roles?.some(role =>
+  // Derive isAdmin from authenticated user's roles or is_admin flag
+  // Backend returns is_admin: true for admin users (see RoleGuard.jsx for reference)
+  const isAdmin = user?.is_admin === true || user?.roles?.some(role =>
     typeof role === 'string' ? role === 'ADMIN' : role.name === 'ADMIN'
   ) || false;
 

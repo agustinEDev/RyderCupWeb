@@ -185,7 +185,8 @@
       "errorReordering": "Failed to reorder golf courses",
       "dragToReorder": "Drag to reorder courses",
       "adding": "Adding course...",
-      "requestNotAvailable": "Requesting new courses is not available in this view. Use the competition creation page."
+      "requestNotAvailable": "Requesting new courses is not available in this view. Use the competition creation page.",
+      "tees": "Tees"
     }
   },
   "browse": {

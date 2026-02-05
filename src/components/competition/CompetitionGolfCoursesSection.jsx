@@ -29,9 +29,25 @@ import {
 } from '../../composition';
 
 /**
+ * Get course type display info
+ */
+const getCourseTypeInfo = (courseType) => {
+  switch (courseType) {
+    case 'STANDARD_18':
+      return { label: '18 Holes', color: 'bg-green-100 text-green-800 border-green-200' };
+    case 'PITCH_AND_PUTT':
+      return { label: 'Pitch & Putt', color: 'bg-amber-100 text-amber-800 border-amber-200' };
+    case 'EXECUTIVE':
+      return { label: 'Executive', color: 'bg-blue-100 text-blue-800 border-blue-200' };
+    default:
+      return { label: courseType, color: 'bg-gray-100 text-gray-800 border-gray-200' };
+  }
+};
+
+/**
  * Sortable Item Component (used by dnd-kit)
  */
-const SortableGolfCourseItem = ({ course, onRemove, canEdit, i18n }) => {
+const SortableGolfCourseItem = ({ course, onRemove, canEdit, i18n, t }) => {
   const {
     attributes,
     listeners,
@@ -47,79 +63,146 @@ const SortableGolfCourseItem = ({ course, onRemove, canEdit, i18n }) => {
     opacity: isDragging ? 0.5 : 1,
   };
 
+  const courseTypeInfo = getCourseTypeInfo(course.course_type);
+  const teesCount = course.tees?.length || 0;
+
   return (
     <div
       ref={setNodeRef}
       style={style}
-      className={`flex items-center gap-3 p-4 bg-white border border-gray-200 rounded-lg ${
-        isDragging ? 'shadow-lg' : ''
-      }`}
+      className={`bg-gradient-to-r from-white to-green-50/30 border border-gray-200 rounded-xl overflow-hidden ${
+        isDragging ? 'shadow-xl ring-2 ring-primary/20' : 'shadow-sm hover:shadow-md'
+      } transition-all duration-200`}
     >
-      {/* Drag Handle (only visible in edit mode) */}
-      {canEdit && (
-        <div
-          {...attributes}
-          {...listeners}
-          className="cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600"
-        >
-          <GripVertical className="w-5 h-5" />
-        </div>
-      )}
+      {/* Mobile Layout (stacked) */}
+      <div className="block sm:hidden">
+        <div className="p-4">
+          {/* Header with drag handle and remove */}
+          <div className="flex items-start justify-between gap-2 mb-3">
+            <div className="flex items-center gap-2 flex-1 min-w-0">
+              {canEdit && (
+                <div
+                  {...attributes}
+                  {...listeners}
+                  className="cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600 p-1"
+                >
+                  <GripVertical className="w-5 h-5" />
+                </div>
+              )}
+              <h4 className="font-bold text-gray-900 leading-tight line-clamp-2">
+                {course.name || `Golf Course`}
+              </h4>
+            </div>
+            {canEdit && (
+              <button
+                onClick={() => onRemove(course.id)}
+                className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors shrink-0"
+                title="Remove golf course"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            )}
+          </div>
 
-      {/* Course Info */}
-      <div className="flex-1 min-w-0">
-        {/* Course Name */}
-        <h4 className="text-lg font-semibold text-gray-900 truncate mb-2">
-          {course.name || `Golf Course (ID: ${course.id?.substring(0, 8)}...)`}
-        </h4>
-
-        {/* Course Details */}
-        <div className="flex flex-wrap items-center gap-3">
-          {/* Country Badge */}
+          {/* Country */}
           {course.country_code && (
-            <div className="flex items-center gap-2 px-3 py-1 bg-blue-50 rounded-full">
-              <CountryFlag countryCode={course.country_code} style={{ width: '18px', height: 'auto' }} />
-              <span className="text-sm font-medium text-blue-900">
+            <div className="flex items-center gap-2 mb-3">
+              <CountryFlag countryCode={course.country_code} style={{ width: '20px', height: 'auto' }} />
+              <span className="text-sm text-gray-700">
                 {formatCountryName({ code: course.country_code, name_en: course.country_name }, i18n.language)}
               </span>
             </div>
           )}
 
-          {/* Course Type Badge */}
-          {course.course_type && (
-            <div className="px-3 py-1 bg-green-50 rounded-full">
-              <span className="text-sm font-medium text-green-900">
-                {course.course_type === 'STANDARD_18' ? '18 Holes' :
-                 course.course_type === 'PITCH_AND_PUTT' ? 'Pitch & Putt' :
-                 course.course_type === 'EXECUTIVE' ? 'Executive' : course.course_type}
-              </span>
+          {/* Stats Grid */}
+          <div className="grid grid-cols-3 gap-2">
+            {/* Course Type */}
+            <div className={`px-2 py-1.5 rounded-lg border text-center ${courseTypeInfo.color}`}>
+              <span className="text-xs font-semibold">{courseTypeInfo.label}</span>
             </div>
-          )}
 
-          {/* Par Badge */}
-          {course.total_par > 0 && (
-            <div className="px-3 py-1 bg-purple-50 rounded-full">
-              <span className="text-sm font-medium text-purple-900">Par {course.total_par}</span>
-            </div>
-          )}
+            {/* Par */}
+            {course.total_par > 0 && (
+              <div className="px-2 py-1.5 rounded-lg border bg-purple-50 text-purple-800 border-purple-200 text-center">
+                <span className="text-xs font-semibold">Par {course.total_par}</span>
+              </div>
+            )}
 
-          {/* No data fallback */}
-          {!course.country_code && (
-            <span className="text-sm text-gray-500 italic">Details not loaded</span>
-          )}
+            {/* Tees */}
+            {teesCount > 0 && (
+              <div className="px-2 py-1.5 rounded-lg border bg-orange-50 text-orange-800 border-orange-200 text-center">
+                <span className="text-xs font-semibold">{teesCount} {t('detail.golfCourses.tees')}</span>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* Remove Button (only visible in edit mode) */}
-      {canEdit && (
-        <button
-          onClick={() => onRemove(course.id)}
-          className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
-          title="Remove golf course"
-        >
-          <Trash2 className="w-5 h-5" />
-        </button>
-      )}
+      {/* Desktop Layout (horizontal) */}
+      <div className="hidden sm:flex items-center gap-4 p-4">
+        {/* Drag Handle */}
+        {canEdit && (
+          <div
+            {...attributes}
+            {...listeners}
+            className="cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600 p-1 shrink-0"
+          >
+            <GripVertical className="w-5 h-5" />
+          </div>
+        )}
+
+        {/* Country Flag */}
+        {course.country_code && (
+          <div className="shrink-0">
+            <CountryFlag countryCode={course.country_code} style={{ width: '28px', height: 'auto' }} />
+          </div>
+        )}
+
+        {/* Course Info */}
+        <div className="flex-1 min-w-0">
+          <h4 className="font-bold text-gray-900 truncate mb-1">
+            {course.name || `Golf Course`}
+          </h4>
+          {course.country_code && (
+            <p className="text-sm text-gray-500 truncate">
+              {formatCountryName({ code: course.country_code, name_en: course.country_name }, i18n.language)}
+            </p>
+          )}
+        </div>
+
+        {/* Badges */}
+        <div className="flex items-center gap-2 shrink-0">
+          {/* Course Type */}
+          <div className={`px-3 py-1.5 rounded-lg border ${courseTypeInfo.color}`}>
+            <span className="text-xs font-semibold whitespace-nowrap">{courseTypeInfo.label}</span>
+          </div>
+
+          {/* Par */}
+          {course.total_par > 0 && (
+            <div className="px-3 py-1.5 rounded-lg border bg-purple-50 text-purple-800 border-purple-200">
+              <span className="text-xs font-semibold whitespace-nowrap">Par {course.total_par}</span>
+            </div>
+          )}
+
+          {/* Tees Count */}
+          {teesCount > 0 && (
+            <div className="px-3 py-1.5 rounded-lg border bg-orange-50 text-orange-800 border-orange-200">
+              <span className="text-xs font-semibold whitespace-nowrap">{teesCount} {t('detail.golfCourses.tees')}</span>
+            </div>
+          )}
+        </div>
+
+        {/* Remove Button */}
+        {canEdit && (
+          <button
+            onClick={() => onRemove(course.id)}
+            className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors shrink-0"
+            title="Remove golf course"
+          >
+            <Trash2 className="w-5 h-5" />
+          </button>
+        )}
+      </div>
     </div>
   );
 };
@@ -333,6 +416,7 @@ const CompetitionGolfCoursesSection = ({ competition, canManage }) => {
                     onRemove={handleRemoveCourse}
                     canEdit={canEdit}
                     i18n={i18n}
+                    t={t}
                   />
                 ))}
               </div>
