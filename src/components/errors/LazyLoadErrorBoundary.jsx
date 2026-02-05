@@ -1,14 +1,17 @@
 import { Component } from 'react';
+import * as Sentry from '@sentry/react';
 
 /**
  * Error Boundary specifically for handling lazy loading failures
  * Automatically reloads the page once when chunk loading fails
  * (typically happens after deployments when old chunks are deleted)
+ *
+ * v2.0.4: Added Sentry error reporting for debugging mobile issues
  */
 class LazyLoadErrorBoundary extends Component {
   constructor(props) {
     super(props);
-    this.state = { hasError: false };
+    this.state = { hasError: false, errorMessage: null, errorName: null };
   }
 
   static getDerivedStateFromError(error) {
@@ -27,17 +30,34 @@ class LazyLoadErrorBoundary extends Component {
         // Mark as reloaded and reload the page
         sessionStorage.setItem('lazy_load_error_reloaded', 'true');
         window.location.reload();
-        return { hasError: false }; // Don't show error UI, we're reloading
+        return { hasError: false, errorMessage: null, errorName: null }; // Don't show error UI, we're reloading
       }
     }
 
     // If it's a chunk error but we already reloaded, or it's a different error
-    return { hasError: true };
+    // v2.0.4: Store error details for debugging display
+    return {
+      hasError: true,
+      errorMessage: error?.message || 'Unknown error',
+      errorName: error?.name || 'Error'
+    };
   }
 
   componentDidCatch(error, errorInfo) {
     // Log the error for debugging
     console.error('LazyLoadErrorBoundary caught an error:', error, errorInfo);
+
+    // v2.0.4: Report to Sentry with full context for mobile debugging
+    Sentry.withScope((scope) => {
+      scope.setTag('errorBoundary', 'LazyLoadErrorBoundary');
+      scope.setTag('userAgent', navigator.userAgent);
+      scope.setTag('platform', navigator.platform);
+      scope.setExtra('componentStack', errorInfo?.componentStack);
+      scope.setExtra('errorMessage', error?.message);
+      scope.setExtra('errorName', error?.name);
+      scope.setExtra('url', window.location.href);
+      Sentry.captureException(error);
+    });
   }
 
   render() {
@@ -57,10 +77,30 @@ class LazyLoadErrorBoundary extends Component {
           <h1 style={{ fontSize: '2rem', marginBottom: '1rem', color: '#ef4444' }}>
             Unable to Load Application
           </h1>
-          <p style={{ color: '#6b7280', marginBottom: '2rem', maxWidth: '600px' }}>
+          <p style={{ color: '#6b7280', marginBottom: '1rem', maxWidth: '600px' }}>
             We encountered an issue loading the application. This typically happens after an update.
             Please try refreshing the page or clearing your browser cache.
           </p>
+          {/* v2.0.4: Show error details for debugging */}
+          {this.state.errorMessage && (
+            <details style={{ marginBottom: '2rem', maxWidth: '600px', textAlign: 'left' }}>
+              <summary style={{ cursor: 'pointer', color: '#6b7280', fontSize: '0.875rem' }}>
+                Technical details
+              </summary>
+              <pre style={{
+                marginTop: '0.5rem',
+                padding: '1rem',
+                backgroundColor: '#f3f4f6',
+                borderRadius: '0.5rem',
+                fontSize: '0.75rem',
+                overflow: 'auto',
+                whiteSpace: 'pre-wrap',
+                wordBreak: 'break-word'
+              }}>
+                {this.state.errorName}: {this.state.errorMessage}
+              </pre>
+            </details>
+          )}
           <button
             onClick={() => {
               sessionStorage.removeItem('lazy_load_error_reloaded');
