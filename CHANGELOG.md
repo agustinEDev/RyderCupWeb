@@ -9,6 +9,31 @@ y este proyecto adhiere a [Versionado Semántico](https://semver.org/lang/es/).
 
 ---
 
+## [2.0.5] - 2026-02-05
+
+### 🐛 Hotfix: Golf Courses UI & Admin Fixes
+
+Correcciones de UI y accesibilidad para la gestión de campos de golf.
+
+### ✨ Added
+- **Translations**: Añadida clave "tees" al namespace `competitions` (EN/ES)
+- **Error Reporting**: Integración de Sentry en `LazyLoadErrorBoundary`
+  - Reporta errores con user agent, platform y component stack
+  - Sección expandible "Technical details" para debugging en producción
+
+### 🐛 Fixed
+- **Golf Courses UI**: Layout responsive para campos en detalle de competición
+  - Layout móvil (stacked) y desktop (horizontal) separados
+  - Badges de tees, par y tipo de campo ahora visibles
+- **Admin Edit Button**: Corrección de verificación `isAdmin`
+  - Ahora verifica `user.is_admin` (formato del backend) además de `user.roles`
+  - Botón de edición ahora visible para administradores en `/admin/golf-courses`
+
+### 📚 References
+- PR #120: `hotfix/golf-courses-responsive-ui`
+
+---
+
 ## [2.0.4] - 2026-02-04
 
 ### 🎯 Sprint 2: Security Enhancements + Infrastructure Migration
