@@ -185,7 +185,8 @@
       "errorReordering": "Error al reordenar los campos de golf",
       "dragToReorder": "Arrastra para reordenar los campos",
       "adding": "Añadiendo campo...",
-      "requestNotAvailable": "La solicitud de nuevos campos no está disponible en esta vista. Usa la página de creación de competiciones."
+      "requestNotAvailable": "La solicitud de nuevos campos no está disponible en esta vista. Usa la página de creación de competiciones.",
+      "tees": "Tees"
     }
   },
   "browse": {
