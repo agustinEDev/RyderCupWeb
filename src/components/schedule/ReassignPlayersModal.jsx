@@ -2,10 +2,11 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { X, Users } from 'lucide-react';
 
-// Wrapper: controls mount/unmount so inner component always has fresh state
-const ReassignPlayersModal = ({ isOpen, ...props }) => {
+// Wrapper: controls mount/unmount so inner component always has fresh state.
+// key={match?.id} forces remount if the match changes while the modal is open.
+const ReassignPlayersModal = ({ isOpen, match, ...props }) => {
   if (!isOpen) return null;
-  return <ReassignPlayersModalContent {...props} />;
+  return <ReassignPlayersModalContent key={match?.id} match={match} {...props} />;
 };
 
 const ReassignPlayersModalContent = ({
