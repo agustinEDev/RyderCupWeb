@@ -58,24 +58,6 @@ const CompetitionDetail = () => {
       // Use GetCompetitionDetailUseCase instead of direct service call
       const data = await getCompetitionDetailUseCase.execute(id);
 
-      // Fetch and add golf courses to competition object for activation validation
-      try {
-        const golfCoursesResult = await getCompetitionGolfCoursesUseCase.execute(id);
-
-        // Map the data structure for activation validation
-        const courses = Array.isArray(golfCoursesResult) ? golfCoursesResult : (golfCoursesResult.golf_courses || []);
-        data.golfCourses = courses.map(item => ({
-          id: item.golf_course?.id || item.golf_course_id,
-          name: item.golf_course?.name || 'Unknown',
-          approvalStatus: item.golf_course?.approval_status || 'APPROVED',
-          display_order: item.display_order
-        }));
-      } catch (error) {
-        console.error('Error loading golf courses:', error);
-        // Set empty array if fetch fails
-        data.golfCourses = [];
-      }
-
       setCompetition(data);
 
       // Load enrollments only if user can manage the competition (for optimization)
@@ -106,24 +88,39 @@ const CompetitionDetail = () => {
   const handleStatusChange = async (action) => {
     // Validate golf courses approval status before activation
     if (action === 'activate') {
-      const golfCourses = competition?.golfCourses || [];
+      try {
+        const golfCoursesResult = await getCompetitionGolfCoursesUseCase.execute(id);
+        const coursesArray = Array.isArray(golfCoursesResult)
+          ? golfCoursesResult
+          : (golfCoursesResult.golf_courses || []);
 
-      if (golfCourses.length === 0) {
+        const golfCourses = coursesArray.map(item => ({
+          id: item.golf_course?.id || item.golf_course_id,
+          name: item.golf_course?.name || item.name || 'Unknown',
+          approvalStatus: item.golf_course?.approval_status || item.approval_status || 'APPROVED',
+        }));
+
+        if (golfCourses.length === 0) {
+          customToast.error(t('detail.errors.noGolfCourses'));
+          return;
+        }
+
+        const pendingCourses = golfCourses.filter(gc => gc.approvalStatus === 'PENDING_APPROVAL');
+        if (pendingCourses.length > 0) {
+          const courseNames = pendingCourses.map(gc => gc.name).join(', ');
+          customToast.error(t('detail.errors.golfCoursesPendingApproval', { courses: courseNames }));
+          return;
+        }
+
+        const rejectedCourses = golfCourses.filter(gc => gc.approvalStatus === 'REJECTED');
+        if (rejectedCourses.length > 0) {
+          const courseNames = rejectedCourses.map(gc => gc.name).join(', ');
+          customToast.error(t('detail.errors.golfCoursesRejected', { courses: courseNames }));
+          return;
+        }
+      } catch (error) {
+        console.error('Error validating golf courses for activation:', error);
         customToast.error(t('detail.errors.noGolfCourses'));
-        return;
-      }
-
-      const pendingCourses = golfCourses.filter(gc => gc.approvalStatus === 'PENDING_APPROVAL');
-      if (pendingCourses.length > 0) {
-        const courseNames = pendingCourses.map(gc => gc.name).join(', ');
-        customToast.error(t('detail.errors.golfCoursesPendingApproval', { courses: courseNames }));
-        return;
-      }
-
-      const rejectedCourses = golfCourses.filter(gc => gc.approvalStatus === 'REJECTED');
-      if (rejectedCourses.length > 0) {
-        const courseNames = rejectedCourses.map(gc => gc.name).join(', ');
-        customToast.error(t('detail.errors.golfCoursesRejected', { courses: courseNames }));
         return;
       }
     }
@@ -208,6 +205,10 @@ const CompetitionDetail = () => {
   };
 
   const handleApproveEnrollment = async (enrollmentId) => {
+    if (isFull) {
+      customToast.error(t('detail.competitionFull', { max: competition.maxPlayers }));
+      return;
+    }
     try {
       // ApproveEnrollmentUseCase expects (competitionId, enrollmentId, teamId?)
       await approveEnrollmentUseCase.execute(competition.id, enrollmentId);
@@ -258,6 +259,10 @@ const CompetitionDetail = () => {
   const canManage = isCreator || hasCreatorRole || isAdmin;
   const canEdit = canManage && competition.status === 'DRAFT';
   const canDelete = canManage && competition.status === 'DRAFT';
+
+  // Check if competition has reached max players
+  const approvedCount = enrollments.filter(e => e.status === 'APPROVED').length;
+  const isFull = competition.maxPlayers && approvedCount >= competition.maxPlayers;
 
   // Check for user enrollment from two sources:
   // 1. From enrollments list (when loaded from detail page)
@@ -443,12 +448,22 @@ const CompetitionDetail = () => {
                       <span>{t('detail.actions.delete')}</span>
                     </button>
                   )}
+
+                  {competition.status !== 'DRAFT' && competition.status !== 'CANCELLED' && (
+                    <button
+                      onClick={() => navigate(`/creator/competitions/${id}/schedule`)}
+                      className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors shadow-md"
+                    >
+                      <Calendar className="w-4 h-4" />
+                      <span>{t('detail.actions.manageSchedule')}</span>
+                    </button>
+                  )}
                 </div>
               </motion.div>
             )}
 
-            {/* Enrollment Button - Show if competition is ACTIVE, user is not enrolled, and user is not the creator */}
-            {!isCreator && competition.status === 'ACTIVE' && !hasEnrollment && (
+            {/* Enrollment Button - Show if competition is ACTIVE, user is not enrolled, not the creator, and not full */}
+            {!isCreator && competition.status === 'ACTIVE' && !hasEnrollment && !isFull && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -514,15 +529,9 @@ const CompetitionDetail = () => {
                     <p className="text-gray-900 font-medium">{competition.team2Name}</p>
                   </div>
                   <div>
-                    <span className="text-gray-500 text-sm">{t('detail.settings.handicapType')}</span>
-                    <p className="text-gray-900 font-medium">{competition.handicapType}</p>
+                    <span className="text-gray-500 text-sm">{t('detail.settings.playMode')}</span>
+                    <p className="text-gray-900 font-medium">{competition.playMode}</p>
                   </div>
-                  {competition.handicapPercentage && (
-                    <div>
-                      <span className="text-gray-500 text-sm">{t('detail.settings.handicapPercentage')}</span>
-                      <p className="text-gray-900 font-medium">{competition.handicapPercentage}%</p>
-                    </div>
-                  )}
                   <div>
                     <span className="text-gray-500 text-sm">{t('detail.settings.teamAssignment')}</span>
                     <p className="text-gray-900 font-medium">{competition.teamAssignment}</p>
@@ -642,8 +651,13 @@ const CompetitionDetail = () => {
                             <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
                               <button
                                 onClick={() => handleApproveEnrollment(enrollment.id)}
-                                className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors shadow-sm"
-                                title="Approve enrollment"
+                                disabled={isFull}
+                                className={`px-4 py-2 text-white rounded-lg text-sm font-medium transition-colors shadow-sm ${
+                                  isFull
+                                    ? 'bg-gray-400 cursor-not-allowed'
+                                    : 'bg-green-600 hover:bg-green-700'
+                                }`}
+                                title={isFull ? t('detail.competitionFull', { max: competition.maxPlayers }) : t('detail.approve')}
                               >
                                 ✓ {t('detail.approve')}
                               </button>

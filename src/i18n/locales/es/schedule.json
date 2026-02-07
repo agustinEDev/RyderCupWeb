@@ -1,0 +1,106 @@
+{
+  "title": "Calendario y Partidos",
+  "rounds": {
+    "title": "Rondas",
+    "create": "Crear Ronda",
+    "edit": "Editar Ronda",
+    "delete": "Eliminar Ronda",
+    "confirmDelete": "¿Estás seguro de que quieres eliminar esta ronda? Todos los partidos asociados también serán eliminados.",
+    "noRounds": "Aún no se han creado rondas",
+    "date": "Fecha",
+    "golfCourse": "Campo de Golf",
+    "sessionType": "Sesión",
+    "matchFormat": "Formato de Partido",
+    "handicapMode": "Modo de Hándicap",
+    "allowancePercentage": "% de Concesión",
+    "effectiveAllowance": "Concesión Efectiva",
+    "matchCount": "{{count}} partido",
+    "matchCount_plural": "{{count}} partidos"
+  },
+  "matches": {
+    "title": "Partidos",
+    "generate": "Generar Partidos",
+    "noMatches": "Aún no se han generado partidos",
+    "matchNumber": "Partido #{{number}}",
+    "teamA": "Equipo A",
+    "teamB": "Equipo B",
+    "vs": "vs",
+    "handicapStrokes": "Golpes de Hándicap: {{strokes}}",
+    "strokesGivenTo": "Golpes concedidos al Equipo {{team}}",
+    "reassignPlayers": "Reasignar Jugadores",
+    "walkover": "Declarar Walkover",
+    "startMatch": "Iniciar Partido",
+    "completeMatch": "Completar Partido",
+    "viewDetail": "Ver Detalle"
+  },
+  "teams": {
+    "title": "Asignación de Equipos",
+    "assign": "Asignar Equipos",
+    "mode": "Modo de Asignación",
+    "manual": "Manual",
+    "automatic": "Automática",
+    "teamA": "Equipo A",
+    "teamB": "Equipo B",
+    "noTeamsAssigned": "Los equipos aún no han sido asignados",
+    "playersCount": "{{count}} jugador",
+    "playersCount_plural": "{{count}} jugadores"
+  },
+  "configuration": {
+    "title": "Configuración del Calendario",
+    "configure": "Configurar Calendario"
+  },
+  "status": {
+    "PENDING_TEAMS": "Equipos Pendientes",
+    "PENDING_MATCHES": "Partidos Pendientes",
+    "SCHEDULED": "Programado",
+    "IN_PROGRESS": "En Progreso",
+    "COMPLETED": "Completado",
+    "WALKOVER": "Walkover"
+  },
+  "formats": {
+    "SINGLES": "Individuales",
+    "FOURBALL": "Fourball",
+    "FOURSOMES": "Foursomes",
+    "SINGLES_DESC": "1 vs 1. Cada jugador juega su propia bola. El jugador con el resultado neto mas bajo en cada hoyo gana ese hoyo.",
+    "FOURBALL_DESC": "2 vs 2. Cada jugador juega su propia bola. El mejor resultado neto de cada pareja cuenta en cada hoyo.",
+    "FOURSOMES_DESC": "2 vs 2. Cada pareja comparte una sola bola, alternando golpes. Los jugadores tambien alternan salidas en cada hoyo."
+  },
+  "sessions": {
+    "MORNING": "Mañana",
+    "AFTERNOON": "Tarde",
+    "EVENING": "Noche"
+  },
+  "handicapModes": {
+    "MATCH_PLAY": "Match Play"
+  },
+  "walkover": {
+    "title": "Declarar Walkover",
+    "winningTeam": "Equipo Ganador",
+    "reason": "Motivo",
+    "reasonPlaceholder": "Introduce el motivo del walkover...",
+    "confirm": "Confirmar Walkover",
+    "confirmMessage": "¿Estás seguro de que quieres declarar un walkover? Esta acción no se puede deshacer."
+  },
+  "errors": {
+    "failedToLoadSchedule": "Error al cargar el calendario",
+    "failedToCreateRound": "Error al crear la ronda",
+    "failedToUpdateRound": "Error al actualizar la ronda",
+    "failedToDeleteRound": "Error al eliminar la ronda",
+    "failedToGenerateMatches": "Error al generar los partidos",
+    "failedToAssignTeams": "Error al asignar los equipos",
+    "failedToUpdateMatchStatus": "Error al actualizar el estado del partido",
+    "failedToDeclareWalkover": "Error al declarar el walkover",
+    "failedToReassignPlayers": "Error al reasignar los jugadores",
+    "failedToLoadMatch": "Error al cargar los detalles del partido"
+  },
+  "success": {
+    "roundCreated": "Ronda creada exitosamente",
+    "roundUpdated": "Ronda actualizada exitosamente",
+    "roundDeleted": "Ronda eliminada exitosamente",
+    "matchesGenerated": "Partidos generados exitosamente",
+    "teamsAssigned": "Equipos asignados exitosamente",
+    "matchStatusUpdated": "Estado del partido actualizado exitosamente",
+    "walkoverDeclared": "Walkover declarado exitosamente",
+    "playersReassigned": "Jugadores reasignados exitosamente"
+  }
+}

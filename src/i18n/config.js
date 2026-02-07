@@ -31,7 +31,7 @@ i18n
   .init({
     fallbackLng: 'en', // Idioma por defecto si no se detecta
     defaultNS: 'common', // Namespace por defecto
-    ns: ['common', 'auth', 'landing', 'dashboard', 'profile', 'competitions', 'devices', 'golfCourses'], // Namespaces disponibles
+    ns: ['common', 'auth', 'landing', 'dashboard', 'profile', 'competitions', 'devices', 'golfCourses', 'schedule'], // Namespaces disponibles
 
     // Lazy loading configuration
     partialBundledLanguages: true, // Permite cargar parcialmente los idiomas
