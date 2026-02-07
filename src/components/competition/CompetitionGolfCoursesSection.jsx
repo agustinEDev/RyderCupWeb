@@ -234,8 +234,8 @@ const CompetitionGolfCoursesSection = ({ competition, canManage }) => {
   const canEdit = canManage && competition.status === 'DRAFT';
 
   // Get compatible countries for the search box
-  // Use main_country if available, otherwise fallback to first country in countries array
-  const mainCountryCode = competition.location || competition.countries?.[0]?.code;
+  // Use country code from countries array (competition.location is a display string, not a code)
+  const mainCountryCode = competition.countries?.[0]?.code;
   const compatibleCountries = [
     mainCountryCode,
     ...(competition.countries?.slice(1).map(c => c.code) || [])

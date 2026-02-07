@@ -33,7 +33,7 @@ describe('Competition', () => {
     mockName = new CompetitionName('Test Competition');
     mockDates = new DateRange(new Date('2025-01-01'), new Date('2025-01-05'));
     mockLocation = new Location(new CountryCode('ES'));
-    mockHandicapSettings = new HandicapSettings(HandicapType.PERCENTAGE, 90);
+    mockHandicapSettings = new HandicapSettings(HandicapType.HANDICAP);
     mockTeamAssignment = TeamAssignment.MANUAL;
   });
 

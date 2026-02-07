@@ -57,10 +57,9 @@
     "coursesSelected": "campos seleccionados",
     "coursePendingApproval": "Este campo está pendiente de aprobación. No podrás activar la competición hasta que sea aprobado.",
     "ryderCupSettings": "Configuración RyderCup",
-    "handicapType": "Tipo de Hándicap *",
+    "playMode": "Modo de Juego *",
     "scratch": "Scratch",
-    "percentage": "Porcentaje",
-    "handicapPercentage": "Porcentaje de Hándicap",
+    "handicap": "Hándicap",
     "numberOfPlayers": "Número de Jugadores *",
     "numberOfPlayersPlaceholder": "Ingresa el número total de jugadores",
     "teamAssignment": "Asignación de Equipos *",
@@ -114,7 +113,8 @@
       "complete": "Completar",
       "cancel": "Cancelar",
       "delete": "Eliminar",
-      "request-to-join": "Solicitar Unirse"
+      "request-to-join": "Solicitar Unirse",
+      "manageSchedule": "Gestionar Calendario"
     },
     "confirmations": {
       "activate": "¿Estás seguro de que quieres activar esta competición?",
@@ -138,8 +138,7 @@
       "title": "Configuración de la Competición",
       "teamOne": "Equipo 1:",
       "teamTwo": "Equipo 2:",
-      "handicapType": "Tipo de Hándicap:",
-      "handicapPercentage": "Porcentaje de Hándicap:",
+      "playMode": "Modo de Juego:",
       "teamAssignment": "Asignación de Equipos:",
       "created": "Creado:"
     },
@@ -165,6 +164,7 @@
       "enrollmentRequested": "Solicitud de inscripción enviada correctamente"
     },
     "failedToApprove": "Error al aprobar la inscripción",
+    "competitionFull": "La competición está completa. Se ha alcanzado el número máximo de jugadores ({{max}}).",
     "failedToReject": "Error al rechazar la inscripción",
     "failedToUpdateCompetition": "Error al actualizar la competición",
     "failedToDeleteCompetition": "Error al eliminar la competición",

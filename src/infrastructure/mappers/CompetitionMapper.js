@@ -40,10 +40,9 @@ class CompetitionMapper {
         new Date(apiData.end_date)
       );
 
-      // Map handicap settings
+      // Map handicap settings (play_mode replaces handicap_type/handicap_percentage)
       const handicapSettings = new HandicapSettings(
-        apiData.handicap_type || 'SCRATCH',
-        apiData.handicap_percentage || null
+        apiData.play_mode || apiData.handicap_type || 'SCRATCH'
       );
 
     // Map team assignment
@@ -91,8 +90,7 @@ class CompetitionMapper {
       end_date: competition.dates.endDate.toISOString().split('T')[0],
       main_country: competition.location.mainCountry().value(),
       countries: competition.location.getAllCountries().slice(1).map(c => c.value()),
-      handicap_type: competition.handicapSettings.type(),
-      handicap_percentage: competition.handicapSettings.percentage(),
+      play_mode: competition.handicapSettings.type(),
       number_of_players: competition.maxPlayers, // Use API contract field name
       team_assignment: competition.teamAssignment.value(),
       status: competition.status.value,
@@ -164,8 +162,7 @@ class CompetitionMapper {
         // Pending enrollments count (for creators to see incoming requests)
         pending_enrollments_count: apiData?.pending_enrollments_count || 0,
         // Additional fields from domain
-        handicapType: competition.handicapSettings.type(),
-        handicapPercentage: competition.handicapSettings.percentage(),
+        playMode: competition.handicapSettings.type(),
         teamAssignment: competition.teamAssignment.value()
       };
       return dto;

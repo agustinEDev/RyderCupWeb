@@ -57,10 +57,9 @@
     "coursesSelected": "courses selected",
     "coursePendingApproval": "This course is pending approval. You won't be able to activate the competition until it's approved.",
     "ryderCupSettings": "RyderCup Settings",
-    "handicapType": "Handicap Type *",
+    "playMode": "Play Mode *",
     "scratch": "Scratch",
-    "percentage": "Percentage",
-    "handicapPercentage": "Handicap Percentage",
+    "handicap": "Handicap",
     "numberOfPlayers": "Number of Players *",
     "numberOfPlayersPlaceholder": "Enter total number of players",
     "teamAssignment": "Team Assignment *",
@@ -114,7 +113,8 @@
       "complete": "Complete",
       "cancel": "Cancel",
       "delete": "Delete",
-      "request-to-join": "Request to Join"
+      "request-to-join": "Request to Join",
+      "manageSchedule": "Manage Schedule"
     },
     "confirmations": {
       "activate": "Are you sure you want to activate this competition?",
@@ -138,8 +138,7 @@
       "title": "Competition Settings",
       "teamOne": "Team 1:",
       "teamTwo": "Team 2:",
-      "handicapType": "Handicap Type:",
-      "handicapPercentage": "Handicap Percentage:",
+      "playMode": "Play Mode:",
       "teamAssignment": "Team Assignment:",
       "created": "Created:"
     },
@@ -165,6 +164,7 @@
       "enrollmentRequested": "Enrollment request sent successfully"
     },
     "failedToApprove": "Failed to approve enrollment",
+    "competitionFull": "The competition is full. Maximum number of players ({{max}}) has been reached.",
     "failedToReject": "Failed to reject enrollment",
     "failedToUpdateCompetition": "Failed to update competition",
     "failedToDeleteCompetition": "Failed to delete competition",
