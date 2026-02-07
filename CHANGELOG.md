@@ -7,6 +7,89 @@ y este proyecto adhiere a [Versionado Semántico](https://semver.org/lang/es/).
 
 ## [Unreleased]
 
+### 🎯 Sprint 2: Schedule & Matches - Backend Integration Layer
+
+Capa completa de integración con los 11 endpoints del backend Sprint 2 para gestión de rondas, partidos y equipos. Incluye breaking change de `handicap_type` a `play_mode`.
+
+### ⚠️ Breaking Changes
+- **`play_mode` reemplaza `handicap_type`/`handicap_percentage`**: El backend ahora usa un único campo `play_mode` (SCRATCH/HANDICAP) en vez de `handicap_type` (SCRATCH/PERCENTAGE) + `handicap_percentage` (90/95/100). El porcentaje se gestiona ahora a nivel de ronda (`allowance_percentage`), no de competición.
+  - `HandicapSettings` value object: Renombrado enum `HandicapType` a `PlayModeType` con valores `SCRATCH`/`HANDICAP` (antes `SCRATCH`/`PERCENTAGE`). Eliminado campo `percentage`.
+  - `CompetitionMapper`: Mapea `play_mode` en vez de `handicap_type`/`handicap_percentage` (con fallback retrocompatible)
+  - `CreateCompetition.jsx`: Formulario actualizado con selector SCRATCH/HANDICAP (eliminado selector de porcentaje)
+  - `CompetitionDetail.jsx`: Display actualizado para `playMode`
+  - Traducciones EN/ES: Claves `handicapType`/`handicapPercentage` reemplazadas por `playMode`
+
+### ✨ Added
+
+#### Domain Layer - Value Objects (6 nuevos)
+- **`SessionType`**: Enum MORNING/AFTERNOON/EVENING con instancias frozen
+- **`MatchFormat`**: Enum SINGLES/FOURBALL/FOURSOMES con `playersPerTeam()` (1 o 2)
+- **`HandicapMode`**: Enum STROKE_PLAY/MATCH_PLAY
+- **`RoundStatus`**: Máquina de estados PENDING_TEAMS → PENDING_MATCHES → SCHEDULED → IN_PROGRESS → COMPLETED con `canTransitionTo()`, `isEditable()`
+- **`MatchStatus`**: Máquina de estados SCHEDULED → IN_PROGRESS → COMPLETED, WALKOVER con `canTransitionTo()`, `isPlayable()`, `isFinal()`
+- **`AllowancePercentage`**: Valor nullable 50-100 en incrementos de 5, con `isCustom()`
+
+#### Domain Layer - Entities (3 nuevas)
+- **`Round`**: Campos privados, `isEditable()`, `hasMatches()`, `matchCount()`, copia defensiva de matches
+- **`Match`**: Campos privados, métodos de estado (`isScheduled()`, `canStart()`, `canComplete()`), copia defensiva de jugadores
+- **`TeamAssignmentResult`**: `isManual()`, `isAutomatic()`, `getTeamSize()`
+
+#### Domain Layer - Repository Interface
+- **`IScheduleRepository`**: Interfaz con 11 métodos mapeados a endpoints del backend
+
+#### Infrastructure Layer
+- **`ScheduleMapper`**: Anti-corruption layer con `toScheduleDTO()`, `toRoundDTO()`, `toMatchDTO()`, `toTeamAssignmentDTO()`. Maneja campos planos de jugadores (team_a_player_1_id, etc.)
+- **`ApiScheduleRepository`**: Implementación REST de los 11 endpoints usando `apiRequest()`
+
+#### Application Layer - Use Cases (11 nuevos)
+- **`GetScheduleUseCase`**: GET /competitions/{id}/schedule
+- **`ConfigureScheduleUseCase`**: POST /competitions/{id}/schedule/configure
+- **`AssignTeamsUseCase`**: POST /competitions/{id}/teams
+- **`CreateRoundUseCase`**: POST /competitions/{id}/rounds (con validación de campos requeridos)
+- **`UpdateRoundUseCase`**: PUT /rounds/{id}
+- **`DeleteRoundUseCase`**: DELETE /rounds/{id}
+- **`GenerateMatchesUseCase`**: POST /rounds/{id}/matches/generate
+- **`GetMatchDetailUseCase`**: GET /matches/{id}
+- **`UpdateMatchStatusUseCase`**: PUT /matches/{id}/status
+- **`DeclareWalkoverUseCase`**: POST /matches/{id}/walkover (con validación equipo A/B y razón)
+- **`ReassignPlayersUseCase`**: PUT /matches/{id}/players (con validación arrays no vacíos)
+
+#### Composition Root
+- Registrado `ApiScheduleRepository` + 11 use cases en DI container (`src/composition/index.js`)
+
+#### Internationalization
+- Nuevo namespace `schedule` registrado en `i18n/config.js`
+- **EN**: `src/i18n/locales/en/schedule.json` - Traducciones completas (rounds, matches, teams, status, formats, sessions, errors, success)
+- **ES**: `src/i18n/locales/es/schedule.json` - Traducciones completas en español
+
+### 🔧 Changed
+- **`HandicapSettings.js`**: `PlayModeType` (SCRATCH/HANDICAP) reemplaza `HandicapType` (SCRATCH/PERCENTAGE). Alias retrocompatible `HandicapType = PlayModeType`
+- **`CompetitionMapper.js`**: `toDomain()` lee `play_mode` (fallback a `handicap_type`), `toDTO()` escribe `play_mode`, `toSimpleDTO()` escribe `playMode`
+- **`CreateCompetition.jsx`**: `formData.playMode` reemplaza `handicapType`/`handicapPercentage`. Payload envía `play_mode`
+- **`CompetitionDetail.jsx`**: Muestra `playMode` en vez de `handicapType`/`handicapPercentage`
+- **`competitions.json` (EN/ES)**: Claves `handicapType`/`handicapPercentage` → `playMode`/`handicap`
+- **`UpdateCompetitionUseCase.js`**: JSDoc actualizado para `play_mode`
+- **`CreateCompetitionUseCase.test.js`**: Fixture actualizado `handicap_type` → `play_mode`
+
+### ✅ Tests
+- **~250 tests nuevos**: 1066 tests passing (+ desde 849)
+- 6 test files para Value Objects (~95 tests)
+- 3 test files para Entities (~47 tests)
+- 1 test file para ScheduleMapper (~8 tests)
+- 1 test file para ApiScheduleRepository (~13 tests)
+- 11 test files para Use Cases (~50 tests)
+- Tests actualizados: HandicapSettings, Competition entity, CreateCompetitionUseCase
+
+### 📊 Estadísticas
+- **Archivos creados:** ~30
+- **Archivos modificados:** ~12
+- **Value Objects:** 6 nuevos
+- **Entities:** 3 nuevas
+- **Use Cases:** 11 nuevos
+- **Repository:** 1 interface + 1 implementation + 1 mapper
+- **Tests:** ~250 nuevos (1066 total)
+- **Traducciones:** 2 archivos nuevos (EN/ES schedule namespace)
+
 ---
 
 ## [2.0.5] - 2026-02-05

@@ -9,12 +9,12 @@
 [![Vite](https://img.shields.io/badge/Vite-7.3.1-646CFF?logo=vite)](.)
 [![Tailwind](https://img.shields.io/badge/Tailwind-4+-38B2AC?logo=tailwind-css)](.)
 
-**Version:** v1.16.0
+**Version:** v2.0.5 (Sprint 2 Schedule en progreso)
 **Stack:** React 19 + Vite 7.3 + Tailwind CSS 4 + ESLint 9
 
 ---
 
-## 🚀 Tech Stack v1.16.0
+## 🚀 Tech Stack
 
 - **Core:** React 19 + Vite 7.3 + Tailwind CSS 4 + ESLint 9
 - **State:** Zustand v4 (global) + TanStack Query v5 (server)
@@ -74,7 +74,7 @@ npm run preview # Preview production build
 | Coverage (Statements) | ≥80% | ✅ |
 | Coverage (Functions) | ≥75% | ✅ |
 | Coverage (Branches) | ≥70% | ✅ |
-| Bundle Size | ≤1000 KB | ⚠️ (1318 KB) |
+| Bundle Size | ≤1000 KB | ✅ |
 | PR Size | ≤1000 changes | ✅ |
 | Code Format | 100% Prettier | ✅ |
 | Commit Format | Conventional | ✅ |
@@ -122,7 +122,7 @@ npm test -- --coverage      # With coverage report
 npm test -- --watch         # Watch mode
 ```
 
-- **717 tests** (domain, application, infrastructure layers)
+- **1066 tests** (domain, application, infrastructure layers)
 - **Coverage:** ≥80% lines, ≥75% functions, ≥70% branches
 
 ### E2E Tests (Playwright)
@@ -236,9 +236,16 @@ Secrets are automatically injected as environment variables in workflows.
 
 ```
 src/
-├── domain/              # Entities and business logic
-├── application/         # Use cases (Clean Architecture)
-├── infrastructure/      # API Repositories, Sentry
+├── domain/              # Entities, Value Objects, Repository Interfaces
+│   ├── entities/        # Competition, GolfCourse, Round, Match, etc.
+│   ├── value_objects/   # CompetitionStatus, MatchFormat, RoundStatus, etc.
+│   └── repositories/    # ICompetitionRepository, IScheduleRepository, etc.
+├── application/         # Use Cases (Clean Architecture)
+│   └── use_cases/       # competition/, schedule/, enrollment/, golf_course/, etc.
+├── infrastructure/      # API Repositories, Mappers
+│   ├── repositories/    # ApiCompetitionRepository, ApiScheduleRepository, etc.
+│   └── mappers/         # CompetitionMapper, ScheduleMapper, etc.
+├── composition/         # Dependency Injection container
 ├── pages/              # Page components (routes)
 │   ├── auth/           # Login, Register, VerifyEmail
 │   ├── public/         # Landing, BrowseCompetitions
@@ -248,8 +255,10 @@ src/
 │   ├── ui/             # Buttons, Inputs, Modals
 │   └── errors/         # Error boundaries
 ├── hooks/              # Custom hooks
-├── services/           # Centralized API
-└── utils/              # Utilities and helpers
+├── store/              # Zustand stores (auth, competition)
+├── services/           # Centralized API (apiRequest with token refresh)
+├── i18n/               # Internationalization (9 namespaces, EN/ES)
+└── utils/              # Validation, Sentry, tokenRefresh
 ```
 
 ### Main Pages
@@ -276,14 +285,17 @@ src/
 **Backend Repository:** [RyderCupAm](https://github.com/agustinEDev/RyderCupAm)
 
 **Main Endpoints:**
+- `POST /api/v1/auth/login` - Login (httpOnly cookies)
 - `POST /api/v1/auth/register` - Registration
-- `POST /api/v1/auth/login` - Login
-- `POST /api/v1/auth/refresh-token` - Token refresh (httpOnly)
-- `POST /api/v1/auth/logout` - Logout
-- `GET /api/v1/auth/current-user` - Current user
-- `PATCH /api/v1/users/profile` - Update profile
-- `POST /api/v1/handicaps/update-manual` - Update manual handicap
-- `POST /api/v1/handicaps/update` - Update from RFEG
+- `POST /api/v1/auth/refresh-token` - Token refresh
+- `GET /api/v1/competitions` - List competitions
+- `POST /api/v1/competitions` - Create competition
+- `GET /api/v1/competitions/{id}/schedule` - Get schedule
+- `POST /api/v1/competitions/{id}/rounds` - Create round
+- `POST /api/v1/rounds/{id}/matches/generate` - Generate matches
+- `PUT /api/v1/matches/{id}/status` - Update match status
+
+See [BACKEND_API_SPEC.md](BACKEND_API_SPEC.md) for full API reference.
 
 **API Docs:** http://localhost:8000/docs
 
@@ -304,7 +316,7 @@ src/
 - ✅ **SRI** - Subresource Integrity for static assets
 - ✅ **Security Tests** - 12 automated OWASP tests
 
-**OWASP Score:** 8.75/10 (target: 9.0/10 in v2.1.0)
+**OWASP Score:** 9.2/10
 
 ---
 
@@ -330,8 +342,9 @@ npm run format:check     # Check formatting
 
 - **[ROADMAP.md](ROADMAP.md)** - v2.1.0 Planning (7 weeks, 5 sprints)
 - **[CHANGELOG.md](CHANGELOG.md)** - Detailed change history
+- **[BACKEND_API_SPEC.md](BACKEND_API_SPEC.md)** - Full API reference (55+ endpoints)
 - **[CLAUDE.md](CLAUDE.md)** - Context for Claude AI
-- **[docs/architecture/decisions/](docs/architecture/decisions/)** - ADRs
+- **[docs/architecture/decisions/](docs/architecture/decisions/)** - ADRs (11 decisions)
 - **[docs/INTEGRATION_TESTS.md](docs/INTEGRATION_TESTS.md)** - Integration tests guide
 - **[docs/BRANCH_PROTECTION.md](docs/BRANCH_PROTECTION.md)** - Branch protection rules
 

@@ -1,9 +1,9 @@
-# Tests de Integración con Backend v1.8.0
+# Tests de Integracion con Backend
 
 > **Tarea #11 del ROADMAP**
-> **Fecha:** 23-24 Dic 2025
-> **Estado:** ✅ DISPONIBLE - Solo para ejecución local manual
-> **Objetivo:** Verificar integración completa Frontend-Backend v1.8.0
+> **Fecha:** 23-24 Dic 2025 (auth flows) | Pendiente: schedule flows (v2.1.0)
+> **Estado:** ✅ DISPONIBLE - Solo para ejecucion local manual
+> **Objetivo:** Verificar integracion completa Frontend-Backend
 
 ## ⚠️ IMPORTANTE
 
@@ -412,7 +412,7 @@ cp .env.example .env
 ## 📚 Referencias
 
 - [Playwright Test API](https://playwright.dev/docs/api/class-test)
-- [Backend v1.8.0 Spec](../BACKEND_API_SPEC.md)
+- [Backend API Spec](../BACKEND_API_SPEC.md)
 - [Token Refresh Interceptor](../src/utils/tokenRefreshInterceptor.js)
 - [ROADMAP Task #11](../ROADMAP.md#tarea-11)
 
@@ -430,10 +430,17 @@ cp .env.example .env
 - ⚠️ **Requiere variables de entorno** `TEST_EMAIL` y `TEST_PASSWORD` configuradas
 - ⚠️ **Requiere usuario de prueba** verificado en el backend
 - ✅ **Tests listos para CI/CD** una vez backend esté en producción
-- ✅ **Integración Frontend-Backend v1.8.0: 100% implementada** 
+- ✅ **Integracion Frontend-Backend: Auth flows 100% implementados**
 
-**Próximos pasos sugeridos:**
+**Proximos pasos sugeridos:**
 1. ✅ ~~Configurar variables de entorno para credenciales de prueba~~ (Implementado)
-2. Crear usuario de prueba automáticamente en setup
+2. Crear usuario de prueba automaticamente en setup
 3. Considerar usar [MSW](https://mswjs.io/) para mock del backend en tests
 4. Ejecutar tests contra backend en CI/CD
+5. **v2.1.0 - Schedule Integration Tests (pendiente):**
+   - Test crear ronda y verificar en schedule
+   - Test generar partidos para una ronda
+   - Test ciclo de vida de partido (SCHEDULED -> IN_PROGRESS -> COMPLETED)
+   - Test declarar walkover
+   - Test asignar equipos (manual/automatico)
+   - Test reasignar jugadores en un partido
