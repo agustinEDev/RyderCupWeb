@@ -32,8 +32,29 @@ jobs:
           GPG_KEYS: ${{ secrets.GPG_PUBLIC_KEYS }}
         run: |
           # Import GitHub's web-flow key (signs commits made via GitHub UI: merges, squash, rebase)
+          echo "🔑 Downloading GitHub web-flow GPG key..."
+          GPG_TMP=$(mktemp)
+          if ! curl -sSL --fail -o "$GPG_TMP" https://github.com/web-flow.gpg; then
+            echo "❌ Failed to download GitHub web-flow GPG key"
+            rm -f "$GPG_TMP"
+            exit 1
+          fi
+
+          if [ ! -s "$GPG_TMP" ]; then
+            echo "❌ Downloaded GPG key file is empty"
+            rm -f "$GPG_TMP"
+            exit 1
+          fi
+
           echo "🔑 Importing GitHub web-flow GPG key..."
-          curl -sL https://github.com/web-flow.gpg | gpg --import
+          if ! gpg --import "$GPG_TMP"; then
+            echo "❌ Failed to import GitHub web-flow GPG key"
+            rm -f "$GPG_TMP"
+            exit 1
+          fi
+
+          rm -f "$GPG_TMP"
+          echo "✅ GitHub web-flow GPG key imported successfully"
 
           # Import team GPG keys from repository secret
           if [ -n "$GPG_KEYS" ]; then

@@ -2,8 +2,13 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { X, AlertTriangle } from 'lucide-react';
 
-const WalkoverModal = ({
-  isOpen,
+// Wrapper: controls mount/unmount so inner component always has fresh state
+const WalkoverModal = ({ isOpen, ...props }) => {
+  if (!isOpen) return null;
+  return <WalkoverModalContent {...props} />;
+};
+
+const WalkoverModalContent = ({
   onClose,
   onConfirm,
   matchNumber,
@@ -18,8 +23,6 @@ const WalkoverModal = ({
     if (!window.confirm(t('walkover.confirmMessage'))) return;
     onConfirm(winningTeam, reason);
   };
-
-  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -104,7 +107,7 @@ const WalkoverModal = ({
               onClick={onClose}
               className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg font-medium hover:bg-gray-200 transition-colors"
             >
-              Cancel
+              {t('cancel')}
             </button>
             <button
               type="submit"

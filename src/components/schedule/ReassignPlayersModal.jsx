@@ -2,8 +2,13 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { X, Users } from 'lucide-react';
 
-const ReassignPlayersModal = ({
-  isOpen,
+// Wrapper: controls mount/unmount so inner component always has fresh state
+const ReassignPlayersModal = ({ isOpen, ...props }) => {
+  if (!isOpen) return null;
+  return <ReassignPlayersModalContent {...props} />;
+};
+
+const ReassignPlayersModalContent = ({
   onClose,
   onConfirm,
   match,
@@ -11,13 +16,12 @@ const ReassignPlayersModal = ({
   isProcessing,
   t,
 }) => {
-  // Initialize with current match players
   const [teamAIds, setTeamAIds] = useState(() =>
-    (match.teamAPlayers || []).map(p => p.userId)
+    (match?.teamAPlayers || []).map(p => p.userId)
   );
 
   const [teamBIds, setTeamBIds] = useState(() =>
-    (match.teamBPlayers || []).map(p => p.userId)
+    (match?.teamBPlayers || []).map(p => p.userId)
   );
 
   // Only approved enrollments
@@ -48,8 +52,6 @@ const ReassignPlayersModal = ({
     if (teamAIds.length === 0 || teamBIds.length === 0) return;
     onConfirm(teamAIds, teamBIds);
   };
-
-  if (!isOpen) return null;
 
   const getPlayerTeam = (playerId) => {
     if (teamAIds.includes(playerId)) return 'A';
@@ -147,7 +149,7 @@ const ReassignPlayersModal = ({
               onClick={onClose}
               className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg font-medium hover:bg-gray-200 transition-colors"
             >
-              Cancel
+              {t('cancel')}
             </button>
             <button
               type="submit"

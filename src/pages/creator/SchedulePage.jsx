@@ -291,7 +291,7 @@ const SchedulePage = () => {
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <Loader className="w-12 h-12 text-primary animate-spin mx-auto mb-4" />
-          <p className="text-gray-600">{t('errors.failedToLoadSchedule').replace('Failed to load', 'Loading')}</p>
+          <p className="text-gray-600">{t('loading')}</p>
         </div>
       </div>
     );

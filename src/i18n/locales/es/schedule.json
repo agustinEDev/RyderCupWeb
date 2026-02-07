@@ -1,5 +1,7 @@
 {
   "title": "Calendario y Partidos",
+  "loading": "Cargando calendario...",
+  "cancel": "Cancelar",
   "rounds": {
     "title": "Rondas",
     "create": "Crear Ronda",

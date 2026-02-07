@@ -24,8 +24,13 @@ const getCompetitionDates = (startDate, endDate) => {
   return dates;
 };
 
-const RoundFormModal = ({
-  isOpen,
+// Wrapper: controls mount/unmount so inner component always has fresh state
+const RoundFormModal = ({ isOpen, ...props }) => {
+  if (!isOpen) return null;
+  return <RoundFormModalContent {...props} />;
+};
+
+const RoundFormModalContent = ({
   onClose,
   onSubmit,
   initialData,
@@ -80,8 +85,6 @@ const RoundFormModal = ({
       year: 'numeric',
     });
   };
-
-  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -205,7 +208,7 @@ const RoundFormModal = ({
               onClick={onClose}
               className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg font-medium hover:bg-gray-200 transition-colors"
             >
-              {t('walkover.title').includes('Walkover') ? 'Cancel' : 'Cancelar'}
+              {t('cancel')}
             </button>
             <button
               type="submit"

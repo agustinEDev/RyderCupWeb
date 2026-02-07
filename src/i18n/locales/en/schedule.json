@@ -1,5 +1,7 @@
 {
   "title": "Schedule & Matches",
+  "loading": "Loading schedule...",
+  "cancel": "Cancel",
   "rounds": {
     "title": "Rounds",
     "create": "Create Round",
