@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import customToast from '../utils/toast';
 
 import {
@@ -12,6 +13,7 @@ import {
 import { useAuth } from './useAuth';
 
 export const useEditProfile = () => {
+  const { t } = useTranslation('profile');
   const { user: authUser, refetch: refetchUser } = useAuth();
 
   const [user, setUser] = useState(null);
@@ -101,7 +103,7 @@ export const useEditProfile = () => {
       // recargará user + formData.
     } catch (error) {
       console.error('Error refreshing user data:', error);
-      customToast.error('Failed to refresh user data.');
+      customToast.error(t('toasts.failedToRefreshData'));
     } finally {
       setIsRefreshing(false);
     }
@@ -111,7 +113,7 @@ export const useEditProfile = () => {
     if (e?.preventDefault) e.preventDefault();
 
     if (!user) {
-      customToast.error('User not loaded.');
+      customToast.error(t('toasts.userNotLoaded'));
       return;
     }
 
@@ -123,10 +125,10 @@ export const useEditProfile = () => {
       });
 
       await refetchUser();
-      customToast.success('Handicap updated successfully!');
+      customToast.success(t('toasts.handicapUpdated'));
     } catch (error) {
       console.error('Error updating handicap:', error);
-      customToast.error(error.message || 'Failed to update handicap');
+      customToast.error(error.message || t('toasts.failedToUpdateHandicap'));
     } finally {
       setIsSaving(false);
     }
@@ -134,7 +136,7 @@ export const useEditProfile = () => {
 
   const handleUpdateHandicapRFEG = async () => {
     if (!user) {
-      customToast.error('User not loaded.');
+      customToast.error(t('toasts.userNotLoaded'));
       return;
     }
 
@@ -147,12 +149,11 @@ export const useEditProfile = () => {
       await refetchUser();
       // refetchUser updates authUser, which triggers useEffect to update formData
 
-      customToast.success('Handicap updated from RFEG successfully!');
+      customToast.success(t('toasts.handicapUpdatedRFEG'));
     } catch (error) {
       console.error('Error updating handicap from RFEG:', error);
       customToast.error(
-        error.message ||
-          'Failed to update handicap from RFEG. Please try again later.',
+        error.message || t('toasts.failedToUpdateHandicapRFEG'),
       );
     } finally {
       setIsUpdatingRFEG(false);
@@ -163,7 +164,7 @@ export const useEditProfile = () => {
     e.preventDefault();
 
     if (!user) {
-      customToast.error('User not loaded.');
+      customToast.error(t('toasts.userNotLoaded'));
       return;
     }
 
@@ -178,17 +179,17 @@ export const useEditProfile = () => {
       trimmedCountryCode !== (user.country_code || '');
 
     if (!isNameChanged && !isCountryChanged) {
-      customToast.info('No changes detected in profile.');
+      customToast.info(t('toasts.noProfileChanges'));
       return;
     }
 
     if (trimmedFirstName.length < 2) {
-      customToast.error('First name must be at least 2 characters.');
+      customToast.error(t('toasts.firstNameTooShort'));
       return;
     }
 
     if (trimmedLastName.length < 2) {
-      customToast.error('Last name must be at least 2 characters.');
+      customToast.error(t('toasts.lastNameTooShort'));
       return;
     }
 
@@ -212,10 +213,10 @@ export const useEditProfile = () => {
       await refetchUser();
       // refetchUser updates authUser, which triggers useEffect to update formData
 
-      customToast.success('Profile updated successfully!');
+      customToast.success(t('toasts.profileUpdated'));
     } catch (error) {
       console.error('Error updating profile:', error);
-      customToast.error(error.message || 'Failed to update profile');
+      customToast.error(error.message || t('toasts.failedToUpdateProfile'));
     } finally {
       setIsSaving(false);
     }
@@ -225,14 +226,12 @@ export const useEditProfile = () => {
     e.preventDefault();
 
     if (!user) {
-      customToast.error('User not loaded.');
+      customToast.error(t('toasts.userNotLoaded'));
       return;
     }
 
     if (!formData.currentPassword) {
-      customToast.error(
-        'Current password is required to update security settings.',
-      );
+      customToast.error(t('toasts.currentPasswordRequired'));
       return;
     }
 
@@ -242,18 +241,18 @@ export const useEditProfile = () => {
     const isPasswordChanged = formData.newPassword !== '';
 
     if (!isEmailChanged && !isPasswordChanged) {
-      customToast.info('No changes detected in email or password.');
+      customToast.info(t('toasts.noSecurityChanges'));
       return;
     }
 
     if (isPasswordChanged) {
       if (formData.newPassword.length < 8) {
-        customToast.error('New password must be at least 8 characters.');
+        customToast.error(t('toasts.passwordTooShort'));
         return;
       }
 
       if (formData.newPassword !== formData.confirmPassword) {
-        customToast.error('New password and confirmation do not match.');
+        customToast.error(t('toasts.passwordsDoNotMatch'));
         return;
       }
     }
@@ -289,14 +288,14 @@ export const useEditProfile = () => {
         confirmPassword: '',
       }));
 
-      customToast.success('Security settings updated successfully!');
+      customToast.success(t('toasts.securityUpdated'));
     } catch (error) {
       console.error('Error updating security:', error);
 
       // v1.13.0: Handle Password History error
       if (error.message && error.message.includes('last 5 passwords')) {
         customToast.error(
-          'Cannot reuse any of your last 5 passwords. Please choose a different password.',
+          t('toasts.passwordReused'),
           {
             duration: 8000,
             icon: '🔑',
@@ -304,7 +303,7 @@ export const useEditProfile = () => {
         );
       } else {
         customToast.error(
-          error.message || 'Failed to update security settings',
+          error.message || t('toasts.failedToUpdateSecurity'),
         );
       }
     } finally {

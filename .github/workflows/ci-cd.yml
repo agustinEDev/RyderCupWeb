@@ -600,10 +600,9 @@ jobs:
           echo "size_kb=$TOTAL_SIZE_KB" >> $GITHUB_OUTPUT
 
           # Define budget (in KB)
-          # v2.0: Increased from 1000 KB to 1500 KB for SVG country flags (~239 KB)
-          # v2.1: Increased to 1600 KB for Sprint 2 schedule/matches feature (~38 KB)
-          MAX_BUNDLE_SIZE_KB=1600
-          WARNING_THRESHOLD_KB=1500
+          # v2.1: Reduced from 1600 KB to 1400 KB after replacing country-flag-icons (239 KB) with CDN images
+          MAX_BUNDLE_SIZE_KB=1400
+          WARNING_THRESHOLD_KB=1300
 
           # List all bundles with sizes
           echo ""

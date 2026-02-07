@@ -5,16 +5,11 @@
  * Uses Unicode Regional Indicator Symbols to generate flag emojis dynamically
  * for ANY ISO 3166-1 alpha-2 country code (works for all ~195 countries)
  *
- * UPDATE (Nov 2025): Added SVG flag support using country-flag-icons
- * to fix rendering issues in Chrome/Windows
- *
- * UPDATE (Jan 2026): Using static imports for SVG flags. Tree-shaking includes
- * all flags (~239 KB) but ensures consistent rendering across all browsers.
- * Bundle size budget increased to accommodate this.
+ * UPDATE (Feb 2026): Replaced country-flag-icons SVG bundle (239 KB) with
+ * flagcdn.com CDN images for consistent cross-browser rendering at zero bundle cost.
  */
 
 import React from 'react';
-import * as flags from 'country-flag-icons/react/3x2';
 
 /**
  * Converts a country code to its flag emoji
@@ -134,19 +129,21 @@ export const canUseRFEG = (user) => {
 };
 
 /**
- * Get SVG flag component for a country code
- * Uses country-flag-icons library for consistent rendering across all browsers
- * Fixes Chrome/Windows rendering issues with Unicode flag emojis
+ * Get flag image component for a country code
+ * Uses flagcdn.com CDN for consistent rendering across all browsers
+ * (fixes Chrome/Windows issues with Unicode flag emojis)
  *
  * @param {string} countryCode - ISO 3166-1 alpha-2 code (e.g., 'ES', 'FR', 'US')
- * @param {Object} props - Optional props for the SVG (className, style, etc.)
- * @returns {JSX.Element|null} - React SVG component or null if invalid
+ * @param {string} className - Optional CSS class names
+ * @param {Object} style - Optional inline styles
+ * @param {string} title - Optional title/tooltip text
+ * @returns {JSX.Element|null} - img element or null if invalid
  *
  * Examples:
  *   <CountryFlag countryCode="ES" className="w-6 h-6" />
- *   <CountryFlag countryCode="FR" style={{ width: '24px', height: '24px' }} />
+ *   <CountryFlag countryCode="FR" style={{ width: '24px', height: 'auto' }} />
  */
-export const CountryFlag = ({ countryCode, className = '', style = {} }) => {
+export const CountryFlag = ({ countryCode, className = '', style = {}, title = '' }) => {
   if (!countryCode || typeof countryCode !== 'string') {
     return null;
   }
@@ -158,18 +155,13 @@ export const CountryFlag = ({ countryCode, className = '', style = {} }) => {
     return null;
   }
 
-  // Get the flag component from the flags object
-  // The country code becomes the key (e.g., 'ES', 'FR', 'US')
-  const FlagComponent = flags[code];
-
-  if (!FlagComponent) {
-    // If flag doesn't exist, log warning and return null
-    console.warn(`⚠️ SVG flag not found for country code: ${code}`);
-    return null;
-  }
-
-  return React.createElement(FlagComponent, {
+  return React.createElement('img', {
+    src: `https://flagcdn.com/w40/${code.toLowerCase()}.png`,
+    srcSet: `https://flagcdn.com/w80/${code.toLowerCase()}.png 2x`,
+    alt: title || code,
+    title: title || undefined,
     className,
+    loading: 'lazy',
     style: { display: 'inline-block', verticalAlign: 'middle', ...style }
   });
 };

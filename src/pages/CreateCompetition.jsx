@@ -177,7 +177,7 @@ const CreateCompetition = () => {
 
       } catch (error) {
         console.error('Error loading competition:', error);
-        customToast.error(t('edit.errorLoading') || 'Error loading competition');
+        customToast.error(t('edit.errorLoading'));
         navigate('/competitions');
       } finally {
         setLoadingCompetition(false);
@@ -472,7 +472,7 @@ const CreateCompetition = () => {
         // EDIT MODE: Update existing competition
         await updateCompetitionUseCase.execute(competitionId, payload);
 
-        customToast.success(t('edit.success') || 'Competition updated successfully');
+        customToast.success(t('edit.success'));
 
         // Navigate to competition detail
         navigationTimerRef.current = setTimeout(() => {

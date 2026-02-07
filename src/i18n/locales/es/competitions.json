@@ -23,10 +23,10 @@
     "pendingRequests": "solicitudes pendientes",
     "enrollmentStatus": "Inscripción: {{status}}",
     "players": "{{count}} / {{max}} jugadores",
-    "golfCoursesCount": "{{count}} campo",
-    "golfCoursesCount_plural": "{{count}} campos",
-    "countriesCount": "{{count}} país",
-    "countriesCount_plural": "{{count}} países"
+    "golfCoursesCount_one": "{{count}} campo",
+    "golfCoursesCount_other": "{{count}} campos",
+    "countriesCount_one": "{{count}} país",
+    "countriesCount_other": "{{count}} países"
   },
   "create": {
     "title": "Crear Competición",

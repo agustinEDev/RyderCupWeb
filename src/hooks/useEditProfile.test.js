@@ -6,6 +6,14 @@ import customToast from '../utils/toast';
 // Importar el hook useEditProfile
 // import duplicada eliminada
 
+// Mock react-i18next
+vi.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (key) => key,
+    i18n: { language: 'en' }
+  })
+}));
+
 // Mockear (simular) las dependencias externas del hook
 vi.mock('../composition', () => ({
   updateUserProfileUseCase: { execute: vi.fn() },
@@ -171,7 +179,7 @@ describe('useEditProfile Hook', () => {
     );
 
     expect(mockRefetch).toHaveBeenCalled();
-    expect(customToast.success).toHaveBeenCalledWith('Profile updated successfully!');
+    expect(customToast.success).toHaveBeenCalledWith('toasts.profileUpdated');
     expect(result.current.isSaving).toBe(false); // Asegurarse de que el estado de guardado se resetea
   });
 
@@ -233,7 +241,7 @@ describe('useEditProfile Hook', () => {
     });
 
     expect(mockRefetch).toHaveBeenCalled();
-    expect(customToast.success).toHaveBeenCalledWith('Security settings updated successfully!');
+    expect(customToast.success).toHaveBeenCalledWith('toasts.securityUpdated');
     expect(result.current.isSaving).toBe(false); // Asegurarse de que el estado de guardado se resetea
 
     // Verificar que los campos de contraseña se han limpiado
@@ -288,7 +296,7 @@ describe('useEditProfile Hook', () => {
     });
 
     expect(mockRefetch).toHaveBeenCalled();
-    expect(customToast.success).toHaveBeenCalledWith('Handicap updated successfully!');
+    expect(customToast.success).toHaveBeenCalledWith('toasts.handicapUpdated');
     expect(result.current.isSaving).toBe(false);
   });
 
@@ -344,7 +352,7 @@ describe('useEditProfile Hook', () => {
     });
 
     expect(mockRefetch).toHaveBeenCalled();
-    expect(customToast.success).toHaveBeenCalledWith('Handicap updated from RFEG successfully!');
+    expect(customToast.success).toHaveBeenCalledWith('toasts.handicapUpdatedRFEG');
     expect(result.current.isUpdatingRFEG).toBe(false); // Asegurarse de que el estado se resetea
     expect(result.current.formData.handicap).toBe(rfegHandicap.toString()); // Verificar que formData se actualizó
   });

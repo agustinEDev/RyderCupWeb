@@ -10,6 +10,14 @@ import customToast from '../utils/toast';
 import * as composition from '../composition';
 import * as useAuthHook from './useAuth';
 
+// Mock react-i18next
+vi.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (key) => key,
+    i18n: { language: 'en' }
+  })
+}));
+
 // Mock dependencies
 vi.mock('../composition', () => ({
   updateUserSecurityUseCase: {
@@ -101,7 +109,7 @@ describe('useEditProfile - Password History', () => {
 
       // Verify error toast was called with specific password history message
       expect(customToast.error).toHaveBeenCalledWith(
-        'Cannot reuse any of your last 5 passwords. Please choose a different password.',
+        'toasts.passwordReused',
         expect.objectContaining({
           duration: 8000,
           icon: '🔑',
@@ -138,7 +146,7 @@ describe('useEditProfile - Password History', () => {
       });
 
       expect(customToast.error).toHaveBeenCalledWith(
-        'Cannot reuse any of your last 5 passwords. Please choose a different password.',
+        'toasts.passwordReused',
         expect.objectContaining({
           duration: 8000,
           icon: '🔑',
@@ -212,7 +220,7 @@ describe('useEditProfile - Password History', () => {
       });
 
       expect(customToast.success).toHaveBeenCalledWith(
-        'Security settings updated successfully!'
+        'toasts.securityUpdated'
       );
       expect(customToast.error).not.toHaveBeenCalled();
       expect(refetchMock).toHaveBeenCalled();

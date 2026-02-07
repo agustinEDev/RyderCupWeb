@@ -68,5 +68,25 @@
       "rfegInfoNoNationality": "To enable RFEG handicap updates, please set your nationality to Spain in your profile."
     },
     "cancel": "Cancel"
+  },
+  "toasts": {
+    "userNotLoaded": "User not loaded.",
+    "failedToRefreshData": "Failed to refresh user data.",
+    "handicapUpdated": "Handicap updated successfully!",
+    "failedToUpdateHandicap": "Failed to update handicap",
+    "handicapUpdatedRFEG": "Handicap updated from RFEG successfully!",
+    "failedToUpdateHandicapRFEG": "Failed to update handicap from RFEG. Please try again later.",
+    "noProfileChanges": "No changes detected in profile.",
+    "firstNameTooShort": "First name must be at least 2 characters.",
+    "lastNameTooShort": "Last name must be at least 2 characters.",
+    "profileUpdated": "Profile updated successfully!",
+    "failedToUpdateProfile": "Failed to update profile",
+    "currentPasswordRequired": "Current password is required to update security settings.",
+    "noSecurityChanges": "No changes detected in email or password.",
+    "passwordTooShort": "New password must be at least 8 characters.",
+    "passwordsDoNotMatch": "New password and confirmation do not match.",
+    "securityUpdated": "Security settings updated successfully!",
+    "passwordReused": "Cannot reuse any of your last 5 passwords. Please choose a different password.",
+    "failedToUpdateSecurity": "Failed to update security settings"
   }
 }

@@ -16,8 +16,8 @@
     "handicapMode": "Handicap Mode",
     "allowancePercentage": "Allowance %",
     "effectiveAllowance": "Effective Allowance",
-    "matchCount": "{{count}} match",
-    "matchCount_plural": "{{count}} matches"
+    "matchCount_one": "{{count}} match",
+    "matchCount_other": "{{count}} matches"
   },
   "matches": {
     "title": "Matches",
@@ -44,8 +44,8 @@
     "teamA": "Team A",
     "teamB": "Team B",
     "noTeamsAssigned": "Teams have not been assigned yet",
-    "playersCount": "{{count}} player",
-    "playersCount_plural": "{{count}} players"
+    "playersCount_one": "{{count}} player",
+    "playersCount_other": "{{count}} players"
   },
   "configuration": {
     "title": "Schedule Configuration",

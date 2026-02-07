@@ -23,10 +23,10 @@
     "pendingRequests": "pending requests",
     "enrollmentStatus": "Enrollment: {{status}}",
     "players": "{{count}} / {{max}} players",
-    "golfCoursesCount": "{{count}} golf course",
-    "golfCoursesCount_plural": "{{count}} golf courses",
-    "countriesCount": "{{count}} country",
-    "countriesCount_plural": "{{count}} countries"
+    "golfCoursesCount_one": "{{count}} golf course",
+    "golfCoursesCount_other": "{{count}} golf courses",
+    "countriesCount_one": "{{count}} country",
+    "countriesCount_other": "{{count}} countries"
   },
   "create": {
     "title": "Create Competition",

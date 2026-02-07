@@ -269,9 +269,7 @@ const Competitions = () => {
                     {/* Show count text only if golf_courses_count is available */}
                     {competition.golf_courses_count !== undefined && competition.golf_courses_count > 0 && (
                       <span className="ml-1">
-                        {competition.golf_courses_count === 1
-                          ? t('myCompetitions.golfCoursesCount', { count: competition.golf_courses_count })
-                          : t('myCompetitions.golfCoursesCount_plural', { count: competition.golf_courses_count })}
+                        {t('myCompetitions.golfCoursesCount', { count: competition.golf_courses_count })}
                       </span>
                     )}
                     {/* Show +N if more than 3 countries */}

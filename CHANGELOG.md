@@ -80,15 +80,36 @@ Capa completa de integración con los 11 endpoints del backend Sprint 2 para ges
 - 11 test files para Use Cases (~50 tests)
 - Tests actualizados: HandicapSettings, Competition entity, CreateCompetitionUseCase
 
+### 📦 Bundle & Performance
+- **Bundle size reducido en ~239 KB** (1619 KB → 1380 KB): Reemplazada librería `country-flag-icons` (SVGs incrustados) por imágenes CDN de [flagcdn.com](https://flagcdn.com)
+  - `CountryFlag` ahora renderiza `<img>` con `srcSet` para retina en vez de SVG components
+  - Eliminada dependencia `axios` (no utilizada)
+- **CI bundle budget reducido**: 1600 KB → 1400 KB (warning: 1300 KB)
+- **`useMemo` en `SchedulePage`**: `playerNameMap` envuelto en `useMemo` para evitar reconstrucciones innecesarias
+
+### 🌐 i18n Fixes
+- **Corregidos ~30 toast messages hardcodeados** que causaban mezcla de idiomas (castellano/inglés):
+  - `useEditProfile.jsx`: 21 mensajes hardcodeados → claves i18n (`toasts.*` en namespace `profile`)
+  - `useInactivityLogout.jsx`: 5 mensajes hardcodeados en español → claves i18n (`inactivity.*` en namespace `auth`)
+  - `deviceRevocationLogout.js`: Detección manual de idioma (localStorage/navigator) → `i18next.t()` con namespace `auth`
+  - `useDeviceManagement.js`: 2 mensajes hardcodeados → claves i18n (namespace `devices`)
+  - `CreateCompetition.jsx`: Eliminados fallbacks redundantes `|| 'texto'` en 2 toasts
+- **Migración de claves plural legacy**: `_plural` → `_one`/`_other` (formato i18next v4) en namespaces `schedule` y `competitions`
+- **Nuevas traducciones EN/ES**:
+  - `profile.json`: 18 claves en sección `toasts`
+  - `auth.json`: `errors.sessionExpired`, `errors.sessionEnded`, sección `inactivity` (5 claves)
+  - `devices.json`: `errors.DEVICE_ID_REQUIRED`, `success.deviceRevoked`
+
 ### 📊 Estadísticas
 - **Archivos creados:** ~30
-- **Archivos modificados:** ~12
+- **Archivos modificados:** ~37
 - **Value Objects:** 6 nuevos
 - **Entities:** 3 nuevas
 - **Use Cases:** 11 nuevos
 - **Repository:** 1 interface + 1 implementation + 1 mapper
-- **Tests:** ~250 nuevos (1066 total)
-- **Traducciones:** 2 archivos nuevos (EN/ES schedule namespace)
+- **Tests:** ~250 nuevos (1063 total, 1 skipped)
+- **Traducciones:** 2 archivos nuevos + 10 archivos actualizados (EN/ES)
+- **Bundle:** 1297 KB (-322 KB desde peak)
 
 ---
 

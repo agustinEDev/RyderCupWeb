@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
@@ -60,12 +60,15 @@ const SchedulePage = () => {
   const [showTeamsModal, setShowTeamsModal] = useState(false);
 
   // Build player name map from enrollments
-  const playerNameMap = new Map();
-  enrollments.forEach((e) => {
-    if (e.userId && e.userName) {
-      playerNameMap.set(e.userId, e.userName);
-    }
-  });
+  const playerNameMap = useMemo(() => {
+    const map = new Map();
+    enrollments.forEach((e) => {
+      if (e.userId && e.userName) {
+        map.set(e.userId, e.userName);
+      }
+    });
+    return map;
+  }, [enrollments]);
 
   const loadData = useCallback(async () => {
     if (!user) return;

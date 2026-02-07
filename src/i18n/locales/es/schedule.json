@@ -16,8 +16,8 @@
     "handicapMode": "Modo de Hándicap",
     "allowancePercentage": "% de Concesión",
     "effectiveAllowance": "Concesión Efectiva",
-    "matchCount": "{{count}} partido",
-    "matchCount_plural": "{{count}} partidos"
+    "matchCount_one": "{{count}} partido",
+    "matchCount_other": "{{count}} partidos"
   },
   "matches": {
     "title": "Partidos",
@@ -44,8 +44,8 @@
     "teamA": "Equipo A",
     "teamB": "Equipo B",
     "noTeamsAssigned": "Los equipos aún no han sido asignados",
-    "playersCount": "{{count}} jugador",
-    "playersCount_plural": "{{count}} jugadores"
+    "playersCount_one": "{{count}} jugador",
+    "playersCount_other": "{{count}} jugadores"
   },
   "configuration": {
     "title": "Configuración del Calendario",

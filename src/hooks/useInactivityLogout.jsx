@@ -1,4 +1,5 @@
 import { useEffect, useRef, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import customToast from '../utils/toast';
 
@@ -25,6 +26,7 @@ const useInactivityLogout = ({
   onLogout,
   enabled = true
 }) => {
+  const { t } = useTranslation('auth');
   // Refs para mantener referencias a timers sin causar re-renders
   const logoutTimerRef = useRef(null);
   const warningTimerRef = useRef(null);
@@ -57,7 +59,7 @@ const useInactivityLogout = ({
     clearTimers();
 
     // Mostrar toast informativo
-    customToast.error('Tu sesión ha expirado por inactividad', {
+    customToast.error(t('inactivity.sessionExpired'), {
       duration: 4000,
       icon: '⏰'
     });
@@ -66,7 +68,7 @@ const useInactivityLogout = ({
     if (onLogout && typeof onLogout === 'function') {
       onLogout();
     }
-  }, [onLogout, clearTimers]);
+  }, [onLogout, clearTimers, t]);
 
   /**
    * Muestra advertencia al usuario antes del logout
@@ -81,28 +83,28 @@ const useInactivityLogout = ({
 
     // Mostrar toast con botón de continuar
     warningToastIdRef.current = toast(
-      (t) => (
+      (toastRef) => (
         <div className="flex flex-col gap-2">
           <div className="flex items-start gap-2">
             <span className="text-2xl">⚠️</span>
             <div>
               <p className="font-semibold text-gray-900">
-                Sesión por expirar
+                {t('inactivity.sessionExpiring')}
               </p>
               <p className="text-sm text-gray-600 mt-1">
-                Tu sesión expirará en 2 minutos por inactividad
+                {t('inactivity.sessionExpiringMessage')}
               </p>
             </div>
           </div>
           <button
             onClick={() => {
-              customToast.dismiss(t.id);
+              customToast.dismiss(toastRef.id);
               resetTimer();
-              customToast.success('Sesión renovada', { duration: 2000 });
+              customToast.success(t('inactivity.sessionRenewed'), { duration: 2000 });
             }}
             className="w-full px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors font-medium"
           >
-            Continuar sesión
+            {t('inactivity.continueSession')}
           </button>
         </div>
       ),
@@ -116,7 +118,7 @@ const useInactivityLogout = ({
       }
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [warningTime]);
+  }, [warningTime, t]);
 
   /**
    * Resetea los timers de inactividad (cuando hay actividad del usuario)
