@@ -347,7 +347,6 @@ describe('deviceRevocationLogout utilities', () => {
 
     it('should call i18next.t with sessionEnded key for unknown reason', async () => {
       const i18next = (await import('i18next')).default;
-      const { default: deviceRevocationModule } = await import('./deviceRevocationLogout');
 
       // handleDeviceRevocationLogout always passes 'revocation', handleSessionExpiredLogout always passes 'expiration'
       // For unknown reason, we test via the internal flow with errorData that doesn't match either pattern
