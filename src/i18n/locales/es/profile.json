@@ -83,7 +83,7 @@
     "failedToUpdateProfile": "Error al actualizar el perfil",
     "currentPasswordRequired": "Se requiere la contraseña actual para actualizar la configuración de seguridad.",
     "noSecurityChanges": "No se detectaron cambios en el email o la contraseña.",
-    "passwordTooShort": "La nueva contraseña debe tener al menos 8 caracteres.",
+    "passwordTooShort": "La nueva contraseña debe tener al menos 12 caracteres.",
     "passwordsDoNotMatch": "La nueva contraseña y la confirmación no coinciden.",
     "securityUpdated": "¡Configuración de seguridad actualizada correctamente!",
     "passwordReused": "No puedes reutilizar ninguna de tus últimas 5 contraseñas. Por favor, elige una contraseña diferente.",

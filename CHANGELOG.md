@@ -72,7 +72,7 @@ Capa completa de integración con los 11 endpoints del backend Sprint 2 para ges
 - **`CreateCompetitionUseCase.test.js`**: Fixture actualizado `handicap_type` → `play_mode`
 
 ### ✅ Tests
-- **~250 tests nuevos**: 1066 tests passing (+ desde 849)
+- **~250 tests nuevos**: 1063 tests passing, 1 skipped (+ desde 849)
 - 6 test files para Value Objects (~95 tests)
 - 3 test files para Entities (~47 tests)
 - 1 test file para ScheduleMapper (~8 tests)
@@ -107,7 +107,7 @@ Capa completa de integración con los 11 endpoints del backend Sprint 2 para ges
 - **Entities:** 3 nuevas
 - **Use Cases:** 11 nuevos
 - **Repository:** 1 interface + 1 implementation + 1 mapper
-- **Tests:** ~250 nuevos (1063 total, 1 skipped)
+- **Tests:** ~250 nuevos (1063 passing, 1 skipped)
 - **Traducciones:** 2 archivos nuevos + 10 archivos actualizados (EN/ES)
 - **Bundle:** 1297 KB (-322 KB desde peak)
 

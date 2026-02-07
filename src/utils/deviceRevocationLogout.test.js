@@ -345,11 +345,10 @@ describe('deviceRevocationLogout utilities', () => {
       expect(i18next.t).toHaveBeenCalledWith('errors.sessionExpired', { ns: 'auth' });
     });
 
-    it('should call i18next.t with sessionEnded key for unknown reason', async () => {
+    it('should call i18next.t with sessionExpired key when handleSessionExpiredLogout is called', async () => {
       const i18next = (await import('i18next')).default;
 
-      // handleDeviceRevocationLogout always passes 'revocation', handleSessionExpiredLogout always passes 'expiration'
-      // For unknown reason, we test via the internal flow with errorData that doesn't match either pattern
+      // handleSessionExpiredLogout always passes 'expiration' reason, which maps to 'errors.sessionExpired'
       handleSessionExpiredLogout();
 
       expect(i18next.t).toHaveBeenCalledWith('errors.sessionExpired', { ns: 'auth' });

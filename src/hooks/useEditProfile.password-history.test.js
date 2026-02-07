@@ -171,10 +171,10 @@ describe('useEditProfile - Password History', () => {
           target: { name: 'currentPassword', value: 'Wrong123' },
         });
         result.current.handleInputChange({
-          target: { name: 'newPassword', value: 'NewValid123' },
+          target: { name: 'newPassword', value: 'NewValidPass123' },
         });
         result.current.handleInputChange({
-          target: { name: 'confirmPassword', value: 'NewValid123' },
+          target: { name: 'confirmPassword', value: 'NewValidPass123' },
         });
       });
 

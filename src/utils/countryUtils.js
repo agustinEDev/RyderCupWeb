@@ -155,13 +155,27 @@ export const CountryFlag = ({ countryCode, className = '', style = {}, title = '
     return null;
   }
 
+  const lowerCode = code.toLowerCase();
+
   return React.createElement('img', {
-    src: `https://flagcdn.com/w40/${code.toLowerCase()}.png`,
-    srcSet: `https://flagcdn.com/w80/${code.toLowerCase()}.png 2x`,
+    src: `https://flagcdn.com/w40/${lowerCode}.png`,
+    srcSet: `https://flagcdn.com/w80/${lowerCode}.png 2x`,
+    width: 40,
+    height: 30,
     alt: title || code,
     title: title || undefined,
     className,
     loading: 'lazy',
-    style: { display: 'inline-block', verticalAlign: 'middle', ...style }
+    style: { display: 'inline-block', verticalAlign: 'middle', ...style },
+    onError: (e) => {
+      const fallback = getCountryFlag(code);
+      if (fallback) {
+        const span = document.createElement('span');
+        span.textContent = fallback;
+        span.setAttribute('role', 'img');
+        span.setAttribute('aria-label', title || code);
+        e.target.replaceWith(span);
+      }
+    }
   });
 };

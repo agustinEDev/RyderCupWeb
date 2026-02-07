@@ -246,7 +246,7 @@ export const useEditProfile = () => {
     }
 
     if (isPasswordChanged) {
-      if (formData.newPassword.length < 8) {
+      if (formData.newPassword.length < 12) {
         customToast.error(t('toasts.passwordTooShort'));
         return;
       }
