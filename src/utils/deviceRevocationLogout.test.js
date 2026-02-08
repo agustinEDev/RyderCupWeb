@@ -302,7 +302,7 @@ describe('deviceRevocationLogout utilities', () => {
   });
 
   // ============================================
-  // i18n Language Detection
+  // i18n Integration
   // ============================================
   describe('i18n Integration', () => {
     beforeEach(() => {

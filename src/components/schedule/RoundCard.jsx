@@ -68,7 +68,7 @@ const RoundCard = ({
           {round.handicapMode && (
             <div className="text-xs text-gray-500 mt-1">
               {t('rounds.handicapMode')}: {t(`handicapModes.${round.handicapMode}`)}
-              {round.allowancePercentage && (
+              {round.allowancePercentage != null && (
                 <span className="ml-2">{t('rounds.allowancePercentage')}: {round.allowancePercentage}%</span>
               )}
             </div>

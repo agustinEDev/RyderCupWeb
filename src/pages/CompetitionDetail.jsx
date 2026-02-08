@@ -338,7 +338,7 @@ const CompetitionDetail = () => {
                     <div>
                       <p className="text-xs text-gray-500">{t('detail.players')}</p>
                       <p className="text-sm font-medium">
-                        {enrollments.filter((e) => e.status === 'APPROVED').length} /{' '}
+                        {approvedCount} /{' '}
                         {competition.maxPlayers || '∞'}
                       </p>
                     </div>

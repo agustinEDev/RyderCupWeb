@@ -75,7 +75,7 @@ const MatchCard = ({
           {t('matches.handicapStrokes', { strokes: match.handicapStrokesGiven })}
           {match.strokesGivenToTeam && (
             <span className="ml-1">
-              ({t('matches.strokesGivenTo', { team: match.strokesGivenToTeam === 'A' ? teamNames.teamA : teamNames.teamB })})
+              ({t('matches.strokesGivenTo', { team: match.strokesGivenToTeam === 'A' ? teamNames.teamA : match.strokesGivenToTeam === 'B' ? teamNames.teamB : '' })})
             </span>
           )}
         </div>

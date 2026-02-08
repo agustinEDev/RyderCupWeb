@@ -2,8 +2,8 @@
 
 > **Tarea #11 del ROADMAP**
 > **Fecha:** 23-24 Dic 2025 (auth flows) | Pendiente: schedule flows (v2.1.0)
-> **Estado:** ✅ DISPONIBLE - Solo para ejecucion local manual
-> **Objetivo:** Verificar integracion completa Frontend-Backend
+> **Estado:** ✅ DISPONIBLE - Solo para ejecución local manual
+> **Objetivo:** Verificar integración completa Frontend-Backend
 
 ## ⚠️ IMPORTANTE
 

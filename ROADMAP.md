@@ -2,7 +2,7 @@
 
 > **Versión:** 1.15.0 → 1.16.0 → 2.0.0 → 2.0.4 → 2.0.5 → 2.1.0 (sincronizado con backend)
 > **Última actualización:** 6 Feb 2026
-> **Estado:** ✅ v2.0.0 Sprint 1 Completado | ✅ v2.0.4 Sprint 2 + Infra Completado | ✅ v2.0.5 Hotfix UI | 🔄 v2.1.0 Sprint 2 Schedule (Backend Integration Layer completado)
+> **Estado:** ✅ v2.0.0 Sprint 1 Completado | ✅ v2.0.4 Sprint 2 + Infra Completado | ✅ v2.0.5 Hotfix UI | ✅ v2.1.0 Sprint 2 Schedule COMPLETADO
 > **Stack:** React 19 + Vite 7.3 + Tailwind CSS 4 + ESLint 9
 > **Arquitectura:** Subdomain (www + api) con Cloudflare Proxy (ADR-011)
 
@@ -333,7 +333,7 @@ Migrar de arquitectura de proxy inverso a subdominios directos para mejorar rend
 - **Use Cases:** 11 nuevos
 - **UI Components:** 8 nuevos (schedule)
 - **Tests:** ~214 nuevos (1088 total passing, 1 skipped)
-- **Bundle:** 1297 KB build sin comprimir (-322 KB desde peak de 1619 KB)
+- **Bundle:** 1308 KB build sin comprimir (-311 KB desde peak de 1619 KB)
 
 ---
 
@@ -469,11 +469,11 @@ Aquí están las confirmaciones y respuestas a vuestras preguntas:
 
 ## 📊 Estado Actual (v2.1.0 - Sprint 2 completado)
 
-### Metricas Clave
+### Métricas Clave
 
 - **Tests:** 1088 passing, 1 skipped, 0 failed ✅
 - **Coverage:** ≥85% lines, ≥75% functions ✅
-- **Bundle:** 1297 KB sin comprimir ✅ (budget: ≤1400 KB, warning: 1300 KB)
+- **Bundle:** 1308 KB sin comprimir ✅ (budget: ≤1400 KB, warning: 1300 KB)
 - **Build time:** ~6s ⚡
 - **Security:** 0 vulnerabilities ✅
 - **OWASP Score:** 9.2/10 ✅
@@ -482,14 +482,14 @@ Aquí están las confirmaciones y respuestas a vuestras preguntas:
 - ✅ Golf Course Management System (v2.0.0 - Sprint 1)
 - ✅ Infrastructure Migration + Security (v2.0.4)
 - ✅ Hotfix Golf Courses UI (v2.0.5)
-- ✅ Schedule Backend Integration Layer (v2.1.0 - Sprint 2, en progreso)
+- ✅ Schedule Backend Integration Layer + UI (v2.1.0 - Sprint 2, COMPLETADO)
 
 ### Completado (v1.x)
 - ✅ Modern Build Stack (v1.16.0)
 - ✅ Data Integrity (SRI, Signed Commits) - **v1.15.0**
 - ✅ Device Fingerprinting (Clean Arch) - **v1.14.0**
 - ✅ Clean Architecture + DDD
-- ✅ Autenticacion (httpOnly cookies, refresh tokens)
+- ✅ Autenticación (httpOnly cookies, refresh tokens)
 - ✅ CRUD Competiciones + Enrollments
 - ✅ Handicaps (Manual + RFEG)
 - ✅ Password Reset Flow

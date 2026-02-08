@@ -2,8 +2,13 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { X, Users } from 'lucide-react';
 
-const AssignTeamsModal = ({
-  isOpen,
+// Wrapper: controls mount/unmount so inner component always has fresh state
+const AssignTeamsModal = ({ isOpen, ...props }) => {
+  if (!isOpen) return null;
+  return <AssignTeamsModalContent {...props} />;
+};
+
+const AssignTeamsModalContent = ({
   onClose,
   onConfirm,
   enrollments,
@@ -54,8 +59,6 @@ const AssignTeamsModal = ({
       });
     }
   };
-
-  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
