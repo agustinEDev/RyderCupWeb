@@ -88,12 +88,9 @@ const GolfCourseTable = ({ courses, onView, onEdit, onApprove, onReject, showAct
               <td className="py-3 px-4 font-medium text-gray-900">{course.totalPar}</td>
               <td className="py-3 px-4">
                 <div className="flex flex-wrap gap-1">
-                  {course.tees.slice(0, 2).map((tee, index) => (
+                  {course.tees.map((tee, index) => (
                     <TeeCategoryBadge key={index} category={tee.teeCategory} identifier={tee.identifier} gender={tee.teeGender || tee.tee_gender || tee.gender} />
                   ))}
-                  {course.tees.length > 2 && (
-                    <span className="text-xs text-gray-500">+{course.tees.length - 2}</span>
-                  )}
                 </div>
               </td>
               <td className="py-3 px-4">
