@@ -10,19 +10,19 @@ import { formatCountryName } from '../../services/countries';
 const COURSE_TYPES = ['STANDARD_18', 'PITCH_AND_PUTT', 'EXECUTIVE'];
 
 const TEE_CATEGORIES = [
-  'CHAMPIONSHIP_MALE',
-  'AMATEUR_MALE',
-  'SENIOR_MALE',
-  'CHAMPIONSHIP_FEMALE',
-  'AMATEUR_FEMALE',
-  'SENIOR_FEMALE',
+  'CHAMPIONSHIP',
+  'AMATEUR',
+  'SENIOR',
+  'FORWARD',
   'JUNIOR',
 ];
+
+const TEE_GENDERS = [null, 'MALE', 'FEMALE'];
 
 /**
  * GolfCourseForm Component
  * Complex form for creating/editing golf courses
- * Handles 18 holes + 2-6 tees with validations
+ * Handles 18 holes + 2-10 tees with validations
  */
 const GolfCourseForm = ({ initialData = null, onSubmit, onCancel }) => {
   const { t, i18n } = useTranslation('golfCourses');
@@ -35,10 +35,10 @@ const GolfCourseForm = ({ initialData = null, onSubmit, onCancel }) => {
   // Countries data
   const [allCountries, setAllCountries] = useState([]);
 
-  // Tees (2-6)
+  // Tees (2-10)
   const [tees, setTees] = useState([
-    { teeCategory: 'CHAMPIONSHIP_MALE', identifier: '', courseRating: '', slopeRating: '' },
-    { teeCategory: 'AMATEUR_MALE', identifier: '', courseRating: '', slopeRating: '' },
+    { teeCategory: 'CHAMPIONSHIP', teeGender: null, identifier: '', courseRating: '', slopeRating: '' },
+    { teeCategory: 'AMATEUR', teeGender: null, identifier: '', courseRating: '', slopeRating: '' },
   ]);
 
   // Holes (18 fixed)
@@ -86,6 +86,7 @@ const GolfCourseForm = ({ initialData = null, onSubmit, onCancel }) => {
       if (initialData.tees && initialData.tees.length > 0) {
         setTees(initialData.tees.map(tee => ({
           teeCategory: tee.teeCategory || tee.tee_category,
+          teeGender: tee.teeGender ?? tee.tee_gender ?? tee.gender ?? null,
           identifier: tee.identifier || '',
           courseRating: tee.courseRating || tee.course_rating || '',
           slopeRating: tee.slopeRating || tee.slope_rating || '',
@@ -104,14 +105,14 @@ const GolfCourseForm = ({ initialData = null, onSubmit, onCancel }) => {
 
   // Add tee
   const handleAddTee = () => {
-    if (tees.length >= 6) {
+    if (tees.length >= 10) {
       customToast.error(t('form.maxTeesReached'));
       return;
     }
 
     setTees([
       ...tees,
-      { teeCategory: 'AMATEUR_MALE', identifier: '', courseRating: '', slopeRating: '' },
+      { teeCategory: 'AMATEUR', teeGender: null, identifier: '', courseRating: '', slopeRating: '' },
     ]);
   };
 
@@ -156,9 +157,29 @@ const GolfCourseForm = ({ initialData = null, onSubmit, onCancel }) => {
       return false;
     }
 
-    if (tees.length < 2 || tees.length > 6) {
+    if (tees.length < 2 || tees.length > 10) {
       customToast.error(t('form.errors.teesRange'));
       return false;
+    }
+
+    // Validate gender mixing: cannot mix gendered and unisex tees for the same category
+    const categoryGenderMap = {};
+    for (const tee of tees) {
+      const hasGender = tee.teeGender !== null && tee.teeGender !== '';
+      if (!categoryGenderMap[tee.teeCategory]) {
+        categoryGenderMap[tee.teeCategory] = { hasGendered: false, hasUnisex: false };
+      }
+      if (hasGender) {
+        categoryGenderMap[tee.teeCategory].hasGendered = true;
+      } else {
+        categoryGenderMap[tee.teeCategory].hasUnisex = true;
+      }
+    }
+    for (const cat of Object.keys(categoryGenderMap)) {
+      if (categoryGenderMap[cat].hasGendered && categoryGenderMap[cat].hasUnisex) {
+        customToast.error(t('form.errors.genderMixing'));
+        return false;
+      }
     }
 
     // Validate each tee
@@ -225,6 +246,7 @@ const GolfCourseForm = ({ initialData = null, onSubmit, onCancel }) => {
         courseType,
         tees: tees.map(tee => ({
           teeCategory: tee.teeCategory,
+          teeGender: tee.teeGender || null,
           identifier: tee.identifier.trim(),
           courseRating: parseFloat(tee.courseRating),
           slopeRating: parseInt(tee.slopeRating, 10),
@@ -327,11 +349,11 @@ const GolfCourseForm = ({ initialData = null, onSubmit, onCancel }) => {
       {/* Tees Section */}
       <div className="bg-white border border-gray-200 rounded-lg p-6">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-bold text-gray-900">{t('form.tees')} ({tees.length}/6)</h3>
+          <h3 className="text-lg font-bold text-gray-900">{t('form.tees')} ({tees.length}/10)</h3>
           <button
             type="button"
             onClick={handleAddTee}
-            disabled={tees.length >= 6}
+            disabled={tees.length >= 10}
             className="flex items-center gap-2 px-3 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Plus className="w-4 h-4" />
@@ -362,7 +384,7 @@ const GolfCourseForm = ({ initialData = null, onSubmit, onCancel }) => {
                 )}
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
                 {/* Tee Category */}
                 <div>
                   <label className="block text-xs font-medium text-gray-600 mb-1">
@@ -377,6 +399,24 @@ const GolfCourseForm = ({ initialData = null, onSubmit, onCancel }) => {
                     {TEE_CATEGORIES.map(cat => (
                       <option key={cat} value={cat}>
                         {t(`form.teeCategories.${cat}`)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Tee Gender */}
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">
+                    {t('form.teeGender')}
+                  </label>
+                  <select
+                    value={tee.teeGender || ''}
+                    onChange={(e) => handleTeeChange(index, 'teeGender', e.target.value || null)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                  >
+                    {TEE_GENDERS.map(g => (
+                      <option key={g ?? 'none'} value={g || ''}>
+                        {t(`form.teeGenders.${g ?? 'none'}`)}
                       </option>
                     ))}
                   </select>

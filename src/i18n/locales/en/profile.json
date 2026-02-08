@@ -30,6 +30,12 @@
       "nationalityOptional": "(Optional)",
       "selectNationality": "No nationality selected",
       "rfegInfo": "Select Spain (ES) to enable RFEG handicap updates",
+      "gender": "Gender",
+      "genderPlaceholder": "Select gender",
+      "genderOptions": {
+        "MALE": "Male",
+        "FEMALE": "Female"
+      },
       "updating": "Updating...",
       "update": "Update Personal Info"
     },

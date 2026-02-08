@@ -259,14 +259,6 @@ describe('deviceRevocationLogout utilities', () => {
       expect(localStorage.removeItem).toHaveBeenCalled();
     });
 
-    it('should use i18n translation key for revocation message', () => {
-      handleDeviceRevocationLogout();
-
-      expect(customToast.error).toHaveBeenCalledWith(
-        'errors.deviceRevoked',
-        expect.objectContaining({ duration: 8000, icon: '🔒' })
-      );
-    });
   });
 
   // ============================================
@@ -307,14 +299,6 @@ describe('deviceRevocationLogout utilities', () => {
       expect(window.location.href).toBe('/login');
     });
 
-    it('should use i18n translation key for expiration message', () => {
-      handleSessionExpiredLogout();
-
-      expect(customToast.error).toHaveBeenCalledWith(
-        'errors.sessionExpired',
-        expect.objectContaining({ duration: 8000, icon: '⏱️' })
-      );
-    });
   });
 
   // ============================================

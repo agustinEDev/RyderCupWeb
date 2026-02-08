@@ -33,7 +33,12 @@
     "walkover": "Declarar Walkover",
     "startMatch": "Iniciar Partido",
     "completeMatch": "Completar Partido",
-    "viewDetail": "Ver Detalle"
+    "viewDetail": "Ver Detalle",
+    "result": "Resultado",
+    "resultWinner": "Ganador: Equipo {{team}}",
+    "resultScore": "Puntuación: {{score}}",
+    "resultReason": "Motivo: {{reason}}",
+    "close": "Cerrar"
   },
   "teams": {
     "title": "Asignación de Equipos",

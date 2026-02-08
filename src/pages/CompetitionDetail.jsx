@@ -13,6 +13,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useUserRoles } from '../hooks/useUserRoles';
 import { CountryFlag } from '../utils/countryUtils';
 import CompetitionGolfCoursesSection from '../components/competition/CompetitionGolfCoursesSection';
+import EnrollmentRequestModal from '../components/enrollment/EnrollmentRequestModal';
 import {
   getCompetitionDetailUseCase,
   getCompetitionGolfCoursesUseCase,
@@ -44,6 +45,7 @@ const CompetitionDetail = () => {
   const [enrollments, setEnrollments] = useState([]);
   const [isLoadingCompetition, setIsLoadingCompetition] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [showEnrollModal, setShowEnrollModal] = useState(false);
 
   // Determine where user came from (browse or my competitions)
   const fromBrowse = location.state?.from === 'browse';
@@ -190,10 +192,11 @@ const CompetitionDetail = () => {
     }
   };
 
-  const handleEnroll = async () => {
+  const handleEnroll = async (teeCategory = null) => {
+    setShowEnrollModal(false);
     setIsProcessing(true);
     try {
-      await requestEnrollmentUseCase.execute(id);
+      await requestEnrollmentUseCase.execute(id, null, { teeCategory });
       customToast.success(t('detail.success.enrollmentRequested'));
       await loadCompetition();
     } catch (error) {
@@ -462,6 +465,25 @@ const CompetitionDetail = () => {
               </motion.div>
             )}
 
+            {/* View Schedule Button - For enrolled players (not creators/admins) */}
+            {!canManage && competition.status !== 'DRAFT' && competition.status !== 'CANCELLED' &&
+              (userEnrollment?.status === 'APPROVED' || competition.enrollment_status === 'APPROVED') && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.1 }}
+                className="p-4"
+              >
+                <button
+                  onClick={() => navigate(`/competitions/${id}/schedule`)}
+                  className="flex items-center justify-center gap-2 w-full px-6 py-3 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors shadow-md"
+                >
+                  <Calendar className="w-5 h-5" />
+                  <span>{t('detail.actions.viewSchedule')}</span>
+                </button>
+              </motion.div>
+            )}
+
             {/* Enrollment Button - Show if competition is ACTIVE, user is not enrolled, not the creator, and not full */}
             {!isCreator && competition.status === 'ACTIVE' && !hasEnrollment && !isFull && (
               <motion.div
@@ -471,7 +493,7 @@ const CompetitionDetail = () => {
                 className="p-4"
               >
                 <button
-                  onClick={handleEnroll}
+                  onClick={() => setShowEnrollModal(true)}
                   disabled={isProcessing}
                   className="flex items-center justify-center gap-2 w-full px-6 py-3 bg-primary text-white rounded-lg font-medium hover:bg-primary/90 transition-colors shadow-md disabled:opacity-50"
                 >
@@ -720,6 +742,13 @@ const CompetitionDetail = () => {
           </div>
         </div>
       </div>
+
+      <EnrollmentRequestModal
+        isOpen={showEnrollModal}
+        onClose={() => setShowEnrollModal(false)}
+        onConfirm={handleEnroll}
+        isProcessing={isProcessing}
+      />
     </div>
   );
 };

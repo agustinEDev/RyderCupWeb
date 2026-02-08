@@ -247,6 +247,14 @@ const Profile = () => {
                         </span>
                       )}
                     </div>
+
+                    {/* Gender */}
+                    {user.gender && (
+                      <div className="flex items-center gap-2 text-gray-600">
+                        <Shield className="w-4 h-4" />
+                        <span className="text-sm">{t('edit.personalInfo.gender')}: {t(`edit.personalInfo.genderOptions.${user.gender}`)}</span>
+                      </div>
+                    )}
                   </div>
 
                   {/* Stats */}

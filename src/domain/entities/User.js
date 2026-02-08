@@ -16,11 +16,18 @@ class User {
     email_verified = false, // Valor por defecto para bool
     verification_token = null,
     country_code = null, // Nacionalidad opcional del usuario
+    gender = null, // Gender: 'MALE', 'FEMALE', or null
     domain_events = [], // Array vacío por defecto para List
   }) {
     // Validaciones básicas de la entidad
     if (!id || !email || !first_name || !last_name) {
       throw new Error('User entity requires id, email, first_name, and last_name');
+    }
+
+    // Validate gender if provided
+    const validGenders = ['MALE', 'FEMALE'];
+    if (gender !== null && !validGenders.includes(gender)) {
+      throw new Error(`Invalid gender: ${gender}. Must be 'MALE', 'FEMALE', or null`);
     }
 
     this.id = id;
@@ -39,6 +46,7 @@ class User {
     this.countryCode = country_code
       ? (country_code instanceof CountryCode ? country_code : new CountryCode(country_code))
       : null;
+    this.gender = gender;
     this.domainEvents = domain_events;
   }
 
@@ -77,6 +85,7 @@ class User {
       email_verified: this.emailVerified,
       verification_token: this.verificationToken,
       country_code: this.countryCode ? this.countryCode.value() : null,
+      gender: this.gender,
       // domain_events no se persistirían directamente
     };
   }

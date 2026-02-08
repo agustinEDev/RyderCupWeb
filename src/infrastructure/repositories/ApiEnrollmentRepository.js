@@ -221,9 +221,14 @@ class ApiEnrollmentRepository extends IEnrollmentRepository {
    * @returns {Promise<Enrollment>}
    */
   async requestEnrollment(competitionId, data = {}) {
+    const body = { ...data };
+    if (data.teeCategory) {
+      body.tee_category = data.teeCategory;
+      delete body.teeCategory;
+    }
     const apiData = await this.#request(`/api/v1/competitions/${competitionId}/enrollments`, {
       method: 'POST',
-      body: JSON.stringify(data),
+      body: JSON.stringify(body),
     });
 
     return EnrollmentMapper.toDomain(apiData);
@@ -339,6 +344,7 @@ class ApiEnrollmentRepository extends IEnrollmentRepository {
         custom_handicap: data.customHandicap,
       }),
       ...(data.teamId && { team_id: data.teamId }),
+      ...(data.teeCategory && { tee_category: data.teeCategory }),
     };
 
     const apiData = await this.#request(

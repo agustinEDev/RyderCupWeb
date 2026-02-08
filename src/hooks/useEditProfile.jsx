@@ -34,6 +34,7 @@ export const useEditProfile = () => {
     confirmPassword: '',
     handicap: '',
     countryCode: '',
+    gender: '',
   });
 
   // Cargar datos de usuario en el formulario
@@ -57,6 +58,7 @@ export const useEditProfile = () => {
           handicap:
             authUser.handicap === null ? '' : authUser.handicap.toString(),
           countryCode: authUser.country_code || '',
+          gender: authUser.gender || '',
         });
       } catch (error) {
         console.error('❌ [useEditProfile] Error fetching user data:', error);
@@ -177,8 +179,10 @@ export const useEditProfile = () => {
       trimmedLastName !== user.last_name;
     const isCountryChanged =
       trimmedCountryCode !== (user.country_code || '');
+    const isGenderChanged =
+      formData.gender !== (user.gender || '');
 
-    if (!isNameChanged && !isCountryChanged) {
+    if (!isNameChanged && !isCountryChanged && !isGenderChanged) {
       customToast.info(t('toasts.noProfileChanges'));
       return;
     }
@@ -203,6 +207,11 @@ export const useEditProfile = () => {
       if (isCountryChanged) {
         updateData.countryCode =
           trimmedCountryCode === '' ? null : trimmedCountryCode;
+      }
+
+      if (isGenderChanged) {
+        updateData.gender =
+          formData.gender === '' ? null : formData.gender;
       }
 
       await updateUserProfileUseCase.execute(

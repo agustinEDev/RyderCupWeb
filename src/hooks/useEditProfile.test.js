@@ -88,7 +88,8 @@ describe('useEditProfile Hook', () => {
       newPassword: '',
       confirmPassword: '',
       handicap: '',
-      countryCode: ''
+      countryCode: '',
+      gender: '',
     });
   });
 
@@ -130,7 +131,8 @@ describe('useEditProfile Hook', () => {
       newPassword: '',
       confirmPassword: '',
       handicap: mockUserPlain.handicap.toString(), // El hándicap se convierte a string
-      countryCode: ''
+      countryCode: '',
+      gender: '',
     });
   });
 

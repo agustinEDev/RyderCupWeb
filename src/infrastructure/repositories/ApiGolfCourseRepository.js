@@ -160,6 +160,7 @@ class ApiGolfCourseRepository extends IGolfCourseRepository {
         identifier: tee.identifier,
         course_rating: tee.courseRating || tee.course_rating,
         slope_rating: tee.slopeRating || tee.slope_rating,
+        tee_gender: tee.teeGender ?? tee.tee_gender ?? tee.gender ?? null,
       })),
       holes: (golfCourseData.holes || []).map(hole => ({
         hole_number: hole.holeNumber || hole.hole_number,

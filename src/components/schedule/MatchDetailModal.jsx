@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { X, Loader } from 'lucide-react';
+import { X, Loader, Trophy, AlertTriangle } from 'lucide-react';
 import { getMatchDetailUseCase } from '../../composition';
 
 const MatchDetailModal = ({
@@ -139,14 +139,33 @@ const MatchDetailModal = ({
               )}
 
               {/* Result */}
-              {match.result && (
-                <div className="bg-green-50 rounded-lg p-4 border border-green-200">
-                  <h4 className="font-semibold text-green-800 mb-1">Result</h4>
-                  <pre className="text-sm text-gray-700 whitespace-pre-wrap">
-                    {JSON.stringify(match.result, null, 2)}
-                  </pre>
-                </div>
-              )}
+              {match.result && (() => {
+                const isWalkover = match.result.score === 'W/O' || match.status === 'WALKOVER';
+                const bgClass = isWalkover ? 'bg-orange-50 border-orange-200' : 'bg-green-50 border-green-200';
+                const headerClass = isWalkover ? 'text-orange-800' : 'text-green-800';
+                const Icon = isWalkover ? AlertTriangle : Trophy;
+                const iconClass = isWalkover ? 'w-4 h-4 text-orange-500' : 'w-4 h-4 text-green-600';
+
+                return (
+                  <div className={`rounded-lg p-4 border ${bgClass}`}>
+                    <div className="flex items-center gap-2 mb-2">
+                      <Icon className={iconClass} />
+                      <h4 className={`font-semibold ${headerClass}`}>{t('matches.result')}</h4>
+                    </div>
+                    <div className="space-y-1 text-sm text-gray-700">
+                      {match.result.score && (
+                        <p className="font-medium">{t('matches.resultScore', { score: match.result.score })}</p>
+                      )}
+                      {match.result.winner && (
+                        <p>{t('matches.resultWinner', { team: match.result.winner })}</p>
+                      )}
+                      {match.result.reason && (
+                        <p className="text-gray-500 italic">{t('matches.resultReason', { reason: match.result.reason })}</p>
+                      )}
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           )}
         </div>
@@ -157,7 +176,7 @@ const MatchDetailModal = ({
             onClick={onClose}
             className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg font-medium hover:bg-gray-200 transition-colors"
           >
-            Close
+            {t('matches.close')}
           </button>
         </div>
       </motion.div>

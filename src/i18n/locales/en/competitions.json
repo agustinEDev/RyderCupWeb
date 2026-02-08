@@ -114,7 +114,8 @@
       "cancel": "Cancel",
       "delete": "Delete",
       "request-to-join": "Request to Join",
-      "manageSchedule": "Manage Schedule"
+      "manageSchedule": "Manage Schedule",
+      "viewSchedule": "View Schedule"
     },
     "confirmations": {
       "activate": "Are you sure you want to activate this competition?",
@@ -237,6 +238,14 @@
     "IN_PROGRESS": "IN PROGRESS",
     "COMPLETED": "COMPLETED",
     "CANCELLED": "CANCELLED"
+  },
+  "enrollment": {
+    "modalTitle": "Request to Join",
+    "teeCategoryLabel": "Preferred tee category",
+    "teeCategoryHint": "Used to assign the right tees in matches",
+    "noPreference": "No preference",
+    "confirm": "Confirm",
+    "cancel": "Cancel"
   },
   "enrollmentStatus": {
     "REQUESTED": "REQUESTED",

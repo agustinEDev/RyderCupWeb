@@ -138,7 +138,8 @@ describe('User Entity', () => {
         updated_at: '2025-11-23T10:00:00Z',
         email_verified: true,
         verification_token: null,
-        country_code: 'ES' // Extracted from CountryCode VO
+        country_code: 'ES', // Extracted from CountryCode VO
+        gender: null,
       });
     });
 
@@ -171,6 +172,90 @@ describe('User Entity', () => {
 
       expect(plainObject.country_code).toBe('IT');
       expect(typeof plainObject.country_code).toBe('string');
+    });
+  });
+
+  describe('gender field', () => {
+    it('should accept gender as MALE', () => {
+      const user = new User({
+        id: 'user-123',
+        email: 'test@example.com',
+        first_name: 'John',
+        last_name: 'Doe',
+        gender: 'MALE'
+      });
+
+      expect(user.gender).toBe('MALE');
+    });
+
+    it('should accept gender as FEMALE', () => {
+      const user = new User({
+        id: 'user-123',
+        email: 'test@example.com',
+        first_name: 'Jane',
+        last_name: 'Doe',
+        gender: 'FEMALE'
+      });
+
+      expect(user.gender).toBe('FEMALE');
+    });
+
+    it('should accept gender as null', () => {
+      const user = new User({
+        id: 'user-123',
+        email: 'test@example.com',
+        first_name: 'John',
+        last_name: 'Doe',
+        gender: null
+      });
+
+      expect(user.gender).toBeNull();
+    });
+
+    it('should default gender to null if not provided', () => {
+      const user = new User({
+        id: 'user-123',
+        email: 'test@example.com',
+        first_name: 'John',
+        last_name: 'Doe'
+      });
+
+      expect(user.gender).toBeNull();
+    });
+
+    it('should throw error for invalid gender value', () => {
+      expect(() => new User({
+        id: 'user-123',
+        email: 'test@example.com',
+        first_name: 'John',
+        last_name: 'Doe',
+        gender: 'OTHER'
+      })).toThrow("Invalid gender: OTHER. Must be 'MALE', 'FEMALE', or null");
+    });
+
+    it('should include gender in toPersistence output', () => {
+      const user = new User({
+        id: 'user-123',
+        email: 'test@example.com',
+        first_name: 'John',
+        last_name: 'Doe',
+        gender: 'MALE'
+      });
+
+      const plainObject = user.toPersistence();
+      expect(plainObject.gender).toBe('MALE');
+    });
+
+    it('should include null gender in toPersistence output', () => {
+      const user = new User({
+        id: 'user-123',
+        email: 'test@example.com',
+        first_name: 'John',
+        last_name: 'Doe'
+      });
+
+      const plainObject = user.toPersistence();
+      expect(plainObject.gender).toBeNull();
     });
   });
 

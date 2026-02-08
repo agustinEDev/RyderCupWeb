@@ -9,7 +9,7 @@
  * flagcdn.com CDN images for consistent cross-browser rendering at zero bundle cost.
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 
 /**
  * Converts a country code to its flag emoji
@@ -144,18 +144,28 @@ export const canUseRFEG = (user) => {
  *   <CountryFlag countryCode="FR" style={{ width: '24px', height: 'auto' }} />
  */
 export const CountryFlag = ({ countryCode, className = '', style = {}, title = '' }) => {
-  if (!countryCode || typeof countryCode !== 'string') {
+  const [useFallback, setUseFallback] = useState(false);
+
+  const isValid = countryCode && typeof countryCode === 'string' && /^[A-Z]{2}$/.test(countryCode.trim().toUpperCase());
+
+  if (!isValid) {
     return null;
   }
 
   const code = countryCode.trim().toUpperCase();
-
-  // Validate: must be exactly 2 letters A-Z
-  if (!/^[A-Z]{2}$/.test(code)) {
-    return null;
-  }
-
   const lowerCode = code.toLowerCase();
+
+  if (useFallback) {
+    const fallback = getCountryFlag(code);
+    if (!fallback) return null;
+    return React.createElement('span', {
+      role: 'img',
+      'aria-label': title || code,
+      title: title || undefined,
+      className,
+      style: { display: 'inline-block', verticalAlign: 'middle', ...style },
+    }, fallback);
+  }
 
   return React.createElement('img', {
     src: `https://flagcdn.com/w40/${lowerCode}.png`,
@@ -167,15 +177,6 @@ export const CountryFlag = ({ countryCode, className = '', style = {}, title = '
     className,
     loading: 'lazy',
     style: { display: 'inline-block', verticalAlign: 'middle', ...style },
-    onError: (e) => {
-      const fallback = getCountryFlag(code);
-      if (fallback) {
-        const span = document.createElement('span');
-        span.textContent = fallback;
-        span.setAttribute('role', 'img');
-        span.setAttribute('aria-label', title || code);
-        e.target.replaceWith(span);
-      }
-    }
+    onError: () => setUseFallback(true),
   });
 };

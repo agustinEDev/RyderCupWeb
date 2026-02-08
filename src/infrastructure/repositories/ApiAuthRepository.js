@@ -48,6 +48,7 @@ class ApiAuthRepository extends IAuthRepository {
       email: userData.email.getValue(),
       password: userData.password.getValue(),
       country_code: userData.countryCode ? userData.countryCode.value() : null,
+      gender: userData.gender || null,
     };
 
     const data = await apiRequest('/api/v1/auth/register', {

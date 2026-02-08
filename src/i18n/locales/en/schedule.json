@@ -33,7 +33,12 @@
     "walkover": "Declare Walkover",
     "startMatch": "Start Match",
     "completeMatch": "Complete Match",
-    "viewDetail": "View Detail"
+    "viewDetail": "View Detail",
+    "result": "Result",
+    "resultWinner": "Winner: Team {{team}}",
+    "resultScore": "Score: {{score}}",
+    "resultReason": "Reason: {{reason}}",
+    "close": "Close"
   },
   "teams": {
     "title": "Team Assignment",

@@ -41,6 +41,9 @@ class ApiUserRepository extends IUserRepository {
       // Si countryCode es null, se envía null (permitir limpiar la nacionalidad)
       payload.country_code = updateData.countryCode;
     }
+    if (updateData.gender !== undefined) {
+      payload.gender = updateData.gender;
+    }
 
     const data = await apiRequest('/api/v1/users/profile', {
       method: 'PATCH',

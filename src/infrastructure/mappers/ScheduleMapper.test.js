@@ -64,10 +64,10 @@ describe('ScheduleMapper', () => {
         round_id: 'round-1',
         match_number: 1,
         team_a_players: [
-          { user_id: 'u1', playing_handicap: 12, tee_category: 'AMATEUR_MALE', strokes_received: [1, 3, 5] },
+          { user_id: 'u1', playing_handicap: 12, tee_category: 'AMATEUR', tee_gender: 'MALE', strokes_received: [1, 3, 5] },
         ],
         team_b_players: [
-          { user_id: 'u2', playing_handicap: 8, tee_category: 'AMATEUR_MALE', strokes_received: [] },
+          { user_id: 'u2', playing_handicap: 8, tee_category: 'AMATEUR', tee_gender: 'MALE', strokes_received: [] },
         ],
         status: 'SCHEDULED',
         handicap_strokes_given: 4,
@@ -85,7 +85,8 @@ describe('ScheduleMapper', () => {
       expect(dto.teamAPlayers).toHaveLength(1);
       expect(dto.teamAPlayers[0].userId).toBe('u1');
       expect(dto.teamAPlayers[0].playingHandicap).toBe(12);
-      expect(dto.teamAPlayers[0].teeCategory).toBe('AMATEUR_MALE');
+      expect(dto.teamAPlayers[0].teeCategory).toBe('AMATEUR');
+      expect(dto.teamAPlayers[0].teeGender).toBe('MALE');
       expect(dto.teamAPlayers[0].strokesReceived).toEqual([1, 3, 5]);
       expect(dto.teamBPlayers).toHaveLength(1);
       expect(dto.teamBPlayers[0].userId).toBe('u2');
@@ -100,12 +101,12 @@ describe('ScheduleMapper', () => {
         round_id: 'round-1',
         match_number: 2,
         team_a_players: [
-          { user_id: 'u1', playing_handicap: 10, tee_category: 'AMATEUR_MALE', strokes_received: [] },
-          { user_id: 'u2', playing_handicap: 14, tee_category: 'AMATEUR_MALE', strokes_received: [] },
+          { user_id: 'u1', playing_handicap: 10, tee_category: 'AMATEUR', tee_gender: 'MALE', strokes_received: [] },
+          { user_id: 'u2', playing_handicap: 14, tee_category: 'AMATEUR', tee_gender: 'MALE', strokes_received: [] },
         ],
         team_b_players: [
-          { user_id: 'u3', playing_handicap: 12, tee_category: 'AMATEUR_MALE', strokes_received: [] },
-          { user_id: 'u4', playing_handicap: 8, tee_category: 'AMATEUR_MALE', strokes_received: [] },
+          { user_id: 'u3', playing_handicap: 12, tee_category: 'AMATEUR', tee_gender: 'MALE', strokes_received: [] },
+          { user_id: 'u4', playing_handicap: 8, tee_category: 'AMATEUR', tee_gender: 'MALE', strokes_received: [] },
         ],
         status: 'SCHEDULED',
       };

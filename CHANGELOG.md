@@ -72,7 +72,7 @@ Capa completa de integración con los 11 endpoints del backend Sprint 2 para ges
 - **`CreateCompetitionUseCase.test.js`**: Fixture actualizado `handicap_type` → `play_mode`
 
 ### ✅ Tests
-- **~250 tests nuevos**: 1063 tests passing, 1 skipped (+ desde 849)
+- **~214 tests nuevos**: 1063 tests passing, 1 skipped (desde 849; 95 + 47 + 8 + 13 + 50 ≈ 213)
 - 6 test files para Value Objects (~95 tests)
 - 3 test files para Entities (~47 tests)
 - 1 test file para ScheduleMapper (~8 tests)
@@ -81,10 +81,11 @@ Capa completa de integración con los 11 endpoints del backend Sprint 2 para ges
 - Tests actualizados: HandicapSettings, Competition entity, CreateCompetitionUseCase
 
 ### 📦 Bundle & Performance
-- **Bundle size reducido en ~239 KB** (1619 KB → 1380 KB): Reemplazada librería `country-flag-icons` (SVGs incrustados) por imágenes CDN de [flagcdn.com](https://flagcdn.com)
+- **Bundle size reducido ~322 KB desde peak** (1619 KB peak → 1297 KB actual, build sin comprimir):
+  - Reemplazada librería `country-flag-icons` (239 KB de SVGs incrustados) por imágenes CDN de [flagcdn.com](https://flagcdn.com)
   - `CountryFlag` ahora renderiza `<img>` con `srcSet` para retina en vez de SVG components
   - Eliminada dependencia `axios` (no utilizada)
-- **CI bundle budget reducido**: 1600 KB → 1400 KB (warning: 1300 KB)
+- **CI bundle budget reducido**: 1600 KB → 1400 KB max, 1300 KB warning (tras eliminar 239 KB de SVGs)
 - **`useMemo` en `SchedulePage`**: `playerNameMap` envuelto en `useMemo` para evitar reconstrucciones innecesarias
 
 ### 🌐 i18n Fixes
@@ -107,9 +108,9 @@ Capa completa de integración con los 11 endpoints del backend Sprint 2 para ges
 - **Entities:** 3 nuevas
 - **Use Cases:** 11 nuevos
 - **Repository:** 1 interface + 1 implementation + 1 mapper
-- **Tests:** ~250 nuevos (1063 passing, 1 skipped)
+- **Tests:** ~214 nuevos (1063 passing, 1 skipped, desde 849)
 - **Traducciones:** 2 archivos nuevos + 10 archivos actualizados (EN/ES)
-- **Bundle:** 1297 KB (-322 KB desde peak)
+- **Bundle:** 1297 KB build sin comprimir (-322 KB desde peak de 1619 KB)
 
 ---
 

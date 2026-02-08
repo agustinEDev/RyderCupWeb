@@ -207,9 +207,15 @@ function AppContent() {
           </ProtectedRoute>
         } />
 
-        {/* Creator routes (v2.1.0 - Sprint 2) */}
+        {/* Schedule routes (v2.1.0 - Sprint 2) */}
+        {/* Creator route: full management. Player route: read-only (canManage=false) */}
         {/* Authorization is per-competition (handled by useUserRoles inside SchedulePage) */}
         <Route path="/creator/competitions/:id/schedule" element={
+          <ProtectedRoute>
+            <SchedulePage />
+          </ProtectedRoute>
+        } />
+        <Route path="/competitions/:id/schedule" element={
           <ProtectedRoute>
             <SchedulePage />
           </ProtectedRoute>

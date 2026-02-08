@@ -114,7 +114,8 @@
       "cancel": "Cancelar",
       "delete": "Eliminar",
       "request-to-join": "Solicitar Unirse",
-      "manageSchedule": "Gestionar Calendario"
+      "manageSchedule": "Gestionar Calendario",
+      "viewSchedule": "Ver Calendario"
     },
     "confirmations": {
       "activate": "¿Estás seguro de que quieres activar esta competición?",
@@ -237,6 +238,14 @@
     "IN_PROGRESS": "EN PROGRESO",
     "COMPLETED": "COMPLETADA",
     "CANCELLED": "CANCELADA"
+  },
+  "enrollment": {
+    "modalTitle": "Solicitar inscripción",
+    "teeCategoryLabel": "Categoría de tee preferida",
+    "teeCategoryHint": "Se usará para asignarte el tee adecuado en los partidos",
+    "noPreference": "Sin preferencia",
+    "confirm": "Confirmar",
+    "cancel": "Cancelar"
   },
   "enrollmentStatus": {
     "REQUESTED": "SOLICITADA",

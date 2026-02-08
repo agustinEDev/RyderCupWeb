@@ -30,6 +30,12 @@
       "nationalityOptional": "(Opcional)",
       "selectNationality": "Ninguna nacionalidad seleccionada",
       "rfegInfo": "Selecciona España (ES) para habilitar actualizaciones de hándicap RFEG",
+      "gender": "Género",
+      "genderPlaceholder": "Selecciona género",
+      "genderOptions": {
+        "MALE": "Masculino",
+        "FEMALE": "Femenino"
+      },
       "updating": "Actualizando...",
       "update": "Actualizar Información Personal"
     },

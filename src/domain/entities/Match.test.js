@@ -8,10 +8,10 @@ describe('Match', () => {
     roundId: 'round-1',
     matchNumber: 1,
     teamAPlayers: [
-      { userId: 'u1', playingHandicap: 12, teeCategory: 'AMATEUR_MALE', strokesReceived: [1, 3, 5] },
+      { userId: 'u1', playingHandicap: 12, teeCategory: 'AMATEUR', teeGender: 'MALE', strokesReceived: [1, 3, 5] },
     ],
     teamBPlayers: [
-      { userId: 'u2', playingHandicap: 8, teeCategory: 'AMATEUR_MALE', strokesReceived: [] },
+      { userId: 'u2', playingHandicap: 8, teeCategory: 'AMATEUR', teeGender: 'MALE', strokesReceived: [] },
     ],
     status: MatchStatus.SCHEDULED,
     handicapStrokesGiven: 4,
