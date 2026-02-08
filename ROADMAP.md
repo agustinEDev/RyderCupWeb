@@ -117,7 +117,7 @@ const CompetitionActions = ({ competitionId }) => {
 | Sprint   | Fechas          | Esfuerzo BE | Endpoints | Sync Point        | Estado        | Versión  |
 |----------|-----------------|-------------|-----------|-------------------|---------------|----------|
 | Sprint 1 | 27 Ene - 6 Feb  | 60h         | 10        | ✅ Viernes 30 Ene | ✅ COMPLETADO | v2.0.0   |
-| Sprint 2 | 3 Feb - 17 Feb  | 70h         | 11        | ✅ Viernes 4 Feb  | 🔄 EN PROGRESO | v2.1.0   |
+| Sprint 2 | 3 Feb - 17 Feb  | 70h         | 11        | ✅ Viernes 4 Feb  | ✅ COMPLETADO  | v2.1.0   |
 | Sprint 3 | 18 Feb - 24 Feb | 48h         | 5         | 🔄 Viernes 20 Feb | 📋 Pendiente  | v2.0.5   |
 | Sprint 4 | 25 Feb - 10 Mar | 92h         | 4         | 🔄 Viernes 6 Mar  | 📋 Pendiente  | v2.0.6   |
 | Sprint 5 | 11 Mar - 17 Mar | 60h         | 2         | 🔄 Viernes 13 Mar | 📋 Pendiente  | v2.0.7   |
@@ -272,7 +272,7 @@ Migrar de arquitectura de proxy inverso a subdominios directos para mejorar rend
 > **Estado:** 🔄 En progreso (Backend Integration Layer completado el 6 Feb 2026)
 > **Branch:** `feature/sprint-2-schedule-matches`
 > **Esfuerzo Frontend:** ~30h (backend integration) + pendiente UI
-> **Tests:** ~250 tests nuevos (1066 total)
+> **Tests:** ~214 tests nuevos (1088 total passing, 1 skipped)
 
 #### 🎯 Objetivos
 
@@ -307,23 +307,33 @@ Migrar de arquitectura de proxy inverso a subdominios directos para mejorar rend
    - DI container actualizado con 11 use cases
    - Namespace `schedule` registrado (EN/ES)
 
-#### 📋 Pendiente: UI Components
+#### ✅ Completado: UI Components (Sprint 2)
 
-- Schedule configuration panel
-- Round cards con drag-and-drop
-- Match creation wizard
-- Match detail modal
-- Manual status control (start, complete, walkover)
-- Team assignment UI
+- ✅ Schedule page completa (`/creator/competitions/:id/schedule`)
+- ✅ Vista read-only para jugadores inscritos (`/competitions/:id/schedule`)
+- ✅ Round cards con expand/collapse
+- ✅ Match cards con acciones (start, complete, walkover, reassign)
+- ✅ Match detail modal con resultado formateado (walkover/completed)
+- ✅ Team assignment section
+- ✅ Walkover modal con equipo ganador + razón
+- ✅ Reassign players modal
+- ✅ Enrollment request modal con selector de tee category
+- ✅ Botón "View Schedule" para jugadores inscritos en CompetitionDetail
 
-#### 📊 Estadisticas del Backend Integration Layer
+#### 📋 Pendiente
+
+- Manual pairings UI (generate matches solo funciona en modo automático)
+
+#### 📊 Estadisticas Sprint 2
 
 - **Archivos creados:** ~30
-- **Archivos modificados:** ~12
+- **Archivos modificados:** ~37
 - **Value Objects:** 6 nuevos
 - **Entities:** 3 nuevas
 - **Use Cases:** 11 nuevos
-- **Tests:** ~250 nuevos (1066 total, 100% passing)
+- **UI Components:** 8 nuevos (schedule)
+- **Tests:** ~214 nuevos (1088 total passing, 1 skipped)
+- **Bundle:** 1297 KB build sin comprimir (-322 KB desde peak de 1619 KB)
 
 ---
 
@@ -461,10 +471,10 @@ Aquí están las confirmaciones y respuestas a vuestras preguntas:
 
 ### Metricas Clave
 
-- **Tests:** 1066 passing, 1 skipped, 0 failed ✅
+- **Tests:** 1088 passing, 1 skipped, 0 failed ✅
 - **Coverage:** ≥85% lines, ≥75% functions ✅
-- **Bundle:** ~920 KB gzipped ✅ (target: ≤1000 KB)
-- **Build time:** 6.11s ⚡
+- **Bundle:** 1297 KB sin comprimir ✅ (budget: ≤1400 KB, warning: 1300 KB)
+- **Build time:** ~6s ⚡
 - **Security:** 0 vulnerabilities ✅
 - **OWASP Score:** 9.2/10 ✅
 
@@ -518,5 +528,5 @@ Aquí están las confirmaciones y respuestas a vuestras preguntas:
 
 ---
 
-**Ultima revision:** 6 Feb 2026 (Sprint 2 Schedule Backend Integration Layer completado)
-**Proxima revision:** Fin Sprint 2 UI (14 Feb 2026)
+**Ultima revision:** 8 Feb 2026 (Sprint 2 Schedule UI completado)
+**Proxima revision:** Inicio Sprint 3 (18 Feb 2026)

@@ -441,6 +441,8 @@ cp .env.example .env
    - Test crear ronda y verificar en schedule
    - Test generar partidos para una ronda
    - Test ciclo de vida de partido (SCHEDULED -> IN_PROGRESS -> COMPLETED)
-   - Test declarar walkover
+   - Test declarar walkover y verificar resultado formateado (score, winner, reason)
    - Test asignar equipos (manual/automatico)
    - Test reasignar jugadores en un partido
+   - Test enrollment con tee category (EnrollmentRequestModal flow)
+   - Test jugador inscrito accede a `/competitions/:id/schedule` (vista read-only, sin botones de gestión)
