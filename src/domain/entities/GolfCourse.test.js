@@ -13,14 +13,14 @@ describe('GolfCourse', () => {
   beforeEach(() => {
     validTees = [
       new Tee({
-        teeCategory: 'CHAMPIONSHIP_MALE',
+        teeCategory: 'CHAMPIONSHIP',
         identifier: 'Black',
         courseRating: 75.5,
         slopeRating: 140,
         gender: 'MALE'
       }),
       new Tee({
-        teeCategory: 'AMATEUR_MALE',
+        teeCategory: 'AMATEUR',
         identifier: 'Blue',
         courseRating: 72.0,
         slopeRating: 130,
@@ -105,11 +105,11 @@ describe('GolfCourse', () => {
         ...validGolfCourseData,
         tees: [
           {
-            tee_category: 'AMATEUR_MALE',
+            tee_category: 'AMATEUR',
             identifier: 'White',
             course_rating: 70.0,
             slope_rating: 120,
-            gender: 'MALE'
+            tee_gender: 'MALE'
           }
         ]
       };
@@ -117,7 +117,7 @@ describe('GolfCourse', () => {
       const course = new GolfCourse(dataWithTeeDTOs);
 
       expect(course.tees[0]).toBeInstanceOf(Tee);
-      expect(course.tees[0].teeCategory).toBe('AMATEUR_MALE');
+      expect(course.tees[0].teeCategory).toBe('AMATEUR');
     });
 
     it('should convert hole DTOs to Hole instances', () => {

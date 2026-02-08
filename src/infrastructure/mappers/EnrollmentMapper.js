@@ -59,6 +59,7 @@ class EnrollmentMapper {
       status: EnrollmentStatus.fromString(apiData.status),
       teamId: apiData.team_id || null,
       customHandicap: apiData.custom_handicap !== null ? apiData.custom_handicap : null,
+      teeCategory: apiData.tee_category || null,
       createdAt: apiData.created_at,
       updatedAt: apiData.updated_at,
     });
@@ -103,6 +104,7 @@ class EnrollmentMapper {
       status: enrollment.status.toString(),
       team_id: enrollment.teamId,
       custom_handicap: enrollment.customHandicap,
+      tee_category: enrollment.teeCategory || null,
       created_at: enrollment.createdAt.toISOString(),
       updated_at: enrollment.updatedAt.toISOString(),
     };
@@ -134,6 +136,7 @@ class EnrollmentMapper {
       status: enrollment.status.toString(),
       teamId: enrollment.teamId,
       customHandicap: enrollment.customHandicap,
+      teeCategory: enrollment.teeCategory || null,
       createdAt: enrollment.createdAt.toISOString(),
       updatedAt: enrollment.updatedAt.toISOString(),
 
@@ -166,6 +169,7 @@ class EnrollmentMapper {
         simpleDTO.userEmail = apiData.user.email;
         simpleDTO.userHandicap = apiData.user.handicap;
         simpleDTO.userCountryCode = apiData.user.country_code;
+        simpleDTO.userGender = apiData.user.gender || null;
       }
     }
 

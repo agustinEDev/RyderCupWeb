@@ -39,7 +39,11 @@
     "DEVICE_NOT_FOUND": "Dispositivo no encontrado",
     "DEVICE_ALREADY_REVOKED": "Dispositivo ya revocado",
     "FAILED_TO_REVOKE_DEVICE": "Error al revocar dispositivo",
+    "DEVICE_ID_REQUIRED": "Se requiere el ID del dispositivo",
     "FAILED_TO_LOAD_DEVICES": "Error al cargar dispositivos"
+  },
+  "success": {
+    "deviceRevoked": "Dispositivo revocado correctamente"
   },
   "aria": {
     "closeErrorMessage": "Cerrar mensaje de error"

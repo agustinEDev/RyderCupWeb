@@ -7,6 +7,136 @@ y este proyecto adhiere a [Versionado Semántico](https://semver.org/lang/es/).
 
 ## [Unreleased]
 
+### 🎯 Sprint 2: Schedule & Matches - Backend Integration Layer
+
+Capa completa de integración con los 11 endpoints del backend Sprint 2 para gestión de rondas, partidos y equipos. Incluye breaking change de `handicap_type` a `play_mode`.
+
+### ⚠️ Breaking Changes
+- **`play_mode` reemplaza `handicap_type`/`handicap_percentage`**: El backend ahora usa un único campo `play_mode` (SCRATCH/HANDICAP) en vez de `handicap_type` (SCRATCH/PERCENTAGE) + `handicap_percentage` (90/95/100). El porcentaje se gestiona ahora a nivel de ronda (`allowance_percentage`), no de competición.
+  - `HandicapSettings` value object: Renombrado enum `HandicapType` a `PlayModeType` con valores `SCRATCH`/`HANDICAP` (antes `SCRATCH`/`PERCENTAGE`). Eliminado campo `percentage`.
+  - `CompetitionMapper`: Mapea `play_mode` en vez de `handicap_type`/`handicap_percentage` (con fallback retrocompatible)
+  - `CreateCompetition.jsx`: Formulario actualizado con selector SCRATCH/HANDICAP (eliminado selector de porcentaje)
+  - `CompetitionDetail.jsx`: Display actualizado para `playMode`
+  - Traducciones EN/ES: Claves `handicapType`/`handicapPercentage` reemplazadas por `playMode`
+
+### ✨ Added
+
+#### Domain Layer - Value Objects (6 nuevos)
+- **`SessionType`**: Enum MORNING/AFTERNOON/EVENING con instancias frozen
+- **`MatchFormat`**: Enum SINGLES/FOURBALL/FOURSOMES con `playersPerTeam()` (1 o 2)
+- **`HandicapMode`**: Enum STROKE_PLAY/MATCH_PLAY
+- **`RoundStatus`**: Máquina de estados PENDING_TEAMS → PENDING_MATCHES → SCHEDULED → IN_PROGRESS → COMPLETED con `canTransitionTo()`, `isEditable()`
+- **`MatchStatus`**: Máquina de estados SCHEDULED → IN_PROGRESS → COMPLETED, WALKOVER con `canTransitionTo()`, `isPlayable()`, `isFinal()`
+- **`AllowancePercentage`**: Valor nullable 50-100 en incrementos de 5, con `isCustom()`
+
+#### Domain Layer - Entities (3 nuevas)
+- **`Round`**: Campos privados, `isEditable()`, `hasMatches()`, `matchCount()`, copia defensiva de matches
+- **`Match`**: Campos privados, métodos de estado (`isScheduled()`, `canStart()`, `canComplete()`), copia defensiva de jugadores
+- **`TeamAssignmentResult`**: `isManual()`, `isAutomatic()`, `getTeamSize()`
+
+#### Domain Layer - Repository Interface
+- **`IScheduleRepository`**: Interfaz con 11 métodos mapeados a endpoints del backend
+
+#### Infrastructure Layer
+- **`ScheduleMapper`**: Anti-corruption layer con `toScheduleDTO()`, `toRoundDTO()`, `toMatchDTO()`, `toTeamAssignmentDTO()`. Maneja campos planos de jugadores (team_a_player_1_id, etc.)
+- **`ApiScheduleRepository`**: Implementación REST de los 11 endpoints usando `apiRequest()`
+
+#### Application Layer - Use Cases (11 nuevos)
+- **`GetScheduleUseCase`**: GET /competitions/{id}/schedule
+- **`ConfigureScheduleUseCase`**: POST /competitions/{id}/schedule/configure
+- **`AssignTeamsUseCase`**: POST /competitions/{id}/teams
+- **`CreateRoundUseCase`**: POST /competitions/{id}/rounds (con validación de campos requeridos)
+- **`UpdateRoundUseCase`**: PUT /rounds/{id}
+- **`DeleteRoundUseCase`**: DELETE /rounds/{id}
+- **`GenerateMatchesUseCase`**: POST /rounds/{id}/matches/generate
+- **`GetMatchDetailUseCase`**: GET /matches/{id}
+- **`UpdateMatchStatusUseCase`**: PUT /matches/{id}/status
+- **`DeclareWalkoverUseCase`**: POST /matches/{id}/walkover (con validación equipo A/B y razón)
+- **`ReassignPlayersUseCase`**: PUT /matches/{id}/players (con validación arrays no vacíos)
+
+#### Composition Root
+- Registrado `ApiScheduleRepository` + 11 use cases en DI container (`src/composition/index.js`)
+
+#### Internationalization
+- Nuevo namespace `schedule` registrado en `i18n/config.js`
+- **EN**: `src/i18n/locales/en/schedule.json` - Traducciones completas (rounds, matches, teams, status, formats, sessions, errors, success)
+- **ES**: `src/i18n/locales/es/schedule.json` - Traducciones completas en español
+
+### 🔧 Changed
+- **`HandicapSettings.js`**: `PlayModeType` (SCRATCH/HANDICAP) reemplaza `HandicapType` (SCRATCH/PERCENTAGE). Alias retrocompatible `HandicapType = PlayModeType`
+- **`CompetitionMapper.js`**: `toDomain()` lee `play_mode` (fallback a `handicap_type`), `toDTO()` escribe `play_mode`, `toSimpleDTO()` escribe `playMode`
+- **`CreateCompetition.jsx`**: `formData.playMode` reemplaza `handicapType`/`handicapPercentage`. Payload envía `play_mode`
+- **`CompetitionDetail.jsx`**: Muestra `playMode` en vez de `handicapType`/`handicapPercentage`
+- **`competitions.json` (EN/ES)**: Claves `handicapType`/`handicapPercentage` → `playMode`/`handicap`
+- **`UpdateCompetitionUseCase.js`**: JSDoc actualizado para `play_mode`
+- **`CreateCompetitionUseCase.test.js`**: Fixture actualizado `handicap_type` → `play_mode`
+
+### ✅ Tests
+- **~238 tests nuevos**: 1087 tests passing, 1 skipped (desde 849; backend: 95 + 47 + 8 + 13 + 50 ≈ 213, UI + fixes: ~25)
+- 6 test files para Value Objects (~95 tests)
+- 3 test files para Entities (~47 tests)
+- 1 test file para ScheduleMapper (~8 tests)
+- 1 test file para ApiScheduleRepository (~13 tests)
+- 11 test files para Use Cases (~50 tests)
+- Tests actualizados: HandicapSettings, Competition entity, CreateCompetitionUseCase
+
+### 📦 Bundle & Performance
+- **Bundle size reducido ~311 KB desde peak** (1619 KB peak → 1308 KB actual, build sin comprimir):
+  - Reemplazada librería `country-flag-icons` (239 KB de SVGs incrustados) por imágenes CDN de [flagcdn.com](https://flagcdn.com)
+  - `CountryFlag` ahora renderiza `<img>` con `srcSet` para retina en vez de SVG components
+  - Eliminada dependencia `axios` (no utilizada)
+- **CI bundle budget**: 1400 KB max, 1300 KB warning (tras eliminar 239 KB de SVGs)
+- **`useMemo` en `SchedulePage`**: `playerNameMap` envuelto en `useMemo` para evitar reconstrucciones innecesarias
+
+### 🌐 i18n Fixes
+- **Corregidos ~30 toast messages hardcodeados** que causaban mezcla de idiomas (castellano/inglés):
+  - `useEditProfile.jsx`: 21 mensajes hardcodeados → claves i18n (`toasts.*` en namespace `profile`)
+  - `useInactivityLogout.jsx`: 5 mensajes hardcodeados en español → claves i18n (`inactivity.*` en namespace `auth`)
+  - `deviceRevocationLogout.js`: Detección manual de idioma (localStorage/navigator) → `i18next.t()` con namespace `auth`
+  - `useDeviceManagement.js`: 2 mensajes hardcodeados → claves i18n (namespace `devices`)
+  - `CreateCompetition.jsx`: Eliminados fallbacks redundantes `|| 'texto'` en 2 toasts
+- **Migración de claves plural legacy**: `_plural` → `_one`/`_other` (formato i18next v4) en namespaces `schedule` y `competitions`
+- **Nuevas traducciones EN/ES**:
+  - `profile.json`: 18 claves en sección `toasts`
+  - `auth.json`: `errors.sessionExpired`, `errors.sessionEnded`, sección `inactivity` (5 claves)
+  - `devices.json`: `errors.DEVICE_ID_REQUIRED`, `success.deviceRevoked`
+
+### 📊 Estadísticas
+- **Archivos creados:** ~30
+- **Archivos modificados:** ~37
+- **Value Objects:** 6 nuevos
+- **Entities:** 3 nuevas
+- **Use Cases:** 11 nuevos
+- **Repository:** 1 interface + 1 implementation + 1 mapper
+- **Tests:** ~238 nuevos (1087 passing, 1 skipped, desde 849)
+- **Traducciones:** 2 archivos nuevos + 10 archivos actualizados (EN/ES)
+- **Bundle:** 1308 KB build sin comprimir (-311 KB desde peak de 1619 KB)
+
+---
+
+## [2.0.5] - 2026-02-05
+
+### 🐛 Hotfix: Golf Courses UI & Admin Fixes
+
+Correcciones de UI y accesibilidad para la gestión de campos de golf.
+
+### ✨ Added
+- **Translations**: Añadida clave "tees" al namespace `competitions` (EN/ES)
+- **Error Reporting**: Integración de Sentry en `LazyLoadErrorBoundary`
+  - Reporta errores con user agent, platform y component stack
+  - Sección expandible "Technical details" para debugging en producción
+
+### 🐛 Fixed
+- **Golf Courses UI**: Layout responsive para campos en detalle de competición
+  - Layout móvil (stacked) y desktop (horizontal) separados
+  - Badges de tees, par y tipo de campo ahora visibles
+- **Admin Edit Button**: Corrección de verificación `isAdmin`
+  - Ahora verifica `user.is_admin` (formato del backend) además de `user.roles`
+  - Botón de edición ahora visible para administradores en `/admin/golf-courses`
+
+### 📚 References
+- PR #120: `hotfix/golf-courses-responsive-ui`
+
 ---
 
 ## [2.0.4] - 2026-02-04

@@ -20,6 +20,7 @@
  * @see src/config/dependencies.py:576-583 (backend)
  */
 
+import i18next from 'i18next';
 import customToast from './toast';
 
 // localStorage key to track if we've already handled device revocation
@@ -173,38 +174,22 @@ const handleLogout = (errorData = null, reason = 'unknown') => {
     }
   }
 
-  // Get user's language preference
-  const storedLang = localStorage.getItem('i18nextLng');
-  const detectedLang = (storedLang || navigator.language)?.startsWith('es') ? 'es' : 'en';
-
-  // Choose message and icon based on reason
-  let messages;
+  // Choose message and icon based on reason using i18n
+  let messageKey;
   let icon;
 
   if (reason === 'revocation') {
-    // Explicit device revocation - security event
-    messages = {
-      es: 'Tu sesión ha sido cerrada. Este dispositivo fue revocado desde otro dispositivo.',
-      en: 'Your session has been closed. This device was revoked from another device.',
-    };
+    messageKey = 'errors.deviceRevoked';
     icon = '🔒';
   } else if (reason === 'expiration') {
-    // Session expired - normal event
-    messages = {
-      es: 'Tu sesión ha expirado. Por favor, inicia sesión nuevamente.',
-      en: 'Your session has expired. Please sign in again.',
-    };
+    messageKey = 'errors.sessionExpired';
     icon = '⏱️';
   } else {
-    // Unknown reason - neutral message
-    messages = {
-      es: 'Tu sesión ha terminado. Por favor, inicia sesión nuevamente.',
-      en: 'Your session has ended. Please sign in again.',
-    };
+    messageKey = 'errors.sessionEnded';
     icon = 'ℹ️';
   }
 
-  const message = messages[detectedLang] || messages.en;
+  const message = i18next.t(messageKey, { ns: 'auth' });
 
   customToast.error(message, {
     duration: 8000,

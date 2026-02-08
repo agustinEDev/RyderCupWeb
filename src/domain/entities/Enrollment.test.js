@@ -534,6 +534,101 @@ describe('Enrollment', () => {
     });
   });
 
+  describe('teeCategory field', () => {
+    it('should default teeCategory to null', () => {
+      const enrollment = Enrollment.request({
+        enrollmentId: mockEnrollmentId,
+        competitionId: mockCompetitionId,
+        userId: mockUserId,
+      });
+
+      expect(enrollment.teeCategory).toBeNull();
+    });
+
+    it('should accept teeCategory in constructor', () => {
+      const enrollment = new Enrollment(createValidEnrollmentProps({
+        teeCategory: 'AMATEUR',
+      }));
+
+      expect(enrollment.teeCategory).toBe('AMATEUR');
+    });
+
+    it('should include teeCategory in toPersistence()', () => {
+      const enrollment = new Enrollment(createValidEnrollmentProps({
+        teeCategory: 'SENIOR',
+      }));
+
+      const persisted = enrollment.toPersistence();
+      expect(persisted.teeCategory).toBe('SENIOR');
+    });
+
+    it('should propagate teeCategory through approve()', () => {
+      const enrollment = new Enrollment(createValidEnrollmentProps({
+        teeCategory: 'CHAMPIONSHIP',
+      }));
+
+      const approved = enrollment.approve();
+      expect(approved.teeCategory).toBe('CHAMPIONSHIP');
+    });
+
+    it('should propagate teeCategory through reject()', () => {
+      const enrollment = new Enrollment(createValidEnrollmentProps({
+        teeCategory: 'AMATEUR',
+      }));
+
+      const rejected = enrollment.reject();
+      expect(rejected.teeCategory).toBe('AMATEUR');
+    });
+
+    it('should propagate teeCategory through cancel()', () => {
+      const enrollment = new Enrollment(createValidEnrollmentProps({
+        teeCategory: 'JUNIOR',
+      }));
+
+      const cancelled = enrollment.cancel();
+      expect(cancelled.teeCategory).toBe('JUNIOR');
+    });
+
+    it('should propagate teeCategory through withdraw()', () => {
+      const enrollment = new Enrollment(createValidEnrollmentProps({
+        status: EnrollmentStatus.approved(),
+        teeCategory: 'FORWARD',
+      }));
+
+      const withdrawn = enrollment.withdraw();
+      expect(withdrawn.teeCategory).toBe('FORWARD');
+    });
+
+    it('should propagate teeCategory through assignToTeam()', () => {
+      const enrollment = new Enrollment(createValidEnrollmentProps({
+        status: EnrollmentStatus.approved(),
+        teeCategory: 'SENIOR',
+      }));
+
+      const assigned = enrollment.assignToTeam('1');
+      expect(assigned.teeCategory).toBe('SENIOR');
+    });
+
+    it('should propagate teeCategory through setCustomHandicap()', () => {
+      const enrollment = new Enrollment(createValidEnrollmentProps({
+        teeCategory: 'AMATEUR',
+      }));
+
+      const updated = enrollment.setCustomHandicap(18.0);
+      expect(updated.teeCategory).toBe('AMATEUR');
+    });
+
+    it('should propagate teeCategory through removeCustomHandicap()', () => {
+      const enrollment = new Enrollment(createValidEnrollmentProps({
+        teeCategory: 'CHAMPIONSHIP',
+        customHandicap: 15.0,
+      }));
+
+      const updated = enrollment.removeCustomHandicap();
+      expect(updated.teeCategory).toBe('CHAMPIONSHIP');
+    });
+  });
+
   describe('Immutability', () => {
     it('should return new instances for all state changes', () => {
       const original = Enrollment.request({

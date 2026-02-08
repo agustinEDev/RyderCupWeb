@@ -31,25 +31,44 @@ jobs:
         env:
           GPG_KEYS: ${{ secrets.GPG_PUBLIC_KEYS }}
         run: |
+          # Import GitHub's web-flow key (signs commits made via GitHub UI: merges, squash, rebase)
+          echo "🔑 Downloading GitHub web-flow GPG key..."
+          GPG_TMP=$(mktemp)
+          if ! curl -sSL --fail -o "$GPG_TMP" https://github.com/web-flow.gpg; then
+            echo "❌ Failed to download GitHub web-flow GPG key"
+            rm -f "$GPG_TMP"
+            exit 1
+          fi
+
+          if [ ! -s "$GPG_TMP" ]; then
+            echo "❌ Downloaded GPG key file is empty"
+            rm -f "$GPG_TMP"
+            exit 1
+          fi
+
+          echo "🔑 Importing GitHub web-flow GPG key..."
+          if ! gpg --import "$GPG_TMP"; then
+            echo "❌ Failed to import GitHub web-flow GPG key"
+            rm -f "$GPG_TMP"
+            exit 1
+          fi
+
+          rm -f "$GPG_TMP"
+          echo "✅ GitHub web-flow GPG key imported successfully"
+
+          # Import team GPG keys from repository secret
           if [ -n "$GPG_KEYS" ]; then
             echo "🔑 Importing team GPG keys..."
             echo "$GPG_KEYS" | gpg --import
           else
-            echo "⚠️ GPG_PUBLIC_KEYS secret not found. Skipping key import."
+            echo "⚠️ GPG_PUBLIC_KEYS secret not found. Only GitHub web-flow key imported."
           fi
 
       - name: Verify commit signature
         run: |
           COMMIT=$(git rev-parse HEAD)
 
-          # Skip verification for GitHub's automatic merge commits (PR testing)
-          PARENT_COUNT=$(git rev-list --parents -n 1 $COMMIT | wc -w)
-          if [ $PARENT_COUNT -gt 2 ]; then
-            echo "⚠️ Skipping verification for GitHub merge commit $COMMIT (automatic PR merge)"
-            exit 0
-          fi
-
-          # Soft-fail check: Skip if keys are not configured yet (to avoid blocking user immediately)
+          # Soft-fail check: Skip if team keys are not configured yet
           if [ -z "${{ secrets.GPG_PUBLIC_KEYS }}" ]; then
              echo "⚠️ GPG_PUBLIC_KEYS secret not configured. Skipping verification."
              exit 0
@@ -59,7 +78,6 @@ jobs:
             echo "✅ Commit $COMMIT signature verified"
           else
             echo "❌ Commit $COMMIT is NOT signed or signature is invalid"
-            # Strict mode: Uncomment to fail build
             exit 1
           fi
 
@@ -582,10 +600,9 @@ jobs:
           echo "size_kb=$TOTAL_SIZE_KB" >> $GITHUB_OUTPUT
 
           # Define budget (in KB)
-          # Increased from 1000 KB to accommodate SVG country flags (~239 KB)
-          # which provide better cross-browser rendering than emoji flags
-          MAX_BUNDLE_SIZE_KB=1500
-          WARNING_THRESHOLD_KB=1400
+          # v2.1: Reduced from 1600 KB to 1400 KB after replacing country-flag-icons (239 KB) with CDN images
+          MAX_BUNDLE_SIZE_KB=1400
+          WARNING_THRESHOLD_KB=1300
 
           # List all bundles with sizes
           echo ""

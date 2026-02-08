@@ -13,28 +13,41 @@ import { onAuthEvent, EVENTS } from './utils/broadcastAuth';
 import { useLogout } from './hooks/useLogout';
 import { useDeviceRevocationMonitor } from './hooks/useDeviceRevocationMonitor';
 
-// Lazy loading de páginas para reducir bundle inicial
-const Landing = lazy(() => import('./pages/Landing'));
-const Login = lazy(() => import('./pages/Login'));
-const Register = lazy(() => import('./pages/Register'));
-const VerifyEmail = lazy(() => import('./pages/VerifyEmail'));
-const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
-const ResetPassword = lazy(() => import('./pages/ResetPassword'));
-const Dashboard = lazy(() => import('./pages/Dashboard'));
-const Profile = lazy(() => import('./pages/Profile'));
-const EditProfile = lazy(() => import('./pages/EditProfile'));
-const DeviceManagement = lazy(() => import('./pages/DeviceManagement'));
-const Competitions = lazy(() => import('./pages/Competitions'));
-const CreateCompetition = lazy(() => import('./pages/CreateCompetition'));
-const CompetitionDetail = lazy(() => import('./pages/CompetitionDetail'));
-const BrowseCompetitions = lazy(() => import('./pages/BrowseCompetitions'));
+// Lazy loading con retry automático para fallos de red transitorios
+// Si el primer import() falla, reintenta tras 1.5s antes de propagar el error
+// al LazyLoadErrorBoundary (que maneja la recarga de página)
+function lazyWithRetry(importFn) {
+  return lazy(() =>
+    importFn().catch(() =>
+      new Promise(resolve => setTimeout(resolve, 1500)).then(() => importFn())
+    )
+  );
+}
+
+const Landing = lazyWithRetry(() => import('./pages/Landing'));
+const Login = lazyWithRetry(() => import('./pages/Login'));
+const Register = lazyWithRetry(() => import('./pages/Register'));
+const VerifyEmail = lazyWithRetry(() => import('./pages/VerifyEmail'));
+const ForgotPassword = lazyWithRetry(() => import('./pages/ForgotPassword'));
+const ResetPassword = lazyWithRetry(() => import('./pages/ResetPassword'));
+const Dashboard = lazyWithRetry(() => import('./pages/Dashboard'));
+const Profile = lazyWithRetry(() => import('./pages/Profile'));
+const EditProfile = lazyWithRetry(() => import('./pages/EditProfile'));
+const DeviceManagement = lazyWithRetry(() => import('./pages/DeviceManagement'));
+const Competitions = lazyWithRetry(() => import('./pages/Competitions'));
+const CreateCompetition = lazyWithRetry(() => import('./pages/CreateCompetition'));
+const CompetitionDetail = lazyWithRetry(() => import('./pages/CompetitionDetail'));
+const BrowseCompetitions = lazyWithRetry(() => import('./pages/BrowseCompetitions'));
 
 // Admin pages (v2.1.0 - Sprint 1)
-const GolfCourses = lazy(() => import('./pages/admin/GolfCourses'));
-const PendingGolfCourses = lazy(() => import('./pages/admin/PendingGolfCourses'));
+const GolfCourses = lazyWithRetry(() => import('./pages/admin/GolfCourses'));
+const PendingGolfCourses = lazyWithRetry(() => import('./pages/admin/PendingGolfCourses'));
+
+// Creator pages (v2.1.0 - Sprint 2)
+const SchedulePage = lazyWithRetry(() => import('./pages/creator/SchedulePage'));
 
 // Error pages
-const Unauthorized = lazy(() => import('./pages/public/Unauthorized'));
+const Unauthorized = lazyWithRetry(() => import('./pages/public/Unauthorized'));
 
 // ============================================
 // SENTRY ROUTING INSTRUMENTATION
@@ -66,6 +79,12 @@ function AppContent() {
 
   const isPublicRoute = PUBLIC_ROUTES.includes(location.pathname) ||
                        location.pathname.startsWith('/reset-password/');
+
+  // Limpiar flag de error de lazy loading tras navegación exitosa
+  // Asegura que la auto-recarga funcione en cada despliegue, no solo el primero
+  useEffect(() => {
+    sessionStorage.removeItem('lazy_load_error_reloaded');
+  }, [location.pathname]);
 
   // Establecer contexto de usuario en Sentry si está autenticado (via httpOnly cookie)
   useEffect(() => {
@@ -185,6 +204,20 @@ function AppContent() {
             <RoleGuard allowedRoles="ADMIN">
               <PendingGolfCourses />
             </RoleGuard>
+          </ProtectedRoute>
+        } />
+
+        {/* Schedule routes (v2.1.0 - Sprint 2) */}
+        {/* Creator route: full management. Player route: read-only (canManage=false) */}
+        {/* Authorization is per-competition (handled by useUserRoles inside SchedulePage) */}
+        <Route path="/creator/competitions/:id/schedule" element={
+          <ProtectedRoute>
+            <SchedulePage />
+          </ProtectedRoute>
+        } />
+        <Route path="/competitions/:id/schedule" element={
+          <ProtectedRoute>
+            <SchedulePage />
           </ProtectedRoute>
         } />
 

@@ -68,8 +68,7 @@ const CreateCompetition = () => {
     golfCourses: [],
 
     // RyderCup Settings
-    handicapType: 'SCRATCH',
-    handicapPercentage: '100',
+    playMode: 'HANDICAP',
     numberOfPlayers: undefined,
     teamAssignment: 'manual',
     playerHandicap: 'user'
@@ -168,8 +167,7 @@ const CreateCompetition = () => {
           showAdjacentCountry1: !!adjacentCountry1,
           showAdjacentCountry2: !!adjacentCountry2,
           golfCourses: golfCoursesData,
-          handicapType: competition.handicapType || 'SCRATCH',
-          handicapPercentage: competition.handicapPercentage?.toString() || '100',
+          playMode: competition.playMode || 'HANDICAP',
           numberOfPlayers: competition.maxPlayers || undefined,
           teamAssignment: competition.teamAssignment?.toLowerCase() || 'manual',
           playerHandicap: 'user' // Default value, not stored in competition
@@ -179,7 +177,7 @@ const CreateCompetition = () => {
 
       } catch (error) {
         console.error('Error loading competition:', error);
-        customToast.error(t('edit.errorLoading') || 'Error loading competition');
+        customToast.error(t('edit.errorLoading'));
         navigate('/competitions');
       } finally {
         setLoadingCompetition(false);
@@ -256,11 +254,10 @@ const CreateCompetition = () => {
 
     if (message.text) setMessage({ type: '', text: '' });
 
-    if (name === 'handicapType' && value === 'SCRATCH') {
+    if (name === 'playMode') {
       setFormData(prev => ({
         ...prev,
-        handicapType: value,
-        handicapPercentage: '100'
+        playMode: value
       }));
     }
   };
@@ -466,20 +463,16 @@ const CreateCompetition = () => {
         end_date: formData.endDate,
         main_country: formData.country?.code,
         countries: countries,
-        handicap_type: formData.handicapType.toUpperCase(),
+        play_mode: formData.playMode.toUpperCase(),
         number_of_players: numPlayers,
         team_assignment: formData.teamAssignment.toUpperCase()
       };
-
-      if (formData.handicapType === 'PERCENTAGE') {
-        payload.handicap_percentage = Number.parseInt(formData.handicapPercentage);
-      }
 
       if (isEditMode) {
         // EDIT MODE: Update existing competition
         await updateCompetitionUseCase.execute(competitionId, payload);
 
-        customToast.success(t('edit.success') || 'Competition updated successfully');
+        customToast.success(t('edit.success'));
 
         // Navigate to competition detail
         navigationTimerRef.current = setTimeout(() => {
@@ -1032,65 +1025,22 @@ const CreateCompetition = () => {
                 </div>
 
                 <div className="space-y-4">
-                  {/* Handicap Type */}
+                  {/* Play Mode */}
                   <div>
-                    <span className="block text-sm font-medium text-gray-700 mb-2">
-                      {t('create.handicapType')}
-                    </span>
-                    <div className="flex gap-4">
-                      <input
-                        id="handicapType-scratch"
-                        type="radio"
-                        name="handicapType"
-                        value="SCRATCH"
-                        checked={formData.handicapType === 'SCRATCH'}
-                        onChange={handleInputChange}
-                        className="w-4 h-4 text-primary focus:ring-primary"
-                      />
-                      <label htmlFor="handicapType-scratch" className="flex items-center gap-2 cursor-pointer">
-                        <span className="text-sm text-gray-700">{t('create.scratch')}</span>
-                      </label>
-                      <input
-                        id="handicapType-percentage"
-                        type="radio"
-                        name="handicapType"
-                        value="PERCENTAGE"
-                        checked={formData.handicapType === 'PERCENTAGE'}
-                        onChange={handleInputChange}
-                        className="w-4 h-4 text-primary focus:ring-primary"
-                      />
-                      <label htmlFor="handicapType-percentage" className="flex items-center gap-2 cursor-pointer">
-                        <span className="text-sm text-gray-700">{t('create.percentage')}</span>
-                      </label>
-                    </div>
+                    <label htmlFor="playMode" className="block text-sm font-medium text-gray-700 mb-1">
+                      {t('create.playMode')}
+                    </label>
+                    <select
+                      id="playMode"
+                      name="playMode"
+                      value={formData.playMode}
+                      onChange={handleInputChange}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
+                    >
+                      <option value="HANDICAP">{t('create.handicap')}</option>
+                      <option value="SCRATCH">{t('create.scratch')}</option>
+                    </select>
                   </div>
-
-                  {/* Handicap Percentage (only when PERCENTAGE is selected) */}
-                  {formData.handicapType === 'PERCENTAGE' && (
-                    <div>
-                      <span className="block text-sm font-medium text-gray-700 mb-2">
-                        {t('create.handicapPercentage')}
-                      </span>
-                      <div className="flex gap-4">
-                        {['100', '95', '90'].map(percentage => (
-                          <>
-                            <input
-                              id={`handicapPercentage-${percentage}`}
-                              type="radio"
-                              name="handicapPercentage"
-                              value={percentage}
-                              checked={formData.handicapPercentage === percentage}
-                              onChange={handleInputChange}
-                              className="w-4 h-4 text-primary focus:ring-primary"
-                            />
-                            <label htmlFor={`handicapPercentage-${percentage}`} className="flex items-center gap-2 cursor-pointer">
-                              <span className="text-sm text-gray-700">{percentage}%</span>
-                            </label>
-                          </>
-                        ))}
-                      </div>
-                    </div>
-                  )}
 
                   {/* Number of Players */}
                   <div>

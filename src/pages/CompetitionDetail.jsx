@@ -13,6 +13,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useUserRoles } from '../hooks/useUserRoles';
 import { CountryFlag } from '../utils/countryUtils';
 import CompetitionGolfCoursesSection from '../components/competition/CompetitionGolfCoursesSection';
+import EnrollmentRequestModal from '../components/enrollment/EnrollmentRequestModal';
 import {
   getCompetitionDetailUseCase,
   getCompetitionGolfCoursesUseCase,
@@ -44,6 +45,7 @@ const CompetitionDetail = () => {
   const [enrollments, setEnrollments] = useState([]);
   const [isLoadingCompetition, setIsLoadingCompetition] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [showEnrollModal, setShowEnrollModal] = useState(false);
 
   // Determine where user came from (browse or my competitions)
   const fromBrowse = location.state?.from === 'browse';
@@ -57,24 +59,6 @@ const CompetitionDetail = () => {
     try {
       // Use GetCompetitionDetailUseCase instead of direct service call
       const data = await getCompetitionDetailUseCase.execute(id);
-
-      // Fetch and add golf courses to competition object for activation validation
-      try {
-        const golfCoursesResult = await getCompetitionGolfCoursesUseCase.execute(id);
-
-        // Map the data structure for activation validation
-        const courses = Array.isArray(golfCoursesResult) ? golfCoursesResult : (golfCoursesResult.golf_courses || []);
-        data.golfCourses = courses.map(item => ({
-          id: item.golf_course?.id || item.golf_course_id,
-          name: item.golf_course?.name || 'Unknown',
-          approvalStatus: item.golf_course?.approval_status || 'APPROVED',
-          display_order: item.display_order
-        }));
-      } catch (error) {
-        console.error('Error loading golf courses:', error);
-        // Set empty array if fetch fails
-        data.golfCourses = [];
-      }
 
       setCompetition(data);
 
@@ -106,24 +90,39 @@ const CompetitionDetail = () => {
   const handleStatusChange = async (action) => {
     // Validate golf courses approval status before activation
     if (action === 'activate') {
-      const golfCourses = competition?.golfCourses || [];
+      try {
+        const golfCoursesResult = await getCompetitionGolfCoursesUseCase.execute(id);
+        const coursesArray = Array.isArray(golfCoursesResult)
+          ? golfCoursesResult
+          : (golfCoursesResult.golf_courses || []);
 
-      if (golfCourses.length === 0) {
-        customToast.error(t('detail.errors.noGolfCourses'));
-        return;
-      }
+        const golfCourses = coursesArray.map(item => ({
+          id: item.golf_course?.id || item.golf_course_id,
+          name: item.golf_course?.name || item.name || 'Unknown',
+          approvalStatus: item.golf_course?.approval_status || item.approval_status || 'PENDING_APPROVAL',
+        }));
 
-      const pendingCourses = golfCourses.filter(gc => gc.approvalStatus === 'PENDING_APPROVAL');
-      if (pendingCourses.length > 0) {
-        const courseNames = pendingCourses.map(gc => gc.name).join(', ');
-        customToast.error(t('detail.errors.golfCoursesPendingApproval', { courses: courseNames }));
-        return;
-      }
+        if (golfCourses.length === 0) {
+          customToast.error(t('detail.errors.noGolfCourses'));
+          return;
+        }
 
-      const rejectedCourses = golfCourses.filter(gc => gc.approvalStatus === 'REJECTED');
-      if (rejectedCourses.length > 0) {
-        const courseNames = rejectedCourses.map(gc => gc.name).join(', ');
-        customToast.error(t('detail.errors.golfCoursesRejected', { courses: courseNames }));
+        const pendingCourses = golfCourses.filter(gc => gc.approvalStatus === 'PENDING_APPROVAL');
+        if (pendingCourses.length > 0) {
+          const courseNames = pendingCourses.map(gc => gc.name).join(', ');
+          customToast.error(t('detail.errors.golfCoursesPendingApproval', { courses: courseNames }));
+          return;
+        }
+
+        const rejectedCourses = golfCourses.filter(gc => gc.approvalStatus === 'REJECTED');
+        if (rejectedCourses.length > 0) {
+          const courseNames = rejectedCourses.map(gc => gc.name).join(', ');
+          customToast.error(t('detail.errors.golfCoursesRejected', { courses: courseNames }));
+          return;
+        }
+      } catch (error) {
+        console.error('Error validating golf courses for activation:', error);
+        customToast.error(t('detail.errors.golfCoursesFetchFailed'));
         return;
       }
     }
@@ -193,10 +192,11 @@ const CompetitionDetail = () => {
     }
   };
 
-  const handleEnroll = async () => {
+  const handleEnroll = async (teeCategory = null) => {
+    setShowEnrollModal(false);
     setIsProcessing(true);
     try {
-      await requestEnrollmentUseCase.execute(id);
+      await requestEnrollmentUseCase.execute(id, null, { teeCategory });
       customToast.success(t('detail.success.enrollmentRequested'));
       await loadCompetition();
     } catch (error) {
@@ -208,6 +208,10 @@ const CompetitionDetail = () => {
   };
 
   const handleApproveEnrollment = async (enrollmentId) => {
+    if (isFull) {
+      customToast.error(t('detail.competitionFull', { max: competition.maxPlayers }));
+      return;
+    }
     try {
       // ApproveEnrollmentUseCase expects (competitionId, enrollmentId, teamId?)
       await approveEnrollmentUseCase.execute(competition.id, enrollmentId);
@@ -258,6 +262,13 @@ const CompetitionDetail = () => {
   const canManage = isCreator || hasCreatorRole || isAdmin;
   const canEdit = canManage && competition.status === 'DRAFT';
   const canDelete = canManage && competition.status === 'DRAFT';
+
+  // Check if competition has reached max players
+  // For creators: use enrollments list. For non-creators: fallback to competition.enrolledCount from API
+  const approvedCount = enrollments.length > 0
+    ? enrollments.filter(e => e.status === 'APPROVED').length
+    : (competition.enrolledCount || 0);
+  const isFull = competition.maxPlayers && approvedCount >= competition.maxPlayers;
 
   // Check for user enrollment from two sources:
   // 1. From enrollments list (when loaded from detail page)
@@ -327,7 +338,7 @@ const CompetitionDetail = () => {
                     <div>
                       <p className="text-xs text-gray-500">{t('detail.players')}</p>
                       <p className="text-sm font-medium">
-                        {enrollments.filter((e) => e.status === 'APPROVED').length} /{' '}
+                        {approvedCount} /{' '}
                         {competition.maxPlayers || '∞'}
                       </p>
                     </div>
@@ -443,12 +454,23 @@ const CompetitionDetail = () => {
                       <span>{t('detail.actions.delete')}</span>
                     </button>
                   )}
+
+                  {competition.status !== 'DRAFT' && competition.status !== 'CANCELLED' && (
+                    <button
+                      onClick={() => navigate(`/creator/competitions/${id}/schedule`)}
+                      className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors shadow-md"
+                    >
+                      <Calendar className="w-4 h-4" />
+                      <span>{t('detail.actions.manageSchedule')}</span>
+                    </button>
+                  )}
                 </div>
               </motion.div>
             )}
 
-            {/* Enrollment Button - Show if competition is ACTIVE, user is not enrolled, and user is not the creator */}
-            {!isCreator && competition.status === 'ACTIVE' && !hasEnrollment && (
+            {/* View Schedule Button - For enrolled players (not creators/admins) */}
+            {!canManage && competition.status !== 'DRAFT' && competition.status !== 'CANCELLED' &&
+              (userEnrollment?.status === 'APPROVED' || competition.enrollment_status === 'APPROVED') && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -456,7 +478,25 @@ const CompetitionDetail = () => {
                 className="p-4"
               >
                 <button
-                  onClick={handleEnroll}
+                  onClick={() => navigate(`/competitions/${id}/schedule`)}
+                  className="flex items-center justify-center gap-2 w-full px-6 py-3 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors shadow-md"
+                >
+                  <Calendar className="w-5 h-5" />
+                  <span>{t('detail.actions.viewSchedule')}</span>
+                </button>
+              </motion.div>
+            )}
+
+            {/* Enrollment Button - Show if competition is ACTIVE, user is not enrolled, not the creator, and not full */}
+            {!isCreator && competition.status === 'ACTIVE' && !hasEnrollment && !isFull && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.1 }}
+                className="p-4"
+              >
+                <button
+                  onClick={() => setShowEnrollModal(true)}
                   disabled={isProcessing}
                   className="flex items-center justify-center gap-2 w-full px-6 py-3 bg-primary text-white rounded-lg font-medium hover:bg-primary/90 transition-colors shadow-md disabled:opacity-50"
                 >
@@ -514,15 +554,9 @@ const CompetitionDetail = () => {
                     <p className="text-gray-900 font-medium">{competition.team2Name}</p>
                   </div>
                   <div>
-                    <span className="text-gray-500 text-sm">{t('detail.settings.handicapType')}</span>
-                    <p className="text-gray-900 font-medium">{competition.handicapType}</p>
+                    <span className="text-gray-500 text-sm">{t('detail.settings.playMode')}</span>
+                    <p className="text-gray-900 font-medium">{competition.playMode}</p>
                   </div>
-                  {competition.handicapPercentage && (
-                    <div>
-                      <span className="text-gray-500 text-sm">{t('detail.settings.handicapPercentage')}</span>
-                      <p className="text-gray-900 font-medium">{competition.handicapPercentage}%</p>
-                    </div>
-                  )}
                   <div>
                     <span className="text-gray-500 text-sm">{t('detail.settings.teamAssignment')}</span>
                     <p className="text-gray-900 font-medium">{competition.teamAssignment}</p>
@@ -642,8 +676,13 @@ const CompetitionDetail = () => {
                             <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
                               <button
                                 onClick={() => handleApproveEnrollment(enrollment.id)}
-                                className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors shadow-sm"
-                                title="Approve enrollment"
+                                disabled={isFull}
+                                className={`px-4 py-2 text-white rounded-lg text-sm font-medium transition-colors shadow-sm ${
+                                  isFull
+                                    ? 'bg-gray-400 cursor-not-allowed'
+                                    : 'bg-green-600 hover:bg-green-700'
+                                }`}
+                                title={isFull ? t('detail.competitionFull', { max: competition.maxPlayers }) : t('detail.approve')}
                               >
                                 ✓ {t('detail.approve')}
                               </button>
@@ -706,6 +745,13 @@ const CompetitionDetail = () => {
           </div>
         </div>
       </div>
+
+      <EnrollmentRequestModal
+        isOpen={showEnrollModal}
+        onClose={() => setShowEnrollModal(false)}
+        onConfirm={handleEnroll}
+        isProcessing={isProcessing}
+      />
     </div>
   );
 };

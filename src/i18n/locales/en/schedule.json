@@ -1,0 +1,114 @@
+{
+  "title": "Schedule & Matches",
+  "loading": "Loading schedule...",
+  "cancel": "Cancel",
+  "backToDetail": "Back to competition detail",
+  "rounds": {
+    "title": "Rounds",
+    "create": "Create Round",
+    "edit": "Edit Round",
+    "delete": "Delete Round",
+    "confirmDelete": "Are you sure you want to delete this round? All associated matches will also be deleted.",
+    "noRounds": "No rounds created yet",
+    "date": "Date",
+    "golfCourse": "Golf Course",
+    "sessionType": "Session",
+    "matchFormat": "Match Format",
+    "handicapMode": "Handicap Mode",
+    "allowancePercentage": "Allowance %",
+    "effectiveAllowance": "Effective Allowance",
+    "matchCount_one": "{{count}} match",
+    "matchCount_other": "{{count}} matches"
+  },
+  "matches": {
+    "title": "Matches",
+    "generate": "Generate Matches",
+    "noMatches": "No matches generated yet",
+    "matchNumber": "Match #{{number}}",
+    "teamA": "Team A",
+    "teamB": "Team B",
+    "vs": "vs",
+    "handicapStrokes": "Handicap Strokes: {{strokes}}",
+    "strokesGivenTo": "Strokes given to {{team}}",
+    "reassignPlayers": "Reassign Players",
+    "walkover": "Declare Walkover",
+    "startMatch": "Start Match",
+    "completeMatch": "Complete Match",
+    "viewDetail": "View Detail",
+    "result": "Result",
+    "resultWinner": "Winner: {{team}}",
+    "resultScore": "Score: {{score}}",
+    "resultReason": "Reason: {{reason}}",
+    "close": "Close"
+  },
+  "teams": {
+    "title": "Team Assignment",
+    "assign": "Assign Teams",
+    "mode": "Assignment Mode",
+    "manual": "Manual",
+    "automatic": "Automatic",
+    "teamA": "Team A",
+    "teamB": "Team B",
+    "noTeamsAssigned": "Teams have not been assigned yet",
+    "playersCount_one": "{{count}} player",
+    "playersCount_other": "{{count}} players"
+  },
+  "configuration": {
+    "title": "Schedule Configuration",
+    "configure": "Configure Schedule"
+  },
+  "status": {
+    "PENDING_TEAMS": "Pending Teams",
+    "PENDING_MATCHES": "Pending Matches",
+    "SCHEDULED": "Scheduled",
+    "IN_PROGRESS": "In Progress",
+    "COMPLETED": "Completed",
+    "WALKOVER": "Walkover"
+  },
+  "formats": {
+    "SINGLES": "Singles",
+    "FOURBALL": "Fourball",
+    "FOURSOMES": "Foursomes",
+    "SINGLES_DESC": "1 vs 1. Each player plays their own ball. The player with the lowest net score on each hole wins that hole.",
+    "FOURBALL_DESC": "2 vs 2. Each player plays their own ball. The best net score from each pair counts on each hole.",
+    "FOURSOMES_DESC": "2 vs 2. Each pair shares a single ball, alternating shots. Players also alternate tee shots on each hole."
+  },
+  "sessions": {
+    "MORNING": "Morning",
+    "AFTERNOON": "Afternoon",
+    "EVENING": "Evening"
+  },
+  "handicapModes": {
+    "MATCH_PLAY": "Match Play"
+  },
+  "walkover": {
+    "title": "Declare Walkover",
+    "winningTeam": "Winning Team",
+    "reason": "Reason",
+    "reasonPlaceholder": "Enter reason for walkover...",
+    "confirm": "Confirm Walkover",
+    "confirmMessage": "Are you sure you want to declare a walkover? This action cannot be undone."
+  },
+  "errors": {
+    "failedToLoadSchedule": "Failed to load schedule",
+    "failedToCreateRound": "Failed to create round",
+    "failedToUpdateRound": "Failed to update round",
+    "failedToDeleteRound": "Failed to delete round",
+    "failedToGenerateMatches": "Failed to generate matches",
+    "failedToAssignTeams": "Failed to assign teams",
+    "failedToUpdateMatchStatus": "Failed to update match status",
+    "failedToDeclareWalkover": "Failed to declare walkover",
+    "failedToReassignPlayers": "Failed to reassign players",
+    "failedToLoadMatch": "Failed to load match details"
+  },
+  "success": {
+    "roundCreated": "Round created successfully",
+    "roundUpdated": "Round updated successfully",
+    "roundDeleted": "Round deleted successfully",
+    "matchesGenerated": "Matches generated successfully",
+    "teamsAssigned": "Teams assigned successfully",
+    "matchStatusUpdated": "Match status updated successfully",
+    "walkoverDeclared": "Walkover declared successfully",
+    "playersReassigned": "Players reassigned successfully"
+  }
+}

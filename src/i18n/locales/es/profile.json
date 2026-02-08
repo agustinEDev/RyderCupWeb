@@ -30,6 +30,12 @@
       "nationalityOptional": "(Opcional)",
       "selectNationality": "Ninguna nacionalidad seleccionada",
       "rfegInfo": "Selecciona España (ES) para habilitar actualizaciones de hándicap RFEG",
+      "gender": "Género",
+      "genderPlaceholder": "Selecciona género",
+      "genderOptions": {
+        "MALE": "Masculino",
+        "FEMALE": "Femenino"
+      },
       "updating": "Actualizando...",
       "update": "Actualizar Información Personal"
     },
@@ -68,5 +74,25 @@
       "rfegInfoNoNationality": "Para habilitar actualizaciones de hándicap RFEG, por favor establece tu nacionalidad como España en tu perfil."
     },
     "cancel": "Cancelar"
+  },
+  "toasts": {
+    "userNotLoaded": "Usuario no cargado.",
+    "failedToRefreshData": "Error al actualizar los datos del usuario.",
+    "handicapUpdated": "¡Hándicap actualizado correctamente!",
+    "failedToUpdateHandicap": "Error al actualizar el hándicap",
+    "handicapUpdatedRFEG": "¡Hándicap actualizado desde RFEG correctamente!",
+    "failedToUpdateHandicapRFEG": "Error al actualizar el hándicap desde RFEG. Por favor, inténtalo más tarde.",
+    "noProfileChanges": "No se detectaron cambios en el perfil.",
+    "firstNameTooShort": "El nombre debe tener al menos 2 caracteres.",
+    "lastNameTooShort": "El apellido debe tener al menos 2 caracteres.",
+    "profileUpdated": "¡Perfil actualizado correctamente!",
+    "failedToUpdateProfile": "Error al actualizar el perfil",
+    "currentPasswordRequired": "Se requiere la contraseña actual para actualizar la configuración de seguridad.",
+    "noSecurityChanges": "No se detectaron cambios en el email o la contraseña.",
+    "passwordTooShort": "La nueva contraseña debe tener al menos 12 caracteres.",
+    "passwordsDoNotMatch": "La nueva contraseña y la confirmación no coinciden.",
+    "securityUpdated": "¡Configuración de seguridad actualizada correctamente!",
+    "passwordReused": "No puedes reutilizar ninguna de tus últimas 5 contraseñas. Por favor, elige una contraseña diferente.",
+    "failedToUpdateSecurity": "Error al actualizar la configuración de seguridad"
   }
 }

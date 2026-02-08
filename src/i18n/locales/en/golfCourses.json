@@ -15,7 +15,7 @@
     "tees": "Tees",
     "tee": "Tee",
     "addTee": "Add Tee",
-    "maxTeesReached": "Maximum 6 tees allowed",
+    "maxTeesReached": "Maximum 10 tees allowed",
     "minTeesRequired": "Minimum 2 tees required",
     "teeCategory": "Category",
     "identifier": "Identifier",
@@ -23,13 +23,17 @@
     "courseRating": "Course Rating",
     "slopeRating": "Slope Rating",
     "teeCategories": {
-      "CHAMPIONSHIP_MALE": "Championship Male",
-      "AMATEUR_MALE": "Amateur Male",
-      "SENIOR_MALE": "Senior Male",
-      "CHAMPIONSHIP_FEMALE": "Championship Female",
-      "AMATEUR_FEMALE": "Amateur Female",
-      "SENIOR_FEMALE": "Senior Female",
+      "CHAMPIONSHIP": "Championship",
+      "AMATEUR": "Amateur",
+      "SENIOR": "Senior",
+      "FORWARD": "Forward",
       "JUNIOR": "Junior"
+    },
+    "teeGender": "Gender",
+    "teeGenders": {
+      "MALE": "Male",
+      "FEMALE": "Female",
+      "none": "Unisex"
     },
     "holes": "Holes (18)",
     "hole": "Hole",
@@ -43,7 +47,8 @@
     "errors": {
       "nameRequired": "Course name must be at least 3 characters",
       "countryCodeRequired": "Country code must be 2 characters (ISO 3166-1)",
-      "teesRange": "Course must have between 2 and 6 tees",
+      "teesRange": "Course must have between 2 and 10 tees",
+      "genderMixing": "Cannot mix gendered and unisex tees for the same category",
       "teeIdentifierRequired": "Tee {{index}} identifier is required",
       "courseRatingRange": "Tee {{index}} Course Rating must be between 50.0 and 90.0",
       "slopeRatingRange": "Tee {{index}} Slope Rating must be between 55 and 155",

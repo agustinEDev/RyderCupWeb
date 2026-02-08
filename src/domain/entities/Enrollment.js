@@ -41,6 +41,7 @@ class Enrollment {
   #status;
   #teamId;
   #customHandicap;
+  #teeCategory;
   #createdAt;
   #updatedAt;
 
@@ -64,6 +65,7 @@ class Enrollment {
     status,
     teamId = null,
     customHandicap = null,
+    teeCategory = null,
     createdAt = null,
     updatedAt = null,
   }) {
@@ -93,6 +95,7 @@ class Enrollment {
     this.#status = status;
     this.#teamId = teamId;
     this.#customHandicap = customHandicap;
+    this.#teeCategory = teeCategory;
     this.#createdAt = createdAt ? new Date(createdAt) : new Date();
     this.#updatedAt = updatedAt ? new Date(updatedAt) : new Date();
   }
@@ -206,6 +209,10 @@ class Enrollment {
     return this.#customHandicap;
   }
 
+  get teeCategory() {
+    return this.#teeCategory;
+  }
+
   get createdAt() {
     return this.#createdAt;
   }
@@ -299,6 +306,7 @@ class Enrollment {
       status: newStatus,
       teamId: this.#teamId,
       customHandicap: this.#customHandicap,
+      teeCategory: this.#teeCategory,
       createdAt: this.#createdAt,
       updatedAt: new Date(),
     });
@@ -325,6 +333,7 @@ class Enrollment {
       status: newStatus,
       teamId: this.#teamId,
       customHandicap: this.#customHandicap,
+      teeCategory: this.#teeCategory,
       createdAt: this.#createdAt,
       updatedAt: new Date(),
     });
@@ -351,6 +360,7 @@ class Enrollment {
       status: newStatus,
       teamId: this.#teamId,
       customHandicap: this.#customHandicap,
+      teeCategory: this.#teeCategory,
       createdAt: this.#createdAt,
       updatedAt: new Date(),
     });
@@ -376,6 +386,7 @@ class Enrollment {
       status: newStatus,
       teamId: this.#teamId,
       customHandicap: this.#customHandicap,
+      teeCategory: this.#teeCategory,
       createdAt: this.#createdAt,
       updatedAt: new Date(),
     });
@@ -413,6 +424,7 @@ class Enrollment {
       status: this.#status,
       teamId: teamId.trim(),
       customHandicap: this.#customHandicap,
+      teeCategory: this.#teeCategory,
       createdAt: this.#createdAt,
       updatedAt: new Date(),
     });
@@ -438,6 +450,7 @@ class Enrollment {
       status: this.#status,
       teamId: this.#teamId,
       customHandicap: handicap,
+      teeCategory: this.#teeCategory,
       createdAt: this.#createdAt,
       updatedAt: new Date(),
     });
@@ -458,6 +471,7 @@ class Enrollment {
       status: this.#status,
       teamId: this.#teamId,
       customHandicap: null,
+      teeCategory: this.#teeCategory,
       createdAt: this.#createdAt,
       updatedAt: new Date(),
     });
@@ -509,6 +523,7 @@ class Enrollment {
       status: this.#status.toString(),
       teamId: this.#teamId,
       customHandicap: this.#customHandicap,
+      teeCategory: this.#teeCategory,
       createdAt: this.#createdAt.toISOString(),
       updatedAt: this.#updatedAt.toISOString(),
     };

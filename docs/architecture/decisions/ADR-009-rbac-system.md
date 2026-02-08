@@ -106,9 +106,16 @@ DELETE /api/v1/admin/users/{id}/roles/{role}
 ```
 
 ### Rutas Protegidas:
-- `/admin/*` → ADMIN only
-- `/creator/*` → ADMIN + CREATOR
+- `/admin/*` → ADMIN only (RoleGuard)
+- `/creator/*` → ADMIN + CREATOR (RoleGuard o useUserRoles per-competition)
 - `/player/*` → Todos (authenticated)
+- `/competitions/:id/schedule` → Authenticated + enrollment APPROVED (no RoleGuard, acceso basado en enrollment)
+
+> **Nota:** El acceso al schedule es enrollment-based, no role-based. Cualquier usuario
+> autenticado con enrollment APPROVED puede ver el calendario en modo read-only.
+> Los creadores/admins acceden via `/creator/competitions/:id/schedule` con permisos de gestión.
+> La autorización de escritura (crear rondas, declarar walkover, etc.) se controla con `canManage`
+> dentro de SchedulePage (basado en `useUserRoles`).
 
 ### Tests:
 ```javascript
@@ -138,3 +145,4 @@ describe('RoleGuard', () => {
 ## Historial de Cambios
 
 - **2026-01-07**: Creación del ADR, implementación v2.1.0
+- **2026-02-08**: Añadida nota sobre acceso enrollment-based al schedule (no RBAC)

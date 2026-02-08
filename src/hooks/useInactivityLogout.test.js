@@ -17,6 +17,14 @@ vi.mock('react-hot-toast', () => {
   };
 });
 
+// Mock react-i18next
+vi.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (key) => key,
+    i18n: { language: 'en' }
+  })
+}));
+
 // Mock customToast
 vi.mock('../utils/toast', () => ({
   default: {
@@ -291,7 +299,7 @@ describe('useInactivityLogout', () => {
 
       // Verificar toast de error
       expect(customToast.error).toHaveBeenCalledWith(
-        'Tu sesión ha expirado por inactividad',
+        'inactivity.sessionExpired',
         expect.objectContaining({
           duration: 4000,
           icon: '⏰'

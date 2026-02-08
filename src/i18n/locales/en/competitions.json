@@ -23,10 +23,10 @@
     "pendingRequests": "pending requests",
     "enrollmentStatus": "Enrollment: {{status}}",
     "players": "{{count}} / {{max}} players",
-    "golfCoursesCount": "{{count}} golf course",
-    "golfCoursesCount_plural": "{{count}} golf courses",
-    "countriesCount": "{{count}} country",
-    "countriesCount_plural": "{{count}} countries"
+    "golfCoursesCount_one": "{{count}} golf course",
+    "golfCoursesCount_other": "{{count}} golf courses",
+    "countriesCount_one": "{{count}} country",
+    "countriesCount_other": "{{count}} countries"
   },
   "create": {
     "title": "Create Competition",
@@ -57,10 +57,9 @@
     "coursesSelected": "courses selected",
     "coursePendingApproval": "This course is pending approval. You won't be able to activate the competition until it's approved.",
     "ryderCupSettings": "RyderCup Settings",
-    "handicapType": "Handicap Type *",
+    "playMode": "Play Mode *",
     "scratch": "Scratch",
-    "percentage": "Percentage",
-    "handicapPercentage": "Handicap Percentage",
+    "handicap": "Handicap",
     "numberOfPlayers": "Number of Players *",
     "numberOfPlayersPlaceholder": "Enter total number of players",
     "teamAssignment": "Team Assignment *",
@@ -114,7 +113,9 @@
       "complete": "Complete",
       "cancel": "Cancel",
       "delete": "Delete",
-      "request-to-join": "Request to Join"
+      "request-to-join": "Request to Join",
+      "manageSchedule": "Manage Schedule",
+      "viewSchedule": "View Schedule"
     },
     "confirmations": {
       "activate": "Are you sure you want to activate this competition?",
@@ -131,15 +132,15 @@
       "noGolfCourse": "Cannot activate competition: No golf course selected",
       "golfCoursesPendingApproval": "Cannot activate: These courses are pending approval: {{courses}}",
       "golfCoursesRejected": "Cannot activate: These courses were rejected: {{courses}}",
-      "noGolfCourses": "Cannot activate: No golf courses selected"
+      "noGolfCourses": "Cannot activate: No golf courses selected",
+      "golfCoursesFetchFailed": "Failed to verify golf courses. Please try again."
     },
     "enrollmentStatus": "Your enrollment status:",
     "settings": {
       "title": "Competition Settings",
       "teamOne": "Team 1:",
       "teamTwo": "Team 2:",
-      "handicapType": "Handicap Type:",
-      "handicapPercentage": "Handicap Percentage:",
+      "playMode": "Play Mode:",
       "teamAssignment": "Team Assignment:",
       "created": "Created:"
     },
@@ -165,6 +166,7 @@
       "enrollmentRequested": "Enrollment request sent successfully"
     },
     "failedToApprove": "Failed to approve enrollment",
+    "competitionFull": "The competition is full. Maximum number of players ({{max}}) has been reached.",
     "failedToReject": "Failed to reject enrollment",
     "failedToUpdateCompetition": "Failed to update competition",
     "failedToDeleteCompetition": "Failed to delete competition",
@@ -237,6 +239,14 @@
     "IN_PROGRESS": "IN PROGRESS",
     "COMPLETED": "COMPLETED",
     "CANCELLED": "CANCELLED"
+  },
+  "enrollment": {
+    "modalTitle": "Request to Join",
+    "teeCategoryLabel": "Preferred tee category",
+    "teeCategoryHint": "Used to assign the right tees in matches",
+    "noPreference": "No preference",
+    "confirm": "Confirm",
+    "cancel": "Cancel"
   },
   "enrollmentStatus": {
     "REQUESTED": "REQUESTED",

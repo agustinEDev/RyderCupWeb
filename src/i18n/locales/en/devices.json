@@ -39,7 +39,11 @@
     "DEVICE_NOT_FOUND": "Device not found",
     "DEVICE_ALREADY_REVOKED": "Device already revoked",
     "FAILED_TO_REVOKE_DEVICE": "Failed to revoke device",
+    "DEVICE_ID_REQUIRED": "Device ID is required",
     "FAILED_TO_LOAD_DEVICES": "Failed to load devices"
+  },
+  "success": {
+    "deviceRevoked": "Device revoked successfully"
   },
   "aria": {
     "closeErrorMessage": "Close error message"

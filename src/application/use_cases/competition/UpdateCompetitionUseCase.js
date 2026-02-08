@@ -27,7 +27,7 @@ class UpdateCompetitionUseCase {
    * @param {string} competitionData.end_date - End date (YYYY-MM-DD).
    * @param {string} competitionData.main_country - Main country ISO code.
    * @param {Array} competitionData.countries - Array of adjacent countries.
-   * @param {string} competitionData.handicap_type - Handicap type.
+   * @param {string} competitionData.play_mode - Play mode (SCRATCH or HANDICAP).
    * @param {number} competitionData.number_of_players - Number of players.
    * @param {string} competitionData.team_assignment - Team assignment method.
    * @returns {Promise<Object>} - The updated competition object.
