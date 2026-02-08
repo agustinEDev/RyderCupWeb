@@ -269,9 +269,9 @@ Migrar de arquitectura de proxy inverso a subdominios directos para mejorar rend
 
 ### 🔄 v2.1.0 - Schedule & Matches Backend Integration Layer (Sprint 2)
 
-> **Estado:** 🔄 En progreso (Backend Integration Layer completado el 6 Feb 2026)
+> **Estado:** ✅ Completado el 8 Feb 2026
 > **Branch:** `feature/sprint-2-schedule-matches`
-> **Esfuerzo Frontend:** ~30h (backend integration) + pendiente UI
+> **Esfuerzo Frontend:** ~50h (backend integration + UI)
 > **Tests:** ~214 tests nuevos (1088 total passing, 1 skipped)
 
 #### 🎯 Objetivos
@@ -467,7 +467,7 @@ Aquí están las confirmaciones y respuestas a vuestras preguntas:
 
 ---
 
-## 📊 Estado Actual (v2.0.5 + Sprint 2 en progreso)
+## 📊 Estado Actual (v2.1.0 - Sprint 2 completado)
 
 ### Metricas Clave
 
@@ -528,5 +528,5 @@ Aquí están las confirmaciones y respuestas a vuestras preguntas:
 
 ---
 
-**Ultima revision:** 8 Feb 2026 (Sprint 2 Schedule UI completado)
-**Proxima revision:** Inicio Sprint 3 (18 Feb 2026)
+**Última revisión:** 8 Feb 2026 (Sprint 2 Schedule UI completado)
+**Próxima revisión:** Inicio Sprint 3 (18 Feb 2026)

@@ -132,7 +132,8 @@
       "noGolfCourse": "No se puede activar la competición: No se ha seleccionado ningún campo de golf",
       "golfCoursesPendingApproval": "No se puede activar: Estos campos están pendientes de aprobación: {{courses}}",
       "golfCoursesRejected": "No se puede activar: Estos campos fueron rechazados: {{courses}}",
-      "noGolfCourses": "No se puede activar: No se han seleccionado campos de golf"
+      "noGolfCourses": "No se puede activar: No se han seleccionado campos de golf",
+      "golfCoursesFetchFailed": "Error al verificar los campos de golf. Inténtalo de nuevo."
     },
     "enrollmentStatus": "Tu estado de inscripción:",
     "settings": {

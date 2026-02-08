@@ -68,9 +68,9 @@
     "SINGLES": "Individuales",
     "FOURBALL": "Fourball",
     "FOURSOMES": "Foursomes",
-    "SINGLES_DESC": "1 vs 1. Cada jugador juega su propia bola. El jugador con el resultado neto mas bajo en cada hoyo gana ese hoyo.",
+    "SINGLES_DESC": "1 vs 1. Cada jugador juega su propia bola. El jugador con el resultado neto más bajo en cada hoyo gana ese hoyo.",
     "FOURBALL_DESC": "2 vs 2. Cada jugador juega su propia bola. El mejor resultado neto de cada pareja cuenta en cada hoyo.",
-    "FOURSOMES_DESC": "2 vs 2. Cada pareja comparte una sola bola, alternando golpes. Los jugadores tambien alternan salidas en cada hoyo."
+    "FOURSOMES_DESC": "2 vs 2. Cada pareja comparte una sola bola, alternando golpes. Los jugadores también alternan salidas en cada hoyo."
   },
   "sessions": {
     "MORNING": "Mañana",

@@ -85,7 +85,7 @@ Capa completa de integración con los 11 endpoints del backend Sprint 2 para ges
   - Reemplazada librería `country-flag-icons` (239 KB de SVGs incrustados) por imágenes CDN de [flagcdn.com](https://flagcdn.com)
   - `CountryFlag` ahora renderiza `<img>` con `srcSet` para retina en vez de SVG components
   - Eliminada dependencia `axios` (no utilizada)
-- **CI bundle budget reducido**: 1600 KB → 1400 KB max, 1300 KB warning (tras eliminar 239 KB de SVGs)
+- **CI bundle budget**: 1400 KB max, 1300 KB warning (tras eliminar 239 KB de SVGs)
 - **`useMemo` en `SchedulePage`**: `playerNameMap` envuelto en `useMemo` para evitar reconstrucciones innecesarias
 
 ### 🌐 i18n Fixes

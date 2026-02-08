@@ -99,7 +99,7 @@ const CompetitionDetail = () => {
         const golfCourses = coursesArray.map(item => ({
           id: item.golf_course?.id || item.golf_course_id,
           name: item.golf_course?.name || item.name || 'Unknown',
-          approvalStatus: item.golf_course?.approval_status || item.approval_status || 'APPROVED',
+          approvalStatus: item.golf_course?.approval_status || item.approval_status || 'PENDING_APPROVAL',
         }));
 
         if (golfCourses.length === 0) {
@@ -122,7 +122,7 @@ const CompetitionDetail = () => {
         }
       } catch (error) {
         console.error('Error validating golf courses for activation:', error);
-        customToast.error(t('detail.errors.noGolfCourses'));
+        customToast.error(t('detail.errors.golfCoursesFetchFailed'));
         return;
       }
     }
@@ -264,7 +264,10 @@ const CompetitionDetail = () => {
   const canDelete = canManage && competition.status === 'DRAFT';
 
   // Check if competition has reached max players
-  const approvedCount = enrollments.filter(e => e.status === 'APPROVED').length;
+  // For creators: use enrollments list. For non-creators: fallback to competition.enrolledCount from API
+  const approvedCount = enrollments.length > 0
+    ? enrollments.filter(e => e.status === 'APPROVED').length
+    : (competition.enrolledCount || 0);
   const isFull = competition.maxPlayers && approvedCount >= competition.maxPlayers;
 
   // Check for user enrollment from two sources:

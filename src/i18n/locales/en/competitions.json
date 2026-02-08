@@ -132,7 +132,8 @@
       "noGolfCourse": "Cannot activate competition: No golf course selected",
       "golfCoursesPendingApproval": "Cannot activate: These courses are pending approval: {{courses}}",
       "golfCoursesRejected": "Cannot activate: These courses were rejected: {{courses}}",
-      "noGolfCourses": "Cannot activate: No golf courses selected"
+      "noGolfCourses": "Cannot activate: No golf courses selected",
+      "golfCoursesFetchFailed": "Failed to verify golf courses. Please try again."
     },
     "enrollmentStatus": "Your enrollment status:",
     "settings": {

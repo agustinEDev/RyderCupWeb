@@ -186,7 +186,9 @@ describe('ScheduleMapper', () => {
       expect(dto.teamAssignment.teamAPlayerIds).toEqual(['u1', 'u2']);
       expect(dto.rounds).toHaveLength(2);
       expect(dto.rounds[0].id).toBe('r-1');
+      expect(dto.rounds[0].roundDate).toBe('2025-06-15');
       expect(dto.rounds[1].id).toBe('r-2');
+      expect(dto.rounds[1].roundDate).toBe('2025-06-16');
     });
 
     it('should handle null team assignment and empty days', () => {

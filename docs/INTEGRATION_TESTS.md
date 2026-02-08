@@ -1,4 +1,4 @@
-# Tests de Integracion con Backend
+# Tests de Integración con Backend
 
 > **Tarea #11 del ROADMAP**
 > **Fecha:** 23-24 Dic 2025 (auth flows) | Pendiente: schedule flows (v2.1.0)
@@ -430,11 +430,11 @@ cp .env.example .env
 - ⚠️ **Requiere variables de entorno** `TEST_EMAIL` y `TEST_PASSWORD` configuradas
 - ⚠️ **Requiere usuario de prueba** verificado en el backend
 - ✅ **Tests listos para CI/CD** una vez backend esté en producción
-- ✅ **Integracion Frontend-Backend: Auth flows 100% implementados**
+- ✅ **Integración Frontend-Backend: Auth flows 100% implementados**
 
-**Proximos pasos sugeridos:**
+**Próximos pasos sugeridos:**
 1. ✅ ~~Configurar variables de entorno para credenciales de prueba~~ (Implementado)
-2. Crear usuario de prueba automaticamente en setup
+2. Crear usuario de prueba automáticamente en setup
 3. Considerar usar [MSW](https://mswjs.io/) para mock del backend en tests
 4. Ejecutar tests contra backend en CI/CD
 5. **v2.1.0 - Schedule Integration Tests (pendiente):**
@@ -442,7 +442,7 @@ cp .env.example .env
    - Test generar partidos para una ronda
    - Test ciclo de vida de partido (SCHEDULED -> IN_PROGRESS -> COMPLETED)
    - Test declarar walkover y verificar resultado formateado (score, winner, reason)
-   - Test asignar equipos (manual/automatico)
+   - Test asignar equipos (manual/automático)
    - Test reasignar jugadores en un partido
    - Test enrollment con tee category (EnrollmentRequestModal flow)
    - Test jugador inscrito accede a `/competitions/:id/schedule` (vista read-only, sin botones de gestión)

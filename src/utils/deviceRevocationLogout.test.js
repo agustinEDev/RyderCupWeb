@@ -329,14 +329,6 @@ describe('deviceRevocationLogout utilities', () => {
       expect(i18next.t).toHaveBeenCalledWith('errors.sessionExpired', { ns: 'auth' });
     });
 
-    it('should call i18next.t with sessionExpired key when handleSessionExpiredLogout is called', async () => {
-      const i18next = (await import('i18next')).default;
-
-      // handleSessionExpiredLogout always passes 'expiration' reason, which maps to 'errors.sessionExpired'
-      handleSessionExpiredLogout();
-
-      expect(i18next.t).toHaveBeenCalledWith('errors.sessionExpired', { ns: 'auth' });
-    });
   });
 
   // ============================================

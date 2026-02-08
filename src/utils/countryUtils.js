@@ -144,7 +144,8 @@ export const canUseRFEG = (user) => {
  *   <CountryFlag countryCode="FR" style={{ width: '24px', height: 'auto' }} />
  */
 export const CountryFlag = ({ countryCode, className = '', style = {}, title = '' }) => {
-  const [useFallback, setUseFallback] = useState(false);
+  const [fallbackCode, setFallbackCode] = useState(null);
+  const useFallback = fallbackCode === countryCode;
 
   const isValid = countryCode && typeof countryCode === 'string' && /^[A-Z]{2}$/.test(countryCode.trim().toUpperCase());
 
@@ -177,6 +178,6 @@ export const CountryFlag = ({ countryCode, className = '', style = {}, title = '
     className,
     loading: 'lazy',
     style: { display: 'inline-block', verticalAlign: 'middle', ...style },
-    onError: () => setUseFallback(true),
+    onError: () => setFallbackCode(countryCode),
   });
 };
