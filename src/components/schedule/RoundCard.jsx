@@ -42,8 +42,12 @@ const RoundCard = ({
     <div className="border border-gray-200 rounded-xl bg-white shadow-sm overflow-hidden">
       {/* Round Header */}
       <div
+        role="button"
+        tabIndex={0}
+        aria-expanded={isExpanded}
         className="flex flex-wrap items-center justify-between gap-3 p-4 cursor-pointer hover:bg-gray-50 transition-colors"
         onClick={onToggleExpand}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onToggleExpand(); } }}
       >
         <div className="flex-1 min-w-0">
           <div className="flex flex-wrap items-center gap-2 mb-1">

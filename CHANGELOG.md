@@ -81,7 +81,7 @@ Capa completa de integración con los 11 endpoints del backend Sprint 2 para ges
 - Tests actualizados: HandicapSettings, Competition entity, CreateCompetitionUseCase
 
 ### 📦 Bundle & Performance
-- **Bundle size reducido ~322 KB desde peak** (1619 KB peak → 1297 KB actual, build sin comprimir):
+- **Bundle size reducido ~311 KB desde peak** (1619 KB peak → 1308 KB actual, build sin comprimir):
   - Reemplazada librería `country-flag-icons` (239 KB de SVGs incrustados) por imágenes CDN de [flagcdn.com](https://flagcdn.com)
   - `CountryFlag` ahora renderiza `<img>` con `srcSet` para retina en vez de SVG components
   - Eliminada dependencia `axios` (no utilizada)
@@ -110,7 +110,7 @@ Capa completa de integración con los 11 endpoints del backend Sprint 2 para ges
 - **Repository:** 1 interface + 1 implementation + 1 mapper
 - **Tests:** ~238 nuevos (1087 passing, 1 skipped, desde 849)
 - **Traducciones:** 2 archivos nuevos + 10 archivos actualizados (EN/ES)
-- **Bundle:** 1297 KB build sin comprimir (-322 KB desde peak de 1619 KB)
+- **Bundle:** 1308 KB build sin comprimir (-311 KB desde peak de 1619 KB)
 
 ---
 
