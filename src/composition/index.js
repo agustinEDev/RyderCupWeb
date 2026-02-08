@@ -56,6 +56,20 @@ import RemoveGolfCourseFromCompetitionUseCase from '../application/use_cases/com
 import ReorderGolfCoursesUseCase from '../application/use_cases/competition/ReorderGolfCoursesUseCase';
 import GetCompetitionGolfCoursesUseCase from '../application/use_cases/competition/GetCompetitionGolfCoursesUseCase';
 
+// Schedule Use Cases (v2.1.0 - Sprint 2)
+import ApiScheduleRepository from '../infrastructure/repositories/ApiScheduleRepository';
+import GetScheduleUseCase from '../application/use_cases/schedule/GetScheduleUseCase';
+import ConfigureScheduleUseCase from '../application/use_cases/schedule/ConfigureScheduleUseCase';
+import AssignTeamsUseCase from '../application/use_cases/schedule/AssignTeamsUseCase';
+import CreateRoundUseCase from '../application/use_cases/schedule/CreateRoundUseCase';
+import UpdateRoundUseCase from '../application/use_cases/schedule/UpdateRoundUseCase';
+import DeleteRoundUseCase from '../application/use_cases/schedule/DeleteRoundUseCase';
+import GenerateMatchesUseCase from '../application/use_cases/schedule/GenerateMatchesUseCase';
+import GetMatchDetailUseCase from '../application/use_cases/schedule/GetMatchDetailUseCase';
+import UpdateMatchStatusUseCase from '../application/use_cases/schedule/UpdateMatchStatusUseCase';
+import DeclareWalkoverUseCase from '../application/use_cases/schedule/DeclareWalkoverUseCase';
+import ReassignPlayersUseCase from '../application/use_cases/schedule/ReassignPlayersUseCase';
+
 // Enrollment Use Cases
 import ApiEnrollmentRepository from '../infrastructure/repositories/ApiEnrollmentRepository';
 import RequestEnrollmentUseCase from '../application/use_cases/enrollment/RequestEnrollmentUseCase';
@@ -77,6 +91,7 @@ const apiCompetitionRepository = new ApiCompetitionRepository();
 const apiEnrollmentRepository = new ApiEnrollmentRepository();
 const apiDeviceRepository = new ApiDeviceRepository();
 const apiGolfCourseRepository = new ApiGolfCourseRepository();
+const apiScheduleRepository = new ApiScheduleRepository();
 
 // --- Casos de Uso ---
 const updateUserProfileUseCase = new UpdateUserProfileUseCase({ userRepository: apiUserRepository });
@@ -109,6 +124,19 @@ const removeGolfCourseFromCompetitionUseCase = new RemoveGolfCourseFromCompetiti
 const reorderGolfCoursesUseCase = new ReorderGolfCoursesUseCase({ competitionRepository: apiCompetitionRepository });
 const getCompetitionGolfCoursesUseCase = new GetCompetitionGolfCoursesUseCase({ competitionRepository: apiCompetitionRepository });
 const fetchCountriesUseCase = new FetchCountriesUseCase();
+
+// Schedule Use Cases (v2.1.0 - Sprint 2)
+const getScheduleUseCase = new GetScheduleUseCase({ scheduleRepository: apiScheduleRepository });
+const configureScheduleUseCase = new ConfigureScheduleUseCase({ scheduleRepository: apiScheduleRepository });
+const assignTeamsUseCase = new AssignTeamsUseCase({ scheduleRepository: apiScheduleRepository });
+const createRoundUseCase = new CreateRoundUseCase({ scheduleRepository: apiScheduleRepository });
+const updateRoundUseCase = new UpdateRoundUseCase({ scheduleRepository: apiScheduleRepository });
+const deleteRoundUseCase = new DeleteRoundUseCase({ scheduleRepository: apiScheduleRepository });
+const generateMatchesUseCase = new GenerateMatchesUseCase({ scheduleRepository: apiScheduleRepository });
+const getMatchDetailUseCase = new GetMatchDetailUseCase({ scheduleRepository: apiScheduleRepository });
+const updateMatchStatusUseCase = new UpdateMatchStatusUseCase({ scheduleRepository: apiScheduleRepository });
+const declareWalkoverUseCase = new DeclareWalkoverUseCase({ scheduleRepository: apiScheduleRepository });
+const reassignPlayersUseCase = new ReassignPlayersUseCase({ scheduleRepository: apiScheduleRepository });
 
 // Enrollment Use Cases
 const requestEnrollmentUseCase = new RequestEnrollmentUseCase(apiEnrollmentRepository);
@@ -189,6 +217,16 @@ export {
   approveGolfCourseUpdateUseCase,
   rejectGolfCourseUpdateUseCase,
   listPendingGolfCoursesUseCase,
-  // También podríamos exportar directamente las entidades si la UI las necesita para displays,
-  // aunque la mejor práctica es que la UI reciba DTOs o ViewModels del caso de uso.
+  // Schedule Use Cases (v2.1.0 - Sprint 2)
+  getScheduleUseCase,
+  configureScheduleUseCase,
+  assignTeamsUseCase,
+  createRoundUseCase,
+  updateRoundUseCase,
+  deleteRoundUseCase,
+  generateMatchesUseCase,
+  getMatchDetailUseCase,
+  updateMatchStatusUseCase,
+  declareWalkoverUseCase,
+  reassignPlayersUseCase,
 };

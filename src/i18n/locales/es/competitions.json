@@ -23,10 +23,10 @@
     "pendingRequests": "solicitudes pendientes",
     "enrollmentStatus": "Inscripción: {{status}}",
     "players": "{{count}} / {{max}} jugadores",
-    "golfCoursesCount": "{{count}} campo",
-    "golfCoursesCount_plural": "{{count}} campos",
-    "countriesCount": "{{count}} país",
-    "countriesCount_plural": "{{count}} países"
+    "golfCoursesCount_one": "{{count}} campo",
+    "golfCoursesCount_other": "{{count}} campos",
+    "countriesCount_one": "{{count}} país",
+    "countriesCount_other": "{{count}} países"
   },
   "create": {
     "title": "Crear Competición",
@@ -57,10 +57,9 @@
     "coursesSelected": "campos seleccionados",
     "coursePendingApproval": "Este campo está pendiente de aprobación. No podrás activar la competición hasta que sea aprobado.",
     "ryderCupSettings": "Configuración RyderCup",
-    "handicapType": "Tipo de Hándicap *",
+    "playMode": "Modo de Juego *",
     "scratch": "Scratch",
-    "percentage": "Porcentaje",
-    "handicapPercentage": "Porcentaje de Hándicap",
+    "handicap": "Hándicap",
     "numberOfPlayers": "Número de Jugadores *",
     "numberOfPlayersPlaceholder": "Ingresa el número total de jugadores",
     "teamAssignment": "Asignación de Equipos *",
@@ -114,7 +113,9 @@
       "complete": "Completar",
       "cancel": "Cancelar",
       "delete": "Eliminar",
-      "request-to-join": "Solicitar Unirse"
+      "request-to-join": "Solicitar Unirse",
+      "manageSchedule": "Gestionar Calendario",
+      "viewSchedule": "Ver Calendario"
     },
     "confirmations": {
       "activate": "¿Estás seguro de que quieres activar esta competición?",
@@ -131,15 +132,15 @@
       "noGolfCourse": "No se puede activar la competición: No se ha seleccionado ningún campo de golf",
       "golfCoursesPendingApproval": "No se puede activar: Estos campos están pendientes de aprobación: {{courses}}",
       "golfCoursesRejected": "No se puede activar: Estos campos fueron rechazados: {{courses}}",
-      "noGolfCourses": "No se puede activar: No se han seleccionado campos de golf"
+      "noGolfCourses": "No se puede activar: No se han seleccionado campos de golf",
+      "golfCoursesFetchFailed": "Error al verificar los campos de golf. Inténtalo de nuevo."
     },
     "enrollmentStatus": "Tu estado de inscripción:",
     "settings": {
       "title": "Configuración de la Competición",
       "teamOne": "Equipo 1:",
       "teamTwo": "Equipo 2:",
-      "handicapType": "Tipo de Hándicap:",
-      "handicapPercentage": "Porcentaje de Hándicap:",
+      "playMode": "Modo de Juego:",
       "teamAssignment": "Asignación de Equipos:",
       "created": "Creado:"
     },
@@ -165,6 +166,7 @@
       "enrollmentRequested": "Solicitud de inscripción enviada correctamente"
     },
     "failedToApprove": "Error al aprobar la inscripción",
+    "competitionFull": "La competición está completa. Se ha alcanzado el número máximo de jugadores ({{max}}).",
     "failedToReject": "Error al rechazar la inscripción",
     "failedToUpdateCompetition": "Error al actualizar la competición",
     "failedToDeleteCompetition": "Error al eliminar la competición",
@@ -237,6 +239,14 @@
     "IN_PROGRESS": "EN PROGRESO",
     "COMPLETED": "COMPLETADA",
     "CANCELLED": "CANCELADA"
+  },
+  "enrollment": {
+    "modalTitle": "Solicitar inscripción",
+    "teeCategoryLabel": "Categoría de tee preferida",
+    "teeCategoryHint": "Se usará para asignarte el tee adecuado en los partidos",
+    "noPreference": "Sin preferencia",
+    "confirm": "Confirmar",
+    "cancel": "Cancelar"
   },
   "enrollmentStatus": {
     "REQUESTED": "SOLICITADA",

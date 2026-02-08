@@ -1,8 +1,8 @@
 # 🗺️ Roadmap - RyderCupFriends Frontend
 
-> **Versión:** 1.15.0 → 1.16.0 → 2.0.0 → 2.0.4 (sincronizado con backend)
-> **Última actualización:** 4 Feb 2026
-> **Estado:** ✅ v2.0.0 Sprint 1 Completado | ✅ v2.0.4 Sprint 2 + Infra Completado
+> **Versión:** 1.15.0 → 1.16.0 → 2.0.0 → 2.0.4 → 2.0.5 → 2.1.0 (sincronizado con backend)
+> **Última actualización:** 6 Feb 2026
+> **Estado:** ✅ v2.0.0 Sprint 1 Completado | ✅ v2.0.4 Sprint 2 + Infra Completado | ✅ v2.0.5 Hotfix UI | ✅ v2.1.0 Sprint 2 Schedule COMPLETADO
 > **Stack:** React 19 + Vite 7.3 + Tailwind CSS 4 + ESLint 9
 > **Arquitectura:** Subdomain (www + api) con Cloudflare Proxy (ADR-011)
 
@@ -117,7 +117,7 @@ const CompetitionActions = ({ competitionId }) => {
 | Sprint   | Fechas          | Esfuerzo BE | Endpoints | Sync Point        | Estado        | Versión  |
 |----------|-----------------|-------------|-----------|-------------------|---------------|----------|
 | Sprint 1 | 27 Ene - 6 Feb  | 60h         | 10        | ✅ Viernes 30 Ene | ✅ COMPLETADO | v2.0.0   |
-| Sprint 2 | 3 Feb - 17 Feb  | 70h         | 10        | ✅ Viernes 4 Feb  | ✅ COMPLETADO | v2.0.4   |
+| Sprint 2 | 3 Feb - 17 Feb  | 70h         | 11        | ✅ Viernes 4 Feb  | ✅ COMPLETADO  | v2.1.0   |
 | Sprint 3 | 18 Feb - 24 Feb | 48h         | 5         | 🔄 Viernes 20 Feb | 📋 Pendiente  | v2.0.5   |
 | Sprint 4 | 25 Feb - 10 Mar | 92h         | 4         | 🔄 Viernes 6 Mar  | 📋 Pendiente  | v2.0.6   |
 | Sprint 5 | 11 Mar - 17 Mar | 60h         | 2         | 🔄 Viernes 13 Mar | 📋 Pendiente  | v2.0.7   |
@@ -130,7 +130,7 @@ const CompetitionActions = ({ competitionId }) => {
 | Sprint   | Backend Entrega                                                                                                         | Frontend Consume                                                                              | Sync Point     | Estado |
 |----------|-------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------|----------------|--------|
 | Sprint 1 | ✅ `POST /admin/golf-courses`<br>✅ `PUT /admin/golf-courses/{id}/approve`<br>✅ `PUT /admin/golf-courses/{id}/reject`<br>✅ `GET /admin/golf-courses/pending`<br>✅ `PUT /admin/golf-courses/{id}/approve-update`<br>✅ `PUT /admin/golf-courses/{id}/reject-update`<br>✅ `PUT /golf-courses/{id}` (smart workflow)<br>✅ `GET /golf-courses`<br>✅ `GET /golf-courses/{id}`<br>✅ `POST /golf-courses/request` | ✅ `/admin/golf-courses` page (CRUD completo)<br>✅ `/admin/golf-courses/pending` page (2 tabs)<br>✅ GolfCourseForm component (400+ líneas)<br>✅ GolfCourseTable component<br>✅ TeeCategoryBadge component<br>✅ 116 tests (100% passing)<br>✅ i18n ES/EN (300+ traducciones)<br>✅ Navigation links (admin only) | ✅ 31 Ene 2026 | ✅ **COMPLETADO** |
-| Sprint 2 | `POST /competitions/{id}/rounds`<br>`POST /rounds/{id}/matches`<br>`GET /matches/{id}` ⭐<br>`PUT /matches/{id}/status` ⭐<br>`POST /matches/{id}/walkover` ⭐ | Schedule drag-drop<br>Match creation wizard<br>Match detail modal<br>Manual status control<br>Walkover button | Viernes 14 Feb | 📋 Pendiente |
+| Sprint 2 | ✅ `GET /competitions/{id}/schedule`<br>✅ `POST /competitions/{id}/schedule/configure`<br>✅ `POST /competitions/{id}/teams`<br>✅ `POST /competitions/{id}/rounds`<br>✅ `PUT /rounds/{id}`<br>✅ `DELETE /rounds/{id}`<br>✅ `POST /rounds/{id}/matches/generate`<br>✅ `GET /matches/{id}`<br>✅ `PUT /matches/{id}/status`<br>✅ `POST /matches/{id}/walkover`<br>✅ `PUT /matches/{id}/players` | ✅ Backend Integration Layer (11 endpoints)<br>✅ Domain Layer (6 VOs + 3 Entities)<br>✅ Infrastructure (Mapper + Repository)<br>✅ 11 Use Cases + Composition Root<br>✅ i18n (EN/ES schedule namespace)<br>📋 UI: Schedule drag-drop<br>📋 UI: Match creation wizard<br>📋 UI: Match detail modal<br>📋 UI: Manual status control | Viernes 14 Feb | 🔄 EN PROGRESO |
 | Sprint 3 | `POST /invitations/{id}/respond`                                                                                        | Invitation cards<br>Email notifications                                                           | Viernes 21 Feb | 📋 Pendiente |
 | Sprint 4 | `GET /matches/{id}/scoring-view`                                                                                        | Scoring 3 tabs<br>Real-time validation ✅/❌                                                        | Viernes 7 Mar  | 📋 Pendiente |
 | Sprint 5 | `GET /competitions/{id}/leaderboard`                                                                                    | Public leaderboard<br>Polling (30s)                                                               | Viernes 14 Mar | 📋 Pendiente |
@@ -267,6 +267,76 @@ Migrar de arquitectura de proxy inverso a subdominios directos para mejorar rend
 
 ---
 
+### 🔄 v2.1.0 - Schedule & Matches Backend Integration Layer (Sprint 2)
+
+> **Estado:** ✅ Completado el 8 Feb 2026
+> **Branch:** `feature/sprint-2-schedule-matches`
+> **Esfuerzo Frontend:** ~50h (backend integration + UI)
+> **Tests:** ~214 tests nuevos (1088 total passing, 1 skipped)
+
+#### 🎯 Objetivos
+
+1. **Backend Integration Layer completo** (11 endpoints del backend Sprint 2)
+2. **Breaking change `play_mode`** (reemplaza `handicap_type`/`handicap_percentage`)
+3. **UI Components** (pendiente): Schedule panel, Round cards, Match cards
+
+#### ✅ Completado: Backend Integration Layer
+
+1. **Breaking Change: `play_mode`**
+   - `HandicapSettings` value object actualizado (SCRATCH/HANDICAP reemplaza SCRATCH/PERCENTAGE)
+   - `CompetitionMapper` mapea `play_mode` (con fallback retrocompatible)
+   - `CreateCompetition.jsx` formulario actualizado (eliminado selector de porcentaje)
+   - Traducciones EN/ES actualizadas
+
+2. **Domain Layer (9 archivos nuevos + tests)**
+   - Value Objects: SessionType, MatchFormat, HandicapMode, RoundStatus, MatchStatus, AllowancePercentage
+   - Entities: Round, Match, TeamAssignmentResult
+   - Repository Interface: IScheduleRepository (11 metodos)
+
+3. **Infrastructure Layer (2 archivos nuevos + tests)**
+   - ScheduleMapper: Anti-corruption layer (snake_case API -> camelCase domain)
+   - ApiScheduleRepository: Implementacion REST de 11 endpoints
+
+4. **Application Layer (11 use cases + tests)**
+   - GetSchedule, ConfigureSchedule, AssignTeams
+   - CreateRound, UpdateRound, DeleteRound
+   - GenerateMatches, GetMatchDetail, UpdateMatchStatus
+   - DeclareWalkover, ReassignPlayers
+
+5. **Composition Root + i18n**
+   - DI container actualizado con 11 use cases
+   - Namespace `schedule` registrado (EN/ES)
+
+#### ✅ Completado: UI Components (Sprint 2)
+
+- ✅ Schedule page completa (`/creator/competitions/:id/schedule`)
+- ✅ Vista read-only para jugadores inscritos (`/competitions/:id/schedule`)
+- ✅ Round cards con expand/collapse
+- ✅ Match cards con acciones (start, complete, walkover, reassign)
+- ✅ Match detail modal con resultado formateado (walkover/completed)
+- ✅ Team assignment section
+- ✅ Walkover modal con equipo ganador + razón
+- ✅ Reassign players modal
+- ✅ Enrollment request modal con selector de tee category
+- ✅ Botón "View Schedule" para jugadores inscritos en CompetitionDetail
+
+#### 📋 Pendiente
+
+- Manual pairings UI (generate matches solo funciona en modo automático)
+
+#### 📊 Estadisticas Sprint 2
+
+- **Archivos creados:** ~30
+- **Archivos modificados:** ~37
+- **Value Objects:** 6 nuevos
+- **Entities:** 3 nuevas
+- **Use Cases:** 11 nuevos
+- **UI Components:** 8 nuevos (schedule)
+- **Tests:** ~214 nuevos (1088 total passing, 1 skipped)
+- **Bundle:** 1308 KB build sin comprimir (-311 KB desde peak de 1619 KB)
+
+---
+
 ### ❓ Respuestas al Equipo Backend
 
 Aquí están las confirmaciones y respuestas a vuestras preguntas:
@@ -397,16 +467,22 @@ Aquí están las confirmaciones y respuestas a vuestras preguntas:
 
 ---
 
-## 📊 Estado Actual (v1.16.0 ✅)
+## 📊 Estado Actual (v2.1.0 - Sprint 2 completado)
 
 ### Métricas Clave
 
-- **Tests:** 717 passing, 1 skipped, 0 failed ✅
+- **Tests:** 1088 passing, 1 skipped, 0 failed ✅
 - **Coverage:** ≥85% lines, ≥75% functions ✅
-- **Bundle:** 1318 KB (~460 KB gzipped) ⚠️ (target: ≤1000 KB)
-- **Build time:** 5.83s ⚡
+- **Bundle:** 1308 KB sin comprimir ✅ (budget: ≤1400 KB, warning: 1300 KB)
+- **Build time:** ~6s ⚡
 - **Security:** 0 vulnerabilities ✅
-- **OWASP Score:** 8.75/10 ✅
+- **OWASP Score:** 9.2/10 ✅
+
+### Completado (v2.x)
+- ✅ Golf Course Management System (v2.0.0 - Sprint 1)
+- ✅ Infrastructure Migration + Security (v2.0.4)
+- ✅ Hotfix Golf Courses UI (v2.0.5)
+- ✅ Schedule Backend Integration Layer + UI (v2.1.0 - Sprint 2, COMPLETADO)
 
 ### Completado (v1.x)
 - ✅ Modern Build Stack (v1.16.0)
@@ -417,7 +493,7 @@ Aquí están las confirmaciones y respuestas a vuestras preguntas:
 - ✅ CRUD Competiciones + Enrollments
 - ✅ Handicaps (Manual + RFEG)
 - ✅ Password Reset Flow
-- ✅ i18n (ES/EN)
+- ✅ i18n (ES/EN, 9 namespaces)
 - ✅ Sentry Monitoring
 - ✅ CI/CD Pipeline (Quality Gates)
 - ✅ Security Scanning (Snyk, TruffleHog)
@@ -452,5 +528,5 @@ Aquí están las confirmaciones y respuestas a vuestras preguntas:
 
 ---
 
-**Última revisión:** 4 Feb 2026 (v2.0.4 Sprint 2 Completado)
-**Próxima revisión:** Fin Sprint 2 (14 Feb 2026)
+**Última revisión:** 8 Feb 2026 (Sprint 2 Schedule UI completado)
+**Próxima revisión:** Inicio Sprint 3 (18 Feb 2026)

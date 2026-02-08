@@ -15,11 +15,10 @@ class Tee {
 
   validate() {
     const validCategories = [
-      'CHAMPIONSHIP_MALE',
-      'AMATEUR_MALE',
-      'SENIOR_MALE',
-      'AMATEUR_FEMALE',
-      'SENIOR_FEMALE',
+      'CHAMPIONSHIP',
+      'AMATEUR',
+      'SENIOR',
+      'FORWARD',
       'JUNIOR',
     ];
 
@@ -63,7 +62,7 @@ class Tee {
       identifier: this.identifier,
       course_rating: this.courseRating,
       slope_rating: this.slopeRating,
-      gender: this.gender,
+      tee_gender: this.gender,
     };
   }
 
@@ -73,7 +72,7 @@ class Tee {
       identifier: dto.identifier,
       courseRating: dto.course_rating,
       slopeRating: dto.slope_rating,
-      gender: dto.gender,
+      gender: dto.tee_gender ?? dto.gender ?? null,
     });
   }
 }

@@ -13,6 +13,7 @@ import {
 } from '../composition';
 import { CountryFlag } from '../utils/countryUtils';
 import { useAuth } from '../hooks/useAuth';
+import EnrollmentRequestModal from '../components/enrollment/EnrollmentRequestModal';
 
 const BrowseCompetitions = () => {
   const navigate = useNavigate();
@@ -35,6 +36,8 @@ const BrowseCompetitions = () => {
 
   // Request enrollment state
   const [requestingEnrollment, setRequestingEnrollment] = useState({});
+  const [enrollModalOpen, setEnrollModalOpen] = useState(false);
+  const [enrollTargetId, setEnrollTargetId] = useState(null);
 
   // Load joinable competitions
   useEffect(() => {
@@ -124,13 +127,20 @@ const BrowseCompetitions = () => {
     return true;
   });
 
+  // Open modal to request enrollment
+  const openEnrollModal = (competitionId) => {
+    setEnrollTargetId(competitionId);
+    setEnrollModalOpen(true);
+  };
+
   // Handle request enrollment
-  const handleRequestEnrollment = async (competitionId) => {
+  const handleRequestEnrollment = async (competitionId, teeCategory = null) => {
+    setEnrollModalOpen(false);
     try {
       setRequestingEnrollment((prev) => ({ ...prev, [competitionId]: true }));
 
       // Call RequestEnrollmentUseCase
-      await requestEnrollmentUseCase.execute(competitionId);
+      await requestEnrollmentUseCase.execute(competitionId, null, { teeCategory });
 
       customToast.success(t('browse.success.enrollmentRequested'));
 
@@ -224,7 +234,7 @@ const BrowseCompetitions = () => {
             key={competition.id}
             competition={competition}
             mode="joinable"
-            onRequestEnrollment={handleRequestEnrollment}
+            onRequestEnrollment={openEnrollModal}
             onViewDetails={handleViewDetails}
             isRequesting={requestingEnrollment[competition.id]}
           />
@@ -397,6 +407,13 @@ const BrowseCompetitions = () => {
           {exploreContent}
         </div>
       </div>
+
+      <EnrollmentRequestModal
+        isOpen={enrollModalOpen}
+        onClose={() => setEnrollModalOpen(false)}
+        onConfirm={(tee) => handleRequestEnrollment(enrollTargetId, tee)}
+        isProcessing={!!requestingEnrollment[enrollTargetId]}
+      />
     </div>
   );
 };

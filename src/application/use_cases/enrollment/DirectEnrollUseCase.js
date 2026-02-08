@@ -50,6 +50,7 @@ class DirectEnrollUseCase {
    * @param {string} data.userId - UUID del usuario a inscribir
    * @param {number|null} data.customHandicap - Handicap personalizado (opcional)
    * @param {string|null} data.teamId - ID del equipo (opcional)
+   * @param {string|null} data.teeCategory - Categoría de tee preferida (opcional: CHAMPIONSHIP, AMATEUR, SENIOR, FORWARD, JUNIOR)
    * @returns {Promise<Object>} DTO simple del enrollment creado
    * @throws {Error} Si el usuario ya está inscrito o falla la operación
    */

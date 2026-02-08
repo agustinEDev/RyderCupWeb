@@ -15,7 +15,7 @@
     "tees": "Tees",
     "tee": "Tee",
     "addTee": "Agregar Tee",
-    "maxTeesReached": "Máximo 6 tees permitidos",
+    "maxTeesReached": "Máximo 10 tees permitidos",
     "minTeesRequired": "Mínimo 2 tees requeridos",
     "teeCategory": "Categoría",
     "identifier": "Identificador",
@@ -23,13 +23,17 @@
     "courseRating": "Course Rating",
     "slopeRating": "Slope Rating",
     "teeCategories": {
-      "CHAMPIONSHIP_MALE": "Campeonato Masculino",
-      "AMATEUR_MALE": "Amateur Masculino",
-      "SENIOR_MALE": "Senior Masculino",
-      "CHAMPIONSHIP_FEMALE": "Campeonato Femenino",
-      "AMATEUR_FEMALE": "Amateur Femenino",
-      "SENIOR_FEMALE": "Senior Femenino",
+      "CHAMPIONSHIP": "Campeonato",
+      "AMATEUR": "Amateur",
+      "SENIOR": "Senior",
+      "FORWARD": "Adelantado",
       "JUNIOR": "Juvenil"
+    },
+    "teeGender": "Género",
+    "teeGenders": {
+      "MALE": "Masculino",
+      "FEMALE": "Femenino",
+      "none": "Mixto"
     },
     "holes": "Hoyos (18)",
     "hole": "Hoyo",
@@ -43,7 +47,8 @@
     "errors": {
       "nameRequired": "El nombre del campo debe tener al menos 3 caracteres",
       "countryCodeRequired": "El código de país debe tener 2 caracteres (ISO 3166-1)",
-      "teesRange": "El campo debe tener entre 2 y 6 tees",
+      "teesRange": "El campo debe tener entre 2 y 10 tees",
+      "genderMixing": "No se pueden mezclar tees con género y sin género para la misma categoría",
       "teeIdentifierRequired": "El identificador del tee {{index}} es requerido",
       "courseRatingRange": "El Course Rating del tee {{index}} debe estar entre 50.0 y 90.0",
       "slopeRatingRange": "El Slope Rating del tee {{index}} debe estar entre 55 y 155",

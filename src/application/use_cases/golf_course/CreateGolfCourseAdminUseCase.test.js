@@ -23,14 +23,14 @@ describe('CreateGolfCourseAdminUseCase', () => {
     courseType: 'STANDARD_18',
     tees: [
       {
-        teeCategory: 'CHAMPIONSHIP_MALE',
+        teeCategory: 'CHAMPIONSHIP',
         identifier: 'Black',
         courseRating: 75.5,
         slopeRating: 140,
         gender: 'MALE'
       },
       {
-        teeCategory: 'AMATEUR_MALE',
+        teeCategory: 'AMATEUR',
         identifier: 'Blue',
         courseRating: 72.0,
         slopeRating: 130,
@@ -82,14 +82,14 @@ describe('CreateGolfCourseAdminUseCase', () => {
       ...createValidCourseData(),
       tees: [
         {
-          teeCategory: 'AMATEUR_MALE',
+          teeCategory: 'AMATEUR',
           identifier: 'Yellow',
           courseRating: 70.0,
           slopeRating: 120,
           gender: 'MALE'
         },
         {
-          teeCategory: 'AMATEUR_FEMALE',
+          teeCategory: 'AMATEUR',
           identifier: 'Red',
           courseRating: 68.0,
           slopeRating: 115,
@@ -119,12 +119,12 @@ describe('CreateGolfCourseAdminUseCase', () => {
     const courseData = {
       ...createValidCourseData(),
       tees: [
-        { teeCategory: 'CHAMPIONSHIP_MALE', identifier: 'Black', courseRating: 75.5, slopeRating: 140, gender: 'MALE' },
-        { teeCategory: 'AMATEUR_MALE', identifier: 'Blue', courseRating: 72.0, slopeRating: 130, gender: 'MALE' },
-        { teeCategory: 'SENIOR_MALE', identifier: 'Yellow', courseRating: 70.0, slopeRating: 120, gender: 'MALE' },
-        { teeCategory: 'JUNIOR', identifier: 'Black', courseRating: 72.0, slopeRating: 130, gender: 'FEMALE' },
-        { teeCategory: 'AMATEUR_FEMALE', identifier: 'Red', courseRating: 68.0, slopeRating: 115, gender: 'FEMALE' },
-        { teeCategory: 'SENIOR_FEMALE', identifier: 'Green', courseRating: 65.0, slopeRating: 110, gender: 'FEMALE' }
+        { teeCategory: 'CHAMPIONSHIP', identifier: 'Black', courseRating: 75.5, slopeRating: 140, gender: 'MALE' },
+        { teeCategory: 'AMATEUR', identifier: 'Blue', courseRating: 72.0, slopeRating: 130, gender: 'MALE' },
+        { teeCategory: 'SENIOR', identifier: 'Yellow', courseRating: 70.0, slopeRating: 120, gender: 'MALE' },
+        { teeCategory: 'JUNIOR', identifier: 'Orange', courseRating: 72.0, slopeRating: 130, gender: 'FEMALE' },
+        { teeCategory: 'FORWARD', identifier: 'Red', courseRating: 68.0, slopeRating: 115, gender: 'FEMALE' },
+        { teeCategory: 'AMATEUR', identifier: 'Green', courseRating: 65.0, slopeRating: 110, gender: 'FEMALE' }
       ]
     };
 
@@ -225,7 +225,7 @@ describe('CreateGolfCourseAdminUseCase', () => {
     const result = await useCase.execute(courseData);
 
     // Assert
-    expect(result.tees[0].teeCategory).toBe('CHAMPIONSHIP_MALE');
+    expect(result.tees[0].teeCategory).toBe('CHAMPIONSHIP');
     expect(result.tees[0].courseRating).toBe(75.5);
     expect(result.holes[0].holeNumber).toBe(1);
     expect(result.holes[17].holeNumber).toBe(18);

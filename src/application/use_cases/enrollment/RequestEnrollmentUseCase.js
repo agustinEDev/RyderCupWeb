@@ -38,10 +38,12 @@ class RequestEnrollmentUseCase {
    *
    * @param {string} competitionId - UUID de la competición
    * @param {string} userId - UUID del usuario (opcional, se obtiene del token JWT)
+   * @param {Object} [data={}] - Datos opcionales del enrollment
+   * @param {string} [data.teeCategory] - Categoría de tee preferida (CHAMPIONSHIP, AMATEUR, SENIOR, FORWARD, JUNIOR)
    * @returns {Promise<Object>} DTO simple del enrollment creado
    * @throws {Error} Si el usuario ya está inscrito o falla la operación
    */
-  async execute(competitionId, userId = null) {
+  async execute(competitionId, userId = null, data = {}) {
     // Validar entrada
     if (!competitionId || typeof competitionId !== 'string') {
       throw new Error('competitionId es requerido y debe ser un string');
@@ -61,7 +63,7 @@ class RequestEnrollmentUseCase {
 
     // Solicitar inscripción (el backend crea el enrollment con estado REQUESTED)
     // El userId se obtiene automáticamente del JWT token en el backend
-    const enrollment = await this.#enrollmentRepository.requestEnrollment(competitionId);
+    const enrollment = await this.#enrollmentRepository.requestEnrollment(competitionId, data);
 
     // Convertir a DTO simple para la UI
     return EnrollmentMapper.toSimpleDTO(enrollment);

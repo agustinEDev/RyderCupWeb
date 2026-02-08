@@ -78,6 +78,74 @@ describe('RegisterUseCase', () => {
     // Add more test cases for other missing fields as needed
   });
 
+  it('should register a user with gender', async () => {
+    // Arrange
+    const userData = {
+      firstName: 'Jane',
+      lastName: 'Doe',
+      email: 'jane.doe@example.com',
+      password: 'StrongPassword123',
+      gender: 'FEMALE'
+    };
+    const mockNewUserEntity = new User({
+      id: '789',
+      first_name: userData.firstName,
+      last_name: userData.lastName,
+      email: userData.email,
+      email_verified: false,
+      gender: 'FEMALE'
+    });
+
+    authRepository.register.mockResolvedValue(mockNewUserEntity);
+
+    // Act
+    const registeredUser = await registerUseCase.execute(userData);
+
+    // Assert
+    const callArg = authRepository.register.mock.calls[0][0];
+    expect(callArg.gender).toBe('FEMALE');
+    expect(registeredUser.gender).toBe('FEMALE');
+  });
+
+  it('should register a user with null gender when not provided', async () => {
+    // Arrange
+    const userData = {
+      firstName: 'John',
+      lastName: 'Doe',
+      email: 'john.doe@example.com',
+      password: 'StrongPassword123',
+    };
+    const mockNewUserEntity = new User({
+      id: '790',
+      first_name: userData.firstName,
+      last_name: userData.lastName,
+      email: userData.email,
+      email_verified: false
+    });
+
+    authRepository.register.mockResolvedValue(mockNewUserEntity);
+
+    // Act
+    await registerUseCase.execute(userData);
+
+    // Assert
+    const callArg = authRepository.register.mock.calls[0][0];
+    expect(callArg.gender).toBeNull();
+  });
+
+  it('should throw error for invalid gender value', async () => {
+    const userData = {
+      firstName: 'Jane',
+      lastName: 'Doe',
+      email: 'jane@example.com',
+      password: 'StrongPassword123',
+      gender: 'OTHER'
+    };
+
+    await expect(registerUseCase.execute(userData)).rejects.toThrow('Invalid gender');
+    expect(authRepository.register).not.toHaveBeenCalled();
+  });
+
   it('should propagate errors from the auth repository', async () => {
     // Arrange
     const userData = {

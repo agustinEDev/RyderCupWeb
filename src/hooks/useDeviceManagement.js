@@ -53,7 +53,7 @@ export const useDeviceManagement = () => {
    */
   const revokeDevice = async (deviceId) => {
     if (!deviceId) {
-      customToast.error('Device ID is required');
+      customToast.error(t('errors.DEVICE_ID_REQUIRED'));
       return false;
     }
 
@@ -73,7 +73,7 @@ export const useDeviceManagement = () => {
       // Remove device from local state
       setDevices(prevDevices => prevDevices.filter(d => d.id !== deviceId));
 
-      customToast.success('Device revoked successfully');
+      customToast.success(t('success.deviceRevoked'));
       return true;
     } catch (error) {
       console.error('❌ [useDeviceManagement] Error revoking device:', error);
