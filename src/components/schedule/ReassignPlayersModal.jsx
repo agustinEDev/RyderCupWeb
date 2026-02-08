@@ -15,6 +15,7 @@ const ReassignPlayersModalContent = ({
   match,
   enrollments,
   isProcessing,
+  teamNames,
   t,
 }) => {
   const [teamAIds, setTeamAIds] = useState(() =>
@@ -114,7 +115,7 @@ const ReassignPlayersModalContent = ({
                           : 'bg-gray-100 text-gray-600 hover:bg-blue-100'
                       }`}
                     >
-                      {t('matches.teamA')}
+                      {teamNames.teamA}
                     </button>
                     <button
                       type="button"
@@ -125,7 +126,7 @@ const ReassignPlayersModalContent = ({
                           : 'bg-gray-100 text-gray-600 hover:bg-red-100'
                       }`}
                     >
-                      {t('matches.teamB')}
+                      {teamNames.teamB}
                     </button>
                   </div>
                 </div>
@@ -136,10 +137,10 @@ const ReassignPlayersModalContent = ({
           {/* Summary */}
           <div className="grid grid-cols-2 gap-3 text-sm">
             <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
-              <span className="font-semibold text-blue-800">{t('matches.teamA')}: {teamAIds.length}</span>
+              <span className="font-semibold text-blue-800">{teamNames.teamA}: {teamAIds.length}</span>
             </div>
             <div className="bg-red-50 rounded-lg p-3 border border-red-200">
-              <span className="font-semibold text-red-800">{t('matches.teamB')}: {teamBIds.length}</span>
+              <span className="font-semibold text-red-800">{teamNames.teamB}: {teamBIds.length}</span>
             </div>
           </div>
 

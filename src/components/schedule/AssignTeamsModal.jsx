@@ -8,6 +8,7 @@ const AssignTeamsModal = ({
   onConfirm,
   enrollments,
   isProcessing,
+  teamNames,
   t,
 }) => {
   const [mode, setMode] = useState('automatic');
@@ -146,7 +147,7 @@ const AssignTeamsModal = ({
                               : 'bg-gray-100 text-gray-600 hover:bg-blue-100'
                           }`}
                         >
-                          {t('teams.teamA')}
+                          {teamNames.teamA}
                         </button>
                         <button
                           type="button"
@@ -157,7 +158,7 @@ const AssignTeamsModal = ({
                               : 'bg-gray-100 text-gray-600 hover:bg-red-100'
                           }`}
                         >
-                          {t('teams.teamB')}
+                          {teamNames.teamB}
                         </button>
                       </div>
                     </div>
@@ -169,12 +170,12 @@ const AssignTeamsModal = ({
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
                   <span className="font-semibold text-blue-800">
-                    {t('teams.teamA')}: {manualTeamA.length}
+                    {teamNames.teamA}: {manualTeamA.length}
                   </span>
                 </div>
                 <div className="bg-red-50 rounded-lg p-3 border border-red-200">
                   <span className="font-semibold text-red-800">
-                    {t('teams.teamB')}: {manualTeamB.length}
+                    {teamNames.teamB}: {manualTeamB.length}
                   </span>
                 </div>
               </div>
@@ -188,7 +189,7 @@ const AssignTeamsModal = ({
               onClick={onClose}
               className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg font-medium hover:bg-gray-200 transition-colors"
             >
-              Cancel
+              {t('cancel')}
             </button>
             <button
               type="submit"

@@ -6,6 +6,7 @@ const TeamAssignmentSection = ({
   canManage,
   playerNameMap,
   enrollments,
+  teamNames,
   t,
 }) => {
   // Build handicap lookup from enrollments
@@ -59,7 +60,7 @@ const TeamAssignmentSection = ({
         {/* Team A */}
         <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
           <h4 className="font-semibold text-blue-800 mb-2">
-            {t('teams.teamA')} ({t('teams.playersCount', { count: teamA.length })})
+            {teamNames.teamA} ({t('teams.playersCount', { count: teamA.length })})
           </h4>
           <ul className="space-y-1.5">
             {teamA.map((playerId) => (
@@ -76,7 +77,7 @@ const TeamAssignmentSection = ({
         {/* Team B */}
         <div className="bg-red-50 rounded-lg p-4 border border-red-200">
           <h4 className="font-semibold text-red-800 mb-2">
-            {t('teams.teamB')} ({t('teams.playersCount', { count: teamB.length })})
+            {teamNames.teamB} ({t('teams.playersCount', { count: teamB.length })})
           </h4>
           <ul className="space-y-1.5">
             {teamB.map((playerId) => (

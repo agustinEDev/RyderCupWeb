@@ -8,6 +8,7 @@ const MatchDetailModal = ({
   onClose,
   matchId,
   playerNameMap,
+  teamNames,
   t,
 }) => {
   const [match, setMatch] = useState(null);
@@ -90,7 +91,7 @@ const MatchDetailModal = ({
 
               {/* Team A */}
               <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
-                <h4 className="font-semibold text-blue-800 mb-2">{t('matches.teamA')}</h4>
+                <h4 className="font-semibold text-blue-800 mb-2">{teamNames.teamA}</h4>
                 <div className="space-y-1">
                   {(match.teamAPlayers || []).map((p, i) => (
                     <p key={p.userId || i} className={`text-sm ${i === 0 ? 'text-gray-900' : 'text-gray-700'}`}>
@@ -108,7 +109,7 @@ const MatchDetailModal = ({
 
               {/* Team B */}
               <div className="bg-red-50 rounded-lg p-4 border border-red-200">
-                <h4 className="font-semibold text-red-800 mb-2">{t('matches.teamB')}</h4>
+                <h4 className="font-semibold text-red-800 mb-2">{teamNames.teamB}</h4>
                 <div className="space-y-1">
                   {(match.teamBPlayers || []).map((p, i) => (
                     <p key={p.userId || i} className={`text-sm ${i === 0 ? 'text-gray-900' : 'text-gray-700'}`}>
@@ -132,7 +133,7 @@ const MatchDetailModal = ({
                   </p>
                   {match.strokesGivenToTeam && (
                     <p className="text-sm text-gray-500">
-                      {t('matches.strokesGivenTo', { team: match.strokesGivenToTeam })}
+                      {t('matches.strokesGivenTo', { team: match.strokesGivenToTeam === 'A' ? teamNames.teamA : teamNames.teamB })}
                     </p>
                   )}
                 </div>
@@ -157,7 +158,7 @@ const MatchDetailModal = ({
                         <p className="font-medium">{t('matches.resultScore', { score: match.result.score })}</p>
                       )}
                       {match.result.winner && (
-                        <p>{t('matches.resultWinner', { team: match.result.winner })}</p>
+                        <p>{t('matches.resultWinner', { team: match.result.winner === 'A' ? teamNames.teamA : teamNames.teamB })}</p>
                       )}
                       {match.result.reason && (
                         <p className="text-gray-500 italic">{t('matches.resultReason', { reason: match.result.reason })}</p>

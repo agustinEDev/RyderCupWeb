@@ -24,6 +24,7 @@ const RoundCard = ({
   onViewMatchDetail,
   playerNameMap,
   golfCourses,
+  teamNames,
   t,
 }) => {
   const status = round.status;
@@ -130,6 +131,7 @@ const RoundCard = ({
                   onViewDetail={onViewMatchDetail}
                   canManage={canEdit}
                   playerNameMap={playerNameMap}
+                  teamNames={teamNames}
                   t={t}
                 />
               ))}

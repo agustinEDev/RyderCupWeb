@@ -20,6 +20,7 @@ const MatchCard = ({
   onViewDetail,
   canManage,
   playerNameMap,
+  teamNames,
   t,
 }) => {
   const status = match.status;
@@ -45,7 +46,7 @@ const MatchCard = ({
       <div className="space-y-2 mb-3">
         {/* Team A */}
         <div className="bg-blue-50 rounded-lg p-2">
-          <p className="text-xs font-semibold text-blue-700 mb-1">{t('matches.teamA')}</p>
+          <p className="text-xs font-semibold text-blue-700 mb-1">{teamNames.teamA}</p>
           {teamA.map((p, i) => (
             <p key={p.userId || i} className={`text-sm ${i === 0 ? 'text-gray-900' : 'text-gray-700'}`}>
               {getPlayerName(p.userId, playerNameMap)}
@@ -58,7 +59,7 @@ const MatchCard = ({
 
         {/* Team B */}
         <div className="bg-red-50 rounded-lg p-2">
-          <p className="text-xs font-semibold text-red-700 mb-1">{t('matches.teamB')}</p>
+          <p className="text-xs font-semibold text-red-700 mb-1">{teamNames.teamB}</p>
           {teamB.map((p, i) => (
             <p key={p.userId || i} className={`text-sm ${i === 0 ? 'text-gray-900' : 'text-gray-700'}`}>
               {getPlayerName(p.userId, playerNameMap)}
@@ -74,7 +75,7 @@ const MatchCard = ({
           {t('matches.handicapStrokes', { strokes: match.handicapStrokesGiven })}
           {match.strokesGivenToTeam && (
             <span className="ml-1">
-              ({t('matches.strokesGivenTo', { team: match.strokesGivenToTeam })})
+              ({t('matches.strokesGivenTo', { team: match.strokesGivenToTeam === 'A' ? teamNames.teamA : teamNames.teamB })})
             </span>
           )}
         </div>

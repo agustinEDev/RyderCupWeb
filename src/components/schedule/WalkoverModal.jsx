@@ -13,6 +13,7 @@ const WalkoverModalContent = ({
   onConfirm,
   matchNumber,
   isProcessing,
+  teamNames,
   t,
 }) => {
   const [winningTeam, setWinningTeam] = useState('');
@@ -68,7 +69,7 @@ const WalkoverModalContent = ({
                   required
                   className="text-primary focus:ring-primary"
                 />
-                <span className="text-sm font-medium">{t('matches.teamA')}</span>
+                <span className="text-sm font-medium">{teamNames.teamA}</span>
               </label>
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
@@ -80,7 +81,7 @@ const WalkoverModalContent = ({
                   required
                   className="text-primary focus:ring-primary"
                 />
-                <span className="text-sm font-medium">{t('matches.teamB')}</span>
+                <span className="text-sm font-medium">{teamNames.teamB}</span>
               </label>
             </div>
           </div>

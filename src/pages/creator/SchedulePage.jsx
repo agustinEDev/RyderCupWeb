@@ -306,6 +306,10 @@ const SchedulePage = () => {
 
   const rounds = schedule?.rounds || [];
   const teamAssignment = schedule?.teamAssignment || null;
+  const teamNames = {
+    teamA: competition.team1Name || 'Team A',
+    teamB: competition.team2Name || 'Team B',
+  };
 
   return (
     <div className="relative flex h-auto min-h-screen w-full flex-col bg-white">
@@ -326,7 +330,7 @@ const SchedulePage = () => {
                 className="flex items-center gap-2 text-gray-600 hover:text-primary transition-colors mb-4"
               >
                 <ArrowLeft className="w-4 h-4" />
-                <span className="text-sm font-medium">{tComp('detail.backToCompetitions')}</span>
+                <span className="text-sm font-medium">{t('backToDetail')}</span>
               </button>
 
               <div className="flex flex-wrap justify-between items-center gap-3">
@@ -364,6 +368,7 @@ const SchedulePage = () => {
                 canManage={canManage}
                 playerNameMap={playerNameMap}
                 enrollments={enrollments}
+                teamNames={teamNames}
                 t={t}
               />
             </motion.div>
@@ -416,6 +421,7 @@ const SchedulePage = () => {
                       onViewMatchDetail={openMatchDetail}
                       playerNameMap={playerNameMap}
                       golfCourses={golfCourses}
+                      teamNames={teamNames}
                       t={t}
                     />
                   ))}
@@ -461,6 +467,7 @@ const SchedulePage = () => {
           onConfirm={handleDeclareWalkover}
           matchNumber={walkoverMatch.matchNumber}
           isProcessing={isProcessing}
+          teamNames={teamNames}
           t={t}
         />
       )}
@@ -477,6 +484,7 @@ const SchedulePage = () => {
           match={reassignMatch}
           enrollments={enrollments}
           isProcessing={isProcessing}
+          teamNames={teamNames}
           t={t}
         />
       )}
@@ -491,6 +499,7 @@ const SchedulePage = () => {
           }}
           matchId={detailMatchId}
           playerNameMap={playerNameMap}
+          teamNames={teamNames}
           t={t}
         />
       )}
@@ -503,6 +512,7 @@ const SchedulePage = () => {
           onConfirm={handleAssignTeams}
           enrollments={enrollments}
           isProcessing={isProcessing}
+          teamNames={teamNames}
           t={t}
         />
       )}
