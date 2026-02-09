@@ -83,19 +83,19 @@ const Footer = () => {
             <h4 className="text-gray-900 font-semibold mb-4 font-poppins">{t('footer.quickLinks')}</h4>
             <ul className="space-y-3">
               <li>
-                <a href="#features" className="text-gray-600 text-sm hover:text-primary transition-colors">
+                <Link to="/#features" className="text-gray-600 text-sm hover:text-primary transition-colors">
                   {t('footer.features')}
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="#pricing" className="text-gray-600 text-sm hover:text-primary transition-colors">
+                <Link to="/pricing" className="text-gray-600 text-sm hover:text-primary transition-colors">
                   {t('footer.pricing')}
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="#support" className="text-gray-600 text-sm hover:text-primary transition-colors">
+                <Link to="/contact" className="text-gray-600 text-sm hover:text-primary transition-colors">
                   {t('footer.support')}
-                </a>
+                </Link>
               </li>
               <li>
                 <Link to="/register" className="text-gray-600 text-sm hover:text-primary transition-colors">
@@ -110,24 +110,24 @@ const Footer = () => {
             <h4 className="text-gray-900 font-semibold mb-4 font-poppins">{t('footer.legal')}</h4>
             <ul className="space-y-3">
               <li>
-                <a href="#terms" className="text-gray-600 text-sm hover:text-primary transition-colors">
+                <Link to="/terms" className="text-gray-600 text-sm hover:text-primary transition-colors">
                   {t('footer.terms')}
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="#privacy" className="text-gray-600 text-sm hover:text-primary transition-colors">
+                <Link to="/privacy" className="text-gray-600 text-sm hover:text-primary transition-colors">
                   {t('footer.privacy')}
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="#cookies" className="text-gray-600 text-sm hover:text-primary transition-colors">
+                <Link to="/cookies" className="text-gray-600 text-sm hover:text-primary transition-colors">
                   {t('footer.cookies')}
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="#contact" className="text-gray-600 text-sm hover:text-primary transition-colors">
+                <Link to="/contact" className="text-gray-600 text-sm hover:text-primary transition-colors">
                   {t('footer.contact')}
-                </a>
+                </Link>
               </li>
             </ul>
           </div>
