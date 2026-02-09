@@ -51,7 +51,7 @@ style: |
 <br>
 
 **Agustin Estevez Dominguez**
-v2.0.7 (BE) / v2.0.6 (FE) | February 2026
+v2.0.8 (BE) / v2.0.6 (FE) | February 2026
 
 Frontend: github.com/agustinEDev/RyderCupWeb
 Backend: github.com/agustinEDev/RyderCupAm
@@ -73,7 +73,7 @@ Backend: github.com/agustinEDev/RyderCupAm
 
 4. Backend Architecture (Clean + DDD)
 5. Domain Model & Database
-6. API Design (69 endpoints)
+6. API Design (70 endpoints)
 7. Backend Security & DevOps
 
 </div>
@@ -84,7 +84,7 @@ Backend: github.com/agustinEDev/RyderCupAm
 8. Frontend Architecture (Clean + DDD)
 9. Key Features & Workflows
 10. Frontend Security & i18n
-11. Testing Strategy (2,410 total tests)
+11. Testing Strategy (2,435 total tests)
 12. CI/CD Pipelines
 
 ### Part IV - Closing
@@ -123,11 +123,11 @@ Backend: github.com/agustinEDev/RyderCupAm
 
 <div class="stat-grid">
 <div class="stat-box">
-<strong>69</strong>
+<strong>70</strong>
 <span>API Endpoints</span>
 </div>
 <div class="stat-box">
-<strong>2,410</strong>
+<strong>2,435</strong>
 <span>Total Tests</span>
 </div>
 <div class="stat-box">
@@ -162,12 +162,12 @@ Backend: github.com/agustinEDev/RyderCupAm
   │  React 19  |  Vite 7  |  Tailwind 4  |  1,104 tests         │
   │  Clean Architecture  |  DDD  |  Zustand  |  i18n (EN/ES)    │
   └──────────────────────────┬──────────────────────────────────┘
-                             │  69 REST API calls
+                             │  70 REST API calls
                              │  httpOnly cookies
                              │  Automatic token refresh
   ┌──────────────────────────┴──────────────────────────────────┐
   │                        BACKEND                               │
-  │  FastAPI  |  Python 3.12  |  PostgreSQL 15  |  1,306 tests   │
+  │  FastAPI  |  Python 3.12  |  PostgreSQL 15  |  1,331 tests   │
   │  Clean Architecture  |  DDD  |  RBAC  |  WHS Handicaps      │
   └─────────────────────────────────────────────────────────────┘
 ```
@@ -175,7 +175,7 @@ Backend: github.com/agustinEDev/RyderCupAm
 | Metric | Frontend | Backend |
 |--------|:--------:|:-------:|
 | Architecture | Clean + DDD | Clean + DDD |
-| Tests | 1,104 | 1,306 |
+| Tests | 1,104 | 1,331 |
 | Coverage | 85%+ | 90% |
 | OWASP | 9.2/10 | 9.4/10 |
 
@@ -247,6 +247,7 @@ Backend: github.com/agustinEDev/RyderCupAm
   │   │   ├── application/        #   Use cases, DTOs, Mappers
   │   │   └── infrastructure/     #   Routes, Persistence, Security
   │   ├── golf_course/            # Golf course module (same layers)
+  │   ├── support/                # Support module (contact form)
   │   └── competition/            # Competition + Schedule module
   └── shared/                     # Cross-cutting concerns
       ├── domain/                 #   Country entity
@@ -319,7 +320,7 @@ Full ERD documented in `docs/DATABASE_ERD.md` (Mermaid)
 
 ---
 
-## 6. API Design - 69 REST Endpoints
+## 6. API Design - 70 REST Endpoints
 
 <div class="columns">
 <div class="col">
@@ -334,8 +335,9 @@ Full ERD documented in `docs/DATABASE_ERD.md` (Mermaid)
 | **Competitions** | 10 | CRUD, state machine |
 | **Enrollments** | 8 | Request, approve, reject |
 | **Schedule** | 11 | Rounds, matches, teams |
+| **Support** | 1 | Contact form → GitHub |
 | **Countries** | 2 | List, adjacent |
-| **Total** | **69** | |
+| **Total** | **70** | |
 
 </div>
 <div class="col">
@@ -648,7 +650,7 @@ Auto-detection + localStorage + flags
 
 <div class="stat-grid">
 <div class="stat-box-green">
-<strong>1,306</strong>
+<strong>1,331</strong>
 <span>Backend Tests</span>
 </div>
 <div class="stat-box">
@@ -881,7 +883,7 @@ Eliminates XSS token theft entirely. Worth the extra CSRF handling.
 | HTTP | Fetch API | FastAPI async |
 | Validation | Zod schemas | Pydantic models |
 | Auth | httpOnly cookies | JWT + refresh tokens |
-| Testing | Vitest (1,104) | pytest (1,306) |
+| Testing | Vitest (1,104) | pytest (1,331) |
 | Monitoring | Sentry (errors) | Sentry (APM + profiling) |
 | CI/CD | GitHub Actions (3 workflows) | GitHub Actions (10 jobs) |
 | Docs | 11 ADRs + API spec | 37 ADRs + ERD + Runbook |
@@ -905,15 +907,15 @@ Eliminates XSS token theft entirely. Worth the extra CSRF handling.
 
 <div class="summary-grid">
 <div class="summary-card">
-<strong>2,410</strong>
-<span>Tests (1,104 FE + 1,306 BE)</span>
+<strong>2,435</strong>
+<span>Tests (1,104 FE + 1,331 BE)</span>
 </div>
 <div class="summary-card">
 <strong>9.2 / 9.4</strong>
 <span>OWASP Score (FE / BE)</span>
 </div>
 <div class="summary-card">
-<strong>69</strong>
+<strong>70</strong>
 <span>REST API Endpoints</span>
 </div>
 <div class="summary-card">

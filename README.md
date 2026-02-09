@@ -9,7 +9,7 @@
 [![Vite](https://img.shields.io/badge/Vite-7.3-646CFF?style=for-the-badge&logo=vite&logoColor=white)](.)
 [![Tailwind](https://img.shields.io/badge/Tailwind-4-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](.)
 
-[![Tests](https://img.shields.io/badge/tests-1088%20passing-00C853?style=for-the-badge&logo=vitest&logoColor=white)](.)
+[![Tests](https://img.shields.io/badge/tests-1104%20passing-00C853?style=for-the-badge&logo=vitest&logoColor=white)](.)
 [![Coverage](https://img.shields.io/badge/coverage-85%25+-success?style=for-the-badge&logo=codecov)](.)
 [![OWASP](https://img.shields.io/badge/OWASP-9.2%2F10-4CAF50?style=for-the-badge&logo=owasp)](https://owasp.org/www-project-top-ten/)
 [![Bundle](https://img.shields.io/badge/bundle-1308%20KB-blueviolet?style=for-the-badge&logo=webpack)](.)
@@ -30,12 +30,12 @@
 ### 🎯 Key Highlights
 
 - ✅ **86+ API integrations** with the backend REST API
-- ✅ **1,088 tests** passing (100% success rate)
+- ✅ **1,104 tests** passing (100% success rate)
 - ✅ **OWASP Top 10 Score: 9.2/10** - Production-grade security
 - ✅ **Clean Architecture** - 4-layer separation with DDD patterns + Composition Root DI
 - ✅ **21 Value Objects** enforcing domain invariants
 - ✅ **58 Use Cases** covering all business operations
-- ✅ **Bilingual** (English + Spanish) with 9 i18n namespaces
+- ✅ **Bilingual** (English + Spanish) with 12 i18n namespaces
 - ✅ **Bundle: 1,308 KB** (within 1,400 KB CI budget)
 - ✅ **3 CI/CD workflows** - GitHub Actions pipeline
 
@@ -210,7 +210,7 @@ src/
 ├── hooks/               # Custom React hooks
 ├── store/               # Zustand stores (auth, competition)
 ├── composition/         # Dependency injection (Composition Root)
-├── i18n/                # 9 namespaces × 2 languages
+├── i18n/                # 12 namespaces × 2 languages
 └── utils/               # Sentry, validation, token refresh
 ```
 
@@ -253,7 +253,7 @@ src/
 
 | Category | Tests | Status | Coverage |
 |----------|-------|--------|----------|
-| **Total** | **1,088** | ✅ 100% passing | 85%+ |
+| **Total** | **1,104** | ✅ 100% passing | 85%+ |
 | Domain | ~400 | ✅ 100% | Entity invariants, VO validation |
 | Application | ~350 | ✅ 100% | Use case orchestration |
 | Infrastructure | ~200 | ✅ 100% | Mapper transformations |
@@ -263,7 +263,7 @@ src/
 
 | Gate | Threshold | Current |
 |------|-----------|---------|
-| Tests | 100% pass | 1,088/1,088 |
+| Tests | 100% pass | 1,104/1,104 |
 | Line coverage | >= 85% | Achieved |
 | Function coverage | >= 75% | Achieved |
 | Branch coverage | >= 70% | Achieved |
@@ -327,9 +327,9 @@ src/
 
 ## 🌍 Internationalization
 
-**9 namespaces** with full English + Spanish coverage:
+**12 namespaces** with full English + Spanish coverage:
 
-`auth` | `common` | `competitions` | `dashboard` | `devices` | `golfCourses` | `landing` | `profile` | `schedule`
+`auth` | `common` | `competitions` | `contact` | `dashboard` | `devices` | `golfCourses` | `landing` | `legal` | `pricing` | `profile` | `schedule`
 
 - ✅ Automatic browser language detection
 - ✅ localStorage persistence
@@ -392,7 +392,7 @@ npm run lint             # ESLint
 - **Enrollment Tee Category Modal**: 5-category tee selection during enrollment
 - **i18n Toast Migration**: All hardcoded messages replaced with translation keys
 - **Bundle Optimization**: CDN flags replacing 239 KB SVG bundle
-- **Total: 1,088 tests** passing - **Bundle: 1,308 KB**
+- **Total: 1,104 tests** passing - **Bundle: 1,308 KB**
 
 ### Coming Next: Sprint 3-5 - Invitations, Scoring & Leaderboards
 

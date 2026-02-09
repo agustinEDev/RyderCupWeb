@@ -117,7 +117,7 @@ const CompetitionActions = ({ competitionId }) => {
 | Sprint   | Fechas          | Esfuerzo BE | Endpoints | Sync Point        | Estado        | Versión  |
 |----------|-----------------|-------------|-----------|-------------------|---------------|----------|
 | Sprint 1 | 27 Ene - 6 Feb  | 60h         | 10        | ✅ Viernes 30 Ene | ✅ COMPLETADO | v2.0.0   |
-| Sprint 2 | 3 Feb - 17 Feb  | 70h         | 11        | ✅ Viernes 4 Feb  | ✅ COMPLETADO  | v2.1.0   |
+| Sprint 2 | 3 Feb - 17 Feb  | 70h         | 11        | ✅ Viernes 4 Feb  | ✅ COMPLETADO  | v2.0.6   |
 | Sprint 3 | 18 Feb - 24 Feb | 48h         | 5         | 🔄 Viernes 20 Feb | 📋 Pendiente  | v2.0.5   |
 | Sprint 4 | 25 Feb - 10 Mar | 92h         | 4         | 🔄 Viernes 6 Mar  | 📋 Pendiente  | v2.0.6   |
 | Sprint 5 | 11 Mar - 17 Mar | 60h         | 2         | 🔄 Viernes 13 Mar | 📋 Pendiente  | v2.0.7   |
@@ -267,7 +267,7 @@ Migrar de arquitectura de proxy inverso a subdominios directos para mejorar rend
 
 ---
 
-### 🔄 v2.1.0 - Schedule & Matches Backend Integration Layer (Sprint 2)
+### 🔄 v2.0.6 - Schedule & Matches Backend Integration Layer (Sprint 2)
 
 > **Estado:** ✅ Completado el 8 Feb 2026
 > **Branch:** `feature/sprint-2-schedule-matches`
@@ -467,7 +467,7 @@ Aquí están las confirmaciones y respuestas a vuestras preguntas:
 
 ---
 
-## 📊 Estado Actual (v2.1.0 - Sprint 2 completado)
+## 📊 Estado Actual (v2.0.6 - Sprint 2 completado)
 
 ### Métricas Clave
 
@@ -482,7 +482,7 @@ Aquí están las confirmaciones y respuestas a vuestras preguntas:
 - ✅ Golf Course Management System (v2.0.0 - Sprint 1)
 - ✅ Infrastructure Migration + Security (v2.0.4)
 - ✅ Hotfix Golf Courses UI (v2.0.5)
-- ✅ Schedule Backend Integration Layer + UI (v2.1.0 - Sprint 2, COMPLETADO)
+- ✅ Schedule Backend Integration Layer + UI (v2.0.6 - Sprint 2, COMPLETADO)
 
 ### Completado (v1.x)
 - ✅ Modern Build Stack (v1.16.0)
@@ -493,7 +493,7 @@ Aquí están las confirmaciones y respuestas a vuestras preguntas:
 - ✅ CRUD Competiciones + Enrollments
 - ✅ Handicaps (Manual + RFEG)
 - ✅ Password Reset Flow
-- ✅ i18n (ES/EN, 9 namespaces)
+- ✅ i18n (ES/EN, 12 namespaces)
 - ✅ Sentry Monitoring
 - ✅ CI/CD Pipeline (Quality Gates)
 - ✅ Security Scanning (Snyk, TruffleHog)
