@@ -1,0 +1,106 @@
+{
+  "terms": {
+    "title": "Terminos de Servicio",
+    "lastUpdated": "Ultima actualizacion: Febrero 2026",
+    "section1": {
+      "title": "1. Aceptacion de los Terminos",
+      "content": "Al acceder o usar RyderCupFriends (\"el Servicio\"), aceptas estar sujeto a estos Terminos de Servicio. Si no estas de acuerdo con estos terminos, por favor no uses el Servicio.\n\nEl Servicio es operado por RyderCupFriends (\"nosotros\" o \"nuestro\"). Nos reservamos el derecho de modificar estos terminos en cualquier momento, y dichas modificaciones seran efectivas inmediatamente tras su publicacion."
+    },
+    "section2": {
+      "title": "2. Elegibilidad",
+      "content": "Debes tener al menos 16 anos para usar este Servicio. Al usar el Servicio, declaras y garantizas que cumples con este requisito de edad.\n\nSi eres menor de 18 anos, debes contar con el consentimiento de tus padres o tutores para usar el Servicio."
+    },
+    "section3": {
+      "title": "3. Cuentas de Usuario",
+      "content": "Para acceder a ciertas funciones del Servicio, debes crear una cuenta. Eres responsable de mantener la confidencialidad de tus credenciales y de todas las actividades que ocurran bajo tu cuenta.\n\nTe comprometes a proporcionar informacion precisa, actual y completa durante el registro y a actualizar dicha informacion para mantenerla precisa y completa."
+    },
+    "section4": {
+      "title": "4. Conducta del Usuario",
+      "content": "Aceptas no usar el Servicio para:\n\n- Violar leyes o regulaciones aplicables\n- Hacerse pasar por otra persona o entidad\n- Acosar, abusar o danar a otros usuarios\n- Subir contenido malicioso o intentar comprometer el Servicio\n- Usar sistemas automatizados para acceder al Servicio sin permiso\n- Interferir con el funcionamiento adecuado del Servicio"
+    },
+    "section5": {
+      "title": "5. Reglas de Competiciones de Golf",
+      "content": "RyderCupFriends proporciona herramientas para organizar competiciones de golf amateur. Todas las competiciones son informales y con fines recreativos unicamente.\n\nNo somos responsables de la precision de los calculos de handicap, puntuacion o cualquier disputa derivada de los resultados de las competiciones. Los organizadores son responsables de garantizar el juego limpio entre los participantes."
+    },
+    "section6": {
+      "title": "6. Propiedad Intelectual",
+      "content": "El Servicio, incluyendo su diseno, funciones y contenido, es propiedad de RyderCupFriends y esta protegido por leyes de propiedad intelectual. No puedes copiar, modificar, distribuir ni crear obras derivadas basadas en el Servicio sin nuestro permiso expreso por escrito.\n\nEl contenido que crees a traves del Servicio (datos de competiciones, puntuaciones, etc.) sigue siendo tuyo, pero nos otorgas una licencia para usarlo para proporcionar y mejorar el Servicio."
+    },
+    "section7": {
+      "title": "7. Limitacion de Responsabilidad",
+      "content": "El Servicio se proporciona \"tal cual\" y \"segun disponibilidad\" sin garantias de ningun tipo. No garantizamos que el Servicio sera ininterrumpido, libre de errores o seguro.\n\nEn la maxima medida permitida por la ley, RyderCupFriends no sera responsable de ningun dano indirecto, incidental, especial o consecuente derivado de tu uso del Servicio."
+    },
+    "section8": {
+      "title": "8. Terminacion",
+      "content": "Podemos suspender o terminar tu acceso al Servicio en cualquier momento, con o sin causa, y con o sin previo aviso. Tras la terminacion, tu derecho a usar el Servicio cesara inmediatamente.\n\nPuedes eliminar tu cuenta en cualquier momento a traves de la configuracion del perfil. Tras la eliminacion, tus datos personales seran eliminados de acuerdo con nuestra Politica de Privacidad."
+    },
+    "section9": {
+      "title": "9. Contacto",
+      "content": "Si tienes preguntas sobre estos Terminos de Servicio, contactanos en support@rydercupfriends.com o a traves de nuestra pagina de Contacto."
+    }
+  },
+  "privacy": {
+    "title": "Politica de Privacidad",
+    "lastUpdated": "Ultima actualizacion: Febrero 2026",
+    "section1": {
+      "title": "1. Informacion que Recopilamos",
+      "content": "Recopilamos informacion que proporcionas directamente al crear una cuenta y usar el Servicio:\n\n- Informacion de cuenta: nombre, correo electronico, pais, genero (opcional)\n- Perfil de golf: indice de handicap, preferencias de tee\n- Datos de competicion: puntuaciones, resultados de partidos, asignaciones de equipo\n- Informacion del dispositivo: tipo de navegador, huella digital del dispositivo (por seguridad)"
+    },
+    "section2": {
+      "title": "2. Como Usamos tu Informacion",
+      "content": "Usamos la informacion recopilada para:\n\n- Proporcionar y mantener el Servicio\n- Gestionar tu cuenta y competiciones\n- Calcular handicaps y generar emparejamientos\n- Enviar notificaciones importantes sobre tus competiciones\n- Mejorar el Servicio y desarrollar nuevas funciones\n- Garantizar la seguridad y prevenir abusos"
+    },
+    "section3": {
+      "title": "3. Cookies y Almacenamiento Local",
+      "content": "Usamos los siguientes mecanismos de almacenamiento:\n\n- Cookies httpOnly: Tokens de autenticacion (acceso y refresco) almacenados de forma segura y no accesibles via JavaScript\n- localStorage: Preferencia de idioma (i18next), configuracion de interfaz\n- Cookies de sesion: Tokens de proteccion CSRF\n\nNo usamos cookies de publicidad de terceros ni cookies de seguimiento."
+    },
+    "section4": {
+      "title": "4. Servicios de Terceros",
+      "content": "Usamos los siguientes servicios de terceros:\n\n- Sentry: Seguimiento de errores y monitoreo de rendimiento. Recopila datos de errores anonimizados y repeticiones de sesion para ayudarnos a corregir fallos.\n- Cloudflare: CDN y seguridad. Procesa solicitudes para proteger contra trafico malicioso.\n- Render: Plataforma de alojamiento de la aplicacion.\n\nEstos servicios tienen sus propias politicas de privacidad que rigen el uso de datos."
+    },
+    "section5": {
+      "title": "5. Retencion de Datos",
+      "content": "Retenemos tus datos mientras tu cuenta este activa. Si eliminas tu cuenta, eliminaremos tus datos personales en un plazo de 30 dias, excepto cuando la retencion sea requerida por ley.\n\nLos resultados de competiciones pueden conservarse de forma anonimizada con fines estadisticos."
+    },
+    "section6": {
+      "title": "6. Tus Derechos",
+      "content": "Tienes derecho a:\n\n- Acceder a tus datos personales a traves de tu perfil\n- Actualizar o corregir tu informacion\n- Eliminar tu cuenta y datos asociados\n- Exportar tus datos de competiciones\n- Objetar ciertos procesamientos de tus datos\n\nPara ejercer estos derechos, contactanos en support@rydercupfriends.com."
+    },
+    "section7": {
+      "title": "7. Privacidad de Menores",
+      "content": "El Servicio no esta dirigido a menores de 16 anos. No recopilamos intencionalmente informacion personal de menores de 16 anos. Si crees que hemos recopilado inadvertidamente dicha informacion, contactanos inmediatamente."
+    },
+    "section8": {
+      "title": "8. Cambios en esta Politica",
+      "content": "Podemos actualizar esta Politica de Privacidad periodicamente. Te notificaremos de cambios significativos publicando la politica actualizada en esta pagina y actualizando la fecha de \"Ultima actualizacion\".\n\nTu uso continuado del Servicio despues de la publicacion de cambios constituye la aceptacion de la politica actualizada."
+    },
+    "section9": {
+      "title": "9. Contacto",
+      "content": "Si tienes preguntas o inquietudes sobre esta Politica de Privacidad, contactanos en support@rydercupfriends.com o a traves de nuestra pagina de Contacto."
+    }
+  },
+  "cookies": {
+    "title": "Politica de Cookies",
+    "lastUpdated": "Ultima actualizacion: Febrero 2026",
+    "section1": {
+      "title": "1. Que son las Cookies",
+      "content": "Las cookies son pequenos archivos de texto almacenados en tu dispositivo cuando visitas un sitio web. Se usan ampliamente para que los sitios web funcionen de manera mas eficiente y para proporcionar informacion a los propietarios del sitio.\n\nTambien usamos tecnologias similares como localStorage para almacenar preferencias."
+    },
+    "section2": {
+      "title": "2. Cookies que Usamos",
+      "content": "Cookies esenciales (necesarias para el funcionamiento del Servicio):\n\n- Cookies de autenticacion (httpOnly): Tokens seguros de acceso y refresco que mantienen tu sesion iniciada. No son accesibles via JavaScript, protegiendote contra ataques XSS.\n- Cookie de token CSRF: Protege contra ataques de falsificacion de solicitudes entre sitios.\n\nAlmacenamiento funcional (localStorage):\n\n- Preferencia de idioma: Recuerda tu idioma seleccionado (Ingles/Espanol).\n- Preferencias de interfaz: Tema y configuracion de visualizacion.\n- Flags de sesion: Recuperacion de errores de carga diferida."
+    },
+    "section3": {
+      "title": "3. Gestion de Cookies",
+      "content": "Puedes controlar las cookies a traves de la configuracion de tu navegador. Ten en cuenta que deshabilitar las cookies esenciales impedira que inicies sesion y uses las funciones autenticadas del Servicio.\n\nPara borrar las cookies de autenticacion, usa el boton \"Cerrar Sesion\" en la aplicacion, que invalidara correctamente tu sesion."
+    },
+    "section4": {
+      "title": "4. Cookies de Terceros",
+      "content": "No usamos cookies de publicidad o seguimiento de terceros.\n\nNuestros servicios de terceros (Sentry para seguimiento de errores, Cloudflare para seguridad) pueden establecer sus propias cookies con fines funcionales. Estas se rigen por sus respectivas politicas de privacidad."
+    },
+    "section5": {
+      "title": "5. Contacto",
+      "content": "Si tienes preguntas sobre nuestro uso de cookies, contactanos en support@rydercupfriends.com o a traves de nuestra pagina de Contacto."
+    }
+  }
+}
