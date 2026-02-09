@@ -46,6 +46,13 @@ const PendingGolfCourses = lazyWithRetry(() => import('./pages/admin/PendingGolf
 // Creator pages (v2.1.0 - Sprint 2)
 const SchedulePage = lazyWithRetry(() => import('./pages/creator/SchedulePage'));
 
+// Public pages
+const Pricing = lazyWithRetry(() => import('./pages/public/Pricing'));
+const Contact = lazyWithRetry(() => import('./pages/public/Contact'));
+const Terms = lazyWithRetry(() => import('./pages/public/Terms'));
+const Privacy = lazyWithRetry(() => import('./pages/public/Privacy'));
+const Cookies = lazyWithRetry(() => import('./pages/public/Cookies'));
+
 // Error pages
 const Unauthorized = lazyWithRetry(() => import('./pages/public/Unauthorized'));
 
@@ -75,6 +82,11 @@ function AppContent() {
     '/verify-email',
     '/forgot-password',
     '/reset-password',
+    '/pricing',
+    '/contact',
+    '/terms',
+    '/privacy',
+    '/cookies',
   ];
 
   const isPublicRoute = PUBLIC_ROUTES.includes(location.pathname) ||
@@ -179,6 +191,11 @@ function AppContent() {
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password/:token" element={<ResetPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/pricing" element={<Pricing />} />
+        <Route path="/contact" element={<Contact />} />
+        <Route path="/terms" element={<Terms />} />
+        <Route path="/privacy" element={<Privacy />} />
+        <Route path="/cookies" element={<Cookies />} />
 
         {/* Protected routes */}
         <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />

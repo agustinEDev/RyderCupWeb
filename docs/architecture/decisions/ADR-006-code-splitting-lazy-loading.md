@@ -20,7 +20,7 @@ dist/assets/index-BhwLQ60R.js  978.45 kB  ← ⚠️ PROBLEMA
 - **Desperdicio de bandwidth**: Usuario descarga código que no usa inmediatamente
 
 **Requisitos:**
-- Reducir bundle inicial a <100 KB
+- Reducir bundle inicial (objetivo original: <100 KB; CI budget actual: <1,400 KB)
 - Cargar solo código necesario para ruta actual
 - Mantener UX fluida (sin delays visibles)
 - Compatible con Sentry y React Router
@@ -311,7 +311,7 @@ export default ChunkErrorBoundary;
 
 Criterios de éxito:
 
-- [x] Bundle inicial <100 KB (✅ 47 KB)
+- [x] Bundle inicial reducido significativamente (v1.7.0: 47 KB inicial; v2.0.6 total: ~1,308 KB dentro del CI budget de 1,400 KB)
 - [x] FCP <1 segundo (✅ 0.8s promedio)
 - [x] TTI <2 segundos (✅ 1.5s promedio)
 - [x] Lighthouse Performance >90 (✅ 92/100)
@@ -405,7 +405,7 @@ if ('IntersectionObserver' in window) {
 
 ### Testing Strategy:
 
-1. **Build size monitoring**: CI/CD alerta si bundle >100 KB
+1. **Build size monitoring**: CI/CD alerta si bundle >1,300 KB (warning), falla si >1,400 KB
 2. **Lighthouse CI**: Score mínimo 90 en cada deploy
 3. **Network throttling tests**: Probar en 3G/4G
 4. **Error scenarios**: Desconectar red durante navegación
