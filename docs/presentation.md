@@ -73,7 +73,7 @@ Backend: github.com/agustinEDev/RyderCupAm
 
 4. Backend Architecture (Clean + DDD)
 5. Domain Model & Database
-6. API Design (70 endpoints)
+6. API Design (71 endpoints)
 7. Backend Security & DevOps
 
 </div>
@@ -123,7 +123,7 @@ Backend: github.com/agustinEDev/RyderCupAm
 
 <div class="stat-grid">
 <div class="stat-box">
-<strong>70</strong>
+<strong>71</strong>
 <span>API Endpoints</span>
 </div>
 <div class="stat-box">
@@ -162,7 +162,7 @@ Backend: github.com/agustinEDev/RyderCupAm
   │  React 19  |  Vite 7  |  Tailwind 4  |  1,104 tests         │
   │  Clean Architecture  |  DDD  |  Zustand  |  i18n (EN/ES)    │
   └──────────────────────────┬──────────────────────────────────┘
-                             │  70 REST API calls
+                             │  71 REST API calls
                              │  httpOnly cookies
                              │  Automatic token refresh
   ┌──────────────────────────┴──────────────────────────────────┐
@@ -320,7 +320,7 @@ Full ERD documented in `docs/DATABASE_ERD.md` (Mermaid)
 
 ---
 
-## 6. API Design - 70 REST Endpoints
+## 6. API Design - 71 REST Endpoints
 
 <div class="columns">
 <div class="col">
@@ -915,7 +915,7 @@ Eliminates XSS token theft entirely. Worth the extra CSRF handling.
 <span>OWASP Score (FE / BE)</span>
 </div>
 <div class="summary-card">
-<strong>70</strong>
+<strong>71</strong>
 <span>REST API Endpoints</span>
 </div>
 <div class="summary-card">

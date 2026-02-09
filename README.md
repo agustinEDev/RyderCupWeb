@@ -205,7 +205,7 @@ src/
 ├── pages/               # 18 route pages
 │   ├── admin/           #   Users, golf course approval
 │   ├── creator/         #   Schedule management
-│   └── public/          #   Leaderboard
+│   └── public/          #   Leaderboard, Pricing, Contact, Terms, Privacy, Cookies
 ├── components/          # 32 reusable components
 ├── hooks/               # Custom React hooks
 ├── store/               # Zustand stores (auth, competition)
@@ -358,6 +358,7 @@ This frontend consumes **86+ REST API endpoints** organized across 11 domain are
 | Matches | 4 | Status, walkover, player reassignment |
 | Teams & Generation | 3 | Team assignment, match generation |
 | Countries | 2 | Country list, adjacent countries |
+| Support | 1 | Public contact/support POST (`POST /api/v1/support/contact`) |
 
 See [BACKEND_API_SPEC.md](BACKEND_API_SPEC.md) for the complete endpoint reference.
 
