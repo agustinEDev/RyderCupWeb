@@ -83,9 +83,13 @@ const Footer = () => {
             <h4 className="text-gray-900 font-semibold mb-4 font-poppins">{t('footer.quickLinks')}</h4>
             <ul className="space-y-3">
               <li>
-                <Link to="/#features" className="text-gray-600 text-sm hover:text-primary transition-colors">
+                <a
+                  href="/#features"
+                  onClick={(e) => { e.preventDefault(); globalThis.location.href = '/#features'; }}
+                  className="text-gray-600 text-sm hover:text-primary transition-colors cursor-pointer"
+                >
                   {t('footer.features')}
-                </Link>
+                </a>
               </li>
               <li>
                 <Link to="/pricing" className="text-gray-600 text-sm hover:text-primary transition-colors">

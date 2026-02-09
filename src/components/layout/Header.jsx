@@ -47,9 +47,9 @@ const Header = () => {
       {/* Desktop Menu */}
       <div className="hidden md:flex flex-1 justify-end gap-8">
         <div className="flex items-center gap-9">
-          <Link className="text-gray-900 text-sm font-medium leading-normal" to="/#features">
+          <a className="text-gray-900 text-sm font-medium leading-normal" href="/#features">
             {t('header.features')}
-          </Link>
+          </a>
           <Link className="text-gray-900 text-sm font-medium leading-normal" to="/pricing">
             {t('header.pricing')}
           </Link>
@@ -102,13 +102,13 @@ const Header = () => {
         {/* Mobile Dropdown Menu */}
         {isMobileMenuOpen && (
           <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
-            <Link
-              to="/#features"
+            <a
+              href="/#features"
               onClick={() => setIsMobileMenuOpen(false)}
               className="block px-4 py-2 text-sm text-gray-900 hover:bg-gray-100 transition-colors"
             >
               {t('header.features')}
-            </Link>
+            </a>
             <Link
               to="/pricing"
               onClick={() => setIsMobileMenuOpen(false)}
