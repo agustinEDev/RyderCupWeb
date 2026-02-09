@@ -1,6 +1,6 @@
 {
   "title": "Precios Simples y Transparentes",
-  "subtitle": "Empieza a organizar torneos estilo Ryder Cup gratis. Funciones premium proximamente.",
+  "subtitle": "Empieza a organizar torneos estilo Ryder Cup gratis. Funciones premium próximamente.",
   "free": {
     "name": "Gratis",
     "price": "$0",
@@ -9,12 +9,12 @@
     "cta": "Comenzar",
     "features": {
       "competitions": "Crear competiciones ilimitadas",
-      "players": "Hasta 24 jugadores por competicion",
-      "scheduling": "Gestion completa de calendario y partidos",
-      "scoring": "Puntuacion en vivo y clasificaciones",
-      "teams": "Asignacion automatica de equipos",
-      "courses": "Gestion de campos de golf",
-      "bilingual": "Soporte bilingue (EN/ES)"
+      "players": "Hasta 24 jugadores por competición",
+      "scheduling": "Gestión completa de calendario y partidos",
+      "scoring": "Puntuación en vivo y clasificaciones",
+      "teams": "Asignación automática de equipos",
+      "courses": "Gestión de campos de golf",
+      "bilingual": "Soporte bilingüe (EN/ES)"
     }
   },
   "pro": {
@@ -22,12 +22,12 @@
     "price": "$9",
     "period": "/mes",
     "description": "Funciones avanzadas para organizadores serios de torneos.",
-    "cta": "Proximamente",
-    "badge": "Proximamente",
+    "cta": "Próximamente",
+    "badge": "Próximamente",
     "features": {
       "everything": "Todo lo del plan Gratis",
-      "players": "Hasta 100 jugadores por competicion",
-      "statistics": "Estadisticas y analiticas avanzadas",
+      "players": "Hasta 100 jugadores por competición",
+      "statistics": "Estadísticas y analíticas avanzadas",
       "export": "Exportar resultados (PDF/CSV)",
       "branding": "Marca personalizada",
       "priority": "Soporte prioritario"
@@ -37,21 +37,21 @@
     "name": "Enterprise",
     "price": "Personalizado",
     "period": "",
-    "description": "Para clubes y organizaciones que gestionan multiples eventos.",
-    "cta": "Proximamente",
-    "badge": "Proximamente",
+    "description": "Para clubes y organizaciones que gestionan múltiples eventos.",
+    "cta": "Próximamente",
+    "badge": "Próximamente",
     "features": {
       "everything": "Todo lo del plan Pro",
       "unlimited": "Jugadores ilimitados",
-      "multi": "Panel multi-competicion",
+      "multi": "Panel multi-competición",
       "api": "Acceso API",
-      "sso": "Integracion SSO",
+      "sso": "Integración SSO",
       "dedicated": "Soporte dedicado"
     }
   },
   "bottomCta": {
-    "title": "Listo para organizar tu primer torneo?",
-    "subtitle": "Unete a cientos de entusiastas del golf que ya usan RyderCupFriends.",
+    "title": "¿Listo para organizar tu primer torneo?",
+    "subtitle": "Únete a cientos de entusiastas del golf que ya usan RyderCupFriends.",
     "button": "Crear Cuenta Gratis"
   }
 }

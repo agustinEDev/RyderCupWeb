@@ -1,13 +1,13 @@
 {
-  "title": "Contactanos",
-  "subtitle": "Tienes una pregunta, encontraste un error o quieres sugerir una funcionalidad? Nos encantaria saber de ti.",
+  "title": "Contáctanos",
+  "subtitle": "¿Tienes una pregunta, encontraste un error o quieres sugerir una funcionalidad? ¡Nos encantaría saber de ti!",
   "form": {
     "name": "Nombre Completo",
     "namePlaceholder": "Tu nombre",
-    "email": "Correo Electronico",
+    "email": "Correo Electrónico",
     "emailPlaceholder": "tu@ejemplo.com",
-    "category": "Categoria",
-    "categoryPlaceholder": "Selecciona una categoria",
+    "category": "Categoría",
+    "categoryPlaceholder": "Selecciona una categoría",
     "categories": {
       "BUG": "Reporte de Error",
       "FEATURE": "Solicitud de Funcionalidad",
@@ -15,33 +15,33 @@
       "OTHER": "Otro"
     },
     "subject": "Asunto",
-    "subjectPlaceholder": "Breve descripcion de tu consulta",
+    "subjectPlaceholder": "Breve descripción de tu consulta",
     "message": "Mensaje",
     "messagePlaceholder": "Por favor describe tu consulta en detalle...",
     "submit": "Enviar Mensaje",
     "submitting": "Enviando..."
   },
   "validation": {
-    "nameRequired": "El nombre es obligatorio (minimo 2 caracteres)",
-    "emailRequired": "Se requiere un correo electronico valido",
-    "categoryRequired": "Por favor selecciona una categoria",
-    "subjectRequired": "El asunto es obligatorio (minimo 3 caracteres)",
-    "messageRequired": "El mensaje es obligatorio (minimo 10 caracteres)"
+    "nameRequired": "El nombre es obligatorio (mínimo 2 caracteres)",
+    "emailRequired": "Se requiere un correo electrónico válido",
+    "categoryRequired": "Por favor selecciona una categoría",
+    "subjectRequired": "El asunto es obligatorio (mínimo 3 caracteres)",
+    "messageRequired": "El mensaje es obligatorio (mínimo 10 caracteres)"
   },
   "success": {
-    "title": "Mensaje Enviado!",
+    "title": "¡Mensaje Enviado!",
     "message": "Gracias por contactarnos. Te responderemos lo antes posible.",
     "another": "Enviar Otro Mensaje"
   },
   "error": {
-    "generic": "No se pudo enviar el mensaje. Por favor intenta mas tarde.",
-    "network": "Error de red. Por favor verifica tu conexion."
+    "generic": "No se pudo enviar el mensaje. Por favor intenta más tarde.",
+    "network": "Error de red. Por favor verifica tu conexión."
   },
   "info": {
     "title": "Ponte en Contacto",
     "email": "support@rydercupfriends.com",
     "responseTime": "Normalmente respondemos en 24-48 horas.",
-    "github": "Tambien puedes reportar problemas en nuestro",
+    "github": "También puedes reportar problemas en nuestro",
     "githubLink": "repositorio de GitHub"
   }
 }
