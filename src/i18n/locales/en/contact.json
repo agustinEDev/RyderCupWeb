@@ -1,0 +1,47 @@
+{
+  "title": "Contact Us",
+  "subtitle": "Have a question, found a bug, or want to suggest a feature? We'd love to hear from you.",
+  "form": {
+    "name": "Full Name",
+    "namePlaceholder": "Your name",
+    "email": "Email Address",
+    "emailPlaceholder": "you@example.com",
+    "category": "Category",
+    "categoryPlaceholder": "Select a category",
+    "categories": {
+      "BUG": "Bug Report",
+      "FEATURE": "Feature Request",
+      "QUESTION": "General Question",
+      "OTHER": "Other"
+    },
+    "subject": "Subject",
+    "subjectPlaceholder": "Brief description of your inquiry",
+    "message": "Message",
+    "messagePlaceholder": "Please describe your inquiry in detail...",
+    "submit": "Send Message",
+    "submitting": "Sending..."
+  },
+  "validation": {
+    "nameRequired": "Name is required (minimum 2 characters)",
+    "emailRequired": "A valid email address is required",
+    "categoryRequired": "Please select a category",
+    "subjectRequired": "Subject is required (minimum 3 characters)",
+    "messageRequired": "Message is required (minimum 10 characters)"
+  },
+  "success": {
+    "title": "Message Sent!",
+    "message": "Thank you for reaching out. We'll get back to you as soon as possible.",
+    "another": "Send Another Message"
+  },
+  "error": {
+    "generic": "Failed to send message. Please try again later.",
+    "network": "Network error. Please check your connection."
+  },
+  "info": {
+    "title": "Get in Touch",
+    "email": "support@rydercupfriends.com",
+    "responseTime": "We typically respond within 24-48 hours.",
+    "github": "You can also report issues on our",
+    "githubLink": "GitHub repository"
+  }
+}

@@ -70,6 +70,10 @@ import UpdateMatchStatusUseCase from '../application/use_cases/schedule/UpdateMa
 import DeclareWalkoverUseCase from '../application/use_cases/schedule/DeclareWalkoverUseCase';
 import ReassignPlayersUseCase from '../application/use_cases/schedule/ReassignPlayersUseCase';
 
+// Support Use Cases
+import ApiSupportRepository from '../infrastructure/repositories/ApiSupportRepository';
+import SubmitContactFormUseCase from '../application/use_cases/support/SubmitContactFormUseCase';
+
 // Enrollment Use Cases
 import ApiEnrollmentRepository from '../infrastructure/repositories/ApiEnrollmentRepository';
 import RequestEnrollmentUseCase from '../application/use_cases/enrollment/RequestEnrollmentUseCase';
@@ -92,6 +96,7 @@ const apiEnrollmentRepository = new ApiEnrollmentRepository();
 const apiDeviceRepository = new ApiDeviceRepository();
 const apiGolfCourseRepository = new ApiGolfCourseRepository();
 const apiScheduleRepository = new ApiScheduleRepository();
+const apiSupportRepository = new ApiSupportRepository();
 
 // --- Casos de Uso ---
 const updateUserProfileUseCase = new UpdateUserProfileUseCase({ userRepository: apiUserRepository });
@@ -137,6 +142,9 @@ const getMatchDetailUseCase = new GetMatchDetailUseCase({ scheduleRepository: ap
 const updateMatchStatusUseCase = new UpdateMatchStatusUseCase({ scheduleRepository: apiScheduleRepository });
 const declareWalkoverUseCase = new DeclareWalkoverUseCase({ scheduleRepository: apiScheduleRepository });
 const reassignPlayersUseCase = new ReassignPlayersUseCase({ scheduleRepository: apiScheduleRepository });
+
+// Support Use Cases
+const submitContactFormUseCase = new SubmitContactFormUseCase({ supportRepository: apiSupportRepository });
 
 // Enrollment Use Cases
 const requestEnrollmentUseCase = new RequestEnrollmentUseCase(apiEnrollmentRepository);
@@ -217,6 +225,8 @@ export {
   approveGolfCourseUpdateUseCase,
   rejectGolfCourseUpdateUseCase,
   listPendingGolfCoursesUseCase,
+  // Support Use Cases
+  submitContactFormUseCase,
   // Schedule Use Cases (v2.1.0 - Sprint 2)
   getScheduleUseCase,
   configureScheduleUseCase,

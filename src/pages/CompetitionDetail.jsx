@@ -99,7 +99,7 @@ const CompetitionDetail = () => {
         const golfCourses = coursesArray.map(item => ({
           id: item.golf_course?.id || item.golf_course_id,
           name: item.golf_course?.name || item.name || 'Unknown',
-          approvalStatus: item.golf_course?.approval_status || item.approval_status || 'PENDING_APPROVAL',
+          approvalStatus: item.golf_course?.approval_status || item.approval_status || 'APPROVED',
         }));
 
         if (golfCourses.length === 0) {

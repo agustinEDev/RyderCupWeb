@@ -47,15 +47,15 @@ const Header = () => {
       {/* Desktop Menu */}
       <div className="hidden md:flex flex-1 justify-end gap-8">
         <div className="flex items-center gap-9">
-          <a className="text-gray-900 text-sm font-medium leading-normal" href="#features">
+          <a className="text-gray-900 text-sm font-medium leading-normal" href="/#features">
             {t('header.features')}
           </a>
-          <a className="text-gray-900 text-sm font-medium leading-normal" href="#pricing">
+          <Link className="text-gray-900 text-sm font-medium leading-normal" to="/pricing">
             {t('header.pricing')}
-          </a>
-          <a className="text-gray-900 text-sm font-medium leading-normal" href="#support">
+          </Link>
+          <Link className="text-gray-900 text-sm font-medium leading-normal" to="/contact">
             {t('header.support')}
-          </a>
+          </Link>
         </div>
 
         {/* Language Switcher */}
@@ -103,26 +103,26 @@ const Header = () => {
         {isMobileMenuOpen && (
           <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
             <a
-              href="#features"
+              href="/#features"
               onClick={() => setIsMobileMenuOpen(false)}
               className="block px-4 py-2 text-sm text-gray-900 hover:bg-gray-100 transition-colors"
             >
               {t('header.features')}
             </a>
-            <a
-              href="#pricing"
+            <Link
+              to="/pricing"
               onClick={() => setIsMobileMenuOpen(false)}
               className="block px-4 py-2 text-sm text-gray-900 hover:bg-gray-100 transition-colors"
             >
               {t('header.pricing')}
-            </a>
-            <a
-              href="#support"
+            </Link>
+            <Link
+              to="/contact"
               onClick={() => setIsMobileMenuOpen(false)}
               className="block px-4 py-2 text-sm text-gray-900 hover:bg-gray-100 transition-colors"
             >
               {t('header.support')}
-            </a>
+            </Link>
             <div className="border-t border-gray-200 my-2"></div>
 
             {/* Language Switcher - Mobile */}

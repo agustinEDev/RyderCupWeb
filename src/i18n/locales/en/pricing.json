@@ -1,0 +1,57 @@
+{
+  "title": "Simple, Transparent Pricing",
+  "subtitle": "Start organizing Ryder Cup-style tournaments for free. Premium features coming soon.",
+  "free": {
+    "name": "Free",
+    "price": "$0",
+    "period": "forever",
+    "description": "Everything you need to get started with amateur golf tournaments.",
+    "cta": "Get Started",
+    "features": {
+      "competitions": "Create unlimited competitions",
+      "players": "Up to 24 players per competition",
+      "scheduling": "Full schedule & match management",
+      "scoring": "Live scoring & leaderboards",
+      "teams": "Automatic team assignment",
+      "courses": "Golf course management",
+      "bilingual": "Bilingual support (EN/ES)"
+    }
+  },
+  "pro": {
+    "name": "Pro",
+    "price": "$9",
+    "period": "/month",
+    "description": "Advanced features for serious tournament organizers.",
+    "cta": "Coming Soon",
+    "badge": "Coming Soon",
+    "features": {
+      "everything": "Everything in Free",
+      "players": "Up to 100 players per competition",
+      "statistics": "Advanced statistics & analytics",
+      "export": "Export results (PDF/CSV)",
+      "branding": "Custom branding",
+      "priority": "Priority support"
+    }
+  },
+  "enterprise": {
+    "name": "Enterprise",
+    "price": "Custom",
+    "period": "",
+    "description": "For clubs and organizations managing multiple events.",
+    "cta": "Coming Soon",
+    "badge": "Coming Soon",
+    "features": {
+      "everything": "Everything in Pro",
+      "unlimited": "Unlimited players",
+      "multi": "Multi-competition dashboard",
+      "api": "API access",
+      "sso": "SSO integration",
+      "dedicated": "Dedicated support"
+    }
+  },
+  "bottomCta": {
+    "title": "Ready to organize your first tournament?",
+    "subtitle": "Join hundreds of golf enthusiasts already using RyderCupFriends.",
+    "button": "Create Free Account"
+  }
+}
