@@ -29,7 +29,7 @@
 
 ### 🎯 Key Highlights
 
-- ✅ **86+ API integrations** with the backend REST API
+- ✅ **66 API integrations** with the backend REST API
 - ✅ **1,104 tests** passing (100% success rate)
 - ✅ **OWASP Top 10 Score: 9.2/10** - Production-grade security
 - ✅ **Clean Architecture** - 4-layer separation with DDD patterns + Composition Root DI
@@ -99,7 +99,6 @@ npm run preview   # Preview locally
 | [CLAUDE.md](CLAUDE.md) | Complete project context for AI development |
 | [ROADMAP.md](ROADMAP.md) | Sprint planning (7 weeks, 5 sprints) |
 | [CHANGELOG.md](CHANGELOG.md) | Detailed version history |
-| [BACKEND_API_SPEC.md](BACKEND_API_SPEC.md) | Full API reference (86+ endpoints) |
 | [ADRs](docs/architecture/decisions/) | Architecture Decision Records (11 total) |
 | [docs/presentation.md](docs/presentation.md) | Academic project presentation |
 | [docs/INTEGRATION_TESTS.md](docs/INTEGRATION_TESTS.md) | Integration tests guide |
@@ -343,24 +342,23 @@ src/
 
 ## 📡 API Integration
 
-This frontend consumes **86+ REST API endpoints** organized across 11 domain areas:
+This frontend consumes **66 REST API endpoints** organized across 13 domain areas:
 
 | Domain | Endpoints | Description |
 |--------|-----------|-------------|
-| Authentication | 11 | Register, login, tokens, password reset |
+| Authentication | 11 | Register, login, tokens, password reset, account unlock |
 | Users | 4 | Profile, security, role queries |
 | Devices | 2 | Fingerprinting, remote revocation |
 | Handicaps | 3 | Manual + RFEG integration |
 | Competitions | 10 | CRUD + state machine transitions |
+| Competition-GolfCourse | 4 | Add/remove/reorder courses in competition |
 | Enrollments | 8 | Request, approve, reject, withdraw |
 | Golf Courses | 10 | CRUD + admin approval workflow |
 | Schedule & Rounds | 4 | Round CRUD, schedule queries |
 | Matches | 4 | Status, walkover, player reassignment |
 | Teams & Generation | 3 | Team assignment, match generation |
 | Countries | 2 | Country list, adjacent countries |
-| Support | 1 | Public contact/support POST (`POST /api/v1/support/contact`) |
-
-See [BACKEND_API_SPEC.md](BACKEND_API_SPEC.md) for the complete endpoint reference.
+| Support | 1 | Public contact form (`POST /api/v1/support/contact`) |
 
 ---
 

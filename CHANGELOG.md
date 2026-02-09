@@ -1173,7 +1173,7 @@ Esta versión actualiza dependencias críticas con breaking changes, modernizand
 - **composition/index.js**: Actualizada inyección de dependencias para `UpdateRfegHandicapUseCase` (ahora incluye `userRepository`)
 - **ApiUserRepository.getById()**: Cambiado endpoint de `/api/v1/users/{userId}` a `/api/v1/auth/current-user` (el userId se obtiene del JWT token automáticamente)
 - **useEditProfile hook**: Refactorizado para hacer auto-sync con backend al montar, similar al patrón usado en Profile.jsx
-- **CreateCompetition.jsx payload**: Corregido para coincidir con BACKEND_API_SPEC.md:
+- **CreateCompetition.jsx payload**: Corregido para coincidir con la API del backend:
   - Eliminados campos no válidos: `team_one_name`, `team_two_name`, `player_handicap`
   - Convertidos a UPPERCASE: `handicap_type` y `team_assignment`
 - **ApiCompetitionRepository.findByCreator()**: Eliminado parámetro `creator_id` (el backend filtra automáticamente por usuario autenticado del JWT)

@@ -73,7 +73,7 @@ Backend: github.com/agustinEDev/RyderCupAm
 
 4. Backend Architecture (Clean + DDD)
 5. Domain Model & Database
-6. API Design (71 endpoints)
+6. API Design (66 endpoints)
 7. Backend Security & DevOps
 
 </div>
@@ -84,7 +84,7 @@ Backend: github.com/agustinEDev/RyderCupAm
 8. Frontend Architecture (Clean + DDD)
 9. Key Features & Workflows
 10. Frontend Security & i18n
-11. Testing Strategy (2,435 total tests)
+11. Testing Strategy (2,717 total tests)
 12. CI/CD Pipelines
 
 ### Part IV - Closing
@@ -123,11 +123,11 @@ Backend: github.com/agustinEDev/RyderCupAm
 
 <div class="stat-grid">
 <div class="stat-box">
-<strong>71</strong>
+<strong>66</strong>
 <span>API Endpoints</span>
 </div>
 <div class="stat-box">
-<strong>2,435</strong>
+<strong>2,717</strong>
 <span>Total Tests</span>
 </div>
 <div class="stat-box">
@@ -158,16 +158,16 @@ Backend: github.com/agustinEDev/RyderCupAm
 
 ```
   ┌─────────────────────────────────────────────────────────────┐
-  │                        FRONTEND                              │
+  │                          FRONTEND                           │
   │  React 19  |  Vite 7  |  Tailwind 4  |  1,104 tests         │
   │  Clean Architecture  |  DDD  |  Zustand  |  i18n (EN/ES)    │
   └──────────────────────────┬──────────────────────────────────┘
-                             │  71 REST API calls
+                             │  66 REST API calls
                              │  httpOnly cookies
                              │  Automatic token refresh
   ┌──────────────────────────┴──────────────────────────────────┐
-  │                        BACKEND                               │
-  │  FastAPI  |  Python 3.12  |  PostgreSQL 15  |  1,331 tests   │
+  │                           BACKEND                           │
+  │  FastAPI  |  Python 3.12  |  PostgreSQL 15  |  1,613 tests  │
   │  Clean Architecture  |  DDD  |  RBAC  |  WHS Handicaps      │
   └─────────────────────────────────────────────────────────────┘
 ```
@@ -175,7 +175,7 @@ Backend: github.com/agustinEDev/RyderCupAm
 | Metric | Frontend | Backend |
 |--------|:--------:|:-------:|
 | Architecture | Clean + DDD | Clean + DDD |
-| Tests | 1,104 | 1,331 |
+| Tests | 1,104 | 1,613 |
 | Coverage | 85%+ | 90% |
 | OWASP | 9.2/10 | 9.4/10 |
 
@@ -257,7 +257,7 @@ Backend: github.com/agustinEDev/RyderCupAm
 
 <div class="stat-grid">
 <div class="stat-box-green">
-<strong>330+</strong>
+<strong>345+</strong>
 <span>Source Files</span>
 </div>
 <div class="stat-box-green">
@@ -320,7 +320,7 @@ Full ERD documented in `docs/DATABASE_ERD.md` (Mermaid)
 
 ---
 
-## 6. API Design - 71 REST Endpoints
+## 6. API Design - 66 REST Endpoints
 
 <div class="columns">
 <div class="col">
@@ -333,11 +333,12 @@ Full ERD documented in `docs/DATABASE_ERD.md` (Mermaid)
 | **Handicaps** | 3 | Manual + RFEG |
 | **Golf Courses** | 10 | CRUD, approval workflow |
 | **Competitions** | 10 | CRUD, state machine |
+| **Comp-GolfCourse** | 4 | Link, reorder courses |
 | **Enrollments** | 8 | Request, approve, reject |
 | **Schedule** | 11 | Rounds, matches, teams |
 | **Support** | 1 | Contact form → GitHub |
 | **Countries** | 2 | List, adjacent |
-| **Total** | **70** | |
+| **Total** | **66** | |
 
 </div>
 <div class="col">
@@ -456,13 +457,13 @@ Plus: Database ERD, Threat Model, Runbook, Module docs, Security docs, CI/CD doc
 
 ```
   ┌────────────────────────────────────────────────────┐
-  │  PRESENTATION    23 Pages | 35+ Components | Hooks  │
+  │  PRESENTATION    23 Pages | 32 Components | Hooks  │
   ├────────────────────────────────────────────────────┤
   │  APPLICATION     59 Use Cases                      │
   ├────────────────────────────────────────────────────┤
-  │  DOMAIN          9 Entities | 21 VOs | Interfaces  │
+  │  DOMAIN          8 Entities | 21 VOs | Interfaces  │
   ├────────────────────────────────────────────────────┤
-  │  INFRASTRUCTURE  12 API Repos | Mappers (ACL)      │
+  │  INFRASTRUCTURE  9 API Repos | Mappers (ACL)       │
   └────────────────────────────────────────────────────┘
               Dependencies point INWARD only
 ```
@@ -525,7 +526,7 @@ Plus: Database ERD, Threat Model, Runbook, Module docs, Security docs, CI/CD doc
 
 <div class="highlight">
 
-**Composition Root** (`src/composition/index.js`) wires all 59 use cases with their 12 repositories at startup, keeping all layers fully decoupled. Domain layer has zero external dependencies.
+**Composition Root** (`src/composition/index.js`) wires all 59 use cases with their 9 repositories at startup, keeping all layers fully decoupled. Domain layer has zero external dependencies.
 
 </div>
 
@@ -650,7 +651,7 @@ Auto-detection + localStorage + flags
 
 <div class="stat-grid">
 <div class="stat-box-green">
-<strong>1,331</strong>
+<strong>1,613</strong>
 <span>Backend Tests</span>
 </div>
 <div class="stat-box">
@@ -883,7 +884,7 @@ Eliminates XSS token theft entirely. Worth the extra CSRF handling.
 | HTTP | Fetch API | FastAPI async |
 | Validation | Zod schemas | Pydantic models |
 | Auth | httpOnly cookies | JWT + refresh tokens |
-| Testing | Vitest (1,104) | pytest (1,331) |
+| Testing | Vitest (1,104) | pytest (1,613) |
 | Monitoring | Sentry (errors) | Sentry (APM + profiling) |
 | CI/CD | GitHub Actions (3 workflows) | GitHub Actions (10 jobs) |
 | Docs | 11 ADRs + API spec | 37 ADRs + ERD + Runbook |
@@ -907,15 +908,15 @@ Eliminates XSS token theft entirely. Worth the extra CSRF handling.
 
 <div class="summary-grid">
 <div class="summary-card">
-<strong>2,435</strong>
-<span>Tests (1,104 FE + 1,331 BE)</span>
+<strong>2,717</strong>
+<span>Tests (1,104 FE + 1,613 BE)</span>
 </div>
 <div class="summary-card">
 <strong>9.2 / 9.4</strong>
 <span>OWASP Score (FE / BE)</span>
 </div>
 <div class="summary-card">
-<strong>71</strong>
+<strong>66</strong>
 <span>REST API Endpoints</span>
 </div>
 <div class="summary-card">
