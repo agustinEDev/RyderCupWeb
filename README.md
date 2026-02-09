@@ -2,369 +2,461 @@
 
 > Modern web application for managing amateur golf tournaments in Ryder Cup format
 
-[![CI/CD Pipeline](https://github.com/agustinEDev/RyderCupWeb/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/agustinEDev/RyderCupWeb/actions/workflows/ci-cd.yml)
-[![PR Checks](https://github.com/agustinEDev/RyderCupWeb/actions/workflows/pr-checks.yml/badge.svg)](https://github.com/agustinEDev/RyderCupWeb/actions/workflows/pr-checks.yml)
+<div align="center">
 
-[![React](https://img.shields.io/badge/React-19+-61DAFB?logo=react)](.)
-[![Vite](https://img.shields.io/badge/Vite-7.3.1-646CFF?logo=vite)](.)
-[![Tailwind](https://img.shields.io/badge/Tailwind-4+-38B2AC?logo=tailwind-css)](.)
+[![Version](https://img.shields.io/badge/version-2.0.6-blue?style=for-the-badge&logo=semver)](.)
+[![React](https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=white)](.)
+[![Vite](https://img.shields.io/badge/Vite-7.3-646CFF?style=for-the-badge&logo=vite&logoColor=white)](.)
+[![Tailwind](https://img.shields.io/badge/Tailwind-4-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](.)
 
-**Version:** v2.0.5 (Sprint 2 Schedule en progreso)
-**Stack:** React 19 + Vite 7.3 + Tailwind CSS 4 + ESLint 9
+[![Tests](https://img.shields.io/badge/tests-1088%20passing-00C853?style=for-the-badge&logo=vitest&logoColor=white)](.)
+[![Coverage](https://img.shields.io/badge/coverage-85%25+-success?style=for-the-badge&logo=codecov)](.)
+[![OWASP](https://img.shields.io/badge/OWASP-9.2%2F10-4CAF50?style=for-the-badge&logo=owasp)](https://owasp.org/www-project-top-ten/)
+[![Bundle](https://img.shields.io/badge/bundle-1308%20KB-blueviolet?style=for-the-badge&logo=webpack)](.)
+
+[![Clean Architecture](https://img.shields.io/badge/architecture-Clean%20Architecture-blueviolet?style=for-the-badge)](.)
+[![DDD](https://img.shields.io/badge/design-Domain%20Driven-orange?style=for-the-badge)](.)
+[![CI/CD](https://img.shields.io/badge/CI%2FCD-passing-2088FF?style=for-the-badge&logo=github-actions&logoColor=white)](https://github.com/agustinEDev/RyderCupWeb/actions)
+[![License](https://img.shields.io/badge/license-MIT-blue?style=for-the-badge)](LICENSE)
+
+</div>
 
 ---
 
-## 🚀 Tech Stack
+## 🌟 Overview
 
-- **Core:** React 19 + Vite 7.3 + Tailwind CSS 4 + ESLint 9
-- **State:** Zustand v4 (global) + TanStack Query v5 (server)
-- **Routing:** React Router v7
-- **Validation:** Zod
-- **i18n:** react-i18next (ES/EN)
-- **Testing:** Vitest + Playwright
-- **Monitoring:** Sentry 10 (Error tracking + Performance)
+**RyderCupWeb** is the frontend SPA for the Ryder Cup Amateur Manager platform. Built with **Clean Architecture** and **Domain-Driven Design**, it provides a complete tournament management experience: from creating competitions and scheduling rounds, to real-time scoring and live leaderboards.
+
+### 🎯 Key Highlights
+
+- ✅ **86+ API integrations** with the backend REST API
+- ✅ **1,088 tests** passing (100% success rate)
+- ✅ **OWASP Top 10 Score: 9.2/10** - Production-grade security
+- ✅ **Clean Architecture** - 4-layer separation with DDD patterns + Composition Root DI
+- ✅ **21 Value Objects** enforcing domain invariants
+- ✅ **58 Use Cases** covering all business operations
+- ✅ **Bilingual** (English + Spanish) with 9 i18n namespaces
+- ✅ **Bundle: 1,308 KB** (within 1,400 KB CI budget)
+- ✅ **3 CI/CD workflows** - GitHub Actions pipeline
+
+---
+
+## 🌐 Backend API
+
+This is the **web frontend**. For the backend REST API, visit:
+
+👉 **[RyderCupAm Repository](https://github.com/agustinEDev/RyderCupAm)** - FastAPI + PostgreSQL + Clean Architecture (1,282 tests, OWASP 9.4/10)
 
 ---
 
 ## 🚀 Quick Start
 
-### 1. Installation
+### Prerequisites
+- Node.js 18+
+- npm 9+
+
+### Local Development
 
 ```bash
+# Clone repository
+git clone https://github.com/agustinEDev/RyderCupWeb.git
+cd RyderCupWeb
+
+# Install dependencies
 npm install
+
+# Copy environment template
+cp .env.example .env
+# Edit .env with your configuration
+
+# Start development server
+npm run dev
+
+# Access application
+open http://localhost:5173
 ```
 
-### 2. Environment Variables
-
+**Environment Variables:**
 ```bash
-# Copy example file
-cp .env.example .env
-
-# Edit .env and configure:
 VITE_API_BASE_URL=http://localhost:8000
 VITE_SENTRY_DSN=your-sentry-dsn
 VITE_SENTRY_ENVIRONMENT=development
 ```
 
-### 3. Development
+### Production Build
 
 ```bash
-npm run dev
-# ➜ Local: http://localhost:5173
-```
-
-### 4. Build & Deploy
-
-```bash
-npm run build   # Generates dist/ folder
-npm run preview # Preview production build
-```
-
-**Deploy:** Upload `dist/` to Netlify, Vercel, Cloudflare Pages, etc.
-
----
-
-## 🔐 CI/CD & Quality Gates
-
-### Continuous Integration Pipeline
-
-| Check | Threshold | Status |
-|-------|-----------|--------|
-| Coverage (Lines) | ≥80% | ✅ |
-| Coverage (Statements) | ≥80% | ✅ |
-| Coverage (Functions) | ≥75% | ✅ |
-| Coverage (Branches) | ≥70% | ✅ |
-| Bundle Size | ≤1000 KB | ✅ |
-| PR Size | ≤1000 changes | ✅ |
-| Code Format | 100% Prettier | ✅ |
-| Commit Format | Conventional | ✅ |
-| GPG Signature | Required | ✅ |
-
-**The CI fails automatically if thresholds are not met.**
-
-### Active Workflows
-
-1. **`.github/workflows/ci-cd.yml`** - Main pipeline
-   - Lint + Prettier check
-   - Unit tests with coverage enforcement
-   - Build with bundle budget
-   - Type checking
-   - GPG commit signature verification
-
-2. **`.github/workflows/security.yml`** - Security
-   - npm audit (blocks critical/high)
-   - Secret scanning (TruffleHog)
-   - License compliance
-   - Outdated dependencies check
-
-3. **`.github/workflows/pr-checks.yml`** - PR quality
-   - PR size validation
-   - Conventional commits validation
-
-### Branch Protection
-
-The `main` branch is protected with:
-- ✅ Requires PR and approval before merge
-- ✅ All CI checks must pass
-- ✅ No force push or deletion allowed
-
-📋 See [`docs/BRANCH_PROTECTION.md`](docs/BRANCH_PROTECTION.md) for details.
-
----
-
-## 🧪 Testing
-
-### Unit Tests (Vitest)
-
-```bash
-npm test                    # Run all tests
-npm test -- --coverage      # With coverage report
-npm test -- --watch         # Watch mode
-```
-
-- **1066 tests** (domain, application, infrastructure layers)
-- **Coverage:** ≥80% lines, ≥75% functions, ≥70% branches
-
-### E2E Tests (Playwright)
-
-```bash
-npm run test:e2e           # All E2E tests
-npm run test:e2e:ui        # Interactive UI mode
-npm run test:security      # Security tests only (12 OWASP validations)
-```
-
-### Integration Tests
-
-```bash
-npm run test:integration   # Requires backend on localhost:8000
-```
-
-⚠️ **Test Credentials Configuration:**
-
-```bash
-# 1. Copy example file
-cp .env.example .env
-
-# 2. Configure test credentials (NOT personal)
-TEST_EMAIL=test-user@example.com
-TEST_PASSWORD=TestPassword123
-
-# 3. Run tests
-npm run test:integration
-```
-
-🔒 **Security:** NEVER use personal or production credentials for testing.
-
-📋 See [`docs/INTEGRATION_TESTS.md`](docs/INTEGRATION_TESTS.md) for more details.
-
----
-
-## 📝 Git Conventional Commits
-
-This project uses [Conventional Commits](https://www.conventionalcommits.org/) with automatic validation.
-
-**Required format:**
-```
-<type>(<scope>): <Subject starting with UPPERCASE>
-```
-
-**Correct examples:**
-```bash
-✅ fix(auth): Verify httpOnly cookies before redirect
-✅ feat(competitions): Add team enrollment feature
-✅ docs(readme): Update installation instructions
-
-❌ fix(auth): verify httpOnly cookies  # Lowercase subject (CI fails)
-```
-
-**Validation:** `amannn/action-semantic-pull-request@v5` blocks PRs with incorrect format.
-
-**Valid types:** `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `chore`, `ci`, `build`, `revert`
-
----
-
-## 🔐 Security Best Practices
-
-### Environment Variables
-
-**🚫 NEVER:**
-- Hardcode credentials in code
-- Commit `.env` files with sensitive data
-- Use personal/production credentials for testing
-- Share credentials in public channels
-
-**✅ ALWAYS:**
-- Use environment variables (`process.env.*`)
-- Keep `.env` in `.gitignore`
-- Use dedicated credentials per environment
-- Rotate credentials regularly
-- Validate variable presence with fail-fast
-
-**Correct example:**
-
-```javascript
-// ✅ CORRECT: Validation with fail-fast
-const getTestCredentials = () => {
-  const email = process.env.TEST_EMAIL;
-  const password = process.env.TEST_PASSWORD;
-
-  if (!email || !password) {
-    throw new Error('Missing TEST_EMAIL or TEST_PASSWORD');
-  }
-
-  return { email, password };
-};
-
-// ❌ INCORRECT: Hardcoded credentials
-const credentials = {
-  email: 'user@example.com',  // DON'T DO THIS!
-  password: 'MyPassword123'   // DON'T DO THIS!
-};
-```
-
-### Secrets Management in CI/CD
-
-GitHub Actions → **Settings → Secrets and variables → Actions:**
-- `TEST_EMAIL` - Test credential
-- `TEST_PASSWORD` - Test credential
-
-Secrets are automatically injected as environment variables in workflows.
-
----
-
-## 🏗️ Project Structure
-
-```
-src/
-├── domain/              # Entities, Value Objects, Repository Interfaces
-│   ├── entities/        # Competition, GolfCourse, Round, Match, etc.
-│   ├── value_objects/   # CompetitionStatus, MatchFormat, RoundStatus, etc.
-│   └── repositories/    # ICompetitionRepository, IScheduleRepository, etc.
-├── application/         # Use Cases (Clean Architecture)
-│   └── use_cases/       # competition/, schedule/, enrollment/, golf_course/, etc.
-├── infrastructure/      # API Repositories, Mappers
-│   ├── repositories/    # ApiCompetitionRepository, ApiScheduleRepository, etc.
-│   └── mappers/         # CompetitionMapper, ScheduleMapper, etc.
-├── composition/         # Dependency Injection container
-├── pages/              # Page components (routes)
-│   ├── auth/           # Login, Register, VerifyEmail
-│   ├── public/         # Landing, BrowseCompetitions
-│   └── protected/      # Dashboard, Profile, Competitions
-├── components/         # Reusable components
-│   ├── layout/         # Header, Footer
-│   ├── ui/             # Buttons, Inputs, Modals
-│   └── errors/         # Error boundaries
-├── hooks/              # Custom hooks
-├── store/              # Zustand stores (auth, competition)
-├── services/           # Centralized API (apiRequest with token refresh)
-├── i18n/               # Internationalization (9 namespaces, EN/ES)
-└── utils/              # Validation, Sentry, tokenRefresh
-```
-
-### Main Pages
-
-**Public:**
-- `/` - Landing
-- `/login` - Login
-- `/register` - Registration
-- `/verify-email` - Email verification
-- `/browse-competitions` - Browse public competitions
-
-**Protected:**
-- `/dashboard` - Main dashboard
-- `/profile` - User profile
-- `/profile/edit` - Edit profile
-- `/profile/devices` - Device management
-- `/competitions` - My competitions list
-- `/competitions/create` - Create competition
-
----
-
-## 🌐 Backend Integration
-
-**Backend Repository:** [RyderCupAm](https://github.com/agustinEDev/RyderCupAm)
-
-**Main Endpoints:**
-- `POST /api/v1/auth/login` - Login (httpOnly cookies)
-- `POST /api/v1/auth/register` - Registration
-- `POST /api/v1/auth/refresh-token` - Token refresh
-- `GET /api/v1/competitions` - List competitions
-- `POST /api/v1/competitions` - Create competition
-- `GET /api/v1/competitions/{id}/schedule` - Get schedule
-- `POST /api/v1/competitions/{id}/rounds` - Create round
-- `POST /api/v1/rounds/{id}/matches/generate` - Generate matches
-- `PUT /api/v1/matches/{id}/status` - Update match status
-
-See [BACKEND_API_SPEC.md](BACKEND_API_SPEC.md) for full API reference.
-
-**API Docs:** http://localhost:8000/docs
-
----
-
-## 🛡️ Security Features
-
-- ✅ **httpOnly Cookies** - Tokens in secure cookies (XSS protection)
-- ✅ **CSRF Protection** - X-CSRF-Token header on mutations
-- ✅ **Token Auto-Refresh** - Automatic access token renewal
-- ✅ **Account Lockout** - HTTP 423 after 10 failed login attempts
-- ✅ **Password History** - Prevents reuse of last 5 passwords
-- ✅ **Device Management** - Active session management with remote revocation
-- ✅ **Input Validation** - Multi-layer validation (HTML + JS + Backend)
-- ✅ **OWASP ASVS V2.1.1** - 12+ character passwords
-- ✅ **Sentry Monitoring** - Error tracking and performance monitoring
-- ✅ **CSP Headers** - Content Security Policy
-- ✅ **SRI** - Subresource Integrity for static assets
-- ✅ **Security Tests** - 12 automated OWASP tests
-
-**OWASP Score:** 9.2/10
-
----
-
-## 🚀 Useful Commands
-
-```bash
-npm install              # Install dependencies
-npm run dev              # Development server
-npm run build            # Production build
-npm run preview          # Preview production build
-npm test                 # Unit tests
-npm run test:e2e         # E2E tests
-npm run test:integration # Integration tests
-npm run test:security    # Security tests
-npm run lint             # ESLint
-npm run format           # Prettier format
-npm run format:check     # Check formatting
+npm run build     # Production build
+npm run preview   # Preview locally
 ```
 
 ---
 
 ## 📚 Documentation
 
-- **[ROADMAP.md](ROADMAP.md)** - v2.1.0 Planning (7 weeks, 5 sprints)
-- **[CHANGELOG.md](CHANGELOG.md)** - Detailed change history
-- **[BACKEND_API_SPEC.md](BACKEND_API_SPEC.md)** - Full API reference (55+ endpoints)
-- **[CLAUDE.md](CLAUDE.md)** - Context for Claude AI
-- **[docs/architecture/decisions/](docs/architecture/decisions/)** - ADRs (11 decisions)
-- **[docs/INTEGRATION_TESTS.md](docs/INTEGRATION_TESTS.md)** - Integration tests guide
-- **[docs/BRANCH_PROTECTION.md](docs/BRANCH_PROTECTION.md)** - Branch protection rules
+| Document | Description |
+|----------|-------------|
+| [CLAUDE.md](CLAUDE.md) | Complete project context for AI development |
+| [ROADMAP.md](ROADMAP.md) | Sprint planning (7 weeks, 5 sprints) |
+| [CHANGELOG.md](CHANGELOG.md) | Detailed version history |
+| [BACKEND_API_SPEC.md](BACKEND_API_SPEC.md) | Full API reference (86+ endpoints) |
+| [ADRs](docs/architecture/decisions/) | Architecture Decision Records (11 total) |
+| [docs/presentation.md](docs/presentation.md) | Academic project presentation |
+| [docs/INTEGRATION_TESTS.md](docs/INTEGRATION_TESTS.md) | Integration tests guide |
+| [docs/BRANCH_PROTECTION.md](docs/BRANCH_PROTECTION.md) | Branch protection rules |
 
 ---
 
-## 🔗 Links
+## 🛠️ Tech Stack
 
-- **Backend Repository:** [RyderCupAm](https://github.com/agustinEDev/RyderCupAm)
-- **Backend API Docs:** http://localhost:8000/docs
-- **Sentry Dashboard:** https://sentry.io/
+<div align="center">
+
+| Category | Technologies |
+|----------|-------------|
+| **Framework** | React 19 |
+| **Build Tool** | Vite 7.3 |
+| **Styling** | Tailwind CSS 4 |
+| **Routing** | React Router 7 |
+| **State (Global)** | Zustand 4 |
+| **State (Server)** | Fetch API + custom hooks |
+| **Validation** | Zod |
+| **Drag & Drop** | @dnd-kit |
+| **i18n** | react-i18next 16 (EN + ES) |
+| **Monitoring** | Sentry 10 |
+| **Testing** | Vitest 4 + Playwright |
+| **Linting** | ESLint 9 |
+
+</div>
 
 ---
 
-## 👤 Author
+## ✨ Features
 
-**Agustín Estévez**
+### User Management
+- ✅ Registration with email verification
+- ✅ JWT authentication (httpOnly cookies)
+- ✅ Profile management (personal info + security)
+- ✅ Handicap system (manual + RFEG integration for Spanish players)
+- ✅ Password reset with secure tokens
+- ✅ Device fingerprinting with remote revocation
+- ✅ Multi-tab logout via Broadcast Channel API
+
+### Role-Based Access Control
+- ✅ **RBAC Foundation (v2.0.0)**: Simplified three-tier role system (ADMIN, CREATOR, PLAYER)
+- ✅ `RoleGuard` HOC for route protection
+- ✅ Per-competition role resolution via `useUserRoles(competitionId)` hook
+- ✅ Role badges with color coding (Purple: Admin, Blue: Creator, Green: Player)
+
+### Tournament Management
+- ✅ Create and configure competitions with custom team names
+- ✅ Enrollment flow with tee category selection (5 categories)
+- ✅ Competition state machine: DRAFT → ACTIVE → IN_PROGRESS → COMPLETED
+- ✅ **Competition ↔ GolfCourse M2M** (v2.0.2) - Multi-course tournaments
+
+### Schedule & Matches (Sprint 2)
+- ✅ Create rounds with configurable formats (Singles, Fourball, Foursomes)
+- ✅ Session-based scheduling (MORNING / AFTERNOON / EVENING)
+- ✅ Automatic and manual team assignment with drag & drop (@dnd-kit)
+- ✅ Match generation with WHS handicap calculations
+- ✅ Walkover declaration with reason tracking
+- ✅ Player reassignment between matches
+
+### Golf Course Management
+- ✅ Full CRUD with admin approval workflow (request → approve/reject)
+- ✅ Tee categories: Championship, Amateur, Senior, Forward, Junior
+- ✅ 18-hole validation with stroke index and par constraints
+- ✅ Clone-based update system for approved courses
+
+### What's New
+
+**v2.0.6 (Sprint 2 Complete - Feb 8, 2026)**
+- ✅ **Schedule & Matches UI**: Full schedule management page with round CRUD, match generation, team assignment
+- ✅ **Enrollment Tee Category Modal**: Tee category selection during enrollment (5 categories)
+- ✅ **i18n Toast Migration**: All hardcoded toast messages replaced with translation keys
+- ✅ **Bundle Optimization**: Replaced country-flag-icons SVG (239 KB) with flagcdn.com CDN images
+- ✅ **TeeCategoryBadge**: Color-coded badges with gender suffix (M/F) display
+- ✅ **Player Schedule View**: Read-only schedule access for enrolled players
+
+**v2.0.4 (Feb 3, 2026)**
+- ✅ **Subdomain Architecture**: Cloudflare configuration for `www` + `api` subdomains
+
+### Coming Soon (Competition Module Evolution)
+- 🔄 **Invitation System** - Email invitations with secure tokens (Sprint 3)
+- 🔄 **Live Scoring** - Hole-by-hole annotation with dual validation (Sprint 4)
+- 🔄 **Real-time Leaderboards** - Public leaderboard with conditional polling (Sprint 5)
+
+---
+
+## 🏗️ Architecture
+
+### Clean Architecture + DDD
+
+```
+src/
+├── domain/              # Entities, VOs, Repository Interfaces
+│   ├── entities/        #   8 domain entities
+│   ├── value_objects/   #  21 value objects
+│   └── repositories/    #   Repository interfaces (ports)
+├── application/         # Use Cases (58 total)
+│   └── use_cases/       #   6 domain areas
+├── infrastructure/      # API Repos, Mappers (ACL)
+│   ├── repositories/    #  11 API repositories (adapters)
+│   └── mappers/         #   Anti-corruption layer
+├── pages/               # 18 route pages
+│   ├── admin/           #   Users, golf course approval
+│   ├── creator/         #   Schedule management
+│   └── public/          #   Leaderboard
+├── components/          # 32 reusable components
+├── hooks/               # Custom React hooks
+├── store/               # Zustand stores (auth, competition)
+├── composition/         # Dependency injection (Composition Root)
+├── i18n/                # 9 namespaces × 2 languages
+└── utils/               # Sentry, validation, token refresh
+```
+
+**Composition Root** (`src/composition/index.js`) wires all dependencies at startup, keeping layers fully decoupled.
+
+### Design Patterns
+- **Repository** - Data access abstraction (domain interfaces → infrastructure implementations)
+- **Anti-Corruption Layer (ACL)** - Mappers translating snake_case API → camelCase domain
+- **Value Objects** - Encapsulated validation logic (21 VOs)
+- **Composition Root** - DI container wiring all layers
+- **Use Cases** - Single responsibility per business operation
+- **Guard Components** - `RoleGuard`, `ProtectedRoute` for access control
+
+### Key Principles
+- **SOLID** compliance
+- **Dependency Inversion** - Domain never imports Infrastructure
+- **Testability** - 85%+ coverage on business logic
+- **Immutability** - Value Objects are immutable
+- **Separation of Concerns** - 4 strict layers
+
+### Codebase Metrics
+
+| Metric | Value |
+|--------|-------|
+| Source files | 268 |
+| Lines of code | ~41,000 |
+| Test files | 82 |
+| Domain entities | 8 |
+| Value objects | 21 |
+| Use cases | 58 |
+| API repositories | 11 |
+| Components | 32 |
+| Pages | 18 |
+
+---
+
+## 🧪 Testing
+
+### Test Statistics (v2.0.6)
+
+| Category | Tests | Status | Coverage |
+|----------|-------|--------|----------|
+| **Total** | **1,088** | ✅ 100% passing | 85%+ |
+| Domain | ~400 | ✅ 100% | Entity invariants, VO validation |
+| Application | ~350 | ✅ 100% | Use case orchestration |
+| Infrastructure | ~200 | ✅ 100% | Mapper transformations |
+| Hooks/Utils | ~116 | ✅ 100% | Custom hooks, utilities |
+
+### Quality Gates
+
+| Gate | Threshold | Current |
+|------|-----------|---------|
+| Tests | 100% pass | 1,088/1,088 |
+| Line coverage | >= 85% | Achieved |
+| Function coverage | >= 75% | Achieved |
+| Branch coverage | >= 70% | Achieved |
+| Bundle size | <= 1,400 KB | 1,308 KB |
+| ESLint errors | 0 | 0 |
+
+**Test Types**:
+- Unit tests (domain + application logic)
+- Infrastructure tests (mapper transformations)
+- Hook tests (custom React hooks)
+- E2E tests (full user flows with Playwright)
+
+---
+
+## 🔐 Security
+
+### OWASP Top 10 2021 Score: 9.2/10 ⭐
+
+<div align="center">
+
+| Feature | Implementation |
+|---------|---------------|
+| **Authentication** | httpOnly cookies (access 15min + refresh 7 days) |
+| **Token Management** | Automatic refresh with 401 interceptor |
+| **Input Validation** | 3-layer: HTML constraints + Zod + Backend Pydantic |
+| **Session Security** | Multi-tab logout via Broadcast Channel API |
+| **Device Control** | Fingerprinting with remote revocation |
+| **Asset Integrity** | SRI (Subresource Integrity) |
+| **Monitoring** | Sentry error tracking + session replay |
+| **Password Policy** | 12-128 chars, uppercase + lowercase + numbers |
+
+</div>
+
+**Security Features Timeline**:
+- **v1.8.0**: httpOnly cookies, session timeout, Broadcast Channel logout
+- **v1.11.0**: Password reset system with secure tokens
+- **v1.13.0**: Device fingerprinting with remote revocation
+- **v2.0.4**: SRI (Subresource Integrity) for production assets
+
+---
+
+## 🔄 CI/CD Pipeline
+
+### GitHub Actions Workflows
+
+3 workflows executed on every push:
+
+| Workflow | Description |
+|----------|-------------|
+| **`ci-cd.yml`** | Main pipeline: lint, tests, coverage, build, bundle budget |
+| **`security.yml`** | npm audit, TruffleHog, license compliance |
+| **`pr-checks.yml`** | PR size validation, conventional commits |
+
+**Branch Protection**:
+- All CI checks must pass before merge
+- GPG-signed commits required on `main` and `develop`
+- Minimum 1 approving review for PRs
+- No force push or deletion on `main`
+
+---
+
+## 🌍 Internationalization
+
+**9 namespaces** with full English + Spanish coverage:
+
+`auth` | `common` | `competitions` | `dashboard` | `devices` | `golfCourses` | `landing` | `profile` | `schedule`
+
+- ✅ Automatic browser language detection
+- ✅ localStorage persistence
+- ✅ Language switcher with country flags
+- ✅ Pluralization support (`_one`/`_other`)
+- ✅ Cross-namespace access in modals
+
+**Adding a language:** Create `locales/fr/*.json` + import in `i18n/config.js`
+
+---
+
+## 📡 API Integration
+
+This frontend consumes **86+ REST API endpoints** organized across 11 domain areas:
+
+| Domain | Endpoints | Description |
+|--------|-----------|-------------|
+| Authentication | 11 | Register, login, tokens, password reset |
+| Users | 4 | Profile, security, role queries |
+| Devices | 2 | Fingerprinting, remote revocation |
+| Handicaps | 3 | Manual + RFEG integration |
+| Competitions | 10 | CRUD + state machine transitions |
+| Enrollments | 8 | Request, approve, reject, withdraw |
+| Golf Courses | 10 | CRUD + admin approval workflow |
+| Schedule & Rounds | 4 | Round CRUD, schedule queries |
+| Matches | 4 | Status, walkover, player reassignment |
+| Teams & Generation | 3 | Team assignment, match generation |
+| Countries | 2 | Country list, adjacent countries |
+
+See [BACKEND_API_SPEC.md](BACKEND_API_SPEC.md) for the complete endpoint reference.
+
+---
+
+## 💻 Development
+
+```bash
+npm install              # Install dependencies
+npm run dev              # Dev server (http://localhost:5173)
+npm run build            # Production build
+npm test                 # Unit tests (Vitest)
+npm test -- --coverage   # Coverage report
+npm run test:e2e         # E2E tests (Playwright)
+npm run lint             # ESLint
+```
+
+### Conventions
+
+- **Commits**: `<type>(<scope>): <UPPERCASE subject>` ([Conventional Commits](https://www.conventionalcommits.org/))
+- **Branches**: GitFlow (`main`, `develop`, `feature/*`, `release/*`, `hotfix/*`)
+- **GPG signing**: Required on `main` and `develop`
+
+---
+
+## 📊 Project Roadmap
+
+### Current Version: v2.0.6 (Production)
+
+**Latest Features** (Sprint 2 Complete - Feb 8, 2026):
+- **Schedule & Matches UI**: Round CRUD, match generation, team assignment, drag & drop
+- **Enrollment Tee Category Modal**: 5-category tee selection during enrollment
+- **i18n Toast Migration**: All hardcoded messages replaced with translation keys
+- **Bundle Optimization**: CDN flags replacing 239 KB SVG bundle
+- **Total: 1,088 tests** passing - **Bundle: 1,308 KB**
+
+### Coming Next: Sprint 3-5 - Invitations, Scoring & Leaderboards
+
+**Sprint Breakdown**:
+1. ✅ **Sprint 1** (Jan 27 - Jan 31): Golf Courses + RBAC (COMPLETED)
+2. ✅ **Sprint 2** (Feb 3 - Feb 8): Schedule & Matches + Enrollment + i18n (COMPLETED)
+3. **Sprint 3** (Feb 2026): Invitation System - Email invitations with secure tokens
+4. **Sprint 4** (Mar 2026): Live Scoring - Hole-by-hole annotation with dual validation
+5. **Sprint 5** (Mar 2026): Leaderboards - Public leaderboard with conditional polling
+
+See [ROADMAP.md](ROADMAP.md) for complete version planning.
+
+---
+
+## 🤝 Contributing
+
+We welcome contributions! Please follow these guidelines:
+
+### Code Standards
+- Follow **Clean Architecture** and **DDD** principles
+- Write **tests** for all new features (>85% coverage)
+- Use **Zod** for input validation
+- Follow **ESLint** rules (enforced in CI)
+- All user-facing strings must use **i18n** keys
+
+### Pull Request Process
+1. Fork the repository
+2. Create feature branch: `git checkout -b feature/amazing-feature`
+3. Commit changes with GPG signature: `git commit -S -m "feat: ADD amazing feature"`
+4. Write/update tests: `npm test`
+5. Push branch: `git push origin feature/amazing-feature`
+6. Open Pull Request with description
+
+---
+
+## 📄 License
+
+This project is licensed under the **MIT License** - see [LICENSE](LICENSE) file for details.
+
+---
+
+## 👨‍💻 Author & Contact
+
+**Agustin Estevez Dominguez**
 - GitHub: [@agustinEDev](https://github.com/agustinEDev)
+- Repository: [RyderCupWeb](https://github.com/agustinEDev/RyderCupWeb)
+- Issues: [Report a bug](https://github.com/agustinEDev/RyderCupWeb/issues)
 
 ---
 
-⭐ If you find this useful, give it a star on GitHub!
+## 🙏 Acknowledgments
 
-🏌️‍♂️ Happy coding!
+- **React** - Modern UI library for building user interfaces
+- **Vite** - Next generation frontend build tool
+- **Tailwind CSS** - Utility-first CSS framework
+- **Zustand** - Lightweight state management
+- **R&A** - Official Rules of Golf
+- **USGA** - World Handicap System (WHS)
+
+---
+
+<div align="center">
+
+### ⭐ Star this repository if you find it useful!
+
+
+</div>
