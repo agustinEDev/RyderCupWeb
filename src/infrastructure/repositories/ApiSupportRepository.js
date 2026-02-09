@@ -35,7 +35,23 @@ class ApiSupportRepository extends ISupportRepository {
       throw error;
     }
 
-    return response.json();
+    try {
+      return await response.json();
+    } catch (parseError) {
+      let bodySnippet = '';
+      try {
+        bodySnippet = await response.text();
+        bodySnippet = bodySnippet.substring(0, 200);
+      } catch {
+        bodySnippet = '(unreadable)';
+      }
+      const error = new Error(
+        `Invalid JSON response (status ${response.status}): ${bodySnippet} — ${parseError.message}`
+      );
+      error.code = 'INVALID_JSON_RESPONSE';
+      error.status = response.status;
+      throw error;
+    }
   }
 }
 
