@@ -8,7 +8,9 @@ import {
   updateManualHandicapUseCase,
   updateRfegHandicapUseCase,
   fetchCountriesUseCase,
+  unlinkGoogleAccountUseCase,
 } from '../composition';
+import { buildGoogleOAuthUrl } from '../utils/googleOAuth';
 
 import { useAuth } from './useAuth';
 
@@ -21,6 +23,7 @@ export const useEditProfile = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [isUpdatingRFEG, setIsUpdatingRFEG] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isUnlinkingGoogle, setIsUnlinkingGoogle] = useState(false);
 
   const [countries, setCountries] = useState([]);
   const [isLoadingCountries, setIsLoadingCountries] = useState(true);
@@ -231,6 +234,28 @@ export const useEditProfile = () => {
     }
   };
 
+  // Google OAuth - derived state
+  const isGoogleLinked = user?.auth_providers?.includes('google') || user?.authProviders?.includes('google') || false;
+  const hasPassword = user?.has_password ?? user?.hasPassword ?? true;
+
+  const handleLinkGoogle = () => {
+    window.location.href = buildGoogleOAuthUrl('link');
+  };
+
+  const handleUnlinkGoogle = async () => {
+    setIsUnlinkingGoogle(true);
+    try {
+      await unlinkGoogleAccountUseCase.execute();
+      await refetchUser();
+      customToast.success(t('edit.linkedAccounts.unlinkSuccess'));
+    } catch (error) {
+      console.error('Error unlinking Google:', error);
+      customToast.error(error.message || t('edit.linkedAccounts.unlinkError'));
+    } finally {
+      setIsUnlinkingGoogle(false);
+    }
+  };
+
   const handleUpdateSecurity = async (e) => {
     e.preventDefault();
 
@@ -328,6 +353,9 @@ export const useEditProfile = () => {
     isSaving,
     isUpdatingRFEG,
     isRefreshing,
+    isUnlinkingGoogle,
+    isGoogleLinked,
+    hasPassword,
     countries,
     isLoadingCountries,
 
@@ -338,5 +366,7 @@ export const useEditProfile = () => {
     handleUpdateHandicapRFEG,
     handleUpdateProfile,
     handleUpdateSecurity,
+    handleLinkGoogle,
+    handleUnlinkGoogle,
   };
 };

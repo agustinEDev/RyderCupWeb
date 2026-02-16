@@ -73,7 +73,20 @@
       "rfegInfoWithNationality": "Your nationality is set to {{countryCode}}. Only players with Spanish nationality can update their handicap from RFEG.",
       "rfegInfoNoNationality": "To enable RFEG handicap updates, please set your nationality to Spain in your profile."
     },
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "linkedAccounts": {
+      "title": "Linked Accounts",
+      "subtitle": "Manage your connected third-party accounts.",
+      "google": "Google",
+      "linked": "Connected",
+      "notLinked": "Not connected",
+      "link": "Link Google",
+      "unlink": "Unlink",
+      "unlinking": "Unlinking...",
+      "unlinkSuccess": "Google account unlinked successfully.",
+      "unlinkError": "Failed to unlink Google account.",
+      "cannotUnlinkOnly": "Set a password first before unlinking your only sign-in method."
+    }
   },
   "toasts": {
     "userNotLoaded": "User not loaded.",

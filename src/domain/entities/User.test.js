@@ -140,6 +140,8 @@ describe('User Entity', () => {
         verification_token: null,
         country_code: 'ES', // Extracted from CountryCode VO
         gender: null,
+        auth_providers: [],
+        has_password: true,
       });
     });
 
