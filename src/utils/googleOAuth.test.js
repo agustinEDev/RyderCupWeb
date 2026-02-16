@@ -1,4 +1,5 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+/* global URL */
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { buildGoogleOAuthUrl } from './googleOAuth';
 
 describe('buildGoogleOAuthUrl', () => {
