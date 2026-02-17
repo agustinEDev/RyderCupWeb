@@ -136,6 +136,58 @@ class ApiAuthRepository extends IAuthRepository {
       message: data.message,
     };
   }
+  /**
+   * @override
+   */
+  async googleLogin(authorizationCode) {
+    try {
+      const data = await apiRequest('/api/v1/auth/google', {
+        method: 'POST',
+        body: JSON.stringify({ authorization_code: authorizationCode }),
+      });
+
+      return {
+        user: new User(data.user),
+        csrfToken: data.csrf_token,
+        isNewUser: data.is_new_user || false,
+      };
+    } catch (error) {
+      if (error.status === 423 || error.statusCode === 423) {
+        throw new Error('Account locked due to too many failed login attempts. Please try again after 30 minutes.');
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * @override
+   */
+  async linkGoogleAccount(authorizationCode) {
+    const data = await apiRequest('/api/v1/auth/google/link', {
+      method: 'POST',
+      body: JSON.stringify({ authorization_code: authorizationCode }),
+    });
+
+    return {
+      message: data.message,
+      provider: data.provider,
+      providerEmail: data.provider_email,
+    };
+  }
+
+  /**
+   * @override
+   */
+  async unlinkGoogleAccount() {
+    const data = await apiRequest('/api/v1/auth/google/unlink', {
+      method: 'DELETE',
+    });
+
+    return {
+      message: data.message,
+      provider: data.provider,
+    };
+  }
 }
 
 export default ApiAuthRepository;

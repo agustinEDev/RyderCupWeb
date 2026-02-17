@@ -8,6 +8,7 @@ import { safeLog } from '../utils/auth';
 import PasswordInput from '../components/ui/PasswordInput';
 import { loginUseCase } from '../composition';
 import { useAuthContext } from '../hooks/useAuthContext'; // v1.13.0: CSRF Protection
+import GoogleSignInButton from '../components/ui/GoogleSignInButton';
 
 const Login = () => {
   const { t } = useTranslation(['auth', 'common']);
@@ -364,12 +365,15 @@ const Login = () => {
                   <div className="w-full border-t border-gray-200"></div>
                 </div>
                 <div className="relative flex justify-center text-sm">
-                  <span className="px-4 bg-white text-gray-500">or</span>
+                  <span className="px-4 bg-white text-gray-500">{t('google.orDivider')}</span>
                 </div>
               </div>
 
+              {/* Google Sign In */}
+              <GoogleSignInButton flow="login" disabled={isLoading} />
+
               {/* Register Link */}
-              <div className="text-center">
+              <div className="text-center mt-6">
                 <p className="text-gray-600 text-sm">
                   {t('login.noAccount')}{' '}
                   <Link

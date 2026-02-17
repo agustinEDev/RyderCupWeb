@@ -46,6 +46,10 @@ const PendingGolfCourses = lazyWithRetry(() => import('./pages/admin/PendingGolf
 // Creator pages (v2.1.0 - Sprint 2)
 const SchedulePage = lazyWithRetry(() => import('./pages/creator/SchedulePage'));
 
+// Google OAuth pages
+const GoogleCallback = lazyWithRetry(() => import('./pages/GoogleCallback'));
+const CompleteProfile = lazyWithRetry(() => import('./pages/CompleteProfile'));
+
 // Public pages
 const Pricing = lazyWithRetry(() => import('./pages/public/Pricing'));
 const Contact = lazyWithRetry(() => import('./pages/public/Contact'));
@@ -87,6 +91,7 @@ function AppContent() {
     '/terms',
     '/privacy',
     '/cookies',
+    '/auth/google/callback',
   ];
 
   const isPublicRoute = PUBLIC_ROUTES.includes(location.pathname) ||
@@ -196,8 +201,10 @@ function AppContent() {
         <Route path="/terms" element={<Terms />} />
         <Route path="/privacy" element={<Privacy />} />
         <Route path="/cookies" element={<Cookies />} />
+        <Route path="/auth/google/callback" element={<GoogleCallback />} />
 
         {/* Protected routes */}
+        <Route path="/auth/complete-profile" element={<ProtectedRoute><CompleteProfile /></ProtectedRoute>} />
         <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
         <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
         <Route path="/profile/edit" element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />

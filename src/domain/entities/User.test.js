@@ -140,6 +140,8 @@ describe('User Entity', () => {
         verification_token: null,
         country_code: 'ES', // Extracted from CountryCode VO
         gender: null,
+        auth_providers: [],
+        has_password: true,
       });
     });
 
@@ -256,6 +258,71 @@ describe('User Entity', () => {
 
       const plainObject = user.toPersistence();
       expect(plainObject.gender).toBeNull();
+    });
+  });
+
+  describe('auth_providers and has_password fields', () => {
+    it('should default auth_providers to empty array', () => {
+      const user = new User({
+        id: 'user-123',
+        email: 'test@example.com',
+        first_name: 'John',
+        last_name: 'Doe',
+      });
+
+      expect(user.authProviders).toEqual([]);
+    });
+
+    it('should accept auth_providers with google', () => {
+      const user = new User({
+        id: 'user-123',
+        email: 'test@example.com',
+        first_name: 'John',
+        last_name: 'Doe',
+        auth_providers: ['google'],
+      });
+
+      expect(user.authProviders).toEqual(['google']);
+    });
+
+    it('should default has_password to true', () => {
+      const user = new User({
+        id: 'user-123',
+        email: 'test@example.com',
+        first_name: 'John',
+        last_name: 'Doe',
+      });
+
+      expect(user.hasPassword).toBe(true);
+    });
+
+    it('should accept has_password as false for OAuth-only users', () => {
+      const user = new User({
+        id: 'user-123',
+        email: 'test@example.com',
+        first_name: 'John',
+        last_name: 'Doe',
+        auth_providers: ['google'],
+        has_password: false,
+      });
+
+      expect(user.hasPassword).toBe(false);
+      expect(user.authProviders).toEqual(['google']);
+    });
+
+    it('should include auth_providers and has_password in toPersistence', () => {
+      const user = new User({
+        id: 'user-123',
+        email: 'test@example.com',
+        first_name: 'John',
+        last_name: 'Doe',
+        auth_providers: ['google'],
+        has_password: false,
+      });
+
+      const plainObject = user.toPersistence();
+      expect(plainObject.auth_providers).toEqual(['google']);
+      expect(plainObject.has_password).toBe(false);
     });
   });
 
