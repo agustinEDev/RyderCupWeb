@@ -207,7 +207,7 @@ describe('GenerateMatchesModal', () => {
 
   it('should disable submit button when isProcessing is true', () => {
     render(<GenerateMatchesModal isOpen={true} {...baseProps} isProcessing={true} />);
-    const submitBtn = screen.getByRole('button', { name: /\.\.\./ });
+    const submitBtn = screen.getByTestId('generate-submit');
     expect(submitBtn).toBeDisabled();
   });
 
@@ -250,5 +250,26 @@ describe('GenerateMatchesModal', () => {
     // Switch to automatic
     fireEvent.click(screen.getByDisplayValue('automatic'));
     expect(screen.queryByText('matches.pairings.validation.incompleteMatch')).not.toBeInTheDocument();
+  });
+
+  it('should show duplicate player validation error when same player used in two matches', () => {
+    render(<GenerateMatchesModal isOpen={true} {...baseProps} />);
+    fireEvent.click(screen.getByDisplayValue('manual'));
+
+    // Add a second match
+    fireEvent.click(screen.getByText('matches.pairings.addMatch'));
+
+    const selects = screen.getAllByRole('combobox');
+    // Match 1: Team A = p1, Team B = p3
+    fireEvent.change(selects[0], { target: { value: 'p1' } });
+    fireEvent.change(selects[1], { target: { value: 'p3' } });
+    // Match 2: Team A = p1 (duplicate!), Team B = p4
+    fireEvent.change(selects[2], { target: { value: 'p1' } });
+    fireEvent.change(selects[3], { target: { value: 'p4' } });
+
+    fireEvent.click(screen.getByText('matches.pairings.generate'));
+
+    expect(screen.getByText('matches.pairings.validation.duplicatePlayer')).toBeInTheDocument();
+    expect(baseProps.onConfirm).not.toHaveBeenCalled();
   });
 });

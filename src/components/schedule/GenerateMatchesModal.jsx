@@ -2,7 +2,8 @@ import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { X, Zap, Plus, Trash2 } from 'lucide-react';
 
-const createEmptyMatch = () => ({ teamAPlayerIds: [], teamBPlayerIds: [] });
+let matchIdCounter = 0;
+const createEmptyMatch = () => ({ id: ++matchIdCounter, teamAPlayerIds: [], teamBPlayerIds: [] });
 
 // Wrapper: controls mount/unmount so inner component always has fresh state
 const GenerateMatchesModal = ({ isOpen, ...props }) => {
@@ -50,8 +51,8 @@ const GenerateMatchesModalContent = ({
   const usedPlayerIds = useMemo(() => {
     const ids = new Set();
     matches.forEach(m => {
-      m.teamAPlayerIds.forEach(id => ids.add(id));
-      m.teamBPlayerIds.forEach(id => ids.add(id));
+      m.teamAPlayerIds.forEach(id => { if (id) ids.add(id); });
+      m.teamBPlayerIds.forEach(id => { if (id) ids.add(id); });
     });
     return ids;
   }, [matches]);
@@ -75,7 +76,7 @@ const GenerateMatchesModalContent = ({
       const key = team === 'A' ? 'teamAPlayerIds' : 'teamBPlayerIds';
       const updated = [...match[key]];
       if (playerId === '') {
-        updated.splice(slotIndex, 1);
+        updated[slotIndex] = '';
       } else {
         updated[slotIndex] = playerId;
       }
@@ -132,7 +133,7 @@ const GenerateMatchesModalContent = ({
       return;
     }
 
-    onConfirm(matches);
+    onConfirm(matches.map(({ teamAPlayerIds, teamBPlayerIds }) => ({ teamAPlayerIds, teamBPlayerIds })));
   };
 
   const renderPlayerSelect = (matchIndex, team, slotIndex, players) => {
@@ -229,7 +230,7 @@ const GenerateMatchesModalContent = ({
           {mode === 'manual' && (
             <div className="space-y-4">
               {matches.map((match, matchIndex) => (
-                <div key={matchIndex} className="border border-gray-200 rounded-lg p-4 space-y-3">
+                <div key={match.id} className="border border-gray-200 rounded-lg p-4 space-y-3">
                   {/* Match header */}
                   <div className="flex justify-between items-center">
                     <span className="text-sm font-semibold text-gray-900">
@@ -316,6 +317,7 @@ const GenerateMatchesModalContent = ({
             <button
               type="submit"
               disabled={isProcessing}
+              data-testid="generate-submit"
               className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
             >
               <Zap className="w-4 h-4" />
