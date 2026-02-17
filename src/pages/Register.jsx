@@ -46,10 +46,13 @@ const Register = () => {
 
   // Cargar lista de países al montar el componente
   useEffect(() => {
+    const controller = new AbortController();
+
     const loadCountries = async () => {
       setIsLoadingCountries(true);
       try {
         const data = await fetchCountriesUseCase.execute();
+        if (controller.signal.aborted) return;
         const validCountries = Array.isArray(data)
           ? data
               .filter(c => c?.code && (c?.name_en || c?.name_es))
@@ -62,14 +65,18 @@ const Register = () => {
           : [];
         setCountries(validCountries);
       } catch (error) {
+        if (controller.signal.aborted) return;
         console.error('Error loading countries:', error);
         setCountries([]);
       } finally {
-        setIsLoadingCountries(false);
+        if (!controller.signal.aborted) {
+          setIsLoadingCountries(false);
+        }
       }
     };
 
     loadCountries();
+    return () => controller.abort();
   }, []);
 
   const handleChange = (e) => {

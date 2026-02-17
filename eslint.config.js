@@ -45,6 +45,7 @@ export default [
         atob: 'readonly',
         btoa: 'readonly',
         BroadcastChannel: 'readonly',
+        AbortController: 'readonly',
         MouseEvent: 'readonly',
         // Node globals (for config files and tests)
         process: 'readonly',

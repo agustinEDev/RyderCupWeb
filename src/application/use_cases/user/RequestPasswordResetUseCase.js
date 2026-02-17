@@ -20,11 +20,11 @@ class RequestPasswordResetUseCase {
    * @throws {Error} Si el email es inválido o hay un error de red
    */
   async execute(email) {
-    if (!email || !email.trim()) {
+    const trimmedEmail = email && email.trim();
+
+    if (!trimmedEmail) {
       throw new Error('Email is required');
     }
-
-    const trimmedEmail = email.trim();
 
     if (trimmedEmail.length > 254) {
       throw new Error('Email must not exceed 254 characters');
@@ -39,7 +39,7 @@ class RequestPasswordResetUseCase {
 
     return {
       success: true,
-      message: result.message || 'If the email exists, a recovery link has been sent'
+      message: result?.message || 'If the email exists, a recovery link has been sent'
     };
   }
 }

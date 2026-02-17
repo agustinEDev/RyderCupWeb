@@ -699,11 +699,13 @@ jobs:
           # Dependency Audit
           MODERATE_COUNT="${{ needs.dependency-audit.outputs.moderate }}"
           TOTAL_COUNT="${{ needs.dependency-audit.outputs.total }}"
+          MODERATE_COUNT="${MODERATE_COUNT:-0}"
+          TOTAL_COUNT="${TOTAL_COUNT:-0}"
           if [ "${{ needs.dependency-audit.result }}" == "success" ]; then
-            if [ -n "$MODERATE_COUNT" ] && [ "$MODERATE_COUNT" -gt 0 ] 2>/dev/null; then
+            if [ "$MODERATE_COUNT" -gt 0 ]; then
               echo "| 🔒 Dependency Audit | ⚠️ Passed | $MODERATE_COUNT moderate vulnerabilities ($TOTAL_COUNT total) |" >> $GITHUB_STEP_SUMMARY
             else
-              echo "| 🔒 Dependency Audit | ✅ Passed | No vulnerabilities found |" >> $GITHUB_STEP_SUMMARY
+              echo "| 🔒 Dependency Audit | ✅ Passed | No critical/high vulnerabilities |" >> $GITHUB_STEP_SUMMARY
             fi
           else
             echo "| 🔒 Dependency Audit | ❌ Failed | Critical/high vulnerabilities found |" >> $GITHUB_STEP_SUMMARY
