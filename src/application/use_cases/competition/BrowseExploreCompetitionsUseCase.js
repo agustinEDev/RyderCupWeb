@@ -1,6 +1,6 @@
 // src/application/use-cases/competition/BrowseExploreCompetitionsUseCase.js
 
-import CompetitionMapper from '../../../infrastructure/mappers/CompetitionMapper';
+import CompetitionAssembler from '../../assemblers/CompetitionAssembler';
 
 /**
  * Use case for browsing competitions that are in progress, closed, or completed.
@@ -59,7 +59,7 @@ class BrowseExploreCompetitionsUseCase {
 
     // Convert domain entities to simple DTOs for the UI
     const competitionDTOs = competitions.map((competition) => {
-      return CompetitionMapper.toSimpleDTO(competition, competition._apiData);
+      return CompetitionAssembler.toSimpleDTO(competition, competition._apiData);
     });
 
     return competitionDTOs;

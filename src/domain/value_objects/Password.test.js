@@ -15,7 +15,13 @@ describe('Password Value Object', () => {
 
   it('should throw PasswordValidationError if password is too short', () => {
     expect(() => new Password('Short12')).toThrow(PasswordValidationError);
-    expect(() => new Password('Short12')).toThrow('Password must be at least 8 characters long.');
+    expect(() => new Password('Short12')).toThrow('Password must be at least 12 characters long.');
+  });
+
+  it('should throw PasswordValidationError if password is too long', () => {
+    const longPassword = 'A'.repeat(127) + '1a';
+    expect(() => new Password(longPassword)).toThrow(PasswordValidationError);
+    expect(() => new Password(longPassword)).toThrow('Password must not exceed 128 characters.');
   });
 
   it('should throw PasswordValidationError if password is missing an uppercase letter', () => {
@@ -41,10 +47,12 @@ describe('Password Value Object', () => {
 
   // Test cases for multiple failures - constructor should throw the first one encountered
   it('should throw the first encountered validation error for multiple failures', () => {
-    expect(() => new Password('abc')).toThrow('Password must be at least 8 characters long.');
-    // CORRECCIÓN: El primer error para 'ABCDEF1' es la longitud, no la falta de minúscula.
-    expect(() => new Password('ABCDEF1')).toThrow('Password must be at least 8 characters long.'); 
-    // Añadimos un nuevo caso para verificar el error de la minúscula
-    expect(() => new Password('ABCDEFGH1')).toThrow('Password must contain at least one lowercase letter.');
+    expect(() => new Password('abc')).toThrow('Password must be at least 12 characters long.');
+    // CORRECCIÓN: El primer error para 'ABCDEF1' es la longitud (7 < 12)
+    expect(() => new Password('ABCDEF1')).toThrow('Password must be at least 12 characters long.');
+    // 'ABCDEFGH1' is 9 chars < 12, so length error is first
+    expect(() => new Password('ABCDEFGH1')).toThrow('Password must be at least 12 characters long.');
+    // For a 12+ char password missing lowercase, check that specific error
+    expect(() => new Password('ABCDEFGHIJK1')).toThrow('Password must contain at least one lowercase letter.');
   });
 });

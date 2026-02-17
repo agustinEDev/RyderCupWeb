@@ -69,8 +69,6 @@ class CompetitionMapper {
       updatedAt: new Date(apiData.updated_at)
     });
     } catch (error) {
-      console.error('❌ Error in CompetitionMapper.toDomain:', error);
-      console.error('API Data:', apiData);
       throw new Error(`Failed to map competition data: ${error.message}`);
     }
   }
@@ -100,76 +98,67 @@ class CompetitionMapper {
 
   /**
    * Maps Competition entity to a simple DTO for UI presentation
-   * This is useful when the UI doesn't need the full entity complexity
+   * @deprecated Use CompetitionAssembler.toSimpleDTO from application/assemblers instead
    * @param {Competition} competition - Domain entity
    * @param {Object} apiData - Original API data (optional, for location string)
    * @returns {Object} - Simple DTO for UI
    */
   static toSimpleDTO(competition, apiData = null) {
-    try {
-      // Use countries array from API if available, otherwise build from domain
-      let countries = [];
+    // Use countries array from API if available, otherwise build from domain
+    let countries = [];
 
-      if (apiData?.countries && Array.isArray(apiData.countries)) {
-        // Use countries from API with full names in English and Spanish
-        countries = apiData.countries.map((country, index) => ({
-          code: country.code,
-          name: country.name_en, // Use English name by default (could use name_es for Spanish)
-          nameEn: country.name_en,
-          nameEs: country.name_es,
-          flag: getCountryFlag(country.code),
-          isMain: index === 0
-        }));
-      } else {
-        // Fallback: build from domain Location value object
-        const allCountries = competition.location.getAllCountries();
-        const countryCodes = allCountries.map(countryCode => countryCode.value());
+    if (apiData?.countries && Array.isArray(apiData.countries)) {
+      // Use countries from API with full names in English and Spanish
+      countries = apiData.countries.map((country, index) => ({
+        code: country.code,
+        name: country.name_en, // Use English name by default (could use name_es for Spanish)
+        nameEn: country.name_en,
+        nameEs: country.name_es,
+        flag: getCountryFlag(country.code),
+        isMain: index === 0
+      }));
+    } else {
+      // Fallback: build from domain Location value object
+      const allCountries = competition.location.getAllCountries();
+      const countryCodes = allCountries.map(countryCode => countryCode.value());
 
-        countries = countryCodes.map((code, index) => ({
-          code: code,
-          name: code, // Fallback to ISO code if no API data
-          flag: getCountryFlag(code),
-          isMain: index === 0
-        }));
-      }
-      const dto = {
-        id: competition.id.toString(),
-        name: competition.name.toString(),
-        team1Name: competition.team1Name,
-        team2Name: competition.team2Name,
-        startDate: competition.dates.startDate.toISOString().split('T')[0],
-        endDate: competition.dates.endDate.toISOString().split('T')[0],
-        location: apiData?.location || competition.location.toString(), // String for backward compatibility
-        countries: countries, // Array with main country (full name) + adjacent (ISO codes)
-        status: competition.status.value,
-        maxPlayers: competition.maxPlayers,
-        enrolledCount: apiData?.enrolled_count || 0, // From API, not in domain
-        isCreator: apiData?.is_creator || false, // From API, not in domain
-        creatorId: competition.creatorId,
-        // Map creator from API data (convert snake_case to camelCase)
-        creator: apiData?.creator ? {
-          id: apiData.creator.id,
-          firstName: apiData.creator.first_name,
-          lastName: apiData.creator.last_name,
-          email: apiData.creator.email,
-          handicap: apiData.creator.handicap,
-          countryCode: apiData.creator.country_code
-        } : null,
-        createdAt: competition.createdAt.toISOString(),
-        updatedAt: competition.updatedAt.toISOString(),
-        // Enrollment status (for competitions where user is enrolled, not creator)
-        enrollment_status: apiData?.user_enrollment_status || null, // PENDING, APPROVED, REJECTED, etc.
-        // Pending enrollments count (for creators to see incoming requests)
-        pending_enrollments_count: apiData?.pending_enrollments_count || 0,
-        // Additional fields from domain
-        playMode: competition.handicapSettings.type(),
-        teamAssignment: competition.teamAssignment.value()
-      };
-      return dto;
-    } catch (error) {
-      console.error('❌ Error in toSimpleDTO:', error);
-      throw error;
+      countries = countryCodes.map((code, index) => ({
+        code: code,
+        name: code, // Fallback to ISO code if no API data
+        flag: getCountryFlag(code),
+        isMain: index === 0
+      }));
     }
+
+    return {
+      id: competition.id.toString(),
+      name: competition.name.toString(),
+      team1Name: competition.team1Name,
+      team2Name: competition.team2Name,
+      startDate: competition.dates.startDate.toISOString().split('T')[0],
+      endDate: competition.dates.endDate.toISOString().split('T')[0],
+      location: apiData?.location || competition.location.toString(),
+      countries: countries,
+      status: competition.status.value,
+      maxPlayers: competition.maxPlayers,
+      enrolledCount: apiData?.enrolled_count || 0,
+      isCreator: apiData?.is_creator || false,
+      creatorId: competition.creatorId,
+      creator: apiData?.creator ? {
+        id: apiData.creator.id,
+        firstName: apiData.creator.first_name,
+        lastName: apiData.creator.last_name,
+        email: apiData.creator.email,
+        handicap: apiData.creator.handicap,
+        countryCode: apiData.creator.country_code
+      } : null,
+      createdAt: competition.createdAt.toISOString(),
+      updatedAt: competition.updatedAt.toISOString(),
+      enrollment_status: apiData?.user_enrollment_status || null,
+      pending_enrollments_count: apiData?.pending_enrollments_count || 0,
+      playMode: competition.handicapSettings.type(),
+      teamAssignment: competition.teamAssignment.value()
+    };
   }
 }
 

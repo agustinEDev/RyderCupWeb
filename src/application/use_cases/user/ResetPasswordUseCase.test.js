@@ -95,7 +95,7 @@ describe('ResetPasswordUseCase', () => {
     it('should throw error if password is empty', async () => {
       // Act & Assert
       await expect(resetPasswordUseCase.execute('valid_token', '')).rejects.toThrow(
-        'Password is required'
+        'Password cannot be empty.'
       );
       expect(authRepository.resetPassword).not.toHaveBeenCalled();
     });
@@ -103,18 +103,18 @@ describe('ResetPasswordUseCase', () => {
     it('should throw error if password is too short (<12 chars)', async () => {
       // Act & Assert
       await expect(resetPasswordUseCase.execute('valid_token', 'Short1')).rejects.toThrow(
-        'Password must be at least 12 characters'
+        'Password must be at least 12 characters long.'
       );
       expect(authRepository.resetPassword).not.toHaveBeenCalled();
     });
 
     it('should throw error if password is too long (>128 chars)', async () => {
       // Arrange: 129 characters (exceeds 128 limit)
-      const longPassword = 'A'.repeat(129);
+      const longPassword = 'A'.repeat(127) + '1a';
 
       // Act & Assert
       await expect(resetPasswordUseCase.execute('valid_token', longPassword)).rejects.toThrow(
-        'Password must not exceed 128 characters'
+        'Password must not exceed 128 characters.'
       );
       expect(authRepository.resetPassword).not.toHaveBeenCalled();
     });

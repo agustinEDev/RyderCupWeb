@@ -1,6 +1,6 @@
 // src/application/use-cases/competition/BrowseJoinableCompetitionsUseCase.js
 
-import CompetitionMapper from '../../../infrastructure/mappers/CompetitionMapper';
+import CompetitionAssembler from '../../assemblers/CompetitionAssembler';
 
 /**
  * Use case for browsing competitions that are available to join.
@@ -56,7 +56,7 @@ class BrowseJoinableCompetitionsUseCase {
 
     // Convert domain entities to simple DTOs for the UI
     const competitionDTOs = competitions.map((competition) => {
-      return CompetitionMapper.toSimpleDTO(competition, competition._apiData);
+      return CompetitionAssembler.toSimpleDTO(competition, competition._apiData);
     });
 
     return competitionDTOs;

@@ -150,4 +150,49 @@ class ICompetitionRepository {
   async updateCompetition(competitionId, competitionData) {
     throw new Error('ICompetitionRepository.updateCompetition must be implemented');
   }
+
+  /**
+   * Activates a competition (DRAFT → ACTIVE).
+   * @param {string} competitionId
+   * @returns {Promise<Object>} Updated competition data
+   */
+  async activate(competitionId) {
+    throw new Error('ICompetitionRepository.activate must be implemented');
+  }
+
+  /**
+   * Closes enrollments for a competition (ACTIVE → CLOSED).
+   * @param {string} competitionId
+   * @returns {Promise<Object>} Updated competition data
+   */
+  async closeEnrollments(competitionId) {
+    throw new Error('ICompetitionRepository.closeEnrollments must be implemented');
+  }
+
+  /**
+   * Starts a competition (CLOSED → IN_PROGRESS).
+   * @param {string} competitionId
+   * @returns {Promise<Object>} Updated competition data
+   */
+  async start(competitionId) {
+    throw new Error('ICompetitionRepository.start must be implemented');
+  }
+
+  /**
+   * Completes a competition (IN_PROGRESS → COMPLETED).
+   * @param {string} competitionId
+   * @returns {Promise<Object>} Updated competition data
+   */
+  async complete(competitionId) {
+    throw new Error('ICompetitionRepository.complete must be implemented');
+  }
+
+  /**
+   * Cancels a competition (any state → CANCELLED).
+   * @param {string} competitionId
+   * @returns {Promise<Object>} Updated competition data
+   */
+  async cancel(competitionId) {
+    throw new Error('ICompetitionRepository.cancel must be implemented');
+  }
 }

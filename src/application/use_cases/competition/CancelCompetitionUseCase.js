@@ -1,11 +1,13 @@
-import apiRequest from '../../../services/api.js';
-
 /**
  * Use Case: Cancel Competition
  * Transitions competition from any state to CANCELLED state.
  * Only the creator can cancel a competition.
  */
 class CancelCompetitionUseCase {
+  constructor({ competitionRepository }) {
+    this.competitionRepository = competitionRepository;
+  }
+
   /**
    * Executes the use case to cancel a competition.
    * @param {string} competitionId - The ID of the competition to cancel.
@@ -17,11 +19,8 @@ class CancelCompetitionUseCase {
       throw new Error('Competition ID is required');
     }
 
-    const data = await apiRequest(`/api/v1/competitions/${competitionId}/cancel`, {
-      method: 'POST'
-    });
+    const data = await this.competitionRepository.cancel(competitionId);
 
-    // Return simple DTO for UI
     return {
       id: data.id,
       name: data.name,

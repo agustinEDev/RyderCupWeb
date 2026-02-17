@@ -7,12 +7,10 @@ import { validateEmail, validateName, validatePassword } from '../utils/validati
 import PasswordInput from '../components/ui/PasswordInput';
 import PasswordRequirements from '../components/ui/PasswordRequirements';
 import PasswordStrengthMeter from '../components/ui/PasswordStrengthMeter';
-import { registerUseCase } from '../composition'; // NUEVO import
+import { registerUseCase, fetchCountriesUseCase } from '../composition';
 import { CountryFlag } from '../utils/countryUtils';
 import { formatCountryName } from '../services/countries';
 import GoogleSignInButton from '../components/ui/GoogleSignInButton';
-
-const API_URL = import.meta.env.VITE_API_BASE_URL || '';
 
 const Register = () => {
   const { t, i18n } = useTranslation('auth');
@@ -48,24 +46,37 @@ const Register = () => {
 
   // Cargar lista de países al montar el componente
   useEffect(() => {
-    const fetchCountries = async () => {
+    const controller = new AbortController();
+
+    const loadCountries = async () => {
       setIsLoadingCountries(true);
       try {
-        const response = await fetch(`${API_URL}/api/v1/countries?language=en`);
-        if (response.ok) {
-          const data = await response.json();
-          setCountries(data);
-        } else {
-          console.error('❌ Failed to load countries, status:', response.status);
-        }
+        const data = await fetchCountriesUseCase.execute();
+        if (controller.signal.aborted) return;
+        const validCountries = Array.isArray(data)
+          ? data
+              .filter(c => c?.code && (c?.name_en || c?.name_es))
+              .map(c => ({
+                code: c.code,
+                name: c.name_en || c.name_es,
+                name_en: c.name_en,
+                name_es: c.name_es
+              }))
+          : [];
+        setCountries(validCountries);
       } catch (error) {
-        console.error('❌ Error loading countries:', error);
+        if (controller.signal.aborted) return;
+        console.error('Error loading countries:', error);
+        setCountries([]);
       } finally {
-        setIsLoadingCountries(false);
+        if (!controller.signal.aborted) {
+          setIsLoadingCountries(false);
+        }
       }
     };
 
-    fetchCountries();
+    loadCountries();
+    return () => controller.abort();
   }, []);
 
   const handleChange = (e) => {

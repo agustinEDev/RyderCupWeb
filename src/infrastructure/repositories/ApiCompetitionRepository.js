@@ -217,6 +217,65 @@ class ApiCompetitionRepository extends ICompetitionRepository {
 
     return competition;
   }
+  /**
+   * Activates a competition (DRAFT → ACTIVE).
+   * @override
+   * @param {string} competitionId
+   * @returns {Promise<Object>} Updated competition data
+   */
+  async activate(competitionId) {
+    return await apiRequest(`/api/v1/competitions/${competitionId}/activate`, {
+      method: 'POST'
+    });
+  }
+
+  /**
+   * Closes enrollments for a competition (ACTIVE → CLOSED).
+   * @override
+   * @param {string} competitionId
+   * @returns {Promise<Object>} Updated competition data
+   */
+  async closeEnrollments(competitionId) {
+    return await apiRequest(`/api/v1/competitions/${competitionId}/close-enrollments`, {
+      method: 'POST'
+    });
+  }
+
+  /**
+   * Starts a competition (CLOSED → IN_PROGRESS).
+   * @override
+   * @param {string} competitionId
+   * @returns {Promise<Object>} Updated competition data
+   */
+  async start(competitionId) {
+    return await apiRequest(`/api/v1/competitions/${competitionId}/start`, {
+      method: 'POST'
+    });
+  }
+
+  /**
+   * Completes a competition (IN_PROGRESS → COMPLETED).
+   * @override
+   * @param {string} competitionId
+   * @returns {Promise<Object>} Updated competition data
+   */
+  async complete(competitionId) {
+    return await apiRequest(`/api/v1/competitions/${competitionId}/complete`, {
+      method: 'POST'
+    });
+  }
+
+  /**
+   * Cancels a competition (any state → CANCELLED).
+   * @override
+   * @param {string} competitionId
+   * @returns {Promise<Object>} Updated competition data
+   */
+  async cancel(competitionId) {
+    return await apiRequest(`/api/v1/competitions/${competitionId}/cancel`, {
+      method: 'POST'
+    });
+  }
 }
 
 export default ApiCompetitionRepository;

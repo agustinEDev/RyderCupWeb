@@ -1,4 +1,4 @@
-import { validateEmail } from '../../../utils/validation.js';
+import Email from '../../../domain/value_objects/Email.js';
 
 /**
  * Use Case para solicitar reset de contraseña
@@ -20,20 +20,26 @@ class RequestPasswordResetUseCase {
    * @throws {Error} Si el email es inválido o hay un error de red
    */
   async execute(email) {
-    // Validación del email usando la función utilitaria
-    const validation = validateEmail(email);
+    const trimmedEmail = email && email.trim();
 
-    if (!validation.isValid) {
-      throw new Error(validation.message);
+    if (!trimmedEmail) {
+      throw new Error('Email is required');
     }
+
+    if (trimmedEmail.length > 254) {
+      throw new Error('Email must not exceed 254 characters');
+    }
+
+    // Validates email format using domain Value Object
+    const emailVO = new Email(trimmedEmail);
 
     // Llamada al repositorio para enviar el email de reset
     // El backend siempre retorna el mismo mensaje (anti-enumeración)
-    const result = await this.authRepository.requestPasswordReset(email);
+    const result = await this.authRepository.requestPasswordReset(emailVO.getValue());
 
     return {
       success: true,
-      message: result.message || 'If the email exists, a recovery link has been sent'
+      message: result?.message || 'If the email exists, a recovery link has been sent'
     };
   }
 }

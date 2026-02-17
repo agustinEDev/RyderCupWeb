@@ -1,13 +1,14 @@
 // src/infrastructure/repositories/ApiScheduleRepository.js
 
-import { apiRequest } from '../../services/api';
+import apiRequest from '../../services/api.js';
+import IScheduleRepository from '../../domain/repositories/IScheduleRepository.js';
 import ScheduleMapper from '../mappers/ScheduleMapper';
 
 /**
  * Implementacion REST del repositorio de Schedule.
  * Consume los 11 endpoints del backend Sprint 2.
  */
-class ApiScheduleRepository {
+class ApiScheduleRepository extends IScheduleRepository {
   /**
    * GET /api/v1/competitions/{competitionId}/schedule
    */

@@ -19,8 +19,6 @@
 class IScheduleRepository {
   /**
    * Obtiene el schedule completo de una competicion.
-   * Endpoint: GET /api/v1/competitions/{competitionId}/schedule
-   *
    * @param {string} competitionId
    * @returns {Promise<Object>} Schedule DTO con rondas y partidos
    * @throws {Error} Si falla la operacion
@@ -31,8 +29,6 @@ class IScheduleRepository {
 
   /**
    * Configura el schedule de una competicion.
-   * Endpoint: POST /api/v1/competitions/{competitionId}/schedule/configure
-   *
    * @param {string} competitionId
    * @param {Object} config - Configuracion del schedule
    * @returns {Promise<Object>} Resultado de la configuracion
@@ -44,8 +40,6 @@ class IScheduleRepository {
 
   /**
    * Asigna equipos a una competicion.
-   * Endpoint: POST /api/v1/competitions/{competitionId}/teams
-   *
    * @param {string} competitionId
    * @param {Object} teamData - Datos de asignacion de equipos
    * @returns {Promise<Object>} TeamAssignment DTO
@@ -57,8 +51,6 @@ class IScheduleRepository {
 
   /**
    * Crea una ronda para una competicion.
-   * Endpoint: POST /api/v1/competitions/{competitionId}/rounds
-   *
    * @param {string} competitionId
    * @param {Object} roundData - Datos de la ronda
    * @param {string} roundData.golf_course_id
@@ -76,8 +68,6 @@ class IScheduleRepository {
 
   /**
    * Actualiza una ronda existente.
-   * Endpoint: PUT /api/v1/rounds/{roundId}
-   *
    * @param {string} roundId
    * @param {Object} roundData - Datos actualizados
    * @returns {Promise<Object>} Round DTO actualizado
@@ -89,8 +79,6 @@ class IScheduleRepository {
 
   /**
    * Elimina una ronda.
-   * Endpoint: DELETE /api/v1/rounds/{roundId}
-   *
    * @param {string} roundId
    * @returns {Promise<void>}
    * @throws {Error} Si falla la operacion
@@ -101,8 +89,6 @@ class IScheduleRepository {
 
   /**
    * Genera partidos para una ronda.
-   * Endpoint: POST /api/v1/rounds/{roundId}/matches/generate
-   *
    * @param {string} roundId
    * @param {Object} pairings - Emparejamientos opcionales
    * @returns {Promise<Object>} Resultado de generacion de partidos
@@ -114,8 +100,6 @@ class IScheduleRepository {
 
   /**
    * Obtiene detalle de un partido.
-   * Endpoint: GET /api/v1/matches/{matchId}
-   *
    * @param {string} matchId
    * @returns {Promise<Object>} Match DTO
    * @throws {Error} Si falla la operacion
@@ -126,8 +110,6 @@ class IScheduleRepository {
 
   /**
    * Actualiza el estado de un partido.
-   * Endpoint: PUT /api/v1/matches/{matchId}/status
-   *
    * @param {string} matchId
    * @param {string} action - Accion a realizar (start, complete, etc.)
    * @param {Object} [result] - Resultado del partido (para complete)
@@ -140,8 +122,6 @@ class IScheduleRepository {
 
   /**
    * Declara walkover para un partido.
-   * Endpoint: POST /api/v1/matches/{matchId}/walkover
-   *
    * @param {string} matchId
    * @param {string} winningTeam - 'A' o 'B'
    * @param {string} reason - Motivo del walkover
@@ -154,8 +134,6 @@ class IScheduleRepository {
 
   /**
    * Reasigna jugadores de un partido.
-   * Endpoint: PUT /api/v1/matches/{matchId}/players
-   *
    * @param {string} matchId
    * @param {string[]} teamAIds - IDs de jugadores equipo A
    * @param {string[]} teamBIds - IDs de jugadores equipo B

@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import BrowseJoinableCompetitionsUseCase from './BrowseJoinableCompetitionsUseCase';
 
-// Mock the CompetitionMapper
-vi.mock('../../../infrastructure/mappers/CompetitionMapper', () => ({
+// Mock the CompetitionAssembler
+vi.mock('../../assemblers/CompetitionAssembler', () => ({
   default: {
     toSimpleDTO: vi.fn((competition) => ({
       id: competition.id,
