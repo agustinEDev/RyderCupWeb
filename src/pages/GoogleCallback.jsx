@@ -3,6 +3,7 @@ import { useSearchParams, useNavigate, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuthContext } from '../hooks/useAuthContext';
 import { googleLoginUseCase, linkGoogleAccountUseCase } from '../composition';
+import { verifyOAuthState } from '../utils/googleOAuth';
 import customToast from '../utils/toast';
 
 const GoogleCallback = () => {
@@ -21,10 +22,17 @@ const GoogleCallback = () => {
 
     const code = searchParams.get('code');
     const errorParam = searchParams.get('error');
-    const state = searchParams.get('state');
+    const stateParam = searchParams.get('state');
 
     const processCallback = async () => {
-      if (state === 'link') setFlow('link');
+      // Verify CSRF nonce from state parameter
+      const { flow: parsedFlow, valid } = verifyOAuthState(stateParam);
+      setFlow(parsedFlow);
+
+      if (!valid) {
+        setError(t('google.callbackError'));
+        return;
+      }
 
       // Handle Google OAuth error
       if (errorParam) {
@@ -39,7 +47,7 @@ const GoogleCallback = () => {
       }
 
       try {
-        if (state === 'link') {
+        if (parsedFlow === 'link') {
           // Link Google account flow
           await linkGoogleAccountUseCase.execute(code);
           customToast.success(t('google.linkSuccess'));

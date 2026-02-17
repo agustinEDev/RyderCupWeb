@@ -140,33 +140,11 @@ class ApiAuthRepository extends IAuthRepository {
    * @override
    */
   async googleLogin(authorizationCode) {
-    const API_URL = window.APP_CONFIG?.API_BASE_URL || import.meta.env.VITE_API_BASE_URL || '';
-
     try {
-      const response = await fetch(`${API_URL}/api/v1/auth/google`, {
+      const data = await apiRequest('/api/v1/auth/google', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
         body: JSON.stringify({ authorization_code: authorizationCode }),
       });
-
-      // Read text first to avoid body stream double-consume bug
-      const text = await response.text();
-
-      if (!response.ok) {
-        let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
-        try {
-          const errorData = JSON.parse(text);
-          errorMessage = errorData.detail || errorData.message || errorMessage;
-        } catch { /* use default */ }
-
-        const error = new Error(errorMessage);
-        error.status = response.status;
-        error.statusCode = response.status;
-        throw error;
-      }
-
-      const data = JSON.parse(text);
 
       return {
         user: new User(data.user),
@@ -174,7 +152,7 @@ class ApiAuthRepository extends IAuthRepository {
         isNewUser: data.is_new_user || false,
       };
     } catch (error) {
-      if (error.status === 423) {
+      if (error.status === 423 || error.statusCode === 423) {
         throw new Error('Account locked due to too many failed login attempts. Please try again after 30 minutes.');
       }
       throw error;

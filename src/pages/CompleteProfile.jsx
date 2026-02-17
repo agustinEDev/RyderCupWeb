@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
-import { useAuthContext } from '../hooks/useAuthContext';
 import { useAuth } from '../hooks/useAuth';
 import { updateUserProfileUseCase, updateManualHandicapUseCase, fetchCountriesUseCase } from '../composition';
 import { CountryFlag } from '../utils/countryUtils';
@@ -12,8 +11,7 @@ import customToast from '../utils/toast';
 const CompleteProfile = () => {
   const { t, i18n } = useTranslation('auth');
   const navigate = useNavigate();
-  const { user } = useAuthContext();
-  const { refetch: refetchUser } = useAuth();
+  const { user, refetch: refetchUser } = useAuth();
 
   const [formData, setFormData] = useState({
     countryCode: '',

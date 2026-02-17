@@ -234,9 +234,9 @@ export const useEditProfile = () => {
     }
   };
 
-  // Google OAuth - derived state
-  const isGoogleLinked = user?.auth_providers?.includes('google') || user?.authProviders?.includes('google') || false;
-  const hasPassword = user?.has_password ?? user?.hasPassword ?? true;
+  // Google OAuth - derived state (user comes from useAuth raw API response, always snake_case)
+  const isGoogleLinked = user?.auth_providers?.includes('google') || false;
+  const hasPassword = user?.has_password ?? true;
 
   const handleLinkGoogle = () => {
     window.location.href = buildGoogleOAuthUrl('link');
