@@ -16,6 +16,7 @@ import WalkoverModal from '../../components/schedule/WalkoverModal';
 import ReassignPlayersModal from '../../components/schedule/ReassignPlayersModal';
 import MatchDetailModal from '../../components/schedule/MatchDetailModal';
 import AssignTeamsModal from '../../components/schedule/AssignTeamsModal';
+import GenerateMatchesModal from '../../components/schedule/GenerateMatchesModal';
 import {
   getScheduleUseCase,
   getCompetitionDetailUseCase,
@@ -58,6 +59,8 @@ const SchedulePage = () => {
   const [showMatchDetailModal, setShowMatchDetailModal] = useState(false);
   const [detailMatchId, setDetailMatchId] = useState(null);
   const [showTeamsModal, setShowTeamsModal] = useState(false);
+  const [showGenerateModal, setShowGenerateModal] = useState(false);
+  const [generateRound, setGenerateRound] = useState(null);
 
   // Build player name map from enrollments
   const playerNameMap = useMemo(() => {
@@ -115,6 +118,7 @@ const SchedulePage = () => {
       setSchedule(scheduleData);
     } catch (error) {
       console.error('Error reloading schedule:', error);
+      customToast.error(t('errors.failedToLoadSchedule'));
     }
   };
 
@@ -170,11 +174,16 @@ const SchedulePage = () => {
     }
   };
 
-  const handleGenerateMatches = async (roundId) => {
+  const handleGenerateMatches = async (roundId, manualPairings = null) => {
     setIsProcessing(true);
     try {
-      await generateMatchesUseCase.execute(roundId);
+      const pairings = manualPairings
+        ? { manualPairings }
+        : {};
+      await generateMatchesUseCase.execute(roundId, pairings);
       customToast.success(t('success.matchesGenerated'));
+      setShowGenerateModal(false);
+      setGenerateRound(null);
       await reloadSchedule();
     } catch (error) {
       console.error('Error generating matches:', error);
@@ -182,6 +191,11 @@ const SchedulePage = () => {
     } finally {
       setIsProcessing(false);
     }
+  };
+
+  const openGenerateModal = (round) => {
+    setGenerateRound(round);
+    setShowGenerateModal(true);
   };
 
   // --- Match handlers ---
@@ -410,7 +424,7 @@ const SchedulePage = () => {
                       round={round}
                       onEdit={() => openEditRound(round)}
                       onDelete={() => handleDeleteRound(round.id)}
-                      onGenerateMatches={() => handleGenerateMatches(round.id)}
+                      onGenerateMatches={() => openGenerateModal(round)}
                       onToggleExpand={() => toggleRoundExpand(round.id)}
                       isExpanded={!!expandedRounds[round.id]}
                       canEdit={canManage}
@@ -513,6 +527,22 @@ const SchedulePage = () => {
           enrollments={enrollments}
           isProcessing={isProcessing}
           teamNames={teamNames}
+          t={t}
+        />
+      )}
+
+      {/* Generate Matches Modal */}
+      {showGenerateModal && generateRound && (
+        <GenerateMatchesModal
+          isOpen={showGenerateModal}
+          onClose={() => { setShowGenerateModal(false); setGenerateRound(null); }}
+          onConfirm={(pairings) => handleGenerateMatches(generateRound.id, pairings)}
+          round={generateRound}
+          enrollments={enrollments}
+          teamAssignment={teamAssignment}
+          isProcessing={isProcessing}
+          teamNames={teamNames}
+          playerNameMap={playerNameMap}
           t={t}
         />
       )}
