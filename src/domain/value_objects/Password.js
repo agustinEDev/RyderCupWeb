@@ -22,8 +22,11 @@ class Password {
   }
 
   validateStrength() { // 3. Renombrar validate a validateStrength
-    if (this._value.length < 8) {
-      throw new PasswordValidationError('Password must be at least 8 characters long.');
+    if (this._value.length < 12) {
+      throw new PasswordValidationError('Password must be at least 12 characters long.');
+    }
+    if (this._value.length > 128) {
+      throw new PasswordValidationError('Password must not exceed 128 characters.');
     }
     if (!/[A-Z]/.test(this._value)) {
       throw new PasswordValidationError('Password must contain at least one uppercase letter.');
@@ -34,10 +37,6 @@ class Password {
     if (!/[0-9]/.test(this._value)) {
       throw new PasswordValidationError('Password must contain at least one number.');
     }
-    // Opcional: Requerir un caracter especial
-    // if (!/[!@#$%^&*]/.test(this._value)) {
-    //   throw new PasswordValidationError('Password must contain at least one special character.');
-    // }
   }
 }
 

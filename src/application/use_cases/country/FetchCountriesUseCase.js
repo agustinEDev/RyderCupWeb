@@ -2,12 +2,17 @@
  * Fetch Countries Use Case
  * Retrieves all active countries for competition creation
  */
-
-import { getCountries } from '../../../services/countries.js';
-
 class FetchCountriesUseCase {
+  /**
+   * @param {Object} dependencies
+   * @param {ICountryRepository} dependencies.countryRepository
+   */
+  constructor({ countryRepository }) {
+    this.countryRepository = countryRepository;
+  }
+
   async execute() {
-    return await getCountries();
+    return await this.countryRepository.findAll();
   }
 }
 

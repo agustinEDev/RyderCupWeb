@@ -1,4 +1,4 @@
-import EnrollmentMapper from '../../../infrastructure/mappers/EnrollmentMapper';
+import EnrollmentAssembler from '../../assemblers/EnrollmentAssembler';
 
 /**
  * Use Case: Set Custom Handicap
@@ -76,7 +76,7 @@ class SetCustomHandicapUseCase {
     );
 
     // Convertir a DTO simple para la UI
-    return EnrollmentMapper.toSimpleDTO(enrollment);
+    return EnrollmentAssembler.toSimpleDTO(enrollment);
   }
 }
 

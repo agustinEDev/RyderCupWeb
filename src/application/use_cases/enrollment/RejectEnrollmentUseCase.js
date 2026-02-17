@@ -1,4 +1,4 @@
-import EnrollmentMapper from '../../../infrastructure/mappers/EnrollmentMapper';
+import EnrollmentAssembler from '../../assemblers/EnrollmentAssembler';
 
 /**
  * Use Case: Reject Enrollment
@@ -56,7 +56,7 @@ class RejectEnrollmentUseCase {
     const enrollment = await this.#enrollmentRepository.reject(competitionId, enrollmentId);
 
     // Convertir a DTO simple para la UI
-    return EnrollmentMapper.toSimpleDTO(enrollment);
+    return EnrollmentAssembler.toSimpleDTO(enrollment);
   }
 }
 

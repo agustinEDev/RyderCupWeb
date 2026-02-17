@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import GetCompetitionDetailUseCase from './GetCompetitionDetailUseCase';
-import CompetitionMapper from '../../../infrastructure/mappers/CompetitionMapper';
+import CompetitionAssembler from '../../assemblers/CompetitionAssembler';
 
-// Mock del mapper
-vi.mock('../../../infrastructure/mappers/CompetitionMapper');
+// Mock del assembler
+vi.mock('../../assemblers/CompetitionAssembler');
 
 describe('GetCompetitionDetailUseCase', () => {
   let useCase;
@@ -31,8 +31,8 @@ describe('GetCompetitionDetailUseCase', () => {
       findById: vi.fn().mockResolvedValue(mockCompetition)
     };
 
-    // Mock CompetitionMapper.toSimpleDTO
-    CompetitionMapper.toSimpleDTO = vi.fn().mockReturnValue({
+    // Mock CompetitionAssembler.toSimpleDTO
+    CompetitionAssembler.toSimpleDTO = vi.fn().mockReturnValue({
       id: 'comp-123',
       name: 'Test Competition',
       status: 'DRAFT',
@@ -50,7 +50,7 @@ describe('GetCompetitionDetailUseCase', () => {
       const result = await useCase.execute('comp-123');
 
       expect(mockRepository.findById).toHaveBeenCalledWith('comp-123');
-      expect(CompetitionMapper.toSimpleDTO).toHaveBeenCalledWith(
+      expect(CompetitionAssembler.toSimpleDTO).toHaveBeenCalledWith(
         mockCompetition,
         mockCompetition._apiData
       );
@@ -86,11 +86,11 @@ describe('GetCompetitionDetailUseCase', () => {
 
       await expect(useCase.execute('comp-123')).rejects.toThrow('Competition not found');
       expect(mockRepository.findById).toHaveBeenCalledWith('comp-123');
-      expect(CompetitionMapper.toSimpleDTO).not.toHaveBeenCalled();
+      expect(CompetitionAssembler.toSimpleDTO).not.toHaveBeenCalled();
     });
 
     it('should propagate mapper errors', async () => {
-      CompetitionMapper.toSimpleDTO.mockImplementation(() => {
+      CompetitionAssembler.toSimpleDTO.mockImplementation(() => {
         throw new Error('Mapping error');
       });
 
@@ -111,7 +111,7 @@ describe('GetCompetitionDetailUseCase', () => {
       };
 
       mockRepository.findById.mockResolvedValue(multiCountryCompetition);
-      CompetitionMapper.toSimpleDTO.mockReturnValue({
+      CompetitionAssembler.toSimpleDTO.mockReturnValue({
         id: 'comp-123',
         name: 'Test Competition',
         status: 'DRAFT',

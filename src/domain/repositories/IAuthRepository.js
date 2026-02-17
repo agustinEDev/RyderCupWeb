@@ -60,6 +60,23 @@ class IAuthRepository {
   async unlinkGoogleAccount() {
     throw new Error('Method not implemented: unlinkGoogleAccount');
   }
+
+  /**
+   * Logout the current user (invalidate session/cookies).
+   * @returns {Promise<{success: boolean}>}
+   */
+  async logout() {
+    throw new Error('Method not implemented: logout');
+  }
+
+  /**
+   * Resend email verification to the user.
+   * @param {string} email - The user's email address.
+   * @returns {Promise<{message: string}>}
+   */
+  async resendVerificationEmail(email) {
+    throw new Error('Method not implemented: resendVerificationEmail');
+  }
 }
 
 export default IAuthRepository;

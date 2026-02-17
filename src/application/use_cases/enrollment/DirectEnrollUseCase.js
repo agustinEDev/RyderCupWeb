@@ -1,4 +1,4 @@
-import EnrollmentMapper from '../../../infrastructure/mappers/EnrollmentMapper';
+import EnrollmentAssembler from '../../assemblers/EnrollmentAssembler';
 
 /**
  * Use Case: Direct Enroll
@@ -94,7 +94,7 @@ class DirectEnrollUseCase {
     const enrollment = await this.#enrollmentRepository.directEnroll(competitionId, data);
 
     // Convertir a DTO simple para la UI
-    return EnrollmentMapper.toSimpleDTO(enrollment);
+    return EnrollmentAssembler.toSimpleDTO(enrollment);
   }
 }
 

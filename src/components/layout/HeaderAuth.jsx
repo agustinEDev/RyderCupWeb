@@ -2,9 +2,8 @@ import { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { broadcastLogout } from '../../utils/broadcastAuth';
+import { logoutUseCase } from '../../composition';
 import LanguageSwitcher from '../ui/LanguageSwitcher';
-
-const API_URL = import.meta.env.VITE_API_BASE_URL || '';
 
 const HeaderAuth = ({ user }) => {
   const { t } = useTranslation('common');
@@ -19,39 +18,13 @@ const HeaderAuth = ({ user }) => {
   };
 
   const handleLogout = async () => {
-    if (import.meta.env.DEV) {
-      console.log('🚀 [HeaderAuth] Logout initiated');
-    }
-
-    // 📡 Broadcast logout event to all other tabs FIRST
+    // Broadcast logout event to all other tabs FIRST
     broadcastLogout();
 
     try {
-      // Call backend logout endpoint
-      const response = await fetch(`${API_URL}/api/v1/auth/logout`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({}) // ✅ FIX: Enviar body vacío para LogoutRequestDTO
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        if (import.meta.env.DEV) {
-          console.error('❌ [HeaderAuth] Logout failed:', response.status, errorData);
-        }
-        // Continue with logout anyway to clear frontend state
-      } else {
-        if (import.meta.env.DEV) {
-          console.log('✅ [HeaderAuth] Backend logout successful');
-        }
-      }
-    } catch (error) {
-      if (import.meta.env.DEV) {
-        console.error('❌ [HeaderAuth] Logout error:', error);
-      }
+      await logoutUseCase.execute();
+    } catch {
+      // Continue with logout anyway to clear frontend state
     }
 
     // Force full page reload to clear all state

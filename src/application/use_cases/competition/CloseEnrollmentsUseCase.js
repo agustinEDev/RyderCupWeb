@@ -1,11 +1,13 @@
-import apiRequest from '../../../services/api.js';
-
 /**
  * Use Case: Close Enrollments
  * Transitions competition from ACTIVE to CLOSED state.
  * Only the creator can close enrollments.
  */
 class CloseEnrollmentsUseCase {
+  constructor({ competitionRepository }) {
+    this.competitionRepository = competitionRepository;
+  }
+
   /**
    * Executes the use case to close enrollments for a competition.
    * @param {string} competitionId - The ID of the competition.
@@ -17,11 +19,8 @@ class CloseEnrollmentsUseCase {
       throw new Error('Competition ID is required');
     }
 
-    const data = await apiRequest(`/api/v1/competitions/${competitionId}/close-enrollments`, {
-      method: 'POST'
-    });
+    const data = await this.competitionRepository.closeEnrollments(competitionId);
 
-    // Return simple DTO for UI
     return {
       id: data.id,
       name: data.name,

@@ -13,7 +13,7 @@ import {
   getStatusColor,
   formatDateRange
 } from '../services/competitions';
-import { isDeviceRevoked, handleDeviceRevocationLogout } from '../utils/deviceRevocationLogout';
+import { useAuth } from '../hooks/useAuth';
 import { CountryFlag } from '../utils/countryUtils';
 
 // Helper function to get enrollment status classes
@@ -33,45 +33,12 @@ const getEnrollmentStatusClasses = (status) => {
 const Competitions = () => {
   const navigate = useNavigate();
   const { t } = useTranslation('competitions');
-  const [user, setUser] = useState(null);
+  const { user } = useAuth();
   const [competitions, setCompetitions] = useState([]);
   const [filteredCompetitions, setFilteredCompetitions] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
-
-  useEffect(() => {
-    const loadUserData = async () => {
-      try {
-        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || ''}/api/v1/auth/current-user`, {
-          credentials: 'include',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        });
-
-        if (response.ok) {
-          const userData = await response.json();
-          setUser(userData);
-        } else if (response.status === 401) {
-          // Check if 401 is due to device revocation
-          try {
-            const errorData = await response.clone().json();
-            if (isDeviceRevoked(response, errorData)) {
-              // Device was revoked - handle logout
-              handleDeviceRevocationLogout(errorData);
-              return; // Logout handler will redirect
-            }
-          } catch {
-            // Could not parse response body, treat as normal 401
-          }
-        }
-      } catch (error) {
-        console.error('Error loading user:', error);
-      }
-    };
-    loadUserData();
-  }, []);
 
   const loadCompetitions = useCallback(async () => {
     if (!user?.id) {

@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import customToast from '../utils/toast';
 import { useTranslation } from 'react-i18next';
 import { validatePassword } from '../utils/validation';
+import { broadcastLogout } from '../utils/broadcastAuth';
 import PasswordInput from '../components/ui/PasswordInput';
 import PasswordStrengthIndicator from '../components/ui/PasswordStrengthIndicator';
 import {
@@ -147,6 +148,13 @@ const ResetPassword = () => {
 
     try {
       await resetPasswordUseCase.execute(token, formData.newPassword);
+
+      // Broadcast logout to all open tabs after successful password reset
+      try {
+        broadcastLogout();
+      } catch {
+        // Non-critical: only affects multi-tab sync
+      }
 
       customToast.success(t('resetPassword.success'), {
         duration: 5000,

@@ -1,11 +1,13 @@
-import apiRequest from '../../../services/api.js';
-
 /**
  * Use Case: Activate Competition
  * Transitions competition from DRAFT to ACTIVE state.
  * Only the creator can activate a competition.
  */
 class ActivateCompetitionUseCase {
+  constructor({ competitionRepository }) {
+    this.competitionRepository = competitionRepository;
+  }
+
   /**
    * Executes the use case to activate a competition.
    * @param {string} competitionId - The ID of the competition to activate.
@@ -17,11 +19,8 @@ class ActivateCompetitionUseCase {
       throw new Error('Competition ID is required');
     }
 
-    const data = await apiRequest(`/api/v1/competitions/${competitionId}/activate`, {
-      method: 'POST'
-    });
+    const data = await this.competitionRepository.activate(competitionId);
 
-    // Return simple DTO for UI
     return {
       id: data.id,
       name: data.name,

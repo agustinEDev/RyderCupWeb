@@ -1,12 +1,17 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import ApiScheduleRepository from './ApiScheduleRepository';
 
-// Mock api.js
-vi.mock('../../services/api', () => ({
-  apiRequest: vi.fn(),
+// Mock domain interface
+vi.mock('../../domain/repositories/IScheduleRepository.js', () => ({
+  default: class IScheduleRepository {},
 }));
 
-import { apiRequest } from '../../services/api';
+// Mock api.js
+vi.mock('../../services/api.js', () => ({
+  default: vi.fn(),
+}));
+
+import apiRequest from '../../services/api.js';
 
 describe('ApiScheduleRepository', () => {
   let repo;

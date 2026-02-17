@@ -1,4 +1,4 @@
-import EnrollmentMapper from '../../../infrastructure/mappers/EnrollmentMapper';
+import EnrollmentAssembler from '../../assemblers/EnrollmentAssembler';
 
 /**
  * Use Case: List Enrollments
@@ -58,7 +58,7 @@ class ListEnrollmentsUseCase {
 
     // Convertir a DTOs simples para la UI, preservando campos extra de la API
     return enrollments.map((enrollment) =>
-      EnrollmentMapper.toSimpleDTO(enrollment, enrollment._apiData)
+      EnrollmentAssembler.toSimpleDTO(enrollment, enrollment._apiData)
     );
   }
 }

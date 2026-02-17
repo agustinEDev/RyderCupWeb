@@ -1,4 +1,4 @@
-import EnrollmentMapper from '../../../infrastructure/mappers/EnrollmentMapper';
+import EnrollmentAssembler from '../../assemblers/EnrollmentAssembler';
 
 /**
  * Use Case: Approve Enrollment
@@ -63,7 +63,7 @@ class ApproveEnrollmentUseCase {
     );
 
     // Convertir a DTO simple para la UI
-    return EnrollmentMapper.toSimpleDTO(enrollment);
+    return EnrollmentAssembler.toSimpleDTO(enrollment);
   }
 }
 

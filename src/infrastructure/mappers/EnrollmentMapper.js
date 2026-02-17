@@ -112,13 +112,7 @@ class EnrollmentMapper {
 
   /**
    * Convierte una entidad del dominio a un DTO simple para la UI
-   *
-   * Transforma:
-   * - Value Objects → Strings/primitivos
-   * - Date objects → ISO strings
-   * - Estructura plana y fácil de consumir en React
-   *
-   * Usado en Use Cases para devolver datos a la UI.
+   * @deprecated Use EnrollmentAssembler.toSimpleDTO from application/assemblers instead
    *
    * @param {Enrollment} enrollment - Entidad del dominio
    * @param {Object} apiData - Datos originales de la API (opcional, para incluir campos extra)
@@ -178,6 +172,7 @@ class EnrollmentMapper {
 
   /**
    * Convierte múltiples entidades del dominio a DTOs simples para la UI
+   * @deprecated Use EnrollmentAssembler.toSimpleDTOMany from application/assemblers instead
    *
    * @param {Array<Enrollment>} enrollments - Array de entidades del dominio
    * @param {Array<Object>} apiDataArray - Array de datos originales de la API (opcional)

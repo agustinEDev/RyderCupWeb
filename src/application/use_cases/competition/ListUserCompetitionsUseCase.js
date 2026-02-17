@@ -1,4 +1,4 @@
-import CompetitionMapper from '../../../infrastructure/mappers/CompetitionMapper';
+import CompetitionAssembler from '../../assemblers/CompetitionAssembler';
 
 class ListUserCompetitionsUseCase {
   /**
@@ -26,7 +26,7 @@ class ListUserCompetitionsUseCase {
 
     // Convert domain entities to simple DTOs for UI
     // Pass original API data for location names parsing
-    return competitions.map(competition => CompetitionMapper.toSimpleDTO(competition, competition._apiData));
+    return competitions.map(competition => CompetitionAssembler.toSimpleDTO(competition, competition._apiData));
   }
 }
 
