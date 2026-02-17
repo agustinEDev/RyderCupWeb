@@ -7,9 +7,78 @@ y este proyecto adhiere a [Versionado Semántico](https://semver.org/lang/es/).
 
 ## [Unreleased]
 
-### 🎯 Sprint 2: Schedule & Matches - Backend Integration Layer
+_No hay cambios pendientes._
 
-Capa completa de integración con los 11 endpoints del backend Sprint 2 para gestión de rondas, partidos y equipos. Incluye breaking change de `handicap_type` a `play_mode`.
+---
+
+## [2.0.10] - 2026-02-17
+
+### Manual Pairings UI for Match Generation
+
+Permite a los creadores de competiciones elegir entre generacion automatica y emparejamiento manual de jugadores al crear partidos.
+
+### ✨ Added
+- **`GenerateMatchesModal`**: Nuevo componente con patron Wrapper+Content. Modo automatico/manual con radio toggle, lista dinamica de partidos con add/remove, dropdowns de jugadores filtrados por equipo
+- **SINGLES**: 1 dropdown por equipo. **FOURBALL/FOURSOMES**: 2 dropdowns por equipo
+- **Validaciones**: Al menos 1 partido, todos los slots completos, sin jugadores duplicados
+- **Resumen visual**: Contador de partidos y jugadores asignados del total disponible
+- **i18n**: 13 nuevas claves de traduccion `matches.pairings.*` en EN y ES
+
+### 🐛 Fixed
+- **`reloadSchedule()` error silencioso**: Ahora muestra toast de error al usuario en vez de tragarse el error en el catch. Causa raiz del bug "no me deja generar partidos" (datos stale con status `PENDING_TEAMS`)
+- **`updateMatchPlayer` splice bug**: `splice(slotIndex, 1)` acortaba y desplazaba el array al limpiar una seleccion. Cambiado a asignacion directa `updated[slotIndex] = ''` para preservar posiciones
+
+### 🔧 Changed
+- **`ApiScheduleRepository.generateMatches()`**: Transformacion camelCase → snake_case del payload `manualPairings` movida a la capa de infraestructura (antes estaba en SchedulePage — violacion de Clean Architecture)
+- **`SchedulePage.jsx`**: "Generate Matches" ahora abre modal en vez de llamar directamente a la API. Pasa payload en camelCase al use case
+
+### ✅ Tests
+- **24 tests nuevos** (1154 total passing, 1 skipped)
+- `GenerateMatchesModal.test.jsx`: 22 tests (render, modos, validacion, seleccion de jugadores, formatos SINGLES/FOURBALL/FOURSOMES, duplicados)
+- `GenerateMatchesUseCase.test.js`: +1 test para payload manual
+- `ApiScheduleRepository.test.js`: +1 test para transformacion snake_case
+
+### 📚 References
+- PR #144: `feature/manual-pairings-ui` → develop
+- PR #145: `release/v2.0.10` → main
+
+---
+
+## [2.0.9] - 2026-02-17
+
+### Clean Architecture Remediation
+
+Remediacion de ~57 violaciones de Clean Architecture en 66 archivos (+810/-890 lineas).
+
+### ✨ Added
+- **`CompetitionAssembler`** y **`EnrollmentAssembler`**: Extraidos de mappers de infraestructura a capa de aplicacion (13 use cases actualizados)
+- **`LogoutUseCase`**, **`ResendVerificationEmailUseCase`**, **`GetAdjacentCountriesUseCase`**: Nuevos use cases para eliminar fetch() directo en UI
+- **`ICountryRepository`** + **`ApiCountryRepository`**: Nuevo repositorio para paises
+- **CI audit outputs**: Contadores moderate/total expuestos en pipeline summary
+
+### 🐛 Fixed
+- **Removed creator.email PII** de DTOs publicos
+- **Null-safe EnrollmentAssembler**: Manejo seguro de enrollments sin datos
+- **Stale closure** en CreateCompetition: Valores pasados como parametros en vez de cerrar sobre state
+- **AbortController** en Register: Limpieza de requests pendientes al desmontar
+
+### 🔧 Changed
+- **5 transiciones de estado de competicion** (activate, start, close, complete, cancel) ruteadas a traves de `ICompetitionRepository` en vez de `apiRequest` directo
+- **`RequestPasswordResetUseCase`** → Email VO, **`ResetPasswordUseCase`** → Password VO (min 12 chars)
+- **`FetchCountriesUseCase`** → `ICountryRepository` + `ApiCountryRepository`
+- **Eliminado todo fetch() directo en UI**: Profile, Register, Competitions, CreateCompetition, HeaderAuth, EmailVerificationBanner, useLogout
+
+### 📚 References
+- PR #142: `refactor/clean-architecture-violations` → develop
+- PR #143: `release/v2.0.9` → main
+
+---
+
+## [2.0.6] - 2026-02-08
+
+### Sprint 2: Schedule & Matches - Backend Integration Layer
+
+Capa completa de integracion con los 11 endpoints del backend Sprint 2 para gestion de rondas, partidos y equipos. Incluye breaking change de `handicap_type` a `play_mode`.
 
 ### ⚠️ Breaking Changes
 - **`play_mode` reemplaza `handicap_type`/`handicap_percentage`**: El backend ahora usa un único campo `play_mode` (SCRATCH/HANDICAP) en vez de `handicap_type` (SCRATCH/PERCENTAGE) + `handicap_percentage` (90/95/100). El porcentaje se gestiona ahora a nivel de ronda (`allowance_percentage`), no de competición.
