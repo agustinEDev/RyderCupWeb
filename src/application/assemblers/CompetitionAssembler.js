@@ -58,7 +58,6 @@ class CompetitionAssembler {
         id: apiData.creator.id,
         firstName: apiData.creator.first_name,
         lastName: apiData.creator.last_name,
-        email: apiData.creator.email,
         handicap: apiData.creator.handicap,
         countryCode: apiData.creator.country_code
       } : null,

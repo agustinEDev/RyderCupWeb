@@ -50,9 +50,20 @@ const Register = () => {
       setIsLoadingCountries(true);
       try {
         const data = await fetchCountriesUseCase.execute();
-        setCountries(data);
+        const validCountries = Array.isArray(data)
+          ? data
+              .filter(c => c?.code && (c?.name_en || c?.name_es))
+              .map(c => ({
+                code: c.code,
+                name: c.name_en || c.name_es,
+                name_en: c.name_en,
+                name_es: c.name_es
+              }))
+          : [];
+        setCountries(validCountries);
       } catch (error) {
         console.error('Error loading countries:', error);
+        setCountries([]);
       } finally {
         setIsLoadingCountries(false);
       }

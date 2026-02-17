@@ -84,6 +84,9 @@ jobs:
   dependency-audit:
     name: 🔒 Dependency Vulnerability Scan
     runs-on: ubuntu-latest
+    outputs:
+      moderate: ${{ steps.audit.outputs.moderate }}
+      total: ${{ steps.audit.outputs.total }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -694,8 +697,14 @@ jobs:
           echo "|-------|--------|---------|" >> $GITHUB_STEP_SUMMARY
 
           # Dependency Audit
+          MODERATE_COUNT="${{ needs.dependency-audit.outputs.moderate }}"
+          TOTAL_COUNT="${{ needs.dependency-audit.outputs.total }}"
           if [ "${{ needs.dependency-audit.result }}" == "success" ]; then
-            echo "| 🔒 Dependency Audit | ✅ Passed | No critical/high vulnerabilities |" >> $GITHUB_STEP_SUMMARY
+            if [ -n "$MODERATE_COUNT" ] && [ "$MODERATE_COUNT" -gt 0 ] 2>/dev/null; then
+              echo "| 🔒 Dependency Audit | ⚠️ Passed | $MODERATE_COUNT moderate vulnerabilities ($TOTAL_COUNT total) |" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "| 🔒 Dependency Audit | ✅ Passed | No vulnerabilities found |" >> $GITHUB_STEP_SUMMARY
+            fi
           else
             echo "| 🔒 Dependency Audit | ❌ Failed | Critical/high vulnerabilities found |" >> $GITHUB_STEP_SUMMARY
           fi

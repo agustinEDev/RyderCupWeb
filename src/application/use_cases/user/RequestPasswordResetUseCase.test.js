@@ -168,8 +168,24 @@ describe('RequestPasswordResetUseCase', () => {
 
       // Assert
       expect(result.success).toBe(true);
-      // validateEmail normaliza el email a lowercase
       expect(authRepository.requestPasswordReset).toHaveBeenCalledWith(email);
+    });
+
+    it('should trim whitespace from email before validation', async () => {
+      // Arrange
+      const email = '  test@example.com  ';
+      const mockResponse = {
+        message: 'If the email exists, a recovery link has been sent',
+      };
+
+      authRepository.requestPasswordReset.mockResolvedValue(mockResponse);
+
+      // Act
+      const result = await requestPasswordResetUseCase.execute(email);
+
+      // Assert
+      expect(result.success).toBe(true);
+      expect(authRepository.requestPasswordReset).toHaveBeenCalledWith('test@example.com');
     });
 
     it('should return default message if repository returns no message', async () => {

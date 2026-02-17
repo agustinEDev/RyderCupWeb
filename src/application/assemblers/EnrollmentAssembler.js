@@ -42,23 +42,27 @@ class EnrollmentAssembler {
     };
 
     // If API data available, include extra fields (joins)
+    // Nested apiData.user takes precedence over flat fields
     if (apiData) {
-      if (apiData.user_name) {
-        simpleDTO.userName = apiData.user_name;
-      }
-      if (apiData.user_email) {
-        simpleDTO.userEmail = apiData.user_email;
-      }
-      if (apiData.user_handicap !== undefined) {
-        simpleDTO.userHandicap = apiData.user_handicap;
-      }
-
       if (apiData.user) {
-        simpleDTO.userName = `${apiData.user.first_name} ${apiData.user.last_name}`;
-        simpleDTO.userEmail = apiData.user.email;
+        const firstName = apiData.user.first_name || '';
+        const lastName = apiData.user.last_name || '';
+        const fullName = [firstName, lastName].filter(Boolean).join(' ') || null;
+        simpleDTO.userName = fullName;
+        simpleDTO.userEmail = apiData.user.email || null;
         simpleDTO.userHandicap = apiData.user.handicap;
         simpleDTO.userCountryCode = apiData.user.country_code;
         simpleDTO.userGender = apiData.user.gender || null;
+      } else {
+        if (apiData.user_name) {
+          simpleDTO.userName = apiData.user_name;
+        }
+        if (apiData.user_email) {
+          simpleDTO.userEmail = apiData.user_email;
+        }
+        if (apiData.user_handicap !== undefined) {
+          simpleDTO.userHandicap = apiData.user_handicap;
+        }
       }
     }
 

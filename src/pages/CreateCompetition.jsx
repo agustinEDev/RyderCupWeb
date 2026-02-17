@@ -126,11 +126,16 @@ const CreateCompetition = () => {
         const adjacentCountry2 = adjacentCountriesArray[1]?.code || '';
 
         // Fetch adjacent countries lists if needed
+        let level1Countries = [];
         if (mainCountryCode) {
-          await fetchAdjacentCountries(mainCountryCode, 1);
+          level1Countries = await fetchAdjacentCountries(mainCountryCode, 1);
         }
         if (adjacentCountry1) {
-          await fetchAdjacentCountries(adjacentCountry1, 2);
+          await fetchAdjacentCountries(adjacentCountry1, 2, {
+            currentAdjacentCountries1: level1Countries,
+            mainCountryCode,
+            adjacentCountry1Code: adjacentCountry1
+          });
         }
 
         // Fetch golf courses for this competition
@@ -209,7 +214,7 @@ const CreateCompetition = () => {
     }
   };
 
-  const fetchAdjacentCountries = async (countryId, level) => {
+  const fetchAdjacentCountries = async (countryId, level, context = {}) => {
     try {
       const data = await getAdjacentCountriesUseCase.execute(countryId);
       const mappedData = Array.isArray(data)
@@ -227,17 +232,21 @@ const CreateCompetition = () => {
       if (level === 1) {
         setAdjacentCountries1(mappedData);
       } else if (level === 2) {
-        const existingIds = new Set(adjacentCountries1.map(c => c.code));
-        const combined = [...adjacentCountries1];
+        const { currentAdjacentCountries1 = [], mainCountryCode = null, adjacentCountry1Code = null } = context;
+        const existingIds = new Set(currentAdjacentCountries1.map(c => c.code));
+        const combined = [...currentAdjacentCountries1];
         for (const country of mappedData) {
-          if (!existingIds.has(country.code) && country.code !== formData.country?.code && country.code !== formData.adjacentCountry1) {
+          if (!existingIds.has(country.code) && country.code !== mainCountryCode && country.code !== adjacentCountry1Code) {
             combined.push(country);
           }
         }
         setAdjacentCountries2(combined);
       }
+
+      return mappedData;
     } catch (error) {
       console.error('Error fetching adjacent countries:', error);
+      return [];
     }
   };
 
@@ -293,7 +302,11 @@ const CreateCompetition = () => {
       showAdjacentCountry2: false
     }));
     if (countryId) {
-      fetchAdjacentCountries(countryId, 2);
+      fetchAdjacentCountries(countryId, 2, {
+        currentAdjacentCountries1: adjacentCountries1,
+        mainCountryCode: formData.country?.code,
+        adjacentCountry1Code: countryId
+      });
     }
   };
 

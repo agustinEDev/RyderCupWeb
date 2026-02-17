@@ -24,12 +24,14 @@ class RequestPasswordResetUseCase {
       throw new Error('Email is required');
     }
 
-    if (email.length > 254) {
+    const trimmedEmail = email.trim();
+
+    if (trimmedEmail.length > 254) {
       throw new Error('Email must not exceed 254 characters');
     }
 
     // Validates email format using domain Value Object
-    const emailVO = new Email(email);
+    const emailVO = new Email(trimmedEmail);
 
     // Llamada al repositorio para enviar el email de reset
     // El backend siempre retorna el mismo mensaje (anti-enumeración)
