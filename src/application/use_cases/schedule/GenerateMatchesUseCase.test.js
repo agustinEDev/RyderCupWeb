@@ -35,4 +35,18 @@ describe('GenerateMatchesUseCase', () => {
     scheduleRepository.generateMatches.mockRejectedValue(new Error('Bad request'));
     await expect(useCase.execute('r-1')).rejects.toThrow('Bad request');
   });
+
+  it('should pass manual pairings payload to repository', async () => {
+    const manualPairings = {
+      manualPairings: [
+        { teamAPlayerIds: ['u1', 'u2'], teamBPlayerIds: ['u3', 'u4'] },
+        { teamAPlayerIds: ['u5'], teamBPlayerIds: ['u6'] },
+      ],
+    };
+    scheduleRepository.generateMatches.mockResolvedValue({ matches_created: 2 });
+
+    const result = await useCase.execute('r-1', manualPairings);
+    expect(scheduleRepository.generateMatches).toHaveBeenCalledWith('r-1', manualPairings);
+    expect(result.matches_created).toBe(2);
+  });
 });

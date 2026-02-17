@@ -39,7 +39,27 @@
     "resultWinner": "Ganador: {{team}}",
     "resultScore": "Puntuación: {{score}}",
     "resultReason": "Motivo: {{reason}}",
-    "close": "Cerrar"
+    "close": "Cerrar",
+    "pairings": {
+      "title": "Generar Partidos",
+      "mode": "Modo de Generación",
+      "automatic": "Automático",
+      "automaticDesc": "El sistema creará los emparejamientos automáticamente",
+      "manual": "Manual",
+      "manualDesc": "Tú eliges qué jugadores se enfrentan en cada partido",
+      "addMatch": "Añadir Partido",
+      "removeMatch": "Eliminar Partido",
+      "matchN": "Partido {{number}}",
+      "selectPlayer": "Seleccionar jugador...",
+      "generate": "Generar",
+      "playerAlreadyUsed": "Este jugador ya está asignado a otro partido",
+      "summary": "{{matchCount}} partidos, {{assignedCount}} de {{totalCount}} jugadores asignados",
+      "validation": {
+        "noMatches": "Añade al menos un partido",
+        "incompleteMatch": "Todos los partidos deben tener equipos completos",
+        "duplicatePlayer": "Un jugador solo puede aparecer en un partido"
+      }
+    }
   },
   "teams": {
     "title": "Asignación de Equipos",
