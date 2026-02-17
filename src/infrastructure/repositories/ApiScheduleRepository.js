@@ -74,9 +74,17 @@ class ApiScheduleRepository extends IScheduleRepository {
    * POST /api/v1/competitions/rounds/{roundId}/matches/generate
    */
   async generateMatches(roundId, pairings) {
+    const body = pairings?.manualPairings
+      ? {
+        manual_pairings: pairings.manualPairings.map(m => ({
+          team_a_player_ids: m.teamAPlayerIds,
+          team_b_player_ids: m.teamBPlayerIds,
+        })),
+      }
+      : {};
     const data = await apiRequest(`/api/v1/competitions/rounds/${roundId}/matches/generate`, {
       method: 'POST',
-      body: JSON.stringify(pairings || {}),
+      body: JSON.stringify(body),
     });
     return data;
   }

@@ -120,14 +120,13 @@ describe('ApiScheduleRepository', () => {
   });
 
   describe('generateMatches', () => {
-    it('should call POST with pairings', async () => {
+    it('should send empty object for automatic generation', async () => {
       apiRequest.mockResolvedValue({ matches_created: 6 });
-      const pairings = { auto: true };
 
-      const result = await repo.generateMatches('r-1', pairings);
+      const result = await repo.generateMatches('r-1', {});
       expect(apiRequest).toHaveBeenCalledWith(
         '/api/v1/competitions/rounds/r-1/matches/generate',
-        { method: 'POST', body: JSON.stringify(pairings) }
+        { method: 'POST', body: '{}' }
       );
       expect(result.matches_created).toBe(6);
     });
@@ -138,6 +137,31 @@ describe('ApiScheduleRepository', () => {
       expect(apiRequest).toHaveBeenCalledWith(
         '/api/v1/competitions/rounds/r-1/matches/generate',
         { method: 'POST', body: '{}' }
+      );
+    });
+
+    it('should transform camelCase manual pairings to snake_case API format', async () => {
+      apiRequest.mockResolvedValue({ matches_created: 2 });
+
+      const pairings = {
+        manualPairings: [
+          { teamAPlayerIds: ['u1', 'u2'], teamBPlayerIds: ['u3', 'u4'] },
+          { teamAPlayerIds: ['u5'], teamBPlayerIds: ['u6'] },
+        ],
+      };
+
+      await repo.generateMatches('r-1', pairings);
+      expect(apiRequest).toHaveBeenCalledWith(
+        '/api/v1/competitions/rounds/r-1/matches/generate',
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            manual_pairings: [
+              { team_a_player_ids: ['u1', 'u2'], team_b_player_ids: ['u3', 'u4'] },
+              { team_a_player_ids: ['u5'], team_b_player_ids: ['u6'] },
+            ],
+          }),
+        }
       );
     });
   });

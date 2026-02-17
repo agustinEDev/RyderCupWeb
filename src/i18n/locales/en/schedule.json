@@ -39,7 +39,27 @@
     "resultWinner": "Winner: {{team}}",
     "resultScore": "Score: {{score}}",
     "resultReason": "Reason: {{reason}}",
-    "close": "Close"
+    "close": "Close",
+    "pairings": {
+      "title": "Generate Matches",
+      "mode": "Generation Mode",
+      "automatic": "Automatic",
+      "automaticDesc": "The system will create balanced match pairings automatically",
+      "manual": "Manual",
+      "manualDesc": "You choose which players face each other in each match",
+      "addMatch": "Add Match",
+      "removeMatch": "Remove Match",
+      "matchN": "Match {{number}}",
+      "selectPlayer": "Select player...",
+      "generate": "Generate",
+      "playerAlreadyUsed": "This player is already assigned to another match",
+      "summary": "{{matchCount}} matches, {{assignedCount}} of {{totalCount}} players assigned",
+      "validation": {
+        "noMatches": "Add at least one match",
+        "incompleteMatch": "All matches must have complete teams",
+        "duplicatePlayer": "A player can only appear in one match"
+      }
+    }
   },
   "teams": {
     "title": "Team Assignment",
