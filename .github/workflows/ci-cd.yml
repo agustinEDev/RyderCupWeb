@@ -143,7 +143,7 @@ jobs:
           # Warn if moderate vulnerabilities found
           if [ "$MODERATE" -gt 0 ]; then
             echo "⚠️ Moderate vulnerabilities found (allowed to pass)"
-            npm audit --audit-level=moderate
+            npm audit --audit-level=moderate || true
           fi
 
           echo "✅ No critical or high vulnerabilities found"
