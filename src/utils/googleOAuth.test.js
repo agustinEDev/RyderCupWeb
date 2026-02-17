@@ -61,7 +61,7 @@ describe('buildGoogleOAuthUrl', () => {
     const state = parsed.searchParams.get('state');
     const nonce = state.split(':')[1];
 
-    expect(sessionStorage.getItem('google_oauth_nonce')).toBe(nonce);
+    expect(sessionStorage.getItem('google_oauth_state_token')).toBe(nonce);
   });
 
   it('should generate different nonces on each call', () => {
@@ -97,7 +97,7 @@ describe('verifyOAuthState', () => {
   });
 
   it('should return valid true when nonce matches', () => {
-    sessionStorage.setItem('google_oauth_nonce', 'abc123');
+    sessionStorage.setItem('google_oauth_state_token', 'abc123');
     const result = verifyOAuthState('login:abc123');
 
     expect(result.flow).toBe('login');
@@ -105,7 +105,7 @@ describe('verifyOAuthState', () => {
   });
 
   it('should return valid false when nonce does not match', () => {
-    sessionStorage.setItem('google_oauth_nonce', 'abc123');
+    sessionStorage.setItem('google_oauth_state_token', 'abc123');
     const result = verifyOAuthState('login:wrong_nonce');
 
     expect(result.flow).toBe('login');
@@ -120,14 +120,14 @@ describe('verifyOAuthState', () => {
   });
 
   it('should clear stored nonce after verification', () => {
-    sessionStorage.setItem('google_oauth_nonce', 'abc123');
+    sessionStorage.setItem('google_oauth_state_token', 'abc123');
     verifyOAuthState('login:abc123');
 
-    expect(sessionStorage.getItem('google_oauth_nonce')).toBeNull();
+    expect(sessionStorage.getItem('google_oauth_state_token')).toBeNull();
   });
 
   it('should parse link flow correctly', () => {
-    sessionStorage.setItem('google_oauth_nonce', 'nonce456');
+    sessionStorage.setItem('google_oauth_state_token', 'nonce456');
     const result = verifyOAuthState('link:nonce456');
 
     expect(result.flow).toBe('link');

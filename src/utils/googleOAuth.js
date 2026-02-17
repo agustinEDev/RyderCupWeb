@@ -1,5 +1,5 @@
 /* global crypto */
-const OAUTH_NONCE_KEY = 'google_oauth_nonce';
+const OAUTH_STATE_KEY = 'google_oauth_state_token';
 
 /**
  * Generate a cryptographically secure random nonce.
@@ -28,7 +28,7 @@ export function buildGoogleOAuthUrl(flow = 'login') {
   }
 
   const nonce = generateNonce();
-  sessionStorage.setItem(OAUTH_NONCE_KEY, nonce);
+  sessionStorage.setItem(OAUTH_STATE_KEY, nonce);
 
   const state = `${flow}:${nonce}`;
 
@@ -64,8 +64,8 @@ export function verifyOAuthState(state) {
   const flow = state.substring(0, separatorIndex);
   const nonce = state.substring(separatorIndex + 1);
 
-  const storedNonce = sessionStorage.getItem(OAUTH_NONCE_KEY);
-  sessionStorage.removeItem(OAUTH_NONCE_KEY);
+  const storedNonce = sessionStorage.getItem(OAUTH_STATE_KEY);
+  sessionStorage.removeItem(OAUTH_STATE_KEY);
 
   return {
     flow,
