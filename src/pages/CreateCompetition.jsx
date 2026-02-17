@@ -10,6 +10,7 @@ import {
   getCompetitionDetailUseCase,
   getCompetitionGolfCoursesUseCase,
   fetchCountriesUseCase,
+  getAdjacentCountriesUseCase,
   createGolfCourseRequestUseCase,
   addGolfCourseToCompetitionUseCase
 } from '../composition';
@@ -19,7 +20,6 @@ import GolfCourseSearchBox from '../components/golf_course/GolfCourseSearchBox';
 import GolfCourseRequestModal from '../components/golf_course/GolfCourseRequestModal';
 import customToast from '../utils/toast';
 
-const API_URL = import.meta.env.VITE_API_BASE_URL || '';
 
 // Helper function to get message className
 const getMessageClassName = (type) => {
@@ -211,34 +211,30 @@ const CreateCompetition = () => {
 
   const fetchAdjacentCountries = async (countryId, level) => {
     try {
-      const response = await fetch(`${API_URL}/api/v1/countries/${countryId}/adjacent`);
+      const data = await getAdjacentCountriesUseCase.execute(countryId);
+      const mappedData = Array.isArray(data)
+        ? data
+            .filter(c => c?.code && (c?.name_en || c?.name_es))
+            .map(c => ({
+              id: c.code,
+              name: c.name_en || c.name_es,
+              code: c.code,
+              name_en: c.name_en,
+              name_es: c.name_es
+            }))
+        : [];
 
-      if (response.ok) {
-        const data = await response.json();
-        const mappedData = Array.isArray(data)
-          ? data
-              .filter(c => c?.code && (c?.name_en || c?.name_es))
-              .map(c => ({
-                id: c.code,
-                name: c.name_en || c.name_es,
-                code: c.code,
-                name_en: c.name_en,
-                name_es: c.name_es
-              }))
-          : [];
-
-        if (level === 1) {
-          setAdjacentCountries1(mappedData);
-        } else if (level === 2) {
-          const existingIds = new Set(adjacentCountries1.map(c => c.code));
-          const combined = [...adjacentCountries1];
-          for (const country of mappedData) {
-            if (!existingIds.has(country.code) && country.code !== formData.country?.code && country.code !== formData.adjacentCountry1) {
-              combined.push(country);
-            }
+      if (level === 1) {
+        setAdjacentCountries1(mappedData);
+      } else if (level === 2) {
+        const existingIds = new Set(adjacentCountries1.map(c => c.code));
+        const combined = [...adjacentCountries1];
+        for (const country of mappedData) {
+          if (!existingIds.has(country.code) && country.code !== formData.country?.code && country.code !== formData.adjacentCountry1) {
+            combined.push(country);
           }
-          setAdjacentCountries2(combined);
         }
+        setAdjacentCountries2(combined);
       }
     } catch (error) {
       console.error('Error fetching adjacent countries:', error);

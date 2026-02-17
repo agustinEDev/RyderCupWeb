@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { resendVerificationEmailUseCase } from '../composition';
 
 const EmailVerificationBanner = ({ userEmail }) => {
   const [isVisible, setIsVisible] = useState(true);
@@ -14,28 +15,11 @@ const EmailVerificationBanner = ({ userEmail }) => {
     setMessage('');
 
     try {
-      const API_URL = import.meta.env.VITE_API_BASE_URL || '';
-
-      const response = await fetch(`${API_URL}/api/v1/auth/resend-verification`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          email: userEmail
-        })
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || 'Failed to resend verification email');
-      }
-
-      setMessage('✅ Verification email sent! Please check your inbox.');
+      await resendVerificationEmailUseCase.execute(userEmail);
+      setMessage('Verification email sent! Please check your inbox.');
     } catch (error) {
       console.error('Error resending email:', error);
-      setMessage(`❌ Failed to resend email: ${error.message}`);
+      setMessage(`Failed to resend email: ${error.message}`);
     } finally {
       setIsResending(false);
     }
@@ -64,7 +48,7 @@ const EmailVerificationBanner = ({ userEmail }) => {
             </p>
           </div>
           {message && (
-            <div className={`mt-2 text-sm ${message.includes('Failed') ? 'text-red-700' : 'text-green-700'}`}>
+            <div className={`mt-2 text-sm ${message.startsWith('Failed') ? 'text-red-700' : 'text-green-700'}`}>
               {message}
             </div>
           )}

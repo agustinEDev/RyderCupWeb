@@ -11,9 +11,7 @@ import { useAuth } from '../hooks/useAuth';
 import { CountryFlag } from '../utils/countryUtils';
 import { broadcastLogout } from '../utils/broadcastAuth';
 import { formatFullDate } from '../utils/dateFormatters';
-import { fetchWithTokenRefresh } from '../utils/tokenRefreshInterceptor';
-
-const API_URL = import.meta.env.VITE_API_BASE_URL || '';
+import { fetchCountriesUseCase, listUserCompetitionsUseCase, logoutUseCase } from '../composition';
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -34,15 +32,10 @@ const Profile = () => {
         // Fetch country name if user has country_code
         if (user.country_code) {
           try {
-            const countriesResponse = await fetchWithTokenRefresh(`${API_URL}/api/v1/countries?language=en`, {
-              credentials: 'include'
-            });
-            if (countriesResponse.ok) {
-              const countries = await countriesResponse.json();
-              const country = countries.find(c => c.code === user.country_code);
-              if (country) {
-                setCountryName(country.name_en || country.name);
-              }
+            const countries = await fetchCountriesUseCase.execute();
+            const country = countries.find(c => c.code === user.country_code);
+            if (country) {
+              setCountryName(country.name_en || country.name);
             }
           } catch (error) {
             console.error('Error fetching country name:', error);
@@ -51,17 +44,7 @@ const Profile = () => {
 
         // Fetch user's competitions count
         try {
-          const competitionsResponse = await fetchWithTokenRefresh(`${API_URL}/api/v1/competitions?my_competitions=true`, {
-            credentials: 'include'
-          });
-
-          if (!competitionsResponse.ok) {
-            console.error('❌ Failed to fetch competitions:', competitionsResponse.status, competitionsResponse.statusText);
-            setCompetitionsCount(0);
-            return;
-          }
-
-          const competitionsData = await competitionsResponse.json();
+          const competitionsData = await listUserCompetitionsUseCase.execute(user.id);
 
           // Handle different response formats: array or object with results array
           let list = [];
@@ -73,11 +56,11 @@ const Profile = () => {
 
           setCompetitionsCount(list.length);
         } catch (error) {
-          console.error('❌ Error fetching competitions count:', error);
+          console.error('Error fetching competitions count:', error);
           setCompetitionsCount(0);
         }
       } catch (error) {
-        console.error('❌ Error fetching user data:', error);
+        console.error('Error fetching user data:', error);
       } finally {
         setIsLoadingData(false);
       }
@@ -91,25 +74,12 @@ const Profile = () => {
   };
 
   const handleLogout = async () => {
-    // 📡 Broadcast logout event to all other tabs FIRST
     broadcastLogout();
 
     try {
-      // Call backend logout endpoint
-      const response = await fetch(`${API_URL}/api/v1/auth/logout`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({})
-      });
-
-      if (!response.ok) {
-        console.error('Logout failed with status:', response.status);
-      }
-    } catch (error) {
-      console.error('Backend logout error:', error);
+      await logoutUseCase.execute();
+    } catch {
+      // Continue with logout anyway to clear frontend state
     }
 
     // Force full page reload to clear all state

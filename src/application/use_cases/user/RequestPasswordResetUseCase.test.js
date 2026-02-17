@@ -69,7 +69,7 @@ describe('RequestPasswordResetUseCase', () => {
     it('should throw error if email is invalid format', async () => {
       // Act & Assert
       await expect(requestPasswordResetUseCase.execute('invalid-email')).rejects.toThrow(
-        'Please enter a valid email address'
+        'Invalid email address.'
       );
       expect(authRepository.requestPasswordReset).not.toHaveBeenCalled();
     });

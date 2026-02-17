@@ -188,6 +188,28 @@ class ApiAuthRepository extends IAuthRepository {
       provider: data.provider,
     };
   }
+
+  /**
+   * @override
+   */
+  async logout() {
+    await apiRequest('/api/v1/auth/logout', {
+      method: 'POST',
+      body: JSON.stringify({}),
+    });
+    return { success: true };
+  }
+
+  /**
+   * @override
+   */
+  async resendVerificationEmail(email) {
+    const data = await apiRequest('/api/v1/auth/resend-verification', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    });
+    return { message: data.message || 'Verification email sent' };
+  }
 }
 
 export default ApiAuthRepository;

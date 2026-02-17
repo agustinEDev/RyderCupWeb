@@ -1,11 +1,13 @@
-import apiRequest from '../../../services/api.js';
-
 /**
  * Use Case: Start Competition
  * Transitions competition from CLOSED to IN_PROGRESS state.
  * Only the creator can start a competition.
  */
 class StartCompetitionUseCase {
+  constructor({ competitionRepository }) {
+    this.competitionRepository = competitionRepository;
+  }
+
   /**
    * Executes the use case to start a competition.
    * @param {string} competitionId - The ID of the competition to start.
@@ -17,11 +19,8 @@ class StartCompetitionUseCase {
       throw new Error('Competition ID is required');
     }
 
-    const data = await apiRequest(`/api/v1/competitions/${competitionId}/start`, {
-      method: 'POST'
-    });
+    const data = await this.competitionRepository.start(competitionId);
 
-    // Return simple DTO for UI
     return {
       id: data.id,
       name: data.name,

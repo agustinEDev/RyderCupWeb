@@ -1,15 +1,16 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import ActivateCompetitionUseCase from './ActivateCompetitionUseCase';
 
-// Mock fetch globally
-globalThis.fetch = vi.fn();
-
 describe('ActivateCompetitionUseCase', () => {
   let useCase;
+  let mockRepository;
 
   beforeEach(() => {
     vi.clearAllMocks();
-    useCase = new ActivateCompetitionUseCase();
+    mockRepository = {
+      activate: vi.fn(),
+    };
+    useCase = new ActivateCompetitionUseCase({ competitionRepository: mockRepository });
   });
 
   describe('execute', () => {
@@ -21,24 +22,11 @@ describe('ActivateCompetitionUseCase', () => {
         updated_at: '2025-11-22T10:00:00Z'
       };
 
-      globalThis.fetch.mockResolvedValue({
-        ok: true,
-        json: async () => mockResponse
-      });
+      mockRepository.activate.mockResolvedValue(mockResponse);
 
       const result = await useCase.execute('comp-123');
 
-      expect(globalThis.fetch).toHaveBeenCalledWith(
-        '/api/v1/competitions/comp-123/activate',
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          credentials: 'include'
-        }
-      );
-
+      expect(mockRepository.activate).toHaveBeenCalledWith('comp-123');
       expect(result).toEqual({
         id: 'comp-123',
         name: 'Test Competition',
@@ -49,51 +37,32 @@ describe('ActivateCompetitionUseCase', () => {
 
     it('should throw error if competitionId is not provided', async () => {
       await expect(useCase.execute()).rejects.toThrow('Competition ID is required');
-      expect(globalThis.fetch).not.toHaveBeenCalled();
+      expect(mockRepository.activate).not.toHaveBeenCalled();
     });
 
     it('should throw error if competitionId is empty string', async () => {
       await expect(useCase.execute('')).rejects.toThrow('Competition ID is required');
-      expect(globalThis.fetch).not.toHaveBeenCalled();
+      expect(mockRepository.activate).not.toHaveBeenCalled();
     });
 
-    it('should throw error if API returns 403 (not creator)', async () => {
-      globalThis.fetch.mockResolvedValue({
-        ok: false,
-        json: async () => ({ detail: 'Only the creator can activate this competition' })
-      });
-
-      await expect(useCase.execute('comp-123')).rejects.toThrow(
-        'Only the creator can activate this competition'
-      );
-    });
-
-    it('should throw error if API returns 409 (invalid state transition)', async () => {
-      globalThis.fetch.mockResolvedValue({
-        ok: false,
-        json: async () => ({ detail: 'Competition must be in DRAFT status to activate' })
-      });
+    it('should propagate repository errors for invalid state transition', async () => {
+      mockRepository.activate.mockRejectedValue(new Error('Competition must be in DRAFT status to activate'));
 
       await expect(useCase.execute('comp-123')).rejects.toThrow(
         'Competition must be in DRAFT status to activate'
       );
     });
 
-    it('should throw generic error if API error has no detail', async () => {
-      globalThis.fetch.mockResolvedValue({
-        ok: false,
-        status: 500,
-        statusText: 'Internal Server Error',
-        json: async () => ({})
-      });
+    it('should propagate authorization errors', async () => {
+      mockRepository.activate.mockRejectedValue(new Error('Only the creator can activate this competition'));
 
       await expect(useCase.execute('comp-123')).rejects.toThrow(
-        'HTTP 500: Internal Server Error'
+        'Only the creator can activate this competition'
       );
     });
 
     it('should handle network errors', async () => {
-      globalThis.fetch.mockRejectedValue(new Error('Network error'));
+      mockRepository.activate.mockRejectedValue(new Error('Network error'));
 
       await expect(useCase.execute('comp-123')).rejects.toThrow('Network error');
     });

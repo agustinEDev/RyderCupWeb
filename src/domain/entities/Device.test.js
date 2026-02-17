@@ -3,7 +3,7 @@
  * v1.13.0: Device Fingerprinting feature
  */
 
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import Device from './Device';
 
 describe('Device Entity', () => {
@@ -470,100 +470,6 @@ describe('Device Entity', () => {
       });
 
       expect(device.isDeviceActive()).toBe(false);
-    });
-  });
-
-  describe('getFormattedLastUsed', () => {
-    it('should return formatted date for valid timestamp', () => {
-      const device = new Device(validDeviceData);
-      const formatted = device.getFormattedLastUsed();
-
-      expect(formatted).toBeTruthy();
-      expect(formatted).not.toBe('Never');
-    });
-
-    it('should return "Never" if last_used_at is null', () => {
-      const device = new Device({
-        ...validDeviceData,
-        last_used_at: null,
-      });
-
-      expect(device.getFormattedLastUsed()).toBe('Never');
-    });
-
-    it('should return "Never" if last_used_at is undefined', () => {
-      const device = new Device({
-        ...validDeviceData,
-        last_used_at: undefined,
-      });
-
-      expect(device.getFormattedLastUsed()).toBe('Never');
-    });
-
-    it('should warn about deprecation in development mode', () => {
-      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-      const originalEnv = import.meta.env.DEV;
-      import.meta.env.DEV = true;
-
-      const device = new Device(validDeviceData);
-      device.getFormattedLastUsed();
-
-      expect(warnSpy).toHaveBeenCalledWith(
-        expect.stringContaining('[DEPRECATED] Device.getFormattedLastUsed()')
-      );
-      expect(warnSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Use formatDateTime() from utils/dateFormatters instead')
-      );
-
-      warnSpy.mockRestore();
-      import.meta.env.DEV = originalEnv;
-    });
-  });
-
-  describe('getFormattedCreatedAt', () => {
-    it('should return formatted date for valid timestamp', () => {
-      const device = new Device(validDeviceData);
-      const formatted = device.getFormattedCreatedAt();
-
-      expect(formatted).toBeTruthy();
-      expect(formatted).not.toBe('Unknown');
-    });
-
-    it('should return "Unknown" if created_at is null', () => {
-      const device = new Device({
-        ...validDeviceData,
-        created_at: null,
-      });
-
-      expect(device.getFormattedCreatedAt()).toBe('Unknown');
-    });
-
-    it('should return "Unknown" if created_at is undefined', () => {
-      const device = new Device({
-        ...validDeviceData,
-        created_at: undefined,
-      });
-
-      expect(device.getFormattedCreatedAt()).toBe('Unknown');
-    });
-
-    it('should warn about deprecation in development mode', () => {
-      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-      const originalEnv = import.meta.env.DEV;
-      import.meta.env.DEV = true;
-
-      const device = new Device(validDeviceData);
-      device.getFormattedCreatedAt();
-
-      expect(warnSpy).toHaveBeenCalledWith(
-        expect.stringContaining('[DEPRECATED] Device.getFormattedCreatedAt()')
-      );
-      expect(warnSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Use formatDateTime() from utils/dateFormatters instead')
-      );
-
-      warnSpy.mockRestore();
-      import.meta.env.DEV = originalEnv;
     });
   });
 

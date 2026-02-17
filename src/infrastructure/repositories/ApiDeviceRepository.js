@@ -71,13 +71,6 @@ class ApiDeviceRepository extends IDeviceRepository {
       // Repository returns error codes, presentation layer handles i18n
       const statusCode = error.status || error.statusCode;
 
-      // Preserve original error for debugging
-      console.error('[ApiDeviceRepository] HTTP error:', {
-        status: statusCode,
-        message: error.message,
-        deviceId,
-      });
-
       // Transform HTTP status codes to domain error codes
       if (statusCode === 403) {
         const domainError = new Error('CSRF_VALIDATION_FAILED');

@@ -1,4 +1,4 @@
-import CompetitionMapper from '../../../infrastructure/mappers/CompetitionMapper';
+import CompetitionAssembler from '../../assemblers/CompetitionAssembler';
 
 class CreateCompetitionUseCase {
   /**
@@ -23,7 +23,7 @@ class CreateCompetitionUseCase {
 
     // Convert domain entity to simple DTO for UI
     // This prevents the UI from depending on complex domain Value Objects
-    return CompetitionMapper.toSimpleDTO(newCompetition);
+    return CompetitionAssembler.toSimpleDTO(newCompetition);
   }
 }
 

@@ -90,9 +90,6 @@ class IEnrollmentRepository {
   /**
    * Solicitar inscripción (crear enrollment con estado REQUESTED)
    *
-   * Endpoint: POST /api/v1/competitions/{competitionId}/enrollments
-   * Body: { } (opcional: datos adicionales)
-   *
    * @param {string} competitionId - UUID de la competición
    * @param {Object} data - Datos adicionales (opcional)
    * @returns {Promise<Enrollment>} Enrollment creado con estado REQUESTED
@@ -104,9 +101,6 @@ class IEnrollmentRepository {
 
   /**
    * Aprobar enrollment (transición REQUESTED/INVITED → APPROVED)
-   *
-   * Endpoint: POST /api/v1/competitions/{competitionId}/enrollments/{enrollmentId}/approve
-   * Body: { team?: string }
    *
    * @param {string} competitionId - UUID de la competición
    * @param {string} enrollmentId - UUID del enrollment
@@ -121,8 +115,6 @@ class IEnrollmentRepository {
   /**
    * Rechazar enrollment (transición REQUESTED/INVITED → REJECTED)
    *
-   * Endpoint: POST /api/v1/competitions/{competitionId}/enrollments/{enrollmentId}/reject
-   *
    * @param {string} competitionId - UUID de la competición
    * @param {string} enrollmentId - UUID del enrollment
    * @returns {Promise<Enrollment>} Enrollment rechazado
@@ -134,8 +126,6 @@ class IEnrollmentRepository {
 
   /**
    * Cancelar enrollment (transición REQUESTED/INVITED → CANCELLED)
-   *
-   * Endpoint: POST /api/v1/competitions/{competitionId}/enrollments/{enrollmentId}/cancel
    *
    * @param {string} competitionId - UUID de la competición
    * @param {string} enrollmentId - UUID del enrollment
@@ -149,8 +139,6 @@ class IEnrollmentRepository {
   /**
    * Retirar enrollment (transición APPROVED → WITHDRAWN)
    *
-   * Endpoint: POST /api/v1/competitions/{competitionId}/enrollments/{enrollmentId}/withdraw
-   *
    * @param {string} competitionId - UUID de la competición
    * @param {string} enrollmentId - UUID del enrollment
    * @returns {Promise<Enrollment>} Enrollment retirado
@@ -162,9 +150,6 @@ class IEnrollmentRepository {
 
   /**
    * Establecer handicap personalizado para enrollment
-   *
-   * Endpoint: PUT /api/v1/competitions/{competitionId}/enrollments/{enrollmentId}/handicap
-   * Body: { custom_handicap: number }
    *
    * @param {string} competitionId - UUID de la competición
    * @param {string} enrollmentId - UUID del enrollment
@@ -178,9 +163,6 @@ class IEnrollmentRepository {
 
   /**
    * Inscripción directa por el creador (sin solicitud previa)
-   *
-   * Endpoint: POST /api/v1/competitions/{competitionId}/enrollments/direct
-   * Body: { user_id: string, custom_handicap?: number, team_id?: string }
    *
    * @param {string} competitionId - UUID de la competición
    * @param {Object} data
@@ -198,8 +180,6 @@ class IEnrollmentRepository {
    * Eliminar enrollment (DELETE físico)
    *
    * NOTA: Usar con precaución. Normalmente se prefiere cambiar a estado final.
-   *
-   * Endpoint: DELETE /api/v1/competitions/{competitionId}/enrollments/{enrollmentId}
    *
    * @param {string} competitionId - UUID de la competición
    * @param {string} enrollmentId - UUID del enrollment

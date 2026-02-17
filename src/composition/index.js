@@ -14,6 +14,8 @@ import ResetPasswordUseCase from '../application/use_cases/user/ResetPasswordUse
 import GoogleLoginUseCase from '../application/use_cases/user/GoogleLoginUseCase';
 import LinkGoogleAccountUseCase from '../application/use_cases/user/LinkGoogleAccountUseCase';
 import UnlinkGoogleAccountUseCase from '../application/use_cases/user/UnlinkGoogleAccountUseCase';
+import LogoutUseCase from '../application/use_cases/user/LogoutUseCase';
+import ResendVerificationEmailUseCase from '../application/use_cases/user/ResendVerificationEmailUseCase';
 
 // Handicap Use Cases
 import ApiHandicapRepository from '../infrastructure/repositories/ApiHandicapRepository';
@@ -21,7 +23,9 @@ import UpdateManualHandicapUseCase from '../application/use_cases/handicap/Updat
 import UpdateRfegHandicapUseCase from '../application/use_cases/handicap/UpdateRfegHandicapUseCase';
 
 // Country Use Cases
+import ApiCountryRepository from '../infrastructure/repositories/ApiCountryRepository';
 import FetchCountriesUseCase from '../application/use_cases/country/FetchCountriesUseCase';
+import GetAdjacentCountriesUseCase from '../application/use_cases/country/GetAdjacentCountriesUseCase';
 
 // Golf Course Use Cases (v2.1.0 - Sprint 1)
 import ApiGolfCourseRepository from '../infrastructure/repositories/ApiGolfCourseRepository';
@@ -100,6 +104,7 @@ const apiDeviceRepository = new ApiDeviceRepository();
 const apiGolfCourseRepository = new ApiGolfCourseRepository();
 const apiScheduleRepository = new ApiScheduleRepository();
 const apiSupportRepository = new ApiSupportRepository();
+const apiCountryRepository = new ApiCountryRepository();
 
 // --- Casos de Uso ---
 const updateUserProfileUseCase = new UpdateUserProfileUseCase({ userRepository: apiUserRepository });
@@ -119,22 +124,25 @@ const resetPasswordUseCase = new ResetPasswordUseCase({ authRepository: apiAuthR
 const googleLoginUseCase = new GoogleLoginUseCase({ authRepository: apiAuthRepository });
 const linkGoogleAccountUseCase = new LinkGoogleAccountUseCase({ authRepository: apiAuthRepository });
 const unlinkGoogleAccountUseCase = new UnlinkGoogleAccountUseCase({ authRepository: apiAuthRepository });
+const logoutUseCase = new LogoutUseCase({ authRepository: apiAuthRepository });
+const resendVerificationEmailUseCase = new ResendVerificationEmailUseCase({ authRepository: apiAuthRepository });
 const createCompetitionUseCase = new CreateCompetitionUseCase({ competitionRepository: apiCompetitionRepository });
 const updateCompetitionUseCase = new UpdateCompetitionUseCase({ competitionRepository: apiCompetitionRepository });
 const listUserCompetitionsUseCase = new ListUserCompetitionsUseCase({ competitionRepository: apiCompetitionRepository });
 const getCompetitionDetailUseCase = new GetCompetitionDetailUseCase({ competitionRepository: apiCompetitionRepository });
-const activateCompetitionUseCase = new ActivateCompetitionUseCase();
-const closeEnrollmentsUseCase = new CloseEnrollmentsUseCase();
-const startCompetitionUseCase = new StartCompetitionUseCase();
-const completeCompetitionUseCase = new CompleteCompetitionUseCase();
-const cancelCompetitionUseCase = new CancelCompetitionUseCase();
+const activateCompetitionUseCase = new ActivateCompetitionUseCase({ competitionRepository: apiCompetitionRepository });
+const closeEnrollmentsUseCase = new CloseEnrollmentsUseCase({ competitionRepository: apiCompetitionRepository });
+const startCompetitionUseCase = new StartCompetitionUseCase({ competitionRepository: apiCompetitionRepository });
+const completeCompetitionUseCase = new CompleteCompetitionUseCase({ competitionRepository: apiCompetitionRepository });
+const cancelCompetitionUseCase = new CancelCompetitionUseCase({ competitionRepository: apiCompetitionRepository });
 const browseJoinableCompetitionsUseCase = new BrowseJoinableCompetitionsUseCase(apiCompetitionRepository);
 const browseExploreCompetitionsUseCase = new BrowseExploreCompetitionsUseCase(apiCompetitionRepository);
 const addGolfCourseToCompetitionUseCase = new AddGolfCourseToCompetitionUseCase({ competitionRepository: apiCompetitionRepository });
 const removeGolfCourseFromCompetitionUseCase = new RemoveGolfCourseFromCompetitionUseCase({ competitionRepository: apiCompetitionRepository });
 const reorderGolfCoursesUseCase = new ReorderGolfCoursesUseCase({ competitionRepository: apiCompetitionRepository });
 const getCompetitionGolfCoursesUseCase = new GetCompetitionGolfCoursesUseCase({ competitionRepository: apiCompetitionRepository });
-const fetchCountriesUseCase = new FetchCountriesUseCase();
+const fetchCountriesUseCase = new FetchCountriesUseCase({ countryRepository: apiCountryRepository });
+const getAdjacentCountriesUseCase = new GetAdjacentCountriesUseCase({ countryRepository: apiCountryRepository });
 
 // Schedule Use Cases (v2.1.0 - Sprint 2)
 const getScheduleUseCase = new GetScheduleUseCase({ scheduleRepository: apiScheduleRepository });
@@ -194,6 +202,8 @@ export {
   googleLoginUseCase,
   linkGoogleAccountUseCase,
   unlinkGoogleAccountUseCase,
+  logoutUseCase,
+  resendVerificationEmailUseCase,
   createCompetitionUseCase,
   updateCompetitionUseCase,
   listUserCompetitionsUseCase,
@@ -211,6 +221,7 @@ export {
   getCompetitionGolfCoursesUseCase,
   // Country Use Cases
   fetchCountriesUseCase,
+  getAdjacentCountriesUseCase,
   // Enrollment Use Cases
   requestEnrollmentUseCase,
   listEnrollmentsUseCase,

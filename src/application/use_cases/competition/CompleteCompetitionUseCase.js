@@ -1,11 +1,13 @@
-import apiRequest from '../../../services/api.js';
-
 /**
  * Use Case: Complete Competition
  * Transitions competition from IN_PROGRESS to COMPLETED state.
  * Only the creator can complete a competition.
  */
 class CompleteCompetitionUseCase {
+  constructor({ competitionRepository }) {
+    this.competitionRepository = competitionRepository;
+  }
+
   /**
    * Executes the use case to complete a competition.
    * @param {string} competitionId - The ID of the competition to complete.
@@ -17,11 +19,8 @@ class CompleteCompetitionUseCase {
       throw new Error('Competition ID is required');
     }
 
-    const data = await apiRequest(`/api/v1/competitions/${competitionId}/complete`, {
-      method: 'POST'
-    });
+    const data = await this.competitionRepository.complete(competitionId);
 
-    // Return simple DTO for UI
     return {
       id: data.id,
       name: data.name,
