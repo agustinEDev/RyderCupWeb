@@ -73,7 +73,20 @@
       "rfegInfoWithNationality": "Tu nacionalidad está configurada como {{countryCode}}. Solo los jugadores con nacionalidad española pueden actualizar su hándicap desde RFEG.",
       "rfegInfoNoNationality": "Para habilitar actualizaciones de hándicap RFEG, por favor establece tu nacionalidad como España en tu perfil."
     },
-    "cancel": "Cancelar"
+    "cancel": "Cancelar",
+    "linkedAccounts": {
+      "title": "Cuentas Vinculadas",
+      "subtitle": "Gestiona tus cuentas de terceros conectadas.",
+      "google": "Google",
+      "linked": "Conectada",
+      "notLinked": "No conectada",
+      "link": "Vincular Google",
+      "unlink": "Desvincular",
+      "unlinking": "Desvinculando...",
+      "unlinkSuccess": "Cuenta de Google desvinculada exitosamente.",
+      "unlinkError": "Error al desvincular la cuenta de Google.",
+      "cannotUnlinkOnly": "Establece una contraseña antes de desvincular tu único método de inicio de sesión."
+    }
   },
   "toasts": {
     "userNotLoaded": "Usuario no cargado.",

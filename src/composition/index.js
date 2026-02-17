@@ -11,6 +11,9 @@ import VerifyEmailUseCase from '../application/use_cases/user/VerifyEmailUseCase
 import RequestPasswordResetUseCase from '../application/use_cases/user/RequestPasswordResetUseCase';
 import ValidateResetTokenUseCase from '../application/use_cases/user/ValidateResetTokenUseCase';
 import ResetPasswordUseCase from '../application/use_cases/user/ResetPasswordUseCase';
+import GoogleLoginUseCase from '../application/use_cases/user/GoogleLoginUseCase';
+import LinkGoogleAccountUseCase from '../application/use_cases/user/LinkGoogleAccountUseCase';
+import UnlinkGoogleAccountUseCase from '../application/use_cases/user/UnlinkGoogleAccountUseCase';
 
 // Handicap Use Cases
 import ApiHandicapRepository from '../infrastructure/repositories/ApiHandicapRepository';
@@ -113,6 +116,9 @@ const verifyEmailUseCase = new VerifyEmailUseCase({ authRepository: apiAuthRepos
 const requestPasswordResetUseCase = new RequestPasswordResetUseCase({ authRepository: apiAuthRepository });
 const validateResetTokenUseCase = new ValidateResetTokenUseCase({ authRepository: apiAuthRepository });
 const resetPasswordUseCase = new ResetPasswordUseCase({ authRepository: apiAuthRepository });
+const googleLoginUseCase = new GoogleLoginUseCase({ authRepository: apiAuthRepository });
+const linkGoogleAccountUseCase = new LinkGoogleAccountUseCase({ authRepository: apiAuthRepository });
+const unlinkGoogleAccountUseCase = new UnlinkGoogleAccountUseCase({ authRepository: apiAuthRepository });
 const createCompetitionUseCase = new CreateCompetitionUseCase({ competitionRepository: apiCompetitionRepository });
 const updateCompetitionUseCase = new UpdateCompetitionUseCase({ competitionRepository: apiCompetitionRepository });
 const listUserCompetitionsUseCase = new ListUserCompetitionsUseCase({ competitionRepository: apiCompetitionRepository });
@@ -185,6 +191,9 @@ export {
   requestPasswordResetUseCase,
   validateResetTokenUseCase,
   resetPasswordUseCase,
+  googleLoginUseCase,
+  linkGoogleAccountUseCase,
+  unlinkGoogleAccountUseCase,
   createCompetitionUseCase,
   updateCompetitionUseCase,
   listUserCompetitionsUseCase,

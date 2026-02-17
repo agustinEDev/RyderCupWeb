@@ -34,6 +34,32 @@ class IAuthRepository {
   async verifyEmail(token) {
     throw new Error('Method not implemented: verifyEmail');
   }
+
+  /**
+   * Authenticate or register a user via Google OAuth.
+   * @param {string} authorizationCode - The authorization code from Google.
+   * @returns {Promise<{user: import('../entities/User').default, csrfToken: string, isNewUser: boolean}>}
+   */
+  async googleLogin(authorizationCode) {
+    throw new Error('Method not implemented: googleLogin');
+  }
+
+  /**
+   * Link a Google account to an existing authenticated user.
+   * @param {string} authorizationCode - The authorization code from Google.
+   * @returns {Promise<{message: string, provider: string, providerEmail: string}>}
+   */
+  async linkGoogleAccount(authorizationCode) {
+    throw new Error('Method not implemented: linkGoogleAccount');
+  }
+
+  /**
+   * Unlink a Google account from an authenticated user.
+   * @returns {Promise<{message: string, provider: string}>}
+   */
+  async unlinkGoogleAccount() {
+    throw new Error('Method not implemented: unlinkGoogleAccount');
+  }
 }
 
 export default IAuthRepository;

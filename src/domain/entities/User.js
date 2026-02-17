@@ -17,6 +17,8 @@ class User {
     verification_token = null,
     country_code = null, // Nacionalidad opcional del usuario
     gender = null, // Gender: 'MALE', 'FEMALE', or null
+    auth_providers = [], // string[] - e.g. ['google']
+    has_password = true, // boolean - false if OAuth-only user
     domain_events = [], // Array vacío por defecto para List
   }) {
     // Validaciones básicas de la entidad
@@ -47,6 +49,8 @@ class User {
       ? (country_code instanceof CountryCode ? country_code : new CountryCode(country_code))
       : null;
     this.gender = gender;
+    this.authProviders = auth_providers;
+    this.hasPassword = has_password;
     this.domainEvents = domain_events;
   }
 
@@ -86,6 +90,8 @@ class User {
       verification_token: this.verificationToken,
       country_code: this.countryCode ? this.countryCode.value() : null,
       gender: this.gender,
+      auth_providers: this.authProviders,
+      has_password: this.hasPassword,
       // domain_events no se persistirían directamente
     };
   }

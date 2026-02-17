@@ -10,6 +10,7 @@ import PasswordStrengthMeter from '../components/ui/PasswordStrengthMeter';
 import { registerUseCase } from '../composition'; // NUEVO import
 import { CountryFlag } from '../utils/countryUtils';
 import { formatCountryName } from '../services/countries';
+import GoogleSignInButton from '../components/ui/GoogleSignInButton';
 
 const API_URL = import.meta.env.VITE_API_BASE_URL || '';
 
@@ -598,12 +599,15 @@ const Register = () => {
                   <div className="w-full border-t border-gray-200"></div>
                 </div>
                 <div className="relative flex justify-center text-sm">
-                  <span className="px-4 bg-white text-gray-500">or</span>
+                  <span className="px-4 bg-white text-gray-500">{t('google.orDivider', { ns: 'auth' })}</span>
                 </div>
               </div>
 
+              {/* Google Sign Up */}
+              <GoogleSignInButton flow="login" label={t('google.signUpWithGoogle', { ns: 'auth' })} disabled={isLoading} />
+
               {/* Login Link */}
-              <div className="text-center">
+              <div className="text-center mt-6">
                 <p className="text-gray-600 text-sm">
                   {t('register.alreadyHaveAccount')}{' '}
                   <Link
