@@ -175,7 +175,7 @@ class ApiAuthRepository extends IAuthRepository {
       };
     } catch (error) {
       if (error.status === 423) {
-        throw new Error('Account locked due to too many failed attempts. Please try again after 30 minutes.');
+        throw new Error('Account locked due to too many failed login attempts. Please try again after 30 minutes.');
       }
       throw error;
     }

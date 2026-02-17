@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { buildGoogleOAuthUrl } from '../../utils/googleOAuth';
+import customToast from '../../utils/toast';
 
 const GoogleSignInButton = ({ flow = 'login', label, disabled = false }) => {
   const { t } = useTranslation('auth');
@@ -10,7 +11,12 @@ const GoogleSignInButton = ({ flow = 'login', label, disabled = false }) => {
     : t('google.signUpWithGoogle');
 
   const handleClick = () => {
-    window.location.href = buildGoogleOAuthUrl(flow);
+    try {
+      window.location.href = buildGoogleOAuthUrl(flow);
+    } catch (error) {
+      console.error('Google OAuth URL error:', error);
+      customToast.error(t('google.genericError'));
+    }
   };
 
   return (

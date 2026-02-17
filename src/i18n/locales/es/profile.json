@@ -85,7 +85,7 @@
       "unlinking": "Desvinculando...",
       "unlinkSuccess": "Cuenta de Google desvinculada exitosamente.",
       "unlinkError": "Error al desvincular la cuenta de Google.",
-      "cannotUnlinkOnly": "Establece una contraseña antes de desvincular tu unico metodo de inicio de sesion."
+      "cannotUnlinkOnly": "Establece una contraseña antes de desvincular tu único método de inicio de sesión."
     }
   },
   "toasts": {

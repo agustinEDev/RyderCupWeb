@@ -84,7 +84,7 @@ const EditProfile = () => {
                 onClick={handleRefreshUserData}
                 disabled={isRefreshing}
                 className="flex items-center gap-2 px-4 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                title="Refresh profile data from server"
+                title={t('edit.refreshData')}
               >
                 <svg className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -430,11 +430,13 @@ const EditProfile = () => {
                         <button
                           type="button"
                           disabled
+                          aria-label={t('edit.linkedAccounts.cannotUnlinkOnly')}
+                          title={t('edit.linkedAccounts.cannotUnlinkOnly')}
                           className="px-4 py-2 bg-gray-100 text-gray-400 text-sm font-semibold rounded-lg cursor-not-allowed"
                         >
                           {t('edit.linkedAccounts.unlink')}
                         </button>
-                        <div className="absolute bottom-full right-0 mb-2 w-64 p-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                        <div className="absolute bottom-full right-0 mb-2 w-64 p-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity pointer-events-none">
                           {t('edit.linkedAccounts.cannotUnlinkOnly')}
                         </div>
                       </div>

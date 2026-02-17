@@ -12,6 +12,7 @@ const GoogleCallback = () => {
   const { setUser, updateCsrfToken } = useAuthContext();
   const hasProcessed = useRef(false);
   const [error, setError] = useState(null);
+  const [flow, setFlow] = useState('login');
 
   useEffect(() => {
     // Prevent double execution in StrictMode
@@ -23,6 +24,8 @@ const GoogleCallback = () => {
     const state = searchParams.get('state');
 
     const processCallback = async () => {
+      if (state === 'link') setFlow('link');
+
       // Handle Google OAuth error
       if (errorParam) {
         setError(t('google.callbackError'));
@@ -64,7 +67,7 @@ const GoogleCallback = () => {
           setError(t('google.accountLocked'));
         } else if (err.status === 429) {
           setError(t('google.rateLimited'));
-        } else if (err.status === 409 || (err.message && err.message.includes('already linked'))) {
+        } else if (err.status === 409) {
           setError(t('google.alreadyLinked'));
         } else {
           setError(err.message || t('google.genericError'));
@@ -89,10 +92,10 @@ const GoogleCallback = () => {
           </h2>
           <p className="text-gray-600 text-sm mb-6">{error}</p>
           <Link
-            to="/login"
+            to={flow === 'link' ? '/profile/edit' : '/login'}
             className="inline-block bg-primary hover:bg-primary/90 text-white font-bold py-2.5 px-6 rounded-lg transition-colors"
           >
-            {t('login.signInButton')}
+            {flow === 'link' ? t('google.backToProfile') : t('login.signInButton')}
           </Link>
         </div>
       </div>
