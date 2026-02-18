@@ -1,0 +1,64 @@
+{
+  "title": "Invitations",
+  "loading": "Loading invitations...",
+  "noInvitations": "No invitations yet",
+  "send": {
+    "title": "Send Invitation",
+    "emailPlaceholder": "Enter player's email address",
+    "personalMessage": "Personal Message (optional)",
+    "personalMessagePlaceholder": "Add a personal message to the invitation...",
+    "send": "Send Invitation",
+    "sending": "Sending..."
+  },
+  "status": {
+    "PENDING": "Pending",
+    "ACCEPTED": "Accepted",
+    "DECLINED": "Declined",
+    "EXPIRED": "Expired"
+  },
+  "actions": {
+    "accept": "Accept",
+    "decline": "Decline",
+    "accepting": "Accepting...",
+    "declining": "Declining..."
+  },
+  "filter": {
+    "allStatuses": "All Statuses",
+    "status": "Status"
+  },
+  "card": {
+    "from": "From",
+    "for": "For competition",
+    "expires": "Expires",
+    "expired": "Expired",
+    "expiresIn": "Expires in {{days}} days",
+    "expiresInHours": "Expires in {{hours}} hours",
+    "respondedAt": "Responded",
+    "message": "Message"
+  },
+  "success": {
+    "sent": "Invitation sent successfully",
+    "accepted": "Invitation accepted",
+    "declined": "Invitation declined"
+  },
+  "errors": {
+    "failedToLoad": "Failed to load invitations",
+    "failedToSend": "Failed to send invitation",
+    "failedToRespond": "Failed to respond to invitation",
+    "duplicateInvitation": "An invitation has already been sent to this email",
+    "invalidEmail": "Please enter a valid email address"
+  },
+  "creator": {
+    "title": "Invitations",
+    "subtitle": "Manage invitations for this competition",
+    "sendNew": "Send Invitation",
+    "sentCount_one": "{{count}} invitation sent",
+    "sentCount_other": "{{count}} invitations sent"
+  },
+  "player": {
+    "title": "My Invitations",
+    "subtitle": "View and respond to competition invitations",
+    "pendingCount_one": "{{count}} pending",
+    "pendingCount_other": "{{count}} pending"
+  }
+}
