@@ -90,6 +90,9 @@ const HeaderAuth = ({ user }) => {
           <Link to="/competitions/create" className="text-gray-900 text-sm font-medium leading-normal hover:text-primary transition-colors">
             {t('header.createCompetition')}
           </Link>
+          <Link to="/player/invitations" className="text-gray-900 text-sm font-medium leading-normal hover:text-primary transition-colors">
+            {t('header.myInvitations')}
+          </Link>
 
           {/* Admin Links (only visible to admins) */}
           {user?.is_admin && (
@@ -207,6 +210,13 @@ const HeaderAuth = ({ user }) => {
               className="block px-4 py-2 text-sm text-gray-900 hover:bg-gray-100 transition-colors"
             >
               {t('header.createCompetition')}
+            </Link>
+            <Link
+              to="/player/invitations"
+              onClick={() => setIsDropdownOpen(false)}
+              className="block px-4 py-2 text-sm text-gray-900 hover:bg-gray-100 transition-colors"
+            >
+              {t('header.myInvitations')}
             </Link>
 
             {/* Admin Links (only visible to admins) */}

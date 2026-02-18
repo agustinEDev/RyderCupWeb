@@ -604,8 +604,9 @@ jobs:
 
           # Define budget (in KB)
           # v2.1: Reduced from 1600 KB to 1400 KB after replacing country-flag-icons (239 KB) with CDN images
-          MAX_BUNDLE_SIZE_KB=1400
-          WARNING_THRESHOLD_KB=1300
+          # v2.0.11: Raised to 1500 KB after Sprint 3 invitations system (2 new pages, 3 components, i18n namespace)
+          MAX_BUNDLE_SIZE_KB=1500
+          WARNING_THRESHOLD_KB=1400
 
           # List all bundles with sizes
           echo ""

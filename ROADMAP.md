@@ -1,8 +1,8 @@
 # 🗺️ Roadmap - RyderCupFriends Frontend
 
-> **Versión:** 1.15.0 → 1.16.0 → 2.0.0 → 2.0.4 → 2.0.5 → 2.0.6 (sincronizado con backend)
-> **Última actualización:** 8 Feb 2026
-> **Estado:** ✅ v2.0.0 Sprint 1 Completado | ✅ v2.0.4 Sprint 2 + Infra Completado | ✅ v2.0.5 Hotfix UI | ✅ v2.0.6 Sprint 2 Schedule COMPLETADO
+> **Versión:** 1.15.0 → 1.16.0 → 2.0.0 → 2.0.4 → 2.0.5 → 2.0.6 → 2.0.9 → 2.0.10 → 2.0.11 (sincronizado con backend)
+> **Última actualización:** 18 Feb 2026
+> **Estado:** ✅ v2.0.0 Sprint 1 Completado | ✅ v2.0.4 Sprint 2 + Infra Completado | ✅ v2.0.5 Hotfix UI | ✅ v2.0.6 Sprint 2 Schedule COMPLETADO | ✅ v2.0.9 Clean Architecture | ✅ v2.0.10 Manual Pairings | 🔄 v2.0.11 Sprint 3 Invitations EN PROGRESO
 > **Stack:** React 19 + Vite 7.3 + Tailwind CSS 4 + ESLint 9
 > **Arquitectura:** Subdomain (www + api) con Cloudflare Proxy (ADR-011)
 
@@ -117,8 +117,8 @@ const CompetitionActions = ({ competitionId }) => {
 | Sprint   | Fechas          | Esfuerzo BE | Endpoints | Sync Point        | Estado        | Versión  |
 |----------|-----------------|-------------|-----------|-------------------|---------------|----------|
 | Sprint 1 | 27 Ene - 6 Feb  | 60h         | 10        | ✅ Viernes 30 Ene | ✅ COMPLETADO | v2.0.0   |
-| Sprint 2 | 3 Feb - 17 Feb  | 70h         | 11        | ✅ Viernes 4 Feb  | ✅ COMPLETADO  | v2.0.6   |
-| Sprint 3 | 18 Feb - 24 Feb | 48h         | 5         | 🔄 Viernes 20 Feb | 📋 Pendiente  | v2.0.5   |
+| Sprint 2 | 3 Feb - 17 Feb  | 70h         | 11        | ✅ Viernes 4 Feb  | ✅ COMPLETADO  | v2.0.10  |
+| Sprint 3 | 18 Feb - 24 Feb | 48h         | 5         | 🔄 Viernes 20 Feb | 🔄 EN PROGRESO | v2.0.11  |
 | Sprint 4 | 25 Feb - 10 Mar | 92h         | 4         | 🔄 Viernes 6 Mar  | 📋 Pendiente  | v2.0.6   |
 | Sprint 5 | 11 Mar - 17 Mar | 60h         | 2         | 🔄 Viernes 13 Mar | 📋 Pendiente  | v2.0.7   |
 | **TOTAL**| **7 semanas**   | **330h**    | **31**    |                   |               |          |
@@ -130,8 +130,8 @@ const CompetitionActions = ({ competitionId }) => {
 | Sprint   | Backend Entrega                                                                                                         | Frontend Consume                                                                              | Sync Point     | Estado |
 |----------|-------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------|----------------|--------|
 | Sprint 1 | ✅ `POST /admin/golf-courses`<br>✅ `PUT /admin/golf-courses/{id}/approve`<br>✅ `PUT /admin/golf-courses/{id}/reject`<br>✅ `GET /admin/golf-courses/pending`<br>✅ `PUT /admin/golf-courses/{id}/approve-update`<br>✅ `PUT /admin/golf-courses/{id}/reject-update`<br>✅ `PUT /golf-courses/{id}` (smart workflow)<br>✅ `GET /golf-courses`<br>✅ `GET /golf-courses/{id}`<br>✅ `POST /golf-courses/request` | ✅ `/admin/golf-courses` page (CRUD completo)<br>✅ `/admin/golf-courses/pending` page (2 tabs)<br>✅ GolfCourseForm component (400+ líneas)<br>✅ GolfCourseTable component<br>✅ TeeCategoryBadge component<br>✅ 116 tests (100% passing)<br>✅ i18n ES/EN (300+ traducciones)<br>✅ Navigation links (admin only) | ✅ 31 Ene 2026 | ✅ **COMPLETADO** |
-| Sprint 2 | ✅ `GET /competitions/{id}/schedule`<br>✅ `POST /competitions/{id}/schedule/configure`<br>✅ `POST /competitions/{id}/teams`<br>✅ `POST /competitions/{id}/rounds`<br>✅ `PUT /rounds/{id}`<br>✅ `DELETE /rounds/{id}`<br>✅ `POST /rounds/{id}/matches/generate`<br>✅ `GET /matches/{id}`<br>✅ `PUT /matches/{id}/status`<br>✅ `POST /matches/{id}/walkover`<br>✅ `PUT /matches/{id}/players` | ✅ Backend Integration Layer (11 endpoints)<br>✅ Domain Layer (6 VOs + 3 Entities)<br>✅ Infrastructure (Mapper + Repository)<br>✅ 11 Use Cases + Composition Root<br>✅ i18n (EN/ES schedule namespace)<br>📋 UI: Schedule drag-drop<br>📋 UI: Match creation wizard<br>📋 UI: Match detail modal<br>📋 UI: Manual status control | Viernes 14 Feb | 🔄 EN PROGRESO |
-| Sprint 3 | `POST /invitations/{id}/respond`                                                                                        | Invitation cards<br>Email notifications                                                           | Viernes 21 Feb | 📋 Pendiente |
+| Sprint 2 | ✅ `GET /competitions/{id}/schedule`<br>✅ `POST /competitions/{id}/schedule/configure`<br>✅ `POST /competitions/{id}/teams`<br>✅ `POST /competitions/{id}/rounds`<br>✅ `PUT /rounds/{id}`<br>✅ `DELETE /rounds/{id}`<br>✅ `POST /rounds/{id}/matches/generate`<br>✅ `GET /matches/{id}`<br>✅ `PUT /matches/{id}/status`<br>✅ `POST /matches/{id}/walkover`<br>✅ `PUT /matches/{id}/players` | ✅ Backend Integration Layer (11 endpoints)<br>✅ Domain Layer (6 VOs + 3 Entities)<br>✅ Infrastructure (Mapper + Repository)<br>✅ 11 Use Cases + Composition Root<br>✅ i18n (EN/ES schedule namespace)<br>✅ UI: Schedule page + Round/Match cards<br>✅ UI: Manual pairings modal<br>✅ UI: Match detail modal<br>✅ UI: Manual status control<br>✅ Clean Architecture remediation | 17 Feb 2026 | ✅ **COMPLETADO** |
+| Sprint 3 | `POST /competitions/{id}/invitations`<br>`POST /competitions/{id}/invitations/by-email`<br>`GET /invitations/me`<br>`POST /invitations/{id}/respond`<br>`GET /competitions/{id}/invitations` | ✅ Backend API contract (`docs/INVITATIONS_API_CONTRACT.md`)<br>✅ Domain layer (InvitationStatus VO, Invitation entity, IInvitationRepository)<br>✅ Infrastructure (InvitationMapper, ApiInvitationRepository)<br>✅ 5 use cases + InvitationAssembler<br>✅ i18n (EN/ES invitations namespace)<br>✅ UI: InvitationBadge, InvitationCard, SendInvitationModal<br>✅ Creator InvitationsPage + Player MyInvitationsPage<br>✅ Navigation integration (HeaderAuth + CompetitionDetail)<br>✅ 95 tests nuevos (1249 total) | Viernes 21 Feb | 🔄 Frontend listo, backend pendiente |
 | Sprint 4 | `GET /matches/{id}/scoring-view`                                                                                        | Scoring 3 tabs<br>Real-time validation ✅/❌                                                        | Viernes 7 Mar  | 📋 Pendiente |
 | Sprint 5 | `GET /competitions/{id}/leaderboard`                                                                                    | Public leaderboard<br>Polling (30s)                                                               | Viernes 14 Mar | 📋 Pendiente |
 
@@ -320,9 +320,18 @@ Migrar de arquitectura de proxy inverso a subdominios directos para mejorar rend
 - ✅ Enrollment request modal con selector de tee category
 - ✅ Botón "View Schedule" para jugadores inscritos en CompetitionDetail
 
-#### 📋 Pendiente
+#### ✅ Completado: v2.0.9 Clean Architecture Remediation
 
-- Manual pairings UI (generate matches solo funciona en modo automático)
+- ✅ ~57 violaciones corregidas en 66 archivos
+- ✅ Assemblers extraidos a capa de aplicacion
+- ✅ Transiciones de estado via ICompetitionRepository
+- ✅ Eliminado todo fetch() directo en UI
+
+#### ✅ Completado: v2.0.10 Manual Pairings UI
+
+- ✅ GenerateMatchesModal con modo automatico/manual
+- ✅ Bugfix: reloadSchedule error silencioso
+- ✅ 24 tests nuevos (1154 total)
 
 #### 📊 Estadisticas Sprint 2
 
@@ -334,6 +343,77 @@ Migrar de arquitectura de proxy inverso a subdominios directos para mejorar rend
 - **UI Components:** 8 nuevos (schedule)
 - **Tests:** ~214 nuevos (1088 total passing, 1 skipped)
 - **Bundle:** 1308 KB build sin comprimir (-311 KB desde peak de 1619 KB)
+
+---
+
+### 🔄 v2.0.11 - Invitations System (Sprint 3)
+
+> **Estado:** 🔄 Frontend completo, backend pendiente
+> **Branch:** `feature/sprint-3-invitations`
+> **Esfuerzo Frontend:** ~20h
+> **Tests:** 95 tests nuevos (1249 total passing, 1 skipped)
+
+#### 🎯 Objetivos
+
+1. **Sistema de invitaciones por email** para que los creadores inviten jugadores
+2. **Pagina de invitaciones del jugador** para aceptar/rechazar invitaciones
+3. **Auto-enrollment** al aceptar una invitacion (bypass de aprobacion)
+4. **Contrato API** para que el equipo backend implemente los 5 endpoints
+
+#### ✅ Completado: Frontend
+
+1. **Backend API Contract**
+   - `docs/INVITATIONS_API_CONTRACT.md` con 5 endpoints completos
+   - Shapes de request/response en snake_case
+   - Codigos de error (400-422) y reglas de negocio
+   - Lifecycle de invitaciones, duplicados, expiracion, auto-enrollment
+
+2. **Domain Layer (5 archivos + tests)**
+   - `InvitationStatus` value object: state machine (PENDING → ACCEPTED/DECLINED/EXPIRED)
+   - `Invitation` entity: inmutable con factory methods y comandos accept/decline
+   - `IInvitationRepository`: interfaz con 5 metodos
+
+3. **Infrastructure Layer (2 archivos + tests)**
+   - `InvitationMapper`: snake_case API → dominio (usa `_apiData` para join fields)
+   - `ApiInvitationRepository`: 5 endpoints REST
+
+4. **Application Layer (6 archivos + tests)**
+   - `InvitationAssembler`: entidad → DTO con campos computados
+   - 5 use cases: SendInvitation, SendInvitationByEmail, ListMyInvitations, RespondToInvitation, ListCompetitionInvitations
+   - Composition root actualizado con DI
+
+5. **i18n + Shared Components**
+   - Namespace `invitations` (EN/ES)
+   - `InvitationBadge`: badge de estado con colores
+   - `InvitationCard`: dual mode (player/creator) con countdown de expiracion
+   - `SendInvitationModal`: patron Wrapper+Content, email + mensaje personal
+
+6. **Pages + Navigation**
+   - Creator InvitationsPage: `/creator/competitions/:id/invitations`
+   - Player MyInvitationsPage: `/player/invitations`
+   - Boton "Invitaciones" en CompetitionDetail (creadores)
+   - Link "Mis Invitaciones" en HeaderAuth (desktop + mobile)
+
+#### 📊 Estadisticas Sprint 3
+
+- **Archivos creados:** 32
+- **Archivos modificados:** 9
+- **Value Objects:** 1 nuevo (InvitationStatus)
+- **Entities:** 1 nueva (Invitation)
+- **Use Cases:** 5 nuevos
+- **UI Components:** 3 nuevos (InvitationBadge, InvitationCard, SendInvitationModal)
+- **Pages:** 2 nuevas (InvitationsPage, MyInvitationsPage)
+- **Tests:** 95 nuevos (1249 total passing, 1 skipped)
+- **Bundle:** dentro de budget (1400 KB max)
+
+#### 📋 Pendiente: Backend
+
+El equipo backend debe implementar los 5 endpoints definidos en `docs/INVITATIONS_API_CONTRACT.md`:
+1. `POST /api/v1/competitions/{id}/invitations` — Invitar por user ID
+2. `POST /api/v1/competitions/{id}/invitations/by-email` — Invitar por email
+3. `GET /api/v1/invitations/me` — Invitaciones recibidas del jugador
+4. `POST /api/v1/invitations/{id}/respond` — Aceptar/Rechazar
+5. `GET /api/v1/competitions/{id}/invitations` — Invitaciones enviadas (creador)
 
 ---
 
@@ -467,13 +547,13 @@ Aquí están las confirmaciones y respuestas a vuestras preguntas:
 
 ---
 
-## 📊 Estado Actual (v2.0.6 - Sprint 2 completado)
+## 📊 Estado Actual (v2.0.10 - Sprint 2 completado)
 
 ### Métricas Clave
 
-- **Tests:** 1088 passing, 1 skipped, 0 failed ✅
+- **Tests:** 1154 passing, 1 skipped, 0 failed ✅
 - **Coverage:** ≥85% lines, ≥75% functions ✅
-- **Bundle:** 1308 KB sin comprimir ✅ (budget: ≤1400 KB, warning: 1300 KB)
+- **Bundle:** dentro de budget ✅ (budget: ≤1400 KB, warning: 1300 KB)
 - **Build time:** ~6s ⚡
 - **Security:** 0 vulnerabilities ✅
 - **OWASP Score:** 9.2/10 ✅
@@ -482,7 +562,9 @@ Aquí están las confirmaciones y respuestas a vuestras preguntas:
 - ✅ Golf Course Management System (v2.0.0 - Sprint 1)
 - ✅ Infrastructure Migration + Security (v2.0.4)
 - ✅ Hotfix Golf Courses UI (v2.0.5)
-- ✅ Schedule Backend Integration Layer + UI (v2.0.6 - Sprint 2, COMPLETADO)
+- ✅ Schedule Backend Integration Layer + UI (v2.0.6 - Sprint 2)
+- ✅ Clean Architecture Remediation (v2.0.9)
+- ✅ Manual Pairings UI (v2.0.10)
 
 ### Completado (v1.x)
 - ✅ Modern Build Stack (v1.16.0)
@@ -528,5 +610,5 @@ Aquí están las confirmaciones y respuestas a vuestras preguntas:
 
 ---
 
-**Última revisión:** 8 Feb 2026 (Sprint 2 Schedule UI completado)
-**Próxima revisión:** Inicio Sprint 3 (18 Feb 2026)
+**Última revisión:** 17 Feb 2026 (Sprint 2 completado — v2.0.10)
+**Próxima revisión:** Fin Sprint 3 (24 Feb 2026)

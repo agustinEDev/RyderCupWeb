@@ -115,7 +115,8 @@
       "delete": "Eliminar",
       "request-to-join": "Solicitar Unirse",
       "manageSchedule": "Gestionar Calendario",
-      "viewSchedule": "Ver Calendario"
+      "viewSchedule": "Ver Calendario",
+      "manageInvitations": "Invitaciones"
     },
     "confirmations": {
       "activate": "¿Estás seguro de que quieres activar esta competición?",

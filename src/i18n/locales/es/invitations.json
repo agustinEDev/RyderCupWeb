@@ -1,0 +1,64 @@
+{
+  "title": "Invitaciones",
+  "loading": "Cargando invitaciones...",
+  "noInvitations": "No hay invitaciones todavia",
+  "send": {
+    "title": "Enviar invitacion",
+    "emailPlaceholder": "Introduce el email del jugador",
+    "personalMessage": "Mensaje personal (opcional)",
+    "personalMessagePlaceholder": "Anade un mensaje personal a la invitacion...",
+    "send": "Enviar invitacion",
+    "sending": "Enviando..."
+  },
+  "status": {
+    "PENDING": "Pendiente",
+    "ACCEPTED": "Aceptada",
+    "DECLINED": "Rechazada",
+    "EXPIRED": "Expirada"
+  },
+  "actions": {
+    "accept": "Aceptar",
+    "decline": "Rechazar",
+    "accepting": "Aceptando...",
+    "declining": "Rechazando..."
+  },
+  "filter": {
+    "allStatuses": "Todos los estados",
+    "status": "Estado"
+  },
+  "card": {
+    "from": "De",
+    "for": "Para la competicion",
+    "expires": "Expira",
+    "expired": "Expirada",
+    "expiresIn": "Expira en {{days}} dias",
+    "expiresInHours": "Expira en {{hours}} horas",
+    "respondedAt": "Respondida",
+    "message": "Mensaje"
+  },
+  "success": {
+    "sent": "Invitacion enviada correctamente",
+    "accepted": "Invitacion aceptada",
+    "declined": "Invitacion rechazada"
+  },
+  "errors": {
+    "failedToLoad": "Error al cargar las invitaciones",
+    "failedToSend": "Error al enviar la invitacion",
+    "failedToRespond": "Error al responder a la invitacion",
+    "duplicateInvitation": "Ya se ha enviado una invitacion a este email",
+    "invalidEmail": "Por favor, introduce un email valido"
+  },
+  "creator": {
+    "title": "Invitaciones",
+    "subtitle": "Gestionar invitaciones para esta competicion",
+    "sendNew": "Enviar invitacion",
+    "sentCount_one": "{{count}} invitacion enviada",
+    "sentCount_other": "{{count}} invitaciones enviadas"
+  },
+  "player": {
+    "title": "Mis invitaciones",
+    "subtitle": "Ver y responder a invitaciones de competiciones",
+    "pendingCount_one": "{{count}} pendiente",
+    "pendingCount_other": "{{count}} pendientes"
+  }
+}
