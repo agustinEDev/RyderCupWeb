@@ -169,7 +169,7 @@ jobs:
           fetch-depth: 0
 
       - name: TruffleHog OSS (Filesystem Scan)
-        uses: trufflesecurity/trufflehog@v3.92.5
+        uses: trufflesecurity/trufflehog@v3.93.3
         with:
           path: ./
           extra_args: --debug --only-verified
