@@ -45,6 +45,10 @@ const PendingGolfCourses = lazyWithRetry(() => import('./pages/admin/PendingGolf
 
 // Creator pages (v2.1.0 - Sprint 2)
 const SchedulePage = lazyWithRetry(() => import('./pages/creator/SchedulePage'));
+const InvitationsPage = lazyWithRetry(() => import('./pages/creator/InvitationsPage'));
+
+// Player pages (Sprint 3)
+const MyInvitationsPage = lazyWithRetry(() => import('./pages/player/MyInvitationsPage'));
 
 // Google OAuth pages
 const GoogleCallback = lazyWithRetry(() => import('./pages/GoogleCallback'));
@@ -228,6 +232,18 @@ function AppContent() {
             <RoleGuard allowedRoles="ADMIN">
               <PendingGolfCourses />
             </RoleGuard>
+          </ProtectedRoute>
+        } />
+
+        {/* Invitation routes (Sprint 3) */}
+        <Route path="/creator/competitions/:id/invitations" element={
+          <ProtectedRoute>
+            <InvitationsPage />
+          </ProtectedRoute>
+        } />
+        <Route path="/player/invitations" element={
+          <ProtectedRoute>
+            <MyInvitationsPage />
           </ProtectedRoute>
         } />
 

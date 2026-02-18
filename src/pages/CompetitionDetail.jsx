@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import {
   Users, Calendar, MapPin, Settings, ArrowLeft,
   Edit, Trash2, Play, CheckCircle, XCircle, Pause,
-  AlertCircle, Loader, UserPlus, Shield
+  AlertCircle, Loader, UserPlus, Shield, Mail
 } from 'lucide-react';
 import customToast from '../utils/toast';
 import { useTranslation } from 'react-i18next';
@@ -462,6 +462,16 @@ const CompetitionDetail = () => {
                     >
                       <Calendar className="w-4 h-4" />
                       <span>{t('detail.actions.manageSchedule')}</span>
+                    </button>
+                  )}
+
+                  {competition.status !== 'DRAFT' && competition.status !== 'CANCELLED' && (
+                    <button
+                      onClick={() => navigate(`/creator/competitions/${id}/invitations`)}
+                      className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700 transition-colors shadow-md"
+                    >
+                      <Mail className="w-4 h-4" />
+                      <span>{t('detail.actions.manageInvitations')}</span>
                     </button>
                   )}
                 </div>

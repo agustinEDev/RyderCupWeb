@@ -5,11 +5,109 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/),
 y este proyecto adhiere a [Versionado Semántico](https://semver.org/lang/es/).
 
-## [Unreleased]
+## [Unreleased] - Sprint 3: Invitations System
 
-### 🎯 Sprint 2: Schedule & Matches - Backend Integration Layer
+### Sistema de Invitaciones
 
-Capa completa de integración con los 11 endpoints del backend Sprint 2 para gestión de rondas, partidos y equipos. Incluye breaking change de `handicap_type` a `play_mode`.
+Permite a los creadores invitar jugadores por email y a los jugadores aceptar o rechazar invitaciones. Aceptar crea una inscripcion automatica (bypass de aprobacion).
+
+### ✨ Added
+- **Backend API Contract:** `docs/INVITATIONS_API_CONTRACT.md` con 5 endpoints, shapes de request/response, codigos de error y reglas de negocio
+- **Domain Layer:** `InvitationStatus` value object (state machine: PENDING → ACCEPTED/DECLINED/EXPIRED), `Invitation` entity (inmutable, factory methods, comandos accept/decline), `IInvitationRepository` interface (5 metodos)
+- **Infrastructure Layer:** `InvitationMapper` (snake_case API → dominio), `ApiInvitationRepository` (5 endpoints REST con patron `_apiData`)
+- **Application Layer:** `InvitationAssembler` (entidad → DTO con campos computados), 5 use cases (`SendInvitation`, `SendInvitationByEmail`, `ListMyInvitations`, `RespondToInvitation`, `ListCompetitionInvitations`)
+- **Composition Root:** `ApiInvitationRepository` + 5 use cases inyectados via DI
+- **i18n:** Namespace `invitations` registrado en config. Traducciones completas EN/ES (status, acciones, filtros, errores, mensajes de exito)
+- **`InvitationBadge`**: Badge de estado con colores (PENDING=amarillo, ACCEPTED=verde, DECLINED=rojo, EXPIRED=gris)
+- **`InvitationCard`**: Tarjeta dual mode (player: accept/decline con countdown de expiracion, creator: solo lectura con info de invitado)
+- **`SendInvitationModal`**: Patron Wrapper+Content. Input de email con validacion HTML5, textarea de mensaje personal (max 500 chars con contador)
+- **Creator InvitationsPage** (`/creator/competitions/:id/invitations`): Lista de invitaciones enviadas, filtro por estado, envio por email, auth per-competition via `useUserRoles`
+- **Player MyInvitationsPage** (`/player/invitations`): Lista de invitaciones recibidas, accept/decline, badge de pendientes, links a competiciones aceptadas
+- **Navegacion:** Boton "Invitaciones" en CompetitionDetail (creadores, bg-purple-600), link "Mis Invitaciones" en HeaderAuth (desktop + mobile)
+
+### ✅ Tests
+- **95 tests nuevos** (1249 total passing, 1 skipped)
+- Domain: 40 tests (InvitationStatus 23, Invitation 17)
+- Infrastructure: 6 tests (ApiInvitationRepository)
+- Application: 18 tests (5 use cases × ~3-4 tests)
+- Components: 21 tests (InvitationBadge 4, InvitationCard 9, SendInvitationModal 8)
+- Pages: 10 tests (InvitationsPage 5, MyInvitationsPage 5)
+
+### 📊 Stats
+- **Archivos creados:** 32
+- **Archivos modificados:** 9
+- **Bundle:** dentro de budget (1400 KB max)
+
+---
+
+## [2.0.10] - 2026-02-17
+
+### Manual Pairings UI for Match Generation
+
+Permite a los creadores de competiciones elegir entre generacion automatica y emparejamiento manual de jugadores al crear partidos.
+
+### ✨ Added
+- **`GenerateMatchesModal`**: Nuevo componente con patron Wrapper+Content. Modo automatico/manual con radio toggle, lista dinamica de partidos con add/remove, dropdowns de jugadores filtrados por equipo
+- **SINGLES**: 1 dropdown por equipo. **FOURBALL/FOURSOMES**: 2 dropdowns por equipo
+- **Validaciones**: Al menos 1 partido, todos los slots completos, sin jugadores duplicados
+- **Resumen visual**: Contador de partidos y jugadores asignados del total disponible
+- **i18n**: 13 nuevas claves de traduccion `matches.pairings.*` en EN y ES
+
+### 🐛 Fixed
+- **`reloadSchedule()` error silencioso**: Ahora muestra toast de error al usuario en vez de tragarse el error en el catch. Causa raiz del bug "no me deja generar partidos" (datos stale con status `PENDING_TEAMS`)
+- **`updateMatchPlayer` splice bug**: `splice(slotIndex, 1)` acortaba y desplazaba el array al limpiar una seleccion. Cambiado a asignacion directa `updated[slotIndex] = ''` para preservar posiciones
+
+### 🔧 Changed
+- **`ApiScheduleRepository.generateMatches()`**: Transformacion camelCase → snake_case del payload `manualPairings` movida a la capa de infraestructura (antes estaba en SchedulePage — violacion de Clean Architecture)
+- **`SchedulePage.jsx`**: "Generate Matches" ahora abre modal en vez de llamar directamente a la API. Pasa payload en camelCase al use case
+
+### ✅ Tests
+- **24 tests nuevos** (1154 total passing, 1 skipped)
+- `GenerateMatchesModal.test.jsx`: 22 tests (render, modos, validacion, seleccion de jugadores, formatos SINGLES/FOURBALL/FOURSOMES, duplicados)
+- `GenerateMatchesUseCase.test.js`: +1 test para payload manual
+- `ApiScheduleRepository.test.js`: +1 test para transformacion snake_case
+
+### 📚 References
+- PR #144: `feature/manual-pairings-ui` → develop
+- PR #145: `release/v2.0.10` → main
+
+---
+
+## [2.0.9] - 2026-02-17
+
+### Clean Architecture Remediation
+
+Remediacion de ~57 violaciones de Clean Architecture en 66 archivos (+810/-890 lineas).
+
+### ✨ Added
+- **`CompetitionAssembler`** y **`EnrollmentAssembler`**: Extraidos de mappers de infraestructura a capa de aplicacion (13 use cases actualizados)
+- **`LogoutUseCase`**, **`ResendVerificationEmailUseCase`**, **`GetAdjacentCountriesUseCase`**: Nuevos use cases para eliminar fetch() directo en UI
+- **`ICountryRepository`** + **`ApiCountryRepository`**: Nuevo repositorio para paises
+- **CI audit outputs**: Contadores moderate/total expuestos en pipeline summary
+
+### 🐛 Fixed
+- **Removed creator.email PII** de DTOs publicos
+- **Null-safe EnrollmentAssembler**: Manejo seguro de enrollments sin datos
+- **Stale closure** en CreateCompetition: Valores pasados como parametros en vez de cerrar sobre state
+- **AbortController** en Register: Limpieza de requests pendientes al desmontar
+
+### 🔧 Changed
+- **5 transiciones de estado de competicion** (activate, start, close, complete, cancel) ruteadas a traves de `ICompetitionRepository` en vez de `apiRequest` directo
+- **`RequestPasswordResetUseCase`** → Email VO, **`ResetPasswordUseCase`** → Password VO (min 12 chars)
+- **`FetchCountriesUseCase`** → `ICountryRepository` + `ApiCountryRepository`
+- **Eliminado todo fetch() directo en UI**: Profile, Register, Competitions, CreateCompetition, HeaderAuth, EmailVerificationBanner, useLogout
+
+### 📚 References
+- PR #142: `refactor/clean-architecture-violations` → develop
+- PR #143: `release/v2.0.9` → main
+
+---
+
+## [2.0.6] - 2026-02-08
+
+### Sprint 2: Schedule & Matches - Backend Integration Layer
+
+Capa completa de integracion con los 11 endpoints del backend Sprint 2 para gestion de rondas, partidos y equipos. Incluye breaking change de `handicap_type` a `play_mode`.
 
 ### ⚠️ Breaking Changes
 - **`play_mode` reemplaza `handicap_type`/`handicap_percentage`**: El backend ahora usa un único campo `play_mode` (SCRATCH/HANDICAP) en vez de `handicap_type` (SCRATCH/PERCENTAGE) + `handicap_percentage` (90/95/100). El porcentaje se gestiona ahora a nivel de ronda (`allowance_percentage`), no de competición.

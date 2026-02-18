@@ -81,6 +81,14 @@ import ReassignPlayersUseCase from '../application/use_cases/schedule/ReassignPl
 import ApiSupportRepository from '../infrastructure/repositories/ApiSupportRepository';
 import SubmitContactFormUseCase from '../application/use_cases/support/SubmitContactFormUseCase';
 
+// Invitation Use Cases (Sprint 3)
+import ApiInvitationRepository from '../infrastructure/repositories/ApiInvitationRepository';
+import SendInvitationUseCase from '../application/use_cases/invitation/SendInvitationUseCase';
+import SendInvitationByEmailUseCase from '../application/use_cases/invitation/SendInvitationByEmailUseCase';
+import ListMyInvitationsUseCase from '../application/use_cases/invitation/ListMyInvitationsUseCase';
+import RespondToInvitationUseCase from '../application/use_cases/invitation/RespondToInvitationUseCase';
+import ListCompetitionInvitationsUseCase from '../application/use_cases/invitation/ListCompetitionInvitationsUseCase';
+
 // Enrollment Use Cases
 import ApiEnrollmentRepository from '../infrastructure/repositories/ApiEnrollmentRepository';
 import RequestEnrollmentUseCase from '../application/use_cases/enrollment/RequestEnrollmentUseCase';
@@ -105,6 +113,7 @@ const apiGolfCourseRepository = new ApiGolfCourseRepository();
 const apiScheduleRepository = new ApiScheduleRepository();
 const apiSupportRepository = new ApiSupportRepository();
 const apiCountryRepository = new ApiCountryRepository();
+const apiInvitationRepository = new ApiInvitationRepository();
 
 // --- Casos de Uso ---
 const updateUserProfileUseCase = new UpdateUserProfileUseCase({ userRepository: apiUserRepository });
@@ -159,6 +168,13 @@ const reassignPlayersUseCase = new ReassignPlayersUseCase({ scheduleRepository: 
 
 // Support Use Cases
 const submitContactFormUseCase = new SubmitContactFormUseCase({ supportRepository: apiSupportRepository });
+
+// Invitation Use Cases (Sprint 3)
+const sendInvitationUseCase = new SendInvitationUseCase({ invitationRepository: apiInvitationRepository });
+const sendInvitationByEmailUseCase = new SendInvitationByEmailUseCase({ invitationRepository: apiInvitationRepository });
+const listMyInvitationsUseCase = new ListMyInvitationsUseCase({ invitationRepository: apiInvitationRepository });
+const respondToInvitationUseCase = new RespondToInvitationUseCase({ invitationRepository: apiInvitationRepository });
+const listCompetitionInvitationsUseCase = new ListCompetitionInvitationsUseCase({ invitationRepository: apiInvitationRepository });
 
 // Enrollment Use Cases
 const requestEnrollmentUseCase = new RequestEnrollmentUseCase(apiEnrollmentRepository);
@@ -259,4 +275,10 @@ export {
   updateMatchStatusUseCase,
   declareWalkoverUseCase,
   reassignPlayersUseCase,
+  // Invitation Use Cases (Sprint 3)
+  sendInvitationUseCase,
+  sendInvitationByEmailUseCase,
+  listMyInvitationsUseCase,
+  respondToInvitationUseCase,
+  listCompetitionInvitationsUseCase,
 };
