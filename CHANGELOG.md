@@ -5,9 +5,38 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/),
 y este proyecto adhiere a [Versionado Semántico](https://semver.org/lang/es/).
 
-## [Unreleased]
+## [Unreleased] - Sprint 3: Invitations System
 
-_No hay cambios pendientes._
+### Sistema de Invitaciones
+
+Permite a los creadores invitar jugadores por email y a los jugadores aceptar o rechazar invitaciones. Aceptar crea una inscripcion automatica (bypass de aprobacion).
+
+### ✨ Added
+- **Backend API Contract:** `docs/INVITATIONS_API_CONTRACT.md` con 5 endpoints, shapes de request/response, codigos de error y reglas de negocio
+- **Domain Layer:** `InvitationStatus` value object (state machine: PENDING → ACCEPTED/DECLINED/EXPIRED), `Invitation` entity (inmutable, factory methods, comandos accept/decline), `IInvitationRepository` interface (5 metodos)
+- **Infrastructure Layer:** `InvitationMapper` (snake_case API → dominio), `ApiInvitationRepository` (5 endpoints REST con patron `_apiData`)
+- **Application Layer:** `InvitationAssembler` (entidad → DTO con campos computados), 5 use cases (`SendInvitation`, `SendInvitationByEmail`, `ListMyInvitations`, `RespondToInvitation`, `ListCompetitionInvitations`)
+- **Composition Root:** `ApiInvitationRepository` + 5 use cases inyectados via DI
+- **i18n:** Namespace `invitations` registrado en config. Traducciones completas EN/ES (status, acciones, filtros, errores, mensajes de exito)
+- **`InvitationBadge`**: Badge de estado con colores (PENDING=amarillo, ACCEPTED=verde, DECLINED=rojo, EXPIRED=gris)
+- **`InvitationCard`**: Tarjeta dual mode (player: accept/decline con countdown de expiracion, creator: solo lectura con info de invitado)
+- **`SendInvitationModal`**: Patron Wrapper+Content. Input de email con validacion HTML5, textarea de mensaje personal (max 500 chars con contador)
+- **Creator InvitationsPage** (`/creator/competitions/:id/invitations`): Lista de invitaciones enviadas, filtro por estado, envio por email, auth per-competition via `useUserRoles`
+- **Player MyInvitationsPage** (`/player/invitations`): Lista de invitaciones recibidas, accept/decline, badge de pendientes, links a competiciones aceptadas
+- **Navegacion:** Boton "Invitaciones" en CompetitionDetail (creadores, bg-purple-600), link "Mis Invitaciones" en HeaderAuth (desktop + mobile)
+
+### ✅ Tests
+- **95 tests nuevos** (1249 total passing, 1 skipped)
+- Domain: 40 tests (InvitationStatus 23, Invitation 17)
+- Infrastructure: 6 tests (ApiInvitationRepository)
+- Application: 18 tests (5 use cases × ~3-4 tests)
+- Components: 21 tests (InvitationBadge 4, InvitationCard 9, SendInvitationModal 8)
+- Pages: 10 tests (InvitationsPage 5, MyInvitationsPage 5)
+
+### 📊 Stats
+- **Archivos creados:** 32
+- **Archivos modificados:** 9
+- **Bundle:** dentro de budget (1400 KB max)
 
 ---
 
