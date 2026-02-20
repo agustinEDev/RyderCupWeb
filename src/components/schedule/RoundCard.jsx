@@ -22,6 +22,7 @@ const RoundCard = ({
   onDeclareWalkover,
   onReassignPlayers,
   onViewMatchDetail,
+  onScoreMatch,
   playerNameMap,
   golfCourses,
   teamNames,
@@ -133,6 +134,7 @@ const RoundCard = ({
                   onDeclareWalkover={onDeclareWalkover}
                   onReassignPlayers={onReassignPlayers}
                   onViewDetail={onViewMatchDetail}
+                  onScoreMatch={onScoreMatch}
                   canManage={canEdit}
                   playerNameMap={playerNameMap}
                   teamNames={teamNames}

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { X, Loader, Trophy, AlertTriangle } from 'lucide-react';
+import { X, Loader, Trophy, AlertTriangle, ClipboardList } from 'lucide-react';
 import { getMatchDetailUseCase } from '../../composition';
 
 const MatchDetailModal = ({
@@ -11,6 +12,7 @@ const MatchDetailModal = ({
   teamNames,
   t,
 }) => {
+  const navigate = useNavigate();
   const [match, setMatch] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -172,7 +174,19 @@ const MatchDetailModal = ({
         </div>
 
         {/* Footer */}
-        <div className="flex justify-end p-6 border-t border-gray-200">
+        <div className="flex justify-end gap-3 p-6 border-t border-gray-200">
+          {match && (match.status === 'IN_PROGRESS' || match.status === 'COMPLETED') && (
+            <button
+              onClick={() => {
+                onClose();
+                navigate(`/player/matches/${matchId}/scoring`);
+              }}
+              className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg font-medium hover:bg-primary/90 transition-colors"
+            >
+              <ClipboardList className="w-4 h-4" />
+              {t('matches.viewScorecard')}
+            </button>
+          )}
           <button
             onClick={onClose}
             className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg font-medium hover:bg-gray-200 transition-colors"

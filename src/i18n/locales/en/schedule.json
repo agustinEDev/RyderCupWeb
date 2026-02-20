@@ -35,6 +35,8 @@
     "startMatch": "Start Match",
     "completeMatch": "Complete Match",
     "viewDetail": "View Detail",
+    "score": "Score",
+    "viewScorecard": "View Scorecard",
     "result": "Result",
     "resultWinner": "Winner: {{team}}",
     "resultScore": "Score: {{score}}",
