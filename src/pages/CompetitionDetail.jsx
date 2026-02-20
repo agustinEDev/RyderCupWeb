@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import {
   Users, Calendar, MapPin, Settings, ArrowLeft,
   Edit, Trash2, Play, CheckCircle, XCircle, Pause,
-  AlertCircle, Loader, UserPlus, Shield, Mail
+  AlertCircle, Loader, UserPlus, Shield, Mail, BarChart3
 } from 'lucide-react';
 import customToast from '../utils/toast';
 import { useTranslation } from 'react-i18next';
@@ -472,6 +472,16 @@ const CompetitionDetail = () => {
                     >
                       <Mail className="w-4 h-4" />
                       <span>{t('detail.actions.manageInvitations')}</span>
+                    </button>
+                  )}
+
+                  {(competition.status === 'IN_PROGRESS' || competition.status === 'COMPLETED') && (
+                    <button
+                      onClick={() => navigate(`/competitions/${id}/leaderboard`)}
+                      className="flex items-center gap-2 px-4 py-2 bg-teal-600 text-white rounded-lg font-medium hover:bg-teal-700 transition-colors shadow-md"
+                    >
+                      <BarChart3 className="w-4 h-4" />
+                      <span>{t('detail.actions.leaderboard')}</span>
                     </button>
                   )}
                 </div>

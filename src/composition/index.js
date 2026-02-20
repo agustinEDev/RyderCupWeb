@@ -89,6 +89,14 @@ import ListMyInvitationsUseCase from '../application/use_cases/invitation/ListMy
 import RespondToInvitationUseCase from '../application/use_cases/invitation/RespondToInvitationUseCase';
 import ListCompetitionInvitationsUseCase from '../application/use_cases/invitation/ListCompetitionInvitationsUseCase';
 
+// Scoring Use Cases (Sprint 4)
+import ApiScoringRepository from '../infrastructure/repositories/ApiScoringRepository';
+import GetScoringViewUseCase from '../application/use_cases/scoring/GetScoringViewUseCase';
+import SubmitHoleScoreUseCase from '../application/use_cases/scoring/SubmitHoleScoreUseCase';
+import SubmitScorecardUseCase from '../application/use_cases/scoring/SubmitScorecardUseCase';
+import GetLeaderboardUseCase from '../application/use_cases/scoring/GetLeaderboardUseCase';
+import ConcedeMatchUseCase from '../application/use_cases/scoring/ConcedeMatchUseCase';
+
 // Enrollment Use Cases
 import ApiEnrollmentRepository from '../infrastructure/repositories/ApiEnrollmentRepository';
 import RequestEnrollmentUseCase from '../application/use_cases/enrollment/RequestEnrollmentUseCase';
@@ -175,6 +183,14 @@ const sendInvitationByEmailUseCase = new SendInvitationByEmailUseCase({ invitati
 const listMyInvitationsUseCase = new ListMyInvitationsUseCase({ invitationRepository: apiInvitationRepository });
 const respondToInvitationUseCase = new RespondToInvitationUseCase({ invitationRepository: apiInvitationRepository });
 const listCompetitionInvitationsUseCase = new ListCompetitionInvitationsUseCase({ invitationRepository: apiInvitationRepository });
+
+// Scoring Use Cases (Sprint 4)
+const apiScoringRepository = new ApiScoringRepository();
+const getScoringViewUseCase = new GetScoringViewUseCase({ scoringRepository: apiScoringRepository });
+const submitHoleScoreUseCase = new SubmitHoleScoreUseCase({ scoringRepository: apiScoringRepository });
+const submitScorecardUseCase = new SubmitScorecardUseCase({ scoringRepository: apiScoringRepository });
+const getLeaderboardUseCase = new GetLeaderboardUseCase({ scoringRepository: apiScoringRepository });
+const concedeMatchUseCase = new ConcedeMatchUseCase({ scoringRepository: apiScoringRepository });
 
 // Enrollment Use Cases
 const requestEnrollmentUseCase = new RequestEnrollmentUseCase(apiEnrollmentRepository);
@@ -281,4 +297,10 @@ export {
   listMyInvitationsUseCase,
   respondToInvitationUseCase,
   listCompetitionInvitationsUseCase,
+  // Scoring Use Cases (Sprint 4)
+  getScoringViewUseCase,
+  submitHoleScoreUseCase,
+  submitScorecardUseCase,
+  getLeaderboardUseCase,
+  concedeMatchUseCase,
 };

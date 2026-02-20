@@ -1,0 +1,147 @@
+{
+  "title": "Live Scoring",
+  "loading": "Loading scoring data...",
+  "retry": "Retry",
+  "matchHeader": "Match #{{number}}",
+  "holesPlayed": "{{count}} holes played",
+  "tabs": {
+    "input": "Input",
+    "scorecard": "Scorecard",
+    "leaderboard": "Leaderboard"
+  },
+  "preMatch": {
+    "title": "Pre-Match Info",
+    "youMark": "You mark",
+    "markedBy": "Marked by",
+    "teeCategory": "Tee Category",
+    "handicap": "Handicap",
+    "format": "Format",
+    "ready": "Ready to Play"
+  },
+  "input": {
+    "hole": "Hole",
+    "par": "Par",
+    "strokeIndex": "SI",
+    "yourScore": "Your Score",
+    "markerScore": "Marker Score",
+    "netScore": "Net",
+    "result": "Result",
+    "standing": "Standing",
+    "strokeReceived": "Stroke received",
+    "pickedUp": "Picked up",
+    "allSquare": "AS",
+    "halved": "Halved",
+    "prevHole": "Previous",
+    "nextHole": "Next"
+  },
+  "scorecard": {
+    "title": "Scorecard",
+    "hole": "Hole",
+    "par": "Par",
+    "si": "SI",
+    "gross": "Gross",
+    "strokes": "Strokes",
+    "net": "Net",
+    "validation": "Val",
+    "result": "Result",
+    "out": "OUT",
+    "in": "IN",
+    "total": "TOTAL",
+    "standing": "Standing"
+  },
+  "leaderboard": {
+    "title": "Leaderboard",
+    "inProgress": "In Progress",
+    "completed": "Completed",
+    "allSquare": "All Square",
+    "points": "pts",
+    "hole": "Hole",
+    "noMatches": "No matches available"
+  },
+  "validation": {
+    "match": "Match",
+    "mismatch": "Mismatch",
+    "pending": "Pending"
+  },
+  "figures": {
+    "eagle": "Eagle",
+    "birdie": "Birdie",
+    "par": "Par",
+    "bogey": "Bogey",
+    "doubleBogey": "Double Bogey+"
+  },
+  "submit": {
+    "title": "Submit Scorecard",
+    "confirm": "Are you sure you want to submit your scorecard? This action cannot be undone.",
+    "button": "Submit Scorecard",
+    "submit": "Submit Scorecard",
+    "submitting": "Submitting...",
+    "cancel": "Cancel",
+    "submitted": "Scorecard submitted",
+    "alreadySubmitted": "Scorecard already submitted",
+    "allValidated": "{{count}}/{{total}} holes validated",
+    "notReady": "Not all holes are validated yet"
+  },
+  "summary": {
+    "title": "Match Summary",
+    "result": "Result",
+    "grossTotal": "Gross Total",
+    "netTotal": "Net Total",
+    "holesWon": "Holes Won",
+    "holesLost": "Holes Lost",
+    "holesHalved": "Holes Halved",
+    "matchComplete": "Match Complete",
+    "waitingForOthers": "Waiting for other players to submit",
+    "backToSchedule": "Back to Schedule",
+    "back": "Go Back"
+  },
+  "earlyEnd": {
+    "title": "Match Decided",
+    "message": "The match has been decided. {{team}} wins {{score}}.",
+    "confirm": "Continue to Submit",
+    "description": "The remaining holes do not need to be played."
+  },
+  "concede": {
+    "title": "Concede Match",
+    "message": "Are you sure you want to concede this match?",
+    "button": "Concede Match",
+    "confirm": "Concede",
+    "cancel": "Cancel",
+    "reason": "Reason (optional)",
+    "reasonPlaceholder": "Enter reason for concession...",
+    "success": "Match conceded"
+  },
+  "offline": {
+    "banner": "You are offline. Scores will be saved locally and synced when reconnected.",
+    "syncing": "Syncing scores...",
+    "syncComplete": "All scores synced",
+    "pendingScores_one": "{{count}} score pending sync",
+    "pendingScores_other": "{{count}} scores pending sync"
+  },
+  "session": {
+    "blocked": "Active Session Detected",
+    "blockedMessage": "There is an active scoring session on another device or tab. Only one session is allowed at a time.",
+    "takeOver": "Take Over Session",
+    "goBack": "Go Back"
+  },
+  "readOnly": {
+    "viewing": "Viewing match",
+    "spectator": "You are viewing this match as a spectator"
+  },
+  "errors": {
+    "generic": "An error occurred",
+    "failedToLoad": "Failed to load scoring data",
+    "failedToSubmitScore": "Failed to submit score",
+    "failedToSubmitScorecard": "Failed to submit scorecard",
+    "failedToLoadLeaderboard": "Failed to load leaderboard",
+    "failedToConcede": "Failed to concede match",
+    "matchNotInProgress": "Match is not in progress"
+  },
+  "navigation": {
+    "liveScoring": "Live Scoring",
+    "viewScorecard": "View Scorecard",
+    "annotate": "Score",
+    "leaderboard": "Leaderboard",
+    "activeMatch": "Active Match"
+  }
+}
