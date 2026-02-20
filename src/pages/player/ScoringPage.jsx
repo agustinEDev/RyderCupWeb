@@ -127,7 +127,8 @@ const ScoringPage = () => {
     );
   }
 
-  if (error) {
+  // Only show full-page error if no data loaded yet (initial load failed)
+  if (error && !scoringView) {
     return (
       <div className="min-h-screen bg-gray-50">
         <HeaderAuth user={user} />
@@ -164,6 +165,21 @@ const ScoringPage = () => {
       <HeaderAuth user={user} />
 
       {isOffline && <OfflineBanner pendingCount={pendingQueueSize} />}
+      
+      {/* Inline error banner for post-load errors */}
+      {error && scoringView && (
+        <div className="max-w-4xl mx-auto px-4 pt-4">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-center justify-between">
+            <p className="text-sm text-red-600">{error.message || t('errors.generic')}</p>
+            <button
+              onClick={refetch}
+              className="px-3 py-1 text-xs bg-red-600 text-white rounded hover:bg-red-700"
+            >
+              {t('retry')}
+            </button>
+          </div>
+        </div>
+      )}
 
       <div className="max-w-4xl mx-auto px-4 py-4">
         {/* Match header */}

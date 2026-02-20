@@ -17,7 +17,7 @@ const MatchSummaryCard = ({ summary }) => {
           </p>
           {summary.result.winner && (
             <p className="text-sm text-gray-600 mt-1">
-              {t('leaderboard.title')}: {summary.result.winner}
+              {t('summary.winner')}: {summary.result.winner}
             </p>
           )}
         </div>

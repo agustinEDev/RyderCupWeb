@@ -85,6 +85,7 @@
   "summary": {
     "title": "Match Summary",
     "result": "Result",
+    "winner": "Winner",
     "grossTotal": "Gross Total",
     "netTotal": "Net Total",
     "holesWon": "Holes Won",

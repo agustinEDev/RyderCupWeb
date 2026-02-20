@@ -1,7 +1,4 @@
-import { useTranslation } from 'react-i18next';
-
 const HoleSelector = ({ currentHole, onSelect, scores = [], totalHoles = 18 }) => {
-  useTranslation('scoring');
 
   const getHoleStatus = (holeNumber) => {
     const holeScore = scores.find(s => s.holeNumber === holeNumber);

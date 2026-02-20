@@ -174,8 +174,14 @@ export const useScoring = (matchId, currentUserId) => {
     }
 
     const cleanup = sessionLock.onLockEvent((event) => {
-      if (event.type === 'LOCK_ACQUIRED' && event.sessionId !== sessionIdRef.current && event.matchId === matchId) {
-        setIsSessionBlocked(true);
+      if (event.type === 'LOCK_ACQUIRED' && event.sessionId !== sessionIdRef.current) {
+        if (event.matchId === matchId) {
+          // Another session acquired lock for this same match
+          setIsSessionBlocked(true);
+        } else if (event.matchId !== matchId) {
+          // Another tab acquired lock for a different match - clear our local lock state
+          setIsSessionBlocked(false);
+        }
       }
       if (event.type === 'LOCK_RELEASED') {
         // Try to re-acquire

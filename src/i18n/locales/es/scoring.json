@@ -85,6 +85,7 @@
   "summary": {
     "title": "Resumen del Partido",
     "result": "Resultado",
+    "winner": "Ganador",
     "grossTotal": "Total Bruto",
     "netTotal": "Total Neto",
     "holesWon": "Hoyos Ganados",
