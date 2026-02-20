@@ -1,32 +1,106 @@
 # Changelog
 
-Todos los cambios notables de este proyecto serán documentados en este archivo.
+All notable changes to this project will be documented in this file.
 
-El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/),
-y este proyecto adhiere a [Versionado Semántico](https://semver.org/lang/es/).
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/).
+
+## [Unreleased] - Sprint 4: Live Scoring System
+
+### Real-Time Scoring System
+
+Allows players to record hole-by-hole scores with cross-validation (player vs marker), view complete scorecard and competition leaderboard. Includes offline support, multi-device session locking and early match finish detection.
+
+### ✨ Added
+
+#### Backend API Contract
+- **`docs/SCORING_API_CONTRACT.md`**: Complete contract with 5 endpoints, request/response shapes in snake_case, error codes and business rules (cross marking, dual validation, early finish, concede, Ryder Cup points)
+
+#### Domain Layer
+- **`HoleScore`** value object: Range 1-9 + null (ball picked up), validation in constructor with factory method `create()`
+- **`IScoringRepository`** interface: 5 methods (getScoringView, submitHoleScore, submitScorecard, getLeaderboard, concedeMatch)
+
+#### Infrastructure Layer
+- **`ScoringMapper`**: Anti-corruption layer snake_case API → camelCase DTOs. 3 methods: `toScoringViewDTO()`, `toLeaderboardDTO()`, `toMatchSummaryDTO()`. Try-catch for unknown fields, null-safe timestamps
+- **`ApiScoringRepository`**: REST implementation of 5 endpoints using `apiRequest()`
+
+#### Application Layer
+- **5 use cases**: `GetScoringViewUseCase`, `SubmitHoleScoreUseCase` (validates with HoleScore VO), `SubmitScorecardUseCase`, `GetLeaderboardUseCase`, `ConcedeMatchUseCase`
+- **Composition Root**: `ApiScoringRepository` + 5 use cases injected via DI
+
+#### i18n
+- Namespace `scoring` registered in config. Complete EN/ES translations (tabs, input, scorecard, leaderboard, modals, errors, validation)
+
+#### UI Components (14 new in `src/components/scoring/`)
+- **`HoleInput`**: [-][+] buttons for own and marked score, range 1-9 + dash, par/SI/net/result/standing
+- **`HoleSelector`**: 1-18 grid with per-hole status indicators (completed, pending, mismatch)
+- **`ScorecardTable`**: OUT (1-9) + IN (10-18) + Total table, all match players, subtotals
+- **`GolfFigure`**: Classic concentric SVG: double-circle eagle, circle birdie, number par, square bogey, double-square double+
+- **`ValidationIcon`**: Validation icon only (match/mismatch/pending)
+- **`LeaderboardView`**: Ryder Cup points, large head-to-head numbers, "In Progress" / "Completed" sections. Reusable for Sprint 5 (public)
+- **`TeamStandingsHeader`**: Large head-to-head team points numbers
+- **`PreMatchInfo`**: Pre-match screen "You mark X, Y marks you" + match format
+- **`MatchSummaryCard`**: Final result + basic stats post-submit
+- **`EarlyEndModal`**: Early finish confirmation (match decided before 18 holes). Wrapper+Content pattern
+- **`ConcedeMatchModal`**: Concede confirmation with optional reason. Wrapper+Content pattern
+- **`SubmitScorecardModal`**: Scorecard submission confirmation (validated holes / total)
+- **`OfflineBanner`**: "No connection" banner with pending queue counter
+- **`SessionBlockedModal`**: "Active session on another device" with option to take control
+
+#### Hooks and Utilities
+- **`useScoring`** hook: Central scoring state, polling every 10s, auto-save, offline queue, session locking
+- **`scoringOfflineQueue`**: localStorage queue (enqueue, dequeue, getByMatch, remove, size, clear)
+- **`scoringSessionLock`**: BroadcastChannel lock (acquire, release, refresh, onLockEvent). Pattern reused from `broadcastAuth.js`
+
+#### Pages
+- **`ScoringPage`** (`/player/matches/:matchId/scoring`): 3 tabs (Input, Scorecard, Leaderboard), useScoring hook, modals, read-only for spectators
+- **`LeaderboardPage`** (`/competitions/:id/leaderboard`): Public page, reuses LeaderboardView, polling 30s
+
+#### Navigation and Integration
+- **`App.jsx`**: 2 lazy-loaded routes (protected ScoringPage, public LeaderboardPage)
+- **`MatchCard.jsx`**: "Score" button for IN_PROGRESS matches → `/player/matches/{id}/scoring`
+- **`SchedulePage.jsx`**: `handleScoreMatch` handler passed to RoundCard → MatchCard
+- **`CompetitionDetail.jsx`**: "Leaderboard" button → `/competitions/{id}/leaderboard`
+
+### ✅ Tests
+- **236 new tests** (1485 total passing, 1 skipped)
+- Domain: 12 tests (HoleScore VO)
+- Infrastructure: 28 tests (ScoringMapper 15, ApiScoringRepository 13)
+- Application: 40 tests (5 use cases × ~8 tests)
+- Hooks + Utils: 40 tests (useScoring 20, offlineQueue 12, sessionLock 8)
+- Components: 93 tests (14 components)
+- Pages: 23 tests (ScoringPage 15, LeaderboardPage 8)
+
+### 📊 Stats
+- **Files created:** 58
+- **Files modified:** 9
+- **Bundle:** 366.66 KB initial (within 1500 KB max budget)
+- **Backend not implemented yet** — frontend will show 404s for API calls (expected)
+
+---
 
 ## [Unreleased] - Sprint 3: Invitations System
 
-### Sistema de Invitaciones
+### Invitations System
 
-Permite a los creadores invitar jugadores por email y a los jugadores aceptar o rechazar invitaciones. Aceptar crea una inscripcion automatica (bypass de aprobacion).
+Allows creators to invite players by email and players to accept or decline invitations. Accepting creates automatic enrollment (bypassing approval).
 
 ### ✨ Added
-- **Backend API Contract:** `docs/INVITATIONS_API_CONTRACT.md` con 5 endpoints, shapes de request/response, codigos de error y reglas de negocio
-- **Domain Layer:** `InvitationStatus` value object (state machine: PENDING → ACCEPTED/DECLINED/EXPIRED), `Invitation` entity (inmutable, factory methods, comandos accept/decline), `IInvitationRepository` interface (5 metodos)
-- **Infrastructure Layer:** `InvitationMapper` (snake_case API → dominio), `ApiInvitationRepository` (5 endpoints REST con patron `_apiData`)
-- **Application Layer:** `InvitationAssembler` (entidad → DTO con campos computados), 5 use cases (`SendInvitation`, `SendInvitationByEmail`, `ListMyInvitations`, `RespondToInvitation`, `ListCompetitionInvitations`)
-- **Composition Root:** `ApiInvitationRepository` + 5 use cases inyectados via DI
-- **i18n:** Namespace `invitations` registrado en config. Traducciones completas EN/ES (status, acciones, filtros, errores, mensajes de exito)
-- **`InvitationBadge`**: Badge de estado con colores (PENDING=amarillo, ACCEPTED=verde, DECLINED=rojo, EXPIRED=gris)
-- **`InvitationCard`**: Tarjeta dual mode (player: accept/decline con countdown de expiracion, creator: solo lectura con info de invitado)
-- **`SendInvitationModal`**: Patron Wrapper+Content. Input de email con validacion HTML5, textarea de mensaje personal (max 500 chars con contador)
-- **Creator InvitationsPage** (`/creator/competitions/:id/invitations`): Lista de invitaciones enviadas, filtro por estado, envio por email, auth per-competition via `useUserRoles`
-- **Player MyInvitationsPage** (`/player/invitations`): Lista de invitaciones recibidas, accept/decline, badge de pendientes, links a competiciones aceptadas
-- **Navegacion:** Boton "Invitaciones" en CompetitionDetail (creadores, bg-purple-600), link "Mis Invitaciones" en HeaderAuth (desktop + mobile)
+- **Backend API Contract:** `docs/INVITATIONS_API_CONTRACT.md` with 5 endpoints, request/response shapes, error codes and business rules
+- **Domain Layer:** `InvitationStatus` value object (state machine: PENDING → ACCEPTED/DECLINED/EXPIRED), `Invitation` entity (immutable, factory methods, accept/decline commands), `IInvitationRepository` interface (5 methods)
+- **Infrastructure Layer:** `InvitationMapper` (snake_case API → domain), `ApiInvitationRepository` (5 REST endpoints with `_apiData` pattern)
+- **Application Layer:** `InvitationAssembler` (entity → DTO with computed fields), 5 use cases (`SendInvitation`, `SendInvitationByEmail`, `ListMyInvitations`, `RespondToInvitation`, `ListCompetitionInvitations`)
+- **Composition Root:** `ApiInvitationRepository` + 5 use cases injected via DI
+- **i18n:** Namespace `invitations` registered in config. Complete EN/ES translations (status, actions, filters, errors, success messages)
+- **`InvitationBadge`**: Status badge with colors (PENDING=yellow, ACCEPTED=green, DECLINED=red, EXPIRED=gray)
+- **`InvitationCard`**: Dual mode card (player: accept/decline with expiration countdown, creator: read-only with invitee info)
+- **`SendInvitationModal`**: Wrapper+Content pattern. Email input with HTML5 validation, personal message textarea (max 500 chars with counter)
+- **Creator InvitationsPage** (`/creator/competitions/:id/invitations`): List of sent invitations, filter by status, send by email, per-competition auth via `useUserRoles`
+- **Player MyInvitationsPage** (`/player/invitations`): List of received invitations, accept/decline, pending badge, links to accepted competitions
+- **Navigation:** "Invitations" button in CompetitionDetail (creators, bg-purple-600), "My Invitations" link in HeaderAuth (desktop + mobile)
 
 ### ✅ Tests
-- **95 tests nuevos** (1249 total passing, 1 skipped)
+- **95 new tests** (1249 total passing, 1 skipped)
 - Domain: 40 tests (InvitationStatus 23, Invitation 17)
 - Infrastructure: 6 tests (ApiInvitationRepository)
 - Application: 18 tests (5 use cases × ~3-4 tests)
@@ -34,9 +108,9 @@ Permite a los creadores invitar jugadores por email y a los jugadores aceptar o 
 - Pages: 10 tests (InvitationsPage 5, MyInvitationsPage 5)
 
 ### 📊 Stats
-- **Archivos creados:** 32
-- **Archivos modificados:** 9
-- **Bundle:** dentro de budget (1400 KB max)
+- **Files created:** 32
+- **Files modified:** 9
+- **Bundle:** within budget (1400 KB max)
 
 ---
 
@@ -44,28 +118,28 @@ Permite a los creadores invitar jugadores por email y a los jugadores aceptar o 
 
 ### Manual Pairings UI for Match Generation
 
-Permite a los creadores de competiciones elegir entre generacion automatica y emparejamiento manual de jugadores al crear partidos.
+Allows competition creators to choose between automatic generation and manual pairing of players when creating matches.
 
 ### ✨ Added
-- **`GenerateMatchesModal`**: Nuevo componente con patron Wrapper+Content. Modo automatico/manual con radio toggle, lista dinamica de partidos con add/remove, dropdowns de jugadores filtrados por equipo
-- **SINGLES**: 1 dropdown por equipo. **FOURBALL/FOURSOMES**: 2 dropdowns por equipo
-- **Validaciones**: Al menos 1 partido, todos los slots completos, sin jugadores duplicados
-- **Resumen visual**: Contador de partidos y jugadores asignados del total disponible
-- **i18n**: 13 nuevas claves de traduccion `matches.pairings.*` en EN y ES
+- **`GenerateMatchesModal`**: New component with Wrapper+Content pattern. Automatic/manual mode with radio toggle, dynamic match list with add/remove, player dropdowns filtered by team
+- **SINGLES**: 1 dropdown per team. **FOURBALL/FOURSOMES**: 2 dropdowns per team
+- **Validations**: At least 1 match, all slots complete, no duplicate players
+- **Visual summary**: Match counter and assigned players out of total available
+- **i18n**: 13 new translation keys `matches.pairings.*` in EN and ES
 
 ### 🐛 Fixed
-- **`reloadSchedule()` error silencioso**: Ahora muestra toast de error al usuario en vez de tragarse el error en el catch. Causa raiz del bug "no me deja generar partidos" (datos stale con status `PENDING_TEAMS`)
-- **`updateMatchPlayer` splice bug**: `splice(slotIndex, 1)` acortaba y desplazaba el array al limpiar una seleccion. Cambiado a asignacion directa `updated[slotIndex] = ''` para preservar posiciones
+- **`reloadSchedule()` silent error**: Now shows error toast to user instead of swallowing error in catch. Root cause of "won't let me generate matches" bug (stale data with status `PENDING_TEAMS`)
+- **`updateMatchPlayer` splice bug**: `splice(slotIndex, 1)` shortened and shifted array when clearing selection. Changed to direct assignment `updated[slotIndex] = ''` to preserve positions
 
 ### 🔧 Changed
-- **`ApiScheduleRepository.generateMatches()`**: Transformacion camelCase → snake_case del payload `manualPairings` movida a la capa de infraestructura (antes estaba en SchedulePage — violacion de Clean Architecture)
-- **`SchedulePage.jsx`**: "Generate Matches" ahora abre modal en vez de llamar directamente a la API. Pasa payload en camelCase al use case
+- **`ApiScheduleRepository.generateMatches()`**: camelCase → snake_case transformation of `manualPairings` payload moved to infrastructure layer (was in SchedulePage — Clean Architecture violation)
+- **`SchedulePage.jsx`**: "Generate Matches" now opens modal instead of calling API directly. Passes payload in camelCase to use case
 
 ### ✅ Tests
-- **24 tests nuevos** (1154 total passing, 1 skipped)
-- `GenerateMatchesModal.test.jsx`: 22 tests (render, modos, validacion, seleccion de jugadores, formatos SINGLES/FOURBALL/FOURSOMES, duplicados)
-- `GenerateMatchesUseCase.test.js`: +1 test para payload manual
-- `ApiScheduleRepository.test.js`: +1 test para transformacion snake_case
+- **24 new tests** (1154 total passing, 1 skipped)
+- `GenerateMatchesModal.test.jsx`: 22 tests (render, modes, validation, player selection, SINGLES/FOURBALL/FOURSOMES formats, duplicates)
+- `GenerateMatchesUseCase.test.js`: +1 test for manual payload
+- `ApiScheduleRepository.test.js`: +1 test for snake_case transformation
 
 ### 📚 References
 - PR #144: `feature/manual-pairings-ui` → develop
@@ -77,25 +151,25 @@ Permite a los creadores de competiciones elegir entre generacion automatica y em
 
 ### Clean Architecture Remediation
 
-Remediacion de ~57 violaciones de Clean Architecture en 66 archivos (+810/-890 lineas).
+Remediation of ~57 Clean Architecture violations across 66 files (+810/-890 lines).
 
 ### ✨ Added
-- **`CompetitionAssembler`** y **`EnrollmentAssembler`**: Extraidos de mappers de infraestructura a capa de aplicacion (13 use cases actualizados)
-- **`LogoutUseCase`**, **`ResendVerificationEmailUseCase`**, **`GetAdjacentCountriesUseCase`**: Nuevos use cases para eliminar fetch() directo en UI
-- **`ICountryRepository`** + **`ApiCountryRepository`**: Nuevo repositorio para paises
-- **CI audit outputs**: Contadores moderate/total expuestos en pipeline summary
+- **`CompetitionAssembler`** and **`EnrollmentAssembler`**: Extracted from infrastructure mappers to application layer (13 use cases updated)
+- **`LogoutUseCase`**, **`ResendVerificationEmailUseCase`**, **`GetAdjacentCountriesUseCase`**: New use cases to eliminate direct fetch() in UI
+- **`ICountryRepository`** + **`ApiCountryRepository`**: New repository for countries
+- **CI audit outputs**: Moderate/total counters exposed in pipeline summary
 
 ### 🐛 Fixed
-- **Removed creator.email PII** de DTOs publicos
-- **Null-safe EnrollmentAssembler**: Manejo seguro de enrollments sin datos
-- **Stale closure** en CreateCompetition: Valores pasados como parametros en vez de cerrar sobre state
-- **AbortController** en Register: Limpieza de requests pendientes al desmontar
+- **Removed creator.email PII** from public DTOs
+- **Null-safe EnrollmentAssembler**: Safe handling of enrollments without data
+- **Stale closure** in CreateCompetition: Values passed as parameters instead of closing over state
+- **AbortController** in Register: Cleanup of pending requests on unmount
 
 ### 🔧 Changed
-- **5 transiciones de estado de competicion** (activate, start, close, complete, cancel) ruteadas a traves de `ICompetitionRepository` en vez de `apiRequest` directo
+- **5 competition state transitions** (activate, start, close, complete, cancel) routed through `ICompetitionRepository` instead of direct `apiRequest`
 - **`RequestPasswordResetUseCase`** → Email VO, **`ResetPasswordUseCase`** → Password VO (min 12 chars)
 - **`FetchCountriesUseCase`** → `ICountryRepository` + `ApiCountryRepository`
-- **Eliminado todo fetch() directo en UI**: Profile, Register, Competitions, CreateCompetition, HeaderAuth, EmailVerificationBanner, useLogout
+- **Eliminated all direct fetch() in UI**: Profile, Register, Competitions, CreateCompetition, HeaderAuth, EmailVerificationBanner, useLogout
 
 ### 📚 References
 - PR #142: `refactor/clean-architecture-violations` → develop
@@ -107,108 +181,108 @@ Remediacion de ~57 violaciones de Clean Architecture en 66 archivos (+810/-890 l
 
 ### Sprint 2: Schedule & Matches - Backend Integration Layer
 
-Capa completa de integracion con los 11 endpoints del backend Sprint 2 para gestion de rondas, partidos y equipos. Incluye breaking change de `handicap_type` a `play_mode`.
+Complete integration layer with backend's 11 Sprint 2 endpoints for rounds, matches and teams management. Includes breaking change from `handicap_type` to `play_mode`.
 
 ### ⚠️ Breaking Changes
-- **`play_mode` reemplaza `handicap_type`/`handicap_percentage`**: El backend ahora usa un único campo `play_mode` (SCRATCH/HANDICAP) en vez de `handicap_type` (SCRATCH/PERCENTAGE) + `handicap_percentage` (90/95/100). El porcentaje se gestiona ahora a nivel de ronda (`allowance_percentage`), no de competición.
-  - `HandicapSettings` value object: Renombrado enum `HandicapType` a `PlayModeType` con valores `SCRATCH`/`HANDICAP` (antes `SCRATCH`/`PERCENTAGE`). Eliminado campo `percentage`.
-  - `CompetitionMapper`: Mapea `play_mode` en vez de `handicap_type`/`handicap_percentage` (con fallback retrocompatible)
-  - `CreateCompetition.jsx`: Formulario actualizado con selector SCRATCH/HANDICAP (eliminado selector de porcentaje)
-  - `CompetitionDetail.jsx`: Display actualizado para `playMode`
-  - Traducciones EN/ES: Claves `handicapType`/`handicapPercentage` reemplazadas por `playMode`
+- **`play_mode` replaces `handicap_type`/`handicap_percentage`**: Backend now uses a single `play_mode` field (SCRATCH/HANDICAP) instead of `handicap_type` (SCRATCH/PERCENTAGE) + `handicap_percentage` (90/95/100). Percentage is now managed at round level (`allowance_percentage`), not competition.
+  - `HandicapSettings` value object: Renamed enum `HandicapType` to `PlayModeType` with values `SCRATCH`/`HANDICAP` (was `SCRATCH`/`PERCENTAGE`). Removed `percentage` field.
+  - `CompetitionMapper`: Maps `play_mode` instead of `handicap_type`/`handicap_percentage` (with backward-compatible fallback)
+  - `CreateCompetition.jsx`: Updated form with SCRATCH/HANDICAP selector (removed percentage selector)
+  - `CompetitionDetail.jsx`: Updated display for `playMode`
+  - EN/ES translations: Keys `handicapType`/`handicapPercentage` replaced by `playMode`
 
 ### ✨ Added
 
-#### Domain Layer - Value Objects (6 nuevos)
-- **`SessionType`**: Enum MORNING/AFTERNOON/EVENING con instancias frozen
-- **`MatchFormat`**: Enum SINGLES/FOURBALL/FOURSOMES con `playersPerTeam()` (1 o 2)
+#### Domain Layer - Value Objects (6 new)
+- **`SessionType`**: Enum MORNING/AFTERNOON/EVENING with frozen instances
+- **`MatchFormat`**: Enum SINGLES/FOURBALL/FOURSOMES with `playersPerTeam()` (1 or 2)
 - **`HandicapMode`**: Enum STROKE_PLAY/MATCH_PLAY
-- **`RoundStatus`**: Máquina de estados PENDING_TEAMS → PENDING_MATCHES → SCHEDULED → IN_PROGRESS → COMPLETED con `canTransitionTo()`, `isEditable()`
-- **`MatchStatus`**: Máquina de estados SCHEDULED → IN_PROGRESS → COMPLETED, WALKOVER con `canTransitionTo()`, `isPlayable()`, `isFinal()`
-- **`AllowancePercentage`**: Valor nullable 50-100 en incrementos de 5, con `isCustom()`
+- **`RoundStatus`**: State machine PENDING_TEAMS → PENDING_MATCHES → SCHEDULED → IN_PROGRESS → COMPLETED with `canTransitionTo()`, `isEditable()`
+- **`MatchStatus`**: State machine SCHEDULED → IN_PROGRESS → COMPLETED, WALKOVER with `canTransitionTo()`, `isPlayable()`, `isFinal()`
+- **`AllowancePercentage`**: Nullable value 50-100 in increments of 5, with `isCustom()`
 
-#### Domain Layer - Entities (3 nuevas)
-- **`Round`**: Campos privados, `isEditable()`, `hasMatches()`, `matchCount()`, copia defensiva de matches
-- **`Match`**: Campos privados, métodos de estado (`isScheduled()`, `canStart()`, `canComplete()`), copia defensiva de jugadores
+#### Domain Layer - Entities (3 new)
+- **`Round`**: Private fields, `isEditable()`, `hasMatches()`, `matchCount()`, defensive copy of matches
+- **`Match`**: Private fields, state methods (`isScheduled()`, `canStart()`, `canComplete()`), defensive copy of players
 - **`TeamAssignmentResult`**: `isManual()`, `isAutomatic()`, `getTeamSize()`
 
 #### Domain Layer - Repository Interface
-- **`IScheduleRepository`**: Interfaz con 11 métodos mapeados a endpoints del backend
+- **`IScheduleRepository`**: Interface with 11 methods mapped to backend endpoints
 
 #### Infrastructure Layer
-- **`ScheduleMapper`**: Anti-corruption layer con `toScheduleDTO()`, `toRoundDTO()`, `toMatchDTO()`, `toTeamAssignmentDTO()`. Maneja campos planos de jugadores (team_a_player_1_id, etc.)
-- **`ApiScheduleRepository`**: Implementación REST de los 11 endpoints usando `apiRequest()`
+- **`ScheduleMapper`**: Anti-corruption layer with `toScheduleDTO()`, `toRoundDTO()`, `toMatchDTO()`, `toTeamAssignmentDTO()`. Handles flat player fields (team_a_player_1_id, etc.)
+- **`ApiScheduleRepository`**: REST implementation of 11 endpoints using `apiRequest()`
 
-#### Application Layer - Use Cases (11 nuevos)
+#### Application Layer - Use Cases (11 new)
 - **`GetScheduleUseCase`**: GET /competitions/{id}/schedule
 - **`ConfigureScheduleUseCase`**: POST /competitions/{id}/schedule/configure
 - **`AssignTeamsUseCase`**: POST /competitions/{id}/teams
-- **`CreateRoundUseCase`**: POST /competitions/{id}/rounds (con validación de campos requeridos)
+- **`CreateRoundUseCase`**: POST /competitions/{id}/rounds (with required field validation)
 - **`UpdateRoundUseCase`**: PUT /rounds/{id}
 - **`DeleteRoundUseCase`**: DELETE /rounds/{id}
 - **`GenerateMatchesUseCase`**: POST /rounds/{id}/matches/generate
 - **`GetMatchDetailUseCase`**: GET /matches/{id}
 - **`UpdateMatchStatusUseCase`**: PUT /matches/{id}/status
-- **`DeclareWalkoverUseCase`**: POST /matches/{id}/walkover (con validación equipo A/B y razón)
-- **`ReassignPlayersUseCase`**: PUT /matches/{id}/players (con validación arrays no vacíos)
+- **`DeclareWalkoverUseCase`**: POST /matches/{id}/walkover (with team A/B and reason validation)
+- **`ReassignPlayersUseCase`**: PUT /matches/{id}/players (with non-empty array validation)
 
 #### Composition Root
-- Registrado `ApiScheduleRepository` + 11 use cases en DI container (`src/composition/index.js`)
+- Registered `ApiScheduleRepository` + 11 use cases in DI container (`src/composition/index.js`)
 
 #### Internationalization
-- Nuevo namespace `schedule` registrado en `i18n/config.js`
-- **EN**: `src/i18n/locales/en/schedule.json` - Traducciones completas (rounds, matches, teams, status, formats, sessions, errors, success)
-- **ES**: `src/i18n/locales/es/schedule.json` - Traducciones completas en español
+- New namespace `schedule` registered in `i18n/config.js`
+- **EN**: `src/i18n/locales/en/schedule.json` - Complete translations (rounds, matches, teams, status, formats, sessions, errors, success)
+- **ES**: `src/i18n/locales/es/schedule.json` - Complete Spanish translations
 
 ### 🔧 Changed
-- **`HandicapSettings.js`**: `PlayModeType` (SCRATCH/HANDICAP) reemplaza `HandicapType` (SCRATCH/PERCENTAGE). Alias retrocompatible `HandicapType = PlayModeType`
-- **`CompetitionMapper.js`**: `toDomain()` lee `play_mode` (fallback a `handicap_type`), `toDTO()` escribe `play_mode`, `toSimpleDTO()` escribe `playMode`
-- **`CreateCompetition.jsx`**: `formData.playMode` reemplaza `handicapType`/`handicapPercentage`. Payload envía `play_mode`
-- **`CompetitionDetail.jsx`**: Muestra `playMode` en vez de `handicapType`/`handicapPercentage`
-- **`competitions.json` (EN/ES)**: Claves `handicapType`/`handicapPercentage` → `playMode`/`handicap`
-- **`UpdateCompetitionUseCase.js`**: JSDoc actualizado para `play_mode`
-- **`CreateCompetitionUseCase.test.js`**: Fixture actualizado `handicap_type` → `play_mode`
+- **`HandicapSettings.js`**: `PlayModeType` (SCRATCH/HANDICAP) replaces `HandicapType` (SCRATCH/PERCENTAGE). Backward-compatible alias `HandicapType = PlayModeType`
+- **`CompetitionMapper.js`**: `toDomain()` reads `play_mode` (fallback to `handicap_type`), `toDTO()` writes `play_mode`, `toSimpleDTO()` writes `playMode`
+- **`CreateCompetition.jsx`**: `formData.playMode` replaces `handicapType`/`handicapPercentage`. Payload sends `play_mode`
+- **`CompetitionDetail.jsx`**: Shows `playMode` instead of `handicapType`/`handicapPercentage`
+- **`competitions.json` (EN/ES)**: Keys `handicapType`/`handicapPercentage` → `playMode`/`handicap`
+- **`UpdateCompetitionUseCase.js`**: JSDoc updated for `play_mode`
+- **`CreateCompetitionUseCase.test.js`**: Fixture updated `handicap_type` → `play_mode`
 
 ### ✅ Tests
-- **~238 tests nuevos**: 1087 tests passing, 1 skipped (desde 849; backend: 95 + 47 + 8 + 13 + 50 ≈ 213, UI + fixes: ~25)
-- 6 test files para Value Objects (~95 tests)
-- 3 test files para Entities (~47 tests)
-- 1 test file para ScheduleMapper (~8 tests)
-- 1 test file para ApiScheduleRepository (~13 tests)
-- 11 test files para Use Cases (~50 tests)
-- Tests actualizados: HandicapSettings, Competition entity, CreateCompetitionUseCase
+- **~238 new tests**: 1087 tests passing, 1 skipped (from 849; backend: 95 + 47 + 8 + 13 + 50 ≈ 213, UI + fixes: ~25)
+- 6 test files for Value Objects (~95 tests)
+- 3 test files for Entities (~47 tests)
+- 1 test file for ScheduleMapper (~8 tests)
+- 1 test file for ApiScheduleRepository (~13 tests)
+- 11 test files for Use Cases (~50 tests)
+- Updated tests: HandicapSettings, Competition entity, CreateCompetitionUseCase
 
 ### 📦 Bundle & Performance
-- **Bundle size reducido ~311 KB desde peak** (1619 KB peak → 1308 KB actual, build sin comprimir):
-  - Reemplazada librería `country-flag-icons` (239 KB de SVGs incrustados) por imágenes CDN de [flagcdn.com](https://flagcdn.com)
-  - `CountryFlag` ahora renderiza `<img>` con `srcSet` para retina en vez de SVG components
-  - Eliminada dependencia `axios` (no utilizada)
-- **CI bundle budget**: 1400 KB max, 1300 KB warning (tras eliminar 239 KB de SVGs)
-- **`useMemo` en `SchedulePage`**: `playerNameMap` envuelto en `useMemo` para evitar reconstrucciones innecesarias
+- **Bundle size reduced ~311 KB from peak** (1619 KB peak → 1308 KB current, uncompressed build):
+  - Replaced `country-flag-icons` library (239 KB of embedded SVGs) with CDN images from [flagcdn.com](https://flagcdn.com)
+  - `CountryFlag` now renders `<img>` with `srcSet` for retina instead of SVG components
+  - Removed unused `axios` dependency
+- **CI bundle budget**: 1400 KB max, 1300 KB warning (after removing 239 KB of SVGs)
+- **`useMemo` in `SchedulePage`**: `playerNameMap` wrapped in `useMemo` to avoid unnecessary rebuilds
 
 ### 🌐 i18n Fixes
-- **Corregidos ~30 toast messages hardcodeados** que causaban mezcla de idiomas (castellano/inglés):
-  - `useEditProfile.jsx`: 21 mensajes hardcodeados → claves i18n (`toasts.*` en namespace `profile`)
-  - `useInactivityLogout.jsx`: 5 mensajes hardcodeados en español → claves i18n (`inactivity.*` en namespace `auth`)
-  - `deviceRevocationLogout.js`: Detección manual de idioma (localStorage/navigator) → `i18next.t()` con namespace `auth`
-  - `useDeviceManagement.js`: 2 mensajes hardcodeados → claves i18n (namespace `devices`)
-  - `CreateCompetition.jsx`: Eliminados fallbacks redundantes `|| 'texto'` en 2 toasts
-- **Migración de claves plural legacy**: `_plural` → `_one`/`_other` (formato i18next v4) en namespaces `schedule` y `competitions`
-- **Nuevas traducciones EN/ES**:
-  - `profile.json`: 18 claves en sección `toasts`
-  - `auth.json`: `errors.sessionExpired`, `errors.sessionEnded`, sección `inactivity` (5 claves)
+- **Fixed ~30 hardcoded toast messages** causing language mixing (Spanish/English):
+  - `useEditProfile.jsx`: 21 hardcoded messages → i18n keys (`toasts.*` in namespace `profile`)
+  - `useInactivityLogout.jsx`: 5 hardcoded Spanish messages → i18n keys (`inactivity.*` in namespace `auth`)
+  - `deviceRevocationLogout.js`: Manual language detection (localStorage/navigator) → `i18next.t()` with namespace `auth`
+  - `useDeviceManagement.js`: 2 hardcoded messages → i18n keys (namespace `devices`)
+  - `CreateCompetition.jsx`: Removed redundant `|| 'text'` fallbacks in 2 toasts
+- **Legacy plural key migration**: `_plural` → `_one`/`_other` (i18next v4 format) in `schedule` and `competitions` namespaces
+- **New EN/ES translations**:
+  - `profile.json`: 18 keys in `toasts` section
+  - `auth.json`: `errors.sessionExpired`, `errors.sessionEnded`, `inactivity` section (5 keys)
   - `devices.json`: `errors.DEVICE_ID_REQUIRED`, `success.deviceRevoked`
 
-### 📊 Estadísticas
-- **Archivos creados:** ~30
-- **Archivos modificados:** ~37
-- **Value Objects:** 6 nuevos
-- **Entities:** 3 nuevas
-- **Use Cases:** 11 nuevos
+### 📊 Statistics
+- **Files created:** ~30
+- **Files modified:** ~37
+- **Value Objects:** 6 new
+- **Entities:** 3 new
+- **Use Cases:** 11 new
 - **Repository:** 1 interface + 1 implementation + 1 mapper
-- **Tests:** ~238 nuevos (1087 passing, 1 skipped, desde 849)
-- **Traducciones:** 2 archivos nuevos + 10 archivos actualizados (EN/ES)
-- **Bundle:** 1308 KB build sin comprimir (-311 KB desde peak de 1619 KB)
+- **Tests:** ~238 new (1087 passing, 1 skipped, from 849)
+- **Translations:** 2 new files + 10 updated files (EN/ES)
+- **Bundle:** 1308 KB uncompressed build (-311 KB from peak of 1619 KB)
 
 ---
 
@@ -216,21 +290,21 @@ Capa completa de integracion con los 11 endpoints del backend Sprint 2 para gest
 
 ### 🐛 Hotfix: Golf Courses UI & Admin Fixes
 
-Correcciones de UI y accesibilidad para la gestión de campos de golf.
+UI and accessibility fixes for golf course management.
 
 ### ✨ Added
-- **Translations**: Añadida clave "tees" al namespace `competitions` (EN/ES)
-- **Error Reporting**: Integración de Sentry en `LazyLoadErrorBoundary`
-  - Reporta errores con user agent, platform y component stack
-  - Sección expandible "Technical details" para debugging en producción
+- **Translations**: Added "tees" key to `competitions` namespace (EN/ES)
+- **Error Reporting**: Sentry integration in `LazyLoadErrorBoundary`
+  - Reports errors with user agent, platform and component stack
+  - Expandable "Technical details" section for production debugging
 
 ### 🐛 Fixed
-- **Golf Courses UI**: Layout responsive para campos en detalle de competición
-  - Layout móvil (stacked) y desktop (horizontal) separados
-  - Badges de tees, par y tipo de campo ahora visibles
-- **Admin Edit Button**: Corrección de verificación `isAdmin`
-  - Ahora verifica `user.is_admin` (formato del backend) además de `user.roles`
-  - Botón de edición ahora visible para administradores en `/admin/golf-courses`
+- **Golf Courses UI**: Responsive layout for courses in competition detail
+  - Separate mobile (stacked) and desktop (horizontal) layouts
+  - Tee badges, par and course type now visible
+- **Admin Edit Button**: Fixed `isAdmin` verification
+  - Now checks `user.is_admin` (backend format) in addition to `user.roles`
+  - Edit button now visible for administrators in `/admin/golf-courses`
 
 ### 📚 References
 - PR #120: `hotfix/golf-courses-responsive-ui`
@@ -241,67 +315,67 @@ Correcciones de UI y accesibilidad para la gestión de campos de golf.
 
 ### 🎯 Sprint 2: Security Enhancements + Infrastructure Migration
 
-Mejoras de seguridad OWASP A07:2021 (Authentication Failures) y migración de infraestructura a subdominios.
+Security improvements for OWASP A07:2021 (Authentication Failures) and infrastructure migration to subdomains.
 
 ### ✨ Added
 
 #### Security (OWASP A07:2021 Compliance)
-- **Proactive Token Refresh**: Nuevo hook `useProactiveTokenRefresh` que refresca tokens antes de expirar
-  - Monitorea actividad del usuario (keydown, mousemove, click, scroll, touch)
-  - Refresca token ~1 minuto antes de expirar si el usuario está activo
-  - Previene "sesión expirada" mientras el usuario está usando la app
-  - Mantiene TTL de 5 minutos (OWASP compliant)
-- **Separated Session Handling**: Separación clara de revocación vs expiración
-  - `isDeviceRevoked()`: Solo retorna true para revocación EXPLÍCITA de dispositivo
-  - `isSessionExpired()`: Maneja expiración de refresh token (separado de revocación)
-  - `handleDeviceRevocationLogout()`: Mensaje con icono 🔒 para revocación
-  - `handleSessionExpiredLogout()`: Mensaje con icono ⏱️ para expiración
-  - Mejor UX: usuarios entienden por qué fueron deslogueados
+- **Proactive Token Refresh**: New `useProactiveTokenRefresh` hook that refreshes tokens before expiring
+  - Monitors user activity (keydown, mousemove, click, scroll, touch)
+  - Refreshes token ~1 minute before expiring if user is active
+  - Prevents "session expired" while user is using the app
+  - Maintains 5-minute TTL (OWASP compliant)
+- **Separated Session Handling**: Clear separation of revocation vs expiration
+  - `isDeviceRevoked()`: Only returns true for EXPLICIT device revocation
+  - `isSessionExpired()`: Handles refresh token expiration (separate from revocation)
+  - `handleDeviceRevocationLogout()`: Message with 🔒 icon for revocation
+  - `handleSessionExpiredLogout()`: Message with ⏱️ icon for expiration
+  - Better UX: users understand why they were logged out
 
 #### Infrastructure
-- **ADR-011**: Documentación de arquitectura de subdominios con Cloudflare Proxy
+- **ADR-011**: Subdomain architecture documentation with Cloudflare Proxy
   - Frontend: `www.rydercupfriends.com`
   - Backend API: `api.rydercupfriends.com`
   - Cookie domain: `.rydercupfriends.com` (cross-subdomain)
 
 #### Features
-- **Tee Categories**: Añadida categoría `CHAMPIONSHIP_FEMALE` al formulario de campos de golf
-  - Actualizado array `TEE_CATEGORIES` en `GolfCourseForm.jsx`
-  - Añadidas traducciones ES/EN en namespace `golfCourses`
-- **Competition Edit**: Funcionalidad completa de edición de competiciones
-- **Golf Course Management**: Mejoras en gestión de campos de golf dentro de competiciones
+- **Tee Categories**: Added `CHAMPIONSHIP_FEMALE` category to golf course form
+  - Updated `TEE_CATEGORIES` array in `GolfCourseForm.jsx`
+  - Added ES/EN translations in `golfCourses` namespace
+- **Competition Edit**: Complete competition editing functionality
+- **Golf Course Management**: Improvements in golf course management within competitions
 
 ### 🔧 Changed
-- **vite.config.js**: Actualizado CSP para incluir `api.rydercupfriends.com` en `connect-src`
-- **.env.example**: Actualizada documentación para migración a API subdomain
-- **Proxy Middleware**: Actualizado a `http-proxy-middleware` v3.0.3 para soporte de cookie rewrite
-- **i18n Keys**: Estandarización de claves de traducción a convención `kebab-case`
-- **tokenRefreshInterceptor.js**: Ahora diferencia correctamente entre revocación y expiración
+- **vite.config.js**: Updated CSP to include `api.rydercupfriends.com` in `connect-src`
+- **.env.example**: Updated documentation for API subdomain migration
+- **Proxy Middleware**: Updated to `http-proxy-middleware` v3.0.3 for cookie rewrite support
+- **i18n Keys**: Standardization of translation keys to `kebab-case` convention
+- **tokenRefreshInterceptor.js**: Now correctly differentiates between revocation and expiration
 
 ### 🗑️ Removed
-- Servicio de proxy inverso (ahorro de $7/mes)
-- Backend URL hardcodeado en security headers
+- Reverse proxy service (saves $7/month)
+- Hardcoded backend URL in security headers
 
 ### 🐛 Fixed
-- **Competitions**: Añadida programación defensiva y mejoras en validación de fechas
-- **Date Validation**: Mejoras en manejo de fechas inválidas
-- **Session Messages**: Usuarios ya no ven "dispositivo revocado" cuando su sesión simplemente expiró
+- **Competitions**: Added defensive programming and improvements in date validation
+- **Date Validation**: Improvements in invalid date handling
+- **Session Messages**: Users no longer see "device revoked" when their session simply expired
 
 ### 🚀 Performance
-- Latencia: -50-100ms (eliminado hop de proxy)
-- Coste: -$7/mes (33% reducción)
-- Fiabilidad: Eliminado single point of failure
+- Latency: -50-100ms (eliminated proxy hop)
+- Cost: -$7/month (33% reduction)
+- Reliability: Eliminated single point of failure
 
 ### 🔐 Security
-- OWASP Score: 9.2/10 mantenido
+- OWASP Score: 9.2/10 maintained
 - DDoS protection via Cloudflare
 - Real IPs via `CF-Connecting-IP` header (fixes device fingerprinting accuracy)
-- Proactive token refresh previene sesiones huérfanas
+- Proactive token refresh prevents orphaned sessions
 
 ### ✅ Tests
 - 849 tests passing (100% pass rate)
-- Nuevos tests para `useProactiveTokenRefresh`
-- Tests actualizados para separación revocación/expiración
+- New tests for `useProactiveTokenRefresh`
+- Updated tests for revocation/expiration separation
 
 ### 📚 References
 - PR #114: `hotfix/proxy-cookie-domain` - Cookie domain rewrite
@@ -315,125 +389,125 @@ Mejoras de seguridad OWASP A07:2021 (Authentication Failures) y migración de in
 
 ### 🎯 Sprint 1: Golf Course Management System
 
-Sistema completo de gestión de campos de golf con arquitectura Clean Architecture + DDD.
+Complete golf course management system with Clean Architecture + DDD architecture.
 
 ### ✨ Added
 
 #### Domain Layer
 - **Value Objects**:
-  - `Tee`: Representa posición de tee con validaciones WHS (World Handicap System)
-    - Categorías: CHAMPIONSHIP_MALE/FEMALE, AMATEUR_MALE/FEMALE, SENIOR_MALE/FEMALE, JUNIOR
+  - `Tee`: Represents tee position with WHS (World Handicap System) validations
+    - Categories: CHAMPIONSHIP_MALE/FEMALE, AMATEUR_MALE/FEMALE, SENIOR_MALE/FEMALE, JUNIOR
     - Course Rating: 50.0-90.0
     - Slope Rating: 55-155
     - Gender: MALE/FEMALE
-  - `Hole`: Representa hoyo de golf con validaciones
+  - `Hole`: Represents golf hole with validations
     - Hole Number: 1-18
     - Par: 3-5
-    - Stroke Index: 1-18 (único)
+    - Stroke Index: 1-18 (unique)
 - **Entities**:
-  - `GolfCourse`: Entidad principal con métodos de negocio
+  - `GolfCourse`: Main entity with business methods
     - isClone(), hasPendingUpdate(), isApproved(), isPending(), isRejected()
-    - getStatusColor() para UI
-    - Soporte para workflow de clones (update proposals)
+    - getStatusColor() for UI
+    - Support for clone workflow (update proposals)
 - **Repository Interfaces**:
-  - `IGolfCourseRepository`: Contrato con 9 métodos (list, getById, create, createAsAdmin, update, approve, reject, approveUpdate, rejectUpdate, listPending)
+  - `IGolfCourseRepository`: Contract with 9 methods (list, getById, create, createAsAdmin, update, approve, reject, approveUpdate, rejectUpdate, listPending)
 
 #### Infrastructure Layer
 - **Repositories**:
-  - `ApiGolfCourseRepository`: Implementación completa con 10 endpoints backend
-    - Mapeo domain ↔ API (snake_case/camelCase)
-    - Helper `_mapToApiPayload()` para conversión
-    - Manejo de errores con contexto
+  - `ApiGolfCourseRepository`: Complete implementation with 10 backend endpoints
+    - Domain ↔ API mapping (snake_case/camelCase)
+    - Helper `_mapToApiPayload()` for conversion
+    - Error handling with context
 
 #### Application Layer (8 Use Cases)
-- `ListGolfCoursesUseCase`: Listar campos con filtros (country, status, type)
-- `GetGolfCourseUseCase`: Obtener campo por ID
-- `CreateGolfCourseAdminUseCase`: Admin crea campo directamente APPROVED
-- `UpdateGolfCourseUseCase`: Smart workflow (admin in-place, creator crea clone)
-- `ApproveGolfCourseUseCase`: Aprobar nueva solicitud
-- `RejectGolfCourseUseCase`: Rechazar con razón (10-500 chars)
-- `ApproveGolfCourseUpdateUseCase`: Aprobar clone → merge a original
-- `RejectGolfCourseUpdateUseCase`: Rechazar clone → eliminar
+- `ListGolfCoursesUseCase`: List courses with filters (country, status, type)
+- `GetGolfCourseUseCase`: Get course by ID
+- `CreateGolfCourseAdminUseCase`: Admin creates course directly APPROVED
+- `UpdateGolfCourseUseCase`: Smart workflow (admin in-place, creator creates clone)
+- `ApproveGolfCourseUseCase`: Approve new request
+- `RejectGolfCourseUseCase`: Reject with reason (10-500 chars)
+- `ApproveGolfCourseUpdateUseCase`: Approve clone → merge to original
+- `RejectGolfCourseUpdateUseCase`: Reject clone → delete
 
 #### Presentation Layer
-- **Componentes**:
-  - `GolfCourseForm`: Formulario complejo (400+ líneas)
-    - 18 hoyos con par + stroke index
-    - 2-6 tees con course/slope rating
-    - Dropdown de países con banderas y nombres traducidos
-    - Validaciones en tiempo real (total par 66-76, stroke indices únicos)
-    - Modos: create/edit con initialData
-  - `GolfCourseTable`: Tabla reutilizable con acciones role-based
-    - Columnas: name, country, type, par, tees, status, actions
-    - Badges de status con colores
-    - Indicadores de pending updates
-  - `TeeCategoryBadge`: Badges visuales para 6 categorías de tees
-- **Páginas Admin**:
-  - `/admin/golf-courses`: CRUD de campos aprobados
-    - Lista todos los campos APPROVED
-    - Admin crea directamente APPROVED
-    - Admin edita in-place (sin clones)
-    - Modal create/edit con GolfCourseForm
-  - `/admin/golf-courses/pending`: Gestión de aprobaciones
-    - Tab "New Requests": Solicitudes nuevas (originalGolfCourseId === null)
-    - Tab "Update Proposals": Propuestas de actualización (clones)
-    - Aprobar/Rechazar con modal de razón
-    - Stats: contadores por tipo
+- **Components**:
+  - `GolfCourseForm`: Complex form (400+ lines)
+    - 18 holes with par + stroke index
+    - 2-6 tees with course/slope rating
+    - Country dropdown with flags and translated names
+    - Real-time validations (total par 66-76, unique stroke indices)
+    - Modes: create/edit with initialData
+  - `GolfCourseTable`: Reusable table with role-based actions
+    - Columns: name, country, type, par, tees, status, actions
+    - Status badges with colors
+    - Pending updates indicators
+  - `TeeCategoryBadge`: Visual badges for 6 tee categories
+- **Admin Pages**:
+  - `/admin/golf-courses`: CRUD for approved courses
+    - Lists all APPROVED courses
+    - Admin creates directly APPROVED
+    - Admin edits in-place (no clones)
+    - Create/edit modal with GolfCourseForm
+  - `/admin/golf-courses/pending`: Approval management
+    - Tab "New Requests": New requests (originalGolfCourseId === null)
+    - Tab "Update Proposals": Update proposals (clones)
+    - Approve/Reject with reason modal
+    - Stats: counters by type
 
 #### Navigation & Auth
-- Enlaces admin en HeaderAuth (desktop + mobile)
-  - Solo visible para usuarios con `is_admin=true`
-  - "Campos de Golf" → `/admin/golf-courses`
-  - "Campos Pendientes" → `/admin/golf-courses/pending`
+- Admin links in HeaderAuth (desktop + mobile)
+  - Only visible for users with `is_admin=true`
+  - "Golf Courses" → `/admin/golf-courses`
+  - "Pending Courses" → `/admin/golf-courses/pending`
 
 #### Internationalization
-- **Namespace**: `golfCourses` (300+ traducciones ES/EN)
-- **Secciones**:
-  - `form`: Campos, validaciones, errores, botones
-  - `table`: Columnas, acciones, estados
-  - `pages.admin`: Títulos, mensajes, toasts
-  - `pages.pending`: Tabs, confirmaciones, modales
-- **Common**: Añadidos `header.golfCourses` y `header.pendingCourses`
+- **Namespace**: `golfCourses` (300+ ES/EN translations)
+- **Sections**:
+  - `form`: Fields, validations, errors, buttons
+  - `table`: Columns, actions, states
+  - `pages.admin`: Titles, messages, toasts
+  - `pages.pending`: Tabs, confirmations, modals
+- **Common**: Added `header.golfCourses` and `header.pendingCourses`
 
 #### Routing & Composition
-- Rutas protegidas con `<ProtectedRoute>`:
+- Protected routes with `<ProtectedRoute>`:
   - `/admin/golf-courses`
   - `/admin/golf-courses/pending`
-- Lazy loading con React.lazy()
-- Dependency injection en `composition/index.js`:
+- Lazy loading with React.lazy()
+- Dependency injection in `composition/index.js`:
   - `apiGolfCourseRepository`
-  - 8 use cases exportados
+  - 8 exported use cases
 
-### ✅ Tests (116 tests - 100% passing)
+###  ✅ Tests (116 tests - 100% passing)
 
 #### Domain Layer (77 tests)
 - `Tee.test.js`: 20 tests
-  - Validaciones de rangos (courseRating 50-90, slopeRating 55-155)
-  - 6 categorías válidas
+  - Range validations (courseRating 50-90, slopeRating 55-155)
+  - 6 valid categories
   - Gender validation (MALE/FEMALE)
   - DTO conversions (camelCase ↔ snake_case)
-  - Edge cases (whitespace trim, decimales)
+  - Edge cases (whitespace trim, decimals)
 - `Hole.test.js`: 24 tests
-  - Validaciones (holeNumber 1-18, par 3-5, strokeIndex 1-18)
-  - Simulación completa de 18 hoyos con par 72
+  - Validations (holeNumber 1-18, par 3-5, strokeIndex 1-18)
+  - Complete 18-hole simulation with par 72
   - Edge cases (typical par 3/5 holes)
 - `GolfCourse.test.js`: 33 tests
-  - Constructor con todos los campos
-  - Métodos de negocio (isClone, hasPendingUpdate, isApproved, isPending, isRejected)
-  - getStatusColor() con 4 estados
-  - toDTO() con conversión completa
-  - Workflows completos (new request, update proposal, rejection)
+  - Constructor with all fields
+  - Business methods (isClone, hasPendingUpdate, isApproved, isPending, isRejected)
+  - getStatusColor() with 4 states
+  - toDTO() with complete conversion
+  - Complete workflows (new request, update proposal, rejection)
 
 #### Application Layer (39 tests)
-- `ListGolfCoursesUseCase.test.js`: 9 tests (filtros múltiples)
+- `ListGolfCoursesUseCase.test.js`: 9 tests (multiple filters)
 - `GetGolfCourseUseCase.test.js`: 7 tests (error handling, not found)
 - `CreateGolfCourseAdminUseCase.test.js`: 8 tests
-  - Validaciones de totalPar (66-76)
+  - TotalPar validations (66-76)
   - Tees range (2-6)
   - Course types (STANDARD_18, EXECUTIVE, PITCH_AND_PUTT)
 - `ApproveRejectGolfCourse.test.js`: 15 tests
   - 4 use cases: approve/reject new + approve/reject update
-  - Validación de rejection reason (10-500 chars)
+  - Rejection reason validation (10-500 chars)
   - Clone ID validations
 
 ### 🏗️ Architecture
@@ -442,60 +516,60 @@ Sistema completo de gestión de campos de golf con arquitectura Clean Architectu
 - **Layers**: Domain → Application → Infrastructure → Presentation
 - **Dependency Rule**: Outer layers depend on inner layers, never inverse
 - **Separation of Concerns**:
-  - Domain: Business logic pura (sin dependencias externas)
-  - Application: Orquestación de casos de uso
-  - Infrastructure: Implementación de repositorios (API)
+  - Domain: Pure business logic (no external dependencies)
+  - Application: Use case orchestration
+  - Infrastructure: Repository implementation (API)
   - Presentation: UI components + pages
-- **Testability**: 116 tests con mocks de repositorios (no API directa)
+- **Testability**: 116 tests with repository mocks (no direct API)
 
 ### 🔄 Workflows
 
 #### New Golf Course Request (Creator)
-1. Creator rellena GolfCourseForm
+1. Creator fills GolfCourseForm
 2. Frontend → `createGolfCourseUseCase.execute()`
-3. Backend crea con status `PENDING_APPROVAL`
-4. Admin ve en tab "New Requests"
-5. Admin aprueba → status `APPROVED` (disponible para competiciones)
-6. Admin rechaza → status `REJECTED` + reason
+3. Backend creates with status `PENDING_APPROVAL`
+4. Admin sees in "New Requests" tab
+5. Admin approves → status `APPROVED` (available for competitions)
+6. Admin rejects → status `REJECTED` + reason
 
 #### Golf Course Update Proposal (Creator)
-1. Creator edita campo APPROVED
+1. Creator edits APPROVED course
 2. Frontend → `updateGolfCourseUseCase.execute()`
-3. Backend crea **clone** con `originalGolfCourseId` set
-4. Original marca `isPendingUpdate=true`
-5. Admin ve en tab "Update Proposals"
-6. Admin aprueba → merge clone → original, elimina clone, `isPendingUpdate=false`
-7. Admin rechaza → elimina clone, `isPendingUpdate=false`
+3. Backend creates **clone** with `originalGolfCourseId` set
+4. Original marks `isPendingUpdate=true`
+5. Admin sees in "Update Proposals" tab
+6. Admin approves → merge clone → original, delete clone, `isPendingUpdate=false`
+7. Admin rejects → delete clone, `isPendingUpdate=false`
 
 #### Admin Direct Creation
-1. Admin rellena GolfCourseForm
+1. Admin fills GolfCourseForm
 2. Frontend → `createGolfCourseAdminUseCase.execute()`
-3. Backend crea directamente con status `APPROVED`
-4. Disponible inmediatamente para competiciones
+3. Backend creates directly with status `APPROVED`
+4. Immediately available for competitions
 
 ### 🎨 UX Improvements
 
-- **Country Dropdown**: Reemplazado input text por select con:
-  - Lista completa de países desde backend
-  - Banderas con `CountryFlag` component
-  - Nombres traducidos con `formatCountryName()`
-  - Preview de país seleccionado
+- **Country Dropdown**: Replaced text input with select including:
+  - Complete country list from backend
+  - Flags with `CountryFlag` component
+  - Translated names with `formatCountryName()`
+  - Preview of selected country
 - **Real-time Validations**:
-  - Total par calculado automáticamente (debe ser 66-76)
-  - Stroke indices únicos (1-18 sin repetir)
-  - Tee ranges (courseRating, slopeRating) con hints WHS
+  - Total par calculated automatically (must be 66-76)
+  - Unique stroke indices (1-18 without repeating)
+  - Tee ranges (courseRating, slopeRating) with WHS hints
 - **Visual Feedback**:
-  - Badges de status con colores (green/yellow/red/gray)
-  - Indicadores de "Update pending" en tabla
-  - Iconos en acciones (view, edit, approve, reject)
-  - Tabs con contadores (New 5, Updates 3)
+  - Status badges with colors (green/yellow/red/gray)
+  - "Update pending" indicators in table
+  - Icons in actions (view, edit, approve, reject)
+  - Tabs with counters (New 5, Updates 3)
 
 ### 🔐 Security
 
-- Role-based visibility: Enlaces admin solo para `user.is_admin=true`
-- Protected routes: Solo autenticados acceden
+- Role-based visibility: Admin links only for `user.is_admin=true`
+- Protected routes: Only authenticated access  
 - Form validations: Multi-layer (HTML → Zod → Backend Pydantic)
-- Rejection reasons: Auditables (10-500 chars, stored in DB)
+- Rejection reasons: Auditable (10-500 chars, stored in DB)
 
 ### 📊 Statistics
 
@@ -513,22 +587,22 @@ Sistema completo de gestión de campos de golf con arquitectura Clean Architectu
 
 ### 🚀 Performance
 
-- Lazy loading de páginas admin con React.lazy()
-- Memoization potencial en GolfCourseTable (pendiente)
+- Lazy loading of admin pages with React.lazy()
+- Potential memoization in GolfCourseTable (pending)
 - Bundle impact: ~45 KB (form + table + pages)
 
 ### 📝 Documentation
 
-- JSDoc en todos los use cases
-- Comentarios en validaciones complejas (totalPar, stroke indices)
-- README actualizado con sección Golf Course Management
-- ROADMAP Sprint 1 marcado como COMPLETADO
+- JSDoc in all use cases
+- Comments in complex validations (totalPar, stroke indices)
+- README updated with Golf Course Management section
+- ROADMAP Sprint 1 marked as COMPLETED
 
 ## [1.16.0] - 2026-01-24
 
 ### 🚀 Major Dependencies Update
 
-Esta versión actualiza dependencias críticas con breaking changes, modernizando el stack tecnológico completo.
+This version updates critical dependencies with breaking changes, modernizing the complete tech stack.
 
 ### ⬆️ Updated
 
@@ -536,39 +610,39 @@ Esta versión actualiza dependencias críticas con breaking changes, modernizand
 - **react** & **react-dom**: 18.2.0 → 19.2.3
 - **@vitejs/plugin-react**: 4.7.0 → 5.1.2
 - **vite**: 6.x → 7.3.1
-- Removed **prop-types** (incompatible con React 19)
+- Removed **prop-types** (incompatible with React 19)
 
 #### Sprint 2: Monitoring & Routing
 - **@sentry/react**: 7.120.4 → 10.34.0 (React 19 support)
 - **react-router-dom**: 6.20.0 → 7.12.0
-- Fixed Docker build con Sentry 10
+- Fixed Docker build with Sentry 10
 
 #### Sprint 3: Build Tools & Styling
 - **tailwindcss**: 3.4.19 → 4.1.18 (CSS-first config)
 - **eslint**: 8.55.0 → 9.39.2 (Flat config)
-- Migración completa a `@theme` inline syntax
-- Nueva configuración `eslint.config.js`
+- Complete migration to `@theme` inline syntax
+- New `eslint.config.js` configuration
 
 #### Sprint 4: Verification & Fixes
 - **@sentry/replay**: → 7.116.0 (peer dependency fix)
 
 ### ✨ Added
-- Custom toast wrapper con botón de cerrar (X)
-- Cursor pointer en botones de cierre de toasts
-- Método `dismiss` en customToast
+- Custom toast wrapper with close button (X)
+- Pointer cursor on toast close buttons
+- `dismiss` method in customToast
 
 ### 🐛 Fixed
-- Login: Fix import de toast no definido (línea 83)
-- useInactivityLogout: Añadido import de toast
-- Tests: Actualizados 5 archivos para customToast mocks
-- Modal overlay: Reducida opacidad de 50% a 30%
-- Toast positioning: Movidos a bottom-right
+- Login: Fix undefined toast import (line 83)
+- useInactivityLogout: Added toast import
+- Tests: Updated 5 files for customToast mocks
+- Modal overlay: Reduced opacity from 50% to 30%
+- Toast positioning: Moved to bottom-right
 
 ### 🎯 Performance
 - Build time: 5.83s
 - Bundle size: 1318 KB (gzipped ~460 KB)
 - Code splitting: 40 chunks
-- Gzip compression: ~70% promedio
+- Gzip compression: ~70% average
 
 ### 🔒 Security
 - NPM Audit: 0 vulnerabilities
@@ -592,43 +666,43 @@ Esta versión actualiza dependencias críticas con breaking changes, modernizand
 ## [1.15.0] - 2026-01-24
 
 ### Added
-- **Subresource Integrity (SRI)**: Implementado sistema de validación de integridad de assets
-  - Instalado `vite-plugin-sri@0.0.2` con algoritmo SHA-384 hardcoded
-  - Todos los assets críticos (JS/CSS) incluyen hashes de integridad
-  - Atributo `crossorigin` agregado automáticamente para CORS
-  - Previene ataques de CDN comprometidas y modificación de assets
-  - Build verificado: 5 assets principales con integrity hashes
-- **CI/CD Commit Signature Verification**: Validación automática de firmas GPG en commits
-  - Nuevo job `commit-verification` en workflow CI/CD
-  - Rechaza commits sin firmar en pipeline (excepto merge commits automáticos de GitHub)
-  - Importa claves públicas desde secret `GPG_PUBLIC_KEYS`
-  - Verifica firma GPG con `git verify-commit`
-  - Bloquea build si commit no está firmado
-  - Detección automática de merge commits por parent count
-- **Package-Lock Integrity Validation**: Validación de integridad de package-lock.json
-  - Nuevo step en job `dependency-audit`
-  - Verifica que `package-lock.json` no se modificó durante `npm ci`
-  - Previene dependency confusion attacks
-  - Garantiza reproducibilidad de builds
+- **Subresource Integrity (SRI)**: Implemented asset integrity validation system
+  - Installed `vite-plugin-sri@0.0.2` with hardcoded SHA-384 algorithm
+  - All critical assets (JS/CSS) include integrity hashes
+  - `crossorigin` attribute added automatically for CORS
+  - Prevents compromised CDN attacks and asset modification
+  - Verified build: 5 main assets with integrity hashes
+- **CI/CD Commit Signature Verification**: Automatic GPG signature validation in commits
+  - New `commit-verification` job in CI/CD workflow
+  - Rejects unsigned commits in pipeline (except automatic GitHub merge commits)
+  - Imports public keys from `GPG_PUBLIC_KEYS` secret
+  - Verifies GPG signature with `git verify-commit`
+  - Blocks build if commit is not signed
+  - Automatic detection of merge commits by parent count
+- **Package-Lock Integrity Validation**: package-lock.json integrity validation
+  - New step in `dependency-audit` job
+  - Verifies that `package-lock.json` was not modified during `npm ci`
+  - Prevents dependency confusion attacks
+  - Guarantees build reproducibility
 
 ### Changed
-- **Dependency Updates**: Actualizadas dependencias a versiones más recientes
-  - `framer-motion`: v12.23.x → v12.27.0 (mejoras de performance)
-  - `vite`: v7.3.0 → v7.3.0 (sin cambios, verificado)
-  - `i18next`: v25.7.3 → v25.7.3 (sin cambios, verificado)
-  - `react-i18next`: v16.5.0 → v16.5.0 (sin cambios, verificado)
-- **GitHub Actions Updates**: Actualizadas actions de seguridad
-  - `snyk/actions`: actualizada a v1.0.0
-  - `trufflesecurity/trufflehog`: actualizada a v3.92.5
+- **Dependency Updates**: Updated dependencies to more recent versions
+  - `framer-motion`: v12.23.x → v12.27.0 (performance improvements)
+  - `vite`: v7.3.0 → v7.3.0 (no changes, verified)
+  - `i18next`: v25.7.3 → v25.7.3 (no changes, verified)
+  - `react-i18next`: v16.5.0 → v16.5.0 (no changes, verified)
+- **GitHub Actions Updates**: Updated security actions
+  - `snyk/actions`: updated to v1.0.0
+  - `trufflesecurity/trufflehog`: updated to v3.92.5
 
 ### Security
-- **OWASP A08: Data Integrity**: Mejora de 7.0/10 → **9.0/10** (+2.0)
-  - SRI previene modificación maliciosa de assets (+0.8)
-  - Commit signing previene commits maliciosos (+0.3)
-  - Package-lock validation previene dependency confusion (+0.2)
-  - Mejoras acumuladas en configuración y CI/CD (+0.7)
-  - Protección contra supply chain attacks
-- **OWASP Score Global**: 8.75/10 → **9.2/10** (+0.45)
+- **OWASP A08: Data Integrity**: Improvement from 7.0/10 → **9.0/10** (+2.0)
+  - SRI prevents malicious asset modification (+0.8)
+  - Commit signing prevents malicious commits (+0.3)
+  - Package-lock validation prevents dependency confusion (+0.2)
+  - Cumulative improvements in configuration and CI/CD (+0.7)
+  - Protection against supply chain attacks
+- **Global OWASP Score**: 8.75/10 → **9.2/10** (+0.45)
 
 ## [1.14.2] - 2026-01-19
 
@@ -685,7 +759,7 @@ Esta versión actualiza dependencias críticas con breaking changes, modernizand
 ## [1.14.0] - 2026-01-17
 
 ### Summary
-**Device Fingerprinting Improvements** - Complete overhaul of device management system with critical security fixes, UX enhancements, and code quality improvements. 19 bugs fixed across 3 sprints (Críticos, Medios, UX) in 3.5 days.
+**Device Fingerprinting Improvements** - Complete overhaul of device management system with critical security fixes, UX enhancements, and code quality improvements. 19 bugs fixed across 3 sprints (Critical, Medium, UX) in 3.5 days.
 
 ### Added
 - **Immediate Device Revocation Detection (Event-Driven)**: Proactive monitoring system for revoked devices
@@ -1115,294 +1189,294 @@ Esta versión actualiza dependencias críticas con breaking changes, modernizand
   - Created `CountryFlag` React component with static imports (Vite-compatible)
   - Updated 5 components: Register, Profile, EditProfile, CompetitionDetail, BrowseCompetitions
   - Flags now render consistently across all browsers and operating systems
-- **Responsive Design in Competition Detail**: Corregido desbordamiento horizontal en la sección "Pending Requests" en la vista de detalle de competición para el creador en dispositivos móviles.
-- **Responsive Design in Create Competition**: Ajustado el ancho de los campos de fecha ("Start Date" y "End Date") en la página de creación de competiciones para evitar que se desborden en pantallas móviles.
+- **Responsive Design in Competition Detail**: Fixed horizontal overflow in "Pending Requests" section in competition detail view for creator on mobile devices.
+- **Responsive Design in Create Competition**: Adjusted width of date fields ("Start Date" and "End Date") in competition creation page to prevent overflow on mobile screens.
 
 ### Changed
 - **Create Competition UI**:
-  - Reemplazados los radio buttons de "Team Assignment" por un selector desplegable para mejorar la UX.
-  - Reemplazados los radio buttons de "Player Handicap" por un selector desplegable.
+  - Replaced "Team Assignment" radio buttons with dropdown selector to improve UX.
+  - Replaced "Player Handicap" radio buttons with dropdown selector.
 
 ### Added
-- **Multiple Competition Status Filter**: Backend ahora acepta múltiples valores de `status` en el endpoint de listado de competiciones:
-  - Modificado parámetro `status_filter` de `Optional[str]` a `Optional[List[str]]` en `list_competitions()`
-  - Actualizada lógica en `_get_user_competitions()` para iterar sobre múltiples status
-  - Implementada deduplicación de competiciones cuando se consultan múltiples status
-  - Permite consultas como `?status=CLOSED&status=IN_PROGRESS&status=COMPLETED`
-- **Pending Enrollments Badge**: Indicador visual en "My Competitions" para creadores:
-  - Badge naranja con contador de solicitudes pendientes (estado REQUESTED)
-  - Aparece solo en competiciones donde el usuario es creador
-  - Incluye animación de pulso para llamar la atención
-  - Backend calcula `pending_enrollments_count` usando `EnrollmentStatus.REQUESTED`
-  - Frontend mapper agregado campo `pending_enrollments_count` al DTO
-- **Enhanced CompetitionDetail for Creators**: Reorganización completa de la sección de enrollments:
-  - **Approved Players Section**: Grid de 2 columnas con jugadores aprobados
-    - Muestra nombre, handicap (HCP: X.X) y equipo asignado
-    - Fondo verde claro y ordenación por equipo y handicap
-  - **Pending Requests Section**: Lista de solicitudes con acciones
-    - Fondo naranja para destacar
-    - Botones de Approve/Reject directamente visibles
-  - **Rejected Enrollments Section**: Colapsable para no ocupar espacio innecesariamente
+- **Multiple Competition Status Filter**: Backend now accepts multiple `status` values in competition listing endpoint:
+  - Modified `status_filter` parameter from `Optional[str]` to `Optional[List[str]]` in `list_competitions()`
+  - Updated logic in `_get_user_competitions()` to iterate over multiple statuses
+  - Implemented competition deduplication when querying multiple statuses
+  - Allows queries like `?status=CLOSED&status=IN_PROGRESS&status=COMPLETED`
+- **Pending Enrollments Badge**: Visual indicator in "My Competitions" for creators:
+  - Orange badge with counter of pending requests (REQUESTED status)
+  - Appears only in competitions where user is creator
+  - Includes pulse animation to draw attention
+  - Backend calculates `pending_enrollments_count` using `EnrollmentStatus.REQUESTED`
+  - Frontend mapper added `pending_enrollments_count` field to DTO
+- **Enhanced CompetitionDetail for Creators**: Complete reorganization of enrollments section:
+  - **Approved Players Section**: 2-column grid with approved players
+    - Shows name, handicap (HCP: X.X) and assigned team
+    - Light green background and sorting by team and handicap
+  - **Pending Requests Section**: List of requests with actions
+    - Orange background to highlight
+    - Approve/Reject buttons directly visible
+  - **Rejected Enrollments Section**: Collapsible to avoid unnecessary space
 - **Smart Competition Filtering for Rejected Enrollments**:
-  - Competiciones rechazadas se mantienen en "My Competitions" si están ACTIVE
-  - Se ocultan automáticamente si la competición está en CLOSED, IN_PROGRESS, COMPLETED o CANCELLED
-  - Permite al usuario ver rechazos mientras aún hay posibilidad de cambio
-  - Implementado en `_get_user_competitions()` con validación `EnrollmentStatus.REJECTED`
-- **Creator Information in Browse Cards**: Mapeo completo de datos del creador:
-  - Agregado campo `creator` al CompetitionMapper con conversión snake_case → camelCase
-  - Muestra nombre completo del creador: "Created by: [Nombre] [Apellido]"
-  - Incluye datos completos: id, firstName, lastName, email, handicap, countryCode
+  - Rejected competitions remain in "My Competitions" if they are ACTIVE
+  - Automatically hidden if competition is CLOSED, IN_PROGRESS, COMPLETED or CANCELLED
+  - Allows user to see rejections while there's still possibility of change
+  - Implemented in `_get_user_competitions()` with `EnrollmentStatus.REJECTED` validation
+- **Creator Information in Browse Cards**: Complete creator data mapping:
+  - Added `creator` field to CompetitionMapper with snake_case → camelCase conversion
+  - Shows creator's full name: "Created by: [First Name] [Last Name]"
+  - Includes complete data: id, firstName, lastName, email, handicap, countryCode
 
 ### Changed
-- **Dashboard Tournaments Counter**: Ahora usa `listUserCompetitionsUseCase` en lugar de `getCompetitions()`:
-  - Garantiza consistencia con la página "My Competitions"
-  - Cuenta solo competiciones del usuario (creadas O inscritas)
-  - Usa el mismo filtro `my_competitions=true` del backend
+- **Dashboard Tournaments Counter**: Now uses `listUserCompetitionsUseCase` instead of `getCompetitions()`:
+  - Guarantees consistency with "My Competitions" page
+  - Counts only user competitions (created OR enrolled)
+  - Uses same `my_competitions=true` filter from backend
 
 ### Testing
-- **Test Suite Update**: Corregidos tests de `useEditProfile` para incluir campo `countryCode`:
-  - Actualizado estado inicial de formData con campo `countryCode: ''`
-  - Total: **419 tests pasando** en **35 archivos**
-  - Cobertura completa de Domain Layer (Value Objects, Entities)
-  - Cobertura completa de Application Layer (Use Cases)
-  - Tests de hooks personalizados (useEditProfile)
-  - Tests de utilidades (countryUtils, validation)
+- **Test Suite Update**: Fixed `useEditProfile` tests to include `countryCode` field:
+  - Updated initial formData state with `countryCode: ''` field
+  - Total: **419 tests passing** in **35 files**
+  - Complete Domain Layer coverage (Value Objects, Entities)
+  - Complete Application Layer coverage (Use Cases)
+  - Custom hooks tests (useEditProfile)
+  - Utilities tests (countryUtils, validation)
 
 ### Fixed
-- **IN_PROGRESS Competitions Not Showing**: Corregido filtro de estados múltiples en backend:
-  - Frontend enviaba array `['CLOSED', 'IN_PROGRESS', 'COMPLETED']`
-  - Backend solo aceptaba un valor único de status
-  - Ahora procesa correctamente múltiples status en "Explore Competitions"
-- **Creator Name Missing in Browse Cards**: Corregido mapeo de datos del creador:
-  - El backend enviaba `creator` con campos en snake_case
-  - Frontend no estaba mapeando el campo `creator` en CompetitionMapper
-  - Ahora convierte correctamente: `first_name` → `firstName`, `last_name` → `lastName`
-- **Handicap Display Removed from Browse Cards**: Eliminado HCP del creador para tarjetas más compactas
+- **IN_PROGRESS Competitions Not Showing**: Fixed multiple status filter in backend:
+  - Frontend sent array `['CLOSED', 'IN_PROGRESS', 'COMPLETED']`
+  - Backend only accepted single status value
+  - Now correctly processes multiple statuses in "Explore Competitions"
+- **Creator Name Missing in Browse Cards**: Fixed creator data mapping:
+  - Backend sent `creator` with fields in snake_case
+  - Frontend wasn't mapping `creator` field in CompetitionMapper
+  - Now converts correctly: `first_name` → `firstName`, `last_name` → `lastName`
+- **Handicap Display Removed from Browse Cards**: Removed creator HCP for more compact cards
 
 ### Added
-- **Browse Competitions Feature**: Nueva página completa para descubrir y explorar competiciones públicas:
-  - **Dos secciones independientes**:
-    - **"Join a Competition"**: Lista competiciones ACTIVE donde el usuario puede solicitar unirse (excluye competiciones propias)
-    - **"Explore Competitions"**: Lista competiciones en estado CLOSED, IN_PROGRESS, o COMPLETED para visualización (incluye propias y ajenas)
-  - **Domain Layer**: Agregado método `findPublic(filters)` a `ICompetitionRepository` para obtener competiciones públicas con filtros
-  - **Infrastructure Layer**: Implementación completa en `ApiCompetitionRepository.findPublic()` con soporte para:
-    - Filtrado por status (único o múltiple)
-    - Búsqueda por nombre de competición (`searchName`)
-    - Búsqueda por nombre/email del creador (`searchCreator`)
-    - Exclusión de competiciones propias (`excludeMyCompetitions`)
-    - Paginación (`limit`, `offset`)
-  - **Application Layer**: Dos casos de uso dedicados con responsabilidad única:
-    - `BrowseJoinableCompetitionsUseCase`: Filtra ACTIVE + excluye competiciones propias
-    - `BrowseExploreCompetitionsUseCase`: Filtra [CLOSED, IN_PROGRESS, COMPLETED] + incluye todas
+- **Browse Competitions Feature**: Complete new page to discover and explore public competitions:
+  - **Two independent sections**:
+    - **"Join a Competition"**: Lists ACTIVE competitions where user can request to join (excludes own competitions)
+    - **"Explore Competitions"**: Lists competitions in CLOSED, IN_PROGRESS, or COMPLETED status for viewing (includes own and others)
+  - **Domain Layer**: Added `findPublic(filters)` method to `ICompetitionRepository` to get public competitions with filters
+  - **Infrastructure Layer**: Complete implementation in `ApiCompetitionRepository.findPublic()` with support for:
+    - Filter by status (single or multiple)
+    - Search by competition name (`searchName`)
+    - Search by creator name/email (`searchCreator`)
+    - Exclude own competitions (`excludeMyCompetitions`)
+    - Pagination (`limit`, `offset`)
+  - **Application Layer**: Two dedicated use cases with single responsibility:
+    - `BrowseJoinableCompetitionsUseCase`: Filters ACTIVE + excludes own competitions
+    - `BrowseExploreCompetitionsUseCase`: Filters [CLOSED, IN_PROGRESS, COMPLETED] + includes all
   - **Presentation Layer** (`BrowseCompetitions.jsx`):
-    - Búsqueda independiente en cada sección (client-side filtering)
-    - Componente reutilizable `CompetitionCard` con modo 'joinable' o 'explore'
-    - Botón "Request to Join" con optimistic UI (card desaparece al solicitar)
-    - Botón "View Details" para competiciones explorables
-    - Skeleton states y manejo de errores
-    - Integración con `secureAuth` para autenticación
-  - **Navegación mejorada**:
-    - Links agregados en `HeaderAuth` (desktop + mobile) y `Dashboard`
-    - Ruta protegida `/browse-competitions` en `App.jsx`
-    - Detección de origen en `CompetitionDetail`: "Back to Browse" o "Back to Competitions" según procedencia
-  - **Tests unitarios completos (19 tests - 100% pass rate)**:
-    - `BrowseJoinableCompetitionsUseCase.test.js`: 9 tests (filtros, status ACTIVE, excludeMyCompetitions)
-    - `BrowseExploreCompetitionsUseCase.test.js`: 10 tests (filtros, múltiples statuses, incluye todas)
+    - Independent search in each section (client-side filtering)
+    - Reusable `CompetitionCard` component with 'joinable' or 'explore' mode
+    - "Request to Join" button with optimistic UI (card disappears when requesting)
+    - "View Details" button for explorable competitions
+    - Skeleton states and error handling
+    - Integration with `secureAuth` for authentication
+  - **Improved navigation**:
+    - Links added in `HeaderAuth` (desktop + mobile) and `Dashboard`
+    - Protected `/browse-competitions` route in `App.jsx`
+    - Origin detection in `CompetitionDetail`: "Back to Browse" or "Back to Competitions" depending on origin
+  - **Complete unit tests (19 tests - 100% pass rate)**:
+    - `BrowseJoinableCompetitionsUseCase.test.js`: 9 tests (filters, ACTIVE status, excludeMyCompetitions)
+    - `BrowseExploreCompetitionsUseCase.test.js`: 10 tests (filters, multiple statuses, includes all)
 
 ### Fixed
-- **Email Verification Auto-Login Flow**: Corregido el flujo de verificación de email para autenticar automáticamente al usuario:
-  - `ApiAuthRepository.verifyEmail()` ahora retorna `{ user, token }` igual que el login
-  - `VerifyEmailUseCase` simplificado para retornar el resultado de autenticación directamente
-  - `VerifyEmail.jsx` ahora usa `setAuthToken()` en lugar de `localStorage` directamente
-  - Agregado `country_code` a `secureAuth.setUserData()` para completar el perfil de usuario
-  - Los usuarios ahora son redirigidos al dashboard después de verificar el email (no requieren login manual)
-  - El backend devuelve JWT token en `/api/v1/auth/verify-email` para autenticación automática
+- **Email Verification Auto-Login Flow**: Fixed email verification flow to automatically authenticate user:
+  - `ApiAuthRepository.verifyEmail()` now returns `{ user, token }` same as login
+  - `VerifyEmailUseCase` simplified to return authentication result directly
+  - `VerifyEmail.jsx` now uses `setAuthToken()` instead of `localStorage` directly
+  - Added `country_code` to `secureAuth.setUserData()` to complete user profile
+  - Users are now redirected to dashboard after verifying email (no manual login required)
+  - Backend returns JWT token in `/api/v1/auth/verify-email` for automatic authentication
 
 ### Added
-- **Sistema de Nacionalidad del Usuario (User Nationality System)**: Implementación completa del sistema de nacionalidad opcional para usuarios:
-  - **Domain Layer**: Campo `countryCode` agregado a la entidad `User` (opcional, nullable)
-  - **Value Object**: Reutilización del `CountryCode` VO existente del módulo Competition
-  - **RegisterUseCase**: Actualizado para aceptar `countryCode` opcional durante el registro
-  - **UpdateRfegHandicapUseCase**: Validación añadida para permitir RFEG solo a usuarios españoles (`country_code === 'ES'`)
-  - **Helper `canUseRFEG()`**: Nueva función utilitaria en `countryUtils.js` para verificar elegibilidad RFEG
-  - **Register.jsx**: Selector de países OPCIONAL con búsqueda, banderas y nombres en inglés
-  - **Profile.jsx**: Visualización de nacionalidad con badge azul mostrando bandera y nombre completo del país
-  - **EditProfile.jsx**: Lógica condicional para mostrar/ocultar botón "Update from RFEG" basado en nacionalidad
-  - **Auto-sync de datos**: Profile.jsx ahora consulta automáticamente el backend para mantener datos actualizados
-- **Inyección de dependencias actualizada**: `UpdateRfegHandicapUseCase` ahora recibe `userRepository` para validar nacionalidad
-- **Tests exhaustivos para Sistema de Nacionalidad (66 tests - 100% pass rate)**:
-  - `UpdateRfegHandicapUseCase.test.js`: 7 tests (validación de nacionalidad española)
+- **User Nationality System**: Complete implementation of optional nationality system for users:
+  - **Domain Layer**: `countryCode` field added to `User` entity (optional, nullable)
+  - **Value Object**: Reuse of existing `CountryCode` VO from Competition module
+  - **RegisterUseCase**: Updated to accept optional `countryCode` during registration
+  - **UpdateRfegHandicapUseCase**: Added validation to allow RFEG only for Spanish users (`country_code === 'ES'`)
+  - **Helper `canUseRFEG()`**: New utility function in `countryUtils.js` to verify RFEG eligibility
+  - **Register.jsx**: OPTIONAL country selector with search, flags and English names
+  - **Profile.jsx**: Nationality display with blue badge showing flag and full country name
+  - **EditProfile.jsx**: Conditional logic to show/hide "Update from RFEG" button based on nationality
+  - **Data auto-sync**: Profile.jsx now automatically queries backend to keep data updated
+- **Updated dependency injection**: `UpdateRfegHandicapUseCase` now receives `userRepository` to validate nationality
+- **Exhaustive tests for Nationality System (66 tests - 100% pass rate)**:
+  - `UpdateRfegHandicapUseCase.test.js`: 7 tests (Spanish nationality validation)
   - `countryUtils.test.js`: 31 tests (canUseRFEG, getCountryFlag, getCountryInfo, getCountriesInfo)
   - `User.test.js`: 17 tests (constructor, country_code field, toPersistence, business methods)
-  - `ApiUserRepository.test.js`: 11 tests (getById con endpoint correcto, update, updateSecurity)
-- **Auto-sync en useEditProfile hook**: Implementado fetch automático de datos frescos del backend al montar EditProfile
-- **Logs de depuración**: Agregados logs comprensivos en UpdateRfegHandicapUseCase, ApiUserRepository, y canUseRFEG para facilitar debugging
+  - `ApiUserRepository.test.js`: 11 tests (getById with correct endpoint, update, updateSecurity)
+- **Auto-sync in useEditProfile hook**: Implemented automatic fetch of fresh data from backend when mounting EditProfile
+- **Debug logs**: Added comprehensive logs in UpdateRfegHandicapUseCase, ApiUserRepository, and canUseRFEG for easier debugging
 
 ###
-- **GetCompetitionDetailUseCase (Application Layer)**: Nuevo caso de uso para obtener detalles de una competición:
-  - Valida entrada (competitionId requerido).
-  - Usa `repository.findById()` para obtener la entidad del dominio.
-  - Convierte la entidad a DTO simple para la UI usando `CompetitionMapper.toSimpleDTO()`.
-- **findById() en ICompetitionRepository**: Nuevo método de interfaz para consultar una competición por su ID.
-- **Casos de uso para transiciones de estado de competiciones**:
+- **GetCompetitionDetailUseCase (Application Layer)**: New use case to get competition details:
+  - Validates input (competitionId required).
+  - Uses `repository.findById()` to get domain entity.
+  - Converts entity to simple DTO for UI using `CompetitionMapper.toSimpleDTO()`.
+- **findById() in ICompetitionRepository**: New interface method to query competition by ID.
+- **Use cases for competition state transitions**:
   - `ActivateCompetitionUseCase`: DRAFT → ACTIVE
   - `CloseEnrollmentsUseCase`: ACTIVE → CLOSED
   - `StartCompetitionUseCase`: CLOSED → IN_PROGRESS
   - `CompleteCompetitionUseCase`: IN_PROGRESS → COMPLETED
   - `CancelCompetitionUseCase`: Any state → CANCELLED
-- **Utilidad de banderas dinámicas** (`countryUtils.js`): Generación de emojis de banderas usando Unicode Regional Indicators para cualquier código ISO de país.
-- **Soporte de países adyacentes con nombres bilingües**: Las competiciones ahora muestran países adyacentes con badges visuales que incluyen banderas y nombres completos en inglés/español.
-- **Tests unitarios completos para casos de uso de competiciones**: 6 nuevos archivos de test con cobertura exhaustiva:
+- **Dynamic flags utility** (`countryUtils.js`): Flag emoji generation using Unicode Regional Indicators for any ISO country code.
+- **Adjacent countries support with bilingual names**: Competitions now show adjacent countries with visual badges including flags and full names in English/Spanish.
+- **Complete unit tests for competition use cases**: 6 new test files with exhaustive coverage:
   - `GetCompetitionDetailUseCase.test.js` (6 test cases)
   - `ActivateCompetitionUseCase.test.js` (7 test cases)
   - `CloseEnrollmentsUseCase.test.js` (6 test cases)
   - `StartCompetitionUseCase.test.js` (7 test cases)
   - `CompleteCompetitionUseCase.test.js` (7 test cases)
   - `CancelCompetitionUseCase.test.js` (9 test cases)
-  - Total: 248 tests pasando (todos los módulos).
+  - Total: 248 tests passing (all modules).
 
 ### Changed
-- **Profile.jsx mejorado**:
-  - Agregado campo "Last Updated" en tarjeta principal de usuario
-  - Agregado campo "Nationality" con badge azul mostrando bandera y nombre del país en inglés
-  - Eliminada tarjeta redundante "Account Information"
-  - Implementado auto-sync con backend para mantener datos actualizados en cada visita
-- **ApiAuthRepository.register()**: Actualizado para enviar `country_code` al backend (con valor `null` si no se especifica)
-- **composition/index.js**: Actualizada inyección de dependencias para `UpdateRfegHandicapUseCase` (ahora incluye `userRepository`)
-- **ApiUserRepository.getById()**: Cambiado endpoint de `/api/v1/users/{userId}` a `/api/v1/auth/current-user` (el userId se obtiene del JWT token automáticamente)
-- **useEditProfile hook**: Refactorizado para hacer auto-sync con backend al montar, similar al patrón usado en Profile.jsx
-- **CreateCompetition.jsx payload**: Corregido para coincidir con la API del backend:
-  - Eliminados campos no válidos: `team_one_name`, `team_two_name`, `player_handicap`
-  - Convertidos a UPPERCASE: `handicap_type` y `team_assignment`
-- **ApiCompetitionRepository.findByCreator()**: Eliminado parámetro `creator_id` (el backend filtra automáticamente por usuario autenticado del JWT)
-- **Refactor `CompetitionDetail.jsx`**: Refactorizada la página de detalle de competiciones para usar Clean Architecture:
-  - Reemplazadas llamadas directas a servicios por casos de uso (`getCompetitionDetailUseCase`, `activateCompetitionUseCase`, etc.).
-  - Simplificado el manejo de estado usando solo actualizaciones parciales en transiciones.
-  - Mejorada la UI con badges de países que muestran banderas dinámicas y nombres completos.
-  - **CompetitionMapper actualizado**:
-  - Método `toDomain()` ahora maneja campos `secondary_country_code` y `tertiary_country_code` del backend.
-  - Método `toSimpleDTO()` genera array `countries` con objetos `{code, name, nameEn, nameEs, flag, isMain}` desde el backend.
-  - Soporte para fallback: si la API no devuelve nombres, usa códigos ISO.
-- **ApiCompetitionRepository.findById()**: Implementación del método para obtener una competición individual:
-  - Llama al endpoint `GET /api/v1/competitions/{id}`.
-  - Mapea respuesta de API a entidad del dominio usando `CompetitionMapper.toDomain()`.
-  - Adjunta datos originales de la API (`_apiData`) para uso del mapper.
+- **Profile.jsx improved**:
+  - Added "Last Updated" field in main user card
+  - Added "Nationality" field with blue badge showing flag and country name in English
+  - Removed redundant "Account Information" card
+  - Implemented auto-sync with backend to keep data updated on each visit
+- **ApiAuthRepository.register()**: Updated to send `country_code` to backend (with `null` value if not specified)
+- **composition/index.js**: Updated dependency injection for `UpdateRfegHandicapUseCase` (now includes `userRepository`)
+- **ApiUserRepository.getById()**: Changed endpoint from `/api/v1/users/{userId}` to `/api/v1/auth/current-user` (userId obtained from JWT token automatically)
+- **useEditProfile hook**: Refactored to do auto-sync with backend on mount, similar to pattern used in Profile.jsx
+- **CreateCompetition.jsx payload**: Fixed to match backend API:
+  - Removed invalid fields: `team_one_name`, `team_two_name`, `player_handicap`
+  - Converted to UPPERCASE: `handicap_type` and `team_assignment`
+- **ApiCompetitionRepository.findByCreator()**: Removed `creator_id` parameter (backend filters automatically by authenticated user from JWT)
+- **Refactor `CompetitionDetail.jsx`**: Refactored competition detail page to use Clean Architecture:
+  - Replaced direct service calls with use cases (`getCompetitionDetailUseCase`, `activateCompetitionUseCase`, etc.).
+  - Simplified state handling using only partial updates in transitions.
+  - Improved UI with country badges showing dynamic flags and full names.
+  - **CompetitionMapper updated**:
+  - `toDomain()` method now handles `secondary_country_code` and `tertiary_country_code` fields from backend.
+  - `toSimpleDTO()` method generates `countries` array with objects `{code, name, nameEn, nameEs, flag, isMain}` from backend.
+  - Fallback support: if API doesn't return names, uses ISO codes.
+- **ApiCompetitionRepository.findById()**: Implementation of method to get individual competition:
+  - Calls endpoint `GET /api/v1/competitions/{id}`.
+  - Maps API response to domain entity using `CompetitionMapper.toDomain()`.
+  - Attaches original API data (`_apiData`) for mapper use.
 
 ### Fixed
-- **Bug en CompetitionMapper**: Corregido error donde `teamAssignment.value` no se llamaba como función, causando renderizado de función en React.
-- **Race condition en Competitions.jsx**: Separado el `useEffect` en dos para evitar que `loadCompetitions()` se ejecute antes de que `setUser()` complete.
-- **Error 404 en ApiUserRepository.getById()**: Corregido endpoint inexistente `/api/v1/users/{userId}` a `/api/v1/auth/current-user` que sí existe en el backend
-- **Datos obsoletos en EditProfile**: Corregido problema donde EditProfile mostraba datos obsoletos del localStorage sin sincronizar con el backend
-- **RFEG no funcionaba para usuarios españoles**: Corregido error donde el repositorio intentaba obtener usuario de endpoint inexistente, impidiendo validación de nacionalidad
-- **Error 500 al crear competiciones**: Corregido payload enviando campos no válidos (`team_one_name`, `team_two_name`, `player_handicap`) que el backend no acepta
-- **Error 500 al listar competiciones**: Corregido envío de parámetro `creator_id` que el backend no acepta (usa JWT automáticamente)
-- **Case sensitivity en enums**: Corregido envío de `handicap_type` y `team_assignment` en lowercase cuando el backend espera UPPERCASE
-- **Mejor manejo de errores 500**: Agregado logging detallado y mensajes más claros cuando el backend responde con error 500
+- **Bug in CompetitionMapper**: Fixed error where `teamAssignment.value` was not called as a function, causing function render in React.
+- **Race condition in Competitions.jsx**: Separated `useEffect` into two to prevent `loadCompetitions()` from executing before `setUser()` completes.
+- **Error 404 in ApiUserRepository.getById()**: Fixed non-existent endpoint `/api/v1/users/{userId}` to `/api/v1/auth/current-user` which exists in the backend
+- **Stale data in EditProfile**: Fixed issue where EditProfile displayed stale localStorage data without syncing with backend
+- **RFEG not working for Spanish users**: Fixed error where repository tried to get user from non-existent endpoint, preventing nationality validation
+- **Error 500 when creating competitions**: Fixed payload sending invalid fields (`team_one_name`, `team_two_name`, `player_handicap`) that backend doesn't accept
+- **Error 500 when listing competitions**: Fixed sending `creator_id` parameter that backend doesn't accept (uses JWT automatically)
+- **Case sensitivity in enums**: Fixed sending `handicap_type` and `team_assignment` in lowercase when backend expects UPPERCASE
+- **Better error 500 handling**: Added detailed logging and clearer messages when backend responds with error 500
 
-###
-- **E2E Testing with Playwright**: Integrado el framework Playwright para tests End-to-End, incluyendo configuración, scripts y tests para el flujo de login.
-- **Unit Test for `CreateCompetitionUseCase`**: Añadido test unitario para el nuevo caso de uso, asegurando su lógica de negocio.
+### Added
+- **E2E Testing with Playwright**: Integrated Playwright framework for End-to-End tests, including configuration, scripts and tests for login flow.
+- **Unit Test for `CreateCompetitionUseCase`**: Added unit test for new use case, ensuring its business logic.
 - **CompetitionMapper (Infrastructure Layer)**: Nueva clase `CompetitionMapper` implementada como Anti-Corruption Layer:
-  - `toDomain()`: Convierte DTOs de la API (snake_case) a entidades del dominio (Competition).
-  - `toDTO()`: Convierte entidades del dominio a DTOs para persistencia.
-  - `toSimpleDTO()`: Convierte entidades a DTOs simples optimizados para la UI.
-  - Protege el dominio de cambios en la estructura de la API externa.
-- **ListUserCompetitionsUseCase (Application Layer)**: Nuevo caso de uso para listar competiciones del usuario:
-  - Valida entrada (userId requerido).
-  - Llama a `repository.findByCreator()` para obtener entidades del dominio.
-  - Convierte entidades a DTOs simples para la UI.
-  - Incluye 5 tests unitarios exhaustivos (validación, filtros, errores, casos vacíos).
-- **findByCreator() en ICompetitionRepository**: Nuevo método de interfaz para consultar competiciones por creador/usuario.
+  - `toDomain()`: Converts API DTOs (snake_case) to domain entities (Competition).
+  - `toDTO()`: Converts domain entities to DTOs for persistence.
+  - `toSimpleDTO()`: Converts entities to simple DTOs optimized for UI.
+  - Protects domain from changes in external API structure.
+- **ListUserCompetitionsUseCase (Application Layer)**: New use case to list user competitions:
+  - Validates input (userId required).
+  - Calls `repository.findByCreator()` to get domain entities.
+  - Converts entities to simple DTOs for UI.
+  - Includes 5 exhaustive unit tests (validation, filters, errors, empty cases).
+- **findByCreator() in ICompetitionRepository**: New interface method to query competitions by creator/user.
 
 ### Changed
-- **Refactor `CreateCompetition`**: Refactorizada la página de creación de competiciones para seguir los principios de Clean Architecture, extrayendo la lógica de negocio a `CreateCompetitionUseCase` y `ApiCompetitionRepository`.
-- **Error Message Standardization**: Estandarizado el mensaje de error para credenciales incorrectas (401) en `ApiAuthRepository` para que sea siempre en inglés.
-- **Clean Architecture & DDD Compliance**: Implementación completa de patrones arquitectónicos:
-  - **ApiCompetitionRepository**: Ahora devuelve entidades del dominio (Competition) en lugar de objetos planos.
-  - **CreateCompetitionUseCase**: Transforma entidades de dominio a DTOs simples para la UI usando `CompetitionMapper.toSimpleDTO()`.
-  - **Separation of Concerns**: Separación clara entre modelos de dominio, DTOs de API y DTOs de UI.
-  - **Repository Pattern**: El repositorio devuelve entidades del dominio, cumpliendo con el patrón.
-  - **DTO Pattern**: La UI recibe DTOs optimizados sin depender de Value Objects complejos.
-  - **Dependency Inversion**: La infraestructura depende del dominio, no al revés.
-- **CreateCompetitionUseCase.test.js**: Test actualizado para mockear `CompetitionMapper` y verificar que el caso de uso devuelve DTOs en lugar de entidades.
-- **Refactor `Competitions.jsx`**: Refactorizada la página de listado de competiciones para usar Clean Architecture:
-  - Reemplazado llamada directa al servicio `getCompetitions()` por `listUserCompetitionsUseCase.execute()`.
-  - Ahora recibe DTOs simples (camelCase) del caso de uso en lugar de datos de API (snake_case).
-  - Eliminada dependencia del servicio para obtención de datos (solo se usa para helpers de UI).
-- **ApiCompetitionRepository.findByCreator()**: Implementación del método para obtener competiciones de un usuario:
-  - Construye query params con `creator_id` y filtros opcionales.
-  - Mapea respuestas de API a entidades del dominio usando `CompetitionMapper.toDomain()`.
-  - Devuelve array de entidades `Competition`.
+- **Refactor `CreateCompetition`**: Refactored competition creation page to follow Clean Architecture principles, extracting business logic to `CreateCompetitionUseCase` and `ApiCompetitionRepository`.
+- **Error Message Standardization**: Standardized error message for incorrect credentials (401) in `ApiAuthRepository` to always be in English.
+- **Clean Architecture & DDD Compliance**: Complete implementation of architectural patterns:
+  - **ApiCompetitionRepository**: Now returns domain entities (Competition) instead of plain objects.
+  - **CreateCompetitionUseCase**: Transforms domain entities to simple DTOs for UI using `CompetitionMapper.toSimpleDTO()`.
+  - **Separation of Concerns**: Clear separation between domain models, API DTOs and UI DTOs.
+  - **Repository Pattern**: Repository returns domain entities, complying with the pattern.
+  - **DTO Pattern**: UI receives optimized DTOs without depending on complex Value Objects.
+  - **Dependency Inversion**: Infrastructure depends on domain, not the other way around.
+- **CreateCompetitionUseCase.test.js**: Test updated to mock `CompetitionMapper` and verify that use case returns DTOs instead of entities.
+- **Refactor `Competitions.jsx`**: Refactored competition listing page to use Clean Architecture:
+  - Replaced direct service call `getCompetitions()` with `listUserCompetitionsUseCase.execute()`.
+  - Now receives simple DTOs (camelCase) from use case instead of API data (snake_case).
+  - Removed service dependency for data fetching (only used for UI helpers).
+- **ApiCompetitionRepository.findByCreator()**: Implementation of method to get user competitions:
+  - Builds query params with `creator_id` and optional filters.
+  - Maps API responses to domain entities using `CompetitionMapper.toDomain()`.
+  - Returns array of `Competition` entities.
 
 ### Fixed
-- **Vite Test Configuration**: Corregida la configuración de Vitest para que ignore los tests de Playwright, permitiendo que ambos corredores de tests funcionen de forma independiente.
-- **Bundler Module Resolution**: Solucionado un error de arranque de la aplicación cambiando la exportación de la entidad `Competition` a una exportación por defecto para resolver un conflicto con el bundler de Vite.
-- **Syntax Errors**: Corregidos múltiples errores de sintaxis y de importación en `composition/index.js` y otros archivos introducidos durante la refactorización.
-- **Missing JSX in CreateCompetition**: Restaurado el JSX completo del formulario de creación de competiciones que fue accidentalmente reemplazado por un comentario en un commit anterior (854 líneas restauradas).
-- **API Response Mapping Error**: Corregido error crítico donde `ApiCompetitionRepository` intentaba crear una entidad Competition directamente con datos de la API en snake_case, causando el error "Team 1 name cannot be empty".
-- **Adjacent Country Filtering**: Corregido el filtro de países adyacentes que comparaba incorrectamente `parseInt(countryCode)` en lugar de comparar strings directamente. Ahora el país seleccionado en "Adjacent Country 1" se excluye correctamente de las opciones de "Adjacent Country 2".
+- **Vite Test Configuration**: Fixed Vitest configuration to ignore Playwright tests, allowing both test runners to work independently.
+- **Bundler Module Resolution**: Solved application startup error by changing `Competition` entity export to default export to resolve conflict with Vite bundler.
+- **Syntax Errors**: Fixed multiple syntax and import errors in `composition/index.js` and other files introduced during refactoring.
+- **Missing JSX in CreateCompetition**: Restored complete JSX for competition creation form that was accidentally replaced by a comment in a previous commit (854 lines restored).
+- **API Response Mapping Error**: Fixed critical error where `ApiCompetitionRepository` tried to create Competition entity directly with snake_case API data, causing "Team 1 name cannot be empty" error.
+- **Adjacent Country Filtering**: Fixed adjacent country filter that incorrectly compared `parseInt(countryCode)` instead of directly comparing strings. Now selected country in "Adjacent Country 1" is correctly excluded from "Adjacent Country 2" options.
 
 
 ### Added
-- **Dominio `Competition`**: Implementación completa de la capa de dominio para la gestión de competiciones, siguiendo principios de DDD.
-  - **Value Objects**: `CompetitionId`, `CompetitionStatus`, `CompetitionName`, `DateRange`, `Location` (compuesto), `HandicapSettings`, `TeamAssignment` y `CountryCode`.
-  - **Entidad**: `Competition` como Agregado Raíz, encapsulando lógica de negocio y transiciones de estado inmutables.
-  - **Repositorio**: Interfaz `ICompetitionRepository` para definir el contrato de persistencia.
-- **Tests Unitarios**: Cobertura de tests completa para todos los nuevos Value Objects y la entidad `Competition` para garantizar la robustez y el comportamiento esperado.
-- **Dashboard**: La tarjeta "Tournaments" ahora muestra dinámicamente el número total de competiciones obtenidas de la API.
-- **Dependencia**: Añadido el paquete `uuid` para la generación de identificadores únicos en el dominio.
+- **`Competition` Domain**: Complete implementation of domain layer for competition management, following DDD principles.
+  - **Value Objects**: `CompetitionId`, `CompetitionStatus`, `CompetitionName`, `DateRange`, `Location` (composite), `HandicapSettings`, `TeamAssignment` and `CountryCode`.
+  - **Entity**: `Competition` as Aggregate Root, encapsulating business logic and immutable state transitions.
+  - **Repository**: `ICompetitionRepository` interface to define persistence contract.
+- **Unit Tests**: Complete test coverage for all new Value Objects and `Competition` entity to ensure robustness and expected behavior.
+- **Dashboard**: "Tournaments" card now dynamically displays total number of competitions obtained from API.
+- **Dependency**: Added `uuid` package for unique identifier generation in domain.
 
 ### Fixed
-- **Crear Competición**: Corregido un bug donde el número de jugadores no se guardaba. El campo enviado a la API ahora es `max_players` en lugar de `number_of_players`.
-- **Borrar Competición**: Corregido un bug crítico que impedía borrar competiciones. El servicio API ahora maneja correctamente las respuestas `204 No Content` del backend.
+- **Create Competition**: Fixed bug where number of players was not saved. Field sent to API is now `max_players` instead of `number_of_players`.
+- **Delete Competition**: Fixed critical bug preventing competition deletion. API service now correctly handles `204 No Content` responses from backend.
 
 ### Changed
-- **Refactor (Formulario)**: Eliminado el campo `description` del formulario de creación de competiciones para alinearlo con el modelo de dominio de la entidad `Competition`.
-- **Refactor (Profile):** Extraída la lógica del componente `EditProfile.jsx` a un hook personalizado `useEditProfile.js`. Esto simplifica el componente a una capa de presentación pura y centraliza el manejo del estado y los efectos secundarios. Se han añadido tests unitarios exhaustivos para el nuevo hook.
-- **Refactor (DDD):** Introducidos `Email` y `Password` Value Objects para mejorar la robustez y seguridad del dominio.
-  - Refactorizados `User` entity, casos de uso de autenticación (`Login`, `Register`, `UpdateUserSecurity`) y repositorios para utilizar los nuevos Value Objects.
-  - Corregidos tests unitarios para alinearse con los nuevos contratos de los casos de uso.
-  - Corregida una regresión en la actualización de seguridad del perfil.
+- **Refactor (Form)**: Removed `description` field from competition creation form to align with `Competition` entity domain model.
+- **Refactor (Profile):** Extracted logic from `EditProfile.jsx` component to custom hook `useEditProfile.js`. This simplifies component to pure presentation layer and centralizes state management and side effects. Exhaustive unit tests added for new hook.
+- **Refactor (DDD):** Introduced `Email` and `Password` Value Objects to improve domain robustness and security.
+  - Refactored `User` entity, authentication use cases (`Login`, `Register`, `UpdateUserSecurity`) and repositories to use new Value Objects.
+  - Fixed unit tests to align with new use case contracts.
+  - Fixed regression in profile security update.
 
 ### Added
-- Implementación de Clean Architecture para el flujo de verificación de email, incluyendo:
-  - Caso de uso `VerifyEmailUseCase`.
-  - Método `verifyEmail` en `IAuthRepository` y `ApiAuthRepository`.
-- Implementación del sistema de pruebas unitarias con Vitest:
-  - Configuración de Vitest, `jsdom`, `@testing-library/react`.
-  - Creación de `setupTests.js` para configuración global de tests.
-  - Creación de tests unitarios para `LoginUseCase`, `RegisterUseCase`, `UpdateUserSecurityUseCase`, `UpdateManualHandicapUseCase`, `UpdateRfegHandicapUseCase`, `UpdateUserProfileUseCase` y `VerifyEmailUseCase`.
-- Implementación de Clean Architecture para el flujo de autenticación (Login/Register), incluyendo:
-  - Interfaz `IAuthRepository`.
-  - Implementación `ApiAuthRepository`.
-  - Casos de uso `LoginUseCase` y `RegisterUseCase`.
-- Implementación de Clean Architecture para la funcionalidad de actualización de seguridad del usuario (email/contraseña), incluyendo:
-  - Caso de uso `UpdateUserSecurityUseCase`.
-  - Método `updateSecurity` en `IUserRepository` y `ApiUserRepository`.
-- Implementación de Clean Architecture para la gestión de hándicaps (manual y RFEG), incluyendo:
-  - Interfaz `IHandicapRepository`.
-  - Implementación `ApiHandicapRepository`.
-  - Casos de uso `UpdateManualHandicapUseCase` y `UpdateRfegHandicapUseCase`.
-- Implementación de Clean Architecture para la funcionalidad de actualización de perfil de usuario. Esto incluye:
-  - Definición de la entidad `User` en la capa de dominio.
-  - Definición de la interfaz `IUserRepository` en la capa de dominio.
-  - Implementación del caso de uso `UpdateUserProfileUseCase` en la capa de aplicación.
-  - Implementación de `ApiUserRepository` en la capa de infraestructura para la comunicación con la API.
-  - Configuración del "composition root" en `src/composition/index.js` para la inyección de dependencias.
+- Implementation of Clean Architecture for email verification flow, including:
+  - Use case `VerifyEmailUseCase`.
+  - Method `verifyEmail` in `IAuthRepository` and `ApiAuthRepository`.
+- Implementation of unit testing system with Vitest:
+  - Configuration of Vitest, `jsdom`, `@testing-library/react`.
+  - Creation of `setupTests.js` for global test configuration.
+  - Creation of unit tests for `LoginUseCase`, `RegisterUseCase`, `UpdateUserSecurityUseCase`, `UpdateManualHandicapUseCase`, `UpdateRfegHandicapUseCase`, `UpdateUserProfileUseCase` and `VerifyEmailUseCase`.
+- Implementation of Clean Architecture for authentication flow (Login/Register), including:
+  - Interface `IAuthRepository`.
+  - Implementation `ApiAuthRepository`.
+  - Use cases `LoginUseCase` and `RegisterUseCase`.
+- Implementation of Clean Architecture for user security update functionality (email/password), including:
+  - Use case `UpdateUserSecurityUseCase`.
+  - Method `updateSecurity` in `IUserRepository` and `ApiUserRepository`.
+- Implementation of Clean Architecture for handicap management (manual and RFEG), including:
+  - Interface `IHandicapRepository`.
+  - Implementation `ApiHandicapRepository`.
+  - Use cases `UpdateManualHandicapUseCase` and `UpdateRfegHandicapUseCase`.
+- Implementation of Clean Architecture for user profile update functionality. This includes:
+  - Definition of `User` entity in domain layer.
+  - Definition of `IUserRepository` interface in domain layer.
+  - Implementation of `UpdateUserProfileUseCase` use case in application layer.
+  - Implementation of `ApiUserRepository` in infrastructure layer for API communication.
+  - Configuration of "composition root" in `src/composition/index.js` for dependency injection.
 
 ### Changed
-- Refactorización de `VerifyEmail.jsx` para utilizar `VerifyEmailUseCase`.
-- Refactorización de `Login.jsx` y `Register.jsx` para utilizar `LoginUseCase` y `RegisterUseCase`.
-- Manejo de errores mejorado en `ApiAuthRepository` para respuestas de la API (ej. errores 422 de validación).
-- Refactorización de `EditProfile.jsx` para utilizar `UpdateUserSecurityUseCase`, `UpdateManualHandicapUseCase` y `UpdateRfegHandicapUseCase`.
-- Centralización y mejora del manejo de errores en `ApiUserRepository` y `ApiHandicapRepository` para respuestas de la API (ej. errores 422 de validación).
-- Refactorización de `EditProfile.jsx` para utilizar `UpdateUserProfileUseCase` y el sistema de notificaciones `react-hot-toast`.
-- Migración completa del sistema de mensajes local (`message` state y `getMessageClassName`) a `react-hot-toast` para una experiencia de usuario consistente y un código más limpio.
+- Refactoring of `VerifyEmail.jsx` to use `VerifyEmailUseCase`.
+- Refactoring of `Login.jsx` and `Register.jsx` to use `LoginUseCase` and `RegisterUseCase`.
+- Improved error handling in `ApiAuthRepository` for API responses (e.g. 422 validation errors).
+- Refactoring of `EditProfile.jsx` to use `UpdateUserSecurityUseCase`, `UpdateManualHandicapUseCase` and `UpdateRfegHandicapUseCase`.
+- Centralization and improvement of error handling in `ApiUserRepository` and `ApiHandicapRepository` for API responses (e.g. 422 validation errors).
+- Refactoring of `EditProfile.jsx` to use `UpdateUserProfileUseCase` and `react-hot-toast` notification system.
+- Complete migration of local message system (`message` state and `getMessageClassName`) to `react-hot-toast` for consistent user experience and cleaner code.
 
 ### Fixed
-- Corrección de un bug en `UpdateUserProfileUseCase` donde faltaba la validación de entrada (`userId`, `updateData`).
-- Corrección de un bug en el flujo de registro donde la estructura de la respuesta de la API era asumida incorrectamente, causando un error de "destructuring".
-- Corrección de un bug en la actualización de seguridad del usuario donde `confirm_password` no se enviaba al backend, causando un error de validación 422.
+- Fixed bug in `UpdateUserProfileUseCase` where input validation was missing (`userId`, `updateData`).
+- Fixed bug in registration flow where API response structure was incorrectly assumed, causing a "destructuring" error.
+- Fixed bug in user security update where `confirm_password` was not sent to backend, causing a 422 validation error.
 
 
 
@@ -1410,146 +1484,146 @@ Esta versión actualiza dependencias críticas con breaking changes, modernizand
 ## [1.4.0] - 2025-11-17
 
 ### Added
-- Rediseño completo de página de Login con animaciones Framer Motion
-- Rediseño completo de página de Register con animaciones Framer Motion
+- Complete redesign of Login page with Framer Motion animations
+- Complete redesign of Register page with Framer Motion animations
 
 ### Changed
-- **BREAKING**: Actualizado @vitejs/plugin-react de 4.2.1 a 4.7.0 para compatibilidad con Vite 7
-- Removido header X-XSS-Protection deprecado de vite.config.js (protección XSS ahora vía CSP)
-- Removido header X-XSS-Protection deprecado de public/_headers y vercel.json
-- Removido header HSTS de vite.config.js (ahora solo en producción vía Netlify/Vercel)
-- Migradas imágenes de Unsplash a assets locales en `/public/images/`
-  - `golf-background.jpeg` - Background del hero section
-  - `hero-tournament.jpeg` - Imagen principal del hero
-  - `golf-friends.jpeg` - Imagen de la sección de beneficios
+- **BREAKING**: Updated @vitejs/plugin-react from 4.2.1 to 4.7.0 for Vite 7 compatibility
+- Removed deprecated X-XSS-Protection header from vite.config.js (XSS protection now via CSP)
+- Removed deprecated X-XSS-Protection header from public/_headers and vercel.json
+- Removed HSTS header from vite.config.js (now only in production via Netlify/Vercel)
+- Migrated images from Unsplash to local assets in `/public/images/`
+  - `golf-background.jpeg` - Hero section background
+  - `hero-tournament.jpeg` - Hero main image
+  - `golf-friends.jpeg` - Benefits section image
 
 ### Fixed
-- **CSP Critical Fix**: Actualizado `connect-src` para permitir conexiones a backend de Render
-  - Agregado `https://rydercupam-euzt.onrender.com` al CSP
-  - Agregado `http://localhost:8000` para desarrollo local
-  - Resuelto error: "Refused to connect to backend because it does not appear in connect-src"
-- **CSP Compatibility**: Agregado `'unsafe-inline'` a `script-src` y `style-src` para React y Tailwind
-- Corregida configuración de headers de seguridad para desarrollo local
-- HSTS ya no fuerza HTTPS en entorno de desarrollo (solo producción)
-- Eliminada dependencia de URLs externas de Unsplash (previene rate-limiting)
+- **CSP Critical Fix**: Updated `connect-src` to allow connections to Render backend
+  - Added `https://rydercupam-euzt.onrender.com` to CSP
+  - Added `http://localhost:8000` for local development
+  - Resolved error: "Refused to connect to backend because it does not appear in connect-src"
+- **CSP Compatibility**: Added `'unsafe-inline'` to `script-src` and `style-src` for React and Tailwind
+- Fixed security header configuration for local development
+- HSTS no longer forces HTTPS in development environment (production only)
+- Eliminated dependency on external Unsplash URLs (prevents rate-limiting)
 
 ### Security
-- **Headers Optimizados**: HSTS solo en producción (Netlify/_headers, vercel.json)
-- **XSS Protection**: Deprecado X-XSS-Protection removido, CSP provee protección
-- **CSP Actualizado**: Content Security Policy corregido para permitir backend API
-- **Assets Locales**: Imágenes locales eliminan dependencia de servicios externos
-- **Vite 7 Compatible**: Build tool actualizado con mejoras de seguridad
-- **Node.js >= 20.19**: Requisito cumplido (v25.1.0 instalado)
+- **Optimized Headers**: HSTS only in production (Netlify/_headers, vercel.json)
+- **XSS Protection**: Deprecated X-XSS-Protection removed, CSP provides protection
+- **Updated CSP**: Content Security Policy fixed to allow backend API
+- **Local Assets**: Local images eliminate dependency on external services
+- **Vite 7 Compatible**: Build tool updated with security improvements
+- **Node.js >= 20.19**: Requirement met (v25.1.0 installed)
 
 ### Performance
-- Imágenes locales mejoran tiempo de carga (sin redirecciones a CDN externo)
-- Build optimizado con Vite 7.2.2 (2.64s, 0 warnings)
+- Local images improve load time (no redirects to external CDN)
+- Build optimized with Vite 7.2.2 (2.64s, 0 warnings)
 
 ## [1.3.0] - 2025-11-17
 
 ### Added
-- Meta tag CSP (Content Security Policy) en index.html para protección contra scripts maliciosos
-- Sanitización exhaustiva de todos los caracteres peligrosos en validaciones
+- CSP meta tag (Content Security Policy) in index.html for protection against malicious scripts
+- Exhaustive sanitization of all dangerous characters in validations
 
 ### Changed
-- Pulido de UI/UX en la landing page para mejor experiencia de usuario
-- Actualizado package.json y dependencias NPM (0 vulnerabilidades)
-- Mejorada función de escape en `src/utils/validation.js` con sanitización más completa
-- Actualizado `SECURITY_MIGRATION.md` con documentación extendida de mejoras de seguridad
+- UI/UX polish on landing page for better user experience
+- Updated package.json and NPM dependencies (0 vulnerabilities)
+- Improved escape function in `src/utils/validation.js` with more complete sanitization
+- Updated `SECURITY_MIGRATION.md` with extended documentation of security improvements
 
 ### Security
-- **AUDITORÍA COMPLETA**: Todas las dependencias NPM auditadas y actualizadas
-- **0 VULNERABILIDADES**: Ninguna vulnerabilidad detectada en las dependencias
-- **CSP Implementado**: Content Security Policy activo para prevenir XSS
-- **XSS Sanitization**: Escape completo de caracteres peligrosos: `< > " ' & / \ =`
-- Protección mejorada contra inyección de scripts en inputs de usuario
+- **COMPLETE AUDIT**: All NPM dependencies audited and updated
+- **0 VULNERABILITIES**: No vulnerabilities detected in dependencies
+- **CSP Implemented**: Content Security Policy active to prevent XSS
+- **XSS Sanitization**: Complete escape of dangerous characters: `< > " ' & / \ =`
+- Improved protection against script injection in user inputs
 
 ### Documentation
-- Expandido `SECURITY_MIGRATION.md` con detalles de las mejoras implementadas
+- Expanded `SECURITY_MIGRATION.md` with details of implemented improvements
 
 ## [1.2.0] - 2024-11-16
 
 ### Added
-- Utilidades centralizadas de autenticación en `src/utils/secureAuth.js`
-- Sistema de migración automática de localStorage a sessionStorage
-- Documentación completa de migración a httpOnly cookies en `SECURITY_MIGRATION.md`
-- Funciones de gestión de autenticación: `getAuthToken()`, `setAuthToken()`, `getUserData()`, `setUserData()`, `clearAuthData()`
-- Validación de expiración de token con buffer de 30 segundos para clock skew
+- Centralized authentication utilities in `src/utils/secureAuth.js`
+- Automatic migration system from localStorage to sessionStorage
+- Complete migration documentation to httpOnly cookies in `SECURITY_MIGRATION.md`
+- Authentication management functions: `getAuthToken()`, `setAuthToken()`, `getUserData()`, `setUserData()`, `clearAuthData()`
+- Token expiration validation with 30-second buffer for clock skew
 
 ### Changed
-- **BREAKING**: Migrado almacenamiento de JWT de localStorage a sessionStorage
-- Actualizados todos los componentes y páginas para usar utilidades de `secureAuth`
-- Centralizada la lógica de autenticación para mejor mantenibilidad
-- Mejorada la validación de tokens con verificación de claim `exp`
+- **BREAKING**: Migrated JWT storage from localStorage to sessionStorage
+- Updated all components and pages to use `secureAuth` utilities
+- Centralized authentication logic for better maintainability
+- Improved token validation with `exp` claim verification
 
 ### Security
-- **IMPORTANTE**: Reducido impacto de vulnerabilidades XSS mediante uso de sessionStorage
-- SessionStorage se limpia automáticamente al cerrar la pestaña/ventana
-- Almacenamiento aislado por pestaña (tab-scoped) para mejor seguridad
-- Tokens ya no persisten entre sesiones del navegador
-- Documentada ruta de migración completa a httpOnly cookies para seguridad máxima
+- **IMPORTANT**: Reduced XSS vulnerability impact through sessionStorage use
+- SessionStorage automatically clears when closing tab/window
+- Tab-scoped isolated storage for better security
+- Tokens no longer persist between browser sessions
+- Documented complete migration path to httpOnly cookies for maximum security
 
 ### Migration Notes
-- Los usuarios existentes se migran automáticamente de localStorage a sessionStorage
-- Se requiere re-autenticación después de actualizar (sesiones antiguas en localStorage se limpian)
-- Ver `SECURITY_MIGRATION.md` para plan de implementación de httpOnly cookies
+- Existing users are automatically migrated from localStorage to sessionStorage
+- Re-authentication required after update (old localStorage sessions are cleared)
+- See `SECURITY_MIGRATION.md` for httpOnly cookies implementation plan
 
 ## [1.1.0] - 2024-11-16
 
 ### Added
-- Sistema de notificaciones toast con react-hot-toast para feedback en tiempo real
-- Componente PasswordStrengthIndicator con barra visual de 4 niveles de fortaleza
-- Componente PasswordInput reutilizable con toggle mostrar/ocultar contraseña
-- Iconos modernos SVG con Lucide React integrados en toda la aplicación
-- Animaciones de entrada y transiciones con Framer Motion en todas las páginas clave
-- Sistema de badges en perfil de usuario (Email Verificado, Cuenta Activa, Hándicap Registrado)
-- Cards de estadísticas con gradientes en Dashboard (Torneos, Hándicap, Estado del perfil)
-- Enlace "Volver al inicio" en páginas de Login y Register
-- Validación visual en tiempo real en formularios de autenticación
+- Toast notification system with react-hot-toast for real-time feedback
+- PasswordStrengthIndicator component with visual bar of 4 strength levels
+- Reusable PasswordInput component with show/hide password toggle
+- Modern SVG icons with Lucide React integrated throughout the application
+- Entry animations and transitions with Framer Motion on all key pages
+- Badge system in user profile (Verified Email, Active Account, Registered Handicap)
+- Statistics cards with gradients in Dashboard (Tournaments, Handicap, Profile Status)
+- "Back to Home" link on Login and Register pages
+- Real-time visual validation in authentication forms
 
 ### Changed
-- Rediseñado completo del Dashboard con cards visuales modernas y gradientes sutiles
-- Mejorado diseño del Profile con header card, badges dinámicos y mejor jerarquía visual
-- Actualizado sistema de colores Tailwind con tonalidades completas 50-900 (verde golf, dorado, navy)
-- Mejoradas páginas de Login y Register con mejor UX, validaciones visuales y animaciones
-- Traducidos todos los textos de la interfaz a español en flujos de autenticación
-- Optimizados botones de acción con iconos Lucide y efectos hover suaves
-- Reorganizadas "Acciones Rápidas" en Dashboard con diseño horizontal y mejores iconos
-- Alineados todos los elementos de formulario (inputs, botones, enlaces) para consistencia visual
-- Mejorada responsividad en dispositivos móviles y tablets
+- Complete Dashboard redesign with modern visual cards and subtle gradients
+- Improved Profile design with header card, dynamic badges and better visual hierarchy
+- Updated Tailwind color system with full 50-900 shades (golf green, gold, navy)
+- Improved Login and Register pages with better UX, visual validations and animations
+- Translated all interface texts to Spanish in authentication flows
+- Optimized action buttons with Lucide icons and smooth hover effects
+- Reorganized "Quick Actions" in Dashboard with horizontal layout and better icons
+- Aligned all form elements (inputs, buttons, links) for visual consistency
+- Improved responsiveness on mobile devices and tablets
 
 ### Fixed
-- Corregido error de toast.warning a toast personalizado con icono de advertencia en Login
-- Solucionado problema de alineación de enlaces en formularios de autenticación
-- Corregida visualización del botón "Crear Cuenta" para ocupar el ancho completo del formulario
+- Fixed toast.warning to custom toast with warning icon in Login
+- Solved link alignment issue in authentication forms
+- Fixed "Create Account" button display to span full form width
 
 ### Security
-- Agregado rate limiting con feedback visual en formulario de login (5 intentos por 5 minutos)
-- Implementada validación robusta de fortaleza de contraseña con múltiples criterios
-- Mejorado sistema de validación centralizado con funciones utilitarias
+- Added rate limiting with visual feedback in login form (5 attempts per 5 minutes)
+- Implemented robust password strength validation with multiple criteria
+- Improved centralized validation system with utility functions
 
 ## [1.0.0] - 2024-11-12
 
 ### Added
-- Sistema de autenticación completo (Login, Register, Verify Email)
-- Dashboard de usuario con información de perfil
-- Página de perfil con visualización de datos personales y hándicap
-- Sistema de gestión de hándicaps (manual y desde RFEG)
-- Integración completa con backend FastAPI
-- Sistema de rutas protegidas con componente ProtectedRoute
-- Validaciones de formularios con mensajes de error
-- ProfileCard componente reutilizable
-- EmailVerificationBanner para usuarios sin verificar
-- Headers de seguridad HTTP en producción
-- Configuración de Tailwind CSS con tema personalizado
-- Sistema de navegación con React Router v6
+- Complete authentication system (Login, Register, Verify Email)
+- User dashboard with profile information
+- Profile page with display of personal data and handicap
+- Handicap management system (manual and from RFEG)
+- Full integration with FastAPI backend
+- Protected routes system with ProtectedRoute component
+- Form validations with error messages
+- Reusable ProfileCard component
+- EmailVerificationBanner for unverified users
+- HTTP security headers in production
+- Tailwind CSS configuration with custom theme
+- Navigation system with React Router v6
 
 ### Security
-- Implementado almacenamiento seguro de tokens JWT en localStorage
-- Validación de tokens en rutas protegidas
-- Sistema de logging seguro (safeLog) que solo funciona en desarrollo
-- Configuración de headers de seguridad (X-Content-Type-Options, X-Frame-Options, etc.)
-- Eliminación automática de console.log en builds de producción
+- Implemented secure JWT token storage in localStorage
+- Token validation in protected routes
+- Secure logging system (safeLog) that only works in development
+- Security headers configuration (X-Content-Type-Options, X-Frame-Options, etc.)
+- Automatic removal of console.log in production builds
 
 [Unreleased]: https://github.com/agustinEDev/RyderCupWeb/compare/v2.0.4...HEAD
 [2.0.4]: https://github.com/agustinEDev/RyderCupWeb/compare/v2.0.0...v2.0.4

@@ -51,7 +51,7 @@ style: |
 <br>
 
 **Agustin Estevez Dominguez**
-v2.0.8 (BE) / v2.0.6 (FE) | February 2026
+v2.0.8 (BE) / v2.0.12 (FE) | February 2026
 
 Frontend: github.com/agustinEDev/RyderCupWeb
 Backend: github.com/agustinEDev/RyderCupAm
@@ -84,7 +84,7 @@ Backend: github.com/agustinEDev/RyderCupAm
 8. Frontend Architecture (Clean + DDD)
 9. Key Features & Workflows
 10. Frontend Security & i18n
-11. Testing Strategy (2,717 total tests)
+11. Testing Strategy (3,098 total tests)
 12. CI/CD Pipelines
 
 ### Part IV - Closing
@@ -127,7 +127,7 @@ Backend: github.com/agustinEDev/RyderCupAm
 <span>API Endpoints</span>
 </div>
 <div class="stat-box">
-<strong>2,717</strong>
+<strong>3,098</strong>
 <span>Total Tests</span>
 </div>
 <div class="stat-box">
@@ -159,7 +159,7 @@ Backend: github.com/agustinEDev/RyderCupAm
 ```
   ┌─────────────────────────────────────────────────────────────┐
   │                          FRONTEND                           │
-  │  React 19  |  Vite 7  |  Tailwind 4  |  1,104 tests         │
+  │  React 19  |  Vite 7  |  Tailwind 4  |  1,485 tests         │
   │  Clean Architecture  |  DDD  |  Zustand  |  i18n (EN/ES)    │
   └──────────────────────────┬──────────────────────────────────┘
                              │  66 REST API calls
@@ -175,7 +175,7 @@ Backend: github.com/agustinEDev/RyderCupAm
 | Metric | Frontend | Backend |
 |--------|:--------:|:-------:|
 | Architecture | Clean + DDD | Clean + DDD |
-| Tests | 1,104 | 1,613 |
+| Tests | 1,485 | 1,613 |
 | Coverage | 85%+ | 90% |
 | OWASP | 9.2/10 | 9.4/10 |
 
@@ -655,7 +655,7 @@ Auto-detection + localStorage + flags
 <span>Backend Tests</span>
 </div>
 <div class="stat-box">
-<strong>1,104</strong>
+<strong>1,485</strong>
 <span>Frontend Tests</span>
 </div>
 <div class="stat-box-green">
@@ -884,7 +884,7 @@ Eliminates XSS token theft entirely. Worth the extra CSRF handling.
 | HTTP | Fetch API | FastAPI async |
 | Validation | Zod schemas | Pydantic models |
 | Auth | httpOnly cookies | JWT + refresh tokens |
-| Testing | Vitest (1,104) | pytest (1,613) |
+| Testing | Vitest (1,485) | pytest (1,613) |
 | Monitoring | Sentry (errors) | Sentry (APM + profiling) |
 | CI/CD | GitHub Actions (3 workflows) | GitHub Actions (10 jobs) |
 | Docs | 11 ADRs + API spec | 37 ADRs + ERD + Runbook |
@@ -908,8 +908,8 @@ Eliminates XSS token theft entirely. Worth the extra CSRF handling.
 
 <div class="summary-grid">
 <div class="summary-card">
-<strong>2,717</strong>
-<span>Tests (1,104 FE + 1,613 BE)</span>
+<strong>3,098</strong>
+<span>Tests (1,485 FE + 1,613 BE)</span>
 </div>
 <div class="summary-card">
 <strong>9.2 / 9.4</strong>
