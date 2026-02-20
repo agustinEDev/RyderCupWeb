@@ -1,135 +1,135 @@
-# 🎯 Resumen de Implementación: Sentry Avanzado
+# 🎯 Implementation Summary: Advanced Sentry
 
-> Documentación completa de la personalización e implementación avanzada de Sentry en el proyecto Ryder Cup Web
+> Complete documentation of the customization and advanced implementation of Sentry in the Ryder Cup Web project
 
-**Fecha de Implementación:** 26 de Noviembre de 2025
-**Versión del Proyecto:** 1.6.0+
-**Implementado por:** Claude AI + Agustín Estévez
-
----
-
-## 📝 Índice
-
-1. [Objetivos Alcanzados](#objetivos-alcanzados)
-2. [Archivos Creados/Modificados](#archivos-creadosmodificados)
-3. [Características Implementadas](#características-implementadas)
-4. [Configuración por Entorno](#configuración-por-entorno)
-5. [Guía de Uso Rápido](#guía-de-uso-rápido)
-6. [Próximos Pasos Recomendados](#próximos-pasos-recomendados)
+**Implementation Date:** November 26, 2025
+**Project Version:** 1.6.0+
+**Implemented by:** Claude AI + Agustín Estévez
 
 ---
 
-## 🎯 Objetivos Alcanzados
+## 📝 Table of Contents
 
-### ✅ Objetivo 1: Configuración por Entorno
-- [x] Variables de entorno separadas para development y production
-- [x] Sample rates diferenciados por entorno
-- [x] Debug habilitado solo en desarrollo
-- [x] Configuración automática basada en `VITE_SENTRY_ENVIRONMENT`
-
-### ✅ Objetivo 2: Integraciones Avanzadas
-- [x] **Browser Tracing** - Monitoreo de navegación y requests HTTP
-- [x] **Session Replay** - Grabación de sesiones (normal + on error)
-- [x] **Feedback Widget** - Opcional para reportes de usuarios
-- [x] **Auto Session Tracking** - Seguimiento automático de sesiones
-- [x] **Attach Stack Trace** - Stack traces en todos los mensajes
-
-### ✅ Objetivo 3: Contexto Enriquecido
-- [x] **User Context** - Información del usuario logueado
-- [x] **Business Context** - Contextos personalizados por módulo
-- [x] **Tags** - Etiquetas por módulo y acción
-- [x] **Breadcrumbs** - Historial de acciones del usuario
-
-### ✅ Objetivo 4: Seguridad y Privacidad
-- [x] Filtrado de datos sensibles (passwords, tokens)
-- [x] Sanitización de headers (Authorization, Cookie)
-- [x] Máscara de elementos con clase `.sensitive`
-- [x] Bloqueo de elementos con clase `.private`
-- [x] Ignorar errores de extensiones de navegador
-
-### ✅ Objetivo 5: Performance Monitoring
-- [x] Tracking de transacciones personalizadas
-- [x] Métricas de Web Vitals (LCP, FID, CLS, INP)
-- [x] Profiling de componentes React
-- [x] Sample rates optimizados por entorno
-
-### ✅ Objetivo 6: UI/UX
-- [x] ErrorBoundary con página de error elegante
-- [x] Routing instrumentation para tracking de navegación
-- [x] Logs de inicialización informativos
-- [x] Opción "Try Again" para recuperarse de errores
-
-### ✅ Objetivo 7: Documentación
-- [x] Documentación completa en CLAUDE.md
-- [x] Guía paso a paso para Render (RENDER_SETUP.md)
-- [x] Comentarios detallados en código
-- [x] Ejemplos de uso de helpers
+1. [Objectives Achieved](#objectives-achieved)
+2. [Created/Modified Files](#createdmodified-files)
+3. [Implemented Features](#implemented-features)
+4. [Configuration by Environment](#configuration-by-environment)
+5. [Quick Usage Guide](#quick-usage-guide)
+6. [Recommended Next Steps](#recommended-next-steps)
 
 ---
 
-## 📂 Archivos Creados/Modificados
+## 🎯 Objectives Achieved
 
-### Archivos Creados (3 nuevos)
+### ✅ Objective 1: Configuration by Environment
+- [x] Separate environment variables for development and production
+- [x] Differentiated sample rates by environment
+- [x] Debug enabled only in development
+- [x] Automatic configuration based on `VITE_SENTRY_ENVIRONMENT`
 
-#### 1. `src/utils/sentryHelpers.js` (450 líneas)
-**Propósito:** Utilidades para trabajar con Sentry
+### ✅ Objective 2: Advanced Integrations
+- [x] **Browser Tracing** - Navigation and HTTP requests monitoring
+- [x] **Session Replay** - Session recording (normal + on error)
+- [x] **Feedback Widget** - Optional for user reports
+- [x] **Auto Session Tracking** - Automatic session tracking
+- [x] **Attach Stack Trace** - Stack traces in all messages
 
-**Funciones principales:**
-- `setUserContext()` / `clearUserContext()` - Gestión de contexto de usuario
-- `setModuleTags()` / `setModuleContext()` - Tags por módulo
-- `setBusinessContext()` / `clearBusinessContext()` - Contextos de negocio
+### ✅ Objective 3: Enriched Context
+- [x] **User Context** - Logged-in user information
+- [x] **Business Context** - Custom contexts per module
+- [x] **Tags** - Tags per module and action
+- [x] **Breadcrumbs** - User action history
+
+### ✅ Objective 4: Security and Privacy
+- [x] Sensitive data filtering (passwords, tokens)
+- [x] Header sanitization (Authorization, Cookie)
+- [x] Masking of elements with `.sensitive` class
+- [x] Blocking of elements with `.private` class
+- [x] Ignoring browser extension errors
+
+### ✅ Objective 5: Performance Monitoring
+- [x] Custom transaction tracking
+- [x] Web Vitals metrics (LCP, FID, CLS, INP)
+- [x] React component profiling
+- [x] Optimized sample rates by environment
+
+### ✅ Objective 6: UI/UX
+- [x] ErrorBoundary with elegant error page
+- [x] Routing instrumentation for navigation tracking
+- [x] Informative initialization logs
+- [x] "Try Again" option to recover from errors
+
+### ✅ Objective 7: Documentation
+- [x] Complete documentation in CLAUDE.md
+- [x] Step-by-step guide for Render (RENDER_SETUP.md)
+- [x] Detailed code comments
+- [x] Helper usage examples
+
+---
+
+## 📂 Created/Modified Files
+
+### Created Files (3 new)
+
+#### 1. `src/utils/sentryHelpers.js` (450 lines)
+**Purpose:** Utilities for working with Sentry
+
+**Main functions:**
+- `setUserContext()` / `clearUserContext()` - User context management
+- `setModuleTags()` / `setModuleContext()` - Module tags
+- `setBusinessContext()` / `clearBusinessContext()` - Business contexts
 - `addBreadcrumb()` / `addUIBreadcrumb()` / `addHTTPBreadcrumb()` / `addAuthBreadcrumb()` - Breadcrumbs
-- `captureError()` / `captureMessage()` - Captura manual de errores
-- `startTransaction()` / `measurePerformance()` - Medición de rendimiento
-- `sanitizeSensitiveData()` - Sanitización de datos
+- `captureError()` / `captureMessage()` - Manual error capture
+- `startTransaction()` / `measurePerformance()` - Performance measurement
+- `sanitizeSensitiveData()` - Data sanitization
 
-**Constantes:**
-- `ModuleTags` - Tags predefinidos por módulo (AUTH, PROFILE, COMPETITIONS, etc.)
+**Constants:**
+- `ModuleTags` - Predefined tags per module (AUTH, PROFILE, COMPETITIONS, etc.)
 
-#### 2. `RENDER_SETUP.md` (300 líneas)
-**Propósito:** Guía completa para configurar variables de entorno en Render
+#### 2. `RENDER_SETUP.md` (300 lines)
+**Purpose:** Complete guide to configure environment variables in Render
 
-**Secciones:**
-- Obtención del DSN de Sentry
-- Configuración paso a paso de variables en Render
-- Verificación de la configuración
-- Ajuste de sample rates según necesidad
-- Solución de problemas comunes
-- Monitoreo de cuotas de Sentry
+**Sections:**
+- Obtaining Sentry DSN
+- Step-by-step configuration of variables in Render
+- Configuration verification
+- Adjusting sample rates as needed
+- Common troubleshooting
+- Monitoring Sentry quotas
 
-#### 3. `SENTRY_IMPLEMENTATION_SUMMARY.md` (este archivo)
-**Propósito:** Resumen ejecutivo de la implementación
+#### 3. `SENTRY_IMPLEMENTATION_SUMMARY.md` (this file)
+**Purpose:** Executive implementation summary
 
 ---
 
-### Archivos Modificados (4 existentes)
+### Modified Files (4 existing)
 
-#### 1. `.env.example` (+37 líneas)
-**Cambios:**
-- Agregada sección completa de variables de Sentry
-- Comentarios explicativos para cada variable
-- Valores recomendados por entorno
+#### 1. `.env.example` (+37 lines)
+**Changes:**
+- Added complete Sentry variables section
+- Explanatory comments for each variable
+- Recommended values per environment
 
-#### 2. `.env` (+11 líneas)
-**Cambios:**
-- Agregadas variables de Sentry con valores de desarrollo
-- DSN configurado con el valor real del proyecto
-- Sample rates optimizados para desarrollo (1.0, 0.1, 1.0)
+#### 2. `.env` (+11 lines)
+**Changes:**
+- Added Sentry variables with development values
+- DSN configured with actual project value
+- Sample rates optimized for development (1.0, 0.1, 1.0)
 
-#### 3. `src/infrastructure/sentry.ts` (completamente reescrito - 250 líneas)
-**Cambios:**
-- Migrado de configuración hardcodeada a basada en variables de entorno
-- Agregadas integraciones avanzadas:
-  - `browserTracingIntegration` con Web Vitals
-  - `replayIntegration` con privacidad configurada
-  - `feedbackIntegration` (opcional)
-- Agregada validación de configuración (no inicializa sin DSN)
-- Agregados hooks `beforeSend` y `beforeSendTransaction` para filtrado
-- Agregado hook `beforeBreadcrumb` para sanitización
-- Agregados logs de inicialización con tabla ASCII
-- Configuración de release automática desde package.json
+#### 3. `src/infrastructure/sentry.ts` (completely rewritten - 250 lines)
+**Changes:**
+- Migrated from hardcoded configuration to environment variable based
+- Added advanced integrations:
+  - `browserTracingIntegration` with Web Vitals
+  - `replayIntegration` with configured privacy
+  - `feedbackIntegration` (optional)
+- Added configuration validation (doesn't initialize without DSN)
+- Added `beforeSend` and `beforeSendTransaction` hooks for filtering
+- Added `beforeBreadcrumb` hook for sanitization
+- Added initialization logs with ASCII table
+- Automatic release configuration from package.json
 
-**Antes:**
+**Before:**
 ```typescript
 init({
   dsn: "https://...", // Hardcoded
@@ -143,14 +143,14 @@ init({
 });
 ```
 
-**Después:**
+**After:**
 ```typescript
 const SENTRY_CONFIG = {
   dsn: import.meta.env.VITE_SENTRY_DSN,
   environment: import.meta.env.VITE_SENTRY_ENVIRONMENT || 'development',
   debug: import.meta.env.VITE_SENTRY_DEBUG === 'true',
   tracesSampleRate: parseFloat(import.meta.env.VITE_SENTRY_TRACES_SAMPLE_RATE || '1.0'),
-  // ... más variables
+  // ... more variables
 };
 
 if (!SENTRY_CONFIG.dsn) {
@@ -160,23 +160,23 @@ if (!SENTRY_CONFIG.dsn) {
     dsn: SENTRY_CONFIG.dsn,
     environment: SENTRY_CONFIG.environment,
     release: RELEASE,
-    integrations: [...], // Configuradas dinámicamente
-    beforeSend(event, hint) { /* Filtrado */ },
-    beforeSendTransaction(transaction) { /* Filtrado */ },
-    beforeBreadcrumb(breadcrumb, hint) { /* Sanitización */ }
+    integrations: [...], // Dynamically configured
+    beforeSend(event, hint) { /* Filtering */ },
+    beforeSendTransaction(transaction) { /* Filtering */ },
+    beforeBreadcrumb(breadcrumb, hint) { /* Sanitization */ }
   });
 }
 ```
 
-#### 4. `src/App.jsx` (+80 líneas)
-**Cambios:**
-- Agregado import de `setUserContext` de sentryHelpers
-- Agregado establecimiento automático de contexto de usuario al montar
-- Envuelto con `Sentry.ErrorBoundary` con fallback UI personalizado
-- Creado `SentryRoutes` con `withSentryReactRouterV6Routing` para tracking de navegación
-- Reemplazado `<Routes>` por `<SentryRoutes>`
+#### 4. `src/App.jsx` (+80 lines)
+**Changes:**
+- Added import of `setUserContext` from sentryHelpers
+- Added automatic user context setup on mount
+- Wrapped with `Sentry.ErrorBoundary` with custom fallback UI
+- Created `SentryRoutes` with `withSentryReactRouterV6Routing` for navigation tracking
+- Replaced `<Routes>` with `<SentryRoutes>`
 
-**Antes:**
+**Before:**
 ```jsx
 function App() {
   return (
@@ -191,7 +191,7 @@ function App() {
 export default Sentry.withProfiler(App);
 ```
 
-**Después:**
+**After:**
 ```jsx
 const SentryRoutes = Sentry.withSentryReactRouterV6Routing(Routes);
 
@@ -217,69 +217,69 @@ function App() {
 export default Sentry.withProfiler(App);
 ```
 
-#### 5. `CLAUDE.md` (+260 líneas)
-**Cambios:**
-- Agregada sección completa sobre Sentry (después de "Variables de Entorno")
-- Documentación de todas las características implementadas
-- Ejemplos de uso de helpers
-- Guía de verificación de configuración
-- Tabla de sample rates explicados
+#### 5. `CLAUDE.md` (+260 lines)
+**Changes:**
+- Added complete Sentry section (after "Environment Variables")
+- Documentation of all implemented features
+- Helper usage examples
+- Configuration verification guide
+- Explained sample rates table
 
 ---
 
-## 🎨 Características Implementadas
+## 🎨 Implemented Features
 
-### 1. Error Tracking Mejorado
+### 1. Improved Error Tracking
 
-**Antes:**
-- Errores capturados sin contexto
-- No se filtraban errores irrelevantes
-- Datos sensibles podían enviarse
+**Before:**
+- Errors captured without context
+- Irrelevant errors were not filtered
+- Sensitive data could be sent
 
-**Ahora:**
-- ✅ Contexto de usuario en cada error
-- ✅ Tags por módulo (AUTH, COMPETITIONS, etc.)
-- ✅ Breadcrumbs de acciones del usuario
-- ✅ Filtrado de errores de extensiones de navegador
-- ✅ Sanitización automática de passwords y tokens
-- ✅ Stack traces en todos los mensajes
+**Now:**
+- ✅ User context in every error
+- ✅ Tags per module (AUTH, COMPETITIONS, etc.)
+- ✅ Breadcrumbs of user actions
+- ✅ Browser extension error filtering
+- ✅ Automatic sanitization of passwords and tokens
+- ✅ Stack traces in all messages
 
-### 2. Performance Monitoring Avanzado
+### 2. Advanced Performance Monitoring
 
-**Antes:**
-- 100% de transacciones capturadas (costoso en producción)
-- No se filtraban transacciones rápidas
-- No había diferenciación por entorno
+**Before:**
+- 100% of transactions captured (expensive in production)
+- Fast transactions were not filtered
+- No differentiation by environment
 
-**Ahora:**
-- ✅ Sample rates optimizados por entorno (100% dev, 10% prod)
-- ✅ Profiling de componentes React
-- ✅ Filtrado de transacciones < 50ms
+**Now:**
+- ✅ Optimized sample rates by environment (100% dev, 10% prod)
+- ✅ React component profiling
+- ✅ Filtering of transactions < 50ms
 - ✅ Web Vitals tracking (LCP, FID, CLS, INP)
-- ✅ Transacciones personalizadas con `measurePerformance()`
+- ✅ Custom transactions with `measurePerformance()`
 
-### 3. Session Replay Inteligente
+### 3. Intelligent Session Replay
 
-**Antes:**
-- 10% de sesiones normales grabadas
-- 100% de sesiones con error grabadas
-- No había configuración de privacidad
+**Before:**
+- 10% of normal sessions recorded
+- 100% of error sessions recorded
+- No privacy configuration
 
-**Ahora:**
-- ✅ Sample rates diferenciados (10% dev, 5% prod para sesiones normales)
-- ✅ 100% de sesiones con error siempre grabadas
-- ✅ Máscara de elementos con clase `.sensitive`
-- ✅ Bloqueo de elementos con clase `.private`
-- ✅ Configuración de privacidad avanzada
+**Now:**
+- ✅ Differentiated sample rates (10% dev, 5% prod for normal sessions)
+- ✅ 100% of error sessions always recorded
+- ✅ Masking of elements with `.sensitive` class
+- ✅ Blocking of elements with `.private` class
+- ✅ Advanced privacy configuration
 
-### 4. User Context Enriquecido
+### 4. Enriched User Context
 
-**Antes:**
-- No se establecía contexto de usuario
+**Before:**
+- No user context was set
 
-**Ahora:**
+**Now:**
 ```javascript
-// En cada error, Sentry incluye:
+// In every error, Sentry includes:
 {
   user: {
     id: "uuid",
@@ -294,9 +294,9 @@ export default Sentry.withProfiler(App);
 }
 ```
 
-### 5. Business Context Personalizado
+### 5. Custom Business Context
 
-**Ahora disponible:**
+**Now available:**
 ```javascript
 // En CompetitionDetail.jsx
 setBusinessContext('competition', {
@@ -308,11 +308,11 @@ setBusinessContext('competition', {
 });
 ```
 
-### 6. Breadcrumbs Detallados
+### 6. Detailed Breadcrumbs
 
-**Ahora disponible:**
+**Now available:**
 ```javascript
-// Historial de acciones antes de un error
+// Action history before an error
 [
   { category: 'navigation', message: 'Navigated from /login to /dashboard' },
   { category: 'auth', message: 'Auth login - Success' },
@@ -321,13 +321,13 @@ setBusinessContext('competition', {
 ]
 ```
 
-### 7. ErrorBoundary con UI Elegante
+### 7. ErrorBoundary with Elegant UI
 
-**Antes:**
-- Pantalla blanca cuando hay error de React
-- No había forma de recuperarse
+**Before:**
+- White screen when there's a React error
+- No way to recover
 
-**Ahora:**
+**Now:**
 ```
 ┌────────────────────────────────────┐
 │   Oops! Something went wrong       │
@@ -336,17 +336,17 @@ setBusinessContext('competition', {
 │                                    │
 │        [ Try Again ]               │
 │                                    │
-│   (Details en dev mode)            │
+│   (Details in dev mode)           │
 └────────────────────────────────────┘
 ```
 
 ---
 
-## ⚙️ Configuración por Entorno
+## ⚙️ Configuration by Environment
 
 ### Development (Local)
 
-**Objetivo:** Máximo debugging, todos los datos disponibles
+**Goal:** Maximum debugging, all data available
 
 ```bash
 VITE_SENTRY_ENVIRONMENT=development
@@ -357,16 +357,16 @@ VITE_SENTRY_REPLAYS_SESSION_SAMPLE_RATE=0.1 # 10%
 VITE_SENTRY_REPLAYS_ON_ERROR_SAMPLE_RATE=1.0 # 100%
 ```
 
-**Resultado:**
-- Todos los errores capturados
-- Todas las transacciones monitoreadas
-- Logs de debug en consola
-- 10% de sesiones normales grabadas
-- 100% de sesiones con error grabadas
+**Result:**
+- All errors captured
+- All transactions monitored
+- Debug logs in console
+- 10% of normal sessions recorded
+- 100% of error sessions recorded
 
 ### Production (Render)
 
-**Objetivo:** Optimizar costos, capturar suficientes datos para análisis
+**Goal:** Optimize costs, capture enough data for analysis
 
 ```bash
 VITE_SENTRY_ENVIRONMENT=production
@@ -377,49 +377,49 @@ VITE_SENTRY_REPLAYS_SESSION_SAMPLE_RATE=0.05 # 5%
 VITE_SENTRY_REPLAYS_ON_ERROR_SAMPLE_RATE=1.0 # 100%
 ```
 
-**Resultado:**
-- Todos los errores capturados
-- 10% de transacciones monitoreadas (suficiente para análisis)
-- No hay logs de debug en consola
-- 5% de sesiones normales grabadas (reduce costos)
-- 100% de sesiones con error grabadas (crítico)
+**Result:**
+- All errors captured
+- 10% of transactions monitored (enough for analysis)
+- No debug logs in console
+- 5% of normal sessions recorded (reduces costs)
+- 100% of error sessions recorded (critical)
 
 ---
 
-## 🚀 Guía de Uso Rápido
+## 🚀 Quick Usage Guide
 
-### Para Desarrolladores - Casos de Uso Comunes
+### For Developers - Common Use Cases
 
-#### 1. Establecer Contexto de Usuario al Login
+#### 1. Set User Context on Login
 
 ```javascript
-// En Login.jsx después de autenticación exitosa
+// In Login.jsx after successful authentication
 import { setUserContext } from '../utils/sentryHelpers';
 
 const handleLogin = async () => {
   const data = await loginUseCase.execute({ email, password });
-  setUserContext(data.user); // ← Agregar esta línea
+  setUserContext(data.user); // ← Add this line
   navigate('/dashboard');
 };
 ```
 
-#### 2. Limpiar Contexto al Logout
+#### 2. Clear Context on Logout
 
 ```javascript
-// En HeaderAuth.jsx o donde esté el logout
+// In HeaderAuth.jsx or where logout is
 import { clearUserContext } from '../utils/sentryHelpers';
 
 const handleLogout = () => {
-  clearUserContext(); // ← Agregar esta línea
+  clearUserContext(); // ← Add this line
   clearAuthData();
   navigate('/');
 };
 ```
 
-#### 3. Establecer Tags por Módulo
+#### 3. Set Module Tags
 
 ```javascript
-// En CreateCompetition.jsx
+// In CreateCompetition.jsx
 import { setModuleContext } from '../utils/sentryHelpers';
 
 useEffect(() => {
@@ -427,10 +427,10 @@ useEffect(() => {
 }, []);
 ```
 
-#### 4. Agregar Contexto de Negocio
+#### 4. Add Business Context
 
 ```javascript
-// En CompetitionDetail.jsx
+// In CompetitionDetail.jsx
 import { setBusinessContext } from '../utils/sentryHelpers';
 
 useEffect(() => {
@@ -446,10 +446,10 @@ useEffect(() => {
 }, [competition]);
 ```
 
-#### 5. Agregar Breadcrumbs
+#### 5. Add Breadcrumbs
 
 ```javascript
-// En cualquier componente
+// In any component
 import { addUIBreadcrumb, addHTTPBreadcrumb } from '../utils/sentryHelpers';
 
 const handleSubmit = async () => {
@@ -460,10 +460,10 @@ const handleSubmit = async () => {
 };
 ```
 
-#### 6. Capturar Errores Manualmente
+#### 6. Capture Errors Manually
 
 ```javascript
-// En un try/catch
+// In a try/catch
 import { captureError } from '../utils/sentryHelpers';
 
 try {
@@ -478,10 +478,10 @@ try {
 }
 ```
 
-#### 7. Medir Performance
+#### 7. Measure Performance
 
 ```javascript
-// En cualquier función asíncrona
+// In any async function
 import { measurePerformance } from '../utils/sentryHelpers';
 
 const loadCompetitions = async () => {
@@ -495,13 +495,13 @@ const loadCompetitions = async () => {
 
 ---
 
-## 📊 Verificación de la Implementación
+## 📋 Implementation Verification
 
-### Checklist de Verificación Local (Development)
+### Local Verification Checklist (Development)
 
-- [ ] **Build compila sin errores:** `npm run build` ✅
-- [ ] **App inicia correctamente:** `npm run dev` ✅
-- [ ] **Log de Sentry visible en consola:**
+- [ ] **Build compiles without errors:** `npm run build` ✅
+- [ ] **App starts correctly:** `npm run dev` ✅
+- [ ] **Sentry log visible in console:**
   ```
   ┌─────────────────────────────────────────────────────────┐
   │ 🚀 Sentry Initialized                                   │
@@ -513,125 +513,125 @@ const loadCompetitions = async () => {
   │ ...                                                     │
   └─────────────────────────────────────────────────────────┘
   ```
-- [ ] **Contexto de usuario se establece al login**
-- [ ] **Breadcrumbs se agregan correctamente**
-- [ ] **ErrorBoundary funciona (probar con error intencional)**
+- [ ] **User context is set on login**
+- [ ] **Breadcrumbs are added correctly**
+- [ ] **ErrorBoundary works (test with intentional error)**
 
-### Checklist de Verificación en Producción (Render)
+### Production Verification Checklist (Render)
 
-- [ ] **Variables agregadas en Render Dashboard**
-- [ ] **Deploy realizado después de agregar variables**
-- [ ] **Log de Sentry visible en consola (environment=production)**
-- [ ] **Evento de prueba visible en Sentry Dashboard**
-- [ ] **Sample rates correctos (10%, 5%, 100%)**
+- [ ] **Variables added in Render Dashboard**
+- [ ] **Deploy performed after adding variables**
+- [ ] **Sentry log visible in console (environment=production)**
+- [ ] **Test event visible in Sentry Dashboard**
+- [ ] **Correct sample rates (10%, 5%, 100%)**
 
 ---
 
-## 🔮 Próximos Pasos Recomendados
+## 🔮 Recommended Next Steps
 
-### Corto Plazo (1-2 semanas)
+### Short Term (1-2 weeks)
 
-#### 1. Integrar Helpers en Componentes Clave
+#### 1. Integrate Helpers in Key Components
 
-**Componentes prioritarios:**
-- [x] `App.jsx` - User context al montar ✅
-- [ ] `Login.jsx` - setUserContext después de login
-- [ ] `HeaderAuth.jsx` - clearUserContext en logout
+**Priority components:**
+- [x] `App.jsx` - User context on mount ✅
+- [ ] `Login.jsx` - setUserContext after login
+- [ ] `HeaderAuth.jsx` - clearUserContext on logout
 - [ ] `CreateCompetition.jsx` - setModuleContext('COMPETITIONS', 'Create')
 - [ ] `CompetitionDetail.jsx` - setBusinessContext('competition', {...})
 - [ ] `Register.jsx` - addAuthBreadcrumb('register', success)
 
-**Tiempo estimado:** 2-3 horas
+**Estimated time:** 2-3 hours
 
-#### 2. Configurar Variables en Render
+#### 2. Configure Variables in Render
 
-**Pasos:**
-1. Seguir guía de `RENDER_SETUP.md`
-2. Agregar 10 variables de entorno
+**Steps:**
+1. Follow guide in `RENDER_SETUP.md`
+2. Add 10 environment variables
 3. Deploy
-4. Verificar inicialización
+4. Verify initialization
 
-**Tiempo estimado:** 30 minutos
+**Estimated time:** 30 minutes
 
-#### 3. Monitorear Uso de Cuota
+#### 3. Monitor Quota Usage
 
-**Acciones:**
-1. Revisar Dashboard de Sentry después de 1 semana
-2. Ajustar sample rates si es necesario
-3. Configurar alertas de cuota
+**Actions:**
+1. Review Sentry Dashboard after 1 week
+2. Adjust sample rates if necessary
+3. Set up quota alerts
 
-**Tiempo estimado:** 15 minutos
+**Estimated time:** 15 minutes
 
-### Medio Plazo (1-2 meses)
+### Medium Term (1-2 months)
 
-#### 4. Agregar Breadcrumbs Personalizados
+#### 4. Add Custom Breadcrumbs
 
-**Lugares estratégicos:**
-- Formularios de autenticación
-- Creación/edición de competiciones
-- Acciones de enrollment (approve, reject)
-- Actualización de handicap
+**Strategic places:**
+- Authentication forms
+- Competition creation/editing
+- Enrollment actions (approve, reject)
+- Handicap update
 
-**Tiempo estimado:** 4-6 horas
+**Estimated time:** 4-6 hours
 
-#### 5. Implementar Feedback Widget
+#### 5. Implement Feedback Widget
 
-**Pasos:**
-1. Cambiar `VITE_SENTRY_ENABLE_FEEDBACK=true` en .env
-2. Personalizar textos del widget (opcional)
-3. Probar en desarrollo
-4. Deploy a producción
+**Steps:**
+1. Change `VITE_SENTRY_ENABLE_FEEDBACK=true` in .env
+2. Customize widget texts (optional)
+3. Test in development
+4. Deploy to production
 
-**Tiempo estimado:** 1 hora
+**Estimated time:** 1 hour
 
-#### 6. Crear Dashboards Personalizados en Sentry
+#### 6. Create Custom Dashboards in Sentry
 
-**Dashboards útiles:**
-- Errores por módulo (AUTH, COMPETITIONS, etc.)
-- Performance por página
-- Tasa de errores por día/semana
-- Usuarios más afectados
+**Useful dashboards:**
+- Errors by module (AUTH, COMPETITIONS, etc.)
+- Performance by page
+- Error rate per day/week
+- Most affected users
 
-**Tiempo estimado:** 2-3 horas
+**Estimated time:** 2-3 hours
 
-### Largo Plazo (3-6 meses)
+### Long Term (3-6 months)
 
-#### 7. Optimizar Sample Rates según Tráfico Real
+#### 7. Optimize Sample Rates Based on Real Traffic
 
-**Análisis:**
-- Revisar cuota consumida mensualmente
-- Ajustar sample rates para balance costo/beneficio
-- Considerar upgrade de plan si es necesario
+**Analysis:**
+- Review monthly consumed quota
+- Adjust sample rates for cost/benefit balance
+- Consider plan upgrade if necessary
 
-#### 8. Integración con Backend Sentry
+#### 8. Backend Sentry Integration
 
-**Objetivo:** Correlacionar errores frontend-backend
+**Goal:** Correlate frontend-backend errors
 
-**Pasos:**
-1. Configurar Sentry en backend (FastAPI)
-2. Configurar `tracePropagationTargets` correctamente
-3. Verificar que traces se propaguen
+**Steps:**
+1. Configure Sentry in backend (FastAPI)
+2. Configure `tracePropagationTargets` correctly
+3. Verify that traces propagate
 
-**Tiempo estimado:** 4-6 horas
+**Estimated time:** 4-6 hours
 
-#### 9. Alertas Avanzadas
+#### 9. Advanced Alerts
 
-**Configurar alertas para:**
-- Spike de errores (> 10 en 5 minutos)
-- Performance degradada (LCP > 3s)
-- Errores en rutas críticas (login, create competition)
+**Configure alerts for:**
+- Error spike (> 10 in 5 minutes)
+- Degraded performance (LCP > 3s)
+- Errors in critical routes (login, create competition)
 
-**Tiempo estimado:** 2 horas
+**Estimated time:** 2 hours
 
 ---
 
-## 📈 Métricas de Éxito
+## 📈 Success Metrics
 
-### KPIs a Monitorear
+### KPIs to Monitor
 
 #### 1. Error Rate
-- **Objetivo:** < 1% de sesiones con error
-- **Medición:** Sentry Dashboard → Issues → Error Rate
+- **Goal:** < 1% of sessions with error
+- **Measurement:** Sentry Dashboard → Issues → Error Rate
 
 #### 2. Performance (Web Vitals)
 - **LCP (Largest Contentful Paint):** < 2.5s
@@ -639,138 +639,138 @@ const loadCompetitions = async () => {
 - **CLS (Cumulative Layout Shift):** < 0.1
 
 #### 3. Session Replay Coverage
-- **Objetivo:** 100% de sesiones con error grabadas
-- **Verificar:** Sentry Dashboard → Replays → Coverage
+- **Goal:** 100% of error sessions recorded
+- **Verify:** Sentry Dashboard → Replays → Coverage
 
 #### 4. Time to Resolution
-- **Objetivo:** Resolver errores críticos en < 24h
-- **Medición:** Sentry Dashboard → Issues → Time to Resolve
+- **Goal:** Resolve critical errors in < 24h
+- **Measurement:** Sentry Dashboard → Issues → Time to Resolve
 
 ---
 
-## 💡 Buenas Prácticas
+## 💡 Best Practices
 
 ### DO ✅
 
-1. **Establecer contexto de usuario al login**
+1. **Set user context on login**
    ```javascript
    setUserContext(user);
    ```
 
-2. **Limpiar contexto al logout**
+2. **Clear context on logout**
    ```javascript
    clearUserContext();
    ```
 
-3. **Usar tags para categorizar errores**
+3. **Use tags to categorize errors**
    ```javascript
    setModuleContext('AUTH', 'Login');
    ```
 
-4. **Agregar breadcrumbs en acciones críticas**
+4. **Add breadcrumbs in critical actions**
    ```javascript
    addUIBreadcrumb('submit', 'Payment Form');
    ```
 
-5. **Sanitizar datos sensibles**
+5. **Sanitize sensitive data**
    ```javascript
    const sanitized = sanitizeSensitiveData(formData);
    ```
 
-6. **Ajustar sample rates según entorno**
-   - Development: altos (1.0)
-   - Production: bajos (0.1)
+6. **Adjust sample rates by environment**
+   - Development: high (1.0)
+   - Production: low (0.1)
 
 ### DON'T ❌
 
-1. **No commitear el DSN en el código**
-   - Siempre usar variables de entorno
+1. **Don't commit DSN in code**
+   - Always use environment variables
 
-2. **No enviar passwords o tokens**
-   - Ya están filtrados automáticamente, pero evitar logs
+2. **Don't send passwords or tokens**
+   - Already filtered automatically, but avoid logs
 
-3. **No usar sample rate 1.0 en producción sin razón**
-   - Consumirá cuota rápidamente
+3. **Don't use sample rate 1.0 in production without reason**
+   - Will consume quota quickly
 
-4. **No ignorar errores sin analizar primero**
-   - Pueden ser síntomas de problemas mayores
+4. **Don't ignore errors without analyzing first**
+   - They may be symptoms of bigger problems
 
-5. **No establecer contexto en cada render**
-   - Usar `useEffect` con dependencias correctas
+5. **Don't set context on every render**
+   - Use `useEffect` with correct dependencies
 
 ---
 
-## 🎓 Recursos de Aprendizaje
+## 🎓 Learning Resources
 
-### Documentación Oficial
+### Official Documentation
 
 - **Sentry React Docs:** https://docs.sentry.io/platforms/javascript/guides/react/
 - **Sentry Configuration:** https://docs.sentry.io/platforms/javascript/configuration/
 - **Sentry Best Practices:** https://docs.sentry.io/platforms/javascript/best-practices/
 
-### Tutoriales Recomendados
+### Recommended Tutorials
 
 - **Sentry Academy:** https://academy.sentry.io/
 - **YouTube - Sentry Crash Course:** https://www.youtube.com/watch?v=...
 - **Blog Post - Advanced Sentry Setup:** https://blog.sentry.io/...
 
-### Comunidad
+### Community
 
-- **Discord de Sentry:** https://discord.gg/sentry
+- **Sentry Discord:** https://discord.gg/sentry
 - **GitHub Discussions:** https://github.com/getsentry/sentry-javascript/discussions
 - **Stack Overflow:** Tag `sentry`
 
 ---
 
-## ✅ Checklist Final de Implementación
+## ✅ Final Implementation Checklist
 
-### Código
-- [x] `sentryHelpers.js` creado con todas las funciones
-- [x] `sentry.ts` reescrito con configuración avanzada
-- [x] `App.jsx` actualizado con ErrorBoundary y routing
-- [x] `.env` y `.env.example` actualizados
+### Code
+- [x] `sentryHelpers.js` created with all functions
+- [x] `sentry.ts` rewritten with advanced configuration
+- [x] `App.jsx` updated with ErrorBoundary and routing
+- [x] `.env` and `.env.example` updated
 
-### Documentación
-- [x] `CLAUDE.md` actualizado con sección de Sentry
-- [x] `RENDER_SETUP.md` creado con guía paso a paso
-- [x] `SENTRY_IMPLEMENTATION_SUMMARY.md` creado (este archivo)
+### Documentation
+- [x] `CLAUDE.md` updated with Sentry section
+- [x] `RENDER_SETUP.md` created with step-by-step guide
+- [x] `SENTRY_IMPLEMENTATION_SUMMARY.md` created (this file)
 
 ### Testing
-- [x] Build compila sin errores
-- [x] App inicia correctamente en desarrollo
-- [ ] Variables configuradas en Render (pendiente - manual)
-- [ ] Verificación en producción (pendiente - después de deploy)
+- [x] Build compiles without errors
+- [x] App starts correctly in development
+- [ ] Variables configured in Render (pending - manual)
+- [ ] Verification in production (pending - after deploy)
 
-### Integración
-- [ ] Helpers integrados en componentes clave (pendiente)
-- [ ] Contexto de usuario establecido en login (pendiente)
-- [ ] Contexto limpiado en logout (pendiente)
-
----
-
-## 🙏 Agradecimientos
-
-Esta implementación fue posible gracias a:
-
-- **Sentry.io** - Por su excelente plataforma de monitoreo
-- **Comunidad de React** - Por las mejores prácticas
-- **Documentación de Vite** - Por claridad en variables de entorno
-- **Render.com** - Por su simplicidad en configuración
+### Integration
+- [ ] Helpers integrated in key components (pending)
+- [ ] User context set in login (pending)
+- [ ] Context cleared in logout (pending)
 
 ---
 
-## 📞 Soporte
+## 🙏 Acknowledgments
 
-Si tienes problemas con la implementación:
+This implementation was made possible thanks to:
 
-1. **Revisa la documentación:** `CLAUDE.md` sección de Sentry
-2. **Consulta la guía de Render:** `RENDER_SETUP.md`
-3. **Revisa logs de build:** Render Dashboard → Logs
-4. **Consulta Sentry Docs:** https://docs.sentry.io/
+- **Sentry.io** - For their excellent monitoring platform
+- **React Community** - For best practices
+- **Vite Documentation** - For clarity on environment variables
+- **Render.com** - For their simplicity in configuration
 
 ---
 
-**Estado:** ✅ Implementación completa y funcional
-**Próximo paso:** Configurar variables en Render y hacer deploy
+## 📞 Support
 
-¡Feliz debugging! 🐛🔍
+If you have problems with the implementation:
+
+1. **Review the documentation:** `CLAUDE.md` Sentry section
+2. **Check the Render guide:** `RENDER_SETUP.md`
+3. **Review build logs:** Render Dashboard → Logs
+4. **Check Sentry Docs:** https://docs.sentry.io/
+
+---
+
+**Status:** ✅ Complete and functional implementation
+**Next step:** Configure variables in Render and deploy
+
+Happy debugging! 🐛🔍

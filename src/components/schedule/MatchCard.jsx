@@ -1,4 +1,4 @@
-import { Play, CheckCircle, AlertTriangle, Eye, Users } from 'lucide-react';
+import { Play, CheckCircle, AlertTriangle, Eye, Users, ClipboardList } from 'lucide-react';
 
 const STATUS_COLORS = {
   SCHEDULED: 'bg-blue-100 text-blue-800',
@@ -18,6 +18,7 @@ const MatchCard = ({
   onDeclareWalkover,
   onReassignPlayers,
   onViewDetail,
+  onScoreMatch,
   canManage,
   playerNameMap,
   teamNames,
@@ -134,12 +135,21 @@ const MatchCard = ({
             <Eye className="w-3 h-3" />
             {t('matches.viewDetail')}
           </button>
+          {isInProgress && onScoreMatch && (
+            <button
+              onClick={() => onScoreMatch(match.id)}
+              className="flex items-center gap-1 px-3 py-1.5 bg-primary text-white rounded-md text-xs font-medium hover:bg-primary/90 transition-colors"
+            >
+              <ClipboardList className="w-3 h-3" />
+              {t('matches.score')}
+            </button>
+          )}
         </div>
       )}
 
       {/* Read-only: just view detail */}
       {!canManage && (
-        <div className="pt-2 border-t border-gray-100">
+        <div className="flex flex-wrap gap-2 pt-2 border-t border-gray-100">
           <button
             onClick={() => onViewDetail(match.id)}
             className="flex items-center gap-1 px-3 py-1.5 bg-indigo-500 text-white rounded-md text-xs font-medium hover:bg-indigo-600 transition-colors"
@@ -147,6 +157,15 @@ const MatchCard = ({
             <Eye className="w-3 h-3" />
             {t('matches.viewDetail')}
           </button>
+          {isInProgress && onScoreMatch && (
+            <button
+              onClick={() => onScoreMatch(match.id)}
+              className="flex items-center gap-1 px-3 py-1.5 bg-primary text-white rounded-md text-xs font-medium hover:bg-primary/90 transition-colors"
+            >
+              <ClipboardList className="w-3 h-3" />
+              {t('matches.score')}
+            </button>
+          )}
         </div>
       )}
     </div>

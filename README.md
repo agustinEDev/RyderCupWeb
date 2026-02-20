@@ -4,12 +4,12 @@
 
 <div align="center">
 
-[![Version](https://img.shields.io/badge/version-2.0.6-blue?style=for-the-badge&logo=semver)](.)
-[![React](https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=white)](.)
-[![Vite](https://img.shields.io/badge/Vite-7.3-646CFF?style=for-the-badge&logo=vite&logoColor=white)](.)
-[![Tailwind](https://img.shields.io/badge/Tailwind-4-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](.)
+[![Version](https://img.shields.io/badge/version-2.0.12-blue?style=for-the-badge&logo=semver)](.)  
+[![React](https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=white)](.)  
+[![Vite](https://img.shields.io/badge/Vite-7.3-646CFF?style=for-the-badge&logo=vite&logoColor=white)](.)  
+[![Tailwind](https://img.shields.io/badge/Tailwind-4-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](.)  
 
-[![Tests](https://img.shields.io/badge/tests-1104%20passing-00C853?style=for-the-badge&logo=vitest&logoColor=white)](.)
+[![Tests](https://img.shields.io/badge/tests-1485%20passing-00C853?style=for-the-badge&logo=vitest&logoColor=white)](.)  
 [![Coverage](https://img.shields.io/badge/coverage-85%25+-success?style=for-the-badge&logo=codecov)](.)
 [![OWASP](https://img.shields.io/badge/OWASP-9.2%2F10-4CAF50?style=for-the-badge&logo=owasp)](https://owasp.org/www-project-top-ten/)
 [![Bundle](https://img.shields.io/badge/bundle-1308%20KB-blueviolet?style=for-the-badge&logo=webpack)](.)
@@ -30,7 +30,7 @@
 ### 🎯 Key Highlights
 
 - ✅ **66 API integrations** with the backend REST API
-- ✅ **1,104 tests** passing (100% success rate)
+- ✅ **1,485 tests** passing (100% success rate)
 - ✅ **OWASP Top 10 Score: 9.2/10** - Production-grade security
 - ✅ **Clean Architecture** - 4-layer separation with DDD patterns + Composition Root DI
 - ✅ **21 Value Objects** enforcing domain invariants
@@ -168,21 +168,27 @@ npm run preview   # Preview locally
 
 ### What's New
 
-**v2.0.6 (Sprint 2 Complete - Feb 8, 2026)**
-- ✅ **Schedule & Matches UI**: Full schedule management page with round CRUD, match generation, team assignment
-- ✅ **Enrollment Tee Category Modal**: Tee category selection during enrollment (5 categories)
-- ✅ **i18n Toast Migration**: All hardcoded toast messages replaced with translation keys
-- ✅ **Bundle Optimization**: Replaced country-flag-icons SVG (239 KB) with flagcdn.com CDN images
-- ✅ **TeeCategoryBadge**: Color-coded badges with gender suffix (M/F) display
-- ✅ **Player Schedule View**: Read-only schedule access for enrolled players
+**v2.0.12 (Sprint 4 - Live Scoring - Feb 2026)**
+- ✅ **Live Scoring UI**: Hole-by-hole annotation with 3-tab interface (Input, Scorecard, Leaderboard)
+- ✅ **Marker System**: Reciprocal markers (singles) + distributed markers (team formats)
+- ✅ **Score Validation**: Visual indicators (✓/✗/○) for match/mismatch/pending states
+- ✅ **Match Concede**: Early end modal with concession tracking
+- ✅ **Offline Support**: Queue scores when offline, auto-sync on reconnect
+- ✅ **Session Lock**: Prevent multi-device conflicts with session blocking
+
+**v2.0.11 (Sprint 3 - Invitations - Feb 2026)**
+- ✅ **Invitation System**: Email invitations with secure tokens
+- ✅ **Invitation Management**: CRUD operations for creators
+- ✅ **Response Flow**: Accept/decline with automated enrollment
+
+**v2.0.6 (Sprint 2 - Schedule & Matches - Feb 8, 2026)**
+- ✅ **Schedule Management**: Round CRUD, match generation, team assignment
+- ✅ **Enrollment Tee Category**: 5-category tee selection during enrollment
+- ✅ **i18n Toast Migration**: All messages use translation keys
+- ✅ **Bundle Optimization**: CDN flags replacing 239 KB SVG bundle
 
 **v2.0.4 (Feb 3, 2026)**
 - ✅ **Subdomain Architecture**: Cloudflare configuration for `www` + `api` subdomains
-
-### Coming Soon (Competition Module Evolution)
-- 🔄 **Invitation System** - Email invitations with secure tokens (Sprint 3)
-- 🔄 **Live Scoring** - Hole-by-hole annotation with dual validation (Sprint 4)
-- 🔄 **Real-time Leaderboards** - Public leaderboard with conditional polling (Sprint 5)
 
 ---
 
@@ -248,23 +254,22 @@ src/
 
 ## 🧪 Testing
 
-### Test Statistics (v2.0.6)
+### Test Statistics (v2.0.12)
 
 | Category | Tests | Status | Coverage |
 |----------|-------|--------|----------|
-| **Total** | **1,104** | ✅ 100% passing | 85%+ |
-| Domain | ~400 | ✅ 100% | Entity invariants, VO validation |
-| Application | ~350 | ✅ 100% | Use case orchestration |
-| Infrastructure | ~200 | ✅ 100% | Mapper transformations |
-| Hooks/Utils | ~116 | ✅ 100% | Custom hooks, utilities |
+| **Total** | **1,485** | ✅ 100% passing | 85%+ |
+| Domain | ~412 | ✅ 100% | Entity invariants, VO validation |
+| Application | ~390 | ✅ 100% | Use case orchestration |
+| Infrastructure | ~228 | ✅ 100% | Mapper transformations |
+| Hooks/Utils | ~156 | ✅ 100% | Custom hooks, utilities |
+| Components/Pages | ~299 | ✅ 100% | UI components, integration |
 
 ### Quality Gates
 
 | Gate | Threshold | Current |
 |------|-----------|---------|
-| Tests | 100% pass | 1,104/1,104 |
-| Line coverage | >= 85% | Achieved |
-| Function coverage | >= 75% | Achieved |
+| Tests | 100% pass | 1,485/1,485 |
 | Branch coverage | >= 70% | Achieved |
 | Bundle size | <= 1,400 KB | 1,308 KB |
 | ESLint errors | 0 | 0 |
@@ -384,23 +389,24 @@ npm run lint             # ESLint
 
 ## 📊 Project Roadmap
 
-### Current Version: v2.0.6 (Production)
+### Current Version: v2.0.12 (Sprint 4 - Live Scoring)
 
-**Latest Features** (Sprint 2 Complete - Feb 8, 2026):
-- **Schedule & Matches UI**: Round CRUD, match generation, team assignment, drag & drop
-- **Enrollment Tee Category Modal**: 5-category tee selection during enrollment
-- **i18n Toast Migration**: All hardcoded messages replaced with translation keys
-- **Bundle Optimization**: CDN flags replacing 239 KB SVG bundle
-- **Total: 1,104 tests** passing - **Bundle: 1,308 KB**
+**Latest Features** (Sprint 4 - Feb 2026):
+- **Live Scoring System**: Hole-by-hole annotation with marker validation
+- **Score Input UI**: 3-tab interface (Input, Scorecard, Leaderboard)
+- **Match Concede Flow**: Early end with concession tracking
+- **Offline Support**: Queue scores when offline, auto-sync on reconnect
+- **Session Management**: Multi-device conflict prevention
+- **Total: 1,485 tests** passing - **Bundle: 1,308 KB**
 
-### Coming Next: Sprint 3-5 - Invitations, Scoring & Leaderboards
+### Sprint History
 
 **Sprint Breakdown**:
-1. ✅ **Sprint 1** (Jan 27 - Jan 31): Golf Courses + RBAC (COMPLETED)
-2. ✅ **Sprint 2** (Feb 3 - Feb 8): Schedule & Matches + Enrollment + i18n (COMPLETED)
-3. **Sprint 3** (Feb 2026): Invitation System - Email invitations with secure tokens
-4. **Sprint 4** (Mar 2026): Live Scoring - Hole-by-hole annotation with dual validation
-5. **Sprint 5** (Mar 2026): Leaderboards - Public leaderboard with conditional polling
+1. ✅ **Sprint 1** (Jan 27-31): Golf Courses + RBAC
+2. ✅ **Sprint 2** (Feb 3-8): Schedule & Matches + Enrollment
+3. ✅ **Sprint 3** (Feb 2026): Invitations System
+4. ✅ **Sprint 4** (Feb 2026): Live Scoring (CURRENT)
+5. 🔄 **Sprint 5** (Mar 2026): Public Leaderboards
 
 See [ROADMAP.md](ROADMAP.md) for complete version planning.
 

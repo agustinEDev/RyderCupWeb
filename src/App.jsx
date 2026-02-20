@@ -47,14 +47,16 @@ const PendingGolfCourses = lazyWithRetry(() => import('./pages/admin/PendingGolf
 const SchedulePage = lazyWithRetry(() => import('./pages/creator/SchedulePage'));
 const InvitationsPage = lazyWithRetry(() => import('./pages/creator/InvitationsPage'));
 
-// Player pages (Sprint 3)
+// Player pages (Sprint 3 + Sprint 4)
 const MyInvitationsPage = lazyWithRetry(() => import('./pages/player/MyInvitationsPage'));
+const ScoringPage = lazyWithRetry(() => import('./pages/player/ScoringPage'));
 
 // Google OAuth pages
 const GoogleCallback = lazyWithRetry(() => import('./pages/GoogleCallback'));
 const CompleteProfile = lazyWithRetry(() => import('./pages/CompleteProfile'));
 
 // Public pages
+const LeaderboardPage = lazyWithRetry(() => import('./pages/public/LeaderboardPage'));
 const Pricing = lazyWithRetry(() => import('./pages/public/Pricing'));
 const Contact = lazyWithRetry(() => import('./pages/public/Contact'));
 const Terms = lazyWithRetry(() => import('./pages/public/Terms'));
@@ -98,8 +100,13 @@ function AppContent() {
     '/auth/google/callback',
   ];
 
+  // Also check dynamic public routes
+  const isDynamicPublicRoute = location.pathname.match(/^\/competitions\/[^/]+\/leaderboard$/);
+
+
   const isPublicRoute = PUBLIC_ROUTES.includes(location.pathname) ||
-                       location.pathname.startsWith('/reset-password/');
+                       location.pathname.startsWith('/reset-password/') ||
+                       isDynamicPublicRoute;
 
   // Limpiar flag de error de lazy loading tras navegación exitosa
   // Asegura que la auto-recarga funcione en cada despliegue, no solo el primero
@@ -206,6 +213,7 @@ function AppContent() {
         <Route path="/privacy" element={<Privacy />} />
         <Route path="/cookies" element={<Cookies />} />
         <Route path="/auth/google/callback" element={<GoogleCallback />} />
+        <Route path="/competitions/:id/leaderboard" element={<LeaderboardPage />} />
 
         {/* Protected routes */}
         <Route path="/auth/complete-profile" element={<ProtectedRoute><CompleteProfile /></ProtectedRoute>} />
@@ -244,6 +252,13 @@ function AppContent() {
         <Route path="/player/invitations" element={
           <ProtectedRoute>
             <MyInvitationsPage />
+          </ProtectedRoute>
+        } />
+
+        {/* Scoring route (Sprint 4) */}
+        <Route path="/player/matches/:matchId/scoring" element={
+          <ProtectedRoute>
+            <ScoringPage />
           </ProtectedRoute>
         } />
 

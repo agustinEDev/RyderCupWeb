@@ -302,6 +302,10 @@ const SchedulePage = () => {
     setShowMatchDetailModal(true);
   };
 
+  const handleScoreMatch = (matchId) => {
+    navigate(`/player/matches/${matchId}/scoring`);
+  };
+
   // --- Loading ---
   if (isLoadingUser || isLoading || isLoadingRoles) {
     return (
@@ -433,6 +437,7 @@ const SchedulePage = () => {
                       onDeclareWalkover={openWalkover}
                       onReassignPlayers={openReassign}
                       onViewMatchDetail={openMatchDetail}
+                      onScoreMatch={handleScoreMatch}
                       playerNameMap={playerNameMap}
                       golfCourses={golfCourses}
                       teamNames={teamNames}

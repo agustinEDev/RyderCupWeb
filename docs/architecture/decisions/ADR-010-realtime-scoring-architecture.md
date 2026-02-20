@@ -1,177 +1,194 @@
-# ADR-010: Arquitectura de Scoring en Tiempo Real
+# ADR-010: Real-Time Scoring Architecture
 
-**Fecha**: 7 de enero de 2026
-**Estado**: Aceptado (Implementado en v2.1.0)
-**Decisores**: Equipo de desarrollo frontend
+**Date**: January 7, 2026
+**Status**: Accepted (Implemented in v2.0.12)
+**Decision makers**: Frontend development team
 
-## Contexto y Problema
+## Context and Problem
 
-El sistema de scoring v2.1.0 debe permitir a jugadores anotar scores en tiempo real con validación dual (jugador + marcador):
+The v2.0.12 scoring system must allow players to record scores in real time with dual validation (player + marker):
 
-**Requisitos:**
-- Jugador anota su score hoyo por hoyo
-- Validación en tiempo real: ✅ coincide con marcador, ❌ discrepancia
-- Solo se puede entregar tarjeta si 18/18 hoyos ✅
-- UI debe reflejar cambios en <10 segundos
-- Soporte offline no requerido inicialmente
+**Requirements:**
+- Player records their score hole by hole
+- Real-time validation: ✅ matches marker, ❌ discrepancy
+- Scorecard can only be submitted if all holes are ✅ (18 or fewer if match decided early)
+- UI must reflect changes in <10 seconds
+- Offline support with localStorage queue and automatic synchronization
+- Multi-device session locking via BroadcastChannel
 
-**Problema:**
-¿Cómo sincronizar datos entre jugador y marcador en tiempo real sin WebSockets?
+**Problem:**
+How to synchronize data between player and marker in real time without WebSockets?
 
-## Opciones Consideradas
+## Options Considered
 
-1. **Polling con React Query (10s)**: Cliente consulta cada 10s
-2. **WebSocket (Socket.io)**: Conexión bidireccional persistente
-3. **Server-Sent Events (SSE)**: Push unidireccional del servidor
-4. **Long Polling**: Cliente espera respuesta hasta timeout
+1. **Polling with React Query (10s)**: Client queries every 10s
+2. **WebSocket (Socket.io)**: Persistent bidirectional connection
+3. **Server-Sent Events (SSE)**: Unidirectional push from server
+4. **Long Polling**: Client waits for response until timeout
 
-## Decisión
+## Decision
 
-**Adoptamos Polling con React Query (refetchInterval: 10s) para v2.1.0:**
+**We adopted Polling with `useScoring` hook (setInterval 10s) for v2.0.12:**
 
-### Arquitectura
+### Architecture
 
-**Frontend:**
+**Frontend (actual implementation):**
 ```javascript
-// Polling cada 10s
-useQuery({
-  queryKey: ['match-scoring', matchId, currentHole],
-  queryFn: () => api.matches.getScoringView(matchId),
-  staleTime: 0,
-  refetchInterval: 10 * 1000
-});
+// useScoring hook - polling via setInterval every 10s
+// Does not use React Query directly, manages its own state
+export const useScoring = (matchId, currentUserId) => {
+  const [scoringView, setScoringView] = useState(null);
+  // ... central state: currentHole, isLoading, error, isSubmitting, matchSummary
 
-// Anotar score con optimistic update
-useMutation({
-  mutationFn: annotateScore,
-  onMutate: async (newScore) => {
-    // Update UI inmediatamente
-    queryClient.setQueryData(['match-scoring'], old => ({...old, player_score: newScore}));
-  }
-});
+  // Polling every 10s
+  useEffect(() => {
+    fetchScoringView();
+    pollIntervalRef.current = setInterval(() => {
+      if (!isOffline) fetchScoringView();
+    }, POLL_INTERVAL);
+    return () => clearInterval(pollIntervalRef.current);
+  }, [fetchScoringView, isOffline]);
+
+  // Offline queue: localStorage queue + sync on reconnect
+  // Session lock: BroadcastChannel prevent concurrent devices
+};
 ```
 
 **Backend:**
 ```
 GET /api/v1/matches/{id}/scoring-view
 → {
-    input_tab: { validation_status: "match" | "mismatch" | "pending" },
-    scorecard_tab: { holes: [...] },
-    leaderboard_tab: { team_standings: {...} }
+    match_id, match_number, match_format, match_status, is_decided,
+    marker_assignments: [...],
+    players: [...],
+    holes: [...],
+    scores: [{ hole_number, player_scores: [{ own_score, marker_score, validation_status }] }],
+    match_standing: { status, leading_team, holes_played },
+    scorecard_submitted_by: [...]
   }
 ```
 
-**UI: 3 Pestañas**
-1. **Input Tab**: Anotar scores (navegación libre 1-18)
-2. **Scorecard Tab**: Tabla completa (bruto/neto/resultado)
-3. **Leaderboard Tab**: Estado del match (2 UP through 14)
+**UI: 3 Tabs**
+1. **Input Tab**: Record scores (free navigation 1-18)
+2. **Scorecard Tab**: Full table (gross/net/result)
+3. **Leaderboard Tab**: Match status (2 UP through 14)
 
-### Reglas de Validación
+### Validation Rules
 
-- ✅ Verde: `player_score === marker_score`
-- ❌ Rojo: `player_score !== marker_score`
-- ⚪ Gris: `player_score === null || marker_score === null`
-- **Submit bloqueado**: Si ∃ hoyo con ❌
+- ✅ Green: `player_score === marker_score`
+- ❌ Red: `player_score !== marker_score`
+- ⚪ Gray: `player_score === null || marker_score === null`
+- **Submit blocked**: If there exists a hole with ❌
 
-## Justificación
+## Rationale
 
-### Por qué Polling vs WebSocket:
+### Why Polling vs WebSocket:
 
-**Ventajas Polling:**
-- ✅ **Simplicidad**: No requiere servidor WebSocket
-- ✅ **Infraestructura**: Reutiliza FastAPI existente (no necesita Socket.io server)
-- ✅ **Debugging**: Fácil ver requests en Network tab
-- ✅ **Resilencia**: Auto-recovery si falla request
-- ✅ **Caching**: React Query maneja cache automáticamente
+**Polling Advantages:**
+- ✅ **Simplicity**: No WebSocket server required
+- ✅ **Infrastructure**: Reuses existing FastAPI (no Socket.io server needed)
+- ✅ **Debugging**: Easy to see requests in Network tab
+- ✅ **Resilience**: Auto-recovery if request fails
+- ✅ **Caching**: React Query handles cache automatically
 
-**Desventajas aceptadas:**
-- ❌ **Latencia**: Hasta 10s de delay (acceptable para golf, no es tiempo crítico)
-- ❌ **Tráfico**: 6 requests/min (acceptable, payload pequeño ~5KB)
-- ❌ **Batería móvil**: Polling constante consume más (mitigado: pausar si app en background)
+**Accepted Drawbacks:**
+- ❌ **Latency**: Up to 10s delay (acceptable for golf, not time-critical)
+- ❌ **Traffic**: 6 requests/min (acceptable, small payload ~5KB)
+- ❌ **Mobile battery**: Constant polling consumes more (mitigated: pause if app in background)
 
-**Cuándo migrar a WebSocket:**
-- Si se requiere latencia <5s
-- Si se añade chat en vivo entre jugadores
-- Si leaderboard necesita updates <10s
+**When to migrate to WebSocket:**
+- If latency <5s is required
+- If live chat between players is added
+- If leaderboard needs updates <10s
 
-### Por qué React Query vs Custom Polling:
+### Why React Query vs Custom Polling:
 
 - ✅ **Optimistic updates**: Built-in
-- ✅ **Request deduplication**: Múltiples componentes usan mismo query sin duplicar requests
-- ✅ **Background refetching**: Actualiza cuando usuario vuelve a la tab
-- ✅ **Error handling**: Retry automático con backoff exponencial
+- ✅ **Request deduplication**: Multiple components use the same query without duplicating requests
+- ✅ **Background refetching**: Updates when user returns to the tab
+- ✅ **Error handling**: Automatic retry with exponential backoff
 
-## Consecuencias
+## Consequences
 
-### Positivas:
-1. **Time-to-market**: Implementación rápida sin infraestructura compleja
-2. **Confiabilidad**: Menos puntos de fallo que WebSocket
-3. **Escalabilidad**: Backend stateless, fácil escalar horizontalmente
-4. **DevEx**: React Query DevTools para debugging
+### Positive:
+1. **Time-to-market**: Fast implementation without complex infrastructure
+2. **Reliability**: Fewer points of failure than WebSocket
+3. **Scalability**: Stateless backend, easy to scale horizontally
+4. **DevEx**: React Query DevTools for debugging
 
-### Negativas (mitigadas):
-1. **Latencia 10s**: Puede confundir usuarios si esperan instantaneidad
-   - *Mitigación*: Optimistic updates para feedback inmediato, mensaje "Sincronizando..."
-2. **Tráfico extra**: 6 req/min por match activo
-   - *Mitigación*: Payload compacto, pausar polling si tab inactiva
-3. **Sincronización compleja**: Race conditions posibles
-   - *Mitigación*: Backend usa timestamps, última anotación gana
+### Negative (mitigated):
+1. **10s latency**: May confuse users if they expect instant updates
+   - *Mitigation*: Optimistic updates for immediate feedback, "Syncing..." message
+2. **Extra traffic**: 6 req/min per active match
+   - *Mitigation*: Compact payload, pause polling if tab inactive
+3. **Complex synchronization**: Possible race conditions
+   - *Mitigation*: Backend uses timestamps, last annotation wins
 
-## Implementación
+## Implementation (v2.0.12 — Sprint 4)
 
-### scoringStore (Zustand):
+### useScoring Hook (replaces scoringStore + React Query):
 ```javascript
-export const useScoringStore = create((set, get) => ({
-  currentHole: 1,
-  scores: [],
-  validationStatus: {},
-  canSubmitScorecard: () => {
-    const { validationStatus } = get();
-    return Object.values(validationStatus).every(v => v === "match");
-  }
-}));
+// src/hooks/useScoring.js — Central hook for live scoring
+export const useScoring = (matchId, currentUserId) => {
+  // State: scoringView, currentHole, isLoading, error, isSubmitting, matchSummary
+  // Offline: isOffline, pendingQueueSize
+  // Session: isSessionBlocked
+
+  // Derived values:
+  const isMatchPlayer = scoringView?.players?.some(p => p.userId === currentUserId);
+  const hasSubmitted = scoringView?.scorecardSubmittedBy?.includes(currentUserId);
+  const canSubmitScorecard = isMatchPlayer && !hasSubmitted && validatedHoles >= totalHoles;
+
+  // Actions: submitScore, submitScorecard, concedeMatch, setCurrentHole, refetch
+};
 ```
 
-### Polling Condicional:
+### Offline Queue (localStorage):
 ```javascript
-// Solo hace polling si hay matches IN_PROGRESS
-const hasActiveMatches = data?.matches?.some(m => m.status === 'IN_PROGRESS');
-
-useQuery({
-  refetchInterval: hasActiveMatches ? 10 * 1000 : false
-});
+// src/utils/scoringOfflineQueue.js
+// Enqueues scores when offline, processes on reconnect
+// enqueue(matchId, holeNumber, scoreData) → stores in localStorage
+// Window online event → processQueue() → replay scores via API
 ```
 
-### Prefetching:
+### Session Lock (BroadcastChannel):
 ```javascript
-// Prefetch próximo hoyo
+// src/utils/scoringSessionLock.js
+// Prevents concurrent scoring sessions on multiple devices
+// acquire(matchId, sessionId) → BroadcastChannel negotiation
+// If another tab/device holds lock → SessionBlockedModal shown
+```
+
+### Leaderboard Polling (30s, public page):
+```javascript
+// src/pages/public/LeaderboardPage.jsx
 useEffect(() => {
-  if (currentHole < 18) {
-    queryClient.prefetchQuery(['match-scoring', matchId, currentHole + 1]);
-  }
-}, [currentHole]);
+  const interval = setInterval(fetchLeaderboard, 30000);
+  return () => clearInterval(interval);
+}, [competitionId]);
 ```
 
-## Alternativas Rechazadas
+## Rejected Alternatives
 
 ### WebSocket (Socket.io):
-- **Por qué no**: Requiere servidor WebSocket dedicado (infraestructura extra)
-- **Cuándo reconsiderar**: v2.2.0 si usuarios reportan latencia inaceptable
+- **Why not**: Requires a dedicated WebSocket server (extra infrastructure)
+- **When to reconsider**: v2.2.0 if users report unacceptable latency
 
 ### Server-Sent Events (SSE):
-- **Por qué no**: Push unidireccional, no ideal para bidireccional (jugador anota → backend → marcador)
-- **Cuándo usar**: Si solo necesitamos push (ej: notificaciones)
+- **Why not**: Unidirectional push, not ideal for bidirectional (player records → backend → marker)
+- **When to use**: If we only need push (e.g.: notifications)
 
 ### Long Polling:
-- **Por qué no**: Complejo de implementar correctamente, consume más recursos que polling corto
-- **Beneficio mínimo**: Reducir latencia de 10s a ~5s no justifica complejidad
+- **Why not**: Complex to implement correctly, consumes more resources than short polling
+- **Minimal benefit**: Reducing latency from 10s to ~5s does not justify the complexity
 
-## Referencias
+## References
 
 - React Query Polling: https://tanstack.com/query/latest/docs/react/guides/window-focus-refetching
 - Optimistic Updates: https://tanstack.com/query/latest/docs/react/guides/optimistic-updates
 - WebSocket vs Polling: https://ably.com/topic/long-polling-vs-websockets
 
-## Historial de Cambios
+## Change History
 
-- **2026-01-07**: Creación del ADR, implementación v2.1.0
+- **2026-01-07**: ADR creation, initial design with React Query polling
+- **2026-02-19**: Updated with actual implementation v2.0.12 (useScoring hook, offline queue, session lock)

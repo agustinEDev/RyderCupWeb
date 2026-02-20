@@ -116,7 +116,8 @@
       "request-to-join": "Solicitar Unirse",
       "manageSchedule": "Gestionar Calendario",
       "viewSchedule": "Ver Calendario",
-      "manageInvitations": "Invitaciones"
+      "manageInvitations": "Invitaciones",
+      "leaderboard": "Clasificación"
     },
     "confirmations": {
       "activate": "¿Estás seguro de que quieres activar esta competición?",

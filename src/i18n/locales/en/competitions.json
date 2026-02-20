@@ -116,7 +116,8 @@
       "request-to-join": "Request to Join",
       "manageSchedule": "Manage Schedule",
       "viewSchedule": "View Schedule",
-      "manageInvitations": "Invitations"
+      "manageInvitations": "Invitations",
+      "leaderboard": "Leaderboard"
     },
     "confirmations": {
       "activate": "Are you sure you want to activate this competition?",

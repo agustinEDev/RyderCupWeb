@@ -35,6 +35,8 @@
     "startMatch": "Iniciar Partido",
     "completeMatch": "Completar Partido",
     "viewDetail": "Ver Detalle",
+    "score": "Anotar",
+    "viewScorecard": "Ver Tarjeta",
     "result": "Resultado",
     "resultWinner": "Ganador: {{team}}",
     "resultScore": "Puntuación: {{score}}",
