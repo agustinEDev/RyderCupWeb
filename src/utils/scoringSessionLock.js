@@ -1,14 +1,15 @@
 /**
  * Session Lock for Scoring
  *
- * Prevents concurrent scoring sessions across tabs/devices using BroadcastChannel.
- * Only one tab at a time can have an active scoring session for a given match.
+ * Prevents the SAME user from having concurrent scoring sessions across tabs.
+ * Different users can score simultaneously (each has their own lock key).
  *
- * Pattern reused from broadcastAuth.js (singleton BroadcastChannel).
+ * Storage key is scoped per userId: `rydercup-scoring-session-{userId}`
+ * BroadcastChannel messages include userId for filtering.
  */
 
 const CHANNEL_NAME = 'rydercup-scoring-lock';
-const STORAGE_KEY = 'rydercup-scoring-session';
+const STORAGE_PREFIX = 'rydercup-scoring-session-';
 
 const isBroadcastSupported = typeof BroadcastChannel !== 'undefined';
 
@@ -24,14 +25,19 @@ const initChannel = () => {
   }
 };
 
+const storageKey = (userId) => `${STORAGE_PREFIX}${userId}`;
+
 /**
  * Try to acquire a scoring session lock for a match.
  * @param {string} matchId
  * @param {string} sessionId - Unique identifier for this tab/session
+ * @param {string} userId - Current user ID (scopes the lock)
  * @returns {boolean} true if lock acquired, false if another session is active
  */
-export const acquire = (matchId, sessionId) => {
-  const existing = getSession();
+export const acquire = (matchId, sessionId, userId) => {
+  if (!userId) return true;
+  const key = storageKey(userId);
+  const existing = getSession(userId);
   if (existing && existing.matchId === matchId && existing.sessionId !== sessionId) {
     // Check if the existing session is stale (older than 2 minutes)
     if (Date.now() - existing.timestamp < 120000) {
@@ -39,8 +45,8 @@ export const acquire = (matchId, sessionId) => {
     }
   }
 
-  const session = { matchId, sessionId, timestamp: Date.now() };
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(session));
+  const session = { matchId, sessionId, userId, timestamp: Date.now() };
+  localStorage.setItem(key, JSON.stringify(session));
 
   // Notify other tabs
   const channel = initChannel();
@@ -58,16 +64,19 @@ export const acquire = (matchId, sessionId) => {
 /**
  * Release the scoring session lock.
  * @param {string} sessionId - The session that owns the lock
+ * @param {string} userId - Current user ID
  */
-export const release = (sessionId) => {
-  const existing = getSession();
+export const release = (sessionId, userId) => {
+  if (!userId) return;
+  const key = storageKey(userId);
+  const existing = getSession(userId);
   if (existing && existing.sessionId === sessionId) {
-    localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(key);
 
     const channel = initChannel();
     if (channel) {
       try {
-        channel.postMessage({ type: 'LOCK_RELEASED', sessionId });
+        channel.postMessage({ type: 'LOCK_RELEASED', sessionId, userId });
       } catch {
         // Silent fail
       }
@@ -78,33 +87,26 @@ export const release = (sessionId) => {
 /**
  * Refresh the lock timestamp to prevent staleness.
  * @param {string} sessionId
+ * @param {string} userId
  */
-export const refresh = (sessionId) => {
-  const existing = getSession();
+export const refresh = (sessionId, userId) => {
+  if (!userId) return;
+  const existing = getSession(userId);
   if (existing && existing.sessionId === sessionId) {
     existing.timestamp = Date.now();
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(existing));
+    localStorage.setItem(storageKey(userId), JSON.stringify(existing));
   }
 };
 
 /**
- * Check if there is an active session lock.
- * @returns {boolean}
+ * Get the current session info for a user.
+ * @param {string} userId
+ * @returns {Object|null} { matchId, sessionId, userId, timestamp } or null
  */
-export const isLocked = () => {
-  const session = getSession();
-  if (!session) return false;
-  // Session is considered stale after 2 minutes without refresh
-  return Date.now() - session.timestamp < 120000;
-};
-
-/**
- * Get the current session info.
- * @returns {Object|null} { matchId, sessionId, timestamp } or null
- */
-export const getSession = () => {
+export const getSession = (userId) => {
+  if (!userId) return null;
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(storageKey(userId));
     return raw ? JSON.parse(raw) : null;
   } catch {
     return null;
@@ -113,7 +115,7 @@ export const getSession = () => {
 
 /**
  * Listen for lock events from other tabs.
- * @param {Function} callback - Receives { type, matchId, sessionId }
+ * @param {Function} callback - Receives { type, matchId, sessionId, userId }
  * @returns {Function} Cleanup function
  */
 export const onLockEvent = (callback) => {
@@ -128,6 +130,25 @@ export const onLockEvent = (callback) => {
 
   channel.addEventListener('message', handler);
   return () => channel.removeEventListener('message', handler);
+};
+
+/**
+ * Force-release any existing lock for a user regardless of session ownership.
+ * Used when user explicitly takes over a session.
+ * @param {string} userId
+ */
+export const forceRelease = (userId) => {
+  if (!userId) return;
+  localStorage.removeItem(storageKey(userId));
+
+  const channel = initChannel();
+  if (channel) {
+    try {
+      channel.postMessage({ type: 'LOCK_RELEASED', sessionId: 'force', userId });
+    } catch {
+      // Silent fail
+    }
+  }
 };
 
 /**

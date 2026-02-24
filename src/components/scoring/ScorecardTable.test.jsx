@@ -71,9 +71,21 @@ describe('ScorecardTable', () => {
     expect(screen.getByTestId('scorecard-table')).toHaveTextContent('scorecard.result');
   });
 
-  it('should show hole result winner', () => {
+  it('should show hole result winner with team name', () => {
     const scores = [{ holeNumber: 1, playerScores: [{ userId: 'u1', ownScore: 4, validationStatus: 'match' }], holeResult: { winner: 'A', standing: '1UP' } }];
-    render(<ScorecardTable holes={holes} players={players} scores={scores} currentUserId="u1" />);
-    expect(screen.getByTestId('scorecard-table')).toHaveTextContent('A');
+    render(<ScorecardTable holes={holes} players={players} scores={scores} currentUserId="u1" teamAName="Team Red" teamBName="Team Blue" />);
+    expect(screen.getByTestId('scorecard-table')).toHaveTextContent('Team Red');
+  });
+
+  it('should show halved symbol for halved holes', () => {
+    const scores = [{ holeNumber: 1, playerScores: [{ userId: 'u1', ownScore: 4, validationStatus: 'match' }], holeResult: { winner: 'HALVED', standing: 'AS' } }];
+    render(<ScorecardTable holes={holes} players={players} scores={scores} currentUserId="u1" teamAName="Team Red" teamBName="Team Blue" />);
+    expect(screen.getByTestId('scorecard-table')).toHaveTextContent('scorecard.halved');
+  });
+
+  it('should show team B name when team B wins hole', () => {
+    const scores = [{ holeNumber: 1, playerScores: [{ userId: 'u2', ownScore: 3, validationStatus: 'match' }], holeResult: { winner: 'B', standing: '1UP' } }];
+    render(<ScorecardTable holes={holes} players={players} scores={scores} currentUserId="u1" teamAName="Team Red" teamBName="Team Blue" />);
+    expect(screen.getByTestId('scorecard-table')).toHaveTextContent('Team Blue');
   });
 });

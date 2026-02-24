@@ -22,7 +22,7 @@ describe('ApiScoringRepository', () => {
   });
 
   describe('getScoringView', () => {
-    it('should call GET /api/v1/matches/{id}/scoring-view and return DTO', async () => {
+    it('should call GET /api/v1/competitions/matches/{id}/scoring-view and return DTO', async () => {
       apiRequest.mockResolvedValue({
         match_id: 'match-1',
         match_number: 1,
@@ -32,7 +32,7 @@ describe('ApiScoringRepository', () => {
 
       const result = await repo.getScoringView('match-1');
 
-      expect(apiRequest).toHaveBeenCalledWith('/api/v1/matches/match-1/scoring-view');
+      expect(apiRequest).toHaveBeenCalledWith('/api/v1/competitions/matches/match-1/scoring-view');
       expect(result.matchId).toBe('match-1');
       expect(result.matchFormat).toBe('SINGLES');
       expect(result.matchStatus).toBe('IN_PROGRESS');
@@ -56,7 +56,7 @@ describe('ApiScoringRepository', () => {
 
       const result = await repo.submitHoleScore('match-1', 3, scoreData);
 
-      expect(apiRequest).toHaveBeenCalledWith('/api/v1/matches/match-1/scores/holes/3', {
+      expect(apiRequest).toHaveBeenCalledWith('/api/v1/competitions/matches/match-1/scores/holes/3', {
         method: 'POST',
         body: JSON.stringify({
           own_score: 5,
@@ -83,7 +83,7 @@ describe('ApiScoringRepository', () => {
 
       await repo.submitHoleScore('match-1', 5, scoreData);
 
-      expect(apiRequest).toHaveBeenCalledWith('/api/v1/matches/match-1/scores/holes/5', {
+      expect(apiRequest).toHaveBeenCalledWith('/api/v1/competitions/matches/match-1/scores/holes/5', {
         method: 'POST',
         body: JSON.stringify({
           own_score: null,
@@ -117,7 +117,7 @@ describe('ApiScoringRepository', () => {
 
       const result = await repo.submitScorecard('match-1');
 
-      expect(apiRequest).toHaveBeenCalledWith('/api/v1/matches/match-1/scorecard/submit', {
+      expect(apiRequest).toHaveBeenCalledWith('/api/v1/competitions/matches/match-1/scorecard/submit', {
         method: 'POST',
         body: JSON.stringify({}),
       });
@@ -156,10 +156,9 @@ describe('ApiScoringRepository', () => {
 
       await repo.concedeMatch('match-1', 'A', 'Player injury');
 
-      expect(apiRequest).toHaveBeenCalledWith('/api/v1/matches/match-1/status', {
+      expect(apiRequest).toHaveBeenCalledWith('/api/v1/competitions/matches/match-1/concede', {
         method: 'PUT',
         body: JSON.stringify({
-          action: 'concede',
           conceding_team: 'A',
           reason: 'Player injury',
         }),
@@ -171,10 +170,9 @@ describe('ApiScoringRepository', () => {
 
       await repo.concedeMatch('match-1', 'B', null);
 
-      expect(apiRequest).toHaveBeenCalledWith('/api/v1/matches/match-1/status', {
+      expect(apiRequest).toHaveBeenCalledWith('/api/v1/competitions/matches/match-1/concede', {
         method: 'PUT',
         body: JSON.stringify({
-          action: 'concede',
           conceding_team: 'B',
         }),
       });
@@ -185,10 +183,9 @@ describe('ApiScoringRepository', () => {
 
       await repo.concedeMatch('match-1', 'A');
 
-      expect(apiRequest).toHaveBeenCalledWith('/api/v1/matches/match-1/status', {
+      expect(apiRequest).toHaveBeenCalledWith('/api/v1/competitions/matches/match-1/concede', {
         method: 'PUT',
         body: JSON.stringify({
-          action: 'concede',
           conceding_team: 'A',
         }),
       });

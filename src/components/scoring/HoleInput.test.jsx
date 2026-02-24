@@ -76,9 +76,9 @@ describe('HoleInput', () => {
     expect(screen.getByTestId('hole-input')).toHaveTextContent('3');
   });
 
-  it('should show standing', () => {
-    render(<HoleInput {...defaultProps} standing="2UP" />);
-    expect(screen.getByTestId('hole-input')).toHaveTextContent('2UP');
+  it('should show standing with team name', () => {
+    render(<HoleInput {...defaultProps} standing="2UP" holeResult={{ winner: 'A', standing: '2UP', standingTeam: 'A' }} teamAName="Europe" teamBName="USA" />);
+    expect(screen.getByTestId('hole-input')).toHaveTextContent('Europe 2UP');
   });
 
   it('should show all square for AS standing', () => {
@@ -89,5 +89,51 @@ describe('HoleInput', () => {
   it('should show strokes received badge', () => {
     render(<HoleInput {...defaultProps} strokesReceived={1} />);
     expect(screen.getByTestId('hole-input')).toHaveTextContent('input.strokeReceived');
+  });
+
+  it('should show team A name for hole winner A', () => {
+    render(<HoleInput {...defaultProps} holeResult={{ winner: 'A', standing: '1UP', standingTeam: 'A' }} teamAName="Europe" teamBName="USA" />);
+    expect(screen.getByTestId('hole-input')).toHaveTextContent('Europe');
+  });
+
+  it('should show team B name for hole winner B', () => {
+    render(<HoleInput {...defaultProps} holeResult={{ winner: 'B', standing: '1UP', standingTeam: 'B' }} teamAName="Europe" teamBName="USA" />);
+    expect(screen.getByTestId('hole-input')).toHaveTextContent('USA');
+  });
+
+  it('should show halved for HALVED result', () => {
+    render(<HoleInput {...defaultProps} holeResult={{ winner: 'HALVED', standing: 'AS', standingTeam: null }} teamAName="Europe" teamBName="USA" />);
+    expect(screen.getByTestId('hole-input')).toHaveTextContent('input.halved');
+  });
+
+  it('should lock own score but keep marker editable when isOwnScoreLocked', () => {
+    render(<HoleInput {...defaultProps} isOwnScoreLocked={true} />);
+    // Own score buttons should not exist
+    expect(screen.queryByTestId('own-score-minus')).toBeNull();
+    expect(screen.queryByTestId('own-score-plus')).toBeNull();
+    // Marker score buttons should still exist
+    expect(screen.getByTestId('marked-score-minus')).toBeInTheDocument();
+    expect(screen.getByTestId('marked-score-plus')).toBeInTheDocument();
+  });
+
+  it('should lock marker score but keep own editable when isMarkerScoreLocked', () => {
+    render(<HoleInput {...defaultProps} isMarkerScoreLocked={true} />);
+    // Own score buttons should exist
+    expect(screen.getByTestId('own-score-minus')).toBeInTheDocument();
+    expect(screen.getByTestId('own-score-plus')).toBeInTheDocument();
+    // Marker score buttons should not exist
+    expect(screen.queryByTestId('marked-score-minus')).toBeNull();
+    expect(screen.queryByTestId('marked-score-plus')).toBeNull();
+  });
+
+  it('should still trigger onScoreChange when only marker score changes', () => {
+    render(<HoleInput {...defaultProps} isOwnScoreLocked={true} />);
+    fireEvent.click(screen.getByTestId('marked-score-plus'));
+    expect(defaultProps.onScoreChange).toHaveBeenCalledWith({ ownScore: 4, markedScore: 5 });
+  });
+
+  it('should fallback to letter when team name not provided', () => {
+    render(<HoleInput {...defaultProps} holeResult={{ winner: 'A', standing: '1UP', standingTeam: 'A' }} />);
+    expect(screen.getByTestId('hole-input')).toHaveTextContent('A');
   });
 });

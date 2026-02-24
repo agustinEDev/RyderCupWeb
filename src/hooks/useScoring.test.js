@@ -26,6 +26,7 @@ vi.mock('../utils/scoringSessionLock', () => ({
   acquire: vi.fn(() => true),
   release: vi.fn(),
   refresh: vi.fn(),
+  forceRelease: vi.fn(),
   isLocked: vi.fn(() => false),
   getSession: vi.fn(() => null),
   onLockEvent: vi.fn(() => () => {}),
@@ -51,6 +52,10 @@ const mockScoringView = {
   players: [
     { userId: 'u1', userName: 'Player A', team: 'A' },
     { userId: 'u2', userName: 'Player B', team: 'B' },
+  ],
+  markerAssignments: [
+    { scorerUserId: 'u1', marksUserId: 'u2', markedByUserId: 'u2' },
+    { scorerUserId: 'u2', marksUserId: 'u1', markedByUserId: 'u1' },
   ],
   holes: Array.from({ length: 18 }, (_, i) => ({ holeNumber: i + 1, par: 4, strokeIndex: i + 1 })),
   scores: [],
@@ -220,13 +225,14 @@ describe('useScoring', () => {
     expect(sessionLock.acquire).toHaveBeenCalled();
   });
 
-  it('should set isSessionBlocked when lock cannot be acquired', async () => {
-    sessionLock.acquire.mockReturnValue(false);
-
+  it('should force-release stale locks and acquire on mount', async () => {
     const { result } = renderHook(() => useScoring('m-1', 'u1'));
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
-    expect(result.current.isSessionBlocked).toBe(true);
+    // forceRelease is called before acquire to clear stale locks
+    expect(sessionLock.forceRelease).toHaveBeenCalled();
+    expect(sessionLock.acquire).toHaveBeenCalled();
+    expect(result.current.isSessionBlocked).toBe(false);
   });
 
   it('should handle fetch error', async () => {
@@ -249,7 +255,7 @@ describe('useScoring', () => {
     expect(submitHoleScoreUseCase.execute).not.toHaveBeenCalled();
   });
 
-  it('should adjust totalHoles when match is decided early', async () => {
+  it('should always show 18 holes even when match is decided early', async () => {
     const decidedView = {
       ...mockScoringView,
       isDecided: true,
@@ -261,7 +267,7 @@ describe('useScoring', () => {
     const { result } = renderHook(() => useScoring('m-1', 'u1'));
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
-    expect(result.current.totalHoles).toBe(14);
+    expect(result.current.totalHoles).toBe(18);
   });
 
   it('should release session lock on unmount', async () => {
@@ -270,5 +276,85 @@ describe('useScoring', () => {
 
     unmount();
     expect(sessionLock.release).toHaveBeenCalled();
+  });
+
+  it('should set isOwnScoreLocked when user has submitted', async () => {
+    const viewWithSubmit = {
+      ...mockScoringView,
+      scorecardSubmittedBy: ['u1'],
+    };
+    getScoringViewUseCase.execute.mockResolvedValue(viewWithSubmit);
+
+    const { result } = renderHook(() => useScoring('m-1', 'u1'));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    expect(result.current.isOwnScoreLocked).toBe(true);
+    expect(result.current.isMarkerScoreLocked).toBe(false);
+  });
+
+  it('should set isMarkerScoreLocked when marked player has submitted', async () => {
+    const viewWithMarkedSubmit = {
+      ...mockScoringView,
+      scorecardSubmittedBy: ['u2'],
+    };
+    getScoringViewUseCase.execute.mockResolvedValue(viewWithMarkedSubmit);
+
+    const { result } = renderHook(() => useScoring('m-1', 'u1'));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    expect(result.current.isOwnScoreLocked).toBe(false);
+    expect(result.current.isMarkerScoreLocked).toBe(true);
+  });
+
+  it('should allow score submission after own scorecard submitted (marker corrections)', async () => {
+    const viewWithOwnSubmit = {
+      ...mockScoringView,
+      scorecardSubmittedBy: ['u1'],
+    };
+    getScoringViewUseCase.execute.mockResolvedValue(viewWithOwnSubmit);
+    const updatedView = { ...viewWithOwnSubmit, scores: [{ holeNumber: 1 }] };
+    submitHoleScoreUseCase.execute.mockResolvedValue(updatedView);
+
+    const { result } = renderHook(() => useScoring('m-1', 'u1'));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    // isOwnScoreLocked=true but isMarkerScoreLocked=false → can still submit
+    await act(async () => {
+      await result.current.submitScore(1, { ownScore: 4, markedPlayerId: 'u2', markedScore: 5 });
+    });
+
+    expect(submitHoleScoreUseCase.execute).toHaveBeenCalled();
+  });
+
+  it('should block score submission when both own and marker are locked', async () => {
+    const viewBothSubmitted = {
+      ...mockScoringView,
+      scorecardSubmittedBy: ['u1', 'u2'],
+    };
+    getScoringViewUseCase.execute.mockResolvedValue(viewBothSubmitted);
+
+    const { result } = renderHook(() => useScoring('m-1', 'u1'));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    await act(async () => {
+      await result.current.submitScore(1, { ownScore: 4, markedPlayerId: 'u2', markedScore: 5 });
+    });
+
+    expect(submitHoleScoreUseCase.execute).not.toHaveBeenCalled();
+  });
+
+  it('should be fully locked when both player and marker submitted', async () => {
+    const viewBothSubmitted = {
+      ...mockScoringView,
+      scorecardSubmittedBy: ['u1', 'u2'],
+    };
+    getScoringViewUseCase.execute.mockResolvedValue(viewBothSubmitted);
+
+    const { result } = renderHook(() => useScoring('m-1', 'u1'));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    expect(result.current.isFullyLocked).toBe(true);
+    expect(result.current.isOwnScoreLocked).toBe(true);
+    expect(result.current.isMarkerScoreLocked).toBe(true);
   });
 });

@@ -10,7 +10,7 @@
     "leaderboard": "Clasificacion"
   },
   "preMatch": {
-    "title": "Info Pre-Partido",
+    "title": "Info del Partido",
     "youMark": "Tu marcas a",
     "markedBy": "Te marca",
     "teeCategory": "Categoria de Tee",
@@ -29,7 +29,7 @@
     "standing": "Marcador",
     "strokeReceived": "Golpe recibido",
     "pickedUp": "Bola levantada",
-    "allSquare": "AS",
+    "allSquare": "Empate",
     "halved": "Empatado",
     "prevHole": "Anterior",
     "nextHole": "Siguiente"
@@ -44,6 +44,7 @@
     "net": "Neto",
     "validation": "Val",
     "result": "Res",
+    "halved": "=",
     "out": "IDA",
     "in": "VUELTA",
     "total": "TOTAL",
@@ -56,6 +57,8 @@
     "allSquare": "All Square",
     "points": "pts",
     "hole": "Hoyo",
+    "wins": "{{team}} gana {{score}}",
+    "conceded": "{{team}} (Concedido)",
     "noMatches": "No hay partidos disponibles"
   },
   "validation": {
@@ -94,6 +97,7 @@
     "matchComplete": "Partido Completado",
     "waitingForOthers": "Esperando a que los demas jugadores envien su tarjeta",
     "backToSchedule": "Volver al Calendario",
+    "backToCompetition": "Volver a Competicion",
     "back": "Volver"
   },
   "earlyEnd": {

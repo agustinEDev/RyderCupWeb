@@ -11,18 +11,18 @@ import ScoringMapper from '../mappers/ScoringMapper';
  */
 class ApiScoringRepository extends IScoringRepository {
   /**
-   * GET /api/v1/matches/{matchId}/scoring-view
+   * GET /api/v1/competitions/matches/{matchId}/scoring-view
    */
   async getScoringView(matchId) {
-    const data = await apiRequest(`/api/v1/matches/${matchId}/scoring-view`);
+    const data = await apiRequest(`/api/v1/competitions/matches/${matchId}/scoring-view`);
     return ScoringMapper.toScoringViewDTO(data);
   }
 
   /**
-   * POST /api/v1/matches/{matchId}/scores/holes/{holeNumber}
+   * POST /api/v1/competitions/matches/{matchId}/scores/holes/{holeNumber}
    */
   async submitHoleScore(matchId, holeNumber, scoreData) {
-    const data = await apiRequest(`/api/v1/matches/${matchId}/scores/holes/${holeNumber}`, {
+    const data = await apiRequest(`/api/v1/competitions/matches/${matchId}/scores/holes/${holeNumber}`, {
       method: 'POST',
       body: JSON.stringify({
         own_score: scoreData.ownScore,
@@ -34,10 +34,10 @@ class ApiScoringRepository extends IScoringRepository {
   }
 
   /**
-   * POST /api/v1/matches/{matchId}/scorecard/submit
+   * POST /api/v1/competitions/matches/{matchId}/scorecard/submit
    */
   async submitScorecard(matchId) {
-    const data = await apiRequest(`/api/v1/matches/${matchId}/scorecard/submit`, {
+    const data = await apiRequest(`/api/v1/competitions/matches/${matchId}/scorecard/submit`, {
       method: 'POST',
       body: JSON.stringify({}),
     });
@@ -53,18 +53,16 @@ class ApiScoringRepository extends IScoringRepository {
   }
 
   /**
-   * PUT /api/v1/matches/{matchId}/status (action: concede)
-   * Reuses the existing match status endpoint with a new action.
+   * PUT /api/v1/competitions/matches/{matchId}/concede
    */
   async concedeMatch(matchId, concedingTeam, reason) {
     const body = {
-      action: 'concede',
       conceding_team: concedingTeam,
     };
     if (reason) {
       body.reason = reason;
     }
-    const data = await apiRequest(`/api/v1/matches/${matchId}/status`, {
+    const data = await apiRequest(`/api/v1/competitions/matches/${matchId}/concede`, {
       method: 'PUT',
       body: JSON.stringify(body),
     });

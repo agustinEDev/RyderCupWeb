@@ -40,16 +40,40 @@ export const useScoring = (matchId, currentUserId) => {
   // Determine if scorecard already submitted by current user
   const hasSubmitted = scoringView?.scorecardSubmittedBy?.includes(currentUserId) ?? false;
 
+  // Find the current user's marker assignment
+  const myAssignment = scoringView?.markerAssignments?.find(
+    ma => ma.scorerUserId === currentUserId
+  );
+
+  // Who marks ME (to check if my marker has submitted)
+  const markerUserId = myAssignment?.markedByUserId;
+  const markerHasSubmitted = markerUserId
+    ? (scoringView?.scorecardSubmittedBy?.includes(markerUserId) ?? false)
+    : false;
+
+  // Who do I mark (to check if the person I mark has submitted)
+  const markedPlayerId = myAssignment?.marksUserId;
+  const markedPlayerHasSubmitted = markedPlayerId
+    ? (scoringView?.scorecardSubmittedBy?.includes(markedPlayerId) ?? false)
+    : false;
+
+  // Own scores locked after I submit my scorecard
+  const isOwnScoreLocked = hasSubmitted;
+
+  // Marker scores locked only when the person I mark has submitted their scorecard
+  const isMarkerScoreLocked = markedPlayerHasSubmitted;
+
+  // Fully locked = both my own scores and marker scores are locked
+  const isFullyLocked = hasSubmitted && markerHasSubmitted;
+
   // Count validated holes
   const validatedHoles = scoringView?.scores?.filter(s => {
     const playerScore = s.playerScores?.find(ps => ps.userId === currentUserId);
     return playerScore?.validationStatus === 'match';
   }).length ?? 0;
 
-  // Total holes to play (18 or fewer if match decided early)
-  const totalHoles = scoringView?.isDecided
-    ? (scoringView?.matchStanding?.holesPlayed ?? 18)
-    : 18;
+  // Always allow navigating all 18 holes, even if match decided early
+  const totalHoles = 18;
 
   const canSubmitScorecard = isMatchPlayer && !hasSubmitted && validatedHoles >= totalHoles;
 
@@ -70,8 +94,10 @@ export const useScoring = (matchId, currentUserId) => {
   }, [matchId, isOffline]);
 
   // --- Submit hole score ---
+  // Allow submission if own scores OR marker scores are still editable
   const submitScore = useCallback(async (holeNumber, scoreData) => {
-    if (!matchId || !isMatchPlayer || hasSubmitted) return;
+    if (!matchId || !isMatchPlayer) return;
+    if (isOwnScoreLocked && isMarkerScoreLocked) return;
 
     if (isOffline) {
       offlineQueue.enqueue(matchId, holeNumber, scoreData);
@@ -82,7 +108,11 @@ export const useScoring = (matchId, currentUserId) => {
     setIsSubmitting(true);
     try {
       const updatedView = await submitHoleScoreUseCase.execute(matchId, holeNumber, scoreData);
-      setScoringView(updatedView);
+      // Preserve holes data if the submit response returns empty holes (backend bug resilience)
+      setScoringView(prev => ({
+        ...updatedView,
+        holes: updatedView.holes?.length > 0 ? updatedView.holes : (prev?.holes || []),
+      }));
       setError(null);
     } catch (err) {
       // Queue for retry if network error
@@ -92,7 +122,7 @@ export const useScoring = (matchId, currentUserId) => {
     } finally {
       setIsSubmitting(false);
     }
-  }, [matchId, isMatchPlayer, hasSubmitted, isOffline]);
+  }, [matchId, isMatchPlayer, isOwnScoreLocked, isMarkerScoreLocked, isOffline]);
 
   // --- Submit scorecard ---
   const submitScorecard = useCallback(async () => {
@@ -143,6 +173,20 @@ export const useScoring = (matchId, currentUserId) => {
     await fetchScoringView();
   }, [matchId, fetchScoringView]);
 
+  // --- Take over session (force-acquire lock) ---
+  const takeOverSession = useCallback(() => {
+    if (!matchId) return;
+    sessionLock.forceRelease(currentUserId);
+    sessionLock.acquire(matchId, sessionIdRef.current, currentUserId);
+    setIsSessionBlocked(false);
+
+    // Start refresh timer for the new lock
+    if (sessionRefreshRef.current) clearInterval(sessionRefreshRef.current);
+    sessionRefreshRef.current = setInterval(() => {
+      sessionLock.refresh(sessionIdRef.current, currentUserId);
+    }, SESSION_REFRESH_INTERVAL);
+  }, [matchId, currentUserId]);
+
   // --- Online/offline listeners ---
   useEffect(() => {
     const handleOnline = () => {
@@ -159,33 +203,40 @@ export const useScoring = (matchId, currentUserId) => {
     };
   }, [processQueue]);
 
-  // --- Session lock ---
+  // --- Session lock (scoped per userId) ---
   useEffect(() => {
-    if (!matchId || !isMatchPlayer) return;
+    if (!matchId || !isMatchPlayer || !currentUserId) return;
 
-    const locked = !sessionLock.acquire(matchId, sessionIdRef.current);
-    setIsSessionBlocked(locked);
+    // Force-release any stale lock before acquiring.
+    // Prevents orphaned locks (closed tabs, page reloads, or cookie-shared
+    // sessions in same browser) from blocking on mount.
+    // Protection is maintained: if another tab is actively open, it receives
+    // the LOCK_ACQUIRED event via BroadcastChannel and gets blocked.
+    sessionLock.forceRelease(currentUserId);
+    sessionLock.acquire(matchId, sessionIdRef.current, currentUserId);
+    setIsSessionBlocked(false);
 
-    if (!locked) {
-      // Refresh lock periodically
-      sessionRefreshRef.current = setInterval(() => {
-        sessionLock.refresh(sessionIdRef.current);
-      }, SESSION_REFRESH_INTERVAL);
-    }
+    // Refresh lock periodically
+    sessionRefreshRef.current = setInterval(() => {
+      sessionLock.refresh(sessionIdRef.current, currentUserId);
+    }, SESSION_REFRESH_INTERVAL);
 
     const cleanup = sessionLock.onLockEvent((event) => {
+      // Strict filter: only react to events from the SAME user
+      // Using !== ensures undefined/null events are also filtered out
+      if (event.userId !== currentUserId) return;
+
       if (event.type === 'LOCK_ACQUIRED' && event.sessionId !== sessionIdRef.current) {
         if (event.matchId === matchId) {
-          // Another session acquired lock for this same match
-          setIsSessionBlocked(true);
-        } else if (event.matchId !== matchId) {
-          // Another tab acquired lock for a different match - clear our local lock state
-          setIsSessionBlocked(false);
+          // Verify against localStorage before blocking (don't trust broadcast alone)
+          const existing = sessionLock.getSession(currentUserId);
+          if (existing && existing.sessionId !== sessionIdRef.current && existing.matchId === matchId) {
+            setIsSessionBlocked(true);
+          }
         }
       }
       if (event.type === 'LOCK_RELEASED') {
-        // Try to re-acquire
-        const acquired = sessionLock.acquire(matchId, sessionIdRef.current);
+        const acquired = sessionLock.acquire(matchId, sessionIdRef.current, currentUserId);
         if (acquired) setIsSessionBlocked(false);
       }
     });
@@ -195,12 +246,12 @@ export const useScoring = (matchId, currentUserId) => {
 
     return () => {
       cleanup();
-      sessionLock.release(currentSessionId);
+      sessionLock.release(currentSessionId, currentUserId);
       if (currentRefreshTimer) {
         clearInterval(currentRefreshTimer);
       }
     };
-  }, [matchId, isMatchPlayer]);
+  }, [matchId, isMatchPlayer, currentUserId]);
 
   // --- Initial fetch + polling ---
   useEffect(() => {
@@ -235,6 +286,9 @@ export const useScoring = (matchId, currentUserId) => {
     // Derived
     isMatchPlayer,
     hasSubmitted,
+    isOwnScoreLocked,
+    isMarkerScoreLocked,
+    isFullyLocked,
     validatedHoles,
     totalHoles,
     canSubmitScorecard,
@@ -244,6 +298,7 @@ export const useScoring = (matchId, currentUserId) => {
     submitScore,
     submitScorecard,
     concedeMatch,
+    takeOverSession,
     refetch: fetchScoringView,
   };
 };

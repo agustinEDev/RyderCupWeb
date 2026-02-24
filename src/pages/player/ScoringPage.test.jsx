@@ -5,6 +5,7 @@ import { render, screen, fireEvent } from '@testing-library/react';
 vi.mock('react-router-dom', () => ({
   useParams: () => ({ matchId: 'm-1' }),
   useNavigate: () => vi.fn(),
+  Link: ({ children, to, ...props }) => <a href={to} {...props}>{children}</a>,
 }));
 
 vi.mock('react-i18next', () => ({
@@ -29,8 +30,10 @@ const mockUseScoring = {
     competitionId: 'c-1',
     isDecided: false,
     decidedResult: null,
+    teamAName: 'Europe',
+    teamBName: 'USA',
     markerAssignments: [
-      { scorerUserId: 'u1', marksUserId: 'u2', marksName: 'Player B', markedByName: 'Player B' },
+      { scorerUserId: 'u1', marksUserId: 'u2', marksName: 'Player B', markedByName: 'Player B', markedByUserId: 'u2' },
     ],
     players: [
       { userId: 'u1', userName: 'Player A', team: 'A' },
@@ -51,6 +54,9 @@ const mockUseScoring = {
   pendingQueueSize: 0,
   isMatchPlayer: true,
   hasSubmitted: false,
+  isOwnScoreLocked: false,
+  isMarkerScoreLocked: false,
+  isFullyLocked: false,
   validatedHoles: 0,
   totalHoles: 18,
   canSubmitScorecard: false,
@@ -58,6 +64,7 @@ const mockUseScoring = {
   submitScore: vi.fn(),
   submitScorecard: vi.fn(),
   concedeMatch: vi.fn(),
+  takeOverSession: vi.fn(),
   refetch: vi.fn(),
 };
 

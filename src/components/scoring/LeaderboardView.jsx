@@ -1,6 +1,16 @@
 import { useTranslation } from 'react-i18next';
 import TeamStandingsHeader from './TeamStandingsHeader';
 
+// Converts "5UP" at hole 14 → "5&4" (5 up with 4 to play).
+// If match ended on hole 18, keeps "2UP" format.
+const formatMatchPlayResult = (score, currentHole) => {
+  const m = score?.match(/^(\d+)UP$/);
+  if (m && currentHole && currentHole < 18) {
+    return `${m[1]}&${18 - currentHole}`;
+  }
+  return score;
+};
+
 const LeaderboardView = ({ leaderboard }) => {
   const { t } = useTranslation('scoring');
 
@@ -9,43 +19,59 @@ const LeaderboardView = ({ leaderboard }) => {
   const inProgress = (leaderboard.matches || []).filter(m => m.status === 'IN_PROGRESS');
   const completed = (leaderboard.matches || []).filter(m => m.status !== 'IN_PROGRESS');
 
-  const renderMatch = (match) => (
-    <div key={match.matchId} data-testid={`leaderboard-match-${match.matchId}`} className="bg-white rounded-lg border border-gray-200 p-3">
-      <div className="flex items-center justify-between mb-2">
-        <span className="text-xs font-medium text-gray-500">
-          #{match.matchNumber} - {match.matchFormat}
-        </span>
-        {match.status === 'IN_PROGRESS' && match.currentHole && (
-          <span className="text-xs text-gray-500">{t('leaderboard.hole')} {match.currentHole}</span>
-        )}
-      </div>
-      <div className="flex items-center justify-between">
-        <div className="flex-1">
-          <p className="text-sm font-medium text-gray-900">
-            {match.teamAPlayers?.map(p => p.userName).join(' / ')}
-          </p>
-        </div>
-        <div className="text-center px-3">
-          {match.standing ? (
-            <span className="text-sm font-bold text-primary">
-              {match.standing === 'AS' ? t('leaderboard.allSquare') : `${match.standing} ${match.leadingTeam}`}
-            </span>
-          ) : match.result ? (
-            <span className="text-sm font-bold">
-              {match.result.score}
-            </span>
-          ) : (
-            <span className="text-xs text-gray-400">-</span>
+  const renderMatch = (match) => {
+    const teamANames = match.teamAPlayers?.map(p => p.userName).join(' / ');
+    const teamBNames = match.teamBPlayers?.map(p => p.userName).join(' / ');
+    const teamAWon = match.result?.winner === 'A';
+    const teamBWon = match.result?.winner === 'B';
+    const isTeamALeading = match.leadingTeam === 'A';
+    const isTeamBLeading = match.leadingTeam === 'B';
+    const teamAHighlighted = isTeamALeading || teamAWon;
+    const teamBHighlighted = isTeamBLeading || teamBWon;
+
+    return (
+      <div key={match.matchId} data-testid={`leaderboard-match-${match.matchId}`} className="bg-white rounded-lg border border-gray-200 p-4">
+        <div className="flex items-center justify-between mb-3">
+          <span className="text-xs font-medium text-gray-500">
+            #{match.matchNumber} - {match.matchFormat}
+          </span>
+          {match.status === 'IN_PROGRESS' && match.currentHole && (
+            <span className="text-xs text-gray-500">{t('leaderboard.hole')} {match.currentHole}</span>
           )}
         </div>
-        <div className="flex-1 text-right">
-          <p className="text-sm font-medium text-gray-900">
-            {match.teamBPlayers?.map(p => p.userName).join(' / ')}
+        <div className="text-center space-y-1">
+          <p className={`text-sm ${teamAHighlighted ? 'font-bold text-gray-900' : 'text-gray-600'}`}>
+            {teamANames}
+          </p>
+          <div className="py-1">
+            {match.standing ? (
+              <span className="text-lg font-bold text-primary">
+                {match.standing === 'AS' ? t('leaderboard.allSquare') : match.standing}
+              </span>
+            ) : match.result ? (
+              <span className="text-lg font-bold text-primary">
+                {match.status === 'CONCEDED' || match.result.score === 'CONCEDED'
+                  ? t('leaderboard.conceded', {
+                    team: match.result.winner === 'A' ? leaderboard.teamAName : leaderboard.teamBName,
+                  })
+                  : match.result.winner
+                    ? t('leaderboard.wins', {
+                      team: match.result.winner === 'A' ? leaderboard.teamAName : leaderboard.teamBName,
+                      score: formatMatchPlayResult(match.result.score, match.currentHole),
+                    })
+                    : formatMatchPlayResult(match.result.score, match.currentHole)}
+              </span>
+            ) : (
+              <span className="text-sm text-gray-400">-</span>
+            )}
+          </div>
+          <p className={`text-sm ${teamBHighlighted ? 'font-bold text-gray-900' : 'text-gray-600'}`}>
+            {teamBNames}
           </p>
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   return (
     <div data-testid="leaderboard-view" className="space-y-6">

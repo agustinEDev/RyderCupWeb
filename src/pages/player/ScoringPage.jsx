@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { Loader } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import HeaderAuth from '../../components/layout/HeaderAuth';
@@ -44,6 +44,9 @@ const ScoringPage = () => {
     pendingQueueSize,
     isMatchPlayer,
     hasSubmitted,
+    isOwnScoreLocked,
+    isMarkerScoreLocked,
+    isFullyLocked,
     validatedHoles,
     totalHoles,
     canSubmitScorecard,
@@ -51,6 +54,7 @@ const ScoringPage = () => {
     submitScore,
     submitScorecard,
     concedeMatch,
+    takeOverSession,
     refetch,
   } = useScoring(matchId, user?.id);
 
@@ -79,6 +83,10 @@ const ScoringPage = () => {
   const currentPlayerScore = currentHoleScore?.playerScores?.find(
     (ps) => ps.userId === currentUserId
   );
+  // Score entry for the player the current user marks (to read what current user entered as marker)
+  const markedPlayerScore = currentHoleScore?.playerScores?.find(
+    (ps) => ps.userId === markerAssignment?.marksUserId
+  );
 
   const handleScoreChange = (scoreData) => {
     if (!markerAssignment) return;
@@ -89,12 +97,38 @@ const ScoringPage = () => {
     });
   };
 
+  // Auto-submit par defaults when navigating away from a hole with no score recorded
+  const autoSubmitIfNeeded = () => {
+    if (!markerAssignment || !currentHoleData || isFullyLocked || isOwnScoreLocked || !isMatchPlayer) return;
+    const hasOwnScore = currentPlayerScore?.ownScore != null;
+    if (!hasOwnScore) {
+      submitScore(currentHole, {
+        ownScore: currentHoleData.par,
+        markedPlayerId: markerAssignment.marksUserId,
+        markedScore: currentHoleData.par,
+      });
+    }
+  };
+
   const handlePrevHole = () => {
-    if (currentHole > 1) setCurrentHole(currentHole - 1);
+    if (currentHole > 1) {
+      autoSubmitIfNeeded();
+      setCurrentHole(currentHole - 1);
+    }
   };
 
   const handleNextHole = () => {
-    if (currentHole < totalHoles) setCurrentHole(currentHole + 1);
+    if (currentHole < totalHoles) {
+      autoSubmitIfNeeded();
+      setCurrentHole(currentHole + 1);
+    }
+  };
+
+  const handleHoleSelect = (hole) => {
+    if (hole !== currentHole) {
+      autoSubmitIfNeeded();
+    }
+    setCurrentHole(hole);
   };
 
   const handleConcede = async (reason) => {
@@ -111,8 +145,7 @@ const ScoringPage = () => {
   };
 
   const handleSessionTakeOver = () => {
-    // Force re-acquire by reloading
-    window.location.reload();
+    takeOverSession();
   };
 
   if (isLoadingUser || isLoading) {
@@ -182,6 +215,16 @@ const ScoringPage = () => {
       )}
 
       <div className="max-w-4xl mx-auto px-4 py-4">
+        {/* Back to schedule */}
+        {scoringView?.competitionId && (
+          <Link
+            to={`/competitions/${scoringView.competitionId}/schedule`}
+            className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-primary mb-3"
+          >
+            &larr; {t('summary.backToSchedule')}
+          </Link>
+        )}
+
         {/* Match header */}
         <div className="flex items-center justify-between mb-4">
           <div>
@@ -195,7 +238,7 @@ const ScoringPage = () => {
               <p className="text-lg font-bold text-primary">
                 {scoringView.matchStanding.status === 'AS'
                   ? t('input.allSquare')
-                  : `${scoringView.matchStanding.status} ${scoringView.matchStanding.leadingTeam}`}
+                  : `${scoringView.matchStanding.status} ${scoringView.matchStanding.leadingTeam === 'A' ? scoringView.teamAName : scoringView.teamBName}`}
               </p>
               <p className="text-xs text-gray-500">
                 {t('holesPlayed', { count: scoringView.matchStanding.holesPlayed })}
@@ -226,7 +269,7 @@ const ScoringPage = () => {
         {activeTab === 'input' && (
           <div className="space-y-4">
             {/* Pre-match info (first time) */}
-            {markerAssignment && currentHole === 1 && (
+            {markerAssignment && (
               <PreMatchInfo
                 markerAssignment={markerAssignment}
                 matchFormat={scoringView?.matchFormat}
@@ -236,7 +279,7 @@ const ScoringPage = () => {
 
             <HoleSelector
               currentHole={currentHole}
-              onSelect={setCurrentHole}
+              onSelect={handleHoleSelect}
               scores={scoringView?.scores}
               totalHoles={totalHoles}
             />
@@ -248,13 +291,18 @@ const ScoringPage = () => {
                 par={currentHoleData.par}
                 strokeIndex={currentHoleData.strokeIndex}
                 playerScore={currentPlayerScore}
+                markedPlayerScore={markedPlayerScore}
                 validationStatus={currentPlayerScore?.validationStatus}
                 netScore={currentPlayerScore?.netScore}
                 strokesReceived={currentPlayerScore?.strokesReceivedThisHole}
                 holeResult={currentHoleScore?.holeResult}
                 standing={currentHoleScore?.holeResult?.standing}
-                isReadOnly={!isMatchPlayer || hasSubmitted || isSessionBlocked}
+                isReadOnly={!isMatchPlayer || isFullyLocked || isSessionBlocked}
+                isOwnScoreLocked={isOwnScoreLocked || !isMatchPlayer || isSessionBlocked}
+                isMarkerScoreLocked={isMarkerScoreLocked || !isMatchPlayer || isSessionBlocked}
                 onScoreChange={handleScoreChange}
+                teamAName={scoringView?.teamAName}
+                teamBName={scoringView?.teamBName}
               />
             )}
 
@@ -296,6 +344,8 @@ const ScoringPage = () => {
               scores={scoringView?.scores}
               players={scoringView?.players}
               currentUserId={currentUserId}
+              teamAName={scoringView?.teamAName}
+              teamBName={scoringView?.teamBName}
             />
 
             {canSubmitScorecard && (
@@ -331,7 +381,14 @@ const ScoringPage = () => {
 
       <EarlyEndModal
         isOpen={showEarlyEnd}
-        decidedResult={scoringView?.decidedResult}
+        decidedResult={scoringView?.decidedResult ? {
+          ...scoringView.decidedResult,
+          winner: scoringView.decidedResult.winner === 'A'
+            ? (scoringView.teamAName || 'A')
+            : scoringView.decidedResult.winner === 'B'
+              ? (scoringView.teamBName || 'B')
+              : scoringView.decidedResult.winner,
+        } : null}
         onConfirm={() => setEarlyEndDismissed(true)}
         onClose={() => setEarlyEndDismissed(true)}
       />

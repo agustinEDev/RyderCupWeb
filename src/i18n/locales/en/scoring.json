@@ -10,7 +10,7 @@
     "leaderboard": "Leaderboard"
   },
   "preMatch": {
-    "title": "Pre-Match Info",
+    "title": "Match Info",
     "youMark": "You mark",
     "markedBy": "Marked by",
     "teeCategory": "Tee Category",
@@ -29,7 +29,7 @@
     "standing": "Standing",
     "strokeReceived": "Stroke received",
     "pickedUp": "Picked up",
-    "allSquare": "AS",
+    "allSquare": "All Square",
     "halved": "Halved",
     "prevHole": "Previous",
     "nextHole": "Next"
@@ -44,6 +44,7 @@
     "net": "Net",
     "validation": "Val",
     "result": "Result",
+    "halved": "=",
     "out": "OUT",
     "in": "IN",
     "total": "TOTAL",
@@ -56,6 +57,8 @@
     "allSquare": "All Square",
     "points": "pts",
     "hole": "Hole",
+    "wins": "{{team}} wins {{score}}",
+    "conceded": "{{team}} (Conceded)",
     "noMatches": "No matches available"
   },
   "validation": {
@@ -94,6 +97,7 @@
     "matchComplete": "Match Complete",
     "waitingForOthers": "Waiting for other players to submit",
     "backToSchedule": "Back to Schedule",
+    "backToCompetition": "Back to Competition",
     "back": "Go Back"
   },
   "earlyEnd": {

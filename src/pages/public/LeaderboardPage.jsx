@@ -1,10 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, Link, useLocation } from 'react-router-dom';
 import { Loader } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import Header from '../../components/layout/Header';
+import HeaderAuth from '../../components/layout/HeaderAuth';
 import Footer from '../../components/layout/Footer';
 import LeaderboardView from '../../components/scoring/LeaderboardView';
+import { useAuth } from '../../hooks/useAuth';
 import { getLeaderboardUseCase } from '../../composition';
 
 const POLL_INTERVAL = 30000; // 30 seconds
@@ -12,6 +14,17 @@ const POLL_INTERVAL = 30000; // 30 seconds
 const LeaderboardPage = () => {
   const { id: competitionId } = useParams();
   const { t } = useTranslation('scoring');
+  const { user } = useAuth();
+  const location = useLocation();
+
+  // Dynamic back link based on where the user came from
+  const from = location.state?.from;
+  const backTo = from === 'detail'
+    ? `/competitions/${competitionId}`
+    : `/competitions/${competitionId}/schedule`;
+  const backText = from === 'detail'
+    ? t('summary.backToCompetition')
+    : t('summary.backToSchedule');
 
   const [leaderboard, setLeaderboard] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -45,9 +58,15 @@ const LeaderboardPage = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
-      <Header />
+      {user ? <HeaderAuth user={user} /> : <Header />}
 
       <main className="flex-1 max-w-4xl mx-auto w-full px-4 py-6">
+        <Link
+          to={backTo}
+          className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-primary mb-3"
+        >
+          &larr; {backText}
+        </Link>
         <h1 className="text-2xl font-bold text-gray-900 mb-6">{t('leaderboard.title')}</h1>
 
         {isLoading && (

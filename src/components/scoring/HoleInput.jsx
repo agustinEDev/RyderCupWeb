@@ -7,18 +7,24 @@ const HoleInput = ({
   par,
   strokeIndex,
   playerScore,
+  markedPlayerScore,
   validationStatus,
   netScore,
   strokesReceived,
   holeResult,
   standing,
   isReadOnly = false,
+  isOwnScoreLocked = false,
+  isMarkerScoreLocked = false,
   onScoreChange,
+  teamAName,
+  teamBName,
 }) => {
   const { t } = useTranslation('scoring');
   // Parent passes key={holeNumber} so component remounts with fresh state on hole change
   const [ownValue, setOwnValue] = useState(playerScore?.ownScore ?? par);
-  const [markedValue, setMarkedValue] = useState(playerScore?.markerScore ?? par);
+  // markedPlayerScore.markerScore = what the current user entered for the player they mark
+  const [markedValue, setMarkedValue] = useState(markedPlayerScore?.markerScore ?? par);
 
   const adjustScore = (current, delta) => {
     if (current === null) return 1;
@@ -37,6 +43,7 @@ const HoleInput = ({
   const handleMarkedChange = (delta) => {
     const next = adjustScore(markedValue, delta);
     setMarkedValue(next);
+    // Always send current ownValue along with updated marker score
     if (onScoreChange) onScoreChange({ ownScore: ownValue, markedScore: next });
   };
 
@@ -60,50 +67,64 @@ const HoleInput = ({
 
       {!isReadOnly && (
         <div className="grid grid-cols-2 gap-4">
+          {/* Own score: locked after submitting scorecard */}
           <div className="space-y-1">
             <label className="text-xs font-medium text-gray-500">{t('input.yourScore')}</label>
-            <div className="flex items-center gap-2">
-              <button
-                data-testid="own-score-minus"
-                onClick={() => handleOwnChange(-1)}
-                className="w-8 h-8 flex items-center justify-center bg-gray-100 rounded-lg hover:bg-gray-200 text-lg font-bold"
-              >
-                -
-              </button>
-              <span data-testid="own-score-value" className="w-8 text-center text-xl font-bold">
+            {!isOwnScoreLocked ? (
+              <div className="flex items-center gap-2">
+                <button
+                  data-testid="own-score-minus"
+                  onClick={() => handleOwnChange(-1)}
+                  className="w-8 h-8 flex items-center justify-center bg-gray-100 rounded-lg hover:bg-gray-200 text-lg font-bold"
+                >
+                  -
+                </button>
+                <span data-testid="own-score-value" className="w-8 text-center text-xl font-bold">
+                  {displayScore(ownValue)}
+                </span>
+                <button
+                  data-testid="own-score-plus"
+                  onClick={() => handleOwnChange(1)}
+                  className="w-8 h-8 flex items-center justify-center bg-gray-100 rounded-lg hover:bg-gray-200 text-lg font-bold"
+                >
+                  +
+                </button>
+              </div>
+            ) : (
+              <p data-testid="own-score-value" className="text-xl font-bold text-center text-gray-500">
                 {displayScore(ownValue)}
-              </span>
-              <button
-                data-testid="own-score-plus"
-                onClick={() => handleOwnChange(1)}
-                className="w-8 h-8 flex items-center justify-center bg-gray-100 rounded-lg hover:bg-gray-200 text-lg font-bold"
-              >
-                +
-              </button>
-            </div>
+              </p>
+            )}
           </div>
 
+          {/* Marker score: locked when marked player submits their scorecard */}
           <div className="space-y-1">
             <label className="text-xs font-medium text-gray-500">{t('input.markerScore')}</label>
-            <div className="flex items-center gap-2">
-              <button
-                data-testid="marked-score-minus"
-                onClick={() => handleMarkedChange(-1)}
-                className="w-8 h-8 flex items-center justify-center bg-gray-100 rounded-lg hover:bg-gray-200 text-lg font-bold"
-              >
-                -
-              </button>
-              <span data-testid="marked-score-value" className="w-8 text-center text-xl font-bold">
+            {!isMarkerScoreLocked ? (
+              <div className="flex items-center gap-2">
+                <button
+                  data-testid="marked-score-minus"
+                  onClick={() => handleMarkedChange(-1)}
+                  className="w-8 h-8 flex items-center justify-center bg-gray-100 rounded-lg hover:bg-gray-200 text-lg font-bold"
+                >
+                  -
+                </button>
+                <span data-testid="marked-score-value" className="w-8 text-center text-xl font-bold">
+                  {displayScore(markedValue)}
+                </span>
+                <button
+                  data-testid="marked-score-plus"
+                  onClick={() => handleMarkedChange(1)}
+                  className="w-8 h-8 flex items-center justify-center bg-gray-100 rounded-lg hover:bg-gray-200 text-lg font-bold"
+                >
+                  +
+                </button>
+              </div>
+            ) : (
+              <p data-testid="marked-score-value" className="text-xl font-bold text-center text-gray-500">
                 {displayScore(markedValue)}
-              </span>
-              <button
-                data-testid="marked-score-plus"
-                onClick={() => handleMarkedChange(1)}
-                className="w-8 h-8 flex items-center justify-center bg-gray-100 rounded-lg hover:bg-gray-200 text-lg font-bold"
-              >
-                +
-              </button>
-            </div>
+              </p>
+            )}
           </div>
         </div>
       )}
@@ -127,12 +148,16 @@ const HoleInput = ({
         )}
         {holeResult && (
           <span className="text-gray-600">
-            {holeResult.winner === 'HALVED' ? t('input.halved') : holeResult.winner}
+            {holeResult.winner === 'HALVED'
+              ? t('input.halved')
+              : holeResult.winner === 'A' ? (teamAName || 'A') : holeResult.winner === 'B' ? (teamBName || 'B') : holeResult.winner}
           </span>
         )}
         {standing && (
           <span className="font-medium text-primary">
-            {standing === 'AS' ? t('input.allSquare') : standing}
+            {standing === 'AS'
+              ? t('input.allSquare')
+              : `${holeResult?.standingTeam === 'A' ? (teamAName || 'A') : holeResult?.standingTeam === 'B' ? (teamBName || 'B') : ''} ${standing}`}
           </span>
         )}
       </div>

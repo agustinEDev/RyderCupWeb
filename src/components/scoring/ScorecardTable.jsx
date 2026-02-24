@@ -2,7 +2,7 @@ import { useTranslation } from 'react-i18next';
 import GolfFigure from './GolfFigure';
 import ValidationIcon from './ValidationIcon';
 
-const ScorecardTable = ({ holes = [], scores = [], players = [], currentUserId }) => {
+const ScorecardTable = ({ holes = [], scores = [], players = [], currentUserId, teamAName, teamBName }) => {
   const { t } = useTranslation('scoring');
 
   const outHoles = holes.filter(h => h.holeNumber <= 9);
@@ -85,9 +85,11 @@ const ScorecardTable = ({ holes = [], scores = [], players = [], currentUserId }
             <td className="px-2 py-1 text-left text-gray-500">{t('scorecard.result')}</td>
             {sectionHoles.map(h => {
               const result = getHoleResult(h.holeNumber);
+              const winnerLabel = result?.winner === 'A' ? (teamAName || 'A') : result?.winner === 'B' ? (teamBName || 'B') : null;
+              const winnerColor = result?.winner === 'A' ? 'bg-blue-100 text-blue-700 font-bold' : result?.winner === 'B' ? 'bg-red-100 text-red-700 font-bold' : '';
               return (
-                <td key={h.holeNumber} className="px-2 py-1 text-center text-xs">
-                  {result ? (result.winner === 'HALVED' ? '-' : result.winner) : ''}
+                <td key={h.holeNumber} className={`px-1 py-1 text-center text-xs ${winnerColor}`}>
+                  {result ? (result.winner === 'HALVED' ? t('scorecard.halved') : winnerLabel) : ''}
                 </td>
               );
             })}
