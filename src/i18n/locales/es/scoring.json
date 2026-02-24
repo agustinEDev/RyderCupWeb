@@ -59,6 +59,7 @@
     "hole": "Hoyo",
     "wins": "{{team}} gana {{score}}",
     "conceded": "{{team}} (Concedido)",
+    "walkover": "{{team}} (Walkover)",
     "noMatches": "No hay partidos disponibles"
   },
   "validation": {

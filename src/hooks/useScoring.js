@@ -168,8 +168,14 @@ export const useScoring = (matchId, currentUserId) => {
       try {
         await submitHoleScoreUseCase.execute(entry.matchId, entry.holeNumber, entry.scoreData);
         offlineQueue.remove(entry.matchId, entry.holeNumber);
-      } catch {
-        break; // Stop on first failure
+      } catch (err) {
+        const status = err?.response?.status ?? err?.status;
+        if (status && status >= 400 && status < 500) {
+          // Non-retryable client error — discard and continue
+          offlineQueue.remove(entry.matchId, entry.holeNumber);
+          continue;
+        }
+        break; // Stop on network or server error
       }
     }
     setPendingQueueSize(offlineQueue.size());

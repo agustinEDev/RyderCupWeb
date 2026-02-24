@@ -12,7 +12,7 @@
 [![Tests](https://img.shields.io/badge/tests-1550%20passing-00C853?style=for-the-badge&logo=vitest&logoColor=white)](.)
 [![Coverage](https://img.shields.io/badge/coverage-85%25+-success?style=for-the-badge&logo=codecov)](.)
 [![OWASP](https://img.shields.io/badge/OWASP-9.2%2F10-4CAF50?style=for-the-badge&logo=owasp)](https://owasp.org/www-project-top-ten/)
-[![Bundle](https://img.shields.io/badge/bundle-1308%20KB-blueviolet?style=for-the-badge&logo=webpack)](.)
+[![Bundle](https://img.shields.io/badge/bundle-1487%20KB-blueviolet?style=for-the-badge&logo=webpack)](.)
 
 [![Clean Architecture](https://img.shields.io/badge/architecture-Clean%20Architecture-blueviolet?style=for-the-badge)](.)
 [![DDD](https://img.shields.io/badge/design-Domain%20Driven-orange?style=for-the-badge)](.)
@@ -29,14 +29,14 @@
 
 ### 🎯 Key Highlights
 
-- ✅ **71 API integrations** with the backend REST API
+- ✅ **74 API integrations** with the backend REST API
 - ✅ **1,550 tests** passing (100% success rate)
 - ✅ **OWASP Top 10 Score: 9.2/10** - Production-grade security
 - ✅ **Clean Architecture** - 4-layer separation with DDD patterns + Composition Root DI
 - ✅ **22 Value Objects** enforcing domain invariants
-- ✅ **64 Use Cases** covering all business operations
+- ✅ **79 Use Cases** covering all business operations
 - ✅ **Bilingual** (English + Spanish) with 14 i18n namespaces
-- ✅ **Bundle: 1,308 KB** (within 1,400 KB CI budget)
+- ✅ **Bundle: 1,487 KB** (within 1,500 KB CI budget)
 - ✅ **3 CI/CD workflows** - GitHub Actions pipeline
 
 ---
@@ -149,7 +149,7 @@ npm run preview   # Preview locally
 ### Tournament Management
 - ✅ Create and configure competitions with custom team names
 - ✅ Enrollment flow with tee category selection (5 categories)
-- ✅ Competition state machine: DRAFT → ACTIVE → IN_PROGRESS → COMPLETED
+- ✅ Competition state machine: DRAFT → ACTIVE → CLOSED → IN_PROGRESS → COMPLETED (+ reverse transitions)
 - ✅ **Competition ↔ GolfCourse M2M** (v2.0.2) - Multi-course tournaments
 
 ### Schedule & Matches (Sprint 2)
@@ -179,6 +179,11 @@ npm run preview   # Preview locally
 - ✅ **Dashboard Pending Actions**: Card showing pending invitations, enrollment requests, upcoming matches
 - ✅ **Invitation Auto-redirect**: Navigate to competition after accepting invitation
 - ✅ **User Search Invitations**: Search registered users by name/email for invitations
+- ✅ **Upcoming Matches Page**: Player view of scheduled/in-progress matches across competitions
+- ✅ **Reverse Status Transitions**: Reopen enrollments (CLOSED→ACTIVE) and revert to closed (IN_PROGRESS→CLOSED)
+- ✅ **Admin Dropdown**: Admin links moved from nav bar to user profile dropdown
+- ✅ **Walkover in Leaderboard**: Walkover matches displayed in completed section
+- ✅ **Creator Info**: Competition detail shows organizer name
 
 **v2.0.11 (Sprint 3 - Invitations - Feb 2026)**
 - ✅ **Invitation System**: Email invitations with secure tokens
@@ -206,16 +211,16 @@ src/
 │   ├── entities/        #   8 domain entities
 │   ├── value_objects/   #  22 value objects
 │   └── repositories/    #   Repository interfaces (ports)
-├── application/         # Use Cases (64 total)
+├── application/         # Use Cases (79 total)
 │   └── use_cases/       #   7 domain areas
 ├── infrastructure/      # API Repos, Mappers (ACL)
 │   ├── repositories/    #  12 API repositories (adapters)
 │   └── mappers/         #   Anti-corruption layer
-├── pages/               # 20 route pages
+├── pages/               # 30 route pages
 │   ├── admin/           #   Users, golf course approval
 │   ├── creator/         #   Schedule, invitations management
 │   └── public/          #   Leaderboard, Pricing, Contact, Terms, Privacy, Cookies
-├── components/          # 48 reusable components
+├── components/          # 52 reusable components
 ├── hooks/               # Custom React hooks
 ├── store/               # Zustand stores (auth, competition)
 ├── composition/         # Dependency injection (Composition Root)
@@ -249,10 +254,10 @@ src/
 | Test files | 130 |
 | Domain entities | 8 |
 | Value objects | 22 |
-| Use cases | 64 |
+| Use cases | 79 |
 | API repositories | 12 |
-| Components | 48 |
-| Pages | 20 |
+| Components | 52 |
+| Pages | 30 |
 
 ---
 
@@ -275,7 +280,7 @@ src/
 |------|-----------|---------|
 | Tests | 100% pass | 1,550/1,550 |
 | Branch coverage | >= 70% | Achieved |
-| Bundle size | <= 1,400 KB | 1,308 KB |
+| Bundle size | <= 1,500 KB | 1,487 KB |
 | ESLint errors | 0 | 0 |
 
 **Test Types**:
@@ -351,7 +356,7 @@ src/
 
 ## 📡 API Integration
 
-This frontend consumes **71 REST API endpoints** organized across 15 domain areas:
+This frontend consumes **74 REST API endpoints** organized across 15 domain areas:
 
 | Domain | Endpoints | Description |
 |--------|-----------|-------------|
@@ -359,7 +364,7 @@ This frontend consumes **71 REST API endpoints** organized across 15 domain area
 | Users | 5 | Profile, security, role queries, user search |
 | Devices | 2 | Fingerprinting, remote revocation |
 | Handicaps | 3 | Manual + RFEG integration |
-| Competitions | 10 | CRUD + state machine transitions |
+| Competitions | 13 | CRUD + state machine transitions + reverse transitions |
 | Competition-GolfCourse | 4 | Add/remove/reorder courses in competition |
 | Enrollments | 8 | Request, approve, reject, withdraw |
 | Golf Courses | 10 | CRUD + admin approval workflow |
@@ -406,7 +411,7 @@ npm run lint             # ESLint
 - **Session Management**: User-scoped multi-device conflict prevention
 - **Dashboard Pending Actions**: Actionable items card (invitations, enrollments, matches)
 - **User Search Invitations**: Tabbed modal with user search + email invite
-- **Total: 1,550 tests** passing - **Bundle: 1,308 KB**
+- **Total: 1,550 tests** passing - **Bundle: 1,487 KB**
 
 ### Sprint History
 

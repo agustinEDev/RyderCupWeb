@@ -19,10 +19,10 @@ const ScorecardTable = ({ holes = [], scores = [], players = [], currentUserId, 
     return holeData?.holeResult || null;
   };
 
-  const sumScores = (holeRange, userId, field) => {
+  const sumScores = (holeRange, userId) => {
     return holeRange.reduce((sum, h) => {
       const ps = getPlayerScore(h.holeNumber, userId);
-      const val = ps?.[field];
+      const val = ps ? (ps.netScore ?? ps.ownScore) : undefined;
       return val !== null && val !== undefined ? sum + val : sum;
     }, 0);
   };
@@ -77,7 +77,7 @@ const ScorecardTable = ({ holes = [], scores = [], players = [], currentUserId, 
                 );
               })}
               <td className="px-2 py-1 text-center font-bold">
-                {sumScores(sectionHoles, player.userId, 'ownScore') || '-'}
+                {sumScores(sectionHoles, player.userId) || '-'}
               </td>
             </tr>
           ))}

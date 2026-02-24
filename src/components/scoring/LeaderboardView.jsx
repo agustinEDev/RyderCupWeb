@@ -17,7 +17,7 @@ const LeaderboardView = ({ leaderboard }) => {
   if (!leaderboard) return null;
 
   const inProgress = (leaderboard.matches || []).filter(m => m.status === 'IN_PROGRESS');
-  const completed = (leaderboard.matches || []).filter(m => m.status === 'COMPLETED' || m.status === 'CONCEDED');
+  const completed = (leaderboard.matches || []).filter(m => m.status === 'COMPLETED' || m.status === 'CONCEDED' || m.status === 'WALKOVER');
 
   const renderMatch = (match) => {
     const teamANames = (match.teamAPlayers ?? []).map(p => p.userName).join(' / ');
@@ -50,7 +50,11 @@ const LeaderboardView = ({ leaderboard }) => {
               </span>
             ) : match.result ? (
               <span className="text-lg font-bold text-primary">
-                {match.status === 'CONCEDED' || match.result.score === 'CONCEDED'
+                {match.status === 'WALKOVER' || match.result.score === 'WALKOVER'
+                  ? t('leaderboard.walkover', {
+                    team: match.result.winner === 'A' ? leaderboard.teamAName : leaderboard.teamBName,
+                  })
+                  : match.status === 'CONCEDED' || match.result.score === 'CONCEDED'
                   ? t('leaderboard.conceded', {
                     team: match.result.winner === 'A' ? leaderboard.teamAName : leaderboard.teamBName,
                   })

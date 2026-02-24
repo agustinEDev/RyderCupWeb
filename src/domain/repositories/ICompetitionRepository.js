@@ -195,4 +195,22 @@ class ICompetitionRepository {
   async cancel(competitionId) {
     throw new Error('ICompetitionRepository.cancel must be implemented');
   }
+
+  /**
+   * Reopens enrollments for a competition (CLOSED → ACTIVE).
+   * @param {string} competitionId
+   * @returns {Promise<Object>} Updated competition data
+   */
+  async reopenEnrollments(competitionId) {
+    throw new Error('ICompetitionRepository.reopenEnrollments must be implemented');
+  }
+
+  /**
+   * Reverts a competition status (IN_PROGRESS → CLOSED).
+   * @param {string} competitionId
+   * @returns {Promise<Object>} Updated competition data
+   */
+  async revertStatus(competitionId) {
+    throw new Error('ICompetitionRepository.revertStatus must be implemented');
+  }
 }

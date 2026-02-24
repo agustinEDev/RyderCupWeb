@@ -30,7 +30,7 @@ const PendingActionsCard = ({ user, competitions }) => {
         const results = await Promise.allSettled([
           listMyInvitationsUseCase.execute({ status: 'PENDING' }),
           isCreator ? loadPendingEnrollments(competitions) : Promise.resolve([]),
-          loadUpcomingMatches(competitions),
+          loadUpcomingMatches(competitions, user.id),
         ]);
 
         if (results[0].status === 'fulfilled') {
@@ -146,8 +146,9 @@ const PendingActionsCard = ({ user, competitions }) => {
           ))}
 
           {upcomingMatches > 0 && (
-            <div
-              className="flex items-center justify-between w-full p-3 bg-white/70 rounded-lg"
+            <button
+              onClick={() => navigate('/player/matches')}
+              className="flex items-center justify-between w-full p-3 bg-white/70 rounded-lg hover:bg-white transition-colors group"
               data-testid="upcoming-matches-action"
             >
               <div className="flex items-center gap-3">
@@ -161,10 +162,13 @@ const PendingActionsCard = ({ user, competitions }) => {
                   </p>
                 </div>
               </div>
-              <span className="inline-flex items-center justify-center min-w-[24px] h-6 px-1.5 rounded-full bg-green-500 text-white text-xs font-bold">
-                {upcomingMatches}
-              </span>
-            </div>
+              <div className="flex items-center gap-2">
+                <span className="inline-flex items-center justify-center min-w-[24px] h-6 px-1.5 rounded-full bg-green-500 text-white text-xs font-bold">
+                  {upcomingMatches}
+                </span>
+                <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-gray-600 transition-colors" />
+              </div>
+            </button>
           )}
         </div>
       </div>
@@ -191,7 +195,7 @@ async function loadPendingEnrollments(competitions) {
     .map((r) => r.value);
 }
 
-async function loadUpcomingMatches(competitions) {
+async function loadUpcomingMatches(competitions, userId) {
   if (!competitions || competitions.length === 0) return 0;
 
   const activeCompetitions = competitions.filter(
@@ -204,7 +208,10 @@ async function loadUpcomingMatches(competitions) {
       const rounds = schedule?.rounds || [];
       return rounds.reduce((total, round) => {
         const active = (round.matches || []).filter(
-          (m) => m.status === 'SCHEDULED' || m.status === 'IN_PROGRESS'
+          (m) =>
+            (m.status === 'SCHEDULED' || m.status === 'IN_PROGRESS') &&
+            ((m.teamAPlayers || []).some((p) => p.userId === userId) ||
+              (m.teamBPlayers || []).some((p) => p.userId === userId))
         );
         return total + active.length;
       }, 0);

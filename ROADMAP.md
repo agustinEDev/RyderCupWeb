@@ -530,7 +530,7 @@ Here are the confirmations and answers to your questions:
         -   **Entity Deletion:** Can a `match` with scores be deleted? Or a `round` with already played `matches`? We expect backend to prevent this with 409 (Conflict) error.
 
 3.  **Pydantic Validations:**
-    -   **Confirmation:** ✅ Validations seem aligned. We will use backend's `ROADMAP.md` DTOs as source of truth for our forms with `Zod`. Any discrepancies will be communicated during *Sync Points*.
+    -   **Confirmation:** ✅ Validations seem aligned. We will use backend's `ROADMAP.md` DTOs as source of truth for our forms with `Zod`. Any discrepancies will be communicated during _Sync Points_.
 
 4.  **Communication Channel:**
     -   **Preference:** ✅ **Slack**. It's the most agile channel for deployment notifications and `curl` examples.

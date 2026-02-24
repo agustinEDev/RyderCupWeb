@@ -85,7 +85,7 @@ const LeaderboardPage = () => {
         {!isLoading && !error && <LeaderboardView leaderboard={leaderboard} />}
       </main>
 
-      <Footer />
+      {!user && <Footer />}
     </div>
   );
 };

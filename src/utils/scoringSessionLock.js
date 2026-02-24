@@ -37,7 +37,7 @@ const storageKey = (userId) => `${STORAGE_PREFIX}${userId}`;
 export const acquire = (matchId, sessionId, userId) => {
   if (!userId) return true;
   const existing = getSession(userId);
-  if (existing && existing.matchId === matchId && existing.sessionId !== sessionId) {
+  if (existing && existing.sessionId !== sessionId) {
     // Check if the existing session is stale (older than 2 minutes)
     if (Date.now() - existing.timestamp < 120000) {
       return false;

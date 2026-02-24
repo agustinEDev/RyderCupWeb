@@ -51,7 +51,7 @@ style: |
 <br>
 
 **Agustin Estevez Dominguez**
-v2.0.8 (BE) / v2.0.12 (FE) | February 2026
+v2.0.8 (BE) / v2.0.13-dev (FE) | February 2026
 
 Frontend: github.com/agustinEDev/RyderCupWeb
 Backend: github.com/agustinEDev/RyderCupAm
@@ -73,7 +73,7 @@ Backend: github.com/agustinEDev/RyderCupAm
 
 4. Backend Architecture (Clean + DDD)
 5. Domain Model & Database
-6. API Design (66 endpoints)
+6. API Design (74 endpoints)
 7. Backend Security & DevOps
 
 </div>
@@ -84,7 +84,7 @@ Backend: github.com/agustinEDev/RyderCupAm
 8. Frontend Architecture (Clean + DDD)
 9. Key Features & Workflows
 10. Frontend Security & i18n
-11. Testing Strategy (3,163 total tests)
+11. Testing Strategy (3,720+ total tests)
 12. CI/CD Pipelines
 
 ### Part IV - Closing
@@ -123,11 +123,11 @@ Backend: github.com/agustinEDev/RyderCupAm
 
 <div class="stat-grid">
 <div class="stat-box">
-<strong>66</strong>
+<strong>74</strong>
 <span>API Endpoints</span>
 </div>
 <div class="stat-box">
-<strong>3,163</strong>
+<strong>3,720</strong>
 <span>Total Tests</span>
 </div>
 <div class="stat-box">
@@ -162,12 +162,12 @@ Backend: github.com/agustinEDev/RyderCupAm
   │  React 19  |  Vite 7  |  Tailwind 4  |  1,550 tests         │
   │  Clean Architecture  |  DDD  |  Zustand  |  i18n (EN/ES)    │
   └──────────────────────────┬──────────────────────────────────┘
-                             │  66 REST API calls
+                             │  74 REST API calls
                              │  httpOnly cookies
                              │  Automatic token refresh
   ┌──────────────────────────┴──────────────────────────────────┐
   │                           BACKEND                           │
-  │  FastAPI  |  Python 3.12  |  PostgreSQL 15  |  1,613 tests  │
+  │  FastAPI  |  Python 3.12  |  PostgreSQL 15  |  2,170 tests  │
   │  Clean Architecture  |  DDD  |  RBAC  |  WHS Handicaps      │
   └─────────────────────────────────────────────────────────────┘
 ```
@@ -175,7 +175,7 @@ Backend: github.com/agustinEDev/RyderCupAm
 | Metric | Frontend | Backend |
 |--------|:--------:|:-------:|
 | Architecture | Clean + DDD | Clean + DDD |
-| Tests | 1,550 | 1,613 |
+| Tests | 1,550 | 2,170 |
 | Coverage | 85%+ | 90% |
 | OWASP | 9.2/10 | 9.4/10 |
 
@@ -199,7 +199,7 @@ Backend: github.com/agustinEDev/RyderCupAm
 | **Vitest 4** | Unit testing |
 | **Playwright** | E2E testing |
 | **Sentry 10** | Error monitoring |
-| **react-i18next** | i18n (12 namespaces) |
+| **react-i18next** | i18n (14 namespaces) |
 
 </div>
 <div class="col">
@@ -320,7 +320,7 @@ Full ERD documented in `docs/DATABASE_ERD.md` (Mermaid)
 
 ---
 
-## 6. API Design - 66 REST Endpoints
+## 6. API Design - 74 REST Endpoints
 
 <div class="columns">
 <div class="col">
@@ -328,17 +328,19 @@ Full ERD documented in `docs/DATABASE_ERD.md` (Mermaid)
 | Module | Endpoints | Scope |
 |--------|:---------:|-------|
 | **Auth** | 11 | Login, register, verify, refresh |
-| **Users** | 4 | Profile, security, roles |
+| **Users** | 5 | Profile, security, roles, search |
 | **Devices** | 2 | Fingerprinting, revocation |
 | **Handicaps** | 3 | Manual + RFEG |
 | **Golf Courses** | 10 | CRUD, approval workflow |
-| **Competitions** | 10 | CRUD, state machine |
+| **Competitions** | 13 | CRUD, state machine, reverse |
 | **Comp-GolfCourse** | 4 | Link, reorder courses |
 | **Enrollments** | 8 | Request, approve, reject |
 | **Schedule** | 11 | Rounds, matches, teams |
+| **Invitations** | 5 | Send, list, respond |
+| **Scoring** | 5 | Scores, scorecard, leaderboard |
 | **Support** | 1 | Contact form → GitHub |
 | **Countries** | 2 | List, adjacent |
-| **Total** | **66** | |
+| **Total** | **74** | |
 
 </div>
 <div class="col">
@@ -457,9 +459,9 @@ Plus: Database ERD, Threat Model, Runbook, Module docs, Security docs, CI/CD doc
 
 ```
   ┌────────────────────────────────────────────────────┐
-  │  PRESENTATION    20 Pages | 48 Components | Hooks  │
+  │  PRESENTATION    30 Pages | 52 Components | Hooks  │
   ├────────────────────────────────────────────────────┤
-  │  APPLICATION     64 Use Cases                      │
+  │  APPLICATION     79 Use Cases                      │
   ├────────────────────────────────────────────────────┤
   │  DOMAIN          8 Entities | 22 VOs | Interfaces  │
   ├────────────────────────────────────────────────────┤
@@ -478,7 +480,7 @@ Plus: Database ERD, Threat Model, Runbook, Module docs, Security docs, CI/CD doc
 <span>Lines of Code</span>
 </div>
 <div class="stat-box">
-<strong>64</strong>
+<strong>79</strong>
 <span>Use Cases</span>
 </div>
 <div class="stat-box">
@@ -526,7 +528,7 @@ Plus: Database ERD, Threat Model, Runbook, Module docs, Security docs, CI/CD doc
 
 <div class="highlight">
 
-**Composition Root** (`src/composition/index.js`) wires all 64 use cases with their 12 repositories at startup, keeping all layers fully decoupled. Domain layer has zero external dependencies.
+**Composition Root** (`src/composition/index.js`) wires all 79 use cases with their 12 repositories at startup, keeping all layers fully decoupled. Domain layer has zero external dependencies.
 
 </div>
 
@@ -603,12 +605,12 @@ Plus: Database ERD, Threat Model, Runbook, Module docs, Security docs, CI/CD doc
 
 ---
 
-## 10. Frontend Security & i18n
+## 10. Frontend Security
+
+### Security (OWASP 9.2/10)
 
 <div class="columns">
 <div class="col">
-
-### Security (OWASP 9.2/10)
 
 | Feature | Detail |
 |---------|--------|
@@ -623,7 +625,27 @@ Plus: Database ERD, Threat Model, Runbook, Module docs, Security docs, CI/CD doc
 </div>
 <div class="col">
 
-### Internationalization (EN/ES)
+<div class="highlight">
+
+**3-layer validation:** HTML `maxLength` constraints prevent oversized input, Zod schemas enforce business rules, and Backend Pydantic models provide final validation.
+
+</div>
+
+<div class="highlight-green">
+
+**Multi-tab logout** via Broadcast Channel API ensures all browser tabs are synchronized when a user logs out from any tab.
+
+</div>
+
+</div>
+</div>
+
+---
+
+## 10.1 Internationalization (EN/ES)
+
+<div class="columns">
+<div class="col">
 
 | Namespace | Scope |
 |-----------|-------|
@@ -634,6 +656,12 @@ Plus: Database ERD, Threat Model, Runbook, Module docs, Security docs, CI/CD doc
 | `invitations` | Send, accept/decline |
 | `scoring` | Live scoring, leaderboard |
 | `golfCourses` | CRUD, approval |
+
+</div>
+<div class="col">
+
+| Namespace | Scope |
+|-----------|-------|
 | `profile` | User profile |
 | `dashboard` | Dashboard, pending actions |
 | `devices` | Device management |
@@ -642,10 +670,10 @@ Plus: Database ERD, Threat Model, Runbook, Module docs, Security docs, CI/CD doc
 | `contact` | Contact form |
 | `legal` | Terms, privacy, cookies |
 
-Auto-detection + localStorage + flags
+</div>
+</div>
 
-</div>
-</div>
+**14 namespaces** with auto-detection + localStorage persistence + language switcher with flags
 
 ---
 
@@ -653,7 +681,7 @@ Auto-detection + localStorage + flags
 
 <div class="stat-grid">
 <div class="stat-box-green">
-<strong>1,613</strong>
+<strong>2,170</strong>
 <span>Backend Tests</span>
 </div>
 <div class="stat-box">
@@ -733,7 +761,7 @@ Lint (ESLint 9)
   └─> Tests (Vitest, 1550)
     └─> Coverage (>=85%)
       └─> Build (Vite)
-        └─> Bundle budget (<=1400 KB)
+        └─> Bundle budget (<=1500 KB)
           └─> Deploy (Vercel)
 ```
 
@@ -765,17 +793,19 @@ Lint (ESLint 9)
 - ✅ Dual validation (player + marker) with independent locking
 - ✅ Offline support + session lock per user
 - ✅ Dashboard pending actions card
+- ✅ Upcoming matches page (/player/matches)
+- ✅ Reverse status transitions (reopen/revert)
 - ✅ 301 new tests (1,550 total)
 
 </div>
 <div class="col">
 
-### Sprint 5: Public Leaderboards (UPCOMING)
+### Sprint 5: Enhancements (UPCOMING)
 
-- Public leaderboard page (no auth required)
-- Team standings bar (aggregate scores)
-- Match summary cards with results
+- Performance optimization (code splitting)
 - Redis cache + conditional polling (30s)
+- Enhanced statistics and analytics
+- FOURSOMES scoring improvements
 
 ### v2.1.0: GDPR + Audit + Avatars
 
@@ -886,7 +916,7 @@ Eliminates XSS token theft entirely. Worth the extra CSRF handling.
 | HTTP | Fetch API | FastAPI async |
 | Validation | Zod schemas | Pydantic models |
 | Auth | httpOnly cookies | JWT + refresh tokens |
-| Testing | Vitest (1,550) | pytest (1,613) |
+| Testing | Vitest (1,550) | pytest (2,170) |
 | Monitoring | Sentry (errors) | Sentry (APM + profiling) |
 | CI/CD | GitHub Actions (3 workflows) | GitHub Actions (10 jobs) |
 | Docs | 11 ADRs + API spec | 37 ADRs + ERD + Runbook |
@@ -910,15 +940,15 @@ Eliminates XSS token theft entirely. Worth the extra CSRF handling.
 
 <div class="summary-grid">
 <div class="summary-card">
-<strong>3,163</strong>
-<span>Tests (1,550 FE + 1,613 BE)</span>
+<strong>3,720</strong>
+<span>Tests (1,550 FE + 2,170 BE)</span>
 </div>
 <div class="summary-card">
 <strong>9.2 / 9.4</strong>
 <span>OWASP Score (FE / BE)</span>
 </div>
 <div class="summary-card">
-<strong>66</strong>
+<strong>74</strong>
 <span>REST API Endpoints</span>
 </div>
 <div class="summary-card">

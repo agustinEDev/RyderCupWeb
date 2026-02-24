@@ -23,6 +23,7 @@ const HoleSelector = ({ currentHole, onSelect, scores = [], totalHoles = 18 }) =
     <div data-testid="hole-selector" className="grid grid-cols-9 gap-1">
       {Array.from({ length: totalHoles }, (_, i) => i + 1).map(hole => (
         <button
+          type="button"
           key={hole}
           data-testid={`hole-btn-${hole}`}
           onClick={() => onSelect(hole)}

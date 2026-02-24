@@ -50,6 +50,7 @@ const InvitationsPage = lazyWithRetry(() => import('./pages/creator/InvitationsP
 // Player pages (Sprint 3 + Sprint 4)
 const MyInvitationsPage = lazyWithRetry(() => import('./pages/player/MyInvitationsPage'));
 const ScoringPage = lazyWithRetry(() => import('./pages/player/ScoringPage'));
+const UpcomingMatchesPage = lazyWithRetry(() => import('./pages/player/UpcomingMatchesPage'));
 
 // Google OAuth pages
 const GoogleCallback = lazyWithRetry(() => import('./pages/GoogleCallback'));
@@ -255,7 +256,12 @@ function AppContent() {
           </ProtectedRoute>
         } />
 
-        {/* Scoring route (Sprint 4) */}
+        {/* Player routes (Sprint 4) */}
+        <Route path="/player/matches" element={
+          <ProtectedRoute>
+            <UpcomingMatchesPage />
+          </ProtectedRoute>
+        } />
         <Route path="/player/matches/:matchId/scoring" element={
           <ProtectedRoute>
             <ScoringPage />

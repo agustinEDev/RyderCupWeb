@@ -1,9 +1,9 @@
 {
   "title": "Invitaciones",
   "loading": "Cargando invitaciones...",
-  "noInvitations": "No hay invitaciones todavia",
+  "noInvitations": "No hay invitaciones todavía",
   "send": {
-    "title": "Enviar invitacion",
+    "title": "Enviar invitación",
     "tabSearchUser": "Buscar usuario",
     "tabByEmail": "Por email",
     "searchPlaceholder": "Buscar por nombre o email...",
@@ -13,8 +13,8 @@
     "emailLabel": "Email",
     "emailPlaceholder": "Introduce el email del jugador",
     "personalMessage": "Mensaje personal (opcional)",
-    "personalMessagePlaceholder": "Anade un mensaje personal a la invitacion...",
-    "send": "Enviar invitacion",
+    "personalMessagePlaceholder": "Añade un mensaje personal a la invitación...",
+    "send": "Enviar invitación",
     "sending": "Enviando..."
   },
   "status": {
@@ -35,31 +35,31 @@
   },
   "card": {
     "from": "De",
-    "for": "Para la competicion",
+    "for": "Para la competición",
     "expires": "Expira",
     "expired": "Expirada",
-    "expiresIn": "Expira en {{days}} dias",
+    "expiresIn": "Expira en {{days}} días",
     "expiresInHours": "Expira en {{hours}} horas",
     "respondedAt": "Respondida",
     "message": "Mensaje"
   },
   "success": {
-    "sent": "Invitacion enviada correctamente",
-    "accepted": "Invitacion aceptada",
-    "declined": "Invitacion rechazada"
+    "sent": "Invitación enviada correctamente",
+    "accepted": "Invitación aceptada",
+    "declined": "Invitación rechazada"
   },
   "errors": {
     "failedToLoad": "Error al cargar las invitaciones",
-    "failedToSend": "Error al enviar la invitacion",
-    "failedToRespond": "Error al responder a la invitacion",
-    "duplicateInvitation": "Ya se ha enviado una invitacion a este email",
-    "invalidEmail": "Por favor, introduce un email valido"
+    "failedToSend": "Error al enviar la invitación",
+    "failedToRespond": "Error al responder a la invitación",
+    "duplicateInvitation": "Ya se ha enviado una invitación a este email",
+    "invalidEmail": "Por favor, introduce un email válido"
   },
   "creator": {
     "title": "Invitaciones",
-    "subtitle": "Gestionar invitaciones para esta competicion",
-    "sendNew": "Enviar invitacion",
-    "sentCount_one": "{{count}} invitacion enviada",
+    "subtitle": "Gestionar invitaciones para esta competición",
+    "sendNew": "Enviar invitación",
+    "sentCount_one": "{{count}} invitación enviada",
     "sentCount_other": "{{count}} invitaciones enviadas"
   },
   "player": {

@@ -102,6 +102,7 @@
     "backToCompetitions": "Back to Competitions",
     "backToBrowse": "Back to Browse",
     "creator": "Creator",
+    "organizedBy": "Organized by",
     "dates": "Dates",
     "players": "Players",
     "countries": "Countries",
@@ -117,7 +118,9 @@
       "manageSchedule": "Manage Schedule",
       "viewSchedule": "View Schedule",
       "manageInvitations": "Invitations",
-      "leaderboard": "Leaderboard"
+      "leaderboard": "Leaderboard",
+      "reopen-enrollments": "Reopen Enrollments",
+      "revert-status": "Revert to Closed"
     },
     "confirmations": {
       "activate": "Are you sure you want to activate this competition?",
@@ -126,7 +129,9 @@
       "complete": "Are you sure you want to complete this competition?",
       "cancel": "Are you sure you want to cancel this competition?",
       "delete": "Are you sure you want to delete this competition? This action cannot be undone.",
-      "reject-enrollment": "Are you sure you want to reject this enrollment?"
+      "reject-enrollment": "Are you sure you want to reject this enrollment?",
+      "reopen-enrollments": "Are you sure you want to reopen enrollments? The competition will go back to ACTIVE status.",
+      "revert-status": "Are you sure you want to revert to CLOSED status? This will allow you to modify the schedule."
     },
     "errors": {
       "golfCoursePendingApproval": "Cannot activate competition: Golf course is pending approval",
@@ -165,7 +170,9 @@
       "completed": "Competition completed successfully",
       "cancelled": "Competition cancelled successfully",
       "deleted": "Competition deleted successfully",
-      "enrollmentRequested": "Enrollment request sent successfully"
+      "enrollmentRequested": "Enrollment request sent successfully",
+      "enrollmentsReopened": "Enrollments reopened successfully",
+      "statusReverted": "Competition reverted to CLOSED status successfully"
     },
     "failedToApprove": "Failed to approve enrollment",
     "competitionFull": "The competition is full. Maximum number of players ({{max}}) has been reached.",

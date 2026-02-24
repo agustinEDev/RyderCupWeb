@@ -37,5 +37,16 @@
     "matches_one": "{{count}} partido próximo",
     "matches_other": "{{count}} partidos próximos",
     "viewSchedule": "Ver Calendario"
+  },
+  "upcomingMatches": {
+    "title": "Mis Próximos Partidos",
+    "subtitle": "Tus partidos programados y en progreso en todas las competiciones",
+    "noMatches": "No tienes próximos partidos",
+    "noMatchesDesc": "Cuando estés inscrito en competiciones activas con partidos programados, aparecerán aquí.",
+    "scoreMatch": "Anotar",
+    "viewSchedule": "Ver Calendario",
+    "matchNumber": "Partido #{{number}}",
+    "round": "Ronda",
+    "loading": "Cargando partidos..."
   }
 }

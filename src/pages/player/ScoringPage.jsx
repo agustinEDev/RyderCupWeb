@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { Loader } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -31,6 +31,7 @@ const ScoringPage = () => {
   const [showConcedeModal, setShowConcedeModal] = useState(false);
   const [showSubmitModal, setShowSubmitModal] = useState(false);
   const [earlyEndDismissed, setEarlyEndDismissed] = useState(false);
+  const submittedScoresRef = useRef({});
 
   const {
     scoringView,
@@ -90,6 +91,7 @@ const ScoringPage = () => {
 
   const handleScoreChange = (scoreData) => {
     if (!markerAssignment) return;
+    submittedScoresRef.current[currentHole] = true;
     submitScore(currentHole, {
       ownScore: scoreData.ownScore,
       markedPlayerId: markerAssignment.marksUserId,
@@ -100,6 +102,7 @@ const ScoringPage = () => {
   // Auto-submit par defaults when navigating away from a hole with no score recorded
   const autoSubmitIfNeeded = () => {
     if (!markerAssignment || !currentHoleData || isFullyLocked || isOwnScoreLocked || !isMatchPlayer) return;
+    if (submittedScoresRef.current[currentHole]) return;
     const hasOwnScore = currentPlayerScore?.ownScore != null;
     const hasMarkedScore = markedPlayerScore?.markerScore != null;
     if (!hasOwnScore) {

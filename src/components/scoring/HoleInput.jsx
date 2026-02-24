@@ -47,7 +47,7 @@ const HoleInput = ({
     if (onScoreChange) onScoreChange({ ownScore: ownValue, markedScore: next });
   };
 
-  const displayScore = (val) => val === null ? '-' : val;
+  const displayScore = (val) => val == null ? '-' : val;
 
   return (
     <div data-testid="hole-input" className="bg-white rounded-lg border border-gray-200 p-4 space-y-4">

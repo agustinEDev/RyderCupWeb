@@ -11,6 +11,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 Allows players to record hole-by-hole scores with cross-validation (player vs marker), view complete scorecard and competition leaderboard. Includes offline support, multi-device session locking, early match finish detection, independent scorecard submission, and UX improvements for invitations and dashboard.
 
+### ✨ Added (Post-Sprint 4 Enhancements)
+
+#### UI/UX Improvements
+- **`UpcomingMatchesPage`** (`/player/matches`): New page showing player's upcoming matches across all IN_PROGRESS competitions, filtered to only matches where the user is a participant. Includes match format, session type, status badges, and scoring navigation
+- **Admin links in dropdown**: Moved admin navigation (Golf Courses, Pending Courses) from top-level nav bar into user profile dropdown, grouped under "Administration" section (desktop and mobile)
+- **`PendingActionsCard` navigation**: Upcoming matches section is now clickable, navigates to `/player/matches`. Match counter filtered to only user's own matches
+- **Creator info in competition detail**: Quick Stats section shows organizer name
+- **Walkover in leaderboard**: WALKOVER matches now displayed in completed section with proper result formatting
+- **Footer fix in LeaderboardPage**: Footer only shows for non-authenticated users
+
+#### Competition Status Management
+- **Reverse status transitions**: Two new actions for competition creators:
+  - "Reopen Enrollments" (CLOSED → ACTIVE) — allows reopening enrollment after closing
+  - "Revert to Closed" (IN_PROGRESS → CLOSED) — allows fixing schedule after starting
+- **`DeleteCompetitionUseCase`**: Replaced direct service call with proper use case (clean architecture fix)
+- **`ReopenEnrollmentsUseCase`**: New use case for CLOSED → ACTIVE transition
+- **`RevertCompetitionStatusUseCase`**: New use case for IN_PROGRESS → CLOSED transition
+- **`ICompetitionRepository`**: Added `reopenEnrollments()`, `revertStatus()`, `delete()` interface methods
+- **`ApiCompetitionRepository`**: Implemented 3 new endpoints (POST reopen-enrollments, PUT revert-status, DELETE)
+
+#### i18n
+- Added `header.administration` key (EN/ES) for admin dropdown section label
+- Added `upcomingMatches.*` keys (EN/ES) for upcoming matches page (9 keys each)
+- Added `status.CONCEDED` in schedule namespace (EN/ES)
+- Added `leaderboard.walkover` in scoring namespace (EN/ES)
+- Added `detail.organizedBy` in competitions namespace (EN/ES)
+- Added reverse transition action labels, confirmations, and success messages (EN/ES)
+
 ### ✨ Added
 
 #### Backend API Contract
@@ -93,10 +121,13 @@ Allows players to record hole-by-hole scores with cross-validation (player vs ma
 - Pages: 54 tests (ScoringPage 15, LeaderboardPage 15, MyInvitationsPage 6, InvitationsPage enhancements)
 
 ### 📊 Stats
-- **Files created:** 60
-- **Files modified:** 28
-- **Bundle:** 366.66 KB initial (within 1500 KB max budget)
-- **Backend endpoints:** All 5 scoring endpoints implemented and tested
+- **Files created:** 63
+- **Files modified:** 36
+- **Use cases:** 79 total (76 + DeleteCompetition + ReopenEnrollments + RevertCompetitionStatus)
+- **Pages:** 30 total (29 + UpcomingMatchesPage)
+- **Components:** 52 total
+- **Bundle:** 1,487 KB total JS (within 1,500 KB max budget)
+- **Backend endpoints:** 74 total consumed
 
 ---
 

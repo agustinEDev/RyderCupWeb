@@ -276,6 +276,42 @@ class ApiCompetitionRepository extends ICompetitionRepository {
       method: 'POST'
     });
   }
+
+  /**
+   * Deletes a competition (only in DRAFT state).
+   * @override
+   * @param {string} competitionId
+   * @returns {Promise<void>}
+   */
+  async delete(competitionId) {
+    await apiRequest(`/api/v1/competitions/${competitionId}`, {
+      method: 'DELETE'
+    });
+  }
+
+  /**
+   * Reopens enrollments for a competition (CLOSED → ACTIVE).
+   * @override
+   * @param {string} competitionId
+   * @returns {Promise<Object>} Updated competition data
+   */
+  async reopenEnrollments(competitionId) {
+    return await apiRequest(`/api/v1/competitions/${competitionId}/reopen-enrollments`, {
+      method: 'POST'
+    });
+  }
+
+  /**
+   * Reverts a competition status (IN_PROGRESS → CLOSED).
+   * @override
+   * @param {string} competitionId
+   * @returns {Promise<Object>} Updated competition data
+   */
+  async revertStatus(competitionId) {
+    return await apiRequest(`/api/v1/competitions/${competitionId}/revert-status`, {
+      method: 'PUT'
+    });
+  }
 }
 
 export default ApiCompetitionRepository;

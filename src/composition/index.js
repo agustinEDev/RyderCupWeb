@@ -57,6 +57,9 @@ import CloseEnrollmentsUseCase from '../application/use_cases/competition/CloseE
 import StartCompetitionUseCase from '../application/use_cases/competition/StartCompetitionUseCase';
 import CompleteCompetitionUseCase from '../application/use_cases/competition/CompleteCompetitionUseCase';
 import CancelCompetitionUseCase from '../application/use_cases/competition/CancelCompetitionUseCase';
+import DeleteCompetitionUseCase from '../application/use_cases/competition/DeleteCompetitionUseCase';
+import ReopenEnrollmentsUseCase from '../application/use_cases/competition/ReopenEnrollmentsUseCase';
+import RevertCompetitionStatusUseCase from '../application/use_cases/competition/RevertCompetitionStatusUseCase';
 import BrowseJoinableCompetitionsUseCase from '../application/use_cases/competition/BrowseJoinableCompetitionsUseCase';
 import BrowseExploreCompetitionsUseCase from '../application/use_cases/competition/BrowseExploreCompetitionsUseCase';
 import AddGolfCourseToCompetitionUseCase from '../application/use_cases/competition/AddGolfCourseToCompetitionUseCase';
@@ -154,6 +157,9 @@ const closeEnrollmentsUseCase = new CloseEnrollmentsUseCase({ competitionReposit
 const startCompetitionUseCase = new StartCompetitionUseCase({ competitionRepository: apiCompetitionRepository });
 const completeCompetitionUseCase = new CompleteCompetitionUseCase({ competitionRepository: apiCompetitionRepository });
 const cancelCompetitionUseCase = new CancelCompetitionUseCase({ competitionRepository: apiCompetitionRepository });
+const deleteCompetitionUseCase = new DeleteCompetitionUseCase({ competitionRepository: apiCompetitionRepository });
+const reopenEnrollmentsUseCase = new ReopenEnrollmentsUseCase({ competitionRepository: apiCompetitionRepository });
+const revertCompetitionStatusUseCase = new RevertCompetitionStatusUseCase({ competitionRepository: apiCompetitionRepository });
 const browseJoinableCompetitionsUseCase = new BrowseJoinableCompetitionsUseCase(apiCompetitionRepository);
 const browseExploreCompetitionsUseCase = new BrowseExploreCompetitionsUseCase(apiCompetitionRepository);
 const addGolfCourseToCompetitionUseCase = new AddGolfCourseToCompetitionUseCase({ competitionRepository: apiCompetitionRepository });
@@ -248,6 +254,9 @@ export {
   startCompetitionUseCase,
   completeCompetitionUseCase,
   cancelCompetitionUseCase,
+  deleteCompetitionUseCase,
+  reopenEnrollmentsUseCase,
+  revertCompetitionStatusUseCase,
   browseJoinableCompetitionsUseCase,
   browseExploreCompetitionsUseCase,
   addGolfCourseToCompetitionUseCase,

@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import {
   Users, Calendar, MapPin, Settings, ArrowLeft,
   Edit, Trash2, Play, CheckCircle, XCircle, Pause,
-  AlertCircle, Loader, UserPlus, Shield, Mail, BarChart3
+  AlertCircle, Loader, UserPlus, Shield, Mail, BarChart3, Undo2
 } from 'lucide-react';
 import customToast from '../utils/toast';
 import { useTranslation } from 'react-i18next';
@@ -22,13 +22,15 @@ import {
   startCompetitionUseCase,
   completeCompetitionUseCase,
   cancelCompetitionUseCase,
+  deleteCompetitionUseCase,
+  reopenEnrollmentsUseCase,
+  revertCompetitionStatusUseCase,
   listEnrollmentsUseCase,
   requestEnrollmentUseCase,
   approveEnrollmentUseCase,
   rejectEnrollmentUseCase,
 } from '../composition';
 import {
-  deleteCompetition,
   getStatusColor,
   getEnrollmentStatusColor,
   formatDateRange,
@@ -152,6 +154,14 @@ const CompetitionDetail = () => {
           result = await cancelCompetitionUseCase.execute(id);
           customToast.success(t('detail.success.cancelled'));
           break;
+        case 'reopen-enrollments':
+          result = await reopenEnrollmentsUseCase.execute(id);
+          customToast.success(t('detail.success.enrollmentsReopened'));
+          break;
+        case 'revert-status':
+          result = await revertCompetitionStatusUseCase.execute(id);
+          customToast.success(t('detail.success.statusReverted'));
+          break;
         default:
           throw new Error('Invalid action');
       }
@@ -178,7 +188,7 @@ const CompetitionDetail = () => {
 
     setIsProcessing(true);
     try {
-      await deleteCompetition(id);
+      await deleteCompetitionUseCase.execute(id);
       customToast.success(t('detail.success.deleted'));
       navigate('/competitions');
     } catch (error) {
@@ -339,6 +349,17 @@ const CompetitionDetail = () => {
                       </p>
                     </div>
                   </div>
+                  {competition.creator && (
+                    <div className="flex items-center gap-2 text-gray-700">
+                      <Shield className="w-5 h-5" />
+                      <div>
+                        <p className="text-xs text-gray-500">{t('detail.organizedBy')}</p>
+                        <p className="text-sm font-medium">
+                          {competition.creator.firstName} {competition.creator.lastName}
+                        </p>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Countries Badges */}
@@ -418,6 +439,17 @@ const CompetitionDetail = () => {
                     </button>
                   )}
 
+                  {competition.status === 'CLOSED' && (
+                    <button
+                      onClick={() => handleStatusChange('reopen-enrollments')}
+                      disabled={isProcessing}
+                      className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg font-medium hover:bg-orange-700 transition-colors shadow-md disabled:opacity-50"
+                    >
+                      <Undo2 className="w-4 h-4" />
+                      <span>{t('detail.actions.reopen-enrollments')}</span>
+                    </button>
+                  )}
+
                   {competition.status === 'IN_PROGRESS' && (
                     <button
                       onClick={() => handleStatusChange('complete')}
@@ -426,6 +458,17 @@ const CompetitionDetail = () => {
                     >
                       <CheckCircle className="w-4 h-4" />
                       <span>{t('detail.actions.complete')}</span>
+                    </button>
+                  )}
+
+                  {competition.status === 'IN_PROGRESS' && (
+                    <button
+                      onClick={() => handleStatusChange('revert-status')}
+                      disabled={isProcessing}
+                      className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg font-medium hover:bg-orange-700 transition-colors shadow-md disabled:opacity-50"
+                    >
+                      <Undo2 className="w-4 h-4" />
+                      <span>{t('detail.actions.revert-status')}</span>
                     </button>
                   )}
 

@@ -233,6 +233,8 @@ const SendInvitationModalContent = ({ onClose, onSend, onSendByUserId, onSearchU
                       data-testid="user-search-input"
                       role="combobox"
                       aria-expanded={showDropdown && searchResults.length > 0}
+                      aria-haspopup="listbox"
+                      aria-controls="user-search-listbox"
                       aria-activedescendant={highlightedIndex >= 0 ? `search-option-${highlightedIndex}` : undefined}
                     />
                     {isSearching && (
@@ -247,7 +249,7 @@ const SendInvitationModalContent = ({ onClose, onSend, onSendByUserId, onSearchU
 
                   {/* Results dropdown */}
                   {showDropdown && searchResults.length > 0 && (
-                    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-48 overflow-y-auto" data-testid="search-results-dropdown" role="listbox">
+                    <div id="user-search-listbox" className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-48 overflow-y-auto" data-testid="search-results-dropdown" role="listbox">
                       {searchResults.map((user, index) => (
                         <button
                           key={user.id}

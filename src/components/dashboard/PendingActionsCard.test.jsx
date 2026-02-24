@@ -168,9 +168,9 @@ describe('PendingActionsCard', () => {
       rounds: [
         {
           matches: [
-            { id: 'm-1', status: 'SCHEDULED' },
-            { id: 'm-2', status: 'IN_PROGRESS' },
-            { id: 'm-3', status: 'COMPLETED' },
+            { id: 'm-1', status: 'SCHEDULED', teamAPlayers: [{ userId: 'user-1' }], teamBPlayers: [] },
+            { id: 'm-2', status: 'IN_PROGRESS', teamAPlayers: [], teamBPlayers: [{ userId: 'user-1' }] },
+            { id: 'm-3', status: 'COMPLETED', teamAPlayers: [{ userId: 'user-1' }], teamBPlayers: [] },
           ],
         },
       ],

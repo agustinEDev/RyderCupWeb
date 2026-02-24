@@ -30,7 +30,7 @@ const RoundCard = ({
 }) => {
   const status = round.status;
   const isEditable = canEdit && (status === 'PENDING_TEAMS' || status === 'PENDING_MATCHES');
-  const canGenerate = canEdit && (status === 'PENDING_MATCHES' || status === 'SCHEDULED');
+  const canGenerate = canEdit && status === 'PENDING_MATCHES';
   const matches = round.matches || [];
 
   const golfCourseName = golfCourses.find(gc => gc.id === round.golfCourseId)?.name || round.golfCourseId;

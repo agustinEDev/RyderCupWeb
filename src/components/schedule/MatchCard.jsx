@@ -49,9 +49,14 @@ const MatchCard = ({
         <div className="bg-blue-50 rounded-lg p-2">
           <p className="text-xs font-semibold text-blue-700 mb-1">{teamNames.teamA}</p>
           {teamA.map((p, i) => (
-            <p key={p.userId || i} className={`text-sm ${i === 0 ? 'text-gray-900' : 'text-gray-700'}`}>
-              {getPlayerName(p.userId, playerNameMap)}
-            </p>
+            <div key={p.userId || i} className="flex items-center justify-between">
+              <p className={`text-sm ${i === 0 ? 'text-gray-900' : 'text-gray-700'}`}>
+                {getPlayerName(p.userId, playerNameMap)}
+              </p>
+              {p.playingHandicap != null && (
+                <span className="text-xs text-blue-600 font-medium">HCP {p.playingHandicap}</span>
+              )}
+            </div>
           ))}
           {teamA.length === 0 && <p className="text-sm text-gray-400">--</p>}
         </div>
@@ -62,9 +67,14 @@ const MatchCard = ({
         <div className="bg-red-50 rounded-lg p-2">
           <p className="text-xs font-semibold text-red-700 mb-1">{teamNames.teamB}</p>
           {teamB.map((p, i) => (
-            <p key={p.userId || i} className={`text-sm ${i === 0 ? 'text-gray-900' : 'text-gray-700'}`}>
-              {getPlayerName(p.userId, playerNameMap)}
-            </p>
+            <div key={p.userId || i} className="flex items-center justify-between">
+              <p className={`text-sm ${i === 0 ? 'text-gray-900' : 'text-gray-700'}`}>
+                {getPlayerName(p.userId, playerNameMap)}
+              </p>
+              {p.playingHandicap != null && (
+                <span className="text-xs text-red-600 font-medium">HCP {p.playingHandicap}</span>
+              )}
+            </div>
           ))}
           {teamB.length === 0 && <p className="text-sm text-gray-400">--</p>}
         </div>

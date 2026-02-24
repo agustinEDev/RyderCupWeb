@@ -53,9 +53,9 @@ describe('scoringSessionLock', () => {
       expect(acquire('m-1', 'session-2', USER_B)).toBe(true);
     });
 
-    it('should allow lock for different match', () => {
+    it('should reject lock for different match when another session is active', () => {
       acquire('m-1', 'session-1', USER_A);
-      expect(acquire('m-2', 'session-2', USER_A)).toBe(true);
+      expect(acquire('m-2', 'session-2', USER_A)).toBe(false);
     });
 
     it('should acquire lock when existing session is stale', () => {

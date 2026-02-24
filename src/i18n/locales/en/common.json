@@ -32,6 +32,7 @@
     "pendingCourses": "Pending Courses",
     "viewProfile": "View Profile",
     "leaderboard": "Leaderboard",
+    "administration": "Administration",
     "logout": "Logout"
   },
   "footer": {

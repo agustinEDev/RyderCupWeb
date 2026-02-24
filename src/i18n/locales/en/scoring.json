@@ -59,6 +59,7 @@
     "hole": "Hole",
     "wins": "{{team}} wins {{score}}",
     "conceded": "{{team}} (Conceded)",
+    "walkover": "{{team}} (Walkover)",
     "noMatches": "No matches available"
   },
   "validation": {
