@@ -228,7 +228,7 @@ src/
 ### Design Patterns
 - **Repository** - Data access abstraction (domain interfaces → infrastructure implementations)
 - **Anti-Corruption Layer (ACL)** - Mappers translating snake_case API → camelCase domain
-- **Value Objects** - Encapsulated validation logic (21 VOs)
+- **Value Objects** - Encapsulated validation logic (22 VOs)
 - **Composition Root** - DI container wiring all layers
 - **Use Cases** - Single responsibility per business operation
 - **Guard Components** - `RoleGuard`, `ProtectedRoute` for access control

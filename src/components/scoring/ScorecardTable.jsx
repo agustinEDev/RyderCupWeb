@@ -39,20 +39,20 @@ const ScorecardTable = ({ holes = [], scores = [], players = [], currentUserId, 
             <th className="px-2 py-1 text-center font-bold text-gray-700">{label}</th>
           </tr>
           <tr className="bg-gray-50">
-            <td className="px-2 py-1 text-left text-gray-400">{t('scorecard.par')}</td>
+            <th scope="row" className="px-2 py-1 text-left text-gray-400 font-normal">{t('scorecard.par')}</th>
             {sectionHoles.map(h => (
-              <td key={h.holeNumber} className="px-2 py-1 text-center text-gray-400">{h.par}</td>
+              <th key={h.holeNumber} scope="col" className="px-2 py-1 text-center text-gray-400 font-normal">{h.par}</th>
             ))}
-            <td className="px-2 py-1 text-center font-medium text-gray-500">
+            <th scope="col" className="px-2 py-1 text-center font-medium text-gray-500">
               {sectionHoles.reduce((s, h) => s + h.par, 0)}
-            </td>
+            </th>
           </tr>
           <tr className="bg-gray-50">
-            <td className="px-2 py-1 text-left text-gray-400">{t('scorecard.si')}</td>
+            <th scope="row" className="px-2 py-1 text-left text-gray-400 font-normal">{t('scorecard.si')}</th>
             {sectionHoles.map(h => (
-              <td key={h.holeNumber} className="px-2 py-1 text-center text-gray-400">{h.strokeIndex}</td>
+              <th key={h.holeNumber} scope="col" className="px-2 py-1 text-center text-gray-400 font-normal">{h.strokeIndex}</th>
             ))}
-            <td className="px-2 py-1"></td>
+            <th scope="col" className="px-2 py-1"></th>
           </tr>
         </thead>
         <tbody>

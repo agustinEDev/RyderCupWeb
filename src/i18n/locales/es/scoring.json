@@ -1,19 +1,19 @@
 {
-  "title": "Anotacion en Vivo",
-  "loading": "Cargando datos de anotacion...",
+  "title": "Anotación en Vivo",
+  "loading": "Cargando datos de anotación...",
   "retry": "Reintentar",
   "matchHeader": "Partido #{{number}}",
   "holesPlayed": "{{count}} hoyos jugados",
   "tabs": {
     "input": "Anotar",
     "scorecard": "Tarjeta",
-    "leaderboard": "Clasificacion"
+    "leaderboard": "Clasificación"
   },
   "preMatch": {
     "title": "Info del Partido",
-    "youMark": "Tu marcas a",
+    "youMark": "Tú marcas a",
     "markedBy": "Te marca",
-    "teeCategory": "Categoria de Tee",
+    "teeCategory": "Categoría de Tee",
     "handicap": "Handicap",
     "format": "Formato",
     "ready": "Listo para Jugar"
@@ -51,10 +51,10 @@
     "standing": "Marcador"
   },
   "leaderboard": {
-    "title": "Clasificacion",
+    "title": "Clasificación",
     "inProgress": "En Juego",
     "completed": "Completados",
-    "allSquare": "All Square",
+    "allSquare": "Empate",
     "points": "pts",
     "hole": "Hoyo",
     "wins": "{{team}} gana {{score}}",
@@ -75,7 +75,7 @@
   },
   "submit": {
     "title": "Enviar Tarjeta",
-    "confirm": "Estas seguro de que quieres enviar tu tarjeta? Esta accion no se puede deshacer.",
+    "confirm": "¿Estás seguro de que quieres enviar tu tarjeta? Esta acción no se puede deshacer.",
     "button": "Enviar Tarjeta",
     "submit": "Enviar Tarjeta",
     "submitting": "Enviando...",
@@ -83,7 +83,7 @@
     "submitted": "Tarjeta enviada",
     "alreadySubmitted": "Tarjeta ya enviada",
     "allValidated": "{{count}}/{{total}} hoyos validados",
-    "notReady": "No todos los hoyos estan validados"
+    "notReady": "No todos los hoyos están validados"
   },
   "summary": {
     "title": "Resumen del Partido",
@@ -95,9 +95,9 @@
     "holesLost": "Hoyos Perdidos",
     "holesHalved": "Hoyos Empatados",
     "matchComplete": "Partido Completado",
-    "waitingForOthers": "Esperando a que los demas jugadores envien su tarjeta",
+    "waitingForOthers": "Esperando a que los demás jugadores envíen su tarjeta",
     "backToSchedule": "Volver al Calendario",
-    "backToCompetition": "Volver a Competicion",
+    "backToCompetition": "Volver a Competición",
     "back": "Volver"
   },
   "earlyEnd": {
@@ -108,45 +108,45 @@
   },
   "concede": {
     "title": "Conceder Partido",
-    "message": "Estas seguro de que quieres conceder este partido?",
+    "message": "¿Estás seguro de que quieres conceder este partido?",
     "button": "Conceder Partido",
     "confirm": "Conceder",
     "cancel": "Cancelar",
     "reason": "Motivo (opcional)",
-    "reasonPlaceholder": "Introduce el motivo de la concesion...",
+    "reasonPlaceholder": "Introduce el motivo de la concesión...",
     "success": "Partido concedido"
   },
   "offline": {
-    "banner": "Estas sin conexion. Los scores se guardaran localmente y se sincronizaran al reconectar.",
+    "banner": "Estás sin conexión. Los scores se guardarán localmente y se sincronizarán al reconectar.",
     "syncing": "Sincronizando scores...",
     "syncComplete": "Todos los scores sincronizados",
     "pendingScores_one": "{{count}} score pendiente de sincronizar",
     "pendingScores_other": "{{count}} scores pendientes de sincronizar"
   },
   "session": {
-    "blocked": "Sesion Activa Detectada",
-    "blockedMessage": "Hay una sesion de anotacion activa en otro dispositivo o pestana. Solo se permite una sesion a la vez.",
-    "takeOver": "Tomar Sesion",
+    "blocked": "Sesión Activa Detectada",
+    "blockedMessage": "Hay una sesión de anotación activa en otro dispositivo o pestaña. Solo se permite una sesión a la vez.",
+    "takeOver": "Tomar Sesión",
     "goBack": "Volver"
   },
   "readOnly": {
     "viewing": "Viendo partido",
-    "spectator": "Estas viendo este partido como espectador"
+    "spectator": "Estás viendo este partido como espectador"
   },
   "errors": {
-    "generic": "Ocurrio un error",
-    "failedToLoad": "Error al cargar datos de anotacion",
+    "generic": "Ocurrió un error",
+    "failedToLoad": "Error al cargar datos de anotación",
     "failedToSubmitScore": "Error al enviar score",
     "failedToSubmitScorecard": "Error al enviar tarjeta",
-    "failedToLoadLeaderboard": "Error al cargar clasificacion",
+    "failedToLoadLeaderboard": "Error al cargar clasificación",
     "failedToConcede": "Error al conceder partido",
-    "matchNotInProgress": "El partido no esta en curso"
+    "matchNotInProgress": "El partido no está en curso"
   },
   "navigation": {
-    "liveScoring": "Anotacion en Vivo",
+    "liveScoring": "Anotación en Vivo",
     "viewScorecard": "Ver Tarjeta",
     "annotate": "Anotar",
-    "leaderboard": "Clasificacion",
+    "leaderboard": "Clasificación",
     "activeMatch": "Partido Activo"
   }
 }

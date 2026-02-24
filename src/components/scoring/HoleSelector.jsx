@@ -3,9 +3,11 @@ const HoleSelector = ({ currentHole, onSelect, scores = [], totalHoles = 18 }) =
   const getHoleStatus = (holeNumber) => {
     const holeScore = scores.find(s => s.holeNumber === holeNumber);
     if (!holeScore) return 'empty';
-    const hasAllMatch = holeScore.playerScores?.every(ps => ps.validationStatus === 'match');
+    const hasPlayers = Array.isArray(holeScore.playerScores) && holeScore.playerScores.length > 0;
+    if (!hasPlayers) return 'pending';
+    const hasAllMatch = holeScore.playerScores.every(ps => ps.validationStatus === 'match');
     if (hasAllMatch) return 'validated';
-    const hasMismatch = holeScore.playerScores?.some(ps => ps.validationStatus === 'mismatch');
+    const hasMismatch = holeScore.playerScores.some(ps => ps.validationStatus === 'mismatch');
     if (hasMismatch) return 'mismatch';
     return 'pending';
   };

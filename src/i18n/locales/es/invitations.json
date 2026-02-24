@@ -10,6 +10,7 @@
     "searchMinChars": "Escribe al menos 2 caracteres",
     "noUsersFound": "No se encontraron usuarios",
     "noUserSelected": "Por favor, selecciona un usuario primero",
+    "emailLabel": "Email",
     "emailPlaceholder": "Introduce el email del jugador",
     "personalMessage": "Mensaje personal (opcional)",
     "personalMessagePlaceholder": "Anade un mensaje personal a la invitacion...",

@@ -101,12 +101,16 @@ const ScoringPage = () => {
   const autoSubmitIfNeeded = () => {
     if (!markerAssignment || !currentHoleData || isFullyLocked || isOwnScoreLocked || !isMatchPlayer) return;
     const hasOwnScore = currentPlayerScore?.ownScore != null;
+    const hasMarkedScore = markedPlayerScore?.markerScore != null;
     if (!hasOwnScore) {
-      submitScore(currentHole, {
+      const payload = {
         ownScore: currentHoleData.par,
-        markedPlayerId: markerAssignment.marksUserId,
-        markedScore: currentHoleData.par,
-      });
+      };
+      if (markerAssignment.marksUserId) {
+        payload.markedPlayerId = markerAssignment.marksUserId;
+        payload.markedScore = hasMarkedScore ? markedPlayerScore.markerScore : currentHoleData.par;
+      }
+      submitScore(currentHole, payload);
     }
   };
 

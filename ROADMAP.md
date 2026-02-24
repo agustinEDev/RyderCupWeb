@@ -120,7 +120,7 @@ const CompetitionActions = ({ competitionId }) => {
 | Sprint 2 | Feb 3 - Feb 17  | 70h       | 11        | ✅ Friday Feb 4  | ✅ COMPLETED  | v2.0.10  |
 | Sprint 3 | Feb 18 - Feb 24 | 48h       | 5         | ✅ Friday Feb 20 | ✅ COMPLETED  | v2.0.11  |
 | Sprint 4 | Feb 25 - Mar 10 | 92h       | 5         | ✅ Friday Mar 6  | ✅ COMPLETED | v2.0.12  |
-| Sprint 5 | Mar 11 - Mar 17 | 60h       | 2         | 🔄 Friday Mar 13 | 📋 Pending  | v2.0.7   |
+| Sprint 5 | Mar 11 - Mar 17 | 60h       | 2         | 🔄 Friday Mar 13 | 📋 Pending  | v2.0.13  |
 | **TOTAL**| **7 weeks**     | **330h**  | **31**    |                   |               |          |
 
 ---
@@ -134,7 +134,7 @@ const CompetitionActions = ({ competitionId }) => {
 | Sprint 2 | ✅ `GET /competitions/{id}/schedule`<br>✅ `POST /competitions/{id}/schedule/configure`<br>✅ `POST /competitions/{id}/teams`<br>✅ `POST /competitions/{id}/rounds`<br>✅ `PUT /rounds/{id}`<br>✅ `DELETE /rounds/{id}`<br>✅ `POST /rounds/{id}/matches/generate`<br>✅ `GET /matches/{id}`<br>✅ `PUT /matches/{id}/status`<br>✅ `POST /matches/{id}/walkover`<br>✅ `PUT /matches/{id}/players` | ✅ Backend Integration Layer (11 endpoints)<br>✅ Domain Layer (6 VOs + 3 Entities)<br>✅ Infrastructure (Mapper + Repository)<br>✅ 11 Use Cases + Composition Root<br>✅ i18n (EN/ES schedule namespace)<br>✅ UI: Schedule page + Round/Match cards<br>✅ UI: Manual pairings modal<br>✅ UI: Match detail modal<br>✅ UI: Manual status control<br>✅ Clean Architecture remediation | Feb 17, 2026 | ✅ **COMPLETED** |
 | Sprint 3 | `POST /competitions/{id}/invitations`<br>`POST /competitions/{id}/invitations/by-email`<br>`GET /invitations/me`<br>`POST /invitations/{id}/respond`<br>`GET /competitions/{id}/invitations` | ✅ Backend API contract (`docs/INVITATIONS_API_CONTRACT.md`)<br>✅ Domain layer (InvitationStatus VO, Invitation entity, IInvitationRepository)<br>✅ Infrastructure (InvitationMapper, ApiInvitationRepository)<br>✅ 5 use cases + InvitationAssembler<br>✅ i18n (EN/ES invitations namespace)<br>✅ UI: InvitationBadge, InvitationCard, SendInvitationModal<br>✅ Creator InvitationsPage + Player MyInvitationsPage<br>✅ Navigation integration (HeaderAuth + CompetitionDetail)<br>✅ 95 new tests (1249 total) | Friday Feb 21 | ✅ Frontend ready, backend pending |
 | Sprint 4 | ✅ `GET /matches/{id}/scoring-view`<br>✅ `POST /matches/{id}/scores/holes/{hole_number}`<br>✅ `POST /matches/{id}/scorecard/submit`<br>✅ `GET /competitions/{id}/leaderboard`<br>✅ `PUT /matches/{id}/status` (concede action) | ✅ Backend API contract (`docs/SCORING_API_CONTRACT.md`)<br>✅ Domain layer (HoleScore VO, IScoringRepository, IUserRepository)<br>✅ Infrastructure (ScoringMapper, ApiScoringRepository, ApiUserRepository)<br>✅ 6 use cases + Composition Root DI<br>✅ i18n (EN/ES scoring + dashboard + invitations)<br>✅ UI: 16 scoring/dashboard components<br>✅ ScoringPage (3 tabs) + LeaderboardPage (public)<br>✅ PendingActionsCard + auto-redirect on accept<br>✅ useScoring hook + offline queue + session lock<br>✅ 2 rounds of bugfixes (team names, locking, score format)<br>✅ 301 new tests (1550 total) | Friday Mar 7 | ✅ Frontend + backend complete |
-| Sprint 5 | `GET /competitions/{id}/leaderboard`                                                                                    | Public leaderboard<br>Polling (30s)                                                               | Friday Mar 14 | 📋 Pending |
+| Sprint 5 | _(leaderboard endpoint already delivered in Sprint 4)_                                                                    | Public leaderboard enhancements<br>Polling (30s)                                                  | Friday Mar 14 | 📋 Pending |
 
 _⭐ = New endpoints added by backend._
 
@@ -246,8 +246,8 @@ Migrate from reverse proxy architecture to direct subdomains to improve performa
 | Before | After |
 |--------|-------|
 | `www.rydercupfriends.com/api/*` → Proxy → Backend | `api.rydercupfriends.com` → Direct backend |
-| Latencia: +50-100ms (hop proxy) | Latency: Direct |
-| Coste: +$7/mes (servicio proxy) | Cost: $0 |
+| Latency: +50-100ms (proxy hop) | Latency: Direct |
+| Cost: +$7/month (proxy service) | Cost: $0 |
 | Cookies: Domain rewrite manual | Cookies: `.rydercupfriends.com` native |
 
 #### ✅ Deliverables
@@ -285,7 +285,7 @@ Migrate from reverse proxy architecture to direct subdomains to improve performa
 
 1. **Breaking Change: `play_mode`**
    - `HandicapSettings` value object updated (SCRATCH/HANDICAP replaces SCRATCH/PERCENTAGE)
-   - `CompetitionMapper` maps `play_mode` (with backwards compatible fallback)
+   - `CompetitionMapper` maps `play_mode` (with backwards-compatible fallback)
    - `CreateCompetition.jsx` form updated (removed percentage selector)
    - EN/ES translations updated
 
@@ -420,7 +420,7 @@ Backend team must implement the 5 endpoints defined in `docs/INVITATIONS_API_CON
 
 ### 🔄 v2.0.12 - Live Scoring System (Sprint 4)
 
-> **Status:** 🔄 Frontend complete, backend complete
+> **Status:** ✅ Frontend complete, backend complete
 > **Branch:** `feature/sprint-4-live-scoring`
 > **Frontend Effort:** ~50h
 > **Tests:** 301 new tests (1550 total passing, 1 skipped)
@@ -462,7 +462,7 @@ Backend team must implement the 5 endpoints defined in `docs/INVITATIONS_API_CON
    - `scoringSessionLock`: BroadcastChannel for multi-device lock with forceRelease
 
 6. **UI Components (14 scoring + 2 enhancements)**
-   - `HoleInput`: [-][+] buttons, own score + marked, visual validation, team names, independent locking
+   - `HoleInput`: minus/plus buttons, own score + marked, visual validation, team names, independent locking
    - `HoleSelector`: 1-18 grid with state indicators
    - `ScorecardTable`: OUT/IN/Total table with all players, team names and color coding
    - `GolfFigure`: classic concentric SVG (eagle/birdie/par/bogey/double+)
@@ -646,13 +646,13 @@ Here are the confirmations and answers to your questions:
 
 ---
 
-## 📊 Current Status (v2.0.10 - Sprint 2 completed)
+## 📊 Current Status (v2.0.12 - Sprint 4 completed)
 
 ### Key Metrics
 
-- **Tests:** 1154 passing, 1 skipped, 0 failed ✅
+- **Tests:** 1550 passing, 1 skipped, 0 failed ✅
 - **Coverage:** ≥85% lines, ≥75% functions ✅
-- **Bundle:** within budget ✅ (budget: ≤1400 KB, warning: 1300 KB)
+- **Bundle:** within budget ✅ (budget: ≤1500 KB, warning: 1400 KB)
 - **Build time:** ~6s ⚡
 - **Security:** 0 vulnerabilities ✅
 - **OWASP Score:** 9.2/10 ✅
@@ -664,6 +664,8 @@ Here are the confirmations and answers to your questions:
 - ✅ Schedule Backend Integration Layer + UI (v2.0.6 - Sprint 2)
 - ✅ Clean Architecture Remediation (v2.0.9)
 - ✅ Manual Pairings UI (v2.0.10)
+- ✅ Invitations System (v2.0.11 - Sprint 3)
+- ✅ Live Scoring System (v2.0.12 - Sprint 4)
 
 ### Completed (v1.x)
 - ✅ Modern Build Stack (v1.16.0)
@@ -709,5 +711,5 @@ Here are the confirmations and answers to your questions:
 
 ---
 
-**Last review:** Feb 17, 2026 (Sprint 2 completed — v2.0.10)
-**Next review:** End Sprint 3 (Feb 24, 2026)
+**Last review:** Feb 24, 2026 (Sprint 4 completed — v2.0.12)
+**Next review:** End Sprint 5 (Mar 17, 2026)

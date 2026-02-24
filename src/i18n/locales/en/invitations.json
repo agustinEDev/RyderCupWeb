@@ -10,6 +10,7 @@
     "searchMinChars": "Type at least 2 characters",
     "noUsersFound": "No users found",
     "noUserSelected": "Please select a user first",
+    "emailLabel": "Email",
     "emailPlaceholder": "Enter player's email address",
     "personalMessage": "Personal Message (optional)",
     "personalMessagePlaceholder": "Add a personal message to the invitation...",

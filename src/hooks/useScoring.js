@@ -115,9 +115,12 @@ export const useScoring = (matchId, currentUserId) => {
       }));
       setError(null);
     } catch (err) {
-      // Queue for retry if network error
-      offlineQueue.enqueue(matchId, holeNumber, scoreData);
-      setPendingQueueSize(offlineQueue.size());
+      const status = err?.response?.status ?? err?.status;
+      const isRetryable = !status || status >= 500;
+      if (isRetryable) {
+        offlineQueue.enqueue(matchId, holeNumber, scoreData);
+        setPendingQueueSize(offlineQueue.size());
+      }
       setError(err);
     } finally {
       setIsSubmitting(false);

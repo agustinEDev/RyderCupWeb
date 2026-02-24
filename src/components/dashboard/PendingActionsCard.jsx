@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Mail, Users, Flag, ChevronRight, Bell } from 'lucide-react';
@@ -15,11 +15,11 @@ const PendingActionsCard = ({ user, competitions }) => {
   const [pendingInvitations, setPendingInvitations] = useState(0);
   const [pendingEnrollments, setPendingEnrollments] = useState([]);
   const [upcomingMatches, setUpcomingMatches] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const isCreator = user?.is_admin ||
+  const isCreator = useMemo(() => user?.is_admin ||
     (user?.roles && Array.isArray(user.roles) &&
-      user.roles.some(r => (typeof r === 'string' ? r : r.name) === 'CREATOR' || (typeof r === 'string' ? r : r.name) === 'ADMIN'));
+      user.roles.some(r => (typeof r === 'string' ? r : r.name) === 'CREATOR' || (typeof r === 'string' ? r : r.name) === 'ADMIN')), [user]);
 
   useEffect(() => {
     if (!user) return;
@@ -195,7 +195,7 @@ async function loadUpcomingMatches(competitions) {
   if (!competitions || competitions.length === 0) return 0;
 
   const activeCompetitions = competitions.filter(
-    (c) => c.status === 'IN_PROGRESS' || c.status === 'STARTED'
+    (c) => c.status === 'IN_PROGRESS'
   );
 
   const results = await Promise.allSettled(

@@ -87,6 +87,7 @@ const SendInvitationModalContent = ({ onClose, onSend, onSendByUserId, onSearchU
     if (trimmed.length < 2) {
       setSearchResults([]);
       setShowDropdown(false);
+      setIsSearching(false);
       return;
     }
 
@@ -328,7 +329,7 @@ const SendInvitationModalContent = ({ onClose, onSend, onSendByUserId, onSearchU
           <form onSubmit={handleEmailSubmit} className="p-4 space-y-4">
             <div>
               <label htmlFor="invitation-email" className="block text-sm font-medium text-gray-700 mb-1">
-                Email
+                {t('send.emailLabel')}
               </label>
               <input
                 id="invitation-email"

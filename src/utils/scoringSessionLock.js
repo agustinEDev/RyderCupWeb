@@ -36,7 +36,6 @@ const storageKey = (userId) => `${STORAGE_PREFIX}${userId}`;
  */
 export const acquire = (matchId, sessionId, userId) => {
   if (!userId) return true;
-  const key = storageKey(userId);
   const existing = getSession(userId);
   if (existing && existing.matchId === matchId && existing.sessionId !== sessionId) {
     // Check if the existing session is stale (older than 2 minutes)
@@ -46,7 +45,11 @@ export const acquire = (matchId, sessionId, userId) => {
   }
 
   const session = { matchId, sessionId, userId, timestamp: Date.now() };
-  localStorage.setItem(key, JSON.stringify(session));
+  try {
+    localStorage.setItem(storageKey(userId), JSON.stringify(session));
+  } catch {
+    // Fail open if storage unavailable
+  }
 
   // Notify other tabs
   const channel = initChannel();
@@ -68,10 +71,13 @@ export const acquire = (matchId, sessionId, userId) => {
  */
 export const release = (sessionId, userId) => {
   if (!userId) return;
-  const key = storageKey(userId);
   const existing = getSession(userId);
   if (existing && existing.sessionId === sessionId) {
-    localStorage.removeItem(key);
+    try {
+      localStorage.removeItem(storageKey(userId));
+    } catch {
+      // Fail open if storage unavailable
+    }
 
     const channel = initChannel();
     if (channel) {
@@ -94,7 +100,11 @@ export const refresh = (sessionId, userId) => {
   const existing = getSession(userId);
   if (existing && existing.sessionId === sessionId) {
     existing.timestamp = Date.now();
-    localStorage.setItem(storageKey(userId), JSON.stringify(existing));
+    try {
+      localStorage.setItem(storageKey(userId), JSON.stringify(existing));
+    } catch {
+      // Fail open if storage unavailable
+    }
   }
 };
 
@@ -139,7 +149,11 @@ export const onLockEvent = (callback) => {
  */
 export const forceRelease = (userId) => {
   if (!userId) return;
-  localStorage.removeItem(storageKey(userId));
+  try {
+    localStorage.removeItem(storageKey(userId));
+  } catch {
+    // Fail open if storage unavailable
+  }
 
   const channel = initChannel();
   if (channel) {

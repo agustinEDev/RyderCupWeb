@@ -27,7 +27,7 @@ const HoleInput = ({
   const [markedValue, setMarkedValue] = useState(markedPlayerScore?.markerScore ?? par);
 
   const adjustScore = (current, delta) => {
-    if (current === null) return 1;
+    if (current === null) return delta > 0 ? 1 : null;
     const next = current + delta;
     if (next < 1) return null; // picked up
     if (next > 9) return 9;

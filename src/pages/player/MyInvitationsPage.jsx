@@ -52,7 +52,9 @@ const MyInvitationsPage = () => {
     try {
       const result = await respondToInvitationUseCase.execute(invitationId, 'ACCEPT');
       customToast.success(t('success.accepted'));
-      navigate(`/competitions/${result.competitionId}`);
+      if (result?.competitionId) {
+        navigate(`/competitions/${result.competitionId}`);
+      }
     } catch (error) {
       console.error('Error accepting invitation:', error);
       customToast.error(error.message || t('errors.failedToRespond'));

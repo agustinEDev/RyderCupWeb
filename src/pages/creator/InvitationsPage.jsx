@@ -101,7 +101,12 @@ const InvitationsPage = () => {
   };
 
   const handleSearchUsers = async (query) => {
-    return searchUsersUseCase.execute(query);
+    if (!query || query.trim().length < 2) return [];
+    try {
+      return await searchUsersUseCase.execute(query);
+    } catch {
+      return [];
+    }
   };
 
   const isPageLoading = isLoadingUser || isLoadingRoles || isLoading;

@@ -194,7 +194,7 @@ describe('PendingActionsCard', () => {
   });
 
   it('should not render when user is null', () => {
-    renderCard(null);
-    expect(screen.queryByTestId('pending-actions-card')).not.toBeInTheDocument();
+    const { container } = renderCard(null);
+    expect(container).toBeEmptyDOMElement();
   });
 });

@@ -63,10 +63,8 @@ const CompetitionDetail = () => {
       setCompetition(data);
 
       // Load enrollments for all authenticated users (approved players visible to everyone)
-      if (user) {
-        const enrollmentsData = await listEnrollmentsUseCase.execute(id);
-        setEnrollments(enrollmentsData);
-      }
+      const enrollmentsData = await listEnrollmentsUseCase.execute(id);
+      setEnrollments(enrollmentsData);
     } catch (error) {
       console.error('Error loading competition:', error);
       customToast.error(error.message || t('detail.failedToLoadCompetition'));

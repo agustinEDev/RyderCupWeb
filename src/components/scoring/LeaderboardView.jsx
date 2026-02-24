@@ -17,11 +17,11 @@ const LeaderboardView = ({ leaderboard }) => {
   if (!leaderboard) return null;
 
   const inProgress = (leaderboard.matches || []).filter(m => m.status === 'IN_PROGRESS');
-  const completed = (leaderboard.matches || []).filter(m => m.status !== 'IN_PROGRESS');
+  const completed = (leaderboard.matches || []).filter(m => m.status === 'COMPLETED' || m.status === 'CONCEDED');
 
   const renderMatch = (match) => {
-    const teamANames = match.teamAPlayers?.map(p => p.userName).join(' / ');
-    const teamBNames = match.teamBPlayers?.map(p => p.userName).join(' / ');
+    const teamANames = (match.teamAPlayers ?? []).map(p => p.userName).join(' / ');
+    const teamBNames = (match.teamBPlayers ?? []).map(p => p.userName).join(' / ');
     const teamAWon = match.result?.winner === 'A';
     const teamBWon = match.result?.winner === 'B';
     const isTeamALeading = match.leadingTeam === 'A';
