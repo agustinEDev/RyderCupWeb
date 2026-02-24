@@ -50,9 +50,9 @@ const MyInvitationsPage = () => {
   const handleAccept = async (invitationId) => {
     setProcessingId(invitationId);
     try {
-      await respondToInvitationUseCase.execute(invitationId, 'ACCEPT');
+      const result = await respondToInvitationUseCase.execute(invitationId, 'ACCEPT');
       customToast.success(t('success.accepted'));
-      await loadData();
+      navigate(`/competitions/${result.competitionId}`);
     } catch (error) {
       console.error('Error accepting invitation:', error);
       customToast.error(error.message || t('errors.failedToRespond'));
