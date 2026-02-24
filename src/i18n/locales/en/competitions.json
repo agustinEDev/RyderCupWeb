@@ -179,6 +179,7 @@
     "failedToReject": "Failed to reject enrollment",
     "failedToUpdateCompetition": "Failed to update competition",
     "failedToDeleteCompetition": "Failed to delete competition",
+    "unknownUser": "Unknown User",
     "failedToEnroll": "Failed to enroll",
     "failedToLoadCompetitions": "Failed to load competitions",
     "golfCourses": {

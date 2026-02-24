@@ -51,7 +51,7 @@ style: |
 <br>
 
 **Agustin Estevez Dominguez**
-v2.0.8 (BE) / v2.0.13-dev (FE) | February 2026
+v2.0.8 (BE) / v2.0.12 (FE) | February 2026
 
 Frontend: github.com/agustinEDev/RyderCupWeb
 Backend: github.com/agustinEDev/RyderCupAm
@@ -73,7 +73,7 @@ Backend: github.com/agustinEDev/RyderCupAm
 
 4. Backend Architecture (Clean + DDD)
 5. Domain Model & Database
-6. API Design (74 endpoints)
+6. API Design (82 endpoints)
 7. Backend Security & DevOps
 
 </div>
@@ -123,7 +123,7 @@ Backend: github.com/agustinEDev/RyderCupAm
 
 <div class="stat-grid">
 <div class="stat-box">
-<strong>74</strong>
+<strong>82</strong>
 <span>API Endpoints</span>
 </div>
 <div class="stat-box">
@@ -162,7 +162,7 @@ Backend: github.com/agustinEDev/RyderCupAm
   │  React 19  |  Vite 7  |  Tailwind 4  |  1,550 tests         │
   │  Clean Architecture  |  DDD  |  Zustand  |  i18n (EN/ES)    │
   └──────────────────────────┬──────────────────────────────────┘
-                             │  74 REST API calls
+                             │  82 REST API calls
                              │  httpOnly cookies
                              │  Automatic token refresh
   ┌──────────────────────────┴──────────────────────────────────┐
@@ -320,7 +320,7 @@ Full ERD documented in `docs/DATABASE_ERD.md` (Mermaid)
 
 ---
 
-## 6. API Design - 74 REST Endpoints
+## 6. API Design - 82 REST Endpoints
 
 <div class="columns">
 <div class="col">
@@ -340,7 +340,7 @@ Full ERD documented in `docs/DATABASE_ERD.md` (Mermaid)
 | **Scoring** | 5 | Scores, scorecard, leaderboard |
 | **Support** | 1 | Contact form → GitHub |
 | **Countries** | 2 | List, adjacent |
-| **Total** | **74** | |
+| **Total** | **82** | |
 
 </div>
 <div class="col">
@@ -948,7 +948,7 @@ Eliminates XSS token theft entirely. Worth the extra CSRF handling.
 <span>OWASP Score (FE / BE)</span>
 </div>
 <div class="summary-card">
-<strong>74</strong>
+<strong>82</strong>
 <span>REST API Endpoints</span>
 </div>
 <div class="summary-card">

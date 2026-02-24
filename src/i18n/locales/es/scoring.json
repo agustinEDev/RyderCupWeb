@@ -3,7 +3,8 @@
   "loading": "Cargando datos de anotación...",
   "retry": "Reintentar",
   "matchHeader": "Partido #{{number}}",
-  "holesPlayed": "{{count}} hoyos jugados",
+  "holesPlayed_one": "{{count}} hoyo jugado",
+  "holesPlayed_other": "{{count}} hoyos jugados",
   "tabs": {
     "input": "Anotar",
     "scorecard": "Tarjeta",
@@ -22,8 +23,8 @@
     "hole": "Hoyo",
     "par": "Par",
     "strokeIndex": "IS",
-    "yourScore": "Tu Score",
-    "markerScore": "Score Marcador",
+    "yourScore": "Tu Anotacion",
+    "markerScore": "Anotacion Marcador",
     "netScore": "Neto",
     "result": "Resultado",
     "standing": "Marcador",
@@ -118,11 +119,11 @@
     "success": "Partido concedido"
   },
   "offline": {
-    "banner": "Estás sin conexión. Los scores se guardarán localmente y se sincronizarán al reconectar.",
-    "syncing": "Sincronizando scores...",
-    "syncComplete": "Todos los scores sincronizados",
-    "pendingScores_one": "{{count}} score pendiente de sincronizar",
-    "pendingScores_other": "{{count}} scores pendientes de sincronizar"
+    "banner": "Estás sin conexión. Las anotaciones se guardarán localmente y se sincronizarán al reconectar.",
+    "syncing": "Sincronizando anotaciones...",
+    "syncComplete": "Todas las anotaciones sincronizadas",
+    "pendingScores_one": "{{count}} anotación pendiente de sincronizar",
+    "pendingScores_other": "{{count}} anotaciones pendientes de sincronizar"
   },
   "session": {
     "blocked": "Sesión Activa Detectada",
@@ -137,7 +138,7 @@
   "errors": {
     "generic": "Ocurrió un error",
     "failedToLoad": "Error al cargar datos de anotación",
-    "failedToSubmitScore": "Error al enviar score",
+    "failedToSubmitScore": "Error al enviar anotación",
     "failedToSubmitScorecard": "Error al enviar tarjeta",
     "failedToLoadLeaderboard": "Error al cargar clasificación",
     "failedToConcede": "Error al conceder partido",

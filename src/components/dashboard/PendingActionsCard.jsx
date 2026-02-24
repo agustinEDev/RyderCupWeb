@@ -34,7 +34,8 @@ const PendingActionsCard = ({ user, competitions }) => {
         ]);
 
         if (results[0].status === 'fulfilled') {
-          setPendingInvitations(results[0].value.invitations.length);
+          const invitations = results[0].value?.invitations;
+          setPendingInvitations(Array.isArray(invitations) ? invitations.length : 0);
         }
         if (results[1].status === 'fulfilled') {
           setPendingEnrollments(results[1].value);

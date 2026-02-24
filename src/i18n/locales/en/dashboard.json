@@ -47,6 +47,8 @@
     "viewSchedule": "View Schedule",
     "matchNumber": "Match #{{number}}",
     "round": "Round",
-    "loading": "Loading matches..."
+    "loading": "Loading matches...",
+    "teamA": "Team A",
+    "teamB": "Team B"
   }
 }

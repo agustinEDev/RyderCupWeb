@@ -127,7 +127,7 @@ Allows players to record hole-by-hole scores with cross-validation (player vs ma
 - **Pages:** 30 total (29 + UpcomingMatchesPage)
 - **Components:** 52 total
 - **Bundle:** 1,487 KB total JS (within 1,500 KB max budget)
-- **Backend endpoints:** 74 total consumed
+- **Backend endpoints:** 82 total consumed
 
 ---
 

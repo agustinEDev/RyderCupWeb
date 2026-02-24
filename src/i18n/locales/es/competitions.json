@@ -179,6 +179,7 @@
     "failedToReject": "Error al rechazar la inscripción",
     "failedToUpdateCompetition": "Error al actualizar la competición",
     "failedToDeleteCompetition": "Error al eliminar la competición",
+    "unknownUser": "Usuario Desconocido",
     "failedToEnroll": "Error al solicitar inscripción",
     "failedToLoadCompetitions": "Error al cargar las competiciones",
     "golfCourses": {

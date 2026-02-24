@@ -16,6 +16,7 @@ const SendInvitationModalContent = ({ onClose, onSend, onSendByUserId, onSearchU
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const dropdownRef = useRef(null);
   const searchTimerRef = useRef(null);
+  const searchRequestIdRef = useRef(0);
   const onSearchUsersRef = useRef(onSearchUsers);
   const highlightedIndexRef = useRef(highlightedIndex);
   const showDropdownRef = useRef(showDropdown);
@@ -92,16 +93,22 @@ const SendInvitationModalContent = ({ onClose, onSend, onSendByUserId, onSearchU
     }
 
     setIsSearching(true);
+    searchRequestIdRef.current += 1;
+    const currentRequestId = searchRequestIdRef.current;
     searchTimerRef.current = setTimeout(async () => {
       try {
         const results = await onSearchUsersRef.current(trimmed);
+        if (currentRequestId !== searchRequestIdRef.current) return;
         setSearchResults(results);
         setShowDropdown(true);
         setHighlightedIndex(-1);
       } catch {
+        if (currentRequestId !== searchRequestIdRef.current) return;
         setSearchResults([]);
       } finally {
-        setIsSearching(false);
+        if (currentRequestId === searchRequestIdRef.current) {
+          setIsSearching(false);
+        }
       }
     }, 300);
 

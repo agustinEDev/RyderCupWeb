@@ -72,7 +72,7 @@ const Unauthorized = lazyWithRetry(() => import('./pages/public/Unauthorized'));
 // ============================================
 
 // Crear Router con tracking de Sentry
-const SentryRoutes = Sentry.withSentryReactRouterV6Routing(Routes);
+const SentryRoutes = Sentry.withSentryReactRouterV7Routing(Routes);
 
 /**
  * Componente interno que contiene la lógica de la app

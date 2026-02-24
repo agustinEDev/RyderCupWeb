@@ -195,7 +195,7 @@ const GenerateMatchesModalContent = ({
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           {/* Warning when no teams assigned */}
-          {!teamAssignment && (
+          {(!teamAssignment || (!teamAssignment.teamAPlayerIds?.length && !teamAssignment.teamBPlayerIds?.length)) && (
             <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
               <p className="text-sm font-medium text-yellow-800">{t('matches.pairings.noTeamsWarning')}</p>
               <p className="text-xs text-yellow-600 mt-1">{t('matches.pairings.noTeamsWarningDesc')}</p>

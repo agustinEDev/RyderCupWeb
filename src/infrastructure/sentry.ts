@@ -27,7 +27,8 @@
  * - VITE_SENTRY_ENABLE_FEEDBACK
  */
 
-import { init, replayIntegration, browserTracingIntegration, feedbackIntegration, getClient } from '@sentry/react';
+import { init, replayIntegration, reactRouterV7BrowserTracingIntegration, feedbackIntegration, getClient } from '@sentry/react';
+import { useEffect, useLocation, useNavigationType, createRoutesFromChildren, matchRoutes } from 'react-router-dom';
 
 // ============================================
 // CONFIGURACIÓN DE VARIABLES DE ENTORNO
@@ -62,8 +63,13 @@ if (!SENTRY_CONFIG.dsn) {
   // ============================================
 
   const integrations = [
-    // Browser Tracing - Monitoreo de rendimiento de navegación
-    browserTracingIntegration({
+    // React Router v7 Browser Tracing - Route-aware performance monitoring
+    reactRouterV7BrowserTracingIntegration({
+      useEffect,
+      useLocation,
+      useNavigationType,
+      createRoutesFromChildren,
+      matchRoutes,
       // Seguimiento de interacciones de usuario
       traceFetch: true,
       traceXHR: true,

@@ -3,7 +3,8 @@
   "loading": "Loading scoring data...",
   "retry": "Retry",
   "matchHeader": "Match #{{number}}",
-  "holesPlayed": "{{count}} holes played",
+  "holesPlayed_one": "{{count}} hole played",
+  "holesPlayed_other": "{{count}} holes played",
   "tabs": {
     "input": "Input",
     "scorecard": "Scorecard",

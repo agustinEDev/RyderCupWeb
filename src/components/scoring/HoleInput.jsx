@@ -22,9 +22,13 @@ const HoleInput = ({
 }) => {
   const { t } = useTranslation('scoring');
   // Parent passes key={holeNumber} so component remounts with fresh state on hole change
-  const [ownValue, setOwnValue] = useState(playerScore?.ownScore ?? par);
+  const [ownValue, setOwnValue] = useState(
+    playerScore?.ownScore !== undefined ? playerScore.ownScore : par
+  );
   // markedPlayerScore.markerScore = what the current user entered for the player they mark
-  const [markedValue, setMarkedValue] = useState(markedPlayerScore?.markerScore ?? par);
+  const [markedValue, setMarkedValue] = useState(
+    markedPlayerScore?.markerScore !== undefined ? markedPlayerScore.markerScore : par
+  );
 
   const adjustScore = (current, delta) => {
     if (current === null) return delta > 0 ? 1 : null;

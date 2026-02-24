@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { Loader, Flag, Calendar, Play } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -19,7 +19,10 @@ const UpcomingMatchesPage = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   const loadMatches = useCallback(async () => {
-    if (!user) return;
+    if (!user) {
+      setIsLoading(false);
+      return;
+    }
 
     setIsLoading(true);
     try {
@@ -106,17 +109,15 @@ const UpcomingMatchesPage = () => {
     }
   }, [user, loadMatches]);
 
-  const formatDate = useMemo(() => {
-    return (dateStr) => {
+  const formatDate = useCallback((dateStr) => {
       if (!dateStr) return '';
       const [year, month, day] = dateStr.split('-').map(Number);
       const date = new Date(year, month - 1, day);
-      return date.toLocaleDateString(undefined, {
-        weekday: 'short',
-        month: 'short',
-        day: 'numeric',
-      });
-    };
+    return date.toLocaleDateString(undefined, {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+    });
   }, []);
 
   const isPageLoading = isLoadingUser || isLoading;
@@ -190,7 +191,7 @@ const UpcomingMatchesPage = () => {
 
                 <div className="flex items-center justify-between bg-gray-50 rounded-lg p-3">
                   <div className="flex-1 text-center">
-                    <p className="text-xs text-gray-400 mb-1">Team A</p>
+                    <p className="text-xs text-gray-400 mb-1">{t('upcomingMatches.teamA')}</p>
                     <div className="space-y-0.5">
                       {match.teamAPlayerNames.map((name, i) => (
                         <p key={i} className="text-sm font-medium text-gray-900">{name}</p>
@@ -199,7 +200,7 @@ const UpcomingMatchesPage = () => {
                   </div>
                   <div className="px-4 text-gray-400 font-bold text-sm">vs</div>
                   <div className="flex-1 text-center">
-                    <p className="text-xs text-gray-400 mb-1">Team B</p>
+                    <p className="text-xs text-gray-400 mb-1">{t('upcomingMatches.teamB')}</p>
                     <div className="space-y-0.5">
                       {match.teamBPlayerNames.map((name, i) => (
                         <p key={i} className="text-sm font-medium text-gray-900">{name}</p>

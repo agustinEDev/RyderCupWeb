@@ -126,6 +126,7 @@ const apiScheduleRepository = new ApiScheduleRepository();
 const apiSupportRepository = new ApiSupportRepository();
 const apiCountryRepository = new ApiCountryRepository();
 const apiInvitationRepository = new ApiInvitationRepository();
+const apiScoringRepository = new ApiScoringRepository();
 
 // --- Casos de Uso ---
 const updateUserProfileUseCase = new UpdateUserProfileUseCase({ userRepository: apiUserRepository });
@@ -193,7 +194,6 @@ const respondToInvitationUseCase = new RespondToInvitationUseCase({ invitationRe
 const listCompetitionInvitationsUseCase = new ListCompetitionInvitationsUseCase({ invitationRepository: apiInvitationRepository });
 
 // Scoring Use Cases (Sprint 4)
-const apiScoringRepository = new ApiScoringRepository();
 const getScoringViewUseCase = new GetScoringViewUseCase({ scoringRepository: apiScoringRepository });
 const submitHoleScoreUseCase = new SubmitHoleScoreUseCase({ scoringRepository: apiScoringRepository });
 const submitScorecardUseCase = new SubmitScorecardUseCase({ scoringRepository: apiScoringRepository });

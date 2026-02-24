@@ -356,7 +356,7 @@ src/
 
 ## 📡 API Integration
 
-This frontend consumes **74 REST API endpoints** organized across 15 domain areas:
+This frontend consumes **82 REST API endpoints** organized across 15 domain areas:
 
 | Domain | Endpoints | Description |
 |--------|-----------|-------------|

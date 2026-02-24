@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
@@ -65,8 +65,12 @@ const CompetitionDetail = () => {
       setCompetition(data);
 
       // Load enrollments for all authenticated users (approved players visible to everyone)
-      const enrollmentsData = await listEnrollmentsUseCase.execute(id);
-      setEnrollments(enrollmentsData);
+      try {
+        const enrollmentsData = await listEnrollmentsUseCase.execute(id);
+        setEnrollments(enrollmentsData);
+      } catch {
+        setEnrollments([]);
+      }
     } catch (error) {
       console.error('Error loading competition:', error);
       customToast.error(error.message || t('detail.failedToLoadCompetition'));
@@ -84,6 +88,11 @@ const CompetitionDetail = () => {
   }, [id, user, loadCompetition]);
 
   const isLoading = isLoadingUser || isLoadingCompetition || isLoadingRoles;
+
+  const approvedEnrollments = useMemo(
+    () => enrollments.filter(e => e.status === 'APPROVED'),
+    [enrollments]
+  );
 
   const handleStatusChange = async (action) => {
     // Validate golf courses approval status before activation
@@ -272,7 +281,7 @@ const CompetitionDetail = () => {
   // Check if competition has reached max players
   // For creators: use enrollments list. For non-creators: fallback to competition.enrolledCount from API
   const approvedCount = enrollments.length > 0
-    ? enrollments.filter(e => e.status === 'APPROVED').length
+    ? approvedEnrollments.length
     : (competition.enrolledCount || 0);
   const isFull = competition.maxPlayers && approvedCount >= competition.maxPlayers;
 
@@ -661,18 +670,17 @@ const CompetitionDetail = () => {
               <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
                 <h3 className="text-gray-900 font-bold text-lg mb-4 flex items-center gap-2">
                   <Users className="w-5 h-5 text-green-600" />
-                  {t('detail.approvedPlayers', { count: enrollments.filter(e => e.status === 'APPROVED').length })}
+                  {t('detail.approvedPlayers', { count: approvedEnrollments.length })}
                 </h3>
 
-                {enrollments.filter(e => e.status === 'APPROVED').length === 0 ? (
+                {approvedEnrollments.length === 0 ? (
                   <div className="text-center py-8 text-gray-500">
                     <Users className="w-12 h-12 mx-auto mb-2 opacity-50" />
                     <p>{t('detail.noApprovedPlayers')}</p>
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {enrollments
-                      .filter(e => e.status === 'APPROVED')
+                    {approvedEnrollments
                       .sort((a, b) => {
                         // Sort by team first, then by handicap
                         if (a.team && b.team && a.team !== b.team) {
@@ -687,7 +695,7 @@ const CompetitionDetail = () => {
                         >
                           <div className="flex-1">
                             <p className="text-gray-900 font-semibold">
-                              {enrollment.userName || 'Unknown User'}
+                              {enrollment.userName || t('detail.unknownUser')}
                             </p>
                             <div className="flex items-center gap-2 mt-1">
                               {enrollment.userHandicap !== null && enrollment.userHandicap !== undefined ? (
@@ -737,7 +745,7 @@ const CompetitionDetail = () => {
                           >
                             <div className="flex-1">
                               <p className="text-gray-900 font-semibold">
-                                {enrollment.userName || 'Unknown User'}
+                                {enrollment.userName || t('detail.unknownUser')}
                               </p>
                               <p className="text-gray-600 text-sm">
                                 {enrollment.userEmail || t('detail.noEmail')}
@@ -794,7 +802,7 @@ const CompetitionDetail = () => {
                           >
                             <div className="flex-1">
                               <p className="text-gray-700 font-medium">
-                                {enrollment.userName || 'Unknown User'}
+                                {enrollment.userName || t('detail.unknownUser')}
                               </p>
                               <p className="text-gray-500 text-sm">
                                 {enrollment.userEmail || t('detail.noEmail')}

@@ -105,9 +105,12 @@ const ScoringPage = () => {
     if (submittedScoresRef.current[currentHole]) return;
     const hasOwnScore = currentPlayerScore?.ownScore != null;
     const hasMarkedScore = markedPlayerScore?.markerScore != null;
-    if (!hasOwnScore) {
+    const needsOwnScore = !hasOwnScore;
+    const needsMarkedScore = markerAssignment.marksUserId && !hasMarkedScore;
+
+    if (needsOwnScore || needsMarkedScore) {
       const payload = {
-        ownScore: currentHoleData.par,
+        ownScore: hasOwnScore ? currentPlayerScore.ownScore : currentHoleData.par,
       };
       if (markerAssignment.marksUserId) {
         payload.markedPlayerId = markerAssignment.marksUserId;

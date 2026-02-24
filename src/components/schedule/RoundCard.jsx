@@ -46,7 +46,7 @@ const RoundCard = ({
         role="button"
         tabIndex={0}
         aria-expanded={isExpanded}
-        className="flex flex-wrap items-center justify-between gap-3 p-4 cursor-pointer hover:bg-gray-50 transition-colors"
+        className="flex items-start sm:items-center justify-between gap-3 p-4 cursor-pointer hover:bg-gray-50 transition-colors"
         onClick={onToggleExpand}
         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onToggleExpand(); } }}
       >
@@ -57,15 +57,15 @@ const RoundCard = ({
               {t(`status.${status}`)}
             </span>
           </div>
-          <div className="flex flex-wrap items-center gap-3 text-sm text-gray-600">
-            <span>{golfCourseName}</span>
-            <span className="text-gray-300">|</span>
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-gray-600">
+            <span className="truncate max-w-[200px] sm:max-w-none">{golfCourseName}</span>
+            <span className="text-gray-300 hidden sm:inline">|</span>
             <span>{t(`sessions.${round.sessionType}`)}</span>
-            <span className="text-gray-300">|</span>
+            <span className="text-gray-300 hidden sm:inline">|</span>
             <span>{t(`formats.${round.matchFormat}`)}</span>
             {matches.length > 0 && (
               <>
-                <span className="text-gray-300">|</span>
+                <span className="text-gray-300 hidden sm:inline">|</span>
                 <span>{t('rounds.matchCount', { count: matches.length })}</span>
               </>
             )}
@@ -80,7 +80,7 @@ const RoundCard = ({
           )}
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0">
           {/* Action buttons (stop propagation to prevent toggle) */}
           {isEditable && (
             <>
@@ -107,7 +107,7 @@ const RoundCard = ({
               title={t('matches.generate')}
             >
               <Zap className="w-3 h-3" />
-              {t('matches.generate')}
+              <span className="hidden sm:inline">{t('matches.generate')}</span>
             </button>
           )}
           {isExpanded ? (

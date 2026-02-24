@@ -47,6 +47,8 @@
     "viewSchedule": "Ver Calendario",
     "matchNumber": "Partido #{{number}}",
     "round": "Ronda",
-    "loading": "Cargando partidos..."
+    "loading": "Cargando partidos...",
+    "teamA": "Equipo A",
+    "teamB": "Equipo B"
   }
 }

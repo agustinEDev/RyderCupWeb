@@ -10,6 +10,7 @@
 
 const CHANNEL_NAME = 'rydercup-scoring-lock';
 const STORAGE_PREFIX = 'rydercup-scoring-session-';
+const STALE_SESSION_THRESHOLD_MS = 120000; // 2 minutes
 
 const isBroadcastSupported = typeof BroadcastChannel !== 'undefined';
 
@@ -39,7 +40,7 @@ export const acquire = (matchId, sessionId, userId) => {
   const existing = getSession(userId);
   if (existing && existing.sessionId !== sessionId) {
     // Check if the existing session is stale (older than 2 minutes)
-    if (Date.now() - existing.timestamp < 120000) {
+    if (Date.now() - existing.timestamp < STALE_SESSION_THRESHOLD_MS) {
       return false;
     }
   }
