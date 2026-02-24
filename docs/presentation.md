@@ -84,7 +84,7 @@ Backend: github.com/agustinEDev/RyderCupAm
 8. Frontend Architecture (Clean + DDD)
 9. Key Features & Workflows
 10. Frontend Security & i18n
-11. Testing Strategy (3,098 total tests)
+11. Testing Strategy (3,163 total tests)
 12. CI/CD Pipelines
 
 ### Part IV - Closing
@@ -127,7 +127,7 @@ Backend: github.com/agustinEDev/RyderCupAm
 <span>API Endpoints</span>
 </div>
 <div class="stat-box">
-<strong>3,098</strong>
+<strong>3,163</strong>
 <span>Total Tests</span>
 </div>
 <div class="stat-box">
@@ -159,7 +159,7 @@ Backend: github.com/agustinEDev/RyderCupAm
 ```
   ┌─────────────────────────────────────────────────────────────┐
   │                          FRONTEND                           │
-  │  React 19  |  Vite 7  |  Tailwind 4  |  1,485 tests         │
+  │  React 19  |  Vite 7  |  Tailwind 4  |  1,550 tests         │
   │  Clean Architecture  |  DDD  |  Zustand  |  i18n (EN/ES)    │
   └──────────────────────────┬──────────────────────────────────┘
                              │  66 REST API calls
@@ -175,7 +175,7 @@ Backend: github.com/agustinEDev/RyderCupAm
 | Metric | Frontend | Backend |
 |--------|:--------:|:-------:|
 | Architecture | Clean + DDD | Clean + DDD |
-| Tests | 1,485 | 1,613 |
+| Tests | 1,550 | 1,613 |
 | Coverage | 85%+ | 90% |
 | OWASP | 9.2/10 | 9.4/10 |
 
@@ -457,32 +457,32 @@ Plus: Database ERD, Threat Model, Runbook, Module docs, Security docs, CI/CD doc
 
 ```
   ┌────────────────────────────────────────────────────┐
-  │  PRESENTATION    23 Pages | 32 Components | Hooks  │
+  │  PRESENTATION    20 Pages | 48 Components | Hooks  │
   ├────────────────────────────────────────────────────┤
-  │  APPLICATION     59 Use Cases                      │
+  │  APPLICATION     64 Use Cases                      │
   ├────────────────────────────────────────────────────┤
-  │  DOMAIN          8 Entities | 21 VOs | Interfaces  │
+  │  DOMAIN          8 Entities | 22 VOs | Interfaces  │
   ├────────────────────────────────────────────────────┤
-  │  INFRASTRUCTURE  9 API Repos | Mappers (ACL)       │
+  │  INFRASTRUCTURE  12 API Repos | Mappers (ACL)      │
   └────────────────────────────────────────────────────┘
               Dependencies point INWARD only
 ```
 
 <div class="stat-grid">
 <div class="stat-box">
-<strong>280+</strong>
+<strong>328+</strong>
 <span>Source Files</span>
 </div>
 <div class="stat-box">
-<strong>~43K</strong>
+<strong>~50K</strong>
 <span>Lines of Code</span>
 </div>
 <div class="stat-box">
-<strong>59</strong>
+<strong>64</strong>
 <span>Use Cases</span>
 </div>
 <div class="stat-box">
-<strong>21</strong>
+<strong>22</strong>
 <span>Value Objects</span>
 </div>
 </div>
@@ -526,7 +526,7 @@ Plus: Database ERD, Threat Model, Runbook, Module docs, Security docs, CI/CD doc
 
 <div class="highlight">
 
-**Composition Root** (`src/composition/index.js`) wires all 59 use cases with their 9 repositories at startup, keeping all layers fully decoupled. Domain layer has zero external dependencies.
+**Composition Root** (`src/composition/index.js`) wires all 64 use cases with their 12 repositories at startup, keeping all layers fully decoupled. Domain layer has zero external dependencies.
 
 </div>
 
@@ -631,9 +631,11 @@ Plus: Database ERD, Threat Model, Runbook, Module docs, Security docs, CI/CD doc
 | `common` | Header, footer, shared |
 | `competitions` | Tournaments, enrollment |
 | `schedule` | Rounds, matches, teams |
+| `invitations` | Send, accept/decline |
+| `scoring` | Live scoring, leaderboard |
 | `golfCourses` | CRUD, approval |
 | `profile` | User profile |
-| `dashboard` | Dashboard |
+| `dashboard` | Dashboard, pending actions |
 | `devices` | Device management |
 | `landing` | Landing page |
 | `pricing` | Pricing plans |
@@ -655,7 +657,7 @@ Auto-detection + localStorage + flags
 <span>Backend Tests</span>
 </div>
 <div class="stat-box">
-<strong>1,485</strong>
+<strong>1,550</strong>
 <span>Frontend Tests</span>
 </div>
 <div class="stat-box-green">
@@ -728,7 +730,7 @@ Lint (Ruff)
 
 ```
 Lint (ESLint 9)
-  └─> Tests (Vitest, 1104)
+  └─> Tests (Vitest, 1550)
     └─> Coverage (>=85%)
       └─> Build (Vite)
         └─> Bundle budget (<=1400 KB)
@@ -745,30 +747,30 @@ Lint (ESLint 9)
 
 ---
 
-## 13. Roadmap - Upcoming Sprints
+## 13. Roadmap - Completed & Upcoming Sprints
 
 <div class="columns">
 <div class="col">
 
-### Sprint 3: Invitations (Feb 25 - Mar 3)
+### Sprint 3: Invitations (COMPLETED)
 
-- Invitation cards (accept/decline UI)
-- Email-based invitations by user ID or email
-- Invitation status tracking and badges
-- 5 new endpoints (secure tokens, auto-enrollment)
+- ✅ Invitation cards (accept/decline UI)
+- ✅ Email + user search invitations (tabbed modal)
+- ✅ Auto-redirect to competition on accept
+- ✅ 5 endpoints + auto-enrollment
 
-### Sprint 4: Live Scoring (Mar 4 - Mar 17)
+### Sprint 4: Live Scoring (COMPLETED)
 
-- Scoring page with **3 tabs**: Input, Scorecard, Leaderboard
-- Hole-by-hole score input with real-time validation
-- Dual validation (player + marker)
-- Scorecard submission workflow
-- Polling every 10s for live updates
+- ✅ 3-tab scoring page (Input, Scorecard, Leaderboard)
+- ✅ Dual validation (player + marker) with independent locking
+- ✅ Offline support + session lock per user
+- ✅ Dashboard pending actions card
+- ✅ 301 new tests (1,550 total)
 
 </div>
 <div class="col">
 
-### Sprint 5: Leaderboard (Mar 18 - Mar 24)
+### Sprint 5: Public Leaderboards (UPCOMING)
 
 - Public leaderboard page (no auth required)
 - Team standings bar (aggregate scores)
@@ -884,7 +886,7 @@ Eliminates XSS token theft entirely. Worth the extra CSRF handling.
 | HTTP | Fetch API | FastAPI async |
 | Validation | Zod schemas | Pydantic models |
 | Auth | httpOnly cookies | JWT + refresh tokens |
-| Testing | Vitest (1,485) | pytest (1,613) |
+| Testing | Vitest (1,550) | pytest (1,613) |
 | Monitoring | Sentry (errors) | Sentry (APM + profiling) |
 | CI/CD | GitHub Actions (3 workflows) | GitHub Actions (10 jobs) |
 | Docs | 11 ADRs + API spec | 37 ADRs + ERD + Runbook |
@@ -908,8 +910,8 @@ Eliminates XSS token theft entirely. Worth the extra CSRF handling.
 
 <div class="summary-grid">
 <div class="summary-card">
-<strong>3,098</strong>
-<span>Tests (1,485 FE + 1,613 BE)</span>
+<strong>3,163</strong>
+<span>Tests (1,550 FE + 1,613 BE)</span>
 </div>
 <div class="summary-card">
 <strong>9.2 / 9.4</strong>

@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Real-Time Scoring System
 
-Allows players to record hole-by-hole scores with cross-validation (player vs marker), view complete scorecard and competition leaderboard. Includes offline support, multi-device session locking and early match finish detection.
+Allows players to record hole-by-hole scores with cross-validation (player vs marker), view complete scorecard and competition leaderboard. Includes offline support, multi-device session locking, early match finish detection, independent scorecard submission, and UX improvements for invitations and dashboard.
 
 ### ✨ Added
 
@@ -19,25 +19,30 @@ Allows players to record hole-by-hole scores with cross-validation (player vs ma
 #### Domain Layer
 - **`HoleScore`** value object: Range 1-9 + null (ball picked up), validation in constructor with factory method `create()`
 - **`IScoringRepository`** interface: 5 methods (getScoringView, submitHoleScore, submitScorecard, getLeaderboard, concedeMatch)
+- **`IUserRepository`** extended: `searchUsers(query)` method for user search
 
 #### Infrastructure Layer
 - **`ScoringMapper`**: Anti-corruption layer snake_case API → camelCase DTOs. 3 methods: `toScoringViewDTO()`, `toLeaderboardDTO()`, `toMatchSummaryDTO()`. Try-catch for unknown fields, null-safe timestamps
 - **`ApiScoringRepository`**: REST implementation of 5 endpoints using `apiRequest()`
+- **`ApiUserRepository`** extended: `searchUsers(query)` endpoint implementation
 
 #### Application Layer
-- **5 use cases**: `GetScoringViewUseCase`, `SubmitHoleScoreUseCase` (validates with HoleScore VO), `SubmitScorecardUseCase`, `GetLeaderboardUseCase`, `ConcedeMatchUseCase`
-- **Composition Root**: `ApiScoringRepository` + 5 use cases injected via DI
+- **5 scoring use cases**: `GetScoringViewUseCase`, `SubmitHoleScoreUseCase` (validates with HoleScore VO), `SubmitScorecardUseCase`, `GetLeaderboardUseCase`, `ConcedeMatchUseCase`
+- **`SearchUsersUseCase`**: Search registered users by name/email (for invitation by user ID)
+- **Composition Root**: `ApiScoringRepository` + 5 scoring use cases + `SearchUsersUseCase` injected via DI
 
 #### i18n
 - Namespace `scoring` registered in config. Complete EN/ES translations (tabs, input, scorecard, leaderboard, modals, errors, validation)
+- Dashboard `pendingActions` keys added (EN/ES): title, invitations, enrollments, matches with pluralization
+- Invitation search keys added (EN/ES): tab labels, search placeholder, user search results
 
-#### UI Components (14 new in `src/components/scoring/`)
-- **`HoleInput`**: [-][+] buttons for own and marked score, range 1-9 + dash, par/SI/net/result/standing
+#### UI Components (14 scoring + 1 dashboard + 1 invitation enhancement)
+- **`HoleInput`**: [-][+] buttons for own and marked score, range 1-9 + dash, par/SI/net/result/standing. Team names display instead of letter identifiers. Independent locking for own vs marker scores
 - **`HoleSelector`**: 1-18 grid with per-hole status indicators (completed, pending, mismatch)
-- **`ScorecardTable`**: OUT (1-9) + IN (10-18) + Total table, all match players, subtotals
+- **`ScorecardTable`**: OUT (1-9) + IN (10-18) + Total table, all match players, subtotals. Team names and color coding
 - **`GolfFigure`**: Classic concentric SVG: double-circle eagle, circle birdie, number par, square bogey, double-square double+
 - **`ValidationIcon`**: Validation icon only (match/mismatch/pending)
-- **`LeaderboardView`**: Ryder Cup points, large head-to-head numbers, "In Progress" / "Completed" sections. Reusable for Sprint 5 (public)
+- **`LeaderboardView`**: Ryder Cup points, large head-to-head numbers, "In Progress" / "Completed" sections. Conceded match display. Proper golf notation (X&Y format)
 - **`TeamStandingsHeader`**: Large head-to-head team points numbers
 - **`PreMatchInfo`**: Pre-match screen "You mark X, Y marks you" + match format
 - **`MatchSummaryCard`**: Final result + basic stats post-submit
@@ -46,36 +51,52 @@ Allows players to record hole-by-hole scores with cross-validation (player vs ma
 - **`SubmitScorecardModal`**: Scorecard submission confirmation (validated holes / total)
 - **`OfflineBanner`**: "No connection" banner with pending queue counter
 - **`SessionBlockedModal`**: "Active session on another device" with option to take control
+- **`PendingActionsCard`** (dashboard): Amber/orange gradient card showing pending invitations, enrollment requests (creators), and upcoming matches with navigation links
+- **`SendInvitationModal`** enhanced: Tabbed interface with "Search User" + "Email" tabs. Server-side user search with debouncing for inviting registered users by ID
 
 #### Hooks and Utilities
-- **`useScoring`** hook: Central scoring state, polling every 10s, auto-save, offline queue, session locking
+- **`useScoring`** hook: Central scoring state, polling every 10s, auto-save, offline queue, session locking. Independent scorecard submission with partial locking (own vs marker scores). User-scoped session lock
 - **`scoringOfflineQueue`**: localStorage queue (enqueue, dequeue, getByMatch, remove, size, clear)
-- **`scoringSessionLock`**: BroadcastChannel lock (acquire, release, refresh, onLockEvent). Pattern reused from `broadcastAuth.js`
+- **`scoringSessionLock`**: BroadcastChannel lock (acquire, release, refresh, onLockEvent) with forceRelease for orphaned locks. User-scoped instead of global
 
 #### Pages
-- **`ScoringPage`** (`/player/matches/:matchId/scoring`): 3 tabs (Input, Scorecard, Leaderboard), useScoring hook, modals, read-only for spectators
-- **`LeaderboardPage`** (`/competitions/:id/leaderboard`): Public page, reuses LeaderboardView, polling 30s
+- **`ScoringPage`** (`/player/matches/:matchId/scoring`): 3 tabs (Input, Scorecard, Leaderboard), useScoring hook, modals, read-only for spectators. Team names in match standing. Auto-submit par defaults when navigating between holes
+- **`LeaderboardPage`** (`/competitions/:id/leaderboard`): Public page, reuses LeaderboardView, polling 30s. Context-aware back navigation. Conditional header (public vs authenticated)
+- **`Dashboard`**: Integrated `PendingActionsCard` between email verification banner and statistics cards
+- **`MyInvitationsPage`**: Auto-redirect to competition detail after accepting invitation
 
 #### Navigation and Integration
 - **`App.jsx`**: 2 lazy-loaded routes (protected ScoringPage, public LeaderboardPage)
 - **`MatchCard.jsx`**: "Score" button for IN_PROGRESS matches → `/player/matches/{id}/scoring`
 - **`SchedulePage.jsx`**: `handleScoreMatch` handler passed to RoundCard → MatchCard
-- **`CompetitionDetail.jsx`**: "Leaderboard" button → `/competitions/{id}/leaderboard`
+- **`CompetitionDetail.jsx`**: "Leaderboard" button accessible to all users (not just creators). Navigation state tracking for back button routing
+
+### 🔧 Fixed
+- **Team names in HoleInput**: `holeResult.winner` showed "A"/"B" instead of actual team names
+- **Team names in EarlyEndModal**: `decidedResult.winner` mapped to actual team name
+- **Independent scorecard submission**: Split `isReadOnly` into `isOwnScoreLocked` + `isMarkerScoreLocked`. Own scores lock after player submits, marker scores lock only when marked player submits
+- **Session lock orphans**: `window.location.reload()` didn't release React lock. Fixed with `forceRelease()` + `takeOverSession()` (no reload needed)
+- **"AS" text confusing**: Changed "AS" abbreviation to "All Square" (EN) / "Empate" (ES)
+- **Session lock scoped per user**: Prevents cross-user lock interference
+- **Leaderboard public access**: Made accessible to all users, not just creators
+- **Dynamic back navigation**: LeaderboardPage navigates back based on access context
+- **Match score format**: Decided matches show proper Ryder Cup format "5&4" instead of "5UP"
+- **Conceded match display**: Leaderboard shows conceded matches with team name
 
 ### ✅ Tests
-- **236 new tests** (1485 total passing, 1 skipped)
+- **301 new tests** (1550 total passing, 1 skipped)
 - Domain: 12 tests (HoleScore VO)
-- Infrastructure: 28 tests (ScoringMapper 15, ApiScoringRepository 13)
-- Application: 40 tests (5 use cases × ~8 tests)
+- Infrastructure: 33 tests (ScoringMapper 15, ApiScoringRepository 13, ApiUserRepository 5)
+- Application: 44 tests (5 scoring use cases + SearchUsersUseCase)
 - Hooks + Utils: 40 tests (useScoring 20, offlineQueue 12, sessionLock 8)
-- Components: 93 tests (14 components)
-- Pages: 23 tests (ScoringPage 15, LeaderboardPage 8)
+- Components: 118 tests (14 scoring + PendingActionsCard 9 + SendInvitationModal enhancements)
+- Pages: 54 tests (ScoringPage 15, LeaderboardPage 15, MyInvitationsPage 6, InvitationsPage enhancements)
 
 ### 📊 Stats
-- **Files created:** 58
-- **Files modified:** 9
+- **Files created:** 60
+- **Files modified:** 28
 - **Bundle:** 366.66 KB initial (within 1500 KB max budget)
-- **Backend not implemented yet** — frontend will show 404s for API calls (expected)
+- **Backend endpoints:** All 5 scoring endpoints implemented and tested
 
 ---
 

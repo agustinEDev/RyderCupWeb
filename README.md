@@ -9,7 +9,7 @@
 [![Vite](https://img.shields.io/badge/Vite-7.3-646CFF?style=for-the-badge&logo=vite&logoColor=white)](.)  
 [![Tailwind](https://img.shields.io/badge/Tailwind-4-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](.)  
 
-[![Tests](https://img.shields.io/badge/tests-1485%20passing-00C853?style=for-the-badge&logo=vitest&logoColor=white)](.)  
+[![Tests](https://img.shields.io/badge/tests-1550%20passing-00C853?style=for-the-badge&logo=vitest&logoColor=white)](.)
 [![Coverage](https://img.shields.io/badge/coverage-85%25+-success?style=for-the-badge&logo=codecov)](.)
 [![OWASP](https://img.shields.io/badge/OWASP-9.2%2F10-4CAF50?style=for-the-badge&logo=owasp)](https://owasp.org/www-project-top-ten/)
 [![Bundle](https://img.shields.io/badge/bundle-1308%20KB-blueviolet?style=for-the-badge&logo=webpack)](.)
@@ -29,13 +29,13 @@
 
 ### 🎯 Key Highlights
 
-- ✅ **66 API integrations** with the backend REST API
-- ✅ **1,485 tests** passing (100% success rate)
+- ✅ **71 API integrations** with the backend REST API
+- ✅ **1,550 tests** passing (100% success rate)
 - ✅ **OWASP Top 10 Score: 9.2/10** - Production-grade security
 - ✅ **Clean Architecture** - 4-layer separation with DDD patterns + Composition Root DI
-- ✅ **21 Value Objects** enforcing domain invariants
-- ✅ **58 Use Cases** covering all business operations
-- ✅ **Bilingual** (English + Spanish) with 12 i18n namespaces
+- ✅ **22 Value Objects** enforcing domain invariants
+- ✅ **64 Use Cases** covering all business operations
+- ✅ **Bilingual** (English + Spanish) with 14 i18n namespaces
 - ✅ **Bundle: 1,308 KB** (within 1,400 KB CI budget)
 - ✅ **3 CI/CD workflows** - GitHub Actions pipeline
 
@@ -171,10 +171,14 @@ npm run preview   # Preview locally
 **v2.0.12 (Sprint 4 - Live Scoring - Feb 2026)**
 - ✅ **Live Scoring UI**: Hole-by-hole annotation with 3-tab interface (Input, Scorecard, Leaderboard)
 - ✅ **Marker System**: Reciprocal markers (singles) + distributed markers (team formats)
-- ✅ **Score Validation**: Visual indicators (✓/✗/○) for match/mismatch/pending states
+- ✅ **Score Validation**: Visual indicators for match/mismatch/pending states
+- ✅ **Independent Scorecard Submission**: Own and marker scores lock independently
 - ✅ **Match Concede**: Early end modal with concession tracking
 - ✅ **Offline Support**: Queue scores when offline, auto-sync on reconnect
-- ✅ **Session Lock**: Prevent multi-device conflicts with session blocking
+- ✅ **Session Lock**: User-scoped multi-device conflict prevention
+- ✅ **Dashboard Pending Actions**: Card showing pending invitations, enrollment requests, upcoming matches
+- ✅ **Invitation Auto-redirect**: Navigate to competition after accepting invitation
+- ✅ **User Search Invitations**: Search registered users by name/email for invitations
 
 **v2.0.11 (Sprint 3 - Invitations - Feb 2026)**
 - ✅ **Invitation System**: Email invitations with secure tokens
@@ -200,22 +204,22 @@ npm run preview   # Preview locally
 src/
 ├── domain/              # Entities, VOs, Repository Interfaces
 │   ├── entities/        #   8 domain entities
-│   ├── value_objects/   #  21 value objects
+│   ├── value_objects/   #  22 value objects
 │   └── repositories/    #   Repository interfaces (ports)
-├── application/         # Use Cases (58 total)
-│   └── use_cases/       #   6 domain areas
+├── application/         # Use Cases (64 total)
+│   └── use_cases/       #   7 domain areas
 ├── infrastructure/      # API Repos, Mappers (ACL)
-│   ├── repositories/    #  11 API repositories (adapters)
+│   ├── repositories/    #  12 API repositories (adapters)
 │   └── mappers/         #   Anti-corruption layer
-├── pages/               # 18 route pages
+├── pages/               # 20 route pages
 │   ├── admin/           #   Users, golf course approval
-│   ├── creator/         #   Schedule management
+│   ├── creator/         #   Schedule, invitations management
 │   └── public/          #   Leaderboard, Pricing, Contact, Terms, Privacy, Cookies
-├── components/          # 32 reusable components
+├── components/          # 48 reusable components
 ├── hooks/               # Custom React hooks
 ├── store/               # Zustand stores (auth, competition)
 ├── composition/         # Dependency injection (Composition Root)
-├── i18n/                # 12 namespaces × 2 languages
+├── i18n/                # 14 namespaces × 2 languages
 └── utils/               # Sentry, validation, token refresh
 ```
 
@@ -240,15 +244,15 @@ src/
 
 | Metric | Value |
 |--------|-------|
-| Source files | 268 |
-| Lines of code | ~41,000 |
-| Test files | 82 |
+| Source files | 328 |
+| Lines of code | ~50,000 |
+| Test files | 130 |
 | Domain entities | 8 |
-| Value objects | 21 |
-| Use cases | 58 |
-| API repositories | 11 |
-| Components | 32 |
-| Pages | 18 |
+| Value objects | 22 |
+| Use cases | 64 |
+| API repositories | 12 |
+| Components | 48 |
+| Pages | 20 |
 
 ---
 
@@ -258,18 +262,18 @@ src/
 
 | Category | Tests | Status | Coverage |
 |----------|-------|--------|----------|
-| **Total** | **1,485** | ✅ 100% passing | 85%+ |
-| Domain | ~412 | ✅ 100% | Entity invariants, VO validation |
-| Application | ~390 | ✅ 100% | Use case orchestration |
-| Infrastructure | ~228 | ✅ 100% | Mapper transformations |
-| Hooks/Utils | ~156 | ✅ 100% | Custom hooks, utilities |
-| Components/Pages | ~299 | ✅ 100% | UI components, integration |
+| **Total** | **1,550** | ✅ 100% passing | 85%+ |
+| Domain | ~424 | ✅ 100% | Entity invariants, VO validation |
+| Application | ~434 | ✅ 100% | Use case orchestration |
+| Infrastructure | ~261 | ✅ 100% | Mapper transformations |
+| Hooks/Utils | ~196 | ✅ 100% | Custom hooks, utilities |
+| Components/Pages | ~235 | ✅ 100% | UI components, integration |
 
 ### Quality Gates
 
 | Gate | Threshold | Current |
 |------|-----------|---------|
-| Tests | 100% pass | 1,485/1,485 |
+| Tests | 100% pass | 1,550/1,550 |
 | Branch coverage | >= 70% | Achieved |
 | Bundle size | <= 1,400 KB | 1,308 KB |
 | ESLint errors | 0 | 0 |
@@ -331,9 +335,9 @@ src/
 
 ## 🌍 Internationalization
 
-**12 namespaces** with full English + Spanish coverage:
+**14 namespaces** with full English + Spanish coverage:
 
-`auth` | `common` | `competitions` | `contact` | `dashboard` | `devices` | `golfCourses` | `landing` | `legal` | `pricing` | `profile` | `schedule`
+`auth` | `common` | `competitions` | `contact` | `dashboard` | `devices` | `golfCourses` | `invitations` | `landing` | `legal` | `pricing` | `profile` | `schedule` | `scoring`
 
 - ✅ Automatic browser language detection
 - ✅ localStorage persistence
@@ -347,12 +351,12 @@ src/
 
 ## 📡 API Integration
 
-This frontend consumes **66 REST API endpoints** organized across 13 domain areas:
+This frontend consumes **71 REST API endpoints** organized across 15 domain areas:
 
 | Domain | Endpoints | Description |
 |--------|-----------|-------------|
 | Authentication | 11 | Register, login, tokens, password reset, account unlock |
-| Users | 4 | Profile, security, role queries |
+| Users | 5 | Profile, security, role queries, user search |
 | Devices | 2 | Fingerprinting, remote revocation |
 | Handicaps | 3 | Manual + RFEG integration |
 | Competitions | 10 | CRUD + state machine transitions |
@@ -362,6 +366,8 @@ This frontend consumes **66 REST API endpoints** organized across 13 domain area
 | Schedule & Rounds | 4 | Round CRUD, schedule queries |
 | Matches | 4 | Status, walkover, player reassignment |
 | Teams & Generation | 3 | Team assignment, match generation |
+| Invitations | 5 | Send, list, respond to invitations |
+| Scoring | 5 | Scoring view, hole scores, scorecard, leaderboard, concede |
 | Countries | 2 | Country list, adjacent countries |
 | Support | 1 | Public contact form (`POST /api/v1/support/contact`) |
 
@@ -394,10 +400,13 @@ npm run lint             # ESLint
 **Latest Features** (Sprint 4 - Feb 2026):
 - **Live Scoring System**: Hole-by-hole annotation with marker validation
 - **Score Input UI**: 3-tab interface (Input, Scorecard, Leaderboard)
+- **Independent Scorecard Submission**: Partial locking (own vs marker scores)
 - **Match Concede Flow**: Early end with concession tracking
 - **Offline Support**: Queue scores when offline, auto-sync on reconnect
-- **Session Management**: Multi-device conflict prevention
-- **Total: 1,485 tests** passing - **Bundle: 1,308 KB**
+- **Session Management**: User-scoped multi-device conflict prevention
+- **Dashboard Pending Actions**: Actionable items card (invitations, enrollments, matches)
+- **User Search Invitations**: Tabbed modal with user search + email invite
+- **Total: 1,550 tests** passing - **Bundle: 1,308 KB**
 
 ### Sprint History
 
@@ -405,7 +414,7 @@ npm run lint             # ESLint
 1. ✅ **Sprint 1** (Jan 27-31): Golf Courses + RBAC
 2. ✅ **Sprint 2** (Feb 3-8): Schedule & Matches + Enrollment
 3. ✅ **Sprint 3** (Feb 2026): Invitations System
-4. ✅ **Sprint 4** (Feb 2026): Live Scoring (CURRENT)
+4. ✅ **Sprint 4** (Feb 2026): Live Scoring (COMPLETE)
 5. 🔄 **Sprint 5** (Mar 2026): Public Leaderboards
 
 See [ROADMAP.md](ROADMAP.md) for complete version planning.

@@ -1,8 +1,8 @@
 # 🗺️ Roadmap - RyderCupFriends Frontend
 
 > **Version:** 1.15.0 → 1.16.0 → 2.0.0 → 2.0.4 → 2.0.5 → 2.0.6 → 2.0.9 → 2.0.10 → 2.0.11 → 2.0.12 (synchronized with backend)
-> **Last Update:** Feb 19, 2026
-> **Status:** ✅ v2.0.0 Sprint 1 Completed | ✅ v2.0.4 Sprint 2 + Infra Completed | ✅ v2.0.5 Hotfix UI | ✅ v2.0.6 Sprint 2 Schedule COMPLETED | ✅ v2.0.9 Clean Architecture | ✅ v2.0.10 Manual Pairings | ✅ v2.0.11 Sprint 3 Invitations | 🔄 v2.0.12 Sprint 4 Live Scoring IN PROGRESS
+> **Last Update:** Feb 24, 2026
+> **Status:** ✅ v2.0.0 Sprint 1 Completed | ✅ v2.0.4 Sprint 2 + Infra Completed | ✅ v2.0.5 Hotfix UI | ✅ v2.0.6 Sprint 2 Schedule COMPLETED | ✅ v2.0.9 Clean Architecture | ✅ v2.0.10 Manual Pairings | ✅ v2.0.11 Sprint 3 Invitations | ✅ v2.0.12 Sprint 4 Live Scoring COMPLETE
 > **Stack:** React 19 + Vite 7.3 + Tailwind CSS 4 + ESLint 9
 > **Architecture:** Subdomain (www + api) with Cloudflare Proxy (ADR-011)
 
@@ -119,7 +119,7 @@ const CompetitionActions = ({ competitionId }) => {
 | Sprint 1 | Jan 27 - Feb 6  | 60h       | 10        | ✅ Friday Jan 30 | ✅ COMPLETED | v2.0.0   |
 | Sprint 2 | Feb 3 - Feb 17  | 70h       | 11        | ✅ Friday Feb 4  | ✅ COMPLETED  | v2.0.10  |
 | Sprint 3 | Feb 18 - Feb 24 | 48h       | 5         | ✅ Friday Feb 20 | ✅ COMPLETED  | v2.0.11  |
-| Sprint 4 | Feb 25 - Mar 10 | 92h       | 5         | 🔄 Friday Mar 6  | 🔄 IN PROGRESS | v2.0.12  |
+| Sprint 4 | Feb 25 - Mar 10 | 92h       | 5         | ✅ Friday Mar 6  | ✅ COMPLETED | v2.0.12  |
 | Sprint 5 | Mar 11 - Mar 17 | 60h       | 2         | 🔄 Friday Mar 13 | 📋 Pending  | v2.0.7   |
 | **TOTAL**| **7 weeks**     | **330h**  | **31**    |                   |               |          |
 
@@ -133,7 +133,7 @@ const CompetitionActions = ({ competitionId }) => {
 
 | Sprint 2 | ✅ `GET /competitions/{id}/schedule`<br>✅ `POST /competitions/{id}/schedule/configure`<br>✅ `POST /competitions/{id}/teams`<br>✅ `POST /competitions/{id}/rounds`<br>✅ `PUT /rounds/{id}`<br>✅ `DELETE /rounds/{id}`<br>✅ `POST /rounds/{id}/matches/generate`<br>✅ `GET /matches/{id}`<br>✅ `PUT /matches/{id}/status`<br>✅ `POST /matches/{id}/walkover`<br>✅ `PUT /matches/{id}/players` | ✅ Backend Integration Layer (11 endpoints)<br>✅ Domain Layer (6 VOs + 3 Entities)<br>✅ Infrastructure (Mapper + Repository)<br>✅ 11 Use Cases + Composition Root<br>✅ i18n (EN/ES schedule namespace)<br>✅ UI: Schedule page + Round/Match cards<br>✅ UI: Manual pairings modal<br>✅ UI: Match detail modal<br>✅ UI: Manual status control<br>✅ Clean Architecture remediation | Feb 17, 2026 | ✅ **COMPLETED** |
 | Sprint 3 | `POST /competitions/{id}/invitations`<br>`POST /competitions/{id}/invitations/by-email`<br>`GET /invitations/me`<br>`POST /invitations/{id}/respond`<br>`GET /competitions/{id}/invitations` | ✅ Backend API contract (`docs/INVITATIONS_API_CONTRACT.md`)<br>✅ Domain layer (InvitationStatus VO, Invitation entity, IInvitationRepository)<br>✅ Infrastructure (InvitationMapper, ApiInvitationRepository)<br>✅ 5 use cases + InvitationAssembler<br>✅ i18n (EN/ES invitations namespace)<br>✅ UI: InvitationBadge, InvitationCard, SendInvitationModal<br>✅ Creator InvitationsPage + Player MyInvitationsPage<br>✅ Navigation integration (HeaderAuth + CompetitionDetail)<br>✅ 95 new tests (1249 total) | Friday Feb 21 | ✅ Frontend ready, backend pending |
-| Sprint 4 | `GET /matches/{id}/scoring-view`<br>`POST /matches/{id}/scores/holes/{hole_number}`<br>`POST /matches/{id}/scorecard/submit`<br>`GET /competitions/{id}/leaderboard`<br>`PUT /matches/{id}/status` (concede action) | ✅ Backend API contract (`docs/SCORING_API_CONTRACT.md`)<br>✅ Domain layer (HoleScore VO, IScoringRepository)<br>✅ Infrastructure (ScoringMapper, ApiScoringRepository)<br>✅ 5 use cases + Composition Root DI<br>✅ i18n (EN/ES scoring namespace)<br>✅ UI: 14 scoring components (HoleInput, ScorecardTable, LeaderboardView, etc.)<br>✅ ScoringPage (3 tabs) + LeaderboardPage (public)<br>✅ useScoring hook + offline queue + session lock<br>✅ Navigation (MatchCard, SchedulePage, CompetitionDetail)<br>✅ 236 new tests (1485 total) | Friday Mar 7 | 🔄 Frontend ready, backend pending |
+| Sprint 4 | ✅ `GET /matches/{id}/scoring-view`<br>✅ `POST /matches/{id}/scores/holes/{hole_number}`<br>✅ `POST /matches/{id}/scorecard/submit`<br>✅ `GET /competitions/{id}/leaderboard`<br>✅ `PUT /matches/{id}/status` (concede action) | ✅ Backend API contract (`docs/SCORING_API_CONTRACT.md`)<br>✅ Domain layer (HoleScore VO, IScoringRepository, IUserRepository)<br>✅ Infrastructure (ScoringMapper, ApiScoringRepository, ApiUserRepository)<br>✅ 6 use cases + Composition Root DI<br>✅ i18n (EN/ES scoring + dashboard + invitations)<br>✅ UI: 16 scoring/dashboard components<br>✅ ScoringPage (3 tabs) + LeaderboardPage (public)<br>✅ PendingActionsCard + auto-redirect on accept<br>✅ useScoring hook + offline queue + session lock<br>✅ 2 rounds of bugfixes (team names, locking, score format)<br>✅ 301 new tests (1550 total) | Friday Mar 7 | ✅ Frontend + backend complete |
 | Sprint 5 | `GET /competitions/{id}/leaderboard`                                                                                    | Public leaderboard<br>Polling (30s)                                                               | Friday Mar 14 | 📋 Pending |
 
 _⭐ = New endpoints added by backend._
@@ -420,10 +420,10 @@ Backend team must implement the 5 endpoints defined in `docs/INVITATIONS_API_CON
 
 ### 🔄 v2.0.12 - Live Scoring System (Sprint 4)
 
-> **Status:** 🔄 Frontend complete, backend pending
+> **Status:** 🔄 Frontend complete, backend complete
 > **Branch:** `feature/sprint-4-live-scoring`
-> **Frontend Effort:** ~40h
-> **Tests:** 236 new tests (1485 total passing, 1 skipped)
+> **Frontend Effort:** ~50h
+> **Tests:** 301 new tests (1550 total passing, 1 skipped)
 
 #### 🎯 Goals
 
@@ -455,47 +455,62 @@ Backend team must implement the 5 endpoints defined in `docs/INVITATIONS_API_CON
 
 5. **i18n + Hooks + Utilities**
    - Namespace `scoring` (complete EN/ES)
-   - `useScoring` hook: central state, 10s polling, auto-save, offline queue, session lock
+   - Dashboard `pendingActions` keys (EN/ES) with pluralization
+   - Invitation search keys (EN/ES) for user search tabs
+   - `useScoring` hook: central state, 10s polling, auto-save, offline queue, user-scoped session lock, independent scorecard submission
    - `scoringOfflineQueue`: localStorage queue for offline mode
-   - `scoringSessionLock`: BroadcastChannel for multi-device lock
+   - `scoringSessionLock`: BroadcastChannel for multi-device lock with forceRelease
 
-6. **UI Components (14 new)**
-   - `HoleInput`: [-][+] buttons, own score + marked, visual validation
+6. **UI Components (14 scoring + 2 enhancements)**
+   - `HoleInput`: [-][+] buttons, own score + marked, visual validation, team names, independent locking
    - `HoleSelector`: 1-18 grid with state indicators
-   - `ScorecardTable`: OUT/IN/Total table with all players
+   - `ScorecardTable`: OUT/IN/Total table with all players, team names and color coding
    - `GolfFigure`: classic concentric SVG (eagle/birdie/par/bogey/double+)
    - `ValidationIcon`: validation icon (match/mismatch/pending)
-   - `LeaderboardView`: reusable for Sprint 5 (public)
+   - `LeaderboardView`: Ryder Cup points, conceded match display, proper golf notation (X&Y)
    - `TeamStandingsHeader`: facing team points
    - `PreMatchInfo`: "You mark X, Y marks you"
    - `MatchSummaryCard`: final result + stats
    - 5 modals: EarlyEnd, ConcedeMatch, SubmitScorecard, OfflineBanner, SessionBlocked
+   - `PendingActionsCard` (dashboard): pending invitations, enrollment requests (creators), upcoming matches
+   - `SendInvitationModal` enhanced: tabbed interface with user search + email tabs
 
 7. **Pages + Navigation**
-   - `ScoringPage` (`/player/matches/:matchId/scoring`): 3 tabs, read-only spectators
-   - `LeaderboardPage` (`/competitions/:id/leaderboard`): public, 30s polling
+   - `ScoringPage` (`/player/matches/:matchId/scoring`): 3 tabs, read-only spectators, team names, auto-submit par defaults
+   - `LeaderboardPage` (`/competitions/:id/leaderboard`): public, 30s polling, context-aware back navigation
+   - `Dashboard`: integrated PendingActionsCard for actionable items
+   - `MyInvitationsPage`: auto-redirect to competition detail after accepting invitation
    - "Score" button in MatchCard for IN_PROGRESS matches
-   - "Leaderboard" button in CompetitionDetail
+   - "Leaderboard" button in CompetitionDetail (accessible to all users)
+
+8. **Bugfixes (2 rounds)**
+   - Team names display instead of letter identifiers (HoleInput, EarlyEndModal, ScorecardTable)
+   - Independent scorecard submission with partial locking (own vs marker scores)
+   - Session lock orphan prevention with forceRelease + user-scoped locks
+   - "AS" abbreviation replaced with "All Square" / "Empate"
+   - Match score format corrected to Ryder Cup notation (X&Y instead of XUP)
+   - Leaderboard made publicly accessible to all users
+   - Conceded match display in leaderboard
 
 #### 📊 Sprint 4 Statistics
 
-- **Created files:** 58
-- **Modified files:** 9
+- **Created files:** 60
+- **Modified files:** 28
 - **Value Objects:** 1 new (HoleScore)
-- **Use Cases:** 5 new
-- **UI Components:** 14 new (scoring)
-- **Pages:** 2 new (ScoringPage, LeaderboardPage)
+- **Use Cases:** 6 new (5 scoring + SearchUsersUseCase)
+- **UI Components:** 16 new/enhanced (14 scoring + PendingActionsCard + SendInvitationModal)
+- **Pages:** 2 new (ScoringPage, LeaderboardPage) + 2 enhanced (Dashboard, MyInvitationsPage)
 - **Hooks:** 1 new (useScoring)
 - **Utilities:** 2 new (offlineQueue, sessionLock)
-- **Tests:** 236 new (1485 total passing, 1 skipped)
+- **Tests:** 301 new (1550 total passing, 1 skipped)
 - **Bundle:** 366.66 KB initial (within 1500 KB max budget)
 
-#### 📋 Pending: Backend
+#### ✅ Backend: Complete
 
-Backend team must implement the 5 endpoints defined in `docs/SCORING_API_CONTRACT.md`:
-1. `GET /api/v1/matches/{id}/scoring-view` — Unified scoring view (3 tabs)
-2. `POST /api/v1/matches/{id}/scores/holes/{hole_number}` — Submit hole score
-3. `POST /api/v1/matches/{id}/scorecard/submit` — Submit final scorecard
+All 5 scoring endpoints implemented and tested (2170 backend tests passing):
+1. `GET /api/v1/competitions/matches/{id}/scoring-view` — Unified scoring view (3 tabs)
+2. `POST /api/v1/competitions/matches/{id}/scores/holes/{hole_number}` — Submit hole score
+3. `POST /api/v1/competitions/matches/{id}/scorecard/submit` — Submit final scorecard
 4. `GET /api/v1/competitions/{id}/leaderboard` — Competition leaderboard
 5. `PUT /api/v1/matches/{id}/status` (action `concede`) — Concede match
 
