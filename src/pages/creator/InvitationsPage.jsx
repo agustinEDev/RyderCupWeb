@@ -12,6 +12,8 @@ import {
   getCompetitionDetailUseCase,
   listCompetitionInvitationsUseCase,
   sendInvitationByEmailUseCase,
+  sendInvitationUseCase,
+  searchUsersUseCase,
 } from '../../composition';
 
 const InvitationsPage = () => {
@@ -77,6 +79,29 @@ const InvitationsPage = () => {
     } finally {
       setIsProcessing(false);
     }
+  };
+
+  const handleSendByUserId = async (userId, personalMessage) => {
+    setIsProcessing(true);
+    try {
+      await sendInvitationUseCase.execute(id, userId, personalMessage);
+      customToast.success(t('success.sent'));
+      setShowSendModal(false);
+      await loadData();
+    } catch (error) {
+      console.error('Error sending invitation:', error);
+      if (error.message?.includes('409')) {
+        customToast.error(t('errors.duplicateInvitation'));
+      } else {
+        customToast.error(error.message || t('errors.failedToSend'));
+      }
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleSearchUsers = async (query) => {
+    return searchUsersUseCase.execute(query);
   };
 
   const isPageLoading = isLoadingUser || isLoadingRoles || isLoading;
@@ -175,6 +200,8 @@ const InvitationsPage = () => {
         isOpen={showSendModal}
         onClose={() => setShowSendModal(false)}
         onSend={handleSendInvitation}
+        onSendByUserId={handleSendByUserId}
+        onSearchUsers={handleSearchUsers}
         isProcessing={isProcessing}
         t={t}
       />

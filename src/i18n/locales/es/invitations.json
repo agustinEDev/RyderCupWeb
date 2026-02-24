@@ -4,6 +4,12 @@
   "noInvitations": "No hay invitaciones todavia",
   "send": {
     "title": "Enviar invitacion",
+    "tabSearchUser": "Buscar usuario",
+    "tabByEmail": "Por email",
+    "searchPlaceholder": "Buscar por nombre o email...",
+    "searchMinChars": "Escribe al menos 2 caracteres",
+    "noUsersFound": "No se encontraron usuarios",
+    "noUserSelected": "Por favor, selecciona un usuario primero",
     "emailPlaceholder": "Introduce el email del jugador",
     "personalMessage": "Mensaje personal (opcional)",
     "personalMessagePlaceholder": "Anade un mensaje personal a la invitacion...",

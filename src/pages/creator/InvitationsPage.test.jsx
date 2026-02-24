@@ -44,11 +44,15 @@ const mockListCompetitionInvitations = vi.fn().mockResolvedValue({
 });
 
 const mockSendInvitationByEmail = vi.fn();
+const mockSendInvitation = vi.fn();
+const mockSearchUsers = vi.fn().mockResolvedValue([]);
 
 vi.mock('../../composition', () => ({
   getCompetitionDetailUseCase: { execute: (...args) => mockGetCompetitionDetail(...args) },
   listCompetitionInvitationsUseCase: { execute: (...args) => mockListCompetitionInvitations(...args) },
   sendInvitationByEmailUseCase: { execute: (...args) => mockSendInvitationByEmail(...args) },
+  sendInvitationUseCase: { execute: (...args) => mockSendInvitation(...args) },
+  searchUsersUseCase: { execute: (...args) => mockSearchUsers(...args) },
 }));
 
 vi.mock('../../utils/toast', () => ({

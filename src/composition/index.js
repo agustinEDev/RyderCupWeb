@@ -4,6 +4,7 @@ import ApiUserRepository from '../infrastructure/repositories/ApiUserRepository'
 import UpdateUserProfileUseCase from '../application/use_cases/user/UpdateUserProfileUseCase';
 import UpdateUserSecurityUseCase from '../application/use_cases/user/UpdateUserSecurityUseCase';
 import GetUserRolesUseCase from '../application/use_cases/user/GetUserRolesUseCase';
+import SearchUsersUseCase from '../application/use_cases/user/SearchUsersUseCase';
 import ApiAuthRepository from '../infrastructure/repositories/ApiAuthRepository';
 import LoginUseCase from '../application/use_cases/user/LoginUseCase';
 import RegisterUseCase from '../application/use_cases/user/RegisterUseCase';
@@ -127,6 +128,7 @@ const apiInvitationRepository = new ApiInvitationRepository();
 const updateUserProfileUseCase = new UpdateUserProfileUseCase({ userRepository: apiUserRepository });
 const updateUserSecurityUseCase = new UpdateUserSecurityUseCase({ userRepository: apiUserRepository });
 const getUserRolesUseCase = new GetUserRolesUseCase({ userRepository: apiUserRepository });
+const searchUsersUseCase = new SearchUsersUseCase({ userRepository: apiUserRepository });
 const updateManualHandicapUseCase = new UpdateManualHandicapUseCase({ handicapRepository: apiHandicapRepository });
 const updateRfegHandicapUseCase = new UpdateRfegHandicapUseCase({
   handicapRepository: apiHandicapRepository,
@@ -223,6 +225,7 @@ export {
   updateUserProfileUseCase,
   updateUserSecurityUseCase,
   getUserRolesUseCase,
+  searchUsersUseCase,
   updateManualHandicapUseCase,
   updateRfegHandicapUseCase,
   loginUseCase,
