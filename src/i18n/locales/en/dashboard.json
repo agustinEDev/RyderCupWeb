@@ -22,5 +22,20 @@
     "myProfileDesc": "View and update your information",
     "browseCompetitions": "Browse Competitions",
     "browseCompetitionsDesc": "Discover tournaments to join"
+  },
+  "pendingActions": {
+    "title": "Requires Your Attention",
+    "invitations": "Pending Invitations",
+    "invitations_one": "{{count}} pending invitation",
+    "invitations_other": "{{count}} pending invitations",
+    "viewInvitations": "View Invitations",
+    "enrollments": "Enrollment Requests",
+    "enrollments_one": "{{count}} enrollment request in {{name}}",
+    "enrollments_other": "{{count}} enrollment requests in {{name}}",
+    "viewCompetition": "Manage",
+    "matches": "Upcoming Matches",
+    "matches_one": "{{count}} upcoming match",
+    "matches_other": "{{count}} upcoming matches",
+    "viewSchedule": "View Schedule"
   }
 }

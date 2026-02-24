@@ -22,5 +22,20 @@
     "myProfileDesc": "Ver y actualizar tu información",
     "browseCompetitions": "Explorar Competiciones",
     "browseCompetitionsDesc": "Descubrir torneos para unirse"
+  },
+  "pendingActions": {
+    "title": "Requiere tu Atencion",
+    "invitations": "Invitaciones Pendientes",
+    "invitations_one": "{{count}} invitacion pendiente",
+    "invitations_other": "{{count}} invitaciones pendientes",
+    "viewInvitations": "Ver Invitaciones",
+    "enrollments": "Solicitudes de Inscripcion",
+    "enrollments_one": "{{count}} solicitud de inscripcion en {{name}}",
+    "enrollments_other": "{{count}} solicitudes de inscripcion en {{name}}",
+    "viewCompetition": "Gestionar",
+    "matches": "Proximos Partidos",
+    "matches_one": "{{count}} partido proximo",
+    "matches_other": "{{count}} partidos proximos",
+    "viewSchedule": "Ver Calendario"
   }
 }
