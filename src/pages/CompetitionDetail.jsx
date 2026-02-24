@@ -62,10 +62,8 @@ const CompetitionDetail = () => {
 
       setCompetition(data);
 
-      // Load enrollments only if user can manage the competition (for optimization)
-      // Note: isAdmin and hasCreatorRole might not be available yet during initial load,
-      // so we still check creatorId. The canManage logic will handle display permissions.
-      if (user && data.creatorId === user.id) {
+      // Load enrollments for all authenticated users (approved players visible to everyone)
+      if (user) {
         const enrollmentsData = await listEnrollmentsUseCase.execute(id);
         setEnrollments(enrollmentsData);
       }
@@ -273,7 +271,7 @@ const CompetitionDetail = () => {
   // Check for user enrollment from two sources:
   // 1. From enrollments list (when loaded from detail page)
   // 2. From competition.enrollment_status (mapped from backend's user_enrollment_status)
-  const userEnrollment = enrollments.find((e) => e.user_id === user.id);
+  const userEnrollment = enrollments.find((e) => e.userId === user.id);
   const hasEnrollment = userEnrollment || competition.enrollment_status;
 
   return (
@@ -475,16 +473,25 @@ const CompetitionDetail = () => {
                     </button>
                   )}
 
-                  {(competition.status === 'IN_PROGRESS' || competition.status === 'COMPLETED') && (
-                    <button
-                      onClick={() => navigate(`/competitions/${id}/leaderboard`)}
-                      className="flex items-center gap-2 px-4 py-2 bg-teal-600 text-white rounded-lg font-medium hover:bg-teal-700 transition-colors shadow-md"
-                    >
-                      <BarChart3 className="w-4 h-4" />
-                      <span>{t('detail.actions.leaderboard')}</span>
-                    </button>
-                  )}
                 </div>
+              </motion.div>
+            )}
+
+            {/* Leaderboard Button - Visible to ALL users */}
+            {(competition.status === 'IN_PROGRESS' || competition.status === 'COMPLETED') && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.1 }}
+                className="p-4"
+              >
+                <button
+                  onClick={() => navigate(`/competitions/${id}/leaderboard`, { state: { from: 'detail' } })}
+                  className="flex items-center justify-center gap-2 w-full px-6 py-3 bg-teal-600 text-white rounded-lg font-medium hover:bg-teal-700 transition-colors shadow-md"
+                >
+                  <BarChart3 className="w-5 h-5" />
+                  <span>{t('detail.actions.leaderboard')}</span>
+                </button>
               </motion.div>
             )}
 
@@ -603,67 +610,74 @@ const CompetitionDetail = () => {
               />
             </motion.div>
 
-            {/* Enrollments List - Only visible to creator/admin */}
+            {/* Approved Players Section - Visible to all authenticated users */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.3 }}
+              className="p-4"
+            >
+              <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+                <h3 className="text-gray-900 font-bold text-lg mb-4 flex items-center gap-2">
+                  <Users className="w-5 h-5 text-green-600" />
+                  {t('detail.approvedPlayers', { count: enrollments.filter(e => e.status === 'APPROVED').length })}
+                </h3>
+
+                {enrollments.filter(e => e.status === 'APPROVED').length === 0 ? (
+                  <div className="text-center py-8 text-gray-500">
+                    <Users className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                    <p>{t('detail.noApprovedPlayers')}</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {enrollments
+                      .filter(e => e.status === 'APPROVED')
+                      .sort((a, b) => {
+                        // Sort by team first, then by handicap
+                        if (a.team && b.team && a.team !== b.team) {
+                          return a.team.localeCompare(b.team);
+                        }
+                        return (a.userHandicap || 999) - (b.userHandicap || 999);
+                      })
+                      .map((enrollment) => (
+                        <div
+                          key={enrollment.id}
+                          className="flex items-center justify-between p-4 border border-gray-200 rounded-lg bg-green-50 hover:bg-green-100 transition-colors"
+                        >
+                          <div className="flex-1">
+                            <p className="text-gray-900 font-semibold">
+                              {enrollment.userName || 'Unknown User'}
+                            </p>
+                            <div className="flex items-center gap-2 mt-1">
+                              {enrollment.userHandicap !== null && enrollment.userHandicap !== undefined ? (
+                                <span className="text-green-700 text-sm font-medium">
+                                  {t('detail.handicapLabel', { handicap: Number(enrollment.userHandicap).toFixed(1) })}
+                                </span>
+                              ) : (
+                                <span className="text-gray-500 text-sm">{t('detail.noHandicap')}</span>
+                              )}
+                            </div>
+                          </div>
+                          {enrollment.team && (
+                            <span className="px-3 py-1.5 bg-primary text-white rounded-lg text-sm font-semibold">
+                              {enrollment.team}
+                            </span>
+                          )}
+                        </div>
+                      ))}
+                  </div>
+                )}
+              </div>
+            </motion.div>
+
+            {/* Pending & Rejected Enrollments - Only visible to creator/admin */}
             {canManage && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.3 }}
-                className="p-4 space-y-4"
+                transition={{ duration: 0.5, delay: 0.35 }}
+                className="px-4 space-y-4"
               >
-                {/* Approved Players Section */}
-                <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
-                  <h3 className="text-gray-900 font-bold text-lg mb-4 flex items-center gap-2">
-                    <Users className="w-5 h-5 text-green-600" />
-                    {t('detail.approvedPlayers', { count: enrollments.filter(e => e.status === 'APPROVED').length })}
-                  </h3>
-
-                  {enrollments.filter(e => e.status === 'APPROVED').length === 0 ? (
-                    <div className="text-center py-8 text-gray-500">
-                      <Users className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                      <p>{t('detail.noApprovedPlayers')}</p>
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      {enrollments
-                        .filter(e => e.status === 'APPROVED')
-                        .sort((a, b) => {
-                          // Sort by team first, then by handicap
-                          if (a.team && b.team && a.team !== b.team) {
-                            return a.team.localeCompare(b.team);
-                          }
-                          return (a.userHandicap || 999) - (b.userHandicap || 999);
-                        })
-                        .map((enrollment) => (
-                          <div
-                            key={enrollment.id}
-                            className="flex items-center justify-between p-4 border border-gray-200 rounded-lg bg-green-50 hover:bg-green-100 transition-colors"
-                          >
-                            <div className="flex-1">
-                              <p className="text-gray-900 font-semibold">
-                                {enrollment.userName || 'Unknown User'}
-                              </p>
-                              <div className="flex items-center gap-2 mt-1">
-                                {enrollment.userHandicap !== null && enrollment.userHandicap !== undefined ? (
-                                  <span className="text-green-700 text-sm font-medium">
-                                    {t('detail.handicapLabel', { handicap: Number(enrollment.userHandicap).toFixed(1) })}
-                                  </span>
-                                ) : (
-                                  <span className="text-gray-500 text-sm">{t('detail.noHandicap')}</span>
-                                )}
-                              </div>
-                            </div>
-                            {enrollment.team && (
-                              <span className="px-3 py-1.5 bg-primary text-white rounded-lg text-sm font-semibold">
-                                {enrollment.team}
-                              </span>
-                            )}
-                          </div>
-                        ))}
-                    </div>
-                  )}
-                </div>
-
                 {/* Pending Requests Section */}
                 {enrollments.filter(e => e.status === 'REQUESTED').length > 0 && (
                   <div className="bg-white border border-orange-200 rounded-xl p-6 shadow-sm">
