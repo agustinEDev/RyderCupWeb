@@ -75,6 +75,8 @@ class ScoringMapper {
             winner: s.hole_result.winner,
             standing: s.hole_result.standing,
             standingTeam: s.hole_result.standing_team,
+            bestBallPlayerA: s.hole_result.best_ball_player_a ?? null,
+            bestBallPlayerB: s.hole_result.best_ball_player_b ?? null,
           }
           : null,
       })),
