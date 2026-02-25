@@ -22,7 +22,7 @@ const ScorecardTable = ({ holes = [], scores = [], players = [], currentUserId, 
   const sumScores = (holeRange, userId) => {
     return holeRange.reduce((sum, h) => {
       const ps = getPlayerScore(h.holeNumber, userId);
-      const val = ps ? (ps.netScore ?? ps.ownScore) : undefined;
+      const val = ps?.ownScore;
       return val !== null && val !== undefined ? sum + val : sum;
     }, 0);
   };
@@ -67,7 +67,7 @@ const ScorecardTable = ({ holes = [], scores = [], players = [], currentUserId, 
                   <td key={h.holeNumber} className="px-1 py-1 text-center">
                     {ps ? (
                       <div className="flex flex-col items-center">
-                        <GolfFigure score={ps.netScore ?? ps.ownScore} par={h.par} />
+                        <GolfFigure score={ps.ownScore} par={h.par} />
                         <ValidationIcon status={ps.validationStatus} />
                       </div>
                     ) : (

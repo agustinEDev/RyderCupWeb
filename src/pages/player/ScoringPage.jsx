@@ -99,6 +99,11 @@ const ScoringPage = () => {
     });
   };
 
+  const handleTabChange = (tab) => {
+    autoSubmitIfNeeded();
+    setActiveTab(tab);
+  };
+
   // Auto-submit par defaults when navigating away from a hole with no score recorded
   const autoSubmitIfNeeded = () => {
     if (!markerAssignment || !currentHoleData || isFullyLocked || isOwnScoreLocked || !isMatchPlayer) return;
@@ -263,7 +268,7 @@ const ScoringPage = () => {
             <button
               key={tab}
               data-testid={`tab-${tab}`}
-              onClick={() => setActiveTab(tab)}
+              onClick={() => handleTabChange(tab)}
               className={`flex-1 py-2 text-sm font-medium text-center border-b-2 transition-colors ${
                 activeTab === tab
                   ? 'border-primary text-primary'
@@ -360,7 +365,7 @@ const ScoringPage = () => {
 
             {canSubmitScorecard && (
               <button
-                onClick={() => setShowSubmitModal(true)}
+                onClick={() => { autoSubmitIfNeeded(); setShowSubmitModal(true); }}
                 disabled={isSubmitting}
                 className="w-full px-4 py-3 bg-primary text-white rounded-lg font-medium hover:bg-primary/90 disabled:opacity-50"
               >
