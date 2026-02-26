@@ -13,6 +13,7 @@ const getPlayerName = (playerId, playerNameMap) => {
 
 const MatchCard = ({
   match,
+  matchFormat,
   onStartMatch,
   onCompleteMatch,
   onDeclareWalkover,
@@ -21,6 +22,7 @@ const MatchCard = ({
   onScoreMatch,
   canManage,
   playerNameMap,
+  playerHandicapMap,
   teamNames,
   t,
 }) => {
@@ -30,6 +32,36 @@ const MatchCard = ({
 
   const teamA = match.teamAPlayers || [];
   const teamB = match.teamBPlayers || [];
+
+  const isTeamFormat = matchFormat === 'FOURBALL' || matchFormat === 'FOURSOMES';
+  const isFoursomes = matchFormat === 'FOURSOMES';
+
+  const renderTeamPlayers = (players, teamColor) => {
+    if (players.length === 0) return <p className="text-sm text-gray-400">--</p>;
+
+    // FOURSOMES: una sola bola, mostrar como pareja unida con "/"
+    if (isFoursomes && players.length === 2) {
+      return (
+        <p className="text-sm text-gray-900">
+          {getPlayerName(players[0].userId, playerNameMap)}
+          <span className="text-gray-400 mx-1">/</span>
+          {getPlayerName(players[1].userId, playerNameMap)}
+        </p>
+      );
+    }
+
+    // FOURBALL y SINGLES: cada jugador por separado con su HCP
+    return players.map((p, i) => (
+      <div key={p.userId || i} className="flex items-center justify-between">
+        <p className={`text-sm ${i === 0 ? 'text-gray-900' : 'text-gray-700'}`}>
+          {getPlayerName(p.userId, playerNameMap)}
+        </p>
+        {playerHandicapMap?.has(p.userId) && (
+          <span className={`text-xs ${teamColor} font-medium`}>HCP {playerHandicapMap.get(p.userId).toFixed(1)}</span>
+        )}
+      </div>
+    ));
+  };
 
   return (
     <div className="border border-gray-200 rounded-lg p-4 bg-white hover:shadow-sm transition-shadow">
@@ -46,37 +78,17 @@ const MatchCard = ({
       {/* Teams */}
       <div className="space-y-2 mb-3">
         {/* Team A */}
-        <div className="bg-blue-50 rounded-lg p-2">
+        <div className={`rounded-lg p-2 ${isTeamFormat ? 'bg-blue-50 border-l-4 border-blue-400' : 'bg-blue-50'}`}>
           <p className="text-xs font-semibold text-blue-700 mb-1">{teamNames.teamA}</p>
-          {teamA.map((p, i) => (
-            <div key={p.userId || i} className="flex items-center justify-between">
-              <p className={`text-sm ${i === 0 ? 'text-gray-900' : 'text-gray-700'}`}>
-                {getPlayerName(p.userId, playerNameMap)}
-              </p>
-              {p.playingHandicap != null && (
-                <span className="text-xs text-blue-600 font-medium">HCP {p.playingHandicap}</span>
-              )}
-            </div>
-          ))}
-          {teamA.length === 0 && <p className="text-sm text-gray-400">--</p>}
+          {renderTeamPlayers(teamA, 'text-blue-600')}
         </div>
 
         <div className="text-center text-xs font-bold text-gray-400">{t('matches.vs')}</div>
 
         {/* Team B */}
-        <div className="bg-red-50 rounded-lg p-2">
+        <div className={`rounded-lg p-2 ${isTeamFormat ? 'bg-red-50 border-l-4 border-red-400' : 'bg-red-50'}`}>
           <p className="text-xs font-semibold text-red-700 mb-1">{teamNames.teamB}</p>
-          {teamB.map((p, i) => (
-            <div key={p.userId || i} className="flex items-center justify-between">
-              <p className={`text-sm ${i === 0 ? 'text-gray-900' : 'text-gray-700'}`}>
-                {getPlayerName(p.userId, playerNameMap)}
-              </p>
-              {p.playingHandicap != null && (
-                <span className="text-xs text-red-600 font-medium">HCP {p.playingHandicap}</span>
-              )}
-            </div>
-          ))}
-          {teamB.length === 0 && <p className="text-sm text-gray-400">--</p>}
+          {renderTeamPlayers(teamB, 'text-red-600')}
         </div>
       </div>
 

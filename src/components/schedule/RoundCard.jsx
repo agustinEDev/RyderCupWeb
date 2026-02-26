@@ -24,6 +24,7 @@ const RoundCard = ({
   onViewMatchDetail,
   onScoreMatch,
   playerNameMap,
+  playerHandicapMap,
   golfCourses,
   teamNames,
   t,
@@ -129,6 +130,7 @@ const RoundCard = ({
                 <MatchCard
                   key={match.id}
                   match={match}
+                  matchFormat={round.matchFormat}
                   onStartMatch={onStartMatch}
                   onCompleteMatch={onCompleteMatch}
                   onDeclareWalkover={onDeclareWalkover}
@@ -137,6 +139,7 @@ const RoundCard = ({
                   onScoreMatch={onScoreMatch}
                   canManage={canEdit}
                   playerNameMap={playerNameMap}
+                  playerHandicapMap={playerHandicapMap}
                   teamNames={teamNames}
                   t={t}
                 />

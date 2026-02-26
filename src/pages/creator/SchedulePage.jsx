@@ -73,6 +73,16 @@ const SchedulePage = () => {
     return map;
   }, [enrollments]);
 
+  const playerHandicapMap = useMemo(() => {
+    const map = new Map();
+    enrollments.forEach((e) => {
+      if (e.userId && e.userHandicap != null) {
+        map.set(e.userId, Number(e.userHandicap));
+      }
+    });
+    return map;
+  }, [enrollments]);
+
   const loadData = useCallback(async () => {
     if (!user) return;
 
@@ -439,6 +449,7 @@ const SchedulePage = () => {
                       onViewMatchDetail={openMatchDetail}
                       onScoreMatch={handleScoreMatch}
                       playerNameMap={playerNameMap}
+                      playerHandicapMap={playerHandicapMap}
                       golfCourses={golfCourses}
                       teamNames={teamNames}
                       t={t}
@@ -518,6 +529,7 @@ const SchedulePage = () => {
           }}
           matchId={detailMatchId}
           playerNameMap={playerNameMap}
+          playerHandicapMap={playerHandicapMap}
           teamNames={teamNames}
           t={t}
         />

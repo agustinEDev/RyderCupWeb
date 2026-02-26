@@ -9,6 +9,7 @@ const MatchDetailModal = ({
   onClose,
   matchId,
   playerNameMap,
+  playerHandicapMap,
   teamNames,
   t,
 }) => {
@@ -98,8 +99,8 @@ const MatchDetailModal = ({
                   {(match.teamAPlayers || []).map((p, i) => (
                     <p key={p.userId || i} className={`text-sm ${i === 0 ? 'text-gray-900' : 'text-gray-700'}`}>
                       {getPlayerName(p.userId)}
-                      {p.playingHandicap != null && (
-                        <span className="ml-2 text-xs text-blue-600 font-medium">HCP {p.playingHandicap}</span>
+                      {playerHandicapMap?.has(p.userId) && (
+                        <span className="ml-2 text-xs text-blue-600 font-medium">HCP {playerHandicapMap.get(p.userId).toFixed(1)}</span>
                       )}
                     </p>
                   ))}
@@ -116,8 +117,8 @@ const MatchDetailModal = ({
                   {(match.teamBPlayers || []).map((p, i) => (
                     <p key={p.userId || i} className={`text-sm ${i === 0 ? 'text-gray-900' : 'text-gray-700'}`}>
                       {getPlayerName(p.userId)}
-                      {p.playingHandicap != null && (
-                        <span className="ml-2 text-xs text-red-600 font-medium">HCP {p.playingHandicap}</span>
+                      {playerHandicapMap?.has(p.userId) && (
+                        <span className="ml-2 text-xs text-red-600 font-medium">HCP {playerHandicapMap.get(p.userId).toFixed(1)}</span>
                       )}
                     </p>
                   ))}
