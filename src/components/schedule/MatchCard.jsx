@@ -34,23 +34,10 @@ const MatchCard = ({
   const teamB = match.teamBPlayers || [];
 
   const isTeamFormat = matchFormat === 'FOURBALL' || matchFormat === 'FOURSOMES';
-  const isFoursomes = matchFormat === 'FOURSOMES';
 
   const renderTeamPlayers = (players, teamColor) => {
     if (players.length === 0) return <p className="text-sm text-gray-400">--</p>;
 
-    // FOURSOMES: una sola bola, mostrar como pareja unida con "/"
-    if (isFoursomes && players.length === 2) {
-      return (
-        <p className="text-sm text-gray-900">
-          {getPlayerName(players[0].userId, playerNameMap)}
-          <span className="text-gray-400 mx-1">/</span>
-          {getPlayerName(players[1].userId, playerNameMap)}
-        </p>
-      );
-    }
-
-    // FOURBALL y SINGLES: cada jugador por separado con su HCP
     return players.map((p, i) => {
       const realHcp = playerHandicapMap?.get(p.userId);
       return (
