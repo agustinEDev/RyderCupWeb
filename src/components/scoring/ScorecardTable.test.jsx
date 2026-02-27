@@ -88,4 +88,97 @@ describe('ScorecardTable', () => {
     render(<ScorecardTable holes={holes} players={players} scores={scores} currentUserId="u1" teamAName="Team Red" teamBName="Team Blue" />);
     expect(screen.getByTestId('scorecard-table')).toHaveTextContent('Team Blue');
   });
+
+  describe('FOURSOMES format', () => {
+    const foursomePlayers = [
+      { userId: 'u1', userName: 'Player A1', team: 'A' },
+      { userId: 'u2', userName: 'Player A2', team: 'A' },
+      { userId: 'u3', userName: 'Player B1', team: 'B' },
+      { userId: 'u4', userName: 'Player B2', team: 'B' },
+    ];
+
+    it('should render 2 rows with combined names for FOURSOMES', () => {
+      render(<ScorecardTable holes={holes} players={foursomePlayers} currentUserId="u1" matchFormat="FOURSOMES" teamAName="Team Red" teamBName="Team Blue" />);
+      const table = screen.getByTestId('scorecard-table');
+      expect(table).toHaveTextContent('Player A1 / Player A2');
+      expect(table).toHaveTextContent('Player B1 / Player B2');
+    });
+
+    it('should show team names above player names in FOURSOMES', () => {
+      render(<ScorecardTable holes={holes} players={foursomePlayers} currentUserId="u1" matchFormat="FOURSOMES" teamAName="Team Red" teamBName="Team Blue" />);
+      const table = screen.getByTestId('scorecard-table');
+      expect(table).toHaveTextContent('Team Red');
+      expect(table).toHaveTextContent('Team Blue');
+    });
+
+    it('should show team color borders in FOURSOMES', () => {
+      render(<ScorecardTable holes={holes} players={foursomePlayers} currentUserId="u1" matchFormat="FOURSOMES" teamAName="Team Red" teamBName="Team Blue" />);
+      const table = screen.getByTestId('scorecard-table');
+      expect(table.innerHTML).toContain('border-l-blue-500');
+      expect(table.innerHTML).toContain('border-l-red-500');
+    });
+
+    it('should use first available score from teammates in FOURSOMES', () => {
+      const foursomeScores = [{
+        holeNumber: 1,
+        playerScores: [
+          { userId: 'u1', ownScore: 4, validationStatus: 'match' },
+          { userId: 'u3', ownScore: 5, validationStatus: 'match' },
+        ],
+      }];
+      render(<ScorecardTable holes={holes} players={foursomePlayers} scores={foursomeScores} currentUserId="u1" matchFormat="FOURSOMES" />);
+      expect(screen.getByTestId('scorecard-table')).toBeInTheDocument();
+    });
+
+    it('should not show best-ball highlighting in FOURSOMES', () => {
+      const scoresWithBestBall = [{
+        holeNumber: 1,
+        playerScores: [{ userId: 'u1', ownScore: 4, validationStatus: 'match' }],
+        holeResult: { winner: 'A', bestBallPlayerA: 'u1' },
+      }];
+      render(<ScorecardTable holes={holes} players={foursomePlayers} scores={scoresWithBestBall} currentUserId="u1" matchFormat="FOURSOMES" />);
+      expect(screen.getByTestId('scorecard-table').innerHTML).not.toContain('bg-yellow-50');
+    });
+  });
+
+  describe('FOURBALL format', () => {
+    const fourballPlayers = [
+      { userId: 'u1', userName: 'Player A1', team: 'A' },
+      { userId: 'u2', userName: 'Player A2', team: 'A' },
+      { userId: 'u3', userName: 'Player B1', team: 'B' },
+      { userId: 'u4', userName: 'Player B2', team: 'B' },
+    ];
+
+    it('should show team color borders for FOURBALL', () => {
+      render(<ScorecardTable holes={holes} players={fourballPlayers} currentUserId="u1" matchFormat="FOURBALL" teamAName="Team Red" teamBName="Team Blue" />);
+      const table = screen.getByTestId('scorecard-table');
+      expect(table.innerHTML).toContain('border-l-blue-500');
+      expect(table.innerHTML).toContain('border-l-red-500');
+    });
+
+    it('should render 4 individual rows for FOURBALL', () => {
+      render(<ScorecardTable holes={holes} players={fourballPlayers} currentUserId="u1" matchFormat="FOURBALL" teamAName="Team Red" teamBName="Team Blue" />);
+      const table = screen.getByTestId('scorecard-table');
+      expect(table).toHaveTextContent('Player A1');
+      expect(table).toHaveTextContent('Player A2');
+      expect(table).toHaveTextContent('Player B1');
+      expect(table).toHaveTextContent('Player B2');
+    });
+
+    it('should show team names above player names in FOURBALL', () => {
+      render(<ScorecardTable holes={holes} players={fourballPlayers} currentUserId="u1" matchFormat="FOURBALL" teamAName="Team Red" teamBName="Team Blue" />);
+      const table = screen.getByTestId('scorecard-table');
+      expect(table).toHaveTextContent('Team Red');
+      expect(table).toHaveTextContent('Team Blue');
+    });
+  });
+
+  describe('SINGLES format', () => {
+    it('should not show team color borders for SINGLES', () => {
+      render(<ScorecardTable holes={holes} players={players} currentUserId="u1" matchFormat="SINGLES" />);
+      const table = screen.getByTestId('scorecard-table');
+      expect(table.innerHTML).not.toContain('border-l-blue-500');
+      expect(table.innerHTML).not.toContain('border-l-red-500');
+    });
+  });
 });

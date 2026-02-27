@@ -3,12 +3,49 @@ import { useTranslation } from 'react-i18next';
 import GolfFigure from './GolfFigure';
 import ValidationIcon from './ValidationIcon';
 
-const ScorecardTable = ({ holes = [], scores = [], players = [], currentUserId, teamAName, teamBName }) => {
+const ScorecardTable = ({ holes = [], scores = [], players = [], currentUserId, teamAName, teamBName, matchFormat }) => {
   const { t } = useTranslation('scoring');
   const [showNet, setShowNet] = useState(false);
 
   const outHoles = holes.filter(h => h.holeNumber <= 9);
   const inHoles = holes.filter(h => h.holeNumber > 9);
+
+  const isTeamFormat = matchFormat === 'FOURBALL' || matchFormat === 'FOURSOMES';
+
+  // Build display rows based on match format
+  const displayRows = (() => {
+    if (matchFormat === 'FOURSOMES') {
+      const teamA = players.filter(p => p.team === 'A');
+      const teamB = players.filter(p => p.team === 'B');
+      const rows = [];
+      if (teamA.length > 0) {
+        rows.push({
+          id: 'team-a',
+          label: teamA.map(p => p.userName).join(' / '),
+          team: 'A',
+          playerIds: teamA.map(p => p.userId),
+          isCurrentUser: teamA.some(p => p.userId === currentUserId),
+        });
+      }
+      if (teamB.length > 0) {
+        rows.push({
+          id: 'team-b',
+          label: teamB.map(p => p.userName).join(' / '),
+          team: 'B',
+          playerIds: teamB.map(p => p.userId),
+          isCurrentUser: teamB.some(p => p.userId === currentUserId),
+        });
+      }
+      return rows;
+    }
+    return players.map(p => ({
+      id: p.userId,
+      label: p.userName,
+      team: p.team,
+      playerIds: [p.userId],
+      isCurrentUser: p.userId === currentUserId,
+    }));
+  })();
 
   const getPlayerScore = (holeNumber, userId) => {
     const holeData = scores.find(s => s.holeNumber === holeNumber);
@@ -16,20 +53,38 @@ const ScorecardTable = ({ holes = [], scores = [], players = [], currentUserId, 
     return holeData.playerScores?.find(ps => ps.userId === userId) || null;
   };
 
+  // Get score for a display row (first non-null from playerIds)
+  const getRowScore = (holeNumber, row) => {
+    for (const userId of row.playerIds) {
+      const ps = getPlayerScore(holeNumber, userId);
+      if (ps?.ownScore != null) return ps;
+    }
+    for (const userId of row.playerIds) {
+      const ps = getPlayerScore(holeNumber, userId);
+      if (ps) return ps;
+    }
+    return null;
+  };
+
   const getHoleResult = (holeNumber) => {
     const holeData = scores.find(s => s.holeNumber === holeNumber);
     return holeData?.holeResult || null;
   };
 
-  const sumScores = (holeRange, userId) => {
+  const sumRowScores = (holeRange, row) => {
     return holeRange.reduce((sum, h) => {
-      const ps = getPlayerScore(h.holeNumber, userId);
+      const ps = getRowScore(h.holeNumber, row);
       const val = showNet ? (ps?.netScore ?? ps?.ownScore) : ps?.ownScore;
       return val !== null && val !== undefined ? sum + val : sum;
     }, 0);
   };
 
   const hasAnyStrokes = players.some(p => p.strokesReceived?.length > 0);
+
+  const getTeamBorderClass = (team) => {
+    if (!isTeamFormat) return '';
+    return team === 'A' ? 'border-l-4 border-l-blue-500' : 'border-l-4 border-l-red-500';
+  };
 
   const renderSection = (sectionHoles, label) => (
     <div className="overflow-x-auto">
@@ -60,20 +115,26 @@ const ScorecardTable = ({ holes = [], scores = [], players = [], currentUserId, 
           </tr>
         </thead>
         <tbody>
-          {players.map(player => {
+          {displayRows.map(row => {
+            const borderClass = getTeamBorderClass(row.team);
             return (
-              <tr key={player.userId} className={player.userId === currentUserId ? 'bg-blue-50' : ''}>
-                <td className="px-2 py-1.5 text-left font-medium text-gray-700 truncate max-w-[80px]">
-                  {player.userName}
+              <tr key={row.id} className={row.isCurrentUser ? 'bg-blue-50' : ''}>
+                <td className={`px-2 py-1.5 text-left font-medium text-gray-700 truncate ${matchFormat === 'FOURSOMES' ? 'max-w-[120px]' : 'max-w-[80px]'} ${borderClass}`}>
+                  {isTeamFormat && (
+                    <span className="block text-[10px] text-gray-400 leading-tight">
+                      {row.team === 'A' ? teamAName : teamBName}
+                    </span>
+                  )}
+                  {row.label}
                 </td>
                 {sectionHoles.map(h => {
-                  const ps = getPlayerScore(h.holeNumber, player.userId);
+                  const ps = getRowScore(h.holeNumber, row);
                   const displayScore = showNet ? (ps?.netScore ?? ps?.ownScore) : ps?.ownScore;
                   const strokeCount = ps?.strokesReceivedThisHole ?? 0;
                   const result = getHoleResult(h.holeNumber);
-                  const isBestBall = (
-                    (player.team === 'A' && result?.bestBallPlayerA === player.userId) ||
-                    (player.team === 'B' && result?.bestBallPlayerB === player.userId)
+                  const isBestBall = matchFormat !== 'FOURSOMES' && (
+                    (row.team === 'A' && result?.bestBallPlayerA === row.playerIds[0]) ||
+                    (row.team === 'B' && result?.bestBallPlayerB === row.playerIds[0])
                   );
                   return (
                     <td key={h.holeNumber} className={`px-1 py-1 text-center ${isBestBall ? 'bg-yellow-50' : ''}`}>
@@ -96,7 +157,7 @@ const ScorecardTable = ({ holes = [], scores = [], players = [], currentUserId, 
                   );
                 })}
                 <td className="px-2 py-1 text-center font-bold">
-                  {sumScores(sectionHoles, player.userId) || '-'}
+                  {sumRowScores(sectionHoles, row) || '-'}
                 </td>
               </tr>
             );

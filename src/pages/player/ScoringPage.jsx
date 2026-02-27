@@ -147,16 +147,22 @@ const ScoringPage = () => {
   };
 
   const handleConcede = async (reason) => {
-    const playerTeam = scoringView?.players?.find((p) => p.userId === currentUserId)?.team;
-    if (playerTeam) {
-      await concedeMatch(playerTeam, reason);
+    try {
+      const playerTeam = scoringView?.players?.find((p) => p.userId === currentUserId)?.team;
+      if (playerTeam) {
+        await concedeMatch(playerTeam, reason);
+      }
+    } finally {
+      setShowConcedeModal(false);
     }
-    setShowConcedeModal(false);
   };
 
   const handleSubmitScorecard = async () => {
-    await submitScorecard();
-    setShowSubmitModal(false);
+    try {
+      await submitScorecard();
+    } finally {
+      setShowSubmitModal(false);
+    }
   };
 
   const handleSessionTakeOver = () => {
@@ -361,6 +367,7 @@ const ScoringPage = () => {
               currentUserId={currentUserId}
               teamAName={scoringView?.teamAName}
               teamBName={scoringView?.teamBName}
+              matchFormat={scoringView?.matchFormat}
             />
 
             {canSubmitScorecard && (
