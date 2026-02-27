@@ -60,7 +60,8 @@
     "subtitle": "Gestionar invitaciones para esta competición",
     "sendNew": "Enviar invitación",
     "sentCount_one": "{{count}} invitación enviada",
-    "sentCount_other": "{{count}} invitaciones enviadas"
+    "sentCount_other": "{{count}} invitaciones enviadas",
+    "nearCapacity": "Ya hay {{accepted}} invitaciones aceptadas de {{max}} plazas. El torneo está casi lleno."
   },
   "player": {
     "title": "Mis invitaciones",

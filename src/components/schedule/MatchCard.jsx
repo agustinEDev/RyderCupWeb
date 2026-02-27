@@ -51,16 +51,21 @@ const MatchCard = ({
     }
 
     // FOURBALL y SINGLES: cada jugador por separado con su HCP
-    return players.map((p, i) => (
-      <div key={p.userId || i} className="flex items-center justify-between">
-        <p className={`text-sm ${i === 0 ? 'text-gray-900' : 'text-gray-700'}`}>
-          {getPlayerName(p.userId, playerNameMap)}
-        </p>
-        {playerHandicapMap?.has(p.userId) && (
-          <span className={`text-xs ${teamColor} font-medium`}>HCP {playerHandicapMap.get(p.userId).toFixed(1)}</span>
-        )}
-      </div>
-    ));
+    return players.map((p, i) => {
+      const realHcp = playerHandicapMap?.get(p.userId);
+      return (
+        <div key={p.userId || i} className="flex items-center justify-between">
+          <p className={`text-sm ${i === 0 ? 'text-gray-900' : 'text-gray-700'}`}>
+            {getPlayerName(p.userId, playerNameMap)}
+          </p>
+          {realHcp != null ? (
+            <span className={`text-xs ${teamColor} font-medium`}>HCP {realHcp.toFixed(1)}</span>
+          ) : p.playingHandicap != null ? (
+            <span className={`text-xs ${teamColor} font-medium`}>HCP {p.playingHandicap}</span>
+          ) : null}
+        </div>
+      );
+    });
   };
 
   return (

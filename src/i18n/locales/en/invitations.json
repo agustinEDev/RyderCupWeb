@@ -60,7 +60,8 @@
     "subtitle": "Manage invitations for this competition",
     "sendNew": "Send Invitation",
     "sentCount_one": "{{count}} invitation sent",
-    "sentCount_other": "{{count}} invitations sent"
+    "sentCount_other": "{{count}} invitations sent",
+    "nearCapacity": "Already {{accepted}} accepted invitations out of {{max}} spots. The tournament is nearly full."
   },
   "player": {
     "title": "My Invitations",
