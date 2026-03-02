@@ -1,107 +1,101 @@
 # ADR-008: Security Testing Strategy (E2E)
 
-**Fecha**: 24 de diciembre de 2025
-**Estado**: Aceptado (Implementado en v1.8.0)
-**Decisores**: Equipo de desarrollo frontend
+**Date:** December 24, 2025
+**Status:** Accepted (Implemented in v1.8.0)
+**Decision Makers:** Frontend development team
 
-## Contexto y Problema
+## Context and Problem
 
-Necesitamos validar que las medidas de seguridad implementadas (XSS protection, CSRF, CSP, validaciones) funcionan correctamente en el navegador real.
+Need to validate that implemented security measures (XSS protection, CSRF, CSP, validations) work correctly in real browsers.
 
-**Problema:** Tests unitarios no validan:
-- Comportamiento real del navegador con payloads maliciosos
-- Headers de seguridad HTTP reales
-- Interacción de React auto-escaping con DOM
-- Protecciones CSP en runtime
-- Validaciones de formularios end-to-end
+**Problem:** Unit tests don't validate:
+- Real browser behavior with malicious payloads
+- Actual HTTP security headers
+- React auto-escaping interaction with DOM
+- Runtime CSP protections
+- End-to-end form validations
 
-## Decisión
+## Decision
 
-**Implementar suite de tests E2E de seguridad** con Playwright que valide:
+**Implement E2E security test suite** with Playwright validating:
 
-### Tests Implementados (12 tests):
+### Tests Implemented (12 tests):
 
-1. **XSS Protection (2 tests)**
-   - React auto-escaping de HTML tags
-   - Prevención de ejecución de payloads maliciosos
+**1. XSS Protection (2 tests)**
+- React auto-escaping of HTML tags
+- Malicious payload execution prevention
 
-2. **CSRF Protection (1 test)**
-   - Validación de SameSite cookies
-   - Protección contra cross-site requests
+**2. CSRF Protection (1 test)**
+- SameSite cookies validation
+- Cross-site request protection
 
-3. **CSP Violations (2 tests)**
-   - Bloqueo de inline scripts
-   - Presencia de security headers
+**3. CSP Violations (2 tests)**
+- Inline script blocking
+- Security headers presence
 
-4. **Authentication Security (3 tests)**
-   - Rechazo de SQL injection attempts
-   - Mensajes de error genéricos (no leak information)
-   - Limpieza de datos sensibles en logout
+**4. Authentication Security (3 tests)**
+- SQL injection attempt rejection
+- Generic error messages (no information leak)
+- Sensitive data cleanup on logout
 
-5. **Input Validation (3 tests)**
-   - Validación de emails malformados
-   - Enforcement de password complexity
-   - Límites de longitud de inputs
+**5. Input Validation (3 tests)**
+- Malformed email validation
+- Password complexity enforcement
+- Input length limits
 
-6. **Rate Limiting (1 test)**
-   - Manejo graceful de rate limiting
+**6. Rate Limiting (1 test)**
+- Graceful rate limiting handling
 
-## Justificación
+## Rationale
 
-**Por qué E2E vs solo unitarios:**
-- ✅ Valida comportamiento real del navegador
-- ✅ Detecta problemas de configuración (headers, CSP)
-- ✅ Verifica interacción React + DOM + Security
-- ✅ Proof of concept para auditorías de seguridad
+**Why E2E vs unit only:**
+- ✅ Validates real browser behavior
+- ✅ Detects configuration issues (headers, CSP)
+- ✅ Verifies React + DOM + Security interaction
+- ✅ Proof of concept for security audits
 
-**Por qué Playwright:**
-- Ya usado en proyecto (integración tests)
-- Soporte multi-browser
-- Fácil debugging con UI mode
+**Why Playwright:**
+- Already used in project (integration tests)
+- Multi-browser support
+- Easy debugging with UI mode
 
-## Consecuencias
+## Consequences
 
-### Positivas:
-- ✅ **Validación automática** de protecciones de seguridad
-- ✅ **Regression prevention** - detecta si alguien deshabilita protecciones
-- ✅ **Documentación ejecutable** - tests muestran cómo funcionan las protecciones
-- ✅ **Audit trail** - evidencia de testing de seguridad para compliance
-- ✅ **CI/CD gate** - bloquea merges que rompen seguridad
+**Positive:**
+- ✅ **Automatic validation** of security protections
+- ✅ **Regression prevention** - detects if protections disabled
+- ✅ **Executable documentation** - tests show how protections work
+- ✅ **Audit trail** - evidence of security testing for compliance
+- ✅ **CI/CD gate** - blocks merges breaking security
 
-### Negativas (mitigadas):
-- ⏱️ **Tiempo de ejecución:** ~30 segundos
-  - *Mitigación*: Solo corre en PRs importantes o en workflow separado
-- 🧪 **Mantenimiento:** Tests pueden volverse frágiles
-  - *Mitigación*: Tests simples, enfocados en comportamiento, no UI
+**Negative (mitigated):**
+- ⏱️ **Execution time:** ~30 seconds
+  - *Mitigation*: Only runs on important PRs or separate workflow
+- 🧪 **Maintenance:** Tests can become fragile
+  - *Mitigation*: Simple tests, focus on behavior not UI
 
-## Implementación
+## Implementation
 
-**Archivos:**
-- `tests/security.spec.js` - 12 tests E2E
-- `.github/workflows/security-tests.yml` - Workflow CI
+**Files:**
+- `tests/security.spec.js` - 12 E2E tests
+- `.github/workflows/security-tests.yml` - CI workflow
 - `package.json` - Script `npm run test:security`
 
-**Comando:**
+**Command:**
 ```bash
 npm run test:security
 ```
 
-## Métricas de Éxito
+## Validation
 
-**Estado actual:** 12/12 tests pasando (100%) ✅
+**Current Status:** 12/12 tests passing (100%) ✅
 
-**Impacto en OWASP Score:**
+**OWASP Score Impact:**
 - A03 Injection: 9.0 → 9.5 (+0.5)
 - A07 Authentication: 9.0 → 9.5 (+0.5)
 - **Overall:** 9.3/10 → 9.5/10 (+0.2)
 
-## Referencias
+## References
 
 - [OWASP Testing Guide](https://owasp.org/www-project-web-security-testing-guide/)
-- [Playwright Security Testing](https://playwright.dev/docs/test-assertions)
-- ADR-007: CI/CD Quality Gates
 - ADR-004: httpOnly Cookies Migration
-
-## Historial
-
-- **2025-12-24**: Creación e implementación

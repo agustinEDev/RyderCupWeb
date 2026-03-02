@@ -1,129 +1,129 @@
-# Tests de Integración con Backend
+# Integration Tests with Backend
 
-> **Tarea #11 del ROADMAP**
-> **Fecha:** 23-24 Dic 2025 (auth flows) | Pendiente: schedule flows (v2.1.0)
-> **Estado:** ✅ DISPONIBLE - Solo para ejecución local manual
-> **Objetivo:** Verificar integración completa Frontend-Backend
+> **ROADMAP Task #11**
+> **Date:** Dec 23-24, 2025 (auth flows) | Pending: schedule flows (v2.1.0)
+> **Status:** ✅ AVAILABLE - Only for manual local execution
+> **Goal:** Verify complete Frontend-Backend integration
 
-## ⚠️ IMPORTANTE
+## ⚠️ IMPORTANT
 
-**Los tests de integración NO se ejecutan en CI/CD.**
+**Integration tests are NOT executed in CI/CD.**
 
-Estos tests están disponibles solo para **ejecución local manual** cuando necesites validar la integración con el backend real.
+These tests are available only for **manual local execution** when you need to validate integration with the real backend.
 
-**Motivo:** La complejidad de mantener un mock backend en CI no justifica el beneficio, ya que:
-- Los tests unitarios cubren >90% del código
-- El backend real debe estar corriendo (no podemos garantizarlo en CI)
-- Los mocks agregan complejidad sin aportar confianza real en la integración
+**Reason:** The complexity of maintaining a mock backend in CI does not justify the benefit, since:
+- Unit tests cover >90% of the code
+- The real backend must be running (we cannot guarantee this in CI)
+- Mocks add complexity without providing real confidence in integration
 
-## ✅ Estado Actual
+## ✅ Current Status
 
-**Tests implementados:** 8 tests E2E
-**Ejecución:** Solo local (con backend real corriendo)
-**Tiempo de ejecución:** ~26 segundos
+**Tests implemented:** 8 E2E tests
+**Execution:** Local only (with real backend running)
+**Execution time:** ~26 seconds
 
-**Para ejecutar estos tests necesitas:**
+**To run these tests you need:**
 1. ✅ Node.js 20+
-2. ✅ Backend real corriendo en `http://localhost:8000`
-3. ✅ Variables de entorno configuradas: `TEST_EMAIL` y `TEST_PASSWORD`
-4. ✅ Usuario de prueba válido en el backend
+2. ✅ Real backend running at `http://localhost:8000`
+3. ✅ Environment variables configured: `TEST_EMAIL` and `TEST_PASSWORD`
+4. ✅ Valid test user in the backend
 
-**Configuración de credenciales:**
+**Credentials configuration:**
 ```bash
-# Opción 1: Archivo .env (recomendado)
+# Option 1: .env file (recommended)
 cp .env.example .env
-# Editar .env y configurar TEST_EMAIL y TEST_PASSWORD
+# Edit .env and configure TEST_EMAIL and TEST_PASSWORD
 
-# Opción 2: Variables de entorno inline
+# Option 2: Inline environment variables
 TEST_EMAIL=your-test@example.com TEST_PASSWORD=YourTestPassword123 npm run test:integration
 ```
 
-## 📋 Suite de Tests Implementada
+## 📋 Implemented Test Suite
 
-Archivo: [`tests/integration.spec.js`](../tests/integration.spec.js)
+File: [`tests/integration.spec.js`](../tests/integration.spec.js)
 
 ### 1️⃣ httpOnly Cookies - Basic Login (2 tests)
 
-Verifica autenticación y manejo de cookies httpOnly:
+Verifies authentication and httpOnly cookies handling:
 
 - ✅ **Login successfully and receive cookies**
-  - Verifica login exitoso con credenciales válidas
-  - Confirma que se reciben cookies: `access_token`, `refresh_token`
-  - Valida redirección a `/dashboard`
+  - Verifies successful login with valid credentials
+  - Confirms that cookies are received: `access_token`, `refresh_token`
+  - Validates redirection to `/dashboard`
   
 - ✅ **Maintain authentication across navigation**
-  - Navega a rutas protegidas (`/profile`) usando cookies
-  - Verifica que los datos del usuario se muestran correctamente
-  - Confirma persistencia de autenticación
+  - Navigates to protected routes (`/profile`) using cookies
+  - Verifies that user data is displayed correctly
+  - Confirms authentication persistence
 
 ### 2️⃣ Backend Validation - Login (1 test)
 
-Verifica validaciones del backend en proceso de login:
+Verifies backend validations in login process:
 
 - ✅ **Reject login with incorrect password**
-  - Intenta login con contraseña incorrecta
-  - Verifica que permanece en página de login
-  - Confirma mensaje de error visible
+  - Attempts login with incorrect password
+  - Verifies that it remains on login page
+  - Confirms visible error message
 
 ### 3️⃣ Backend Validation - Registration (2 tests)
 
-Verifica validaciones del formulario de registro:
+Verifies registration form validations:
 
 - ✅ **Reject registration with short password**
-  - Intenta registro con contraseña < 12 caracteres
-  - Verifica mensaje de validación de longitud
+  - Attempts registration with password < 12 characters
+  - Verifies length validation message
   
 - ✅ **Validate registration form fields**
-  - Verifica presencia de todos los campos del formulario
-  - Llena formulario con datos válidos
-  - Confirma ausencia de errores de validación frontend
+  - Verifies presence of all form fields
+  - Fills form with valid data
+  - Confirms absence of frontend validation errors
 
 ### 4️⃣ Complete E2E Flow (1 test)
 
-Verifica el flujo completo de usuario autenticado:
+Verifies the complete authenticated user flow:
 
 - ✅ **Login → dashboard → profile → competitions flow**
-  1. Login exitoso con credenciales válidas
-  2. Redirección a `/dashboard`
-  3. Navegación a `/profile` - datos de usuario visibles
-  4. Navegación a `/competitions` - página carga correctamente
-  5. Cookies mantienen sesión en todas las navegaciones
+  1. Successful login with valid credentials
+  2. Redirection to `/dashboard`
+  3. Navigation to `/profile` - user data visible
+  4. Navigation to `/competitions` - page loads correctly
+  5. Cookies maintain session across all navigations
 
 ### 5️⃣ Session Persistence (1 test)
 
-Verifica persistencia de sesión con cookies httpOnly:
+Verifies session persistence with httpOnly cookies:
 
 - ✅ **Maintain session across page reload**
-  - Login exitoso
-  - Recarga la página (F5)
-  - Sesión se mantiene (permanece en `/dashboard`)
-  - Cookies persisten después del reload
+  - Successful login
+  - Reloads the page (F5)
+  - Session is maintained (remains on `/dashboard`)
+  - Cookies persist after reload
 
-## 🚀 Ejecución de Tests
+## 🚀 Test Execution
 
-### Comandos Disponibles
+### Available Commands
 
 ```bash
-# Ejecutar todos los tests de integración
+# Run all integration tests
 npm run test:integration
 
-# Ejecutar todos los tests E2E (incluye otros tests)
+# Run all E2E tests (includes other tests)
 npm run test:e2e
 
-# Modo interactivo con UI
+# Interactive mode with UI
 npm run test:e2e:ui
 
-# Ver navegador durante ejecución
+# View browser during execution
 npm run test:e2e:headed
 ```
 
-### Configuración Importante
+### Important Configuration
 
 **Playwright Config (`playwright.config.js`):**
 ```javascript
 {
-  workers: 1,              // ⚠️ CRÍTICO: Ejecutar en serie para evitar rate limiting
-  fullyParallel: false,    // Deshabilitar paralelización
+  workers: 1,              // ⚠️ CRITICAL: Execute in series to avoid rate limiting
+  fullyParallel: false,    // Disable parallelization
   baseURL: 'http://localhost:5173',
   webServer: {
     command: 'npm run dev',
@@ -133,101 +133,101 @@ npm run test:e2e:headed
 }
   
 - ✅ **Handle authentication throughout competitions flow**
-  - `/competitions` accesible
-  - `/competitions/browse` accesible
-  - `/competitions/create` accesible
+  - `/competitions` accessible
+  - `/competitions/browse` accessible
+  - `/competitions/create` accessible
 
 ### 5️⃣ Session Timeout & Inactivity (2 tests)
 
-Verifica persistencia de sesión:
+Verifies session persistence:
 
 - ✅ **Maintain session across page reloads**
-  - Reload de página mantiene sesión activa
-  - Dashboard sigue accesible sin re-login
+  - Page reload maintains active session
+  - Dashboard remains accessible without re-login
   
 - ✅ **Maintain session across tab/window close simulation**
-  - Cookies persisten después de cerrar tab
-  - Simula comportamiento real del navegador
+  - Cookies persist after closing tab
+  - Simulates real browser behavior
 
-## 🚀 Ejecutar Tests
+## 🚀 Run Tests
 
-### ⚠️ Requisitos Previos
+### ⚠️ Prerequisites
 
-**1. Instalar navegadores (solo primera vez):**
+**1. Install browsers (first time only):**
 
 ```bash
 npx playwright install chromium
 ```
 
-**2. Backend DEBE estar corriendo:**
+**2. Backend MUST be running:**
 
-⚠️ **CRÍTICO:** Los tests de integración requieren que el backend real esté activo.
+⚠️ **CRITICAL:** Integration tests require the real backend to be active.
 
 ```bash
-# En el repositorio del backend (RyderCupAm)
+# In the backend repository (RyderCupAm)
 cd ../RyderCupAm
-source venv/bin/activate  # o el entorno que uses
+source venv/bin/activate  # or the environment you use
 uvicorn app.main:app --reload
 
-# Verificar que responde
+# Verify that it responds
 curl http://localhost:8000/api/v1/health
 ```
 
-**Importante:** Si el backend no está corriendo, los tests fallarán.
+**Important:** If the backend is not running, tests will fail.
 
-**3. Configurar credenciales de prueba:**
+**3. Configure test credentials:**
 
-⚠️ **IMPORTANTE:** Las credenciales se leen desde variables de entorno para mayor seguridad.
+⚠️ **IMPORTANT:** Credentials are read from environment variables for greater security.
 
 ```bash
-# Opción 1: Crear archivo .env (recomendado)
+# Option 1: Create .env file (recommended)
 cp .env.example .env
 
-# Editar .env y configurar:
-TEST_EMAIL=tu-usuario-prueba@example.com
-TEST_PASSWORD=TuPasswordDePrueba123
+# Edit .env and configure:
+TEST_EMAIL=your-test-user@example.com
+TEST_PASSWORD=YourTestPassword123
 
-# Opción 2: Exportar variables inline
-export TEST_EMAIL=tu-usuario-prueba@example.com
-export TEST_PASSWORD=TuPasswordDePrueba123
+# Option 2: Export inline variables
+export TEST_EMAIL=your-test-user@example.com
+export TEST_PASSWORD=YourTestPassword123
 npm run test:integration
 ```
 
-**El usuario de prueba debe:**
-- Existir en tu backend de desarrollo/testing
-- Tener email verificado
-- Usar credenciales dedicadas (NO personales/producción)
+**The test user must:**
+- Exist in your development/testing backend
+- Have verified email
+- Use dedicated credentials (NOT personal/production)
 
-**Si no tienes usuario de prueba:**
-1. Regístralo manualmente en el frontend local
-2. Verifica el email
-3. Configura esas credenciales en `.env`
+**If you don't have a test user:**
+1. Register it manually in the local frontend
+2. Verify the email
+3. Configure those credentials in `.env`
 
-### Todos los tests E2E
+### All E2E tests
 
 ```bash
 npm run test:e2e
 ```
 
-### Solo tests de integración
+### Integration tests only
 
 ```bash
 npm run test:integration
 ```
 
-### En modo UI (interactivo)
+### In UI mode (interactive)
 
 ```bash
 npm run test:e2e:ui
 ```
 
-### Ver navegador (headed mode)
+### View browser (headed mode)
 
 ```bash
 npm run test:e2e:headed
 ```
 
-### Específico por describe block
+### Specific by describe block
 
 ```bash
 npx playwright test -g "httpOnly Cookies"
@@ -236,9 +236,9 @@ npx playwright test -g "Backend Validation"
 npx playwright test -g "Complete E2E Flow"
 ```
 
-## ⚙️ Configuración
+## ⚙️ Configuration
 
-**Archivo:** `playwright.config.js`
+**File:** `playwright.config.js`
 
 ```javascript
 {
@@ -255,10 +255,10 @@ npx playwright test -g "Complete E2E Flow"
 }
 ```
 
-## 📊 Cobertura de Tests
+## 📊Se Test Coverage
 
-| Característica Backend v1.8.0 | Tests | Estado |
-|-------------------------------|-------|--------|
+| Backend v1.8.0 Feature | Tests | Status |
+|------------------------|-------|--------|
 | httpOnly Cookies | 3 | ✅ |
 | Refresh Token Flow | 2 | ✅ |
 | Password Policy (12 chars) | 1 | ✅ |
@@ -269,51 +269,51 @@ npx playwright test -g "Complete E2E Flow"
 | Protected Routes | 3 | ✅ |
 | **Total** | **15** | **✅ 100%** |
 
-## 🎯 Checklist de Validación
+## 🎯 Validation Checklist
 
-- [x] httpOnly cookies se almacenan correctamente
-- [x] Cookies se envían automáticamente con requests
-- [x] Cookies se limpian después de logout
-- [x] Refresh token flow funciona automáticamente
-- [x] Redirección a login cuando refresh token es inválido
-- [x] Backend rechaza passwords cortos (< 12 chars)
-- [x] Backend rechaza emails inválidos
-- [x] Backend rechaza nombres excesivamente largos (> 100 chars)
-- [x] Backend acepta nombres con acentos y caracteres especiales
-- [x] Flujo completo funciona: login → dashboard → profile → edit → logout
-- [x] Sesión persiste después de page reload
-- [x] Rutas protegidas redirigen a login sin autenticación
+- [x] httpOnly cookies are stored correctly
+- [x] Cookies are sent automatically with requests
+- [x] Cookies are cleared after logout
+- [x] Refresh token flow works automatically
+- [x] Redirection to login when refresh token is invalid
+- [x] Backend rejects short passwords (< 12 chars)
+- [x] Backend rejects invalid emails
+- [x] Backend rejects excessively long names (> 100 chars)
+- [x] Backend accepts names with accents and special characters
+- [x] Complete flow works: login → dashboard → profile → edit → logout
+- [x] Session persists after page reload
+- [x] Protected routes redirect to login without authentication
 
-## 🔍 Notas Técnicas
+## 🔍 Technical Notes
 
-### User Credentials para Tests
+### User Credentials for Tests
 
-🔒 **Seguridad:** Las credenciales se cargan desde variables de entorno.
+🔒 **Security:** Credentials are loaded from environment variables.
 
 ```javascript
 // En tests/integration.spec.js
 const { email, password } = getTestCredentials();
 
-// getTestCredentials() lee de:
+// getTestCredentials() reads from:
 // - process.env.TEST_EMAIL
 // - process.env.TEST_PASSWORD
 ```
 
-**⚠️ Importante:**
-- El usuario debe existir en el backend de pruebas y estar verificado
-- Las credenciales NUNCA deben estar hardcodeadas en el código
-- Usa credenciales dedicadas para testing (NO personales/producción)
+**⚠️ Important:**
+- The user must exist in the test backend and be verified
+- Credentials should NEVER be hardcoded in the code
+- Use dedicated credentials for testing (NOT personal/production)
 
 ### Timeout Considerations
 
-- Login/Dashboard redirect: 10 segundos
-- Page navigation: 5 segundos
-- Element visibility: 3 segundos (validaciones)
-- Reason: Backend puede estar en "cold start" (Render.com)
+- Login/Dashboard redirect: 10 seconds
+- Page navigation: 5 seconds
+- Element visibility: 3 seconds (validations)
+- Reason: Backend may be in "cold start" (Render.com)
 
 ### Cookie Debugging
 
-Los tests incluyen logging de cookies:
+Tests include cookie logging:
 
 ```javascript
 console.log('🍪 Cookies after login:', cookies.map(c => ({ 
@@ -324,12 +324,12 @@ console.log('🍪 Cookies after login:', cookies.map(c => ({
 })));
 ```
 
-### Fallbacks en UI Testing
+### Fallbacks in UI Testing
 
-Algunos elementos pueden tener diferentes selectores según el estado de la UI:
+Some elements may have different selectors depending on the UI state:
 
 ```javascript
-// Ejemplo: Logout button
+// Example: Logout button
 await page.click('[data-testid="user-menu-button"]').catch(() => {
   return page.click('button:has-text("Settings")').catch(() => {
     return page.click('[aria-label*="user" i]');
@@ -341,108 +341,108 @@ await page.click('[data-testid="user-menu-button"]').catch(() => {
 
 ### Error: Login fails / Remains on /login page
 
-**Problema:** Tests esperan llegar a `/dashboard` pero se quedan en `/login`.
+**Problem:** Tests expect to reach `/dashboard` but stay on `/login`.
 
-**Causas posibles:**
-1. Backend no está corriendo
-2. Usuario de prueba no existe
-3. Credenciales incorrectas
-4. Backend en cold start (Render.com)
+**Possible causes:**
+1. Backend is not running
+2. Test user does not exist
+3. Incorrect credentials
+4. Backend in cold start (Render.com)
 
-**Solución:**
+**Solution:**
 ```bash
-# 1. Verificar backend
+# 1. Verify backend
 curl http://localhost:8000/health
 
-# 2. Verificar credenciales en tu backend
-# Registrar usuario manualmente si no existe
+# 2. Verify credentials in your backend
+# Register user manually if it doesn't exist
 
-# 3. O actualizar credenciales en tests/integration.spec.js
-# Buscar: panetetrinx@gmail.com
-# Reemplazar con tu usuario de prueba
+# 3. Or update credentials in tests/integration.spec.js
+# Search for: panetetrinx@gmail.com
+# Replace with your test user
 ```
 
 ### Error: Timeout waiting for webServer
 
-**Problema:** El servidor dev no inició a tiempo.
+**Problem:** Dev server did not start in time.
 
-**Solución:**
+**Solution:**
 ```bash
-# Iniciar servidor manualmente en otra terminal
+# Start server manually in another terminal
 npm run dev
 
-# Ejecutar tests sin webServer
+# Run tests without webServer
 npx playwright test --config playwright.config.js
 ```
 
 ### Error: Missing test credentials
 
-**Problema:** Variables de entorno `TEST_EMAIL` o `TEST_PASSWORD` no están configuradas.
+**Problem:** Environment variables `TEST_EMAIL` or `TEST_PASSWORD` are not configured.
 
-**Error mostrado:**
+**Error shown:**
 ```
 Missing test credentials. Please set TEST_EMAIL and TEST_PASSWORD environment variables.
 ```
 
-**Solución:**
+**Solution:**
 ```bash
-# Crear archivo .env con credenciales
+# Create .env file with credentials
 cp .env.example .env
-# Editar .env y configurar TEST_EMAIL y TEST_PASSWORD
+# Edit .env and configure TEST_EMAIL and TEST_PASSWORD
 ```
 
 ### Error: User not found / Invalid credentials
 
-**Problema:** Usuario de prueba no existe en backend o credenciales incorrectas.
+**Problem:** Test user does not exist in backend or incorrect credentials.
 
-**Solución:**
-1. Verificar que el usuario existe en el backend
-2. Verificar que el email está verificado
-3. Registrar nuevo usuario si es necesario
-4. Actualizar credenciales en `.env`
+**Solution:**
+1. Verify that the user exists in the backend
+2. Verify that the email is verified
+3. Register new user if necessary
+4. Update credentials in `.env`
 
-### Tests fallan en CI pero pasan local
+### Tests fail in CI but pass locally
 
-**Problema:** Diferencias en timing (backend cold start).
+**Problem:** Timing differences (backend cold start).
 
-**Solución:**
-- Aumentar timeouts en `playwright.config.js`
-- Configurar retries: `retries: 2` en CI
+**Solution:**
+- Increase timeouts in `playwright.config.js`
+- Configure retries: `retries: 2` in CI
 
-## 📚 Referencias
+## 📚 References
 
 - [Playwright Test API](https://playwright.dev/docs/api/class-test)
 - Backend API Spec (see backend repo `docs/API.md`)
 - [Token Refresh Interceptor](../src/utils/tokenRefreshInterceptor.js)
 - [ROADMAP Task #11](../ROADMAP.md#tarea-11)
 
-## ✅ Resultado
+## ✅ Result
 
-**15 tests implementados** cubriendo:
+**15 tests implemented** covering:
 - ✅ httpOnly cookies
-- ✅ Refresh token flow automático
-- ✅ Validaciones del backend
-- ✅ Flujo E2E completo
-- ✅ Persistencia de sesión
+- ✅ Automatic refresh token flow
+- ✅ Backend validations
+- ✅ Complete E2E flow
+- ✅ Session persistence
 
-**Estado de ejecución:**
-- ⚠️ **Requiere backend activo** en `http://localhost:8000`
-- ⚠️ **Requiere variables de entorno** `TEST_EMAIL` y `TEST_PASSWORD` configuradas
-- ⚠️ **Requiere usuario de prueba** verificado en el backend
-- ✅ **Tests listos para CI/CD** una vez backend esté en producción
-- ✅ **Integración Frontend-Backend: Auth flows 100% implementados**
+**Execution status:**
+- ⚠️ **Requires active backend** at `http://localhost:8000`
+- ⚠️ **Requires environment variables** `TEST_EMAIL` and `TEST_PASSWORD` configured
+- ⚠️ **Requires verified test user** in the backend
+- ✅ **Tests ready for CI/CD** once backend is in production
+- ✅ **Frontend-Backend Integration: Auth flows 100% implemented**
 
-**Próximos pasos sugeridos:**
-1. ✅ ~~Configurar variables de entorno para credenciales de prueba~~ (Implementado)
-2. Crear usuario de prueba automáticamente en setup
-3. Considerar usar [MSW](https://mswjs.io/) para mock del backend en tests
-4. Ejecutar tests contra backend en CI/CD
-5. **v2.1.0 - Schedule Integration Tests (pendiente):**
-   - Test crear ronda y verificar en schedule
-   - Test generar partidos para una ronda
-   - Test ciclo de vida de partido (SCHEDULED -> IN_PROGRESS -> COMPLETED)
-   - Test declarar walkover y verificar resultado formateado (score, winner, reason)
-   - Test asignar equipos (manual/automático)
-   - Test reasignar jugadores en un partido
-   - Test enrollment con tee category (EnrollmentRequestModal flow)
-   - Test jugador inscrito accede a `/competitions/:id/schedule` (vista read-only, sin botones de gestión)
+**Suggested next steps:**
+1. ✅ ~~Configure environment variables for test credentials~~ (Implemented)
+2. Automatically create test user in setup
+3. Consider using [MSW](https://mswjs.io/) for backend mock in tests
+4. Run tests against backend in CI/CD
+5. **v2.1.0 - Schedule Integration Tests (pending):**
+   - Test create round and verify in schedule
+   - Test generate matches for a round
+   - Test match lifecycle (SCHEDULED -> IN_PROGRESS -> COMPLETED)
+   - Test declare walkover and verify formatted result (score, winner, reason)
+   - Test assign teams (manual/automatic)
+   - Test reassign players in a match
+   - Test enrollment with tee category (EnrollmentRequestModal flow)
+   - Test enrolled player accesses `/competitions/:id/schedule` (read-only view, no management buttons)

@@ -4,15 +4,15 @@
 
 <div align="center">
 
-[![Version](https://img.shields.io/badge/version-2.0.6-blue?style=for-the-badge&logo=semver)](.)
-[![React](https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=white)](.)
-[![Vite](https://img.shields.io/badge/Vite-7.3-646CFF?style=for-the-badge&logo=vite&logoColor=white)](.)
-[![Tailwind](https://img.shields.io/badge/Tailwind-4-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](.)
+[![Version](https://img.shields.io/badge/version-2.0.12-blue?style=for-the-badge&logo=semver)](.)  
+[![React](https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=white)](.)  
+[![Vite](https://img.shields.io/badge/Vite-7.3-646CFF?style=for-the-badge&logo=vite&logoColor=white)](.)  
+[![Tailwind](https://img.shields.io/badge/Tailwind-4-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](.)  
 
-[![Tests](https://img.shields.io/badge/tests-1104%20passing-00C853?style=for-the-badge&logo=vitest&logoColor=white)](.)
+[![Tests](https://img.shields.io/badge/tests-1550%20passing-00C853?style=for-the-badge&logo=vitest&logoColor=white)](.)
 [![Coverage](https://img.shields.io/badge/coverage-85%25+-success?style=for-the-badge&logo=codecov)](.)
 [![OWASP](https://img.shields.io/badge/OWASP-9.2%2F10-4CAF50?style=for-the-badge&logo=owasp)](https://owasp.org/www-project-top-ten/)
-[![Bundle](https://img.shields.io/badge/bundle-1308%20KB-blueviolet?style=for-the-badge&logo=webpack)](.)
+[![Bundle](https://img.shields.io/badge/bundle-1487%20KB-blueviolet?style=for-the-badge&logo=webpack)](.)
 
 [![Clean Architecture](https://img.shields.io/badge/architecture-Clean%20Architecture-blueviolet?style=for-the-badge)](.)
 [![DDD](https://img.shields.io/badge/design-Domain%20Driven-orange?style=for-the-badge)](.)
@@ -29,14 +29,14 @@
 
 ### 🎯 Key Highlights
 
-- ✅ **66 API integrations** with the backend REST API
-- ✅ **1,104 tests** passing (100% success rate)
+- ✅ **74 API integrations** with the backend REST API
+- ✅ **1,550 tests** passing (100% success rate)
 - ✅ **OWASP Top 10 Score: 9.2/10** - Production-grade security
 - ✅ **Clean Architecture** - 4-layer separation with DDD patterns + Composition Root DI
-- ✅ **21 Value Objects** enforcing domain invariants
-- ✅ **58 Use Cases** covering all business operations
-- ✅ **Bilingual** (English + Spanish) with 12 i18n namespaces
-- ✅ **Bundle: 1,308 KB** (within 1,400 KB CI budget)
+- ✅ **22 Value Objects** enforcing domain invariants
+- ✅ **79 Use Cases** covering all business operations
+- ✅ **Bilingual** (English + Spanish) with 14 i18n namespaces
+- ✅ **Bundle: 1,487 KB** (within 1,500 KB CI budget)
 - ✅ **3 CI/CD workflows** - GitHub Actions pipeline
 
 ---
@@ -149,7 +149,7 @@ npm run preview   # Preview locally
 ### Tournament Management
 - ✅ Create and configure competitions with custom team names
 - ✅ Enrollment flow with tee category selection (5 categories)
-- ✅ Competition state machine: DRAFT → ACTIVE → IN_PROGRESS → COMPLETED
+- ✅ Competition state machine: DRAFT → ACTIVE → CLOSED → IN_PROGRESS → COMPLETED (+ reverse transitions)
 - ✅ **Competition ↔ GolfCourse M2M** (v2.0.2) - Multi-course tournaments
 
 ### Schedule & Matches (Sprint 2)
@@ -168,21 +168,36 @@ npm run preview   # Preview locally
 
 ### What's New
 
-**v2.0.6 (Sprint 2 Complete - Feb 8, 2026)**
-- ✅ **Schedule & Matches UI**: Full schedule management page with round CRUD, match generation, team assignment
-- ✅ **Enrollment Tee Category Modal**: Tee category selection during enrollment (5 categories)
-- ✅ **i18n Toast Migration**: All hardcoded toast messages replaced with translation keys
-- ✅ **Bundle Optimization**: Replaced country-flag-icons SVG (239 KB) with flagcdn.com CDN images
-- ✅ **TeeCategoryBadge**: Color-coded badges with gender suffix (M/F) display
-- ✅ **Player Schedule View**: Read-only schedule access for enrolled players
+**v2.0.12 (Sprint 4 - Live Scoring - Feb 2026)**
+- ✅ **Live Scoring UI**: Hole-by-hole annotation with 3-tab interface (Input, Scorecard, Leaderboard)
+- ✅ **Marker System**: Reciprocal markers (singles) + distributed markers (team formats)
+- ✅ **Score Validation**: Visual indicators for match/mismatch/pending states
+- ✅ **Independent Scorecard Submission**: Own and marker scores lock independently
+- ✅ **Match Concede**: Early end modal with concession tracking
+- ✅ **Offline Support**: Queue scores when offline, auto-sync on reconnect
+- ✅ **Session Lock**: User-scoped multi-device conflict prevention
+- ✅ **Dashboard Pending Actions**: Card showing pending invitations, enrollment requests, upcoming matches
+- ✅ **Invitation Auto-redirect**: Navigate to competition after accepting invitation
+- ✅ **User Search Invitations**: Search registered users by name/email for invitations
+- ✅ **Upcoming Matches Page**: Player view of scheduled/in-progress matches across competitions
+- ✅ **Reverse Status Transitions**: Reopen enrollments (CLOSED→ACTIVE) and revert to closed (IN_PROGRESS→CLOSED)
+- ✅ **Admin Dropdown**: Admin links moved from nav bar to user profile dropdown
+- ✅ **Walkover in Leaderboard**: Walkover matches displayed in completed section
+- ✅ **Creator Info**: Competition detail shows organizer name
+
+**v2.0.11 (Sprint 3 - Invitations - Feb 2026)**
+- ✅ **Invitation System**: Email invitations with secure tokens
+- ✅ **Invitation Management**: CRUD operations for creators
+- ✅ **Response Flow**: Accept/decline with automated enrollment
+
+**v2.0.6 (Sprint 2 - Schedule & Matches - Feb 8, 2026)**
+- ✅ **Schedule Management**: Round CRUD, match generation, team assignment
+- ✅ **Enrollment Tee Category**: 5-category tee selection during enrollment
+- ✅ **i18n Toast Migration**: All messages use translation keys
+- ✅ **Bundle Optimization**: CDN flags replacing 239 KB SVG bundle
 
 **v2.0.4 (Feb 3, 2026)**
 - ✅ **Subdomain Architecture**: Cloudflare configuration for `www` + `api` subdomains
-
-### Coming Soon (Competition Module Evolution)
-- 🔄 **Invitation System** - Email invitations with secure tokens (Sprint 3)
-- 🔄 **Live Scoring** - Hole-by-hole annotation with dual validation (Sprint 4)
-- 🔄 **Real-time Leaderboards** - Public leaderboard with conditional polling (Sprint 5)
 
 ---
 
@@ -194,22 +209,22 @@ npm run preview   # Preview locally
 src/
 ├── domain/              # Entities, VOs, Repository Interfaces
 │   ├── entities/        #   8 domain entities
-│   ├── value_objects/   #  21 value objects
+│   ├── value_objects/   #  22 value objects
 │   └── repositories/    #   Repository interfaces (ports)
-├── application/         # Use Cases (58 total)
-│   └── use_cases/       #   6 domain areas
+├── application/         # Use Cases (79 total)
+│   └── use_cases/       #   7 domain areas
 ├── infrastructure/      # API Repos, Mappers (ACL)
-│   ├── repositories/    #  11 API repositories (adapters)
+│   ├── repositories/    #  12 API repositories (adapters)
 │   └── mappers/         #   Anti-corruption layer
-├── pages/               # 18 route pages
+├── pages/               # 30 route pages
 │   ├── admin/           #   Users, golf course approval
-│   ├── creator/         #   Schedule management
+│   ├── creator/         #   Schedule, invitations management
 │   └── public/          #   Leaderboard, Pricing, Contact, Terms, Privacy, Cookies
-├── components/          # 32 reusable components
+├── components/          # 52 reusable components
 ├── hooks/               # Custom React hooks
 ├── store/               # Zustand stores (auth, competition)
 ├── composition/         # Dependency injection (Composition Root)
-├── i18n/                # 12 namespaces × 2 languages
+├── i18n/                # 14 namespaces × 2 languages
 └── utils/               # Sentry, validation, token refresh
 ```
 
@@ -218,7 +233,7 @@ src/
 ### Design Patterns
 - **Repository** - Data access abstraction (domain interfaces → infrastructure implementations)
 - **Anti-Corruption Layer (ACL)** - Mappers translating snake_case API → camelCase domain
-- **Value Objects** - Encapsulated validation logic (21 VOs)
+- **Value Objects** - Encapsulated validation logic (22 VOs)
 - **Composition Root** - DI container wiring all layers
 - **Use Cases** - Single responsibility per business operation
 - **Guard Components** - `RoleGuard`, `ProtectedRoute` for access control
@@ -234,39 +249,38 @@ src/
 
 | Metric | Value |
 |--------|-------|
-| Source files | 268 |
-| Lines of code | ~41,000 |
-| Test files | 82 |
+| Source files | 328 |
+| Lines of code | ~50,000 |
+| Test files | 130 |
 | Domain entities | 8 |
-| Value objects | 21 |
-| Use cases | 58 |
-| API repositories | 11 |
-| Components | 32 |
-| Pages | 18 |
+| Value objects | 22 |
+| Use cases | 79 |
+| API repositories | 12 |
+| Components | 52 |
+| Pages | 30 |
 
 ---
 
 ## 🧪 Testing
 
-### Test Statistics (v2.0.6)
+### Test Statistics (v2.0.12)
 
 | Category | Tests | Status | Coverage |
 |----------|-------|--------|----------|
-| **Total** | **1,104** | ✅ 100% passing | 85%+ |
-| Domain | ~400 | ✅ 100% | Entity invariants, VO validation |
-| Application | ~350 | ✅ 100% | Use case orchestration |
-| Infrastructure | ~200 | ✅ 100% | Mapper transformations |
-| Hooks/Utils | ~116 | ✅ 100% | Custom hooks, utilities |
+| **Total** | **1,550** | ✅ 100% passing | 85%+ |
+| Domain | ~424 | ✅ 100% | Entity invariants, VO validation |
+| Application | ~434 | ✅ 100% | Use case orchestration |
+| Infrastructure | ~261 | ✅ 100% | Mapper transformations |
+| Hooks/Utils | ~196 | ✅ 100% | Custom hooks, utilities |
+| Components/Pages | ~235 | ✅ 100% | UI components, integration |
 
 ### Quality Gates
 
 | Gate | Threshold | Current |
 |------|-----------|---------|
-| Tests | 100% pass | 1,104/1,104 |
-| Line coverage | >= 85% | Achieved |
-| Function coverage | >= 75% | Achieved |
+| Tests | 100% pass | 1,550/1,550 |
 | Branch coverage | >= 70% | Achieved |
-| Bundle size | <= 1,400 KB | 1,308 KB |
+| Bundle size | <= 1,500 KB | 1,487 KB |
 | ESLint errors | 0 | 0 |
 
 **Test Types**:
@@ -326,9 +340,9 @@ src/
 
 ## 🌍 Internationalization
 
-**12 namespaces** with full English + Spanish coverage:
+**14 namespaces** with full English + Spanish coverage:
 
-`auth` | `common` | `competitions` | `contact` | `dashboard` | `devices` | `golfCourses` | `landing` | `legal` | `pricing` | `profile` | `schedule`
+`auth` | `common` | `competitions` | `contact` | `dashboard` | `devices` | `golfCourses` | `invitations` | `landing` | `legal` | `pricing` | `profile` | `schedule` | `scoring`
 
 - ✅ Automatic browser language detection
 - ✅ localStorage persistence
@@ -342,21 +356,23 @@ src/
 
 ## 📡 API Integration
 
-This frontend consumes **66 REST API endpoints** organized across 13 domain areas:
+This frontend consumes **82 REST API endpoints** organized across 15 domain areas:
 
 | Domain | Endpoints | Description |
 |--------|-----------|-------------|
 | Authentication | 11 | Register, login, tokens, password reset, account unlock |
-| Users | 4 | Profile, security, role queries |
+| Users | 5 | Profile, security, role queries, user search |
 | Devices | 2 | Fingerprinting, remote revocation |
 | Handicaps | 3 | Manual + RFEG integration |
-| Competitions | 10 | CRUD + state machine transitions |
+| Competitions | 13 | CRUD + state machine transitions + reverse transitions |
 | Competition-GolfCourse | 4 | Add/remove/reorder courses in competition |
 | Enrollments | 8 | Request, approve, reject, withdraw |
 | Golf Courses | 10 | CRUD + admin approval workflow |
 | Schedule & Rounds | 4 | Round CRUD, schedule queries |
 | Matches | 4 | Status, walkover, player reassignment |
 | Teams & Generation | 3 | Team assignment, match generation |
+| Invitations | 5 | Send, list, respond to invitations |
+| Scoring | 5 | Scoring view, hole scores, scorecard, leaderboard, concede |
 | Countries | 2 | Country list, adjacent countries |
 | Support | 1 | Public contact form (`POST /api/v1/support/contact`) |
 
@@ -384,23 +400,27 @@ npm run lint             # ESLint
 
 ## 📊 Project Roadmap
 
-### Current Version: v2.0.6 (Production)
+### Current Version: v2.0.12 (Sprint 4 - Live Scoring)
 
-**Latest Features** (Sprint 2 Complete - Feb 8, 2026):
-- **Schedule & Matches UI**: Round CRUD, match generation, team assignment, drag & drop
-- **Enrollment Tee Category Modal**: 5-category tee selection during enrollment
-- **i18n Toast Migration**: All hardcoded messages replaced with translation keys
-- **Bundle Optimization**: CDN flags replacing 239 KB SVG bundle
-- **Total: 1,104 tests** passing - **Bundle: 1,308 KB**
+**Latest Features** (Sprint 4 - Feb 2026):
+- **Live Scoring System**: Hole-by-hole annotation with marker validation
+- **Score Input UI**: 3-tab interface (Input, Scorecard, Leaderboard)
+- **Independent Scorecard Submission**: Partial locking (own vs marker scores)
+- **Match Concede Flow**: Early end with concession tracking
+- **Offline Support**: Queue scores when offline, auto-sync on reconnect
+- **Session Management**: User-scoped multi-device conflict prevention
+- **Dashboard Pending Actions**: Actionable items card (invitations, enrollments, matches)
+- **User Search Invitations**: Tabbed modal with user search + email invite
+- **Total: 1,550 tests** passing - **Bundle: 1,487 KB**
 
-### Coming Next: Sprint 3-5 - Invitations, Scoring & Leaderboards
+### Sprint History
 
 **Sprint Breakdown**:
-1. ✅ **Sprint 1** (Jan 27 - Jan 31): Golf Courses + RBAC (COMPLETED)
-2. ✅ **Sprint 2** (Feb 3 - Feb 8): Schedule & Matches + Enrollment + i18n (COMPLETED)
-3. **Sprint 3** (Feb 2026): Invitation System - Email invitations with secure tokens
-4. **Sprint 4** (Mar 2026): Live Scoring - Hole-by-hole annotation with dual validation
-5. **Sprint 5** (Mar 2026): Leaderboards - Public leaderboard with conditional polling
+1. ✅ **Sprint 1** (Jan 27-31): Golf Courses + RBAC
+2. ✅ **Sprint 2** (Feb 3-8): Schedule & Matches + Enrollment
+3. ✅ **Sprint 3** (Feb 2026): Invitations System
+4. ✅ **Sprint 4** (Feb 2026): Live Scoring (COMPLETE)
+5. 🔄 **Sprint 5** (Mar 2026): Public Leaderboards
 
 See [ROADMAP.md](ROADMAP.md) for complete version planning.
 

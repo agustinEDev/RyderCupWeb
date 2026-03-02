@@ -202,6 +202,71 @@ describe('ApiUserRepository', () => {
     });
   });
 
+  describe('searchUsers', () => {
+    it('should call search-autocomplete endpoint with encoded query', async () => {
+      const mockResponse = {
+        users: [
+          { user_id: 'u1', email: 'john@test.com', full_name: 'John Doe' },
+          { user_id: 'u2', email: 'jane@test.com', full_name: 'Jane Smith' },
+        ],
+      };
+
+      apiRequest.mockResolvedValueOnce(mockResponse);
+
+      const results = await apiUserRepository.searchUsers('Jo');
+
+      expect(apiRequest).toHaveBeenCalledWith('/api/v1/users/search-autocomplete?query=Jo');
+      expect(results).toHaveLength(2);
+      expect(results[0]).toEqual({
+        id: 'u1',
+        firstName: 'John',
+        lastName: 'Doe',
+        email: 'john@test.com',
+        countryCode: null,
+      });
+      expect(results[1]).toEqual({
+        id: 'u2',
+        firstName: 'Jane',
+        lastName: 'Smith',
+        email: 'jane@test.com',
+        countryCode: null,
+      });
+    });
+
+    it('should encode special characters in query', async () => {
+      apiRequest.mockResolvedValueOnce({ users: [] });
+
+      await apiUserRepository.searchUsers('John Doe');
+
+      expect(apiRequest).toHaveBeenCalledWith('/api/v1/users/search-autocomplete?query=John%20Doe');
+    });
+
+    it('should return empty array when no users found', async () => {
+      apiRequest.mockResolvedValueOnce({ users: [] });
+
+      const results = await apiUserRepository.searchUsers('nonexistent');
+
+      expect(results).toEqual([]);
+    });
+
+    it('should handle single-word full_name', async () => {
+      apiRequest.mockResolvedValueOnce({
+        users: [{ user_id: 'u1', email: 'test@test.com', full_name: 'Madonna' }],
+      });
+
+      const results = await apiUserRepository.searchUsers('Mad');
+
+      expect(results[0].firstName).toBe('Madonna');
+      expect(results[0].lastName).toBe('');
+    });
+
+    it('should propagate API errors', async () => {
+      apiRequest.mockRejectedValueOnce(new Error('HTTP 500: Internal Server Error'));
+
+      await expect(apiUserRepository.searchUsers('test')).rejects.toThrow('HTTP 500');
+    });
+  });
+
   describe('updateSecurity', () => {
     it('should update user security settings', async () => {
       // Arrange

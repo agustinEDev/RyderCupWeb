@@ -97,6 +97,29 @@ class ApiUserRepository extends IUserRepository {
       is_player: data.is_player,
     };
   }
+
+  /**
+   * @override
+   * Uses GET /api/v1/users/search-autocomplete?query=... for partial name matching.
+   */
+  async searchUsers(query) {
+    const data = await apiRequest(`/api/v1/users/search-autocomplete?query=${encodeURIComponent(query)}`);
+
+    return (data.users || []).map(user => {
+      const fullName = user.full_name || '';
+      const spaceIndex = fullName.indexOf(' ');
+      const firstName = spaceIndex > 0 ? fullName.substring(0, spaceIndex) : fullName;
+      const lastName = spaceIndex > 0 ? fullName.substring(spaceIndex + 1) : '';
+
+      return {
+        id: user.user_id,
+        firstName,
+        lastName,
+        email: user.email,
+        countryCode: null,
+      };
+    });
+  }
 }
 
 export default ApiUserRepository;

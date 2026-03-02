@@ -1,4 +1,4 @@
-import { Play, CheckCircle, AlertTriangle, Eye, Users } from 'lucide-react';
+import { Play, CheckCircle, AlertTriangle, Eye, Users, ClipboardList } from 'lucide-react';
 
 const STATUS_COLORS = {
   SCHEDULED: 'bg-blue-100 text-blue-800',
@@ -13,13 +13,16 @@ const getPlayerName = (playerId, playerNameMap) => {
 
 const MatchCard = ({
   match,
+  matchFormat,
   onStartMatch,
   onCompleteMatch,
   onDeclareWalkover,
   onReassignPlayers,
   onViewDetail,
+  onScoreMatch,
   canManage,
   playerNameMap,
+  playerHandicapMap,
   teamNames,
   t,
 }) => {
@@ -29,6 +32,28 @@ const MatchCard = ({
 
   const teamA = match.teamAPlayers || [];
   const teamB = match.teamBPlayers || [];
+
+  const isTeamFormat = matchFormat === 'FOURBALL' || matchFormat === 'FOURSOMES';
+
+  const renderTeamPlayers = (players, teamColor) => {
+    if (players.length === 0) return <p className="text-sm text-gray-400">--</p>;
+
+    return players.map((p, i) => {
+      const realHcp = playerHandicapMap?.get(p.userId);
+      return (
+        <div key={p.userId || i} className="flex items-center justify-between">
+          <p className={`text-sm ${i === 0 ? 'text-gray-900' : 'text-gray-700'}`}>
+            {getPlayerName(p.userId, playerNameMap)}
+          </p>
+          {realHcp != null ? (
+            <span className={`text-xs ${teamColor} font-medium`}>HCP {realHcp.toFixed(1)}</span>
+          ) : p.playingHandicap != null ? (
+            <span className={`text-xs ${teamColor} font-medium`}>HCP {p.playingHandicap}</span>
+          ) : null}
+        </div>
+      );
+    });
+  };
 
   return (
     <div className="border border-gray-200 rounded-lg p-4 bg-white hover:shadow-sm transition-shadow">
@@ -45,27 +70,17 @@ const MatchCard = ({
       {/* Teams */}
       <div className="space-y-2 mb-3">
         {/* Team A */}
-        <div className="bg-blue-50 rounded-lg p-2">
+        <div className={`rounded-lg p-2 ${isTeamFormat ? 'bg-blue-50 border-l-4 border-blue-400' : 'bg-blue-50'}`}>
           <p className="text-xs font-semibold text-blue-700 mb-1">{teamNames.teamA}</p>
-          {teamA.map((p, i) => (
-            <p key={p.userId || i} className={`text-sm ${i === 0 ? 'text-gray-900' : 'text-gray-700'}`}>
-              {getPlayerName(p.userId, playerNameMap)}
-            </p>
-          ))}
-          {teamA.length === 0 && <p className="text-sm text-gray-400">--</p>}
+          {renderTeamPlayers(teamA, 'text-blue-600')}
         </div>
 
         <div className="text-center text-xs font-bold text-gray-400">{t('matches.vs')}</div>
 
         {/* Team B */}
-        <div className="bg-red-50 rounded-lg p-2">
+        <div className={`rounded-lg p-2 ${isTeamFormat ? 'bg-red-50 border-l-4 border-red-400' : 'bg-red-50'}`}>
           <p className="text-xs font-semibold text-red-700 mb-1">{teamNames.teamB}</p>
-          {teamB.map((p, i) => (
-            <p key={p.userId || i} className={`text-sm ${i === 0 ? 'text-gray-900' : 'text-gray-700'}`}>
-              {getPlayerName(p.userId, playerNameMap)}
-            </p>
-          ))}
-          {teamB.length === 0 && <p className="text-sm text-gray-400">--</p>}
+          {renderTeamPlayers(teamB, 'text-red-600')}
         </div>
       </div>
 
@@ -134,12 +149,21 @@ const MatchCard = ({
             <Eye className="w-3 h-3" />
             {t('matches.viewDetail')}
           </button>
+          {isInProgress && onScoreMatch && (
+            <button
+              onClick={() => onScoreMatch(match.id)}
+              className="flex items-center gap-1 px-3 py-1.5 bg-primary text-white rounded-md text-xs font-medium hover:bg-primary/90 transition-colors"
+            >
+              <ClipboardList className="w-3 h-3" />
+              {t('matches.score')}
+            </button>
+          )}
         </div>
       )}
 
       {/* Read-only: just view detail */}
       {!canManage && (
-        <div className="pt-2 border-t border-gray-100">
+        <div className="flex flex-wrap gap-2 pt-2 border-t border-gray-100">
           <button
             onClick={() => onViewDetail(match.id)}
             className="flex items-center gap-1 px-3 py-1.5 bg-indigo-500 text-white rounded-md text-xs font-medium hover:bg-indigo-600 transition-colors"
@@ -147,6 +171,15 @@ const MatchCard = ({
             <Eye className="w-3 h-3" />
             {t('matches.viewDetail')}
           </button>
+          {isInProgress && onScoreMatch && (
+            <button
+              onClick={() => onScoreMatch(match.id)}
+              className="flex items-center gap-1 px-3 py-1.5 bg-primary text-white rounded-md text-xs font-medium hover:bg-primary/90 transition-colors"
+            >
+              <ClipboardList className="w-3 h-3" />
+              {t('matches.score')}
+            </button>
+          )}
         </div>
       )}
     </div>

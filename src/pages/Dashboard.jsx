@@ -6,8 +6,9 @@ import { useTranslation } from 'react-i18next';
 import HeaderAuth from '../components/layout/HeaderAuth';
 import ProfileCard from '../components/profile/ProfileCard';
 import EmailVerificationBanner from '../components/EmailVerificationBanner';
+import PendingActionsCard from '../components/dashboard/PendingActionsCard';
 import { useAuth } from '../hooks/useAuth';
-import { listUserCompetitionsUseCase } from '../composition'; // Use the same use case as My Competitions
+import { listUserCompetitionsUseCase } from '../composition';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -91,6 +92,9 @@ const Dashboard = () => {
                 <EmailVerificationBanner userEmail={user.email} />
               </div>
             )}
+
+            {/* Pending Actions */}
+            <PendingActionsCard user={user} competitions={competitions} />
 
             {/* Statistics Cards */}
             <motion.div

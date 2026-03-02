@@ -98,7 +98,7 @@ const TeamAssignmentSection = ({
             onClick={onAssignTeams}
             className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors"
           >
-            {t('teams.assign')}
+            {t('teams.reassign')}
           </button>
         </div>
       )}

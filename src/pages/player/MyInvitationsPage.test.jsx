@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import MyInvitationsPage from './MyInvitationsPage';
 
@@ -39,6 +39,15 @@ vi.mock('../../composition', () => ({
 vi.mock('../../utils/toast', () => ({
   default: { success: vi.fn(), error: vi.fn() },
 }));
+
+const mockNavigate = vi.fn();
+vi.mock('react-router-dom', async () => {
+  const actual = await vi.importActual('react-router-dom');
+  return {
+    ...actual,
+    useNavigate: () => mockNavigate,
+  };
+});
 
 const renderPage = () => {
   return render(
@@ -96,6 +105,45 @@ describe('MyInvitationsPage', () => {
   it('should have status filter dropdown', async () => {
     renderPage();
     expect(await screen.findByTestId('status-filter')).toBeInTheDocument();
+  });
+
+  it('should navigate to competition detail after accepting invitation', async () => {
+    mockListMyInvitations.mockResolvedValue({
+      invitations: [
+        {
+          id: 'inv-1',
+          competitionId: 'comp-123',
+          competitionName: 'Summer Cup',
+          inviterName: 'Creator',
+          inviteeEmail: 'player@test.com',
+          status: 'PENDING',
+          isPending: true,
+          isAccepted: false,
+          isDeclined: false,
+          isExpired: false,
+          personalMessage: null,
+          expiresAt: new Date(Date.now() + 86400000).toISOString(),
+          respondedAt: null,
+        },
+      ],
+      totalCount: 1,
+    });
+    mockRespondToInvitation.mockResolvedValue({
+      id: 'inv-1',
+      competitionId: 'comp-123',
+      status: 'ACCEPTED',
+    });
+
+    renderPage();
+    const acceptButton = await screen.findByTestId('accept-button');
+    fireEvent.click(acceptButton);
+
+    await waitFor(() => {
+      expect(mockRespondToInvitation).toHaveBeenCalledWith('inv-1', 'ACCEPT');
+    });
+    await waitFor(() => {
+      expect(mockNavigate).toHaveBeenCalledWith('/competitions/comp-123');
+    });
   });
 
   it('should show pending count badge', async () => {

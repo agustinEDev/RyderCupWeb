@@ -94,17 +94,6 @@ const HeaderAuth = ({ user }) => {
             {t('header.myInvitations')}
           </Link>
 
-          {/* Admin Links (only visible to admins) */}
-          {user?.is_admin && (
-            <>
-              <Link to="/admin/golf-courses" className="text-gray-900 text-sm font-medium leading-normal hover:text-primary transition-colors">
-                {t('header.golfCourses')}
-              </Link>
-              <Link to="/admin/golf-courses/pending" className="text-gray-900 text-sm font-medium leading-normal hover:text-primary transition-colors">
-                {t('header.pendingCourses')}
-              </Link>
-            </>
-          )}
         </div>
 
         {/* Language Switcher */}
@@ -123,13 +112,36 @@ const HeaderAuth = ({ user }) => {
 
           {/* Desktop Dropdown Menu */}
           {isDropdownOpen && (
-            <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
+            <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
               <button
                 onClick={handleProfileClick}
                 className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
               >
                 {t('header.viewProfile')}
               </button>
+              {user?.is_admin && (
+                <>
+                  <div className="border-t border-gray-200 my-1" />
+                  <p className="px-4 py-1 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                    {t('header.administration')}
+                  </p>
+                  <Link
+                    to="/admin/golf-courses"
+                    onClick={() => setIsDropdownOpen(false)}
+                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                  >
+                    {t('header.golfCourses')}
+                  </Link>
+                  <Link
+                    to="/admin/golf-courses/pending"
+                    onClick={() => setIsDropdownOpen(false)}
+                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                  >
+                    {t('header.pendingCourses')}
+                  </Link>
+                </>
+              )}
+              <div className="border-t border-gray-200 my-1" />
               <button
                 onClick={handleLogout}
                 className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
@@ -219,10 +231,16 @@ const HeaderAuth = ({ user }) => {
               {t('header.myInvitations')}
             </Link>
 
-            {/* Admin Links (only visible to admins) */}
+            <div className="border-t border-gray-200 my-2"></div>
+            <div className="px-4 py-2">
+              <LanguageSwitcher />
+            </div>
             {user?.is_admin && (
               <>
                 <div className="border-t border-gray-200 my-2"></div>
+                <p className="px-4 py-1 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                  {t('header.administration')}
+                </p>
                 <Link
                   to="/admin/golf-courses"
                   onClick={() => setIsDropdownOpen(false)}
@@ -239,10 +257,6 @@ const HeaderAuth = ({ user }) => {
                 </Link>
               </>
             )}
-            <div className="border-t border-gray-200 my-2"></div>
-            <div className="px-4 py-2">
-              <LanguageSwitcher />
-            </div>
             <div className="border-t border-gray-200 my-2"></div>
             <button
               onClick={handleProfileClick}

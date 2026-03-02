@@ -1,10 +1,10 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   Users, Calendar, MapPin, Settings, ArrowLeft,
   Edit, Trash2, Play, CheckCircle, XCircle, Pause,
-  AlertCircle, Loader, UserPlus, Shield, Mail
+  AlertCircle, Loader, UserPlus, Shield, Mail, BarChart3, Undo2
 } from 'lucide-react';
 import customToast from '../utils/toast';
 import { useTranslation } from 'react-i18next';
@@ -22,13 +22,15 @@ import {
   startCompetitionUseCase,
   completeCompetitionUseCase,
   cancelCompetitionUseCase,
+  deleteCompetitionUseCase,
+  reopenEnrollmentsUseCase,
+  revertCompetitionStatusUseCase,
   listEnrollmentsUseCase,
   requestEnrollmentUseCase,
   approveEnrollmentUseCase,
   rejectEnrollmentUseCase,
 } from '../composition';
 import {
-  deleteCompetition,
   getStatusColor,
   getEnrollmentStatusColor,
   formatDateRange,
@@ -62,12 +64,12 @@ const CompetitionDetail = () => {
 
       setCompetition(data);
 
-      // Load enrollments only if user can manage the competition (for optimization)
-      // Note: isAdmin and hasCreatorRole might not be available yet during initial load,
-      // so we still check creatorId. The canManage logic will handle display permissions.
-      if (user && data.creatorId === user.id) {
+      // Load enrollments for all authenticated users (approved players visible to everyone)
+      try {
         const enrollmentsData = await listEnrollmentsUseCase.execute(id);
         setEnrollments(enrollmentsData);
+      } catch {
+        setEnrollments([]);
       }
     } catch (error) {
       console.error('Error loading competition:', error);
@@ -86,6 +88,11 @@ const CompetitionDetail = () => {
   }, [id, user, loadCompetition]);
 
   const isLoading = isLoadingUser || isLoadingCompetition || isLoadingRoles;
+
+  const approvedEnrollments = useMemo(
+    () => enrollments.filter(e => e.status === 'APPROVED'),
+    [enrollments]
+  );
 
   const handleStatusChange = async (action) => {
     // Validate golf courses approval status before activation
@@ -156,6 +163,14 @@ const CompetitionDetail = () => {
           result = await cancelCompetitionUseCase.execute(id);
           customToast.success(t('detail.success.cancelled'));
           break;
+        case 'reopen-enrollments':
+          result = await reopenEnrollmentsUseCase.execute(id);
+          customToast.success(t('detail.success.enrollmentsReopened'));
+          break;
+        case 'revert-status':
+          result = await revertCompetitionStatusUseCase.execute(id);
+          customToast.success(t('detail.success.statusReverted'));
+          break;
         default:
           throw new Error('Invalid action');
       }
@@ -182,7 +197,7 @@ const CompetitionDetail = () => {
 
     setIsProcessing(true);
     try {
-      await deleteCompetition(id);
+      await deleteCompetitionUseCase.execute(id);
       customToast.success(t('detail.success.deleted'));
       navigate('/competitions');
     } catch (error) {
@@ -266,14 +281,14 @@ const CompetitionDetail = () => {
   // Check if competition has reached max players
   // For creators: use enrollments list. For non-creators: fallback to competition.enrolledCount from API
   const approvedCount = enrollments.length > 0
-    ? enrollments.filter(e => e.status === 'APPROVED').length
+    ? approvedEnrollments.length
     : (competition.enrolledCount || 0);
   const isFull = competition.maxPlayers && approvedCount >= competition.maxPlayers;
 
   // Check for user enrollment from two sources:
   // 1. From enrollments list (when loaded from detail page)
   // 2. From competition.enrollment_status (mapped from backend's user_enrollment_status)
-  const userEnrollment = enrollments.find((e) => e.user_id === user.id);
+  const userEnrollment = enrollments.find((e) => e.userId === user.id);
   const hasEnrollment = userEnrollment || competition.enrollment_status;
 
   return (
@@ -343,6 +358,17 @@ const CompetitionDetail = () => {
                       </p>
                     </div>
                   </div>
+                  {competition.creator && (
+                    <div className="flex items-center gap-2 text-gray-700">
+                      <Shield className="w-5 h-5" />
+                      <div>
+                        <p className="text-xs text-gray-500">{t('detail.organizedBy')}</p>
+                        <p className="text-sm font-medium">
+                          {competition.creator.firstName} {competition.creator.lastName}
+                        </p>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Countries Badges */}
@@ -422,6 +448,17 @@ const CompetitionDetail = () => {
                     </button>
                   )}
 
+                  {competition.status === 'CLOSED' && (
+                    <button
+                      onClick={() => handleStatusChange('reopen-enrollments')}
+                      disabled={isProcessing}
+                      className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg font-medium hover:bg-orange-700 transition-colors shadow-md disabled:opacity-50"
+                    >
+                      <Undo2 className="w-4 h-4" />
+                      <span>{t('detail.actions.reopen-enrollments')}</span>
+                    </button>
+                  )}
+
                   {competition.status === 'IN_PROGRESS' && (
                     <button
                       onClick={() => handleStatusChange('complete')}
@@ -430,6 +467,17 @@ const CompetitionDetail = () => {
                     >
                       <CheckCircle className="w-4 h-4" />
                       <span>{t('detail.actions.complete')}</span>
+                    </button>
+                  )}
+
+                  {competition.status === 'IN_PROGRESS' && (
+                    <button
+                      onClick={() => handleStatusChange('revert-status')}
+                      disabled={isProcessing}
+                      className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg font-medium hover:bg-orange-700 transition-colors shadow-md disabled:opacity-50"
+                    >
+                      <Undo2 className="w-4 h-4" />
+                      <span>{t('detail.actions.revert-status')}</span>
                     </button>
                   )}
 
@@ -474,7 +522,26 @@ const CompetitionDetail = () => {
                       <span>{t('detail.actions.manageInvitations')}</span>
                     </button>
                   )}
+
                 </div>
+              </motion.div>
+            )}
+
+            {/* Leaderboard Button - Visible to ALL users */}
+            {(competition.status === 'IN_PROGRESS' || competition.status === 'COMPLETED') && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.1 }}
+                className="p-4"
+              >
+                <button
+                  onClick={() => navigate(`/competitions/${id}/leaderboard`, { state: { from: 'detail' } })}
+                  className="flex items-center justify-center gap-2 w-full px-6 py-3 bg-teal-600 text-white rounded-lg font-medium hover:bg-teal-700 transition-colors shadow-md"
+                >
+                  <BarChart3 className="w-5 h-5" />
+                  <span>{t('detail.actions.leaderboard')}</span>
+                </button>
               </motion.div>
             )}
 
@@ -593,67 +660,73 @@ const CompetitionDetail = () => {
               />
             </motion.div>
 
-            {/* Enrollments List - Only visible to creator/admin */}
+            {/* Approved Players Section - Visible to all authenticated users */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.3 }}
+              className="p-4"
+            >
+              <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+                <h3 className="text-gray-900 font-bold text-lg mb-4 flex items-center gap-2">
+                  <Users className="w-5 h-5 text-green-600" />
+                  {t('detail.approvedPlayers', { count: approvedEnrollments.length })}
+                </h3>
+
+                {approvedEnrollments.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500">
+                    <Users className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                    <p>{t('detail.noApprovedPlayers')}</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {approvedEnrollments
+                      .sort((a, b) => {
+                        // Sort by team first, then by handicap
+                        if (a.team && b.team && a.team !== b.team) {
+                          return a.team.localeCompare(b.team);
+                        }
+                        return (a.userHandicap || 999) - (b.userHandicap || 999);
+                      })
+                      .map((enrollment) => (
+                        <div
+                          key={enrollment.id}
+                          className="flex items-center justify-between p-4 border border-gray-200 rounded-lg bg-green-50 hover:bg-green-100 transition-colors"
+                        >
+                          <div className="flex-1">
+                            <p className="text-gray-900 font-semibold">
+                              {enrollment.userName || t('detail.unknownUser')}
+                            </p>
+                            <div className="flex items-center gap-2 mt-1">
+                              {enrollment.userHandicap !== null && enrollment.userHandicap !== undefined ? (
+                                <span className="text-green-700 text-sm font-medium">
+                                  {t('detail.handicapLabel', { handicap: Number(enrollment.userHandicap).toFixed(1) })}
+                                </span>
+                              ) : (
+                                <span className="text-gray-500 text-sm">{t('detail.noHandicap')}</span>
+                              )}
+                            </div>
+                          </div>
+                          {enrollment.team && (
+                            <span className="px-3 py-1.5 bg-primary text-white rounded-lg text-sm font-semibold">
+                              {enrollment.team}
+                            </span>
+                          )}
+                        </div>
+                      ))}
+                  </div>
+                )}
+              </div>
+            </motion.div>
+
+            {/* Pending & Rejected Enrollments - Only visible to creator/admin */}
             {canManage && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.3 }}
-                className="p-4 space-y-4"
+                transition={{ duration: 0.5, delay: 0.35 }}
+                className="px-4 space-y-4"
               >
-                {/* Approved Players Section */}
-                <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
-                  <h3 className="text-gray-900 font-bold text-lg mb-4 flex items-center gap-2">
-                    <Users className="w-5 h-5 text-green-600" />
-                    {t('detail.approvedPlayers', { count: enrollments.filter(e => e.status === 'APPROVED').length })}
-                  </h3>
-
-                  {enrollments.filter(e => e.status === 'APPROVED').length === 0 ? (
-                    <div className="text-center py-8 text-gray-500">
-                      <Users className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                      <p>{t('detail.noApprovedPlayers')}</p>
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      {enrollments
-                        .filter(e => e.status === 'APPROVED')
-                        .sort((a, b) => {
-                          // Sort by team first, then by handicap
-                          if (a.team && b.team && a.team !== b.team) {
-                            return a.team.localeCompare(b.team);
-                          }
-                          return (a.userHandicap || 999) - (b.userHandicap || 999);
-                        })
-                        .map((enrollment) => (
-                          <div
-                            key={enrollment.id}
-                            className="flex items-center justify-between p-4 border border-gray-200 rounded-lg bg-green-50 hover:bg-green-100 transition-colors"
-                          >
-                            <div className="flex-1">
-                              <p className="text-gray-900 font-semibold">
-                                {enrollment.userName || 'Unknown User'}
-                              </p>
-                              <div className="flex items-center gap-2 mt-1">
-                                {enrollment.userHandicap !== null && enrollment.userHandicap !== undefined ? (
-                                  <span className="text-green-700 text-sm font-medium">
-                                    {t('detail.handicapLabel', { handicap: Number(enrollment.userHandicap).toFixed(1) })}
-                                  </span>
-                                ) : (
-                                  <span className="text-gray-500 text-sm">{t('detail.noHandicap')}</span>
-                                )}
-                              </div>
-                            </div>
-                            {enrollment.team && (
-                              <span className="px-3 py-1.5 bg-primary text-white rounded-lg text-sm font-semibold">
-                                {enrollment.team}
-                              </span>
-                            )}
-                          </div>
-                        ))}
-                    </div>
-                  )}
-                </div>
-
                 {/* Pending Requests Section */}
                 {enrollments.filter(e => e.status === 'REQUESTED').length > 0 && (
                   <div className="bg-white border border-orange-200 rounded-xl p-6 shadow-sm">
@@ -672,7 +745,7 @@ const CompetitionDetail = () => {
                           >
                             <div className="flex-1">
                               <p className="text-gray-900 font-semibold">
-                                {enrollment.userName || 'Unknown User'}
+                                {enrollment.userName || t('detail.unknownUser')}
                               </p>
                               <p className="text-gray-600 text-sm">
                                 {enrollment.userEmail || t('detail.noEmail')}
@@ -729,7 +802,7 @@ const CompetitionDetail = () => {
                           >
                             <div className="flex-1">
                               <p className="text-gray-700 font-medium">
-                                {enrollment.userName || 'Unknown User'}
+                                {enrollment.userName || t('detail.unknownUser')}
                               </p>
                               <p className="text-gray-500 text-sm">
                                 {enrollment.userEmail || t('detail.noEmail')}
