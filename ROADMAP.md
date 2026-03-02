@@ -1,65 +1,65 @@
 # 🗺️ Roadmap - RyderCupFriends Frontend
 
-> **Versión:** 1.15.0 → 1.16.0 → 2.0.0 → 2.0.4 → 2.0.5 → 2.0.6 → 2.0.9 → 2.0.10 → 2.0.11 (sincronizado con backend)
-> **Última actualización:** 18 Feb 2026
-> **Estado:** ✅ v2.0.0 Sprint 1 Completado | ✅ v2.0.4 Sprint 2 + Infra Completado | ✅ v2.0.5 Hotfix UI | ✅ v2.0.6 Sprint 2 Schedule COMPLETADO | ✅ v2.0.9 Clean Architecture | ✅ v2.0.10 Manual Pairings | 🔄 v2.0.11 Sprint 3 Invitations EN PROGRESO
+> **Version:** 1.15.0 → 1.16.0 → 2.0.0 → 2.0.4 → 2.0.5 → 2.0.6 → 2.0.9 → 2.0.10 → 2.0.11 → 2.0.12 (synchronized with backend)
+> **Last Update:** Feb 24, 2026
+> **Status:** ✅ v2.0.0 Sprint 1 Completed | ✅ v2.0.4 Sprint 2 + Infra Completed | ✅ v2.0.5 Hotfix UI | ✅ v2.0.6 Sprint 2 Schedule COMPLETED | ✅ v2.0.9 Clean Architecture | ✅ v2.0.10 Manual Pairings | ✅ v2.0.11 Sprint 3 Invitations | ✅ v2.0.12 Sprint 4 Live Scoring COMPLETE
 > **Stack:** React 19 + Vite 7.3 + Tailwind CSS 4 + ESLint 9
-> **Arquitectura:** Subdomain (www + api) con Cloudflare Proxy (ADR-011)
+> **Architecture:** Subdomain (www + api) with Cloudflare Proxy (ADR-011)
 
 ---
 
-## 🎯 Roadmap v2.0.0 - Sincronización Frontend & Backend
+## 🎯 Roadmap v2.0.0 - Frontend & Backend Synchronization
 
-> **Objetivo:** Convertir la gestión básica de torneos en un sistema completo de planificación, scoring y leaderboards en tiempo real.
-> **Duración:** 7 semanas (27 Ene 2026 - 17 Mar 2026)
-> **Estado:** 🟢 **100% Sincronizado con Backend v2.0.0**
-> **Backend compatible:** FastAPI v2.0.0 (RyderCupAm)
+> **Goal:** Transform basic tournament management into a complete planning, scoring and real-time leaderboard system.
+> **Duration:** 7 weeks (Jan 27, 2026 - Mar 17, 2026)
+> **Status:** 🟢 **100% Synchronized with Backend v2.0.0**
+> **Compatible Backend:** FastAPI v2.0.0 (RyderCupAm)
 
 ---
 
-### 📝 Resumen de Sincronización con Backend (v2.0.0)
+### 📝 Backend Synchronization Summary (v2.0.0)
 
-Tras la revisión del prompt del backend, hemos actualizado nuestro plan para reflejar una sincronización total.
+After reviewing the backend prompt, we have updated our plan to reflect total synchronization.
 
-- **Endpoints:** Confirmados **30 endpoints** (26 originales + 4 nuevos).
-- **Tests:** Aceptada la estimación de **75+ tests** del backend, enfocados en cobertura pragmática.
-- **Sprints:** Adoptada la estructura de **5 sprints** con fechas y sync points idénticos.
-- **DTOs y Validación:** Se utilizarán los schemas Pydantic del backend como **fuente de la verdad**.
-- **Lógica de Dominio:** Confirmados los 3 `Domain Services` que impulsarán la UI (Handicaps, Scoring, Leaderboards).
+- **Endpoints:** Confirmed **30 endpoints** (26 original + 4 new).
+- **Tests:** Accepted backend estimation of **75+ tests**, focused on pragmatic coverage.
+- **Sprints:** Adopted **5 sprints** structure with identical dates and sync points.
+- **DTOs and Validation:** Pydantic backend schemas will be used as **source of truth**.
+- **Domain Logic:** Confirmed 3 `Domain Services` that will drive the UI (Handicaps, Scoring, Leaderboards).
 - **RBAC Foundation v2.0.0 (Backend):**
-    - ✅ Endpoint `GET /api/v1/users/me/roles/{competition_id}` implementado.
-    - ✅ Authorization helpers implementados.
-- **Protocolo de Handoff:** Aceptado el proceso de entregas semanales.
+    - ✅ Endpoint `GET /api/v1/users/me/roles/{competition_id}` implemented.
+    - ✅ Authorization helpers implemented.
+- **Handoff Protocol:** Accepted weekly delivery process.
 
 ---
 
-### 🔑 RBAC Frontend Implementation Simplificada
+### 🔑 Simplified RBAC Frontend Implementation
 
-Con la fundación RBAC v2.0.0 implementada en el backend, el trabajo en el frontend se simplifica enormemente. Ya **no es necesario** implementar un sistema complejo de roles, sino consumir el endpoint provisto para adaptar la UX.
+With RBAC Foundation v2.0.0 implemented in the backend, frontend work is greatly simplified. It is **no longer necessary** to implement a complex role system, but rather consume the provided endpoint to adapt the UX.
 
-#### 📝 Tareas Simplificadas de Frontend:
+#### 📝 Simplified Frontend Tasks:
 
-1.  **Crear `useUserRoles(competitionId)` hook:**
-    *   Este hook custom consumirá el endpoint `GET /api/v1/users/me/roles/{competition_id}`.
-    *   Retornará el estado de los roles (`isAdmin`, `isCreator`, `isPlayer`) y el `loading` state.
-2.  **Implementar `<RoleBasedAccess>` componente:**
-    *   Un componente wrapper que utilizará `useUserRoles` para renderizar condicionalmente su `children` basado en los roles requeridos.
-3.  **Agregar condicionales en botones/vistas:**
-    *   Utilizar el hook `useUserRoles` directamente en componentes o las props del `<RoleBasedAccess>` para controlar la visibilidad de elementos UI (botones, secciones, navegación).
+1.  **Create `useUserRoles(competitionId)` hook:**
+    *   This custom hook will consume the endpoint `GET /api/v1/users/me/roles/{competition_id}`.
+    *   Will return role state (`isAdmin`, `isCreator`, `isPlayer`) and `loading` state.
+2.  **Implement `<RoleBasedAccess>` component:**
+    *   A wrapper component that will use `useUserRoles` to conditionally render its `children` based on required roles.
+3.  **Add conditionals in buttons/views:**
+    *   Use the `useUserRoles` hook directly in components or `<RoleBasedAccess>` props to control visibility of UI elements (buttons, sections, navigation).
 
-#### 💡 Ejemplo de Implementación (Frontend):
+#### 💡 Implementation Example (Frontend):
 
 ```javascript
 // Hook example (src/hooks/useUserRoles.js)
 import { useQuery } from '@tanstack/react-query';
-import { fetchUserRoles } from '../infrastructure/repositories/userRepository'; // Suponiendo una función de fetch
+import { fetchUserRoles } from '../infrastructure/repositories/userRepository'; // Assuming a fetch function
 
 export const useUserRoles = (competitionId) => {
   const { data, isLoading, error } = useQuery(
     ['userRoles', competitionId],
     () => fetchUserRoles(competitionId),
     {
-      enabled: !!competitionId, // Solo ejecutar si tenemos competitionId
+      enabled: !!competitionId, // Only execute if we have competitionId
     }
   );
 
@@ -74,157 +74,158 @@ export const useUserRoles = (competitionId) => {
 
 // Component usage example
 import { useUserRoles } from '../../hooks/useUserRoles';
-import { Button } from '../../components/ui/Button'; // Suponiendo un componente Button
+import { Button } from '../../components/ui/Button'; // Assuming a Button component
 
 const CompetitionActions = ({ competitionId }) => {
   const { isAdmin, isCreator, isLoading } = useUserRoles(competitionId);
 
   if (isLoading) {
-    return <p>Cargando roles...</p>;
+    return <p>Loading roles...</p>;
   }
 
   return (
     <div>
       {(isCreator || isAdmin) && (
-        <Button onClick={() => console.log('Editar Competición')}>
-          Editar Competición
+        <Button onClick={() => console.log('Edit Competition')}>
+          Edit Competition
         </Button>
       )}
       {(isCreator || isAdmin) && (
-        <Button onClick={() => console.log('Gestionar Inscripciones')}>
-          Gestionar Inscripciones
+        <Button onClick={() => console.log('Manage Enrollments')}>
+          Manage Enrollments
         </Button>
       )}
-      {/* ... otros botones con lógica de rol ... */}
+      {/* ... other buttons with role logic ... */}
     </div>
   );
 };
 ```
 
-#### ⚠️ Notas Importantes:
+#### ⚠️ Important Notes:
 
-*   **NO implementar autorización en frontend:** El frontend solo se encargará de mejorar la experiencia de usuario (UX) mostrando u ocultando elementos.
-*   **La autorización real se valida en backend:** Toda operación sensible debe ser validada por el backend, que es la única fuente de verdad para los permisos.
-*   **El endpoint es solo para UX:** El `GET /api/v1/users/me/roles/{competition_id}` se utiliza exclusivamente para adaptar la interfaz de usuario, no para aplicar reglas de seguridad.
-
----
-
-### 📅 Sprint Breakdown (Sincronizado con Backend)
-
-> **Fechas:** 27 Ene 2026 - 17 Mar 2026
-> **Equipo:** 1 Frontend Dev + 1 Backend Dev (paralelo)
-
-| Sprint   | Fechas          | Esfuerzo BE | Endpoints | Sync Point        | Estado        | Versión  |
-|----------|-----------------|-------------|-----------|-------------------|---------------|----------|
-| Sprint 1 | 27 Ene - 6 Feb  | 60h         | 10        | ✅ Viernes 30 Ene | ✅ COMPLETADO | v2.0.0   |
-| Sprint 2 | 3 Feb - 17 Feb  | 70h         | 11        | ✅ Viernes 4 Feb  | ✅ COMPLETADO  | v2.0.10  |
-| Sprint 3 | 18 Feb - 24 Feb | 48h         | 5         | 🔄 Viernes 20 Feb | 🔄 EN PROGRESO | v2.0.11  |
-| Sprint 4 | 25 Feb - 10 Mar | 92h         | 4         | 🔄 Viernes 6 Mar  | 📋 Pendiente  | v2.0.6   |
-| Sprint 5 | 11 Mar - 17 Mar | 60h         | 2         | 🔄 Viernes 13 Mar | 📋 Pendiente  | v2.0.7   |
-| **TOTAL**| **7 semanas**   | **330h**    | **31**    |                   |               |          |
+*   **DO NOT implement authorization in frontend:** Frontend only handles improving user experience (UX) by showing or hiding elements.
+*   **Real authorization is validated in backend:** Every sensitive operation must be validated by backend, which is the only source of truth for permissions.
+*   **The endpoint is for UX only:** The `GET /api/v1/users/me/roles/{competition_id}` is used exclusively to adapt the user interface, not to apply security rules.
 
 ---
 
-### 🔄 Plan de Handoffs por Sprint (Frontend/Backend)
+### 📅 Sprint Breakdown (Synchronized with Backend)
 
-| Sprint   | Backend Entrega                                                                                                         | Frontend Consume                                                                              | Sync Point     | Estado |
+> **Dates:** Jan 27, 2026 - Mar 17, 2026
+> **Team:** 1 Frontend Dev + 1 Backend Dev (parallel)
+
+| Sprint   | Dates           | BE Effort | Endpoints | Sync Point        | Status        | Version  |
+|----------|-----------------|-----------|-----------|-------------------|---------------|---------|
+| Sprint 1 | Jan 27 - Feb 6  | 60h       | 10        | ✅ Friday Jan 30 | ✅ COMPLETED | v2.0.0   |
+| Sprint 2 | Feb 3 - Feb 17  | 70h       | 11        | ✅ Friday Feb 4  | ✅ COMPLETED  | v2.0.10  |
+| Sprint 3 | Feb 18 - Feb 24 | 48h       | 5         | ✅ Friday Feb 20 | ✅ COMPLETED  | v2.0.11  |
+| Sprint 4 | Feb 25 - Mar 10 | 92h       | 5         | ✅ Friday Mar 6  | ✅ COMPLETED | v2.0.12  |
+| Sprint 5 | Mar 11 - Mar 17 | 60h       | 2         | 🔄 Friday Mar 13 | 📋 Pending  | v2.0.13  |
+| **TOTAL**| **7 weeks**     | **330h**  | **31**    |                   |               |          |
+
+---
+
+### 🔄 Sprint Handoff Plan (Frontend/Backend)
+
+| Sprint   | Backend Delivers                                                                                                         | Frontend Consumes                                                                              | Sync Point     | Status |
 |----------|-------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------|----------------|--------|
-| Sprint 1 | ✅ `POST /admin/golf-courses`<br>✅ `PUT /admin/golf-courses/{id}/approve`<br>✅ `PUT /admin/golf-courses/{id}/reject`<br>✅ `GET /admin/golf-courses/pending`<br>✅ `PUT /admin/golf-courses/{id}/approve-update`<br>✅ `PUT /admin/golf-courses/{id}/reject-update`<br>✅ `PUT /golf-courses/{id}` (smart workflow)<br>✅ `GET /golf-courses`<br>✅ `GET /golf-courses/{id}`<br>✅ `POST /golf-courses/request` | ✅ `/admin/golf-courses` page (CRUD completo)<br>✅ `/admin/golf-courses/pending` page (2 tabs)<br>✅ GolfCourseForm component (400+ líneas)<br>✅ GolfCourseTable component<br>✅ TeeCategoryBadge component<br>✅ 116 tests (100% passing)<br>✅ i18n ES/EN (300+ traducciones)<br>✅ Navigation links (admin only) | ✅ 31 Ene 2026 | ✅ **COMPLETADO** |
-| Sprint 2 | ✅ `GET /competitions/{id}/schedule`<br>✅ `POST /competitions/{id}/schedule/configure`<br>✅ `POST /competitions/{id}/teams`<br>✅ `POST /competitions/{id}/rounds`<br>✅ `PUT /rounds/{id}`<br>✅ `DELETE /rounds/{id}`<br>✅ `POST /rounds/{id}/matches/generate`<br>✅ `GET /matches/{id}`<br>✅ `PUT /matches/{id}/status`<br>✅ `POST /matches/{id}/walkover`<br>✅ `PUT /matches/{id}/players` | ✅ Backend Integration Layer (11 endpoints)<br>✅ Domain Layer (6 VOs + 3 Entities)<br>✅ Infrastructure (Mapper + Repository)<br>✅ 11 Use Cases + Composition Root<br>✅ i18n (EN/ES schedule namespace)<br>✅ UI: Schedule page + Round/Match cards<br>✅ UI: Manual pairings modal<br>✅ UI: Match detail modal<br>✅ UI: Manual status control<br>✅ Clean Architecture remediation | 17 Feb 2026 | ✅ **COMPLETADO** |
-| Sprint 3 | `POST /competitions/{id}/invitations`<br>`POST /competitions/{id}/invitations/by-email`<br>`GET /invitations/me`<br>`POST /invitations/{id}/respond`<br>`GET /competitions/{id}/invitations` | ✅ Backend API contract (`docs/INVITATIONS_API_CONTRACT.md`)<br>✅ Domain layer (InvitationStatus VO, Invitation entity, IInvitationRepository)<br>✅ Infrastructure (InvitationMapper, ApiInvitationRepository)<br>✅ 5 use cases + InvitationAssembler<br>✅ i18n (EN/ES invitations namespace)<br>✅ UI: InvitationBadge, InvitationCard, SendInvitationModal<br>✅ Creator InvitationsPage + Player MyInvitationsPage<br>✅ Navigation integration (HeaderAuth + CompetitionDetail)<br>✅ 95 tests nuevos (1249 total) | Viernes 21 Feb | 🔄 Frontend listo, backend pendiente |
-| Sprint 4 | `GET /matches/{id}/scoring-view`                                                                                        | Scoring 3 tabs<br>Real-time validation ✅/❌                                                        | Viernes 7 Mar  | 📋 Pendiente |
-| Sprint 5 | `GET /competitions/{id}/leaderboard`                                                                                    | Public leaderboard<br>Polling (30s)                                                               | Viernes 14 Mar | 📋 Pendiente |
+| Sprint 1 | ✅ `POST /admin/golf-courses`<br>✅ `PUT /admin/golf-courses/{id}/approve`<br>✅ `PUT /admin/golf-courses/{id}/reject`<br>✅ `GET /admin/golf-courses/pending`<br>✅ `PUT /admin/golf-courses/{id}/approve-update`<br>✅ `PUT /admin/golf-courses/{id}/reject-update`<br>✅ `PUT /golf-courses/{id}` (smart workflow)<br>✅ `GET /golf-courses`<br>✅ `GET /golf-courses/{id}`<br>✅ `POST /golf-courses/request` | ✅ `/admin/golf-courses` page (complete CRUD)<br>✅ `/admin/golf-courses/pending` page (2 tabs)<br>✅ GolfCourseForm component (400+ lines)<br>✅ GolfCourseTable component<br>✅ TeeCategoryBadge component<br>✅ 116 tests (100% passing)<br>✅ i18n EN/ES (300+ translations)<br>✅ Navigation links (admin only) | ✅ Jan 31, 2026 | ✅ **COMPLETED** |
 
-_⭐ = Endpoints nuevos añadidos por backend._
+| Sprint 2 | ✅ `GET /competitions/{id}/schedule`<br>✅ `POST /competitions/{id}/schedule/configure`<br>✅ `POST /competitions/{id}/teams`<br>✅ `POST /competitions/{id}/rounds`<br>✅ `PUT /rounds/{id}`<br>✅ `DELETE /rounds/{id}`<br>✅ `POST /rounds/{id}/matches/generate`<br>✅ `GET /matches/{id}`<br>✅ `PUT /matches/{id}/status`<br>✅ `POST /matches/{id}/walkover`<br>✅ `PUT /matches/{id}/players` | ✅ Backend Integration Layer (11 endpoints)<br>✅ Domain Layer (6 VOs + 3 Entities)<br>✅ Infrastructure (Mapper + Repository)<br>✅ 11 Use Cases + Composition Root<br>✅ i18n (EN/ES schedule namespace)<br>✅ UI: Schedule page + Round/Match cards<br>✅ UI: Manual pairings modal<br>✅ UI: Match detail modal<br>✅ UI: Manual status control<br>✅ Clean Architecture remediation | Feb 17, 2026 | ✅ **COMPLETED** |
+| Sprint 3 | `POST /competitions/{id}/invitations`<br>`POST /competitions/{id}/invitations/by-email`<br>`GET /invitations/me`<br>`POST /invitations/{id}/respond`<br>`GET /competitions/{id}/invitations` | ✅ Backend API contract (`docs/INVITATIONS_API_CONTRACT.md`)<br>✅ Domain layer (InvitationStatus VO, Invitation entity, IInvitationRepository)<br>✅ Infrastructure (InvitationMapper, ApiInvitationRepository)<br>✅ 5 use cases + InvitationAssembler<br>✅ i18n (EN/ES invitations namespace)<br>✅ UI: InvitationBadge, InvitationCard, SendInvitationModal<br>✅ Creator InvitationsPage + Player MyInvitationsPage<br>✅ Navigation integration (HeaderAuth + CompetitionDetail)<br>✅ 95 new tests (1249 total) | Friday Feb 21 | ✅ Frontend ready, backend pending |
+| Sprint 4 | ✅ `GET /matches/{id}/scoring-view`<br>✅ `POST /matches/{id}/scores/holes/{hole_number}`<br>✅ `POST /matches/{id}/scorecard/submit`<br>✅ `GET /competitions/{id}/leaderboard`<br>✅ `PUT /matches/{id}/status` (concede action) | ✅ Backend API contract (`docs/SCORING_API_CONTRACT.md`)<br>✅ Domain layer (HoleScore VO, IScoringRepository, IUserRepository)<br>✅ Infrastructure (ScoringMapper, ApiScoringRepository, ApiUserRepository)<br>✅ 6 use cases + Composition Root DI<br>✅ i18n (EN/ES scoring + dashboard + invitations)<br>✅ UI: 16 scoring/dashboard components<br>✅ ScoringPage (3 tabs) + LeaderboardPage (public)<br>✅ PendingActionsCard + auto-redirect on accept<br>✅ useScoring hook + offline queue + session lock<br>✅ 2 rounds of bugfixes (team names, locking, score format)<br>✅ 301 new tests (1550 total) | Friday Mar 7 | ✅ Frontend + backend complete |
+| Sprint 5 | _(leaderboard endpoint already delivered in Sprint 4)_                                                                    | Public leaderboard enhancements<br>Polling (30s)                                                  | Friday Mar 14 | 📋 Pending |
+
+_⭐ = New endpoints added by backend._
 
 ---
 
-### ✅ Sprint 1: Golf Course Management System (COMPLETADO)
+### ✅ Sprint 1: Golf Course Management System (COMPLETED)
 
-> **Estado:** ✅ Completado el 31 Ene 2026
-> **Esfuerzo Frontend:** ~50h
+> **Status:** ✅ Completed on Jan 31, 2026
+> **Frontend Effort:** ~50h
 > **Tests:** 116 tests (100% passing)
 
-#### 🎯 Objetivos Alcanzados
+#### 🎯 Achieved Goals
 
-1. **Sistema Completo de Gestión de Campos de Golf**
-   - CRUD completo con Clean Architecture + DDD
-   - Workflow de aprobación con sistema de clones
-   - 2 páginas admin (CRUD + Aprobaciones)
-   - 3 componentes reutilizables
-   - 8 use cases implementados
+1. **Complete Golf Course Management System**
+   - Complete CRUD with Clean Architecture + DDD
+   - Approval workflow with clone system
+   - 2 admin pages (CRUD + Approvals)
+   - 3 reusable components
+   - 8 implemented use cases
 
-2. **Arquitectura**
+2. **Architecture**
    - Domain Layer: 2 value objects (Tee, Hole) + 1 entity (GolfCourse)
-   - Application Layer: 8 use cases con validaciones
+   - Application Layer: 8 use cases with validations
    - Infrastructure Layer: ApiGolfCourseRepository (10 endpoints)
-   - Presentation Layer: Pages + Components + i18n completo
+   - Presentation Layer: Pages + Components + complete i18n
 
 3. **Testing & Quality**
-   - 116 tests unitarios (100% passing)
+   - 116 unit tests (100% passing)
    - Coverage: Domain (77 tests), Application (39 tests)
-   - Tests de workflows completos (new request, update proposal, rejection)
+   - Complete workflow tests (new request, update proposal, rejection)
 
 4. **UX/UI**
-   - Formulario complejo: 18 hoyos + 2-6 tees
-   - Validaciones WHS (World Handicap System)
-   - Dropdown de países con banderas
-   - Real-time validations (totalPar 66-76, stroke indices únicos)
-   - Tabs para separar "New Requests" y "Update Proposals"
-   - Modal de rechazo con razón auditable
+   - Complex form: 18 holes + 2-6 tees
+   - WHS validations (World Handicap System)
+   - Country dropdown with flags
+   - Real-time validations (totalPar 66-76, unique stroke indices)
+   - Tabs to separate "New Requests" and "Update Proposals"
+   - Rejection modal with auditable reason
 
 5. **Internationalization**
-   - 300+ traducciones (ES/EN)
-   - Namespace `golfCourses` completo
-   - Nombres de países traducidos
+   - 300+ translations (ES/EN)
+   - Complete `golfCourses` namespace
+   - Translated country names
 
-#### 📊 Estadísticas del Sprint
+#### 📊 Sprint Statistics
 
-- **Archivos creados:** 30+
-- **Líneas de código:** ~3,500
-- **Componentes:** 3
-- **Páginas:** 2
+- **Created files:** 30+
+- **Lines of code:** ~3,500
+- **Components:** 3
+- **Pages:** 2
 - **Use Cases:** 8
 - **Tests:** 116
-- **Traducciones:** 300+
+- **Translations:** 300+
 - **Value Objects:** 2
 - **Entities:** 1
 - **Repositories:** 1 interface + 1 implementation
 
-#### 🚀 Entregables
+#### 🚀 Deliverables
 
-- ✅ `/admin/golf-courses` - Lista y gestión de campos aprobados
-- ✅ `/admin/golf-courses/pending` - Aprobación/rechazo de solicitudes
-- ✅ `GolfCourseForm` - Formulario complejo con validaciones
-- ✅ `GolfCourseTable` - Tabla reutilizable con acciones role-based
-- ✅ `TeeCategoryBadge` - Badges visuales para categorías de tees
-- ✅ Clean Architecture completa (4 capas)
-- ✅ 116 tests unitarios
-- ✅ i18n ES/EN completo
-- ✅ Documentación actualizada (CHANGELOG.md + ROADMAP.md)
+- ✅ `/admin/golf-courses` - List and management of approved courses
+- ✅ `/admin/golf-courses/pending` - Approval/rejection of requests
+- ✅ `GolfCourseForm` - Complex form with validations
+- ✅ `GolfCourseTable` - Reusable table with role-based actions
+- ✅ `TeeCategoryBadge` - Visual badges for tee categories
+- ✅ Complete Clean Architecture (4 layers)
+- ✅ 116 unit tests
+- ✅ Complete i18n EN/ES
+- ✅ Updated documentation (CHANGELOG.md + ROADMAP.md)
 
 #### 🔗 Backend Integration
 
-- ✅ Integración con 10 endpoints del backend v2.0.0
+- ✅ Integration with 10 endpoints from backend v2.0.0
 - ✅ Smart update workflow (admin in-place, creator clone)
-- ✅ Mapeo domain ↔ API (camelCase ↔ snake_case)
-- ✅ Manejo de errores con contexto
-- ✅ Validaciones multi-capa (HTML → Zod → Backend Pydantic)
+- ✅ Domain ↔ API mapping (camelCase ↔ snake_case)
+- ✅ Error handling with context
+- ✅ Multi-layer validations (HTML → Zod → Backend Pydantic)
 
 #### 🎨 UX Improvements
 
-- Country dropdown con banderas (reemplaza input text)
+- Country dropdown with flags (replaces text input)
 - Real-time totalPar calculation
 - Stroke index uniqueness validation
-- Tee category badges con colores
+- Tee category badges with colors
 - Status badges (APPROVED/PENDING/REJECTED)
 - Update pending indicators
 - Role-based navigation links
 
-#### 📝 Próximos Pasos
+#### 📝 Next Steps
 
-- Sprint 2: Schedule & Match Management (7 Feb - 17 Feb)
-- Implementar drag-and-drop para planificación de rounds
+- Sprint 2: Schedule & Match Management (Feb 7 - Feb 17)
+- Implement drag-and-drop for round planning
 - Match creation wizard
 - Manual match status control
 
@@ -232,70 +233,70 @@ _⭐ = Endpoints nuevos añadidos por backend._
 
 ### 🏗️ v2.0.4 - Infrastructure + Security (Sprint 2)
 
-> **Estado:** ✅ Completado el 3 Feb 2026
-> **Tipo:** Hotfix de infraestructura
+> **Status:** ✅ Completed on Feb 3, 2026
+> **Type:** Infrastructure hotfix
 > **ADR:** ADR-011
 
-#### 🎯 Objetivo
+#### 🎯 Goal
 
-Migrar de arquitectura de proxy inverso a subdominios directos para mejorar rendimiento y reducir costes.
+Migrate from reverse proxy architecture to direct subdomains to improve performance and reduce costs.
 
-#### 🔧 Cambios Implementados
+#### 🔧 Implemented Changes
 
-| Antes | Después |
-|-------|---------|
-| `www.rydercupfriends.com/api/*` → Proxy → Backend | `api.rydercupfriends.com` → Backend directo |
-| Latencia: +50-100ms (hop proxy) | Latencia: Directa |
-| Coste: +$7/mes (servicio proxy) | Coste: $0 |
-| Cookies: Domain rewrite manual | Cookies: `.rydercupfriends.com` nativo |
+| Before | After |
+|--------|-------|
+| `www.rydercupfriends.com/api/*` → Proxy → Backend | `api.rydercupfriends.com` → Direct backend |
+| Latency: +50-100ms (proxy hop) | Latency: Direct |
+| Cost: +$7/month (proxy service) | Cost: $0 |
+| Cookies: Domain rewrite manual | Cookies: `.rydercupfriends.com` native |
 
-#### ✅ Entregables
+#### ✅ Deliverables
 
 - ✅ PR #114: Cookie domain rewrite fix
 - ✅ PR #115: Upgrade http-proxy-middleware v3.0.3
 - ✅ PR #116: Full subdomain migration
-- ✅ ADR-011: Documentación de arquitectura
-- ✅ Cloudflare Page Rules configuradas
-- ✅ Backend CORS actualizado
+- ✅ ADR-011: Architecture documentation
+- ✅ Cloudflare Page Rules configured
+- ✅ Backend CORS updated
 
-#### 📊 Impacto
+#### 📊 Impact
 
-- **Performance:** -50-100ms latencia
-- **Coste:** -$7/mes (33% reducción)
-- **Fiabilidad:** Eliminado single point of failure
-- **Device Fingerprinting:** IPs reales via `CF-Connecting-IP`
+- **Performance:** -50-100ms latency
+- **Cost:** -$7/month (33% reduction)
+- **Reliability:** Eliminated single point of failure
+- **Device Fingerprinting:** Real IPs via `CF-Connecting-IP`
 
 ---
 
 ### 🔄 v2.0.6 - Schedule & Matches Backend Integration Layer (Sprint 2)
 
-> **Estado:** ✅ Completado el 8 Feb 2026
+> **Status:** ✅ Completed on Feb 8, 2026
 > **Branch:** `feature/sprint-2-schedule-matches`
-> **Esfuerzo Frontend:** ~50h (backend integration + UI)
-> **Tests:** ~214 tests nuevos (1088 total passing, 1 skipped)
+> **Frontend Effort:** ~50h (backend integration + UI)
+> **Tests:** ~214 new tests (1088 total passing, 1 skipped)
 
-#### 🎯 Objetivos
+#### 🎯 Goals
 
-1. **Backend Integration Layer completo** (11 endpoints del backend Sprint 2)
-2. **Breaking change `play_mode`** (reemplaza `handicap_type`/`handicap_percentage`)
-3. **UI Components** (pendiente): Schedule panel, Round cards, Match cards
+1. **Complete Backend Integration Layer** (11 endpoints from backend Sprint 2)
+2. **Breaking change `play_mode`** (replaces `handicap_type`/`handicap_percentage`)
+3. **UI Components** (pending): Schedule panel, Round cards, Match cards
 
-#### ✅ Completado: Backend Integration Layer
+#### ✅ Completed: Backend Integration Layer
 
 1. **Breaking Change: `play_mode`**
-   - `HandicapSettings` value object actualizado (SCRATCH/HANDICAP reemplaza SCRATCH/PERCENTAGE)
-   - `CompetitionMapper` mapea `play_mode` (con fallback retrocompatible)
-   - `CreateCompetition.jsx` formulario actualizado (eliminado selector de porcentaje)
-   - Traducciones EN/ES actualizadas
+   - `HandicapSettings` value object updated (SCRATCH/HANDICAP replaces SCRATCH/PERCENTAGE)
+   - `CompetitionMapper` maps `play_mode` (with backwards-compatible fallback)
+   - `CreateCompetition.jsx` form updated (removed percentage selector)
+   - EN/ES translations updated
 
-2. **Domain Layer (9 archivos nuevos + tests)**
+2. **Domain Layer (9 new files + tests)**
    - Value Objects: SessionType, MatchFormat, HandicapMode, RoundStatus, MatchStatus, AllowancePercentage
    - Entities: Round, Match, TeamAssignmentResult
-   - Repository Interface: IScheduleRepository (11 metodos)
+   - Repository Interface: IScheduleRepository (11 methods)
 
-3. **Infrastructure Layer (2 archivos nuevos + tests)**
+3. **Infrastructure Layer (2 new files + tests)**
    - ScheduleMapper: Anti-corruption layer (snake_case API -> camelCase domain)
-   - ApiScheduleRepository: Implementacion REST de 11 endpoints
+   - ApiScheduleRepository: REST implementation of 11 endpoints
 
 4. **Application Layer (11 use cases + tests)**
    - GetSchedule, ConfigureSchedule, AssignTeams
@@ -304,197 +305,295 @@ Migrar de arquitectura de proxy inverso a subdominios directos para mejorar rend
    - DeclareWalkover, ReassignPlayers
 
 5. **Composition Root + i18n**
-   - DI container actualizado con 11 use cases
-   - Namespace `schedule` registrado (EN/ES)
+   - DI container updated with 11 use cases
+   - `schedule` namespace registered (EN/ES)
 
-#### ✅ Completado: UI Components (Sprint 2)
+#### ✅ Completed: UI Components (Sprint 2)
 
-- ✅ Schedule page completa (`/creator/competitions/:id/schedule`)
-- ✅ Vista read-only para jugadores inscritos (`/competitions/:id/schedule`)
-- ✅ Round cards con expand/collapse
-- ✅ Match cards con acciones (start, complete, walkover, reassign)
-- ✅ Match detail modal con resultado formateado (walkover/completed)
+- ✅ Complete Schedule page (`/creator/competitions/:id/schedule`)
+- ✅ Read-only view for enrolled players (`/competitions/:id/schedule`)
+- ✅ Round cards with expand/collapse
+- ✅ Match cards with actions (start, complete, walkover, reassign)
+- ✅ Match detail modal with formatted result (walkover/completed)
 - ✅ Team assignment section
-- ✅ Walkover modal con equipo ganador + razón
+- ✅ Walkover modal with winning team + reason
 - ✅ Reassign players modal
-- ✅ Enrollment request modal con selector de tee category
-- ✅ Botón "View Schedule" para jugadores inscritos en CompetitionDetail
+- ✅ Enrollment request modal with tee category selector
+- ✅ "View Schedule" button for enrolled players in CompetitionDetail
 
-#### ✅ Completado: v2.0.9 Clean Architecture Remediation
+#### ✅ Completed: v2.0.9 Clean Architecture Remediation
 
-- ✅ ~57 violaciones corregidas en 66 archivos
-- ✅ Assemblers extraidos a capa de aplicacion
-- ✅ Transiciones de estado via ICompetitionRepository
-- ✅ Eliminado todo fetch() directo en UI
+- ✅ ~57 violations fixed in 66 files
+- ✅ Assemblers extracted to application layer
+- ✅ State transitions via ICompetitionRepository
+- ✅ Removed all direct fetch() in UI
 
-#### ✅ Completado: v2.0.10 Manual Pairings UI
+#### ✅ Completed: v2.0.10 Manual Pairings UI
 
-- ✅ GenerateMatchesModal con modo automatico/manual
-- ✅ Bugfix: reloadSchedule error silencioso
-- ✅ 24 tests nuevos (1154 total)
+- ✅ GenerateMatchesModal with automatic/manual mode
+- ✅ Bugfix: silent reloadSchedule error
+- ✅ 24 new tests (1154 total)
 
-#### 📊 Estadisticas Sprint 2
+#### 📊 Sprint 2 Statistics
 
-- **Archivos creados:** ~30
-- **Archivos modificados:** ~37
-- **Value Objects:** 6 nuevos
-- **Entities:** 3 nuevas
-- **Use Cases:** 11 nuevos
-- **UI Components:** 8 nuevos (schedule)
-- **Tests:** ~214 nuevos (1088 total passing, 1 skipped)
-- **Bundle:** 1308 KB build sin comprimir (-311 KB desde peak de 1619 KB)
+- **Created files:** ~30
+- **Modified files:** ~37
+- **Value Objects:** 6 new
+- **Entities:** 3 new
+- **Use Cases:** 11 new
+- **UI Components:** 8 new (schedule)
+- **Tests:** ~214 new (1088 total passing, 1 skipped)
+- **Bundle:** 1308 KB uncompressed build (-311 KB from peak of 1619 KB)
 
 ---
 
-### 🔄 v2.0.11 - Invitations System (Sprint 3)
+### ✅ v2.0.11 - Invitations System (Sprint 3)
 
-> **Estado:** 🔄 Frontend completo, backend pendiente
+> **Status:** ✅ Frontend complete, backend pending
 > **Branch:** `feature/sprint-3-invitations`
-> **Esfuerzo Frontend:** ~20h
-> **Tests:** 95 tests nuevos (1249 total passing, 1 skipped)
+> **Frontend Effort:** ~20h
+> **Tests:** 95 new tests (1249 total passing, 1 skipped)
 
-#### 🎯 Objetivos
+#### 🎯 Goals
 
-1. **Sistema de invitaciones por email** para que los creadores inviten jugadores
-2. **Pagina de invitaciones del jugador** para aceptar/rechazar invitaciones
-3. **Auto-enrollment** al aceptar una invitacion (bypass de aprobacion)
-4. **Contrato API** para que el equipo backend implemente los 5 endpoints
+1. **Email invitations system** for creators to invite players
+2. **Player invitations page** to accept/reject invitations
+3. **Auto-enrollment** when accepting invitation (approval bypass)
+4. **API contract** for backend team to implement 5 endpoints
 
-#### ✅ Completado: Frontend
+#### ✅ Completed: Frontend
 
 1. **Backend API Contract**
-   - `docs/INVITATIONS_API_CONTRACT.md` con 5 endpoints completos
-   - Shapes de request/response en snake_case
-   - Codigos de error (400-422) y reglas de negocio
-   - Lifecycle de invitaciones, duplicados, expiracion, auto-enrollment
+   - `docs/INVITATIONS_API_CONTRACT.md` with 5 complete endpoints
+   - Request/response shapes in snake_case
+   - Error codes (400-422) and business rules
+   - Invitation lifecycle, duplicates, expiration, auto-enrollment
 
-2. **Domain Layer (5 archivos + tests)**
+2. **Domain Layer (5 files + tests)**
    - `InvitationStatus` value object: state machine (PENDING → ACCEPTED/DECLINED/EXPIRED)
-   - `Invitation` entity: inmutable con factory methods y comandos accept/decline
-   - `IInvitationRepository`: interfaz con 5 metodos
+   - `Invitation` entity: immutable with factory methods and accept/decline commands
+   - `IInvitationRepository`: interface with 5 methods
 
-3. **Infrastructure Layer (2 archivos + tests)**
-   - `InvitationMapper`: snake_case API → dominio (usa `_apiData` para join fields)
-   - `ApiInvitationRepository`: 5 endpoints REST
+3. **Infrastructure Layer (2 files + tests)**
+   - `InvitationMapper`: snake_case API → domain (uses `_apiData` for join fields)
+   - `ApiInvitationRepository`: 5 REST endpoints
 
-4. **Application Layer (6 archivos + tests)**
-   - `InvitationAssembler`: entidad → DTO con campos computados
+4. **Application Layer (6 files + tests)**
+   - `InvitationAssembler`: entity → DTO with computed fields
    - 5 use cases: SendInvitation, SendInvitationByEmail, ListMyInvitations, RespondToInvitation, ListCompetitionInvitations
-   - Composition root actualizado con DI
+   - Composition root updated with DI
 
 5. **i18n + Shared Components**
    - Namespace `invitations` (EN/ES)
-   - `InvitationBadge`: badge de estado con colores
-   - `InvitationCard`: dual mode (player/creator) con countdown de expiracion
-   - `SendInvitationModal`: patron Wrapper+Content, email + mensaje personal
+   - `InvitationBadge`: status badge with colors
+   - `InvitationCard`: dual mode (player/creator) with expiration countdown
+   - `SendInvitationModal`: Wrapper+Content pattern, email + personal message
 
 6. **Pages + Navigation**
    - Creator InvitationsPage: `/creator/competitions/:id/invitations`
    - Player MyInvitationsPage: `/player/invitations`
-   - Boton "Invitaciones" en CompetitionDetail (creadores)
-   - Link "Mis Invitaciones" en HeaderAuth (desktop + mobile)
+   - "Invitations" button in CompetitionDetail (creators)
+   - "My Invitations" link in HeaderAuth (desktop + mobile)
 
-#### 📊 Estadisticas Sprint 3
+#### 📊 Sprint 3 Statistics
 
-- **Archivos creados:** 32
-- **Archivos modificados:** 9
-- **Value Objects:** 1 nuevo (InvitationStatus)
-- **Entities:** 1 nueva (Invitation)
-- **Use Cases:** 5 nuevos
-- **UI Components:** 3 nuevos (InvitationBadge, InvitationCard, SendInvitationModal)
-- **Pages:** 2 nuevas (InvitationsPage, MyInvitationsPage)
-- **Tests:** 95 nuevos (1249 total passing, 1 skipped)
-- **Bundle:** dentro de budget (1400 KB max)
+- **Created files:** 32
+- **Modified files:** 9
+- **Value Objects:** 1 new (InvitationStatus)
+- **Entities:** 1 new (Invitation)
+- **Use Cases:** 5 new
+- **UI Components:** 3 new (InvitationBadge, InvitationCard, SendInvitationModal)
+- **Pages:** 2 new (InvitationsPage, MyInvitationsPage)
+- **Tests:** 95 new (1249 total passing, 1 skipped)
+- **Bundle:** within budget (1400 KB max)
 
-#### 📋 Pendiente: Backend
+#### 📋 Pending: Backend
 
-El equipo backend debe implementar los 5 endpoints definidos en `docs/INVITATIONS_API_CONTRACT.md`:
-1. `POST /api/v1/competitions/{id}/invitations` — Invitar por user ID
-2. `POST /api/v1/competitions/{id}/invitations/by-email` — Invitar por email
-3. `GET /api/v1/invitations/me` — Invitaciones recibidas del jugador
-4. `POST /api/v1/invitations/{id}/respond` — Aceptar/Rechazar
-5. `GET /api/v1/competitions/{id}/invitations` — Invitaciones enviadas (creador)
-
----
-
-### ❓ Respuestas al Equipo Backend
-
-Aquí están las confirmaciones y respuestas a vuestras preguntas:
-
-1.  **Endpoints Adicionales:**
-    -   **Confirmación:** ✅ Sí, los **4 nuevos endpoints** (`GET /golf-courses/{id}`, `GET /matches/{id}`, `PUT /matches/{id}/status`, `POST /matches/{id}/walkover`) cubren todas las necesidades de UX que habíamos identificado. No vemos necesidad de más endpoints por ahora.
-
-2.  **Priorización de Testing:**
-    -   **Confirmación:** ✅ De acuerdo con la estimación de **75+ tests**.
-    -   **Casos Edge Críticos:** Nos gustaría asegurar que los siguientes casos estén cubiertos:
-        -   **Expiración de Tokens:** ¿Qué sucede si el token de un usuario expira a mitad de una operación de scoring? ¿La UI lo gestiona sin pérdida de datos?
-        -   **Eliminación de Entidades:** ¿Se puede eliminar un `match` que ya tiene scores? ¿O un `round` con `matches` ya jugados? Esperamos que el backend lo impida con un error 409 (Conflict).
-
-3.  **Validaciones Pydantic:**
-    -   **Confirmación:** ✅ Las validaciones parecen alineadas. Usaremos los DTOs del `ROADMAP.md` del backend como fuente de la verdad para nuestros formularios con `Zod`. Cualquier discrepancia la comunicaremos durante los *Sync Points*.
-
-4.  **Canal de Comunicación:**
-    -   **Preferencia:** ✅ **Slack**. Es el canal más ágil para notificaciones de despliegues y `curl` de ejemplo.
-
-5.  **Fórmula WHS:**
-    -   **Confirmación:** ✅ La fórmula `PH = (Handicap Index × Slope Rating / 113) + (Course Rating - Par)` es **correcta** según el estándar WHS. La hemos validado con calculadoras online y es la que esperamos.
+Backend team must implement the 5 endpoints defined in `docs/INVITATIONS_API_CONTRACT.md`:
+1. `POST /api/v1/competitions/{id}/invitations` — Invite by user ID
+2. `POST /api/v1/competitions/{id}/invitations/by-email` — Invite by email
+3. `GET /api/v1/invitations/me` — Player's received invitations
+4. `POST /api/v1/invitations/{id}/respond` — Accept/Reject
+5. `GET /api/v1/competitions/{id}/invitations` — Sent invitations (creator)
 
 ---
 
-### ✅ Acceptance Criteria Global (v2.0.0)
+### 🔄 v2.0.12 - Live Scoring System (Sprint 4)
 
-1.  **Funcionalidad:**
-    -   ✅ Admin gestiona usuarios y aprueba campos de golf.
-    -   ✅ Creator planifica torneos (rounds + matches) con drag & drop.
-    -   ✅ Creator invita jugadores por email o user ID.
-    -   ✅ Player anota scores en tiempo real con validación dual.
-    -   ✅ Leaderboard público actualiza cada 30s (solo si hay matches activos).
+> **Status:** ✅ Frontend complete, backend complete
+> **Branch:** `feature/sprint-4-live-scoring`
+> **Frontend Effort:** ~50h
+> **Tests:** 301 new tests (1550 total passing, 1 skipped)
+
+#### 🎯 Goals
+
+1. **Real-time scoring system** with player/marker cross-validation
+2. **3 scoring tabs** (Input, Scorecard, Leaderboard) in unified view
+3. **Complete offline support** with localStorage queue and automatic synchronization
+4. **Session lock** multi-device via BroadcastChannel
+5. **Public leaderboard** with Ryder Cup points and 30s polling
+6. **API contract** for backend team to implement 5 endpoints
+
+#### ✅ Completed: Frontend
+
+1. **Backend API Contract**
+   - `docs/SCORING_API_CONTRACT.md` with 5 complete endpoints
+   - Request/response shapes in snake_case
+   - Business rules: cross-marking, dual validation, early finish, concession, Ryder Cup points
+
+2. **Domain Layer (3 files + tests)**
+   - `HoleScore` value object: range 1-9 + null (ball picked up)
+   - `IScoringRepository`: interface with 5 methods
+
+3. **Infrastructure Layer (2 files + tests)**
+   - `ScoringMapper`: snake_case API → camelCase DTOs (3 methods)
+   - `ApiScoringRepository`: 5 REST endpoints
+
+4. **Application Layer (5 files + tests)**
+   - 5 use cases: GetScoringView, SubmitHoleScore (validates with HoleScore VO), SubmitScorecard, GetLeaderboard, ConcedeMatch
+   - Composition root updated with DI
+
+5. **i18n + Hooks + Utilities**
+   - Namespace `scoring` (complete EN/ES)
+   - Dashboard `pendingActions` keys (EN/ES) with pluralization
+   - Invitation search keys (EN/ES) for user search tabs
+   - `useScoring` hook: central state, 10s polling, auto-save, offline queue, user-scoped session lock, independent scorecard submission
+   - `scoringOfflineQueue`: localStorage queue for offline mode
+   - `scoringSessionLock`: BroadcastChannel for multi-device lock with forceRelease
+
+6. **UI Components (14 scoring + 2 enhancements)**
+   - `HoleInput`: minus/plus buttons, own score + marked, visual validation, team names, independent locking
+   - `HoleSelector`: 1-18 grid with state indicators
+   - `ScorecardTable`: OUT/IN/Total table with all players, team names and color coding
+   - `GolfFigure`: classic concentric SVG (eagle/birdie/par/bogey/double+)
+   - `ValidationIcon`: validation icon (match/mismatch/pending)
+   - `LeaderboardView`: Ryder Cup points, conceded match display, proper golf notation (X&Y)
+   - `TeamStandingsHeader`: facing team points
+   - `PreMatchInfo`: "You mark X, Y marks you"
+   - `MatchSummaryCard`: final result + stats
+   - 5 modals: EarlyEnd, ConcedeMatch, SubmitScorecard, OfflineBanner, SessionBlocked
+   - `PendingActionsCard` (dashboard): pending invitations, enrollment requests (creators), upcoming matches
+   - `SendInvitationModal` enhanced: tabbed interface with user search + email tabs
+
+7. **Pages + Navigation**
+   - `ScoringPage` (`/player/matches/:matchId/scoring`): 3 tabs, read-only spectators, team names, auto-submit par defaults
+   - `LeaderboardPage` (`/competitions/:id/leaderboard`): public, 30s polling, context-aware back navigation
+   - `Dashboard`: integrated PendingActionsCard for actionable items
+   - `MyInvitationsPage`: auto-redirect to competition detail after accepting invitation
+   - "Score" button in MatchCard for IN_PROGRESS matches
+   - "Leaderboard" button in CompetitionDetail (accessible to all users)
+
+8. **Bugfixes (2 rounds)**
+   - Team names display instead of letter identifiers (HoleInput, EarlyEndModal, ScorecardTable)
+   - Independent scorecard submission with partial locking (own vs marker scores)
+   - Session lock orphan prevention with forceRelease + user-scoped locks
+   - "AS" abbreviation replaced with "All Square" / "Empate"
+   - Match score format corrected to Ryder Cup notation (X&Y instead of XUP)
+   - Leaderboard made publicly accessible to all users
+   - Conceded match display in leaderboard
+
+#### 📊 Sprint 4 Statistics
+
+- **Created files:** 60
+- **Modified files:** 28
+- **Value Objects:** 1 new (HoleScore)
+- **Use Cases:** 6 new (5 scoring + SearchUsersUseCase)
+- **UI Components:** 16 new/enhanced (14 scoring + PendingActionsCard + SendInvitationModal)
+- **Pages:** 2 new (ScoringPage, LeaderboardPage) + 2 enhanced (Dashboard, MyInvitationsPage)
+- **Hooks:** 1 new (useScoring)
+- **Utilities:** 2 new (offlineQueue, sessionLock)
+- **Tests:** 301 new (1550 total passing, 1 skipped)
+- **Bundle:** 366.66 KB initial (within 1500 KB max budget)
+
+#### ✅ Backend: Complete
+
+All 5 scoring endpoints implemented and tested (2170 backend tests passing):
+1. `GET /api/v1/competitions/matches/{id}/scoring-view` — Unified scoring view (3 tabs)
+2. `POST /api/v1/competitions/matches/{id}/scores/holes/{hole_number}` — Submit hole score
+3. `POST /api/v1/competitions/matches/{id}/scorecard/submit` — Submit final scorecard
+4. `GET /api/v1/competitions/{id}/leaderboard` — Competition leaderboard
+5. `PUT /api/v1/matches/{id}/status` (action `concede`) — Concede match
+
+---
+
+### ❓ Answers to Backend Team
+
+Here are the confirmations and answers to your questions:
+
+1.  **Additional Endpoints:**
+    -   **Confirmation:** ✅ Yes, the **4 new endpoints** (`GET /golf-courses/{id}`, `GET /matches/{id}`, `PUT /matches/{id}/status`, `POST /matches/{id}/walkover`) cover all UX needs we had identified. We don't see need for more endpoints right now.
+
+2.  **Testing Prioritization:**
+    -   **Confirmation:** ✅ Agree with **75+ tests** estimation.
+    -   **Critical Edge Cases:** We would like to ensure the following cases are covered:
+        -   **Token Expiration:** What happens if a user's token expires mid-scoring operation? Does the UI handle it without data loss?
+        -   **Entity Deletion:** Can a `match` with scores be deleted? Or a `round` with already played `matches`? We expect backend to prevent this with 409 (Conflict) error.
+
+3.  **Pydantic Validations:**
+    -   **Confirmation:** ✅ Validations seem aligned. We will use backend's `ROADMAP.md` DTOs as source of truth for our forms with `Zod`. Any discrepancies will be communicated during _Sync Points_.
+
+4.  **Communication Channel:**
+    -   **Preference:** ✅ **Slack**. It's the most agile channel for deployment notifications and `curl` examples.
+
+5.  **WHS Formula:**
+    -   **Confirmation:** ✅ The formula `PH = (Handicap Index × Slope Rating / 113) + (Course Rating - Par)` is **correct** according to WHS standard. We have validated it with online calculators and it's what we expect.
+
+---
+
+### ✅ Global Acceptance Criteria (v2.0.0)
+
+1.  **Functionality:**
+    -   ✅ Admin manages users and approves golf courses.
+    -   ✅ Creator plans tournaments (rounds + matches) with drag & drop.
+    -   ✅ Creator invites players by email or user ID.
+    -   ✅ Player scores in real-time with dual validation.
+    -   ✅ Public leaderboard updates every 30s (only if there are active matches).
 
 2.  **Testing:**
-    -   ✅ ≥85% test coverage (lines) en frontend.
-    -   ✅ Backend mantiene ≥85% test coverage en su lógica de negocio.
-    -   ✅ E2E tests cubren flujo completo.
-    -   ✅ 0 tests failing en pipeline.
+    -   ✅ ≥85% test coverage (lines) in frontend.
+    -   ✅ Backend maintains ≥85% test coverage in business logic.
+    -   ✅ E2E tests cover complete flow.
+    -   ✅ 0 tests failing in pipeline.
 
 3.  **Performance:**
     -   ✅ Bundle size ≤1200 KB.
     -   ✅ Build time ≤6s.
-    -   ✅ Polling optimizado (solo cuando necesario).
+    -   ✅ Polling optimized (only when necessary).
 
 4.  **Security:**
-    -   ✅ RoleGuard protege rutas por rol.
+    -   ✅ RoleGuard protects routes by role.
     -   ✅ 0 vulnerabilities (npm audit).
     -   ✅ OWASP Score ≥9.0/10.
 
 5.  **Documentation:**
-    -   ✅ ADRs actualizados (ADR-009, ADR-010).
-    -   ✅ CHANGELOG.md con v2.0.0 completo.
-    -   ✅ `ROADMAP.md` sincronizado entre frontend y backend.
+    -   ✅ ADRs updated (ADR-009, ADR-010).
+    -   ✅ CHANGELOG.md with complete v2.0.0.
+    -   ✅ `ROADMAP.md` synchronized between frontend and backend.
 ---
 
 #### 🔄 Handoffs & Dependencies
 
 | Sprint | Frontend Needs | Backend Delivers | Sync Point |
 |--------|---------------|------------------|------------|
-| Sprint 1 | Roles endpoints | `POST /admin/users/{id}/roles` | Viernes semana 1 |
-| Sprint 2 | Schedule endpoints | `POST /competitions/{id}/rounds` | Viernes semana 3 |
-| Sprint 3 | Invitations endpoints | `POST /invitations/{id}/respond` | Viernes semana 4 |
-| Sprint 4 | Scoring endpoints | `GET /matches/{id}/scoring-view` | Viernes semana 6 |
-| Sprint 5 | Leaderboard endpoints | `GET /competitions/{id}/leaderboard` | Viernes semana 7 |
+| Sprint 1 | Roles endpoints | `POST /admin/users/{id}/roles` | Friday week 1 |
+| Sprint 2 | Schedule endpoints | `POST /competitions/{id}/rounds` | Friday week 3 |
+| Sprint 3 | Invitations endpoints | `POST /invitations/{id}/respond` | Friday week 4 |
+| Sprint 4 | Scoring endpoints | `GET /matches/{id}/scoring-view` | Friday week 6 |
+| Sprint 5 | Leaderboard endpoints | `GET /competitions/{id}/leaderboard` | Friday week 7 |
 
-**Comunicación:** Daily standups + PR reviews cruzados Frontend ↔ Backend
+**Communication:** Daily standups + cross PR reviews Frontend ↔ Backend
 
 ---
 
-## ✅ Historial de Implementaciones (Completado)
+## ✅ Implementation History (Completed)
 
 ### 🎯 v1.16.0 - Major Dependencies Update (Sprints 1-4)
 
-> **Estado:** ✅ Completado (24 Ene 2026)
-> **Objetivo:** Modernizar el stack tecnológico completo.
+> **Status:** ✅ Completed (Jan 24, 2026)
+> **Goal:** Modernize complete technology stack.
 
-#### ✅ Sprint 4: Verificación Final
-- `@sentry/replay`: downgrade a **7.116.0** (peer dependency fix)
+#### ✅ Sprint 4: Final Verification
+- `@sentry/replay`: downgrade to **7.116.0** (peer dependency fix)
 - Tests: 717 passed, 0 failed ✅
 - Security: 0 vulnerabilities ✅
 - Performance: Bundle 1318 KB (gzipped ~460 KB)
@@ -503,7 +602,7 @@ Aquí están las confirmaciones y respuestas a vuestras preguntas:
 #### ✅ Sprint 3: Build Tools & Styling (Tailwind 4, ESLint 9)
 - `tailwindcss`: v3.4.19 → **v4.1.18** (CSS-first)
 - `eslint`: v8.55.0 → **v9.39.2** (Flat config)
-- Migración completa de configuración (`eslint.config.js`, `@theme` CSS)
+- Complete configuration migration (`eslint.config.js`, `@theme` CSS)
 
 #### ✅ Sprint 2: Monitoring & Routing (Sentry 10, React Router 7)
 - `@sentry/react`: v7.120.4 → **v10.34.0**
@@ -513,26 +612,26 @@ Aquí están las confirmaciones y respuestas a vuestras preguntas:
 #### ✅ Sprint 1: React 19 Ecosystem
 - `react` & `react-dom`: v18.2.0 → **v19.2.3**
 - `@vitejs/plugin-react`: v4.7.0 → **v5.1.2**
-- `prop-types` removido (incompatible con React 19)
+- `prop-types` removed (incompatible with React 19)
 
 ---
 
 ### 🎯 v1.15.0 - Data Integrity Improvements (A08)
 
-> **Estado:** ✅ Completado (24 Ene 2026)
-> **Objetivo:** Mejorar OWASP A08 (Data Integrity) de 7.0/10 a 9.0/10
+> **Status:** ✅ Completed (Jan 24, 2026)
+> **Goal:** Improve OWASP A08 (Data Integrity) from 7.0/10 to 9.0/10
 
-#### ✅ Tareas Implementadas:
+#### ✅ Implemented Tasks:
 - ✅ **SRI (Subresource Integrity):**
-  - Implementado `vite-plugin-sri` (SHA-384).
-  - Assets críticos protegidos con hashes de integridad.
+  - Implemented `vite-plugin-sri` (SHA-384).
+  - Critical assets protected with integrity hashes.
 - ✅ **CI/CD Commit Verification:**
-  - Job `commit-verification` en GitHub Actions.
-  - Verificación de firmas GPG en cada commit.
+  - Job `commit-verification` in GitHub Actions.
+  - GPG signature verification on each commit.
 - ✅ **Package-Lock Validation:**
-  - Check de integridad en CI/CD.
-  - Previene dependency confusion attacks.
-- ✅ **Actualización de Dependencias:**
+  - Integrity check in CI/CD.
+  - Prevents dependency confusion attacks.
+- ✅ **Dependencies Update:**
   - NPM: `framer-motion` (v12.27.0), `vite` (v7.3.1), `i18next` (v25.7.4), `react-i18next` (v16.5.2).
   - Actions: `snyk/actions/node` (v1.0.0), `trufflesecurity/trufflehog` (v3.92.5).
 
@@ -540,39 +639,41 @@ Aquí están las confirmaciones y respuestas a vuestras preguntas:
 
 ### 🎯 v1.14.0 - Device Fingerprinting Improvements
 
-> **Estado:** ✅ Completado (17 Ene 2026)
-> **Objetivo:** Resolver bugs críticos y mejorar robustez del sistema de device fingerprinting
+> **Status:** ✅ Completed (Jan 17, 2026)
+> **Goal:** Resolve critical bugs and improve device fingerprinting system robustness
 
-*... (Se mantiene igual que la versión anterior) ...*
+_... (Remains the same as previous version) ..._
 
 ---
 
-## 📊 Estado Actual (v2.0.10 - Sprint 2 completado)
+## 📊 Current Status (v2.0.12 - Sprint 4 completed)
 
-### Métricas Clave
+### Key Metrics
 
-- **Tests:** 1154 passing, 1 skipped, 0 failed ✅
+- **Tests:** 1550 passing, 1 skipped, 0 failed ✅
 - **Coverage:** ≥85% lines, ≥75% functions ✅
-- **Bundle:** dentro de budget ✅ (budget: ≤1400 KB, warning: 1300 KB)
+- **Bundle:** within budget ✅ (budget: ≤1500 KB, warning: 1400 KB)
 - **Build time:** ~6s ⚡
 - **Security:** 0 vulnerabilities ✅
 - **OWASP Score:** 9.2/10 ✅
 
-### Completado (v2.x)
+### Completed (v2.x)
 - ✅ Golf Course Management System (v2.0.0 - Sprint 1)
 - ✅ Infrastructure Migration + Security (v2.0.4)
 - ✅ Hotfix Golf Courses UI (v2.0.5)
 - ✅ Schedule Backend Integration Layer + UI (v2.0.6 - Sprint 2)
 - ✅ Clean Architecture Remediation (v2.0.9)
 - ✅ Manual Pairings UI (v2.0.10)
+- ✅ Invitations System (v2.0.11 - Sprint 3)
+- ✅ Live Scoring System (v2.0.12 - Sprint 4)
 
-### Completado (v1.x)
+### Completed (v1.x)
 - ✅ Modern Build Stack (v1.16.0)
 - ✅ Data Integrity (SRI, Signed Commits) - **v1.15.0**
 - ✅ Device Fingerprinting (Clean Arch) - **v1.14.0**
 - ✅ Clean Architecture + DDD
-- ✅ Autenticación (httpOnly cookies, refresh tokens)
-- ✅ CRUD Competiciones + Enrollments
+- ✅ Authentication (httpOnly cookies, refresh tokens)
+- ✅ Competitions CRUD + Enrollments
 - ✅ Handicaps (Manual + RFEG)
 - ✅ Password Reset Flow
 - ✅ i18n (ES/EN, 12 namespaces)
@@ -582,33 +683,33 @@ Aquí están las confirmaciones y respuestas a vuestras preguntas:
 
 ---
 
-## 🔐 Seguridad OWASP Top 10 2021
+## 🔐 OWASP Top 10 2021 Security
 
-| Categoría | Score | Estado | Prioridad |
-|-----------|-------|--------|-----------|
-| A01: Broken Access Control | 8.5/10 | ✅ Excelente | 🟢 Baja |
-| A02: Cryptographic Failures | 9.5/10 | ✅ Excelente | 🟢 Baja |
-| A03: Injection | 9.5/10 | ✅ Excelente | 🟢 Baja |
-| A04: Insecure Design | 8.5/10 | ✅ Excelente | 🟢 Baja |
-| A05: Security Misconfiguration | 10.0/10 | ✅ Perfecto | 🟢 Baja |
-| A06: Vulnerable Components | 9.5/10 | ✅ Excelente | 🟢 Baja |
-| A07: Auth Failures | 9.0/10 | ✅ Excelente | 🟢 Baja |
-| A08: Data Integrity | 9.0/10 | ✅ Excelente | 🟢 Baja |
-| A09: Logging & Monitoring | 9.5/10 | ✅ Excelente | 🟢 Baja |
-| A10: SSRF | 9.0/10 | ✅ N/A | 🟢 Baja |
-| **TOTAL (Media)** | **9.2/10** | | |
+| Category | Score | Status | Priority |
+|----------|-------|--------|----------|
+| A01: Broken Access Control | 8.5/10 | ✅ Excellent | 🟢 Low |
+| A02: Cryptographic Failures | 9.5/10 | ✅ Excellent | 🟢 Low |
+| A03: Injection | 9.5/10 | ✅ Excellent | 🟢 Low |
+| A04: Insecure Design | 8.5/10 | ✅ Excellent | 🟢 Low |
+| A05: Security Misconfiguration | 10.0/10 | ✅ Perfect | 🟢 Low |
+| A06: Vulnerable Components | 9.5/10 | ✅ Excellent | 🟢 Low |
+| A07: Auth Failures | 9.0/10 | ✅ Excellent | 🟢 Low |
+| A08: Data Integrity | 9.0/10 | ✅ Excellent | 🟢 Low |
+| A09: Logging & Monitoring | 9.5/10 | ✅ Excellent | 🟢 Low |
+| A10: SSRF | 9.0/10 | ✅ N/A | 🟢 Low |
+| **TOTAL (Average)** | **9.2/10** | | |
 
 ---
 
-## 🔗 Documentación
+## 🔗 Documentation
 
-- **CHANGELOG.md** - Historial detallado de cambios
-- **CLAUDE.md** - Contexto para AI (instrucciones del proyecto)
+- **CHANGELOG.md** - Detailed change history
+- **CLAUDE.md** - AI context (project instructions)
 - **ADRs:** `docs/architecture/decisions/`
-- **Backend:** Configurar variable `BACKEND_PATH` con la ruta local del repositorio backend
-- **API Docs:** `http://localhost:{BACKEND_PORT}/docs` (por defecto puerto 8000)
+- **Backend:** Configure `BACKEND_PATH` variable with local backend repository path
+- **API Docs:** `http://localhost:{BACKEND_PORT}/docs` (default port 8000)
 
 ---
 
-**Última revisión:** 17 Feb 2026 (Sprint 2 completado — v2.0.10)
-**Próxima revisión:** Fin Sprint 3 (24 Feb 2026)
+**Last review:** Feb 24, 2026 (Sprint 4 completed — v2.0.12)
+**Next review:** End Sprint 5 (Mar 17, 2026)

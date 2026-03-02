@@ -1,12 +1,12 @@
 # 🚀 Setup Guide - Ryder Cup Manager
 
-Guía completa para configurar el entorno de desarrollo local con Backend + Frontend.
+Complete guide to configure local development environment with Backend + Frontend.
 
 ---
 
-## 📋 Prerequisitos
+## 📋 Prerequisites
 
-Asegúrate de tener instalado:
+Make sure you have installed:
 
 - **Node.js** 18+ ([Download](https://nodejs.org/))
 - **Python** 3.12+ ([Download](https://www.python.org/downloads/))
@@ -14,10 +14,10 @@ Asegúrate de tener instalado:
 - **Git** ([Download](https://git-scm.com/downloads))
 - **Docker** (opcional, para backend) ([Download](https://www.docker.com/))
 
-Verificar instalación:
+Verify installation:
 ```bash
-node --version    # v18.x.x o superior
-npm --version     # 9.x.x o superior
+node --version    # v18.x.x or higher
+npm --version     # 9.x.x or higher
 python --version  # Python 3.12.x
 psql --version    # PostgreSQL 15.x
 git --version     # git version 2.x.x
@@ -25,9 +25,9 @@ git --version     # git version 2.x.x
 
 ---
 
-## 🏗️ Arquitectura de Repositorios
+## 🏗️ Repository Architecture
 
-El proyecto está dividido en **dos repositorios separados**:
+The project is divided into **two separate repositories**:
 
 ```
 Documents/
@@ -35,60 +35,60 @@ Documents/
 └── RyderCupWeb/         # Frontend Web (React + Vite)
 ```
 
-Ambos deben estar clonados para desarrollo completo.
+Both must be cloned for complete development.
 
 ---
 
 ## 1️⃣ Setup Backend (RyderCupAm)
 
-### Clonar Repositorio
+### Clone Repository
 ```bash
 cd ~/Documents
 git clone https://github.com/agustinEDev/RyderCupAm.git
 cd RyderCupAm
 ```
 
-### Opción A: Con Docker (Recomendado)
+### Option A: With Docker (Recommended)
 
 ```bash
-# 1. Iniciar servicios (PostgreSQL + App)
+# 1. Start services (PostgreSQL + App)
 docker-compose up -d
 
-# 2. Aplicar migraciones
+# 2. Apply migrations
 docker-compose exec app alembic upgrade head
 
-# 3. Verificar que esté funcionando
+# 3. Verify it's working
 curl http://localhost:8000/docs
 
-# 4. Ver logs si hay problemas
+# 4. View logs if there are issues
 docker-compose logs -f app
 ```
 
-### Opción B: Sin Docker (Local)
+### Option B: Without Docker (Local)
 
 ```bash
-# 1. Crear entorno virtual
+# 1. Create virtual environment
 python -m venv .venv
-source .venv/bin/activate  # En Windows: .venv\Scripts\activate
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 
-# 2. Instalar dependencias
+# 2. Install dependencies
 pip install -r requirements.txt
 
-# 3. Configurar base de datos
-# Editar .env con tus credenciales de PostgreSQL
+# 3. Configure database
+# Edit .env with your PostgreSQL credentials
 cp .env.example .env
 
-# 4. Aplicar migraciones
+# 4. Apply migrations
 alembic upgrade head
 
-# 5. Correr aplicación
+# 5. Run application
 uvicorn main:app --reload
 
-# 6. Verificar
+# 6. Verify
 open http://localhost:8000/docs
 ```
 
-### Variables de Entorno Backend (.env)
+### Backend Environment Variables (.env)
 ```env
 DATABASE_URL=postgresql+asyncpg://user:password@localhost:5432/rydercup
 SECRET_KEY=your-secret-key-change-this-in-production
@@ -96,7 +96,7 @@ ALGORITHM=HS256
 ACCESS_TOKEN_EXPIRE_MINUTES=1440
 ```
 
-### Verificar Backend Funcional
+### Verify Backend is Working
 ```bash
 # Health check
 curl http://localhost:8000/health
@@ -108,74 +108,74 @@ open http://localhost:8000/docs
 python dev_tests.py
 ```
 
-✅ **Backend OK** si ves la documentación Swagger en el navegador.
+✅ **Backend OK** if you see Swagger documentation in the browser.
 
 ---
 
 ## 2️⃣ Setup Frontend (RyderCupWeb)
 
-### Clonar Repositorio
+### Clone Repository
 ```bash
 cd ~/Documents
 git clone https://github.com/agustinEDev/RyderCupWeb.git
 cd RyderCupWeb
 ```
 
-### Instalar Dependencias
+### Install Dependencies
 
-**Opción 1: Si el proyecto React ya está inicializado**
+**Option 1: If React project is already initialized**
 ```bash
 npm install
 ```
 
-**Opción 2: Si necesitas crear el proyecto desde cero**
+**Option 2: If you need to create the project from scratch**
 ```bash
-# Crear proyecto con Vite
+# Create project with Vite
 npm create vite@latest . -- --template react
 
-# Instalar dependencias base
+# Install base dependencies
 npm install
 
-# Instalar dependencias adicionales
+# Install additional dependencies
 npm install react-router-dom axios
 npm install -D tailwindcss postcss autoprefixer
 npx tailwindcss init -p
 ```
 
-### Configurar Variables de Entorno
+### Configure Environment Variables
 ```bash
-# Copiar ejemplo
+# Copy example
 cp .env.example .env
 
-# Editar .env
+# Edit .env
 # VITE_API_BASE_URL=http://localhost:8000
 ```
 
-### Ejecutar Desarrollo
+### Run Development
 ```bash
 npm run dev
 ```
 
-Abre el navegador en: `http://localhost:5173`
+Open browser at: `http://localhost:5173`
 
-### Verificar Frontend Funcional
-- ✅ Landing page se carga
-- ✅ Botones de Login/Register visibles
-- ✅ Puedes navegar a `/login` y `/register`
-- ✅ Console sin errores de CORS (si backend está corriendo)
+### Verify Frontend is Working
+- ✅ Landing page loads
+- ✅ Login/Register buttons visible
+- ✅ You can navigate to `/login` and `/register`
+- ✅ Console without CORS errors (if backend is running)
 
 ---
 
-## 3️⃣ Desarrollo Completo (Backend + Frontend)
+## 3️⃣ Complete Development (Backend + Frontend)
 
 ### Terminal 1: Backend
 ```bash
 cd ~/Documents/RyderCupAm
 
-# Con Docker
+# With Docker
 docker-compose up
 
-# O sin Docker
+# Or without Docker
 source .venv/bin/activate
 uvicorn main:app --reload
 ```
@@ -186,7 +186,7 @@ cd ~/Documents/RyderCupWeb
 npm run dev
 ```
 
-### URLs de Desarrollo
+### Development URLs
 - **Frontend**: http://localhost:5173
 - **Backend API**: http://localhost:8000
 - **API Docs**: http://localhost:8000/docs
@@ -201,7 +201,7 @@ cd ~/Documents/RyderCupAm
 python dev_tests.py          # 360 tests, ~12s
 ```
 
-### Frontend Tests (cuando estén implementados)
+### Frontend Tests (when implemented)
 ```bash
 cd ~/Documents/RyderCupWeb
 npm run test
@@ -209,46 +209,46 @@ npm run test
 
 ---
 
-## 🔄 Workflow de Desarrollo Típico
+## 🔄 Typical Development Workflow
 
-### 1. Iniciar día de trabajo
+### 1. Start work day
 ```bash
 # Terminal 1: Backend
 cd ~/Documents/RyderCupAm
-docker-compose up -d  # o uvicorn main:app --reload
+docker-compose up -d  # or uvicorn main:app --reload
 
 # Terminal 2: Frontend
 cd ~/Documents/RyderCupWeb
 npm run dev
 ```
 
-### 2. Hacer cambios
-- **Backend**: Editar en `RyderCupAm/src/`
-  - FastAPI recarga automáticamente
+### 2. Make changes
+- **Backend**: Edit in `RyderCupAm/src/`
+  - FastAPI reloads automatically
   - Tests: `python dev_tests.py`
 
-- **Frontend**: Editar en `RyderCupWeb/src/`
-  - Vite recarga automáticamente
-  - Ver cambios inmediatamente en navegador
+- **Frontend**: Edit in `RyderCupWeb/src/`
+  - Vite reloads automatically
+  - See changes immediately in browser
 
-### 3. Probar integración
-1. Hacer registro de usuario en frontend
-2. Verificar que se crea en backend
-3. Login y ver token JWT
-4. Navegar por la aplicación
+### 3. Test integration
+1. Register user in frontend
+2. Verify it's created in backend
+3. Login and see JWT token
+4. Navigate through application
 
 ### 4. Commits
 ```bash
 # Backend
 cd ~/Documents/RyderCupAm
 git add .
-git commit -m "feat: descripción del cambio"
+git commit -m "feat: change description"
 git push origin main
 
 # Frontend
 cd ~/Documents/RyderCupWeb
 git add .
-git commit -m "feat: descripción del cambio"
+git commit -m "feat: change description"
 git push origin main
 ```
 
@@ -256,42 +256,42 @@ git push origin main
 
 ## 🐛 Troubleshooting
 
-### Backend no inicia
+### Backend doesn't start
 ```bash
-# Verificar PostgreSQL
-docker-compose ps  # Con Docker
-psql -U postgres   # Sin Docker
+# Verify PostgreSQL
+docker-compose ps  # With Docker
+psql -U postgres   # Without Docker
 
-# Ver logs
+# View logs
 docker-compose logs -f app
 
-# Recrear base de datos
+# Recreate database
 docker-compose down -v
 docker-compose up -d
 alembic upgrade head
 ```
 
-### Frontend no conecta con Backend
+### Frontend doesn't connect with Backend
 ```bash
-# 1. Verificar backend corriendo
+# 1. Verify backend is running
 curl http://localhost:8000/health
 
-# 2. Verificar .env del frontend
+# 2. Verify frontend .env
 cat .env
-# Debe tener: VITE_API_BASE_URL=http://localhost:8000
+# Must have: VITE_API_BASE_URL=http://localhost:8000
 
-# 3. Revisar CORS en backend
-# Ver main.py, debe permitir http://localhost:5173
+# 3. Review CORS in backend
+# See main.py, must allow http://localhost:5173
 ```
 
 ### CORS Errors
-Si ves errores de CORS en consola del navegador:
+If you see CORS errors in browser console:
 
-**Backend**: Verificar en `main.py`:
+**Backend**: Verify in `main.py`:
 ```python
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],  # ← Agregar si falta
+    allow_origins=["http://localhost:5173"],  # ← Add if missing
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -309,22 +309,22 @@ lsof -ti:5173 | xargs kill -9
 
 ---
 
-## 📚 Próximos Pasos
+## 📚 Next Steps
 
-Una vez que tengas todo funcionando:
+Once you have everything working:
 
-1. **Leer documentación**:
+1. **Read documentation**:
    - Backend: `RyderCupAm/CLAUDE.md`
    - Frontend: `RyderCupWeb/CLAUDE.md`
    - Design: `RyderCupWeb/STITCH_PROMPT.md`
 
-2. **Explorar código**:
-   - Backend: Arquitectura Clean Architecture en `src/modules/`
-   - Frontend: Componentes en `src/components/`
+2. **Explore code**:
+   - Backend: Clean Architecture in `src/modules/`
+   - Frontend: Components in `src/components/`
 
-3. **Implementar features**:
-   - Ver `STITCH_PROMPT.md` para diseño completo
-   - Seguir convenciones de cada repo
+3. **Implement features**:
+   - See `STITCH_PROMPT.md` for complete design
+   - Follow conventions of each repo
 
 ---
 
@@ -333,43 +333,43 @@ Una vez que tengas todo funcionando:
 ```bash
 # Backend
 cd ~/Documents/RyderCupAm
-docker-compose up -d               # Iniciar
-docker-compose logs -f app         # Ver logs
-docker-compose down                # Detener
+docker-compose up -d               # Start
+docker-compose logs -f app         # View logs
+docker-compose down                # Stop
 python dev_tests.py                # Tests
 alembic upgrade head               # Migrations
 
 # Frontend
 cd ~/Documents/RyderCupWeb
-npm run dev                        # Desarrollo
-npm run build                      # Producción
+npm run dev                        # Development
+npm run build                      # Production
 npm run preview                    # Preview build
 npm run lint                       # Linter
 
-# Ambos
-git status                         # Ver cambios
-git add .                          # Añadir cambios
-git commit -m "mensaje"            # Commit
+# Both
+git status                         # View changes
+git add .                          # Add changes
+git commit -m "message"            # Commit
 git push origin main               # Push
 ```
 
 ---
 
-## ✅ Checklist de Setup Completo
+## ✅ Complete Setup Checklist
 
-- [ ] Node.js 18+ instalado
-- [ ] Python 3.12+ instalado
-- [ ] PostgreSQL 15+ instalado (o Docker)
-- [ ] Git configurado
-- [ ] Backend clonado en `~/Documents/RyderCupAm`
-- [ ] Frontend clonado en `~/Documents/RyderCupWeb`
-- [ ] Backend corriendo en `http://localhost:8000`
-- [ ] Frontend corriendo en `http://localhost:5173`
-- [ ] Swagger docs accesibles
-- [ ] Landing page del frontend cargando
-- [ ] Sin errores de CORS
-- [ ] Backend tests pasando (360 tests)
+- [ ] Node.js 18+ installed
+- [ ] Python 3.12+ installed
+- [ ] PostgreSQL 15+ installed (or Docker)
+- [ ] Git configured
+- [ ] Backend cloned in `~/Documents/RyderCupAm`
+- [ ] Frontend cloned in `~/Documents/RyderCupWeb`
+- [ ] Backend running at `http://localhost:8000`
+- [ ] Frontend running at `http://localhost:5173`
+- [ ] Swagger docs accessible
+- [ ] Frontend landing page loading
+- [ ] No CORS errors
+- [ ] Backend tests passing (360 tests)
 
 ---
 
-¡Todo listo para desarrollar! 🚀⛳
+All set to develop! 🚀⛳

@@ -22,5 +22,33 @@
     "myProfileDesc": "Ver y actualizar tu información",
     "browseCompetitions": "Explorar Competiciones",
     "browseCompetitionsDesc": "Descubrir torneos para unirse"
+  },
+  "pendingActions": {
+    "title": "Requiere tu Atención",
+    "invitations": "Invitaciones Pendientes",
+    "invitations_one": "{{count}} invitación pendiente",
+    "invitations_other": "{{count}} invitaciones pendientes",
+    "viewInvitations": "Ver Invitaciones",
+    "enrollments": "Solicitudes de Inscripción",
+    "enrollments_one": "{{count}} solicitud de inscripción en {{name}}",
+    "enrollments_other": "{{count}} solicitudes de inscripción en {{name}}",
+    "viewCompetition": "Gestionar",
+    "matches": "Próximos Partidos",
+    "matches_one": "{{count}} partido próximo",
+    "matches_other": "{{count}} partidos próximos",
+    "viewSchedule": "Ver Calendario"
+  },
+  "upcomingMatches": {
+    "title": "Mis Próximos Partidos",
+    "subtitle": "Tus partidos programados y en progreso en todas las competiciones",
+    "noMatches": "No tienes próximos partidos",
+    "noMatchesDesc": "Cuando estés inscrito en competiciones activas con partidos programados, aparecerán aquí.",
+    "scoreMatch": "Anotar",
+    "viewSchedule": "Ver Calendario",
+    "matchNumber": "Partido #{{number}}",
+    "round": "Ronda",
+    "loading": "Cargando partidos...",
+    "teamA": "Equipo A",
+    "teamB": "Equipo B"
   }
 }

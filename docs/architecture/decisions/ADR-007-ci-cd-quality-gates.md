@@ -1,132 +1,125 @@
-# ADR-007: Quality Gates en Pipeline CI/CD
+# ADR-007: CI/CD Quality Gates
 
-**Fecha**: 24 de diciembre de 2025
-**Estado**: Aceptado (Implementado en v1.8.0)
-**Decisores**: Equipo de desarrollo frontend
+**Date:** December 24, 2025
+**Status:** Accepted (Implemented in v1.8.0)
+**Decision Makers:** Frontend development team
 
-## Contexto y Problema
+## Context and Problem
 
-El pipeline de CI/CD actual ejecuta tests y build, pero no previene problemas comunes de calidad:
+Current CI/CD pipeline runs tests and builds, but doesn't prevent common quality issues:
 
-- **Degradación de cobertura de tests**: La cobertura puede bajar sin que nadie lo note
-- **Bundle size sin control**: El bundle JavaScript puede crecer sin límites afectando performance
-- **Formato inconsistente**: Código sin formateo uniforme dificulta code reviews
-- **PRs masivos**: Pull requests muy grandes son difíciles de revisar y propensas a bugs
-- **Commits inconsistentes**: Sin convención de commits, el historial es difícil de leer
+- **Coverage degradation**: Can drop unnoticed
+- **Uncontrolled bundle size**: Can grow unbounded
+- **Inconsistent formatting**: Makes code reviews harder
+- **Massive PRs**: Large pull requests prone to bugs
+- **Inconsistent commits**: Difficult to read history
 
-**Requisitos:**
-- Prevenir degradación de calidad automáticamente
-- Feedback inmediato en PRs
-- No ralentizar significativamente el CI
-- Fácil de mantener y ajustar
+**Requirements:**
+- Prevent quality degradation automatically
+- Immediate feedback on PRs
+- Fast execution (don't slow CI significantly)
+- Easy to maintain and adjust
 
-## Opciones Consideradas
+## Options Considered
 
-1. **SonarQube Cloud**: Plataforma completa de quality gates (pago)
-2. **Codecov**: Coverage tracking con badges (pago para privados)
-3. **Custom scripts en CI**: Scripts bash personalizados (gratis, flexible)
-4. **Pre-commit hooks locales**: Validaciones solo locales (no garantizado)
-5. **No hacer nada**: Confiar en code reviews manuales
+1. **SonarQube Cloud**: Complete quality platform (paid)
+2. **Codecov**: Coverage tracking with badges (paid for private)
+3. **Custom CI scripts**: Bash scripts (free, flexible)
+4. **Pre-commit hooks**: Local validation only (not guaranteed)
+5. **Do nothing**: Trust manual code reviews
 
-## Decisión
+## Decision
 
-**Adoptamos quality gates personalizados en CI/CD** con scripts bash integrados:
+**Adopt custom quality gates in CI/CD** with integrated bash scripts:
 
-### Implementaciones:
+### Implementations:
 
-1. **Coverage Threshold Enforcement**
-   - Tool: Vitest coverage + script bash
-   - Thresholds: Lines 80%, Statements 80%, Functions 75%, Branches 70%
-   - Ubicación: `.github/workflows/ci.yml`
+**1. Coverage Threshold Enforcement**
+- Tool: Vitest coverage + bash script
+- Thresholds: Lines 80%, Statements 80%, Functions 75%, Branches 70%
+- Location: `.github/workflows/ci.yml`
 
-2. **Bundle Size Budget**
-   - Tool: Script bash + `du`
-   - Budget: 500 KB máximo, warning en 400 KB
-   - Ubicación: `.github/workflows/ci.yml`
+**2. Bundle Size Budget**
+- Tool: Bash script + `du`
+- Budget: 1,400 KB max, warning at 1,300 KB
+- Location: `.github/workflows/ci.yml`
 
-3. **Prettier Format Check**
-   - Tool: Prettier con flag `--check`
-   - Archivos: `*.{js,jsx,ts,tsx,css,json}`
-   - Ubicación: `.github/workflows/ci.yml`
+**3. Prettier Format Check**
+- Tool: Prettier with `--check` flag
+- Files: `*.{js,jsx,ts,tsx,css,json}`
+- Location: `.github/workflows/ci.yml`
 
-4. **PR Size Check**
-   - Tool: GitHub Actions script
-   - Limits: XL >1000 cambios (falla), L >500 (warning)
-   - Ubicación: `.github/workflows/pr-checks.yml`
+**4. PR Size Check**
+- Tool: GitHub Actions script
+- Limits: XL >1000 changes (fails), L >500 (warning)
+- Location: `.github/workflows/pr-checks.yml`
 
-5. **Conventional Commits**
-   - Tool: `amannn/action-semantic-pull-request`
-   - Tipos: feat, fix, docs, style, refactor, perf, test, build, ci, chore
-   - Ubicación: `.github/workflows/pr-checks.yml`
+**5. Conventional Commits**
+- Tool: `amannn/action-semantic-pull-request`
+- Types: feat, fix, docs, style, refactor, perf, test, build, ci, chore
+- Location: `.github/workflows/pr-checks.yml`
 
-## Justificación
+## Rationale
 
-### Por qué custom scripts vs SonarQube:
+**Why custom scripts vs SonarQube:**
 
-**Ventajas:**
-- ✅ **Gratis**: Sin costos de suscripción
-- ✅ **Rápido**: Ejecuta en 10-20 segundos adicionales
-- ✅ **Flexible**: Fácil ajustar thresholds según evoluciona el proyecto
-- ✅ **Sin vendor lock-in**: No dependemos de servicio externo
-- ✅ **Transparente**: Scripts visibles en el repo
+**Advantages:**
+- ✅ **Free**: No subscription costs
+- ✅ **Fast**: Executes in 10-20 extra seconds
+- ✅ **Flexible**: Easy to adjust thresholds as project evolves
+- ✅ **No vendor lock-in**: Independent of external services
+- ✅ **Transparent**: Scripts visible in repo
 
-**Desventajas aceptadas:**
-- ❌ Sin UI gráfica bonita (acceptable, logs en CI son suficientes)
-- ❌ Sin historial de métricas (acceptable por ahora)
-- ❌ Mantenimiento manual de scripts (minimal effort)
+**Accepted trade-offs:**
+- ❌ No fancy UI (acceptable, CI logs sufficient)
+- ❌ No metric history (acceptable for now)
+- ❌ Manual script maintenance (minimal effort)
 
-### Por qué estos thresholds específicos:
+**Why these specific thresholds:**
 
 **Coverage (80/80/75/70):**
-- Basados en coverage actual del proyecto (90%+)
-- Permiten flexibilidad en funciones utilitarias (75%)
-- Branches menos estrictos (70%) porque son difíciles de cubrir al 100%
+- Based on current project coverage (90%+)
+- Allow flexibility in utility functions (75%)
+- Branches less strict (70%) - hard to cover 100%
 
-**Bundle size (1000 KB):**
-- Proyecto actual: ~783 KB (con countryUtils 236 KB)
-- Budget: 1000 KB (28% de margen)
-- Warning: 800 KB (80% del budget)
-- Justificación: SPA con React + Router + Sentry + country data debe mantenerse <1MB para buen LCP
+**Bundle size (1,400 KB):**
+- Current project: ~1,308 KB (with optimizations)
+- Budget: 1,400 KB (7% margin)
+- Warning: 1,300 KB (93% of budget)
+- Rationale: SPA with React + Router + Sentry + country data must stay <1.5MB for good LCP
 
-**PR size (1000 cambios):**
-- Basado en research: PRs >400 líneas reducen 60% la efectividad del review
-- 1000 cambios = límite absoluto
-- 500 cambios = warning para considerar split
+**PR size (1,000 changes):**
+- Based on research: PRs >400 lines reduce review effectiveness 60%
+- 1,000 changes = absolute limit
+- 500 changes = warning to consider split
 
-## Consecuencias
+## Consequences
 
-### Positivas:
+**Positive:**
+- ✅ **Quality guaranteed**: Can't merge code that degrades metrics
+- ✅ **Fast feedback**: Developers know immediately if something's wrong
+- ✅ **Automation**: Doesn't depend on reviewers remembering checks
+- ✅ **Visible metrics**: CI logs show trends clearly
+- ✅ **Quality culture**: Team maintains high standards
 
-1. **Calidad garantizada**: No se puede mergear código que degrada métricas
-2. **Feedback rápido**: Desarrolladores saben inmediatamente si algo está mal
-3. **Automatización**: No depende de reviewers recordar verificar cobertura/bundle
-4. **Métricas visibles**: Logs de CI muestran tendencias claramente
-5. **Cultura de calidad**: El equipo se acostumbra a mantener estándares altos
+**Negative (mitigated):**
+- ⏱️ **CI time increases**: +10-20 seconds per build
+  - *Mitigation*: Checks run in parallel when possible
+  
+- ⚠️ **Possible false positives**: Scripts may fail on valid changes
+  - *Mitigation*: Adjustable thresholds, continue-on-error where appropriate
+  
+- 🔧 **Maintenance**: Bash scripts may need updates
+  - *Mitigation*: Simple scripts, well documented, versioned in repo
 
-### Negativas (mitigadas):
+## Implementation
 
-1. **Tiempo de CI aumenta**: +10-20 segundos por build
-   - *Mitigación*: Los checks corren en paralelo cuando es posible
+**Files:**
+- `.github/workflows/ci.yml` - Coverage + Bundle size + Prettier
+- `.github/workflows/pr-checks.yml` - PR size + Conventional commits
+- `docs/architecture/decisions/ADR-007-ci-cd-quality-gates.md` - This doc
 
-2. **Posibles falsos positivos**: Scripts pueden fallar por cambios válidos
-   - *Mitigación*: Thresholds ajustables, continue-on-error donde apropiado
-
-3. **Fricción inicial**: Devs pueden frustrarse con rechazos
-   - *Mitigación*: Mensajes claros con instrucciones de cómo resolver
-
-4. **Mantenimiento**: Scripts bash pueden necesitar updates
-   - *Mitigación*: Scripts simples, bien documentados, versionados en repo
-
-## Implementación
-
-### Archivos modificados:
-
-- `.github/workflows/ci.yml`: Coverage + Bundle size + Prettier
-- `.github/workflows/pr-checks.yml`: PR size + Conventional commits (nuevo)
-- `docs/architecture/decisions/ADR-007-ci-cd-quality-gates.md`: Este documento
-
-### Ejemplo de fallo de coverage:
-
+**Coverage Failure Example:**
 ```bash
 📊 Checking coverage thresholds...
   Lines: 78.5%
@@ -140,48 +133,41 @@ El pipeline de CI/CD actual ejecuta tests y build, pero no previene problemas co
 💡 Tip: Add more tests to increase coverage
 ```
 
-### Ejemplo de fallo de bundle:
-
+**Bundle Failure Example:**
 ```bash
 📦 Bundle size analysis:
-  Total JS bundle size: 542 KB
+  Total JS bundle size: 1,450 KB
 
-❌ Bundle size (542 KB) exceeds budget (500 KB)!
+❌ Bundle size (1,450 KB) exceeds budget (1,400 KB)!
 💡 Tip: Consider code splitting, tree shaking, or removing unused dependencies
 ```
 
-## Alternativas Rechazadas
+## Validation
 
-### SonarQube Cloud
-- **Por qué no**: $10/mes por proyecto, overkill para un proyecto pequeño
-- **Cuándo reconsiderar**: Si el equipo crece >5 personas o proyecto se vuelve crítico
+**Success Metrics (after 1 month):**
+- ✅ **0 undetected** coverage degradations
+- ✅ **0 bundles >1,400KB** merged without discussion
+- ✅ **90%+ PRs** are <500 lines
+- ✅ **100% commits** follow conventional commits
+- ✅ **CI time** stays <5 minutes
 
-### Codecov
-- **Por qué no**: $5/mes, solo cubre coverage (no bundle size, PR size, etc.)
-- **Cuándo reconsiderar**: Si necesitamos badges bonitos o coverage trends
+## Alternatives Rejected
 
-### Pre-commit hooks locales
-- **Por qué no**: Fácil de bypasear con `--no-verify`
-- **Cuándo usar**: Como complemento, no como reemplazo del CI
+**SonarQube Cloud:**
+- Why not: $10/month per project, overkill for small project
+- When to reconsider: If team grows >5 people or project becomes critical
 
-## Métricas de Éxito
+**Codecov:**
+- Why not: $5/month, only covers coverage (not bundle size, PR size, etc.)
+- When to reconsider: If need badges or coverage trends
 
-Después de 1 mes de implementación, evaluaremos:
+**Pre-commit hooks:**
+- Why not: Easy to bypass with `--no-verify`
+- When to use: As complement, not replacement for CI
 
-- ✅ **0 degradaciones de coverage** no detectadas
-- ✅ **0 bundles >500KB** mergeados sin discusión
-- ✅ **90%+ de PRs** son <500 líneas
-- ✅ **100% de commits** siguen conventional commits
-- ✅ **CI time** se mantiene <5 minutos
-
-## Referencias
+## References
 
 - [Google: How to do Code Review](https://google.github.io/eng-practices/review/)
 - [Conventional Commits Specification](https://www.conventionalcommits.org/)
 - [Web Performance Budget](https://web.dev/performance-budgets-101/)
 - [Vitest Coverage](https://vitest.dev/guide/coverage.html)
-- [GitHub Actions Best Practices](https://docs.github.com/en/actions/learn-github-actions/best-practices-for-github-actions)
-
-## Historial de Cambios
-
-- **2025-12-24**: Creación del ADR, implementación inicial

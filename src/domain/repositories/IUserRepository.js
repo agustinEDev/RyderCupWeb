@@ -43,6 +43,15 @@ class IUserRepository {
   async getUserRoles(competitionId) {
     throw new Error('Method not implemented: getUserRoles');
   }
+
+  /**
+   * Searches for registered users by name or email.
+   * @param {string} query - Search query (min 2 characters).
+   * @returns {Promise<Array<{id: string, firstName: string, lastName: string, email: string, countryCode: string|null}>>}
+   */
+  async searchUsers(query) {
+    throw new Error('Method not implemented: searchUsers');
+  }
 }
 
 export default IUserRepository;

@@ -86,7 +86,11 @@ const Login = () => {
         });
       }
 
-      const from = location.state?.from?.pathname || '/dashboard';
+      const requestedPath = location.state?.from?.pathname;
+      // Validate redirect target is a relative path to prevent Open Redirect (CWE-601)
+      const from = (requestedPath && requestedPath.startsWith('/') && !requestedPath.startsWith('//'))
+        ? requestedPath
+        : '/dashboard';
       navigate(from, { replace: true });
 
     } catch (error) {

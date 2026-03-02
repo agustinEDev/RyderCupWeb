@@ -102,6 +102,7 @@
     "backToCompetitions": "Volver a Competiciones",
     "backToBrowse": "Volver a Explorar",
     "creator": "Creador",
+    "organizedBy": "Organizado por",
     "dates": "Fechas",
     "players": "Jugadores",
     "countries": "Países",
@@ -116,7 +117,10 @@
       "request-to-join": "Solicitar Unirse",
       "manageSchedule": "Gestionar Calendario",
       "viewSchedule": "Ver Calendario",
-      "manageInvitations": "Invitaciones"
+      "manageInvitations": "Invitaciones",
+      "leaderboard": "Clasificación",
+      "reopen-enrollments": "Reabrir Inscripciones",
+      "revert-status": "Volver a Cerrada"
     },
     "confirmations": {
       "activate": "¿Estás seguro de que quieres activar esta competición?",
@@ -125,7 +129,9 @@
       "complete": "¿Estás seguro de que quieres completar esta competición?",
       "cancel": "¿Estás seguro de que quieres cancelar esta competición?",
       "delete": "¿Estás seguro de que quieres eliminar esta competición? Esta acción no se puede deshacer.",
-      "reject-enrollment": "¿Estás seguro de que quieres rechazar esta inscripción?"
+      "reject-enrollment": "¿Estás seguro de que quieres rechazar esta inscripción?",
+      "reopen-enrollments": "¿Estás seguro de que quieres reabrir las inscripciones? La competición volverá al estado ACTIVA.",
+      "revert-status": "¿Estás seguro de que quieres volver al estado CERRADA? Esto te permitirá modificar el calendario."
     },
     "errors": {
       "golfCoursePendingApproval": "No se puede activar la competición: El campo de golf está pendiente de aprobación",
@@ -164,13 +170,16 @@
       "completed": "Competición completada correctamente",
       "cancelled": "Competición cancelada correctamente",
       "deleted": "Competición eliminada correctamente",
-      "enrollmentRequested": "Solicitud de inscripción enviada correctamente"
+      "enrollmentRequested": "Solicitud de inscripción enviada correctamente",
+      "enrollmentsReopened": "Inscripciones reabiertas correctamente",
+      "statusReverted": "Competición revertida al estado CERRADA correctamente"
     },
     "failedToApprove": "Error al aprobar la inscripción",
     "competitionFull": "La competición está completa. Se ha alcanzado el número máximo de jugadores ({{max}}).",
     "failedToReject": "Error al rechazar la inscripción",
     "failedToUpdateCompetition": "Error al actualizar la competición",
     "failedToDeleteCompetition": "Error al eliminar la competición",
+    "unknownUser": "Usuario Desconocido",
     "failedToEnroll": "Error al solicitar inscripción",
     "failedToLoadCompetitions": "Error al cargar las competiciones",
     "golfCourses": {

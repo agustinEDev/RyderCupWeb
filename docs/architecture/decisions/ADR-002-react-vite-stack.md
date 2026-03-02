@@ -1,92 +1,92 @@
-# ADR-002: React + Vite como Stack Tecnológico Frontend
+# ADR-002: React + Vite as Frontend Technology Stack
 
-**Fecha**: 10 de noviembre de 2025
-**Estado**: Aceptado
-**Decisores**: Equipo de desarrollo frontend
+**Date**: November 10, 2025
+**Status**: Accepted
+**Decision Makers**: Frontend development team
 
-## Contexto y Problema
+## Context and Problem
 
-Necesitamos elegir el stack tecnológico para el frontend de RyderCupFriends. Requisitos:
+We need to choose the technology stack for the RyderCupFriends frontend. Requirements:
 
-- Build rápido en desarrollo (<1s HMR)
-- Build optimizado para producción
-- Soporte moderno de JavaScript/ES6+
-- Ecosistema maduro y mantenido
-- Buen tooling (DevTools, debugging)
-- Deployment sencillo (static files)
+- Fast development build (<1s HMR)
+- Optimized production build
+- Modern JavaScript/ES6+ support
+- Mature and maintained ecosystem
+- Good tooling (DevTools, debugging)
+- Simple deployment (static files)
 
-## Opciones Consideradas
+## Options Considered
 
-1. **Create React App (CRA)**: Webpack + React oficial
-2. **Vite + React**: Build tool moderno con ESM
-3. **Next.js**: Framework React con SSR
-4. **Vue.js + Vite**: Alternativa a React
+1. **Create React App (CRA)**: Webpack + official React
+2. **Vite + React**: Modern build tool with ESM
+3. **Next.js**: React framework with SSR
+4. **Vue.js + Vite**: Alternative to React
 
-## Decisión
+## Decision
 
-**Adoptamos React 18 + Vite 5** como stack principal:
+**We adopt React 18 + Vite 5** as the main stack:
 
-- **Librería UI**: React 18 (library, no framework)
-- **Build Tool**: Vite 5 (ESM-based, ultra rápido)
+- **UI Library**: React 18 (library, not framework)
+- **Build Tool**: Vite 5 (ESM-based, ultra fast)
 - **Routing**: React Router v6
 - **Styling**: Tailwind CSS 3
 - **State**: useState + Context API (no Redux)
-- **HTTP**: Fetch API nativo (no Axios)
+- **HTTP**: Native Fetch API (no Axios)
 
-## Justificación
+## Rationale
 
-### Por qué React:
+### Why React:
 
-1. **Ecosistema Maduro**
-   - Librerías de terceros abundantes
-   - Comunidad activa y documentación extensa
-   - Fácil encontrar desarrolladores con experiencia
+1. **Mature Ecosystem**
+   - Abundant third-party libraries
+   - Active community and extensive documentation
+   - Easy to find experienced developers
 
-2. **Flexibilidad**
-   - Library, no framework (libertad arquitectónica)
-   - Compatible con Clean Architecture
-   - No impone estructura de carpetas
+2. **Flexibility**
+   - Library, not framework (architectural freedom)
+   - Compatible with Clean Architecture
+   - Does not impose folder structure
 
 3. **Performance**
-   - Virtual DOM optimizado
+   - Optimized Virtual DOM
    - Concurrent Mode (React 18)
-   - Lazy loading nativo con React.lazy()
+   - Native lazy loading with React.lazy()
 
-### Por qué Vite (vs CRA):
+### Why Vite (vs CRA):
 
-| Característica | Vite 5 | Create React App |
-|---------------|---------|------------------|
+| Feature | Vite 5 | Create React App |
+|---------|--------|------------------|
 | **HMR** | <50ms | ~1-3s |
-| **Build tiempo** | 3.8s | ~15-20s |
-| **Bundle size** | 47 KB (optimizado) | ~200+ KB (sin optimizar) |
-| **Code splitting** | Manual y automático | Solo automático |
-| **Mantenimiento** | Activo (2024) | Deprecado (2023) |
+| **Build time** | 3.8s | ~15-20s |
+| **Bundle size** | 47 KB (optimized) | ~200+ KB (unoptimized) |
+| **Code splitting** | Manual and automatic | Automatic only |
+| **Maintenance** | Active (2024) | Deprecated (2023) |
 
-**CRA está deprecado oficialmente** (React docs recomienda Vite/Next)
+**CRA is officially deprecated** (React docs recommend Vite/Next)
 
-### Por qué NO Next.js:
+### Why NOT Next.js:
 
-- No necesitamos SSR (no es SEO-crítico)
-- Backend separado (FastAPI)
-- Deployment más simple (static files vs Node server)
-- Overhead innecesario para SPA
+- We don't need SSR (not SEO-critical)
+- Separate backend (FastAPI)
+- Simpler deployment (static files vs Node server)
+- Unnecessary overhead for SPA
 
-## Consecuencias
+## Consequences
 
-### Positivas:
-- ✅ **HMR instantáneo**: <50ms en desarrollo
-- ✅ **Build rápido**: 3.8s para producción
-- ✅ **Bundle optimizado**: 47 KB inicial (con code splitting)
-- ✅ **DX (Developer Experience)** excelente
-- ✅ **Deploy simple**: Render.com (static site)
-- ✅ **Tooling moderno**: ES Modules nativos
+### Positive:
+- ✅ **Instant HMR**: <50ms in development
+- ✅ **Fast build**: 3.8s for production
+- ✅ **Optimized bundle**: 47 KB initial (with code splitting)
+- ✅ **Excellent DX (Developer Experience)**
+- ✅ **Simple deploy**: Render.com (static site)
+- ✅ **Modern tooling**: Native ES Modules
 
-### Negativas:
-- ❌ Configuración manual de algunas features (vs CRA preconfigurado)
-- ❌ Menos recursos/tutoriales que CRA (históricamente)
-- ❌ No tiene SSR out-of-the-box (no es problema para SPA)
+### Negative:
+- ❌ Manual configuration of some features (vs preconfigured CRA)
+- ❌ Fewer resources/tutorials than CRA (historically)
+- ❌ No SSR out-of-the-box (not a problem for SPA)
 
-### Métricas Reales (v1.7.0):
+### Real Metrics (v1.7.0):
 ```bash
 # Build
 $ npm run build
@@ -104,17 +104,17 @@ dist/assets/react-vendor-BXTqkeYX.js 159.86 kB │ gzip: 52.29 kB
 dist/assets/sentry-H0cbkE6T.js       244.11 kB │ gzip: 75.91 kB
 ```
 
-## Validación
+## Validation
 
-La decisión se considera exitosa si:
-- [x] HMR < 100ms (✅ ~50ms promedio)
-- [x] Build production < 10s (✅ 3.8s)
-- [x] Bundle size < 500 KB (✅ 47 KB inicial, chunks separados)
-- [x] Deploy automático funciona (✅ Render.com sin problemas)
+The decision is considered successful if:
+- [x] HMR < 100ms (✅ ~50ms average)
+- [x] Production build < 10s (✅ 3.8s)
+- [x] Bundle size < 500 KB (✅ 47 KB initial, separate chunks)
+- [x] Automatic deploy works (✅ Render.com without issues)
 
-## Configuración Clave
+## Key Configuration
 
-### vite.config.js (Optimizaciones):
+### vite.config.js (Optimizations):
 ```javascript
 export default defineConfig({
   plugins: [react()],
@@ -134,33 +134,33 @@ export default defineConfig({
 })
 ```
 
-### Plugins Instalados:
+### Installed Plugins:
 - `@vitejs/plugin-react` - Fast Refresh, JSX transform
-- `vite-plugin-...` (security headers en dev)
+- `vite-plugin-...` (security headers in dev)
 
-## Referencias
+## References
 
 - [Vite Official Docs](https://vitejs.dev)
 - [React Docs - Start a New React Project](https://react.dev/learn/start-a-new-react-project)
 - [CRA Deprecation Discussion](https://github.com/reactjs/react.dev/pull/5487)
 - [Vite vs CRA Benchmark](https://github.com/yyx990803/vite-vs-webpack)
 
-## Notas de Migración
+## Migration Notes
 
-### Si se requiere migrar en el futuro:
+### If migration is required in the future:
 
-**A Next.js (si necesitamos SSR):**
-- Mantener arquitectura Clean (portable)
-- Migrar componentes React (sin cambios)
-- Ajustar routing a Next.js App Router
-- Configurar API routes si es necesario
+**To Next.js (if we need SSR):**
+- Keep Clean Architecture (portable)
+- Migrate React components (no changes)
+- Adjust routing to Next.js App Router
+- Configure API routes if necessary
 
-**A Otro build tool (Turbopack, esbuild):**
-- Solo cambiar vite.config.js
-- Código de aplicación sin cambios
-- Verificar plugins compatibles
+**To another build tool (Turbopack, esbuild):**
+- Only change vite.config.js
+- Application code unchanged
+- Verify compatible plugins
 
-## Relacionado
+## Related
 
 - ADR-001: Clean Architecture Frontend
-- ADR-006: Code Splitting y Lazy Loading
+- ADR-006: Code Splitting and Lazy Loading

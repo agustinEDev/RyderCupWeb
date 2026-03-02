@@ -1,5 +1,5 @@
 import toast from 'react-hot-toast';
-import { X, CheckCircle2, AlertCircle, Info } from 'lucide-react';
+import { X, CheckCircle2, AlertCircle, AlertTriangle, Info } from 'lucide-react';
 import { createElement } from 'react';
 
 /**
@@ -18,6 +18,12 @@ const ToastContent = ({ message, type, toastId, icon }) => {
       bgClass: 'bg-red-50',
       borderClass: 'border-red-200',
       textClass: 'text-red-600',
+    },
+    warning: {
+      Icon: AlertTriangle,
+      bgClass: 'bg-amber-50',
+      borderClass: 'border-amber-200',
+      textClass: 'text-amber-600',
     },
     info: {
       Icon: Info,
@@ -72,6 +78,14 @@ export const customToast = {
     const { icon, ...toastOptions } = options;
     return toast.custom(
       (t) => createElement(ToastContent, { message, type: 'error', toastId: t.id, icon }),
+      { duration: 5000, ...toastOptions }
+    );
+  },
+
+  warning: (message, options = {}) => {
+    const { icon, ...toastOptions } = options;
+    return toast.custom(
+      (t) => createElement(ToastContent, { message, type: 'warning', toastId: t.id, icon }),
       { duration: 5000, ...toastOptions }
     );
   },

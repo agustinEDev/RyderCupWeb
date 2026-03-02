@@ -35,6 +35,8 @@
     "startMatch": "Start Match",
     "completeMatch": "Complete Match",
     "viewDetail": "View Detail",
+    "score": "Score",
+    "viewScorecard": "View Scorecard",
     "result": "Result",
     "resultWinner": "Winner: {{team}}",
     "resultScore": "Score: {{score}}",
@@ -54,16 +56,20 @@
       "generate": "Generate",
       "playerAlreadyUsed": "This player is already assigned to another match",
       "summary": "{{matchCount}} matches, {{assignedCount}} of {{totalCount}} players assigned",
+      "noTeamsWarning": "Teams have not been assigned yet",
+      "noTeamsWarningDesc": "You need to assign teams before generating matches.",
       "validation": {
         "noMatches": "Add at least one match",
         "incompleteMatch": "All matches must have complete teams",
-        "duplicatePlayer": "A player can only appear in one match"
+        "duplicatePlayer": "A player can only appear in one match",
+        "noTeamAssignment": "Teams must be assigned before generating matches"
       }
     }
   },
   "teams": {
     "title": "Team Assignment",
     "assign": "Assign Teams",
+    "reassign": "Reassign Teams",
     "mode": "Assignment Mode",
     "manual": "Manual",
     "automatic": "Automatic",
@@ -83,7 +89,8 @@
     "SCHEDULED": "Scheduled",
     "IN_PROGRESS": "In Progress",
     "COMPLETED": "Completed",
-    "WALKOVER": "Walkover"
+    "WALKOVER": "Walkover",
+    "CONCEDED": "Conceded"
   },
   "formats": {
     "SINGLES": "Singles",

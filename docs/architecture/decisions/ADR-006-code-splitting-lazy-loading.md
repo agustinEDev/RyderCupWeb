@@ -1,45 +1,37 @@
-# ADR-006: Code Splitting y Lazy Loading
+# ADR-006: Code Splitting & Lazy Loading
 
-**Fecha**: 27 de noviembre de 2025
-**Estado**: Aceptado (Implementado en v1.7.0)
-**Decisores**: Equipo de desarrollo frontend
+**Date:** November 27, 2025
+**Status:** Accepted (Implemented in v1.7.0)
+**Decision Makers:** Frontend development team
 
-## Contexto y Problema
+## Context and Problem
 
-Después de integrar Sentry y otras librerías, el bundle inicial creció a 978 KB:
+After integrating Sentry and libraries, initial bundle grew to 978 KB:
 
-```bash
-# Build sin optimización (v1.5.0)
-dist/assets/index-BhwLQ60R.js  978.45 kB  ← ⚠️ PROBLEMA
-```
+**Problems:**
+- High initial load time: 3-5s on 3G
+- Slow FCP (First Contentful Paint): >2s
+- Wasted bandwidth: User downloads unused code
 
-**Problemas:**
-- **Tiempo de carga inicial alto**: 3-5 segundos en 3G
-- **FCP (First Contentful Paint) lento**: >2 segundos
-- **TTI (Time to Interactive) alto**: >4 segundos
-- **Desperdicio de bandwidth**: Usuario descarga código que no usa inmediatamente
+**Requirements:**
+- Reduce initial bundle (CI budget: <1,400 KB)
+- Load only necessary code for current route
+- Maintain smooth UX
+- Compatible with Sentry and React Router
 
-**Requisitos:**
-- Reducir bundle inicial (objetivo original: <100 KB; CI budget actual: <1,400 KB)
-- Cargar solo código necesario para ruta actual
-- Mantener UX fluida (sin delays visibles)
-- Compatible con Sentry y React Router
+## Options Considered
 
-## Opciones Consideradas
+1. **Manual Code Splitting**: Rollup `manualChunks` + React.lazy()
+2. **Automatic Code Splitting**: Vite automatic only
+3. **Route-based Splitting**: React.lazy() on routes only
+4. **Component-level Splitting**: React.lazy() on all components
+5. **No optimization**: Keep monolithic bundle
 
-1. **Code Splitting Manual**: Rollup `manualChunks` + React.lazy()
-2. **Automatic Code Splitting**: Solo Vite automático
-3. **Route-based Splitting**: Solo React.lazy() en rutas
-4. **Component-level Splitting**: React.lazy() en todos los componentes
-5. **No hacer nada**: Mantener bundle monolítico
+## Decision
 
-## Decisión
-
-**Adoptamos Code Splitting Manual + Route-based Lazy Loading**:
+**Adopt Manual Code Splitting + Route-based Lazy Loading:**
 
 ### 1. Manual Chunks (Vendor Splitting)
-Separar librerías de terceros en chunks dedicados:
-
 ```javascript
 // vite.config.js
 export default defineConfig({
@@ -49,7 +41,7 @@ export default defineConfig({
         manualChunks: {
           'react-vendor': ['react', 'react-dom', 'react-router-dom'],
           'sentry': ['@sentry/react'],
-          'ui-vendor': ['react-hot-toast'],
+          'ui-vendor': ['react-hot-toast']
         }
       }
     }
@@ -58,360 +50,156 @@ export default defineConfig({
 ```
 
 ### 2. Route-based Lazy Loading
-Cargar páginas bajo demanda:
-
 ```jsx
 // src/App.jsx
 import React, { Suspense, lazy } from 'react';
 
-// Eager loading (páginas públicas críticas)
+// Eager (critical public pages)
 import Landing from './pages/Landing';
 import Login from './pages/Login';
 
-// Lazy loading (páginas protegidas)
+// Lazy (protected pages)
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const Profile = lazy(() => import('./pages/Profile'));
-const EditProfile = lazy(() => import('./pages/EditProfile'));
 const Competitions = lazy(() => import('./pages/Competitions'));
-const CreateCompetition = lazy(() => import('./pages/CreateCompetition'));
 
-// Suspense con fallback
 <Suspense fallback={<LoadingSpinner />}>
   <Routes>
     <Route path="/" element={<Landing />} />
-    <Route path="/login" element={<Login />} />
     <Route path="/dashboard" element={<Dashboard />} />
-    {/* ... */}
   </Routes>
 </Suspense>
 ```
 
 ### 3. Loading Fallback
 ```jsx
-// src/components/LoadingSpinner.jsx
 const LoadingSpinner = () => (
   <div className="min-h-screen flex items-center justify-center">
-    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+    <div className="animate-spin rounded-full h-12 w-12 border-primary"></div>
   </div>
 );
 ```
 
-## Justificación
+## Rationale
 
-### Por qué Manual Chunks:
+**Why Manual Chunks:**
+- ✅ Full control over chunk composition
+- ✅ Cache optimization (vendor rarely changes)
+- ✅ Parallel downloads
+- ✅ Long-term caching (stable hashes)
 
-1. **Control Total**: Decidimos qué va en cada chunk
-2. **Cache Optimization**: React vendor rara vez cambia
-3. **Parallel Downloads**: Navegador descarga chunks en paralelo
-4. **Long-term Caching**: Vendor chunks tienen hashes estables
+**Why Route-based Lazy Loading:**
+- ✅ High ROI: Maximum impact, minimum effort
+- ✅ Predictable UX: Users expect navigation delay
+- ✅ Router compatible: React Router v6 supports Suspense
+- ✅ Easy maintenance: Clear, consistent pattern
 
-### Por qué Route-based Lazy Loading:
+**Why NOT Component-level:**
+- ❌ Over-engineering: Complexity without significant benefit
+- ❌ Worse UX: Unexpected interaction delays
+- ❌ Maintenance burden: Hard to decide which components
 
-1. **ROI Alto**: Máximo impacto con mínimo esfuerzo
-2. **UX Predecible**: Usuario espera delay al navegar (es natural)
-3. **Compatible con Router**: React Router v6 soporta Suspense
-4. **Fácil Mantener**: Patrón claro y consistente
+**Comparison:**
 
-### Por qué NO Component-level Splitting:
+| Strategy | Initial Bundle | Complexity | UX | Maintainability |
+|----------|:--------------:|:----------:|:--:|:---------------:|
+| **Manual + Route-based** | ✅ 47 KB | ⚠️ Medium | ✅ Excellent | ✅ Easy |
+| **Automatic Only** | ❌ 800+ KB | ✅ Low | ❌ Slow | ✅ Easy |
+| **Route-based Only** | ⚠️ 600 KB | ✅ Low | ✅ Good | ✅ Easy |
+| **Component-level** | ✅ 30 KB | ❌ High | ⚠️ Delays | ❌ Complex |
+| **No optimization** | ❌ 978 KB | ✅ Low | ❌ Very slow | ✅ Easy |
 
-- **Over-engineering**: Complejidad sin beneficio significativo
-- **UX Worse**: Delays inesperados en interacciones
-- **Maintenance Hell**: Difícil decidir qué componentes hacer lazy
+## Consequences
 
-### Comparación con Alternativas:
+**Positive:**
+- ✅ **95% reduction**: 978 KB → 47 KB initial
+- ✅ **FCP improved**: 2s → 0.8s (60% faster)
+- ✅ **TTI improved**: 4s → 1.5s (62% faster)
+- ✅ **Better caching**: Vendor chunks rarely change
+- ✅ **Parallel downloads**: Chunks load simultaneously
+- ✅ **Lighthouse score**: 65 → 92
 
-| Estrategia | Bundle Inicial | Complejidad | UX | Mantenibilidad |
-|-----------|----------------|-------------|-----|---------------|
-| **Manual + Route-based** | ✅ 47 KB | ⚠️ Media | ✅ Excelente | ✅ Fácil |
-| **Automatic Only** | ❌ 800+ KB | ✅ Baja | ❌ Lento | ✅ Fácil |
-| **Route-based Only** | ⚠️ 600 KB | ✅ Baja | ✅ Buena | ✅ Fácil |
-| **Component-level** | ✅ 30 KB | ❌ Alta | ⚠️ Delays | ❌ Complejo |
-| **No optimización** | ❌ 978 KB | ✅ Baja | ❌ Muy lento | ✅ Fácil |
+**Negative:**
+- ❌ Added complexity: Chunk configuration + Suspense
+- ❌ Navigation delay: 100-300ms on route change (acceptable)
+- ❌ More files: 1 bundle → 10+ chunks
+- ❌ Testing complexity: Mocks for lazy imports
 
-## Consecuencias
+**Mitigated Risks:**
+1. **Loading flicker**: Spinner with min-height prevents layout shift
+2. **Chunk load errors**: Error boundary catches import() errors
+3. **Cache invalidation**: Hashed filenames guarantee fresh deploys
+4. **Critical preload**: Landing/Login eager loaded (not lazy)
 
-### Positivas:
-- ✅ **Bundle inicial reducido 95%**: 978 KB → 47 KB
-- ✅ **FCP mejorado**: 2s → 0.8s (60% mejora)
-- ✅ **TTI mejorado**: 4s → 1.5s (62% mejora)
-- ✅ **Mejor caching**: Vendor chunks rara vez cambian
-- ✅ **Parallel downloads**: Chunks se descargan simultáneamente
-- ✅ **Mejor Lighthouse score**: 65 → 92
+## Implementation
 
-### Negativas:
-- ❌ **Complejidad agregada**: Configuración de chunks, Suspense
-- ❌ **Delay en navegación**: 100-300ms al cargar nueva ruta (acceptable)
-- ❌ **Más archivos**: 1 bundle → 10+ chunks
-- ❌ **Testing más complejo**: Mocks para lazy imports
-
-### Riesgos Mitigados:
-
-1. **Loading flicker**: Spinner con min-height evita layout shift
-2. **Error loading chunks**: Error boundary captura errores de import()
-3. **Cache invalidation**: Hashes en filenames garantizan fresh deployments
-4. **Preload crítico**: Landing/Login eager load (no lazy)
-
-## Implementación
-
-### 1. Configuración Vite:
-
-```javascript
-// vite.config.js
-import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react';
-
-export default defineConfig({
-  plugins: [react()],
-  build: {
-    minify: 'terser',
-    chunkSizeWarningLimit: 1000,
-    rollupOptions: {
-      output: {
-        manualChunks: {
-          'react-vendor': [
-            'react',
-            'react-dom',
-            'react-router-dom'
-          ],
-          'sentry': [
-            '@sentry/react'
-          ],
-          'ui-vendor': [
-            'react-hot-toast'
-          ],
-        }
-      }
-    }
-  }
-});
+**Build Output (v1.7.0):**
+```bash
+dist/assets/index-BhwLQ60R.js         47.21 kB  ✅ Initial
+dist/assets/react-vendor-BXTqkeYX.js 159.86 kB  (lazy)
+dist/assets/sentry-H0cbkE6T.js       244.11 kB  (lazy)
+dist/assets/Dashboard-X9mKp2rT.js     12.34 kB  (lazy)
 ```
 
-### 2. App.jsx con Lazy Loading:
+**Web Vitals:**
 
+| Metric | Before | After | Improvement |
+|--------|-------:|------:|:-----------:|
+| **FCP** | 2.1s | 0.8s | ⬇️ 62% |
+| **LCP** | 3.5s | 1.5s | ⬇️ 57% |
+| **TTI** | 4.2s | 1.5s | ⬇️ 64% |
+| **TBT** | 450ms | 120ms | ⬇️ 73% |
+
+**Error Boundary:**
 ```jsx
-// src/App.jsx
-import React, { Suspense, lazy } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import LoadingSpinner from './components/LoadingSpinner';
-
-// Eager: Páginas públicas críticas
-import Landing from './pages/Landing';
-import Login from './pages/Login';
-import Register from './pages/Register';
-
-// Lazy: Páginas protegidas (menor prioridad)
-const Dashboard = lazy(() => import('./pages/Dashboard'));
-const Profile = lazy(() => import('./pages/Profile'));
-const EditProfile = lazy(() => import('./pages/EditProfile'));
-const Competitions = lazy(() => import('./pages/Competitions'));
-const CreateCompetition = lazy(() => import('./pages/CreateCompetition'));
-const BrowseCompetitions = lazy(() => import('./pages/BrowseCompetitions'));
-const CompetitionDetail = lazy(() => import('./pages/CompetitionDetail'));
-const VerifyEmail = lazy(() => import('./pages/VerifyEmail'));
-
-function App() {
-  return (
-    <Router>
-      <Suspense fallback={<LoadingSpinner />}>
-        <Routes>
-          {/* Public routes (eager) */}
-          <Route path="/" element={<Landing />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-
-          {/* Protected routes (lazy) */}
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/profile/edit" element={<EditProfile />} />
-          <Route path="/competitions" element={<Competitions />} />
-          <Route path="/competitions/create" element={<CreateCompetition />} />
-          <Route path="/competitions/browse" element={<BrowseCompetitions />} />
-          <Route path="/competitions/:id" element={<CompetitionDetail />} />
-          <Route path="/verify-email" element={<VerifyEmail />} />
-        </Routes>
-      </Suspense>
-    </Router>
-  );
-}
-
-export default App;
-```
-
-### 3. Loading Spinner:
-
-```jsx
-// src/components/LoadingSpinner.jsx
-const LoadingSpinner = () => {
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="text-center">
-        <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-primary mx-auto"></div>
-        <p className="mt-4 text-gray-600">Loading...</p>
-      </div>
-    </div>
-  );
-};
-
-export default LoadingSpinner;
-```
-
-### 4. Error Boundary para Chunk Loading:
-
-```jsx
-// src/components/ChunkErrorBoundary.jsx
-import React from 'react';
-
 class ChunkErrorBoundary extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = { hasError: false };
-  }
-
   static getDerivedStateFromError(error) {
-    // Detectar errores de chunk loading
     if (error.name === 'ChunkLoadError') {
       return { hasError: true };
     }
     return null;
   }
 
-  componentDidCatch(error, errorInfo) {
-    if (error.name === 'ChunkLoadError') {
-      console.error('Failed to load chunk:', error);
-    }
-  }
-
   render() {
     if (this.state.hasError) {
       return (
-        <div className="min-h-screen flex items-center justify-center">
-          <div className="text-center">
-            <h1 className="text-2xl font-bold text-red-600 mb-4">
-              Failed to load page
-            </h1>
-            <button
-              onClick={() => window.location.reload()}
-              className="px-4 py-2 bg-primary text-white rounded-lg"
-            >
-              Reload page
-            </button>
-          </div>
+        <div>
+          <h1>Failed to load page</h1>
+          <button onClick={() => window.location.reload()}>Reload</button>
         </div>
       );
     }
-
     return this.props.children;
   }
 }
-
-export default ChunkErrorBoundary;
 ```
 
-## Validación
+## Validation
 
-Criterios de éxito:
-
-- [x] Bundle inicial reducido significativamente (v1.7.0: 47 KB inicial; v2.0.6 total: ~1,308 KB dentro del CI budget de 1,400 KB)
-- [x] FCP <1 segundo (✅ 0.8s promedio)
-- [x] TTI <2 segundos (✅ 1.5s promedio)
+**Success Criteria:**
+- [x] Initial bundle <100 KB (✅ 47 KB in v1.7.0; v2.0.6 total: ~1,308 KB within CI budget of 1,400 KB)
+- [x] FCP <1s (✅ 0.8s average)
+- [x] TTI <2s (✅ 1.5s average)
 - [x] Lighthouse Performance >90 (✅ 92/100)
-- [x] No errores de chunk loading (✅ Error boundary implementado)
-- [x] UX fluida (✅ Spinner profesional)
+- [x] No chunk loading errors (✅ Error boundary implemented)
+- [x] Smooth UX (✅ Professional spinner)
 
-### Métricas Reales (v1.7.0):
+**CI/CD Monitoring:**
+- Build size alert if bundle >1,300 KB (warning)
+- Build fails if bundle >1,400 KB
+- Lighthouse minimum score: 90
 
-```bash
-# Build output
-vite v5.0.8 building for production...
-✓ 2395 modules transformed.
-✓ built in 3.88s
+## Future Optimizations
 
-dist/index.html                         0.51 kB │ gzip:  0.32 kB
-dist/assets/index-BhwLQ60R.css          4.25 kB │ gzip:  1.38 kB
-dist/assets/index-BhwLQ60R.js          47.21 kB │ gzip: 10.44 kB ✅ INICIAL
-dist/assets/react-vendor-BXTqkeYX.js  159.86 kB │ gzip: 52.29 kB
-dist/assets/sentry-H0cbkE6T.js        244.11 kB │ gzip: 75.91 kB
-dist/assets/Dashboard-X9mKp2rT.js     12.34 kB │ gzip:  4.12 kB
-dist/assets/Profile-Zk8NqWxL.js        8.92 kB │ gzip:  3.01 kB
-dist/assets/Competitions-Hk2MpQxY.js  15.67 kB │ gzip:  5.23 kB
-```
+1. **Preload Critical Routes**: `<link rel="prefetch" href="/Dashboard.js" />`
+2. **Route Prefetching**: Load on link hover
+3. **Network-aware Loading**: No lazy load on 2G
+4. **Progressive Enhancement**: Advanced features if supported
 
-**Mejora total:**
-- Antes: 978 KB inicial
-- Después: 47 KB inicial (95% reducción)
-- Vendor chunks: 404 KB (descargados en paralelo cuando se necesitan)
-
-### Web Vitals:
-
-| Métrica | Antes | Después | Mejora |
-|---------|-------|---------|--------|
-| **FCP** | 2.1s | 0.8s | 62% ⬇️ |
-| **LCP** | 3.5s | 1.5s | 57% ⬇️ |
-| **TTI** | 4.2s | 1.5s | 64% ⬇️ |
-| **TBT** | 450ms | 120ms | 73% ⬇️ |
-| **CLS** | 0.02 | 0.01 | 50% ⬇️ |
-
-## Referencias
+## References
 
 - [Vite Code Splitting](https://vitejs.dev/guide/build.html#chunking-strategy)
 - [React Code Splitting](https://react.dev/reference/react/lazy)
 - [React Router Lazy Loading](https://reactrouter.com/en/main/guides/lazy)
-- [Web Vitals](https://web.dev/vitals/)
-- [Lighthouse](https://developer.chrome.com/docs/lighthouse/)
-
-## Notas de Implementación
-
-### Ya Implementado (v1.7.0):
-
-- ✅ Manual chunks configuration
-- ✅ Route-based lazy loading (8 rutas lazy)
-- ✅ Loading spinner component
-- ✅ Error boundary para chunk loading
-- ✅ Suspense en router principal
-- ✅ Eager loading de rutas críticas (Landing, Login)
-
-### Optimizaciones Adicionales (Futuro):
-
-#### 1. Preload Critical Routes
-```jsx
-// Precargar Dashboard cuando usuario está en Login
-<link rel="prefetch" href="/assets/Dashboard-X9mKp2rT.js" />
-```
-
-#### 2. Route Prefetching
-```jsx
-// Precargar ruta al hover sobre link
-const prefetchRoute = () => import('./pages/Dashboard');
-
-<Link to="/dashboard" onMouseEnter={prefetchRoute}>
-  Dashboard
-</Link>
-```
-
-#### 3. Network-aware Loading
-```javascript
-// No lazy load en conexiones lentas
-const connection = navigator.connection;
-const shouldLazyLoad = connection?.effectiveType !== '2g';
-```
-
-#### 4. Progressive Enhancement
-```jsx
-// Cargar features avanzadas solo si navegador lo soporta
-if ('IntersectionObserver' in window) {
-  const AdvancedFeature = lazy(() => import('./AdvancedFeature'));
-}
-```
-
-### Testing Strategy:
-
-1. **Build size monitoring**: CI/CD alerta si bundle >1,300 KB (warning), falla si >1,400 KB
-2. **Lighthouse CI**: Score mínimo 90 en cada deploy
-3. **Network throttling tests**: Probar en 3G/4G
-4. **Error scenarios**: Desconectar red durante navegación
-
-## Relacionado
-
-- ADR-002: React + Vite Stack (build tool que permite code splitting)
-- ADR-005: Sentry Error Tracking (chunk separado para Sentry)
-- ROADMAP.md: v1.7.0 Performance Improvements
+- ADR-002: React + Vite Stack
+- ADR-005: Sentry Error Tracking

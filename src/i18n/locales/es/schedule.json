@@ -35,6 +35,8 @@
     "startMatch": "Iniciar Partido",
     "completeMatch": "Completar Partido",
     "viewDetail": "Ver Detalle",
+    "score": "Anotar",
+    "viewScorecard": "Ver Tarjeta",
     "result": "Resultado",
     "resultWinner": "Ganador: {{team}}",
     "resultScore": "Puntuación: {{score}}",
@@ -54,16 +56,20 @@
       "generate": "Generar",
       "playerAlreadyUsed": "Este jugador ya está asignado a otro partido",
       "summary": "{{matchCount}} partidos, {{assignedCount}} de {{totalCount}} jugadores asignados",
+      "noTeamsWarning": "Los equipos aún no han sido asignados",
+      "noTeamsWarningDesc": "Necesitas asignar equipos antes de generar partidos.",
       "validation": {
         "noMatches": "Añade al menos un partido",
         "incompleteMatch": "Todos los partidos deben tener equipos completos",
-        "duplicatePlayer": "Un jugador solo puede aparecer en un partido"
+        "duplicatePlayer": "Un jugador solo puede aparecer en un partido",
+        "noTeamAssignment": "Los equipos deben estar asignados antes de generar partidos"
       }
     }
   },
   "teams": {
     "title": "Asignación de Equipos",
     "assign": "Asignar Equipos",
+    "reassign": "Reasignar Equipos",
     "mode": "Modo de Asignación",
     "manual": "Manual",
     "automatic": "Automática",
@@ -83,7 +89,8 @@
     "SCHEDULED": "Programado",
     "IN_PROGRESS": "En Progreso",
     "COMPLETED": "Completado",
-    "WALKOVER": "Walkover"
+    "WALKOVER": "Walkover",
+    "CONCEDED": "Concedido"
   },
   "formats": {
     "SINGLES": "Individuales",

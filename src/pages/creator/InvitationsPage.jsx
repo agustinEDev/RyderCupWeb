@@ -12,6 +12,8 @@ import {
   getCompetitionDetailUseCase,
   listCompetitionInvitationsUseCase,
   sendInvitationByEmailUseCase,
+  sendInvitationUseCase,
+  searchUsersUseCase,
 } from '../../composition';
 
 const InvitationsPage = () => {
@@ -79,6 +81,34 @@ const InvitationsPage = () => {
     }
   };
 
+  const handleSendByUserId = async (userId, personalMessage) => {
+    setIsProcessing(true);
+    try {
+      await sendInvitationUseCase.execute(id, userId, personalMessage);
+      customToast.success(t('success.sent'));
+      setShowSendModal(false);
+      await loadData();
+    } catch (error) {
+      console.error('Error sending invitation:', error);
+      if (error.message?.includes('409')) {
+        customToast.error(t('errors.duplicateInvitation'));
+      } else {
+        customToast.error(error.message || t('errors.failedToSend'));
+      }
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleSearchUsers = async (query) => {
+    if (!query || query.trim().length < 2) return [];
+    try {
+      return await searchUsersUseCase.execute(query);
+    } catch {
+      return [];
+    }
+  };
+
   const isPageLoading = isLoadingUser || isLoadingRoles || isLoading;
 
   if (isPageLoading) {
@@ -125,7 +155,13 @@ const InvitationsPage = () => {
             </div>
 
             <button
-              onClick={() => setShowSendModal(true)}
+              onClick={() => {
+                const acceptedCount = invitations.filter(inv => inv.status === 'ACCEPTED').length;
+                if (competition?.maxPlayers && acceptedCount >= competition.maxPlayers - 1) {
+                  customToast.warning(t('creator.nearCapacity', { accepted: acceptedCount, max: competition.maxPlayers }));
+                }
+                setShowSendModal(true);
+              }}
               className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-primary rounded-lg hover:bg-primary/90 transition-colors"
             >
               <Plus className="h-4 w-4" />
@@ -175,6 +211,8 @@ const InvitationsPage = () => {
         isOpen={showSendModal}
         onClose={() => setShowSendModal(false)}
         onSend={handleSendInvitation}
+        onSendByUserId={handleSendByUserId}
+        onSearchUsers={handleSearchUsers}
         isProcessing={isProcessing}
         t={t}
       />

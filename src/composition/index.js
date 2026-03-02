@@ -4,6 +4,7 @@ import ApiUserRepository from '../infrastructure/repositories/ApiUserRepository'
 import UpdateUserProfileUseCase from '../application/use_cases/user/UpdateUserProfileUseCase';
 import UpdateUserSecurityUseCase from '../application/use_cases/user/UpdateUserSecurityUseCase';
 import GetUserRolesUseCase from '../application/use_cases/user/GetUserRolesUseCase';
+import SearchUsersUseCase from '../application/use_cases/user/SearchUsersUseCase';
 import ApiAuthRepository from '../infrastructure/repositories/ApiAuthRepository';
 import LoginUseCase from '../application/use_cases/user/LoginUseCase';
 import RegisterUseCase from '../application/use_cases/user/RegisterUseCase';
@@ -56,6 +57,9 @@ import CloseEnrollmentsUseCase from '../application/use_cases/competition/CloseE
 import StartCompetitionUseCase from '../application/use_cases/competition/StartCompetitionUseCase';
 import CompleteCompetitionUseCase from '../application/use_cases/competition/CompleteCompetitionUseCase';
 import CancelCompetitionUseCase from '../application/use_cases/competition/CancelCompetitionUseCase';
+import DeleteCompetitionUseCase from '../application/use_cases/competition/DeleteCompetitionUseCase';
+import ReopenEnrollmentsUseCase from '../application/use_cases/competition/ReopenEnrollmentsUseCase';
+import RevertCompetitionStatusUseCase from '../application/use_cases/competition/RevertCompetitionStatusUseCase';
 import BrowseJoinableCompetitionsUseCase from '../application/use_cases/competition/BrowseJoinableCompetitionsUseCase';
 import BrowseExploreCompetitionsUseCase from '../application/use_cases/competition/BrowseExploreCompetitionsUseCase';
 import AddGolfCourseToCompetitionUseCase from '../application/use_cases/competition/AddGolfCourseToCompetitionUseCase';
@@ -89,6 +93,14 @@ import ListMyInvitationsUseCase from '../application/use_cases/invitation/ListMy
 import RespondToInvitationUseCase from '../application/use_cases/invitation/RespondToInvitationUseCase';
 import ListCompetitionInvitationsUseCase from '../application/use_cases/invitation/ListCompetitionInvitationsUseCase';
 
+// Scoring Use Cases (Sprint 4)
+import ApiScoringRepository from '../infrastructure/repositories/ApiScoringRepository';
+import GetScoringViewUseCase from '../application/use_cases/scoring/GetScoringViewUseCase';
+import SubmitHoleScoreUseCase from '../application/use_cases/scoring/SubmitHoleScoreUseCase';
+import SubmitScorecardUseCase from '../application/use_cases/scoring/SubmitScorecardUseCase';
+import GetLeaderboardUseCase from '../application/use_cases/scoring/GetLeaderboardUseCase';
+import ConcedeMatchUseCase from '../application/use_cases/scoring/ConcedeMatchUseCase';
+
 // Enrollment Use Cases
 import ApiEnrollmentRepository from '../infrastructure/repositories/ApiEnrollmentRepository';
 import RequestEnrollmentUseCase from '../application/use_cases/enrollment/RequestEnrollmentUseCase';
@@ -114,11 +126,13 @@ const apiScheduleRepository = new ApiScheduleRepository();
 const apiSupportRepository = new ApiSupportRepository();
 const apiCountryRepository = new ApiCountryRepository();
 const apiInvitationRepository = new ApiInvitationRepository();
+const apiScoringRepository = new ApiScoringRepository();
 
 // --- Casos de Uso ---
 const updateUserProfileUseCase = new UpdateUserProfileUseCase({ userRepository: apiUserRepository });
 const updateUserSecurityUseCase = new UpdateUserSecurityUseCase({ userRepository: apiUserRepository });
 const getUserRolesUseCase = new GetUserRolesUseCase({ userRepository: apiUserRepository });
+const searchUsersUseCase = new SearchUsersUseCase({ userRepository: apiUserRepository });
 const updateManualHandicapUseCase = new UpdateManualHandicapUseCase({ handicapRepository: apiHandicapRepository });
 const updateRfegHandicapUseCase = new UpdateRfegHandicapUseCase({
   handicapRepository: apiHandicapRepository,
@@ -144,6 +158,9 @@ const closeEnrollmentsUseCase = new CloseEnrollmentsUseCase({ competitionReposit
 const startCompetitionUseCase = new StartCompetitionUseCase({ competitionRepository: apiCompetitionRepository });
 const completeCompetitionUseCase = new CompleteCompetitionUseCase({ competitionRepository: apiCompetitionRepository });
 const cancelCompetitionUseCase = new CancelCompetitionUseCase({ competitionRepository: apiCompetitionRepository });
+const deleteCompetitionUseCase = new DeleteCompetitionUseCase({ competitionRepository: apiCompetitionRepository });
+const reopenEnrollmentsUseCase = new ReopenEnrollmentsUseCase({ competitionRepository: apiCompetitionRepository });
+const revertCompetitionStatusUseCase = new RevertCompetitionStatusUseCase({ competitionRepository: apiCompetitionRepository });
 const browseJoinableCompetitionsUseCase = new BrowseJoinableCompetitionsUseCase(apiCompetitionRepository);
 const browseExploreCompetitionsUseCase = new BrowseExploreCompetitionsUseCase(apiCompetitionRepository);
 const addGolfCourseToCompetitionUseCase = new AddGolfCourseToCompetitionUseCase({ competitionRepository: apiCompetitionRepository });
@@ -176,6 +193,13 @@ const listMyInvitationsUseCase = new ListMyInvitationsUseCase({ invitationReposi
 const respondToInvitationUseCase = new RespondToInvitationUseCase({ invitationRepository: apiInvitationRepository });
 const listCompetitionInvitationsUseCase = new ListCompetitionInvitationsUseCase({ invitationRepository: apiInvitationRepository });
 
+// Scoring Use Cases (Sprint 4)
+const getScoringViewUseCase = new GetScoringViewUseCase({ scoringRepository: apiScoringRepository });
+const submitHoleScoreUseCase = new SubmitHoleScoreUseCase({ scoringRepository: apiScoringRepository });
+const submitScorecardUseCase = new SubmitScorecardUseCase({ scoringRepository: apiScoringRepository });
+const getLeaderboardUseCase = new GetLeaderboardUseCase({ scoringRepository: apiScoringRepository });
+const concedeMatchUseCase = new ConcedeMatchUseCase({ scoringRepository: apiScoringRepository });
+
 // Enrollment Use Cases
 const requestEnrollmentUseCase = new RequestEnrollmentUseCase(apiEnrollmentRepository);
 const listEnrollmentsUseCase = new ListEnrollmentsUseCase(apiEnrollmentRepository);
@@ -207,6 +231,7 @@ export {
   updateUserProfileUseCase,
   updateUserSecurityUseCase,
   getUserRolesUseCase,
+  searchUsersUseCase,
   updateManualHandicapUseCase,
   updateRfegHandicapUseCase,
   loginUseCase,
@@ -229,6 +254,9 @@ export {
   startCompetitionUseCase,
   completeCompetitionUseCase,
   cancelCompetitionUseCase,
+  deleteCompetitionUseCase,
+  reopenEnrollmentsUseCase,
+  revertCompetitionStatusUseCase,
   browseJoinableCompetitionsUseCase,
   browseExploreCompetitionsUseCase,
   addGolfCourseToCompetitionUseCase,
@@ -281,4 +309,10 @@ export {
   listMyInvitationsUseCase,
   respondToInvitationUseCase,
   listCompetitionInvitationsUseCase,
+  // Scoring Use Cases (Sprint 4)
+  getScoringViewUseCase,
+  submitHoleScoreUseCase,
+  submitScorecardUseCase,
+  getLeaderboardUseCase,
+  concedeMatchUseCase,
 };

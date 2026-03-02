@@ -4,6 +4,13 @@
   "noInvitations": "No invitations yet",
   "send": {
     "title": "Send Invitation",
+    "tabSearchUser": "Search User",
+    "tabByEmail": "By Email",
+    "searchPlaceholder": "Search by name or email...",
+    "searchMinChars": "Type at least 2 characters",
+    "noUsersFound": "No users found",
+    "noUserSelected": "Please select a user first",
+    "emailLabel": "Email",
     "emailPlaceholder": "Enter player's email address",
     "personalMessage": "Personal Message (optional)",
     "personalMessagePlaceholder": "Add a personal message to the invitation...",
@@ -53,7 +60,8 @@
     "subtitle": "Manage invitations for this competition",
     "sendNew": "Send Invitation",
     "sentCount_one": "{{count}} invitation sent",
-    "sentCount_other": "{{count}} invitations sent"
+    "sentCount_other": "{{count}} invitations sent",
+    "nearCapacity": "Already {{accepted}} accepted invitations out of {{max}} spots. The tournament is nearly full."
   },
   "player": {
     "title": "My Invitations",
