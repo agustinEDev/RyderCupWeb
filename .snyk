@@ -1,0 +1,13 @@
+# Snyk (https://snyk.io) policy file
+
+# Exclude test files from Snyk Code (SAST) analysis.
+# Test fixtures legitimately use hardcoded credentials (e.g. 'password123',
+# 'StrongPassword123') to simulate user input. These are not real secrets.
+exclude:
+  code:
+    - "**/*.test.js"
+    - "**/*.test.ts"
+    - "**/*.spec.js"
+    - "**/*.spec.ts"
+
+patch: {}

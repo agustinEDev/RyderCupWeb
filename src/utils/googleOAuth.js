@@ -1,4 +1,5 @@
 /* global crypto */
+// deepcode ignore HardcodedNonCryptoSecret: This is a sessionStorage key name, not a secret value. The actual secret is the cryptographically random nonce generated via crypto.getRandomValues().
 const OAUTH_STATE_KEY = 'google_oauth_state_token';
 
 /**
