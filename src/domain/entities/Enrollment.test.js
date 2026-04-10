@@ -555,14 +555,13 @@ describe('Enrollment', () => {
       expect(enrollment.teeCategory.toString()).toBe('AMATEUR');
     });
 
-    it('should include teeCategory in toPersistence()', () => {
+    it('should include teeCategory as string in toPersistence()', () => {
       const enrollment = new Enrollment(createValidEnrollmentProps({
         teeCategory: TeeCategory.senior(),
       }));
 
       const persisted = enrollment.toPersistence();
-      expect(persisted.teeCategory).toBeInstanceOf(TeeCategory);
-      expect(persisted.teeCategory.toString()).toBe('SENIOR');
+      expect(persisted.teeCategory).toBe('SENIOR');
     });
 
     it('should propagate teeCategory through approve()', () => {

@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Refactored
+- **`TeeCategory` Value Object** (`src/domain/value_objects/TeeCategory.js`): New VO replacing raw `teeCategory` strings throughout the domain. Five valid values: `CHAMPIONSHIP`, `AMATEUR`, `SENIOR`, `FORWARD`, `JUNIOR`. Provides `TeeCategory.getAllValues()`, factory methods per value, `fromString()`, `isValid()`, `toString()`, and `equals()`
+- **`Enrollment` entity**: Constructor now validates `teeCategory instanceof TeeCategory | null` — rejects invalid strings at construction time. `toPersistence()` serializes to primitive string
+- **`Tee` VO**: Validation reuses `TeeCategory.getAllValues()` — removes duplicate category list
+- **`EnrollmentMapper`**: Wraps `tee_category` in `TeeCategory.fromString()` on `toDomain()`; extracts `.toString()` on `toDTO()` and `toSimpleDTO()`
+- **`EnrollmentAssembler`**: Extracts `.toString()` before building UI DTO
+
+### Tests
+- **30 new tests** for `TeeCategory` VO (`TeeCategory.test.js`) — constructor validation, factory methods, `fromString`, `isValid`, `getAllValues` defensive copy, `toString`, `equals`, immutability
+
 ### Security
 - **`.snyk` config**: Exclude test files (`*.test.js`, `*.spec.js`) from Snyk Code SAST — test fixtures use hardcoded credentials by design, not real secrets
 - **`googleOAuth.js`**: Add deepcode ignore comment on `OAUTH_STATE_KEY` — it is a sessionStorage key name, not a secret value

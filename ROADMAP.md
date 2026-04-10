@@ -650,7 +650,7 @@ _... (Remains the same as previous version) ..._
 
 ### Key Metrics
 
-- **Tests:** 1559 passing, 1 skipped, 0 failed ✅
+- **Tests:** 1589 passing, 1 skipped, 0 failed ✅
 - **Coverage:** ≥85% lines, ≥75% functions ✅
 - **Bundle:** 1,432 KB total JS ✅ (budget: ≤1500 KB, warning: 1400 KB)
 - **Build time:** ~6s ⚡
@@ -668,6 +668,7 @@ _... (Remains the same as previous version) ..._
 - ✅ Live Scoring + Sprint 5 enhancements (v2.0.13 - Sprint 4+5)
 - ✅ Dependency consolidation (v2.0.14)
 - ✅ Security hotfixes — Snyk false positives, npm audit, Vite CVE (post-v2.0.14)
+- ✅ TeeCategory Value Object — domain refactor, 30 tests (refactor/tee-category-vo)
 
 ### Completed (v1.x)
 - ✅ Modern Build Stack (v1.16.0)

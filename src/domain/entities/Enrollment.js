@@ -531,7 +531,7 @@ class Enrollment {
       status: this.#status.toString(),
       teamId: this.#teamId,
       customHandicap: this.#customHandicap,
-      teeCategory: this.#teeCategory,
+      teeCategory: this.#teeCategory?.toString() ?? null,
       createdAt: this.#createdAt.toISOString(),
       updatedAt: this.#updatedAt.toISOString(),
     };
