@@ -1,5 +1,6 @@
 import EnrollmentId from '../value_objects/EnrollmentId';
 import EnrollmentStatus from '../value_objects/EnrollmentStatus';
+import TeeCategory from '../value_objects/TeeCategory';
 
 /**
  * Excepción para errores de estado de Enrollment
@@ -86,6 +87,13 @@ class Enrollment {
     // Validar custom handicap si está presente
     if (customHandicap !== null) {
       this._validateCustomHandicap(customHandicap);
+    }
+
+    // Validar teeCategory si está presente
+    if (teeCategory !== null && !(teeCategory instanceof TeeCategory)) {
+      throw new TypeError(
+        `teeCategory must be a TeeCategory instance or null, got: ${typeof teeCategory}`
+      );
     }
 
     // Asignar campos privados

@@ -27,7 +27,7 @@ class EnrollmentAssembler {
       status: enrollment.status.toString(),
       teamId: enrollment.teamId,
       customHandicap: enrollment.customHandicap,
-      teeCategory: enrollment.teeCategory || null,
+      teeCategory: enrollment.teeCategory ? enrollment.teeCategory.toString() : null,
       createdAt: enrollment.createdAt.toISOString(),
       updatedAt: enrollment.updatedAt.toISOString(),
 
