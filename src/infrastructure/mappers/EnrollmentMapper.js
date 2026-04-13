@@ -1,6 +1,7 @@
 import Enrollment from '../../domain/entities/Enrollment';
 import EnrollmentId from '../../domain/value_objects/EnrollmentId';
 import EnrollmentStatus from '../../domain/value_objects/EnrollmentStatus';
+import TeeCategory from '../../domain/value_objects/TeeCategory';
 
 /**
  * EnrollmentMapper - Anti-Corruption Layer
@@ -59,7 +60,7 @@ class EnrollmentMapper {
       status: EnrollmentStatus.fromString(apiData.status),
       teamId: apiData.team_id || null,
       customHandicap: apiData.custom_handicap !== null ? apiData.custom_handicap : null,
-      teeCategory: apiData.tee_category || null,
+      teeCategory: apiData.tee_category == null ? null : TeeCategory.fromString(apiData.tee_category),
       createdAt: apiData.created_at,
       updatedAt: apiData.updated_at,
     });
@@ -104,7 +105,7 @@ class EnrollmentMapper {
       status: enrollment.status.toString(),
       team_id: enrollment.teamId,
       custom_handicap: enrollment.customHandicap,
-      tee_category: enrollment.teeCategory || null,
+      tee_category: enrollment.teeCategory ? enrollment.teeCategory.toString() : null,
       created_at: enrollment.createdAt.toISOString(),
       updated_at: enrollment.updatedAt.toISOString(),
     };
@@ -130,7 +131,7 @@ class EnrollmentMapper {
       status: enrollment.status.toString(),
       teamId: enrollment.teamId,
       customHandicap: enrollment.customHandicap,
-      teeCategory: enrollment.teeCategory || null,
+      teeCategory: enrollment.teeCategory ? enrollment.teeCategory.toString() : null,
       createdAt: enrollment.createdAt.toISOString(),
       updatedAt: enrollment.updatedAt.toISOString(),
 

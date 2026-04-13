@@ -4,6 +4,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import Enrollment from './Enrollment';
 import EnrollmentId from '../value_objects/EnrollmentId';
 import EnrollmentStatus from '../value_objects/EnrollmentStatus';
+import TeeCategory from '../value_objects/TeeCategory';
 
 describe('Enrollment', () => {
   let mockEnrollmentId;
@@ -547,15 +548,16 @@ describe('Enrollment', () => {
 
     it('should accept teeCategory in constructor', () => {
       const enrollment = new Enrollment(createValidEnrollmentProps({
-        teeCategory: 'AMATEUR',
+        teeCategory: TeeCategory.amateur(),
       }));
 
-      expect(enrollment.teeCategory).toBe('AMATEUR');
+      expect(enrollment.teeCategory).toBeInstanceOf(TeeCategory);
+      expect(enrollment.teeCategory.toString()).toBe('AMATEUR');
     });
 
-    it('should include teeCategory in toPersistence()', () => {
+    it('should include teeCategory as string in toPersistence()', () => {
       const enrollment = new Enrollment(createValidEnrollmentProps({
-        teeCategory: 'SENIOR',
+        teeCategory: TeeCategory.senior(),
       }));
 
       const persisted = enrollment.toPersistence();
@@ -564,68 +566,68 @@ describe('Enrollment', () => {
 
     it('should propagate teeCategory through approve()', () => {
       const enrollment = new Enrollment(createValidEnrollmentProps({
-        teeCategory: 'CHAMPIONSHIP',
+        teeCategory: TeeCategory.championship(),
       }));
 
       const approved = enrollment.approve();
-      expect(approved.teeCategory).toBe('CHAMPIONSHIP');
+      expect(approved.teeCategory.toString()).toBe('CHAMPIONSHIP');
     });
 
     it('should propagate teeCategory through reject()', () => {
       const enrollment = new Enrollment(createValidEnrollmentProps({
-        teeCategory: 'AMATEUR',
+        teeCategory: TeeCategory.amateur(),
       }));
 
       const rejected = enrollment.reject();
-      expect(rejected.teeCategory).toBe('AMATEUR');
+      expect(rejected.teeCategory.toString()).toBe('AMATEUR');
     });
 
     it('should propagate teeCategory through cancel()', () => {
       const enrollment = new Enrollment(createValidEnrollmentProps({
-        teeCategory: 'JUNIOR',
+        teeCategory: TeeCategory.junior(),
       }));
 
       const cancelled = enrollment.cancel();
-      expect(cancelled.teeCategory).toBe('JUNIOR');
+      expect(cancelled.teeCategory.toString()).toBe('JUNIOR');
     });
 
     it('should propagate teeCategory through withdraw()', () => {
       const enrollment = new Enrollment(createValidEnrollmentProps({
         status: EnrollmentStatus.approved(),
-        teeCategory: 'FORWARD',
+        teeCategory: TeeCategory.forward(),
       }));
 
       const withdrawn = enrollment.withdraw();
-      expect(withdrawn.teeCategory).toBe('FORWARD');
+      expect(withdrawn.teeCategory.toString()).toBe('FORWARD');
     });
 
     it('should propagate teeCategory through assignToTeam()', () => {
       const enrollment = new Enrollment(createValidEnrollmentProps({
         status: EnrollmentStatus.approved(),
-        teeCategory: 'SENIOR',
+        teeCategory: TeeCategory.senior(),
       }));
 
       const assigned = enrollment.assignToTeam('1');
-      expect(assigned.teeCategory).toBe('SENIOR');
+      expect(assigned.teeCategory.toString()).toBe('SENIOR');
     });
 
     it('should propagate teeCategory through setCustomHandicap()', () => {
       const enrollment = new Enrollment(createValidEnrollmentProps({
-        teeCategory: 'AMATEUR',
+        teeCategory: TeeCategory.amateur(),
       }));
 
       const updated = enrollment.setCustomHandicap(18.0);
-      expect(updated.teeCategory).toBe('AMATEUR');
+      expect(updated.teeCategory.toString()).toBe('AMATEUR');
     });
 
     it('should propagate teeCategory through removeCustomHandicap()', () => {
       const enrollment = new Enrollment(createValidEnrollmentProps({
-        teeCategory: 'CHAMPIONSHIP',
+        teeCategory: TeeCategory.championship(),
         customHandicap: 15.0,
       }));
 
       const updated = enrollment.removeCustomHandicap();
-      expect(updated.teeCategory).toBe('CHAMPIONSHIP');
+      expect(updated.teeCategory.toString()).toBe('CHAMPIONSHIP');
     });
   });
 

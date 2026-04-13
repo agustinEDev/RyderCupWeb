@@ -1,3 +1,5 @@
+import TeeCategory from './TeeCategory';
+
 /**
  * Tee Value Object
  * Represents a tee position on a golf course
@@ -14,13 +16,7 @@ class Tee {
   }
 
   validate() {
-    const validCategories = [
-      'CHAMPIONSHIP',
-      'AMATEUR',
-      'SENIOR',
-      'FORWARD',
-      'JUNIOR',
-    ];
+    const validCategories = TeeCategory.getAllValues();
 
     const validGenders = ['MALE', 'FEMALE'];
 

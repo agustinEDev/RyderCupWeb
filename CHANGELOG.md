@@ -5,7 +5,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
-## [Unreleased] - Sprint 4: Live Scoring System
+## [Unreleased]
+
+---
+
+## [2.0.15] - 2026-04-10
+
+### Refactored
+- **`TeeCategory` Value Object** (`src/domain/value_objects/TeeCategory.js`): New VO replacing raw `teeCategory` strings throughout the domain. Five valid values: `CHAMPIONSHIP`, `AMATEUR`, `SENIOR`, `FORWARD`, `JUNIOR`. Provides `TeeCategory.getAllValues()`, factory methods per value, `fromString()`, `isValid()`, `toString()`, and `equals()`
+- **`Enrollment` entity**: Constructor now validates `teeCategory instanceof TeeCategory | null` — rejects invalid strings at construction time. `toPersistence()` serializes to primitive string
+- **`Tee` VO**: Validation reuses `TeeCategory.getAllValues()` — removes duplicate category list
+- **`EnrollmentMapper`**: Wraps `tee_category` in `TeeCategory.fromString()` on `toDomain()`; extracts `.toString()` on `toDTO()` and `toSimpleDTO()`. Explicit `== null` guard — empty strings fail fast
+- **`EnrollmentAssembler`**: Extracts `.toString()` before building UI DTO
+
+### Tests
+- **30 new tests** for `TeeCategory` VO (`TeeCategory.test.js`) — constructor validation, factory methods, `fromString`, `isValid`, `getAllValues` defensive copy, `toString`, `equals`, immutability
+
+### Security
+- **`.snyk` config**: Exclude test files (`*.test.js`, `*.spec.js`) from Snyk Code SAST — test fixtures use hardcoded credentials by design, not real secrets
+- **`googleOAuth.js`**: Add deepcode ignore comment on `OAUTH_STATE_KEY` — it is a sessionStorage key name, not a secret value
+- **npm audit fix**: Resolved 4 vulnerabilities in transitive dependencies — `undici` (High: WebSocket overflow, HTTP smuggling, DoS), `picomatch` (High: ReDoS + method injection), `flatted` (High: prototype pollution + recursion DoS), `brace-expansion` (Moderate: zero-step hang)
+- **Vite 7.3.1 → 7.3.2**: Patched 3 High CVEs — GHSA-4w7w-66w2-5vf9 (path traversal in optimized deps), GHSA-v2wj-q39q-566r (server.fs.deny bypass via queries), GHSA-p9ff-h696-f583 (arbitrary file read via dev server WebSocket)
+
+---
+
+## [2.0.13] - 2026-03-02
 
 ### Real-Time Scoring System
 
@@ -131,7 +155,19 @@ Allows players to record hole-by-hole scores with cross-validation (player vs ma
 
 ---
 
-## [Unreleased] - Sprint 3: Invitations System
+## [2.0.14] - 2026-03-02
+
+### Build / CI
+- Consolidated all pending Dependabot PRs into a single release
+- `trufflesecurity/trufflehog`: 3.92.5 → 3.93.6
+- `actions/upload-artifact`: v4 → v7
+- `@dnd-kit/sortable`: 8.0.0 → 10.0.0
+- `jsdom`: 27.4.0 → 28.0.0
+- 18 minor package bumps across all dependency groups
+
+---
+
+## [2.0.11] - 2026-02-18
 
 ### Invitations System
 
