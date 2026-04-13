@@ -7,11 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+---
+
+## [2.0.15] - 2026-04-10
+
 ### Refactored
 - **`TeeCategory` Value Object** (`src/domain/value_objects/TeeCategory.js`): New VO replacing raw `teeCategory` strings throughout the domain. Five valid values: `CHAMPIONSHIP`, `AMATEUR`, `SENIOR`, `FORWARD`, `JUNIOR`. Provides `TeeCategory.getAllValues()`, factory methods per value, `fromString()`, `isValid()`, `toString()`, and `equals()`
 - **`Enrollment` entity**: Constructor now validates `teeCategory instanceof TeeCategory | null` — rejects invalid strings at construction time. `toPersistence()` serializes to primitive string
 - **`Tee` VO**: Validation reuses `TeeCategory.getAllValues()` — removes duplicate category list
-- **`EnrollmentMapper`**: Wraps `tee_category` in `TeeCategory.fromString()` on `toDomain()`; extracts `.toString()` on `toDTO()` and `toSimpleDTO()`
+- **`EnrollmentMapper`**: Wraps `tee_category` in `TeeCategory.fromString()` on `toDomain()`; extracts `.toString()` on `toDTO()` and `toSimpleDTO()`. Explicit `== null` guard — empty strings fail fast
 - **`EnrollmentAssembler`**: Extracts `.toString()` before building UI DTO
 
 ### Tests
