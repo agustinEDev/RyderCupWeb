@@ -7,7 +7,8 @@
 # ==========================================
 # Stage 1: Build - Construir aplicación React
 # ==========================================
-FROM node:20-alpine AS build
+# Actualizado a node:22-alpine (LTS) para resolver CVE de Type Confusion (HIGH) en node:20-alpine
+FROM node:22-alpine AS build
 
 # Directorio de trabajo
 WORKDIR /app
