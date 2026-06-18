@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+
+**Scoring — Score Input Redesign (`HoleInput`)**
+
+- Replaced the `+` / `-` increment buttons with a tap-to-open number panel. Tapping the score field opens a bottom sheet with buttons 1–9, "Bola levantada / Picked up" (null), and "Otro... / Other..." (custom input).
+- The "Other..." option shows a numeric text field accepting values from 1 to 15, aligned with the new backend limit.
+- Locked score fields (read-only when scorecard already submitted) now render the value as plain text without the tap trigger.
+
+### Fixed
+
+- `HoleInput`: `data-testid` attributes (`own-score-value`, `marked-score-value`) preserved for existing tests; button triggers added as `own-score-button` / `marked-score-button`.
+
 ---
 
 ## [2.0.15] - 2026-04-10

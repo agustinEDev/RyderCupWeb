@@ -2,6 +2,111 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import ValidationIcon from './ValidationIcon';
 
+const MAX_SCORE = 15;
+
+const ScoreInputPanel = ({ value, onSelect, onClose, label }) => {
+  const { t } = useTranslation('scoring');
+  const [customMode, setCustomMode] = useState(false);
+  const [customInput, setCustomInput] = useState('');
+
+  const handleCustomConfirm = () => {
+    const num = parseInt(customInput, 10);
+    if (!isNaN(num) && num >= 1 && num <= MAX_SCORE) {
+      onSelect(num);
+    }
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-end justify-center bg-black/40"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white rounded-t-2xl w-full max-w-md p-4 pb-8 shadow-xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between mb-3">
+          <span className="text-sm font-semibold text-gray-600">{label}</span>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 text-lg leading-none"
+          >
+            ✕
+          </button>
+        </div>
+
+        {!customMode ? (
+          <>
+            <div className="grid grid-cols-3 gap-2 mb-2">
+              {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => (
+                <button
+                  key={n}
+                  onClick={() => onSelect(n)}
+                  className={`h-14 rounded-xl text-xl font-bold transition-colors ${
+                    value === n
+                      ? 'bg-primary text-white'
+                      : 'bg-gray-100 text-gray-800 hover:bg-gray-200 active:bg-gray-300'
+                  }`}
+                >
+                  {n}
+                </button>
+              ))}
+            </div>
+            <div className="flex flex-col gap-2">
+              <button
+                data-testid="picked-up-button"
+                onClick={() => onSelect(null)}
+                className={`h-12 w-full rounded-xl text-base font-bold transition-colors ${
+                  value === null
+                    ? 'bg-gray-600 text-white'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200 active:bg-gray-300'
+                }`}
+              >
+                {t('input.pickedUp')}
+              </button>
+              <button
+                onClick={() => setCustomMode(true)}
+                className="h-12 w-full rounded-xl text-base font-bold bg-gray-100 text-gray-600 hover:bg-gray-200 active:bg-gray-300"
+              >
+                {t('input.customScore')}
+              </button>
+            </div>
+          </>
+        ) : (
+          <div className="flex flex-col gap-3">
+            <p className="text-sm text-gray-500">{t('input.enterCustomScore')}</p>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                min="1"
+                max={MAX_SCORE}
+                value={customInput}
+                onChange={(e) => setCustomInput(e.target.value)}
+                className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-lg font-bold text-center focus:outline-none focus:ring-2 focus:ring-primary"
+                autoFocus
+              />
+              <button
+                onClick={handleCustomConfirm}
+                className="px-4 py-2 bg-primary text-white rounded-lg font-semibold hover:bg-primary/90"
+              >
+                ✓
+              </button>
+              <button
+                onClick={() => { setCustomMode(false); setCustomInput(''); }}
+                className="px-4 py-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200"
+              >
+                ←
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
 const HoleInput = ({
   holeNumber,
   par,
@@ -21,34 +126,24 @@ const HoleInput = ({
   teamBName,
 }) => {
   const { t } = useTranslation('scoring');
-  // Parent passes key={holeNumber} so component remounts with fresh state on hole change
   const [ownValue, setOwnValue] = useState(
     playerScore?.ownScore !== undefined ? playerScore.ownScore : par
   );
-  // markedPlayerScore.markerScore = what the current user entered for the player they mark
   const [markedValue, setMarkedValue] = useState(
     markedPlayerScore?.markerScore !== undefined ? markedPlayerScore.markerScore : par
   );
+  const [openPanel, setOpenPanel] = useState(null); // 'own' | 'marked' | null
 
-  const adjustScore = (current, delta) => {
-    if (current === null) return delta > 0 ? 1 : null;
-    const next = current + delta;
-    if (next < 1) return null; // picked up
-    if (next > 9) return 9;
-    return next;
+  const handleOwnSelect = (val) => {
+    setOwnValue(val);
+    setOpenPanel(null);
+    if (onScoreChange) onScoreChange({ ownScore: val, markedScore: markedValue });
   };
 
-  const handleOwnChange = (delta) => {
-    const next = adjustScore(ownValue, delta);
-    setOwnValue(next);
-    if (onScoreChange) onScoreChange({ ownScore: next, markedScore: markedValue });
-  };
-
-  const handleMarkedChange = (delta) => {
-    const next = adjustScore(markedValue, delta);
-    setMarkedValue(next);
-    // Always send current ownValue along with updated marker score
-    if (onScoreChange) onScoreChange({ ownScore: ownValue, markedScore: next });
+  const handleMarkedSelect = (val) => {
+    setMarkedValue(val);
+    setOpenPanel(null);
+    if (onScoreChange) onScoreChange({ ownScore: ownValue, markedScore: val });
   };
 
   const displayScore = (val) => val == null ? '-' : val;
@@ -71,61 +166,41 @@ const HoleInput = ({
 
       {!isReadOnly && (
         <div className="grid grid-cols-2 gap-4">
-          {/* Own score: locked after submitting scorecard */}
+          {/* Own score */}
           <div className="space-y-1">
             <label className="text-xs font-medium text-gray-500">{t('input.yourScore')}</label>
             {!isOwnScoreLocked ? (
-              <div className="flex items-center gap-2">
-                <button
-                  data-testid="own-score-minus"
-                  onClick={() => handleOwnChange(-1)}
-                  className="w-8 h-8 flex items-center justify-center bg-gray-100 rounded-lg hover:bg-gray-200 text-lg font-bold"
-                >
-                  -
-                </button>
-                <span data-testid="own-score-value" className="w-8 text-center text-xl font-bold">
+              <button
+                data-testid="own-score-button"
+                onClick={() => setOpenPanel('own')}
+                className="w-full h-12 flex items-center justify-center bg-gray-100 rounded-xl hover:bg-gray-200 active:bg-gray-300 transition-colors"
+              >
+                <span data-testid="own-score-value" className="text-2xl font-bold text-gray-900">
                   {displayScore(ownValue)}
                 </span>
-                <button
-                  data-testid="own-score-plus"
-                  onClick={() => handleOwnChange(1)}
-                  className="w-8 h-8 flex items-center justify-center bg-gray-100 rounded-lg hover:bg-gray-200 text-lg font-bold"
-                >
-                  +
-                </button>
-              </div>
+              </button>
             ) : (
-              <p data-testid="own-score-value" className="text-xl font-bold text-center text-gray-500">
+              <p data-testid="own-score-value" className="h-12 flex items-center justify-center text-2xl font-bold text-gray-400">
                 {displayScore(ownValue)}
               </p>
             )}
           </div>
 
-          {/* Marker score: locked when marked player submits their scorecard */}
+          {/* Marker score */}
           <div className="space-y-1">
             <label className="text-xs font-medium text-gray-500">{t('input.markerScore')}</label>
             {!isMarkerScoreLocked ? (
-              <div className="flex items-center gap-2">
-                <button
-                  data-testid="marked-score-minus"
-                  onClick={() => handleMarkedChange(-1)}
-                  className="w-8 h-8 flex items-center justify-center bg-gray-100 rounded-lg hover:bg-gray-200 text-lg font-bold"
-                >
-                  -
-                </button>
-                <span data-testid="marked-score-value" className="w-8 text-center text-xl font-bold">
+              <button
+                data-testid="marked-score-button"
+                onClick={() => setOpenPanel('marked')}
+                className="w-full h-12 flex items-center justify-center bg-gray-100 rounded-xl hover:bg-gray-200 active:bg-gray-300 transition-colors"
+              >
+                <span data-testid="marked-score-value" className="text-2xl font-bold text-gray-900">
                   {displayScore(markedValue)}
                 </span>
-                <button
-                  data-testid="marked-score-plus"
-                  onClick={() => handleMarkedChange(1)}
-                  className="w-8 h-8 flex items-center justify-center bg-gray-100 rounded-lg hover:bg-gray-200 text-lg font-bold"
-                >
-                  +
-                </button>
-              </div>
+              </button>
             ) : (
-              <p data-testid="marked-score-value" className="text-xl font-bold text-center text-gray-500">
+              <p data-testid="marked-score-value" className="h-12 flex items-center justify-center text-2xl font-bold text-gray-400">
                 {displayScore(markedValue)}
               </p>
             )}
@@ -165,6 +240,23 @@ const HoleInput = ({
           </span>
         )}
       </div>
+
+      {openPanel === 'own' && (
+        <ScoreInputPanel
+          value={ownValue}
+          onSelect={handleOwnSelect}
+          onClose={() => setOpenPanel(null)}
+          label={t('input.yourScore')}
+        />
+      )}
+      {openPanel === 'marked' && (
+        <ScoreInputPanel
+          value={markedValue}
+          onSelect={handleMarkedSelect}
+          onClose={() => setOpenPanel(null)}
+          label={t('input.markerScore')}
+        />
+      )}
     </div>
   );
 };
