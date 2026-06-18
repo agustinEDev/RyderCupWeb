@@ -11,13 +11,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 **Scoring — Score Input Redesign (`HoleInput`)**
 
-- Replaced the `+` / `-` increment buttons with a tap-to-open number panel. Tapping the score field opens a bottom sheet with buttons 1–9, "Bola levantada / Picked up" (null), and "Otro... / Other..." (custom input).
-- The "Other..." option shows a numeric text field accepting values from 1 to 15, aligned with the new backend limit.
-- Locked score fields (read-only when scorecard already submitted) now render the value as plain text without the tap trigger.
+- Replaced the `+` / `-` increment buttons with a tap-to-open bottom-sheet numpad. Tapping the score field opens a panel with buttons 1–9, `−` (bola levantada / picked up), and "Otro... / Other..." (manual entry).
+- Panel layout uses a **3-column grid** (classic numpad style) with 56 px tall buttons — optimised for one-handed thumb reach on mobile.
+- The "Other..." option opens a numeric text field (`inputMode="numeric"`) accepting values from 1 to 15, using the native mobile keyboard without the quirks of `type="number"`.
+- Locked score fields (read-only when scorecard already submitted) render the value as plain text with no tap trigger.
+- MAX_SCORE raised from 9 to 15, in sync with backend `HoleScore.MAX_SCORE`.
 
 ### Fixed
 
-- `HoleInput`: `data-testid` attributes (`own-score-value`, `marked-score-value`) preserved for existing tests; button triggers added as `own-score-button` / `marked-score-button`.
+- `HoleInput`: `data-testid` attributes (`own-score-value`, `marked-score-value`) preserved; new testids added: `own-score-button`, `marked-score-button`, `picked-up-button`.
 
 ---
 
