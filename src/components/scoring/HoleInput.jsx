@@ -10,8 +10,9 @@ const ScoreInputPanel = ({ value, onSelect, onClose, label }) => {
   const [customInput, setCustomInput] = useState('');
 
   const handleCustomConfirm = () => {
-    const num = parseInt(customInput, 10);
-    if (!isNaN(num) && num >= 1 && num <= MAX_SCORE) {
+    const trimmed = customInput.trim();
+    const num = Number(trimmed);
+    if (Number.isInteger(num) && String(num) === trimmed && num >= 1 && num <= MAX_SCORE) {
       onSelect(num);
     }
   };
@@ -19,9 +20,14 @@ const ScoreInputPanel = ({ value, onSelect, onClose, label }) => {
   return (
     <div
       className="fixed inset-0 z-50 flex items-end justify-center bg-black/40"
+      role="presentation"
       onClick={onClose}
+      onKeyDown={(e) => e.key === 'Escape' && onClose()}
     >
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={label}
         className="bg-white rounded-t-2xl w-full max-w-md p-4 pb-8 shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
@@ -29,6 +35,7 @@ const ScoreInputPanel = ({ value, onSelect, onClose, label }) => {
           <span className="text-sm font-semibold text-gray-600">{label}</span>
           <button
             onClick={onClose}
+            aria-label={t('input.close')}
             className="text-gray-400 hover:text-gray-600 text-lg leading-none"
           >
             ✕
@@ -89,12 +96,14 @@ const ScoreInputPanel = ({ value, onSelect, onClose, label }) => {
               />
               <button
                 onClick={handleCustomConfirm}
+                aria-label={t('input.confirmScore')}
                 className="px-4 py-2 bg-primary text-white rounded-lg font-semibold hover:bg-primary/90"
               >
                 ✓
               </button>
               <button
                 onClick={() => { setCustomMode(false); setCustomInput(''); }}
+                aria-label={t('input.back')}
                 className="px-4 py-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200"
               >
                 ←
@@ -135,18 +144,23 @@ const HoleInput = ({
   const [openPanel, setOpenPanel] = useState(null); // 'own' | 'marked' | null
 
   const handleOwnSelect = (val) => {
+    if (isReadOnly || isOwnScoreLocked) return;
     setOwnValue(val);
     setOpenPanel(null);
     if (onScoreChange) onScoreChange({ ownScore: val, markedScore: markedValue });
   };
 
   const handleMarkedSelect = (val) => {
+    if (isReadOnly || isMarkerScoreLocked) return;
     setMarkedValue(val);
     setOpenPanel(null);
     if (onScoreChange) onScoreChange({ ownScore: ownValue, markedScore: val });
   };
 
-  const displayScore = (val) => val == null ? '-' : val;
+  const displayScore = (val, ariaLabelNull = null) =>
+    val == null
+      ? <span aria-label={ariaLabelNull || undefined}>-</span>
+      : val;
 
   return (
     <div data-testid="hole-input" className="bg-white rounded-lg border border-gray-200 p-4 space-y-4">
@@ -176,12 +190,12 @@ const HoleInput = ({
                 className="w-full h-12 flex items-center justify-center bg-gray-100 rounded-xl hover:bg-gray-200 active:bg-gray-300 transition-colors"
               >
                 <span data-testid="own-score-value" className="text-2xl font-bold text-gray-900">
-                  {displayScore(ownValue)}
+                  {displayScore(ownValue, t('input.pickedUp'))}
                 </span>
               </button>
             ) : (
               <p data-testid="own-score-value" className="h-12 flex items-center justify-center text-2xl font-bold text-gray-400">
-                {displayScore(ownValue)}
+                {displayScore(ownValue, t('input.pickedUp'))}
               </p>
             )}
           </div>
@@ -196,12 +210,12 @@ const HoleInput = ({
                 className="w-full h-12 flex items-center justify-center bg-gray-100 rounded-xl hover:bg-gray-200 active:bg-gray-300 transition-colors"
               >
                 <span data-testid="marked-score-value" className="text-2xl font-bold text-gray-900">
-                  {displayScore(markedValue)}
+                  {displayScore(markedValue, t('input.pickedUp'))}
                 </span>
               </button>
             ) : (
               <p data-testid="marked-score-value" className="h-12 flex items-center justify-center text-2xl font-bold text-gray-400">
-                {displayScore(markedValue)}
+                {displayScore(markedValue, t('input.pickedUp'))}
               </p>
             )}
           </div>
