@@ -1,10 +1,22 @@
 # 🗺️ Roadmap - RyderCupFriends Frontend
 
 > **Version:** 1.15.0 → 1.16.0 → 2.0.0 → 2.0.4 → 2.0.5 → 2.0.6 → 2.0.9 → 2.0.10 → 2.0.11 → 2.0.12 (synchronized with backend)
-> **Last Update:** Feb 24, 2026
-> **Status:** ✅ v2.0.0 Sprint 1 Completed | ✅ v2.0.4 Sprint 2 + Infra Completed | ✅ v2.0.5 Hotfix UI | ✅ v2.0.6 Sprint 2 Schedule COMPLETED | ✅ v2.0.9 Clean Architecture | ✅ v2.0.10 Manual Pairings | ✅ v2.0.11 Sprint 3 Invitations | ✅ v2.0.12 Sprint 4 Live Scoring COMPLETE
+> **Last Update:** Jun 18, 2026
+> **Status:** ✅ v2.0.0 Sprint 1 Completed | ✅ v2.0.4 Sprint 2 + Infra Completed | ✅ v2.0.5 Hotfix UI | ✅ v2.0.6 Sprint 2 Schedule COMPLETED | ✅ v2.0.9 Clean Architecture | ✅ v2.0.10 Manual Pairings | ✅ v2.0.11 Sprint 3 Invitations | ✅ v2.0.12 Sprint 4 Live Scoring COMPLETE | ✅ v2.0.13 Sprint 5 Absorbed + Post-Sprint 4 | ✅ v2.0.14 Build/CI Dependencies | ✅ v2.0.15 TeeCategory VO + Security Hotfixes
 > **Stack:** React 19 + Vite 7.3 + Tailwind CSS 4 + ESLint 9
 > **Architecture:** Subdomain (www + api) with Cloudflare Proxy (ADR-011)
+
+---
+
+## En progreso: Score Input Redesign (branch )
+
+### HoleInput numpad panel ✅
+
+- **Reemplaza botones +/−** con un bottom-sheet tap-to-open que muestra 1–9, "−" (bola levantada), y "Otro..." (entrada manual 10–15)
+- **Grid 3 columnas** (layout estilo numpad): botones de 56px de alto para facilitar el uso con el pulgar en móvil
+- **`inputMode="numeric"`** en el campo de entrada manual para teclado numérico nativo en iOS/Android
+- **MAX_SCORE 9 → 15**: en sincronía con el cambio de backend
+- `data-testid` preservados: `own-score-value`, `marked-score-value`; nuevos: `own-score-button`, `marked-score-button`, `picked-up-button`
 
 ---
 
