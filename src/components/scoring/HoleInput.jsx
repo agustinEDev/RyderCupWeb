@@ -4,10 +4,21 @@ import ValidationIcon from './ValidationIcon';
 
 const MAX_SCORE = 15;
 
-const ScoreInputPanel = ({ value, onSelect, onClose, label }) => {
+const ScoreInputPanel = ({ value, onSelect, onClose, label, par }) => {
   const { t } = useTranslation('scoring');
   const [customMode, setCustomMode] = useState(false);
   const [customInput, setCustomInput] = useState('');
+
+  const getScoreLabel = (n) => {
+    if (!par) return null;
+    const diff = n - par;
+    if (diff === -2) return t('input.scoreEagle');
+    if (diff === -1) return t('input.scoreBirdie');
+    if (diff === 0) return t('input.par');
+    if (diff === 1) return t('input.scoreBogey');
+    if (diff === 2) return t('input.scoreDouble');
+    return null;
+  };
 
   const handleCustomConfirm = () => {
     const trimmed = customInput.trim();
@@ -45,31 +56,38 @@ const ScoreInputPanel = ({ value, onSelect, onClose, label }) => {
         {!customMode ? (
           <>
             <div className="grid grid-cols-3 gap-2 mb-2">
-              {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => (
-                <button
-                  key={n}
-                  onClick={() => onSelect(n)}
-                  className={`h-14 rounded-xl text-xl font-bold transition-colors ${
-                    value === n
-                      ? 'bg-primary text-white'
-                      : 'bg-gray-100 text-gray-800 hover:bg-gray-200 active:bg-gray-300'
-                  }`}
-                >
-                  {n}
-                </button>
-              ))}
+              {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => {
+                const label = getScoreLabel(n);
+                return (
+                  <button
+                    key={n}
+                    onClick={() => onSelect(n)}
+                    className={`h-14 rounded-xl transition-colors flex flex-col items-center justify-center leading-none gap-0.5 ${
+                      value === n
+                        ? 'bg-primary text-white'
+                        : 'bg-gray-100 text-gray-800 hover:bg-gray-200 active:bg-gray-300'
+                    }`}
+                  >
+                    <span className="text-xl font-bold">{n}</span>
+                    {label && (
+                      <span className="text-[10px] font-medium opacity-70 leading-none">{label}</span>
+                    )}
+                  </button>
+                );
+              })}
             </div>
             <div className="flex flex-col gap-2">
               <button
                 data-testid="picked-up-button"
                 onClick={() => onSelect(null)}
-                className={`h-12 w-full rounded-xl text-base font-bold transition-colors ${
+                className={`h-12 w-full rounded-xl transition-colors flex flex-col items-center justify-center leading-none ${
                   value === null
                     ? 'bg-gray-600 text-white'
                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200 active:bg-gray-300'
                 }`}
               >
-                {t('input.pickedUp')}
+                <span className="text-xl font-bold">-</span>
+                <span className="text-xs font-medium opacity-75">{t('input.pickedUpLabel')}</span>
               </button>
               <button
                 onClick={() => setCustomMode(true)}
@@ -261,6 +279,7 @@ const HoleInput = ({
           onSelect={handleOwnSelect}
           onClose={() => setOpenPanel(null)}
           label={t('input.yourScore')}
+          par={par}
         />
       )}
       {openPanel === 'marked' && (
@@ -269,6 +288,7 @@ const HoleInput = ({
           onSelect={handleMarkedSelect}
           onClose={() => setOpenPanel(null)}
           label={t('input.markerScore')}
+          par={par}
         />
       )}
     </div>

@@ -38,7 +38,7 @@ describe('HoleInput', () => {
     render(<HoleInput {...defaultProps} />);
     fireEvent.click(screen.getByTestId('own-score-button'));
     // Panel is open — click button "5"
-    fireEvent.click(screen.getByRole('button', { name: '5' }));
+    fireEvent.click(screen.getByRole('button', { name: /5/ }));
     expect(screen.getByTestId('own-score-value')).toHaveTextContent('5');
     expect(defaultProps.onScoreChange).toHaveBeenCalledWith({ ownScore: 5, markedScore: 4 });
   });
@@ -46,7 +46,7 @@ describe('HoleInput', () => {
   it('should select a lower value via own score panel', () => {
     render(<HoleInput {...defaultProps} />);
     fireEvent.click(screen.getByTestId('own-score-button'));
-    fireEvent.click(screen.getByRole('button', { name: '3' }));
+    fireEvent.click(screen.getByRole('button', { name: /3/ }));
     expect(screen.getByTestId('own-score-value')).toHaveTextContent('3');
   });
 
@@ -60,7 +60,7 @@ describe('HoleInput', () => {
   it('should open panel on marked score button click and select a value', () => {
     render(<HoleInput {...defaultProps} />);
     fireEvent.click(screen.getByTestId('marked-score-button'));
-    fireEvent.click(screen.getByRole('button', { name: '5' }));
+    fireEvent.click(screen.getByRole('button', { name: /5/ }));
     expect(screen.getByTestId('marked-score-value')).toHaveTextContent('5');
     expect(defaultProps.onScoreChange).toHaveBeenCalledWith({ ownScore: 4, markedScore: 5 });
   });
@@ -121,7 +121,7 @@ describe('HoleInput', () => {
   it('should trigger onScoreChange with correct ownScore when only marker changes', () => {
     render(<HoleInput {...defaultProps} isOwnScoreLocked={true} />);
     fireEvent.click(screen.getByTestId('marked-score-button'));
-    fireEvent.click(screen.getByRole('button', { name: '5' }));
+    fireEvent.click(screen.getByRole('button', { name: /5/ }));
     expect(defaultProps.onScoreChange).toHaveBeenCalledWith({ ownScore: 4, markedScore: 5 });
   });
 
