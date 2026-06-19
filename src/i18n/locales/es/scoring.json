@@ -30,6 +30,7 @@
     "standing": "Marcador",
     "strokeReceived": "Golpe recibido",
     "pickedUp": "Bola levantada",
+    "pickedUpLabel": "Raya",
     "customScore": "Otro...",
     "enterCustomScore": "Introduce el número de golpes (máx. 15)",
     "close": "Cerrar panel de puntuación",

@@ -63,13 +63,14 @@ const ScoreInputPanel = ({ value, onSelect, onClose, label }) => {
               <button
                 data-testid="picked-up-button"
                 onClick={() => onSelect(null)}
-                className={`h-12 w-full rounded-xl text-base font-bold transition-colors ${
+                className={`h-12 w-full rounded-xl transition-colors flex flex-col items-center justify-center leading-none ${
                   value === null
                     ? 'bg-gray-600 text-white'
                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200 active:bg-gray-300'
                 }`}
               >
-                {t('input.pickedUp')}
+                <span className="text-xl font-bold">-</span>
+                <span className="text-xs font-medium opacity-75">{t('input.pickedUpLabel')}</span>
               </button>
               <button
                 onClick={() => setCustomMode(true)}
