@@ -97,15 +97,17 @@ export default defineConfig(() => ({
     // Manual chunk splitting for better caching and performance
     rollupOptions: {
       output: {
-        manualChunks: {
-          // React core and router in separate chunk
-          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
-
-          // Sentry in separate chunk (large library)
-          'sentry': ['@sentry/react'],
-
-          // UI libraries in separate chunk
-          'ui-vendor': ['react-hot-toast'],
+        // Vite 8 (Rolldown) requires manualChunks as a function, not an object
+        manualChunks: (id) => {
+          if (['react', 'react-dom', 'react-router-dom'].some(p => id.includes(`/node_modules/${p}/`))) {
+            return 'react-vendor'
+          }
+          if (id.includes('/node_modules/@sentry/react/')) {
+            return 'sentry'
+          }
+          if (id.includes('/node_modules/react-hot-toast/')) {
+            return 'ui-vendor'
+          }
         }
       }
     }

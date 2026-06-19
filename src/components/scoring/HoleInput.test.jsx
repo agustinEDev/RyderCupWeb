@@ -34,41 +34,41 @@ describe('HoleInput', () => {
     expect(screen.getByTestId('marked-score-value')).toHaveTextContent('4');
   });
 
-  it('should increment own score on plus click', () => {
+  it('should open panel on own score button click and select a value', () => {
     render(<HoleInput {...defaultProps} />);
-    fireEvent.click(screen.getByTestId('own-score-plus'));
+    fireEvent.click(screen.getByTestId('own-score-button'));
+    // Panel is open — click button "5"
+    fireEvent.click(screen.getByRole('button', { name: /5/ }));
     expect(screen.getByTestId('own-score-value')).toHaveTextContent('5');
     expect(defaultProps.onScoreChange).toHaveBeenCalledWith({ ownScore: 5, markedScore: 4 });
   });
 
-  it('should decrement own score on minus click', () => {
+  it('should select a lower value via own score panel', () => {
     render(<HoleInput {...defaultProps} />);
-    fireEvent.click(screen.getByTestId('own-score-minus'));
+    fireEvent.click(screen.getByTestId('own-score-button'));
+    fireEvent.click(screen.getByRole('button', { name: /3/ }));
     expect(screen.getByTestId('own-score-value')).toHaveTextContent('3');
   });
 
-  it('should show dash when score goes below 1 (picked up)', () => {
-    render(<HoleInput {...defaultProps} playerScore={{ ownScore: 1, markerScore: 4 }} />);
-    fireEvent.click(screen.getByTestId('own-score-minus'));
+  it('should show dash when picked-up is selected', () => {
+    render(<HoleInput {...defaultProps} />);
+    fireEvent.click(screen.getByTestId('own-score-button'));
+    fireEvent.click(screen.getByTestId('picked-up-button'));
     expect(screen.getByTestId('own-score-value')).toHaveTextContent('-');
   });
 
-  it('should not exceed 9', () => {
-    render(<HoleInput {...defaultProps} playerScore={{ ownScore: 9, markerScore: 4 }} />);
-    fireEvent.click(screen.getByTestId('own-score-plus'));
-    expect(screen.getByTestId('own-score-value')).toHaveTextContent('9');
-  });
-
-  it('should increment marked score', () => {
+  it('should open panel on marked score button click and select a value', () => {
     render(<HoleInput {...defaultProps} />);
-    fireEvent.click(screen.getByTestId('marked-score-plus'));
+    fireEvent.click(screen.getByTestId('marked-score-button'));
+    fireEvent.click(screen.getByRole('button', { name: /5/ }));
     expect(screen.getByTestId('marked-score-value')).toHaveTextContent('5');
+    expect(defaultProps.onScoreChange).toHaveBeenCalledWith({ ownScore: 4, markedScore: 5 });
   });
 
   it('should show read-only mode without buttons', () => {
     render(<HoleInput {...defaultProps} isReadOnly={true} playerScore={{ ownScore: 5, markerScore: 4 }} />);
-    expect(screen.queryByTestId('own-score-minus')).toBeNull();
-    expect(screen.queryByTestId('own-score-plus')).toBeNull();
+    expect(screen.queryByTestId('own-score-button')).toBeNull();
+    expect(screen.queryByTestId('marked-score-button')).toBeNull();
   });
 
   it('should show net score when provided', () => {
@@ -106,29 +106,22 @@ describe('HoleInput', () => {
     expect(screen.getByTestId('hole-input')).toHaveTextContent('input.halved');
   });
 
-  it('should lock own score but keep marker editable when isOwnScoreLocked', () => {
+  it('should hide own score button when isOwnScoreLocked, keep marked button visible', () => {
     render(<HoleInput {...defaultProps} isOwnScoreLocked={true} />);
-    // Own score buttons should not exist
-    expect(screen.queryByTestId('own-score-minus')).toBeNull();
-    expect(screen.queryByTestId('own-score-plus')).toBeNull();
-    // Marker score buttons should still exist
-    expect(screen.getByTestId('marked-score-minus')).toBeInTheDocument();
-    expect(screen.getByTestId('marked-score-plus')).toBeInTheDocument();
+    expect(screen.queryByTestId('own-score-button')).toBeNull();
+    expect(screen.getByTestId('marked-score-button')).toBeInTheDocument();
   });
 
-  it('should lock marker score but keep own editable when isMarkerScoreLocked', () => {
+  it('should hide marked score button when isMarkerScoreLocked, keep own button visible', () => {
     render(<HoleInput {...defaultProps} isMarkerScoreLocked={true} />);
-    // Own score buttons should exist
-    expect(screen.getByTestId('own-score-minus')).toBeInTheDocument();
-    expect(screen.getByTestId('own-score-plus')).toBeInTheDocument();
-    // Marker score buttons should not exist
-    expect(screen.queryByTestId('marked-score-minus')).toBeNull();
-    expect(screen.queryByTestId('marked-score-plus')).toBeNull();
+    expect(screen.getByTestId('own-score-button')).toBeInTheDocument();
+    expect(screen.queryByTestId('marked-score-button')).toBeNull();
   });
 
-  it('should still trigger onScoreChange when only marker score changes', () => {
+  it('should trigger onScoreChange with correct ownScore when only marker changes', () => {
     render(<HoleInput {...defaultProps} isOwnScoreLocked={true} />);
-    fireEvent.click(screen.getByTestId('marked-score-plus'));
+    fireEvent.click(screen.getByTestId('marked-score-button'));
+    fireEvent.click(screen.getByRole('button', { name: /5/ }));
     expect(defaultProps.onScoreChange).toHaveBeenCalledWith({ ownScore: 4, markedScore: 5 });
   });
 
