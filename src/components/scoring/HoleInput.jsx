@@ -11,16 +11,13 @@ const ScoreInputPanel = ({ value, onSelect, onClose, label, par }) => {
 
   const getScoreLabel = (n) => {
     if (!par) return null;
-    if (n === 1) return t('input.scoreAce');
     const diff = n - par;
-    if (diff < -2) return `${diff}`;
     if (diff === -2) return t('input.scoreEagle');
     if (diff === -1) return t('input.scoreBirdie');
     if (diff === 0) return t('input.par');
     if (diff === 1) return t('input.scoreBogey');
     if (diff === 2) return t('input.scoreDouble');
-    if (diff === 3) return t('input.scoreTriple');
-    return `+${diff}`;
+    return null;
   };
 
   const handleCustomConfirm = () => {
