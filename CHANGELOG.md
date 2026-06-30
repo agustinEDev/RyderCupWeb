@@ -5,7 +5,40 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [Unreleased] — feature/scoring-improvements
+
+### Fixed
+
+**Scoring — Leaderboard: Halved Match Result Display**
+
+- `LeaderboardView`: When `match.result.winner === 'HALVED'`, the component now renders the new `t('leaderboard.halved')` key ("AS") instead of falling into the `wins` template ("Equipo X gana AS"). `winner` is a non-empty string, so the previous `match.result.winner ? wins(...) : score` condition was always truthy for halved matches.
+
+**Scoring — PreMatchInfo: Show Only the Player the User Marks**
+
+- `PreMatchInfo`: Removed the "Te marca:" (`markedBy`) row. The component now shows only "Tú marcas a:" (`youMark`), which is the only information the scorer needs before play.
+
+**Scoring — Score Navigation: Data Not Saved When Moving to Next Hole**
+
+- `ScoringPage` / `HoleInput`: Investigated and fixed the hole-navigation flow where scores entered via the numpad were not persisted when the user navigated forward. _(Details to be confirmed during implementation.)_
+
+**Scoring — Best Ball Tie Display in Fourball**
+
+- `ScorecardTable`: When two players on the same team share the best net score on a hole, the "Result" row now shows "Nombre1 y Nombre2" (first names only, no surnames) instead of a single player name. Reads the updated `bestBallPlayerA` / `bestBallPlayerB` fields, which are now arrays when there is a tie.
+
+### Added
+
+**Competition — Playing Handicap Limit (Creator Form)**
+
+- Competition creation and edit forms: New optional numeric field "Límite de Hándicap de Juego" (1–54). Sent as `max_playing_handicap` to the backend. Displayed as informational text on the competition detail page.
+
+**Admin — Full Scoring Access**
+
+- `useScoring`: `isMatchPlayer` guard now also passes when `user.is_admin === true`, allowing admins to enter scores and submit scorecards for any match.
+- `ScoringPage`: Admin users can interact with all scoring actions (submit hole scores, submit scorecard, concede) regardless of whether they are enrolled in the match.
+
+**UI — Admin Badge in Header**
+
+- `HeaderAuth`: When the logged-in user has `is_admin === true`, a visible "Admin" badge is displayed next to their name in the header (desktop) and in the profile dropdown (mobile), making it clear at a glance which account is active.
 
 ---
 

@@ -8,7 +8,24 @@
 
 ---
 
-## En progreso: Score Input Redesign (branch )
+## En progreso: Scoring Improvements (branch `feature/scoring-improvements`)
+
+### Correcciones (pendientes de implementar)
+
+- **Leaderboard "Equipo X gana AS"**: `LeaderboardView` comprueba `winner === 'HALVED'` y usa clave `leaderboard.halved` en lugar de `leaderboard.wins`.
+- **PreMatchInfo solo muestra "Tú marcas a"**: se elimina la fila "Te marca" (`markedBy`).
+- **Score no guardado al cambiar de hoyo**: revisión del flujo numpad → `handleScoreChange` → `autoSubmitIfNeeded`.
+- **Best ball empate Fourball**: `ScorecardTable` muestra "Nombre1 y Nombre2" (solo nombre, sin apellido) cuando `bestBallPlayerA` es array (empate).
+
+### Añadido (pendiente de implementar)
+
+- **Límite hándicap de juego**: campo en formulario de creación/edición de competición (`max_playing_handicap`, 1–54).
+- **Admin acceso total a scoring**: `useScoring` omite el guard `isMatchPlayer` para usuarios admin.
+- **Badge admin en cabecera**: `HeaderAuth` muestra etiqueta "Admin" junto al nombre cuando `user.is_admin === true`.
+
+---
+
+## Completado: Score Input Redesign
 
 ### HoleInput numpad panel ✅
 
