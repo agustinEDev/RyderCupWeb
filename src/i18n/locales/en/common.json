@@ -33,6 +33,7 @@
     "viewProfile": "View Profile",
     "leaderboard": "Leaderboard",
     "administration": "Administration",
+    "adminBadge": "Admin",
     "logout": "Logout"
   },
   "footer": {

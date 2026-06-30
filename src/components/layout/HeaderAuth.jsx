@@ -105,6 +105,11 @@ const HeaderAuth = ({ user }) => {
             onClick={toggleDropdown}
             className="flex items-center gap-2 hover:opacity-80 transition-opacity"
           >
+            {user?.is_admin && (
+              <span data-testid="admin-badge" className="text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">
+                {t('header.adminBadge')}
+              </span>
+            )}
             <div className="bg-primary bg-center bg-no-repeat aspect-square bg-cover rounded-full h-8 w-8 md:h-10 md:w-10 flex items-center justify-center text-white font-bold text-sm md:text-base">
               {getInitials()}
             </div>
@@ -186,9 +191,16 @@ const HeaderAuth = ({ user }) => {
                   {getInitials()}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900 truncate">
-                    {user?.first_name} {user?.last_name}
-                  </p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm font-medium text-gray-900 truncate">
+                      {user?.first_name} {user?.last_name}
+                    </p>
+                    {user?.is_admin && (
+                      <span data-testid="admin-badge-mobile" className="text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 flex-shrink-0">
+                        {t('header.adminBadge')}
+                      </span>
+                    )}
+                  </div>
                   <p className="text-xs text-gray-500 truncate">
                     {user?.email}
                   </p>
