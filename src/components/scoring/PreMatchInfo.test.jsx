@@ -19,7 +19,7 @@ describe('PreMatchInfo', () => {
     render(<PreMatchInfo markerAssignment={assignment} matchFormat="SINGLES" currentUserId="u1" />);
     expect(screen.getByTestId('pre-match-info')).toBeInTheDocument();
     expect(screen.getByTestId('pre-match-info')).toHaveTextContent('Pedro');
-    expect(screen.getByTestId('pre-match-info')).toHaveTextContent('Maria');
+    expect(screen.getByTestId('pre-match-info')).not.toHaveTextContent('Maria');
   });
 
   it('should display match format', () => {
@@ -32,16 +32,21 @@ describe('PreMatchInfo', () => {
     expect(container.firstChild).toBeNull();
   });
 
-  it('should hide marksName section if not provided', () => {
+  it('should hide youMark section if marksName not provided', () => {
     const partial = { markedByName: 'Maria' };
     render(<PreMatchInfo markerAssignment={partial} matchFormat="SINGLES" currentUserId="u1" />);
     expect(screen.getByTestId('pre-match-info')).not.toHaveTextContent('preMatch.youMark');
+  });
+
+  it('should not show markedBy row', () => {
+    render(<PreMatchInfo markerAssignment={assignment} matchFormat="SINGLES" currentUserId="u1" />);
+    expect(screen.getByTestId('pre-match-info')).not.toHaveTextContent('preMatch.markedBy');
+    expect(screen.getByTestId('pre-match-info')).not.toHaveTextContent('Maria');
   });
 
   it('should show translation keys', () => {
     render(<PreMatchInfo markerAssignment={assignment} matchFormat="SINGLES" currentUserId="u1" />);
     expect(screen.getByTestId('pre-match-info')).toHaveTextContent('preMatch.title');
     expect(screen.getByTestId('pre-match-info')).toHaveTextContent('preMatch.youMark');
-    expect(screen.getByTestId('pre-match-info')).toHaveTextContent('preMatch.markedBy');
   });
 });
