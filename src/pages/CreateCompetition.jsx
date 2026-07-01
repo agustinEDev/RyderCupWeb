@@ -71,7 +71,8 @@ const CreateCompetition = () => {
     playMode: 'HANDICAP',
     numberOfPlayers: undefined,
     teamAssignment: 'manual',
-    playerHandicap: 'user'
+    playerHandicap: 'user',
+    maxPlayingHandicap: undefined
   });
 
   // Golf Course Request Modal
@@ -175,7 +176,8 @@ const CreateCompetition = () => {
           playMode: competition.playMode || 'HANDICAP',
           numberOfPlayers: competition.maxPlayers || undefined,
           teamAssignment: competition.teamAssignment?.toLowerCase() || 'manual',
-          playerHandicap: 'user' // Default value, not stored in competition
+          playerHandicap: 'user', // Default value, not stored in competition
+          maxPlayingHandicap: competition.maxPlayingHandicap ?? undefined
         };
 
         setFormData(formDataToSet);
@@ -474,7 +476,10 @@ const CreateCompetition = () => {
         countries: countries,
         play_mode: formData.playMode.toUpperCase(),
         number_of_players: numPlayers,
-        team_assignment: formData.teamAssignment.toUpperCase()
+        team_assignment: formData.teamAssignment.toUpperCase(),
+        max_playing_handicap: formData.maxPlayingHandicap
+          ? parseInt(formData.maxPlayingHandicap, 10)
+          : null
       };
 
       if (isEditMode) {
@@ -1119,6 +1124,25 @@ const CreateCompetition = () => {
                         </button>
                       ))}
                     </div>
+                  </div>
+
+                  {/* Max Playing Handicap */}
+                  <div>
+                    <label htmlFor="maxPlayingHandicap" className="block text-sm font-medium text-gray-700 mb-1">
+                      {t('create.maxPlayingHandicap')}
+                    </label>
+                    <input
+                      id="maxPlayingHandicap"
+                      type="number"
+                      name="maxPlayingHandicap"
+                      value={formData.maxPlayingHandicap === undefined ? '' : formData.maxPlayingHandicap}
+                      onChange={handleInputChange}
+                      min="1"
+                      max="54"
+                      placeholder={t('create.maxPlayingHandicapPlaceholder')}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                    />
+                    <p className="mt-1 text-xs text-gray-500">{t('create.maxPlayingHandicapHint')}</p>
                   </div>
                 </div>
               </div>
