@@ -61,6 +61,7 @@
     "validation": "Val",
     "result": "Result",
     "halved": "=",
+    "and": "&",
     "out": "OUT",
     "in": "IN",
     "total": "TOTAL",

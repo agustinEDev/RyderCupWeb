@@ -10,18 +10,19 @@
 
 ## En progreso: Scoring Improvements (branch `feature/scoring-improvements`)
 
-### Correcciones (pendientes de implementar)
+### Pendiente de implementar
 
-- **Leaderboard "Equipo X gana AS"**: `LeaderboardView` comprueba `winner === 'HALVED'` y usa clave `leaderboard.halved` en lugar de `leaderboard.wins`.
-- **PreMatchInfo solo muestra "Tú marcas a"**: se elimina la fila "Te marca" (`markedBy`).
-- **Score no guardado al cambiar de hoyo**: revisión del flujo numpad → `handleScoreChange` → `autoSubmitIfNeeded`.
-- **Best ball empate Fourball**: `ScorecardTable` muestra "Nombre1 y Nombre2" (solo nombre, sin apellido) cuando `bestBallPlayerA` es array (empate).
+- **Score no guardado al cambiar de hoyo** (#7): revisión del flujo numpad → `handleScoreChange` → `autoSubmitIfNeeded`.
+- **Límite hándicap de juego** (#4): campo en formulario de creación/edición de competición (`max_playing_handicap`, 1–54).
+- **Admin acceso total a scoring** (#5): `useScoring` omite el guard `isMatchPlayer` para usuarios admin.
 
-### Añadido (pendiente de implementar)
+### Completado ✅
 
-- **Límite hándicap de juego**: campo en formulario de creación/edición de competición (`max_playing_handicap`, 1–54).
-- **Admin acceso total a scoring**: `useScoring` omite el guard `isMatchPlayer` para usuarios admin.
-- **Badge admin en cabecera**: `HeaderAuth` muestra etiqueta "Admin" junto al nombre cuando `user.is_admin === true`.
+- **Leaderboard "Equipo X gana AS"** (#1): `LeaderboardView` comprueba `winner === 'HALVED'` antes del branch `wins`.
+- **PreMatchInfo solo muestra "Tú marcas a"** (#2): eliminada la fila `markedBy`.
+- **Best ball empate Fourball** (#3): `ScorecardTable` muestra "Carlos M. / Ana R." (nombre + inicial) en líneas separadas con `whitespace-nowrap` por nombre. `bestBallPlayerA/B` es ahora array.
+- **Badge admin en cabecera** (#6): `HeaderAuth` muestra badge ámbar "Admin" en desktop y dropdown móvil.
+- **Button groups en formularios**: `GolfCourseForm` (courseType, teeCategory, teeGender, par, stroke index con auto-swap) y `CreateCompetition` (playMode, teamAssignment, playerHandicap) reemplazan sus `<select>` por grupos de botones.
 
 ---
 

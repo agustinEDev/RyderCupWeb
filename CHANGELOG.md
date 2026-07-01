@@ -23,7 +23,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 **Scoring — Best Ball Tie Display in Fourball**
 
-- `ScorecardTable`: When two players on the same team share the best net score on a hole, the "Result" row now shows "Nombre1 y Nombre2" (first names only, no surnames) instead of a single player name. Reads the updated `bestBallPlayerA` / `bestBallPlayerB` fields, which are now arrays when there is a tie.
+- `ScorecardTable`: When two players on the same team share the best net score on a hole, the "Result" row now shows each tied player on its own line in `FirstName I.` format (e.g. "Carlos M."), with the "y" / "&" connector on its own line between them. Each name has `whitespace-nowrap` so the initial never wraps to a separate line.
+- `ScorecardTable`: `isBestBall` yellow highlight now uses `.includes()` to match against the array of tied player IDs.
+- `ScoringMapper`: `bestBallPlayerA` / `bestBallPlayerB` default to `[]` instead of `null` when absent.
+- `scoring.json` (ES/EN): Added `scorecard.and` key (`"y"` / `"&"`) used as connector between tied names.
 
 ### Added
 
