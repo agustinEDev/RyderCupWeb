@@ -639,6 +639,14 @@ const CompetitionDetail = () => {
                     <p className="text-gray-900 font-medium">{competition.teamAssignment}</p>
                   </div>
                   <div>
+                    <span className="text-gray-500 text-sm">{t('detail.settings.maxPlayingHandicap')}</span>
+                    {competition.maxPlayingHandicap != null ? (
+                      <p className="text-gray-900 font-medium">{competition.maxPlayingHandicap}</p>
+                    ) : (
+                      <p className="text-gray-500 font-medium italic">{t('detail.settings.maxPlayingHandicapNone')}</p>
+                    )}
+                  </div>
+                  <div>
                     <span className="text-gray-500 text-sm">{t('detail.settings.created')}</span>
                     <p className="text-gray-900 font-medium">
                       {new Date(competition.createdAt).toLocaleDateString()}

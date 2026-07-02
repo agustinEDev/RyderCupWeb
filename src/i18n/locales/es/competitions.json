@@ -152,6 +152,8 @@
       "teamTwo": "Equipo 2:",
       "playMode": "Modo de Juego:",
       "teamAssignment": "Asignación de Equipos:",
+      "maxPlayingHandicap": "Límite Hándicap de Juego:",
+      "maxPlayingHandicapNone": "Sin límite",
       "created": "Creado:"
     },
     "approvedPlayers": "Jugadores Aprobados ({{count}})",

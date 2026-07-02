@@ -450,6 +450,7 @@ const SchedulePage = () => {
                       onScoreMatch={handleScoreMatch}
                       playerNameMap={playerNameMap}
                       playerHandicapMap={playerHandicapMap}
+                      maxPlayingHandicap={competition.maxPlayingHandicap ?? null}
                       golfCourses={golfCourses}
                       teamNames={teamNames}
                       t={t}

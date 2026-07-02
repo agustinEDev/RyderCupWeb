@@ -25,6 +25,7 @@ const RoundCard = ({
   onScoreMatch,
   playerNameMap,
   playerHandicapMap,
+  maxPlayingHandicap,
   golfCourses,
   teamNames,
   t,
@@ -140,6 +141,7 @@ const RoundCard = ({
                   canManage={canEdit}
                   playerNameMap={playerNameMap}
                   playerHandicapMap={playerHandicapMap}
+                  maxPlayingHandicap={maxPlayingHandicap}
                   teamNames={teamNames}
                   t={t}
                 />
