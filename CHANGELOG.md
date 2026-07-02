@@ -17,9 +17,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 - `PreMatchInfo`: Removed the "Te marca:" (`markedBy`) row. The component now shows only "Tú marcas a:" (`youMark`), which is the only information the scorer needs before play.
 
-**Scoring — Score Navigation: Data Not Saved When Moving to Next Hole**
+**Scoring — Score Navigation: Score Display Not Persisted When Navigating Between Holes**
 
-- `ScoringPage` / `HoleInput`: Investigated and fixed the hole-navigation flow where scores entered via the numpad were not persisted when the user navigated forward. _(Details to be confirmed during implementation.)_
+- `ScoringPage`: Added `localScoresRef` to track the last submitted score value per hole. `HoleInput` now re-initializes with this local value instead of relying on the potentially-stale `scoringView` response (which can lag behind due to the 10 s poll racing the submit response).
+- `ScoringPage`: `submittedScoresRef` is now also updated inside `autoSubmitIfNeeded` to prevent redundant re-submissions when navigating back to a hole that was auto-submitted with par defaults.
 
 **Scoring — Best Ball Tie Display in Fourball**
 
@@ -43,6 +44,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 **UI — Admin Badge in Header**
 
 - `HeaderAuth`: When the logged-in user has `is_admin === true`, a visible "Admin" badge is displayed next to their name in the header (desktop) and in the profile dropdown (mobile), making it clear at a glance which account is active.
+
+**Forms — Button Groups Replace Select Inputs**
+
+- `GolfCourseForm`: `courseType` (3 buttons), `teeCategory` (5 vertical buttons per tee), `teeGender` (3 vertical buttons per tee), `par` per hole (3 inline buttons), and `strokeIndex` (trigger + 6×3 popover with auto-swap on conflict) all replaced their `<select>` elements with inline button groups.
+- `CreateCompetition`: `playMode`, `teamAssignment`, and `playerHandicap` selects replaced with 2-button inline groups.
+
+**PWA — Progressive Web App Support**
+
+- Installed `vite-plugin-pwa` and configured Workbox: `NetworkOnly` for `/api/*`, `CacheFirst` for static assets.
+- Generated `manifest.webmanifest` and service worker with an offline fallback page (`public/offline.html`).
+- Added PWA icons (192×192 and 512×512) from the RCF monogram.
+- `InstallBanner` component: shows a native `beforeinstallprompt` install dialog on Android/desktop, and manual add-to-homescreen instructions on iOS. Dismissal is persisted in `localStorage`.
+- `useInstallPrompt` hook: handles `beforeinstallprompt`, iOS detection, and dismiss state.
+- Updated `public/_headers` with correct `Cache-Control` and `Service-Worker-Allowed` headers for `sw.js` and `manifest.webmanifest`.
 
 ---
 
