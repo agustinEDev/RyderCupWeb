@@ -1,4 +1,14 @@
 {
+  "installBanner": {
+    "title": "Instala RyderCupFriends",
+    "subtitle": "Accede más rápido desde tu pantalla de inicio",
+    "install": "Instalar",
+    "dismiss": "Cerrar banner de instalación",
+    "iosHint": {
+      "prefix": "Instala la app: pulsa ",
+      "suffix": " y luego \"Añadir a pantalla de inicio\""
+    }
+  },
   "loading": "Cargando...",
   "error": "Ocurrió un error",
   "success": "Éxito",

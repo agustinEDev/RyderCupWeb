@@ -1,4 +1,14 @@
 {
+  "installBanner": {
+    "title": "Install RyderCupFriends",
+    "subtitle": "Quick access from your home screen",
+    "install": "Install",
+    "dismiss": "Close install banner",
+    "iosHint": {
+      "prefix": "Install the app: tap ",
+      "suffix": " then \"Add to Home Screen\""
+    }
+  },
   "loading": "Loading...",
   "error": "An error occurred",
   "success": "Success",

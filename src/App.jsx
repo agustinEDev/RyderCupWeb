@@ -12,6 +12,7 @@ import useProactiveTokenRefresh from './hooks/useProactiveTokenRefresh';
 import { onAuthEvent, EVENTS } from './utils/broadcastAuth';
 import { useLogout } from './hooks/useLogout';
 import { useDeviceRevocationMonitor } from './hooks/useDeviceRevocationMonitor';
+import InstallBanner from './components/ui/InstallBanner';
 
 // Lazy loading con retry automático para fallos de red transitorios
 // Si el primer import() falla, reintenta tras 1.5s antes de propagar el error
@@ -187,6 +188,7 @@ function AppContent() {
 
   return (
     <LazyLoadErrorBoundary>
+      <InstallBanner />
       <Suspense fallback={
         <div style={{
           display: 'flex',

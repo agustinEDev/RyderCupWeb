@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import sri from 'vite-plugin-sri'
+import { VitePWA } from 'vite-plugin-pwa'
 
 // Security headers configuration
 // Updated: 22 Dec 2025 - Added CSP without 'unsafe-inline' (v1.8.0)
@@ -23,6 +24,47 @@ export default defineConfig(() => ({
   // In Render, VITE_API_BASE_URL is set as environment variable
   plugins: [
     react(),
+    VitePWA({
+      registerType: 'autoUpdate',
+      // sw.js must be excluded from SRI — browsers reject SW with integrity attribute
+      filename: 'sw.js',
+      manifest: {
+        name: 'RyderCupFriends',
+        short_name: 'RCF',
+        description: 'Amateur golf tournament management platform',
+        theme_color: '#15803d',
+        background_color: '#ffffff',
+        display: 'standalone',
+        start_url: '/',
+        scope: '/',
+        icons: [
+          { src: '/icons/pwa-192x192.png', sizes: '192x192', type: 'image/png' },
+          { src: '/icons/pwa-512x512.png', sizes: '512x512', type: 'image/png', purpose: 'any maskable' },
+        ],
+      },
+      workbox: {
+        // Cache static assets (JS, CSS, fonts, images)
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+        runtimeCaching: [
+          {
+            // API calls: always fetch from network, never serve stale data
+            urlPattern: /^https?:\/\/.*\/api\//,
+            handler: 'NetworkOnly',
+          },
+          {
+            // Google Fonts
+            urlPattern: /^https:\/\/fonts\.(googleapis|gstatic)\.com\//,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'google-fonts',
+              expiration: { maxEntries: 20, maxAgeSeconds: 60 * 60 * 24 * 365 },
+            },
+          },
+        ],
+        navigateFallback: '/offline.html',
+        navigateFallbackDenylist: [/^\/api\//],
+      },
+    }),
     // Subresource Integrity (SRI) plugin - adds integrity hashes to assets (v1.15.0)
     // v0.0.2 uses hardcoded sha384, no config needed
     sri(),
