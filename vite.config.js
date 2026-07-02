@@ -61,8 +61,8 @@ export default defineConfig(() => ({
             },
           },
         ],
-        navigateFallback: '/offline.html',
-        navigateFallbackDenylist: [/^\/api\//],
+        navigateFallback: '/index.html',
+        navigateFallbackDenylist: [/^\/api\//, /^\/offline\.html$/],
       },
     }),
     // Subresource Integrity (SRI) plugin - adds integrity hashes to assets (v1.15.0)
