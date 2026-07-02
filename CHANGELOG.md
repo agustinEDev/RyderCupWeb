@@ -36,8 +36,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 **Admin — Full Scoring Access**
 
-- `useScoring`: `isMatchPlayer` guard now also passes when `user.is_admin === true`, allowing admins to enter scores and submit scorecards for any match.
-- `ScoringPage`: Admin users can interact with all scoring actions (submit hole scores, submit scorecard, concede) regardless of whether they are enrolled in the match.
+- `useScoring`: New `isAdmin` parameter (default `false`) and derived `canScore = isMatchPlayer || isAdmin`. All scoring guards (`submitScore`, `canSubmitScorecard`) now use `canScore`. Session lock is unchanged — it remains scoped to actual match players only.
+- `ScoringPage`: Passes `user?.is_admin` to `useScoring`; replaces `isMatchPlayer` with `canScore` in `HoleInput` read-only props, `autoSubmitIfNeeded`, and concede button. Admin users can submit hole scores, submit scorecards, and concede for any match regardless of enrollment.
+- `useScoring.test.js`: 4 new tests covering admin `canScore`, admin score submission, admin session-lock bypass, and non-admin non-player block.
 
 **UI — Admin Badge in Header**
 

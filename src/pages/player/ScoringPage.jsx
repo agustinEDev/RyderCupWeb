@@ -44,6 +44,7 @@ const ScoringPage = () => {
     isSessionBlocked,
     pendingQueueSize,
     isMatchPlayer,
+    canScore,
     hasSubmitted,
     isOwnScoreLocked,
     isMarkerScoreLocked,
@@ -57,7 +58,7 @@ const ScoringPage = () => {
     concedeMatch,
     takeOverSession,
     refetch,
-  } = useScoring(matchId, user?.id);
+  } = useScoring(matchId, user?.id, user?.is_admin ?? false);
 
   // Load leaderboard when tab changes to leaderboard
   useEffect(() => {
@@ -106,7 +107,7 @@ const ScoringPage = () => {
 
   // Auto-submit par defaults when navigating away from a hole with no score recorded
   const autoSubmitIfNeeded = () => {
-    if (!markerAssignment || !currentHoleData || isFullyLocked || isOwnScoreLocked || !isMatchPlayer) return;
+    if (!markerAssignment || !currentHoleData || isFullyLocked || isOwnScoreLocked || !canScore) return;
     if (submittedScoresRef.current[currentHole]) return;
     const hasOwnScore = currentPlayerScore?.ownScore != null;
     const hasMarkedScore = markedPlayerScore?.markerScore != null;
@@ -318,9 +319,9 @@ const ScoringPage = () => {
                 strokesReceived={currentPlayerScore?.strokesReceivedThisHole}
                 holeResult={currentHoleScore?.holeResult}
                 standing={currentHoleScore?.holeResult?.standing}
-                isReadOnly={!isMatchPlayer || isFullyLocked || isSessionBlocked}
-                isOwnScoreLocked={isOwnScoreLocked || !isMatchPlayer || isSessionBlocked}
-                isMarkerScoreLocked={isMarkerScoreLocked || !isMatchPlayer || isSessionBlocked}
+                isReadOnly={!canScore || isFullyLocked || isSessionBlocked}
+                isOwnScoreLocked={isOwnScoreLocked || !canScore || isSessionBlocked}
+                isMarkerScoreLocked={isMarkerScoreLocked || !canScore || isSessionBlocked}
                 onScoreChange={handleScoreChange}
                 teamAName={scoringView?.teamAName}
                 teamBName={scoringView?.teamBName}
@@ -346,7 +347,7 @@ const ScoringPage = () => {
             </div>
 
             {/* Concede button */}
-            {isMatchPlayer && !hasSubmitted && scoringView?.matchStatus === 'IN_PROGRESS' && (
+            {canScore && !hasSubmitted && scoringView?.matchStatus === 'IN_PROGRESS' && (
               <button
                 onClick={() => setShowConcedeModal(true)}
                 className="w-full px-4 py-2 text-red-600 border border-red-200 rounded-lg text-sm font-medium hover:bg-red-50"

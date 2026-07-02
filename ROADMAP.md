@@ -12,9 +12,18 @@
 
 ### Pendiente de implementar
 
+#### Scoring fixes
 - **Score no guardado al cambiar de hoyo** (#7): revisión del flujo numpad → `handleScoreChange` → `autoSubmitIfNeeded`.
-- **Límite hándicap de juego** (#4): campo en formulario de creación/edición de competición (`max_playing_handicap`, 1–54).
+- **Límite hándicap de juego** (#4): campo `max_playing_handicap` (1–54) en formulario de creación/edición de competición; si el hándicap de juego calculado supera el límite, se sustituye por el valor limitado.
 - **Admin acceso total a scoring** (#5): `useScoring` omite el guard `isMatchPlayer` para usuarios admin.
+
+#### Módulo Gestión de Hándicaps
+- **Popup hándicap en login** (H2): al autenticarse, si el jugador es español y no se localiza en RFEG (o no es español), mostrar ventana emergente solicitando el hándicap manualmente. Si rechaza, crear item en "Requiere tu atención".
+- **"Requiere tu atención" — hándicap pendiente** (H2): sección/tarjeta en dashboard o perfil que liste los jugadores/usuarios con hándicap sin actualizar pendiente de introducción manual.
+- **UI hándicap personalizado por competición** (H3): cuando la opción `playerHandicap` está activa en la competición, el creador puede ver y editar el hándicap de cada jugador inscrito. Si no lo modifica, queda el hándicap del usuario.
+
+#### PWA
+- **Conversión a Progressive Web App** (PWA): añadir `manifest.json`, service worker, `meta` tags iOS, install prompt y soporte offline básico para que la web pueda instalarse como app nativa en móvil y escritorio.
 
 ### Completado ✅
 

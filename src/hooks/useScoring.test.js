@@ -357,4 +357,54 @@ describe('useScoring', () => {
     expect(result.current.isOwnScoreLocked).toBe(true);
     expect(result.current.isMarkerScoreLocked).toBe(true);
   });
+
+  describe('admin bypass', () => {
+    it('admin not in match has canScore=true and isMatchPlayer=false', async () => {
+      const { result } = renderHook(() => useScoring('m-1', 'u-admin', true));
+      await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+      expect(result.current.isMatchPlayer).toBe(false);
+      expect(result.current.canScore).toBe(true);
+    });
+
+    it('admin can submit hole score even without being in the match', async () => {
+      const updatedView = { ...mockScoringView, scores: [{ holeNumber: 1 }] };
+      submitHoleScoreUseCase.execute.mockResolvedValue(updatedView);
+
+      const { result } = renderHook(() => useScoring('m-1', 'u-admin', true));
+      await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+      await act(async () => {
+        await result.current.submitScore(1, { ownScore: 4, markedPlayerId: 'u2', markedScore: 5 });
+      });
+
+      expect(submitHoleScoreUseCase.execute).toHaveBeenCalledWith('m-1', 1, {
+        ownScore: 4,
+        markedPlayerId: 'u2',
+        markedScore: 5,
+      });
+    });
+
+    it('admin does not acquire session lock', async () => {
+      sessionLock.acquire.mockClear();
+
+      const { result } = renderHook(() => useScoring('m-1', 'u-admin', true));
+      await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+      expect(sessionLock.acquire).not.toHaveBeenCalled();
+    });
+
+    it('non-admin non-player still cannot score', async () => {
+      const { result } = renderHook(() => useScoring('m-1', 'u99', false));
+      await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+      expect(result.current.canScore).toBe(false);
+
+      await act(async () => {
+        await result.current.submitScore(1, { ownScore: 5, markedPlayerId: 'u2', markedScore: 4 });
+      });
+
+      expect(submitHoleScoreUseCase.execute).not.toHaveBeenCalled();
+    });
+  });
 });

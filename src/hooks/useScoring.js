@@ -19,7 +19,7 @@ const SESSION_REFRESH_INTERVAL = 30000; // 30 seconds
  * @param {string} currentUserId
  * @returns {Object} Scoring state and actions
  */
-export const useScoring = (matchId, currentUserId) => {
+export const useScoring = (matchId, currentUserId, isAdmin = false) => {
   const [scoringView, setScoringView] = useState(null);
   const [currentHole, setCurrentHole] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
@@ -36,6 +36,9 @@ export const useScoring = (matchId, currentUserId) => {
 
   // Determine if user is a player in this match
   const isMatchPlayer = scoringView?.players?.some(p => p.userId === currentUserId) ?? false;
+
+  // Admins can score any match even if not enrolled as a player
+  const canScore = isMatchPlayer || isAdmin;
 
   // Determine if scorecard already submitted by current user
   const hasSubmitted = scoringView?.scorecardSubmittedBy?.includes(currentUserId) ?? false;
@@ -75,7 +78,7 @@ export const useScoring = (matchId, currentUserId) => {
   // Always allow navigating all 18 holes, even if match decided early
   const totalHoles = 18;
 
-  const canSubmitScorecard = isMatchPlayer && !hasSubmitted && validatedHoles >= totalHoles;
+  const canSubmitScorecard = canScore && !hasSubmitted && validatedHoles >= totalHoles;
 
   // --- Fetch scoring view ---
   const fetchScoringView = useCallback(async () => {
@@ -96,7 +99,7 @@ export const useScoring = (matchId, currentUserId) => {
   // --- Submit hole score ---
   // Allow submission if own scores OR marker scores are still editable
   const submitScore = useCallback(async (holeNumber, scoreData) => {
-    if (!matchId || !isMatchPlayer) return;
+    if (!matchId || !canScore) return;
     if (isOwnScoreLocked && isMarkerScoreLocked) return;
 
     if (isOffline) {
@@ -125,7 +128,7 @@ export const useScoring = (matchId, currentUserId) => {
     } finally {
       setIsSubmitting(false);
     }
-  }, [matchId, isMatchPlayer, isOwnScoreLocked, isMarkerScoreLocked, isOffline]);
+  }, [matchId, canScore, isOwnScoreLocked, isMarkerScoreLocked, isOffline]);
 
   // --- Submit scorecard ---
   const submitScorecard = useCallback(async () => {
@@ -294,6 +297,7 @@ export const useScoring = (matchId, currentUserId) => {
 
     // Derived
     isMatchPlayer,
+    canScore,
     hasSubmitted,
     isOwnScoreLocked,
     isMarkerScoreLocked,
