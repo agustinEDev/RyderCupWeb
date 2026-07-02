@@ -24,7 +24,7 @@ const CloseButton = ({ onClick, label }) => (
 
 const InstallBanner = () => {
   const { t } = useTranslation('common');
-  const { canInstall, isIOS, install, dismiss } = useInstallPrompt();
+  const { canInstall, isIOS, isDesktopSafari, install, dismiss } = useInstallPrompt();
 
   if (!canInstall) return null;
 
@@ -43,6 +43,16 @@ const InstallBanner = () => {
                 {t('installBanner.iosHint.prefix')}
                 <ShareIcon />
                 {t('installBanner.iosHint.suffix')}
+              </p>
+            </div>
+            <CloseButton onClick={dismiss} label={t('installBanner.dismiss')} />
+          </>
+        ) : isDesktopSafari ? (
+          <>
+            <div className="flex items-center gap-3 min-w-0">
+              <span className="text-xl shrink-0">⛳</span>
+              <p className="text-sm leading-snug">
+                {t('installBanner.safariHint', 'Instala la app: Archivo → Añadir al Dock…')}
               </p>
             </div>
             <CloseButton onClick={dismiss} label={t('installBanner.dismiss')} />
