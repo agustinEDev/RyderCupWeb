@@ -32,6 +32,7 @@ const ScoringPage = () => {
   const [showSubmitModal, setShowSubmitModal] = useState(false);
   const [earlyEndDismissed, setEarlyEndDismissed] = useState(false);
   const submittedScoresRef = useRef({});
+  const localScoresRef = useRef({}); // last submitted values per hole, used to re-initialize HoleInput when scoringView is stale
 
   const {
     scoringView,
@@ -92,6 +93,7 @@ const ScoringPage = () => {
 
   const handleScoreChange = (scoreData) => {
     if (!markerAssignment) return;
+    localScoresRef.current[currentHole] = { ownScore: scoreData.ownScore, markedScore: scoreData.markedScore };
     submittedScoresRef.current[currentHole] = true;
     submitScore(currentHole, {
       ownScore: scoreData.ownScore,
@@ -115,12 +117,14 @@ const ScoringPage = () => {
     const needsMarkedScore = markerAssignment.marksUserId && !hasMarkedScore;
 
     if (needsOwnScore || needsMarkedScore) {
-      const payload = {
-        ownScore: hasOwnScore ? currentPlayerScore.ownScore : currentHoleData.par,
-      };
+      const ownScore = hasOwnScore ? currentPlayerScore.ownScore : currentHoleData.par;
+      const markedScore = hasMarkedScore ? markedPlayerScore.markerScore : currentHoleData.par;
+      localScoresRef.current[currentHole] = { ownScore, markedScore };
+      submittedScoresRef.current[currentHole] = true;
+      const payload = { ownScore };
       if (markerAssignment.marksUserId) {
         payload.markedPlayerId = markerAssignment.marksUserId;
-        payload.markedScore = hasMarkedScore ? markedPlayerScore.markerScore : currentHoleData.par;
+        payload.markedScore = markedScore;
       }
       submitScore(currentHole, payload);
     }
@@ -214,6 +218,16 @@ const ScoringPage = () => {
       </div>
     );
   }
+
+  // Use locally-tracked submitted values as fallback so HoleInput doesn't show stale
+  // server data when scoringView hasn't been updated yet (e.g. poll races submit response).
+  const localHoleScore = localScoresRef.current[currentHole];
+  const effectivePlayerScore = localHoleScore
+    ? { ...currentPlayerScore, ownScore: localHoleScore.ownScore }
+    : currentPlayerScore;
+  const effectiveMarkedPlayerScore = localHoleScore
+    ? { ...markedPlayerScore, markerScore: localHoleScore.markedScore }
+    : markedPlayerScore;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -312,8 +326,8 @@ const ScoringPage = () => {
                 holeNumber={currentHole}
                 par={currentHoleData.par}
                 strokeIndex={currentHoleData.strokeIndex}
-                playerScore={currentPlayerScore}
-                markedPlayerScore={markedPlayerScore}
+                playerScore={effectivePlayerScore}
+                markedPlayerScore={effectiveMarkedPlayerScore}
                 validationStatus={currentPlayerScore?.validationStatus}
                 netScore={currentPlayerScore?.netScore}
                 strokesReceived={currentPlayerScore?.strokesReceivedThisHole}
