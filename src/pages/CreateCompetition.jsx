@@ -71,7 +71,6 @@ const CreateCompetition = () => {
     playMode: 'HANDICAP',
     numberOfPlayers: undefined,
     teamAssignment: 'manual',
-    playerHandicap: 'user',
     maxPlayingHandicap: undefined
   });
 
@@ -176,7 +175,6 @@ const CreateCompetition = () => {
           playMode: competition.playMode || 'HANDICAP',
           numberOfPlayers: competition.maxPlayers || undefined,
           teamAssignment: competition.teamAssignment?.toLowerCase() || 'manual',
-          playerHandicap: 'user', // Default value, not stored in competition
           maxPlayingHandicap: competition.maxPlayingHandicap ?? undefined
         };
 
@@ -1098,29 +1096,6 @@ const CreateCompetition = () => {
                           }`}
                         >
                           {t(`create.${mode}`)}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Player Handicap Source */}
-                  <div>
-                    <span className="block text-sm font-medium text-gray-700 mb-2">
-                      {t('create.playerHandicap')}
-                    </span>
-                    <div className="flex flex-wrap gap-2">
-                      {['custom', 'user'].map(mode => (
-                        <button
-                          key={mode}
-                          type="button"
-                          onClick={() => setFormData(prev => ({ ...prev, playerHandicap: mode }))}
-                          className={`border-2 rounded-lg text-sm px-3 py-2 transition-colors ${
-                            formData.playerHandicap === mode
-                              ? 'bg-primary text-white border-primary'
-                              : 'bg-white text-gray-600 border-gray-200 hover:border-primary hover:text-primary'
-                          }`}
-                        >
-                          {t(mode === 'custom' ? 'create.customByCreator' : 'create.userHandicap')}
                         </button>
                       ))}
                     </div>

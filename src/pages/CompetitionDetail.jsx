@@ -30,6 +30,7 @@ import {
   approveEnrollmentUseCase,
   rejectEnrollmentUseCase,
   assignTeamsUseCase,
+  setCustomHandicapUseCase,
 } from '../composition';
 import {
   getStatusColor,
@@ -49,6 +50,9 @@ const CompetitionDetail = () => {
   const [isLoadingCompetition, setIsLoadingCompetition] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
   const [showEnrollModal, setShowEnrollModal] = useState(false);
+  const [editingHandicapId, setEditingHandicapId] = useState(null);
+  const [handicapInput, setHandicapInput] = useState('');
+  const [savingHandicapId, setSavingHandicapId] = useState(null);
 
   // Determine where user came from (browse or my competitions)
   const fromBrowse = location.state?.from === 'browse';
@@ -259,6 +263,41 @@ const CompetitionDetail = () => {
     } catch (error) {
       console.error('Error rejecting enrollment:', error);
       customToast.error(error.message || t('detail.failedToReject'));
+    }
+  };
+
+  const handleStartEditHandicap = (enrollment) => {
+    setEditingHandicapId(enrollment.id);
+    setHandicapInput(
+      enrollment.hasCustomHandicap
+        ? String(enrollment.customHandicap)
+        : (enrollment.userHandicap ?? '')
+    );
+  };
+
+  const handleCancelEditHandicap = () => {
+    setEditingHandicapId(null);
+    setHandicapInput('');
+  };
+
+  const handleSaveHandicap = async (enrollmentId) => {
+    const value = parseFloat(handicapInput);
+    if (isNaN(value)) {
+      customToast.error(t('detail.invalidHandicap'));
+      return;
+    }
+    setSavingHandicapId(enrollmentId);
+    try {
+      await setCustomHandicapUseCase.execute(competition.id, enrollmentId, value);
+      customToast.success(t('detail.handicapUpdated'));
+      const enrollmentsData = await listEnrollmentsUseCase.execute(competition.id);
+      setEnrollments(enrollmentsData);
+      setEditingHandicapId(null);
+    } catch (error) {
+      console.error('Error setting custom handicap:', error);
+      customToast.error(error.message || t('detail.failedToUpdateHandicap'));
+    } finally {
+      setSavingHandicapId(null);
     }
   };
 
@@ -711,12 +750,65 @@ const CompetitionDetail = () => {
                               {enrollment.userName || t('detail.unknownUser')}
                             </p>
                             <div className="flex items-center gap-2 mt-1">
-                              {enrollment.userHandicap !== null && enrollment.userHandicap !== undefined ? (
-                                <span className="text-green-700 text-sm font-medium">
-                                  {t('detail.handicapLabel', { handicap: Number(enrollment.userHandicap).toFixed(1) })}
-                                </span>
+                              {editingHandicapId === enrollment.id ? (
+                                <div className="flex items-center gap-1.5">
+                                  <input
+                                    type="number"
+                                    step="0.1"
+                                    min="-10"
+                                    max="54"
+                                    value={handicapInput}
+                                    onChange={(e) => setHandicapInput(e.target.value)}
+                                    autoFocus
+                                    className="w-20 px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() => handleSaveHandicap(enrollment.id)}
+                                    disabled={savingHandicapId === enrollment.id}
+                                    className="text-green-600 hover:text-green-800 disabled:opacity-50"
+                                    title={t('detail.saveHandicap')}
+                                  >
+                                    <CheckCircle className="w-4 h-4" />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={handleCancelEditHandicap}
+                                    disabled={savingHandicapId === enrollment.id}
+                                    className="text-gray-400 hover:text-gray-600 disabled:opacity-50"
+                                    title={t('detail.cancelHandicap')}
+                                  >
+                                    <XCircle className="w-4 h-4" />
+                                  </button>
+                                </div>
                               ) : (
-                                <span className="text-gray-500 text-sm">{t('detail.noHandicap')}</span>
+                                <>
+                                  {enrollment.hasCustomHandicap ? (
+                                    <span className="text-amber-700 text-sm font-medium">
+                                      {t('detail.handicapLabel', { handicap: Number(enrollment.customHandicap).toFixed(1) })}
+                                      {' '}
+                                      <span className="px-1.5 py-0.5 bg-amber-100 text-amber-800 rounded text-xs font-semibold">
+                                        {t('detail.customHandicapBadge')}
+                                      </span>
+                                    </span>
+                                  ) : enrollment.userHandicap !== null && enrollment.userHandicap !== undefined ? (
+                                    <span className="text-green-700 text-sm font-medium">
+                                      {t('detail.handicapLabel', { handicap: Number(enrollment.userHandicap).toFixed(1) })}
+                                    </span>
+                                  ) : (
+                                    <span className="text-gray-500 text-sm">{t('detail.noHandicap')}</span>
+                                  )}
+                                  {canManage && (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleStartEditHandicap(enrollment)}
+                                      className="text-gray-400 hover:text-primary"
+                                      title={t('detail.editHandicap')}
+                                    >
+                                      <Edit className="w-3.5 h-3.5" />
+                                    </button>
+                                  )}
+                                </>
                               )}
                             </div>
                           </div>
