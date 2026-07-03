@@ -44,7 +44,6 @@ const ScoringPage = () => {
     isOffline,
     isSessionBlocked,
     pendingQueueSize,
-    isMatchPlayer,
     canScore,
     hasSubmitted,
     isOwnScoreLocked,
