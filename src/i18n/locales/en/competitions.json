@@ -171,6 +171,7 @@
     "success": {
       "activated": "Competition activated successfully",
       "enrollmentsClosed": "Enrollments closed successfully",
+      "teamsAutoAssigned": "Teams automatically assigned",
       "started": "Competition started successfully",
       "completed": "Competition completed successfully",
       "cancelled": "Competition cancelled successfully",

@@ -29,6 +29,7 @@ import {
   requestEnrollmentUseCase,
   approveEnrollmentUseCase,
   rejectEnrollmentUseCase,
+  assignTeamsUseCase,
 } from '../composition';
 import {
   getStatusColor,
@@ -150,6 +151,10 @@ const CompetitionDetail = () => {
         case 'close-enrollments':
           result = await closeEnrollmentsUseCase.execute(id);
           customToast.success(t('detail.success.enrollmentsClosed'));
+          if (competition.teamAssignment === 'AUTOMATIC') {
+            await assignTeamsUseCase.execute(id, { mode: 'AUTOMATIC' });
+            customToast.success(t('detail.success.teamsAutoAssigned'));
+          }
           break;
         case 'start':
           result = await startCompetitionUseCase.execute(id);
