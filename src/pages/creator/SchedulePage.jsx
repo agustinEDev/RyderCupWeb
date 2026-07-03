@@ -397,6 +397,7 @@ const SchedulePage = () => {
                 playerNameMap={playerNameMap}
                 enrollments={enrollments}
                 teamNames={teamNames}
+                maxPlayingHandicap={competition.maxPlayingHandicap ?? null}
                 t={t}
               />
             </motion.div>
