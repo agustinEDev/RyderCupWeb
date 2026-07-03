@@ -70,11 +70,15 @@ const Login = () => {
 
     try {
       // v1.13.0: LoginUseCase now returns { user, csrfToken }
-      const { user: authenticatedUser, csrfToken } = await loginUseCase.execute(formData.email, formData.password);
+      const { user: authenticatedUser, csrfToken, needsHandicap } = await loginUseCase.execute(formData.email, formData.password);
 
       // Update auth context with user and CSRF token
       setUser(authenticatedUser);
       updateCsrfToken(csrfToken);
+
+      if (needsHandicap) {
+        localStorage.setItem('needs_handicap', 'true');
+      }
 
       resetRateLimit('login');
       customToast.success(t('login.welcomeMessage', { name: authenticatedUser.firstName }));

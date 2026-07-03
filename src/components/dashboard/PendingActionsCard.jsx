@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Mail, Users, Flag, ChevronRight, Bell } from 'lucide-react';
+import { Mail, Users, Flag, TrendingUp, ChevronRight, Bell } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import {
   listMyInvitationsUseCase,
@@ -9,7 +9,7 @@ import {
   getScheduleUseCase,
 } from '../../composition';
 
-const PendingActionsCard = ({ user, competitions }) => {
+const PendingActionsCard = ({ user, competitions, onHandicapAction, handicapPending = false }) => {
   const navigate = useNavigate();
   const { t } = useTranslation('dashboard');
   const [pendingInvitations, setPendingInvitations] = useState(0);
@@ -53,7 +53,7 @@ const PendingActionsCard = ({ user, competitions }) => {
     loadPendingData();
   }, [user, competitions, isCreator]);
 
-  const totalItems = pendingInvitations + pendingEnrollments.length + (upcomingMatches > 0 ? 1 : 0);
+  const totalItems = pendingInvitations + pendingEnrollments.length + (upcomingMatches > 0 ? 1 : 0) + (handicapPending ? 1 : 0);
 
   if (isLoading) {
     return (
@@ -169,6 +169,25 @@ const PendingActionsCard = ({ user, competitions }) => {
                 </span>
                 <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-gray-600 transition-colors" />
               </div>
+            </button>
+          )}
+
+          {handicapPending && (
+            <button
+              onClick={onHandicapAction}
+              className="flex items-center justify-between w-full p-3 bg-white/70 rounded-lg hover:bg-white transition-colors group"
+              data-testid="handicap-pending-action"
+            >
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-amber-100 rounded-lg">
+                  <TrendingUp className="w-4 h-4 text-amber-600" />
+                </div>
+                <div className="text-left">
+                  <p className="text-sm font-semibold text-gray-900">{t('pendingActions.handicap')}</p>
+                  <p className="text-xs text-gray-500">{t('pendingActions.handicapDesc')}</p>
+                </div>
+              </div>
+              <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-gray-600 transition-colors" />
             </button>
           )}
         </div>
