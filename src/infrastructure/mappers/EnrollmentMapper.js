@@ -59,7 +59,10 @@ class EnrollmentMapper {
       userId: apiData.user_id,
       status: EnrollmentStatus.fromString(apiData.status),
       teamId: apiData.team_id || null,
-      customHandicap: apiData.custom_handicap !== null ? apiData.custom_handicap : null,
+      customHandicap:
+        apiData.custom_handicap !== null && apiData.custom_handicap !== undefined
+          ? Number(apiData.custom_handicap)
+          : null,
       teeCategory: apiData.tee_category == null ? null : TeeCategory.fromString(apiData.tee_category),
       createdAt: apiData.created_at,
       updatedAt: apiData.updated_at,
