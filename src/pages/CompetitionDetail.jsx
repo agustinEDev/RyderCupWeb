@@ -281,7 +281,7 @@ const CompetitionDetail = () => {
   };
 
   const handleSaveHandicap = async (enrollmentId) => {
-    const value = parseFloat(handicapInput);
+    const value = parseFloat(String(handicapInput).replace(',', '.'));
     if (isNaN(value)) {
       customToast.error(t('detail.invalidHandicap'));
       return;
@@ -753,10 +753,8 @@ const CompetitionDetail = () => {
                               {editingHandicapId === enrollment.id ? (
                                 <div className="flex items-center gap-1.5">
                                   <input
-                                    type="number"
-                                    step="0.1"
-                                    min="-10"
-                                    max="54"
+                                    type="text"
+                                    inputMode="decimal"
                                     value={handicapInput}
                                     onChange={(e) => setHandicapInput(e.target.value)}
                                     autoFocus
