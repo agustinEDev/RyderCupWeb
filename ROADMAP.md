@@ -1,16 +1,16 @@
 # 🗺️ Roadmap - RyderCupFriends Frontend
 
-> **Version:** 1.15.0 → 1.16.0 → 2.0.0 → 2.0.4 → 2.0.5 → 2.0.6 → 2.0.9 → 2.0.10 → 2.0.11 → 2.0.12 (synchronized with backend)
+> **Version:** 1.15.0 → 1.16.0 → 2.0.0 → 2.0.4 → 2.0.5 → 2.0.6 → 2.0.9 → 2.0.10 → 2.0.11 → 2.0.12 → 2.0.17 (synchronized with backend)
 > **Last Update:** Jul 6, 2026
-> **Status:** ✅ v2.0.0 Sprint 1 Completed | ✅ v2.0.4 Sprint 2 + Infra Completed | ✅ v2.0.5 Hotfix UI | ✅ v2.0.6 Sprint 2 Schedule COMPLETED | ✅ v2.0.9 Clean Architecture | ✅ v2.0.10 Manual Pairings | ✅ v2.0.11 Sprint 3 Invitations | ✅ v2.0.12 Sprint 4 Live Scoring COMPLETE | ✅ v2.0.13 Sprint 5 Absorbed + Post-Sprint 4 | ✅ v2.0.14 Build/CI Dependencies | ✅ v2.0.15 TeeCategory VO + Security Hotfixes
+> **Status:** ✅ v2.0.0 Sprint 1 Completed | ✅ v2.0.4 Sprint 2 + Infra Completed | ✅ v2.0.5 Hotfix UI | ✅ v2.0.6 Sprint 2 Schedule COMPLETED | ✅ v2.0.9 Clean Architecture | ✅ v2.0.10 Manual Pairings | ✅ v2.0.11 Sprint 3 Invitations | ✅ v2.0.12 Sprint 4 Live Scoring COMPLETE | ✅ v2.0.13 Sprint 5 Absorbed + Post-Sprint 4 | ✅ v2.0.14 Build/CI Dependencies | ✅ v2.0.15 TeeCategory VO + Security Hotfixes | ✅ v2.0.17 Scoring Improvements
 > **Stack:** React 19 + Vite 7.3 + Tailwind CSS 4 + ESLint 9
 > **Architecture:** Subdomain (www + api) with Cloudflare Proxy (ADR-011)
 
 ---
 
-## En progreso: Scoring Improvements (branch `feature/scoring-improvements`)
+## Completado: Scoring Improvements ⭐ v2.0.17
 
-### Pendiente de implementar
+### Pendiente para próxima release
 
 #### Módulo Gestión de Hándicaps
 - **"Requiere tu atención" — hándicap pendiente** (H2): sección/tarjeta en dashboard o perfil que liste los jugadores/usuarios con hándicap sin actualizar pendiente de introducción manual.
