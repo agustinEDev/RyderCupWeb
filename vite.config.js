@@ -39,12 +39,15 @@ export default defineConfig(() => ({
         scope: '/',
         icons: [
           { src: '/icons/pwa-192x192.png', sizes: '192x192', type: 'image/png' },
-          { src: '/icons/pwa-512x512.png', sizes: '512x512', type: 'image/png', purpose: 'any maskable' },
+          { src: '/icons/pwa-512x512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
+          { src: '/icons/pwa-512x512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
         ],
       },
       workbox: {
         // Cache static assets (JS, CSS, fonts, images)
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+        // Explicit cap so oversized assets fail the SW build loudly instead of silently
+        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5 MB
         runtimeCaching: [
           {
             // API calls: always fetch from network, never serve stale data

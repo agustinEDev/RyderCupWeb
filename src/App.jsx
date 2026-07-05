@@ -188,7 +188,7 @@ function AppContent() {
 
   return (
     <LazyLoadErrorBoundary>
-      <InstallBanner />
+      {location.pathname !== '/' && <InstallBanner />}
       <Suspense fallback={
         <div style={{
           display: 'flex',
