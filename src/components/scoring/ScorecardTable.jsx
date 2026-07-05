@@ -173,7 +173,8 @@ const ScorecardTable = ({ holes = [], scores = [], players = [], currentUserId, 
                   : [];
               const bestNames = (bestBallIds ?? []).map(id => {
                 const parts = players.find(p => p.userId === id)?.userName?.split(' ') ?? [];
-                return parts[0] ? (parts[1] ? `${parts[0]} ${parts[1][0]}.` : parts[0]) : null;
+                const name = parts[0] ? (parts[1] ? `${parts[0]} ${parts[1][0]}.` : parts[0]) : null;
+                return name ? { id, name } : null;
               }).filter(Boolean);
               const fallbackLabel = result?.winner === 'A' ? (teamAName || 'A') : result?.winner === 'B' ? (teamBName || 'B') : null;
               const winnerColor = result?.winner === 'A' ? 'bg-blue-100 text-blue-700 font-bold' : result?.winner === 'B' ? 'bg-red-100 text-red-700 font-bold' : '';
@@ -184,10 +185,10 @@ const ScorecardTable = ({ holes = [], scores = [], players = [], currentUserId, 
                   : bestNames.length > 0
                     ? (
                       <span className="flex flex-col items-center leading-tight">
-                        {bestNames.map((name, i) => (
-                          <span key={name}>
+                        {bestNames.map((entry, i) => (
+                          <span key={entry.id}>
                             {i > 0 && <span className="block text-gray-400 font-normal">{t('scorecard.and')}</span>}
-                            <span className="whitespace-nowrap">{name}</span>
+                            <span className="whitespace-nowrap">{entry.name}</span>
                           </span>
                         ))}
                       </span>
