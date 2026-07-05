@@ -196,6 +196,32 @@ describe('LeaderboardView', () => {
     expect(matchCard).not.toHaveTextContent('leaderboard.wins');
   });
 
+  it('should show allSquare label for a completed halved match, not wins template', () => {
+    const halved = {
+      ...mockLeaderboard,
+      matches: [
+        {
+          matchId: 'm-6',
+          matchNumber: 6,
+          matchFormat: 'SINGLES',
+          status: 'COMPLETED',
+          currentHole: 18,
+          standing: null,
+          leadingTeam: null,
+          teamAPlayers: [{ userId: 'u11', userName: 'Player K' }],
+          teamBPlayers: [{ userId: 'u12', userName: 'Player L' }],
+          result: { winner: 'HALVED', score: 'AS' },
+        },
+      ],
+    };
+    render(<LeaderboardView leaderboard={halved} />);
+    const matchCard = screen.getByTestId('leaderboard-match-m-6');
+    expect(matchCard).toHaveTextContent('leaderboard.allSquare');
+    expect(matchCard).not.toHaveTextContent('leaderboard.wins');
+    expect(matchCard).not.toHaveTextContent('Team Red');
+    expect(matchCard).not.toHaveTextContent('Team Blue');
+  });
+
   it('should show no matches message when empty', () => {
     const empty = { ...mockLeaderboard, matches: [] };
     render(<LeaderboardView leaderboard={empty} />);

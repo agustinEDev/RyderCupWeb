@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Trophy, Users, User, TrendingUp, Award, Search } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import HeaderAuth from '../components/layout/HeaderAuth';
 import ProfileCard from '../components/profile/ProfileCard';
+import HandicapRequestModal from '../components/profile/HandicapRequestModal';
 import EmailVerificationBanner from '../components/EmailVerificationBanner';
 import PendingActionsCard from '../components/dashboard/PendingActionsCard';
 import { useAuth } from '../hooks/useAuth';
@@ -13,9 +14,33 @@ import { listUserCompetitionsUseCase } from '../composition';
 const Dashboard = () => {
   const navigate = useNavigate();
   const { t } = useTranslation('dashboard');
-  const { user, loading: isLoadingUser } = useAuth();
+  const { user, loading: isLoadingUser, refetch: refetchUser } = useAuth();
   const [competitions, setCompetitions] = useState([]);
   const [isLoadingCompetitions, setIsLoadingCompetitions] = useState(true);
+  const [showHandicapModal, setShowHandicapModal] = useState(false);
+  const [handicapPending, setHandicapPending] = useState(
+    () => typeof localStorage !== 'undefined' && localStorage.getItem('handicap_pending') === 'true'
+  );
+
+  useEffect(() => {
+    if (user && localStorage.getItem('needs_handicap') === 'true') {
+      localStorage.removeItem('needs_handicap');
+      setShowHandicapModal(true);
+    }
+  }, [user]);
+
+  const handleHandicapSaved = useCallback(async () => {
+    setShowHandicapModal(false);
+    setHandicapPending(false);
+    localStorage.removeItem('handicap_pending');
+    await refetchUser();
+  }, [refetchUser]);
+
+  const handleHandicapDismiss = useCallback(() => {
+    setShowHandicapModal(false);
+    setHandicapPending(true);
+    localStorage.setItem('handicap_pending', 'true');
+  }, []);
 
   useEffect(() => {
     const loadDashboardData = async () => {
@@ -43,7 +68,9 @@ const Dashboard = () => {
     loadDashboardData();
   }, [user]);
 
-  const isLoading = isLoadingUser || isLoadingCompetitions;
+  // Only gate the full-page spinner on the initial load (no user yet).
+  // Subsequent refetches (e.g. after saving handicap) shouldn't unmount the current UI.
+  const isLoading = (isLoadingUser && !user) || isLoadingCompetitions;
 
   if (isLoading) {
     return (
@@ -64,6 +91,12 @@ const Dashboard = () => {
 
   return (
     <div className="relative flex h-auto min-h-screen w-full flex-col bg-white">
+      <HandicapRequestModal
+        isOpen={showHandicapModal}
+        user={user}
+        onClose={handleHandicapDismiss}
+        onSaved={handleHandicapSaved}
+      />
       <div className="layout-container flex h-full grow flex-col">
         <HeaderAuth user={user} />
 
@@ -94,7 +127,12 @@ const Dashboard = () => {
             )}
 
             {/* Pending Actions */}
-            <PendingActionsCard user={user} competitions={competitions} />
+            <PendingActionsCard
+              user={user}
+              competitions={competitions}
+              handicapPending={handicapPending}
+              onHandicapAction={() => setShowHandicapModal(true)}
+            />
 
             {/* Statistics Cards */}
             <motion.div

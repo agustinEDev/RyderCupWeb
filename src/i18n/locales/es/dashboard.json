@@ -36,7 +36,9 @@
     "matches": "Próximos Partidos",
     "matches_one": "{{count}} partido próximo",
     "matches_other": "{{count}} partidos próximos",
-    "viewSchedule": "Ver Calendario"
+    "viewSchedule": "Ver Calendario",
+    "handicap": "Configura tu Hándicap",
+    "handicapDesc": "Completa tu perfil de golf para participar en torneos"
   },
   "upcomingMatches": {
     "title": "Mis Próximos Partidos",

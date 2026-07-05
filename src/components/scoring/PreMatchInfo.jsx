@@ -21,13 +21,6 @@ const PreMatchInfo = ({ markerAssignment, matchFormat }) => {
             <span className="text-sm font-medium text-primary">{markerAssignment.marksName}</span>
           </div>
         )}
-
-        {markerAssignment.markedByName && (
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-500">{t('preMatch.markedBy')}:</span>
-            <span className="text-sm font-medium text-primary">{markerAssignment.markedByName}</span>
-          </div>
-        )}
       </div>
     </div>
   );

@@ -110,6 +110,7 @@ import RejectEnrollmentUseCase from '../application/use_cases/enrollment/RejectE
 import CancelEnrollmentUseCase from '../application/use_cases/enrollment/CancelEnrollmentUseCase';
 import WithdrawEnrollmentUseCase from '../application/use_cases/enrollment/WithdrawEnrollmentUseCase';
 import SetCustomHandicapUseCase from '../application/use_cases/enrollment/SetCustomHandicapUseCase';
+import RemoveCustomHandicapUseCase from '../application/use_cases/enrollment/RemoveCustomHandicapUseCase';
 import DirectEnrollUseCase from '../application/use_cases/enrollment/DirectEnrollUseCase';
 
 
@@ -208,6 +209,7 @@ const rejectEnrollmentUseCase = new RejectEnrollmentUseCase(apiEnrollmentReposit
 const userCancelEnrollmentUseCase = new CancelEnrollmentUseCase(apiEnrollmentRepository);
 const withdrawEnrollmentUseCase = new WithdrawEnrollmentUseCase(apiEnrollmentRepository);
 const setCustomHandicapUseCase = new SetCustomHandicapUseCase(apiEnrollmentRepository);
+const removeCustomHandicapUseCase = new RemoveCustomHandicapUseCase(apiEnrollmentRepository);
 const directEnrollUseCase = new DirectEnrollUseCase(apiEnrollmentRepository);
 
 // Device Management Use Cases (v1.13.0)
@@ -274,6 +276,7 @@ export {
   userCancelEnrollmentUseCase, // Usuario cancela su solicitud (diferente de cancelCompetitionUseCase)
   withdrawEnrollmentUseCase,
   setCustomHandicapUseCase,
+  removeCustomHandicapUseCase,
   directEnrollUseCase,
   // Device Management Use Cases (v1.13.0)
   getActiveDevicesUseCase,

@@ -162,6 +162,18 @@ class IEnrollmentRepository {
   }
 
   /**
+   * Eliminar handicap personalizado (vuelve a usarse el hándicap oficial del jugador)
+   *
+   * @param {string} competitionId - UUID de la competición
+   * @param {string} enrollmentId - UUID del enrollment
+   * @returns {Promise<Enrollment>} Enrollment sin handicap personalizado
+   * @throws {Error} Si falla la operación
+   */
+  async removeCustomHandicap(competitionId, enrollmentId) {
+    throw new Error('Method removeCustomHandicap() must be implemented');
+  }
+
+  /**
    * Inscripción directa por el creador (sin solicitud previa)
    *
    * @param {string} competitionId - UUID de la competición

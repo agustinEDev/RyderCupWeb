@@ -134,7 +134,7 @@ describe('ScorecardTable', () => {
       const scoresWithBestBall = [{
         holeNumber: 1,
         playerScores: [{ userId: 'u1', ownScore: 4, validationStatus: 'match' }],
-        holeResult: { winner: 'A', bestBallPlayerA: 'u1' },
+        holeResult: { winner: 'A', bestBallPlayerA: ['u1'] },
       }];
       render(<ScorecardTable holes={holes} players={foursomePlayers} scores={scoresWithBestBall} currentUserId="u1" matchFormat="FOURSOMES" />);
       expect(screen.getByTestId('scorecard-table').innerHTML).not.toContain('bg-yellow-50');

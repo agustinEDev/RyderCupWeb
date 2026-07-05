@@ -1,4 +1,16 @@
 {
+  "installBanner": {
+    "title": "Instala RyderCupFriends",
+    "subtitle": "Accede más rápido desde tu pantalla de inicio",
+    "install": "Instalar",
+    "dismiss": "Cerrar banner de instalación",
+    "iosHint": {
+      "prefix": "Instala la app: pulsa ",
+      "suffix": " y luego \"Añadir a pantalla de inicio\""
+    },
+    "safariHint": "Instala la app: Archivo → Añadir al Dock…",
+    "genericHint": "Ya está instalada o tu navegador no permite instalarla directamente desde aquí."
+  },
   "loading": "Cargando...",
   "error": "Ocurrió un error",
   "success": "Éxito",
@@ -33,6 +45,7 @@
     "viewProfile": "Ver Perfil",
     "leaderboard": "Clasificación",
     "administration": "Administración",
+    "adminBadge": "Admin",
     "logout": "Cerrar Sesión"
   },
   "footer": {

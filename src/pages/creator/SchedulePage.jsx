@@ -397,6 +397,7 @@ const SchedulePage = () => {
                 playerNameMap={playerNameMap}
                 enrollments={enrollments}
                 teamNames={teamNames}
+                maxPlayingHandicap={competition.maxPlayingHandicap ?? null}
                 t={t}
               />
             </motion.div>
@@ -450,6 +451,7 @@ const SchedulePage = () => {
                       onScoreMatch={handleScoreMatch}
                       playerNameMap={playerNameMap}
                       playerHandicapMap={playerHandicapMap}
+                      maxPlayingHandicap={competition.maxPlayingHandicap ?? null}
                       golfCourses={golfCourses}
                       teamNames={teamNames}
                       t={t}
@@ -530,6 +532,7 @@ const SchedulePage = () => {
           matchId={detailMatchId}
           playerNameMap={playerNameMap}
           playerHandicapMap={playerHandicapMap}
+          maxPlayingHandicap={competition.maxPlayingHandicap ?? null}
           teamNames={teamNames}
           t={t}
         />

@@ -66,7 +66,8 @@ class CompetitionAssembler {
       enrollment_status: apiData?.user_enrollment_status || null,
       pending_enrollments_count: apiData?.pending_enrollments_count || 0,
       playMode: competition.handicapSettings.type(),
-      teamAssignment: competition.teamAssignment.value()
+      teamAssignment: competition.teamAssignment.value(),
+      maxPlayingHandicap: apiData?.max_playing_handicap ?? null
     };
   }
 }
