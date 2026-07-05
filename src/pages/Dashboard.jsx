@@ -68,7 +68,9 @@ const Dashboard = () => {
     loadDashboardData();
   }, [user]);
 
-  const isLoading = isLoadingUser || isLoadingCompetitions;
+  // Only gate the full-page spinner on the initial load (no user yet).
+  // Subsequent refetches (e.g. after saving handicap) shouldn't unmount the current UI.
+  const isLoading = (isLoadingUser && !user) || isLoadingCompetitions;
 
   if (isLoading) {
     return (
