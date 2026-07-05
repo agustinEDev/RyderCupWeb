@@ -4,7 +4,7 @@
 
 <div align="center">
 
-[![Version](https://img.shields.io/badge/version-2.0.12-blue?style=for-the-badge&logo=semver)](.)  
+[![Version](https://img.shields.io/badge/version-2.0.17-blue?style=for-the-badge&logo=semver)](.)  
 [![React](https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=white)](.)  
 [![Vite](https://img.shields.io/badge/Vite-7.3-646CFF?style=for-the-badge&logo=vite&logoColor=white)](.)  
 [![Tailwind](https://img.shields.io/badge/Tailwind-4-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](.)  
@@ -167,6 +167,16 @@ npm run preview   # Preview locally
 - ✅ Clone-based update system for approved courses
 
 ### What's New
+
+**v2.0.17 (Scoring Improvements - Jul 2026)**
+- ✅ **Handicap Revert to RFEG**: Creator/admin can clear a player's custom handicap from the enrollment edit form, reverting to their official RFEG handicap (Spanish players only)
+- ✅ **Auto Handicap Refresh on Login**: Spanish players get a silent daily RFEG lookup; others see the handicap request modal
+- ✅ **Admin Full Scoring Access**: Admins can submit scores, scorecards, and concede any match without being a player
+- ✅ **Playing Handicap Limit**: Optional per-competition cap (1–54) on calculated playing handicap
+- ✅ **Best Ball Tie Display**: Shows both tied players' names on best-ball holes in Fourball
+- ✅ **Admin Badge**: Header and profile dropdown show an "Admin" badge for admin accounts
+- ✅ **Button Groups**: Golf course and competition forms replace `<select>` inputs with button groups
+- ✅ **Progressive Web App**: Installable app with offline fallback page and install prompt
 
 **v2.0.12 (Sprint 4 - Live Scoring - Feb 2026)**
 - ✅ **Live Scoring UI**: Hole-by-hole annotation with 3-tab interface (Input, Scorecard, Leaderboard)

@@ -1,7 +1,7 @@
 # 🗺️ Roadmap - RyderCupFriends Frontend
 
 > **Version:** 1.15.0 → 1.16.0 → 2.0.0 → 2.0.4 → 2.0.5 → 2.0.6 → 2.0.9 → 2.0.10 → 2.0.11 → 2.0.12 (synchronized with backend)
-> **Last Update:** Jul 2, 2026
+> **Last Update:** Jul 6, 2026
 > **Status:** ✅ v2.0.0 Sprint 1 Completed | ✅ v2.0.4 Sprint 2 + Infra Completed | ✅ v2.0.5 Hotfix UI | ✅ v2.0.6 Sprint 2 Schedule COMPLETED | ✅ v2.0.9 Clean Architecture | ✅ v2.0.10 Manual Pairings | ✅ v2.0.11 Sprint 3 Invitations | ✅ v2.0.12 Sprint 4 Live Scoring COMPLETE | ✅ v2.0.13 Sprint 5 Absorbed + Post-Sprint 4 | ✅ v2.0.14 Build/CI Dependencies | ✅ v2.0.15 TeeCategory VO + Security Hotfixes
 > **Stack:** React 19 + Vite 7.3 + Tailwind CSS 4 + ESLint 9
 > **Architecture:** Subdomain (www + api) with Cloudflare Proxy (ADR-011)
@@ -13,11 +13,12 @@
 ### Pendiente de implementar
 
 #### Módulo Gestión de Hándicaps
-- **Popup hándicap en login** (H2): al autenticarse, si el jugador es español y no se localiza en RFEG (o no es español), mostrar ventana emergente solicitando el hándicap manualmente. Si rechaza, crear item en "Requiere tu atención".
 - **"Requiere tu atención" — hándicap pendiente** (H2): sección/tarjeta en dashboard o perfil que liste los jugadores/usuarios con hándicap sin actualizar pendiente de introducción manual.
-- **UI hándicap personalizado por competición** (H3): cuando la opción `playerHandicap` está activa en la competición, el creador puede ver y editar el hándicap de cada jugador inscrito. Si no lo modifica, queda el hándicap del usuario.
 
 ### Completado ✅
+
+- **Popup hándicap en login** (H2): `HandicapRequestModal` se muestra cuando el backend devuelve `needs_handicap=true` (jugador español sin refresco RFEG hoy, o no español).
+- **UI hándicap personalizado por competición + revertir a RFEG** (H3): el creador puede editar el hándicap de un jugador inscrito desde la lista de inscripciones; botón "revertir a RFEG" disponible solo dentro del formulario de edición y solo para jugadores españoles con hándicap personalizado.
 
 - **Leaderboard "Equipo X gana AS"** (#1): `LeaderboardView` comprueba `winner === 'HALVED'` antes del branch `wins`.
 - **PreMatchInfo solo muestra "Tú marcas a"** (#2): eliminada la fila `markedBy`.
