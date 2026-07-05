@@ -155,12 +155,12 @@ const GolfCourseForm = ({ initialData = null, onSubmit, onCancel }) => {
 
   // Select stroke index with auto-swap: if another hole already uses the chosen SI, swap them
   const handleStrokeIndexSelect = (holeIndex, newSI) => {
-    const updatedHoles = [...holes];
-    const conflictIndex = updatedHoles.findIndex((h, hi) => hi !== holeIndex && h.strokeIndex === newSI);
-    if (conflictIndex !== -1) {
-      updatedHoles[conflictIndex].strokeIndex = updatedHoles[holeIndex].strokeIndex;
-    }
-    updatedHoles[holeIndex].strokeIndex = newSI;
+    const conflictIndex = holes.findIndex((h, hi) => hi !== holeIndex && h.strokeIndex === newSI);
+    const updatedHoles = holes.map((h, hi) => {
+      if (hi === holeIndex) return { ...h, strokeIndex: newSI };
+      if (hi === conflictIndex) return { ...h, strokeIndex: holes[holeIndex].strokeIndex };
+      return h;
+    });
     setHoles(updatedHoles);
     setOpenPickerIndex(null);
   };
@@ -360,6 +360,7 @@ const GolfCourseForm = ({ initialData = null, onSubmit, onCancel }) => {
                 <button
                   key={type}
                   type="button"
+                  aria-pressed={courseType === type}
                   onClick={() => setCourseType(type)}
                   className={`border-2 rounded-lg text-sm px-3 py-2 transition-colors ${
                     courseType === type
@@ -556,7 +557,7 @@ const GolfCourseForm = ({ initialData = null, onSubmit, onCancel }) => {
                     </div>
                   </td>
                   <td className="py-2 px-3">
-                    <div className="relative">
+                    <div className="relative" ref={openPickerIndex === index ? pickerRef : null}>
                       <button
                         type="button"
                         onClick={() => setOpenPickerIndex(openPickerIndex === index ? null : index)}
@@ -570,7 +571,6 @@ const GolfCourseForm = ({ initialData = null, onSubmit, onCancel }) => {
                       </button>
                       {openPickerIndex === index && (
                         <div
-                          ref={pickerRef}
                           className="absolute z-10 top-full left-0 mt-1 p-2 bg-white border border-gray-200 rounded-lg shadow-lg"
                         >
                           <div className="grid grid-cols-6 gap-1">
