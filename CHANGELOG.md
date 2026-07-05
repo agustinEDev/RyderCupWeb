@@ -9,6 +9,68 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [2.0.17] - 2026-07-06
+
+### Fixed
+
+**Scoring — Leaderboard: Halved Match Result Display**
+
+- `LeaderboardView`: When `match.result.winner === 'HALVED'`, the component now renders the new `t('leaderboard.halved')` key ("AS") instead of falling into the `wins` template ("Equipo X gana AS"). `winner` is a non-empty string, so the previous `match.result.winner ? wins(...) : score` condition was always truthy for halved matches.
+
+**Scoring — PreMatchInfo: Show Only the Player the User Marks**
+
+- `PreMatchInfo`: Removed the "Te marca:" (`markedBy`) row. The component now shows only "Tú marcas a:" (`youMark`), which is the only information the scorer needs before play.
+
+**Scoring — Score Navigation: Score Display Not Persisted When Navigating Between Holes**
+
+- `ScoringPage`: Added `localScoresRef` to track the last submitted score value per hole. `HoleInput` now re-initializes with this local value instead of relying on the potentially-stale `scoringView` response (which can lag behind due to the 10 s poll racing the submit response).
+- `ScoringPage`: `submittedScoresRef` is now also updated inside `autoSubmitIfNeeded` to prevent redundant re-submissions when navigating back to a hole that was auto-submitted with par defaults.
+
+**Scoring — Best Ball Tie Display in Fourball**
+
+- `ScorecardTable`: When two players on the same team share the best net score on a hole, the "Result" row now shows each tied player on its own line in `FirstName I.` format (e.g. "Carlos M."), with the "y" / "&" connector on its own line between them. Each name has `whitespace-nowrap` so the initial never wraps to a separate line.
+- `ScorecardTable`: `isBestBall` yellow highlight now uses `.includes()` to match against the array of tied player IDs.
+- `ScoringMapper`: `bestBallPlayerA` / `bestBallPlayerB` default to `[]` instead of `null` when absent.
+- `scoring.json` (ES/EN): Added `scorecard.and` key (`"y"` / `"&"`) used as connector between tied names.
+
+### Added
+
+**Competition — Playing Handicap Limit (Creator Form)**
+
+- Competition creation and edit forms: New optional numeric field "Límite de Hándicap de Juego" (1–54). Sent as `max_playing_handicap` to the backend. Displayed as informational text on the competition detail page.
+
+**Admin — Full Scoring Access**
+
+- `useScoring`: New `isAdmin` parameter (default `false`) and derived `canScore = isMatchPlayer || isAdmin`. All scoring guards (`submitScore`, `canSubmitScorecard`) now use `canScore`. Session lock is unchanged — it remains scoped to actual match players only.
+- `ScoringPage`: Passes `user?.is_admin` to `useScoring`; replaces `isMatchPlayer` with `canScore` in `HoleInput` read-only props, `autoSubmitIfNeeded`, and concede button. Admin users can submit hole scores, submit scorecards, and concede for any match regardless of enrollment.
+- `useScoring.test.js`: 4 new tests covering admin `canScore`, admin score submission, admin session-lock bypass, and non-admin non-player block.
+
+**UI — Admin Badge in Header**
+
+- `HeaderAuth`: When the logged-in user has `is_admin === true`, a visible "Admin" badge is displayed next to their name in the header (desktop) and in the profile dropdown (mobile), making it clear at a glance which account is active.
+
+**Forms — Button Groups Replace Select Inputs**
+
+- `GolfCourseForm`: `courseType` (3 buttons), `teeCategory` (5 vertical buttons per tee), `teeGender` (3 vertical buttons per tee), `par` per hole (3 inline buttons), and `strokeIndex` (trigger + 6×3 popover with auto-swap on conflict) all replaced their `<select>` elements with inline button groups.
+- `CreateCompetition`: `playMode`, `teamAssignment`, and `playerHandicap` selects replaced with 2-button inline groups.
+
+**PWA — Progressive Web App Support**
+
+- Installed `vite-plugin-pwa` and configured Workbox: `NetworkOnly` for `/api/*`, `CacheFirst` for static assets.
+- Generated `manifest.webmanifest` and service worker with an offline fallback page (`public/offline.html`).
+- Added PWA icons (192×192 and 512×512) from the RCF monogram.
+- `InstallBanner` component: shows a native `beforeinstallprompt` install dialog on Android/desktop, and manual add-to-homescreen instructions on iOS. Dismissal is persisted in `localStorage`.
+- `useInstallPrompt` hook: handles `beforeinstallprompt`, iOS detection, and dismiss state.
+- Updated `public/_headers` with correct `Cache-Control` and `Service-Worker-Allowed` headers for `sw.js` and `manifest.webmanifest`.
+
+**Enrollment — Revert Custom Handicap to RFEG**
+
+- `CompetitionDetail`: The "edit handicap" pencil button is now only shown while the competition is `DRAFT`, `ACTIVE`, or `CLOSED` — matches the new backend restriction, since handicaps can't be edited once a competition is `IN_PROGRESS`.
+- New button inside the handicap edit form (visible only for enrollments with a custom handicap belonging to Spanish players) reverts the enrollment to the player's official RFEG-sourced handicap via the new `DELETE /api/v1/enrollments/{id}/handicap` endpoint.
+- `RemoveCustomHandicapUseCase.js` + `ApiEnrollmentRepository.removeCustomHandicap()`: new use case and repository method, wired in `composition/index.js`.
+
+---
+
 ## [2.0.16] - 2026-06-19
 
 ### Changed

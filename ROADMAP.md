@@ -1,14 +1,38 @@
 # 🗺️ Roadmap - RyderCupFriends Frontend
 
-> **Version:** 1.15.0 → 1.16.0 → 2.0.0 → 2.0.4 → 2.0.5 → 2.0.6 → 2.0.9 → 2.0.10 → 2.0.11 → 2.0.12 (synchronized with backend)
-> **Last Update:** Jun 18, 2026
-> **Status:** ✅ v2.0.0 Sprint 1 Completed | ✅ v2.0.4 Sprint 2 + Infra Completed | ✅ v2.0.5 Hotfix UI | ✅ v2.0.6 Sprint 2 Schedule COMPLETED | ✅ v2.0.9 Clean Architecture | ✅ v2.0.10 Manual Pairings | ✅ v2.0.11 Sprint 3 Invitations | ✅ v2.0.12 Sprint 4 Live Scoring COMPLETE | ✅ v2.0.13 Sprint 5 Absorbed + Post-Sprint 4 | ✅ v2.0.14 Build/CI Dependencies | ✅ v2.0.15 TeeCategory VO + Security Hotfixes
+> **Version:** 1.15.0 → 1.16.0 → 2.0.0 → 2.0.4 → 2.0.5 → 2.0.6 → 2.0.9 → 2.0.10 → 2.0.11 → 2.0.12 → 2.0.17 (synchronized with backend)
+> **Last Update:** Jul 6, 2026
+> **Status:** ✅ v2.0.0 Sprint 1 Completed | ✅ v2.0.4 Sprint 2 + Infra Completed | ✅ v2.0.5 Hotfix UI | ✅ v2.0.6 Sprint 2 Schedule COMPLETED | ✅ v2.0.9 Clean Architecture | ✅ v2.0.10 Manual Pairings | ✅ v2.0.11 Sprint 3 Invitations | ✅ v2.0.12 Sprint 4 Live Scoring COMPLETE | ✅ v2.0.13 Sprint 5 Absorbed + Post-Sprint 4 | ✅ v2.0.14 Build/CI Dependencies | ✅ v2.0.15 TeeCategory VO + Security Hotfixes | ✅ v2.0.17 Scoring Improvements
 > **Stack:** React 19 + Vite 7.3 + Tailwind CSS 4 + ESLint 9
 > **Architecture:** Subdomain (www + api) with Cloudflare Proxy (ADR-011)
 
 ---
 
-## En progreso: Score Input Redesign (branch )
+## Completado: Scoring Improvements ⭐ v2.0.17
+
+### Pendiente para próxima release
+
+#### Módulo Gestión de Hándicaps
+- **"Requiere tu atención" — hándicap pendiente** (H2): sección/tarjeta en dashboard o perfil que liste los jugadores/usuarios con hándicap sin actualizar pendiente de introducción manual.
+
+### Completado ✅
+
+- **Popup hándicap en login** (H2): `HandicapRequestModal` se muestra cuando el backend devuelve `needs_handicap=true` (jugador español sin refresco RFEG hoy, o no español).
+- **UI hándicap personalizado por competición + revertir a RFEG** (H3): el creador puede editar el hándicap de un jugador inscrito desde la lista de inscripciones; botón "revertir a RFEG" disponible solo dentro del formulario de edición y solo para jugadores españoles con hándicap personalizado.
+
+- **Leaderboard "Equipo X gana AS"** (#1): `LeaderboardView` comprueba `winner === 'HALVED'` antes del branch `wins`.
+- **PreMatchInfo solo muestra "Tú marcas a"** (#2): eliminada la fila `markedBy`.
+- **Best ball empate Fourball** (#3): `ScorecardTable` muestra "Carlos M. / Ana R." (nombre + inicial) en líneas separadas con `whitespace-nowrap` por nombre. `bestBallPlayerA/B` es ahora array.
+- **Límite hándicap de juego** (#4): campo `max_playing_handicap` (1–54) en formulario de creación/edición de competición; si el hándicap de juego calculado supera el límite, se sustituye por el valor limitado.
+- **Admin acceso total a scoring** (#5): `useScoring` añade parámetro `isAdmin` y `canScore = isMatchPlayer || isAdmin`; `ScoringPage` pasa `user?.is_admin`. Admins pueden entregar scores, scorecards y conceder en cualquier partido.
+- **Badge admin en cabecera** (#6): `HeaderAuth` muestra badge ámbar "Admin" en desktop y dropdown móvil.
+- **Score no guardado al cambiar de hoyo** (#7): `ScoringPage` usa `localScoresRef` para restaurar el último valor enviado al navegar entre hoyos, evitando que el poll de 10 s sobreescriba el score antes de que el servidor responda.
+- **Button groups en formularios**: `GolfCourseForm` (courseType, teeCategory, teeGender, par, stroke index con auto-swap) y `CreateCompetition` (playMode, teamAssignment, playerHandicap) reemplazan sus `<select>` por grupos de botones.
+- **Progressive Web App** (PWA): `vite-plugin-pwa` + Workbox (NetworkOnly para `/api/*`, CacheFirst para estáticos). Iconos 192/512 px, página offline, `InstallBanner` con prompt nativo en Android/desktop e instrucciones manuales en iOS, `useInstallPrompt` hook con persistencia en `localStorage`.
+
+---
+
+## Completado: Score Input Redesign
 
 ### HoleInput numpad panel ✅
 

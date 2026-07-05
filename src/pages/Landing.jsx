@@ -1,13 +1,18 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
-import { BarChart3, Trophy, Users, Zap } from 'lucide-react';
+import { BarChart3, Download, Share, Trophy, Users, Zap } from 'lucide-react';
 import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
+import { useInstallPrompt } from '../hooks/useInstallPrompt';
 
 const Landing = () => {
   const { t } = useTranslation('landing');
+  const { t: tCommon } = useTranslation('common');
   const navigate = useNavigate();
+  const { canInstall, isIOS, isDesktopSafari, install } = useInstallPrompt();
+  const [showInstallHint, setShowInstallHint] = useState(false);
 
   const handleCreateCompetition = () => {
     navigate('/login');
@@ -101,6 +106,39 @@ const Landing = () => {
                   >
                     {t('hero.viewDemoButton')}
                   </button>
+
+                  <div className="flex flex-col gap-2">
+                    <button
+                      onClick={() => {
+                        if (isIOS || isDesktopSafari || !canInstall) {
+                          setShowInstallHint(h => !h);
+                        } else {
+                          install();
+                        }
+                      }}
+                      className="flex items-center justify-center gap-2 px-8 py-4 bg-accent text-white text-base font-bold rounded-lg transition-all duration-300 hover:bg-accent/90 hover:shadow-lg hover:scale-105"
+                    >
+                      {isIOS ? <Share className="w-5 h-5" /> : <Download className="w-5 h-5" />}
+                      {tCommon('installBanner.install')}
+                    </button>
+                    {showInstallHint && isIOS && (
+                      <p className="text-sm text-gray-600 bg-gray-50 rounded-lg px-4 py-2 border border-gray-200">
+                        {tCommon('installBanner.iosHint.prefix')}
+                        <Share className="w-4 h-4 inline mx-1 align-middle" />
+                        {tCommon('installBanner.iosHint.suffix')}
+                      </p>
+                    )}
+                    {showInstallHint && isDesktopSafari && (
+                      <p className="text-sm text-gray-600 bg-gray-50 rounded-lg px-4 py-2 border border-gray-200">
+                        {tCommon('installBanner.safariHint')}
+                      </p>
+                    )}
+                    {showInstallHint && !isIOS && !isDesktopSafari && !canInstall && (
+                      <p className="text-sm text-gray-600 bg-gray-50 rounded-lg px-4 py-2 border border-gray-200">
+                        {tCommon('installBanner.genericHint')}
+                      </p>
+                    )}
+                  </div>
                 </motion.div>
 
                 {/* Stats */}

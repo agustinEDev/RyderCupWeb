@@ -7,15 +7,32 @@ const TeamAssignmentSection = ({
   playerNameMap,
   enrollments,
   teamNames,
+  maxPlayingHandicap,
   t,
 }) => {
   // Build handicap lookup from enrollments
   const handicapMap = new Map();
   (enrollments || []).forEach((e) => {
-    if (e.userId && e.userHandicap != null) {
-      handicapMap.set(e.userId, Number(e.userHandicap));
+    if (!e.userId) return;
+    const effectiveHandicap = e.hasCustomHandicap ? e.customHandicap : e.userHandicap;
+    if (effectiveHandicap != null) {
+      handicapMap.set(e.userId, Number(effectiveHandicap));
     }
   });
+
+  const renderHandicap = (playerId, colorClass) => {
+    if (!handicapMap.has(playerId)) return null;
+    const hcp = handicapMap.get(playerId);
+    const isLimited = maxPlayingHandicap != null && hcp > maxPlayingHandicap;
+    return (
+      <span className="flex items-center gap-1">
+        <span className={`text-xs ${colorClass} font-medium`}>HCP {hcp.toFixed(1)}</span>
+        {isLimited && (
+          <span className="text-xs text-amber-600 font-medium">| {maxPlayingHandicap} Lim.</span>
+        )}
+      </span>
+    );
+  };
   if (!teamAssignment) {
     return (
       <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
@@ -66,9 +83,7 @@ const TeamAssignmentSection = ({
             {teamA.map((playerId) => (
               <li key={playerId} className="flex items-center justify-between text-sm">
                 <span className="text-gray-800">{playerNameMap.get(playerId) || playerId}</span>
-                {handicapMap.has(playerId) && (
-                  <span className="text-xs text-blue-600 font-medium">HCP {handicapMap.get(playerId).toFixed(1)}</span>
-                )}
+                {renderHandicap(playerId, 'text-blue-600')}
               </li>
             ))}
           </ul>
@@ -83,9 +98,7 @@ const TeamAssignmentSection = ({
             {teamB.map((playerId) => (
               <li key={playerId} className="flex items-center justify-between text-sm">
                 <span className="text-gray-800">{playerNameMap.get(playerId) || playerId}</span>
-                {handicapMap.has(playerId) && (
-                  <span className="text-xs text-red-600 font-medium">HCP {handicapMap.get(playerId).toFixed(1)}</span>
-                )}
+                {renderHandicap(playerId, 'text-red-600')}
               </li>
             ))}
           </ul>

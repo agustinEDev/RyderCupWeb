@@ -17,3 +17,11 @@
 # Cache control: Assets con content-hash se cachean agresivamente
 /assets/*
   Cache-Control: public, max-age=31536000, immutable
+
+# PWA: service worker y manifest nunca se cachean (el browser debe comprobar actualizaciones)
+/sw.js
+  Cache-Control: no-cache, no-store, must-revalidate
+  Service-Worker-Allowed: /
+
+/manifest.webmanifest
+  Cache-Control: no-cache, no-store, must-revalidate

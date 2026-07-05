@@ -10,6 +10,7 @@ const MatchDetailModal = ({
   matchId,
   playerNameMap,
   playerHandicapMap,
+  maxPlayingHandicap,
   teamNames,
   t,
 }) => {
@@ -41,6 +42,34 @@ const MatchDetailModal = ({
   if (!isOpen) return null;
 
   const getPlayerName = (playerId) => playerNameMap.get(playerId) || playerId || '--';
+
+  const renderHandicapInfo = (p) => {
+    const realHcp = p.playerHandicap ?? playerHandicapMap?.get(p.userId) ?? null;
+    const ph = p.playingHandicap;
+    const isCapped = maxPlayingHandicap != null && ph != null && ph >= maxPlayingHandicap;
+
+    if (realHcp == null && ph == null) return null;
+
+    return (
+      <span className="ml-2 inline-flex items-center gap-1">
+        {realHcp != null && (
+          <span className="text-xs text-gray-600 font-medium">HCP {Number(realHcp).toFixed(1)}</span>
+        )}
+        {ph != null && (
+          <>
+            {realHcp != null && <span className="text-xs text-gray-400">|</span>}
+            {isCapped ? (
+              <span className="text-xs bg-orange-100 text-orange-700 font-semibold px-1.5 py-0.5 rounded">
+                PH: {ph} Lim.
+              </span>
+            ) : (
+              <span className="text-xs text-gray-600 font-medium">PH: {ph}</span>
+            )}
+          </>
+        )}
+      </span>
+    );
+  };
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -99,9 +128,7 @@ const MatchDetailModal = ({
                   {(match.teamAPlayers || []).map((p, i) => (
                     <p key={p.userId || i} className={`text-sm ${i === 0 ? 'text-gray-900' : 'text-gray-700'}`}>
                       {getPlayerName(p.userId)}
-                      {playerHandicapMap?.has(p.userId) && (
-                        <span className="ml-2 text-xs text-blue-600 font-medium">HCP {playerHandicapMap.get(p.userId).toFixed(1)}</span>
-                      )}
+                      {renderHandicapInfo(p)}
                     </p>
                   ))}
                   {(!match.teamAPlayers || match.teamAPlayers.length === 0) && (
@@ -117,9 +144,7 @@ const MatchDetailModal = ({
                   {(match.teamBPlayers || []).map((p, i) => (
                     <p key={p.userId || i} className={`text-sm ${i === 0 ? 'text-gray-900' : 'text-gray-700'}`}>
                       {getPlayerName(p.userId)}
-                      {playerHandicapMap?.has(p.userId) && (
-                        <span className="ml-2 text-xs text-red-600 font-medium">HCP {playerHandicapMap.get(p.userId).toFixed(1)}</span>
-                      )}
+                      {renderHandicapInfo(p)}
                     </p>
                   ))}
                   {(!match.teamBPlayers || match.teamBPlayers.length === 0) && (

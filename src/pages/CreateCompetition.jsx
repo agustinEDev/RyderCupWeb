@@ -71,7 +71,7 @@ const CreateCompetition = () => {
     playMode: 'HANDICAP',
     numberOfPlayers: undefined,
     teamAssignment: 'manual',
-    playerHandicap: 'user'
+    maxPlayingHandicap: undefined
   });
 
   // Golf Course Request Modal
@@ -175,7 +175,7 @@ const CreateCompetition = () => {
           playMode: competition.playMode || 'HANDICAP',
           numberOfPlayers: competition.maxPlayers || undefined,
           teamAssignment: competition.teamAssignment?.toLowerCase() || 'manual',
-          playerHandicap: 'user' // Default value, not stored in competition
+          maxPlayingHandicap: competition.maxPlayingHandicap ?? undefined
         };
 
         setFormData(formDataToSet);
@@ -474,7 +474,10 @@ const CreateCompetition = () => {
         countries: countries,
         play_mode: formData.playMode.toUpperCase(),
         number_of_players: numPlayers,
-        team_assignment: formData.teamAssignment.toUpperCase()
+        team_assignment: formData.teamAssignment.toUpperCase(),
+        max_playing_handicap: formData.maxPlayingHandicap
+          ? parseInt(formData.maxPlayingHandicap, 10)
+          : null
       };
 
       if (isEditMode) {
@@ -1036,19 +1039,26 @@ const CreateCompetition = () => {
                 <div className="space-y-4">
                   {/* Play Mode */}
                   <div>
-                    <label htmlFor="playMode" className="block text-sm font-medium text-gray-700 mb-1">
+                    <span className="block text-sm font-medium text-gray-700 mb-2">
                       {t('create.playMode')}
-                    </label>
-                    <select
-                      id="playMode"
-                      name="playMode"
-                      value={formData.playMode}
-                      onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
-                    >
-                      <option value="HANDICAP">{t('create.handicap')}</option>
-                      <option value="SCRATCH">{t('create.scratch')}</option>
-                    </select>
+                    </span>
+                    <div className="flex flex-wrap gap-2">
+                      {['HANDICAP', 'SCRATCH'].map(mode => (
+                        <button
+                          key={mode}
+                          type="button"
+                          aria-pressed={formData.playMode === mode}
+                          onClick={() => setFormData(prev => ({ ...prev, playMode: mode }))}
+                          className={`border-2 rounded-lg text-sm px-3 py-2 transition-colors ${
+                            formData.playMode === mode
+                              ? 'bg-primary text-white border-primary'
+                              : 'bg-white text-gray-600 border-gray-200 hover:border-primary hover:text-primary'
+                          }`}
+                        >
+                          {t(`create.${mode.toLowerCase()}`)}
+                        </button>
+                      ))}
+                    </div>
                   </div>
 
                   {/* Number of Players */}
@@ -1074,39 +1084,42 @@ const CreateCompetition = () => {
                     <span className="block text-sm font-medium text-gray-700 mb-2">
                       {t('create.teamAssignment')}
                     </span>
-                    <div className="relative">
-                      <select
-                        id="teamAssignment"
-                        name="teamAssignment"
-                        value={formData.teamAssignment}
-                        onChange={handleInputChange}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary appearance-none"
-                      >
-                        <option value="manual">{t('create.manual')}</option>
-                        <option value="automatic">{t('create.automatic')}</option>
-                      </select>
-                      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
+                    <div className="flex flex-wrap gap-2">
+                      {['manual', 'automatic'].map(mode => (
+                        <button
+                          key={mode}
+                          type="button"
+                          aria-pressed={formData.teamAssignment === mode}
+                          onClick={() => setFormData(prev => ({ ...prev, teamAssignment: mode }))}
+                          className={`border-2 rounded-lg text-sm px-3 py-2 transition-colors ${
+                            formData.teamAssignment === mode
+                              ? 'bg-primary text-white border-primary'
+                              : 'bg-white text-gray-600 border-gray-200 hover:border-primary hover:text-primary'
+                          }`}
+                        >
+                          {t(`create.${mode}`)}
+                        </button>
+                      ))}
                     </div>
                   </div>
 
-                  {/* Player Handicap Source */}
+                  {/* Max Playing Handicap */}
                   <div>
-                    <span className="block text-sm font-medium text-gray-700 mb-2">
-                      {t('create.playerHandicap')}
-                    </span>
-                    <div className="relative">
-                      <select
-                        id="playerHandicap"
-                        name="playerHandicap"
-                        value={formData.playerHandicap}
-                        onChange={handleInputChange}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary appearance-none"
-                      >
-                        <option value="custom">{t('create.customByCreator')}</option>
-                        <option value="user">{t('create.userHandicap')}</option>
-                      </select>
-                      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
-                    </div>
+                    <label htmlFor="maxPlayingHandicap" className="block text-sm font-medium text-gray-700 mb-1">
+                      {t('create.maxPlayingHandicap')}
+                    </label>
+                    <input
+                      id="maxPlayingHandicap"
+                      type="number"
+                      name="maxPlayingHandicap"
+                      value={formData.maxPlayingHandicap === undefined ? '' : formData.maxPlayingHandicap}
+                      onChange={handleInputChange}
+                      min="1"
+                      max="54"
+                      placeholder={t('create.maxPlayingHandicapPlaceholder')}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                    />
+                    <p className="mt-1 text-xs text-gray-500">{t('create.maxPlayingHandicapHint')}</p>
                   </div>
                 </div>
               </div>

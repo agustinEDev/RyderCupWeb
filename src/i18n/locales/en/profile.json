@@ -1,4 +1,12 @@
 {
+  "handicapModal": {
+    "title": "Set Up Your Handicap",
+    "subtitle": "Your profile has no handicap set. Add it to participate in tournaments with accurate playing calculations.",
+    "rfegTab": "RFEG (Automatic)",
+    "manualTab": "Manual",
+    "fetchRfeg": "Fetch from RFEG",
+    "dismiss": "Not now"
+  },
   "title": "My Profile",
   "subtitle": "Your account information and statistics",
   "emailVerified": "Email Verified",

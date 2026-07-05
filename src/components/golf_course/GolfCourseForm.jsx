@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Plus, Trash2, ChevronDown } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -51,6 +51,19 @@ const GolfCourseForm = ({ initialData = null, onSubmit, onCancel }) => {
   );
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [openPickerIndex, setOpenPickerIndex] = useState(null);
+  const pickerRef = useRef(null);
+
+  useEffect(() => {
+    if (openPickerIndex === null) return;
+    const handleClickOutside = (e) => {
+      if (pickerRef.current && !pickerRef.current.contains(e.target)) {
+        setOpenPickerIndex(null);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [openPickerIndex]);
 
   // Load countries on mount (only once)
   useEffect(() => {
@@ -138,6 +151,18 @@ const GolfCourseForm = ({ initialData = null, onSubmit, onCancel }) => {
     const updatedHoles = [...holes];
     updatedHoles[index][field] = parseInt(value, 10) || 0;
     setHoles(updatedHoles);
+  };
+
+  // Select stroke index with auto-swap: if another hole already uses the chosen SI, swap them
+  const handleStrokeIndexSelect = (holeIndex, newSI) => {
+    const conflictIndex = holes.findIndex((h, hi) => hi !== holeIndex && h.strokeIndex === newSI);
+    const updatedHoles = holes.map((h, hi) => {
+      if (hi === holeIndex) return { ...h, strokeIndex: newSI };
+      if (hi === conflictIndex) return { ...h, strokeIndex: holes[holeIndex].strokeIndex };
+      return h;
+    });
+    setHoles(updatedHoles);
+    setOpenPickerIndex(null);
   };
 
   // Calculate total par
@@ -330,18 +355,23 @@ const GolfCourseForm = ({ initialData = null, onSubmit, onCancel }) => {
             <label className="block text-sm font-medium text-gray-700 mb-2">
               {t('form.courseType')} *
             </label>
-            <select
-              value={courseType}
-              onChange={(e) => setCourseType(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
-              required
-            >
+            <div className="flex flex-wrap gap-2">
               {COURSE_TYPES.map(type => (
-                <option key={type} value={type}>
+                <button
+                  key={type}
+                  type="button"
+                  aria-pressed={courseType === type}
+                  onClick={() => setCourseType(type)}
+                  className={`border-2 rounded-lg text-sm px-3 py-2 transition-colors ${
+                    courseType === type
+                      ? 'bg-primary text-white border-primary'
+                      : 'bg-white text-gray-600 border-gray-200 hover:border-primary hover:text-primary'
+                  }`}
+                >
                   {t(`form.courseTypes.${type}`)}
-                </option>
+                </button>
               ))}
-            </select>
+            </div>
           </div>
         </div>
       </div>
@@ -390,18 +420,22 @@ const GolfCourseForm = ({ initialData = null, onSubmit, onCancel }) => {
                   <label className="block text-xs font-medium text-gray-600 mb-1">
                     {t('form.teeCategory')}
                   </label>
-                  <select
-                    value={tee.teeCategory}
-                    onChange={(e) => handleTeeChange(index, 'teeCategory', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-                    required
-                  >
+                  <div className="flex flex-col gap-1">
                     {TEE_CATEGORIES.map(cat => (
-                      <option key={cat} value={cat}>
+                      <button
+                        key={cat}
+                        type="button"
+                        onClick={() => handleTeeChange(index, 'teeCategory', cat)}
+                        className={`border rounded text-xs px-2 py-1 text-left transition-colors ${
+                          tee.teeCategory === cat
+                            ? 'bg-primary text-white border-primary'
+                            : 'bg-white text-gray-600 border-gray-200 hover:border-primary hover:text-primary'
+                        }`}
+                      >
                         {t(`form.teeCategories.${cat}`)}
-                      </option>
+                      </button>
                     ))}
-                  </select>
+                  </div>
                 </div>
 
                 {/* Tee Gender */}
@@ -409,17 +443,22 @@ const GolfCourseForm = ({ initialData = null, onSubmit, onCancel }) => {
                   <label className="block text-xs font-medium text-gray-600 mb-1">
                     {t('form.teeGender')}
                   </label>
-                  <select
-                    value={tee.teeGender || ''}
-                    onChange={(e) => handleTeeChange(index, 'teeGender', e.target.value || null)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-                  >
+                  <div className="flex flex-col gap-1">
                     {TEE_GENDERS.map(g => (
-                      <option key={g ?? 'none'} value={g || ''}>
+                      <button
+                        key={g ?? 'none'}
+                        type="button"
+                        onClick={() => handleTeeChange(index, 'teeGender', g)}
+                        className={`border rounded text-xs px-2 py-1 text-left transition-colors ${
+                          tee.teeGender === g
+                            ? 'bg-primary text-white border-primary'
+                            : 'bg-white text-gray-600 border-gray-200 hover:border-primary hover:text-primary'
+                        }`}
+                      >
                         {t(`form.teeGenders.${g ?? 'none'}`)}
-                      </option>
+                      </button>
                     ))}
-                  </select>
+                  </div>
                 </div>
 
                 {/* Identifier */}
@@ -500,27 +539,64 @@ const GolfCourseForm = ({ initialData = null, onSubmit, onCancel }) => {
                 <tr key={hole.holeNumber} className="border-b border-gray-100">
                   <td className="py-2 px-3 font-medium">{hole.holeNumber}</td>
                   <td className="py-2 px-3">
-                    <select
-                      value={hole.par}
-                      onChange={(e) => handleHoleChange(index, 'par', e.target.value)}
-                      className="w-20 px-2 py-1 border border-gray-300 rounded"
-                      required
-                    >
-                      <option value={3}>3</option>
-                      <option value={4}>4</option>
-                      <option value={5}>5</option>
-                    </select>
+                    <div className="flex gap-1">
+                      {[3, 4, 5].map(p => (
+                        <button
+                          key={p}
+                          type="button"
+                          onClick={() => handleHoleChange(index, 'par', p)}
+                          className={`w-9 h-9 border-2 rounded font-semibold text-sm transition-colors ${
+                            hole.par === p
+                              ? 'bg-primary text-white border-primary'
+                              : 'bg-white text-gray-600 border-gray-200 hover:border-primary hover:text-primary'
+                          }`}
+                        >
+                          {p}
+                        </button>
+                      ))}
+                    </div>
                   </td>
                   <td className="py-2 px-3">
-                    <input
-                      type="number"
-                      min="1"
-                      max="18"
-                      value={hole.strokeIndex}
-                      onChange={(e) => handleHoleChange(index, 'strokeIndex', e.target.value)}
-                      className="w-20 px-2 py-1 border border-gray-300 rounded"
-                      required
-                    />
+                    <div className="relative" ref={openPickerIndex === index ? pickerRef : null}>
+                      <button
+                        type="button"
+                        onClick={() => setOpenPickerIndex(openPickerIndex === index ? null : index)}
+                        className={`w-9 h-9 border-2 rounded font-semibold text-sm transition-colors ${
+                          openPickerIndex === index
+                            ? 'bg-primary text-white border-primary'
+                            : 'bg-white text-gray-700 border-gray-300 hover:border-primary hover:text-primary'
+                        }`}
+                      >
+                        {hole.strokeIndex}
+                      </button>
+                      {openPickerIndex === index && (
+                        <div
+                          className="absolute z-10 top-full left-0 mt-1 p-2 bg-white border border-gray-200 rounded-lg shadow-lg"
+                        >
+                          <div className="grid grid-cols-6 gap-1">
+                            {Array.from({ length: 18 }, (_, i) => i + 1).map(n => {
+                              const usedByOther = holes.some((h, hi) => hi !== index && h.strokeIndex === n);
+                              return (
+                                <button
+                                  key={n}
+                                  type="button"
+                                  onClick={() => handleStrokeIndexSelect(index, n)}
+                                  className={`w-7 h-7 rounded text-xs font-semibold transition-colors ${
+                                    hole.strokeIndex === n
+                                      ? 'bg-primary text-white'
+                                      : usedByOther
+                                      ? 'bg-gray-100 text-gray-500 border border-gray-200 hover:border-amber-400 hover:text-amber-700 hover:bg-amber-50'
+                                      : 'bg-white text-gray-700 border border-gray-200 hover:border-primary hover:text-primary'
+                                  }`}
+                                >
+                                  {n}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}

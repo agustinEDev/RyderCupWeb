@@ -23,6 +23,7 @@ const MatchCard = ({
   canManage,
   playerNameMap,
   playerHandicapMap,
+  maxPlayingHandicap,
   teamNames,
   t,
 }) => {
@@ -39,17 +40,31 @@ const MatchCard = ({
     if (players.length === 0) return <p className="text-sm text-gray-400">--</p>;
 
     return players.map((p, i) => {
-      const realHcp = playerHandicapMap?.get(p.userId);
+      const realHcp = p.playerHandicap ?? playerHandicapMap?.get(p.userId) ?? null;
+      const ph = p.playingHandicap;
+      const isCapped = maxPlayingHandicap != null && ph != null && ph >= maxPlayingHandicap;
       return (
-        <div key={p.userId || i} className="flex items-center justify-between">
+        <div key={p.userId || i} className="flex items-center justify-between gap-2">
           <p className={`text-sm ${i === 0 ? 'text-gray-900' : 'text-gray-700'}`}>
             {getPlayerName(p.userId, playerNameMap)}
           </p>
-          {realHcp != null ? (
-            <span className={`text-xs ${teamColor} font-medium`}>HCP {realHcp.toFixed(1)}</span>
-          ) : p.playingHandicap != null ? (
-            <span className={`text-xs ${teamColor} font-medium`}>HCP {p.playingHandicap}</span>
-          ) : null}
+          <div className="flex items-center gap-1 shrink-0">
+            {realHcp != null && (
+              <span className={`text-xs ${teamColor} font-medium`}>HCP {Number(realHcp).toFixed(1)}</span>
+            )}
+            {ph != null && (
+              <>
+                {realHcp != null && <span className="text-xs text-gray-400">|</span>}
+                {isCapped ? (
+                  <span className="text-xs bg-orange-100 text-orange-700 font-semibold px-1.5 py-0.5 rounded">
+                    PH: {ph} Lim.
+                  </span>
+                ) : (
+                  <span className={`text-xs ${teamColor} font-medium`}>PH: {ph}</span>
+                )}
+              </>
+            )}
+          </div>
         </div>
       );
     });

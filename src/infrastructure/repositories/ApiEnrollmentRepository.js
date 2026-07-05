@@ -320,10 +320,28 @@ class ApiEnrollmentRepository extends IEnrollmentRepository {
    */
   async setCustomHandicap(competitionId, enrollmentId, customHandicap) {
     const apiData = await this.#request(
-      `/api/v1/competitions/${competitionId}/enrollments/${enrollmentId}/handicap`,
+      `/api/v1/enrollments/${enrollmentId}/handicap`,
       {
         method: 'PUT',
-        body: JSON.stringify({ custom_handicap: customHandicap }),
+        body: JSON.stringify({ enrollment_id: enrollmentId, custom_handicap: customHandicap }),
+      }
+    );
+
+    return EnrollmentMapper.toDomain(apiData);
+  }
+
+  /**
+   * Eliminar handicap personalizado (vuelve a usarse el hándicap oficial)
+   *
+   * @param {string} competitionId
+   * @param {string} enrollmentId
+   * @returns {Promise<Enrollment>}
+   */
+  async removeCustomHandicap(competitionId, enrollmentId) {
+    const apiData = await this.#request(
+      `/api/v1/enrollments/${enrollmentId}/handicap`,
+      {
+        method: 'DELETE',
       }
     );
 

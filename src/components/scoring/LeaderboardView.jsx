@@ -58,7 +58,9 @@ const LeaderboardView = ({ leaderboard }) => {
                   ? t('leaderboard.conceded', {
                     team: match.result.winner === 'A' ? leaderboard.teamAName : leaderboard.teamBName,
                   })
-                  : match.result.winner
+                  : match.result.winner === 'HALVED'
+                    ? t('leaderboard.allSquare')
+                    : match.result.winner
                     ? t('leaderboard.wins', {
                       team: match.result.winner === 'A' ? leaderboard.teamAName : leaderboard.teamBName,
                       score: formatMatchPlayResult(match.result.score, match.currentHole),

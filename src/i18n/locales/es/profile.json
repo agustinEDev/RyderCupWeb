@@ -1,4 +1,12 @@
 {
+  "handicapModal": {
+    "title": "Configura tu Hándicap",
+    "subtitle": "Tu perfil no tiene hándicap configurado. Añádelo para participar en torneos con cálculos de juego precisos.",
+    "rfegTab": "RFEG (Automático)",
+    "manualTab": "Manual",
+    "fetchRfeg": "Obtener desde RFEG",
+    "dismiss": "Ahora no"
+  },
   "title": "Mi Perfil",
   "subtitle": "Información de tu cuenta y estadísticas",
   "emailVerified": "Email Verificado",

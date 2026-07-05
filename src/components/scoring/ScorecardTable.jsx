@@ -133,8 +133,8 @@ const ScorecardTable = ({ holes = [], scores = [], players = [], currentUserId, 
                   const strokeCount = ps?.strokesReceivedThisHole ?? 0;
                   const result = getHoleResult(h.holeNumber);
                   const isBestBall = matchFormat !== 'FOURSOMES' && (
-                    (row.team === 'A' && result?.bestBallPlayerA === row.playerIds[0]) ||
-                    (row.team === 'B' && result?.bestBallPlayerB === row.playerIds[0])
+                    (row.team === 'A' && result?.bestBallPlayerA?.includes(row.playerIds[0])) ||
+                    (row.team === 'B' && result?.bestBallPlayerB?.includes(row.playerIds[0]))
                   );
                   return (
                     <td key={h.holeNumber} className={`px-1 py-1 text-center ${isBestBall ? 'bg-yellow-50' : ''}`}>
@@ -166,17 +166,37 @@ const ScorecardTable = ({ holes = [], scores = [], players = [], currentUserId, 
             <td className="px-2 py-1 text-left text-gray-500">{t('scorecard.result')}</td>
             {sectionHoles.map(h => {
               const result = getHoleResult(h.holeNumber);
-              const bestPlayerName = result?.winner === 'A'
-                ? players.find(p => p.userId === result.bestBallPlayerA)?.userName
+              const bestBallIds = result?.winner === 'A'
+                ? result.bestBallPlayerA
                 : result?.winner === 'B'
-                  ? players.find(p => p.userId === result.bestBallPlayerB)?.userName
-                  : null;
-              const winnerLabel = bestPlayerName
-                || (result?.winner === 'A' ? (teamAName || 'A') : result?.winner === 'B' ? (teamBName || 'B') : null);
+                  ? result.bestBallPlayerB
+                  : [];
+              const bestNames = (bestBallIds ?? []).map(id => {
+                const parts = players.find(p => p.userId === id)?.userName?.split(' ') ?? [];
+                const name = parts[0] ? (parts[1] ? `${parts[0]} ${parts[1][0]}.` : parts[0]) : null;
+                return name ? { id, name } : null;
+              }).filter(Boolean);
+              const fallbackLabel = result?.winner === 'A' ? (teamAName || 'A') : result?.winner === 'B' ? (teamBName || 'B') : null;
               const winnerColor = result?.winner === 'A' ? 'bg-blue-100 text-blue-700 font-bold' : result?.winner === 'B' ? 'bg-red-100 text-red-700 font-bold' : '';
+              const winnerContent = !result
+                ? ''
+                : result.winner === 'HALVED'
+                  ? t('scorecard.halved')
+                  : bestNames.length > 0
+                    ? (
+                      <span className="flex flex-col items-center leading-tight">
+                        {bestNames.map((entry, i) => (
+                          <span key={entry.id}>
+                            {i > 0 && <span className="block text-gray-400 font-normal">{t('scorecard.and')}</span>}
+                            <span className="whitespace-nowrap">{entry.name}</span>
+                          </span>
+                        ))}
+                      </span>
+                    )
+                    : fallbackLabel;
               return (
                 <td key={h.holeNumber} className={`px-1 py-1 text-center text-xs ${winnerColor}`}>
-                  {result ? (result.winner === 'HALVED' ? t('scorecard.halved') : winnerLabel) : ''}
+                  {winnerContent}
                 </td>
               );
             })}

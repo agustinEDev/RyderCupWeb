@@ -21,6 +21,7 @@ class ApiAuthRepository extends IAuthRepository {
         user: new User(data.user),
         token: data.access_token, // Legacy (httpOnly cookie is used)
         csrfToken: data.csrf_token, // NEW: Required for POST/PUT/PATCH/DELETE requests
+        needsHandicap: data.needs_handicap || false,
       };
     } catch (error) {
       // v1.13.0: Handle Account Lockout (HTTP 423)
