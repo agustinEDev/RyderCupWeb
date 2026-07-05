@@ -59,6 +59,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - `useInstallPrompt` hook: handles `beforeinstallprompt`, iOS detection, and dismiss state.
 - Updated `public/_headers` with correct `Cache-Control` and `Service-Worker-Allowed` headers for `sw.js` and `manifest.webmanifest`.
 
+**Enrollment — Revert Custom Handicap to RFEG**
+
+- `CompetitionDetail`: The "edit handicap" pencil button is now only shown while the competition is `DRAFT`, `ACTIVE`, or `CLOSED` — matches the new backend restriction, since handicaps can't be edited once a competition is `IN_PROGRESS`.
+- New button inside the handicap edit form (visible only for enrollments with a custom handicap belonging to Spanish players) reverts the enrollment to the player's official RFEG-sourced handicap via the new `DELETE /api/v1/enrollments/{id}/handicap` endpoint.
+- `RemoveCustomHandicapUseCase.js` + `ApiEnrollmentRepository.removeCustomHandicap()`: new use case and repository method, wired in `composition/index.js`.
+
 ---
 
 ## [2.0.16] - 2026-06-19

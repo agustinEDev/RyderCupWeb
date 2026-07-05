@@ -60,6 +60,7 @@ const mockListEnrollments = vi.fn().mockResolvedValue([
 ]);
 
 const mockSetCustomHandicap = vi.fn().mockResolvedValue({});
+const mockRemoveCustomHandicap = vi.fn().mockResolvedValue({});
 
 vi.mock('../composition', () => ({
   getCompetitionDetailUseCase: { execute: (...args) => mockGetCompetitionDetail(...args) },
@@ -78,6 +79,7 @@ vi.mock('../composition', () => ({
   rejectEnrollmentUseCase: { execute: vi.fn() },
   assignTeamsUseCase: { execute: vi.fn() },
   setCustomHandicapUseCase: { execute: (...args) => mockSetCustomHandicap(...args) },
+  removeCustomHandicapUseCase: { execute: (...args) => mockRemoveCustomHandicap(...args) },
 }));
 
 vi.mock('../utils/toast', () => ({
@@ -119,6 +121,7 @@ describe('CompetitionDetail - edición de hándicap', () => {
       },
     ]);
     mockSetCustomHandicap.mockResolvedValue({});
+    mockRemoveCustomHandicap.mockResolvedValue({});
   });
 
   it('acepta coma como separador decimal y envía el punto al backend', async () => {
@@ -172,5 +175,93 @@ describe('CompetitionDetail - edición de hándicap', () => {
       expect(customToast.error).toHaveBeenCalledWith('detail.invalidHandicap');
     });
     expect(mockSetCustomHandicap).not.toHaveBeenCalled();
+  });
+
+  it('no muestra el botón de editar hándicap si la competición está IN_PROGRESS', async () => {
+    mockGetCompetitionDetail.mockResolvedValue({
+      id: 'comp-1',
+      name: 'Summer Cup',
+      status: 'IN_PROGRESS',
+      creatorId: 'creator-1',
+      maxPlayers: 20,
+      countries: [],
+    });
+
+    renderPage();
+
+    await waitFor(() => expect(mockListEnrollments).toHaveBeenCalled());
+    expect(screen.queryByTitle('detail.editHandicap')).not.toBeInTheDocument();
+  });
+
+  it('muestra el botón de revertir a RFEG solo para jugadores españoles con hándicap personalizado', async () => {
+    mockListEnrollments.mockResolvedValue([
+      {
+        id: 'enrollment-1',
+        status: 'APPROVED',
+        userName: 'Jugador Uno',
+        userHandicap: 18.4,
+        hasCustomHandicap: true,
+        customHandicap: 20.0,
+        userCountryCode: 'ES',
+        team: null,
+      },
+    ]);
+
+    renderPage();
+
+    const editButton = await screen.findByTitle('detail.editHandicap');
+    fireEvent.click(editButton);
+
+    expect(screen.getByTitle('detail.revertToRfegHandicap')).toBeInTheDocument();
+  });
+
+  it('no muestra el botón de revertir a RFEG para jugadores no españoles', async () => {
+    mockListEnrollments.mockResolvedValue([
+      {
+        id: 'enrollment-1',
+        status: 'APPROVED',
+        userName: 'Jugador Uno',
+        userHandicap: 18.4,
+        hasCustomHandicap: true,
+        customHandicap: 20.0,
+        userCountryCode: 'FR',
+        team: null,
+      },
+    ]);
+
+    renderPage();
+
+    const editButton = await screen.findByTitle('detail.editHandicap');
+    fireEvent.click(editButton);
+
+    expect(screen.queryByTitle('detail.revertToRfegHandicap')).not.toBeInTheDocument();
+  });
+
+  it('al revertir a RFEG llama al use case y recarga los enrollments', async () => {
+    mockListEnrollments.mockResolvedValue([
+      {
+        id: 'enrollment-1',
+        status: 'APPROVED',
+        userName: 'Jugador Uno',
+        userHandicap: 18.4,
+        hasCustomHandicap: true,
+        customHandicap: 20.0,
+        userCountryCode: 'ES',
+        team: null,
+      },
+    ]);
+
+    renderPage();
+
+    const editButton = await screen.findByTitle('detail.editHandicap');
+    fireEvent.click(editButton);
+
+    const revertButton = screen.getByTitle('detail.revertToRfegHandicap');
+    fireEvent.click(revertButton);
+
+    await waitFor(() => {
+      expect(mockRemoveCustomHandicap).toHaveBeenCalledWith('comp-1', 'enrollment-1');
+    });
+    expect(customToast.error).not.toHaveBeenCalled();
   });
 });

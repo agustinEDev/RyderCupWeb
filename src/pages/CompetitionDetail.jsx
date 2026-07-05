@@ -31,6 +31,7 @@ import {
   rejectEnrollmentUseCase,
   assignTeamsUseCase,
   setCustomHandicapUseCase,
+  removeCustomHandicapUseCase,
 } from '../composition';
 import {
   getStatusColor,
@@ -53,6 +54,7 @@ const CompetitionDetail = () => {
   const [editingHandicapId, setEditingHandicapId] = useState(null);
   const [handicapInput, setHandicapInput] = useState('');
   const [savingHandicapId, setSavingHandicapId] = useState(null);
+  const [revertingHandicapId, setRevertingHandicapId] = useState(null);
 
   // Determine where user came from (browse or my competitions)
   const fromBrowse = location.state?.from === 'browse';
@@ -301,6 +303,22 @@ const CompetitionDetail = () => {
     }
   };
 
+  const handleRevertToRfegHandicap = async (enrollmentId) => {
+    setRevertingHandicapId(enrollmentId);
+    try {
+      await removeCustomHandicapUseCase.execute(competition.id, enrollmentId);
+      customToast.success(t('detail.handicapReverted'));
+      const enrollmentsData = await listEnrollmentsUseCase.execute(competition.id);
+      setEnrollments(enrollmentsData);
+      setEditingHandicapId(null);
+    } catch (error) {
+      console.error('Error reverting custom handicap:', error);
+      customToast.error(error.message || t('detail.failedToRevertHandicap'));
+    } finally {
+      setRevertingHandicapId(null);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -321,6 +339,8 @@ const CompetitionDetail = () => {
   const canManage = isCreator || hasCreatorRole || isAdmin;
   const canEdit = canManage && competition.status === 'DRAFT';
   const canDelete = canManage && competition.status === 'DRAFT';
+  const canEditHandicap =
+    canManage && ['DRAFT', 'ACTIVE', 'CLOSED'].includes(competition.status);
 
   // Check if competition has reached max players
   // For creators: use enrollments list. For non-creators: fallback to competition.enrolledCount from API
@@ -772,12 +792,23 @@ const CompetitionDetail = () => {
                                   <button
                                     type="button"
                                     onClick={handleCancelEditHandicap}
-                                    disabled={savingHandicapId === enrollment.id}
+                                    disabled={savingHandicapId === enrollment.id || revertingHandicapId === enrollment.id}
                                     className="text-gray-400 hover:text-gray-600 disabled:opacity-50"
                                     title={t('detail.cancelHandicap')}
                                   >
                                     <XCircle className="w-4 h-4" />
                                   </button>
+                                  {enrollment.hasCustomHandicap && enrollment.userCountryCode === 'ES' && (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleRevertToRfegHandicap(enrollment.id)}
+                                      disabled={savingHandicapId === enrollment.id || revertingHandicapId === enrollment.id}
+                                      className="text-blue-600 hover:text-blue-800 disabled:opacity-50"
+                                      title={t('detail.revertToRfegHandicap')}
+                                    >
+                                      <Undo2 className="w-4 h-4" />
+                                    </button>
+                                  )}
                                 </div>
                               ) : (
                                 <>
@@ -796,7 +827,7 @@ const CompetitionDetail = () => {
                                   ) : (
                                     <span className="text-gray-500 text-sm">{t('detail.noHandicap')}</span>
                                   )}
-                                  {canManage && (
+                                  {canEditHandicap && (
                                     <button
                                       type="button"
                                       onClick={() => handleStartEditHandicap(enrollment)}

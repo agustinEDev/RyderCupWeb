@@ -331,6 +331,24 @@ class ApiEnrollmentRepository extends IEnrollmentRepository {
   }
 
   /**
+   * Eliminar handicap personalizado (vuelve a usarse el hándicap oficial)
+   *
+   * @param {string} competitionId
+   * @param {string} enrollmentId
+   * @returns {Promise<Enrollment>}
+   */
+  async removeCustomHandicap(competitionId, enrollmentId) {
+    const apiData = await this.#request(
+      `/api/v1/enrollments/${enrollmentId}/handicap`,
+      {
+        method: 'DELETE',
+      }
+    );
+
+    return EnrollmentMapper.toDomain(apiData);
+  }
+
+  /**
    * Inscripción directa por el creador (sin solicitud previa)
    *
    * @param {string} competitionId
