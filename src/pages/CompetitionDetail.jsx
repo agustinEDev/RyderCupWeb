@@ -158,8 +158,13 @@ const CompetitionDetail = () => {
           result = await closeEnrollmentsUseCase.execute(id);
           customToast.success(t('detail.success.enrollmentsClosed'));
           if (competition.teamAssignment === 'AUTOMATIC') {
-            await assignTeamsUseCase.execute(id, { mode: 'AUTOMATIC' });
-            customToast.success(t('detail.success.teamsAutoAssigned'));
+            try {
+              await assignTeamsUseCase.execute(id, { mode: 'AUTOMATIC' });
+              customToast.success(t('detail.success.teamsAutoAssigned'));
+            } catch (assignError) {
+              console.error('Error auto-assigning teams:', assignError);
+              customToast.error(assignError.message || t('detail.errors.teamAssignmentFailed'));
+            }
           }
           break;
         case 'start':
@@ -284,7 +289,7 @@ const CompetitionDetail = () => {
 
   const handleSaveHandicap = async (enrollmentId) => {
     const value = parseFloat(String(handicapInput).replace(',', '.'));
-    if (isNaN(value)) {
+    if (isNaN(value) || value < -10.0 || value > 54.0) {
       customToast.error(t('detail.invalidHandicap'));
       return;
     }

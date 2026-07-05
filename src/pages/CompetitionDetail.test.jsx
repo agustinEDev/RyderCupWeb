@@ -47,6 +47,9 @@ const mockGetCompetitionDetail = vi.fn().mockResolvedValue({
   countries: [],
 });
 
+const mockCloseEnrollments = vi.fn();
+const mockAssignTeams = vi.fn();
+
 const mockListEnrollments = vi.fn().mockResolvedValue([
   {
     id: 'enrollment-1',
@@ -66,7 +69,7 @@ vi.mock('../composition', () => ({
   getCompetitionDetailUseCase: { execute: (...args) => mockGetCompetitionDetail(...args) },
   getCompetitionGolfCoursesUseCase: { execute: vi.fn().mockResolvedValue([]) },
   activateCompetitionUseCase: { execute: vi.fn() },
-  closeEnrollmentsUseCase: { execute: vi.fn() },
+  closeEnrollmentsUseCase: { execute: (...args) => mockCloseEnrollments(...args) },
   startCompetitionUseCase: { execute: vi.fn() },
   completeCompetitionUseCase: { execute: vi.fn() },
   cancelCompetitionUseCase: { execute: vi.fn() },
@@ -77,7 +80,7 @@ vi.mock('../composition', () => ({
   requestEnrollmentUseCase: { execute: vi.fn() },
   approveEnrollmentUseCase: { execute: vi.fn() },
   rejectEnrollmentUseCase: { execute: vi.fn() },
-  assignTeamsUseCase: { execute: vi.fn() },
+  assignTeamsUseCase: { execute: (...args) => mockAssignTeams(...args) },
   setCustomHandicapUseCase: { execute: (...args) => mockSetCustomHandicap(...args) },
   removeCustomHandicapUseCase: { execute: (...args) => mockRemoveCustomHandicap(...args) },
 }));
@@ -263,5 +266,43 @@ describe('CompetitionDetail - edición de hándicap', () => {
       expect(mockRemoveCustomHandicap).toHaveBeenCalledWith('comp-1', 'enrollment-1');
     });
     expect(customToast.error).not.toHaveBeenCalled();
+  });
+});
+
+describe('CompetitionDetail - cierre de inscripciones con asignación automática', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockGetCompetitionDetail.mockResolvedValue({
+      id: 'comp-1',
+      name: 'Summer Cup',
+      status: 'ACTIVE',
+      creatorId: 'creator-1',
+      maxPlayers: 20,
+      teamAssignment: 'AUTOMATIC',
+      countries: [],
+    });
+    mockListEnrollments.mockResolvedValue([]);
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+  });
+
+  it('actualiza el estado a CLOSED aunque falle la asignación automática de equipos', async () => {
+    mockCloseEnrollments.mockResolvedValue({ status: 'CLOSED', updatedAt: '2026-07-05T00:00:00Z' });
+    mockAssignTeams.mockRejectedValue(new Error('assign failed'));
+
+    renderPage();
+
+    const closeButton = await screen.findByText('detail.actions.close-enrollments');
+    fireEvent.click(closeButton);
+
+    await waitFor(() => {
+      expect(mockAssignTeams).toHaveBeenCalledWith('comp-1', { mode: 'AUTOMATIC' });
+    });
+
+    // Status update from closeEnrollments must survive the assignTeams failure
+    await waitFor(() => {
+      expect(screen.getByText('detail.actions.start-competition')).toBeInTheDocument();
+    });
+    expect(customToast.error).toHaveBeenCalledWith('assign failed');
+    expect(customToast.success).toHaveBeenCalledWith('detail.success.enrollmentsClosed');
   });
 });

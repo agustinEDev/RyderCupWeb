@@ -140,7 +140,8 @@
       "golfCoursesPendingApproval": "No se puede activar: Estos campos están pendientes de aprobación: {{courses}}",
       "golfCoursesRejected": "No se puede activar: Estos campos fueron rechazados: {{courses}}",
       "noGolfCourses": "No se puede activar: No se han seleccionado campos de golf",
-      "golfCoursesFetchFailed": "Error al verificar los campos de golf. Inténtalo de nuevo."
+      "golfCoursesFetchFailed": "Error al verificar los campos de golf. Inténtalo de nuevo.",
+      "teamAssignmentFailed": "Las inscripciones se cerraron, pero la asignación automática de equipos falló. Puedes asignar los equipos manualmente."
     },
     "enrollmentStatus": "Tu estado de inscripción:",
     "settings": {
