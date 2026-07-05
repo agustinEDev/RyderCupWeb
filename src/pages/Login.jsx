@@ -78,6 +78,8 @@ const Login = () => {
 
       if (needsHandicap) {
         localStorage.setItem('needs_handicap', 'true');
+      } else {
+        localStorage.removeItem('needs_handicap');
       }
 
       resetRateLimit('login');
