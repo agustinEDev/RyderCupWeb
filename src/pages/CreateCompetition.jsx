@@ -1047,6 +1047,7 @@ const CreateCompetition = () => {
                         <button
                           key={mode}
                           type="button"
+                          aria-pressed={formData.playMode === mode}
                           onClick={() => setFormData(prev => ({ ...prev, playMode: mode }))}
                           className={`border-2 rounded-lg text-sm px-3 py-2 transition-colors ${
                             formData.playMode === mode
@@ -1088,6 +1089,7 @@ const CreateCompetition = () => {
                         <button
                           key={mode}
                           type="button"
+                          aria-pressed={formData.teamAssignment === mode}
                           onClick={() => setFormData(prev => ({ ...prev, teamAssignment: mode }))}
                           className={`border-2 rounded-lg text-sm px-3 py-2 transition-colors ${
                             formData.teamAssignment === mode

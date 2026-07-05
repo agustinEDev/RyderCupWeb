@@ -57,27 +57,24 @@ class ScheduleMapper {
    * @param {Object} apiMatch - Partido de la API (snake_case)
    * @returns {Object} Match DTO (camelCase)
    */
+  static toMatchPlayerDTO(p) {
+    return {
+      userId: p.user_id,
+      playingHandicap: p.playing_handicap ?? null,
+      teeCategory: p.tee_category || null,
+      teeGender: p.tee_gender || null,
+      strokesReceived: p.strokes_received || [],
+      playerHandicap: p.player_handicap ?? null,
+    };
+  }
+
   static toMatchDTO(apiMatch) {
     return {
       id: apiMatch.id,
       roundId: apiMatch.round_id,
       matchNumber: apiMatch.match_number,
-      teamAPlayers: (apiMatch.team_a_players || []).map(p => ({
-        userId: p.user_id,
-        playingHandicap: p.playing_handicap ?? null,
-        teeCategory: p.tee_category || null,
-        teeGender: p.tee_gender || null,
-        strokesReceived: p.strokes_received || [],
-        playerHandicap: p.player_handicap ?? null,
-      })),
-      teamBPlayers: (apiMatch.team_b_players || []).map(p => ({
-        userId: p.user_id,
-        playingHandicap: p.playing_handicap ?? null,
-        teeCategory: p.tee_category || null,
-        teeGender: p.tee_gender || null,
-        strokesReceived: p.strokes_received || [],
-        playerHandicap: p.player_handicap ?? null,
-      })),
+      teamAPlayers: (apiMatch.team_a_players || []).map(ScheduleMapper.toMatchPlayerDTO),
+      teamBPlayers: (apiMatch.team_b_players || []).map(ScheduleMapper.toMatchPlayerDTO),
       status: apiMatch.status,
       handicapStrokesGiven: apiMatch.handicap_strokes_given ?? null,
       strokesGivenToTeam: apiMatch.strokes_given_to_team || null,
