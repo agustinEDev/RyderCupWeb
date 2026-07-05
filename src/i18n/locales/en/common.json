@@ -8,7 +8,8 @@
       "prefix": "Install the app: tap ",
       "suffix": " then \"Add to Home Screen\""
     },
-    "safariHint": "Install the app: File → Add to Dock…"
+    "safariHint": "Install the app: File → Add to Dock…",
+    "genericHint": "It's already installed, or your browser doesn't support installing it directly from here."
   },
   "loading": "Loading...",
   "error": "An error occurred",

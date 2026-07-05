@@ -107,35 +107,38 @@ const Landing = () => {
                     {t('hero.viewDemoButton')}
                   </button>
 
-                  {canInstall && (
-                    <div className="flex flex-col gap-2">
-                      <button
-                        onClick={() => {
-                          if (isIOS || isDesktopSafari) {
-                            setShowInstallHint(h => !h);
-                          } else {
-                            install();
-                          }
-                        }}
-                        className="flex items-center justify-center gap-2 px-8 py-4 bg-accent text-white text-base font-bold rounded-lg transition-all duration-300 hover:bg-accent/90 hover:shadow-lg hover:scale-105"
-                      >
-                        {isIOS ? <Share className="w-5 h-5" /> : <Download className="w-5 h-5" />}
-                        {tCommon('installBanner.install')}
-                      </button>
-                      {showInstallHint && isIOS && (
-                        <p className="text-sm text-gray-600 bg-gray-50 rounded-lg px-4 py-2 border border-gray-200">
-                          {tCommon('installBanner.iosHint.prefix')}
-                          <Share className="w-4 h-4 inline mx-1 align-middle" />
-                          {tCommon('installBanner.iosHint.suffix')}
-                        </p>
-                      )}
-                      {showInstallHint && isDesktopSafari && (
-                        <p className="text-sm text-gray-600 bg-gray-50 rounded-lg px-4 py-2 border border-gray-200">
-                          {tCommon('installBanner.safariHint')}
-                        </p>
-                      )}
-                    </div>
-                  )}
+                  <div className="flex flex-col gap-2">
+                    <button
+                      onClick={() => {
+                        if (isIOS || isDesktopSafari || !canInstall) {
+                          setShowInstallHint(h => !h);
+                        } else {
+                          install();
+                        }
+                      }}
+                      className="flex items-center justify-center gap-2 px-8 py-4 bg-accent text-white text-base font-bold rounded-lg transition-all duration-300 hover:bg-accent/90 hover:shadow-lg hover:scale-105"
+                    >
+                      {isIOS ? <Share className="w-5 h-5" /> : <Download className="w-5 h-5" />}
+                      {tCommon('installBanner.install')}
+                    </button>
+                    {showInstallHint && isIOS && (
+                      <p className="text-sm text-gray-600 bg-gray-50 rounded-lg px-4 py-2 border border-gray-200">
+                        {tCommon('installBanner.iosHint.prefix')}
+                        <Share className="w-4 h-4 inline mx-1 align-middle" />
+                        {tCommon('installBanner.iosHint.suffix')}
+                      </p>
+                    )}
+                    {showInstallHint && isDesktopSafari && (
+                      <p className="text-sm text-gray-600 bg-gray-50 rounded-lg px-4 py-2 border border-gray-200">
+                        {tCommon('installBanner.safariHint')}
+                      </p>
+                    )}
+                    {showInstallHint && !isIOS && !isDesktopSafari && !canInstall && (
+                      <p className="text-sm text-gray-600 bg-gray-50 rounded-lg px-4 py-2 border border-gray-200">
+                        {tCommon('installBanner.genericHint')}
+                      </p>
+                    )}
+                  </div>
                 </motion.div>
 
                 {/* Stats */}
