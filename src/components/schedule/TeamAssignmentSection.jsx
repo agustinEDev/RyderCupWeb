@@ -13,8 +13,10 @@ const TeamAssignmentSection = ({
   // Build handicap lookup from enrollments
   const handicapMap = new Map();
   (enrollments || []).forEach((e) => {
-    if (e.userId && e.userHandicap != null) {
-      handicapMap.set(e.userId, Number(e.userHandicap));
+    if (!e.userId) return;
+    const effectiveHandicap = e.hasCustomHandicap ? e.customHandicap : e.userHandicap;
+    if (effectiveHandicap != null) {
+      handicapMap.set(e.userId, Number(effectiveHandicap));
     }
   });
 

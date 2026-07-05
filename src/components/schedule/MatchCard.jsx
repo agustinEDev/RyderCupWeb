@@ -40,7 +40,7 @@ const MatchCard = ({
     if (players.length === 0) return <p className="text-sm text-gray-400">--</p>;
 
     return players.map((p, i) => {
-      const realHcp = playerHandicapMap?.get(p.userId);
+      const realHcp = p.playerHandicap ?? playerHandicapMap?.get(p.userId) ?? null;
       const ph = p.playingHandicap;
       const isCapped = maxPlayingHandicap != null && ph != null && ph >= maxPlayingHandicap;
       return (
@@ -50,7 +50,7 @@ const MatchCard = ({
           </p>
           <div className="flex items-center gap-1 shrink-0">
             {realHcp != null && (
-              <span className={`text-xs ${teamColor} font-medium`}>HCP {realHcp.toFixed(1)}</span>
+              <span className={`text-xs ${teamColor} font-medium`}>HCP {Number(realHcp).toFixed(1)}</span>
             )}
             {ph != null && (
               <>
