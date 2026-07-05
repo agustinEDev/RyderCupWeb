@@ -68,6 +68,7 @@ class ScheduleMapper {
         teeCategory: p.tee_category || null,
         teeGender: p.tee_gender || null,
         strokesReceived: p.strokes_received || [],
+        playerHandicap: p.player_handicap ?? null,
       })),
       teamBPlayers: (apiMatch.team_b_players || []).map(p => ({
         userId: p.user_id,
@@ -75,6 +76,7 @@ class ScheduleMapper {
         teeCategory: p.tee_category || null,
         teeGender: p.tee_gender || null,
         strokesReceived: p.strokes_received || [],
+        playerHandicap: p.player_handicap ?? null,
       })),
       status: apiMatch.status,
       handicapStrokesGiven: apiMatch.handicap_strokes_given ?? null,

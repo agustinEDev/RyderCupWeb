@@ -118,6 +118,26 @@ describe('ScheduleMapper', () => {
       expect(dto.teamBPlayers[1].userId).toBe('u4');
     });
 
+    it('should map player_handicap snapshot to playerHandicap (HM-1b)', () => {
+      const apiMatch = {
+        id: 'match-4',
+        round_id: 'round-1',
+        match_number: 1,
+        team_a_players: [
+          { user_id: 'u1', playing_handicap: 12, tee_category: 'AMATEUR', tee_gender: 'MALE', strokes_received: [], player_handicap: 14.2 },
+        ],
+        team_b_players: [
+          { user_id: 'u2', playing_handicap: 8, tee_category: 'AMATEUR', tee_gender: 'MALE', strokes_received: [] },
+        ],
+        status: 'SCHEDULED',
+      };
+
+      const dto = ScheduleMapper.toMatchDTO(apiMatch);
+      expect(dto.teamAPlayers[0].playerHandicap).toBe(14.2);
+      // Partidos generados antes de HM-1b no tienen player_handicap en la respuesta
+      expect(dto.teamBPlayers[0].playerHandicap).toBeNull();
+    });
+
     it('should handle match with no players assigned', () => {
       const apiMatch = {
         id: 'match-3',

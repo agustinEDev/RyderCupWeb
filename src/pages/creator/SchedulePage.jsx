@@ -532,6 +532,7 @@ const SchedulePage = () => {
           matchId={detailMatchId}
           playerNameMap={playerNameMap}
           playerHandicapMap={playerHandicapMap}
+          maxPlayingHandicap={competition.maxPlayingHandicap ?? null}
           teamNames={teamNames}
           t={t}
         />
