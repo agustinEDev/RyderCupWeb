@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
 
-const MatchSummaryCard = ({ summary }) => {
+const MatchSummaryCard = ({ summary, winnerName }) => {
   const { t } = useTranslation('scoring');
 
   if (!summary) return null;
@@ -15,11 +15,13 @@ const MatchSummaryCard = ({ summary }) => {
           <p className="text-3xl font-bold text-primary mt-1">
             {summary.result.score}
           </p>
-          {summary.result.winner && (
+          {summary.result.winner === 'HALVED' ? (
+            <p className="text-sm text-gray-600 mt-1">{t('summary.halved')}</p>
+          ) : winnerName ? (
             <p className="text-sm text-gray-600 mt-1">
-              {t('summary.winner')}: {summary.result.winner}
+              {t('summary.winner')}: {winnerName}
             </p>
-          )}
+          ) : null}
         </div>
       )}
 
