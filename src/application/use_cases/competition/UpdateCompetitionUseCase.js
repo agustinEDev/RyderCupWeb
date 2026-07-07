@@ -77,8 +77,8 @@ class UpdateCompetitionUseCase {
       throw new Error('Invalid end_date');
     }
 
-    if (endDate <= startDate) {
-      throw new Error('End date must be after start date');
+    if (endDate < startDate) {
+      throw new Error('End date must be on or after start date');
     }
 
     // Call repository (backend validates business rules like ownership and status)
