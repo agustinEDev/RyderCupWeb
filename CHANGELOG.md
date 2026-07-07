@@ -9,6 +9,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [2.0.18] - 2026-07-07
+
+### Fixed
+
+**PWA — Stale Service Worker After Deploy**
+
+- `/sw.js` and `/manifest.webmanifest` fell into the aggressive 1-year immutable cache block for static assets (matched `\.js$`), so browsers cached the old service worker after a deploy. With `registerType: autoUpdate`, the stale SW's precache manifest then referenced hashed chunks the next deploy had already removed from `dist`, causing a 404 during install and `register()` to reject without a catch handler. Nginx cache headers updated to exclude these files.
+
+**Competition — Same-Day Start and End Dates**
+
+- Frontend counterpart to the backend date range fix: single-day tournaments (`start_date == end_date`) are now accepted instead of rejected as invalid.
+
+**UI — Sentry Feedback Widget Overlapping Toasts**
+
+- The "Report a Bug" widget defaulted to bottom-right, overlapping `react-hot-toast` notifications and bottom banners. It renders in a shadow DOM host that only reads CSS custom properties, so it's repositioned by overriding `--actor-inset` from outside the shadow root.
+
+**API — Unreadable FastAPI 422 Validation Errors**
+
+- On 422 responses, `errorData.detail` is a list of Pydantic error objects (`{type, loc, msg, input, ctx}`) rather than a string, so it was shown to the user as a raw JSON blob. Each error's `msg` is now extracted and joined into a readable message.
+
+**Scoring — Match Summary Winner Shown as Raw Team Code**
+
+- `MatchSummaryCard` displayed the raw team code ("A"/"B") returned by the backend instead of a readable name. `ScoringPage` now resolves it to the team name plus its players (e.g. "Europe (John Doe)") using data already available from the scoring view, and a halved match shows a dedicated message instead of the literal "HALVED" string.
+
+---
+
 ## [2.0.17] - 2026-07-06
 
 ### Fixed
