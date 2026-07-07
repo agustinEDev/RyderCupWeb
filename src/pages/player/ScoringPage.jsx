@@ -202,11 +202,24 @@ const ScoringPage = () => {
 
   // Match summary screen
   if (matchSummary) {
+    const winnerTeam = matchSummary.result?.winner;
+    const winnerTeamName = winnerTeam === 'A'
+      ? scoringView?.teamAName
+      : winnerTeam === 'B'
+        ? scoringView?.teamBName
+        : null;
+    const winnerPlayerNames = (winnerTeam === 'A' || winnerTeam === 'B')
+      ? scoringView?.players?.filter((p) => p.team === winnerTeam).map((p) => p.userName).join(' y ')
+      : null;
+    const winnerName = winnerTeamName && winnerPlayerNames
+      ? `${winnerTeamName} (${winnerPlayerNames})`
+      : winnerTeamName;
+
     return (
       <div className="min-h-screen bg-gray-50">
         <HeaderAuth user={user} />
         <div className="max-w-lg mx-auto px-4 py-6">
-          <MatchSummaryCard summary={matchSummary} />
+          <MatchSummaryCard summary={matchSummary} winnerName={winnerName} />
           <button
             onClick={() => navigate(-1)}
             className="mt-4 w-full px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200"
