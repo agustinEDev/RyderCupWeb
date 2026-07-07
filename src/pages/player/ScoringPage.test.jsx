@@ -97,7 +97,9 @@ vi.mock('../../components/scoring/PreMatchInfo', () => ({
   default: () => <div data-testid="pre-match-info">PreMatchInfo</div>,
 }));
 vi.mock('../../components/scoring/MatchSummaryCard', () => ({
-  default: () => <div data-testid="match-summary-card">MatchSummaryCard</div>,
+  default: ({ winnerName }) => (
+    <div data-testid="match-summary-card">MatchSummaryCard {winnerName}</div>
+  ),
 }));
 vi.mock('../../components/scoring/OfflineBanner', () => ({
   default: () => <div data-testid="offline-banner">OfflineBanner</div>,
@@ -178,5 +180,34 @@ describe('ScoringPage', () => {
     render(<ScoringPage />);
     expect(screen.getByText('input.prevHole')).toBeInTheDocument();
     expect(screen.getByText('input.nextHole')).toBeInTheDocument();
+  });
+
+  describe('match summary screen', () => {
+    afterEach(() => {
+      mockUseScoring.matchSummary = null;
+    });
+
+    it('should resolve the winning team and player names', () => {
+      mockUseScoring.matchSummary = {
+        matchId: 'm-1',
+        result: { winner: 'A', score: '3&2' },
+        stats: { playerGrossTotal: 82, playerNetTotal: 72, holesWon: 8, holesLost: 5 },
+        matchComplete: false,
+      };
+      render(<ScoringPage />);
+      expect(screen.getByTestId('match-summary-card')).toHaveTextContent('Europe (Player A)');
+    });
+
+    it('should pass no winner name for a halved match', () => {
+      mockUseScoring.matchSummary = {
+        matchId: 'm-1',
+        result: { winner: 'HALVED', score: 'AS' },
+        stats: { playerGrossTotal: 82, playerNetTotal: 82, holesWon: 6, holesLost: 6 },
+        matchComplete: false,
+      };
+      render(<ScoringPage />);
+      expect(screen.getByTestId('match-summary-card')).not.toHaveTextContent('Europe');
+      expect(screen.getByTestId('match-summary-card')).not.toHaveTextContent('USA');
+    });
   });
 });

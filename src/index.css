@@ -159,3 +159,14 @@
 @utility border-primary {
   border-color: var(--color-primary-500);
 }
+
+/* Sentry feedback widget ("Report a Bug") defaults to bottom-right, which
+   overlaps our react-hot-toast notifications and bottom banners. The widget
+   renders in a shadow DOM host (#sentry-feedback) that only reads CSS custom
+   properties, so it can't be restyled with normal selectors — moving it means
+   overriding --actor-inset (top/right/bottom/left) from outside the shadow
+   root. Left untouched: --dialog-inset, so the report form itself still opens
+   in its default position. */
+#sentry-feedback {
+  --actor-inset: auto auto 0 0;
+}
