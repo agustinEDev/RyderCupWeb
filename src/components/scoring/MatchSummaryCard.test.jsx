@@ -50,4 +50,22 @@ describe('MatchSummaryCard', () => {
     render(<MatchSummaryCard summary={mockSummary} />);
     expect(screen.getByTestId('match-summary-card')).toHaveTextContent('summary.matchComplete');
   });
+
+  it('should display the resolved winner name when provided', () => {
+    render(<MatchSummaryCard summary={mockSummary} winnerName="Team A (John Doe)" />);
+    expect(screen.getByTestId('match-summary-card')).toHaveTextContent('Team A (John Doe)');
+  });
+
+  it('should not display a winner line when winnerName is not provided', () => {
+    render(<MatchSummaryCard summary={mockSummary} />);
+    expect(screen.getByTestId('match-summary-card')).not.toHaveTextContent('summary.winner');
+  });
+
+  it('should show the halved message instead of a winner name for a tied match', () => {
+    const halvedSummary = { ...mockSummary, result: { winner: 'HALVED', score: 'AS' } };
+    render(<MatchSummaryCard summary={halvedSummary} winnerName="Team A (John Doe)" />);
+    const card = screen.getByTestId('match-summary-card');
+    expect(card).toHaveTextContent('summary.halved');
+    expect(card).not.toHaveTextContent('John Doe');
+  });
 });
