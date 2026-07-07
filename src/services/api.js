@@ -85,10 +85,19 @@ export const apiRequest = async (endpoint, options = {}) => {
       let errorMessage = '';
 
       if (errorData.detail) {
-        // FastAPI returns errors in 'detail' field
-        errorMessage = typeof errorData.detail === 'string'
-          ? errorData.detail
-          : JSON.stringify(errorData.detail);
+        // FastAPI returns errors in 'detail' field. On 422s it's a list of
+        // Pydantic error objects ({ type, loc, msg, input, ctx }) rather than
+        // a string — extract `msg` from each so the user sees readable text
+        // instead of the raw JSON blob.
+        if (typeof errorData.detail === 'string') {
+          errorMessage = errorData.detail;
+        } else if (Array.isArray(errorData.detail)) {
+          errorMessage = errorData.detail
+            .map((err) => err?.msg || JSON.stringify(err))
+            .join('; ');
+        } else {
+          errorMessage = JSON.stringify(errorData.detail);
+        }
       } else if (errorData.message) {
         // Some APIs use 'message' field
         errorMessage = errorData.message;
