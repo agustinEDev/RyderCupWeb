@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+
+**PWA — iOS Install Hint Lost After Banner Dismissal**
+
+- `isIOS`/`isDesktopSafari` in `useInstallPrompt` were derived with `!isDismissed() && detectIOS()`, so once a user closed the install banner once (persisted 30 days), platform detection reported `false` from then on. The Landing page's manual "Install" button reused those flags, so it fell back to the generic "already installed or unsupported" hint instead of the correct iOS/Safari instructions. Platform detection is now independent of dismissal state; only `canInstall` (which drives the banner's auto-display) stays dismissal-gated.
+
 ---
 
 ## [2.0.18] - 2026-07-07
