@@ -182,6 +182,31 @@ describe('ScoringPage', () => {
     expect(screen.getByText('input.nextHole')).toBeInTheDocument();
   });
 
+  describe('early end modal', () => {
+    afterEach(() => {
+      mockUseScoring.hasSubmitted = false;
+      mockUseScoring.scoringView.isDecided = false;
+    });
+
+    it('should show the early end modal when the match is decided and not yet submitted', () => {
+      mockUseScoring.hasSubmitted = false;
+      mockUseScoring.scoringView.isDecided = true;
+
+      render(<ScoringPage />);
+
+      expect(screen.getByTestId('early-end-modal')).toBeInTheDocument();
+    });
+
+    it('should not show the early end modal once the player has already submitted', () => {
+      mockUseScoring.hasSubmitted = true;
+      mockUseScoring.scoringView.isDecided = true;
+
+      render(<ScoringPage />);
+
+      expect(screen.queryByTestId('early-end-modal')).toBeNull();
+    });
+  });
+
   describe('scorecard tab — already submitted', () => {
     afterEach(() => {
       mockUseScoring.hasSubmitted = false;

@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 **Scoring — Pending Players Shown After Submitting a Scorecard**
 
 - In FOURBALL/FOURSOMES, a match only completes once all 4 players have individually submitted their validated scorecard (each validates their own card against a cross-team marker — by design, not per-pair). After submitting, the Scorecard tab previously only showed "Scorecard already submitted" with no indication that teammates and opponents were still pending, which read as if nothing was happening. It now names the players still pending, or shows a "match finished" message once the match status is `COMPLETED`.
+- The "Match Decided" early-end modal ("continue to submit") kept reappearing on every revisit of an already-submitted scorecard, even though there was nothing left to submit. It's now suppressed once the player has submitted.
 
 ---
 

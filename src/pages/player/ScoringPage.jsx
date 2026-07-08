@@ -69,8 +69,10 @@ const ScoringPage = () => {
     }
   }, [activeTab, scoringView?.competitionId]);
 
-  // Derived: show early end modal when match is decided and user hasn't dismissed
-  const showEarlyEnd = !!scoringView?.isDecided && !earlyEndDismissed && !matchSummary;
+  // Derived: show early end modal when match is decided and user hasn't dismissed.
+  // Not shown once the player has already submitted — the "continue to submit" CTA
+  // no longer applies, and re-showing it on every revisit is just noise.
+  const showEarlyEnd = !!scoringView?.isDecided && !earlyEndDismissed && !matchSummary && !hasSubmitted;
 
   const currentUserId = user?.id;
 
