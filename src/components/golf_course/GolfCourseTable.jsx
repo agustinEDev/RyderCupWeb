@@ -44,108 +44,177 @@ const GolfCourseTable = ({ courses, onView, onEdit, onApprove, onReject, showAct
     );
   }
 
+  const renderActions = (course, justify = 'justify-end') => (
+    <div className={`flex items-center ${justify} gap-2`}>
+      {onView && (
+        <button
+          onClick={() => onView(course)}
+          className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+          title={t('table.view')}
+        >
+          <Eye className="w-4 h-4" />
+        </button>
+      )}
+      {onEdit && isAdmin && (
+        <button
+          onClick={() => onEdit(course)}
+          className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+          title={t('table.edit')}
+        >
+          <Edit className="w-4 h-4" />
+        </button>
+      )}
+      {onApprove && course.isPending() && (
+        <button
+          onClick={() => onApprove(course)}
+          className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+          title={t('table.approve')}
+        >
+          <CheckCircle className="w-4 h-4" />
+        </button>
+      )}
+      {onReject && course.isPending() && (
+        <button
+          onClick={() => onReject(course)}
+          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+          title={t('table.reject')}
+        >
+          <XCircle className="w-4 h-4" />
+        </button>
+      )}
+    </div>
+  );
+
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-sm">
-        <thead className="bg-gray-50 border-b border-gray-200">
-          <tr>
-            <th className="text-left py-3 px-4 font-semibold text-gray-700">{t('table.name')}</th>
-            <th className="text-left py-3 px-4 font-semibold text-gray-700">{t('table.country')}</th>
-            <th className="text-left py-3 px-4 font-semibold text-gray-700">{t('table.type')}</th>
-            <th className="text-left py-3 px-4 font-semibold text-gray-700">{t('table.par')}</th>
-            <th className="text-left py-3 px-4 font-semibold text-gray-700">{t('table.tees')}</th>
-            <th className="text-left py-3 px-4 font-semibold text-gray-700">{t('table.status')}</th>
-            {showActions && <th className="text-right py-3 px-4 font-semibold text-gray-700">{t('table.actions')}</th>}
-          </tr>
-        </thead>
-        <tbody>
-          {courses.map((course) => (
-            <tr key={course.id} className="border-b border-gray-100 hover:bg-gray-50">
-              <td className="py-3 px-4">
-                <div>
-                  <p className="font-medium text-gray-900">{course.name}</p>
-                  {course.isPendingUpdate && (
-                    <span className="inline-flex items-center gap-1 mt-1 text-xs text-yellow-700">
-                      <AlertCircle className="w-3 h-3" />
-                      {t('table.pendingUpdate')}
-                    </span>
-                  )}
-                  {course.isClone() && (
-                    <span className="inline-flex items-center gap-1 mt-1 text-xs text-blue-700">
-                      <AlertCircle className="w-3 h-3" />
-                      {t('table.updateProposal')}
-                    </span>
-                  )}
-                </div>
-              </td>
-              <td className="py-3 px-4">
-                <div className="flex items-center gap-2">
+    <>
+      {/* Mobile: stacked cards (avoids horizontal cut-off from a wide table) */}
+      <div className="md:hidden divide-y divide-gray-100">
+        {courses.map((course) => (
+          <div key={course.id} className="p-4">
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                <p className="font-medium text-gray-900 break-words">{course.name}</p>
+                {course.isPendingUpdate && (
+                  <span className="inline-flex items-center gap-1 mt-1 text-xs text-yellow-700">
+                    <AlertCircle className="w-3 h-3" />
+                    {t('table.pendingUpdate')}
+                  </span>
+                )}
+                {course.isClone() && (
+                  <span className="inline-flex items-center gap-1 mt-1 text-xs text-blue-700">
+                    <AlertCircle className="w-3 h-3" />
+                    {t('table.updateProposal')}
+                  </span>
+                )}
+              </div>
+              <span className={`shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border ${getStatusColor(course.approvalStatus)}`}>
+                {getStatusIcon(course.approvalStatus)}
+                {t(`table.statuses.${course.approvalStatus}`)}
+              </span>
+            </div>
+
+            <div className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 text-sm">
+              <div>
+                <p className="text-xs text-gray-500">{t('table.country')}</p>
+                <div className="flex items-center gap-2 mt-0.5">
                   <CountryFlag countryCode={course.countryCode} className="w-5 h-5" />
                   <span className="text-gray-700">{course.countryCode}</span>
                 </div>
-              </td>
-              <td className="py-3 px-4 text-gray-700">{t(`form.courseTypes.${course.courseType}`)}</td>
-              <td className="py-3 px-4 font-medium text-gray-900">{course.totalPar}</td>
-              <td className="py-3 px-4">
-                <div className="flex flex-wrap gap-1">
-                  {course.tees.map((tee, index) => (
-                    <TeeCategoryBadge key={index} category={tee.teeCategory} identifier={tee.identifier} gender={tee.teeGender || tee.tee_gender || tee.gender} />
-                  ))}
-                </div>
-              </td>
-              <td className="py-3 px-4">
-                <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border ${getStatusColor(course.approvalStatus)}`}>
-                  {getStatusIcon(course.approvalStatus)}
-                  {t(`table.statuses.${course.approvalStatus}`)}
-                </span>
-              </td>
-              {showActions && (
+              </div>
+              <div>
+                <p className="text-xs text-gray-500">{t('table.type')}</p>
+                <p className="text-gray-700 mt-0.5">{t(`form.courseTypes.${course.courseType}`)}</p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-500">{t('table.par')}</p>
+                <p className="font-medium text-gray-900 mt-0.5">{course.totalPar}</p>
+              </div>
+            </div>
+
+            <div className="mt-3">
+              <p className="text-xs text-gray-500 mb-1">{t('table.tees')}</p>
+              <div className="flex flex-wrap gap-1">
+                {course.tees.map((tee, index) => (
+                  <TeeCategoryBadge key={index} category={tee.teeCategory} identifier={tee.identifier} gender={tee.teeGender || tee.tee_gender || tee.gender} />
+                ))}
+              </div>
+            </div>
+
+            {showActions && (
+              <div className="mt-3 pt-3 border-t border-gray-100">
+                {renderActions(course, 'justify-start')}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* Desktop / tablet: table */}
+      <div className="hidden md:block overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead className="bg-gray-50 border-b border-gray-200">
+            <tr>
+              <th className="text-left py-3 px-4 font-semibold text-gray-700">{t('table.name')}</th>
+              <th className="text-left py-3 px-4 font-semibold text-gray-700">{t('table.country')}</th>
+              <th className="text-left py-3 px-4 font-semibold text-gray-700">{t('table.type')}</th>
+              <th className="text-left py-3 px-4 font-semibold text-gray-700">{t('table.par')}</th>
+              <th className="text-left py-3 px-4 font-semibold text-gray-700">{t('table.tees')}</th>
+              <th className="text-left py-3 px-4 font-semibold text-gray-700">{t('table.status')}</th>
+              {showActions && <th className="text-right py-3 px-4 font-semibold text-gray-700">{t('table.actions')}</th>}
+            </tr>
+          </thead>
+          <tbody>
+            {courses.map((course) => (
+              <tr key={course.id} className="border-b border-gray-100 hover:bg-gray-50">
                 <td className="py-3 px-4">
-                  <div className="flex items-center justify-end gap-2">
-                    {onView && (
-                      <button
-                        onClick={() => onView(course)}
-                        className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                        title={t('table.view')}
-                      >
-                        <Eye className="w-4 h-4" />
-                      </button>
+                  <div>
+                    <p className="font-medium text-gray-900">{course.name}</p>
+                    {course.isPendingUpdate && (
+                      <span className="inline-flex items-center gap-1 mt-1 text-xs text-yellow-700">
+                        <AlertCircle className="w-3 h-3" />
+                        {t('table.pendingUpdate')}
+                      </span>
                     )}
-                    {onEdit && isAdmin && (
-                      <button
-                        onClick={() => onEdit(course)}
-                        className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-                        title={t('table.edit')}
-                      >
-                        <Edit className="w-4 h-4" />
-                      </button>
-                    )}
-                    {onApprove && course.isPending() && (
-                      <button
-                        onClick={() => onApprove(course)}
-                        className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
-                        title={t('table.approve')}
-                      >
-                        <CheckCircle className="w-4 h-4" />
-                      </button>
-                    )}
-                    {onReject && course.isPending() && (
-                      <button
-                        onClick={() => onReject(course)}
-                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                        title={t('table.reject')}
-                      >
-                        <XCircle className="w-4 h-4" />
-                      </button>
+                    {course.isClone() && (
+                      <span className="inline-flex items-center gap-1 mt-1 text-xs text-blue-700">
+                        <AlertCircle className="w-3 h-3" />
+                        {t('table.updateProposal')}
+                      </span>
                     )}
                   </div>
                 </td>
-              )}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+                <td className="py-3 px-4">
+                  <div className="flex items-center gap-2">
+                    <CountryFlag countryCode={course.countryCode} className="w-5 h-5" />
+                    <span className="text-gray-700">{course.countryCode}</span>
+                  </div>
+                </td>
+                <td className="py-3 px-4 text-gray-700">{t(`form.courseTypes.${course.courseType}`)}</td>
+                <td className="py-3 px-4 font-medium text-gray-900">{course.totalPar}</td>
+                <td className="py-3 px-4">
+                  <div className="flex flex-wrap gap-1">
+                    {course.tees.map((tee, index) => (
+                      <TeeCategoryBadge key={index} category={tee.teeCategory} identifier={tee.identifier} gender={tee.teeGender || tee.tee_gender || tee.gender} />
+                    ))}
+                  </div>
+                </td>
+                <td className="py-3 px-4">
+                  <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border ${getStatusColor(course.approvalStatus)}`}>
+                    {getStatusIcon(course.approvalStatus)}
+                    {t(`table.statuses.${course.approvalStatus}`)}
+                  </span>
+                </td>
+                {showActions && (
+                  <td className="py-3 px-4">
+                    {renderActions(course)}
+                  </td>
+                )}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </>
   );
 };
 
