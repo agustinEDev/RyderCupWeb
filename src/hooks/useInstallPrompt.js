@@ -35,8 +35,8 @@ function detectDesktopSafari() {
 
 export function useInstallPrompt() {
   const [deferredPrompt, setDeferredPrompt] = useState(null);
-  const [isIOS] = useState(() => !isDismissed() && detectIOS());
-  const [isDesktopSafari] = useState(() => !isDismissed() && !detectIOS() && detectDesktopSafari());
+  const [isIOS] = useState(() => detectIOS());
+  const [isDesktopSafari] = useState(() => !detectIOS() && detectDesktopSafari());
   const [canInstall, setCanInstall] = useState(() => !isDismissed() && (detectIOS() || detectDesktopSafari()));
 
   useEffect(() => {
