@@ -69,8 +69,10 @@ const ScoringPage = () => {
     }
   }, [activeTab, scoringView?.competitionId]);
 
-  // Derived: show early end modal when match is decided and user hasn't dismissed
-  const showEarlyEnd = !!scoringView?.isDecided && !earlyEndDismissed && !matchSummary;
+  // Derived: show early end modal when match is decided and user hasn't dismissed.
+  // Not shown once the player has already submitted — the "continue to submit" CTA
+  // no longer applies, and re-showing it on every revisit is just noise.
+  const showEarlyEnd = !!scoringView?.isDecided && !earlyEndDismissed && !matchSummary && !hasSubmitted;
 
   const currentUserId = user?.id;
 
@@ -78,6 +80,11 @@ const ScoringPage = () => {
   const markerAssignment = scoringView?.markerAssignments?.find(
     (ma) => ma.scorerUserId === currentUserId
   );
+
+  // Players who still need to submit their scorecard for the match to complete
+  const pendingPlayers = scoringView?.players?.filter(
+    (p) => !scoringView?.scorecardSubmittedBy?.includes(p.userId)
+  ) ?? [];
 
   // Get current hole data
   const currentHoleData = scoringView?.holes?.find((h) => h.holeNumber === currentHole);
@@ -408,9 +415,19 @@ const ScoringPage = () => {
             )}
 
             {hasSubmitted && (
-              <p className="text-center text-sm text-green-600 font-medium">
-                {t('submit.alreadySubmitted')}
-              </p>
+              <div className="text-center text-sm space-y-1">
+                <p className="text-green-600 font-medium">{t('submit.alreadySubmitted')}</p>
+                {scoringView?.matchStatus === 'COMPLETED' ? (
+                  <p className="text-gray-500">{t('submit.matchCompleted')}</p>
+                ) : pendingPlayers.length > 0 && (
+                  <p className="text-gray-500">
+                    {t('submit.waitingForPlayers', {
+                      count: pendingPlayers.length,
+                      names: pendingPlayers.map((p) => p.userName).join(', '),
+                    })}
+                  </p>
+                )}
+              </div>
             )}
           </div>
         )}
