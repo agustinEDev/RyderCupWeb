@@ -79,6 +79,11 @@ const ScoringPage = () => {
     (ma) => ma.scorerUserId === currentUserId
   );
 
+  // Players who still need to submit their scorecard for the match to complete
+  const pendingPlayers = scoringView?.players?.filter(
+    (p) => !scoringView?.scorecardSubmittedBy?.includes(p.userId)
+  ) ?? [];
+
   // Get current hole data
   const currentHoleData = scoringView?.holes?.find((h) => h.holeNumber === currentHole);
   const currentHoleScore = scoringView?.scores?.find((s) => s.holeNumber === currentHole);
@@ -408,9 +413,19 @@ const ScoringPage = () => {
             )}
 
             {hasSubmitted && (
-              <p className="text-center text-sm text-green-600 font-medium">
-                {t('submit.alreadySubmitted')}
-              </p>
+              <div className="text-center text-sm space-y-1">
+                <p className="text-green-600 font-medium">{t('submit.alreadySubmitted')}</p>
+                {scoringView?.matchStatus === 'COMPLETED' ? (
+                  <p className="text-gray-500">{t('submit.matchCompleted')}</p>
+                ) : pendingPlayers.length > 0 && (
+                  <p className="text-gray-500">
+                    {t('submit.waitingForPlayers', {
+                      count: pendingPlayers.length,
+                      names: pendingPlayers.map((p) => p.userName).join(', '),
+                    })}
+                  </p>
+                )}
+              </div>
             )}
           </div>
         )}
