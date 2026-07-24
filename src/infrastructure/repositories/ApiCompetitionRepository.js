@@ -312,6 +312,18 @@ class ApiCompetitionRepository extends ICompetitionRepository {
       method: 'PUT'
     });
   }
+
+  /**
+   * Reverts a completed competition back to IN_PROGRESS (COMPLETED → IN_PROGRESS).
+   * @override
+   * @param {string} competitionId
+   * @returns {Promise<Object>} Updated competition data
+   */
+  async revertToInProgress(competitionId) {
+    return await apiRequest(`/api/v1/competitions/${competitionId}/revert-to-in-progress`, {
+      method: 'PUT'
+    });
+  }
 }
 
 export default ApiCompetitionRepository;

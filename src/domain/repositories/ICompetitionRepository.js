@@ -213,4 +213,14 @@ class ICompetitionRepository {
   async revertStatus(competitionId) {
     throw new Error('ICompetitionRepository.revertStatus must be implemented');
   }
+
+  /**
+   * Reverts a completed competition back to IN_PROGRESS (COMPLETED → IN_PROGRESS).
+   * Does not modify existing rounds/matches.
+   * @param {string} competitionId
+   * @returns {Promise<Object>} Updated competition data
+   */
+  async revertToInProgress(competitionId) {
+    throw new Error('ICompetitionRepository.revertToInProgress must be implemented');
+  }
 }
