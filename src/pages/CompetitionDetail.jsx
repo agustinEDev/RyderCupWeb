@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { useNavigate, useParams, useLocation } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router';
 import { motion } from 'framer-motion';
 import {
   Users, Calendar, MapPin, Settings, ArrowLeft,

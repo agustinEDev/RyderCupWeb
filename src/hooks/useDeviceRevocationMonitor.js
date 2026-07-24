@@ -18,7 +18,7 @@
  */
 
 import { useEffect, useCallback, useRef } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router';
 import { apiRequest } from '../services/api';
 import { handleDeviceRevocationLogout } from '../utils/deviceRevocationLogout';
 
