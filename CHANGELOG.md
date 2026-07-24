@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+**Competition — Revert to In Progress (COMPLETED → IN_PROGRESS)**
+
+- New "Reopen Tournament" button on `CompetitionDetail`, visible only when `status === 'COMPLETED'`. Calls `PUT /api/v1/competitions/{id}/revert-to-in-progress` via the new `RevertCompetitionToInProgressUseCase` and `ApiCompetitionRepository.revertToInProgress()`. Does not touch existing rounds/matches.
+- i18n strings (ES/EN) for the button label, confirmation dialog, and success toast.
+
 ---
 
 ## [2.0.18] - 2026-07-07
