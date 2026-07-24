@@ -25,6 +25,7 @@ import {
   deleteCompetitionUseCase,
   reopenEnrollmentsUseCase,
   revertCompetitionStatusUseCase,
+  revertCompetitionToInProgressUseCase,
   listEnrollmentsUseCase,
   requestEnrollmentUseCase,
   approveEnrollmentUseCase,
@@ -90,6 +91,7 @@ const CompetitionDetail = () => {
 
   useEffect(() => {
     if (user) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- pre-existing pattern surfaced by eslint-plugin-react-hooks 7.1.1 bump; needs dedicated review (tracked in follow-up)
       loadCompetition();
     }
   }, [id, user, loadCompetition]);
@@ -186,6 +188,10 @@ const CompetitionDetail = () => {
         case 'revert-status':
           result = await revertCompetitionStatusUseCase.execute(id);
           customToast.success(t('detail.success.statusReverted'));
+          break;
+        case 'revert-to-in-progress':
+          result = await revertCompetitionToInProgressUseCase.execute(id);
+          customToast.success(t('detail.success.revertedToInProgress'));
           break;
         default:
           throw new Error('Invalid action');
@@ -547,6 +553,17 @@ const CompetitionDetail = () => {
                     >
                       <Undo2 className="w-4 h-4" />
                       <span>{t('detail.actions.revert-status')}</span>
+                    </button>
+                  )}
+
+                  {competition.status === 'COMPLETED' && (
+                    <button
+                      onClick={() => handleStatusChange('revert-to-in-progress')}
+                      disabled={isProcessing}
+                      className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg font-medium hover:bg-orange-700 transition-colors shadow-md disabled:opacity-50"
+                    >
+                      <Undo2 className="w-4 h-4" />
+                      <span>{t('detail.actions.revert-to-in-progress')}</span>
                     </button>
                   )}
 

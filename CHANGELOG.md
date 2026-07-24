@@ -13,6 +13,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 - `isIOS`/`isDesktopSafari` in `useInstallPrompt` were derived with `!isDismissed() && detectIOS()`, so once a user closed the install banner once (persisted 30 days), platform detection reported `false` from then on. The Landing page's manual "Install" button reused those flags, so it fell back to the generic "already installed or unsupported" hint instead of the correct iOS/Safari instructions. Platform detection is now independent of dismissal state; only `canInstall` (which drives the banner's auto-display) stays dismissal-gated.
 
+### Added
+
+**Competition — Revert to In Progress (COMPLETED → IN_PROGRESS)**
+
+- New "Reopen Tournament" button on `CompetitionDetail`, visible only when `status === 'COMPLETED'`. Calls `PUT /api/v1/competitions/{id}/revert-to-in-progress` via the new `RevertCompetitionToInProgressUseCase` and `ApiCompetitionRepository.revertToInProgress()`. Does not touch existing rounds/matches.
+- i18n strings (ES/EN) for the button label, confirmation dialog, and success toast.
+
 ---
 
 ## [2.0.18] - 2026-07-07

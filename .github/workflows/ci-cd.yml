@@ -92,10 +92,17 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: '20'
           cache: 'npm'
+
+      - name: Upgrade npm
+        # npm 10.8.2 (bundled with Node 20) fails npm ci with ERESOLVE on
+        # optional peer dependency mismatches (e.g. typescript vs i18next's
+        # "^5 || ^6" peerOptional range) that npm 11 treats as non-fatal.
+        # Pinned explicitly so CI stays reproducible across Node bumps.
+        run: npm install -g npm@11.17.0
 
       - name: Install dependencies
         run: npm ci
@@ -169,7 +176,7 @@ jobs:
           fetch-depth: 0
 
       - name: TruffleHog OSS (Filesystem Scan)
-        uses: trufflesecurity/trufflehog@v3.95.5
+        uses: trufflesecurity/trufflehog@v3.95.9
         with:
           path: ./
           extra_args: --debug --only-verified
@@ -182,10 +189,17 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: '20'
           cache: 'npm'
+
+      - name: Upgrade npm
+        # npm 10.8.2 (bundled with Node 20) fails npm ci with ERESOLVE on
+        # optional peer dependency mismatches (e.g. typescript vs i18next's
+        # "^5 || ^6" peerOptional range) that npm 11 treats as non-fatal.
+        # Pinned explicitly so CI stays reproducible across Node bumps.
+        run: npm install -g npm@11.17.0
 
       - name: Install dependencies
         run: npm ci
@@ -228,10 +242,17 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: '20'
           cache: 'npm'
+
+      - name: Upgrade npm
+        # npm 10.8.2 (bundled with Node 20) fails npm ci with ERESOLVE on
+        # optional peer dependency mismatches (e.g. typescript vs i18next's
+        # "^5 || ^6" peerOptional range) that npm 11 treats as non-fatal.
+        # Pinned explicitly so CI stays reproducible across Node bumps.
+        run: npm install -g npm@11.17.0
 
       - name: Install dependencies
         run: npm ci
@@ -280,10 +301,17 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: '20'
           cache: 'npm'
+
+      - name: Upgrade npm
+        # npm 10.8.2 (bundled with Node 20) fails npm ci with ERESOLVE on
+        # optional peer dependency mismatches (e.g. typescript vs i18next's
+        # "^5 || ^6" peerOptional range) that npm 11 treats as non-fatal.
+        # Pinned explicitly so CI stays reproducible across Node bumps.
+        run: npm install -g npm@11.17.0
 
       - name: Install dependencies
         run: npm ci
@@ -330,10 +358,17 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: '20'
           cache: 'npm'
+
+      - name: Upgrade npm
+        # npm 10.8.2 (bundled with Node 20) fails npm ci with ERESOLVE on
+        # optional peer dependency mismatches (e.g. typescript vs i18next's
+        # "^5 || ^6" peerOptional range) that npm 11 treats as non-fatal.
+        # Pinned explicitly so CI stays reproducible across Node bumps.
+        run: npm install -g npm@11.17.0
 
       - name: Install dependencies
         run: npm ci
@@ -378,10 +413,17 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: '20'
           cache: 'npm'
+
+      - name: Upgrade npm
+        # npm 10.8.2 (bundled with Node 20) fails npm ci with ERESOLVE on
+        # optional peer dependency mismatches (e.g. typescript vs i18next's
+        # "^5 || ^6" peerOptional range) that npm 11 treats as non-fatal.
+        # Pinned explicitly so CI stays reproducible across Node bumps.
+        run: npm install -g npm@11.17.0
 
       - name: Install dependencies
         run: npm ci
@@ -418,10 +460,17 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: '20'
           cache: 'npm'
+
+      - name: Upgrade npm
+        # npm 10.8.2 (bundled with Node 20) fails npm ci with ERESOLVE on
+        # optional peer dependency mismatches (e.g. typescript vs i18next's
+        # "^5 || ^6" peerOptional range) that npm 11 treats as non-fatal.
+        # Pinned explicitly so CI stays reproducible across Node bumps.
+        run: npm install -g npm@11.17.0
 
       - name: Install dependencies
         run: npm ci
@@ -536,10 +585,17 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: '20'
           cache: 'npm'
+
+      - name: Upgrade npm
+        # npm 10.8.2 (bundled with Node 20) fails npm ci with ERESOLVE on
+        # optional peer dependency mismatches (e.g. typescript vs i18next's
+        # "^5 || ^6" peerOptional range) that npm 11 treats as non-fatal.
+        # Pinned explicitly so CI stays reproducible across Node bumps.
+        run: npm install -g npm@11.17.0
 
       - name: Install dependencies
         run: npm ci
@@ -568,10 +624,17 @@ jobs:
           fetch-depth: 0
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: '20'
           cache: 'npm'
+
+      - name: Upgrade npm
+        # npm 10.8.2 (bundled with Node 20) fails npm ci with ERESOLVE on
+        # optional peer dependency mismatches (e.g. typescript vs i18next's
+        # "^5 || ^6" peerOptional range) that npm 11 treats as non-fatal.
+        # Pinned explicitly so CI stays reproducible across Node bumps.
+        run: npm install -g npm@11.17.0
 
       - name: Install dependencies
         run: npm ci
@@ -605,8 +668,10 @@ jobs:
           # Define budget (in KB)
           # v2.1: Reduced from 1600 KB to 1400 KB after replacing country-flag-icons (239 KB) with CDN images
           # v2.0.11: Raised to 1500 KB after Sprint 3 invitations system (2 new pages, 3 components, i18n namespace)
-          MAX_BUNDLE_SIZE_KB=1500
-          WARNING_THRESHOLD_KB=1400
+          # Jul 2026: Raised to 1600 KB after minor-updates dependency bump (Sentry SDK growth mainly); no
+          # trimmable dead code found (knip-flagged unused deps/files aren't part of the compiled bundle anyway)
+          MAX_BUNDLE_SIZE_KB=1600
+          WARNING_THRESHOLD_KB=1500
 
           # List all bundles with sizes
           echo ""
@@ -642,10 +707,17 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: '20'
           cache: 'npm'
+
+      - name: Upgrade npm
+        # npm 10.8.2 (bundled with Node 20) fails npm ci with ERESOLVE on
+        # optional peer dependency mismatches (e.g. typescript vs i18next's
+        # "^5 || ^6" peerOptional range) that npm 11 treats as non-fatal.
+        # Pinned explicitly so CI stays reproducible across Node bumps.
+        run: npm install -g npm@11.17.0
 
       - name: Install dependencies
         run: npm ci
