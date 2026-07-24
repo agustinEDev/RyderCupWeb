@@ -60,6 +60,7 @@ import CancelCompetitionUseCase from '../application/use_cases/competition/Cance
 import DeleteCompetitionUseCase from '../application/use_cases/competition/DeleteCompetitionUseCase';
 import ReopenEnrollmentsUseCase from '../application/use_cases/competition/ReopenEnrollmentsUseCase';
 import RevertCompetitionStatusUseCase from '../application/use_cases/competition/RevertCompetitionStatusUseCase';
+import RevertCompetitionToInProgressUseCase from '../application/use_cases/competition/RevertCompetitionToInProgressUseCase';
 import BrowseJoinableCompetitionsUseCase from '../application/use_cases/competition/BrowseJoinableCompetitionsUseCase';
 import BrowseExploreCompetitionsUseCase from '../application/use_cases/competition/BrowseExploreCompetitionsUseCase';
 import AddGolfCourseToCompetitionUseCase from '../application/use_cases/competition/AddGolfCourseToCompetitionUseCase';
@@ -162,6 +163,7 @@ const cancelCompetitionUseCase = new CancelCompetitionUseCase({ competitionRepos
 const deleteCompetitionUseCase = new DeleteCompetitionUseCase({ competitionRepository: apiCompetitionRepository });
 const reopenEnrollmentsUseCase = new ReopenEnrollmentsUseCase({ competitionRepository: apiCompetitionRepository });
 const revertCompetitionStatusUseCase = new RevertCompetitionStatusUseCase({ competitionRepository: apiCompetitionRepository });
+const revertCompetitionToInProgressUseCase = new RevertCompetitionToInProgressUseCase({ competitionRepository: apiCompetitionRepository });
 const browseJoinableCompetitionsUseCase = new BrowseJoinableCompetitionsUseCase(apiCompetitionRepository);
 const browseExploreCompetitionsUseCase = new BrowseExploreCompetitionsUseCase(apiCompetitionRepository);
 const addGolfCourseToCompetitionUseCase = new AddGolfCourseToCompetitionUseCase({ competitionRepository: apiCompetitionRepository });
@@ -259,6 +261,7 @@ export {
   deleteCompetitionUseCase,
   reopenEnrollmentsUseCase,
   revertCompetitionStatusUseCase,
+  revertCompetitionToInProgressUseCase,
   browseJoinableCompetitionsUseCase,
   browseExploreCompetitionsUseCase,
   addGolfCourseToCompetitionUseCase,

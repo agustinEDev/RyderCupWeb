@@ -14,6 +14,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - In FOURBALL/FOURSOMES, a match only completes once all 4 players have individually submitted their validated scorecard (each validates their own card against a cross-team marker — by design, not per-pair). After submitting, the Scorecard tab previously only showed "Scorecard already submitted" with no indication that teammates and opponents were still pending, which read as if nothing was happening. It now names the players still pending, or shows a "match finished" message once the match status is `COMPLETED`.
 - The "Match Decided" early-end modal ("continue to submit") kept reappearing on every revisit of an already-submitted scorecard, even though there was nothing left to submit. It's now suppressed once the player has submitted.
 
+### Added
+
+**Competition — Revert to In Progress (COMPLETED → IN_PROGRESS)**
+
+- New "Reopen Tournament" button on `CompetitionDetail`, visible only when `status === 'COMPLETED'`. Calls `PUT /api/v1/competitions/{id}/revert-to-in-progress` via the new `RevertCompetitionToInProgressUseCase` and `ApiCompetitionRepository.revertToInProgress()`. Does not touch existing rounds/matches.
+- i18n strings (ES/EN) for the button label, confirmation dialog, and success toast.
+
 ---
 
 ## [2.0.18] - 2026-07-07

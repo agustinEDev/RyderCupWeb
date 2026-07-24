@@ -105,6 +105,7 @@ const UpcomingMatchesPage = () => {
 
   useEffect(() => {
     if (user) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- pre-existing pattern surfaced by eslint-plugin-react-hooks 7.1.1 bump; needs dedicated review (tracked in follow-up)
       loadMatches();
     }
   }, [user, loadMatches]);
