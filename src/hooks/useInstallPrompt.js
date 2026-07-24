@@ -15,6 +15,13 @@ function isDismissed() {
   }
 }
 
+function detectStandalone() {
+  return (
+    window.navigator.standalone === true ||
+    (typeof window.matchMedia === 'function' && window.matchMedia('(display-mode: standalone)').matches)
+  );
+}
+
 function detectIOS() {
   const ua = navigator.userAgent;
   const isIOS = /iphone|ipad|ipod/i.test(ua);
@@ -22,21 +29,21 @@ function detectIOS() {
   const isIPadOS =
     (/macintosh/i.test(ua) || navigator.platform === 'MacIntel') &&
     navigator.maxTouchPoints > 1;
-  const isStandalone = window.navigator.standalone === true;
-  return (isIOS || isIPadOS) && !isStandalone;
+  return (isIOS || isIPadOS) && !detectStandalone();
 }
 
 function detectDesktopSafari() {
   const ua = navigator.userAgent;
   const isSafari = /safari/i.test(ua) && !/chrome|chromium|android/i.test(ua);
   const isMac = /macintosh/i.test(ua) && navigator.maxTouchPoints === 0;
-  return isSafari && isMac;
+  return isSafari && isMac && !detectStandalone();
 }
 
 export function useInstallPrompt() {
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [isIOS] = useState(() => detectIOS());
   const [isDesktopSafari] = useState(() => !detectIOS() && detectDesktopSafari());
+  const [isInstalled] = useState(() => detectStandalone());
   const [canInstall, setCanInstall] = useState(() => !isDismissed() && (detectIOS() || detectDesktopSafari()));
 
   useEffect(() => {
@@ -75,5 +82,5 @@ export function useInstallPrompt() {
     setCanInstall(false);
   };
 
-  return { canInstall, isIOS, isDesktopSafari, install, dismiss };
+  return { canInstall, isIOS, isDesktopSafari, isInstalled, install, dismiss };
 }

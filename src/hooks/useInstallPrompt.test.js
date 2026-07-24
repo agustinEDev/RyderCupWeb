@@ -28,10 +28,15 @@ function setUserAgent(ua) {
   Object.defineProperty(navigator, 'userAgent', { value: ua, configurable: true });
 }
 
+function setStandalone(value) {
+  Object.defineProperty(window.navigator, 'standalone', { value, configurable: true });
+}
+
 describe('useInstallPrompt', () => {
   beforeEach(() => {
     localStorage.clear();
     setUserAgent(IOS_UA);
+    setStandalone(undefined);
   });
 
   it('detects iOS platform even when the banner was previously dismissed', () => {
@@ -48,5 +53,24 @@ describe('useInstallPrompt', () => {
 
     expect(result.current.isIOS).toBe(true);
     expect(result.current.canInstall).toBe(true);
+  });
+
+  it('reports isInstalled and not isIOS when running standalone on iOS', () => {
+    setStandalone(true);
+
+    const { result } = renderHook(() => useInstallPrompt());
+
+    expect(result.current.isInstalled).toBe(true);
+    expect(result.current.isIOS).toBe(false);
+    expect(result.current.canInstall).toBe(false);
+  });
+
+  it('reports isInstalled via display-mode media query on non-iOS browsers', () => {
+    setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36');
+    window.matchMedia = (query) => ({ matches: query === '(display-mode: standalone)' });
+
+    const { result } = renderHook(() => useInstallPrompt());
+
+    expect(result.current.isInstalled).toBe(true);
   });
 });

@@ -9,7 +9,8 @@
       "suffix": " y luego \"Añadir a pantalla de inicio\""
     },
     "safariHint": "Instala la app: Archivo → Añadir al Dock…",
-    "genericHint": "Ya está instalada o tu navegador no permite instalarla directamente desde aquí."
+    "alreadyInstalled": "Ya tienes la app instalada.",
+    "genericHint": "Tu navegador no permite instalarla directamente desde aquí."
   },
   "loading": "Cargando...",
   "error": "Ocurrió un error",
