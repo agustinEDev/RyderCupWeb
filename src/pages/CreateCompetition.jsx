@@ -92,6 +92,7 @@ const CreateCompetition = () => {
 
   useEffect(() => {
     // Fetch all countries
+    // eslint-disable-next-line react-hooks/immutability -- pre-existing pattern surfaced by eslint-plugin-react-hooks 7.1.1 bump; needs dedicated review (tracked in follow-up)
     fetchCountries();
   }, []);
 
@@ -128,6 +129,7 @@ const CreateCompetition = () => {
         // Fetch adjacent countries lists if needed
         let level1Countries = [];
         if (mainCountryCode) {
+          // eslint-disable-next-line react-hooks/immutability -- pre-existing pattern surfaced by eslint-plugin-react-hooks 7.1.1 bump; needs dedicated review (tracked in follow-up)
           level1Countries = await fetchAdjacentCountries(mainCountryCode, 1);
         }
         if (adjacentCountry1) {
