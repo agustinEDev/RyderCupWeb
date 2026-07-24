@@ -25,6 +25,7 @@ const Dashboard = () => {
   useEffect(() => {
     if (user && localStorage.getItem('needs_handicap') === 'true') {
       localStorage.removeItem('needs_handicap');
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- pre-existing pattern surfaced by eslint-plugin-react-hooks 7.1.1 bump; needs dedicated review (tracked in follow-up)
       setShowHandicapModal(true);
     }
   }, [user]);
