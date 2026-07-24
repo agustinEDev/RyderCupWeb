@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { useAuthContext } from './useAuthContext';
 import { clearUserContext } from '../utils/sentryHelpers';
 import { logoutUseCase } from '../composition';

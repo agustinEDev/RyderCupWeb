@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Security
+
+**Dependencies — react-router HIGH CVE (GHSA-qwww-vcr4-c8h2)**
+
+- `react-router`/`react-router-dom` 7.12.0–8.2.0 allowed action execution before the 400 response in RSC mode (CSRF bypass). `react-router-dom` was never published past `7.18.1` — as of v8 the DOM router lives directly in the `react-router` package itself, so this is a package swap, not a version bump: replaced `react-router-dom@7.18.1` with `react-router@8.3.0` across all 43 import sites (components, hooks, `vite.config.js`, `src/infrastructure/sentry.ts`) and test mocks. Same exported symbols (`BrowserRouter`, `Routes`, `useNavigate`, etc.), no API changes needed. `npm audit` now reports 0 vulnerabilities.
+
 ### Added
 
 **Competition — Revert to In Progress (COMPLETED → IN_PROGRESS)**

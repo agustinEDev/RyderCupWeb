@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useParams, Link, useLocation } from 'react-router-dom';
+import { useParams, Link, useLocation } from 'react-router';
 import { Loader } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import Header from '../../components/layout/Header';

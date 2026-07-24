@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router';
 import { motion } from 'framer-motion';
 import customToast from '../utils/toast';
 import { useTranslation } from 'react-i18next';
