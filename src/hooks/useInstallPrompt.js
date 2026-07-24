@@ -29,14 +29,18 @@ function detectIOS() {
   const isIPadOS =
     (/macintosh/i.test(ua) || navigator.platform === 'MacIntel') &&
     navigator.maxTouchPoints > 1;
-  return (isIOS || isIPadOS) && !detectStandalone();
+  // Only navigator.standalone here — matchMedia('display-mode: standalone') is unreliable
+  // in some mobile WebView-based browsers (e.g. Chrome iOS) and falsely reports true in
+  // regular tabs, which would wrongly hide the "Add to Home Screen" instructions.
+  const isStandalone = window.navigator.standalone === true;
+  return (isIOS || isIPadOS) && !isStandalone;
 }
 
 function detectDesktopSafari() {
   const ua = navigator.userAgent;
   const isSafari = /safari/i.test(ua) && !/chrome|chromium|android/i.test(ua);
   const isMac = /macintosh/i.test(ua) && navigator.maxTouchPoints === 0;
-  return isSafari && isMac && !detectStandalone();
+  return isSafari && isMac;
 }
 
 export function useInstallPrompt() {
