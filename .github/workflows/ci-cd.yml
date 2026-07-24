@@ -605,8 +605,10 @@ jobs:
           # Define budget (in KB)
           # v2.1: Reduced from 1600 KB to 1400 KB after replacing country-flag-icons (239 KB) with CDN images
           # v2.0.11: Raised to 1500 KB after Sprint 3 invitations system (2 new pages, 3 components, i18n namespace)
-          MAX_BUNDLE_SIZE_KB=1500
-          WARNING_THRESHOLD_KB=1400
+          # Jul 2026: Raised to 1600 KB after minor-updates dependency bump (Sentry SDK growth mainly); no
+          # trimmable dead code found (knip-flagged unused deps/files aren't part of the compiled bundle anyway)
+          MAX_BUNDLE_SIZE_KB=1600
+          WARNING_THRESHOLD_KB=1500
 
           # List all bundles with sizes
           echo ""
