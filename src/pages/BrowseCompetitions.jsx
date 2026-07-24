@@ -1,7 +1,7 @@
 // src/pages/BrowseCompetitions.jsx
 
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import customToast from '../utils/toast';
 import { useTranslation } from 'react-i18next';
 import { Search, Calendar, Users, Target, TrendingUp } from 'lucide-react';

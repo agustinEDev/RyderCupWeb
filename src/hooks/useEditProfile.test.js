@@ -46,8 +46,8 @@ vi.mock('../utils/toast', () => ({
   },
 }));
 
-// Mockear 'react-router-dom' para el hook 'useNavigate'
-vi.mock('react-router-dom', () => ({
+// Mockear 'react-router' para el hook 'useNavigate'
+vi.mock('react-router', () => ({
   useNavigate: () => vi.fn(),
 }));
 
