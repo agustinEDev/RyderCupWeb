@@ -8,6 +8,19 @@
 
 ---
 
+## 🧾 Deuda Técnica
+
+> Cosas que se han pospuesto conscientemente (con una razón concreta) en vez de arreglarse en el momento. Revisar y priorizar periódicamente.
+
+### React Hooks — 37 avisos silenciados tras bump de `eslint-plugin-react-hooks` (Jul 2026)
+- **Qué pasó:** al mergear la PR de Dependabot que sube `eslint-plugin-react-hooks` 7.0.1 → 7.1.1, la nueva versión incorpora la familia de reglas del React Compiler (`immutability`, `purity`, `refs`, `preserve-manual-memoization`, además de `set-state-in-effect`) al set "recommended", y estas detectan 37 patrones preexistentes repartidos en 19 archivos.
+- **Por qué se pospuso:** arreglarlos de verdad implica refactorizar 19 archivos de producción entendiendo el contexto de cada uno (por ejemplo, mover llamadas que hacen `setState` desde un `useEffect`, o el acceso a `.current` de refs durante el render), lo cual es un cambio de comportamiento real que no debía colarse dentro de un PR de "bump de dependencias".
+- **Qué se hizo en su lugar:** cada aviso se silenció puntualmente con `// eslint-disable-next-line <regla> -- ...` (sin tocar lógica), manteniendo la política de `--max-warnings 0` intacta para el resto del proyecto.
+- **Archivos afectados:** `CompetitionGolfCoursesSection.jsx`, `GolfCourseForm.jsx`, `GolfCourseSearchBox.jsx`, `SendInvitationModal.jsx`, `useAuth.js`, `useDeviceManagement.js`, `useInactivityLogout.jsx`, `useProactiveTokenRefresh.js`, `useScoring.js`, `useUserRoles.jsx`, `CompetitionDetail.jsx`, `Competitions.jsx`, `CreateCompetition.jsx`, `Dashboard.jsx`, `admin/GolfCourses.jsx`, `admin/PendingGolfCourses.jsx`, `creator/InvitationsPage.jsx`, `creator/SchedulePage.jsx`, `player/MyInvitationsPage.jsx`, `player/ScoringPage.jsx`, `player/UpcomingMatchesPage.jsx`.
+- **Siguiente paso:** revisar y arreglar caso por caso (probablemente varias PRs pequeñas por área: scoring, invitations, golf courses...), retirando el `eslint-disable-next-line` correspondiente en cada uno.
+
+---
+
 ## Completado: Scoring Improvements ⭐ v2.0.17
 
 ### Pendiente para próxima release

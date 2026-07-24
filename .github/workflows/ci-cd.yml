@@ -97,6 +97,13 @@ jobs:
           node-version: '20'
           cache: 'npm'
 
+      - name: Upgrade npm
+        # npm 10.8.2 (bundled with Node 20) fails npm ci with ERESOLVE on
+        # optional peer dependency mismatches (e.g. typescript vs i18next's
+        # "^5 || ^6" peerOptional range) that npm 11 treats as non-fatal.
+        # Pinned explicitly so CI stays reproducible across Node bumps.
+        run: npm install -g npm@11.17.0
+
       - name: Install dependencies
         run: npm ci
 
@@ -187,6 +194,13 @@ jobs:
           node-version: '20'
           cache: 'npm'
 
+      - name: Upgrade npm
+        # npm 10.8.2 (bundled with Node 20) fails npm ci with ERESOLVE on
+        # optional peer dependency mismatches (e.g. typescript vs i18next's
+        # "^5 || ^6" peerOptional range) that npm 11 treats as non-fatal.
+        # Pinned explicitly so CI stays reproducible across Node bumps.
+        run: npm install -g npm@11.17.0
+
       - name: Install dependencies
         run: npm ci
 
@@ -232,6 +246,13 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
+
+      - name: Upgrade npm
+        # npm 10.8.2 (bundled with Node 20) fails npm ci with ERESOLVE on
+        # optional peer dependency mismatches (e.g. typescript vs i18next's
+        # "^5 || ^6" peerOptional range) that npm 11 treats as non-fatal.
+        # Pinned explicitly so CI stays reproducible across Node bumps.
+        run: npm install -g npm@11.17.0
 
       - name: Install dependencies
         run: npm ci
@@ -285,6 +306,13 @@ jobs:
           node-version: '20'
           cache: 'npm'
 
+      - name: Upgrade npm
+        # npm 10.8.2 (bundled with Node 20) fails npm ci with ERESOLVE on
+        # optional peer dependency mismatches (e.g. typescript vs i18next's
+        # "^5 || ^6" peerOptional range) that npm 11 treats as non-fatal.
+        # Pinned explicitly so CI stays reproducible across Node bumps.
+        run: npm install -g npm@11.17.0
+
       - name: Install dependencies
         run: npm ci
 
@@ -335,6 +363,13 @@ jobs:
           node-version: '20'
           cache: 'npm'
 
+      - name: Upgrade npm
+        # npm 10.8.2 (bundled with Node 20) fails npm ci with ERESOLVE on
+        # optional peer dependency mismatches (e.g. typescript vs i18next's
+        # "^5 || ^6" peerOptional range) that npm 11 treats as non-fatal.
+        # Pinned explicitly so CI stays reproducible across Node bumps.
+        run: npm install -g npm@11.17.0
+
       - name: Install dependencies
         run: npm ci
 
@@ -383,6 +418,13 @@ jobs:
           node-version: '20'
           cache: 'npm'
 
+      - name: Upgrade npm
+        # npm 10.8.2 (bundled with Node 20) fails npm ci with ERESOLVE on
+        # optional peer dependency mismatches (e.g. typescript vs i18next's
+        # "^5 || ^6" peerOptional range) that npm 11 treats as non-fatal.
+        # Pinned explicitly so CI stays reproducible across Node bumps.
+        run: npm install -g npm@11.17.0
+
       - name: Install dependencies
         run: npm ci
 
@@ -422,6 +464,13 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
+
+      - name: Upgrade npm
+        # npm 10.8.2 (bundled with Node 20) fails npm ci with ERESOLVE on
+        # optional peer dependency mismatches (e.g. typescript vs i18next's
+        # "^5 || ^6" peerOptional range) that npm 11 treats as non-fatal.
+        # Pinned explicitly so CI stays reproducible across Node bumps.
+        run: npm install -g npm@11.17.0
 
       - name: Install dependencies
         run: npm ci
@@ -541,6 +590,13 @@ jobs:
           node-version: '20'
           cache: 'npm'
 
+      - name: Upgrade npm
+        # npm 10.8.2 (bundled with Node 20) fails npm ci with ERESOLVE on
+        # optional peer dependency mismatches (e.g. typescript vs i18next's
+        # "^5 || ^6" peerOptional range) that npm 11 treats as non-fatal.
+        # Pinned explicitly so CI stays reproducible across Node bumps.
+        run: npm install -g npm@11.17.0
+
       - name: Install dependencies
         run: npm ci
 
@@ -572,6 +628,13 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
+
+      - name: Upgrade npm
+        # npm 10.8.2 (bundled with Node 20) fails npm ci with ERESOLVE on
+        # optional peer dependency mismatches (e.g. typescript vs i18next's
+        # "^5 || ^6" peerOptional range) that npm 11 treats as non-fatal.
+        # Pinned explicitly so CI stays reproducible across Node bumps.
+        run: npm install -g npm@11.17.0
 
       - name: Install dependencies
         run: npm ci
@@ -648,6 +711,13 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
+
+      - name: Upgrade npm
+        # npm 10.8.2 (bundled with Node 20) fails npm ci with ERESOLVE on
+        # optional peer dependency mismatches (e.g. typescript vs i18next's
+        # "^5 || ^6" peerOptional range) that npm 11 treats as non-fatal.
+        # Pinned explicitly so CI stays reproducible across Node bumps.
+        run: npm install -g npm@11.17.0
 
       - name: Install dependencies
         run: npm ci
