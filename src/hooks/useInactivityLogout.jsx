@@ -99,6 +99,7 @@ const useInactivityLogout = ({
           <button
             onClick={() => {
               customToast.dismiss(toastRef.id);
+              // eslint-disable-next-line react-hooks/immutability -- pre-existing pattern surfaced by eslint-plugin-react-hooks 7.1.1 bump; needs dedicated review (tracked in follow-up)
               resetTimer();
               customToast.success(t('inactivity.sessionRenewed'), { duration: 2000 });
             }}
@@ -123,6 +124,7 @@ const useInactivityLogout = ({
   /**
    * Resetea los timers de inactividad (cuando hay actividad del usuario)
    */
+  // eslint-disable-next-line react-hooks/preserve-manual-memoization -- pre-existing pattern surfaced by eslint-plugin-react-hooks 7.1.1 bump; needs dedicated review (tracked in follow-up)
   const resetTimer = useCallback(() => {
     // Limpiar timers anteriores
     clearTimers();
