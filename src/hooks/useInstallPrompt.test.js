@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { renderHook } from '@testing-library/react';
+import { renderHook, act } from '@testing-library/react';
 import { useInstallPrompt } from './useInstallPrompt';
 
 const IOS_UA =
@@ -72,5 +72,21 @@ describe('useInstallPrompt', () => {
     const { result } = renderHook(() => useInstallPrompt());
 
     expect(result.current.isInstalled).toBe(true);
+  });
+
+  it('sets isInstalled when the appinstalled event fires in the current tab', () => {
+    setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36');
+    window.matchMedia = () => ({ matches: false });
+
+    const { result } = renderHook(() => useInstallPrompt());
+
+    expect(result.current.isInstalled).toBe(false);
+
+    act(() => {
+      window.dispatchEvent(new window.Event('appinstalled'));
+    });
+
+    expect(result.current.isInstalled).toBe(true);
+    expect(result.current.canInstall).toBe(false);
   });
 });

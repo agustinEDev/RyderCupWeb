@@ -47,7 +47,7 @@ export function useInstallPrompt() {
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [isIOS] = useState(() => detectIOS());
   const [isDesktopSafari] = useState(() => !detectIOS() && detectDesktopSafari());
-  const [isInstalled] = useState(() => detectStandalone());
+  const [isInstalled, setIsInstalled] = useState(() => detectStandalone());
   const [canInstall, setCanInstall] = useState(() => !isDismissed() && (detectIOS() || detectDesktopSafari()));
 
   useEffect(() => {
@@ -59,7 +59,10 @@ export function useInstallPrompt() {
       setCanInstall(true);
     };
 
-    const installedHandler = () => setCanInstall(false);
+    const installedHandler = () => {
+      setCanInstall(false);
+      setIsInstalled(true);
+    };
 
     window.addEventListener('beforeinstallprompt', handler);
     window.addEventListener('appinstalled', installedHandler);
