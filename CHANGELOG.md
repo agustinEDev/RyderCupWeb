@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Security
+
+**Frontend — Full Security & Clean Architecture/DDD Audit (Issue #237)**
+
+- Proactive audit of the whole frontend codebase: dependency security (`snyk test --all-projects`, 0 vulnerabilities across 35 dependencies), auth token handling, XSS surface, CSP/security headers, and Clean-Architecture/DDD compliance (component boundaries, state management consistency, hook boundaries, API layer centralization).
+- Full report: `docs/AUDIT_FRONTEND_2026-07.md`. 0 Critical, 1 High, 4 Medium, 3 Low findings. 5 follow-up issues opened (#240–#244); the already-tracked 37 silenced `react-hooks/*` warnings (#239) were referenced, not duplicated.
+
 ## [2.1.0] - 2026-07-25
 
 ### Changed
