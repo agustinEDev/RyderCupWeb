@@ -11,33 +11,26 @@ import * as Sentry from '@sentry/react';
 class LazyLoadErrorBoundary extends Component {
   constructor(props) {
     super(props);
-    this.state = { hasError: false, errorMessage: null, errorName: null };
+    this.state = { hasError: false, isReloading: false, errorMessage: null, errorName: null };
   }
 
   static getDerivedStateFromError(error) {
-    // Check if error is related to chunk/module loading
+    // React may invoke getDerivedStateFromError more than once for the same
+    // error (it's a render-phase, side-effect-free method by contract), so it
+    // must only compute state here — sessionStorage writes and reload() live
+    // in componentDidCatch below, which React guarantees runs exactly once.
     const isChunkLoadError =
       error?.name === 'ChunkLoadError' ||
       error?.message?.includes('Loading chunk') ||
       error?.message?.includes('Importing a module script failed') ||
       error?.message?.includes('Failed to fetch dynamically imported module');
 
-    if (isChunkLoadError) {
-      // Check if we've already reloaded (prevent infinite loop)
-      const hasReloaded = sessionStorage.getItem('lazy_load_error_reloaded');
+    const alreadyReloaded = Boolean(sessionStorage.getItem('lazy_load_error_reloaded'));
+    const willAutoReload = isChunkLoadError && !alreadyReloaded;
 
-      if (!hasReloaded) {
-        // Mark as reloaded and reload the page
-        sessionStorage.setItem('lazy_load_error_reloaded', 'true');
-        window.location.reload();
-        return { hasError: false, errorMessage: null, errorName: null }; // Don't show error UI, we're reloading
-      }
-    }
-
-    // If it's a chunk error but we already reloaded, or it's a different error
-    // v2.0.4: Store error details for debugging display
     return {
-      hasError: true,
+      hasError: !willAutoReload,
+      isReloading: willAutoReload,
       errorMessage: error?.message || 'Unknown error',
       errorName: error?.name || 'Error'
     };
@@ -46,6 +39,15 @@ class LazyLoadErrorBoundary extends Component {
   componentDidCatch(error, errorInfo) {
     // Log the error for debugging
     console.error('LazyLoadErrorBoundary caught an error:', error, errorInfo);
+
+    if (this.state.isReloading) {
+      // Mark as reloaded and reload the page (typically happens after
+      // deployments when old chunks are deleted). Self-healing: skip Sentry
+      // reporting for this path, the user never actually saw a broken app.
+      sessionStorage.setItem('lazy_load_error_reloaded', 'true');
+      window.location.reload();
+      return;
+    }
 
     // v2.0.4: Report to Sentry with full context for mobile debugging
     Sentry.withScope((scope) => {
@@ -61,6 +63,12 @@ class LazyLoadErrorBoundary extends Component {
   }
 
   render() {
+    if (this.state.isReloading) {
+      // Blank until the browser navigation from window.location.reload() takes
+      // over — must not render `children` again or the lazy component re-throws.
+      return null;
+    }
+
     if (this.state.hasError) {
       // Fallback UI when error persists after reload
       return (
