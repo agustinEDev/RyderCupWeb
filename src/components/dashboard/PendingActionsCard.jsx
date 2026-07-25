@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { motion } from 'framer-motion';
 import { Mail, Users, Flag, TrendingUp, ChevronRight, Bell } from 'lucide-react';
 import { useTranslation } from 'react-i18next';

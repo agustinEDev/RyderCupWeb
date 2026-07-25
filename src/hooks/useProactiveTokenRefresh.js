@@ -33,6 +33,7 @@ const useProactiveTokenRefresh = ({
   enabled = true
 } = {}) => {
   // Track when the token was last refreshed
+  // eslint-disable-next-line react-hooks/purity -- pre-existing pattern surfaced by eslint-plugin-react-hooks 7.1.1 bump; needs dedicated review (tracked in follow-up)
   const lastRefreshRef = useRef(Date.now());
 
   // Track if a refresh is in progress

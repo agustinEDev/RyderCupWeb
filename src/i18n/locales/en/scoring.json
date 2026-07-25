@@ -100,6 +100,9 @@
     "cancel": "Cancel",
     "submitted": "Scorecard submitted",
     "alreadySubmitted": "Scorecard already submitted",
+    "matchCompleted": "The match has finished",
+    "waitingForPlayers_one": "Waiting for {{names}} to submit their scorecard",
+    "waitingForPlayers_other": "Waiting for {{count}} players to submit their scorecards: {{names}}",
     "allValidated": "{{count}}/{{total}} holes validated",
     "notReady": "Not all holes are validated yet"
   },

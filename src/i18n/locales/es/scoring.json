@@ -100,6 +100,9 @@
     "cancel": "Cancelar",
     "submitted": "Tarjeta enviada",
     "alreadySubmitted": "Tarjeta ya enviada",
+    "matchCompleted": "La partida ha finalizado",
+    "waitingForPlayers_one": "Esperando a que {{names}} entregue su tarjeta",
+    "waitingForPlayers_other": "Esperando a que {{count}} jugadores entreguen su tarjeta: {{names}}",
     "allValidated": "{{count}}/{{total}} hoyos validados",
     "notReady": "No todos los hoyos están validados"
   },

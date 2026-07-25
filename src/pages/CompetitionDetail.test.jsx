@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { MemoryRouter, Route, Routes } from 'react-router';
 import CompetitionDetail from './CompetitionDetail';
 
 vi.mock('react-i18next', () => ({
@@ -49,6 +49,7 @@ const mockGetCompetitionDetail = vi.fn().mockResolvedValue({
 
 const mockCloseEnrollments = vi.fn();
 const mockAssignTeams = vi.fn();
+const mockRevertToInProgress = vi.fn();
 
 const mockListEnrollments = vi.fn().mockResolvedValue([
   {
@@ -76,6 +77,7 @@ vi.mock('../composition', () => ({
   deleteCompetitionUseCase: { execute: vi.fn() },
   reopenEnrollmentsUseCase: { execute: vi.fn() },
   revertCompetitionStatusUseCase: { execute: vi.fn() },
+  revertCompetitionToInProgressUseCase: { execute: (...args) => mockRevertToInProgress(...args) },
   listEnrollmentsUseCase: { execute: (...args) => mockListEnrollments(...args) },
   requestEnrollmentUseCase: { execute: vi.fn() },
   approveEnrollmentUseCase: { execute: vi.fn() },
@@ -304,5 +306,70 @@ describe('CompetitionDetail - cierre de inscripciones con asignación automátic
     });
     expect(customToast.error).toHaveBeenCalledWith('assign failed');
     expect(customToast.success).toHaveBeenCalledWith('detail.success.enrollmentsClosed');
+  });
+});
+
+describe('CompetitionDetail - reabrir torneo completado', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockListEnrollments.mockResolvedValue([]);
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+  });
+
+  it('muestra el botón de reabrir torneo solo cuando el estado es COMPLETED', async () => {
+    mockGetCompetitionDetail.mockResolvedValue({
+      id: 'comp-1',
+      name: 'Summer Cup',
+      status: 'COMPLETED',
+      creatorId: 'creator-1',
+      maxPlayers: 20,
+      countries: [],
+    });
+
+    renderPage();
+
+    expect(await screen.findByText('detail.actions.revert-to-in-progress')).toBeInTheDocument();
+  });
+
+  it('no muestra el botón de reabrir torneo si el estado no es COMPLETED', async () => {
+    mockGetCompetitionDetail.mockResolvedValue({
+      id: 'comp-1',
+      name: 'Summer Cup',
+      status: 'IN_PROGRESS',
+      creatorId: 'creator-1',
+      maxPlayers: 20,
+      countries: [],
+    });
+
+    renderPage();
+
+    await waitFor(() => expect(mockListEnrollments).toHaveBeenCalled());
+    expect(screen.queryByText('detail.actions.revert-to-in-progress')).not.toBeInTheDocument();
+  });
+
+  it('al reabrir el torneo llama al use case y actualiza el estado a IN_PROGRESS', async () => {
+    mockGetCompetitionDetail.mockResolvedValue({
+      id: 'comp-1',
+      name: 'Summer Cup',
+      status: 'COMPLETED',
+      creatorId: 'creator-1',
+      maxPlayers: 20,
+      countries: [],
+    });
+    mockRevertToInProgress.mockResolvedValue({
+      status: 'IN_PROGRESS',
+      updatedAt: '2026-07-09T00:00:00Z',
+    });
+
+    renderPage();
+
+    const reopenButton = await screen.findByText('detail.actions.revert-to-in-progress');
+    fireEvent.click(reopenButton);
+
+    await waitFor(() => {
+      expect(mockRevertToInProgress).toHaveBeenCalledWith('comp-1');
+    });
+    expect(customToast.success).toHaveBeenCalledWith('detail.success.revertedToInProgress');
+    expect(screen.getByText('detail.actions.complete')).toBeInTheDocument();
   });
 });

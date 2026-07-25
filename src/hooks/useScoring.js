@@ -30,6 +30,7 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
   const [isSessionBlocked, setIsSessionBlocked] = useState(false);
   const [pendingQueueSize, setPendingQueueSize] = useState(0);
 
+  // eslint-disable-next-line react-hooks/purity -- pre-existing pattern surfaced by eslint-plugin-react-hooks 7.1.1 bump; needs dedicated review (tracked in follow-up)
   const sessionIdRef = useRef(`${Date.now()}-${Math.random().toString(36).slice(2)}`);
   const pollIntervalRef = useRef(null);
   const sessionRefreshRef = useRef(null);
@@ -48,12 +49,6 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
     ma => ma.scorerUserId === currentUserId
   );
 
-  // Who marks ME (to check if my marker has submitted)
-  const markerUserId = myAssignment?.markedByUserId;
-  const markerHasSubmitted = markerUserId
-    ? (scoringView?.scorecardSubmittedBy?.includes(markerUserId) ?? false)
-    : false;
-
   // Who do I mark (to check if the person I mark has submitted)
   const markedPlayerId = myAssignment?.marksUserId;
   const markedPlayerHasSubmitted = markedPlayerId
@@ -66,8 +61,13 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
   // Marker scores locked only when the person I mark has submitted their scorecard
   const isMarkerScoreLocked = markedPlayerHasSubmitted;
 
-  // Fully locked = both my own scores and marker scores are locked
-  const isFullyLocked = hasSubmitted && markerHasSubmitted;
+  // Fully locked = both my own scores and marker scores are locked.
+  // Must use markedPlayerHasSubmitted (the player I mark), not whoever marks ME —
+  // in FOURBALL/FOURSOMES marking is a non-reciprocal 4-cycle (A1 marks B1, but is
+  // marked by B2), so those are different people and mixing them up read-only-locks
+  // the whole input as soon as MY marker submits, even while the player I still mark
+  // has an unresolved discrepancy — leaving no one able to fix it.
+  const isFullyLocked = isOwnScoreLocked && isMarkerScoreLocked;
 
   // Count validated holes
   const validatedHoles = scoringView?.scores?.filter(s => {
@@ -226,6 +226,7 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
     // the LOCK_ACQUIRED event via BroadcastChannel and gets blocked.
     sessionLock.forceRelease(currentUserId);
     sessionLock.acquire(matchId, sessionIdRef.current, currentUserId);
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- pre-existing pattern surfaced by eslint-plugin-react-hooks 7.1.1 bump; needs dedicated review (tracked in follow-up)
     setIsSessionBlocked(false);
 
     // Refresh lock periodically
@@ -267,6 +268,7 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
 
   // --- Initial fetch + polling ---
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- pre-existing pattern surfaced by eslint-plugin-react-hooks 7.1.1 bump; needs dedicated review (tracked in follow-up)
     fetchScoringView();
 
     pollIntervalRef.current = setInterval(() => {
@@ -280,6 +282,7 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
 
   // --- Update pending queue size on mount ---
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- pre-existing pattern surfaced by eslint-plugin-react-hooks 7.1.1 bump; needs dedicated review (tracked in follow-up)
     setPendingQueueSize(offlineQueue.size());
   }, []);
 

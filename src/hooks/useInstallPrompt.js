@@ -15,6 +15,13 @@ function isDismissed() {
   }
 }
 
+function detectStandalone() {
+  return (
+    window.navigator.standalone === true ||
+    (typeof window.matchMedia === 'function' && window.matchMedia('(display-mode: standalone)').matches)
+  );
+}
+
 function detectIOS() {
   const ua = navigator.userAgent;
   const isIOS = /iphone|ipad|ipod/i.test(ua);
@@ -22,6 +29,9 @@ function detectIOS() {
   const isIPadOS =
     (/macintosh/i.test(ua) || navigator.platform === 'MacIntel') &&
     navigator.maxTouchPoints > 1;
+  // Only navigator.standalone here — matchMedia('display-mode: standalone') is unreliable
+  // in some mobile WebView-based browsers (e.g. Chrome iOS) and falsely reports true in
+  // regular tabs, which would wrongly hide the "Add to Home Screen" instructions.
   const isStandalone = window.navigator.standalone === true;
   return (isIOS || isIPadOS) && !isStandalone;
 }
@@ -35,8 +45,9 @@ function detectDesktopSafari() {
 
 export function useInstallPrompt() {
   const [deferredPrompt, setDeferredPrompt] = useState(null);
-  const [isIOS] = useState(() => !isDismissed() && detectIOS());
-  const [isDesktopSafari] = useState(() => !isDismissed() && !detectIOS() && detectDesktopSafari());
+  const [isIOS] = useState(() => detectIOS());
+  const [isDesktopSafari] = useState(() => !detectIOS() && detectDesktopSafari());
+  const [isInstalled, setIsInstalled] = useState(() => detectStandalone());
   const [canInstall, setCanInstall] = useState(() => !isDismissed() && (detectIOS() || detectDesktopSafari()));
 
   useEffect(() => {
@@ -48,7 +59,10 @@ export function useInstallPrompt() {
       setCanInstall(true);
     };
 
-    const installedHandler = () => setCanInstall(false);
+    const installedHandler = () => {
+      setCanInstall(false);
+      setIsInstalled(true);
+    };
 
     window.addEventListener('beforeinstallprompt', handler);
     window.addEventListener('appinstalled', installedHandler);
@@ -75,5 +89,5 @@ export function useInstallPrompt() {
     setCanInstall(false);
   };
 
-  return { canInstall, isIOS, isDesktopSafari, install, dismiss };
+  return { canInstall, isIOS, isDesktopSafari, isInstalled, install, dismiss };
 }

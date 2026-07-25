@@ -144,7 +144,7 @@ export default defineConfig(() => ({
       output: {
         // Vite 8 (Rolldown) requires manualChunks as a function, not an object
         manualChunks: (id) => {
-          if (['react', 'react-dom', 'react-router-dom'].some(p => id.includes(`/node_modules/${p}/`))) {
+          if (['react', 'react-dom', 'react-router'].some(p => id.includes(`/node_modules/${p}/`))) {
             return 'react-vendor'
           }
           if (id.includes('/node_modules/@sentry/react/')) {

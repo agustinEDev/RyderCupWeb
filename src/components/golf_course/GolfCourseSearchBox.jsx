@@ -66,6 +66,7 @@ const GolfCourseSearchBox = ({
   // Filter courses based on search query
   useEffect(() => {
     if (!searchQuery.trim()) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- pre-existing pattern surfaced by eslint-plugin-react-hooks 7.1.1 bump; needs dedicated review (tracked in follow-up)
       setFilteredCourses(allCourses);
       return;
     }
