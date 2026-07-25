@@ -48,12 +48,6 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
     ma => ma.scorerUserId === currentUserId
   );
 
-  // Who marks ME (to check if my marker has submitted)
-  const markerUserId = myAssignment?.markedByUserId;
-  const markerHasSubmitted = markerUserId
-    ? (scoringView?.scorecardSubmittedBy?.includes(markerUserId) ?? false)
-    : false;
-
   // Who do I mark (to check if the person I mark has submitted)
   const markedPlayerId = myAssignment?.marksUserId;
   const markedPlayerHasSubmitted = markedPlayerId
@@ -66,8 +60,13 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
   // Marker scores locked only when the person I mark has submitted their scorecard
   const isMarkerScoreLocked = markedPlayerHasSubmitted;
 
-  // Fully locked = both my own scores and marker scores are locked
-  const isFullyLocked = hasSubmitted && markerHasSubmitted;
+  // Fully locked = both my own scores and marker scores are locked.
+  // Must use markedPlayerHasSubmitted (the player I mark), not whoever marks ME —
+  // in FOURBALL/FOURSOMES marking is a non-reciprocal 4-cycle (A1 marks B1, but is
+  // marked by B2), so those are different people and mixing them up read-only-locks
+  // the whole input as soon as MY marker submits, even while the player I still mark
+  // has an unresolved discrepancy — leaving no one able to fix it.
+  const isFullyLocked = isOwnScoreLocked && isMarkerScoreLocked;
 
   // Count validated holes
   const validatedHoles = scoringView?.scores?.filter(s => {

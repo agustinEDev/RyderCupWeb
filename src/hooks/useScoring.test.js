@@ -358,6 +358,45 @@ describe('useScoring', () => {
     expect(result.current.isMarkerScoreLocked).toBe(true);
   });
 
+  it('should NOT be fully locked in FOURBALL when the player I mark has a pending discrepancy, even if the player who marks me already submitted', async () => {
+    // Non-reciprocal 4-cycle, matching backend's FOURBALL marker generation:
+    // u1(A1)->u2(B1), marked by u4(B2). u2(B1)->u3(A2), marked by u1(A1).
+    // u3(A2)->u4(B2), marked by u2(B1). u4(B2)->u1(A1), marked by u3(A2).
+    const fourballView = {
+      ...mockScoringView,
+      matchFormat: 'FOURBALL',
+      players: [
+        { userId: 'u1', userName: 'A1', team: 'A' },
+        { userId: 'u2', userName: 'B1', team: 'B' },
+        { userId: 'u3', userName: 'A2', team: 'A' },
+        { userId: 'u4', userName: 'B2', team: 'B' },
+      ],
+      markerAssignments: [
+        { scorerUserId: 'u1', marksUserId: 'u2', markedByUserId: 'u4' },
+        { scorerUserId: 'u2', marksUserId: 'u3', markedByUserId: 'u1' },
+        { scorerUserId: 'u3', marksUserId: 'u4', markedByUserId: 'u2' },
+        { scorerUserId: 'u4', marksUserId: 'u1', markedByUserId: 'u3' },
+      ],
+      // u1 and u4 (who marks u1) already submitted; u2 (whom u1 marks) has not,
+      // e.g. blocked by an unresolved discrepancy.
+      scorecardSubmittedBy: ['u1', 'u4'],
+    };
+    getScoringViewUseCase.execute.mockResolvedValue(fourballView);
+
+    const { result } = renderHook(() => useScoring('m-1', 'u1'));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    expect(result.current.isOwnScoreLocked).toBe(true);
+    expect(result.current.isMarkerScoreLocked).toBe(false);
+    expect(result.current.isFullyLocked).toBe(false);
+
+    // u1 must still be able to correct the marker score for u2 (the discrepancy)
+    await act(async () => {
+      await result.current.submitScore(1, { ownScore: 4, markedPlayerId: 'u2', markedScore: 5 });
+    });
+    expect(submitHoleScoreUseCase.execute).toHaveBeenCalled();
+  });
+
   describe('admin bypass', () => {
     it('admin not in match has canScore=true and isMatchPlayer=false', async () => {
       const { result } = renderHook(() => useScoring('m-1', 'u-admin', true));
