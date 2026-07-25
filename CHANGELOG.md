@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [2.1.0] - 2026-07-25
+
 ### Changed
 
 **Scoring — Pending Players Shown After Submitting a Scorecard**
