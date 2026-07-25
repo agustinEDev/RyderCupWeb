@@ -15,6 +15,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+**Scoring — Marker Input Wrongly Locked in FOURBALL/FOURSOMES**
+
+- `isFullyLocked` in `useScoring` gated the entire hole-input UI (own score + marker score) on whether *the player who marks me* had submitted, instead of whether *the player I mark* had submitted. In SINGLES marking is reciprocal so both are the same person and the bug never surfaced, but FOURBALL/FOURSOMES use a non-reciprocal 4-cycle (e.g. A1 marks B1 but is marked by B2) — so a player who had already submitted lost the ability to fix a marker-score discrepancy for the player they still mark as soon as their own marker submitted, while that other player couldn't submit either due to the unresolved mismatch. No one could unblock the match. `isFullyLocked` now correctly derives from `isOwnScoreLocked && isMarkerScoreLocked` (both keyed off the player being marked, matching the already-correct backend lock logic).
+
 **PWA — iOS Install Hint Lost After Banner Dismissal**
 
 - `isIOS`/`isDesktopSafari` in `useInstallPrompt` were derived with `!isDismissed() && detectIOS()`, so once a user closed the install banner once (persisted 30 days), platform detection reported `false` from then on. The Landing page's manual "Install" button reused those flags, so it fell back to the generic "already installed or unsupported" hint instead of the correct iOS/Safari instructions. Platform detection is now independent of dismissal state; only `canInstall` (which drives the banner's auto-display) stays dismissal-gated.
