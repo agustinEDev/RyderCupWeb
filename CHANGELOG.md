@@ -7,11 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
-### Security
+### Changed
 
-**Dependencies — react-router HIGH CVE (GHSA-qwww-vcr4-c8h2)**
+**Scoring — Pending Players Shown After Submitting a Scorecard**
 
-- `react-router`/`react-router-dom` 7.12.0–8.2.0 allowed action execution before the 400 response in RSC mode (CSRF bypass). `react-router-dom` was never published past `7.18.1` — as of v8 the DOM router lives directly in the `react-router` package itself, so this is a package swap, not a version bump: replaced `react-router-dom@7.18.1` with `react-router@8.3.0` across all 43 import sites (components, hooks, `vite.config.js`, `src/infrastructure/sentry.ts`) and test mocks. Same exported symbols (`BrowserRouter`, `Routes`, `useNavigate`, etc.), no API changes needed. `npm audit` now reports 0 vulnerabilities.
+- In FOURBALL/FOURSOMES, a match only completes once all 4 players have individually submitted their validated scorecard (each validates their own card against a cross-team marker — by design, not per-pair). After submitting, the Scorecard tab previously only showed "Scorecard already submitted" with no indication that teammates and opponents were still pending, which read as if nothing was happening. It now names the players still pending, or shows a "match finished" message once the match status is `COMPLETED`.
+- The "Match Decided" early-end modal ("continue to submit") kept reappearing on every revisit of an already-submitted scorecard, even though there was nothing left to submit. It's now suppressed once the player has submitted.
 
 ### Fixed
 
@@ -24,6 +25,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - `isIOS`/`isDesktopSafari` in `useInstallPrompt` were derived with `!isDismissed() && detectIOS()`, so once a user closed the install banner once (persisted 30 days), platform detection reported `false` from then on. The Landing page's manual "Install" button reused those flags, so it fell back to the generic "already installed or unsupported" hint instead of the correct iOS/Safari instructions. Platform detection is now independent of dismissal state; only `canInstall` (which drives the banner's auto-display) stays dismissal-gated.
 - The "already installed" and "browser doesn't support install" cases were merged into a single ambiguous `genericHint` message. Added a `detectStandalone()` check (`navigator.standalone` + `display-mode: standalone` media query), exposed as `isInstalled` from `useInstallPrompt`. The Landing page now shows a dedicated "already installed" message instead of the generic one when `isInstalled` is true — but only when the page itself is being viewed from inside the installed app window (or, on iOS, `navigator.standalone`); there is no reliable cross-browser way to detect "already installed" from a regular tab, so desktop Safari/Chrome users revisiting the site in a normal tab after installing still see the generic hint. `isDesktopSafari` intentionally does **not** factor in standalone mode (unlike iOS), since `matchMedia('display-mode: standalone')` produced false positives in some mobile WebView-based browsers (confirmed on Chrome iOS) that broke the "Add to Home Screen" instructions; `isInstalled` is informational only and never feeds back into platform detection.
 - `isInstalled` was computed once at mount and never updated afterwards, so accepting the native install prompt in the same tab still showed the generic hint instead of "already installed" until a full reload. The `appinstalled` handler now also flips `isInstalled` to `true`.
+
+### Security
+
+**Dependencies — react-router HIGH CVE (GHSA-qwww-vcr4-c8h2)**
+
+- `react-router`/`react-router-dom` 7.12.0–8.2.0 allowed action execution before the 400 response in RSC mode (CSRF bypass). `react-router-dom` was never published past `7.18.1` — as of v8 the DOM router lives directly in the `react-router` package itself, so this is a package swap, not a version bump: replaced `react-router-dom@7.18.1` with `react-router@8.3.0` across all 43 import sites (components, hooks, `vite.config.js`, `src/infrastructure/sentry.ts`) and test mocks. Same exported symbols (`BrowserRouter`, `Routes`, `useNavigate`, etc.), no API changes needed. `npm audit` now reports 0 vulnerabilities.
 
 ### Added
 

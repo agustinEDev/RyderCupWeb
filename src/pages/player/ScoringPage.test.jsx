@@ -182,6 +182,98 @@ describe('ScoringPage', () => {
     expect(screen.getByText('input.nextHole')).toBeInTheDocument();
   });
 
+  describe('early end modal', () => {
+    afterEach(() => {
+      mockUseScoring.hasSubmitted = false;
+      mockUseScoring.scoringView.isDecided = false;
+    });
+
+    it('should show the early end modal when the match is decided and not yet submitted', () => {
+      mockUseScoring.hasSubmitted = false;
+      mockUseScoring.scoringView.isDecided = true;
+
+      render(<ScoringPage />);
+
+      expect(screen.getByTestId('early-end-modal')).toBeInTheDocument();
+    });
+
+    it('should not show the early end modal once the player has already submitted', () => {
+      mockUseScoring.hasSubmitted = true;
+      mockUseScoring.scoringView.isDecided = true;
+
+      render(<ScoringPage />);
+
+      expect(screen.queryByTestId('early-end-modal')).toBeNull();
+    });
+  });
+
+  describe('scorecard tab — already submitted', () => {
+    afterEach(() => {
+      mockUseScoring.hasSubmitted = false;
+      mockUseScoring.scoringView.players = [
+        { userId: 'u1', userName: 'Player A', team: 'A' },
+        { userId: 'u2', userName: 'Player B', team: 'B' },
+      ];
+      mockUseScoring.scoringView.scorecardSubmittedBy = [];
+      mockUseScoring.scoringView.matchStatus = 'IN_PROGRESS';
+    });
+
+    it('should show the names of players still pending submission', () => {
+      mockUseScoring.hasSubmitted = true;
+      mockUseScoring.scoringView.matchFormat = 'FOURBALL';
+      mockUseScoring.scoringView.players = [
+        { userId: 'u1', userName: 'Player A', team: 'A' },
+        { userId: 'u2', userName: 'Player B', team: 'A' },
+        { userId: 'u3', userName: 'Player C', team: 'B' },
+        { userId: 'u4', userName: 'Player D', team: 'B' },
+      ];
+      mockUseScoring.scoringView.scorecardSubmittedBy = ['u1'];
+      mockUseScoring.scoringView.matchStatus = 'IN_PROGRESS';
+
+      render(<ScoringPage />);
+      fireEvent.click(screen.getByTestId('tab-scorecard'));
+
+      expect(screen.getByText('submit.alreadySubmitted')).toBeInTheDocument();
+      expect(screen.getByText(/submit\.waitingForPlayers/)).toHaveTextContent(
+        'Player B, Player C, Player D'
+      );
+    });
+
+    it('should show a completed message instead of pending players once the match is COMPLETED', () => {
+      mockUseScoring.hasSubmitted = true;
+      mockUseScoring.scoringView.players = [
+        { userId: 'u1', userName: 'Player A', team: 'A' },
+        { userId: 'u2', userName: 'Player B', team: 'B' },
+      ];
+      mockUseScoring.scoringView.scorecardSubmittedBy = ['u1', 'u2'];
+      mockUseScoring.scoringView.matchStatus = 'COMPLETED';
+
+      render(<ScoringPage />);
+      fireEvent.click(screen.getByTestId('tab-scorecard'));
+
+      expect(screen.getByText('submit.alreadySubmitted')).toBeInTheDocument();
+      expect(screen.getByText('submit.matchCompleted')).toBeInTheDocument();
+      expect(screen.queryByText(/submit\.waitingForPlayers/)).toBeNull();
+    });
+
+    it('should show no secondary message once nobody else is pending', () => {
+      mockUseScoring.hasSubmitted = true;
+      mockUseScoring.scoringView.players = [
+        { userId: 'u1', userName: 'Player A', team: 'A' },
+        { userId: 'u2', userName: 'Player B', team: 'B' },
+      ];
+      mockUseScoring.scoringView.scorecardSubmittedBy = ['u1', 'u2'];
+      mockUseScoring.scoringView.matchStatus = 'IN_PROGRESS';
+
+      render(<ScoringPage />);
+      fireEvent.click(screen.getByTestId('tab-scorecard'));
+
+      expect(screen.getByText('submit.alreadySubmitted')).toBeInTheDocument();
+      expect(screen.queryByText(/submit\.waitingForPlayers/)).toBeNull();
+      expect(screen.queryByText('submit.matchCompleted')).toBeNull();
+    });
+  });
+
   describe('match summary screen', () => {
     afterEach(() => {
       mockUseScoring.matchSummary = null;
