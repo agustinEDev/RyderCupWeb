@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 
 // Mock dependencies
-vi.mock('react-router-dom', () => ({
+vi.mock('react-router', () => ({
   useParams: () => ({ matchId: 'm-1' }),
   useNavigate: () => vi.fn(),
   Link: ({ children, to, ...props }) => <a href={to} {...props}>{children}</a>,

@@ -29,7 +29,7 @@
 
 import { init, replayIntegration, reactRouterV7BrowserTracingIntegration, feedbackIntegration, getClient } from '@sentry/react';
 import { useEffect } from 'react';
-import { useLocation, useNavigationType, createRoutesFromChildren, matchRoutes } from 'react-router-dom';
+import { useLocation, useNavigationType, createRoutesFromChildren, matchRoutes } from 'react-router';
 
 // ============================================
 // CONFIGURACIÓN DE VARIABLES DE ENTORNO

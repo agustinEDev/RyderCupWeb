@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { useRef, useEffect, useState } from 'react';
 import HeaderAuth from '../components/layout/HeaderAuth';

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { BarChart3, Download, Share, Trophy, Users, Zap } from 'lucide-react';
@@ -11,7 +11,7 @@ const Landing = () => {
   const { t } = useTranslation('landing');
   const { t: tCommon } = useTranslation('common');
   const navigate = useNavigate();
-  const { canInstall, isIOS, isDesktopSafari, install } = useInstallPrompt();
+  const { canInstall, isIOS, isDesktopSafari, isInstalled, install } = useInstallPrompt();
   const [showInstallHint, setShowInstallHint] = useState(false);
 
   const handleCreateCompetition = () => {
@@ -135,7 +135,9 @@ const Landing = () => {
                     )}
                     {showInstallHint && !isIOS && !isDesktopSafari && !canInstall && (
                       <p className="text-sm text-gray-600 bg-gray-50 rounded-lg px-4 py-2 border border-gray-200">
-                        {tCommon('installBanner.genericHint')}
+                        {isInstalled
+                          ? tCommon('installBanner.alreadyInstalled')
+                          : tCommon('installBanner.genericHint')}
                       </p>
                     )}
                   </div>

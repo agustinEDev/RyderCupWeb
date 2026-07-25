@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 
 const mockLocationState = { state: null };
-vi.mock('react-router-dom', () => ({
+vi.mock('react-router', () => ({
   useParams: () => ({ id: 'c-1' }),
   useLocation: () => mockLocationState,
   Link: ({ children, to, ...props }) => <a href={to} {...props}>{children}</a>,
