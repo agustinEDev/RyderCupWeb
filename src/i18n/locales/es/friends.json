@@ -1,0 +1,61 @@
+{
+  "title": "Amigos",
+  "subtitle": "Gestiona tus amigos y solicitudes de amistad",
+  "loading": "Cargando amigos...",
+  "tabs": {
+    "friends": "Mis amigos",
+    "received": "Recibidas",
+    "sent": "Enviadas"
+  },
+  "empty": {
+    "friends": "Todavía no tienes amigos añadidos",
+    "received": "No tienes solicitudes pendientes",
+    "sent": "No has enviado solicitudes"
+  },
+  "add": {
+    "button": "Añadir amigo",
+    "title": "Añadir amigo",
+    "searchPlaceholder": "Buscar por nombre o email...",
+    "searchMinChars": "Escribe al menos 2 caracteres",
+    "noUsersFound": "No se encontraron usuarios",
+    "noUserSelected": "Por favor, selecciona un usuario primero",
+    "send": "Enviar solicitud",
+    "sending": "Enviando..."
+  },
+  "status": {
+    "PENDING": "Pendiente",
+    "ACCEPTED": "Amigos",
+    "DECLINED": "Rechazada",
+    "BLOCKED": "Bloqueado"
+  },
+  "actions": {
+    "accept": "Aceptar",
+    "decline": "Rechazar",
+    "accepting": "Aceptando...",
+    "declining": "Rechazando...",
+    "remove": "Eliminar",
+    "removing": "Eliminando...",
+    "cancel": "Cancelar",
+    "cancelling": "Cancelando...",
+    "block": "Bloquear"
+  },
+  "card": {
+    "unknownUser": "Usuario desconocido",
+    "friendsSince": "Amigos desde {{date}}",
+    "requestedAt": "Solicitud del {{date}}"
+  },
+  "success": {
+    "sent": "Solicitud de amistad enviada",
+    "accepted": "Solicitud aceptada",
+    "declined": "Solicitud rechazada",
+    "removed": "Amistad eliminada",
+    "blocked": "Usuario bloqueado"
+  },
+  "errors": {
+    "failedToLoad": "Error al cargar los amigos",
+    "failedToSend": "Error al enviar la solicitud",
+    "failedToRespond": "Error al responder a la solicitud",
+    "failedToRemove": "Error al eliminar la amistad",
+    "failedToBlock": "Error al bloquear al usuario"
+  }
+}

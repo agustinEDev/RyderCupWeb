@@ -94,6 +94,15 @@ import ListMyInvitationsUseCase from '../application/use_cases/invitation/ListMy
 import RespondToInvitationUseCase from '../application/use_cases/invitation/RespondToInvitationUseCase';
 import ListCompetitionInvitationsUseCase from '../application/use_cases/invitation/ListCompetitionInvitationsUseCase';
 
+// Friend Use Cases
+import ApiFriendRepository from '../infrastructure/repositories/ApiFriendRepository';
+import SendFriendRequestUseCase from '../application/use_cases/friend/SendFriendRequestUseCase';
+import RespondFriendRequestUseCase from '../application/use_cases/friend/RespondFriendRequestUseCase';
+import RemoveFriendUseCase from '../application/use_cases/friend/RemoveFriendUseCase';
+import BlockUserUseCase from '../application/use_cases/friend/BlockUserUseCase';
+import ListFriendsUseCase from '../application/use_cases/friend/ListFriendsUseCase';
+import ListPendingFriendRequestsUseCase from '../application/use_cases/friend/ListPendingFriendRequestsUseCase';
+
 // Scoring Use Cases (Sprint 4)
 import ApiScoringRepository from '../infrastructure/repositories/ApiScoringRepository';
 import GetScoringViewUseCase from '../application/use_cases/scoring/GetScoringViewUseCase';
@@ -195,6 +204,15 @@ const sendInvitationByEmailUseCase = new SendInvitationByEmailUseCase({ invitati
 const listMyInvitationsUseCase = new ListMyInvitationsUseCase({ invitationRepository: apiInvitationRepository });
 const respondToInvitationUseCase = new RespondToInvitationUseCase({ invitationRepository: apiInvitationRepository });
 const listCompetitionInvitationsUseCase = new ListCompetitionInvitationsUseCase({ invitationRepository: apiInvitationRepository });
+
+// Friend Use Cases
+const apiFriendRepository = new ApiFriendRepository();
+const sendFriendRequestUseCase = new SendFriendRequestUseCase({ friendRepository: apiFriendRepository });
+const respondFriendRequestUseCase = new RespondFriendRequestUseCase({ friendRepository: apiFriendRepository });
+const removeFriendUseCase = new RemoveFriendUseCase({ friendRepository: apiFriendRepository });
+const blockUserUseCase = new BlockUserUseCase({ friendRepository: apiFriendRepository });
+const listFriendsUseCase = new ListFriendsUseCase({ friendRepository: apiFriendRepository });
+const listPendingFriendRequestsUseCase = new ListPendingFriendRequestsUseCase({ friendRepository: apiFriendRepository });
 
 // Scoring Use Cases (Sprint 4)
 const getScoringViewUseCase = new GetScoringViewUseCase({ scoringRepository: apiScoringRepository });
@@ -315,6 +333,13 @@ export {
   listMyInvitationsUseCase,
   respondToInvitationUseCase,
   listCompetitionInvitationsUseCase,
+  // Friend Use Cases
+  sendFriendRequestUseCase,
+  respondFriendRequestUseCase,
+  removeFriendUseCase,
+  blockUserUseCase,
+  listFriendsUseCase,
+  listPendingFriendRequestsUseCase,
   // Scoring Use Cases (Sprint 4)
   getScoringViewUseCase,
   submitHoleScoreUseCase,

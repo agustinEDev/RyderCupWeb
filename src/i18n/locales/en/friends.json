@@ -1,0 +1,61 @@
+{
+  "title": "Friends",
+  "subtitle": "Manage your friends and friend requests",
+  "loading": "Loading friends...",
+  "tabs": {
+    "friends": "My friends",
+    "received": "Received",
+    "sent": "Sent"
+  },
+  "empty": {
+    "friends": "You haven't added any friends yet",
+    "received": "You have no pending requests",
+    "sent": "You haven't sent any requests"
+  },
+  "add": {
+    "button": "Add friend",
+    "title": "Add friend",
+    "searchPlaceholder": "Search by name or email...",
+    "searchMinChars": "Type at least 2 characters",
+    "noUsersFound": "No users found",
+    "noUserSelected": "Please select a user first",
+    "send": "Send request",
+    "sending": "Sending..."
+  },
+  "status": {
+    "PENDING": "Pending",
+    "ACCEPTED": "Friends",
+    "DECLINED": "Declined",
+    "BLOCKED": "Blocked"
+  },
+  "actions": {
+    "accept": "Accept",
+    "decline": "Decline",
+    "accepting": "Accepting...",
+    "declining": "Declining...",
+    "remove": "Remove",
+    "removing": "Removing...",
+    "cancel": "Cancel",
+    "cancelling": "Cancelling...",
+    "block": "Block"
+  },
+  "card": {
+    "unknownUser": "Unknown user",
+    "friendsSince": "Friends since {{date}}",
+    "requestedAt": "Requested on {{date}}"
+  },
+  "success": {
+    "sent": "Friend request sent",
+    "accepted": "Request accepted",
+    "declined": "Request declined",
+    "removed": "Friendship removed",
+    "blocked": "User blocked"
+  },
+  "errors": {
+    "failedToLoad": "Failed to load friends",
+    "failedToSend": "Failed to send request",
+    "failedToRespond": "Failed to respond to request",
+    "failedToRemove": "Failed to remove friendship",
+    "failedToBlock": "Failed to block user"
+  }
+}

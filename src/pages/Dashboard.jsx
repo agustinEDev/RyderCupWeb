@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router';
 import { motion } from 'framer-motion';
-import { Trophy, Users, User, TrendingUp, Award, Search } from 'lucide-react';
+import { Trophy, Users, User, TrendingUp, Award, Search, UserPlus, Flag } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import HeaderAuth from '../components/layout/HeaderAuth';
 import ProfileCard from '../components/profile/ProfileCard';
@@ -287,6 +287,42 @@ const Dashboard = () => {
                       {t('quickActions.browseCompetitions')}
                     </h3>
                     <p className="text-gray-500 text-sm">{t('quickActions.browseCompetitionsDesc')}</p>
+                  </div>
+                </motion.button>
+
+                {/* Friends Card */}
+                <motion.button
+                  onClick={() => navigate('/friends')}
+                  whileHover={{ scale: 1.02, y: -2 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="flex items-center gap-4 p-6 bg-white border-2 border-gray-200 rounded-xl hover:border-pink-500 hover:shadow-lg transition-all text-left group"
+                >
+                  <div className="p-3 bg-pink-100 rounded-lg group-hover:bg-pink-500 transition-colors">
+                    <UserPlus className="w-7 h-7 text-pink-600 group-hover:text-white transition-colors" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-gray-900 font-bold text-lg group-hover:text-pink-600 transition-colors">
+                      {t('quickActions.friends')}
+                    </h3>
+                    <p className="text-gray-500 text-sm">{t('quickActions.friendsDesc')}</p>
+                  </div>
+                </motion.button>
+
+                {/* Quick Match Card */}
+                <motion.button
+                  onClick={() => navigate('/quick-matches')}
+                  whileHover={{ scale: 1.02, y: -2 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="flex items-center gap-4 p-6 bg-white border-2 border-gray-200 rounded-xl hover:border-orange-500 hover:shadow-lg transition-all text-left group"
+                >
+                  <div className="p-3 bg-orange-100 rounded-lg group-hover:bg-orange-500 transition-colors">
+                    <Flag className="w-7 h-7 text-orange-600 group-hover:text-white transition-colors" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-gray-900 font-bold text-lg group-hover:text-orange-600 transition-colors">
+                      {t('quickActions.quickMatch')}
+                    </h3>
+                    <p className="text-gray-500 text-sm">{t('quickActions.quickMatchDesc')}</p>
                   </div>
                 </motion.button>
               </div>
