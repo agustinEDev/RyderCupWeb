@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [2.1.1] - 2026-07-26
+
+### Security
+
+**Sentry Session Replay — Unmasked PII in Production**
+
+- `replayIntegration` in `src/infrastructure/sentry.ts` had `maskAllText: false` and `blockAllMedia: false` hardcoded and unconditional, so any JS error in production triggered a full-DOM-text session recording — player names, emails, handicaps, competition data — sent unmasked to Sentry. `maskAllText`/`blockAllMedia` are now gated on `SENTRY_CONFIG.environment === 'production'`, reusing the existing environment-check pattern already used elsewhere in the same file. Sample rates are unchanged.
+
 ## [2.1.0] - 2026-07-25
 
 ### Changed
