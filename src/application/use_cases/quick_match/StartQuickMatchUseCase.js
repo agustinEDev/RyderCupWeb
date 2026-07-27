@@ -23,6 +23,9 @@ class StartQuickMatchUseCase {
     if (!Array.isArray(scorerIds) || scorerIds.length === 0) {
       throw new Error('scorerIds must be a non-empty array');
     }
+    if (scorerIds.length > 4) {
+      throw new Error('scorerIds must contain at most 4 participant ids');
+    }
 
     const quickMatch = await this.#quickMatchRepository.start(quickMatchId, scorerIds);
     return QuickMatchAssembler.toSimpleDTO(quickMatch);

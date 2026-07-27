@@ -87,7 +87,7 @@ const MyQuickMatchesPage = () => {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className={`text-xs font-semibold px-2 py-1 rounded-full ${STATUS_STYLES[qm.status]}`}>
+                    <span className={`text-xs font-semibold px-2 py-1 rounded-full ${STATUS_STYLES[qm.status] ?? 'bg-gray-100 text-gray-700'}`}>
                       {t(`history.status.${qm.status}`, qm.status)}
                     </span>
                     <ChevronRight className="w-4 h-4 text-gray-400" />

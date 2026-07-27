@@ -29,7 +29,10 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
   const pollIntervalRef = useRef(null);
 
   const fetchQuickMatch = useCallback(async () => {
-    if (!quickMatchId) return;
+    if (!quickMatchId) {
+      setIsLoading(false);
+      return;
+    }
     try {
       const data = await getQuickMatchUseCase.execute(quickMatchId);
       setQuickMatch(data);
@@ -52,6 +55,7 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
   }, [quickMatchId]);
 
   useEffect(() => {
+    holesLoadedRef.current = false;
     // eslint-disable-next-line react-hooks/set-state-in-effect -- initial fetch + polling, same pattern as useScoring.js
     fetchQuickMatch();
     pollIntervalRef.current = setInterval(fetchQuickMatch, POLL_INTERVAL);
@@ -73,7 +77,7 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
     ? myAssignment?.coveredParticipantIds ?? [myParticipant.participantId]
     : [];
 
-  const totalHoles = 18;
+  const totalHoles = holes.length || 18;
 
   const submitScore = useCallback(
     async (holeNumber, participantId, score) => {

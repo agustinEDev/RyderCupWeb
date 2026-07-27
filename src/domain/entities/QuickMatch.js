@@ -1,5 +1,8 @@
 import QuickMatchStatus from '../value_objects/QuickMatchStatus';
 
+const VALID_MATCH_FORMATS = ['SINGLES', 'FOURBALL', 'FOURSOMES'];
+const MAX_NAME_LENGTH = 100;
+
 /**
  * Entity: QuickMatch
  *
@@ -50,6 +53,12 @@ class QuickMatch {
     }
     if (!matchFormat || typeof matchFormat !== 'string') {
       throw new TypeError('matchFormat must be a non-empty string');
+    }
+    if (!VALID_MATCH_FORMATS.includes(matchFormat)) {
+      throw new TypeError(`Invalid matchFormat: ${matchFormat}`);
+    }
+    if (name != null && (typeof name !== 'string' || name.length > MAX_NAME_LENGTH)) {
+      throw new TypeError(`name must be a string of at most ${MAX_NAME_LENGTH} characters`);
     }
     if (!(status instanceof QuickMatchStatus)) {
       throw new TypeError('status must be a QuickMatchStatus instance');

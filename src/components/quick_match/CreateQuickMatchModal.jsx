@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { X, Trash2 } from 'lucide-react';
@@ -63,7 +63,7 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser }) => {
     (f) => !participants.some((p) => p.userId === f.otherUserId)
   );
 
-  const handleClose = async () => {
+  const handleClose = useCallback(async () => {
     if (quickMatch?.isPending) {
       try {
         await cancelQuickMatchUseCase.execute(quickMatch.id);
@@ -72,7 +72,17 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser }) => {
       }
     }
     onClose();
-  };
+  }, [quickMatch, onClose]);
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && !isProcessing) {
+        handleClose();
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isProcessing, handleClose]);
 
   const handleCourseNext = async () => {
     if (!selectedCourse) {
@@ -181,17 +191,22 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser }) => {
     }
   };
 
-  const handleRequestNewCourse = () => {
-    handleClose();
+  const handleRequestNewCourse = async () => {
+    await handleClose();
     navigate('/creator/golf-courses/new');
   };
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+      <div
+        className="bg-white rounded-lg shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="quick-match-modal-title"
+      >
         <div className="flex items-center justify-between p-4 border-b border-gray-200">
           <div>
-            <h2 className="text-lg font-semibold text-gray-900">{t('create.title')}</h2>
+            <h2 id="quick-match-modal-title" className="text-lg font-semibold text-gray-900">{t('create.title')}</h2>
             <p className="text-xs text-gray-500">{t('create.step', { current: step, total: 3 })}</p>
           </div>
           <button
