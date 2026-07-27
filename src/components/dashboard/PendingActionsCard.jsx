@@ -1,12 +1,13 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router';
 import { motion } from 'framer-motion';
-import { Mail, Users, Flag, TrendingUp, ChevronRight, Bell } from 'lucide-react';
+import { Mail, Users, Flag, TrendingUp, ChevronRight, Bell, UserPlus } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import {
   listMyInvitationsUseCase,
   listEnrollmentsUseCase,
   getScheduleUseCase,
+  listPendingFriendRequestsUseCase,
 } from '../../composition';
 
 const PendingActionsCard = ({ user, competitions, onHandicapAction, handicapPending = false }) => {
@@ -15,6 +16,7 @@ const PendingActionsCard = ({ user, competitions, onHandicapAction, handicapPend
   const [pendingInvitations, setPendingInvitations] = useState(0);
   const [pendingEnrollments, setPendingEnrollments] = useState([]);
   const [upcomingMatches, setUpcomingMatches] = useState(0);
+  const [pendingFriendRequests, setPendingFriendRequests] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
 
   const isCreator = useMemo(() => user?.is_admin ||
@@ -31,6 +33,7 @@ const PendingActionsCard = ({ user, competitions, onHandicapAction, handicapPend
           listMyInvitationsUseCase.execute({ status: 'PENDING' }),
           isCreator ? loadPendingEnrollments(competitions) : Promise.resolve([]),
           loadUpcomingMatches(competitions, user.id),
+          listPendingFriendRequestsUseCase.execute(user.id, 'received'),
         ]);
 
         if (results[0].status === 'fulfilled') {
@@ -43,6 +46,9 @@ const PendingActionsCard = ({ user, competitions, onHandicapAction, handicapPend
         if (results[2].status === 'fulfilled') {
           setUpcomingMatches(results[2].value);
         }
+        if (results[3].status === 'fulfilled') {
+          setPendingFriendRequests(results[3].value?.totalCount || 0);
+        }
       } catch (error) {
         console.error('Error loading pending actions:', error);
       } finally {
@@ -53,7 +59,7 @@ const PendingActionsCard = ({ user, competitions, onHandicapAction, handicapPend
     loadPendingData();
   }, [user, competitions, isCreator]);
 
-  const totalItems = pendingInvitations + pendingEnrollments.length + (upcomingMatches > 0 ? 1 : 0) + (handicapPending ? 1 : 0);
+  const totalItems = pendingInvitations + pendingEnrollments.length + (upcomingMatches > 0 ? 1 : 0) + (handicapPending ? 1 : 0) + (pendingFriendRequests > 0 ? 1 : 0);
 
   if (isLoading) {
     return (
@@ -113,6 +119,32 @@ const PendingActionsCard = ({ user, competitions, onHandicapAction, handicapPend
               <div className="flex items-center gap-2">
                 <span className="inline-flex items-center justify-center min-w-[24px] h-6 px-1.5 rounded-full bg-blue-500 text-white text-xs font-bold">
                   {pendingInvitations}
+                </span>
+                <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-gray-600 transition-colors" />
+              </div>
+            </button>
+          )}
+
+          {pendingFriendRequests > 0 && (
+            <button
+              onClick={() => navigate('/friends')}
+              className="flex items-center justify-between w-full p-3 bg-white/70 rounded-lg hover:bg-white transition-colors group"
+              data-testid="pending-friend-requests-action"
+            >
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-pink-100 rounded-lg">
+                  <UserPlus className="w-4 h-4 text-pink-600" />
+                </div>
+                <div className="text-left">
+                  <p className="text-sm font-semibold text-gray-900">{t('pendingActions.friendRequests')}</p>
+                  <p className="text-xs text-gray-500">
+                    {t('pendingActions.friendRequestsDesc', { count: pendingFriendRequests })}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="inline-flex items-center justify-center min-w-[24px] h-6 px-1.5 rounded-full bg-pink-500 text-white text-xs font-bold">
+                  {pendingFriendRequests}
                 </span>
                 <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-gray-600 transition-colors" />
               </div>

@@ -35,11 +35,13 @@ vi.mock('react-router', async () => {
 const mockListMyInvitations = vi.fn();
 const mockListEnrollments = vi.fn();
 const mockGetSchedule = vi.fn();
+const mockListPendingFriendRequests = vi.fn();
 
 vi.mock('../../composition', () => ({
   listMyInvitationsUseCase: { execute: (...args) => mockListMyInvitations(...args) },
   listEnrollmentsUseCase: { execute: (...args) => mockListEnrollments(...args) },
   getScheduleUseCase: { execute: (...args) => mockGetSchedule(...args) },
+  listPendingFriendRequestsUseCase: { execute: (...args) => mockListPendingFriendRequests(...args) },
 }));
 
 const baseUser = {
@@ -68,6 +70,7 @@ describe('PendingActionsCard', () => {
     mockListMyInvitations.mockResolvedValue({ invitations: [], totalCount: 0 });
     mockListEnrollments.mockResolvedValue([]);
     mockGetSchedule.mockResolvedValue({ rounds: [] });
+    mockListPendingFriendRequests.mockResolvedValue({ friendships: [], totalCount: 0 });
   });
 
   it('should not render when there are no pending items', async () => {
