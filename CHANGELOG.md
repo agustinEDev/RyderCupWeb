@@ -25,6 +25,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - `QuickMatch` domain entity: `matchFormat` is now nullable and mutually exclusive with the new `scoringFormat` field, validated in the constructor. Requires the matching backend change (RyderCupAm — nullable `quick_matches.match_format` + new `scoring_format` column, migration `a3f7c1d9e2b4`).
 - `QuickMatchScorecardTable`'s classification switches to a net-strokes ranking (ascending) when `scoringFormat` is `MEDAL`, reusing the existing per-hole stroke allocation from `StablefordCalculator` (now also exposing `netStrokes` per participant).
 
+**Quick Match — Playing Handicap (WHS)**
+
+- The Stableford/Medal classification used each participant's raw handicap index directly against the course's stroke index (no tee/slope adjustment), since quick match creation didn't collect a tee. Now, if a participant picked a tee, `StablefordCalculator` computes their real WHS Playing Handicap (new `PlayingHandicapCalculator` domain service, same formula as the backend's `competition.PlayingHandicapCalculator`) and uses that instead — falls back to the raw handicap when no tee was selected, so existing matches keep working unchanged.
+- `CreateQuickMatchModal`: once a course is picked, the creator can choose their own tee (step 1) and each friend/guest can choose theirs when added (step 2), both optional. An allowance % field (step 1) defaults to the WHS value for the selected format (Singles match play 100%, Fourball 90%, Foursomes 50%, free play 95%) and can be overridden.
+- Fixed a related backend gap while at it: registered participants' `handicap` was always `null` in the API response (only guests had theirs), so the existing Stableford display silently treated every registered player as scratch. Requires the matching backend change (RyderCupAm — `User.handicap` now mapped through, plus `tee_category`/`tee_gender` per participant and `allowance_percentage`/`effective_allowance` on the match, migration `b8e2f4a6c1d7`).
+
 ### Fixed
 
 **Quick Match — Duplicate Self Entry When the Creator Is Also a Scorer**

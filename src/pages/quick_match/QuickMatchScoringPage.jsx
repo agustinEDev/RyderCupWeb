@@ -23,6 +23,7 @@ const QuickMatchScoringPage = () => {
   const {
     quickMatch,
     holes,
+    tees,
     currentHole,
     isLoading,
     error,
@@ -217,6 +218,8 @@ const QuickMatchScoringPage = () => {
             participants={quickMatch?.participants ?? []}
             currentParticipantId={myParticipant?.participantId}
             scoringFormat={quickMatch?.scoringFormat}
+            tees={tees}
+            allowancePercentage={quickMatch?.effectiveAllowance}
           />
         )}
       </div>

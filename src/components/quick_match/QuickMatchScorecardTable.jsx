@@ -13,6 +13,8 @@ const QuickMatchScorecardTable = ({
   participants = [],
   currentParticipantId,
   scoringFormat = null,
+  tees = [],
+  allowancePercentage = 100,
 }) => {
   const { t } = useTranslation('quickMatch');
   const { t: ts } = useTranslation('scoring');
@@ -22,8 +24,8 @@ const QuickMatchScorecardTable = ({
 
   const isMedal = scoringFormat === 'MEDAL';
   const ranking = isMedal
-    ? StablefordCalculator.rankParticipantsByMedal(participants, holes, holeScores)
-    : StablefordCalculator.rankParticipants(participants, holes, holeScores);
+    ? StablefordCalculator.rankParticipantsByMedal(participants, holes, holeScores, tees, allowancePercentage)
+    : StablefordCalculator.rankParticipants(participants, holes, holeScores, tees, allowancePercentage);
 
   const getScore = (holeNumber, participantId) => {
     const entry = holeScores.find((hs) => hs.holeNumber === holeNumber && hs.participantId === participantId);

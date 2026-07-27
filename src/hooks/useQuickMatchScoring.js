@@ -20,6 +20,7 @@ const POLL_INTERVAL = 10000; // 10 seconds
 export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
   const [quickMatch, setQuickMatch] = useState(null);
   const [holes, setHoles] = useState([]);
+  const [tees, setTees] = useState([]);
   const [currentHole, setCurrentHole] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -43,6 +44,7 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
         try {
           const course = await getGolfCourseUseCase.execute(data.golfCourseId);
           setHoles(course.holes || []);
+          setTees(course.tees || []);
         } catch {
           holesLoadedRef.current = false;
         }
@@ -119,6 +121,7 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
   return {
     quickMatch,
     holes,
+    tees,
     currentHole,
     isLoading,
     error,

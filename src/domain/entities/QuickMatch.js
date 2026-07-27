@@ -19,6 +19,8 @@ class QuickMatch {
   #golfCourseId;
   #matchFormat;
   #scoringFormat;
+  #allowancePercentage;
+  #effectiveAllowance;
   #status;
   #name;
   #participants;
@@ -35,6 +37,8 @@ class QuickMatch {
     golfCourseId,
     matchFormat = null,
     scoringFormat = null,
+    allowancePercentage = null,
+    effectiveAllowance = 100,
     status,
     name = null,
     participants = [],
@@ -75,6 +79,8 @@ class QuickMatch {
     this.#golfCourseId = golfCourseId;
     this.#matchFormat = matchFormat;
     this.#scoringFormat = scoringFormat;
+    this.#allowancePercentage = allowancePercentage;
+    this.#effectiveAllowance = effectiveAllowance;
     this.#status = status;
     this.#name = name;
     this.#participants = participants;
@@ -112,6 +118,14 @@ class QuickMatch {
 
   get scoringFormat() {
     return this.#scoringFormat;
+  }
+
+  get allowancePercentage() {
+    return this.#allowancePercentage;
+  }
+
+  get effectiveAllowance() {
+    return this.#effectiveAllowance;
   }
 
   get status() {
@@ -193,6 +207,8 @@ class QuickMatch {
       golfCourseId: this.#golfCourseId,
       matchFormat: this.#matchFormat,
       scoringFormat: this.#scoringFormat,
+      allowancePercentage: this.#allowancePercentage,
+      effectiveAllowance: this.#effectiveAllowance,
       status: this.#status.toString(),
       name: this.#name,
       participants: this.#participants,

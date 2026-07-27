@@ -59,6 +59,49 @@ describe('StablefordCalculator', () => {
     });
   });
 
+  describe('resolveStrokesBasis', () => {
+    const holes = [
+      { holeNumber: 1, par: 4 },
+      { holeNumber: 2, par: 4 },
+    ]; // course par 8, for a simple round number
+
+    it('should return null when the participant has no handicap', () => {
+      const participant = { handicap: null, teeCategory: 'AMATEUR', teeGender: 'MALE' };
+      expect(StablefordCalculator.resolveStrokesBasis(participant, holes, [], 100)).toBeNull();
+    });
+
+    it('should fall back to raw handicap when no tee was selected', () => {
+      const participant = { handicap: 12, teeCategory: null, teeGender: null };
+      expect(StablefordCalculator.resolveStrokesBasis(participant, holes, [], 100)).toBe(12);
+    });
+
+    it('should fall back to raw handicap when the selected tee is not found on the course', () => {
+      const participant = { handicap: 12, teeCategory: 'AMATEUR', teeGender: 'MALE' };
+      const tees = [{ teeCategory: 'CHAMPIONSHIP', gender: 'MALE', courseRating: 72, slopeRating: 130 }];
+      expect(StablefordCalculator.resolveStrokesBasis(participant, holes, tees, 100)).toBe(12);
+    });
+
+    it('should compute the Playing Handicap when a matching tee is found', () => {
+      const participant = { handicap: 12, teeCategory: 'AMATEUR', teeGender: 'MALE' };
+      const tees = [{ teeCategory: 'AMATEUR', gender: 'MALE', courseRating: 8, slopeRating: 113 }];
+      // CH = 12 * (113/113) + (8 - 8) = 12, allowance 100% -> 12
+      expect(StablefordCalculator.resolveStrokesBasis(participant, holes, tees, 100)).toBe(12);
+    });
+
+    it('should apply the allowance percentage to the Playing Handicap', () => {
+      const participant = { handicap: 20, teeCategory: 'AMATEUR', teeGender: 'MALE' };
+      const tees = [{ teeCategory: 'AMATEUR', gender: 'MALE', courseRating: 8, slopeRating: 113 }];
+      // CH = 20, 90% allowance -> 18
+      expect(StablefordCalculator.resolveStrokesBasis(participant, holes, tees, 90)).toBe(18);
+    });
+
+    it('should match tees with a null gender (gender-neutral) only against a participant with no teeGender', () => {
+      const participant = { handicap: 12, teeCategory: 'AMATEUR', teeGender: null };
+      const tees = [{ teeCategory: 'AMATEUR', gender: null, courseRating: 8, slopeRating: 113 }];
+      expect(StablefordCalculator.resolveStrokesBasis(participant, holes, tees, 100)).toBe(12);
+    });
+  });
+
   describe('computeParticipantTotals', () => {
     const holes = [
       { holeNumber: 1, par: 4, strokeIndex: 5 },
@@ -87,6 +130,33 @@ describe('StablefordCalculator', () => {
 
       const result = StablefordCalculator.computeParticipantTotals(participant, holes, holeScores);
       expect(result.netStrokes).toBe(4);
+    });
+
+    it('should use the Playing Handicap instead of the raw handicap when a tee is selected', () => {
+      // Two holes par 4+3=7. Raw handicap 18 would give a stroke on every hole;
+      // a tee/allowance combo that computes a lower Playing Handicap (e.g. 0)
+      // must NOT grant that stroke.
+      const participant = {
+        participantId: 'p-1',
+        handicap: 18,
+        teeCategory: 'AMATEUR',
+        teeGender: 'MALE',
+      };
+      const tees = [{ teeCategory: 'AMATEUR', gender: 'MALE', courseRating: 7, slopeRating: 113 }];
+      const holeScores = [{ holeNumber: 1, participantId: 'p-1', score: 4 }];
+
+      const result = StablefordCalculator.computeParticipantTotals(participant, holes, holeScores, tees, 100);
+      // CH = 18*(113/113) + (7-7) = 18 -> 1 stroke on hole 1 (SI 5) -> net 3
+      const resultLowAllowance = StablefordCalculator.computeParticipantTotals(
+        participant,
+        holes,
+        holeScores,
+        tees,
+        20
+      );
+      // PH = round(18 * 0.20) = 4 -> below SI 5 -> no stroke on hole 1 -> net 4
+      expect(result.netStrokes).toBe(3);
+      expect(resultLowAllowance.netStrokes).toBe(4);
     });
   });
 

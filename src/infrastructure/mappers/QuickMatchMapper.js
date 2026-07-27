@@ -34,6 +34,8 @@ class QuickMatchMapper {
       handicap: p.handicap ?? null,
       team: p.team ?? null,
       isGuest: !!p.is_guest,
+      teeCategory: p.tee_category ?? null,
+      teeGender: p.tee_gender ?? null,
     }));
 
     const holeScores = (apiData.hole_scores || []).map((hs) => ({
@@ -65,6 +67,8 @@ class QuickMatchMapper {
       golfCourseId: apiData.golf_course_id,
       matchFormat: apiData.match_format ?? null,
       scoringFormat: apiData.scoring_format ?? null,
+      allowancePercentage: apiData.allowance_percentage ?? null,
+      effectiveAllowance: apiData.effective_allowance ?? 100,
       status: QuickMatchStatus.fromString(apiData.status),
       name: apiData.name ?? null,
       participants,

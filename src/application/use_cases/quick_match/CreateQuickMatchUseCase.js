@@ -15,7 +15,7 @@ class CreateQuickMatchUseCase {
     this.#quickMatchRepository = quickMatchRepository;
   }
 
-  async execute(golfCourseId, matchFormat, scoringFormat = null, name = null) {
+  async execute(golfCourseId, matchFormat, scoringFormat = null, name = null, options = {}) {
     if (!golfCourseId || typeof golfCourseId !== 'string') {
       throw new Error('golfCourseId is required');
     }
@@ -27,7 +27,8 @@ class CreateQuickMatchUseCase {
       golfCourseId,
       matchFormat,
       scoringFormat,
-      name
+      name,
+      options
     );
     return QuickMatchAssembler.toSimpleDTO(quickMatch);
   }

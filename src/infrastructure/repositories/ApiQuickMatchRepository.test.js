@@ -47,6 +47,9 @@ describe('ApiQuickMatchRepository', () => {
           match_format: 'SINGLES',
           scoring_format: null,
           name: null,
+          allowance_percentage: null,
+          creator_tee_category: null,
+          creator_tee_gender: null,
         }),
       });
       expect(result).toBeInstanceOf(QuickMatch);
@@ -64,6 +67,9 @@ describe('ApiQuickMatchRepository', () => {
           match_format: null,
           scoring_format: 'STABLEFORD',
           name: null,
+          allowance_percentage: null,
+          creator_tee_category: null,
+          creator_tee_gender: null,
         }),
       });
     });
@@ -80,6 +86,32 @@ describe('ApiQuickMatchRepository', () => {
           match_format: 'SINGLES',
           scoring_format: null,
           name: 'Viernes con Rafa',
+          allowance_percentage: null,
+          creator_tee_category: null,
+          creator_tee_gender: null,
+        }),
+      });
+    });
+
+    it('should POST allowance and creator tee when provided in options', async () => {
+      apiRequest.mockResolvedValue(mockQuickMatchApi);
+
+      await repo.create('course-1', 'SINGLES', null, null, {
+        allowancePercentage: 90,
+        creatorTeeCategory: 'AMATEUR',
+        creatorTeeGender: 'MALE',
+      });
+
+      expect(apiRequest).toHaveBeenCalledWith('/api/v1/quick-matches', {
+        method: 'POST',
+        body: JSON.stringify({
+          golf_course_id: 'course-1',
+          match_format: 'SINGLES',
+          scoring_format: null,
+          name: null,
+          allowance_percentage: 90,
+          creator_tee_category: 'AMATEUR',
+          creator_tee_gender: 'MALE',
         }),
       });
     });
@@ -93,7 +125,26 @@ describe('ApiQuickMatchRepository', () => {
 
       expect(apiRequest).toHaveBeenCalledWith('/api/v1/quick-matches/qm-1/participants', {
         method: 'POST',
-        body: JSON.stringify({ friend_user_id: 'user-2', team: 'A' }),
+        body: JSON.stringify({ friend_user_id: 'user-2', team: 'A', tee_category: null, tee_gender: null }),
+      });
+    });
+
+    it('should POST the chosen tee when provided in options', async () => {
+      apiRequest.mockResolvedValue(mockQuickMatchApi);
+
+      await repo.addFriendParticipant('qm-1', 'user-2', 'A', {
+        teeCategory: 'AMATEUR',
+        teeGender: 'MALE',
+      });
+
+      expect(apiRequest).toHaveBeenCalledWith('/api/v1/quick-matches/qm-1/participants', {
+        method: 'POST',
+        body: JSON.stringify({
+          friend_user_id: 'user-2',
+          team: 'A',
+          tee_category: 'AMATEUR',
+          tee_gender: 'MALE',
+        }),
       });
     });
   });
@@ -111,7 +162,39 @@ describe('ApiQuickMatchRepository', () => {
 
       expect(apiRequest).toHaveBeenCalledWith('/api/v1/quick-matches/qm-1/participants/guest', {
         method: 'POST',
-        body: JSON.stringify({ first_name: 'Jane', last_name: 'Doe', handicap: 15, team: null }),
+        body: JSON.stringify({
+          first_name: 'Jane',
+          last_name: 'Doe',
+          handicap: 15,
+          team: null,
+          tee_category: null,
+          tee_gender: null,
+        }),
+      });
+    });
+
+    it('should POST the chosen tee when the guest carries teeCategory/teeGender', async () => {
+      apiRequest.mockResolvedValue(mockQuickMatchApi);
+
+      await repo.addGuestParticipant('qm-1', {
+        firstName: 'Jane',
+        lastName: 'Doe',
+        handicap: 15,
+        team: null,
+        teeCategory: 'FORWARD',
+        teeGender: 'FEMALE',
+      });
+
+      expect(apiRequest).toHaveBeenCalledWith('/api/v1/quick-matches/qm-1/participants/guest', {
+        method: 'POST',
+        body: JSON.stringify({
+          first_name: 'Jane',
+          last_name: 'Doe',
+          handicap: 15,
+          team: null,
+          tee_category: 'FORWARD',
+          tee_gender: 'FEMALE',
+        }),
       });
     });
   });

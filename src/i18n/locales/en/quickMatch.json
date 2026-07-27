@@ -20,6 +20,9 @@
       "formatMedal": "Medal (stroke play, lowest net score wins)",
       "formatStableford": "Stableford (points-based)",
       "courseLabel": "Golf course",
+      "yourTeeLabel": "Your tee",
+      "noTeeOption": "Not specified",
+      "allowanceLabel": "Allowance (%)",
       "next": "Next",
       "creating": "Creating...",
       "errorCourseRequired": "Select a golf course"
@@ -27,6 +30,7 @@
     "participants": {
       "heading": "Add participants",
       "rosterTitle": "Players ({{count}}/{{max}})",
+      "teeLabel": "Tee",
       "tabFriends": "Friends",
       "tabGuest": "Guest",
       "noFriends": "You don't have any friends added yet",

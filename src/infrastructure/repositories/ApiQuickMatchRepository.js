@@ -36,7 +36,8 @@ class ApiQuickMatchRepository extends IQuickMatchRepository {
     return queryString ? `?${queryString}` : '';
   }
 
-  async create(golfCourseId, matchFormat, scoringFormat, name = null) {
+  async create(golfCourseId, matchFormat, scoringFormat, name = null, options = {}) {
+    const { allowancePercentage = null, creatorTeeCategory = null, creatorTeeGender = null } = options;
     const apiData = await apiRequest('/api/v1/quick-matches', {
       method: 'POST',
       body: JSON.stringify({
@@ -44,16 +45,25 @@ class ApiQuickMatchRepository extends IQuickMatchRepository {
         match_format: matchFormat,
         scoring_format: scoringFormat,
         name,
+        allowance_percentage: allowancePercentage,
+        creator_tee_category: creatorTeeCategory,
+        creator_tee_gender: creatorTeeGender,
       }),
     });
 
     return QuickMatchMapper.toDomain(apiData);
   }
 
-  async addFriendParticipant(quickMatchId, friendUserId, team = null) {
+  async addFriendParticipant(quickMatchId, friendUserId, team = null, options = {}) {
+    const { teeCategory = null, teeGender = null } = options;
     const apiData = await apiRequest(`/api/v1/quick-matches/${quickMatchId}/participants`, {
       method: 'POST',
-      body: JSON.stringify({ friend_user_id: friendUserId, team }),
+      body: JSON.stringify({
+        friend_user_id: friendUserId,
+        team,
+        tee_category: teeCategory,
+        tee_gender: teeGender,
+      }),
     });
 
     return QuickMatchMapper.toDomain(apiData);
@@ -67,6 +77,8 @@ class ApiQuickMatchRepository extends IQuickMatchRepository {
         last_name: guest.lastName,
         handicap: guest.handicap ?? null,
         team: guest.team ?? null,
+        tee_category: guest.teeCategory ?? null,
+        tee_gender: guest.teeGender ?? null,
       }),
     });
 

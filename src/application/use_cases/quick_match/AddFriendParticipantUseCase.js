@@ -15,7 +15,7 @@ class AddFriendParticipantUseCase {
     this.#quickMatchRepository = quickMatchRepository;
   }
 
-  async execute(quickMatchId, friendUserId, team = null) {
+  async execute(quickMatchId, friendUserId, team = null, options = {}) {
     if (!quickMatchId || !friendUserId) {
       throw new Error('quickMatchId and friendUserId are required');
     }
@@ -23,7 +23,8 @@ class AddFriendParticipantUseCase {
     const quickMatch = await this.#quickMatchRepository.addFriendParticipant(
       quickMatchId,
       friendUserId,
-      team
+      team,
+      options
     );
     return QuickMatchAssembler.toSimpleDTO(quickMatch);
   }

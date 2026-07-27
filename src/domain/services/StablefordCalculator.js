@@ -1,15 +1,46 @@
+import PlayingHandicapCalculator from './PlayingHandicapCalculator';
+
 /**
  * Domain Service: StablefordCalculator
  *
  * Computes Stableford points and stroke totals for quick match participants.
- * Pure, no IO — mirrors the quick match philosophy (simple, informal scoring):
- * strokes are allocated from the participant's raw handicap index directly
- * against the course's stroke index (no tee/slope-adjusted playing handicap,
- * since quick match creation doesn't collect a tee selection).
+ * Pure, no IO. Strokes are allocated from each participant's Playing
+ * Handicap (WHS course handicap + allowance) when they picked a tee;
+ * otherwise it falls back to their raw handicap index directly against the
+ * course's stroke index, for participants who didn't select a tee.
  *
  * Points table (per hole): max(0, 2 - (netScore - par)).
  */
 class StablefordCalculator {
+  /**
+   * Resolves the handicap value to feed into `allocateStrokes`: the
+   * participant's Playing Handicap if they picked a tee that matches one on
+   * the course, otherwise their raw handicap as-is.
+   *
+   * @param {{handicap: number|null, teeCategory?: string|null, teeGender?: string|null}} participant
+   * @param {Array<{holeNumber: number, par: number}>} holes
+   * @param {Array<{teeCategory: string, gender?: string|null, courseRating: number, slopeRating: number}>} tees
+   * @param {number} allowancePercentage
+   * @returns {number|null}
+   */
+  static resolveStrokesBasis(participant, holes, tees, allowancePercentage) {
+    if (participant.handicap == null) return null;
+    if (!participant.teeCategory) return participant.handicap;
+
+    const tee = tees.find(
+      (t) => t.teeCategory === participant.teeCategory && (t.gender ?? null) === (participant.teeGender ?? null)
+    );
+    if (!tee) return participant.handicap;
+
+    const par = holes.reduce((sum, h) => sum + h.par, 0);
+    const playingHandicap = PlayingHandicapCalculator.calculate(
+      participant.handicap,
+      { courseRating: tee.courseRating, slopeRating: tee.slopeRating, par },
+      allowancePercentage
+    );
+    return playingHandicap ?? participant.handicap;
+  }
+
   /**
    * Strokes a participant receives (or gives, if handicap is negative) on a hole.
    *
@@ -55,16 +86,25 @@ class StablefordCalculator {
    * Aggregates Stableford points and gross strokes for one participant,
    * over the holes that already have a recorded score.
    *
-   * @param {{participantId: string, handicap: number|null}} participant
+   * @param {{participantId: string, handicap: number|null, teeCategory?: string|null, teeGender?: string|null}} participant
    * @param {Array<{holeNumber: number, par: number, strokeIndex: number}>} holes
    * @param {Array<{holeNumber: number, participantId: string, score: number}>} holeScores
+   * @param {Array<Object>} tees - Course tees, to resolve the participant's Playing Handicap
+   * @param {number} allowancePercentage - WHS allowance (50-100)
    * @returns {{stablefordPoints: number, totalStrokes: number, netStrokes: number, holesPlayed: number}}
    */
-  static computeParticipantTotals(participant, holes, holeScores) {
+  static computeParticipantTotals(participant, holes, holeScores, tees = [], allowancePercentage = 100) {
     let stablefordPoints = 0;
     let totalStrokes = 0;
     let netStrokes = 0;
     let holesPlayed = 0;
+
+    const strokesBasis = StablefordCalculator.resolveStrokesBasis(
+      participant,
+      holes,
+      tees,
+      allowancePercentage
+    );
 
     for (const hole of holes) {
       const entry = holeScores.find(
@@ -72,7 +112,7 @@ class StablefordCalculator {
       );
       if (!entry || entry.score == null) continue;
 
-      const strokesReceived = StablefordCalculator.allocateStrokes(participant.handicap, hole.strokeIndex);
+      const strokesReceived = StablefordCalculator.allocateStrokes(strokesBasis, hole.strokeIndex);
       stablefordPoints += StablefordCalculator.holePoints(entry.score, hole.par, strokesReceived);
       totalStrokes += entry.score;
       netStrokes += entry.score - strokesReceived;
@@ -89,14 +129,22 @@ class StablefordCalculator {
    * @param {Array<{participantId: string, name: string, handicap: number|null}>} participants
    * @param {Array<{holeNumber: number, par: number, strokeIndex: number}>} holes
    * @param {Array<{holeNumber: number, participantId: string, score: number}>} holeScores
+   * @param {Array<Object>} tees
+   * @param {number} allowancePercentage
    * @returns {Array<{participantId: string, name: string, stablefordPoints: number, totalStrokes: number, holesPlayed: number}>}
    */
-  static rankParticipants(participants, holes, holeScores) {
+  static rankParticipants(participants, holes, holeScores, tees = [], allowancePercentage = 100) {
     const rows = participants.map((participant) => ({
       participantId: participant.participantId,
       name: participant.name,
       team: participant.team,
-      ...StablefordCalculator.computeParticipantTotals(participant, holes, holeScores),
+      ...StablefordCalculator.computeParticipantTotals(
+        participant,
+        holes,
+        holeScores,
+        tees,
+        allowancePercentage
+      ),
     }));
 
     return rows.sort((a, b) => {
@@ -112,14 +160,22 @@ class StablefordCalculator {
    * @param {Array<{participantId: string, name: string, handicap: number|null}>} participants
    * @param {Array<{holeNumber: number, par: number, strokeIndex: number}>} holes
    * @param {Array<{holeNumber: number, participantId: string, score: number}>} holeScores
+   * @param {Array<Object>} tees
+   * @param {number} allowancePercentage
    * @returns {Array<{participantId: string, name: string, stablefordPoints: number, totalStrokes: number, netStrokes: number, holesPlayed: number}>}
    */
-  static rankParticipantsByMedal(participants, holes, holeScores) {
+  static rankParticipantsByMedal(participants, holes, holeScores, tees = [], allowancePercentage = 100) {
     const rows = participants.map((participant) => ({
       participantId: participant.participantId,
       name: participant.name,
       team: participant.team,
-      ...StablefordCalculator.computeParticipantTotals(participant, holes, holeScores),
+      ...StablefordCalculator.computeParticipantTotals(
+        participant,
+        holes,
+        holeScores,
+        tees,
+        allowancePercentage
+      ),
     }));
 
     return rows.sort((a, b) => {

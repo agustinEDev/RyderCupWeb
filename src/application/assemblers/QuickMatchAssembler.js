@@ -23,6 +23,8 @@ class QuickMatchAssembler {
       golfCourseId: quickMatch.golfCourseId,
       matchFormat: quickMatch.matchFormat,
       scoringFormat: quickMatch.scoringFormat,
+      allowancePercentage: quickMatch.allowancePercentage,
+      effectiveAllowance: quickMatch.effectiveAllowance,
       status: quickMatch.status.toString(),
       name: quickMatch.name,
       participants: quickMatch.participants,

@@ -28,6 +28,8 @@ describe('QuickMatchMapper', () => {
         handicap: 10,
         team: null,
         isGuest: false,
+        teeCategory: null,
+        teeGender: null,
       });
     });
 
@@ -63,6 +65,38 @@ describe('QuickMatchMapper', () => {
     it('should carry over the name when present', () => {
       const quickMatch = QuickMatchMapper.toDomain({ ...baseApiData(), name: 'Viernes con Rafa' });
       expect(quickMatch.name).toBe('Viernes con Rafa');
+    });
+
+    it('should map participant tee_category/tee_gender and allowance fields', () => {
+      const apiData = {
+        ...baseApiData(),
+        allowance_percentage: 90,
+        effective_allowance: 90,
+        participants: [
+          {
+            participant_id: 'p-1',
+            user_id: 'user-1',
+            name: 'Creator',
+            handicap: 10,
+            team: null,
+            is_guest: false,
+            tee_category: 'AMATEUR',
+            tee_gender: 'MALE',
+          },
+        ],
+      };
+
+      const quickMatch = QuickMatchMapper.toDomain(apiData);
+      expect(quickMatch.participants[0].teeCategory).toBe('AMATEUR');
+      expect(quickMatch.participants[0].teeGender).toBe('MALE');
+      expect(quickMatch.allowancePercentage).toBe(90);
+      expect(quickMatch.effectiveAllowance).toBe(90);
+    });
+
+    it('should default effectiveAllowance to 100 when absent', () => {
+      const quickMatch = QuickMatchMapper.toDomain(baseApiData());
+      expect(quickMatch.allowancePercentage).toBeNull();
+      expect(quickMatch.effectiveAllowance).toBe(100);
     });
 
     it('should map a free-play response with null match_format and a scoring_format', () => {

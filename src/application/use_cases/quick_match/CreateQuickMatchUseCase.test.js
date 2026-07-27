@@ -45,7 +45,7 @@ describe('CreateQuickMatchUseCase', () => {
   it('should create the quick match and return a simple DTO', async () => {
     const result = await useCase.execute('course-1', 'SINGLES');
 
-    expect(mockRepo.create).toHaveBeenCalledWith('course-1', 'SINGLES', null, null);
+    expect(mockRepo.create).toHaveBeenCalledWith('course-1', 'SINGLES', null, null, {});
     expect(result.id).toBe('qm-1');
     expect(result.isPending).toBe(true);
   });
@@ -53,12 +53,19 @@ describe('CreateQuickMatchUseCase', () => {
   it('should create a free-play quick match with scoringFormat', async () => {
     await useCase.execute('course-1', null, 'STABLEFORD');
 
-    expect(mockRepo.create).toHaveBeenCalledWith('course-1', null, 'STABLEFORD', null);
+    expect(mockRepo.create).toHaveBeenCalledWith('course-1', null, 'STABLEFORD', null, {});
   });
 
   it('should pass the optional name through to the repository', async () => {
     await useCase.execute('course-1', 'SINGLES', null, 'Viernes con Rafa');
 
-    expect(mockRepo.create).toHaveBeenCalledWith('course-1', 'SINGLES', null, 'Viernes con Rafa');
+    expect(mockRepo.create).toHaveBeenCalledWith('course-1', 'SINGLES', null, 'Viernes con Rafa', {});
+  });
+
+  it('should pass allowance/tee options through to the repository', async () => {
+    const options = { allowancePercentage: 90, creatorTeeCategory: 'AMATEUR', creatorTeeGender: 'MALE' };
+    await useCase.execute('course-1', 'SINGLES', null, null, options);
+
+    expect(mockRepo.create).toHaveBeenCalledWith('course-1', 'SINGLES', null, null, options);
   });
 });
