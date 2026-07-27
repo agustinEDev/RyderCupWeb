@@ -19,6 +19,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Quick matches were previously only reachable right after creation, with no way back once you navigated away. `PendingActionsCard` now lists the user's `IN_PROGRESS` quick matches as resumable items, and a new `/quick-matches` page (linked from the dashboard) lists the full history — pending, in progress, completed and cancelled — each row linking to its scoring page.
 - Creating several quick matches left them indistinguishable everywhere but the format ("Individual", "Individual", ...). `CreateQuickMatchModal`'s step 1 now has an optional free-text name field (max 100 chars); when set, it's shown instead of the format in `PendingActionsCard`, `/quick-matches`, and the scoring page header (format still shown as secondary text). Requires the matching backend change (RyderCupAm — `quick_matches.name` column, migration `de76ad1f8cf2`).
 
+**Quick Match — Free-Play Mode (Medal / Stableford)**
+
+- Quick matches only supported Ryder Cup-style team match play (Singles/Fourball/Foursomes). `CreateQuickMatchModal` step 1 now has a match-play/free-play mode toggle; free play offers Medal (stroke play) or Stableford (points), 1 to 4 players with no teams — including a solo round. The participants step no longer requires filling the roster before continuing when in free play.
+- `QuickMatch` domain entity: `matchFormat` is now nullable and mutually exclusive with the new `scoringFormat` field, validated in the constructor. Requires the matching backend change (RyderCupAm — nullable `quick_matches.match_format` + new `scoring_format` column, migration `a3f7c1d9e2b4`).
+- `QuickMatchScorecardTable`'s classification switches to a net-strokes ranking (ascending) when `scoringFormat` is `MEDAL`, reusing the existing per-hole stroke allocation from `StablefordCalculator` (now also exposing `netStrokes` per participant).
+
 ### Fixed
 
 **Quick Match — Duplicate Self Entry When the Creator Is Also a Scorer**
