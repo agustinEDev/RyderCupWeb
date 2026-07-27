@@ -99,7 +99,7 @@ const FriendCard = ({
                 disabled={isProcessing}
                 className="px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 rounded-md hover:bg-red-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
-                {t('actions.block')}
+                {isProcessing ? t('actions.blocking') : t('actions.block')}
               </button>
             </>
           )}

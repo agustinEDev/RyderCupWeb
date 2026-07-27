@@ -10,20 +10,25 @@ const AddFriendModalContent = ({ onClose, onSend, onSearchUsers, isProcessing, t
   const [showDropdown, setShowDropdown] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const dropdownRef = useRef(null);
+  const searchInputRef = useRef(null);
   const searchTimerRef = useRef(null);
   const searchRequestIdRef = useRef(0);
   const onSearchUsersRef = useRef(onSearchUsers);
+  const onCloseRef = useRef(onClose);
+  const isProcessingRef = useRef(isProcessing);
   const highlightedIndexRef = useRef(highlightedIndex);
   const showDropdownRef = useRef(showDropdown);
   const searchResultsRef = useRef(searchResults);
-  // eslint-disable-next-line react-hooks/refs -- pre-existing pattern surfaced by eslint-plugin-react-hooks 7.1.1 bump; needs dedicated review (tracked in follow-up)
-  onSearchUsersRef.current = onSearchUsers;
-  // eslint-disable-next-line react-hooks/refs -- pre-existing pattern surfaced by eslint-plugin-react-hooks 7.1.1 bump; needs dedicated review (tracked in follow-up)
-  highlightedIndexRef.current = highlightedIndex;
-  // eslint-disable-next-line react-hooks/refs -- pre-existing pattern surfaced by eslint-plugin-react-hooks 7.1.1 bump; needs dedicated review (tracked in follow-up)
-  showDropdownRef.current = showDropdown;
-  // eslint-disable-next-line react-hooks/refs -- pre-existing pattern surfaced by eslint-plugin-react-hooks 7.1.1 bump; needs dedicated review (tracked in follow-up)
-  searchResultsRef.current = searchResults;
+  useEffect(() => { onSearchUsersRef.current = onSearchUsers; });
+  useEffect(() => { onCloseRef.current = onClose; });
+  useEffect(() => { isProcessingRef.current = isProcessing; });
+  useEffect(() => { highlightedIndexRef.current = highlightedIndex; });
+  useEffect(() => { showDropdownRef.current = showDropdown; });
+  useEffect(() => { searchResultsRef.current = searchResults; });
+
+  useEffect(() => {
+    searchInputRef.current?.focus();
+  }, []);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -37,6 +42,16 @@ const AddFriendModalContent = ({ onClose, onSend, onSearchUsers, isProcessing, t
 
   useEffect(() => {
     const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        if (showDropdownRef.current) {
+          setShowDropdown(false);
+          setHighlightedIndex(-1);
+        } else if (!isProcessingRef.current) {
+          onCloseRef.current();
+        }
+        return;
+      }
+
       if (!showDropdownRef.current || searchResultsRef.current.length === 0) return;
 
       if (e.key === 'ArrowDown') {
@@ -57,9 +72,6 @@ const AddFriendModalContent = ({ onClose, onSend, onSearchUsers, isProcessing, t
           setShowDropdown(false);
           setError('');
         }
-      } else if (e.key === 'Escape') {
-        setShowDropdown(false);
-        setHighlightedIndex(-1);
       }
     };
 
@@ -135,9 +147,14 @@ const AddFriendModalContent = ({ onClose, onSend, onSearchUsers, isProcessing, t
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
+      <div
+        className="bg-white rounded-lg shadow-xl w-full max-w-md"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="add-friend-modal-title"
+      >
         <div className="flex items-center justify-between p-4 border-b border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-900">{t('add.title')}</h2>
+          <h2 id="add-friend-modal-title" className="text-lg font-semibold text-gray-900">{t('add.title')}</h2>
           <button
             onClick={onClose}
             disabled={isProcessing}
@@ -172,6 +189,7 @@ const AddFriendModalContent = ({ onClose, onSend, onSearchUsers, isProcessing, t
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                   <input
+                    ref={searchInputRef}
                     type="text"
                     value={searchQuery}
                     onChange={(e) => { setSearchQuery(e.target.value); setError(''); }}
@@ -235,7 +253,7 @@ const AddFriendModalContent = ({ onClose, onSend, onSearchUsers, isProcessing, t
               disabled={isProcessing}
               className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 disabled:opacity-50 transition-colors"
             >
-              {t('cancel', { ns: 'schedule' })}
+              {t('cancel', { ns: 'common' })}
             </button>
             <button
               type="submit"

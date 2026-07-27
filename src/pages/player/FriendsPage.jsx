@@ -27,14 +27,26 @@ const FriendsPage = () => {
   const [received, setReceived] = useState([]);
   const [sent, setSent] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [processingId, setProcessingId] = useState(null);
+  const [processingKeys, setProcessingKeys] = useState(() => new Set());
   const [showAddModal, setShowAddModal] = useState(false);
   const [isSending, setIsSending] = useState(false);
 
-  const loadData = useCallback(async () => {
+  const startProcessing = (key) => {
+    setProcessingKeys((prev) => new Set(prev).add(key));
+  };
+
+  const stopProcessing = (key) => {
+    setProcessingKeys((prev) => {
+      const next = new Set(prev);
+      next.delete(key);
+      return next;
+    });
+  };
+
+  const loadData = useCallback(async ({ silent = false } = {}) => {
     if (!user) return;
 
-    setIsLoading(true);
+    if (!silent) setIsLoading(true);
     try {
       const [friendsResult, receivedResult, sentResult] = await Promise.all([
         listFriendsUseCase.execute(user.id),
@@ -48,7 +60,7 @@ const FriendsPage = () => {
       console.error('Error loading friends:', error);
       customToast.error(error.message || t('errors.failedToLoad'));
     } finally {
-      setIsLoading(false);
+      if (!silent) setIsLoading(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
@@ -61,59 +73,63 @@ const FriendsPage = () => {
   }, [user, loadData]);
 
   const handleAccept = async (friendshipId) => {
-    setProcessingId(friendshipId);
+    const key = `friendship:${friendshipId}`;
+    startProcessing(key);
     try {
       await respondFriendRequestUseCase.execute(friendshipId, 'ACCEPT');
       customToast.success(t('success.accepted'));
-      await loadData();
+      await loadData({ silent: true });
     } catch (error) {
       console.error('Error accepting friend request:', error);
       customToast.error(error.message || t('errors.failedToRespond'));
     } finally {
-      setProcessingId(null);
+      stopProcessing(key);
     }
   };
 
   const handleDecline = async (friendshipId) => {
-    setProcessingId(friendshipId);
+    const key = `friendship:${friendshipId}`;
+    startProcessing(key);
     try {
       await respondFriendRequestUseCase.execute(friendshipId, 'DECLINE');
       customToast.success(t('success.declined'));
-      await loadData();
+      await loadData({ silent: true });
     } catch (error) {
       console.error('Error declining friend request:', error);
       customToast.error(error.message || t('errors.failedToRespond'));
     } finally {
-      setProcessingId(null);
+      stopProcessing(key);
     }
   };
 
   const handleRemoveOrCancel = async (friendshipId) => {
-    setProcessingId(friendshipId);
+    const key = `friendship:${friendshipId}`;
+    startProcessing(key);
     try {
       await removeFriendUseCase.execute(friendshipId);
       customToast.success(t('success.removed'));
-      await loadData();
+      await loadData({ silent: true });
     } catch (error) {
       console.error('Error removing friendship:', error);
       customToast.error(error.message || t('errors.failedToRemove'));
     } finally {
-      setProcessingId(null);
+      stopProcessing(key);
     }
   };
 
   const handleBlock = async (otherUserId) => {
     if (!otherUserId) return;
-    setProcessingId(otherUserId);
+    const key = `user:${otherUserId}`;
+    startProcessing(key);
     try {
       await blockUserUseCase.execute(otherUserId);
       customToast.success(t('success.blocked'));
-      await loadData();
+      await loadData({ silent: true });
     } catch (error) {
       console.error('Error blocking user:', error);
       customToast.error(error.message || t('errors.failedToBlock'));
     } finally {
-      setProcessingId(null);
+      stopProcessing(key);
     }
   };
 
@@ -123,7 +139,7 @@ const FriendsPage = () => {
       await sendFriendRequestUseCase.execute(addresseeId);
       customToast.success(t('success.sent'));
       setShowAddModal(false);
-      await loadData();
+      await loadData({ silent: true });
     } catch (error) {
       console.error('Error sending friend request:', error);
       customToast.error(error.message || t('errors.failedToSend'));
@@ -225,7 +241,8 @@ const FriendsPage = () => {
                 onCancel={handleRemoveOrCancel}
                 onBlock={handleBlock}
                 isProcessing={
-                  processingId === friendship.id || processingId === friendship.otherUserId
+                  processingKeys.has(`friendship:${friendship.id}`) ||
+                  processingKeys.has(`user:${friendship.otherUserId}`)
                 }
                 t={t}
               />

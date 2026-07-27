@@ -37,7 +37,8 @@
     "removing": "Eliminando...",
     "cancel": "Cancelar",
     "cancelling": "Cancelando...",
-    "block": "Bloquear"
+    "block": "Bloquear",
+    "blocking": "Bloqueando..."
   },
   "card": {
     "unknownUser": "Usuario desconocido",
