@@ -1,13 +1,14 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router';
 import { motion } from 'framer-motion';
-import { Mail, Users, Flag, TrendingUp, ChevronRight, Bell, UserPlus } from 'lucide-react';
+import { Mail, Users, Flag, TrendingUp, ChevronRight, Bell, UserPlus, Zap } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import {
   listMyInvitationsUseCase,
   listEnrollmentsUseCase,
   getScheduleUseCase,
   listPendingFriendRequestsUseCase,
+  listMyQuickMatchesUseCase,
 } from '../../composition';
 
 const PendingActionsCard = ({ user, competitions, onHandicapAction, handicapPending = false }) => {
@@ -17,6 +18,7 @@ const PendingActionsCard = ({ user, competitions, onHandicapAction, handicapPend
   const [pendingEnrollments, setPendingEnrollments] = useState([]);
   const [upcomingMatches, setUpcomingMatches] = useState(0);
   const [pendingFriendRequests, setPendingFriendRequests] = useState(0);
+  const [activeQuickMatches, setActiveQuickMatches] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
 
   const isCreator = useMemo(() => user?.is_admin ||
@@ -34,6 +36,7 @@ const PendingActionsCard = ({ user, competitions, onHandicapAction, handicapPend
           isCreator ? loadPendingEnrollments(competitions) : Promise.resolve([]),
           loadUpcomingMatches(competitions, user.id),
           listPendingFriendRequestsUseCase.execute(user.id, 'received'),
+          listMyQuickMatchesUseCase.execute({ status: 'IN_PROGRESS' }),
         ]);
 
         if (results[0].status === 'fulfilled') {
@@ -49,6 +52,9 @@ const PendingActionsCard = ({ user, competitions, onHandicapAction, handicapPend
         if (results[3].status === 'fulfilled') {
           setPendingFriendRequests(results[3].value?.totalCount || 0);
         }
+        if (results[4].status === 'fulfilled') {
+          setActiveQuickMatches(results[4].value?.quickMatches || []);
+        }
       } catch (error) {
         console.error('Error loading pending actions:', error);
       } finally {
@@ -59,7 +65,7 @@ const PendingActionsCard = ({ user, competitions, onHandicapAction, handicapPend
     loadPendingData();
   }, [user, competitions, isCreator]);
 
-  const totalItems = pendingInvitations + pendingEnrollments.length + (upcomingMatches > 0 ? 1 : 0) + (handicapPending ? 1 : 0) + (pendingFriendRequests > 0 ? 1 : 0);
+  const totalItems = pendingInvitations + pendingEnrollments.length + (upcomingMatches > 0 ? 1 : 0) + (handicapPending ? 1 : 0) + (pendingFriendRequests > 0 ? 1 : 0) + activeQuickMatches.length;
 
   if (isLoading) {
     return (
@@ -150,6 +156,32 @@ const PendingActionsCard = ({ user, competitions, onHandicapAction, handicapPend
               </div>
             </button>
           )}
+
+          {activeQuickMatches.map((qm) => (
+            <button
+              key={qm.id}
+              onClick={() => navigate(`/quick-matches/${qm.id}/scoring`)}
+              className="flex items-center justify-between w-full p-3 bg-white/70 rounded-lg hover:bg-white transition-colors group"
+              data-testid={`active-quick-match-${qm.id}`}
+            >
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-primary-100 rounded-lg">
+                  <Zap className="w-4 h-4 text-primary-600" />
+                </div>
+                <div className="text-left">
+                  <p className="text-sm font-semibold text-gray-900">
+                    {qm.name || t('pendingActions.quickMatchInProgress')}
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    {qm.name
+                      ? t('pendingActions.quickMatchInProgress')
+                      : t(`pendingActions.quickMatchFormat.${qm.matchFormat}`, qm.matchFormat)}
+                  </p>
+                </div>
+              </div>
+              <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-gray-600 transition-colors" />
+            </button>
+          ))}
 
           {pendingEnrollments.map((enrollment) => (
             <button

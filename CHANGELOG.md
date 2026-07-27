@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+**Quick Match — Dashboard Entry Points and Scoring Flow (FE #236)**
+
+- New dashboard entry points to start a quick match without going through full tournament creation: a "Quick Match" card in Quick Actions, and a dedicated call-to-action button at the same visual level as Pending Actions for faster access.
+- `CreateQuickMatchModal`: a 3-step wizard (course + format → add friends/guests → choose scorers) instead of a full page, since the flow is a lightweight setup step, not a destination worth its own URL. Reuses `GolfCourseSearchBox` for course selection.
+- New `/quick-matches/:quickMatchId/scoring` page reusing the tournament scoring visual language (`GolfFigure`, and a numpad picker extracted out of `HoleInput` into standalone `ScoreInputPanel` for reuse) adapted to quick match's simpler, single-entry delegated-scoring model (no dual validation, no session lock). Only two tabs: Input and Scorecard — no live team leaderboard, since quick match has no team classification system.
+- Scorecard tab includes a Stableford classification (points + gross strokes, ranked by points) computed client-side from each participant's raw handicap index and the course's stroke index — quick match creation doesn't collect a tee, so this is a simplified allocation, not the full WHS playing-handicap formula used for tournaments.
+- New Clean Architecture slice for the `quick_match` frontend module: domain entity/VO/repository interface, 11 application use cases, `ApiQuickMatchRepository`, and a `StablefordCalculator` domain service — wired into `composition/index.js`.
+- Quick matches were previously only reachable right after creation, with no way back once you navigated away. `PendingActionsCard` now lists the user's `IN_PROGRESS` quick matches as resumable items, and a new `/quick-matches` page (linked from the dashboard) lists the full history — pending, in progress, completed and cancelled — each row linking to its scoring page.
+- Creating several quick matches left them indistinguishable everywhere but the format ("Individual", "Individual", ...). `CreateQuickMatchModal`'s step 1 now has an optional free-text name field (max 100 chars); when set, it's shown instead of the format in `PendingActionsCard`, `/quick-matches`, and the scoring page header (format still shown as secondary text). Requires the matching backend change (RyderCupAm — `quick_matches.name` column, migration `de76ad1f8cf2`).
+
+### Fixed
+
+**Quick Match — Duplicate Self Entry When the Creator Is Also a Scorer**
+
+- `useQuickMatchScoring`'s `coveredParticipantIds` prepended the current user's own `participantId` on top of the backend's `scoring_assignments`, but the backend's assignment for a scorer already includes that scorer in its own `covered_participant_ids` (self-coverage), not just delegated non-scorers. When a scorer had no one delegated to them, the hole input screen showed their own name twice instead of once. Found by testing the full create → score flow in the browser; fixed by trusting the backend's assignment as-is, only falling back to `[self]` if no assignment is present.
+
 ## [2.1.1] - 2026-07-26
 
 ### Security

@@ -45,7 +45,13 @@
     "matches_other": "{{count}} partidos próximos",
     "viewSchedule": "Ver Calendario",
     "handicap": "Configura tu Hándicap",
-    "handicapDesc": "Completa tu perfil de golf para participar en torneos"
+    "handicapDesc": "Completa tu perfil de golf para participar en torneos",
+    "quickMatchInProgress": "Partida Rápida en Curso",
+    "quickMatchFormat": {
+      "SINGLES": "Individual",
+      "FOURBALL": "Fourball",
+      "FOURSOMES": "Foursomes"
+    }
   },
   "upcomingMatches": {
     "title": "Mis Próximos Partidos",

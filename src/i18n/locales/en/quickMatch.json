@@ -1,0 +1,104 @@
+{
+  "create": {
+    "title": "New quick match",
+    "step": "Step {{current}} of {{total}}",
+    "cancel": "Cancel",
+    "errors": {
+      "generic": "Something went wrong. Please try again."
+    },
+    "course": {
+      "heading": "Course and format",
+      "nameLabel": "Name (optional)",
+      "namePlaceholder": "E.g. Friday round with the club",
+      "formatLabel": "Format",
+      "formatSingles": "Singles (1 vs 1)",
+      "formatFourball": "Fourball (2 vs 2, best ball)",
+      "formatFoursomes": "Foursomes (2 vs 2, alternate shot)",
+      "courseLabel": "Golf course",
+      "next": "Next",
+      "creating": "Creating...",
+      "errorCourseRequired": "Select a golf course"
+    },
+    "participants": {
+      "heading": "Add participants",
+      "rosterTitle": "Players ({{count}}/{{max}})",
+      "tabFriends": "Friends",
+      "tabGuest": "Guest",
+      "noFriends": "You don't have any friends added yet",
+      "addFriend": "Add",
+      "guestFirstName": "First name",
+      "guestLastName": "Last name",
+      "guestHandicap": "Handicap (optional)",
+      "addGuest": "Add guest",
+      "team": "Team",
+      "teamA": "Team A",
+      "teamB": "Team B",
+      "remove": "Remove",
+      "rosterFull": "This match already has the maximum players for this format",
+      "back": "Back",
+      "next": "Next",
+      "creatorBadge": "You",
+      "guestBadge": "Guest"
+    },
+    "scorers": {
+      "heading": "Choose scorers",
+      "description": "Choose 1 to 4 registered players who will record scores. You always score.",
+      "back": "Back",
+      "start": "Start match",
+      "starting": "Starting...",
+      "errorMinScorers": "Select at least one scorer"
+    }
+  },
+  "dashboard": {
+    "ctaTitle": "Impromptu round?",
+    "ctaDesc": "Start a quick match with friends, no tournament needed",
+    "ctaButton": "Create quick match",
+    "viewHistory": "View my quick matches"
+  },
+  "history": {
+    "title": "My Quick Matches",
+    "empty": "You haven't played any quick matches yet.",
+    "format": {
+      "SINGLES": "Singles",
+      "FOURBALL": "Fourball",
+      "FOURSOMES": "Foursomes"
+    },
+    "status": {
+      "PENDING": "Pending",
+      "IN_PROGRESS": "In progress",
+      "COMPLETED": "Completed",
+      "CANCELLED": "Cancelled"
+    }
+  },
+  "scoring": {
+    "matchHeader": "Quick match",
+    "loading": "Loading match...",
+    "notAScorer": "You're not a scorer in this match. You can still follow the scorecard.",
+    "tabs": {
+      "input": "Input",
+      "scorecard": "Scorecard"
+    },
+    "yourGroup": "You're scoring for",
+    "backToDashboard": "Back to dashboard",
+    "finish": {
+      "button": "Finish match",
+      "confirmTitle": "Finish the match?",
+      "confirmBody": "It will be marked as completed. You'll still be able to view the scorecard afterwards.",
+      "confirm": "Finish",
+      "cancel": "Cancel",
+      "completed": "Match completed"
+    },
+    "classification": {
+      "title": "Classification",
+      "player": "Player",
+      "points": "Pts",
+      "strokes": "Strokes",
+      "you": "You"
+    },
+    "errors": {
+      "generic": "Something went wrong. Please try again.",
+      "notFound": "Quick match not found"
+    },
+    "retry": "Retry"
+  }
+}
