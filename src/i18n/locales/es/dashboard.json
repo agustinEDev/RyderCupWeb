@@ -50,7 +50,9 @@
     "quickMatchFormat": {
       "SINGLES": "Individual",
       "FOURBALL": "Fourball",
-      "FOURSOMES": "Foursomes"
+      "FOURSOMES": "Foursomes",
+      "MEDAL": "Medal",
+      "STABLEFORD": "Stableford"
     }
   },
   "upcomingMatches": {

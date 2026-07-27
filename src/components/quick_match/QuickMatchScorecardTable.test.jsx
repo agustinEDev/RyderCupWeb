@@ -44,6 +44,28 @@ describe('QuickMatchScorecardTable', () => {
     expect(screen.getByText('scoring.classification.you', { exact: false })).toBeInTheDocument();
   });
 
+  it('should rank by net strokes when scoringFormat is MEDAL', () => {
+    const holeScores = [
+      { holeNumber: 1, participantId: 'p-1', score: 4 },
+      { holeNumber: 1, participantId: 'p-2', score: 3 },
+    ];
+
+    render(
+      <QuickMatchScorecardTable
+        holes={holes}
+        holeScores={holeScores}
+        participants={participants}
+        currentParticipantId="p-1"
+        scoringFormat="MEDAL"
+      />
+    );
+
+    const classificationTable = screen.getByTestId('quick-match-classification-table');
+    const rows = within(classificationTable).getAllByRole('row').slice(1);
+    expect(within(rows[0]).getByText('Bob')).toBeInTheDocument();
+    expect(within(rows[1]).getByText('Alice')).toBeInTheDocument();
+  });
+
   it('should render the hole-by-hole grid with GolfFigure scores', () => {
     const holeScores = [{ holeNumber: 1, participantId: 'p-1', score: 4 }];
 

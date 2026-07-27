@@ -30,6 +30,30 @@ describe('QuickMatch', () => {
     it('should throw if status is not a QuickMatchStatus instance', () => {
       expect(() => new QuickMatch({ ...baseProps(), status: 'PENDING' })).toThrow(TypeError);
     });
+
+    it('should create a free-play QuickMatch with scoringFormat instead of matchFormat', () => {
+      const props = baseProps();
+      props.matchFormat = null;
+      const quickMatch = new QuickMatch({ ...props, scoringFormat: 'STABLEFORD' });
+      expect(quickMatch.matchFormat).toBeNull();
+      expect(quickMatch.scoringFormat).toBe('STABLEFORD');
+    });
+
+    it('should throw if neither matchFormat nor scoringFormat is provided', () => {
+      const props = baseProps();
+      props.matchFormat = null;
+      expect(() => new QuickMatch(props)).toThrow(TypeError);
+    });
+
+    it('should throw if both matchFormat and scoringFormat are provided', () => {
+      expect(() => new QuickMatch({ ...baseProps(), scoringFormat: 'MEDAL' })).toThrow(TypeError);
+    });
+
+    it('should throw on an invalid scoringFormat', () => {
+      const props = baseProps();
+      props.matchFormat = null;
+      expect(() => new QuickMatch({ ...props, scoringFormat: 'BOGEY' })).toThrow(TypeError);
+    });
   });
 
   describe('fromPersistence', () => {

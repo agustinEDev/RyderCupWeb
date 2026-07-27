@@ -175,7 +175,10 @@ const PendingActionsCard = ({ user, competitions, onHandicapAction, handicapPend
                   <p className="text-xs text-gray-500">
                     {qm.name
                       ? t('pendingActions.quickMatchInProgress')
-                      : t(`pendingActions.quickMatchFormat.${qm.matchFormat}`, qm.matchFormat)}
+                      : t(
+                          `pendingActions.quickMatchFormat.${qm.matchFormat ?? qm.scoringFormat}`,
+                          qm.matchFormat ?? qm.scoringFormat
+                        )}
                   </p>
                 </div>
               </div>

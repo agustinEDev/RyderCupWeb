@@ -38,25 +38,47 @@ describe('ApiQuickMatchRepository', () => {
     it('should POST to /quick-matches with golf_course_id, match_format and name null by default', async () => {
       apiRequest.mockResolvedValue(mockQuickMatchApi);
 
-      const result = await repo.create('course-1', 'SINGLES');
-
-      expect(apiRequest).toHaveBeenCalledWith('/api/v1/quick-matches', {
-        method: 'POST',
-        body: JSON.stringify({ golf_course_id: 'course-1', match_format: 'SINGLES', name: null }),
-      });
-      expect(result).toBeInstanceOf(QuickMatch);
-    });
-
-    it('should POST the given name when provided', async () => {
-      apiRequest.mockResolvedValue(mockQuickMatchApi);
-
-      await repo.create('course-1', 'SINGLES', 'Viernes con Rafa');
+      const result = await repo.create('course-1', 'SINGLES', null);
 
       expect(apiRequest).toHaveBeenCalledWith('/api/v1/quick-matches', {
         method: 'POST',
         body: JSON.stringify({
           golf_course_id: 'course-1',
           match_format: 'SINGLES',
+          scoring_format: null,
+          name: null,
+        }),
+      });
+      expect(result).toBeInstanceOf(QuickMatch);
+    });
+
+    it('should POST scoring_format for a free-play quick match', async () => {
+      apiRequest.mockResolvedValue({ ...mockQuickMatchApi, match_format: null, scoring_format: 'STABLEFORD' });
+
+      await repo.create('course-1', null, 'STABLEFORD');
+
+      expect(apiRequest).toHaveBeenCalledWith('/api/v1/quick-matches', {
+        method: 'POST',
+        body: JSON.stringify({
+          golf_course_id: 'course-1',
+          match_format: null,
+          scoring_format: 'STABLEFORD',
+          name: null,
+        }),
+      });
+    });
+
+    it('should POST the given name when provided', async () => {
+      apiRequest.mockResolvedValue(mockQuickMatchApi);
+
+      await repo.create('course-1', 'SINGLES', null, 'Viernes con Rafa');
+
+      expect(apiRequest).toHaveBeenCalledWith('/api/v1/quick-matches', {
+        method: 'POST',
+        body: JSON.stringify({
+          golf_course_id: 'course-1',
+          match_format: 'SINGLES',
+          scoring_format: null,
           name: 'Viernes con Rafa',
         }),
       });

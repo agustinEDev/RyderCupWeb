@@ -58,11 +58,12 @@ class StablefordCalculator {
    * @param {{participantId: string, handicap: number|null}} participant
    * @param {Array<{holeNumber: number, par: number, strokeIndex: number}>} holes
    * @param {Array<{holeNumber: number, participantId: string, score: number}>} holeScores
-   * @returns {{stablefordPoints: number, totalStrokes: number, holesPlayed: number}}
+   * @returns {{stablefordPoints: number, totalStrokes: number, netStrokes: number, holesPlayed: number}}
    */
   static computeParticipantTotals(participant, holes, holeScores) {
     let stablefordPoints = 0;
     let totalStrokes = 0;
+    let netStrokes = 0;
     let holesPlayed = 0;
 
     for (const hole of holes) {
@@ -74,10 +75,11 @@ class StablefordCalculator {
       const strokesReceived = StablefordCalculator.allocateStrokes(participant.handicap, hole.strokeIndex);
       stablefordPoints += StablefordCalculator.holePoints(entry.score, hole.par, strokesReceived);
       totalStrokes += entry.score;
+      netStrokes += entry.score - strokesReceived;
       holesPlayed += 1;
     }
 
-    return { stablefordPoints, totalStrokes, holesPlayed };
+    return { stablefordPoints, totalStrokes, netStrokes, holesPlayed };
   }
 
   /**
@@ -100,6 +102,31 @@ class StablefordCalculator {
     return rows.sort((a, b) => {
       if (b.stablefordPoints !== a.stablefordPoints) return b.stablefordPoints - a.stablefordPoints;
       return a.totalStrokes - b.totalStrokes;
+    });
+  }
+
+  /**
+   * Ranks participants by net strokes (asc, fewer is better) for Medal play,
+   * only counting participants who have at least one recorded score.
+   *
+   * @param {Array<{participantId: string, name: string, handicap: number|null}>} participants
+   * @param {Array<{holeNumber: number, par: number, strokeIndex: number}>} holes
+   * @param {Array<{holeNumber: number, participantId: string, score: number}>} holeScores
+   * @returns {Array<{participantId: string, name: string, stablefordPoints: number, totalStrokes: number, netStrokes: number, holesPlayed: number}>}
+   */
+  static rankParticipantsByMedal(participants, holes, holeScores) {
+    const rows = participants.map((participant) => ({
+      participantId: participant.participantId,
+      name: participant.name,
+      team: participant.team,
+      ...StablefordCalculator.computeParticipantTotals(participant, holes, holeScores),
+    }));
+
+    return rows.sort((a, b) => {
+      if (a.holesPlayed === 0 && b.holesPlayed === 0) return 0;
+      if (a.holesPlayed === 0) return 1;
+      if (b.holesPlayed === 0) return -1;
+      return a.netStrokes - b.netStrokes;
     });
   }
 }

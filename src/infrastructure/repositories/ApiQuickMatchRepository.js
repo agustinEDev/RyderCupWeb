@@ -36,10 +36,15 @@ class ApiQuickMatchRepository extends IQuickMatchRepository {
     return queryString ? `?${queryString}` : '';
   }
 
-  async create(golfCourseId, matchFormat, name = null) {
+  async create(golfCourseId, matchFormat, scoringFormat, name = null) {
     const apiData = await apiRequest('/api/v1/quick-matches', {
       method: 'POST',
-      body: JSON.stringify({ golf_course_id: golfCourseId, match_format: matchFormat, name }),
+      body: JSON.stringify({
+        golf_course_id: golfCourseId,
+        match_format: matchFormat,
+        scoring_format: scoringFormat,
+        name,
+      }),
     });
 
     return QuickMatchMapper.toDomain(apiData);

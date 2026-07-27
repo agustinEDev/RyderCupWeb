@@ -23,6 +23,12 @@ const FORMAT_LABEL_KEY = {
 };
 // Mirrors backend MAX_SCORERS (quick_match domain entity)
 const MAX_SCORERS = 4;
+// Mirrors backend MAX_FREE_PLAY_PLAYERS (quick_match domain entity)
+const FREE_PLAY_CAPACITY = 4;
+const SCORING_FORMAT_LABEL_KEY = {
+  MEDAL: 'formatMedal',
+  STABLEFORD: 'formatStableford',
+};
 
 const initialGuestForm = { firstName: '', lastName: '', handicap: '' };
 
@@ -32,7 +38,9 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser }) => {
 
   const [step, setStep] = useState(1);
   const [matchName, setMatchName] = useState('');
+  const [mode, setMode] = useState('MATCH_PLAY');
   const [matchFormat, setMatchFormat] = useState('SINGLES');
+  const [scoringFormat, setScoringFormat] = useState('STABLEFORD');
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [quickMatch, setQuickMatch] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -54,8 +62,9 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser }) => {
     }
   }, [step, currentUser?.id]);
 
-  const capacity = FORMAT_CAPACITY[matchFormat] ?? 2;
-  const isTeamFormat = TEAM_FORMATS.includes(matchFormat);
+  const isFreePlay = mode === 'FREE_PLAY';
+  const capacity = isFreePlay ? FREE_PLAY_CAPACITY : (FORMAT_CAPACITY[matchFormat] ?? 2);
+  const isTeamFormat = !isFreePlay && TEAM_FORMATS.includes(matchFormat);
   const participants = quickMatch?.participants ?? [];
   const rosterFull = participants.length >= capacity;
   const registeredParticipants = participants.filter((p) => !p.isGuest);
@@ -94,7 +103,8 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser }) => {
     try {
       const created = await createQuickMatchUseCase.execute(
         selectedCourse.id,
-        matchFormat,
+        isFreePlay ? null : matchFormat,
+        isFreePlay ? scoringFormat : null,
         matchName.trim() || null
       );
       setQuickMatch(created);
@@ -245,25 +255,77 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser }) => {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
+                {t('create.course.modeLabel')}
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setMode('MATCH_PLAY')}
+                  data-testid="mode-option-MATCH_PLAY"
+                  className={`text-left px-3 py-2 rounded-lg border text-sm transition-colors ${
+                    mode === 'MATCH_PLAY'
+                      ? 'border-primary bg-primary/5 text-primary font-medium'
+                      : 'border-gray-200 text-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  {t('create.course.modeMatchPlay')}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMode('FREE_PLAY')}
+                  data-testid="mode-option-FREE_PLAY"
+                  className={`text-left px-3 py-2 rounded-lg border text-sm transition-colors ${
+                    mode === 'FREE_PLAY'
+                      ? 'border-primary bg-primary/5 text-primary font-medium'
+                      : 'border-gray-200 text-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  {t('create.course.modeFreePlay')}
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
                 {t('create.course.formatLabel')}
               </label>
-              <div className="grid grid-cols-1 gap-2">
-                {Object.keys(FORMAT_CAPACITY).map((format) => (
-                  <button
-                    key={format}
-                    type="button"
-                    onClick={() => setMatchFormat(format)}
-                    data-testid={`format-option-${format}`}
-                    className={`text-left px-3 py-2 rounded-lg border text-sm transition-colors ${
-                      matchFormat === format
-                        ? 'border-primary bg-primary/5 text-primary font-medium'
-                        : 'border-gray-200 text-gray-700 hover:border-gray-300'
-                    }`}
-                  >
-                    {t(`create.course.${FORMAT_LABEL_KEY[format]}`)}
-                  </button>
-                ))}
-              </div>
+              {isFreePlay ? (
+                <div className="grid grid-cols-1 gap-2">
+                  {Object.keys(SCORING_FORMAT_LABEL_KEY).map((format) => (
+                    <button
+                      key={format}
+                      type="button"
+                      onClick={() => setScoringFormat(format)}
+                      data-testid={`scoring-format-option-${format}`}
+                      className={`text-left px-3 py-2 rounded-lg border text-sm transition-colors ${
+                        scoringFormat === format
+                          ? 'border-primary bg-primary/5 text-primary font-medium'
+                          : 'border-gray-200 text-gray-700 hover:border-gray-300'
+                      }`}
+                    >
+                      {t(`create.course.${SCORING_FORMAT_LABEL_KEY[format]}`)}
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 gap-2">
+                  {Object.keys(FORMAT_CAPACITY).map((format) => (
+                    <button
+                      key={format}
+                      type="button"
+                      onClick={() => setMatchFormat(format)}
+                      data-testid={`format-option-${format}`}
+                      className={`text-left px-3 py-2 rounded-lg border text-sm transition-colors ${
+                        matchFormat === format
+                          ? 'border-primary bg-primary/5 text-primary font-medium'
+                          : 'border-gray-200 text-gray-700 hover:border-gray-300'
+                      }`}
+                    >
+                      {t(`create.course.${FORMAT_LABEL_KEY[format]}`)}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div>
@@ -475,7 +537,7 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser }) => {
               <button
                 type="button"
                 onClick={goToScorers}
-                disabled={isProcessing || participants.length < capacity}
+                disabled={isProcessing || (isFreePlay ? participants.length < 1 : participants.length < capacity)}
                 data-testid="quick-match-participants-next"
                 className="px-4 py-2 text-sm font-medium text-white bg-primary rounded-md hover:bg-primary/90 disabled:opacity-50"
               >

@@ -127,7 +127,7 @@ const QuickMatchScoringPage = () => {
             </h1>
             <p className="text-sm text-gray-500">
               {quickMatch?.name ? `${t('scoring.matchHeader')} · ` : ''}
-              {quickMatch?.matchFormat}
+              {quickMatch?.matchFormat ?? quickMatch?.scoringFormat}
             </p>
           </div>
           {quickMatch?.isCompleted && (
@@ -216,6 +216,7 @@ const QuickMatchScoringPage = () => {
             holeScores={quickMatch?.holeScores ?? []}
             participants={quickMatch?.participants ?? []}
             currentParticipantId={myParticipant?.participantId}
+            scoringFormat={quickMatch?.scoringFormat}
           />
         )}
       </div>

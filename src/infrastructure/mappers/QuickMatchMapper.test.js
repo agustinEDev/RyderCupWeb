@@ -65,6 +65,13 @@ describe('QuickMatchMapper', () => {
       expect(quickMatch.name).toBe('Viernes con Rafa');
     });
 
+    it('should map a free-play response with null match_format and a scoring_format', () => {
+      const apiData = { ...baseApiData(), match_format: null, scoring_format: 'MEDAL' };
+      const quickMatch = QuickMatchMapper.toDomain(apiData);
+      expect(quickMatch.matchFormat).toBeNull();
+      expect(quickMatch.scoringFormat).toBe('MEDAL');
+    });
+
     it('should throw when required fields are missing', () => {
       expect(() => QuickMatchMapper.toDomain(null)).toThrow('apiData is required');
       expect(() => QuickMatchMapper.toDomain({ id: 'qm-1' })).toThrow('Missing required fields');

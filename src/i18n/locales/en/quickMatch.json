@@ -10,10 +10,15 @@
       "heading": "Course and format",
       "nameLabel": "Name (optional)",
       "namePlaceholder": "E.g. Friday round with the club",
+      "modeLabel": "Match type",
+      "modeMatchPlay": "Match play (Ryder Cup)",
+      "modeFreePlay": "Free play",
       "formatLabel": "Format",
       "formatSingles": "Singles (1 vs 1)",
       "formatFourball": "Fourball (2 vs 2, best ball)",
       "formatFoursomes": "Foursomes (2 vs 2, alternate shot)",
+      "formatMedal": "Medal (stroke play, lowest net score wins)",
+      "formatStableford": "Stableford (points-based)",
       "courseLabel": "Golf course",
       "next": "Next",
       "creating": "Creating...",
@@ -61,7 +66,9 @@
     "format": {
       "SINGLES": "Singles",
       "FOURBALL": "Fourball",
-      "FOURSOMES": "Foursomes"
+      "FOURSOMES": "Foursomes",
+      "MEDAL": "Medal",
+      "STABLEFORD": "Stableford"
     },
     "status": {
       "PENDING": "Pending",
@@ -93,6 +100,7 @@
       "player": "Player",
       "points": "Pts",
       "strokes": "Strokes",
+      "netStrokes": "Net strokes",
       "you": "You"
     },
     "errors": {

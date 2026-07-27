@@ -1,6 +1,7 @@
 import QuickMatchStatus from '../value_objects/QuickMatchStatus';
 
 const VALID_MATCH_FORMATS = ['SINGLES', 'FOURBALL', 'FOURSOMES'];
+const VALID_SCORING_FORMATS = ['MEDAL', 'STABLEFORD'];
 const MAX_NAME_LENGTH = 100;
 
 /**
@@ -17,6 +18,7 @@ class QuickMatch {
   #creatorId;
   #golfCourseId;
   #matchFormat;
+  #scoringFormat;
   #status;
   #name;
   #participants;
@@ -31,7 +33,8 @@ class QuickMatch {
     id,
     creatorId,
     golfCourseId,
-    matchFormat,
+    matchFormat = null,
+    scoringFormat = null,
     status,
     name = null,
     participants = [],
@@ -51,11 +54,14 @@ class QuickMatch {
     if (!golfCourseId || typeof golfCourseId !== 'string') {
       throw new TypeError('golfCourseId must be a non-empty string');
     }
-    if (!matchFormat || typeof matchFormat !== 'string') {
-      throw new TypeError('matchFormat must be a non-empty string');
+    if ((matchFormat == null) === (scoringFormat == null)) {
+      throw new TypeError('Exactly one of matchFormat or scoringFormat must be provided');
     }
-    if (!VALID_MATCH_FORMATS.includes(matchFormat)) {
+    if (matchFormat != null && !VALID_MATCH_FORMATS.includes(matchFormat)) {
       throw new TypeError(`Invalid matchFormat: ${matchFormat}`);
+    }
+    if (scoringFormat != null && !VALID_SCORING_FORMATS.includes(scoringFormat)) {
+      throw new TypeError(`Invalid scoringFormat: ${scoringFormat}`);
     }
     if (name != null && (typeof name !== 'string' || name.length > MAX_NAME_LENGTH)) {
       throw new TypeError(`name must be a string of at most ${MAX_NAME_LENGTH} characters`);
@@ -68,6 +74,7 @@ class QuickMatch {
     this.#creatorId = creatorId;
     this.#golfCourseId = golfCourseId;
     this.#matchFormat = matchFormat;
+    this.#scoringFormat = scoringFormat;
     this.#status = status;
     this.#name = name;
     this.#participants = participants;
@@ -101,6 +108,10 @@ class QuickMatch {
 
   get matchFormat() {
     return this.#matchFormat;
+  }
+
+  get scoringFormat() {
+    return this.#scoringFormat;
   }
 
   get status() {
@@ -181,6 +192,7 @@ class QuickMatch {
       creatorId: this.#creatorId,
       golfCourseId: this.#golfCourseId,
       matchFormat: this.#matchFormat,
+      scoringFormat: this.#scoringFormat,
       status: this.#status.toString(),
       name: this.#name,
       participants: this.#participants,
@@ -201,7 +213,8 @@ class QuickMatch {
   }
 
   toString() {
-    return `QuickMatch(${this.#id}, ${this.#matchFormat}, ${this.#status.toString()})`;
+    const format = this.#matchFormat ?? this.#scoringFormat;
+    return `QuickMatch(${this.#id}, ${format}, ${this.#status.toString()})`;
   }
 }
 

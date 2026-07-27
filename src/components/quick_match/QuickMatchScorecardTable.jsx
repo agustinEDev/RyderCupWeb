@@ -7,14 +7,23 @@ import StablefordCalculator from '../../domain/services/StablefordCalculator';
  * ranked highest points first) plus the hole-by-hole grid. No team columns,
  * net scores or validation icons — quick match is single-entry, individual.
  */
-const QuickMatchScorecardTable = ({ holes = [], holeScores = [], participants = [], currentParticipantId }) => {
+const QuickMatchScorecardTable = ({
+  holes = [],
+  holeScores = [],
+  participants = [],
+  currentParticipantId,
+  scoringFormat = null,
+}) => {
   const { t } = useTranslation('quickMatch');
   const { t: ts } = useTranslation('scoring');
 
   const outHoles = holes.filter((h) => h.holeNumber <= 9);
   const inHoles = holes.filter((h) => h.holeNumber > 9);
 
-  const ranking = StablefordCalculator.rankParticipants(participants, holes, holeScores);
+  const isMedal = scoringFormat === 'MEDAL';
+  const ranking = isMedal
+    ? StablefordCalculator.rankParticipantsByMedal(participants, holes, holeScores)
+    : StablefordCalculator.rankParticipants(participants, holes, holeScores);
 
   const getScore = (holeNumber, participantId) => {
     const entry = holeScores.find((hs) => hs.holeNumber === holeNumber && hs.participantId === participantId);
@@ -81,7 +90,11 @@ const QuickMatchScorecardTable = ({ holes = [], holeScores = [], participants = 
               <tr className="bg-gray-50 text-gray-500">
                 <th className="px-2 py-1.5 text-left font-medium">#</th>
                 <th className="px-2 py-1.5 text-left font-medium">{t('scoring.classification.player')}</th>
-                <th className="px-2 py-1.5 text-center font-medium">{t('scoring.classification.points')}</th>
+                {isMedal ? (
+                  <th className="px-2 py-1.5 text-center font-medium">{t('scoring.classification.netStrokes')}</th>
+                ) : (
+                  <th className="px-2 py-1.5 text-center font-medium">{t('scoring.classification.points')}</th>
+                )}
                 <th className="px-2 py-1.5 text-center font-medium">{t('scoring.classification.strokes')}</th>
               </tr>
             </thead>
@@ -98,7 +111,11 @@ const QuickMatchScorecardTable = ({ holes = [], holeScores = [], participants = 
                       <span className="ml-1 text-xs text-primary">({t('scoring.classification.you')})</span>
                     )}
                   </td>
-                  <td className="px-2 py-1.5 text-center font-bold text-primary">{row.stablefordPoints}</td>
+                  {isMedal ? (
+                    <td className="px-2 py-1.5 text-center font-bold text-primary">{row.holesPlayed ? row.netStrokes : '-'}</td>
+                  ) : (
+                    <td className="px-2 py-1.5 text-center font-bold text-primary">{row.stablefordPoints}</td>
+                  )}
                   <td className="px-2 py-1.5 text-center text-gray-700">{row.totalStrokes || '-'}</td>
                 </tr>
               ))}

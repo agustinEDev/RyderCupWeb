@@ -11,14 +11,16 @@
 class IQuickMatchRepository {
   /**
    * Create a quick match (current user becomes creator/first participant).
+   * Exactly one of matchFormat/scoringFormat must be provided.
    *
    * @param {string} golfCourseId - UUID of an APPROVED golf course
-   * @param {string} matchFormat - 'SINGLES' | 'FOURBALL' | 'FOURSOMES'
+   * @param {string|null} matchFormat - 'SINGLES' | 'FOURBALL' | 'FOURSOMES' (Ryder Cup match play), or null for free play
+   * @param {string|null} scoringFormat - 'MEDAL' | 'STABLEFORD' (free play), or null for match play
    * @param {string|null} name - Optional free-text name to tell matches apart
    * @returns {Promise<QuickMatch>} Created quick match
    * @throws {Error} If operation fails
    */
-  async create(golfCourseId, matchFormat, name = null) {
+  async create(golfCourseId, matchFormat, scoringFormat, name = null) {
     throw new Error('Method create() must be implemented');
   }
 

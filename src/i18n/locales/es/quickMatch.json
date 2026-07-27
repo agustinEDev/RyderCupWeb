@@ -10,10 +10,15 @@
       "heading": "Campo y formato",
       "nameLabel": "Nombre (opcional)",
       "namePlaceholder": "Ej. Viernes con los del club",
+      "modeLabel": "Tipo de partida",
+      "modeMatchPlay": "Match play (Ryder Cup)",
+      "modeFreePlay": "Partido libre",
       "formatLabel": "Formato",
       "formatSingles": "Individual (1 contra 1)",
       "formatFourball": "Fourball (2 contra 2, mejor bola)",
       "formatFoursomes": "Foursomes (2 contra 2, bola alterna)",
+      "formatMedal": "Medal (stroke play, gana quien menos golpes netos hace)",
+      "formatStableford": "Stableford (por puntos)",
       "courseLabel": "Campo de golf",
       "next": "Siguiente",
       "creating": "Creando...",
@@ -61,7 +66,9 @@
     "format": {
       "SINGLES": "Individual",
       "FOURBALL": "Fourball",
-      "FOURSOMES": "Foursomes"
+      "FOURSOMES": "Foursomes",
+      "MEDAL": "Medal",
+      "STABLEFORD": "Stableford"
     },
     "status": {
       "PENDING": "Pendiente",
@@ -93,6 +100,7 @@
       "player": "Jugador",
       "points": "Pts",
       "strokes": "Golpes",
+      "netStrokes": "Golpes netos",
       "you": "Tú"
     },
     "errors": {

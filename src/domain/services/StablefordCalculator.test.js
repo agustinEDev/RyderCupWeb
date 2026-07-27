@@ -70,7 +70,7 @@ describe('StablefordCalculator', () => {
       const holeScores = [{ holeNumber: 1, participantId: 'p-1', score: 4 }];
 
       const result = StablefordCalculator.computeParticipantTotals(participant, holes, holeScores);
-      expect(result).toEqual({ stablefordPoints: 2, totalStrokes: 4, holesPlayed: 1 });
+      expect(result).toEqual({ stablefordPoints: 2, totalStrokes: 4, netStrokes: 4, holesPlayed: 1 });
     });
 
     it('should ignore scores belonging to other participants', () => {
@@ -78,7 +78,15 @@ describe('StablefordCalculator', () => {
       const holeScores = [{ holeNumber: 1, participantId: 'p-2', score: 3 }];
 
       const result = StablefordCalculator.computeParticipantTotals(participant, holes, holeScores);
-      expect(result).toEqual({ stablefordPoints: 0, totalStrokes: 0, holesPlayed: 0 });
+      expect(result).toEqual({ stablefordPoints: 0, totalStrokes: 0, netStrokes: 0, holesPlayed: 0 });
+    });
+
+    it('should subtract strokes received from gross to compute net strokes', () => {
+      const participant = { participantId: 'p-1', handicap: 18 };
+      const holeScores = [{ holeNumber: 1, participantId: 'p-1', score: 5 }];
+
+      const result = StablefordCalculator.computeParticipantTotals(participant, holes, holeScores);
+      expect(result.netStrokes).toBe(4);
     });
   });
 
@@ -126,6 +134,35 @@ describe('StablefordCalculator', () => {
 
       // Sanity check the original (non-tied) scenario still resolves without throwing
       expect(() => StablefordCalculator.rankParticipants(participants, holes, holeScores)).not.toThrow();
+    });
+  });
+
+  describe('rankParticipantsByMedal', () => {
+    const holes = [{ holeNumber: 1, par: 4, strokeIndex: 5 }];
+
+    it('should rank by net strokes ascending', () => {
+      const participants = [
+        { participantId: 'p-1', name: 'Alice', handicap: 0 },
+        { participantId: 'p-2', name: 'Bob', handicap: 18 },
+      ];
+      const holeScores = [
+        { holeNumber: 1, participantId: 'p-1', score: 4 }, // net 4
+        { holeNumber: 1, participantId: 'p-2', score: 4 }, // 1 stroke received -> net 3
+      ];
+
+      const ranking = StablefordCalculator.rankParticipantsByMedal(participants, holes, holeScores);
+      expect(ranking.map((r) => r.participantId)).toEqual(['p-2', 'p-1']);
+    });
+
+    it('should push participants with no recorded scores to the bottom', () => {
+      const participants = [
+        { participantId: 'p-1', name: 'Alice', handicap: 0 },
+        { participantId: 'p-2', name: 'Bob', handicap: 0 },
+      ];
+      const holeScores = [{ holeNumber: 1, participantId: 'p-1', score: 4 }];
+
+      const ranking = StablefordCalculator.rankParticipantsByMedal(participants, holes, holeScores);
+      expect(ranking.map((r) => r.participantId)).toEqual(['p-1', 'p-2']);
     });
   });
 });

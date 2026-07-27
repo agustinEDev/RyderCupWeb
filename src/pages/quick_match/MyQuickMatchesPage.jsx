@@ -78,10 +78,10 @@ const MyQuickMatchesPage = () => {
                     </div>
                     <div>
                       <p className="text-sm font-semibold text-gray-900">
-                        {qm.name || t(`history.format.${qm.matchFormat}`, qm.matchFormat)}
+                        {qm.name || t(`history.format.${qm.matchFormat ?? qm.scoringFormat}`, qm.matchFormat ?? qm.scoringFormat)}
                       </p>
                       <p className="text-xs text-gray-500">
-                        {qm.name && `${t(`history.format.${qm.matchFormat}`, qm.matchFormat)} · `}
+                        {qm.name && `${t(`history.format.${qm.matchFormat ?? qm.scoringFormat}`, qm.matchFormat ?? qm.scoringFormat)} · `}
                         {new Date(qm.createdAt).toLocaleDateString()}
                       </p>
                     </div>

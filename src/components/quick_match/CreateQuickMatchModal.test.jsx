@@ -81,7 +81,7 @@ describe('CreateQuickMatchModal', () => {
     fireEvent.click(screen.getByTestId('quick-match-course-next'));
 
     await waitFor(() => {
-      expect(mockCreate).toHaveBeenCalledWith('course-1', 'SINGLES', 'Viernes con Rafa');
+      expect(mockCreate).toHaveBeenCalledWith('course-1', 'SINGLES', null, 'Viernes con Rafa');
     });
   });
 
@@ -98,7 +98,44 @@ describe('CreateQuickMatchModal', () => {
     fireEvent.click(screen.getByTestId('quick-match-course-next'));
 
     await waitFor(() => {
-      expect(mockCreate).toHaveBeenCalledWith('course-1', 'SINGLES', null);
+      expect(mockCreate).toHaveBeenCalledWith('course-1', 'SINGLES', null, null);
+    });
+  });
+
+  it('should create a free-play quick match with the selected scoring format', async () => {
+    mockCreate.mockResolvedValue({
+      id: 'qm-1',
+      isPending: true,
+      participants: [{ participantId: 'user-1', userId: 'user-1', name: 'Me', isGuest: false }],
+    });
+
+    renderModal();
+
+    fireEvent.click(screen.getByTestId('mode-option-FREE_PLAY'));
+    fireEvent.click(screen.getByTestId('scoring-format-option-MEDAL'));
+    fireEvent.click(screen.getByTestId('select-course-stub'));
+    fireEvent.click(screen.getByTestId('quick-match-course-next'));
+
+    await waitFor(() => {
+      expect(mockCreate).toHaveBeenCalledWith('course-1', null, 'MEDAL', null);
+    });
+  });
+
+  it('should allow moving past the participants step with only the creator in free play', async () => {
+    mockCreate.mockResolvedValue({
+      id: 'qm-1',
+      isPending: true,
+      participants: [{ participantId: 'user-1', userId: 'user-1', name: 'Me', isGuest: false }],
+    });
+
+    renderModal();
+
+    fireEvent.click(screen.getByTestId('mode-option-FREE_PLAY'));
+    fireEvent.click(screen.getByTestId('select-course-stub'));
+    fireEvent.click(screen.getByTestId('quick-match-course-next'));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('quick-match-participants-next')).not.toBeDisabled();
     });
   });
 });

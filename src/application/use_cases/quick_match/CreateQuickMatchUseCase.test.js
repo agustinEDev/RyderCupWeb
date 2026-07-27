@@ -30,21 +30,35 @@ describe('CreateQuickMatchUseCase', () => {
     await expect(useCase.execute('', 'SINGLES')).rejects.toThrow('golfCourseId is required');
   });
 
-  it('should throw for a missing matchFormat', async () => {
-    await expect(useCase.execute('course-1', '')).rejects.toThrow('matchFormat is required');
+  it('should throw when neither matchFormat nor scoringFormat is given', async () => {
+    await expect(useCase.execute('course-1')).rejects.toThrow(
+      'Exactly one of matchFormat or scoringFormat is required'
+    );
+  });
+
+  it('should throw when both matchFormat and scoringFormat are given', async () => {
+    await expect(useCase.execute('course-1', 'SINGLES', 'MEDAL')).rejects.toThrow(
+      'Exactly one of matchFormat or scoringFormat is required'
+    );
   });
 
   it('should create the quick match and return a simple DTO', async () => {
     const result = await useCase.execute('course-1', 'SINGLES');
 
-    expect(mockRepo.create).toHaveBeenCalledWith('course-1', 'SINGLES', null);
+    expect(mockRepo.create).toHaveBeenCalledWith('course-1', 'SINGLES', null, null);
     expect(result.id).toBe('qm-1');
     expect(result.isPending).toBe(true);
   });
 
-  it('should pass the optional name through to the repository', async () => {
-    await useCase.execute('course-1', 'SINGLES', 'Viernes con Rafa');
+  it('should create a free-play quick match with scoringFormat', async () => {
+    await useCase.execute('course-1', null, 'STABLEFORD');
 
-    expect(mockRepo.create).toHaveBeenCalledWith('course-1', 'SINGLES', 'Viernes con Rafa');
+    expect(mockRepo.create).toHaveBeenCalledWith('course-1', null, 'STABLEFORD', null);
+  });
+
+  it('should pass the optional name through to the repository', async () => {
+    await useCase.execute('course-1', 'SINGLES', null, 'Viernes con Rafa');
+
+    expect(mockRepo.create).toHaveBeenCalledWith('course-1', 'SINGLES', null, 'Viernes con Rafa');
   });
 });
