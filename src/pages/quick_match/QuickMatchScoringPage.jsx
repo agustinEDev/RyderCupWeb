@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router';
 import { Loader, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -39,6 +39,15 @@ const QuickMatchScoringPage = () => {
     completeMatch,
     refetch,
   } = useQuickMatchScoring(quickMatchId, user?.id);
+
+  useEffect(() => {
+    if (!showFinishConfirm) return;
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && !isSubmitting) setShowFinishConfirm(false);
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [showFinishConfirm, isSubmitting]);
 
   if (isLoadingUser || isLoading) {
     return (
@@ -223,6 +232,7 @@ const QuickMatchScoringPage = () => {
             participants={quickMatch?.participants ?? []}
             currentParticipantId={myParticipant?.participantId}
             scoringFormat={quickMatch?.scoringFormat}
+            standing={quickMatch?.standing}
             tees={tees}
             allowancePercentage={quickMatch?.effectiveAllowance}
           />
@@ -242,10 +252,7 @@ const QuickMatchScoringPage = () => {
       </div>
 
       {showFinishConfirm && (
-        <div
-          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
-          onKeyDown={(e) => e.key === 'Escape' && !isSubmitting && setShowFinishConfirm(false)}
-        >
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div
             className="bg-white rounded-lg shadow-xl w-full max-w-sm p-4"
             role="dialog"

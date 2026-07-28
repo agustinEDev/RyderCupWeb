@@ -90,6 +90,9 @@ describe('CreateQuickMatchModal', () => {
       target: { value: '  Viernes con Rafa  ' },
     });
     fireEvent.click(screen.getByTestId('select-course-stub'));
+    await waitFor(() => {
+      expect(screen.getByTestId('quick-match-course-next')).not.toBeDisabled();
+    });
     fireEvent.click(screen.getByTestId('quick-match-course-next'));
 
     await waitFor(() => {
@@ -111,6 +114,9 @@ describe('CreateQuickMatchModal', () => {
     renderModal();
 
     fireEvent.click(screen.getByTestId('select-course-stub'));
+    await waitFor(() => {
+      expect(screen.getByTestId('quick-match-course-next')).not.toBeDisabled();
+    });
     fireEvent.click(screen.getByTestId('quick-match-course-next'));
 
     await waitFor(() => {
@@ -134,6 +140,9 @@ describe('CreateQuickMatchModal', () => {
     fireEvent.click(screen.getByTestId('mode-option-FREE_PLAY'));
     fireEvent.click(screen.getByTestId('scoring-format-option-MEDAL'));
     fireEvent.click(screen.getByTestId('select-course-stub'));
+    await waitFor(() => {
+      expect(screen.getByTestId('quick-match-course-next')).not.toBeDisabled();
+    });
     fireEvent.click(screen.getByTestId('quick-match-course-next'));
 
     await waitFor(() => {
@@ -156,6 +165,9 @@ describe('CreateQuickMatchModal', () => {
 
     fireEvent.click(screen.getByTestId('mode-option-FREE_PLAY'));
     fireEvent.click(screen.getByTestId('select-course-stub'));
+    await waitFor(() => {
+      expect(screen.getByTestId('quick-match-course-next')).not.toBeDisabled();
+    });
     fireEvent.click(screen.getByTestId('quick-match-course-next'));
 
     await waitFor(() => {
@@ -177,6 +189,9 @@ describe('CreateQuickMatchModal', () => {
 
     fireEvent.click(screen.getByTestId('quick-match-allowance-option-50'));
     fireEvent.click(screen.getByTestId('select-course-stub'));
+    await waitFor(() => {
+      expect(screen.getByTestId('quick-match-course-next')).not.toBeDisabled();
+    });
     fireEvent.click(screen.getByTestId('quick-match-course-next'));
 
     await waitFor(() => {
@@ -253,6 +268,10 @@ describe('CreateQuickMatchModal', () => {
     renderModal();
 
     fireEvent.click(screen.getByTestId('select-course-stub'));
+    await waitFor(() => {
+      expect(screen.getByTestId('quick-match-creator-tee-option-FORWARD|FEMALE')).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByTestId('quick-match-creator-tee-option-FORWARD|FEMALE'));
     fireEvent.click(screen.getByTestId('quick-match-course-next'));
 
     await waitFor(() => {
@@ -319,6 +338,34 @@ describe('CreateQuickMatchModal', () => {
     expect(screen.queryByText('White')).not.toBeInTheDocument();
   });
 
+  it('should reset the creator tee selection when switching to a different course', async () => {
+    mockGetGolfCourse.mockImplementation((id) =>
+      id === 'course-1'
+        ? Promise.resolve({ tees: [{ teeCategory: 'AMATEUR', gender: 'MALE', identifier: 'White', courseRating: 71, slopeRating: 128 }] })
+        : Promise.resolve({ tees: [{ teeCategory: 'FORWARD', gender: 'FEMALE', identifier: 'Red', courseRating: 68, slopeRating: 118 }] })
+    );
+
+    renderModal();
+
+    fireEvent.click(screen.getByTestId('select-course-stub'));
+    await waitFor(() => {
+      expect(screen.getByTestId('quick-match-creator-tee-option-AMATEUR|MALE')).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByTestId('quick-match-creator-tee-option-AMATEUR|MALE'));
+
+    fireEvent.click(screen.getByTestId('select-course-stub-2'));
+    await waitFor(() => {
+      expect(screen.getByTestId('quick-match-creator-tee-option-FORWARD|FEMALE')).toBeInTheDocument();
+    });
+
+    // The tee picked for course-1 must not silently carry over to course-2
+    expect(screen.getByTestId('quick-match-creator-tee-option-FORWARD|FEMALE')).toHaveAttribute('aria-pressed', 'false');
+
+    fireEvent.click(screen.getByTestId('quick-match-course-next'));
+    expect(screen.getByTestId('quick-match-modal-error')).toHaveTextContent('create.course.errorTeeRequired');
+    expect(mockCreate).not.toHaveBeenCalled();
+  });
+
   it('should let each friend be added with their own, independently selected tee', async () => {
     mockGetGolfCourse.mockResolvedValue({
       tees: [
@@ -352,6 +399,10 @@ describe('CreateQuickMatchModal', () => {
     // Free play (capacity 4) so the roster isn't already full after adding just Alice
     fireEvent.click(screen.getByTestId('mode-option-FREE_PLAY'));
     fireEvent.click(screen.getByTestId('select-course-stub'));
+    await waitFor(() => {
+      expect(screen.getByTestId('quick-match-creator-tee-option-AMATEUR|MALE')).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByTestId('quick-match-creator-tee-option-AMATEUR|MALE'));
     fireEvent.click(screen.getByTestId('quick-match-course-next'));
 
     await waitFor(() => {
@@ -361,7 +412,7 @@ describe('CreateQuickMatchModal', () => {
     fireEvent.click(screen.getByTestId('quick-match-friend-tee-select-f-1-AMATEUR|MALE'));
     fireEvent.click(screen.getByTestId('quick-match-friend-tee-select-f-2-FORWARD|FEMALE'));
 
-    fireEvent.click(within(screen.getByText('Alice').closest('div')).getByText('create.participants.addFriend'));
+    fireEvent.click(within(screen.getByTestId('quick-match-friend-row-f-1')).getByText('create.participants.addFriend'));
 
     await waitFor(() => {
       expect(mockAddFriend).toHaveBeenCalledWith('qm-1', 'user-2', null, {
@@ -490,6 +541,9 @@ describe('CreateQuickMatchModal', () => {
     renderModal();
 
     fireEvent.click(screen.getByTestId('select-course-stub'));
+    await waitFor(() => {
+      expect(screen.getByTestId('quick-match-course-next')).not.toBeDisabled();
+    });
     fireEvent.click(screen.getByTestId('quick-match-course-next'));
 
     await waitFor(() => {
@@ -515,6 +569,9 @@ describe('CreateQuickMatchModal', () => {
 
     fireEvent.click(screen.getByTestId('mode-option-FREE_PLAY'));
     fireEvent.click(screen.getByTestId('select-course-stub'));
+    await waitFor(() => {
+      expect(screen.getByTestId('quick-match-course-next')).not.toBeDisabled();
+    });
     fireEvent.click(screen.getByTestId('quick-match-course-next'));
 
     await waitFor(() => {

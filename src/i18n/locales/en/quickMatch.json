@@ -111,7 +111,13 @@
       "points": "Pts",
       "strokes": "Strokes",
       "netStrokes": "Net strokes",
-      "you": "You"
+      "you": "You",
+      "noHolesYet": "No holes completed yet",
+      "allSquare": "All square",
+      "holesUp": "{{count}} UP",
+      "decidedResult": "{{lead}}&{{remaining}}",
+      "leads": "{{name}} leads",
+      "holesPlayed": "{{count}} hole(s) played"
     },
     "scorecard": {
       "strokeReceived": "Receives {{count}} extra stroke(s) on this hole",

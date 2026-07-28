@@ -27,7 +27,13 @@ describe('QuickMatchClassificationTable', () => {
     ];
 
     render(
-      <QuickMatchClassificationTable holes={holes} holeScores={holeScores} participants={participants} currentParticipantId="p-1" />
+      <QuickMatchClassificationTable
+        holes={holes}
+        holeScores={holeScores}
+        participants={participants}
+        currentParticipantId="p-1"
+        scoringFormat="STABLEFORD"
+      />
     );
 
     const classificationTable = screen.getByTestId('quick-match-classification-table');
@@ -38,7 +44,13 @@ describe('QuickMatchClassificationTable', () => {
 
   it('should highlight the current participant and mark them as "you"', () => {
     render(
-      <QuickMatchClassificationTable holes={holes} holeScores={[]} participants={participants} currentParticipantId="p-1" />
+      <QuickMatchClassificationTable
+        holes={holes}
+        holeScores={[]}
+        participants={participants}
+        currentParticipantId="p-1"
+        scoringFormat="STABLEFORD"
+      />
     );
 
     expect(screen.getByText('scoring.classification.you', { exact: false })).toBeInTheDocument();
@@ -64,5 +76,50 @@ describe('QuickMatchClassificationTable', () => {
     const rows = within(classificationTable).getAllByRole('row').slice(1);
     expect(within(rows[0]).getByText('Bob')).toBeInTheDocument();
     expect(within(rows[1]).getByText('Alice')).toBeInTheDocument();
+  });
+
+  it('should show the match standing instead of a Stableford ranking for match-play formats', () => {
+    render(
+      <QuickMatchClassificationTable
+        holes={holes}
+        holeScores={[]}
+        participants={participants}
+        currentParticipantId="p-1"
+        standing={{ status: '2UP', leadingTeam: 'A', holesPlayed: 5, holesRemaining: 13, isDecided: false }}
+      />
+    );
+
+    expect(screen.getByTestId('quick-match-standing')).toBeInTheDocument();
+    expect(screen.queryByRole('table')).not.toBeInTheDocument();
+    // p-1 (Alice) resolves to team A positionally, since neither participant has an explicit team
+    expect(screen.getByText('scoring.classification.leads')).toBeInTheDocument();
+  });
+
+  it('should show an all-square message when the match-play standing has no leader', () => {
+    render(
+      <QuickMatchClassificationTable
+        holes={holes}
+        holeScores={[]}
+        participants={participants}
+        currentParticipantId="p-1"
+        standing={{ status: 'AS', leadingTeam: null, holesPlayed: 4, holesRemaining: 14, isDecided: false }}
+      />
+    );
+
+    expect(screen.getByText('scoring.classification.allSquare')).toBeInTheDocument();
+  });
+
+  it('should show a placeholder when no holes have been played yet in a match-play quick match', () => {
+    render(
+      <QuickMatchClassificationTable
+        holes={holes}
+        holeScores={[]}
+        participants={participants}
+        currentParticipantId="p-1"
+        standing={null}
+      />
+    );
+
+    expect(screen.getByTestId('quick-match-standing-empty')).toBeInTheDocument();
   });
 });

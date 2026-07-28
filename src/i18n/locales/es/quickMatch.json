@@ -111,7 +111,13 @@
       "points": "Pts",
       "strokes": "Golpes",
       "netStrokes": "Golpes netos",
-      "you": "Tú"
+      "you": "Tú",
+      "noHolesYet": "Todavía no hay hoyos completados",
+      "allSquare": "Empatados",
+      "holesUp": "{{count}} arriba",
+      "decidedResult": "{{lead}}&{{remaining}}",
+      "leads": "{{name}} lidera",
+      "holesPlayed": "{{count}} hoyo(s) jugados"
     },
     "scorecard": {
       "strokeReceived": "Recibe {{count}} golpe(s) extra en este hoyo",

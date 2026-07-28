@@ -120,6 +120,7 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser }) => {
   const [scoringFormat, setScoringFormat] = useState('STABLEFORD');
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [courseTees, setCourseTees] = useState([]);
+  const [teesLoading, setTeesLoading] = useState(false);
   // null while following the WHS default for the current format; a number once the user overrides it
   const [allowanceOverride, setAllowanceOverride] = useState(null);
   const [creatorTeeKey, setCreatorTeeKey] = useState(NO_TEE_KEY);
@@ -147,12 +148,14 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser }) => {
   }, [step, currentUser?.id]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- reset tee/tees state on every course change (including to none), mirrors useQuickMatchScoring's course-fetch pattern
+    setCreatorTeeKey(NO_TEE_KEY);
     if (!selectedCourse?.id) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- reset on course change, mirrors useQuickMatchScoring's course-fetch pattern
       setCourseTees([]);
       return;
     }
     let cancelled = false;
+    setTeesLoading(true);
     getGolfCourseUseCase
       .execute(selectedCourse.id)
       .then((course) => {
@@ -160,6 +163,9 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser }) => {
       })
       .catch(() => {
         if (!cancelled) setCourseTees([]);
+      })
+      .finally(() => {
+        if (!cancelled) setTeesLoading(false);
       });
     return () => {
       cancelled = true;
@@ -206,7 +212,12 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser }) => {
       setError(t('create.course.errorCourseRequired'));
       return;
     }
-    if (courseTees.length > 0 && creatorTeeKey === NO_TEE_KEY) {
+    if (teesLoading) {
+      setError(t('create.course.errorTeeRequired'));
+      return;
+    }
+    const creatorTeeIsValid = courseTees.some((tee) => teeKey(tee.teeCategory, tee.gender) === creatorTeeKey);
+    if (courseTees.length > 0 && !creatorTeeIsValid) {
       setError(t('create.course.errorTeeRequired'));
       return;
     }
@@ -555,7 +566,7 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser }) => {
               <button
                 type="button"
                 onClick={handleCourseNext}
-                disabled={isProcessing}
+                disabled={isProcessing || teesLoading}
                 data-testid="quick-match-course-next"
                 className="px-4 py-2 text-sm font-medium text-white bg-primary rounded-md hover:bg-primary/90 disabled:opacity-50"
               >
@@ -669,6 +680,7 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser }) => {
                       availableFriends.map((f) => (
                         <div
                           key={f.id}
+                          data-testid={`quick-match-friend-row-${f.id}`}
                           className="px-3 py-2 border border-gray-200 rounded-lg space-y-1.5"
                         >
                           <div className="flex items-center justify-between gap-2">
