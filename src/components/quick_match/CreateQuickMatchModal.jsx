@@ -67,7 +67,9 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser }) => {
   const [participantTab, setParticipantTab] = useState('friends');
   const [friends, setFriends] = useState([]);
   const [selectedTeam, setSelectedTeam] = useState('A');
-  const [selectedTeeKey, setSelectedTeeKey] = useState(NO_TEE_KEY);
+  // Tee chosen per friend row (keyed by friend.id), so each friend can pick a different one
+  const [friendTeeByFriendId, setFriendTeeByFriendId] = useState({});
+  const [guestTeeKey, setGuestTeeKey] = useState(NO_TEE_KEY);
   const [guestForm, setGuestForm] = useState(initialGuestForm);
 
   const [scorerIds, setScorerIds] = useState([]);
@@ -87,10 +89,18 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser }) => {
       setCourseTees([]);
       return;
     }
+    let cancelled = false;
     getGolfCourseUseCase
       .execute(selectedCourse.id)
-      .then((course) => setCourseTees(course.tees || []))
-      .catch(() => setCourseTees([]));
+      .then((course) => {
+        if (!cancelled) setCourseTees(course.tees || []);
+      })
+      .catch(() => {
+        if (!cancelled) setCourseTees([]);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [selectedCourse?.id]);
 
   const isFreePlay = mode === 'FREE_PLAY';
@@ -157,7 +167,7 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser }) => {
     setIsProcessing(true);
     setError('');
     try {
-      const { teeCategory, teeGender } = parseTeeKey(selectedTeeKey);
+      const { teeCategory, teeGender } = parseTeeKey(friendTeeByFriendId[friend.id] ?? NO_TEE_KEY);
       const updated = await addFriendParticipantUseCase.execute(
         quickMatch.id,
         friend.otherUserId,
@@ -165,6 +175,11 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser }) => {
         { teeCategory, teeGender }
       );
       setQuickMatch(updated);
+      setFriendTeeByFriendId((prev) => {
+        const next = { ...prev };
+        delete next[friend.id];
+        return next;
+      });
     } catch (err) {
       setError(err.message || t('create.errors.generic'));
     } finally {
@@ -179,7 +194,7 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser }) => {
     setIsProcessing(true);
     setError('');
     try {
-      const { teeCategory, teeGender } = parseTeeKey(selectedTeeKey);
+      const { teeCategory, teeGender } = parseTeeKey(guestTeeKey);
       const updated = await addGuestParticipantUseCase.execute(quickMatch.id, {
         firstName: guestForm.firstName.trim(),
         lastName: guestForm.lastName.trim(),
@@ -190,6 +205,7 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser }) => {
       });
       setQuickMatch(updated);
       setGuestForm(initialGuestForm);
+      setGuestTeeKey(NO_TEE_KEY);
     } catch (err) {
       setError(err.message || t('create.errors.generic'));
     } finally {
@@ -520,28 +536,6 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser }) => {
                   </div>
                 )}
 
-                {courseTees.length > 0 && (
-                  <div>
-                    <label htmlFor="quick-match-participant-tee" className="block text-xs font-medium text-gray-500 mb-1">
-                      {t('create.participants.teeLabel')}
-                    </label>
-                    <select
-                      id="quick-match-participant-tee"
-                      value={selectedTeeKey}
-                      onChange={(e) => setSelectedTeeKey(e.target.value)}
-                      data-testid="quick-match-participant-tee-select"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                    >
-                      <option value={NO_TEE_KEY}>{t('create.course.noTeeOption')}</option>
-                      {courseTees.map((tee) => (
-                        <option key={teeKey(tee.teeCategory, tee.gender)} value={teeKey(tee.teeCategory, tee.gender)}>
-                          {tee.identifier}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-
                 <div className="flex border-b border-gray-200">
                   <button
                     type="button"
@@ -571,17 +565,40 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser }) => {
                       availableFriends.map((f) => (
                         <div
                           key={f.id}
-                          className="flex items-center justify-between px-3 py-2 border border-gray-200 rounded-lg"
+                          className="flex items-center justify-between gap-2 px-3 py-2 border border-gray-200 rounded-lg"
                         >
-                          <span className="text-sm text-gray-900">{f.otherUserName}</span>
-                          <button
-                            type="button"
-                            onClick={() => handleAddFriend(f)}
-                            disabled={isProcessing}
-                            className="text-xs font-medium text-primary hover:underline disabled:opacity-50"
-                          >
-                            {t('create.participants.addFriend')}
-                          </button>
+                          <span className="text-sm text-gray-900 truncate">{f.otherUserName}</span>
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            {courseTees.length > 0 && (
+                              <select
+                                aria-label={t('create.participants.teeLabel')}
+                                value={friendTeeByFriendId[f.id] ?? NO_TEE_KEY}
+                                onChange={(e) =>
+                                  setFriendTeeByFriendId((prev) => ({ ...prev, [f.id]: e.target.value }))
+                                }
+                                data-testid={`quick-match-friend-tee-select-${f.id}`}
+                                className="px-2 py-1 border border-gray-300 rounded-md text-xs focus:outline-none focus:ring-2 focus:ring-primary"
+                              >
+                                <option value={NO_TEE_KEY}>{t('create.course.noTeeOption')}</option>
+                                {courseTees.map((tee) => (
+                                  <option
+                                    key={teeKey(tee.teeCategory, tee.gender)}
+                                    value={teeKey(tee.teeCategory, tee.gender)}
+                                  >
+                                    {tee.identifier}
+                                  </option>
+                                ))}
+                              </select>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => handleAddFriend(f)}
+                              disabled={isProcessing}
+                              className="text-xs font-medium text-primary hover:underline disabled:opacity-50"
+                            >
+                              {t('create.participants.addFriend')}
+                            </button>
+                          </div>
                         </div>
                       ))
                     )}
@@ -618,6 +635,22 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser }) => {
                       placeholder={t('create.participants.guestHandicap')}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                     />
+                    {courseTees.length > 0 && (
+                      <select
+                        aria-label={t('create.participants.teeLabel')}
+                        value={guestTeeKey}
+                        onChange={(e) => setGuestTeeKey(e.target.value)}
+                        data-testid="quick-match-guest-tee-select"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                      >
+                        <option value={NO_TEE_KEY}>{t('create.course.noTeeOption')}</option>
+                        {courseTees.map((tee) => (
+                          <option key={teeKey(tee.teeCategory, tee.gender)} value={teeKey(tee.teeCategory, tee.gender)}>
+                            {tee.identifier}
+                          </option>
+                        ))}
+                      </select>
+                    )}
                     <button
                       type="submit"
                       disabled={isProcessing}

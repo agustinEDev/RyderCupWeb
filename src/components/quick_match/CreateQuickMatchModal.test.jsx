@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 import CreateQuickMatchModal from './CreateQuickMatchModal';
 
@@ -16,13 +16,22 @@ vi.mock('react-i18next', () => ({
 
 vi.mock('../golf_course/GolfCourseSearchBox', () => ({
   default: ({ onCourseSelect }) => (
-    <button
-      type="button"
-      data-testid="select-course-stub"
-      onClick={() => onCourseSelect({ id: 'course-1', name: 'St Andrews' })}
-    >
-      Select course
-    </button>
+    <>
+      <button
+        type="button"
+        data-testid="select-course-stub"
+        onClick={() => onCourseSelect({ id: 'course-1', name: 'St Andrews' })}
+      >
+        Select course
+      </button>
+      <button
+        type="button"
+        data-testid="select-course-stub-2"
+        onClick={() => onCourseSelect({ id: 'course-2', name: 'Valderrama' })}
+      >
+        Select other course
+      </button>
+    </>
   ),
 }));
 
@@ -242,7 +251,7 @@ describe('CreateQuickMatchModal', () => {
     });
     fireEvent.click(screen.getByText('create.participants.tabGuest'));
 
-    fireEvent.change(screen.getByTestId('quick-match-participant-tee-select'), {
+    fireEvent.change(screen.getByTestId('quick-match-guest-tee-select'), {
       target: { value: 'FORWARD|FEMALE' },
     });
     fireEvent.change(screen.getByPlaceholderText('create.participants.guestFirstName'), {
@@ -263,5 +272,102 @@ describe('CreateQuickMatchModal', () => {
         teeGender: 'FEMALE',
       });
     });
+  });
+
+  it('should ignore a stale course-tees response from a previously selected course', async () => {
+    const deferred = {};
+    ['course-1', 'course-2'].forEach((id) => {
+      deferred[id] = {};
+      deferred[id].promise = new Promise((resolve) => {
+        deferred[id].resolve = resolve;
+      });
+    });
+    mockGetGolfCourse.mockImplementation((id) => deferred[id].promise);
+    mockCreate.mockResolvedValue({
+      id: 'qm-1',
+      isPending: true,
+      participants: [{ participantId: 'user-1', userId: 'user-1', name: 'Me', isGuest: false }],
+    });
+
+    renderModal();
+
+    // Select course-1, then quickly re-select course-2 before course-1's request resolves
+    fireEvent.click(screen.getByTestId('select-course-stub'));
+    fireEvent.click(screen.getByTestId('select-course-stub-2'));
+
+    // course-2's response arrives first (its own request), then the stale course-1 one arrives after
+    deferred['course-2'].resolve({
+      tees: [{ teeCategory: 'FORWARD', gender: 'FEMALE', identifier: 'Red', courseRating: 68, slopeRating: 118 }],
+    });
+    deferred['course-1'].resolve({
+      tees: [{ teeCategory: 'AMATEUR', gender: 'MALE', identifier: 'White', courseRating: 71, slopeRating: 128 }],
+    });
+
+    await waitFor(() => {
+      expect(screen.getByTestId('quick-match-creator-tee-select')).toBeInTheDocument();
+    });
+
+    // Only course-2's tee ("Red") must be present — the stale course-1 response ("White") must not overwrite it
+    expect(screen.queryByText('Red')).toBeInTheDocument();
+    expect(screen.queryByText('White')).not.toBeInTheDocument();
+  });
+
+  it('should let each friend be added with their own, independently selected tee', async () => {
+    mockGetGolfCourse.mockResolvedValue({
+      tees: [
+        { teeCategory: 'AMATEUR', gender: 'MALE', identifier: 'White', courseRating: 71, slopeRating: 128 },
+        { teeCategory: 'FORWARD', gender: 'FEMALE', identifier: 'Red', courseRating: 68, slopeRating: 118 },
+      ],
+    });
+    mockListFriends.mockResolvedValue({
+      friendships: [
+        { id: 'f-1', otherUserId: 'user-2', otherUserName: 'Alice' },
+        { id: 'f-2', otherUserId: 'user-3', otherUserName: 'Bob' },
+      ],
+      totalCount: 2,
+    });
+    mockCreate.mockResolvedValue({
+      id: 'qm-1',
+      isPending: true,
+      participants: [{ participantId: 'user-1', userId: 'user-1', name: 'Me', isGuest: false }],
+    });
+    mockAddFriend.mockResolvedValue({
+      id: 'qm-1',
+      isPending: true,
+      participants: [
+        { participantId: 'user-1', userId: 'user-1', name: 'Me', isGuest: false },
+        { participantId: 'user-2', userId: 'user-2', name: 'Alice', isGuest: false },
+      ],
+    });
+
+    renderModal();
+
+    // Free play (capacity 4) so the roster isn't already full after adding just Alice
+    fireEvent.click(screen.getByTestId('mode-option-FREE_PLAY'));
+    fireEvent.click(screen.getByTestId('select-course-stub'));
+    fireEvent.click(screen.getByTestId('quick-match-course-next'));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('quick-match-friend-tee-select-f-1')).toBeInTheDocument();
+    });
+
+    fireEvent.change(screen.getByTestId('quick-match-friend-tee-select-f-1'), {
+      target: { value: 'AMATEUR|MALE' },
+    });
+    fireEvent.change(screen.getByTestId('quick-match-friend-tee-select-f-2'), {
+      target: { value: 'FORWARD|FEMALE' },
+    });
+
+    fireEvent.click(within(screen.getByText('Alice').closest('div')).getByText('create.participants.addFriend'));
+
+    await waitFor(() => {
+      expect(mockAddFriend).toHaveBeenCalledWith('qm-1', 'user-2', null, {
+        teeCategory: 'AMATEUR',
+        teeGender: 'MALE',
+      });
+    });
+
+    // Bob's row keeps its own independent tee selection, unaffected by Alice's add
+    expect(screen.getByTestId('quick-match-friend-tee-select-f-2').value).toBe('FORWARD|FEMALE');
   });
 });
