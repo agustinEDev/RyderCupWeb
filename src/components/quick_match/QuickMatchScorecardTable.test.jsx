@@ -97,4 +97,60 @@ describe('QuickMatchScorecardTable', () => {
 
     expect(screen.queryByTestId('stroke-dots')).not.toBeInTheDocument();
   });
+
+  it('should render a separate card per participant instead of one shared table', () => {
+    const holeScores = [{ holeNumber: 1, participantId: 'p-1', score: 4 }];
+
+    render(
+      <QuickMatchScorecardTable holes={holes} holeScores={holeScores} participants={participants} currentParticipantId="p-1" />
+    );
+
+    expect(screen.getByTestId('quick-match-player-card-p-1')).toBeInTheDocument();
+    expect(screen.getByTestId('quick-match-player-card-p-2')).toBeInTheDocument();
+  });
+
+  it('should show Stableford points per hole when scoringFormat is STABLEFORD', () => {
+    const holeScores = [{ holeNumber: 1, participantId: 'p-1', score: 4 }];
+
+    render(
+      <QuickMatchScorecardTable
+        holes={holes}
+        holeScores={holeScores}
+        participants={participants}
+        currentParticipantId="p-1"
+        scoringFormat="STABLEFORD"
+      />
+    );
+
+    expect(screen.getAllByTestId('hole-points').length).toBeGreaterThan(0);
+    expect(screen.queryByTestId('hole-net-strokes')).not.toBeInTheDocument();
+  });
+
+  it('should show net strokes per hole when scoringFormat is MEDAL', () => {
+    const holeScores = [{ holeNumber: 1, participantId: 'p-1', score: 4 }];
+
+    render(
+      <QuickMatchScorecardTable
+        holes={holes}
+        holeScores={holeScores}
+        participants={participants}
+        currentParticipantId="p-1"
+        scoringFormat="MEDAL"
+      />
+    );
+
+    expect(screen.getAllByTestId('hole-net-strokes').length).toBeGreaterThan(0);
+    expect(screen.queryByTestId('hole-points')).not.toBeInTheDocument();
+  });
+
+  it('should not show points or net strokes badges for match-play formats', () => {
+    const holeScores = [{ holeNumber: 1, participantId: 'p-1', score: 4 }];
+
+    render(
+      <QuickMatchScorecardTable holes={holes} holeScores={holeScores} participants={participants} currentParticipantId="p-1" />
+    );
+
+    expect(screen.queryByTestId('hole-points')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('hole-net-strokes')).not.toBeInTheDocument();
+  });
 });

@@ -114,7 +114,9 @@
     },
     "scorecard": {
       "strokeReceived": "Receives {{count}} extra stroke(s) on this hole",
-      "strokeGiven": "Gives back {{count}} stroke(s) on this hole"
+      "strokeGiven": "Gives back {{count}} stroke(s) on this hole",
+      "holePoints": "{{count}} Stableford point(s) on this hole",
+      "holeNetStrokes": "{{count}} net stroke(s) on this hole"
     },
     "errors": {
       "generic": "Something went wrong. Please try again.",

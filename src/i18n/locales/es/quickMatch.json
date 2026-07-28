@@ -114,7 +114,9 @@
     },
     "scorecard": {
       "strokeReceived": "Recibe {{count}} golpe(s) extra en este hoyo",
-      "strokeGiven": "Cede {{count}} golpe(s) en este hoyo"
+      "strokeGiven": "Cede {{count}} golpe(s) en este hoyo",
+      "holePoints": "{{count}} punto(s) Stableford en este hoyo",
+      "holeNetStrokes": "{{count}} golpe(s) netos en este hoyo"
     },
     "errors": {
       "generic": "Ha ocurrido un error. Inténtalo de nuevo.",
