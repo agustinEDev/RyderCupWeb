@@ -64,6 +64,19 @@ class IQuickMatchRepository {
   }
 
   /**
+   * Set/override a participant's handicap (creator only, while PENDING).
+   *
+   * @param {string} quickMatchId
+   * @param {string} participantId
+   * @param {number|null} handicap
+   * @returns {Promise<QuickMatch>} Updated quick match
+   * @throws {Error} If operation fails
+   */
+  async setParticipantHandicap(quickMatchId, participantId, handicap) {
+    throw new Error('Method setParticipantHandicap() must be implemented');
+  }
+
+  /**
    * Start the quick match, choosing 1 to 4 scorers (creator always included).
    *
    * @param {string} quickMatchId

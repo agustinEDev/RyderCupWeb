@@ -40,6 +40,7 @@ const mockListFriends = vi.fn();
 const mockAddFriend = vi.fn();
 const mockAddGuest = vi.fn();
 const mockRemoveParticipant = vi.fn();
+const mockSetHandicap = vi.fn();
 const mockStart = vi.fn();
 const mockCancel = vi.fn();
 const mockGetGolfCourse = vi.fn();
@@ -49,6 +50,7 @@ vi.mock('../../composition', () => ({
   addFriendParticipantUseCase: { execute: (...args) => mockAddFriend(...args) },
   addGuestParticipantUseCase: { execute: (...args) => mockAddGuest(...args) },
   removeQuickMatchParticipantUseCase: { execute: (...args) => mockRemoveParticipant(...args) },
+  setQuickMatchParticipantHandicapUseCase: { execute: (...args) => mockSetHandicap(...args) },
   startQuickMatchUseCase: { execute: (...args) => mockStart(...args) },
   cancelQuickMatchUseCase: { execute: (...args) => mockCancel(...args) },
   listFriendsUseCase: { execute: (...args) => mockListFriends(...args) },
@@ -412,7 +414,7 @@ describe('CreateQuickMatchModal', () => {
     fireEvent.click(screen.getByTestId('quick-match-friend-tee-select-f-1-AMATEUR|MALE'));
     fireEvent.click(screen.getByTestId('quick-match-friend-tee-select-f-2-FORWARD|FEMALE'));
 
-    fireEvent.click(within(screen.getByTestId('quick-match-friend-row-f-1')).getByText('create.participants.addFriend'));
+    fireEvent.click(screen.getByTestId('quick-match-add-friend-f-1'));
 
     await waitFor(() => {
       expect(mockAddFriend).toHaveBeenCalledWith('qm-1', 'user-2', null, {
@@ -487,9 +489,9 @@ describe('CreateQuickMatchModal', () => {
     fireEvent.click(screen.getByTestId('quick-match-course-next'));
 
     await waitFor(() => {
-      expect(screen.getByText('create.participants.addFriend')).toBeInTheDocument();
+      expect(screen.getByTestId('quick-match-add-friend-f-1')).toBeInTheDocument();
     });
-    fireEvent.click(screen.getByText('create.participants.addFriend'));
+    fireEvent.click(screen.getByTestId('quick-match-add-friend-f-1'));
 
     expect(screen.getByTestId('quick-match-modal-error')).toHaveTextContent('create.participants.errorTeeRequired');
     expect(mockAddFriend).not.toHaveBeenCalled();
@@ -587,5 +589,153 @@ describe('CreateQuickMatchModal', () => {
 
     expect(mockCancel).not.toHaveBeenCalled();
     expect(screen.getByTestId('quick-match-participants-next')).toBeInTheDocument();
+  });
+
+  it('should move to the summary step after choosing scorers', async () => {
+    mockCreate.mockResolvedValue({
+      id: 'qm-1',
+      isPending: true,
+      participants: [{ participantId: 'user-1', userId: 'user-1', name: 'Me', handicap: null, isGuest: false }],
+    });
+
+    renderModal();
+
+    fireEvent.click(screen.getByTestId('mode-option-FREE_PLAY'));
+    fireEvent.click(screen.getByTestId('select-course-stub'));
+    await waitFor(() => {
+      expect(screen.getByTestId('quick-match-course-next')).not.toBeDisabled();
+    });
+    fireEvent.click(screen.getByTestId('quick-match-course-next'));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('quick-match-participants-next')).not.toBeDisabled();
+    });
+    fireEvent.click(screen.getByTestId('quick-match-participants-next'));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('quick-match-scorers-next')).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByTestId('quick-match-scorers-next'));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('quick-match-start')).toBeInTheDocument();
+      expect(screen.getByTestId('quick-match-handicap-button-user-1')).toBeInTheDocument();
+    });
+    expect(mockStart).not.toHaveBeenCalled();
+  });
+
+  it('should set a participant handicap via the keypad panel in the summary step', async () => {
+    mockCreate.mockResolvedValue({
+      id: 'qm-1',
+      isPending: true,
+      participants: [{ participantId: 'user-1', userId: 'user-1', name: 'Me', handicap: null, isGuest: false }],
+    });
+    mockSetHandicap.mockResolvedValue({
+      id: 'qm-1',
+      isPending: true,
+      participants: [{ participantId: 'user-1', userId: 'user-1', name: 'Me', handicap: 16.4, isGuest: false }],
+    });
+
+    renderModal();
+
+    fireEvent.click(screen.getByTestId('mode-option-FREE_PLAY'));
+    fireEvent.click(screen.getByTestId('select-course-stub'));
+    await waitFor(() => expect(screen.getByTestId('quick-match-course-next')).not.toBeDisabled());
+    fireEvent.click(screen.getByTestId('quick-match-course-next'));
+    await waitFor(() => expect(screen.getByTestId('quick-match-participants-next')).not.toBeDisabled());
+    fireEvent.click(screen.getByTestId('quick-match-participants-next'));
+    await waitFor(() => expect(screen.getByTestId('quick-match-scorers-next')).toBeInTheDocument());
+    fireEvent.click(screen.getByTestId('quick-match-scorers-next'));
+
+    fireEvent.click(await screen.findByTestId('quick-match-handicap-button-user-1'));
+    const panel = await screen.findByRole('dialog', { name: 'Me' });
+    fireEvent.click(within(panel).getByText('1'));
+    fireEvent.click(within(panel).getByText('6'));
+    fireEvent.click(within(panel).getByText('.'));
+    fireEvent.click(within(panel).getByText('4'));
+    fireEvent.click(within(panel).getByTestId('handicap-panel-confirm'));
+
+    await waitFor(() => {
+      expect(mockSetHandicap).toHaveBeenCalledWith('qm-1', 'user-1', 16.4);
+    });
+  });
+
+  it('should not call setHandicap when confirming without changing the value', async () => {
+    mockCreate.mockResolvedValue({
+      id: 'qm-1',
+      isPending: true,
+      participants: [{ participantId: 'user-1', userId: 'user-1', name: 'Me', handicap: 10, isGuest: false }],
+    });
+
+    renderModal();
+
+    fireEvent.click(screen.getByTestId('mode-option-FREE_PLAY'));
+    fireEvent.click(screen.getByTestId('select-course-stub'));
+    await waitFor(() => expect(screen.getByTestId('quick-match-course-next')).not.toBeDisabled());
+    fireEvent.click(screen.getByTestId('quick-match-course-next'));
+    await waitFor(() => expect(screen.getByTestId('quick-match-participants-next')).not.toBeDisabled());
+    fireEvent.click(screen.getByTestId('quick-match-participants-next'));
+    await waitFor(() => expect(screen.getByTestId('quick-match-scorers-next')).toBeInTheDocument());
+    fireEvent.click(screen.getByTestId('quick-match-scorers-next'));
+
+    fireEvent.click(await screen.findByTestId('quick-match-handicap-button-user-1'));
+    const panel = await screen.findByRole('dialog', { name: 'Me' });
+    fireEvent.click(within(panel).getByTestId('handicap-panel-confirm'));
+
+    expect(mockSetHandicap).not.toHaveBeenCalled();
+  });
+
+  it('should start the match when confirming from the summary step', async () => {
+    const onStarted = vi.fn();
+    mockCreate.mockResolvedValue({
+      id: 'qm-1',
+      isPending: true,
+      participants: [{ participantId: 'user-1', userId: 'user-1', name: 'Me', handicap: 10, isGuest: false }],
+    });
+    mockStart.mockResolvedValue({ id: 'qm-1' });
+
+    renderModal({ onStarted });
+
+    fireEvent.click(screen.getByTestId('mode-option-FREE_PLAY'));
+    fireEvent.click(screen.getByTestId('select-course-stub'));
+    await waitFor(() => expect(screen.getByTestId('quick-match-course-next')).not.toBeDisabled());
+    fireEvent.click(screen.getByTestId('quick-match-course-next'));
+    await waitFor(() => expect(screen.getByTestId('quick-match-participants-next')).not.toBeDisabled());
+    fireEvent.click(screen.getByTestId('quick-match-participants-next'));
+    await waitFor(() => expect(screen.getByTestId('quick-match-scorers-next')).toBeInTheDocument());
+    fireEvent.click(screen.getByTestId('quick-match-scorers-next'));
+
+    await screen.findByTestId('quick-match-start');
+    fireEvent.click(screen.getByTestId('quick-match-start'));
+
+    await waitFor(() => {
+      expect(mockStart).toHaveBeenCalledWith('qm-1', ['user-1']);
+      expect(onStarted).toHaveBeenCalledWith('qm-1');
+    });
+  });
+
+  it('should return to the scorers step when going back from the summary', async () => {
+    mockCreate.mockResolvedValue({
+      id: 'qm-1',
+      isPending: true,
+      participants: [{ participantId: 'user-1', userId: 'user-1', name: 'Me', handicap: 10, isGuest: false }],
+    });
+
+    renderModal();
+
+    fireEvent.click(screen.getByTestId('mode-option-FREE_PLAY'));
+    fireEvent.click(screen.getByTestId('select-course-stub'));
+    await waitFor(() => expect(screen.getByTestId('quick-match-course-next')).not.toBeDisabled());
+    fireEvent.click(screen.getByTestId('quick-match-course-next'));
+    await waitFor(() => expect(screen.getByTestId('quick-match-participants-next')).not.toBeDisabled());
+    fireEvent.click(screen.getByTestId('quick-match-participants-next'));
+    await waitFor(() => expect(screen.getByTestId('quick-match-scorers-next')).toBeInTheDocument());
+    fireEvent.click(screen.getByTestId('quick-match-scorers-next'));
+
+    await screen.findByTestId('quick-match-summary-back');
+    fireEvent.click(screen.getByTestId('quick-match-summary-back'));
+
+    expect(screen.getByTestId('quick-match-scorers-next')).toBeInTheDocument();
+    expect(mockCancel).not.toHaveBeenCalled();
   });
 });

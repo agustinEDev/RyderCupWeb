@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+**Quick Match — Pre-Start Summary and Handicap Editing**
+
+- `CreateQuickMatchModal` gains a 4th step ("Summary") between choosing scorers and actually starting the match: shows course/format/allowance, every participant with their resolved handicap, and the chosen scorers, all before the creator confirms. The old "Start match" button on the scorers step is now just "Next"; the summary's "Confirm and start" button is what actually calls `start()`.
+- The summary lets the creator edit any participant's handicap right there — a manual value for guests, or an override for registered players who don't have one on their profile (e.g. a friend who never set a handicap) — via the new backend `PATCH .../participants/{id}/handicap` endpoint (RyderCupAm #121). Requires that backend change.
+- Replaced the plain `<input type="number">` for handicap entry (both the guest-add form in step 2 and the new summary step) with a bottom-sheet numeric keypad (`HandicapInputPanel`, same pattern as `scoring/ScoreInputPanel`'s numpad) — digits, decimal point, sign toggle for plus-handicaps, live range validation (-10 to 54).
+- Friend rows in the participants step were a two-line card (name + add button, then tee buttons wrapping below) that looked bulky once a course had several tees. Condensed to a single line — name, compact tee buttons, and the "Add" action now a small `+` icon button instead of a text link. `TeeSelectButtons` gained a `compact` variant (smaller padding/dots, horizontally scrollable instead of wrapping) used here; the creator's own tee picker (step 1) and the guest tee picker keep the original size.
+
 **Quick Match — Dashboard Entry Points and Scoring Flow (FE #236)**
 
 - New dashboard entry points to start a quick match without going through full tournament creation: a "Quick Match" card in Quick Actions, and a dedicated call-to-action button at the same visual level as Pending Actions for faster access.

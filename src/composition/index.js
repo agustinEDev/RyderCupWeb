@@ -129,6 +129,7 @@ import CreateQuickMatchUseCase from '../application/use_cases/quick_match/Create
 import AddFriendParticipantUseCase from '../application/use_cases/quick_match/AddFriendParticipantUseCase';
 import AddGuestParticipantUseCase from '../application/use_cases/quick_match/AddGuestParticipantUseCase';
 import RemoveQuickMatchParticipantUseCase from '../application/use_cases/quick_match/RemoveQuickMatchParticipantUseCase';
+import SetQuickMatchParticipantHandicapUseCase from '../application/use_cases/quick_match/SetQuickMatchParticipantHandicapUseCase';
 import StartQuickMatchUseCase from '../application/use_cases/quick_match/StartQuickMatchUseCase';
 import CompleteQuickMatchUseCase from '../application/use_cases/quick_match/CompleteQuickMatchUseCase';
 import CancelQuickMatchUseCase from '../application/use_cases/quick_match/CancelQuickMatchUseCase';
@@ -252,6 +253,7 @@ const createQuickMatchUseCase = new CreateQuickMatchUseCase({ quickMatchReposito
 const addFriendParticipantUseCase = new AddFriendParticipantUseCase({ quickMatchRepository: apiQuickMatchRepository });
 const addGuestParticipantUseCase = new AddGuestParticipantUseCase({ quickMatchRepository: apiQuickMatchRepository });
 const removeQuickMatchParticipantUseCase = new RemoveQuickMatchParticipantUseCase({ quickMatchRepository: apiQuickMatchRepository });
+const setQuickMatchParticipantHandicapUseCase = new SetQuickMatchParticipantHandicapUseCase({ quickMatchRepository: apiQuickMatchRepository });
 const startQuickMatchUseCase = new StartQuickMatchUseCase({ quickMatchRepository: apiQuickMatchRepository });
 const completeQuickMatchUseCase = new CompleteQuickMatchUseCase({ quickMatchRepository: apiQuickMatchRepository });
 const cancelQuickMatchUseCase = new CancelQuickMatchUseCase({ quickMatchRepository: apiQuickMatchRepository });
@@ -379,6 +381,7 @@ export {
   addFriendParticipantUseCase,
   addGuestParticipantUseCase,
   removeQuickMatchParticipantUseCase,
+  setQuickMatchParticipantHandicapUseCase,
   startQuickMatchUseCase,
   completeQuickMatchUseCase,
   cancelQuickMatchUseCase,
