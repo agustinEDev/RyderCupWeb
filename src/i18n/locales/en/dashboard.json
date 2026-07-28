@@ -45,7 +45,15 @@
     "matches_other": "{{count}} upcoming matches",
     "viewSchedule": "View Schedule",
     "handicap": "Set Up Your Handicap",
-    "handicapDesc": "Complete your golf profile to participate in tournaments"
+    "handicapDesc": "Complete your golf profile to participate in tournaments",
+    "quickMatchInProgress": "Quick Match In Progress",
+    "quickMatchFormat": {
+      "SINGLES": "Singles",
+      "FOURBALL": "Fourball",
+      "FOURSOMES": "Foursomes",
+      "MEDAL": "Medal",
+      "STABLEFORD": "Stableford"
+    }
   },
   "upcomingMatches": {
     "title": "My Upcoming Matches",

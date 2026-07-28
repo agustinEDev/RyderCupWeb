@@ -123,6 +123,20 @@ import SetCustomHandicapUseCase from '../application/use_cases/enrollment/SetCus
 import RemoveCustomHandicapUseCase from '../application/use_cases/enrollment/RemoveCustomHandicapUseCase';
 import DirectEnrollUseCase from '../application/use_cases/enrollment/DirectEnrollUseCase';
 
+// Quick Match Use Cases (FE #236)
+import ApiQuickMatchRepository from '../infrastructure/repositories/ApiQuickMatchRepository';
+import CreateQuickMatchUseCase from '../application/use_cases/quick_match/CreateQuickMatchUseCase';
+import AddFriendParticipantUseCase from '../application/use_cases/quick_match/AddFriendParticipantUseCase';
+import AddGuestParticipantUseCase from '../application/use_cases/quick_match/AddGuestParticipantUseCase';
+import RemoveQuickMatchParticipantUseCase from '../application/use_cases/quick_match/RemoveQuickMatchParticipantUseCase';
+import StartQuickMatchUseCase from '../application/use_cases/quick_match/StartQuickMatchUseCase';
+import CompleteQuickMatchUseCase from '../application/use_cases/quick_match/CompleteQuickMatchUseCase';
+import CancelQuickMatchUseCase from '../application/use_cases/quick_match/CancelQuickMatchUseCase';
+import GetQuickMatchUseCase from '../application/use_cases/quick_match/GetQuickMatchUseCase';
+import ListMyQuickMatchesUseCase from '../application/use_cases/quick_match/ListMyQuickMatchesUseCase';
+import SubmitQuickMatchHoleScoreUseCase from '../application/use_cases/quick_match/SubmitQuickMatchHoleScoreUseCase';
+import SubmitQuickMatchProxyHoleScoreUseCase from '../application/use_cases/quick_match/SubmitQuickMatchProxyHoleScoreUseCase';
+
 
 // --- Repositorios (implementaciones concretas) ---
 // Con httpOnly cookies ya no necesitamos authTokenProvider
@@ -138,6 +152,7 @@ const apiSupportRepository = new ApiSupportRepository();
 const apiCountryRepository = new ApiCountryRepository();
 const apiInvitationRepository = new ApiInvitationRepository();
 const apiScoringRepository = new ApiScoringRepository();
+const apiQuickMatchRepository = new ApiQuickMatchRepository();
 
 // --- Casos de Uso ---
 const updateUserProfileUseCase = new UpdateUserProfileUseCase({ userRepository: apiUserRepository });
@@ -231,6 +246,19 @@ const withdrawEnrollmentUseCase = new WithdrawEnrollmentUseCase(apiEnrollmentRep
 const setCustomHandicapUseCase = new SetCustomHandicapUseCase(apiEnrollmentRepository);
 const removeCustomHandicapUseCase = new RemoveCustomHandicapUseCase(apiEnrollmentRepository);
 const directEnrollUseCase = new DirectEnrollUseCase(apiEnrollmentRepository);
+
+// Quick Match Use Cases (FE #236)
+const createQuickMatchUseCase = new CreateQuickMatchUseCase({ quickMatchRepository: apiQuickMatchRepository });
+const addFriendParticipantUseCase = new AddFriendParticipantUseCase({ quickMatchRepository: apiQuickMatchRepository });
+const addGuestParticipantUseCase = new AddGuestParticipantUseCase({ quickMatchRepository: apiQuickMatchRepository });
+const removeQuickMatchParticipantUseCase = new RemoveQuickMatchParticipantUseCase({ quickMatchRepository: apiQuickMatchRepository });
+const startQuickMatchUseCase = new StartQuickMatchUseCase({ quickMatchRepository: apiQuickMatchRepository });
+const completeQuickMatchUseCase = new CompleteQuickMatchUseCase({ quickMatchRepository: apiQuickMatchRepository });
+const cancelQuickMatchUseCase = new CancelQuickMatchUseCase({ quickMatchRepository: apiQuickMatchRepository });
+const getQuickMatchUseCase = new GetQuickMatchUseCase({ quickMatchRepository: apiQuickMatchRepository });
+const listMyQuickMatchesUseCase = new ListMyQuickMatchesUseCase({ quickMatchRepository: apiQuickMatchRepository });
+const submitQuickMatchHoleScoreUseCase = new SubmitQuickMatchHoleScoreUseCase({ quickMatchRepository: apiQuickMatchRepository });
+const submitQuickMatchProxyHoleScoreUseCase = new SubmitQuickMatchProxyHoleScoreUseCase({ quickMatchRepository: apiQuickMatchRepository });
 
 // Device Management Use Cases (v1.13.0)
 const getActiveDevicesUseCase = new GetActiveDevicesUseCase({ deviceRepository: apiDeviceRepository });
@@ -346,4 +374,16 @@ export {
   submitScorecardUseCase,
   getLeaderboardUseCase,
   concedeMatchUseCase,
+  // Quick Match Use Cases (FE #236)
+  createQuickMatchUseCase,
+  addFriendParticipantUseCase,
+  addGuestParticipantUseCase,
+  removeQuickMatchParticipantUseCase,
+  startQuickMatchUseCase,
+  completeQuickMatchUseCase,
+  cancelQuickMatchUseCase,
+  getQuickMatchUseCase,
+  listMyQuickMatchesUseCase,
+  submitQuickMatchHoleScoreUseCase,
+  submitQuickMatchProxyHoleScoreUseCase,
 };

@@ -1,0 +1,134 @@
+{
+  "create": {
+    "title": "Nueva partida rápida",
+    "step": "Paso {{current}} de {{total}}",
+    "cancel": "Cancelar",
+    "errors": {
+      "generic": "Ha ocurrido un error. Inténtalo de nuevo."
+    },
+    "course": {
+      "heading": "Campo y formato",
+      "nameLabel": "Nombre (opcional)",
+      "namePlaceholder": "Ej. Viernes con los del club",
+      "modeLabel": "Tipo de partida",
+      "modeMatchPlay": "Match play (Ryder Cup)",
+      "modeFreePlay": "Partido libre",
+      "formatLabel": "Formato",
+      "formatSingles": "Individual (1 contra 1)",
+      "formatFourball": "Fourball (2 contra 2, mejor bola)",
+      "formatFoursomes": "Foursomes (2 contra 2, bola alterna)",
+      "formatMedal": "Medal (stroke play, gana quien menos golpes netos hace)",
+      "formatStableford": "Stableford (por puntos)",
+      "courseLabel": "Campo de golf",
+      "yourTeeLabel": "Tu tee",
+      "allowanceLabel": "Allowance (%)",
+      "next": "Siguiente",
+      "creating": "Creando...",
+      "errorCourseRequired": "Selecciona un campo de golf",
+      "errorTeeRequired": "Selecciona un tee para continuar"
+    },
+    "participants": {
+      "heading": "Añadir participantes",
+      "rosterTitle": "Jugadores ({{count}}/{{max}})",
+      "teeLabel": "Tee",
+      "tabFriends": "Amigos",
+      "tabGuest": "Invitado",
+      "noFriends": "No tienes amigos añadidos todavía",
+      "addFriend": "Añadir",
+      "guestFirstName": "Nombre",
+      "guestLastName": "Apellidos",
+      "guestHandicap": "Hándicap (opcional)",
+      "addGuest": "Añadir invitado",
+      "team": "Equipo",
+      "teamA": "Equipo A",
+      "teamB": "Equipo B",
+      "remove": "Quitar",
+      "rosterFull": "La partida ya tiene el máximo de jugadores para este formato",
+      "errorTeeRequired": "Selecciona un tee antes de añadir al jugador",
+      "back": "Atrás",
+      "next": "Siguiente",
+      "creatorBadge": "Tú",
+      "guestBadge": "Invitado"
+    },
+    "scorers": {
+      "heading": "Elegir anotadores",
+      "description": "Elige entre 1 y 4 jugadores registrados que anotarán los resultados. Tú siempre anotas.",
+      "back": "Atrás",
+      "start": "Iniciar partida",
+      "starting": "Iniciando...",
+      "errorMinScorers": "Selecciona al menos un anotador"
+    }
+  },
+  "dashboard": {
+    "ctaTitle": "¿Partido improvisado?",
+    "ctaDesc": "Crea una partida rápida con amigos, sin necesidad de un torneo",
+    "ctaButton": "Crear partida rápida",
+    "viewHistory": "Ver mis partidas rápidas"
+  },
+  "history": {
+    "title": "Mis Partidas Rápidas",
+    "empty": "Todavía no has jugado ninguna partida rápida.",
+    "format": {
+      "SINGLES": "Individual",
+      "FOURBALL": "Fourball",
+      "FOURSOMES": "Foursomes",
+      "MEDAL": "Medal",
+      "STABLEFORD": "Stableford"
+    },
+    "status": {
+      "PENDING": "Pendiente",
+      "IN_PROGRESS": "En curso",
+      "COMPLETED": "Completada",
+      "CANCELLED": "Cancelada"
+    }
+  },
+  "scoring": {
+    "matchHeader": "Partida rápida",
+    "loading": "Cargando partida...",
+    "notAScorer": "No eres anotador en esta partida. Puedes seguir el resultado en la tarjeta.",
+    "tabs": {
+      "input": "Anotar",
+      "classification": "Clasificación",
+      "scorecard": "Tarjeta"
+    },
+    "navigation": {
+      "previous": "Anterior",
+      "next": "Siguiente"
+    },
+    "yourGroup": "Anotas para",
+    "backToDashboard": "Volver al panel",
+    "finish": {
+      "button": "Finalizar partida",
+      "confirmTitle": "¿Finalizar la partida?",
+      "confirmBody": "Se marcará como completada. Podrás seguir viendo la tarjeta después.",
+      "confirm": "Finalizar",
+      "cancel": "Cancelar",
+      "completed": "Partida finalizada"
+    },
+    "classification": {
+      "title": "Clasificación",
+      "player": "Jugador",
+      "points": "Pts",
+      "strokes": "Golpes",
+      "netStrokes": "Golpes netos",
+      "you": "Tú",
+      "noHolesYet": "Todavía no hay hoyos completados",
+      "allSquare": "Empatados",
+      "holesUp": "{{count}} arriba",
+      "decidedResult": "{{lead}}&{{remaining}}",
+      "leads": "{{name}} lidera",
+      "holesPlayed": "{{count}} hoyo(s) jugados"
+    },
+    "scorecard": {
+      "strokeReceived": "Recibe {{count}} golpe(s) extra en este hoyo",
+      "strokeGiven": "Cede {{count}} golpe(s) en este hoyo",
+      "holePoints": "{{count}} punto(s) Stableford en este hoyo",
+      "holeNetStrokes": "{{count}} golpe(s) netos en este hoyo"
+    },
+    "errors": {
+      "generic": "Ha ocurrido un error. Inténtalo de nuevo.",
+      "notFound": "No se ha encontrado la partida"
+    },
+    "retry": "Reintentar"
+  }
+}

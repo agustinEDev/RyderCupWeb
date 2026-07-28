@@ -7,6 +7,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+**Quick Match — Dashboard Entry Points and Scoring Flow (FE #236)**
+
+- New dashboard entry points to start a quick match without going through full tournament creation: a "Quick Match" card in Quick Actions, and a dedicated call-to-action button at the same visual level as Pending Actions for faster access.
+- `CreateQuickMatchModal`: a 3-step wizard (course + format → add friends/guests → choose scorers) instead of a full page, since the flow is a lightweight setup step, not a destination worth its own URL. Reuses `GolfCourseSearchBox` for course selection.
+- New `/quick-matches/:quickMatchId/scoring` page reusing the tournament scoring visual language (`GolfFigure`, and a numpad picker extracted out of `HoleInput` into standalone `ScoreInputPanel` for reuse) adapted to quick match's simpler, single-entry delegated-scoring model (no dual validation, no session lock). Only two tabs: Input and Scorecard — no live team leaderboard, since quick match has no team classification system.
+- Scorecard tab includes a Stableford classification (points + gross strokes, ranked by points) computed client-side from each participant's raw handicap index and the course's stroke index. At the time, quick match creation didn't collect a tee, so this was a simplified allocation rather than the full WHS playing-handicap formula used for tournaments — superseded below by the Playing Handicap entry once tee selection was added.
+- New Clean Architecture slice for the `quick_match` frontend module: domain entity/VO/repository interface, 11 application use cases, `ApiQuickMatchRepository`, and a `StablefordCalculator` domain service — wired into `composition/index.js`.
+- Quick matches were previously only reachable right after creation, with no way back once you navigated away. `PendingActionsCard` now lists the user's `IN_PROGRESS` quick matches as resumable items, and a new `/quick-matches` page (linked from the dashboard) lists the full history — pending, in progress, completed and cancelled — each row linking to its scoring page.
+- Creating several quick matches left them indistinguishable everywhere but the format ("Individual", "Individual", ...). `CreateQuickMatchModal`'s step 1 now has an optional free-text name field (max 100 chars); when set, it's shown instead of the format in `PendingActionsCard`, `/quick-matches`, and the scoring page header (format still shown as secondary text). Requires the matching backend change (RyderCupAm — `quick_matches.name` column, migration `de76ad1f8cf2`).
+
+**Quick Match — Free-Play Mode (Medal / Stableford)**
+
+- Quick matches only supported Ryder Cup-style team match play (Singles/Fourball/Foursomes). `CreateQuickMatchModal` step 1 now has a match-play/free-play mode toggle; free play offers Medal (stroke play) or Stableford (points), 1 to 4 players with no teams — including a solo round. The participants step no longer requires filling the roster before continuing when in free play.
+- `QuickMatch` domain entity: `matchFormat` is now nullable and mutually exclusive with the new `scoringFormat` field, validated in the constructor. Requires the matching backend change (RyderCupAm — nullable `quick_matches.match_format` + new `scoring_format` column, migration `a3f7c1d9e2b4`).
+- `QuickMatchScorecardTable`'s classification switches to a net-strokes ranking (ascending) when `scoringFormat` is `MEDAL`, reusing the existing per-hole stroke allocation from `StablefordCalculator` (now also exposing `netStrokes` per participant).
+
+**Quick Match — Playing Handicap (WHS)**
+
+- The Stableford/Medal classification used each participant's raw handicap index directly against the course's stroke index (no tee/slope adjustment), since quick match creation didn't collect a tee. Now, if a participant picked a tee, `StablefordCalculator` computes their real WHS Playing Handicap (new `PlayingHandicapCalculator` domain service, same formula as the backend's `competition.PlayingHandicapCalculator`) and uses that instead — falls back to the raw handicap when no tee was selected, so existing matches keep working unchanged.
+- `CreateQuickMatchModal`: once a course is picked, the creator can choose their own tee (step 1) and each friend/guest can choose theirs when added (step 2), both optional. An allowance % field (step 1) defaults to the WHS value for the selected format (Singles match play 100%, Fourball 90%, Foursomes 50%, free play 95%) and can be overridden.
+- Fixed a related backend gap while at it: registered participants' `handicap` was always `null` in the API response (only guests had theirs), so the existing Stableford display silently treated every registered player as scratch. Requires the matching backend change (RyderCupAm — `User.handicap` now mapped through, plus `tee_category`/`tee_gender` per participant and `allowance_percentage`/`effective_allowance` on the match, migration `b8e2f4a6c1d7`).
+
+**Quick Match — Scoring UI Polish**
+
+- Split the scoring page's "Scorecard" tab in two: a dedicated "Classification" tab (the ranking table) and a "Scorecard" tab now showing only the hole-by-hole grid, instead of both stacked in one view.
+- The scorecard grid now marks, per player and hole, the holes where they receive (or, for a plus handicap, give back) a stroke — small dots under the score, reusing the same Playing Handicap resolution as the classification.
+- `CreateQuickMatchModal`: tee selection (creator, each friend, guest) and the allowance % field are now button groups instead of `<select>` dropdowns, consistent with the format/mode pickers already using buttons. Free play only offers 90/95/100% allowance (match play keeps 50/90/100, its three format defaults) instead of the full 50-100 range. Extracted the duplicated tee-option markup into a shared `TeeSelectButtons` component (CodeRabbit nitpick on PR #254).
+- The hole navigation buttons on the Input tab had a bug where "Previous" showed the translated tab label ("Input ←") instead of an actual "Previous" text — now reads "Previous"/"Next" with chevron icons and clearer styling.
+
+### Fixed
+
+**Quick Match — Duplicate Self Entry When the Creator Is Also a Scorer**
+
+- `useQuickMatchScoring`'s `coveredParticipantIds` prepended the current user's own `participantId` on top of the backend's `scoring_assignments`, but the backend's assignment for a scorer already includes that scorer in its own `covered_participant_ids` (self-coverage), not just delegated non-scorers. When a scorer had no one delegated to them, the hole input screen showed their own name twice instead of once. Found by testing the full create → score flow in the browser; fixed by trusting the backend's assignment as-is, only falling back to `[self]` if no assignment is present.
+
 ## [2.1.1] - 2026-07-26
 
 ### Security
