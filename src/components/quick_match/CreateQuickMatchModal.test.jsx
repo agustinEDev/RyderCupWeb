@@ -311,7 +311,7 @@ describe('CreateQuickMatchModal', () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByTestId('quick-match-creator-tee-option-none')).toBeInTheDocument();
+      expect(screen.getByTestId('quick-match-creator-tee-option-FORWARD|FEMALE')).toBeInTheDocument();
     });
 
     // Only course-2's tee ("Red") must be present — the stale course-1 response ("White") must not overwrite it
@@ -375,5 +375,160 @@ describe('CreateQuickMatchModal', () => {
       'aria-pressed',
       'true'
     );
+  });
+
+  it('should not pre-select any tee option', async () => {
+    mockGetGolfCourse.mockResolvedValue({
+      tees: [{ teeCategory: 'AMATEUR', gender: 'MALE', identifier: 'White', courseRating: 71, slopeRating: 128 }],
+    });
+
+    renderModal();
+
+    fireEvent.click(screen.getByTestId('select-course-stub'));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('quick-match-creator-tee-option-AMATEUR|MALE')).toBeInTheDocument();
+    });
+    expect(screen.getByTestId('quick-match-creator-tee-option-AMATEUR|MALE')).toHaveAttribute('aria-pressed', 'false');
+    expect(screen.queryByTestId('quick-match-creator-tee-option-none')).not.toBeInTheDocument();
+    expect(screen.queryByText('create.course.noTeeOption')).not.toBeInTheDocument();
+  });
+
+  it('should require a tee selection before continuing when the course has tees', async () => {
+    mockGetGolfCourse.mockResolvedValue({
+      tees: [{ teeCategory: 'AMATEUR', gender: 'MALE', identifier: 'White', courseRating: 71, slopeRating: 128 }],
+    });
+
+    renderModal();
+
+    fireEvent.click(screen.getByTestId('select-course-stub'));
+    await waitFor(() => {
+      expect(screen.getByTestId('quick-match-creator-tee-option-AMATEUR|MALE')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByTestId('quick-match-course-next'));
+
+    expect(screen.getByTestId('quick-match-modal-error')).toHaveTextContent('create.course.errorTeeRequired');
+    expect(mockCreate).not.toHaveBeenCalled();
+  });
+
+  it('should require a tee selection before adding a friend when the course has tees', async () => {
+    mockGetGolfCourse.mockResolvedValue({
+      tees: [{ teeCategory: 'AMATEUR', gender: 'MALE', identifier: 'White', courseRating: 71, slopeRating: 128 }],
+    });
+    mockListFriends.mockResolvedValue({
+      friendships: [{ id: 'f-1', otherUserId: 'user-2', otherUserName: 'Alice' }],
+      totalCount: 1,
+    });
+    mockCreate.mockResolvedValue({
+      id: 'qm-1',
+      isPending: true,
+      participants: [{ participantId: 'user-1', userId: 'user-1', name: 'Me', isGuest: false }],
+    });
+
+    renderModal();
+
+    fireEvent.click(screen.getByTestId('select-course-stub'));
+    await waitFor(() => {
+      expect(screen.getByTestId('quick-match-creator-tee-option-AMATEUR|MALE')).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByTestId('quick-match-creator-tee-option-AMATEUR|MALE'));
+    fireEvent.click(screen.getByTestId('quick-match-course-next'));
+
+    await waitFor(() => {
+      expect(screen.getByText('create.participants.addFriend')).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByText('create.participants.addFriend'));
+
+    expect(screen.getByTestId('quick-match-modal-error')).toHaveTextContent('create.participants.errorTeeRequired');
+    expect(mockAddFriend).not.toHaveBeenCalled();
+  });
+
+  it('should require a tee selection before adding a guest when the course has tees', async () => {
+    mockGetGolfCourse.mockResolvedValue({
+      tees: [{ teeCategory: 'AMATEUR', gender: 'MALE', identifier: 'White', courseRating: 71, slopeRating: 128 }],
+    });
+    mockCreate.mockResolvedValue({
+      id: 'qm-1',
+      isPending: true,
+      participants: [{ participantId: 'user-1', userId: 'user-1', name: 'Me', isGuest: false }],
+    });
+
+    renderModal();
+
+    fireEvent.click(screen.getByTestId('select-course-stub'));
+    await waitFor(() => {
+      expect(screen.getByTestId('quick-match-creator-tee-option-AMATEUR|MALE')).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByTestId('quick-match-creator-tee-option-AMATEUR|MALE'));
+    fireEvent.click(screen.getByTestId('quick-match-course-next'));
+
+    await waitFor(() => {
+      expect(screen.getByText('create.participants.tabGuest')).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByText('create.participants.tabGuest'));
+
+    fireEvent.change(screen.getByPlaceholderText('create.participants.guestFirstName'), {
+      target: { value: 'Jane' },
+    });
+    fireEvent.change(screen.getByPlaceholderText('create.participants.guestLastName'), {
+      target: { value: 'Doe' },
+    });
+    fireEvent.click(screen.getByText('create.participants.addGuest'));
+
+    expect(screen.getByTestId('quick-match-modal-error')).toHaveTextContent('create.participants.errorTeeRequired');
+    expect(mockAddGuest).not.toHaveBeenCalled();
+  });
+
+  it('should cancel the pending match and return to step 1 when going back from participants', async () => {
+    mockCreate.mockResolvedValue({
+      id: 'qm-1',
+      isPending: true,
+      participants: [{ participantId: 'user-1', userId: 'user-1', name: 'Me', isGuest: false }],
+    });
+
+    renderModal();
+
+    fireEvent.click(screen.getByTestId('select-course-stub'));
+    fireEvent.click(screen.getByTestId('quick-match-course-next'));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('quick-match-participants-back')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByTestId('quick-match-participants-back'));
+
+    await waitFor(() => {
+      expect(mockCancel).toHaveBeenCalledWith('qm-1');
+      expect(screen.getByTestId('quick-match-course-next')).toBeInTheDocument();
+    });
+  });
+
+  it('should return to the participants step without cancelling when going back from scorers', async () => {
+    mockCreate.mockResolvedValue({
+      id: 'qm-1',
+      isPending: true,
+      participants: [{ participantId: 'user-1', userId: 'user-1', name: 'Me', isGuest: false }],
+    });
+
+    renderModal();
+
+    fireEvent.click(screen.getByTestId('mode-option-FREE_PLAY'));
+    fireEvent.click(screen.getByTestId('select-course-stub'));
+    fireEvent.click(screen.getByTestId('quick-match-course-next'));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('quick-match-participants-next')).not.toBeDisabled();
+    });
+    fireEvent.click(screen.getByTestId('quick-match-participants-next'));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('quick-match-scorers-back')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByTestId('quick-match-scorers-back'));
+
+    expect(mockCancel).not.toHaveBeenCalled();
+    expect(screen.getByTestId('quick-match-participants-next')).toBeInTheDocument();
   });
 });

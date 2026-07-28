@@ -21,11 +21,11 @@
       "formatStableford": "Stableford (por puntos)",
       "courseLabel": "Campo de golf",
       "yourTeeLabel": "Tu tee",
-      "noTeeOption": "Sin especificar",
       "allowanceLabel": "Allowance (%)",
       "next": "Siguiente",
       "creating": "Creando...",
-      "errorCourseRequired": "Selecciona un campo de golf"
+      "errorCourseRequired": "Selecciona un campo de golf",
+      "errorTeeRequired": "Selecciona un tee para continuar"
     },
     "participants": {
       "heading": "Añadir participantes",
@@ -44,6 +44,7 @@
       "teamB": "Equipo B",
       "remove": "Quitar",
       "rosterFull": "La partida ya tiene el máximo de jugadores para este formato",
+      "errorTeeRequired": "Selecciona un tee antes de añadir al jugador",
       "back": "Atrás",
       "next": "Siguiente",
       "creatorBadge": "Tú",

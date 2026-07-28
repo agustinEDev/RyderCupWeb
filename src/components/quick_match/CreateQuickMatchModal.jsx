@@ -48,24 +48,46 @@ const parseTeeKey = (key) => {
   return { teeCategory: category, teeGender: gender || null };
 };
 
+// Tee identifiers are free text (e.g. "Blue", "Green (Women)", "Championship"),
+// but most golf courses name them after the actual marker color on the tee box.
+// When the identifier's first word matches one of these, the button picks up
+// that real color instead of the generic primary color.
+const TEE_COLOR_STYLES = {
+  white: { dot: 'bg-white border border-gray-400', selected: 'border-gray-500 bg-gray-50 text-gray-700' },
+  yellow: { dot: 'bg-yellow-400', selected: 'border-yellow-500 bg-yellow-50 text-yellow-700' },
+  gold: { dot: 'bg-yellow-500', selected: 'border-yellow-600 bg-yellow-50 text-yellow-700' },
+  blue: { dot: 'bg-blue-500', selected: 'border-blue-500 bg-blue-50 text-blue-700' },
+  red: { dot: 'bg-red-500', selected: 'border-red-500 bg-red-50 text-red-700' },
+  green: { dot: 'bg-green-500', selected: 'border-green-500 bg-green-50 text-green-700' },
+  black: { dot: 'bg-black', selected: 'border-gray-800 bg-gray-100 text-gray-900' },
+  orange: { dot: 'bg-orange-500', selected: 'border-orange-500 bg-orange-50 text-orange-700' },
+  silver: { dot: 'bg-gray-300 border border-gray-400', selected: 'border-gray-400 bg-gray-50 text-gray-700' },
+  purple: { dot: 'bg-purple-500', selected: 'border-purple-500 bg-purple-50 text-purple-700' },
+  bronze: { dot: 'bg-amber-700', selected: 'border-amber-700 bg-amber-50 text-amber-800' },
+};
+
+const resolveTeeColor = (identifier) => {
+  const firstWord = identifier?.trim().split(/\s+/)[0]?.toLowerCase();
+  return TEE_COLOR_STYLES[firstWord] ?? null;
+};
+
 const initialGuestForm = { firstName: '', lastName: '', handicap: '' };
 
 /**
  * Button-group tee picker, shared by the creator (step 1) and each friend/guest
- * (step 2) — avoids duplicating the tee option list/styling three times.
+ * (step 2) — avoids duplicating the tee option list/styling three times. Tee
+ * selection is mandatory whenever the course has tees: there's no "unspecified"
+ * option, so nothing is pre-selected and the caller must validate before
+ * proceeding (see handleCourseNext/handleAddFriend/handleAddGuest).
  */
 const TeeSelectButtons = ({ value, onChange, courseTees, ariaLabel, testIdPrefix }) => {
-  const { t } = useTranslation('quickMatch');
-  const options = [
-    { key: NO_TEE_KEY, label: t('create.course.noTeeOption'), testKey: 'none' },
-    ...courseTees.map((tee) => {
-      const key = teeKey(tee.teeCategory, tee.gender);
-      return { key, label: tee.identifier, testKey: key };
-    }),
-  ];
+  const options = courseTees.map((tee) => {
+    const key = teeKey(tee.teeCategory, tee.gender);
+    return { key, label: tee.identifier, testKey: key, color: resolveTeeColor(tee.identifier) };
+  });
 
   return (
-    <div className="flex flex-wrap gap-1.5" role="group" aria-label={ariaLabel}>
+    <div className="flex flex-wrap gap-2" role="group" aria-label={ariaLabel}>
       {options.map((option) => (
         <button
           key={option.key}
@@ -73,12 +95,13 @@ const TeeSelectButtons = ({ value, onChange, courseTees, ariaLabel, testIdPrefix
           onClick={() => onChange(option.key)}
           aria-pressed={value === option.key}
           data-testid={testIdPrefix ? `${testIdPrefix}-${option.testKey}` : undefined}
-          className={`px-2.5 py-1 rounded-md border text-xs font-medium transition-colors ${
+          className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-md border text-sm font-medium transition-colors ${
             value === option.key
-              ? 'border-primary bg-primary/5 text-primary'
+              ? (option.color?.selected ?? 'border-primary bg-primary/5 text-primary')
               : 'border-gray-200 text-gray-600 hover:border-gray-300'
           }`}
         >
+          {option.color && <span className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${option.color.dot}`} />}
           {option.label}
         </button>
       ))}
@@ -183,6 +206,10 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser }) => {
       setError(t('create.course.errorCourseRequired'));
       return;
     }
+    if (courseTees.length > 0 && creatorTeeKey === NO_TEE_KEY) {
+      setError(t('create.course.errorTeeRequired'));
+      return;
+    }
     setIsProcessing(true);
     setError('');
     try {
@@ -204,10 +231,15 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser }) => {
   };
 
   const handleAddFriend = async (friend) => {
+    const friendTeeKeyValue = friendTeeByFriendId[friend.id] ?? NO_TEE_KEY;
+    if (courseTees.length > 0 && friendTeeKeyValue === NO_TEE_KEY) {
+      setError(t('create.participants.errorTeeRequired'));
+      return;
+    }
     setIsProcessing(true);
     setError('');
     try {
-      const { teeCategory, teeGender } = parseTeeKey(friendTeeByFriendId[friend.id] ?? NO_TEE_KEY);
+      const { teeCategory, teeGender } = parseTeeKey(friendTeeKeyValue);
       const updated = await addFriendParticipantUseCase.execute(
         quickMatch.id,
         friend.otherUserId,
@@ -230,6 +262,10 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser }) => {
   const handleAddGuest = async (e) => {
     e.preventDefault();
     if (!guestForm.firstName.trim() || !guestForm.lastName.trim()) return;
+    if (courseTees.length > 0 && guestTeeKey === NO_TEE_KEY) {
+      setError(t('create.participants.errorTeeRequired'));
+      return;
+    }
 
     setIsProcessing(true);
     setError('');
@@ -265,6 +301,30 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser }) => {
     } finally {
       setIsProcessing(false);
     }
+  };
+
+  const handleBackToCourse = async () => {
+    setIsProcessing(true);
+    setError('');
+    try {
+      if (quickMatch?.isPending) {
+        await cancelQuickMatchUseCase.execute(quickMatch.id);
+      }
+    } catch {
+      // Best-effort cleanup — the match stays PENDING and is simply abandoned, same as handleClose
+    } finally {
+      setQuickMatch(null);
+      setFriendTeeByFriendId({});
+      setGuestTeeKey(NO_TEE_KEY);
+      setGuestForm(initialGuestForm);
+      setIsProcessing(false);
+      setStep(1);
+    }
+  };
+
+  const handleBackToParticipants = () => {
+    setError('');
+    setStep(2);
   };
 
   const goToScorers = () => {
@@ -688,24 +748,35 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser }) => {
               </>
             )}
 
-            <div className="flex justify-end gap-3 pt-2">
+            <div className="flex items-center justify-between gap-3 pt-2">
               <button
                 type="button"
-                onClick={handleClose}
+                onClick={handleBackToCourse}
                 disabled={isProcessing}
+                data-testid="quick-match-participants-back"
                 className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 disabled:opacity-50"
               >
-                {t('create.cancel')}
+                {t('create.participants.back')}
               </button>
-              <button
-                type="button"
-                onClick={goToScorers}
-                disabled={isProcessing || (isFreePlay ? participants.length < 1 : participants.length < capacity)}
-                data-testid="quick-match-participants-next"
-                className="px-4 py-2 text-sm font-medium text-white bg-primary rounded-md hover:bg-primary/90 disabled:opacity-50"
-              >
-                {t('create.participants.next')}
-              </button>
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={handleClose}
+                  disabled={isProcessing}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 disabled:opacity-50"
+                >
+                  {t('create.cancel')}
+                </button>
+                <button
+                  type="button"
+                  onClick={goToScorers}
+                  disabled={isProcessing || (isFreePlay ? participants.length < 1 : participants.length < capacity)}
+                  data-testid="quick-match-participants-next"
+                  className="px-4 py-2 text-sm font-medium text-white bg-primary rounded-md hover:bg-primary/90 disabled:opacity-50"
+                >
+                  {t('create.participants.next')}
+                </button>
+              </div>
             </div>
           </div>
         )}
@@ -744,24 +815,35 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser }) => {
               </ul>
             </div>
 
-            <div className="flex justify-end gap-3 pt-2">
+            <div className="flex items-center justify-between gap-3 pt-2">
               <button
                 type="button"
-                onClick={handleClose}
+                onClick={handleBackToParticipants}
                 disabled={isProcessing}
+                data-testid="quick-match-scorers-back"
                 className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 disabled:opacity-50"
               >
-                {t('create.cancel')}
+                {t('create.scorers.back')}
               </button>
-              <button
-                type="button"
-                onClick={handleStart}
-                disabled={isProcessing}
-                data-testid="quick-match-start"
-                className="px-4 py-2 text-sm font-medium text-white bg-primary rounded-md hover:bg-primary/90 disabled:opacity-50"
-              >
-                {isProcessing ? t('create.scorers.starting') : t('create.scorers.start')}
-              </button>
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={handleClose}
+                  disabled={isProcessing}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 disabled:opacity-50"
+                >
+                  {t('create.cancel')}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleStart}
+                  disabled={isProcessing}
+                  data-testid="quick-match-start"
+                  className="px-4 py-2 text-sm font-medium text-white bg-primary rounded-md hover:bg-primary/90 disabled:opacity-50"
+                >
+                  {isProcessing ? t('create.scorers.starting') : t('create.scorers.start')}
+                </button>
+              </div>
             </div>
           </div>
         )}
