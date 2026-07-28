@@ -87,7 +87,12 @@
     "notAScorer": "You're not a scorer in this match. You can still follow the scorecard.",
     "tabs": {
       "input": "Input",
+      "classification": "Classification",
       "scorecard": "Scorecard"
+    },
+    "navigation": {
+      "previous": "Previous",
+      "next": "Next"
     },
     "yourGroup": "You're scoring for",
     "backToDashboard": "Back to dashboard",
@@ -106,6 +111,10 @@
       "strokes": "Strokes",
       "netStrokes": "Net strokes",
       "you": "You"
+    },
+    "scorecard": {
+      "strokeReceived": "Receives {{count}} extra stroke(s) on this hole",
+      "strokeGiven": "Gives back {{count}} stroke(s) on this hole"
     },
     "errors": {
       "generic": "Something went wrong. Please try again.",

@@ -173,19 +173,30 @@ describe('CreateQuickMatchModal', () => {
     renderModal();
 
     fireEvent.click(screen.getByTestId('format-option-FOURBALL'));
-    expect(screen.getByTestId('quick-match-allowance-select').value).toBe('90');
+    expect(screen.getByTestId('quick-match-allowance-option-90')).toHaveAttribute('aria-pressed', 'true');
 
-    fireEvent.change(screen.getByTestId('quick-match-allowance-select'), { target: { value: '75' } });
+    fireEvent.click(screen.getByTestId('quick-match-allowance-option-50'));
     fireEvent.click(screen.getByTestId('select-course-stub'));
     fireEvent.click(screen.getByTestId('quick-match-course-next'));
 
     await waitFor(() => {
       expect(mockCreate).toHaveBeenCalledWith('course-1', 'FOURBALL', null, null, {
-        allowancePercentage: 75,
+        allowancePercentage: 50,
         creatorTeeCategory: null,
         creatorTeeGender: null,
       });
     });
+  });
+
+  it('should only offer 90/95/100 allowance options in free play', async () => {
+    renderModal();
+
+    fireEvent.click(screen.getByTestId('mode-option-FREE_PLAY'));
+
+    expect(screen.getByTestId('quick-match-allowance-option-90')).toBeInTheDocument();
+    expect(screen.getByTestId('quick-match-allowance-option-95')).toBeInTheDocument();
+    expect(screen.getByTestId('quick-match-allowance-option-100')).toBeInTheDocument();
+    expect(screen.queryByTestId('quick-match-allowance-option-50')).not.toBeInTheDocument();
   });
 
   it('should let the creator pick a tee once the course tees are loaded', async () => {
@@ -205,11 +216,9 @@ describe('CreateQuickMatchModal', () => {
     fireEvent.click(screen.getByTestId('select-course-stub'));
 
     await waitFor(() => {
-      expect(screen.getByTestId('quick-match-creator-tee-select')).toBeInTheDocument();
+      expect(screen.getByTestId('quick-match-creator-tee-option-AMATEUR|MALE')).toBeInTheDocument();
     });
-    fireEvent.change(screen.getByTestId('quick-match-creator-tee-select'), {
-      target: { value: 'AMATEUR|MALE' },
-    });
+    fireEvent.click(screen.getByTestId('quick-match-creator-tee-option-AMATEUR|MALE'));
     fireEvent.click(screen.getByTestId('quick-match-course-next'));
 
     await waitFor(() => {
@@ -251,9 +260,7 @@ describe('CreateQuickMatchModal', () => {
     });
     fireEvent.click(screen.getByText('create.participants.tabGuest'));
 
-    fireEvent.change(screen.getByTestId('quick-match-guest-tee-select'), {
-      target: { value: 'FORWARD|FEMALE' },
-    });
+    fireEvent.click(screen.getByTestId('quick-match-guest-tee-option-FORWARD|FEMALE'));
     fireEvent.change(screen.getByPlaceholderText('create.participants.guestFirstName'), {
       target: { value: 'Jane' },
     });
@@ -304,7 +311,7 @@ describe('CreateQuickMatchModal', () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByTestId('quick-match-creator-tee-select')).toBeInTheDocument();
+      expect(screen.getByTestId('quick-match-creator-tee-option-none')).toBeInTheDocument();
     });
 
     // Only course-2's tee ("Red") must be present — the stale course-1 response ("White") must not overwrite it
@@ -348,15 +355,11 @@ describe('CreateQuickMatchModal', () => {
     fireEvent.click(screen.getByTestId('quick-match-course-next'));
 
     await waitFor(() => {
-      expect(screen.getByTestId('quick-match-friend-tee-select-f-1')).toBeInTheDocument();
+      expect(screen.getByTestId('quick-match-friend-tee-select-f-1-AMATEUR|MALE')).toBeInTheDocument();
     });
 
-    fireEvent.change(screen.getByTestId('quick-match-friend-tee-select-f-1'), {
-      target: { value: 'AMATEUR|MALE' },
-    });
-    fireEvent.change(screen.getByTestId('quick-match-friend-tee-select-f-2'), {
-      target: { value: 'FORWARD|FEMALE' },
-    });
+    fireEvent.click(screen.getByTestId('quick-match-friend-tee-select-f-1-AMATEUR|MALE'));
+    fireEvent.click(screen.getByTestId('quick-match-friend-tee-select-f-2-FORWARD|FEMALE'));
 
     fireEvent.click(within(screen.getByText('Alice').closest('div')).getByText('create.participants.addFriend'));
 
@@ -368,6 +371,9 @@ describe('CreateQuickMatchModal', () => {
     });
 
     // Bob's row keeps its own independent tee selection, unaffected by Alice's add
-    expect(screen.getByTestId('quick-match-friend-tee-select-f-2').value).toBe('FORWARD|FEMALE');
+    expect(screen.getByTestId('quick-match-friend-tee-select-f-2-FORWARD|FEMALE')).toHaveAttribute(
+      'aria-pressed',
+      'true'
+    );
   });
 });

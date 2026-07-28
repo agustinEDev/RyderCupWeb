@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { render, screen, within } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import QuickMatchScorecardTable from './QuickMatchScorecardTable';
 
 vi.mock('react-i18next', () => ({
@@ -20,52 +20,6 @@ const participants = [
 ];
 
 describe('QuickMatchScorecardTable', () => {
-  it('should render the classification table ranked by Stableford points', () => {
-    const holeScores = [
-      { holeNumber: 1, participantId: 'p-1', score: 5 }, // net bogey -> 1 pt
-      { holeNumber: 1, participantId: 'p-2', score: 3 }, // net birdie -> 3 pts
-    ];
-
-    render(
-      <QuickMatchScorecardTable holes={holes} holeScores={holeScores} participants={participants} currentParticipantId="p-1" />
-    );
-
-    const classificationTable = screen.getByTestId('quick-match-classification-table');
-    const rows = within(classificationTable).getAllByRole('row').slice(1); // skip header row
-    expect(within(rows[0]).getByText('Bob')).toBeInTheDocument();
-    expect(within(rows[1]).getByText('Alice')).toBeInTheDocument();
-  });
-
-  it('should highlight the current participant and mark them as "you"', () => {
-    render(
-      <QuickMatchScorecardTable holes={holes} holeScores={[]} participants={participants} currentParticipantId="p-1" />
-    );
-
-    expect(screen.getByText('scoring.classification.you', { exact: false })).toBeInTheDocument();
-  });
-
-  it('should rank by net strokes when scoringFormat is MEDAL', () => {
-    const holeScores = [
-      { holeNumber: 1, participantId: 'p-1', score: 4 },
-      { holeNumber: 1, participantId: 'p-2', score: 3 },
-    ];
-
-    render(
-      <QuickMatchScorecardTable
-        holes={holes}
-        holeScores={holeScores}
-        participants={participants}
-        currentParticipantId="p-1"
-        scoringFormat="MEDAL"
-      />
-    );
-
-    const classificationTable = screen.getByTestId('quick-match-classification-table');
-    const rows = within(classificationTable).getAllByRole('row').slice(1);
-    expect(within(rows[0]).getByText('Bob')).toBeInTheDocument();
-    expect(within(rows[1]).getByText('Alice')).toBeInTheDocument();
-  });
-
   it('should render the hole-by-hole grid with GolfFigure scores', () => {
     const holeScores = [{ holeNumber: 1, participantId: 'p-1', score: 4 }];
 
@@ -75,5 +29,72 @@ describe('QuickMatchScorecardTable', () => {
 
     expect(screen.getByTestId('quick-match-scorecard-table')).toBeInTheDocument();
     expect(screen.getAllByTestId('golf-figure').length).toBeGreaterThan(0);
+  });
+
+  it('should not render a classification table anymore (moved to its own tab)', () => {
+    render(
+      <QuickMatchScorecardTable holes={holes} holeScores={[]} participants={participants} currentParticipantId="p-1" />
+    );
+
+    expect(screen.queryByTestId('quick-match-classification-table')).not.toBeInTheDocument();
+  });
+
+  it('should mark a hole with a stroke dot when the participant receives a stroke there', () => {
+    // handicap 18 -> exactly 1 stroke on every hole (mirrors StablefordCalculator's own test fixture)
+    const highHandicapParticipants = [
+      { participantId: 'p-1', name: 'Alice', handicap: 18, team: null, isGuest: false },
+    ];
+    const holeScores = [{ holeNumber: 1, participantId: 'p-1', score: 5 }];
+
+    render(
+      <QuickMatchScorecardTable
+        holes={holes}
+        holeScores={holeScores}
+        participants={highHandicapParticipants}
+        currentParticipantId="p-1"
+      />
+    );
+
+    expect(screen.getAllByTestId('stroke-dots').length).toBeGreaterThan(0);
+  });
+
+  it('should not mark a stroke dot for a scratch (0 handicap) participant', () => {
+    const scratchParticipants = [
+      { participantId: 'p-1', name: 'Alice', handicap: 0, team: null, isGuest: false },
+    ];
+    const holeScores = [{ holeNumber: 1, participantId: 'p-1', score: 5 }];
+
+    render(
+      <QuickMatchScorecardTable
+        holes={holes}
+        holeScores={holeScores}
+        participants={scratchParticipants}
+        currentParticipantId="p-1"
+      />
+    );
+
+    expect(screen.queryByTestId('stroke-dots')).not.toBeInTheDocument();
+  });
+
+  it('should use the Playing Handicap (via tee + allowance) instead of the raw handicap when resolving stroke dots', () => {
+    const participant = [
+      { participantId: 'p-1', name: 'Alice', handicap: 18, team: null, isGuest: false, teeCategory: 'AMATEUR', teeGender: 'MALE' },
+    ];
+    const tees = [{ teeCategory: 'AMATEUR', gender: 'MALE', courseRating: 7, slopeRating: 113 }];
+    const holeScores = [{ holeNumber: 1, participantId: 'p-1', score: 5 }];
+
+    // 20% allowance drops the Playing Handicap well below stroke index 5, so no dot should show
+    render(
+      <QuickMatchScorecardTable
+        holes={holes}
+        holeScores={holeScores}
+        participants={participant}
+        currentParticipantId="p-1"
+        tees={tees}
+        allowancePercentage={20}
+      />
+    );
+
+    expect(screen.queryByTestId('stroke-dots')).not.toBeInTheDocument();
   });
 });

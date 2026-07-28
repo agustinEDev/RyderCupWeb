@@ -31,6 +31,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - `CreateQuickMatchModal`: once a course is picked, the creator can choose their own tee (step 1) and each friend/guest can choose theirs when added (step 2), both optional. An allowance % field (step 1) defaults to the WHS value for the selected format (Singles match play 100%, Fourball 90%, Foursomes 50%, free play 95%) and can be overridden.
 - Fixed a related backend gap while at it: registered participants' `handicap` was always `null` in the API response (only guests had theirs), so the existing Stableford display silently treated every registered player as scratch. Requires the matching backend change (RyderCupAm — `User.handicap` now mapped through, plus `tee_category`/`tee_gender` per participant and `allowance_percentage`/`effective_allowance` on the match, migration `b8e2f4a6c1d7`).
 
+**Quick Match — Scoring UI Polish**
+
+- Split the scoring page's "Scorecard" tab in two: a dedicated "Classification" tab (the ranking table) and a "Scorecard" tab now showing only the hole-by-hole grid, instead of both stacked in one view.
+- The scorecard grid now marks, per player and hole, the holes where they receive (or, for a plus handicap, give back) a stroke — small dots under the score, reusing the same Playing Handicap resolution as the classification.
+- `CreateQuickMatchModal`: tee selection (creator, each friend, guest) and the allowance % field are now button groups instead of `<select>` dropdowns, consistent with the format/mode pickers already using buttons. Free play only offers 90/95/100% allowance (match play keeps 50/90/100, its three format defaults) instead of the full 50-100 range. Extracted the duplicated tee-option markup into a shared `TeeSelectButtons` component (CodeRabbit nitpick on PR #254).
+- The hole navigation buttons on the Input tab had a bug where "Previous" showed the translated tab label ("Input ←") instead of an actual "Previous" text — now reads "Previous"/"Next" with chevron icons and clearer styling.
+
 ### Fixed
 
 **Quick Match — Duplicate Self Entry When the Creator Is Also a Scorer**

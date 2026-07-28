@@ -1,15 +1,16 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router';
-import { Loader } from 'lucide-react';
+import { Loader, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import HeaderAuth from '../../components/layout/HeaderAuth';
 import { useAuth } from '../../hooks/useAuth';
 import { useQuickMatchScoring } from '../../hooks/useQuickMatchScoring';
 import QuickMatchHoleSelector from '../../components/quick_match/QuickMatchHoleSelector';
 import QuickMatchHoleInput from '../../components/quick_match/QuickMatchHoleInput';
+import QuickMatchClassificationTable from '../../components/quick_match/QuickMatchClassificationTable';
 import QuickMatchScorecardTable from '../../components/quick_match/QuickMatchScorecardTable';
 
-const TABS = ['input', 'scorecard'];
+const TABS = ['input', 'classification', 'scorecard'];
 
 const QuickMatchScoringPage = () => {
   const { quickMatchId } = useParams();
@@ -181,20 +182,24 @@ const QuickMatchScoringPage = () => {
                   />
                 )}
 
-                <div className="flex justify-between">
+                <div className="flex gap-3">
                   <button
                     onClick={handlePrevHole}
                     disabled={currentHole <= 1}
-                    className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 disabled:opacity-50"
+                    data-testid="quick-match-prev-hole"
+                    className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2.5 bg-white border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 hover:border-gray-400 disabled:opacity-40 disabled:hover:bg-white transition-colors"
                   >
-                    {t('scoring.tabs.input')} &larr;
+                    <ChevronLeft className="w-4 h-4" />
+                    {t('scoring.navigation.previous')}
                   </button>
                   <button
                     onClick={handleNextHole}
                     disabled={currentHole >= totalHoles}
-                    className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 disabled:opacity-50"
+                    data-testid="quick-match-next-hole"
+                    className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2.5 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary/90 disabled:opacity-40 disabled:hover:bg-primary transition-colors"
                   >
-                    &rarr;
+                    {t('scoring.navigation.next')}
+                    <ChevronRight className="w-4 h-4" />
                   </button>
                 </div>
               </>
@@ -211,13 +216,24 @@ const QuickMatchScoringPage = () => {
           </div>
         )}
 
+        {activeTab === 'classification' && (
+          <QuickMatchClassificationTable
+            holes={holes}
+            holeScores={quickMatch?.holeScores ?? []}
+            participants={quickMatch?.participants ?? []}
+            currentParticipantId={myParticipant?.participantId}
+            scoringFormat={quickMatch?.scoringFormat}
+            tees={tees}
+            allowancePercentage={quickMatch?.effectiveAllowance}
+          />
+        )}
+
         {activeTab === 'scorecard' && (
           <QuickMatchScorecardTable
             holes={holes}
             holeScores={quickMatch?.holeScores ?? []}
             participants={quickMatch?.participants ?? []}
             currentParticipantId={myParticipant?.participantId}
-            scoringFormat={quickMatch?.scoringFormat}
             tees={tees}
             allowancePercentage={quickMatch?.effectiveAllowance}
           />

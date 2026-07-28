@@ -87,7 +87,12 @@
     "notAScorer": "No eres anotador en esta partida. Puedes seguir el resultado en la tarjeta.",
     "tabs": {
       "input": "Anotar",
+      "classification": "Clasificación",
       "scorecard": "Tarjeta"
+    },
+    "navigation": {
+      "previous": "Anterior",
+      "next": "Siguiente"
     },
     "yourGroup": "Anotas para",
     "backToDashboard": "Volver al panel",
@@ -106,6 +111,10 @@
       "strokes": "Golpes",
       "netStrokes": "Golpes netos",
       "you": "Tú"
+    },
+    "scorecard": {
+      "strokeReceived": "Recibe {{count}} golpe(s) extra en este hoyo",
+      "strokeGiven": "Cede {{count}} golpe(s) en este hoyo"
     },
     "errors": {
       "generic": "Ha ocurrido un error. Inténtalo de nuevo.",

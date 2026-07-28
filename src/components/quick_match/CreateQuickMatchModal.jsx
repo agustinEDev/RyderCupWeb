@@ -34,7 +34,11 @@ const SCORING_FORMAT_LABEL_KEY = {
 // Mirrors backend WHS allowance defaults (quick_match domain entity get_effective_allowance())
 const DEFAULT_ALLOWANCE_BY_MATCH_FORMAT = { SINGLES: 100, FOURBALL: 90, FOURSOMES: 50 };
 const DEFAULT_FREE_PLAY_ALLOWANCE = 95;
-const ALLOWANCE_OPTIONS = Array.from({ length: 11 }, (_, i) => 50 + i * 5); // 50..100 step 5
+// Curated quick-pick values instead of the full 50-100 (step 5) WHS range:
+// match play only ever really uses its three format defaults, and free play
+// (stroke play) conventionally sits at 90/95/100.
+const MATCH_PLAY_ALLOWANCE_OPTIONS = [50, 90, 100];
+const FREE_PLAY_ALLOWANCE_OPTIONS = [90, 95, 100];
 
 const NO_TEE_KEY = '';
 const teeKey = (category, gender) => (category ? `${category}|${gender ?? ''}` : NO_TEE_KEY);
@@ -45,6 +49,42 @@ const parseTeeKey = (key) => {
 };
 
 const initialGuestForm = { firstName: '', lastName: '', handicap: '' };
+
+/**
+ * Button-group tee picker, shared by the creator (step 1) and each friend/guest
+ * (step 2) — avoids duplicating the tee option list/styling three times.
+ */
+const TeeSelectButtons = ({ value, onChange, courseTees, ariaLabel, testIdPrefix }) => {
+  const { t } = useTranslation('quickMatch');
+  const options = [
+    { key: NO_TEE_KEY, label: t('create.course.noTeeOption'), testKey: 'none' },
+    ...courseTees.map((tee) => {
+      const key = teeKey(tee.teeCategory, tee.gender);
+      return { key, label: tee.identifier, testKey: key };
+    }),
+  ];
+
+  return (
+    <div className="flex flex-wrap gap-1.5" role="group" aria-label={ariaLabel}>
+      {options.map((option) => (
+        <button
+          key={option.key}
+          type="button"
+          onClick={() => onChange(option.key)}
+          aria-pressed={value === option.key}
+          data-testid={testIdPrefix ? `${testIdPrefix}-${option.testKey}` : undefined}
+          className={`px-2.5 py-1 rounded-md border text-xs font-medium transition-colors ${
+            value === option.key
+              ? 'border-primary bg-primary/5 text-primary'
+              : 'border-gray-200 text-gray-600 hover:border-gray-300'
+          }`}
+        >
+          {option.label}
+        </button>
+      ))}
+    </div>
+  );
+};
 
 const CreateQuickMatchModal = ({ onClose, onStarted, currentUser }) => {
   const { t } = useTranslation('quickMatch');
@@ -318,7 +358,10 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser }) => {
               <div className="grid grid-cols-2 gap-2">
                 <button
                   type="button"
-                  onClick={() => setMode('MATCH_PLAY')}
+                  onClick={() => {
+                    setMode('MATCH_PLAY');
+                    setAllowanceOverride(null);
+                  }}
                   data-testid="mode-option-MATCH_PLAY"
                   className={`text-left px-3 py-2 rounded-lg border text-sm transition-colors ${
                     mode === 'MATCH_PLAY'
@@ -330,7 +373,10 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser }) => {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setMode('FREE_PLAY')}
+                  onClick={() => {
+                    setMode('FREE_PLAY');
+                    setAllowanceOverride(null);
+                  }}
                   data-testid="mode-option-FREE_PLAY"
                   className={`text-left px-3 py-2 rounded-lg border text-sm transition-colors ${
                     mode === 'FREE_PLAY'
@@ -400,43 +446,41 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser }) => {
 
             {courseTees.length > 0 && (
               <div>
-                <label htmlFor="quick-match-creator-tee" className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
                   {t('create.course.yourTeeLabel')}
                 </label>
-                <select
-                  id="quick-match-creator-tee"
+                <TeeSelectButtons
                   value={creatorTeeKey}
-                  onChange={(e) => setCreatorTeeKey(e.target.value)}
-                  data-testid="quick-match-creator-tee-select"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                >
-                  <option value={NO_TEE_KEY}>{t('create.course.noTeeOption')}</option>
-                  {courseTees.map((tee) => (
-                    <option key={teeKey(tee.teeCategory, tee.gender)} value={teeKey(tee.teeCategory, tee.gender)}>
-                      {tee.identifier}
-                    </option>
-                  ))}
-                </select>
+                  onChange={setCreatorTeeKey}
+                  courseTees={courseTees}
+                  ariaLabel={t('create.course.yourTeeLabel')}
+                  testIdPrefix="quick-match-creator-tee-option"
+                />
               </div>
             )}
 
             <div>
-              <label htmlFor="quick-match-allowance" className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
                 {t('create.course.allowanceLabel')}
               </label>
-              <select
-                id="quick-match-allowance"
-                value={allowancePercentage}
-                onChange={(e) => setAllowanceOverride(Number(e.target.value))}
-                data-testid="quick-match-allowance-select"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-              >
-                {ALLOWANCE_OPTIONS.map((pct) => (
-                  <option key={pct} value={pct}>
+              <div className="flex gap-2" role="group" aria-label={t('create.course.allowanceLabel')}>
+                {(isFreePlay ? FREE_PLAY_ALLOWANCE_OPTIONS : MATCH_PLAY_ALLOWANCE_OPTIONS).map((pct) => (
+                  <button
+                    key={pct}
+                    type="button"
+                    onClick={() => setAllowanceOverride(pct)}
+                    aria-pressed={allowancePercentage === pct}
+                    data-testid={`quick-match-allowance-option-${pct}`}
+                    className={`flex-1 px-3 py-2 rounded-lg border text-sm font-medium transition-colors ${
+                      allowancePercentage === pct
+                        ? 'border-primary bg-primary/5 text-primary'
+                        : 'border-gray-200 text-gray-700 hover:border-gray-300'
+                    }`}
+                  >
                     {pct}%
-                  </option>
+                  </button>
                 ))}
-              </select>
+              </div>
             </div>
 
             <div className="flex justify-end gap-3 pt-2">
@@ -565,40 +609,28 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser }) => {
                       availableFriends.map((f) => (
                         <div
                           key={f.id}
-                          className="flex items-center justify-between gap-2 px-3 py-2 border border-gray-200 rounded-lg"
+                          className="px-3 py-2 border border-gray-200 rounded-lg space-y-1.5"
                         >
-                          <span className="text-sm text-gray-900 truncate">{f.otherUserName}</span>
-                          <div className="flex items-center gap-2 flex-shrink-0">
-                            {courseTees.length > 0 && (
-                              <select
-                                aria-label={t('create.participants.teeLabel')}
-                                value={friendTeeByFriendId[f.id] ?? NO_TEE_KEY}
-                                onChange={(e) =>
-                                  setFriendTeeByFriendId((prev) => ({ ...prev, [f.id]: e.target.value }))
-                                }
-                                data-testid={`quick-match-friend-tee-select-${f.id}`}
-                                className="px-2 py-1 border border-gray-300 rounded-md text-xs focus:outline-none focus:ring-2 focus:ring-primary"
-                              >
-                                <option value={NO_TEE_KEY}>{t('create.course.noTeeOption')}</option>
-                                {courseTees.map((tee) => (
-                                  <option
-                                    key={teeKey(tee.teeCategory, tee.gender)}
-                                    value={teeKey(tee.teeCategory, tee.gender)}
-                                  >
-                                    {tee.identifier}
-                                  </option>
-                                ))}
-                              </select>
-                            )}
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-sm text-gray-900 truncate">{f.otherUserName}</span>
                             <button
                               type="button"
                               onClick={() => handleAddFriend(f)}
                               disabled={isProcessing}
-                              className="text-xs font-medium text-primary hover:underline disabled:opacity-50"
+                              className="text-xs font-medium text-primary hover:underline disabled:opacity-50 flex-shrink-0"
                             >
                               {t('create.participants.addFriend')}
                             </button>
                           </div>
+                          {courseTees.length > 0 && (
+                            <TeeSelectButtons
+                              value={friendTeeByFriendId[f.id] ?? NO_TEE_KEY}
+                              onChange={(key) => setFriendTeeByFriendId((prev) => ({ ...prev, [f.id]: key }))}
+                              courseTees={courseTees}
+                              ariaLabel={t('create.participants.teeLabel')}
+                              testIdPrefix={`quick-match-friend-tee-select-${f.id}`}
+                            />
+                          )}
                         </div>
                       ))
                     )}
@@ -636,20 +668,13 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser }) => {
                       className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                     />
                     {courseTees.length > 0 && (
-                      <select
-                        aria-label={t('create.participants.teeLabel')}
+                      <TeeSelectButtons
                         value={guestTeeKey}
-                        onChange={(e) => setGuestTeeKey(e.target.value)}
-                        data-testid="quick-match-guest-tee-select"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                      >
-                        <option value={NO_TEE_KEY}>{t('create.course.noTeeOption')}</option>
-                        {courseTees.map((tee) => (
-                          <option key={teeKey(tee.teeCategory, tee.gender)} value={teeKey(tee.teeCategory, tee.gender)}>
-                            {tee.identifier}
-                          </option>
-                        ))}
-                      </select>
+                        onChange={setGuestTeeKey}
+                        courseTees={courseTees}
+                        ariaLabel={t('create.participants.teeLabel')}
+                        testIdPrefix="quick-match-guest-tee-option"
+                      />
                     )}
                     <button
                       type="submit"
