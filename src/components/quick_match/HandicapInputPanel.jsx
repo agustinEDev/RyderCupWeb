@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 const MIN_HANDICAP = -10;
@@ -47,12 +47,21 @@ const HandicapInputPanel = ({ value, onConfirm, onClose, label }) => {
     onConfirm(isEmpty ? null : parsed);
   };
 
+  useEffect(() => {
+    const onKeyDown = (e) => {
+      if (e.key !== 'Escape') return;
+      e.stopPropagation();
+      onClose();
+    };
+    document.addEventListener('keydown', onKeyDown, true);
+    return () => document.removeEventListener('keydown', onKeyDown, true);
+  }, [onClose]);
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-end justify-center bg-black/40"
       role="presentation"
       onClick={onClose}
-      onKeyDown={(e) => e.key === 'Escape' && onClose()}
     >
       <div
         role="dialog"

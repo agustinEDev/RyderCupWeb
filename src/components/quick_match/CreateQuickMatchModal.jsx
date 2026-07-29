@@ -102,7 +102,7 @@ const TeeSelectButtons = ({ value, onChange, courseTees, ariaLabel, testIdPrefix
           aria-pressed={value === option.key}
           data-testid={testIdPrefix ? `${testIdPrefix}-${option.testKey}` : undefined}
           className={`inline-flex items-center flex-shrink-0 rounded-md border font-medium transition-colors ${
-            compact ? 'gap-1 px-2 py-0.5 text-xs' : 'gap-1.5 px-3.5 py-2 text-sm'
+            compact ? 'gap-1 px-2 py-1.5 text-xs' : 'gap-1.5 px-3.5 py-2 text-sm'
           } ${
             value === option.key
               ? (option.color?.selected ?? 'border-primary bg-primary/5 text-primary')
@@ -750,8 +750,8 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser }) => {
                             type="button"
                             onClick={() => handleAddFriend(f)}
                             disabled={isProcessing}
-                            aria-label={t('create.participants.addFriend')}
-                            title={t('create.participants.addFriend')}
+                            aria-label={t('create.participants.addFriendNamed', { name: f.otherUserName })}
+                            title={t('create.participants.addFriendNamed', { name: f.otherUserName })}
                             data-testid={`quick-match-add-friend-${f.id}`}
                             className="flex-shrink-0 ml-auto w-7 h-7 flex items-center justify-center rounded-full bg-primary text-white hover:bg-primary/90 disabled:opacity-50 transition-colors"
                           >
@@ -963,6 +963,7 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser }) => {
                       type="button"
                       onClick={() => setEditingHandicapParticipant(p)}
                       disabled={isProcessing}
+                      aria-label={t('create.summary.editHandicapNamed', { name: p.name })}
                       data-testid={`quick-match-handicap-button-${p.participantId}`}
                       className={`px-3 py-1 border border-gray-300 rounded-md text-sm hover:border-gray-400 disabled:opacity-50 ${
                         p.handicap != null ? 'text-gray-900' : 'text-gray-400'

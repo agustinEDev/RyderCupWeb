@@ -21,6 +21,9 @@ class SetQuickMatchParticipantHandicapUseCase {
     if (!quickMatchId || !participantId) {
       throw new Error('quickMatchId and participantId are required');
     }
+    if (handicap !== null && !Number.isFinite(handicap)) {
+      throw new Error('handicap must be a finite number or null');
+    }
 
     const quickMatch = await this.#quickMatchRepository.setParticipantHandicap(
       quickMatchId,
