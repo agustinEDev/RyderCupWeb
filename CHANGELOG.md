@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [2.2.0] - 2026-07-29
+
 ### Added
 
 **Quick Match — Pre-Start Summary and Handicap Editing**
@@ -44,6 +46,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - The scorecard grid now marks, per player and hole, the holes where they receive (or, for a plus handicap, give back) a stroke — small dots under the score, reusing the same Playing Handicap resolution as the classification.
 - `CreateQuickMatchModal`: tee selection (creator, each friend, guest) and the allowance % field are now button groups instead of `<select>` dropdowns, consistent with the format/mode pickers already using buttons. Free play only offers 90/95/100% allowance (match play keeps 50/90/100, its three format defaults) instead of the full 50-100 range. Extracted the duplicated tee-option markup into a shared `TeeSelectButtons` component (CodeRabbit nitpick on PR #254).
 - The hole navigation buttons on the Input tab had a bug where "Previous" showed the translated tab label ("Input ←") instead of an actual "Previous" text — now reads "Previous"/"Next" with chevron icons and clearer styling.
+
+**Friends System UI (FE #235)**
+
+- New `FriendsPage` (send/accept/decline/remove/block friend requests), `FriendCard`, `AddFriendModal` (search by name/email), and `FriendshipBadge`, following the same Clean Architecture slice pattern as other modules (domain entity/VOs, 6 use cases, `ApiFriendRepository`). Pending friend requests now surface in `PendingActionsCard` on the dashboard.
+- Accessibility pass on `AddFriendModal`: `role="dialog"`/`aria-modal`, autofocus on the search input when opened, and Escape now closes the modal itself (previously it only closed an inner dropdown).
+- Requires the matching backend module (RyderCupAm `social`, migration `7cec1e04eb61`).
 
 ### Fixed
 
