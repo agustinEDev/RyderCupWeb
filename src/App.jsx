@@ -50,8 +50,13 @@ const InvitationsPage = lazyWithRetry(() => import('./pages/creator/InvitationsP
 
 // Player pages (Sprint 3 + Sprint 4)
 const MyInvitationsPage = lazyWithRetry(() => import('./pages/player/MyInvitationsPage'));
+const FriendsPage = lazyWithRetry(() => import('./pages/player/FriendsPage'));
 const ScoringPage = lazyWithRetry(() => import('./pages/player/ScoringPage'));
 const UpcomingMatchesPage = lazyWithRetry(() => import('./pages/player/UpcomingMatchesPage'));
+
+// Quick Match pages (FE #236)
+const QuickMatchScoringPage = lazyWithRetry(() => import('./pages/quick_match/QuickMatchScoringPage'));
+const MyQuickMatchesPage = lazyWithRetry(() => import('./pages/quick_match/MyQuickMatchesPage'));
 
 // Google OAuth pages
 const GoogleCallback = lazyWithRetry(() => import('./pages/GoogleCallback'));
@@ -258,6 +263,13 @@ function AppContent() {
           </ProtectedRoute>
         } />
 
+        {/* Friends routes */}
+        <Route path="/friends" element={
+          <ProtectedRoute>
+            <FriendsPage />
+          </ProtectedRoute>
+        } />
+
         {/* Player routes (Sprint 4) */}
         <Route path="/player/matches" element={
           <ProtectedRoute>
@@ -267,6 +279,18 @@ function AppContent() {
         <Route path="/player/matches/:matchId/scoring" element={
           <ProtectedRoute>
             <ScoringPage />
+          </ProtectedRoute>
+        } />
+
+        {/* Quick Match routes (FE #236) */}
+        <Route path="/quick-matches" element={
+          <ProtectedRoute>
+            <MyQuickMatchesPage />
+          </ProtectedRoute>
+        } />
+        <Route path="/quick-matches/:quickMatchId/scoring" element={
+          <ProtectedRoute>
+            <QuickMatchScoringPage />
           </ProtectedRoute>
         } />
 
