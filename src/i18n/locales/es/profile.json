@@ -29,6 +29,17 @@
     "title": "Editar Perfil",
     "refreshData": "Actualizar Datos",
     "refreshing": "Actualizando...",
+    "avatar": {
+      "title": "Foto de perfil",
+      "subtitle": "Elige una foto con temática de golf, o sube la tuya propia.",
+      "presetsLabel": "Elige una foto",
+      "uploadLabel": "O sube la tuya",
+      "uploadButton": "Subir foto",
+      "uploading": "Subiendo...",
+      "historyLabel": "Tus fotos subidas",
+      "remove": "Quitar foto",
+      "removing": "Quitando..."
+    },
     "personalInfo": {
       "title": "Información Personal",
       "subtitle": "Actualiza tu nombre y apellido. No se requiere contraseña.",
@@ -114,6 +125,13 @@
     "passwordsDoNotMatch": "La nueva contraseña y la confirmación no coinciden.",
     "securityUpdated": "¡Configuración de seguridad actualizada correctamente!",
     "passwordReused": "No puedes reutilizar ninguna de tus últimas 5 contraseñas. Por favor, elige una contraseña diferente.",
-    "failedToUpdateSecurity": "Error al actualizar la configuración de seguridad"
+    "failedToUpdateSecurity": "Error al actualizar la configuración de seguridad",
+    "avatarUpdated": "¡Foto de perfil actualizada!",
+    "failedToUpdateAvatar": "Error al actualizar la foto de perfil",
+    "avatarFileTooLarge": "Esa foto es demasiado grande (máx. 10MB).",
+    "avatarInvalidImage": "Ese archivo no es una imagen válida (JPEG, PNG o WEBP).",
+    "avatarRemoved": "Foto de perfil eliminada.",
+    "failedToRemoveAvatar": "Error al quitar la foto de perfil",
+    "failedToLoadAvatarOptions": "Error al cargar las opciones de avatar."
   }
 }
