@@ -35,6 +35,7 @@
       "tabGuest": "Invitado",
       "noFriends": "No tienes amigos añadidos todavía",
       "addFriend": "Añadir",
+      "addFriendNamed": "Añadir a {{name}}",
       "guestFirstName": "Nombre",
       "guestLastName": "Apellidos",
       "guestHandicap": "Hándicap (opcional)",
@@ -54,9 +55,30 @@
       "heading": "Elegir anotadores",
       "description": "Elige entre 1 y 4 jugadores registrados que anotarán los resultados. Tú siempre anotas.",
       "back": "Atrás",
-      "start": "Iniciar partida",
-      "starting": "Iniciando...",
+      "next": "Siguiente",
       "errorMinScorers": "Selecciona al menos un anotador"
+    },
+    "summary": {
+      "heading": "Resumen de la partida",
+      "description": "Revisa la partida antes de confirmar. Puedes ajustar el hándicap de cualquier jugador.",
+      "courseLabel": "Campo",
+      "formatLabel": "Formato",
+      "allowanceLabel": "Allowance",
+      "participantsLabel": "Jugadores",
+      "handicapPlaceholder": "Sin hándicap",
+      "editHandicapNamed": "Editar hándicap de {{name}}",
+      "scorersLabel": "Anotadores",
+      "back": "Atrás",
+      "start": "Confirmar e iniciar",
+      "starting": "Iniciando..."
+    },
+    "handicapPanel": {
+      "placeholder": "Introduce el hándicap",
+      "errorRange": "Debe estar entre -10 y 54",
+      "toggleSign": "Cambiar signo",
+      "backspace": "Borrar",
+      "confirm": "Confirmar",
+      "close": "Cerrar"
     }
   },
   "dashboard": {

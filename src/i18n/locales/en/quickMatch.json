@@ -35,6 +35,7 @@
       "tabGuest": "Guest",
       "noFriends": "You don't have any friends added yet",
       "addFriend": "Add",
+      "addFriendNamed": "Add {{name}}",
       "guestFirstName": "First name",
       "guestLastName": "Last name",
       "guestHandicap": "Handicap (optional)",
@@ -54,9 +55,30 @@
       "heading": "Choose scorers",
       "description": "Choose 1 to 4 registered players who will record scores. You always score.",
       "back": "Back",
-      "start": "Start match",
-      "starting": "Starting...",
+      "next": "Next",
       "errorMinScorers": "Select at least one scorer"
+    },
+    "summary": {
+      "heading": "Match summary",
+      "description": "Review the match before confirming. You can adjust any player's handicap.",
+      "courseLabel": "Course",
+      "formatLabel": "Format",
+      "allowanceLabel": "Allowance",
+      "participantsLabel": "Players",
+      "handicapPlaceholder": "No handicap",
+      "editHandicapNamed": "Edit {{name}}'s handicap",
+      "scorersLabel": "Scorers",
+      "back": "Back",
+      "start": "Confirm and start",
+      "starting": "Starting..."
+    },
+    "handicapPanel": {
+      "placeholder": "Enter handicap",
+      "errorRange": "Must be between -10 and 54",
+      "toggleSign": "Toggle sign",
+      "backspace": "Backspace",
+      "confirm": "Confirm",
+      "close": "Close"
     }
   },
   "dashboard": {

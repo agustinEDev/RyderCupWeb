@@ -212,6 +212,36 @@ describe('ApiQuickMatchRepository', () => {
     });
   });
 
+  describe('setParticipantHandicap', () => {
+    it('should PATCH to /quick-matches/{id}/participants/{participantId}/handicap with the new value', async () => {
+      apiRequest.mockResolvedValue(mockQuickMatchApi);
+
+      await repo.setParticipantHandicap('qm-1', 'p-1', 16.4);
+
+      expect(apiRequest).toHaveBeenCalledWith(
+        '/api/v1/quick-matches/qm-1/participants/p-1/handicap',
+        {
+          method: 'PATCH',
+          body: JSON.stringify({ handicap: 16.4 }),
+        }
+      );
+    });
+
+    it('should PATCH with null to clear an override', async () => {
+      apiRequest.mockResolvedValue(mockQuickMatchApi);
+
+      await repo.setParticipantHandicap('qm-1', 'p-1', null);
+
+      expect(apiRequest).toHaveBeenCalledWith(
+        '/api/v1/quick-matches/qm-1/participants/p-1/handicap',
+        {
+          method: 'PATCH',
+          body: JSON.stringify({ handicap: null }),
+        }
+      );
+    });
+  });
+
   describe('submitHoleScore', () => {
     it('should POST to /quick-matches/{id}/holes/{n}/score and return raw data', async () => {
       const scoreResponse = { hole_number: 1, participant_id: 'p-1', score: 4, recorded_by_participant_id: 'p-1' };

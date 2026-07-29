@@ -1,13 +1,15 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router';
 import { useTranslation } from 'react-i18next';
-import { X, Trash2 } from 'lucide-react';
+import { X, Trash2, Plus } from 'lucide-react';
 import GolfCourseSearchBox from '../golf_course/GolfCourseSearchBox';
+import HandicapInputPanel from './HandicapInputPanel';
 import {
   createQuickMatchUseCase,
   addFriendParticipantUseCase,
   addGuestParticipantUseCase,
   removeQuickMatchParticipantUseCase,
+  setQuickMatchParticipantHandicapUseCase,
   startQuickMatchUseCase,
   cancelQuickMatchUseCase,
   listFriendsUseCase,
@@ -80,14 +82,18 @@ const initialGuestForm = { firstName: '', lastName: '', handicap: '' };
  * option, so nothing is pre-selected and the caller must validate before
  * proceeding (see handleCourseNext/handleAddFriend/handleAddGuest).
  */
-const TeeSelectButtons = ({ value, onChange, courseTees, ariaLabel, testIdPrefix }) => {
+const TeeSelectButtons = ({ value, onChange, courseTees, ariaLabel, testIdPrefix, compact = false }) => {
   const options = courseTees.map((tee) => {
     const key = teeKey(tee.teeCategory, tee.gender);
     return { key, label: tee.identifier, testKey: key, color: resolveTeeColor(tee.identifier) };
   });
 
   return (
-    <div className="flex flex-wrap gap-2" role="group" aria-label={ariaLabel}>
+    <div
+      className={`flex ${compact ? 'flex-nowrap gap-1 overflow-x-auto' : 'flex-wrap gap-2'}`}
+      role="group"
+      aria-label={ariaLabel}
+    >
       {options.map((option) => (
         <button
           key={option.key}
@@ -95,13 +101,19 @@ const TeeSelectButtons = ({ value, onChange, courseTees, ariaLabel, testIdPrefix
           onClick={() => onChange(option.key)}
           aria-pressed={value === option.key}
           data-testid={testIdPrefix ? `${testIdPrefix}-${option.testKey}` : undefined}
-          className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-md border text-sm font-medium transition-colors ${
+          className={`inline-flex items-center flex-shrink-0 rounded-md border font-medium transition-colors ${
+            compact ? 'gap-1 px-2 py-1.5 text-xs' : 'gap-1.5 px-3.5 py-2 text-sm'
+          } ${
             value === option.key
               ? (option.color?.selected ?? 'border-primary bg-primary/5 text-primary')
               : 'border-gray-200 text-gray-600 hover:border-gray-300'
           }`}
         >
-          {option.color && <span className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${option.color.dot}`} />}
+          {option.color && (
+            <span
+              className={`rounded-full flex-shrink-0 ${compact ? 'w-1.5 h-1.5' : 'w-2.5 h-2.5'} ${option.color.dot}`}
+            />
+          )}
           {option.label}
         </button>
       ))}
@@ -137,6 +149,10 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser }) => {
   const [guestForm, setGuestForm] = useState(initialGuestForm);
 
   const [scorerIds, setScorerIds] = useState([]);
+  // Which participant's handicap keypad is open (step 4 summary), or null when closed.
+  const [editingHandicapParticipant, setEditingHandicapParticipant] = useState(null);
+  // Whether the guest-form handicap keypad (step 2) is open.
+  const [showGuestHandicapPanel, setShowGuestHandicapPanel] = useState(false);
 
   useEffect(() => {
     if (step === 2 && currentUser?.id) {
@@ -353,11 +369,47 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser }) => {
     });
   };
 
-  const handleStart = async () => {
+  const goToSummary = () => {
     if (scorerIds.length === 0) {
       setError(t('create.scorers.errorMinScorers'));
       return;
     }
+    setError('');
+    setStep(4);
+  };
+
+  const handleBackToScorers = () => {
+    setError('');
+    setStep(3);
+  };
+
+  const handleConfirmParticipantHandicap = async (newHandicap) => {
+    const participant = editingHandicapParticipant;
+    setEditingHandicapParticipant(null);
+    if (newHandicap === (participant.handicap ?? null)) return;
+
+    setIsProcessing(true);
+    setError('');
+    try {
+      const updated = await setQuickMatchParticipantHandicapUseCase.execute(
+        quickMatch.id,
+        participant.participantId,
+        newHandicap
+      );
+      setQuickMatch(updated);
+    } catch (err) {
+      setError(err.message || t('create.errors.generic'));
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleConfirmGuestHandicap = (newHandicap) => {
+    setGuestForm((g) => ({ ...g, handicap: newHandicap === null ? '' : String(newHandicap) }));
+    setShowGuestHandicapPanel(false);
+  };
+
+  const handleStart = async () => {
     setIsProcessing(true);
     setError('');
     try {
@@ -386,7 +438,7 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser }) => {
         <div className="flex items-center justify-between p-4 border-b border-gray-200">
           <div>
             <h2 id="quick-match-modal-title" className="text-lg font-semibold text-gray-900">{t('create.title')}</h2>
-            <p className="text-xs text-gray-500">{t('create.step', { current: step, total: 3 })}</p>
+            <p className="text-xs text-gray-500">{t('create.step', { current: step, total: 4 })}</p>
           </div>
           <button
             type="button"
@@ -681,19 +733,9 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser }) => {
                         <div
                           key={f.id}
                           data-testid={`quick-match-friend-row-${f.id}`}
-                          className="px-3 py-2 border border-gray-200 rounded-lg space-y-1.5"
+                          className="flex items-center gap-2 px-3 py-1.5 border border-gray-200 rounded-lg"
                         >
-                          <div className="flex items-center justify-between gap-2">
-                            <span className="text-sm text-gray-900 truncate">{f.otherUserName}</span>
-                            <button
-                              type="button"
-                              onClick={() => handleAddFriend(f)}
-                              disabled={isProcessing}
-                              className="text-xs font-medium text-primary hover:underline disabled:opacity-50 flex-shrink-0"
-                            >
-                              {t('create.participants.addFriend')}
-                            </button>
-                          </div>
+                          <span className="text-sm text-gray-900 truncate min-w-0">{f.otherUserName}</span>
                           {courseTees.length > 0 && (
                             <TeeSelectButtons
                               value={friendTeeByFriendId[f.id] ?? NO_TEE_KEY}
@@ -701,8 +743,20 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser }) => {
                               courseTees={courseTees}
                               ariaLabel={t('create.participants.teeLabel')}
                               testIdPrefix={`quick-match-friend-tee-select-${f.id}`}
+                              compact
                             />
                           )}
+                          <button
+                            type="button"
+                            onClick={() => handleAddFriend(f)}
+                            disabled={isProcessing}
+                            aria-label={t('create.participants.addFriendNamed', { name: f.otherUserName })}
+                            title={t('create.participants.addFriendNamed', { name: f.otherUserName })}
+                            data-testid={`quick-match-add-friend-${f.id}`}
+                            className="flex-shrink-0 ml-auto w-7 h-7 flex items-center justify-center rounded-full bg-primary text-white hover:bg-primary/90 disabled:opacity-50 transition-colors"
+                          >
+                            <Plus className="w-3.5 h-3.5" />
+                          </button>
                         </div>
                       ))
                     )}
@@ -729,16 +783,16 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser }) => {
                         className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                       />
                     </div>
-                    <input
-                      type="number"
-                      step="0.1"
-                      min="-10"
-                      max="54"
-                      value={guestForm.handicap}
-                      onChange={(e) => setGuestForm((g) => ({ ...g, handicap: e.target.value }))}
-                      placeholder={t('create.participants.guestHandicap')}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowGuestHandicapPanel(true)}
+                      data-testid="quick-match-guest-handicap-button"
+                      className={`w-full px-3 py-2 border border-gray-300 rounded-md text-sm text-left focus:outline-none focus:ring-2 focus:ring-primary ${
+                        guestForm.handicap ? 'text-gray-900' : 'text-gray-400'
+                      }`}
+                    >
+                      {guestForm.handicap || t('create.participants.guestHandicap')}
+                    </button>
                     {courseTees.length > 0 && (
                       <TeeSelectButtons
                         value={guestTeeKey}
@@ -848,18 +902,139 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser }) => {
                 </button>
                 <button
                   type="button"
+                  onClick={goToSummary}
+                  disabled={isProcessing}
+                  data-testid="quick-match-scorers-next"
+                  className="px-4 py-2 text-sm font-medium text-white bg-primary rounded-md hover:bg-primary/90 disabled:opacity-50"
+                >
+                  {t('create.scorers.next')}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {step === 4 && (
+          <div className="p-4 space-y-4">
+            <div>
+              <h3 className="text-sm font-medium text-gray-700 mb-1">{t('create.summary.heading')}</h3>
+              <p className="text-xs text-gray-500 mb-3">{t('create.summary.description')}</p>
+
+              <dl className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm mb-4">
+                <dt className="text-gray-500">{t('create.summary.courseLabel')}</dt>
+                <dd className="text-gray-900 text-right truncate">{selectedCourse?.name}</dd>
+                <dt className="text-gray-500">{t('create.summary.formatLabel')}</dt>
+                <dd className="text-gray-900 text-right">
+                  {isFreePlay
+                    ? t(`create.course.${SCORING_FORMAT_LABEL_KEY[scoringFormat]}`)
+                    : t(`create.course.${FORMAT_LABEL_KEY[matchFormat]}`)}
+                </dd>
+                <dt className="text-gray-500">{t('create.summary.allowanceLabel')}</dt>
+                <dd className="text-gray-900 text-right">{allowancePercentage}%</dd>
+              </dl>
+            </div>
+
+            <div>
+              <p className="text-sm font-medium text-gray-700 mb-2">
+                {t('create.summary.participantsLabel')}
+              </p>
+              <ul className="space-y-2">
+                {participants.map((p) => (
+                  <li key={p.participantId} className="px-3 py-2 bg-gray-50 rounded-lg space-y-1.5">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="text-sm font-medium text-gray-900 truncate">{p.name}</span>
+                      {p.userId === currentUser.id && (
+                        <span className="text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded flex-shrink-0">
+                          {t('create.participants.creatorBadge')}
+                        </span>
+                      )}
+                      {p.isGuest && (
+                        <span className="text-xs bg-gray-200 text-gray-600 px-1.5 py-0.5 rounded flex-shrink-0">
+                          {t('create.participants.guestBadge')}
+                        </span>
+                      )}
+                      {isTeamFormat && p.team && (
+                        <span className="text-xs text-gray-400 flex-shrink-0">
+                          {p.team === 'A' ? t('create.participants.teamA') : t('create.participants.teamB')}
+                        </span>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setEditingHandicapParticipant(p)}
+                      disabled={isProcessing}
+                      aria-label={t('create.summary.editHandicapNamed', { name: p.name })}
+                      data-testid={`quick-match-handicap-button-${p.participantId}`}
+                      className={`px-3 py-1 border border-gray-300 rounded-md text-sm hover:border-gray-400 disabled:opacity-50 ${
+                        p.handicap != null ? 'text-gray-900' : 'text-gray-400'
+                      }`}
+                    >
+                      {p.handicap != null ? p.handicap : t('create.summary.handicapPlaceholder')}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <p className="text-xs text-gray-500">
+              {t('create.summary.scorersLabel')}:{' '}
+              {registeredParticipants
+                .filter((p) => scorerIds.includes(p.participantId))
+                .map((p) => p.name)
+                .join(', ')}
+            </p>
+
+            <div className="flex items-center justify-between gap-3 pt-2">
+              <button
+                type="button"
+                onClick={handleBackToScorers}
+                disabled={isProcessing}
+                data-testid="quick-match-summary-back"
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 disabled:opacity-50"
+              >
+                {t('create.summary.back')}
+              </button>
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={handleClose}
+                  disabled={isProcessing}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 disabled:opacity-50"
+                >
+                  {t('create.cancel')}
+                </button>
+                <button
+                  type="button"
                   onClick={handleStart}
                   disabled={isProcessing}
                   data-testid="quick-match-start"
                   className="px-4 py-2 text-sm font-medium text-white bg-primary rounded-md hover:bg-primary/90 disabled:opacity-50"
                 >
-                  {isProcessing ? t('create.scorers.starting') : t('create.scorers.start')}
+                  {isProcessing ? t('create.summary.starting') : t('create.summary.start')}
                 </button>
               </div>
             </div>
           </div>
         )}
       </div>
+
+      {showGuestHandicapPanel && (
+        <HandicapInputPanel
+          label={t('create.participants.guestHandicap')}
+          value={guestForm.handicap ? Number(guestForm.handicap) : null}
+          onClose={() => setShowGuestHandicapPanel(false)}
+          onConfirm={handleConfirmGuestHandicap}
+        />
+      )}
+
+      {editingHandicapParticipant && (
+        <HandicapInputPanel
+          label={editingHandicapParticipant.name}
+          value={editingHandicapParticipant.handicap}
+          onClose={() => setEditingHandicapParticipant(null)}
+          onConfirm={handleConfirmParticipantHandicap}
+        />
+      )}
     </div>
   );
 };

@@ -10,6 +10,7 @@ import apiRequest from '../../services/api.js';
  * - POST   /api/v1/quick-matches/{id}/participants
  * - POST   /api/v1/quick-matches/{id}/participants/guest
  * - DELETE /api/v1/quick-matches/{id}/participants/{participantId}
+ * - PATCH  /api/v1/quick-matches/{id}/participants/{participantId}/handicap
  * - POST   /api/v1/quick-matches/{id}/start
  * - POST   /api/v1/quick-matches/{id}/complete
  * - POST   /api/v1/quick-matches/{id}/cancel
@@ -89,6 +90,18 @@ class ApiQuickMatchRepository extends IQuickMatchRepository {
     const apiData = await apiRequest(
       `/api/v1/quick-matches/${quickMatchId}/participants/${participantId}`,
       { method: 'DELETE' }
+    );
+
+    return QuickMatchMapper.toDomain(apiData);
+  }
+
+  async setParticipantHandicap(quickMatchId, participantId, handicap) {
+    const apiData = await apiRequest(
+      `/api/v1/quick-matches/${quickMatchId}/participants/${participantId}/handicap`,
+      {
+        method: 'PATCH',
+        body: JSON.stringify({ handicap }),
+      }
     );
 
     return QuickMatchMapper.toDomain(apiData);
