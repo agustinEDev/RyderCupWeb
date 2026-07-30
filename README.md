@@ -116,9 +116,9 @@ npm run preview   # Preview locally
 | **Build Tool** | Vite 7.3 |
 | **Styling** | Tailwind CSS 4 |
 | **Routing** | React Router 7 |
-| **State (Global)** | Zustand 4 |
+| **State (Global)** | React Context (AuthContext) |
 | **State (Server)** | Fetch API + custom hooks |
-| **Validation** | Zod |
+| **Validation** | Ad-hoc JS per form (`src/utils/validation.js`) |
 | **Drag & Drop** | @dnd-kit |
 | **i18n** | react-i18next 16 (EN + ES) |
 | **Monitoring** | Sentry 10 |
@@ -231,8 +231,8 @@ src/
 │   ├── creator/         #   Schedule, invitations management
 │   └── public/          #   Leaderboard, Pricing, Contact, Terms, Privacy, Cookies
 ├── components/          # 52 reusable components
-├── hooks/               # Custom React hooks
-├── store/               # Zustand stores (auth, competition)
+├── hooks/               # Custom React hooks (incl. polling: useScoring, useQuickMatchScoring)
+├── contexts/            # React Context (AuthContext — only global state)
 ├── composition/         # Dependency injection (Composition Root)
 ├── i18n/                # 14 namespaces × 2 languages
 └── utils/               # Sentry, validation, token refresh
@@ -311,7 +311,7 @@ src/
 |---------|---------------|
 | **Authentication** | httpOnly cookies (access 15min + refresh 7 days) |
 | **Token Management** | Automatic refresh with 401 interceptor |
-| **Input Validation** | 3-layer: HTML constraints + Zod + Backend Pydantic |
+| **Input Validation** | 3-layer: HTML constraints + ad-hoc JS validation + Backend Pydantic |
 | **Session Security** | Multi-tab logout via Broadcast Channel API |
 | **Device Control** | Fingerprinting with remote revocation |
 | **Asset Integrity** | SRI (Subresource Integrity) |
@@ -443,7 +443,7 @@ We welcome contributions! Please follow these guidelines:
 ### Code Standards
 - Follow **Clean Architecture** and **DDD** principles
 - Write **tests** for all new features (>85% coverage)
-- Use **Zod** for input validation
+- Follow the existing ad-hoc per-form validation pattern (`src/utils/validation.js`)
 - Follow **ESLint** rules (enforced in CI)
 - All user-facing strings must use **i18n** keys
 
@@ -477,7 +477,6 @@ This project is licensed under the **MIT License** - see [LICENSE](LICENSE) file
 - **React** - Modern UI library for building user interfaces
 - **Vite** - Next generation frontend build tool
 - **Tailwind CSS** - Utility-first CSS framework
-- **Zustand** - Lightweight state management
 - **R&A** - Official Rules of Golf
 - **USGA** - World Handicap System (WHS)
 
