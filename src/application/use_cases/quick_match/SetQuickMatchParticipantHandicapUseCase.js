@@ -1,4 +1,5 @@
 import QuickMatchAssembler from '../../assemblers/QuickMatchAssembler';
+import { isValidHandicap } from '../../../domain/services/handicapRange';
 
 /**
  * Use Case: Set Quick Match Participant Handicap
@@ -21,8 +22,13 @@ class SetQuickMatchParticipantHandicapUseCase {
     if (!quickMatchId || !participantId) {
       throw new Error('quickMatchId and participantId are required');
     }
-    if (handicap !== null && !Number.isFinite(handicap)) {
-      throw new Error('handicap must be a finite number or null');
+    if (handicap !== null) {
+      if (!Number.isFinite(handicap)) {
+        throw new Error('handicap must be a finite number or null');
+      }
+      if (!isValidHandicap(handicap)) {
+        throw new Error('Invalid handicap value. Must be between -10.0 and 54.0');
+      }
     }
 
     const quickMatch = await this.#quickMatchRepository.setParticipantHandicap(
