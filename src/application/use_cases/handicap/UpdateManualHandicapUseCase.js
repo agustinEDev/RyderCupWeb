@@ -1,3 +1,5 @@
+import { isValidHandicap } from '../../../domain/services/handicapRange';
+
 class UpdateManualHandicapUseCase {
   /**
    * @param {Object} dependencies - Objeto de dependencias.
@@ -29,7 +31,7 @@ class UpdateManualHandicapUseCase {
     }
 
     // Business logic: Validate handicap range.
-    if (handicapValue < -10 || handicapValue > 54) {
+    if (!isValidHandicap(handicapValue)) {
       throw new Error('Invalid handicap value. Must be between -10.0 and 54.0');
     }
 
