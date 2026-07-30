@@ -348,6 +348,7 @@ export const useEditProfile = () => {
   return {
     // Public state
     user,
+    refetchUser,
     formData,
     isLoading,
     isSaving,

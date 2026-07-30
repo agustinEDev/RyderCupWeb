@@ -94,6 +94,15 @@ import ListMyInvitationsUseCase from '../application/use_cases/invitation/ListMy
 import RespondToInvitationUseCase from '../application/use_cases/invitation/RespondToInvitationUseCase';
 import ListCompetitionInvitationsUseCase from '../application/use_cases/invitation/ListCompetitionInvitationsUseCase';
 
+// Avatar Use Cases
+import ApiAvatarRepository from '../infrastructure/repositories/ApiAvatarRepository';
+import ListAvatarPresetsUseCase from '../application/use_cases/avatar/ListAvatarPresetsUseCase';
+import SetAvatarPresetUseCase from '../application/use_cases/avatar/SetAvatarPresetUseCase';
+import UploadAvatarUseCase from '../application/use_cases/avatar/UploadAvatarUseCase';
+import ListMyAvatarUploadsUseCase from '../application/use_cases/avatar/ListMyAvatarUploadsUseCase';
+import ActivateUploadedAvatarUseCase from '../application/use_cases/avatar/ActivateUploadedAvatarUseCase';
+import RemoveAvatarUseCase from '../application/use_cases/avatar/RemoveAvatarUseCase';
+
 // Friend Use Cases
 import ApiFriendRepository from '../infrastructure/repositories/ApiFriendRepository';
 import SendFriendRequestUseCase from '../application/use_cases/friend/SendFriendRequestUseCase';
@@ -220,6 +229,15 @@ const sendInvitationByEmailUseCase = new SendInvitationByEmailUseCase({ invitati
 const listMyInvitationsUseCase = new ListMyInvitationsUseCase({ invitationRepository: apiInvitationRepository });
 const respondToInvitationUseCase = new RespondToInvitationUseCase({ invitationRepository: apiInvitationRepository });
 const listCompetitionInvitationsUseCase = new ListCompetitionInvitationsUseCase({ invitationRepository: apiInvitationRepository });
+
+// Avatar Use Cases
+const apiAvatarRepository = new ApiAvatarRepository();
+const listAvatarPresetsUseCase = new ListAvatarPresetsUseCase({ avatarRepository: apiAvatarRepository });
+const setAvatarPresetUseCase = new SetAvatarPresetUseCase({ avatarRepository: apiAvatarRepository });
+const uploadAvatarUseCase = new UploadAvatarUseCase({ avatarRepository: apiAvatarRepository });
+const listMyAvatarUploadsUseCase = new ListMyAvatarUploadsUseCase({ avatarRepository: apiAvatarRepository });
+const activateUploadedAvatarUseCase = new ActivateUploadedAvatarUseCase({ avatarRepository: apiAvatarRepository });
+const removeAvatarUseCase = new RemoveAvatarUseCase({ avatarRepository: apiAvatarRepository });
 
 // Friend Use Cases
 const apiFriendRepository = new ApiFriendRepository();
@@ -363,6 +381,13 @@ export {
   listMyInvitationsUseCase,
   respondToInvitationUseCase,
   listCompetitionInvitationsUseCase,
+  // Avatar Use Cases
+  listAvatarPresetsUseCase,
+  setAvatarPresetUseCase,
+  uploadAvatarUseCase,
+  listMyAvatarUploadsUseCase,
+  activateUploadedAvatarUseCase,
+  removeAvatarUseCase,
   // Friend Use Cases
   sendFriendRequestUseCase,
   respondFriendRequestUseCase,

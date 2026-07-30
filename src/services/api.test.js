@@ -340,4 +340,40 @@ describe('apiRequest - CSRF Protection', () => {
       expect(result).toEqual(mockData);
     });
   });
+
+  describe('FormData bodies (file uploads)', () => {
+    it('should NOT set a Content-Type header when the body is FormData', async () => {
+      const mockResponse = {
+        ok: true,
+        status: 201,
+        json: async () => ({ id: 'upload-1' }),
+      };
+      TokenRefreshInterceptor.fetchWithTokenRefresh.mockResolvedValue(mockResponse);
+
+      const formData = new FormData();
+      formData.append('file', new File(['bytes'], 'photo.jpg', { type: 'image/jpeg' }));
+
+      await apiRequest('/api/v1/users/me/avatar/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const [, config] = TokenRefreshInterceptor.fetchWithTokenRefresh.mock.calls[0];
+      expect(config.headers['Content-Type']).toBeUndefined();
+      expect(config.body).toBe(formData);
+    });
+
+    it('should still set Content-Type: application/json for regular JSON bodies', async () => {
+      const mockResponse = { ok: true, status: 200, json: async () => ({}) };
+      TokenRefreshInterceptor.fetchWithTokenRefresh.mockResolvedValue(mockResponse);
+
+      await apiRequest('/api/v1/test', {
+        method: 'POST',
+        body: JSON.stringify({ foo: 'bar' }),
+      });
+
+      const [, config] = TokenRefreshInterceptor.fetchWithTokenRefresh.mock.calls[0];
+      expect(config.headers['Content-Type']).toBe('application/json');
+    });
+  });
 });

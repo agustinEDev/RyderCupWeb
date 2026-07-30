@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import HeaderAuth from '../components/layout/HeaderAuth';
+import Avatar from '../components/ui/Avatar';
 import { useAuth } from '../hooks/useAuth';
 import { CountryFlag } from '../utils/countryUtils';
 import { broadcastLogout } from '../utils/broadcastAuth';
@@ -151,6 +152,11 @@ const Profile = () => {
 
                 {/* Content */}
                 <div className="relative z-10">
+                  {/* Avatar */}
+                  <div className="mb-4">
+                    <Avatar userId={user.id} size="xl" version={user.updated_at} />
+                  </div>
+
                   {/* Name and Badges */}
                   <div className="mb-4">
                     <h2 className="text-3xl font-bold text-gray-900 mb-2">{fullName}</h2>

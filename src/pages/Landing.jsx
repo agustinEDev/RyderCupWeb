@@ -14,10 +14,6 @@ const Landing = () => {
   const { canInstall, isIOS, isDesktopSafari, isInstalled, install } = useInstallPrompt();
   const [showInstallHint, setShowInstallHint] = useState(false);
 
-  const handleCreateCompetition = () => {
-    navigate('/login');
-  };
-
   const handleGetStarted = () => {
     navigate('/register');
   };
@@ -98,13 +94,6 @@ const Landing = () => {
                     className="px-8 py-4 bg-primary text-white text-base font-bold rounded-lg transition-all duration-300 hover:bg-primary-600 hover:shadow-xl hover:scale-105"
                   >
                     {t('hero.getStartedButton')}
-                  </button>
-
-                  <button
-                    onClick={handleCreateCompetition}
-                    className="px-8 py-4 bg-white text-primary text-base font-bold rounded-lg border-2 border-primary hover:bg-primary-50 transition-all duration-300 hover:shadow-lg hover:scale-105"
-                  >
-                    {t('hero.viewDemoButton')}
                   </button>
 
                   <div className="flex flex-col gap-2">

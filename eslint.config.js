@@ -47,6 +47,8 @@ export default [
         BroadcastChannel: 'readonly',
         AbortController: 'readonly',
         MouseEvent: 'readonly',
+        FormData: 'readonly',
+        File: 'readonly',
         // Node globals (for config files and tests)
         process: 'readonly',
         __dirname: 'readonly',
