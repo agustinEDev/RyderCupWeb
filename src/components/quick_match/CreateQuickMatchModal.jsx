@@ -202,7 +202,7 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser }) => {
     (f) => !participants.some((p) => p.userId === f.otherUserId)
   );
 
-  const handleClose = useCallback(async () => {
+  const cancelIfPending = useCallback(async () => {
     if (quickMatch?.isPending) {
       try {
         await cancelQuickMatchUseCase.execute(quickMatch.id);
@@ -210,8 +210,12 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser }) => {
         // Best-effort cleanup — the match stays PENDING and is simply abandoned
       }
     }
+  }, [quickMatch]);
+
+  const handleClose = useCallback(async () => {
+    await cancelIfPending();
     onClose();
-  }, [quickMatch, onClose]);
+  }, [cancelIfPending, onClose]);
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -333,20 +337,13 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser }) => {
   const handleBackToCourse = async () => {
     setIsProcessing(true);
     setError('');
-    try {
-      if (quickMatch?.isPending) {
-        await cancelQuickMatchUseCase.execute(quickMatch.id);
-      }
-    } catch {
-      // Best-effort cleanup — the match stays PENDING and is simply abandoned, same as handleClose
-    } finally {
-      setQuickMatch(null);
-      setFriendTeeByFriendId({});
-      setGuestTeeKey(NO_TEE_KEY);
-      setGuestForm(initialGuestForm);
-      setIsProcessing(false);
-      setStep(1);
-    }
+    await cancelIfPending();
+    setQuickMatch(null);
+    setFriendTeeByFriendId({});
+    setGuestTeeKey(NO_TEE_KEY);
+    setGuestForm(initialGuestForm);
+    setIsProcessing(false);
+    setStep(1);
   };
 
   const handleBackToParticipants = () => {
