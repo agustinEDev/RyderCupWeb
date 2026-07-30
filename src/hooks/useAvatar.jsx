@@ -36,9 +36,14 @@ export const useAvatar = (user, refetchUser) => {
   }, []);
 
   useEffect(() => {
+    // Evita actualizar estado si el efecto quedó obsoleto (el componente se
+    // desmontó, o `user`/dependencias cambiaron y ya hay una ejecución más
+    // reciente en curso) mientras la carga todavía estaba en el aire.
+    let ignore = false;
+
     const loadOptions = async () => {
       if (!user) {
-        setIsLoadingOptions(false);
+        if (!ignore) setIsLoadingOptions(false);
         return;
       }
 
@@ -47,84 +52,95 @@ export const useAvatar = (user, refetchUser) => {
           listAvatarPresetsUseCase.execute(),
           loadUploads(),
         ]);
-        setPresets(presetList || []);
+        if (!ignore) setPresets(presetList || []);
       } catch (error) {
         console.error('Error loading avatar options:', error);
-        customToast.error(t('toasts.failedToLoadAvatarOptions'));
+        if (!ignore) customToast.error(t('toasts.failedToLoadAvatarOptions'));
       } finally {
-        setIsLoadingOptions(false);
+        if (!ignore) setIsLoadingOptions(false);
       }
     };
 
     loadOptions();
+
+    return () => {
+      ignore = true;
+    };
   }, [user, loadUploads, t]);
 
-  const handleSelectPreset = async (presetId) => {
-    setIsSettingPreset(true);
+  /**
+   * Ejecuta la acción principal (persistir el cambio de avatar) y, solo si
+   * tiene éxito, refresca el estado local (refetchUser + opcionalmente
+   * loadUploads). Un fallo en el refresco posterior NO se reporta como fallo
+   * de la acción principal — el cambio ya se guardó en el servidor.
+   */
+  const runAvatarAction = async ({
+    setBusy,
+    action,
+    mapError,
+    refreshUploads,
+    successMessage,
+  }) => {
+    setBusy(true);
     try {
-      await setAvatarPresetUseCase.execute(presetId);
-      await refetchUser();
-      await loadUploads();
-      customToast.success(t('toasts.avatarUpdated'));
+      await action();
     } catch (error) {
-      console.error('Error setting avatar preset:', error);
-      customToast.error(error.message || t('toasts.failedToUpdateAvatar'));
+      console.error('Error updating avatar:', error);
+      customToast.error(
+        mapError ? mapError(error) : error.message || t('toasts.failedToUpdateAvatar'),
+      );
+      setBusy(false);
+      return;
+    }
+
+    customToast.success(successMessage || t('toasts.avatarUpdated'));
+
+    try {
+      await refetchUser();
+      if (refreshUploads) await loadUploads();
+    } catch (error) {
+      console.error('Error refreshing after avatar update:', error);
     } finally {
-      setIsSettingPreset(false);
+      setBusy(false);
     }
   };
 
-  const handleUpload = async (file) => {
-    if (!file) return;
+  const handleSelectPreset = (presetId) =>
+    runAvatarAction({
+      setBusy: setIsSettingPreset,
+      action: () => setAvatarPresetUseCase.execute(presetId),
+      refreshUploads: true,
+    });
 
-    setIsUploading(true);
-    try {
-      await uploadAvatarUseCase.execute(file);
-      await refetchUser();
-      await loadUploads();
-      customToast.success(t('toasts.avatarUpdated'));
-    } catch (error) {
-      console.error('Error uploading avatar:', error);
-      if (error.message === 'FILE_TOO_LARGE') {
-        customToast.error(t('toasts.avatarFileTooLarge'));
-      } else if (error.status === 400) {
-        customToast.error(t('toasts.avatarInvalidImage'));
-      } else {
-        customToast.error(error.message || t('toasts.failedToUpdateAvatar'));
-      }
-    } finally {
-      setIsUploading(false);
-    }
+  const handleUpload = (file) => {
+    if (!file) return Promise.resolve();
+
+    return runAvatarAction({
+      setBusy: setIsUploading,
+      action: () => uploadAvatarUseCase.execute(file),
+      refreshUploads: true,
+      mapError: (error) => {
+        if (error.message === 'FILE_TOO_LARGE') return t('toasts.avatarFileTooLarge');
+        if (error.status === 400) return t('toasts.avatarInvalidImage');
+        return error.message || t('toasts.failedToUpdateAvatar');
+      },
+    });
   };
 
-  const handleActivateUpload = async (uploadId) => {
-    setIsSettingPreset(true);
-    try {
-      await activateUploadedAvatarUseCase.execute(uploadId);
-      await refetchUser();
-      await loadUploads();
-      customToast.success(t('toasts.avatarUpdated'));
-    } catch (error) {
-      console.error('Error activating uploaded avatar:', error);
-      customToast.error(error.message || t('toasts.failedToUpdateAvatar'));
-    } finally {
-      setIsSettingPreset(false);
-    }
-  };
+  const handleActivateUpload = (uploadId) =>
+    runAvatarAction({
+      setBusy: setIsSettingPreset,
+      action: () => activateUploadedAvatarUseCase.execute(uploadId),
+      refreshUploads: true,
+    });
 
-  const handleRemove = async () => {
-    setIsRemoving(true);
-    try {
-      await removeAvatarUseCase.execute();
-      await refetchUser();
-      customToast.success(t('toasts.avatarRemoved'));
-    } catch (error) {
-      console.error('Error removing avatar:', error);
-      customToast.error(error.message || t('toasts.failedToRemoveAvatar'));
-    } finally {
-      setIsRemoving(false);
-    }
-  };
+  const handleRemove = () =>
+    runAvatarAction({
+      setBusy: setIsRemoving,
+      action: () => removeAvatarUseCase.execute(),
+      mapError: (error) => error.message || t('toasts.failedToRemoveAvatar'),
+      successMessage: t('toasts.avatarRemoved'),
+    });
 
   return {
     presets,

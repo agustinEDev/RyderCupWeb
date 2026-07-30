@@ -30,21 +30,28 @@ const ICON_SIZE_CLASSES = {
  * @param {string|number} version - Optional cache-busting value (e.g. user.updated_at)
  */
 const Avatar = ({ userId, size = 'md', className = '', version }) => {
-  const [hasError, setHasError] = useState(false);
+  // Guarda el `src` concreto que falló, no un booleano: así, si userId/version
+  // cambian (p.ej. tras cambiar de avatar), el `src` nuevo ya no coincide con
+  // el que falló y el componente reintenta cargarlo automáticamente en el
+  // siguiente render, sin necesitar un efecto que resetee el estado.
+  const [erroredSrc, setErroredSrc] = useState(null);
 
   const sizeClass = SIZE_CLASSES[size] || SIZE_CLASSES.md;
   const iconSizeClass = ICON_SIZE_CLASSES[size] || ICON_SIZE_CLASSES.md;
   const containerClass = `${sizeClass} rounded-full overflow-hidden flex items-center justify-center bg-gray-100 border border-gray-200 shrink-0 ${className}`;
 
-  if (!userId || hasError) {
+  const src = userId
+    ? `${getApiBaseUrl()}/api/v1/users/${userId}/avatar${version ? `?v=${encodeURIComponent(version)}` : ''}`
+    : null;
+  const hasError = src !== null && erroredSrc === src;
+
+  if (!src || hasError) {
     return (
       <div className={containerClass}>
         <User className={`${iconSizeClass} text-gray-400`} />
       </div>
     );
   }
-
-  const src = `${getApiBaseUrl()}/api/v1/users/${userId}/avatar${version ? `?v=${encodeURIComponent(version)}` : ''}`;
 
   return (
     <div className={containerClass}>
@@ -53,7 +60,7 @@ const Avatar = ({ userId, size = 'md', className = '', version }) => {
         alt="Avatar"
         crossOrigin="use-credentials"
         className="w-full h-full object-cover"
-        onError={() => setHasError(true)}
+        onError={() => setErroredSrc(src)}
       />
     </div>
   );

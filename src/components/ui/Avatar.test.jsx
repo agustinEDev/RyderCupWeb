@@ -29,6 +29,28 @@ describe('Avatar', () => {
     expect(screen.queryByRole('img', { hidden: true })).not.toBeInTheDocument();
   });
 
+  it('retries (resets the error state) when userId changes after a failed load', () => {
+    const { rerender } = render(<Avatar userId="abc-123" />);
+    fireEvent.error(screen.getByRole('img', { hidden: true }));
+    expect(screen.queryByRole('img', { hidden: true })).not.toBeInTheDocument();
+
+    rerender(<Avatar userId="different-user" />);
+
+    const img = screen.getByRole('img', { hidden: true });
+    expect(img.src).toContain('/api/v1/users/different-user/avatar');
+  });
+
+  it('retries (resets the error state) when version changes after a failed load', () => {
+    const { rerender } = render(<Avatar userId="abc-123" version="v1" />);
+    fireEvent.error(screen.getByRole('img', { hidden: true }));
+    expect(screen.queryByRole('img', { hidden: true })).not.toBeInTheDocument();
+
+    rerender(<Avatar userId="abc-123" version="v2" />);
+
+    const img = screen.getByRole('img', { hidden: true });
+    expect(img.src).toContain('v=v2');
+  });
+
   it('applies the requested size class', () => {
     const { container } = render(<Avatar userId="abc-123" size="lg" />);
     expect(container.firstChild.className).toContain('w-24');

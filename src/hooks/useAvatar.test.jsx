@@ -126,4 +126,41 @@ describe('useAvatar', () => {
     expect(refetchUser).toHaveBeenCalled();
     expect(customToast.success).toHaveBeenCalledWith('toasts.avatarRemoved');
   });
+
+  it('still reports success when the persisted action worked but the post-refresh fails', async () => {
+    const refetchUser = vi.fn().mockRejectedValue(new Error('network blip'));
+    setAvatarPresetUseCase.execute.mockResolvedValue({});
+    const { result } = renderHook(() => useAvatar(mockUser, refetchUser));
+    await waitFor(() => expect(result.current.isLoadingOptions).toBe(false));
+
+    await act(async () => {
+      await result.current.handleSelectPreset(4);
+    });
+
+    // El cambio ya se guardó en el servidor: un fallo al refrescar el estado
+    // local no debe reportarse como si la acción principal hubiera fallado.
+    expect(customToast.success).toHaveBeenCalledWith('toasts.avatarUpdated');
+    expect(customToast.error).not.toHaveBeenCalled();
+    expect(result.current.isSettingPreset).toBe(false);
+  });
+
+  it('does not update state after unmounting mid-load', async () => {
+    const refetchUser = vi.fn();
+    let resolvePresets;
+    listAvatarPresetsUseCase.execute.mockReturnValue(
+      new Promise((resolve) => {
+        resolvePresets = resolve;
+      }),
+    );
+
+    const { unmount } = renderHook(() => useAvatar(mockUser, refetchUser));
+    unmount();
+
+    // Resolver la carga después de desmontar no debe lanzar ni intentar
+    // actualizar estado de un componente ya desmontado.
+    await act(async () => {
+      resolvePresets([{ id: 1, image_url: '/api/v1/avatar-presets/1/image' }]);
+      await Promise.resolve();
+    });
+  });
 });

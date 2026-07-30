@@ -53,7 +53,22 @@ describe('Avatar Use Cases', () => {
     it('rejects a missing presetId', async () => {
       const useCase = new SetAvatarPresetUseCase({ avatarRepository });
 
-      await expect(useCase.execute()).rejects.toThrow('presetId is required');
+      await expect(useCase.execute()).rejects.toThrow(/must be an integer between 1 and 10/);
+      expect(avatarRepository.setPreset).not.toHaveBeenCalled();
+    });
+
+    it.each([
+      ['zero', 0],
+      ['negative', -1],
+      ['fractional', 3.5],
+      ['above range', 11],
+      ['non-numeric', '3'],
+    ])('rejects an invalid presetId (%s)', async (_label, invalidPresetId) => {
+      const useCase = new SetAvatarPresetUseCase({ avatarRepository });
+
+      await expect(useCase.execute(invalidPresetId)).rejects.toThrow(
+        /must be an integer between 1 and 10/,
+      );
       expect(avatarRepository.setPreset).not.toHaveBeenCalled();
     });
   });

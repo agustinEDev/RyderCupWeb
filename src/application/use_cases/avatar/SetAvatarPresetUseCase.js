@@ -3,6 +3,8 @@
  *
  * Activates one of the 10 preset avatars for the current user.
  */
+const AVATAR_PRESET_COUNT = 10;
+
 class SetAvatarPresetUseCase {
   #avatarRepository;
 
@@ -14,8 +16,13 @@ class SetAvatarPresetUseCase {
   }
 
   async execute(presetId) {
-    if (!presetId || typeof presetId !== 'number') {
-      throw new Error('presetId is required');
+    if (
+      typeof presetId !== 'number' ||
+      !Number.isInteger(presetId) ||
+      presetId < 1 ||
+      presetId > AVATAR_PRESET_COUNT
+    ) {
+      throw new Error(`presetId must be an integer between 1 and ${AVATAR_PRESET_COUNT}`);
     }
 
     return this.#avatarRepository.setPreset(presetId);
