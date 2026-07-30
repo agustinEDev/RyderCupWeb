@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [2.3.0] - 2026-07-30
+
 ### Added
 
 **User Avatars**
@@ -24,6 +26,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ### Removed
 
 - Botón "Ver Demo" de la landing: no llevaba a ninguna demo real, solo redirigía a `/login` (duplicando "Comenzar Gratis"). Issue FE #238.
+
+### Build / CI
+
+- CI Node.js: 20 → 22 (alinea con `node:22-alpine` de producción; desbloquea el bump de `jsdom` que requiere Node `^22.22.2`).
+- `jsdom`: 29.1.1 → 30.0.1, `@testing-library/jest-dom`: 6.9.1 → 7.0.0, `trufflesecurity/trufflehog`: 3.95.9 → 3.96.0.
+- Grupo de actualizaciones menores (9 paquetes): `@sentry/react`, `framer-motion`, `lucide-react`, `react`/`react-dom`, `react-i18next`, `@playwright/test`, `@vitejs/plugin-react`, `postcss`.
 
 ## [2.2.0] - 2026-07-29
 
