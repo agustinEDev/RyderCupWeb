@@ -2,9 +2,14 @@ import { renderHook, act, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { useAvatar } from './useAvatar';
 
+// `t` estable entre renders, como el `t` real de react-i18next (memoizado
+// mientras no cambie el idioma) — un `t` nuevo en cada render re-dispararía
+// el efecto de carga inicial (está en sus dependencias) en cada actualización
+// de estado, algo que no ocurre con la librería real.
+const stableT = (key) => key;
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key) => key,
+    t: stableT,
   }),
 }));
 
@@ -142,6 +147,42 @@ describe('useAvatar', () => {
     expect(customToast.success).toHaveBeenCalledWith('toasts.avatarUpdated');
     expect(customToast.error).not.toHaveBeenCalled();
     expect(result.current.isSettingPreset).toBe(false);
+  });
+
+  it('does not let a stale in-flight loadUploads response overwrite a newer one', async () => {
+    const refetchUser = vi.fn().mockResolvedValue();
+    activateUploadedAvatarUseCase.execute.mockResolvedValue({});
+
+    // La llamada a loadUploads() del efecto de montaje se queda pendiente
+    // (simula una respuesta lenta que resolverá más tarde, fuera de orden).
+    let resolveMountCall;
+    listMyAvatarUploadsUseCase.execute.mockImplementationOnce(
+      () => new Promise((resolve) => { resolveMountCall = resolve; }),
+    );
+
+    const { result } = renderHook(() => useAvatar(mockUser, refetchUser));
+    await waitFor(() => expect(listMyAvatarUploadsUseCase.execute).toHaveBeenCalledTimes(1));
+
+    // Mientras la del montaje sigue en el aire, un handler dispara una segunda
+    // llamada que sí resuelve (con datos más recientes).
+    listMyAvatarUploadsUseCase.execute.mockResolvedValueOnce([
+      { id: 'newer-upload', is_active: true },
+    ]);
+
+    await act(async () => {
+      await result.current.handleActivateUpload('some-upload-id');
+    });
+
+    expect(result.current.uploads).toEqual([{ id: 'newer-upload', is_active: true }]);
+
+    // Ahora resuelve la del montaje (más antigua): no debe pisar el estado
+    // ya actualizado por la llamada más reciente.
+    await act(async () => {
+      resolveMountCall([{ id: 'older-upload', is_active: true }]);
+      await Promise.resolve();
+    });
+
+    expect(result.current.uploads).toEqual([{ id: 'newer-upload', is_active: true }]);
   });
 
   it('does not update state after unmounting mid-load', async () => {

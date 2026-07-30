@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import customToast from '../utils/toast';
 import {
@@ -26,10 +26,19 @@ export const useAvatar = (user, refetchUser) => {
   const [isUploading, setIsUploading] = useState(false);
   const [isRemoving, setIsRemoving] = useState(false);
 
+  // `loadUploads` se llama tanto desde el efecto de montaje como directamente
+  // desde cada handler de refresco: dos llamadas pueden quedar en vuelo a la
+  // vez y resolver en desorden. Un contador monotónico descarta cualquier
+  // respuesta que ya no sea la de la llamada más reciente.
+  const uploadsRequestIdRef = useRef(0);
+
   const loadUploads = useCallback(async () => {
+    const requestId = ++uploadsRequestIdRef.current;
     try {
       const myUploads = await listMyAvatarUploadsUseCase.execute();
-      setUploads(myUploads || []);
+      if (requestId === uploadsRequestIdRef.current) {
+        setUploads(myUploads || []);
+      }
     } catch (error) {
       console.error('Error loading avatar uploads:', error);
     }
