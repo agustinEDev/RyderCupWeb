@@ -1,5 +1,6 @@
-import { User, Clock } from 'lucide-react';
+import { Clock } from 'lucide-react';
 import FriendshipBadge from './FriendshipBadge';
+import Avatar from '../ui/Avatar';
 
 /**
  * FriendCard
@@ -25,29 +26,29 @@ const FriendCard = ({
   return (
     <div data-testid="friend-card" className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
       <div className="flex items-start justify-between gap-3">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
-            <div className="flex items-center gap-1.5">
-              <User className="h-4 w-4 text-gray-400" />
+        <div className="flex-1 min-w-0 flex items-start gap-3">
+          <Avatar userId={friendship.otherUserId} size="sm" />
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-1">
               <h3 className="text-sm font-semibold text-gray-900 truncate">{name}</h3>
+              {mode !== 'friend' && <FriendshipBadge status={friendship.status} />}
             </div>
-            {mode !== 'friend' && <FriendshipBadge status={friendship.status} />}
-          </div>
 
-          {friendship.createdAt && (
-            <div className="flex items-center gap-1.5 text-xs text-gray-400 mt-1.5">
-              <Clock className="h-3.5 w-3.5" />
-              <span>
-                {mode === 'friend'
-                  ? t('card.friendsSince', {
-                      date: new Date(friendship.respondedAt || friendship.createdAt).toLocaleDateString(),
-                    })
-                  : t('card.requestedAt', {
-                      date: new Date(friendship.createdAt).toLocaleDateString(),
-                    })}
-              </span>
-            </div>
-          )}
+            {friendship.createdAt && (
+              <div className="flex items-center gap-1.5 text-xs text-gray-400 mt-1.5">
+                <Clock className="h-3.5 w-3.5" />
+                <span>
+                  {mode === 'friend'
+                    ? t('card.friendsSince', {
+                        date: new Date(friendship.respondedAt || friendship.createdAt).toLocaleDateString(),
+                      })
+                    : t('card.requestedAt', {
+                        date: new Date(friendship.createdAt).toLocaleDateString(),
+                      })}
+                </span>
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="flex flex-col gap-2 flex-shrink-0">
