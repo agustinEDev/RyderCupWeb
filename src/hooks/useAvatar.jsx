@@ -31,12 +31,30 @@ export const useAvatar = (user, refetchUser) => {
   // vez y resolver en desorden. Un contador monotónico descarta cualquier
   // respuesta que ya no sea la de la llamada más reciente.
   const uploadsRequestIdRef = useRef(0);
+  // Además del orden, hay que evitar que una respuesta de OTRO usuario (p.ej.
+  // si esta misma instancia del hook sigue viva tras un cambio de sesión) se
+  // cuele en el estado: se compara también contra el usuario activo en el
+  // momento de aplicar la respuesta, no solo en el momento de pedirla.
+  const currentUserIdRef = useRef(user?.id ?? null);
+
+  useEffect(() => {
+    currentUserIdRef.current = user?.id ?? null;
+    // Al cambiar de usuario, no dejar restos del historial del usuario
+    // anterior visibles ni un instante mientras se carga el nuevo. Se difiere
+    // a un microtask (en vez de llamar a setUploads directamente aquí) para
+    // no disparar un re-render síncrono en cascada dentro del propio efecto.
+    Promise.resolve().then(() => setUploads([]));
+  }, [user]);
 
   const loadUploads = useCallback(async () => {
     const requestId = ++uploadsRequestIdRef.current;
+    const requestedForUserId = currentUserIdRef.current;
     try {
       const myUploads = await listMyAvatarUploadsUseCase.execute();
-      if (requestId === uploadsRequestIdRef.current) {
+      const isStillCurrent =
+        requestId === uploadsRequestIdRef.current &&
+        requestedForUserId === currentUserIdRef.current;
+      if (isStillCurrent) {
         setUploads(myUploads || []);
       }
     } catch (error) {

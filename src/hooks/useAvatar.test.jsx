@@ -185,6 +185,48 @@ describe('useAvatar', () => {
     expect(result.current.uploads).toEqual([{ id: 'newer-upload', is_active: true }]);
   });
 
+  it('discards a stale response from a previous user after switching accounts', async () => {
+    const userA = { id: 'user-a', avatar_source: 'NONE', avatar_preset_id: null };
+    const userB = { id: 'user-b', avatar_source: 'NONE', avatar_preset_id: null };
+    const refetchUser = vi.fn().mockResolvedValue();
+    activateUploadedAvatarUseCase.execute.mockResolvedValue({});
+
+    const { result, rerender } = renderHook(({ user }) => useAvatar(user, refetchUser), {
+      initialProps: { user: userA },
+    });
+    await waitFor(() => expect(result.current.isLoadingOptions).toBe(false));
+
+    // Una llamada para el usuario A (p.ej. el refresco tras reactivar una foto
+    // del historial) se queda pendiente.
+    let resolveStaleCall;
+    listMyAvatarUploadsUseCase.execute.mockImplementationOnce(
+      () => new Promise((resolve) => { resolveStaleCall = resolve; }),
+    );
+    let staleAction;
+    act(() => {
+      staleAction = result.current.handleActivateUpload('some-upload-id');
+    });
+    await waitFor(() => expect(resolveStaleCall).toBeDefined());
+
+    // Antes de que resuelva, la sesión cambia a un usuario distinto.
+    listMyAvatarUploadsUseCase.execute.mockResolvedValue([
+      { id: 'user-b-photo', is_active: true },
+    ]);
+    rerender({ user: userB });
+    await waitFor(() =>
+      expect(result.current.uploads).toEqual([{ id: 'user-b-photo', is_active: true }]),
+    );
+
+    // Ahora resuelve la llamada obsoleta del usuario A: no debe pisar el
+    // estado ya cargado para el usuario B.
+    await act(async () => {
+      resolveStaleCall([{ id: 'user-a-photo', is_active: true }]);
+      await staleAction;
+    });
+
+    expect(result.current.uploads).toEqual([{ id: 'user-b-photo', is_active: true }]);
+  });
+
   it('does not update state after unmounting mid-load', async () => {
     const refetchUser = vi.fn();
     let resolvePresets;
