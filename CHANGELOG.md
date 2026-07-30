@@ -7,30 +7,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
-### Added
-
-**User Avatars**
-
-- Nueva sección "Foto de perfil" en Editar Perfil (`AvatarPicker`): grid de 10 fotos de golf predefinidas, subida de foto propia (con validación de tamaño en cliente), galería del historial de subidas propias (hasta 5) para reactivar sin volver a subir, y botón para quitar el avatar activo.
-- Nuevo componente reutilizable `<Avatar userId size>` (fallback a icono placeholder ante error/404) usado en el perfil (`Profile`, `ProfileCard` del dashboard) y en la lista de amigos (`FriendCard`) — sustituye la imagen de placeholder externa hardcodeada que tenía `ProfileCard`.
-- Repositorio (`ApiAvatarRepository`/`IAvatarRepository`) y casos de uso (`ListAvatarPresetsUseCase`, `SetAvatarPresetUseCase`, `UploadAvatarUseCase`, `ListMyAvatarUploadsUseCase`, `ActivateUploadedAvatarUseCase`, `RemoveAvatarUseCase`) siguiendo el patrón Clean Architecture existente, wireados en `composition/index.js`.
-- `apiRequest()` soporta ahora bodies `FormData` (omite el header `Content-Type` para que el navegador añada el boundary multipart correcto) — primer uso de subida de ficheros reales en el proyecto.
-- Requiere el backend correspondiente (RyderCupAm, módulo `user` — presets, subida, historial).
-
-### Fixed
-
-- CSP de desarrollo/preview (`vite.config.js`) no incluía `http://localhost:8000` en `img-src` (solo en `connect-src`), por lo que las imágenes de avatar cargadas vía `<img>` fallaban silenciosamente en local aunque el `fetch()` de la lista de presets funcionara. En producción no afecta (el backend real es `https:`, ya cubierto por el comodín existente).
-
-### Removed
-
-- Botón "Ver Demo" de la landing: no llevaba a ninguna demo real, solo redirigía a `/login` (duplicando "Comenzar Gratis"). Issue FE #238.
-
-### Build / CI
-
-- CI Node.js: 20 → 22 (alinea con `node:22-alpine` de producción; desbloquea el bump de `jsdom` que requiere Node `^22.22.2`).
-- `jsdom`: 29.1.1 → 30.0.1, `@testing-library/jest-dom`: 6.9.1 → 7.0.0, `trufflesecurity/trufflehog`: 3.95.9 → 3.96.0.
-- Grupo de actualizaciones menores (9 paquetes): `@sentry/react`, `framer-motion`, `lucide-react`, `react`/`react-dom`, `react-i18next`, `@playwright/test`, `@vitejs/plugin-react`, `postcss`.
-
 ## [2.3.0] - 2026-07-30
 
 ### Added
