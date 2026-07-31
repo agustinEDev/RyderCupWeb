@@ -16,6 +16,7 @@ import {
 } from '../composition';
 import { CountryFlag } from '../utils/countryUtils';
 import { formatCountryName } from '../services/countries';
+import { validateCompetitionForm } from '../utils/competitionFormValidation';
 import GolfCourseSearchBox from '../components/golf_course/GolfCourseSearchBox';
 import GolfCourseRequestModal from '../components/golf_course/GolfCourseRequestModal';
 import customToast from '../utils/toast';
@@ -398,66 +399,29 @@ const CreateCompetition = () => {
     setMessage({ type: '', text: '' });
 
     // UI Validation
-    if (!formData.competitionName.trim()) {
-      setMessage({ type: 'error', text: t('create.errors.nameRequired') });
-      return;
-    }
-
-    if (!formData.teamOneName.trim() || !formData.teamTwoName.trim()) {
-      setMessage({ type: 'error', text: t('create.errors.teamNamesRequired') });
-      return;
-    }
-
-    if (!formData.startDate || !formData.endDate) {
-      setMessage({ type: 'error', text: t('create.errors.datesRequired') });
-      return;
-    }
-
-    if (new Date(formData.startDate) > new Date(formData.endDate)) {
-      setMessage({ type: 'error', text: t('create.errors.endDateAfterStart') });
-      return;
-    }
-
-    if (!formData.country) {
-      setMessage({ type: 'error', text: t('create.errors.countryRequired') });
-      return;
-    }
-
-    // Validate golf courses for all countries
-    const selectedCountries = [formData.country?.code];
-    if (formData.adjacentCountry1) selectedCountries.push(formData.adjacentCountry1);
-    if (formData.adjacentCountry2) selectedCountries.push(formData.adjacentCountry2);
-
-    // Check that each country has at least one golf course
-    const missingCourses = selectedCountries.filter(code => {
-      return !formData.golfCourses.some(gc => gc.countryCode === code);
-    });
-
-    if (missingCourses.length > 0) {
-      const countryNames = missingCourses.map(code => {
-        const country = allCountries.find(c => c.code === code) ||
-                        adjacentCountries1.find(c => c.code === code) ||
-                        adjacentCountries2.find(c => c.code === code);
-        return formatCountryName(country, i18n.language);
-      }).join(', ');
-      setMessage({ type: 'error', text: t('create.errors.golfCoursesRequired', { countries: countryNames }) });
-      return;
-    }
-
-    const numPlayers = Number.parseInt(formData.numberOfPlayers, 10);
-    if (Number.isNaN(numPlayers) || numPlayers < 2) {
-      setMessage({ type: 'error', text: t('create.errors.playersMinimum') });
-      return;
-    }
-
-    if (numPlayers > 100) {
-      setMessage({ type: 'error', text: t('create.errors.playersMaximum') });
+    const validationError = validateCompetitionForm(formData);
+    if (validationError) {
+      if (validationError.key === 'golfCoursesRequired') {
+        const countryNames = validationError.missingCourseCountryCodes.map(code => {
+          const country = allCountries.find(c => c.code === code) ||
+                          adjacentCountries1.find(c => c.code === code) ||
+                          adjacentCountries2.find(c => c.code === code);
+          return formatCountryName(country, i18n.language);
+        }).join(', ');
+        setMessage({
+          type: 'error',
+          text: t(`create.errors.${validationError.key}`, { countries: countryNames })
+        });
+      } else {
+        setMessage({ type: 'error', text: t(`create.errors.${validationError.key}`) });
+      }
       return;
     }
 
     setIsSubmitting(true);
 
     try {
+      const numPlayers = Number.parseInt(formData.numberOfPlayers, 10);
       const countries = [];
       if (formData.adjacentCountry1) {
         countries.push(formData.adjacentCountry1);
