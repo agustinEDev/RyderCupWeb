@@ -49,6 +49,7 @@ import RevokeDeviceUseCase from '../application/use_cases/device/RevokeDeviceUse
 // Competition Use Cases
 import ApiCompetitionRepository from '../infrastructure/repositories/ApiCompetitionRepository';
 import CreateCompetitionUseCase from '../application/use_cases/competition/CreateCompetitionUseCase';
+import CreateCompetitionWithGolfCoursesUseCase from '../application/use_cases/competition/CreateCompetitionWithGolfCoursesUseCase';
 import UpdateCompetitionUseCase from '../application/use_cases/competition/UpdateCompetitionUseCase';
 import ListUserCompetitionsUseCase from '../application/use_cases/competition/ListUserCompetitionsUseCase';
 import GetCompetitionDetailUseCase from '../application/use_cases/competition/GetCompetitionDetailUseCase';
@@ -186,6 +187,7 @@ const unlinkGoogleAccountUseCase = new UnlinkGoogleAccountUseCase({ authReposito
 const logoutUseCase = new LogoutUseCase({ authRepository: apiAuthRepository });
 const resendVerificationEmailUseCase = new ResendVerificationEmailUseCase({ authRepository: apiAuthRepository });
 const createCompetitionUseCase = new CreateCompetitionUseCase({ competitionRepository: apiCompetitionRepository });
+const createCompetitionWithGolfCoursesUseCase = new CreateCompetitionWithGolfCoursesUseCase({ competitionRepository: apiCompetitionRepository });
 const updateCompetitionUseCase = new UpdateCompetitionUseCase({ competitionRepository: apiCompetitionRepository });
 const listUserCompetitionsUseCase = new ListUserCompetitionsUseCase({ competitionRepository: apiCompetitionRepository });
 const getCompetitionDetailUseCase = new GetCompetitionDetailUseCase({ competitionRepository: apiCompetitionRepository });
@@ -316,6 +318,7 @@ export {
   logoutUseCase,
   resendVerificationEmailUseCase,
   createCompetitionUseCase,
+  createCompetitionWithGolfCoursesUseCase,
   updateCompetitionUseCase,
   listUserCompetitionsUseCase,
   getCompetitionDetailUseCase,

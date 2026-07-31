@@ -5,14 +5,13 @@ import { useTranslation } from 'react-i18next';
 import HeaderAuth from '../components/layout/HeaderAuth';
 import { useAuth } from '../hooks/useAuth';
 import {
-  createCompetitionUseCase,
+  createCompetitionWithGolfCoursesUseCase,
   updateCompetitionUseCase,
   getCompetitionDetailUseCase,
   getCompetitionGolfCoursesUseCase,
   fetchCountriesUseCase,
   getAdjacentCountriesUseCase,
-  createGolfCourseRequestUseCase,
-  addGolfCourseToCompetitionUseCase
+  createGolfCourseRequestUseCase
 } from '../composition';
 import { CountryFlag } from '../utils/countryUtils';
 import { formatCountryName } from '../services/countries';
@@ -458,26 +457,13 @@ const CreateCompetition = () => {
         }, 1000);
 
       } else {
-        // CREATE MODE: Create new competition
-        // STEP 1: Create competition
-        const createdCompetition = await createCompetitionUseCase.execute(payload);
-
-        // STEP 2: Associate each golf course one by one
-        let successCount = 0;
-        let failedCourses = [];
-
-        for (const gc of formData.golfCourses) {
-          try {
-            await addGolfCourseToCompetitionUseCase.execute(
-              createdCompetition.id,
-              gc.course.id
-            );
-            successCount++;
-          } catch (courseError) {
-            console.error(`Error adding golf course ${gc.course.name}:`, courseError);
-            failedCourses.push(gc.course.name);
-          }
-        }
+        // CREATE MODE: Create new competition and attach its golf courses
+        const golfCourses = formData.golfCourses.map((gc) => ({
+          id: gc.course.id,
+          name: gc.course.name
+        }));
+        const { competition: createdCompetition, successCount, failedCourses } =
+          await createCompetitionWithGolfCoursesUseCase.execute(payload, golfCourses);
 
         // Show appropriate message based on results
         if (failedCourses.length === 0) {
