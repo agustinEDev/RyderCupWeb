@@ -12,6 +12,13 @@ import { handleCsrfLogout } from '../utils/csrfLogout'; // v1.13.0: Centralized 
 const API_URL = window.APP_CONFIG?.API_BASE_URL || import.meta.env.VITE_API_BASE_URL || '';
 
 /**
+ * Get the configured API base URL (for building direct <img>/<a> URLs that
+ * don't go through apiRequest, e.g. avatar images).
+ * @returns {string}
+ */
+export const getApiBaseUrl = () => API_URL;
+
+/**
  * Make authenticated API request with httpOnly cookies and automatic token refresh
  * @param {string} endpoint - API endpoint (e.g., '/api/v1/competitions')
  * @param {object} options - Fetch options
@@ -30,7 +37,10 @@ const API_URL = window.APP_CONFIG?.API_BASE_URL || import.meta.env.VITE_API_BASE
  * - Queues multiple 401s to prevent duplicate refresh calls
  */
 export const apiRequest = async (endpoint, options = {}) => {
-  const defaultHeaders = {
+  // FormData (file uploads): the browser must set its own Content-Type header
+  // with the multipart boundary — setting it manually here would break parsing.
+  const isFormData = options.body instanceof FormData;
+  const defaultHeaders = isFormData ? {} : {
     'Content-Type': 'application/json',
   };
 

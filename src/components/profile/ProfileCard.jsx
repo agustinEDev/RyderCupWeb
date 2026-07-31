@@ -1,4 +1,9 @@
+import { useNavigate } from 'react-router';
+import { Pencil } from 'lucide-react';
+import Avatar from '../ui/Avatar';
+
 const ProfileCard = ({ user }) => {
+  const navigate = useNavigate();
   const fullName = user ? `${user.first_name} ${user.last_name}` : 'User';
   const email = user?.email || 'No email';
   const handicap = user?.handicap !== null && user?.handicap !== undefined
@@ -7,7 +12,7 @@ const ProfileCard = ({ user }) => {
 
   return (
     <div className="p-4">
-      <div className="flex items-stretch justify-between gap-4 rounded-lg bg-white border border-gray-200 p-4 hover:shadow-md transition-shadow">
+      <div className="flex items-center justify-between gap-4 rounded-lg bg-white border border-gray-200 p-4 hover:shadow-md transition-shadow">
         <div className="flex flex-col gap-1 flex-[2_2_0px]">
           <p className="text-gray-900 text-base font-bold leading-tight">
             {fullName}
@@ -16,12 +21,18 @@ const ProfileCard = ({ user }) => {
             {email} • Handicap: <span className="font-semibold text-primary">{handicap}</span>
           </p>
         </div>
-        <div
-          className="w-full bg-center bg-no-repeat aspect-video bg-cover rounded-lg flex-1"
-          style={{
-            backgroundImage: `url("https://lh3.googleusercontent.com/aida-public/AB6AXuCj4WSOg6hXDZFGfTANqHkzJ62WYpLEc5H1vBHazpEnoltPPQTBtna05CNSae1gjSi9SNT4OmM4Whhyu34JFxh-cAGDxiNa_GmgSglXdP4eGS6k0INHwrsGPrVJd9C3S8RssvatBLGz0oewnA2PzN8ZBNN0RIPjxbIt7v-vE1LAvTRSNGNpDyX5sQDwCcfQUF4uMa6fzlnda6-TdjvQuF_NqIyfSnPlcbV_9GwWTscPuUUKTXSJaD_Vs80qBxnaQKpfnZmIxNXgzwGt")`
-          }}
-        ></div>
+        <button
+          type="button"
+          onClick={() => navigate('/profile/edit')}
+          title="Change profile photo"
+          aria-label="Change profile photo"
+          className="relative rounded-full group focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+        >
+          <Avatar userId={user?.id} size="lg" version={user?.updated_at} />
+          <span className="absolute inset-0 flex items-center justify-center rounded-full bg-black/0 group-hover:bg-black/40 transition-colors">
+            <Pencil className="w-5 h-5 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+          </span>
+        </button>
       </div>
     </div>
   );

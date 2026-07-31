@@ -1,0 +1,156 @@
+{
+  "create": {
+    "title": "New quick match",
+    "step": "Step {{current}} of {{total}}",
+    "cancel": "Cancel",
+    "errors": {
+      "generic": "Something went wrong. Please try again."
+    },
+    "course": {
+      "heading": "Course and format",
+      "nameLabel": "Name (optional)",
+      "namePlaceholder": "E.g. Friday round with the club",
+      "modeLabel": "Match type",
+      "modeMatchPlay": "Match play (Ryder Cup)",
+      "modeFreePlay": "Free play",
+      "formatLabel": "Format",
+      "formatSingles": "Singles (1 vs 1)",
+      "formatFourball": "Fourball (2 vs 2, best ball)",
+      "formatFoursomes": "Foursomes (2 vs 2, alternate shot)",
+      "formatMedal": "Medal (stroke play, lowest net score wins)",
+      "formatStableford": "Stableford (points-based)",
+      "courseLabel": "Golf course",
+      "yourTeeLabel": "Your tee",
+      "allowanceLabel": "Allowance (%)",
+      "next": "Next",
+      "creating": "Creating...",
+      "errorCourseRequired": "Select a golf course",
+      "errorTeeRequired": "Select a tee to continue"
+    },
+    "participants": {
+      "heading": "Add participants",
+      "rosterTitle": "Players ({{count}}/{{max}})",
+      "teeLabel": "Tee",
+      "tabFriends": "Friends",
+      "tabGuest": "Guest",
+      "noFriends": "You don't have any friends added yet",
+      "addFriend": "Add",
+      "addFriendNamed": "Add {{name}}",
+      "guestFirstName": "First name",
+      "guestLastName": "Last name",
+      "guestHandicap": "Handicap (optional)",
+      "addGuest": "Add guest",
+      "team": "Team",
+      "teamA": "Team A",
+      "teamB": "Team B",
+      "remove": "Remove",
+      "rosterFull": "This match already has the maximum players for this format",
+      "errorTeeRequired": "Select a tee before adding the player",
+      "back": "Back",
+      "next": "Next",
+      "creatorBadge": "You",
+      "guestBadge": "Guest"
+    },
+    "scorers": {
+      "heading": "Choose scorers",
+      "description": "Choose 1 to 4 registered players who will record scores. You always score.",
+      "back": "Back",
+      "next": "Next",
+      "errorMinScorers": "Select at least one scorer"
+    },
+    "summary": {
+      "heading": "Match summary",
+      "description": "Review the match before confirming. You can adjust any player's handicap.",
+      "courseLabel": "Course",
+      "formatLabel": "Format",
+      "allowanceLabel": "Allowance",
+      "participantsLabel": "Players",
+      "handicapPlaceholder": "No handicap",
+      "editHandicapNamed": "Edit {{name}}'s handicap",
+      "scorersLabel": "Scorers",
+      "back": "Back",
+      "start": "Confirm and start",
+      "starting": "Starting..."
+    },
+    "handicapPanel": {
+      "placeholder": "Enter handicap",
+      "errorRange": "Must be between -10 and 54",
+      "toggleSign": "Toggle sign",
+      "backspace": "Backspace",
+      "confirm": "Confirm",
+      "close": "Close"
+    }
+  },
+  "dashboard": {
+    "ctaTitle": "Impromptu round?",
+    "ctaDesc": "Start a quick match with friends, no tournament needed",
+    "ctaButton": "Create quick match",
+    "viewHistory": "View my quick matches"
+  },
+  "history": {
+    "title": "My Quick Matches",
+    "empty": "You haven't played any quick matches yet.",
+    "format": {
+      "SINGLES": "Singles",
+      "FOURBALL": "Fourball",
+      "FOURSOMES": "Foursomes",
+      "MEDAL": "Medal",
+      "STABLEFORD": "Stableford"
+    },
+    "status": {
+      "PENDING": "Pending",
+      "IN_PROGRESS": "In progress",
+      "COMPLETED": "Completed",
+      "CANCELLED": "Cancelled"
+    }
+  },
+  "scoring": {
+    "matchHeader": "Quick match",
+    "loading": "Loading match...",
+    "notAScorer": "You're not a scorer in this match. You can still follow the scorecard.",
+    "tabs": {
+      "input": "Input",
+      "classification": "Classification",
+      "scorecard": "Scorecard"
+    },
+    "navigation": {
+      "previous": "Previous",
+      "next": "Next"
+    },
+    "yourGroup": "You're scoring for",
+    "backToDashboard": "Back to dashboard",
+    "finish": {
+      "button": "Finish match",
+      "confirmTitle": "Finish the match?",
+      "confirmBody": "It will be marked as completed. You'll still be able to view the scorecard afterwards.",
+      "confirm": "Finish",
+      "cancel": "Cancel",
+      "completed": "Match completed"
+    },
+    "classification": {
+      "title": "Classification",
+      "player": "Player",
+      "points": "Pts",
+      "strokes": "Strokes",
+      "netStrokes": "Net strokes",
+      "you": "You",
+      "noHolesYet": "No holes completed yet",
+      "allSquare": "All square",
+      "holesUp": "{{count}} UP",
+      "decidedResult": "{{lead}}&{{remaining}}",
+      "leads": "{{name}} leads",
+      "holesPlayed": "{{count}} hole(s) played"
+    },
+    "scorecard": {
+      "strokeReceived": "Receives {{count}} extra stroke(s) on this hole",
+      "strokeGiven": "Gives back {{count}} stroke(s) on this hole",
+      "holePoints": "{{count}} Stableford point(s) on this hole",
+      "holeNetStrokes": "{{count}} net stroke(s) on this hole"
+    },
+    "errors": {
+      "generic": "Something went wrong. Please try again.",
+      "notFound": "Quick match not found"
+    },
+    "retry": "Retry"
+  }
+}

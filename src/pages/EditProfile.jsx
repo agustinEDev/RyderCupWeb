@@ -1,7 +1,9 @@
 import { useNavigate } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import HeaderAuth from '../components/layout/HeaderAuth';
+import AvatarPicker from '../components/profile/AvatarPicker';
 import { useEditProfile } from '../hooks/useEditProfile'; // <- ¡NUEVA IMPORTACIÓN!
+import { useAvatar } from '../hooks/useAvatar';
 import { canUseRFEG, CountryFlag } from '../utils/countryUtils';
 import { formatCountryName } from '../services/countries';
 
@@ -10,6 +12,7 @@ const EditProfile = () => {
   // Toda la lógica ahora reside en el hook. Obtenemos todo lo que necesitamos de él.
   const {
     user,
+    refetchUser,
     formData,
     isLoading,
     isSaving,
@@ -29,6 +32,19 @@ const EditProfile = () => {
     handleLinkGoogle,
     handleUnlinkGoogle,
   } = useEditProfile();
+
+  const {
+    presets: avatarPresets,
+    uploads: avatarUploads,
+    isLoadingOptions: isLoadingAvatarOptions,
+    isSettingPreset: isSettingAvatarPreset,
+    isUploading: isUploadingAvatar,
+    isRemoving: isRemovingAvatar,
+    handleSelectPreset: handleSelectAvatarPreset,
+    handleUpload: handleUploadAvatar,
+    handleActivateUpload: handleActivateAvatarUpload,
+    handleRemove: handleRemoveAvatar,
+  } = useAvatar(user, refetchUser);
 
   const navigate = useNavigate();
 
@@ -91,6 +107,22 @@ const EditProfile = () => {
                 </svg>
                 {isRefreshing ? t('edit.refreshing') : t('edit.refreshData')}
               </button>
+            </div>
+
+            <div className="px-4 mb-6">
+              <AvatarPicker
+                user={user}
+                presets={avatarPresets}
+                uploads={avatarUploads}
+                isLoadingOptions={isLoadingAvatarOptions}
+                isSettingPreset={isSettingAvatarPreset}
+                isUploading={isUploadingAvatar}
+                isRemoving={isRemovingAvatar}
+                onSelectPreset={handleSelectAvatarPreset}
+                onUpload={handleUploadAvatar}
+                onActivateUpload={handleActivateAvatarUpload}
+                onRemove={handleRemoveAvatar}
+              />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 px-4">

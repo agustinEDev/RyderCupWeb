@@ -35,11 +35,15 @@ vi.mock('react-router', async () => {
 const mockListMyInvitations = vi.fn();
 const mockListEnrollments = vi.fn();
 const mockGetSchedule = vi.fn();
+const mockListPendingFriendRequests = vi.fn();
+const mockListMyQuickMatches = vi.fn();
 
 vi.mock('../../composition', () => ({
   listMyInvitationsUseCase: { execute: (...args) => mockListMyInvitations(...args) },
   listEnrollmentsUseCase: { execute: (...args) => mockListEnrollments(...args) },
   getScheduleUseCase: { execute: (...args) => mockGetSchedule(...args) },
+  listPendingFriendRequestsUseCase: { execute: (...args) => mockListPendingFriendRequests(...args) },
+  listMyQuickMatchesUseCase: { execute: (...args) => mockListMyQuickMatches(...args) },
 }));
 
 const baseUser = {
@@ -68,6 +72,41 @@ describe('PendingActionsCard', () => {
     mockListMyInvitations.mockResolvedValue({ invitations: [], totalCount: 0 });
     mockListEnrollments.mockResolvedValue([]);
     mockGetSchedule.mockResolvedValue({ rounds: [] });
+    mockListPendingFriendRequests.mockResolvedValue({ friendships: [], totalCount: 0 });
+    mockListMyQuickMatches.mockResolvedValue({ quickMatches: [], totalCount: 0, page: 1, limit: 20 });
+  });
+
+  it('should show active quick matches and navigate to their scoring page', async () => {
+    mockListMyQuickMatches.mockResolvedValue({
+      quickMatches: [{ id: 'qm-1', matchFormat: 'SINGLES', status: 'IN_PROGRESS' }],
+      totalCount: 1,
+      page: 1,
+      limit: 20,
+    });
+
+    renderCard();
+
+    await waitFor(() => {
+      expect(screen.getByTestId('active-quick-match-qm-1')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByTestId('active-quick-match-qm-1'));
+    expect(mockNavigate).toHaveBeenCalledWith('/quick-matches/qm-1/scoring');
+  });
+
+  it('should show the quick match name instead of the format when it has one', async () => {
+    mockListMyQuickMatches.mockResolvedValue({
+      quickMatches: [{ id: 'qm-1', matchFormat: 'SINGLES', status: 'IN_PROGRESS', name: 'Viernes con Rafa' }],
+      totalCount: 1,
+      page: 1,
+      limit: 20,
+    });
+
+    renderCard();
+
+    await waitFor(() => {
+      expect(screen.getByText('Viernes con Rafa')).toBeInTheDocument();
+    });
   });
 
   it('should not render when there are no pending items', async () => {

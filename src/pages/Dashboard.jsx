@@ -1,23 +1,26 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router';
 import { motion } from 'framer-motion';
-import { Trophy, Users, User, TrendingUp, Award, Search } from 'lucide-react';
+import { Trophy, Users, User, TrendingUp, Award, Search, UserPlus, Zap } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import HeaderAuth from '../components/layout/HeaderAuth';
 import ProfileCard from '../components/profile/ProfileCard';
 import HandicapRequestModal from '../components/profile/HandicapRequestModal';
 import EmailVerificationBanner from '../components/EmailVerificationBanner';
 import PendingActionsCard from '../components/dashboard/PendingActionsCard';
+import CreateQuickMatchModal from '../components/quick_match/CreateQuickMatchModal';
 import { useAuth } from '../hooks/useAuth';
 import { listUserCompetitionsUseCase } from '../composition';
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const { t } = useTranslation('dashboard');
+  const { t: tQuickMatch } = useTranslation('quickMatch');
   const { user, loading: isLoadingUser, refetch: refetchUser } = useAuth();
   const [competitions, setCompetitions] = useState([]);
   const [isLoadingCompetitions, setIsLoadingCompetitions] = useState(true);
   const [showHandicapModal, setShowHandicapModal] = useState(false);
+  const [showQuickMatchModal, setShowQuickMatchModal] = useState(false);
   const [handicapPending, setHandicapPending] = useState(
     () => typeof localStorage !== 'undefined' && localStorage.getItem('handicap_pending') === 'true'
   );
@@ -42,6 +45,11 @@ const Dashboard = () => {
     setHandicapPending(true);
     localStorage.setItem('handicap_pending', 'true');
   }, []);
+
+  const handleQuickMatchStarted = useCallback((quickMatchId) => {
+    setShowQuickMatchModal(false);
+    navigate(`/quick-matches/${quickMatchId}/scoring`);
+  }, [navigate]);
 
   useEffect(() => {
     const loadDashboardData = async () => {
@@ -98,6 +106,13 @@ const Dashboard = () => {
         onClose={handleHandicapDismiss}
         onSaved={handleHandicapSaved}
       />
+      {showQuickMatchModal && (
+        <CreateQuickMatchModal
+          onClose={() => setShowQuickMatchModal(false)}
+          onStarted={handleQuickMatchStarted}
+          currentUser={user}
+        />
+      )}
       <div className="layout-container flex h-full grow flex-col">
         <HeaderAuth user={user} />
 
@@ -126,6 +141,42 @@ const Dashboard = () => {
                 <EmailVerificationBanner userEmail={user.email} />
               </div>
             )}
+
+            {/* Quick access: create a quick match */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.05 }}
+              className="px-4 mb-2"
+            >
+              <button
+                type="button"
+                onClick={() => setShowQuickMatchModal(true)}
+                data-testid="quick-match-cta"
+                className="w-full flex items-center justify-between gap-3 rounded-xl border-2 border-primary-200 bg-gradient-to-r from-primary-50 to-blue-50 p-5 shadow-sm hover:shadow-md transition-shadow text-left"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="p-1.5 bg-primary-500 rounded-lg">
+                    <Zap className="w-4 h-4 text-white" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-primary-900">{tQuickMatch('dashboard.ctaTitle')}</p>
+                    <p className="text-xs text-primary-700">{tQuickMatch('dashboard.ctaDesc')}</p>
+                  </div>
+                </div>
+                <span className="flex-shrink-0 px-3 py-1.5 bg-primary-500 text-white text-xs font-semibold rounded-lg">
+                  {tQuickMatch('dashboard.ctaButton')}
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={() => navigate('/quick-matches')}
+                data-testid="quick-match-history-link"
+                className="mt-1.5 text-xs text-primary-700 hover:text-primary-900 hover:underline"
+              >
+                {tQuickMatch('dashboard.viewHistory')}
+              </button>
+            </motion.div>
 
             {/* Pending Actions */}
             <PendingActionsCard
@@ -287,6 +338,43 @@ const Dashboard = () => {
                       {t('quickActions.browseCompetitions')}
                     </h3>
                     <p className="text-gray-500 text-sm">{t('quickActions.browseCompetitionsDesc')}</p>
+                  </div>
+                </motion.button>
+
+                {/* Friends Card */}
+                <motion.button
+                  onClick={() => navigate('/friends')}
+                  whileHover={{ scale: 1.02, y: -2 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="flex items-center gap-4 p-6 bg-white border-2 border-gray-200 rounded-xl hover:border-pink-500 hover:shadow-lg transition-all text-left group"
+                >
+                  <div className="p-3 bg-pink-100 rounded-lg group-hover:bg-pink-500 transition-colors">
+                    <UserPlus className="w-7 h-7 text-pink-600 group-hover:text-white transition-colors" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-gray-900 font-bold text-lg group-hover:text-pink-600 transition-colors">
+                      {t('quickActions.friends')}
+                    </h3>
+                    <p className="text-gray-500 text-sm">{t('quickActions.friendsDesc')}</p>
+                  </div>
+                </motion.button>
+
+                {/* Quick Match Card */}
+                <motion.button
+                  onClick={() => setShowQuickMatchModal(true)}
+                  whileHover={{ scale: 1.02, y: -2 }}
+                  whileTap={{ scale: 0.98 }}
+                  data-testid="quick-match-card"
+                  className="flex items-center gap-4 p-6 bg-white border-2 border-gray-200 rounded-xl hover:border-primary-500 hover:shadow-lg transition-all text-left group"
+                >
+                  <div className="p-3 bg-primary-100 rounded-lg group-hover:bg-primary-500 transition-colors">
+                    <Zap className="w-7 h-7 text-primary-600 group-hover:text-white transition-colors" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-gray-900 font-bold text-lg group-hover:text-primary-600 transition-colors">
+                      {t('quickActions.quickMatch')}
+                    </h3>
+                    <p className="text-gray-500 text-sm">{t('quickActions.quickMatchDesc')}</p>
                   </div>
                 </motion.button>
               </div>

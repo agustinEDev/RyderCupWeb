@@ -21,7 +21,11 @@
     "myProfile": "My Profile",
     "myProfileDesc": "View and update your information",
     "browseCompetitions": "Browse Competitions",
-    "browseCompetitionsDesc": "Discover tournaments to join"
+    "browseCompetitionsDesc": "Discover tournaments to join",
+    "friends": "Friends",
+    "friendsDesc": "Manage your friends and requests",
+    "quickMatch": "Quick Match",
+    "quickMatchDesc": "Play a round with friends without creating a tournament"
   },
   "pendingActions": {
     "title": "Requires Your Attention",
@@ -29,6 +33,9 @@
     "invitations_one": "{{count}} pending invitation",
     "invitations_other": "{{count}} pending invitations",
     "viewInvitations": "View Invitations",
+    "friendRequests": "Friend Requests",
+    "friendRequestsDesc_one": "{{count}} pending friend request",
+    "friendRequestsDesc_other": "{{count}} pending friend requests",
     "enrollments": "Enrollment Requests",
     "enrollments_one": "{{count}} enrollment request in {{name}}",
     "enrollments_other": "{{count}} enrollment requests in {{name}}",
@@ -38,7 +45,15 @@
     "matches_other": "{{count}} upcoming matches",
     "viewSchedule": "View Schedule",
     "handicap": "Set Up Your Handicap",
-    "handicapDesc": "Complete your golf profile to participate in tournaments"
+    "handicapDesc": "Complete your golf profile to participate in tournaments",
+    "quickMatchInProgress": "Quick Match In Progress",
+    "quickMatchFormat": {
+      "SINGLES": "Singles",
+      "FOURBALL": "Fourball",
+      "FOURSOMES": "Foursomes",
+      "MEDAL": "Medal",
+      "STABLEFORD": "Stableford"
+    }
   },
   "upcomingMatches": {
     "title": "My Upcoming Matches",
