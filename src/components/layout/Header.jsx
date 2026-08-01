@@ -1,10 +1,12 @@
 import { useState, useRef, useEffect } from 'react';
-import { Link } from 'react-router';
+import { Link, useLocation } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import LanguageSwitcher from '../ui/LanguageSwitcher';
 
 const Header = () => {
   const { t } = useTranslation('common');
+  const location = useLocation();
+  const isLandingPage = location.pathname === '/';
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const mobileMenuRef = useRef(null);
 
@@ -31,18 +33,33 @@ const Header = () => {
 
   return (
     <header className="flex items-center justify-between whitespace-nowrap border-b border-solid border-b-gray-200 px-4 md:px-10 py-3 overflow-visible">
-      <Link to="/" className="flex items-center gap-3 text-gray-900 hover:opacity-80 transition-opacity">
-        <div className="h-10 w-10 md:h-12 md:w-12 flex-shrink-0 flex items-center justify-center overflow-visible">
-          <img
-            src="/images/rcf-monogram-green.jpeg"
-            alt="RCF Logo"
-            className="block h-full w-auto object-contain transform -translate-y-[2px] md:-translate-y-[2px] scale-105 md:scale-110"
-          />
+      {isLandingPage ? (
+        <div className="flex items-center gap-3 text-gray-900" data-testid="header-logo-static">
+          <div className="h-10 w-10 md:h-12 md:w-12 flex-shrink-0 flex items-center justify-center overflow-visible">
+            <img
+              src="/images/rcf-monogram-green.jpeg"
+              alt="RCF Logo"
+              className="block h-full w-auto object-contain transform -translate-y-[2px] md:-translate-y-[2px] scale-105 md:scale-110"
+            />
+          </div>
+          <h2 className="text-gray-900 text-lg md:text-xl font-bold leading-tight tracking-tight font-poppins">
+            RyderCupFriends
+          </h2>
         </div>
-        <h2 className="text-gray-900 text-lg md:text-xl font-bold leading-tight tracking-tight font-poppins">
-          RyderCupFriends
-        </h2>
-      </Link>
+      ) : (
+        <Link to="/" className="flex items-center gap-3 text-gray-900 hover:opacity-80 transition-opacity">
+          <div className="h-10 w-10 md:h-12 md:w-12 flex-shrink-0 flex items-center justify-center overflow-visible">
+            <img
+              src="/images/rcf-monogram-green.jpeg"
+              alt="RCF Logo"
+              className="block h-full w-auto object-contain transform -translate-y-[2px] md:-translate-y-[2px] scale-105 md:scale-110"
+            />
+          </div>
+          <h2 className="text-gray-900 text-lg md:text-xl font-bold leading-tight tracking-tight font-poppins">
+            RyderCupFriends
+          </h2>
+        </Link>
+      )}
 
       {/* Desktop Menu */}
       <div className="hidden md:flex flex-1 justify-end gap-8">
