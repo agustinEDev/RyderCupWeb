@@ -58,7 +58,9 @@ describe('ScoringMapper', () => {
             {
               user_id: 'u1',
               own_score: 5,
+              own_submitted: true,
               marker_score: 5,
+              marker_submitted: true,
               validation_status: 'match',
               net_score: 4,
               strokes_received_this_hole: 1,
@@ -66,7 +68,9 @@ describe('ScoringMapper', () => {
             {
               user_id: 'u2',
               own_score: 4,
+              own_submitted: true,
               marker_score: 4,
+              marker_submitted: true,
               validation_status: 'match',
               net_score: 4,
               strokes_received_this_hole: 0,
@@ -152,7 +156,9 @@ describe('ScoringMapper', () => {
       expect(dto.scores[0].playerScores).toHaveLength(2);
       expect(dto.scores[0].playerScores[0].userId).toBe('u1');
       expect(dto.scores[0].playerScores[0].ownScore).toBe(5);
+      expect(dto.scores[0].playerScores[0].ownSubmitted).toBe(true);
       expect(dto.scores[0].playerScores[0].markerScore).toBe(5);
+      expect(dto.scores[0].playerScores[0].markerSubmitted).toBe(true);
       expect(dto.scores[0].playerScores[0].validationStatus).toBe('match');
       expect(dto.scores[0].playerScores[0].netScore).toBe(4);
       expect(dto.scores[0].playerScores[0].strokesReceivedThisHole).toBe(1);
@@ -228,6 +234,8 @@ describe('ScoringMapper', () => {
       const dto = ScoringMapper.toScoringViewDTO(data);
 
       expect(dto.scores[0].playerScores[0].validationStatus).toBe('pending');
+      expect(dto.scores[0].playerScores[0].ownSubmitted).toBe(false);
+      expect(dto.scores[0].playerScores[0].markerSubmitted).toBe(false);
       expect(dto.scores[0].playerScores[0].markerScore).toBeNull();
       expect(dto.scores[0].playerScores[0].netScore).toBeNull();
       expect(dto.scores[0].playerScores[0].strokesReceivedThisHole).toBe(0);
