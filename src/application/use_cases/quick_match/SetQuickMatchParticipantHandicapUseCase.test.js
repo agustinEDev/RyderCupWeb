@@ -49,4 +49,26 @@ describe('SetQuickMatchParticipantHandicapUseCase', () => {
 
     expect(mockRepo.setParticipantHandicap).toHaveBeenCalledWith('qm-1', 'user-2', null);
   });
+
+  it('should throw if handicap is below the valid range', async () => {
+    await expect(useCase.execute('qm-1', 'user-2', -10.1)).rejects.toThrow(
+      'Invalid handicap value. Must be between -10.0 and 54.0'
+    );
+    expect(mockRepo.setParticipantHandicap).not.toHaveBeenCalled();
+  });
+
+  it('should throw if handicap is above the valid range', async () => {
+    await expect(useCase.execute('qm-1', 'user-2', 54.1)).rejects.toThrow(
+      'Invalid handicap value. Must be between -10.0 and 54.0'
+    );
+    expect(mockRepo.setParticipantHandicap).not.toHaveBeenCalled();
+  });
+
+  it('should accept handicap at the range boundaries', async () => {
+    await useCase.execute('qm-1', 'user-2', -10);
+    await useCase.execute('qm-1', 'user-2', 54);
+
+    expect(mockRepo.setParticipantHandicap).toHaveBeenCalledWith('qm-1', 'user-2', -10);
+    expect(mockRepo.setParticipantHandicap).toHaveBeenCalledWith('qm-1', 'user-2', 54);
+  });
 });

@@ -28,10 +28,29 @@ describe('HoleInput', () => {
     expect(screen.getByTestId('hole-input')).toHaveTextContent('7');
   });
 
-  it('should show par as default score value', () => {
+  it('should show a dash (not the par) when no score has been submitted yet', () => {
     render(<HoleInput {...defaultProps} />);
+    expect(screen.getByTestId('own-score-value')).toHaveTextContent('-');
+    expect(screen.getByTestId('marked-score-value')).toHaveTextContent('-');
+  });
+
+  it('should show the actual submitted score, styled differently from the unset state', () => {
+    render(
+      <HoleInput
+        {...defaultProps}
+        playerScore={{ ownScore: 4, ownSubmitted: true }}
+        markedPlayerScore={{ markerScore: 4, markerSubmitted: true }}
+      />
+    );
     expect(screen.getByTestId('own-score-value')).toHaveTextContent('4');
-    expect(screen.getByTestId('marked-score-value')).toHaveTextContent('4');
+    expect(screen.getByTestId('own-score-value').className).toContain('text-gray-900');
+    expect(screen.getByTestId('own-score-button').className).not.toContain('border-dashed');
+  });
+
+  it('should style the unset own score button as a dashed placeholder', () => {
+    render(<HoleInput {...defaultProps} />);
+    expect(screen.getByTestId('own-score-button').className).toContain('border-dashed');
+    expect(screen.getByTestId('own-score-value').className).toContain('text-gray-400');
   });
 
   it('should open panel on own score button click and select a value', () => {
@@ -40,7 +59,7 @@ describe('HoleInput', () => {
     // Panel is open — click button "5"
     fireEvent.click(screen.getByRole('button', { name: /5/ }));
     expect(screen.getByTestId('own-score-value')).toHaveTextContent('5');
-    expect(defaultProps.onScoreChange).toHaveBeenCalledWith({ ownScore: 5, markedScore: 4 });
+    expect(defaultProps.onScoreChange).toHaveBeenCalledWith({ ownScore: 5, markedScore: undefined });
   });
 
   it('should select a lower value via own score panel', () => {
@@ -62,7 +81,7 @@ describe('HoleInput', () => {
     fireEvent.click(screen.getByTestId('marked-score-button'));
     fireEvent.click(screen.getByRole('button', { name: /5/ }));
     expect(screen.getByTestId('marked-score-value')).toHaveTextContent('5');
-    expect(defaultProps.onScoreChange).toHaveBeenCalledWith({ ownScore: 4, markedScore: 5 });
+    expect(defaultProps.onScoreChange).toHaveBeenCalledWith({ ownScore: undefined, markedScore: 5 });
   });
 
   it('should show read-only mode without buttons', () => {
@@ -122,7 +141,7 @@ describe('HoleInput', () => {
     render(<HoleInput {...defaultProps} isOwnScoreLocked={true} />);
     fireEvent.click(screen.getByTestId('marked-score-button'));
     fireEvent.click(screen.getByRole('button', { name: /5/ }));
-    expect(defaultProps.onScoreChange).toHaveBeenCalledWith({ ownScore: 4, markedScore: 5 });
+    expect(defaultProps.onScoreChange).toHaveBeenCalledWith({ ownScore: undefined, markedScore: 5 });
   });
 
   it('should fallback to letter when team name not provided', () => {

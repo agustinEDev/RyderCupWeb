@@ -7,29 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
-### Added
+## [2.3.1] - 2026-08-01
 
-**User Avatars**
+### Changed
 
-- Nueva sección "Foto de perfil" en Editar Perfil (`AvatarPicker`): grid de 10 fotos de golf predefinidas, subida de foto propia (con validación de tamaño en cliente), galería del historial de subidas propias (hasta 5) para reactivar sin volver a subir, y botón para quitar el avatar activo.
-- Nuevo componente reutilizable `<Avatar userId size>` (fallback a icono placeholder ante error/404) usado en el perfil (`Profile`, `ProfileCard` del dashboard) y en la lista de amigos (`FriendCard`) — sustituye la imagen de placeholder externa hardcodeada que tenía `ProfileCard`.
-- Repositorio (`ApiAvatarRepository`/`IAvatarRepository`) y casos de uso (`ListAvatarPresetsUseCase`, `SetAvatarPresetUseCase`, `UploadAvatarUseCase`, `ListMyAvatarUploadsUseCase`, `ActivateUploadedAvatarUseCase`, `RemoveAvatarUseCase`) siguiendo el patrón Clean Architecture existente, wireados en `composition/index.js`.
-- `apiRequest()` soporta ahora bodies `FormData` (omite el header `Content-Type` para que el navegador añada el boundary multipart correcto) — primer uso de subida de ficheros reales en el proyecto.
-- Requiere el backend correspondiente (RyderCupAm, módulo `user` — presets, subida, historial).
+- Header logo: on authenticated pages it now links to `/dashboard` instead of `/` (no longer drops logged-in users onto the marketing landing page); on public pages it still links to `/` from any sub-page, but is a static, non-interactive element specifically on the landing page itself.
+- Dashboard stat cards reordered: Handicap now shown first, Tournaments second.
 
 ### Fixed
 
-- CSP de desarrollo/preview (`vite.config.js`) no incluía `http://localhost:8000` en `img-src` (solo en `connect-src`), por lo que las imágenes de avatar cargadas vía `<img>` fallaban silenciosamente en local aunque el `fetch()` de la lista de presets funcionara. En producción no afecta (el backend real es `https:`, ya cubierto por el comodín existente).
+- Scoring screen (tournament matches) silently auto-submitted the hole's par as a real score when navigating to the next hole/tab without entering one, making an unplayed hole indistinguishable from one actually scored at par. Score entry already goes through the numpad modal (numeric value or explicit pick-up) for every hole, same as quick match scoring, so this fallback is no longer needed. `HoleInput` now visually distinguishes "not entered yet" (dashed border, muted dash) from an actually submitted value. Issue #232. Requires backend RyderCupAM #101 (`own_submitted`/`marker_submitted` on the scoring view).
 
-### Removed
+### Security
 
-- Botón "Ver Demo" de la landing: no llevaba a ninguna demo real, solo redirigía a `/login` (duplicando "Comenzar Gratis"). Issue FE #238.
+**Frontend — Full Security & Clean Architecture/DDD Audit (Issue #237)**
 
-### Build / CI
-
-- CI Node.js: 20 → 22 (alinea con `node:22-alpine` de producción; desbloquea el bump de `jsdom` que requiere Node `^22.22.2`).
-- `jsdom`: 29.1.1 → 30.0.1, `@testing-library/jest-dom`: 6.9.1 → 7.0.0, `trufflesecurity/trufflehog`: 3.95.9 → 3.96.0.
-- Grupo de actualizaciones menores (9 paquetes): `@sentry/react`, `framer-motion`, `lucide-react`, `react`/`react-dom`, `react-i18next`, `@playwright/test`, `@vitejs/plugin-react`, `postcss`.
+- Proactive audit of the whole frontend codebase: dependency security (`snyk test --all-projects`, 0 vulnerabilities across 35 dependencies), auth token handling, XSS surface, CSP/security headers, and Clean-Architecture/DDD compliance (component boundaries, state management consistency, hook boundaries, API layer centralization).
+- Full report: `docs/AUDIT_FRONTEND_2026-07.md`. 0 Critical, 1 High, 4 Medium, 3 Low findings. 5 follow-up issues opened (#240–#244); the already-tracked 37 silenced `react-hooks/*` warnings (#239) were referenced, not duplicated.
 
 ## [2.3.0] - 2026-07-30
 

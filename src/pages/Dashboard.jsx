@@ -194,24 +194,7 @@ const Dashboard = () => {
               className="p-4"
             >
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                {/* Stat Card 1 - Tournaments */}
-                <div className="relative overflow-hidden bg-primary-50 p-6 rounded-xl border border-primary-200 hover:shadow-lg transition-all duration-300 group">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="p-3 bg-primary-500 rounded-lg shadow-md">
-                      <Trophy className="w-6 h-6 text-white" />
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm text-primary-600 font-medium">{t('statistics.tournaments')}</p>
-                      <p className="text-3xl font-bold text-primary-700">{Array.isArray(competitions) ? competitions.length : 0}</p>
-                    </div>
-                  </div>
-                  <p className="text-xs text-primary-600">{t('statistics.viewTournaments')}</p>
-                  <div className="absolute -bottom-6 -right-6 opacity-10">
-                    <Trophy className="w-32 h-32 text-primary-700" />
-                  </div>
-                </div>
-
-                {/* Stat Card 2 - Handicap */}
+                {/* Stat Card 1 - Handicap */}
                 <div className="relative overflow-hidden bg-accent-50 p-6 rounded-xl border border-accent-200 hover:shadow-lg transition-all duration-300 group">
                   <div className="flex items-center justify-between mb-4">
                     <div className="p-3 bg-accent-500 rounded-lg shadow-md">
@@ -231,6 +214,23 @@ const Dashboard = () => {
                   </p>
                   <div className="absolute -bottom-6 -right-6 opacity-10">
                     <TrendingUp className="w-32 h-32 text-amber-700" />
+                  </div>
+                </div>
+
+                {/* Stat Card 2 - Tournaments */}
+                <div className="relative overflow-hidden bg-primary-50 p-6 rounded-xl border border-primary-200 hover:shadow-lg transition-all duration-300 group">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="p-3 bg-primary-500 rounded-lg shadow-md">
+                      <Trophy className="w-6 h-6 text-white" />
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm text-primary-600 font-medium">{t('statistics.tournaments')}</p>
+                      <p className="text-3xl font-bold text-primary-700">{Array.isArray(competitions) ? competitions.length : 0}</p>
+                    </div>
+                  </div>
+                  <p className="text-xs text-primary-600">{t('statistics.viewTournaments')}</p>
+                  <div className="absolute -bottom-6 -right-6 opacity-10">
+                    <Trophy className="w-32 h-32 text-primary-700" />
                   </div>
                 </div>
 

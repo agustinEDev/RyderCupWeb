@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { MAX_HANDICAP, MIN_HANDICAP } from '../../domain/services/handicapRange';
 
-const MIN_HANDICAP = -10;
-const MAX_HANDICAP = 54;
 const KEYPAD_DIGITS = [7, 8, 9, 4, 5, 6, 1, 2, 3];
 
 /**

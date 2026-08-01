@@ -31,7 +31,6 @@ const ScoringPage = () => {
   const [showConcedeModal, setShowConcedeModal] = useState(false);
   const [showSubmitModal, setShowSubmitModal] = useState(false);
   const [earlyEndDismissed, setEarlyEndDismissed] = useState(false);
-  const submittedScoresRef = useRef({});
   const localScoresRef = useRef({}); // last submitted values per hole, used to re-initialize HoleInput when scoringView is stale
 
   const {
@@ -100,7 +99,6 @@ const ScoringPage = () => {
   const handleScoreChange = (scoreData) => {
     if (!markerAssignment) return;
     localScoresRef.current[currentHole] = { ownScore: scoreData.ownScore, markedScore: scoreData.markedScore };
-    submittedScoresRef.current[currentHole] = true;
     submitScore(currentHole, {
       ownScore: scoreData.ownScore,
       markedPlayerId: markerAssignment.marksUserId,
@@ -109,51 +107,22 @@ const ScoringPage = () => {
   };
 
   const handleTabChange = (tab) => {
-    autoSubmitIfNeeded();
     setActiveTab(tab);
-  };
-
-  // Auto-submit par defaults when navigating away from a hole with no score recorded
-  const autoSubmitIfNeeded = () => {
-    if (!markerAssignment || !currentHoleData || isFullyLocked || isOwnScoreLocked || !canScore) return;
-    if (submittedScoresRef.current[currentHole]) return;
-    const hasOwnScore = currentPlayerScore?.ownScore != null;
-    const hasMarkedScore = markedPlayerScore?.markerScore != null;
-    const needsOwnScore = !hasOwnScore;
-    const needsMarkedScore = markerAssignment.marksUserId && !hasMarkedScore;
-
-    if (needsOwnScore || needsMarkedScore) {
-      const ownScore = hasOwnScore ? currentPlayerScore.ownScore : currentHoleData.par;
-      const markedScore = hasMarkedScore ? markedPlayerScore.markerScore : currentHoleData.par;
-      localScoresRef.current[currentHole] = { ownScore, markedScore };
-      submittedScoresRef.current[currentHole] = true;
-      const payload = { ownScore };
-      if (markerAssignment.marksUserId) {
-        payload.markedPlayerId = markerAssignment.marksUserId;
-        payload.markedScore = markedScore;
-      }
-      submitScore(currentHole, payload);
-    }
   };
 
   const handlePrevHole = () => {
     if (currentHole > 1) {
-      autoSubmitIfNeeded();
       setCurrentHole(currentHole - 1);
     }
   };
 
   const handleNextHole = () => {
     if (currentHole < totalHoles) {
-      autoSubmitIfNeeded();
       setCurrentHole(currentHole + 1);
     }
   };
 
   const handleHoleSelect = (hole) => {
-    if (hole !== currentHole) {
-      autoSubmitIfNeeded();
-    }
     setCurrentHole(hole);
   };
 
@@ -412,7 +381,7 @@ const ScoringPage = () => {
 
             {canSubmitScorecard && (
               <button
-                onClick={() => { autoSubmitIfNeeded(); setShowSubmitModal(true); }}
+                onClick={() => setShowSubmitModal(true)}
                 disabled={isSubmitting}
                 className="w-full px-4 py-3 bg-primary text-white rounded-lg font-medium hover:bg-primary/90 disabled:opacity-50"
               >
