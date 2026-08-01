@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [2.3.1] - 2026-08-01
+
+### Changed
+
+- Header logo: on authenticated pages it now links to `/dashboard` instead of `/` (no longer drops logged-in users onto the marketing landing page); on public pages it still links to `/` from any sub-page, but is a static, non-interactive element specifically on the landing page itself.
+- Dashboard stat cards reordered: Handicap now shown first, Tournaments second.
+
+### Fixed
+
+- Scoring screen (tournament matches) silently auto-submitted the hole's par as a real score when navigating to the next hole/tab without entering one, making an unplayed hole indistinguishable from one actually scored at par. Score entry already goes through the numpad modal (numeric value or explicit pick-up) for every hole, same as quick match scoring, so this fallback is no longer needed. `HoleInput` now visually distinguishes "not entered yet" (dashed border, muted dash) from an actually submitted value. Issue #232. Requires backend RyderCupAM #101 (`own_submitted`/`marker_submitted` on the scoring view).
+
 ### Security
 
 **Frontend — Full Security & Clean Architecture/DDD Audit (Issue #237)**
