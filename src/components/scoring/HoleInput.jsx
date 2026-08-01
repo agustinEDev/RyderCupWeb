@@ -22,11 +22,12 @@ const HoleInput = ({
   teamBName,
 }) => {
   const { t } = useTranslation('scoring');
+  // undefined = hole not scored yet (nothing persisted); null = explicitly picked up.
   const [ownValue, setOwnValue] = useState(
-    playerScore?.ownScore !== undefined ? playerScore.ownScore : par
+    playerScore?.ownSubmitted ? playerScore.ownScore : undefined
   );
   const [markedValue, setMarkedValue] = useState(
-    markedPlayerScore?.markerScore !== undefined ? markedPlayerScore.markerScore : par
+    markedPlayerScore?.markerSubmitted ? markedPlayerScore.markerScore : undefined
   );
   const [openPanel, setOpenPanel] = useState(null); // 'own' | 'marked' | null
 
@@ -44,10 +45,12 @@ const HoleInput = ({
     if (onScoreChange) onScoreChange({ ownScore: ownValue, markedScore: val });
   };
 
-  const displayScore = (val, ariaLabelNull = null) =>
-    val == null
+  const displayScore = (val, ariaLabelNull = null) => {
+    if (val === undefined) return <span aria-label={t('input.notEntered')}>-</span>;
+    return val === null
       ? <span aria-label={ariaLabelNull || undefined}>-</span>
       : val;
+  };
 
   return (
     <div data-testid="hole-input" className="bg-white rounded-lg border border-gray-200 p-4 space-y-4">
@@ -74,9 +77,16 @@ const HoleInput = ({
               <button
                 data-testid="own-score-button"
                 onClick={() => setOpenPanel('own')}
-                className="w-full h-12 flex items-center justify-center bg-gray-100 rounded-xl hover:bg-gray-200 active:bg-gray-300 transition-colors"
+                className={`w-full h-12 flex items-center justify-center rounded-xl transition-colors ${
+                  ownValue === undefined
+                    ? 'bg-white border-2 border-dashed border-gray-300 hover:border-gray-400'
+                    : 'bg-gray-100 hover:bg-gray-200 active:bg-gray-300'
+                }`}
               >
-                <span data-testid="own-score-value" className="text-2xl font-bold text-gray-900">
+                <span
+                  data-testid="own-score-value"
+                  className={`text-2xl font-bold ${ownValue === undefined ? 'text-gray-400' : 'text-gray-900'}`}
+                >
                   {displayScore(ownValue, t('input.pickedUp'))}
                 </span>
               </button>
@@ -94,9 +104,16 @@ const HoleInput = ({
               <button
                 data-testid="marked-score-button"
                 onClick={() => setOpenPanel('marked')}
-                className="w-full h-12 flex items-center justify-center bg-gray-100 rounded-xl hover:bg-gray-200 active:bg-gray-300 transition-colors"
+                className={`w-full h-12 flex items-center justify-center rounded-xl transition-colors ${
+                  markedValue === undefined
+                    ? 'bg-white border-2 border-dashed border-gray-300 hover:border-gray-400'
+                    : 'bg-gray-100 hover:bg-gray-200 active:bg-gray-300'
+                }`}
               >
-                <span data-testid="marked-score-value" className="text-2xl font-bold text-gray-900">
+                <span
+                  data-testid="marked-score-value"
+                  className={`text-2xl font-bold ${markedValue === undefined ? 'text-gray-400' : 'text-gray-900'}`}
+                >
                   {displayScore(markedValue, t('input.pickedUp'))}
                 </span>
               </button>

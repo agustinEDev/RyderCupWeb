@@ -65,7 +65,9 @@ class ScoringMapper {
         playerScores: (s.player_scores || []).map(ps => ({
           userId: ps.user_id,
           ownScore: ps.own_score ?? null,
+          ownSubmitted: ps.own_submitted ?? false,
           markerScore: ps.marker_score ?? null,
+          markerSubmitted: ps.marker_submitted ?? false,
           validationStatus: ps.validation_status || 'pending',
           netScore: ps.net_score ?? null,
           strokesReceivedThisHole: ps.strokes_received_this_hole ?? 0,
