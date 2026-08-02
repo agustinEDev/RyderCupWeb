@@ -91,12 +91,13 @@ class StablefordCalculator {
    * @param {Array<{holeNumber: number, participantId: string, score: number}>} holeScores
    * @param {Array<Object>} tees - Course tees, to resolve the participant's Playing Handicap
    * @param {number} allowancePercentage - WHS allowance (50-100)
-   * @returns {{stablefordPoints: number, totalStrokes: number, netStrokes: number, holesPlayed: number}}
+   * @returns {{stablefordPoints: number, totalStrokes: number, netStrokes: number, parPlayed: number, holesPlayed: number}}
    */
   static computeParticipantTotals(participant, holes, holeScores, tees = [], allowancePercentage = 100) {
     let stablefordPoints = 0;
     let totalStrokes = 0;
     let netStrokes = 0;
+    let parPlayed = 0;
     let holesPlayed = 0;
 
     const strokesBasis = StablefordCalculator.resolveStrokesBasis(
@@ -116,10 +117,23 @@ class StablefordCalculator {
       stablefordPoints += StablefordCalculator.holePoints(entry.score, hole.par, strokesReceived);
       totalStrokes += entry.score;
       netStrokes += entry.score - strokesReceived;
+      parPlayed += hole.par;
       holesPlayed += 1;
     }
 
-    return { stablefordPoints, totalStrokes, netStrokes, holesPlayed };
+    return { stablefordPoints, totalStrokes, netStrokes, parPlayed, holesPlayed };
+  }
+
+  /**
+   * Formats a net-to-par score in standard golf notation: "PAR" when even,
+   * otherwise a signed number (e.g. "-3", "+4").
+   *
+   * @param {number} toPar - netStrokes - parPlayed
+   * @returns {string}
+   */
+  static formatToPar(toPar) {
+    if (toPar === 0) return 'PAR';
+    return toPar > 0 ? `+${toPar}` : `${toPar}`;
   }
 
   /**
@@ -154,15 +168,18 @@ class StablefordCalculator {
   }
 
   /**
-   * Ranks participants by net strokes (asc, fewer is better) for Medal play,
-   * only counting participants who have at least one recorded score.
+   * Ranks participants by score-to-par (net strokes minus par played, asc,
+   * fewer is better) for Medal play — not raw net strokes, so participants
+   * with a partial round (fewer holes played) still rank fairly against
+   * those further along. Participants with no recorded score sink to the
+   * bottom.
    *
    * @param {Array<{participantId: string, name: string, handicap: number|null}>} participants
    * @param {Array<{holeNumber: number, par: number, strokeIndex: number}>} holes
    * @param {Array<{holeNumber: number, participantId: string, score: number}>} holeScores
    * @param {Array<Object>} tees
    * @param {number} allowancePercentage
-   * @returns {Array<{participantId: string, name: string, stablefordPoints: number, totalStrokes: number, netStrokes: number, holesPlayed: number}>}
+   * @returns {Array<{participantId: string, name: string, stablefordPoints: number, totalStrokes: number, netStrokes: number, parPlayed: number, holesPlayed: number}>}
    */
   static rankParticipantsByMedal(participants, holes, holeScores, tees = [], allowancePercentage = 100) {
     const rows = participants.map((participant) => ({
@@ -182,7 +199,10 @@ class StablefordCalculator {
       if (a.holesPlayed === 0 && b.holesPlayed === 0) return 0;
       if (a.holesPlayed === 0) return 1;
       if (b.holesPlayed === 0) return -1;
-      return a.netStrokes - b.netStrokes;
+      // Score-to-par (net strokes minus par for the holes actually played),
+      // not raw net strokes: fair when participants have played a different
+      // number of holes (partial rounds), matching standard golf leaderboards.
+      return (a.netStrokes - a.parPlayed) - (b.netStrokes - b.parPlayed);
     });
   }
 }

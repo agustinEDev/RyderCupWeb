@@ -41,6 +41,14 @@ import ApproveGolfCourseUpdateUseCase from '../application/use_cases/golf_course
 import RejectGolfCourseUpdateUseCase from '../application/use_cases/golf_course/RejectGolfCourseUpdateUseCase';
 import ListPendingGolfCoursesUseCase from '../application/use_cases/golf_course/ListPendingGolfCoursesUseCase';
 
+// Admin Panel Use Cases (v2.4.0)
+import ApiAdminRepository from '../infrastructure/repositories/ApiAdminRepository';
+import GetAdminStatsUseCase from '../application/use_cases/admin/GetAdminStatsUseCase';
+import ListAdminUsersUseCase from '../application/use_cases/admin/ListAdminUsersUseCase';
+import UpdateAdminUserUseCase from '../application/use_cases/admin/UpdateAdminUserUseCase';
+import SetAdminUserActiveUseCase from '../application/use_cases/admin/SetAdminUserActiveUseCase';
+import DeleteAdminUserUseCase from '../application/use_cases/admin/DeleteAdminUserUseCase';
+
 // Device Management Use Cases (v1.13.0)
 import ApiDeviceRepository from '../infrastructure/repositories/ApiDeviceRepository';
 import GetActiveDevicesUseCase from '../application/use_cases/device/GetActiveDevicesUseCase';
@@ -64,6 +72,8 @@ import RevertCompetitionStatusUseCase from '../application/use_cases/competition
 import RevertCompetitionToInProgressUseCase from '../application/use_cases/competition/RevertCompetitionToInProgressUseCase';
 import BrowseJoinableCompetitionsUseCase from '../application/use_cases/competition/BrowseJoinableCompetitionsUseCase';
 import BrowseExploreCompetitionsUseCase from '../application/use_cases/competition/BrowseExploreCompetitionsUseCase';
+import AdminListCompetitionsUseCase from '../application/use_cases/competition/AdminListCompetitionsUseCase';
+import AdminUpdateCompetitionUseCase from '../application/use_cases/competition/AdminUpdateCompetitionUseCase';
 import AddGolfCourseToCompetitionUseCase from '../application/use_cases/competition/AddGolfCourseToCompetitionUseCase';
 import RemoveGolfCourseFromCompetitionUseCase from '../application/use_cases/competition/RemoveGolfCourseFromCompetitionUseCase';
 import ReorderGolfCoursesUseCase from '../application/use_cases/competition/ReorderGolfCoursesUseCase';
@@ -158,6 +168,7 @@ const apiCompetitionRepository = new ApiCompetitionRepository();
 const apiEnrollmentRepository = new ApiEnrollmentRepository();
 const apiDeviceRepository = new ApiDeviceRepository();
 const apiGolfCourseRepository = new ApiGolfCourseRepository();
+const apiAdminRepository = new ApiAdminRepository();
 const apiScheduleRepository = new ApiScheduleRepository();
 const apiSupportRepository = new ApiSupportRepository();
 const apiCountryRepository = new ApiCountryRepository();
@@ -202,6 +213,8 @@ const revertCompetitionStatusUseCase = new RevertCompetitionStatusUseCase({ comp
 const revertCompetitionToInProgressUseCase = new RevertCompetitionToInProgressUseCase({ competitionRepository: apiCompetitionRepository });
 const browseJoinableCompetitionsUseCase = new BrowseJoinableCompetitionsUseCase(apiCompetitionRepository);
 const browseExploreCompetitionsUseCase = new BrowseExploreCompetitionsUseCase(apiCompetitionRepository);
+const adminListCompetitionsUseCase = new AdminListCompetitionsUseCase(apiCompetitionRepository);
+const adminUpdateCompetitionUseCase = new AdminUpdateCompetitionUseCase({ competitionRepository: apiCompetitionRepository });
 const addGolfCourseToCompetitionUseCase = new AddGolfCourseToCompetitionUseCase({ competitionRepository: apiCompetitionRepository });
 const removeGolfCourseFromCompetitionUseCase = new RemoveGolfCourseFromCompetitionUseCase({ competitionRepository: apiCompetitionRepository });
 const reorderGolfCoursesUseCase = new ReorderGolfCoursesUseCase({ competitionRepository: apiCompetitionRepository });
@@ -298,6 +311,13 @@ const approveGolfCourseUpdateUseCase = new ApproveGolfCourseUpdateUseCase({ golf
 const rejectGolfCourseUpdateUseCase = new RejectGolfCourseUpdateUseCase({ golfCourseRepository: apiGolfCourseRepository });
 const listPendingGolfCoursesUseCase = new ListPendingGolfCoursesUseCase({ golfCourseRepository: apiGolfCourseRepository });
 
+// Admin Panel Use Cases (v2.4.0)
+const getAdminStatsUseCase = new GetAdminStatsUseCase({ adminRepository: apiAdminRepository });
+const listAdminUsersUseCase = new ListAdminUsersUseCase({ adminRepository: apiAdminRepository });
+const updateAdminUserUseCase = new UpdateAdminUserUseCase({ adminRepository: apiAdminRepository });
+const setAdminUserActiveUseCase = new SetAdminUserActiveUseCase({ adminRepository: apiAdminRepository });
+const deleteAdminUserUseCase = new DeleteAdminUserUseCase({ adminRepository: apiAdminRepository });
+
 // Exportar los casos de uso y otros servicios que la capa de presentación necesite
 export {
   updateUserProfileUseCase,
@@ -364,6 +384,14 @@ export {
   approveGolfCourseUpdateUseCase,
   rejectGolfCourseUpdateUseCase,
   listPendingGolfCoursesUseCase,
+  // Admin Panel Use Cases (v2.4.0)
+  getAdminStatsUseCase,
+  listAdminUsersUseCase,
+  updateAdminUserUseCase,
+  setAdminUserActiveUseCase,
+  deleteAdminUserUseCase,
+  adminListCompetitionsUseCase,
+  adminUpdateCompetitionUseCase,
   // Support Use Cases
   submitContactFormUseCase,
   // Schedule Use Cases (v2.1.0 - Sprint 2)

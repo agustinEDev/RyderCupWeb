@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [2.4.0] - 2026-08-02
+
+### Added
+
+- **Panel de administración** (issue #233): nueva página `/admin` consolidada con pestañas Resumen (estadísticas globales), Usuarios (listado paginado con filtros de rol/estado/verificación, edición, desactivar/reactivar y borrado definitivo) y Campos de golf/Pendientes (integradas como pestañas, sustituyendo los enlaces sueltos del menú de Administración). El borrado definitivo respeta el bloqueo (409) del backend cuando la cuenta tiene actividad, ofreciendo desactivar como alternativa segura. Requiere el backend correspondiente (RyderCupAM).
+- **Pestaña Competiciones en el panel de administración** (issue #282): listado de todas las competiciones del sistema (cualquier estado/creador), edición de nombre/fechas solo en estado borrador, y transición forzada de estado (activar, cerrar inscripciones, iniciar, completar, cancelar, reabrir inscripciones, revertir) reutilizando los endpoints ya usados por el flujo del creador. Cancelar requiere confirmación explícita.
+- **Última conexión** en la pestaña Usuarios del panel de administración (columna "Última conexión", `null` → "Nunca"). Requiere el backend correspondiente (RyderCupAM).
+- **Resultado personal en el historial de partidas rápidas** (issue #263): las tarjetas de partidas completadas en `/quick-matches` muestran el resultado propio a la par (`-3`/`+4`/`PAR`) y los golpes brutos, en todos los formatos (incluido match play).
+- **Mejoras en la clasificación de partidas rápidas**: columna "Hoyo" por jugador (progreso individual, relevante con anotación delegada) y badge "F" junto a puntos/golpes cuando la partida ha finalizado. En Medal, nueva columna "Resultado" (a la par) y el orden pasa de golpes netos en bruto a resultado-a-la-par — más justo cuando los jugadores llevan distinto número de hoyos jugados.
+
 ## [2.3.1] - 2026-08-01
 
 ### Changed

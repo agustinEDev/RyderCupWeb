@@ -113,7 +113,13 @@ describe('StablefordCalculator', () => {
       const holeScores = [{ holeNumber: 1, participantId: 'p-1', score: 4 }];
 
       const result = StablefordCalculator.computeParticipantTotals(participant, holes, holeScores);
-      expect(result).toEqual({ stablefordPoints: 2, totalStrokes: 4, netStrokes: 4, holesPlayed: 1 });
+      expect(result).toEqual({
+        stablefordPoints: 2,
+        totalStrokes: 4,
+        netStrokes: 4,
+        parPlayed: 4,
+        holesPlayed: 1,
+      });
     });
 
     it('should ignore scores belonging to other participants', () => {
@@ -121,7 +127,13 @@ describe('StablefordCalculator', () => {
       const holeScores = [{ holeNumber: 1, participantId: 'p-2', score: 3 }];
 
       const result = StablefordCalculator.computeParticipantTotals(participant, holes, holeScores);
-      expect(result).toEqual({ stablefordPoints: 0, totalStrokes: 0, netStrokes: 0, holesPlayed: 0 });
+      expect(result).toEqual({
+        stablefordPoints: 0,
+        totalStrokes: 0,
+        netStrokes: 0,
+        parPlayed: 0,
+        holesPlayed: 0,
+      });
     });
 
     it('should subtract strokes received from gross to compute net strokes', () => {
@@ -157,6 +169,31 @@ describe('StablefordCalculator', () => {
       // PH = round(18 * 0.20) = 4 -> below SI 5 -> no stroke on hole 1 -> net 4
       expect(result.netStrokes).toBe(3);
       expect(resultLowAllowance.netStrokes).toBe(4);
+    });
+
+    it('should only sum par for the holes actually played', () => {
+      const participant = { participantId: 'p-1', handicap: 0 };
+      const holeScores = [
+        { holeNumber: 1, participantId: 'p-1', score: 4 },
+        { holeNumber: 2, participantId: 'p-1', score: 3 },
+      ];
+
+      const result = StablefordCalculator.computeParticipantTotals(participant, holes, holeScores);
+      expect(result.parPlayed).toBe(7); // par 4 + par 3
+    });
+  });
+
+  describe('formatToPar', () => {
+    it('formats an even score as PAR', () => {
+      expect(StablefordCalculator.formatToPar(0)).toBe('PAR');
+    });
+
+    it('formats an under-par score with a leading minus sign', () => {
+      expect(StablefordCalculator.formatToPar(-3)).toBe('-3');
+    });
+
+    it('formats an over-par score with a leading plus sign', () => {
+      expect(StablefordCalculator.formatToPar(4)).toBe('+4');
     });
   });
 
@@ -233,6 +270,37 @@ describe('StablefordCalculator', () => {
 
       const ranking = StablefordCalculator.rankParticipantsByMedal(participants, holes, holeScores);
       expect(ranking.map((r) => r.participantId)).toEqual(['p-1', 'p-2']);
+    });
+
+    it('should rank by score-to-par, not raw net strokes, so a partial round ranks fairly', () => {
+      // 3 holes, all par 4 (par total 12).
+      const multiHoles = [
+        { holeNumber: 1, par: 4, strokeIndex: 1 },
+        { holeNumber: 2, par: 4, strokeIndex: 2 },
+        { holeNumber: 3, par: 4, strokeIndex: 3 },
+      ];
+      const participants = [
+        { participantId: 'further-along', name: 'Alice', handicap: 0 },
+        { participantId: 'just-started', name: 'Bob', handicap: 0 },
+      ];
+      const holeScores = [
+        // Alice played all 3 holes at par -> net 12, toPar 0.
+        { holeNumber: 1, participantId: 'further-along', score: 4 },
+        { holeNumber: 2, participantId: 'further-along', score: 4 },
+        { holeNumber: 3, participantId: 'further-along', score: 4 },
+        // Bob played only 1 hole with a bogey -> net 5, toPar +1.
+        { holeNumber: 1, participantId: 'just-started', score: 5 },
+      ];
+
+      const ranking = StablefordCalculator.rankParticipantsByMedal(
+        participants,
+        multiHoles,
+        holeScores
+      );
+
+      // Raw net strokes would rank Bob first (5 < 12); score-to-par correctly
+      // ranks Alice first instead (even vs. one over).
+      expect(ranking.map((r) => r.participantId)).toEqual(['further-along', 'just-started']);
     });
   });
 });

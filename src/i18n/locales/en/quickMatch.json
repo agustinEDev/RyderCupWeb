@@ -102,7 +102,9 @@
       "IN_PROGRESS": "In progress",
       "COMPLETED": "Completed",
       "CANCELLED": "Cancelled"
-    }
+    },
+    "grossStrokes_one": "{{count}} stroke",
+    "grossStrokes_other": "{{count}} strokes"
   },
   "scoring": {
     "matchHeader": "Quick match",
@@ -133,6 +135,10 @@
       "points": "Pts",
       "strokes": "Strokes",
       "netStrokes": "Net strokes",
+      "result": "Result",
+      "hole": "Hole",
+      "finishedBadge": "F",
+      "finishedTooltip": "Match finished",
       "you": "You",
       "noHolesYet": "No holes completed yet",
       "allSquare": "All square",
