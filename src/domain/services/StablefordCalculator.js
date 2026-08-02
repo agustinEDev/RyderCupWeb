@@ -91,12 +91,13 @@ class StablefordCalculator {
    * @param {Array<{holeNumber: number, participantId: string, score: number}>} holeScores
    * @param {Array<Object>} tees - Course tees, to resolve the participant's Playing Handicap
    * @param {number} allowancePercentage - WHS allowance (50-100)
-   * @returns {{stablefordPoints: number, totalStrokes: number, netStrokes: number, holesPlayed: number}}
+   * @returns {{stablefordPoints: number, totalStrokes: number, netStrokes: number, parPlayed: number, holesPlayed: number}}
    */
   static computeParticipantTotals(participant, holes, holeScores, tees = [], allowancePercentage = 100) {
     let stablefordPoints = 0;
     let totalStrokes = 0;
     let netStrokes = 0;
+    let parPlayed = 0;
     let holesPlayed = 0;
 
     const strokesBasis = StablefordCalculator.resolveStrokesBasis(
@@ -116,10 +117,23 @@ class StablefordCalculator {
       stablefordPoints += StablefordCalculator.holePoints(entry.score, hole.par, strokesReceived);
       totalStrokes += entry.score;
       netStrokes += entry.score - strokesReceived;
+      parPlayed += hole.par;
       holesPlayed += 1;
     }
 
-    return { stablefordPoints, totalStrokes, netStrokes, holesPlayed };
+    return { stablefordPoints, totalStrokes, netStrokes, parPlayed, holesPlayed };
+  }
+
+  /**
+   * Formats a net-to-par score in standard golf notation: "PAR" when even,
+   * otherwise a signed number (e.g. "-3", "+4").
+   *
+   * @param {number} toPar - netStrokes - parPlayed
+   * @returns {string}
+   */
+  static formatToPar(toPar) {
+    if (toPar === 0) return 'PAR';
+    return toPar > 0 ? `+${toPar}` : `${toPar}`;
   }
 
   /**

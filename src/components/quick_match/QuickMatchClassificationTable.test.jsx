@@ -56,6 +56,67 @@ describe('QuickMatchClassificationTable', () => {
     expect(screen.getByText('scoring.classification.you', { exact: false })).toBeInTheDocument();
   });
 
+  it('should show each participant\'s holes played in the Hoyo column', () => {
+    const holeScores = [
+      { holeNumber: 1, participantId: 'p-1', score: 5 },
+      { holeNumber: 2, participantId: 'p-1', score: 4 },
+      { holeNumber: 1, participantId: 'p-2', score: 3 },
+    ];
+
+    render(
+      <QuickMatchClassificationTable
+        holes={holes}
+        holeScores={holeScores}
+        participants={participants}
+        currentParticipantId="p-1"
+        scoringFormat="STABLEFORD"
+      />
+    );
+
+    const classificationTable = screen.getByTestId('quick-match-classification-table');
+    const rows = within(classificationTable).getAllByRole('row').slice(1);
+    const aliceRow = rows.find((row) => within(row).queryByText('Alice'));
+    const bobRow = rows.find((row) => within(row).queryByText('Bob'));
+    const lastCell = (row) => within(row).getAllByRole('cell').at(-1);
+    expect(lastCell(aliceRow)).toHaveTextContent('2');
+    expect(lastCell(bobRow)).toHaveTextContent('1');
+  });
+
+  it('should not show the finished badge while the match is still in progress', () => {
+    const holeScores = [{ holeNumber: 1, participantId: 'p-1', score: 4 }];
+
+    render(
+      <QuickMatchClassificationTable
+        holes={holes}
+        holeScores={holeScores}
+        participants={participants}
+        currentParticipantId="p-1"
+        scoringFormat="STABLEFORD"
+        isCompleted={false}
+      />
+    );
+
+    expect(screen.queryByText('scoring.classification.finishedBadge')).not.toBeInTheDocument();
+  });
+
+  it('should show the finished badge next to points and strokes once the match is completed', () => {
+    const holeScores = [{ holeNumber: 1, participantId: 'p-1', score: 4 }];
+
+    render(
+      <QuickMatchClassificationTable
+        holes={holes}
+        holeScores={holeScores}
+        participants={participants}
+        currentParticipantId="p-1"
+        scoringFormat="STABLEFORD"
+        isCompleted
+      />
+    );
+
+    // 2 participants x 2 cells each (points/netStrokes + strokes) = 4 badges
+    expect(screen.getAllByText('scoring.classification.finishedBadge')).toHaveLength(4);
+  });
+
   it('should rank by net strokes when scoringFormat is MEDAL', () => {
     const holeScores = [
       { holeNumber: 1, participantId: 'p-1', score: 4 },

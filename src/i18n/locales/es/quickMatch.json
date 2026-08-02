@@ -102,7 +102,9 @@
       "IN_PROGRESS": "En curso",
       "COMPLETED": "Completada",
       "CANCELLED": "Cancelada"
-    }
+    },
+    "grossStrokes_one": "{{count}} golpe",
+    "grossStrokes_other": "{{count}} golpes"
   },
   "scoring": {
     "matchHeader": "Partida rápida",
@@ -133,6 +135,9 @@
       "points": "Pts",
       "strokes": "Golpes",
       "netStrokes": "Golpes netos",
+      "hole": "Hoyo",
+      "finishedBadge": "F",
+      "finishedTooltip": "Partida finalizada",
       "you": "Tú",
       "noHolesYet": "Todavía no hay hoyos completados",
       "allSquare": "Empatados",
