@@ -29,6 +29,7 @@ const AdminUsersTable = ({ users, onEdit, onToggleActive, onManageDelete }) => {
             <th className="text-left py-3 px-4 font-semibold text-gray-700">{t('users.columnRole')}</th>
             <th className="text-left py-3 px-4 font-semibold text-gray-700">{t('users.columnStatus')}</th>
             <th className="text-left py-3 px-4 font-semibold text-gray-700">{t('users.columnJoined')}</th>
+            <th className="text-left py-3 px-4 font-semibold text-gray-700">{t('users.columnLastLogin')}</th>
             <th className="text-right py-3 px-4 font-semibold text-gray-700">{t('users.columnActions')}</th>
           </tr>
         </thead>
@@ -71,6 +72,9 @@ const AdminUsersTable = ({ users, onEdit, onToggleActive, onManageDelete }) => {
               </td>
               <td className="py-3 px-4 text-gray-500">
                 {user.createdAt ? new Date(user.createdAt).toLocaleDateString(i18n.language) : '—'}
+              </td>
+              <td className="py-3 px-4 text-gray-500">
+                {user.lastLoginAt ? new Date(user.lastLoginAt).toLocaleDateString(i18n.language) : t('users.lastLoginNever')}
               </td>
               <td className="py-3 px-4">
                 <div className="flex items-center justify-end gap-1">

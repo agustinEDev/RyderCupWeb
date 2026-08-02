@@ -90,7 +90,34 @@ describe('ApiAdminRepository', () => {
         isActive: true,
         emailVerified: true,
         createdAt: '2026-07-27T00:00:00Z',
+        lastLoginAt: null,
       });
+    });
+
+    it('should map a populated last_login_at value', async () => {
+      apiRequestMock.mockResolvedValue({
+        users: [
+          {
+            id: 'u1',
+            first_name: 'Agus',
+            last_name: 'Estevez',
+            email: 'agus@test.com',
+            handicap: 17.7,
+            is_admin: true,
+            is_active: true,
+            email_verified: true,
+            created_at: '2026-07-27T00:00:00Z',
+            last_login_at: '2026-07-30T10:00:00Z',
+          },
+        ],
+        total_count: 1,
+        limit: 20,
+        offset: 0,
+      });
+
+      const result = await repository.listUsers({});
+
+      expect(result.users[0].lastLoginAt).toBe('2026-07-30T10:00:00Z');
     });
 
     it('should omit undefined/null filters from the query string', async () => {

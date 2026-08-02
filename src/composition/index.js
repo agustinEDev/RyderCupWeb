@@ -72,6 +72,8 @@ import RevertCompetitionStatusUseCase from '../application/use_cases/competition
 import RevertCompetitionToInProgressUseCase from '../application/use_cases/competition/RevertCompetitionToInProgressUseCase';
 import BrowseJoinableCompetitionsUseCase from '../application/use_cases/competition/BrowseJoinableCompetitionsUseCase';
 import BrowseExploreCompetitionsUseCase from '../application/use_cases/competition/BrowseExploreCompetitionsUseCase';
+import AdminListCompetitionsUseCase from '../application/use_cases/competition/AdminListCompetitionsUseCase';
+import AdminUpdateCompetitionUseCase from '../application/use_cases/competition/AdminUpdateCompetitionUseCase';
 import AddGolfCourseToCompetitionUseCase from '../application/use_cases/competition/AddGolfCourseToCompetitionUseCase';
 import RemoveGolfCourseFromCompetitionUseCase from '../application/use_cases/competition/RemoveGolfCourseFromCompetitionUseCase';
 import ReorderGolfCoursesUseCase from '../application/use_cases/competition/ReorderGolfCoursesUseCase';
@@ -211,6 +213,8 @@ const revertCompetitionStatusUseCase = new RevertCompetitionStatusUseCase({ comp
 const revertCompetitionToInProgressUseCase = new RevertCompetitionToInProgressUseCase({ competitionRepository: apiCompetitionRepository });
 const browseJoinableCompetitionsUseCase = new BrowseJoinableCompetitionsUseCase(apiCompetitionRepository);
 const browseExploreCompetitionsUseCase = new BrowseExploreCompetitionsUseCase(apiCompetitionRepository);
+const adminListCompetitionsUseCase = new AdminListCompetitionsUseCase(apiCompetitionRepository);
+const adminUpdateCompetitionUseCase = new AdminUpdateCompetitionUseCase({ competitionRepository: apiCompetitionRepository });
 const addGolfCourseToCompetitionUseCase = new AddGolfCourseToCompetitionUseCase({ competitionRepository: apiCompetitionRepository });
 const removeGolfCourseFromCompetitionUseCase = new RemoveGolfCourseFromCompetitionUseCase({ competitionRepository: apiCompetitionRepository });
 const reorderGolfCoursesUseCase = new ReorderGolfCoursesUseCase({ competitionRepository: apiCompetitionRepository });
@@ -386,6 +390,8 @@ export {
   updateAdminUserUseCase,
   setAdminUserActiveUseCase,
   deleteAdminUserUseCase,
+  adminListCompetitionsUseCase,
+  adminUpdateCompetitionUseCase,
   // Support Use Cases
   submitContactFormUseCase,
   // Schedule Use Cases (v2.1.0 - Sprint 2)

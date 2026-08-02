@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { Loader, Users as UsersIcon, BarChart3, Flag, Clock, Search } from 'lucide-react';
+import { Loader, Users as UsersIcon, BarChart3, Flag, Clock, Search, Trophy, AlertTriangle, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import customToast from '../../utils/toast';
 import HeaderAuth from '../../components/layout/HeaderAuth';
@@ -8,6 +8,8 @@ import { useAuth } from '../../hooks/useAuth';
 import AdminUsersTable from '../../components/admin/AdminUsersTable';
 import EditUserModal from '../../components/admin/EditUserModal';
 import ManageAccountModal from '../../components/admin/ManageAccountModal';
+import AdminCompetitionsTable from '../../components/admin/AdminCompetitionsTable';
+import AdminEditCompetitionModal from '../../components/admin/AdminEditCompetitionModal';
 import GolfCourses from './GolfCourses';
 import PendingGolfCourses from './PendingGolfCourses';
 import {
@@ -16,7 +18,28 @@ import {
   updateAdminUserUseCase,
   setAdminUserActiveUseCase,
   deleteAdminUserUseCase,
+  adminListCompetitionsUseCase,
+  adminUpdateCompetitionUseCase,
+  activateCompetitionUseCase,
+  closeEnrollmentsUseCase,
+  startCompetitionUseCase,
+  completeCompetitionUseCase,
+  cancelCompetitionUseCase,
+  reopenEnrollmentsUseCase,
+  revertCompetitionStatusUseCase,
+  revertCompetitionToInProgressUseCase,
 } from '../../composition';
+
+const TRANSITION_USE_CASES = {
+  activate: activateCompetitionUseCase,
+  closeEnrollments: closeEnrollmentsUseCase,
+  start: startCompetitionUseCase,
+  complete: completeCompetitionUseCase,
+  cancel: cancelCompetitionUseCase,
+  reopenEnrollments: reopenEnrollmentsUseCase,
+  revertStatus: revertCompetitionStatusUseCase,
+  revertToInProgress: revertCompetitionToInProgressUseCase,
+};
 
 const PAGE_SIZE = 20;
 
@@ -48,6 +71,17 @@ const AdminPanel = () => {
 
   const [editingUser, setEditingUser] = useState(null);
   const [managingUser, setManagingUser] = useState(null);
+
+  // Competitions
+  const [competitions, setCompetitions] = useState([]);
+  const [hasMoreCompetitions, setHasMoreCompetitions] = useState(false);
+  const [competitionOffset, setCompetitionOffset] = useState(0);
+  const [isLoadingCompetitions, setIsLoadingCompetitions] = useState(true);
+  const [competitionSearch, setCompetitionSearch] = useState('');
+  const [competitionSearchInput, setCompetitionSearchInput] = useState('');
+  const [editingCompetition, setEditingCompetition] = useState(null);
+  const [cancelingCompetition, setCancelingCompetition] = useState(null);
+  const [isTransitioning, setIsTransitioning] = useState(false);
 
   const loadStats = useCallback(async () => {
     setIsLoadingStats(true);
@@ -83,6 +117,26 @@ const AdminPanel = () => {
     }
   }, [search, roleFilter, statusFilter, verifiedFilter, offset, t]);
 
+  const loadCompetitions = useCallback(async () => {
+    setIsLoadingCompetitions(true);
+    try {
+      // Fetch one extra to know if there's a next page — the backend list
+      // endpoint returns a plain array with no total count to paginate against.
+      const data = await adminListCompetitionsUseCase.execute({
+        searchName: competitionSearch || undefined,
+        limit: PAGE_SIZE + 1,
+        offset: competitionOffset,
+      });
+      setHasMoreCompetitions(data.length > PAGE_SIZE);
+      setCompetitions(data.slice(0, PAGE_SIZE));
+    } catch (error) {
+      console.error('Error loading competitions:', error);
+      customToast.error(error.message || t('competitions.loadError'));
+    } finally {
+      setIsLoadingCompetitions(false);
+    }
+  }, [competitionSearch, competitionOffset, t]);
+
   useEffect(() => {
     if (user) {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- pre-existing pattern surfaced by eslint-plugin-react-hooks 7.1.1 bump; needs dedicated review (tracked in follow-up)
@@ -97,6 +151,13 @@ const AdminPanel = () => {
       loadUsers();
     }
   }, [user, activeTab, loadUsers]);
+
+  useEffect(() => {
+    if (user && activeTab === 'competitions') {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- pre-existing pattern surfaced by eslint-plugin-react-hooks 7.1.1 bump; needs dedicated review (tracked in follow-up)
+      loadCompetitions();
+    }
+  }, [user, activeTab, loadCompetitions]);
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
@@ -129,6 +190,42 @@ const AdminPanel = () => {
     loadStats();
   };
 
+  const handleCompetitionSearchSubmit = (e) => {
+    e.preventDefault();
+    setCompetitionOffset(0);
+    setCompetitionSearch(competitionSearchInput.trim());
+  };
+
+  const handleUpdateCompetition = async (fields) => {
+    await adminUpdateCompetitionUseCase.execute(editingCompetition.id, fields);
+    customToast.success(t('competitions.editModal.success'));
+    setEditingCompetition(null);
+    loadCompetitions();
+  };
+
+  const runTransition = async (competition, action) => {
+    setIsTransitioning(true);
+    try {
+      await TRANSITION_USE_CASES[action].execute(competition.id);
+      customToast.success(t('competitions.transitionSuccess'));
+      loadCompetitions();
+    } catch (error) {
+      console.error(`Error running competition transition "${action}":`, error);
+      customToast.error(error.message || t('competitions.transitionError'));
+    } finally {
+      setIsTransitioning(false);
+      setCancelingCompetition(null);
+    }
+  };
+
+  const handleTransition = (competition, action) => {
+    if (action === 'cancel') {
+      setCancelingCompetition(competition);
+      return;
+    }
+    runTransition(competition, action);
+  };
+
   if (isLoadingUser) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -147,6 +244,7 @@ const AdminPanel = () => {
   const tabs = [
     { id: 'overview', label: t('tabs.overview'), icon: BarChart3 },
     { id: 'users', label: t('tabs.users'), icon: UsersIcon },
+    { id: 'competitions', label: t('tabs.competitions'), icon: Trophy },
     { id: 'golfCourses', label: t('tabs.golfCourses'), icon: Flag },
     { id: 'pending', label: t('tabs.pending'), icon: Clock },
   ];
@@ -346,6 +444,76 @@ const AdminPanel = () => {
                 </motion.div>
               )}
 
+              {activeTab === 'competitions' && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5 }}
+                  className="space-y-4"
+                >
+                  <form onSubmit={handleCompetitionSearchSubmit} className="flex flex-wrap gap-3 items-end">
+                    <div className="flex-1 min-w-[220px]">
+                      <div className="relative">
+                        <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                        <input
+                          type="text"
+                          value={competitionSearchInput}
+                          onChange={(e) => setCompetitionSearchInput(e.target.value)}
+                          placeholder={t('competitions.searchPlaceholder')}
+                          className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-400 focus:border-primary-400 outline-none"
+                        />
+                      </div>
+                    </div>
+                    <button
+                      type="submit"
+                      className="px-4 py-2 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary/90 transition-colors"
+                    >
+                      {t('competitions.searchButton')}
+                    </button>
+                  </form>
+
+                  <p className="text-sm text-gray-500">
+                    {t('competitions.totalCount', { count: competitions.length })}
+                  </p>
+
+                  {isLoadingCompetitions ? (
+                    <div className="flex justify-center py-12">
+                      <Loader className="w-8 h-8 text-primary animate-spin" />
+                    </div>
+                  ) : (
+                    <>
+                      <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+                        <AdminCompetitionsTable
+                          competitions={competitions}
+                          onEdit={setEditingCompetition}
+                          onTransition={handleTransition}
+                          disabled={isTransitioning}
+                        />
+                      </div>
+
+                      {(competitionOffset > 0 || hasMoreCompetitions) && (
+                        <div className="flex items-center justify-between pt-2">
+                          <button
+                            onClick={() => setCompetitionOffset((prev) => Math.max(0, prev - PAGE_SIZE))}
+                            disabled={competitionOffset === 0}
+                            className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            {t('competitions.previous')}
+                          </button>
+                          <button
+                            onClick={() => setCompetitionOffset((prev) => prev + PAGE_SIZE)}
+                            disabled={!hasMoreCompetitions}
+                            className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            {t('competitions.next')}
+                          </button>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </motion.div>
+              )}
+
               {activeTab === 'golfCourses' && <GolfCourses embedded />}
               {activeTab === 'pending' && <PendingGolfCourses embedded />}
             </div>
@@ -368,6 +536,60 @@ const AdminPanel = () => {
           onDelete={handleDeleteUser}
           onCancel={() => setManagingUser(null)}
         />
+      )}
+
+      {editingCompetition && (
+        <AdminEditCompetitionModal
+          competition={editingCompetition}
+          onSubmit={handleUpdateCompetition}
+          onCancel={() => setEditingCompetition(null)}
+        />
+      )}
+
+      {cancelingCompetition && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white rounded-xl shadow-2xl max-w-md w-full"
+          >
+            <div className="flex items-start justify-between p-6 border-b border-gray-200">
+              <div className="flex items-start gap-3">
+                <AlertTriangle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                <div>
+                  <h2 className="text-xl font-bold text-gray-900">{t('competitions.confirmCancelTitle')}</h2>
+                  <p className="text-sm text-gray-500 mt-1">{t('competitions.confirmCancelBody')}</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setCancelingCompetition(null)}
+                className="text-gray-400 hover:text-gray-600"
+                aria-label={t('competitions.confirmCancelDismiss')}
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="flex justify-end gap-3 p-6">
+              <button
+                type="button"
+                onClick={() => setCancelingCompetition(null)}
+                disabled={isTransitioning}
+                className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                {t('competitions.confirmCancelDismiss')}
+              </button>
+              <button
+                type="button"
+                onClick={() => runTransition(cancelingCompetition, 'cancel')}
+                disabled={isTransitioning}
+                className="flex items-center gap-2 px-5 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition-colors disabled:opacity-60"
+              >
+                {isTransitioning && <Loader className="w-4 h-4 animate-spin" />}
+                {t('competitions.confirmCancel')}
+              </button>
+            </div>
+          </motion.div>
+        </div>
       )}
     </div>
   );
