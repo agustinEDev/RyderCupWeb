@@ -5,7 +5,8 @@
     "overview": "Resumen",
     "users": "Usuarios",
     "golfCourses": "Campos de golf",
-    "pending": "Pendientes"
+    "pending": "Pendientes",
+    "competitions": "Competiciones"
   },
   "overview": {
     "totalUsers": "Usuarios registrados",
@@ -37,6 +38,8 @@
     "columnRole": "Rol",
     "columnStatus": "Estado",
     "columnJoined": "Alta",
+    "columnLastLogin": "Última conexión",
+    "lastLoginNever": "Nunca",
     "columnActions": "Acciones",
     "roleAdmin": "Admin",
     "rolePlayer": "Jugador",
@@ -53,6 +56,51 @@
     "previous": "Anterior",
     "next": "Siguiente",
     "pageInfo": "Página {{current}} de {{total}}"
+  },
+  "competitions": {
+    "searchPlaceholder": "Buscar por nombre o creador…",
+    "searchButton": "Buscar",
+    "totalCount_one": "{{count}} competición",
+    "totalCount_other": "{{count}} competiciones",
+    "columnName": "Competición",
+    "columnCreator": "Creador",
+    "columnStatus": "Estado",
+    "columnDates": "Fechas",
+    "columnActions": "Acciones",
+    "noResults": "No se han encontrado competiciones con esos filtros.",
+    "loadError": "Error al cargar las competiciones",
+    "unknownCreator": "Desconocido",
+    "editTooltip": "Editar",
+    "editDisabledTooltip": "Solo se pueden editar competiciones en estado borrador",
+    "transitionsTooltip": "Cambiar estado",
+    "editModal": {
+      "title": "Editar competición",
+      "subtitle": "Solo disponible en estado borrador. Los cambios se guardan al confirmar.",
+      "name": "Nombre",
+      "startDate": "Fecha de inicio",
+      "endDate": "Fecha de fin",
+      "cancel": "Cancelar",
+      "save": "Guardar cambios",
+      "saving": "Guardando…",
+      "success": "Competición actualizada",
+      "error": "Error al actualizar la competición"
+    },
+    "actions": {
+      "activate": "Activar",
+      "closeEnrollments": "Cerrar inscripciones",
+      "start": "Iniciar",
+      "complete": "Completar",
+      "cancel": "Cancelar competición",
+      "reopenEnrollments": "Reabrir inscripciones",
+      "revertStatus": "Revertir a cerrada",
+      "revertToInProgress": "Revertir a en progreso"
+    },
+    "confirmCancelTitle": "¿Cancelar esta competición?",
+    "confirmCancelBody": "Esta acción marca la competición como cancelada. Puede ser necesario para destrabar torneos abandonados.",
+    "confirmCancel": "Sí, cancelar",
+    "confirmCancelDismiss": "No cancelar",
+    "transitionSuccess": "Estado actualizado",
+    "transitionError": "Error al cambiar el estado"
   },
   "editModal": {
     "title": "Editar usuario",

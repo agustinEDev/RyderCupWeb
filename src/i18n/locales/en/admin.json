@@ -5,7 +5,8 @@
     "overview": "Overview",
     "users": "Users",
     "golfCourses": "Golf Courses",
-    "pending": "Pending"
+    "pending": "Pending",
+    "competitions": "Competitions"
   },
   "overview": {
     "totalUsers": "Registered users",
@@ -37,6 +38,8 @@
     "columnRole": "Role",
     "columnStatus": "Status",
     "columnJoined": "Joined",
+    "columnLastLogin": "Last login",
+    "lastLoginNever": "Never",
     "columnActions": "Actions",
     "roleAdmin": "Admin",
     "rolePlayer": "Player",
@@ -53,6 +56,51 @@
     "previous": "Previous",
     "next": "Next",
     "pageInfo": "Page {{current}} of {{total}}"
+  },
+  "competitions": {
+    "searchPlaceholder": "Search by name or creator…",
+    "searchButton": "Search",
+    "totalCount_one": "{{count}} competition",
+    "totalCount_other": "{{count}} competitions",
+    "columnName": "Competition",
+    "columnCreator": "Creator",
+    "columnStatus": "Status",
+    "columnDates": "Dates",
+    "columnActions": "Actions",
+    "noResults": "No competitions found matching those filters.",
+    "loadError": "Failed to load competitions",
+    "unknownCreator": "Unknown",
+    "editTooltip": "Edit",
+    "editDisabledTooltip": "Only draft competitions can be edited",
+    "transitionsTooltip": "Change status",
+    "editModal": {
+      "title": "Edit competition",
+      "subtitle": "Only available in draft status. Changes are saved on confirm.",
+      "name": "Name",
+      "startDate": "Start date",
+      "endDate": "End date",
+      "cancel": "Cancel",
+      "save": "Save changes",
+      "saving": "Saving…",
+      "success": "Competition updated",
+      "error": "Failed to update competition"
+    },
+    "actions": {
+      "activate": "Activate",
+      "closeEnrollments": "Close enrollments",
+      "start": "Start",
+      "complete": "Complete",
+      "cancel": "Cancel competition",
+      "reopenEnrollments": "Reopen enrollments",
+      "revertStatus": "Revert to closed",
+      "revertToInProgress": "Revert to in progress"
+    },
+    "confirmCancelTitle": "Cancel this competition?",
+    "confirmCancelBody": "This marks the competition as cancelled. Useful to unstick abandoned tournaments.",
+    "confirmCancel": "Yes, cancel",
+    "confirmCancelDismiss": "No, keep it",
+    "transitionSuccess": "Status updated",
+    "transitionError": "Failed to update status"
   },
   "editModal": {
     "title": "Edit user",

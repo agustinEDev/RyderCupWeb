@@ -33,6 +33,16 @@ const mockListAdminUsers = vi.fn();
 const mockUpdateAdminUser = vi.fn();
 const mockSetAdminUserActive = vi.fn();
 const mockDeleteAdminUser = vi.fn();
+const mockAdminListCompetitions = vi.fn();
+const mockAdminUpdateCompetition = vi.fn();
+const mockActivateCompetition = vi.fn();
+const mockCloseEnrollments = vi.fn();
+const mockStartCompetition = vi.fn();
+const mockCompleteCompetition = vi.fn();
+const mockCancelCompetition = vi.fn();
+const mockReopenEnrollments = vi.fn();
+const mockRevertCompetitionStatus = vi.fn();
+const mockRevertCompetitionToInProgress = vi.fn();
 
 vi.mock('../../composition', () => ({
   getAdminStatsUseCase: { execute: (...args) => mockGetAdminStats(...args) },
@@ -40,6 +50,16 @@ vi.mock('../../composition', () => ({
   updateAdminUserUseCase: { execute: (...args) => mockUpdateAdminUser(...args) },
   setAdminUserActiveUseCase: { execute: (...args) => mockSetAdminUserActive(...args) },
   deleteAdminUserUseCase: { execute: (...args) => mockDeleteAdminUser(...args) },
+  adminListCompetitionsUseCase: { execute: (...args) => mockAdminListCompetitions(...args) },
+  adminUpdateCompetitionUseCase: { execute: (...args) => mockAdminUpdateCompetition(...args) },
+  activateCompetitionUseCase: { execute: (...args) => mockActivateCompetition(...args) },
+  closeEnrollmentsUseCase: { execute: (...args) => mockCloseEnrollments(...args) },
+  startCompetitionUseCase: { execute: (...args) => mockStartCompetition(...args) },
+  completeCompetitionUseCase: { execute: (...args) => mockCompleteCompetition(...args) },
+  cancelCompetitionUseCase: { execute: (...args) => mockCancelCompetition(...args) },
+  reopenEnrollmentsUseCase: { execute: (...args) => mockReopenEnrollments(...args) },
+  revertCompetitionStatusUseCase: { execute: (...args) => mockRevertCompetitionStatus(...args) },
+  revertCompetitionToInProgressUseCase: { execute: (...args) => mockRevertCompetitionToInProgress(...args) },
 }));
 
 const stats = {
@@ -69,11 +89,31 @@ const usersResponse = {
   offset: 0,
 };
 
+const competitionsResponse = [
+  {
+    id: 'c1',
+    name: 'Ryder Cup Local',
+    status: 'DRAFT',
+    startDate: '2026-09-01',
+    endDate: '2026-09-03',
+    creator: { firstName: 'Ana', lastName: 'Ruiz' },
+  },
+  {
+    id: 'c2',
+    name: 'Stuck Tournament',
+    status: 'IN_PROGRESS',
+    startDate: '2026-08-01',
+    endDate: '2026-08-02',
+    creator: { firstName: 'Bea', lastName: 'Soto' },
+  },
+];
+
 describe('AdminPanel', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockGetAdminStats.mockResolvedValue(stats);
     mockListAdminUsers.mockResolvedValue(usersResponse);
+    mockAdminListCompetitions.mockResolvedValue(competitionsResponse);
   });
 
   it('loads and renders the overview stats on mount', async () => {
@@ -176,5 +216,59 @@ describe('AdminPanel', () => {
     expect(await screen.findByText('manageModal.deleteBlockedTitle')).toBeInTheDocument();
     // The user is still present in the table — nothing was deleted
     expect(screen.getByText('Agus Estevez')).toBeInTheDocument();
+  });
+
+  it('loads and renders the competitions table when switching to the Competitions tab', async () => {
+    render(<AdminPanel />);
+    await waitFor(() => expect(mockGetAdminStats).toHaveBeenCalled());
+
+    fireEvent.click(screen.getByRole('tab', { name: /tabs.competitions/ }));
+
+    await waitFor(() => expect(mockAdminListCompetitions).toHaveBeenCalled());
+    expect(await screen.findByText('Ryder Cup Local')).toBeInTheDocument();
+    expect(screen.getByText('Stuck Tournament')).toBeInTheDocument();
+  });
+
+  it('only allows editing DRAFT competitions and saves via adminUpdateCompetitionUseCase', async () => {
+    mockAdminUpdateCompetition.mockResolvedValue({ id: 'c1', name: 'Renamed' });
+    render(<AdminPanel />);
+    await waitFor(() => expect(mockGetAdminStats).toHaveBeenCalled());
+    fireEvent.click(screen.getByRole('tab', { name: /tabs.competitions/ }));
+    await screen.findByText('Ryder Cup Local');
+
+    const editButtons = screen.getAllByRole('button', { name: 'competitions.editTooltip' });
+    expect(editButtons).toHaveLength(1); // only the DRAFT competition has an enabled edit button
+
+    fireEvent.click(editButtons[0]);
+    fireEvent.click(screen.getByRole('button', { name: 'competitions.editModal.save' }));
+
+    await waitFor(() => expect(mockAdminUpdateCompetition).toHaveBeenCalledWith('c1', expect.any(Object)));
+  });
+
+  it('runs a non-destructive transition immediately', async () => {
+    mockActivateCompetition.mockResolvedValue({ id: 'c1', status: 'ACTIVE' });
+    render(<AdminPanel />);
+    await waitFor(() => expect(mockGetAdminStats).toHaveBeenCalled());
+    fireEvent.click(screen.getByRole('tab', { name: /tabs.competitions/ }));
+    await screen.findByText('Ryder Cup Local');
+
+    fireEvent.click(screen.getByRole('button', { name: 'competitions.actions.activate' }));
+
+    await waitFor(() => expect(mockActivateCompetition).toHaveBeenCalledWith('c1'));
+  });
+
+  it('requires confirmation before cancelling a competition', async () => {
+    mockCancelCompetition.mockResolvedValue({ id: 'c1', status: 'CANCELLED' });
+    render(<AdminPanel />);
+    await waitFor(() => expect(mockGetAdminStats).toHaveBeenCalled());
+    fireEvent.click(screen.getByRole('tab', { name: /tabs.competitions/ }));
+    await screen.findByText('Ryder Cup Local');
+
+    fireEvent.click(screen.getAllByRole('button', { name: 'competitions.actions.cancel' })[0]);
+    expect(mockCancelCompetition).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole('button', { name: 'competitions.confirmCancel' }));
+
+    await waitFor(() => expect(mockCancelCompetition).toHaveBeenCalledWith('c1'));
   });
 });

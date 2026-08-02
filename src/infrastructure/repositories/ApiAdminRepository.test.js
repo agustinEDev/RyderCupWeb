@@ -90,6 +90,7 @@ describe('ApiAdminRepository', () => {
         isActive: true,
         emailVerified: true,
         createdAt: '2026-07-27T00:00:00Z',
+        lastLoginAt: null,
       });
     });
 

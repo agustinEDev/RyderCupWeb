@@ -97,6 +97,7 @@ class ApiAdminRepository extends IAdminRepository {
       isActive: userData.is_active,
       emailVerified: userData.email_verified,
       createdAt: userData.created_at,
+      lastLoginAt: userData.last_login_at ?? null,
     };
   }
 }
