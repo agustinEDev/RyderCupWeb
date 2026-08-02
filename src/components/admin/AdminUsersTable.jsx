@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next';
  * Table of users for the admin panel with role/status pills and row actions.
  */
 const AdminUsersTable = ({ users, onEdit, onToggleActive, onManageDelete }) => {
-  const { t } = useTranslation('admin');
+  const { t, i18n } = useTranslation('admin');
 
   if (!users || users.length === 0) {
     return (
@@ -70,7 +70,7 @@ const AdminUsersTable = ({ users, onEdit, onToggleActive, onManageDelete }) => {
                 )}
               </td>
               <td className="py-3 px-4 text-gray-500">
-                {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : '—'}
+                {user.createdAt ? new Date(user.createdAt).toLocaleDateString(i18n.language) : '—'}
               </td>
               <td className="py-3 px-4">
                 <div className="flex items-center justify-end gap-1">

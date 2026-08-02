@@ -14,7 +14,7 @@ const EditUserModal = ({ user, onSubmit, onCancel }) => {
     lastName: user.lastName || '',
     email: user.email || '',
     handicap: user.handicap ?? '',
-    isAdmin: user.isAdmin,
+    isAdmin: user.isAdmin ?? false,
   });
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState('');
@@ -66,8 +66,9 @@ const EditUserModal = ({ user, onSubmit, onCancel }) => {
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{t('editModal.firstName')}</label>
+              <label htmlFor="edit-user-first-name" className="block text-sm font-medium text-gray-700 mb-1">{t('editModal.firstName')}</label>
               <input
+                id="edit-user-first-name"
                 type="text"
                 value={formData.firstName}
                 onChange={handleChange('firstName')}
@@ -76,8 +77,9 @@ const EditUserModal = ({ user, onSubmit, onCancel }) => {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{t('editModal.lastName')}</label>
+              <label htmlFor="edit-user-last-name" className="block text-sm font-medium text-gray-700 mb-1">{t('editModal.lastName')}</label>
               <input
+                id="edit-user-last-name"
                 type="text"
                 value={formData.lastName}
                 onChange={handleChange('lastName')}
@@ -88,8 +90,9 @@ const EditUserModal = ({ user, onSubmit, onCancel }) => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">{t('editModal.email')}</label>
+            <label htmlFor="edit-user-email" className="block text-sm font-medium text-gray-700 mb-1">{t('editModal.email')}</label>
             <input
+              id="edit-user-email"
               type="email"
               value={formData.email}
               onChange={handleChange('email')}
@@ -99,8 +102,9 @@ const EditUserModal = ({ user, onSubmit, onCancel }) => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">{t('editModal.handicap')}</label>
+            <label htmlFor="edit-user-handicap" className="block text-sm font-medium text-gray-700 mb-1">{t('editModal.handicap')}</label>
             <input
+              id="edit-user-handicap"
               type="number"
               step="0.1"
               value={formData.handicap}

@@ -75,7 +75,7 @@
     "deactivateOption": "Desactivar cuenta",
     "deactivateDesc": "Bloquea el login y la oculta de listados. Reversible, no toca ningún dato.",
     "deleteOption": "Eliminar permanentemente",
-    "deleteDesc": "Borra la cuenta y su historial. No reversible.",
+    "deleteDesc": "Borra la cuenta y su historial. Es irreversible.",
     "confirmDeleteLabel": "Escribe ELIMINAR para confirmar",
     "confirmDeletePlaceholder": "ELIMINAR",
     "confirmDeleteWord": "ELIMINAR",

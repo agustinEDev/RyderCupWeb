@@ -5,6 +5,7 @@ import AdminPanel from './AdminPanel';
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (key, params) => (params?.count !== undefined ? `${key}_${params.count}` : key),
+    i18n: { language: 'en' },
   }),
 }));
 
@@ -87,7 +88,7 @@ describe('AdminPanel', () => {
     render(<AdminPanel />);
     await waitFor(() => expect(mockGetAdminStats).toHaveBeenCalled());
 
-    fireEvent.click(screen.getByRole('button', { name: /tabs.users/ }));
+    fireEvent.click(screen.getByRole('tab', { name: /tabs.users/ }));
 
     await waitFor(() => expect(mockListAdminUsers).toHaveBeenCalled());
     expect(await screen.findByText('Agus Estevez')).toBeInTheDocument();
@@ -97,7 +98,7 @@ describe('AdminPanel', () => {
     render(<AdminPanel />);
     await waitFor(() => expect(mockGetAdminStats).toHaveBeenCalled());
 
-    fireEvent.click(screen.getByRole('button', { name: /tabs.golfCourses/ }));
+    fireEvent.click(screen.getByRole('tab', { name: /tabs.golfCourses/ }));
 
     expect(await screen.findByTestId('golf-courses-tab')).toBeInTheDocument();
   });
@@ -106,7 +107,7 @@ describe('AdminPanel', () => {
     render(<AdminPanel />);
     await waitFor(() => expect(mockGetAdminStats).toHaveBeenCalled());
 
-    fireEvent.click(screen.getByRole('button', { name: /tabs.pending/ }));
+    fireEvent.click(screen.getByRole('tab', { name: /tabs.pending/ }));
 
     expect(await screen.findByTestId('pending-golf-courses-tab')).toBeInTheDocument();
   });
@@ -115,7 +116,7 @@ describe('AdminPanel', () => {
     mockUpdateAdminUser.mockResolvedValue({ ...usersResponse.users[0], firstName: 'Renamed' });
     render(<AdminPanel />);
     await waitFor(() => expect(mockGetAdminStats).toHaveBeenCalled());
-    fireEvent.click(screen.getByRole('button', { name: /tabs.users/ }));
+    fireEvent.click(screen.getByRole('tab', { name: /tabs.users/ }));
     await screen.findByText('Agus Estevez');
 
     fireEvent.click(screen.getByRole('button', { name: 'users.editTooltip' }));
@@ -128,12 +129,52 @@ describe('AdminPanel', () => {
     mockSetAdminUserActive.mockResolvedValue();
     render(<AdminPanel />);
     await waitFor(() => expect(mockGetAdminStats).toHaveBeenCalled());
-    fireEvent.click(screen.getByRole('button', { name: /tabs.users/ }));
+    fireEvent.click(screen.getByRole('tab', { name: /tabs.users/ }));
     await screen.findByText('Agus Estevez');
 
     fireEvent.click(screen.getByRole('button', { name: 'users.deactivateTooltip' }));
     fireEvent.click(screen.getByRole('button', { name: 'manageModal.confirmDeactivate' }));
 
     await waitFor(() => expect(mockSetAdminUserActive).toHaveBeenCalledWith('u1', false));
+  });
+
+  it('permanently deletes a user once the confirmation word is typed', async () => {
+    mockDeleteAdminUser.mockResolvedValue();
+    render(<AdminPanel />);
+    await waitFor(() => expect(mockGetAdminStats).toHaveBeenCalled());
+    fireEvent.click(screen.getByRole('tab', { name: /tabs.users/ }));
+    await screen.findByText('Agus Estevez');
+
+    fireEvent.click(screen.getByRole('button', { name: 'users.deleteTooltip' }));
+    fireEvent.click(screen.getByRole('radio', { name: /manageModal.deleteOption/ }));
+    fireEvent.change(screen.getByPlaceholderText('manageModal.confirmDeletePlaceholder'), {
+      target: { value: 'manageModal.confirmDeleteWord' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'manageModal.confirmDelete' }));
+
+    await waitFor(() => expect(mockDeleteAdminUser).toHaveBeenCalledWith('u1'));
+    // Refreshes the overview stats after a successful delete
+    await waitFor(() => expect(mockGetAdminStats.mock.calls.length).toBeGreaterThan(1));
+  });
+
+  it('shows the blocked message when delete is rejected with a 409', async () => {
+    const error = new Error('has created one or more quick matches');
+    error.status = 409;
+    mockDeleteAdminUser.mockRejectedValue(error);
+    render(<AdminPanel />);
+    await waitFor(() => expect(mockGetAdminStats).toHaveBeenCalled());
+    fireEvent.click(screen.getByRole('tab', { name: /tabs.users/ }));
+    await screen.findByText('Agus Estevez');
+
+    fireEvent.click(screen.getByRole('button', { name: 'users.deleteTooltip' }));
+    fireEvent.click(screen.getByRole('radio', { name: /manageModal.deleteOption/ }));
+    fireEvent.change(screen.getByPlaceholderText('manageModal.confirmDeletePlaceholder'), {
+      target: { value: 'manageModal.confirmDeleteWord' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'manageModal.confirmDelete' }));
+
+    expect(await screen.findByText('manageModal.deleteBlockedTitle')).toBeInTheDocument();
+    // The user is still present in the table — nothing was deleted
+    expect(screen.getByText('Agus Estevez')).toBeInTheDocument();
   });
 });

@@ -126,6 +126,7 @@ const AdminPanel = () => {
     setTotalCount((prev) => Math.max(0, prev - 1));
     customToast.success(t('manageModal.deleteSuccess'));
     setManagingUser(null);
+    loadStats();
   };
 
   if (isLoadingUser) {
@@ -177,10 +178,12 @@ const AdminPanel = () => {
               transition={{ duration: 0.5, delay: 0.1 }}
               className="px-4"
             >
-              <div className="flex gap-2 border-b border-gray-200 overflow-x-auto">
+              <div role="tablist" className="flex gap-2 border-b border-gray-200 overflow-x-auto">
                 {tabs.map(({ id, label, icon: Icon }) => (
                   <button
                     key={id}
+                    role="tab"
+                    aria-selected={activeTab === id}
                     onClick={() => setActiveTab(id)}
                     className={`flex items-center gap-2 px-4 py-2 font-medium border-b-2 whitespace-nowrap transition-colors ${
                       activeTab === id
