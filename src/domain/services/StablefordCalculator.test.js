@@ -113,7 +113,13 @@ describe('StablefordCalculator', () => {
       const holeScores = [{ holeNumber: 1, participantId: 'p-1', score: 4 }];
 
       const result = StablefordCalculator.computeParticipantTotals(participant, holes, holeScores);
-      expect(result).toEqual({ stablefordPoints: 2, totalStrokes: 4, netStrokes: 4, holesPlayed: 1 });
+      expect(result).toEqual({
+        stablefordPoints: 2,
+        totalStrokes: 4,
+        netStrokes: 4,
+        parPlayed: 4,
+        holesPlayed: 1,
+      });
     });
 
     it('should ignore scores belonging to other participants', () => {
@@ -121,7 +127,13 @@ describe('StablefordCalculator', () => {
       const holeScores = [{ holeNumber: 1, participantId: 'p-2', score: 3 }];
 
       const result = StablefordCalculator.computeParticipantTotals(participant, holes, holeScores);
-      expect(result).toEqual({ stablefordPoints: 0, totalStrokes: 0, netStrokes: 0, holesPlayed: 0 });
+      expect(result).toEqual({
+        stablefordPoints: 0,
+        totalStrokes: 0,
+        netStrokes: 0,
+        parPlayed: 0,
+        holesPlayed: 0,
+      });
     });
 
     it('should subtract strokes received from gross to compute net strokes', () => {
@@ -157,6 +169,31 @@ describe('StablefordCalculator', () => {
       // PH = round(18 * 0.20) = 4 -> below SI 5 -> no stroke on hole 1 -> net 4
       expect(result.netStrokes).toBe(3);
       expect(resultLowAllowance.netStrokes).toBe(4);
+    });
+
+    it('should only sum par for the holes actually played', () => {
+      const participant = { participantId: 'p-1', handicap: 0 };
+      const holeScores = [
+        { holeNumber: 1, participantId: 'p-1', score: 4 },
+        { holeNumber: 2, participantId: 'p-1', score: 3 },
+      ];
+
+      const result = StablefordCalculator.computeParticipantTotals(participant, holes, holeScores);
+      expect(result.parPlayed).toBe(7); // par 4 + par 3
+    });
+  });
+
+  describe('formatToPar', () => {
+    it('formats an even score as PAR', () => {
+      expect(StablefordCalculator.formatToPar(0)).toBe('PAR');
+    });
+
+    it('formats an under-par score with a leading minus sign', () => {
+      expect(StablefordCalculator.formatToPar(-3)).toBe('-3');
+    });
+
+    it('formats an over-par score with a leading plus sign', () => {
+      expect(StablefordCalculator.formatToPar(4)).toBe('+4');
     });
   });
 

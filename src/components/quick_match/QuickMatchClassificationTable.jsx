@@ -62,6 +62,16 @@ const MatchStandingSummary = ({ participants, standing }) => {
  * standing instead — an individual points ranking doesn't mean anything there.
  * Split out of the hole-by-hole scorecard so each lives in its own tab.
  */
+const FinishedBadge = ({ t }) => (
+  <span
+    className="ml-1 text-[10px] font-bold text-gray-400 align-super"
+    title={t('scoring.classification.finishedTooltip')}
+    aria-label={t('scoring.classification.finishedTooltip')}
+  >
+    {t('scoring.classification.finishedBadge')}
+  </span>
+);
+
 const QuickMatchClassificationTable = ({
   holes = [],
   holeScores = [],
@@ -71,6 +81,7 @@ const QuickMatchClassificationTable = ({
   standing = null,
   tees = [],
   allowancePercentage = 100,
+  isCompleted = false,
 }) => {
   const { t } = useTranslation('quickMatch');
 
@@ -102,6 +113,7 @@ const QuickMatchClassificationTable = ({
               <th className="px-2 py-1.5 text-center font-medium">{t('scoring.classification.points')}</th>
             )}
             <th className="px-2 py-1.5 text-center font-medium">{t('scoring.classification.strokes')}</th>
+            <th className="px-2 py-1.5 text-center font-medium">{t('scoring.classification.hole')}</th>
           </tr>
         </thead>
         <tbody>
@@ -118,11 +130,21 @@ const QuickMatchClassificationTable = ({
                 )}
               </td>
               {isMedal ? (
-                <td className="px-2 py-1.5 text-center font-bold text-primary">{row.holesPlayed ? row.netStrokes : '-'}</td>
+                <td className="px-2 py-1.5 text-center font-bold text-primary">
+                  {row.holesPlayed ? row.netStrokes : '-'}
+                  {isCompleted && <FinishedBadge t={t} />}
+                </td>
               ) : (
-                <td className="px-2 py-1.5 text-center font-bold text-primary">{row.stablefordPoints}</td>
+                <td className="px-2 py-1.5 text-center font-bold text-primary">
+                  {row.stablefordPoints}
+                  {isCompleted && <FinishedBadge t={t} />}
+                </td>
               )}
-              <td className="px-2 py-1.5 text-center text-gray-700">{row.totalStrokes || '-'}</td>
+              <td className="px-2 py-1.5 text-center text-gray-700">
+                {row.totalStrokes || '-'}
+                {isCompleted && <FinishedBadge t={t} />}
+              </td>
+              <td className="px-2 py-1.5 text-center text-gray-500">{row.holesPlayed || '-'}</td>
             </tr>
           ))}
         </tbody>

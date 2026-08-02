@@ -4,7 +4,8 @@ import { Loader, Zap, ChevronRight } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import HeaderAuth from '../../components/layout/HeaderAuth';
 import { useAuth } from '../../hooks/useAuth';
-import { listMyQuickMatchesUseCase } from '../../composition';
+import { listMyQuickMatchesUseCase, getQuickMatchUseCase, getGolfCourseUseCase } from '../../composition';
+import StablefordCalculator from '../../domain/services/StablefordCalculator';
 
 const STATUS_STYLES = {
   PENDING: 'bg-amber-100 text-amber-800',
@@ -21,6 +22,7 @@ const MyQuickMatchesPage = () => {
   const [quickMatches, setQuickMatches] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [resultsByMatchId, setResultsByMatchId] = useState({});
 
   useEffect(() => {
     if (!user) return;
@@ -31,6 +33,66 @@ const MyQuickMatchesPage = () => {
       .catch((err) => setError(err))
       .finally(() => setIsLoading(false));
   }, [user]);
+
+  // For each finished quick match, compute the current user's own result
+  // (net-to-par + gross strokes) shown on its card. The list endpoint doesn't
+  // carry hole scores, so this fetches match detail + course per finished
+  // match (course lookups deduplicated), same approach the scoring page uses.
+  useEffect(() => {
+    const completedMatches = quickMatches.filter((qm) => qm.status === 'COMPLETED');
+    if (!user || completedMatches.length === 0) return;
+
+    let cancelled = false;
+    const courseCache = new Map();
+    const loadCourse = (golfCourseId) => {
+      if (!courseCache.has(golfCourseId)) {
+        courseCache.set(golfCourseId, getGolfCourseUseCase.execute(golfCourseId));
+      }
+      return courseCache.get(golfCourseId);
+    };
+
+    const loadResult = async (qm) => {
+      try {
+        const [detail, course] = await Promise.all([
+          getQuickMatchUseCase.execute(qm.id),
+          loadCourse(qm.golfCourseId),
+        ]);
+        const myParticipant = detail.participants.find((p) => p.userId === user.id);
+        if (!myParticipant) return null;
+
+        const totals = StablefordCalculator.computeParticipantTotals(
+          myParticipant,
+          course.holes || [],
+          detail.holeScores || [],
+          course.tees || [],
+          detail.effectiveAllowance ?? 100
+        );
+        if (totals.holesPlayed === 0) return null;
+
+        return {
+          toParLabel: StablefordCalculator.formatToPar(totals.netStrokes - totals.parPlayed),
+          totalStrokes: totals.totalStrokes,
+        };
+      } catch {
+        return null;
+      }
+    };
+
+    Promise.all(completedMatches.map((qm) => loadResult(qm).then((result) => [qm.id, result]))).then(
+      (entries) => {
+        if (cancelled) return;
+        const next = {};
+        for (const [id, result] of entries) {
+          if (result) next[id] = result;
+        }
+        setResultsByMatchId(next);
+      }
+    );
+
+    return () => {
+      cancelled = true;
+    };
+  }, [quickMatches, user]);
 
   if (isLoadingUser || isLoading) {
     return (
@@ -87,6 +149,14 @@ const MyQuickMatchesPage = () => {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
+                    {resultsByMatchId[qm.id] && (
+                      <div className="text-right" data-testid={`quick-match-result-${qm.id}`}>
+                        <p className="text-sm font-bold text-gray-900">{resultsByMatchId[qm.id].toParLabel}</p>
+                        <p className="text-[10px] text-gray-500">
+                          {t('history.grossStrokes', { count: resultsByMatchId[qm.id].totalStrokes })}
+                        </p>
+                      </div>
+                    )}
                     <span className={`text-xs font-semibold px-2 py-1 rounded-full ${STATUS_STYLES[qm.status] ?? 'bg-gray-100 text-gray-700'}`}>
                       {t(`history.status.${qm.status}`, qm.status)}
                     </span>
