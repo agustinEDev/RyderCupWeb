@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- **Panel de administración** (issue #233): nueva página `/admin` consolidada con pestañas Resumen (estadísticas globales), Usuarios (listado paginado con filtros de rol/estado/verificación, edición, desactivar/reactivar y borrado definitivo) y Campos de golf/Pendientes (integradas como pestañas, sustituyendo los enlaces sueltos del menú de Administración). El borrado definitivo respeta el bloqueo (409) del backend cuando la cuenta tiene actividad, ofreciendo desactivar como alternativa segura. Requiere el backend correspondiente (RyderCupAM).
+
 ## [2.3.1] - 2026-08-01
 
 ### Changed

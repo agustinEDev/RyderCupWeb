@@ -40,9 +40,8 @@ const CreateCompetition = lazyWithRetry(() => import('./pages/CreateCompetition'
 const CompetitionDetail = lazyWithRetry(() => import('./pages/CompetitionDetail'));
 const BrowseCompetitions = lazyWithRetry(() => import('./pages/BrowseCompetitions'));
 
-// Admin pages (v2.1.0 - Sprint 1)
-const GolfCourses = lazyWithRetry(() => import('./pages/admin/GolfCourses'));
-const PendingGolfCourses = lazyWithRetry(() => import('./pages/admin/PendingGolfCourses'));
+// Admin pages (v2.4.0 - Admin Panel)
+const AdminPanel = lazyWithRetry(() => import('./pages/admin/AdminPanel'));
 
 // Creator pages (v2.1.0 - Sprint 2)
 const SchedulePage = lazyWithRetry(() => import('./pages/creator/SchedulePage'));
@@ -235,18 +234,11 @@ function AppContent() {
         <Route path="/competitions/:id" element={<ProtectedRoute><CompetitionDetail /></ProtectedRoute>} />
         <Route path="/browse-competitions" element={<ProtectedRoute><BrowseCompetitions /></ProtectedRoute>} />
 
-        {/* Admin routes (v2.1.0 - Sprint 1) - Protected by ADMIN role */}
-        <Route path="/admin/golf-courses" element={
+        {/* Admin routes (v2.4.0) - Protected by ADMIN role */}
+        <Route path="/admin" element={
           <ProtectedRoute>
             <RoleGuard allowedRoles="ADMIN">
-              <GolfCourses />
-            </RoleGuard>
-          </ProtectedRoute>
-        } />
-        <Route path="/admin/golf-courses/pending" element={
-          <ProtectedRoute>
-            <RoleGuard allowedRoles="ADMIN">
-              <PendingGolfCourses />
+              <AdminPanel />
             </RoleGuard>
           </ProtectedRoute>
         } />
