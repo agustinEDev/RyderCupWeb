@@ -235,7 +235,7 @@ const QuickMatchScoringPage = () => {
             standing={quickMatch?.standing}
             tees={tees}
             allowancePercentage={quickMatch?.effectiveAllowance}
-            isCompleted={quickMatch ? quickMatch.isCompleted() : false}
+            isCompleted={!!quickMatch?.isCompleted}
           />
         )}
 
