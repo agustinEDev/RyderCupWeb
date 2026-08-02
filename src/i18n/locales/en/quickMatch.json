@@ -135,6 +135,7 @@
       "points": "Pts",
       "strokes": "Strokes",
       "netStrokes": "Net strokes",
+      "result": "Result",
       "hole": "Hole",
       "finishedBadge": "F",
       "finishedTooltip": "Match finished",
