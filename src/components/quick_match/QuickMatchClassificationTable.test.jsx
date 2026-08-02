@@ -139,6 +139,34 @@ describe('QuickMatchClassificationTable', () => {
     expect(within(rows[1]).getByText('Alice')).toBeInTheDocument();
   });
 
+  it('should show the to-par Resultado column alongside net and gross strokes for MEDAL', () => {
+    // Par 4 hole: Alice nets 5 (bogey, +1), Bob nets 3 (birdie, -1).
+    const holeScores = [
+      { holeNumber: 1, participantId: 'p-1', score: 5 },
+      { holeNumber: 1, participantId: 'p-2', score: 3 },
+    ];
+
+    render(
+      <QuickMatchClassificationTable
+        holes={holes}
+        holeScores={holeScores}
+        participants={participants}
+        currentParticipantId="p-1"
+        scoringFormat="MEDAL"
+      />
+    );
+
+    expect(screen.getByText('scoring.classification.result')).toBeInTheDocument();
+    const classificationTable = screen.getByTestId('quick-match-classification-table');
+    const rows = within(classificationTable).getAllByRole('row').slice(1);
+    const resultCell = (row) => within(row).getAllByRole('cell')[2]; // #, name, result, ...
+    // Bob (-1) ranks above Alice (+1).
+    expect(within(rows[0]).getByText('Bob')).toBeInTheDocument();
+    expect(resultCell(rows[0])).toHaveTextContent('-1');
+    expect(within(rows[1]).getByText('Alice')).toBeInTheDocument();
+    expect(resultCell(rows[1])).toHaveTextContent('+1');
+  });
+
   it('should show the match standing instead of a Stableford ranking for match-play formats', () => {
     render(
       <QuickMatchClassificationTable

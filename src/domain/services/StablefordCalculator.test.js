@@ -271,5 +271,36 @@ describe('StablefordCalculator', () => {
       const ranking = StablefordCalculator.rankParticipantsByMedal(participants, holes, holeScores);
       expect(ranking.map((r) => r.participantId)).toEqual(['p-1', 'p-2']);
     });
+
+    it('should rank by score-to-par, not raw net strokes, so a partial round ranks fairly', () => {
+      // 3 holes, all par 4 (par total 12).
+      const multiHoles = [
+        { holeNumber: 1, par: 4, strokeIndex: 1 },
+        { holeNumber: 2, par: 4, strokeIndex: 2 },
+        { holeNumber: 3, par: 4, strokeIndex: 3 },
+      ];
+      const participants = [
+        { participantId: 'further-along', name: 'Alice', handicap: 0 },
+        { participantId: 'just-started', name: 'Bob', handicap: 0 },
+      ];
+      const holeScores = [
+        // Alice played all 3 holes at par -> net 12, toPar 0.
+        { holeNumber: 1, participantId: 'further-along', score: 4 },
+        { holeNumber: 2, participantId: 'further-along', score: 4 },
+        { holeNumber: 3, participantId: 'further-along', score: 4 },
+        // Bob played only 1 hole with a bogey -> net 5, toPar +1.
+        { holeNumber: 1, participantId: 'just-started', score: 5 },
+      ];
+
+      const ranking = StablefordCalculator.rankParticipantsByMedal(
+        participants,
+        multiHoles,
+        holeScores
+      );
+
+      // Raw net strokes would rank Bob first (5 < 12); score-to-par correctly
+      // ranks Alice first instead (even vs. one over).
+      expect(ranking.map((r) => r.participantId)).toEqual(['further-along', 'just-started']);
+    });
   });
 });

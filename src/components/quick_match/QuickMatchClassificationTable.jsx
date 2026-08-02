@@ -108,7 +108,10 @@ const QuickMatchClassificationTable = ({
             <th className="px-2 py-1.5 text-left font-medium">#</th>
             <th className="px-2 py-1.5 text-left font-medium">{t('scoring.classification.player')}</th>
             {isMedal ? (
-              <th className="px-2 py-1.5 text-center font-medium">{t('scoring.classification.netStrokes')}</th>
+              <>
+                <th className="px-2 py-1.5 text-center font-medium">{t('scoring.classification.result')}</th>
+                <th className="px-2 py-1.5 text-center font-medium">{t('scoring.classification.netStrokes')}</th>
+              </>
             ) : (
               <th className="px-2 py-1.5 text-center font-medium">{t('scoring.classification.points')}</th>
             )}
@@ -130,10 +133,16 @@ const QuickMatchClassificationTable = ({
                 )}
               </td>
               {isMedal ? (
-                <td className="px-2 py-1.5 text-center font-bold text-primary">
-                  {row.holesPlayed ? row.netStrokes : '-'}
-                  {isCompleted && <FinishedBadge t={t} />}
-                </td>
+                <>
+                  <td className="px-2 py-1.5 text-center font-bold text-primary">
+                    {row.holesPlayed ? StablefordCalculator.formatToPar(row.netStrokes - row.parPlayed) : '-'}
+                    {isCompleted && <FinishedBadge t={t} />}
+                  </td>
+                  <td className="px-2 py-1.5 text-center text-gray-700">
+                    {row.holesPlayed ? row.netStrokes : '-'}
+                    {isCompleted && <FinishedBadge t={t} />}
+                  </td>
+                </>
               ) : (
                 <td className="px-2 py-1.5 text-center font-bold text-primary">
                   {row.stablefordPoints}
