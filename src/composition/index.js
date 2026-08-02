@@ -41,6 +41,14 @@ import ApproveGolfCourseUpdateUseCase from '../application/use_cases/golf_course
 import RejectGolfCourseUpdateUseCase from '../application/use_cases/golf_course/RejectGolfCourseUpdateUseCase';
 import ListPendingGolfCoursesUseCase from '../application/use_cases/golf_course/ListPendingGolfCoursesUseCase';
 
+// Admin Panel Use Cases (v2.4.0)
+import ApiAdminRepository from '../infrastructure/repositories/ApiAdminRepository';
+import GetAdminStatsUseCase from '../application/use_cases/admin/GetAdminStatsUseCase';
+import ListAdminUsersUseCase from '../application/use_cases/admin/ListAdminUsersUseCase';
+import UpdateAdminUserUseCase from '../application/use_cases/admin/UpdateAdminUserUseCase';
+import SetAdminUserActiveUseCase from '../application/use_cases/admin/SetAdminUserActiveUseCase';
+import DeleteAdminUserUseCase from '../application/use_cases/admin/DeleteAdminUserUseCase';
+
 // Device Management Use Cases (v1.13.0)
 import ApiDeviceRepository from '../infrastructure/repositories/ApiDeviceRepository';
 import GetActiveDevicesUseCase from '../application/use_cases/device/GetActiveDevicesUseCase';
@@ -158,6 +166,7 @@ const apiCompetitionRepository = new ApiCompetitionRepository();
 const apiEnrollmentRepository = new ApiEnrollmentRepository();
 const apiDeviceRepository = new ApiDeviceRepository();
 const apiGolfCourseRepository = new ApiGolfCourseRepository();
+const apiAdminRepository = new ApiAdminRepository();
 const apiScheduleRepository = new ApiScheduleRepository();
 const apiSupportRepository = new ApiSupportRepository();
 const apiCountryRepository = new ApiCountryRepository();
@@ -298,6 +307,13 @@ const approveGolfCourseUpdateUseCase = new ApproveGolfCourseUpdateUseCase({ golf
 const rejectGolfCourseUpdateUseCase = new RejectGolfCourseUpdateUseCase({ golfCourseRepository: apiGolfCourseRepository });
 const listPendingGolfCoursesUseCase = new ListPendingGolfCoursesUseCase({ golfCourseRepository: apiGolfCourseRepository });
 
+// Admin Panel Use Cases (v2.4.0)
+const getAdminStatsUseCase = new GetAdminStatsUseCase({ adminRepository: apiAdminRepository });
+const listAdminUsersUseCase = new ListAdminUsersUseCase({ adminRepository: apiAdminRepository });
+const updateAdminUserUseCase = new UpdateAdminUserUseCase({ adminRepository: apiAdminRepository });
+const setAdminUserActiveUseCase = new SetAdminUserActiveUseCase({ adminRepository: apiAdminRepository });
+const deleteAdminUserUseCase = new DeleteAdminUserUseCase({ adminRepository: apiAdminRepository });
+
 // Exportar los casos de uso y otros servicios que la capa de presentación necesite
 export {
   updateUserProfileUseCase,
@@ -364,6 +380,12 @@ export {
   approveGolfCourseUpdateUseCase,
   rejectGolfCourseUpdateUseCase,
   listPendingGolfCoursesUseCase,
+  // Admin Panel Use Cases (v2.4.0)
+  getAdminStatsUseCase,
+  listAdminUsersUseCase,
+  updateAdminUserUseCase,
+  setAdminUserActiveUseCase,
+  deleteAdminUserUseCase,
   // Support Use Cases
   submitContactFormUseCase,
   // Schedule Use Cases (v2.1.0 - Sprint 2)

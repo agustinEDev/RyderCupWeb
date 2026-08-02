@@ -17,8 +17,11 @@ import {
  * GolfCourses Page (Admin)
  * Lists all APPROVED golf courses
  * Admin can create new courses (directly APPROVED) and edit existing ones
+ *
+ * @param {boolean} [embedded=false] - When true, renders just the content
+ *   (no HeaderAuth/page shell) so it can be used as a tab inside AdminPanel.
  */
-const GolfCourses = () => {
+const GolfCourses = ({ embedded = false }) => {
   const { t } = useTranslation('golfCourses');
   const { user, loading: isLoadingUser } = useAuth();
 
@@ -115,73 +118,86 @@ const GolfCourses = () => {
     return null;
   }
 
+  const content = (
+    <div className={embedded ? undefined : 'layout-content-container flex flex-col max-w-[1200px] flex-1'}>
+      {/* Header */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="flex flex-wrap justify-between items-center gap-3 p-4"
+      >
+        <div>
+          {!embedded && (
+            <>
+              <h1 className="text-gray-900 tracking-tight text-3xl md:text-[32px] font-bold leading-tight">
+                {t('pages.admin.title')}
+              </h1>
+              <p className="text-gray-500 text-sm mt-1">
+                {t('pages.admin.subtitle')}
+              </p>
+            </>
+          )}
+        </div>
+        <motion.button
+          onClick={() => setShowCreateModal(true)}
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+          className="flex items-center gap-2 px-5 py-2.5 bg-primary text-white rounded-lg font-medium hover:bg-primary/90 transition-colors shadow-md"
+        >
+          <Plus className="w-4 h-4" />
+          <span>{t('pages.admin.createCourse')}</span>
+        </motion.button>
+      </motion.div>
+
+      {/* Stats */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.1 }}
+        className="p-4"
+      >
+        <div className="bg-primary-50 border border-primary-200 rounded-lg p-4">
+          <p className="text-sm text-gray-600">
+            {t('pages.admin.totalCourses')}: <span className="font-bold text-gray-900">{courses.length}</span>
+          </p>
+        </div>
+      </motion.div>
+
+      {/* Table */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.2 }}
+        className="p-4"
+      >
+        <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+          <GolfCourseTable
+            courses={courses}
+            onView={handleView}
+            onEdit={handleOpenEdit}
+            isAdmin={isAdmin}
+            showActions={true}
+          />
+        </div>
+      </motion.div>
+    </div>
+  );
+
   return (
-    <div className="relative flex h-auto min-h-screen w-full flex-col bg-white">
-      <div className="layout-container flex h-full grow flex-col">
-        <HeaderAuth user={user} />
-
-        <div className="px-4 md:px-40 flex flex-1 justify-center py-5">
-          <div className="layout-content-container flex flex-col max-w-[1200px] flex-1">
-            {/* Header */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
-              className="flex flex-wrap justify-between items-center gap-3 p-4"
-            >
-              <div>
-                <h1 className="text-gray-900 tracking-tight text-3xl md:text-[32px] font-bold leading-tight">
-                  {t('pages.admin.title')}
-                </h1>
-                <p className="text-gray-500 text-sm mt-1">
-                  {t('pages.admin.subtitle')}
-                </p>
-              </div>
-              <motion.button
-                onClick={() => setShowCreateModal(true)}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                className="flex items-center gap-2 px-5 py-2.5 bg-primary text-white rounded-lg font-medium hover:bg-primary/90 transition-colors shadow-md"
-              >
-                <Plus className="w-4 h-4" />
-                <span>{t('pages.admin.createCourse')}</span>
-              </motion.button>
-            </motion.div>
-
-            {/* Stats */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.1 }}
-              className="p-4"
-            >
-              <div className="bg-primary-50 border border-primary-200 rounded-lg p-4">
-                <p className="text-sm text-gray-600">
-                  {t('pages.admin.totalCourses')}: <span className="font-bold text-gray-900">{courses.length}</span>
-                </p>
-              </div>
-            </motion.div>
-
-            {/* Table */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-              className="p-4"
-            >
-              <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
-                <GolfCourseTable
-                  courses={courses}
-                  onView={handleView}
-                  onEdit={handleOpenEdit}
-                  isAdmin={isAdmin}
-                  showActions={true}
-                />
-              </div>
-            </motion.div>
+    <>
+      {embedded ? (
+        content
+      ) : (
+        <div className="relative flex h-auto min-h-screen w-full flex-col bg-white">
+          <div className="layout-container flex h-full grow flex-col">
+            <HeaderAuth user={user} />
+            <div className="px-4 md:px-40 flex flex-1 justify-center py-5">
+              {content}
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Create Modal */}
       {showCreateModal && (
@@ -230,7 +246,7 @@ const GolfCourses = () => {
           </motion.div>
         </div>
       )}
-    </div>
+    </>
   );
 };
 

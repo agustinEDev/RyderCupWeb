@@ -131,18 +131,11 @@ const HeaderAuth = ({ user }) => {
                     {t('header.administration')}
                   </p>
                   <Link
-                    to="/admin/golf-courses"
+                    to="/admin"
                     onClick={() => setIsDropdownOpen(false)}
                     className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
                   >
-                    {t('header.golfCourses')}
-                  </Link>
-                  <Link
-                    to="/admin/golf-courses/pending"
-                    onClick={() => setIsDropdownOpen(false)}
-                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
-                  >
-                    {t('header.pendingCourses')}
+                    {t('header.adminPanel')}
                   </Link>
                 </>
               )}
@@ -254,18 +247,11 @@ const HeaderAuth = ({ user }) => {
                   {t('header.administration')}
                 </p>
                 <Link
-                  to="/admin/golf-courses"
+                  to="/admin"
                   onClick={() => setIsDropdownOpen(false)}
                   className="block px-4 py-2 text-sm text-gray-900 hover:bg-gray-100 transition-colors"
                 >
-                  {t('header.golfCourses')}
-                </Link>
-                <Link
-                  to="/admin/golf-courses/pending"
-                  onClick={() => setIsDropdownOpen(false)}
-                  className="block px-4 py-2 text-sm text-gray-900 hover:bg-gray-100 transition-colors"
-                >
-                  {t('header.pendingCourses')}
+                  {t('header.adminPanel')}
                 </Link>
               </>
             )}
