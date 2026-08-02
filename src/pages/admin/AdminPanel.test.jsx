@@ -257,6 +257,39 @@ describe('AdminPanel', () => {
     await waitFor(() => expect(mockActivateCompetition).toHaveBeenCalledWith('c1'));
   });
 
+  it('paginates competitions using the extra-item hasMore trick (no backend total count)', async () => {
+    const fullPage = Array.from({ length: 21 }, (_, i) => ({
+      id: `c${i}`,
+      name: `Competition ${i}`,
+      status: 'DRAFT',
+      startDate: '2026-09-01',
+      endDate: '2026-09-03',
+      creator: { firstName: 'Ana', lastName: 'Ruiz' },
+    }));
+    mockAdminListCompetitions.mockResolvedValue(fullPage);
+    render(<AdminPanel />);
+    await waitFor(() => expect(mockGetAdminStats).toHaveBeenCalled());
+    fireEvent.click(screen.getByRole('tab', { name: /tabs.competitions/ }));
+    await waitFor(() => expect(mockAdminListCompetitions).toHaveBeenCalled());
+
+    // 21 fetched (limit 20 + 1) means there's a next page; only 20 are shown.
+    expect(screen.getByText('Competition 19')).toBeInTheDocument();
+    expect(screen.queryByText('Competition 20')).not.toBeInTheDocument();
+
+    const nextButton = screen.getByRole('button', { name: 'competitions.next' });
+    expect(screen.getByRole('button', { name: 'competitions.previous' })).toBeDisabled();
+    expect(nextButton).not.toBeDisabled();
+
+    mockAdminListCompetitions.mockResolvedValue([]);
+    fireEvent.click(nextButton);
+
+    await waitFor(() =>
+      expect(mockAdminListCompetitions).toHaveBeenLastCalledWith(
+        expect.objectContaining({ offset: 20, limit: 21 })
+      )
+    );
+  });
+
   it('requires confirmation before cancelling a competition', async () => {
     mockCancelCompetition.mockResolvedValue({ id: 'c1', status: 'CANCELLED' });
     render(<AdminPanel />);

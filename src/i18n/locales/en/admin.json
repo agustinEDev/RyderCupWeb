@@ -70,6 +70,8 @@
     "noResults": "No competitions found matching those filters.",
     "loadError": "Failed to load competitions",
     "unknownCreator": "Unknown",
+    "previous": "Previous",
+    "next": "Next",
     "editTooltip": "Edit",
     "editDisabledTooltip": "Only draft competitions can be edited",
     "transitionsTooltip": "Change status",

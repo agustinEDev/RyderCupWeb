@@ -70,6 +70,8 @@
     "noResults": "No se han encontrado competiciones con esos filtros.",
     "loadError": "Error al cargar las competiciones",
     "unknownCreator": "Desconocido",
+    "previous": "Anterior",
+    "next": "Siguiente",
     "editTooltip": "Editar",
     "editDisabledTooltip": "Solo se pueden editar competiciones en estado borrador",
     "transitionsTooltip": "Cambiar estado",

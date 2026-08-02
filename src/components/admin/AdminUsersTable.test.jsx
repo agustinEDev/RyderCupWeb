@@ -129,6 +129,34 @@ describe('AdminUsersTable', () => {
     expect(onToggleActive).toHaveBeenCalledWith(inactiveUser);
   });
 
+  it('shows the localized last login date when lastLoginAt is set', () => {
+    render(
+      <AdminUsersTable
+        users={[{ ...baseUser, lastLoginAt: '2026-07-30T10:00:00Z' }]}
+        onEdit={vi.fn()}
+        onToggleActive={vi.fn()}
+        onManageDelete={vi.fn()}
+      />
+    );
+
+    expect(
+      screen.getByText(new Date('2026-07-30T10:00:00Z').toLocaleDateString('en'))
+    ).toBeInTheDocument();
+  });
+
+  it('shows "never" when lastLoginAt is null', () => {
+    render(
+      <AdminUsersTable
+        users={[{ ...baseUser, lastLoginAt: null }]}
+        onEdit={vi.fn()}
+        onToggleActive={vi.fn()}
+        onManageDelete={vi.fn()}
+      />
+    );
+
+    expect(screen.getByText('users.lastLoginNever')).toBeInTheDocument();
+  });
+
   it('calls onManageDelete with the user when the manage button is clicked', () => {
     const onManageDelete = vi.fn();
     render(

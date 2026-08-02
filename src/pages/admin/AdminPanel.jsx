@@ -74,6 +74,8 @@ const AdminPanel = () => {
 
   // Competitions
   const [competitions, setCompetitions] = useState([]);
+  const [hasMoreCompetitions, setHasMoreCompetitions] = useState(false);
+  const [competitionOffset, setCompetitionOffset] = useState(0);
   const [isLoadingCompetitions, setIsLoadingCompetitions] = useState(true);
   const [competitionSearch, setCompetitionSearch] = useState('');
   const [competitionSearchInput, setCompetitionSearchInput] = useState('');
@@ -118,17 +120,22 @@ const AdminPanel = () => {
   const loadCompetitions = useCallback(async () => {
     setIsLoadingCompetitions(true);
     try {
+      // Fetch one extra to know if there's a next page — the backend list
+      // endpoint returns a plain array with no total count to paginate against.
       const data = await adminListCompetitionsUseCase.execute({
         searchName: competitionSearch || undefined,
+        limit: PAGE_SIZE + 1,
+        offset: competitionOffset,
       });
-      setCompetitions(data);
+      setHasMoreCompetitions(data.length > PAGE_SIZE);
+      setCompetitions(data.slice(0, PAGE_SIZE));
     } catch (error) {
       console.error('Error loading competitions:', error);
       customToast.error(error.message || t('competitions.loadError'));
     } finally {
       setIsLoadingCompetitions(false);
     }
-  }, [competitionSearch, t]);
+  }, [competitionSearch, competitionOffset, t]);
 
   useEffect(() => {
     if (user) {
@@ -185,6 +192,7 @@ const AdminPanel = () => {
 
   const handleCompetitionSearchSubmit = (e) => {
     e.preventDefault();
+    setCompetitionOffset(0);
     setCompetitionSearch(competitionSearchInput.trim());
   };
 
@@ -473,13 +481,35 @@ const AdminPanel = () => {
                       <Loader className="w-8 h-8 text-primary animate-spin" />
                     </div>
                   ) : (
-                    <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
-                      <AdminCompetitionsTable
-                        competitions={competitions}
-                        onEdit={setEditingCompetition}
-                        onTransition={handleTransition}
-                      />
-                    </div>
+                    <>
+                      <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+                        <AdminCompetitionsTable
+                          competitions={competitions}
+                          onEdit={setEditingCompetition}
+                          onTransition={handleTransition}
+                          disabled={isTransitioning}
+                        />
+                      </div>
+
+                      {(competitionOffset > 0 || hasMoreCompetitions) && (
+                        <div className="flex items-center justify-between pt-2">
+                          <button
+                            onClick={() => setCompetitionOffset((prev) => Math.max(0, prev - PAGE_SIZE))}
+                            disabled={competitionOffset === 0}
+                            className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            {t('competitions.previous')}
+                          </button>
+                          <button
+                            onClick={() => setCompetitionOffset((prev) => prev + PAGE_SIZE)}
+                            disabled={!hasMoreCompetitions}
+                            className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            {t('competitions.next')}
+                          </button>
+                        </div>
+                      )}
+                    </>
                   )}
                 </motion.div>
               )}
