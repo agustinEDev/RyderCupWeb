@@ -35,7 +35,10 @@ FROM nginx:alpine
 COPY --from=build /app/dist /usr/share/nginx/html
 
 # Copiar configuración personalizada de nginx
+# El fragmento de cabeceras va a snippets/ y no a conf.d/, porque el nginx.conf
+# principal hace include de conf.d/*.conf y lo cargaria por su cuenta.
 COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY nginx-security-headers.conf /etc/nginx/snippets/security-headers.conf
 
 # Copiar script de entrypoint para inyectar variables en runtime
 COPY entrypoint.sh /entrypoint.sh
