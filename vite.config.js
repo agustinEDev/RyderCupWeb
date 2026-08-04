@@ -3,18 +3,21 @@ import react from '@vitejs/plugin-react'
 import sri from 'vite-plugin-sri'
 import { VitePWA } from 'vite-plugin-pwa'
 
-// Security headers configuration
-// Updated: 22 Dec 2025 - Added CSP without 'unsafe-inline' (v1.8.0)
-// Note: HSTS is configured in production via _headers, nginx.conf and vercel.json
-// to avoid forcing HTTPS in local development
+// Security headers for the LOCAL dev and preview servers only.
+// Production is a Render Static Site and serves its headers from Render's own
+// configuration — see docs/SECURITY_HEADERS.md. It does not read this file.
+// Updated: 04 Aug 2026 - style-src needs 'unsafe-inline' (see #295)
 const securityHeaders = {
   'X-Content-Type-Options': 'nosniff',
   'X-Frame-Options': 'DENY',
   'Referrer-Policy': 'strict-origin-when-cross-origin',
   'Permissions-Policy': 'geolocation=(), microphone=(), camera=()',
-  // Content Security Policy without 'unsafe-inline' (v1.8.0)
-  // Updated: 03 Feb 2026 - Added api.rydercupfriends.com for subdomain architecture
-  'Content-Security-Policy': "default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' https: data: http://localhost:8000; connect-src 'self' https://api.rydercupfriends.com http://localhost:8000 https://o4510427294662656.ingest.de.sentry.io https://*.ingest.sentry.io; worker-src 'self' blob:; child-src 'self' blob:; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none';"
+  // style-src requires 'unsafe-inline': React sets inline styles and framer-motion
+  // animates by writing the style attribute at runtime. Without it the whole UI is
+  // unstyled — this was verified against production in #295, where the policy had
+  // been strict since Dec 2025 without anyone noticing, because it never applied.
+  // script-src stays strict, which is what actually stops an XSS.
+  'Content-Security-Policy': "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' https: data: http://localhost:8000; connect-src 'self' https://api.rydercupfriends.com http://localhost:8000 https://o4510427294662656.ingest.de.sentry.io https://*.ingest.sentry.io; worker-src 'self' blob:; child-src 'self' blob:; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none';"
 }
 
 // https://vitejs.dev/config/
@@ -89,7 +92,7 @@ export default defineConfig(() => ({
       },
       configurePreviewServer(server) {
         server.middlewares.use((req, res, next) => {
-          // En preview usamos el CSP estricto de producción
+          // En preview usamos el CSP estricto (sin las concesiones que necesita el HMR)
           for (const [key, value] of Object.entries(securityHeaders)) {
             res.setHeader(key, value)
           }

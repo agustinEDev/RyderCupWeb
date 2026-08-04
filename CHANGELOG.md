@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Security
+
+- **Cabeceras de seguridad servidas por fin en producción** (issue #295): el frontend no enviaba ninguna salvo `X-Content-Type-Options`. La CSP y compañía estaban definidas en `vercel.json`, `public/_headers` y `nginx.conf`, y **un Render Static Site no lee ninguno de los tres**, así que durante meses hubo tres ficheros que aparentaban ser configuración de seguridad sin serlo. Sin `frame-ancestors` ni `X-Frame-Options`, la aplicación podía embeberse en un iframe de cualquier origen, con el riesgo de clickjacking que eso supone en una app autenticada por cookies. Ahora se sirven desde la configuración de Headers de Render (`Content-Security-Policy`, `Strict-Transport-Security`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`), verificadas en vivo tanto en el HTML como en los assets.
+
+### Fixed
+
+- **`style-src` de la CSP rompía la interfaz**: la política declaraba `style-src 'self'` sin `'unsafe-inline'` desde diciembre de 2025, lo que bloquea los estilos inline de React y las animaciones de framer-motion, que escriben el atributo `style` en runtime. Nunca se detectó porque la CSP no llegaba a aplicarse en ningún entorno servido. Corregido en `nginx.conf` (Docker/k8s) y en el CSP de preview de `vite.config.js`, donde también estaba roto. `script-src` se mantiene estricto: la aplicación no tiene scripts inline y un `<script>` inyectado es bloqueado.
+
+### Removed
+
+- **`vercel.json` y `public/_headers`**: configuración muerta que ningún entorno leía. Documentado en `docs/SECURITY_HEADERS.md` de dónde salen realmente las cabeceras en cada entorno.
+
+### Changed
+
+- **ADR-011 corregido**: afirmaba que `api` estaba *Proxied* tras Cloudflare y que `CF-Connecting-IP` proporcionaba la IP real. Verificado en el panel: `www` y `api` son ambos **"Solo DNS"**, el tráfico no pasa por el proxy y esa cabecera no llega. Documentado también por qué las respuestas traen `cf-ray` pese a ello (Render sirve sus static sites tras su propio Cloudflare), que fue lo que despistó el diagnóstico inicial.
+
 ## [2.4.1] - 2026-08-04
 
 ### Fixed
