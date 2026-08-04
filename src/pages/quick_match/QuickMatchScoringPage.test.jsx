@@ -47,27 +47,33 @@ const renderPage = () => {
     <MemoryRouter initialEntries={['/quick-matches/qm-1/scoring']}>
       <Routes>
         <Route path="/quick-matches/:quickMatchId/scoring" element={<QuickMatchScoringPage />} />
+        <Route path="/quick-matches" element={<div data-testid="my-quick-matches-page" />} />
       </Routes>
     </MemoryRouter>
   );
+};
+
+const baseHookState = {
+  quickMatch: baseQuickMatch,
+  holes: [{ holeNumber: 1, par: 4, strokeIndex: 5 }],
+  tees: [],
+  courseName: 'Real Club de Golf',
+  currentHole: 1,
+  isLoading: false,
+  error: null,
+  isSubmitting: false,
+  myParticipant: baseQuickMatch.participants[0],
+  isCreator: false,
+  isScorer: false,
+  coveredParticipantIds: [],
+  totalHoles: 1,
 };
 
 describe('QuickMatchScoringPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockUseQuickMatchScoring.mockReturnValue({
-      quickMatch: baseQuickMatch,
-      holes: [{ holeNumber: 1, par: 4, strokeIndex: 5 }],
-      tees: [],
-      currentHole: 1,
-      isLoading: false,
-      error: null,
-      isSubmitting: false,
-      myParticipant: baseQuickMatch.participants[0],
-      isCreator: false,
-      isScorer: false,
-      coveredParticipantIds: [],
-      totalHoles: 1,
+      ...baseHookState,
       setCurrentHole: vi.fn(),
       submitScore: vi.fn(),
       completeMatch: vi.fn(),
@@ -86,6 +92,37 @@ describe('QuickMatchScoringPage', () => {
 
     await waitFor(() => {
       expect(screen.getByTestId('quick-match-classification-table')).toBeInTheDocument();
+    });
+  });
+
+  it('should show the golf course the match was played on', () => {
+    renderPage();
+
+    expect(screen.getByTestId('quick-match-course-name')).toHaveTextContent('Real Club de Golf');
+  });
+
+  it('should not show the course line while the course has not been loaded yet', () => {
+    mockUseQuickMatchScoring.mockReturnValue({
+      ...baseHookState,
+      courseName: null,
+      setCurrentHole: vi.fn(),
+      submitScore: vi.fn(),
+      completeMatch: vi.fn(),
+      refetch: vi.fn(),
+    });
+
+    renderPage();
+
+    expect(screen.queryByTestId('quick-match-course-name')).not.toBeInTheDocument();
+  });
+
+  it('should navigate back to the quick matches list, not the dashboard', async () => {
+    renderPage();
+
+    fireEvent.click(screen.getByRole('button', { name: /backToMyQuickMatches/ }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('my-quick-matches-page')).toBeInTheDocument();
     });
   });
 });
