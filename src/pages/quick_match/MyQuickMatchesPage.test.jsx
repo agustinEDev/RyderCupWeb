@@ -10,11 +10,16 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
+// El valor se define fuera para que su identidad sea estable entre renders,
+// igual que en la app (viene de AuthContext). Si se crea un objeto nuevo en
+// cada render, el efecto que depende de [user] recarga la lista sin parar.
+const mockAuthValue = {
+  user: { id: 'user-1', first_name: 'Test', last_name: 'User' },
+  loading: false,
+};
+
 vi.mock('../../hooks/useAuth', () => ({
-  useAuth: () => ({
-    user: { id: 'user-1', first_name: 'Test', last_name: 'User' },
-    loading: false,
-  }),
+  useAuth: () => mockAuthValue,
 }));
 
 vi.mock('../../components/layout/HeaderAuth', () => ({
@@ -24,11 +29,17 @@ vi.mock('../../components/layout/HeaderAuth', () => ({
 const mockListMyQuickMatches = vi.fn();
 const mockGetQuickMatch = vi.fn();
 const mockGetGolfCourse = vi.fn();
+const mockHideQuickMatch = vi.fn();
 
 vi.mock('../../composition', () => ({
   listMyQuickMatchesUseCase: { execute: (...args) => mockListMyQuickMatches(...args) },
   getQuickMatchUseCase: { execute: (...args) => mockGetQuickMatch(...args) },
   getGolfCourseUseCase: { execute: (...args) => mockGetGolfCourse(...args) },
+  hideQuickMatchUseCase: { execute: (...args) => mockHideQuickMatch(...args) },
+}));
+
+vi.mock('../../utils/toast', () => ({
+  default: { success: vi.fn(), error: vi.fn() },
 }));
 
 const mockNavigate = vi.fn();
@@ -167,6 +178,107 @@ describe('MyQuickMatchesPage', () => {
 
     await waitFor(() => {
       expect(screen.getByText('Network error')).toBeInTheDocument();
+    });
+  });
+
+  describe('hiding a match from the history', () => {
+    const twoMatches = {
+      quickMatches: [
+        { id: 'qm-1', matchFormat: 'SINGLES', status: 'COMPLETED', createdAt: '2026-07-27T10:00:00Z' },
+        { id: 'qm-2', matchFormat: 'FOURBALL', status: 'COMPLETED', createdAt: '2026-07-20T10:00:00Z' },
+      ],
+      totalCount: 2,
+      page: 1,
+      limit: 50,
+    };
+
+    it('should show a hide button on every card', async () => {
+      mockListMyQuickMatches.mockResolvedValue(twoMatches);
+
+      renderPage();
+
+      await waitFor(() => {
+        expect(screen.getByTestId('quick-match-hide-qm-1')).toBeInTheDocument();
+      });
+      expect(screen.getByTestId('quick-match-hide-qm-2')).toBeInTheDocument();
+    });
+
+    it('should hide the match and remove only that card from the list', async () => {
+      mockListMyQuickMatches.mockResolvedValue(twoMatches);
+      mockHideQuickMatch.mockResolvedValue({ id: 'qm-1' });
+
+      renderPage();
+
+      await waitFor(() => {
+        expect(screen.getByTestId('quick-match-hide-qm-1')).toBeInTheDocument();
+      });
+
+      fireEvent.click(screen.getByTestId('quick-match-hide-qm-1'));
+
+      await waitFor(() => {
+        expect(screen.queryByTestId('quick-match-history-item-qm-1')).not.toBeInTheDocument();
+      });
+      expect(mockHideQuickMatch).toHaveBeenCalledWith('qm-1');
+      // La otra partida no se toca: ocultar es por usuario y por partida.
+      expect(screen.getByTestId('quick-match-history-item-qm-2')).toBeInTheDocument();
+    });
+
+    it('should not navigate to scoring when the hide button is clicked', async () => {
+      mockListMyQuickMatches.mockResolvedValue(twoMatches);
+      mockHideQuickMatch.mockResolvedValue({ id: 'qm-1' });
+
+      renderPage();
+
+      await waitFor(() => {
+        expect(screen.getByTestId('quick-match-hide-qm-1')).toBeInTheDocument();
+      });
+
+      fireEvent.click(screen.getByTestId('quick-match-hide-qm-1'));
+
+      await waitFor(() => {
+        expect(mockHideQuickMatch).toHaveBeenCalled();
+      });
+      expect(mockNavigate).not.toHaveBeenCalled();
+    });
+
+    it('should keep the card when hiding fails', async () => {
+      mockListMyQuickMatches.mockResolvedValue(twoMatches);
+      mockHideQuickMatch.mockRejectedValue(new Error('Quick match not found'));
+
+      renderPage();
+
+      await waitFor(() => {
+        expect(screen.getByTestId('quick-match-hide-qm-1')).toBeInTheDocument();
+      });
+
+      fireEvent.click(screen.getByTestId('quick-match-hide-qm-1'));
+
+      await waitFor(() => {
+        expect(mockHideQuickMatch).toHaveBeenCalledWith('qm-1');
+      });
+      expect(screen.getByTestId('quick-match-history-item-qm-1')).toBeInTheDocument();
+    });
+
+    it('should disable the button while the request is in flight', async () => {
+      mockListMyQuickMatches.mockResolvedValue(twoMatches);
+      let resolveHide;
+      mockHideQuickMatch.mockReturnValue(new Promise((resolve) => { resolveHide = resolve; }));
+
+      renderPage();
+
+      await waitFor(() => {
+        expect(screen.getByTestId('quick-match-hide-qm-1')).toBeInTheDocument();
+      });
+
+      fireEvent.click(screen.getByTestId('quick-match-hide-qm-1'));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('quick-match-hide-qm-1')).toBeDisabled();
+      });
+      // El resto de tarjetas siguen accionables mientras una se oculta.
+      expect(screen.getByTestId('quick-match-hide-qm-2')).not.toBeDisabled();
+
+      resolveHide({ id: 'qm-1' });
     });
   });
 });
