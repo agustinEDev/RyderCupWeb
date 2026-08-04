@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- **Quitar partidas rápidas del historial propio** (issue #263): botón de papelera en cada tarjeta de `/quick-matches` que retira la partida del historial del usuario actual. No borra nada ni afecta a lo que ven los demás participantes: cada uno la oculta solo para sí mismo, en cualquier estado de la partida, y la operación es idempotente. Sin diálogo de confirmación por ser una acción no destructiva. Requiere el backend correspondiente (RyderCupAM #127, `POST /quick-matches/{id}/hide`), que ya filtra las ocultas en `GET /quick-matches/me`.
+
 ### Security
 
 - **Cabeceras de seguridad servidas por fin en producción** (issue #295): el frontend no enviaba ninguna salvo `X-Content-Type-Options`. La CSP y compañía estaban definidas en `vercel.json`, `public/_headers` y `nginx.conf`, y **un Render Static Site no lee ninguno de los tres**, así que durante meses hubo tres ficheros que aparentaban ser configuración de seguridad sin serlo. Sin `frame-ancestors` ni `X-Frame-Options`, la aplicación podía embeberse en un iframe de cualquier origen, con el riesgo de clickjacking que eso supone en una app autenticada por cookies. Ahora se sirven desde la configuración de Headers de Render (`Content-Security-Policy`, `Strict-Transport-Security`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`), verificadas en vivo tanto en el HTML como en los assets.

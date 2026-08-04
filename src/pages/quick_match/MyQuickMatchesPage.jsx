@@ -1,11 +1,17 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
-import { Loader, Zap, ChevronRight } from 'lucide-react';
+import { Loader, Zap, ChevronRight, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import HeaderAuth from '../../components/layout/HeaderAuth';
 import { useAuth } from '../../hooks/useAuth';
-import { listMyQuickMatchesUseCase, getQuickMatchUseCase, getGolfCourseUseCase } from '../../composition';
+import {
+  listMyQuickMatchesUseCase,
+  getQuickMatchUseCase,
+  getGolfCourseUseCase,
+  hideQuickMatchUseCase,
+} from '../../composition';
 import StablefordCalculator from '../../domain/services/StablefordCalculator';
+import customToast from '../../utils/toast';
 
 const STATUS_STYLES = {
   PENDING: 'bg-amber-100 text-amber-800',
@@ -23,6 +29,28 @@ const MyQuickMatchesPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [resultsByMatchId, setResultsByMatchId] = useState({});
+  // Un Set y no un único id: si se ocultan dos partidas seguidas, la primera en
+  // responder no debe reactivar el botón de la que sigue en vuelo.
+  const [hidingIds, setHidingIds] = useState(() => new Set());
+
+  // Quitar la partida del historial propio. No borra nada ni afecta a lo que
+  // ven los demás participantes: cada uno la oculta solo para sí mismo.
+  const handleHide = async (quickMatchId) => {
+    setHidingIds((prev) => new Set(prev).add(quickMatchId));
+    try {
+      await hideQuickMatchUseCase.execute(quickMatchId);
+      setQuickMatches((prev) => prev.filter((qm) => qm.id !== quickMatchId));
+      customToast.success(t('history.hidden'));
+    } catch {
+      customToast.error(t('history.hideError'));
+    } finally {
+      setHidingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(quickMatchId);
+        return next;
+      });
+    }
+  };
 
   useEffect(() => {
     if (!user) return;
@@ -128,27 +156,32 @@ const MyQuickMatchesPage = () => {
         ) : (
           <ul className="space-y-2" data-testid="quick-match-history-list">
             {quickMatches.map((qm) => (
-              <li key={qm.id}>
+              // El botón de quitar es hermano del de navegar, no hijo: anidar
+              // botones es HTML inválido y rompe la navegación por teclado.
+              <li
+                key={qm.id}
+                className="flex items-stretch bg-white border border-gray-200 rounded-lg overflow-hidden hover:border-primary-300 hover:shadow-sm transition-all"
+              >
                 <button
                   onClick={() => navigate(`/quick-matches/${qm.id}/scoring`)}
                   data-testid={`quick-match-history-item-${qm.id}`}
-                  className="w-full flex items-center justify-between p-4 bg-white border border-gray-200 rounded-lg hover:border-primary-300 hover:shadow-sm transition-all text-left"
+                  className="flex-1 min-w-0 flex items-center justify-between p-4 text-left"
                 >
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-primary-100 rounded-lg">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="p-2 bg-primary-100 rounded-lg flex-shrink-0">
                       <Zap className="w-4 h-4 text-primary-600" />
                     </div>
-                    <div>
-                      <p className="text-sm font-semibold text-gray-900">
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-gray-900 truncate">
                         {qm.name || t(`history.format.${qm.matchFormat ?? qm.scoringFormat}`, qm.matchFormat ?? qm.scoringFormat)}
                       </p>
-                      <p className="text-xs text-gray-500">
+                      <p className="text-xs text-gray-500 truncate">
                         {qm.name && `${t(`history.format.${qm.matchFormat ?? qm.scoringFormat}`, qm.matchFormat ?? qm.scoringFormat)} · `}
                         {new Date(qm.createdAt).toLocaleDateString()}
                       </p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-shrink-0">
                     {resultsByMatchId[qm.id] && (
                       <div className="text-right" data-testid={`quick-match-result-${qm.id}`}>
                         <p className="text-sm font-bold text-gray-900">{resultsByMatchId[qm.id].toParLabel}</p>
@@ -162,6 +195,16 @@ const MyQuickMatchesPage = () => {
                     </span>
                     <ChevronRight className="w-4 h-4 text-gray-400" />
                   </div>
+                </button>
+                <button
+                  onClick={() => handleHide(qm.id)}
+                  disabled={hidingIds.has(qm.id)}
+                  aria-label={t('history.hide')}
+                  title={t('history.hide')}
+                  data-testid={`quick-match-hide-${qm.id}`}
+                  className="px-3 flex items-center justify-center text-gray-400 hover:text-red-600 hover:bg-red-50 border-l border-gray-100 transition-colors disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-gray-400"
+                >
+                  <Trash2 className="w-4 h-4" />
                 </button>
               </li>
             ))}

@@ -153,6 +153,7 @@ import SetQuickMatchParticipantHandicapUseCase from '../application/use_cases/qu
 import StartQuickMatchUseCase from '../application/use_cases/quick_match/StartQuickMatchUseCase';
 import CompleteQuickMatchUseCase from '../application/use_cases/quick_match/CompleteQuickMatchUseCase';
 import CancelQuickMatchUseCase from '../application/use_cases/quick_match/CancelQuickMatchUseCase';
+import HideQuickMatchUseCase from '../application/use_cases/quick_match/HideQuickMatchUseCase';
 import GetQuickMatchUseCase from '../application/use_cases/quick_match/GetQuickMatchUseCase';
 import ListMyQuickMatchesUseCase from '../application/use_cases/quick_match/ListMyQuickMatchesUseCase';
 import SubmitQuickMatchHoleScoreUseCase from '../application/use_cases/quick_match/SubmitQuickMatchHoleScoreUseCase';
@@ -290,6 +291,7 @@ const setQuickMatchParticipantHandicapUseCase = new SetQuickMatchParticipantHand
 const startQuickMatchUseCase = new StartQuickMatchUseCase({ quickMatchRepository: apiQuickMatchRepository });
 const completeQuickMatchUseCase = new CompleteQuickMatchUseCase({ quickMatchRepository: apiQuickMatchRepository });
 const cancelQuickMatchUseCase = new CancelQuickMatchUseCase({ quickMatchRepository: apiQuickMatchRepository });
+const hideQuickMatchUseCase = new HideQuickMatchUseCase({ quickMatchRepository: apiQuickMatchRepository });
 const getQuickMatchUseCase = new GetQuickMatchUseCase({ quickMatchRepository: apiQuickMatchRepository });
 const listMyQuickMatchesUseCase = new ListMyQuickMatchesUseCase({ quickMatchRepository: apiQuickMatchRepository });
 const submitQuickMatchHoleScoreUseCase = new SubmitQuickMatchHoleScoreUseCase({ quickMatchRepository: apiQuickMatchRepository });
@@ -441,6 +443,7 @@ export {
   startQuickMatchUseCase,
   completeQuickMatchUseCase,
   cancelQuickMatchUseCase,
+  hideQuickMatchUseCase,
   getQuickMatchUseCase,
   listMyQuickMatchesUseCase,
   submitQuickMatchHoleScoreUseCase,

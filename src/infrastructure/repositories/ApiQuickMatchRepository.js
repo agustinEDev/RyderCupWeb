@@ -132,6 +132,14 @@ class ApiQuickMatchRepository extends IQuickMatchRepository {
     return QuickMatchMapper.toDomain(apiData);
   }
 
+  async hide(quickMatchId) {
+    const apiData = await apiRequest(`/api/v1/quick-matches/${quickMatchId}/hide`, {
+      method: 'POST',
+    });
+
+    return QuickMatchMapper.toDomain(apiData);
+  }
+
   async submitHoleScore(quickMatchId, holeNumber, score) {
     return await apiRequest(`/api/v1/quick-matches/${quickMatchId}/holes/${holeNumber}/score`, {
       method: 'POST',

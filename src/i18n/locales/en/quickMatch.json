@@ -104,7 +104,10 @@
       "CANCELLED": "Cancelled"
     },
     "grossStrokes_one": "{{count}} stroke",
-    "grossStrokes_other": "{{count}} strokes"
+    "grossStrokes_other": "{{count}} strokes",
+    "hide": "Remove from my history",
+    "hidden": "Match removed from your history",
+    "hideError": "Could not remove the match from your history"
   },
   "scoring": {
     "matchHeader": "Quick match",

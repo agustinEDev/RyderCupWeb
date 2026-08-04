@@ -111,6 +111,20 @@ class IQuickMatchRepository {
   }
 
   /**
+   * Hide the quick match from the current user's own history.
+   *
+   * Does not delete anything nor affect what other participants see: each
+   * participant hides it only for themselves. Idempotent.
+   *
+   * @param {string} quickMatchId
+   * @returns {Promise<QuickMatch>} Updated quick match
+   * @throws {Error} If operation fails
+   */
+  async hide(quickMatchId) {
+    throw new Error('Method hide() must be implemented');
+  }
+
+  /**
    * Submit/update the current user's own score for a hole (scorers only).
    *
    * @param {string} quickMatchId
