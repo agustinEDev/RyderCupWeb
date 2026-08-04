@@ -280,5 +280,38 @@ describe('MyQuickMatchesPage', () => {
 
       resolveHide({ id: 'qm-1' });
     });
+
+    it('should keep a still-pending card disabled when another hide request finishes first', async () => {
+      // Con un único hidingId, resolver qm-1 reactivaba el botón de qm-2 aunque
+      // su petición siguiera en vuelo, permitiendo un segundo envío duplicado.
+      mockListMyQuickMatches.mockResolvedValue(twoMatches);
+      const resolvers = {};
+      mockHideQuickMatch.mockImplementation(
+        (id) => new Promise((resolve) => { resolvers[id] = resolve; })
+      );
+
+      renderPage();
+
+      await waitFor(() => {
+        expect(screen.getByTestId('quick-match-hide-qm-1')).toBeInTheDocument();
+      });
+
+      fireEvent.click(screen.getByTestId('quick-match-hide-qm-1'));
+      fireEvent.click(screen.getByTestId('quick-match-hide-qm-2'));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('quick-match-hide-qm-2')).toBeDisabled();
+      });
+
+      resolvers['qm-1']({ id: 'qm-1' });
+
+      await waitFor(() => {
+        expect(screen.queryByTestId('quick-match-hide-qm-1')).not.toBeInTheDocument();
+      });
+      expect(screen.getByTestId('quick-match-hide-qm-2')).toBeDisabled();
+      expect(mockHideQuickMatch).toHaveBeenCalledTimes(2);
+
+      resolvers['qm-2']({ id: 'qm-2' });
+    });
   });
 });

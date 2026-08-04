@@ -29,12 +29,14 @@ const MyQuickMatchesPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [resultsByMatchId, setResultsByMatchId] = useState({});
-  const [hidingId, setHidingId] = useState(null);
+  // Un Set y no un único id: si se ocultan dos partidas seguidas, la primera en
+  // responder no debe reactivar el botón de la que sigue en vuelo.
+  const [hidingIds, setHidingIds] = useState(() => new Set());
 
   // Quitar la partida del historial propio. No borra nada ni afecta a lo que
   // ven los demás participantes: cada uno la oculta solo para sí mismo.
   const handleHide = async (quickMatchId) => {
-    setHidingId(quickMatchId);
+    setHidingIds((prev) => new Set(prev).add(quickMatchId));
     try {
       await hideQuickMatchUseCase.execute(quickMatchId);
       setQuickMatches((prev) => prev.filter((qm) => qm.id !== quickMatchId));
@@ -42,7 +44,11 @@ const MyQuickMatchesPage = () => {
     } catch {
       customToast.error(t('history.hideError'));
     } finally {
-      setHidingId(null);
+      setHidingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(quickMatchId);
+        return next;
+      });
     }
   };
 
@@ -192,7 +198,7 @@ const MyQuickMatchesPage = () => {
                 </button>
                 <button
                   onClick={() => handleHide(qm.id)}
-                  disabled={hidingId === qm.id}
+                  disabled={hidingIds.has(qm.id)}
                   aria-label={t('history.hide')}
                   title={t('history.hide')}
                   data-testid={`quick-match-hide-${qm.id}`}
