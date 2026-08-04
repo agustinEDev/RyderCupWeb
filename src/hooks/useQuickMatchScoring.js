@@ -21,6 +21,7 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
   const [quickMatch, setQuickMatch] = useState(null);
   const [holes, setHoles] = useState([]);
   const [tees, setTees] = useState([]);
+  const [courseName, setCourseName] = useState(null);
   const [currentHole, setCurrentHole] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -45,6 +46,7 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
           const course = await getGolfCourseUseCase.execute(data.golfCourseId);
           setHoles(course.holes || []);
           setTees(course.tees || []);
+          setCourseName(course.name ?? null);
         } catch {
           holesLoadedRef.current = false;
         }
@@ -122,6 +124,7 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
     quickMatch,
     holes,
     tees,
+    courseName,
     currentHole,
     isLoading,
     error,
