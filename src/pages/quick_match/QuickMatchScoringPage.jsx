@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router';
-import { Loader, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Loader, ChevronLeft, ChevronRight, MapPin } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import HeaderAuth from '../../components/layout/HeaderAuth';
 import { useAuth } from '../../hooks/useAuth';
@@ -25,6 +25,7 @@ const QuickMatchScoringPage = () => {
     quickMatch,
     holes,
     tees,
+    courseName,
     currentHole,
     isLoading,
     error,
@@ -125,10 +126,10 @@ const QuickMatchScoringPage = () => {
 
       <div className="max-w-4xl mx-auto px-4 py-4">
         <button
-          onClick={() => navigate('/dashboard')}
+          onClick={() => navigate('/quick-matches')}
           className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-primary mb-3"
         >
-          &larr; {t('scoring.backToDashboard')}
+          &larr; {t('scoring.backToMyQuickMatches')}
         </button>
 
         <div className="flex items-center justify-between mb-4">
@@ -140,6 +141,12 @@ const QuickMatchScoringPage = () => {
               {quickMatch?.name ? `${t('scoring.matchHeader')} · ` : ''}
               {quickMatch?.matchFormat ?? quickMatch?.scoringFormat}
             </p>
+            {courseName && (
+              <p className="flex items-center gap-1.5 text-sm text-gray-500 mt-1" data-testid="quick-match-course-name">
+                <MapPin className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+                {courseName}
+              </p>
+            )}
           </div>
           {quickMatch?.isCompleted && (
             <span className="text-sm font-medium text-green-700 bg-green-100 px-2.5 py-1 rounded-full">

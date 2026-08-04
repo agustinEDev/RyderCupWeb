@@ -104,7 +104,10 @@
       "CANCELLED": "Cancelada"
     },
     "grossStrokes_one": "{{count}} golpe",
-    "grossStrokes_other": "{{count}} golpes"
+    "grossStrokes_other": "{{count}} golpes",
+    "hide": "Quitar de mi historial",
+    "hidden": "Partida quitada de tu historial",
+    "hideError": "No se pudo quitar la partida de tu historial"
   },
   "scoring": {
     "matchHeader": "Partida rápida",
@@ -121,6 +124,7 @@
     },
     "yourGroup": "Anotas para",
     "backToDashboard": "Volver al panel",
+    "backToMyQuickMatches": "Volver a partidas rápidas",
     "finish": {
       "button": "Finalizar partida",
       "confirmTitle": "¿Finalizar la partida?",

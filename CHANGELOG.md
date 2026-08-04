@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [2.5.0] - 2026-08-04
+
+### Added
+
+- **Campo de golf y vuelta al listado en el detalle de partida rápida** (issue #298): el detalle nunca decía en qué campo se había jugado, y su enlace superior volvía al panel — al que siempre se llega con un clic en el logo — en lugar de al listado, que es lo que hace falta cuando quieres abrir otra partida. Ahora muestra el nombre del campo bajo el formato y el enlace lleva a `/quick-matches`. El hook ya cargaba el campo completo para obtener hoyos y tees, así que no supone ninguna petición extra, y la línea solo aparece cuando el campo ha terminado de cargar.
+- **Quitar partidas rápidas del historial propio** (issue #263): botón de papelera en cada tarjeta de `/quick-matches` que retira la partida del historial del usuario actual. No borra nada ni afecta a lo que ven los demás participantes: cada uno la oculta solo para sí mismo, en cualquier estado de la partida, y la operación es idempotente. Sin diálogo de confirmación por ser una acción no destructiva. Requiere el backend correspondiente (RyderCupAM #127, `POST /quick-matches/{id}/hide`), que ya filtra las ocultas en `GET /quick-matches/me`.
+
+### Security
+
+- **Cabeceras de seguridad servidas por fin en producción** (issue #295): el frontend no enviaba ninguna salvo `X-Content-Type-Options`. La CSP y compañía estaban definidas en `vercel.json`, `public/_headers` y `nginx.conf`, y **un Render Static Site no lee ninguno de los tres**, así que durante meses hubo tres ficheros que aparentaban ser configuración de seguridad sin serlo. Sin `frame-ancestors` ni `X-Frame-Options`, la aplicación podía embeberse en un iframe de cualquier origen, con el riesgo de clickjacking que eso supone en una app autenticada por cookies. Ahora se sirven desde la configuración de Headers de Render (`Content-Security-Policy`, `Strict-Transport-Security`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`), verificadas en vivo tanto en el HTML como en los assets.
+
+### Fixed
+
+- **Las cabeceras de seguridad no llegaban a ninguna página servida por nginx** (issue #299): estaban declaradas solo a nivel `server`, y en nginx los `add_header` no se heredan una vez que un nivel inferior declara el suyo — así que el `location /` que sirve la SPA, con su propio `Cache-Control`, se llevaba por delante la CSP, `X-Frame-Options` y HSTS. Medido contra la imagen desplegada: `/` servía 0 de 6 cabeceras y solo los assets estáticos las conservaban, justo al revés de lo que interesa, porque CSP y `frame-ancestors` únicamente aplican al documento. Extraídas a `nginx-security-headers.conf` e incluidas en el `server` y en cada `location` que declara `add_header`. Producción no estaba afectada: allí las emite Render, no este nginx.
+- **Ocultar dos partidas rápidas seguidas reactivaba el botón de la segunda**: el estado era un único `hidingId` que se limpiaba sin comprobar qué petición había terminado, de modo que al responder la primera, la tarjeta que seguía en vuelo volvía a aceptar clics y podía enviar una petición duplicada. Ahora se registran todos los identificadores en curso y solo se retira el que ha completado.
+- **Accesibilidad del selector de stroke index** (issue #294): el bottom-sheet que sustituyó al popover ancorado arregló el solape en móvil pero nunca recibió el trabajo de accesibilidad que necesita un modal. Declaraba `aria-modal="true"` y nada más: al abrirlo el foco se quedaba en el disparador, el tabulador se escapaba a la tabla de hoyos y a las acciones del formulario de debajo, `Escape` no lo cerraba y al cerrarlo el foco se perdía por completo — lo más grave aquí, porque el disparador vive dentro de una tabla con scroll horizontal y el usuario de teclado acababa al principio del formulario sin forma razonable de volver al hoyo que estaba editando. Además, el nombre accesible avisaba de que elegir un índice ocupado los intercambiaría, sin decir con cuál: ahora nombra ambos lados (elegir el 9 en el hoyo 1 anuncia que ese hoyo pasa a 9 y el hoyo 9 pasa a 1).
+- **`style-src` de la CSP rompía la interfaz**: la política declaraba `style-src 'self'` sin `'unsafe-inline'` desde diciembre de 2025, lo que bloquea los estilos inline de React y las animaciones de framer-motion, que escriben el atributo `style` en runtime. Nunca se detectó porque la CSP no llegaba a aplicarse en ningún entorno servido. Corregido en `nginx.conf` (Docker/k8s) y en el CSP de preview de `vite.config.js`, donde también estaba roto. `script-src` se mantiene estricto: la aplicación no tiene scripts inline y un `<script>` inyectado es bloqueado.
+
+### Removed
+
+- **`vercel.json` y `public/_headers`**: configuración muerta que ningún entorno leía. Documentado en `docs/SECURITY_HEADERS.md` de dónde salen realmente las cabeceras en cada entorno.
+
+### Changed
+
+- **ADR-011 corregido**: afirmaba que `api` estaba *Proxied* tras Cloudflare y que `CF-Connecting-IP` proporcionaba la IP real. Verificado en el panel: `www` y `api` son ambos **"Solo DNS"**, el tráfico no pasa por el proxy y esa cabecera no llega. Documentado también por qué las respuestas traen `cf-ray` pese a ello (Render sirve sus static sites tras su propio Cloudflare), que fue lo que despistó el diagnóstico inicial.
+- Dependencias actualizadas por Dependabot: `vite` 8.1.5 → 8.2.0, `@sentry/react` 10.68.0 → 10.69.0, `lucide-react` 1.27.0 → 1.28.0, `@playwright/test` 1.62.0 → 1.62.1, `@vitejs/plugin-react` 6.0.4 → 6.0.5, tipos de React, y `postcss` en el grupo de Tailwind. Verificado que no reintroducen las vulnerabilidades corregidas en el hotfix v2.4.1 (`npm audit` limpio).
+
 ## [2.4.1] - 2026-08-04
 
 ### Fixed

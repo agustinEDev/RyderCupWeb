@@ -212,6 +212,19 @@ describe('ApiQuickMatchRepository', () => {
     });
   });
 
+  describe('hide', () => {
+    it('should POST to /quick-matches/{id}/hide with no body', async () => {
+      apiRequest.mockResolvedValue({ ...mockQuickMatchApi, status: 'COMPLETED' });
+
+      const result = await repo.hide('qm-1');
+
+      expect(apiRequest).toHaveBeenCalledWith('/api/v1/quick-matches/qm-1/hide', {
+        method: 'POST',
+      });
+      expect(result).toBeInstanceOf(QuickMatch);
+    });
+  });
+
   describe('setParticipantHandicap', () => {
     it('should PATCH to /quick-matches/{id}/participants/{participantId}/handicap with the new value', async () => {
       apiRequest.mockResolvedValue(mockQuickMatchApi);
