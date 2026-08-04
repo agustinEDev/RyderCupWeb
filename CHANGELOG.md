@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [2.4.1] - 2026-08-04
+
+### Fixed
+
+- **Panel de administración roto en móvil**: el contenedor principal (`layout-content-container`) era `flex-1` sin `min-w-0`, así que en vez de encogerse al ancho del viewport y dejar que sus hijos (tabla, barra de pestañas) hicieran scroll interno, todo el contenedor crecía y desplazaba la página entera — cortando el título, las estadísticas y las pestañas.
+- **Selector de Stroke Index sin usabilidad en móvil** (formulario de campos de golf): el picker de hándicap de hoyo era un popover posicionado en `absolute` anclado a una celda de una tabla con scroll horizontal, y sus números se solapaban con filas adyacentes en pantallas estrechas. Sustituido por un modal bottom-sheet (mismo patrón que `HandicapInputPanel`), que no depende del scroll/overflow de la tabla.
+
 ## [2.4.0] - 2026-08-02
 
 ### Added

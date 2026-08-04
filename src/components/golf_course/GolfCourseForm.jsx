@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Plus, Trash2, ChevronDown } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -52,18 +52,6 @@ const GolfCourseForm = ({ initialData = null, onSubmit, onCancel }) => {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [openPickerIndex, setOpenPickerIndex] = useState(null);
-  const pickerRef = useRef(null);
-
-  useEffect(() => {
-    if (openPickerIndex === null) return;
-    const handleClickOutside = (e) => {
-      if (pickerRef.current && !pickerRef.current.contains(e.target)) {
-        setOpenPickerIndex(null);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [openPickerIndex]);
 
   // Load countries on mount (only once)
   useEffect(() => {
@@ -558,46 +546,17 @@ const GolfCourseForm = ({ initialData = null, onSubmit, onCancel }) => {
                     </div>
                   </td>
                   <td className="py-2 px-3">
-                    <div className="relative" ref={openPickerIndex === index ? pickerRef : null}>
-                      <button
-                        type="button"
-                        onClick={() => setOpenPickerIndex(openPickerIndex === index ? null : index)}
-                        className={`w-9 h-9 border-2 rounded font-semibold text-sm transition-colors ${
-                          openPickerIndex === index
-                            ? 'bg-primary text-white border-primary'
-                            : 'bg-white text-gray-700 border-gray-300 hover:border-primary hover:text-primary'
-                        }`}
-                      >
-                        {hole.strokeIndex}
-                      </button>
-                      {openPickerIndex === index && (
-                        <div
-                          className="absolute z-10 top-full left-0 mt-1 p-2 bg-white border border-gray-200 rounded-lg shadow-lg"
-                        >
-                          <div className="grid grid-cols-6 gap-1">
-                            {Array.from({ length: 18 }, (_, i) => i + 1).map(n => {
-                              const usedByOther = holes.some((h, hi) => hi !== index && h.strokeIndex === n);
-                              return (
-                                <button
-                                  key={n}
-                                  type="button"
-                                  onClick={() => handleStrokeIndexSelect(index, n)}
-                                  className={`w-7 h-7 rounded text-xs font-semibold transition-colors ${
-                                    hole.strokeIndex === n
-                                      ? 'bg-primary text-white'
-                                      : usedByOther
-                                      ? 'bg-gray-100 text-gray-500 border border-gray-200 hover:border-amber-400 hover:text-amber-700 hover:bg-amber-50'
-                                      : 'bg-white text-gray-700 border border-gray-200 hover:border-primary hover:text-primary'
-                                  }`}
-                                >
-                                  {n}
-                                </button>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      )}
-                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setOpenPickerIndex(index)}
+                      className={`w-9 h-9 border-2 rounded font-semibold text-sm transition-colors ${
+                        openPickerIndex === index
+                          ? 'bg-primary text-white border-primary'
+                          : 'bg-white text-gray-700 border-gray-300 hover:border-primary hover:text-primary'
+                      }`}
+                    >
+                      {hole.strokeIndex}
+                    </button>
                   </td>
                 </tr>
               ))}
@@ -605,6 +564,65 @@ const GolfCourseForm = ({ initialData = null, onSubmit, onCancel }) => {
           </table>
         </div>
       </div>
+
+      {/* Stroke index picker: bottom-sheet modal (not an anchored popover) so it
+          always renders full-screen-centered regardless of the holes table's own
+          horizontal scroll/narrow rows on mobile — an absolutely-positioned
+          popover inside that scrollable table used to get clipped and overlap
+          adjacent rows. */}
+      {openPickerIndex !== null && (
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-center bg-black/40"
+          role="presentation"
+          onClick={() => setOpenPickerIndex(null)}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label={t('form.strokeIndex')}
+            className="bg-white rounded-t-2xl w-full max-w-md p-4 pb-8 shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-sm font-semibold text-gray-600">
+                {t('form.strokeIndex')} — {t('form.hole')} {holes[openPickerIndex]?.holeNumber}
+              </span>
+              <button
+                type="button"
+                onClick={() => setOpenPickerIndex(null)}
+                aria-label={t('form.closeStrokeIndexPicker')}
+                className="text-gray-400 hover:text-gray-600 text-lg leading-none flex-shrink-0"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="grid grid-cols-6 gap-2">
+              {Array.from({ length: 18 }, (_, i) => i + 1).map(n => {
+                const usedByOther = holes.some((h, hi) => hi !== openPickerIndex && h.strokeIndex === n);
+                return (
+                  <button
+                    key={n}
+                    type="button"
+                    onClick={() => {
+                      handleStrokeIndexSelect(openPickerIndex, n);
+                      setOpenPickerIndex(null);
+                    }}
+                    className={`h-11 rounded-lg text-sm font-semibold transition-colors ${
+                      holes[openPickerIndex]?.strokeIndex === n
+                        ? 'bg-primary text-white'
+                        : usedByOther
+                        ? 'bg-gray-100 text-gray-500 border border-gray-200 hover:border-amber-400 hover:text-amber-700 hover:bg-amber-50'
+                        : 'bg-white text-gray-700 border border-gray-200 hover:border-primary hover:text-primary'
+                    }`}
+                  >
+                    {n}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Actions */}
       <div className="flex items-center justify-end gap-3">
