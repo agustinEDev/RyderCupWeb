@@ -39,6 +39,7 @@
     "hole": "Hole",
     "par": "Par",
     "strokeIndex": "Stroke Index",
+    "closeStrokeIndexPicker": "Close",
     "totalPar": "Total Par",
     "cancel": "Cancel",
     "create": "Create Course",
