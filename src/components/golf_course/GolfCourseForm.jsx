@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Plus, Trash2, ChevronDown } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -52,6 +52,20 @@ const GolfCourseForm = ({ initialData = null, onSubmit, onCancel }) => {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [openPickerIndex, setOpenPickerIndex] = useState(null);
+
+  // Stroke index picker: el panel es un modal, así que tiene que gestionar el
+  // foco. El trigger vive dentro de una tabla con scroll horizontal, de modo
+  // que perder el foco al cerrar deja al usuario de teclado tirado al principio
+  // del formulario, sin forma razonable de volver al hoyo que estaba editando.
+  const pickerRef = useRef(null);
+  const pickerTriggerRef = useRef(null);
+
+  const closeStrokeIndexPicker = useCallback(() => {
+    setOpenPickerIndex(null);
+    // Devolver el foco al botón del hoyo que abrió el panel.
+    pickerTriggerRef.current?.focus();
+    pickerTriggerRef.current = null;
+  }, []);
 
   // Load countries on mount (only once)
   useEffect(() => {
@@ -142,6 +156,55 @@ const GolfCourseForm = ({ initialData = null, onSubmit, onCancel }) => {
     setHoles(updatedHoles);
   };
 
+  // Ciclo de vida del foco del picker: al abrirlo lleva el foco al stroke index
+  // seleccionado, atrapa el Tab dentro del panel mientras está abierto y cierra
+  // con Escape. `capture` porque el panel vive dentro del <form> y no queremos
+  // que la tecla llegue a nada de debajo.
+  useEffect(() => {
+    if (openPickerIndex === null) return undefined;
+
+    const panel = pickerRef.current;
+    if (!panel) return undefined;
+
+    // Todo lo enfocable del panel son botones y todos están visibles por
+    // construcción, así que no hace falta filtrar por visibilidad (y hacerlo
+    // con offsetParent falla dentro de un contenedor position:fixed).
+    const getFocusable = () => Array.from(panel.querySelectorAll('button:not([disabled])'));
+
+    // Enfocar el valor actual para que el usuario sepa de dónde parte.
+    const focusables = getFocusable();
+    const selected = panel.querySelector('[aria-pressed="true"]');
+    (selected || focusables[0])?.focus();
+
+    const handleKeyDown = event => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        event.stopPropagation();
+        closeStrokeIndexPicker();
+        return;
+      }
+
+      if (event.key !== 'Tab') return;
+
+      const items = getFocusable();
+      if (items.length === 0) return;
+
+      const first = items[0];
+      const last = items[items.length - 1];
+
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown, true);
+    return () => document.removeEventListener('keydown', handleKeyDown, true);
+  }, [openPickerIndex, closeStrokeIndexPicker]);
+
   // Select stroke index with auto-swap: if another hole already uses the chosen SI, swap them
   const handleStrokeIndexSelect = (holeIndex, newSI) => {
     const conflictIndex = holes.findIndex((h, hi) => hi !== holeIndex && h.strokeIndex === newSI);
@@ -151,7 +214,7 @@ const GolfCourseForm = ({ initialData = null, onSubmit, onCancel }) => {
       return h;
     });
     setHoles(updatedHoles);
-    setOpenPickerIndex(null);
+    closeStrokeIndexPicker();
   };
 
   // Calculate total par
@@ -548,7 +611,16 @@ const GolfCourseForm = ({ initialData = null, onSubmit, onCancel }) => {
                   <td className="py-2 px-3">
                     <button
                       type="button"
-                      onClick={() => setOpenPickerIndex(index)}
+                      onClick={event => {
+                        pickerTriggerRef.current = event.currentTarget;
+                        setOpenPickerIndex(index);
+                      }}
+                      aria-haspopup="dialog"
+                      aria-expanded={openPickerIndex === index}
+                      aria-label={t('form.strokeIndexForHole', {
+                        hole: hole.holeNumber,
+                        value: hole.strokeIndex,
+                      })}
                       className={`w-9 h-9 border-2 rounded font-semibold text-sm transition-colors ${
                         openPickerIndex === index
                           ? 'bg-primary text-white border-primary'
@@ -574,9 +646,10 @@ const GolfCourseForm = ({ initialData = null, onSubmit, onCancel }) => {
         <div
           className="fixed inset-0 z-50 flex items-end justify-center bg-black/40"
           role="presentation"
-          onClick={() => setOpenPickerIndex(null)}
+          onClick={closeStrokeIndexPicker}
         >
           <div
+            ref={pickerRef}
             role="dialog"
             aria-modal="true"
             aria-label={t('form.strokeIndex')}
@@ -589,7 +662,7 @@ const GolfCourseForm = ({ initialData = null, onSubmit, onCancel }) => {
               </span>
               <button
                 type="button"
-                onClick={() => setOpenPickerIndex(null)}
+                onClick={closeStrokeIndexPicker}
                 aria-label={t('form.closeStrokeIndexPicker')}
                 className="text-gray-400 hover:text-gray-600 text-lg leading-none flex-shrink-0"
               >
@@ -598,17 +671,31 @@ const GolfCourseForm = ({ initialData = null, onSubmit, onCancel }) => {
             </div>
             <div className="grid grid-cols-6 gap-2">
               {Array.from({ length: 18 }, (_, i) => i + 1).map(n => {
-                const usedByOther = holes.some((h, hi) => hi !== openPickerIndex && h.strokeIndex === n);
+                const conflictHole = holes.find(
+                  (h, hi) => hi !== openPickerIndex && h.strokeIndex === n
+                );
+                const usedByOther = Boolean(conflictHole);
+                const isSelected = holes[openPickerIndex]?.strokeIndex === n;
                 return (
                   <button
                     key={n}
                     type="button"
-                    onClick={() => {
-                      handleStrokeIndexSelect(openPickerIndex, n);
-                      setOpenPickerIndex(null);
-                    }}
+                    onClick={() => handleStrokeIndexSelect(openPickerIndex, n)}
+                    // El estado seleccionado y el "ya en uso" solo se distinguen
+                    // por color; sin esto un lector de pantalla solo anuncia el
+                    // número, y el usuario no puede saber que elegir un índice
+                    // ocupado lo intercambia con el otro hoyo.
+                    aria-pressed={isSelected}
+                    aria-label={
+                      usedByOther
+                        ? t('form.strokeIndexUsedByHole', {
+                            value: n,
+                            hole: conflictHole.holeNumber,
+                          })
+                        : String(n)
+                    }
                     className={`h-11 rounded-lg text-sm font-semibold transition-colors ${
-                      holes[openPickerIndex]?.strokeIndex === n
+                      isSelected
                         ? 'bg-primary text-white'
                         : usedByOther
                         ? 'bg-gray-100 text-gray-500 border border-gray-200 hover:border-amber-400 hover:text-amber-700 hover:bg-amber-50'

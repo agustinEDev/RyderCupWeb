@@ -40,6 +40,8 @@
     "par": "Par",
     "strokeIndex": "Stroke Index",
     "closeStrokeIndexPicker": "Close",
+    "strokeIndexForHole": "Stroke index for hole {{hole}}: {{value}}. Press to change it",
+    "strokeIndexUsedByHole": "{{value}}, already used by hole {{hole}}. Choosing it will swap them",
     "totalPar": "Total Par",
     "cancel": "Cancel",
     "create": "Create Course",
