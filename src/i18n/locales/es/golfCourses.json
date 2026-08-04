@@ -40,6 +40,8 @@
     "par": "Par",
     "strokeIndex": "Stroke Index",
     "closeStrokeIndexPicker": "Cerrar",
+    "strokeIndexForHole": "Stroke index del hoyo {{hole}}: {{value}}. Pulsa para cambiarlo",
+    "strokeIndexUsedByHole": "{{value}}, en uso por el hoyo {{hole}}. Al elegirlo, este hoyo pasará a tener el {{value}} y el hoyo {{hole}} el {{current}}",
     "totalPar": "Par Total",
     "cancel": "Cancelar",
     "create": "Crear Campo",
