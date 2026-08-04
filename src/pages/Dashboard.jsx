@@ -10,6 +10,8 @@ import EmailVerificationBanner from '../components/EmailVerificationBanner';
 import PendingActionsCard from '../components/dashboard/PendingActionsCard';
 import CreateQuickMatchModal from '../components/quick_match/CreateQuickMatchModal';
 import { useAuth } from '../hooks/useAuth';
+import { useEntryMotion } from '../hooks/useEntryMotion';
+import { fadeInUp, staggerContainer, getEntryProps } from '../utils/animations';
 import { listUserCompetitionsUseCase } from '../composition';
 
 const Dashboard = () => {
@@ -17,6 +19,7 @@ const Dashboard = () => {
   const { t } = useTranslation('dashboard');
   const { t: tQuickMatch } = useTranslation('quickMatch');
   const { user, loading: isLoadingUser, refetch: refetchUser } = useAuth();
+  const { animateEntry } = useEntryMotion();
   const [competitions, setCompetitions] = useState([]);
   const [isLoadingCompetitions, setIsLoadingCompetitions] = useState(true);
   const [showHandicapModal, setShowHandicapModal] = useState(false);
@@ -117,12 +120,14 @@ const Dashboard = () => {
         <HeaderAuth user={user} />
 
         <div className="px-4 md:px-40 flex flex-1 justify-center py-5">
-          <div className="layout-content-container flex flex-col max-w-[960px] flex-1">
+          <motion.div
+            {...getEntryProps(animateEntry)}
+            variants={staggerContainer}
+            className="layout-content-container flex flex-col max-w-[960px] flex-1"
+          >
             {/* Welcome Message */}
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
+              variants={fadeInUp}
               className="flex flex-wrap justify-between gap-3 p-4"
             >
               <div>
@@ -144,9 +149,7 @@ const Dashboard = () => {
 
             {/* Quick access: create a quick match */}
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.05 }}
+              variants={fadeInUp}
               className="px-4 mb-2"
             >
               <button
@@ -188,9 +191,7 @@ const Dashboard = () => {
 
             {/* Statistics Cards */}
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.1 }}
+              variants={fadeInUp}
               className="p-4"
             >
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
@@ -262,9 +263,7 @@ const Dashboard = () => {
 
             {/* Quick Actions */}
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.2 }}
+              variants={fadeInUp}
               className="p-4 mt-4"
             >
               <h2 className="text-gray-900 text-xl font-bold mb-4">{t('quickActions.title')}</h2>
@@ -379,7 +378,7 @@ const Dashboard = () => {
                 </motion.button>
               </div>
             </motion.div>
-          </div>
+          </motion.div>
         </div>
       </div>
     </div>
