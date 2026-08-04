@@ -257,7 +257,7 @@ const AdminPanel = () => {
       <div className="layout-container flex h-full grow flex-col">
         <HeaderAuth user={user} />
         <div className="px-4 md:px-40 flex flex-1 justify-center py-5">
-          <div className="layout-content-container flex flex-col max-w-[1200px] flex-1">
+          <div className="layout-content-container flex flex-col max-w-[1200px] flex-1 min-w-0">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
