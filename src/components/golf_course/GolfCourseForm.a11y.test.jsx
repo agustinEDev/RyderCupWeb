@@ -138,13 +138,15 @@ describe('GolfCourseForm - accesibilidad del stroke index picker', () => {
       expect(pressed[0]).toHaveTextContent('4');
     });
 
-    it('anuncia qué hoyo ocupa un stroke index y que se intercambiarán', () => {
+    it('anuncia qué hoyo ocupa un stroke index y los dos índices que se intercambian', () => {
       renderForm();
       openPickerForHole(1);
 
-      // El stroke index 9 lo ocupa el hoyo 9 por defecto.
+      // El hoyo 1 arranca con stroke index 1; el 9 lo ocupa el hoyo 9. Elegirlo
+      // deja al hoyo 1 con el 9 y al hoyo 9 con el 1, y el nombre accesible
+      // tiene que decir ambos para que el intercambio no sea una sorpresa.
       const occupied = within(getPicker()).getByRole('button', {
-        name: /strokeIndexUsedByHole.*"hole":9/,
+        name: /strokeIndexUsedByHole.*"value":9,"hole":9,"current":1/,
       });
 
       expect(occupied).toHaveAttribute('aria-pressed', 'false');

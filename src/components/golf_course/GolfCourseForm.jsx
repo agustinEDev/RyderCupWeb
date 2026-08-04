@@ -691,6 +691,9 @@ const GolfCourseForm = ({ initialData = null, onSubmit, onCancel }) => {
                         ? t('form.strokeIndexUsedByHole', {
                             value: n,
                             hole: conflictHole.holeNumber,
+                            // El intercambio es recíproco: el hoyo abierto cede
+                            // su índice actual al hoyo en conflicto.
+                            current: holes[openPickerIndex]?.strokeIndex,
                           })
                         : String(n)
                     }
