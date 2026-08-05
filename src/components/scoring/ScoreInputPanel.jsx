@@ -43,7 +43,7 @@ const ScoreInputPanel = ({ value, onSelect, onClose, label, par }) => {
         role="dialog"
         aria-modal="true"
         aria-label={label}
-        className="bg-white rounded-t-2xl w-full max-w-md p-4 pb-8 shadow-xl"
+        className="bg-white rounded-t-2xl w-full max-w-md p-4 pb-[calc(2rem+env(safe-area-inset-bottom))] shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-3">
