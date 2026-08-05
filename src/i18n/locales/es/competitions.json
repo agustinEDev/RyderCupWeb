@@ -258,7 +258,7 @@
       "enrollmentRequested": "¡Solicitud de inscripción enviada! Revisa \"Mis Competiciones\" para seguir el estado."
     }
   },
-  "footer": "© 2025 RyderCupFriends",
+  "footer": "© {{year}} RyderCupFriends",
   "status": {
     "DRAFT": "BORRADOR",
     "ACTIVE": "ACTIVA",

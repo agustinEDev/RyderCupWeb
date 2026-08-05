@@ -60,7 +60,8 @@
     "privacy": "Privacy Policy",
     "cookies": "Cookie Policy",
     "contact": "Contact Us",
-    "copyright": "© 2024 RyderCupFriends - RCF. All rights reserved.",
+    "copyright": "© {{year}} RyderCupFriends - RCF. All rights reserved.",
+    "copyrightShort": "© {{year}} RyderCupFriends - RCF",
     "madeWith": "Made with",
     "forGolfers": "for golf enthusiasts"
   }
