@@ -35,7 +35,7 @@ import {
  * - Rate limiting 3 intentos/hora (backend)
  */
 const ResetPassword = () => {
-  const { t } = useTranslation('auth');
+  const { t } = useTranslation(['auth', 'common']);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const params = useParams();
@@ -368,7 +368,7 @@ const ResetPassword = () => {
             </div>
 
             {/* Footer */}
-            <div className="text-white/70 text-sm">© 2024 RyderCupFriends - RCF</div>
+            <div className="text-white/70 text-sm">{t('common:footer.copyrightShort', { year: new Date().getFullYear() })}</div>
           </div>
         </motion.div>
 

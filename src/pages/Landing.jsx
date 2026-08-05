@@ -134,16 +134,16 @@ const Landing = () => {
                   className="grid grid-cols-3 gap-6 pt-8 border-t border-gray-200"
                 >
                   <div>
-                    <div className="text-3xl font-bold text-primary font-poppins">500+</div>
-                    <div className="text-sm text-gray-600 mt-1">{t('hero.stats.tournaments')}</div>
+                    <div className="text-2xl font-bold text-primary font-poppins">{t('hero.stats.free')}</div>
+                    <div className="text-sm text-gray-600 mt-1">{t('hero.stats.freeDetail')}</div>
                   </div>
                   <div>
-                    <div className="text-3xl font-bold text-primary font-poppins">2K+</div>
-                    <div className="text-sm text-gray-600 mt-1">{t('hero.stats.players')}</div>
+                    <div className="text-2xl font-bold text-primary font-poppins">{t('hero.stats.handicap')}</div>
+                    <div className="text-sm text-gray-600 mt-1">{t('hero.stats.handicapDetail')}</div>
                   </div>
                   <div>
-                    <div className="text-3xl font-bold text-primary font-poppins">98%</div>
-                    <div className="text-sm text-gray-600 mt-1">{t('hero.stats.satisfaction')}</div>
+                    <div className="text-2xl font-bold text-primary font-poppins">{t('hero.stats.noAds')}</div>
+                    <div className="text-sm text-gray-600 mt-1">{t('hero.stats.noAdsDetail')}</div>
                   </div>
                 </motion.div>
               </motion.div>
@@ -170,15 +170,9 @@ const Landing = () => {
                       variants={slideUp}
                       className="absolute bottom-6 left-6 right-6 bg-white/95 backdrop-blur-sm rounded-xl p-4 shadow-lg"
                     >
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <div className="text-sm font-semibold text-gray-600">{t('hero.nextTournament')}</div>
-                          <div className="text-lg font-bold text-gray-900">{t('hero.springClassic')}</div>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-sm text-gray-600">{t('hero.stats.players')}</div>
-                          <div className="text-2xl font-bold text-primary">24</div>
-                        </div>
+                      <div>
+                        <div className="text-sm font-semibold text-gray-600">{t('hero.nextTournament')}</div>
+                        <div className="text-lg font-bold text-gray-900">{t('hero.springClassic')}</div>
                       </div>
                     </motion.div>
                   </div>

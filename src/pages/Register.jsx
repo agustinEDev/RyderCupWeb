@@ -13,7 +13,7 @@ import { formatCountryName } from '../services/countries';
 import GoogleSignInButton from '../components/ui/GoogleSignInButton';
 
 const Register = () => {
-  const { t, i18n } = useTranslation('auth');
+  const { t, i18n } = useTranslation(['auth', 'common']);
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     firstName: '',
@@ -241,23 +241,23 @@ const Register = () => {
               {/* Stats */}
               <div className="grid grid-cols-3 gap-6 pt-8 mt-8 border-t border-white/20">
                 <div>
-                  <div className="text-3xl font-bold font-poppins">500+</div>
-                  <div className="text-sm text-white/70 mt-1">{t('register.stats.tournaments')}</div>
+                  <div className="text-2xl font-bold font-poppins">{t('register.stats.free')}</div>
+                  <div className="text-sm text-white/70 mt-1">{t('register.stats.freeDetail')}</div>
                 </div>
                 <div>
-                  <div className="text-3xl font-bold font-poppins">2K+</div>
-                  <div className="text-sm text-white/70 mt-1">{t('register.stats.players')}</div>
+                  <div className="text-2xl font-bold font-poppins">{t('register.stats.handicap')}</div>
+                  <div className="text-sm text-white/70 mt-1">{t('register.stats.handicapDetail')}</div>
                 </div>
                 <div>
-                  <div className="text-3xl font-bold font-poppins">98%</div>
-                  <div className="text-sm text-white/70 mt-1">{t('register.stats.satisfaction')}</div>
+                  <div className="text-2xl font-bold font-poppins">{t('register.stats.noAds')}</div>
+                  <div className="text-sm text-white/70 mt-1">{t('register.stats.noAdsDetail')}</div>
                 </div>
               </div>
             </div>
 
             {/* Footer */}
             <div className="text-white/70 text-sm">
-              © 2024 RyderCupFriends - RCF
+              {t('common:footer.copyrightShort', { year: new Date().getFullYear() })}
             </div>
           </div>
         </motion.div>
