@@ -13,6 +13,7 @@ import { onAuthEvent, EVENTS } from './utils/broadcastAuth';
 import { useLogout } from './hooks/useLogout';
 import { useDeviceRevocationMonitor } from './hooks/useDeviceRevocationMonitor';
 import InstallBanner from './components/ui/InstallBanner';
+import BottomNav from './components/layout/BottomNav';
 
 // Lazy loading con retry automático para fallos de red transitorios
 // Si el primer import() falla, reintenta tras 1.5s antes de propagar el error
@@ -114,6 +115,13 @@ function AppContent() {
                        location.pathname.startsWith('/reset-password/') ||
                        isDynamicPublicRoute;
 
+  // La anotación en vivo es inmersiva: la navegación inferior le robaría
+  // el espacio vertical que necesita el flujo hoyo a hoyo (FE #306)
+  const isScoringRoute = /\/scoring$/.test(location.pathname);
+
+  // Navegación inferior: solo móvil, solo con sesión y fuera del scoring
+  const showBottomNav = isAuthenticated && !isPublicRoute && !isScoringRoute;
+
   // Limpiar flag de error de lazy loading tras navegación exitosa
   // Asegura que la auto-recarga funcione en cada despliegue, no solo el primero
   useEffect(() => {
@@ -192,7 +200,7 @@ function AppContent() {
 
   return (
     <LazyLoadErrorBoundary>
-      {location.pathname !== '/' && <InstallBanner />}
+      {location.pathname !== '/' && <InstallBanner aboveBottomNav={showBottomNav} />}
       <Suspense fallback={
         <div style={{
           display: 'flex',
@@ -304,6 +312,13 @@ function AppContent() {
         <Route path="/unauthorized" element={<Unauthorized />} />
         </SentryRoutes>
       </Suspense>
+      {showBottomNav && (
+        <>
+          {/* Espaciador en el flujo: la nav es fixed y taparía el final de la página */}
+          <div aria-hidden="true" className="md:hidden h-[calc(4rem+env(safe-area-inset-bottom))]" />
+          <BottomNav />
+        </>
+      )}
     </LazyLoadErrorBoundary>
   );
 }

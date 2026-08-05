@@ -7,7 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- **Barra de navegación inferior en móvil** (issue #306, fase 1): hasta ahora, con sesión iniciada, moverse por la aplicación desde el teléfono exigía abrir el hamburguesa cada vez — dos toques y una lista de siete enlaces para cualquier salto entre secciones. La nueva `<BottomNav />` deja las cinco entradas reales al alcance del pulgar (Inicio, Torneos, el botón de partida rápida, Jugadores y Perfil), marca la sección activa con `aria-current` incluso en subpáginas (`/competitions/:id` mantiene Torneos encendido) y respeta el inset inferior de la issue #308 para no quedar bajo el indicador de inicio. Se monta una sola vez en `App.jsx` para las rutas autenticadas, con un espaciador en el flujo que evita que la barra tape el final de cada página, y se retira en la anotación en vivo, que es inmersiva y necesita todo el alto. El banner de instalación de la PWA se apila justo encima en lugar de solaparse. El botón central de partida rápida abre el mismo modal que el panel, cargándolo de forma diferida y consultando el usuario actual solo cuando se pulsa, para no añadir ni peso al bundle inicial ni una petición por página.
+
 ### Changed
+
+- **El menú hamburguesa desaparece de la cabecera con sesión iniciada en móvil** (issue #306): su función la asume la navegación inferior. Lo que no cabe en las cinco pestañas se ha movido a Perfil, que en móvil pasa a ofrecer el selector de idioma y, para administradores, el acceso al panel de administración; cerrar sesión ya estaba allí. En escritorio la cabecera no cambia.
 
 - **Iniciar sesión y Registrarse dejan de esconderse tras el menú de móvil** (issue #314): en las páginas públicas ambos botones vivían solo dentro del desplegable del hamburguesa, por debajo de los enlaces de marketing y del selector de idioma, así que desde el teléfono no había ninguna forma visible de entrar con una cuenta ya creada. Ahora están en la propia cabecera, siempre visibles, y el hamburguesa se queda con lo que le corresponde: características, precios, soporte e idioma. Para que quepan en las pantallas más estrechas, el nombre de la marca se oculta por debajo de `sm` y queda solo el monograma; medido en la cabecera real, el contenido ocupa 295 px, así que entra incluso en un iPhone SE de 320 px.
 

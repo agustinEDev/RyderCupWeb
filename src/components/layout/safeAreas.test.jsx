@@ -36,6 +36,7 @@ describe('safe areas', () => {
     ['src/components/layout/HeaderAuth.jsx', 'env(safe-area-inset-top)'],
     ['src/components/layout/Footer.jsx', 'env(safe-area-inset-bottom)'],
     ['src/components/ui/InstallBanner.jsx', 'env(safe-area-inset-bottom)'],
+    ['src/components/layout/BottomNav.jsx', 'env(safe-area-inset-bottom)'],
     ['src/components/scoring/ScoreInputPanel.jsx', 'env(safe-area-inset-bottom)'],
     ['src/components/quick_match/HandicapInputPanel.jsx', 'env(safe-area-inset-bottom)'],
     ['src/components/golf_course/GolfCourseForm.jsx', 'env(safe-area-inset-bottom)'],

@@ -49,6 +49,14 @@
     "adminBadge": "Admin",
     "logout": "Cerrar Sesión"
   },
+  "bottomNav": {
+    "label": "Navegación principal",
+    "home": "Inicio",
+    "tournaments": "Torneos",
+    "quickMatch": "Partida",
+    "players": "Jugadores",
+    "profile": "Perfil"
+  },
   "footer": {
     "description": "La plataforma definitiva para gestionar torneos de golf amateur en formato Ryder Cup. Conecta con amigos y disfruta del espíritu de la competencia amistosa.",
     "quickLinks": "Enlaces Rápidos",
