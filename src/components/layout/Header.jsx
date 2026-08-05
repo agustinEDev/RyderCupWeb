@@ -32,7 +32,7 @@ const Header = () => {
   }, [isMobileMenuOpen]);
 
   return (
-    <header className="flex items-center justify-between whitespace-nowrap border-b border-solid border-b-gray-200 px-4 md:px-10 py-3 overflow-visible">
+    <header className="flex items-center justify-between whitespace-nowrap border-b border-solid border-b-gray-200 px-4 md:px-10 pb-3 pt-[calc(0.75rem+env(safe-area-inset-top))] overflow-visible">
       {isLandingPage ? (
         <div className="flex items-center gap-3 text-gray-900" data-testid="header-logo-static">
           <div className="h-10 w-10 md:h-12 md:w-12 flex-shrink-0 flex items-center justify-center overflow-visible">

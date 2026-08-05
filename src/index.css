@@ -55,6 +55,16 @@
     font-family: 'Inter', sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+
+    /* Safe areas (FE #308). Installed as a standalone PWA there is no browser
+       chrome, so content would run under the notch and the rounded corners.
+       The side insets go on the body because in landscape they apply to every
+       screen; the top and bottom ones live on the elements that reach those
+       edges (headers, footer, fixed panels) so their background still covers
+       the system UI instead of leaving a blank strip. All of them are 0 in a
+       browser tab and in portrait on devices without a notch. */
+    padding-left: env(safe-area-inset-left, 0px);
+    padding-right: env(safe-area-inset-right, 0px);
   }
 
   h1, h2, h3, h4, h5, h6 {
