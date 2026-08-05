@@ -6,6 +6,14 @@ import { BarChart3, Download, Share, Trophy, Users, Zap } from 'lucide-react';
 import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
 import { useInstallPrompt } from '../hooks/useInstallPrompt';
+import { useEntryMotion } from '../hooks/useEntryMotion';
+import {
+  fadeInUp,
+  slideUp,
+  staggerContainer,
+  getEntryProps,
+  getRevealProps
+} from '../utils/animations';
 
 const Landing = () => {
   const { t } = useTranslation('landing');
@@ -13,26 +21,15 @@ const Landing = () => {
   const navigate = useNavigate();
   const { canInstall, isIOS, isDesktopSafari, isInstalled, install } = useInstallPrompt();
   const [showInstallHint, setShowInstallHint] = useState(false);
+  const { animateEntry, animateOnScroll } = useEntryMotion();
 
   const handleGetStarted = () => {
     navigate('/register');
   };
 
-  // Animation variants
-  const fadeInUp = {
-    initial: { opacity: 0, y: 20 },
-    animate: { opacity: 1, y: 0 },
-    transition: { duration: 0.6 }
-  };
-
-
-  const staggerContainer = {
-    animate: {
-      transition: {
-        staggerChildren: 0.1
-      }
-    }
-  };
+  // Hero is above the fold: it never animates opacity, only transform
+  const heroProps = getEntryProps(animateEntry);
+  const revealProps = getRevealProps(animateOnScroll);
 
   return (
     <div className="relative flex h-auto min-h-screen w-full flex-col bg-white">
@@ -48,13 +45,12 @@ const Landing = () => {
 
               {/* Left Column - Text Content */}
               <motion.div
-                initial="initial"
-                animate="animate"
+                {...heroProps}
                 variants={staggerContainer}
                 className="space-y-6 md:space-y-8"
               >
                 {/* Badge */}
-                <motion.div variants={fadeInUp}>
+                <motion.div variants={slideUp}>
                   <span className="inline-flex items-center gap-2 px-4 py-2 bg-primary-100 text-primary-700 rounded-full text-sm font-semibold">
                     <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                       <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
@@ -64,7 +60,7 @@ const Landing = () => {
                 </motion.div>
 
                 {/* Main Heading */}
-                <motion.div variants={fadeInUp} className="space-y-4">
+                <motion.div variants={slideUp} className="space-y-4">
                   <h1 className="text-4xl md:text-5xl lg:text-6xl font-black leading-tight tracking-tight text-gray-900 font-poppins">
                     {t('hero.title')}{' '}
                     <span className="text-primary">
@@ -78,7 +74,7 @@ const Landing = () => {
 
                 {/* Subtitle */}
                 <motion.p
-                  variants={fadeInUp}
+                  variants={slideUp}
                   className="text-lg md:text-xl text-gray-600 leading-relaxed max-w-xl"
                 >
                   {t('hero.subtitle')}
@@ -86,7 +82,7 @@ const Landing = () => {
 
                 {/* CTA Buttons */}
                 <motion.div
-                  variants={fadeInUp}
+                  variants={slideUp}
                   className="flex flex-col sm:flex-row gap-4"
                 >
                   <button
@@ -134,7 +130,7 @@ const Landing = () => {
 
                 {/* Stats */}
                 <motion.div
-                  variants={fadeInUp}
+                  variants={slideUp}
                   className="grid grid-cols-3 gap-6 pt-8 border-t border-gray-200"
                 >
                   <div>
@@ -154,9 +150,8 @@ const Landing = () => {
 
               {/* Right Column - Hero Image/Visual */}
               <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.8, delay: 0.2 }}
+                {...heroProps}
+                variants={slideUp}
                 className="relative hidden lg:block"
               >
                 <div className="relative">
@@ -171,9 +166,8 @@ const Landing = () => {
 
                     {/* Floating Card - Tournament Info */}
                     <motion.div
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.8, duration: 0.6 }}
+                      {...heroProps}
+                      variants={slideUp}
                       className="absolute bottom-6 left-6 right-6 bg-white/95 backdrop-blur-sm rounded-xl p-4 shadow-lg"
                     >
                       <div className="flex items-center justify-between">
@@ -209,9 +203,7 @@ const Landing = () => {
         {/* Features Section - Redesigned */}
         <section id="features" className="relative z-10 bg-white px-4 md:px-8 py-16 md:py-24 max-w-7xl mx-auto">
           <motion.div
-            initial="initial"
-            whileInView="animate"
-            viewport={{ once: true }}
+            {...revealProps}
             variants={staggerContainer}
             className="space-y-12"
           >
@@ -297,9 +289,7 @@ const Landing = () => {
         <section className="bg-gray-50 py-16 md:py-24">
           <div className="max-w-7xl mx-auto px-4 md:px-8">
             <motion.div
-              initial="initial"
-              whileInView="animate"
-              viewport={{ once: true }}
+              {...revealProps}
               variants={staggerContainer}
               className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center"
             >
@@ -370,9 +360,7 @@ const Landing = () => {
         {/* CTA Section */}
         <section className="py-16 md:py-24 px-4 md:px-8">
           <motion.div
-            initial="initial"
-            whileInView="animate"
-            viewport={{ once: true }}
+            {...revealProps}
             variants={fadeInUp}
             className="max-w-4xl mx-auto text-center bg-primary rounded-3xl p-12 md:p-16 relative overflow-hidden shadow-2xl"
           >

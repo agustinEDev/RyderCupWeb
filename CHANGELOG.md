@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+
+- **Las animaciones de entrada dejaban secciones en blanco durante segundos** (issue #302): la home y el panel animaban con duraciones de 0,5-0,8 s, un stagger de 100 ms entre hermanos y retardos de hasta 0,8 s, todo partiendo de `opacity: 0`. El hero, que es lo primero que ve un visitante nuevo, tardaba casi un segundo en estar completo: el badge aparecía y el H1, el subtítulo y los CTAs seguían invisibles. Los reveals por scroll usaban `whileInView` sin margen, así que la sección empezaba a aparecer cuando ya estaba dentro de la pantalla y con scroll rápido se veía vacía. Ahora las reglas viven en `src/utils/animations.js` (duración 250 ms, stagger 60 ms, viewport con margen negativo del 10 %) y el contenido above-the-fold anima solo `transform`, nunca opacidad, por lo que se pinta visible en el primer frame. El nuevo hook `useEntryMotion` respeta `prefers-reduced-motion: reduce` y desactiva los reveals por scroll en móvil, que es donde se reprodujo el problema; en ambos casos el contenido se monta directamente en su estado final. La página de precios, con el mismo patrón (retardos de hasta 0,4 s en las tarjetas de plan y un `whileInView` sin margen en el CTA final), pasa por las mismas reglas: los planes Pro y Enterprise conservan su atenuación mediante la clase `opacity-60` que ya tenían, en vez de animar la opacidad hasta 0,6.
+
 ## [2.5.0] - 2026-08-04
 
 ### Added
