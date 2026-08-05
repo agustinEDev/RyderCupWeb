@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+
+- **Iniciar sesión y Registrarse dejan de esconderse tras el menú de móvil** (issue #314): en las páginas públicas ambos botones vivían solo dentro del desplegable del hamburguesa, por debajo de los enlaces de marketing y del selector de idioma, así que desde el teléfono no había ninguna forma visible de entrar con una cuenta ya creada. Ahora están en la propia cabecera, siempre visibles, y el hamburguesa se queda con lo que le corresponde: características, precios, soporte e idioma. Para que quepan en las pantallas más estrechas, el nombre de la marca se oculta por debajo de `sm` y queda solo el monograma; medido en la cabecera real, el contenido ocupa 295 px, así que entra incluso en un iPhone SE de 320 px.
+
 ### Fixed
 
 - **La aplicación instalada se metía bajo la isla dinámica y la barra de gestos** (issue #308): el manifiesto declara `display: standalone`, así que al instalarla desaparece el cromo del navegador, pero no había ni un `env(safe-area-inset-*)` en todo el proyecto ni `viewport-fit=cover` en el `viewport` — y sin eso los insets valen 0 aunque se usen. En un iPhone con notch, la cabecera quedaba parcialmente bajo la barra de estado y el banner de instalación y los bottom-sheets, bajo el indicador de inicio. Los márgenes laterales van en el `body`, porque en horizontal afectan a todas las pantallas; los superiores e inferiores van en los elementos que llegan a esos bordes (cabeceras, pie, banner y paneles fijos) para que su fondo siga cubriendo la zona del sistema en vez de dejar una franja en blanco. Todos valen 0 en pestaña de navegador y en vertical sin notch. Es requisito previo de la barra de navegación inferior (issue #306): sin el inset inferior, quedaría bajo el indicador de inicio.
