@@ -42,7 +42,7 @@ const Header = () => {
               className="block h-full w-auto object-contain transform -translate-y-[2px] md:-translate-y-[2px] scale-105 md:scale-110"
             />
           </div>
-          <h2 className="text-gray-900 text-lg md:text-xl font-bold leading-tight tracking-tight font-poppins">
+          <h2 className="hidden sm:block text-gray-900 text-lg md:text-xl font-bold leading-tight tracking-tight font-poppins">
             RyderCupFriends
           </h2>
         </div>
@@ -55,7 +55,7 @@ const Header = () => {
               className="block h-full w-auto object-contain transform -translate-y-[2px] md:-translate-y-[2px] scale-105 md:scale-110"
             />
           </div>
-          <h2 className="text-gray-900 text-lg md:text-xl font-bold leading-tight tracking-tight font-poppins">
+          <h2 className="hidden sm:block text-gray-900 text-lg md:text-xl font-bold leading-tight tracking-tight font-poppins">
             RyderCupFriends
           </h2>
         </Link>
@@ -92,6 +92,20 @@ const Header = () => {
         </div>
       </div>
 
+      {/* Mobile: the two actions the site exists for stay visible (#314) */}
+      <div className="md:hidden flex items-center gap-2 ml-auto mr-2">
+        <Link to="/register">
+          <button className="flex items-center justify-center rounded-lg h-10 px-3 bg-primary text-white text-sm font-bold tracking-wide active:bg-primary-600 transition-colors">
+            {t('header.register')}
+          </button>
+        </Link>
+        <Link to="/login">
+          <button className="flex items-center justify-center rounded-lg h-10 px-3 bg-gray-100 text-gray-900 text-sm font-bold tracking-wide active:bg-gray-200 transition-colors">
+            {t('header.signInShort')}
+          </button>
+        </Link>
+      </div>
+
       {/* Mobile Menu Button */}
       <div className="md:hidden relative" ref={mobileMenuRef}>
         <button
@@ -118,7 +132,7 @@ const Header = () => {
 
         {/* Mobile Dropdown Menu */}
         {isMobileMenuOpen && (
-          <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
+          <div data-testid="mobile-menu" className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
             <a
               href="/#features"
               onClick={() => setIsMobileMenuOpen(false)}
@@ -147,21 +161,6 @@ const Header = () => {
               <LanguageSwitcher />
             </div>
 
-            <div className="border-t border-gray-200 my-2"></div>
-            <Link
-              to="/register"
-              onClick={() => setIsMobileMenuOpen(false)}
-              className="block px-4 py-2 text-sm text-white bg-primary hover:bg-primary/90 transition-colors mx-2 rounded-lg text-center font-bold"
-            >
-              {t('header.register')}
-            </Link>
-            <Link
-              to="/login"
-              onClick={() => setIsMobileMenuOpen(false)}
-              className="block px-4 py-2 text-sm text-gray-900 bg-gray-100 hover:bg-gray-200 transition-colors mx-2 mt-2 rounded-lg text-center font-bold"
-            >
-              {t('header.signIn')}
-            </Link>
           </div>
         )}
       </div>
