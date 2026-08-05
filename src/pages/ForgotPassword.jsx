@@ -7,7 +7,7 @@ import { validateEmail } from '../utils/validation';
 import { requestPasswordResetUseCase } from '../composition';
 
 const ForgotPassword = () => {
-  const { t } = useTranslation('auth');
+  const { t } = useTranslation(['auth', 'common']);
   const [email, setEmail] = useState('');
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
@@ -125,7 +125,7 @@ const ForgotPassword = () => {
 
               {/* Footer */}
               <div className="text-white/70 text-sm">
-                © 2024 RyderCupFriends - RCF
+                {t('common:footer.copyrightShort', { year: new Date().getFullYear() })}
               </div>
             </div>
           </motion.div>
@@ -316,7 +316,7 @@ const ForgotPassword = () => {
 
             {/* Footer */}
             <div className="text-white/70 text-sm">
-              © 2024 RyderCupFriends - RCF
+              {t('common:footer.copyrightShort', { year: new Date().getFullYear() })}
             </div>
           </div>
         </motion.div>

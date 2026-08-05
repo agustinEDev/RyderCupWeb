@@ -29,7 +29,7 @@ const LanguageSwitcher = () => {
       <select
         value={currentLanguage}
         onChange={changeLanguage}
-        className="appearance-none bg-white border-2 border-gray-200 rounded-lg px-3 py-2 pr-8 text-sm font-medium text-gray-700 hover:border-primary focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all cursor-pointer"
+        className="appearance-none bg-white border-2 border-gray-200 rounded-lg px-3 py-2 pr-8 min-h-[44px] md:min-h-0 text-sm font-medium text-gray-700 hover:border-primary focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all cursor-pointer"
         aria-label="Select language"
       >
         {languages.map((lang) => (

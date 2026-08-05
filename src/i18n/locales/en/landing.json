@@ -6,12 +6,15 @@
     "subtitle": "The ultimate platform for organizing amateur golf tournaments in Ryder Cup format. Connect with friends, create exciting competitions, and enjoy the spirit of friendly golf rivalry.",
     "getStartedButton": "Get Started Free",
     "stats": {
-      "tournaments": "Tournaments",
-      "players": "Players",
-      "satisfaction": "Satisfaction"
+      "free": "Free",
+      "freeDetail": "Always",
+      "handicap": "WHS",
+      "handicapDetail": "Official handicap",
+      "noAds": "No ads",
+      "noAdsDetail": "No tracking"
     },
     "nextTournament": "Next Tournament",
-    "springClassic": "Spring Classic 2024"
+    "springClassic": "Spring Classic"
   },
   "features": {
     "title": "Everything You Need to Run Your Tournament",
@@ -36,7 +39,7 @@
   "benefits": {
     "verifiedBadge": "Verified Platform",
     "title": "Why Golf Enthusiasts Love RyderCupFriends",
-    "subtitle": "Join thousands of amateur golfers who have transformed their tournament experience",
+    "subtitle": "Built for whoever runs the tournament, and for everyone who just wants to play",
     "simple": {
       "title": "Simple & Intuitive",
       "description": "No complicated setup. Get started in minutes."
@@ -67,19 +70,6 @@
       "title": "Social & Fun",
       "description": "Build lasting friendships through friendly rivalry"
     }
-  },
-  "testimonials": {
-    "title": "What Our Community Says",
-    "subtitle": "Real feedback from real golfers",
-    "quote1": "RCF has completely changed how we organize our monthly tournaments. The handicap system is brilliant and everyone loves the Ryder Cup format!",
-    "author1": "Michael Chen",
-    "role1": "Tournament Organizer",
-    "quote2": "As someone new to organizing golf events, this platform made everything so simple. The team management tools are fantastic!",
-    "author2": "Sarah Johnson",
-    "role2": "Golf Enthusiast",
-    "quote3": "The live scoring feature keeps all our players engaged throughout the tournament. It's like having our own PGA Tour event!",
-    "author3": "David Martinez",
-    "role3": "Club Captain"
   },
   "pricing": {
     "title": "Simple, Transparent Pricing",
@@ -120,7 +110,7 @@
   },
   "cta": {
     "title": "Ready to Transform Your Golf Tournaments?",
-    "subtitle": "Join thousands of golfers already using RyderCupFriends",
+    "subtitle": "Set up your first tournament in a few minutes",
     "button": "Start Your Free Trial",
     "learnMore": "Learn More",
     "noCredit": "No credit card required"

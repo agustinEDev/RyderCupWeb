@@ -36,6 +36,7 @@
     "support": "Support",
     "register": "Register",
     "signIn": "Sign In",
+    "signInShort": "Sign in",
     "dashboard": "Dashboard",
     "browseCompetitions": "Browse Competitions",
     "myCompetitions": "My Competitions",
@@ -47,6 +48,14 @@
     "administration": "Administration",
     "adminBadge": "Admin",
     "logout": "Logout"
+  },
+  "bottomNav": {
+    "label": "Main navigation",
+    "home": "Home",
+    "tournaments": "Tournaments",
+    "quickMatch": "Match",
+    "friends": "Friends",
+    "profile": "Profile"
   },
   "footer": {
     "description": "The ultimate platform for managing amateur golf tournaments in Ryder Cup format. Connect with friends and enjoy the spirit of friendly competition.",
@@ -60,7 +69,8 @@
     "privacy": "Privacy Policy",
     "cookies": "Cookie Policy",
     "contact": "Contact Us",
-    "copyright": "© 2024 RyderCupFriends - RCF. All rights reserved.",
+    "copyright": "© {{year}} RyderCupFriends - RCF. All rights reserved.",
+    "copyrightShort": "© {{year}} RyderCupFriends - RCF",
     "madeWith": "Made with",
     "forGolfers": "for golf enthusiasts"
   }

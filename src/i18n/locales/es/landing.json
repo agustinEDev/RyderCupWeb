@@ -6,12 +6,15 @@
     "subtitle": "La plataforma definitiva para organizar torneos de golf amateur en formato Ryder Cup. Conecta con amigos, crea competiciones emocionantes y disfruta del espíritu de la rivalidad amistosa del golf.",
     "getStartedButton": "Comenzar Gratis",
     "stats": {
-      "tournaments": "Torneos",
-      "players": "Jugadores",
-      "satisfaction": "Satisfacción"
+      "free": "Gratis",
+      "freeDetail": "Siempre",
+      "handicap": "WHS",
+      "handicapDetail": "Hándicap oficial",
+      "noAds": "Sin anuncios",
+      "noAdsDetail": "Ni rastreo"
     },
     "nextTournament": "Próximo Torneo",
-    "springClassic": "Clásico de Primavera 2024"
+    "springClassic": "Clásico de Primavera"
   },
   "features": {
     "title": "Todo lo que Necesitas para tu Torneo",
@@ -36,7 +39,7 @@
   "benefits": {
     "verifiedBadge": "Plataforma Verificada",
     "title": "Por qué los Entusiastas del Golf Aman RyderCupFriends",
-    "subtitle": "Únete a miles de golfistas amateur que han transformado su experiencia de torneos",
+    "subtitle": "Pensado para quien organiza el torneo y para quien solo quiere jugar",
     "simple": {
       "title": "Simple e Intuitivo",
       "description": "Sin configuración complicada. Comienza en minutos."
@@ -67,19 +70,6 @@
       "title": "Social y Divertido",
       "description": "Construye amistades duraderas a través de la rivalidad amistosa"
     }
-  },
-  "testimonials": {
-    "title": "Lo que Dice Nuestra Comunidad",
-    "subtitle": "Opiniones reales de golfistas reales",
-    "quote1": "RCF ha cambiado completamente cómo organizamos nuestros torneos mensuales. ¡El sistema de handicap es brillante y todos aman el formato Ryder Cup!",
-    "author1": "Michael Chen",
-    "role1": "Organizador de Torneos",
-    "quote2": "Como alguien nuevo en organizar eventos de golf, esta plataforma hizo todo tan simple. ¡Las herramientas de gestión de equipos son fantásticas!",
-    "author2": "Sarah Johnson",
-    "role2": "Entusiasta del Golf",
-    "quote3": "La función de puntuación en vivo mantiene a todos nuestros jugadores comprometidos durante el torneo. ¡Es como tener nuestro propio evento del PGA Tour!",
-    "author3": "David Martinez",
-    "role3": "Capitán del Club"
   },
   "pricing": {
     "title": "Precios Simples y Transparentes",
@@ -120,7 +110,7 @@
   },
   "cta": {
     "title": "¿Listo para Transformar tus Torneos de Golf?",
-    "subtitle": "Únete a miles de golfistas que ya usan RyderCupFriends",
+    "subtitle": "Crea tu primer torneo en unos minutos",
     "button": "Comienza tu Prueba Gratis",
     "learnMore": "Saber Más",
     "noCredit": "No se requiere tarjeta de crédito"

@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 const Footer = () => {
   const { t } = useTranslation('common');
   return (
-    <footer className="bg-gray-50 border-t border-gray-200 mt-16">
+    <footer className="bg-gray-50 border-t border-gray-200 mt-16 pb-[env(safe-area-inset-bottom)]">
       <div className="max-w-7xl mx-auto px-4 md:px-8 py-12">
         {/* Footer Grid */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
@@ -141,7 +141,7 @@ const Footer = () => {
         <div className="pt-8 border-t border-gray-200">
           <div className="flex flex-col md:flex-row justify-center items-center gap-4">
             <p className="text-gray-500 text-sm">
-              {t('footer.copyright')}
+              {t('footer.copyright', { year: new Date().getFullYear() })}
             </p>
           </div>
         </div>
