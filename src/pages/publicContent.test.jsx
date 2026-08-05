@@ -54,6 +54,16 @@ describe('public content', () => {
     expect(offenders).toEqual([]);
   });
 
+  it('never passes a literal year to a copyright string', () => {
+    // Interpolating {{year}} is only half the fix: t('footer.copyright', { year: 2024 })
+    // would render just as stale without leaving a "© 2024" literal behind.
+    const offenders = files
+      .filter((f) => /year:\s*\d/.test(f.content))
+      .map((f) => relative(f.path));
+
+    expect(offenders).toEqual([]);
+  });
+
   it('interpolates the year into both copyright strings', () => {
     for (const locale of ['es', 'en']) {
       const common = JSON.parse(readFileSync(resolve(SRC, `i18n/locales/${locale}/common.json`), 'utf8'));

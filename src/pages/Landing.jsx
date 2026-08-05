@@ -170,15 +170,9 @@ const Landing = () => {
                       variants={slideUp}
                       className="absolute bottom-6 left-6 right-6 bg-white/95 backdrop-blur-sm rounded-xl p-4 shadow-lg"
                     >
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <div className="text-sm font-semibold text-gray-600">{t('hero.nextTournament')}</div>
-                          <div className="text-lg font-bold text-gray-900">{t('hero.springClassic')}</div>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-sm text-gray-600">{t('hero.stats.players')}</div>
-                          <div className="text-2xl font-bold text-primary">24</div>
-                        </div>
+                      <div>
+                        <div className="text-sm font-semibold text-gray-600">{t('hero.nextTournament')}</div>
+                        <div className="text-lg font-bold text-gray-900">{t('hero.springClassic')}</div>
                       </div>
                     </motion.div>
                   </div>
