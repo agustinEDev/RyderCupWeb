@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- **Avatares y presets bloqueados en el clúster local**: la misma CSP declaraba `img-src 'self' https: data:`, sin el origen de la API. Como avatar y presets se sirven desde ella (`/api/v1/users/{id}/avatar` y `/api/v1/avatar-presets/{id}/image`) y en local va por HTTP, el navegador bloqueaba las imágenes aunque las llamadas a la API funcionasen — `connect-src` sí tenía el origen desde el principio. Verificado contra la API en marcha: los dos endpoints responden 200 con `image/jpeg`, así que el fallo estaba solo en la política.
 - **Página en blanco en Safari sobre el despliegue de Kubernetes**: la CSP de nginx llevaba `upgrade-insecure-requests` incondicionalmente, y el contenedor se sirve por HTTP. Safari aplica la directiva también en `localhost` —Chrome exime los orígenes de confianza, de ahí que allí no se notara—, así que reescribía a `https://` todos los subrecursos, que morían con error de TLS porque ahí no hay TLS. El documento sí cargaba, porque la navegación de nivel superior no se reescribe: de ahí el blanco en vez de un error de conexión. Ahora la directiva se añade solo cuando la petición llegó por HTTPS, mirando `X-Forwarded-Proto` primero (detrás de un proxy TLS el pod sigue recibiendo HTTP) y el esquema real si no viene. Producción no estaba afectada: allí las cabeceras las sirve Render, no este nginx.
 
 ### Changed
