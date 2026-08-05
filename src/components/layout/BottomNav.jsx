@@ -103,7 +103,7 @@ const BottomNav = () => {
           <NavItem
             to="/friends"
             icon={Users}
-            label={t('bottomNav.players')}
+            label={t('bottomNav.friends')}
             isActive={isActive('/friends')}
           />
           <NavItem

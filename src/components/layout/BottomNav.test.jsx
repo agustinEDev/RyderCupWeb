@@ -34,7 +34,7 @@ describe('BottomNav', () => {
 
     expect(hrefOf('bottomNav.home')).toBe('/dashboard');
     expect(hrefOf('bottomNav.tournaments')).toBe('/competitions');
-    expect(hrefOf('bottomNav.players')).toBe('/friends');
+    expect(hrefOf('bottomNav.friends')).toBe('/friends');
     expect(hrefOf('bottomNav.profile')).toBe('/profile');
   });
 
