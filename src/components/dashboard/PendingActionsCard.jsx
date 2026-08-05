@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { Mail, Users, Flag, TrendingUp, ChevronRight, Bell, UserPlus, Zap } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useEntryMotion } from '../../hooks/useEntryMotion';
-import { fadeInUp, getEntryProps } from '../../utils/animations';
+import { slideUp, getEntryProps } from '../../utils/animations';
 import {
   listMyInvitationsUseCase,
   listEnrollmentsUseCase,
@@ -74,7 +74,7 @@ const PendingActionsCard = ({ user, competitions, onHandicapAction, handicapPend
     return (
       <motion.div
         {...getEntryProps(animateEntry)}
-        variants={fadeInUp}
+        variants={slideUp}
         className="px-4 mb-2"
       >
         <div className="rounded-xl border-2 border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 p-5 animate-pulse">
@@ -93,7 +93,7 @@ const PendingActionsCard = ({ user, competitions, onHandicapAction, handicapPend
   return (
     <motion.div
       {...getEntryProps(animateEntry)}
-      variants={fadeInUp}
+      variants={slideUp}
       className="px-4 mb-2"
       data-testid="pending-actions-card"
     >

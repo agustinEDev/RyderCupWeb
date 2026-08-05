@@ -11,7 +11,7 @@ import PendingActionsCard from '../components/dashboard/PendingActionsCard';
 import CreateQuickMatchModal from '../components/quick_match/CreateQuickMatchModal';
 import { useAuth } from '../hooks/useAuth';
 import { useEntryMotion } from '../hooks/useEntryMotion';
-import { fadeInUp, staggerContainer, getEntryProps } from '../utils/animations';
+import { slideUp, staggerContainer, getEntryProps } from '../utils/animations';
 import { listUserCompetitionsUseCase } from '../composition';
 
 const Dashboard = () => {
@@ -127,7 +127,7 @@ const Dashboard = () => {
           >
             {/* Welcome Message */}
             <motion.div
-              variants={fadeInUp}
+              variants={slideUp}
               className="flex flex-wrap justify-between gap-3 p-4"
             >
               <div>
@@ -149,7 +149,7 @@ const Dashboard = () => {
 
             {/* Quick access: create a quick match */}
             <motion.div
-              variants={fadeInUp}
+              variants={slideUp}
               className="px-4 mb-2"
             >
               <button
@@ -191,7 +191,7 @@ const Dashboard = () => {
 
             {/* Statistics Cards */}
             <motion.div
-              variants={fadeInUp}
+              variants={slideUp}
               className="p-4"
             >
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
@@ -263,7 +263,7 @@ const Dashboard = () => {
 
             {/* Quick Actions */}
             <motion.div
-              variants={fadeInUp}
+              variants={slideUp}
               className="p-4 mt-4"
             >
               <h2 className="text-gray-900 text-xl font-bold mb-4">{t('quickActions.title')}</h2>
