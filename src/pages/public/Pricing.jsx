@@ -4,6 +4,8 @@ import { useTranslation } from 'react-i18next';
 import { Check } from 'lucide-react';
 import Header from '../../components/layout/Header';
 import Footer from '../../components/layout/Footer';
+import { useEntryMotion } from '../../hooks/useEntryMotion';
+import { fadeInUp, slideUp, staggerContainer, getEntryProps, getRevealProps } from '../../utils/animations';
 
 const FREE_FEATURES = ['competitions', 'players', 'scheduling', 'scoring', 'teams', 'courses', 'bilingual'];
 const PRO_FEATURES = ['everything', 'players', 'statistics', 'export', 'branding', 'priority'];
@@ -12,12 +14,10 @@ const ENTERPRISE_FEATURES = ['everything', 'unlimited', 'multi', 'api', 'sso', '
 const Pricing = () => {
   const { t } = useTranslation('pricing');
   const navigate = useNavigate();
+  const { animateEntry, animateOnScroll } = useEntryMotion();
 
-  const fadeInUp = {
-    initial: { opacity: 0, y: 20 },
-    animate: { opacity: 1, y: 0 },
-    transition: { duration: 0.5 }
-  };
+  // Hero and plan cards are above the fold: transform only, never opacity
+  const entryProps = getEntryProps(animateEntry);
 
   return (
     <div className="relative flex h-auto min-h-screen w-full flex-col bg-white">
@@ -25,32 +25,36 @@ const Pricing = () => {
         <Header />
         <main className="flex-1">
           {/* Hero */}
-          <div className="max-w-7xl mx-auto px-4 md:px-8 pt-16 pb-12 text-center">
+          <motion.div
+            {...entryProps}
+            variants={staggerContainer}
+            className="max-w-7xl mx-auto px-4 md:px-8 pt-16 pb-12 text-center"
+          >
             <motion.h1
+              variants={slideUp}
               className="text-3xl md:text-5xl font-bold text-gray-900 mb-4"
-              {...fadeInUp}
             >
               {t('title')}
             </motion.h1>
             <motion.p
+              variants={slideUp}
               className="text-lg text-gray-600 max-w-2xl mx-auto"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.1 }}
             >
               {t('subtitle')}
             </motion.p>
-          </div>
+          </motion.div>
 
           {/* Pricing Cards */}
           <div className="max-w-7xl mx-auto px-4 md:px-8 pb-16">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <motion.div
+              {...entryProps}
+              variants={staggerContainer}
+              className="grid grid-cols-1 md:grid-cols-3 gap-8"
+            >
               {/* Free Plan */}
               <motion.div
+                variants={slideUp}
                 className="border-2 border-primary rounded-2xl p-8 relative"
-                initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.2 }}
               >
                 <h3 className="text-xl font-bold text-gray-900 mb-2">{t('free.name')}</h3>
                 <p className="text-gray-600 text-sm mb-4">{t('free.description')}</p>
@@ -76,10 +80,8 @@ const Pricing = () => {
 
               {/* Pro Plan */}
               <motion.div
+                variants={slideUp}
                 className="border border-gray-200 rounded-2xl p-8 relative opacity-60"
-                initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 0.6, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.3 }}
               >
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2">
                   <span className="bg-gray-400 text-white text-xs font-bold px-3 py-1 rounded-full">
@@ -110,10 +112,8 @@ const Pricing = () => {
 
               {/* Enterprise Plan */}
               <motion.div
+                variants={slideUp}
                 className="border border-gray-200 rounded-2xl p-8 relative opacity-60"
-                initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 0.6, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.4 }}
               >
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2">
                   <span className="bg-gray-400 text-white text-xs font-bold px-3 py-1 rounded-full">
@@ -141,17 +141,16 @@ const Pricing = () => {
                   ))}
                 </ul>
               </motion.div>
-            </div>
+            </motion.div>
           </div>
 
           {/* Bottom CTA */}
           <div className="bg-gray-50 py-16">
             <div className="max-w-3xl mx-auto px-4 md:px-8 text-center">
               <motion.h2
+                {...getRevealProps(animateOnScroll)}
+                variants={fadeInUp}
                 className="text-2xl md:text-3xl font-bold text-gray-900 mb-4"
-                initial={{ opacity: 0 }}
-                whileInView={{ opacity: 1 }}
-                viewport={{ once: true }}
               >
                 {t('bottomCta.title')}
               </motion.h2>
