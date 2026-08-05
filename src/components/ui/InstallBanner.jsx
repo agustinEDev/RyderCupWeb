@@ -33,9 +33,11 @@ const InstallBanner = ({ aboveBottomNav = false }) => {
   if (!canInstall) return null;
 
   // Con nav inferior el banner no puede apoyarse en el borde: la nav ya ocupa
-  // ese espacio (y su propio safe-area), así que se apila justo encima
+  // ese espacio (y su propio safe-area), así que se apila justo encima. Los
+  // 5rem no son la altura de la barra (55 px) sino la del botón de partida
+  // rápida, que sobresale por encima y llega a 71 px del borde inferior
   const positionClasses = aboveBottomNav
-    ? 'bottom-[calc(4rem+env(safe-area-inset-bottom))] md:bottom-0 pb-0 md:pb-[env(safe-area-inset-bottom)]'
+    ? 'bottom-[calc(5rem+env(safe-area-inset-bottom))] md:bottom-0 pb-0 md:pb-[env(safe-area-inset-bottom)]'
     : 'bottom-0 pb-[env(safe-area-inset-bottom)]';
 
   return (

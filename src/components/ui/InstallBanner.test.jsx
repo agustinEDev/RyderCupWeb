@@ -36,7 +36,7 @@ describe('InstallBanner', () => {
     render(<InstallBanner aboveBottomNav />);
 
     const banner = screen.getByTestId('install-banner');
-    expect(banner.className).toContain('bottom-[calc(4rem+env(safe-area-inset-bottom))]');
+    expect(banner.className).toContain('bottom-[calc(5rem+env(safe-area-inset-bottom))]');
     // en escritorio no hay nav inferior: vuelve al borde
     expect(banner.className).toContain('md:bottom-0');
   });
