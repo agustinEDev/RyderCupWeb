@@ -8,6 +8,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import HeaderAuth from '../components/layout/HeaderAuth';
 import Avatar from '../components/ui/Avatar';
+import LanguageSwitcher from '../components/ui/LanguageSwitcher';
 import { useAuth } from '../hooks/useAuth';
 import { CountryFlag } from '../utils/countryUtils';
 import { broadcastLogout } from '../utils/broadcastAuth';
@@ -17,6 +18,7 @@ import { fetchCountriesUseCase, listUserCompetitionsUseCase, logoutUseCase } fro
 const Profile = () => {
   const navigate = useNavigate();
   const { t } = useTranslation('profile');
+  const { t: tCommon } = useTranslation('common');
   const { user, loading: isLoadingUser } = useAuth();
   const [countryName, setCountryName] = useState(null);
   const [competitionsCount, setCompetitionsCount] = useState(0);
@@ -269,6 +271,22 @@ const Profile = () => {
               transition={{ duration: 0.5, delay: 0.3 }}
               className="p-4"
             >
+              {/* En móvil el menú del header ya no existe (FE #306): idioma y
+                  panel de administración se acceden desde aquí */}
+              <div className="md:hidden flex items-center justify-between gap-3 mb-4 pb-4 border-b border-gray-200">
+                <LanguageSwitcher />
+                {user?.is_admin && (
+                  <button
+                    type="button"
+                    onClick={() => navigate('/admin')}
+                    className="flex items-center gap-2 px-4 py-2.5 min-h-[44px] bg-amber-100 text-amber-800 rounded-lg font-medium active:bg-amber-200 transition-colors"
+                  >
+                    <Shield className="w-4 h-4" />
+                    <span>{tCommon('header.adminPanel')}</span>
+                  </button>
+                )}
+              </div>
+
               <div className="flex flex-wrap gap-3 justify-end">
                 <motion.button
                   onClick={() => navigate('/dashboard')}

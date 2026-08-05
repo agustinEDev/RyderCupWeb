@@ -2,6 +2,47 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import sri from 'vite-plugin-sri'
 import { VitePWA } from 'vite-plugin-pwa'
+import { readdirSync, existsSync, rmSync } from 'node:fs'
+import { join, resolve, relative } from 'node:path'
+
+/**
+ * Los ficheros CLAUDE.md son contexto para el asistente, no assets. Las
+ * herramientas que los generan los dejan junto al código que documentan, y
+ * cualquiera que caiga bajo `public/` lo copia Vite tal cual a `dist/`, con lo
+ * que acabaría servido en producción. Este plugin los retira del directorio de
+ * salida después del build; los del árbol de fuentes no se tocan.
+ */
+function stripAssistantDocs() {
+  let outDir
+
+  return {
+    name: 'strip-assistant-docs',
+    apply: 'build',
+    configResolved(config) {
+      outDir = resolve(config.root, config.build.outDir)
+    },
+    closeBundle() {
+      if (!outDir || !existsSync(outDir)) return
+
+      const removed = []
+      const walk = (dir) => {
+        for (const entry of readdirSync(dir, { withFileTypes: true })) {
+          const full = join(dir, entry.name)
+          if (entry.isDirectory()) walk(full)
+          else if (entry.name === 'CLAUDE.md') {
+            rmSync(full)
+            removed.push(relative(outDir, full))
+          }
+        }
+      }
+      walk(outDir)
+
+      if (removed.length) {
+        console.log(`strip-assistant-docs: retirados de dist -> ${removed.join(', ')}`)
+      }
+    },
+  }
+}
 
 // Security headers for the LOCAL dev and preview servers only.
 // Production is a Render Static Site and serves its headers from Render's own
@@ -27,6 +68,9 @@ export default defineConfig(() => ({
   // In Render, VITE_API_BASE_URL is set as environment variable
   plugins: [
     react(),
+    // Antes de VitePWA: su service worker se genera en el mismo hook y no debe
+    // llegar a ver estos ficheros
+    stripAssistantDocs(),
     VitePWA({
       registerType: 'autoUpdate',
       // sw.js must be excluded from SRI — browsers reject SW with integrity attribute
@@ -41,9 +85,11 @@ export default defineConfig(() => ({
         start_url: '/',
         scope: '/',
         icons: [
-          { src: '/icons/pwa-192x192.png', sizes: '192x192', type: 'image/png' },
+          { src: '/icons/pwa-192x192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
           { src: '/icons/pwa-512x512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
-          { src: '/icons/pwa-512x512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+          // El maskable es un fichero aparte: Android recorta un 40 % y el icono
+          // 'any' perderia el anillo del monograma y sus esquinas redondeadas
+          { src: '/icons/pwa-maskable-512x512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
         ],
       },
       workbox: {

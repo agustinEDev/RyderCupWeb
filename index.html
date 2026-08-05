@@ -2,8 +2,11 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/golf-icon.svg" />
-    <link rel="apple-touch-icon" href="/icons/pwa-192x192.png" />
+    <!-- El favicon claro se sirve en tema oscuro, donde el verde se pierde contra
+         la barra de pestanas. El navegador se queda con la ultima coincidencia. -->
+    <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="32x32" media="(prefers-color-scheme: dark)" href="/icons/favicon-dark-32x32.png" />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon-180x180.png" />
     <!-- viewport-fit=cover lets the page extend under the status bar and the home
          indicator when installed. Without it every env(safe-area-inset-*) resolves
          to 0 and the safe-area padding across the app does nothing. -->

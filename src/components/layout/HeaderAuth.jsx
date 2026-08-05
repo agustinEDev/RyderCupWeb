@@ -10,7 +10,6 @@ const HeaderAuth = ({ user }) => {
   const navigate = useNavigate();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const desktopDropdownRef = useRef(null);
-  const mobileDropdownRef = useRef(null);
 
   const handleProfileClick = () => {
     navigate('/profile');
@@ -38,10 +37,7 @@ const HeaderAuth = ({ user }) => {
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
-      const isOutsideDesktop = !desktopDropdownRef.current?.contains(event.target);
-      const isOutsideMobile = !mobileDropdownRef.current?.contains(event.target);
-      
-      if (isOutsideDesktop && isOutsideMobile) {
+      if (!desktopDropdownRef.current?.contains(event.target)) {
         setIsDropdownOpen(false);
       }
     };
@@ -151,126 +147,8 @@ const HeaderAuth = ({ user }) => {
         </div>
       </div>
 
-      {/* Mobile Menu */}
-      <div className="md:hidden relative" ref={mobileDropdownRef}>
-        <button
-          onClick={toggleDropdown}
-          className="flex items-center justify-center w-10 h-10 rounded-lg hover:bg-gray-100 transition-colors"
-          aria-label="Toggle menu"
-        >
-          <svg
-            className="w-6 h-6 text-gray-900"
-            fill="none"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth="2"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            {isDropdownOpen ? (
-              <path d="M6 18L18 6M6 6l12 12" />
-            ) : (
-              <path d="M4 6h16M4 12h16M4 18h16" />
-            )}
-          </svg>
-        </button>
-
-        {/* Mobile Dropdown Menu */}
-        {isDropdownOpen && (
-          <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
-            <div className="px-4 py-3 border-b border-gray-200">
-              <div className="flex items-center gap-3">
-                <div className="bg-primary bg-center bg-no-repeat aspect-square bg-cover rounded-full h-8 w-8 md:h-10 md:w-10 flex items-center justify-center text-white font-bold text-sm md:text-base">
-                  {getInitials()}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <p className="text-sm font-medium text-gray-900 truncate">
-                      {user?.first_name} {user?.last_name}
-                    </p>
-                    {user?.is_admin && (
-                      <span data-testid="admin-badge-mobile" className="text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 flex-shrink-0">
-                        {t('header.adminBadge')}
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-xs text-gray-500 truncate">
-                    {user?.email}
-                  </p>
-                </div>
-              </div>
-            </div>
-            <Link
-              to="/dashboard"
-              onClick={() => setIsDropdownOpen(false)}
-              className="block px-4 py-2 text-sm text-gray-900 hover:bg-gray-100 transition-colors"
-            >
-              {t('header.dashboard')}
-            </Link>
-            <Link
-              to="/browse-competitions"
-              onClick={() => setIsDropdownOpen(false)}
-              className="block px-4 py-2 text-sm text-gray-900 hover:bg-gray-100 transition-colors"
-            >
-              {t('header.browseCompetitions')}
-            </Link>
-            <Link
-              to="/competitions"
-              onClick={() => setIsDropdownOpen(false)}
-              className="block px-4 py-2 text-sm text-gray-900 hover:bg-gray-100 transition-colors"
-            >
-              {t('header.myCompetitions')}
-            </Link>
-            <Link
-              to="/competitions/create"
-              onClick={() => setIsDropdownOpen(false)}
-              className="block px-4 py-2 text-sm text-gray-900 hover:bg-gray-100 transition-colors"
-            >
-              {t('header.createCompetition')}
-            </Link>
-            <Link
-              to="/player/invitations"
-              onClick={() => setIsDropdownOpen(false)}
-              className="block px-4 py-2 text-sm text-gray-900 hover:bg-gray-100 transition-colors"
-            >
-              {t('header.myInvitations')}
-            </Link>
-
-            <div className="border-t border-gray-200 my-2"></div>
-            <div className="px-4 py-2">
-              <LanguageSwitcher />
-            </div>
-            {user?.is_admin && (
-              <>
-                <div className="border-t border-gray-200 my-2"></div>
-                <p className="px-4 py-1 text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                  {t('header.administration')}
-                </p>
-                <Link
-                  to="/admin"
-                  onClick={() => setIsDropdownOpen(false)}
-                  className="block px-4 py-2 text-sm text-gray-900 hover:bg-gray-100 transition-colors"
-                >
-                  {t('header.adminPanel')}
-                </Link>
-              </>
-            )}
-            <div className="border-t border-gray-200 my-2"></div>
-            <button
-              onClick={handleProfileClick}
-              className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
-            >
-              {t('header.viewProfile')}
-            </button>
-            <button
-              onClick={handleLogout}
-              className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
-            >
-              {t('header.logout')}
-            </button>
-          </div>
-        )}
-      </div>
+      {/* En móvil no hay menú: la navegación vive en <BottomNav /> (FE #306).
+          Idioma, panel Admin y cierre de sesión están en /profile. */}
     </header>
   );
 };
