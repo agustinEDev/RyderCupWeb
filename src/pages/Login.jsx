@@ -205,7 +205,7 @@ const Login = () => {
 
             {/* Footer */}
             <div className="text-white/70 text-sm">
-              © 2024 RyderCupFriends - RCF
+              {t('common:footer.copyrightShort', { year: new Date().getFullYear() })}
             </div>
           </div>
         </motion.div>

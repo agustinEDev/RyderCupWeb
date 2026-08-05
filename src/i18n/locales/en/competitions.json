@@ -258,7 +258,7 @@
       "enrollmentRequested": "Enrollment request sent! Check \"My Competitions\" to track status."
     }
   },
-  "footer": "© 2025 RyderCupFriends",
+  "footer": "© {{year}} RyderCupFriends",
   "status": {
     "DRAFT": "DRAFT",
     "ACTIVE": "ACTIVE",
