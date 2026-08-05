@@ -653,7 +653,7 @@ const GolfCourseForm = ({ initialData = null, onSubmit, onCancel }) => {
             role="dialog"
             aria-modal="true"
             aria-label={t('form.strokeIndex')}
-            className="bg-white rounded-t-2xl w-full max-w-md p-4 pb-8 shadow-xl"
+            className="bg-white rounded-t-2xl w-full max-w-md p-4 pb-[calc(2rem+env(safe-area-inset-bottom))] shadow-xl"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-3">

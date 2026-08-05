@@ -31,7 +31,7 @@ const InstallBanner = () => {
   return (
     <div
       data-testid="install-banner"
-      className="fixed bottom-0 left-0 right-0 z-50 bg-green-700 text-white shadow-lg"
+      className="fixed bottom-0 left-0 right-0 z-50 bg-green-700 text-white shadow-lg pb-[env(safe-area-inset-bottom)]"
     >
       <div className="max-w-screen-xl mx-auto flex items-center justify-between gap-4 px-4 py-3">
 
