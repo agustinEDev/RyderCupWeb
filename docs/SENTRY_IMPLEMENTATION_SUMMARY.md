@@ -122,7 +122,7 @@
 - Added advanced integrations:
   - `browserTracingIntegration` with Web Vitals
   - `replayIntegration` with configured privacy
-  - `feedbackIntegration` (optional)
+  - `feedbackIntegration` (optional) — removed in v2.6.1, see #320
 - Added configuration validation (doesn't initialize without DSN)
 - Added `beforeSend` and `beforeSendTransaction` hooks for filtering
 - Added `beforeBreadcrumb` hook for sanitization
@@ -574,15 +574,12 @@ const loadCompetitions = async () => {
 
 **Estimated time:** 4-6 hours
 
-#### 5. Implement Feedback Widget
+#### 5. Implement Feedback Widget — dropped
 
-**Steps:**
-1. Change `VITE_SENTRY_ENABLE_FEEDBACK=true` in .env
-2. Customize widget texts (optional)
-3. Test in development
-4. Deploy to production
-
-**Estimated time:** 1 hour
+Sentry's widget was removed in v2.6.1: it carried Sentry's branding and English
+copy, wrote into the monitoring tool rather than the project's workflow, and did
+not separate bug reports from feature requests. A native support section is
+tracked in #320.
 
 #### 6. Create Custom Dashboards in Sentry
 

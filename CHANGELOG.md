@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [2.6.1] - 2026-08-06
+
+### Removed
+
+- **El widget «Report a Problem» de Sentry**: era el único canal de reporte dentro de la aplicación y no era nuestro. Mostraba la marca de Sentry, su formulario y sus textos en inglés en medio de una interfaz traducida, escribía en la herramienta de monitorización en vez de en el flujo de trabajo del proyecto, y no distinguía entre un fallo y una sugerencia. Se retira la integración entera —no solo el interruptor `VITE_SENTRY_ENABLE_FEEDBACK`, que ya estaba a `false` en local y en el clúster—, de modo que no puede reaparecer por configuración de entorno. El resto de Sentry (errores, replay de sesión y trazas) sigue igual. El canal de soporte propio que lo sustituye se planifica en #320.
+
 ## [2.6.0] - 2026-08-06
 
 ### Added

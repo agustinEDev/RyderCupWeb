@@ -10,7 +10,6 @@
  * Integraciones:
  * ✅ BrowserTracing - Monitoreo de rendimiento (navegación, requests HTTP)
  * ✅ Replay - Grabación de sesiones (normal + on error)
- * ✅ Feedback - Widget de feedback para usuarios (opcional)
  * ✅ Auto Session Tracking - Seguimiento automático de sesiones
  * ✅ Attach Stack Trace - Stack traces en todos los mensajes
  *
@@ -24,10 +23,9 @@
  * - VITE_SENTRY_REPLAYS_ON_ERROR_SAMPLE_RATE
  * - VITE_SENTRY_AUTO_SESSION_TRACKING
  * - VITE_SENTRY_ATTACH_STACKTRACE
- * - VITE_SENTRY_ENABLE_FEEDBACK
  */
 
-import { init, replayIntegration, reactRouterV7BrowserTracingIntegration, feedbackIntegration, getClient } from '@sentry/react';
+import { init, replayIntegration, reactRouterV7BrowserTracingIntegration, getClient } from '@sentry/react';
 import { useEffect } from 'react';
 import { useLocation, useNavigationType, createRoutesFromChildren, matchRoutes } from 'react-router';
 
@@ -45,7 +43,6 @@ const SENTRY_CONFIG = {
   replaysOnErrorSampleRate: parseFloat(import.meta.env.VITE_SENTRY_REPLAYS_ON_ERROR_SAMPLE_RATE || '1.0'),
   autoSessionTracking: import.meta.env.VITE_SENTRY_AUTO_SESSION_TRACKING === 'true',
   attachStacktrace: import.meta.env.VITE_SENTRY_ATTACH_STACKTRACE === 'true',
-  enableFeedback: import.meta.env.VITE_SENTRY_ENABLE_FEEDBACK === 'true',
 };
 
 // Obtener release desde package.json
@@ -101,24 +98,6 @@ if (!SENTRY_CONFIG.dsn) {
       // Sample rates (ya configurados en init)
     }),
   ];
-
-  // Feedback Integration (opcional) - Widget para que usuarios reporten problemas
-  if (SENTRY_CONFIG.enableFeedback) {
-    integrations.push(
-      // @ts-ignore - Feedback integration types are not fully compatible with Integration type
-      feedbackIntegration({
-        // Configuración del widget
-        colorScheme: 'system', // 'light', 'dark', 'system'
-        showBranding: true,
-        autoInject: true, // Inyectar automáticamente el botón
-        // Personalización de textos (opcional)
-        formTitle: 'Report a Problem',
-        submitButtonLabel: 'Send Feedback',
-        messagePlaceholder: 'Describe what happened...',
-        successMessageText: 'Thank you for your feedback!',
-      })
-    );
-  }
 
   // ============================================
   // INICIALIZACIÓN DE SENTRY
@@ -269,7 +248,6 @@ if (!SENTRY_CONFIG.dsn) {
 │ Profiles Sample:   ${(SENTRY_CONFIG.profilesSampleRate * 100).toFixed(0)}%${' '.repeat(30)}│
 │ Replays Session:   ${(SENTRY_CONFIG.replaysSessionSampleRate * 100).toFixed(0)}%${' '.repeat(30)}│
 │ Replays On Error:  ${(SENTRY_CONFIG.replaysOnErrorSampleRate * 100).toFixed(0)}%${' '.repeat(30)}│
-│ Feedback Widget:   ${String(SENTRY_CONFIG.enableFeedback).padEnd(32)}│
 └─────────────────────────────────────────────────────────┘
   `);
 }
