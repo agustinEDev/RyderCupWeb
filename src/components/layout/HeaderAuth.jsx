@@ -1,15 +1,30 @@
 import { useState, useRef, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router';
+import { Link, useNavigate, useLocation } from 'react-router';
 import { useTranslation } from 'react-i18next';
+import { ArrowLeft } from 'lucide-react';
 import { broadcastLogout } from '../../utils/broadcastAuth';
 import { logoutUseCase } from '../../composition';
+import { resolveScreen } from './screenTitles';
 import LanguageSwitcher from '../ui/LanguageSwitcher';
 
-const HeaderAuth = ({ user }) => {
+/**
+ * @param {string} [title] - Sustituye al titulo del mapa de rutas. Para
+ *   pantallas cuyo nombre solo se conoce en ejecucion (el de un torneo).
+ * @param {string|null} [backTo] - Sustituye al destino de la flecha. `null`
+ *   explicito la retira.
+ */
+const HeaderAuth = ({ user, title, backTo }) => {
   const { t } = useTranslation('common');
   const navigate = useNavigate();
+  const location = useLocation();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const desktopDropdownRef = useRef(null);
+
+  // En movil la cabecera dice donde estas y como volver; repetir la marca en
+  // cada pantalla es lenguaje de sitio web, no de aplicacion (FE #310)
+  const screen = resolveScreen(location.pathname);
+  const screenTitle = title ?? (screen ? t(screen.titleKey) : null);
+  const screenBackTo = backTo !== undefined ? backTo : screen?.backTo ?? null;
 
   const handleProfileClick = () => {
     navigate('/profile');
@@ -58,15 +73,49 @@ const HeaderAuth = ({ user }) => {
 
   return (
     <header className="flex items-center justify-between whitespace-nowrap border-b border-solid border-b-gray-200 px-4 md:px-10 pb-3 pt-[calc(0.75rem+env(safe-area-inset-top))] overflow-visible">
-      <Link to="/dashboard" className="flex items-center gap-3 text-gray-900 hover:opacity-80 transition-opacity">
-        <div className="h-10 w-10 md:h-12 md:w-12 flex-shrink-0 flex items-center justify-center overflow-visible">
+      {/* Movil: titulo de pantalla, con flecha si hay pantalla padre. Sin
+          titulo en el mapa (alta de perfil, rutas sueltas) se mantiene la
+          marca, que es el comportamiento anterior */}
+      {screenTitle ? (
+        <div className="md:hidden flex items-center gap-2 min-w-0 flex-1">
+          {screenBackTo && (
+            <Link
+              to={screenBackTo}
+              aria-label={t('back')}
+              className="-ml-2 flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-lg text-gray-700 active:bg-gray-100 transition-colors"
+            >
+              <ArrowLeft className="h-5 w-5" aria-hidden="true" />
+            </Link>
+          )}
+          <h1 className="truncate text-lg font-bold leading-tight tracking-tight text-gray-900 font-poppins">
+            {screenTitle}
+          </h1>
+        </div>
+      ) : (
+        <Link to="/dashboard" className="md:hidden flex items-center gap-3 text-gray-900 hover:opacity-80 transition-opacity">
+          <div className="h-10 w-10 flex-shrink-0 flex items-center justify-center overflow-visible">
+            <img
+              src="/images/rcf-monogram-green.jpeg"
+              alt="RCF Logo"
+              className="block h-full w-auto object-contain transform -translate-y-[2px] scale-105"
+            />
+          </div>
+          <h2 className="text-gray-900 text-lg font-bold leading-tight tracking-tight font-poppins">
+            RyderCupFriends
+          </h2>
+        </Link>
+      )}
+
+      {/* Escritorio: la marca no se toca */}
+      <Link to="/dashboard" className="hidden md:flex items-center gap-3 text-gray-900 hover:opacity-80 transition-opacity">
+        <div className="h-12 w-12 flex-shrink-0 flex items-center justify-center overflow-visible">
           <img
             src="/images/rcf-monogram-green.jpeg"
             alt="RCF Logo"
-            className="block h-full w-auto object-contain transform -translate-y-[2px] md:-translate-y-[2px] scale-105 md:scale-110"
+            className="block h-full w-auto object-contain transform -translate-y-[2px] scale-110"
           />
         </div>
-        <h2 className="text-gray-900 text-lg md:text-xl font-bold leading-tight tracking-tight font-poppins">
+        <h2 className="text-gray-900 text-xl font-bold leading-tight tracking-tight font-poppins">
           RyderCupFriends
         </h2>
       </Link>

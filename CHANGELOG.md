@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+
+- **La cabecera dice en qué pantalla estás y cómo volver** (issue #310): en móvil, con sesión iniciada, cada pantalla repetía el monograma y el nombre de la aplicación, que es lo que uno espera de un sitio web y no de una aplicación —ocupaba la franja más valiosa de la pantalla para decir algo que ya sabías—. Ahora esa franja lleva el título de la pantalla y, cuando existe una pantalla superior, una flecha para volver a ella. La flecha va a la pantalla padre, no a la anterior del historial: desde el calendario de un torneo se vuelve a ese torneo, aunque hayas llegado desde la lista o desde una invitación. Las cuatro raíces de la navegación inferior —Inicio, Torneos, Amigos y Perfil— llevan título pero no flecha, porque volver ahí no significa nada. El detalle de un torneo muestra su nombre real, no una etiqueta genérica. En escritorio la cabecera no cambia, y en rutas que no son pantallas de la aplicación —el alta de perfil, la anotación en vivo, las páginas públicas— se mantiene la marca de siempre. El mapa de rutas vive en un único fichero en lugar de repartido por las veinte páginas que montan la cabecera, y desempata a favor de la ruta más específica: sin eso `/competitions/:id` se habría quedado con `/competitions/create`.
+
 ## [2.6.0] - 2026-08-06
 
 ### Added
