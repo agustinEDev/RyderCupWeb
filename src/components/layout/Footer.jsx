@@ -1,8 +1,17 @@
 import { Link } from 'react-router';
 import { useTranslation } from 'react-i18next';
+import { useStandalone } from '../../hooks/useStandalone';
 
 const Footer = () => {
   const { t } = useTranslation('common');
+  const isStandalone = useStandalone();
+
+  // Instalada, la aplicacion no debe terminar cada pantalla con enlaces de
+  // marketing y redes: eso la delata como sitio web (FE #309). Los legales
+  // siguen alcanzables desde Perfil. El descarte vive aqui y no en cada pagina
+  // porque son siete las que montan el pie.
+  if (isStandalone) return null;
+
   return (
     <footer className="bg-gray-50 border-t border-gray-200 mt-16 pb-[env(safe-area-inset-bottom)]">
       <div className="max-w-7xl mx-auto px-4 md:px-8 py-12">

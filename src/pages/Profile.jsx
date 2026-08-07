@@ -3,12 +3,14 @@ import { useNavigate } from 'react-router';
 import { motion } from 'framer-motion';
 import {
   Mail, Shield, Calendar, TrendingUp, Award,
-  CheckCircle, AlertCircle, Edit, LogOut, ArrowLeft, Globe, Clock, Smartphone
+  CheckCircle, AlertCircle, Edit, LogOut, ArrowLeft, Globe, Clock, Smartphone,
+  FileText, Lock, Cookie
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import HeaderAuth from '../components/layout/HeaderAuth';
 import Avatar from '../components/ui/Avatar';
 import LanguageSwitcher from '../components/ui/LanguageSwitcher';
+import { SettingsGroup, SettingsRow, SettingsControlRow } from '../components/profile/SettingsList';
 import { useAuth } from '../hooks/useAuth';
 import { CountryFlag } from '../utils/countryUtils';
 import { broadcastLogout } from '../utils/broadcastAuth';
@@ -271,31 +273,70 @@ const Profile = () => {
               transition={{ duration: 0.5, delay: 0.3 }}
               className="p-4"
             >
-              {/* En móvil el menú del header ya no existe (FE #306): idioma y
-                  panel de administración se acceden desde aquí */}
-              <div className="md:hidden flex items-center justify-between gap-3 mb-4 pb-4 border-b border-gray-200">
-                <LanguageSwitcher />
-                {user?.is_admin && (
-                  <button
-                    type="button"
-                    onClick={() => navigate('/admin')}
-                    className="flex items-center gap-2 px-4 py-2.5 min-h-[44px] bg-amber-100 text-amber-800 rounded-lg font-medium active:bg-amber-200 transition-colors"
-                  >
-                    <Shield className="w-4 h-4" />
-                    <span>{tCommon('header.adminPanel')}</span>
-                  </button>
-                )}
+              {/* Móvil: lista de ajustes (FE #324). La botonera de cuatro
+                  colores no establecía jerarquía y se escalonaba al envolver;
+                  aquí manda el orden de la lista, no el color. "Volver al
+                  panel" no aparece: la navegación inferior ya tiene Inicio */}
+              <div className="md:hidden">
+                <SettingsGroup title={t('sections.account')}>
+                  <SettingsRow icon={Edit} label={t('actions.editProfile')} onClick={handleEditProfile} />
+                  <SettingsRow
+                    icon={Smartphone}
+                    label={t('actions.manageDevices')}
+                    onClick={() => navigate('/profile/devices')}
+                  />
+                  {user?.is_admin && (
+                    <SettingsRow
+                      icon={Shield}
+                      label={tCommon('header.adminPanel')}
+                      onClick={() => navigate('/admin')}
+                    />
+                  )}
+                </SettingsGroup>
+
+                {/* El selector de idioma cayó aquí al retirarse el menú
+                    hamburguesa en móvil (FE #306) */}
+                <SettingsGroup title={t('sections.preferences')}>
+                  <SettingsControlRow icon={Globe} label={t('sections.language')}>
+                    <LanguageSwitcher />
+                  </SettingsControlRow>
+                </SettingsGroup>
+
+                {/* Instalada, la aplicación no muestra el pie de marketing
+                    (FE #309): este es el único sitio donde quedan los legales */}
+                <SettingsGroup title={t('sections.legal')}>
+                  <SettingsRow icon={FileText} label={t('legal.terms')} to="/terms" />
+                  <SettingsRow icon={Lock} label={t('legal.privacy')} to="/privacy" />
+                  <SettingsRow icon={Cookie} label={t('legal.cookies')} to="/cookies" />
+                </SettingsGroup>
+
+                <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
+                  <SettingsRow icon={LogOut} label={t('actions.logOut')} onClick={handleLogout} tone="danger" />
+                </div>
               </div>
 
-              <div className="flex flex-wrap gap-3 justify-end">
+              {/* Escritorio: se mantiene la botonera, con una sola acción
+                  principal y el cierre de sesión como texto, no como bloque
+                  rojo al mismo nivel que editar el perfil (FE #324) */}
+              <div className="hidden md:flex flex-wrap items-center gap-3 justify-end">
                 <motion.button
                   onClick={() => navigate('/dashboard')}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                  className="flex items-center gap-2 px-5 py-2.5 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-colors"
+                  className="flex items-center gap-2 px-5 py-2.5 text-gray-600 rounded-lg font-medium hover:bg-gray-100 transition-colors"
                 >
                   <ArrowLeft className="w-4 h-4" />
                   <span>{t('actions.backToDashboard')}</span>
+                </motion.button>
+
+                <motion.button
+                  onClick={() => navigate('/profile/devices')}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="flex items-center gap-2 px-5 py-2.5 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors"
+                >
+                  <Smartphone className="w-4 h-4" />
+                  <span>{t('actions.manageDevices')}</span>
                 </motion.button>
 
                 <motion.button
@@ -309,20 +350,10 @@ const Profile = () => {
                 </motion.button>
 
                 <motion.button
-                  onClick={() => navigate('/profile/devices')}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  className="flex items-center gap-2 px-5 py-2.5 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600 transition-colors shadow-md"
-                >
-                  <Smartphone className="w-4 h-4" />
-                  <span>{t('actions.manageDevices')}</span>
-                </motion.button>
-
-                <motion.button
                   onClick={handleLogout}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                  className="flex items-center gap-2 px-5 py-2.5 bg-red-500 text-white rounded-lg font-medium hover:bg-red-600 transition-colors shadow-md"
+                  className="flex items-center gap-2 px-5 py-2.5 text-red-600 rounded-lg font-medium hover:bg-red-50 transition-colors"
                 >
                   <LogOut className="w-4 h-4" />
                   <span>{t('actions.logOut')}</span>

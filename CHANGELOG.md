@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+
+- **El pie de marketing desaparece dentro de la aplicación instalada** (issue #309): ninguna aplicación termina cada pantalla con enlaces a redes sociales, condiciones y copyright, y eso era exactamente lo que delataba a la nuestra como un sitio web metido en un icono. Instalada, el pie deja de pintarse. El descarte vive en el propio `Footer`, no en cada pantalla, porque son siete las páginas que lo montan —y conviene recordar que el pie nunca estuvo en las pantallas con sesión: el problema se veía al arrancar, porque el manifiesto abre la aplicación en la portada. La detección de modo instalado estaba duplicada dentro de `useInstallPrompt`; ahora es un hook propio, `useStandalone`, que además reacciona si la pestaña pasa a instalada sin recargarse. Se mantiene aparte la comprobación de iOS del banner de instalación, que a propósito solo mira `navigator.standalone`: algunos navegadores basados en WebView responden que sí a `display-mode: standalone` estando en una pestaña normal, y las instrucciones de "Añadir a pantalla de inicio" desaparecerían sin motivo.
+
+- **El perfil deja de ser una botonera de colores** (issue #324): las cuatro acciones del final —volver, editar, dispositivos y cerrar sesión— eran cuatro botones sólidos en gris, verde, azul y rojo, tres de ellos con sombra, sin nada que indicase cuál era la principal; el azul ni siquiera pertenece a la paleta. En un teléfono, además, solo entraban dos por fila y la última quedaba pegada a la derecha dejando un hueco irregular. En móvil pasan a ser una lista de ajustes agrupada (cuenta, preferencias, legal), con filas de ancho completo, zona táctil de 44 px y el orden marcando la jerarquía en lugar del color. Cerrar sesión se separa del grupo como texto rojo, no como bloque. "Volver al panel" se retira del móvil, donde la navegación inferior ya tiene Inicio, y se conserva en escritorio; allí la botonera sigue, pero con una sola acción principal. Los enlaces legales encuentran aquí su sitio, que es lo que hacía falta al retirar el pie en la aplicación instalada.
+
 ## [2.6.0] - 2026-08-06
 
 ### Added
