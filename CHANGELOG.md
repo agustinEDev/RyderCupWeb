@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+
+- **Los avisos dejan de taparse contra la navegación inferior en móvil** (issue #322): `react-hot-toast` fija su contenedor con `bottom: 16px` en un atributo `style`, justo la franja que ocupa la `<BottomNav />` desde la versión anterior, de modo que cada notificación aterrizaba encima de la barra y de su botón central. No era un problema de apilamiento —el toast ya se dibujaba por delante— sino de sitio: ocupaban el mismo espacio. Las notificaciones se suben ahora 5 rem más el inset inferior, el mismo desfase que ya usaba el banner de instalación para librar la barra, y recuperan su posición habitual a partir de `md`, donde la navegación inferior no se pinta. Como el desfase solo aplica cuando esa navegación está visible —con sesión, fuera de las rutas públicas y fuera de la anotación en vivo—, el `<Toaster>` pasa de `main.jsx` a `App.jsx`, que es donde se conoce esa condición.
+
 ## [2.6.0] - 2026-08-06
 
 ### Added
