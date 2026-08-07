@@ -35,7 +35,9 @@ export const SettingsRow = ({ icon: Icon, label, to, onClick, tone = 'default' }
         {Icon && <Icon className={`h-5 w-5 ${tone === 'danger' ? 'text-red-500' : 'text-gray-400'}`} aria-hidden="true" />}
         <span className="text-sm font-medium">{label}</span>
       </span>
-      <ChevronRight className="h-4 w-4 text-gray-300" aria-hidden="true" />
+      {/* El chevron promete "esto te lleva a otra pantalla". Cerrar sesion no
+          lleva a ninguna, asi que en el tono destructivo no se pinta */}
+      {tone !== 'danger' && <ChevronRight className="h-4 w-4 text-gray-300" aria-hidden="true" />}
     </>
   );
 

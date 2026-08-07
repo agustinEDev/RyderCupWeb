@@ -52,6 +52,15 @@ describe('SettingsList', () => {
     expect(row.className).not.toContain('bg-red-500');
   });
 
+  it('drops the chevron on a destructive row', () => {
+    // El chevron promete navegacion; cerrar sesion no lleva a otra pantalla
+    const { container: navigating } = renderInRouter(<SettingsRow label="Editar perfil" onClick={vi.fn()} />);
+    const { container: destructive } = renderInRouter(<SettingsRow label="Cerrar sesión" onClick={vi.fn()} tone="danger" />);
+
+    expect(navigating.querySelectorAll('svg')).toHaveLength(1);
+    expect(destructive.querySelectorAll('svg')).toHaveLength(0);
+  });
+
   it('hosts its own control instead of a chevron', () => {
     renderInRouter(
       <SettingsControlRow label="Idioma">
