@@ -29,7 +29,7 @@ describe('toast placement', () => {
     const css = read('src/index.css');
 
     expect(css).toContain('.toast-container-above-bottom-nav');
-    expect(css).toContain('bottom: calc(5rem + env(safe-area-inset-bottom)) !important');
+    expect(css).toContain('bottom: calc(6rem + env(safe-area-inset-bottom)) !important');
   });
 
   it('restores the default offset from md upwards', () => {
