@@ -1,5 +1,10 @@
 import { useState, useEffect } from 'react';
 import { detectStandalone } from './useStandalone';
+import {
+  getCapturedInstallPrompt,
+  onInstallPromptCaptured,
+  startCapturingInstallPrompt,
+} from '../utils/installPromptCapture';
 
 const DISMISSED_KEY = 'pwa_install_dismissed';
 const DISMISS_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
@@ -68,34 +73,31 @@ function detectDesktopSafari() {
 }
 
 export function useInstallPrompt() {
-  const [deferredPrompt, setDeferredPrompt] = useState(null);
+  // El evento pudo llegar antes de montar: se recoge ya capturado (FE #334)
+  const [deferredPrompt, setDeferredPrompt] = useState(() => getCapturedInstallPrompt());
   const [isIOS] = useState(() => detectIOS());
   const [iosInstallRoute] = useState(() => detectIOSInstallRoute());
   const [isDesktopSafari] = useState(() => !detectIOS() && detectDesktopSafari());
   const [isInstalled, setIsInstalled] = useState(() => detectStandalone());
-  const [canInstall, setCanInstall] = useState(() => !isDismissed() && (detectIOS() || detectDesktopSafari()));
+  const [canInstall, setCanInstall] = useState(
+    () => !isDismissed() && (detectIOS() || detectDesktopSafari() || getCapturedInstallPrompt() !== null)
+  );
 
   useEffect(() => {
     if (isDismissed() || isIOS || isDesktopSafari) return;
 
-    const handler = (e) => {
-      e.preventDefault();
-      setDeferredPrompt(e);
-      setCanInstall(true);
-    };
+    // No hace nada si main.jsx ya la arranco; cubre el caso de que no
+    startCapturingInstallPrompt();
 
-    const installedHandler = () => {
-      setCanInstall(false);
-      setIsInstalled(true);
-    };
+    // La suscripcion avisa tambien de lo ya capturado, asi que cubre por igual
+    // el evento que llego antes de montar y el que llegue despues
+    const unsubscribe = onInstallPromptCaptured((event) => {
+      setDeferredPrompt(event);
+      setCanInstall(event !== null);
+      if (event === null) setIsInstalled(true);
+    });
 
-    window.addEventListener('beforeinstallprompt', handler);
-    window.addEventListener('appinstalled', installedHandler);
-
-    return () => {
-      window.removeEventListener('beforeinstallprompt', handler);
-      window.removeEventListener('appinstalled', installedHandler);
-    };
+    return unsubscribe;
   }, [isIOS, isDesktopSafari]);
 
   const install = async () => {
