@@ -57,6 +57,24 @@
     "friends": "Friends",
     "profile": "Profile"
   },
+  "screens": {
+    "dashboard": "Home",
+    "myCompetitions": "Tournaments",
+    "friends": "Friends",
+    "profile": "Profile",
+    "editProfile": "Edit Profile",
+    "devices": "Devices",
+    "admin": "Administration",
+    "createCompetition": "Create Tournament",
+    "competition": "Tournament",
+    "editCompetition": "Edit Tournament",
+    "schedule": "Schedule",
+    "invitations": "Invitations",
+    "browseCompetitions": "Browse",
+    "myInvitations": "My Invitations",
+    "myMatches": "My Matches",
+    "myQuickMatches": "Quick Matches"
+  },
   "footer": {
     "description": "The ultimate platform for managing amateur golf tournaments in Ryder Cup format. Connect with friends and enjoy the spirit of friendly competition.",
     "quickLinks": "Quick Links",

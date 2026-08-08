@@ -369,7 +369,9 @@ const CompetitionDetail = () => {
   return (
     <div className="relative flex h-auto min-h-screen w-full flex-col bg-white">
       <div className="layout-container flex h-full grow flex-col">
-        <HeaderAuth user={user} />
+        {/* El nombre del torneo solo se conoce en ejecucion: sustituye al
+            titulo generico del mapa de rutas (FE #310) */}
+        <HeaderAuth user={user} title={competition.name} />
 
         <div className="px-4 md:px-40 flex flex-1 justify-center py-5">
           <div className="layout-content-container flex flex-col max-w-[960px] flex-1">
