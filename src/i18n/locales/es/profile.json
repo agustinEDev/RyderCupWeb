@@ -25,6 +25,17 @@
     "manageDevices": "Gestionar Dispositivos",
     "logOut": "Cerrar Sesión"
   },
+  "sections": {
+    "account": "Cuenta",
+    "preferences": "Preferencias",
+    "legal": "Legal",
+    "language": "Idioma"
+  },
+  "legal": {
+    "terms": "Términos de Servicio",
+    "privacy": "Política de Privacidad",
+    "cookies": "Política de Cookies"
+  },
   "edit": {
     "title": "Editar Perfil",
     "refreshData": "Actualizar Datos",

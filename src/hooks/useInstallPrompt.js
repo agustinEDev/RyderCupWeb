@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { detectStandalone } from './useStandalone';
 
 const DISMISSED_KEY = 'pwa_install_dismissed';
 const DISMISS_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
@@ -13,13 +14,6 @@ function isDismissed() {
   } catch {
     return false;
   }
-}
-
-function detectStandalone() {
-  return (
-    window.navigator.standalone === true ||
-    (typeof window.matchMedia === 'function' && window.matchMedia('(display-mode: standalone)').matches)
-  );
 }
 
 function detectIOS() {
