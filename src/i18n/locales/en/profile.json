@@ -25,6 +25,17 @@
     "manageDevices": "Manage Devices",
     "logOut": "Log Out"
   },
+  "sections": {
+    "account": "Account",
+    "preferences": "Preferences",
+    "legal": "Legal",
+    "language": "Language"
+  },
+  "legal": {
+    "terms": "Terms of Service",
+    "privacy": "Privacy Policy",
+    "cookies": "Cookie Policy"
+  },
   "edit": {
     "title": "Edit Profile",
     "refreshData": "Refresh Data",
