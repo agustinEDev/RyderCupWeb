@@ -30,6 +30,36 @@ function detectIOS() {
   return (isIOS || isIPadOS) && !isStandalone;
 }
 
+/**
+ * Donde vive el boton de compartir y como se llega a "Anadir a pantalla de
+ * inicio" cambia segun el navegador y el aparato (FE #332).
+ *
+ * Solo se afirma una posicion concreta en Safari, que es la unica que se puede
+ * dar por cierta: barra inferior en iPhone, barra superior en iPad. El resto de
+ * navegadores de iOS llegan por su propio menu, y prometerles un sitio exacto
+ * seria peor que no decir nada.
+ *
+ * @returns {'safari-iphone'|'safari-ipad'|'other-browser'}
+ */
+function detectIOSInstallRoute() {
+  const ua = navigator.userAgent;
+
+  // Los navegadores de iOS son WebKit por obligacion y arrastran "Safari" en su
+  // UA, asi que Safari se reconoce por descarte de los tokens de los demas
+  const isOtherBrowser = /crios|fxios|edgios|opt\//i.test(ua);
+  if (isOtherBrowser) return 'other-browser';
+
+  // Un UA que se identifica como iPhone o iPod manda, y corta aqui: la regla de
+  // abajo mira `navigator.platform`, que en algunos entornos vale 'MacIntel'
+  // junto a un UA de iPhone y lo mandaria a las instrucciones de iPad
+  if (/iphone|ipod/i.test(ua)) return 'safari-iphone';
+
+  // iPadOS 13+ se presenta como MacIntel, de ahi el maxTouchPoints
+  const isIPad = /ipad/i.test(ua) || ((/macintosh/i.test(ua) || navigator.platform === 'MacIntel') && navigator.maxTouchPoints > 1);
+
+  return isIPad ? 'safari-ipad' : 'safari-iphone';
+}
+
 function detectDesktopSafari() {
   const ua = navigator.userAgent;
   const isSafari = /safari/i.test(ua) && !/chrome|chromium|android/i.test(ua);
@@ -40,6 +70,7 @@ function detectDesktopSafari() {
 export function useInstallPrompt() {
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [isIOS] = useState(() => detectIOS());
+  const [iosInstallRoute] = useState(() => detectIOSInstallRoute());
   const [isDesktopSafari] = useState(() => !detectIOS() && detectDesktopSafari());
   const [isInstalled, setIsInstalled] = useState(() => detectStandalone());
   const [canInstall, setCanInstall] = useState(() => !isDismissed() && (detectIOS() || detectDesktopSafari()));
@@ -83,5 +114,5 @@ export function useInstallPrompt() {
     setCanInstall(false);
   };
 
-  return { canInstall, isIOS, isDesktopSafari, isInstalled, install, dismiss };
+  return { canInstall, isIOS, iosInstallRoute, isDesktopSafari, isInstalled, install, dismiss };
 }

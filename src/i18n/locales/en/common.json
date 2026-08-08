@@ -6,7 +6,10 @@
     "dismiss": "Close install banner",
     "iosHint": {
       "prefix": "Install the app: tap ",
-      "suffix": " then \"Add to Home Screen\""
+      "inBottomBar": " in the bottom bar",
+      "inTopBar": " in the top bar",
+      "suffix": " then \"Add to Home Screen\"",
+      "otherBrowser": "Install the app: open your browser menu and choose \"Add to Home Screen\""
     },
     "safariHint": "Install the app: File → Add to Dock…",
     "alreadyInstalled": "You already have the app installed.",

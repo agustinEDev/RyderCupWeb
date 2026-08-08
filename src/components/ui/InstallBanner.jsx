@@ -28,7 +28,7 @@ const CloseButton = ({ onClick, label }) => (
  */
 const InstallBanner = ({ aboveBottomNav = false }) => {
   const { t } = useTranslation('common');
-  const { canInstall, isIOS, isDesktopSafari, install, dismiss } = useInstallPrompt();
+  const { canInstall, isIOS, iosInstallRoute, isDesktopSafari, install, dismiss } = useInstallPrompt();
 
   if (!canInstall) return null;
 
@@ -51,11 +51,23 @@ const InstallBanner = ({ aboveBottomNav = false }) => {
           <>
             <div className="flex items-center gap-3 min-w-0">
               <span className="text-xl shrink-0">⛳</span>
-              <p className="text-sm leading-snug">
-                {t('installBanner.iosHint.prefix')}
-                <ShareIcon />
-                {t('installBanner.iosHint.suffix')}
-              </p>
+              {/* Sin el icono no se sabe qué buscar, y sin decir dónde está no
+                  se sabe dónde mirar: en Safari la barra de compartir está
+                  abajo en iPhone y arriba en iPad. Los demás navegadores de iOS
+                  llegan por su propio menú, así que a ellos no se les promete
+                  ninguna posición (FE #332) */}
+              {iosInstallRoute === 'other-browser' ? (
+                <p className="text-sm leading-snug">
+                  {t('installBanner.iosHint.otherBrowser')}
+                </p>
+              ) : (
+                <p className="text-sm leading-snug">
+                  {t('installBanner.iosHint.prefix')}
+                  <ShareIcon />
+                  {t(`installBanner.iosHint.${iosInstallRoute === 'safari-ipad' ? 'inTopBar' : 'inBottomBar'}`)}
+                  {t('installBanner.iosHint.suffix')}
+                </p>
+              )}
             </div>
             <CloseButton onClick={dismiss} label={t('installBanner.dismiss')} />
           </>
