@@ -5,6 +5,7 @@
     "install": "Instalar",
     "dismiss": "Cerrar banner de instalación",
     "iosHint": {
+      "iphone": "Añade la app a tu pantalla de inicio",
       "prefix": "Instala la app: pulsa ",
       "inBottomBar": " en la barra de abajo",
       "inTopBar": " en la barra de arriba",
@@ -14,6 +15,23 @@
     "safariHint": "Instala la app: Archivo → Añadir al Dock…",
     "alreadyInstalled": "Ya tienes la app instalada.",
     "genericHint": "Tu navegador no permite instalarla directamente desde aquí."
+  },
+  "installModal": {
+    "title": "Instalar RyderCupFriends",
+    "close": "Cerrar instrucciones de instalación",
+    "gotIt": "Entendido",
+    "howTo": "Cómo se instala",
+    "steps": {
+      "moreButton": "Pulsa el botón ··· en la barra de abajo, a la derecha",
+      "shareInMenu": "Pulsa «Compartir», en la parte de arriba del menú",
+      "shareTop": "Pulsa el botón Compartir en la barra de arriba",
+      "findAddToHome": "Baja hasta «Añadir a pantalla de inicio»; si no aparece, pulsa «Ver más»",
+      "confirmAdd": "Pulsa «Añadir», arriba a la derecha",
+      "openMenu": "Abre el menú de tu navegador",
+      "chooseAdd": "Elige «Añadir a pantalla de inicio»",
+      "openFileMenu": "Abre el menú Archivo de Safari",
+      "chooseDock": "Elige «Añadir al Dock…»"
+    }
   },
   "loading": "Cargando...",
   "error": "Ocurrió un error",

@@ -38,12 +38,14 @@ describe('InstallBanner iOS hint', () => {
     hookState.current = {};
   });
 
-  it('sends iPhone users to the bottom bar', () => {
+  it('does not promise a position on iPhone, where Share lives inside a menu', () => {
+    // Corregido con un iPhone delante: el boton Compartir no esta en la barra
     onIOS('safari-iphone');
 
     render(<InstallBanner />);
 
-    expect(screen.getByText(/installBanner.iosHint.inBottomBar/)).toBeInTheDocument();
+    expect(screen.getByText('installBanner.iosHint.iphone')).toBeInTheDocument();
+    expect(screen.queryByText(/inBottomBar/)).not.toBeInTheDocument();
   });
 
   it('sends iPad users to the top bar', () => {
@@ -66,17 +68,17 @@ describe('InstallBanner iOS hint', () => {
   });
 
   it('draws the share icon only where a position is claimed', () => {
-    // Sin saber donde mirar, el icono suelto no ayuda; con el menu propio del
-    // navegador, dibujar el icono de Safari confundiria
-    onIOS('safari-iphone');
-    const { container: safari } = render(<InstallBanner />);
-    const safariIcons = safari.querySelectorAll('svg').length;
+    // Solo el iPad tiene Compartir directamente en la barra: ahi el icono
+    // ayuda. En el iPhone y en otros navegadores, dibujarlo manda a buscar
+    // algo que no esta a la vista
+    onIOS('safari-ipad');
+    const { container: ipad } = render(<InstallBanner />);
+    const ipadIcons = ipad.querySelectorAll('svg').length;
 
     onIOS('other-browser');
     const { container: other } = render(<InstallBanner />);
 
-    // Ambos pintan el aspa de cerrar; solo Safari suma el icono de compartir
-    expect(safariIcons).toBe(other.querySelectorAll('svg').length + 1);
+    expect(ipadIcons).toBe(other.querySelectorAll('svg').length + 1);
   });
 
   it('keeps the dismiss control on every route', () => {
