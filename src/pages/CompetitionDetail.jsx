@@ -393,7 +393,7 @@ const CompetitionDetail = () => {
               <div className="bg-primary-50 rounded-xl border border-primary-200 p-6 shadow-md">
                 <div className="flex flex-wrap justify-between items-start gap-4 mb-4">
                   <div className="flex-1">
-                    <h1 className="text-gray-900 text-3xl md:text-4xl font-bold mb-2">
+                    <h1 className="hidden md:block text-gray-900 text-3xl md:text-4xl font-bold mb-2">
                       {competition.name}
                     </h1>
                     <div className="flex flex-wrap items-center gap-3">

@@ -100,7 +100,7 @@ const MyInvitationsPage = () => {
         {/* Header */}
         <div className="mb-6">
           <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold text-gray-900">{t('player.title')}</h1>
+            <h1 className="hidden md:block text-2xl font-bold text-gray-900">{t('player.title')}</h1>
             {pendingCount > 0 && (
               <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
                 {t('player.pendingCount', { count: pendingCount })}

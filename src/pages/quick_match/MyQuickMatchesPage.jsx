@@ -145,7 +145,7 @@ const MyQuickMatchesPage = () => {
           &larr; {t('scoring.backToDashboard')}
         </button>
 
-        <h1 className="text-xl font-bold text-gray-900 mb-4">{t('history.title')}</h1>
+        <h1 className="hidden md:block text-xl font-bold text-gray-900 mb-4">{t('history.title')}</h1>
 
         {error && (
           <p className="text-sm text-red-600 mb-4">{error.message || t('scoring.errors.generic')}</p>

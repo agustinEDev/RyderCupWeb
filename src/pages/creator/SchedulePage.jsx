@@ -364,7 +364,7 @@ const SchedulePage = () => {
 
               <div className="flex flex-wrap justify-between items-center gap-3">
                 <div>
-                  <h1 className="text-gray-900 text-3xl md:text-4xl font-bold">
+                  <h1 className="hidden md:block text-gray-900 text-3xl md:text-4xl font-bold">
                     {t('title')}
                   </h1>
                   <p className="text-gray-500 text-sm mt-1">{competition.name}</p>
