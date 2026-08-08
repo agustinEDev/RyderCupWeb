@@ -72,3 +72,36 @@ describe('page titles vs the contextual header', () => {
     expect(header).not.toContain('<h1 className="hidden');
   });
 });
+
+/**
+ * Enlaces de "volver" frente a la flecha de la cabecera (FE #338).
+ *
+ * Mismo origen que la duplicacion de titulos: la cabecera contextual trajo una
+ * flecha de vuelta, y los enlaces que ya existian en las paginas hacen ahora lo
+ * mismo justo debajo.
+ */
+describe('back links vs the header arrow', () => {
+  const REDUNDANTES = [
+    'src/pages/DeviceManagement.jsx',
+    'src/pages/quick_match/MyQuickMatchesPage.jsx',
+    'src/pages/creator/SchedulePage.jsx',
+    'src/pages/creator/InvitationsPage.jsx',
+    'src/pages/CompetitionDetail.jsx',
+  ];
+
+  it.each(REDUNDANTES)('%s hides its back link on mobile', (ruta) => {
+    const fuente = read(ruta);
+
+    // El enlace sigue en escritorio, donde la cabecera muestra la marca y no
+    // ofrece vuelta
+    expect(fuente).toMatch(/className="hidden md:(flex|inline-flex)[^"]*"/);
+  });
+
+  it('gives the competition header the origin-aware destination', () => {
+    // La pagina sabe si se llego desde explorar; el mapa de rutas no. Sin
+    // pasarle ese destino, ocultar el enlace perderia comportamiento
+    const fuente = read('src/pages/CompetitionDetail.jsx');
+
+    expect(fuente).toContain('backTo={backLink}');
+  });
+});

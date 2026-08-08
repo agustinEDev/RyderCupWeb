@@ -356,7 +356,7 @@ const SchedulePage = () => {
             >
               <button
                 onClick={() => navigate(`/competitions/${id}`)}
-                className="flex items-center gap-2 text-gray-600 hover:text-primary transition-colors mb-4"
+                className="hidden md:flex items-center gap-2 text-gray-600 hover:text-primary transition-colors mb-4"
               >
                 <ArrowLeft className="w-4 h-4" />
                 <span className="text-sm font-medium">{t('backToDetail')}</span>

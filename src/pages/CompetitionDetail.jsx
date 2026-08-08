@@ -370,8 +370,12 @@ const CompetitionDetail = () => {
     <div className="relative flex h-auto min-h-screen w-full flex-col bg-white">
       <div className="layout-container flex h-full grow flex-col">
         {/* El nombre del torneo solo se conoce en ejecucion: sustituye al
-            titulo generico del mapa de rutas (FE #310) */}
-        <HeaderAuth user={user} title={competition.name} />
+            titulo generico del mapa de rutas (FE #310).
+            El destino tambien: el mapa lleva siempre a /competitions, pero esta
+            pantalla sabe si se llego desde explorar, y esa vuelta es mejor. Sin
+            pasarsela, ocultar el enlace de la pagina en movil perderia
+            comportamiento en lugar de quitar ruido (FE #338) */}
+        <HeaderAuth user={user} title={competition.name} backTo={backLink} />
 
         <div className="px-4 md:px-40 flex flex-1 justify-center py-5">
           <div className="layout-content-container flex flex-col max-w-[960px] flex-1">
@@ -384,7 +388,7 @@ const CompetitionDetail = () => {
             >
               <button
                 onClick={() => navigate(backLink)}
-                className="flex items-center gap-2 text-gray-600 hover:text-primary transition-colors mb-4"
+                className="hidden md:flex items-center gap-2 text-gray-600 hover:text-primary transition-colors mb-4"
               >
                 <ArrowLeft className="w-4 h-4" />
                 <span className="text-sm font-medium">{backText}</span>

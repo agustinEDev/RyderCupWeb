@@ -140,7 +140,7 @@ const MyQuickMatchesPage = () => {
       <div className="max-w-2xl mx-auto px-4 py-6">
         <button
           onClick={() => navigate('/dashboard')}
-          className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-primary mb-3"
+          className="hidden md:inline-flex items-center gap-1 text-sm text-gray-500 hover:text-primary mb-3"
         >
           &larr; {t('scoring.backToDashboard')}
         </button>
