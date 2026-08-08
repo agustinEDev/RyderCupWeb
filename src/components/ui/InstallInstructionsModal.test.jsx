@@ -154,4 +154,13 @@ describe('InstallInstructionsModal', () => {
     unmount();
     expect(document.body.style.overflow).toBe('scroll');
   });
+  it('stays reachable on a short viewport', () => {
+    // Encontrado por CodeRabbit: con el fondo bloqueado y sin scroll propio, un
+    // movil en horizontal se queda sin ver los ultimos pasos ni el boton
+    open('safari-iphone');
+
+    const dialog = screen.getByRole('dialog');
+    expect(dialog.className).toContain('overflow-y-auto');
+    expect(dialog.className).toContain('max-h-[calc(100dvh-2rem)]');
+  });
 });

@@ -163,7 +163,11 @@ const InstallInstructionsModal = ({ isOpen, route, onClose }) => {
         role="dialog"
         aria-modal="true"
         aria-labelledby="install-modal-title"
-        className="w-full max-w-sm rounded-2xl bg-white shadow-xl"
+        // Cuatro pasos mas el diagrama no caben en una pantalla baja (un movil
+        // en horizontal), y como el fondo esta bloqueado se perderian los
+        // ultimos pasos y el boton. `dvh` porque en movil la altura util cambia
+        // al aparecer y desaparecer las barras del navegador
+        className="max-h-[calc(100dvh-2rem)] w-full max-w-sm overflow-y-auto rounded-2xl bg-white shadow-xl"
         onClick={(event) => event.stopPropagation()}
       >
         <div className="flex items-start justify-between gap-3 px-5 pt-5">
