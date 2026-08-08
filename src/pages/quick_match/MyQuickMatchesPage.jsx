@@ -140,12 +140,12 @@ const MyQuickMatchesPage = () => {
       <div className="max-w-2xl mx-auto px-4 py-6">
         <button
           onClick={() => navigate('/dashboard')}
-          className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-primary mb-3"
+          className="hidden md:inline-flex items-center gap-1 text-sm text-gray-500 hover:text-primary mb-3"
         >
           &larr; {t('scoring.backToDashboard')}
         </button>
 
-        <h1 className="text-xl font-bold text-gray-900 mb-4">{t('history.title')}</h1>
+        <h1 className="hidden md:block text-xl font-bold text-gray-900 mb-4">{t('history.title')}</h1>
 
         {error && (
           <p className="text-sm text-red-600 mb-4">{error.message || t('scoring.errors.generic')}</p>

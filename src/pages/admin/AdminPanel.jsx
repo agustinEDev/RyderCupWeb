@@ -264,7 +264,7 @@ const AdminPanel = () => {
               transition={{ duration: 0.5 }}
               className="p-4"
             >
-              <h1 className="text-gray-900 tracking-tight text-3xl md:text-[32px] font-bold leading-tight">
+              <h1 className="hidden md:block text-gray-900 tracking-tight text-3xl md:text-[32px] font-bold leading-tight">
                 {t('title')}
               </h1>
               <p className="text-gray-500 text-sm mt-1">{t('subtitle')}</p>

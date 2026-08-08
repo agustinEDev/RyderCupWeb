@@ -134,7 +134,7 @@ const Profile = () => {
               className="flex flex-wrap justify-between gap-3 p-4"
             >
               <div>
-                <p className="text-gray-900 tracking-tight text-3xl md:text-[32px] font-bold leading-tight">
+                <p className="hidden md:block text-gray-900 tracking-tight text-3xl md:text-[32px] font-bold leading-tight">
                   {t('title')}
                 </p>
                 <p className="text-gray-500 text-sm mt-1">
