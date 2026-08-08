@@ -12,6 +12,7 @@ import Avatar from '../components/ui/Avatar';
 import LanguageSwitcher from '../components/ui/LanguageSwitcher';
 import { SettingsGroup, SettingsRow, SettingsControlRow } from '../components/profile/SettingsList';
 import { useAuth } from '../hooks/useAuth';
+import { useStandalone } from '../hooks/useStandalone';
 import { CountryFlag } from '../utils/countryUtils';
 import { broadcastLogout } from '../utils/broadcastAuth';
 import { formatFullDate } from '../utils/dateFormatters';
@@ -22,6 +23,7 @@ const Profile = () => {
   const { t } = useTranslation('profile');
   const { t: tCommon } = useTranslation('common');
   const { user, loading: isLoadingUser } = useAuth();
+  const isStandalone = useStandalone();
   const [countryName, setCountryName] = useState(null);
   const [competitionsCount, setCompetitionsCount] = useState(0);
   const [isLoadingData, setIsLoadingData] = useState(true);
@@ -279,17 +281,17 @@ const Profile = () => {
                   panel" no aparece: la navegación inferior ya tiene Inicio */}
               <div className="md:hidden">
                 <SettingsGroup title={t('sections.account')}>
-                  <SettingsRow icon={Edit} label={t('actions.editProfile')} onClick={handleEditProfile} />
+                  <SettingsRow icon={Edit} label={t('actions.editProfile')} to="/profile/edit" />
                   <SettingsRow
                     icon={Smartphone}
                     label={t('actions.manageDevices')}
-                    onClick={() => navigate('/profile/devices')}
+                    to="/profile/devices"
                   />
                   {user?.is_admin && (
                     <SettingsRow
                       icon={Shield}
                       label={tCommon('header.adminPanel')}
-                      onClick={() => navigate('/admin')}
+                      to="/admin"
                     />
                   )}
                 </SettingsGroup>
@@ -301,15 +303,21 @@ const Profile = () => {
                     <LanguageSwitcher />
                   </SettingsControlRow>
                 </SettingsGroup>
+              </div>
 
-                {/* Instalada, la aplicación no muestra el pie de marketing
-                    (FE #309): este es el único sitio donde quedan los legales */}
+              {/* Los legales viven aquí porque instalada no se pinta el pie
+                  (FE #309). En escritorio con el pie visible serían un duplicado,
+                  pero una aplicación instalada en escritorio tampoco lo tiene:
+                  ahí este es el único acceso que queda */}
+              <div className={isStandalone ? '' : 'md:hidden'}>
                 <SettingsGroup title={t('sections.legal')}>
                   <SettingsRow icon={FileText} label={t('legal.terms')} to="/terms" />
                   <SettingsRow icon={Lock} label={t('legal.privacy')} to="/privacy" />
                   <SettingsRow icon={Cookie} label={t('legal.cookies')} to="/cookies" />
                 </SettingsGroup>
+              </div>
 
+              <div className="md:hidden">
                 <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
                   <SettingsRow icon={LogOut} label={t('actions.logOut')} onClick={handleLogout} tone="danger" />
                 </div>
