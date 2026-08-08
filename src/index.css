@@ -170,6 +170,25 @@
   border-color: var(--color-primary-500);
 }
 
+/* react-hot-toast fija su contenedor con `bottom: 16px` en un style inline, de
+   modo que en movil los toasts caen dentro de la navegacion inferior y la tapan
+   (FE #322). Solo un !important puede ganar a ese inline style.
+
+   6rem, no las 5rem de InstallBanner: medido en el navegador, la barra ocupa
+   55px y el boton central sobresale hasta los 78px del fondo, asi que con 5rem
+   el aviso libraba el FAB por 2px — no lo tapaba, pero se leia como un error de
+   maquetacion, y la sombra del boton llegaba a tocarlo. A partir de `md` la
+   navegacion no se pinta y el toast recupera su sitio. */
+.toast-container-above-bottom-nav {
+  bottom: calc(6rem + env(safe-area-inset-bottom)) !important;
+}
+
+@media (min-width: 768px) {
+  .toast-container-above-bottom-nav {
+    bottom: 16px !important;
+  }
+}
+
 /* Sentry feedback widget ("Report a Bug") defaults to bottom-right, which
    overlaps our react-hot-toast notifications and bottom banners. The widget
    renders in a shadow DOM host (#sentry-feedback) that only reads CSS custom

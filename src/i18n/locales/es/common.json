@@ -5,12 +5,33 @@
     "install": "Instalar",
     "dismiss": "Cerrar banner de instalación",
     "iosHint": {
+      "iphone": "Añade la app a tu pantalla de inicio",
       "prefix": "Instala la app: pulsa ",
-      "suffix": " y luego \"Añadir a pantalla de inicio\""
+      "inBottomBar": " en la barra de abajo",
+      "inTopBar": " en la barra de arriba",
+      "suffix": " y luego \"Añadir a pantalla de inicio\"",
+      "otherBrowser": "Instala la app: abre el menú de tu navegador y elige «Añadir a pantalla de inicio»"
     },
     "safariHint": "Instala la app: Archivo → Añadir al Dock…",
     "alreadyInstalled": "Ya tienes la app instalada.",
     "genericHint": "Tu navegador no permite instalarla directamente desde aquí."
+  },
+  "installModal": {
+    "title": "Instalar RyderCupFriends",
+    "close": "Cerrar instrucciones de instalación",
+    "gotIt": "Entendido",
+    "howTo": "Cómo se instala",
+    "steps": {
+      "moreButton": "Pulsa el botón ··· en la barra de abajo, a la derecha",
+      "shareInMenu": "Pulsa «Compartir», en la parte de arriba del menú",
+      "shareTop": "Pulsa el botón Compartir en la barra de arriba",
+      "findAddToHome": "Baja hasta «Añadir a pantalla de inicio»; si no aparece, pulsa «Ver más»",
+      "confirmAdd": "Pulsa «Añadir», arriba a la derecha",
+      "openMenu": "Abre el menú de tu navegador",
+      "chooseAdd": "Elige «Añadir a pantalla de inicio»",
+      "openFileMenu": "Abre el menú Archivo de Safari",
+      "chooseDock": "Elige «Añadir al Dock…»"
+    }
   },
   "loading": "Cargando...",
   "error": "Ocurrió un error",
@@ -56,6 +77,24 @@
     "quickMatch": "Partida",
     "friends": "Amigos",
     "profile": "Perfil"
+  },
+  "screens": {
+    "dashboard": "Inicio",
+    "myCompetitions": "Torneos",
+    "friends": "Amigos",
+    "profile": "Perfil",
+    "editProfile": "Editar Perfil",
+    "devices": "Dispositivos",
+    "admin": "Administración",
+    "createCompetition": "Crear Torneo",
+    "competition": "Torneo",
+    "editCompetition": "Editar Torneo",
+    "schedule": "Calendario",
+    "invitations": "Invitaciones",
+    "browseCompetitions": "Explorar",
+    "myInvitations": "Mis Invitaciones",
+    "myMatches": "Mis Partidos",
+    "myQuickMatches": "Partidas Rápidas"
   },
   "footer": {
     "description": "La plataforma definitiva para gestionar torneos de golf amateur en formato Ryder Cup. Conecta con amigos y disfruta del espíritu de la competencia amistosa.",

@@ -138,7 +138,7 @@ const InvitationsPage = () => {
         <div className="mb-6">
           <button
             onClick={() => navigate(`/competitions/${id}`)}
-            className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-3 transition-colors"
+            className="hidden md:flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-3 transition-colors"
           >
             <ArrowLeft className="h-4 w-4" />
             {competition?.name || 'Back'}
@@ -146,7 +146,7 @@ const InvitationsPage = () => {
 
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">{t('creator.title')}</h1>
+              <h1 className="hidden md:block text-2xl font-bold text-gray-900">{t('creator.title')}</h1>
               <p className="text-sm text-gray-500 mt-1">{t('creator.subtitle')}</p>
               {totalCount > 0 && (
                 <p className="text-xs text-gray-400 mt-1">

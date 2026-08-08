@@ -6,6 +6,7 @@ import { BarChart3, Download, Share, Trophy, Users, Zap } from 'lucide-react';
 import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
 import { useInstallPrompt } from '../hooks/useInstallPrompt';
+import InstallInstructionsModal from '../components/ui/InstallInstructionsModal';
 import { useEntryMotion } from '../hooks/useEntryMotion';
 import {
   fadeInUp,
@@ -19,8 +20,9 @@ const Landing = () => {
   const { t } = useTranslation('landing');
   const { t: tCommon } = useTranslation('common');
   const navigate = useNavigate();
-  const { canInstall, isIOS, isDesktopSafari, isInstalled, install } = useInstallPrompt();
+  const { canInstall, isIOS, iosInstallRoute, isDesktopSafari, isInstalled, install } = useInstallPrompt();
   const [showInstallHint, setShowInstallHint] = useState(false);
+  const [showInstallModal, setShowInstallModal] = useState(false);
   const { animateEntry, animateOnScroll } = useEntryMotion();
 
   const handleGetStarted = () => {
@@ -33,6 +35,11 @@ const Landing = () => {
 
   return (
     <div className="relative flex h-auto min-h-screen w-full flex-col bg-white">
+      <InstallInstructionsModal
+        isOpen={showInstallModal}
+        route={isDesktopSafari ? 'desktop-safari' : iosInstallRoute}
+        onClose={() => setShowInstallModal(false)}
+      />
       <div className="layout-container flex h-full grow flex-col">
         <Header />
 
@@ -95,7 +102,12 @@ const Landing = () => {
                   <div className="flex flex-col gap-2">
                     <button
                       onClick={() => {
-                        if (isIOS || isDesktopSafari || !canInstall) {
+                        // Donde no hay instalacion programatica, los pasos son
+                        // la funcionalidad: merecen un modal, no una linea de
+                        // texto gris bajo el boton (FE #335)
+                        if (isIOS || isDesktopSafari) {
+                          setShowInstallModal(true);
+                        } else if (!canInstall) {
                           setShowInstallHint(h => !h);
                         } else {
                           install();
@@ -106,18 +118,6 @@ const Landing = () => {
                       {isIOS ? <Share className="w-5 h-5" /> : <Download className="w-5 h-5" />}
                       {tCommon('installBanner.install')}
                     </button>
-                    {showInstallHint && isIOS && (
-                      <p className="text-sm text-gray-600 bg-gray-50 rounded-lg px-4 py-2 border border-gray-200">
-                        {tCommon('installBanner.iosHint.prefix')}
-                        <Share className="w-4 h-4 inline mx-1 align-middle" />
-                        {tCommon('installBanner.iosHint.suffix')}
-                      </p>
-                    )}
-                    {showInstallHint && isDesktopSafari && (
-                      <p className="text-sm text-gray-600 bg-gray-50 rounded-lg px-4 py-2 border border-gray-200">
-                        {tCommon('installBanner.safariHint')}
-                      </p>
-                    )}
                     {showInstallHint && !isIOS && !isDesktopSafari && !canInstall && (
                       <p className="text-sm text-gray-600 bg-gray-50 rounded-lg px-4 py-2 border border-gray-200">
                         {isInstalled

@@ -5,12 +5,33 @@
     "install": "Install",
     "dismiss": "Close install banner",
     "iosHint": {
+      "iphone": "Add the app to your Home Screen",
       "prefix": "Install the app: tap ",
-      "suffix": " then \"Add to Home Screen\""
+      "inBottomBar": " in the bottom bar",
+      "inTopBar": " in the top bar",
+      "suffix": " then \"Add to Home Screen\"",
+      "otherBrowser": "Install the app: open your browser menu and choose \"Add to Home Screen\""
     },
     "safariHint": "Install the app: File → Add to Dock…",
     "alreadyInstalled": "You already have the app installed.",
     "genericHint": "Your browser doesn't support installing it directly from here."
+  },
+  "installModal": {
+    "title": "Install RyderCupFriends",
+    "close": "Close install instructions",
+    "gotIt": "Got it",
+    "howTo": "How to install",
+    "steps": {
+      "moreButton": "Tap the ··· button at the right of the bottom bar",
+      "shareInMenu": "Tap \"Share\" at the top of the menu",
+      "shareTop": "Tap the Share button in the top bar",
+      "findAddToHome": "Scroll down to \"Add to Home Screen\" — tap \"Show More\" if you cannot see it",
+      "confirmAdd": "Tap \"Add\", at the top right",
+      "openMenu": "Open your browser menu",
+      "chooseAdd": "Choose \"Add to Home Screen\"",
+      "openFileMenu": "Open Safari's File menu",
+      "chooseDock": "Choose \"Add to Dock…\""
+    }
   },
   "loading": "Loading...",
   "error": "An error occurred",
@@ -56,6 +77,24 @@
     "quickMatch": "Match",
     "friends": "Friends",
     "profile": "Profile"
+  },
+  "screens": {
+    "dashboard": "Home",
+    "myCompetitions": "Tournaments",
+    "friends": "Friends",
+    "profile": "Profile",
+    "editProfile": "Edit Profile",
+    "devices": "Devices",
+    "admin": "Administration",
+    "createCompetition": "Create Tournament",
+    "competition": "Tournament",
+    "editCompetition": "Edit Tournament",
+    "schedule": "Schedule",
+    "invitations": "Invitations",
+    "browseCompetitions": "Browse",
+    "myInvitations": "My Invitations",
+    "myMatches": "My Matches",
+    "myQuickMatches": "Quick Matches"
   },
   "footer": {
     "description": "The ultimate platform for managing amateur golf tournaments in Ryder Cup format. Connect with friends and enjoy the spirit of friendly competition.",
