@@ -2,9 +2,14 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import * as Sentry from '@sentry/react';
 import App from './App.jsx';
+import { startCapturingInstallPrompt } from './utils/installPromptCapture';
 import './index.css';
 import './i18n'; // Import i18n initialization
 import { AuthProviderWithGlobalSync } from './contexts/AuthContext'; // v1.13.0: CSRF Protection
+
+// Cuanto antes, mejor: Chrome dispara `beforeinstallprompt` nada más procesar
+// el manifiesto, muy por delante del montaje de React (FE #334)
+startCapturingInstallPrompt();
 
 // ============================================
 // EARLY SENTRY INITIALIZATION

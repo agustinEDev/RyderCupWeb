@@ -6,7 +6,10 @@
     "dismiss": "Cerrar banner de instalación",
     "iosHint": {
       "prefix": "Instala la app: pulsa ",
-      "suffix": " y luego \"Añadir a pantalla de inicio\""
+      "inBottomBar": " en la barra de abajo",
+      "inTopBar": " en la barra de arriba",
+      "suffix": " y luego \"Añadir a pantalla de inicio\"",
+      "otherBrowser": "Instala la app: abre el menú de tu navegador y elige «Añadir a pantalla de inicio»"
     },
     "safariHint": "Instala la app: Archivo → Añadir al Dock…",
     "alreadyInstalled": "Ya tienes la app instalada.",
