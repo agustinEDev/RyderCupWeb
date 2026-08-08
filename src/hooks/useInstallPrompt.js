@@ -49,10 +49,13 @@ function detectIOS() {
 function detectIOSInstallRoute() {
   const ua = navigator.userAgent;
 
-  // Los navegadores de iOS son WebKit por obligacion y arrastran "Safari" en su
-  // UA, asi que Safari se reconoce por descarte de los tokens de los demas
-  const isOtherBrowser = /crios|fxios|edgios|opt\//i.test(ua);
-  if (isOtherBrowser) return 'other-browser';
+  // Safari se reconoce por lo que tiene, no por lo que le falta: solo el
+  // navegador de Apple emite el par `Version/<n>` + `Safari/<n>`. Descartar una
+  // lista de tokens ajenos (CriOS, FxiOS...) dejaria a cualquier navegador que
+  // no este en la lista —Brave, DuckDuckGo, Opera, el que salga manana— con las
+  // instrucciones de Safari, que no le sirven. Ante la duda, el menu propio.
+  const isSafari = /version\/[\d.]+/i.test(ua) && /safari\//i.test(ua) && !/crios|fxios|edgios|opt\/|duckduckgo/i.test(ua);
+  if (!isSafari) return 'other-browser';
 
   // Un UA que se identifica como iPhone o iPod manda, y corta aqui: la regla de
   // abajo mira `navigator.platform`, que en algunos entornos vale 'MacIntel'

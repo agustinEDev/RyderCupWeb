@@ -126,10 +126,19 @@ describe('useInstallPrompt iOS install route', () => {
     expect(renderHook(() => useInstallPrompt()).result.current.iosInstallRoute).toBe('safari-ipad');
   });
 
+  const DUCKDUCKGO_IOS =
+    'Mozilla/5.0 (iPhone; CPU iPhone OS 26_5_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 DuckDuckGo/7 Safari/605.1.15';
+  const UNKNOWN_IOS_BROWSER =
+    'Mozilla/5.0 (iPhone; CPU iPhone OS 26_5_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) SomeNewBrowser/3.2 Mobile/15E148 Safari/605.1.15';
+
   it.each([
     ['Chrome', CHROME_IOS],
     ['Firefox', FIREFOX_IOS],
     ['Edge', EDGE_IOS],
+    ['DuckDuckGo', DUCKDUCKGO_IOS],
+    // Encontrado por CodeRabbit: descartar una lista de tokens conocidos deja a
+    // cualquier navegador nuevo con las instrucciones de Safari
+    ['an unknown browser', UNKNOWN_IOS_BROWSER],
   ])('does not claim a position for %s on iOS', (_name, ua) => {
     // Todos arrastran "Safari" en el UA por ser WebKit: reconocerlos por su
     // propio token es lo unico que los distingue
