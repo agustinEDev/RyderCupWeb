@@ -51,12 +51,28 @@ const TONES = {
   },
 };
 
-const PlayerStatsCards = ({ stats, isLoading = false }) => {
+/**
+ * @param {Object} props
+ * @param {number|null} [props.fallbackHandicap] - Hándicap del perfil
+ * @param {number} [props.fallbackTournaments] - Torneos ya cargados por la página
+ *
+ * Los dos fallbacks existen porque el panel **ya sabe** el hándicap y cuántos
+ * torneos tiene el jugador antes de pedir las estadísticas: vienen del perfil y
+ * del listado de competiciones. Si el resumen falla o el backend todavía no
+ * expone el endpoint, no hay razón para tirar dos datos que ya están en la
+ * mano y enseñar "--" al lado de una tarjeta de perfil que dice "Hándicap: 18".
+ */
+const PlayerStatsCards = ({
+  stats,
+  isLoading = false,
+  fallbackHandicap = null,
+  fallbackTournaments = 0,
+}) => {
   const { t } = useTranslation('dashboard');
 
   const formatNumber = (value) => (value === null || value === undefined ? '--' : value.toFixed(1));
 
-  const handicap = stats?.handicap;
+  const handicap = stats?.handicap ?? fallbackHandicap;
   const trend = stats?.handicapTrend;
   const isImproving = stats?.isImproving?.() ?? false;
   // Un cambio de exactamente cero es información, no ausencia de tendencia:
@@ -71,7 +87,10 @@ const PlayerStatsCards = ({ stats, isLoading = false }) => {
         icon={TrendingUp}
         tone={TONES.handicap}
         label={t('statistics.handicap')}
-        value={isLoading ? '--' : formatNumber(handicap)}
+        // Sin gatear por isLoading: el hándicap del perfil ya está, y parpadear
+        // de "--" a "18" cuando llegan las estadísticas es peor que enseñarlo
+        // desde el principio
+        value={formatNumber(handicap)}
         hint={
           trend !== null && trend !== undefined && !isLoading ? (
             <p
@@ -116,7 +135,8 @@ const PlayerStatsCards = ({ stats, isLoading = false }) => {
         icon={Trophy}
         tone={TONES.tournaments}
         label={t('statistics.tournaments')}
-        value={isLoading ? '--' : (stats?.tournamentsTotal ?? 0)}
+        // Mismo motivo que el hándicap: la página ya cargó las competiciones
+        value={stats?.tournamentsTotal ?? fallbackTournaments}
         hint={
           <p className="mt-0.5 text-[10px] md:text-xs text-primary-600">
             {t('statistics.activeCount', { count: stats?.tournamentsActive ?? 0 })}

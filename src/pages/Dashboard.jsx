@@ -219,7 +219,12 @@ const Dashboard = () => {
 
             {/* Statistics Cards */}
             <motion.div variants={slideUp} className="p-4">
-              <PlayerStatsCards stats={playerStats} isLoading={isLoadingStats} />
+              <PlayerStatsCards
+                stats={playerStats}
+                isLoading={isLoadingStats}
+                fallbackHandicap={user.handicap ?? null}
+                fallbackTournaments={Array.isArray(competitions) ? competitions.length : 0}
+              />
             </motion.div>
 
             {/* Profile Card */}

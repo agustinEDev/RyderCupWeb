@@ -92,10 +92,12 @@ describe('PlayerStatsCards', () => {
     expect(screen.getByText('statistics.activeCount:0')).toBeInTheDocument();
   });
 
-  it('shows dashes while loading instead of stale or zero values', () => {
+  it('holds back only the figures that need the request, while loading', () => {
     render(<PlayerStatsCards stats={fullStats} isLoading />);
 
-    expect(screen.getByTestId('stat-card-handicap')).toHaveTextContent('--');
+    // El indice y la tendencia solo existen en el resumen: hasta que llega, no
+    // hay nada honesto que enseñar en su lugar
+    expect(screen.getByTestId('stat-card-playing-to')).toHaveTextContent('--');
     expect(screen.queryByTestId('handicap-trend')).not.toBeInTheDocument();
   });
 
@@ -104,6 +106,47 @@ describe('PlayerStatsCards', () => {
 
     expect(screen.getByTestId('player-stats-cards')).toBeInTheDocument();
     expect(screen.getByTestId('stat-card-playing-to')).toHaveTextContent('--');
+  });
+
+  describe('falling back to what the page already knows', () => {
+    /**
+     * Encontrado verificando en el navegador: la tarjeta decia "Handicap --"
+     * mientras la de perfil, justo debajo, decia "Handicap: 18". El resumen
+     * fallaba y con el se iba un dato que la pagina ya tenia.
+     */
+    it('shows the profile handicap when the stats request brought none', () => {
+      render(<PlayerStatsCards stats={null} fallbackHandicap={18} />);
+
+      expect(screen.getByTestId('stat-card-handicap')).toHaveTextContent('18.0');
+    });
+
+    it('shows the competitions already loaded when stats are missing', () => {
+      render(<PlayerStatsCards stats={null} fallbackTournaments={3} />);
+
+      expect(screen.getByTestId('stat-card-tournaments')).toHaveTextContent('3');
+    });
+
+    it('prefers the stats over the fallback once they arrive', () => {
+      const stats = PlayerStats.fromPersistence({ handicap: 14.2, tournamentsTotal: 5 });
+
+      render(<PlayerStatsCards stats={stats} fallbackHandicap={18} fallbackTournaments={3} />);
+
+      expect(screen.getByTestId('stat-card-handicap')).toHaveTextContent('14.2');
+      expect(screen.getByTestId('stat-card-tournaments')).toHaveTextContent('5');
+    });
+
+    it('does not blink through dashes while the stats are loading', () => {
+      render(<PlayerStatsCards stats={null} isLoading fallbackHandicap={18} />);
+
+      // Ir de "--" a "18" al llegar la respuesta se ve como un fallo
+      expect(screen.getByTestId('stat-card-handicap')).toHaveTextContent('18.0');
+    });
+
+    it('still shows dashes when nobody knows the handicap', () => {
+      render(<PlayerStatsCards stats={null} />);
+
+      expect(screen.getByTestId('stat-card-handicap')).toHaveTextContent('--');
+    });
   });
 
   it('lays the three cards out in three columns on mobile', () => {
