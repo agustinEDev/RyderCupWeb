@@ -138,6 +138,12 @@ const HeaderAuth = ({ user, title, backTo }) => {
           <Link to="/player/invitations" className="text-gray-900 text-sm font-medium leading-normal hover:text-primary transition-colors">
             {t('header.myInvitations')}
           </Link>
+          {/* Amigos solo vivia en la navegacion inferior, que es md:hidden, y en
+              una tarjeta del panel. Al quitar esa tarjeta (FE #306) el escritorio
+              se quedaba sin ninguna forma de llegar a /friends */}
+          <Link to="/friends" className="text-gray-900 text-sm font-medium leading-normal hover:text-primary transition-colors">
+            {t('header.friends')}
+          </Link>
 
         </div>
 
