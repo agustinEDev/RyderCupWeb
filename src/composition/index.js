@@ -123,6 +123,10 @@ import BlockUserUseCase from '../application/use_cases/friend/BlockUserUseCase';
 import ListFriendsUseCase from '../application/use_cases/friend/ListFriendsUseCase';
 import ListPendingFriendRequestsUseCase from '../application/use_cases/friend/ListPendingFriendRequestsUseCase';
 
+// Player Stats Use Cases (FE #306)
+import ApiPlayerStatsRepository from '../infrastructure/repositories/ApiPlayerStatsRepository';
+import GetPlayerStatsUseCase from '../application/use_cases/player_stats/GetPlayerStatsUseCase';
+
 // Scoring Use Cases (Sprint 4)
 import ApiScoringRepository from '../infrastructure/repositories/ApiScoringRepository';
 import GetScoringViewUseCase from '../application/use_cases/scoring/GetScoringViewUseCase';
@@ -263,6 +267,10 @@ const removeFriendUseCase = new RemoveFriendUseCase({ friendRepository: apiFrien
 const blockUserUseCase = new BlockUserUseCase({ friendRepository: apiFriendRepository });
 const listFriendsUseCase = new ListFriendsUseCase({ friendRepository: apiFriendRepository });
 const listPendingFriendRequestsUseCase = new ListPendingFriendRequestsUseCase({ friendRepository: apiFriendRepository });
+
+// Player Stats Use Cases (FE #306)
+const apiPlayerStatsRepository = new ApiPlayerStatsRepository();
+const getPlayerStatsUseCase = new GetPlayerStatsUseCase({ playerStatsRepository: apiPlayerStatsRepository });
 
 // Scoring Use Cases (Sprint 4)
 const getScoringViewUseCase = new GetScoringViewUseCase({ scoringRepository: apiScoringRepository });
@@ -427,6 +435,7 @@ export {
   removeFriendUseCase,
   blockUserUseCase,
   listFriendsUseCase,
+  getPlayerStatsUseCase,
   listPendingFriendRequestsUseCase,
   // Scoring Use Cases (Sprint 4)
   getScoringViewUseCase,
