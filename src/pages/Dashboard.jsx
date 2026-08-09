@@ -1,18 +1,19 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router';
 import { motion } from 'framer-motion';
-import { Trophy, Users, User, TrendingUp, Award, Search, UserPlus, Zap } from 'lucide-react';
+import { Trophy, Zap } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import HeaderAuth from '../components/layout/HeaderAuth';
 import ProfileCard from '../components/profile/ProfileCard';
 import HandicapRequestModal from '../components/profile/HandicapRequestModal';
 import EmailVerificationBanner from '../components/EmailVerificationBanner';
 import PendingActionsCard from '../components/dashboard/PendingActionsCard';
+import PlayerStatsCards from '../components/dashboard/PlayerStatsCards';
 import CreateQuickMatchModal from '../components/quick_match/CreateQuickMatchModal';
 import { useAuth } from '../hooks/useAuth';
 import { useEntryMotion } from '../hooks/useEntryMotion';
 import { slideUp, staggerContainer, getEntryProps } from '../utils/animations';
-import { listUserCompetitionsUseCase } from '../composition';
+import { listUserCompetitionsUseCase, getPlayerStatsUseCase } from '../composition';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -22,6 +23,8 @@ const Dashboard = () => {
   const { animateEntry } = useEntryMotion();
   const [competitions, setCompetitions] = useState([]);
   const [isLoadingCompetitions, setIsLoadingCompetitions] = useState(true);
+  const [playerStats, setPlayerStats] = useState(null);
+  const [isLoadingStats, setIsLoadingStats] = useState(true);
   const [showHandicapModal, setShowHandicapModal] = useState(false);
   const [showQuickMatchModal, setShowQuickMatchModal] = useState(false);
   const [handicapPending, setHandicapPending] = useState(
@@ -60,7 +63,7 @@ const Dashboard = () => {
         setIsLoadingCompetitions(false);
         return;
       }
-      
+
       setIsLoadingCompetitions(true);
       try {
 
@@ -78,6 +81,31 @@ const Dashboard = () => {
     };
 
     loadDashboardData();
+  }, [user]);
+
+  useEffect(() => {
+    // Las estadísticas van por su cuenta y no bloquean la página: son un
+    // resumen, y si el backend tarda o falla, el resto del panel sigue siendo
+    // útil. Un fallo deja las cifras en "--", que es lo mismo que enseña una
+    // cuenta sin vueltas.
+    const loadPlayerStats = async () => {
+      if (!user) {
+        setIsLoadingStats(false);
+        return;
+      }
+
+      setIsLoadingStats(true);
+      try {
+        setPlayerStats(await getPlayerStatsUseCase.execute());
+      } catch (error) {
+        console.error('Failed to load player stats:', error);
+        setPlayerStats(null);
+      } finally {
+        setIsLoadingStats(false);
+      }
+    };
+
+    loadPlayerStats();
   }, [user]);
 
   // Only gate the full-page spinner on the initial load (no user yet).
@@ -190,72 +218,8 @@ const Dashboard = () => {
             />
 
             {/* Statistics Cards */}
-            <motion.div
-              variants={slideUp}
-              className="p-4"
-            >
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                {/* Stat Card 1 - Handicap */}
-                <div className="relative overflow-hidden bg-accent-50 p-6 rounded-xl border border-accent-200 hover:shadow-lg transition-all duration-300 group">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="p-3 bg-accent-500 rounded-lg shadow-md">
-                      <TrendingUp className="w-6 h-6 text-white" />
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm text-amber-700 font-medium">{t('statistics.handicap')}</p>
-                      <p className="text-3xl font-bold text-amber-800">
-                        {user.handicap != null ? user.handicap.toFixed(1) : '--'}
-                      </p>
-                    </div>
-                  </div>
-                  <p className="text-xs text-amber-700">
-                    {user.handicap_updated_at
-                      ? t('statistics.updated', { date: new Date(user.handicap_updated_at).toLocaleDateString() })
-                      : t('statistics.notUpdated')}
-                  </p>
-                  <div className="absolute -bottom-6 -right-6 opacity-10">
-                    <TrendingUp className="w-32 h-32 text-amber-700" />
-                  </div>
-                </div>
-
-                {/* Stat Card 2 - Tournaments */}
-                <div className="relative overflow-hidden bg-primary-50 p-6 rounded-xl border border-primary-200 hover:shadow-lg transition-all duration-300 group">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="p-3 bg-primary-500 rounded-lg shadow-md">
-                      <Trophy className="w-6 h-6 text-white" />
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm text-primary-600 font-medium">{t('statistics.tournaments')}</p>
-                      <p className="text-3xl font-bold text-primary-700">{Array.isArray(competitions) ? competitions.length : 0}</p>
-                    </div>
-                  </div>
-                  <p className="text-xs text-primary-600">{t('statistics.viewTournaments')}</p>
-                  <div className="absolute -bottom-6 -right-6 opacity-10">
-                    <Trophy className="w-32 h-32 text-primary-700" />
-                  </div>
-                </div>
-
-                {/* Stat Card 3 - Profile */}
-                <div className="relative overflow-hidden bg-blue-50 p-6 rounded-xl border border-blue-200 hover:shadow-lg transition-all duration-300 group">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="p-3 bg-navy-800 rounded-lg shadow-md">
-                      <Award className="w-6 h-6 text-white" />
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm text-navy-800 font-medium">{t('statistics.status')}</p>
-                      <p className="text-lg font-bold text-navy-900">
-                        {user.email_verified ? `✓ ${t('statistics.verified')}` : `⚠ ${t('statistics.pending')}`}
-                      </p>
-                    </div>
-                  </div>
-                  <p className="text-xs text-navy-700">
-                    {t('statistics.memberSince', { date: new Date(user.created_at).toLocaleDateString() })}
-                  </p>
-                  <div className="absolute -bottom-6 -right-6 opacity-10">
-                    <Award className="w-32 h-32 text-navy-700" />
-                  </div>
-                </div>
-              </div>
+            <motion.div variants={slideUp} className="p-4">
+              <PlayerStatsCards stats={playerStats} isLoading={isLoadingStats} />
             </motion.div>
 
             {/* Profile Card */}
@@ -267,7 +231,29 @@ const Dashboard = () => {
               className="p-4 mt-4"
             >
               <h2 className="text-gray-900 text-xl font-bold mb-4">{t('quickActions.title')}</h2>
+              {/* Dos, no seis: Mis Torneos, Explorar, Amigos y Perfil ya viven
+                  en la navegacion, y repetirlos aqui convertia el panel en un
+                  menu con otro aspecto */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Quick Match Card - primary action */}
+                <motion.button
+                  onClick={() => setShowQuickMatchModal(true)}
+                  whileHover={{ scale: 1.02, y: -2 }}
+                  whileTap={{ scale: 0.98 }}
+                  data-testid="quick-match-card"
+                  className="flex items-center gap-4 p-6 bg-primary-50 border-2 border-primary-500 rounded-xl hover:shadow-lg transition-all text-left group"
+                >
+                  <div className="p-3 bg-primary-500 rounded-lg">
+                    <Zap className="w-7 h-7 text-white" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-gray-900 font-bold text-lg group-hover:text-primary-600 transition-colors">
+                      {t('quickActions.quickMatch')}
+                    </h3>
+                    <p className="text-gray-500 text-sm">{t('quickActions.quickMatchDesc')}</p>
+                  </div>
+                </motion.button>
+
                 {/* Create Competition Card */}
                 <motion.button
                   onClick={() => navigate('/competitions/create')}
@@ -283,97 +269,6 @@ const Dashboard = () => {
                       {t('quickActions.createTournament')}
                     </h3>
                     <p className="text-gray-500 text-sm">{t('quickActions.createTournamentDesc')}</p>
-                  </div>
-                </motion.button>
-
-                {/* My Competitions Card */}
-                <motion.button
-                  onClick={() => navigate('/competitions')}
-                  whileHover={{ scale: 1.02, y: -2 }}
-                  whileTap={{ scale: 0.98 }}
-                  className="flex items-center gap-4 p-6 bg-white border-2 border-gray-200 rounded-xl hover:border-accent-500 hover:shadow-lg transition-all text-left group"
-                >
-                  <div className="p-3 bg-accent-100 rounded-lg group-hover:bg-accent-500 transition-colors">
-                    <Users className="w-7 h-7 text-accent-600 group-hover:text-white transition-colors" />
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="text-gray-900 font-bold text-lg group-hover:text-accent-600 transition-colors">
-                      {t('quickActions.myTournaments')}
-                    </h3>
-                    <p className="text-gray-500 text-sm">{t('quickActions.myTournamentsDesc')}</p>
-                  </div>
-                </motion.button>
-
-                {/* View Profile Card */}
-                <motion.button
-                  onClick={() => navigate('/profile')}
-                  whileHover={{ scale: 1.02, y: -2 }}
-                  whileTap={{ scale: 0.98 }}
-                  className="flex items-center gap-4 p-6 bg-white border-2 border-gray-200 rounded-xl hover:border-navy-800 hover:shadow-lg transition-all text-left group"
-                >
-                  <div className="p-3 bg-blue-100 rounded-lg group-hover:bg-navy-800 transition-colors">
-                    <User className="w-7 h-7 text-navy-800 group-hover:text-white transition-colors" />
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="text-gray-900 font-bold text-lg group-hover:text-navy-800 transition-colors">
-                      {t('quickActions.myProfile')}
-                    </h3>
-                    <p className="text-gray-500 text-sm">{t('quickActions.myProfileDesc')}</p>
-                  </div>
-                </motion.button>
-
-                {/* Browse Competitions Card */}
-                <motion.button
-                  onClick={() => navigate('/browse-competitions')}
-                  whileHover={{ scale: 1.02, y: -2 }}
-                  whileTap={{ scale: 0.98 }}
-                  className="flex items-center gap-4 p-6 bg-white border-2 border-gray-200 rounded-xl hover:border-green-500 hover:shadow-lg transition-all text-left group"
-                >
-                  <div className="p-3 bg-green-100 rounded-lg group-hover:bg-green-500 transition-colors">
-                    <Search className="w-7 h-7 text-green-600 group-hover:text-white transition-colors" />
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="text-gray-900 font-bold text-lg group-hover:text-green-600 transition-colors">
-                      {t('quickActions.browseCompetitions')}
-                    </h3>
-                    <p className="text-gray-500 text-sm">{t('quickActions.browseCompetitionsDesc')}</p>
-                  </div>
-                </motion.button>
-
-                {/* Friends Card */}
-                <motion.button
-                  onClick={() => navigate('/friends')}
-                  whileHover={{ scale: 1.02, y: -2 }}
-                  whileTap={{ scale: 0.98 }}
-                  className="flex items-center gap-4 p-6 bg-white border-2 border-gray-200 rounded-xl hover:border-pink-500 hover:shadow-lg transition-all text-left group"
-                >
-                  <div className="p-3 bg-pink-100 rounded-lg group-hover:bg-pink-500 transition-colors">
-                    <UserPlus className="w-7 h-7 text-pink-600 group-hover:text-white transition-colors" />
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="text-gray-900 font-bold text-lg group-hover:text-pink-600 transition-colors">
-                      {t('quickActions.friends')}
-                    </h3>
-                    <p className="text-gray-500 text-sm">{t('quickActions.friendsDesc')}</p>
-                  </div>
-                </motion.button>
-
-                {/* Quick Match Card */}
-                <motion.button
-                  onClick={() => setShowQuickMatchModal(true)}
-                  whileHover={{ scale: 1.02, y: -2 }}
-                  whileTap={{ scale: 0.98 }}
-                  data-testid="quick-match-card"
-                  className="flex items-center gap-4 p-6 bg-white border-2 border-gray-200 rounded-xl hover:border-primary-500 hover:shadow-lg transition-all text-left group"
-                >
-                  <div className="p-3 bg-primary-100 rounded-lg group-hover:bg-primary-500 transition-colors">
-                    <Zap className="w-7 h-7 text-primary-600 group-hover:text-white transition-colors" />
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="text-gray-900 font-bold text-lg group-hover:text-primary-600 transition-colors">
-                      {t('quickActions.quickMatch')}
-                    </h3>
-                    <p className="text-gray-500 text-sm">{t('quickActions.quickMatchDesc')}</p>
                   </div>
                 </motion.button>
               </div>
