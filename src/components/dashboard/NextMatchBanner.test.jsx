@@ -83,6 +83,26 @@ describe('NextMatchBanner', () => {
     });
   });
 
+  it('lets its text shrink instead of pushing the page wider', () => {
+    /**
+     * Visto en un iPhone: la banda vacia empujaba el ancho mas alla de la
+     * pantalla y la pagina entera acababa con scroll horizontal, desplazada.
+     * Los elementos fijos (barra inferior, avisos) seguian centrados, que es
+     * lo que delataba que era scroll y no un margen.
+     *
+     * Un hijo flex no encoge por debajo del ancho de su contenido salvo que
+     * lleve min-w-0, y el boton es flex-shrink-0.
+     */
+    renderBanner({ match: null });
+
+    const cta = screen.getByTestId('next-match-empty-cta');
+    const bloqueTexto = cta.querySelector('.min-w-0');
+
+    expect(bloqueTexto).not.toBeNull();
+    // El icono no debe deformarse al encoger el texto
+    expect(cta.querySelector('.flex-shrink-0')).not.toBeNull();
+  });
+
   it('shows a placeholder while loading, not the empty state', () => {
     // Enseñar el CTA de partida rapida antes de saber si hay partido seria
     // decirle que no tiene ninguno sin haberlo comprobado

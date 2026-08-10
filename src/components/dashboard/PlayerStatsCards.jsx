@@ -24,7 +24,9 @@ const StatCard = ({ icon: Icon, label, value, hint, tone, testId, onClick, ariaL
     onClick={onClick}
     type={onClick ? 'button' : undefined}
     aria-label={onClick ? ariaLabel : undefined}
-    className={`relative overflow-hidden rounded-xl border p-3 md:p-6 text-left ${tone.container} ${
+    // `min-w-0`: una columna de grid tampoco encoge por debajo del ancho de su
+    // contenido, así que sin esto una etiqueta larga desborda la rejilla
+    className={`relative min-w-0 overflow-hidden rounded-xl border p-3 md:p-6 text-left ${tone.container} ${
       onClick ? 'transition-shadow hover:shadow-md' : ''
     }`}
   >
