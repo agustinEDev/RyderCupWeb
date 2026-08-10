@@ -73,6 +73,18 @@
 }
 
 @layer components {
+  /* El contenedor de contenido de cada pantalla es un `flex-1` dentro de un
+     padre flex, y un hijo flex NO encoge por debajo del ancho de su contenido
+     salvo que se le permita explícitamente. Sin esto, un texto largo —el nombre
+     de un rival, el de un campo— estira el contenedor más allá del ancho de la
+     pantalla: el móvil acaba con scroll horizontal y la página desplazada, con
+     el contenido cortado por la izquierda mientras la navegación inferior y los
+     avisos (que son `fixed`) siguen en su sitio. Se arregla aquí y no en cada
+     una de las trece pantallas que usan la clase. */
+  .layout-content-container {
+    min-width: 0;
+  }
+
   .btn-primary {
     background-color: var(--color-primary-500);
     color: white;

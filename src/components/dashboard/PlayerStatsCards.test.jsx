@@ -31,10 +31,16 @@ describe('PlayerStatsCards', () => {
     tournamentsTotal: 3,
     tournamentsActive: 1,
     estimatedIndex: 12.8,
+    playingAvg: 16.4,
     roundsWithDifferential: 8,
   });
 
-  it('shows the handicap and the index side by side', () => {
+  it('shows the handicap next to the level actually being played', () => {
+    /**
+     * La media, no el indice. El indice mira solo las mejores vueltas —con
+     * tres, literalmente la mejor— asi que decia "juegas a 14.1" a un jugador
+     * que venia jugando a 18.9. Visto en produccion.
+     */
     render(
       <MemoryRouter>
         <PlayerStatsCards stats={fullStats} />
@@ -42,10 +48,11 @@ describe('PlayerStatsCards', () => {
     );
 
     expect(screen.getByText('14.2')).toBeInTheDocument();
-    expect(screen.getByText('12.8')).toBeInTheDocument();
+    expect(screen.getByText('16.4')).toBeInTheDocument();
+    expect(screen.queryByText('12.8')).not.toBeInTheDocument();
   });
 
-  it('shows how many rounds the index was calculated over', () => {
+  it('shows how many rounds the average was calculated over', () => {
     render(
       <MemoryRouter>
         <PlayerStatsCards stats={fullStats} />
