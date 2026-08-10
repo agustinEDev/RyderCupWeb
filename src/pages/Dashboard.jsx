@@ -88,6 +88,11 @@ const Dashboard = () => {
     // resumen, y si el backend tarda o falla, el resto del panel sigue siendo
     // útil. Un fallo deja las cifras en "--", que es lo mismo que enseña una
     // cuenta sin vueltas.
+    // Son datos personales: si el usuario cambia mientras una petición está en
+    // vuelo, la respuesta vieja no debe escribir nada. Sin este guardia podría
+    // llegar después de la nueva y dejar en pantalla las cifras de otra cuenta
+    let cancelled = false;
+
     const loadPlayerStats = async () => {
       if (!user) {
         setIsLoadingStats(false);
@@ -96,16 +101,27 @@ const Dashboard = () => {
 
       setIsLoadingStats(true);
       try {
-        setPlayerStats(await getPlayerStatsUseCase.execute());
+        const stats = await getPlayerStatsUseCase.execute();
+        if (!cancelled) {
+          setPlayerStats(stats);
+        }
       } catch (error) {
         console.error('Failed to load player stats:', error);
-        setPlayerStats(null);
+        if (!cancelled) {
+          setPlayerStats(null);
+        }
       } finally {
-        setIsLoadingStats(false);
+        if (!cancelled) {
+          setIsLoadingStats(false);
+        }
       }
     };
 
     loadPlayerStats();
+
+    return () => {
+      cancelled = true;
+    };
   }, [user]);
 
   // Only gate the full-page spinner on the initial load (no user yet).

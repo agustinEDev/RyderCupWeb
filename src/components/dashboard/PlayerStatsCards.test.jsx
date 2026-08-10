@@ -92,6 +92,31 @@ describe('PlayerStatsCards', () => {
     expect(screen.getByText('statistics.activeCount:0')).toBeInTheDocument();
   });
 
+  it('says nothing about active tournaments when the summary never arrived', () => {
+    /**
+     * Visto en pantalla antes de que nadie lo señalara: la tarjeta decia "1
+     * torneo / 0 activos" mientras el endpoint fallaba, y el valor real era 1
+     * activo. El total lo sabe la pagina; cuantos estan activos, no. Un cero
+     * ahi no es un hueco, es una cifra falsa.
+     */
+    render(<PlayerStatsCards stats={null} fallbackTournaments={1} />);
+
+    expect(screen.getByTestId('stat-card-tournaments')).toHaveTextContent('1');
+    expect(screen.queryByText('statistics.activeCount:0')).not.toBeInTheDocument();
+  });
+
+  it('says nothing about active tournaments while still loading', () => {
+    render(<PlayerStatsCards stats={fullStats} isLoading fallbackTournaments={1} />);
+
+    expect(screen.queryByText(/statistics.activeCount/)).not.toBeInTheDocument();
+  });
+
+  it('makes no claim about missing rounds while still loading', () => {
+    render(<PlayerStatsCards stats={null} isLoading />);
+
+    expect(screen.queryByText('statistics.needsMoreRounds')).not.toBeInTheDocument();
+  });
+
   it('holds back only the figures that need the request, while loading', () => {
     render(<PlayerStatsCards stats={fullStats} isLoading />);
 

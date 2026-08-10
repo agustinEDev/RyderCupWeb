@@ -122,11 +122,15 @@ const PlayerStatsCards = ({
         label={t('statistics.playingTo')}
         value={isLoading ? '--' : formatNumber(stats?.estimatedIndex)}
         hint={
-          <p className="mt-0.5 text-[10px] md:text-xs text-green-700">
-            {stats?.hasEstimatedIndex?.()
-              ? t('statistics.overRounds', { count: stats.roundsWithDifferential })
-              : t('statistics.needsMoreRounds')}
-          </p>
+          // Mientras el resumen no ha llegado no se puede decir ni que falten
+          // vueltas: eso ya sería una afirmación sobre datos que no se tienen
+          isLoading ? null : (
+            <p className="mt-0.5 text-[10px] md:text-xs text-green-700">
+              {stats?.hasEstimatedIndex?.()
+                ? t('statistics.overRounds', { count: stats.roundsWithDifferential })
+                : t('statistics.needsMoreRounds')}
+            </p>
+          )
         }
       />
 
@@ -138,9 +142,14 @@ const PlayerStatsCards = ({
         // Mismo motivo que el hándicap: la página ya cargó las competiciones
         value={stats?.tournamentsTotal ?? fallbackTournaments}
         hint={
-          <p className="mt-0.5 text-[10px] md:text-xs text-primary-600">
-            {t('statistics.activeCount', { count: stats?.tournamentsActive ?? 0 })}
-          </p>
+          // Cuántos están activos solo lo sabe el resumen: el total sí lo
+          // conoce la página, pero este dato no. Sin él se enseñaba "0
+          // activos", que no es un hueco, es una cifra falsa
+          stats && !isLoading ? (
+            <p className="mt-0.5 text-[10px] md:text-xs text-primary-600">
+              {t('statistics.activeCount', { count: stats.tournamentsActive })}
+            </p>
+          ) : null
         }
       />
     </div>
