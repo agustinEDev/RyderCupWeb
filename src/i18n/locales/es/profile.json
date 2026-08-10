@@ -144,5 +144,10 @@
     "avatarRemoved": "Foto de perfil eliminada.",
     "failedToRemoveAvatar": "Error al quitar la foto de perfil",
     "failedToLoadAvatarOptions": "Error al cargar las opciones de avatar."
-  }
+  },
+  "handicapLabel": "Hándicap",
+  "tournamentsLabel": "Torneos",
+  "updatedOn": "Actualizado: {{date}}",
+  "memberSince": "Miembro desde {{date}}",
+  "viewStats": "Ver mis estadísticas"
 }

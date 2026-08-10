@@ -21,6 +21,16 @@ class IPlayerStatsRepository {
   async getRecentMatches(limit) {
     throw new Error('Method not implemented: getRecentMatches');
   }
+
+  /**
+   * Estadísticas del jugador restringidas a un campo de golf
+   * @param {string} golfCourseId
+   * @returns {Promise<import('../entities/PlayerStats').default>}
+   */
+  // eslint-disable-next-line no-unused-vars
+  async getPlayerStatsByGolfCourse(golfCourseId) {
+    throw new Error('Method not implemented: getPlayerStatsByGolfCourse');
+  }
 }
 
 export default IPlayerStatsRepository;

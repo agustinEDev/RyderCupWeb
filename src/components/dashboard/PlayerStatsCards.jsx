@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router';
 import { TrendingUp, TrendingDown, Trophy, Target, Minus } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
@@ -13,10 +14,19 @@ import { useTranslation } from 'react-i18next';
  * vueltas. Enseñar uno sin el otro pierde justamente la comparación.
  */
 
-const StatCard = ({ icon: Icon, label, value, hint, tone, testId }) => (
-  <div
+const StatCard = ({ icon: Icon, label, value, hint, tone, testId, onClick, ariaLabel }) => {
+  // Una tarjeta que lleva a algún sitio tiene que ser un botón, no un div con
+  // un manejador: el teclado y los lectores de pantalla lo necesitan
+  const Tag = onClick ? 'button' : 'div';
+  return (
+  <Tag
     data-testid={testId}
-    className={`relative overflow-hidden rounded-xl border p-3 md:p-6 ${tone.container}`}
+    onClick={onClick}
+    type={onClick ? 'button' : undefined}
+    aria-label={onClick ? ariaLabel : undefined}
+    className={`relative overflow-hidden rounded-xl border p-3 md:p-6 text-left ${tone.container} ${
+      onClick ? 'transition-shadow hover:shadow-md' : ''
+    }`}
   >
     <div className={`inline-flex rounded-lg p-1.5 md:p-2.5 shadow-sm ${tone.iconBackground}`}>
       <Icon className="h-4 w-4 md:h-5 md:w-5 text-white" aria-hidden="true" />
@@ -27,8 +37,9 @@ const StatCard = ({ icon: Icon, label, value, hint, tone, testId }) => (
     <div className="pointer-events-none absolute -bottom-6 -right-6 hidden opacity-10 md:block">
       <Icon className={`h-32 w-32 ${tone.value}`} aria-hidden="true" />
     </div>
-  </div>
-);
+  </Tag>
+  );
+};
 
 const TONES = {
   handicap: {
@@ -69,6 +80,8 @@ const PlayerStatsCards = ({
   fallbackTournaments = 0,
 }) => {
   const { t } = useTranslation('dashboard');
+  const navigate = useNavigate();
+  const openStats = () => navigate('/stats');
 
   const formatNumber = (value) => (value === null || value === undefined ? '--' : value.toFixed(1));
 
@@ -86,6 +99,8 @@ const PlayerStatsCards = ({
         testId="stat-card-handicap"
         icon={TrendingUp}
         tone={TONES.handicap}
+        onClick={openStats}
+        ariaLabel={t('statistics.openStats')}
         label={t('statistics.handicap')}
         // Sin gatear por isLoading: el hándicap del perfil ya está, y parpadear
         // de "--" a "18" cuando llegan las estadísticas es peor que enseñarlo
@@ -119,6 +134,8 @@ const PlayerStatsCards = ({
         testId="stat-card-playing-to"
         icon={Target}
         tone={TONES.playing}
+        onClick={openStats}
+        ariaLabel={t('statistics.openStats')}
         label={t('statistics.playingTo')}
         value={isLoading ? '--' : formatNumber(stats?.estimatedIndex)}
         hint={

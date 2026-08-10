@@ -73,7 +73,12 @@ const MatchRow = ({ match, onOpen, t, formatDate }) => {
   );
 };
 
-const RecentMatches = ({ matches = [], isLoading = false, onCreateQuickMatch }) => {
+const RecentMatches = ({
+  matches = [],
+  isLoading = false,
+  onCreateQuickMatch,
+  titleKey = 'recentMatches.title',
+}) => {
   const { t, i18n } = useTranslation('dashboard');
   const navigate = useNavigate();
 
@@ -83,7 +88,7 @@ const RecentMatches = ({ matches = [], isLoading = false, onCreateQuickMatch }) 
   if (isLoading) {
     return (
       <section data-testid="recent-matches" aria-busy="true">
-        <h2 className="mb-3 text-xl font-bold text-gray-900">{t('recentMatches.title')}</h2>
+        <h2 className="mb-3 text-xl font-bold text-gray-900">{t(titleKey)}</h2>
         <div className="space-y-2">
           {[0, 1, 2].map((row) => (
             <div key={row} className="h-14 animate-pulse rounded-lg bg-gray-100" />
@@ -95,7 +100,7 @@ const RecentMatches = ({ matches = [], isLoading = false, onCreateQuickMatch }) 
 
   return (
     <section data-testid="recent-matches">
-      <h2 className="mb-3 text-xl font-bold text-gray-900">{t('recentMatches.title')}</h2>
+      <h2 className="mb-3 text-xl font-bold text-gray-900">{t(titleKey)}</h2>
 
       {matches.length === 0 ? (
         <div
@@ -104,15 +109,17 @@ const RecentMatches = ({ matches = [], isLoading = false, onCreateQuickMatch }) 
         >
           <p className="text-sm font-semibold text-gray-900">{t('recentMatches.emptyTitle')}</p>
           <p className="mt-1 text-xs text-gray-500">{t('recentMatches.emptyDescription')}</p>
-          <button
-            type="button"
-            onClick={onCreateQuickMatch}
-            data-testid="recent-matches-empty-cta"
-            className="mt-4 inline-flex items-center gap-2 rounded-lg bg-primary-500 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-600"
-          >
-            <Zap className="h-4 w-4" aria-hidden="true" />
-            {t('recentMatches.emptyAction')}
-          </button>
+          {onCreateQuickMatch && (
+            <button
+              type="button"
+              onClick={onCreateQuickMatch}
+              data-testid="recent-matches-empty-cta"
+              className="mt-4 inline-flex items-center gap-2 rounded-lg bg-primary-500 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-600"
+            >
+              <Zap className="h-4 w-4" aria-hidden="true" />
+              {t('recentMatches.emptyAction')}
+            </button>
+          )}
         </div>
       ) : (
         <div className="rounded-xl border border-gray-200 px-3">

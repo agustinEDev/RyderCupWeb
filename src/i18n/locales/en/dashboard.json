@@ -14,7 +14,8 @@
     "activeCount_other": "{{count}} active",
     "trendImproving": "improving",
     "trendWorsening": "getting worse",
-    "trendSteady": "no change"
+    "trendSteady": "no change",
+    "openStats": "See all my statistics"
   },
   "quickActions": {
     "title": "Quick Actions",
@@ -107,5 +108,29 @@
       "MEDAL": "Medal",
       "STABLEFORD": "Stableford"
     }
+  },
+  "playerStats": {
+    "title": "My statistics",
+    "subtitle": "How you are playing, across every round and course by course",
+    "allCourses": "All courses",
+    "roundsPlayed": "Rounds",
+    "scoringAvg": "Average to par",
+    "scoringAvgHint": "Net strokes against par",
+    "estimatedIndex": "Playing to",
+    "bestRound": "Best round",
+    "levelPar": "PAR",
+    "overRounds_one": "over {{count}} round",
+    "overRounds_other": "over {{count}} rounds",
+    "needsMoreRounds": "Play more rounds",
+    "notOfficial": "This index is the app's own calculation from your rounds. It is not your official federation handicap: it leaves out the adjustment for each day's playing conditions.",
+    "historyTitle": "All your matches",
+    "emptyTitle": "No statistics yet",
+    "emptyDescription": "As soon as you finish a full round, you will start seeing how you play here",
+    "emptyCourseTitle": "No complete rounds on this course",
+    "emptyCourseDescription": "Only rounds finished with the whole card count",
+    "roundsWithoutTee_one": "Calculated over {{counted}} of your {{count}} round: the other has no tee recorded, and without it there is no way to measure how hard the course played.",
+    "roundsWithoutTee_other": "Calculated over {{counted}} of your {{count}} rounds: the rest have no tee recorded, and without it there is no way to measure how hard the course played.",
+    "noRoundsWithTee_one": "Your round has no tee recorded, and without it there is no way to measure how hard the course played.",
+    "noRoundsWithTee_other": "None of your {{count}} rounds have a tee recorded, and without it there is no way to measure how hard the course played."
   }
 }
