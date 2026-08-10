@@ -131,6 +131,8 @@
     "roundsWithoutTee_one": "Calculated over {{counted}} of your {{count}} round: the other has no tee recorded, and without it there is no way to measure how hard the course played.",
     "roundsWithoutTee_other": "Calculated over {{counted}} of your {{count}} rounds: the rest have no tee recorded, and without it there is no way to measure how hard the course played.",
     "noRoundsWithTee_one": "Your round has no tee recorded, and without it there is no way to measure how hard the course played.",
-    "noRoundsWithTee_other": "None of your {{count}} rounds have a tee recorded, and without it there is no way to measure how hard the course played."
+    "noRoundsWithTee_other": "None of your {{count}} rounds have a tee recorded, and without it there is no way to measure how hard the course played.",
+    "playingAverage": "Playing to",
+    "estimatedIndexExplained": "It comes from your best rounds, not all of them: it says what you are capable of, not the level you have been playing at. With few rounds it is calculated from your best one, so it is slow to reflect a bad run."
   }
 }

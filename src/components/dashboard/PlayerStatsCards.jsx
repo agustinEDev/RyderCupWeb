@@ -137,13 +137,19 @@ const PlayerStatsCards = ({
         onClick={openStats}
         ariaLabel={t('statistics.openStats')}
         label={t('statistics.playingTo')}
-        value={isLoading ? '--' : formatNumber(stats?.estimatedIndex)}
+        // La media de las vueltas recientes, no el índice estimado. El índice
+        // mira solo las mejores —con tres vueltas, literalmente la mejor— así
+        // que decía "juegas a 14.1" a quien venía jugando a 18.9. Dice de lo
+        // que el jugador es capaz, no a lo que está jugando, que es lo que
+        // esta tarjeta promete. El índice vive en /stats, donde hay sitio para
+        // explicar qué significa
+        value={isLoading ? '--' : formatNumber(stats?.playingAvg)}
         hint={
           // Mientras el resumen no ha llegado no se puede decir ni que falten
           // vueltas: eso ya sería una afirmación sobre datos que no se tienen
           isLoading ? null : (
             <p className="mt-0.5 text-[10px] md:text-xs text-green-700">
-              {stats?.hasEstimatedIndex?.()
+              {stats?.hasPlayingAverage?.()
                 ? t('statistics.overRounds', { count: stats.roundsWithDifferential })
                 : t('statistics.needsMoreRounds')}
             </p>

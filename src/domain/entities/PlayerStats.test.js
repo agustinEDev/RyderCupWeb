@@ -130,6 +130,50 @@ describe('PlayerStats', () => {
     });
   });
 
+  describe('hasPlayingAverage', () => {
+    it('is true with a single round, unlike the index', () => {
+      // Una vuelta ya dice a que nivel se jugo ese dia; el indice necesita tres
+      const stats = PlayerStats.fromPersistence({ playingAvg: 18.9, roundsPlayed: 1 });
+
+      expect(stats.hasPlayingAverage()).toBe(true);
+      expect(stats.hasEstimatedIndex()).toBe(false);
+    });
+
+    it('is false on an empty account', () => {
+      expect(PlayerStats.empty().hasPlayingAverage()).toBe(false);
+    });
+
+    it('keeps a scratch average of exactly zero', () => {
+      expect(PlayerStats.fromPersistence({ playingAvg: 0 }).hasPlayingAverage()).toBe(true);
+    });
+  });
+
+  describe('the gap the index leaves with few rounds', () => {
+    /**
+     * Caso real de produccion (10 ago 2026): tres vueltas, diferenciales
+     * [16.1, 24.6, 16.1]. El indice salio 14.1 —la mejor menos 2.0, por la
+     * tabla WHS— mientras el jugador venia jugando a 18.9. Ambos numeros son
+     * correctos; lo que engañaba era enseñar el primero bajo la etiqueta
+     * "juegas a".
+     */
+    it('separates what the player is capable of from what they are playing', () => {
+      const stats = PlayerStats.fromPersistence({
+        handicap: 18,
+        estimatedIndex: 14.1,
+        playingAvg: 18.9,
+        bestDifferential: 16.1,
+        differentials: [16.1, 24.6, 16.1],
+        roundsPlayed: 3,
+        roundsWithDifferential: 3,
+      });
+
+      // El indice mejora sobre el handicap; la media dice que se juega a el
+      expect(stats.isPlayingBetterThanHandicap()).toBe(true);
+      expect(stats.playingAvg).toBeGreaterThan(stats.estimatedIndex);
+      expect(stats.playingAvg).toBeGreaterThan(stats.handicap);
+    });
+  });
+
   describe('isImproving', () => {
     it('reads a negative trend as improvement', () => {
       // Los diferenciales bajan al jugar mejor, igual que baja un hándicap

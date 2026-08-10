@@ -247,12 +247,12 @@ const PlayerStatsPage = () => {
                       hint={t('playerStats.scoringAvgHint')}
                     />
                     <StatBlock
-                      testId="stat-index"
+                      testId="stat-playing-avg"
                       icon={TrendIcon}
-                      label={t('playerStats.estimatedIndex')}
-                      value={format(shown.estimatedIndex)}
+                      label={t('playerStats.playingAverage')}
+                      value={format(shown.playingAvg)}
                       hint={
-                        shown.hasEstimatedIndex()
+                        shown.hasPlayingAverage()
                           ? t('playerStats.overRounds', { count: shown.roundsWithDifferential })
                           : t('playerStats.needsMoreRounds')
                       }
@@ -282,7 +282,28 @@ const PlayerStatsPage = () => {
                     </p>
                   )}
 
-                  <p className="mt-3 text-xs text-gray-400">{t('playerStats.notOfficial')}</p>
+                  {/* El índice se saca del resumen y se explica aparte: mira
+                      solo las mejores vueltas, así que sin contexto se lee como
+                      el nivel al que se está jugando, que es otra cosa */}
+                  <div
+                    data-testid="estimated-index-block"
+                    className="mt-4 rounded-xl border border-gray-200 bg-gray-50 p-4"
+                  >
+                    <div className="flex items-baseline justify-between gap-3">
+                      <span className="text-sm font-semibold text-gray-900">
+                        {t('playerStats.estimatedIndex')}
+                      </span>
+                      <span className="text-2xl font-bold text-gray-900">
+                        {format(shown.estimatedIndex)}
+                      </span>
+                    </div>
+                    <p className="mt-1 text-xs text-gray-500">
+                      {shown.hasEstimatedIndex()
+                        ? t('playerStats.estimatedIndexExplained')
+                        : t('playerStats.needsMoreRounds')}
+                    </p>
+                    <p className="mt-2 text-xs text-gray-400">{t('playerStats.notOfficial')}</p>
+                  </div>
                 </>
               ) : (
                 <div

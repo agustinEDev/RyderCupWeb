@@ -121,6 +121,16 @@ class PlayerStats {
   }
 
   /**
+   * Si hay una media de juego que enseñar.
+   *
+   * A diferencia del índice, no exige un mínimo de vueltas: una sola ya dice a
+   * qué nivel se jugó ese día.
+   */
+  hasPlayingAverage() {
+    return this.#playingAvg !== null && this.#playingAvg !== undefined;
+  }
+
+  /**
    * Si el índice se calculó sobre menos vueltas de las que el jugador ha
    * jugado, porque a alguna le faltaba el tee.
    *

@@ -131,6 +131,8 @@
     "roundsWithoutTee_one": "Calculado sobre {{counted}} de tu {{count}} vuelta: a la otra le falta el tee con el que jugaste, y sin él no se puede medir la dificultad del campo.",
     "roundsWithoutTee_other": "Calculado sobre {{counted}} de tus {{count}} vueltas: al resto les falta el tee con el que jugaste, y sin él no se puede medir la dificultad del campo.",
     "noRoundsWithTee_one": "Tu vuelta no tiene registrado el tee con el que jugaste, y sin él no se puede medir la dificultad del campo.",
-    "noRoundsWithTee_other": "Ninguna de tus {{count}} vueltas tiene registrado el tee con el que jugaste, y sin él no se puede medir la dificultad del campo."
+    "noRoundsWithTee_other": "Ninguna de tus {{count}} vueltas tiene registrado el tee con el que jugaste, y sin él no se puede medir la dificultad del campo.",
+    "playingAverage": "Juegas a",
+    "estimatedIndexExplained": "Sale de tus mejores vueltas, no de todas: dice de lo que eres capaz, no el nivel al que vienes jugando. Con pocas vueltas se calcula sobre la mejor, así que tarda en reflejar una mala racha."
   }
 }
