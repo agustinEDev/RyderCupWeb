@@ -34,6 +34,7 @@ const VerifyEmail = lazyWithRetry(() => import('./pages/VerifyEmail'));
 const ForgotPassword = lazyWithRetry(() => import('./pages/ForgotPassword'));
 const ResetPassword = lazyWithRetry(() => import('./pages/ResetPassword'));
 const Dashboard = lazyWithRetry(() => import('./pages/Dashboard'));
+const PlayerStatsPage = lazyWithRetry(() => import('./pages/PlayerStatsPage'));
 const Profile = lazyWithRetry(() => import('./pages/Profile'));
 const EditProfile = lazyWithRetry(() => import('./pages/EditProfile'));
 const DeviceManagement = lazyWithRetry(() => import('./pages/DeviceManagement'));
@@ -264,6 +265,7 @@ function AppContent() {
         {/* Protected routes */}
         <Route path="/auth/complete-profile" element={<ProtectedRoute><CompleteProfile /></ProtectedRoute>} />
         <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+        <Route path="/stats" element={<ProtectedRoute><PlayerStatsPage /></ProtectedRoute>} />
         <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
         <Route path="/profile/edit" element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />
         <Route path="/profile/devices" element={<ProtectedRoute><DeviceManagement /></ProtectedRoute>} />

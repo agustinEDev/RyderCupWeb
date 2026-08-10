@@ -144,5 +144,10 @@
     "avatarRemoved": "Profile photo removed.",
     "failedToRemoveAvatar": "Failed to remove profile photo",
     "failedToLoadAvatarOptions": "Failed to load avatar options."
-  }
+  },
+  "handicapLabel": "Handicap",
+  "tournamentsLabel": "Tournaments",
+  "updatedOn": "Updated: {{date}}",
+  "memberSince": "Member since {{date}}",
+  "viewStats": "See my statistics"
 }

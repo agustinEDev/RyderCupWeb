@@ -9,6 +9,7 @@ import apiRequest from '../../services/api.js';
  * Endpoints:
  * - GET /api/v1/users/me/stats
  * - GET /api/v1/users/me/matches
+ * - GET /api/v1/users/me/stats/golf-courses/{id}
  */
 class ApiPlayerStatsRepository extends IPlayerStatsRepository {
   constructor() {
@@ -24,6 +25,13 @@ class ApiPlayerStatsRepository extends IPlayerStatsRepository {
     const query = limit ? `?limit=${limit}` : '';
     const apiData = await apiRequest(`/api/v1/users/me/matches${query}`);
     return RecentMatchMapper.toDomainList(apiData?.matches);
+  }
+
+  async getPlayerStatsByGolfCourse(golfCourseId) {
+    const apiData = await apiRequest(
+      `/api/v1/users/me/stats/golf-courses/${encodeURIComponent(golfCourseId)}`
+    );
+    return PlayerStatsMapper.toDomain(apiData);
   }
 }
 

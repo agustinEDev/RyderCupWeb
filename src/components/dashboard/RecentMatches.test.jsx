@@ -71,6 +71,26 @@ describe('RecentMatches', () => {
     );
   });
 
+  it('does not repeat the format when it is already the headline', () => {
+    /**
+     * Visto en el navegador con una vuelta en solitario: sin rival ni torneo el
+     * titular cae al formato, y el subtitulo lo repetia -> "Medal / Medal · St
+     * Andrews".
+     */
+    const soloRound = RecentMatch.fromPersistence({
+      id: 'qm-solo',
+      scoringFormat: 'MEDAL',
+      golfCourseName: 'St Andrews',
+      score: 'PAR',
+    });
+
+    renderList({ matches: [soloRound] });
+
+    const row = screen.getByTestId('recent-match-qm-solo');
+    expect(row.textContent.match(/recentMatches\.format\.MEDAL/g)).toHaveLength(1);
+    expect(row).toHaveTextContent('St Andrews');
+  });
+
   it('still shows the opponent as the headline', () => {
     renderList({ matches: [tournamentWin] });
 

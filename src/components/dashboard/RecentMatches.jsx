@@ -19,6 +19,12 @@ const RESULT_TONES = {
 const MatchRow = ({ match, onOpen, t, formatDate }) => {
   const opponents = match.opponents.join(', ');
   const format = match.matchFormat || match.scoringFormat;
+  const formatLabel = format ? t(`recentMatches.format.${format}`, format) : null;
+  // El titular es el rival, o el torneo, o —en una vuelta en solitario— el
+  // propio formato. En ese último caso el subtítulo no lo repite: decir
+  // "Medal / Medal · St Andrews" no añade nada
+  const headline = opponents || match.tournamentName || formatLabel;
+  const repeatsHeadline = headline === formatLabel;
 
   return (
     <button
@@ -46,12 +52,12 @@ const MatchRow = ({ match, onOpen, t, formatDate }) => {
 
       <span className="min-w-0 flex-1">
         <span className="block truncate text-sm font-semibold text-gray-900">
-          {opponents || match.tournamentName || t(`recentMatches.format.${format}`, format)}
+          {headline}
         </span>
         {/* El formato va aquí y no como último recurso: es lo que distingue dos
             partidas contra el mismo rival, en el mismo campo y el mismo día */}
         <span className="block truncate text-xs text-gray-500">
-          {[format && t(`recentMatches.format.${format}`, format), match.golfCourseName]
+          {[repeatsHeadline ? null : formatLabel, match.golfCourseName]
             .filter(Boolean)
             .join(' · ')}
         </span>
@@ -73,7 +79,12 @@ const MatchRow = ({ match, onOpen, t, formatDate }) => {
   );
 };
 
-const RecentMatches = ({ matches = [], isLoading = false, onCreateQuickMatch }) => {
+const RecentMatches = ({
+  matches = [],
+  isLoading = false,
+  onCreateQuickMatch,
+  titleKey = 'recentMatches.title',
+}) => {
   const { t, i18n } = useTranslation('dashboard');
   const navigate = useNavigate();
 
@@ -83,7 +94,7 @@ const RecentMatches = ({ matches = [], isLoading = false, onCreateQuickMatch }) 
   if (isLoading) {
     return (
       <section data-testid="recent-matches" aria-busy="true">
-        <h2 className="mb-3 text-xl font-bold text-gray-900">{t('recentMatches.title')}</h2>
+        <h2 className="mb-3 text-xl font-bold text-gray-900">{t(titleKey)}</h2>
         <div className="space-y-2">
           {[0, 1, 2].map((row) => (
             <div key={row} className="h-14 animate-pulse rounded-lg bg-gray-100" />
@@ -95,7 +106,7 @@ const RecentMatches = ({ matches = [], isLoading = false, onCreateQuickMatch }) 
 
   return (
     <section data-testid="recent-matches">
-      <h2 className="mb-3 text-xl font-bold text-gray-900">{t('recentMatches.title')}</h2>
+      <h2 className="mb-3 text-xl font-bold text-gray-900">{t(titleKey)}</h2>
 
       {matches.length === 0 ? (
         <div
@@ -104,15 +115,17 @@ const RecentMatches = ({ matches = [], isLoading = false, onCreateQuickMatch }) 
         >
           <p className="text-sm font-semibold text-gray-900">{t('recentMatches.emptyTitle')}</p>
           <p className="mt-1 text-xs text-gray-500">{t('recentMatches.emptyDescription')}</p>
-          <button
-            type="button"
-            onClick={onCreateQuickMatch}
-            data-testid="recent-matches-empty-cta"
-            className="mt-4 inline-flex items-center gap-2 rounded-lg bg-primary-500 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-600"
-          >
-            <Zap className="h-4 w-4" aria-hidden="true" />
-            {t('recentMatches.emptyAction')}
-          </button>
+          {onCreateQuickMatch && (
+            <button
+              type="button"
+              onClick={onCreateQuickMatch}
+              data-testid="recent-matches-empty-cta"
+              className="mt-4 inline-flex items-center gap-2 rounded-lg bg-primary-500 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-600"
+            >
+              <Zap className="h-4 w-4" aria-hidden="true" />
+              {t('recentMatches.emptyAction')}
+            </button>
+          )}
         </div>
       ) : (
         <div className="rounded-xl border border-gray-200 px-3">

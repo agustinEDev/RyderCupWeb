@@ -128,6 +128,7 @@ import ApiPlayerStatsRepository from '../infrastructure/repositories/ApiPlayerSt
 import GetPlayerStatsUseCase from '../application/use_cases/player_stats/GetPlayerStatsUseCase';
 import GetRecentMatchesUseCase from '../application/use_cases/player_stats/GetRecentMatchesUseCase';
 import GetUpcomingMatchesUseCase from '../application/use_cases/schedule/GetUpcomingMatchesUseCase';
+import GetPlayerStatsByGolfCourseUseCase from '../application/use_cases/player_stats/GetPlayerStatsByGolfCourseUseCase';
 
 // Scoring Use Cases (Sprint 4)
 import ApiScoringRepository from '../infrastructure/repositories/ApiScoringRepository';
@@ -274,6 +275,7 @@ const listPendingFriendRequestsUseCase = new ListPendingFriendRequestsUseCase({ 
 const apiPlayerStatsRepository = new ApiPlayerStatsRepository();
 const getPlayerStatsUseCase = new GetPlayerStatsUseCase({ playerStatsRepository: apiPlayerStatsRepository });
 const getRecentMatchesUseCase = new GetRecentMatchesUseCase({ playerStatsRepository: apiPlayerStatsRepository });
+const getPlayerStatsByGolfCourseUseCase = new GetPlayerStatsByGolfCourseUseCase({ playerStatsRepository: apiPlayerStatsRepository });
 
 // Scoring Use Cases (Sprint 4)
 const getScoringViewUseCase = new GetScoringViewUseCase({ scoringRepository: apiScoringRepository });
@@ -449,6 +451,7 @@ export {
   getPlayerStatsUseCase,
   getRecentMatchesUseCase,
   getUpcomingMatchesUseCase,
+  getPlayerStatsByGolfCourseUseCase,
   listPendingFriendRequestsUseCase,
   // Scoring Use Cases (Sprint 4)
   getScoringViewUseCase,

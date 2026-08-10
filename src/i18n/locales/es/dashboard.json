@@ -14,7 +14,8 @@
     "activeCount_other": "{{count}} activos",
     "trendImproving": "mejorando",
     "trendWorsening": "empeorando",
-    "trendSteady": "sin cambios"
+    "trendSteady": "sin cambios",
+    "openStats": "Ver todas mis estadísticas"
   },
   "quickActions": {
     "title": "Acciones Rápidas",
@@ -107,5 +108,29 @@
       "MEDAL": "Medal",
       "STABLEFORD": "Stableford"
     }
+  },
+  "playerStats": {
+    "title": "Mis estadísticas",
+    "subtitle": "Cómo estás jugando, en todas tus vueltas y campo a campo",
+    "allCourses": "Todos los campos",
+    "roundsPlayed": "Vueltas",
+    "scoringAvg": "Media al par",
+    "scoringAvgHint": "Golpes netos respecto al par",
+    "estimatedIndex": "Juegas a",
+    "bestRound": "Mejor vuelta",
+    "levelPar": "PAR",
+    "overRounds_one": "sobre {{count}} vuelta",
+    "overRounds_other": "sobre {{count}} vueltas",
+    "needsMoreRounds": "Juega más vueltas",
+    "notOfficial": "Este índice lo calcula la app a partir de tus vueltas. No es tu hándicap oficial de la federación: no incluye el ajuste por las condiciones de juego de cada día.",
+    "historyTitle": "Todas tus partidas",
+    "emptyTitle": "Todavía no hay estadísticas",
+    "emptyDescription": "En cuanto termines una vuelta entera, empezarás a ver aquí cómo juegas",
+    "emptyCourseTitle": "Sin vueltas completas en este campo",
+    "emptyCourseDescription": "Solo cuentan las vueltas terminadas con la tarjeta entera",
+    "roundsWithoutTee_one": "Calculado sobre {{counted}} de tu {{count}} vuelta: a la otra le falta el tee con el que jugaste, y sin él no se puede medir la dificultad del campo.",
+    "roundsWithoutTee_other": "Calculado sobre {{counted}} de tus {{count}} vueltas: al resto les falta el tee con el que jugaste, y sin él no se puede medir la dificultad del campo.",
+    "noRoundsWithTee_one": "Tu vuelta no tiene registrado el tee con el que jugaste, y sin él no se puede medir la dificultad del campo.",
+    "noRoundsWithTee_other": "Ninguna de tus {{count}} vueltas tiene registrado el tee con el que jugaste, y sin él no se puede medir la dificultad del campo."
   }
 }

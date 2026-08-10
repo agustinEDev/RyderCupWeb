@@ -203,7 +203,7 @@ const Profile = () => {
                     {/* Member Since */}
                     <div className="flex items-center gap-2 text-gray-600 mb-2">
                       <Calendar className="w-4 h-4" />
-                      <span className="text-sm">Member since {memberSince}</span>
+                      <span className="text-sm">{t('memberSince', { date: memberSince })}</span>
                     </div>
 
                     {/* Last Updated */}
@@ -244,18 +244,18 @@ const Profile = () => {
                     <div className="bg-white/80 backdrop-blur rounded-lg p-4 border border-primary-200">
                       <div className="flex items-center gap-2 mb-1">
                         <TrendingUp className="w-5 h-5 text-accent-600" />
-                        <span className="text-xs text-gray-500 font-medium">Handicap</span>
+                        <span className="text-xs text-gray-500 font-medium">{t('handicapLabel')}</span>
                       </div>
                       <p className="text-2xl font-bold text-gray-900">{handicap}</p>
                       {handicap !== 'Not set' && (
-                        <p className="text-xs text-gray-500 mt-1">Updated: {handicapUpdated}</p>
+                        <p className="text-xs text-gray-500 mt-1">{t('updatedOn', { date: handicapUpdated })}</p>
                       )}
                     </div>
 
                     <div className="bg-white/80 backdrop-blur rounded-lg p-4 border border-primary-200">
                       <div className="flex items-center gap-2 mb-1">
                         <Award className="w-5 h-5 text-primary-600" />
-                        <span className="text-xs text-gray-500 font-medium">Tournaments</span>
+                        <span className="text-xs text-gray-500 font-medium">{t('tournamentsLabel')}</span>
                       </div>
                       <p className="text-2xl font-bold text-gray-900">{competitionsCount}</p>
                       <p className="text-xs text-gray-500 mt-1">
@@ -264,6 +264,17 @@ const Profile = () => {
                       </p>
                     </div>
                   </div>
+
+                  {/* El perfil enseña dos cifras; el resto vive en su propia
+                      página desde FE #306 fase 2 */}
+                  <button
+                    type="button"
+                    onClick={() => navigate('/stats')}
+                    data-testid="profile-view-stats"
+                    className="mt-3 text-sm font-semibold text-primary-700 hover:text-primary-900 hover:underline"
+                  >
+                    {t('viewStats')}
+                  </button>
                 </div>
               </div>
             </motion.div>
