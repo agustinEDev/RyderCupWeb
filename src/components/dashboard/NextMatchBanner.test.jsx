@@ -95,12 +95,13 @@ describe('NextMatchBanner', () => {
      */
     renderBanner({ match: null });
 
-    const cta = screen.getByTestId('next-match-empty-cta');
-    const bloqueTexto = cta.querySelector('.min-w-0');
-
-    expect(bloqueTexto).not.toBeNull();
+    // Cada elemento por su testid: buscar por clase podia dar con el span de
+    // fuera o con el boton, y el test seguiria pasando aunque el bloque de
+    // texto perdiera su min-w-0
+    expect(screen.getByTestId('next-match-empty-content').className).toContain('min-w-0');
+    expect(screen.getByTestId('next-match-empty-text').className).toContain('min-w-0');
     // El icono no debe deformarse al encoger el texto
-    expect(cta.querySelector('.flex-shrink-0')).not.toBeNull();
+    expect(screen.getByTestId('next-match-empty-icon').className).toContain('flex-shrink-0');
   });
 
   it('shows a placeholder while loading, not the empty state', () => {

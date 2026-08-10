@@ -36,11 +36,11 @@ const NextMatchBanner = ({ match, isLoading = false, onCreateQuickMatch }) => {
             ancho de su contenido salvo que se le diga, así que sin esto el
             texto largo empujaba la banda más allá de la pantalla y la página
             entera acababa con scroll horizontal */}
-        <span className="flex min-w-0 items-center gap-3">
-          <span className="flex-shrink-0 rounded-lg bg-primary-500 p-2">
+        <span data-testid="next-match-empty-content" className="flex min-w-0 items-center gap-3">
+          <span data-testid="next-match-empty-icon" className="flex-shrink-0 rounded-lg bg-primary-500 p-2">
             <Zap className="h-5 w-5 text-white" aria-hidden="true" />
           </span>
-          <span className="min-w-0">
+          <span data-testid="next-match-empty-text" className="min-w-0">
             <span className="block text-sm font-bold text-primary-900">
               {t('nextMatch.emptyTitle')}
             </span>

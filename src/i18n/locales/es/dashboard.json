@@ -118,7 +118,7 @@
     "roundsPlayed": "Vueltas",
     "scoringAvg": "Media al par",
     "scoringAvgHint": "Golpes netos respecto al par",
-    "estimatedIndex": "Juegas a",
+    "estimatedIndex": "Índice estimado",
     "bestRound": "Mejor vuelta",
     "levelPar": "PAR",
     "overRounds_one": "sobre {{count}} vuelta",

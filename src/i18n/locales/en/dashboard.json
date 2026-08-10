@@ -118,7 +118,7 @@
     "roundsPlayed": "Rounds",
     "scoringAvg": "Average to par",
     "scoringAvgHint": "Net strokes against par",
-    "estimatedIndex": "Playing to",
+    "estimatedIndex": "Estimated index",
     "bestRound": "Best round",
     "levelPar": "PAR",
     "overRounds_one": "over {{count}} round",
