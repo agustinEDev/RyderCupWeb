@@ -55,24 +55,40 @@ const MatchRow = ({ match, onOpen, t, formatDate }) => {
           {headline}
         </span>
         {/* El formato va aquí y no como último recurso: es lo que distingue dos
-            partidas contra el mismo rival, en el mismo campo y el mismo día */}
+            partidas contra el mismo rival, en el mismo campo y el mismo día. El
+            marcador del match play le acompaña, porque es con lo que uno cuenta
+            la partida después ("le gané 3 y 2") */}
         <span className="block truncate text-xs text-gray-500">
-          {[repeatsHeadline ? null : formatLabel, match.golfCourseName]
+          {[
+            repeatsHeadline ? null : formatLabel,
+            match.hasResult() ? match.score : null,
+            match.golfCourseName,
+          ]
             .filter(Boolean)
             .join(' · ')}
         </span>
       </span>
 
       <span className="flex flex-shrink-0 flex-col items-end">
-        {(match.score || match.stablefordPoints !== null) && (
-          <span className="text-sm font-bold text-gray-900">
-            {match.stablefordPoints !== null
-              ? t('recentMatches.points', { count: match.stablefordPoints })
-              : match.score}
+        {/* Los puntos mandan visualmente porque son lo único comparable entre
+            vueltas: 36 es jugar a tu hándicap, en cualquier campo y formato */}
+        {match.stablefordPoints !== null ? (
+          <span className="text-base font-bold text-gray-900">
+            {t('recentMatches.points', { count: match.stablefordPoints })}
+          </span>
+        ) : (
+          match.score && (
+            <span className="text-base font-bold text-gray-900">{match.score}</span>
+          )
+        )}
+        {match.totalStrokes !== null && (
+          <span className="text-[11px] text-gray-500">
+            {t('recentMatches.strokesOverHoles', {
+              strokes: match.totalStrokes,
+              count: match.holesPlayed ?? 18,
+            })}
           </span>
         )}
-        {/* La fecha sale del subtítulo para dejarle sitio al formato, y porque
-            aquí no compite por el ancho con el nombre del campo */}
         <span className="text-[10px] text-gray-400">{formatDate(match.date)}</span>
       </span>
     </button>

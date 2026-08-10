@@ -1,10 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router';
 import { motion } from 'framer-motion';
-import { Trophy, Zap } from 'lucide-react';
+import { Trophy, Zap, Pencil } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import HeaderAuth from '../components/layout/HeaderAuth';
-import ProfileCard from '../components/profile/ProfileCard';
+import Avatar from '../components/ui/Avatar';
 import HandicapRequestModal from '../components/profile/HandicapRequestModal';
 import EmailVerificationBanner from '../components/EmailVerificationBanner';
 import PendingActionsCard from '../components/dashboard/PendingActionsCard';
@@ -256,18 +256,26 @@ const Dashboard = () => {
             variants={staggerContainer}
             className="layout-content-container flex flex-col max-w-[960px] flex-1"
           >
-            {/* Welcome Message */}
-            <motion.div
-              variants={slideUp}
-              className="flex flex-wrap justify-between gap-3 p-4"
-            >
-              <div>
-                <p className="text-gray-900 tracking-tight text-3xl md:text-[32px] font-bold leading-tight">
+            {/* Bienvenida y perfil en una sola pieza: la tarjeta que había
+                debajo repetía el nombre y el hándicap, y de nuevo solo aportaba
+                el correo y el acceso a cambiar la foto */}
+            <motion.div variants={slideUp} className="flex items-center gap-3 p-4">
+              <button
+                type="button"
+                onClick={() => navigate('/profile/edit')}
+                aria-label={t('changePhoto')}
+                className="group relative flex-shrink-0 rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              >
+                <Avatar userId={user.id} size="lg" version={user.updated_at} />
+                <span className="absolute inset-0 flex items-center justify-center rounded-full bg-black/0 transition-colors group-hover:bg-black/40">
+                  <Pencil className="h-5 w-5 text-white opacity-0 transition-opacity group-hover:opacity-100" />
+                </span>
+              </button>
+              <div className="min-w-0">
+                <p className="truncate text-2xl md:text-3xl font-bold leading-tight tracking-tight text-gray-900">
                   {t('welcome', { name: firstName })}
                 </p>
-                <p className="text-gray-500 text-sm mt-1">
-                  {t('activitySummary')}
-                </p>
+                <p className="truncate text-sm text-gray-500">{user.email}</p>
               </div>
             </motion.div>
 
@@ -323,9 +331,6 @@ const Dashboard = () => {
                 {tQuickMatch('dashboard.viewHistory')}
               </button>
             </motion.div>
-
-            {/* Profile Card */}
-            <ProfileCard user={user} />
 
             {/* Quick Actions */}
             <motion.div

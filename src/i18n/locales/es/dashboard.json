@@ -107,7 +107,9 @@
       "FOURSOMES": "Foursomes",
       "MEDAL": "Medal",
       "STABLEFORD": "Stableford"
-    }
+    },
+    "strokesOverHoles_one": "{{strokes}} golpes · {{count}} hoyo",
+    "strokesOverHoles_other": "{{strokes}} golpes · {{count}} hoyos"
   },
   "playerStats": {
     "title": "Mis estadísticas",
@@ -134,5 +136,6 @@
     "noRoundsWithTee_other": "Ninguna de tus {{count}} vueltas tiene registrado el tee con el que jugaste, y sin él no se puede medir la dificultad del campo.",
     "playingAverage": "Juegas a",
     "estimatedIndexExplained": "Sale de tus mejores vueltas, no de todas: dice de lo que eres capaz, no el nivel al que vienes jugando. Con pocas vueltas se calcula sobre la mejor, así que tarda en reflejar una mala racha."
-  }
+  },
+  "changePhoto": "Cambiar foto de perfil"
 }
