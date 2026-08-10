@@ -4,11 +4,7 @@ import { Loader, Flag, Calendar, Play } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import HeaderAuth from '../../components/layout/HeaderAuth';
 import { useAuth } from '../../hooks/useAuth';
-import {
-  listUserCompetitionsUseCase,
-  getScheduleUseCase,
-  listEnrollmentsUseCase,
-} from '../../composition';
+import { getUpcomingMatchesUseCase } from '../../composition';
 
 const UpcomingMatchesPage = () => {
   const { t } = useTranslation('dashboard');
@@ -26,75 +22,10 @@ const UpcomingMatchesPage = () => {
 
     setIsLoading(true);
     try {
-      const competitions = await listUserCompetitionsUseCase.execute(user.id);
-      const activeComps = (competitions || []).filter(
-        (c) => c.status === 'IN_PROGRESS'
-      );
-
-      if (activeComps.length === 0) {
-        setMatches([]);
-        return;
-      }
-
-      const results = await Promise.allSettled(
-        activeComps.map(async (comp) => {
-          const [schedule, enrollments] = await Promise.all([
-            getScheduleUseCase.execute(comp.id),
-            listEnrollmentsUseCase.execute(comp.id),
-          ]);
-
-          const playerNameMap = new Map();
-          (enrollments || []).forEach((e) => {
-            if (e.userId && e.userName) {
-              playerNameMap.set(e.userId, e.userName);
-            }
-          });
-
-          const rounds = schedule?.rounds || [];
-          const matchList = [];
-
-          rounds.forEach((round) => {
-            (round.matches || []).forEach((match) => {
-              const isPlayerInMatch =
-                (match.teamAPlayers || []).some((p) => p.userId === user.id) ||
-                (match.teamBPlayers || []).some((p) => p.userId === user.id);
-
-              if (isPlayerInMatch && (match.status === 'SCHEDULED' || match.status === 'IN_PROGRESS')) {
-                matchList.push({
-                  ...match,
-                  competitionId: comp.id,
-                  competitionName: comp.name,
-                  roundDate: round.roundDate,
-                  sessionType: round.sessionType,
-                  matchFormat: round.matchFormat,
-                  golfCourseName: round.golfCourseName,
-                  teamAPlayerNames: (match.teamAPlayers || []).map(
-                    (p) => playerNameMap.get(p.userId) || p.userId
-                  ),
-                  teamBPlayerNames: (match.teamBPlayers || []).map(
-                    (p) => playerNameMap.get(p.userId) || p.userId
-                  ),
-                });
-              }
-            });
-          });
-
-          return matchList;
-        })
-      );
-
-      const allMatches = results
-        .filter((r) => r.status === 'fulfilled')
-        .flatMap((r) => r.value);
-
-      allMatches.sort((a, b) => {
-        const dateCompare = (a.roundDate || '').localeCompare(b.roundDate || '');
-        if (dateCompare !== 0) return dateCompare;
-        const sessionOrder = { MORNING: 0, AFTERNOON: 1, EVENING: 2 };
-        return (sessionOrder[a.sessionType] || 0) - (sessionOrder[b.sessionType] || 0);
-      });
-
-      setMatches(allMatches);
+      // Mismo cálculo que usa el panel para su banner de próximo partido: si
+      // cada pantalla lo hiciera por su cuenta, acabarían discrepando sobre
+      // qué cuenta como "próximo"
+      setMatches(await getUpcomingMatchesUseCase.execute(user.id));
     } catch (error) {
       console.error('Error loading upcoming matches:', error);
       setMatches([]);

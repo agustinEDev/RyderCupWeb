@@ -1,5 +1,6 @@
 import IPlayerStatsRepository from '../../domain/repositories/IPlayerStatsRepository';
 import PlayerStatsMapper from '../mappers/PlayerStatsMapper';
+import RecentMatchMapper from '../mappers/RecentMatchMapper';
 import apiRequest from '../../services/api.js';
 
 /**
@@ -7,6 +8,7 @@ import apiRequest from '../../services/api.js';
  *
  * Endpoints:
  * - GET /api/v1/users/me/stats
+ * - GET /api/v1/users/me/matches
  */
 class ApiPlayerStatsRepository extends IPlayerStatsRepository {
   constructor() {
@@ -16,6 +18,12 @@ class ApiPlayerStatsRepository extends IPlayerStatsRepository {
   async getPlayerStats() {
     const apiData = await apiRequest('/api/v1/users/me/stats');
     return PlayerStatsMapper.toDomain(apiData);
+  }
+
+  async getRecentMatches(limit) {
+    const query = limit ? `?limit=${limit}` : '';
+    const apiData = await apiRequest(`/api/v1/users/me/matches${query}`);
+    return RecentMatchMapper.toDomainList(apiData?.matches);
   }
 }
 

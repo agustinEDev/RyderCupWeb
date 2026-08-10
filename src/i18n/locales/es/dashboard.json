@@ -63,5 +63,49 @@
     "loading": "Cargando partidos...",
     "teamA": "Equipo A",
     "teamB": "Equipo B"
+  },
+  "nextMatch": {
+    "label": "Tu próximo partido",
+    "view": "Ver",
+    "versus": "Contra {{opponents}}",
+    "withPartners": "con {{partners}}",
+    "emptyTitle": "¿Partido improvisado?",
+    "emptyDescription": "Crea una partida rápida con amigos, sin necesidad de un torneo",
+    "emptyAction": "Crear partida rápida",
+    "session": {
+      "MORNING": "Mañana",
+      "AFTERNOON": "Tarde",
+      "EVENING": "Noche"
+    },
+    "format": {
+      "SINGLES": "Individual",
+      "FOURBALL": "Fourball",
+      "FOURSOMES": "Foursomes"
+    }
+  },
+  "recentMatches": {
+    "title": "Últimas partidas",
+    "emptyTitle": "Todavía no has jugado ninguna partida",
+    "emptyDescription": "Cuando termines una, aparecerá aquí con su resultado",
+    "emptyAction": "Jugar una partida rápida",
+    "points_one": "{{count}} pt",
+    "points_other": "{{count}} pts",
+    "result": {
+      "WON": "Ganado",
+      "LOST": "Perdido",
+      "HALVED": "Empatado"
+    },
+    "resultShort": {
+      "WON": "G",
+      "LOST": "P",
+      "HALVED": "E"
+    },
+    "format": {
+      "SINGLES": "Individual",
+      "FOURBALL": "Fourball",
+      "FOURSOMES": "Foursomes",
+      "MEDAL": "Medal",
+      "STABLEFORD": "Stableford"
+    }
   }
 }

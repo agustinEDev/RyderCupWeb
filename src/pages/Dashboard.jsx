@@ -9,11 +9,21 @@ import HandicapRequestModal from '../components/profile/HandicapRequestModal';
 import EmailVerificationBanner from '../components/EmailVerificationBanner';
 import PendingActionsCard from '../components/dashboard/PendingActionsCard';
 import PlayerStatsCards from '../components/dashboard/PlayerStatsCards';
+import NextMatchBanner from '../components/dashboard/NextMatchBanner';
+import RecentMatches from '../components/dashboard/RecentMatches';
 import CreateQuickMatchModal from '../components/quick_match/CreateQuickMatchModal';
 import { useAuth } from '../hooks/useAuth';
 import { useEntryMotion } from '../hooks/useEntryMotion';
 import { slideUp, staggerContainer, getEntryProps } from '../utils/animations';
-import { listUserCompetitionsUseCase, getPlayerStatsUseCase } from '../composition';
+import {
+  listUserCompetitionsUseCase,
+  getPlayerStatsUseCase,
+  getRecentMatchesUseCase,
+  getUpcomingMatchesUseCase,
+} from '../composition';
+
+// El panel enseña un resumen, no el historial entero
+const RECENT_MATCHES_SHOWN = 3;
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -25,6 +35,10 @@ const Dashboard = () => {
   const [isLoadingCompetitions, setIsLoadingCompetitions] = useState(true);
   const [playerStats, setPlayerStats] = useState(null);
   const [isLoadingStats, setIsLoadingStats] = useState(true);
+  const [recentMatches, setRecentMatches] = useState([]);
+  const [isLoadingRecent, setIsLoadingRecent] = useState(true);
+  const [upcomingMatches, setUpcomingMatches] = useState([]);
+  const [isLoadingUpcoming, setIsLoadingUpcoming] = useState(true);
   const [showHandicapModal, setShowHandicapModal] = useState(false);
   const [showQuickMatchModal, setShowQuickMatchModal] = useState(false);
   const [handicapPending, setHandicapPending] = useState(
@@ -124,6 +138,79 @@ const Dashboard = () => {
     };
   }, [user]);
 
+  useEffect(() => {
+    // Mismo guardia que las estadísticas: una respuesta en vuelo no debe
+    // escribir sobre la de otra cuenta
+    let cancelled = false;
+
+    const loadRecentMatches = async () => {
+      if (!user) {
+        setIsLoadingRecent(false);
+        return;
+      }
+
+      setIsLoadingRecent(true);
+      try {
+        const matches = await getRecentMatchesUseCase.execute(RECENT_MATCHES_SHOWN);
+        if (!cancelled) {
+          setRecentMatches(matches);
+        }
+      } catch (error) {
+        console.error('Failed to load recent matches:', error);
+        if (!cancelled) {
+          setRecentMatches([]);
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoadingRecent(false);
+        }
+      }
+    };
+
+    loadRecentMatches();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
+
+  useEffect(() => {
+    // Se cargan aquí, y no dentro de cada componente, porque el banner de
+    // próximo partido y el contador de acciones pendientes miran exactamente
+    // los mismos partidos: pedirlos dos veces serían el doble de llamadas al
+    // calendario de cada competición
+    let cancelled = false;
+
+    const loadUpcomingMatches = async () => {
+      if (!user || isLoadingCompetitions) {
+        return;
+      }
+
+      setIsLoadingUpcoming(true);
+      try {
+        const matches = await getUpcomingMatchesUseCase.execute(user.id, competitions);
+        if (!cancelled) {
+          setUpcomingMatches(matches);
+        }
+      } catch (error) {
+        console.error('Failed to load upcoming matches:', error);
+        if (!cancelled) {
+          setUpcomingMatches([]);
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoadingUpcoming(false);
+        }
+      }
+    };
+
+    loadUpcomingMatches();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user, competitions, isLoadingCompetitions]);
+
   // Only gate the full-page spinner on the initial load (no user yet).
   // Subsequent refetches (e.g. after saving handicap) shouldn't unmount the current UI.
   const isLoading = (isLoadingUser && !user) || isLoadingCompetitions;
@@ -191,46 +278,13 @@ const Dashboard = () => {
               </div>
             )}
 
-            {/* Quick access: create a quick match */}
-            <motion.div
-              variants={slideUp}
-              className="px-4 mb-2"
-            >
-              <button
-                type="button"
-                onClick={() => setShowQuickMatchModal(true)}
-                data-testid="quick-match-cta"
-                className="w-full flex items-center justify-between gap-3 rounded-xl border-2 border-primary-200 bg-gradient-to-r from-primary-50 to-blue-50 p-5 shadow-sm hover:shadow-md transition-shadow text-left"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="p-1.5 bg-primary-500 rounded-lg">
-                    <Zap className="w-4 h-4 text-white" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-bold text-primary-900">{tQuickMatch('dashboard.ctaTitle')}</p>
-                    <p className="text-xs text-primary-700">{tQuickMatch('dashboard.ctaDesc')}</p>
-                  </div>
-                </div>
-                <span className="flex-shrink-0 px-3 py-1.5 bg-primary-500 text-white text-xs font-semibold rounded-lg">
-                  {tQuickMatch('dashboard.ctaButton')}
-                </span>
-              </button>
-              <button
-                type="button"
-                onClick={() => navigate('/quick-matches')}
-                data-testid="quick-match-history-link"
-                className="mt-1.5 text-xs text-primary-700 hover:text-primary-900 hover:underline"
-              >
-                {tQuickMatch('dashboard.viewHistory')}
-              </button>
-            </motion.div>
-
             {/* Pending Actions */}
             <PendingActionsCard
               user={user}
               competitions={competitions}
               handicapPending={handicapPending}
               onHandicapAction={() => setShowHandicapModal(true)}
+              upcomingMatches={upcomingMatches.length}
             />
 
             {/* Statistics Cards */}
@@ -241,6 +295,33 @@ const Dashboard = () => {
                 fallbackHandicap={user.handicap ?? null}
                 fallbackTournaments={Array.isArray(competitions) ? competitions.length : 0}
               />
+            </motion.div>
+
+            {/* Next match: the centrepiece. Falls back to the quick match CTA
+                that used to live above, so the band is never empty */}
+            <motion.div variants={slideUp} className="px-4 pb-2">
+              <NextMatchBanner
+                match={upcomingMatches[0] ?? null}
+                isLoading={isLoadingUpcoming}
+                onCreateQuickMatch={() => setShowQuickMatchModal(true)}
+              />
+            </motion.div>
+
+            {/* Recent matches */}
+            <motion.div variants={slideUp} className="px-4 pt-2">
+              <RecentMatches
+                matches={recentMatches}
+                isLoading={isLoadingRecent}
+                onCreateQuickMatch={() => setShowQuickMatchModal(true)}
+              />
+              <button
+                type="button"
+                onClick={() => navigate('/quick-matches')}
+                data-testid="quick-match-history-link"
+                className="mt-2 text-xs text-primary-700 hover:text-primary-900 hover:underline"
+              >
+                {tQuickMatch('dashboard.viewHistory')}
+              </button>
             </motion.div>
 
             {/* Profile Card */}
