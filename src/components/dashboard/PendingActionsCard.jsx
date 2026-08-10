@@ -8,18 +8,16 @@ import { slideUp, getEntryProps } from '../../utils/animations';
 import {
   listMyInvitationsUseCase,
   listEnrollmentsUseCase,
-  getScheduleUseCase,
   listPendingFriendRequestsUseCase,
   listMyQuickMatchesUseCase,
 } from '../../composition';
 
-const PendingActionsCard = ({ user, competitions, onHandicapAction, handicapPending = false }) => {
+const PendingActionsCard = ({ user, competitions, onHandicapAction, handicapPending = false , upcomingMatches = 0 }) => {
   const navigate = useNavigate();
   const { t } = useTranslation('dashboard');
   const { animateEntry } = useEntryMotion();
   const [pendingInvitations, setPendingInvitations] = useState(0);
   const [pendingEnrollments, setPendingEnrollments] = useState([]);
-  const [upcomingMatches, setUpcomingMatches] = useState(0);
   const [pendingFriendRequests, setPendingFriendRequests] = useState(0);
   const [activeQuickMatches, setActiveQuickMatches] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -37,7 +35,6 @@ const PendingActionsCard = ({ user, competitions, onHandicapAction, handicapPend
         const results = await Promise.allSettled([
           listMyInvitationsUseCase.execute({ status: 'PENDING' }),
           isCreator ? loadPendingEnrollments(competitions) : Promise.resolve([]),
-          loadUpcomingMatches(competitions, user.id),
           listPendingFriendRequestsUseCase.execute(user.id, 'received'),
           listMyQuickMatchesUseCase.execute({ status: 'IN_PROGRESS' }),
         ]);
@@ -50,13 +47,10 @@ const PendingActionsCard = ({ user, competitions, onHandicapAction, handicapPend
           setPendingEnrollments(results[1].value);
         }
         if (results[2].status === 'fulfilled') {
-          setUpcomingMatches(results[2].value);
+          setPendingFriendRequests(results[2].value?.totalCount || 0);
         }
         if (results[3].status === 'fulfilled') {
-          setPendingFriendRequests(results[3].value?.totalCount || 0);
-        }
-        if (results[4].status === 'fulfilled') {
-          setActiveQuickMatches(results[4].value?.quickMatches || []);
+          setActiveQuickMatches(results[3].value?.quickMatches || []);
         }
       } catch (error) {
         console.error('Error loading pending actions:', error);
@@ -281,34 +275,6 @@ async function loadPendingEnrollments(competitions) {
   return results
     .filter((r) => r.status === 'fulfilled' && r.value.count > 0)
     .map((r) => r.value);
-}
-
-async function loadUpcomingMatches(competitions, userId) {
-  if (!competitions || competitions.length === 0) return 0;
-
-  const activeCompetitions = competitions.filter(
-    (c) => c.status === 'IN_PROGRESS'
-  );
-
-  const results = await Promise.allSettled(
-    activeCompetitions.map(async (comp) => {
-      const schedule = await getScheduleUseCase.execute(comp.id);
-      const rounds = schedule?.rounds || [];
-      return rounds.reduce((total, round) => {
-        const active = (round.matches || []).filter(
-          (m) =>
-            (m.status === 'SCHEDULED' || m.status === 'IN_PROGRESS') &&
-            ((m.teamAPlayers || []).some((p) => p.userId === userId) ||
-              (m.teamBPlayers || []).some((p) => p.userId === userId))
-        );
-        return total + active.length;
-      }, 0);
-    })
-  );
-
-  return results
-    .filter((r) => r.status === 'fulfilled')
-    .reduce((total, r) => total + r.value, 0);
 }
 
 export default PendingActionsCard;

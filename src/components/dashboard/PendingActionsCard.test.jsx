@@ -58,10 +58,14 @@ const creatorUser = {
   roles: [{ name: 'CREATOR' }],
 };
 
-const renderCard = (user = baseUser, competitions = []) => {
+const renderCard = (user = baseUser, competitions = [], upcomingMatches = 0) => {
   return render(
     <MemoryRouter>
-      <PendingActionsCard user={user} competitions={competitions} />
+      <PendingActionsCard
+        user={user}
+        competitions={competitions}
+        upcomingMatches={upcomingMatches}
+      />
     </MemoryRouter>
   );
 };
@@ -198,27 +202,24 @@ describe('PendingActionsCard', () => {
     expect(mockNavigate).toHaveBeenCalledWith('/competitions/comp-1');
   });
 
-  it('should show upcoming matches for active competitions', async () => {
-    const competitions = [
-      { id: 'comp-1', name: 'Cup', status: 'IN_PROGRESS' },
-    ];
-
-    mockGetSchedule.mockResolvedValue({
-      rounds: [
-        {
-          matches: [
-            { id: 'm-1', status: 'SCHEDULED', teamAPlayers: [{ userId: 'user-1' }], teamBPlayers: [] },
-            { id: 'm-2', status: 'IN_PROGRESS', teamAPlayers: [], teamBPlayers: [{ userId: 'user-1' }] },
-            { id: 'm-3', status: 'COMPLETED', teamAPlayers: [{ userId: 'user-1' }], teamBPlayers: [] },
-          ],
-        },
-      ],
-    });
-
-    renderCard(baseUser, competitions);
+  it('should show upcoming matches when the dashboard passes some', async () => {
+    /**
+     * La tarjeta ya no calcula los partidos: los recibe. El banner de proximo
+     * partido mira exactamente los mismos, y cargarlos por separado duplicaba
+     * las llamadas al calendario de cada competicion (FE #306).
+     */
+    renderCard(baseUser, [{ id: 'comp-1', name: 'Cup', status: 'IN_PROGRESS' }], 2);
 
     await waitFor(() => {
       expect(screen.getByTestId('upcoming-matches-action')).toBeInTheDocument();
+    });
+  });
+
+  it('should not show upcoming matches when there are none', async () => {
+    renderCard(baseUser, [{ id: 'comp-1', name: 'Cup', status: 'IN_PROGRESS' }], 0);
+
+    await waitFor(() => {
+      expect(screen.queryByTestId('upcoming-matches-action')).not.toBeInTheDocument();
     });
   });
 

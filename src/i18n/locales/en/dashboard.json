@@ -63,5 +63,49 @@
     "loading": "Loading matches...",
     "teamA": "Team A",
     "teamB": "Team B"
+  },
+  "nextMatch": {
+    "label": "Your next match",
+    "view": "View",
+    "versus": "Against {{opponents}}",
+    "withPartners": "with {{partners}}",
+    "emptyTitle": "Fancy a round?",
+    "emptyDescription": "Start a quick match with friends, no tournament needed",
+    "emptyAction": "New quick match",
+    "session": {
+      "MORNING": "Morning",
+      "AFTERNOON": "Afternoon",
+      "EVENING": "Evening"
+    },
+    "format": {
+      "SINGLES": "Singles",
+      "FOURBALL": "Fourball",
+      "FOURSOMES": "Foursomes"
+    }
+  },
+  "recentMatches": {
+    "title": "Recent matches",
+    "emptyTitle": "You have not played any matches yet",
+    "emptyDescription": "Once you finish one, it will show up here with its result",
+    "emptyAction": "Play a quick match",
+    "points_one": "{{count}} pt",
+    "points_other": "{{count}} pts",
+    "result": {
+      "WON": "Won",
+      "LOST": "Lost",
+      "HALVED": "Halved"
+    },
+    "resultShort": {
+      "WON": "W",
+      "LOST": "L",
+      "HALVED": "H"
+    },
+    "format": {
+      "SINGLES": "Singles",
+      "FOURBALL": "Fourball",
+      "FOURSOMES": "Foursomes",
+      "MEDAL": "Medal",
+      "STABLEFORD": "Stableford"
+    }
   }
 }
