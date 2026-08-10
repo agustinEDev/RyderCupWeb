@@ -19,6 +19,12 @@ const RESULT_TONES = {
 const MatchRow = ({ match, onOpen, t, formatDate }) => {
   const opponents = match.opponents.join(', ');
   const format = match.matchFormat || match.scoringFormat;
+  const formatLabel = format ? t(`recentMatches.format.${format}`, format) : null;
+  // El titular es el rival, o el torneo, o —en una vuelta en solitario— el
+  // propio formato. En ese último caso el subtítulo no lo repite: decir
+  // "Medal / Medal · St Andrews" no añade nada
+  const headline = opponents || match.tournamentName || formatLabel;
+  const repeatsHeadline = headline === formatLabel;
 
   return (
     <button
@@ -46,12 +52,12 @@ const MatchRow = ({ match, onOpen, t, formatDate }) => {
 
       <span className="min-w-0 flex-1">
         <span className="block truncate text-sm font-semibold text-gray-900">
-          {opponents || match.tournamentName || t(`recentMatches.format.${format}`, format)}
+          {headline}
         </span>
         {/* El formato va aquí y no como último recurso: es lo que distingue dos
             partidas contra el mismo rival, en el mismo campo y el mismo día */}
         <span className="block truncate text-xs text-gray-500">
-          {[format && t(`recentMatches.format.${format}`, format), match.golfCourseName]
+          {[repeatsHeadline ? null : formatLabel, match.golfCourseName]
             .filter(Boolean)
             .join(' · ')}
         </span>
