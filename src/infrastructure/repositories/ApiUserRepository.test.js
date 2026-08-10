@@ -204,10 +204,12 @@ describe('ApiUserRepository', () => {
 
   describe('searchUsers', () => {
     it('should call search-autocomplete endpoint with encoded query', async () => {
+      // El backend ya no devuelve `email`: se retiró porque tecleando nombres
+      // se podían recolectar direcciones de gente con la que no tienes relación.
       const mockResponse = {
         users: [
-          { user_id: 'u1', email: 'john@test.com', full_name: 'John Doe' },
-          { user_id: 'u2', email: 'jane@test.com', full_name: 'Jane Smith' },
+          { user_id: 'u1', full_name: 'John Doe', first_name: 'John', last_name: 'Doe' },
+          { user_id: 'u2', full_name: 'Jane Smith', first_name: 'Jane', last_name: 'Smith' },
         ],
       };
 
@@ -221,14 +223,48 @@ describe('ApiUserRepository', () => {
         id: 'u1',
         firstName: 'John',
         lastName: 'Doe',
-        email: 'john@test.com',
         countryCode: null,
       });
       expect(results[1]).toEqual({
         id: 'u2',
         firstName: 'Jane',
         lastName: 'Smith',
-        email: 'jane@test.com',
+        countryCode: null,
+      });
+    });
+
+    it('should use the separated name fields instead of splitting full_name', async () => {
+      // Partir por el primer espacio rompía con nombres compuestos: "María José
+      // García" dejaba "María" de nombre y "José García" de apellidos.
+      apiRequest.mockResolvedValueOnce({
+        users: [
+          {
+            user_id: 'u3',
+            full_name: 'María José García',
+            first_name: 'María José',
+            last_name: 'García',
+          },
+        ],
+      });
+
+      const results = await apiUserRepository.searchUsers('Mar');
+
+      expect(results[0].firstName).toBe('María José');
+      expect(results[0].lastName).toBe('García');
+    });
+
+    it('should fall back to splitting full_name when the fields are absent', async () => {
+      // Cubre una respuesta de un backend anterior al cambio.
+      apiRequest.mockResolvedValueOnce({
+        users: [{ user_id: 'u4', full_name: 'John Doe' }],
+      });
+
+      const results = await apiUserRepository.searchUsers('Jo');
+
+      expect(results[0]).toEqual({
+        id: 'u4',
+        firstName: 'John',
+        lastName: 'Doe',
         countryCode: null,
       });
     });
