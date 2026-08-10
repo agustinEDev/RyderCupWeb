@@ -55,6 +55,28 @@ describe('RecentMatches', () => {
     expect(screen.getByTestId('recent-match-qm-1')).toHaveTextContent('Valderrama');
   });
 
+  it('names the format, which is what tells two similar rows apart', () => {
+    /**
+     * Visto en el navegador: tres partidas contra el mismo rival, en el mismo
+     * campo y el mismo dia se veian identicas. Lo unico que las distinguia era
+     * el marcador, y el formato explica por que uno dice "1UP" y otro "-1".
+     */
+    renderList({ matches: [tournamentWin, stablefordRound] });
+
+    expect(screen.getByTestId('recent-match-match-1')).toHaveTextContent(
+      'recentMatches.format.SINGLES'
+    );
+    expect(screen.getByTestId('recent-match-qm-1')).toHaveTextContent(
+      'recentMatches.format.STABLEFORD'
+    );
+  });
+
+  it('still shows the opponent as the headline', () => {
+    renderList({ matches: [tournamentWin] });
+
+    expect(screen.getByTestId('recent-match-match-1')).toHaveTextContent('Ana Soto');
+  });
+
   it('badges a match play result and spells it out for screen readers', () => {
     renderList({ matches: [tournamentWin] });
 

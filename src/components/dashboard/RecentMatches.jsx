@@ -48,18 +48,27 @@ const MatchRow = ({ match, onOpen, t, formatDate }) => {
         <span className="block truncate text-sm font-semibold text-gray-900">
           {opponents || match.tournamentName || t(`recentMatches.format.${format}`, format)}
         </span>
+        {/* El formato va aquí y no como último recurso: es lo que distingue dos
+            partidas contra el mismo rival, en el mismo campo y el mismo día */}
         <span className="block truncate text-xs text-gray-500">
-          {[match.golfCourseName, formatDate(match.date)].filter(Boolean).join(' · ')}
+          {[format && t(`recentMatches.format.${format}`, format), match.golfCourseName]
+            .filter(Boolean)
+            .join(' · ')}
         </span>
       </span>
 
-      {(match.score || match.stablefordPoints !== null) && (
-        <span className="flex-shrink-0 text-sm font-bold text-gray-900">
-          {match.stablefordPoints !== null
-            ? t('recentMatches.points', { count: match.stablefordPoints })
-            : match.score}
-        </span>
-      )}
+      <span className="flex flex-shrink-0 flex-col items-end">
+        {(match.score || match.stablefordPoints !== null) && (
+          <span className="text-sm font-bold text-gray-900">
+            {match.stablefordPoints !== null
+              ? t('recentMatches.points', { count: match.stablefordPoints })
+              : match.score}
+          </span>
+        )}
+        {/* La fecha sale del subtítulo para dejarle sitio al formato, y porque
+            aquí no compite por el ancho con el nombre del campo */}
+        <span className="text-[10px] text-gray-400">{formatDate(match.date)}</span>
+      </span>
     </button>
   );
 };
