@@ -123,6 +123,13 @@ import BlockUserUseCase from '../application/use_cases/friend/BlockUserUseCase';
 import ListFriendsUseCase from '../application/use_cases/friend/ListFriendsUseCase';
 import ListPendingFriendRequestsUseCase from '../application/use_cases/friend/ListPendingFriendRequestsUseCase';
 
+// Player Stats Use Cases (FE #306)
+import ApiPlayerStatsRepository from '../infrastructure/repositories/ApiPlayerStatsRepository';
+import GetPlayerStatsUseCase from '../application/use_cases/player_stats/GetPlayerStatsUseCase';
+import GetRecentMatchesUseCase from '../application/use_cases/player_stats/GetRecentMatchesUseCase';
+import GetUpcomingMatchesUseCase from '../application/use_cases/schedule/GetUpcomingMatchesUseCase';
+import GetPlayerStatsByGolfCourseUseCase from '../application/use_cases/player_stats/GetPlayerStatsByGolfCourseUseCase';
+
 // Scoring Use Cases (Sprint 4)
 import ApiScoringRepository from '../infrastructure/repositories/ApiScoringRepository';
 import GetScoringViewUseCase from '../application/use_cases/scoring/GetScoringViewUseCase';
@@ -264,6 +271,12 @@ const blockUserUseCase = new BlockUserUseCase({ friendRepository: apiFriendRepos
 const listFriendsUseCase = new ListFriendsUseCase({ friendRepository: apiFriendRepository });
 const listPendingFriendRequestsUseCase = new ListPendingFriendRequestsUseCase({ friendRepository: apiFriendRepository });
 
+// Player Stats Use Cases (FE #306)
+const apiPlayerStatsRepository = new ApiPlayerStatsRepository();
+const getPlayerStatsUseCase = new GetPlayerStatsUseCase({ playerStatsRepository: apiPlayerStatsRepository });
+const getRecentMatchesUseCase = new GetRecentMatchesUseCase({ playerStatsRepository: apiPlayerStatsRepository });
+const getPlayerStatsByGolfCourseUseCase = new GetPlayerStatsByGolfCourseUseCase({ playerStatsRepository: apiPlayerStatsRepository });
+
 // Scoring Use Cases (Sprint 4)
 const getScoringViewUseCase = new GetScoringViewUseCase({ scoringRepository: apiScoringRepository });
 const submitHoleScoreUseCase = new SubmitHoleScoreUseCase({ scoringRepository: apiScoringRepository });
@@ -274,6 +287,14 @@ const concedeMatchUseCase = new ConcedeMatchUseCase({ scoringRepository: apiScor
 // Enrollment Use Cases
 const requestEnrollmentUseCase = new RequestEnrollmentUseCase(apiEnrollmentRepository);
 const listEnrollmentsUseCase = new ListEnrollmentsUseCase(apiEnrollmentRepository);
+
+// Próximos partidos del jugador (FE #306): compone competiciones + calendario +
+// inscripciones, porque no hay un endpoint que lo responda de una vez
+const getUpcomingMatchesUseCase = new GetUpcomingMatchesUseCase({
+  listUserCompetitionsUseCase,
+  getScheduleUseCase,
+  listEnrollmentsUseCase,
+});
 const approveEnrollmentUseCase = new ApproveEnrollmentUseCase(apiEnrollmentRepository);
 const rejectEnrollmentUseCase = new RejectEnrollmentUseCase(apiEnrollmentRepository);
 const userCancelEnrollmentUseCase = new CancelEnrollmentUseCase(apiEnrollmentRepository);
@@ -427,6 +448,10 @@ export {
   removeFriendUseCase,
   blockUserUseCase,
   listFriendsUseCase,
+  getPlayerStatsUseCase,
+  getRecentMatchesUseCase,
+  getUpcomingMatchesUseCase,
+  getPlayerStatsByGolfCourseUseCase,
   listPendingFriendRequestsUseCase,
   // Scoring Use Cases (Sprint 4)
   getScoringViewUseCase,

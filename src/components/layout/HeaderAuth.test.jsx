@@ -83,4 +83,16 @@ describe('HeaderAuth', () => {
     const hrefs = screen.getAllByRole('link').map((link) => link.getAttribute('href'));
     expect(hrefs).toEqual(expect.arrayContaining(['/dashboard', '/browse-competitions', '/competitions']));
   });
+
+  it('reaches friends from the desktop navigation', () => {
+    /**
+     * La navegacion inferior es md:hidden, asi que en escritorio esta cabecera
+     * es el unico camino a /friends desde que el panel dejo de tener su tarjeta
+     * (FE #306). Sin este enlace, la seccion queda inalcanzable.
+     */
+    renderHeader('/dashboard');
+
+    const hrefs = screen.getAllByRole('link').map((link) => link.getAttribute('href'));
+    expect(hrefs).toContain('/friends');
+  });
 });

@@ -7,6 +7,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [2.8.0] - 2026-08-10
+
+### Added
+
+- **El panel deja de ser un menú y pasa a decir cómo vas** (issue #306): quien abría la aplicación se encontraba seis tarjetas que repetían el menú de navegación y un dato estático, cuando lo que quiere saber es cuándo juega, cómo quedó lo último y cómo va. En un teléfono de 390 px eso ocupaba entre ocho y nueve pantallas de desplazamiento; ahora cabe en unas dos. Las tres cifras pasan a tres columnas en móvil en vez de una —en columna, tres números ocupaban tres pantallas ellos solos— con una variante compacta que reserva los iconos de fondo y los textos secundarios para pantallas grandes. El titular es la pareja **hándicap oficial y «juegas a»**: el segundo es el índice estimado que calcula el backend a partir de las últimas vueltas, y ninguno de los dos dice gran cosa por separado. La tarjeta de «Estado Verificado» se retira del panel, porque no aporta nada después del primer día y el perfil ya lleva ese mismo distintivo. Las acciones rápidas bajan de seis tarjetas a dos —Partida Rápida y Crear Torneo—, ya que Mis Torneos, Explorar, Amigos y Perfil viven en la navegación y repetirlos convertía el panel en el menú con otro aspecto.
+
+- **Una banda con el próximo partido, que nunca queda hueca**: formato, torneo, cuándo, dónde, compañeros y rivales, y una forma de entrar. Cuando no hay ningún partido programado no desaparece ni deja un hueco: se convierte en la invitación a montar una partida rápida, que es la que ocupaba ese sitio antes. Importa más de lo que parece, porque la mayoría de la gente no está metida en un torneo y para ella ese es el estado normal, no la excepción; un hueco en mitad del panel se lee como que algo ha fallado. Mientras carga muestra un hueco de espera y no el estado vacío, porque ofrecer «no tienes partidos, monta uno» antes de haberlo comprobado es afirmar algo que todavía no se sabe.
+
+- **Las últimas partidas jugadas**, mezclando torneo y partidas rápidas, que es como se juega en realidad. Cada fila dice cómo acabó, contra quién, en qué formato, dónde y con qué marcador. Una vuelta de Medal o Stableford no lleva distintivo de resultado: tiene marcador pero no rival al que ganar, y una «E» gris daría a entender que se empató contra alguien. La letra del distintivo va acompañada de la palabra completa para lectores de pantalla, porque un color y una inicial no dicen nada a quien no los ve.
+
+- **Una página propia de estadísticas** en `/stats`, a la que se llega tocando cualquiera de las dos tarjetas de juego del panel y desde el perfil. Se descartó ampliar el panel —que acababa de adelgazar a propósito— y meterlo en el perfil, que ya es largo. Ahí caben las tres cosas que hacían falta: el resumen completo, el desglose por campo de golf y el historial entero de partidas. El selector de campos se construye a partir del propio historial del jugador, sin endpoint que los liste y sin necesitarlo, porque nadie tiene estadísticas de un campo donde no ha jugado. La página avisa de que el índice estimado no es el hándicap oficial de la federación: decirlo en la documentación de la API no basta, porque quien lee esta página es justo quien puede confundir uno con otro.
+
+### Fixed
+
+- **A la sección de Amigos no se llegaba desde escritorio**: al retirar su tarjeta del panel, la única puerta que quedaba era la navegación inferior, que solo existe por debajo de `md`. La cabecera de escritorio nunca tuvo un enlace a `/friends`, de modo que la ruta seguía ahí sin forma de alcanzarla. Se añade a la cabecera, con un test que falla si vuelve a perderse — nada más habría detectado que una página se volvió inalcanzable. El perfil no estaba afectado, porque el menú de usuario ya lleva a él.
+
+- **El hándicap y el número de torneos desaparecían si fallaba la consulta de estadísticas**: al montar las tarjetas sobre ese resumen pasaron a depender de él, cuando el panel ya conoce ambos datos por su cuenta —del perfil y del listado de competiciones que carga igualmente—. Con el backend sin desplegar, la tarjeta decía «Hándicap --» mientras la tarjeta de perfil, justo debajo, decía «Hándicap: 18». Ahora recurren a lo que la página ya sabe, y no esperan a que termine la petición: pasar de «--» a «18» se lee como un error. Solo el índice y la tendencia aguardan respuesta, porque no existen en ningún otro sitio.
+
+- **La tarjeta afirmaba «0 torneos activos» cuando no había podido preguntarlo**, y el valor real era 1. El total sí tiene de dónde salir, pero cuántos están activos solo lo sabe el resumen, así que ese cero no era un hueco sino una cifra falsa. Los textos secundarios de las tarjetas se ocultan hasta que hay datos que los respalden.
+
+- **Dos partidas parecidas se veían idénticas en el historial**: tres partidas contra el mismo rival, en el mismo campo y el mismo día se distinguían solo por el marcador, sin nada que explicara por qué una decía «1UP» y otra «-1». El formato se usaba únicamente como último recurso cuando no había rival al que nombrar, justo al revés de lo que hace falta. Pasa al subtítulo, y la fecha se mueve a la columna derecha para no competir por el ancho con el nombre del campo. En una vuelta en solitario, donde el formato ya es el titular, el subtítulo deja de repetirlo.
+
+- **Cuatro textos del perfil estaban en inglés y fuera del sistema de traducción** («Handicap», «Tournaments», «Member since» y «Updated»), rodeados de contenido traducido.
+
+### Changed
+
+- **Los próximos partidos se calculan una sola vez para todo el panel.** No hay endpoint que responda «mi próximo partido»: hay que preguntar el calendario y las inscripciones de cada competición en curso y quedarse con los partidos donde aparece el jugador. La tarjeta de acciones pendientes ya hacía ese mismo recorrido para sacar un contador, de modo que añadir la banda del próximo partido habría pedido el calendario de cada competición dos veces. El cálculo se extrae a un caso de uso propio que la página ejecuta una vez y reparte, y la página de próximos partidos —de donde salió el original, copiado— también lo usa, así que las tres no pueden discrepar sobre qué cuenta como «próximo». De paso, compañeros y rivales se resuelven desde el lado de quien pregunta y no como «equipo A» y «equipo B»: uno juega con sus compañeros y contra sus rivales, y en qué equipo le pusieron es contabilidad interna.
+
+- **Las tarjetas de estadísticas que llevan a otra pantalla son botones de verdad**, no un `div` con un manejador de clic, que deja fuera al teclado y a los lectores de pantalla. La de torneos se queda como contenido, porque su detalle no vive en estadísticas.
+
+### Build
+
+- Presupuesto de tamaño del paquete subido a 1750 KB. Este trabajo lo dejó en 1705 KB frente a un límite de 1700. La página de estadísticas se carga de forma diferida, pero la comprobación suma todos los ficheros generados, así que dividir el código mueve bytes de un trozo a otro sin bajar el total — la misma nota que ya dejó el ajuste anterior. Se sube a 1750 en vez de a 1710 para no repetir el ajuste con la siguiente funcionalidad.
+
+
 ## [2.7.0] - 2026-08-08
 
 ### Added

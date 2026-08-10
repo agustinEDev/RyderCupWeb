@@ -1,18 +1,29 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router';
 import { motion } from 'framer-motion';
-import { Trophy, Users, User, TrendingUp, Award, Search, UserPlus, Zap } from 'lucide-react';
+import { Trophy, Zap } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import HeaderAuth from '../components/layout/HeaderAuth';
 import ProfileCard from '../components/profile/ProfileCard';
 import HandicapRequestModal from '../components/profile/HandicapRequestModal';
 import EmailVerificationBanner from '../components/EmailVerificationBanner';
 import PendingActionsCard from '../components/dashboard/PendingActionsCard';
+import PlayerStatsCards from '../components/dashboard/PlayerStatsCards';
+import NextMatchBanner from '../components/dashboard/NextMatchBanner';
+import RecentMatches from '../components/dashboard/RecentMatches';
 import CreateQuickMatchModal from '../components/quick_match/CreateQuickMatchModal';
 import { useAuth } from '../hooks/useAuth';
 import { useEntryMotion } from '../hooks/useEntryMotion';
 import { slideUp, staggerContainer, getEntryProps } from '../utils/animations';
-import { listUserCompetitionsUseCase } from '../composition';
+import {
+  listUserCompetitionsUseCase,
+  getPlayerStatsUseCase,
+  getRecentMatchesUseCase,
+  getUpcomingMatchesUseCase,
+} from '../composition';
+
+// El panel enseña un resumen, no el historial entero
+const RECENT_MATCHES_SHOWN = 3;
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -22,6 +33,12 @@ const Dashboard = () => {
   const { animateEntry } = useEntryMotion();
   const [competitions, setCompetitions] = useState([]);
   const [isLoadingCompetitions, setIsLoadingCompetitions] = useState(true);
+  const [playerStats, setPlayerStats] = useState(null);
+  const [isLoadingStats, setIsLoadingStats] = useState(true);
+  const [recentMatches, setRecentMatches] = useState([]);
+  const [isLoadingRecent, setIsLoadingRecent] = useState(true);
+  const [upcomingMatches, setUpcomingMatches] = useState([]);
+  const [isLoadingUpcoming, setIsLoadingUpcoming] = useState(true);
   const [showHandicapModal, setShowHandicapModal] = useState(false);
   const [showQuickMatchModal, setShowQuickMatchModal] = useState(false);
   const [handicapPending, setHandicapPending] = useState(
@@ -60,7 +77,7 @@ const Dashboard = () => {
         setIsLoadingCompetitions(false);
         return;
       }
-      
+
       setIsLoadingCompetitions(true);
       try {
 
@@ -79,6 +96,120 @@ const Dashboard = () => {
 
     loadDashboardData();
   }, [user]);
+
+  useEffect(() => {
+    // Las estadísticas van por su cuenta y no bloquean la página: son un
+    // resumen, y si el backend tarda o falla, el resto del panel sigue siendo
+    // útil. Un fallo deja las cifras en "--", que es lo mismo que enseña una
+    // cuenta sin vueltas.
+    // Son datos personales: si el usuario cambia mientras una petición está en
+    // vuelo, la respuesta vieja no debe escribir nada. Sin este guardia podría
+    // llegar después de la nueva y dejar en pantalla las cifras de otra cuenta
+    let cancelled = false;
+
+    const loadPlayerStats = async () => {
+      if (!user) {
+        setIsLoadingStats(false);
+        return;
+      }
+
+      setIsLoadingStats(true);
+      try {
+        const stats = await getPlayerStatsUseCase.execute();
+        if (!cancelled) {
+          setPlayerStats(stats);
+        }
+      } catch (error) {
+        console.error('Failed to load player stats:', error);
+        if (!cancelled) {
+          setPlayerStats(null);
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoadingStats(false);
+        }
+      }
+    };
+
+    loadPlayerStats();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
+
+  useEffect(() => {
+    // Mismo guardia que las estadísticas: una respuesta en vuelo no debe
+    // escribir sobre la de otra cuenta
+    let cancelled = false;
+
+    const loadRecentMatches = async () => {
+      if (!user) {
+        setIsLoadingRecent(false);
+        return;
+      }
+
+      setIsLoadingRecent(true);
+      try {
+        const matches = await getRecentMatchesUseCase.execute(RECENT_MATCHES_SHOWN);
+        if (!cancelled) {
+          setRecentMatches(matches);
+        }
+      } catch (error) {
+        console.error('Failed to load recent matches:', error);
+        if (!cancelled) {
+          setRecentMatches([]);
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoadingRecent(false);
+        }
+      }
+    };
+
+    loadRecentMatches();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
+
+  useEffect(() => {
+    // Se cargan aquí, y no dentro de cada componente, porque el banner de
+    // próximo partido y el contador de acciones pendientes miran exactamente
+    // los mismos partidos: pedirlos dos veces serían el doble de llamadas al
+    // calendario de cada competición
+    let cancelled = false;
+
+    const loadUpcomingMatches = async () => {
+      if (!user || isLoadingCompetitions) {
+        return;
+      }
+
+      setIsLoadingUpcoming(true);
+      try {
+        const matches = await getUpcomingMatchesUseCase.execute(user.id, competitions);
+        if (!cancelled) {
+          setUpcomingMatches(matches);
+        }
+      } catch (error) {
+        console.error('Failed to load upcoming matches:', error);
+        if (!cancelled) {
+          setUpcomingMatches([]);
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoadingUpcoming(false);
+        }
+      }
+    };
+
+    loadUpcomingMatches();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user, competitions, isLoadingCompetitions]);
 
   // Only gate the full-page spinner on the initial load (no user yet).
   // Subsequent refetches (e.g. after saving handicap) shouldn't unmount the current UI.
@@ -147,115 +278,50 @@ const Dashboard = () => {
               </div>
             )}
 
-            {/* Quick access: create a quick match */}
-            <motion.div
-              variants={slideUp}
-              className="px-4 mb-2"
-            >
-              <button
-                type="button"
-                onClick={() => setShowQuickMatchModal(true)}
-                data-testid="quick-match-cta"
-                className="w-full flex items-center justify-between gap-3 rounded-xl border-2 border-primary-200 bg-gradient-to-r from-primary-50 to-blue-50 p-5 shadow-sm hover:shadow-md transition-shadow text-left"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="p-1.5 bg-primary-500 rounded-lg">
-                    <Zap className="w-4 h-4 text-white" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-bold text-primary-900">{tQuickMatch('dashboard.ctaTitle')}</p>
-                    <p className="text-xs text-primary-700">{tQuickMatch('dashboard.ctaDesc')}</p>
-                  </div>
-                </div>
-                <span className="flex-shrink-0 px-3 py-1.5 bg-primary-500 text-white text-xs font-semibold rounded-lg">
-                  {tQuickMatch('dashboard.ctaButton')}
-                </span>
-              </button>
-              <button
-                type="button"
-                onClick={() => navigate('/quick-matches')}
-                data-testid="quick-match-history-link"
-                className="mt-1.5 text-xs text-primary-700 hover:text-primary-900 hover:underline"
-              >
-                {tQuickMatch('dashboard.viewHistory')}
-              </button>
-            </motion.div>
-
             {/* Pending Actions */}
             <PendingActionsCard
               user={user}
               competitions={competitions}
               handicapPending={handicapPending}
               onHandicapAction={() => setShowHandicapModal(true)}
+              upcomingMatches={upcomingMatches.length}
             />
 
             {/* Statistics Cards */}
-            <motion.div
-              variants={slideUp}
-              className="p-4"
-            >
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                {/* Stat Card 1 - Handicap */}
-                <div className="relative overflow-hidden bg-accent-50 p-6 rounded-xl border border-accent-200 hover:shadow-lg transition-all duration-300 group">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="p-3 bg-accent-500 rounded-lg shadow-md">
-                      <TrendingUp className="w-6 h-6 text-white" />
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm text-amber-700 font-medium">{t('statistics.handicap')}</p>
-                      <p className="text-3xl font-bold text-amber-800">
-                        {user.handicap != null ? user.handicap.toFixed(1) : '--'}
-                      </p>
-                    </div>
-                  </div>
-                  <p className="text-xs text-amber-700">
-                    {user.handicap_updated_at
-                      ? t('statistics.updated', { date: new Date(user.handicap_updated_at).toLocaleDateString() })
-                      : t('statistics.notUpdated')}
-                  </p>
-                  <div className="absolute -bottom-6 -right-6 opacity-10">
-                    <TrendingUp className="w-32 h-32 text-amber-700" />
-                  </div>
-                </div>
+            <motion.div variants={slideUp} className="p-4">
+              <PlayerStatsCards
+                stats={playerStats}
+                isLoading={isLoadingStats}
+                fallbackHandicap={user.handicap ?? null}
+                fallbackTournaments={Array.isArray(competitions) ? competitions.length : 0}
+              />
+            </motion.div>
 
-                {/* Stat Card 2 - Tournaments */}
-                <div className="relative overflow-hidden bg-primary-50 p-6 rounded-xl border border-primary-200 hover:shadow-lg transition-all duration-300 group">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="p-3 bg-primary-500 rounded-lg shadow-md">
-                      <Trophy className="w-6 h-6 text-white" />
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm text-primary-600 font-medium">{t('statistics.tournaments')}</p>
-                      <p className="text-3xl font-bold text-primary-700">{Array.isArray(competitions) ? competitions.length : 0}</p>
-                    </div>
-                  </div>
-                  <p className="text-xs text-primary-600">{t('statistics.viewTournaments')}</p>
-                  <div className="absolute -bottom-6 -right-6 opacity-10">
-                    <Trophy className="w-32 h-32 text-primary-700" />
-                  </div>
-                </div>
+            {/* Next match: the centrepiece. Falls back to the quick match CTA
+                that used to live above, so the band is never empty */}
+            <motion.div variants={slideUp} className="px-4 pb-2">
+              <NextMatchBanner
+                match={upcomingMatches[0] ?? null}
+                isLoading={isLoadingUpcoming}
+                onCreateQuickMatch={() => setShowQuickMatchModal(true)}
+              />
+            </motion.div>
 
-                {/* Stat Card 3 - Profile */}
-                <div className="relative overflow-hidden bg-blue-50 p-6 rounded-xl border border-blue-200 hover:shadow-lg transition-all duration-300 group">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="p-3 bg-navy-800 rounded-lg shadow-md">
-                      <Award className="w-6 h-6 text-white" />
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm text-navy-800 font-medium">{t('statistics.status')}</p>
-                      <p className="text-lg font-bold text-navy-900">
-                        {user.email_verified ? `✓ ${t('statistics.verified')}` : `⚠ ${t('statistics.pending')}`}
-                      </p>
-                    </div>
-                  </div>
-                  <p className="text-xs text-navy-700">
-                    {t('statistics.memberSince', { date: new Date(user.created_at).toLocaleDateString() })}
-                  </p>
-                  <div className="absolute -bottom-6 -right-6 opacity-10">
-                    <Award className="w-32 h-32 text-navy-700" />
-                  </div>
-                </div>
-              </div>
+            {/* Recent matches */}
+            <motion.div variants={slideUp} className="px-4 pt-2">
+              <RecentMatches
+                matches={recentMatches}
+                isLoading={isLoadingRecent}
+                onCreateQuickMatch={() => setShowQuickMatchModal(true)}
+              />
+              <button
+                type="button"
+                onClick={() => navigate('/quick-matches')}
+                data-testid="quick-match-history-link"
+                className="mt-2 text-xs text-primary-700 hover:text-primary-900 hover:underline"
+              >
+                {tQuickMatch('dashboard.viewHistory')}
+              </button>
             </motion.div>
 
             {/* Profile Card */}
@@ -267,7 +333,29 @@ const Dashboard = () => {
               className="p-4 mt-4"
             >
               <h2 className="text-gray-900 text-xl font-bold mb-4">{t('quickActions.title')}</h2>
+              {/* Dos, no seis: Mis Torneos, Explorar, Amigos y Perfil ya viven
+                  en la navegacion, y repetirlos aqui convertia el panel en un
+                  menu con otro aspecto */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Quick Match Card - primary action */}
+                <motion.button
+                  onClick={() => setShowQuickMatchModal(true)}
+                  whileHover={{ scale: 1.02, y: -2 }}
+                  whileTap={{ scale: 0.98 }}
+                  data-testid="quick-match-card"
+                  className="flex items-center gap-4 p-6 bg-primary-50 border-2 border-primary-500 rounded-xl hover:shadow-lg transition-all text-left group"
+                >
+                  <div className="p-3 bg-primary-500 rounded-lg">
+                    <Zap className="w-7 h-7 text-white" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-gray-900 font-bold text-lg group-hover:text-primary-600 transition-colors">
+                      {t('quickActions.quickMatch')}
+                    </h3>
+                    <p className="text-gray-500 text-sm">{t('quickActions.quickMatchDesc')}</p>
+                  </div>
+                </motion.button>
+
                 {/* Create Competition Card */}
                 <motion.button
                   onClick={() => navigate('/competitions/create')}
@@ -283,97 +371,6 @@ const Dashboard = () => {
                       {t('quickActions.createTournament')}
                     </h3>
                     <p className="text-gray-500 text-sm">{t('quickActions.createTournamentDesc')}</p>
-                  </div>
-                </motion.button>
-
-                {/* My Competitions Card */}
-                <motion.button
-                  onClick={() => navigate('/competitions')}
-                  whileHover={{ scale: 1.02, y: -2 }}
-                  whileTap={{ scale: 0.98 }}
-                  className="flex items-center gap-4 p-6 bg-white border-2 border-gray-200 rounded-xl hover:border-accent-500 hover:shadow-lg transition-all text-left group"
-                >
-                  <div className="p-3 bg-accent-100 rounded-lg group-hover:bg-accent-500 transition-colors">
-                    <Users className="w-7 h-7 text-accent-600 group-hover:text-white transition-colors" />
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="text-gray-900 font-bold text-lg group-hover:text-accent-600 transition-colors">
-                      {t('quickActions.myTournaments')}
-                    </h3>
-                    <p className="text-gray-500 text-sm">{t('quickActions.myTournamentsDesc')}</p>
-                  </div>
-                </motion.button>
-
-                {/* View Profile Card */}
-                <motion.button
-                  onClick={() => navigate('/profile')}
-                  whileHover={{ scale: 1.02, y: -2 }}
-                  whileTap={{ scale: 0.98 }}
-                  className="flex items-center gap-4 p-6 bg-white border-2 border-gray-200 rounded-xl hover:border-navy-800 hover:shadow-lg transition-all text-left group"
-                >
-                  <div className="p-3 bg-blue-100 rounded-lg group-hover:bg-navy-800 transition-colors">
-                    <User className="w-7 h-7 text-navy-800 group-hover:text-white transition-colors" />
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="text-gray-900 font-bold text-lg group-hover:text-navy-800 transition-colors">
-                      {t('quickActions.myProfile')}
-                    </h3>
-                    <p className="text-gray-500 text-sm">{t('quickActions.myProfileDesc')}</p>
-                  </div>
-                </motion.button>
-
-                {/* Browse Competitions Card */}
-                <motion.button
-                  onClick={() => navigate('/browse-competitions')}
-                  whileHover={{ scale: 1.02, y: -2 }}
-                  whileTap={{ scale: 0.98 }}
-                  className="flex items-center gap-4 p-6 bg-white border-2 border-gray-200 rounded-xl hover:border-green-500 hover:shadow-lg transition-all text-left group"
-                >
-                  <div className="p-3 bg-green-100 rounded-lg group-hover:bg-green-500 transition-colors">
-                    <Search className="w-7 h-7 text-green-600 group-hover:text-white transition-colors" />
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="text-gray-900 font-bold text-lg group-hover:text-green-600 transition-colors">
-                      {t('quickActions.browseCompetitions')}
-                    </h3>
-                    <p className="text-gray-500 text-sm">{t('quickActions.browseCompetitionsDesc')}</p>
-                  </div>
-                </motion.button>
-
-                {/* Friends Card */}
-                <motion.button
-                  onClick={() => navigate('/friends')}
-                  whileHover={{ scale: 1.02, y: -2 }}
-                  whileTap={{ scale: 0.98 }}
-                  className="flex items-center gap-4 p-6 bg-white border-2 border-gray-200 rounded-xl hover:border-pink-500 hover:shadow-lg transition-all text-left group"
-                >
-                  <div className="p-3 bg-pink-100 rounded-lg group-hover:bg-pink-500 transition-colors">
-                    <UserPlus className="w-7 h-7 text-pink-600 group-hover:text-white transition-colors" />
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="text-gray-900 font-bold text-lg group-hover:text-pink-600 transition-colors">
-                      {t('quickActions.friends')}
-                    </h3>
-                    <p className="text-gray-500 text-sm">{t('quickActions.friendsDesc')}</p>
-                  </div>
-                </motion.button>
-
-                {/* Quick Match Card */}
-                <motion.button
-                  onClick={() => setShowQuickMatchModal(true)}
-                  whileHover={{ scale: 1.02, y: -2 }}
-                  whileTap={{ scale: 0.98 }}
-                  data-testid="quick-match-card"
-                  className="flex items-center gap-4 p-6 bg-white border-2 border-gray-200 rounded-xl hover:border-primary-500 hover:shadow-lg transition-all text-left group"
-                >
-                  <div className="p-3 bg-primary-100 rounded-lg group-hover:bg-primary-500 transition-colors">
-                    <Zap className="w-7 h-7 text-primary-600 group-hover:text-white transition-colors" />
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="text-gray-900 font-bold text-lg group-hover:text-primary-600 transition-colors">
-                      {t('quickActions.quickMatch')}
-                    </h3>
-                    <p className="text-gray-500 text-sm">{t('quickActions.quickMatchDesc')}</p>
                   </div>
                 </motion.button>
               </div>

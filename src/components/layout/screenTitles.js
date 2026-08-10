@@ -36,6 +36,7 @@ const SCREENS = [
   { pattern: '/player/invitations', titleKey: 'screens.myInvitations', parent: '/dashboard' },
   { pattern: '/player/matches', titleKey: 'screens.myMatches', parent: '/dashboard' },
   { pattern: '/quick-matches', titleKey: 'screens.myQuickMatches', parent: '/dashboard' },
+  { pattern: '/stats', titleKey: 'screens.myStats', parent: '/dashboard' },
 ];
 
 /**

@@ -3,27 +3,24 @@
   "activitySummary": "Aquí está tu resumen de actividad",
   "statistics": {
     "tournaments": "Torneos",
-    "viewTournaments": "Ver tus torneos activos y pasados",
     "handicap": "Hándicap",
     "updated": "Actualizado el {{date}}",
     "notUpdated": "No actualizado",
-    "status": "Estado",
-    "verified": "Verificado",
-    "pending": "Pendiente",
-    "memberSince": "Miembro desde {{date}}"
+    "playingTo": "Juegas a",
+    "overRounds_one": "sobre {{count}} vuelta",
+    "overRounds_other": "sobre {{count}} vueltas",
+    "needsMoreRounds": "Juega más vueltas",
+    "activeCount_one": "{{count}} activo",
+    "activeCount_other": "{{count}} activos",
+    "trendImproving": "mejorando",
+    "trendWorsening": "empeorando",
+    "trendSteady": "sin cambios",
+    "openStats": "Ver todas mis estadísticas"
   },
   "quickActions": {
     "title": "Acciones Rápidas",
     "createTournament": "Crear Torneo",
     "createTournamentDesc": "Comenzar un nuevo torneo Ryder Cup",
-    "myTournaments": "Mis Torneos",
-    "myTournamentsDesc": "Ver y gestionar tus torneos",
-    "myProfile": "Mi Perfil",
-    "myProfileDesc": "Ver y actualizar tu información",
-    "browseCompetitions": "Explorar Competiciones",
-    "browseCompetitionsDesc": "Descubrir torneos para unirse",
-    "friends": "Amigos",
-    "friendsDesc": "Gestiona tus amigos y solicitudes",
     "quickMatch": "Partida Rápida",
     "quickMatchDesc": "Juega una ronda con amigos sin crear un torneo"
   },
@@ -67,5 +64,73 @@
     "loading": "Cargando partidos...",
     "teamA": "Equipo A",
     "teamB": "Equipo B"
+  },
+  "nextMatch": {
+    "label": "Tu próximo partido",
+    "view": "Ver",
+    "versus": "Contra {{opponents}}",
+    "withPartners": "con {{partners}}",
+    "emptyTitle": "¿Partido improvisado?",
+    "emptyDescription": "Crea una partida rápida con amigos, sin necesidad de un torneo",
+    "emptyAction": "Crear partida rápida",
+    "session": {
+      "MORNING": "Mañana",
+      "AFTERNOON": "Tarde",
+      "EVENING": "Noche"
+    },
+    "format": {
+      "SINGLES": "Individual",
+      "FOURBALL": "Fourball",
+      "FOURSOMES": "Foursomes"
+    }
+  },
+  "recentMatches": {
+    "title": "Últimas partidas",
+    "emptyTitle": "Todavía no has jugado ninguna partida",
+    "emptyDescription": "Cuando termines una, aparecerá aquí con su resultado",
+    "emptyAction": "Jugar una partida rápida",
+    "points_one": "{{count}} pt",
+    "points_other": "{{count}} pts",
+    "result": {
+      "WON": "Ganado",
+      "LOST": "Perdido",
+      "HALVED": "Empatado"
+    },
+    "resultShort": {
+      "WON": "G",
+      "LOST": "P",
+      "HALVED": "E"
+    },
+    "format": {
+      "SINGLES": "Individual",
+      "FOURBALL": "Fourball",
+      "FOURSOMES": "Foursomes",
+      "MEDAL": "Medal",
+      "STABLEFORD": "Stableford"
+    }
+  },
+  "playerStats": {
+    "title": "Mis estadísticas",
+    "subtitle": "Cómo estás jugando, en todas tus vueltas y campo a campo",
+    "allCourses": "Todos los campos",
+    "roundsPlayed": "Vueltas",
+    "scoringAvg": "Media al par",
+    "scoringAvgHint": "Golpes netos respecto al par",
+    "estimatedIndex": "Juegas a",
+    "bestRound": "Mejor vuelta",
+    "levelPar": "PAR",
+    "overRounds_one": "sobre {{count}} vuelta",
+    "overRounds_other": "sobre {{count}} vueltas",
+    "needsMoreRounds": "Juega más vueltas",
+    "notOfficial": "Este índice lo calcula la app a partir de tus vueltas. No es tu hándicap oficial de la federación: no incluye el ajuste por las condiciones de juego de cada día.",
+    "historyTitle": "Todas tus partidas",
+    "emptyTitle": "Todavía no hay estadísticas",
+    "emptyDescription": "En cuanto termines una vuelta entera, empezarás a ver aquí cómo juegas",
+    "emptyCourseTitle": "Sin vueltas completas en este campo",
+    "emptyCourseDescription": "Solo cuentan las vueltas terminadas con la tarjeta entera",
+    "roundsWithoutTee_one": "Calculado sobre {{counted}} de tu {{count}} vuelta: a la otra le falta el tee con el que jugaste, y sin él no se puede medir la dificultad del campo.",
+    "roundsWithoutTee_other": "Calculado sobre {{counted}} de tus {{count}} vueltas: al resto les falta el tee con el que jugaste, y sin él no se puede medir la dificultad del campo.",
+    "noRoundsWithTee_one": "Tu vuelta no tiene registrado el tee con el que jugaste, y sin él no se puede medir la dificultad del campo.",
+    "noRoundsWithTee_other": "Ninguna de tus {{count}} vueltas tiene registrado el tee con el que jugaste, y sin él no se puede medir la dificultad del campo."
   }
 }

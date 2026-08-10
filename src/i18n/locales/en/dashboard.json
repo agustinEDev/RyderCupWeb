@@ -3,27 +3,24 @@
   "activitySummary": "Here's your activity summary",
   "statistics": {
     "tournaments": "Tournaments",
-    "viewTournaments": "View your active and past tournaments",
     "handicap": "Handicap",
     "updated": "Updated {{date}}",
     "notUpdated": "Not updated",
-    "status": "Status",
-    "verified": "Verified",
-    "pending": "Pending",
-    "memberSince": "Member since {{date}}"
+    "playingTo": "Playing to",
+    "overRounds_one": "over {{count}} round",
+    "overRounds_other": "over {{count}} rounds",
+    "needsMoreRounds": "Play more rounds",
+    "activeCount_one": "{{count}} active",
+    "activeCount_other": "{{count}} active",
+    "trendImproving": "improving",
+    "trendWorsening": "getting worse",
+    "trendSteady": "no change",
+    "openStats": "See all my statistics"
   },
   "quickActions": {
     "title": "Quick Actions",
     "createTournament": "Create Tournament",
     "createTournamentDesc": "Start a new Ryder Cup tournament",
-    "myTournaments": "My Tournaments",
-    "myTournamentsDesc": "View and manage your tournaments",
-    "myProfile": "My Profile",
-    "myProfileDesc": "View and update your information",
-    "browseCompetitions": "Browse Competitions",
-    "browseCompetitionsDesc": "Discover tournaments to join",
-    "friends": "Friends",
-    "friendsDesc": "Manage your friends and requests",
     "quickMatch": "Quick Match",
     "quickMatchDesc": "Play a round with friends without creating a tournament"
   },
@@ -67,5 +64,73 @@
     "loading": "Loading matches...",
     "teamA": "Team A",
     "teamB": "Team B"
+  },
+  "nextMatch": {
+    "label": "Your next match",
+    "view": "View",
+    "versus": "Against {{opponents}}",
+    "withPartners": "with {{partners}}",
+    "emptyTitle": "Fancy a round?",
+    "emptyDescription": "Start a quick match with friends, no tournament needed",
+    "emptyAction": "New quick match",
+    "session": {
+      "MORNING": "Morning",
+      "AFTERNOON": "Afternoon",
+      "EVENING": "Evening"
+    },
+    "format": {
+      "SINGLES": "Singles",
+      "FOURBALL": "Fourball",
+      "FOURSOMES": "Foursomes"
+    }
+  },
+  "recentMatches": {
+    "title": "Recent matches",
+    "emptyTitle": "You have not played any matches yet",
+    "emptyDescription": "Once you finish one, it will show up here with its result",
+    "emptyAction": "Play a quick match",
+    "points_one": "{{count}} pt",
+    "points_other": "{{count}} pts",
+    "result": {
+      "WON": "Won",
+      "LOST": "Lost",
+      "HALVED": "Halved"
+    },
+    "resultShort": {
+      "WON": "W",
+      "LOST": "L",
+      "HALVED": "H"
+    },
+    "format": {
+      "SINGLES": "Singles",
+      "FOURBALL": "Fourball",
+      "FOURSOMES": "Foursomes",
+      "MEDAL": "Medal",
+      "STABLEFORD": "Stableford"
+    }
+  },
+  "playerStats": {
+    "title": "My statistics",
+    "subtitle": "How you are playing, across every round and course by course",
+    "allCourses": "All courses",
+    "roundsPlayed": "Rounds",
+    "scoringAvg": "Average to par",
+    "scoringAvgHint": "Net strokes against par",
+    "estimatedIndex": "Playing to",
+    "bestRound": "Best round",
+    "levelPar": "PAR",
+    "overRounds_one": "over {{count}} round",
+    "overRounds_other": "over {{count}} rounds",
+    "needsMoreRounds": "Play more rounds",
+    "notOfficial": "This index is the app's own calculation from your rounds. It is not your official federation handicap: it leaves out the adjustment for each day's playing conditions.",
+    "historyTitle": "All your matches",
+    "emptyTitle": "No statistics yet",
+    "emptyDescription": "As soon as you finish a full round, you will start seeing how you play here",
+    "emptyCourseTitle": "No complete rounds on this course",
+    "emptyCourseDescription": "Only rounds finished with the whole card count",
+    "roundsWithoutTee_one": "Calculated over {{counted}} of your {{count}} round: the other has no tee recorded, and without it there is no way to measure how hard the course played.",
+    "roundsWithoutTee_other": "Calculated over {{counted}} of your {{count}} rounds: the rest have no tee recorded, and without it there is no way to measure how hard the course played.",
+    "noRoundsWithTee_one": "Your round has no tee recorded, and without it there is no way to measure how hard the course played.",
+    "noRoundsWithTee_other": "None of your {{count}} rounds have a tee recorded, and without it there is no way to measure how hard the course played."
   }
 }
