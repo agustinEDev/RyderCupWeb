@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Loader, Users, UserPlus } from 'lucide-react';
+import { Link } from 'react-router';
+import { ArrowLeft, Loader, Users, UserPlus } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import customToast from '../../utils/toast';
 import HeaderAuth from '../../components/layout/HeaderAuth';
@@ -183,6 +184,20 @@ const FriendsPage = () => {
       />
 
       <div className="max-w-4xl mx-auto px-4 py-6">
+        {/* La vuelta al feed va visible tambien en movil, al reves que el resto
+            de la aplicacion: a Amigos se entra desde el feed, y en movil la
+            navegacion inferior marca la pestana del feed como activa mientras
+            estas aqui, asi que sin este enlace no hay ninguna senal de por
+            donde se vuelve */}
+        <Link
+          to="/feed"
+          data-testid="friends-back-to-feed"
+          className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-3 transition-colors"
+        >
+          <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+          {t('backToFeed')}
+        </Link>
+
         <div className="mb-6 flex items-center justify-between">
           <div>
             <h1 className="hidden md:block text-2xl font-bold text-gray-900">{t('title')}</h1>
