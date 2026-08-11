@@ -34,8 +34,13 @@ const HALF_ROUND_HOLES = 9;
  * uno: cuántos birdies y en qué hoyos, qué diferencial batió a cuál. Los
  * birdies vienen ya agrupados por vuelta desde el backend — "3 birdies" es una
  * entrada, no tres.
+ *
+ * `courseName` llega resuelto desde fuera, igual que `author`: el `payload` solo
+ * guarda el id del campo y el nombre viaja aparte en la respuesta del feed. Es
+ * opcional — un campo borrado, o un id que el backend no supo leer, deja la
+ * entrada sin nombre en vez de sin pintar.
  */
-const ActivityEventCard = ({ event, author }) => {
+const ActivityEventCard = ({ event, author, courseName }) => {
   const { t, i18n } = useTranslation(['feed', 'common']);
 
   const Icon = EVENT_ICONS[event.type] || Award;
@@ -69,6 +74,11 @@ const ActivityEventCard = ({ event, author }) => {
   }
   if (event.payload?.from_tournament) {
     detalles.push(t('feed:detail.fromTournament'));
+  }
+  // El campo va el último: es el dato que menos distingue una entrada de otra,
+  // porque se repite en todos los logros de la misma vuelta
+  if (courseName) {
+    detalles.push(courseName);
   }
 
   return (

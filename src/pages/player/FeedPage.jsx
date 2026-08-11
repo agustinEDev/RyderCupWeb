@@ -22,6 +22,7 @@ const FeedPage = () => {
 
   const [events, setEvents] = useState([]);
   const [authors, setAuthors] = useState({});
+  const [courses, setCourses] = useState({});
   const [nextCursor, setNextCursor] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -54,6 +55,7 @@ const FeedPage = () => {
       const page = await getFriendsFeedUseCase.execute({ limit: PAGE_SIZE });
       setEvents(page.events);
       setAuthors(page.authors);
+      setCourses(page.courses);
       setNextCursor(page.nextCursor);
 
       if (!yaMarcado.current) {
@@ -85,6 +87,7 @@ const FeedPage = () => {
       });
       setEvents((prev) => [...prev, ...page.events]);
       setAuthors((prev) => ({ ...prev, ...page.authors }));
+      setCourses((prev) => ({ ...prev, ...page.courses }));
       setNextCursor(page.nextCursor);
     } catch {
       customToast.error(t('common:errors.generic'));
@@ -135,6 +138,7 @@ const FeedPage = () => {
                   key={event.id}
                   event={event}
                   author={authors[event.userId]}
+                  courseName={courses[event.payload?.golf_course_id]}
                 />
               ))}
             </div>
