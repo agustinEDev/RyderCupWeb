@@ -1,0 +1,48 @@
+{
+  "title": "Activity",
+  "subtitle": "What you and your friends have achieved",
+  "loading": "Loading activity...",
+  "loadMore": "Show more",
+  "tabs": {
+    "feed": "Activity",
+    "friends": "Friends"
+  },
+  "empty": {
+    "noFriends": "You're not following anyone yet",
+    "noFriendsHint": "Add friends to see what they're achieving here.",
+    "noActivity": "Nothing to show yet",
+    "noActivityHint": "Once you finish a round, your best shots will appear here.",
+    "addFriends": "Find friends"
+  },
+  "unseen": {
+    "badge": "{{count}} new",
+    "badge_other": "{{count}} new"
+  },
+  "events": {
+    "HOLE_IN_ONE": "Hole in one!",
+    "HOLE_IN_ONE_other": "{{count}} holes in one!",
+    "EAGLE_OR_BETTER": "An eagle",
+    "EAGLE_OR_BETTER_other": "{{count}} eagles",
+    "BIRDIE": "A birdie",
+    "BIRDIE_other": "{{count}} birdies",
+    "NEW_COURSE": "Played a new course",
+    "PERSONAL_BEST": "New personal best",
+    "FIRST_TOURNAMENT": "Their first tournament"
+  },
+  "detail": {
+    "holes": "On hole {{holes}}",
+    "holes_other": "On holes {{holes}}",
+    "differential": "{{differential}}, beating their {{previous}}",
+    "halfRound": "Half round",
+    "fromTournament": "In a tournament",
+    "viewMatch": "View the round"
+  },
+  "sharing": {
+    "title": "Publish my activity",
+    "description": "Your achievements appear in your friends' activity.",
+    "off": "With this off, friends stop seeing your achievements and what was already published is removed.",
+    "confirmOff": "Turning this off deletes what you already published, and turning it back on won't restore it. Continue?",
+    "turnedOff": "Your activity is no longer published",
+    "turnedOn": "Your activity is published again"
+  }
+}

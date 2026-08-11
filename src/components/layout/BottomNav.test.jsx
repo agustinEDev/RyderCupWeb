@@ -34,8 +34,16 @@ describe('BottomNav', () => {
 
     expect(hrefOf('bottomNav.home')).toBe('/dashboard');
     expect(hrefOf('bottomNav.tournaments')).toBe('/competitions');
-    expect(hrefOf('bottomNav.friends')).toBe('/friends');
+    expect(hrefOf('bottomNav.feed')).toBe('/feed');
     expect(hrefOf('bottomNav.profile')).toBe('/profile');
+  });
+
+  it('keeps the feed tab active while browsing friends', () => {
+    // Amigos ya no tiene posición propia: vive dentro del feed, así que su
+    // pestaña debe seguir marcada al navegar a la lista de amigos.
+    renderNav('/friends');
+
+    expect(screen.getByRole('link', { name: 'bottomNav.feed' })).toHaveAttribute('aria-current', 'page');
   });
 
   it('marks the current section as the active page', () => {

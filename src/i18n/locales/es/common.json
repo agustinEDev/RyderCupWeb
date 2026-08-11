@@ -77,7 +77,8 @@
     "tournaments": "Torneos",
     "quickMatch": "Partida",
     "friends": "Amigos",
-    "profile": "Perfil"
+    "profile": "Perfil",
+    "feed": "Actividad"
   },
   "screens": {
     "dashboard": "Inicio",

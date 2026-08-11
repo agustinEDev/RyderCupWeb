@@ -15,7 +15,7 @@
   "add": {
     "button": "Add friend",
     "title": "Add friend",
-    "searchPlaceholder": "Search by name or email...",
+    "searchPlaceholder": "Search by name...",
     "searchMinChars": "Type at least 2 characters",
     "noUsersFound": "No users found",
     "noUserSelected": "Please select a user first",
