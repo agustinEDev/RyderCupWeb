@@ -53,6 +53,20 @@ class ISocialFeedRepository {
   async getPlayerActivity() {
     throw new Error('Not implemented');
   }
+
+  /**
+   * Enciende o apaga la publicación de los logros propios.
+   *
+   * Apagarlo **borra** lo ya publicado, y volver a encenderlo no lo recupera:
+   * el feed se vuelve a llenar con las vueltas que se jueguen a partir de ahí.
+   * Por eso devuelve cuántas entradas se retiraron, para poder decirlo.
+   *
+   * @param {boolean} enabled
+   * @returns {Promise<{ shareActivity: boolean, removedEvents: number }>}
+   */
+  async setActivitySharing() {
+    throw new Error('Not implemented');
+  }
 }
 
 export default ISocialFeedRepository;

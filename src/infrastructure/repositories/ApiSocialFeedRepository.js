@@ -11,6 +11,7 @@ import apiRequest from '../../services/api.js';
  * - PUT /api/v1/users/me/feed/seen
  * - GET /api/v1/users/{id}/profile
  * - GET /api/v1/users/{id}/activity
+ * - PUT /api/v1/social/activity-sharing
  */
 class ApiSocialFeedRepository extends ISocialFeedRepository {
   #buildQuery({ limit, cursor }) {
@@ -64,6 +65,20 @@ class ApiSocialFeedRepository extends ISocialFeedRepository {
       `/api/v1/users/${userId}/activity${this.#buildQuery({ limit, cursor })}`
     );
     return ActivityEventMapper.feedToDomain(data);
+  }
+
+  async setActivitySharing(enabled) {
+    const data = await apiRequest('/api/v1/social/activity-sharing', {
+      method: 'PUT',
+      body: JSON.stringify({ enabled }),
+    });
+
+    return {
+      shareActivity: data.share_activity,
+      // El backend siempre lo manda, pero un 0 por defecto evita que la
+      // pantalla anuncie "undefined entradas retiradas" si algún día no llega
+      removedEvents: data.removed_events ?? 0,
+    };
   }
 }
 
