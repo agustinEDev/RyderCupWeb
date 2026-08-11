@@ -29,7 +29,8 @@
     "account": "Account",
     "preferences": "Preferences",
     "legal": "Legal",
-    "language": "Language"
+    "language": "Language",
+    "privacy": "Privacy"
   },
   "legal": {
     "terms": "Terms of Service",
@@ -149,5 +150,17 @@
   "tournamentsLabel": "Tournaments",
   "updatedOn": "Updated: {{date}}",
   "memberSince": "Member since {{date}}",
-  "viewStats": "See my statistics"
+  "viewStats": "See my statistics",
+  "privacy": {
+    "shareActivity": "Publish my achievements",
+    "shareActivityHint": "Your friends see your birdies, eagles and new courses in their feed.",
+    "confirmOffTitle": "Stop publishing?",
+    "confirmOffMessage": "What you already published will be deleted, and turning this back on does not restore it. Your rounds and scorecards are untouched: they only disappear from your friends’ feed.",
+    "confirmOffAction": "Stop publishing and delete",
+    "turnedOn": "Your achievements are published again",
+    "turnedOff_zero": "Your achievements are no longer published",
+    "turnedOff_one": "Your achievements are no longer published. 1 entry was removed",
+    "turnedOff_other": "Your achievements are no longer published. {{count}} entries were removed",
+    "saveFailed": "Could not save. Please try again"
+  }
 }

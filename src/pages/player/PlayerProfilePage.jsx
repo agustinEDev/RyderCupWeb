@@ -248,9 +248,18 @@ const PlayerProfilePage = () => {
                 <h3 className="text-sm font-semibold text-gray-900">
                   {t('playerProfile:contact.title')}
                 </h3>
+                {/* Un correo no tiene espacios: no puede partirse solo, asi que
+                    su ancho minimo es el ancho entero y desborda la tarjeta en
+                    un movil. `min-w-0` deja encoger al hijo de flex y
+                    `break-all` le permite pasar a la linea siguiente. Se parte
+                    en vez de recortarse porque una direccion a medias no sirve
+                    para nada */}
                 <p className="mt-2 flex items-center gap-2 text-sm text-gray-700">
-                  <Mail className="w-4 h-4 text-gray-400" aria-hidden="true" />
-                  <a href={`mailto:${profile.email}`} className="text-primary hover:underline">
+                  <Mail className="w-4 h-4 shrink-0 text-gray-400" aria-hidden="true" />
+                  <a
+                    href={`mailto:${profile.email}`}
+                    className="min-w-0 break-all text-primary hover:underline"
+                  >
                     {profile.email}
                   </a>
                 </p>

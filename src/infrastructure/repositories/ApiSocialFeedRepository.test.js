@@ -161,4 +161,26 @@ describe('ApiSocialFeedRepository', () => {
       expect(page.courses).toEqual({});
     });
   });
+
+  describe('setActivitySharing', () => {
+    it('sends the new value and reports how much was removed', async () => {
+      apiRequest.mockResolvedValue({ share_activity: false, removed_events: 7 });
+
+      const result = await repository.setActivitySharing(false);
+
+      expect(apiRequest).toHaveBeenCalledWith('/api/v1/social/activity-sharing', {
+        method: 'PUT',
+        body: JSON.stringify({ enabled: false }),
+      });
+      expect(result).toEqual({ shareActivity: false, removedEvents: 7 });
+    });
+
+    it('defaults the removed count to zero when the response omits it', async () => {
+      apiRequest.mockResolvedValue({ share_activity: true });
+
+      const result = await repository.setActivitySharing(true);
+
+      expect(result).toEqual({ shareActivity: true, removedEvents: 0 });
+    });
+  });
 });
