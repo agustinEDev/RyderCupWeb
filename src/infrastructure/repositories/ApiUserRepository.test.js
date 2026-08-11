@@ -233,6 +233,29 @@ describe('ApiUserRepository', () => {
       });
     });
 
+    it('never carries an email through, even if the backend sent one', async () => {
+      // El fixture de arriba no trae `email`, así que un mapeo que lo copiara
+      // produciría `email: undefined` y `toEqual` lo pasaría por alto. Aquí se
+      // manda uno de verdad para que la frontera quede fijada por un test y no
+      // solo por lo que hoy devuelve el backend.
+      apiRequest.mockResolvedValueOnce({
+        users: [
+          {
+            user_id: 'u1',
+            full_name: 'John Doe',
+            first_name: 'John',
+            last_name: 'Doe',
+            email: 'john@example.com',
+          },
+        ],
+      });
+
+      const results = await apiUserRepository.searchUsers('Jo');
+
+      expect(results[0]).not.toHaveProperty('email');
+      expect(JSON.stringify(results)).not.toContain('john@example.com');
+    });
+
     it('should use the separated name fields instead of splitting full_name', async () => {
       // Partir por el primer espacio rompía con nombres compuestos: "María José
       // García" dejaba "María" de nombre y "José García" de apellidos.

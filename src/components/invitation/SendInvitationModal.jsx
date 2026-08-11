@@ -279,7 +279,10 @@ const SendInvitationModalContent = ({ onClose, onSend, onSendByUserId, onSearchU
                         >
                           <div className="flex items-center gap-2">
                             <Avatar userId={user.id} size="sm" />
-                            <p className="text-sm font-medium text-gray-900 truncate">
+                            {/* `truncate` no basta en un hijo de flex: sin `min-w-0`
+                                su ancho mínimo es el del contenido, así que un
+                                nombre largo desborda en vez de recortarse */}
+                            <p className="min-w-0 flex-1 text-sm font-medium text-gray-900 truncate">
                               {user.firstName} {user.lastName}
                             </p>
                           </div>
