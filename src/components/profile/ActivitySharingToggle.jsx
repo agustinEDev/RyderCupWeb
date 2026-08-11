@@ -30,7 +30,10 @@ const ActivitySharingToggle = ({ initialValue, onChange }) => {
       setEnabled(result.shareActivity);
       onChange?.(result.shareActivity);
 
-      if (next) {
+      // Se ramifica por lo que confirmo el backend, no por lo que se pidio: es
+      // el mismo estado con el que se pinta el interruptor, y si algun dia
+      // difieren, el aviso y el interruptor no pueden decir cosas distintas
+      if (result.shareActivity) {
         customToast.success(t('privacy.turnedOn'));
       } else {
         customToast.success(

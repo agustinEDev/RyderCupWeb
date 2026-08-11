@@ -10,8 +10,13 @@ vi.mock('../../utils/toast', () => ({
   default: { success: vi.fn(), error: vi.fn() },
 }));
 
+// `t` es observable a proposito: el mensaje de apagado interpola cuantas
+// entradas se retiraron, y con una `t` que descarta las opciones el test solo
+// probaria la clave y daria por bueno un contador que nunca se pasa
+const { tMock } = vi.hoisted(() => ({ tMock: vi.fn((key) => key) }));
+
 vi.mock('react-i18next', () => ({
-  useTranslation: () => ({ t: (key) => key }),
+  useTranslation: () => ({ t: tMock }),
 }));
 
 import { setActivitySharingUseCase } from '../../composition';
@@ -78,6 +83,7 @@ describe('ActivitySharingToggle', () => {
       expect(screen.getByRole('switch')).toHaveAttribute('aria-checked', 'false');
     });
     expect(setActivitySharingUseCase.execute).toHaveBeenCalledWith(false);
+    expect(tMock).toHaveBeenCalledWith('privacy.turnedOff', { count: 4 });
     expect(customToast.success).toHaveBeenCalledWith('privacy.turnedOff');
   });
 
