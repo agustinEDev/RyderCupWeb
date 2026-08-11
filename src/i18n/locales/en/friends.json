@@ -1,6 +1,7 @@
 {
   "title": "Friends",
   "subtitle": "Manage your friends and friend requests",
+  "backToFeed": "Activity",
   "loading": "Loading friends...",
   "tabs": {
     "friends": "My friends",

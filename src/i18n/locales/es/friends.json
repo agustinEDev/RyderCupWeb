@@ -1,6 +1,7 @@
 {
   "title": "Amigos",
   "subtitle": "Gestiona tus amigos y solicitudes de amistad",
+  "backToFeed": "Actividad",
   "loading": "Cargando amigos...",
   "tabs": {
     "friends": "Mis amigos",
