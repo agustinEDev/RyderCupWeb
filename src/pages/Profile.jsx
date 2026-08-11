@@ -195,10 +195,11 @@ const Profile = () => {
                       )}
                     </div>
 
-                    {/* Email */}
+                    {/* Email. Mismo caso que en el perfil de otro jugador: una
+                        direccion larga no puede partirse sola y desborda */}
                     <div className="flex items-center gap-2 text-gray-600 mb-2">
-                      <Mail className="w-4 h-4" />
-                      <span className="text-sm">{email}</span>
+                      <Mail className="w-4 h-4 shrink-0" />
+                      <span className="min-w-0 break-all text-sm">{email}</span>
                     </div>
 
                     {/* Member Since */}

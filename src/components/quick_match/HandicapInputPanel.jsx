@@ -70,7 +70,10 @@ const HandicapInputPanel = ({ value, onConfirm, onClose, label }) => {
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-3">
-          <span className="text-sm font-semibold text-gray-600 truncate">{label}</span>
+          {/* `truncate` no recorta nada sin `min-w-0`: el ancho minimo del hijo
+              de flex es el de su contenido, asi que un nombre largo empujaria
+              la cruz de cerrar fuera del panel en vez de acortarse */}
+          <span className="min-w-0 truncate text-sm font-semibold text-gray-600">{label}</span>
           <button
             type="button"
             onClick={onClose}
