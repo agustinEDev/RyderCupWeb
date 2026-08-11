@@ -1,0 +1,49 @@
+{
+  "title": "Profile",
+  "loading": "Loading profile...",
+  "friendsCount": "{{count}} friend",
+  "friendsCount_other": "{{count}} friends",
+  "notFound": {
+    "title": "We could not find this player",
+    "hint": "They may have closed their account, or the link may be wrong.",
+    "back": "Back to activity"
+  },
+  "friendship": {
+    "add": "Add friend",
+    "sent": "Request sent",
+    "received": "They sent you a request",
+    "accept": "Accept",
+    "decline": "Decline",
+    "friends": "You are friends",
+    "blocked": "You have blocked this player",
+    "requestSent": "Request sent",
+    "accepted": "You are now friends",
+    "declined": "Request declined"
+  },
+  "private": {
+    "title": "Friends only",
+    "hint": "Their handicap, stats and activity show up once you are friends."
+  },
+  "contact": {
+    "title": "Contact",
+    "email": "Email"
+  },
+  "stats": {
+    "title": "Stats",
+    "handicap": "Handicap",
+    "estimatedIndex": "Estimated index",
+    "scoringAvg": "Average to par",
+    "roundsPlayed": "Rounds",
+    "bestDifferential": "Best differential",
+    "tournaments": "Tournaments",
+    "estimatedIndexHint": "This is not the official federation index.",
+    "empty": "No rounds to show yet.",
+    "noValue": "—"
+  },
+  "activity": {
+    "title": "Their activity",
+    "empty": "They have not published anything yet.",
+    "hidden": "They do not publish their activity.",
+    "loadMore": "Load more"
+  }
+}

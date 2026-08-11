@@ -1,5 +1,6 @@
 import ISocialFeedRepository from '../../domain/repositories/ISocialFeedRepository';
 import ActivityEventMapper from '../mappers/ActivityEventMapper';
+import PlayerStatsMapper from '../mappers/PlayerStatsMapper';
 import apiRequest from '../../services/api.js';
 
 /**
@@ -50,7 +51,11 @@ class ApiSocialFeedRepository extends ISocialFeedRepository {
       // se puede ver".
       email: data.email ?? null,
       handicap: data.handicap ?? null,
-      stats: data.stats ?? null,
+      // Las estadísticas pasan por el mismo mapper que las propias: es el
+      // mismo DTO del backend, y devolverlo aquí en snake_case obligaría a la
+      // pantalla de perfil a leer los campos de otra forma que el resto del
+      // frontend.
+      stats: data.stats ? PlayerStatsMapper.toDomain(data.stats) : null,
     };
   }
 

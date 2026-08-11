@@ -54,6 +54,7 @@ const InvitationsPage = lazyWithRetry(() => import('./pages/creator/InvitationsP
 const MyInvitationsPage = lazyWithRetry(() => import('./pages/player/MyInvitationsPage'));
 const FriendsPage = lazyWithRetry(() => import('./pages/player/FriendsPage'));
 const FeedPage = lazyWithRetry(() => import('./pages/player/FeedPage'));
+const PlayerProfilePage = lazyWithRetry(() => import('./pages/player/PlayerProfilePage'));
 const ScoringPage = lazyWithRetry(() => import('./pages/player/ScoringPage'));
 const UpcomingMatchesPage = lazyWithRetry(() => import('./pages/player/UpcomingMatchesPage'));
 
@@ -301,6 +302,12 @@ function AppContent() {
         <Route path="/feed" element={
           <ProtectedRoute>
             <FeedPage />
+          </ProtectedRoute>
+        } />
+
+        <Route path="/players/:userId" element={
+          <ProtectedRoute>
+            <PlayerProfilePage />
           </ProtectedRoute>
         } />
 
