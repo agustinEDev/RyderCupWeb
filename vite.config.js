@@ -150,6 +150,11 @@ export default defineConfig(() => ({
   test: {
     globals: true,
     environment: 'jsdom',
+    // El de vitest son 5 s, y el a11y de GolfCourseForm renderiza un formulario
+    // de 18 hoyos: ya rozaba ese límite y cualquier fichero de test nuevo lo
+    // empuja por encima al competir por CPU. El test no es lento por estar mal,
+    // es que monta mucho; 15 s le dejan margen sin ocultar un cuelgue de verdad.
+    testTimeout: 15000,
     setupFiles: './src/setupTests.js', // Se podría crear más tarde si es necesario.
     css: {
       modules: {

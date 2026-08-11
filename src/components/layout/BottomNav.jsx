@@ -1,7 +1,7 @@
 import { useState, useCallback, lazy, Suspense } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router';
 import { useTranslation } from 'react-i18next';
-import { Home, Trophy, Users, User, Zap } from 'lucide-react';
+import { Home, Trophy, Sparkles, User, Zap } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 
 // El modal solo se necesita cuando el usuario pulsa el FAB: fuera del bundle inicial
@@ -100,11 +100,15 @@ const BottomNav = () => {
             </span>
           </div>
 
+          {/* El feed ocupa el sitio que tenía Amigos: la barra vive de sus cinco
+              posiciones con el FAB centrado, y una sexta la descoloca. La lista
+              de amigos queda a un toque, dentro del propio feed, que es donde
+              uno acaba mirando a sus amigos de todos modos. */}
           <NavItem
-            to="/friends"
-            icon={Users}
-            label={t('bottomNav.friends')}
-            isActive={isActive('/friends')}
+            to="/feed"
+            icon={Sparkles}
+            label={t('bottomNav.feed')}
+            isActive={isActive('/feed') || isActive('/friends')}
           />
           <NavItem
             to="/profile"
