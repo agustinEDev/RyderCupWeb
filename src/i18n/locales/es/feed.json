@@ -1,0 +1,48 @@
+{
+  "title": "Actividad",
+  "subtitle": "Lo que habéis conseguido tú y tus amigos",
+  "loading": "Cargando actividad...",
+  "loadMore": "Ver más",
+  "tabs": {
+    "feed": "Actividad",
+    "friends": "Amigos"
+  },
+  "empty": {
+    "noFriends": "Todavía no sigues a nadie",
+    "noFriendsHint": "Añade amigos para ver aquí lo que van consiguiendo.",
+    "noActivity": "Aún no hay nada que contar",
+    "noActivityHint": "Cuando termines una vuelta, tus mejores golpes aparecerán aquí.",
+    "addFriends": "Buscar amigos"
+  },
+  "unseen": {
+    "badge": "{{count}} novedad",
+    "badge_other": "{{count}} novedades"
+  },
+  "events": {
+    "HOLE_IN_ONE": "¡Hoyo en uno!",
+    "HOLE_IN_ONE_other": "¡{{count}} hoyos en uno!",
+    "EAGLE_OR_BETTER": "Un eagle",
+    "EAGLE_OR_BETTER_other": "{{count}} eagles",
+    "BIRDIE": "Un birdie",
+    "BIRDIE_other": "{{count}} birdies",
+    "NEW_COURSE": "Estrenó campo",
+    "PERSONAL_BEST": "Nuevo récord personal",
+    "FIRST_TOURNAMENT": "Su primer torneo"
+  },
+  "detail": {
+    "holes": "En el hoyo {{holes}}",
+    "holes_other": "En los hoyos {{holes}}",
+    "differential": "{{differential}}, mejorando su {{previous}}",
+    "halfRound": "Media vuelta",
+    "fromTournament": "En torneo",
+    "viewMatch": "Ver la partida"
+  },
+  "sharing": {
+    "title": "Publicar mi actividad",
+    "description": "Tus logros aparecen en la actividad de tus amigos.",
+    "off": "Con esto apagado, tus amigos dejan de ver tus logros y se retira lo que ya se publicó.",
+    "confirmOff": "Al apagarlo se borrará lo que ya habías publicado, y volver a encenderlo no lo recupera. ¿Seguimos?",
+    "turnedOff": "Ya no se publica tu actividad",
+    "turnedOn": "Tu actividad vuelve a publicarse"
+  }
+}

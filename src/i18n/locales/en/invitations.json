@@ -6,7 +6,7 @@
     "title": "Send Invitation",
     "tabSearchUser": "Search User",
     "tabByEmail": "By Email",
-    "searchPlaceholder": "Search by name or email...",
+    "searchPlaceholder": "Search by name...",
     "searchMinChars": "Type at least 2 characters",
     "noUsersFound": "No users found",
     "noUserSelected": "Please select a user first",
