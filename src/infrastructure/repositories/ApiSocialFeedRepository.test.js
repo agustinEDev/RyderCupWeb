@@ -135,4 +135,30 @@ describe('ApiSocialFeedRepository', () => {
       expect(apiRequest).toHaveBeenCalledWith('/api/v1/users/u1/activity?limit=20');
     });
   });
+
+  describe('course names', () => {
+    it('carries the course names that come beside the events', async () => {
+      apiRequest.mockResolvedValue({
+        events: [],
+        authors: {},
+        courses: { 'c-1': 'Real Club de Golf' },
+        next_cursor: null,
+        unseen_count: 0,
+      });
+
+      const page = await repository.getFeed({ limit: 20 });
+
+      expect(page.courses).toEqual({ 'c-1': 'Real Club de Golf' });
+    });
+
+    it('falls back to an empty map when the response carries no courses', async () => {
+      // Una respuesta de antes de BE #183 no trae `courses`. La página tiene que
+      // pintarse igual, con las entradas sin nombre de campo.
+      apiRequest.mockResolvedValue({ events: [], authors: {}, next_cursor: null, unseen_count: 0 });
+
+      const page = await repository.getFeed({ limit: 20 });
+
+      expect(page.courses).toEqual({});
+    });
+  });
 });

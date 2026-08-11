@@ -40,6 +40,9 @@ class ActivityEventMapper {
     return {
       events: (apiResponse.events || []).map(ActivityEventMapper.toDomain),
       authors,
+      // Los nombres de campo llegan sueltos, no dentro de cada evento: el
+      // backend los resuelve al leer porque el payload solo guarda el id
+      courses: apiResponse.courses || {},
       nextCursor: apiResponse.next_cursor ?? null,
       unseenCount: apiResponse.unseen_count ?? 0,
     };

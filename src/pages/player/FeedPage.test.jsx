@@ -40,6 +40,7 @@ const evento = (overrides = {}) => ({
 const pagina = (overrides = {}) => ({
   events: [evento()],
   authors: { u1: { id: 'u1', firstName: 'Ana', lastName: 'García' } },
+  courses: {},
   nextCursor: null,
   unseenCount: 0,
   ...overrides,
@@ -64,6 +65,57 @@ describe('FeedPage', () => {
 
     expect(await screen.findByTestId('activity-event-e1')).toBeInTheDocument();
     expect(screen.getByText('Ana García')).toBeInTheDocument();
+  });
+
+  it('says on which course each achievement happened', async () => {
+    getFeed.mockResolvedValue(
+      pagina({
+        events: [evento({ payload: { count: 3, holes: [1, 5, 9], golf_course_id: 'c-1' } })],
+        courses: { 'c-1': 'Real Club de Golf' },
+      })
+    );
+    renderFeed();
+
+    expect(await screen.findByText(/Real Club de Golf/)).toBeInTheDocument();
+  });
+
+  it('still paints the entry when the course name is missing', async () => {
+    // Un campo borrado, o un id que el backend no supo leer, deja la entrada
+    // sin nombre — nunca sin pintar.
+    getFeed.mockResolvedValue(
+      pagina({
+        events: [evento({ payload: { count: 3, holes: [1, 5, 9], golf_course_id: 'c-borrado' } })],
+        courses: {},
+      })
+    );
+    renderFeed();
+
+    expect(await screen.findByTestId('activity-event-e1')).toBeInTheDocument();
+  });
+
+  it('keeps the course names from earlier pages when loading more', async () => {
+    // Los nombres se acumulan igual que los autores: si se reemplazaran, las
+    // entradas ya pintadas perderían el suyo al paginar.
+    getFeed.mockResolvedValueOnce(
+      pagina({
+        events: [evento({ payload: { golf_course_id: 'c-1' } })],
+        courses: { 'c-1': 'Real Club de Golf' },
+        nextCursor: 'cursor-1',
+      })
+    );
+    getFeed.mockResolvedValueOnce(
+      pagina({
+        events: [evento({ id: 'e2', payload: { golf_course_id: 'c-2' } })],
+        courses: { 'c-2': 'Otro Campo' },
+      })
+    );
+    renderFeed();
+
+    await screen.findByTestId('activity-event-e1');
+    fireEvent.click(screen.getByTestId('feed-load-more'));
+
+    expect(await screen.findByText(/Otro Campo/)).toBeInTheDocument();
+    expect(screen.getByText(/Real Club de Golf/)).toBeInTheDocument();
   });
 
   it('marks the feed as seen once, not on every page', async () => {
