@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [2.9.0] - 2026-08-11
+
+### Added
+
+- **El feed de actividad, y la pestaña de Amigos convertida en su puerta** (issue #352): muestra lo que tú y tus amigos habéis conseguido, de lo más reciente a lo más antiguo, paginado por cursor porque el feed crece por arriba y un desplazamiento numérico repetiría entradas cada vez que alguien publica mientras navegas. Ocupa el sitio de Amigos en la barra inferior: esa barra vive de cinco posiciones con el botón de partida centrado, y una sexta la desequilibra — Amigos queda a un toque, dentro del feed, que es donde acabas mirando a tus amigos de todas formas. La pestaña sigue resaltada mientras navegas por Amigos, para que la sección no parezca haber desaparecido. **El feed se da por visto una vez por visita, no por página**: paginar apagaría el aviso de novedades por refrescar en vez de por mirar, y que falle apagarlo nunca impide leer — lo peor que pasa es que el aviso siga ahí hasta la visita siguiente. Un feed vacío es el primer estado normal y no un error —sin amigos todavía, amigos que no han jugado, o una cuenta nueva—, así que ofrece el paso que lo arregla en vez de dejar una pantalla en blanco.
+
+- **La página de perfil de un jugador** en `/players/{id}`, a la que el feed ya enlazaba sin que existiera. Tiene los dos niveles de detalle que impone el backend: cualquiera ve la ficha mínima —foto, nombre y número de amigos— y solo los amigos ven correo, hándicap, estadísticas y actividad. Los campos privados llegan en `null` en vez de recortados o a cero, de modo que la página distingue «esto no lo puedes ver» de «aquí no hay nada»: lo primero se explica, lo segundo se dice sin rodeos. **El perfil propio no se pinta aquí**: el feed enlaza a `/players/{id}` también para tus propios logros, y verte a ti mismo a través de la ficha de un desconocido, sin nada editable, desorienta — así que redirige a `/profile`. Un 404 cubre tanto a un jugador que no existe como a uno que no puedes ver, que es deliberado en el backend: un 403 confirmaría que la cuenta existe y sondear identificadores revelaría quién está registrado. Un 403 en la actividad significa otra cosa y se trata como tal — ese jugador no publica nada, lo que deja el resto del perfil perfectamente válido.
+
+- **El nombre del campo en cada tarjeta del feed**, consumiendo el mapa `courses` que añadió BE #183. Hasta ahora nadie lo leía, así que una tarjeta no podía decir dónde se hizo un birdie y `NEW_COURSE` anunciaba un campo sin nombrarlo. Va al final de la línea de detalles que ya existía y no en una línea propia: el campo es la parte menos distintiva de una entrada, porque todos los logros de la misma vuelta lo repiten. Los nombres **se acumulan entre páginas**, igual que ya hacían los autores — reemplazar el mapa al paginar le quitaría el nombre a las entradas que ya están en pantalla en cuanto llegara la página siguiente. El nombre es opcional en cada paso: un campo borrado, un identificador que el backend no supo leer o una respuesta anterior a BE #183 dejan la entrada sin nombre, nunca sin pintar.
+
+- **Un interruptor para dejar de publicar tus logros**, en un grupo nuevo de Privacidad dentro del perfil. El feed publica cada birdie, cada eagle y cada campo nuevo a tus amigos, y `share_activity` viene encendido para todo el mundo; el backend tenía el interruptor desde BE #175, pero nada en la interfaz llegaba a él y la única forma de salirse era llamar a la API a mano. **Apagarlo es destructivo** —el backend borra además lo ya publicado, y volver a encenderlo no lo recupera—, así que pasa por una confirmación que lo dice, incluida la parte de que tus vueltas y tus tarjetas no se tocan: solo desaparecen del feed de tus amigos. Encenderlo no pregunta, porque no destruye nada. **El interruptor solo se mueve cuando el backend confirma**, y el mensaje se elige por el estado que devolvió el backend y no por el que se pidió: moverlo por adelantado le diría a alguien que sus logros son privados mientras una petición fallida los dejó públicos, que es la única dirección en la que equivocarse importa. El grupo de Privacidad se pinta fuera del `md:hidden` que envuelve al resto de la lista de ajustes — esa lista es solo de móvil y en escritorio manda una botonera donde un interruptor no cabe, así que dentro de ella la única forma de dejar de publicar habría sido inalcanzable por encima de `md`.
+
+- **Una vuelta al feed desde Amigos**: a Amigos se llega desde el feed, y estando allí la navegación inferior sigue marcando la pestaña del feed como activa, de modo que nada en pantalla decía cómo volver. El enlace **se ve también en móvil**, al revés que los de las páginas de creador, que se ocultan por debajo de `md`: aquellas se alcanzan desde una cabecera de escritorio, y esta es la página a la que un usuario de móvil llega desde el feed, que es justo donde hace falta la vuelta. La etiqueta nombra el destino en vez de decir «Atrás», para que se lea igual que el encabezado al que llegas.
+
+### Fixed
+
+- **El correo de un amigo se salía de la tarjeta en un móvil.** Un correo no tiene espacios, así que no puede partirse solo: como hijo de un contenedor flex su ancho mínimo es su ancho entero, y una dirección larga desborda por el lado. Pasaba en el perfil de otro jugador —código que no había llegado a producción— y también en el perfil propio. Ahora los dos parten de línea en vez de recortarse, porque media dirección no sirve de nada, y el icono del sobre cede el sitio al texto y no al revés. El título del panel de hándicap tenía el mismo defecto por otra vía: llevaba `truncate` sin `min-w-0`, que no recorta nada, así que un nombre largo empujaba la cruz de cerrar fuera del panel en lugar de acortarse. Es la misma causa que cortaba el panel del tablero en la #351.
+
+- **La búsqueda de jugadores enseñaba un correo que el backend ya no devuelve** (issue #353), de modo que los dos sitios que lo pintaban habrían mostrado una línea vacía. La foto asume el trabajo de distinguir a dos jugadores con el mismo nombre, y lo hace mejor. Nombre y apellidos llegan ya separados, así que desaparece el corte por el primer espacio — que además era incorrecto con nombres compuestos.
+
+- **El tablero decía el hándicap oficial donde debía decir a cuánto juegas, y se cortaba en pantallas de teléfono** (issue #351).
+
+### Build
+
+- Actualizaciones de dependencias: `lucide-react` 1.29.0, `vite` 8.2.1, `terser` 5.49.2 y `postcss` 8.5.26.
+
 ## [2.8.0] - 2026-08-10
 
 ### Added
