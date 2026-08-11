@@ -6,7 +6,7 @@ import customToast from '../../utils/toast';
 import HeaderAuth from '../../components/layout/HeaderAuth';
 import { useAuth } from '../../hooks/useAuth';
 import GolfCourseTable from '../../components/golf_course/GolfCourseTable';
-import TeeCategoryBadge from '../../components/golf_course/TeeCategoryBadge';
+import TeeColorBadge from '../../components/golf_course/TeeColorBadge';
 import { CountryFlag } from '../../utils/countryUtils';
 import { formatCountryName } from '../../services/countries';
 import {
@@ -356,7 +356,7 @@ const PendingGolfCourses = ({ embedded = false }) => {
                   {(courseToView?.tees || []).map((tee, index) => (
                     <div key={index} className="bg-gray-50 rounded-lg p-4">
                       <div className="flex items-center justify-between mb-2">
-                        <TeeCategoryBadge category={tee.teeCategory} identifier={tee.identifier} gender={tee.teeGender || tee.tee_gender || tee.gender} />
+                        <TeeColorBadge category={tee.color} identifier={tee.identifier} gender={tee.teeGender || tee.tee_gender || tee.gender} />
                         <span className="text-sm text-gray-600">{t('form.tee')} {index + 1}</span>
                       </div>
                       <div className="grid grid-cols-2 gap-4 mt-3">

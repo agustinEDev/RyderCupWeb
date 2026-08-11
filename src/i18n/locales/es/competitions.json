@@ -269,8 +269,8 @@
   },
   "enrollment": {
     "modalTitle": "Solicitar inscripción",
-    "teeCategoryLabel": "Categoría de tee preferida",
-    "teeCategoryHint": "Se usará para asignarte el tee adecuado en los partidos",
+    "colorLabel": "Categoría de tee preferida",
+    "colorHint": "Se usará para asignarte el tee adecuado en los partidos",
     "noPreference": "Sin preferencia",
     "confirm": "Confirmar",
     "cancel": "Cancelar"

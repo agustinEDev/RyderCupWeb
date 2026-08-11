@@ -13,14 +13,14 @@ describe('GolfCourse', () => {
   beforeEach(() => {
     validTees = [
       new Tee({
-        teeCategory: 'CHAMPIONSHIP',
+        color: 'WHITE',
         identifier: 'Black',
         courseRating: 75.5,
         slopeRating: 140,
         gender: 'MALE'
       }),
       new Tee({
-        teeCategory: 'AMATEUR',
+        color: 'YELLOW',
         identifier: 'Blue',
         courseRating: 72.0,
         slopeRating: 130,
@@ -105,7 +105,7 @@ describe('GolfCourse', () => {
         ...validGolfCourseData,
         tees: [
           {
-            tee_category: 'AMATEUR',
+            color: 'YELLOW',
             identifier: 'White',
             course_rating: 70.0,
             slope_rating: 120,
@@ -117,7 +117,7 @@ describe('GolfCourse', () => {
       const course = new GolfCourse(dataWithTeeDTOs);
 
       expect(course.tees[0]).toBeInstanceOf(Tee);
-      expect(course.tees[0].teeCategory).toBe('AMATEUR');
+      expect(course.tees[0].color).toBe('YELLOW');
     });
 
     it('should convert hole DTOs to Hole instances', () => {
@@ -361,7 +361,7 @@ describe('GolfCourse', () => {
       const dto = course.toDTO();
 
       expect(dto.tees).toHaveLength(2);
-      expect(dto.tees[0]).toHaveProperty('tee_category');
+      expect(dto.tees[0]).toHaveProperty('color');
       expect(dto.tees[0]).toHaveProperty('course_rating');
       expect(dto.tees[0]).toHaveProperty('slope_rating');
     });

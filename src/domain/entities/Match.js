@@ -20,8 +20,8 @@ export default class Match {
    * @param {string} props.id
    * @param {string} props.roundId
    * @param {number} props.matchNumber
-   * @param {Array} props.teamAPlayers - [{userId, playingHandicap, teeCategory, strokesReceived}]
-   * @param {Array} props.teamBPlayers - [{userId, playingHandicap, teeCategory, strokesReceived}]
+   * @param {Array} props.teamAPlayers - [{userId, playingHandicap, color, strokesReceived}]
+   * @param {Array} props.teamBPlayers - [{userId, playingHandicap, color, strokesReceived}]
    * @param {MatchStatus} props.status
    * @param {?number} props.handicapStrokesGiven
    * @param {?string} props.strokesGivenToTeam - 'A' or 'B' or null

@@ -1,6 +1,6 @@
 import { Eye, Edit, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import TeeCategoryBadge from './TeeCategoryBadge';
+import TeeColorBadge from './TeeColorBadge';
 import { CountryFlag } from '../../utils/countryUtils';
 
 /**
@@ -135,7 +135,7 @@ const GolfCourseTable = ({ courses, onView, onEdit, onApprove, onReject, showAct
               <p className="text-xs text-gray-500 mb-1">{t('table.tees')}</p>
               <div className="flex flex-wrap gap-1">
                 {course.tees.map((tee, index) => (
-                  <TeeCategoryBadge key={index} category={tee.teeCategory} identifier={tee.identifier} gender={tee.teeGender || tee.tee_gender || tee.gender} />
+                  <TeeColorBadge key={index} category={tee.color} identifier={tee.identifier} gender={tee.teeGender || tee.tee_gender || tee.gender} />
                 ))}
               </div>
             </div>
@@ -194,7 +194,7 @@ const GolfCourseTable = ({ courses, onView, onEdit, onApprove, onReject, showAct
                 <td className="py-3 px-4">
                   <div className="flex flex-wrap gap-1">
                     {course.tees.map((tee, index) => (
-                      <TeeCategoryBadge key={index} category={tee.teeCategory} identifier={tee.identifier} gender={tee.teeGender || tee.tee_gender || tee.gender} />
+                      <TeeColorBadge key={index} category={tee.color} identifier={tee.identifier} gender={tee.teeGender || tee.tee_gender || tee.gender} />
                     ))}
                   </div>
                 </td>

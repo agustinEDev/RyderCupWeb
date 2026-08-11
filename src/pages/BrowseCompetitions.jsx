@@ -134,13 +134,13 @@ const BrowseCompetitions = () => {
   };
 
   // Handle request enrollment
-  const handleRequestEnrollment = async (competitionId, teeCategory = null) => {
+  const handleRequestEnrollment = async (competitionId, color = null) => {
     setEnrollModalOpen(false);
     try {
       setRequestingEnrollment((prev) => ({ ...prev, [competitionId]: true }));
 
       // Call RequestEnrollmentUseCase
-      await requestEnrollmentUseCase.execute(competitionId, null, { teeCategory });
+      await requestEnrollmentUseCase.execute(competitionId, null, { color });
 
       customToast.success(t('browse.success.enrollmentRequested'));
 

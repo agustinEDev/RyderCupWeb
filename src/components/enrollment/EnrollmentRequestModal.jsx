@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { X, UserPlus } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
-const TEE_CATEGORIES = ['CHAMPIONSHIP', 'AMATEUR', 'SENIOR', 'FORWARD', 'JUNIOR'];
+const TEE_CATEGORIES = ['WHITE', 'YELLOW', 'BLUE', 'RED', 'GREEN'];
 
 const EnrollmentRequestModal = ({ isOpen, onClose, onConfirm, isProcessing }) => {
   if (!isOpen) return null;
@@ -55,7 +55,7 @@ const EnrollmentRequestModalContent = ({ onClose, onConfirm, isProcessing }) => 
               htmlFor="tee-category"
               className="block text-sm font-medium text-gray-700 mb-1"
             >
-              {t('competitions:enrollment.teeCategoryLabel')}
+              {t('competitions:enrollment.colorLabel')}
             </label>
             <select
               id="tee-category"
@@ -66,12 +66,12 @@ const EnrollmentRequestModalContent = ({ onClose, onConfirm, isProcessing }) => 
               <option value="">{t('competitions:enrollment.noPreference')}</option>
               {TEE_CATEGORIES.map((cat) => (
                 <option key={cat} value={cat}>
-                  {t(`golfCourses:form.teeCategories.${cat}`)}
+                  {t(`golfCourses:form.teeColors.${cat}`)}
                 </option>
               ))}
             </select>
             <p className="mt-1 text-xs text-gray-500">
-              {t('competitions:enrollment.teeCategoryHint')}
+              {t('competitions:enrollment.colorHint')}
             </p>
           </div>
 

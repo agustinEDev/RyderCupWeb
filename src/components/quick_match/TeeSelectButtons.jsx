@@ -10,8 +10,8 @@ import { teeKey, resolveTeeColor } from './createQuickMatchModalConstants';
  */
 const TeeSelectButtons = ({ value, onChange, courseTees, ariaLabel, testIdPrefix, compact = false }) => {
   const options = courseTees.map((tee) => {
-    const key = teeKey(tee.teeCategory, tee.gender);
-    return { key, label: tee.identifier, testKey: key, color: resolveTeeColor(tee.identifier) };
+    const key = teeKey(tee.color, tee.gender);
+    return { key, label: tee.identifier || tee.color, testKey: key, color: resolveTeeColor(tee.color) };
   });
 
   return (

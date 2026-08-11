@@ -44,7 +44,7 @@ class CreateGolfCourseRequestUseCase {
       if (!tee.identifier || typeof tee.identifier !== 'string') {
         throw new Error(`Tee ${index + 1} must have a valid identifier`);
       }
-      if (!tee.teeCategory) {
+      if (!tee.color) {
         throw new Error(`Tee ${index + 1} must have a category`);
       }
       if (typeof tee.slopeRating !== 'number') {

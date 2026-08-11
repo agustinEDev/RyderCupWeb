@@ -39,7 +39,7 @@ class RequestEnrollmentUseCase {
    * @param {string} competitionId - UUID de la competición
    * @param {string} userId - UUID del usuario (opcional, se obtiene del token JWT)
    * @param {Object} [data={}] - Datos opcionales del enrollment
-   * @param {string} [data.teeCategory] - Categoría de tee preferida (CHAMPIONSHIP, AMATEUR, SENIOR, FORWARD, JUNIOR)
+   * @param {string} [data.color] - Categoría de tee preferida (CHAMPIONSHIP, AMATEUR, SENIOR, FORWARD, JUNIOR)
    * @returns {Promise<Object>} DTO simple del enrollment creado
    * @throws {Error} Si el usuario ya está inscrito o falla la operación
    */

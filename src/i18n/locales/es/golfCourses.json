@@ -17,18 +17,11 @@
     "addTee": "Agregar Tee",
     "maxTeesReached": "Máximo 10 tees permitidos",
     "minTeesRequired": "Mínimo 2 tees requeridos",
-    "teeCategory": "Categoría",
+    "color": "Color",
     "identifier": "Identificador",
     "identifierPlaceholder": "Amarillo, Blanco, etc.",
     "courseRating": "Course Rating",
     "slopeRating": "Slope Rating",
-    "teeCategories": {
-      "CHAMPIONSHIP": "Campeonato",
-      "AMATEUR": "Amateur",
-      "SENIOR": "Senior",
-      "FORWARD": "Adelantado",
-      "JUNIOR": "Juvenil"
-    },
     "teeGender": "Género",
     "teeGenders": {
       "MALE": "Masculino",
@@ -59,6 +52,18 @@
       "uniqueStrokeIndices": "Cada hoyo debe tener un stroke index único (1-18)",
       "totalParRange": "El par total debe estar entre 66 y 76 (actual: {{totalPar}})",
       "submitFailed": "Error al guardar el campo de golf"
+    },
+    "teeColors": {
+      "WHITE": "Blancas",
+      "YELLOW": "Amarillas",
+      "BLUE": "Azules",
+      "RED": "Rojas",
+      "BLACK": "Negras",
+      "GREEN": "Verdes",
+      "ORANGE": "Naranjas",
+      "PINK": "Rosas",
+      "GOLD": "Doradas",
+      "OTHER": "Otro"
     }
   },
   "table": {

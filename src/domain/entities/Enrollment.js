@@ -1,6 +1,6 @@
 import EnrollmentId from '../value_objects/EnrollmentId';
 import EnrollmentStatus from '../value_objects/EnrollmentStatus';
-import TeeCategory from '../value_objects/TeeCategory';
+import TeeColor from '../value_objects/TeeColor';
 
 /**
  * Excepción para errores de estado de Enrollment
@@ -42,7 +42,7 @@ class Enrollment {
   #status;
   #teamId;
   #customHandicap;
-  #teeCategory;
+  #color;
   #createdAt;
   #updatedAt;
 
@@ -66,7 +66,7 @@ class Enrollment {
     status,
     teamId = null,
     customHandicap = null,
-    teeCategory = null,
+    color = null,
     createdAt = null,
     updatedAt = null,
   }) {
@@ -89,10 +89,10 @@ class Enrollment {
       this._validateCustomHandicap(customHandicap);
     }
 
-    // Validar teeCategory si está presente
-    if (teeCategory !== null && !(teeCategory instanceof TeeCategory)) {
+    // Validar color si está presente
+    if (color !== null && !(color instanceof TeeColor)) {
       throw new TypeError(
-        `teeCategory must be a TeeCategory instance or null, got: ${typeof teeCategory}`
+        `color must be a TeeColor instance or null, got: ${typeof color}`
       );
     }
 
@@ -103,7 +103,7 @@ class Enrollment {
     this.#status = status;
     this.#teamId = teamId;
     this.#customHandicap = customHandicap;
-    this.#teeCategory = teeCategory;
+    this.#color = color;
     this.#createdAt = createdAt ? new Date(createdAt) : new Date();
     this.#updatedAt = updatedAt ? new Date(updatedAt) : new Date();
   }
@@ -217,8 +217,8 @@ class Enrollment {
     return this.#customHandicap;
   }
 
-  get teeCategory() {
-    return this.#teeCategory;
+  get color() {
+    return this.#color;
   }
 
   get createdAt() {
@@ -314,7 +314,7 @@ class Enrollment {
       status: newStatus,
       teamId: this.#teamId,
       customHandicap: this.#customHandicap,
-      teeCategory: this.#teeCategory,
+      color: this.#color,
       createdAt: this.#createdAt,
       updatedAt: new Date(),
     });
@@ -341,7 +341,7 @@ class Enrollment {
       status: newStatus,
       teamId: this.#teamId,
       customHandicap: this.#customHandicap,
-      teeCategory: this.#teeCategory,
+      color: this.#color,
       createdAt: this.#createdAt,
       updatedAt: new Date(),
     });
@@ -368,7 +368,7 @@ class Enrollment {
       status: newStatus,
       teamId: this.#teamId,
       customHandicap: this.#customHandicap,
-      teeCategory: this.#teeCategory,
+      color: this.#color,
       createdAt: this.#createdAt,
       updatedAt: new Date(),
     });
@@ -394,7 +394,7 @@ class Enrollment {
       status: newStatus,
       teamId: this.#teamId,
       customHandicap: this.#customHandicap,
-      teeCategory: this.#teeCategory,
+      color: this.#color,
       createdAt: this.#createdAt,
       updatedAt: new Date(),
     });
@@ -432,7 +432,7 @@ class Enrollment {
       status: this.#status,
       teamId: teamId.trim(),
       customHandicap: this.#customHandicap,
-      teeCategory: this.#teeCategory,
+      color: this.#color,
       createdAt: this.#createdAt,
       updatedAt: new Date(),
     });
@@ -458,7 +458,7 @@ class Enrollment {
       status: this.#status,
       teamId: this.#teamId,
       customHandicap: handicap,
-      teeCategory: this.#teeCategory,
+      color: this.#color,
       createdAt: this.#createdAt,
       updatedAt: new Date(),
     });
@@ -479,7 +479,7 @@ class Enrollment {
       status: this.#status,
       teamId: this.#teamId,
       customHandicap: null,
-      teeCategory: this.#teeCategory,
+      color: this.#color,
       createdAt: this.#createdAt,
       updatedAt: new Date(),
     });
@@ -531,7 +531,7 @@ class Enrollment {
       status: this.#status.toString(),
       teamId: this.#teamId,
       customHandicap: this.#customHandicap,
-      teeCategory: this.#teeCategory?.toString() ?? null,
+      color: this.#color?.toString() ?? null,
       createdAt: this.#createdAt.toISOString(),
       updatedAt: this.#updatedAt.toISOString(),
     };

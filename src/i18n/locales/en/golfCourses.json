@@ -17,18 +17,11 @@
     "addTee": "Add Tee",
     "maxTeesReached": "Maximum 10 tees allowed",
     "minTeesRequired": "Minimum 2 tees required",
-    "teeCategory": "Category",
+    "color": "Colour",
     "identifier": "Identifier",
     "identifierPlaceholder": "Yellow, White, etc.",
     "courseRating": "Course Rating",
     "slopeRating": "Slope Rating",
-    "teeCategories": {
-      "CHAMPIONSHIP": "Championship",
-      "AMATEUR": "Amateur",
-      "SENIOR": "Senior",
-      "FORWARD": "Forward",
-      "JUNIOR": "Junior"
-    },
     "teeGender": "Gender",
     "teeGenders": {
       "MALE": "Male",
@@ -59,6 +52,18 @@
       "uniqueStrokeIndices": "Each hole must have a unique stroke index (1-18)",
       "totalParRange": "Total par must be between 66 and 76 (current: {{totalPar}})",
       "submitFailed": "Failed to save golf course"
+    },
+    "teeColors": {
+      "WHITE": "White",
+      "YELLOW": "Yellow",
+      "BLUE": "Blue",
+      "RED": "Red",
+      "BLACK": "Black",
+      "GREEN": "Green",
+      "ORANGE": "Orange",
+      "PINK": "Pink",
+      "GOLD": "Gold",
+      "OTHER": "Other"
     }
   },
   "table": {
