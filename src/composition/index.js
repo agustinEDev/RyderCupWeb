@@ -116,6 +116,12 @@ import RemoveAvatarUseCase from '../application/use_cases/avatar/RemoveAvatarUse
 
 // Friend Use Cases
 import ApiFriendRepository from '../infrastructure/repositories/ApiFriendRepository';
+import ApiSocialFeedRepository from '../infrastructure/repositories/ApiSocialFeedRepository';
+import GetFriendsFeedUseCase from '../application/use_cases/social/GetFriendsFeedUseCase';
+import MarkFeedAsSeenUseCase from '../application/use_cases/social/MarkFeedAsSeenUseCase';
+import GetPlayerProfileUseCase from '../application/use_cases/social/GetPlayerProfileUseCase';
+import GetPlayerActivityUseCase from '../application/use_cases/social/GetPlayerActivityUseCase';
+import SetActivitySharingUseCase from '../application/use_cases/social/SetActivitySharingUseCase';
 import SendFriendRequestUseCase from '../application/use_cases/friend/SendFriendRequestUseCase';
 import RespondFriendRequestUseCase from '../application/use_cases/friend/RespondFriendRequestUseCase';
 import RemoveFriendUseCase from '../application/use_cases/friend/RemoveFriendUseCase';
@@ -264,6 +270,12 @@ const removeAvatarUseCase = new RemoveAvatarUseCase({ avatarRepository: apiAvata
 
 // Friend Use Cases
 const apiFriendRepository = new ApiFriendRepository();
+const apiSocialFeedRepository = new ApiSocialFeedRepository();
+export const getFriendsFeedUseCase = new GetFriendsFeedUseCase({ socialFeedRepository: apiSocialFeedRepository });
+export const markFeedAsSeenUseCase = new MarkFeedAsSeenUseCase({ socialFeedRepository: apiSocialFeedRepository });
+export const getPlayerProfileUseCase = new GetPlayerProfileUseCase({ socialFeedRepository: apiSocialFeedRepository });
+export const getPlayerActivityUseCase = new GetPlayerActivityUseCase({ socialFeedRepository: apiSocialFeedRepository });
+export const setActivitySharingUseCase = new SetActivitySharingUseCase({ socialFeedRepository: apiSocialFeedRepository });
 const sendFriendRequestUseCase = new SendFriendRequestUseCase({ friendRepository: apiFriendRepository });
 const respondFriendRequestUseCase = new RespondFriendRequestUseCase({ friendRepository: apiFriendRepository });
 const removeFriendUseCase = new RemoveFriendUseCase({ friendRepository: apiFriendRepository });

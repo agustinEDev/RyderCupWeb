@@ -19,6 +19,8 @@ class RecentMatch {
   #result;
   #score;
   #stablefordPoints;
+  #totalStrokes;
+  #holesPlayed;
   #partners;
   #opponents;
 
@@ -33,6 +35,8 @@ class RecentMatch {
     result = null,
     score = null,
     stablefordPoints = null,
+    totalStrokes = null,
+    holesPlayed = null,
     partners = [],
     opponents = [],
   }) {
@@ -50,6 +54,8 @@ class RecentMatch {
     this.#result = result;
     this.#score = score;
     this.#stablefordPoints = stablefordPoints;
+    this.#totalStrokes = totalStrokes;
+    this.#holesPlayed = holesPlayed;
     this.#partners = Object.freeze([...partners]);
     this.#opponents = Object.freeze([...opponents]);
   }
@@ -96,6 +102,24 @@ class RecentMatch {
 
   get stablefordPoints() {
     return this.#stablefordPoints;
+  }
+
+  get totalStrokes() {
+    return this.#totalStrokes;
+  }
+
+  get holesPlayed() {
+    return this.#holesPlayed;
+  }
+
+  /**
+   * Si la vuelta fue de nueve hoyos.
+   *
+   * Importa enseñarlo: «45 golpes» al lado de «90 golpes» parece un juegazo en
+   * vez de media vuelta.
+   */
+  isHalfRound() {
+    return this.#holesPlayed === 9;
   }
 
   get partners() {

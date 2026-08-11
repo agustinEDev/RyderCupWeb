@@ -4,13 +4,14 @@ import { motion } from 'framer-motion';
 import {
   Mail, Shield, Calendar, TrendingUp, Award,
   CheckCircle, AlertCircle, Edit, LogOut, ArrowLeft, Globe, Clock, Smartphone,
-  FileText, Lock, Cookie
+  FileText, Lock, Cookie, Users
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import HeaderAuth from '../components/layout/HeaderAuth';
 import Avatar from '../components/ui/Avatar';
 import LanguageSwitcher from '../components/ui/LanguageSwitcher';
 import { SettingsGroup, SettingsRow, SettingsControlRow } from '../components/profile/SettingsList';
+import ActivitySharingToggle from '../components/profile/ActivitySharingToggle';
 import { useAuth } from '../hooks/useAuth';
 import { useStandalone } from '../hooks/useStandalone';
 import { CountryFlag } from '../utils/countryUtils';
@@ -194,10 +195,11 @@ const Profile = () => {
                       )}
                     </div>
 
-                    {/* Email */}
+                    {/* Email. Mismo caso que en el perfil de otro jugador: una
+                        direccion larga no puede partirse sola y desborda */}
                     <div className="flex items-center gap-2 text-gray-600 mb-2">
-                      <Mail className="w-4 h-4" />
-                      <span className="text-sm">{email}</span>
+                      <Mail className="w-4 h-4 shrink-0" />
+                      <span className="min-w-0 break-all text-sm">{email}</span>
                     </div>
 
                     {/* Member Since */}
@@ -315,6 +317,20 @@ const Profile = () => {
                   </SettingsControlRow>
                 </SettingsGroup>
               </div>
+
+              {/* Privacidad va fuera del `md:hidden`: la lista de ajustes es
+                  solo de móvil, y en escritorio manda una botonera que no
+                  admite un interruptor. Dejarlo dentro haría inalcanzable desde
+                  escritorio la única forma de dejar de publicar */}
+              <SettingsGroup title={t('sections.privacy')}>
+                <SettingsControlRow
+                  icon={Users}
+                  label={t('privacy.shareActivity')}
+                  description={t('privacy.shareActivityHint')}
+                >
+                  <ActivitySharingToggle initialValue={user?.share_activity} />
+                </SettingsControlRow>
+              </SettingsGroup>
 
               {/* Los legales viven aquí porque instalada no se pinta el pie
                   (FE #309). En escritorio con el pie visible serían un duplicado,

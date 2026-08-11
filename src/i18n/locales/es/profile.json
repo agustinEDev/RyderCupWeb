@@ -29,7 +29,8 @@
     "account": "Cuenta",
     "preferences": "Preferencias",
     "legal": "Legal",
-    "language": "Idioma"
+    "language": "Idioma",
+    "privacy": "Privacidad"
   },
   "legal": {
     "terms": "Términos de Servicio",
@@ -149,5 +150,17 @@
   "tournamentsLabel": "Torneos",
   "updatedOn": "Actualizado: {{date}}",
   "memberSince": "Miembro desde {{date}}",
-  "viewStats": "Ver mis estadísticas"
+  "viewStats": "Ver mis estadísticas",
+  "privacy": {
+    "shareActivity": "Publicar mis logros",
+    "shareActivityHint": "Tus amigos ven tus birdies, eagles y campos nuevos en su feed.",
+    "confirmOffTitle": "¿Dejar de publicar?",
+    "confirmOffMessage": "Se borrará la actividad que ya habías publicado, y volver a activarlo no la recupera. Tus vueltas y tus tarjetas no se tocan: solo desaparecen del feed de tus amigos.",
+    "confirmOffAction": "Dejar de publicar y borrar",
+    "turnedOn": "Tus logros vuelven a publicarse",
+    "turnedOff_zero": "Ya no se publican tus logros",
+    "turnedOff_one": "Ya no se publican tus logros. Se ha retirado 1 entrada",
+    "turnedOff_other": "Ya no se publican tus logros. Se han retirado {{count}} entradas",
+    "saveFailed": "No se ha podido guardar. Vuelve a intentarlo"
+  }
 }

@@ -29,6 +29,8 @@ class RecentMatchMapper {
       result: apiData.result ?? null,
       score: apiData.score ?? null,
       stablefordPoints: apiData.stableford_points ?? null,
+      totalStrokes: apiData.total_strokes ?? null,
+      holesPlayed: apiData.holes_played ?? null,
       partners: Array.isArray(apiData.partners) ? apiData.partners : [],
       opponents: Array.isArray(apiData.opponents) ? apiData.opponents : [],
     });

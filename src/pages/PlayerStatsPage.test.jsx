@@ -47,6 +47,7 @@ const fullStats = PlayerStats.fromPersistence({
   scoringAvg: 12.5,
   roundsPlayed: 10,
   estimatedIndex: 14.2,
+  playingAvg: 18.9,
   bestDifferential: 9.4,
   roundsWithDifferential: 8,
 });
@@ -95,8 +96,21 @@ describe('PlayerStatsPage', () => {
     await waitFor(() => {
       expect(screen.getByTestId('stat-rounds')).toHaveTextContent('10');
     });
-    expect(screen.getByTestId('stat-index')).toHaveTextContent('14.2');
+    expect(screen.getByTestId('stat-playing-avg')).toHaveTextContent('18.9');
     expect(screen.getByTestId('stat-best')).toHaveTextContent('9.4');
+  });
+
+  it('keeps the estimated index apart, with what it means', async () => {
+    /**
+     * Separado de las cifras principales a proposito: sin contexto se lee como
+     * el nivel al que se esta jugando, y es otra cosa.
+     */
+    renderPage();
+
+    await waitFor(() => {
+      expect(screen.getByTestId('estimated-index-block')).toHaveTextContent('14.2');
+    });
+    expect(screen.getByText('playerStats.estimatedIndexExplained')).toBeInTheDocument();
   });
 
   it('asks for the whole history, not just the dashboard slice', async () => {

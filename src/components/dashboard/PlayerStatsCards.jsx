@@ -24,7 +24,9 @@ const StatCard = ({ icon: Icon, label, value, hint, tone, testId, onClick, ariaL
     onClick={onClick}
     type={onClick ? 'button' : undefined}
     aria-label={onClick ? ariaLabel : undefined}
-    className={`relative overflow-hidden rounded-xl border p-3 md:p-6 text-left ${tone.container} ${
+    // `min-w-0`: una columna de grid tampoco encoge por debajo del ancho de su
+    // contenido, así que sin esto una etiqueta larga desborda la rejilla
+    className={`relative min-w-0 overflow-hidden rounded-xl border p-3 md:p-6 text-left ${tone.container} ${
       onClick ? 'transition-shadow hover:shadow-md' : ''
     }`}
   >
@@ -137,13 +139,19 @@ const PlayerStatsCards = ({
         onClick={openStats}
         ariaLabel={t('statistics.openStats')}
         label={t('statistics.playingTo')}
-        value={isLoading ? '--' : formatNumber(stats?.estimatedIndex)}
+        // La media de las vueltas recientes, no el índice estimado. El índice
+        // mira solo las mejores —con tres vueltas, literalmente la mejor— así
+        // que decía "juegas a 14.1" a quien venía jugando a 18.9. Dice de lo
+        // que el jugador es capaz, no a lo que está jugando, que es lo que
+        // esta tarjeta promete. El índice vive en /stats, donde hay sitio para
+        // explicar qué significa
+        value={isLoading ? '--' : formatNumber(stats?.playingAvg)}
         hint={
           // Mientras el resumen no ha llegado no se puede decir ni que falten
           // vueltas: eso ya sería una afirmación sobre datos que no se tienen
           isLoading ? null : (
             <p className="mt-0.5 text-[10px] md:text-xs text-green-700">
-              {stats?.hasEstimatedIndex?.()
+              {stats?.hasPlayingAverage?.()
                 ? t('statistics.overRounds', { count: stats.roundsWithDifferential })
                 : t('statistics.needsMoreRounds')}
             </p>

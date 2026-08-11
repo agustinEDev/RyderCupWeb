@@ -32,11 +32,15 @@ const NextMatchBanner = ({ match, isLoading = false, onCreateQuickMatch }) => {
         data-testid="next-match-empty-cta"
         className="flex w-full items-center justify-between gap-3 rounded-xl border-2 border-primary-200 bg-gradient-to-r from-primary-50 to-blue-50 p-5 text-left shadow-sm transition-shadow hover:shadow-md"
       >
-        <span className="flex items-center gap-3">
-          <span className="rounded-lg bg-primary-500 p-2">
+        {/* `min-w-0` en los dos niveles: un hijo flex no encoge por debajo del
+            ancho de su contenido salvo que se le diga, así que sin esto el
+            texto largo empujaba la banda más allá de la pantalla y la página
+            entera acababa con scroll horizontal */}
+        <span data-testid="next-match-empty-content" className="flex min-w-0 items-center gap-3">
+          <span data-testid="next-match-empty-icon" className="flex-shrink-0 rounded-lg bg-primary-500 p-2">
             <Zap className="h-5 w-5 text-white" aria-hidden="true" />
           </span>
-          <span>
+          <span data-testid="next-match-empty-text" className="min-w-0">
             <span className="block text-sm font-bold text-primary-900">
               {t('nextMatch.emptyTitle')}
             </span>
