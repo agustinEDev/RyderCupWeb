@@ -106,16 +106,17 @@ class ApiUserRepository extends IUserRepository {
     const data = await apiRequest(`/api/v1/users/search-autocomplete?query=${encodeURIComponent(query)}`);
 
     return (data.users || []).map(user => {
+      // El backend manda nombre y apellidos ya separados. Antes se partía
+      // `full_name` por el primer espacio, que daba "Ana" / "García Pérez" bien
+      // pero rompía con nombres compuestos: "María José García" se quedaba con
+      // "María" y "José García" de apellidos.
       const fullName = user.full_name || '';
       const spaceIndex = fullName.indexOf(' ');
-      const firstName = spaceIndex > 0 ? fullName.substring(0, spaceIndex) : fullName;
-      const lastName = spaceIndex > 0 ? fullName.substring(spaceIndex + 1) : '';
 
       return {
         id: user.user_id,
-        firstName,
-        lastName,
-        email: user.email,
+        firstName: user.first_name ?? (spaceIndex > 0 ? fullName.substring(0, spaceIndex) : fullName),
+        lastName: user.last_name ?? (spaceIndex > 0 ? fullName.substring(spaceIndex + 1) : ''),
         countryCode: null,
       };
     });

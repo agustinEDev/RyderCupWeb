@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { X, Search, Loader } from 'lucide-react';
+import Avatar from '../ui/Avatar';
 
 const SendInvitationModalContent = ({ onClose, onSend, onSendByUserId, onSearchUsers, isProcessing, t }) => {
   const [activeTab, setActiveTab] = useState('search');
@@ -215,11 +216,11 @@ const SendInvitationModalContent = ({ onClose, onSend, onSendByUserId, onSearchU
             <div>
               {selectedUser ? (
                 <div className="flex items-center gap-2 px-3 py-2 bg-primary/5 border border-primary/20 rounded-md" data-testid="selected-user-chip">
+                  <Avatar userId={selectedUser.id} size="sm" />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-gray-900 truncate">
                       {selectedUser.firstName} {selectedUser.lastName}
                     </p>
-                    <p className="text-xs text-gray-500 truncate">{selectedUser.email}</p>
                   </div>
                   <button
                     type="button"
@@ -276,10 +277,15 @@ const SendInvitationModalContent = ({ onClose, onSend, onSendByUserId, onSearchU
                           aria-selected={index === highlightedIndex}
                           data-testid={`search-result-${user.id}`}
                         >
-                          <p className="text-sm font-medium text-gray-900">
-                            {user.firstName} {user.lastName}
-                          </p>
-                          <p className="text-xs text-gray-500">{user.email}</p>
+                          <div className="flex items-center gap-2">
+                            <Avatar userId={user.id} size="sm" />
+                            {/* `truncate` no basta en un hijo de flex: sin `min-w-0`
+                                su ancho mínimo es el del contenido, así que un
+                                nombre largo desborda en vez de recortarse */}
+                            <p className="min-w-0 flex-1 text-sm font-medium text-gray-900 truncate">
+                              {user.firstName} {user.lastName}
+                            </p>
+                          </div>
                         </button>
                       ))}
                     </div>
