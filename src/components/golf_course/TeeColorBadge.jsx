@@ -13,7 +13,7 @@ const TeeColorBadge = ({ color, identifier, gender }) => {
   const { t } = useTranslation('golfCourses');
 
   const swatch = TeeColor.swatchFor(color);
-  const label = identifier || t(`form.colors.${color}`, { defaultValue: color });
+  const label = identifier || t(`form.teeColors.${color}`, { defaultValue: color });
   const genderSuffix = gender === 'MALE' ? ' (M)' : gender === 'FEMALE' ? ' (F)' : '';
 
   return (

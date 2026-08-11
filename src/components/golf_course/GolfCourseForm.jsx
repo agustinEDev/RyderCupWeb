@@ -238,7 +238,23 @@ const GolfCourseForm = ({ initialData = null, onSubmit, onCancel }) => {
       return false;
     }
 
-    // Validate gender mixing: cannot mix gendered and unisex tees for the same category
+    // Dos salidas del mismo color y genero serian la misma salida. Con OTHER
+    // las distingue su identificador.
+    const seenTees = new Set();
+    for (const tee of tees) {
+      const identity =
+        tee.color === TeeColor.OTHER
+          ? `identifier:${tee.identifier?.trim() ?? ''}`
+          : `color:${tee.color}`;
+      const key = `${identity}|${tee.teeGender ?? ''}`;
+      if (seenTees.has(key)) {
+        customToast.error(t('form.errors.duplicateTee'));
+        return false;
+      }
+      seenTees.add(key);
+    }
+
+    // Validate gender mixing: cannot mix gendered and unisex tees for the same colour
     const categoryGenderMap = {};
     for (const tee of tees) {
       const hasGender = tee.teeGender !== null && tee.teeGender !== '';
@@ -477,6 +493,7 @@ const GolfCourseForm = ({ initialData = null, onSubmit, onCancel }) => {
                         key={cat}
                         type="button"
                         onClick={() => handleTeeChange(index, 'color', cat)}
+                        aria-pressed={tee.color === cat}
                         className={`border rounded text-xs px-2 py-1 text-left transition-colors ${
                           tee.color === cat
                             ? 'bg-primary text-white border-primary'
@@ -530,7 +547,7 @@ const GolfCourseForm = ({ initialData = null, onSubmit, onCancel }) => {
                     onChange={(e) => handleTeeChange(index, 'identifier', e.target.value)}
                     placeholder={t('form.identifierPlaceholder')}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-                    required
+                    required={tee.color === TeeColor.OTHER}
                   />
                 </div>
 

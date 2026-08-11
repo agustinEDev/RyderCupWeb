@@ -223,7 +223,8 @@ class ApiEnrollmentRepository extends IEnrollmentRepository {
   async requestEnrollment(competitionId, data = {}) {
     const body = { ...data };
     if (data.color) {
-      body.color = data.color;
+      // La API espera tee_color; el dominio lo llama color
+      body.tee_color = data.color;
       delete body.color;
     }
     const apiData = await this.#request(`/api/v1/competitions/${competitionId}/enrollments`, {

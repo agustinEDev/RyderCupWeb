@@ -41,11 +41,13 @@ class CreateGolfCourseRequestUseCase {
 
     // Validate each tee has required fields
     golfCourseData.tees.forEach((tee, index) => {
-      if (!tee.identifier || typeof tee.identifier !== 'string') {
-        throw new Error(`Tee ${index + 1} must have a valid identifier`);
-      }
       if (!tee.color) {
-        throw new Error(`Tee ${index + 1} must have a category`);
+        throw new Error(`Tee ${index + 1} must have a colour`);
+      }
+      // El color nombra la salida; el identificador solo hace falta cuando no
+      // lo es, porque OTHER puede repetirse en un mismo campo
+      if (tee.color === 'OTHER' && !tee.identifier?.trim()) {
+        throw new Error(`Tee ${index + 1} must have an identifier when its colour is OTHER`);
       }
       if (typeof tee.slopeRating !== 'number') {
         throw new Error(`Tee ${index + 1} must have a numeric slope rating`);

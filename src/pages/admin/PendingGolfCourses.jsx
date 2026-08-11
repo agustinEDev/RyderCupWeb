@@ -356,7 +356,7 @@ const PendingGolfCourses = ({ embedded = false }) => {
                   {(courseToView?.tees || []).map((tee, index) => (
                     <div key={index} className="bg-gray-50 rounded-lg p-4">
                       <div className="flex items-center justify-between mb-2">
-                        <TeeColorBadge category={tee.color} identifier={tee.identifier} gender={tee.teeGender || tee.tee_gender || tee.gender} />
+                        <TeeColorBadge color={tee.color} identifier={tee.identifier} gender={tee.teeGender || tee.tee_gender || tee.gender} />
                         <span className="text-sm text-gray-600">{t('form.tee')} {index + 1}</span>
                       </div>
                       <div className="grid grid-cols-2 gap-4 mt-3">

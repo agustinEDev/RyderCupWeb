@@ -269,7 +269,7 @@
   },
   "enrollment": {
     "modalTitle": "Solicitar inscripción",
-    "colorLabel": "Categoría de tee preferida",
+    "colorLabel": "Color de barras preferido",
     "colorHint": "Se usará para asignarte el tee adecuado en los partidos",
     "noPreference": "Sin preferencia",
     "confirm": "Confirmar",
