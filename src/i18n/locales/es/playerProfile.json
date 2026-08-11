@@ -1,0 +1,49 @@
+{
+  "title": "Perfil",
+  "loading": "Cargando perfil...",
+  "friendsCount": "{{count}} amigo",
+  "friendsCount_other": "{{count}} amigos",
+  "notFound": {
+    "title": "No encontramos a este jugador",
+    "hint": "Puede que haya dado de baja su cuenta o que el enlace no sea correcto.",
+    "back": "Volver a la actividad"
+  },
+  "friendship": {
+    "add": "Añadir a amigos",
+    "sent": "Solicitud enviada",
+    "received": "Te ha enviado una solicitud",
+    "accept": "Aceptar",
+    "decline": "Rechazar",
+    "friends": "Sois amigos",
+    "blocked": "Has bloqueado a este jugador",
+    "requestSent": "Solicitud enviada",
+    "accepted": "Ya sois amigos",
+    "declined": "Solicitud rechazada"
+  },
+  "private": {
+    "title": "Solo entre amigos",
+    "hint": "Su hándicap, sus estadísticas y su actividad se ven cuando sois amigos."
+  },
+  "contact": {
+    "title": "Contacto",
+    "email": "Correo"
+  },
+  "stats": {
+    "title": "Estadísticas",
+    "handicap": "Hándicap",
+    "estimatedIndex": "Índice estimado",
+    "scoringAvg": "Media al par",
+    "roundsPlayed": "Vueltas",
+    "bestDifferential": "Mejor diferencial",
+    "tournaments": "Torneos",
+    "estimatedIndexHint": "No es el índice oficial de la federación.",
+    "empty": "Todavía no tiene ninguna vuelta que contar.",
+    "noValue": "—"
+  },
+  "activity": {
+    "title": "Su actividad",
+    "empty": "No ha publicado nada todavía.",
+    "hidden": "No publica su actividad.",
+    "loadMore": "Ver más"
+  }
+}
