@@ -1,3 +1,5 @@
+import { useTranslation } from 'react-i18next';
+
 import { teeKey, resolveTeeColor } from './createQuickMatchModalConstants';
 
 /**
@@ -9,9 +11,12 @@ import { teeKey, resolveTeeColor } from './createQuickMatchModalConstants';
  * CreateQuickMatchModal).
  */
 const TeeSelectButtons = ({ value, onChange, courseTees, ariaLabel, testIdPrefix, compact = false }) => {
+  const { t } = useTranslation('golfCourses');
+
   const options = courseTees.map((tee) => {
-    const key = teeKey(tee.teeCategory, tee.gender);
-    return { key, label: tee.identifier, testKey: key, color: resolveTeeColor(tee.identifier) };
+    const key = teeKey(tee.color, tee.gender);
+    const label = tee.identifier || t(`form.teeColors.${tee.color}`, { defaultValue: tee.color });
+    return { key, label, testKey: key, color: resolveTeeColor(tee.color) };
   });
 
   return (

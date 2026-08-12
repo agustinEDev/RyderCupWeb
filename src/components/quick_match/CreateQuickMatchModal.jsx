@@ -151,7 +151,7 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser }) => {
       setError(t('create.course.errorTeeRequired'));
       return;
     }
-    const creatorTeeIsValid = courseTees.some((tee) => teeKey(tee.teeCategory, tee.gender) === creatorTeeKey);
+    const creatorTeeIsValid = courseTees.some((tee) => teeKey(tee.color, tee.gender) === creatorTeeKey);
     if (courseTees.length > 0 && !creatorTeeIsValid) {
       setError(t('create.course.errorTeeRequired'));
       return;
@@ -159,13 +159,13 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser }) => {
     setIsProcessing(true);
     setError('');
     try {
-      const { teeCategory: creatorTeeCategory, teeGender: creatorTeeGender } = parseTeeKey(creatorTeeKey);
+      const { color: creatorTeeColor, teeGender: creatorTeeGender } = parseTeeKey(creatorTeeKey);
       const created = await createQuickMatchUseCase.execute(
         selectedCourse.id,
         isFreePlay ? null : matchFormat,
         isFreePlay ? scoringFormat : null,
         matchName.trim() || null,
-        { allowancePercentage, creatorTeeCategory, creatorTeeGender }
+        { allowancePercentage, creatorTeeColor, creatorTeeGender }
       );
       setQuickMatch(created);
       setStep(2);
@@ -189,12 +189,12 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser }) => {
     setIsProcessing(true);
     setError('');
     try {
-      const { teeCategory, teeGender } = parseTeeKey(friendTeeKeyValue);
+      const { color, teeGender } = parseTeeKey(friendTeeKeyValue);
       const updated = await addFriendParticipantUseCase.execute(
         quickMatch.id,
         friend.otherUserId,
         isTeamFormat ? selectedTeam : null,
-        { teeCategory, teeGender }
+        { color, teeGender }
       );
       setQuickMatch(updated);
       setFriendTeeByFriendId((prev) => {
@@ -223,13 +223,13 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser }) => {
     setIsProcessing(true);
     setError('');
     try {
-      const { teeCategory, teeGender } = parseTeeKey(guestTeeKey);
+      const { color, teeGender } = parseTeeKey(guestTeeKey);
       const updated = await addGuestParticipantUseCase.execute(quickMatch.id, {
         firstName: guestForm.firstName.trim(),
         lastName: guestForm.lastName.trim(),
         handicap: guestForm.handicap.trim() ? Number(guestForm.handicap) : null,
         team: isTeamFormat ? selectedTeam : null,
-        teeCategory,
+        color,
         teeGender,
       });
       setQuickMatch(updated);

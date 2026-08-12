@@ -29,7 +29,7 @@ describe('GetGolfCourseUseCase', () => {
       totalPar: 72,
       tees: [
         {
-          teeCategory: 'CHAMPIONSHIP',
+          color: 'WHITE',
           identifier: 'Black',
           courseRating: 75.5,
           slopeRating: 140,
@@ -94,14 +94,14 @@ describe('GetGolfCourseUseCase', () => {
       totalPar: 72,
       tees: [
         {
-          teeCategory: 'CHAMPIONSHIP',
+          color: 'WHITE',
           identifier: 'Black',
           courseRating: 75.0,
           slopeRating: 135,
           gender: 'MALE'
         },
         {
-          teeCategory: 'AMATEUR',
+          color: 'YELLOW',
           identifier: 'Blue',
           courseRating: 72.0,
           slopeRating: 125,

@@ -100,7 +100,7 @@ describe('CreateQuickMatchModal', () => {
     await waitFor(() => {
       expect(mockCreate).toHaveBeenCalledWith('course-1', 'SINGLES', null, 'Viernes con Rafa', {
         allowancePercentage: 100,
-        creatorTeeCategory: null,
+        creatorTeeColor: null,
         creatorTeeGender: null,
       });
     });
@@ -124,7 +124,7 @@ describe('CreateQuickMatchModal', () => {
     await waitFor(() => {
       expect(mockCreate).toHaveBeenCalledWith('course-1', 'SINGLES', null, null, {
         allowancePercentage: 100,
-        creatorTeeCategory: null,
+        creatorTeeColor: null,
         creatorTeeGender: null,
       });
     });
@@ -150,7 +150,7 @@ describe('CreateQuickMatchModal', () => {
     await waitFor(() => {
       expect(mockCreate).toHaveBeenCalledWith('course-1', null, 'MEDAL', null, {
         allowancePercentage: 95,
-        creatorTeeCategory: null,
+        creatorTeeColor: null,
         creatorTeeGender: null,
       });
     });
@@ -199,7 +199,7 @@ describe('CreateQuickMatchModal', () => {
     await waitFor(() => {
       expect(mockCreate).toHaveBeenCalledWith('course-1', 'FOURBALL', null, null, {
         allowancePercentage: 50,
-        creatorTeeCategory: null,
+        creatorTeeColor: null,
         creatorTeeGender: null,
       });
     });
@@ -219,7 +219,7 @@ describe('CreateQuickMatchModal', () => {
   it('should let the creator pick a tee once the course tees are loaded', async () => {
     mockGetGolfCourse.mockResolvedValue({
       tees: [
-        { teeCategory: 'AMATEUR', gender: 'MALE', identifier: 'White', courseRating: 71, slopeRating: 128 },
+        { color: 'YELLOW', gender: 'MALE', identifier: 'White', courseRating: 71, slopeRating: 128 },
       ],
     });
     mockCreate.mockResolvedValue({
@@ -233,15 +233,15 @@ describe('CreateQuickMatchModal', () => {
     fireEvent.click(screen.getByTestId('select-course-stub'));
 
     await waitFor(() => {
-      expect(screen.getByTestId('quick-match-creator-tee-option-AMATEUR|MALE')).toBeInTheDocument();
+      expect(screen.getByTestId('quick-match-creator-tee-option-YELLOW|MALE')).toBeInTheDocument();
     });
-    fireEvent.click(screen.getByTestId('quick-match-creator-tee-option-AMATEUR|MALE'));
+    fireEvent.click(screen.getByTestId('quick-match-creator-tee-option-YELLOW|MALE'));
     fireEvent.click(screen.getByTestId('quick-match-course-next'));
 
     await waitFor(() => {
       expect(mockCreate).toHaveBeenCalledWith('course-1', 'SINGLES', null, null, {
         allowancePercentage: 100,
-        creatorTeeCategory: 'AMATEUR',
+        creatorTeeColor: 'YELLOW',
         creatorTeeGender: 'MALE',
       });
     });
@@ -250,7 +250,7 @@ describe('CreateQuickMatchModal', () => {
   it('should let a guest tee be selected and sent when adding them', async () => {
     mockGetGolfCourse.mockResolvedValue({
       tees: [
-        { teeCategory: 'FORWARD', gender: 'FEMALE', identifier: 'Red', courseRating: 68, slopeRating: 118 },
+        { color: 'RED', gender: 'FEMALE', identifier: 'Red', courseRating: 68, slopeRating: 118 },
       ],
     });
     mockCreate.mockResolvedValue({
@@ -271,9 +271,9 @@ describe('CreateQuickMatchModal', () => {
 
     fireEvent.click(screen.getByTestId('select-course-stub'));
     await waitFor(() => {
-      expect(screen.getByTestId('quick-match-creator-tee-option-FORWARD|FEMALE')).toBeInTheDocument();
+      expect(screen.getByTestId('quick-match-creator-tee-option-RED|FEMALE')).toBeInTheDocument();
     });
-    fireEvent.click(screen.getByTestId('quick-match-creator-tee-option-FORWARD|FEMALE'));
+    fireEvent.click(screen.getByTestId('quick-match-creator-tee-option-RED|FEMALE'));
     fireEvent.click(screen.getByTestId('quick-match-course-next'));
 
     await waitFor(() => {
@@ -281,7 +281,7 @@ describe('CreateQuickMatchModal', () => {
     });
     fireEvent.click(screen.getByText('create.participants.tabGuest'));
 
-    fireEvent.click(screen.getByTestId('quick-match-guest-tee-option-FORWARD|FEMALE'));
+    fireEvent.click(screen.getByTestId('quick-match-guest-tee-option-RED|FEMALE'));
     fireEvent.change(screen.getByPlaceholderText('create.participants.guestFirstName'), {
       target: { value: 'Jane' },
     });
@@ -296,7 +296,7 @@ describe('CreateQuickMatchModal', () => {
         lastName: 'Doe',
         handicap: null,
         team: null,
-        teeCategory: 'FORWARD',
+        color: 'RED',
         teeGender: 'FEMALE',
       });
     });
@@ -325,14 +325,14 @@ describe('CreateQuickMatchModal', () => {
 
     // course-2's response arrives first (its own request), then the stale course-1 one arrives after
     deferred['course-2'].resolve({
-      tees: [{ teeCategory: 'FORWARD', gender: 'FEMALE', identifier: 'Red', courseRating: 68, slopeRating: 118 }],
+      tees: [{ color: 'RED', gender: 'FEMALE', identifier: 'Red', courseRating: 68, slopeRating: 118 }],
     });
     deferred['course-1'].resolve({
-      tees: [{ teeCategory: 'AMATEUR', gender: 'MALE', identifier: 'White', courseRating: 71, slopeRating: 128 }],
+      tees: [{ color: 'YELLOW', gender: 'MALE', identifier: 'White', courseRating: 71, slopeRating: 128 }],
     });
 
     await waitFor(() => {
-      expect(screen.getByTestId('quick-match-creator-tee-option-FORWARD|FEMALE')).toBeInTheDocument();
+      expect(screen.getByTestId('quick-match-creator-tee-option-RED|FEMALE')).toBeInTheDocument();
     });
 
     // Only course-2's tee ("Red") must be present — the stale course-1 response ("White") must not overwrite it
@@ -343,25 +343,25 @@ describe('CreateQuickMatchModal', () => {
   it('should reset the creator tee selection when switching to a different course', async () => {
     mockGetGolfCourse.mockImplementation((id) =>
       id === 'course-1'
-        ? Promise.resolve({ tees: [{ teeCategory: 'AMATEUR', gender: 'MALE', identifier: 'White', courseRating: 71, slopeRating: 128 }] })
-        : Promise.resolve({ tees: [{ teeCategory: 'FORWARD', gender: 'FEMALE', identifier: 'Red', courseRating: 68, slopeRating: 118 }] })
+        ? Promise.resolve({ tees: [{ color: 'YELLOW', gender: 'MALE', identifier: 'White', courseRating: 71, slopeRating: 128 }] })
+        : Promise.resolve({ tees: [{ color: 'RED', gender: 'FEMALE', identifier: 'Red', courseRating: 68, slopeRating: 118 }] })
     );
 
     renderModal();
 
     fireEvent.click(screen.getByTestId('select-course-stub'));
     await waitFor(() => {
-      expect(screen.getByTestId('quick-match-creator-tee-option-AMATEUR|MALE')).toBeInTheDocument();
+      expect(screen.getByTestId('quick-match-creator-tee-option-YELLOW|MALE')).toBeInTheDocument();
     });
-    fireEvent.click(screen.getByTestId('quick-match-creator-tee-option-AMATEUR|MALE'));
+    fireEvent.click(screen.getByTestId('quick-match-creator-tee-option-YELLOW|MALE'));
 
     fireEvent.click(screen.getByTestId('select-course-stub-2'));
     await waitFor(() => {
-      expect(screen.getByTestId('quick-match-creator-tee-option-FORWARD|FEMALE')).toBeInTheDocument();
+      expect(screen.getByTestId('quick-match-creator-tee-option-RED|FEMALE')).toBeInTheDocument();
     });
 
     // The tee picked for course-1 must not silently carry over to course-2
-    expect(screen.getByTestId('quick-match-creator-tee-option-FORWARD|FEMALE')).toHaveAttribute('aria-pressed', 'false');
+    expect(screen.getByTestId('quick-match-creator-tee-option-RED|FEMALE')).toHaveAttribute('aria-pressed', 'false');
 
     fireEvent.click(screen.getByTestId('quick-match-course-next'));
     expect(screen.getByTestId('quick-match-modal-error')).toHaveTextContent('create.course.errorTeeRequired');
@@ -371,8 +371,8 @@ describe('CreateQuickMatchModal', () => {
   it('should let each friend be added with their own, independently selected tee', async () => {
     mockGetGolfCourse.mockResolvedValue({
       tees: [
-        { teeCategory: 'AMATEUR', gender: 'MALE', identifier: 'White', courseRating: 71, slopeRating: 128 },
-        { teeCategory: 'FORWARD', gender: 'FEMALE', identifier: 'Red', courseRating: 68, slopeRating: 118 },
+        { color: 'YELLOW', gender: 'MALE', identifier: 'White', courseRating: 71, slopeRating: 128 },
+        { color: 'RED', gender: 'FEMALE', identifier: 'Red', courseRating: 68, slopeRating: 118 },
       ],
     });
     mockListFriends.mockResolvedValue({
@@ -402,29 +402,29 @@ describe('CreateQuickMatchModal', () => {
     fireEvent.click(screen.getByTestId('mode-option-FREE_PLAY'));
     fireEvent.click(screen.getByTestId('select-course-stub'));
     await waitFor(() => {
-      expect(screen.getByTestId('quick-match-creator-tee-option-AMATEUR|MALE')).toBeInTheDocument();
+      expect(screen.getByTestId('quick-match-creator-tee-option-YELLOW|MALE')).toBeInTheDocument();
     });
-    fireEvent.click(screen.getByTestId('quick-match-creator-tee-option-AMATEUR|MALE'));
+    fireEvent.click(screen.getByTestId('quick-match-creator-tee-option-YELLOW|MALE'));
     fireEvent.click(screen.getByTestId('quick-match-course-next'));
 
     await waitFor(() => {
-      expect(screen.getByTestId('quick-match-friend-tee-select-f-1-AMATEUR|MALE')).toBeInTheDocument();
+      expect(screen.getByTestId('quick-match-friend-tee-select-f-1-YELLOW|MALE')).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByTestId('quick-match-friend-tee-select-f-1-AMATEUR|MALE'));
-    fireEvent.click(screen.getByTestId('quick-match-friend-tee-select-f-2-FORWARD|FEMALE'));
+    fireEvent.click(screen.getByTestId('quick-match-friend-tee-select-f-1-YELLOW|MALE'));
+    fireEvent.click(screen.getByTestId('quick-match-friend-tee-select-f-2-RED|FEMALE'));
 
     fireEvent.click(screen.getByTestId('quick-match-add-friend-f-1'));
 
     await waitFor(() => {
       expect(mockAddFriend).toHaveBeenCalledWith('qm-1', 'user-2', null, {
-        teeCategory: 'AMATEUR',
+        color: 'YELLOW',
         teeGender: 'MALE',
       });
     });
 
     // Bob's row keeps its own independent tee selection, unaffected by Alice's add
-    expect(screen.getByTestId('quick-match-friend-tee-select-f-2-FORWARD|FEMALE')).toHaveAttribute(
+    expect(screen.getByTestId('quick-match-friend-tee-select-f-2-RED|FEMALE')).toHaveAttribute(
       'aria-pressed',
       'true'
     );
@@ -432,7 +432,7 @@ describe('CreateQuickMatchModal', () => {
 
   it('should not pre-select any tee option', async () => {
     mockGetGolfCourse.mockResolvedValue({
-      tees: [{ teeCategory: 'AMATEUR', gender: 'MALE', identifier: 'White', courseRating: 71, slopeRating: 128 }],
+      tees: [{ color: 'YELLOW', gender: 'MALE', identifier: 'White', courseRating: 71, slopeRating: 128 }],
     });
 
     renderModal();
@@ -440,23 +440,23 @@ describe('CreateQuickMatchModal', () => {
     fireEvent.click(screen.getByTestId('select-course-stub'));
 
     await waitFor(() => {
-      expect(screen.getByTestId('quick-match-creator-tee-option-AMATEUR|MALE')).toBeInTheDocument();
+      expect(screen.getByTestId('quick-match-creator-tee-option-YELLOW|MALE')).toBeInTheDocument();
     });
-    expect(screen.getByTestId('quick-match-creator-tee-option-AMATEUR|MALE')).toHaveAttribute('aria-pressed', 'false');
+    expect(screen.getByTestId('quick-match-creator-tee-option-YELLOW|MALE')).toHaveAttribute('aria-pressed', 'false');
     expect(screen.queryByTestId('quick-match-creator-tee-option-none')).not.toBeInTheDocument();
     expect(screen.queryByText('create.course.noTeeOption')).not.toBeInTheDocument();
   });
 
   it('should require a tee selection before continuing when the course has tees', async () => {
     mockGetGolfCourse.mockResolvedValue({
-      tees: [{ teeCategory: 'AMATEUR', gender: 'MALE', identifier: 'White', courseRating: 71, slopeRating: 128 }],
+      tees: [{ color: 'YELLOW', gender: 'MALE', identifier: 'White', courseRating: 71, slopeRating: 128 }],
     });
 
     renderModal();
 
     fireEvent.click(screen.getByTestId('select-course-stub'));
     await waitFor(() => {
-      expect(screen.getByTestId('quick-match-creator-tee-option-AMATEUR|MALE')).toBeInTheDocument();
+      expect(screen.getByTestId('quick-match-creator-tee-option-YELLOW|MALE')).toBeInTheDocument();
     });
 
     fireEvent.click(screen.getByTestId('quick-match-course-next'));
@@ -467,7 +467,7 @@ describe('CreateQuickMatchModal', () => {
 
   it('should require a tee selection before adding a friend when the course has tees', async () => {
     mockGetGolfCourse.mockResolvedValue({
-      tees: [{ teeCategory: 'AMATEUR', gender: 'MALE', identifier: 'White', courseRating: 71, slopeRating: 128 }],
+      tees: [{ color: 'YELLOW', gender: 'MALE', identifier: 'White', courseRating: 71, slopeRating: 128 }],
     });
     mockListFriends.mockResolvedValue({
       friendships: [{ id: 'f-1', otherUserId: 'user-2', otherUserName: 'Alice' }],
@@ -483,9 +483,9 @@ describe('CreateQuickMatchModal', () => {
 
     fireEvent.click(screen.getByTestId('select-course-stub'));
     await waitFor(() => {
-      expect(screen.getByTestId('quick-match-creator-tee-option-AMATEUR|MALE')).toBeInTheDocument();
+      expect(screen.getByTestId('quick-match-creator-tee-option-YELLOW|MALE')).toBeInTheDocument();
     });
-    fireEvent.click(screen.getByTestId('quick-match-creator-tee-option-AMATEUR|MALE'));
+    fireEvent.click(screen.getByTestId('quick-match-creator-tee-option-YELLOW|MALE'));
     fireEvent.click(screen.getByTestId('quick-match-course-next'));
 
     await waitFor(() => {
@@ -499,7 +499,7 @@ describe('CreateQuickMatchModal', () => {
 
   it('should require a tee selection before adding a guest when the course has tees', async () => {
     mockGetGolfCourse.mockResolvedValue({
-      tees: [{ teeCategory: 'AMATEUR', gender: 'MALE', identifier: 'White', courseRating: 71, slopeRating: 128 }],
+      tees: [{ color: 'YELLOW', gender: 'MALE', identifier: 'White', courseRating: 71, slopeRating: 128 }],
     });
     mockCreate.mockResolvedValue({
       id: 'qm-1',
@@ -511,9 +511,9 @@ describe('CreateQuickMatchModal', () => {
 
     fireEvent.click(screen.getByTestId('select-course-stub'));
     await waitFor(() => {
-      expect(screen.getByTestId('quick-match-creator-tee-option-AMATEUR|MALE')).toBeInTheDocument();
+      expect(screen.getByTestId('quick-match-creator-tee-option-YELLOW|MALE')).toBeInTheDocument();
     });
-    fireEvent.click(screen.getByTestId('quick-match-creator-tee-option-AMATEUR|MALE'));
+    fireEvent.click(screen.getByTestId('quick-match-creator-tee-option-YELLOW|MALE'));
     fireEvent.click(screen.getByTestId('quick-match-course-next'));
 
     await waitFor(() => {

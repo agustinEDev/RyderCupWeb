@@ -51,7 +51,7 @@ class ScoringMapper {
         userId: p.user_id,
         userName: p.user_name,
         team: p.team,
-        teeCategory: p.tee_category,
+        color: p.color,
         playingHandicap: p.playing_handicap,
         strokesReceived: p.strokes_received || [],
       })),

@@ -156,7 +156,7 @@ class ApiGolfCourseRepository extends IGolfCourseRepository {
       country_code: golfCourseData.countryCode || golfCourseData.country_code,
       course_type: golfCourseData.courseType || golfCourseData.course_type,
       tees: (golfCourseData.tees || []).map(tee => ({
-        tee_category: tee.teeCategory || tee.tee_category,
+        color: tee.color || tee.color,
         identifier: tee.identifier,
         course_rating: tee.courseRating || tee.course_rating,
         slope_rating: tee.slopeRating || tee.slope_rating,

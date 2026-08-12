@@ -229,11 +229,11 @@ const CompetitionDetail = () => {
     }
   };
 
-  const handleEnroll = async (teeCategory = null) => {
+  const handleEnroll = async (color = null) => {
     setShowEnrollModal(false);
     setIsProcessing(true);
     try {
-      await requestEnrollmentUseCase.execute(id, null, { teeCategory });
+      await requestEnrollmentUseCase.execute(id, null, { color });
       customToast.success(t('detail.success.enrollmentRequested'));
       await loadCompetition();
     } catch (error) {

@@ -269,8 +269,8 @@
   },
   "enrollment": {
     "modalTitle": "Request to Join",
-    "teeCategoryLabel": "Preferred tee category",
-    "teeCategoryHint": "Used to assign the right tees in matches",
+    "colorLabel": "Preferred tee colour",
+    "colorHint": "Used to assign the right tees in matches",
     "noPreference": "No preference",
     "confirm": "Confirm",
     "cancel": "Cancel"
