@@ -9,6 +9,7 @@ import GolfCourseTable from '../../components/golf_course/GolfCourseTable';
 import GolfCourseForm from '../../components/golf_course/GolfCourseForm';
 import {
   listGolfCoursesUseCase,
+  getGolfCourseUseCase,
   createGolfCourseAdminUseCase,
   updateGolfCourseUseCase,
 } from '../../composition';
@@ -27,6 +28,7 @@ const GolfCourses = ({ embedded = false }) => {
 
   const [courses, setCourses] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingCourse, setIsLoadingCourse] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState(null);
@@ -41,8 +43,8 @@ const GolfCourses = ({ embedded = false }) => {
   const loadCourses = async () => {
     setIsLoading(true);
     try {
-      const data = await listGolfCoursesUseCase.execute({ approvalStatus: 'APPROVED' });
-      setCourses(data);
+      const page = await listGolfCoursesUseCase.execute({ approvalStatus: 'APPROVED' });
+      setCourses(page.courses);
     } catch (error) {
       console.error('Error loading golf courses:', error);
       customToast.error(error.message || t('pages.admin.errorLoading'));
@@ -98,9 +100,23 @@ const GolfCourses = ({ embedded = false }) => {
   };
 
   // Open edit modal
-  const handleOpenEdit = (course) => {
-    setSelectedCourse(course);
-    setShowEditModal(true);
+  //
+  // El campo se pide entero por su id en vez de usar el del listado: el
+  // listado no trae la tarjeta, y el formulario, al no encontrarla, arrancaría
+  // con sus 18 hoyos por defecto de par 4. Guardar desde ahí sobrescribiría la
+  // tarjeta real del campo. Es el mismo patrón que ya usa la partida rápida.
+  const handleOpenEdit = async (course) => {
+    setIsLoadingCourse(true);
+    try {
+      const fullCourse = await getGolfCourseUseCase.execute(course.id);
+      setSelectedCourse(fullCourse);
+      setShowEditModal(true);
+    } catch (error) {
+      console.error('Error loading golf course:', error);
+      customToast.error(error.message || t('pages.admin.errorLoading'));
+    } finally {
+      setIsLoadingCourse(false);
+    }
   };
 
   if (isLoadingUser || isLoading) {
@@ -171,7 +187,7 @@ const GolfCourses = ({ embedded = false }) => {
         transition={{ duration: 0.5, delay: 0.2 }}
         className="p-4"
       >
-        <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+        <div className="relative bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
           <GolfCourseTable
             courses={courses}
             onView={handleView}
@@ -179,6 +195,13 @@ const GolfCourses = ({ embedded = false }) => {
             isAdmin={isAdmin}
             showActions={true}
           />
+          {/* Abrir la edición ahora pide el campo entero, así que hay una
+              espera corta donde antes no había ninguna */}
+          {isLoadingCourse && (
+            <div className="absolute inset-0 bg-white/70 flex items-center justify-center">
+              <Loader className="w-8 h-8 text-primary animate-spin" />
+            </div>
+          )}
         </div>
       </motion.div>
     </div>
