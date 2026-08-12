@@ -336,8 +336,10 @@ describe('CreateQuickMatchModal', () => {
     });
 
     // Only course-2's tee ("Red") must be present — the stale course-1 response ("White") must not overwrite it
-    expect(screen.queryByText('Red')).toBeInTheDocument();
-    expect(screen.queryByText('White')).not.toBeInTheDocument();
+    // La etiqueta lleva el sufijo de género, que es lo que distingue dos
+    // salidas del mismo color
+    expect(screen.queryByText('Red (F)')).toBeInTheDocument();
+    expect(screen.queryByText(/White/)).not.toBeInTheDocument();
   });
 
   it('should reset the creator tee selection when switching to a different course', async () => {
