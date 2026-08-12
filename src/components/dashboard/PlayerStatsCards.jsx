@@ -25,12 +25,21 @@ const StatCard = ({ icon: Icon, label, value, hint, tone, testId, onClick, ariaL
     type={onClick ? 'button' : undefined}
     aria-label={onClick ? ariaLabel : undefined}
     // `min-w-0`: una columna de grid tampoco encoge por debajo del ancho de su
-    // contenido, así que sin esto una etiqueta larga desborda la rejilla
-    className={`relative min-w-0 overflow-hidden rounded-xl border p-3 md:p-6 text-left ${tone.container} ${
+    // contenido, así que sin esto una etiqueta larga desborda la rejilla.
+    //
+    // `flex flex-col`: un <button> centra verticalmente su contenido y un <div>
+    // lo alinea arriba. Como la rejilla estira las tres tarjetas a la misma
+    // altura, la que es botón y tiene menos contenido —el hándicap cuando no
+    // hay tendencia que enseñar— aparecía bajada respecto a las demás. Con la
+    // columna explícita, la alineación deja de depender de si la tarjeta lleva
+    // onClick o no.
+    className={`relative flex min-w-0 flex-col overflow-hidden rounded-xl border p-3 md:p-6 text-left ${tone.container} ${
       onClick ? 'transition-shadow hover:shadow-md' : ''
     }`}
   >
-    <div className={`inline-flex rounded-lg p-1.5 md:p-2.5 shadow-sm ${tone.iconBackground}`}>
+    {/* `self-start`: en una columna flex los hijos se estiran a lo ancho por
+        defecto, y el recuadro del icono dejaría de ser un cuadrado */}
+    <div className={`inline-flex self-start rounded-lg p-1.5 md:p-2.5 shadow-sm ${tone.iconBackground}`}>
       <Icon className="h-4 w-4 md:h-5 md:w-5 text-white" aria-hidden="true" />
     </div>
     <p className={`mt-2 text-[10px] md:text-sm font-medium leading-tight ${tone.label}`}>{label}</p>
