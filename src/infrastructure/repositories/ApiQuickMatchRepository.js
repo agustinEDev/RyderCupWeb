@@ -47,7 +47,7 @@ class ApiQuickMatchRepository extends IQuickMatchRepository {
         scoring_format: scoringFormat,
         name,
         allowance_percentage: allowancePercentage,
-        creator_color: creatorTeeColor,
+        creator_tee_color: creatorTeeColor,
         creator_tee_gender: creatorTeeGender,
       }),
     });
@@ -62,7 +62,7 @@ class ApiQuickMatchRepository extends IQuickMatchRepository {
       body: JSON.stringify({
         friend_user_id: friendUserId,
         team,
-        color: color,
+        tee_color: color,
         tee_gender: teeGender,
       }),
     });
@@ -78,7 +78,7 @@ class ApiQuickMatchRepository extends IQuickMatchRepository {
         last_name: guest.lastName,
         handicap: guest.handicap ?? null,
         team: guest.team ?? null,
-        color: guest.color ?? null,
+        tee_color: guest.color ?? null,
         tee_gender: guest.teeGender ?? null,
       }),
     });
