@@ -25,12 +25,31 @@ class ApiGolfCourseRepository extends IGolfCourseRepository {
       queryParams.append('country_code', filters.countryCode);
     }
 
+    // El nombre se filtra en la base de datos, no aquí: con 802 campos, traerse
+    // el catálogo entero para buscar por texto son ~1,6 MB en cada visita
+    if (filters.name) {
+      queryParams.append('name', filters.name);
+    }
+
+    if (filters.limit != null) {
+      queryParams.append('limit', String(filters.limit));
+    }
+
+    if (filters.offset) {
+      queryParams.append('offset', String(filters.offset));
+    }
+
     const queryString = queryParams.toString();
     const url = `/api/v1/golf-courses${queryString ? `?${queryString}` : ''}`;
 
     const data = await apiRequest(url);
 
-    return data.golf_courses.map(courseData => new GolfCourse(courseData));
+    // `total` son los campos que cumplen el filtro, no los devueltos: es lo que
+    // permite saber si hay más de los que caben en la página
+    return {
+      courses: data.golf_courses.map(courseData => new GolfCourse(courseData)),
+      total: data.total ?? data.golf_courses.length,
+    };
   }
 
   /**

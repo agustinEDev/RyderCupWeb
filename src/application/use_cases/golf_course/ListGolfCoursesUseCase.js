@@ -14,7 +14,11 @@ class ListGolfCoursesUseCase {
    * Execute the use case
    * @param {Object} filters - Optional filters
    * @param {string} filters.approvalStatus - Filter by approval status
-   * @returns {Promise<GolfCourse[]>} Array of golf courses
+   * @param {string} filters.countryCode - Filter by ISO country code
+   * @param {string} filters.name - Partial name search, filtered in the database
+   * @param {number} filters.limit - Page size. Without it every course comes back
+   * @param {number} filters.offset - Courses to skip
+   * @returns {Promise<{courses: GolfCourse[], total: number}>} Page and how many match
    */
   async execute(filters = {}) {
     return await this.golfCourseRepository.list(filters);
