@@ -48,7 +48,7 @@ describe('ApiQuickMatchRepository', () => {
           scoring_format: null,
           name: null,
           allowance_percentage: null,
-          creator_color: null,
+          creator_tee_color: null,
           creator_tee_gender: null,
         }),
       });
@@ -68,7 +68,7 @@ describe('ApiQuickMatchRepository', () => {
           scoring_format: 'STABLEFORD',
           name: null,
           allowance_percentage: null,
-          creator_color: null,
+          creator_tee_color: null,
           creator_tee_gender: null,
         }),
       });
@@ -87,7 +87,7 @@ describe('ApiQuickMatchRepository', () => {
           scoring_format: null,
           name: 'Viernes con Rafa',
           allowance_percentage: null,
-          creator_color: null,
+          creator_tee_color: null,
           creator_tee_gender: null,
         }),
       });
@@ -110,7 +110,7 @@ describe('ApiQuickMatchRepository', () => {
           scoring_format: null,
           name: null,
           allowance_percentage: 90,
-          creator_color: 'YELLOW',
+          creator_tee_color: 'YELLOW',
           creator_tee_gender: 'MALE',
         }),
       });
@@ -125,7 +125,7 @@ describe('ApiQuickMatchRepository', () => {
 
       expect(apiRequest).toHaveBeenCalledWith('/api/v1/quick-matches/qm-1/participants', {
         method: 'POST',
-        body: JSON.stringify({ friend_user_id: 'user-2', team: 'A', color: null, tee_gender: null }),
+        body: JSON.stringify({ friend_user_id: 'user-2', team: 'A', tee_color: null, tee_gender: null }),
       });
     });
 
@@ -142,7 +142,7 @@ describe('ApiQuickMatchRepository', () => {
         body: JSON.stringify({
           friend_user_id: 'user-2',
           team: 'A',
-          color: 'YELLOW',
+          tee_color: 'YELLOW',
           tee_gender: 'MALE',
         }),
       });
@@ -167,7 +167,7 @@ describe('ApiQuickMatchRepository', () => {
           last_name: 'Doe',
           handicap: 15,
           team: null,
-          color: null,
+          tee_color: null,
           tee_gender: null,
         }),
       });
@@ -192,7 +192,7 @@ describe('ApiQuickMatchRepository', () => {
           last_name: 'Doe',
           handicap: 15,
           team: null,
-          color: 'RED',
+          tee_color: 'RED',
           tee_gender: 'FEMALE',
         }),
       });
