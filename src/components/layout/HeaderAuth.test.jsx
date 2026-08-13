@@ -136,5 +136,31 @@ describe('HeaderAuth', () => {
 
       expect(screen.getByText('actividad')).toBeInTheDocument();
     });
+
+    it('falls back after a chain of replaces, which renews the location key', () => {
+      /**
+       * Abrir un perfil compartido sin sesion encadena dos `replace` —el
+       * redirect a /login y la vuelta tras entrar—, y cada uno estrena `key`
+       * sin apilar entrada. Mirando solo la `key` esto parecia historial
+       * propio y la flecha sacaba de la aplicacion.
+       *
+       * React Router deja ese recorrido en `window.history.state.idx`, que
+       * los `replace` no incrementan.
+       */
+      const previous = window.history.state;
+      window.history.replaceState({ idx: 0 }, '');
+
+      try {
+        // Dos entradas y una `key` real, justo lo que enmascaraba el fallo
+        renderPlayerProfile(['/friends', '/players/abc'], 1);
+
+        fireEvent.click(screen.getByRole('button', { name: 'back' }));
+
+        expect(screen.getByText('actividad')).toBeInTheDocument();
+        expect(screen.queryByText('lista de amigos')).not.toBeInTheDocument();
+      } finally {
+        window.history.replaceState(previous, '');
+      }
+    });
   });
 });

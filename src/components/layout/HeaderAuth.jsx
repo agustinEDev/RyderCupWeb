@@ -97,7 +97,11 @@ const HeaderAuth = ({ user, title, backTo }) => {
               <ArrowLeft className="h-5 w-5" aria-hidden="true" />
             </Link>
           )}
-          {backByHistory && (
+          {/* Excluyente con la de arriba a proposito: hoy ninguna pantalla
+              declara `parent` y `back: 'history'` a la vez, pero el mapa esta
+              hecho para crecer y la primera que declarase ambos pintaria dos
+              flechas seguidas */}
+          {!screenBackTo && backByHistory && (
             <button
               type="button"
               onClick={goBack}
