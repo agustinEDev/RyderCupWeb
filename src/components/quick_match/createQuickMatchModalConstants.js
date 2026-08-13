@@ -30,15 +30,15 @@ export const FREE_PLAY_ALLOWANCE_OPTIONS = [90, 95, 100];
 export const NO_TEE_KEY = '';
 export const teeKey = (category, gender) => (category ? `${category}|${gender ?? ''}` : NO_TEE_KEY);
 export const parseTeeKey = (key) => {
-  if (!key) return { teeCategory: null, teeGender: null };
+  if (!key) return { color: null, teeGender: null };
   const [category, gender] = key.split('|');
-  return { teeCategory: category, teeGender: gender || null };
+  return { color: category, teeGender: gender || null };
 };
 
-// Tee identifiers are free text (e.g. "Blue", "Green (Women)", "Championship"),
-// but most golf courses name them after the actual marker color on the tee box.
-// When the identifier's first word matches one of these, the button picks up
-// that real color instead of the generic primary color.
+// Estilos por color real de las barras. Antes se adivinaba el color leyendo la
+// primera palabra del identificador libre; ahora la salida trae su color, así
+// que se usa directamente. PINK se anade porque hay campos federados con barras
+// rosas, y OTHER no tiene color propio: cae en el estilo neutro.
 export const TEE_COLOR_STYLES = {
   white: { dot: 'bg-white border border-gray-400', selected: 'border-gray-500 bg-gray-50 text-gray-700' },
   yellow: { dot: 'bg-yellow-400', selected: 'border-yellow-500 bg-yellow-50 text-yellow-700' },
@@ -51,11 +51,9 @@ export const TEE_COLOR_STYLES = {
   silver: { dot: 'bg-gray-300 border border-gray-400', selected: 'border-gray-400 bg-gray-50 text-gray-700' },
   purple: { dot: 'bg-purple-500', selected: 'border-purple-500 bg-purple-50 text-purple-700' },
   bronze: { dot: 'bg-amber-700', selected: 'border-amber-700 bg-amber-50 text-amber-800' },
+  pink: { dot: 'bg-pink-400', selected: 'border-pink-400 bg-pink-50 text-pink-700' },
 };
 
-export const resolveTeeColor = (identifier) => {
-  const firstWord = identifier?.trim().split(/\s+/)[0]?.toLowerCase();
-  return TEE_COLOR_STYLES[firstWord] ?? null;
-};
+export const resolveTeeColor = (color) => TEE_COLOR_STYLES[color?.toLowerCase()] ?? null;
 
 export const initialGuestForm = { firstName: '', lastName: '', handicap: '' };

@@ -34,7 +34,7 @@ describe('ScoringMapper', () => {
           user_id: 'u1',
           user_name: 'Agustin',
           team: 'A',
-          tee_category: 'AMATEUR',
+          color: 'YELLOW',
           playing_handicap: 12,
           strokes_received: [1, 3, 5, 7, 9, 11, 13, 15, 17],
         },
@@ -42,7 +42,7 @@ describe('ScoringMapper', () => {
           user_id: 'u2',
           user_name: 'Pedro',
           team: 'B',
-          tee_category: 'AMATEUR',
+          color: 'YELLOW',
           playing_handicap: 8,
           strokes_received: [1, 5, 9, 13],
         },
@@ -134,7 +134,7 @@ describe('ScoringMapper', () => {
       expect(dto.players[0].userId).toBe('u1');
       expect(dto.players[0].userName).toBe('Agustin');
       expect(dto.players[0].team).toBe('A');
-      expect(dto.players[0].teeCategory).toBe('AMATEUR');
+      expect(dto.players[0].color).toBe('YELLOW');
       expect(dto.players[0].playingHandicap).toBe(12);
       expect(dto.players[0].strokesReceived).toEqual([1, 3, 5, 7, 9, 11, 13, 15, 17]);
     });
@@ -245,7 +245,7 @@ describe('ScoringMapper', () => {
     it('should handle missing strokes_received on players', () => {
       const data = {
         ...fullApiResponse,
-        players: [{ user_id: 'u1', user_name: 'Test', team: 'A', tee_category: 'AMATEUR', playing_handicap: 0 }],
+        players: [{ user_id: 'u1', user_name: 'Test', team: 'A', color: 'YELLOW', playing_handicap: 0 }],
       };
       const dto = ScoringMapper.toScoringViewDTO(data);
       expect(dto.players[0].strokesReceived).toEqual([]);

@@ -17,7 +17,7 @@ class IQuickMatchRepository {
    * @param {string|null} matchFormat - 'SINGLES' | 'FOURBALL' | 'FOURSOMES' (Ryder Cup match play), or null for free play
    * @param {string|null} scoringFormat - 'MEDAL' | 'STABLEFORD' (free play), or null for match play
    * @param {string|null} name - Optional free-text name to tell matches apart
-   * @param {{allowancePercentage?: number|null, creatorTeeCategory?: string|null, creatorTeeGender?: string|null}} options
+   * @param {{allowancePercentage?: number|null, creatorTeeColor?: string|null, creatorTeeGender?: string|null}} options
    * @returns {Promise<QuickMatch>} Created quick match
    * @throws {Error} If operation fails
    */
@@ -31,7 +31,7 @@ class IQuickMatchRepository {
    * @param {string} quickMatchId
    * @param {string} friendUserId
    * @param {'A'|'B'|null} team
-   * @param {{teeCategory?: string|null, teeGender?: string|null}} options
+   * @param {{color?: string|null, teeGender?: string|null}} options
    * @returns {Promise<QuickMatch>} Updated quick match
    * @throws {Error} If operation fails
    */

@@ -17,18 +17,11 @@
     "addTee": "Add Tee",
     "maxTeesReached": "Maximum 10 tees allowed",
     "minTeesRequired": "Minimum 2 tees required",
-    "teeCategory": "Category",
+    "color": "Colour",
     "identifier": "Identifier",
     "identifierPlaceholder": "Yellow, White, etc.",
     "courseRating": "Course Rating",
     "slopeRating": "Slope Rating",
-    "teeCategories": {
-      "CHAMPIONSHIP": "Championship",
-      "AMATEUR": "Amateur",
-      "SENIOR": "Senior",
-      "FORWARD": "Forward",
-      "JUNIOR": "Junior"
-    },
     "teeGender": "Gender",
     "teeGenders": {
       "MALE": "Male",
@@ -51,14 +44,27 @@
       "nameRequired": "Course name must be at least 3 characters",
       "countryCodeRequired": "Country code must be 2 characters (ISO 3166-1)",
       "teesRange": "Course must have between 2 and 10 tees",
-      "genderMixing": "Cannot mix gendered and unisex tees for the same category",
+      "genderMixing": "Cannot mix gendered and unisex tees for the same colour",
       "teeIdentifierRequired": "Tee {{index}} identifier is required",
       "courseRatingRange": "Tee {{index}} Course Rating must be between 50.0 and 90.0",
       "slopeRatingRange": "Tee {{index}} Slope Rating must be between 55 and 155",
       "strokeIndexRange": "Hole {{index}} stroke index must be between 1 and 18",
       "uniqueStrokeIndices": "Each hole must have a unique stroke index (1-18)",
       "totalParRange": "Total par must be between 66 and 76 (current: {{totalPar}})",
-      "submitFailed": "Failed to save golf course"
+      "submitFailed": "Failed to save golf course",
+      "duplicateTee": "Two tees are identical: same colour and gender"
+    },
+    "teeColors": {
+      "WHITE": "White",
+      "YELLOW": "Yellow",
+      "BLUE": "Blue",
+      "RED": "Red",
+      "BLACK": "Black",
+      "GREEN": "Green",
+      "ORANGE": "Orange",
+      "PINK": "Pink",
+      "GOLD": "Gold",
+      "OTHER": "Other"
     }
   },
   "table": {

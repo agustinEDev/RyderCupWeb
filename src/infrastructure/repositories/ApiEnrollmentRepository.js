@@ -222,9 +222,10 @@ class ApiEnrollmentRepository extends IEnrollmentRepository {
    */
   async requestEnrollment(competitionId, data = {}) {
     const body = { ...data };
-    if (data.teeCategory) {
-      body.tee_category = data.teeCategory;
-      delete body.teeCategory;
+    if (data.color) {
+      // La API espera tee_color; el dominio lo llama color
+      body.tee_color = data.color;
+      delete body.color;
     }
     const apiData = await this.#request(`/api/v1/competitions/${competitionId}/enrollments`, {
       method: 'POST',
@@ -362,7 +363,7 @@ class ApiEnrollmentRepository extends IEnrollmentRepository {
         custom_handicap: data.customHandicap,
       }),
       ...(data.teamId && { team_id: data.teamId }),
-      ...(data.teeCategory && { tee_category: data.teeCategory }),
+      ...(data.color && { color: data.color }),
     };
 
     const apiData = await this.#request(

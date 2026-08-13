@@ -61,7 +61,7 @@ class ScheduleMapper {
     return {
       userId: p.user_id,
       playingHandicap: p.playing_handicap ?? null,
-      teeCategory: p.tee_category || null,
+      color: p.color || null,
       teeGender: p.tee_gender || null,
       strokesReceived: p.strokes_received || [],
       playerHandicap: p.player_handicap ?? null,

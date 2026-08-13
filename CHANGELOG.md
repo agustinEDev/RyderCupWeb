@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+
+- **El selector de campos busca en el servidor en vez de descargarse el catálogo** (issue BE #197): cargaba todos los campos aprobados del país y filtraba por nombre en el navegador. Con los 802 campos federados recién importados eso son unos 1,6 MB en cada visita al selector, y el filtrado ocurre en el móvil del usuario en lugar de en la base de datos. Ahora pide **veinte campos por vuelta** con el texto escrito, y espera 300 ms desde la última tecla: escribir "Real Club" son nueve pulsaciones y sin esa espera serían nueve peticiones. La respuesta en vuelo se descarta si llega otra, porque escribiendo deprisa vuelven desordenadas y se pintarían los resultados de una búsqueda anterior sobre los de la actual.
+
+  Como solo llegan los primeros veinte, **se avisa de cuántos hay en total**: sin decirlo, un campo que existe pero se ha quedado fuera parece que no existe. Y el cuadro de texto **ya no se deshabilita mientras carga** — con una búsqueda por pulsación, eso habría hecho imposible escribir.
+
+### Fixed
+
+- **La tarjeta del hándicap vuelve a estar a la altura de las otras dos** en el panel: aparecía bajada unos 25 píxeles, con el número descolgado respecto a "Juegas a" y "Torneos". La causa no era un margen sino el tipo de etiqueta: `StatCard` se pinta como `<button>` cuando lleva a algún sitio y como `<div>` cuando no, y **un botón centra verticalmente su contenido mientras que un div lo alinea arriba**. Como la rejilla estira las tres tarjetas a la misma altura, la diferencia solo se nota en la que es botón y tiene menos contenido dentro — el hándicap cuando no hay tendencia que enseñar. Con una columna flex explícita, la alineación deja de depender de si la tarjeta es pulsable.
+
+- **Editar un campo desde el panel ya no puede destrozarle la tarjeta** (issue BE #199): el formulario se alimentaba del campo tal como venía del listado. Ahora que el listado no trae la tarjeta, `GolfCourseForm` no la encontraba y arrancaba con sus 18 hoyos por defecto de par 4; guardar desde ahí sobrescribía la tarjeta real. En 802 campos recién importados de la federación, corregir un nombre les habría borrado la geometría. El campo se pide entero por su id antes de abrir el modal, que es el patrón que ya usaba la partida rápida al seleccionar. Tres de los cuatro tests nuevos de la página fallan sin este cambio.
+
 ## [2.9.0] - 2026-08-11
 
 ### Added

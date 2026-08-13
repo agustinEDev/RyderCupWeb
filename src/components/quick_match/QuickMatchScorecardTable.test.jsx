@@ -78,9 +78,9 @@ describe('QuickMatchScorecardTable', () => {
 
   it('should use the Playing Handicap (via tee + allowance) instead of the raw handicap when resolving stroke dots', () => {
     const participant = [
-      { participantId: 'p-1', name: 'Alice', handicap: 18, team: null, isGuest: false, teeCategory: 'AMATEUR', teeGender: 'MALE' },
+      { participantId: 'p-1', name: 'Alice', handicap: 18, team: null, isGuest: false, color: 'YELLOW', teeGender: 'MALE' },
     ];
-    const tees = [{ teeCategory: 'AMATEUR', gender: 'MALE', courseRating: 7, slopeRating: 113 }];
+    const tees = [{ color: 'YELLOW', gender: 'MALE', courseRating: 7, slopeRating: 113 }];
     const holeScores = [{ holeNumber: 1, participantId: 'p-1', score: 5 }];
 
     // 20% allowance drops the Playing Handicap well below stroke index 5, so no dot should show
