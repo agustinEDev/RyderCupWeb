@@ -410,13 +410,12 @@ describe('CreateQuickMatchModal', () => {
     fireEvent.click(screen.getByTestId('quick-match-course-next'));
 
     await waitFor(() => {
-      expect(screen.getByTestId('quick-match-friend-tee-select-f-1-YELLOW|MALE')).toBeInTheDocument();
+      expect(screen.getByTestId('quick-match-add-friend-f-1')).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByTestId('quick-match-friend-tee-select-f-1-YELLOW|MALE'));
-    fireEvent.click(screen.getByTestId('quick-match-friend-tee-select-f-2-RED|FEMALE'));
-
+    // La salida se elige en el panel que abre el + de cada amigo, no en su fila
     fireEvent.click(screen.getByTestId('quick-match-add-friend-f-1'));
+    fireEvent.click(screen.getByTestId('quick-match-tee-panel-option-YELLOW|MALE'));
 
     await waitFor(() => {
       expect(mockAddFriend).toHaveBeenCalledWith('qm-1', 'user-2', null, {
@@ -425,11 +424,16 @@ describe('CreateQuickMatchModal', () => {
       });
     });
 
-    // Bob's row keeps its own independent tee selection, unaffected by Alice's add
-    expect(screen.getByTestId('quick-match-friend-tee-select-f-2-RED|FEMALE')).toHaveAttribute(
-      'aria-pressed',
-      'true'
-    );
+    // El panel del siguiente amigo empieza limpio: la salida de Alice no arrastra
+    fireEvent.click(screen.getByTestId('quick-match-add-friend-f-2'));
+    fireEvent.click(screen.getByTestId('quick-match-tee-panel-option-RED|FEMALE'));
+
+    await waitFor(() => {
+      expect(mockAddFriend).toHaveBeenLastCalledWith('qm-1', 'user-3', null, {
+        color: 'RED',
+        teeGender: 'FEMALE',
+      });
+    });
   });
 
   it('should not pre-select any tee option', async () => {
@@ -495,7 +499,9 @@ describe('CreateQuickMatchModal', () => {
     });
     fireEvent.click(screen.getByTestId('quick-match-add-friend-f-1'));
 
-    expect(screen.getByTestId('quick-match-modal-error')).toHaveTextContent('create.participants.errorTeeRequired');
+    // El + ya no añade: abre el panel de salidas. Así no hay forma de añadir a
+    // nadie sin salida en un campo que las tiene, y no hace falta el error
+    expect(screen.getByTestId('quick-match-tee-panel')).toBeInTheDocument();
     expect(mockAddFriend).not.toHaveBeenCalled();
   });
 
