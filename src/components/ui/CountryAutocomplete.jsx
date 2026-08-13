@@ -36,6 +36,7 @@ const CountryAutocomplete = ({
   const [searchQuery, setSearchQuery] = useState('');
   const wrapperRef = useRef(null);
   const inputRef = useRef(null);
+  const listRef = useRef(null);
   const generatedId = useId();
   const controlId = id || generatedId;
 
@@ -66,6 +67,18 @@ const CountryAutocomplete = ({
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  // El <select> nativo abría posicionado en la opción elegida. Sin esto la
+  // lista arranca siempre por la A, de modo que quien tenga España guardada
+  // abre y ve Afganistán: el país elegido queda fuera de la vista.
+  // Solo al abrir, no al filtrar, donde lo que importa es el primer resultado.
+  useEffect(() => {
+    if (!isOpen) return;
+    const selected = listRef.current?.querySelector('[aria-selected="true"]');
+    // jsdom no implementa scrollIntoView, y tampoco lo tienen navegadores muy
+    // viejos: la llamada es opcional para que su ausencia no rompa nada
+    selected?.scrollIntoView?.({ block: 'nearest' });
+  }, [isOpen]);
 
   const close = () => {
     setIsOpen(false);
@@ -187,7 +200,7 @@ const CountryAutocomplete = ({
             </div>
           </div>
 
-          <ul role="listbox" className="overflow-y-auto max-h-60 py-1">
+          <ul ref={listRef} role="listbox" className="overflow-y-auto max-h-60 py-1">
             {filteredCountries.length === 0 ? (
               <li className="px-4 py-3 text-center text-gray-500 text-sm">
                 {searchQuery

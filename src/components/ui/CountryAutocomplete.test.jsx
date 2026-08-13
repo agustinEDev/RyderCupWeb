@@ -189,4 +189,28 @@ describe('CountryAutocomplete', () => {
     const selected = screen.getByRole('option', { name: /Portugal/ });
     expect(selected).toHaveAttribute('aria-selected', 'true');
   });
+
+  it('abre posicionado en el país elegido', () => {
+    // El select nativo lo hacía solo. Sin esto, quien tiene España guardada
+    // abre y ve Afganistán, con su país fuera de la vista
+    const scrollIntoView = vi.fn();
+    globalThis.Element.prototype.scrollIntoView = scrollIntoView;
+
+    renderSelect({ value: 'DE' });
+    open();
+
+    expect(scrollIntoView).toHaveBeenCalled();
+    const scrolled = screen.getByRole('option', { name: /Alemania/ });
+    expect(scrolled).toHaveAttribute('aria-selected', 'true');
+  });
+
+  it('no intenta posicionarse cuando no hay nada elegido', () => {
+    const scrollIntoView = vi.fn();
+    globalThis.Element.prototype.scrollIntoView = scrollIntoView;
+
+    renderSelect({ value: '' });
+    open();
+
+    expect(scrollIntoView).not.toHaveBeenCalled();
+  });
 });
