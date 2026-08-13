@@ -34,7 +34,7 @@ class QuickMatchMapper {
       handicap: p.handicap ?? null,
       team: p.team ?? null,
       isGuest: !!p.is_guest,
-      teeCategory: p.tee_category ?? null,
+      color: p.color ?? null,
       teeGender: p.tee_gender ?? null,
     }));
 

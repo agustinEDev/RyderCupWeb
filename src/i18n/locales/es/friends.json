@@ -19,9 +19,7 @@
     "searchPlaceholder": "Buscar por nombre...",
     "searchMinChars": "Escribe al menos 2 caracteres",
     "noUsersFound": "No se encontraron usuarios",
-    "noUserSelected": "Por favor, selecciona un usuario primero",
-    "send": "Enviar solicitud",
-    "sending": "Enviando..."
+    "opensProfileHint": "Toca a un jugador para ver su perfil y enviarle la solicitud desde ahí."
   },
   "status": {
     "PENDING": "Pendiente",

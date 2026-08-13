@@ -1,3 +1,5 @@
+import { useTranslation } from 'react-i18next';
+
 import { teeKey, resolveTeeColor } from './createQuickMatchModalConstants';
 
 /**
@@ -9,9 +11,17 @@ import { teeKey, resolveTeeColor } from './createQuickMatchModalConstants';
  * CreateQuickMatchModal).
  */
 const TeeSelectButtons = ({ value, onChange, courseTees, ariaLabel, testIdPrefix, compact = false }) => {
+  const { t } = useTranslation('golfCourses');
+
   const options = courseTees.map((tee) => {
-    const key = teeKey(tee.teeCategory, tee.gender);
-    return { key, label: tee.identifier, testKey: key, color: resolveTeeColor(tee.identifier) };
+    const key = teeKey(tee.color, tee.gender);
+    const name = tee.identifier || t(`form.teeColors.${tee.color}`, { defaultValue: tee.color });
+    // Un campo federado trae las mismas barras valoradas para cada género, así
+    // que el color solo no señala una salida: "Rojas" aparece dos veces y son
+    // dos salidas distintas. Mismo sufijo que TeeColorBadge, para no tener dos
+    // convenciones segun la pantalla.
+    const genderSuffix = tee.gender === 'MALE' ? ' (M)' : tee.gender === 'FEMALE' ? ' (F)' : '';
+    return { key, label: `${name}${genderSuffix}`, testKey: key, color: resolveTeeColor(tee.color) };
   });
 
   return (

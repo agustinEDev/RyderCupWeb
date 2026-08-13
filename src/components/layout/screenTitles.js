@@ -12,6 +12,11 @@ import { matchPath } from 'react-router';
  * la lista. Sin `parent` no se pinta flecha: son las cuatro raices de la
  * navegacion inferior, donde volver no significa nada.
  *
+ * `back: 'history'` es para pantallas sin padre unico. Al perfil de un jugador
+ * se llega desde el feed, desde Amigos y desde la busqueda, asi que cualquier
+ * destino fijo se equivocaria dos de cada tres veces: se vuelve por donde se
+ * vino.
+ *
  * Las rutas de anotacion en vivo no aparecen a proposito: llevan su propia
  * cabecera y ni siquiera muestran la navegacion inferior.
  */
@@ -31,6 +36,8 @@ const SCREENS = [
   { pattern: '/competitions/:id/schedule', titleKey: 'screens.schedule', parent: '/competitions/:id' },
   { pattern: '/creator/competitions/:id/schedule', titleKey: 'screens.schedule', parent: '/competitions/:id' },
   { pattern: '/creator/competitions/:id/invitations', titleKey: 'screens.invitations', parent: '/competitions/:id' },
+
+  { pattern: '/players/:userId', titleKey: 'screens.playerProfile', back: 'history' },
 
   { pattern: '/browse-competitions', titleKey: 'screens.browseCompetitions', parent: '/dashboard' },
   { pattern: '/player/invitations', titleKey: 'screens.myInvitations', parent: '/dashboard' },
@@ -57,8 +64,9 @@ function buildPath(template, params) {
 }
 
 /**
- * Devuelve `{ titleKey, backTo }` para un pathname, o null si la ruta no es una
- * pantalla de la aplicacion (publicas, anotacion en vivo, alta de perfil).
+ * Devuelve `{ titleKey, backTo, backByHistory }` para un pathname, o null si la
+ * ruta no es una pantalla de la aplicacion (publicas, anotacion en vivo, alta
+ * de perfil).
  */
 function specificity(pattern) {
   const segments = pattern.split('/');
@@ -86,6 +94,7 @@ export function resolveScreen(pathname) {
   return {
     titleKey: best.screen.titleKey,
     backTo: best.screen.parent ? buildPath(best.screen.parent, best.match.params) : null,
+    backByHistory: best.screen.back === 'history',
   };
 }
 

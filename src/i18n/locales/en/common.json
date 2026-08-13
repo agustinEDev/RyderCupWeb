@@ -63,7 +63,7 @@
     "myCompetitions": "My Competitions",
     "createCompetition": "Create Competition",
     "myInvitations": "My Invitations",
-    "friends": "Friends",
+    "feed": "Activity",
     "adminPanel": "Admin Panel",
     "viewProfile": "View Profile",
     "leaderboard": "Leaderboard",
@@ -97,7 +97,8 @@
     "myInvitations": "My Invitations",
     "myMatches": "My Matches",
     "myQuickMatches": "Quick Matches",
-    "myStats": "My statistics"
+    "myStats": "My statistics",
+    "playerProfile": "Player profile"
   },
   "footer": {
     "description": "The ultimate platform for managing amateur golf tournaments in Ryder Cup format. Connect with friends and enjoy the spirit of friendly competition.",

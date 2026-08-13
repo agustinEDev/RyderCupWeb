@@ -7,6 +7,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [2.10.0] - 2026-08-13
+
+### Added
+
+- **Se llega al perfil de un jugador desde Amigos y desde la búsqueda**: `/players/{id}` solo se enlazaba desde una tarjeta del feed, así que un amigo que no hubiera publicado nada era inalcanzable, y una cuenta nueva —con el feed vacío por definición— no podía abrir ningún perfil. La página existía y el backend la servía; no llevaba nada a ella. Ahora la foto y el nombre de cada tarjeta de amigo enlazan al perfil **en los tres modos**, también en las solicitudes pendientes, que es donde más falta hace: ver quién te escribe antes de aceptar. La búsqueda de "Añadir amigo" deja de seleccionar y **abre el perfil**, que es donde ya vivía el botón de enviar la solicitud, de modo que desaparecen el chip de selección y el pie con Cancelar y Enviar. La página de perfil no necesitó nada: ya pintaba el control correcto para los seis estados de amistad que devuelve el backend.
+
+- **Actividad se alcanza desde el escritorio**: el feed solo colgaba de la navegación inferior, que es `md:hidden`, así que por encima de `md` no había forma de llegar salvo tecleando la URL. Amigos sale de la cabecera a cambio: se entra desde dentro del propio feed, igual que en móvil.
+
+- **Volver desde el perfil de un jugador**: se llega desde el feed, desde Amigos y desde la búsqueda, así que no hay una pantalla padre única a la que regresar. En móvil la flecha de la cabecera **retrocede por el historial**, y en escritorio el enlace vive junto al contenido, como en el detalle de un torneo, nombrando adónde lleva. Quien enlaza dice de dónde viene, de modo que revisando solicitudes se vuelve a Amigos y no al feed: entrar y salir del perfil una vez por solicitud costaba dos clics de más cada vez.
+
+### Changed
+
+- **Las salidas se identifican por color y llevan su propia tarjeta** (issue BE #186): acompaña al cambio del backend, donde `tee_category` pasa a ser `color`. Las cinco categorías eran invención nuestra y ninguna federación las publica. Afecta a la selección de barras en partida rápida, a las insignias del panel y al formulario de campos.
+
+- **El selector de campos busca en el servidor en vez de descargarse el catálogo** (issue BE #197): cargaba todos los campos aprobados del país y filtraba por nombre en el navegador. Con los 802 campos federados recién importados eso son unos 1,6 MB en cada visita al selector, y el filtrado ocurre en el móvil del usuario en lugar de en la base de datos. Ahora pide **veinte campos por vuelta** con el texto escrito, y espera 300 ms desde la última tecla: escribir "Real Club" son nueve pulsaciones y sin esa espera serían nueve peticiones. La respuesta en vuelo se descarta si llega otra, porque escribiendo deprisa vuelven desordenadas y se pintarían los resultados de una búsqueda anterior sobre los de la actual.
+
+  Como solo llegan los primeros veinte, **se avisa de cuántos hay en total**: sin decirlo, un campo que existe pero se ha quedado fuera parece que no existe. Y el cuadro de texto **ya no se deshabilita mientras carga** — con una búsqueda por pulsación, eso habría hecho imposible escribir.
+
+### Fixed
+
+- **La tarjeta del hándicap vuelve a estar a la altura de las otras dos** en el panel: aparecía bajada unos 25 píxeles, con el número descolgado respecto a "Juegas a" y "Torneos". La causa no era un margen sino el tipo de etiqueta: `StatCard` se pinta como `<button>` cuando lleva a algún sitio y como `<div>` cuando no, y **un botón centra verticalmente su contenido mientras que un div lo alinea arriba**. Como la rejilla estira las tres tarjetas a la misma altura, la diferencia solo se nota en la que es botón y tiene menos contenido dentro — el hándicap cuando no hay tendencia que enseñar. Con una columna flex explícita, la alineación deja de depender de si la tarjeta es pulsable.
+
+- **El buscador de campos deja de quedarse congelado al elegir uno**: una vez seleccionado un campo, la casilla mostraba su nombre pasara lo que pasara. Se podía borrar y el texto seguía entero, sin manera de cambiar de campo. Teclear sobre una selección es querer buscar otro, así que ahora se suelta antes de nada. Solo se avisa al padre cuando de verdad había selección: los otros tres usos del buscador —añadir campo a una competición y los de crearla— no mantienen ninguna y su callback no espera recibir un vacío.
+
+- **La flecha de volver ya no puede echarte de la aplicación**: retrocedía siempre que la ubicación tuviera una clave propia, y un `replace` estrena clave sin apilar entrada en el historial. Abrir un perfil compartido sin sesión encadena dos —la redirección a iniciar sesión y la vuelta después de entrar—, de modo que la flecha salía del sitio con cero pantallas detrás. Ahora se mira el índice real del historial, que un `replace` no incrementa. El respaldo además **reemplaza en lugar de apilar**: si no, el gesto de retroceso del teléfono devolvía al perfil y las dos páginas se atrapaban entre sí.
+
+- **Los partidos rápidos vuelven a crearse con las barras elegidas**: se enviaban los nombres de campo anteriores al cambio de color y la API respondía 422.
+
+- **La búsqueda de amigos se puede cerrar**: al quitar el pie con Cancelar, la única salida era el icono de la cabecera, de 20 píxeles y sin margen, con el fondo inerte y sin tecla de escape en un teléfono. El icono pasa a la zona táctil que usa el resto de la aplicación y **el fondo cierra**.
+
+- **El lector de pantalla anuncia un solo enlace por tarjeta de amigo**: la foto enlaza al mismo perfil que el nombre y estaba fuera del tabulador, pero `tabindex="-1"` solo quita la parada de teclado y no retira del árbol de accesibilidad, así que se seguían anunciando dos enlaces idénticos al mismo sitio.
+
+- **Editar un campo desde el panel ya no puede destrozarle la tarjeta** (issue BE #199): el formulario se alimentaba del campo tal como venía del listado. Ahora que el listado no trae la tarjeta, `GolfCourseForm` no la encontraba y arrancaba con sus 18 hoyos por defecto de par 4; guardar desde ahí sobrescribía la tarjeta real. En 802 campos recién importados de la federación, corregir un nombre les habría borrado la geometría. El campo se pide entero por su id antes de abrir el modal, que es el patrón que ya usaba la partida rápida al seleccionar. Tres de los cuatro tests nuevos de la página fallan sin este cambio.
+
 ## [2.9.0] - 2026-08-11
 
 ### Added

@@ -17,6 +17,7 @@ describe('resolveScreen', () => {
     expect(resolveScreen('/profile/devices')).toEqual({
       titleKey: 'screens.devices',
       backTo: '/profile',
+      backByHistory: false,
     });
   });
 
@@ -25,6 +26,7 @@ describe('resolveScreen', () => {
     expect(resolveScreen('/competitions/create')).toEqual({
       titleKey: 'screens.createCompetition',
       backTo: '/competitions',
+      backByHistory: false,
     });
   });
 
@@ -32,6 +34,7 @@ describe('resolveScreen', () => {
     expect(resolveScreen('/competitions/abc-123')).toEqual({
       titleKey: 'screens.competition',
       backTo: '/competitions',
+      backByHistory: false,
     });
   });
 
@@ -40,6 +43,7 @@ describe('resolveScreen', () => {
     expect(resolveScreen('/competitions/abc-123/schedule')).toEqual({
       titleKey: 'screens.schedule',
       backTo: '/competitions/abc-123',
+      backByHistory: false,
     });
   });
 
@@ -47,6 +51,7 @@ describe('resolveScreen', () => {
     expect(resolveScreen('/competitions/abc-123/edit')).toEqual({
       titleKey: 'screens.editCompetition',
       backTo: '/competitions/abc-123',
+      backByHistory: false,
     });
   });
 
@@ -54,6 +59,17 @@ describe('resolveScreen', () => {
     expect(resolveScreen('/creator/competitions/xyz/invitations')).toEqual({
       titleKey: 'screens.invitations',
       backTo: '/competitions/xyz',
+      backByHistory: false,
+    });
+  });
+
+  it('sends the player profile back through history, with no fixed parent', () => {
+    // Se llega desde el feed, desde Amigos y desde la busqueda: cualquier padre
+    // fijo se equivocaria dos de cada tres veces
+    expect(resolveScreen('/players/abc-123')).toEqual({
+      titleKey: 'screens.playerProfile',
+      backTo: null,
+      backByHistory: true,
     });
   });
 

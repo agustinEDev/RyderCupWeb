@@ -17,18 +17,18 @@ class StablefordCalculator {
    * participant's Playing Handicap if they picked a tee that matches one on
    * the course, otherwise their raw handicap as-is.
    *
-   * @param {{handicap: number|null, teeCategory?: string|null, teeGender?: string|null}} participant
+   * @param {{handicap: number|null, color?: string|null, teeGender?: string|null}} participant
    * @param {Array<{holeNumber: number, par: number}>} holes
-   * @param {Array<{teeCategory: string, gender?: string|null, courseRating: number, slopeRating: number}>} tees
+   * @param {Array<{color: string, gender?: string|null, courseRating: number, slopeRating: number}>} tees
    * @param {number} allowancePercentage
    * @returns {number|null}
    */
   static resolveStrokesBasis(participant, holes, tees, allowancePercentage) {
     if (participant.handicap == null) return null;
-    if (!participant.teeCategory) return participant.handicap;
+    if (!participant.color) return participant.handicap;
 
     const tee = tees.find(
-      (t) => t.teeCategory === participant.teeCategory && (t.gender ?? null) === (participant.teeGender ?? null)
+      (t) => t.color === participant.color && (t.gender ?? null) === (participant.teeGender ?? null)
     );
     if (!tee) return participant.handicap;
 
@@ -86,7 +86,7 @@ class StablefordCalculator {
    * Aggregates Stableford points and gross strokes for one participant,
    * over the holes that already have a recorded score.
    *
-   * @param {{participantId: string, handicap: number|null, teeCategory?: string|null, teeGender?: string|null}} participant
+   * @param {{participantId: string, handicap: number|null, color?: string|null, teeGender?: string|null}} participant
    * @param {Array<{holeNumber: number, par: number, strokeIndex: number}>} holes
    * @param {Array<{holeNumber: number, participantId: string, score: number}>} holeScores
    * @param {Array<Object>} tees - Course tees, to resolve the participant's Playing Handicap

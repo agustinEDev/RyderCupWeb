@@ -63,7 +63,7 @@ describe('CreateQuickMatchUseCase', () => {
   });
 
   it('should pass allowance/tee options through to the repository', async () => {
-    const options = { allowancePercentage: 90, creatorTeeCategory: 'AMATEUR', creatorTeeGender: 'MALE' };
+    const options = { allowancePercentage: 90, creatorTeeColor: 'YELLOW', creatorTeeGender: 'MALE' };
     await useCase.execute('course-1', 'SINGLES', null, null, options);
 
     expect(mockRepo.create).toHaveBeenCalledWith('course-1', 'SINGLES', null, null, options);

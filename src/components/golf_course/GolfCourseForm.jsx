@@ -6,16 +6,15 @@ import customToast from '../../utils/toast';
 import { fetchCountriesUseCase } from '../../composition';
 import { CountryFlag } from '../../utils/countryUtils';
 import { formatCountryName } from '../../services/countries';
+import TeeColor from '../../domain/value_objects/TeeColor';
 
 const COURSE_TYPES = ['STANDARD_18', 'PITCH_AND_PUTT', 'EXECUTIVE'];
 
-const TEE_CATEGORIES = [
-  'CHAMPIONSHIP',
-  'AMATEUR',
-  'SENIOR',
-  'FORWARD',
-  'JUNIOR',
-];
+// Los diez colores admitidos, ordenados de barras mas largas a mas cortas
+// segun el uso habitual. OTHER cubre las salidas cuyo nombre no es un color
+// (las "Championship" britanicas, las combinadas o las numeradas por metros) y
+// por eso exige identificador.
+const TEE_COLORS = TeeColor.getAllValues();
 
 const TEE_GENDERS = [null, 'MALE', 'FEMALE'];
 
@@ -37,8 +36,8 @@ const GolfCourseForm = ({ initialData = null, onSubmit, onCancel }) => {
 
   // Tees (2-10)
   const [tees, setTees] = useState([
-    { teeCategory: 'CHAMPIONSHIP', teeGender: null, identifier: '', courseRating: '', slopeRating: '' },
-    { teeCategory: 'AMATEUR', teeGender: null, identifier: '', courseRating: '', slopeRating: '' },
+    { color: 'WHITE', teeGender: null, identifier: '', courseRating: '', slopeRating: '' },
+    { color: 'YELLOW', teeGender: null, identifier: '', courseRating: '', slopeRating: '' },
   ]);
 
   // Holes (18 fixed)
@@ -101,7 +100,7 @@ const GolfCourseForm = ({ initialData = null, onSubmit, onCancel }) => {
 
       if (initialData.tees && initialData.tees.length > 0) {
         setTees(initialData.tees.map(tee => ({
-          teeCategory: tee.teeCategory || tee.tee_category,
+          color: tee.color,
           teeGender: tee.teeGender ?? tee.tee_gender ?? tee.gender ?? null,
           identifier: tee.identifier || '',
           courseRating: tee.courseRating || tee.course_rating || '',
@@ -128,7 +127,7 @@ const GolfCourseForm = ({ initialData = null, onSubmit, onCancel }) => {
 
     setTees([
       ...tees,
-      { teeCategory: 'AMATEUR', teeGender: null, identifier: '', courseRating: '', slopeRating: '' },
+      { color: 'YELLOW', teeGender: null, identifier: '', courseRating: '', slopeRating: '' },
     ]);
   };
 
@@ -239,17 +238,33 @@ const GolfCourseForm = ({ initialData = null, onSubmit, onCancel }) => {
       return false;
     }
 
-    // Validate gender mixing: cannot mix gendered and unisex tees for the same category
+    // Dos salidas del mismo color y genero serian la misma salida. Con OTHER
+    // las distingue su identificador.
+    const seenTees = new Set();
+    for (const tee of tees) {
+      const identity =
+        tee.color === TeeColor.OTHER
+          ? `identifier:${tee.identifier?.trim() ?? ''}`
+          : `color:${tee.color}`;
+      const key = `${identity}|${tee.teeGender ?? ''}`;
+      if (seenTees.has(key)) {
+        customToast.error(t('form.errors.duplicateTee'));
+        return false;
+      }
+      seenTees.add(key);
+    }
+
+    // Validate gender mixing: cannot mix gendered and unisex tees for the same colour
     const categoryGenderMap = {};
     for (const tee of tees) {
       const hasGender = tee.teeGender !== null && tee.teeGender !== '';
-      if (!categoryGenderMap[tee.teeCategory]) {
-        categoryGenderMap[tee.teeCategory] = { hasGendered: false, hasUnisex: false };
+      if (!categoryGenderMap[tee.color]) {
+        categoryGenderMap[tee.color] = { hasGendered: false, hasUnisex: false };
       }
       if (hasGender) {
-        categoryGenderMap[tee.teeCategory].hasGendered = true;
+        categoryGenderMap[tee.color].hasGendered = true;
       } else {
-        categoryGenderMap[tee.teeCategory].hasUnisex = true;
+        categoryGenderMap[tee.color].hasUnisex = true;
       }
     }
     for (const cat of Object.keys(categoryGenderMap)) {
@@ -262,7 +277,7 @@ const GolfCourseForm = ({ initialData = null, onSubmit, onCancel }) => {
     // Validate each tee
     for (let i = 0; i < tees.length; i++) {
       const tee = tees[i];
-      if (!tee.identifier || tee.identifier.trim().length === 0) {
+      if (tee.color === TeeColor.OTHER && !tee.identifier?.trim()) {
         customToast.error(t('form.errors.teeIdentifierRequired', { index: i + 1 }));
         return false;
       }
@@ -322,9 +337,9 @@ const GolfCourseForm = ({ initialData = null, onSubmit, onCancel }) => {
         countryCode: countryCode.toUpperCase(),
         courseType,
         tees: tees.map(tee => ({
-          teeCategory: tee.teeCategory,
+          color: tee.color,
           teeGender: tee.teeGender || null,
-          identifier: tee.identifier.trim(),
+          identifier: tee.identifier?.trim() || null,
           courseRating: parseFloat(tee.courseRating),
           slopeRating: parseInt(tee.slopeRating, 10),
         })),
@@ -470,21 +485,29 @@ const GolfCourseForm = ({ initialData = null, onSubmit, onCancel }) => {
                 {/* Tee Category */}
                 <div>
                   <label className="block text-xs font-medium text-gray-600 mb-1">
-                    {t('form.teeCategory')}
+                    {t('form.color')}
                   </label>
                   <div className="flex flex-col gap-1">
-                    {TEE_CATEGORIES.map(cat => (
+                    {TEE_COLORS.map(cat => (
                       <button
                         key={cat}
                         type="button"
-                        onClick={() => handleTeeChange(index, 'teeCategory', cat)}
+                        onClick={() => handleTeeChange(index, 'color', cat)}
+                        aria-pressed={tee.color === cat}
                         className={`border rounded text-xs px-2 py-1 text-left transition-colors ${
-                          tee.teeCategory === cat
+                          tee.color === cat
                             ? 'bg-primary text-white border-primary'
                             : 'bg-white text-gray-600 border-gray-200 hover:border-primary hover:text-primary'
                         }`}
                       >
-                        {t(`form.teeCategories.${cat}`)}
+                        <span className="inline-flex items-center gap-1.5">
+                          <span
+                            aria-hidden="true"
+                            className="inline-block w-2 h-2 rounded-full border border-black/20"
+                            style={{ backgroundColor: TeeColor.swatchFor(cat) }}
+                          />
+                          {t(`form.teeColors.${cat}`, { defaultValue: cat })}
+                        </span>
                       </button>
                     ))}
                   </div>
@@ -524,7 +547,7 @@ const GolfCourseForm = ({ initialData = null, onSubmit, onCancel }) => {
                     onChange={(e) => handleTeeChange(index, 'identifier', e.target.value)}
                     placeholder={t('form.identifierPlaceholder')}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-                    required
+                    required={tee.color === TeeColor.OTHER}
                   />
                 </div>
 

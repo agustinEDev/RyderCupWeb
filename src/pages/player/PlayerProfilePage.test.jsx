@@ -123,6 +123,30 @@ describe('PlayerProfilePage', () => {
       expect(screen.getByText('playerProfile:friendsCount')).toBeInTheDocument();
     });
 
+    it('offers a way back to the feed, which the desktop header does not give', async () => {
+      // En escritorio la cabecera no pinta flecha, asi que sin este enlace se
+      // entra al perfil y no hay forma de salir salvo el boton del navegador
+      renderProfile();
+
+      const volver = await screen.findByRole('link', { name: 'playerProfile:backToFeed' });
+      expect(volver).toHaveAttribute('href', '/feed');
+    });
+
+    it('sends you back to friends when that is where you came from', async () => {
+      // Revisando solicitudes se entra y se sale del perfil una vez por cada
+      // una: devolver siempre al feed obliga a rehacer el camino cada vez
+      render(
+        <MemoryRouter initialEntries={[{ pathname: '/players/u1', state: { from: 'friends' } }]}>
+          <Routes>
+            <Route path="/players/:userId" element={<PlayerProfilePage />} />
+          </Routes>
+        </MemoryRouter>
+      );
+
+      const volver = await screen.findByRole('link', { name: 'playerProfile:backToFriends' });
+      expect(volver).toHaveAttribute('href', '/friends');
+    });
+
     it('explains what is behind a friendship instead of showing empty fields', async () => {
       // Los campos privados llegan en null, no a cero: hay que decir que no se
       // pueden ver, no dar a entender que no tiene datos.

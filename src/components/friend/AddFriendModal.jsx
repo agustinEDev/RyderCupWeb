@@ -1,13 +1,22 @@
 import { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router';
 import { X, Search, Loader } from 'lucide-react';
 import Avatar from '../ui/Avatar';
 
-const AddFriendModalContent = ({ onClose, onSend, onSearchUsers, isProcessing, t }) => {
-  const [error, setError] = useState('');
+/**
+ * Buscador de jugadores.
+ *
+ * Elegir a alguien lleva a su perfil, que es donde vive el boton de enviar la
+ * solicitud. Antes se seleccionaba aqui, aparecia un resumen y habia que pulsar
+ * Enviar en el pie del modal: los mismos toques, pero mandandole una solicitud
+ * a un nombre sin haber visto de quien se trataba. Del perfil ademas se sale
+ * aceptando, rechazando o sin hacer nada, segun en que punto este la relacion.
+ */
+const AddFriendModalContent = ({ onClose, onSearchUsers, t }) => {
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
-  const [selectedUser, setSelectedUser] = useState(null);
   const [showDropdown, setShowDropdown] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const dropdownRef = useRef(null);
@@ -16,13 +25,12 @@ const AddFriendModalContent = ({ onClose, onSend, onSearchUsers, isProcessing, t
   const searchRequestIdRef = useRef(0);
   const onSearchUsersRef = useRef(onSearchUsers);
   const onCloseRef = useRef(onClose);
-  const isProcessingRef = useRef(isProcessing);
   const highlightedIndexRef = useRef(highlightedIndex);
   const showDropdownRef = useRef(showDropdown);
   const searchResultsRef = useRef(searchResults);
+  const openProfileRef = useRef(null);
   useEffect(() => { onSearchUsersRef.current = onSearchUsers; });
   useEffect(() => { onCloseRef.current = onClose; });
-  useEffect(() => { isProcessingRef.current = isProcessing; });
   useEffect(() => { highlightedIndexRef.current = highlightedIndex; });
   useEffect(() => { showDropdownRef.current = showDropdown; });
   useEffect(() => { searchResultsRef.current = searchResults; });
@@ -47,7 +55,7 @@ const AddFriendModalContent = ({ onClose, onSend, onSearchUsers, isProcessing, t
         if (showDropdownRef.current) {
           setShowDropdown(false);
           setHighlightedIndex(-1);
-        } else if (!isProcessingRef.current) {
+        } else {
           onCloseRef.current();
         }
         return;
@@ -67,11 +75,7 @@ const AddFriendModalContent = ({ onClose, onSend, onSearchUsers, isProcessing, t
         const idx = highlightedIndexRef.current;
         if (idx >= 0 && idx < searchResultsRef.current.length) {
           e.preventDefault();
-          const user = searchResultsRef.current[idx];
-          setSelectedUser(user);
-          setSearchQuery('');
-          setShowDropdown(false);
-          setError('');
+          openProfileRef.current?.(searchResultsRef.current[idx]);
         }
       }
     };
@@ -121,171 +125,125 @@ const AddFriendModalContent = ({ onClose, onSend, onSearchUsers, isProcessing, t
     };
   }, [searchQuery]);
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    setError('');
-
-    if (!selectedUser) {
-      setError(t('add.noUserSelected'));
-      return;
-    }
-
-    onSend(selectedUser.id);
-  };
-
-  const handleSelectUser = (user) => {
-    setSelectedUser(user);
-    setSearchQuery('');
+  const handleOpenProfile = (user) => {
     setShowDropdown(false);
-    setError('');
+    onClose();
+    // De donde se viene, para que el perfil sepa adonde devolver: esta busqueda
+    // se abre desde Amigos, y mandar de vuelta al feed obligaria a rehacer el
+    // camino a mano
+    navigate(`/players/${user.id}`, { state: { from: 'friends' } });
   };
 
-  const handleClearUser = () => {
-    setSelectedUser(null);
-    setSearchQuery('');
-    setSearchResults([]);
-  };
+  // El manejador de teclado se registra una sola vez y no ve los valores del
+  // render actual, asi que la funcion viaja por ref igual que las demas. Se
+  // asigna en un efecto y no en el cuerpo: escribir un ref durante el render
+  // rompe con React Compiler y lo vigila `react-hooks/refs`
+  useEffect(() => { openProfileRef.current = handleOpenProfile; });
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+    <div
+      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+      data-testid="add-friend-backdrop"
+      // Pulsar fuera cierra. Sin el pie, la X es la unica salida visible, y en
+      // un telefono no hay tecla de escape a la que recurrir
+      onClick={onClose}
+    >
       <div
         className="bg-white rounded-lg shadow-xl w-full max-w-md"
         role="dialog"
         aria-modal="true"
         aria-labelledby="add-friend-modal-title"
+        onClick={(event) => event.stopPropagation()}
       >
         <div className="flex items-center justify-between p-4 border-b border-gray-200">
           <h2 id="add-friend-modal-title" className="text-lg font-semibold text-gray-900">{t('add.title')}</h2>
+          {/* h-11 w-11 y no el icono a secas: es la zona tactil minima que usa
+              el resto de la aplicacion, y al quitar el pie esta X paso a ser la
+              unica forma de cerrar */}
           <button
             onClick={onClose}
-            disabled={isProcessing}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
+            aria-label={t('cancel', { ns: 'common' })}
+            className="-mr-2 flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-lg text-gray-400 transition-colors hover:text-gray-600 active:bg-gray-100"
           >
-            <X className="h-5 w-5" />
+            <X className="h-5 w-5" aria-hidden="true" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-4 space-y-4">
-          <div>
-            {selectedUser ? (
-              <div className="flex items-center gap-2 px-3 py-2 bg-primary/5 border border-primary/20 rounded-md" data-testid="selected-user-chip">
-                <Avatar userId={selectedUser.id} size="sm" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900 truncate">
-                    {selectedUser.firstName} {selectedUser.lastName}
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={handleClearUser}
-                  disabled={isProcessing}
-                  className="text-gray-400 hover:text-gray-600 flex-shrink-0"
-                  data-testid="clear-selected-user"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
-            ) : (
-              <div className="relative" ref={dropdownRef}>
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                  <input
-                    ref={searchInputRef}
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => { setSearchQuery(e.target.value); setError(''); }}
-                    placeholder={t('add.searchPlaceholder')}
-                    disabled={isProcessing}
-                    className="w-full pl-9 pr-8 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:opacity-50"
-                    data-testid="user-search-input"
-                    role="combobox"
-                    aria-expanded={showDropdown && searchResults.length > 0}
-                    aria-haspopup="listbox"
-                    aria-controls="friend-search-listbox"
-                    aria-activedescendant={highlightedIndex >= 0 ? `friend-search-option-${highlightedIndex}` : undefined}
-                  />
-                  {isSearching && (
-                    <Loader className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 animate-spin" />
-                  )}
-                </div>
+        {/* Ya no hay formulario: no queda nada que enviar desde aqui. El pie
+            con Cancelar y Enviar se va con el — cierran la X y el fondo */}
+        <div className="p-4">
+          <div className="relative" ref={dropdownRef}>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input
+                ref={searchInputRef}
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder={t('add.searchPlaceholder')}
+                className="w-full pl-9 pr-8 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                data-testid="user-search-input"
+                role="combobox"
+                aria-expanded={showDropdown && searchResults.length > 0}
+                aria-haspopup="listbox"
+                aria-controls="friend-search-listbox"
+                aria-activedescendant={highlightedIndex >= 0 ? `friend-search-option-${highlightedIndex}` : undefined}
+              />
+              {isSearching && (
+                <Loader className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 animate-spin" />
+              )}
+            </div>
 
-                {searchQuery.trim().length > 0 && searchQuery.trim().length < 2 && (
-                  <p className="text-xs text-gray-400 mt-1">{t('add.searchMinChars')}</p>
-                )}
+            {searchQuery.trim().length > 0 && searchQuery.trim().length < 2 && (
+              <p className="text-xs text-gray-400 mt-1">{t('add.searchMinChars')}</p>
+            )}
 
-                {showDropdown && searchResults.length > 0 && (
-                  <div id="friend-search-listbox" className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-48 overflow-y-auto" data-testid="search-results-dropdown" role="listbox">
-                    {searchResults.map((user, index) => (
-                      <button
-                        key={user.id}
-                        id={`friend-search-option-${index}`}
-                        type="button"
-                        onClick={() => handleSelectUser(user)}
-                        onMouseEnter={() => setHighlightedIndex(index)}
-                        className={`w-full px-3 py-2 text-left transition-colors border-b border-gray-100 last:border-b-0 ${
-                          index === highlightedIndex ? 'bg-blue-100' : 'hover:bg-gray-50'
-                        }`}
-                        role="option"
-                        aria-selected={index === highlightedIndex}
-                        data-testid={`search-result-${user.id}`}
-                      >
-                        <div className="flex items-center gap-2">
-                          <Avatar userId={user.id} size="sm" />
-                          {/* `truncate` no basta en un hijo de flex: sin `min-w-0`
-                              su ancho mínimo es el del contenido, así que un
-                              nombre largo desborda en vez de recortarse */}
-                          <p className="min-w-0 flex-1 text-sm font-medium text-gray-900 truncate">
-                            {user.firstName} {user.lastName}
-                          </p>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                )}
-
-                {showDropdown && searchResults.length === 0 && searchQuery.trim().length >= 2 && !isSearching && (
-                  <p className="text-xs text-gray-500 mt-1" data-testid="no-users-found">{t('add.noUsersFound')}</p>
-                )}
+            {showDropdown && searchResults.length > 0 && (
+              <div id="friend-search-listbox" className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-48 overflow-y-auto" data-testid="search-results-dropdown" role="listbox">
+                {searchResults.map((user, index) => (
+                  <button
+                    key={user.id}
+                    id={`friend-search-option-${index}`}
+                    type="button"
+                    onClick={() => handleOpenProfile(user)}
+                    onMouseEnter={() => setHighlightedIndex(index)}
+                    className={`w-full px-3 py-2 text-left transition-colors border-b border-gray-100 last:border-b-0 ${
+                      index === highlightedIndex ? 'bg-blue-100' : 'hover:bg-gray-50'
+                    }`}
+                    role="option"
+                    aria-selected={index === highlightedIndex}
+                    data-testid={`search-result-${user.id}`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <Avatar userId={user.id} size="sm" />
+                      {/* `truncate` no basta en un hijo de flex: sin `min-w-0`
+                          su ancho mínimo es el del contenido, así que un
+                          nombre largo desborda en vez de recortarse */}
+                      <p className="min-w-0 flex-1 text-sm font-medium text-gray-900 truncate">
+                        {user.firstName} {user.lastName}
+                      </p>
+                    </div>
+                  </button>
+                ))}
               </div>
             )}
 
-            {error && <p className="text-sm text-red-600 mt-1">{error}</p>}
+            {showDropdown && searchResults.length === 0 && searchQuery.trim().length >= 2 && !isSearching && (
+              <p className="text-xs text-gray-500 mt-1" data-testid="no-users-found">{t('add.noUsersFound')}</p>
+            )}
           </div>
 
-          <div className="flex justify-end gap-3 pt-2">
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={isProcessing}
-              className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 disabled:opacity-50 transition-colors"
-            >
-              {t('cancel', { ns: 'common' })}
-            </button>
-            <button
-              type="submit"
-              disabled={isProcessing || !selectedUser}
-              className="px-4 py-2 text-sm font-medium text-white bg-primary rounded-md hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              data-testid="send-request-button"
-            >
-              {isProcessing ? t('add.sending') : t('add.send')}
-            </button>
-          </div>
-        </form>
+          <p className="mt-3 text-xs text-gray-500">{t('add.opensProfileHint')}</p>
+        </div>
       </div>
     </div>
   );
 };
 
-const AddFriendModal = ({ isOpen, onClose, onSend, onSearchUsers, isProcessing, t }) => {
+const AddFriendModal = ({ isOpen, onClose, onSearchUsers, t }) => {
   if (!isOpen) return null;
   return (
-    <AddFriendModalContent
-      onClose={onClose}
-      onSend={onSend}
-      onSearchUsers={onSearchUsers}
-      isProcessing={isProcessing}
-      t={t}
-    />
+    <AddFriendModalContent onClose={onClose} onSearchUsers={onSearchUsers} t={t} />
   );
 };
 

@@ -4,7 +4,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import Enrollment from './Enrollment';
 import EnrollmentId from '../value_objects/EnrollmentId';
 import EnrollmentStatus from '../value_objects/EnrollmentStatus';
-import TeeCategory from '../value_objects/TeeCategory';
+import TeeColor from '../value_objects/TeeColor';
 
 describe('Enrollment', () => {
   let mockEnrollmentId;
@@ -535,99 +535,99 @@ describe('Enrollment', () => {
     });
   });
 
-  describe('teeCategory field', () => {
-    it('should default teeCategory to null', () => {
+  describe('color field', () => {
+    it('should default color to null', () => {
       const enrollment = Enrollment.request({
         enrollmentId: mockEnrollmentId,
         competitionId: mockCompetitionId,
         userId: mockUserId,
       });
 
-      expect(enrollment.teeCategory).toBeNull();
+      expect(enrollment.color).toBeNull();
     });
 
-    it('should accept teeCategory in constructor', () => {
+    it('should accept color in constructor', () => {
       const enrollment = new Enrollment(createValidEnrollmentProps({
-        teeCategory: TeeCategory.amateur(),
+        color: TeeColor.fromString(TeeColor.YELLOW),
       }));
 
-      expect(enrollment.teeCategory).toBeInstanceOf(TeeCategory);
-      expect(enrollment.teeCategory.toString()).toBe('AMATEUR');
+      expect(enrollment.color).toBeInstanceOf(TeeColor);
+      expect(enrollment.color.toString()).toBe('YELLOW');
     });
 
-    it('should include teeCategory as string in toPersistence()', () => {
+    it('should include color as string in toPersistence()', () => {
       const enrollment = new Enrollment(createValidEnrollmentProps({
-        teeCategory: TeeCategory.senior(),
+        color: TeeColor.fromString(TeeColor.BLUE),
       }));
 
       const persisted = enrollment.toPersistence();
-      expect(persisted.teeCategory).toBe('SENIOR');
+      expect(persisted.color).toBe('BLUE');
     });
 
-    it('should propagate teeCategory through approve()', () => {
+    it('should propagate color through approve()', () => {
       const enrollment = new Enrollment(createValidEnrollmentProps({
-        teeCategory: TeeCategory.championship(),
+        color: TeeColor.fromString(TeeColor.WHITE),
       }));
 
       const approved = enrollment.approve();
-      expect(approved.teeCategory.toString()).toBe('CHAMPIONSHIP');
+      expect(approved.color.toString()).toBe('WHITE');
     });
 
-    it('should propagate teeCategory through reject()', () => {
+    it('should propagate color through reject()', () => {
       const enrollment = new Enrollment(createValidEnrollmentProps({
-        teeCategory: TeeCategory.amateur(),
+        color: TeeColor.fromString(TeeColor.YELLOW),
       }));
 
       const rejected = enrollment.reject();
-      expect(rejected.teeCategory.toString()).toBe('AMATEUR');
+      expect(rejected.color.toString()).toBe('YELLOW');
     });
 
-    it('should propagate teeCategory through cancel()', () => {
+    it('should propagate color through cancel()', () => {
       const enrollment = new Enrollment(createValidEnrollmentProps({
-        teeCategory: TeeCategory.junior(),
+        color: TeeColor.fromString(TeeColor.GREEN),
       }));
 
       const cancelled = enrollment.cancel();
-      expect(cancelled.teeCategory.toString()).toBe('JUNIOR');
+      expect(cancelled.color.toString()).toBe('GREEN');
     });
 
-    it('should propagate teeCategory through withdraw()', () => {
+    it('should propagate color through withdraw()', () => {
       const enrollment = new Enrollment(createValidEnrollmentProps({
         status: EnrollmentStatus.approved(),
-        teeCategory: TeeCategory.forward(),
+        color: TeeColor.fromString(TeeColor.RED),
       }));
 
       const withdrawn = enrollment.withdraw();
-      expect(withdrawn.teeCategory.toString()).toBe('FORWARD');
+      expect(withdrawn.color.toString()).toBe('RED');
     });
 
-    it('should propagate teeCategory through assignToTeam()', () => {
+    it('should propagate color through assignToTeam()', () => {
       const enrollment = new Enrollment(createValidEnrollmentProps({
         status: EnrollmentStatus.approved(),
-        teeCategory: TeeCategory.senior(),
+        color: TeeColor.fromString(TeeColor.BLUE),
       }));
 
       const assigned = enrollment.assignToTeam('1');
-      expect(assigned.teeCategory.toString()).toBe('SENIOR');
+      expect(assigned.color.toString()).toBe('BLUE');
     });
 
-    it('should propagate teeCategory through setCustomHandicap()', () => {
+    it('should propagate color through setCustomHandicap()', () => {
       const enrollment = new Enrollment(createValidEnrollmentProps({
-        teeCategory: TeeCategory.amateur(),
+        color: TeeColor.fromString(TeeColor.YELLOW),
       }));
 
       const updated = enrollment.setCustomHandicap(18.0);
-      expect(updated.teeCategory.toString()).toBe('AMATEUR');
+      expect(updated.color.toString()).toBe('YELLOW');
     });
 
-    it('should propagate teeCategory through removeCustomHandicap()', () => {
+    it('should propagate color through removeCustomHandicap()', () => {
       const enrollment = new Enrollment(createValidEnrollmentProps({
-        teeCategory: TeeCategory.championship(),
+        color: TeeColor.fromString(TeeColor.WHITE),
         customHandicap: 15.0,
       }));
 
       const updated = enrollment.removeCustomHandicap();
-      expect(updated.teeCategory.toString()).toBe('CHAMPIONSHIP');
+      expect(updated.color.toString()).toBe('WHITE');
     });
   });
 

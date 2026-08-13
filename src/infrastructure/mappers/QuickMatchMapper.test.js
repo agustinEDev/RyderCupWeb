@@ -28,7 +28,7 @@ describe('QuickMatchMapper', () => {
         handicap: 10,
         team: null,
         isGuest: false,
-        teeCategory: null,
+        color: null,
         teeGender: null,
       });
     });
@@ -67,7 +67,7 @@ describe('QuickMatchMapper', () => {
       expect(quickMatch.name).toBe('Viernes con Rafa');
     });
 
-    it('should map participant tee_category/tee_gender and allowance fields', () => {
+    it('should map participant color/tee_gender and allowance fields', () => {
       const apiData = {
         ...baseApiData(),
         allowance_percentage: 90,
@@ -80,14 +80,14 @@ describe('QuickMatchMapper', () => {
             handicap: 10,
             team: null,
             is_guest: false,
-            tee_category: 'AMATEUR',
+            color: 'YELLOW',
             tee_gender: 'MALE',
           },
         ],
       };
 
       const quickMatch = QuickMatchMapper.toDomain(apiData);
-      expect(quickMatch.participants[0].teeCategory).toBe('AMATEUR');
+      expect(quickMatch.participants[0].color).toBe('YELLOW');
       expect(quickMatch.participants[0].teeGender).toBe('MALE');
       expect(quickMatch.allowancePercentage).toBe(90);
       expect(quickMatch.effectiveAllowance).toBe(90);

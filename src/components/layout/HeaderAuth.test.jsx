@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
-import { MemoryRouter } from 'react-router';
+import { render, screen, fireEvent } from '@testing-library/react';
+import { MemoryRouter, Routes, Route } from 'react-router';
 import HeaderAuth from './HeaderAuth';
 
 vi.mock('react-i18next', () => ({
@@ -84,15 +84,83 @@ describe('HeaderAuth', () => {
     expect(hrefs).toEqual(expect.arrayContaining(['/dashboard', '/browse-competitions', '/competitions']));
   });
 
-  it('reaches friends from the desktop navigation', () => {
+  it('reaches the feed from the desktop navigation', () => {
     /**
      * La navegacion inferior es md:hidden, asi que en escritorio esta cabecera
-     * es el unico camino a /friends desde que el panel dejo de tener su tarjeta
-     * (FE #306). Sin este enlace, la seccion queda inalcanzable.
+     * es el unico camino al feed. Sin este enlace la seccion solo se alcanza
+     * tecleando la URL.
+     *
+     * Amigos ya no cuelga de la cabecera: se entra desde dentro del feed, igual
+     * que en movil. Que ese segundo salto exista lo vigila FeedPage.test.jsx
+     * ("links to the friends list"), de modo que la cadena completa hasta
+     * /friends sigue cubierta.
      */
     renderHeader('/dashboard');
 
     const hrefs = screen.getAllByRole('link').map((link) => link.getAttribute('href'));
-    expect(hrefs).toContain('/friends');
+    expect(hrefs).toContain('/feed');
+  });
+
+  /**
+   * Al perfil de un jugador se llega desde el feed, desde Amigos y desde la
+   * busqueda: no hay padre unico al que volver, asi que se retrocede por el
+   * historial. Esta flecha es la de movil; en escritorio la vuelta la pone la
+   * propia pagina, junto al contenido.
+   */
+  describe('vuelta desde el perfil de un jugador', () => {
+    const renderPlayerProfile = (entries, index) =>
+      render(
+        <MemoryRouter initialEntries={entries} initialIndex={index}>
+          <Routes>
+            <Route path="/friends" element={<p>lista de amigos</p>} />
+            <Route path="/feed" element={<p>actividad</p>} />
+            <Route path="/players/:userId" element={<HeaderAuth user={user} />} />
+          </Routes>
+        </MemoryRouter>
+      );
+
+    it('goes back to the previous page instead of a fixed parent', () => {
+      renderPlayerProfile(['/friends', '/players/abc'], 1);
+
+      fireEvent.click(screen.getByRole('button', { name: 'back' }));
+
+      expect(screen.getByText('lista de amigos')).toBeInTheDocument();
+    });
+
+    it('falls back to the feed when there is nowhere to go back to', () => {
+      // Entrar por URL directa deja el historial vacio: retroceder sacaria de
+      // la aplicacion
+      renderPlayerProfile(['/players/abc'], 0);
+
+      fireEvent.click(screen.getByRole('button', { name: 'back' }));
+
+      expect(screen.getByText('actividad')).toBeInTheDocument();
+    });
+
+    it('falls back after a chain of replaces, which renews the location key', () => {
+      /**
+       * Abrir un perfil compartido sin sesion encadena dos `replace` —el
+       * redirect a /login y la vuelta tras entrar—, y cada uno estrena `key`
+       * sin apilar entrada. Mirando solo la `key` esto parecia historial
+       * propio y la flecha sacaba de la aplicacion.
+       *
+       * React Router deja ese recorrido en `window.history.state.idx`, que
+       * los `replace` no incrementan.
+       */
+      const previous = window.history.state;
+      window.history.replaceState({ idx: 0 }, '');
+
+      try {
+        // Dos entradas y una `key` real, justo lo que enmascaraba el fallo
+        renderPlayerProfile(['/friends', '/players/abc'], 1);
+
+        fireEvent.click(screen.getByRole('button', { name: 'back' }));
+
+        expect(screen.getByText('actividad')).toBeInTheDocument();
+        expect(screen.queryByText('lista de amigos')).not.toBeInTheDocument();
+      } finally {
+        window.history.replaceState(previous, '');
+      }
+    });
   });
 });

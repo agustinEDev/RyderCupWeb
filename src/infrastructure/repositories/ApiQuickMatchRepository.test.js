@@ -48,7 +48,7 @@ describe('ApiQuickMatchRepository', () => {
           scoring_format: null,
           name: null,
           allowance_percentage: null,
-          creator_tee_category: null,
+          creator_tee_color: null,
           creator_tee_gender: null,
         }),
       });
@@ -68,7 +68,7 @@ describe('ApiQuickMatchRepository', () => {
           scoring_format: 'STABLEFORD',
           name: null,
           allowance_percentage: null,
-          creator_tee_category: null,
+          creator_tee_color: null,
           creator_tee_gender: null,
         }),
       });
@@ -87,7 +87,7 @@ describe('ApiQuickMatchRepository', () => {
           scoring_format: null,
           name: 'Viernes con Rafa',
           allowance_percentage: null,
-          creator_tee_category: null,
+          creator_tee_color: null,
           creator_tee_gender: null,
         }),
       });
@@ -98,7 +98,7 @@ describe('ApiQuickMatchRepository', () => {
 
       await repo.create('course-1', 'SINGLES', null, null, {
         allowancePercentage: 90,
-        creatorTeeCategory: 'AMATEUR',
+        creatorTeeColor: 'YELLOW',
         creatorTeeGender: 'MALE',
       });
 
@@ -110,7 +110,7 @@ describe('ApiQuickMatchRepository', () => {
           scoring_format: null,
           name: null,
           allowance_percentage: 90,
-          creator_tee_category: 'AMATEUR',
+          creator_tee_color: 'YELLOW',
           creator_tee_gender: 'MALE',
         }),
       });
@@ -125,7 +125,7 @@ describe('ApiQuickMatchRepository', () => {
 
       expect(apiRequest).toHaveBeenCalledWith('/api/v1/quick-matches/qm-1/participants', {
         method: 'POST',
-        body: JSON.stringify({ friend_user_id: 'user-2', team: 'A', tee_category: null, tee_gender: null }),
+        body: JSON.stringify({ friend_user_id: 'user-2', team: 'A', tee_color: null, tee_gender: null }),
       });
     });
 
@@ -133,7 +133,7 @@ describe('ApiQuickMatchRepository', () => {
       apiRequest.mockResolvedValue(mockQuickMatchApi);
 
       await repo.addFriendParticipant('qm-1', 'user-2', 'A', {
-        teeCategory: 'AMATEUR',
+        color: 'YELLOW',
         teeGender: 'MALE',
       });
 
@@ -142,7 +142,7 @@ describe('ApiQuickMatchRepository', () => {
         body: JSON.stringify({
           friend_user_id: 'user-2',
           team: 'A',
-          tee_category: 'AMATEUR',
+          tee_color: 'YELLOW',
           tee_gender: 'MALE',
         }),
       });
@@ -167,13 +167,13 @@ describe('ApiQuickMatchRepository', () => {
           last_name: 'Doe',
           handicap: 15,
           team: null,
-          tee_category: null,
+          tee_color: null,
           tee_gender: null,
         }),
       });
     });
 
-    it('should POST the chosen tee when the guest carries teeCategory/teeGender', async () => {
+    it('should POST the chosen tee when the guest carries color/teeGender', async () => {
       apiRequest.mockResolvedValue(mockQuickMatchApi);
 
       await repo.addGuestParticipant('qm-1', {
@@ -181,7 +181,7 @@ describe('ApiQuickMatchRepository', () => {
         lastName: 'Doe',
         handicap: 15,
         team: null,
-        teeCategory: 'FORWARD',
+        color: 'RED',
         teeGender: 'FEMALE',
       });
 
@@ -192,7 +192,7 @@ describe('ApiQuickMatchRepository', () => {
           last_name: 'Doe',
           handicap: 15,
           team: null,
-          tee_category: 'FORWARD',
+          tee_color: 'RED',
           tee_gender: 'FEMALE',
         }),
       });

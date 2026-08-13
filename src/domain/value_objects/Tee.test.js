@@ -7,7 +7,7 @@ describe('Tee', () => {
   describe('Constructor and Validation', () => {
     it('should create a valid Tee with all fields', () => {
       const tee = new Tee({
-        teeCategory: 'CHAMPIONSHIP',
+        color: 'WHITE',
         identifier: 'Black',
         courseRating: 75.5,
         slopeRating: 135,
@@ -15,7 +15,7 @@ describe('Tee', () => {
       });
 
       expect(tee).toBeInstanceOf(Tee);
-      expect(tee.teeCategory).toBe('CHAMPIONSHIP');
+      expect(tee.color).toBe('WHITE');
       expect(tee.identifier).toBe('Black');
       expect(tee.courseRating).toBe(75.5);
       expect(tee.slopeRating).toBe(135);
@@ -24,7 +24,7 @@ describe('Tee', () => {
 
     it('should create a valid Tee with null gender (unisex)', () => {
       const tee = new Tee({
-        teeCategory: 'AMATEUR',
+        color: 'YELLOW',
         identifier: 'White',
         courseRating: 70.0,
         slopeRating: 120,
@@ -36,7 +36,7 @@ describe('Tee', () => {
 
     it('should create a valid Tee without gender (undefined)', () => {
       const tee = new Tee({
-        teeCategory: 'AMATEUR',
+        color: 'YELLOW',
         identifier: 'White',
         courseRating: 70.0,
         slopeRating: 120,
@@ -47,7 +47,7 @@ describe('Tee', () => {
 
     it('should create a valid Tee with minimum course rating', () => {
       const tee = new Tee({
-        teeCategory: 'SENIOR',
+        color: 'BLUE',
         identifier: 'Red',
         courseRating: 50.0,
         slopeRating: 55,
@@ -59,7 +59,7 @@ describe('Tee', () => {
 
     it('should create a valid Tee with maximum course rating', () => {
       const tee = new Tee({
-        teeCategory: 'CHAMPIONSHIP',
+        color: 'WHITE',
         identifier: 'Black',
         courseRating: 90.0,
         slopeRating: 155,
@@ -71,7 +71,7 @@ describe('Tee', () => {
 
     it('should create a valid Tee with minimum slope rating', () => {
       const tee = new Tee({
-        teeCategory: 'SENIOR',
+        color: 'BLUE',
         identifier: 'Red',
         courseRating: 65.0,
         slopeRating: 55,
@@ -83,7 +83,7 @@ describe('Tee', () => {
 
     it('should create a valid Tee with maximum slope rating', () => {
       const tee = new Tee({
-        teeCategory: 'CHAMPIONSHIP',
+        color: 'WHITE',
         identifier: 'Black',
         courseRating: 75.0,
         slopeRating: 155,
@@ -95,87 +95,99 @@ describe('Tee', () => {
 
     it('should throw error for invalid tee category', () => {
       expect(() => new Tee({
-        teeCategory: 'INVALID_CATEGORY',
+        color: 'INVALID_CATEGORY',
         identifier: 'Blue',
         courseRating: 72.0,
         slopeRating: 125,
         gender: 'MALE'
-      })).toThrow('Invalid tee category');
+      })).toThrow('Invalid tee color');
     });
 
     it('should throw error for old combined category values', () => {
       expect(() => new Tee({
-        teeCategory: 'AMATEUR_MALE',
+        color: 'AMATEUR_MALE',
         identifier: 'Blue',
         courseRating: 72.0,
         slopeRating: 125,
         gender: 'MALE'
-      })).toThrow('Invalid tee category');
+      })).toThrow('Invalid tee color');
     });
 
-    it('should throw error for missing identifier', () => {
-      expect(() => new Tee({
-        teeCategory: 'AMATEUR',
-        identifier: '',
+    it('should accept a tee without identifier when the colour names it', () => {
+      const tee = new Tee({
+        color: 'YELLOW',
         courseRating: 72.0,
         slopeRating: 125,
         gender: 'MALE'
-      })).toThrow('Tee identifier is required');
+      });
+      expect(tee.identifier).toBeNull();
+      expect(tee.displayName).toBe('YELLOW');
     });
 
-    it('should throw error for null identifier', () => {
+    it('should throw when the colour is OTHER and there is no identifier', () => {
+      // Sin nombre, dos salidas OTHER serian indistinguibles
       expect(() => new Tee({
-        teeCategory: 'AMATEUR',
-        identifier: null,
+        color: 'OTHER',
         courseRating: 72.0,
         slopeRating: 125,
         gender: 'MALE'
-      })).toThrow('Tee identifier is required');
+      })).toThrow('A tee with color OTHER must have an identifier');
+    });
+
+    it('should accept OTHER with an identifier, like the British Championship tees', () => {
+      const tee = new Tee({
+        color: 'OTHER',
+        identifier: 'Championship',
+        courseRating: 75.7,
+        slopeRating: 143,
+        gender: 'MALE'
+      });
+      expect(tee.displayName).toBe('Championship');
     });
 
     it('should throw error for course rating below minimum', () => {
       expect(() => new Tee({
-        teeCategory: 'AMATEUR',
+        color: 'YELLOW',
         identifier: 'Blue',
-        courseRating: 49.9,
+        courseRating: 44.9,
         slopeRating: 125,
         gender: 'MALE'
-      })).toThrow('Course rating must be between 50.0 and 90.0');
+      })).toThrow('Course rating must be between 45 and 90');
     });
 
     it('should throw error for course rating above maximum', () => {
       expect(() => new Tee({
-        teeCategory: 'AMATEUR',
+        color: 'YELLOW',
         identifier: 'Blue',
         courseRating: 90.1,
         slopeRating: 125,
         gender: 'MALE'
-      })).toThrow('Course rating must be between 50.0 and 90.0');
+      })).toThrow('Course rating must be between 45 and 90');
     });
 
     it('should throw error for slope rating below minimum', () => {
       expect(() => new Tee({
-        teeCategory: 'AMATEUR',
+        color: 'YELLOW',
         identifier: 'Blue',
         courseRating: 72.0,
-        slopeRating: 54,
+        slopeRating: 39,
         gender: 'MALE'
-      })).toThrow('Slope rating must be between 55 and 155');
+      })).toThrow('Slope rating must be between 40 and 160');
     });
 
     it('should throw error for slope rating above maximum', () => {
       expect(() => new Tee({
-        teeCategory: 'AMATEUR',
+        color: 'YELLOW',
         identifier: 'Blue',
         courseRating: 72.0,
-        slopeRating: 156,
+        slopeRating: 161,
         gender: 'MALE'
-      })).toThrow('Slope rating must be between 55 and 155');
+      })).toThrow('Slope rating must be between 40 and 160');
     });
 
     it('should throw error for invalid gender', () => {
       expect(() => new Tee({
-        teeCategory: 'AMATEUR',
+        color: 'YELLOW',
         identifier: 'Blue',
         courseRating: 72.0,
         slopeRating: 125,
@@ -187,7 +199,7 @@ describe('Tee', () => {
   describe('validate', () => {
     it('should return true for valid tee', () => {
       const tee = new Tee({
-        teeCategory: 'AMATEUR',
+        color: 'YELLOW',
         identifier: 'Blue',
         courseRating: 72.0,
         slopeRating: 125,
@@ -201,7 +213,7 @@ describe('Tee', () => {
   describe('toDTO', () => {
     it('should convert Tee to DTO format with tee_gender', () => {
       const tee = new Tee({
-        teeCategory: 'AMATEUR',
+        color: 'YELLOW',
         identifier: 'Blue',
         courseRating: 72.5,
         slopeRating: 130,
@@ -211,7 +223,7 @@ describe('Tee', () => {
       const dto = tee.toDTO();
 
       expect(dto).toEqual({
-        tee_category: 'AMATEUR',
+        color: 'YELLOW',
         identifier: 'Blue',
         course_rating: 72.5,
         slope_rating: 130,
@@ -221,7 +233,7 @@ describe('Tee', () => {
 
     it('should output tee_gender as null for unisex tees', () => {
       const tee = new Tee({
-        teeCategory: 'FORWARD',
+        color: 'RED',
         identifier: 'Green',
         courseRating: 65.0,
         slopeRating: 110,
@@ -236,7 +248,7 @@ describe('Tee', () => {
   describe('fromDTO', () => {
     it('should create Tee from DTO with tee_gender', () => {
       const dto = {
-        tee_category: 'JUNIOR',
+        color: 'GREEN',
         identifier: 'Red',
         course_rating: 68.5,
         slope_rating: 115,
@@ -246,7 +258,7 @@ describe('Tee', () => {
       const tee = Tee.fromDTO(dto);
 
       expect(tee).toBeInstanceOf(Tee);
-      expect(tee.teeCategory).toBe('JUNIOR');
+      expect(tee.color).toBe('GREEN');
       expect(tee.identifier).toBe('Red');
       expect(tee.courseRating).toBe(68.5);
       expect(tee.slopeRating).toBe(115);
@@ -255,7 +267,7 @@ describe('Tee', () => {
 
     it('should fallback to gender field for backward compatibility', () => {
       const dto = {
-        tee_category: 'AMATEUR',
+        color: 'YELLOW',
         identifier: 'Blue',
         course_rating: 72.0,
         slope_rating: 125,
@@ -268,7 +280,7 @@ describe('Tee', () => {
 
     it('should prefer tee_gender over gender', () => {
       const dto = {
-        tee_category: 'AMATEUR',
+        color: 'YELLOW',
         identifier: 'Blue',
         course_rating: 72.0,
         slope_rating: 125,
@@ -282,16 +294,16 @@ describe('Tee', () => {
 
     it('should handle all valid tee categories', () => {
       const categories = [
-        'CHAMPIONSHIP',
-        'AMATEUR',
-        'SENIOR',
-        'FORWARD',
-        'JUNIOR'
+        'WHITE',
+        'YELLOW',
+        'BLUE',
+        'RED',
+        'GREEN'
       ];
 
       categories.forEach(category => {
         const dto = {
-          tee_category: category,
+          color: category,
           identifier: 'Test',
           course_rating: 70.0,
           slope_rating: 120,
@@ -299,7 +311,7 @@ describe('Tee', () => {
         };
 
         const tee = Tee.fromDTO(dto);
-        expect(tee.teeCategory).toBe(category);
+        expect(tee.color).toBe(category);
       });
     });
   });
@@ -307,7 +319,7 @@ describe('Tee', () => {
   describe('Edge Cases', () => {
     it('should handle decimal course ratings correctly', () => {
       const tee = new Tee({
-        teeCategory: 'AMATEUR',
+        color: 'YELLOW',
         identifier: 'White',
         courseRating: 71.3,
         slopeRating: 127,
@@ -319,7 +331,7 @@ describe('Tee', () => {
 
     it('should trim whitespace from identifier', () => {
       const tee = new Tee({
-        teeCategory: 'AMATEUR',
+        color: 'YELLOW',
         identifier: '  Yellow  ',
         courseRating: 70.0,
         slopeRating: 120,
@@ -331,7 +343,7 @@ describe('Tee', () => {
 
     it('should handle standard slope rating of 113', () => {
       const tee = new Tee({
-        teeCategory: 'AMATEUR',
+        color: 'YELLOW',
         identifier: 'Yellow',
         courseRating: 70.0,
         slopeRating: 113,
@@ -343,14 +355,14 @@ describe('Tee', () => {
 
     it('should create FORWARD category tee', () => {
       const tee = new Tee({
-        teeCategory: 'FORWARD',
+        color: 'RED',
         identifier: 'Green',
         courseRating: 63.0,
         slopeRating: 105,
         gender: 'FEMALE'
       });
 
-      expect(tee.teeCategory).toBe('FORWARD');
+      expect(tee.color).toBe('RED');
       expect(tee.gender).toBe('FEMALE');
     });
   });

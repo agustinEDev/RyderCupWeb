@@ -320,4 +320,23 @@ describe('PlayerStatsCards', () => {
     // El punto de la issue: en una columna, tres cifras ocupaban tres pantallas
     expect(screen.getByTestId('player-stats-cards').className).toContain('grid-cols-3');
   });
+
+  it('aligns the three cards the same way whether or not they are buttons', () => {
+    // Un <button> centra verticalmente su contenido y un <div> lo alinea
+    // arriba. Como la rejilla estira las tres tarjetas a la misma altura, la
+    // del hándicap —que es botón y se queda sin pista cuando no hay tendencia
+    // que enseñar— aparecía bajada respecto a las otras dos. La columna
+    // explícita es lo que quita esa diferencia; jsdom no maqueta, así que lo
+    // que se puede afirmar aquí es que ninguna tarjeta se queda sin ella
+    render(
+      <MemoryRouter>
+        <PlayerStatsCards stats={fullStats} />
+      </MemoryRouter>
+    );
+
+    for (const testId of ['stat-card-handicap', 'stat-card-playing-to', 'stat-card-tournaments']) {
+      const card = screen.getByTestId(testId);
+      expect(card.className).toContain('flex-col');
+    }
+  });
 });

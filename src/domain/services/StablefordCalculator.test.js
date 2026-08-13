@@ -66,38 +66,38 @@ describe('StablefordCalculator', () => {
     ]; // course par 8, for a simple round number
 
     it('should return null when the participant has no handicap', () => {
-      const participant = { handicap: null, teeCategory: 'AMATEUR', teeGender: 'MALE' };
+      const participant = { handicap: null, color: 'YELLOW', teeGender: 'MALE' };
       expect(StablefordCalculator.resolveStrokesBasis(participant, holes, [], 100)).toBeNull();
     });
 
     it('should fall back to raw handicap when no tee was selected', () => {
-      const participant = { handicap: 12, teeCategory: null, teeGender: null };
+      const participant = { handicap: 12, color: null, teeGender: null };
       expect(StablefordCalculator.resolveStrokesBasis(participant, holes, [], 100)).toBe(12);
     });
 
     it('should fall back to raw handicap when the selected tee is not found on the course', () => {
-      const participant = { handicap: 12, teeCategory: 'AMATEUR', teeGender: 'MALE' };
-      const tees = [{ teeCategory: 'CHAMPIONSHIP', gender: 'MALE', courseRating: 72, slopeRating: 130 }];
+      const participant = { handicap: 12, color: 'YELLOW', teeGender: 'MALE' };
+      const tees = [{ color: 'WHITE', gender: 'MALE', courseRating: 72, slopeRating: 130 }];
       expect(StablefordCalculator.resolveStrokesBasis(participant, holes, tees, 100)).toBe(12);
     });
 
     it('should compute the Playing Handicap when a matching tee is found', () => {
-      const participant = { handicap: 12, teeCategory: 'AMATEUR', teeGender: 'MALE' };
-      const tees = [{ teeCategory: 'AMATEUR', gender: 'MALE', courseRating: 8, slopeRating: 113 }];
+      const participant = { handicap: 12, color: 'YELLOW', teeGender: 'MALE' };
+      const tees = [{ color: 'YELLOW', gender: 'MALE', courseRating: 8, slopeRating: 113 }];
       // CH = 12 * (113/113) + (8 - 8) = 12, allowance 100% -> 12
       expect(StablefordCalculator.resolveStrokesBasis(participant, holes, tees, 100)).toBe(12);
     });
 
     it('should apply the allowance percentage to the Playing Handicap', () => {
-      const participant = { handicap: 20, teeCategory: 'AMATEUR', teeGender: 'MALE' };
-      const tees = [{ teeCategory: 'AMATEUR', gender: 'MALE', courseRating: 8, slopeRating: 113 }];
+      const participant = { handicap: 20, color: 'YELLOW', teeGender: 'MALE' };
+      const tees = [{ color: 'YELLOW', gender: 'MALE', courseRating: 8, slopeRating: 113 }];
       // CH = 20, 90% allowance -> 18
       expect(StablefordCalculator.resolveStrokesBasis(participant, holes, tees, 90)).toBe(18);
     });
 
     it('should match tees with a null gender (gender-neutral) only against a participant with no teeGender', () => {
-      const participant = { handicap: 12, teeCategory: 'AMATEUR', teeGender: null };
-      const tees = [{ teeCategory: 'AMATEUR', gender: null, courseRating: 8, slopeRating: 113 }];
+      const participant = { handicap: 12, color: 'YELLOW', teeGender: null };
+      const tees = [{ color: 'YELLOW', gender: null, courseRating: 8, slopeRating: 113 }];
       expect(StablefordCalculator.resolveStrokesBasis(participant, holes, tees, 100)).toBe(12);
     });
   });
@@ -151,10 +151,10 @@ describe('StablefordCalculator', () => {
       const participant = {
         participantId: 'p-1',
         handicap: 18,
-        teeCategory: 'AMATEUR',
+        color: 'YELLOW',
         teeGender: 'MALE',
       };
-      const tees = [{ teeCategory: 'AMATEUR', gender: 'MALE', courseRating: 7, slopeRating: 113 }];
+      const tees = [{ color: 'YELLOW', gender: 'MALE', courseRating: 7, slopeRating: 113 }];
       const holeScores = [{ holeNumber: 1, participantId: 'p-1', score: 4 }];
 
       const result = StablefordCalculator.computeParticipantTotals(participant, holes, holeScores, tees, 100);

@@ -15,6 +15,14 @@ import { listGolfCoursesUseCase } from '../../composition';
  * - onCourseSelect: function - Callback when a course is selected
  * - onRequestNewCourse: function - Callback when "Request new course" is clicked
  */
+// Cuántos campos se piden por vuelta. Es una lista para elegir en el móvil, no
+// un catálogo: más de esto no cabe en pantalla y solo alarga la respuesta.
+const PAGE_SIZE = 20;
+
+// Lo que se espera desde la última tecla antes de preguntar al servidor.
+// Escribir "Real Club" son nueve pulsaciones; sin esto, nueve peticiones.
+const SEARCH_DEBOUNCE_MS = 300;
+
 const GolfCourseSearchBox = ({
   countryCode,
   selectedCourse,
@@ -23,60 +31,60 @@ const GolfCourseSearchBox = ({
 }) => {
   const { t } = useTranslation('golfCourses');
   const [searchQuery, setSearchQuery] = useState('');
-  const [allCourses, setAllCourses] = useState([]);
-  const [filteredCourses, setFilteredCourses] = useState([]);
+  // Los resultados guardan de qué país son. Así, al cambiar de país, no se
+  // pintan un instante los del anterior mientras llega la respuesta nueva, y
+  // no hace falta vaciarlos desde el cuerpo del efecto.
+  const [result, setResult] = useState({ countryCode: null, courses: [], total: 0 });
   const [isLoading, setIsLoading] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const [error, setError] = useState(null);
   const dropdownRef = useRef(null);
 
-  // Load golf courses when country changes
+  // Ask the backend on every change of country or search term.
+  //
+  // Antes se descargaban todos los campos aprobados del país y se filtraba en
+  // el navegador. Con los 802 campos federados eso son ~1,6 MB en cada visita,
+  // y el filtrado ocurre en el móvil del usuario en vez de en la base de datos.
   useEffect(() => {
-    const loadGolfCourses = async () => {
-      if (!countryCode) {
-        setAllCourses([]);
-        setFilteredCourses([]);
-        return;
-      }
+    if (!countryCode) return;
 
+    // La petición en vuelo se descarta si llega otra: escribiendo deprisa, las
+    // respuestas pueden volver desordenadas y pintar los resultados de una
+    // búsqueda anterior sobre los de la actual
+    let cancelled = false;
+
+    const timer = setTimeout(async () => {
       setIsLoading(true);
       setError(null);
 
       try {
-        // Pass countryCode as filter object and only get APPROVED courses
-        const courses = await listGolfCoursesUseCase.execute({
-          countryCode: countryCode,
-          approvalStatus: 'APPROVED'
+        const page = await listGolfCoursesUseCase.execute({
+          countryCode,
+          approvalStatus: 'APPROVED',
+          name: searchQuery.trim() || undefined,
+          limit: PAGE_SIZE,
         });
-        setAllCourses(courses);
-        setFilteredCourses(courses);
+        if (cancelled) return;
+        setResult({ countryCode, courses: page.courses, total: page.total });
       } catch (err) {
+        if (cancelled) return;
         console.error('Error loading golf courses:', err);
         setError(err.message || t('searchBox.errorLoading', 'Error loading golf courses'));
-        setAllCourses([]);
-        setFilteredCourses([]);
+        setResult({ countryCode, courses: [], total: 0 });
       } finally {
-        setIsLoading(false);
+        if (!cancelled) setIsLoading(false);
       }
+    }, SEARCH_DEBOUNCE_MS);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
     };
+  }, [countryCode, searchQuery, t]);
 
-    loadGolfCourses();
-  }, [countryCode, t]);
-
-  // Filter courses based on search query
-  useEffect(() => {
-    if (!searchQuery.trim()) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- pre-existing pattern surfaced by eslint-plugin-react-hooks 7.1.1 bump; needs dedicated review (tracked in follow-up)
-      setFilteredCourses(allCourses);
-      return;
-    }
-
-    const query = searchQuery.toLowerCase();
-    const filtered = allCourses.filter(course =>
-      course.name.toLowerCase().includes(query)
-    );
-    setFilteredCourses(filtered);
-  }, [searchQuery, allCourses]);
+  // Solo valen los resultados del país que se está mirando ahora
+  const courses = result.countryCode === countryCode ? result.courses : [];
+  const total = result.countryCode === countryCode ? result.total : 0;
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -91,6 +99,15 @@ const GolfCourseSearchBox = ({
   }, []);
 
   const handleInputChange = (e) => {
+    // Con un campo ya elegido, la casilla muestra su nombre y no lo que se
+    // teclea, así que parecía congelada: se podía borrar y el texto seguía
+    // entero, sin forma de cambiar de campo. Teclear sobre una selección es
+    // querer buscar otro, de modo que se suelta antes de nada.
+    //
+    // Solo se avisa al padre si de verdad había selección: quien usa el
+    // buscador como "añadir" pasa siempre `selectedCourse={null}` y su callback
+    // no espera recibir un null.
+    if (selectedCourse) onCourseSelect(null);
     setSearchQuery(e.target.value);
     setShowDropdown(true);
   };
@@ -125,7 +142,7 @@ const GolfCourseSearchBox = ({
               ? t('searchBox.selectCountryFirst', 'Select a country first...')
               : t('searchBox.searchPlaceholder', 'Search golf course...')
           }
-          disabled={!countryCode || isLoading}
+          disabled={!countryCode}
           className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all disabled:bg-gray-50 disabled:cursor-not-allowed"
         />
         {isLoading && (
@@ -144,11 +161,11 @@ const GolfCourseSearchBox = ({
       )}
 
       {/* Dropdown */}
-      {showDropdown && countryCode && !isLoading && (
+      {showDropdown && countryCode && (
         <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-          {filteredCourses.length > 0 ? (
+          {courses.length > 0 ? (
             <ul className="py-1">
-              {filteredCourses.map((course) => (
+              {courses.map((course) => (
                 <li key={course.id}>
                   <button
                     type="button"
@@ -168,6 +185,13 @@ const GolfCourseSearchBox = ({
                 </li>
               ))}
             </ul>
+          ) : isLoading ? (
+            // Mientras la primera búsqueda está en vuelo no se puede decir que
+            // no hay campos: aún no se sabe
+            <div className="py-8 px-4 text-center">
+              <div className="animate-spin rounded-full h-6 w-6 border-2 border-primary border-t-transparent mx-auto mb-3"></div>
+              <p className="text-sm text-gray-500">{t('searchBox.searching', 'Searching...')}</p>
+            </div>
           ) : (
             <div className="py-8 px-4 text-center">
               <AlertCircle className="w-12 h-12 text-gray-300 mx-auto mb-3" />
@@ -191,8 +215,19 @@ const GolfCourseSearchBox = ({
           )}
 
           {/* Request new course button (always visible when there are results) */}
-          {filteredCourses.length > 0 && (
+          {courses.length > 0 && (
             <div className="border-t border-gray-200 p-2">
+              {/* Solo llegan los primeros PAGE_SIZE. Sin decirlo, un campo que
+                  existe pero se ha quedado fuera parece que no existe */}
+              {total > courses.length && (
+                <p className="px-4 py-1.5 text-xs text-gray-500">
+                  {t('searchBox.showingSome', {
+                    defaultValue: 'Showing {{shown}} of {{total}}. Keep typing to narrow it down.',
+                    shown: courses.length,
+                    total,
+                  })}
+                </p>
+              )}
               <button
                 type="button"
                 onClick={handleRequestNewCourse}
