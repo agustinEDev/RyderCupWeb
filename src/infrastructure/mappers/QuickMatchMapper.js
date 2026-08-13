@@ -34,7 +34,12 @@ class QuickMatchMapper {
       handicap: p.handicap ?? null,
       team: p.team ?? null,
       isGuest: !!p.is_guest,
-      color: p.color ?? null,
+      // La API lo llama `tee_color`; el dominio, `color`. Leerlo de `p.color`
+      // dejaba la salida siempre en null, y con ella nula
+      // `StablefordCalculator.resolveStrokesBasis` devuelve el hándicap bruto
+      // en vez del de juego: las tarjetas repartían golpes sin ajustar por
+      // slope, course rating ni allowance.
+      color: p.tee_color ?? null,
       teeGender: p.tee_gender ?? null,
     }));
 

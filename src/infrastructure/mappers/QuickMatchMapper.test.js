@@ -80,7 +80,9 @@ describe('QuickMatchMapper', () => {
             handicap: 10,
             team: null,
             is_guest: false,
-            color: 'YELLOW',
+            // La API manda `tee_color`. Este test usaba `color`, un campo que
+            // no existe en la respuesta, así que daba por bueno un mapeo roto
+            tee_color: 'YELLOW',
             tee_gender: 'MALE',
           },
         ],
