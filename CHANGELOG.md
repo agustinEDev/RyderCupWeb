@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [2.11.1] - 2026-08-13
+
+### Fixed
+
+- **«Campos cerca de mí» no hacía absolutamente nada** (issue #383): la cabecera `Permissions-Policy` se servía con `geolocation=()`, una lista de permitidos **vacía**, que bloquea la geolocalización para todos los orígenes **incluido el propio**. El navegador cortaba `getCurrentPosition` antes siquiera de preguntar, de modo que la búsqueda por cercanía recién publicada en la v2.11.0 no podía funcionar en ningún caso. Pasa a `geolocation=(self)`: la capacidad se concede **solo a nuestro propio origen**, que es exactamente lo que la funcionalidad necesita; micrófono y cámara siguen bloqueados del todo, y ningún tercero incrustado recibe nada porque la aplicación no se puede embeber. El mismo valor se corrige en la configuración de Vite, para que en desarrollo local se pueda reproducir lo que hace producción — estaba igual de bloqueado allí, y por eso no se detectó.
+
 ## [2.11.0] - 2026-08-13
 
 ### Added
