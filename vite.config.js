@@ -73,6 +73,11 @@ export default defineConfig(() => ({
     stripAssistantDocs(),
     VitePWA({
       registerType: 'autoUpdate',
+      // El registro que inyecta el plugin solo llama a `register()`: no se
+      // entera de que ha entrado una versión nueva ni vuelve a preguntar. En la
+      // aplicación instalada eso significaba quedarse con el paquete viejo hasta
+      // desinstalarla. El nuestro está en `utils/serviceWorkerRegistration.js`
+      injectRegister: null,
       // sw.js must be excluded from SRI — browsers reject SW with integrity attribute
       filename: 'sw.js',
       manifest: {

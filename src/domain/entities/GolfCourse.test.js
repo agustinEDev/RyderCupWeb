@@ -491,4 +491,31 @@ describe('GolfCourse', () => {
       expect(rejectedCourse.getStatusColor()).toBe('red');
     });
   });
+
+  describe('distancia', () => {
+    const build = (extra) => new GolfCourse({
+      id: 'course-1',
+      name: 'Club de Campo',
+      country_code: 'ES',
+      course_type: 'STANDARD_18',
+      approval_status: 'APPROVED',
+      total_par: 72,
+      tees: [],
+      holes: [],
+      ...extra
+    });
+
+    it('recoge la distancia que devuelve una búsqueda por cercanía', () => {
+      expect(build({ distance_km: 78.4 }).distanceKm).toBe(78.4);
+    });
+
+    it('conserva la distancia cero de un campo que se está pisando', () => {
+      // Es una distancia real, no un dato ausente: con `||` se volvería null
+      expect(build({ distance_km: 0 }).distanceKm).toBe(0);
+    });
+
+    it('la deja en null cuando no se preguntó por cercanía', () => {
+      expect(build({}).distanceKm).toBeNull();
+    });
+  });
 });

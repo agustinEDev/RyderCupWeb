@@ -203,4 +203,153 @@ describe('GolfCourseSearchBox', () => {
     expect(onCourseSelect).not.toHaveBeenCalled();
     expect(input).toHaveValue('rea');
   });
+
+  describe('búsqueda por cercanía', () => {
+    const MADRID = { coords: { latitude: 40.4168, longitude: -3.7038 } };
+
+    const stubGeolocation = (implementation) => {
+      Object.defineProperty(navigator, 'geolocation', {
+        value: { getCurrentPosition: vi.fn(implementation) },
+        configurable: true,
+        writable: true,
+      });
+    };
+
+    const openDropdown = async () => {
+      await waitFor(() => expect(mockList).toHaveBeenCalled());
+      fireEvent.focus(screen.getByRole('textbox'));
+    };
+
+    beforeEach(() => {
+      stubGeolocation((success) => success(MADRID));
+    });
+
+    it('no ofrece la cercanía a quien no la ha pedido', async () => {
+      // Los otros tres usos del buscador (añadir campo a competición y los de
+      // crear competición) eligen campo para otro día y otro sitio
+      renderBox();
+      await openDropdown();
+
+      await screen.findByText('Real Club de Golf');
+      expect(screen.queryByTestId('golf-course-nearby-button')).not.toBeInTheDocument();
+    });
+
+    it('no pide la ubicación a quien solo quería teclear', async () => {
+      // El permiso es un diálogo del navegador: pedirlo al abrir es intrusivo
+      renderBox({ allowNearby: true });
+      await openDropdown();
+
+      await screen.findByTestId('golf-course-nearby-button');
+      expect(navigator.geolocation.getCurrentPosition).not.toHaveBeenCalled();
+    });
+
+    it('manda la posición al backend al pulsar el botón', async () => {
+      renderBox({ allowNearby: true });
+      await openDropdown();
+
+      fireEvent.click(await screen.findByTestId('golf-course-nearby-button'));
+
+      await waitFor(() => {
+        const lastFilters = mockList.mock.calls[mockList.mock.calls.length - 1][0];
+        expect(lastFilters.lat).toBe(MADRID.coords.latitude);
+        expect(lastFilters.lon).toBe(MADRID.coords.longitude);
+      });
+    });
+
+    it('no recorta por radio: enseña los más cercanos aunque estén lejos', async () => {
+      // Un radio fijo deja Soria vacía. Más vale ver "a 78 km" que nada
+      renderBox({ allowNearby: true });
+      await openDropdown();
+
+      fireEvent.click(await screen.findByTestId('golf-course-nearby-button'));
+
+      await waitFor(() => {
+        const lastFilters = mockList.mock.calls[mockList.mock.calls.length - 1][0];
+        expect(lastFilters.lat).toBeDefined();
+      });
+      const lastFilters = mockList.mock.calls[mockList.mock.calls.length - 1][0];
+      expect(lastFilters.radiusKm).toBeUndefined();
+    });
+
+    it('enseña la distancia de cada campo', async () => {
+      mockList.mockResolvedValue({
+        courses: [{ ...course('1', 'Club de Campo'), distanceKm: 78 }],
+        total: 1,
+      });
+      renderBox({ allowNearby: true });
+      await openDropdown();
+
+      fireEvent.click(await screen.findByTestId('golf-course-nearby-button'));
+
+      expect(await screen.findByText(/78 km away/)).toBeInTheDocument();
+    });
+
+    it('enseña la distancia de un campo que se pisa', async () => {
+      // 0 es una distancia real, no un dato ausente: con `||` desaparecería
+      mockList.mockResolvedValue({
+        courses: [{ ...course('1', 'Club de Campo'), distanceKm: 0 }],
+        total: 1,
+      });
+      renderBox({ allowNearby: true });
+      await openDropdown();
+
+      fireEvent.click(await screen.findByTestId('golf-course-nearby-button'));
+
+      expect(await screen.findByText(/0 km away/)).toBeInTheDocument();
+    });
+
+    it('vuelve a buscar por nombre en cuanto se teclea', async () => {
+      // 11 de los 802 campos importados no tienen coordenadas y solo se
+      // alcanzan por nombre: la cercanía no puede secuestrar el buscador
+      renderBox({ allowNearby: true });
+      await openDropdown();
+      fireEvent.click(await screen.findByTestId('golf-course-nearby-button'));
+      await waitFor(() => {
+        const filters = mockList.mock.calls[mockList.mock.calls.length - 1][0];
+        expect(filters.lat).toBeDefined();
+      });
+
+      fireEvent.change(screen.getByRole('textbox'), { target: { value: 'Prat' } });
+
+      await waitFor(() => {
+        const lastFilters = mockList.mock.calls[mockList.mock.calls.length - 1][0];
+        expect(lastFilters.name).toBe('Prat');
+        expect(lastFilters.lat).toBeUndefined();
+      });
+    });
+
+    it('sigue sirviendo por nombre si se deniega el permiso', async () => {
+      stubGeolocation((_success, failure) => failure({ code: 1 }));
+      renderBox({ allowNearby: true });
+      await openDropdown();
+
+      fireEvent.click(await screen.findByTestId('golf-course-nearby-button'));
+
+      expect(await screen.findByText(/Could not get your location/)).toBeInTheDocument();
+      const input = screen.getByRole('textbox');
+      expect(input).not.toBeDisabled();
+
+      fireEvent.change(input, { target: { value: 'Prat' } });
+      await waitFor(() => {
+        const lastFilters = mockList.mock.calls[mockList.mock.calls.length - 1][0];
+        expect(lastFilters.name).toBe('Prat');
+      });
+    });
+
+    it('sigue sirviendo por nombre en un dispositivo sin ubicación', async () => {
+      // Sin HTTPS, o en un navegador viejo, el objeto no existe siquiera
+      Object.defineProperty(navigator, 'geolocation', {
+        value: undefined,
+        configurable: true,
+        writable: true,
+      });
+      renderBox({ allowNearby: true });
+      await openDropdown();
+
+      fireEvent.click(await screen.findByTestId('golf-course-nearby-button'));
+
+      expect(await screen.findByText(/no location/)).toBeInTheDocument();
+      expect(screen.getByRole('textbox')).not.toBeDisabled();
+    });
+  });
 });

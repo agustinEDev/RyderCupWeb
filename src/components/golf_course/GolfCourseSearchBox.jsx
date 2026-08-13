@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Search, MapPin, AlertCircle } from 'lucide-react';
+import { Search, MapPin, AlertCircle, Navigation } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { listGolfCoursesUseCase } from '../../composition';
 
@@ -14,6 +14,7 @@ import { listGolfCoursesUseCase } from '../../composition';
  * - selectedCourse: object | null - Currently selected golf course
  * - onCourseSelect: function - Callback when a course is selected
  * - onRequestNewCourse: function - Callback when "Request new course" is clicked
+ * - allowNearby: boolean - Offer the "courses near me" button. Off by default
  */
 // Cuántos campos se piden por vuelta. Es una lista para elegir en el móvil, no
 // un catálogo: más de esto no cabe en pantalla y solo alarga la respuesta.
@@ -23,14 +24,26 @@ const PAGE_SIZE = 20;
 // Escribir "Real Club" son nueve pulsaciones; sin esto, nueve peticiones.
 const SEARCH_DEBOUNCE_MS = 300;
 
+// Una posición de hace cinco minutos sirve igual para elegir campo, y evita
+// encender el GPS otra vez. No se pide precisión alta: separar dos campos no
+// necesita metros, y el modo preciso tarda más y gasta batería.
+const GEOLOCATION_OPTIONS = { timeout: 10000, maximumAge: 5 * 60 * 1000 };
+
 const GolfCourseSearchBox = ({
   countryCode,
   selectedCourse,
   onCourseSelect,
-  onRequestNewCourse
+  onRequestNewCourse,
+  allowNearby = false
 }) => {
-  const { t } = useTranslation('golfCourses');
+  const { t, i18n } = useTranslation('golfCourses');
   const [searchQuery, setSearchQuery] = useState('');
+  // null mientras no se haya concedido el permiso. Se pide solo al pulsar el
+  // botón: hacerlo al abrir dispara el diálogo del navegador a quien únicamente
+  // quería teclear un nombre.
+  const [position, setPosition] = useState(null);
+  // 'idle' | 'requesting' | 'denied' | 'unavailable'
+  const [geoStatus, setGeoStatus] = useState('idle');
   // Los resultados guardan de qué país son. Así, al cambiar de país, no se
   // pintan un instante los del anterior mientras llega la respuesta nueva, y
   // no hace falta vaciarlos desde el cuerpo del efecto.
@@ -39,6 +52,16 @@ const GolfCourseSearchBox = ({
   const [showDropdown, setShowDropdown] = useState(false);
   const [error, setError] = useState(null);
   const dropdownRef = useRef(null);
+
+  // Escribir manda sobre la cercanía: en cuanto hay texto se busca por nombre.
+  // Tiene que ser así porque 11 de los 802 campos importados no tienen
+  // coordenadas y son invisibles a una búsqueda por cercanía; el nombre es el
+  // único camino que los alcanza, y no puede quedar de segunda clase.
+  const isNearbyActive = position !== null && searchQuery.trim() === '';
+  // Se derivan primitivos en vez de pasar el objeto al efecto: `position` cambia
+  // de identidad en cada lectura del GPS y dispararía búsquedas de más.
+  const nearbyLat = isNearbyActive ? position.lat : null;
+  const nearbyLon = isNearbyActive ? position.lon : null;
 
   // Ask the backend on every change of country or search term.
   //
@@ -63,6 +86,12 @@ const GolfCourseSearchBox = ({
           approvalStatus: 'APPROVED',
           name: searchQuery.trim() || undefined,
           limit: PAGE_SIZE,
+          // Sin radio a propósito: el backend ordena en vez de cortar porque un
+          // radio fijo es inservible en media España. Medido sobre los campos
+          // importados, a 50 km hay 69 en Madrid pero 3 en Soria; más vale ver
+          // "a 78 km" que una lista vacía.
+          lat: nearbyLat ?? undefined,
+          lon: nearbyLon ?? undefined,
         });
         if (cancelled) return;
         setResult({ countryCode, courses: page.courses, total: page.total });
@@ -80,7 +109,7 @@ const GolfCourseSearchBox = ({
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [countryCode, searchQuery, t]);
+  }, [countryCode, searchQuery, t, nearbyLat, nearbyLon]);
 
   // Solo valen los resultados del país que se está mirando ahora
   const courses = result.countryCode === countryCode ? result.courses : [];
@@ -127,6 +156,42 @@ const GolfCourseSearchBox = ({
     onRequestNewCourse();
   };
 
+  const handleNearbyClick = () => {
+    // Un navegador sin geolocalización, o una página servida sin HTTPS, no
+    // expone el objeto. No es un error del usuario: se dice y se sigue por
+    // nombre, que funciona igual.
+    if (!navigator.geolocation) {
+      setGeoStatus('unavailable');
+      return;
+    }
+
+    // Buscar por cercanía teniendo texto escrito no querría decir nada: se
+    // limpia para que mande la posición. Y si había un campo elegido se suelta,
+    // porque pulsar aquí es querer cambiarlo.
+    setSearchQuery('');
+    if (selectedCourse) onCourseSelect(null);
+    setGeoStatus('requesting');
+    setShowDropdown(true);
+
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setPosition({ lat: pos.coords.latitude, lon: pos.coords.longitude });
+        setGeoStatus('idle');
+      },
+      // Da igual si lo denegó, si expiró o si el dispositivo no sabe dónde está:
+      // en los tres casos la salida es la misma, seguir por nombre.
+      () => setGeoStatus('denied'),
+      GEOLOCATION_OPTIONS
+    );
+  };
+
+  // Un campo a 800 m y otro a 78 km no se leen igual con el mismo formato: por
+  // debajo de 10 km el decimal informa, por encima solo estorba.
+  const formatDistance = (distanceKm) =>
+    new Intl.NumberFormat(i18n.language, {
+      maximumFractionDigits: distanceKm < 10 ? 1 : 0,
+    }).format(distanceKm);
+
   return (
     <div className="relative" ref={dropdownRef}>
       {/* Search Input */}
@@ -163,6 +228,52 @@ const GolfCourseSearchBox = ({
       {/* Dropdown */}
       {showDropdown && countryCode && (
         <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+          {/* Vive dentro del desplegable, no en el formulario: así no ocupa
+              sitio en un paso que ya es largo, y el permiso solo se pide a quien
+              ha abierto la lista para elegir campo */}
+          {allowNearby && (
+            <div className="border-b border-gray-200 p-2">
+              {isNearbyActive ? (
+                <p className="px-2 py-1 text-xs text-gray-500">
+                  {t('searchBox.sortedByDistance', {
+                    defaultValue:
+                      'Nearest first. Courses without a location only show up by name.',
+                  })}
+                </p>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleNearbyClick}
+                  disabled={geoStatus === 'requesting'}
+                  data-testid="golf-course-nearby-button"
+                  className="w-full flex items-center gap-2 px-2 py-2 text-left text-sm text-primary hover:bg-primary/5 rounded-lg transition-colors font-medium disabled:opacity-50"
+                >
+                  <Navigation className="w-4 h-4 flex-shrink-0" />
+                  {geoStatus === 'requesting'
+                    ? t('searchBox.locating', { defaultValue: 'Getting your location...' })
+                    : t('searchBox.nearbyCourses', { defaultValue: 'Courses near me' })}
+                </button>
+              )}
+
+              {/* Denegar el permiso no rompe nada: se dice y el buscador por
+                  nombre sigue exactamente igual de disponible */}
+              {/* Aparece como respuesta a pulsar el botón, así que hay que
+                  anunciarlo: quien usa lector de pantalla no ve que el texto
+                  ha cambiado bajo el botón que acaba de activar */}
+              {(geoStatus === 'denied' || geoStatus === 'unavailable') && (
+                <p role="status" className="px-2 pt-1 text-xs text-gray-500">
+                  {geoStatus === 'denied'
+                    ? t('searchBox.locationDenied', {
+                        defaultValue: 'Could not get your location. Search by name instead.',
+                      })
+                    : t('searchBox.locationUnavailable', {
+                        defaultValue: 'This device has no location. Search by name instead.',
+                      })}
+                </p>
+              )}
+            </div>
+          )}
+
           {courses.length > 0 ? (
             <ul className="py-1">
               {courses.map((course) => (
@@ -179,6 +290,14 @@ const GolfCourseSearchBox = ({
                       </p>
                       <p className="text-xs text-gray-500">
                         {t(`courseTypes.${course.courseType}`, course.courseType)} • {course.tees.length} {t('searchBox.tees', 'tees')}
+                        {/* Comparado con null y no por verdadero: un campo a
+                            menos de 50 m devuelve 0, que es una distancia real */}
+                        {course.distanceKm != null && (
+                          <> • {t('searchBox.distanceAway', {
+                            defaultValue: '{{distance}} km away',
+                            distance: formatDistance(course.distanceKm),
+                          })}</>
+                        )}
                       </p>
                     </div>
                   </button>
