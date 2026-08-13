@@ -79,6 +79,13 @@
       "backspace": "Backspace",
       "confirm": "Confirm",
       "close": "Close"
+    },
+    "teePanel": {
+      "title": "{{name}}'s tee",
+      "close": "Close",
+      "male": "Men's",
+      "female": "Women's",
+      "mixed": "Mixed"
     }
   },
   "dashboard": {
