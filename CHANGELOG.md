@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [2.10.1] - 2026-08-13
+
+### Fixed
+
+- **Las tarjetas de partida rápida repartían los golpes con el hándicap bruto** (issue #378): el mapeador leía la salida del participante de `p.color`, un campo que la API no envía —manda `tee_color`—, así que el color quedaba siempre en `null`. Con el color nulo, `StablefordCalculator.resolveStrokesBasis` se sale por su primera guarda y devuelve el hándicap tal cual en vez del hándicap de juego, de modo que los golpes se repartían **sin ajustar por slope, course rating ni allowance**. Para un 18.0 en un campo de slope 128 son un par de golpes, que en Stableford son puntos. Lo introdujo el refactor de salidas por color del 12 de agosto y salió a producción con la v2.10.0. Dos suites en verde no lo vieron porque el test del mapeador se inventaba un payload con `color` —dando por bueno el mapeo roto— y el del calculador construía los participantes a mano con el color ya puesto: ninguno cruzaba el contrato real de la API con el cálculo. Se corrige el campo y se añade la prueba que faltaba, la que lleva un participante salido del mapeador hasta el reparto de golpes.
+
 ## [2.10.0] - 2026-08-13
 
 ### Added
