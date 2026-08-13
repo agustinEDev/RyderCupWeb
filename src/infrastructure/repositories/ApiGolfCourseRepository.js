@@ -39,6 +39,21 @@ class ApiGolfCourseRepository extends IGolfCourseRepository {
       queryParams.append('offset', String(filters.offset));
     }
 
+    // Con posición, el backend ordena del más cercano al más lejano y añade la
+    // distancia de cada campo. Las dos coordenadas van juntas o no van: media
+    // coordenada es un 400. Se comparan contra null porque el meridiano de
+    // Greenwich y el ecuador valen 0 y son posiciones válidas.
+    if (filters.lat != null && filters.lon != null) {
+      queryParams.append('lat', String(filters.lat));
+      queryParams.append('lon', String(filters.lon));
+
+      // Sin radio no se corta nada: en media España el campo más cercano está a
+      // más de 50 km, y una lista vacía es peor respuesta que "a 78 km"
+      if (filters.radiusKm != null) {
+        queryParams.append('radius_km', String(filters.radiusKm));
+      }
+    }
+
     const queryString = queryParams.toString();
     const url = `/api/v1/golf-courses${queryString ? `?${queryString}` : ''}`;
 

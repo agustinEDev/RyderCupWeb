@@ -92,4 +92,37 @@ describe('ApiGolfCourseRepository.list', () => {
     expect(calledParams().get('country_code')).toBe('ES');
     expect(calledParams().get('approval_status')).toBe('APPROVED');
   });
+
+  it('manda la posición para que el backend ordene por cercanía', async () => {
+    await repository.list({ lat: 40.4168, lon: -3.7038 });
+
+    expect(calledParams().get('lat')).toBe('40.4168');
+    expect(calledParams().get('lon')).toBe('-3.7038');
+  });
+
+  it('manda el radio solo cuando se pide', async () => {
+    await repository.list({ lat: 40.4168, lon: -3.7038, radiusKm: 50 });
+
+    expect(calledParams().get('radius_km')).toBe('50');
+  });
+
+  it('no manda media coordenada, que el backend rechaza con un 400', async () => {
+    await repository.list({ lat: 40.4168 });
+
+    expect(calledParams().has('lat')).toBe(false);
+  });
+
+  it('no manda el radio sin posición desde la que medirlo', async () => {
+    await repository.list({ radiusKm: 50 });
+
+    expect(calledParams().has('radius_km')).toBe(false);
+  });
+
+  it('manda el ecuador y Greenwich, que son posiciones válidas', async () => {
+    // Con una comprobación por verdadero, el cero se caería
+    await repository.list({ lat: 0, lon: 0 });
+
+    expect(calledParams().get('lat')).toBe('0');
+    expect(calledParams().get('lon')).toBe('0');
+  });
 });

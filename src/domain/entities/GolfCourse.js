@@ -22,6 +22,11 @@ class GolfCourse {
     this.originalGolfCourseId = data.original_golf_course_id || data.originalGolfCourseId || null;
     this.isPendingUpdate = data.is_pending_update || data.isPendingUpdate || false;
 
+    // Solo viene cuando se ha preguntado por cercanía; el resto de las veces es
+    // null. Con `??` en vez de `||` porque un campo a menos de 50 m devuelve 0,
+    // que es una distancia real y no una ausencia de dato.
+    this.distanceKm = data.distance_km ?? data.distanceKm ?? null;
+
     // Value Objects
     this.tees = (data.tees || []).map(tee =>
       tee instanceof Tee ? tee : Tee.fromDTO(tee)
