@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import StablefordCalculator from './StablefordCalculator';
+import QuickMatchMapper from '../../infrastructure/mappers/QuickMatchMapper';
 
 describe('StablefordCalculator', () => {
   describe('allocateStrokes', () => {
@@ -68,6 +69,45 @@ describe('StablefordCalculator', () => {
     it('should return null when the participant has no handicap', () => {
       const participant = { handicap: null, color: 'YELLOW', teeGender: 'MALE' };
       expect(StablefordCalculator.resolveStrokesBasis(participant, holes, [], 100)).toBeNull();
+    });
+
+    it('should reach the playing handicap with a participant built by the mapper', () => {
+      // El hueco por el que se coló el fallo: aquí los participantes se
+      // escribían a mano con `color` ya puesto, así que nadie comprobaba que
+      // el mapper lo rellenase de verdad. Con `color` en null esta función
+      // devuelve el hándicap bruto y la tarjeta reparte golpes sin ajustar.
+      const quickMatch = QuickMatchMapper.toDomain({
+        id: 'qm-1',
+        creator_id: 'user-1',
+        golf_course_id: 'course-1',
+        match_format: 'SINGLES',
+        status: 'PENDING',
+        participants: [
+          {
+            participant_id: 'p-1',
+            user_id: 'user-1',
+            name: 'Creator',
+            handicap: 12,
+            team: null,
+            is_guest: false,
+            tee_color: 'YELLOW',
+            tee_gender: 'MALE',
+          },
+        ],
+        scorer_ids: ['p-1'],
+        created_at: '2026-01-01T00:00:00Z',
+        updated_at: '2026-01-01T00:00:00Z',
+      });
+
+      const tees = [{ color: 'YELLOW', gender: 'MALE', courseRating: 72, slopeRating: 130 }];
+      const basis = StablefordCalculator.resolveStrokesBasis(
+        quickMatch.participants[0],
+        holes,
+        tees,
+        100
+      );
+
+      expect(basis).not.toBe(12);
     });
 
     it('should fall back to raw handicap when no tee was selected', () => {
