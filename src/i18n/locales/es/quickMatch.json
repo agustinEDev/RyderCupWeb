@@ -79,6 +79,13 @@
       "backspace": "Borrar",
       "confirm": "Confirmar",
       "close": "Cerrar"
+    },
+    "teePanel": {
+      "title": "Salida de {{name}}",
+      "close": "Cerrar",
+      "male": "Masculinas",
+      "female": "Femeninas",
+      "mixed": "Mixtas"
     }
   },
   "dashboard": {

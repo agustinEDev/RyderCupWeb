@@ -53,8 +53,6 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser }) => {
   const [participantTab, setParticipantTab] = useState('friends');
   const [friends, setFriends] = useState([]);
   const [selectedTeam, setSelectedTeam] = useState('A');
-  // Tee chosen per friend row (keyed by friend.id), so each friend can pick a different one
-  const [friendTeeByFriendId, setFriendTeeByFriendId] = useState({});
   const [guestTeeKey, setGuestTeeKey] = useState(NO_TEE_KEY);
   const [guestForm, setGuestForm] = useState(initialGuestForm);
 
@@ -176,20 +174,18 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser }) => {
     }
   };
 
-  const handleFriendTeeChange = (friendId, key) => {
-    setFriendTeeByFriendId((prev) => ({ ...prev, [friendId]: key }));
-  };
-
-  const handleAddFriend = async (friend) => {
-    const friendTeeKeyValue = friendTeeByFriendId[friend.id] ?? NO_TEE_KEY;
-    if (courseTees.length > 0 && friendTeeKeyValue === NO_TEE_KEY) {
+  // La salida llega del panel que abre el + del propio amigo, así que ya no
+  // hace falta guardarla por amigo mientras se decide: se elige y se añade en
+  // el mismo gesto.
+  const handleAddFriend = async (friend, friendTeeKeyValue) => {
+    if (courseTees.length > 0 && (!friendTeeKeyValue || friendTeeKeyValue === NO_TEE_KEY)) {
       setError(t('create.participants.errorTeeRequired'));
       return;
     }
     setIsProcessing(true);
     setError('');
     try {
-      const { color, teeGender } = parseTeeKey(friendTeeKeyValue);
+      const { color, teeGender } = parseTeeKey(friendTeeKeyValue ?? NO_TEE_KEY);
       const updated = await addFriendParticipantUseCase.execute(
         quickMatch.id,
         friend.otherUserId,
@@ -197,11 +193,6 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser }) => {
         { color, teeGender }
       );
       setQuickMatch(updated);
-      setFriendTeeByFriendId((prev) => {
-        const next = { ...prev };
-        delete next[friend.id];
-        return next;
-      });
     } catch (err) {
       setError(err.message || t('create.errors.generic'));
     } finally {
@@ -261,7 +252,6 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser }) => {
     setError('');
     await cancelIfPending();
     setQuickMatch(null);
-    setFriendTeeByFriendId({});
     setGuestTeeKey(NO_TEE_KEY);
     setGuestForm(initialGuestForm);
     setIsProcessing(false);
@@ -417,8 +407,6 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser }) => {
             participantTab={participantTab}
             onParticipantTabChange={setParticipantTab}
             availableFriends={availableFriends}
-            friendTeeByFriendId={friendTeeByFriendId}
-            onFriendTeeChange={handleFriendTeeChange}
             courseTees={courseTees}
             onAddFriend={handleAddFriend}
             guestForm={guestForm}

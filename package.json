@@ -1,6 +1,6 @@
 {
   "name": "rydercup-web",
-  "version": "2.10.0",
+  "version": "2.11.1",
   "type": "module",
   "description": "Frontend web para Ryder Cup Amateur Manager",
   "scripts": {
@@ -67,7 +67,7 @@
     "ryder-cup",
     "tournament-management"
   ],
-  "author": "Agust\u00edn Est\u00e9vez",
+  "author": "Agustín Estévez",
   "license": "MIT",
   "overrides": {
     "minimatch": "^10.2.1"

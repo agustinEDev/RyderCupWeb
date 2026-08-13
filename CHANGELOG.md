@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [2.11.1] - 2026-08-13
+
+### Fixed
+
+- **«Campos cerca de mí» no hacía absolutamente nada** (issue #383): la cabecera `Permissions-Policy` se servía con `geolocation=()`, una lista de permitidos **vacía**, que bloquea la geolocalización para todos los orígenes **incluido el propio**. El navegador cortaba `getCurrentPosition` antes siquiera de preguntar, de modo que la búsqueda por cercanía recién publicada en la v2.11.0 no podía funcionar en ningún caso. Pasa a `geolocation=(self)`: la capacidad se concede **solo a nuestro propio origen**, que es exactamente lo que la funcionalidad necesita; micrófono y cámara siguen bloqueados del todo, y ningún tercero incrustado recibe nada porque la aplicación no se puede embeber. El mismo valor se corrige en la configuración de Vite, para que en desarrollo local se pueda reproducir lo que hace producción — estaba igual de bloqueado allí, y por eso no se detectó.
+
+## [2.11.0] - 2026-08-13
+
+### Added
+
+- **Los campos se pueden listar por cercanía en la partida rápida** (issue #364): el backend ordenaba por distancia desde la #197 y nada en el frontend se lo pedía, así que estando en el campo había que teclear su nombre entre 802. Un botón «Campos cerca de mí» dentro del desplegable pide la ubicación **solo al pulsarlo** —hacerlo al abrir dispara el diálogo del navegador a quien únicamente quería escribir— y cada resultado muestra su distancia. **Escribir vuelve a la búsqueda por nombre**: 11 de los 802 campos importados no tienen coordenadas y son invisibles a una búsqueda por cercanía, de modo que el nombre no puede quedar de segunda clase. **No se recorta por radio**: a 50 km hay 69 campos en Madrid pero 3 en Soria, así que un radio fijo es inservible en media España; se enseñan los más cercanos con su distancia, que «a 78 km» informa y una lista vacía no. Denegar el permiso, o no tener geolocalización, deja el buscador exactamente igual de usable.
+
+### Fixed
+
+- **La aplicación instalada se queda con la versión antigua hasta reinstalarla** (issue #370): el service worker no recogía una versión nueva, de modo que quien tenía la PWA instalada seguía viendo la anterior por mucho que se desplegara. Incluye además reintentar un registro fallido en vez de rendirse al primer intento. Es lo que hace que cualquier arreglo posterior —incluida la corrección de los golpes de la v2.10.1— llegue de verdad a quien usa la aplicación instalada.
+
+### Changed
+
+- **framer-motion sube a 13.0.0**: su único cambio de ruptura es retirar la dependencia opcional `@emotion/is-prop-valid`, que este proyecto no usa ni tiene en su árbol de dependencias. Los dos arreglos de la versión tocan SVG acelerado por hardware —aquí no se anima ninguno— y `AnimatePresence` con `propagate` sin hijos, que no es el caso del único uso que hay.
+
+## [2.10.1] - 2026-08-13
+
+### Fixed
+
+- **Las tarjetas de partida rápida repartían los golpes con el hándicap bruto** (issue #378): el mapeador leía la salida del participante de `p.color`, un campo que la API no envía —manda `tee_color`—, así que el color quedaba siempre en `null`. Con el color nulo, `StablefordCalculator.resolveStrokesBasis` se sale por su primera guarda y devuelve el hándicap tal cual en vez del hándicap de juego, de modo que los golpes se repartían **sin ajustar por slope, course rating ni allowance**. Para un 18.0 en un campo de slope 128 son un par de golpes, que en Stableford son puntos. Lo introdujo el refactor de salidas por color del 12 de agosto y salió a producción con la v2.10.0. Dos suites en verde no lo vieron porque el test del mapeador se inventaba un payload con `color` —dando por bueno el mapeo roto— y el del calculador construía los participantes a mano con el color ya puesto: ninguno cruzaba el contrato real de la API con el cálculo. Se corrige el campo y se añade la prueba que faltaba, la que lleva un participante salido del mapeador hasta el reparto de golpes.
+
 ## [2.10.0] - 2026-08-13
 
 ### Added
