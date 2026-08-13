@@ -441,15 +441,24 @@ const Register = () => {
 
                 {/* 4. Nationality (Optional) */}
                 <div>
-                  <label htmlFor="countryCode" className="block text-sm font-semibold text-gray-700 mb-2">
-                    {t('register.countryLabel')} <span className="text-gray-400 font-normal">{t('register.countryOptional')}</span>
-                  </label>
                   {/* Se le pasa un evento sintético en vez de tocar el estado
                       directamente: handleChange es el que además limpia el
                       error del campo, y saltárselo dejaría el aviso colgado */}
                   <CountryAutocomplete
                     id="countryCode"
                     countries={countries}
+                    /* La etiqueta va dentro del componente, no como <label
+                       htmlFor> externo: el disparador es un <button>, que es
+                       etiquetable, y el <label> nativo gana a name-from-content,
+                       así que un lector de pantalla decía "Nacionalidad" y nunca
+                       el país elegido. El <select> anterior decía los dos */
+                    label={
+                      <>
+                        {t('register.countryLabel')}{' '}
+                        <span className="text-gray-400 font-normal">{t('register.countryOptional')}</span>
+                      </>
+                    }
+                    labelClassName="block text-sm font-semibold text-gray-700 mb-2"
                     value={formData.countryCode}
                     placeholder={t('register.countryPlaceholder')}
                     disabled={isLoading || isLoadingCountries}

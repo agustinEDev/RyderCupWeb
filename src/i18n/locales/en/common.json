@@ -122,6 +122,8 @@
     "searchPlaceholder": "Search countries...",
     "noMatches": "No countries match your search",
     "empty": "No countries available",
-    "clear": "Clear selection"
+    "clear": "Clear selection",
+    "moreResults_one": "1 more country — keep typing to narrow it down",
+    "moreResults_other": "{{count}} more countries — keep typing to narrow it down"
   }
 }

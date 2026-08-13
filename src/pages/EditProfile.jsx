@@ -167,14 +167,20 @@ const EditProfile = () => {
 
                   {/* Nationality Selector */}
                   <div>
-                    <label htmlFor="countryCode" className="block text-sm font-medium text-gray-700 mb-1">
-                      {t('edit.personalInfo.nationality')} <span className="text-gray-400 font-normal">{t('edit.personalInfo.nationalityOptional')}</span>
-                    </label>
                     {/* Evento sintético para no saltarse handleInputChange,
                         que es quien además limpia el error del campo */}
                     <CountryAutocomplete
                       id="countryCode"
                       countries={countries}
+                      /* Dentro del componente y no como <label htmlFor>
+                         externo: sobre un <button> el <label> nativo gana a
+                         name-from-content y tapaba el país elegido */
+                      label={
+                        <>
+                          {t('edit.personalInfo.nationality')}{' '}
+                          <span className="text-gray-400 font-normal">{t('edit.personalInfo.nationalityOptional')}</span>
+                        </>
+                      }
                       value={formData.countryCode}
                       placeholder={t('edit.personalInfo.selectNationality')}
                       disabled={isSaving || isLoadingCountries}

@@ -213,4 +213,176 @@ describe('CountryAutocomplete', () => {
 
     expect(scrollIntoView).not.toHaveBeenCalled();
   });
+
+  it('corta el Enter en la búsqueda para que no envíe el formulario', () => {
+    // La casilla vive dentro del <form> de las cinco pantallas que montan el
+    // componente, y todas tienen botón de envío: sin cortarlo, teclear y
+    // confirmar no elegía país y enviaba el formulario. En Registro eso daba
+    // de alta la cuenta
+    renderSelect();
+    open();
+    type('Portu');
+
+    const seguirian = fireEvent.keyDown(screen.getByTestId('country-autocomplete-search'), {
+      key: 'Enter',
+    });
+
+    expect(seguirian).toBe(false); // preventDefault: no hay envío implícito
+  });
+
+  it('elige el primer resultado al confirmar lo tecleado', () => {
+    const onChange = vi.fn();
+    renderSelect({ onChange });
+    open();
+    type('Portu');
+
+    fireEvent.keyDown(screen.getByTestId('country-autocomplete-search'), { key: 'Enter' });
+
+    expect(onChange).toHaveBeenCalledWith('PT');
+  });
+
+  it('no elige nada al confirmar sin haber buscado', () => {
+    // Quedarse con el primero de los 200 sería elegir por el usuario
+    const onChange = vi.fn();
+    renderSelect({ onChange });
+    open();
+
+    fireEvent.keyDown(screen.getByTestId('country-autocomplete-search'), { key: 'Enter' });
+
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('recorre la lista con las flechas y elige la resaltada', () => {
+    // El <select> daba flechas gratis; sin esto había que tabular por 200
+    // botones para llegar al país
+    const onChange = vi.fn();
+    renderSelect({ onChange });
+    open();
+
+    const search = screen.getByTestId('country-autocomplete-search');
+    fireEvent.keyDown(search, { key: 'ArrowDown' }); // España
+    fireEvent.keyDown(search, { key: 'ArrowDown' }); // Portugal
+    fireEvent.keyDown(search, { key: 'Enter' });
+
+    expect(onChange).toHaveBeenCalledWith('PT');
+  });
+
+  it('vuelve al final de la lista al subir desde el principio', () => {
+    const onChange = vi.fn();
+    renderSelect({ onChange });
+    open();
+
+    const search = screen.getByTestId('country-autocomplete-search');
+    fireEvent.keyDown(search, { key: 'ArrowUp' });
+    fireEvent.keyDown(search, { key: 'Enter' });
+
+    expect(onChange).toHaveBeenCalledWith('DE'); // el último de COUNTRIES
+  });
+
+  it('salta al principio y al final con Home y End', () => {
+    const onChange = vi.fn();
+    renderSelect({ onChange });
+    open();
+
+    const search = screen.getByTestId('country-autocomplete-search');
+    fireEvent.keyDown(search, { key: 'End' });
+    fireEvent.keyDown(search, { key: 'Enter' });
+    expect(onChange).toHaveBeenLastCalledWith('DE');
+
+    open();
+    fireEvent.keyDown(screen.getByTestId('country-autocomplete-search'), { key: 'Home' });
+    fireEvent.keyDown(screen.getByTestId('country-autocomplete-search'), { key: 'Enter' });
+    expect(onChange).toHaveBeenLastCalledWith('ES');
+  });
+
+  it('anuncia con aria-activedescendant la opción resaltada', () => {
+    renderSelect();
+    open();
+
+    const search = screen.getByTestId('country-autocomplete-search');
+    expect(search).not.toHaveAttribute('aria-activedescendant');
+
+    fireEvent.keyDown(search, { key: 'ArrowDown' });
+
+    const activo = search.getAttribute('aria-activedescendant');
+    expect(activo).toBeTruthy();
+    expect(document.getElementById(activo)).toHaveAttribute('role', 'option');
+  });
+
+  it('saca la X de limpiar fuera del disparador', () => {
+    // Anidada era un <span role="button"> dentro de un <button>: HTML inválido,
+    // y WebKit reasigna ese clic al botón padre, así que en iOS tocar la X
+    // abría la lista en vez de limpiar
+    render(<CountryAutocomplete countries={COUNTRIES} value="ES" onChange={vi.fn()} />);
+
+    const clear = screen.getByTestId('country-autocomplete-clear');
+    const trigger = screen.getByTestId('country-autocomplete-trigger');
+
+    expect(clear.tagName).toBe('BUTTON');
+    expect(trigger.contains(clear)).toBe(false);
+  });
+
+  it('devuelve el foco al disparador al elegir', () => {
+    // close() desmonta la casilla de búsqueda, que es donde estaba el foco: sin
+    // devolverlo, el siguiente Tab reempieza arriba de la página
+    renderSelect();
+    open();
+
+    fireEvent.click(screen.getByRole('option', { name: /España/ }));
+
+    expect(screen.getByTestId('country-autocomplete-trigger')).toHaveFocus();
+  });
+
+  it('devuelve el foco al disparador al cerrar con Escape', () => {
+    renderSelect();
+    open();
+
+    fireEvent.keyDown(screen.getByTestId('country-autocomplete-search'), { key: 'Escape' });
+
+    expect(screen.getByTestId('country-autocomplete-trigger')).toHaveFocus();
+  });
+
+  it('cuelga las opciones directas del listbox, sin <li> por medio', () => {
+    // Un <li> entre el role="listbox" y las role="option" no es una estructura
+    // que ARIA admita
+    renderSelect();
+    open();
+
+    const listbox = screen.getByRole('listbox');
+    expect(listbox.querySelector('li')).toBeNull();
+    for (const option of screen.getAllByRole('option')) {
+      expect(option.parentElement).toBe(listbox);
+    }
+  });
+
+  it('tapa la lista para no pedir 200 banderas de golpe', () => {
+    // Cada opción monta un <img> de flagcdn: sin tope, abrir dispara ~200
+    // peticiones a un CDN externo a la vez
+    const muchos = Array.from({ length: 70 }, (_, i) => ({
+      code: `X${i.toString().padStart(2, '0')}`,
+      name_en: `Country ${i}`,
+      name_es: `País ${i}`,
+    }));
+
+    render(<CountryAutocomplete countries={muchos} value="" onChange={vi.fn()} />);
+    open();
+
+    expect(screen.getAllByRole('option')).toHaveLength(50);
+    expect(screen.getByTestId('country-autocomplete-more')).toBeInTheDocument();
+  });
+
+  it('usa la etiqueta como nombre accesible del control', () => {
+    // Como <label htmlFor> externo sobre un <button>, el <label> nativo gana a
+    // name-from-content: se anunciaba "Nacionalidad" y nunca el país elegido
+    render(
+      <CountryAutocomplete
+        countries={COUNTRIES}
+        value="ES"
+        onChange={vi.fn()}
+        label="Nacionalidad"
+      />
+    );
+
+    expect(screen.getByTestId('country-autocomplete-trigger')).toHaveAccessibleName(/Nacionalidad/);
+  });
 });

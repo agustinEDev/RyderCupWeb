@@ -115,14 +115,16 @@ const CompleteProfile = () => {
           <form onSubmit={handleSave} className="space-y-5">
             {/* Country */}
             <div>
-              <label htmlFor="countryCode" className="block text-sm font-semibold text-gray-700 mb-2">
-                {t('google.completeProfile.countryLabel')}
-              </label>
               {/* Evento sintético para no saltarse handleChange, que es quien
                   además limpia el error del campo */}
               <CountryAutocomplete
                 id="countryCode"
                 countries={countries}
+                /* Dentro del componente y no como <label htmlFor> externo: sobre
+                   un <button> el <label> nativo gana a name-from-content y
+                   tapaba el país elegido */
+                label={t('google.completeProfile.countryLabel')}
+                labelClassName="block text-sm font-semibold text-gray-700 mb-2"
                 value={formData.countryCode}
                 placeholder={t('google.completeProfile.countryPlaceholder')}
                 disabled={isSaving || isLoadingCountries}
