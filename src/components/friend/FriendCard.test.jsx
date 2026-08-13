@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
-import { MemoryRouter } from 'react-router';
+import { render, screen, fireEvent } from '@testing-library/react';
+import { MemoryRouter, Routes, Route, useLocation } from 'react-router';
 import FriendCard from './FriendCard';
 
 vi.mock('../ui/Avatar', () => ({
@@ -55,6 +55,39 @@ describe('FriendCard', () => {
     const foto = enlaces.find((a) => a.getAttribute('tabindex') === '-1');
 
     expect(foto).toHaveAttribute('href', '/players/u-9');
+  });
+
+  it('announces one link per card, not two with the same name', () => {
+    // `tabindex="-1"` quita la parada de teclado pero NO saca del arbol de
+    // accesibilidad: sin `aria-hidden`, el lector anuncia la foto y el nombre
+    // como dos enlaces identicos al mismo sitio
+    pintar();
+
+    expect(screen.getAllByRole('link')).toHaveLength(1);
+    expect(screen.getByRole('link')).toHaveAttribute('href', '/players/u-9');
+  });
+
+  it('tells the profile it was reached from friends, so it can send you back', () => {
+    // Sin la pista, volver desde el perfil deja en el feed y hay que rehacer el
+    // camino hasta Amigos en cada solicitud que se revisa. El state no aparece
+    // en el DOM, asi que se navega de verdad y se lee en el destino
+    const Destino = () => <p>viene de: {useLocation().state?.from ?? 'ningun sitio'}</p>;
+
+    render(
+      <MemoryRouter initialEntries={['/friends']}>
+        <Routes>
+          <Route
+            path="/friends"
+            element={<FriendCard friendship={amistad()} mode="friend" t={(k) => k} />}
+          />
+          <Route path="/players/:userId" element={<Destino />} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    fireEvent.click(screen.getByTestId('friend-profile-link'));
+
+    expect(screen.getByText('viene de: friends')).toBeInTheDocument();
   });
 
   it('still links when the name is unknown', () => {

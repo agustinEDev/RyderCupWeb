@@ -58,7 +58,7 @@ describe('AddFriendModal', () => {
 
     fireEvent.click(screen.getByTestId('search-result-u-2'));
 
-    expect(navigate).toHaveBeenCalledWith('/players/u-2');
+    expect(navigate).toHaveBeenCalledWith('/players/u-2', { state: { from: 'friends' } });
     expect(onClose).toHaveBeenCalled();
   });
 
@@ -71,7 +71,7 @@ describe('AddFriendModal', () => {
     fireEvent.keyDown(document, { key: 'ArrowDown' });
     fireEvent.keyDown(document, { key: 'Enter' });
 
-    expect(navigate).toHaveBeenCalledWith('/players/u-1');
+    expect(navigate).toHaveBeenCalledWith('/players/u-1', { state: { from: 'friends' } });
   });
 
   it('no longer offers a way to send from here', async () => {
@@ -80,6 +80,25 @@ describe('AddFriendModal', () => {
 
     expect(screen.queryByTestId('send-request-button')).not.toBeInTheDocument();
     expect(screen.queryByTestId('selected-user-chip')).not.toBeInTheDocument();
+  });
+
+  it('can be dismissed by the backdrop, not only by a 20px icon', async () => {
+    // Al quitar el pie con Cancelar, la X de la cabecera quedo como unica
+    // salida. En un telefono no hay tecla de escape a la que recurrir
+    const { onClose } = pintar();
+
+    fireEvent.click(screen.getByTestId('add-friend-backdrop'));
+
+    expect(onClose).toHaveBeenCalled();
+  });
+
+  it('does not close when the click lands inside the dialog', async () => {
+    // El cierre por fondo no puede tragarse los clics del propio contenido
+    const { onClose } = pintar();
+
+    fireEvent.click(screen.getByRole('dialog'));
+
+    expect(onClose).not.toHaveBeenCalled();
   });
 
   it('says where picking someone takes you', async () => {

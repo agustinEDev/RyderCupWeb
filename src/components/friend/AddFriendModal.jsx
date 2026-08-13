@@ -128,7 +128,10 @@ const AddFriendModalContent = ({ onClose, onSearchUsers, t }) => {
   const handleOpenProfile = (user) => {
     setShowDropdown(false);
     onClose();
-    navigate(`/players/${user.id}`);
+    // De donde se viene, para que el perfil sepa adonde devolver: esta busqueda
+    // se abre desde Amigos, y mandar de vuelta al feed obligaria a rehacer el
+    // camino a mano
+    navigate(`/players/${user.id}`, { state: { from: 'friends' } });
   };
 
   // El manejador de teclado se registra una sola vez y no ve los valores del
@@ -138,26 +141,36 @@ const AddFriendModalContent = ({ onClose, onSearchUsers, t }) => {
   useEffect(() => { openProfileRef.current = handleOpenProfile; });
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+    <div
+      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+      data-testid="add-friend-backdrop"
+      // Pulsar fuera cierra. Sin el pie, la X es la unica salida visible, y en
+      // un telefono no hay tecla de escape a la que recurrir
+      onClick={onClose}
+    >
       <div
         className="bg-white rounded-lg shadow-xl w-full max-w-md"
         role="dialog"
         aria-modal="true"
         aria-labelledby="add-friend-modal-title"
+        onClick={(event) => event.stopPropagation()}
       >
         <div className="flex items-center justify-between p-4 border-b border-gray-200">
           <h2 id="add-friend-modal-title" className="text-lg font-semibold text-gray-900">{t('add.title')}</h2>
+          {/* h-11 w-11 y no el icono a secas: es la zona tactil minima que usa
+              el resto de la aplicacion, y al quitar el pie esta X paso a ser la
+              unica forma de cerrar */}
           <button
             onClick={onClose}
             aria-label={t('cancel', { ns: 'common' })}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
+            className="-mr-2 flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-lg text-gray-400 transition-colors hover:text-gray-600 active:bg-gray-100"
           >
-            <X className="h-5 w-5" />
+            <X className="h-5 w-5" aria-hidden="true" />
           </button>
         </div>
 
         {/* Ya no hay formulario: no queda nada que enviar desde aqui. El pie
-            con Cancelar y Enviar se va con el — la X de la cabecera cierra */}
+            con Cancelar y Enviar se va con el — cierran la X y el fondo */}
         <div className="p-4">
           <div className="relative" ref={dropdownRef}>
             <div className="relative">

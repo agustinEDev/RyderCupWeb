@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Link, Navigate, useParams } from 'react-router';
+import { Link, Navigate, useLocation, useParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { ArrowLeft, Check, Loader, Lock, Mail, UserPlus, UserX, X } from 'lucide-react';
 import customToast from '../../utils/toast';
@@ -39,6 +39,13 @@ const PlayerProfilePage = () => {
   const { userId } = useParams();
   const { t } = useTranslation(['playerProfile', 'common']);
   const { user, loading: isLoadingUser } = useAuth();
+  const location = useLocation();
+
+  // Quien enlaza al perfil dice de dónde viene; sin esa pista se vuelve al
+  // feed, que es de donde se llega la mayoría de las veces
+  const cameFromFriends = location.state?.from === 'friends';
+  const backLink = cameFromFriends ? '/friends' : '/feed';
+  const backTextKey = cameFromFriends ? 'playerProfile:backToFriends' : 'playerProfile:backToFeed';
 
   const [profile, setProfile] = useState(null);
   const [isNotFound, setIsNotFound] = useState(false);
@@ -197,15 +204,16 @@ const PlayerProfilePage = () => {
         {/* En móvil la vuelta la da la flecha de la cabecera contextual. En
             escritorio esa cabecera no la pinta, así que el enlace vive aquí,
             junto al contenido, igual que en el detalle de un torneo.
-            Este dice adónde lleva, así que lleva ahí de verdad: por historial
-            acabaría en Amigos o en la búsqueda según el camino de entrada, y el
-            texto mentiría. La flecha de móvil no nombra destino y sí retrocede */}
+            Este nombra su destino, así que lleva ahí de verdad en lugar de
+            retroceder a ciegas — y por eso quien enlaza dice de dónde viene:
+            desde Amigos, devolver al feed obliga a rehacer el camino, y eso
+            se paga en cada solicitud que se revisa */}
         <Link
-          to="/feed"
+          to={backLink}
           className="hidden md:flex items-center gap-2 text-gray-600 hover:text-primary transition-colors mb-4 w-fit"
         >
           <ArrowLeft className="w-4 h-4" aria-hidden="true" />
-          <span className="text-sm font-medium">{t('playerProfile:backToFeed')}</span>
+          <span className="text-sm font-medium">{t(backTextKey)}</span>
         </Link>
 
         {/* La cabecera contextual ya pinta el título en móvil: un segundo

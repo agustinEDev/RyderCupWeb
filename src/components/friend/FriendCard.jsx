@@ -36,8 +36,9 @@ const FriendCard = ({
         <div className="flex-1 min-w-0 flex items-start gap-3">
           <Link
             to={`/players/${friendship.otherUserId}`}
+            state={{ from: 'friends' }}
             className="shrink-0"
-            aria-label={name}
+            aria-hidden="true"
             tabIndex={-1}
           >
             <Avatar userId={friendship.otherUserId} size="sm" />
@@ -45,11 +46,16 @@ const FriendCard = ({
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">
               {/* La foto tambien enlaza, para dar una zona tactil mayor, pero
-                  queda fuera del tabulador: dos paradas seguidas al mismo sitio
-                  y con el mismo nombre solo estorban a quien navega por teclado */}
+                  se retira de las dos formas de recorrer la tarjeta: del
+                  tabulador con `tabIndex`, y del arbol de accesibilidad con
+                  `aria-hidden`, que hace falta aparte —`tabindex="-1"` solo
+                  quita la parada de teclado y el lector de pantalla seguiria
+                  anunciando dos enlaces con el mismo nombre al mismo sitio.
+                  Este de aqui es el que queda, y ya lleva el nombre dentro */}
               <h3 className="text-sm font-semibold text-gray-900 truncate">
                 <Link
                   to={`/players/${friendship.otherUserId}`}
+                  state={{ from: 'friends' }}
                   className="hover:underline"
                   data-testid="friend-profile-link"
                 >
