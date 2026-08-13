@@ -52,7 +52,7 @@ const securityHeaders = {
   'X-Content-Type-Options': 'nosniff',
   'X-Frame-Options': 'DENY',
   'Referrer-Policy': 'strict-origin-when-cross-origin',
-  'Permissions-Policy': 'geolocation=(), microphone=(), camera=()',
+  'Permissions-Policy': 'geolocation=(self), microphone=(), camera=()',
   // style-src requires 'unsafe-inline': React sets inline styles and framer-motion
   // animates by writing the style attribute at runtime. Without it the whole UI is
   // unstyled — this was verified against production in #295, where the policy had
