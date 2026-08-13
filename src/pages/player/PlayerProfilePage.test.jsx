@@ -123,6 +123,15 @@ describe('PlayerProfilePage', () => {
       expect(screen.getByText('playerProfile:friendsCount')).toBeInTheDocument();
     });
 
+    it('offers a way back to the feed, which the desktop header does not give', async () => {
+      // En escritorio la cabecera no pinta flecha, asi que sin este enlace se
+      // entra al perfil y no hay forma de salir salvo el boton del navegador
+      renderProfile();
+
+      const volver = await screen.findByRole('link', { name: 'playerProfile:backToFeed' });
+      expect(volver).toHaveAttribute('href', '/feed');
+    });
+
     it('explains what is behind a friendship instead of showing empty fields', async () => {
       // Los campos privados llegan en null, no a cero: hay que decir que no se
       // pueden ver, no dar a entender que no tiene datos.

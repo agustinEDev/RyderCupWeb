@@ -1,4 +1,5 @@
 {
+  "backToFeed": "Back to activity",
   "title": "Profile",
   "loading": "Loading profile...",
   "friendsCount": "{{count}} friend",

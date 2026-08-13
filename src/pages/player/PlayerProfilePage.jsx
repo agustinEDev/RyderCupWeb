@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Link, Navigate, useParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
-import { Check, Loader, Lock, Mail, UserPlus, UserX, X } from 'lucide-react';
+import { ArrowLeft, Check, Loader, Lock, Mail, UserPlus, UserX, X } from 'lucide-react';
 import customToast from '../../utils/toast';
 import HeaderAuth from '../../components/layout/HeaderAuth';
 import Avatar from '../../components/ui/Avatar';
@@ -194,6 +194,20 @@ const PlayerProfilePage = () => {
       <HeaderAuth />
 
       <main className="max-w-2xl mx-auto px-4 py-6 pb-24">
+        {/* En móvil la vuelta la da la flecha de la cabecera contextual. En
+            escritorio esa cabecera no la pinta, así que el enlace vive aquí,
+            junto al contenido, igual que en el detalle de un torneo.
+            Este dice adónde lleva, así que lleva ahí de verdad: por historial
+            acabaría en Amigos o en la búsqueda según el camino de entrada, y el
+            texto mentiría. La flecha de móvil no nombra destino y sí retrocede */}
+        <Link
+          to="/feed"
+          className="hidden md:flex items-center gap-2 text-gray-600 hover:text-primary transition-colors mb-4 w-fit"
+        >
+          <ArrowLeft className="w-4 h-4" aria-hidden="true" />
+          <span className="text-sm font-medium">{t('playerProfile:backToFeed')}</span>
+        </Link>
+
         {/* La cabecera contextual ya pinta el título en móvil: un segundo
             encabezado de nivel 1 rompería la jerarquía para los lectores de
             pantalla. */}
