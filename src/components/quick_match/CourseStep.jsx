@@ -133,11 +133,15 @@ const CourseStep = ({
       <label className="block text-sm font-medium text-gray-700 mb-1">
         {t('create.course.courseLabel')}
       </label>
+      {/* La cercanía se ofrece solo aquí: en una partida rápida estás pisando el
+          campo, así que el que quieres es el más próximo. Al crear una
+          competición se eligen campos para otro día y para otro sitio */}
       <GolfCourseSearchBox
         countryCode={countryCode}
         selectedCourse={selectedCourse}
         onCourseSelect={onCourseSelect}
         onRequestNewCourse={onRequestNewCourse}
+        allowNearby
       />
     </div>
 
