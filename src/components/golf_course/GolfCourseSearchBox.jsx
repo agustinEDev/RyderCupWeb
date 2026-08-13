@@ -99,6 +99,15 @@ const GolfCourseSearchBox = ({
   }, []);
 
   const handleInputChange = (e) => {
+    // Con un campo ya elegido, la casilla muestra su nombre y no lo que se
+    // teclea, así que parecía congelada: se podía borrar y el texto seguía
+    // entero, sin forma de cambiar de campo. Teclear sobre una selección es
+    // querer buscar otro, de modo que se suelta antes de nada.
+    //
+    // Solo se avisa al padre si de verdad había selección: quien usa el
+    // buscador como "añadir" pasa siempre `selectedCourse={null}` y su callback
+    // no espera recibir un null.
+    if (selectedCourse) onCourseSelect(null);
     setSearchQuery(e.target.value);
     setShowDropdown(true);
   };

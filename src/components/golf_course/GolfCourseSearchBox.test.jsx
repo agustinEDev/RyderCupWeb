@@ -1,5 +1,6 @@
 // src/components/golf_course/GolfCourseSearchBox.test.jsx
 
+import { useState } from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import GolfCourseSearchBox from './GolfCourseSearchBox';
@@ -45,6 +46,27 @@ const renderBox = (props = {}) =>
       {...props}
     />
   );
+
+// El buscador es controlado: quien lo usa decide qué campo hay elegido. Con un
+// espía suelto como `onCourseSelect` el prop nunca cambia y no se puede afirmar
+// lo que acaba viéndose en la casilla, que es justo lo que se rompía
+const ControlledBox = ({ initialCourse = null, onCourseSelect }) => {
+  const [selectedCourse, setSelectedCourse] = useState(initialCourse);
+
+  return (
+    <GolfCourseSearchBox
+      countryCode="ES"
+      selectedCourse={selectedCourse}
+      onCourseSelect={(course) => {
+        setSelectedCourse(course);
+        onCourseSelect(course);
+      }}
+      onRequestNewCourse={vi.fn()}
+    />
+  );
+};
+
+const renderControlledBox = (props) => render(<ControlledBox {...props} />);
 
 describe('GolfCourseSearchBox', () => {
   beforeEach(() => {
@@ -149,5 +171,36 @@ describe('GolfCourseSearchBox', () => {
     await waitFor(() => {
       expect(screen.queryByText('Real Club de Golf')).not.toBeInTheDocument();
     });
+  });
+
+  it('suelta el campo elegido al teclear, para poder cambiarlo', async () => {
+    // Con un campo elegido la casilla mostraba su nombre pase lo que pase: se
+    // borraba y el texto seguía entero, sin manera de buscar otro campo.
+    // Se afirma el valor visible, no solo el aviso: con un espía suelto el
+    // padre nunca soltaría la selección y la casilla seguiría congelada aunque
+    // el arreglo no estuviera
+    const onCourseSelect = vi.fn();
+    renderControlledBox({ initialCourse: course('1', 'Real Club de Golf'), onCourseSelect });
+
+    const input = screen.getByRole('textbox');
+    expect(input).toHaveValue('Real Club de Golf');
+
+    fireEvent.change(input, { target: { value: 'Real Club de Gol' } });
+
+    expect(onCourseSelect).toHaveBeenCalledWith(null);
+    expect(input).toHaveValue('Real Club de Gol');
+  });
+
+  it('no avisa de deselección a quien no mantiene ninguna', async () => {
+    // Los usos de "añadir campo" pasan selectedCourse={null} y su callback
+    // recibe el campo elegido directamente: un null ahí les rompería
+    const onCourseSelect = vi.fn();
+    renderControlledBox({ onCourseSelect });
+
+    const input = screen.getByRole('textbox');
+    fireEvent.change(input, { target: { value: 'rea' } });
+
+    expect(onCourseSelect).not.toHaveBeenCalled();
+    expect(input).toHaveValue('rea');
   });
 });
