@@ -96,7 +96,13 @@
     "noCoursesFound": "No golf courses found",
     "tryDifferentSearch": "Try a different search term or request a new course",
     "noCoursesInCountry": "No approved courses in this country yet",
-    "requestNewCourse": "Request new golf course"
+    "requestNewCourse": "Request new golf course",
+    "nearbyCourses": "Courses near me",
+    "locating": "Getting your location...",
+    "sortedByDistance": "Nearest first. Courses without a location only show up by name.",
+    "locationDenied": "Could not get your location. Search by name instead.",
+    "locationUnavailable": "This device has no location. Search by name instead.",
+    "distanceAway": "{{distance}} km away"
   },
   "requestModal": {
     "title": "Request New Golf Course",

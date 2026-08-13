@@ -96,7 +96,13 @@
     "noCoursesFound": "No se encontraron campos de golf",
     "tryDifferentSearch": "Prueba con otro término de búsqueda o solicita un nuevo campo",
     "noCoursesInCountry": "Aún no hay campos aprobados en este país",
-    "requestNewCourse": "Solicitar nuevo campo de golf"
+    "requestNewCourse": "Solicitar nuevo campo de golf",
+    "nearbyCourses": "Campos cerca de mí",
+    "locating": "Obteniendo tu ubicación...",
+    "sortedByDistance": "Del más cercano al más lejano. Los campos sin ubicación solo aparecen buscando por nombre.",
+    "locationDenied": "No se pudo obtener tu ubicación. Busca por nombre.",
+    "locationUnavailable": "Este dispositivo no tiene ubicación. Busca por nombre.",
+    "distanceAway": "a {{distance}} km"
   },
   "requestModal": {
     "title": "Solicitar Nuevo Campo de Golf",
