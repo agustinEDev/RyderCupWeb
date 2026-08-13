@@ -1,4 +1,5 @@
 import { Clock } from 'lucide-react';
+import { Link } from 'react-router';
 import FriendshipBadge from './FriendshipBadge';
 import Avatar from '../ui/Avatar';
 
@@ -9,6 +10,12 @@ import Avatar from '../ui/Avatar';
  * - mode="friend": accepted friend (remove/block actions)
  * - mode="received": pending request received (accept/decline actions)
  * - mode="sent": pending request sent (cancel action)
+ *
+ * La foto y el nombre llevan al perfil del jugador en los tres. Hasta ahora
+ * `/players/{id}` solo se alcanzaba desde una tarjeta del feed, asi que un
+ * amigo que no hubiera publicado nada era inalcanzable y una cuenta nueva no
+ * podia ver ningun perfil. En una solicitud recibida es donde mas falta hace:
+ * ver quien te la manda antes de aceptarla.
  */
 const FriendCard = ({
   friendship,
@@ -27,10 +34,34 @@ const FriendCard = ({
     <div data-testid="friend-card" className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0 flex items-start gap-3">
-          <Avatar userId={friendship.otherUserId} size="sm" />
+          <Link
+            to={`/players/${friendship.otherUserId}`}
+            state={{ from: 'friends' }}
+            className="shrink-0"
+            aria-hidden="true"
+            tabIndex={-1}
+          >
+            <Avatar userId={friendship.otherUserId} size="sm" />
+          </Link>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">
-              <h3 className="text-sm font-semibold text-gray-900 truncate">{name}</h3>
+              {/* La foto tambien enlaza, para dar una zona tactil mayor, pero
+                  se retira de las dos formas de recorrer la tarjeta: del
+                  tabulador con `tabIndex`, y del arbol de accesibilidad con
+                  `aria-hidden`, que hace falta aparte —`tabindex="-1"` solo
+                  quita la parada de teclado y el lector de pantalla seguiria
+                  anunciando dos enlaces con el mismo nombre al mismo sitio.
+                  Este de aqui es el que queda, y ya lleva el nombre dentro */}
+              <h3 className="text-sm font-semibold text-gray-900 truncate">
+                <Link
+                  to={`/players/${friendship.otherUserId}`}
+                  state={{ from: 'friends' }}
+                  className="hover:underline"
+                  data-testid="friend-profile-link"
+                >
+                  {name}
+                </Link>
+              </h3>
               {mode !== 'friend' && <FriendshipBadge status={friendship.status} />}
             </div>
 

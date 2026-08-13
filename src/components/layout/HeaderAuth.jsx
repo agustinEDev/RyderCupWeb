@@ -5,6 +5,7 @@ import { ArrowLeft } from 'lucide-react';
 import { broadcastLogout } from '../../utils/broadcastAuth';
 import { logoutUseCase } from '../../composition';
 import { resolveScreen } from './screenTitles';
+import { useGoBack } from '../../hooks/useGoBack';
 import LanguageSwitcher from '../ui/LanguageSwitcher';
 
 /**
@@ -25,6 +26,15 @@ const HeaderAuth = ({ user, title, backTo }) => {
   const screen = resolveScreen(location.pathname);
   const screenTitle = title ?? (screen ? t(screen.titleKey) : null);
   const screenBackTo = backTo !== undefined ? backTo : screen?.backTo ?? null;
+
+  // Pantallas sin padre unico vuelven por donde se vino. En escritorio la
+  // vuelta la pone la propia pagina, junto al contenido, como hace el detalle
+  // de un torneo: una flecha suelta en la cabecera desentona
+  const backByHistory = backTo === undefined && !!screen?.backByHistory;
+  const goBack = useGoBack();
+
+  const backArrowClasses =
+    'flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-lg text-gray-700 transition-colors active:bg-gray-100';
 
   const handleProfileClick = () => {
     navigate('/profile');
@@ -82,10 +92,24 @@ const HeaderAuth = ({ user, title, backTo }) => {
             <Link
               to={screenBackTo}
               aria-label={t('back')}
-              className="-ml-2 flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-lg text-gray-700 active:bg-gray-100 transition-colors"
+              className={`-ml-2 ${backArrowClasses}`}
             >
               <ArrowLeft className="h-5 w-5" aria-hidden="true" />
             </Link>
+          )}
+          {/* Excluyente con la de arriba a proposito: hoy ninguna pantalla
+              declara `parent` y `back: 'history'` a la vez, pero el mapa esta
+              hecho para crecer y la primera que declarase ambos pintaria dos
+              flechas seguidas */}
+          {!screenBackTo && backByHistory && (
+            <button
+              type="button"
+              onClick={goBack}
+              aria-label={t('back')}
+              className={`-ml-2 ${backArrowClasses}`}
+            >
+              <ArrowLeft className="h-5 w-5" aria-hidden="true" />
+            </button>
           )}
           <h1 className="truncate text-lg font-bold leading-tight tracking-tight text-gray-900 font-poppins">
             {screenTitle}
@@ -138,11 +162,12 @@ const HeaderAuth = ({ user, title, backTo }) => {
           <Link to="/player/invitations" className="text-gray-900 text-sm font-medium leading-normal hover:text-primary transition-colors">
             {t('header.myInvitations')}
           </Link>
-          {/* Amigos solo vivia en la navegacion inferior, que es md:hidden, y en
-              una tarjeta del panel. Al quitar esa tarjeta (FE #306) el escritorio
-              se quedaba sin ninguna forma de llegar a /friends */}
-          <Link to="/friends" className="text-gray-900 text-sm font-medium leading-normal hover:text-primary transition-colors">
-            {t('header.friends')}
+          {/* El feed solo se alcanzaba desde la navegacion inferior, que es
+              md:hidden: en escritorio no habia forma de llegar salvo tecleando
+              la URL. Amigos ya no va aqui suelto porque se entra desde dentro
+              del propio feed, igual que en movil */}
+          <Link to="/feed" className="text-gray-900 text-sm font-medium leading-normal hover:text-primary transition-colors">
+            {t('header.feed')}
           </Link>
 
         </div>

@@ -13,7 +13,6 @@ import {
   respondFriendRequestUseCase,
   removeFriendUseCase,
   blockUserUseCase,
-  sendFriendRequestUseCase,
   searchUsersUseCase,
 } from '../../composition';
 
@@ -30,7 +29,6 @@ const FriendsPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [processingKeys, setProcessingKeys] = useState(() => new Set());
   const [showAddModal, setShowAddModal] = useState(false);
-  const [isSending, setIsSending] = useState(false);
 
   const startProcessing = (key) => {
     setProcessingKeys((prev) => new Set(prev).add(key));
@@ -134,21 +132,6 @@ const FriendsPage = () => {
     }
   };
 
-  const handleSendRequest = async (addresseeId) => {
-    setIsSending(true);
-    try {
-      await sendFriendRequestUseCase.execute(addresseeId);
-      customToast.success(t('success.sent'));
-      setShowAddModal(false);
-      await loadData({ silent: true });
-    } catch (error) {
-      console.error('Error sending friend request:', error);
-      customToast.error(error.message || t('errors.failedToSend'));
-    } finally {
-      setIsSending(false);
-    }
-  };
-
   const handleSearchUsers = async (query) => {
     return searchUsersUseCase.execute(query);
   };
@@ -177,9 +160,7 @@ const FriendsPage = () => {
       <AddFriendModal
         isOpen={showAddModal}
         onClose={() => setShowAddModal(false)}
-        onSend={handleSendRequest}
         onSearchUsers={handleSearchUsers}
-        isProcessing={isSending}
         t={t}
       />
 

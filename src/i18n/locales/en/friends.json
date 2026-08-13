@@ -19,9 +19,7 @@
     "searchPlaceholder": "Search by name...",
     "searchMinChars": "Type at least 2 characters",
     "noUsersFound": "No users found",
-    "noUserSelected": "Please select a user first",
-    "send": "Send request",
-    "sending": "Sending..."
+    "opensProfileHint": "Tap a player to open their profile and send the request from there."
   },
   "status": {
     "PENDING": "Pending",
