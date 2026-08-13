@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client';
 import * as Sentry from '@sentry/react';
 import App from './App.jsx';
 import { startCapturingInstallPrompt } from './utils/installPromptCapture';
+import { registerServiceWorker } from './utils/serviceWorkerRegistration';
 import './index.css';
 import './i18n'; // Import i18n initialization
 import { AuthProviderWithGlobalSync } from './contexts/AuthContext'; // v1.13.0: CSRF Protection
@@ -10,6 +11,10 @@ import { AuthProviderWithGlobalSync } from './contexts/AuthContext'; // v1.13.0:
 // Cuanto antes, mejor: Chrome dispara `beforeinstallprompt` nada más procesar
 // el manifiesto, muy por delante del montaje de React (FE #334)
 startCapturingInstallPrompt();
+
+// Sustituye al registro que inyectaba el plugin: además de registrar, recarga
+// cuando entra una versión nueva y la busca al volver a primer plano
+registerServiceWorker();
 
 // ============================================
 // EARLY SENTRY INITIALIZATION
