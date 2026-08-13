@@ -17,9 +17,23 @@ describe('registerServiceWorker', () => {
     return (await import('./serviceWorkerRegistration')).registerServiceWorker;
   };
 
+  // `vi.resetModules()` da un modulo nuevo, pero los oyentes que la ejecucion
+  // anterior colgo de `document` y `window` siguen vivos y responderian a los
+  // eventos de este caso, disparando registros de mas
+  const puestos = [];
+  const interceptarOyentes = (objetivo) => {
+    const original = objetivo.addEventListener.bind(objetivo);
+    vi.spyOn(objetivo, 'addEventListener').mockImplementation((tipo, fn, opciones) => {
+      puestos.push([objetivo, tipo, fn]);
+      return original(tipo, fn, opciones);
+    });
+  };
+
   const prepararNavegador = ({ conControlador }) => {
     oyentes = {};
     registro = { update: vi.fn().mockResolvedValue(undefined) };
+    interceptarOyentes(document);
+    interceptarOyentes(window);
 
     navigator.serviceWorker = {
       controller: conControlador ? {} : null,
@@ -47,6 +61,12 @@ describe('registerServiceWorker', () => {
   });
 
   afterEach(() => {
+    // El spy se restaura solo; los oyentes ya colgados hay que retirarlos a mano
+    vi.restoreAllMocks();
+    while (puestos.length) {
+      const [objetivo, tipo, fn] = puestos.pop();
+      objetivo.removeEventListener(tipo, fn);
+    }
     delete navigator.serviceWorker;
   });
 
@@ -125,5 +145,41 @@ describe('registerServiceWorker', () => {
     const registerServiceWorker = await cargarModulo();
 
     await expect(async () => registerServiceWorker()).not.toThrow();
+  });
+
+  it('retries a failed registration and then keeps checking for updates', async () => {
+    /**
+     * Arrancar sin cobertura hacia fallar el registro, y como los oyentes se
+     * instalaban despues de registrar, no quedaba nada que pudiera reintentar:
+     * la sesion entera se quedaba sin service worker, sin actualizaciones y sin
+     * funcionar sin conexion.
+     */
+    prepararNavegador({ conControlador: true });
+    navigator.serviceWorker.register = vi
+      .fn()
+      .mockRejectedValueOnce(new Error('sin red'))
+      .mockResolvedValue(registro);
+
+    const registerServiceWorker = await cargarModulo();
+    registerServiceWorker();
+    await vi.waitFor(() => expect(navigator.serviceWorker.register).toHaveBeenCalledTimes(1));
+
+    // Recuperar la red es justo cuando el registro que fallo puede salir adelante
+    window.dispatchEvent(new window.Event('online'));
+    await vi.waitFor(() => expect(navigator.serviceWorker.register).toHaveBeenCalledTimes(2));
+
+    // Y con el registro ya conseguido, volver a la aplicacion pregunta por una
+    // version nueva. Se reintenta el aviso dentro del `waitFor` porque el
+    // registro se asigna al resolverse la promesa, un tick despues de que su
+    // llamada quede contada
+    Object.defineProperty(document, 'visibilityState', {
+      configurable: true,
+      get: () => 'visible',
+    });
+
+    await vi.waitFor(() => {
+      document.dispatchEvent(new window.Event('visibilitychange'));
+      expect(registro.update).toHaveBeenCalled();
+    });
   });
 });

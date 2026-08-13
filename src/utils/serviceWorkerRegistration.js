@@ -17,13 +17,24 @@
  * aplicación vuelve a primer plano, y recargar cuando el nuevo toma el mando.
  */
 
-/** Evita registrar dos veces si el módulo se importa más de una vez. */
-let yaRegistrado = false;
+/**
+ * Los oyentes se instalan una sola vez, y **aparte del registro**: si se atara
+ * lo uno a lo otro, un registro fallido —arrancar sin cobertura, sin ir más
+ * lejos— dejaría la aplicación sin oyentes y sin forma de reintentar, es decir
+ * sin actualizaciones y sin funcionar sin conexión durante toda la sesión.
+ */
+let oyentesInstalados = false;
+
+/** El registro conseguido, o null mientras no haya ninguno. */
+let registro = null;
+
+/** Evita solaparse consigo mismo cuando llegan dos avisos casi a la vez. */
+let enCurso = false;
 
 export function registerServiceWorker() {
   if (typeof navigator === 'undefined' || !('serviceWorker' in navigator)) return;
-  if (yaRegistrado) return;
-  yaRegistrado = true;
+  if (oyentesInstalados) return;
+  oyentesInstalados = true;
 
   // Sin controlador al arrancar, esta es la primera visita: el `controllerchange`
   // que viene después es el de la instalación inicial, no el de una versión
@@ -40,35 +51,47 @@ export function registerServiceWorker() {
     window.location.reload();
   });
 
-  const registrar = async () => {
+  /**
+   * Registra si aún no hay registro, y si lo hay pregunta por una versión nueva.
+   *
+   * Un fallo deja `registro` en null a propósito, para que el siguiente aviso
+   * lo vuelva a intentar en lugar de darse por vencido.
+   */
+  const registrarOActualizar = async () => {
+    if (enCurso) return;
+    enCurso = true;
+
     try {
-      const registro = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
-
-      // Volver a la aplicación es el único momento fiable para preguntar en una
-      // instalada, que puede pasar días sin recargarse
-      document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'visible') {
-          registro.update().catch(() => {
-            // Sin conexión no hay nada que comprobar, y no es un error que
-            // merezca ruido: se reintenta la próxima vez que vuelva
-          });
-        }
-      });
-
-      return registro;
+      if (registro) {
+        await registro.update();
+      } else {
+        registro = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+      }
     } catch {
-      // Un fallo al registrar deja la aplicación sin funcionar sin conexión,
-      // pero no debe impedir que arranque
-      return null;
+      // Sin conexión no hay nada que comprobar, y un registro fallido no debe
+      // impedir que la aplicación arranque: se reintenta al volver o al
+      // recuperar la red
+    } finally {
+      enCurso = false;
     }
   };
+
+  // Volver a la aplicación es el único momento fiable en una instalada, que
+  // puede pasar días sin recargarse
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') registrarOActualizar();
+  });
+
+  // Y recuperar la red es el otro: es justo cuando un registro que falló por
+  // estar sin cobertura puede por fin salir adelante
+  window.addEventListener('online', registrarOActualizar);
 
   // `load` ya puede haber pasado cuando este módulo se ejecuta, y entonces el
   // oyente no se dispararía nunca
   if (document.readyState === 'complete') {
-    registrar();
+    registrarOActualizar();
   } else {
-    window.addEventListener('load', registrar, { once: true });
+    window.addEventListener('load', registrarOActualizar, { once: true });
   }
 }
 
