@@ -1,12 +1,11 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, Trash2, ChevronDown } from 'lucide-react';
+import { Plus, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import customToast from '../../utils/toast';
 import { fetchCountriesUseCase } from '../../composition';
-import { CountryFlag } from '../../utils/countryUtils';
-import { formatCountryName } from '../../services/countries';
 import TeeColor from '../../domain/value_objects/TeeColor';
+import CountryAutocomplete from '../ui/CountryAutocomplete';
 
 const COURSE_TYPES = ['STANDARD_18', 'PITCH_AND_PUTT', 'EXECUTIVE'];
 
@@ -24,7 +23,7 @@ const TEE_GENDERS = [null, 'MALE', 'FEMALE'];
  * Handles 18 holes + 2-10 tees with validations
  */
 const GolfCourseForm = ({ initialData = null, onSubmit, onCancel }) => {
-  const { t, i18n } = useTranslation('golfCourses');
+  const { t } = useTranslation('golfCourses');
 
   // Basic fields
   const [name, setName] = useState('');
@@ -387,35 +386,14 @@ const GolfCourseForm = ({ initialData = null, onSubmit, onCancel }) => {
           </div>
 
           {/* Country Code */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              {t('form.countryCode')} *
-            </label>
-            <div className="relative">
-              <select
-                value={countryCode}
-                onChange={(e) => setCountryCode(e.target.value)}
-                className={`w-full py-2 px-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary bg-white appearance-none pr-10 ${
-                  countryCode ? 'pl-12' : 'pl-3'
-                }`}
-                required
-              >
-                <option value="">{t('form.selectCountry')}</option>
-                {allCountries.map((country) => (
-                  <option key={country.code} value={country.code}>
-                    {formatCountryName(country, i18n.language)}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
-              {/* Show flag if country is selected */}
-              {countryCode && (
-                <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                  <CountryFlag countryCode={countryCode} style={{ width: '24px', height: 'auto' }} />
-                </div>
-              )}
-            </div>
-          </div>
+          <CountryAutocomplete
+            countries={allCountries}
+            value={countryCode}
+            label={t('form.countryCode')}
+            required
+            placeholder={t('form.selectCountry')}
+            onChange={setCountryCode}
+          />
 
           {/* Course Type */}
           <div>

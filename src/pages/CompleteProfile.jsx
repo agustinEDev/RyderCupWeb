@@ -4,12 +4,11 @@ import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { useAuth } from '../hooks/useAuth';
 import { updateUserProfileUseCase, updateManualHandicapUseCase, fetchCountriesUseCase } from '../composition';
-import { CountryFlag } from '../utils/countryUtils';
-import { formatCountryName } from '../services/countries';
 import customToast from '../utils/toast';
+import CountryAutocomplete from '../components/ui/CountryAutocomplete';
 
 const CompleteProfile = () => {
-  const { t, i18n } = useTranslation('auth');
+  const { t } = useTranslation('auth');
   const navigate = useNavigate();
   const { user, refetch: refetchUser } = useAuth();
 
@@ -119,35 +118,18 @@ const CompleteProfile = () => {
               <label htmlFor="countryCode" className="block text-sm font-semibold text-gray-700 mb-2">
                 {t('google.completeProfile.countryLabel')}
               </label>
-              <div className="relative">
-                <select
-                  id="countryCode"
-                  name="countryCode"
-                  value={formData.countryCode}
-                  onChange={handleChange}
-                  className={`w-full py-3 rounded-lg border-2 border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none text-gray-900 bg-white disabled:bg-gray-50 disabled:cursor-not-allowed appearance-none pr-10 ${
-                    formData.countryCode ? 'pl-12' : 'pl-4'
-                  }`}
-                  disabled={isSaving || isLoadingCountries}
-                >
-                  <option value="">{t('google.completeProfile.countryPlaceholder')}</option>
-                  {countries.map((country) => (
-                    <option key={country.code} value={country.code}>
-                      {formatCountryName(country, i18n.language)}
-                    </option>
-                  ))}
-                </select>
-                <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                  <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </div>
-                {formData.countryCode && (
-                  <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                    <CountryFlag countryCode={formData.countryCode} style={{ width: '24px', height: 'auto' }} />
-                  </div>
-                )}
-              </div>
+              {/* Evento sintético para no saltarse handleChange, que es quien
+                  además limpia el error del campo */}
+              <CountryAutocomplete
+                id="countryCode"
+                countries={countries}
+                value={formData.countryCode}
+                placeholder={t('google.completeProfile.countryPlaceholder')}
+                disabled={isSaving || isLoadingCountries}
+                onChange={(code) =>
+                  handleChange({ target: { name: 'countryCode', value: code } })
+                }
+              />
               <p className="text-xs text-gray-500 mt-2">
                 {t('google.completeProfile.countryHint')}
               </p>

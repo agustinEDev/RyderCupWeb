@@ -4,11 +4,11 @@ import HeaderAuth from '../components/layout/HeaderAuth';
 import AvatarPicker from '../components/profile/AvatarPicker';
 import { useEditProfile } from '../hooks/useEditProfile'; // <- ¡NUEVA IMPORTACIÓN!
 import { useAvatar } from '../hooks/useAvatar';
-import { canUseRFEG, CountryFlag } from '../utils/countryUtils';
-import { formatCountryName } from '../services/countries';
+import { canUseRFEG } from '../utils/countryUtils';
+import CountryAutocomplete from '../components/ui/CountryAutocomplete';
 
 const EditProfile = () => {
-  const { t, i18n } = useTranslation('profile');
+  const { t } = useTranslation('profile');
   // Toda la lógica ahora reside en el hook. Obtenemos todo lo que necesitamos de él.
   const {
     user,
@@ -170,37 +170,18 @@ const EditProfile = () => {
                     <label htmlFor="countryCode" className="block text-sm font-medium text-gray-700 mb-1">
                       {t('edit.personalInfo.nationality')} <span className="text-gray-400 font-normal">{t('edit.personalInfo.nationalityOptional')}</span>
                     </label>
-                    <div className="relative">
-                      <select
-                        id="countryCode"
-                        name="countryCode"
-                        value={formData.countryCode}
-                        onChange={handleInputChange}
-                        className={`w-full py-2 px-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary bg-white disabled:bg-gray-50 disabled:cursor-not-allowed appearance-none pr-10 ${
-                          formData.countryCode ? 'pl-12' : 'pl-3'
-                        }`}
-                        disabled={isSaving || isLoadingCountries}
-                      >
-                        <option value="">{t('edit.personalInfo.selectNationality')}</option>
-                        {countries.map((country) => (
-                          <option key={country.code} value={country.code}>
-                            {formatCountryName(country, i18n.language)}
-                          </option>
-                        ))}
-                      </select>
-                      {/* Dropdown icon */}
-                      <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                        <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                        </svg>
-                      </div>
-                      {/* Show flag if country is selected */}
-                      {formData.countryCode && (
-                        <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                          <CountryFlag countryCode={formData.countryCode} style={{ width: '24px', height: 'auto' }} />
-                        </div>
-                      )}
-                    </div>
+                    {/* Evento sintético para no saltarse handleInputChange,
+                        que es quien además limpia el error del campo */}
+                    <CountryAutocomplete
+                      id="countryCode"
+                      countries={countries}
+                      value={formData.countryCode}
+                      placeholder={t('edit.personalInfo.selectNationality')}
+                      disabled={isSaving || isLoadingCountries}
+                      onChange={(code) =>
+                        handleInputChange({ target: { name: 'countryCode', value: code } })
+                      }
+                    />
                     <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
                       <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
                         <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />

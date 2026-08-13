@@ -16,6 +16,7 @@ import {
 import { CountryFlag } from '../utils/countryUtils';
 import { formatCountryName } from '../services/countries';
 import { validateCompetitionForm } from '../utils/competitionFormValidation';
+import CountryAutocomplete from '../components/ui/CountryAutocomplete';
 import GolfCourseSearchBox from '../components/golf_course/GolfCourseSearchBox';
 import GolfCourseRequestModal from '../components/golf_course/GolfCourseRequestModal';
 import customToast from '../utils/toast';
@@ -642,51 +643,31 @@ const CreateCompetition = () => {
                 </div>
 
                 <div className="space-y-4">
-                  {/* Country Select */}
-                  <div>
-                    <label htmlFor="country" className="block text-sm font-medium text-gray-700 mb-1">
-                      {t('create.country')}
-                    </label>
-                    <div className="relative">
-                      <select
-                        id="country"
-                        name="country"
-                        value={formData.country?.code || ''}
-                        onChange={(e) => {
-                          const selectedCountry = allCountries.find(c => c.code === e.target.value);
-                          if (selectedCountry) {
-                            handleCountrySelect(selectedCountry);
-                          } else {
-                            setFormData(prev => ({
-                              ...prev,
-                              country: null,
-                              adjacentCountry1: '',
-                              adjacentCountry2: '',
-                              showAdjacentCountry1: false,
-                              showAdjacentCountry2: false
-                            }));
-                          }
-                        }}
-                        className={`w-full py-2 px-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary bg-white appearance-none pr-10 ${
-                          formData.country ? 'pl-12' : 'pl-3'
-                        }`}
-                      >
-                        <option value="">{t('create.selectCountry')}</option>
-                        {allCountries.map((country) => (
-                          <option key={country.code} value={country.code}>
-                            {formatCountryName(country, i18n.language)}
-                          </option>
-                        ))}
-                      </select>
-                      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
-                      {/* Show flag if country is selected */}
-                      {formData.country && (
-                        <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                          <CountryFlag countryCode={formData.country.code} style={{ width: '24px', height: 'auto' }} />
-                        </div>
-                      )}
-                    </div>
-                  </div>
+                  {/* El país principal se elige entre los 200: es el único de
+                      los tres selectores que necesita búsqueda, porque los
+                      adyacentes ya listan solo países fronterizos */}
+                  <CountryAutocomplete
+                    id="country"
+                    countries={allCountries}
+                    value={formData.country?.code || ''}
+                    label={t('create.country')}
+                    placeholder={t('create.selectCountry')}
+                    onChange={(code) => {
+                      const selectedCountry = allCountries.find(c => c.code === code);
+                      if (selectedCountry) {
+                        handleCountrySelect(selectedCountry);
+                      } else {
+                        setFormData(prev => ({
+                          ...prev,
+                          country: null,
+                          adjacentCountry1: '',
+                          adjacentCountry2: '',
+                          showAdjacentCountry1: false,
+                          showAdjacentCountry2: false
+                        }));
+                      }
+                    }}
+                  />
 
                   {/* Adjacent Country 1 */}
                   {formData.country && !formData.showAdjacentCountry1 && adjacentCountries1.length > 0 && (
