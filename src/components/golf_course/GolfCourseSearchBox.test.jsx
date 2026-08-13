@@ -150,4 +150,30 @@ describe('GolfCourseSearchBox', () => {
       expect(screen.queryByText('Real Club de Golf')).not.toBeInTheDocument();
     });
   });
+
+  it('suelta el campo elegido al teclear, para poder cambiarlo', async () => {
+    // Con un campo elegido la casilla mostraba su nombre pase lo que pase: se
+    // borraba y el texto seguía entero, sin manera de buscar otro campo
+    const onCourseSelect = vi.fn();
+    const chosen = course('1', 'Real Club de Golf');
+    renderBox({ selectedCourse: chosen, onCourseSelect });
+
+    const input = screen.getByRole('textbox');
+    expect(input).toHaveValue('Real Club de Golf');
+
+    fireEvent.change(input, { target: { value: 'Real Club de Gol' } });
+
+    expect(onCourseSelect).toHaveBeenCalledWith(null);
+  });
+
+  it('no avisa de deselección a quien no mantiene ninguna', async () => {
+    // Los usos de "añadir campo" pasan selectedCourse={null} y su callback
+    // recibe el campo elegido directamente: un null ahí les rompería
+    const onCourseSelect = vi.fn();
+    renderBox({ onCourseSelect });
+
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: 'rea' } });
+
+    expect(onCourseSelect).not.toHaveBeenCalled();
+  });
 });
