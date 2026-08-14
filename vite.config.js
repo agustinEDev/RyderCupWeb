@@ -36,31 +36,67 @@ import { execSync } from 'node:child_process'
  * también se propaguen.
  */
 function emitVersionFile() {
+  let info
+
+  /** Se calcula una vez por build: el HTML y el JSON tienen que decir lo mismo. */
+  const buildInfo = () => {
+    if (info) return info
+
+    // Render expone el commit en el entorno de build; fuera de ahí se pregunta
+    // a git. `cwd` fijo al proyecto porque el build puede lanzarse desde otro
+    // sitio (`npm --prefix`), y ahí git respondería por otro repositorio; su
+    // stderr se descarta para que un "not a git repository" no parezca un fallo
+    // del build cuando simplemente no hay repositorio
+    let commit = process.env.RENDER_GIT_COMMIT || process.env.GITHUB_SHA || ''
+    if (!commit) {
+      try {
+        commit = execSync('git rev-parse HEAD', {
+          encoding: 'utf8',
+          cwd: __dirname,
+          stdio: ['ignore', 'pipe', 'ignore'],
+        }).trim()
+      } catch {
+        commit = 'unknown'
+      }
+    }
+
+    const { version } = JSON.parse(readFileSync(resolve(__dirname, 'package.json'), 'utf8'))
+    info = { version, commit: commit.slice(0, 7), builtAt: new Date().toISOString() }
+    return info
+  }
+
   return {
     name: 'emit-version-file',
     apply: 'build',
+
+    /**
+     * La marca va **dentro del HTML**, y ahí está el fondo del asunto.
+     *
+     * Workbox no vuelve a pedir una entrada del precache cuya revisión no ha
+     * cambiado, y la revisión es el hash del contenido. Marcar un fichero
+     * aparte movía el `sw.js` y disparaba la recarga, pero esa recarga la
+     * contestaba `navigateFallback` con el `index.html` guardado, que es el
+     * viejo — y las cabeceras viajan con la respuesta guardada, de modo que la
+     * política antigua seguía aplicándose. Cambiando el propio HTML, su hash se
+     * mueve, Workbox lo vuelve a descargar y la recarga entrega el documento
+     * nuevo con sus cabeceras nuevas.
+     */
+    transformIndexHtml() {
+      const { version, commit, builtAt } = buildInfo()
+      return [
+        {
+          tag: 'meta',
+          attrs: { name: 'app-build', content: `${version} ${commit} ${builtAt}` },
+          injectTo: 'head',
+        },
+      ]
+    },
+
     generateBundle() {
-      // Render expone el commit en el entorno de build; fuera de ahí se pregunta
-      // a git, que puede no existir según dónde se construya
-      let commit = process.env.RENDER_GIT_COMMIT || process.env.GITHUB_SHA || ''
-      if (!commit) {
-        try {
-          commit = execSync('git rev-parse HEAD', { encoding: 'utf8' }).trim()
-        } catch {
-          commit = 'unknown'
-        }
-      }
-
-      const { version } = JSON.parse(readFileSync(resolve(__dirname, 'package.json'), 'utf8'))
-
       this.emitFile({
         type: 'asset',
         fileName: 'version.json',
-        source: `${JSON.stringify(
-          { version, commit: commit.slice(0, 7), builtAt: new Date().toISOString() },
-          null,
-          2
-        )}\n`,
+        source: `${JSON.stringify(buildInfo(), null, 2)}\n`,
       })
     },
   }
@@ -156,10 +192,11 @@ export default defineConfig(() => ({
       },
       workbox: {
         // Cache static assets (JS, CSS, fonts, images)
-        // `json` entra por `version.json`: es el único de dist, y estando en el
-        // precache su hash cambia con cada publicación, que es lo que mueve el
-        // sw.js y dispara la actualización de la aplicación instalada
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2,json}'],
+        // `version.json` se queda deliberadamente FUERA: precacheado se
+        // respondería desde la caché y diría la versión de la publicación
+        // anterior, que es justo la mentira que venía a quitar. Y no hace falta
+        // para mover el service worker, de eso se encarga la marca del HTML
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
         // Explicit cap so oversized assets fail the SW build loudly instead of silently
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5 MB
         runtimeCaching: [
