@@ -351,6 +351,30 @@ describe('CountryAutocomplete', () => {
     expect(onChange).toHaveBeenCalledWith('ES');
   });
 
+  it('suelta el resaltado cuando la lista se reordena bajo él', () => {
+    // Cambiar de idioma con la lista abierta la reordena: el índice resaltado
+    // seguiría siendo válido, pero apuntando a otro país. Enter elegiría uno
+    // que nadie señaló
+    const onChange = vi.fn();
+    const lista = () => (
+      <CountryAutocomplete countries={ORDENADOS_EN_INGLES} value="" onChange={onChange} />
+    );
+    const { rerender } = render(lista());
+    open();
+
+    const search = screen.getByTestId('country-autocomplete-search');
+    fireEvent.keyDown(search, { key: 'ArrowDown' }); // Corea del Sur, en español
+
+    i18nState.language = 'en';
+    rerender(lista());
+
+    fireEvent.keyDown(screen.getByTestId('country-autocomplete-search'), { key: 'Enter' });
+
+    // En inglés la primera posición es Sudáfrica: sin soltar el resaltado, ese
+    // Enter habría elegido ZA sin que nadie lo señalara
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
   it('vuelve al final de la lista al subir desde el principio', () => {
     const onChange = vi.fn();
     renderSelect({ onChange });

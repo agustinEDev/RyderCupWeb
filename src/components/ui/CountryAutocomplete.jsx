@@ -71,6 +71,14 @@ const CountryAutocomplete = ({
     [countries, i18n.language]
   );
 
+  // Cambiar de idioma con la lista abierta la reordena bajo el resaltado: el
+  // índice seguiría siendo válido, pero apuntando a otro país. Se suelta, que
+  // es lo único que no elige por nadie.
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- reaccionar al reorden es justamente el objetivo
+    setActiveIndex(-1);
+  }, [sortedCountries]);
+
   // Se busca contra los dos idiomas y el código a la vez, no contra lo que se
   // esté mostrando: quien tiene la aplicación en español puede teclear "Spain",
   // y "ES" también encuentra España.

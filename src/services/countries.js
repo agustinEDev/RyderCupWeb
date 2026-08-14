@@ -210,16 +210,30 @@ export const getAdjacentCountriesFallback = (countryCode) => {
 };
 
 /**
+ * Reduce a language tag to its base code: 'es-ES', 'es_ES' y 'ES' dan 'es'.
+ *
+ * El guion bajo importa: quien decide el idioma es el detector de i18next, que
+ * lee `i18nextLng` de localStorage sin lista de valores permitidos. Si el
+ * nombre que se pinta y el idioma con el que se ordena no normalizan igual, se
+ * acaba ordenando nombres en inglés con las reglas del español.
+ *
+ * @param {string} language
+ * @returns {string} El codigo base en minusculas, o '' si no hay etiqueta
+ */
+const toBaseLanguage = (language) =>
+  typeof language === 'string' ? language.toLowerCase().split(/[-_]/)[0] : '';
+
+/**
  * Format country name based on user's language preference
  * @param {object} country - Country object with name_en and name_es
- * @param {string} language - 'en', 'es', 'en-US', 'es-ES', etc.
+ * @param {string} language - 'en', 'es', 'en-US', 'es-ES', 'es_ES', etc.
  * @returns {string}
  */
 export const formatCountryName = (country, language = 'en') => {
   if (!country) return '';
 
   // Normalize language to base code (es-ES -> es, en-US -> en)
-  const baseLang = language ? language.toLowerCase().split('-')[0] : 'en';
+  const baseLang = toBaseLanguage(language) || 'en';
 
   // Always prefer the requested language, fallback to the other language
   if (baseLang === 'es') {
@@ -247,7 +261,7 @@ export const formatCountryName = (country, language = 'en') => {
  * @returns {string|undefined}
  */
 const toCollatorLocale = (language) => {
-  const base = typeof language === 'string' ? language.toLowerCase().split(/[-_]/)[0] : '';
+  const base = toBaseLanguage(language);
   return /^[a-z]{2,3}$/.test(base) ? base : undefined;
 };
 

@@ -1,7 +1,7 @@
 // src/services/countries.test.js
 
 import { describe, it, expect } from 'vitest';
-import { sortCountriesByName } from './countries';
+import { sortCountriesByName, formatCountryName } from './countries';
 
 // El listado llega del backend ordenado por el nombre en inglés, y la interfaz
 // pinta el del idioma activo. Estos cuatro son el ejemplo de la issue #375: en
@@ -55,13 +55,26 @@ describe('sortCountriesByName', () => {
     }
   });
 
-  it('ordena por el nombre que se pinta, aunque el idioma no se resuelva', () => {
-    // formatCountryName normaliza partiendo por el guion, así que con "es_ES"
-    // no reconoce el español y devuelve los nombres en inglés. Lo que importa
-    // es que el orden acompañe a lo que se ve: si se mostrasen nombres ingleses
-    // ordenados en español volvería el desorden que arregla esta issue
+  it('normaliza igual el nombre que pinta y el idioma con el que ordena', () => {
+    // El guion bajo llegaba a los dos sitios y se resolvía distinto: el nombre
+    // salía en inglés (se partía solo por el guion) y la comparación se hacía
+    // con reglas del español. Eso es ordenar una lista por algo que no es lo
+    // que se ve, que es justo el desorden que arregla esta issue
     expect(codes(sortCountriesByName(ORDENADOS_EN_INGLES, 'es_ES')))
-      .toEqual(['ZA', 'KR', 'SS', 'ES']);
+      .toEqual(codes(sortCountriesByName(ORDENADOS_EN_INGLES, 'es')));
+    expect(formatCountryName(ORDENADOS_EN_INGLES[0], 'es_ES')).toBe('Sudáfrica');
+  });
+
+  it('ordena con la intercalación del idioma que de verdad se pinta', () => {
+    // La Ñ va entre la N y la O en español, y detrás de la Z en inglés: si el
+    // nombre y la comparación no vinieran del mismo idioma, esto los separaría
+    const conEnie = [
+      { code: 'NO', name_en: 'Norway', name_es: 'Noruega' },
+      { code: 'XX', name_en: 'Nandu Land', name_es: 'Ñandú' },
+      { code: 'PT', name_en: 'Portugal', name_es: 'Portugal' },
+    ];
+
+    expect(codes(sortCountriesByName(conEnie, 'es_ES'))).toEqual(['NO', 'XX', 'PT']);
   });
 
   it('no toca la lista que recibe', () => {
