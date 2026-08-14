@@ -30,6 +30,7 @@
 import { init, replayIntegration, reactRouterV7BrowserTracingIntegration, feedbackIntegration, getClient } from '@sentry/react';
 import { useEffect } from 'react';
 import { useLocation, useNavigationType, createRoutesFromChildren, matchRoutes } from 'react-router';
+import { scrubUrl } from '../utils/sentryHelpers';
 
 // ============================================
 // CONFIGURACIÓN DE VARIABLES DE ENTORNO
@@ -99,12 +100,14 @@ if (!SENTRY_CONFIG.dsn) {
       // Usar maskAllText: true para enmascarar todo el texto si es necesario
 
       // Ignorar errores de red específicos
-      // filter(Boolean): una cadena vacia en estas listas casa con CUALQUIER
-      // URL (Sentry hace `value.includes(pattern)`), no con ninguna
+      // La API NO entra aqui (FE #385). Esta lista graba en la sesion el
+      // detalle de red -URL, cabeceras y cuerpos- de lo que case, y en la API
+      // eso es todo: perfiles, correos, listas de amigos, la posicion de quien
+      // busca campos cerca. Para depurar ya estan los eventos de error con su
+      // breadcrumb, que llevan metodo, ruta y codigo de estado.
       networkDetailAllowUrls: [
         window.location.origin,
-        API_URL,
-      ].filter(Boolean),
+      ],
 
       // Sample rates (ya configurados en init)
     }),
@@ -204,6 +207,11 @@ if (!SENTRY_CONFIG.dsn) {
 
       // 3. Sanitizar datos sensibles
       if (event.request) {
+        // La URL del evento tambien viaja con su query string (FE #385)
+        if (event.request.url) {
+          event.request.url = scrubUrl(event.request.url);
+        }
+
         // Remover headers sensibles
         delete event.request.headers?.Authorization;
         delete event.request.headers?.Cookie;
@@ -234,6 +242,25 @@ if (!SENTRY_CONFIG.dsn) {
         return null;
       }
 
+      // Los spans HTTP llevan la URL completa en su descripción y en sus datos,
+      // asi que la query string entra por aqui igual que por los breadcrumbs
+      if (transaction.request?.url) {
+        transaction.request.url = scrubUrl(transaction.request.url);
+      }
+
+      transaction.spans?.forEach((span) => {
+        if (span.description) {
+          span.description = scrubUrl(span.description);
+        }
+        if (span.data) {
+          for (const key of ['url', 'http.url']) {
+            if (typeof span.data[key] === 'string') {
+              span.data[key] = scrubUrl(span.data[key]);
+            }
+          }
+        }
+      });
+
       return transaction;
     },
 
@@ -252,9 +279,9 @@ if (!SENTRY_CONFIG.dsn) {
         return null;
       }
 
-      // Sanitizar URLs con tokens
+      // Sanitizar URLs con tokens o con la posicion del usuario (FE #385)
       if (breadcrumb.data?.url) {
-        breadcrumb.data.url = breadcrumb.data.url.replace(/token=[^&]+/, 'token=[REDACTED]');
+        breadcrumb.data.url = scrubUrl(breadcrumb.data.url);
       }
 
       return breadcrumb;
