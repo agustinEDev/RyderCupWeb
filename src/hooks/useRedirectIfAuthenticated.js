@@ -32,6 +32,9 @@ import { useLocation, useNavigate } from 'react-router';
 import { useAuthContext } from './useAuthContext';
 import { refreshAccessToken } from '../utils/tokenRefreshInterceptor';
 import { isDeviceRevoked, handleDeviceRevocationLogout } from '../utils/deviceRevocationLogout';
+// El mismo guard que usa el login manual. Compartirlo es lo que importa: dos
+// copias de una comprobación de seguridad acaban divergiendo
+import { resolvePostAuthTarget } from '../utils/auth';
 import User from '../domain/entities/User.js';
 
 // Misma prioridad que `api.js` y el interceptor: la configuración de ejecución
@@ -57,16 +60,6 @@ class SessionRejectedError extends Error {}
 
 const isSessionRejected = (error) =>
   error instanceof SessionRejectedError || error?.response?.status === 401;
-
-/**
- * Mismo criterio que el login manual: se respeta el origen de la navegación
- * solo si es una ruta interna, para no convertirlo en un Open Redirect
- * (CWE-601). `//evil.com` es una URL protocol-relative, no una ruta.
- */
-const resolveTarget = (requestedPath) =>
-  requestedPath && requestedPath.startsWith('/') && !requestedPath.startsWith('//')
-    ? requestedPath
-    : '/dashboard';
 
 /**
  * @returns {boolean} `true` mientras se resuelve la sesión: el formulario no
@@ -145,7 +138,7 @@ export const useRedirectIfAuthenticated = () => {
         settled = true;
         clearTimeout(deadline);
         setUser(currentUser);
-        navigate(resolveTarget(location.state?.from?.pathname), { replace: true });
+        navigate(resolvePostAuthTarget(location.state?.from?.pathname), { replace: true });
         // `isChecking` se queda arriba a propósito: la página se está yendo y
         // bajarlo pintaría el formulario un instante
       } catch (error) {

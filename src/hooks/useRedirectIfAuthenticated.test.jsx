@@ -82,12 +82,15 @@ describe('useRedirectIfAuthenticated', () => {
     isDeviceRevoked.mockReturnValue(false);
     storedUser = null;
     locationState = null;
-    globalThis.fetch = vi.fn();
+    // `restoreAllMocks` no deshace una asignación directa a `globalThis`, así
+    // que el fetch simulado sobreviviría a la suite
+    vi.stubGlobal('fetch', vi.fn());
     vi.spyOn(console, 'warn').mockImplementation(() => {});
   });
 
   afterEach(() => {
     vi.restoreAllMocks();
+    vi.unstubAllGlobals();
     vi.useRealTimers();
   });
 
@@ -168,6 +171,17 @@ describe('useRedirectIfAuthenticated', () => {
       await waitFor(() => expect(navigate).toHaveBeenCalledWith('/dashboard', { replace: true }));
     });
 
+    it('no se queda en la propia pantalla de acceso', async () => {
+      // Navegar a donde ya estamos dejaría `isChecking` arriba para siempre: el
+      // cartel de carga se queda y el formulario no vuelve
+      locationState = { from: { pathname: '/login' } };
+      globalThis.fetch.mockResolvedValue(okResponse(BACKEND_USER));
+
+      renderHook(() => useRedirectIfAuthenticated());
+
+      await waitFor(() => expect(navigate).toHaveBeenCalledWith('/dashboard', { replace: true }));
+    });
+
     describe('cuando la comprobación no sale bien', () => {
       it('tira el usuario guardado si el backend rechaza el refresh', async () => {
         globalThis.fetch.mockResolvedValue(errorResponse(401));
@@ -178,6 +192,21 @@ describe('useRedirectIfAuthenticated', () => {
         await waitFor(() => expect(result.current).toBe(false));
         expect(clearAuth).toHaveBeenCalledTimes(1);
         // Lo que evita el bucle /login -> /dashboard -> /login
+        expect(navigate).not.toHaveBeenCalled();
+      });
+
+      it('tira el usuario guardado si sigue habiendo 401 tras renovar', async () => {
+        // El refresco funciona pero la sesión ya no vale: es el único camino que
+        // llega al 401 definitivo, y hasta ahora ningún test pasaba por él
+        globalThis.fetch.mockResolvedValue(errorResponse(401));
+        refreshAccessToken.mockResolvedValue(true);
+
+        const { result } = renderHook(() => useRedirectIfAuthenticated());
+
+        await waitFor(() => expect(result.current).toBe(false));
+        expect(refreshAccessToken).toHaveBeenCalledTimes(1);
+        expect(globalThis.fetch).toHaveBeenCalledTimes(2);
+        expect(clearAuth).toHaveBeenCalledTimes(1);
         expect(navigate).not.toHaveBeenCalled();
       });
 

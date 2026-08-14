@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import customToast from '../utils/toast';
 import { useTranslation } from 'react-i18next';
 import { validateEmail, checkRateLimit, resetRateLimit } from '../utils/validation';
-import { safeLog } from '../utils/auth';
+import { safeLog, resolvePostAuthTarget } from '../utils/auth';
 import PasswordInput from '../components/ui/PasswordInput';
 import { loginUseCase } from '../composition';
 import { useAuthContext } from '../hooks/useAuthContext'; // v1.13.0: CSRF Protection
@@ -95,12 +95,7 @@ const Login = () => {
         });
       }
 
-      const requestedPath = location.state?.from?.pathname;
-      // Validate redirect target is a relative path to prevent Open Redirect (CWE-601)
-      const from = (requestedPath && requestedPath.startsWith('/') && !requestedPath.startsWith('//'))
-        ? requestedPath
-        : '/dashboard';
-      navigate(from, { replace: true });
+      navigate(resolvePostAuthTarget(location.state?.from?.pathname), { replace: true });
 
     } catch (error) {
       console.error('Login error:', error);
