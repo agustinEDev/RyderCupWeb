@@ -371,6 +371,37 @@ describe('CountryAutocomplete', () => {
     expect(screen.getByTestId('country-autocomplete-more')).toBeInTheDocument();
   });
 
+  it('devuelve el foco al disparador al limpiar el país', () => {
+    // La X solo existe mientras hay país elegido: limpiar la desmonta con el
+    // foco dentro, y sin devolverlo se cae al <body>
+    render(<Controlled onChange={vi.fn()} />);
+    open();
+    fireEvent.click(screen.getByRole('option', { name: /España/ }));
+
+    fireEvent.click(screen.getByTestId('country-autocomplete-clear'));
+
+    expect(screen.getByTestId('country-autocomplete-trigger')).toHaveFocus();
+  });
+
+  it('anuncia el error y la obligatoriedad, no solo los pinta', () => {
+    // El borde rojo y el asterisco solo existen para quien ve la pantalla
+    renderSelect({ error: true, required: true, label: 'País' });
+
+    const trigger = screen.getByTestId('country-autocomplete-trigger');
+    expect(trigger).toHaveAttribute('aria-invalid', 'true');
+    expect(trigger).toHaveAttribute('aria-required', 'true');
+  });
+
+  it('apunta al listbox con aria-controls solo mientras está abierto', () => {
+    renderSelect();
+    const trigger = screen.getByTestId('country-autocomplete-trigger');
+    expect(trigger).not.toHaveAttribute('aria-controls');
+
+    open();
+
+    expect(trigger.getAttribute('aria-controls')).toBe(screen.getByRole('listbox').id);
+  });
+
   it('usa la etiqueta como nombre accesible del control', () => {
     // Como <label htmlFor> externo sobre un <button>, el <label> nativo gana a
     // name-from-content: se anunciaba "Nacionalidad" y nunca el país elegido

@@ -146,6 +146,11 @@ const CountryAutocomplete = ({
     e.stopPropagation();
     onChange('');
     setSearchQuery('');
+    setActiveIndex(-1);
+    // Este botón solo existe mientras hay país elegido, así que limpiar lo
+    // desmonta con el foco dentro y este se cae al <body>: el mismo agujero
+    // que close() ya tapa por el otro camino
+    triggerRef.current?.focus();
   };
 
   // Escape cierra sin elegir, que es lo que espera cualquiera que abra esto por
@@ -224,6 +229,12 @@ const CountryAutocomplete = ({
           disabled={disabled}
           aria-expanded={isOpen}
           aria-haspopup="listbox"
+          aria-controls={isOpen ? listboxId : undefined}
+          // El borde rojo y el asterisco de la etiqueta son señales que solo
+          // existen para quien ve la pantalla. El <select> reportaba los dos
+          // estados, y aquí había que reponerlos a mano
+          aria-invalid={error || undefined}
+          aria-required={required || undefined}
           data-testid="country-autocomplete-trigger"
           className={`w-full py-2 pl-3 pr-16 rounded-lg border text-left flex items-center gap-2 transition-all ${
             error
