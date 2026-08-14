@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useMemo, useId } from 'react';
 import { ChevronDown, Search, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { CountryFlag } from '../../utils/countryUtils';
-import { formatCountryName } from '../../services/countries';
+import { formatCountryName, sortCountriesByName } from '../../services/countries';
 
 /**
  * CountryAutocomplete Component
@@ -64,19 +64,34 @@ const CountryAutocomplete = ({
 
   const selectedCountry = countries.find(c => c.code === value);
 
+  // Ordenar aquí, y no en el servidor, es lo que hace que el cambio de idioma
+  // reordene la lista sin volver a pedirla
+  const sortedCountries = useMemo(
+    () => sortCountriesByName(countries, i18n.language),
+    [countries, i18n.language]
+  );
+
+  // Cambiar de idioma con la lista abierta la reordena bajo el resaltado: el
+  // índice seguiría siendo válido, pero apuntando a otro país. Se suelta, que
+  // es lo único que no elige por nadie.
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- reaccionar al reorden es justamente el objetivo
+    setActiveIndex(-1);
+  }, [sortedCountries]);
+
   // Se busca contra los dos idiomas y el código a la vez, no contra lo que se
   // esté mostrando: quien tiene la aplicación en español puede teclear "Spain",
   // y "ES" también encuentra España.
   const matchingCountries = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
-    if (!query) return countries;
+    if (!query) return sortedCountries;
 
-    return countries.filter(country =>
+    return sortedCountries.filter(country =>
       (country.name_en || '').toLowerCase().includes(query) ||
       (country.name_es || '').toLowerCase().includes(query) ||
       (country.code || '').toLowerCase().includes(query)
     );
-  }, [searchQuery, countries]);
+  }, [searchQuery, sortedCountries]);
 
   const visibleCountries = matchingCountries.slice(0, MAX_VISIBLE_OPTIONS);
   const hiddenCount = matchingCountries.length - visibleCountries.length;
