@@ -1,16 +1,33 @@
 import { useEffect, useRef, useCallback } from 'react';
-import { refreshAccessToken } from '../utils/tokenRefreshInterceptor';
+import { refreshAccessToken, getLastRefreshAt } from '../utils/tokenRefreshInterceptor';
 
 /**
- * Vida del access token que emite el backend: 15 minutos
- * (RyderCupAm `src/config/settings.py` -> ACCESS_TOKEN_EXPIRE_MINUTES=15,
- * cookie con `max_age=900`). Este valor debe seguir al del backend: si se
- * queda corto, la app refresca mucho mas de lo necesario.
+ * Vida util de la cookie del access token: 15 minutos.
+ *
+ * La fuente de verdad es `COOKIE_MAX_AGE = 900` en RyderCupAm
+ * (`src/shared/infrastructure/security/cookie_handler.py`), NO la variable
+ * `ACCESS_TOKEN_EXPIRE_MINUTES`: esa vale 15 por defecto pero los despliegues
+ * la ponen a 60, y aun asi el navegador tira la cookie a los 15 minutos. Si se
+ * sube este valor siguiendo la variable de entorno, el refresco proactivo deja
+ * de dispararse a tiempo.
  */
 export const ACCESS_TOKEN_TTL_MS = 15 * 60 * 1000;
 
 /** Margen con el que se refresca antes de que expire el token. */
 export const REFRESH_BEFORE_MS = 1 * 60 * 1000;
+
+/**
+ * Momento del que parte el hook al montarse.
+ *
+ * Si ya ha habido un refresco en esta carga, se usa ese instante. Si no, la
+ * edad del token es desconocida (la cookie es httpOnly), asi que se supone lo
+ * peor -que esta a punto de expirar- en vez de darlo por recien emitido. Se
+ * deja `refreshBefore` de margen para no lanzar la peticion en pleno arranque:
+ * la primera comprobacion cae un minuto despues de cargar. A partir de ahi la
+ * referencia es real, porque el refresco reactivo por 401 tambien se anota.
+ */
+const initialLastRefresh = (tokenTTL, refreshBefore) =>
+  getLastRefreshAt() ?? Date.now() - tokenTTL + refreshBefore * 2;
 
 /**
  * Hook for proactive token refresh based on user activity
@@ -40,8 +57,7 @@ const useProactiveTokenRefresh = ({
   enabled = true
 } = {}) => {
   // Track when the token was last refreshed
-  // eslint-disable-next-line react-hooks/purity -- pre-existing pattern surfaced by eslint-plugin-react-hooks 7.1.1 bump; needs dedicated review (tracked in follow-up)
-  const lastRefreshRef = useRef(Date.now());
+  const lastRefreshRef = useRef(initialLastRefresh(tokenTTL, refreshBefore));
 
   // Track if a refresh is in progress
   const isRefreshingRef = useRef(false);

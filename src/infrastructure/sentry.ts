@@ -51,6 +51,12 @@ const SENTRY_CONFIG = {
 // Obtener release desde package.json
 const RELEASE = `rydercup-web@${import.meta.env.VITE_APP_VERSION || '1.6.0'}`;
 
+// Misma prioridad que el resto del codigo: runtime config primero (FE #392).
+// En un despliegue en contenedor la variable de compilacion ni siquiera existe
+// -el Dockerfile no declara build args-, asi que sin esto el origen de la API
+// no entra en las listas de Sentry y las llamadas se quedan sin traza.
+const API_URL = globalThis.APP_CONFIG?.API_BASE_URL || import.meta.env.VITE_API_BASE_URL || '';
+
 // ============================================
 // VALIDACIÓN DE CONFIGURACIÓN
 // ============================================
@@ -93,10 +99,12 @@ if (!SENTRY_CONFIG.dsn) {
       // Usar maskAllText: true para enmascarar todo el texto si es necesario
 
       // Ignorar errores de red específicos
+      // filter(Boolean): una cadena vacia en estas listas casa con CUALQUIER
+      // URL (Sentry hace `value.includes(pattern)`), no con ninguna
       networkDetailAllowUrls: [
         window.location.origin,
-        import.meta.env.VITE_API_BASE_URL,
-      ],
+        API_URL,
+      ].filter(Boolean),
 
       // Sample rates (ya configurados en init)
     }),
@@ -168,8 +176,8 @@ if (!SENTRY_CONFIG.dsn) {
       'localhost',
       /^\//,
       /^https?:\/\/.*\.onrender\.com/,
-      import.meta.env.VITE_API_BASE_URL,
-    ],
+      API_URL,
+    ].filter(Boolean),
 
     // Normalización de URLs (remover query strings con datos sensibles)
     normalizeDepth: 5,

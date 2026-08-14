@@ -45,6 +45,7 @@ describe('useAuth - resolucion de la URL base de la API', () => {
 
   afterEach(() => {
     delete globalThis.APP_CONFIG;
+    vi.unstubAllEnvs();
   });
 
   it('usa la configuracion inyectada en tiempo de ejecucion cuando existe', async () => {
@@ -60,20 +61,33 @@ describe('useAuth - resolucion de la URL base de la API', () => {
   });
 
   it('cae en la variable de compilacion cuando no hay APP_CONFIG', async () => {
+    vi.stubEnv('VITE_API_BASE_URL', 'https://build.example.test');
+
     const getUserData = await loadGetUserData();
     await getUserData();
 
     const [url] = fetchWithTokenRefresh.mock.calls[0];
-    expect(url).toBe(`${import.meta.env.VITE_API_BASE_URL || ''}/api/v1/auth/current-user`);
+    expect(url).toBe('https://build.example.test/api/v1/auth/current-user');
   });
 
   it('ignora un APP_CONFIG sin API_BASE_URL', async () => {
+    vi.stubEnv('VITE_API_BASE_URL', 'https://build.example.test');
     globalThis.APP_CONFIG = {};
 
     const getUserData = await loadGetUserData();
     await getUserData();
 
     const [url] = fetchWithTokenRefresh.mock.calls[0];
-    expect(url).toBe(`${import.meta.env.VITE_API_BASE_URL || ''}/api/v1/auth/current-user`);
+    expect(url).toBe('https://build.example.test/api/v1/auth/current-user');
+  });
+
+  it('usa URLs relativas cuando no hay ninguna de las dos', async () => {
+    vi.stubEnv('VITE_API_BASE_URL', '');
+
+    const getUserData = await loadGetUserData();
+    await getUserData();
+
+    const [url] = fetchWithTokenRefresh.mock.calls[0];
+    expect(url).toBe('/api/v1/auth/current-user');
   });
 });
