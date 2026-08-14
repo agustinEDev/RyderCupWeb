@@ -10,10 +10,13 @@ import PasswordStrengthMeter from '../components/ui/PasswordStrengthMeter';
 import { registerUseCase, fetchCountriesUseCase } from '../composition';
 import GoogleSignInButton from '../components/ui/GoogleSignInButton';
 import CountryAutocomplete from '../components/ui/CountryAutocomplete';
+import FullScreenLoader from '../components/ui/FullScreenLoader';
+import { useRedirectIfAuthenticated } from '../hooks/useRedirectIfAuthenticated';
 
 const Register = () => {
   const { t } = useTranslation(['auth', 'common']);
   const navigate = useNavigate();
+  const isCheckingSession = useRedirectIfAuthenticated();
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -158,6 +161,11 @@ const Register = () => {
       setIsLoading(false);
     }
   };
+
+  // Ver Login.jsx: con sesión por confirmar no se pinta el formulario (FE #305)
+  if (isCheckingSession) {
+    return <FullScreenLoader />;
+  }
 
   return (
     <div className="relative flex min-h-screen w-full bg-white">

@@ -8,7 +8,9 @@ import { safeLog } from '../utils/auth';
 import PasswordInput from '../components/ui/PasswordInput';
 import { loginUseCase } from '../composition';
 import { useAuthContext } from '../hooks/useAuthContext'; // v1.13.0: CSRF Protection
+import { useRedirectIfAuthenticated } from '../hooks/useRedirectIfAuthenticated';
 import GoogleSignInButton from '../components/ui/GoogleSignInButton';
+import FullScreenLoader from '../components/ui/FullScreenLoader';
 
 const Login = () => {
   const { t } = useTranslation(['auth', 'common']);
@@ -16,6 +18,7 @@ const Login = () => {
   const location = useLocation();
   const successMessage = location.state?.message;
   const { setUser, updateCsrfToken } = useAuthContext(); // v1.13.0: CSRF Protection
+  const isCheckingSession = useRedirectIfAuthenticated();
 
   const [formData, setFormData] = useState({
     email: '',
@@ -123,6 +126,12 @@ const Login = () => {
       setIsLoading(false);
     }
   };
+
+  // Con sesión guardada por confirmar, el formulario no se pinta: quien llega
+  // aquí desde el icono de la PWA se va al dashboard sin verlo (FE #305)
+  if (isCheckingSession) {
+    return <FullScreenLoader />;
+  }
 
   return (
     <div className="relative flex min-h-screen w-full bg-white">
