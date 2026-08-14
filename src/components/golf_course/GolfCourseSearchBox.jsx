@@ -210,6 +210,11 @@ const GolfCourseSearchBox = ({
     // porque pulsar aquí es querer cambiarlo.
     setSearchQuery('');
     if (selectedCourse) onCourseSelect(null);
+    // La posicion anterior se suelta ANTES de pedir la nueva. Si se conserva,
+    // la peticion sale con las coordenadas viejas mientras llega la lectura, y
+    // si esa lectura falla `isNearbyActive` sigue siendo cierto: se verian
+    // distancias de donde el usuario ya no esta, sin mensaje ni reintento.
+    setPosition(null);
     setGeoStatus('requesting');
     setShowDropdown(true);
 

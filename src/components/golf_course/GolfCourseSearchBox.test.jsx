@@ -390,6 +390,41 @@ describe('GolfCourseSearchBox', () => {
       expect(await screen.findByText(/device settings/)).toBeInTheDocument();
     });
 
+    it('no reutiliza la posición anterior cuando la nueva lectura falla', async () => {
+      // Quien busca por cercanía, luego teclea un nombre y vuelve a pulsar
+      // cercanía desde otra ciudad: si la segunda lectura falla y se conserva
+      // la primera, el buscador seguiría ordenando por donde estuvo ayer, sin
+      // mensaje que lo explique ni botón para reintentar
+      let readingFails = false;
+      stubGeolocation((success, failure) =>
+        readingFails ? failure({ code: 3 }) : success(MADRID)
+      );
+      renderBox({ allowNearby: true });
+      await openDropdown();
+
+      fireEvent.click(await screen.findByTestId('golf-course-nearby-button'));
+      await waitFor(() => {
+        const filters = mockList.mock.calls[mockList.mock.calls.length - 1][0];
+        expect(filters.lat).toBe(40.417);
+      });
+
+      fireEvent.change(screen.getByRole('textbox'), { target: { value: 'Prat' } });
+      await waitFor(() => {
+        expect(mockList.mock.calls[mockList.mock.calls.length - 1][0].name).toBe('Prat');
+      });
+
+      readingFails = true;
+      fireEvent.click(await screen.findByTestId('golf-course-nearby-button'));
+
+      expect(await screen.findByText(/took too long/)).toBeInTheDocument();
+      expect(screen.getByTestId('golf-course-nearby-button')).toBeInTheDocument();
+      await waitFor(() => {
+        const filters = mockList.mock.calls[mockList.mock.calls.length - 1][0];
+        expect(filters.lat).toBeUndefined();
+        expect(filters.lon).toBeUndefined();
+      });
+    });
+
     it('sigue sirviendo por nombre en un dispositivo sin ubicación', async () => {
       // Sin HTTPS, o en un navegador viejo, el objeto no existe siquiera
       Object.defineProperty(navigator, 'geolocation', {
