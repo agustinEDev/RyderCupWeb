@@ -1,19 +1,28 @@
 // src/components/ui/CountryAutocomplete.test.jsx
 
 import { useState } from 'react';
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import CountryAutocomplete from './CountryAutocomplete';
 
-// Se imita a i18next: con defaultValue se usa ese texto. El idioma es español,
-// que es justo el caso donde el componente antiguo enseñaba los nombres en
-// inglés
+// El idioma vive en un objeto mutable en vez de fijo: el orden de la lista
+// depende de él, así que hay que poder cambiarlo dentro de un test. vi.hoisted
+// es lo que permite que la fábrica del mock, que se iza, lo alcance.
+const i18nState = vi.hoisted(() => ({ language: 'es' }));
+
+// Se imita a i18next: con defaultValue se usa ese texto. El idioma por defecto
+// es español, que es justo el caso donde el componente antiguo enseñaba los
+// nombres en inglés
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (key, fallback) => (typeof fallback === 'string' ? fallback : key),
-    i18n: { language: 'es' },
+    i18n: { language: i18nState.language },
   }),
 }));
+
+afterEach(() => {
+  i18nState.language = 'es';
+});
 
 const COUNTRIES = [
   { code: 'ES', name_en: 'Spain', name_es: 'España' },
@@ -39,6 +48,10 @@ const type = (text) =>
 /** Nombres de país visibles en la lista desplegada. */
 const visibleOptions = () =>
   screen.getAllByRole('option').map(option => option.textContent);
+
+/** Igual, pero sin el código de país que cada opción lleva al final. */
+const visibleNames = () =>
+  screen.getAllByRole('option').map(option => option.querySelector('.truncate')?.textContent);
 
 // El control es controlado: quien lo usa decide el país elegido
 const Controlled = ({ onChange }) => {
@@ -104,6 +117,75 @@ describe('CountryAutocomplete', () => {
     expect(names).toContain('España');
     expect(names).toContain('Alemania');
     expect(names).not.toContain('Germany');
+  });
+
+  // El listado llega del backend ordenado por el nombre en inglés, y se pinta el
+  // del idioma activo. Estos cuatro son el ejemplo exacto de la issue: en inglés
+  // van seguidos, en español quedan entreverados.
+  const ORDENADOS_EN_INGLES = [
+    { code: 'ZA', name_en: 'South Africa', name_es: 'Sudáfrica' },
+    { code: 'KR', name_en: 'South Korea', name_es: 'Corea del Sur' },
+    { code: 'SS', name_en: 'South Sudan', name_es: 'Sudán del Sur' },
+    { code: 'ES', name_en: 'Spain', name_es: 'España' },
+  ];
+
+  it('ordena la lista por el nombre que se ve, no por el inglés', () => {
+    render(<CountryAutocomplete countries={ORDENADOS_EN_INGLES} value="" onChange={vi.fn()} />);
+    open();
+
+    // Sin ordenar saldrían tal cual llegan: Sudáfrica, Corea del Sur, Sudán del
+    // Sur, España. Quien recorre la lista con el dedo no puede usar el alfabeto
+    expect(visibleNames()).toEqual([
+      'Corea del Sur',
+      'España',
+      'Sudáfrica',
+      'Sudán del Sur',
+    ]);
+  });
+
+  it('reordena la lista al cambiar de idioma', () => {
+    // Se cambia el idioma con el componente ya montado: montarlo directamente
+    // en inglés solo probaría que arranca ordenado, y seguiría pasando aunque
+    // el orden se calculase una vez y se quedase fijo. Cada pasada crea además
+    // un elemento nuevo, porque repetir el mismo objeto hace que React se salte
+    // la reconciliación y entonces el test tampoco probaría nada.
+    const lista = () => (
+      <CountryAutocomplete countries={ORDENADOS_EN_INGLES} value="" onChange={vi.fn()} />
+    );
+    const { rerender } = render(lista());
+    open();
+    expect(visibleNames()).toEqual([
+      'Corea del Sur',
+      'España',
+      'Sudáfrica',
+      'Sudán del Sur',
+    ]);
+
+    i18nState.language = 'en';
+    rerender(lista());
+
+    // Ordenar en el componente y no en el servidor es lo que hace que el cambio
+    // de idioma se note sin volver a pedir la lista
+    expect(visibleNames()).toEqual([
+      'South Africa',
+      'South Korea',
+      'South Sudan',
+      'Spain',
+    ]);
+  });
+
+  it('coloca los acentos donde los busca un hispanohablante', () => {
+    // Comparando por código de carácter, "á" (U+00E1) va detrás de cualquier
+    // letra ASCII y Suecia adelantaría a Sudán. localeCompare con el idioma
+    // activo es lo que trata la tilde como la vocal que es
+    const conTilde = [
+      { code: 'SE', name_en: 'Sweden', name_es: 'Suecia' },
+      { code: 'SS', name_en: 'South Sudan', name_es: 'Sudán del Sur' },
+    ];
+    render(<CountryAutocomplete countries={conTilde} value="" onChange={vi.fn()} />);
+    open();
+
+    expect(visibleNames()).toEqual(['Sudán del Sur', 'Suecia']);
   });
 
   it('avisa cuando la búsqueda no encuentra nada', () => {
@@ -260,11 +342,37 @@ describe('CountryAutocomplete', () => {
     open();
 
     const search = screen.getByTestId('country-autocomplete-search');
+    // La lista va ordenada por el nombre en español: Alemania, España,
+    // Francia, Portugal
+    fireEvent.keyDown(search, { key: 'ArrowDown' }); // Alemania
     fireEvent.keyDown(search, { key: 'ArrowDown' }); // España
-    fireEvent.keyDown(search, { key: 'ArrowDown' }); // Portugal
     fireEvent.keyDown(search, { key: 'Enter' });
 
-    expect(onChange).toHaveBeenCalledWith('PT');
+    expect(onChange).toHaveBeenCalledWith('ES');
+  });
+
+  it('suelta el resaltado cuando la lista se reordena bajo él', () => {
+    // Cambiar de idioma con la lista abierta la reordena: el índice resaltado
+    // seguiría siendo válido, pero apuntando a otro país. Enter elegiría uno
+    // que nadie señaló
+    const onChange = vi.fn();
+    const lista = () => (
+      <CountryAutocomplete countries={ORDENADOS_EN_INGLES} value="" onChange={onChange} />
+    );
+    const { rerender } = render(lista());
+    open();
+
+    const search = screen.getByTestId('country-autocomplete-search');
+    fireEvent.keyDown(search, { key: 'ArrowDown' }); // Corea del Sur, en español
+
+    i18nState.language = 'en';
+    rerender(lista());
+
+    fireEvent.keyDown(screen.getByTestId('country-autocomplete-search'), { key: 'Enter' });
+
+    // En inglés la primera posición es Sudáfrica: sin soltar el resaltado, ese
+    // Enter habría elegido ZA sin que nadie lo señalara
+    expect(onChange).not.toHaveBeenCalled();
   });
 
   it('vuelve al final de la lista al subir desde el principio', () => {
@@ -276,7 +384,7 @@ describe('CountryAutocomplete', () => {
     fireEvent.keyDown(search, { key: 'ArrowUp' });
     fireEvent.keyDown(search, { key: 'Enter' });
 
-    expect(onChange).toHaveBeenCalledWith('DE'); // el último de COUNTRIES
+    expect(onChange).toHaveBeenCalledWith('PT'); // el último por nombre en español
   });
 
   it('salta al principio y al final con Home y End', () => {
@@ -287,12 +395,12 @@ describe('CountryAutocomplete', () => {
     const search = screen.getByTestId('country-autocomplete-search');
     fireEvent.keyDown(search, { key: 'End' });
     fireEvent.keyDown(search, { key: 'Enter' });
-    expect(onChange).toHaveBeenLastCalledWith('DE');
+    expect(onChange).toHaveBeenLastCalledWith('PT'); // Portugal cierra la lista
 
     open();
     fireEvent.keyDown(screen.getByTestId('country-autocomplete-search'), { key: 'Home' });
     fireEvent.keyDown(screen.getByTestId('country-autocomplete-search'), { key: 'Enter' });
-    expect(onChange).toHaveBeenLastCalledWith('ES');
+    expect(onChange).toHaveBeenLastCalledWith('DE'); // Alemania la abre
   });
 
   it('anuncia con aria-activedescendant la opción resaltada', () => {
