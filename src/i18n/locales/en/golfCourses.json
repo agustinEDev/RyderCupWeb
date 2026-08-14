@@ -100,8 +100,9 @@
     "nearbyCourses": "Courses near me",
     "locating": "Getting your location...",
     "sortedByDistance": "Nearest first. Courses without a location only show up by name.",
-    "locationDenied": "Could not get your location. Search by name instead.",
-    "locationUnavailable": "This device has no location. Search by name instead.",
+    "locationDenied": "Location permission is off. Turn it on in your browser settings - on iPhone, also in the system settings - or search by name.",
+    "locationUnavailable": "Could not get your location. Check that it is on in your device settings, or search by name.",
+    "locationTimeout": "Locating you took too long. Try again or search by name.",
     "distanceAway": "{{distance}} km away"
   },
   "requestModal": {
