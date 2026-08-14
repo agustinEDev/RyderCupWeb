@@ -230,6 +230,53 @@ export const formatCountryName = (country, language = 'en') => {
 };
 
 /**
+ * Reduce a language tag to something Intl accepts as a locale.
+ *
+ * `Intl` es mucho más estricto que formatCountryName, que se limita a mirar el
+ * código base: una etiqueta vacía o con guion bajo ("es_ES") hace que
+ * localeCompare lance RangeError. Y como el idioma sale del detector de
+ * i18next, que lee `i18nextLng` de localStorage sin lista de valores
+ * permitidos, ahí puede llegar cualquier cosa. Ordenar corre dentro de un
+ * useMemo en pleno render, así que un RangeError no degradaría el orden: se
+ * llevaría por delante toda pantalla con selector de país.
+ *
+ * Cuando la etiqueta no tiene pinta de código de idioma se devuelve undefined,
+ * que para Intl significa "usa el del navegador".
+ *
+ * @param {string} language
+ * @returns {string|undefined}
+ */
+const toCollatorLocale = (language) => {
+  const base = typeof language === 'string' ? language.toLowerCase().split(/[-_]/)[0] : '';
+  return /^[a-z]{2,3}$/.test(base) ? base : undefined;
+};
+
+/**
+ * Sort countries by the name actually shown to the user.
+ *
+ * El backend devuelve la lista ordenada por el nombre en inglés, pero se pinta
+ * el del idioma activo: en español eso deja "Corea del Sur" entre "Sudáfrica" y
+ * "Sudán del Sur". Se ordena por lo que se ve, que es la única razón por la que
+ * se ordena una lista de 200. `localeCompare` con el idioma activo es lo que
+ * coloca "España" bajo la E y no tras "Sudán".
+ *
+ * No muta la lista recibida.
+ *
+ * @param {object[]} countries - Countries with name_en / name_es
+ * @param {string} language - Active language ('es', 'en-US'...)
+ * @returns {object[]} - A new, sorted array
+ */
+export const sortCountriesByName = (countries, language = 'en') => {
+  if (!Array.isArray(countries)) return [];
+
+  const locale = toCollatorLocale(language);
+
+  return [...countries].sort((a, b) =>
+    formatCountryName(a, language).localeCompare(formatCountryName(b, language), locale)
+  );
+};
+
+/**
  * Get country name field based on language
  * @param {string} language - 'en' or 'es'
  * @returns {string} - Field name to use ('name_en' or 'name_es')

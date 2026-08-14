@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { Calendar, Trophy, MapPin, Settings, Plus, X, ChevronDown, Flag, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -14,7 +14,7 @@ import {
   createGolfCourseRequestUseCase
 } from '../composition';
 import { CountryFlag } from '../utils/countryUtils';
-import { formatCountryName } from '../services/countries';
+import { formatCountryName, sortCountriesByName } from '../services/countries';
 import { validateCompetitionForm } from '../utils/competitionFormValidation';
 import CountryAutocomplete from '../components/ui/CountryAutocomplete';
 import GolfCourseSearchBox from '../components/golf_course/GolfCourseSearchBox';
@@ -46,6 +46,18 @@ const CreateCompetition = () => {
   const [allCountries, setAllCountries] = useState([]);
   const [adjacentCountries1, setAdjacentCountries1] = useState([]);
   const [adjacentCountries2, setAdjacentCountries2] = useState([]);
+
+  // Los dos desplegables se pintan en el idioma activo, así que se ordenan por
+  // él. La segunda lista además se construye concatenando dos, de modo que sin
+  // esto no sale ordenada en ningún idioma.
+  const sortedAdjacentCountries1 = useMemo(
+    () => sortCountriesByName(adjacentCountries1, i18n.language),
+    [adjacentCountries1, i18n.language]
+  );
+  const sortedAdjacentCountries2 = useMemo(
+    () => sortCountriesByName(adjacentCountries2, i18n.language),
+    [adjacentCountries2, i18n.language]
+  );
 
   // Form data
   const [formData, setFormData] = useState({
@@ -698,7 +710,7 @@ const CreateCompetition = () => {
                             }`}
                           >
                             <option value="">{t('create.selectAdjacentCountry')}</option>
-                            {adjacentCountries1.map(country => (
+                            {sortedAdjacentCountries1.map(country => (
                               <option key={country.id} value={country.id}>
                                 {formatCountryName(country, i18n.language)}
                               </option>
@@ -752,7 +764,7 @@ const CreateCompetition = () => {
                             }`}
                           >
                             <option value="">{t('create.selectThirdCountry')}</option>
-                            {adjacentCountries2
+                            {sortedAdjacentCountries2
                               .filter(c => c.code !== formData.adjacentCountry1)
                               .map(country => (
                                 <option key={country.id} value={country.id}>
