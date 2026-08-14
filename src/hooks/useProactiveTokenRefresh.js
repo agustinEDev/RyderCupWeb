@@ -69,6 +69,20 @@ const useProactiveTokenRefresh = ({
   const activityDebounceRef = useRef(null);
 
   /**
+   * Ultimo refresco conocido, teniendo en cuenta los que hace el camino
+   * reactivo (un 401 dentro de `fetchWithTokenRefresh`) despues de montar: solo
+   * pueden dejar el token MAS fresco de lo que cree el hook, es decir provocar
+   * un refresco antes de tiempo. Releerlo aqui lo evita.
+   */
+  const syncLastRefresh = useCallback(() => {
+    const recorded = getLastRefreshAt();
+    if (recorded !== null && recorded > lastRefreshRef.current) {
+      lastRefreshRef.current = recorded;
+    }
+    return lastRefreshRef.current;
+  }, []);
+
+  /**
    * Attempt to refresh the token proactively
    */
   const doProactiveRefresh = useCallback(async () => {
@@ -77,7 +91,7 @@ const useProactiveTokenRefresh = ({
     }
 
     const now = Date.now();
-    const timeSinceLastRefresh = now - lastRefreshRef.current;
+    const timeSinceLastRefresh = now - syncLastRefresh();
     const timeUntilExpiry = tokenTTL - timeSinceLastRefresh;
 
     // Only refresh if we're within the refresh window
@@ -99,7 +113,7 @@ const useProactiveTokenRefresh = ({
     } finally {
       isRefreshingRef.current = false;
     }
-  }, [enabled, tokenTTL, refreshBefore]);
+  }, [enabled, tokenTTL, refreshBefore, syncLastRefresh]);
 
   /**
    * Schedule a refresh check based on token TTL
@@ -113,7 +127,7 @@ const useProactiveTokenRefresh = ({
     }
 
     const now = Date.now();
-    const timeSinceLastRefresh = now - lastRefreshRef.current;
+    const timeSinceLastRefresh = now - syncLastRefresh();
     const timeUntilRefreshWindow = (tokenTTL - refreshBefore) - timeSinceLastRefresh;
 
     // If we're already in the refresh window, check now
@@ -127,7 +141,7 @@ const useProactiveTokenRefresh = ({
       doProactiveRefresh();
     }, timeUntilRefreshWindow);
 
-  }, [enabled, tokenTTL, refreshBefore, doProactiveRefresh]);
+  }, [enabled, tokenTTL, refreshBefore, doProactiveRefresh, syncLastRefresh]);
 
   /**
    * Handle user activity - schedule refresh check with debouncing

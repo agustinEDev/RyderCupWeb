@@ -33,9 +33,11 @@ describe('useProactiveTokenRefresh', () => {
     vi.useFakeTimers();
     refreshAccessToken.mockReset();
     refreshAccessToken.mockResolvedValue(undefined);
-    // Por defecto: ya ha habido un refresco en esta carga, ahora mismo
+    // Por defecto: ya ha habido un refresco en esta carga, justo ahora. Es un
+    // instante fijo, no `Date.now()` vivo: el interceptor anota el momento del
+    // refresco, no la hora a la que se le pregunta
     getLastRefreshAt.mockReset();
-    getLastRefreshAt.mockImplementation(() => Date.now());
+    getLastRefreshAt.mockReturnValue(Date.now());
   });
 
   afterEach(() => {
@@ -98,6 +100,30 @@ describe('useProactiveTokenRefresh', () => {
 
       expect(refreshAccessToken).toHaveBeenCalledTimes(1);
     });
+  });
+
+  it('cuenta desde el refresco reactivo posterior al montaje', () => {
+    // El camino reactivo (un 401 dentro de fetchWithTokenRefresh) refresca sin
+    // pasar por el hook. Si el hook no lo lee, sigue contando desde su propia
+    // referencia y pide un refresco antes de tiempo.
+    const mountedAt = Date.now();
+    getLastRefreshAt.mockReturnValue(mountedAt);
+
+    renderHook(() => useProactiveTokenRefresh({ enabled: true }));
+
+    // A los 5 minutos, un 401 refresca el token por su cuenta
+    vi.advanceTimersByTime(5 * MINUTE);
+    getLastRefreshAt.mockReturnValue(Date.now());
+
+    // Se llega al plazo viejo (14 min desde el montaje): ya no toca
+    vi.advanceTimersByTime(ACCESS_TOKEN_TTL_MS - REFRESH_BEFORE_MS - 5 * MINUTE);
+    document.dispatchEvent(new MouseEvent('mousemove'));
+    vi.advanceTimersByTime(1000);
+    expect(refreshAccessToken).not.toHaveBeenCalled();
+
+    // Y si toca en el nuevo, 14 minutos despues de ese refresco reactivo
+    vi.advanceTimersByTime(5 * MINUTE);
+    expect(refreshAccessToken).toHaveBeenCalledTimes(1);
   });
 
   it('no programa nada mientras no haya sesion', () => {
