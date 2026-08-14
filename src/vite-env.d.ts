@@ -17,3 +17,7 @@ interface ImportMetaEnv {
 interface ImportMeta {
   readonly env: ImportMetaEnv
 }
+
+// Configuracion inyectada en tiempo de ejecucion por entrypoint.sh en los
+// despliegues en contenedor. No existe en el sitio estatico de produccion.
+declare var APP_CONFIG: { API_BASE_URL?: string } | undefined

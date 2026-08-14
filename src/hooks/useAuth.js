@@ -10,8 +10,9 @@ import { useState, useEffect, useCallback } from 'react';
 import { isDeviceRevoked, handleDeviceRevocationLogout, clearDeviceRevocationFlag } from '../utils/deviceRevocationLogout';
 import { fetchWithTokenRefresh } from '../utils/tokenRefreshInterceptor';
 
-// Use relative URL if no API_BASE_URL is set (for proxy setup)
-const API_URL = import.meta.env.VITE_API_BASE_URL || '';
+// Prioridad: 1. Runtime config (globalThis.APP_CONFIG, inyectado por entrypoint.sh en
+// despliegues en contenedor) 2. Build-time env 3. Cadena vacia -> URLs relativas (proxy)
+const API_URL = globalThis.APP_CONFIG?.API_BASE_URL || import.meta.env.VITE_API_BASE_URL || '';
 
 /**
  * Hook to get the current authenticated user
