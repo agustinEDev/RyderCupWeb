@@ -2,8 +2,9 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import sri from 'vite-plugin-sri'
 import { VitePWA } from 'vite-plugin-pwa'
-import { readdirSync, existsSync, rmSync } from 'node:fs'
+import { readdirSync, existsSync, rmSync, readFileSync } from 'node:fs'
 import { join, resolve, relative } from 'node:path'
+import { execSync } from 'node:child_process'
 
 /**
  * Los ficheros CLAUDE.md son contexto para el asistente, no assets. Las
@@ -12,6 +13,100 @@ import { join, resolve, relative } from 'node:path'
  * que acabaría servido en producción. Este plugin los retira del directorio de
  * salida después del build; los del árbol de fuentes no se tocan.
  */
+/**
+ * Sella cada build con lo que se está publicando de verdad: una marca `app-build`
+ * en el HTML y un `version.json` junto a él.
+ *
+ * Hace dos cosas, y la segunda es la que importa:
+ *
+ * 1. Dice qué versión sirve producción. Antes había un `public/version.json`
+ *    escrito a mano que llevaba desde diciembre de 2025 anunciando "1.8.0-debug":
+ *    nadie lo leía y engañaba a quien fuera a comprobar un despliegue. Ese JSON
+ *    se queda deliberadamente FUERA del precache —ver `globPatterns` más abajo—,
+ *    porque precacheado respondería la versión de la publicación anterior.
+ *
+ * 2. **Hace que cada despliegue mueva el service worker.** El `sw.js` de Workbox
+ *    solo cambia si cambia su manifiesto de precache, que es la lista de ficheros
+ *    con el hash de su contenido. Un despliegue que no toque el build —arreglar
+ *    una cabecera en el panel de Render, sin ir más lejos— deja un `sw.js`
+ *    idéntico, así que el `update()` de `serviceWorkerRegistration.js` no
+ *    encuentra nada, no hay `controllerchange` y nadie recarga: la aplicación
+ *    instalada se queda con lo viejo indefinidamente. La marca va en el
+ *    `index.html`, que sí está precacheado: cada publicación cambia su hash y la
+ *    cadena entera arranca sola. El porqué de sellar el HTML y no un fichero
+ *    aparte está en `transformIndexHtml`, más abajo.
+ *
+ * Por eso lleva `builtAt` además del commit: garantiza que dos publicaciones del
+ * mismo commit —que es justo el caso de "he redesplegado y no ha llegado"—
+ * también se propaguen.
+ */
+function emitVersionFile() {
+  let info
+
+  /** Se calcula una vez por build: el HTML y el JSON tienen que decir lo mismo. */
+  const buildInfo = () => {
+    if (info) return info
+
+    // Render expone el commit en el entorno de build; fuera de ahí se pregunta
+    // a git. `cwd` fijo al proyecto porque el build puede lanzarse desde otro
+    // sitio (`npm --prefix`), y ahí git respondería por otro repositorio; su
+    // stderr se descarta para que un "not a git repository" no parezca un fallo
+    // del build cuando simplemente no hay repositorio
+    let commit = process.env.RENDER_GIT_COMMIT || process.env.GITHUB_SHA || ''
+    if (!commit) {
+      try {
+        commit = execSync('git rev-parse HEAD', {
+          encoding: 'utf8',
+          cwd: __dirname,
+          stdio: ['ignore', 'pipe', 'ignore'],
+        }).trim()
+      } catch {
+        commit = 'unknown'
+      }
+    }
+
+    const { version } = JSON.parse(readFileSync(resolve(__dirname, 'package.json'), 'utf8'))
+    info = { version, commit: commit.slice(0, 7), builtAt: new Date().toISOString() }
+    return info
+  }
+
+  return {
+    name: 'emit-version-file',
+    apply: 'build',
+
+    /**
+     * La marca va **dentro del HTML**, y ahí está el fondo del asunto.
+     *
+     * Workbox no vuelve a pedir una entrada del precache cuya revisión no ha
+     * cambiado, y la revisión es el hash del contenido. Marcar un fichero
+     * aparte movía el `sw.js` y disparaba la recarga, pero esa recarga la
+     * contestaba `navigateFallback` con el `index.html` guardado, que es el
+     * viejo — y las cabeceras viajan con la respuesta guardada, de modo que la
+     * política antigua seguía aplicándose. Cambiando el propio HTML, su hash se
+     * mueve, Workbox lo vuelve a descargar y la recarga entrega el documento
+     * nuevo con sus cabeceras nuevas.
+     */
+    transformIndexHtml() {
+      const { version, commit, builtAt } = buildInfo()
+      return [
+        {
+          tag: 'meta',
+          attrs: { name: 'app-build', content: `${version} ${commit} ${builtAt}` },
+          injectTo: 'head',
+        },
+      ]
+    },
+
+    generateBundle() {
+      this.emitFile({
+        type: 'asset',
+        fileName: 'version.json',
+        source: `${JSON.stringify(buildInfo(), null, 2)}\n`,
+      })
+    },
+  }
+}
+
 function stripAssistantDocs() {
   let outDir
 
@@ -71,6 +166,9 @@ export default defineConfig(() => ({
     // Antes de VitePWA: su service worker se genera en el mismo hook y no debe
     // llegar a ver estos ficheros
     stripAssistantDocs(),
+    // También antes de VitePWA: el fichero tiene que existir cuando Workbox
+    // construye el manifiesto, que es de lo que se trata
+    emitVersionFile(),
     VitePWA({
       registerType: 'autoUpdate',
       // El registro que inyecta el plugin solo llama a `register()`: no se
@@ -99,6 +197,10 @@ export default defineConfig(() => ({
       },
       workbox: {
         // Cache static assets (JS, CSS, fonts, images)
+        // `version.json` se queda deliberadamente FUERA: precacheado se
+        // respondería desde la caché y diría la versión de la publicación
+        // anterior, que es justo la mentira que venía a quitar. Y no hace falta
+        // para mover el service worker, de eso se encarga la marca del HTML
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
         // Explicit cap so oversized assets fail the SW build loudly instead of silently
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5 MB

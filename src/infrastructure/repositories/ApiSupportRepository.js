@@ -1,7 +1,7 @@
 import ISupportRepository from '../../domain/repositories/ISupportRepository.js';
 
 // Use plain fetch (not apiRequest) since this is an unauthenticated public endpoint
-const API_URL = window.APP_CONFIG?.API_BASE_URL || import.meta.env.VITE_API_BASE_URL || '';
+const API_URL = globalThis.APP_CONFIG?.API_BASE_URL || import.meta.env.VITE_API_BASE_URL || '';
 
 /**
  * API implementation of Support Repository

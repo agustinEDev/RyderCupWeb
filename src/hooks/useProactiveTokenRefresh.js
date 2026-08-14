@@ -1,11 +1,39 @@
 import { useEffect, useRef, useCallback } from 'react';
-import { refreshAccessToken } from '../utils/tokenRefreshInterceptor';
+import { refreshAccessToken, getLastRefreshAt } from '../utils/tokenRefreshInterceptor';
+
+/**
+ * Vida util de la cookie del access token: 15 minutos.
+ *
+ * La fuente de verdad es `COOKIE_MAX_AGE = 900` en RyderCupAm
+ * (`src/shared/infrastructure/security/cookie_handler.py`), NO la variable
+ * `ACCESS_TOKEN_EXPIRE_MINUTES`: esa vale 15 por defecto pero los despliegues
+ * la ponen a 60, y aun asi el navegador tira la cookie a los 15 minutos. Si se
+ * sube este valor siguiendo la variable de entorno, el refresco proactivo deja
+ * de dispararse a tiempo.
+ */
+export const ACCESS_TOKEN_TTL_MS = 15 * 60 * 1000;
+
+/** Margen con el que se refresca antes de que expire el token. */
+export const REFRESH_BEFORE_MS = 1 * 60 * 1000;
+
+/**
+ * Momento del que parte el hook al montarse.
+ *
+ * Si ya ha habido un refresco en esta carga, se usa ese instante. Si no, la
+ * edad del token es desconocida (la cookie es httpOnly), asi que se supone lo
+ * peor -que esta a punto de expirar- en vez de darlo por recien emitido. Se
+ * deja `refreshBefore` de margen para no lanzar la peticion en pleno arranque:
+ * la primera comprobacion cae un minuto despues de cargar. A partir de ahi la
+ * referencia es real, porque el refresco reactivo por 401 tambien se anota.
+ */
+const initialLastRefresh = (tokenTTL, refreshBefore) =>
+  getLastRefreshAt() ?? Date.now() - tokenTTL + refreshBefore * 2;
 
 /**
  * Hook for proactive token refresh based on user activity
  *
  * Problem solved:
- * - Access token expires every 5 minutes (OWASP security)
+ * - Access token expires every 15 minutes (see ACCESS_TOKEN_TTL_MS)
  * - Token only refreshes on 401 response (reactive)
  * - If user is active (filling forms) but not making API calls, token expires silently
  * - When user finally makes a request, token is expired → potential logout
@@ -16,25 +44,20 @@ import { refreshAccessToken } from '../utils/tokenRefreshInterceptor';
  * - User never sees "session expired" while actively using the app
  *
  * @param {Object} options - Configuration options
- * @param {number} options.tokenTTL - Token time-to-live in ms (default: 5 minutes)
- * @param {number} options.refreshBefore - Time before expiry to trigger refresh in ms (default: 1 minute)
+ * @param {number} options.tokenTTL - Token time-to-live in ms (default: ACCESS_TOKEN_TTL_MS)
+ * @param {number} options.refreshBefore - Time before expiry to trigger refresh in ms (default: REFRESH_BEFORE_MS)
  * @param {boolean} options.enabled - Whether the hook is active (default: true)
  *
  * @example
- * useProactiveTokenRefresh({
- *   tokenTTL: 5 * 60 * 1000,      // 5 minutes
- *   refreshBefore: 1 * 60 * 1000, // Refresh 1 minute before expiry
- *   enabled: isAuthenticated
- * });
+ * useProactiveTokenRefresh({ enabled: isAuthenticated });
  */
 const useProactiveTokenRefresh = ({
-  tokenTTL = 5 * 60 * 1000,        // 5 minutes (OWASP compliant)
-  refreshBefore = 1 * 60 * 1000,   // Refresh 1 minute before expiry
+  tokenTTL = ACCESS_TOKEN_TTL_MS,
+  refreshBefore = REFRESH_BEFORE_MS,
   enabled = true
 } = {}) => {
   // Track when the token was last refreshed
-  // eslint-disable-next-line react-hooks/purity -- pre-existing pattern surfaced by eslint-plugin-react-hooks 7.1.1 bump; needs dedicated review (tracked in follow-up)
-  const lastRefreshRef = useRef(Date.now());
+  const lastRefreshRef = useRef(initialLastRefresh(tokenTTL, refreshBefore));
 
   // Track if a refresh is in progress
   const isRefreshingRef = useRef(false);
@@ -46,6 +69,20 @@ const useProactiveTokenRefresh = ({
   const activityDebounceRef = useRef(null);
 
   /**
+   * Ultimo refresco conocido, teniendo en cuenta los que hace el camino
+   * reactivo (un 401 dentro de `fetchWithTokenRefresh`) despues de montar: solo
+   * pueden dejar el token MAS fresco de lo que cree el hook, es decir provocar
+   * un refresco antes de tiempo. Releerlo aqui lo evita.
+   */
+  const syncLastRefresh = useCallback(() => {
+    const recorded = getLastRefreshAt();
+    if (recorded !== null && recorded > lastRefreshRef.current) {
+      lastRefreshRef.current = recorded;
+    }
+    return lastRefreshRef.current;
+  }, []);
+
+  /**
    * Attempt to refresh the token proactively
    */
   const doProactiveRefresh = useCallback(async () => {
@@ -54,7 +91,7 @@ const useProactiveTokenRefresh = ({
     }
 
     const now = Date.now();
-    const timeSinceLastRefresh = now - lastRefreshRef.current;
+    const timeSinceLastRefresh = now - syncLastRefresh();
     const timeUntilExpiry = tokenTTL - timeSinceLastRefresh;
 
     // Only refresh if we're within the refresh window
@@ -76,7 +113,7 @@ const useProactiveTokenRefresh = ({
     } finally {
       isRefreshingRef.current = false;
     }
-  }, [enabled, tokenTTL, refreshBefore]);
+  }, [enabled, tokenTTL, refreshBefore, syncLastRefresh]);
 
   /**
    * Schedule a refresh check based on token TTL
@@ -90,7 +127,7 @@ const useProactiveTokenRefresh = ({
     }
 
     const now = Date.now();
-    const timeSinceLastRefresh = now - lastRefreshRef.current;
+    const timeSinceLastRefresh = now - syncLastRefresh();
     const timeUntilRefreshWindow = (tokenTTL - refreshBefore) - timeSinceLastRefresh;
 
     // If we're already in the refresh window, check now
@@ -104,7 +141,7 @@ const useProactiveTokenRefresh = ({
       doProactiveRefresh();
     }, timeUntilRefreshWindow);
 
-  }, [enabled, tokenTTL, refreshBefore, doProactiveRefresh]);
+  }, [enabled, tokenTTL, refreshBefore, doProactiveRefresh, syncLastRefresh]);
 
   /**
    * Handle user activity - schedule refresh check with debouncing

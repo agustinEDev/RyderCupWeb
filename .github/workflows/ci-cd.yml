@@ -680,7 +680,13 @@ jobs:
           # NextMatchBanner, RecentMatches and the /stats page pushed the total to 1705 KB. The page is
           # lazy-loaded, but this check sums every dist/assets/*.js file, so splitting moves bytes
           # between chunks without lowering the total
-          MAX_BUNDLE_SIZE_KB=1750
+          # 14 Aug 2026: Raised to 1800 KB. develop stood at 1744 KB and TeeSelectPanel (FE #377) adds
+          # 2.6 KB, which left only 3.2 KB under the previous 1750 KB budget — thin enough that the next
+          # feature of any size would turn the check red mid-review. Against this 1800 KB budget the same
+          # 1746.8 KB leaves 53.2 KB. Sentry is 328 KB of the total (19%) and is the one real lever here;
+          # trimming it is tracked separately. Raised in one step rather than per-feature so the budget
+          # stops being a thing we bump under pressure
+          MAX_BUNDLE_SIZE_KB=1800
           WARNING_THRESHOLD_KB=1500
 
           # List all bundles with sizes

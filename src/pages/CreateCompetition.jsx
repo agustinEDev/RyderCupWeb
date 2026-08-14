@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { Calendar, Trophy, MapPin, Settings, Plus, X, ChevronDown, Flag, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -14,8 +14,9 @@ import {
   createGolfCourseRequestUseCase
 } from '../composition';
 import { CountryFlag } from '../utils/countryUtils';
-import { formatCountryName } from '../services/countries';
+import { formatCountryName, sortCountriesByName } from '../services/countries';
 import { validateCompetitionForm } from '../utils/competitionFormValidation';
+import CountryAutocomplete from '../components/ui/CountryAutocomplete';
 import GolfCourseSearchBox from '../components/golf_course/GolfCourseSearchBox';
 import GolfCourseRequestModal from '../components/golf_course/GolfCourseRequestModal';
 import customToast from '../utils/toast';
@@ -45,6 +46,18 @@ const CreateCompetition = () => {
   const [allCountries, setAllCountries] = useState([]);
   const [adjacentCountries1, setAdjacentCountries1] = useState([]);
   const [adjacentCountries2, setAdjacentCountries2] = useState([]);
+
+  // Los dos desplegables se pintan en el idioma activo, así que se ordenan por
+  // él. La segunda lista además se construye concatenando dos, de modo que sin
+  // esto no sale ordenada en ningún idioma.
+  const sortedAdjacentCountries1 = useMemo(
+    () => sortCountriesByName(adjacentCountries1, i18n.language),
+    [adjacentCountries1, i18n.language]
+  );
+  const sortedAdjacentCountries2 = useMemo(
+    () => sortCountriesByName(adjacentCountries2, i18n.language),
+    [adjacentCountries2, i18n.language]
+  );
 
   // Form data
   const [formData, setFormData] = useState({
@@ -642,51 +655,31 @@ const CreateCompetition = () => {
                 </div>
 
                 <div className="space-y-4">
-                  {/* Country Select */}
-                  <div>
-                    <label htmlFor="country" className="block text-sm font-medium text-gray-700 mb-1">
-                      {t('create.country')}
-                    </label>
-                    <div className="relative">
-                      <select
-                        id="country"
-                        name="country"
-                        value={formData.country?.code || ''}
-                        onChange={(e) => {
-                          const selectedCountry = allCountries.find(c => c.code === e.target.value);
-                          if (selectedCountry) {
-                            handleCountrySelect(selectedCountry);
-                          } else {
-                            setFormData(prev => ({
-                              ...prev,
-                              country: null,
-                              adjacentCountry1: '',
-                              adjacentCountry2: '',
-                              showAdjacentCountry1: false,
-                              showAdjacentCountry2: false
-                            }));
-                          }
-                        }}
-                        className={`w-full py-2 px-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary bg-white appearance-none pr-10 ${
-                          formData.country ? 'pl-12' : 'pl-3'
-                        }`}
-                      >
-                        <option value="">{t('create.selectCountry')}</option>
-                        {allCountries.map((country) => (
-                          <option key={country.code} value={country.code}>
-                            {formatCountryName(country, i18n.language)}
-                          </option>
-                        ))}
-                      </select>
-                      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
-                      {/* Show flag if country is selected */}
-                      {formData.country && (
-                        <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                          <CountryFlag countryCode={formData.country.code} style={{ width: '24px', height: 'auto' }} />
-                        </div>
-                      )}
-                    </div>
-                  </div>
+                  {/* El país principal se elige entre los 200: es el único de
+                      los tres selectores que necesita búsqueda, porque los
+                      adyacentes ya listan solo países fronterizos */}
+                  <CountryAutocomplete
+                    id="country"
+                    countries={allCountries}
+                    value={formData.country?.code || ''}
+                    label={t('create.country')}
+                    placeholder={t('create.selectCountry')}
+                    onChange={(code) => {
+                      const selectedCountry = allCountries.find(c => c.code === code);
+                      if (selectedCountry) {
+                        handleCountrySelect(selectedCountry);
+                      } else {
+                        setFormData(prev => ({
+                          ...prev,
+                          country: null,
+                          adjacentCountry1: '',
+                          adjacentCountry2: '',
+                          showAdjacentCountry1: false,
+                          showAdjacentCountry2: false
+                        }));
+                      }
+                    }}
+                  />
 
                   {/* Adjacent Country 1 */}
                   {formData.country && !formData.showAdjacentCountry1 && adjacentCountries1.length > 0 && (
@@ -717,7 +710,7 @@ const CreateCompetition = () => {
                             }`}
                           >
                             <option value="">{t('create.selectAdjacentCountry')}</option>
-                            {adjacentCountries1.map(country => (
+                            {sortedAdjacentCountries1.map(country => (
                               <option key={country.id} value={country.id}>
                                 {formatCountryName(country, i18n.language)}
                               </option>
@@ -771,7 +764,7 @@ const CreateCompetition = () => {
                             }`}
                           >
                             <option value="">{t('create.selectThirdCountry')}</option>
-                            {adjacentCountries2
+                            {sortedAdjacentCountries2
                               .filter(c => c.code !== formData.adjacentCountry1)
                               .map(country => (
                                 <option key={country.id} value={country.id}>

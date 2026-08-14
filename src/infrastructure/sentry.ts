@@ -30,6 +30,7 @@
 import { init, replayIntegration, reactRouterV7BrowserTracingIntegration, feedbackIntegration, getClient } from '@sentry/react';
 import { useEffect } from 'react';
 import { useLocation, useNavigationType, createRoutesFromChildren, matchRoutes } from 'react-router';
+import { scrubUrl } from '../utils/sentryHelpers';
 
 // ============================================
 // CONFIGURACIÓN DE VARIABLES DE ENTORNO
@@ -50,6 +51,12 @@ const SENTRY_CONFIG = {
 
 // Obtener release desde package.json
 const RELEASE = `rydercup-web@${import.meta.env.VITE_APP_VERSION || '1.6.0'}`;
+
+// Misma prioridad que el resto del codigo: runtime config primero (FE #392).
+// En un despliegue en contenedor la variable de compilacion ni siquiera existe
+// -el Dockerfile no declara build args-, asi que sin esto el origen de la API
+// no entra en las listas de Sentry y las llamadas se quedan sin traza.
+const API_URL = globalThis.APP_CONFIG?.API_BASE_URL || import.meta.env.VITE_API_BASE_URL || '';
 
 // ============================================
 // VALIDACIÓN DE CONFIGURACIÓN
@@ -92,11 +99,14 @@ if (!SENTRY_CONFIG.dsn) {
       // Nota: maskTextSelector y blockSelector removidos en Sentry 10
       // Usar maskAllText: true para enmascarar todo el texto si es necesario
 
-      // Ignorar errores de red específicos
-      networkDetailAllowUrls: [
-        window.location.origin,
-        import.meta.env.VITE_API_BASE_URL,
-      ],
+      // Vacia a proposito (FE #385). Lo que esta lista abre no es la URL -esa
+      // Replay la graba siempre, junto al metodo, el estado y la duracion-,
+      // sino las CABECERAS Y LOS CUERPOS de lo que case. Con el origen propio
+      // dentro, en cualquier despliegue que sirva la API por el mismo host
+      // (proxy /api del Vite local, nginx del contenedor) eso son los perfiles,
+      // los correos y las listas de amigos enteros dentro de la grabacion.
+      // Para depurar ya estan los eventos de error con su breadcrumb.
+      networkDetailAllowUrls: [],
 
       // Sample rates (ya configurados en init)
     }),
@@ -141,6 +151,12 @@ if (!SENTRY_CONFIG.dsn) {
 
     console.log('✅ Heavy Sentry integrations added successfully');
   } else {
+    // OJO: en el navegador este `else` no se ejecuta nunca. `main.jsx` llama a
+    // `Sentry.init()` en cuanto hay DSN -la misma variable que mira este
+    // fichero-, asi que al cargar esto ya hay cliente y se toma la rama de
+    // arriba. Todo lo que se configure aqui abajo es papel mojado: los ganchos
+    // que si filtran (`beforeSend`, `beforeBreadcrumb`, `beforeSendTransaction`)
+    // viven en `main.jsx`. Se conserva por si algun dia se retira aquel init.
     // Sentry not initialized yet - do full initialization
     init({
     dsn: SENTRY_CONFIG.dsn,
@@ -168,8 +184,8 @@ if (!SENTRY_CONFIG.dsn) {
       'localhost',
       /^\//,
       /^https?:\/\/.*\.onrender\.com/,
-      import.meta.env.VITE_API_BASE_URL,
-    ],
+      API_URL,
+    ].filter(Boolean),
 
     // Normalización de URLs (remover query strings con datos sensibles)
     normalizeDepth: 5,
@@ -196,6 +212,11 @@ if (!SENTRY_CONFIG.dsn) {
 
       // 3. Sanitizar datos sensibles
       if (event.request) {
+        // La URL del evento tambien viaja con su query string (FE #385)
+        if (event.request.url) {
+          event.request.url = scrubUrl(event.request.url);
+        }
+
         // Remover headers sensibles
         delete event.request.headers?.Authorization;
         delete event.request.headers?.Cookie;
@@ -226,7 +247,44 @@ if (!SENTRY_CONFIG.dsn) {
         return null;
       }
 
+      // Los spans HTTP llevan la URL completa en su descripción y en sus datos,
+      // asi que la query string entra por aqui igual que por los breadcrumbs
+      if (transaction.request?.url) {
+        transaction.request.url = scrubUrl(transaction.request.url);
+      }
+
+      transaction.spans?.forEach((span) => {
+        if (span.description) {
+          span.description = scrubUrl(span.description);
+        }
+        if (span.data) {
+          for (const key of ['url', 'http.url']) {
+            if (typeof span.data[key] === 'string') {
+              span.data[key] = scrubUrl(span.data[key]);
+            }
+          }
+        }
+      });
+
       return transaction;
+    },
+
+    // Los spans sueltos no pasan por el gancho de arriba. Esta rama hoy no se
+    // ejecuta, pero se conserva por si se retira el init de `main.jsx`: si
+    // llegara ese dia, sin esto volveria el mismo agujero que cierra la FE #385.
+    beforeSendSpan(span) {
+      if (span.description) {
+        span.description = scrubUrl(span.description);
+      }
+      if (span.data) {
+        for (const key of ['url', 'http.url']) {
+          if (typeof span.data[key] === 'string') {
+            span.data[key] = scrubUrl(span.data[key]);
+          }
+        }
+      }
+
+      return span;
     },
 
     // ===== OPCIONES DE TRANSPORTE =====
@@ -244,9 +302,9 @@ if (!SENTRY_CONFIG.dsn) {
         return null;
       }
 
-      // Sanitizar URLs con tokens
+      // Sanitizar URLs con tokens o con la posicion del usuario (FE #385)
       if (breadcrumb.data?.url) {
-        breadcrumb.data.url = breadcrumb.data.url.replace(/token=[^&]+/, 'token=[REDACTED]');
+        breadcrumb.data.url = scrubUrl(breadcrumb.data.url);
       }
 
       return breadcrumb;

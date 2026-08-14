@@ -9,6 +9,7 @@
  */
 
 import * as Sentry from '@sentry/react';
+import { scrubUrl } from './scrubUrl';
 
 // ============================================
 // USER CONTEXT - Contexto del Usuario
@@ -409,6 +410,10 @@ export const sanitizeSensitiveData = (obj, sensitiveFields = ['password', 'token
   return sanitized;
 };
 
+// El saneado de URLs vive en su propio modulo porque lo necesita `main.jsx`,
+// donde arranca Sentry de verdad, y alli no se puede arrastrar este fichero
+export { scrubUrl };
+
 // ============================================
 // EXPORTS
 // ============================================
@@ -444,4 +449,5 @@ export default {
 
   // Utilities
   sanitizeSensitiveData,
+  scrubUrl,
 };

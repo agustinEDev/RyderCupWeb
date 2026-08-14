@@ -28,6 +28,18 @@ const API_URL = globalThis.APP_CONFIG?.API_BASE_URL || import.meta.env.VITE_API_
 let isRefreshing = false;
 let failedQueue = [];
 
+// Momento del ultimo refresco con exito en esta carga de la pagina, o null si
+// todavia no ha habido ninguno. Lo consulta el refresco proactivo, que de otro
+// modo solo puede suponer la edad del token: la cookie es httpOnly y no se
+// puede consultar desde JavaScript (FE #392).
+let lastRefreshAt = null;
+
+/**
+ * @returns {number|null} Timestamp del ultimo refresco con exito, o null si no
+ * ha habido ninguno desde que se cargo la pagina.
+ */
+export const getLastRefreshAt = () => lastRefreshAt;
+
 /**
  * Process the queue of failed requests after successful token refresh
  * @param {Error|null} error - Error if refresh failed, null if successful
@@ -97,6 +109,8 @@ export const refreshAccessToken = async () => {
 
     // Backend sets new access_token cookie automatically (httpOnly)
     // No need to handle token manually
+
+    lastRefreshAt = Date.now();
 
     return true;
   } catch (error) {
