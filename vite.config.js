@@ -14,13 +14,16 @@ import { execSync } from 'node:child_process'
  * salida después del build; los del árbol de fuentes no se tocan.
  */
 /**
- * Escribe `version.json` con lo que se está publicando de verdad.
+ * Sella cada build con lo que se está publicando de verdad: una marca `app-build`
+ * en el HTML y un `version.json` junto a él.
  *
  * Hace dos cosas, y la segunda es la que importa:
  *
  * 1. Dice qué versión sirve producción. Antes había un `public/version.json`
  *    escrito a mano que llevaba desde diciembre de 2025 anunciando "1.8.0-debug":
- *    nadie lo leía y engañaba a quien fuera a comprobar un despliegue.
+ *    nadie lo leía y engañaba a quien fuera a comprobar un despliegue. Ese JSON
+ *    se queda deliberadamente FUERA del precache —ver `globPatterns` más abajo—,
+ *    porque precacheado respondería la versión de la publicación anterior.
  *
  * 2. **Hace que cada despliegue mueva el service worker.** El `sw.js` de Workbox
  *    solo cambia si cambia su manifiesto de precache, que es la lista de ficheros
@@ -28,8 +31,10 @@ import { execSync } from 'node:child_process'
  *    una cabecera en el panel de Render, sin ir más lejos— deja un `sw.js`
  *    idéntico, así que el `update()` de `serviceWorkerRegistration.js` no
  *    encuentra nada, no hay `controllerchange` y nadie recarga: la aplicación
- *    instalada se queda con lo viejo indefinidamente. Con este fichero dentro del
- *    precache, cada publicación cambia un hash y la cadena entera arranca sola.
+ *    instalada se queda con lo viejo indefinidamente. La marca va en el
+ *    `index.html`, que sí está precacheado: cada publicación cambia su hash y la
+ *    cadena entera arranca sola. El porqué de sellar el HTML y no un fichero
+ *    aparte está en `transformIndexHtml`, más abajo.
  *
  * Por eso lleva `builtAt` además del commit: garantiza que dos publicaciones del
  * mismo commit —que es justo el caso de "he redesplegado y no ha llegado"—
