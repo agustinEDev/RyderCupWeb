@@ -8,12 +8,11 @@ import PasswordInput from '../components/ui/PasswordInput';
 import PasswordRequirements from '../components/ui/PasswordRequirements';
 import PasswordStrengthMeter from '../components/ui/PasswordStrengthMeter';
 import { registerUseCase, fetchCountriesUseCase } from '../composition';
-import { CountryFlag } from '../utils/countryUtils';
-import { formatCountryName } from '../services/countries';
 import GoogleSignInButton from '../components/ui/GoogleSignInButton';
+import CountryAutocomplete from '../components/ui/CountryAutocomplete';
 
 const Register = () => {
-  const { t, i18n } = useTranslation(['auth', 'common']);
+  const { t } = useTranslation(['auth', 'common']);
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     firstName: '',
@@ -442,40 +441,31 @@ const Register = () => {
 
                 {/* 4. Nationality (Optional) */}
                 <div>
-                  <label htmlFor="countryCode" className="block text-sm font-semibold text-gray-700 mb-2">
-                    {t('register.countryLabel')} <span className="text-gray-400 font-normal">{t('register.countryOptional')}</span>
-                  </label>
-                  <div className="relative">
-                    <select
-                      id="countryCode"
-                      name="countryCode"
-                      value={formData.countryCode}
-                      onChange={handleChange}
-                      className={`w-full py-3 rounded-lg border-2 border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none text-gray-900 bg-white disabled:bg-gray-50 disabled:cursor-not-allowed appearance-none pr-10 ${
-                        formData.countryCode ? 'pl-12' : 'pl-4'
-                      }`}
-                      disabled={isLoading || isLoadingCountries}
-                    >
-                      <option value="">{t('register.countryPlaceholder')}</option>
-                      {countries.map((country) => (
-                        <option key={country.code} value={country.code}>
-                          {formatCountryName(country, i18n.language)}
-                        </option>
-                      ))}
-                    </select>
-                    {/* Icono de dropdown personalizado */}
-                    <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                      <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                      </svg>
-                    </div>
-                    {/* Mostrar bandera del país seleccionado */}
-                    {formData.countryCode && (
-                      <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                        <CountryFlag countryCode={formData.countryCode} style={{ width: '24px', height: 'auto' }} />
-                      </div>
-                    )}
-                  </div>
+                  {/* Se le pasa un evento sintético en vez de tocar el estado
+                      directamente: handleChange es el que además limpia el
+                      error del campo, y saltárselo dejaría el aviso colgado */}
+                  <CountryAutocomplete
+                    id="countryCode"
+                    countries={countries}
+                    /* La etiqueta va dentro del componente, no como <label
+                       htmlFor> externo: el disparador es un <button>, que es
+                       etiquetable, y el <label> nativo gana a name-from-content,
+                       así que un lector de pantalla decía "Nacionalidad" y nunca
+                       el país elegido. El <select> anterior decía los dos */
+                    label={
+                      <>
+                        {t('register.countryLabel')}{' '}
+                        <span className="text-gray-400 font-normal">{t('register.countryOptional')}</span>
+                      </>
+                    }
+                    labelClassName="block text-sm font-semibold text-gray-700 mb-2"
+                    value={formData.countryCode}
+                    placeholder={t('register.countryPlaceholder')}
+                    disabled={isLoading || isLoadingCountries}
+                    onChange={(code) =>
+                      handleChange({ target: { name: 'countryCode', value: code } })
+                    }
+                  />
                   <p className="text-xs text-gray-500 mt-2 flex items-center gap-1">
                     <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />

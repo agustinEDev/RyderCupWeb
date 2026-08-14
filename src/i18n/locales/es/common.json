@@ -116,5 +116,14 @@
     "copyrightShort": "© {{year}} RyderCupFriends - RCF",
     "madeWith": "Hecho con",
     "forGolfers": "para los entusiastas del golf"
+  },
+  "countrySelect": {
+    "placeholder": "Selecciona un país...",
+    "searchPlaceholder": "Buscar país...",
+    "noMatches": "Ningún país coincide con la búsqueda",
+    "empty": "No hay países disponibles",
+    "clear": "Quitar el país elegido",
+    "moreResults_one": "1 país más — sigue escribiendo para afinar",
+    "moreResults_other": "{{count}} países más — sigue escribiendo para afinar"
   }
 }
