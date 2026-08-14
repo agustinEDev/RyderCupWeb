@@ -2,10 +2,21 @@ import { useEffect, useRef, useCallback } from 'react';
 import { refreshAccessToken } from '../utils/tokenRefreshInterceptor';
 
 /**
+ * Vida del access token que emite el backend: 15 minutos
+ * (RyderCupAm `src/config/settings.py` -> ACCESS_TOKEN_EXPIRE_MINUTES=15,
+ * cookie con `max_age=900`). Este valor debe seguir al del backend: si se
+ * queda corto, la app refresca mucho mas de lo necesario.
+ */
+export const ACCESS_TOKEN_TTL_MS = 15 * 60 * 1000;
+
+/** Margen con el que se refresca antes de que expire el token. */
+export const REFRESH_BEFORE_MS = 1 * 60 * 1000;
+
+/**
  * Hook for proactive token refresh based on user activity
  *
  * Problem solved:
- * - Access token expires every 5 minutes (OWASP security)
+ * - Access token expires every 15 minutes (see ACCESS_TOKEN_TTL_MS)
  * - Token only refreshes on 401 response (reactive)
  * - If user is active (filling forms) but not making API calls, token expires silently
  * - When user finally makes a request, token is expired → potential logout
@@ -16,20 +27,16 @@ import { refreshAccessToken } from '../utils/tokenRefreshInterceptor';
  * - User never sees "session expired" while actively using the app
  *
  * @param {Object} options - Configuration options
- * @param {number} options.tokenTTL - Token time-to-live in ms (default: 5 minutes)
- * @param {number} options.refreshBefore - Time before expiry to trigger refresh in ms (default: 1 minute)
+ * @param {number} options.tokenTTL - Token time-to-live in ms (default: ACCESS_TOKEN_TTL_MS)
+ * @param {number} options.refreshBefore - Time before expiry to trigger refresh in ms (default: REFRESH_BEFORE_MS)
  * @param {boolean} options.enabled - Whether the hook is active (default: true)
  *
  * @example
- * useProactiveTokenRefresh({
- *   tokenTTL: 5 * 60 * 1000,      // 5 minutes
- *   refreshBefore: 1 * 60 * 1000, // Refresh 1 minute before expiry
- *   enabled: isAuthenticated
- * });
+ * useProactiveTokenRefresh({ enabled: isAuthenticated });
  */
 const useProactiveTokenRefresh = ({
-  tokenTTL = 5 * 60 * 1000,        // 5 minutes (OWASP compliant)
-  refreshBefore = 1 * 60 * 1000,   // Refresh 1 minute before expiry
+  tokenTTL = ACCESS_TOKEN_TTL_MS,
+  refreshBefore = REFRESH_BEFORE_MS,
   enabled = true
 } = {}) => {
   // Track when the token was last refreshed

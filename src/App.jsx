@@ -196,9 +196,9 @@ function AppContent() {
   // Hook de refresh proactivo de token (v2.0.4)
   // Refresca el token ANTES de que expire si el usuario está activo
   // Previene "sesión expirada" mientras el usuario está usando la app
+  // Los tiempos (TTL del token y margen de refresco) los define el propio hook,
+  // que es donde se anota de donde sale el valor del backend (FE #392)
   useProactiveTokenRefresh({
-    tokenTTL: 5 * 60 * 1000,       // 5 minutos (OWASP compliant)
-    refreshBefore: 1 * 60 * 1000,  // Refrescar 1 minuto antes de expirar
     enabled: isAuthenticated
   });
 
