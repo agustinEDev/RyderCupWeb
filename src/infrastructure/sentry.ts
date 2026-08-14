@@ -99,15 +99,14 @@ if (!SENTRY_CONFIG.dsn) {
       // Nota: maskTextSelector y blockSelector removidos en Sentry 10
       // Usar maskAllText: true para enmascarar todo el texto si es necesario
 
-      // Ignorar errores de red específicos
-      // La API NO entra aqui (FE #385). Esta lista graba en la sesion el
-      // detalle de red -URL, cabeceras y cuerpos- de lo que case, y en la API
-      // eso es todo: perfiles, correos, listas de amigos, la posicion de quien
-      // busca campos cerca. Para depurar ya estan los eventos de error con su
-      // breadcrumb, que llevan metodo, ruta y codigo de estado.
-      networkDetailAllowUrls: [
-        window.location.origin,
-      ],
+      // Vacia a proposito (FE #385). Lo que esta lista abre no es la URL -esa
+      // Replay la graba siempre, junto al metodo, el estado y la duracion-,
+      // sino las CABECERAS Y LOS CUERPOS de lo que case. Con el origen propio
+      // dentro, en cualquier despliegue que sirva la API por el mismo host
+      // (proxy /api del Vite local, nginx del contenedor) eso son los perfiles,
+      // los correos y las listas de amigos enteros dentro de la grabacion.
+      // Para depurar ya estan los eventos de error con su breadcrumb.
+      networkDetailAllowUrls: [],
 
       // Sample rates (ya configurados en init)
     }),
@@ -152,6 +151,12 @@ if (!SENTRY_CONFIG.dsn) {
 
     console.log('✅ Heavy Sentry integrations added successfully');
   } else {
+    // OJO: en el navegador este `else` no se ejecuta nunca. `main.jsx` llama a
+    // `Sentry.init()` en cuanto hay DSN -la misma variable que mira este
+    // fichero-, asi que al cargar esto ya hay cliente y se toma la rama de
+    // arriba. Todo lo que se configure aqui abajo es papel mojado: los ganchos
+    // que si filtran (`beforeSend`, `beforeBreadcrumb`, `beforeSendTransaction`)
+    // viven en `main.jsx`. Se conserva por si algun dia se retira aquel init.
     // Sentry not initialized yet - do full initialization
     init({
     dsn: SENTRY_CONFIG.dsn,

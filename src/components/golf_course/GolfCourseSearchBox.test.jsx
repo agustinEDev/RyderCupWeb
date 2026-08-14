@@ -346,10 +346,10 @@ describe('GolfCourseSearchBox', () => {
     // permisos vieja servida por el service worker en el escritorio— y los dos
     // imprimían la misma frase. Distinguirlos es toda la issue (FE #387)
     it.each([
-      [1, /Location permission is off/, 'el permiso denegado manda a los ajustes'],
-      [2, /no location/, 'sin posición solo queda el nombre'],
-      [3, /took too long/, 'el tiempo agotado invita a reintentar'],
-    ])('código %i: %s', async (code, expected) => {
+      [1, 'el permiso denegado manda a los ajustes', /Location permission is off/],
+      [2, 'sin posición se apunta a los ajustes del dispositivo', /device settings/],
+      [3, 'el tiempo agotado invita a reintentar', /took too long/],
+    ])('código %i: %s', async (code, _description, expected) => {
       stubGeolocation((_success, failure) => failure({ code }));
       renderBox({ allowNearby: true });
       await openDropdown();
@@ -361,6 +361,23 @@ describe('GolfCourseSearchBox', () => {
       expect(screen.getByTestId('golf-course-nearby-button')).toBeInTheDocument();
     });
 
+    it('trata una lectura de GPS que no es un número como falta de posición', async () => {
+      // Extensiones que falsean la posición y algunos WebViews devuelven NaN.
+      // Sin esto, `position` quedaría con lat/lon a null: la interfaz anunciaría
+      // orden por distancia, el backend no recibiría coordenadas y el botón de
+      // reintentar habría desaparecido
+      stubGeolocation((success) => success({ coords: { latitude: NaN, longitude: NaN } }));
+      renderBox({ allowNearby: true });
+      await openDropdown();
+
+      fireEvent.click(await screen.findByTestId('golf-course-nearby-button'));
+
+      expect(await screen.findByText(/device settings/)).toBeInTheDocument();
+      expect(screen.getByTestId('golf-course-nearby-button')).toBeInTheDocument();
+      const lastFilters = mockList.mock.calls[mockList.mock.calls.length - 1][0];
+      expect(lastFilters.lat).toBeUndefined();
+    });
+
     it('ante un error sin código no manda a nadie a los ajustes', async () => {
       // Decirle "activa el permiso" a quien no ha denegado nada es peor que no
       // decir nada: manda a buscar un ajuste que ya está puesto
@@ -370,7 +387,7 @@ describe('GolfCourseSearchBox', () => {
 
       fireEvent.click(await screen.findByTestId('golf-course-nearby-button'));
 
-      expect(await screen.findByText(/no location/)).toBeInTheDocument();
+      expect(await screen.findByText(/device settings/)).toBeInTheDocument();
     });
 
     it('sigue sirviendo por nombre en un dispositivo sin ubicación', async () => {
@@ -385,7 +402,7 @@ describe('GolfCourseSearchBox', () => {
 
       fireEvent.click(await screen.findByTestId('golf-course-nearby-button'));
 
-      expect(await screen.findByText(/no location/)).toBeInTheDocument();
+      expect(await screen.findByText(/device settings/)).toBeInTheDocument();
       expect(screen.getByRole('textbox')).not.toBeDisabled();
     });
   });

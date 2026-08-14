@@ -4,6 +4,7 @@ import * as Sentry from '@sentry/react';
 import App from './App.jsx';
 import { startCapturingInstallPrompt } from './utils/installPromptCapture';
 import { registerServiceWorker } from './utils/serviceWorkerRegistration';
+import { scrubUrl } from './utils/scrubUrl';
 import './index.css';
 import './i18n'; // Import i18n initialization
 import { AuthProviderWithGlobalSync } from './contexts/AuthContext'; // v1.13.0: CSRF Protection
@@ -34,6 +35,45 @@ if (sentryDsn) {
     replaysSessionSampleRate: parseFloat(import.meta.env.VITE_SENTRY_REPLAYS_SESSION_SAMPLE_RATE || '0.1'),
     replaysOnErrorSampleRate: parseFloat(import.meta.env.VITE_SENTRY_REPLAYS_ON_ERROR_SAMPLE_RATE || '1.0'),
     attachStacktrace: true,
+
+    // El saneado de URLs va AQUI y no en infrastructure/sentry.ts (FE #385).
+    // Aquel fichero carga dos segundos mas tarde y para entonces ya hay
+    // cliente, asi que solo ejecuta su rama de `addIntegration`: sus ganchos
+    // `beforeSend`/`beforeBreadcrumb` nunca llegan a registrarse. Lo que se
+    // configura despues de esta llamada no filtra nada.
+    beforeBreadcrumb(breadcrumb) {
+      if (breadcrumb.data?.url) {
+        breadcrumb.data.url = scrubUrl(breadcrumb.data.url);
+      }
+      return breadcrumb;
+    },
+
+    beforeSend(event) {
+      if (event.request?.url) {
+        event.request.url = scrubUrl(event.request.url);
+      }
+      return event;
+    },
+
+    // Los spans HTTP llevan la URL completa en su descripcion y en sus datos
+    beforeSendTransaction(transaction) {
+      if (transaction.request?.url) {
+        transaction.request.url = scrubUrl(transaction.request.url);
+      }
+
+      transaction.spans?.forEach((span) => {
+        if (span.description) {
+          span.description = scrubUrl(span.description);
+        }
+        for (const key of ['url', 'http.url']) {
+          if (typeof span.data?.[key] === 'string') {
+            span.data[key] = scrubUrl(span.data[key]);
+          }
+        }
+      });
+
+      return transaction;
+    },
   });
 }
 

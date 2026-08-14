@@ -5,21 +5,13 @@
  * cercania, y de ahi entra en Sentry por tres puertas: breadcrumbs de fetch,
  * spans de rendimiento y la URL del propio evento de error. Redondear en
  * origen reduce el dato; esto lo retira del todo.
+ *
+ * El modulo esta suelto y sin dependencias porque quien lo usa es `main.jsx`:
+ * es ahi donde arranca Sentry y donde los ganchos llegan a registrarse.
  */
 
-import { describe, it, expect, vi } from 'vitest';
-
-vi.mock('@sentry/react', () => ({
-  setUser: vi.fn(),
-  setTag: vi.fn(),
-  setTags: vi.fn(),
-  setContext: vi.fn(),
-  addBreadcrumb: vi.fn(),
-  captureException: vi.fn(),
-  captureMessage: vi.fn(),
-}));
-
-const { scrubUrl } = await import('./sentryHelpers');
+import { describe, it, expect } from 'vitest';
+import { scrubUrl } from './scrubUrl';
 
 describe('scrubUrl', () => {
   it('retira la posicion de la busqueda por cercania', () => {

@@ -54,9 +54,14 @@ const GEO_ERROR_MESSAGES = {
     fallback:
       'Location permission is off. Turn it on in your browser settings - on iPhone, also in the system settings - or search by name.',
   },
+  // No dice "este dispositivo no tiene ubicación" porque no consta: iOS
+  // devuelve este mismo código 2 cuando la ubicación está apagada a nivel de
+  // sistema, que es el caso del iPhone del 14 de agosto. Apunta a los ajustes
+  // del dispositivo, que cubre ambas cosas sin afirmar ninguna.
   unavailable: {
     key: 'searchBox.locationUnavailable',
-    fallback: 'This device has no location. Search by name instead.',
+    fallback:
+      'Could not get your location. Check that it is on in your device settings, or search by name.',
   },
   timeout: {
     key: 'searchBox.locationTimeout',
@@ -77,7 +82,7 @@ const GolfCourseSearchBox = ({
   // botón: hacerlo al abrir dispara el diálogo del navegador a quien únicamente
   // quería teclear un nombre.
   const [position, setPosition] = useState(null);
-  // 'idle' | 'requesting' | 'denied' | 'unavailable'
+  // 'idle' | 'requesting' | 'denied' | 'unavailable' | 'timeout'
   const [geoStatus, setGeoStatus] = useState('idle');
   // Los resultados guardan de qué país son. Así, al cambiar de país, no se
   // pintan un instante los del anterior mientras llega la respuesta nueva, y
@@ -212,10 +217,20 @@ const GolfCourseSearchBox = ({
       (pos) => {
         // Se redondea antes de tocar el estado, no al construir la petición:
         // así la precisión de la casa no llega a existir dentro de la app.
-        setPosition({
-          lat: roundCoordinate(pos.coords.latitude),
-          lon: roundCoordinate(pos.coords.longitude),
-        });
+        const lat = roundCoordinate(pos.coords.latitude);
+        const lon = roundCoordinate(pos.coords.longitude);
+
+        // Una lectura que no es un número (extensiones que falsean la posición,
+        // WebViews con errores) daría un `position` no nulo con las coordenadas
+        // a null: la interfaz anunciaría orden por distancia y el repositorio
+        // se dejaría los parámetros fuera, sin distancias y sin botón para
+        // reintentar. Es un fallo de posición como cualquier otro.
+        if (lat === null || lon === null) {
+          setGeoStatus('unavailable');
+          return;
+        }
+
+        setPosition({ lat, lon });
         setGeoStatus('idle');
       },
       // Denegado, sin posición o agotado el tiempo piden cosas distintas a
