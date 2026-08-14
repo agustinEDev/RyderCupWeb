@@ -100,8 +100,9 @@
     "nearbyCourses": "Campos cerca de mí",
     "locating": "Obteniendo tu ubicación...",
     "sortedByDistance": "Del más cercano al más lejano. Los campos sin ubicación solo aparecen buscando por nombre.",
-    "locationDenied": "No se pudo obtener tu ubicación. Busca por nombre.",
+    "locationDenied": "Falta el permiso de ubicación. Actívalo en los ajustes del navegador —en iPhone, también en los del sistema— o busca por nombre.",
     "locationUnavailable": "Este dispositivo no tiene ubicación. Busca por nombre.",
+    "locationTimeout": "Se tardó demasiado en localizarte. Inténtalo de nuevo o busca por nombre.",
     "distanceAway": "a {{distance}} km"
   },
   "requestModal": {

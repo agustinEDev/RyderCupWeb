@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Search, MapPin, AlertCircle, Navigation } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { listGolfCoursesUseCase } from '../../composition';
+import { roundCoordinate } from '../../utils/geo';
 
 /**
  * GolfCourseSearchBox Component
@@ -28,6 +29,40 @@ const SEARCH_DEBOUNCE_MS = 300;
 // encender el GPS otra vez. No se pide precisión alta: separar dos campos no
 // necesita metros, y el modo preciso tarda más y gasta batería.
 const GEOLOCATION_OPTIONS = { timeout: 10000, maximumAge: 5 * 60 * 1000 };
+
+// Los tres fallos de `GeolocationPositionError` piden remedios distintos: el
+// permiso se concede en los ajustes, la falta de posición no tiene arreglo
+// desde aquí y el tiempo agotado se reintenta. Un solo mensaje para los tres
+// deja al usuario sin saber cuál de las tres cosas le ha pasado (FE #387).
+const GEOLOCATION_ERROR_STATUS = {
+  1: 'denied', // PERMISSION_DENIED
+  2: 'unavailable', // POSITION_UNAVAILABLE
+  3: 'timeout', // TIMEOUT
+};
+
+// Ante un error sin código reconocible, "no hay posición" es lo único que se
+// puede afirmar: mandar a los ajustes a quien no ha denegado nada es peor.
+const geoStatusFromError = (error) => GEOLOCATION_ERROR_STATUS[error?.code] ?? 'unavailable';
+
+// El permiso denegado es el único de los tres con arreglo, y hay que decir
+// dónde: en iOS la ubicación de Safari se concede en los ajustes del sistema,
+// no en la página, así que sin mencionarlos no hay forma de que nadie lo
+// encuentre. Buscar por nombre sigue disponible en los tres casos.
+const GEO_ERROR_MESSAGES = {
+  denied: {
+    key: 'searchBox.locationDenied',
+    fallback:
+      'Location permission is off. Turn it on in your browser settings - on iPhone, also in the system settings - or search by name.',
+  },
+  unavailable: {
+    key: 'searchBox.locationUnavailable',
+    fallback: 'This device has no location. Search by name instead.',
+  },
+  timeout: {
+    key: 'searchBox.locationTimeout',
+    fallback: 'Locating you took too long. Try again or search by name.',
+  },
+};
 
 const GolfCourseSearchBox = ({
   countryCode,
@@ -175,12 +210,17 @@ const GolfCourseSearchBox = ({
 
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        setPosition({ lat: pos.coords.latitude, lon: pos.coords.longitude });
+        // Se redondea antes de tocar el estado, no al construir la petición:
+        // así la precisión de la casa no llega a existir dentro de la app.
+        setPosition({
+          lat: roundCoordinate(pos.coords.latitude),
+          lon: roundCoordinate(pos.coords.longitude),
+        });
         setGeoStatus('idle');
       },
-      // Da igual si lo denegó, si expiró o si el dispositivo no sabe dónde está:
-      // en los tres casos la salida es la misma, seguir por nombre.
-      () => setGeoStatus('denied'),
+      // Denegado, sin posición o agotado el tiempo piden cosas distintas a
+      // quien busca, así que no pueden acabar los tres en el mismo mensaje.
+      (error) => setGeoStatus(geoStatusFromError(error)),
       GEOLOCATION_OPTIONS
     );
   };
@@ -260,15 +300,11 @@ const GolfCourseSearchBox = ({
               {/* Aparece como respuesta a pulsar el botón, así que hay que
                   anunciarlo: quien usa lector de pantalla no ve que el texto
                   ha cambiado bajo el botón que acaba de activar */}
-              {(geoStatus === 'denied' || geoStatus === 'unavailable') && (
+              {GEO_ERROR_MESSAGES[geoStatus] && (
                 <p role="status" className="px-2 pt-1 text-xs text-gray-500">
-                  {geoStatus === 'denied'
-                    ? t('searchBox.locationDenied', {
-                        defaultValue: 'Could not get your location. Search by name instead.',
-                      })
-                    : t('searchBox.locationUnavailable', {
-                        defaultValue: 'This device has no location. Search by name instead.',
-                      })}
+                  {t(GEO_ERROR_MESSAGES[geoStatus].key, {
+                    defaultValue: GEO_ERROR_MESSAGES[geoStatus].fallback,
+                  })}
                 </p>
               )}
             </div>

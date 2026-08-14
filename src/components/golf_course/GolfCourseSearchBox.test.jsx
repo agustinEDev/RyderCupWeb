@@ -205,7 +205,9 @@ describe('GolfCourseSearchBox', () => {
   });
 
   describe('búsqueda por cercanía', () => {
-    const MADRID = { coords: { latitude: 40.4168, longitude: -3.7038 } };
+    // Con toda la precisión que da una lectura real del GPS: es lo que hay que
+    // demostrar que no sale del navegador
+    const MADRID = { coords: { latitude: 40.41677382, longitude: -3.70379409 } };
 
     const stubGeolocation = (implementation) => {
       Object.defineProperty(navigator, 'geolocation', {
@@ -243,7 +245,10 @@ describe('GolfCourseSearchBox', () => {
       expect(navigator.geolocation.getCurrentPosition).not.toHaveBeenCalled();
     });
 
-    it('manda la posición al backend al pulsar el botón', async () => {
+    it('manda la posición al backend al pulsar el botón, redondeada', async () => {
+      // La lectura del GPS llega con precisión de metros y la query string
+      // acaba en los registros de nginx, Cloudflare, Render y Sentry. Tres
+      // decimales (~110 m) ordenan igual y no dicen en qué casa está (FE #385)
       renderBox({ allowNearby: true });
       await openDropdown();
 
@@ -251,8 +256,8 @@ describe('GolfCourseSearchBox', () => {
 
       await waitFor(() => {
         const lastFilters = mockList.mock.calls[mockList.mock.calls.length - 1][0];
-        expect(lastFilters.lat).toBe(MADRID.coords.latitude);
-        expect(lastFilters.lon).toBe(MADRID.coords.longitude);
+        expect(lastFilters.lat).toBe(40.417);
+        expect(lastFilters.lon).toBe(-3.704);
       });
     });
 
@@ -325,7 +330,7 @@ describe('GolfCourseSearchBox', () => {
 
       fireEvent.click(await screen.findByTestId('golf-course-nearby-button'));
 
-      expect(await screen.findByText(/Could not get your location/)).toBeInTheDocument();
+      expect(await screen.findByText(/Location permission is off/)).toBeInTheDocument();
       const input = screen.getByRole('textbox');
       expect(input).not.toBeDisabled();
 
@@ -334,6 +339,38 @@ describe('GolfCourseSearchBox', () => {
         const lastFilters = mockList.mock.calls[mockList.mock.calls.length - 1][0];
         expect(lastFilters.name).toBe('Prat');
       });
+    });
+
+    // El 14 de agosto la cercanía se rompió en dos dispositivos a la vez por
+    // motivos distintos —permiso del sistema apagado en el iPhone, política de
+    // permisos vieja servida por el service worker en el escritorio— y los dos
+    // imprimían la misma frase. Distinguirlos es toda la issue (FE #387)
+    it.each([
+      [1, /Location permission is off/, 'el permiso denegado manda a los ajustes'],
+      [2, /no location/, 'sin posición solo queda el nombre'],
+      [3, /took too long/, 'el tiempo agotado invita a reintentar'],
+    ])('código %i: %s', async (code, expected) => {
+      stubGeolocation((_success, failure) => failure({ code }));
+      renderBox({ allowNearby: true });
+      await openDropdown();
+
+      fireEvent.click(await screen.findByTestId('golf-course-nearby-button'));
+
+      expect(await screen.findByText(expected)).toBeInTheDocument();
+      // El botón sigue ahí: en el caso del tiempo agotado es el reintento
+      expect(screen.getByTestId('golf-course-nearby-button')).toBeInTheDocument();
+    });
+
+    it('ante un error sin código no manda a nadie a los ajustes', async () => {
+      // Decirle "activa el permiso" a quien no ha denegado nada es peor que no
+      // decir nada: manda a buscar un ajuste que ya está puesto
+      stubGeolocation((_success, failure) => failure({}));
+      renderBox({ allowNearby: true });
+      await openDropdown();
+
+      fireEvent.click(await screen.findByTestId('golf-course-nearby-button'));
+
+      expect(await screen.findByText(/no location/)).toBeInTheDocument();
     });
 
     it('sigue sirviendo por nombre en un dispositivo sin ubicación', async () => {
