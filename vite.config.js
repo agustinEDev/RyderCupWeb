@@ -2,8 +2,9 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import sri from 'vite-plugin-sri'
 import { VitePWA } from 'vite-plugin-pwa'
-import { readdirSync, existsSync, rmSync } from 'node:fs'
+import { readdirSync, existsSync, rmSync, readFileSync } from 'node:fs'
 import { join, resolve, relative } from 'node:path'
+import { execSync } from 'node:child_process'
 
 /**
  * Los ficheros CLAUDE.md son contexto para el asistente, no assets. Las
@@ -12,6 +13,59 @@ import { join, resolve, relative } from 'node:path'
  * que acabaría servido en producción. Este plugin los retira del directorio de
  * salida después del build; los del árbol de fuentes no se tocan.
  */
+/**
+ * Escribe `version.json` con lo que se está publicando de verdad.
+ *
+ * Hace dos cosas, y la segunda es la que importa:
+ *
+ * 1. Dice qué versión sirve producción. Antes había un `public/version.json`
+ *    escrito a mano que llevaba desde diciembre de 2025 anunciando "1.8.0-debug":
+ *    nadie lo leía y engañaba a quien fuera a comprobar un despliegue.
+ *
+ * 2. **Hace que cada despliegue mueva el service worker.** El `sw.js` de Workbox
+ *    solo cambia si cambia su manifiesto de precache, que es la lista de ficheros
+ *    con el hash de su contenido. Un despliegue que no toque el build —arreglar
+ *    una cabecera en el panel de Render, sin ir más lejos— deja un `sw.js`
+ *    idéntico, así que el `update()` de `serviceWorkerRegistration.js` no
+ *    encuentra nada, no hay `controllerchange` y nadie recarga: la aplicación
+ *    instalada se queda con lo viejo indefinidamente. Con este fichero dentro del
+ *    precache, cada publicación cambia un hash y la cadena entera arranca sola.
+ *
+ * Por eso lleva `builtAt` además del commit: garantiza que dos publicaciones del
+ * mismo commit —que es justo el caso de "he redesplegado y no ha llegado"—
+ * también se propaguen.
+ */
+function emitVersionFile() {
+  return {
+    name: 'emit-version-file',
+    apply: 'build',
+    generateBundle() {
+      // Render expone el commit en el entorno de build; fuera de ahí se pregunta
+      // a git, que puede no existir según dónde se construya
+      let commit = process.env.RENDER_GIT_COMMIT || process.env.GITHUB_SHA || ''
+      if (!commit) {
+        try {
+          commit = execSync('git rev-parse HEAD', { encoding: 'utf8' }).trim()
+        } catch {
+          commit = 'unknown'
+        }
+      }
+
+      const { version } = JSON.parse(readFileSync(resolve(__dirname, 'package.json'), 'utf8'))
+
+      this.emitFile({
+        type: 'asset',
+        fileName: 'version.json',
+        source: `${JSON.stringify(
+          { version, commit: commit.slice(0, 7), builtAt: new Date().toISOString() },
+          null,
+          2
+        )}\n`,
+      })
+    },
+  }
+}
+
 function stripAssistantDocs() {
   let outDir
 
@@ -71,6 +125,9 @@ export default defineConfig(() => ({
     // Antes de VitePWA: su service worker se genera en el mismo hook y no debe
     // llegar a ver estos ficheros
     stripAssistantDocs(),
+    // También antes de VitePWA: el fichero tiene que existir cuando Workbox
+    // construye el manifiesto, que es de lo que se trata
+    emitVersionFile(),
     VitePWA({
       registerType: 'autoUpdate',
       // El registro que inyecta el plugin solo llama a `register()`: no se
@@ -99,7 +156,10 @@ export default defineConfig(() => ({
       },
       workbox: {
         // Cache static assets (JS, CSS, fonts, images)
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+        // `json` entra por `version.json`: es el único de dist, y estando en el
+        // precache su hash cambia con cada publicación, que es lo que mueve el
+        // sw.js y dispara la actualización de la aplicación instalada
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2,json}'],
         // Explicit cap so oversized assets fail the SW build loudly instead of silently
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5 MB
         runtimeCaching: [
