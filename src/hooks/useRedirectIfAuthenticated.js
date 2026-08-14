@@ -15,24 +15,48 @@
  *    horas después, con el access de 15 minutos caducado y el refresh vivo. Con
  *    esa negativa el usuario vería el formulario teniendo sesión renovable. Se
  *    pide el refresco a mano, que además no arrastra el logout ni la redirección
- *    del interceptor —justo lo que reintroduciría el bucle.
+ *    del interceptor —justo lo que reintroduciría el bucle—, a cambio de tener
+ *    que mirar aquí la revocación de dispositivo que el interceptor sí atiende.
  *
  * Cuando no hay nada guardado no se toca la red: el visitante anónimo, que es
  * el caso común, ve el formulario de inmediato.
+ *
+ * Nota sobre `StrictMode`: en desarrollo el efecto se monta dos veces y salen
+ * dos peticiones. No se pone un `ref` que lo corte porque la limpieza del primer
+ * montaje descarta su propia respuesta, y el candado dejaría la segunda sin
+ * ejecutar: nunca se resolvería nada. En producción no hay doble montaje.
  */
 
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router';
 import { useAuthContext } from './useAuthContext';
 import { refreshAccessToken } from '../utils/tokenRefreshInterceptor';
+import { isDeviceRevoked, handleDeviceRevocationLogout } from '../utils/deviceRevocationLogout';
+import User from '../domain/entities/User.js';
 
-const API_URL = import.meta.env.VITE_API_BASE_URL || '';
+// Misma prioridad que `api.js` y el interceptor: la configuración de ejecución
+// manda sobre la del build. Sin esto, `/current-user` y el refresco de aquí
+// abajo pueden acabar apuntando a hosts distintos en un despliegue en contenedor
+const API_URL = globalThis.APP_CONFIG?.API_BASE_URL || import.meta.env.VITE_API_BASE_URL || '';
 
-const requestCurrentUser = () =>
+/**
+ * Más allá de esto se enseña el formulario. Una instancia fría o una red mala no
+ * pueden dejar la pantalla de acceso inalcanzable detrás de un "Cargando...".
+ */
+const SESSION_CHECK_TIMEOUT_MS = 5000;
+
+const requestCurrentUser = (signal) =>
   fetch(`${API_URL}/api/v1/auth/current-user`, {
     credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
+    signal,
   });
+
+/** El backend ha contestado que no: la sesión está muerta, no es un tropiezo. */
+class SessionRejectedError extends Error {}
+
+const isSessionRejected = (error) =>
+  error instanceof SessionRejectedError || error?.response?.status === 401;
 
 /**
  * Mismo criterio que el login manual: se respeta el origen de la navegación
@@ -62,44 +86,92 @@ export const useRedirectIfAuthenticated = () => {
     if (!hadStoredUser) return undefined;
 
     let cancelled = false;
+    let settled = false;
+    const controller = new AbortController();
+
+    let deadline;
+
+    const showForm = () => {
+      settled = true;
+      clearTimeout(deadline);
+      setIsChecking(false);
+    };
+
+    deadline = setTimeout(() => {
+      if (cancelled || settled) return;
+      // Se abandona la comprobación, pero NO se toca el usuario guardado: no
+      // sabemos nada de la sesión, solo que el backend no contestó a tiempo
+      controller.abort();
+      showForm();
+    }, SESSION_CHECK_TIMEOUT_MS);
 
     const verifySession = async () => {
       try {
-        let response = await requestCurrentUser();
+        let response = await requestCurrentUser(controller.signal);
 
-        // El access caduca a los 15 minutos; que esté caducado no dice nada
-        // sobre la sesión, solo que toca renovarlo
         if (response.status === 401) {
+          const errorData = await response
+            .clone()
+            .json()
+            .catch(() => ({}));
+
+          // Sin esto el dispositivo revocado desde otro navegador aterriza en un
+          // formulario pelado, sin el aviso que da el interceptor
+          if (isDeviceRevoked(response, errorData)) {
+            handleDeviceRevocationLogout(errorData);
+            if (cancelled || settled) return;
+            clearAuth();
+            showForm();
+            return;
+          }
+
+          // El access caduca a los 15 minutos; que esté caducado no dice nada
+          // sobre la sesión, solo que toca renovarlo
           await refreshAccessToken();
-          response = await requestCurrentUser();
+          response = await requestCurrentUser(controller.signal);
+        }
+
+        if (response.status === 401) {
+          throw new SessionRejectedError('La sesión ya no vale');
         }
 
         if (!response.ok) {
           throw new Error(`current-user respondió ${response.status}`);
         }
 
-        const currentUser = await response.json();
-        if (cancelled) return;
+        const currentUser = new User(await response.json());
+        if (cancelled || settled) return;
 
+        settled = true;
+        clearTimeout(deadline);
         setUser(currentUser);
         navigate(resolveTarget(location.state?.from?.pathname), { replace: true });
         // `isChecking` se queda arriba a propósito: la página se está yendo y
         // bajarlo pintaría el formulario un instante
-        return;
-      } catch {
-        if (cancelled) return;
-        // La sesión no se puede recuperar, así que el `user` guardado es resto
-        // de otra anterior: se tira, o cada montaje repite el viaje a la red
-        clearAuth();
-      }
+      } catch (error) {
+        if (cancelled || settled) return;
 
-      setIsChecking(false);
+        if (isSessionRejected(error)) {
+          // Ahora sí: el `user` guardado es resto de una sesión anterior y se
+          // tira, o cada montaje repite el viaje a la red
+          clearAuth();
+        } else {
+          // Caída, corte de red o respuesta rara. El usuario guardado se queda
+          // donde está: borrarlo por un tropiezo inutilizaría esta redirección
+          // durante los 7 días que al refresh token le quedan de vida
+          console.warn('[auth] no se pudo comprobar la sesión, se muestra el formulario:', error);
+        }
+
+        showForm();
+      }
     };
 
     verifySession();
 
     return () => {
       cancelled = true;
+      clearTimeout(deadline);
+      controller.abort();
     };
   }, [hadStoredUser, navigate, location.state, setUser, clearAuth]);
 
