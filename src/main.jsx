@@ -74,6 +74,22 @@ if (sentryDsn) {
 
       return transaction;
     },
+
+    // Un span puede viajar solo, en su propio envelope, sin transaccion que lo
+    // envuelva: por ahi `beforeSendTransaction` no pasa nunca y la URL entera
+    // -con su query string- saldria sin sanear.
+    beforeSendSpan(span) {
+      if (span.description) {
+        span.description = scrubUrl(span.description);
+      }
+      for (const key of ['url', 'http.url']) {
+        if (typeof span.data?.[key] === 'string') {
+          span.data[key] = scrubUrl(span.data[key]);
+        }
+      }
+
+      return span;
+    },
   });
 }
 

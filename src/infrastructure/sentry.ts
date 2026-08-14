@@ -269,6 +269,24 @@ if (!SENTRY_CONFIG.dsn) {
       return transaction;
     },
 
+    // Los spans sueltos no pasan por el gancho de arriba. Esta rama hoy no se
+    // ejecuta, pero se conserva por si se retira el init de `main.jsx`: si
+    // llegara ese dia, sin esto volveria el mismo agujero que cierra la FE #385.
+    beforeSendSpan(span) {
+      if (span.description) {
+        span.description = scrubUrl(span.description);
+      }
+      if (span.data) {
+        for (const key of ['url', 'http.url']) {
+          if (typeof span.data[key] === 'string') {
+            span.data[key] = scrubUrl(span.data[key]);
+          }
+        }
+      }
+
+      return span;
+    },
+
     // ===== OPCIONES DE TRANSPORTE =====
     // Configurar tiempo de espera y reintentos
     transport: undefined, // Usar transporte por defecto
