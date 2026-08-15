@@ -30,6 +30,21 @@ const NEUTRAL_SLOPE = 113;
 const HOLES_PER_ROUND = 18;
 const SINGLES_PARTICIPANTS = 2;
 
+// Rangos que valida `TeeRating` en el backend. Son MÁS ESTRECHOS que los que
+// admite el `Tee` del frontend (CR 45-90, SR 40-160), que se ensancharon para
+// los pitch & putt federados. El backend descarta la barra que se sale y hace
+// jugar con el Handicap Index a pelo, así que aquí hay que descartarla igual:
+// si no, el reparto cambia en cuanto se cae la red, que es justo cuando este
+// cálculo tiene que servir para algo.
+// El arreglo de fondo es ensanchar `TeeRating`, pero lo comparte `competition`
+// y tocarlo movería el reparto de las competiciones ya creadas.
+const RATED_MIN_COURSE_RATING = 55;
+const RATED_MAX_COURSE_RATING = 85;
+const RATED_MIN_SLOPE_RATING = 55;
+const RATED_MAX_SLOPE_RATING = 155;
+const RATED_MIN_PAR = 66;
+const RATED_MAX_PAR = 76;
+
 class MatchPlayStrokeAllocator {
   /**
    * Golpes que reparte un Playing Handicap en un hoyo concreto, CON SIGNO.
@@ -84,6 +99,42 @@ class MatchPlayStrokeAllocator {
   }
 
   /**
+   * Si una barra se puede usar para calcular un hándicap de juego.
+   *
+   * Espeja la validación de `TeeRating` en el backend, par incluido. Una barra
+   * fuera de rango no invalida la partida: se juega con el Handicap Index.
+   *
+   * @param {{courseRating: number, slopeRating: number}} tee
+   * @param {number} par
+   * @returns {boolean}
+   */
+  static isRatable(tee, par) {
+    if (!tee) return false;
+    return (
+      Number.isFinite(tee.courseRating) &&
+      Number.isFinite(tee.slopeRating) &&
+      tee.courseRating >= RATED_MIN_COURSE_RATING &&
+      tee.courseRating <= RATED_MAX_COURSE_RATING &&
+      tee.slopeRating >= RATED_MIN_SLOPE_RATING &&
+      tee.slopeRating <= RATED_MAX_SLOPE_RATING &&
+      par >= RATED_MIN_PAR &&
+      par <= RATED_MAX_PAR
+    );
+  }
+
+  /**
+   * La barra del participante, solo si se puede valorar.
+   *
+   * @returns {?{tee: Object, par: number}}
+   */
+  static ratableTeeFor(participant, holes, tees) {
+    const tee = MatchPlayStrokeAllocator.findTee(participant, tees);
+    if (!tee) return null;
+    const par = MatchPlayStrokeAllocator.parFor(tee, holes);
+    return MatchPlayStrokeAllocator.isRatable(tee, par) ? { tee, par } : null;
+  }
+
+  /**
    * Course Handicap (sin allowance), base de los repartos por equipos.
    *
    * @returns {number} Entero >= 0
@@ -92,10 +143,10 @@ class MatchPlayStrokeAllocator {
     const hi = participant?.handicap;
     if (hi == null) return 0;
 
-    const tee = MatchPlayStrokeAllocator.findTee(participant, tees);
-    if (!tee) return Math.max(0, PlayingHandicapCalculator.roundHalfAwayFromZero(hi));
+    const rated = MatchPlayStrokeAllocator.ratableTeeFor(participant, holes, tees);
+    if (!rated) return Math.max(0, PlayingHandicapCalculator.roundHalfAwayFromZero(hi));
 
-    const par = MatchPlayStrokeAllocator.parFor(tee, holes);
+    const { tee, par } = rated;
     const raw = hi * (tee.slopeRating / NEUTRAL_SLOPE) + (tee.courseRating - par);
     return Math.max(0, PlayingHandicapCalculator.roundHalfAwayFromZero(raw));
   }
@@ -120,15 +171,15 @@ class MatchPlayStrokeAllocator {
 
     const clamp = (value) => (allowNegative ? value : Math.max(0, value));
 
-    const tee = MatchPlayStrokeAllocator.findTee(participant, tees);
-    if (!tee) return clamp(PlayingHandicapCalculator.roundHalfAwayFromZero(hi));
+    const rated = MatchPlayStrokeAllocator.ratableTeeFor(participant, holes, tees);
+    if (!rated) return clamp(PlayingHandicapCalculator.roundHalfAwayFromZero(hi));
 
     const ph = PlayingHandicapCalculator.calculate(
       hi,
       {
-        courseRating: tee.courseRating,
-        slopeRating: tee.slopeRating,
-        par: MatchPlayStrokeAllocator.parFor(tee, holes),
+        courseRating: rated.tee.courseRating,
+        slopeRating: rated.tee.slopeRating,
+        par: rated.par,
       },
       allowancePercentage
     );
@@ -198,6 +249,29 @@ class MatchPlayStrokeAllocator {
     return MatchPlayStrokeAllocator.#foursomes(participants, holes, tees, allowancePercentage);
   }
 
+  /**
+   * Reparto efectivo de la partida: el del servidor si lo hay, si no el local.
+   *
+   * Lo usan la tarjeta y la clasificación, y por eso vive aquí: si cada
+   * pestaña decidiese por su cuenta cuándo fiarse del servidor, una diferencia
+   * entre las dos implementaciones se vería en una sí y en la otra no.
+   *
+   * @param {Object} params
+   * @param {Array<{participantId: string, playingHandicap: number, strokesByHole: Object}>} params.participantStrokes
+   * @returns {Object<string, {playingHandicap: number, strokesByHole: Object<number, number>}>}
+   */
+  static resolve({ participantStrokes = [], ...localParams }) {
+    if (participantStrokes.length > 0) {
+      return Object.fromEntries(
+        participantStrokes.map((ps) => [
+          ps.participantId,
+          { playingHandicap: ps.playingHandicap, strokesByHole: ps.strokesByHole ?? {} },
+        ])
+      );
+    }
+    return MatchPlayStrokeAllocator.allocate(localParams);
+  }
+
   // ===========================================
   // Reparto por formato
   // ===========================================
@@ -238,16 +312,24 @@ class MatchPlayStrokeAllocator {
   static #fourball(participants, holes, tees, allowance) {
     const courseHandicaps = participants.map((p) => ({
       participantId: p.participantId,
+      participant: p,
       ch: MatchPlayStrokeAllocator.courseHandicap(p, holes, tees),
     }));
     const lowest = Math.min(...courseHandicaps.map((e) => e.ch));
 
     const result = {};
-    for (const { participantId, ch } of courseHandicaps) {
-      const ph = PlayingHandicapCalculator.roundHalfAwayFromZero(
+    for (const { participantId, ch, participant } of courseHandicaps) {
+      const allocated = PlayingHandicapCalculator.roundHalfAwayFromZero(
         (ch - lowest) * (allowance / 100)
       );
-      result[participantId] = MatchPlayStrokeAllocator.#build(Math.max(0, ph), holes);
+      // Se enseña su hándicap de juego, no la diferencia: "recibe 14 golpes"
+      // junto a "Hcp de juego 14" era el mismo número dos veces, y ninguno de
+      // los dos era su hándicap de juego real
+      result[participantId] = MatchPlayStrokeAllocator.#build(
+        Math.max(0, allocated),
+        holes,
+        MatchPlayStrokeAllocator.playingHandicap(participant, holes, tees, allowance)
+      );
     }
     return result;
   }
@@ -274,9 +356,16 @@ class MatchPlayStrokeAllocator {
 
     const result = {};
     // Los dos jugadores del equipo reciben exactamente el mismo reparto: juegan
-    // una sola bola a golpe alterno, así que el golpe es del equipo
-    for (const p of teamA) result[p.participantId] = MatchPlayStrokeAllocator.#build(phA, holes);
-    for (const p of teamB) result[p.participantId] = MatchPlayStrokeAllocator.#build(phB, holes);
+    // una sola bola a golpe alterno, así que el golpe es del equipo. El
+    // hándicap de juego que se enseña sí es el de cada uno.
+    const build = (p, allocated) =>
+      MatchPlayStrokeAllocator.#build(
+        allocated,
+        holes,
+        MatchPlayStrokeAllocator.playingHandicap(p, holes, tees, allowance)
+      );
+    for (const p of teamA) result[p.participantId] = build(p, phA);
+    for (const p of teamB) result[p.participantId] = build(p, phB);
     return result;
   }
 
@@ -284,18 +373,32 @@ class MatchPlayStrokeAllocator {
   // Helpers
   // ===========================================
 
-  static #build(playingHandicap, holes) {
+  /**
+   * @param {number} allocated - Golpes a repartir (la diferencia en match play)
+   * @param {Array<Object>} holes
+   * @param {number} [displayHandicap] - Hándicap de juego del jugador, para
+   *   enseñar. En match play NO coincide con `allocated`: uno es lo que juega y
+   *   el otro lo que recibe.
+   */
+  static #build(allocated, holes, displayHandicap = allocated) {
+    // El reparto va por el ORDEN de dificultad, no por el número de stroke
+    // index en bruto: el backend recorre los hoyos ya ordenados y usa la
+    // posición. Con una tarjeta 1..18 limpia da igual, pero un campo importado
+    // con un stroke index repetido o fuera de rango pondría los golpes en
+    // hoyos distintos dentro y fuera de línea.
+    const byDifficulty = [...holes].sort((a, b) => a.strokeIndex - b.strokeIndex);
+
     const strokesByHole = {};
-    for (const hole of holes) {
+    byDifficulty.forEach((hole, position) => {
       // 18 fijo, no `holes.length`: `GolfCourse` valida exactamente 18 hoyos
       // como invariante, y el backend reparte contra esa misma constante. Usar
       // la longitud de la lista haría que una tarjeta parcial repartiese de más.
-      const count = MatchPlayStrokeAllocator.strokesOnHole(playingHandicap, hole.strokeIndex);
+      const count = MatchPlayStrokeAllocator.strokesOnHole(allocated, position + 1);
       // Solo los hoyos con golpe, igual que el backend: así los dos repartos se
       // pueden comparar tal cual, sin arrastrar 18 ceros
       if (count !== 0) strokesByHole[hole.holeNumber] = count;
-    }
-    return { playingHandicap, strokesByHole };
+    });
+    return { playingHandicap: displayHandicap, strokesByHole };
   }
 
   static #zeroed(participants) {

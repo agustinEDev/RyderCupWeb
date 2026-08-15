@@ -230,7 +230,6 @@ const ParticipantsStep = ({
                 value={guestTeeKey}
                 onChange={onGuestTeeKeyChange}
                 courseTees={courseTees}
-                label={t('create.participants.teeLabel')}
                 placeholder={t('create.participants.teePlaceholder')}
                 playerName={
                   `${guestForm.firstName} ${guestForm.lastName}`.trim() ||

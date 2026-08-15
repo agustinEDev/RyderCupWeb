@@ -77,17 +77,24 @@ describe('QuickMatchScorecardTable', () => {
   });
 
   it('should use the Playing Handicap (via tee + allowance) instead of the raw handicap when resolving stroke dots', () => {
+    // Campo entero y valorable: con un par de dos hoyos el tee queda fuera del
+    // rango WHS y el reparto cae al Handicap Index, que no es lo que se prueba
+    const fullHoles = Array.from({ length: 18 }, (_, i) => ({
+      holeNumber: i + 1,
+      par: 4,
+      strokeIndex: i + 1,
+    }));
     const participant = [
       { participantId: 'p-1', name: 'Alice', handicap: 18, team: null, isGuest: false, color: 'YELLOW', teeGender: 'MALE' },
     ];
-    const tees = [{ color: 'YELLOW', gender: 'MALE', courseRating: 7, slopeRating: 113 }];
-    const holeScores = [{ holeNumber: 1, participantId: 'p-1', score: 5 }];
+    const tees = [{ color: 'YELLOW', gender: 'MALE', courseRating: 72, slopeRating: 113 }];
 
-    // 20% allowance drops the Playing Handicap well below stroke index 5, so no dot should show
+    // Con allowance 20% el hándicap de juego baja a 4: solo los cuatro hoyos
+    // más difíciles llevan punto, no los 18 que daría el hándicap en bruto
     render(
       <QuickMatchScorecardTable
-        holes={holes}
-        holeScores={holeScores}
+        holes={fullHoles}
+        holeScores={[]}
         participants={participant}
         currentParticipantId="p-1"
         tees={tees}
@@ -95,7 +102,7 @@ describe('QuickMatchScorecardTable', () => {
       />
     );
 
-    expect(screen.queryByTestId('stroke-dots')).not.toBeInTheDocument();
+    expect(screen.getAllByTestId('stroke-dots')).toHaveLength(4);
   });
 
   it('should render a separate card per participant instead of one shared table', () => {

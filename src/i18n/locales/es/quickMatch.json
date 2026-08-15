@@ -177,7 +177,9 @@
       "playingHandicap": "Hcp de juego {{value}}",
       "receivesStrokes_one": "recibe {{count}} golpe",
       "receivesStrokes_other": "recibe {{count}} golpes",
-      "receivesNoStrokes": "no recibe golpes"
+      "receivesNoStrokes": "no recibe golpes",
+      "givesStrokes_one": "cede {{count}} golpe",
+      "givesStrokes_other": "cede {{count}} golpes"
     },
     "errors": {
       "generic": "Ha ocurrido un error. Inténtalo de nuevo.",

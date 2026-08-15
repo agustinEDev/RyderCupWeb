@@ -46,30 +46,18 @@ const QuickMatchScorecardTable = ({
   const isStableford = scoringFormat === 'STABLEFORD';
   const isMedal = scoringFormat === 'MEDAL';
 
-  // El backend manda el reparto con el que ha decidido cada hoyo. Es el dato
-  // bueno mientras haya red: si el cliente recalculase siempre, una diferencia
-  // entre las dos implementaciones se vería en la tarjeta y no en el resultado.
-  // Sin conexión no llega nada y se recalcula, que es justo para lo que existe
-  // `MatchPlayStrokeAllocator`.
-  const allocationFromServer = participantStrokes.length
-    ? Object.fromEntries(
-        participantStrokes.map((ps) => [
-          ps.participantId,
-          { playingHandicap: ps.playingHandicap, strokesByHole: ps.strokesByHole ?? {} },
-        ])
-      )
-    : null;
-
-  const allocation =
-    allocationFromServer ??
-    MatchPlayStrokeAllocator.allocate({
-      participants,
-      holes,
-      tees,
-      matchFormat,
-      allowancePercentage,
-      playMode,
-    });
+  // El backend manda el reparto con el que ha decidido cada hoyo, y es el dato
+  // bueno mientras haya red. Sin conexión no llega nada y se recalcula, que es
+  // justo para lo que existe `MatchPlayStrokeAllocator`.
+  const allocation = MatchPlayStrokeAllocator.resolve({
+    participantStrokes,
+    participants,
+    holes,
+    tees,
+    matchFormat,
+    allowancePercentage,
+    playMode,
+  });
 
   const getScore = (holeNumber, participantId) => {
     const entry = holeScores.find((hs) => hs.holeNumber === holeNumber && hs.participantId === participantId);
@@ -79,8 +67,17 @@ const QuickMatchScorecardTable = ({
   const getStrokesReceived = (holeNumber, participantId) =>
     allocation[participantId]?.strokesByHole?.[holeNumber] ?? 0;
 
+  // Con signo: un hándicap plus suma negativo porque CEDE golpes. Sumarlo a
+  // secas y preguntar por "> 0" hacía que la cabecera dijese "no recibe golpes"
+  // mientras la propia tarjeta pintaba los puntos de los golpes cedidos.
   const totalStrokesFor = (participantId) =>
     holes.reduce((sum, h) => sum + getStrokesReceived(h.holeNumber, participantId), 0);
+
+  const describeStrokes = (total) => {
+    if (total > 0) return t('scoring.scorecard.receivesStrokes', { count: total });
+    if (total < 0) return t('scoring.scorecard.givesStrokes', { count: Math.abs(total) });
+    return t('scoring.scorecard.receivesNoStrokes');
+  };
 
   const renderTeeLabel = (participant) => {
     const tee = MatchPlayStrokeAllocator.findTee(participant, tees);
@@ -220,11 +217,7 @@ const QuickMatchScorecardTable = ({
                           value: allocation[p.participantId].playingHandicap,
                         })
                       : null,
-                    totalStrokesFor(p.participantId) > 0
-                      ? t('scoring.scorecard.receivesStrokes', {
-                          count: totalStrokesFor(p.participantId),
-                        })
-                      : t('scoring.scorecard.receivesNoStrokes'),
+                    describeStrokes(totalStrokesFor(p.participantId)),
                   ]
                     .filter(Boolean)
                     .join(' · ')}

@@ -287,6 +287,128 @@ describe('MatchPlayStrokeAllocator', () => {
     });
   });
 
+  describe('Barras no valorables', () => {
+    // El backend descarta las barras fuera del rango WHS y hace jugar con el
+    // Handicap Index. Si aquí se aceptasen, el reparto cambiaría al caerse la
+    // red — justo cuando este cálculo tiene que servir.
+    it('descarta un pitch & putt fuera del rango de slope del backend', () => {
+      const pitchAndPutt = Array.from({ length: 18 }, (_, i) => ({
+        holeNumber: i + 1,
+        par: 3,
+        strokeIndex: i + 1,
+      }));
+      const tees = [{ color: 'YELLOW', gender: 'MALE', courseRating: 46.8, slopeRating: 47 }];
+
+      const result = MatchPlayStrokeAllocator.allocate({
+        participants: [player('a', 18.0)],
+        holes: pitchAndPutt,
+        tees,
+        matchFormat: null,
+        allowancePercentage: 100,
+        playMode: 'HANDICAP',
+      });
+
+      // Handicap Index a pelo (18), no el 0 que saldría de valorar esa barra
+      expect(result.a.playingHandicap).toBe(18);
+    });
+
+    it('acepta una barra dentro del rango', () => {
+      expect(
+        MatchPlayStrokeAllocator.isRatable({ courseRating: 73.1, slopeRating: 140 }, 72)
+      ).toBe(true);
+    });
+
+    it('rechaza un par fuera del rango WHS', () => {
+      expect(
+        MatchPlayStrokeAllocator.isRatable({ courseRating: 73.1, slopeRating: 140 }, 54)
+      ).toBe(false);
+    });
+  });
+
+  describe('Orden de dificultad', () => {
+    it('reparte por el orden de stroke index, no por su valor en bruto', () => {
+      // Tarjeta importada con stroke index no consecutivos: el backend recorre
+      // los hoyos ya ordenados y usa la posición, así que aquí igual
+      const holes = [
+        { holeNumber: 1, par: 4, strokeIndex: 40 },
+        { holeNumber: 2, par: 4, strokeIndex: 3 },
+        { holeNumber: 3, par: 4, strokeIndex: 21 },
+      ];
+
+      const result = MatchPlayStrokeAllocator.allocate({
+        participants: [player('a', 18.0)],
+        holes,
+        tees: [],
+        matchFormat: null,
+        allowancePercentage: 100,
+        playMode: 'HANDICAP',
+      });
+
+      // PH 18: los tres hoyos llevan golpe, y el más difícil es el 2 (SI 3)
+      expect(result.a.strokesByHole).toEqual({ 1: 1, 2: 1, 3: 1 });
+    });
+  });
+
+  describe('Hándicap de juego que se enseña', () => {
+    it('en fourball enseña el hándicap de juego, no la diferencia repartida', () => {
+      const players = [
+        player('a1', 5.0, 'MALE', 'A'),
+        player('a2', 15.0, 'MALE', 'A'),
+        player('b1', 20.0, 'MALE', 'B'),
+        player('b2', 25.0, 'MALE', 'B'),
+      ];
+
+      const result = MatchPlayStrokeAllocator.allocate({
+        participants: players,
+        holes: flatHoles(),
+        tees: MEIS_TEES,
+        matchFormat: 'FOURBALL',
+        allowancePercentage: 90,
+        playMode: 'HANDICAP',
+      });
+
+      // El de 25 recibe menos golpes de los que dice su hándicap de juego: los
+      // golpes son la diferencia respecto al mejor, el hándicap es suyo
+      const worst = result.b2;
+      expect(worst.playingHandicap).toBeGreaterThan(totalStrokes(worst));
+      // Y el de menor hándicap juega off scratch pero conserva el suyo
+      expect(totalStrokes(result.a1)).toBe(0);
+      expect(result.a1.playingHandicap).toBeGreaterThan(0);
+    });
+  });
+
+  describe('resolve', () => {
+    it('prefiere el reparto del backend cuando llega', () => {
+      const result = MatchPlayStrokeAllocator.resolve({
+        participantStrokes: [
+          { participantId: 'a', playingHandicap: 27, strokesByHole: { 2: 1 } },
+        ],
+        participants: [player('a', 18.0)],
+        holes: flatHoles(),
+        tees: MEIS_TEES,
+        matchFormat: null,
+        allowancePercentage: 100,
+        playMode: 'HANDICAP',
+      });
+
+      expect(result.a).toEqual({ playingHandicap: 27, strokesByHole: { 2: 1 } });
+    });
+
+    it('recalcula en local cuando no llega nada (sin conexión)', () => {
+      const result = MatchPlayStrokeAllocator.resolve({
+        participantStrokes: [],
+        participants: [player('a', 18.0)],
+        holes: meisHoles(),
+        tees: MEIS_TEES,
+        matchFormat: null,
+        allowancePercentage: 100,
+        playMode: 'HANDICAP',
+      });
+
+      expect(result.a.playingHandicap).toBe(23);
+    });
+  });
+
   describe('parFor', () => {
     it('usa el par propio de la barra cuando la trae', () => {
       const tee = { color: 'YELLOW', gender: 'MALE', holes: [{ par: 3 }, { par: 4 }] };

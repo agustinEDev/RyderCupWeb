@@ -156,7 +156,6 @@ const CourseStep = ({
           value={creatorTeeKey}
           onChange={onCreatorTeeKeyChange}
           courseTees={courseTees}
-          label={t('create.course.yourTeeLabel')}
           placeholder={t('create.course.yourTeePlaceholder')}
           playerName={t('create.course.yourTeePanelTitle')}
           testIdPrefix="quick-match-creator-tee"
@@ -209,7 +208,9 @@ const CourseStep = ({
             type="button"
             onClick={() => onAllowanceChange(pct)}
             disabled={playMode === 'SCRATCH'}
-            aria-pressed={allowancePercentage === pct}
+            // El mismo guard que el estilo: si no, el lector anuncia "100%,
+            // pulsado" sobre un botón que se ve apagado y sin seleccionar
+            aria-pressed={allowancePercentage === pct && playMode !== 'SCRATCH'}
             data-testid={`quick-match-allowance-option-${pct}`}
             className={`flex-1 px-3 py-2 rounded-lg border text-sm font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
               allowancePercentage === pct && playMode !== 'SCRATCH'

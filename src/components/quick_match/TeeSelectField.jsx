@@ -21,7 +21,6 @@ const TeeSelectField = ({
   value,
   onChange,
   courseTees,
-  label,
   placeholder,
   playerName,
   testIdPrefix,
@@ -45,7 +44,13 @@ const TeeSelectField = ({
       <button
         type="button"
         onClick={() => setIsPanelOpen(true)}
-        aria-label={label}
+        // Sin `aria-label`: sustituiría al contenido y el lector de pantalla
+        // anunciaría siempre "Tus barras", nunca "Amarillas (F)". Todo este
+        // trabajo va de que se vea de qué género es la barra, así que
+        // escondérselo a quien navega por voz deshace el arreglo justo para
+        // quien más lo necesita. El contenido visible ya es un buen nombre.
+        aria-haspopup="dialog"
+        aria-expanded={isPanelOpen}
         data-testid={testIdPrefix}
         className="w-full flex items-center justify-between gap-2 px-3 py-2 border border-gray-300 rounded-md text-sm text-left hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-primary"
       >

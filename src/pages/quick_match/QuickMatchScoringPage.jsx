@@ -243,6 +243,7 @@ const QuickMatchScoringPage = () => {
             tees={tees}
             allowancePercentage={quickMatch?.effectiveAllowance}
             playMode={quickMatch?.playMode}
+            participantStrokes={quickMatch?.participantStrokes ?? []}
             isCompleted={!!quickMatch?.isCompleted}
           />
         )}
