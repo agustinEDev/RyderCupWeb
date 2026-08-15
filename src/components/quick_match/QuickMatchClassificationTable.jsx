@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import StablefordCalculator from '../../domain/services/StablefordCalculator';
+import MatchPlayStrokeAllocator from '../../domain/services/MatchPlayStrokeAllocator';
 
 // Mirrors the backend's ScoringService._compute_standing SINGLES fallback:
 // team is only set for FOURBALL/FOURSOMES, so a 2-participant match without
@@ -81,6 +82,8 @@ const QuickMatchClassificationTable = ({
   standing = null,
   tees = [],
   allowancePercentage = 100,
+  playMode = 'HANDICAP',
+  participantStrokes = [],
   isCompleted = false,
 }) => {
   const { t } = useTranslation('quickMatch');
@@ -96,9 +99,24 @@ const QuickMatchClassificationTable = ({
   }
 
   const isMedal = scoringFormat === 'MEDAL';
-  const ranking = isMedal
-    ? StablefordCalculator.rankParticipantsByMedal(participants, holes, holeScores, tees, allowancePercentage)
-    : StablefordCalculator.rankParticipants(participants, holes, holeScores, tees, allowancePercentage);
+  // Exactamente el mismo reparto que pinta la tarjeta: el del servidor si hay
+  // red, el local si no. Recalcularlo aquí por separado abría la puerta a que
+  // las dos pestañas diesen puntos distintos para el mismo jugador, que es el
+  // fallo que este trabajo viene a cerrar.
+  const allocation = MatchPlayStrokeAllocator.resolve({
+    participantStrokes,
+    participants,
+    holes,
+    tees,
+    matchFormat: null,
+    allowancePercentage,
+    playMode,
+  });
+
+  const rank = isMedal
+    ? StablefordCalculator.rankParticipantsByMedal
+    : StablefordCalculator.rankParticipants;
+  const ranking = rank(participants, holes, holeScores, allocation);
 
   return (
     <div data-testid="quick-match-classification-table" className="overflow-x-auto">

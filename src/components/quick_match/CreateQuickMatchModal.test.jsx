@@ -72,6 +72,19 @@ const renderModal = (props = {}) => {
   );
 };
 
+// Elegir salida es ahora abrir el panel agrupado por género y tocar una opción,
+// el mismo gesto que ya se usaba para los amigos. La fila plana de botones se
+// retiró porque "Amarillas (M)" y "Amarillas (F)" iban pegadas y se confundían.
+const pickCreatorTee = (key) => {
+  fireEvent.click(screen.getByTestId('quick-match-creator-tee'));
+  fireEvent.click(screen.getByTestId(`quick-match-tee-panel-option-${key}`));
+};
+
+const pickGuestTee = (key) => {
+  fireEvent.click(screen.getByTestId('quick-match-guest-tee'));
+  fireEvent.click(screen.getByTestId(`quick-match-tee-panel-option-${key}`));
+};
+
 describe('CreateQuickMatchModal', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -100,6 +113,7 @@ describe('CreateQuickMatchModal', () => {
     await waitFor(() => {
       expect(mockCreate).toHaveBeenCalledWith('course-1', 'SINGLES', null, 'Viernes con Rafa', {
         allowancePercentage: 100,
+        playMode: 'HANDICAP',
         creatorTeeColor: null,
         creatorTeeGender: null,
       });
@@ -124,6 +138,7 @@ describe('CreateQuickMatchModal', () => {
     await waitFor(() => {
       expect(mockCreate).toHaveBeenCalledWith('course-1', 'SINGLES', null, null, {
         allowancePercentage: 100,
+        playMode: 'HANDICAP',
         creatorTeeColor: null,
         creatorTeeGender: null,
       });
@@ -150,6 +165,7 @@ describe('CreateQuickMatchModal', () => {
     await waitFor(() => {
       expect(mockCreate).toHaveBeenCalledWith('course-1', null, 'MEDAL', null, {
         allowancePercentage: 95,
+        playMode: 'HANDICAP',
         creatorTeeColor: null,
         creatorTeeGender: null,
       });
@@ -199,6 +215,7 @@ describe('CreateQuickMatchModal', () => {
     await waitFor(() => {
       expect(mockCreate).toHaveBeenCalledWith('course-1', 'FOURBALL', null, null, {
         allowancePercentage: 50,
+        playMode: 'HANDICAP',
         creatorTeeColor: null,
         creatorTeeGender: null,
       });
@@ -233,14 +250,15 @@ describe('CreateQuickMatchModal', () => {
     fireEvent.click(screen.getByTestId('select-course-stub'));
 
     await waitFor(() => {
-      expect(screen.getByTestId('quick-match-creator-tee-option-YELLOW|MALE')).toBeInTheDocument();
+      expect(screen.getByTestId('quick-match-creator-tee')).toBeInTheDocument();
     });
-    fireEvent.click(screen.getByTestId('quick-match-creator-tee-option-YELLOW|MALE'));
+    pickCreatorTee('YELLOW|MALE');
     fireEvent.click(screen.getByTestId('quick-match-course-next'));
 
     await waitFor(() => {
       expect(mockCreate).toHaveBeenCalledWith('course-1', 'SINGLES', null, null, {
         allowancePercentage: 100,
+        playMode: 'HANDICAP',
         creatorTeeColor: 'YELLOW',
         creatorTeeGender: 'MALE',
       });
@@ -271,9 +289,9 @@ describe('CreateQuickMatchModal', () => {
 
     fireEvent.click(screen.getByTestId('select-course-stub'));
     await waitFor(() => {
-      expect(screen.getByTestId('quick-match-creator-tee-option-RED|FEMALE')).toBeInTheDocument();
+      expect(screen.getByTestId('quick-match-creator-tee')).toBeInTheDocument();
     });
-    fireEvent.click(screen.getByTestId('quick-match-creator-tee-option-RED|FEMALE'));
+    pickCreatorTee('RED|FEMALE');
     fireEvent.click(screen.getByTestId('quick-match-course-next'));
 
     await waitFor(() => {
@@ -281,7 +299,7 @@ describe('CreateQuickMatchModal', () => {
     });
     fireEvent.click(screen.getByText('create.participants.tabGuest'));
 
-    fireEvent.click(screen.getByTestId('quick-match-guest-tee-option-RED|FEMALE'));
+    pickGuestTee('RED|FEMALE');
     fireEvent.change(screen.getByPlaceholderText('create.participants.guestFirstName'), {
       target: { value: 'Jane' },
     });
@@ -332,14 +350,13 @@ describe('CreateQuickMatchModal', () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByTestId('quick-match-creator-tee-option-RED|FEMALE')).toBeInTheDocument();
+      expect(screen.getByTestId('quick-match-creator-tee')).toBeInTheDocument();
     });
 
     // Only course-2's tee ("Red") must be present — the stale course-1 response ("White") must not overwrite it
-    // La etiqueta lleva el sufijo de género, que es lo que distingue dos
-    // salidas del mismo color
-    expect(screen.queryByText('Red (F)')).toBeInTheDocument();
-    expect(screen.queryByText(/White/)).not.toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('quick-match-creator-tee'));
+    expect(screen.getByTestId('quick-match-tee-panel-option-RED|FEMALE')).toBeInTheDocument();
+    expect(screen.queryByTestId('quick-match-tee-panel-option-YELLOW|MALE')).not.toBeInTheDocument();
   });
 
   it('should reset the creator tee selection when switching to a different course', async () => {
@@ -353,17 +370,19 @@ describe('CreateQuickMatchModal', () => {
 
     fireEvent.click(screen.getByTestId('select-course-stub'));
     await waitFor(() => {
-      expect(screen.getByTestId('quick-match-creator-tee-option-YELLOW|MALE')).toBeInTheDocument();
+      expect(screen.getByTestId('quick-match-creator-tee')).toBeInTheDocument();
     });
-    fireEvent.click(screen.getByTestId('quick-match-creator-tee-option-YELLOW|MALE'));
+    pickCreatorTee('YELLOW|MALE');
 
     fireEvent.click(screen.getByTestId('select-course-stub-2'));
     await waitFor(() => {
-      expect(screen.getByTestId('quick-match-creator-tee-option-RED|FEMALE')).toBeInTheDocument();
+      expect(screen.getByTestId('quick-match-creator-tee')).toBeInTheDocument();
     });
 
     // The tee picked for course-1 must not silently carry over to course-2
-    expect(screen.getByTestId('quick-match-creator-tee-option-RED|FEMALE')).toHaveAttribute('aria-pressed', 'false');
+    expect(screen.getByTestId('quick-match-creator-tee')).toHaveTextContent(
+      'create.course.yourTeePlaceholder'
+    );
 
     fireEvent.click(screen.getByTestId('quick-match-course-next'));
     expect(screen.getByTestId('quick-match-modal-error')).toHaveTextContent('create.course.errorTeeRequired');
@@ -404,9 +423,9 @@ describe('CreateQuickMatchModal', () => {
     fireEvent.click(screen.getByTestId('mode-option-FREE_PLAY'));
     fireEvent.click(screen.getByTestId('select-course-stub'));
     await waitFor(() => {
-      expect(screen.getByTestId('quick-match-creator-tee-option-YELLOW|MALE')).toBeInTheDocument();
+      expect(screen.getByTestId('quick-match-creator-tee')).toBeInTheDocument();
     });
-    fireEvent.click(screen.getByTestId('quick-match-creator-tee-option-YELLOW|MALE'));
+    pickCreatorTee('YELLOW|MALE');
     fireEvent.click(screen.getByTestId('quick-match-course-next'));
 
     await waitFor(() => {
@@ -446,10 +465,19 @@ describe('CreateQuickMatchModal', () => {
     fireEvent.click(screen.getByTestId('select-course-stub'));
 
     await waitFor(() => {
-      expect(screen.getByTestId('quick-match-creator-tee-option-YELLOW|MALE')).toBeInTheDocument();
+      expect(screen.getByTestId('quick-match-creator-tee')).toBeInTheDocument();
     });
-    expect(screen.getByTestId('quick-match-creator-tee-option-YELLOW|MALE')).toHaveAttribute('aria-pressed', 'false');
-    expect(screen.queryByTestId('quick-match-creator-tee-option-none')).not.toBeInTheDocument();
+    // Sin elegir nada, el campo enseña el marcador de posición
+    expect(screen.getByTestId('quick-match-creator-tee')).toHaveTextContent(
+      'create.course.yourTeePlaceholder'
+    );
+
+    // Y dentro del panel ninguna salida sale marcada
+    fireEvent.click(screen.getByTestId('quick-match-creator-tee'));
+    expect(screen.getByTestId('quick-match-tee-panel-option-YELLOW|MALE')).toHaveAttribute(
+      'aria-pressed',
+      'false'
+    );
     expect(screen.queryByText('create.course.noTeeOption')).not.toBeInTheDocument();
   });
 
@@ -462,7 +490,7 @@ describe('CreateQuickMatchModal', () => {
 
     fireEvent.click(screen.getByTestId('select-course-stub'));
     await waitFor(() => {
-      expect(screen.getByTestId('quick-match-creator-tee-option-YELLOW|MALE')).toBeInTheDocument();
+      expect(screen.getByTestId('quick-match-creator-tee')).toBeInTheDocument();
     });
 
     fireEvent.click(screen.getByTestId('quick-match-course-next'));
@@ -489,9 +517,9 @@ describe('CreateQuickMatchModal', () => {
 
     fireEvent.click(screen.getByTestId('select-course-stub'));
     await waitFor(() => {
-      expect(screen.getByTestId('quick-match-creator-tee-option-YELLOW|MALE')).toBeInTheDocument();
+      expect(screen.getByTestId('quick-match-creator-tee')).toBeInTheDocument();
     });
-    fireEvent.click(screen.getByTestId('quick-match-creator-tee-option-YELLOW|MALE'));
+    pickCreatorTee('YELLOW|MALE');
     fireEvent.click(screen.getByTestId('quick-match-course-next'));
 
     await waitFor(() => {
@@ -519,9 +547,9 @@ describe('CreateQuickMatchModal', () => {
 
     fireEvent.click(screen.getByTestId('select-course-stub'));
     await waitFor(() => {
-      expect(screen.getByTestId('quick-match-creator-tee-option-YELLOW|MALE')).toBeInTheDocument();
+      expect(screen.getByTestId('quick-match-creator-tee')).toBeInTheDocument();
     });
-    fireEvent.click(screen.getByTestId('quick-match-creator-tee-option-YELLOW|MALE'));
+    pickCreatorTee('YELLOW|MALE');
     fireEvent.click(screen.getByTestId('quick-match-course-next'));
 
     await waitFor(() => {

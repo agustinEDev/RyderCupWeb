@@ -15,6 +15,10 @@ import { teeKey, resolveTeeColor } from './createQuickMatchModalConstants';
  * The tee travels in the same request that adds them and there is no endpoint
  * to change it afterwards, so a mis-tap is undone by removing the participant
  * and adding them again.
+ *
+ * Tambien lo usan el creador y el invitado a traves de `TeeSelectField`, donde
+ * si hay una salida ya elegida: llega en `selectedKey` y se marca, para que
+ * cambiarla sea ver cual esta puesta y tocar otra.
  */
 
 // Las salidas se agrupan por género porque cada jugador elige entre las suyas.
@@ -28,7 +32,7 @@ const GENDER_LABEL_KEY = {
   null: 'create.teePanel.mixed',
 };
 
-const TeeSelectPanel = ({ courseTees, onSelect, onClose, playerName }) => {
+const TeeSelectPanel = ({ courseTees, onSelect, onClose, playerName, selectedKey = null }) => {
   const { t } = useTranslation('quickMatch');
   const { t: tCourses } = useTranslation('golfCourses');
 
@@ -95,15 +99,18 @@ const TeeSelectPanel = ({ courseTees, onSelect, onClose, playerName }) => {
                   // añadió el sufijo en las listas donde van mezcladas
                   const name = tee.identifier || tCourses(`form.teeColors.${tee.color}`, { defaultValue: tee.color });
 
+                  const isSelected = key === selectedKey;
+
                   return (
                     <button
                       key={key}
                       type="button"
                       onClick={() => onSelect(key)}
+                      aria-pressed={isSelected}
                       data-testid={`quick-match-tee-panel-option-${key}`}
                       className={`inline-flex items-center gap-2 rounded-xl border px-3 py-3 text-sm font-medium transition-colors ${
                         color?.selected ?? 'border-gray-200 text-gray-700'
-                      } hover:opacity-80`}
+                      } ${isSelected ? 'ring-2 ring-primary ring-offset-1' : ''} hover:opacity-80`}
                     >
                       {color && (
                         <span className={`w-3 h-3 rounded-full flex-shrink-0 ${color.dot}`} />

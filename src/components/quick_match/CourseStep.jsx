@@ -1,5 +1,5 @@
 import GolfCourseSearchBox from '../golf_course/GolfCourseSearchBox';
-import TeeSelectButtons from './TeeSelectButtons';
+import TeeSelectField from './TeeSelectField';
 import {
   FORMAT_CAPACITY,
   FORMAT_LABEL_KEY,
@@ -32,6 +32,8 @@ const CourseStep = ({
   onCreatorTeeKeyChange,
   allowancePercentage,
   onAllowanceChange,
+  playMode = 'HANDICAP',
+  onPlayModeChange,
   isProcessing,
   teesLoading,
   onClose,
@@ -150,16 +152,51 @@ const CourseStep = ({
         <label className="block text-sm font-medium text-gray-700 mb-1">
           {t('create.course.yourTeeLabel')}
         </label>
-        <TeeSelectButtons
+        <TeeSelectField
           value={creatorTeeKey}
           onChange={onCreatorTeeKeyChange}
           courseTees={courseTees}
-          ariaLabel={t('create.course.yourTeeLabel')}
-          testIdPrefix="quick-match-creator-tee-option"
+          placeholder={t('create.course.yourTeePlaceholder')}
+          playerName={t('create.course.yourTeePanelTitle')}
+          testIdPrefix="quick-match-creator-tee"
         />
       </div>
     )}
 
+    <div>
+      <label className="block text-sm font-medium text-gray-700 mb-1">
+        {t('create.course.playModeLabel')}
+      </label>
+      <div className="flex gap-2" role="group" aria-label={t('create.course.playModeLabel')}>
+        {['HANDICAP', 'SCRATCH'].map((mode) => (
+          <button
+            key={mode}
+            type="button"
+            onClick={() => onPlayModeChange(mode)}
+            aria-pressed={playMode === mode}
+            data-testid={`quick-match-play-mode-option-${mode}`}
+            className={`flex-1 px-3 py-2 rounded-lg border text-sm font-medium transition-colors ${
+              playMode === mode
+                ? 'border-primary bg-primary/5 text-primary'
+                : 'border-gray-200 text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            {mode === 'SCRATCH'
+              ? t('create.course.playModeScratch')
+              : t('create.course.playModeHandicap')}
+          </button>
+        ))}
+      </div>
+      <p className="mt-1 text-xs text-gray-500">
+        {playMode === 'SCRATCH'
+          ? t('create.course.playModeScratchHint')
+          : t('create.course.playModeHandicapHint')}
+      </p>
+    </div>
+
+    {/* El allowance es el porcentaje del hándicap que se aplica: en scratch no
+        se aplica ninguno, así que el selector se deshabilita en vez de
+        desaparecer, para que se vea que existe y por qué no está disponible. */}
     <div>
       <label className="block text-sm font-medium text-gray-700 mb-1">
         {t('create.course.allowanceLabel')}
@@ -170,10 +207,13 @@ const CourseStep = ({
             key={pct}
             type="button"
             onClick={() => onAllowanceChange(pct)}
-            aria-pressed={allowancePercentage === pct}
+            disabled={playMode === 'SCRATCH'}
+            // El mismo guard que el estilo: si no, el lector anuncia "100%,
+            // pulsado" sobre un botón que se ve apagado y sin seleccionar
+            aria-pressed={allowancePercentage === pct && playMode !== 'SCRATCH'}
             data-testid={`quick-match-allowance-option-${pct}`}
-            className={`flex-1 px-3 py-2 rounded-lg border text-sm font-medium transition-colors ${
-              allowancePercentage === pct
+            className={`flex-1 px-3 py-2 rounded-lg border text-sm font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
+              allowancePercentage === pct && playMode !== 'SCRATCH'
                 ? 'border-primary bg-primary/5 text-primary'
                 : 'border-gray-200 text-gray-700 hover:border-gray-300'
             }`}
@@ -182,6 +222,9 @@ const CourseStep = ({
           </button>
         ))}
       </div>
+      {playMode === 'SCRATCH' && (
+        <p className="mt-1 text-xs text-gray-500">{t('create.course.allowanceNotApplied')}</p>
+      )}
     </div>
 
     <div className="flex justify-end gap-3 pt-2">

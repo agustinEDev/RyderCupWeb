@@ -25,6 +25,8 @@ class QuickMatchAssembler {
       scoringFormat: quickMatch.scoringFormat,
       allowancePercentage: quickMatch.allowancePercentage,
       effectiveAllowance: quickMatch.effectiveAllowance,
+      playMode: quickMatch.playMode,
+      participantStrokes: quickMatch.participantStrokes,
       status: quickMatch.status.toString(),
       name: quickMatch.name,
       participants: quickMatch.participants,

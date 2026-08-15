@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import GolfFigure from '../scoring/GolfFigure';
 import StablefordCalculator from '../../domain/services/StablefordCalculator';
+import MatchPlayStrokeAllocator from '../../domain/services/MatchPlayStrokeAllocator';
 
 const MAX_STROKE_DOTS = 2;
 
@@ -10,10 +11,18 @@ const MAX_STROKE_DOTS = 2;
  * isn't a wall of numbers. Each card has its own hole-by-hole grid (OUT/IN),
  * no team columns or validation icons — quick match is single-entry,
  * individual. Small dots under each score mark the holes where that
- * participant receives (or, for a plus handicap, gives back) a handicap
- * stroke, using the same Playing Handicap resolution as the classification
- * tab. In free-play matches, each hole also shows the Stableford points
- * earned (STABLEFORD) or the net strokes played (MEDAL).
+ * participant receives a handicap stroke. In free-play matches, each hole also
+ * shows the Stableford points earned (STABLEFORD) or the net strokes played
+ * (MEDAL).
+ *
+ * Los golpes salen de `MatchPlayStrokeAllocator`, el mismo reparto que usa el
+ * backend para decidir cada hoyo. Antes se repartía el Playing Handicap entero
+ * de cada jugador incluso en match play, que es el método del stroke play: los
+ * puntos caían en hoyos distintos de los que de verdad daban ventaja.
+ *
+ * La cabecera dice desde qué barra juega cada uno. No es adorno: una barra del
+ * género equivocado cambia el Playing Handicap varios golpes y hasta ahora no
+ * había forma de verlo desde la tarjeta.
  */
 const QuickMatchScorecardTable = ({
   holes = [],
@@ -23,9 +32,13 @@ const QuickMatchScorecardTable = ({
   tees = [],
   allowancePercentage = 100,
   scoringFormat = null,
+  matchFormat = null,
+  playMode = 'HANDICAP',
+  participantStrokes = [],
 }) => {
   const { t } = useTranslation('quickMatch');
   const { t: ts } = useTranslation('scoring');
+  const { t: tCourses } = useTranslation('golfCourses');
 
   const outHoles = holes.filter((h) => h.holeNumber <= 9);
   const inHoles = holes.filter((h) => h.holeNumber > 9);
@@ -33,20 +46,49 @@ const QuickMatchScorecardTable = ({
   const isStableford = scoringFormat === 'STABLEFORD';
   const isMedal = scoringFormat === 'MEDAL';
 
-  const strokesBasisByParticipantId = Object.fromEntries(
-    participants.map((p) => [
-      p.participantId,
-      StablefordCalculator.resolveStrokesBasis(p, holes, tees, allowancePercentage),
-    ])
-  );
+  // El backend manda el reparto con el que ha decidido cada hoyo, y es el dato
+  // bueno mientras haya red. Sin conexión no llega nada y se recalcula, que es
+  // justo para lo que existe `MatchPlayStrokeAllocator`.
+  const allocation = MatchPlayStrokeAllocator.resolve({
+    participantStrokes,
+    participants,
+    holes,
+    tees,
+    matchFormat,
+    allowancePercentage,
+    playMode,
+  });
 
   const getScore = (holeNumber, participantId) => {
     const entry = holeScores.find((hs) => hs.holeNumber === holeNumber && hs.participantId === participantId);
     return entry ? entry.score : null;
   };
 
-  const getStrokesReceived = (holeStrokeIndex, participantId) =>
-    StablefordCalculator.allocateStrokes(strokesBasisByParticipantId[participantId], holeStrokeIndex);
+  const getStrokesReceived = (holeNumber, participantId) =>
+    allocation[participantId]?.strokesByHole?.[holeNumber] ?? 0;
+
+  // Con signo: un hándicap plus suma negativo porque CEDE golpes. Sumarlo a
+  // secas y preguntar por "> 0" hacía que la cabecera dijese "no recibe golpes"
+  // mientras la propia tarjeta pintaba los puntos de los golpes cedidos.
+  const totalStrokesFor = (participantId) =>
+    holes.reduce((sum, h) => sum + getStrokesReceived(h.holeNumber, participantId), 0);
+
+  const describeStrokes = (total) => {
+    if (total > 0) return t('scoring.scorecard.receivesStrokes', { count: total });
+    if (total < 0) return t('scoring.scorecard.givesStrokes', { count: Math.abs(total) });
+    return t('scoring.scorecard.receivesNoStrokes');
+  };
+
+  const renderTeeLabel = (participant) => {
+    const tee = MatchPlayStrokeAllocator.findTee(participant, tees);
+    if (!tee) return null;
+    const name =
+      tee.identifier || tCourses(`form.teeColors.${tee.color}`, { defaultValue: tee.color });
+    // Mismo sufijo (M)/(F) que TeeColorBadge y el selector, para no tener dos
+    // convenciones según la pantalla
+    const suffix = tee.gender === 'MALE' ? ' (M)' : tee.gender === 'FEMALE' ? ' (F)' : '';
+    return `${name}${suffix}`;
+  };
 
   const sumStrokes = (holeRange, participantId) =>
     holeRange.reduce((sum, h) => {
@@ -86,7 +128,7 @@ const QuickMatchScorecardTable = ({
             </th>
             {sectionHoles.map((h) => {
               const score = getScore(h.holeNumber, participantId);
-              const strokesReceived = getStrokesReceived(h.strokeIndex, participantId);
+              const strokesReceived = getStrokesReceived(h.holeNumber, participantId);
               const dotCount = Math.min(Math.abs(strokesReceived), MAX_STROKE_DOTS);
               return (
                 <td key={h.holeNumber} className="px-1 py-1 text-center align-top">
@@ -162,6 +204,24 @@ const QuickMatchScorecardTable = ({
                 </span>
               )}
             </span>
+            <p
+              className="text-xs text-gray-500 leading-tight"
+              data-testid={`quick-match-player-handicap-${p.participantId}`}
+            >
+              {playMode === 'SCRATCH'
+                ? t('scoring.scorecard.scratchMatch')
+                : [
+                    renderTeeLabel(p),
+                    allocation[p.participantId]
+                      ? t('scoring.scorecard.playingHandicap', {
+                          value: allocation[p.participantId].playingHandicap,
+                        })
+                      : null,
+                    describeStrokes(totalStrokesFor(p.participantId)),
+                  ]
+                    .filter(Boolean)
+                    .join(' · ')}
+            </p>
           </div>
           <div className="p-2 space-y-2">
             {renderSection(outHoles, ts('scorecard.out'), p.participantId)}

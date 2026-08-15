@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Plus, Trash2 } from 'lucide-react';
-import TeeSelectButtons from './TeeSelectButtons';
+import TeeSelectField from './TeeSelectField';
 import TeeSelectPanel from './TeeSelectPanel';
 import TeeColorBadge from '../golf_course/TeeColorBadge';
 
@@ -226,12 +226,16 @@ const ParticipantsStep = ({
               {guestForm.handicap || t('create.participants.guestHandicap')}
             </button>
             {courseTees.length > 0 && (
-              <TeeSelectButtons
+              <TeeSelectField
                 value={guestTeeKey}
                 onChange={onGuestTeeKeyChange}
                 courseTees={courseTees}
-                ariaLabel={t('create.participants.teeLabel')}
-                testIdPrefix="quick-match-guest-tee-option"
+                placeholder={t('create.participants.teePlaceholder')}
+                playerName={
+                  `${guestForm.firstName} ${guestForm.lastName}`.trim() ||
+                  t('create.participants.guestFallbackName')
+                }
+                testIdPrefix="quick-match-guest-tee"
               />
             )}
             <button
