@@ -1,5 +1,5 @@
 import GolfCourseSearchBox from '../golf_course/GolfCourseSearchBox';
-import TeeSelectButtons from './TeeSelectButtons';
+import TeeSelectField from './TeeSelectField';
 import {
   FORMAT_CAPACITY,
   FORMAT_LABEL_KEY,
@@ -152,12 +152,14 @@ const CourseStep = ({
         <label className="block text-sm font-medium text-gray-700 mb-1">
           {t('create.course.yourTeeLabel')}
         </label>
-        <TeeSelectButtons
+        <TeeSelectField
           value={creatorTeeKey}
           onChange={onCreatorTeeKeyChange}
           courseTees={courseTees}
-          ariaLabel={t('create.course.yourTeeLabel')}
-          testIdPrefix="quick-match-creator-tee-option"
+          label={t('create.course.yourTeeLabel')}
+          placeholder={t('create.course.yourTeePlaceholder')}
+          playerName={t('create.course.yourTeePanelTitle')}
+          testIdPrefix="quick-match-creator-tee"
         />
       </div>
     )}

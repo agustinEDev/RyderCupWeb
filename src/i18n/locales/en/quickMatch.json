@@ -31,7 +31,9 @@
       "playModeScratch": "Scratch",
       "playModeHandicapHint": "Strokes are given according to each player's handicap (WHS).",
       "playModeScratchHint": "Nobody receives strokes: lowest gross score wins.",
-      "allowanceNotApplied": "Not applied in a scratch match."
+      "allowanceNotApplied": "Not applied in a scratch match.",
+      "yourTeePlaceholder": "Pick your tee",
+      "yourTeePanelTitle": "your tee"
     },
     "participants": {
       "heading": "Add participants",
@@ -55,7 +57,9 @@
       "back": "Back",
       "next": "Next",
       "creatorBadge": "You",
-      "guestBadge": "Guest"
+      "guestBadge": "Guest",
+      "teePlaceholder": "Pick their tee",
+      "guestFallbackName": "the guest"
     },
     "scorers": {
       "heading": "Choose scorers",

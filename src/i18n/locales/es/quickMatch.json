@@ -31,7 +31,9 @@
       "playModeScratch": "Scratch",
       "playModeHandicapHint": "Se reparten golpes según el hándicap de cada jugador (WHS).",
       "playModeScratchHint": "Nadie recibe golpes: gana quien menos golpes haga.",
-      "allowanceNotApplied": "No se aplica en una partida scratch."
+      "allowanceNotApplied": "No se aplica en una partida scratch.",
+      "yourTeePlaceholder": "Elige tus barras",
+      "yourTeePanelTitle": "tus barras"
     },
     "participants": {
       "heading": "Añadir participantes",
@@ -55,7 +57,9 @@
       "back": "Atrás",
       "next": "Siguiente",
       "creatorBadge": "Tú",
-      "guestBadge": "Invitado"
+      "guestBadge": "Invitado",
+      "teePlaceholder": "Elige sus barras",
+      "guestFallbackName": "el invitado"
     },
     "scorers": {
       "heading": "Elegir anotadores",
