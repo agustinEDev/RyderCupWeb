@@ -89,13 +89,39 @@ class MatchPlayStrokeAllocator {
    */
   static findTee(participant, tees = []) {
     if (!participant?.color) return null;
+    const sameColor = tees.filter((t) => t.color === participant.color);
+    // Reserva a la barra sin género, igual que el backend: un campo dado de
+    // alta a mano puede tenerla así, y el participante siempre manda color y
+    // género juntos. Sin la reserva no acertaría nunca y caería al hándicap
+    // índice, varios golpes por debajo.
     return (
-      tees.find(
-        (t) =>
-          t.color === participant.color &&
-          (t.gender ?? null) === (participant.teeGender ?? null)
-      ) ?? null
+      sameColor.find((t) => (t.gender ?? null) === (participant.teeGender ?? null)) ??
+      sameColor.find((t) => (t.gender ?? null) === null) ??
+      null
     );
+  }
+
+  /**
+   * Orden de dificultad con el que se reparte a un participante.
+   *
+   * Cada barra puede traer su propia tarjeta, y en 56 de los 800 campos
+   * federados importados el stroke index cambia de una barra a otra. Repartir
+   * con el orden de la tarjeta de referencia del campo pondría los golpes en
+   * los hoyos equivocados a quien juegue otra barra.
+   *
+   * @returns {Array<number>} Números de hoyo, del más difícil al más fácil
+   */
+  static holesByDifficultyFor(participant, holes, tees) {
+    const tee = MatchPlayStrokeAllocator.findTee(participant, tees);
+    const card = tee?.holes?.length ? tee.holes : holes;
+    return [...card]
+      .sort((a, b) => a.strokeIndex - b.strokeIndex)
+      .map((hole) => hole.holeNumber);
+  }
+
+  /** Orden de dificultad del campo, para lo que no es de un jugador concreto. */
+  static courseHolesByDifficulty(holes) {
+    return [...holes].sort((a, b) => a.strokeIndex - b.strokeIndex).map((h) => h.holeNumber);
   }
 
   /**
@@ -172,7 +198,14 @@ class MatchPlayStrokeAllocator {
     const clamp = (value) => (allowNegative ? value : Math.max(0, value));
 
     const rated = MatchPlayStrokeAllocator.ratableTeeFor(participant, holes, tees);
-    if (!rated) return clamp(PlayingHandicapCalculator.roundHalfAwayFromZero(hi));
+    if (!rated) {
+      // El allowance se aplica igual: sin él, quien no tiene barra valorable
+      // jugaría al 100% de su hándicap mientras el resto de la partida juega al
+      // 95%, y saldría ganando por no tener datos.
+      return clamp(
+        PlayingHandicapCalculator.roundHalfAwayFromZero((hi * allowancePercentage) / 100)
+      );
+    }
 
     const ph = PlayingHandicapCalculator.calculate(
       hi,
@@ -282,7 +315,10 @@ class MatchPlayStrokeAllocator {
       // Sin acotar a cero: un hándicap plus cede golpes al campo, y acotarlo
       // dejaba la tarjeta contando una cosa y la clasificación otra
       const ph = MatchPlayStrokeAllocator.playingHandicap(p, holes, tees, allowance, true);
-      result[p.participantId] = MatchPlayStrokeAllocator.#build(ph, holes);
+      result[p.participantId] = MatchPlayStrokeAllocator.#build(
+        ph,
+        MatchPlayStrokeAllocator.holesByDifficultyFor(p, holes, tees)
+      );
     }
     return result;
   }
@@ -298,14 +334,16 @@ class MatchPlayStrokeAllocator {
     const diff = phA - phB;
 
     return {
-      [a.participantId]: {
-        ...MatchPlayStrokeAllocator.#build(Math.max(0, diff), holes),
-        playingHandicap: phA,
-      },
-      [b.participantId]: {
-        ...MatchPlayStrokeAllocator.#build(Math.max(0, -diff), holes),
-        playingHandicap: phB,
-      },
+      [a.participantId]: MatchPlayStrokeAllocator.#build(
+        Math.max(0, diff),
+        MatchPlayStrokeAllocator.holesByDifficultyFor(a, holes, tees),
+        phA
+      ),
+      [b.participantId]: MatchPlayStrokeAllocator.#build(
+        Math.max(0, -diff),
+        MatchPlayStrokeAllocator.holesByDifficultyFor(b, holes, tees),
+        phB
+      ),
     };
   }
 
@@ -327,7 +365,7 @@ class MatchPlayStrokeAllocator {
       // los dos era su hándicap de juego real
       result[participantId] = MatchPlayStrokeAllocator.#build(
         Math.max(0, allocated),
-        holes,
+        MatchPlayStrokeAllocator.holesByDifficultyFor(participant, holes, tees),
         MatchPlayStrokeAllocator.playingHandicap(participant, holes, tees, allowance)
       );
     }
@@ -358,10 +396,15 @@ class MatchPlayStrokeAllocator {
     // Los dos jugadores del equipo reciben exactamente el mismo reparto: juegan
     // una sola bola a golpe alterno, así que el golpe es del equipo. El
     // hándicap de juego que se enseña sí es el de cada uno.
+    // Golpe alterno: una sola bola, así que un solo orden de dificultad para
+    // los dos. Se usa el del campo aunque cada uno juegue una barra distinta,
+    // porque el golpe es del equipo y no puede caer en dos hoyos según quién
+    // golpee. Mismo criterio que el backend.
+    const courseOrder = MatchPlayStrokeAllocator.courseHolesByDifficulty(holes);
     const build = (p, allocated) =>
       MatchPlayStrokeAllocator.#build(
         allocated,
-        holes,
+        courseOrder,
         MatchPlayStrokeAllocator.playingHandicap(p, holes, tees, allowance)
       );
     for (const p of teamA) result[p.participantId] = build(p, phA);
@@ -380,23 +423,23 @@ class MatchPlayStrokeAllocator {
    *   enseñar. En match play NO coincide con `allocated`: uno es lo que juega y
    *   el otro lo que recibe.
    */
-  static #build(allocated, holes, displayHandicap = allocated) {
-    // El reparto va por el ORDEN de dificultad, no por el número de stroke
-    // index en bruto: el backend recorre los hoyos ya ordenados y usa la
-    // posición. Con una tarjeta 1..18 limpia da igual, pero un campo importado
-    // con un stroke index repetido o fuera de rango pondría los golpes en
-    // hoyos distintos dentro y fuera de línea.
-    const byDifficulty = [...holes].sort((a, b) => a.strokeIndex - b.strokeIndex);
-
+  /**
+   * @param {number} allocated - Golpes a repartir
+   * @param {Array<number>} holesByDifficulty - Hoyos del más difícil al más fácil
+   * @param {number} [displayHandicap]
+   */
+  static #build(allocated, holesByDifficulty, displayHandicap = allocated) {
     const strokesByHole = {};
-    byDifficulty.forEach((hole, position) => {
-      // 18 fijo, no `holes.length`: `GolfCourse` valida exactamente 18 hoyos
-      // como invariante, y el backend reparte contra esa misma constante. Usar
-      // la longitud de la lista haría que una tarjeta parcial repartiese de más.
+    // Se reparte por POSICIÓN en el orden de dificultad, no por el valor del
+    // stroke index: es lo que hace el backend, y así un campo importado con un
+    // índice repetido o fuera de rango no reparte distinto dentro y fuera de
+    // línea.
+    holesByDifficulty.forEach((holeNumber, position) => {
+      // 18 fijo, no la longitud de la lista: `GolfCourse` valida exactamente 18
+      // hoyos como invariante y el backend reparte contra esa misma constante.
       const count = MatchPlayStrokeAllocator.strokesOnHole(allocated, position + 1);
-      // Solo los hoyos con golpe, igual que el backend: así los dos repartos se
-      // pueden comparar tal cual, sin arrastrar 18 ceros
-      if (count !== 0) strokesByHole[hole.holeNumber] = count;
+      // Solo los hoyos con golpe, igual que el backend
+      if (count !== 0) strokesByHole[holeNumber] = count;
     });
     return { playingHandicap: displayHandicap, strokesByHole };
   }
