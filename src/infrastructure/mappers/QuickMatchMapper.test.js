@@ -126,3 +126,50 @@ describe('QuickMatchMapper', () => {
     });
   });
 });
+
+describe('QuickMatchMapper - reparto de golpes del backend', () => {
+  const base = {
+    id: 'qm-1',
+    creator_id: 'u-1',
+    golf_course_id: 'gc-1',
+    match_format: 'SINGLES',
+    status: 'IN_PROGRESS',
+    participants: [],
+  };
+
+  it('normaliza a número las claves de hoyo, que en JSON llegan como texto', () => {
+    const result = QuickMatchMapper.toDomain({
+      ...base,
+      participant_strokes: [
+        { participant_id: 'p-1', playing_handicap: 27, strokes_by_hole: { 2: 1, 11: 1 } },
+      ],
+    });
+
+    const [strokes] = result.participantStrokes;
+    expect(strokes.participantId).toBe('p-1');
+    expect(strokes.playingHandicap).toBe(27);
+    expect(strokes.strokesByHole).toEqual({ 2: 1, 11: 1 });
+    // La clave tiene que ser indexable por holeNumber numérico
+    expect(strokes.strokesByHole[2]).toBe(1);
+  });
+
+  it('conserva los golpes cedidos de un hándicap plus', () => {
+    const result = QuickMatchMapper.toDomain({
+      ...base,
+      participant_strokes: [
+        { participant_id: 'p-1', playing_handicap: -2, strokes_by_hole: { 17: -1, 18: -1 } },
+      ],
+    });
+
+    expect(result.participantStrokes[0].strokesByHole).toEqual({ 17: -1, 18: -1 });
+  });
+
+  it('deja la lista vacía cuando la respuesta no trae reparto', () => {
+    expect(QuickMatchMapper.toDomain(base).participantStrokes).toEqual([]);
+  });
+
+  it('usa HANDICAP como modo de juego por defecto', () => {
+    expect(QuickMatchMapper.toDomain(base).playMode).toBe('HANDICAP');
+    expect(QuickMatchMapper.toDomain({ ...base, play_mode: 'SCRATCH' }).playMode).toBe('SCRATCH');
+  });
+});

@@ -247,6 +247,57 @@ describe('MatchPlayStrokeAllocator', () => {
     });
   });
 
+  describe('Hándicap plus (Regla WHS 8.2)', () => {
+    // Campo neutro: slope 113 y CR = par, para que el PH sea el HI exacto
+    const neutralTees = [
+      { color: 'YELLOW', gender: 'MALE', courseRating: 72, slopeRating: 113 },
+    ];
+    const par72Holes = () =>
+      Array.from({ length: 18 }, (_, i) => ({ holeNumber: i + 1, par: 4, strokeIndex: i + 1 }));
+
+    it('cede golpes al campo en partido libre, empezando por el hoyo más fácil', () => {
+      const result = MatchPlayStrokeAllocator.allocate({
+        participants: [player('plus', -2.0)],
+        holes: par72Holes(),
+        tees: neutralTees,
+        matchFormat: null,
+        allowancePercentage: 100,
+        playMode: 'HANDICAP',
+      });
+
+      expect(result.plus.playingHandicap).toBe(-2);
+      expect(result.plus.strokesByHole).toEqual({ 17: -1, 18: -1 });
+      expect(totalStrokes(result.plus)).toBe(-2);
+    });
+
+    it('en match play juega off scratch y el rival recibe la diferencia entera', () => {
+      const result = MatchPlayStrokeAllocator.allocate({
+        participants: [player('plus', -2.0), player('high', 20.0)],
+        holes: par72Holes(),
+        tees: neutralTees,
+        matchFormat: 'SINGLES',
+        allowancePercentage: 100,
+        playMode: 'HANDICAP',
+      });
+
+      expect(result.plus.playingHandicap).toBe(0);
+      expect(result.high.playingHandicap).toBe(20);
+      expect(totalStrokes(result.plus)).toBe(0);
+      expect(totalStrokes(result.high)).toBe(20);
+    });
+  });
+
+  describe('parFor', () => {
+    it('usa el par propio de la barra cuando la trae', () => {
+      const tee = { color: 'YELLOW', gender: 'MALE', holes: [{ par: 3 }, { par: 4 }] };
+      expect(MatchPlayStrokeAllocator.parFor(tee, [{ par: 5 }, { par: 5 }])).toBe(7);
+    });
+
+    it('cae al par del campo si la barra no trae tarjeta', () => {
+      expect(MatchPlayStrokeAllocator.parFor({}, [{ par: 5 }, { par: 5 }])).toBe(10);
+    });
+  });
+
   describe('strokesOnHole', () => {
     it('reparte un segundo golpe cuando el hándicap pasa de 18', () => {
       // PH 23: base 1 en todos, y uno extra en los SI 1 a 5
@@ -258,6 +309,13 @@ describe('MatchPlayStrokeAllocator', () => {
 
     it('no reparte nada con hándicap de juego cero', () => {
       expect(MatchPlayStrokeAllocator.strokesOnHole(0, 1)).toBe(0);
+    });
+
+    it('cede desde el hoyo más fácil hacia atrás con hándicap plus', () => {
+      expect(MatchPlayStrokeAllocator.strokesOnHole(-2, 18)).toBe(-1);
+      expect(MatchPlayStrokeAllocator.strokesOnHole(-2, 17)).toBe(-1);
+      expect(MatchPlayStrokeAllocator.strokesOnHole(-2, 16)).toBe(0);
+      expect(MatchPlayStrokeAllocator.strokesOnHole(-2, 1)).toBe(0);
     });
   });
 

@@ -34,6 +34,7 @@ const QuickMatchScorecardTable = ({
   scoringFormat = null,
   matchFormat = null,
   playMode = 'HANDICAP',
+  participantStrokes = [],
 }) => {
   const { t } = useTranslation('quickMatch');
   const { t: ts } = useTranslation('scoring');
@@ -45,14 +46,30 @@ const QuickMatchScorecardTable = ({
   const isStableford = scoringFormat === 'STABLEFORD';
   const isMedal = scoringFormat === 'MEDAL';
 
-  const allocation = MatchPlayStrokeAllocator.allocate({
-    participants,
-    holes,
-    tees,
-    matchFormat,
-    allowancePercentage,
-    playMode,
-  });
+  // El backend manda el reparto con el que ha decidido cada hoyo. Es el dato
+  // bueno mientras haya red: si el cliente recalculase siempre, una diferencia
+  // entre las dos implementaciones se vería en la tarjeta y no en el resultado.
+  // Sin conexión no llega nada y se recalcula, que es justo para lo que existe
+  // `MatchPlayStrokeAllocator`.
+  const allocationFromServer = participantStrokes.length
+    ? Object.fromEntries(
+        participantStrokes.map((ps) => [
+          ps.participantId,
+          { playingHandicap: ps.playingHandicap, strokesByHole: ps.strokesByHole ?? {} },
+        ])
+      )
+    : null;
+
+  const allocation =
+    allocationFromServer ??
+    MatchPlayStrokeAllocator.allocate({
+      participants,
+      holes,
+      tees,
+      matchFormat,
+      allowancePercentage,
+      playMode,
+    });
 
   const getScore = (holeNumber, participantId) => {
     const entry = holeScores.find((hs) => hs.holeNumber === holeNumber && hs.participantId === participantId);

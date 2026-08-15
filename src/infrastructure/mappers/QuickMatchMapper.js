@@ -66,7 +66,12 @@ class QuickMatchMapper {
     const participantStrokes = (apiData.participant_strokes || []).map((ps) => ({
       participantId: ps.participant_id,
       playingHandicap: ps.playing_handicap,
-      strokesReceived: ps.strokes_received || [],
+      // Número de hoyo -> golpes, con signo: negativo si los cede (hándicap plus).
+      // Las claves llegan como texto en JSON; se normalizan a número para poder
+      // indexar por `holeNumber` sin convertir en cada consulta.
+      strokesByHole: Object.fromEntries(
+        Object.entries(ps.strokes_by_hole || {}).map(([hole, count]) => [Number(hole), count])
+      ),
     }));
 
     const scoringAssignments = (apiData.scoring_assignments || []).map((sa) => ({

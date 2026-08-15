@@ -32,17 +32,33 @@ const SINGLES_PARTICIPANTS = 2;
 
 class MatchPlayStrokeAllocator {
   /**
-   * Golpes que reparte un Playing Handicap en un hoyo concreto.
+   * Golpes que reparte un Playing Handicap en un hoyo concreto, CON SIGNO.
    *
-   * @param {number} playingHandicap - Entero >= 0
+   * Positivo se reparte del hoyo más difícil (stroke index 1) al más fácil,
+   * dando la vuelta al pasar de 18. Negativo (hándicap plus) se cede empezando
+   * por el más fácil y hacia atrás, que es lo que manda la Regla WHS 8.2.
+   *
+   * @param {number} playingHandicap - Entero, puede ser negativo
    * @param {number} strokeIndex - 1 (más difícil) a 18
-   * @returns {number}
+   * @param {number} totalHoles
+   * @returns {number} Positivo si recibe, negativo si cede
    */
-  static strokesOnHole(playingHandicap, strokeIndex) {
-    if (!playingHandicap || playingHandicap <= 0) return 0;
-    const base = Math.floor(playingHandicap / HOLES_PER_ROUND);
-    const extra = playingHandicap % HOLES_PER_ROUND >= strokeIndex ? 1 : 0;
-    return base + extra;
+  static strokesOnHole(playingHandicap, strokeIndex, totalHoles = HOLES_PER_ROUND) {
+    if (!playingHandicap || totalHoles === 0) return 0;
+
+    const sign = playingHandicap > 0 ? 1 : -1;
+    const magnitude = Math.abs(playingHandicap);
+    const base = Math.floor(magnitude / totalHoles);
+    const remainder = magnitude % totalHoles;
+    const extra =
+      sign > 0
+        ? remainder >= strokeIndex
+        : remainder >= totalHoles + 1 - strokeIndex;
+
+    const count = base + (extra ? 1 : 0);
+    // Sin este atajo, un reparto vacío de hándicap plus devuelve -0, que no es
+    // igual a 0 para Object.is (y por tanto tampoco para toBe ni para toEqual)
+    return count === 0 ? 0 : sign * count;
   }
 
   /**
@@ -79,7 +95,7 @@ class MatchPlayStrokeAllocator {
     const tee = MatchPlayStrokeAllocator.findTee(participant, tees);
     if (!tee) return Math.max(0, PlayingHandicapCalculator.roundHalfAwayFromZero(hi));
 
-    const par = holes.reduce((sum, h) => sum + h.par, 0);
+    const par = MatchPlayStrokeAllocator.parFor(tee, holes);
     const raw = hi * (tee.slopeRating / NEUTRAL_SLOPE) + (tee.courseRating - par);
     return Math.max(0, PlayingHandicapCalculator.roundHalfAwayFromZero(raw));
   }
@@ -91,22 +107,51 @@ class MatchPlayStrokeAllocator {
    * se usa el propio Handicap Index: es una aproximación, pero deja la partida
    * utilizable en vez de tratar al jugador como scratch.
    *
-   * @returns {number} Entero >= 0
+   * `allowNegative` deja pasar el hándicap plus, que cede golpes al campo
+   * (Regla WHS 8.2). En match play no se usa: la diferencia entre los dos
+   * Playing Handicaps ya recoge la ventaja, y el WHS acota cada uno a cero
+   * antes de restarlos.
+   *
+   * @returns {number} Entero; negativo solo si allowNegative
    */
-  static playingHandicap(participant, holes, tees, allowancePercentage) {
+  static playingHandicap(participant, holes, tees, allowancePercentage, allowNegative = false) {
     const hi = participant?.handicap;
     if (hi == null) return 0;
 
-    const tee = MatchPlayStrokeAllocator.findTee(participant, tees);
-    if (!tee) return Math.max(0, PlayingHandicapCalculator.roundHalfAwayFromZero(hi));
+    const clamp = (value) => (allowNegative ? value : Math.max(0, value));
 
-    const par = holes.reduce((sum, h) => sum + h.par, 0);
+    const tee = MatchPlayStrokeAllocator.findTee(participant, tees);
+    if (!tee) return clamp(PlayingHandicapCalculator.roundHalfAwayFromZero(hi));
+
     const ph = PlayingHandicapCalculator.calculate(
       hi,
-      { courseRating: tee.courseRating, slopeRating: tee.slopeRating, par },
+      {
+        courseRating: tee.courseRating,
+        slopeRating: tee.slopeRating,
+        par: MatchPlayStrokeAllocator.parFor(tee, holes),
+      },
       allowancePercentage
     );
-    return Math.max(0, ph ?? 0);
+    return clamp(ph ?? 0);
+  }
+
+  /**
+   * Par contra el que se valora una barra.
+   *
+   * Cada barra puede traer su propia tarjeta, y en un campo federado el par de
+   * la barra de señora suele diferir del de caballero. Usar siempre el par del
+   * campo desviaba el Course Handicap respecto al que calcula el backend, que
+   * sí mira el de la barra.
+   *
+   * @param {{holes?: Array<{par: number}>}} tee
+   * @param {Array<{par: number}>} holes - Tarjeta de referencia del campo
+   * @returns {number}
+   */
+  static parFor(tee, holes) {
+    if (tee?.holes?.length) {
+      return tee.holes.reduce((sum, h) => sum + h.par, 0);
+    }
+    return holes.reduce((sum, h) => sum + h.par, 0);
   }
 
   /**
@@ -160,7 +205,9 @@ class MatchPlayStrokeAllocator {
   static #byIndividualHandicap(participants, holes, tees, allowance) {
     const result = {};
     for (const p of participants) {
-      const ph = MatchPlayStrokeAllocator.playingHandicap(p, holes, tees, allowance);
+      // Sin acotar a cero: un hándicap plus cede golpes al campo, y acotarlo
+      // dejaba la tarjeta contando una cosa y la clasificación otra
+      const ph = MatchPlayStrokeAllocator.playingHandicap(p, holes, tees, allowance, true);
       result[p.participantId] = MatchPlayStrokeAllocator.#build(ph, holes);
     }
     return result;
@@ -240,10 +287,13 @@ class MatchPlayStrokeAllocator {
   static #build(playingHandicap, holes) {
     const strokesByHole = {};
     for (const hole of holes) {
-      strokesByHole[hole.holeNumber] = MatchPlayStrokeAllocator.strokesOnHole(
-        playingHandicap,
-        hole.strokeIndex
-      );
+      // 18 fijo, no `holes.length`: `GolfCourse` valida exactamente 18 hoyos
+      // como invariante, y el backend reparte contra esa misma constante. Usar
+      // la longitud de la lista haría que una tarjeta parcial repartiese de más.
+      const count = MatchPlayStrokeAllocator.strokesOnHole(playingHandicap, hole.strokeIndex);
+      // Solo los hoyos con golpe, igual que el backend: así los dos repartos se
+      // pueden comparar tal cual, sin arrastrar 18 ceros
+      if (count !== 0) strokesByHole[hole.holeNumber] = count;
     }
     return { playingHandicap, strokesByHole };
   }

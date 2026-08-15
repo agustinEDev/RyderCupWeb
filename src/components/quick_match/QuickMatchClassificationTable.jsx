@@ -97,14 +97,26 @@ const QuickMatchClassificationTable = ({
   }
 
   const isMedal = scoringFormat === 'MEDAL';
-  // En scratch nadie recibe golpes: se puntúa a bruto. Vaciar el hándicap hace
-  // que `resolveStrokesBasis` devuelva null y el reparto sea cero, en vez de
-  // duplicar aquí la regla del modo de juego.
-  const ranked =
-    playMode === 'SCRATCH' ? participants.map((p) => ({ ...p, handicap: null })) : participants;
+  // El modo de juego viaja hasta el servicio de dominio, que es quien decide si
+  // se reparten golpes. Falsear aquí el hándicap para forzar el scratch dejaba
+  // la regla escondida en un componente.
   const ranking = isMedal
-    ? StablefordCalculator.rankParticipantsByMedal(ranked, holes, holeScores, tees, allowancePercentage)
-    : StablefordCalculator.rankParticipants(ranked, holes, holeScores, tees, allowancePercentage);
+    ? StablefordCalculator.rankParticipantsByMedal(
+        participants,
+        holes,
+        holeScores,
+        tees,
+        allowancePercentage,
+        playMode
+      )
+    : StablefordCalculator.rankParticipants(
+        participants,
+        holes,
+        holeScores,
+        tees,
+        allowancePercentage,
+        playMode
+      );
 
   return (
     <div data-testid="quick-match-classification-table" className="overflow-x-auto">

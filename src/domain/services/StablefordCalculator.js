@@ -1,4 +1,4 @@
-import PlayingHandicapCalculator from './PlayingHandicapCalculator';
+import MatchPlayStrokeAllocator from './MatchPlayStrokeAllocator';
 
 /**
  * Domain Service: StablefordCalculator
@@ -13,32 +13,34 @@ import PlayingHandicapCalculator from './PlayingHandicapCalculator';
  */
 class StablefordCalculator {
   /**
-   * Resolves the handicap value to feed into `allocateStrokes`: the
-   * participant's Playing Handicap if they picked a tee that matches one on
-   * the course, otherwise their raw handicap as-is.
+   * Resolves the handicap value to feed into `allocateStrokes`.
+   *
+   * Delega en `MatchPlayStrokeAllocator`, que es quien sabe resolver la barra
+   * (color + género) y el par contra el que está valorada. Antes esta función
+   * repetía ese cálculo por su cuenta, y las dos copias empezaron a discrepar:
+   * la tarjeta y la clasificación daban totales distintos para el mismo
+   * jugador. Una sola fuente, un solo número.
    *
    * @param {{handicap: number|null, color?: string|null, teeGender?: string|null}} participant
    * @param {Array<{holeNumber: number, par: number}>} holes
    * @param {Array<{color: string, gender?: string|null, courseRating: number, slopeRating: number}>} tees
    * @param {number} allowancePercentage
+   * @param {string} playMode - 'SCRATCH' no reparte golpes a nadie
    * @returns {number|null}
    */
-  static resolveStrokesBasis(participant, holes, tees, allowancePercentage) {
+  static resolveStrokesBasis(participant, holes, tees, allowancePercentage, playMode = 'HANDICAP') {
     if (participant.handicap == null) return null;
-    if (!participant.color) return participant.handicap;
+    if (playMode === 'SCRATCH') return 0;
 
-    const tee = tees.find(
-      (t) => t.color === participant.color && (t.gender ?? null) === (participant.teeGender ?? null)
+    // Con hándicap plus el resultado es negativo a propósito: cede golpes al
+    // campo (Regla WHS 8.2), y `allocateStrokes` sabe repartirlo.
+    return MatchPlayStrokeAllocator.playingHandicap(
+      participant,
+      holes,
+      tees,
+      allowancePercentage,
+      true
     );
-    if (!tee) return participant.handicap;
-
-    const par = holes.reduce((sum, h) => sum + h.par, 0);
-    const playingHandicap = PlayingHandicapCalculator.calculate(
-      participant.handicap,
-      { courseRating: tee.courseRating, slopeRating: tee.slopeRating, par },
-      allowancePercentage
-    );
-    return playingHandicap ?? participant.handicap;
   }
 
   /**
@@ -93,7 +95,14 @@ class StablefordCalculator {
    * @param {number} allowancePercentage - WHS allowance (50-100)
    * @returns {{stablefordPoints: number, totalStrokes: number, netStrokes: number, parPlayed: number, holesPlayed: number}}
    */
-  static computeParticipantTotals(participant, holes, holeScores, tees = [], allowancePercentage = 100) {
+  static computeParticipantTotals(
+    participant,
+    holes,
+    holeScores,
+    tees = [],
+    allowancePercentage = 100,
+    playMode = 'HANDICAP'
+  ) {
     let stablefordPoints = 0;
     let totalStrokes = 0;
     let netStrokes = 0;
@@ -104,7 +113,8 @@ class StablefordCalculator {
       participant,
       holes,
       tees,
-      allowancePercentage
+      allowancePercentage,
+      playMode
     );
 
     for (const hole of holes) {
@@ -147,7 +157,14 @@ class StablefordCalculator {
    * @param {number} allowancePercentage
    * @returns {Array<{participantId: string, name: string, stablefordPoints: number, totalStrokes: number, holesPlayed: number}>}
    */
-  static rankParticipants(participants, holes, holeScores, tees = [], allowancePercentage = 100) {
+  static rankParticipants(
+    participants,
+    holes,
+    holeScores,
+    tees = [],
+    allowancePercentage = 100,
+    playMode = 'HANDICAP'
+  ) {
     const rows = participants.map((participant) => ({
       participantId: participant.participantId,
       name: participant.name,
@@ -157,7 +174,8 @@ class StablefordCalculator {
         holes,
         holeScores,
         tees,
-        allowancePercentage
+        allowancePercentage,
+        playMode
       ),
     }));
 
@@ -181,7 +199,14 @@ class StablefordCalculator {
    * @param {number} allowancePercentage
    * @returns {Array<{participantId: string, name: string, stablefordPoints: number, totalStrokes: number, netStrokes: number, parPlayed: number, holesPlayed: number}>}
    */
-  static rankParticipantsByMedal(participants, holes, holeScores, tees = [], allowancePercentage = 100) {
+  static rankParticipantsByMedal(
+    participants,
+    holes,
+    holeScores,
+    tees = [],
+    allowancePercentage = 100,
+    playMode = 'HANDICAP'
+  ) {
     const rows = participants.map((participant) => ({
       participantId: participant.participantId,
       name: participant.name,
@@ -191,7 +216,8 @@ class StablefordCalculator {
         holes,
         holeScores,
         tees,
-        allowancePercentage
+        allowancePercentage,
+        playMode
       ),
     }));
 
