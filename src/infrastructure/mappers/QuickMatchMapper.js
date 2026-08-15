@@ -60,6 +60,15 @@ class QuickMatchMapper {
         }
       : null;
 
+    // Los golpes que el backend ha usado para decidir cada hoyo. Solo vienen en
+    // el detalle; en la respuesta base la lista llega vacía y el reparto se
+    // recalcula en el cliente (que es lo que permite anotar sin conexión).
+    const participantStrokes = (apiData.participant_strokes || []).map((ps) => ({
+      participantId: ps.participant_id,
+      playingHandicap: ps.playing_handicap,
+      strokesReceived: ps.strokes_received || [],
+    }));
+
     const scoringAssignments = (apiData.scoring_assignments || []).map((sa) => ({
       scorerParticipantId: sa.scorer_participant_id,
       scorerName: sa.scorer_name,
@@ -74,6 +83,7 @@ class QuickMatchMapper {
       scoringFormat: apiData.scoring_format ?? null,
       allowancePercentage: apiData.allowance_percentage ?? null,
       effectiveAllowance: apiData.effective_allowance ?? 100,
+      playMode: apiData.play_mode ?? 'HANDICAP',
       status: QuickMatchStatus.fromString(apiData.status),
       name: apiData.name ?? null,
       participants,
@@ -81,6 +91,7 @@ class QuickMatchMapper {
       holeScores,
       standing,
       scoringAssignments,
+      participantStrokes,
       createdAt: apiData.created_at,
       updatedAt: apiData.updated_at,
     });

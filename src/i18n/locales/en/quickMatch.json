@@ -25,7 +25,13 @@
       "next": "Next",
       "creating": "Creating...",
       "errorCourseRequired": "Select a golf course",
-      "errorTeeRequired": "Select a tee to continue"
+      "errorTeeRequired": "Select a tee to continue",
+      "playModeLabel": "Play mode",
+      "playModeHandicap": "With handicap",
+      "playModeScratch": "Scratch",
+      "playModeHandicapHint": "Strokes are given according to each player's handicap (WHS).",
+      "playModeScratchHint": "Nobody receives strokes: lowest gross score wins.",
+      "allowanceNotApplied": "Not applied in a scratch match."
     },
     "participants": {
       "heading": "Add participants",
@@ -162,7 +168,12 @@
       "strokeReceived": "Receives {{count}} extra stroke(s) on this hole",
       "strokeGiven": "Gives back {{count}} stroke(s) on this hole",
       "holePoints": "{{count}} Stableford point(s) on this hole",
-      "holeNetStrokes": "{{count}} net stroke(s) on this hole"
+      "holeNetStrokes": "{{count}} net stroke(s) on this hole",
+      "scratchMatch": "Scratch match · no handicap",
+      "playingHandicap": "Playing handicap {{value}}",
+      "receivesStrokes_one": "receives {{count}} stroke",
+      "receivesStrokes_other": "receives {{count}} strokes",
+      "receivesNoStrokes": "receives no strokes"
     },
     "errors": {
       "generic": "Something went wrong. Please try again.",

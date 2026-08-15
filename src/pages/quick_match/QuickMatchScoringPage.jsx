@@ -242,6 +242,7 @@ const QuickMatchScoringPage = () => {
             standing={quickMatch?.standing}
             tees={tees}
             allowancePercentage={quickMatch?.effectiveAllowance}
+            playMode={quickMatch?.playMode}
             isCompleted={!!quickMatch?.isCompleted}
           />
         )}
@@ -253,6 +254,8 @@ const QuickMatchScoringPage = () => {
             participants={quickMatch?.participants ?? []}
             currentParticipantId={myParticipant?.participantId}
             scoringFormat={quickMatch?.scoringFormat}
+            matchFormat={quickMatch?.matchFormat}
+            playMode={quickMatch?.playMode}
             tees={tees}
             allowancePercentage={quickMatch?.effectiveAllowance}
           />

@@ -25,7 +25,13 @@
       "next": "Siguiente",
       "creating": "Creando...",
       "errorCourseRequired": "Selecciona un campo de golf",
-      "errorTeeRequired": "Selecciona un tee para continuar"
+      "errorTeeRequired": "Selecciona un tee para continuar",
+      "playModeLabel": "Modo de juego",
+      "playModeHandicap": "Con hándicap",
+      "playModeScratch": "Scratch",
+      "playModeHandicapHint": "Se reparten golpes según el hándicap de cada jugador (WHS).",
+      "playModeScratchHint": "Nadie recibe golpes: gana quien menos golpes haga.",
+      "allowanceNotApplied": "No se aplica en una partida scratch."
     },
     "participants": {
       "heading": "Añadir participantes",
@@ -162,7 +168,12 @@
       "strokeReceived": "Recibe {{count}} golpe(s) extra en este hoyo",
       "strokeGiven": "Cede {{count}} golpe(s) en este hoyo",
       "holePoints": "{{count}} punto(s) Stableford en este hoyo",
-      "holeNetStrokes": "{{count}} golpe(s) netos en este hoyo"
+      "holeNetStrokes": "{{count}} golpe(s) netos en este hoyo",
+      "scratchMatch": "Partida scratch · sin hándicap",
+      "playingHandicap": "Hcp de juego {{value}}",
+      "receivesStrokes_one": "recibe {{count}} golpe",
+      "receivesStrokes_other": "recibe {{count}} golpes",
+      "receivesNoStrokes": "no recibe golpes"
     },
     "errors": {
       "generic": "Ha ocurrido un error. Inténtalo de nuevo.",

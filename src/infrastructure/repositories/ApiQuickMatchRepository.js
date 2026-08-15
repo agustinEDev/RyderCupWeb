@@ -38,7 +38,12 @@ class ApiQuickMatchRepository extends IQuickMatchRepository {
   }
 
   async create(golfCourseId, matchFormat, scoringFormat, name = null, options = {}) {
-    const { allowancePercentage = null, creatorTeeColor = null, creatorTeeGender = null } = options;
+    const {
+      allowancePercentage = null,
+      playMode = 'HANDICAP',
+      creatorTeeColor = null,
+      creatorTeeGender = null,
+    } = options;
     const apiData = await apiRequest('/api/v1/quick-matches', {
       method: 'POST',
       body: JSON.stringify({
@@ -47,6 +52,7 @@ class ApiQuickMatchRepository extends IQuickMatchRepository {
         scoring_format: scoringFormat,
         name,
         allowance_percentage: allowancePercentage,
+        play_mode: playMode,
         creator_tee_color: creatorTeeColor,
         creator_tee_gender: creatorTeeGender,
       }),

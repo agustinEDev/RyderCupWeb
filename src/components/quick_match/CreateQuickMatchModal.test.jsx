@@ -100,6 +100,7 @@ describe('CreateQuickMatchModal', () => {
     await waitFor(() => {
       expect(mockCreate).toHaveBeenCalledWith('course-1', 'SINGLES', null, 'Viernes con Rafa', {
         allowancePercentage: 100,
+        playMode: 'HANDICAP',
         creatorTeeColor: null,
         creatorTeeGender: null,
       });
@@ -124,6 +125,7 @@ describe('CreateQuickMatchModal', () => {
     await waitFor(() => {
       expect(mockCreate).toHaveBeenCalledWith('course-1', 'SINGLES', null, null, {
         allowancePercentage: 100,
+        playMode: 'HANDICAP',
         creatorTeeColor: null,
         creatorTeeGender: null,
       });
@@ -150,6 +152,7 @@ describe('CreateQuickMatchModal', () => {
     await waitFor(() => {
       expect(mockCreate).toHaveBeenCalledWith('course-1', null, 'MEDAL', null, {
         allowancePercentage: 95,
+        playMode: 'HANDICAP',
         creatorTeeColor: null,
         creatorTeeGender: null,
       });
@@ -199,6 +202,7 @@ describe('CreateQuickMatchModal', () => {
     await waitFor(() => {
       expect(mockCreate).toHaveBeenCalledWith('course-1', 'FOURBALL', null, null, {
         allowancePercentage: 50,
+        playMode: 'HANDICAP',
         creatorTeeColor: null,
         creatorTeeGender: null,
       });
@@ -241,6 +245,7 @@ describe('CreateQuickMatchModal', () => {
     await waitFor(() => {
       expect(mockCreate).toHaveBeenCalledWith('course-1', 'SINGLES', null, null, {
         allowancePercentage: 100,
+        playMode: 'HANDICAP',
         creatorTeeColor: 'YELLOW',
         creatorTeeGender: 'MALE',
       });

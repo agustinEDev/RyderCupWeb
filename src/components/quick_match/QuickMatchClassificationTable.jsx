@@ -81,6 +81,7 @@ const QuickMatchClassificationTable = ({
   standing = null,
   tees = [],
   allowancePercentage = 100,
+  playMode = 'HANDICAP',
   isCompleted = false,
 }) => {
   const { t } = useTranslation('quickMatch');
@@ -96,9 +97,14 @@ const QuickMatchClassificationTable = ({
   }
 
   const isMedal = scoringFormat === 'MEDAL';
+  // En scratch nadie recibe golpes: se puntúa a bruto. Vaciar el hándicap hace
+  // que `resolveStrokesBasis` devuelva null y el reparto sea cero, en vez de
+  // duplicar aquí la regla del modo de juego.
+  const ranked =
+    playMode === 'SCRATCH' ? participants.map((p) => ({ ...p, handicap: null })) : participants;
   const ranking = isMedal
-    ? StablefordCalculator.rankParticipantsByMedal(participants, holes, holeScores, tees, allowancePercentage)
-    : StablefordCalculator.rankParticipants(participants, holes, holeScores, tees, allowancePercentage);
+    ? StablefordCalculator.rankParticipantsByMedal(ranked, holes, holeScores, tees, allowancePercentage)
+    : StablefordCalculator.rankParticipants(ranked, holes, holeScores, tees, allowancePercentage);
 
   return (
     <div data-testid="quick-match-classification-table" className="overflow-x-auto">
