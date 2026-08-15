@@ -30,7 +30,7 @@
       "playModeHandicap": "With handicap",
       "playModeScratch": "Scratch",
       "playModeHandicapHint": "Strokes are given according to each player's handicap (WHS).",
-      "playModeScratchHint": "Nobody receives strokes: lowest gross score wins.",
+      "playModeScratchHint": "Nobody receives strokes: everyone plays off zero.",
       "allowanceNotApplied": "Not applied in a scratch match.",
       "yourTeePlaceholder": "Pick your tee",
       "yourTeePanelTitle": "your tee"

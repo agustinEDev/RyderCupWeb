@@ -30,7 +30,7 @@
       "playModeHandicap": "Con hándicap",
       "playModeScratch": "Scratch",
       "playModeHandicapHint": "Se reparten golpes según el hándicap de cada jugador (WHS).",
-      "playModeScratchHint": "Nadie recibe golpes: gana quien menos golpes haga.",
+      "playModeScratchHint": "Nadie recibe golpes: se juega con el hándicap a cero.",
       "allowanceNotApplied": "No se aplica en una partida scratch.",
       "yourTeePlaceholder": "Elige tus barras",
       "yourTeePanelTitle": "tus barras"

@@ -49,8 +49,10 @@ class StablefordCalculator {
    * @param {{participantId: string, handicap: number|null, color?: string|null, teeGender?: string|null}} participant
    * @param {Array<{holeNumber: number, par: number, strokeIndex: number}>} holes
    * @param {Array<{holeNumber: number, participantId: string, score: number}>} holeScores
-   * @param {Array<Object>} tees - Course tees, to resolve the participant's Playing Handicap
-   * @param {number} allowancePercentage - WHS allowance (50-100)
+   * @param {Object<string, {strokesByHole: Object<number, number>}>} allocation - Reparto ya
+   *   resuelto, de `MatchPlayStrokeAllocator.resolve`. Sin entrada para el participante se
+   *   puntúa a bruto, así que pasarle otra cosa (los tees, como pedía la firma vieja) no
+   *   falla: cuenta mal en silencio.
    * @returns {{stablefordPoints: number, totalStrokes: number, netStrokes: number, parPlayed: number, holesPlayed: number}}
    */
   static computeParticipantTotals(participant, holes, holeScores, allocation = {}) {
@@ -100,8 +102,7 @@ class StablefordCalculator {
    * @param {Array<{participantId: string, name: string, handicap: number|null}>} participants
    * @param {Array<{holeNumber: number, par: number, strokeIndex: number}>} holes
    * @param {Array<{holeNumber: number, participantId: string, score: number}>} holeScores
-   * @param {Array<Object>} tees
-   * @param {number} allowancePercentage
+   * @param {Object<string, {strokesByHole: Object<number, number>}>} allocation
    * @returns {Array<{participantId: string, name: string, stablefordPoints: number, totalStrokes: number, holesPlayed: number}>}
    */
   static rankParticipants(participants, holes, holeScores, allocation = {}) {
@@ -133,8 +134,7 @@ class StablefordCalculator {
    * @param {Array<{participantId: string, name: string, handicap: number|null}>} participants
    * @param {Array<{holeNumber: number, par: number, strokeIndex: number}>} holes
    * @param {Array<{holeNumber: number, participantId: string, score: number}>} holeScores
-   * @param {Array<Object>} tees
-   * @param {number} allowancePercentage
+   * @param {Object<string, {strokesByHole: Object<number, number>}>} allocation
    * @returns {Array<{participantId: string, name: string, stablefordPoints: number, totalStrokes: number, netStrokes: number, parPlayed: number, holesPlayed: number}>}
    */
   static rankParticipantsByMedal(participants, holes, holeScores, allocation = {}) {
