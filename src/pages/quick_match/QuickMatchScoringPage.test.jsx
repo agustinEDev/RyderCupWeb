@@ -60,7 +60,8 @@ const baseHookState = {
   courseName: 'Real Club de Golf',
   currentHole: 1,
   isLoading: false,
-  error: null,
+  loadError: null,
+  saveError: null,
   isSubmitting: false,
   myParticipant: baseQuickMatch.participants[0],
   isCreator: false,
@@ -132,11 +133,12 @@ describe('QuickMatchScoringPage - copia de los errores', () => {
     vi.clearAllMocks();
   });
 
-  const renderWithError = (error, quickMatch = null) => {
+  const renderWithError = (error, quickMatch = null, kind = 'load') => {
     mockUseQuickMatchScoring.mockReturnValue({
       ...baseHookState,
       quickMatch,
-      error,
+      loadError: kind === 'load' ? error : null,
+      saveError: kind === 'save' ? error : null,
       setCurrentHole: vi.fn(),
       submitScore: vi.fn(),
       completeMatch: vi.fn(),
@@ -188,7 +190,8 @@ describe('QuickMatchScoringPage - copia de los errores', () => {
   it('no dice "no participas" ante un 403 al anotar, con la partida en pantalla', () => {
     renderWithError(
       withStatus('You are not an assigned scorer for this participant.', 403),
-      baseQuickMatch
+      baseQuickMatch,
+      'save'
     );
 
     const shown = screen.getByTestId('quick-match-scoring-error');
@@ -198,19 +201,37 @@ describe('QuickMatchScoringPage - copia de los errores', () => {
   });
 
   it('distingue el conflicto y la validación al anotar, que antes caían en el genérico', () => {
-    renderWithError(withStatus('Quick match is already completed.', 409), baseQuickMatch);
+    renderWithError(withStatus('Quick match is already completed.', 409), baseQuickMatch, 'save');
     expect(screen.getByTestId('quick-match-scoring-error')).toHaveTextContent(
       'scoring.errors.saveConflict'
     );
 
-    renderWithError(withStatus('Score must be between 1 and 20.', 422), baseQuickMatch);
+    renderWithError(withStatus('Score must be between 1 and 20.', 422), baseQuickMatch, 'save');
     expect(screen.getAllByTestId('quick-match-scoring-error')[1]).toHaveTextContent(
       'scoring.errors.saveInvalid'
     );
   });
 
+  /**
+   * El sondeo cada 10 s recarga la partida mucho después de que se cargara la
+   * primera vez, y `fetchQuickMatch` conserva la anterior a propósito. Con la
+   * partida en pantalla, deducir la operación de su presencia daba la copia de
+   * guardado a un fallo que es de carga.
+   */
+  it('un 403 del sondeo, con la partida ya en pantalla, sigue siendo un error de carga', () => {
+    renderWithError(
+      withStatus('You are not a participant of this quick match.', 403),
+      baseQuickMatch,
+      'load'
+    );
+
+    const shown = screen.getByTestId('quick-match-scoring-error');
+    expect(shown).toHaveTextContent('scoring.errors.forbidden');
+    expect(shown).not.toHaveTextContent('scoring.errors.saveForbidden');
+  });
+
   it('un fallo de red al anotar dice que no se ha podido guardar, no un error de carga', () => {
-    renderWithError(new Error('Failed to fetch'), baseQuickMatch);
+    renderWithError(new Error('Failed to fetch'), baseQuickMatch, 'save');
 
     const shown = screen.getByTestId('quick-match-scoring-error');
     expect(shown).toHaveTextContent('scoring.errors.saveFailed');
