@@ -28,7 +28,21 @@ describe('HoleInput', () => {
    */
   it('marca la coincidencia entre anotadores, que ya solo se ve aquí', () => {
     render(<HoleInput {...defaultProps} validationStatus="mismatch" />);
-    expect(screen.getByTestId('validation-icon')).toBeInTheDocument();
+
+    // Por el título, no por la presencia: ValidationIcon devuelve el mismo
+    // data-testid para su estado "pending" gris, así que buscar solo el testid
+    // pasaría igual aunque el cableado se degradase a un pendiente constante,
+    // que es justo cómo se perdería la señal ahora que este es el único sitio
+    // donde se ve
+    expect(screen.getByTestId('validation-icon')).toHaveAttribute(
+      'title',
+      'validation.mismatch'
+    );
+  });
+
+  it('distingue el acuerdo del desacuerdo, no solo que hay icono', () => {
+    render(<HoleInput {...defaultProps} validationStatus="match" />);
+    expect(screen.getByTestId('validation-icon')).toHaveAttribute('title', 'validation.match');
   });
 
   it('should render hole info', () => {

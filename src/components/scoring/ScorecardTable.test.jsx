@@ -73,8 +73,12 @@ describe('ScorecardTable', () => {
     render(<ScorecardTable holes={holes} players={players} scores={scores} currentUserId="u1" />);
 
     expect(screen.queryByTestId('validation-icon')).not.toBeInTheDocument();
-    // pero el resultado del hoyo sigue estando
-    expect(screen.getAllByTestId('golf-figure').length).toBeGreaterThan(0);
+    // pero los resultados siguen estando: GolfFigure emite el mismo testid para
+    // su guión de "sin resultado", así que contar iconos no distinguiría una
+    // tarjeta con datos de una vacía
+    const figures = screen.getAllByTestId('golf-figure').map((f) => f.textContent);
+    expect(figures).toContain('5');
+    expect(figures).toContain('6');
   });
 
   it('should highlight current user row', () => {
