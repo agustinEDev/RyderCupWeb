@@ -323,6 +323,7 @@ const ScoringPage = () => {
                 // eslint-disable-next-line react-hooks/refs -- pre-existing pattern surfaced by eslint-plugin-react-hooks 7.1.1 bump; needs dedicated review (tracked in follow-up)
                 markedPlayerScore={effectiveMarkedPlayerScore}
                 validationStatus={currentPlayerScore?.validationStatus}
+                markedValidationStatus={markedPlayerScore?.validationStatus}
                 netScore={currentPlayerScore?.netScore}
                 strokesReceived={currentPlayerScore?.strokesReceivedThisHole}
                 holeResult={currentHoleScore?.holeResult}

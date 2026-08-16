@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, within } from '@testing-library/react';
 import HoleInput from './HoleInput';
 
 vi.mock('react-i18next', () => ({
@@ -43,6 +43,30 @@ describe('HoleInput', () => {
   it('distingue el acuerdo del desacuerdo, no solo que hay icono', () => {
     render(<HoleInput {...defaultProps} validationStatus="match" />);
     expect(screen.getByTestId('validation-icon')).toHaveAttribute('title', 'validation.match');
+  });
+
+  /**
+   * Son dos acuerdos distintos: el de la cabecera es el de TU resultado, y el
+   * del jugador al que anotas puede discrepar mientras el tuyo cuadra. Antes se
+   * veía en la tarjeta; ahora que la tarjeta no lo lleva, este es el único
+   * sitio, y sin él la tira de hoyos se pone roja sin decir por quién.
+   */
+  it('marca aparte el desacuerdo del jugador al que anotas', () => {
+    render(
+      <HoleInput {...defaultProps} validationStatus="match" markedValidationStatus="mismatch" />
+    );
+
+    const marked = within(screen.getByTestId('marked-validation')).getByTestId('validation-icon');
+    expect(marked).toHaveAttribute('title', 'validation.mismatch');
+
+    // y el propio sigue diciendo que el tuyo sí cuadra: son independientes
+    const icons = screen.getAllByTestId('validation-icon');
+    expect(icons.some((i) => i.getAttribute('title') === 'validation.match')).toBe(true);
+  });
+
+  it('no reserva sitio para esa marca cuando no anotas a nadie', () => {
+    render(<HoleInput {...defaultProps} validationStatus="match" />);
+    expect(screen.queryByTestId('marked-validation')).not.toBeInTheDocument();
   });
 
   it('should render hole info', () => {

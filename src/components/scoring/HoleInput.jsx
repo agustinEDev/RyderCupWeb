@@ -10,6 +10,7 @@ const HoleInput = ({
   playerScore,
   markedPlayerScore,
   validationStatus,
+  markedValidationStatus,
   netScore,
   strokesReceived,
   holeResult,
@@ -99,7 +100,19 @@ const HoleInput = ({
 
           {/* Marker score */}
           <div className="space-y-1">
-            <label className="text-xs font-medium text-gray-500">{t('input.markerScore')}</label>
+            {/* La marca del jugador al que anotas va aquí y no en la cabecera:
+                la de arriba es la de TU resultado, y son dos acuerdos distintos.
+                Sin esta, un anotador veía su tick verde mientras la tira de
+                hoyos se ponía roja por el otro, sin forma de saber por quién.
+                La tarjeta ya no la lleva, así que este es el único sitio. */}
+            <div className="flex items-center justify-between gap-2">
+              <label className="text-xs font-medium text-gray-500">{t('input.markerScore')}</label>
+              {markedValidationStatus && (
+                <span data-testid="marked-validation">
+                  <ValidationIcon status={markedValidationStatus} />
+                </span>
+              )}
+            </div>
             {!isMarkerScoreLocked ? (
               <button
                 data-testid="marked-score-button"
