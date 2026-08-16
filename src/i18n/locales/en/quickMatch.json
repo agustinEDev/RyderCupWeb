@@ -74,13 +74,15 @@
       "courseLabel": "Course",
       "formatLabel": "Format",
       "allowanceLabel": "Allowance",
+      "allowanceNotApplied": "Not applied",
       "participantsLabel": "Players",
       "handicapPlaceholder": "No handicap",
       "editHandicapNamed": "Edit {{name}}'s handicap",
       "scorersLabel": "Scorers",
       "back": "Back",
       "start": "Confirm and start",
-      "starting": "Starting..."
+      "starting": "Starting...",
+      "noTee": "No tee: plays off the handicap index"
     },
     "handicapPanel": {
       "placeholder": "Enter handicap",

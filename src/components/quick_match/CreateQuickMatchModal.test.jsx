@@ -774,4 +774,183 @@ describe('CreateQuickMatchModal', () => {
     expect(screen.getByTestId('quick-match-scorers-next')).toBeInTheDocument();
     expect(mockCancel).not.toHaveBeenCalled();
   });
+
+  /**
+   * The summary is the last screen before the round starts, and it used to read
+   * "Allowance 100%" on a scratch match — the one setting that guarantees the
+   * allowance is not applied at all. Step 1 already greys it out for that
+   * reason; the recap contradicted it.
+   */
+  const goToSummary = async () => {
+    await waitFor(() => expect(screen.getByTestId('quick-match-course-next')).not.toBeDisabled());
+    fireEvent.click(screen.getByTestId('quick-match-course-next'));
+    await waitFor(() =>
+      expect(screen.getByTestId('quick-match-participants-next')).not.toBeDisabled()
+    );
+    fireEvent.click(screen.getByTestId('quick-match-participants-next'));
+    await waitFor(() => expect(screen.getByTestId('quick-match-scorers-next')).toBeInTheDocument());
+    fireEvent.click(screen.getByTestId('quick-match-scorers-next'));
+    await screen.findByTestId('quick-match-start');
+  };
+
+  it('should recap a scratch match without an allowance percentage', async () => {
+    mockCreate.mockResolvedValue({
+      id: 'qm-1',
+      isPending: true,
+      participants: [{ participantId: 'user-1', userId: 'user-1', name: 'Me', handicap: 18, isGuest: false }],
+    });
+
+    renderModal();
+
+    fireEvent.click(screen.getByTestId('mode-option-FREE_PLAY'));
+    fireEvent.click(screen.getByTestId('select-course-stub'));
+    fireEvent.click(screen.getByTestId('quick-match-play-mode-option-SCRATCH'));
+    await goToSummary();
+
+    expect(screen.getByTestId('quick-match-summary-play-mode')).toHaveTextContent(
+      'create.course.playModeScratch'
+    );
+    const allowance = screen.getByTestId('quick-match-summary-allowance');
+    expect(allowance).toHaveTextContent('create.summary.allowanceNotApplied');
+    expect(allowance).not.toHaveTextContent('%');
+  });
+
+  it('should recap the allowance and the handicap mode on a non-scratch match', async () => {
+    mockCreate.mockResolvedValue({
+      id: 'qm-1',
+      isPending: true,
+      participants: [{ participantId: 'user-1', userId: 'user-1', name: 'Me', handicap: 18, isGuest: false }],
+    });
+
+    renderModal();
+
+    fireEvent.click(screen.getByTestId('mode-option-FREE_PLAY'));
+    fireEvent.click(screen.getByTestId('select-course-stub'));
+    await goToSummary();
+
+    expect(screen.getByTestId('quick-match-summary-play-mode')).toHaveTextContent(
+      'create.course.playModeHandicap'
+    );
+    expect(screen.getByTestId('quick-match-summary-allowance')).toHaveTextContent('95%');
+  });
+
+  it('should show each player tee in the summary, where a wrong one is still cheap to fix', async () => {
+    mockCreate.mockResolvedValue({
+      id: 'qm-1',
+      isPending: true,
+      participants: [
+        {
+          participantId: 'user-1',
+          userId: 'user-1',
+          name: 'Me',
+          handicap: 18,
+          isGuest: false,
+          color: 'YELLOW',
+          teeGender: 'FEMALE',
+        },
+      ],
+    });
+
+    renderModal();
+
+    fireEvent.click(screen.getByTestId('mode-option-FREE_PLAY'));
+    fireEvent.click(screen.getByTestId('select-course-stub'));
+    await goToSummary();
+
+    const summary = screen.getByTestId('quick-match-start').closest('div.p-4');
+    expect(within(summary).getByText(/form\.teeColors\.YELLOW \(F\)/)).toBeInTheDocument();
+  });
+
+  /**
+   * Sin salida el reparto cae al Handicap Index en vez de al hándicap de juego
+   * —varios golpes— y ese es justo el caso que se quedaba en blanco: el resumen
+   * que existe para cazar una salida equivocada no enseñaba ninguna línea.
+   * Pasa de verdad: si la carga de salidas del campo falla, el modal la traga
+   * (`setCourseTees([])`) y el guard de "elige salida" no salta con la lista
+   * vacía, así que todos se crean con `color: null`.
+   */
+  it('avisa cuando un jugador se queda sin barras, en vez de no enseñar nada', async () => {
+    mockCreate.mockResolvedValue({
+      id: 'qm-1',
+      isPending: true,
+      participants: [
+        { participantId: 'user-1', userId: 'user-1', name: 'Me', handicap: 18, isGuest: false },
+      ],
+    });
+
+    renderModal();
+
+    fireEvent.click(screen.getByTestId('mode-option-FREE_PLAY'));
+    fireEvent.click(screen.getByTestId('select-course-stub'));
+    await goToSummary();
+
+    expect(screen.getByTestId('quick-match-summary-tee-user-1')).toHaveTextContent(
+      'create.summary.noTee'
+    );
+  });
+
+  /**
+   * En scratch nadie recibe golpes, así que quedarse sin salida no cuesta nada:
+   * avisar de que "jugará con el hándicap exacto" sería afirmar un efecto que
+   * ese modo no tiene.
+   */
+  it('no avisa de la falta de barras en una partida scratch, donde no cambia nada', async () => {
+    mockCreate.mockResolvedValue({
+      id: 'qm-1',
+      isPending: true,
+      participants: [
+        { participantId: 'user-1', userId: 'user-1', name: 'Me', handicap: 18, isGuest: false },
+      ],
+    });
+
+    renderModal();
+
+    fireEvent.click(screen.getByTestId('mode-option-FREE_PLAY'));
+    fireEvent.click(screen.getByTestId('select-course-stub'));
+    fireEvent.click(screen.getByTestId('quick-match-play-mode-option-SCRATCH'));
+    await goToSummary();
+
+    expect(screen.getByTestId('quick-match-summary-tee-user-1')).not.toHaveTextContent(
+      'create.summary.noTee'
+    );
+  });
+
+  it('nombra la barra igual que el paso 1 cuando el campo le da identificador', async () => {
+    mockGetGolfCourse.mockResolvedValue({
+      tees: [
+        { color: 'YELLOW', gender: 'FEMALE', identifier: 'Amarillas Campeonato', courseRating: 72, slopeRating: 113 },
+      ],
+    });
+    mockCreate.mockResolvedValue({
+      id: 'qm-1',
+      isPending: true,
+      participants: [
+        {
+          participantId: 'user-1',
+          userId: 'user-1',
+          name: 'Me',
+          handicap: 18,
+          isGuest: false,
+          color: 'YELLOW',
+          teeGender: 'FEMALE',
+        },
+      ],
+    });
+
+    renderModal();
+
+    fireEvent.click(screen.getByTestId('mode-option-FREE_PLAY'));
+    fireEvent.click(screen.getByTestId('select-course-stub'));
+    await waitFor(() => {
+      expect(screen.getByTestId('quick-match-creator-tee')).toBeInTheDocument();
+    });
+    pickCreatorTee('YELLOW|FEMALE');
+    await goToSummary();
+
+    // el identificador, no el nombre del color: el paso 1 dice "Amarillas
+    // Campeonato (F)" y el resumen decía "Amarillas (F)"
+    expect(screen.getByTestId('quick-match-summary-tee-user-1')).toHaveTextContent(
+      'Amarillas Campeonato (F)'
+    );
+  });
 });

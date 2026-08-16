@@ -74,13 +74,15 @@
       "courseLabel": "Campo",
       "formatLabel": "Formato",
       "allowanceLabel": "Allowance",
+      "allowanceNotApplied": "No se aplica",
       "participantsLabel": "Jugadores",
       "handicapPlaceholder": "Sin hándicap",
       "editHandicapNamed": "Editar hándicap de {{name}}",
       "scorersLabel": "Anotadores",
       "back": "Atrás",
       "start": "Confirmar e iniciar",
-      "starting": "Iniciando..."
+      "starting": "Iniciando...",
+      "noTee": "Sin barras: jugará con el hándicap exacto"
     },
     "handicapPanel": {
       "placeholder": "Introduce el hándicap",
