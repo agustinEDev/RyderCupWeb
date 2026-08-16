@@ -860,4 +860,71 @@ describe('CreateQuickMatchModal', () => {
     const summary = screen.getByTestId('quick-match-start').closest('div.p-4');
     expect(within(summary).getByText(/form\.teeColors\.YELLOW \(F\)/)).toBeInTheDocument();
   });
+
+  /**
+   * Sin salida el reparto cae al Handicap Index en vez de al hándicap de juego
+   * —varios golpes— y ese es justo el caso que se quedaba en blanco: el resumen
+   * que existe para cazar una salida equivocada no enseñaba ninguna línea.
+   * Pasa de verdad: si la carga de salidas del campo falla, el modal la traga
+   * (`setCourseTees([])`) y el guard de "elige salida" no salta con la lista
+   * vacía, así que todos se crean con `color: null`.
+   */
+  it('avisa cuando un jugador se queda sin barras, en vez de no enseñar nada', async () => {
+    mockCreate.mockResolvedValue({
+      id: 'qm-1',
+      isPending: true,
+      participants: [
+        { participantId: 'user-1', userId: 'user-1', name: 'Me', handicap: 18, isGuest: false },
+      ],
+    });
+
+    renderModal();
+
+    fireEvent.click(screen.getByTestId('mode-option-FREE_PLAY'));
+    fireEvent.click(screen.getByTestId('select-course-stub'));
+    await goToSummary();
+
+    expect(screen.getByTestId('quick-match-summary-tee-user-1')).toHaveTextContent(
+      'create.summary.noTee'
+    );
+  });
+
+  it('nombra la barra igual que el paso 1 cuando el campo le da identificador', async () => {
+    mockGetGolfCourse.mockResolvedValue({
+      tees: [
+        { color: 'YELLOW', gender: 'FEMALE', identifier: 'Amarillas Campeonato', courseRating: 72, slopeRating: 113 },
+      ],
+    });
+    mockCreate.mockResolvedValue({
+      id: 'qm-1',
+      isPending: true,
+      participants: [
+        {
+          participantId: 'user-1',
+          userId: 'user-1',
+          name: 'Me',
+          handicap: 18,
+          isGuest: false,
+          color: 'YELLOW',
+          teeGender: 'FEMALE',
+        },
+      ],
+    });
+
+    renderModal();
+
+    fireEvent.click(screen.getByTestId('mode-option-FREE_PLAY'));
+    fireEvent.click(screen.getByTestId('select-course-stub'));
+    await waitFor(() => {
+      expect(screen.getByTestId('quick-match-creator-tee')).toBeInTheDocument();
+    });
+    pickCreatorTee('YELLOW|FEMALE');
+    await goToSummary();
+
+    // el identificador, no el nombre del color: el paso 1 dice "Amarillas
+    // Campeonato (F)" y el resumen decía "Amarillas (F)"
+    expect(screen.getByTestId('quick-match-summary-tee-user-1')).toHaveTextContent(
+      'Amarillas Campeonato (F)'
+    );
+  });
 });

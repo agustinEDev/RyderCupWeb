@@ -81,7 +81,8 @@
       "scorersLabel": "Scorers",
       "back": "Back",
       "start": "Confirm and start",
-      "starting": "Starting..."
+      "starting": "Starting...",
+      "noTee": "No tee: plays off the handicap index"
     },
     "handicapPanel": {
       "placeholder": "Enter handicap",

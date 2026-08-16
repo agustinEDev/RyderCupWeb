@@ -20,6 +20,7 @@ const SummaryStep = ({
   matchFormat,
   allowancePercentage,
   playMode,
+  courseTees = [],
   participants,
   currentUser,
   isTeamFormat,
@@ -32,6 +33,20 @@ const SummaryStep = ({
   onStart,
 }) => {
   const isScratch = playMode === 'SCRATCH';
+
+  // Se busca la salida entera, no solo color y género, porque el identificador
+  // es parte del nombre: en un campo federado cuya salida amarilla se llama
+  // "Amarillas Campeonato", el paso 1 dice eso y el resumen diría "Amarillas".
+  // Dos nombres para la misma elección estropean justo lo que se viene a
+  // confirmar aquí.
+  const teeFor = (participant) =>
+    participant.color
+      ? courseTees.find(
+          (tee) =>
+            tee.color === participant.color &&
+            (tee.gender ?? null) === (participant.teeGender ?? null)
+        ) ?? { color: participant.color, gender: participant.teeGender }
+      : null;
 
   return (
   <div className="p-4 space-y-4">
@@ -56,7 +71,7 @@ const SummaryStep = ({
         </dd>
         <dt className="text-gray-500">{t('create.summary.allowanceLabel')}</dt>
         <dd
-          className={`text-right ${isScratch ? 'text-gray-400' : 'text-gray-900'}`}
+          className={`text-right ${isScratch ? 'text-gray-600' : 'text-gray-900'}`}
           data-testid="quick-match-summary-allowance"
         >
           {isScratch ? t('create.summary.allowanceNotApplied') : `${allowancePercentage}%`}
@@ -88,9 +103,30 @@ const SummaryStep = ({
                   {p.team === 'A' ? t('create.participants.teamA') : t('create.participants.teamB')}
                 </span>
               )}
-              {p.color && (
-                <span className="flex-shrink-0">
-                  <TeeColorBadge color={p.color} gender={p.teeGender} />
+            </div>
+            {/* En su propia línea: todo lo de arriba es `flex-shrink-0`, así que
+                en un móvil estrecho el nombre se recorta hasta desaparecer
+                antes de que las etiquetas cedan un píxel. Mismo criterio que el
+                paso 2. */}
+            <div className="mt-1" data-testid={`quick-match-summary-tee-${p.participantId}`}>
+              {p.color ? (
+                (() => {
+                  const tee = teeFor(p);
+                  return (
+                    <TeeColorBadge
+                      color={tee.color}
+                      identifier={tee.identifier}
+                      gender={tee.gender}
+                    />
+                  );
+                })()
+              ) : (
+                // El caso peor, y el que se quedaba en blanco: sin salida el
+                // reparto cae al Handicap Index en vez del hándicap de juego, y
+                // eso son varios golpes. Callarlo aquí es esconder justo lo que
+                // este resumen viene a enseñar.
+                <span className="text-xs font-medium text-amber-700">
+                  {t('create.summary.noTee')}
                 </span>
               )}
             </div>
