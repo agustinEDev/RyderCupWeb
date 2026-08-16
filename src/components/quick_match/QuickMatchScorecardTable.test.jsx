@@ -260,4 +260,44 @@ describe('QuickMatchScorecardTable - reparto de golpes por formato', () => {
     expect(cards[0].querySelectorAll('[data-testid="stroke-dots"]').length).toBe(18);
     expect(cards[1].querySelectorAll('[data-testid="stroke-dots"]').length).toBe(18);
   });
+
+  /**
+   * Los dos números de la cabecera no se pueden restar: el Playing Handicap
+   * lleva el allowance, y los golpes salen del allowance sobre la DIFERENCIA de
+   * Course Handicaps. En un fourball al 90% con 23 y 10 en pantalla el reparto
+   * es 14, no 13, y sin decir de dónde sale parece un error de uno.
+   */
+  it('nombra el allowance junto a los golpes en match play', () => {
+    renderSingles();
+
+    // El que recibe necesita la explicación; el que no recibe no tiene nada que
+    // explicar, así que la coletilla ahí solo sería ruido
+    expect(screen.getByTestId('quick-match-player-handicap-p-2')).toHaveTextContent(
+      'scoring.scorecard.ofTheDifference'
+    );
+    expect(screen.getByTestId('quick-match-player-handicap-p-1')).not.toHaveTextContent(
+      'scoring.scorecard.ofTheDifference'
+    );
+  });
+
+  it('no nombra el allowance en partido libre, donde no hay diferencia que explicar', () => {
+    render(
+      <QuickMatchScorecardTable
+        holes={meisHoles}
+        holeScores={[]}
+        participants={singlesParticipants}
+        currentParticipantId="p-1"
+        tees={meisTees}
+        allowancePercentage={95}
+        matchFormat={null}
+        scoringFormat="STABLEFORD"
+      />
+    );
+
+    // Recibe golpes —y muchos— pero son su Playing Handicap entero, no una
+    // diferencia contra nadie
+    const header = screen.getByTestId('quick-match-player-handicap-p-1');
+    expect(header).toHaveTextContent('scoring.scorecard.receivesStrokes');
+    expect(header).not.toHaveTextContent('scoring.scorecard.ofTheDifference');
+  });
 });

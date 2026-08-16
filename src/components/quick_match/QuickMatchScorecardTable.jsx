@@ -73,9 +73,30 @@ const QuickMatchScorecardTable = ({
   const totalStrokesFor = (participantId) =>
     holes.reduce((sum, h) => sum + getStrokesReceived(h.holeNumber, participantId), 0);
 
+  // Los dos números de la cabecera no se pueden restar, y eso confunde: el
+  // Playing Handicap que se muestra lleva el allowance aplicado, mientras que
+  // los golpes salen del allowance aplicado a la DIFERENCIA de Course Handicaps
+  // (WHS). Con 23 y 10 en pantalla, un fourball al 90% reparte 14, no 13. La
+  // coletilla nombra de dónde sale el tercer número en vez de dejar al lector
+  // haciendo una resta que nunca cuadra.
+  //
+  // Solo en match play: en partido libre (`matchFormat === null`) cada jugador
+  // recibe su Playing Handicap entero y no hay diferencia que explicar.
+  const isDifferential = matchFormat !== null;
+
   const describeStrokes = (total) => {
-    if (total > 0) return t('scoring.scorecard.receivesStrokes', { count: total });
-    if (total < 0) return t('scoring.scorecard.givesStrokes', { count: Math.abs(total) });
+    if (total > 0) {
+      const received = t('scoring.scorecard.receivesStrokes', { count: total });
+      return isDifferential
+        ? `${received} ${t('scoring.scorecard.ofTheDifference', { allowance: allowancePercentage })}`
+        : received;
+    }
+    if (total < 0) {
+      const given = t('scoring.scorecard.givesStrokes', { count: Math.abs(total) });
+      return isDifferential
+        ? `${given} ${t('scoring.scorecard.ofTheDifference', { allowance: allowancePercentage })}`
+        : given;
+    }
     return t('scoring.scorecard.receivesNoStrokes');
   };
 
