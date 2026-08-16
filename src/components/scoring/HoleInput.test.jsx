@@ -21,6 +21,16 @@ describe('HoleInput', () => {
     vi.clearAllMocks();
   });
 
+  /**
+   * La tarjeta dejó de marcar la coincidencia y la anotación es ahora el único
+   * sitio donde se ve: si alguien la quita también de aquí, deja de haber forma
+   * de saber que los dos anotadores discrepan.
+   */
+  it('marca la coincidencia entre anotadores, que ya solo se ve aquí', () => {
+    render(<HoleInput {...defaultProps} validationStatus="mismatch" />);
+    expect(screen.getByTestId('validation-icon')).toBeInTheDocument();
+  });
+
   it('should render hole info', () => {
     render(<HoleInput {...defaultProps} />);
     expect(screen.getByTestId('hole-input')).toHaveTextContent('5');
