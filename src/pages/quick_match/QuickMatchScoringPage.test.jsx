@@ -145,34 +145,33 @@ describe('QuickMatchScoringPage - copia de los errores', () => {
     return renderPage();
   };
 
+  const withStatus = (message, status) => {
+    const error = new Error(message);
+    error.status = status;
+    return error;
+  };
+
   /**
    * El `detail` del backend está en inglés, y llegaba tal cual a una pantalla
-   * en español: "You are not a participant of this quick match." El status es
-   * el dato traducible.
+   * en español: "You are not a participant of this quick match."
    */
-  it('traduce un 403 en vez de pintar el mensaje del servidor', () => {
-    const error = new Error('You are not a participant of this quick match.');
-    error.status = 403;
-
-    renderWithError(error);
+  it('traduce un 403 de carga en vez de pintar el mensaje del servidor', () => {
+    renderWithError(withStatus('You are not a participant of this quick match.', 403));
 
     const shown = screen.getByTestId('quick-match-scoring-error');
     expect(shown).toHaveTextContent('scoring.errors.forbidden');
     expect(shown).not.toHaveTextContent('You are not a participant');
   });
 
-  it('traduce un 404 con su propia copia', () => {
-    const error = new Error('Quick match not found');
-    error.status = 404;
-
-    renderWithError(error);
+  it('traduce un 404 de carga con su propia copia', () => {
+    renderWithError(withStatus('Quick match not found', 404));
 
     expect(screen.getByTestId('quick-match-scoring-error')).toHaveTextContent(
       'scoring.errors.notFound'
     );
   });
 
-  it('cae al mensaje genérico cuando el error no trae status', () => {
+  it('cae al mensaje genérico cuando el error de carga no trae status', () => {
     renderWithError(new Error('Failed to fetch'));
 
     const shown = screen.getByTestId('quick-match-scoring-error');
@@ -180,14 +179,41 @@ describe('QuickMatchScoringPage - copia de los errores', () => {
     expect(shown).not.toHaveTextContent('Failed to fetch');
   });
 
-  it('tampoco filtra el mensaje del servidor en el aviso sobre la partida ya cargada', () => {
-    const error = new Error('You are not a participant of this quick match.');
-    error.status = 403;
-
-    renderWithError(error, baseQuickMatch);
+  /**
+   * `useQuickMatchScoring` guarda en el MISMO estado el fallo de cargar y el de
+   * guardar, así que el status por sí solo no basta: un 403 al anotar es "no
+   * eres el anotador de ese jugador", y decirle "no participas en esta partida"
+   * a alguien que se está viendo en la lista es peor que no decirle nada.
+   */
+  it('no dice "no participas" ante un 403 al anotar, con la partida en pantalla', () => {
+    renderWithError(
+      withStatus('You are not an assigned scorer for this participant.', 403),
+      baseQuickMatch
+    );
 
     const shown = screen.getByTestId('quick-match-scoring-error');
-    expect(shown).toHaveTextContent('scoring.errors.forbidden');
-    expect(shown).not.toHaveTextContent('You are not a participant');
+    expect(shown).toHaveTextContent('scoring.errors.saveForbidden');
+    expect(shown).not.toHaveTextContent('scoring.errors.forbidden"');
+    expect(shown).not.toHaveTextContent('You are not an assigned scorer');
+  });
+
+  it('distingue el conflicto y la validación al anotar, que antes caían en el genérico', () => {
+    renderWithError(withStatus('Quick match is already completed.', 409), baseQuickMatch);
+    expect(screen.getByTestId('quick-match-scoring-error')).toHaveTextContent(
+      'scoring.errors.saveConflict'
+    );
+
+    renderWithError(withStatus('Score must be between 1 and 20.', 422), baseQuickMatch);
+    expect(screen.getAllByTestId('quick-match-scoring-error')[1]).toHaveTextContent(
+      'scoring.errors.saveInvalid'
+    );
+  });
+
+  it('un fallo de red al anotar dice que no se ha podido guardar, no un error de carga', () => {
+    renderWithError(new Error('Failed to fetch'), baseQuickMatch);
+
+    const shown = screen.getByTestId('quick-match-scoring-error');
+    expect(shown).toHaveTextContent('scoring.errors.saveFailed');
+    expect(shown).not.toHaveTextContent('Failed to fetch');
   });
 });

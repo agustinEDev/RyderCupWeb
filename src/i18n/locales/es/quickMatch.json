@@ -184,7 +184,12 @@
     "errors": {
       "generic": "Ha ocurrido un error. Inténtalo de nuevo.",
       "forbidden": "No participas en esta partida.",
-      "notFound": "No se ha encontrado la partida"
+      "notFound": "No se ha encontrado la partida",
+      "saveFailed": "No se ha podido guardar el resultado. Inténtalo de nuevo.",
+      "saveForbidden": "No puedes anotar el resultado de este jugador.",
+      "saveNotFound": "La partida o el jugador ya no están disponibles.",
+      "saveConflict": "La partida ha cambiado mientras anotabas. Vuelve a cargarla.",
+      "saveInvalid": "Ese resultado no es válido."
     },
     "retry": "Reintentar"
   }
