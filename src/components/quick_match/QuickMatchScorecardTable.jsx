@@ -73,29 +73,36 @@ const QuickMatchScorecardTable = ({
   const totalStrokesFor = (participantId) =>
     holes.reduce((sum, h) => sum + getStrokesReceived(h.holeNumber, participantId), 0);
 
-  // Los dos números de la cabecera no se pueden restar, y eso confunde: el
-  // Playing Handicap que se muestra lleva el allowance aplicado, mientras que
-  // los golpes salen del allowance aplicado a la DIFERENCIA de Course Handicaps
-  // (WHS). Con 23 y 10 en pantalla, un fourball al 90% reparte 14, no 13. La
-  // coletilla nombra de dónde sale el tercer número en vez de dejar al lector
-  // haciendo una resta que nunca cuadra.
+  // Solo el FOURBALL reparte a partir de una diferencia que NO se puede leer en
+  // la cabecera, y por eso es el único que necesita explicarse:
   //
-  // Solo en match play: en partido libre (`matchFormat === null`) cada jugador
-  // recibe su Playing Handicap entero y no hay diferencia que explicar.
-  const isDifferential = matchFormat !== null;
+  //   FOURBALL   (ch - menor ch de los cuatro) x allowance  -> los Course
+  //              Handicaps no se enseñan, así que con "Hcp de juego 23" y
+  //              "Hcp de juego 10" en pantalla el reparto es 14 y la resta da
+  //              13. Ahí es donde el lector cree ver un error de uno.
+  //   SINGLES    phA - phB, con el allowance ya dentro de los dos -> la resta
+  //              de los dos números de la cabecera cuadra siempre. Decir aquí
+  //              "el N% de la diferencia" sería falso.
+  //   FOURSOMES  diferencia de PROMEDIOS de equipo: los dos compañeros reciben
+  //              el mismo número junto a hándicaps de juego distintos, y ningún
+  //              par de números en pantalla lo reproduce. Necesita su propia
+  //              explicación, no esta.
+  //   libre      cada uno recibe su Playing Handicap entero, sin diferencia.
+  const explainsAllowance = matchFormat === 'FOURBALL';
+
+  const withAllowanceNote = (text) =>
+    explainsAllowance
+      ? `${text} ${t('scoring.scorecard.ofTheDifference', { allowance: allowancePercentage })}`
+      : text;
 
   const describeStrokes = (total) => {
     if (total > 0) {
-      const received = t('scoring.scorecard.receivesStrokes', { count: total });
-      return isDifferential
-        ? `${received} ${t('scoring.scorecard.ofTheDifference', { allowance: allowancePercentage })}`
-        : received;
+      return withAllowanceNote(t('scoring.scorecard.receivesStrokes', { count: total }));
     }
     if (total < 0) {
-      const given = t('scoring.scorecard.givesStrokes', { count: Math.abs(total) });
-      return isDifferential
-        ? `${given} ${t('scoring.scorecard.ofTheDifference', { allowance: allowancePercentage })}`
-        : given;
+      return withAllowanceNote(
+        t('scoring.scorecard.givesStrokes', { count: Math.abs(total) })
+      );
     }
     return t('scoring.scorecard.receivesNoStrokes');
   };
