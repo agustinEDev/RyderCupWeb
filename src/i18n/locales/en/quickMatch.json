@@ -180,6 +180,7 @@
       "receivesStrokes_one": "receives {{count}} stroke",
       "receivesStrokes_other": "receives {{count}} strokes",
       "receivesNoStrokes": "receives no strokes",
+      "ofTheDifference": "({{allowance}}% of the difference)",
       "givesStrokes_one": "gives back {{count}} stroke",
       "givesStrokes_other": "gives back {{count}} strokes"
     },

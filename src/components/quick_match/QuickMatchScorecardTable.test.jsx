@@ -4,7 +4,7 @@ import QuickMatchScorecardTable from './QuickMatchScorecardTable';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key) => key,
+    t: (key, opts) => (opts ? `${key} ${JSON.stringify(opts)}` : key),
     i18n: { language: 'en' },
   }),
 }));
@@ -197,6 +197,17 @@ describe('QuickMatchScorecardTable - reparto de golpes por formato', () => {
     },
   ];
 
+  // El fourball que se anotó contra el despliegue local: 18/8 contra 20/28 en
+  // Meis amarillas masculinas al 90%. Course handicaps 23/11/26/36, el menor es
+  // 11, y el reparto sale (ch - 11) x 90%: 11 / 0 / 14 / 23. Los hándicaps de
+  // juego que se ENSEÑAN son otros —21/10/23/32—, y por eso 23 - 10 no da 14.
+  const fourballParticipants = [
+    { participantId: 'p-1', name: 'Agustin', handicap: 18.0, color: 'YELLOW', teeGender: 'MALE', team: 'A', isGuest: false },
+    { participantId: 'p-2', name: 'Companero', handicap: 8.0, color: 'YELLOW', teeGender: 'MALE', team: 'A', isGuest: false },
+    { participantId: 'p-3', name: 'RivalUno', handicap: 20.0, color: 'YELLOW', teeGender: 'MALE', team: 'B', isGuest: false },
+    { participantId: 'p-4', name: 'RivalDos', handicap: 28.0, color: 'YELLOW', teeGender: 'MALE', team: 'B', isGuest: false },
+  ];
+
   const renderSingles = (props = {}) =>
     render(
       <QuickMatchScorecardTable
@@ -259,5 +270,94 @@ describe('QuickMatchScorecardTable - reparto de golpes por formato', () => {
     // Los dos reciben: aquí el reparto individual es el correcto
     expect(cards[0].querySelectorAll('[data-testid="stroke-dots"]').length).toBe(18);
     expect(cards[1].querySelectorAll('[data-testid="stroke-dots"]').length).toBe(18);
+  });
+
+  /**
+   * El FOURBALL es el único formato cuyo reparto no se puede leer de la
+   * cabecera: sale de los Course Handicaps, que no se enseñan. Con "Hcp de
+   * juego 23" y "Hcp de juego 10" delante, un fourball al 90% reparte 14 y la
+   * resta da 13.
+   */
+  it('nombra el allowance en fourball, donde la resta de la cabecera no cuadra', () => {
+    render(
+      <QuickMatchScorecardTable
+        holes={meisHoles}
+        holeScores={[]}
+        participants={fourballParticipants}
+        currentParticipantId="p-1"
+        tees={meisTees}
+        allowancePercentage={90}
+        matchFormat="FOURBALL"
+      />
+    );
+
+    const receiver = screen.getByTestId('quick-match-player-handicap-p-3');
+    expect(receiver).toHaveTextContent('scoring.scorecard.ofTheDifference');
+    // y con el allowance de verdad dentro, no con uno cualquiera
+    expect(receiver).toHaveTextContent('"allowance":90');
+
+    // el de menor hándicap no recibe nada, así que no hay nada que explicarle
+    expect(screen.getByTestId('quick-match-player-handicap-p-2')).not.toHaveTextContent(
+      'scoring.scorecard.ofTheDifference'
+    );
+  });
+
+  /**
+   * En SINGLES los golpes son `phA - phB` con el allowance ya dentro de los
+   * dos, así que la resta de los dos números de la cabecera cuadra siempre.
+   * Decir aquí "el 90% de la diferencia" sería sencillamente falso.
+   */
+  it('no nombra el allowance en singles, donde la resta ya cuadra', () => {
+    renderSingles({ allowancePercentage: 90 });
+
+    const header = screen.getByTestId('quick-match-player-handicap-p-2');
+    expect(header).toHaveTextContent('scoring.scorecard.receivesStrokes');
+    expect(header).not.toHaveTextContent('scoring.scorecard.ofTheDifference');
+  });
+
+  /**
+   * En FOURSOMES el número sale de promedios por equipo y los dos compañeros
+   * reciben lo mismo junto a hándicaps de juego distintos: ningún par de
+   * números en pantalla lo reproduce, así que esta explicación no vale.
+   */
+  it('no nombra el allowance en foursomes, que necesitaría otra explicación', () => {
+    render(
+      <QuickMatchScorecardTable
+        holes={meisHoles}
+        holeScores={[]}
+        participants={fourballParticipants}
+        currentParticipantId="p-1"
+        tees={meisTees}
+        allowancePercentage={50}
+        matchFormat="FOURSOMES"
+      />
+    );
+
+    for (const id of ['p-1', 'p-2', 'p-3', 'p-4']) {
+      expect(screen.getByTestId(`quick-match-player-handicap-${id}`)).not.toHaveTextContent(
+        'scoring.scorecard.ofTheDifference'
+      );
+    }
+  });
+
+  it('no nombra el allowance en partido libre, donde no hay diferencia que explicar', () => {
+    render(
+      <QuickMatchScorecardTable
+        holes={meisHoles}
+        holeScores={[]}
+        participants={singlesParticipants}
+        currentParticipantId="p-1"
+        tees={meisTees}
+        allowancePercentage={95}
+        matchFormat={null}
+        scoringFormat="STABLEFORD"
+      />
+    );
+
+    // Recibe golpes —y muchos— pero son su Playing Handicap entero, no una
+    // diferencia contra nadie
+    const header = screen.getByTestId('quick-match-player-handicap-p-1');
+    expect(header).toHaveTextContent('scoring.scorecard.receivesStrokes');
+    expect(header).not.toHaveTextContent('scoring.scorecard.ofTheDifference');
   });
 });

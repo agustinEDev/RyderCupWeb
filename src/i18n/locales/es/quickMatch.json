@@ -180,6 +180,7 @@
       "receivesStrokes_one": "recibe {{count}} golpe",
       "receivesStrokes_other": "recibe {{count}} golpes",
       "receivesNoStrokes": "no recibe golpes",
+      "ofTheDifference": "({{allowance}}% de la diferencia)",
       "givesStrokes_one": "cede {{count}} golpe",
       "givesStrokes_other": "cede {{count}} golpes"
     },
