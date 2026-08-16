@@ -74,6 +74,7 @@
       "courseLabel": "Course",
       "formatLabel": "Format",
       "allowanceLabel": "Allowance",
+      "allowanceNotApplied": "Not applied",
       "participantsLabel": "Players",
       "handicapPlaceholder": "No handicap",
       "editHandicapNamed": "Edit {{name}}'s handicap",

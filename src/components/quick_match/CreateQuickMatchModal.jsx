@@ -451,6 +451,7 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser }) => {
             scoringFormat={scoringFormat}
             matchFormat={matchFormat}
             allowancePercentage={allowancePercentage}
+            playMode={playMode}
             participants={participants}
             currentUser={currentUser}
             isTeamFormat={isTeamFormat}

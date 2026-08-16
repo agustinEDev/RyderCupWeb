@@ -74,6 +74,7 @@
       "courseLabel": "Campo",
       "formatLabel": "Formato",
       "allowanceLabel": "Allowance",
+      "allowanceNotApplied": "No se aplica",
       "participantsLabel": "Jugadores",
       "handicapPlaceholder": "Sin hándicap",
       "editHandicapNamed": "Editar hándicap de {{name}}",
