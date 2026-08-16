@@ -12,6 +12,41 @@ import QuickMatchScorecardTable from '../../components/quick_match/QuickMatchSco
 
 const TABS = ['input', 'classification', 'scorecard'];
 
+/**
+ * El `message` de un error de la API es el `detail` que escribe el backend, y
+ * ese está en inglés: pintarlo tal cual metía "You are not a participant of
+ * this quick match." en medio de una pantalla en español. El status sí es un
+ * dato estable y traducible, así que la copia sale de él.
+ *
+ * Hacen falta DOS mapas porque el mismo status significa cosas distintas según
+ * la operación: un 403 al cargar es "no juegas esta partida", pero un 403 al
+ * anotar es "no eres el anotador de ese jugador" — decirle lo primero a alguien
+ * que se está viendo en la lista de participantes es peor que no decirle nada.
+ *
+ * Cuál es cuál lo dice el hook, que los guarda por separado. Deducirlo de si
+ * había partida en pantalla no valía: el sondeo cada 10 s falla mucho después
+ * de que la partida haya cargado, y ese fallo es de carga.
+ */
+const LOAD_ERROR_KEY_BY_STATUS = {
+  403: 'scoring.errors.forbidden',
+  404: 'scoring.errors.notFound',
+};
+
+// Los endpoints de anotación devuelven 403, 404, 409 y 422; el resto cae en el
+// mensaje de "no se ha podido guardar", que es cierto sea cual sea la causa
+const SAVE_ERROR_KEY_BY_STATUS = {
+  403: 'scoring.errors.saveForbidden',
+  404: 'scoring.errors.saveNotFound',
+  409: 'scoring.errors.saveConflict',
+  422: 'scoring.errors.saveInvalid',
+};
+
+const loadErrorKeyFor = (error) =>
+  LOAD_ERROR_KEY_BY_STATUS[error?.status] ?? 'scoring.errors.generic';
+
+const saveErrorKeyFor = (error) =>
+  SAVE_ERROR_KEY_BY_STATUS[error?.status] ?? 'scoring.errors.saveFailed';
+
 const QuickMatchScoringPage = () => {
   const { quickMatchId } = useParams();
   const navigate = useNavigate();
@@ -28,7 +63,8 @@ const QuickMatchScoringPage = () => {
     courseName,
     currentHole,
     isLoading,
-    error,
+    loadError,
+    saveError,
     isSubmitting,
     myParticipant,
     isCreator,
@@ -62,12 +98,14 @@ const QuickMatchScoringPage = () => {
     );
   }
 
-  if (error && !quickMatch) {
+  if (loadError && !quickMatch) {
     return (
       <div className="min-h-screen bg-gray-50">
         <HeaderAuth user={user} />
         <div className="max-w-4xl mx-auto px-4 py-6 text-center">
-          <p className="text-red-600">{error.message || t('scoring.errors.generic')}</p>
+          <p className="text-red-600" data-testid="quick-match-scoring-error">
+            {t(loadErrorKeyFor(loadError))}
+          </p>
           <button onClick={refetch} className="mt-4 px-4 py-2 bg-primary text-white rounded-lg">
             {t('scoring.retry')}
           </button>
@@ -113,10 +151,15 @@ const QuickMatchScoringPage = () => {
     <div className="min-h-screen bg-gray-50">
       <HeaderAuth user={user} />
 
-      {error && quickMatch && (
+      {/* El aviso de arriba cubre los dos: un guardado rechazado y un sondeo que
+          falla con la partida ya cargada. Cada uno con su copia, y el de
+          guardar primero porque es lo que el anotador acaba de intentar. */}
+      {(saveError || loadError) && quickMatch && (
         <div className="max-w-4xl mx-auto px-4 pt-4">
           <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-center justify-between">
-            <p className="text-sm text-red-600">{error.message || t('scoring.errors.generic')}</p>
+            <p className="text-sm text-red-600" data-testid="quick-match-scoring-error">
+              {saveError ? t(saveErrorKeyFor(saveError)) : t(loadErrorKeyFor(loadError))}
+            </p>
             <button onClick={refetch} className="px-3 py-1 text-xs bg-red-600 text-white rounded hover:bg-red-700">
               {t('scoring.retry')}
             </button>

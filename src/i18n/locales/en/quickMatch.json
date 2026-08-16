@@ -186,7 +186,13 @@
     },
     "errors": {
       "generic": "Something went wrong. Please try again.",
-      "notFound": "Quick match not found"
+      "forbidden": "You are not a player in this match.",
+      "notFound": "Quick match not found",
+      "saveFailed": "The score couldn't be saved. Please try again.",
+      "saveForbidden": "You can't enter this player's score.",
+      "saveNotFound": "The match or the player is no longer available.",
+      "saveConflict": "The match changed while you were scoring. Reload it.",
+      "saveInvalid": "That score is not valid."
     },
     "retry": "Retry"
   }
