@@ -889,6 +889,32 @@ describe('CreateQuickMatchModal', () => {
     );
   });
 
+  /**
+   * En scratch nadie recibe golpes, así que quedarse sin salida no cuesta nada:
+   * avisar de que "jugará con el hándicap exacto" sería afirmar un efecto que
+   * ese modo no tiene.
+   */
+  it('no avisa de la falta de barras en una partida scratch, donde no cambia nada', async () => {
+    mockCreate.mockResolvedValue({
+      id: 'qm-1',
+      isPending: true,
+      participants: [
+        { participantId: 'user-1', userId: 'user-1', name: 'Me', handicap: 18, isGuest: false },
+      ],
+    });
+
+    renderModal();
+
+    fireEvent.click(screen.getByTestId('mode-option-FREE_PLAY'));
+    fireEvent.click(screen.getByTestId('select-course-stub'));
+    fireEvent.click(screen.getByTestId('quick-match-play-mode-option-SCRATCH'));
+    await goToSummary();
+
+    expect(screen.getByTestId('quick-match-summary-tee-user-1')).not.toHaveTextContent(
+      'create.summary.noTee'
+    );
+  });
+
   it('nombra la barra igual que el paso 1 cuando el campo le da identificador', async () => {
     mockGetGolfCourse.mockResolvedValue({
       tees: [

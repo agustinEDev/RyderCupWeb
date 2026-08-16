@@ -125,9 +125,15 @@ const SummaryStep = ({
                 // reparto cae al Handicap Index en vez del hándicap de juego, y
                 // eso son varios golpes. Callarlo aquí es esconder justo lo que
                 // este resumen viene a enseñar.
-                <span className="text-xs font-medium text-amber-700">
-                  {t('create.summary.noTee')}
-                </span>
+                //
+                // Salvo en scratch, donde no hay reparto ninguno: ahí nadie
+                // recibe golpes, así que no falta nada y avisar de un hándicap
+                // que no se va a usar sería sencillamente falso.
+                !isScratch && (
+                  <span className="text-xs font-medium text-amber-700">
+                    {t('create.summary.noTee')}
+                  </span>
+                )
               )}
             </div>
             <button
