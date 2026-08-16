@@ -183,6 +183,7 @@
     },
     "errors": {
       "generic": "Something went wrong. Please try again.",
+      "forbidden": "You are not a player in this match.",
       "notFound": "Quick match not found"
     },
     "retry": "Retry"

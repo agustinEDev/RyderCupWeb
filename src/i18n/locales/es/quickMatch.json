@@ -183,6 +183,7 @@
     },
     "errors": {
       "generic": "Ha ocurrido un error. Inténtalo de nuevo.",
+      "forbidden": "No participas en esta partida.",
       "notFound": "No se ha encontrado la partida"
     },
     "retry": "Reintentar"

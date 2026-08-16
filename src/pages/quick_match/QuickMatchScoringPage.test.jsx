@@ -126,3 +126,68 @@ describe('QuickMatchScoringPage', () => {
     });
   });
 });
+
+describe('QuickMatchScoringPage - copia de los errores', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  const renderWithError = (error, quickMatch = null) => {
+    mockUseQuickMatchScoring.mockReturnValue({
+      ...baseHookState,
+      quickMatch,
+      error,
+      setCurrentHole: vi.fn(),
+      submitScore: vi.fn(),
+      completeMatch: vi.fn(),
+      refetch: vi.fn(),
+    });
+    return renderPage();
+  };
+
+  /**
+   * El `detail` del backend está en inglés, y llegaba tal cual a una pantalla
+   * en español: "You are not a participant of this quick match." El status es
+   * el dato traducible.
+   */
+  it('traduce un 403 en vez de pintar el mensaje del servidor', () => {
+    const error = new Error('You are not a participant of this quick match.');
+    error.status = 403;
+
+    renderWithError(error);
+
+    const shown = screen.getByTestId('quick-match-scoring-error');
+    expect(shown).toHaveTextContent('scoring.errors.forbidden');
+    expect(shown).not.toHaveTextContent('You are not a participant');
+  });
+
+  it('traduce un 404 con su propia copia', () => {
+    const error = new Error('Quick match not found');
+    error.status = 404;
+
+    renderWithError(error);
+
+    expect(screen.getByTestId('quick-match-scoring-error')).toHaveTextContent(
+      'scoring.errors.notFound'
+    );
+  });
+
+  it('cae al mensaje genérico cuando el error no trae status', () => {
+    renderWithError(new Error('Failed to fetch'));
+
+    const shown = screen.getByTestId('quick-match-scoring-error');
+    expect(shown).toHaveTextContent('scoring.errors.generic');
+    expect(shown).not.toHaveTextContent('Failed to fetch');
+  });
+
+  it('tampoco filtra el mensaje del servidor en el aviso sobre la partida ya cargada', () => {
+    const error = new Error('You are not a participant of this quick match.');
+    error.status = 403;
+
+    renderWithError(error, baseQuickMatch);
+
+    const shown = screen.getByTestId('quick-match-scoring-error');
+    expect(shown).toHaveTextContent('scoring.errors.forbidden');
+    expect(shown).not.toHaveTextContent('You are not a participant');
+  });
+});

@@ -12,6 +12,21 @@ import QuickMatchScorecardTable from '../../components/quick_match/QuickMatchSco
 
 const TABS = ['input', 'classification', 'scorecard'];
 
+/**
+ * El `message` de un error de la API es el `detail` que escribe el backend, y
+ * ese está en inglés: pintarlo tal cual metía "You are not a participant of
+ * this quick match." en medio de una pantalla en español. El status sí es un
+ * dato estable y traducible, así que la copia sale de él y el mensaje del
+ * servidor se queda para la consola.
+ */
+const ERROR_KEY_BY_STATUS = {
+  403: 'scoring.errors.forbidden',
+  404: 'scoring.errors.notFound',
+};
+
+const errorKeyFor = (error) =>
+  ERROR_KEY_BY_STATUS[error?.status] ?? 'scoring.errors.generic';
+
 const QuickMatchScoringPage = () => {
   const { quickMatchId } = useParams();
   const navigate = useNavigate();
@@ -67,7 +82,9 @@ const QuickMatchScoringPage = () => {
       <div className="min-h-screen bg-gray-50">
         <HeaderAuth user={user} />
         <div className="max-w-4xl mx-auto px-4 py-6 text-center">
-          <p className="text-red-600">{error.message || t('scoring.errors.generic')}</p>
+          <p className="text-red-600" data-testid="quick-match-scoring-error">
+            {t(errorKeyFor(error))}
+          </p>
           <button onClick={refetch} className="mt-4 px-4 py-2 bg-primary text-white rounded-lg">
             {t('scoring.retry')}
           </button>
@@ -116,7 +133,9 @@ const QuickMatchScoringPage = () => {
       {error && quickMatch && (
         <div className="max-w-4xl mx-auto px-4 pt-4">
           <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-center justify-between">
-            <p className="text-sm text-red-600">{error.message || t('scoring.errors.generic')}</p>
+            <p className="text-sm text-red-600" data-testid="quick-match-scoring-error">
+              {t(errorKeyFor(error))}
+            </p>
             <button onClick={refetch} className="px-3 py-1 text-xs bg-red-600 text-white rounded hover:bg-red-700">
               {t('scoring.retry')}
             </button>
