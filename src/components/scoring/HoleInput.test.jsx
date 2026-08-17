@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, within } from '@testing-library/react';
 import HoleInput from './HoleInput';
 
 vi.mock('react-i18next', () => ({
@@ -19,6 +19,54 @@ describe('HoleInput', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+  /**
+   * La tarjeta dejó de marcar la coincidencia y la anotación es ahora el único
+   * sitio donde se ve: si alguien la quita también de aquí, deja de haber forma
+   * de saber que los dos anotadores discrepan.
+   */
+  it('marca la coincidencia entre anotadores, que ya solo se ve aquí', () => {
+    render(<HoleInput {...defaultProps} validationStatus="mismatch" />);
+
+    // Por el título, no por la presencia: ValidationIcon devuelve el mismo
+    // data-testid para su estado "pending" gris, así que buscar solo el testid
+    // pasaría igual aunque el cableado se degradase a un pendiente constante,
+    // que es justo cómo se perdería la señal ahora que este es el único sitio
+    // donde se ve
+    expect(screen.getByTestId('validation-icon')).toHaveAttribute(
+      'title',
+      'validation.mismatch'
+    );
+  });
+
+  it('distingue el acuerdo del desacuerdo, no solo que hay icono', () => {
+    render(<HoleInput {...defaultProps} validationStatus="match" />);
+    expect(screen.getByTestId('validation-icon')).toHaveAttribute('title', 'validation.match');
+  });
+
+  /**
+   * Son dos acuerdos distintos: el de la cabecera es el de TU resultado, y el
+   * del jugador al que anotas puede discrepar mientras el tuyo cuadra. Antes se
+   * veía en la tarjeta; ahora que la tarjeta no lo lleva, este es el único
+   * sitio, y sin él la tira de hoyos se pone roja sin decir por quién.
+   */
+  it('marca aparte el desacuerdo del jugador al que anotas', () => {
+    render(
+      <HoleInput {...defaultProps} validationStatus="match" markedValidationStatus="mismatch" />
+    );
+
+    const marked = within(screen.getByTestId('marked-validation')).getByTestId('validation-icon');
+    expect(marked).toHaveAttribute('title', 'validation.mismatch');
+
+    // y el propio sigue diciendo que el tuyo sí cuadra: son independientes
+    const icons = screen.getAllByTestId('validation-icon');
+    expect(icons.some((i) => i.getAttribute('title') === 'validation.match')).toBe(true);
+  });
+
+  it('no reserva sitio para esa marca cuando no anotas a nadie', () => {
+    render(<HoleInput {...defaultProps} validationStatus="match" />);
+    expect(screen.queryByTestId('marked-validation')).not.toBeInTheDocument();
   });
 
   it('should render hole info', () => {

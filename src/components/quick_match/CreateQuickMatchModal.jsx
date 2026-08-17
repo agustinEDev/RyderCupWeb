@@ -45,6 +45,9 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser }) => {
   const [teesLoading, setTeesLoading] = useState(false);
   // null while following the WHS default for the current format; a number once the user overrides it
   const [allowanceOverride, setAllowanceOverride] = useState(null);
+  // Por defecto con hándicap: es como se juega normalmente, y el scratch es
+  // la excepción que hay que pedir a propósito.
+  const [playMode, setPlayMode] = useState('HANDICAP');
   const [creatorTeeKey, setCreatorTeeKey] = useState(NO_TEE_KEY);
   const [quickMatch, setQuickMatch] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -163,7 +166,7 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser }) => {
         isFreePlay ? null : matchFormat,
         isFreePlay ? scoringFormat : null,
         matchName.trim() || null,
-        { allowancePercentage, creatorTeeColor, creatorTeeGender }
+        { allowancePercentage, playMode, creatorTeeColor, creatorTeeGender }
       );
       setQuickMatch(created);
       setStep(2);
@@ -386,6 +389,8 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser }) => {
             onCreatorTeeKeyChange={setCreatorTeeKey}
             allowancePercentage={allowancePercentage}
             onAllowanceChange={setAllowanceOverride}
+            playMode={playMode}
+            onPlayModeChange={setPlayMode}
             isProcessing={isProcessing}
             teesLoading={teesLoading}
             onClose={handleClose}
@@ -446,6 +451,8 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser }) => {
             scoringFormat={scoringFormat}
             matchFormat={matchFormat}
             allowancePercentage={allowancePercentage}
+            playMode={playMode}
+            courseTees={courseTees}
             participants={participants}
             currentUser={currentUser}
             isTeamFormat={isTeamFormat}

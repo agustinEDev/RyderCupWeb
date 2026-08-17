@@ -21,6 +21,8 @@ class QuickMatch {
   #scoringFormat;
   #allowancePercentage;
   #effectiveAllowance;
+  #playMode;
+  #participantStrokes;
   #status;
   #name;
   #participants;
@@ -39,6 +41,8 @@ class QuickMatch {
     scoringFormat = null,
     allowancePercentage = null,
     effectiveAllowance = 100,
+    playMode = 'HANDICAP',
+    participantStrokes = [],
     status,
     name = null,
     participants = [],
@@ -81,6 +85,8 @@ class QuickMatch {
     this.#scoringFormat = scoringFormat;
     this.#allowancePercentage = allowancePercentage;
     this.#effectiveAllowance = effectiveAllowance;
+    this.#playMode = playMode;
+    this.#participantStrokes = participantStrokes;
     this.#status = status;
     this.#name = name;
     this.#participants = participants;
@@ -126,6 +132,25 @@ class QuickMatch {
 
   get effectiveAllowance() {
     return this.#effectiveAllowance;
+  }
+
+  /** 'SCRATCH' (golpes brutos) o 'HANDICAP' (reparto WHS). */
+  get playMode() {
+    return this.#playMode;
+  }
+
+  /**
+   * Reparto de golpes ya resuelto por el backend, cuando viene el detalle.
+   *
+   * Es el dato bueno mientras haya red: son los mismos golpes con los que se ha
+   * decidido cada hoyo. Sin conexión, `MatchPlayStrokeAllocator` lo recalcula.
+   */
+  get participantStrokes() {
+    return this.#participantStrokes;
+  }
+
+  usesHandicap() {
+    return this.#playMode !== 'SCRATCH';
   }
 
   get status() {
@@ -209,6 +234,8 @@ class QuickMatch {
       scoringFormat: this.#scoringFormat,
       allowancePercentage: this.#allowancePercentage,
       effectiveAllowance: this.#effectiveAllowance,
+      playMode: this.#playMode,
+      participantStrokes: this.#participantStrokes,
       status: this.#status.toString(),
       name: this.#name,
       participants: this.#participants,

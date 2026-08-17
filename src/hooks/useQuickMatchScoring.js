@@ -24,7 +24,15 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
   const [courseName, setCourseName] = useState(null);
   const [currentHole, setCurrentHole] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
+  // Dos errores y no uno: el mismo status significa cosas distintas según de
+  // dónde venga. Un 403 al cargar es "no juegas esta partida"; un 403 al anotar
+  // es "no eres el anotador de ese jugador". Con un solo estado no había forma
+  // de distinguirlos, y mirar si ya había partida en pantalla no vale: el
+  // sondeo cada 10 s puede fallar mucho después de que la partida cargara, y
+  // `fetchQuickMatch` conserva la anterior a propósito para no vaciar la
+  // pantalla por un fallo de red pasajero.
+  const [loadError, setLoadError] = useState(null);
+  const [saveError, setSaveError] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const holesLoadedRef = useRef(false);
@@ -38,7 +46,7 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
     try {
       const data = await getQuickMatchUseCase.execute(quickMatchId);
       setQuickMatch(data);
-      setError(null);
+      setLoadError(null);
 
       if (!holesLoadedRef.current) {
         holesLoadedRef.current = true;
@@ -52,7 +60,7 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
         }
       }
     } catch (err) {
-      setError(err);
+      setLoadError(err);
     } finally {
       setIsLoading(false);
     }
@@ -94,10 +102,10 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
         } else {
           await submitQuickMatchProxyHoleScoreUseCase.execute(quickMatchId, participantId, holeNumber, score);
         }
+        setSaveError(null);
         await fetchQuickMatch();
-        setError(null);
       } catch (err) {
-        setError(err);
+        setSaveError(err);
       } finally {
         setIsSubmitting(false);
       }
@@ -111,10 +119,10 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
     setIsSubmitting(true);
     try {
       await completeQuickMatchUseCase.execute(quickMatchId);
+      setSaveError(null);
       await fetchQuickMatch();
-      setError(null);
     } catch (err) {
-      setError(err);
+      setSaveError(err);
     } finally {
       setIsSubmitting(false);
     }
@@ -127,7 +135,8 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
     courseName,
     currentHole,
     isLoading,
-    error,
+    loadError,
+    saveError,
     isSubmitting,
 
     myParticipant,

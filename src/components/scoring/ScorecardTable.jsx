@@ -1,8 +1,15 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import GolfFigure from './GolfFigure';
-import ValidationIcon from './ValidationIcon';
 
+/**
+ * La coincidencia entre los dos anotadores no se marca aquí. Es un dato de la
+ * anotación —dice si hay que hablar con el otro anotador ANTES de seguir— y
+ * vive donde se actúa sobre él: la cabecera de `HoleInput` y el color de cada
+ * hoyo en `HoleSelector`. Repetirlo en cada celda de la tarjeta llenaba la
+ * rejilla de iconos y competía con el propio resultado, que es lo que se viene
+ * a leer aquí.
+ */
 const ScorecardTable = ({ holes = [], scores = [], players = [], currentUserId, teamAName, teamBName, matchFormat }) => {
   const { t } = useTranslation('scoring');
   const [showNet, setShowNet] = useState(false);
@@ -148,7 +155,6 @@ const ScorecardTable = ({ holes = [], scores = [], players = [], currentUserId, 
                             </div>
                           )}
                           <GolfFigure score={displayScore} par={h.par} />
-                          <ValidationIcon status={ps.validationStatus} />
                         </div>
                       ) : (
                         <span className="text-gray-300">-</span>

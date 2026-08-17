@@ -1,8 +1,16 @@
+import TeeColorBadge from '../golf_course/TeeColorBadge';
 import { FORMAT_LABEL_KEY, SCORING_FORMAT_LABEL_KEY } from './createQuickMatchModalConstants';
 
 /**
- * Wizard step 4: pre-start summary — course/format/allowance recap,
+ * Wizard step 4: pre-start summary — course/format/play-mode recap,
  * per-participant handicap review/override, and the scorer list.
+ *
+ * The recap repeats the two settings that decide how many strokes each player
+ * gets — the play mode and the tee — because both are invisible once the round
+ * starts and a wrong one costs the whole card. A scratch match draws no
+ * strokes, so its allowance is not a percentage that applies: showing "100%"
+ * there contradicted step 1, which greys the allowance out with the same
+ * reason.
  */
 const SummaryStep = ({
   t,
@@ -11,6 +19,8 @@ const SummaryStep = ({
   scoringFormat,
   matchFormat,
   allowancePercentage,
+  playMode,
+  courseTees = [],
   participants,
   currentUser,
   isTeamFormat,
@@ -21,7 +31,24 @@ const SummaryStep = ({
   onBack,
   onClose,
   onStart,
-}) => (
+}) => {
+  const isScratch = playMode === 'SCRATCH';
+
+  // Se busca la salida entera, no solo color y género, porque el identificador
+  // es parte del nombre: en un campo federado cuya salida amarilla se llama
+  // "Amarillas Campeonato", el paso 1 dice eso y el resumen diría "Amarillas".
+  // Dos nombres para la misma elección estropean justo lo que se viene a
+  // confirmar aquí.
+  const teeFor = (participant) =>
+    participant.color
+      ? courseTees.find(
+          (tee) =>
+            tee.color === participant.color &&
+            (tee.gender ?? null) === (participant.teeGender ?? null)
+        ) ?? { color: participant.color, gender: participant.teeGender }
+      : null;
+
+  return (
   <div className="p-4 space-y-4">
     <div>
       <h3 className="text-sm font-medium text-gray-700 mb-1">{t('create.summary.heading')}</h3>
@@ -36,8 +63,19 @@ const SummaryStep = ({
             ? t(`create.course.${SCORING_FORMAT_LABEL_KEY[scoringFormat]}`)
             : t(`create.course.${FORMAT_LABEL_KEY[matchFormat]}`)}
         </dd>
+        <dt className="text-gray-500">{t('create.course.playModeLabel')}</dt>
+        <dd className="text-gray-900 text-right" data-testid="quick-match-summary-play-mode">
+          {isScratch
+            ? t('create.course.playModeScratch')
+            : t('create.course.playModeHandicap')}
+        </dd>
         <dt className="text-gray-500">{t('create.summary.allowanceLabel')}</dt>
-        <dd className="text-gray-900 text-right">{allowancePercentage}%</dd>
+        <dd
+          className={`text-right ${isScratch ? 'text-gray-600' : 'text-gray-900'}`}
+          data-testid="quick-match-summary-allowance"
+        >
+          {isScratch ? t('create.summary.allowanceNotApplied') : `${allowancePercentage}%`}
+        </dd>
       </dl>
     </div>
 
@@ -64,6 +102,38 @@ const SummaryStep = ({
                 <span className="text-xs text-gray-400 flex-shrink-0">
                   {p.team === 'A' ? t('create.participants.teamA') : t('create.participants.teamB')}
                 </span>
+              )}
+            </div>
+            {/* En su propia línea: todo lo de arriba es `flex-shrink-0`, así que
+                en un móvil estrecho el nombre se recorta hasta desaparecer
+                antes de que las etiquetas cedan un píxel. Mismo criterio que el
+                paso 2. */}
+            <div className="mt-1" data-testid={`quick-match-summary-tee-${p.participantId}`}>
+              {p.color ? (
+                (() => {
+                  const tee = teeFor(p);
+                  return (
+                    <TeeColorBadge
+                      color={tee.color}
+                      identifier={tee.identifier}
+                      gender={tee.gender}
+                    />
+                  );
+                })()
+              ) : (
+                // El caso peor, y el que se quedaba en blanco: sin salida el
+                // reparto cae al Handicap Index en vez del hándicap de juego, y
+                // eso son varios golpes. Callarlo aquí es esconder justo lo que
+                // este resumen viene a enseñar.
+                //
+                // Salvo en scratch, donde no hay reparto ninguno: ahí nadie
+                // recibe golpes, así que no falta nada y avisar de un hándicap
+                // que no se va a usar sería sencillamente falso.
+                !isScratch && (
+                  <span className="text-xs font-medium text-amber-700">
+                    {t('create.summary.noTee')}
+                  </span>
+                )
               )}
             </div>
             <button
@@ -122,6 +192,7 @@ const SummaryStep = ({
       </div>
     </div>
   </div>
-);
+  );
+};
 
 export default SummaryStep;

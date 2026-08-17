@@ -25,7 +25,15 @@
       "next": "Siguiente",
       "creating": "Creando...",
       "errorCourseRequired": "Selecciona un campo de golf",
-      "errorTeeRequired": "Selecciona un tee para continuar"
+      "errorTeeRequired": "Selecciona un tee para continuar",
+      "playModeLabel": "Modo de juego",
+      "playModeHandicap": "Con hándicap",
+      "playModeScratch": "Scratch",
+      "playModeHandicapHint": "Se reparten golpes según el hándicap de cada jugador (WHS).",
+      "playModeScratchHint": "Nadie recibe golpes: se juega con el hándicap a cero.",
+      "allowanceNotApplied": "No se aplica en una partida scratch.",
+      "yourTeePlaceholder": "Elige tus barras",
+      "yourTeePanelTitle": "tus barras"
     },
     "participants": {
       "heading": "Añadir participantes",
@@ -49,7 +57,9 @@
       "back": "Atrás",
       "next": "Siguiente",
       "creatorBadge": "Tú",
-      "guestBadge": "Invitado"
+      "guestBadge": "Invitado",
+      "teePlaceholder": "Elige sus barras",
+      "guestFallbackName": "el invitado"
     },
     "scorers": {
       "heading": "Elegir anotadores",
@@ -64,13 +74,15 @@
       "courseLabel": "Campo",
       "formatLabel": "Formato",
       "allowanceLabel": "Allowance",
+      "allowanceNotApplied": "No se aplica",
       "participantsLabel": "Jugadores",
       "handicapPlaceholder": "Sin hándicap",
       "editHandicapNamed": "Editar hándicap de {{name}}",
       "scorersLabel": "Anotadores",
       "back": "Atrás",
       "start": "Confirmar e iniciar",
-      "starting": "Iniciando..."
+      "starting": "Iniciando...",
+      "noTee": "Sin barras: jugará con el hándicap exacto"
     },
     "handicapPanel": {
       "placeholder": "Introduce el hándicap",
@@ -162,11 +174,25 @@
       "strokeReceived": "Recibe {{count}} golpe(s) extra en este hoyo",
       "strokeGiven": "Cede {{count}} golpe(s) en este hoyo",
       "holePoints": "{{count}} punto(s) Stableford en este hoyo",
-      "holeNetStrokes": "{{count}} golpe(s) netos en este hoyo"
+      "holeNetStrokes": "{{count}} golpe(s) netos en este hoyo",
+      "scratchMatch": "Partida scratch · sin hándicap",
+      "playingHandicap": "Hcp de juego {{value}}",
+      "receivesStrokes_one": "recibe {{count}} golpe",
+      "receivesStrokes_other": "recibe {{count}} golpes",
+      "receivesNoStrokes": "no recibe golpes",
+      "ofTheDifference": "({{allowance}}% de la diferencia)",
+      "givesStrokes_one": "cede {{count}} golpe",
+      "givesStrokes_other": "cede {{count}} golpes"
     },
     "errors": {
       "generic": "Ha ocurrido un error. Inténtalo de nuevo.",
-      "notFound": "No se ha encontrado la partida"
+      "forbidden": "No participas en esta partida.",
+      "notFound": "No se ha encontrado la partida",
+      "saveFailed": "No se ha podido guardar el resultado. Inténtalo de nuevo.",
+      "saveForbidden": "No puedes anotar el resultado de este jugador.",
+      "saveNotFound": "La partida o el jugador ya no están disponibles.",
+      "saveConflict": "La partida ha cambiado mientras anotabas. Vuelve a cargarla.",
+      "saveInvalid": "Ese resultado no es válido."
     },
     "retry": "Reintentar"
   }

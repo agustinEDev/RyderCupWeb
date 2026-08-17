@@ -54,6 +54,33 @@ describe('ScorecardTable', () => {
     expect(table).toBeInTheDocument();
   });
 
+  /**
+   * La coincidencia entre anotadores se decidió que vive en la anotación, no en
+   * la tarjeta: aquí se viene a leer el resultado, y un icono por celda competía
+   * con él en las 18 columnas.
+   */
+  it('no pinta el icono de coincidencia en las celdas', () => {
+    const scores = [
+      {
+        holeNumber: 1,
+        playerScores: [
+          { userId: 'u1', ownScore: 5, netScore: 4, validationStatus: 'match' },
+          { userId: 'u2', ownScore: 6, netScore: 6, validationStatus: 'mismatch' },
+        ],
+      },
+    ];
+
+    render(<ScorecardTable holes={holes} players={players} scores={scores} currentUserId="u1" />);
+
+    expect(screen.queryByTestId('validation-icon')).not.toBeInTheDocument();
+    // pero los resultados siguen estando: GolfFigure emite el mismo testid para
+    // su guión de "sin resultado", así que contar iconos no distinguiría una
+    // tarjeta con datos de una vacía
+    const figures = screen.getAllByTestId('golf-figure').map((f) => f.textContent);
+    expect(figures).toContain('5');
+    expect(figures).toContain('6');
+  });
+
   it('should highlight current user row', () => {
     const scores = [{ holeNumber: 1, playerScores: [{ userId: 'u1', ownScore: 5, netScore: 4, validationStatus: 'match' }] }];
     render(<ScorecardTable holes={holes} players={players} scores={scores} currentUserId="u1" />);
