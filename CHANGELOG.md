@@ -7,6 +7,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [2.13.0] - 2026-08-16
+
+### Fixed
+
+- **La tarjeta repartía el hándicap de juego entero a cada jugador**, que es el método del stroke play. En match play el WHS da solo la **diferencia**, al de más hándicap, en los hoyos de menor índice de dificultad. Los totales se parecían y los golpes caían en hoyos distintos, que es exactamente donde se deciden los hoyos ajustados. En la partida real que lo destapó, en Golf de Meis, el de hándicap 18.0 pasaba de recibir 23 golpes a jugar a scratch, y el de 20.7 de 27 golpes a 4, en los hoyos 2, 7, 11 y 17. El nuevo `MatchPlayStrokeAllocator` reproduce el servicio del backend hoyo por hoyo; la duplicación se mantiene a propósito, porque la anotación sin conexión no puede llamar a la API.
+
+- **La cabecera de la tarjeta dice desde qué barra juega cada uno**, además de su hándicap de juego y los golpes que recibe. No es adorno: una barra del género equivocado mueve el hándicap de juego varios golpes y no había forma de verlo desde la tarjeta. Es lo que habría hecho visible, en el primer hoyo, que al jugador del informe se le había asignado la barra amarilla femenina.
+
+- **En fourball la cabecera dice de dónde salen los golpes**: el hándicap de juego que se muestra lleva el allowance aplicado, mientras que los golpes salen del allowance aplicado a la **diferencia** de hándicaps de campo, que no se enseñan. Con «hcp de juego 23» y «hcp de juego 10» delante, un fourball al 90% reparte 14 y la resta da 13, así que la tarjeta parecía tener un error de uno. En individual no se dice, porque ahí los golpes sí son la resta de los dos números en pantalla.
+
+- **Todas las barras se eligen en el panel agrupado por género.** El creador y los invitados usaban una fila plana donde un campo federado lista «Amarillas (M)» y «Amarillas (F)» pegadas, distinguidas solo por ese sufijo; los amigos ya usaban un panel con encabezado de género. `TeeSelectButtons` se retira.
+
+- **Los hándicaps plus dejan de recortarse a cero** en la tarjeta mientras la clasificación los dejaba negativos según la regla 8.2 del WHS: el mismo jugador, en la misma pantalla, con dos totales Stableford distintos.
+
+- **Fourball y foursomes guardaban la diferencia en el hándicap de juego**, de modo que la tarjeta leía «hcp de juego 14 · recibe 14 golpes»: el mismo número dos veces, y ninguno de los dos era su hándicap de juego real.
+
+- **La tarjeta y la clasificación usaban repartos distintos**: la clasificación recalculaba el suyo mientras la tarjeta usaba el del servidor. Ahora las dos pestañas piden el mismo.
+
+- **Los errores de la anotación salen traducidos**: se pintaba el `detail` del backend tal cual, así que abrir una partida en la que no participas mostraba «You are not a participant of this quick match.» en medio de una pantalla en español. La copia sale ahora del código de estado, y distingue si el fallo fue al **cargar** la partida o al **guardar** un resultado: el sondeo periódico recarga con la partida ya en pantalla, así que el mismo 403 significa «ya no juegas esta partida» o «no eres el anotador de ese jugador» según de dónde venga.
+
+- **El resumen previo a empezar ya no se contradice con el primer paso**: decía «Allowance 100%» en una partida scratch, el único ajuste que garantiza que no se aplica ninguno. Ahora nombra el modo de juego, sustituye el porcentaje cuando no aplica y enseña la barra de cada jugador, además de avisar si alguno se ha quedado sin barras, que es el caso peor —el reparto cae al hándicap exacto— y era el que no mostraba nada.
+
+- **Accesibilidad**: el `aria-label` del selector de barras tapaba su contenido, así que un lector de pantalla anunciaba siempre «Tus barras» y nunca «Amarillas (F)». Dado que esta entrega existe porque una barra del género equivocado era invisible, escondérselo a quien navega por voz deshacía el arreglo justo para quien más lo necesita. Los botones de allowance deshabilitados también seguían anunciándose como pulsados.
+
+### Added
+
+- **Modo scratch** en las partidas rápidas, junto al allowance, que queda deshabilitado mientras está activo. Nadie recibe golpes y los hoyos se deciden a bruto. Por defecto, con hándicap.
+
+- **La coincidencia entre anotadores se marca también para el jugador al que anotas**, en su propia casilla. Antes solo se veía el acuerdo del resultado propio, y la tira de hoyos avisaba de que alguien discrepaba en un hoyo sin decir quién.
+
+- **Test de paridad con el backend**: el reparto del cliente se comprueba contra 12 escenarios **generados por el servicio real del backend**, y se afirma que salen los mismos hándicaps de juego y los mismos golpes en los mismos hoyos. Falló en 3 de los 12 la primera vez que se ejecutó, y ninguno de los tres era visible para los tests escritos a mano de cada lado.
+
+### Changed
+
+- **La tarjeta de campeonato deja de marcar la coincidencia entre anotadores en cada celda**: una tarjeta de 18 hoyos llegaba a llevar 36 iconos encima de los números que se vienen a leer. Ese dato es de la anotación —dice si hay que hablar con el otro anotador antes de seguir— y se queda donde se puede actuar sobre él: la cabecera del hoyo, la casilla del jugador anotado y el color de cada hoyo en la tira.
+
+- **`StablefordCalculator` deja de resolver golpes**: recibe el reparto y cuenta puntos. Su copia de las reglas de reparto se retira, porque ya se había separado de la de la tarjeta.
+
 ## [2.12.0] - 2026-08-14
 
 ### Added
