@@ -12,6 +12,9 @@ import {
 } from '../../composition';
 import StablefordCalculator from '../../domain/services/StablefordCalculator';
 import MatchPlayStrokeAllocator from '../../domain/services/MatchPlayStrokeAllocator';
+
+// Una vuelta personal se mide con el hándicap de juego entero.
+const PERSONAL_ROUND_ALLOWANCE = 100;
 import customToast from '../../utils/toast';
 
 const STATUS_STYLES = {
@@ -81,6 +84,9 @@ const MyQuickMatchesPage = () => {
     };
 
     const loadResult = async (qm) => {
+      // En foursomes se juega a golpes alternos con una sola bola: lo anotado
+      // es del equipo, así que no hay vuelta propia que enseñar.
+      if (qm.matchFormat === 'FOURSOMES') return null;
       try {
         const [detail, course] = await Promise.all([
           getQuickMatchUseCase.execute(qm.id),
@@ -107,7 +113,12 @@ const MyQuickMatchesPage = () => {
           holes: course.holes || [],
           tees: course.tees || [],
           matchFormat: null,
-          allowancePercentage: detail.effectiveAllowance ?? 100,
+          // Al 100%, no con el allowance del partido: el allowance equilibra
+          // una competición —90% en fourball, 50% en foursomes— y no mide una
+          // vuelta. Con él, la misma vuelta salía -2, PAR o +8 según el
+          // formato jugado, y dejaba de poder compararse con las demás. El
+          // resultado con allowance es el del partido, y ese se ve dentro.
+          allowancePercentage: PERSONAL_ROUND_ALLOWANCE,
           playMode: detail.playMode,
         });
 

@@ -266,5 +266,64 @@ describe('QuickMatchClassificationTable', () => {
       expect(screen.queryByTestId('quick-match-my-round')).not.toBeInTheDocument();
       expect(screen.getByTestId('quick-match-standing')).toBeInTheDocument();
     });
+
+    /**
+     * En foursomes la pareja juega una sola bola a golpes alternos: lo anotado
+     * es del equipo, no la vuelta de nadie. Enseñarlo como vuelta propia, y
+     * encima descontando el hándicap entero de uno, no significa nada.
+     */
+    it('does not show a personal round in foursomes', () => {
+      render(
+        <QuickMatchClassificationTable
+          holes={holes}
+          holeScores={[
+            { holeNumber: 1, participantId: 'p-1', score: 4 },
+            { holeNumber: 2, participantId: 'p-1', score: 2 },
+          ]}
+          participants={[
+            { participantId: 'p-1', name: 'Alice', handicap: 2, team: 'A', isGuest: false },
+            { participantId: 'p-2', name: 'Bob', handicap: 12, team: 'B', isGuest: false },
+          ]}
+          currentParticipantId="p-1"
+          scoringFormat={null}
+          standing={standing}
+          matchFormat="FOURSOMES"
+        />
+      );
+
+      expect(screen.queryByTestId('quick-match-my-round')).not.toBeInTheDocument();
+      expect(screen.getByTestId('quick-match-standing')).toBeInTheDocument();
+    });
+
+    /**
+     * El allowance equilibra una competición, no mide una vuelta: al 90% de un
+     * fourball la misma vuelta daría otro número, y dejaría de compararse con
+     * las demás del jugador.
+     */
+    it("ignores the match allowance when counting the player's own round", () => {
+      render(
+        <QuickMatchClassificationTable
+          holes={holes}
+          holeScores={[
+            { holeNumber: 1, participantId: 'p-1', score: 4 },
+            { holeNumber: 2, participantId: 'p-1', score: 2 },
+          ]}
+          participants={[
+            { participantId: 'p-1', name: 'Alice', handicap: 2, team: 'A', isGuest: false },
+            { participantId: 'p-2', name: 'Bob', handicap: 12, team: 'B', isGuest: false },
+          ]}
+          currentParticipantId="p-1"
+          scoringFormat={null}
+          standing={standing}
+          matchFormat="SINGLES"
+          allowancePercentage={50}
+        />
+      );
+
+      // Con su hándicap entero (2) recibe un golpe en cada hoyo: netos 3 + 1 =
+      // 4 sobre un par jugado de 7, o sea -3. Aplicando el 50% del partido
+      // serían 1 golpe en total y saldría -2.
+      expect(screen.getByTestId('quick-match-my-round')).toHaveTextContent('-3');
+    });
   });
 });

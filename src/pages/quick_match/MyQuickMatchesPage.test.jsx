@@ -244,6 +244,30 @@ describe('MyQuickMatchesPage', () => {
     expect(screen.getByText('-3')).toBeInTheDocument();
   });
 
+  /**
+   * En foursomes la pareja juega una sola bola a golpes alternos: lo anotado es
+   * del equipo, no la vuelta de nadie.
+   */
+  it('should not show a personal result for a foursomes match', async () => {
+    mockListMyQuickMatches.mockResolvedValue({
+      quickMatches: [
+        { id: 'qm-5', golfCourseId: 'course-1', matchFormat: 'FOURSOMES', status: 'COMPLETED', createdAt: '2026-07-20T10:00:00Z' },
+      ],
+      totalCount: 1,
+      page: 1,
+      limit: 50,
+    });
+
+    renderPage();
+
+    await waitFor(() => {
+      expect(screen.getByTestId('quick-match-history-list')).toBeInTheDocument();
+    });
+    expect(screen.queryByTestId('quick-match-result-qm-5')).not.toBeInTheDocument();
+    // Ni siquiera se pide el detalle: no hay vuelta propia que calcular
+    expect(mockGetQuickMatch).not.toHaveBeenCalled();
+  });
+
   it('should not fetch or show a result for matches that are not completed', async () => {
     mockListMyQuickMatches.mockResolvedValue({
       quickMatches: [

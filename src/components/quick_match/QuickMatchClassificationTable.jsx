@@ -19,6 +19,9 @@ const resolveMatchTeams = (participants) => {
  * points/strokes ranking to show, just who's up and by how much, mirroring
  * the backend's already-computed `standing` (GetQuickMatchUseCase._compute_standing).
  */
+// Una vuelta personal se mide con el hándicap de juego entero.
+const PERSONAL_ROUND_ALLOWANCE = 100;
+
 const MatchStandingSummary = ({ participants, standing, myToPar }) => {
   const { t } = useTranslation('quickMatch');
 
@@ -94,6 +97,7 @@ const QuickMatchClassificationTable = ({
   playMode = 'HANDICAP',
   participantStrokes = [],
   isCompleted = false,
+  matchFormat = null,
 }) => {
   const { t } = useTranslation('quickMatch');
 
@@ -104,14 +108,23 @@ const QuickMatchClassificationTable = ({
     // su hándicap de juego, no con el reparto del partido: en match play los
     // golpes se dan por diferencia, así que el de hándicap más bajo recibe
     // cero y su vuelta saldría a bruto.
-    const me = participants.find((p) => p.participantId === currentParticipantId);
+    // En foursomes se juega a golpes alternos con una sola bola: lo anotado es
+    // del equipo, así que no hay vuelta propia que enseñar.
+    const me =
+      matchFormat === 'FOURSOMES'
+        ? null
+        : participants.find((p) => p.participantId === currentParticipantId);
+    // Al 100% y no con el allowance del partido, que equilibra una competición
+    // en vez de medir una vuelta: con él, la misma vuelta cambiaba de resultado
+    // según el formato. El resultado con allowance es el marcador del partido,
+    // que ya está justo encima.
     const ownAllocation = me
       ? MatchPlayStrokeAllocator.allocate({
           participants,
           holes,
           tees,
           matchFormat: null,
-          allowancePercentage,
+          allowancePercentage: PERSONAL_ROUND_ALLOWANCE,
           playMode,
         })
       : {};
