@@ -106,6 +106,7 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser }) => {
   const allowancePercentage = allowanceOverride ?? defaultAllowance;
   const capacity = isFreePlay ? FREE_PLAY_CAPACITY : (FORMAT_CAPACITY[matchFormat] ?? 2);
   const isTeamFormat = !isFreePlay && TEAM_FORMATS.includes(matchFormat);
+  const isFoursomes = !isFreePlay && matchFormat === 'FOURSOMES';
   const participants = quickMatch?.participants ?? [];
   const rosterFull = participants.length >= capacity;
   const registeredParticipants = participants.filter((p) => !p.isGuest);
@@ -266,9 +267,45 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser }) => {
     setStep(2);
   };
 
+  // En foursomes la pareja juega UNA bola, asi que no se elige quien anota a
+  // quien jugador a jugador: se elige si apuntan las dos parejas —cada una
+  // marca a la otra, como se juega— o solo la de quien crea la partida, que
+  // entonces lleva las dos tarjetas. Dentro de una pareja puede apuntar
+  // cualquiera de los dos, asi que entran todos sus registrados.
+  const myTeam = () => participants.find((p) => p.userId === currentUser.id)?.team ?? null;
+
+  const registeredOfTeam = (team) =>
+    registeredParticipants.filter((p) => (p.team ?? null) === team);
+
+  const rivalCanScore = () =>
+    isFoursomes && registeredOfTeam(myTeam() === 'A' ? 'B' : 'A').length > 0;
+
+  const chooseScoringSides = (mode) => {
+    const mine = registeredOfTeam(myTeam()).map((p) => p.participantId);
+    if (mode === 'MINE') {
+      setScorerIds(mine);
+      return;
+    }
+    setScorerIds(registeredParticipants.map((p) => p.participantId));
+  };
+
   const goToScorers = () => {
     const creatorParticipant = participants.find((p) => p.userId === currentUser.id);
-    setScorerIds(creatorParticipant ? [creatorParticipant.participantId] : []);
+    if (isFoursomes) {
+      // Las dos parejas por defecto; si enfrente no hay ninguna cuenta con la
+      // que anotar, esa opcion ni se ofrece y se queda la del creador.
+      const team = participants.find((p) => p.userId === currentUser.id)?.team ?? null;
+      const rival = registeredParticipants.filter((p) => (p.team ?? null) !== team);
+      setScorerIds(
+        rival.length > 0
+          ? registeredParticipants.map((p) => p.participantId)
+          : registeredParticipants
+              .filter((p) => (p.team ?? null) === team)
+              .map((p) => p.participantId)
+      );
+    } else {
+      setScorerIds(creatorParticipant ? [creatorParticipant.participantId] : []);
+    }
     setError('');
     setStep(3);
   };
@@ -436,6 +473,9 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser }) => {
             currentUser={currentUser}
             scorerIds={scorerIds}
             onToggleScorer={toggleScorer}
+            isFoursomes={isFoursomes}
+            rivalCanScore={rivalCanScore()}
+            onChooseScoringSides={chooseScoringSides}
             isProcessing={isProcessing}
             onBack={handleBackToParticipants}
             onClose={handleClose}

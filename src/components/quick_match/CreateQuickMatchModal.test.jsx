@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 import CreateQuickMatchModal from './CreateQuickMatchModal';
+import ScorersStep from './ScorersStep';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -952,5 +953,116 @@ describe('CreateQuickMatchModal', () => {
     expect(screen.getByTestId('quick-match-summary-tee-user-1')).toHaveTextContent(
       'Amarillas Campeonato (F)'
     );
+  });
+});
+
+describe('CreateQuickMatchModal · quién lleva la tarjeta en foursomes', () => {
+  /**
+   * En foursomes la pareja juega una bola y lleva una tarjeta, así que el paso
+   * no pregunta jugador a jugador: pregunta si apuntan las dos parejas —cada
+   * una marca a la otra— o solo la de quien crea la partida.
+   */
+  const foursomesRoster = [
+    { participantId: 'p-1', userId: 'user-1', name: 'Yo', team: 'A', isGuest: false },
+    { participantId: 'p-2', userId: 'user-2', name: 'Socio', team: 'A', isGuest: false },
+    { participantId: 'p-3', userId: 'user-3', name: 'Rival Uno', team: 'B', isGuest: false },
+    { participantId: 'p-4', name: 'Rival Dos', team: 'B', isGuest: true },
+  ];
+
+  const guestOnlyRival = [
+    foursomesRoster[0],
+    foursomesRoster[1],
+    { participantId: 'p-3', name: 'Rival Uno', team: 'B', isGuest: true },
+    foursomesRoster[3],
+  ];
+
+  it('ofrece las dos parejas cuando enfrente hay con qué anotar', () => {
+    render(
+      <ScorersStep
+        t={(key) => key}
+        registeredParticipants={foursomesRoster.filter((p) => !p.isGuest)}
+        currentUser={{ id: 'user-1' }}
+        scorerIds={['p-1', 'p-2', 'p-3']}
+        onToggleScorer={vi.fn()}
+        isFoursomes
+        rivalCanScore
+        onChooseScoringSides={vi.fn()}
+        isProcessing={false}
+        onBack={vi.fn()}
+        onClose={vi.fn()}
+        onNext={vi.fn()}
+      />
+    );
+
+    expect(screen.getByTestId('quick-match-scorers-both-pairs')).toBeInTheDocument();
+    expect(screen.getByTestId('quick-match-scorers-my-pair')).toBeInTheDocument();
+    // Y no la lista de casillas por jugador
+    expect(screen.queryByText('Rival Uno')).not.toBeInTheDocument();
+  });
+
+  /** Dos invitados enfrente no tienen cuenta con la que anotar: no se ofrece. */
+  it('esconde las dos parejas cuando la de enfrente no puede anotar', () => {
+    render(
+      <ScorersStep
+        t={(key) => key}
+        registeredParticipants={guestOnlyRival.filter((p) => !p.isGuest)}
+        currentUser={{ id: 'user-1' }}
+        scorerIds={['p-1', 'p-2']}
+        onToggleScorer={vi.fn()}
+        isFoursomes
+        rivalCanScore={false}
+        onChooseScoringSides={vi.fn()}
+        isProcessing={false}
+        onBack={vi.fn()}
+        onClose={vi.fn()}
+        onNext={vi.fn()}
+      />
+    );
+
+    expect(screen.queryByTestId('quick-match-scorers-both-pairs')).not.toBeInTheDocument();
+    expect(screen.getByTestId('quick-match-scorers-my-pair')).toBeInTheDocument();
+  });
+
+  it('elige que apunte solo mi pareja', () => {
+    const onChooseScoringSides = vi.fn();
+    render(
+      <ScorersStep
+        t={(key) => key}
+        registeredParticipants={foursomesRoster.filter((p) => !p.isGuest)}
+        currentUser={{ id: 'user-1' }}
+        scorerIds={['p-1', 'p-2', 'p-3']}
+        onToggleScorer={vi.fn()}
+        isFoursomes
+        rivalCanScore
+        onChooseScoringSides={onChooseScoringSides}
+        isProcessing={false}
+        onBack={vi.fn()}
+        onClose={vi.fn()}
+        onNext={vi.fn()}
+      />
+    );
+
+    fireEvent.click(screen.getByTestId('quick-match-scorers-my-pair'));
+
+    expect(onChooseScoringSides).toHaveBeenCalledWith('MINE');
+  });
+
+  it('sigue preguntando jugador a jugador fuera de foursomes', () => {
+    render(
+      <ScorersStep
+        t={(key) => key}
+        registeredParticipants={foursomesRoster.filter((p) => !p.isGuest)}
+        currentUser={{ id: 'user-1' }}
+        scorerIds={['p-1']}
+        onToggleScorer={vi.fn()}
+        isProcessing={false}
+        onBack={vi.fn()}
+        onClose={vi.fn()}
+        onNext={vi.fn()}
+      />
+    );
+
+    expect(screen.queryByTestId('quick-match-scorers-both-pairs')).not.toBeInTheDocument();
+    expect(screen.getByText('Rival Uno')).toBeInTheDocument();
   });
 });
