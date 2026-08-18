@@ -333,7 +333,8 @@ describe('QuickMatchScorecardTable - reparto de golpes por formato', () => {
       />
     );
 
-    for (const id of ['p-1', 'p-2', 'p-3', 'p-4']) {
+    // Una tarjeta por bando: comparten bola, así que comparten tarjeta.
+    for (const id of ['p-1', 'p-3']) {
       expect(screen.getByTestId(`quick-match-player-handicap-${id}`)).not.toHaveTextContent(
         'scoring.scorecard.ofTheDifference'
       );
@@ -359,5 +360,59 @@ describe('QuickMatchScorecardTable - reparto de golpes por formato', () => {
     const header = screen.getByTestId('quick-match-player-handicap-p-1');
     expect(header).toHaveTextContent('scoring.scorecard.receivesStrokes');
     expect(header).not.toHaveTextContent('scoring.scorecard.ofTheDifference');
+  });
+});
+
+describe('QuickMatchScorecardTable · una tarjeta por bando en foursomes', () => {
+  const holes = [
+    { holeNumber: 1, par: 4, strokeIndex: 1 },
+    { holeNumber: 2, par: 3, strokeIndex: 2 },
+  ];
+
+  const sideParticipants = [
+    { participantId: 'p-1', name: 'Agustin', handicap: 18.0, team: 'A' },
+    { participantId: 'p-2', name: 'Companero', handicap: 8.0, team: 'A' },
+    { participantId: 'p-3', name: 'RivalUno', handicap: 20.0, team: 'B' },
+    { participantId: 'p-4', name: 'RivalDos', handicap: 28.0, team: 'B' },
+  ];
+
+  const renderFoursomes = (holeScores) =>
+    render(
+      <QuickMatchScorecardTable
+        holes={holes}
+        holeScores={holeScores}
+        participants={sideParticipants}
+        currentParticipantId="p-1"
+        tees={[]}
+        allowancePercentage={50}
+        matchFormat="FOURSOMES"
+      />
+    );
+
+  it('junta a los dos compañeros en una sola tarjeta', () => {
+    renderFoursomes([]);
+
+    expect(screen.getByText(/Agustin & Companero/)).toBeInTheDocument();
+    expect(screen.getByText(/RivalUno & RivalDos/)).toBeInTheDocument();
+    expect(screen.getByTestId('quick-match-player-card-p-1')).toBeInTheDocument();
+    expect(screen.queryByTestId('quick-match-player-card-p-2')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('quick-match-player-card-p-4')).not.toBeInTheDocument();
+  });
+
+  /**
+   * Bola alterna: cada hoyo lo anota quien golpeó. Con una tarjeta por jugador
+   * cada compañero se quedaba con la mitad de los hoyos y la otra en blanco.
+   */
+  it('recoge los hoyos anotados por cualquiera de los dos', () => {
+    renderFoursomes([
+      { holeNumber: 1, participantId: 'p-1', score: 5 },
+      { holeNumber: 2, participantId: 'p-2', score: 4 },
+    ]);
+
+    const card = screen.getByTestId('quick-match-player-card-p-1');
+    expect(card).toHaveTextContent('5');
+    expect(card).toHaveTextContent('4');
+    // IDA: los dos hoyos del bando, no solo el propio
+    expect(card).toHaveTextContent('9');
   });
 });

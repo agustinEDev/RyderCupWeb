@@ -8,6 +8,42 @@ import MatchPlayStrokeAllocator from './MatchPlayStrokeAllocator';
 const PERSONAL_ROUND_ALLOWANCE = 100;
 
 /**
+ * Golpes brutos del BANDO en foursomes: una bola por hoyo, la anote quien la
+ * anote.
+ *
+ * Contarlos con `computeParticipantTotals(me, ...)` daba los golpes de quien
+ * mira la pantalla bajo la etiqueta «Del equipo»: con la tarjeta llevada como
+ * se juega —cada hoyo a nombre de quien golpeó— se perdían todos los hoyos del
+ * compañero. Ver RyderCupWeb#420.
+ *
+ * Se toma UN score por hoyo y **nunca se suman los dos compañeros**: antes de
+ * ese cambio ambos anotaban el mismo golpe, así que sumarlos duplicaría el
+ * total de las vueltas ya jugadas.
+ *
+ * Sin `team` —partidas viejas, o un dato incompleto— el bando es el propio
+ * jugador: se vuelve al comportamiento anterior en vez de mezclar a los cuatro.
+ */
+const sideTotals = (me, participants, holes, holeScores) => {
+  const sideIds = me.team
+    ? new Set(participants.filter((p) => p.team === me.team).map((p) => p.participantId))
+    : new Set([me.participantId]);
+
+  let totalStrokes = 0;
+  let holesPlayed = 0;
+
+  for (const hole of holes) {
+    const entry = holeScores.find(
+      (hs) => sideIds.has(hs.participantId) && hs.holeNumber === hole.holeNumber && hs.score != null
+    );
+    if (!entry) continue;
+    totalStrokes += entry.score;
+    holesPlayed += 1;
+  }
+
+  return { totalStrokes, holesPlayed };
+};
+
+/**
  * La vuelta propia de un jugador en una partida rápida, en sus dos lecturas.
  *
  * Son dos números distintos y los dos son ciertos:
@@ -77,7 +113,7 @@ class PersonalRoundCalculator {
     // dos sitios.
     if (matchFormat === 'FOURSOMES') {
       // Sin reparto: el bruto no depende de los golpes que se den.
-      const teamTotals = StablefordCalculator.computeParticipantTotals(me, holes, holeScores);
+      const teamTotals = sideTotals(me, participants, holes, holeScores);
       if (!teamTotals.holesPlayed) return null;
       return {
         personalToPar: null,

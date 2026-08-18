@@ -505,3 +505,94 @@ describe('QuickMatchScoringPage - copia de los errores', () => {
     });
   });
 });
+
+describe('QuickMatchScoringPage · foursomes anota una bola por bando', () => {
+  const foursomesMatch = {
+    ...baseQuickMatch,
+    matchFormat: 'FOURSOMES',
+    scoringFormat: null,
+    status: 'IN_PROGRESS',
+    isCompleted: false,
+    participants: [
+      { participantId: 'user-1', userId: 'user-1', name: 'Yo', handicap: 18, team: 'A' },
+      { participantId: 'p-partner', name: 'Socio', handicap: 12, team: 'A' },
+      { participantId: 'p-rival-1', name: 'Rival Uno', handicap: 10, team: 'B' },
+      { participantId: 'p-rival-2', name: 'Rival Dos', handicap: 14, team: 'B' },
+    ],
+    holeScores: [],
+  };
+
+  const renderFoursomes = (overrides = {}, submitScore = vi.fn()) => {
+    mockUseQuickMatchScoring.mockReturnValue({
+      ...baseHookState,
+      quickMatch: { ...foursomesMatch, ...overrides },
+      myParticipant: foursomesMatch.participants[0],
+      isScorer: true,
+      coveredParticipantIds: ['user-1', 'p-partner', 'p-rival-1', 'p-rival-2'],
+      setCurrentHole: vi.fn(),
+      submitScore,
+      completeMatch: vi.fn(),
+      refetch: vi.fn(),
+    });
+    renderPage();
+    return submitScore;
+  };
+
+  it('shows one box per side, named after both partners', () => {
+    renderFoursomes();
+
+    expect(screen.getByText('Yo & Socio')).toBeInTheDocument();
+    expect(screen.getByText('Rival Uno & Rival Dos')).toBeInTheDocument();
+    // Una casilla por bando, no una por jugador.
+    expect(screen.getByTestId('quick-match-score-button-user-1')).toBeInTheDocument();
+    expect(screen.getByTestId('quick-match-score-button-p-rival-1')).toBeInTheDocument();
+    expect(screen.queryByTestId('quick-match-score-button-p-partner')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('quick-match-score-button-p-rival-2')).not.toBeInTheDocument();
+  });
+
+  /**
+   * La bola del bando la anota cualquiera de los dos: si la metió el compañero,
+   * la casilla del bando tiene que enseñarla igual. Antes, cada jugador solo
+   * veía la suya y el hoyo parecía sin anotar.
+   */
+  it('shows the ball the partner entered', () => {
+    renderFoursomes({
+      holeScores: [{ holeNumber: 1, participantId: 'p-partner', score: 5 }],
+    });
+
+    expect(screen.getByTestId('quick-match-score-button-user-1')).toHaveTextContent('5');
+  });
+
+  it('keeps one box per player in fourball', () => {
+    renderFoursomes({ matchFormat: 'FOURBALL' });
+
+    // Dos bolas por bando: cada jugador anota la suya.
+    expect(screen.getByTestId('quick-match-score-button-user-1')).toBeInTheDocument();
+    expect(screen.getByTestId('quick-match-score-button-p-partner')).toBeInTheDocument();
+    expect(screen.getByTestId('quick-match-score-button-p-rival-1')).toBeInTheDocument();
+    expect(screen.getByTestId('quick-match-score-button-p-rival-2')).toBeInTheDocument();
+  });
+
+  /**
+   * El anotador puede no cubrir al primero de un bando: la casilla se guarda a
+   * nombre de quien sí cubre, y por eso no depende del reparto de anotadores.
+   */
+  it('writes the side ball under a player this scorer covers', () => {
+    mockUseQuickMatchScoring.mockReturnValue({
+      ...baseHookState,
+      quickMatch: foursomesMatch,
+      myParticipant: foursomesMatch.participants[0],
+      isScorer: true,
+      coveredParticipantIds: ['user-1', 'p-rival-2'],
+      setCurrentHole: vi.fn(),
+      submitScore: vi.fn(),
+      completeMatch: vi.fn(),
+      refetch: vi.fn(),
+    });
+
+    renderPage();
+
+    expect(screen.getByTestId('quick-match-score-button-p-rival-2')).toBeInTheDocument();
+    expect(screen.queryByTestId('quick-match-score-button-p-rival-1')).not.toBeInTheDocument();
+  });
+});

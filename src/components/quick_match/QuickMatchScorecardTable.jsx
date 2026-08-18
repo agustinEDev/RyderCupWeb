@@ -59,8 +59,13 @@ const QuickMatchScorecardTable = ({
     playMode,
   });
 
-  const getScore = (holeNumber, participantId) => {
-    const entry = holeScores.find((hs) => hs.holeNumber === holeNumber && hs.participantId === participantId);
+  // Recibe los participantes cuyos golpes forman UNA bola: uno en todos los
+  // formatos menos foursomes, donde el bando comparte bola y cada hoyo puede
+  // estar anotado a nombre de cualquiera de los dos compañeros.
+  const getScore = (holeNumber, scoreIds) => {
+    const entry = holeScores.find(
+      (hs) => hs.holeNumber === holeNumber && scoreIds.includes(hs.participantId)
+    );
     return entry ? entry.score : null;
   };
 
@@ -107,6 +112,44 @@ const QuickMatchScorecardTable = ({
     return t('scoring.scorecard.receivesNoStrokes');
   };
 
+  // Una tarjeta por bando en foursomes —comparten bola, así que comparten
+  // tarjeta— y una por jugador en todo lo demás. Con una tarjeta por jugador,
+  // una vuelta anotada como se juega dejaba a cada compañero con la mitad de
+  // los hoyos y la otra mitad en blanco. Ver RyderCupWeb#420.
+  //
+  // El reparto de foursomes ya es de equipo: los dos compañeros reciben los
+  // mismos golpes, así que leerlos del primero no pierde nada.
+  const buildCards = () => {
+    if (matchFormat !== 'FOURSOMES') {
+      return participants.map((p) => ({
+        key: p.participantId,
+        title: p.name,
+        scoreIds: [p.participantId],
+        strokesId: p.participantId,
+        teeParticipant: p,
+        isMine: p.participantId === currentParticipantId,
+      }));
+    }
+
+    const sides = new Map();
+    for (const p of participants) {
+      const side = p.team ?? 'A';
+      if (!sides.has(side)) sides.set(side, []);
+      sides.get(side).push(p);
+    }
+
+    return [...sides.values()].map((members) => ({
+      key: members[0].participantId,
+      title: members.map((m) => m.name).join(' & '),
+      scoreIds: members.map((m) => m.participantId),
+      strokesId: members[0].participantId,
+      teeParticipant: members[0],
+      isMine: members.some((m) => m.participantId === currentParticipantId),
+    }));
+  };
+
+  const cards = buildCards();
+
   const renderTeeLabel = (participant) => {
     const tee = MatchPlayStrokeAllocator.findTee(participant, tees);
     if (!tee) return null;
@@ -118,13 +161,13 @@ const QuickMatchScorecardTable = ({
     return `${name}${suffix}`;
   };
 
-  const sumStrokes = (holeRange, participantId) =>
+  const sumStrokes = (holeRange, scoreIds) =>
     holeRange.reduce((sum, h) => {
-      const score = getScore(h.holeNumber, participantId);
+      const score = getScore(h.holeNumber, scoreIds);
       return score != null ? sum + score : sum;
     }, 0);
 
-  const renderSection = (sectionHoles, label, participantId) => (
+  const renderSection = (sectionHoles, label, card) => (
     <div className="overflow-x-auto">
       <table className="min-w-full text-xs">
         <thead>
@@ -155,8 +198,8 @@ const QuickMatchScorecardTable = ({
               {label}
             </th>
             {sectionHoles.map((h) => {
-              const score = getScore(h.holeNumber, participantId);
-              const strokesReceived = getStrokesReceived(h.holeNumber, participantId);
+              const score = getScore(h.holeNumber, card.scoreIds);
+              const strokesReceived = getStrokesReceived(h.holeNumber, card.strokesId);
               const dotCount = Math.min(Math.abs(strokesReceived), MAX_STROKE_DOTS);
               return (
                 <td key={h.holeNumber} className="px-1 py-1 text-center align-top">
@@ -205,7 +248,7 @@ const QuickMatchScorecardTable = ({
               );
             })}
             <td className="px-2 py-1 text-center font-bold">
-              {sumStrokes(sectionHoles, participantId) || '-'}
+              {sumStrokes(sectionHoles, card.scoreIds) || '-'}
             </td>
           </tr>
         </tbody>
@@ -215,18 +258,18 @@ const QuickMatchScorecardTable = ({
 
   return (
     <div data-testid="quick-match-scorecard-table" className="space-y-3">
-      {participants.map((p) => (
+      {cards.map((card) => (
         <div
-          key={p.participantId}
-          data-testid={`quick-match-player-card-${p.participantId}`}
+          key={card.key}
+          data-testid={`quick-match-player-card-${card.key}`}
           className={`rounded-lg border overflow-hidden ${
-            p.participantId === currentParticipantId ? 'border-primary/40 bg-blue-50/30' : 'border-gray-200'
+            card.isMine ? 'border-primary/40 bg-blue-50/30' : 'border-gray-200'
           }`}
         >
           <div className="px-3 py-1.5 bg-gray-50 border-b border-gray-200">
             <span className="text-sm font-semibold text-gray-800">
-              {p.name}
-              {p.participantId === currentParticipantId && (
+              {card.title}
+              {card.isMine && (
                 <span className="ml-1.5 text-xs font-normal text-primary">
                   ({t('scoring.classification.you')})
                 </span>
@@ -234,26 +277,26 @@ const QuickMatchScorecardTable = ({
             </span>
             <p
               className="text-xs text-gray-500 leading-tight"
-              data-testid={`quick-match-player-handicap-${p.participantId}`}
+              data-testid={`quick-match-player-handicap-${card.key}`}
             >
               {playMode === 'SCRATCH'
                 ? t('scoring.scorecard.scratchMatch')
                 : [
-                    renderTeeLabel(p),
-                    allocation[p.participantId]
+                    renderTeeLabel(card.teeParticipant),
+                    allocation[card.strokesId]
                       ? t('scoring.scorecard.playingHandicap', {
-                          value: allocation[p.participantId].playingHandicap,
+                          value: allocation[card.strokesId].playingHandicap,
                         })
                       : null,
-                    describeStrokes(totalStrokesFor(p.participantId)),
+                    describeStrokes(totalStrokesFor(card.strokesId)),
                   ]
                     .filter(Boolean)
                     .join(' · ')}
             </p>
           </div>
           <div className="p-2 space-y-2">
-            {renderSection(outHoles, ts('scorecard.out'), p.participantId)}
-            {inHoles.length > 0 && renderSection(inHoles, ts('scorecard.in'), p.participantId)}
+            {renderSection(outHoles, ts('scorecard.out'), card)}
+            {inHoles.length > 0 && renderSection(inHoles, ts('scorecard.in'), card)}
           </div>
         </div>
       ))}

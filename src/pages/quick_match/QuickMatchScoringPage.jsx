@@ -141,18 +141,63 @@ const QuickMatchScoringPage = () => {
 
   const currentHoleData = holeFor(myParticipant) ?? courseHoleData;
 
-  const entries = coveredParticipantIds.map((participantId) => {
-    const participant = quickMatch?.participants?.find((p) => p.participantId === participantId);
-    const scoreEntry = quickMatch?.holeScores?.find(
+  const participantOf = (participantId) =>
+    quickMatch?.participants?.find((p) => p.participantId === participantId);
+
+  const scoreOf = (participantId) =>
+    quickMatch?.holeScores?.find(
       (hs) => hs.holeNumber === currentHole && hs.participantId === participantId
-    );
-    return {
-      participantId,
-      name: participant?.name ?? '',
-      score: scoreEntry ? scoreEntry.score : null,
-      hole: holeFor(participant) ?? courseHoleData,
-    };
-  });
+    )?.score ?? null;
+
+  const playerEntries = () =>
+    coveredParticipantIds.map((participantId) => {
+      const participant = participantOf(participantId);
+      return {
+        participantId,
+        name: participant?.name ?? '',
+        score: scoreOf(participantId),
+        hole: holeFor(participant) ?? courseHoleData,
+      };
+    });
+
+  // Foursomes se juega a golpes alternos con UNA bola por bando: una casilla
+  // por equipo, no una por jugador. Con cuatro casillas, anotar como se juega
+  // —cada hoyo a nombre de quien golpeó— dejaba media tarjeta a nombre del
+  // compañero, el total del bando perdía esos hoyos y el partido se quedaba sin
+  // un solo hoyo válido. Ver RyderCupWeb#420 y RyderCupAm#216.
+  //
+  // La casilla se guarda a nombre del participante del bando que este anotador
+  // cubre: así la rellena cualquiera de los dos —quien tenga el móvil— sin
+  // depender de cómo se hayan repartido los anotadores.
+  const sideEntries = () => {
+    const sides = new Map();
+
+    for (const participant of quickMatch?.participants ?? []) {
+      const side = participant.team ?? 'A';
+      if (!sides.has(side)) sides.set(side, []);
+      sides.get(side).push(participant);
+    }
+
+    return [...sides.entries()]
+      .map(([side, members]) => {
+        const writable = members.find((m) => coveredParticipantIds.includes(m.participantId));
+        if (!writable) return null;
+        const scored = members.find((m) => scoreOf(m.participantId) != null);
+        return {
+          participantId: writable.participantId,
+          name: members.map((m) => m.name).join(' & '),
+          score: scored ? scoreOf(scored.participantId) : null,
+          // Comparten bola, así que comparten tarjeta: la del primero del bando,
+          // la misma para los dos y no la de quien tenga el móvil.
+          hole: holeFor(members[0]) ?? courseHoleData,
+          side,
+        };
+      })
+      .filter(Boolean);
+  };
+
+  const isFoursomes = quickMatch?.matchFormat === 'FOURSOMES';
+  const entries = isFoursomes ? sideEntries() : playerEntries();
 
   const isReadOnly = !isScorer || quickMatch?.isCompleted || isSubmitting;
 
