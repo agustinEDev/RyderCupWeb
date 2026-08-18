@@ -196,5 +196,8 @@
       "saveInvalid": "Ese resultado no es válido."
     },
     "retry": "Reintentar"
+  },
+  "personalRound": {
+    "inMatch": "({{value}} en el partido)"
   }
 }

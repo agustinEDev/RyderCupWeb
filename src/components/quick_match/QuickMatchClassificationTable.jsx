@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import StablefordCalculator from '../../domain/services/StablefordCalculator';
 import MatchPlayStrokeAllocator from '../../domain/services/MatchPlayStrokeAllocator';
+import PersonalRoundCalculator from '../../domain/services/PersonalRoundCalculator';
 
 // Mirrors the backend's ScoringService._compute_standing SINGLES fallback:
 // team is only set for FOURBALL/FOURSOMES, so a 2-participant match without
@@ -19,10 +20,7 @@ const resolveMatchTeams = (participants) => {
  * points/strokes ranking to show, just who's up and by how much, mirroring
  * the backend's already-computed `standing` (GetQuickMatchUseCase._compute_standing).
  */
-// Una vuelta personal se mide con el hándicap de juego entero.
-const PERSONAL_ROUND_ALLOWANCE = 100;
-
-const MatchStandingSummary = ({ participants, standing, myToPar }) => {
+const MatchStandingSummary = ({ participants, standing }) => {
   const { t } = useTranslation('quickMatch');
 
   if (!standing) {
@@ -55,16 +53,31 @@ const MatchStandingSummary = ({ participants, standing, myToPar }) => {
       <p className="text-xs text-gray-400 mt-2">
         {t('scoring.classification.holesPlayed', { count: standing.holesPlayed })}
       </p>
-      {/* En match play el marcador dice quién gana, no cómo jugó uno. Los
-          golpes se dan por diferencia, así que el resultado propio se calcula
-          aparte, con el hándicap de juego de cada uno. */}
-      {myToPar !== null && myToPar !== undefined && (
-        <p className="text-sm text-gray-600 mt-3" data-testid="quick-match-my-round">
-          {t('scoring.classification.yourRound')}{' '}
-          <span className="font-bold text-gray-900">{myToPar}</span>
-        </p>
-      )}
     </div>
+  );
+};
+
+/**
+ * La vuelta propia, en sus dos lecturas: cómo jugó el jugador (hándicap de
+ * juego entero) y, si sale distinto, cómo contó en el partido. El marcador de
+ * arriba dice quién gana; esto dice cómo jugó uno, que no es lo mismo y hasta
+ * ahora no se veía en ninguna parte.
+ */
+const PersonalRound = ({ round }) => {
+  const { t } = useTranslation('quickMatch');
+
+  if (!round) return null;
+
+  return (
+    <p className="text-sm text-gray-600 mt-3" data-testid="quick-match-my-round">
+      {t('scoring.classification.yourRound')}{' '}
+      <span className="font-bold text-gray-900">{round.personalToPar}</span>
+      {round.matchToPar && (
+        <span className="text-gray-500" data-testid="quick-match-my-round-in-match">
+          {' '}{t('personalRound.inMatch', { value: round.matchToPar })}
+        </span>
+      )}
+    </p>
   );
 };
 
@@ -103,46 +116,33 @@ const QuickMatchClassificationTable = ({
 
   const isFreePlay = scoringFormat === 'MEDAL' || scoringFormat === 'STABLEFORD';
 
-  if (!isFreePlay) {
-    // La vuelta propia va contra el par con los golpes que le tocan a uno por
-    // su hándicap de juego, no con el reparto del partido: en match play los
-    // golpes se dan por diferencia, así que el de hándicap más bajo recibe
-    // cero y su vuelta saldría a bruto.
-    // En foursomes se juega a golpes alternos con una sola bola: lo anotado es
-    // del equipo, así que no hay vuelta propia que enseñar.
-    const me =
-      matchFormat === 'FOURSOMES'
-        ? null
-        : participants.find((p) => p.participantId === currentParticipantId);
-    // Al 100% y no con el allowance del partido, que equilibra una competición
-    // en vez de medir una vuelta: con él, la misma vuelta cambiaba de resultado
-    // según el formato. El resultado con allowance es el marcador del partido,
-    // que ya está justo encima.
-    const ownAllocation = me
-      ? MatchPlayStrokeAllocator.allocate({
-          participants,
-          holes,
-          tees,
-          matchFormat: null,
-          allowancePercentage: PERSONAL_ROUND_ALLOWANCE,
-          playMode,
-        })
-      : {};
-    const myTotals = me
-      ? StablefordCalculator.computeParticipantTotals(me, holes, holeScores, ownAllocation)
-      : null;
+  // La vuelta propia se enseña en los dos formatos. En juego libre la columna
+  // "Resultado" va con el reparto del partido —el allowance WHS del 95%— y el
+  // historial destacaba el de hándicap entero: dos números distintos para la
+  // misma vuelta, uno en cada pantalla y sin nada que lo explicara, que es el
+  // fallo que este servicio existe para cerrar.
+  const myRound = PersonalRoundCalculator.compute({
+    me: participants.find((p) => p.participantId === currentParticipantId) ?? null,
+    participants,
+    holes,
+    holeScores,
+    tees,
+    participantStrokes,
+    matchFormat,
+    allowancePercentage,
+    playMode,
+  });
 
+  if (!isFreePlay) {
+    // La vuelta propia va FUERA del marcador: el backend deja el standing en
+    // null mientras no haya un hoyo anotado por todos, así que dentro se perdía
+    // la vuelta de quien sí había anotado la suya entera.
     return (
       <div data-testid="quick-match-classification-table">
-        <MatchStandingSummary
-          participants={participants}
-          standing={standing}
-          myToPar={
-            myTotals?.holesPlayed
-              ? StablefordCalculator.formatToPar(myTotals.netStrokes - myTotals.parPlayed)
-              : null
-          }
-        />
+        <MatchStandingSummary participants={participants} standing={standing} />
+        <div className="text-center pb-4">
+          <PersonalRound round={myRound} />
+        </div>
       </div>
     );
   }
@@ -225,6 +225,13 @@ const QuickMatchClassificationTable = ({
           ))}
         </tbody>
       </table>
+      {/* La columna "Resultado" va con el reparto del partido; esto es la vuelta
+          del jugador con su hándicap de juego entero, que es lo que el historial
+          destaca. Enseñar los dos aquí es lo que evita que las dos pantallas
+          parezcan contradecirse. */}
+      <div className="text-center py-3">
+        <PersonalRound round={myRound} />
+      </div>
     </div>
   );
 };

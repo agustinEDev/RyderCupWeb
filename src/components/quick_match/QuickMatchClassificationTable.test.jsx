@@ -4,7 +4,9 @@ import QuickMatchClassificationTable from './QuickMatchClassificationTable';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key) => key,
+    // Solo se interpola `value`, que es lo unico que se afirma por su numero;
+    // el resto de claves se siguen comprobando peladas.
+    t: (key, opts) => (opts?.value !== undefined ? `${key} ${opts.value}` : key),
     i18n: { language: 'en' },
   }),
 }));
@@ -251,6 +253,94 @@ describe('QuickMatchClassificationTable', () => {
       expect(screen.getByTestId('quick-match-standing')).toBeInTheDocument();
     });
 
+    /**
+     * Son dos numeros distintos y los dos son ciertos: como jugo (handicap de
+     * juego entero) y como conto en el partido (por diferencia, que a la mas
+     * baja no le da ninguno). Ensenar solo uno obligaba a elegir, y cada
+     * pantalla elegia distinto sin decirlo.
+     */
+    it('shows the match figure alongside the personal one when they differ', () => {
+      render(
+        <QuickMatchClassificationTable
+          holes={holes}
+          holeScores={[
+            { holeNumber: 1, participantId: 'p-1', score: 4 },
+            { holeNumber: 2, participantId: 'p-1', score: 2 },
+          ]}
+          participants={[
+            { participantId: 'p-1', name: 'Alice', handicap: 2, team: 'A', isGuest: false },
+            { participantId: 'p-2', name: 'Bob', handicap: 12, team: 'B', isGuest: false },
+          ]}
+          currentParticipantId="p-1"
+          scoringFormat={null}
+          standing={standing}
+          participantStrokes={[
+            { participantId: 'p-1', playingHandicap: 2, strokesByHole: {} },
+            { participantId: 'p-2', playingHandicap: 12, strokesByHole: { 1: 1, 2: 1 } },
+          ]}
+        />
+      );
+
+      // Su vuelta es -3; en el partido, sin golpes por ser la mas baja, -1
+      expect(screen.getByTestId('quick-match-my-round')).toHaveTextContent('-3');
+      expect(screen.getByTestId('quick-match-my-round-in-match')).toHaveTextContent('-1');
+    });
+
+    it('shows no match figure when both readings agree', () => {
+      render(
+        <QuickMatchClassificationTable
+          holes={holes}
+          holeScores={[
+            { holeNumber: 1, participantId: 'p-1', score: 4 },
+            { holeNumber: 2, participantId: 'p-1', score: 2 },
+          ]}
+          participants={[
+            { participantId: 'p-1', name: 'Alice', handicap: 2, team: 'A', isGuest: false },
+            { participantId: 'p-2', name: 'Bob', handicap: 12, team: 'B', isGuest: false },
+          ]}
+          currentParticipantId="p-1"
+          scoringFormat={null}
+          standing={standing}
+          // El mismo reparto que le sale por su handicap de juego entero
+          participantStrokes={[
+            { participantId: 'p-1', playingHandicap: 2, strokesByHole: { 1: 1, 2: 1 } },
+            { participantId: 'p-2', playingHandicap: 12, strokesByHole: { 1: 1, 2: 1 } },
+          ]}
+        />
+      );
+
+      expect(screen.getByTestId('quick-match-my-round')).toHaveTextContent('-3');
+      expect(screen.queryByTestId('quick-match-my-round-in-match')).not.toBeInTheDocument();
+    });
+
+    /**
+     * El backend deja el standing en null mientras no haya un hoyo anotado por
+     * TODOS. Con la vuelta propia dentro del marcador, quien habia anotado la
+     * suya entera no la veia porque su rival no habia metido nada.
+     */
+    it('shows the personal round even when there is no standing yet', () => {
+      render(
+        <QuickMatchClassificationTable
+          holes={holes}
+          holeScores={[
+            { holeNumber: 1, participantId: 'p-1', score: 4 },
+            { holeNumber: 2, participantId: 'p-1', score: 2 },
+          ]}
+          participants={[
+            { participantId: 'p-1', name: 'Alice', handicap: 2, team: 'A', isGuest: false },
+            { participantId: 'p-2', name: 'Bob', handicap: 12, team: 'B', isGuest: false },
+          ]}
+          currentParticipantId="p-1"
+          scoringFormat={null}
+          standing={null}
+          participantStrokes={[]}
+        />
+      );
+
+      expect(screen.getByTestId('quick-match-standing-empty')).toBeInTheDocument();
+      expect(screen.getByTestId('quick-match-my-round')).toHaveTextContent('-3');
+    });
+
     it('shows only the standing when the player has not scored a hole yet', () => {
       render(
         <QuickMatchClassificationTable
@@ -324,6 +414,40 @@ describe('QuickMatchClassificationTable', () => {
       // 4 sobre un par jugado de 7, o sea -3. Aplicando el 50% del partido
       // serían 1 golpe en total y saldría -2.
       expect(screen.getByTestId('quick-match-my-round')).toHaveTextContent('-3');
+    });
+  });
+
+  /**
+   * En juego libre la columna "Resultado" va con el reparto del partido, que el
+   * backend calcula al 95% (FREE_PLAY_ALLOWANCE), y el historial destaca la
+   * vuelta con el handicap de juego entero. Sin las dos lecturas aqui, cada
+   * pantalla destacaba un numero distinto de la misma vuelta.
+   */
+  describe('en juego libre', () => {
+    it('shows the personal round below the ranking too', () => {
+      render(
+        <QuickMatchClassificationTable
+          holes={holes}
+          holeScores={[
+            { holeNumber: 1, participantId: 'p-1', score: 4 },
+            { holeNumber: 2, participantId: 'p-1', score: 2 },
+          ]}
+          participants={[
+            { participantId: 'p-1', name: 'Alice', handicap: 2, isGuest: false },
+            { participantId: 'p-2', name: 'Bob', handicap: 12, isGuest: false },
+          ]}
+          currentParticipantId="p-1"
+          scoringFormat="MEDAL"
+          allowancePercentage={95}
+          participantStrokes={[
+            { participantId: 'p-1', playingHandicap: 2, strokesByHole: {} },
+            { participantId: 'p-2', playingHandicap: 11, strokesByHole: { 1: 1, 2: 1 } },
+          ]}
+        />
+      );
+
+      expect(screen.getByTestId('quick-match-my-round')).toHaveTextContent('-3');
+      expect(screen.getByTestId('quick-match-my-round-in-match')).toHaveTextContent('-1');
     });
   });
 });

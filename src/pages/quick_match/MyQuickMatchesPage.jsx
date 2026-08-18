@@ -10,11 +10,7 @@ import {
   getGolfCourseUseCase,
   hideQuickMatchUseCase,
 } from '../../composition';
-import StablefordCalculator from '../../domain/services/StablefordCalculator';
-import MatchPlayStrokeAllocator from '../../domain/services/MatchPlayStrokeAllocator';
-
-// Una vuelta personal se mide con el hándicap de juego entero.
-const PERSONAL_ROUND_ALLOWANCE = 100;
+import PersonalRoundCalculator from '../../domain/services/PersonalRoundCalculator';
 import customToast from '../../utils/toast';
 
 const STATUS_STYLES = {
@@ -95,45 +91,20 @@ const MyQuickMatchesPage = () => {
         const myParticipant = detail.participants.find((p) => p.userId === user.id);
         if (!myParticipant) return null;
 
-        // El cuarto argumento es el REPARTO, no las salidas: con la firma vieja
-        // no fallaba nada, simplemente no encontraba los golpes de nadie y la
-        // vuelta salía a bruto.
-        //
-        // Y se reparte por el hándicap de juego de cada uno (`matchFormat:
-        // null`), no por el del partido, a propósito: esta tarjeta es el
-        // historial personal del jugador. En match play los golpes se dan por
-        // DIFERENCIA, así que el de hándicap más bajo recibe cero y su vuelta
-        // saldría a bruto mientras la del rival descuenta toda la diferencia:
-        // dos vueltas iguales contadas distinto según con quién jugaste. Por lo
-        // mismo no se usa `resolve()`, que daría prioridad al reparto que mandó
-        // el backend, que es el del partido. La clasificación y la tarjeta del
-        // partido sí usan ese, porque ahí lo que se mide es quién ganó.
-        const allocation = MatchPlayStrokeAllocator.allocate({
+        // Las dos lecturas de la vuelta, calculadas en un solo sitio para que
+        // esta tarjeta y la pestaña de clasificación no puedan dar números
+        // distintos para la misma vuelta, que es lo que pasaba.
+        return PersonalRoundCalculator.compute({
+          me: myParticipant,
           participants: detail.participants ?? [],
           holes: course.holes || [],
+          holeScores: detail.holeScores || [],
           tees: course.tees || [],
-          matchFormat: null,
-          // Al 100%, no con el allowance del partido: el allowance equilibra
-          // una competición —90% en fourball, 50% en foursomes— y no mide una
-          // vuelta. Con él, la misma vuelta salía -2, PAR o +8 según el
-          // formato jugado, y dejaba de poder compararse con las demás. El
-          // resultado con allowance es el del partido, y ese se ve dentro.
-          allowancePercentage: PERSONAL_ROUND_ALLOWANCE,
+          participantStrokes: detail.participantStrokes ?? [],
+          matchFormat: qm.matchFormat,
+          allowancePercentage: detail.effectiveAllowance,
           playMode: detail.playMode,
         });
-
-        const totals = StablefordCalculator.computeParticipantTotals(
-          myParticipant,
-          course.holes || [],
-          detail.holeScores || [],
-          allocation
-        );
-        if (totals.holesPlayed === 0) return null;
-
-        return {
-          toParLabel: StablefordCalculator.formatToPar(totals.netStrokes - totals.parPlayed),
-          totalStrokes: totals.totalStrokes,
-        };
       } catch {
         return null;
       }
@@ -217,7 +188,17 @@ const MyQuickMatchesPage = () => {
                   <div className="flex items-center gap-2 flex-shrink-0">
                     {resultsByMatchId[qm.id] && (
                       <div className="text-right" data-testid={`quick-match-result-${qm.id}`}>
-                        <p className="text-sm font-bold text-gray-900">{resultsByMatchId[qm.id].toParLabel}</p>
+                        <p className="text-sm font-bold text-gray-900">
+                          {resultsByMatchId[qm.id].personalToPar}
+                          {resultsByMatchId[qm.id].matchToPar && (
+                            <span
+                              className="ml-1 text-[10px] font-normal text-gray-500"
+                              data-testid={`quick-match-result-in-match-${qm.id}`}
+                            >
+                              {t('personalRound.inMatch', { value: resultsByMatchId[qm.id].matchToPar })}
+                            </span>
+                          )}
+                        </p>
                         <p className="text-[10px] text-gray-500">
                           {t('history.grossStrokes', { count: resultsByMatchId[qm.id].totalStrokes })}
                         </p>
