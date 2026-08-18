@@ -246,15 +246,17 @@ describe('QuickMatchScoringPage - copia de los errores', () => {
    * el reparto de golpes -que si resuelve la barra- le da golpe en otro hoyo.
    */
   describe('tarjeta de la barra del jugador', () => {
-    const renderWithCard = ({ holes, tees, participant }) => {
+    const renderWithCard = ({ holes, tees, participant, others = [] }) => {
+      const me = { ...baseHookState.myParticipant, ...participant };
       mockUseQuickMatchScoring.mockReturnValue({
         ...baseHookState,
+        quickMatch: { ...baseQuickMatch, participants: [me, ...others] },
         holes,
         tees,
-        myParticipant: { ...baseHookState.myParticipant, ...participant },
+        myParticipant: me,
         // La cabecera del hoyo solo se pinta a quien anota
         isScorer: true,
-        coveredParticipantIds: ['user-1'],
+        coveredParticipantIds: ['user-1', ...others.map((o) => o.participantId)],
         setCurrentHole: vi.fn(),
         submitScore: vi.fn(),
         completeMatch: vi.fn(),
@@ -309,6 +311,55 @@ describe('QuickMatchScoringPage - copia de los errores', () => {
      * se lee como "aqui falta el dato", y la cabecera no cambia de tamano
      * segun el campo.
      */
+
+    /**
+     * Quien anota puede estar anotando a alguien de otra barra: con una sola
+     * cabecera se le pintaba —y se le dibujaba la figura— contra un par que no
+     * era el suyo, mientras sus golpes sí venían resueltos por su barra.
+     */
+    it('con barras distintas, cada jugador lleva sus propios datos', () => {
+      renderWithCard({
+        holes: [{ holeNumber: 1, par: 4, strokeIndex: 5 }],
+        tees: [
+          teeWithCard,
+          {
+            color: 'RED',
+            gender: 'FEMALE',
+            holes: [{ holeNumber: 1, par: 5, strokeIndex: 3, meters: 300 }],
+          },
+        ],
+        participant: { color: 'YELLOW', teeGender: 'MALE' },
+        others: [
+          {
+            participantId: 'user-2',
+            userId: 'user-2',
+            name: 'Friend',
+            handicap: 0,
+            color: 'RED',
+            teeGender: 'FEMALE',
+          },
+        ],
+      });
+
+      const mine = screen.getByTestId('quick-match-hole-facts-user-1');
+      const theirs = screen.getByTestId('quick-match-hole-facts-user-2');
+      expect(mine).toHaveTextContent('input.par 3');
+      expect(mine).toHaveTextContent('input.meters 142');
+      expect(theirs).toHaveTextContent('input.par 5');
+      expect(theirs).toHaveTextContent('input.meters 300');
+    });
+
+    it('con la misma barra, los datos van una sola vez en la cabecera', () => {
+      renderWithCard({
+        holes: [{ holeNumber: 1, par: 4, strokeIndex: 5 }],
+        tees: [teeWithCard],
+        participant: { color: 'YELLOW', teeGender: 'MALE' },
+      });
+
+      expect(screen.getByText('input.par 3')).toBeInTheDocument();
+      expect(screen.queryByTestId('quick-match-hole-facts-user-1')).not.toBeInTheDocument();
+    });
+
     it('ensena la etiqueta con un guion cuando el hoyo no tiene metros', () => {
       renderWithCard({
         holes: [{ holeNumber: 1, par: 4, strokeIndex: 5 }],

@@ -115,12 +115,17 @@ const QuickMatchScoringPage = () => {
     );
   }
 
-  // La tarjeta que se pinta es la de la barra que juega quien anota: el par y
-  // el stroke index cambian de una barra a otra, y son los mismos que usa el
-  // reparto de golpes. Sin esto la cabecera podia contradecir al indicador de
-  // "golpe recibido" que ya viene resuelto por barra desde el backend.
-  const myHoleCard = MatchPlayStrokeAllocator.holeCardFor(myParticipant, holes, tees);
-  const currentHoleData = myHoleCard.find((h) => h.holeNumber === currentHole);
+  // El par, el índice y los metros son de la barra de CADA jugador, no de una
+  // común: en 56 de los 800 campos federados el índice cambia entre barras y en
+  // 25 el par, y quien anota puede estar anotando a alguien de otra barra. Con
+  // una sola tarjeta se le pintaba —y se le dibujaba la figura— contra un par
+  // que no era el suyo, mientras sus golpes sí venían resueltos por su barra.
+  const holeFor = (participant) =>
+    MatchPlayStrokeAllocator.holeCardFor(participant, holes, tees).find(
+      (h) => h.holeNumber === currentHole
+    ) ?? null;
+
+  const currentHoleData = holeFor(myParticipant);
 
   const entries = coveredParticipantIds.map((participantId) => {
     const participant = quickMatch?.participants?.find((p) => p.participantId === participantId);
@@ -131,6 +136,7 @@ const QuickMatchScoringPage = () => {
       participantId,
       name: participant?.name ?? '',
       score: scoreEntry ? scoreEntry.score : null,
+      hole: holeFor(participant) ?? currentHoleData,
     };
   });
 
