@@ -15,14 +15,14 @@
     "youMark": "Tú marcas a",
     "markedBy": "Te marca",
     "color": "Color de barras",
-    "handicap": "Handicap",
+    "handicap": "Hándicap",
     "format": "Formato",
     "ready": "Listo para Jugar"
   },
   "input": {
     "hole": "Hoyo",
     "par": "Par",
-    "strokeIndex": "HCP",
+    "strokeIndex": "Hcp hoyo",
     "yourScore": "Tu Anotación",
     "markerScore": "Anotación Marcador",
     "netScore": "Neto",
