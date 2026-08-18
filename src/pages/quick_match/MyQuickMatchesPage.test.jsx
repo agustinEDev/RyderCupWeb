@@ -5,7 +5,8 @@ import MyQuickMatchesPage from './MyQuickMatchesPage';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key) => key,
+    // Solo se interpola `value`, que es lo unico que se afirma por su numero
+    t: (key, opts) => (opts?.value !== undefined ? `${key} ${opts.value}` : key),
     i18n: { language: 'en' },
   }),
 }));
@@ -150,6 +151,192 @@ describe('MyQuickMatchesPage', () => {
     // Net strokes 6 (0 handicap, no strokes received) vs par played 7 -> 1 under par.
     expect(screen.getByText('-1')).toBeInTheDocument();
     expect(screen.getByText('history.grossStrokes')).toBeInTheDocument();
+  });
+
+  /**
+   * El resultado de esta tarjeta es NETO y personal: se descuentan los golpes
+   * que le tocan al jugador por SU hándicap de juego. La llamada al calculador
+   * se había quedado con la firma vieja —le pasaba las salidas donde va el
+   * reparto—, y como sin entrada para el participante se puntúa a bruto, la
+   * lista contaba la vuelta contra el par del campo.
+   */
+  it("should subtract the player's own strokes from the to-par result", async () => {
+    mockListMyQuickMatches.mockResolvedValue({
+      quickMatches: [
+        { id: 'qm-3', golfCourseId: 'course-1', matchFormat: 'SINGLES', status: 'COMPLETED', createdAt: '2026-07-20T10:00:00Z' },
+      ],
+      totalCount: 1,
+      page: 1,
+      limit: 50,
+    });
+    mockGetQuickMatch.mockResolvedValue({
+      participants: [{ participantId: 'user-1', userId: 'user-1', name: 'Test User', handicap: 2 }],
+      holeScores: [
+        { holeNumber: 1, participantId: 'user-1', score: 4 },
+        { holeNumber: 2, participantId: 'user-1', score: 2 },
+      ],
+      effectiveAllowance: 100,
+      playMode: 'HANDICAP',
+    });
+    mockGetGolfCourse.mockResolvedValue({
+      holes: [
+        { holeNumber: 1, par: 4, strokeIndex: 5 },
+        { holeNumber: 2, par: 3, strokeIndex: 15 },
+      ],
+      tees: [],
+    });
+
+    renderPage();
+
+    await waitFor(() => {
+      expect(screen.getByTestId('quick-match-result-qm-3')).toBeInTheDocument();
+    });
+    // Hándicap 2 sobre dos hoyos: un golpe en cada uno. Netos 3 + 1 = 4 sobre
+    // un par jugado de 7, o sea tres bajo par. A bruto serían -1.
+    expect(screen.getByText('-3')).toBeInTheDocument();
+  });
+
+  /**
+   * En match play los golpes se dan por DIFERENCIA, así que el backend manda
+   * cero para el jugador de hándicap más bajo. Esta tarjeta es el historial
+   * personal, no el partido: usar ese reparto haría que la misma vuelta
+   * contara distinto según con quién se jugó.
+   */
+  it("should ignore the match allocation and use the player's own handicap", async () => {
+    mockListMyQuickMatches.mockResolvedValue({
+      quickMatches: [
+        { id: 'qm-4', golfCourseId: 'course-1', matchFormat: 'SINGLES', status: 'COMPLETED', createdAt: '2026-07-20T10:00:00Z' },
+      ],
+      totalCount: 1,
+      page: 1,
+      limit: 50,
+    });
+    mockGetQuickMatch.mockResolvedValue({
+      participants: [
+        { participantId: 'user-1', userId: 'user-1', name: 'Test User', handicap: 2 },
+        { participantId: 'user-2', userId: 'user-2', name: 'Rival', handicap: 12 },
+      ],
+      holeScores: [
+        { holeNumber: 1, participantId: 'user-1', score: 4 },
+        { holeNumber: 2, participantId: 'user-1', score: 2 },
+      ],
+      // El reparto del partido: el de hándicap bajo no recibe ninguno
+      participantStrokes: [
+        { participantId: 'user-1', playingHandicap: 2, strokesByHole: {} },
+        { participantId: 'user-2', playingHandicap: 12, strokesByHole: { 1: 1, 2: 1 } },
+      ],
+      effectiveAllowance: 100,
+      playMode: 'HANDICAP',
+    });
+    mockGetGolfCourse.mockResolvedValue({
+      holes: [
+        { holeNumber: 1, par: 4, strokeIndex: 5 },
+        { holeNumber: 2, par: 3, strokeIndex: 15 },
+      ],
+      tees: [],
+    });
+
+    renderPage();
+
+    await waitFor(() => {
+      expect(screen.getByTestId('quick-match-result-qm-4')).toBeInTheDocument();
+    });
+    // Sus dos golpes siguen contando: -3. Con el reparto del partido saldría -1.
+    expect(screen.getByText('-3')).toBeInTheDocument();
+  });
+
+  /**
+   * En juego libre el backend aplica el allowance WHS de stroke play, el 95%
+   * (`FREE_PLAY_ALLOWANCE`), asi que el reparto del partido NO es el mismo que
+   * el del handicap de juego entero. Ensenando solo uno, esta tarjeta y la
+   * pestana de clasificacion daban dos numeros distintos para la misma vuelta
+   * sin que nada dijera por que. Se ensenan los dos, etiquetados.
+   */
+  it('should show the match figure next to the personal one in free play', async () => {
+    mockListMyQuickMatches.mockResolvedValue({
+      quickMatches: [
+        { id: 'qm-6', golfCourseId: 'course-1', scoringFormat: 'MEDAL', status: 'COMPLETED', createdAt: '2026-07-21T10:00:00Z' },
+      ],
+      totalCount: 1,
+      page: 1,
+      limit: 50,
+    });
+    mockGetQuickMatch.mockResolvedValue({
+      participants: [{ participantId: 'user-1', userId: 'user-1', name: 'Test User', handicap: 12 }],
+      holeScores: [
+        { holeNumber: 1, participantId: 'user-1', score: 10 },
+        { holeNumber: 2, participantId: 'user-1', score: 10 },
+      ],
+      // Al 95% el handicap de juego baja de 12 a 11, y se reparte distinto
+      participantStrokes: [
+        { participantId: 'user-1', playingHandicap: 11, strokesByHole: { 1: 6, 2: 5 } },
+      ],
+      effectiveAllowance: 95,
+      playMode: 'HANDICAP',
+    });
+    mockGetGolfCourse.mockResolvedValue({
+      holes: [
+        { holeNumber: 1, par: 4, strokeIndex: 5 },
+        { holeNumber: 2, par: 3, strokeIndex: 15 },
+      ],
+      tees: [],
+    });
+
+    renderPage();
+
+    await waitFor(() => {
+      expect(screen.getByTestId('quick-match-result-qm-6')).toBeInTheDocument();
+    });
+    // Entero: el reparto local le da un golpe en cada hoyo -> netos 9 y 9
+    // sobre un par jugado de 7 -> +11
+    expect(screen.getByText('+11')).toBeInTheDocument();
+    // Del partido: el reparto que mando el backend al 95% -> netos 4 y 5 -> +2
+    expect(screen.getByTestId('quick-match-result-in-match-qm-6')).toHaveTextContent('+2');
+  });
+
+  /**
+   * En foursomes la pareja juega una sola bola a golpes alternos: lo anotado es
+   * del equipo, no la vuelta de nadie. Los golpes brutos sí son del equipo y la
+   * tarjeta los enseñaba antes de esto: saltarse la partida entera la dejaba en
+   * blanco, que es peor que no tocarla.
+   */
+  it('should show only the team gross strokes, and no to-par, for a foursomes match', async () => {
+    mockListMyQuickMatches.mockResolvedValue({
+      quickMatches: [
+        { id: 'qm-5', golfCourseId: 'course-1', matchFormat: 'FOURSOMES', status: 'COMPLETED', createdAt: '2026-07-20T10:00:00Z' },
+      ],
+      totalCount: 1,
+      page: 1,
+      limit: 50,
+    });
+    mockGetQuickMatch.mockResolvedValue({
+      participants: [{ participantId: 'user-1', userId: 'user-1', name: 'Test User', handicap: 0 }],
+      holeScores: [
+        { holeNumber: 1, participantId: 'user-1', score: 4 },
+        { holeNumber: 2, participantId: 'user-1', score: 2 },
+      ],
+      effectiveAllowance: 50,
+    });
+    mockGetGolfCourse.mockResolvedValue({
+      holes: [
+        { holeNumber: 1, par: 4, strokeIndex: 5 },
+        { holeNumber: 2, par: 3, strokeIndex: 15 },
+      ],
+      tees: [],
+    });
+
+    renderPage();
+
+    await waitFor(() => {
+      expect(screen.getByTestId('quick-match-result-qm-5')).toBeInTheDocument();
+    });
+    expect(screen.getByText('history.grossStrokes')).toBeInTheDocument();
+    // Etiquetados como del equipo: sin eso la tarjeta se queda en una línea
+    // suelta de 10px y parece a medio pintar
+    expect(screen.getByText('history.teamTotal')).toBeInTheDocument();
+    // Ni la lectura personal ni la del partido: en foursomes no son de nadie
+    expect(screen.queryByText('-1')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('quick-match-result-in-match-qm-5')).not.toBeInTheDocument();
   });
 
   it('should not fetch or show a result for matches that are not completed', async () => {

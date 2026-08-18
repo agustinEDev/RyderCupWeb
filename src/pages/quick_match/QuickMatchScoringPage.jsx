@@ -314,6 +314,7 @@ const QuickMatchScoringPage = () => {
             allowancePercentage={quickMatch?.effectiveAllowance}
             playMode={quickMatch?.playMode}
             participantStrokes={quickMatch?.participantStrokes ?? []}
+            matchFormat={quickMatch?.matchFormat}
             isCompleted={!!quickMatch?.isCompleted}
           />
         )}

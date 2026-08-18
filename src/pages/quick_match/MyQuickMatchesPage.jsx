@@ -10,7 +10,7 @@ import {
   getGolfCourseUseCase,
   hideQuickMatchUseCase,
 } from '../../composition';
-import StablefordCalculator from '../../domain/services/StablefordCalculator';
+import PersonalRoundCalculator from '../../domain/services/PersonalRoundCalculator';
 import customToast from '../../utils/toast';
 
 const STATUS_STYLES = {
@@ -88,19 +88,20 @@ const MyQuickMatchesPage = () => {
         const myParticipant = detail.participants.find((p) => p.userId === user.id);
         if (!myParticipant) return null;
 
-        const totals = StablefordCalculator.computeParticipantTotals(
-          myParticipant,
-          course.holes || [],
-          detail.holeScores || [],
-          course.tees || [],
-          detail.effectiveAllowance ?? 100
-        );
-        if (totals.holesPlayed === 0) return null;
-
-        return {
-          toParLabel: StablefordCalculator.formatToPar(totals.netStrokes - totals.parPlayed),
-          totalStrokes: totals.totalStrokes,
-        };
+        // Las dos lecturas de la vuelta, calculadas en un solo sitio para que
+        // esta tarjeta y la pestaña de clasificación no puedan dar números
+        // distintos para la misma vuelta, que es lo que pasaba.
+        return PersonalRoundCalculator.compute({
+          me: myParticipant,
+          participants: detail.participants ?? [],
+          holes: course.holes || [],
+          holeScores: detail.holeScores || [],
+          tees: course.tees || [],
+          participantStrokes: detail.participantStrokes ?? [],
+          matchFormat: qm.matchFormat,
+          allowancePercentage: detail.effectiveAllowance,
+          playMode: detail.playMode,
+        });
       } catch {
         return null;
       }
@@ -184,10 +185,43 @@ const MyQuickMatchesPage = () => {
                   <div className="flex items-center gap-2 flex-shrink-0">
                     {resultsByMatchId[qm.id] && (
                       <div className="text-right" data-testid={`quick-match-result-${qm.id}`}>
-                        <p className="text-sm font-bold text-gray-900">{resultsByMatchId[qm.id].toParLabel}</p>
-                        <p className="text-[10px] text-gray-500">
-                          {t('history.grossStrokes', { count: resultsByMatchId[qm.id].totalStrokes })}
-                        </p>
+                        {/* En foursomes no hay vuelta propia —una sola bola a
+                            golpes alternos—, así que el calculador deja las dos
+                            lecturas en null. Los golpes del equipo pasan
+                            entonces a ser el titular, con su etiqueta: dejarlos
+                            en la línea de apoyo de 10px y sin nada encima hacía
+                            que la tarjeta pareciera a medio pintar. */}
+                        {resultsByMatchId[qm.id].personalToPar ? (
+                          <>
+                            <p className="text-sm font-bold text-gray-900">
+                              {resultsByMatchId[qm.id].personalToPar}
+                            </p>
+                            <p className="text-[10px] text-gray-500">
+                              {t('history.grossStrokes', { count: resultsByMatchId[qm.id].totalStrokes })}
+                            </p>
+                          </>
+                        ) : (
+                          <>
+                            <p className="text-sm font-bold text-gray-900">
+                              {t('history.grossStrokes', { count: resultsByMatchId[qm.id].totalStrokes })}
+                            </p>
+                            <p className="text-[10px] text-gray-500">{t('history.teamTotal')}</p>
+                          </>
+                        )}
+                        {/* En su propia línea, no al lado del resultado: esta
+                            columna no encoge (`flex-shrink-0`), así que el
+                            paréntesis se llevaba unos 100px del ancho, y el
+                            único bloque que sí encoge es el del nombre y la
+                            fecha —el del `truncate`—, que en un móvil de 375px
+                            se quedaba en cuatro letras. */}
+                        {resultsByMatchId[qm.id].matchToPar && (
+                          <p
+                            className="text-[10px] text-gray-500"
+                            data-testid={`quick-match-result-in-match-${qm.id}`}
+                          >
+                            {t('personalRound.inMatch', { value: resultsByMatchId[qm.id].matchToPar })}
+                          </p>
+                        )}
                       </div>
                     )}
                     <span className={`text-xs font-semibold px-2 py-1 rounded-full ${STATUS_STYLES[qm.status] ?? 'bg-gray-100 text-gray-700'}`}>
