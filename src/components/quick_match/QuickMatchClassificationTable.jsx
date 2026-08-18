@@ -63,23 +63,29 @@ const MatchStandingSummary = ({ participants, standing }) => {
  * arriba dice quién gana; esto dice cómo jugó uno, que no es lo mismo y hasta
  * ahora no se veía en ninguna parte.
  */
-const PersonalRound = ({ round }) => {
+const PersonalRound = ({ round, className = '' }) => {
   const { t } = useTranslation('quickMatch');
 
   // En foursomes el calculador devuelve solo los golpes brutos del equipo, sin
   // ninguna de las dos lecturas: ahí no hay vuelta que enseñar.
+  //
+  // El contenedor con el hueco lo pinta este componente, no quien lo llama: con
+  // el hueco fuera, un foursomes —o un espectador, o cualquiera antes de anotar
+  // su primer hoyo— se comía el `padding` de una línea que no existe.
   if (!round?.personalToPar) return null;
 
   return (
-    <p className="text-sm text-gray-600 mt-3" data-testid="quick-match-my-round">
-      {t('scoring.classification.yourRound')}{' '}
-      <span className="font-bold text-gray-900">{round.personalToPar}</span>
-      {round.matchToPar && (
-        <span className="text-gray-500" data-testid="quick-match-my-round-in-match">
-          {' '}{t('personalRound.inMatch', { value: round.matchToPar })}
-        </span>
-      )}
-    </p>
+    <div className={`text-center ${className}`}>
+      <p className="text-sm text-gray-600 mt-3" data-testid="quick-match-my-round">
+        {t('scoring.classification.yourRound')}{' '}
+        <span className="font-bold text-gray-900">{round.personalToPar}</span>
+        {round.matchToPar && (
+          <span className="text-gray-500" data-testid="quick-match-my-round-in-match">
+            {' '}{t('personalRound.inMatch', { value: round.matchToPar })}
+          </span>
+        )}
+      </p>
+    </div>
   );
 };
 
@@ -142,9 +148,7 @@ const QuickMatchClassificationTable = ({
     return (
       <div data-testid="quick-match-classification-table">
         <MatchStandingSummary participants={participants} standing={standing} />
-        <div className="text-center pb-4">
-          <PersonalRound round={myRound} />
-        </div>
+        <PersonalRound round={myRound} className="pb-4" />
       </div>
     );
   }
@@ -239,9 +243,7 @@ const QuickMatchClassificationTable = ({
           reparto del partido; en STABLEFORD no hay ninguna otra cifra al par en
           pantalla, pero el número sigue siendo el que decidió los puntos de la
           tabla de arriba, y es el que difiere del que destaca el historial. */}
-      <div className="text-center py-3">
-        <PersonalRound round={myRound} />
-      </div>
+      <PersonalRound round={myRound} className="py-3" />
     </div>
   );
 };

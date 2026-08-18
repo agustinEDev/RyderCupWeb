@@ -124,6 +124,7 @@
     },
     "grossStrokes_one": "{{count}} stroke",
     "grossStrokes_other": "{{count}} strokes",
+    "teamTotal": "Team total",
     "hide": "Remove from my history",
     "hidden": "Match removed from your history",
     "hideError": "Could not remove the match from your history"

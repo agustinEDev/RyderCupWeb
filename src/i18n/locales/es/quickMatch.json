@@ -124,6 +124,7 @@
     },
     "grossStrokes_one": "{{count}} golpe",
     "grossStrokes_other": "{{count}} golpes",
+    "teamTotal": "Del equipo",
     "hide": "Quitar de mi historial",
     "hidden": "Partida quitada de tu historial",
     "hideError": "No se pudo quitar la partida de tu historial"

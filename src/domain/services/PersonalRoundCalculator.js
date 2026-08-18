@@ -45,13 +45,13 @@ class PersonalRoundCalculator {
    * @param {?string} params.matchFormat SINGLES/FOURBALL/FOURSOMES, o null en juego libre
    * @param {?number} params.allowancePercentage Allowance efectivo del partido
    * @param {string} params.playMode HANDICAP o SCRATCH
-   * @returns {?{personalToPar: ?string, matchToPar: ?string, holesPlayed: number,
-   *   totalStrokes: number}} `matchToPar` es null cuando coincide con la
-   *   personal: no hay nada que aclarar y repetir el mismo número al lado solo
-   *   es ruido. En foursomes las DOS lecturas son null y solo quedan los golpes
-   *   brutos del equipo, así que quien lo pinte tiene que mirar
-   *   `personalToPar`, no solo si el objeto es null. `totalStrokes` son los
-   *   golpes brutos, que el historial pinta debajo del resultado.
+   * @returns {?{personalToPar: ?string, matchToPar: ?string, totalStrokes: number}}
+   *   `matchToPar` es null cuando coincide con la personal: no hay nada que
+   *   aclarar y repetir el mismo número al lado solo es ruido. En foursomes las
+   *   DOS lecturas son null y solo quedan los golpes brutos del equipo, así que
+   *   quien lo pinte tiene que mirar `personalToPar` y no si el objeto es null.
+   *   `totalStrokes` son los golpes brutos: el historial los pinta debajo del
+   *   resultado, o como titular cuando no hay resultado que enseñar.
    */
   static compute({
     me = null,
@@ -82,7 +82,6 @@ class PersonalRoundCalculator {
       return {
         personalToPar: null,
         matchToPar: null,
-        holesPlayed: teamTotals.holesPlayed,
         totalStrokes: teamTotals.totalStrokes,
       };
     }
@@ -139,11 +138,9 @@ class PersonalRoundCalculator {
     return {
       personalToPar,
       matchToPar: matchToPar === personalToPar ? null : matchToPar,
-      holesPlayed: personalTotals.holesPlayed,
       totalStrokes: personalTotals.totalStrokes,
     };
   }
 }
 
 export default PersonalRoundCalculator;
-export { PERSONAL_ROUND_ALLOWANCE };

@@ -187,16 +187,27 @@ const MyQuickMatchesPage = () => {
                       <div className="text-right" data-testid={`quick-match-result-${qm.id}`}>
                         {/* En foursomes no hay vuelta propia —una sola bola a
                             golpes alternos—, así que el calculador deja las dos
-                            lecturas en null y de la tarjeta solo quedan los
-                            golpes brutos del equipo. */}
-                        {resultsByMatchId[qm.id].personalToPar && (
-                          <p className="text-sm font-bold text-gray-900">
-                            {resultsByMatchId[qm.id].personalToPar}
-                          </p>
+                            lecturas en null. Los golpes del equipo pasan
+                            entonces a ser el titular, con su etiqueta: dejarlos
+                            en la línea de apoyo de 10px y sin nada encima hacía
+                            que la tarjeta pareciera a medio pintar. */}
+                        {resultsByMatchId[qm.id].personalToPar ? (
+                          <>
+                            <p className="text-sm font-bold text-gray-900">
+                              {resultsByMatchId[qm.id].personalToPar}
+                            </p>
+                            <p className="text-[10px] text-gray-500">
+                              {t('history.grossStrokes', { count: resultsByMatchId[qm.id].totalStrokes })}
+                            </p>
+                          </>
+                        ) : (
+                          <>
+                            <p className="text-sm font-bold text-gray-900">
+                              {t('history.grossStrokes', { count: resultsByMatchId[qm.id].totalStrokes })}
+                            </p>
+                            <p className="text-[10px] text-gray-500">{t('history.teamTotal')}</p>
+                          </>
                         )}
-                        <p className="text-[10px] text-gray-500">
-                          {t('history.grossStrokes', { count: resultsByMatchId[qm.id].totalStrokes })}
-                        </p>
                         {/* En su propia línea, no al lado del resultado: esta
                             columna no encoge (`flex-shrink-0`), así que el
                             paréntesis se llevaba unos 100px del ancho, y el

@@ -331,6 +331,9 @@ describe('MyQuickMatchesPage', () => {
       expect(screen.getByTestId('quick-match-result-qm-5')).toBeInTheDocument();
     });
     expect(screen.getByText('history.grossStrokes')).toBeInTheDocument();
+    // Etiquetados como del equipo: sin eso la tarjeta se queda en una línea
+    // suelta de 10px y parece a medio pintar
+    expect(screen.getByText('history.teamTotal')).toBeInTheDocument();
     // Ni la lectura personal ni la del partido: en foursomes no son de nadie
     expect(screen.queryByText('-1')).not.toBeInTheDocument();
     expect(screen.queryByTestId('quick-match-result-in-match-qm-5')).not.toBeInTheDocument();
