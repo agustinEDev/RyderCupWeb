@@ -237,4 +237,86 @@ describe('QuickMatchScoringPage - copia de los errores', () => {
     expect(shown).toHaveTextContent('scoring.errors.saveFailed');
     expect(shown).not.toHaveTextContent('Failed to fetch');
   });
+
+  /**
+   * El par, el stroke index y los metros son de la barra que juega cada uno.
+   * `holes` es solo la tarjeta de la PRIMERA barra del campo, y en 56 de los
+   * 800 campos federados el stroke index cambia de una barra a otra: pintar esa
+   * tarjeta a quien juega otra le ensena un indice que no es el suyo, mientras
+   * el reparto de golpes -que si resuelve la barra- le da golpe en otro hoyo.
+   */
+  describe('tarjeta de la barra del jugador', () => {
+    const renderWithCard = ({ holes, tees, participant }) => {
+      mockUseQuickMatchScoring.mockReturnValue({
+        ...baseHookState,
+        holes,
+        tees,
+        myParticipant: { ...baseHookState.myParticipant, ...participant },
+        // La cabecera del hoyo solo se pinta a quien anota
+        isScorer: true,
+        coveredParticipantIds: ['user-1'],
+        setCurrentHole: vi.fn(),
+        submitScore: vi.fn(),
+        completeMatch: vi.fn(),
+        refetch: vi.fn(),
+      });
+      return renderPage();
+    };
+
+    const teeWithCard = {
+      color: 'YELLOW',
+      gender: 'MALE',
+      holes: [{ holeNumber: 1, par: 3, strokeIndex: 15, meters: 142 }],
+    };
+
+    it('pinta el par y el indice de su barra, no los del campo', () => {
+      renderWithCard({
+        holes: [{ holeNumber: 1, par: 4, strokeIndex: 5 }],
+        tees: [teeWithCard],
+        participant: { color: 'YELLOW', teeGender: 'MALE' },
+      });
+
+      expect(screen.getByText('input.par 3')).toBeInTheDocument();
+      expect(screen.getByText('input.strokeIndex 15')).toBeInTheDocument();
+      expect(screen.queryByText('input.par 4')).not.toBeInTheDocument();
+      expect(screen.queryByText('input.strokeIndex 5')).not.toBeInTheDocument();
+    });
+
+    it('muestra los metros de la barra', () => {
+      renderWithCard({
+        holes: [{ holeNumber: 1, par: 4, strokeIndex: 5 }],
+        tees: [teeWithCard],
+        participant: { color: 'YELLOW', teeGender: 'MALE' },
+      });
+
+      expect(screen.getByText('input.meters 142')).toBeInTheDocument();
+    });
+
+    it('cae a la tarjeta del campo cuando la barra no trae la suya', () => {
+      renderWithCard({
+        holes: [{ holeNumber: 1, par: 4, strokeIndex: 5 }],
+        tees: [{ color: 'YELLOW', gender: 'MALE' }],
+        participant: { color: 'YELLOW', teeGender: 'MALE' },
+      });
+
+      expect(screen.getByText('input.par 4')).toBeInTheDocument();
+      expect(screen.getByText('input.strokeIndex 5')).toBeInTheDocument();
+    });
+
+    /**
+     * Las salidas dadas de alta a mano no traen metros, y la tarjeta del campo
+     * no tiene donde guardarlos. Se ensena la etiqueta con un guion: el hueco
+     * se lee como "aqui falta el dato", y la cabecera no cambia de tamano
+     * segun el campo.
+     */
+    it('ensena la etiqueta con un guion cuando el hoyo no tiene metros', () => {
+      renderWithCard({
+        holes: [{ holeNumber: 1, par: 4, strokeIndex: 5 }],
+        tees: [],
+        participant: { color: 'YELLOW', teeGender: 'MALE' },
+      });
+
+      expect(screen.getByText('input.meters -')).toBeInTheDocument();
+    });
+  });
 });

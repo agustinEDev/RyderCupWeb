@@ -9,6 +9,7 @@ import QuickMatchHoleSelector from '../../components/quick_match/QuickMatchHoleS
 import QuickMatchHoleInput from '../../components/quick_match/QuickMatchHoleInput';
 import QuickMatchClassificationTable from '../../components/quick_match/QuickMatchClassificationTable';
 import QuickMatchScorecardTable from '../../components/quick_match/QuickMatchScorecardTable';
+import MatchPlayStrokeAllocator from '../../domain/services/MatchPlayStrokeAllocator';
 
 const TABS = ['input', 'classification', 'scorecard'];
 
@@ -114,7 +115,12 @@ const QuickMatchScoringPage = () => {
     );
   }
 
-  const currentHoleData = holes.find((h) => h.holeNumber === currentHole);
+  // La tarjeta que se pinta es la de la barra que juega quien anota: el par y
+  // el stroke index cambian de una barra a otra, y son los mismos que usa el
+  // reparto de golpes. Sin esto la cabecera podia contradecir al indicador de
+  // "golpe recibido" que ya viene resuelto por barra desde el backend.
+  const myHoleCard = MatchPlayStrokeAllocator.holeCardFor(myParticipant, holes, tees);
+  const currentHoleData = myHoleCard.find((h) => h.holeNumber === currentHole);
 
   const entries = coveredParticipantIds.map((participantId) => {
     const participant = quickMatch?.participants?.find((p) => p.participantId === participantId);
@@ -235,6 +241,7 @@ const QuickMatchScoringPage = () => {
                     holeNumber={currentHole}
                     par={currentHoleData.par}
                     strokeIndex={currentHoleData.strokeIndex}
+                    meters={currentHoleData.meters ?? null}
                     entries={entries}
                     isReadOnly={isReadOnly}
                     onScoreChange={handleScoreChange}

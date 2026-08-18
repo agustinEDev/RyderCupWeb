@@ -10,7 +10,7 @@ import GolfFigure from '../scoring/GolfFigure';
  * the tournament scoring screen — only the "own + marker" pairing from
  * HoleInput doesn't fit the delegated (1-to-N) quick match model.
  */
-const QuickMatchHoleInput = ({ holeNumber, par, strokeIndex, entries, isReadOnly = false, onScoreChange }) => {
+const QuickMatchHoleInput = ({ holeNumber, par, strokeIndex, meters = null, entries, isReadOnly = false, onScoreChange }) => {
   const { t } = useTranslation('scoring');
   const [openParticipantId, setOpenParticipantId] = useState(null);
 
@@ -27,6 +27,13 @@ const QuickMatchHoleInput = ({ holeNumber, par, strokeIndex, entries, isReadOnly
         <span className="text-lg font-bold text-gray-900">{t('input.hole')} {holeNumber}</span>
         <span className="text-sm text-gray-500">{t('input.par')} {par}</span>
         <span className="text-sm text-gray-500">{t('input.strokeIndex')} {strokeIndex}</span>
+        {/* Los metros son de la barra, y las salidas dadas de alta a mano no
+            los traen. Se ensena siempre la etiqueta con un guion en vez de
+            esconder el dato: el hueco se lee como "aqui falta", que es lo que
+            pasa, y no mueve el resto de la cabecera al cargar. */}
+        <span className="text-sm text-gray-500">
+          {t('input.meters')} {meters ?? '-'}
+        </span>
       </div>
 
       <div className="grid grid-cols-2 gap-3">
