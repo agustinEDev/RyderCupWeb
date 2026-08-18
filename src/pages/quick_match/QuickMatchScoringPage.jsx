@@ -125,7 +125,21 @@ const QuickMatchScoringPage = () => {
       (h) => h.holeNumber === currentHole
     ) ?? null;
 
-  const currentHoleData = holeFor(myParticipant);
+  // Reserva para quien no traiga el hoyo en su barra. No es neutra —`holes` es
+  // la tarjeta de la PRIMERA barra—, pero es la misma para todos y la que ya
+  // elige `holeCardFor` cuando una barra viene sin tarjeta. Lo que no vale es
+  // caer a la barra de quien anota: eso le pinta a un jugador un par distinto
+  // segun quien le este anotando.
+  //
+  // OJO: el reparto de golpes NO usa esta reserva. `holeCardFor` es todo o
+  // nada —con que la barra traiga un hoyo, usa su tarjeta y descarta la del
+  // campo—, asi que en una tarjeta parcial la pantalla enseña el indice del
+  // campo y el reparto no cuenta ese hoyo. El backend hace lo mismo
+  // (`TeeContextBuilder._card_for`), asi que hoy los dos calculos coinciden y
+  // completar los huecos solo aqui los separaria. Ver RyderCupAm#215.
+  const courseHoleData = holes.find((h) => h.holeNumber === currentHole) ?? null;
+
+  const currentHoleData = holeFor(myParticipant) ?? courseHoleData;
 
   const entries = coveredParticipantIds.map((participantId) => {
     const participant = quickMatch?.participants?.find((p) => p.participantId === participantId);
@@ -136,7 +150,7 @@ const QuickMatchScoringPage = () => {
       participantId,
       name: participant?.name ?? '',
       score: scoreEntry ? scoreEntry.score : null,
-      hole: holeFor(participant) ?? currentHoleData,
+      hole: holeFor(participant) ?? courseHoleData,
     };
   });
 

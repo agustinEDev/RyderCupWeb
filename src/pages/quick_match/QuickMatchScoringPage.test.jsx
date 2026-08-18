@@ -246,13 +246,15 @@ describe('QuickMatchScoringPage - copia de los errores', () => {
    * el reparto de golpes -que si resuelve la barra- le da golpe en otro hoyo.
    */
   describe('tarjeta de la barra del jugador', () => {
-    const renderWithCard = ({ holes, tees, participant, others = [] }) => {
+    const renderWithCard = ({ holes, tees, participant, others = [], currentHole = 1 }) => {
       const me = { ...baseHookState.myParticipant, ...participant };
       mockUseQuickMatchScoring.mockReturnValue({
         ...baseHookState,
         quickMatch: { ...baseQuickMatch, participants: [me, ...others] },
         holes,
         tees,
+        currentHole,
+        totalHoles: holes.length,
         myParticipant: me,
         // La cabecera del hoyo solo se pinta a quien anota
         isScorer: true,
@@ -317,7 +319,7 @@ describe('QuickMatchScoringPage - copia de los errores', () => {
      * cabecera se le pintaba —y se le dibujaba la figura— contra un par que no
      * era el suyo, mientras sus golpes sí venían resueltos por su barra.
      */
-    it('con barras distintas, cada jugador lleva sus propios datos', () => {
+    it('con barras distintas, la cabecera es la de quien anota y el otro lleva la suya', () => {
       renderWithCard({
         holes: [{ holeNumber: 1, par: 4, strokeIndex: 5 }],
         tees: [
@@ -341,10 +343,12 @@ describe('QuickMatchScoringPage - copia de los errores', () => {
         ],
       });
 
-      const mine = screen.getByTestId('quick-match-hole-facts-user-1');
+      // Los mios, en la cabecera: es la vuelta que estoy jugando
+      expect(screen.getByText('input.par 3')).toBeInTheDocument();
+      expect(screen.getByText('input.meters 142')).toBeInTheDocument();
+      expect(screen.queryByTestId('quick-match-hole-facts-user-1')).not.toBeInTheDocument();
+
       const theirs = screen.getByTestId('quick-match-hole-facts-user-2');
-      expect(mine).toHaveTextContent('input.par 3');
-      expect(mine).toHaveTextContent('input.meters 142');
       expect(theirs).toHaveTextContent('input.par 5');
       expect(theirs).toHaveTextContent('input.meters 300');
     });
@@ -368,6 +372,136 @@ describe('QuickMatchScoringPage - copia de los errores', () => {
       });
 
       expect(screen.getByText('input.meters -')).toBeInTheDocument();
+    });
+
+    /**
+     * La reserva de quien no trae su hoyo es la tarjeta del campo, que es de
+     * todos, y NUNCA la barra de quien anota: pintarle a otro jugador el par
+     * amarillo bajo su nombre es el error que esta pantalla viene a quitar.
+     * Pasa con tarjetas importadas a medias, que existen pero no traen el hoyo.
+     */
+    it('a quien le falta el hoyo en su barra le pinta el del campo, no el de quien anota', () => {
+      renderWithCard({
+        holes: [{ holeNumber: 1, par: 4, strokeIndex: 5 }],
+        tees: [
+          teeWithCard,
+          {
+            color: 'RED',
+            gender: 'FEMALE',
+            holes: [{ holeNumber: 2, par: 5, strokeIndex: 3, meters: 300 }],
+          },
+        ],
+        participant: { color: 'YELLOW', teeGender: 'MALE' },
+        others: [
+          {
+            participantId: 'user-2',
+            userId: 'user-2',
+            name: 'Friend',
+            handicap: 0,
+            color: 'RED',
+            teeGender: 'FEMALE',
+          },
+        ],
+      });
+
+      const theirs = screen.getByTestId('quick-match-hole-facts-user-2');
+      expect(theirs).toHaveTextContent('input.par 4');
+      expect(theirs).toHaveTextContent('input.strokeIndex 5');
+      expect(theirs).not.toHaveTextContent('input.par 3');
+      expect(theirs).not.toHaveTextContent('input.meters 142');
+    });
+
+    /**
+     * Nada obliga a que la tarjeta de una barra este completa: la trae el
+     * importador. Con el panel colgando solo de la barra propia, en los hoyos
+     * que le faltaran desaparecia la entrada de golpes y no se podia anotar a
+     * NADIE, mientras el boton de siguiente seguia llevando hasta alli.
+     */
+    it('con la barra propia a medias sigue dejando anotar, con la tarjeta del campo', () => {
+      renderWithCard({
+        holes: [
+          { holeNumber: 1, par: 4, strokeIndex: 5 },
+          { holeNumber: 2, par: 3, strokeIndex: 11 },
+        ],
+        tees: [teeWithCard],
+        participant: { color: 'YELLOW', teeGender: 'MALE' },
+        currentHole: 2,
+      });
+
+      expect(screen.getByTestId('quick-match-hole-input')).toBeInTheDocument();
+      expect(screen.getByText('input.par 3')).toBeInTheDocument();
+      expect(screen.getByText('input.strokeIndex 11')).toBeInTheDocument();
+    });
+
+    /**
+     * Los metros son justo lo que distingue una barra de otra, y no deciden
+     * como se lee el golpe. Comparados junto al par y al indice, cualquier
+     * partido mixto partia la cabecera y apretaba los datos de cada uno en
+     * media columna a 320 px, que es lo que se acababa de arreglar. Cada campo
+     * se mira por su cuenta: del otro jugador solo baja lo que difiera.
+     */
+    it('con el mismo par e indice pero metros distintos, solo bajan los metros', () => {
+      renderWithCard({
+        holes: [{ holeNumber: 1, par: 4, strokeIndex: 5 }],
+        tees: [
+          { color: 'YELLOW', gender: 'MALE', holes: [{ holeNumber: 1, par: 4, strokeIndex: 5, meters: 142 }] },
+          { color: 'RED', gender: 'FEMALE', holes: [{ holeNumber: 1, par: 4, strokeIndex: 5, meters: 300 }] },
+        ],
+        participant: { color: 'YELLOW', teeGender: 'MALE' },
+        others: [
+          {
+            participantId: 'user-2',
+            userId: 'user-2',
+            name: 'Friend',
+            handicap: 0,
+            color: 'RED',
+            teeGender: 'FEMALE',
+          },
+        ],
+      });
+
+      // El par y el indice, una sola vez arriba, con mis metros
+      expect(screen.getByText('input.par 4')).toBeInTheDocument();
+      expect(screen.getByText('input.strokeIndex 5')).toBeInTheDocument();
+      expect(screen.getByText('input.meters 142')).toBeInTheDocument();
+      expect(screen.queryByTestId('quick-match-hole-facts-user-1')).not.toBeInTheDocument();
+
+      // Del otro jugador solo bajan los metros: el par y el indice son los mismos
+      const theirs = screen.getByTestId('quick-match-hole-facts-user-2');
+      expect(theirs).toHaveTextContent('input.meters 300');
+      expect(theirs).not.toHaveTextContent('input.par');
+      expect(theirs).not.toHaveTextContent('input.strokeIndex');
+    });
+
+    /**
+     * De los 800 campos federados, 56 cambian el indice entre barras y solo 25
+     * el par: agrupar los dos repetia debajo del otro jugador un par que ya
+     * estaba en la cabecera y era el mismo, justo en el caso mas frecuente.
+     */
+    it('si solo cambia el indice, no repite debajo el par que ya esta arriba', () => {
+      renderWithCard({
+        holes: [{ holeNumber: 1, par: 4, strokeIndex: 5 }],
+        tees: [
+          { color: 'YELLOW', gender: 'MALE', holes: [{ holeNumber: 1, par: 4, strokeIndex: 5, meters: 142 }] },
+          { color: 'RED', gender: 'FEMALE', holes: [{ holeNumber: 1, par: 4, strokeIndex: 3, meters: 142 }] },
+        ],
+        participant: { color: 'YELLOW', teeGender: 'MALE' },
+        others: [
+          {
+            participantId: 'user-2',
+            userId: 'user-2',
+            name: 'Friend',
+            handicap: 0,
+            color: 'RED',
+            teeGender: 'FEMALE',
+          },
+        ],
+      });
+
+      const theirs = screen.getByTestId('quick-match-hole-facts-user-2');
+      expect(theirs).toHaveTextContent('input.strokeIndex 3');
+      expect(theirs).not.toHaveTextContent('input.par');
+      expect(theirs).not.toHaveTextContent('input.meters');
     });
   });
 });
