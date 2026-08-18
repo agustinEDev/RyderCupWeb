@@ -22,7 +22,7 @@
   "input": {
     "hole": "Hoyo",
     "par": "Par",
-    "strokeIndex": "IS",
+    "strokeIndex": "HCP",
     "yourScore": "Tu Anotación",
     "markerScore": "Anotación Marcador",
     "netScore": "Neto",
@@ -52,7 +52,7 @@
     "title": "Tarjeta",
     "hole": "Hoyo",
     "par": "Par",
-    "si": "IS",
+    "si": "HCP",
     "gross": "Bruto",
     "strokes": "Golpes",
     "net": "Neto",
