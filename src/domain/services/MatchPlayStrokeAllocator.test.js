@@ -454,4 +454,60 @@ describe('MatchPlayStrokeAllocator', () => {
       expect(MatchPlayStrokeAllocator.findTee({ color: null }, MEIS_TEES)).toBeNull();
     });
   });
+
+  describe('holeCardFor', () => {
+    // Barra con tarjeta propia: otro par, otro stroke index y, sobre todo,
+    // metros, que la tarjeta de referencia del campo ni siquiera guarda.
+    const teesWithCard = [
+      {
+        color: 'YELLOW',
+        gender: 'MALE',
+        courseRating: 73.1,
+        slopeRating: 140,
+        holes: [
+          { holeNumber: 1, par: 3, strokeIndex: 15, meters: 142 },
+          { holeNumber: 2, par: 5, strokeIndex: 1, meters: 488 },
+        ],
+      },
+      { color: 'WHITE', gender: 'MALE', courseRating: 71.0, slopeRating: 133 },
+    ];
+
+    it('devuelve la tarjeta de la barra del jugador, con sus metros', () => {
+      const card = MatchPlayStrokeAllocator.holeCardFor(
+        player('a', 18, 'MALE'),
+        meisHoles(),
+        teesWithCard
+      );
+
+      expect(card).toHaveLength(2);
+      expect(card[0]).toMatchObject({ holeNumber: 1, par: 3, strokeIndex: 15, meters: 142 });
+    });
+
+    it('cae a la tarjeta del campo cuando la barra no trae la suya', () => {
+      const white = { ...player('a', 18, 'MALE'), color: 'WHITE' };
+
+      const card = MatchPlayStrokeAllocator.holeCardFor(white, meisHoles(), teesWithCard);
+
+      expect(card).toEqual(meisHoles());
+      expect(card[0].meters).toBeUndefined();
+    });
+
+    it('cae a la tarjeta del campo cuando el jugador no eligió barra', () => {
+      const card = MatchPlayStrokeAllocator.holeCardFor({ color: null }, meisHoles(), teesWithCard);
+
+      expect(card).toEqual(meisHoles());
+    });
+
+    it('reparte con la tarjeta de la barra, no con la del campo', () => {
+      // El hoyo 2 es el más difícil de la barra (SI 1) y el 1 el más fácil de
+      // los dos; en la tarjeta del campo de Meis el orden es el contrario.
+      const order = MatchPlayStrokeAllocator.holesByDifficultyFor(
+        player('a', 18, 'MALE'),
+        meisHoles(),
+        teesWithCard
+      );
+
+      expect(order).toEqual([2, 1]);
+    });
+  });
 });

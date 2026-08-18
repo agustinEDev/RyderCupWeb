@@ -112,11 +112,35 @@ class MatchPlayStrokeAllocator {
    * @returns {Array<number>} Números de hoyo, del más difícil al más fácil
    */
   static holesByDifficultyFor(participant, holes, tees) {
-    const tee = MatchPlayStrokeAllocator.findTee(participant, tees);
-    const card = tee?.holes?.length ? tee.holes : holes;
-    return [...card]
+    return [...MatchPlayStrokeAllocator.holeCardFor(participant, holes, tees)]
       .sort((a, b) => a.strokeIndex - b.strokeIndex)
       .map((hole) => hole.holeNumber);
+  }
+
+  /**
+   * Tarjeta que le corresponde a un participante: la de su barra.
+   *
+   * El par, el stroke index y los metros son de la barra, no del campo:
+   * `golfCourse.holes` es solo la tarjeta de la PRIMERA, y de los 800 campos
+   * federados importados 56 cambian de stroke index entre barras y 25 de par.
+   * El reparto de golpes ya resolvia la barra por su cuenta; lo que se PINTA
+   * (cabecera de anotacion, tarjeta) seguia leyendo la del campo, asi que un
+   * jugador podia recibir golpe en un hoyo mientras la pantalla le ensenaba el
+   * indice de otra barra. Una sola resolucion para calcular y para mostrar.
+   *
+   * Cae a la tarjeta del campo cuando la barra no trae la suya, que es como
+   * quedan las salidas dadas de alta a mano. Esa caida se lleva por delante los
+   * metros, porque la tarjeta del campo no los guarda: quien la use vera el
+   * hueco, no un numero de otra barra.
+   *
+   * @param {{color: ?string, teeGender: ?string}} participant
+   * @param {Array<Object>} holes Tarjeta de referencia del campo
+   * @param {Array<Object>} tees Salidas del campo, con su tarjeta si la tienen
+   * @returns {Array<Object>} Hoyos de la barra, en el orden en que vinieran
+   */
+  static holeCardFor(participant, holes = [], tees = []) {
+    const tee = MatchPlayStrokeAllocator.findTee(participant, tees);
+    return tee?.holes?.length ? tee.holes : holes;
   }
 
   /** Orden de dificultad del campo, para lo que no es de un jugador concreto. */

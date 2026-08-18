@@ -9,6 +9,7 @@ import QuickMatchHoleSelector from '../../components/quick_match/QuickMatchHoleS
 import QuickMatchHoleInput from '../../components/quick_match/QuickMatchHoleInput';
 import QuickMatchClassificationTable from '../../components/quick_match/QuickMatchClassificationTable';
 import QuickMatchScorecardTable from '../../components/quick_match/QuickMatchScorecardTable';
+import MatchPlayStrokeAllocator from '../../domain/services/MatchPlayStrokeAllocator';
 
 const TABS = ['input', 'classification', 'scorecard'];
 
@@ -114,7 +115,31 @@ const QuickMatchScoringPage = () => {
     );
   }
 
-  const currentHoleData = holes.find((h) => h.holeNumber === currentHole);
+  // El par, el índice y los metros son de la barra de CADA jugador, no de una
+  // común: en 56 de los 800 campos federados el índice cambia entre barras y en
+  // 25 el par, y quien anota puede estar anotando a alguien de otra barra. Con
+  // una sola tarjeta se le pintaba —y se le dibujaba la figura— contra un par
+  // que no era el suyo, mientras sus golpes sí venían resueltos por su barra.
+  const holeFor = (participant) =>
+    MatchPlayStrokeAllocator.holeCardFor(participant, holes, tees).find(
+      (h) => h.holeNumber === currentHole
+    ) ?? null;
+
+  // Reserva para quien no traiga el hoyo en su barra. No es neutra —`holes` es
+  // la tarjeta de la PRIMERA barra—, pero es la misma para todos y la que ya
+  // elige `holeCardFor` cuando una barra viene sin tarjeta. Lo que no vale es
+  // caer a la barra de quien anota: eso le pinta a un jugador un par distinto
+  // segun quien le este anotando.
+  //
+  // OJO: el reparto de golpes NO usa esta reserva. `holeCardFor` es todo o
+  // nada —con que la barra traiga un hoyo, usa su tarjeta y descarta la del
+  // campo—, asi que en una tarjeta parcial la pantalla enseña el indice del
+  // campo y el reparto no cuenta ese hoyo. El backend hace lo mismo
+  // (`TeeContextBuilder._card_for`), asi que hoy los dos calculos coinciden y
+  // completar los huecos solo aqui los separaria. Ver RyderCupAm#215.
+  const courseHoleData = holes.find((h) => h.holeNumber === currentHole) ?? null;
+
+  const currentHoleData = holeFor(myParticipant) ?? courseHoleData;
 
   const entries = coveredParticipantIds.map((participantId) => {
     const participant = quickMatch?.participants?.find((p) => p.participantId === participantId);
@@ -125,6 +150,7 @@ const QuickMatchScoringPage = () => {
       participantId,
       name: participant?.name ?? '',
       score: scoreEntry ? scoreEntry.score : null,
+      hole: holeFor(participant) ?? courseHoleData,
     };
   });
 
@@ -235,6 +261,7 @@ const QuickMatchScoringPage = () => {
                     holeNumber={currentHole}
                     par={currentHoleData.par}
                     strokeIndex={currentHoleData.strokeIndex}
+                    meters={currentHoleData.meters ?? null}
                     entries={entries}
                     isReadOnly={isReadOnly}
                     onScoreChange={handleScoreChange}
