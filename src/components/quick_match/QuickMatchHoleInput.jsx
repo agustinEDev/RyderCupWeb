@@ -23,15 +23,15 @@ const QuickMatchHoleInput = ({ holeNumber, par, strokeIndex, meters = null, entr
 
   return (
     <div data-testid="quick-match-hole-input" className="bg-white rounded-lg border border-gray-200 p-4 space-y-4">
-      <div className="flex items-center gap-3">
-        <span className="text-lg font-bold text-gray-900">{t('input.hole')} {holeNumber}</span>
-        <span className="text-sm text-gray-500">{t('input.par')} {par}</span>
-        <span className="text-sm text-gray-500">{t('input.strokeIndex')} {strokeIndex}</span>
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+        <span className="text-lg font-bold text-gray-900 whitespace-nowrap">{t('input.hole')} {holeNumber}</span>
+        <span className="text-sm text-gray-500 whitespace-nowrap">{t('input.par')} {par}</span>
+        <span className="text-sm text-gray-500 whitespace-nowrap">{t('input.strokeIndex')} {strokeIndex}</span>
         {/* Los metros son de la barra, y las salidas dadas de alta a mano no
             los traen. Se ensena siempre la etiqueta con un guion en vez de
             esconder el dato: el hueco se lee como "aqui falta", que es lo que
             pasa, y no mueve el resto de la cabecera al cargar. */}
-        <span className="text-sm text-gray-500">
+        <span className="text-sm text-gray-500 whitespace-nowrap">
           {t('input.meters')} {meters ?? '-'}
         </span>
       </div>
