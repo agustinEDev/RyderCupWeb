@@ -111,10 +111,20 @@ describe('PersonalRoundCalculator', () => {
   describe('cuándo no hay vuelta que enseñar', () => {
     /**
      * En foursomes la pareja juega una sola bola a golpes alternos: lo anotado
-     * es del equipo, no la vuelta de nadie.
+     * es del equipo, no la vuelta de nadie. Los golpes brutos sí son del
+     * equipo, y el historial los pinta: devolver null a secas dejaba esa
+     * tarjeta entera en blanco.
      */
-    it('no da vuelta en foursomes', () => {
-      expect(compute({ matchFormat: 'FOURSOMES' })).toBeNull();
+    it('no da ninguna de las dos lecturas en foursomes, pero sí los golpes del equipo', () => {
+      const result = compute({ matchFormat: 'FOURSOMES' });
+
+      expect(result.personalToPar).toBeNull();
+      expect(result.matchToPar).toBeNull();
+      expect(result.totalStrokes).toBe(6);
+    });
+
+    it('no da nada en foursomes sin ningún hoyo anotado', () => {
+      expect(compute({ matchFormat: 'FOURSOMES', holeScores: [] })).toBeNull();
     });
 
     it('no da vuelta sin participante', () => {

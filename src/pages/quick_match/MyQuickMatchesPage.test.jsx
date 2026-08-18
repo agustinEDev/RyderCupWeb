@@ -296,9 +296,11 @@ describe('MyQuickMatchesPage', () => {
 
   /**
    * En foursomes la pareja juega una sola bola a golpes alternos: lo anotado es
-   * del equipo, no la vuelta de nadie.
+   * del equipo, no la vuelta de nadie. Los golpes brutos sí son del equipo y la
+   * tarjeta los enseñaba antes de esto: saltarse la partida entera la dejaba en
+   * blanco, que es peor que no tocarla.
    */
-  it('should not show a personal result for a foursomes match', async () => {
+  it('should show only the team gross strokes, and no to-par, for a foursomes match', async () => {
     mockListMyQuickMatches.mockResolvedValue({
       quickMatches: [
         { id: 'qm-5', golfCourseId: 'course-1', matchFormat: 'FOURSOMES', status: 'COMPLETED', createdAt: '2026-07-20T10:00:00Z' },
@@ -307,15 +309,31 @@ describe('MyQuickMatchesPage', () => {
       page: 1,
       limit: 50,
     });
+    mockGetQuickMatch.mockResolvedValue({
+      participants: [{ participantId: 'user-1', userId: 'user-1', name: 'Test User', handicap: 0 }],
+      holeScores: [
+        { holeNumber: 1, participantId: 'user-1', score: 4 },
+        { holeNumber: 2, participantId: 'user-1', score: 2 },
+      ],
+      effectiveAllowance: 50,
+    });
+    mockGetGolfCourse.mockResolvedValue({
+      holes: [
+        { holeNumber: 1, par: 4, strokeIndex: 5 },
+        { holeNumber: 2, par: 3, strokeIndex: 15 },
+      ],
+      tees: [],
+    });
 
     renderPage();
 
     await waitFor(() => {
-      expect(screen.getByTestId('quick-match-history-list')).toBeInTheDocument();
+      expect(screen.getByTestId('quick-match-result-qm-5')).toBeInTheDocument();
     });
-    expect(screen.queryByTestId('quick-match-result-qm-5')).not.toBeInTheDocument();
-    // Ni siquiera se pide el detalle: no hay vuelta propia que calcular
-    expect(mockGetQuickMatch).not.toHaveBeenCalled();
+    expect(screen.getByText('history.grossStrokes')).toBeInTheDocument();
+    // Ni la lectura personal ni la del partido: en foursomes no son de nadie
+    expect(screen.queryByText('-1')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('quick-match-result-in-match-qm-5')).not.toBeInTheDocument();
   });
 
   it('should not fetch or show a result for matches that are not completed', async () => {

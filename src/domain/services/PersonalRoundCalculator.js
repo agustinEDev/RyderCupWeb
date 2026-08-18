@@ -45,11 +45,13 @@ class PersonalRoundCalculator {
    * @param {?string} params.matchFormat SINGLES/FOURBALL/FOURSOMES, o null en juego libre
    * @param {?number} params.allowancePercentage Allowance efectivo del partido
    * @param {string} params.playMode HANDICAP o SCRATCH
-   * @returns {?{personalToPar: string, matchToPar: ?string, holesPlayed: number,
+   * @returns {?{personalToPar: ?string, matchToPar: ?string, holesPlayed: number,
    *   totalStrokes: number}} `matchToPar` es null cuando coincide con la
    *   personal: no hay nada que aclarar y repetir el mismo número al lado solo
-   *   es ruido. `totalStrokes` son los golpes brutos, que el historial pinta
-   *   debajo del resultado.
+   *   es ruido. En foursomes las DOS lecturas son null y solo quedan los golpes
+   *   brutos del equipo, así que quien lo pinte tiene que mirar
+   *   `personalToPar`, no solo si el objeto es null. `totalStrokes` son los
+   *   golpes brutos, que el historial pinta debajo del resultado.
    */
   static compute({
     me = null,
@@ -62,9 +64,28 @@ class PersonalRoundCalculator {
     allowancePercentage = null,
     playMode = 'HANDICAP',
   }) {
+    if (!me) return null;
+
     // En foursomes se juega a golpes alternos con una sola bola: lo anotado es
-    // del equipo, así que no hay vuelta propia que enseñar.
-    if (!me || matchFormat === 'FOURSOMES') return null;
+    // del equipo, así que no hay vuelta propia que enseñar y las dos lecturas
+    // salen a null. Los golpes brutos sí son un hecho del equipo, y sin ellos
+    // la tarjeta del historial se quedaba entera en blanco.
+    //
+    // La regla vive AQUÍ y no en cada pantalla: estaba duplicada en el
+    // historial, que además se ahorraba la petición de detalle, y cualquier
+    // formato nuevo a golpes alternos habría que acordarse de añadirlo en los
+    // dos sitios.
+    if (matchFormat === 'FOURSOMES') {
+      // Sin reparto: el bruto no depende de los golpes que se den.
+      const teamTotals = StablefordCalculator.computeParticipantTotals(me, holes, holeScores);
+      if (!teamTotals.holesPlayed) return null;
+      return {
+        personalToPar: null,
+        matchToPar: null,
+        holesPlayed: teamTotals.holesPlayed,
+        totalStrokes: teamTotals.totalStrokes,
+      };
+    }
 
     // El par se cuenta contra la tarjeta del campo, la misma que usa el ranking
     // de la clasificacion. No es la barra del jugador —`holes` es la tarjeta de

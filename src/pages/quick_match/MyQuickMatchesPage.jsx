@@ -80,9 +80,6 @@ const MyQuickMatchesPage = () => {
     };
 
     const loadResult = async (qm) => {
-      // En foursomes se juega a golpes alternos con una sola bola: lo anotado
-      // es del equipo, así que no hay vuelta propia que enseñar.
-      if (qm.matchFormat === 'FOURSOMES') return null;
       try {
         const [detail, course] = await Promise.all([
           getQuickMatchUseCase.execute(qm.id),
@@ -188,20 +185,32 @@ const MyQuickMatchesPage = () => {
                   <div className="flex items-center gap-2 flex-shrink-0">
                     {resultsByMatchId[qm.id] && (
                       <div className="text-right" data-testid={`quick-match-result-${qm.id}`}>
-                        <p className="text-sm font-bold text-gray-900">
-                          {resultsByMatchId[qm.id].personalToPar}
-                          {resultsByMatchId[qm.id].matchToPar && (
-                            <span
-                              className="ml-1 text-[10px] font-normal text-gray-500"
-                              data-testid={`quick-match-result-in-match-${qm.id}`}
-                            >
-                              {t('personalRound.inMatch', { value: resultsByMatchId[qm.id].matchToPar })}
-                            </span>
-                          )}
-                        </p>
+                        {/* En foursomes no hay vuelta propia —una sola bola a
+                            golpes alternos—, así que el calculador deja las dos
+                            lecturas en null y de la tarjeta solo quedan los
+                            golpes brutos del equipo. */}
+                        {resultsByMatchId[qm.id].personalToPar && (
+                          <p className="text-sm font-bold text-gray-900">
+                            {resultsByMatchId[qm.id].personalToPar}
+                          </p>
+                        )}
                         <p className="text-[10px] text-gray-500">
                           {t('history.grossStrokes', { count: resultsByMatchId[qm.id].totalStrokes })}
                         </p>
+                        {/* En su propia línea, no al lado del resultado: esta
+                            columna no encoge (`flex-shrink-0`), así que el
+                            paréntesis se llevaba unos 100px del ancho, y el
+                            único bloque que sí encoge es el del nombre y la
+                            fecha —el del `truncate`—, que en un móvil de 375px
+                            se quedaba en cuatro letras. */}
+                        {resultsByMatchId[qm.id].matchToPar && (
+                          <p
+                            className="text-[10px] text-gray-500"
+                            data-testid={`quick-match-result-in-match-${qm.id}`}
+                          >
+                            {t('personalRound.inMatch', { value: resultsByMatchId[qm.id].matchToPar })}
+                          </p>
+                        )}
                       </div>
                     )}
                     <span className={`text-xs font-semibold px-2 py-1 rounded-full ${STATUS_STYLES[qm.status] ?? 'bg-gray-100 text-gray-700'}`}>

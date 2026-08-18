@@ -66,7 +66,9 @@ const MatchStandingSummary = ({ participants, standing }) => {
 const PersonalRound = ({ round }) => {
   const { t } = useTranslation('quickMatch');
 
-  if (!round) return null;
+  // En foursomes el calculador devuelve solo los golpes brutos del equipo, sin
+  // ninguna de las dos lecturas: ahí no hay vuelta que enseñar.
+  if (!round?.personalToPar) return null;
 
   return (
     <p className="text-sm text-gray-600 mt-3" data-testid="quick-match-my-round">
@@ -168,67 +170,75 @@ const QuickMatchClassificationTable = ({
   const ranking = rank(participants, holes, holeScores, allocation);
 
   return (
-    <div data-testid="quick-match-classification-table" className="overflow-x-auto">
-      <table className="min-w-full text-sm">
-        <thead>
-          <tr className="bg-gray-50 text-gray-500">
-            <th className="px-2 py-1.5 text-left font-medium">#</th>
-            <th className="px-2 py-1.5 text-left font-medium">{t('scoring.classification.player')}</th>
-            {isMedal ? (
-              <>
-                <th className="px-2 py-1.5 text-center font-medium">{t('scoring.classification.result')}</th>
-                <th className="px-2 py-1.5 text-center font-medium">{t('scoring.classification.netStrokes')}</th>
-              </>
-            ) : (
-              <th className="px-2 py-1.5 text-center font-medium">{t('scoring.classification.points')}</th>
-            )}
-            <th className="px-2 py-1.5 text-center font-medium">{t('scoring.classification.strokes')}</th>
-            <th className="px-2 py-1.5 text-center font-medium">{t('scoring.classification.hole')}</th>
-          </tr>
-        </thead>
-        <tbody>
-          {ranking.map((row, index) => (
-            <tr
-              key={row.participantId}
-              className={row.participantId === currentParticipantId ? 'bg-blue-50' : index % 2 === 1 ? 'bg-gray-50' : ''}
-            >
-              <td className="px-2 py-1.5 text-left text-gray-500">{index + 1}</td>
-              <td className="px-2 py-1.5 text-left font-medium text-gray-900">
-                {row.name}
-                {row.participantId === currentParticipantId && (
-                  <span className="ml-1 text-xs text-primary">({t('scoring.classification.you')})</span>
-                )}
-              </td>
+    <div data-testid="quick-match-classification-table">
+      <div className="overflow-x-auto">
+        <table className="min-w-full text-sm">
+          <thead>
+            <tr className="bg-gray-50 text-gray-500">
+              <th className="px-2 py-1.5 text-left font-medium">#</th>
+              <th className="px-2 py-1.5 text-left font-medium">{t('scoring.classification.player')}</th>
               {isMedal ? (
                 <>
-                  <td className="px-2 py-1.5 text-center font-bold text-primary">
-                    {row.holesPlayed ? StablefordCalculator.formatToPar(row.netStrokes - row.parPlayed) : '-'}
-                    {isCompleted && <FinishedBadge t={t} />}
-                  </td>
-                  <td className="px-2 py-1.5 text-center text-gray-700">
-                    {row.holesPlayed ? row.netStrokes : '-'}
-                    {isCompleted && <FinishedBadge t={t} />}
-                  </td>
+                  <th className="px-2 py-1.5 text-center font-medium">{t('scoring.classification.result')}</th>
+                  <th className="px-2 py-1.5 text-center font-medium">{t('scoring.classification.netStrokes')}</th>
                 </>
               ) : (
-                <td className="px-2 py-1.5 text-center font-bold text-primary">
-                  {row.stablefordPoints}
+                <th className="px-2 py-1.5 text-center font-medium">{t('scoring.classification.points')}</th>
+              )}
+              <th className="px-2 py-1.5 text-center font-medium">{t('scoring.classification.strokes')}</th>
+              <th className="px-2 py-1.5 text-center font-medium">{t('scoring.classification.hole')}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {ranking.map((row, index) => (
+              <tr
+                key={row.participantId}
+                className={row.participantId === currentParticipantId ? 'bg-blue-50' : index % 2 === 1 ? 'bg-gray-50' : ''}
+              >
+                <td className="px-2 py-1.5 text-left text-gray-500">{index + 1}</td>
+                <td className="px-2 py-1.5 text-left font-medium text-gray-900">
+                  {row.name}
+                  {row.participantId === currentParticipantId && (
+                    <span className="ml-1 text-xs text-primary">({t('scoring.classification.you')})</span>
+                  )}
+                </td>
+                {isMedal ? (
+                  <>
+                    <td className="px-2 py-1.5 text-center font-bold text-primary">
+                      {row.holesPlayed ? StablefordCalculator.formatToPar(row.netStrokes - row.parPlayed) : '-'}
+                      {isCompleted && <FinishedBadge t={t} />}
+                    </td>
+                    <td className="px-2 py-1.5 text-center text-gray-700">
+                      {row.holesPlayed ? row.netStrokes : '-'}
+                      {isCompleted && <FinishedBadge t={t} />}
+                    </td>
+                  </>
+                ) : (
+                  <td className="px-2 py-1.5 text-center font-bold text-primary">
+                    {row.stablefordPoints}
+                    {isCompleted && <FinishedBadge t={t} />}
+                  </td>
+                )}
+                <td className="px-2 py-1.5 text-center text-gray-700">
+                  {row.totalStrokes || '-'}
                   {isCompleted && <FinishedBadge t={t} />}
                 </td>
-              )}
-              <td className="px-2 py-1.5 text-center text-gray-700">
-                {row.totalStrokes || '-'}
-                {isCompleted && <FinishedBadge t={t} />}
-              </td>
-              <td className="px-2 py-1.5 text-center text-gray-500">{row.holesPlayed || '-'}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      {/* La columna "Resultado" va con el reparto del partido; esto es la vuelta
-          del jugador con su hándicap de juego entero, que es lo que el historial
-          destaca. Enseñar los dos aquí es lo que evita que las dos pantallas
-          parezcan contradecirse. */}
+                <td className="px-2 py-1.5 text-center text-gray-500">{row.holesPlayed || '-'}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {/* Fuera del contenedor con scroll: dentro, el `text-center` centraba
+          sobre el ancho de la TABLA —unos 500px con cuatro jugadores— y en un
+          móvil de 375px media línea quedaba fuera de pantalla, con scroll
+          lateral para leer la vuelta de uno mismo.
+
+          El paréntesis con la lectura del partido se enseña en los dos formatos
+          libres. En MEDAL cuadra con la columna "Resultado", que va con el
+          reparto del partido; en STABLEFORD no hay ninguna otra cifra al par en
+          pantalla, pero el número sigue siendo el que decidió los puntos de la
+          tabla de arriba, y es el que difiere del que destaca el historial. */}
       <div className="text-center py-3">
         <PersonalRound round={myRound} />
       </div>
