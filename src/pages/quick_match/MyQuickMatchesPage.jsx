@@ -89,12 +89,20 @@ const MyQuickMatchesPage = () => {
         const myParticipant = detail.participants.find((p) => p.userId === user.id);
         if (!myParticipant) return null;
 
-        // El cuarto argumento es el REPARTO ya resuelto, no las salidas: con la
-        // firma vieja no fallaba nada, simplemente no encontraba los golpes de
-        // nadie y la vuelta salía a bruto. Se resuelve igual que en la
-        // clasificación y la tarjeta, para que las tres cuenten lo mismo.
-        const allocation = MatchPlayStrokeAllocator.resolve({
-          participantStrokes: detail.participantStrokes ?? [],
+        // El cuarto argumento es el REPARTO, no las salidas: con la firma vieja
+        // no fallaba nada, simplemente no encontraba los golpes de nadie y la
+        // vuelta salía a bruto.
+        //
+        // Y se reparte por el hándicap de juego de cada uno (`matchFormat:
+        // null`), no por el del partido, a propósito: esta tarjeta es el
+        // historial personal del jugador. En match play los golpes se dan por
+        // DIFERENCIA, así que el de hándicap más bajo recibe cero y su vuelta
+        // saldría a bruto mientras la del rival descuenta toda la diferencia:
+        // dos vueltas iguales contadas distinto según con quién jugaste. Por lo
+        // mismo no se usa `resolve()`, que daría prioridad al reparto que mandó
+        // el backend, que es el del partido. La clasificación y la tarjeta del
+        // partido sí usan ese, porque ahí lo que se mide es quién ganó.
+        const allocation = MatchPlayStrokeAllocator.allocate({
           participants: detail.participants ?? [],
           holes: course.holes || [],
           tees: course.tees || [],

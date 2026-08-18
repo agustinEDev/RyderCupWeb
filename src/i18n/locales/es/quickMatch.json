@@ -168,7 +168,8 @@
       "holesUp": "{{count}} arriba",
       "decidedResult": "{{lead}}&{{remaining}}",
       "leads": "{{name}} lidera",
-      "holesPlayed": "{{count}} hoyo(s) jugados"
+      "holesPlayed": "{{count}} hoyo(s) jugados",
+      "yourRound": "Tu vuelta:"
     },
     "scorecard": {
       "strokeReceived": "Recibe {{count}} golpe(s) extra en este hoyo",

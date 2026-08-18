@@ -19,7 +19,7 @@ const resolveMatchTeams = (participants) => {
  * points/strokes ranking to show, just who's up and by how much, mirroring
  * the backend's already-computed `standing` (GetQuickMatchUseCase._compute_standing).
  */
-const MatchStandingSummary = ({ participants, standing }) => {
+const MatchStandingSummary = ({ participants, standing, myToPar }) => {
   const { t } = useTranslation('quickMatch');
 
   if (!standing) {
@@ -52,6 +52,15 @@ const MatchStandingSummary = ({ participants, standing }) => {
       <p className="text-xs text-gray-400 mt-2">
         {t('scoring.classification.holesPlayed', { count: standing.holesPlayed })}
       </p>
+      {/* En match play el marcador dice quién gana, no cómo jugó uno. Los
+          golpes se dan por diferencia, así que el resultado propio se calcula
+          aparte, con el hándicap de juego de cada uno. */}
+      {myToPar !== null && myToPar !== undefined && (
+        <p className="text-sm text-gray-600 mt-3" data-testid="quick-match-my-round">
+          {t('scoring.classification.yourRound')}{' '}
+          <span className="font-bold text-gray-900">{myToPar}</span>
+        </p>
+      )}
     </div>
   );
 };
@@ -91,9 +100,36 @@ const QuickMatchClassificationTable = ({
   const isFreePlay = scoringFormat === 'MEDAL' || scoringFormat === 'STABLEFORD';
 
   if (!isFreePlay) {
+    // La vuelta propia va contra el par con los golpes que le tocan a uno por
+    // su hándicap de juego, no con el reparto del partido: en match play los
+    // golpes se dan por diferencia, así que el de hándicap más bajo recibe
+    // cero y su vuelta saldría a bruto.
+    const me = participants.find((p) => p.participantId === currentParticipantId);
+    const ownAllocation = me
+      ? MatchPlayStrokeAllocator.allocate({
+          participants,
+          holes,
+          tees,
+          matchFormat: null,
+          allowancePercentage,
+          playMode,
+        })
+      : {};
+    const myTotals = me
+      ? StablefordCalculator.computeParticipantTotals(me, holes, holeScores, ownAllocation)
+      : null;
+
     return (
       <div data-testid="quick-match-classification-table">
-        <MatchStandingSummary participants={participants} standing={standing} />
+        <MatchStandingSummary
+          participants={participants}
+          standing={standing}
+          myToPar={
+            myTotals?.holesPlayed
+              ? StablefordCalculator.formatToPar(myTotals.netStrokes - myTotals.parPlayed)
+              : null
+          }
+        />
       </div>
     );
   }

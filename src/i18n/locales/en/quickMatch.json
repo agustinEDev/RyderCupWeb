@@ -168,7 +168,8 @@
       "holesUp": "{{count}} UP",
       "decidedResult": "{{lead}}&{{remaining}}",
       "leads": "{{name}} leads",
-      "holesPlayed": "{{count}} hole(s) played"
+      "holesPlayed": "{{count}} hole(s) played",
+      "yourRound": "Your round:"
     },
     "scorecard": {
       "strokeReceived": "Receives {{count}} extra stroke(s) on this hole",
