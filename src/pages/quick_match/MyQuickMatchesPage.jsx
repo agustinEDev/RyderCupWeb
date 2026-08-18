@@ -11,6 +11,7 @@ import {
   hideQuickMatchUseCase,
 } from '../../composition';
 import StablefordCalculator from '../../domain/services/StablefordCalculator';
+import MatchPlayStrokeAllocator from '../../domain/services/MatchPlayStrokeAllocator';
 import customToast from '../../utils/toast';
 
 const STATUS_STYLES = {
@@ -88,12 +89,25 @@ const MyQuickMatchesPage = () => {
         const myParticipant = detail.participants.find((p) => p.userId === user.id);
         if (!myParticipant) return null;
 
+        // El cuarto argumento es el REPARTO ya resuelto, no las salidas: con la
+        // firma vieja no fallaba nada, simplemente no encontraba los golpes de
+        // nadie y la vuelta salía a bruto. Se resuelve igual que en la
+        // clasificación y la tarjeta, para que las tres cuenten lo mismo.
+        const allocation = MatchPlayStrokeAllocator.resolve({
+          participantStrokes: detail.participantStrokes ?? [],
+          participants: detail.participants ?? [],
+          holes: course.holes || [],
+          tees: course.tees || [],
+          matchFormat: null,
+          allowancePercentage: detail.effectiveAllowance ?? 100,
+          playMode: detail.playMode,
+        });
+
         const totals = StablefordCalculator.computeParticipantTotals(
           myParticipant,
           course.holes || [],
           detail.holeScores || [],
-          course.tees || [],
-          detail.effectiveAllowance ?? 100
+          allocation
         );
         if (totals.holesPlayed === 0) return null;
 

@@ -152,6 +152,52 @@ describe('MyQuickMatchesPage', () => {
     expect(screen.getByText('history.grossStrokes')).toBeInTheDocument();
   });
 
+  /**
+   * El resultado de la tarjeta es NETO: los golpes recibidos se descuentan.
+   * La llamada al calculador se quedó con la firma vieja —le pasaba las salidas
+   * donde ahora va el reparto ya resuelto—, y como sin entrada para el
+   * participante se puntúa a bruto, la lista contaba la vuelta contra el par
+   * del campo mientras la clasificación y la tarjeta sí descontaban los golpes.
+   */
+  it("should subtract the player's received strokes from the to-par result", async () => {
+    mockListMyQuickMatches.mockResolvedValue({
+      quickMatches: [
+        { id: 'qm-3', golfCourseId: 'course-1', matchFormat: 'SINGLES', status: 'COMPLETED', createdAt: '2026-07-20T10:00:00Z' },
+      ],
+      totalCount: 1,
+      page: 1,
+      limit: 50,
+    });
+    mockGetQuickMatch.mockResolvedValue({
+      participants: [{ participantId: 'user-1', userId: 'user-1', name: 'Test User', handicap: 18 }],
+      holeScores: [
+        { holeNumber: 1, participantId: 'user-1', score: 4 },
+        { holeNumber: 2, participantId: 'user-1', score: 2 },
+      ],
+      // El reparto ya resuelto por el backend: un golpe en el hoyo 1
+      participantStrokes: [
+        { participantId: 'user-1', playingHandicap: 18, strokesByHole: { 1: 1, 2: 0 } },
+      ],
+      effectiveAllowance: 100,
+      playMode: 'HANDICAP',
+    });
+    mockGetGolfCourse.mockResolvedValue({
+      holes: [
+        { holeNumber: 1, par: 4, strokeIndex: 5 },
+        { holeNumber: 2, par: 3, strokeIndex: 15 },
+      ],
+      tees: [],
+    });
+
+    renderPage();
+
+    await waitFor(() => {
+      expect(screen.getByTestId('quick-match-result-qm-3')).toBeInTheDocument();
+    });
+    // Netos 3 + 2 = 5 sobre un par jugado de 7: dos bajo par. A bruto serían -1.
+    expect(screen.getByText('-2')).toBeInTheDocument();
+  });
+
   it('should not fetch or show a result for matches that are not completed', async () => {
     mockListMyQuickMatches.mockResolvedValue({
       quickMatches: [
