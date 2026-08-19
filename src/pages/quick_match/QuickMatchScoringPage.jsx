@@ -2,6 +2,12 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router';
 import { Loader, ChevronLeft, ChevronRight, MapPin } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+
+import {
+  groupParticipantsBySide,
+  sideCardHolder,
+  sideScoreOf,
+} from '../../domain/services/FoursomesSides';
 import HeaderAuth from '../../components/layout/HeaderAuth';
 import { useAuth } from '../../hooks/useAuth';
 import { useQuickMatchScoring } from '../../hooks/useQuickMatchScoring';
@@ -154,6 +160,7 @@ const QuickMatchScoringPage = () => {
       const participant = participantOf(participantId);
       return {
         participantId,
+        scoreIds: [participantId],
         name: participant?.name ?? '',
         score: scoreOf(participantId),
         hole: holeFor(participant) ?? courseHoleData,
@@ -169,32 +176,35 @@ const QuickMatchScoringPage = () => {
   // La casilla se guarda a nombre del participante del bando que este anotador
   // cubre: así la rellena cualquiera de los dos —quien tenga el móvil— sin
   // depender de cómo se hayan repartido los anotadores.
-  const sideEntries = () => {
-    const sides = new Map();
-
-    for (const participant of quickMatch?.participants ?? []) {
-      const side = participant.team ?? 'A';
-      if (!sides.has(side)) sides.set(side, []);
-      sides.get(side).push(participant);
-    }
-
-    return [...sides.entries()]
-      .map(([side, members]) => {
-        const writable = members.find((m) => coveredParticipantIds.includes(m.participantId));
+  const sideEntries = () =>
+    groupParticipantsBySide(quickMatch?.participants ?? [])
+      .map((members) => {
+        // Una bola, una fila: se guarda a nombre del primer jugador del bando
+        // la anote quien la anote. A nombre de quien tuviera el móvil, los dos
+        // anotadores escribían filas distintas del mismo golpe.
+        //
+        // Con la anotación cruzada del backend todos cubren a los cuatro, así
+        // que esa fila siempre se puede escribir. Si no —un backend aún sin ese
+        // reparto, o un detalle sin `scoringAssignments`— se escribe bajo el
+        // primer miembro que sí se cubra: preferible a dejar al compañero con
+        // la pantalla en blanco y sin poder anotar.
+        const cardHolder = sideCardHolder(members);
+        const writable = coveredParticipantIds.includes(cardHolder.participantId)
+          ? cardHolder
+          : members.find((m) => coveredParticipantIds.includes(m.participantId));
         if (!writable) return null;
-        const scored = members.find((m) => scoreOf(m.participantId) != null);
         return {
           participantId: writable.participantId,
+          scoreIds: members.map((m) => m.participantId),
           name: members.map((m) => m.name).join(' & '),
-          score: scored ? scoreOf(scored.participantId) : null,
+          score: sideScoreOf(members, scoreOf),
           // Comparten bola, así que comparten tarjeta: la del primero del bando,
           // la misma para los dos y no la de quien tenga el móvil.
-          hole: holeFor(members[0]) ?? courseHoleData,
-          side,
+          hole: holeFor(cardHolder) ?? courseHoleData,
+          side: cardHolder.participantId,
         };
       })
       .filter(Boolean);
-  };
 
   const isFoursomes = quickMatch?.matchFormat === 'FOURSOMES';
   const entries = isFoursomes ? sideEntries() : playerEntries();
@@ -296,7 +306,10 @@ const QuickMatchScoringPage = () => {
                   currentHole={currentHole}
                   onSelect={setCurrentHole}
                   holeScores={quickMatch?.holeScores ?? []}
-                  coveredParticipantIds={coveredParticipantIds}
+                  // Los golpes que espera cada casilla de la pantalla: una por
+                  // bando en foursomes —donde el hoyo está completo con las dos
+                  // bolas, no con cuatro— y una por jugador en el resto.
+                  expectedScoreIdGroups={entries.map((entry) => entry.scoreIds)}
                   totalHoles={totalHoles}
                 />
 

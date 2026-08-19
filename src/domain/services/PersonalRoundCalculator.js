@@ -1,5 +1,6 @@
 import StablefordCalculator from './StablefordCalculator';
 import MatchPlayStrokeAllocator from './MatchPlayStrokeAllocator';
+import { groupParticipantsBySide, sideScoreOf } from './FoursomesSides';
 
 // Una vuelta personal se mide con el hándicap de juego entero. El allowance
 // —95% en juego libre, 90% en fourball, 50% en foursomes— equilibra un partido,
@@ -22,21 +23,32 @@ const PERSONAL_ROUND_ALLOWANCE = 100;
  *
  * Sin `team` —partidas viejas, o un dato incompleto— el bando es el propio
  * jugador: se vuelve al comportamiento anterior en vez de mezclar a los cuatro.
+ *
+ * Cuál es la nota del bando lo decide `sideScoreOf`, la misma regla que usan la
+ * pantalla de anotación y la tarjeta: aquí se recorrían los golpes anotados en
+ * el orden del backend y allí los jugadores, así que con dos anotaciones del
+ * mismo hoyo el total podía no cuadrar con lo que enseñaba la tarjeta.
  */
 const sideTotals = (me, participants, holes, holeScores) => {
-  const sideIds = me.team
-    ? new Set(participants.filter((p) => p.team === me.team).map((p) => p.participantId))
-    : new Set([me.participantId]);
+  const members =
+    groupParticipantsBySide(participants).find((side) =>
+      side.some((p) => p.participantId === me.participantId)
+    ) ?? [me];
+
+  const scoreAt = (holeNumber) => (participantId) => {
+    const entry = holeScores.find(
+      (hs) => hs.participantId === participantId && hs.holeNumber === holeNumber
+    );
+    return entry?.score ?? null;
+  };
 
   let totalStrokes = 0;
   let holesPlayed = 0;
 
   for (const hole of holes) {
-    const entry = holeScores.find(
-      (hs) => sideIds.has(hs.participantId) && hs.holeNumber === hole.holeNumber && hs.score != null
-    );
-    if (!entry) continue;
-    totalStrokes += entry.score;
+    const score = sideScoreOf(members, scoreAt(hole.holeNumber));
+    if (score == null) continue;
+    totalStrokes += score;
     holesPlayed += 1;
   }
 

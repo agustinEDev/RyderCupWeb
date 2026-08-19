@@ -574,10 +574,42 @@ describe('QuickMatchScoringPage · foursomes anota una bola por bando', () => {
   });
 
   /**
-   * El anotador puede no cubrir al primero de un bando: la casilla se guarda a
-   * nombre de quien sí cubre, y por eso no depende del reparto de anotadores.
+   * Una bola, una fila: la del primer jugador del bando, la anote quien la
+   * anote. A nombre de quien tuviera el móvil, los dos anotadores escribían
+   * filas distintas del mismo golpe y cada pantalla leía una.
    */
-  it('writes the side ball under a player this scorer covers', () => {
+  it('writes the side ball under the first player of the side', () => {
+    const submitScore = vi.fn();
+    mockUseQuickMatchScoring.mockReturnValue({
+      ...baseHookState,
+      quickMatch: foursomesMatch,
+      myParticipant: foursomesMatch.participants[2],
+      isScorer: true,
+      // Anotación cruzada: en foursomes cada anotador cubre a los cuatro.
+      coveredParticipantIds: ['user-1', 'p-partner', 'p-rival-1', 'p-rival-2'],
+      setCurrentHole: vi.fn(),
+      submitScore,
+      completeMatch: vi.fn(),
+      refetch: vi.fn(),
+    });
+
+    renderPage();
+
+    // El rival anota la bola del bando de enfrente bajo su primer jugador, no
+    // bajo sí mismo ni bajo el compañero.
+    expect(screen.getByTestId('quick-match-score-button-user-1')).toBeInTheDocument();
+    expect(screen.getByTestId('quick-match-score-button-p-rival-1')).toBeInTheDocument();
+    expect(screen.queryByTestId('quick-match-score-button-p-partner')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('quick-match-score-button-p-rival-2')).not.toBeInTheDocument();
+  });
+
+  /**
+   * Con la anotación cruzada del backend todos cubren la fila del bando. Si no
+   * —un backend aún sin ese reparto, o un detalle sin asignaciones— se escribe
+   * bajo el primer miembro que sí se cubra: dejar al compañero con la pantalla
+   * en blanco y sin poder anotar es peor que una fila a otro nombre.
+   */
+  it('falls back to a covered member when the card holder is not covered', () => {
     mockUseQuickMatchScoring.mockReturnValue({
       ...baseHookState,
       quickMatch: foursomesMatch,
@@ -592,7 +624,75 @@ describe('QuickMatchScoringPage · foursomes anota una bola por bando', () => {
 
     renderPage();
 
+    expect(screen.getByTestId('quick-match-score-button-user-1')).toBeInTheDocument();
     expect(screen.getByTestId('quick-match-score-button-p-rival-2')).toBeInTheDocument();
     expect(screen.queryByTestId('quick-match-score-button-p-rival-1')).not.toBeInTheDocument();
+  });
+
+  /** Sin cubrir a nadie del bando no hay dónde escribir: la casilla no se pinta. */
+  it('hides the side box when this scorer covers nobody on that side', () => {
+    mockUseQuickMatchScoring.mockReturnValue({
+      ...baseHookState,
+      quickMatch: foursomesMatch,
+      myParticipant: foursomesMatch.participants[0],
+      isScorer: true,
+      coveredParticipantIds: ['user-1', 'p-partner'],
+      setCurrentHole: vi.fn(),
+      submitScore: vi.fn(),
+      completeMatch: vi.fn(),
+      refetch: vi.fn(),
+    });
+
+    renderPage();
+
+    expect(screen.getByTestId('quick-match-score-button-user-1')).toBeInTheDocument();
+    expect(screen.queryByTestId('quick-match-score-button-p-rival-1')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('quick-match-score-button-p-rival-2')).not.toBeInTheDocument();
+  });
+
+  /**
+   * La bola anotada a nombre del compañero cuenta para el hoyo: el selector
+   * miraba solo al titular de la tarjeta y el hoyo no llegaba a ponerse verde.
+   */
+  it('counts a side ball entered under the partner as the side\'s ball', () => {
+    renderFoursomes({
+      holeScores: [
+        { holeNumber: 1, participantId: 'p-partner', score: 4 },
+        { holeNumber: 1, participantId: 'p-rival-2', score: 5 },
+      ],
+    });
+
+    expect(screen.getByTestId('quick-match-hole-btn-1').className).toContain('green');
+  });
+
+  /**
+   * El hoyo está completo cuando están las dos bolas, no cuatro golpes: el
+   * selector contaba los participantes que cubre el anotador —los cuatro, con
+   * anotación cruzada— y ningún hoyo de foursomes llegaba a ponerse verde.
+   */
+  it('marks a foursomes hole complete with one ball per side', () => {
+    renderFoursomes({
+      holeScores: [
+        { holeNumber: 1, participantId: 'user-1', score: 4 },
+        { holeNumber: 1, participantId: 'p-rival-1', score: 5 },
+      ],
+    });
+
+    expect(screen.getByTestId('quick-match-hole-btn-1').className).toContain('green');
+  });
+
+  /**
+   * Sin `team` no hay bando: cada jugador va solo. Agruparlos a todos bajo el
+   * mismo dejaba una única casilla con los cuatro nombres.
+   */
+  it('keeps a box per player when the participants have no team', () => {
+    renderFoursomes({
+      participants: foursomesMatch.participants.map((p) => ({ ...p, team: null })),
+    });
+
+    expect(screen.getByTestId('quick-match-score-button-user-1')).toBeInTheDocument();
+    expect(screen.getByTestId('quick-match-score-button-p-partner')).toBeInTheDocument();
+    expect(screen.getByTestId('quick-match-score-button-p-rival-1')).toBeInTheDocument();
+    expect(screen.getByTestId('quick-match-score-button-p-rival-2')).toBeInTheDocument();
   });
 });

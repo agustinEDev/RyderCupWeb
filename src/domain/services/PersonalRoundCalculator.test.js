@@ -194,6 +194,20 @@ describe('PersonalRoundCalculator · los golpes del bando en foursomes', () => {
     expect(result.totalStrokes).toBe(7);
   });
 
+  /**
+   * Con anotación cruzada los dos bandos pueden escribir la misma bola. Si no
+   * coinciden se aclara entre las parejas, pero mientras tanto este total y la
+   * tarjeta tienen que enseñar el mismo número: el del primero del bando.
+   */
+  it('toma la misma nota que la tarjeta cuando las dos anotaciones difieren', () => {
+    const result = computeFoursomes([
+      { holeNumber: 1, participantId: 'p-3', score: 6 },
+      { holeNumber: 1, participantId: 'p-1', score: 4 },
+    ]);
+
+    expect(result.totalStrokes).toBe(4);
+  });
+
   it('ignora los golpes del bando rival', () => {
     const result = computeFoursomes([
       { holeNumber: 1, participantId: 'p-1', score: 4 },

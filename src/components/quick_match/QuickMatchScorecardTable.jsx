@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next';
+import { groupParticipantsBySide, sideCardHolder, sideScoreOf } from '../../domain/services/FoursomesSides';
 import GolfFigure from '../scoring/GolfFigure';
 import StablefordCalculator from '../../domain/services/StablefordCalculator';
 import MatchPlayStrokeAllocator from '../../domain/services/MatchPlayStrokeAllocator';
@@ -59,15 +60,18 @@ const QuickMatchScorecardTable = ({
     playMode,
   });
 
-  // Recibe los participantes cuyos golpes forman UNA bola: uno en todos los
-  // formatos menos foursomes, donde el bando comparte bola y cada hoyo puede
-  // estar anotado a nombre de cualquiera de los dos compañeros.
-  const getScore = (holeNumber, scoreIds) => {
+  const scoreAt = (holeNumber) => (participantId) => {
     const entry = holeScores.find(
-      (hs) => hs.holeNumber === holeNumber && scoreIds.includes(hs.participantId)
+      (hs) => hs.holeNumber === holeNumber && hs.participantId === participantId
     );
     return entry ? entry.score : null;
   };
+
+  // Recibe los participantes cuyos golpes forman UNA bola: uno en todos los
+  // formatos menos foursomes, donde el bando comparte bola. Se elige recorriendo
+  // el bando —no los golpes anotados, que llegan en el orden del backend— para
+  // que esta tarjeta y la pantalla de anotación enseñen siempre la misma.
+  const getScore = (holeNumber, members) => sideScoreOf(members, scoreAt(holeNumber));
 
   const getStrokesReceived = (holeNumber, participantId) =>
     allocation[participantId]?.strokesByHole?.[holeNumber] ?? 0;
@@ -124,26 +128,19 @@ const QuickMatchScorecardTable = ({
       return participants.map((p) => ({
         key: p.participantId,
         title: p.name,
-        scoreIds: [p.participantId],
+        members: [p],
         strokesId: p.participantId,
         teeParticipant: p,
         isMine: p.participantId === currentParticipantId,
       }));
     }
 
-    const sides = new Map();
-    for (const p of participants) {
-      const side = p.team ?? 'A';
-      if (!sides.has(side)) sides.set(side, []);
-      sides.get(side).push(p);
-    }
-
-    return [...sides.values()].map((members) => ({
-      key: members[0].participantId,
+    return groupParticipantsBySide(participants).map((members) => ({
+      key: sideCardHolder(members).participantId,
       title: members.map((m) => m.name).join(' & '),
-      scoreIds: members.map((m) => m.participantId),
-      strokesId: members[0].participantId,
-      teeParticipant: members[0],
+      members,
+      strokesId: sideCardHolder(members).participantId,
+      teeParticipant: sideCardHolder(members),
       isMine: members.some((m) => m.participantId === currentParticipantId),
     }));
   };
@@ -161,9 +158,9 @@ const QuickMatchScorecardTable = ({
     return `${name}${suffix}`;
   };
 
-  const sumStrokes = (holeRange, scoreIds) =>
+  const sumStrokes = (holeRange, members) =>
     holeRange.reduce((sum, h) => {
-      const score = getScore(h.holeNumber, scoreIds);
+      const score = getScore(h.holeNumber, members);
       return score != null ? sum + score : sum;
     }, 0);
 
@@ -198,7 +195,7 @@ const QuickMatchScorecardTable = ({
               {label}
             </th>
             {sectionHoles.map((h) => {
-              const score = getScore(h.holeNumber, card.scoreIds);
+              const score = getScore(h.holeNumber, card.members);
               const strokesReceived = getStrokesReceived(h.holeNumber, card.strokesId);
               const dotCount = Math.min(Math.abs(strokesReceived), MAX_STROKE_DOTS);
               return (
@@ -248,7 +245,7 @@ const QuickMatchScorecardTable = ({
               );
             })}
             <td className="px-2 py-1 text-center font-bold">
-              {sumStrokes(sectionHoles, card.scoreIds) || '-'}
+              {sumStrokes(sectionHoles, card.members) || '-'}
             </td>
           </tr>
         </tbody>

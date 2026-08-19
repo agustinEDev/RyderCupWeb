@@ -32,7 +32,7 @@ describe('QuickMatchHoleSelector', () => {
       <QuickMatchHoleSelector
         currentHole={1}
         onSelect={mockOnSelect}
-        coveredParticipantIds={['p-1', 'p-2']}
+        expectedScoreIdGroups={[['p-1'], ['p-2']]}
         holeScores={[
           { holeNumber: 3, participantId: 'p-1', score: 4 },
           { holeNumber: 3, participantId: 'p-2', score: 5 },

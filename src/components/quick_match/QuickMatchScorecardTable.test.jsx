@@ -376,12 +376,12 @@ describe('QuickMatchScorecardTable · una tarjeta por bando en foursomes', () =>
     { participantId: 'p-4', name: 'RivalDos', handicap: 28.0, team: 'B' },
   ];
 
-  const renderFoursomes = (holeScores) =>
+  const renderFoursomes = (holeScores, participants = sideParticipants) =>
     render(
       <QuickMatchScorecardTable
         holes={holes}
         holeScores={holeScores}
-        participants={sideParticipants}
+        participants={participants}
         currentParticipantId="p-1"
         tees={[]}
         allowancePercentage={50}
@@ -414,5 +414,39 @@ describe('QuickMatchScorecardTable · una tarjeta por bando en foursomes', () =>
     expect(card).toHaveTextContent('4');
     // IDA: los dos hoyos del bando, no solo el propio
     expect(card).toHaveTextContent('9');
+  });
+
+  /**
+   * Con anotación cruzada los dos bandos escriben la misma bola. Si no
+   * coinciden se aclara entre las parejas; mientras tanto la tarjeta enseña la
+   * del primero del bando, la misma que el total de la vuelta.
+   */
+  it('enseña la del primero del bando cuando las dos anotaciones difieren', () => {
+    renderFoursomes([
+      { holeNumber: 1, participantId: 'p-2', score: 8 },
+      { holeNumber: 1, participantId: 'p-1', score: 5 },
+    ]);
+
+    const card = screen.getByTestId('quick-match-player-card-p-1');
+    expect(card).toHaveTextContent('5');
+    // El par de los dos hoyos suma 7, así que un 8 solo puede venir de la otra
+    // anotación del mismo hoyo.
+    expect(card).not.toHaveTextContent('8');
+  });
+
+  /**
+   * Sin `team` no hay bando: cada uno con su tarjeta. Agruparlos a todos bajo
+   * el mismo dejaba una sola tarjeta con los cuatro nombres.
+   */
+  it('da una tarjeta por jugador cuando no hay bando', () => {
+    renderFoursomes(
+      [],
+      sideParticipants.map((p) => ({ ...p, team: null }))
+    );
+
+    expect(screen.getByTestId('quick-match-player-card-p-1')).toBeInTheDocument();
+    expect(screen.getByTestId('quick-match-player-card-p-2')).toBeInTheDocument();
+    expect(screen.getByTestId('quick-match-player-card-p-3')).toBeInTheDocument();
+    expect(screen.getByTestId('quick-match-player-card-p-4')).toBeInTheDocument();
   });
 });
