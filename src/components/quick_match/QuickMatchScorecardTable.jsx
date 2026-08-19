@@ -46,9 +46,6 @@ const QuickMatchScorecardTable = ({
   const { t: ts } = useTranslation('scoring');
   const { t: tCourses } = useTranslation('golfCourses');
 
-  const outHoles = holes.filter((h) => h.holeNumber <= 9);
-  const inHoles = holes.filter((h) => h.holeNumber > 9);
-
   const isStableford = scoringFormat === 'STABLEFORD';
   const isMedal = scoringFormat === 'MEDAL';
 
@@ -82,22 +79,22 @@ const QuickMatchScorecardTable = ({
   const totalStrokesFor = (participantId) =>
     holes.reduce((sum, h) => sum + getStrokesReceived(h.holeNumber, participantId), 0);
 
-  // Solo el FOURBALL reparte a partir de una diferencia que NO se puede leer en
-  // la cabecera, y por eso es el único que necesita explicarse:
+  // Se nombra el allowance en los formatos cuyo reparto NO se puede reproducir
+  // restando los dos números de la cabecera:
   //
   //   FOURBALL   (ch - menor ch de los cuatro) x allowance  -> los Course
   //              Handicaps no se enseñan, así que con "Hcp de juego 23" y
   //              "Hcp de juego 10" en pantalla el reparto es 14 y la resta da
   //              13. Ahí es donde el lector cree ver un error de uno.
+  //   FOURSOMES  diferencia de PROMEDIOS de equipo x allowance. La cabecera ya
+  //              enseña el hándicap del BANDO (#423), así que la resta sí se
+  //              parece al reparto, pero cada bando se redondea por su cuenta y
+  //              puede quedarse a un golpe. Mismo caso que el FOURBALL.
   //   SINGLES    phA - phB, con el allowance ya dentro de los dos -> la resta
   //              de los dos números de la cabecera cuadra siempre. Decir aquí
   //              "el N% de la diferencia" sería falso.
-  //   FOURSOMES  diferencia de PROMEDIOS de equipo: los dos compañeros reciben
-  //              el mismo número junto a hándicaps de juego distintos, y ningún
-  //              par de números en pantalla lo reproduce. Necesita su propia
-  //              explicación, no esta.
   //   libre      cada uno recibe su Playing Handicap entero, sin diferencia.
-  const explainsAllowance = matchFormat === 'FOURBALL';
+  const explainsAllowance = matchFormat === 'FOURBALL' || matchFormat === 'FOURSOMES';
 
   const withAllowanceNote = (text) =>
     explainsAllowance
@@ -147,6 +144,35 @@ const QuickMatchScorecardTable = ({
 
   const cards = buildCards();
 
+  // La tarjeta que se PINTA es la de la barra de quien la juega. `holes` es
+  // solo la tarjeta de la PRIMERA barra del campo, y de los 800 campos
+  // federados importados 25 cambian de par entre barras —Son Parc va de 71 en
+  // amarillas a 58 en naranjas—, así que la fila Par, la figura del hoyo y los
+  // puntos salían de un par ajeno mientras la pantalla de anotación, desde
+  // #412, ya usaba el propio. Ver RyderCupWeb#417.
+  //
+  // Un bando de foursomes cuyos jugadores salen de barras distintas no tiene
+  // una sola tarjeta que pintar —comparten bola, no barra—, así que ese caso se
+  // queda con la del campo, la misma reserva que ya elige `holeCardFor`. Es
+  // preferible a inventar un par que no juega ninguno de los dos.
+  const holesForCard = (card) => {
+    const teeOf = (participant) => MatchPlayStrokeAllocator.findTee(participant, tees);
+    const tee = teeOf(card.teeParticipant);
+    if (!tee || card.members.some((m) => teeOf(m) !== tee)) return holes;
+    return MatchPlayStrokeAllocator.holeCardFor(card.teeParticipant, holes, tees);
+  };
+
+  const outHolesOf = (card) => holesForCard(card).filter((h) => h.holeNumber <= 9);
+  const inHolesOf = (card) => holesForCard(card).filter((h) => h.holeNumber > 9);
+
+  // El hándicap de juego de una tarjeta de foursomes es el del BANDO: el de su
+  // primer jugador dejaba dos bandos distintos con el mismo número al lado de
+  // repartos distintos. Ver RyderCupWeb#423.
+  const playingHandicapOf = (card) =>
+    matchFormat === 'FOURSOMES'
+      ? MatchPlayStrokeAllocator.sidePlayingHandicap(card.members, holes, tees, allowancePercentage)
+      : (allocation[card.strokesId]?.playingHandicap ?? null);
+
   const renderTeeLabel = (participant) => {
     const tee = MatchPlayStrokeAllocator.findTee(participant, tees);
     if (!tee) return null;
@@ -180,7 +206,12 @@ const QuickMatchScorecardTable = ({
           <tr className="bg-gray-50">
             <th scope="row" className="px-2 py-1 text-left text-gray-400 font-normal">{ts('scorecard.par')}</th>
             {sectionHoles.map((h) => (
-              <th key={h.holeNumber} scope="col" className="px-2 py-1 text-center text-gray-400 font-normal">
+              <th
+                key={h.holeNumber}
+                scope="col"
+                data-testid={`quick-match-par-${card.key}-${h.holeNumber}`}
+                className="px-2 py-1 text-center text-gray-400 font-normal"
+              >
                 {h.par}
               </th>
             ))}
@@ -284,9 +315,9 @@ const QuickMatchScorecardTable = ({
                 ? t('scoring.scorecard.scratchMatch')
                 : [
                     renderTeeLabel(card.teeParticipant),
-                    allocation[card.strokesId]
+                    playingHandicapOf(card) != null
                       ? t('scoring.scorecard.playingHandicap', {
-                          value: allocation[card.strokesId].playingHandicap,
+                          value: playingHandicapOf(card),
                         })
                       : null,
                     describeStrokes(totalStrokesFor(card.strokesId)),
@@ -296,8 +327,9 @@ const QuickMatchScorecardTable = ({
             </p>
           </div>
           <div className="p-2 space-y-2">
-            {renderSection(outHoles, ts('scorecard.out'), card)}
-            {inHoles.length > 0 && renderSection(inHoles, ts('scorecard.in'), card)}
+            {renderSection(outHolesOf(card), ts('scorecard.out'), card)}
+            {inHolesOf(card).length > 0 &&
+              renderSection(inHolesOf(card), ts('scorecard.in'), card)}
           </div>
         </div>
       ))}

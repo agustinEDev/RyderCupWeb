@@ -202,6 +202,41 @@ class MatchPlayStrokeAllocator {
   }
 
   /**
+   * Hándicap de juego de un bando de foursomes: el promedio de los Course
+   * Handicaps de sus jugadores, con el allowance aplicado.
+   *
+   * Existe porque el bando juega UNA bola y por tanto tiene un solo hándicap,
+   * mientras que `resolve` guarda por participante el de cada jugador —el que
+   * hacía falta cuando cada uno llevaba su propia tarjeta—. Enseñar el del
+   * primero como si fuera el del bando dejaba dos cabeceras con el mismo número
+   * junto a repartos distintos. Ver RyderCupWeb#423.
+   *
+   * Sale del mismo promedio con el que `#foursomes` reparte, así que la resta
+   * de los dos bandos reproduce los golpes que se enseñan debajo. Los dos
+   * redondeos son independientes, de modo que en casos límite la resta puede
+   * quedar a un golpe del reparto; es el mismo margen que ya arrastra el
+   * FOURBALL, y sigue siendo preferible a enseñar el número de un jugador.
+   *
+   * @param {Array<Object>} members - Jugadores del bando
+   * @returns {number} Entero >= 0
+   */
+  static sidePlayingHandicap(members = [], holes = [], tees = [], allowancePercentage = 100) {
+    if (members.length === 0) return 0;
+    const average = MatchPlayStrokeAllocator.#averageCourseHandicap(members, holes, tees);
+    return Math.max(
+      0,
+      PlayingHandicapCalculator.roundHalfAwayFromZero((average * allowancePercentage) / 100)
+    );
+  }
+
+  static #averageCourseHandicap(members, holes, tees) {
+    return (
+      members.reduce((sum, p) => sum + MatchPlayStrokeAllocator.courseHandicap(p, holes, tees), 0) /
+      members.length
+    );
+  }
+
+  /**
    * Playing Handicap (con allowance aplicado).
    *
    * Sin hándicap conocido juega a scratch. Sin una barra que se pueda valorar
@@ -403,12 +438,8 @@ class MatchPlayStrokeAllocator {
       return MatchPlayStrokeAllocator.#zeroed(participants);
     }
 
-    const average = (team) =>
-      team.reduce((sum, p) => sum + MatchPlayStrokeAllocator.courseHandicap(p, holes, tees), 0) /
-      team.length;
-
-    const avgA = average(teamA);
-    const avgB = average(teamB);
+    const avgA = MatchPlayStrokeAllocator.#averageCourseHandicap(teamA, holes, tees);
+    const avgB = MatchPlayStrokeAllocator.#averageCourseHandicap(teamB, holes, tees);
     const strokes = PlayingHandicapCalculator.roundHalfAwayFromZero(
       Math.abs(avgA - avgB) * (allowance / 100)
     );
