@@ -427,11 +427,17 @@ describe('QuickMatchScorecardTable · una tarjeta por bando en foursomes', () =>
       { holeNumber: 1, participantId: 'p-1', score: 5 },
     ]);
 
-    const card = screen.getByTestId('quick-match-player-card-p-1');
-    expect(card).toHaveTextContent('5');
-    // El par de los dos hoyos suma 7, así que un 8 solo puede venir de la otra
-    // anotación del mismo hoyo.
-    expect(card).not.toHaveTextContent('8');
+    // Sobre las celdas de golpes y no sobre la tarjeta entera: su cabecera
+    // lleva el hándicap (18.0), así que un `not.toHaveTextContent('8')` contra
+    // todo el bloque solo pasaba mientras el mock de traducción se comiera los
+    // valores interpolados.
+    const scoreCells = screen
+      .getByTestId('quick-match-player-card-p-1')
+      .querySelectorAll('[data-testid^="quick-match-score-cell-"]');
+    const shown = [...scoreCells].map((cell) => cell.textContent);
+
+    expect(shown).toContain('5');
+    expect(shown).not.toContain('8');
   });
 
   /**

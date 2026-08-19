@@ -55,6 +55,25 @@ export const sideScoreOf = (members = [], scoreOf) => {
 };
 
 /**
+ * Lector de golpes por participante para un hoyo, sobre los golpes anotados.
+ *
+ * Lo usan la tarjeta y la vuelta propia, que antes llevaban cada una su copia:
+ * tenían que seguir siendo idénticas para que los dos números cuadraran.
+ *
+ * @param {Array<Object>} holeScores
+ * @returns {(holeNumber: number) => (participantId: string) => number|null}
+ */
+export const scoreAtOf =
+  (holeScores = []) =>
+  (holeNumber) =>
+  (participantId) => {
+    const entry = holeScores.find(
+      (hs) => hs.participantId === participantId && hs.holeNumber === holeNumber
+    );
+    return entry?.score ?? null;
+  };
+
+/**
  * El participante a cuyo nombre se guarda la bola del bando: el primero.
  *
  * Una bola, una fila. Guardarla a nombre de quien tenga el móvil dejaba dos

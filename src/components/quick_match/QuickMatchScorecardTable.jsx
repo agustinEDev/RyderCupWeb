@@ -1,5 +1,10 @@
 import { useTranslation } from 'react-i18next';
-import { groupParticipantsBySide, sideCardHolder, sideScoreOf } from '../../domain/services/FoursomesSides';
+import {
+  groupParticipantsBySide,
+  scoreAtOf,
+  sideCardHolder,
+  sideScoreOf,
+} from '../../domain/services/FoursomesSides';
 import GolfFigure from '../scoring/GolfFigure';
 import StablefordCalculator from '../../domain/services/StablefordCalculator';
 import MatchPlayStrokeAllocator from '../../domain/services/MatchPlayStrokeAllocator';
@@ -60,12 +65,7 @@ const QuickMatchScorecardTable = ({
     playMode,
   });
 
-  const scoreAt = (holeNumber) => (participantId) => {
-    const entry = holeScores.find(
-      (hs) => hs.holeNumber === holeNumber && hs.participantId === participantId
-    );
-    return entry ? entry.score : null;
-  };
+  const scoreAt = scoreAtOf(holeScores);
 
   // Recibe los participantes cuyos golpes forman UNA bola: uno en todos los
   // formatos menos foursomes, donde el bando comparte bola. Se elige recorriendo
@@ -199,7 +199,11 @@ const QuickMatchScorecardTable = ({
               const strokesReceived = getStrokesReceived(h.holeNumber, card.strokesId);
               const dotCount = Math.min(Math.abs(strokesReceived), MAX_STROKE_DOTS);
               return (
-                <td key={h.holeNumber} className="px-1 py-1 text-center align-top">
+                <td
+                  key={h.holeNumber}
+                  data-testid={`quick-match-score-cell-${card.key}-${h.holeNumber}`}
+                  className="px-1 py-1 text-center align-top"
+                >
                   <div className="flex flex-col items-center gap-0.5">
                     <GolfFigure score={score} par={h.par} />
                     {score != null && isStableford && (

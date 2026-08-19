@@ -193,11 +193,16 @@ const QuickMatchScoringPage = () => {
           ? cardHolder
           : members.find((m) => coveredParticipantIds.includes(m.participantId));
         if (!writable) return null;
+        // Lo que se lee tiene que ser lo que se escribe. Cuando el respaldo
+        // manda, la casilla seguía enseñando la fila del titular: corriges el
+        // golpe, se guarda bajo otro, y la pantalla te devuelve el viejo como
+        // si la corrección se hubiera perdido.
+        const readOrder = writable === cardHolder ? members : [writable, ...members];
         return {
           participantId: writable.participantId,
           scoreIds: members.map((m) => m.participantId),
           name: members.map((m) => m.name).join(' & '),
-          score: sideScoreOf(members, scoreOf),
+          score: sideScoreOf(readOrder, scoreOf),
           // Comparten bola, así que comparten tarjeta: la del primero del bando,
           // la misma para los dos y no la de quien tenga el móvil.
           hole: holeFor(cardHolder) ?? courseHoleData,

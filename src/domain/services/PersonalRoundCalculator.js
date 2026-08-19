@@ -1,6 +1,6 @@
 import StablefordCalculator from './StablefordCalculator';
 import MatchPlayStrokeAllocator from './MatchPlayStrokeAllocator';
-import { groupParticipantsBySide, sideScoreOf } from './FoursomesSides';
+import { groupParticipantsBySide, scoreAtOf, sideScoreOf } from './FoursomesSides';
 
 // Una vuelta personal se mide con el hándicap de juego entero. El allowance
 // —95% en juego libre, 90% en fourball, 50% en foursomes— equilibra un partido,
@@ -35,12 +35,7 @@ const sideTotals = (me, participants, holes, holeScores) => {
       side.some((p) => p.participantId === me.participantId)
     ) ?? [me];
 
-  const scoreAt = (holeNumber) => (participantId) => {
-    const entry = holeScores.find(
-      (hs) => hs.participantId === participantId && hs.holeNumber === holeNumber
-    );
-    return entry?.score ?? null;
-  };
+  const scoreAt = scoreAtOf(holeScores);
 
   let totalStrokes = 0;
   let holesPlayed = 0;

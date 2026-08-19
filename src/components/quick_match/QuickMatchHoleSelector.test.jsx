@@ -45,4 +45,31 @@ describe('QuickMatchHoleSelector', () => {
     expect(screen.getByTestId('quick-match-hole-btn-4').className).toContain('bg-yellow-100');
     expect(screen.getByTestId('quick-match-hole-btn-5').className).toContain('bg-gray-100');
   });
+
+  /**
+   * En foursomes cada grupo es un BANDO: el hoyo está completo con las dos
+   * bolas, no con cuatro golpes, y la bola cuenta la anote quien la anote.
+   */
+  it('should count one score per group, not per participant', () => {
+    render(
+      <QuickMatchHoleSelector
+        currentHole={1}
+        onSelect={mockOnSelect}
+        expectedScoreIdGroups={[
+          ['p-1', 'p-2'],
+          ['p-3', 'p-4'],
+        ]}
+        holeScores={[
+          // Una bola por bando, y la del segundo bando la metió el compañero.
+          { holeNumber: 3, participantId: 'p-1', score: 4 },
+          { holeNumber: 3, participantId: 'p-4', score: 5 },
+          { holeNumber: 4, participantId: 'p-1', score: 4 },
+        ]}
+      />
+    );
+
+    expect(screen.getByTestId('quick-match-hole-btn-3').className).toContain('bg-green-100');
+    // Falta la bola del otro bando, no los golpes de los otros tres jugadores.
+    expect(screen.getByTestId('quick-match-hole-btn-4').className).toContain('bg-yellow-100');
+  });
 });

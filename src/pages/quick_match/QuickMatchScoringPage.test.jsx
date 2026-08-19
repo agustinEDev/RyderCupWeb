@@ -601,6 +601,13 @@ describe('QuickMatchScoringPage · foursomes anota una bola por bando', () => {
     expect(screen.getByTestId('quick-match-score-button-p-rival-1')).toBeInTheDocument();
     expect(screen.queryByTestId('quick-match-score-button-p-partner')).not.toBeInTheDocument();
     expect(screen.queryByTestId('quick-match-score-button-p-rival-2')).not.toBeInTheDocument();
+
+    // Y al anotar de verdad, el golpe se guarda a ese nombre: que se pinte la
+    // casilla correcta no dice nada de bajo quién escribe.
+    fireEvent.click(screen.getByTestId('quick-match-score-button-user-1'));
+    fireEvent.click(screen.getByText('5').closest('button'));
+
+    expect(submitScore).toHaveBeenCalledWith(1, 'user-1', 5);
   });
 
   /**
@@ -627,6 +634,35 @@ describe('QuickMatchScoringPage · foursomes anota una bola por bando', () => {
     expect(screen.getByTestId('quick-match-score-button-user-1')).toBeInTheDocument();
     expect(screen.getByTestId('quick-match-score-button-p-rival-2')).toBeInTheDocument();
     expect(screen.queryByTestId('quick-match-score-button-p-rival-1')).not.toBeInTheDocument();
+  });
+
+  /**
+   * Y la casilla enseña la fila que se escribe, no la del titular: con el
+   * respaldo mandando, corregir el golpe guardaba bien pero la pantalla seguía
+   * devolviendo el viejo, como si la corrección se hubiera perdido.
+   */
+  it('shows the entry of the row it actually writes to', () => {
+    mockUseQuickMatchScoring.mockReturnValue({
+      ...baseHookState,
+      quickMatch: {
+        ...foursomesMatch,
+        holeScores: [
+          { holeNumber: 1, participantId: 'p-rival-1', score: 4 },
+          { holeNumber: 1, participantId: 'p-rival-2', score: 6 },
+        ],
+      },
+      myParticipant: foursomesMatch.participants[0],
+      isScorer: true,
+      coveredParticipantIds: ['user-1', 'p-rival-2'],
+      setCurrentHole: vi.fn(),
+      submitScore: vi.fn(),
+      completeMatch: vi.fn(),
+      refetch: vi.fn(),
+    });
+
+    renderPage();
+
+    expect(screen.getByTestId('quick-match-score-button-p-rival-2')).toHaveTextContent('6');
   });
 
   /** Sin cubrir a nadie del bando no hay dónde escribir: la casilla no se pinta. */
