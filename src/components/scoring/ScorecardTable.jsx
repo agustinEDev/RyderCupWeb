@@ -14,6 +14,18 @@ const ScorecardTable = ({ holes = [], scores = [], players = [], currentUserId, 
   const { t } = useTranslation('scoring');
   const [showNet, setShowNet] = useState(false);
 
+  // El par es de la barra de cada jugador —el backend lo manda resuelto por
+  // jugador desde RyderCupAm#213— y esta rejilla lo comparte entre todas las
+  // filas. Las filas Par y SI son comunes por diseño: con jugadores en barras
+  // distintas no hay un par que enseñar ahí, así que se quedan con la del
+  // campo. La FIGURA de cada casilla sí es de quien juega esa bola: ahí no hay
+  // nada compartido que decidir, y era donde un jugador de otra barra veía su
+  // 4 pintado como birdie contra un par que no era el suyo. Ver
+  // RyderCupWeb#417.
+  const cardOf = (userId) => players.find(p => p.userId === userId)?.holeCard ?? [];
+  const parFor = (userId, holeNumber, fallbackPar) =>
+    cardOf(userId).find(h => h.holeNumber === holeNumber)?.par ?? fallbackPar;
+
   const outHoles = holes.filter(h => h.holeNumber <= 9);
   const inHoles = holes.filter(h => h.holeNumber > 9);
 
@@ -154,7 +166,10 @@ const ScorecardTable = ({ holes = [], scores = [], players = [], currentUserId, 
                               ))}
                             </div>
                           )}
-                          <GolfFigure score={displayScore} par={h.par} />
+                          <GolfFigure
+                            score={displayScore}
+                            par={parFor(row.playerIds[0], h.holeNumber, h.par)}
+                          />
                         </div>
                       ) : (
                         <span className="text-gray-300">-</span>

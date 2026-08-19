@@ -446,4 +446,51 @@ describe('ScoringMapper', () => {
       expect(dto.matchComplete).toBe(false);
     });
   });
+  /**
+   * El backend resuelve la tarjeta de cada barra y la manda por jugador
+   * (RyderCupAm#213) «para que el cliente no tenga que volver a resolverlo — y
+   * no lo resuelva de otra manera». El mapper la tiraba, así que la pantalla
+   * seguía puntuando contra la tarjeta del campo. Ver RyderCupWeb#417.
+   */
+  describe('la tarjeta de la barra de cada jugador', () => {
+    const withHoleCard = {
+      players: [
+        {
+          user_id: 'u1',
+          user_name: 'Agustin',
+          team: 'A',
+          tee_color: 'ORANGE',
+          playing_handicap: 12,
+          strokes_received: [],
+          hole_card: [
+            { hole_number: 1, par: 3, stroke_index: 11, meters: 258 },
+            { hole_number: 2, par: 4, stroke_index: 15, meters: 300 },
+          ],
+        },
+      ],
+    };
+
+    it('mapea hole_card a holeCard', () => {
+      const dto = ScoringMapper.toScoringViewDTO(withHoleCard);
+
+      expect(dto.players[0].holeCard).toEqual([
+        { holeNumber: 1, par: 3, strokeIndex: 11, meters: 258 },
+        { holeNumber: 2, par: 4, strokeIndex: 15, meters: 300 },
+      ]);
+    });
+
+    it('deja la tarjeta vacía cuando el backend no la manda', () => {
+      const dto = ScoringMapper.toScoringViewDTO({
+        players: [{ user_id: 'u1', user_name: 'A', team: 'A', playing_handicap: 0 }],
+      });
+
+      expect(dto.players[0].holeCard).toEqual([]);
+    });
+
+    it('lee el color de tee_color, que es como lo manda el DTO', () => {
+      const dto = ScoringMapper.toScoringViewDTO(withHoleCard);
+
+      expect(dto.players[0].color).toBe('ORANGE');
+    });
+  });
 });

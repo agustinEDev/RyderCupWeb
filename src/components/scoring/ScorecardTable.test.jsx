@@ -209,3 +209,71 @@ describe('ScorecardTable', () => {
     });
   });
 });
+/**
+ * La rejilla comparte las filas Par y SI entre todos los jugadores, pero la
+ * FIGURA de cada casilla es de quien juega esa bola: en 25 de los 800 campos
+ * federados el par cambia entre barras, y quien no jugaba la primera veía su
+ * resultado dibujado contra un par ajeno. Ver RyderCupWeb#417.
+ */
+describe('ScorecardTable · la figura sale del par de cada jugador', () => {
+  const courseHoles = Array.from({ length: 18 }, (_, i) => ({
+    holeNumber: i + 1,
+    par: 4,
+    strokeIndex: i + 1,
+  }));
+
+  // El de naranjas juega un par 3 donde la tarjeta del campo dice 4
+  const orangeCard = courseHoles.map((h) => (h.holeNumber === 1 ? { ...h, par: 3 } : h));
+
+  const players = [
+    { userId: 'u1', userName: 'Naranjas', team: 'A', holeCard: orangeCard },
+    { userId: 'u2', userName: 'Campo', team: 'B', holeCard: [] },
+  ];
+
+  const scores = [
+    {
+      holeNumber: 1,
+      playerScores: [
+        { userId: 'u1', ownScore: 3 },
+        { userId: 'u2', ownScore: 3 },
+      ],
+    },
+  ];
+
+  it('pinta par para quien juega un par 3 y birdie para quien juega el par 4 del campo', () => {
+    render(
+      <ScorecardTable
+        holes={courseHoles}
+        players={players}
+        scores={scores}
+        currentUserId="u1"
+      />
+    );
+
+    const figures = screen.getAllByTestId('golf-figure');
+    const titles = figures.map((f) => f.getAttribute('title')).filter(Boolean);
+
+    // Mismo 3 en el mismo hoyo, dos figuras distintas: cada una contra su par
+    expect(titles).toContain('figures.par');
+    expect(titles).toContain('figures.birdie');
+  });
+
+  it('cae al par del campo para quien no trae tarjeta de barra', () => {
+    render(
+      <ScorecardTable
+        holes={courseHoles}
+        players={[players[1]]}
+        scores={[{ holeNumber: 1, playerScores: [{ userId: 'u2', ownScore: 3 }] }]}
+        currentUserId="u2"
+      />
+    );
+
+    const titles = screen
+      .getAllByTestId('golf-figure')
+      .map((f) => f.getAttribute('title'))
+      .filter(Boolean);
+
+    expect(titles).toContain('figures.birdie');
+    expect(titles).not.toContain('figures.par');
+  });
+});

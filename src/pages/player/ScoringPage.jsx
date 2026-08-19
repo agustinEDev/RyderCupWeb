@@ -85,8 +85,22 @@ const ScoringPage = () => {
     (p) => !scoringView?.scorecardSubmittedBy?.includes(p.userId)
   ) ?? [];
 
+  // El par, el índice y los metros son de la barra de CADA jugador: en 56 de
+  // los 800 campos federados el índice cambia entre barras y en 25 el par.
+  // El backend ya manda la tarjeta resuelta por jugador (RyderCupAm#213); esta
+  // pantalla leía `holes`, que es la del campo, y le pintaba a quien no juega
+  // la primera barra un par que no era el suyo. Ver RyderCupWeb#417.
+  //
+  // Reserva a la tarjeta del campo para quien venga sin la suya, que es lo que
+  // manda el backend cuando no pudo cargar el campo.
+  const holeCardOf = (userId) =>
+    scoringView?.players?.find((p) => p.userId === userId)?.holeCard ?? [];
+  const holeFor = (userId) =>
+    holeCardOf(userId).find((h) => h.holeNumber === currentHole) ?? null;
+
   // Get current hole data
-  const currentHoleData = scoringView?.holes?.find((h) => h.holeNumber === currentHole);
+  const courseHoleData = scoringView?.holes?.find((h) => h.holeNumber === currentHole);
+  const currentHoleData = holeFor(currentUserId) ?? courseHoleData;
   const currentHoleScore = scoringView?.scores?.find((s) => s.holeNumber === currentHole);
   const currentPlayerScore = currentHoleScore?.playerScores?.find(
     (ps) => ps.userId === currentUserId
@@ -317,6 +331,7 @@ const ScoringPage = () => {
                 key={currentHole}
                 holeNumber={currentHole}
                 par={currentHoleData.par}
+                markedPar={holeFor(markerAssignment?.marksUserId)?.par ?? null}
                 strokeIndex={currentHoleData.strokeIndex}
                 // eslint-disable-next-line react-hooks/refs -- pre-existing pattern surfaced by eslint-plugin-react-hooks 7.1.1 bump; needs dedicated review (tracked in follow-up)
                 playerScore={effectivePlayerScore}
