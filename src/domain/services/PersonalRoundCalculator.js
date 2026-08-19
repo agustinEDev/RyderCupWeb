@@ -1,11 +1,54 @@
 import StablefordCalculator from './StablefordCalculator';
 import MatchPlayStrokeAllocator from './MatchPlayStrokeAllocator';
+import { groupParticipantsBySide, scoreAtOf, sideScoreOf } from './FoursomesSides';
 
 // Una vuelta personal se mide con el hándicap de juego entero. El allowance
 // —95% en juego libre, 90% en fourball, 50% en foursomes— equilibra un partido,
 // no mide una vuelta: con él, la misma vuelta salía -2, PAR o +8 según con qué
 // formato se hubiera jugado, y dejaba de poder compararse con las demás.
 const PERSONAL_ROUND_ALLOWANCE = 100;
+
+/**
+ * Golpes brutos del BANDO en foursomes: una bola por hoyo, la anote quien la
+ * anote.
+ *
+ * Contarlos con `computeParticipantTotals(me, ...)` daba los golpes de quien
+ * mira la pantalla bajo la etiqueta «Del equipo»: con la tarjeta llevada como
+ * se juega —cada hoyo a nombre de quien golpeó— se perdían todos los hoyos del
+ * compañero. Ver RyderCupWeb#420.
+ *
+ * Se toma UN score por hoyo y **nunca se suman los dos compañeros**: antes de
+ * ese cambio ambos anotaban el mismo golpe, así que sumarlos duplicaría el
+ * total de las vueltas ya jugadas.
+ *
+ * Sin `team` —partidas viejas, o un dato incompleto— el bando es el propio
+ * jugador: se vuelve al comportamiento anterior en vez de mezclar a los cuatro.
+ *
+ * Cuál es la nota del bando lo decide `sideScoreOf`, la misma regla que usan la
+ * pantalla de anotación y la tarjeta: aquí se recorrían los golpes anotados en
+ * el orden del backend y allí los jugadores, así que con dos anotaciones del
+ * mismo hoyo el total podía no cuadrar con lo que enseñaba la tarjeta.
+ */
+const sideTotals = (me, participants, holes, holeScores) => {
+  const members =
+    groupParticipantsBySide(participants).find((side) =>
+      side.some((p) => p.participantId === me.participantId)
+    ) ?? [me];
+
+  const scoreAt = scoreAtOf(holeScores);
+
+  let totalStrokes = 0;
+  let holesPlayed = 0;
+
+  for (const hole of holes) {
+    const score = sideScoreOf(members, scoreAt(hole.holeNumber));
+    if (score == null) continue;
+    totalStrokes += score;
+    holesPlayed += 1;
+  }
+
+  return { totalStrokes, holesPlayed };
+};
 
 /**
  * La vuelta propia de un jugador en una partida rápida, en sus dos lecturas.
@@ -77,7 +120,7 @@ class PersonalRoundCalculator {
     // dos sitios.
     if (matchFormat === 'FOURSOMES') {
       // Sin reparto: el bruto no depende de los golpes que se den.
-      const teamTotals = StablefordCalculator.computeParticipantTotals(me, holes, holeScores);
+      const teamTotals = sideTotals(me, participants, holes, holeScores);
       if (!teamTotals.holesPlayed) return null;
       return {
         personalToPar: null,

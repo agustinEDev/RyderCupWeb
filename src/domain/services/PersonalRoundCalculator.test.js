@@ -146,3 +146,103 @@ describe('PersonalRoundCalculator', () => {
     });
   });
 });
+
+describe('PersonalRoundCalculator · los golpes del bando en foursomes', () => {
+  const partner = { participantId: 'p-3', name: 'Carol', handicap: 8, team: 'A' };
+  const teamMe = { ...me, team: 'A' };
+  const teamRival = { ...rival, team: 'B' };
+
+  const computeFoursomes = (holeScores, participants = [teamMe, partner, teamRival]) =>
+    PersonalRoundCalculator.compute({
+      me: teamMe,
+      participants,
+      holes,
+      holeScores,
+      tees: [],
+      participantStrokes: [],
+      matchFormat: 'FOURSOMES',
+      allowancePercentage: 50,
+      playMode: 'HANDICAP',
+    });
+
+  /**
+   * Como se juega de verdad: una bola por bando y cada hoyo a nombre de quien
+   * golpeó. Contando solo los del jugador que mira la pantalla, el hoyo del
+   * compañero se perdía y el total salía a la mitad.
+   */
+  it('suma los hoyos que anotó el compañero', () => {
+    const result = computeFoursomes([
+      { holeNumber: 1, participantId: 'p-1', score: 4 },
+      { holeNumber: 2, participantId: 'p-3', score: 3 },
+    ]);
+
+    expect(result.totalStrokes).toBe(7);
+  });
+
+  /**
+   * Antes de la casilla única los dos compañeros anotaban el MISMO golpe.
+   * Sumarlos duplicaría el total de una vuelta ya jugada.
+   */
+  it('no duplica cuando los dos anotaron el mismo hoyo', () => {
+    const result = computeFoursomes([
+      { holeNumber: 1, participantId: 'p-1', score: 4 },
+      { holeNumber: 1, participantId: 'p-3', score: 4 },
+      { holeNumber: 2, participantId: 'p-1', score: 3 },
+      { holeNumber: 2, participantId: 'p-3', score: 3 },
+    ]);
+
+    expect(result.totalStrokes).toBe(7);
+  });
+
+  /**
+   * Con anotación cruzada los dos bandos pueden escribir la misma bola. Si no
+   * coinciden se aclara entre las parejas, pero mientras tanto este total y la
+   * tarjeta tienen que enseñar el mismo número: el del primero del bando.
+   */
+  it('toma la misma nota que la tarjeta cuando las dos anotaciones difieren', () => {
+    const result = computeFoursomes([
+      { holeNumber: 1, participantId: 'p-3', score: 6 },
+      { holeNumber: 1, participantId: 'p-1', score: 4 },
+    ]);
+
+    expect(result.totalStrokes).toBe(4);
+  });
+
+  it('ignora los golpes del bando rival', () => {
+    const result = computeFoursomes([
+      { holeNumber: 1, participantId: 'p-1', score: 4 },
+      { holeNumber: 1, participantId: 'p-2', score: 6 },
+      { holeNumber: 2, participantId: 'p-2', score: 6 },
+    ]);
+
+    expect(result.totalStrokes).toBe(4);
+  });
+
+  /** Sin `team` no se puede saber el bando: se cuenta solo lo propio. */
+  it('cuenta solo lo propio cuando no hay bando', () => {
+    const result = PersonalRoundCalculator.compute({
+      me,
+      participants: [me, rival],
+      holes,
+      holeScores: [
+        { holeNumber: 1, participantId: 'p-1', score: 4 },
+        { holeNumber: 2, participantId: 'p-3', score: 3 },
+      ],
+      tees: [],
+      participantStrokes: [],
+      matchFormat: 'FOURSOMES',
+      allowancePercentage: 50,
+      playMode: 'HANDICAP',
+    });
+
+    expect(result.totalStrokes).toBe(4);
+  });
+
+  it('sigue sin dar vuelta propia', () => {
+    const result = computeFoursomes([{ holeNumber: 1, participantId: 'p-3', score: 5 }]);
+
+    expect(result.personalToPar).toBeNull();
+    expect(result.matchToPar).toBeNull();
+    expect(result.totalStrokes).toBe(5);
+  });
+});

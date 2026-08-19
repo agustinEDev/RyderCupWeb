@@ -2,6 +2,12 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router';
 import { Loader, ChevronLeft, ChevronRight, MapPin } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+
+import {
+  groupParticipantsBySide,
+  sideCardHolder,
+  sideScoreOf,
+} from '../../domain/services/FoursomesSides';
 import HeaderAuth from '../../components/layout/HeaderAuth';
 import { useAuth } from '../../hooks/useAuth';
 import { useQuickMatchScoring } from '../../hooks/useQuickMatchScoring';
@@ -141,18 +147,72 @@ const QuickMatchScoringPage = () => {
 
   const currentHoleData = holeFor(myParticipant) ?? courseHoleData;
 
-  const entries = coveredParticipantIds.map((participantId) => {
-    const participant = quickMatch?.participants?.find((p) => p.participantId === participantId);
-    const scoreEntry = quickMatch?.holeScores?.find(
+  const participantOf = (participantId) =>
+    quickMatch?.participants?.find((p) => p.participantId === participantId);
+
+  const scoreOf = (participantId) =>
+    quickMatch?.holeScores?.find(
       (hs) => hs.holeNumber === currentHole && hs.participantId === participantId
-    );
-    return {
-      participantId,
-      name: participant?.name ?? '',
-      score: scoreEntry ? scoreEntry.score : null,
-      hole: holeFor(participant) ?? courseHoleData,
-    };
-  });
+    )?.score ?? null;
+
+  const playerEntries = () =>
+    coveredParticipantIds.map((participantId) => {
+      const participant = participantOf(participantId);
+      return {
+        participantId,
+        scoreIds: [participantId],
+        name: participant?.name ?? '',
+        score: scoreOf(participantId),
+        hole: holeFor(participant) ?? courseHoleData,
+      };
+    });
+
+  // Foursomes se juega a golpes alternos con UNA bola por bando: una casilla
+  // por equipo, no una por jugador. Con cuatro casillas, anotar como se juega
+  // —cada hoyo a nombre de quien golpeó— dejaba media tarjeta a nombre del
+  // compañero, el total del bando perdía esos hoyos y el partido se quedaba sin
+  // un solo hoyo válido. Ver RyderCupWeb#420 y RyderCupAm#216.
+  //
+  // La casilla se guarda a nombre del participante del bando que este anotador
+  // cubre: así la rellena cualquiera de los dos —quien tenga el móvil— sin
+  // depender de cómo se hayan repartido los anotadores.
+  const sideEntries = () =>
+    groupParticipantsBySide(quickMatch?.participants ?? [])
+      .map((members) => {
+        // Una bola, una fila: se guarda a nombre del primer jugador del bando
+        // la anote quien la anote. A nombre de quien tuviera el móvil, los dos
+        // anotadores escribían filas distintas del mismo golpe.
+        //
+        // Con la anotación cruzada del backend todos cubren a los cuatro, así
+        // que esa fila siempre se puede escribir. Si no —un backend aún sin ese
+        // reparto, o un detalle sin `scoringAssignments`— se escribe bajo el
+        // primer miembro que sí se cubra: preferible a dejar al compañero con
+        // la pantalla en blanco y sin poder anotar.
+        const cardHolder = sideCardHolder(members);
+        const writable = coveredParticipantIds.includes(cardHolder.participantId)
+          ? cardHolder
+          : members.find((m) => coveredParticipantIds.includes(m.participantId));
+        if (!writable) return null;
+        // Lo que se lee tiene que ser lo que se escribe. Cuando el respaldo
+        // manda, la casilla seguía enseñando la fila del titular: corriges el
+        // golpe, se guarda bajo otro, y la pantalla te devuelve el viejo como
+        // si la corrección se hubiera perdido.
+        const readOrder = writable === cardHolder ? members : [writable, ...members];
+        return {
+          participantId: writable.participantId,
+          scoreIds: members.map((m) => m.participantId),
+          name: members.map((m) => m.name).join(' & '),
+          score: sideScoreOf(readOrder, scoreOf),
+          // Comparten bola, así que comparten tarjeta: la del primero del bando,
+          // la misma para los dos y no la de quien tenga el móvil.
+          hole: holeFor(cardHolder) ?? courseHoleData,
+          side: cardHolder.participantId,
+        };
+      })
+      .filter(Boolean);
+
+  const isFoursomes = quickMatch?.matchFormat === 'FOURSOMES';
+  const entries = isFoursomes ? sideEntries() : playerEntries();
 
   const isReadOnly = !isScorer || quickMatch?.isCompleted || isSubmitting;
 
@@ -251,7 +311,10 @@ const QuickMatchScoringPage = () => {
                   currentHole={currentHole}
                   onSelect={setCurrentHole}
                   holeScores={quickMatch?.holeScores ?? []}
-                  coveredParticipantIds={coveredParticipantIds}
+                  // Los golpes que espera cada casilla de la pantalla: una por
+                  // bando en foursomes —donde el hoyo está completo con las dos
+                  // bolas, no con cuatro— y una por jugador en el resto.
+                  expectedScoreIdGroups={entries.map((entry) => entry.scoreIds)}
                   totalHoles={totalHoles}
                 />
 

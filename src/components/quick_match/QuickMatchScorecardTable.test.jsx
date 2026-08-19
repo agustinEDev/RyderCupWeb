@@ -333,7 +333,8 @@ describe('QuickMatchScorecardTable - reparto de golpes por formato', () => {
       />
     );
 
-    for (const id of ['p-1', 'p-2', 'p-3', 'p-4']) {
+    // Una tarjeta por bando: comparten bola, así que comparten tarjeta.
+    for (const id of ['p-1', 'p-3']) {
       expect(screen.getByTestId(`quick-match-player-handicap-${id}`)).not.toHaveTextContent(
         'scoring.scorecard.ofTheDifference'
       );
@@ -359,5 +360,99 @@ describe('QuickMatchScorecardTable - reparto de golpes por formato', () => {
     const header = screen.getByTestId('quick-match-player-handicap-p-1');
     expect(header).toHaveTextContent('scoring.scorecard.receivesStrokes');
     expect(header).not.toHaveTextContent('scoring.scorecard.ofTheDifference');
+  });
+});
+
+describe('QuickMatchScorecardTable · una tarjeta por bando en foursomes', () => {
+  const holes = [
+    { holeNumber: 1, par: 4, strokeIndex: 1 },
+    { holeNumber: 2, par: 3, strokeIndex: 2 },
+  ];
+
+  const sideParticipants = [
+    { participantId: 'p-1', name: 'Agustin', handicap: 18.0, team: 'A' },
+    { participantId: 'p-2', name: 'Companero', handicap: 8.0, team: 'A' },
+    { participantId: 'p-3', name: 'RivalUno', handicap: 20.0, team: 'B' },
+    { participantId: 'p-4', name: 'RivalDos', handicap: 28.0, team: 'B' },
+  ];
+
+  const renderFoursomes = (holeScores, participants = sideParticipants) =>
+    render(
+      <QuickMatchScorecardTable
+        holes={holes}
+        holeScores={holeScores}
+        participants={participants}
+        currentParticipantId="p-1"
+        tees={[]}
+        allowancePercentage={50}
+        matchFormat="FOURSOMES"
+      />
+    );
+
+  it('junta a los dos compañeros en una sola tarjeta', () => {
+    renderFoursomes([]);
+
+    expect(screen.getByText(/Agustin & Companero/)).toBeInTheDocument();
+    expect(screen.getByText(/RivalUno & RivalDos/)).toBeInTheDocument();
+    expect(screen.getByTestId('quick-match-player-card-p-1')).toBeInTheDocument();
+    expect(screen.queryByTestId('quick-match-player-card-p-2')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('quick-match-player-card-p-4')).not.toBeInTheDocument();
+  });
+
+  /**
+   * Bola alterna: cada hoyo lo anota quien golpeó. Con una tarjeta por jugador
+   * cada compañero se quedaba con la mitad de los hoyos y la otra en blanco.
+   */
+  it('recoge los hoyos anotados por cualquiera de los dos', () => {
+    renderFoursomes([
+      { holeNumber: 1, participantId: 'p-1', score: 5 },
+      { holeNumber: 2, participantId: 'p-2', score: 4 },
+    ]);
+
+    const card = screen.getByTestId('quick-match-player-card-p-1');
+    expect(card).toHaveTextContent('5');
+    expect(card).toHaveTextContent('4');
+    // IDA: los dos hoyos del bando, no solo el propio
+    expect(card).toHaveTextContent('9');
+  });
+
+  /**
+   * Con anotación cruzada los dos bandos escriben la misma bola. Si no
+   * coinciden se aclara entre las parejas; mientras tanto la tarjeta enseña la
+   * del primero del bando, la misma que el total de la vuelta.
+   */
+  it('enseña la del primero del bando cuando las dos anotaciones difieren', () => {
+    renderFoursomes([
+      { holeNumber: 1, participantId: 'p-2', score: 8 },
+      { holeNumber: 1, participantId: 'p-1', score: 5 },
+    ]);
+
+    // Sobre las celdas de golpes y no sobre la tarjeta entera: su cabecera
+    // lleva el hándicap (18.0), así que un `not.toHaveTextContent('8')` contra
+    // todo el bloque solo pasaba mientras el mock de traducción se comiera los
+    // valores interpolados.
+    const scoreCells = screen
+      .getByTestId('quick-match-player-card-p-1')
+      .querySelectorAll('[data-testid^="quick-match-score-cell-"]');
+    const shown = [...scoreCells].map((cell) => cell.textContent);
+
+    expect(shown).toContain('5');
+    expect(shown).not.toContain('8');
+  });
+
+  /**
+   * Sin `team` no hay bando: cada uno con su tarjeta. Agruparlos a todos bajo
+   * el mismo dejaba una sola tarjeta con los cuatro nombres.
+   */
+  it('da una tarjeta por jugador cuando no hay bando', () => {
+    renderFoursomes(
+      [],
+      sideParticipants.map((p) => ({ ...p, team: null }))
+    );
+
+    expect(screen.getByTestId('quick-match-player-card-p-1')).toBeInTheDocument();
+    expect(screen.getByTestId('quick-match-player-card-p-2')).toBeInTheDocument();
+    expect(screen.getByTestId('quick-match-player-card-p-3')).toBeInTheDocument();
+    expect(screen.getByTestId('quick-match-player-card-p-4')).toBeInTheDocument();
   });
 });
