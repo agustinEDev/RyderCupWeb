@@ -24,6 +24,7 @@ const ScorersStep = ({
   onToggleScorer,
   isFoursomes = false,
   rivalCanScore = false,
+  partnerCanScore = false,
   onChooseScoringSides = () => {},
   isProcessing,
   onBack,
@@ -36,12 +37,19 @@ const ScorersStep = ({
         <h3 className="text-sm font-medium text-gray-700 mb-1">
           {t('create.scorers.foursomesHeading')}
         </h3>
-        <p className="text-xs text-gray-500 mb-3">{t('create.scorers.foursomesDescription')}</p>
+        <p className="text-xs text-gray-500 mb-3">
+          {t(
+            partnerCanScore
+              ? 'create.scorers.foursomesDescription'
+              : 'create.scorers.foursomesDescriptionAlone'
+          )}
+        </p>
         <div className="space-y-2">
           {rivalCanScore && (
             <button
               type="button"
               data-testid="quick-match-scorers-both-pairs"
+              aria-pressed={bothPairsScore(registeredParticipants, currentUser, scorerIds)}
               onClick={() => onChooseScoringSides('BOTH')}
               className={`w-full text-left px-3 py-2 border rounded-lg transition-colors ${
                 bothPairsScore(registeredParticipants, currentUser, scorerIds)
@@ -56,6 +64,7 @@ const ScorersStep = ({
           <button
             type="button"
             data-testid="quick-match-scorers-my-pair"
+            aria-pressed={!bothPairsScore(registeredParticipants, currentUser, scorerIds)}
             onClick={() => onChooseScoringSides('MINE')}
             className={`w-full text-left px-3 py-2 border rounded-lg transition-colors ${
               bothPairsScore(registeredParticipants, currentUser, scorerIds)
@@ -64,7 +73,13 @@ const ScorersStep = ({
             }`}
           >
             <span className="block text-sm text-gray-900">{t('create.scorers.onlyMyPair')}</span>
-            <span className="block text-xs text-gray-500">{t('create.scorers.onlyMyPairHint')}</span>
+            <span className="block text-xs text-gray-500">
+              {t(
+                partnerCanScore
+                  ? 'create.scorers.onlyMyPairHint'
+                  : 'create.scorers.onlyMyPairHintAlone'
+              )}
+            </span>
           </button>
         </div>
       </div>

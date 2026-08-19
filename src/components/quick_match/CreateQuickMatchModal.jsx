@@ -280,10 +280,15 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser }) => {
   const rivalCanScore = () =>
     isFoursomes && registeredOfTeam(myTeam() === 'A' ? 'B' : 'A').length > 0;
 
-  const chooseScoringSides = (mode) => {
-    const mine = registeredOfTeam(myTeam()).map((p) => p.participantId);
-    if (mode === 'MINE') {
-      setScorerIds(mine);
+  // Dentro de una pareja puede apuntar cualquiera de los dos, asi que aqui solo
+  // importa si hay ALGUN registrado mas en mi bando.
+  const partnerCanScore = () =>
+    isFoursomes && registeredOfTeam(myTeam()).some((p) => p.userId !== currentUser.id);
+
+  // `choice` y no `mode`: `mode` es el estado del modal (MATCH_PLAY/FREE_PLAY).
+  const chooseScoringSides = (choice) => {
+    if (choice === 'MINE') {
+      setScorerIds(registeredOfTeam(myTeam()).map((p) => p.participantId));
       return;
     }
     setScorerIds(registeredParticipants.map((p) => p.participantId));
@@ -293,16 +298,11 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser }) => {
     const creatorParticipant = participants.find((p) => p.userId === currentUser.id);
     if (isFoursomes) {
       // Las dos parejas por defecto; si enfrente no hay ninguna cuenta con la
-      // que anotar, esa opcion ni se ofrece y se queda la del creador.
-      const team = participants.find((p) => p.userId === currentUser.id)?.team ?? null;
-      const rival = registeredParticipants.filter((p) => (p.team ?? null) !== team);
-      setScorerIds(
-        rival.length > 0
-          ? registeredParticipants.map((p) => p.participantId)
-          : registeredParticipants
-              .filter((p) => (p.team ?? null) === team)
-              .map((p) => p.participantId)
-      );
+      // que anotar, esa opcion ni se ofrece y se queda la del creador. Con los
+      // mismos helpers que usa el paso: escrito aparte, "rival" era aqui todo
+      // el que no fuera de mi bando —un registrado sin equipo incluido— y el
+      // paso acababa ofreciendo una cosa distinta de la que quedaba marcada.
+      chooseScoringSides(rivalCanScore() ? 'BOTH' : 'MINE');
     } else {
       setScorerIds(creatorParticipant ? [creatorParticipant.participantId] : []);
     }
@@ -475,6 +475,7 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser }) => {
             onToggleScorer={toggleScorer}
             isFoursomes={isFoursomes}
             rivalCanScore={rivalCanScore()}
+            partnerCanScore={partnerCanScore()}
             onChooseScoringSides={chooseScoringSides}
             isProcessing={isProcessing}
             onBack={handleBackToParticipants}

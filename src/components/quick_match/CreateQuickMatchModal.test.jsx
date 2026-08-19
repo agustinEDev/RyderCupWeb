@@ -956,6 +956,132 @@ describe('CreateQuickMatchModal', () => {
   });
 });
 
+describe('CreateQuickMatchModal · el paso 3 en foursomes, con el asistente entero', () => {
+  /**
+   * Los tests de abajo montan `ScorersStep` con `rivalCanScore` puesto a mano,
+   * así que no tocan `rivalCanScore()`, `chooseScoringSides()` ni la rama de
+   * foursomes de `goToScorers()`: invertir su ternario no rompía ninguno.
+   * Estos recorren el asistente de verdad.
+   */
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockListFriends.mockResolvedValue({ friendships: [], totalCount: 0 });
+    mockGetGolfCourse.mockResolvedValue({ tees: [] });
+  });
+
+  const goToScorersStep = async (participants) => {
+    mockCreate.mockResolvedValue({ id: 'qm-1', isPending: true, participants });
+
+    renderModal();
+
+    fireEvent.click(screen.getByTestId('format-option-FOURSOMES'));
+    fireEvent.click(screen.getByTestId('select-course-stub'));
+    await waitFor(() => {
+      expect(screen.getByTestId('quick-match-course-next')).not.toBeDisabled();
+    });
+    fireEvent.click(screen.getByTestId('quick-match-course-next'));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('quick-match-participants-next')).not.toBeDisabled();
+    });
+    fireEvent.click(screen.getByTestId('quick-match-participants-next'));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('quick-match-scorers-my-pair')).toBeInTheDocument();
+    });
+  };
+
+  const withRegisteredRival = [
+    { participantId: 'p-1', userId: 'user-1', name: 'Yo', team: 'A', isGuest: false },
+    { participantId: 'p-2', userId: 'user-2', name: 'Socio', team: 'A', isGuest: false },
+    { participantId: 'p-3', userId: 'user-3', name: 'Rival Uno', team: 'B', isGuest: false },
+    { participantId: 'p-4', name: 'Rival Dos', team: 'B', isGuest: true },
+  ];
+
+  it('llega al paso con las dos parejas ya elegidas', async () => {
+    await goToScorersStep(withRegisteredRival);
+
+    // Es la opción por defecto, y se ve cuál está elegida sin depender del color.
+    expect(screen.getByTestId('quick-match-scorers-both-pairs')).toHaveAttribute(
+      'aria-pressed',
+      'true'
+    );
+    expect(screen.getByTestId('quick-match-scorers-my-pair')).toHaveAttribute(
+      'aria-pressed',
+      'false'
+    );
+  });
+
+  it('cambia a que apunte solo mi pareja', async () => {
+    await goToScorersStep(withRegisteredRival);
+
+    fireEvent.click(screen.getByTestId('quick-match-scorers-my-pair'));
+
+    expect(screen.getByTestId('quick-match-scorers-my-pair')).toHaveAttribute(
+      'aria-pressed',
+      'true'
+    );
+    expect(screen.getByTestId('quick-match-scorers-both-pairs')).toHaveAttribute(
+      'aria-pressed',
+      'false'
+    );
+  });
+
+  it('con la pareja de enfrente toda invitada, ni la ofrece ni la deja elegida', async () => {
+    await goToScorersStep([
+      withRegisteredRival[0],
+      withRegisteredRival[1],
+      { participantId: 'p-3', name: 'Rival Uno', team: 'B', isGuest: true },
+      withRegisteredRival[3],
+    ]);
+
+    expect(screen.queryByTestId('quick-match-scorers-both-pairs')).not.toBeInTheDocument();
+    expect(screen.getByTestId('quick-match-scorers-my-pair')).toHaveAttribute(
+      'aria-pressed',
+      'true'
+    );
+  });
+
+  /**
+   * Un registrado sin equipo no es un rival. Escrita aparte, la rama de
+   * `goToScorers` lo contaba como tal —cualquiera que no fuese de mi bando— y
+   * dejaba el paso ofreciendo una cosa y seleccionando otra: sin el botón de
+   * las dos parejas y con el único visible sin marcar.
+   */
+  it('no toma por rival a un registrado sin equipo', async () => {
+    await goToScorersStep([
+      withRegisteredRival[0],
+      withRegisteredRival[1],
+      { participantId: 'p-3', userId: 'user-3', name: 'Suelto', team: null, isGuest: false },
+      withRegisteredRival[3],
+    ]);
+
+    expect(screen.queryByTestId('quick-match-scorers-both-pairs')).not.toBeInTheDocument();
+    expect(screen.getByTestId('quick-match-scorers-my-pair')).toHaveAttribute(
+      'aria-pressed',
+      'true'
+    );
+  });
+
+  /**
+   * «Puede apuntar cualquiera de los dos» y «Lleváis las dos tarjetas» son
+   * ciertas con el compañero registrado. Con un invitado al lado, el único que
+   * anota es quien crea la partida.
+   */
+  it('no promete que apunte el compañero cuando es un invitado', async () => {
+    await goToScorersStep([
+      withRegisteredRival[0],
+      { participantId: 'p-2', name: 'Socio', team: 'A', isGuest: true },
+      withRegisteredRival[2],
+      withRegisteredRival[3],
+    ]);
+
+    expect(screen.getByText('create.scorers.foursomesDescriptionAlone')).toBeInTheDocument();
+    expect(screen.getByText('create.scorers.onlyMyPairHintAlone')).toBeInTheDocument();
+    expect(screen.queryByText('create.scorers.onlyMyPairHint')).not.toBeInTheDocument();
+  });
+});
+
 describe('CreateQuickMatchModal · quién lleva la tarjeta en foursomes', () => {
   /**
    * En foursomes la pareja juega una bola y lleva una tarjeta, así que el paso

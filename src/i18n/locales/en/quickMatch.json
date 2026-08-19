@@ -66,10 +66,12 @@
       "description": "Choose 1 to 4 registered players who will record scores. You always score.",
       "foursomesHeading": "Who keeps the card?",
       "foursomesDescription": "In foursomes each pair plays one ball and keeps one card. Either partner can enter it.",
+      "foursomesDescriptionAlone": "In foursomes each pair plays one ball and keeps one card.",
       "bothPairs": "Both pairs score",
       "bothPairsHint": "Each pair marks the other.",
       "onlyMyPair": "Only my pair scores",
       "onlyMyPairHint": "You keep both cards.",
+      "onlyMyPairHintAlone": "You keep both cards.",
       "back": "Back",
       "next": "Next",
       "errorMinScorers": "Select at least one scorer"
