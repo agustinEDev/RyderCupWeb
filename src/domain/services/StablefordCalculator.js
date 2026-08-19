@@ -1,3 +1,5 @@
+import MatchPlayStrokeAllocator from './MatchPlayStrokeAllocator';
+
 /**
  * Domain Service: StablefordCalculator
  *
@@ -7,6 +9,15 @@
  * `MatchPlayStrokeAllocator` o viene del backend. Esta clase llegó a tener su
  * propia copia del reparto y las dos acabaron discrepando, así que ahora solo
  * cuenta puntos con los golpes que le dan.
+ *
+ * El par sí lo resuelve: cada jugador puntúa contra la tarjeta de SU barra
+ * cuando se le pasan las salidas del campo. `holes` es solo la tarjeta de la
+ * primera barra, y en 25 de los 800 campos federados el par cambia entre
+ * barras. El backend ya puntúa así (`GolfCourse.hole_card_for`), así que
+ * contarlo aquí contra el campo separaba la pantalla del historial. Se resuelve
+ * en esta clase, y no en cada llamante, para que las tres superficies que
+ * puntúan —tarjeta, clasificación y vuelta propia— no puedan volver a
+ * separarse. Ver RyderCupWeb#417.
  *
  * Tabla de puntos por hoyo: max(0, 2 - (neto - par)).
  */
@@ -53,16 +64,24 @@ class StablefordCalculator {
    *   resuelto, de `MatchPlayStrokeAllocator.resolve`. Sin entrada para el participante se
    *   puntúa a bruto, así que pasarle otra cosa (los tees, como pedía la firma vieja) no
    *   falla: cuenta mal en silencio.
+   * @param {Array<Object>} [tees] - Salidas del campo. Con ellas se puntúa contra el par de
+   *   la barra del participante; sin ellas, contra `holes`, que es la tarjeta de la primera.
    * @returns {{stablefordPoints: number, totalStrokes: number, netStrokes: number, parPlayed: number, holesPlayed: number}}
    */
-  static computeParticipantTotals(participant, holes, holeScores, allocation = {}) {
+  static computeParticipantTotals(participant, holes, holeScores, allocation = {}, tees = []) {
     let stablefordPoints = 0;
     let totalStrokes = 0;
     let netStrokes = 0;
     let parPlayed = 0;
     let holesPlayed = 0;
 
-    for (const hole of holes) {
+    // Todo o nada, igual que `GolfCourse.hole_card_for` en el backend: con que
+    // la barra traiga tarjeta se usa entera. Completar hoyo a hoyo los huecos
+    // de una tarjeta parcial daría aquí un total que el historial no da. Ver
+    // RyderCupAm#215.
+    const card = MatchPlayStrokeAllocator.holeCardFor(participant, holes, tees);
+
+    for (const hole of card) {
       const entry = holeScores.find(
         (hs) => hs.participantId === participant.participantId && hs.holeNumber === hole.holeNumber
       );
@@ -105,7 +124,7 @@ class StablefordCalculator {
    * @param {Object<string, {strokesByHole: Object<number, number>}>} allocation
    * @returns {Array<{participantId: string, name: string, stablefordPoints: number, totalStrokes: number, holesPlayed: number}>}
    */
-  static rankParticipants(participants, holes, holeScores, allocation = {}) {
+  static rankParticipants(participants, holes, holeScores, allocation = {}, tees = []) {
     const rows = participants.map((participant) => ({
       participantId: participant.participantId,
       name: participant.name,
@@ -114,7 +133,8 @@ class StablefordCalculator {
         participant,
         holes,
         holeScores,
-        allocation
+        allocation,
+        tees
       ),
     }));
 
@@ -137,7 +157,7 @@ class StablefordCalculator {
    * @param {Object<string, {strokesByHole: Object<number, number>}>} allocation
    * @returns {Array<{participantId: string, name: string, stablefordPoints: number, totalStrokes: number, netStrokes: number, parPlayed: number, holesPlayed: number}>}
    */
-  static rankParticipantsByMedal(participants, holes, holeScores, allocation = {}) {
+  static rankParticipantsByMedal(participants, holes, holeScores, allocation = {}, tees = []) {
     const rows = participants.map((participant) => ({
       participantId: participant.participantId,
       name: participant.name,
@@ -146,7 +166,8 @@ class StablefordCalculator {
         participant,
         holes,
         holeScores,
-        allocation
+        allocation,
+        tees
       ),
     }));
 

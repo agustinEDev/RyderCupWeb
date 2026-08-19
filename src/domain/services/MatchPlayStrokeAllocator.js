@@ -222,11 +222,10 @@ class MatchPlayStrokeAllocator {
    */
   static sidePlayingHandicap(members = [], holes = [], tees = [], allowancePercentage = 100) {
     if (members.length === 0) return 0;
+    // Sin clamp: `courseHandicap` ya deja a cada jugador en 0 o más, así que el
+    // promedio no puede salir negativo.
     const average = MatchPlayStrokeAllocator.#averageCourseHandicap(members, holes, tees);
-    return Math.max(
-      0,
-      PlayingHandicapCalculator.roundHalfAwayFromZero((average * allowancePercentage) / 100)
-    );
+    return PlayingHandicapCalculator.roundHalfAwayFromZero((average * allowancePercentage) / 100);
   }
 
   static #averageCourseHandicap(members, holes, tees) {

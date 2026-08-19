@@ -80,18 +80,17 @@ describe('PersonalRoundCalculator', () => {
     });
   });
 
-  describe('el par, contra la tarjeta del campo', () => {
+  describe('el par, contra la tarjeta de su barra', () => {
     /**
-     * DELIBERADO, y pendiente de RyderCupWeb#417: el par se cuenta contra la
-     * tarjeta del campo —la de la PRIMERA barra— porque es la que usa el
-     * ranking de la clasificación, que va justo encima de este número. En 25 de
-     * los 800 campos federados el par cambia entre barras, así que para esos
-     * jugadores el resultado sale desviado esa diferencia; contarlo aquí por
-     * barra y en la tabla por campo ponía dos números distintos para la misma
-     * vuelta en la misma pantalla, que es peor. Se arregla en las tres
-     * superficies a la vez, y entonces este test debe cambiar.
+     * Este número se contaba contra la tarjeta del campo —la de la PRIMERA
+     * barra— porque era la que usaba el ranking de la clasificación, que va
+     * justo encima. Desde RyderCupWeb#417 la resolución vive en
+     * `computeParticipantTotals`, del que comen las tres superficies, así que
+     * ya se puede contar por barra sin que la pantalla se contradiga: es lo que
+     * hace el backend (`GolfCourse.hole_card_for`) y por tanto lo que dice el
+     * historial de la misma vuelta.
      */
-    it('cuenta el par del campo aunque su barra tenga otro, como el ranking', () => {
+    it('cuenta el par de su barra, no el del campo', () => {
       const result = PersonalRoundCalculator.compute({
         me: { participantId: 'p-1', name: 'Alice', handicap: 0, color: 'RED', teeGender: 'FEMALE' },
         participants: [{ participantId: 'p-1', name: 'Alice', handicap: 0, color: 'RED', teeGender: 'FEMALE' }],
@@ -102,9 +101,9 @@ describe('PersonalRoundCalculator', () => {
         allowancePercentage: 100,
       });
 
-      // Su barra dice par 5, pero se cuenta contra el par 4 del campo: +1.
-      // Cuando se arregle la #417 esto pasará a ser PAR.
-      expect(result.personalToPar).toBe('+1');
+      // Su barra dice par 5 y ahí hizo 5: PAR. Contra el par 4 del campo, que
+      // es el que se contaba antes, salía +1
+      expect(result.personalToPar).toBe('PAR');
     });
   });
 

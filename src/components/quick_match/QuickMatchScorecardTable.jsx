@@ -8,6 +8,7 @@ import {
 import GolfFigure from '../scoring/GolfFigure';
 import StablefordCalculator from '../../domain/services/StablefordCalculator';
 import MatchPlayStrokeAllocator from '../../domain/services/MatchPlayStrokeAllocator';
+import PlayingHandicapCalculator from '../../domain/services/PlayingHandicapCalculator';
 
 const MAX_STROKE_DOTS = 2;
 
@@ -142,8 +143,6 @@ const QuickMatchScorecardTable = ({
     }));
   };
 
-  const cards = buildCards();
-
   // La tarjeta que se PINTA es la de la barra de quien la juega. `holes` es
   // solo la tarjeta de la PRIMERA barra del campo, y de los 800 campos
   // federados importados 25 cambian de par entre barras —Son Parc va de 71 en
@@ -151,27 +150,61 @@ const QuickMatchScorecardTable = ({
   // puntos salían de un par ajeno mientras la pantalla de anotación, desde
   // #412, ya usaba el propio. Ver RyderCupWeb#417.
   //
-  // Un bando de foursomes cuyos jugadores salen de barras distintas no tiene
-  // una sola tarjeta que pintar —comparten bola, no barra—, así que ese caso se
-  // queda con la del campo, la misma reserva que ya elige `holeCardFor`. Es
-  // preferible a inventar un par que no juega ninguno de los dos.
+  // Un bando de foursomes cuyos jugadores juegan pares distintos no tiene una
+  // sola tarjeta que pintar —comparten bola, no barra—, así que ese caso se
+  // queda con la del campo antes que inventar un par que no juega ninguno.
+  // Se comparan las TARJETAS y no los objetos de salida: el foursomes mixto
+  // normal es rojas masculinas con rojas femeninas, dos entradas distintas de
+  // `tees` —`findTee` las separa por género a propósito— que suelen traer el
+  // mismo par. Comparando salidas, la reserva saltaba justo ahí.
   const holesForCard = (card) => {
-    const teeOf = (participant) => MatchPlayStrokeAllocator.findTee(participant, tees);
-    const tee = teeOf(card.teeParticipant);
-    if (!tee || card.members.some((m) => teeOf(m) !== tee)) return holes;
-    return MatchPlayStrokeAllocator.holeCardFor(card.teeParticipant, holes, tees);
+    const cards = card.members.map((m) => MatchPlayStrokeAllocator.holeCardFor(m, holes, tees));
+    const [first] = cards;
+    const samePar = cards.every((c) =>
+      c.every((hole, i) => hole.par === first[i]?.par && hole.holeNumber === first[i]?.holeNumber)
+    );
+    return samePar ? first : holes;
   };
-
-  const outHolesOf = (card) => holesForCard(card).filter((h) => h.holeNumber <= 9);
-  const inHolesOf = (card) => holesForCard(card).filter((h) => h.holeNumber > 9);
 
   // El hándicap de juego de una tarjeta de foursomes es el del BANDO: el de su
   // primer jugador dejaba dos bandos distintos con el mismo número al lado de
   // repartos distintos. Ver RyderCupWeb#423.
-  const playingHandicapOf = (card) =>
-    matchFormat === 'FOURSOMES'
-      ? MatchPlayStrokeAllocator.sidePlayingHandicap(card.members, holes, tees, allowancePercentage)
-      : (allocation[card.strokesId]?.playingHandicap ?? null);
+  //
+  // Solo cuando el bando existe de verdad. Sin `team` no hay bandos, y entonces
+  // `#foursomes` no reparte nada: anunciar un hándicap de bando junto a un
+  // reparto a cero decía dos cosas incompatibles en la misma línea.
+  //
+  // Con reparto del servidor se promedian SUS hándicaps de juego en vez de
+  // recalcularlos: si la llamada al campo falla —`useQuickMatchScoring` la
+  // envuelve en su propio try/catch— `holes` y `tees` llegan vacíos, el cálculo
+  // local cae al hándicap índice a pelo y la cabecera se separaría varios
+  // golpes de los puntos que pinta debajo, que sí son del servidor.
+  const playingHandicapOf = (card) => {
+    if (matchFormat !== 'FOURSOMES' || card.members.length < 2) {
+      return allocation[card.strokesId]?.playingHandicap ?? null;
+    }
+    const fromServer = card.members.map((m) => allocation[m.participantId]?.playingHandicap);
+    if (participantStrokes.length > 0 && fromServer.every((ph) => ph != null)) {
+      return PlayingHandicapCalculator.roundHalfAwayFromZero(
+        fromServer.reduce((sum, ph) => sum + ph, 0) / fromServer.length
+      );
+    }
+    return MatchPlayStrokeAllocator.sidePlayingHandicap(
+      card.members,
+      holes,
+      tees,
+      allowancePercentage
+    );
+  };
+
+  // Cada tarjeta resuelve sus hoyos y su hándicap UNA vez: los dos recorren a
+  // los miembros y a los 18 hoyos, y se leían varias veces por tarjeta en cada
+  // render.
+  const cards = buildCards().map((card) => ({
+    ...card,
+    holes: holesForCard(card),
+    playingHandicap: playingHandicapOf(card),
+  }));
 
   const renderTeeLabel = (participant) => {
     const tee = MatchPlayStrokeAllocator.findTee(participant, tees);
@@ -315,9 +348,9 @@ const QuickMatchScorecardTable = ({
                 ? t('scoring.scorecard.scratchMatch')
                 : [
                     renderTeeLabel(card.teeParticipant),
-                    playingHandicapOf(card) != null
+                    card.playingHandicap != null
                       ? t('scoring.scorecard.playingHandicap', {
-                          value: playingHandicapOf(card),
+                          value: card.playingHandicap,
                         })
                       : null,
                     describeStrokes(totalStrokesFor(card.strokesId)),
@@ -327,9 +360,17 @@ const QuickMatchScorecardTable = ({
             </p>
           </div>
           <div className="p-2 space-y-2">
-            {renderSection(outHolesOf(card), ts('scorecard.out'), card)}
-            {inHolesOf(card).length > 0 &&
-              renderSection(inHolesOf(card), ts('scorecard.in'), card)}
+            {renderSection(
+              card.holes.filter((h) => h.holeNumber <= 9),
+              ts('scorecard.out'),
+              card
+            )}
+            {card.holes.some((h) => h.holeNumber > 9) &&
+              renderSection(
+                card.holes.filter((h) => h.holeNumber > 9),
+                ts('scorecard.in'),
+                card
+              )}
           </div>
         </div>
       ))}
