@@ -1064,6 +1064,35 @@ describe('CreateQuickMatchModal · el paso 3 en foursomes, con el asistente ente
   });
 
   /**
+   * Solo anotan las dos PAREJAS. Un registrado sin equipo no juega en ninguna
+   * de las dos, y con «las dos parejas» elegido se colaba en los anotadores que
+   * se mandan al arrancar.
+   */
+  it('no manda como anotador a un registrado que no está en ninguna pareja', async () => {
+    const roster = [
+      withRegisteredRival[0],
+      withRegisteredRival[1],
+      withRegisteredRival[2],
+      { participantId: 'p-loose', userId: 'user-9', name: 'Suelto', team: null, isGuest: false },
+    ];
+    await goToScorersStep(roster);
+
+    // Enfrente hay una cuenta registrada, así que anotan las dos parejas.
+    expect(screen.getByTestId('quick-match-scorers-both-pairs')).toHaveAttribute(
+      'aria-pressed',
+      'true'
+    );
+
+    fireEvent.click(screen.getByTestId('quick-match-scorers-next'));
+    await waitFor(() => expect(screen.getByTestId('quick-match-start')).toBeInTheDocument());
+    fireEvent.click(screen.getByTestId('quick-match-start'));
+
+    await waitFor(() => {
+      expect(mockStart).toHaveBeenCalledWith('qm-1', ['p-1', 'p-2', 'p-3']);
+    });
+  });
+
+  /**
    * «Puede apuntar cualquiera de los dos» y «Lleváis las dos tarjetas» son
    * ciertas con el compañero registrado. Con un invitado al lado, el único que
    * anota es quien crea la partida.

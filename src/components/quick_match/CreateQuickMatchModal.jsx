@@ -24,6 +24,7 @@ import {
   FORMAT_CAPACITY,
   FREE_PLAY_CAPACITY,
   MAX_SCORERS,
+  oppositeTeam,
   NO_TEE_KEY,
   TEAM_FORMATS,
   initialGuestForm,
@@ -277,8 +278,7 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser }) => {
   const registeredOfTeam = (team) =>
     registeredParticipants.filter((p) => (p.team ?? null) === team);
 
-  const rivalCanScore = () =>
-    isFoursomes && registeredOfTeam(myTeam() === 'A' ? 'B' : 'A').length > 0;
+  const rivalCanScore = () => isFoursomes && registeredOfTeam(oppositeTeam(myTeam())).length > 0;
 
   // Dentro de una pareja puede apuntar cualquiera de los dos, asi que aqui solo
   // importa si hay ALGUN registrado mas en mi bando.
@@ -287,11 +287,16 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser }) => {
 
   // `choice` y no `mode`: `mode` es el estado del modal (MATCH_PLAY/FREE_PLAY).
   const chooseScoringSides = (choice) => {
+    const mine = registeredOfTeam(myTeam());
     if (choice === 'MINE') {
-      setScorerIds(registeredOfTeam(myTeam()).map((p) => p.participantId));
+      setScorerIds(mine.map((p) => p.participantId));
       return;
     }
-    setScorerIds(registeredParticipants.map((p) => p.participantId));
+    // Los DOS bandos, no todos los registrados: un registrado sin equipo no
+    // juega en ninguna de las dos parejas y se colaba como anotador.
+    setScorerIds(
+      [...mine, ...registeredOfTeam(oppositeTeam(myTeam()))].map((p) => p.participantId)
+    );
   };
 
   const goToScorers = () => {

@@ -1,14 +1,19 @@
-import { MAX_SCORERS } from './createQuickMatchModalConstants';
+import { MAX_SCORERS, oppositeTeam } from './createQuickMatchModalConstants';
 
 /**
  * En foursomes apuntan las dos parejas cuando hay algun anotador del bando de
  * enfrente; si no, la tarjeta la lleva entera la pareja de quien crea.
+ *
+ * El bando de enfrente es la OTRA letra, no "cualquiera que no sea el mio": un
+ * registrado sin equipo no juega en ninguna de las dos parejas y bastaba con
+ * que estuviera entre los anotadores para dar por elegidas las dos.
  */
 const bothPairsScore = (registeredParticipants, currentUser, scorerIds) => {
   const myTeam =
     registeredParticipants.find((p) => p.userId === currentUser?.id)?.team ?? null;
+  const rivalTeam = oppositeTeam(myTeam);
   return registeredParticipants.some(
-    (p) => (p.team ?? null) !== myTeam && scorerIds.includes(p.participantId)
+    (p) => (p.team ?? null) === rivalTeam && scorerIds.includes(p.participantId)
   );
 };
 
