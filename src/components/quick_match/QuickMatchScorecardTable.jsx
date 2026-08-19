@@ -158,10 +158,17 @@ const QuickMatchScorecardTable = ({
   // `tees` —`findTee` las separa por género a propósito— que suelen traer el
   // mismo par. Comparando salidas, la reserva saltaba justo ahí.
   const holesForCard = (card) => {
-    const cards = card.members.map((m) => MatchPlayStrokeAllocator.holeCardFor(m, holes, tees));
-    const [first] = cards;
-    const samePar = cards.every((c) =>
-      c.every((hole, i) => hole.par === first[i]?.par && hole.holeNumber === first[i]?.holeNumber)
+    const memberCards = card.members.map((m) =>
+      MatchPlayStrokeAllocator.holeCardFor(m, holes, tees)
+    );
+    const [first] = memberCards;
+    // La longitud entra en la comparación: sin ella, una tarjeta de barra más
+    // corta —el caso parcial de RyderCupAm#215— pasaba en vacío y el bando
+    // acababa pintado con hoyos que uno de los dos no juega.
+    const samePar = memberCards.every(
+      (c) =>
+        c.length === first.length &&
+        c.every((hole, i) => hole.par === first[i].par && hole.holeNumber === first[i].holeNumber)
     );
     return samePar ? first : holes;
   };
@@ -174,17 +181,26 @@ const QuickMatchScorecardTable = ({
   // `#foursomes` no reparte nada: anunciar un hándicap de bando junto a un
   // reparto a cero decía dos cosas incompatibles en la misma línea.
   //
-  // Con reparto del servidor se promedian SUS hándicaps de juego en vez de
-  // recalcularlos: si la llamada al campo falla —`useQuickMatchScoring` la
-  // envuelve en su propio try/catch— `holes` y `tees` llegan vacíos, el cálculo
-  // local cae al hándicap índice a pelo y la cabecera se separaría varios
-  // golpes de los puntos que pinta debajo, que sí son del servidor.
+  // Se calcula del promedio de Course Handicaps, que es de donde sale el
+  // reparto, para que la resta de los dos bandos reproduzca los golpes de
+  // debajo. Promediar en su lugar los hándicaps de juego que manda el servidor
+  // NO vale: los manda por jugador y ya redondeados, así que
+  // `round(avg(round(x), round(y)))` se aparta de `round(avg(x, y) x allowance)`
+  // —dos compañeros con 3,4 y 5,4 al 50% dan 2 por un lado y 3 por el otro— y
+  // el número volvería a no cuadrar con el reparto, que es lo que cierra #423.
+  //
+  // Solo se recurre a ellos cuando no hay con qué calcular: si la llamada al
+  // campo falla —`useQuickMatchScoring` la envuelve en su propio try/catch—
+  // `holes` y `tees` llegan vacíos, el cálculo local caería al hándicap índice
+  // a pelo y la cabecera se separaría varios golpes de los puntos que pinta
+  // debajo, que sí son del servidor.
   const playingHandicapOf = (card) => {
     if (matchFormat !== 'FOURSOMES' || card.members.length < 2) {
       return allocation[card.strokesId]?.playingHandicap ?? null;
     }
+    const sinCampo = holes.length === 0 || tees.length === 0;
     const fromServer = card.members.map((m) => allocation[m.participantId]?.playingHandicap);
-    if (participantStrokes.length > 0 && fromServer.every((ph) => ph != null)) {
+    if (sinCampo && fromServer.every((ph) => ph != null)) {
       return PlayingHandicapCalculator.roundHalfAwayFromZero(
         fromServer.reduce((sum, ph) => sum + ph, 0) / fromServer.length
       );

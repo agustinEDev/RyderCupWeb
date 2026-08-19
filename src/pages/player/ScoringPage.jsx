@@ -331,7 +331,7 @@ const ScoringPage = () => {
                 key={currentHole}
                 holeNumber={currentHole}
                 par={currentHoleData.par}
-                markedPar={holeFor(markerAssignment?.marksUserId)?.par ?? null}
+                markedPar={holeFor(markerAssignment?.marksUserId)?.par ?? courseHoleData?.par ?? null}
                 strokeIndex={currentHoleData.strokeIndex}
                 // eslint-disable-next-line react-hooks/refs -- pre-existing pattern surfaced by eslint-plugin-react-hooks 7.1.1 bump; needs dedicated review (tracked in follow-up)
                 playerScore={effectivePlayerScore}

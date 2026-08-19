@@ -621,3 +621,127 @@ describe('QuickMatchScorecardTable · el hándicap de la tarjeta de foursomes es
     expect(sideB).toHaveTextContent('"allowance":50');
   });
 });
+/**
+ * El servidor manda los hándicaps de juego POR JUGADOR y ya redondeados, así
+ * que promediarlos no es el promedio del que sale el reparto. Usarlos mientras
+ * hubiera red devolvía a la cabecera un número que no cuadra con los golpes de
+ * al lado —el defecto que cerró #423—, así que solo se recurre a ellos cuando
+ * no llegó el campo y no hay con qué calcular.
+ */
+describe('QuickMatchScorecardTable · de dónde sale el hándicap del bando', () => {
+  const holes = [
+    { holeNumber: 1, par: 4, strokeIndex: 1 },
+    { holeNumber: 2, par: 3, strokeIndex: 2 },
+  ];
+  const tees = [{ color: 'YELLOW', gender: 'MALE', courseRating: 70, slopeRating: 120 }];
+  const sides = [
+    { participantId: 'p-1', name: 'Uno', handicap: 18.0, team: 'A', color: 'YELLOW', teeGender: 'MALE' },
+    { participantId: 'p-2', name: 'Dos', handicap: 8.0, team: 'A', color: 'YELLOW', teeGender: 'MALE' },
+    { participantId: 'p-3', name: 'Tres', handicap: 20.0, team: 'B', color: 'YELLOW', teeGender: 'MALE' },
+    { participantId: 'p-4', name: 'Cuatro', handicap: 28.0, team: 'B', color: 'YELLOW', teeGender: 'MALE' },
+  ];
+
+  // Hándicaps de juego individuales, como los manda el backend. Su promedio
+  // (9) NO es el del bando por promedio de Course Handicaps (7).
+  const participantStrokes = [
+    { participantId: 'p-1', playingHandicap: 11, strokesByHole: {} },
+    { participantId: 'p-2', playingHandicap: 7, strokesByHole: {} },
+    { participantId: 'p-3', playingHandicap: 12, strokesByHole: { 1: 1 } },
+    { participantId: 'p-4', playingHandicap: 12, strokesByHole: { 1: 1 } },
+  ];
+
+  it('con campo cargado calcula el del bando, aunque el servidor mande los suyos', () => {
+    render(
+      <QuickMatchScorecardTable
+        holes={holes}
+        holeScores={[]}
+        participants={sides}
+        currentParticipantId="p-1"
+        tees={tees}
+        allowancePercentage={50}
+        matchFormat="FOURSOMES"
+        participantStrokes={participantStrokes}
+      />
+    );
+
+    // El promedio de Course Handicaps (13 al 50% = 7), no el de los 11 y 7 que
+    // manda el servidor, que daría 9
+    expect(screen.getByTestId('quick-match-player-handicap-p-1')).toHaveTextContent('"value":7');
+  });
+
+  it('sin campo cargado se apoya en los del servidor, que es lo único que hay', () => {
+    render(
+      <QuickMatchScorecardTable
+        holes={[]}
+        holeScores={[]}
+        participants={sides}
+        currentParticipantId="p-1"
+        tees={[]}
+        allowancePercentage={50}
+        matchFormat="FOURSOMES"
+        participantStrokes={participantStrokes}
+      />
+    );
+
+    // Promedio de 11 y 7: sin campo no hay Course Handicap que promediar
+    expect(screen.getByTestId('quick-match-player-handicap-p-1')).toHaveTextContent('"value":9');
+  });
+});
+
+/**
+ * `holeCardFor` es todo o nada, así que una barra con tarjeta PARCIAL devuelve
+ * menos hoyos. Comparar solo hoyo a hoyo dejaba pasar ese caso en vacío y el
+ * bando salía pintado con la tarjeta del compañero. Ver RyderCupAm#215.
+ */
+describe('QuickMatchScorecardTable · bando con una tarjeta de barra más corta', () => {
+  const courseHoles = [
+    { holeNumber: 1, par: 4, strokeIndex: 1 },
+    { holeNumber: 2, par: 3, strokeIndex: 2 },
+  ];
+
+  const tees = [
+    {
+      color: 'YELLOW',
+      gender: 'MALE',
+      courseRating: 70,
+      slopeRating: 120,
+      holes: [
+        { holeNumber: 1, par: 5, strokeIndex: 1 },
+        { holeNumber: 2, par: 5, strokeIndex: 2 },
+      ],
+    },
+    // Tarjeta parcial: solo trae el hoyo 1
+    {
+      color: 'ORANGE',
+      gender: 'MALE',
+      courseRating: 60,
+      slopeRating: 100,
+      holes: [{ holeNumber: 1, par: 5, strokeIndex: 1 }],
+    },
+  ];
+
+  it('se queda con la tarjeta del campo en vez de con la del compañero', () => {
+    const members = [
+      { participantId: 'p-1', name: 'Larga', handicap: 0, team: 'A', color: 'YELLOW', teeGender: 'MALE' },
+      { participantId: 'p-2', name: 'Corta', handicap: 0, team: 'A', color: 'ORANGE', teeGender: 'MALE' },
+      { participantId: 'p-3', name: 'Rival', handicap: 0, team: 'B', color: 'YELLOW', teeGender: 'MALE' },
+      { participantId: 'p-4', name: 'Rival2', handicap: 0, team: 'B', color: 'YELLOW', teeGender: 'MALE' },
+    ];
+
+    render(
+      <QuickMatchScorecardTable
+        holes={courseHoles}
+        holeScores={[]}
+        participants={members}
+        currentParticipantId="p-1"
+        tees={tees}
+        matchFormat="FOURSOMES"
+      />
+    );
+
+    // El par 4 del campo, no el 5 de la barra del compañero
+    expect(screen.getByTestId('quick-match-par-p-1-1')).toHaveTextContent('4');
+    // Y el bando que sí comparte barra entera sigue con la suya
+    expect(screen.getByTestId('quick-match-par-p-3-1')).toHaveTextContent('5');
+  });
+});
