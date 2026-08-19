@@ -9,6 +9,11 @@ export const FORMAT_LABEL_KEY = {
   FOURBALL: 'formatFourball',
   FOURSOMES: 'formatFoursomes',
 };
+// En un formato por equipos solo hay dos bandos, A y B, y el contrario es
+// SIEMPRE la otra letra. Preguntar por "el que no es el mío" contaba como rival
+// a un registrado sin equipo, que no está en ninguno de los dos.
+export const oppositeTeam = (team) => (team === 'A' ? 'B' : 'A');
+
 // Mirrors backend MAX_SCORERS (quick_match domain entity)
 export const MAX_SCORERS = 4;
 // Mirrors backend MAX_FREE_PLAY_PLAYERS (quick_match domain entity)
