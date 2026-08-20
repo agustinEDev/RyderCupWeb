@@ -121,14 +121,14 @@
       "teeCards": {},
       "participants": [
         {
-          "participantId": "cf358835-5258-411b-9951-a3aefde9259a",
+          "participantId": "78ff463f-458a-4044-9a94-b988578e5af5",
           "handicap": 18.0,
           "color": "YELLOW",
           "teeGender": "MALE",
           "team": null
         },
         {
-          "participantId": "ac0a1b66-5c6e-4b55-8a52-1be08652df37",
+          "participantId": "2781438e-8f0d-4236-8333-697062eaf518",
           "handicap": 20.7,
           "color": "YELLOW",
           "teeGender": "MALE",
@@ -136,11 +136,11 @@
         }
       ],
       "expected": {
-        "cf358835-5258-411b-9951-a3aefde9259a": {
+        "78ff463f-458a-4044-9a94-b988578e5af5": {
           "playingHandicap": 23,
           "strokesByHole": {}
         },
-        "ac0a1b66-5c6e-4b55-8a52-1be08652df37": {
+        "2781438e-8f0d-4236-8333-697062eaf518": {
           "playingHandicap": 27,
           "strokesByHole": {
             "2": 1,
@@ -271,14 +271,14 @@
       "teeCards": {},
       "participants": [
         {
-          "participantId": "39bbe35b-6954-4722-90aa-93f8587348b3",
+          "participantId": "09ad3f9b-00cb-4600-8612-6e4cea09376c",
           "handicap": 18.0,
           "color": "YELLOW",
           "teeGender": "FEMALE",
           "team": null
         },
         {
-          "participantId": "02e6d908-223a-4e1d-b3ed-973644847798",
+          "participantId": "2e05912d-4dff-498e-9f5b-18a1213416f9",
           "handicap": 20.7,
           "color": "YELLOW",
           "teeGender": "MALE",
@@ -286,7 +286,7 @@
         }
       ],
       "expected": {
-        "39bbe35b-6954-4722-90aa-93f8587348b3": {
+        "09ad3f9b-00cb-4600-8612-6e4cea09376c": {
           "playingHandicap": 31,
           "strokesByHole": {
             "2": 1,
@@ -295,7 +295,7 @@
             "17": 1
           }
         },
-        "02e6d908-223a-4e1d-b3ed-973644847798": {
+        "2e05912d-4dff-498e-9f5b-18a1213416f9": {
           "playingHandicap": 27,
           "strokesByHole": {}
         }
@@ -421,14 +421,14 @@
       "teeCards": {},
       "participants": [
         {
-          "participantId": "a8787309-71ce-4665-ad37-a941803d468b",
+          "participantId": "1f4a4284-14b5-48ad-a65a-618ef3b7ac40",
           "handicap": 18.0,
           "color": "YELLOW",
           "teeGender": "MALE",
           "team": null
         },
         {
-          "participantId": "0b4f2882-9275-46c2-8ead-54abb4cedd91",
+          "participantId": "fbd3519b-c109-4b4e-b71a-cfd316990c72",
           "handicap": 20.7,
           "color": "YELLOW",
           "teeGender": "MALE",
@@ -436,7 +436,7 @@
         }
       ],
       "expected": {
-        "a8787309-71ce-4665-ad37-a941803d468b": {
+        "1f4a4284-14b5-48ad-a65a-618ef3b7ac40": {
           "playingHandicap": 22,
           "strokesByHole": {
             "1": 1,
@@ -459,7 +459,7 @@
             "18": 1
           }
         },
-        "0b4f2882-9275-46c2-8ead-54abb4cedd91": {
+        "fbd3519b-c109-4b4e-b71a-cfd316990c72": {
           "playingHandicap": 25,
           "strokesByHole": {
             "1": 2,
@@ -604,7 +604,7 @@
       "teeCards": {},
       "participants": [
         {
-          "participantId": "ede4bbda-ef5e-41fe-a4b4-0eca17d1c3bf",
+          "participantId": "d01e54de-48dc-4fc6-b1b4-5b3e324376b9",
           "handicap": -2.0,
           "color": "YELLOW",
           "teeGender": "MALE",
@@ -612,7 +612,7 @@
         }
       ],
       "expected": {
-        "ede4bbda-ef5e-41fe-a4b4-0eca17d1c3bf": {
+        "d01e54de-48dc-4fc6-b1b4-5b3e324376b9": {
           "playingHandicap": -1,
           "strokesByHole": {
             "15": -1
@@ -740,14 +740,14 @@
       "teeCards": {},
       "participants": [
         {
-          "participantId": "b9feadfa-8470-4496-bd9a-9c5147b4c84b",
+          "participantId": "896e2e7b-5f42-4d5c-bb68-83da99e547fd",
           "handicap": 5.0,
           "color": "YELLOW",
           "teeGender": "MALE",
           "team": null
         },
         {
-          "participantId": "999ce0aa-162f-46d6-9ae4-74a51712399e",
+          "participantId": "acd1ba2b-3b63-460f-b8c0-79b38af85582",
           "handicap": 30.0,
           "color": "YELLOW",
           "teeGender": "MALE",
@@ -755,11 +755,11 @@
         }
       ],
       "expected": {
-        "b9feadfa-8470-4496-bd9a-9c5147b4c84b": {
+        "896e2e7b-5f42-4d5c-bb68-83da99e547fd": {
           "playingHandicap": 0,
           "strokesByHole": {}
         },
-        "999ce0aa-162f-46d6-9ae4-74a51712399e": {
+        "acd1ba2b-3b63-460f-b8c0-79b38af85582": {
           "playingHandicap": 0,
           "strokesByHole": {}
         }
@@ -866,7 +866,7 @@
       "teeCards": {},
       "participants": [
         {
-          "participantId": "feb72624-1552-47b3-94bf-59ffd79aaa73",
+          "participantId": "7c81d132-9411-4432-80cf-6cc99e2c4cce",
           "handicap": 20.0,
           "color": "YELLOW",
           "teeGender": "MALE",
@@ -874,7 +874,7 @@
         }
       ],
       "expected": {
-        "feb72624-1552-47b3-94bf-59ffd79aaa73": {
+        "7c81d132-9411-4432-80cf-6cc99e2c4cce": {
           "playingHandicap": 19,
           "strokesByHole": {
             "1": 1,
@@ -1000,7 +1000,7 @@
       "teeCards": {},
       "participants": [
         {
-          "participantId": "06fba56a-b9eb-41d8-9a1e-cf39dfd0fed3",
+          "participantId": "ac2cc36d-4092-425a-9130-716f0459ff3e",
           "handicap": 20.5,
           "color": "YELLOW",
           "teeGender": "MALE",
@@ -1008,7 +1008,7 @@
         }
       ],
       "expected": {
-        "06fba56a-b9eb-41d8-9a1e-cf39dfd0fed3": {
+        "ac2cc36d-4092-425a-9130-716f0459ff3e": {
           "playingHandicap": 21,
           "strokesByHole": {
             "1": 1,
@@ -1153,7 +1153,7 @@
       "teeCards": {},
       "participants": [
         {
-          "participantId": "98a870ca-424e-4745-908c-f846ee5c76bf",
+          "participantId": "63dc1e53-6f1e-4a31-87a9-b1e448e3e641",
           "handicap": 18.0,
           "color": "WHITE",
           "teeGender": "MALE",
@@ -1161,7 +1161,7 @@
         }
       ],
       "expected": {
-        "98a870ca-424e-4745-908c-f846ee5c76bf": {
+        "63dc1e53-6f1e-4a31-87a9-b1e448e3e641": {
           "playingHandicap": 25,
           "strokesByHole": {
             "1": 2,
@@ -1306,28 +1306,28 @@
       "teeCards": {},
       "participants": [
         {
-          "participantId": "8463f1b9-d3f1-4c14-9c46-d45fe8ea888f",
+          "participantId": "cca17387-cd39-4169-8658-1a5f0895877c",
           "handicap": 5.0,
           "color": "YELLOW",
           "teeGender": "MALE",
           "team": "A"
         },
         {
-          "participantId": "02f3aefc-1d3b-4394-abf1-c297b5ba0f59",
+          "participantId": "0f2e1b87-1cf4-4d41-90b0-c6792f477609",
           "handicap": 15.0,
           "color": "YELLOW",
           "teeGender": "MALE",
           "team": "A"
         },
         {
-          "participantId": "63aedae1-cc58-4366-a768-18dbca74e1f7",
+          "participantId": "829fe255-7a60-4a22-9dc7-b7fe82937e6c",
           "handicap": 20.0,
           "color": "YELLOW",
           "teeGender": "MALE",
           "team": "B"
         },
         {
-          "participantId": "263ebe69-c5c2-4c58-8eca-897cda7f4041",
+          "participantId": "7fc812e8-1c4a-4b2f-84f1-b2051ba5c8dd",
           "handicap": 25.0,
           "color": "YELLOW",
           "teeGender": "MALE",
@@ -1335,11 +1335,11 @@
         }
       ],
       "expected": {
-        "8463f1b9-d3f1-4c14-9c46-d45fe8ea888f": {
+        "cca17387-cd39-4169-8658-1a5f0895877c": {
           "playingHandicap": 7,
           "strokesByHole": {}
         },
-        "02f3aefc-1d3b-4394-abf1-c297b5ba0f59": {
+        "0f2e1b87-1cf4-4d41-90b0-c6792f477609": {
           "playingHandicap": 18,
           "strokesByHole": {
             "1": 1,
@@ -1356,7 +1356,7 @@
             "18": 1
           }
         },
-        "63aedae1-cc58-4366-a768-18dbca74e1f7": {
+        "829fe255-7a60-4a22-9dc7-b7fe82937e6c": {
           "playingHandicap": 23,
           "strokesByHole": {
             "1": 1,
@@ -1378,7 +1378,7 @@
             "18": 1
           }
         },
-        "263ebe69-c5c2-4c58-8eca-897cda7f4041": {
+        "7fc812e8-1c4a-4b2f-84f1-b2051ba5c8dd": {
           "playingHandicap": 29,
           "strokesByHole": {
             "1": 1,
@@ -1523,28 +1523,28 @@
       "teeCards": {},
       "participants": [
         {
-          "participantId": "2f896c61-d109-49c7-94fa-917d72250ba4",
+          "participantId": "f5be8644-df14-46d3-a6d7-efbe1faec583",
           "handicap": 10.0,
           "color": "YELLOW",
           "teeGender": "MALE",
           "team": "A"
         },
         {
-          "participantId": "ce02d048-99b6-4cb5-91c4-19d29b7538ca",
+          "participantId": "836e6324-6cf8-4486-828d-99acf3ac5f9b",
           "handicap": 12.0,
           "color": "YELLOW",
           "teeGender": "MALE",
           "team": "A"
         },
         {
-          "participantId": "bff26639-b0e8-43be-8b1c-e729f758d588",
+          "participantId": "5dc9bdcb-aec3-46b2-8016-524965409037",
           "handicap": 20.0,
           "color": "YELLOW",
           "teeGender": "MALE",
           "team": "B"
         },
         {
-          "participantId": "8ed004c3-5288-408f-8842-25a67ecae8a0",
+          "participantId": "ebc8c189-9622-4803-9e6e-e60d820ddc41",
           "handicap": 24.0,
           "color": "YELLOW",
           "teeGender": "MALE",
@@ -1552,15 +1552,15 @@
         }
       ],
       "expected": {
-        "2f896c61-d109-49c7-94fa-917d72250ba4": {
+        "f5be8644-df14-46d3-a6d7-efbe1faec583": {
           "playingHandicap": 7,
           "strokesByHole": {}
         },
-        "ce02d048-99b6-4cb5-91c4-19d29b7538ca": {
+        "836e6324-6cf8-4486-828d-99acf3ac5f9b": {
           "playingHandicap": 8,
           "strokesByHole": {}
         },
-        "bff26639-b0e8-43be-8b1c-e729f758d588": {
+        "5dc9bdcb-aec3-46b2-8016-524965409037": {
           "playingHandicap": 13,
           "strokesByHole": {
             "1": 1,
@@ -1572,7 +1572,7 @@
             "17": 1
           }
         },
-        "8ed004c3-5288-408f-8842-25a67ecae8a0": {
+        "ebc8c189-9622-4803-9e6e-e60d820ddc41": {
           "playingHandicap": 15,
           "strokesByHole": {
             "1": 1,
@@ -1727,7 +1727,7 @@
       },
       "participants": [
         {
-          "participantId": "135dab18-0778-41b5-9411-da569fd22d09",
+          "participantId": "7035b3f2-bcff-4e78-97c8-b5702ac32a77",
           "handicap": 20.0,
           "color": "YELLOW",
           "teeGender": "FEMALE",
@@ -1735,7 +1735,7 @@
         }
       ],
       "expected": {
-        "135dab18-0778-41b5-9411-da569fd22d09": {
+        "7035b3f2-bcff-4e78-97c8-b5702ac32a77": {
           "playingHandicap": 33,
           "strokesByHole": {
             "1": 1,
@@ -1756,6 +1756,150 @@
             "16": 2,
             "17": 2,
             "18": 2
+          }
+        }
+      }
+    },
+    {
+      "name": "campo corto",
+      "matchFormat": "SINGLES",
+      "allowancePercentage": 100,
+      "playMode": "HANDICAP",
+      "holes": [
+        {
+          "holeNumber": 1,
+          "par": 3,
+          "strokeIndex": 1
+        },
+        {
+          "holeNumber": 2,
+          "par": 3,
+          "strokeIndex": 2
+        },
+        {
+          "holeNumber": 3,
+          "par": 3,
+          "strokeIndex": 3
+        },
+        {
+          "holeNumber": 4,
+          "par": 3,
+          "strokeIndex": 4
+        },
+        {
+          "holeNumber": 5,
+          "par": 3,
+          "strokeIndex": 5
+        },
+        {
+          "holeNumber": 6,
+          "par": 3,
+          "strokeIndex": 6
+        },
+        {
+          "holeNumber": 7,
+          "par": 3,
+          "strokeIndex": 7
+        },
+        {
+          "holeNumber": 8,
+          "par": 3,
+          "strokeIndex": 8
+        },
+        {
+          "holeNumber": 9,
+          "par": 3,
+          "strokeIndex": 9
+        },
+        {
+          "holeNumber": 10,
+          "par": 3,
+          "strokeIndex": 10
+        },
+        {
+          "holeNumber": 11,
+          "par": 3,
+          "strokeIndex": 11
+        },
+        {
+          "holeNumber": 12,
+          "par": 3,
+          "strokeIndex": 12
+        },
+        {
+          "holeNumber": 13,
+          "par": 3,
+          "strokeIndex": 13
+        },
+        {
+          "holeNumber": 14,
+          "par": 3,
+          "strokeIndex": 14
+        },
+        {
+          "holeNumber": 15,
+          "par": 4,
+          "strokeIndex": 15
+        },
+        {
+          "holeNumber": 16,
+          "par": 4,
+          "strokeIndex": 16
+        },
+        {
+          "holeNumber": 17,
+          "par": 4,
+          "strokeIndex": 17
+        },
+        {
+          "holeNumber": 18,
+          "par": 4,
+          "strokeIndex": 18
+        }
+      ],
+      "tees": [
+        {
+          "color": "ORANGE",
+          "gender": "MALE",
+          "courseRating": 54.9,
+          "slopeRating": 91
+        }
+      ],
+      "teeCards": {},
+      "participants": [
+        {
+          "participantId": "9aba241c-e64f-4e58-9bdb-aa8c10c0fb75",
+          "handicap": 18.0,
+          "color": "ORANGE",
+          "teeGender": "MALE",
+          "team": null
+        },
+        {
+          "participantId": "c7421d0f-bcce-41e7-8eb6-691dc51b4a78",
+          "handicap": 30.0,
+          "color": "ORANGE",
+          "teeGender": "MALE",
+          "team": null
+        }
+      ],
+      "expected": {
+        "9aba241c-e64f-4e58-9bdb-aa8c10c0fb75": {
+          "playingHandicap": 11,
+          "strokesByHole": {}
+        },
+        "c7421d0f-bcce-41e7-8eb6-691dc51b4a78": {
+          "playingHandicap": 21,
+          "strokesByHole": {
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 1,
+            "6": 1,
+            "7": 1,
+            "8": 1,
+            "9": 1,
+            "10": 1
           }
         }
       }
@@ -1880,14 +2024,14 @@
       "teeCards": {},
       "participants": [
         {
-          "participantId": "eaae1789-449d-486c-9a49-d2e3c88085d4",
+          "participantId": "56a88fa6-255f-4f09-935a-904cdf2ef967",
           "handicap": 18.0,
           "color": "YELLOW",
           "teeGender": "MALE",
           "team": null
         },
         {
-          "participantId": "5fbbb8f1-b7dc-4ad9-a3c4-01df59f2c815",
+          "participantId": "980de2f3-43ff-4f7c-8108-e575ce6c7d5f",
           "handicap": null,
           "color": "YELLOW",
           "teeGender": "MALE",
@@ -1895,7 +2039,7 @@
         }
       ],
       "expected": {
-        "eaae1789-449d-486c-9a49-d2e3c88085d4": {
+        "56a88fa6-255f-4f09-935a-904cdf2ef967": {
           "playingHandicap": 23,
           "strokesByHole": {
             "1": 1,
@@ -1918,7 +2062,7 @@
             "18": 1
           }
         },
-        "5fbbb8f1-b7dc-4ad9-a3c4-01df59f2c815": {
+        "980de2f3-43ff-4f7c-8108-e575ce6c7d5f": {
           "playingHandicap": 0,
           "strokesByHole": {}
         }
