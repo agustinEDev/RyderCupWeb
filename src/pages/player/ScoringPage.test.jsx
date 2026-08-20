@@ -316,6 +316,26 @@ describe('ScoringPage', () => {
       expect(screen.queryByText('submit.button')).toBeNull();
     });
 
+    it('does not reopen the confirmation on its own once submission is possible again', () => {
+      // The marker can score a hole while the dialog is open. Hiding it is not
+      // enough: the dialog would pop back up by itself when readiness returns
+      mockUseScoring.scoringView.isDecided = true;
+      mockUseScoring.canSubmitScorecard = true;
+
+      const { rerender } = render(<ScoringPage />);
+      fireEvent.click(screen.getByTestId('tab-scorecard'));
+      fireEvent.click(screen.getByText('submit.button'));
+      expect(screen.getByTestId('submit-scorecard-modal')).toBeInTheDocument();
+
+      mockUseScoring.canSubmitScorecard = false;
+      rerender(<ScoringPage />);
+      expect(screen.queryByTestId('submit-scorecard-modal')).toBeNull();
+
+      mockUseScoring.canSubmitScorecard = true;
+      rerender(<ScoringPage />);
+      expect(screen.queryByTestId('submit-scorecard-modal')).toBeNull();
+    });
+
     it('counts the confirmation against the holes played, not always 18', () => {
       mockUseScoring.scoringView.isDecided = true;
       mockUseScoring.canSubmitScorecard = true;

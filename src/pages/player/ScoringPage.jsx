@@ -69,6 +69,16 @@ const ScoringPage = () => {
     }
   }, [activeTab, scoringView?.competitionId]);
 
+  // Confirmar la entrega deja de ser posible si el marcador anota mientras el
+  // diálogo está abierto. Ocultarlo no basta: `showSubmitModal` seguiría a true
+  // y el diálogo reaparecería solo en cuanto la entrega volviera a ser posible,
+  // sin que el jugador lo hubiera pedido otra vez.
+  useEffect(() => {
+    if (!canSubmitScorecard) {
+      setShowSubmitModal(false);
+    }
+  }, [canSubmitScorecard]);
+
   // Derived: show early end modal when match is decided and user hasn't dismissed.
   // Not shown once the player has already submitted — the "continue to submit" CTA
   // no longer applies, and re-showing it on every revisit is just noise.
@@ -471,9 +481,6 @@ const ScoringPage = () => {
       />
 
       <SubmitScorecardModal
-        /* Si el marcador anota mientras el diálogo está abierto, la entrega
-           puede dejar de ser posible: confirmar entonces no enviaba nada y
-           cerraba el diálogo sin decir nada */
         isOpen={showSubmitModal && canSubmitScorecard}
         validatedHoles={validatedHoles}
         totalHoles={holesToSubmit}
