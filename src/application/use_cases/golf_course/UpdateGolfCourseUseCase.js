@@ -1,3 +1,5 @@
+import { parRangeFor } from '../../../domain/services/courseTypeRanges';
+
 /**
  * UpdateGolfCourseUseCase
  * Updates a golf course
@@ -62,10 +64,12 @@ class UpdateGolfCourseUseCase {
       throw new Error('Each hole must have a unique stroke index (1-18)');
     }
 
-    // Validate total par
+    // El par total es el del tipo de campo, no el de un 18 hoyos. Aqui el tipo
+    // llega en cualquiera de las dos formas, como el resto de los campos.
     const totalPar = data.holes.reduce((sum, h) => sum + h.par, 0);
-    if (totalPar < 66 || totalPar > 76) {
-      throw new Error(`Total par must be between 66 and 76. Got: ${totalPar}`);
+    const [minPar, maxPar] = parRangeFor(data.courseType || data.course_type);
+    if (totalPar < minPar || totalPar > maxPar) {
+      throw new Error(`Total par must be between ${minPar} and ${maxPar}. Got: ${totalPar}`);
     }
   }
 }

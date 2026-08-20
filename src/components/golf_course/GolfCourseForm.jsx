@@ -6,29 +6,13 @@ import customToast from '../../utils/toast';
 import { fetchCountriesUseCase } from '../../composition';
 import TeeColor from '../../domain/value_objects/TeeColor';
 import CountryAutocomplete from '../ui/CountryAutocomplete';
-
-const COURSE_TYPES = ['STANDARD_18', 'PITCH_AND_PUTT', 'EXECUTIVE'];
-
-// Los mismos rangos que valida `GolfCourse._validate_tee_ratings` en el
-// backend, por tipo de campo: un pitch & putt no se valora en la misma escala
-// que un 18 hoyos. Con un rango unico se rechazaba aqui lo que el backend si
-// admite —un CR 46,8 y un SR 47 son valores reales de la RFEG— y no habia forma
-// de dar de alta a mano un campo corto. Ver RyderCupAm#206.
-const RATING_RANGE_BY_COURSE_TYPE = {
-  STANDARD_18: [50, 90],
-  PITCH_AND_PUTT: [45, 90],
-  EXECUTIVE: [45, 90],
-};
-const SLOPE_RANGE_BY_COURSE_TYPE = {
-  STANDARD_18: [55, 160],
-  PITCH_AND_PUTT: [40, 155],
-  EXECUTIVE: [40, 155],
-};
-const PAR_RANGE_BY_COURSE_TYPE = {
-  STANDARD_18: [66, 76],
-  PITCH_AND_PUTT: [54, 60],
-  EXECUTIVE: [61, 65],
-};
+import {
+  COURSE_TYPES,
+  isTotalParValid,
+  parRangeFor,
+  ratingRangeFor,
+  slopeRangeFor,
+} from '../../domain/services/courseTypeRanges';
 
 // Los diez colores admitidos, ordenados de barras mas largas a mas cortas
 // segun el uso habitual. OTHER cubre las salidas cuyo nombre no es un color
@@ -242,11 +226,9 @@ const GolfCourseForm = ({ initialData = null, onSubmit, onCancel }) => {
   // porque el navegador valida con ellos ANTES de llamar al onSubmit — dejarlos
   // fijos anulaba la validacion por tipo sin que ningun test lo viera, porque
   // jsdom no aplica la validacion nativa.
-  const ratingRange =
-    RATING_RANGE_BY_COURSE_TYPE[courseType] ?? RATING_RANGE_BY_COURSE_TYPE.STANDARD_18;
-  const slopeRange =
-    SLOPE_RANGE_BY_COURSE_TYPE[courseType] ?? SLOPE_RANGE_BY_COURSE_TYPE.STANDARD_18;
-  const parRange = PAR_RANGE_BY_COURSE_TYPE[courseType] ?? PAR_RANGE_BY_COURSE_TYPE.STANDARD_18;
+  const ratingRange = ratingRangeFor(courseType);
+  const slopeRange = slopeRangeFor(courseType);
+  const parRange = parRangeFor(courseType);
 
   const calculateTotalPar = () => {
     return holes.reduce((sum, hole) => sum + hole.par, 0);
@@ -400,7 +382,7 @@ const GolfCourseForm = ({ initialData = null, onSubmit, onCancel }) => {
   };
 
   const totalPar = calculateTotalPar();
-  const parColor = totalPar < 66 || totalPar > 76 ? 'text-red-600' : 'text-green-600';
+  const parColor = isTotalParValid(totalPar, courseType) ? 'text-green-600' : 'text-red-600';
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -615,7 +597,9 @@ const GolfCourseForm = ({ initialData = null, onSubmit, onCancel }) => {
           <div className="text-sm">
             <span className="text-gray-600">{t('form.totalPar')}: </span>
             <span className={`font-bold ${parColor}`}>{totalPar}</span>
-            <span className="text-gray-500 ml-2">(66-76)</span>
+            <span className="text-gray-500 ml-2">
+              ({parRange[0]}-{parRange[1]})
+            </span>
           </div>
         </div>
 

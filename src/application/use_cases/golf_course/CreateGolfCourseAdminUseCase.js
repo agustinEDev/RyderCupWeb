@@ -1,3 +1,5 @@
+import { parRangeFor } from '../../../domain/services/courseTypeRanges';
+
 /**
  * CreateGolfCourseAdminUseCase
  * Creates a golf course directly as APPROVED (admin only)
@@ -53,10 +55,12 @@ class CreateGolfCourseAdminUseCase {
       throw new Error('Each hole must have a unique stroke index (1-18)');
     }
 
-    // Validate total par
+    // El par total es el del tipo de campo, no el de un 18 hoyos: un pitch &
+    // putt es par 54-60 y un ejecutivo 61-65. Ver `courseTypeRanges`.
     const totalPar = data.holes.reduce((sum, h) => sum + h.par, 0);
-    if (totalPar < 66 || totalPar > 76) {
-      throw new Error(`Total par must be between 66 and 76. Got: ${totalPar}`);
+    const [minPar, maxPar] = parRangeFor(data.courseType);
+    if (totalPar < minPar || totalPar > maxPar) {
+      throw new Error(`Total par must be between ${minPar} and ${maxPar}. Got: ${totalPar}`);
     }
   }
 }

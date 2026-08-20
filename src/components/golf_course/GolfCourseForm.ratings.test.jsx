@@ -43,10 +43,11 @@ describe('GolfCourseForm · rangos de valoracion por tipo de campo', () => {
 
   // Se entra por `initialData` para que la validacion llegue hasta los ratings:
   // se corta en el primer fallo, y antes de las barras exige nombre y pais.
-  const renderWith = (courseType, courseRating, slopeRating, parPorHoyo = null) =>
+  const renderWith = (courseType, courseRating, slopeRating, parPorHoyo = null) => {
+    const onSubmit = vi.fn();
     render(
       <GolfCourseForm
-        onSubmit={vi.fn()}
+        onSubmit={onSubmit}
         onCancel={vi.fn()}
         initialData={{
           name: 'Campo de prueba',
@@ -68,6 +69,8 @@ describe('GolfCourseForm · rangos de valoracion por tipo de campo', () => {
         }}
       />
     );
+    return onSubmit;
+  };
 
   // En jsdom, pulsar el boton no dispara el `onSubmit` del form, y la validacion
   // vive ahi: sin esto los tests pasaban sin validar nada.
@@ -151,21 +154,25 @@ describe('GolfCourseForm · rangos de valoracion por tipo de campo', () => {
    */
   describe('el par total sigue al tipo de campo', () => {
     it('acepta el par 54 de un pitch & putt', () => {
-      renderWith('PITCH_AND_PUTT', 46.8, 47, 3);
+      const onSubmit = renderWith('PITCH_AND_PUTT', 46.8, 47, 3);
 
       submitForm();
 
-      expect(errores().some((m) => m.includes('totalParRange'))).toBe(false);
+      // Se comprueba que ENVIA, no que no se queja: la ausencia del error
+      // tambien la daria por buena cualquier otra regla que cortase antes.
+      expect(onSubmit).toHaveBeenCalledTimes(1);
+      expect(errores()).toEqual([]);
     });
 
     it('rechaza ese mismo par 54 en un campo de 18 hoyos, y dice su rango', () => {
-      renderWith('STANDARD_18', 73.1, 130, 3);
+      const onSubmit = renderWith('STANDARD_18', 73.1, 130, 3);
 
       submitForm();
 
       const mensaje = errores().find((m) => m.includes('totalParRange'));
       expect(mensaje).toContain('"min":66');
       expect(mensaje).toContain('"max":76');
+      expect(onSubmit).not.toHaveBeenCalled();
     });
   });
   /**
