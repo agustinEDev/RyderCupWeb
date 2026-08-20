@@ -6,6 +6,11 @@ import ScoreInputPanel from './ScoreInputPanel';
 const HoleInput = ({
   holeNumber,
   par,
+  // El par del jugador al que se marca, cuando sale de otra barra: el teclado
+  // etiqueta Par/Birdie/Bogey contra el par de quien juega esa bola, no contra
+  // el de quien anota. Sin él, marcar a alguien de otra barra le ponía las
+  // etiquetas del par propio. Ver RyderCupWeb#417.
+  markedPar = null,
   strokeIndex,
   playerScore,
   markedPlayerScore,
@@ -187,7 +192,7 @@ const HoleInput = ({
           onSelect={handleMarkedSelect}
           onClose={() => setOpenPanel(null)}
           label={t('input.markerScore')}
-          par={par}
+          par={markedPar ?? par}
         />
       )}
     </div>

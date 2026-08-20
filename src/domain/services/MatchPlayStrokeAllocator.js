@@ -30,20 +30,24 @@ const NEUTRAL_SLOPE = 113;
 const HOLES_PER_ROUND = 18;
 const SINGLES_PARTICIPANTS = 2;
 
-// Rangos que valida `TeeRating` en el backend. Son MÁS ESTRECHOS que los que
-// admite el `Tee` del frontend (CR 45-90, SR 40-160), que se ensancharon para
-// los pitch & putt federados. El backend descarta la barra que se sale y hace
-// jugar con el Handicap Index a pelo, así que aquí hay que descartarla igual:
-// si no, el reparto cambia en cuanto se cae la red, que es justo cuando este
-// cálculo tiene que servir para algo.
-// El arreglo de fondo es ensanchar `TeeRating`, pero lo comparte `competition`
-// y tocarlo movería el reparto de las competiciones ya creadas.
-const RATED_MIN_COURSE_RATING = 55;
-const RATED_MAX_COURSE_RATING = 85;
-const RATED_MIN_SLOPE_RATING = 55;
-const RATED_MAX_SLOPE_RATING = 155;
-const RATED_MIN_PAR = 66;
-const RATED_MAX_PAR = 76;
+// Rangos que valida `TeeRating` en el backend, y que hay que espejar aquí: si
+// aquí se descarta una barra que allí sí se valora —o al revés—, el reparto
+// cambia en cuanto se cae la red, que es justo cuando este cálculo tiene que
+// servir para algo.
+//
+// Eran los de un campo de 18 hoyos y dejaban fuera 468 salidas en 227 campos
+// federados: los pitch & putt y los ejecutivos, que el sistema no valora en la
+// misma escala. Sus jugadores acababan con el Handicap Index a pelo —un 18
+// recibía 18 golpes donde le tocan 11—. Desde RyderCupAm#206 el backend usa la
+// unión de los rangos de todos los tipos de campo, que son además los que ya
+// admitía el `Tee` del frontend, y el rango estricto por tipo lo valida
+// `GolfCourse`, que es quien sabe de qué campo se trata.
+const RATED_MIN_COURSE_RATING = 45;
+const RATED_MAX_COURSE_RATING = 90;
+const RATED_MIN_SLOPE_RATING = 40;
+const RATED_MAX_SLOPE_RATING = 160;
+const RATED_MIN_PAR = 50;
+const RATED_MAX_PAR = 80;
 
 class MatchPlayStrokeAllocator {
   /**
@@ -112,11 +116,35 @@ class MatchPlayStrokeAllocator {
    * @returns {Array<number>} Números de hoyo, del más difícil al más fácil
    */
   static holesByDifficultyFor(participant, holes, tees) {
-    const tee = MatchPlayStrokeAllocator.findTee(participant, tees);
-    const card = tee?.holes?.length ? tee.holes : holes;
-    return [...card]
+    return [...MatchPlayStrokeAllocator.holeCardFor(participant, holes, tees)]
       .sort((a, b) => a.strokeIndex - b.strokeIndex)
       .map((hole) => hole.holeNumber);
+  }
+
+  /**
+   * Tarjeta que le corresponde a un participante: la de su barra.
+   *
+   * El par, el stroke index y los metros son de la barra, no del campo:
+   * `golfCourse.holes` es solo la tarjeta de la PRIMERA, y de los 800 campos
+   * federados importados 56 cambian de stroke index entre barras y 25 de par.
+   * El reparto de golpes ya resolvia la barra por su cuenta; lo que se PINTA
+   * (cabecera de anotacion, tarjeta) seguia leyendo la del campo, asi que un
+   * jugador podia recibir golpe en un hoyo mientras la pantalla le ensenaba el
+   * indice de otra barra. Una sola resolucion para calcular y para mostrar.
+   *
+   * Cae a la tarjeta del campo cuando la barra no trae la suya, que es como
+   * quedan las salidas dadas de alta a mano. Esa caida se lleva por delante los
+   * metros, porque la tarjeta del campo no los guarda: quien la use vera el
+   * hueco, no un numero de otra barra.
+   *
+   * @param {{color: ?string, teeGender: ?string}} participant
+   * @param {Array<Object>} holes Tarjeta de referencia del campo
+   * @param {Array<Object>} tees Salidas del campo, con su tarjeta si la tienen
+   * @returns {Array<Object>} Hoyos de la barra, en el orden en que vinieran
+   */
+  static holeCardFor(participant, holes = [], tees = []) {
+    const tee = MatchPlayStrokeAllocator.findTee(participant, tees);
+    return tee?.holes?.length ? tee.holes : holes;
   }
 
   /** Orden de dificultad del campo, para lo que no es de un jugador concreto. */
@@ -175,6 +203,40 @@ class MatchPlayStrokeAllocator {
     const { tee, par } = rated;
     const raw = hi * (tee.slopeRating / NEUTRAL_SLOPE) + (tee.courseRating - par);
     return Math.max(0, PlayingHandicapCalculator.roundHalfAwayFromZero(raw));
+  }
+
+  /**
+   * Hándicap de juego de un bando de foursomes: el promedio de los Course
+   * Handicaps de sus jugadores, con el allowance aplicado.
+   *
+   * Existe porque el bando juega UNA bola y por tanto tiene un solo hándicap,
+   * mientras que `resolve` guarda por participante el de cada jugador —el que
+   * hacía falta cuando cada uno llevaba su propia tarjeta—. Enseñar el del
+   * primero como si fuera el del bando dejaba dos cabeceras con el mismo número
+   * junto a repartos distintos. Ver RyderCupWeb#423.
+   *
+   * Sale del mismo promedio con el que `#foursomes` reparte, así que la resta
+   * de los dos bandos reproduce los golpes que se enseñan debajo. Los dos
+   * redondeos son independientes, de modo que en casos límite la resta puede
+   * quedar a un golpe del reparto; es el mismo margen que ya arrastra el
+   * FOURBALL, y sigue siendo preferible a enseñar el número de un jugador.
+   *
+   * @param {Array<Object>} members - Jugadores del bando
+   * @returns {number} Entero >= 0
+   */
+  static sidePlayingHandicap(members = [], holes = [], tees = [], allowancePercentage = 100) {
+    if (members.length === 0) return 0;
+    // Sin clamp: `courseHandicap` ya deja a cada jugador en 0 o más, así que el
+    // promedio no puede salir negativo.
+    const average = MatchPlayStrokeAllocator.#averageCourseHandicap(members, holes, tees);
+    return PlayingHandicapCalculator.roundHalfAwayFromZero((average * allowancePercentage) / 100);
+  }
+
+  static #averageCourseHandicap(members, holes, tees) {
+    return (
+      members.reduce((sum, p) => sum + MatchPlayStrokeAllocator.courseHandicap(p, holes, tees), 0) /
+      members.length
+    );
   }
 
   /**
@@ -379,12 +441,8 @@ class MatchPlayStrokeAllocator {
       return MatchPlayStrokeAllocator.#zeroed(participants);
     }
 
-    const average = (team) =>
-      team.reduce((sum, p) => sum + MatchPlayStrokeAllocator.courseHandicap(p, holes, tees), 0) /
-      team.length;
-
-    const avgA = average(teamA);
-    const avgB = average(teamB);
+    const avgA = MatchPlayStrokeAllocator.#averageCourseHandicap(teamA, holes, tees);
+    const avgB = MatchPlayStrokeAllocator.#averageCourseHandicap(teamB, holes, tees);
     const strokes = PlayingHandicapCalculator.roundHalfAwayFromZero(
       Math.abs(avgA - avgB) * (allowance / 100)
     );

@@ -6,8 +6,13 @@ import customToast from '../../utils/toast';
 import { fetchCountriesUseCase } from '../../composition';
 import TeeColor from '../../domain/value_objects/TeeColor';
 import CountryAutocomplete from '../ui/CountryAutocomplete';
-
-const COURSE_TYPES = ['STANDARD_18', 'PITCH_AND_PUTT', 'EXECUTIVE'];
+import {
+  COURSE_TYPES,
+  isTotalParValid,
+  parRangeFor,
+  ratingRangeFor,
+  slopeRangeFor,
+} from '../../domain/services/courseTypeRanges';
 
 // Los diez colores admitidos, ordenados de barras mas largas a mas cortas
 // segun el uso habitual. OTHER cubre las salidas cuyo nombre no es un color
@@ -216,6 +221,15 @@ const GolfCourseForm = ({ initialData = null, onSubmit, onCancel }) => {
   };
 
   // Calculate total par
+  // Los rangos del tipo de campo elegido. Se usan en DOS sitios y los dos hacen
+  // falta: `validateForm` para el mensaje, y los `min`/`max` de los inputs
+  // porque el navegador valida con ellos ANTES de llamar al onSubmit — dejarlos
+  // fijos anulaba la validacion por tipo sin que ningun test lo viera, porque
+  // jsdom no aplica la validacion nativa.
+  const ratingRange = ratingRangeFor(courseType);
+  const slopeRange = slopeRangeFor(courseType);
+  const parRange = parRangeFor(courseType);
+
   const calculateTotalPar = () => {
     return holes.reduce((sum, hole) => sum + hole.par, 0);
   };
@@ -281,15 +295,27 @@ const GolfCourseForm = ({ initialData = null, onSubmit, onCancel }) => {
         return false;
       }
 
+      // En un navegador real estas dos comprobaciones casi nunca se ven: los
+      // `min`/`max` nativos de los inputs cortan el submit antes, y el globo lo
+      // pinta el navegador en SU idioma. Se quedan como red de seguridad —para
+      // los valores que llegan por `initialData` y para quien entre sin la
+      // validacion nativa— y porque son las que sabemos probar: jsdom no aplica
+      // constraint validation. No borrarlas por parecer inalcanzables.
+      const [minRating, maxRating] = ratingRange;
       const courseRating = parseFloat(tee.courseRating);
-      if (isNaN(courseRating) || courseRating < 50 || courseRating > 90) {
-        customToast.error(t('form.errors.courseRatingRange', { index: i + 1 }));
+      if (isNaN(courseRating) || courseRating < minRating || courseRating > maxRating) {
+        customToast.error(
+          t('form.errors.courseRatingRange', { index: i + 1, min: minRating.toFixed(1), max: maxRating.toFixed(1) })
+        );
         return false;
       }
 
+      const [minSlope, maxSlope] = slopeRange;
       const slopeRating = parseInt(tee.slopeRating, 10);
-      if (isNaN(slopeRating) || slopeRating < 55 || slopeRating > 155) {
-        customToast.error(t('form.errors.slopeRatingRange', { index: i + 1 }));
+      if (isNaN(slopeRating) || slopeRating < minSlope || slopeRating > maxSlope) {
+        customToast.error(
+          t('form.errors.slopeRatingRange', { index: i + 1, min: minSlope, max: maxSlope })
+        );
         return false;
       }
     }
@@ -311,9 +337,12 @@ const GolfCourseForm = ({ initialData = null, onSubmit, onCancel }) => {
       return false;
     }
 
+    const [minTotalPar, maxTotalPar] = parRange;
     const totalPar = calculateTotalPar();
-    if (totalPar < 66 || totalPar > 76) {
-      customToast.error(t('form.errors.totalParRange', { totalPar }));
+    if (totalPar < minTotalPar || totalPar > maxTotalPar) {
+      customToast.error(
+        t('form.errors.totalParRange', { totalPar, min: minTotalPar, max: maxTotalPar })
+      );
       return false;
     }
 
@@ -359,7 +388,7 @@ const GolfCourseForm = ({ initialData = null, onSubmit, onCancel }) => {
   };
 
   const totalPar = calculateTotalPar();
-  const parColor = totalPar < 66 || totalPar > 76 ? 'text-red-600' : 'text-green-600';
+  const parColor = isTotalParValid(totalPar, courseType) ? 'text-green-600' : 'text-red-600';
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -537,8 +566,8 @@ const GolfCourseForm = ({ initialData = null, onSubmit, onCancel }) => {
                   <input
                     type="number"
                     step="0.1"
-                    min="50"
-                    max="90"
+                    min={ratingRange[0]}
+                    max={ratingRange[1]}
                     value={tee.courseRating}
                     onChange={(e) => handleTeeChange(index, 'courseRating', e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
@@ -553,8 +582,8 @@ const GolfCourseForm = ({ initialData = null, onSubmit, onCancel }) => {
                   </label>
                   <input
                     type="number"
-                    min="55"
-                    max="155"
+                    min={slopeRange[0]}
+                    max={slopeRange[1]}
                     value={tee.slopeRating}
                     onChange={(e) => handleTeeChange(index, 'slopeRating', e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
@@ -574,7 +603,9 @@ const GolfCourseForm = ({ initialData = null, onSubmit, onCancel }) => {
           <div className="text-sm">
             <span className="text-gray-600">{t('form.totalPar')}: </span>
             <span className={`font-bold ${parColor}`}>{totalPar}</span>
-            <span className="text-gray-500 ml-2">(66-76)</span>
+            <span className="text-gray-500 ml-2">
+              ({parRange[0]}-{parRange[1]})
+            </span>
           </div>
         </div>
 

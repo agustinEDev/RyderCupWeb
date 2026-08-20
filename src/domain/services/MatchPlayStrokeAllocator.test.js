@@ -287,11 +287,14 @@ describe('MatchPlayStrokeAllocator', () => {
     });
   });
 
-  describe('Barras no valorables', () => {
-    // El backend descarta las barras fuera del rango WHS y hace jugar con el
-    // Handicap Index. Si aquí se aceptasen, el reparto cambiaría al caerse la
-    // red — justo cuando este cálculo tiene que servir.
-    it('descarta un pitch & putt fuera del rango de slope del backend', () => {
+  describe('Barras valorables', () => {
+    // Los rangos espejan los del backend, y desde RyderCupAm#206 son la unión
+    // de los de todos los tipos de campo. Antes eran los de un 18 hoyos, así
+    // que un pitch & putt se descartaba y sus jugadores acababan con el
+    // Handicap Index a pelo. Si aquí se descartase lo que allí sí se valora
+    // —o al revés—, el reparto cambiaría al caerse la red, justo cuando este
+    // cálculo tiene que servir.
+    it('valora un pitch & putt en vez de dejarlo con el hándicap índice', () => {
       const pitchAndPutt = Array.from({ length: 18 }, (_, i) => ({
         holeNumber: i + 1,
         par: 3,
@@ -308,19 +311,38 @@ describe('MatchPlayStrokeAllocator', () => {
         playMode: 'HANDICAP',
       });
 
-      // Handicap Index a pelo (18), no el 0 que saldría de valorar esa barra
-      expect(result.a.playingHandicap).toBe(18);
+      // 18 x (47/113) + (46.8 - 54) = 0,29 -> 0 golpes. En un recorrido de par
+      // 54 un 18 no recibe 18 golpes, que es lo que daba el índice a pelo
+      expect(result.a.playingHandicap).toBe(0);
     });
 
-    it('acepta una barra dentro del rango', () => {
+    it('acepta una barra de campo largo', () => {
       expect(
         MatchPlayStrokeAllocator.isRatable({ courseRating: 73.1, slopeRating: 140 }, 72)
       ).toBe(true);
     });
 
-    it('rechaza un par fuera del rango WHS', () => {
+    it('acepta el par de un pitch & putt federado', () => {
       expect(
-        MatchPlayStrokeAllocator.isRatable({ courseRating: 73.1, slopeRating: 140 }, 54)
+        MatchPlayStrokeAllocator.isRatable({ courseRating: 54.9, slopeRating: 91 }, 58)
+      ).toBe(true);
+    });
+
+    it('acepta los extremos del catálogo federado', () => {
+      expect(
+        MatchPlayStrokeAllocator.isRatable({ courseRating: 46.5, slopeRating: 46 }, 54)
+      ).toBe(true);
+      expect(
+        MatchPlayStrokeAllocator.isRatable({ courseRating: 84.7, slopeRating: 157 }, 74)
+      ).toBe(true);
+    });
+
+    it('sigue rechazando lo que no puede ser válido en ningún tipo de campo', () => {
+      expect(
+        MatchPlayStrokeAllocator.isRatable({ courseRating: 30.0, slopeRating: 140 }, 72)
+      ).toBe(false);
+      expect(
+        MatchPlayStrokeAllocator.isRatable({ courseRating: 73.1, slopeRating: 140 }, 40)
       ).toBe(false);
     });
   });
@@ -452,6 +474,105 @@ describe('MatchPlayStrokeAllocator', () => {
 
     it('devuelve null si el participante no eligió barra', () => {
       expect(MatchPlayStrokeAllocator.findTee({ color: null }, MEIS_TEES)).toBeNull();
+    });
+  });
+
+  describe('holeCardFor', () => {
+    // Barra con tarjeta propia: otro par, otro stroke index y, sobre todo,
+    // metros, que la tarjeta de referencia del campo ni siquiera guarda.
+    const teesWithCard = [
+      {
+        color: 'YELLOW',
+        gender: 'MALE',
+        courseRating: 73.1,
+        slopeRating: 140,
+        holes: [
+          { holeNumber: 1, par: 3, strokeIndex: 15, meters: 142 },
+          { holeNumber: 2, par: 5, strokeIndex: 1, meters: 488 },
+        ],
+      },
+      { color: 'WHITE', gender: 'MALE', courseRating: 71.0, slopeRating: 133 },
+    ];
+
+    it('devuelve la tarjeta de la barra del jugador, con sus metros', () => {
+      const card = MatchPlayStrokeAllocator.holeCardFor(
+        player('a', 18, 'MALE'),
+        meisHoles(),
+        teesWithCard
+      );
+
+      expect(card).toHaveLength(2);
+      expect(card[0]).toMatchObject({ holeNumber: 1, par: 3, strokeIndex: 15, meters: 142 });
+    });
+
+    it('cae a la tarjeta del campo cuando la barra no trae la suya', () => {
+      const white = { ...player('a', 18, 'MALE'), color: 'WHITE' };
+
+      const card = MatchPlayStrokeAllocator.holeCardFor(white, meisHoles(), teesWithCard);
+
+      expect(card).toEqual(meisHoles());
+      expect(card[0].meters).toBeUndefined();
+    });
+
+    it('cae a la tarjeta del campo cuando el jugador no eligió barra', () => {
+      const card = MatchPlayStrokeAllocator.holeCardFor({ color: null }, meisHoles(), teesWithCard);
+
+      expect(card).toEqual(meisHoles());
+    });
+
+    it('reparte con la tarjeta de la barra, no con la del campo', () => {
+      // El hoyo 2 es el más difícil de la barra (SI 1) y el 1 el más fácil de
+      // los dos; en la tarjeta del campo de Meis el orden es el contrario.
+      const order = MatchPlayStrokeAllocator.holesByDifficultyFor(
+        player('a', 18, 'MALE'),
+        meisHoles(),
+        teesWithCard
+      );
+
+      expect(order).toEqual([2, 1]);
+    });
+  });
+  /**
+   * El bando de foursomes juega UNA bola, así que tiene un solo hándicap. El
+   * reparto ya sale del promedio de los dos; esto es el mismo promedio para
+   * poder enseñarlo. Ver RyderCupWeb#423.
+   */
+  describe('sidePlayingHandicap', () => {
+    it('promedia los Course Handicaps del bando y aplica el allowance', () => {
+      // Sin barra valorable el Course Handicap es el hándicap redondeado:
+      // (18 + 8) / 2 = 13, y el 50% de 13 son 6,5 -> 7
+      const side = [player('a', 18.0), player('b', 8.0)];
+
+      expect(MatchPlayStrokeAllocator.sidePlayingHandicap(side, [], [], 50)).toBe(7);
+    });
+
+    it('reproduce el reparto: la resta de los dos bandos son los golpes que se dan', () => {
+      const holes = meisHoles();
+      const sideA = [player('a', 18.0, 'MALE'), player('b', 8.0, 'MALE')];
+      const sideB = [player('c', 20.0, 'MALE'), player('d', 28.0, 'MALE')];
+      const participants = [
+        { ...sideA[0], team: 'A' },
+        { ...sideA[1], team: 'A' },
+        { ...sideB[0], team: 'B' },
+        { ...sideB[1], team: 'B' },
+      ];
+
+      const phA = MatchPlayStrokeAllocator.sidePlayingHandicap(sideA, holes, MEIS_TEES, 50);
+      const phB = MatchPlayStrokeAllocator.sidePlayingHandicap(sideB, holes, MEIS_TEES, 50);
+      const allocation = MatchPlayStrokeAllocator.allocate({
+        participants,
+        holes,
+        tees: MEIS_TEES,
+        matchFormat: 'FOURSOMES',
+        allowancePercentage: 50,
+      });
+      const received = Object.values(allocation.c.strokesByHole).reduce((a, b) => a + b, 0);
+
+      expect(phB - phA).toBe(received);
+    });
+
+    it('sin jugadores no inventa un hándicap', () => {
+      expect(MatchPlayStrokeAllocator.sidePlayingHandicap([], meisHoles(), MEIS_TEES, 50)).toBe(0);
     });
   });
 });

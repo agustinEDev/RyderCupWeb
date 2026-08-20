@@ -1,3 +1,5 @@
+import { parRangeFor } from '../../../domain/services/courseTypeRanges';
+
 /**
  * UpdateGolfCourseUseCase
  * Updates a golf course
@@ -47,8 +49,11 @@ class UpdateGolfCourseUseCase {
       throw new Error('Course type is required');
     }
 
-    if (!data.tees || data.tees.length < 2 || data.tees.length > 6) {
-      throw new Error('Golf course must have between 2 and 6 tees');
+    // 10, no 6: es lo que deja meter el formulario (`handleAddTee`) y lo que
+    // dice su mensaje. Con 6 aqui, un campo de 7 barras se aceptaba arriba y
+    // reventaba justo despues. El backend admite de 1 a 14.
+    if (!data.tees || data.tees.length < 2 || data.tees.length > 10) {
+      throw new Error('Golf course must have between 2 and 10 tees');
     }
 
     if (!data.holes || data.holes.length !== 18) {
@@ -62,10 +67,12 @@ class UpdateGolfCourseUseCase {
       throw new Error('Each hole must have a unique stroke index (1-18)');
     }
 
-    // Validate total par
+    // El par total es el del tipo de campo, no el de un 18 hoyos. Aqui el tipo
+    // llega en cualquiera de las dos formas, como el resto de los campos.
     const totalPar = data.holes.reduce((sum, h) => sum + h.par, 0);
-    if (totalPar < 66 || totalPar > 76) {
-      throw new Error(`Total par must be between 66 and 76. Got: ${totalPar}`);
+    const [minPar, maxPar] = parRangeFor(data.courseType || data.course_type);
+    if (totalPar < minPar || totalPar > maxPar) {
+      throw new Error(`Total par must be between ${minPar} and ${maxPar}. Got: ${totalPar}`);
     }
   }
 }

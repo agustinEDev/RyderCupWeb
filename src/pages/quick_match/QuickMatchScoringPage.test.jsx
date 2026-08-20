@@ -237,4 +237,498 @@ describe('QuickMatchScoringPage - copia de los errores', () => {
     expect(shown).toHaveTextContent('scoring.errors.saveFailed');
     expect(shown).not.toHaveTextContent('Failed to fetch');
   });
+
+  /**
+   * El par, el stroke index y los metros son de la barra que juega cada uno.
+   * `holes` es solo la tarjeta de la PRIMERA barra del campo, y en 56 de los
+   * 800 campos federados el stroke index cambia de una barra a otra: pintar esa
+   * tarjeta a quien juega otra le ensena un indice que no es el suyo, mientras
+   * el reparto de golpes -que si resuelve la barra- le da golpe en otro hoyo.
+   */
+  describe('tarjeta de la barra del jugador', () => {
+    const renderWithCard = ({ holes, tees, participant, others = [], currentHole = 1 }) => {
+      const me = { ...baseHookState.myParticipant, ...participant };
+      mockUseQuickMatchScoring.mockReturnValue({
+        ...baseHookState,
+        quickMatch: { ...baseQuickMatch, participants: [me, ...others] },
+        holes,
+        tees,
+        currentHole,
+        totalHoles: holes.length,
+        myParticipant: me,
+        // La cabecera del hoyo solo se pinta a quien anota
+        isScorer: true,
+        coveredParticipantIds: ['user-1', ...others.map((o) => o.participantId)],
+        setCurrentHole: vi.fn(),
+        submitScore: vi.fn(),
+        completeMatch: vi.fn(),
+        refetch: vi.fn(),
+      });
+      return renderPage();
+    };
+
+    const teeWithCard = {
+      color: 'YELLOW',
+      gender: 'MALE',
+      holes: [{ holeNumber: 1, par: 3, strokeIndex: 15, meters: 142 }],
+    };
+
+    it('pinta el par y el indice de su barra, no los del campo', () => {
+      renderWithCard({
+        holes: [{ holeNumber: 1, par: 4, strokeIndex: 5 }],
+        tees: [teeWithCard],
+        participant: { color: 'YELLOW', teeGender: 'MALE' },
+      });
+
+      expect(screen.getByText('input.par 3')).toBeInTheDocument();
+      expect(screen.getByText('input.strokeIndex 15')).toBeInTheDocument();
+      expect(screen.queryByText('input.par 4')).not.toBeInTheDocument();
+      expect(screen.queryByText('input.strokeIndex 5')).not.toBeInTheDocument();
+    });
+
+    it('muestra los metros de la barra', () => {
+      renderWithCard({
+        holes: [{ holeNumber: 1, par: 4, strokeIndex: 5 }],
+        tees: [teeWithCard],
+        participant: { color: 'YELLOW', teeGender: 'MALE' },
+      });
+
+      expect(screen.getByText('input.meters 142')).toBeInTheDocument();
+    });
+
+    it('cae a la tarjeta del campo cuando la barra no trae la suya', () => {
+      renderWithCard({
+        holes: [{ holeNumber: 1, par: 4, strokeIndex: 5 }],
+        tees: [{ color: 'YELLOW', gender: 'MALE' }],
+        participant: { color: 'YELLOW', teeGender: 'MALE' },
+      });
+
+      expect(screen.getByText('input.par 4')).toBeInTheDocument();
+      expect(screen.getByText('input.strokeIndex 5')).toBeInTheDocument();
+    });
+
+    /**
+     * Las salidas dadas de alta a mano no traen metros, y la tarjeta del campo
+     * no tiene donde guardarlos. Se ensena la etiqueta con un guion: el hueco
+     * se lee como "aqui falta el dato", y la cabecera no cambia de tamano
+     * segun el campo.
+     */
+
+    /**
+     * Quien anota puede estar anotando a alguien de otra barra: con una sola
+     * cabecera se le pintaba —y se le dibujaba la figura— contra un par que no
+     * era el suyo, mientras sus golpes sí venían resueltos por su barra.
+     */
+    it('con barras distintas, la cabecera es la de quien anota y el otro lleva la suya', () => {
+      renderWithCard({
+        holes: [{ holeNumber: 1, par: 4, strokeIndex: 5 }],
+        tees: [
+          teeWithCard,
+          {
+            color: 'RED',
+            gender: 'FEMALE',
+            holes: [{ holeNumber: 1, par: 5, strokeIndex: 3, meters: 300 }],
+          },
+        ],
+        participant: { color: 'YELLOW', teeGender: 'MALE' },
+        others: [
+          {
+            participantId: 'user-2',
+            userId: 'user-2',
+            name: 'Friend',
+            handicap: 0,
+            color: 'RED',
+            teeGender: 'FEMALE',
+          },
+        ],
+      });
+
+      // Los mios, en la cabecera: es la vuelta que estoy jugando
+      expect(screen.getByText('input.par 3')).toBeInTheDocument();
+      expect(screen.getByText('input.meters 142')).toBeInTheDocument();
+      expect(screen.queryByTestId('quick-match-hole-facts-user-1')).not.toBeInTheDocument();
+
+      const theirs = screen.getByTestId('quick-match-hole-facts-user-2');
+      expect(theirs).toHaveTextContent('input.par 5');
+      expect(theirs).toHaveTextContent('input.meters 300');
+    });
+
+    it('con la misma barra, los datos van una sola vez en la cabecera', () => {
+      renderWithCard({
+        holes: [{ holeNumber: 1, par: 4, strokeIndex: 5 }],
+        tees: [teeWithCard],
+        participant: { color: 'YELLOW', teeGender: 'MALE' },
+      });
+
+      expect(screen.getByText('input.par 3')).toBeInTheDocument();
+      expect(screen.queryByTestId('quick-match-hole-facts-user-1')).not.toBeInTheDocument();
+    });
+
+    it('ensena la etiqueta con un guion cuando el hoyo no tiene metros', () => {
+      renderWithCard({
+        holes: [{ holeNumber: 1, par: 4, strokeIndex: 5 }],
+        tees: [],
+        participant: { color: 'YELLOW', teeGender: 'MALE' },
+      });
+
+      expect(screen.getByText('input.meters -')).toBeInTheDocument();
+    });
+
+    /**
+     * La reserva de quien no trae su hoyo es la tarjeta del campo, que es de
+     * todos, y NUNCA la barra de quien anota: pintarle a otro jugador el par
+     * amarillo bajo su nombre es el error que esta pantalla viene a quitar.
+     * Pasa con tarjetas importadas a medias, que existen pero no traen el hoyo.
+     */
+    it('a quien le falta el hoyo en su barra le pinta el del campo, no el de quien anota', () => {
+      renderWithCard({
+        holes: [{ holeNumber: 1, par: 4, strokeIndex: 5 }],
+        tees: [
+          teeWithCard,
+          {
+            color: 'RED',
+            gender: 'FEMALE',
+            holes: [{ holeNumber: 2, par: 5, strokeIndex: 3, meters: 300 }],
+          },
+        ],
+        participant: { color: 'YELLOW', teeGender: 'MALE' },
+        others: [
+          {
+            participantId: 'user-2',
+            userId: 'user-2',
+            name: 'Friend',
+            handicap: 0,
+            color: 'RED',
+            teeGender: 'FEMALE',
+          },
+        ],
+      });
+
+      const theirs = screen.getByTestId('quick-match-hole-facts-user-2');
+      expect(theirs).toHaveTextContent('input.par 4');
+      expect(theirs).toHaveTextContent('input.strokeIndex 5');
+      expect(theirs).not.toHaveTextContent('input.par 3');
+      expect(theirs).not.toHaveTextContent('input.meters 142');
+    });
+
+    /**
+     * Nada obliga a que la tarjeta de una barra este completa: la trae el
+     * importador. Con el panel colgando solo de la barra propia, en los hoyos
+     * que le faltaran desaparecia la entrada de golpes y no se podia anotar a
+     * NADIE, mientras el boton de siguiente seguia llevando hasta alli.
+     */
+    it('con la barra propia a medias sigue dejando anotar, con la tarjeta del campo', () => {
+      renderWithCard({
+        holes: [
+          { holeNumber: 1, par: 4, strokeIndex: 5 },
+          { holeNumber: 2, par: 3, strokeIndex: 11 },
+        ],
+        tees: [teeWithCard],
+        participant: { color: 'YELLOW', teeGender: 'MALE' },
+        currentHole: 2,
+      });
+
+      expect(screen.getByTestId('quick-match-hole-input')).toBeInTheDocument();
+      expect(screen.getByText('input.par 3')).toBeInTheDocument();
+      expect(screen.getByText('input.strokeIndex 11')).toBeInTheDocument();
+    });
+
+    /**
+     * Los metros son justo lo que distingue una barra de otra, y no deciden
+     * como se lee el golpe. Comparados junto al par y al indice, cualquier
+     * partido mixto partia la cabecera y apretaba los datos de cada uno en
+     * media columna a 320 px, que es lo que se acababa de arreglar. Cada campo
+     * se mira por su cuenta: del otro jugador solo baja lo que difiera.
+     */
+    it('con el mismo par e indice pero metros distintos, solo bajan los metros', () => {
+      renderWithCard({
+        holes: [{ holeNumber: 1, par: 4, strokeIndex: 5 }],
+        tees: [
+          { color: 'YELLOW', gender: 'MALE', holes: [{ holeNumber: 1, par: 4, strokeIndex: 5, meters: 142 }] },
+          { color: 'RED', gender: 'FEMALE', holes: [{ holeNumber: 1, par: 4, strokeIndex: 5, meters: 300 }] },
+        ],
+        participant: { color: 'YELLOW', teeGender: 'MALE' },
+        others: [
+          {
+            participantId: 'user-2',
+            userId: 'user-2',
+            name: 'Friend',
+            handicap: 0,
+            color: 'RED',
+            teeGender: 'FEMALE',
+          },
+        ],
+      });
+
+      // El par y el indice, una sola vez arriba, con mis metros
+      expect(screen.getByText('input.par 4')).toBeInTheDocument();
+      expect(screen.getByText('input.strokeIndex 5')).toBeInTheDocument();
+      expect(screen.getByText('input.meters 142')).toBeInTheDocument();
+      expect(screen.queryByTestId('quick-match-hole-facts-user-1')).not.toBeInTheDocument();
+
+      // Del otro jugador solo bajan los metros: el par y el indice son los mismos
+      const theirs = screen.getByTestId('quick-match-hole-facts-user-2');
+      expect(theirs).toHaveTextContent('input.meters 300');
+      expect(theirs).not.toHaveTextContent('input.par');
+      expect(theirs).not.toHaveTextContent('input.strokeIndex');
+    });
+
+    /**
+     * De los 800 campos federados, 56 cambian el indice entre barras y solo 25
+     * el par: agrupar los dos repetia debajo del otro jugador un par que ya
+     * estaba en la cabecera y era el mismo, justo en el caso mas frecuente.
+     */
+    it('si solo cambia el indice, no repite debajo el par que ya esta arriba', () => {
+      renderWithCard({
+        holes: [{ holeNumber: 1, par: 4, strokeIndex: 5 }],
+        tees: [
+          { color: 'YELLOW', gender: 'MALE', holes: [{ holeNumber: 1, par: 4, strokeIndex: 5, meters: 142 }] },
+          { color: 'RED', gender: 'FEMALE', holes: [{ holeNumber: 1, par: 4, strokeIndex: 3, meters: 142 }] },
+        ],
+        participant: { color: 'YELLOW', teeGender: 'MALE' },
+        others: [
+          {
+            participantId: 'user-2',
+            userId: 'user-2',
+            name: 'Friend',
+            handicap: 0,
+            color: 'RED',
+            teeGender: 'FEMALE',
+          },
+        ],
+      });
+
+      const theirs = screen.getByTestId('quick-match-hole-facts-user-2');
+      expect(theirs).toHaveTextContent('input.strokeIndex 3');
+      expect(theirs).not.toHaveTextContent('input.par');
+      expect(theirs).not.toHaveTextContent('input.meters');
+    });
+  });
+});
+
+describe('QuickMatchScoringPage · foursomes anota una bola por bando', () => {
+  const foursomesMatch = {
+    ...baseQuickMatch,
+    matchFormat: 'FOURSOMES',
+    scoringFormat: null,
+    status: 'IN_PROGRESS',
+    isCompleted: false,
+    participants: [
+      { participantId: 'user-1', userId: 'user-1', name: 'Yo', handicap: 18, team: 'A' },
+      { participantId: 'p-partner', name: 'Socio', handicap: 12, team: 'A' },
+      { participantId: 'p-rival-1', name: 'Rival Uno', handicap: 10, team: 'B' },
+      { participantId: 'p-rival-2', name: 'Rival Dos', handicap: 14, team: 'B' },
+    ],
+    holeScores: [],
+  };
+
+  const renderFoursomes = (overrides = {}, submitScore = vi.fn()) => {
+    mockUseQuickMatchScoring.mockReturnValue({
+      ...baseHookState,
+      quickMatch: { ...foursomesMatch, ...overrides },
+      myParticipant: foursomesMatch.participants[0],
+      isScorer: true,
+      coveredParticipantIds: ['user-1', 'p-partner', 'p-rival-1', 'p-rival-2'],
+      setCurrentHole: vi.fn(),
+      submitScore,
+      completeMatch: vi.fn(),
+      refetch: vi.fn(),
+    });
+    renderPage();
+    return submitScore;
+  };
+
+  it('shows one box per side, named after both partners', () => {
+    renderFoursomes();
+
+    expect(screen.getByText('Yo & Socio')).toBeInTheDocument();
+    expect(screen.getByText('Rival Uno & Rival Dos')).toBeInTheDocument();
+    // Una casilla por bando, no una por jugador.
+    expect(screen.getByTestId('quick-match-score-button-user-1')).toBeInTheDocument();
+    expect(screen.getByTestId('quick-match-score-button-p-rival-1')).toBeInTheDocument();
+    expect(screen.queryByTestId('quick-match-score-button-p-partner')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('quick-match-score-button-p-rival-2')).not.toBeInTheDocument();
+  });
+
+  /**
+   * La bola del bando la anota cualquiera de los dos: si la metió el compañero,
+   * la casilla del bando tiene que enseñarla igual. Antes, cada jugador solo
+   * veía la suya y el hoyo parecía sin anotar.
+   */
+  it('shows the ball the partner entered', () => {
+    renderFoursomes({
+      holeScores: [{ holeNumber: 1, participantId: 'p-partner', score: 5 }],
+    });
+
+    expect(screen.getByTestId('quick-match-score-button-user-1')).toHaveTextContent('5');
+  });
+
+  it('keeps one box per player in fourball', () => {
+    renderFoursomes({ matchFormat: 'FOURBALL' });
+
+    // Dos bolas por bando: cada jugador anota la suya.
+    expect(screen.getByTestId('quick-match-score-button-user-1')).toBeInTheDocument();
+    expect(screen.getByTestId('quick-match-score-button-p-partner')).toBeInTheDocument();
+    expect(screen.getByTestId('quick-match-score-button-p-rival-1')).toBeInTheDocument();
+    expect(screen.getByTestId('quick-match-score-button-p-rival-2')).toBeInTheDocument();
+  });
+
+  /**
+   * Una bola, una fila: la del primer jugador del bando, la anote quien la
+   * anote. A nombre de quien tuviera el móvil, los dos anotadores escribían
+   * filas distintas del mismo golpe y cada pantalla leía una.
+   */
+  it('writes the side ball under the first player of the side', () => {
+    const submitScore = vi.fn();
+    mockUseQuickMatchScoring.mockReturnValue({
+      ...baseHookState,
+      quickMatch: foursomesMatch,
+      myParticipant: foursomesMatch.participants[2],
+      isScorer: true,
+      // Anotación cruzada: en foursomes cada anotador cubre a los cuatro.
+      coveredParticipantIds: ['user-1', 'p-partner', 'p-rival-1', 'p-rival-2'],
+      setCurrentHole: vi.fn(),
+      submitScore,
+      completeMatch: vi.fn(),
+      refetch: vi.fn(),
+    });
+
+    renderPage();
+
+    // El rival anota la bola del bando de enfrente bajo su primer jugador, no
+    // bajo sí mismo ni bajo el compañero.
+    expect(screen.getByTestId('quick-match-score-button-user-1')).toBeInTheDocument();
+    expect(screen.getByTestId('quick-match-score-button-p-rival-1')).toBeInTheDocument();
+    expect(screen.queryByTestId('quick-match-score-button-p-partner')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('quick-match-score-button-p-rival-2')).not.toBeInTheDocument();
+
+    // Y al anotar de verdad, el golpe se guarda a ese nombre: que se pinte la
+    // casilla correcta no dice nada de bajo quién escribe.
+    fireEvent.click(screen.getByTestId('quick-match-score-button-user-1'));
+    fireEvent.click(screen.getByText('5').closest('button'));
+
+    expect(submitScore).toHaveBeenCalledWith(1, 'user-1', 5);
+  });
+
+  /**
+   * Con la anotación cruzada del backend todos cubren la fila del bando. Si no
+   * —un backend aún sin ese reparto, o un detalle sin asignaciones— se escribe
+   * bajo el primer miembro que sí se cubra: dejar al compañero con la pantalla
+   * en blanco y sin poder anotar es peor que una fila a otro nombre.
+   */
+  it('falls back to a covered member when the card holder is not covered', () => {
+    mockUseQuickMatchScoring.mockReturnValue({
+      ...baseHookState,
+      quickMatch: foursomesMatch,
+      myParticipant: foursomesMatch.participants[0],
+      isScorer: true,
+      coveredParticipantIds: ['user-1', 'p-rival-2'],
+      setCurrentHole: vi.fn(),
+      submitScore: vi.fn(),
+      completeMatch: vi.fn(),
+      refetch: vi.fn(),
+    });
+
+    renderPage();
+
+    expect(screen.getByTestId('quick-match-score-button-user-1')).toBeInTheDocument();
+    expect(screen.getByTestId('quick-match-score-button-p-rival-2')).toBeInTheDocument();
+    expect(screen.queryByTestId('quick-match-score-button-p-rival-1')).not.toBeInTheDocument();
+  });
+
+  /**
+   * Y la casilla enseña la fila que se escribe, no la del titular: con el
+   * respaldo mandando, corregir el golpe guardaba bien pero la pantalla seguía
+   * devolviendo el viejo, como si la corrección se hubiera perdido.
+   */
+  it('shows the entry of the row it actually writes to', () => {
+    mockUseQuickMatchScoring.mockReturnValue({
+      ...baseHookState,
+      quickMatch: {
+        ...foursomesMatch,
+        holeScores: [
+          { holeNumber: 1, participantId: 'p-rival-1', score: 4 },
+          { holeNumber: 1, participantId: 'p-rival-2', score: 6 },
+        ],
+      },
+      myParticipant: foursomesMatch.participants[0],
+      isScorer: true,
+      coveredParticipantIds: ['user-1', 'p-rival-2'],
+      setCurrentHole: vi.fn(),
+      submitScore: vi.fn(),
+      completeMatch: vi.fn(),
+      refetch: vi.fn(),
+    });
+
+    renderPage();
+
+    expect(screen.getByTestId('quick-match-score-button-p-rival-2')).toHaveTextContent('6');
+  });
+
+  /** Sin cubrir a nadie del bando no hay dónde escribir: la casilla no se pinta. */
+  it('hides the side box when this scorer covers nobody on that side', () => {
+    mockUseQuickMatchScoring.mockReturnValue({
+      ...baseHookState,
+      quickMatch: foursomesMatch,
+      myParticipant: foursomesMatch.participants[0],
+      isScorer: true,
+      coveredParticipantIds: ['user-1', 'p-partner'],
+      setCurrentHole: vi.fn(),
+      submitScore: vi.fn(),
+      completeMatch: vi.fn(),
+      refetch: vi.fn(),
+    });
+
+    renderPage();
+
+    expect(screen.getByTestId('quick-match-score-button-user-1')).toBeInTheDocument();
+    expect(screen.queryByTestId('quick-match-score-button-p-rival-1')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('quick-match-score-button-p-rival-2')).not.toBeInTheDocument();
+  });
+
+  /**
+   * La bola anotada a nombre del compañero cuenta para el hoyo: el selector
+   * miraba solo al titular de la tarjeta y el hoyo no llegaba a ponerse verde.
+   */
+  it('counts a side ball entered under the partner as the side\'s ball', () => {
+    renderFoursomes({
+      holeScores: [
+        { holeNumber: 1, participantId: 'p-partner', score: 4 },
+        { holeNumber: 1, participantId: 'p-rival-2', score: 5 },
+      ],
+    });
+
+    expect(screen.getByTestId('quick-match-hole-btn-1').className).toContain('green');
+  });
+
+  /**
+   * El hoyo está completo cuando están las dos bolas, no cuatro golpes: el
+   * selector contaba los participantes que cubre el anotador —los cuatro, con
+   * anotación cruzada— y ningún hoyo de foursomes llegaba a ponerse verde.
+   */
+  it('marks a foursomes hole complete with one ball per side', () => {
+    renderFoursomes({
+      holeScores: [
+        { holeNumber: 1, participantId: 'user-1', score: 4 },
+        { holeNumber: 1, participantId: 'p-rival-1', score: 5 },
+      ],
+    });
+
+    expect(screen.getByTestId('quick-match-hole-btn-1').className).toContain('green');
+  });
+
+  /**
+   * Sin `team` no hay bando: cada jugador va solo. Agruparlos a todos bajo el
+   * mismo dejaba una única casilla con los cuatro nombres.
+   */
+  it('keeps a box per player when the participants have no team', () => {
+    renderFoursomes({
+      participants: foursomesMatch.participants.map((p) => ({ ...p, team: null })),
+    });
+
+    expect(screen.getByTestId('quick-match-score-button-user-1')).toBeInTheDocument();
+    expect(screen.getByTestId('quick-match-score-button-p-partner')).toBeInTheDocument();
+    expect(screen.getByTestId('quick-match-score-button-p-rival-1')).toBeInTheDocument();
+    expect(screen.getByTestId('quick-match-score-button-p-rival-2')).toBeInTheDocument();
+  });
 });

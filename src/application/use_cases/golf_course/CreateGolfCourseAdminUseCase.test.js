@@ -114,7 +114,7 @@ describe('CreateGolfCourseAdminUseCase', () => {
     expect(result.tees).toHaveLength(2);
   });
 
-  it('should handle course creation with maximum 6 tees', async () => {
+  it('should handle course creation with 6 tees', async () => {
     // Arrange
     const courseData = {
       ...createValidCourseData(),
@@ -144,6 +144,54 @@ describe('CreateGolfCourseAdminUseCase', () => {
     expect(result.tees).toHaveLength(6);
   });
 
+  it('should accept the 10 tees the form allows, not just 6', async () => {
+    // Arrange - el formulario deja llegar hasta 10 (`handleAddTee`) y su mensaje
+    // dice "entre 2 y 10". Con el limite en 6, un campo de 7 barras se aceptaba
+    // en pantalla y reventaba aqui.
+    const courseData = {
+      ...createValidCourseData(),
+      tees: Array.from({ length: 10 }, (_, i) => ({
+        color: 'OTHER',
+        identifier: `Barra ${i + 1}`,
+        courseRating: 70.0,
+        slopeRating: 120,
+        gender: 'MALE'
+      }))
+    };
+
+    golfCourseRepository.createAsAdmin.mockResolvedValue({
+      id: 'course-790',
+      ...courseData,
+      totalPar: 72
+    });
+
+    // Act
+    const result = await useCase.execute(courseData);
+
+    // Assert
+    expect(result.tees).toHaveLength(10);
+  });
+
+  it('should reject 11 tees, which the form cannot produce either', async () => {
+    // Arrange
+    const courseData = {
+      ...createValidCourseData(),
+      tees: Array.from({ length: 11 }, (_, i) => ({
+        color: 'OTHER',
+        identifier: `Barra ${i + 1}`,
+        courseRating: 70.0,
+        slopeRating: 120,
+        gender: 'MALE'
+      }))
+    };
+
+    // Act & Assert
+    await expect(useCase.execute(courseData)).rejects.toThrow(
+      'Golf course must have between 2 and 10 tees'
+    );
+    expect(golfCourseRepository.createAsAdmin).not.toHaveBeenCalled();
+  });
+
   it('should create course with exactly 18 holes', async () => {
     // Arrange
     const courseData = createValidCourseData();
@@ -164,20 +212,22 @@ describe('CreateGolfCourseAdminUseCase', () => {
   });
 
   it('should handle different course types', async () => {
-    // Arrange - EXECUTIVE course with valid total par (66-76)
+    // Arrange - un EXECUTIVE de par 64, que es su rango (61-65) y no el de un
+    // campo de 18 hoyos. Este caso pedia par 66 y pasaba porque la validacion
+    // era la de un STANDARD_18 para los tres tipos.
     const executiveData = {
       ...createValidCourseData(),
       courseType: 'EXECUTIVE',
       holes: [
-        ...Array.from({ length: 12 }, (_, i) => ({
+        ...Array.from({ length: 10 }, (_, i) => ({
           holeNumber: i + 1,
           par: 4,
           strokeIndex: i + 1
         })),
-        ...Array.from({ length: 6 }, (_, i) => ({
-          holeNumber: i + 13,
+        ...Array.from({ length: 8 }, (_, i) => ({
+          holeNumber: i + 11,
           par: 3,
-          strokeIndex: i + 13
+          strokeIndex: i + 11
         }))
       ]
     };
@@ -186,7 +236,7 @@ describe('CreateGolfCourseAdminUseCase', () => {
       id: 'course-111',
       ...executiveData,
       approvalStatus: 'APPROVED',
-      totalPar: 66 // 12*4 + 6*3 = 48+18 = 66
+      totalPar: 64 // 10*4 + 8*3 = 40+24 = 64
     };
 
     golfCourseRepository.createAsAdmin.mockResolvedValue(mockCreatedCourse);
@@ -196,7 +246,53 @@ describe('CreateGolfCourseAdminUseCase', () => {
 
     // Assert
     expect(result.courseType).toBe('EXECUTIVE');
-    expect(result.totalPar).toBe(66);
+    expect(result.totalPar).toBe(64);
+  });
+
+  it('should accept a pitch & putt at par 54, which a standard course would reject', async () => {
+    // Arrange - 18 hoyos par 3. Antes se rechazaba aqui despues de que el
+    // formulario lo aceptase, asi que dar de alta un campo corto era imposible.
+    const pitchAndPuttData = {
+      ...createValidCourseData(),
+      courseType: 'PITCH_AND_PUTT',
+      holes: Array.from({ length: 18 }, (_, i) => ({
+        holeNumber: i + 1,
+        par: 3,
+        strokeIndex: i + 1
+      }))
+    };
+
+    golfCourseRepository.createAsAdmin.mockResolvedValue({
+      id: 'course-112',
+      ...pitchAndPuttData,
+      totalPar: 54
+    });
+
+    // Act
+    const result = await useCase.execute(pitchAndPuttData);
+
+    // Assert
+    expect(golfCourseRepository.createAsAdmin).toHaveBeenCalled();
+    expect(result.totalPar).toBe(54);
+  });
+
+  it('should reject that same par 54 on a standard 18-hole course', async () => {
+    // Arrange
+    const standardData = {
+      ...createValidCourseData(),
+      courseType: 'STANDARD_18',
+      holes: Array.from({ length: 18 }, (_, i) => ({
+        holeNumber: i + 1,
+        par: 3,
+        strokeIndex: i + 1
+      }))
+    };
+
+    // Act & Assert - el mensaje nombra el rango del tipo, no uno fijo
+    await expect(useCase.execute(standardData)).rejects.toThrow(
+      'Total par must be between 66 and 76'
+    );
+    expect(golfCourseRepository.createAsAdmin).not.toHaveBeenCalled();
   });
 
   it('should handle repository errors', async () => {

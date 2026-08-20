@@ -64,6 +64,14 @@
     "scorers": {
       "heading": "Choose scorers",
       "description": "Choose 1 to 4 registered players who will record scores. You always score.",
+      "foursomesHeading": "Who keeps the card?",
+      "foursomesDescription": "In foursomes each pair plays one ball and keeps one card. Either partner can enter it.",
+      "foursomesDescriptionAlone": "In foursomes the pair plays one ball, in alternate shot.",
+      "bothPairs": "Both pairs score",
+      "bothPairsHint": "Each pair marks the other.",
+      "onlyMyPair": "Only my pair scores",
+      "onlyMyPairHint": "You keep both cards.",
+      "onlyMyPairHintAlone": "You keep both cards.",
       "back": "Back",
       "next": "Next",
       "errorMinScorers": "Select at least one scorer"
@@ -124,6 +132,7 @@
     },
     "grossStrokes_one": "{{count}} stroke",
     "grossStrokes_other": "{{count}} strokes",
+    "teamTotal": "Team total",
     "hide": "Remove from my history",
     "hidden": "Match removed from your history",
     "hideError": "Could not remove the match from your history"
@@ -168,7 +177,8 @@
       "holesUp": "{{count}} UP",
       "decidedResult": "{{lead}}&{{remaining}}",
       "leads": "{{name}} leads",
-      "holesPlayed": "{{count}} hole(s) played"
+      "holesPlayed": "{{count}} hole(s) played",
+      "yourRound": "Your round:"
     },
     "scorecard": {
       "strokeReceived": "Receives {{count}} extra stroke(s) on this hole",
@@ -195,5 +205,8 @@
       "saveInvalid": "That score is not valid."
     },
     "retry": "Retry"
+  },
+  "personalRound": {
+    "inMatch": "({{value}} in the match)"
   }
 }

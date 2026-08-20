@@ -64,6 +64,14 @@
     "scorers": {
       "heading": "Elegir anotadores",
       "description": "Elige entre 1 y 4 jugadores registrados que anotarán los resultados. Tú siempre anotas.",
+      "foursomesHeading": "¿Quién lleva la tarjeta?",
+      "foursomesDescription": "En foursomes cada pareja juega una bola y lleva una tarjeta. Puede apuntar cualquiera de los dos.",
+      "foursomesDescriptionAlone": "En foursomes la pareja juega una bola a golpes alternos.",
+      "bothPairs": "Apuntan las dos parejas",
+      "bothPairsHint": "Cada pareja marca a la de enfrente.",
+      "onlyMyPair": "Apunta solo mi pareja",
+      "onlyMyPairHint": "Lleváis las dos tarjetas.",
+      "onlyMyPairHintAlone": "Llevas las dos tarjetas.",
       "back": "Atrás",
       "next": "Siguiente",
       "errorMinScorers": "Selecciona al menos un anotador"
@@ -124,6 +132,7 @@
     },
     "grossStrokes_one": "{{count}} golpe",
     "grossStrokes_other": "{{count}} golpes",
+    "teamTotal": "Del equipo",
     "hide": "Quitar de mi historial",
     "hidden": "Partida quitada de tu historial",
     "hideError": "No se pudo quitar la partida de tu historial"
@@ -168,7 +177,8 @@
       "holesUp": "{{count}} arriba",
       "decidedResult": "{{lead}}&{{remaining}}",
       "leads": "{{name}} lidera",
-      "holesPlayed": "{{count}} hoyo(s) jugados"
+      "holesPlayed": "{{count}} hoyo(s) jugados",
+      "yourRound": "Tu vuelta:"
     },
     "scorecard": {
       "strokeReceived": "Recibe {{count}} golpe(s) extra en este hoyo",
@@ -195,5 +205,8 @@
       "saveInvalid": "Ese resultado no es válido."
     },
     "retry": "Reintentar"
+  },
+  "personalRound": {
+    "inMatch": "({{value}} en el partido)"
   }
 }

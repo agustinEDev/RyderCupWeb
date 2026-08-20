@@ -1,3 +1,5 @@
+import { parRangeFor } from '../../../domain/services/courseTypeRanges';
+
 /**
  * Create Golf Course Request Use Case
  * Allows creators to request a new golf course (status: PENDING_APPROVAL)
@@ -6,7 +8,7 @@
  * - Any authenticated user can request a golf course
  * - Golf course is created with status PENDING_APPROVAL
  * - Admin must approve before it can be used in competitions
- * - Validates: name, country, tees (2-6), holes (18), total par (66-76)
+ * - Validates: name, country, tees (2-6), holes (18), total par (by course type)
  */
 class CreateGolfCourseRequestUseCase {
   constructor({ golfCourseRepository }) {
@@ -72,10 +74,12 @@ class CreateGolfCourseRequestUseCase {
       }
     });
 
-    // Validate total par (66-76 range)
+    // El par total es el del tipo de campo, no el de un 18 hoyos: un pitch &
+    // putt es par 54-60 y un ejecutivo 61-65. Ver `courseTypeRanges`.
     const totalPar = golfCourseData.holes.reduce((sum, hole) => sum + hole.par, 0);
-    if (totalPar < 66 || totalPar > 76) {
-      throw new Error(`Total par must be between 66 and 76 (current: ${totalPar})`);
+    const [minPar, maxPar] = parRangeFor(golfCourseData.courseType);
+    if (totalPar < minPar || totalPar > maxPar) {
+      throw new Error(`Total par must be between ${minPar} and ${maxPar} (current: ${totalPar})`);
     }
 
     // Call repository to create golf course request
