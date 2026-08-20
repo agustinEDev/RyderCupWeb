@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [2.14.0] - 2026-08-20
+
+### Fixed
+
+- **En foursomes la pantalla ofrecía cuatro casillas, una por jugador, cuando la pareja juega UNA bola**. Nada decía que el bando comparte bola, así que lo natural —anotar cada hoyo en la casilla de quien lo jugó— rompía tres cosas a la vez: el total del bando perdía todos los hoyos que había metido el compañero, la tarjeta dejaba a cada uno con la mitad de los hoyos y el resto en blanco, y el partido no puntuaba **ningún** hoyo. Reproducido en el clúster antes de arreglarlo: hoyo 1 en una casilla (5), hoyo 2 en la del compañero (4), y el historial decía «5 golpes · Del equipo» mientras la clasificación decía «Todavía no hay hoyos completados». Ahora hay **una casilla y una tarjeta por bando**, la bola se guarda a nombre del primer jugador del bando —la anote quien la anote, así que no hay dos verdades que reconciliar— y la cabecera enseña el hándicap del bando. Cierra la issue #420.
+
+- **La tarjeta se imprimía contra la barra equivocada**: leía `holes`, la tarjeta de referencia de la **primera** barra del campo. De los 800 campos federados importados, **25 cambian de par entre barras** —Son Parc es par 71 desde amarillas y 58 desde naranjas—, así que la fila del Par, la figura del hoyo y los puntos Stableford se medían contra un par que no jugaba nadie, mientras la pestaña de al lado ya resolvía la barra de cada jugador. En foursomes, además, la cabecera del bando enseñaba el hándicap de juego del primer jugador: los dos bandos imprimían «Hcp de juego 9», uno seguido de «no recibe golpes» y el otro de «recibe 2 golpes», dos nueves que se contradecían entre sí. Cierra las issues #417 y #423.
+
+- **El histórico medía la vuelta contra el par del campo en vez de dar el resultado neto del jugador**: `MyQuickMatchesPage` llamaba a `computeParticipantTotals` con la firma antigua, pasando las barras del campo donde ahora va el reparto ya resuelto. Reportado desde el uso.
+
+- **Los rangos de valoración de barra seguían a los del backend, que se ensancharon** para admitir los campos cortos (CR 45-90, slope 40-160). La copia de este lado es deliberada —sin ella no hay anotación sin conexión—, pero mientras no coincidieran, la misma partida repartía distinto en línea y fuera de línea: comprobado en un campo corto, **hándicap de juego 11 y 21 en el servidor contra 18 y 30 aquí**, diez golpes de diferencia contra doce, suficiente para cambiar quién gana. Es la mitad de cliente de RyderCupAm#206.
+
+- **El índice de dificultad del hoyo se rotulaba «IS» en español**, que es el «SI» inglés con las letras cambiadas y no significa nada en ninguno de los dos idiomas. Pasa a **«HCP»**, que es lo que imprimen las tarjetas españolas y la RFEG; en el formulario del campo, donde hay sitio, la palabra entera.
+
+- **Una tarjeta no se podía entregar si el partido se decidía antes del hoyo 18.** Un match play acaba en cuanto un bando va más arriba que hoyos quedan, y la aplicación ya lo decía —el aviso «Partido Decidido» ofrece «Continuar para Enviar»—, pero detrás no había nada: el botón exigía los 18 hoyos validados y devolvía al jugador a la pantalla de anotar, donde ese botón ni siquiera vive. El servidor sí acepta esa tarjeta; solo pide que los hoyos **jugados** estén validados. Ahora la puerta replica esa regla y se queda más estricta que la API: un hoyo cuenta como jugado cuando **cualquiera de los dos lados** lo ha anotado, porque leer solo la anotación propia escondía el hoyo que había anotado el marcador y no uno mismo —y entregar la tarjeta bloquea el golpe propio para siempre, así que ese hoyo se habría perdido y se habría caído del resultado—. El diálogo cuenta contra los hoyos jugados, así que un partido decidido en el 11 dice «11/11» y no «11/18», y ya no se queda abierto si la entrega deja de ser posible. Cierra la issue #426.
+
+### Added
+
+- **Cada jugador ve la tarjeta de su propia barra** —par, índice de dificultad y metros—, que es lo que el servidor sirve desde la v2.10.0. El par, el índice y la distancia son de la **barra**, no del campo: de los 800 campos federados, 56 cambian de índice entre barras y 25 de par.
+
+- **En foursomes, el tercer paso pregunta quién lleva la tarjeta**, en vez de pedir entre uno y cuatro anotadores, que es la pregunta correcta solo cuando cada uno juega su bola. Se elige entre que **anoten los dos bandos** —cada pareja marca a la otra, como se juega, y es lo que viene por defecto— o que **anote solo mi pareja**. Cualquiera de los dos compañeros puede teclear: se manda como anotador a todos los jugadores registrados del bando que anota, así que nadie tiene que pasar el móvil a mitad de vuelta.
+
 ## [2.13.0] - 2026-08-16
 
 ### Fixed
