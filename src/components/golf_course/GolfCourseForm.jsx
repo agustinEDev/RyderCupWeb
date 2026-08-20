@@ -9,6 +9,22 @@ import CountryAutocomplete from '../ui/CountryAutocomplete';
 
 const COURSE_TYPES = ['STANDARD_18', 'PITCH_AND_PUTT', 'EXECUTIVE'];
 
+// Los mismos rangos que valida `GolfCourse._validate_tee_ratings` en el
+// backend, por tipo de campo: un pitch & putt no se valora en la misma escala
+// que un 18 hoyos. Con un rango unico se rechazaba aqui lo que el backend si
+// admite —un CR 46,8 y un SR 47 son valores reales de la RFEG— y no habia forma
+// de dar de alta a mano un campo corto. Ver RyderCupAm#206.
+const RATING_RANGE_BY_COURSE_TYPE = {
+  STANDARD_18: [50, 90],
+  PITCH_AND_PUTT: [45, 90],
+  EXECUTIVE: [45, 90],
+};
+const SLOPE_RANGE_BY_COURSE_TYPE = {
+  STANDARD_18: [55, 160],
+  PITCH_AND_PUTT: [40, 155],
+  EXECUTIVE: [40, 155],
+};
+
 // Los diez colores admitidos, ordenados de barras mas largas a mas cortas
 // segun el uso habitual. OTHER cubre las salidas cuyo nombre no es un color
 // (las "Championship" britanicas, las combinadas o las numeradas por metros) y
@@ -281,15 +297,23 @@ const GolfCourseForm = ({ initialData = null, onSubmit, onCancel }) => {
         return false;
       }
 
+      const [minRating, maxRating] =
+        RATING_RANGE_BY_COURSE_TYPE[courseType] ?? RATING_RANGE_BY_COURSE_TYPE.STANDARD_18;
       const courseRating = parseFloat(tee.courseRating);
-      if (isNaN(courseRating) || courseRating < 50 || courseRating > 90) {
-        customToast.error(t('form.errors.courseRatingRange', { index: i + 1 }));
+      if (isNaN(courseRating) || courseRating < minRating || courseRating > maxRating) {
+        customToast.error(
+          t('form.errors.courseRatingRange', { index: i + 1, min: minRating.toFixed(1), max: maxRating.toFixed(1) })
+        );
         return false;
       }
 
+      const [minSlope, maxSlope] =
+        SLOPE_RANGE_BY_COURSE_TYPE[courseType] ?? SLOPE_RANGE_BY_COURSE_TYPE.STANDARD_18;
       const slopeRating = parseInt(tee.slopeRating, 10);
-      if (isNaN(slopeRating) || slopeRating < 55 || slopeRating > 155) {
-        customToast.error(t('form.errors.slopeRatingRange', { index: i + 1 }));
+      if (isNaN(slopeRating) || slopeRating < minSlope || slopeRating > maxSlope) {
+        customToast.error(
+          t('form.errors.slopeRatingRange', { index: i + 1, min: minSlope, max: maxSlope })
+        );
         return false;
       }
     }
