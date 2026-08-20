@@ -40,7 +40,8 @@ describe('courseTypeRanges', () => {
   });
 
   it('trata un tipo ausente o desconocido como campo estandar', () => {
-    // Es el rango mas estricto de los tres: ante la duda, no se cuela nada
+    // Lo que asume el backend cuando no hay tipo. No es "lo mas estricto": el
+    // techo de slope estandar (160) es MAS alto que el de un campo corto (155).
     for (const desconocido of [undefined, null, '', 'LINKS']) {
       expect(parRangeFor(desconocido)).toEqual([66, 76]);
       expect(ratingRangeFor(desconocido)).toEqual([50, 90]);

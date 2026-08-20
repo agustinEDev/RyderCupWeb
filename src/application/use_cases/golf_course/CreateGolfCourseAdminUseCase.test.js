@@ -114,7 +114,7 @@ describe('CreateGolfCourseAdminUseCase', () => {
     expect(result.tees).toHaveLength(2);
   });
 
-  it('should handle course creation with maximum 6 tees', async () => {
+  it('should handle course creation with 6 tees', async () => {
     // Arrange
     const courseData = {
       ...createValidCourseData(),
@@ -142,6 +142,54 @@ describe('CreateGolfCourseAdminUseCase', () => {
 
     // Assert
     expect(result.tees).toHaveLength(6);
+  });
+
+  it('should accept the 10 tees the form allows, not just 6', async () => {
+    // Arrange - el formulario deja llegar hasta 10 (`handleAddTee`) y su mensaje
+    // dice "entre 2 y 10". Con el limite en 6, un campo de 7 barras se aceptaba
+    // en pantalla y reventaba aqui.
+    const courseData = {
+      ...createValidCourseData(),
+      tees: Array.from({ length: 10 }, (_, i) => ({
+        color: 'OTHER',
+        identifier: `Barra ${i + 1}`,
+        courseRating: 70.0,
+        slopeRating: 120,
+        gender: 'MALE'
+      }))
+    };
+
+    golfCourseRepository.createAsAdmin.mockResolvedValue({
+      id: 'course-790',
+      ...courseData,
+      totalPar: 72
+    });
+
+    // Act
+    const result = await useCase.execute(courseData);
+
+    // Assert
+    expect(result.tees).toHaveLength(10);
+  });
+
+  it('should reject 11 tees, which the form cannot produce either', async () => {
+    // Arrange
+    const courseData = {
+      ...createValidCourseData(),
+      tees: Array.from({ length: 11 }, (_, i) => ({
+        color: 'OTHER',
+        identifier: `Barra ${i + 1}`,
+        courseRating: 70.0,
+        slopeRating: 120,
+        gender: 'MALE'
+      }))
+    };
+
+    // Act & Assert
+    await expect(useCase.execute(courseData)).rejects.toThrow(
+      'Golf course must have between 2 and 10 tees'
+    );
+    expect(golfCourseRepository.createAsAdmin).not.toHaveBeenCalled();
   });
 
   it('should create course with exactly 18 holes', async () => {

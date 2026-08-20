@@ -295,6 +295,12 @@ const GolfCourseForm = ({ initialData = null, onSubmit, onCancel }) => {
         return false;
       }
 
+      // En un navegador real estas dos comprobaciones casi nunca se ven: los
+      // `min`/`max` nativos de los inputs cortan el submit antes, y el globo lo
+      // pinta el navegador en SU idioma. Se quedan como red de seguridad —para
+      // los valores que llegan por `initialData` y para quien entre sin la
+      // validacion nativa— y porque son las que sabemos probar: jsdom no aplica
+      // constraint validation. No borrarlas por parecer inalcanzables.
       const [minRating, maxRating] = ratingRange;
       const courseRating = parseFloat(tee.courseRating);
       if (isNaN(courseRating) || courseRating < minRating || courseRating > maxRating) {

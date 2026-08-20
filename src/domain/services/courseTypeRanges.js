@@ -39,7 +39,11 @@ export const SLOPE_RANGE_BY_COURSE_TYPE = {
 };
 
 // Un tipo desconocido —o ausente, que es lo que llega desde los formularios mas
-// viejos— se trata como campo estandar: es el rango mas estricto de los tres.
+// viejos— se trata como campo estandar, que es lo que el backend asume tambien.
+// Ojo: eso NO equivale a "lo mas estricto". Lo es para el par y para el CR,
+// pero no para el slope: el techo de un campo estandar es 160 y el de uno corto
+// 155, asi que un slope de 158 sin tipo pasa. Se acepta porque el caso real es
+// un campo largo antiguo sin `courseType`, no un pitch & putt disfrazado.
 const rangeFor = (table) => (courseType) => table[courseType] ?? table[DEFAULT_COURSE_TYPE];
 
 export const parRangeFor = rangeFor(PAR_RANGE_BY_COURSE_TYPE);
