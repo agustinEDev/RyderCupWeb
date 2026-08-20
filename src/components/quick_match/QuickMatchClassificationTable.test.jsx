@@ -450,4 +450,65 @@ describe('QuickMatchClassificationTable', () => {
       expect(screen.getByTestId('quick-match-my-round-in-match')).toHaveTextContent('-1');
     });
   });
+  /**
+   * El par por barra tiene que llegar a las TRES superficies que puntúan a la
+   * vez —tarjeta, clasificación y vuelta propia—: arreglarlo en una sola dejaba
+   * dos pestañas de la misma pantalla dando puntos distintos para el mismo
+   * hoyo, que es peor que el defecto. Ver RyderCupWeb#417.
+   */
+  describe('el par sale de la barra de cada jugador', () => {
+    const courseHoles = [{ holeNumber: 1, par: 4, strokeIndex: 1 }];
+    const tees = [
+      {
+        color: 'ORANGE',
+        gender: 'MALE',
+        courseRating: 60,
+        slopeRating: 100,
+        holes: [{ holeNumber: 1, par: 3, strokeIndex: 1 }],
+      },
+    ];
+    const onOrange = [
+      {
+        participantId: 'p-1',
+        name: 'Naranjas',
+        handicap: 0,
+        color: 'ORANGE',
+        teeGender: 'MALE',
+        isGuest: false,
+      },
+    ];
+
+    it('puntúa el ranking contra el par de la barra, no contra el del campo', () => {
+      render(
+        <QuickMatchClassificationTable
+          holes={courseHoles}
+          holeScores={[{ holeNumber: 1, participantId: 'p-1', score: 3 }]}
+          participants={onOrange}
+          currentParticipantId="p-1"
+          tees={tees}
+          scoringFormat="STABLEFORD"
+        />
+      );
+
+      // 3 golpes en su par 3 son 2 puntos. Contra el par 4 del campo eran 3, y
+      // la tarjeta de al lado ya enseñaba 2.
+      expect(screen.getByTestId('quick-match-classification-table')).toHaveTextContent('2');
+    });
+
+    it('cuenta la vuelta propia contra el mismo par que el ranking', () => {
+      render(
+        <QuickMatchClassificationTable
+          holes={courseHoles}
+          holeScores={[{ holeNumber: 1, participantId: 'p-1', score: 3 }]}
+          participants={onOrange}
+          currentParticipantId="p-1"
+          tees={tees}
+          scoringFormat="MEDAL"
+        />
+      );
+
+      // PAR sobre su barra; contra el par 4 del campo salía -1
+      expect(screen.getByTestId('quick-match-my-round')).toHaveTextContent('PAR');
+    });
+  });
 });

@@ -197,3 +197,39 @@ describe('HoleInput', () => {
     expect(screen.getByTestId('hole-input')).toHaveTextContent('A');
   });
 });
+/**
+ * Quien anota y a quien marca pueden salir de barras distintas, y entonces el
+ * mismo hoyo tiene dos pares. El teclado etiquetaba los dos contra el par de
+ * quien anota. Ver RyderCupWeb#417.
+ */
+describe('HoleInput · el teclado del marcado usa SU par', () => {
+  const base = {
+    holeNumber: 1,
+    par: 5,
+    strokeIndex: 1,
+    playerScore: null,
+    markedPlayerScore: null,
+    onScoreChange: vi.fn(),
+  };
+
+  it('etiqueta el 4 como birdie en el propio y como par en el del marcado', () => {
+    render(<HoleInput {...base} markedPar={4} />);
+
+    fireEvent.click(screen.getByTestId('own-score-button'));
+    const own = screen.getByRole('dialog');
+    expect(within(own).getByRole('button', { name: /4/ })).toHaveTextContent('input.scoreBirdie');
+    fireEvent.click(within(own).getByRole('button', { name: /input.close/ }));
+
+    fireEvent.click(screen.getByTestId('marked-score-button'));
+    const marked = screen.getByRole('dialog');
+    expect(within(marked).getByRole('button', { name: /4/ })).toHaveTextContent('input.par');
+  });
+
+  it('sin par propio del marcado usa el del hoyo, como hasta ahora', () => {
+    render(<HoleInput {...base} />);
+
+    fireEvent.click(screen.getByTestId('marked-score-button'));
+    const marked = screen.getByRole('dialog');
+    expect(within(marked).getByRole('button', { name: /5/ })).toHaveTextContent('input.par');
+  });
+});

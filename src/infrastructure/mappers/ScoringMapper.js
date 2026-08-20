@@ -51,9 +51,21 @@ class ScoringMapper {
         userId: p.user_id,
         userName: p.user_name,
         team: p.team,
-        color: p.color,
+        // El DTO manda `tee_color`; leer `p.color` dejaba el color en undefined
+        color: p.tee_color ?? p.color ?? null,
         playingHandicap: p.playing_handicap,
         strokesReceived: p.strokes_received || [],
+        // La tarjeta de SU barra: par, índice y metros. El backend la resuelve y
+        // la manda por jugador desde RyderCupAm#213 —«para que el cliente no
+        // tenga que volver a resolverlo, y no lo resuelva de otra manera»— y
+        // aquí se estaba tirando, así que la pantalla seguía puntuando contra la
+        // tarjeta del campo. Ver RyderCupWeb#417.
+        holeCard: (p.hole_card || []).map(h => ({
+          holeNumber: h.hole_number,
+          par: h.par,
+          strokeIndex: h.stroke_index,
+          meters: h.meters ?? null,
+        })),
       })),
       holes: (apiData.holes || []).map(h => ({
         holeNumber: h.hole_number,

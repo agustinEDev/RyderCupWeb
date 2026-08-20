@@ -510,4 +510,47 @@ describe('MatchPlayStrokeAllocator', () => {
       expect(order).toEqual([2, 1]);
     });
   });
+  /**
+   * El bando de foursomes juega UNA bola, así que tiene un solo hándicap. El
+   * reparto ya sale del promedio de los dos; esto es el mismo promedio para
+   * poder enseñarlo. Ver RyderCupWeb#423.
+   */
+  describe('sidePlayingHandicap', () => {
+    it('promedia los Course Handicaps del bando y aplica el allowance', () => {
+      // Sin barra valorable el Course Handicap es el hándicap redondeado:
+      // (18 + 8) / 2 = 13, y el 50% de 13 son 6,5 -> 7
+      const side = [player('a', 18.0), player('b', 8.0)];
+
+      expect(MatchPlayStrokeAllocator.sidePlayingHandicap(side, [], [], 50)).toBe(7);
+    });
+
+    it('reproduce el reparto: la resta de los dos bandos son los golpes que se dan', () => {
+      const holes = meisHoles();
+      const sideA = [player('a', 18.0, 'MALE'), player('b', 8.0, 'MALE')];
+      const sideB = [player('c', 20.0, 'MALE'), player('d', 28.0, 'MALE')];
+      const participants = [
+        { ...sideA[0], team: 'A' },
+        { ...sideA[1], team: 'A' },
+        { ...sideB[0], team: 'B' },
+        { ...sideB[1], team: 'B' },
+      ];
+
+      const phA = MatchPlayStrokeAllocator.sidePlayingHandicap(sideA, holes, MEIS_TEES, 50);
+      const phB = MatchPlayStrokeAllocator.sidePlayingHandicap(sideB, holes, MEIS_TEES, 50);
+      const allocation = MatchPlayStrokeAllocator.allocate({
+        participants,
+        holes,
+        tees: MEIS_TEES,
+        matchFormat: 'FOURSOMES',
+        allowancePercentage: 50,
+      });
+      const received = Object.values(allocation.c.strokesByHole).reduce((a, b) => a + b, 0);
+
+      expect(phB - phA).toBe(received);
+    });
+
+    it('sin jugadores no inventa un hándicap', () => {
+      expect(MatchPlayStrokeAllocator.sidePlayingHandicap([], meisHoles(), MEIS_TEES, 50)).toBe(0);
+    });
+  });
 });

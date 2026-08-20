@@ -129,17 +129,17 @@ class PersonalRoundCalculator {
       };
     }
 
-    // El par se cuenta contra la tarjeta del campo, la misma que usa el ranking
-    // de la clasificacion. No es la barra del jugador —`holes` es la tarjeta de
-    // la PRIMERA barra, y en 25 de 800 campos el par cambia entre barras—, pero
-    // contarlo aqui por barra y en la tabla de al lado por campo dejaba la fila
-    // "Resultado" y esta linea con dos numeros distintos en la misma pantalla,
-    // que es justo lo que este servicio existe para quitar. El par por barra se
-    // arregla de una vez en las tres superficies en RyderCupWeb#417.
+    // El par sale de la barra del jugador, no de `holes`, que es la tarjeta de
+    // la PRIMERA: en 25 de 800 campos el par cambia entre barras. Lo resuelve
+    // `computeParticipantTotals`, el mismo sitio del que come el ranking de la
+    // clasificacion y la tarjeta, para que las tres superficies no puedan dar
+    // numeros distintos en la misma pantalla —que es lo que este servicio
+    // existe para quitar—. Ver RyderCupWeb#417.
     //
-    // De paso, `holeCardFor` es todo o nada: una tarjeta de barra incompleta se
-    // llevaria por delante los hoyos que le faltan, y con ellos los golpes
-    // brutos que esta pagina pinta debajo del resultado.
+    // Esa resolucion es todo o nada, igual que el backend: una tarjeta de barra
+    // incompleta se lleva por delante los hoyos que le faltan, y con ellos los
+    // golpes brutos que esta pagina pinta debajo del resultado. Se acepta a
+    // cambio de dar el mismo numero que el historial. Ver RyderCupAm#215.
 
     const personalTotals = StablefordCalculator.computeParticipantTotals(
       me,
@@ -152,7 +152,8 @@ class PersonalRoundCalculator {
         matchFormat: null,
         allowancePercentage: PERSONAL_ROUND_ALLOWANCE,
         playMode,
-      })
+      }),
+      tees
     );
     if (!personalTotals.holesPlayed) return null;
 
@@ -168,7 +169,8 @@ class PersonalRoundCalculator {
         matchFormat,
         allowancePercentage: allowancePercentage ?? PERSONAL_ROUND_ALLOWANCE,
         playMode,
-      })
+      }),
+      tees
     );
 
     const personalToPar = StablefordCalculator.formatToPar(

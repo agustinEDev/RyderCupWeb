@@ -171,7 +171,10 @@ const QuickMatchClassificationTable = ({
   const rank = isMedal
     ? StablefordCalculator.rankParticipantsByMedal
     : StablefordCalculator.rankParticipants;
-  const ranking = rank(participants, holes, holeScores, allocation);
+  // Con las salidas, para que cada uno puntúe contra el par de SU barra: sin
+  // ellas esta tabla contaba contra la del campo mientras la tarjeta de al lado
+  // ya usaba la propia. Ver RyderCupWeb#417.
+  const ranking = rank(participants, holes, holeScores, allocation, tees);
 
   return (
     <div data-testid="quick-match-classification-table">
