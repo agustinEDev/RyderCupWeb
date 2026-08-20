@@ -287,11 +287,14 @@ describe('MatchPlayStrokeAllocator', () => {
     });
   });
 
-  describe('Barras no valorables', () => {
-    // El backend descarta las barras fuera del rango WHS y hace jugar con el
-    // Handicap Index. Si aquí se aceptasen, el reparto cambiaría al caerse la
-    // red — justo cuando este cálculo tiene que servir.
-    it('descarta un pitch & putt fuera del rango de slope del backend', () => {
+  describe('Barras valorables', () => {
+    // Los rangos espejan los del backend, y desde RyderCupAm#206 son la unión
+    // de los de todos los tipos de campo. Antes eran los de un 18 hoyos, así
+    // que un pitch & putt se descartaba y sus jugadores acababan con el
+    // Handicap Index a pelo. Si aquí se descartase lo que allí sí se valora
+    // —o al revés—, el reparto cambiaría al caerse la red, justo cuando este
+    // cálculo tiene que servir.
+    it('valora un pitch & putt en vez de dejarlo con el hándicap índice', () => {
       const pitchAndPutt = Array.from({ length: 18 }, (_, i) => ({
         holeNumber: i + 1,
         par: 3,
@@ -308,19 +311,38 @@ describe('MatchPlayStrokeAllocator', () => {
         playMode: 'HANDICAP',
       });
 
-      // Handicap Index a pelo (18), no el 0 que saldría de valorar esa barra
-      expect(result.a.playingHandicap).toBe(18);
+      // 18 x (47/113) + (46.8 - 54) = 0,29 -> 0 golpes. En un recorrido de par
+      // 54 un 18 no recibe 18 golpes, que es lo que daba el índice a pelo
+      expect(result.a.playingHandicap).toBe(0);
     });
 
-    it('acepta una barra dentro del rango', () => {
+    it('acepta una barra de campo largo', () => {
       expect(
         MatchPlayStrokeAllocator.isRatable({ courseRating: 73.1, slopeRating: 140 }, 72)
       ).toBe(true);
     });
 
-    it('rechaza un par fuera del rango WHS', () => {
+    it('acepta el par de un pitch & putt federado', () => {
       expect(
-        MatchPlayStrokeAllocator.isRatable({ courseRating: 73.1, slopeRating: 140 }, 54)
+        MatchPlayStrokeAllocator.isRatable({ courseRating: 54.9, slopeRating: 91 }, 58)
+      ).toBe(true);
+    });
+
+    it('acepta los extremos del catálogo federado', () => {
+      expect(
+        MatchPlayStrokeAllocator.isRatable({ courseRating: 46.5, slopeRating: 46 }, 54)
+      ).toBe(true);
+      expect(
+        MatchPlayStrokeAllocator.isRatable({ courseRating: 84.7, slopeRating: 157 }, 74)
+      ).toBe(true);
+    });
+
+    it('sigue rechazando lo que no puede ser válido en ningún tipo de campo', () => {
+      expect(
+        MatchPlayStrokeAllocator.isRatable({ courseRating: 30.0, slopeRating: 140 }, 72)
+      ).toBe(false);
+      expect(
+        MatchPlayStrokeAllocator.isRatable({ courseRating: 73.1, slopeRating: 140 }, 40)
       ).toBe(false);
     });
   });

@@ -30,20 +30,24 @@ const NEUTRAL_SLOPE = 113;
 const HOLES_PER_ROUND = 18;
 const SINGLES_PARTICIPANTS = 2;
 
-// Rangos que valida `TeeRating` en el backend. Son MÁS ESTRECHOS que los que
-// admite el `Tee` del frontend (CR 45-90, SR 40-160), que se ensancharon para
-// los pitch & putt federados. El backend descarta la barra que se sale y hace
-// jugar con el Handicap Index a pelo, así que aquí hay que descartarla igual:
-// si no, el reparto cambia en cuanto se cae la red, que es justo cuando este
-// cálculo tiene que servir para algo.
-// El arreglo de fondo es ensanchar `TeeRating`, pero lo comparte `competition`
-// y tocarlo movería el reparto de las competiciones ya creadas.
-const RATED_MIN_COURSE_RATING = 55;
-const RATED_MAX_COURSE_RATING = 85;
-const RATED_MIN_SLOPE_RATING = 55;
-const RATED_MAX_SLOPE_RATING = 155;
-const RATED_MIN_PAR = 66;
-const RATED_MAX_PAR = 76;
+// Rangos que valida `TeeRating` en el backend, y que hay que espejar aquí: si
+// aquí se descarta una barra que allí sí se valora —o al revés—, el reparto
+// cambia en cuanto se cae la red, que es justo cuando este cálculo tiene que
+// servir para algo.
+//
+// Eran los de un campo de 18 hoyos y dejaban fuera 468 salidas en 227 campos
+// federados: los pitch & putt y los ejecutivos, que el sistema no valora en la
+// misma escala. Sus jugadores acababan con el Handicap Index a pelo —un 18
+// recibía 18 golpes donde le tocan 11—. Desde RyderCupAm#206 el backend usa la
+// unión de los rangos de todos los tipos de campo, que son además los que ya
+// admitía el `Tee` del frontend, y el rango estricto por tipo lo valida
+// `GolfCourse`, que es quien sabe de qué campo se trata.
+const RATED_MIN_COURSE_RATING = 45;
+const RATED_MAX_COURSE_RATING = 90;
+const RATED_MIN_SLOPE_RATING = 40;
+const RATED_MAX_SLOPE_RATING = 160;
+const RATED_MIN_PAR = 50;
+const RATED_MAX_PAR = 80;
 
 class MatchPlayStrokeAllocator {
   /**
