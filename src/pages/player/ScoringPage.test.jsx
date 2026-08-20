@@ -53,12 +53,14 @@ const mockUseScoring = {
   isSessionBlocked: false,
   pendingQueueSize: 0,
   isMatchPlayer: true,
+  canScore: true,
   hasSubmitted: false,
   isOwnScoreLocked: false,
   isMarkerScoreLocked: false,
   isFullyLocked: false,
   validatedHoles: 0,
   totalHoles: 18,
+  holesToSubmit: 18,
   canSubmitScorecard: false,
   setCurrentHole: vi.fn(),
   submitScore: vi.fn(),
@@ -108,13 +110,20 @@ vi.mock('../../components/scoring/SessionBlockedModal', () => ({
   default: ({ isOpen }) => isOpen ? <div data-testid="session-blocked-modal">SessionBlocked</div> : null,
 }));
 vi.mock('../../components/scoring/EarlyEndModal', () => ({
-  default: ({ isOpen }) => isOpen ? <div data-testid="early-end-modal">EarlyEnd</div> : null,
+  default: ({ isOpen, onConfirm }) => isOpen ? (
+    <div data-testid="early-end-modal">
+      EarlyEnd
+      <button data-testid="early-end-confirm" onClick={onConfirm}>continue</button>
+    </div>
+  ) : null,
 }));
 vi.mock('../../components/scoring/ConcedeMatchModal', () => ({
   default: ({ isOpen }) => isOpen ? <div data-testid="concede-match-modal">Concede</div> : null,
 }));
 vi.mock('../../components/scoring/SubmitScorecardModal', () => ({
-  default: ({ isOpen }) => isOpen ? <div data-testid="submit-scorecard-modal">Submit</div> : null,
+  default: ({ isOpen, validatedHoles, totalHoles }) => isOpen ? (
+    <div data-testid="submit-scorecard-modal">Submit {validatedHoles}/{totalHoles}</div>
+  ) : null,
 }));
 
 import ScoringPage from './ScoringPage';
@@ -271,6 +280,73 @@ describe('ScoringPage', () => {
       expect(screen.getByText('submit.alreadySubmitted')).toBeInTheDocument();
       expect(screen.queryByText(/submit\.waitingForPlayers/)).toBeNull();
       expect(screen.queryByText('submit.matchCompleted')).toBeNull();
+    });
+  });
+
+  describe('a match decided before the 18th hole', () => {
+    afterEach(() => {
+      mockUseScoring.scoringView.isDecided = false;
+      mockUseScoring.canSubmitScorecard = false;
+      mockUseScoring.hasSubmitted = false;
+      mockUseScoring.validatedHoles = 0;
+      mockUseScoring.holesToSubmit = 18;
+    });
+
+    it('takes "continue to submit" to the tab where the submit button lives', () => {
+      // The CTA used to just dismiss the dialog, dropping the player back on the
+      // hole input with no way to hand in the card
+      mockUseScoring.scoringView.isDecided = true;
+      mockUseScoring.scoringView.decidedResult = { winner: 'A', score: '9&7' };
+      mockUseScoring.canSubmitScorecard = true;
+
+      render(<ScoringPage />);
+      fireEvent.click(screen.getByTestId('early-end-confirm'));
+
+      expect(screen.getByText('submit.button')).toBeInTheDocument();
+    });
+
+    it('says why the card is not ready instead of showing nothing', () => {
+      mockUseScoring.scoringView.isDecided = true;
+      mockUseScoring.canSubmitScorecard = false;
+
+      render(<ScoringPage />);
+      fireEvent.click(screen.getByTestId('tab-scorecard'));
+
+      expect(screen.getByText('submit.notReady')).toBeInTheDocument();
+      expect(screen.queryByText('submit.button')).toBeNull();
+    });
+
+    it('does not reopen the confirmation on its own once submission is possible again', () => {
+      // The marker can score a hole while the dialog is open. Hiding it is not
+      // enough: the dialog would pop back up by itself when readiness returns
+      mockUseScoring.scoringView.isDecided = true;
+      mockUseScoring.canSubmitScorecard = true;
+
+      const { rerender } = render(<ScoringPage />);
+      fireEvent.click(screen.getByTestId('tab-scorecard'));
+      fireEvent.click(screen.getByText('submit.button'));
+      expect(screen.getByTestId('submit-scorecard-modal')).toBeInTheDocument();
+
+      mockUseScoring.canSubmitScorecard = false;
+      rerender(<ScoringPage />);
+      expect(screen.queryByTestId('submit-scorecard-modal')).toBeNull();
+
+      mockUseScoring.canSubmitScorecard = true;
+      rerender(<ScoringPage />);
+      expect(screen.queryByTestId('submit-scorecard-modal')).toBeNull();
+    });
+
+    it('counts the confirmation against the holes played, not always 18', () => {
+      mockUseScoring.scoringView.isDecided = true;
+      mockUseScoring.canSubmitScorecard = true;
+      mockUseScoring.validatedHoles = 11;
+      mockUseScoring.holesToSubmit = 11;
+
+      render(<ScoringPage />);
+      fireEvent.click(screen.getByTestId('tab-scorecard'));
+      fireEvent.click(screen.getByText('submit.button'));
+
+      expect(screen.getByTestId('submit-scorecard-modal')).toHaveTextContent('11/11');
     });
   });
 

@@ -50,6 +50,7 @@ const ScoringPage = () => {
     isFullyLocked,
     validatedHoles,
     totalHoles,
+    holesToSubmit,
     canSubmitScorecard,
     setCurrentHole,
     submitScore,
@@ -67,6 +68,21 @@ const ScoringPage = () => {
         .catch(() => {});
     }
   }, [activeTab, scoringView?.competitionId]);
+
+  // Confirmar la entrega deja de ser posible si el marcador anota mientras el
+  // diálogo está abierto. Ocultarlo no basta: `showSubmitModal` seguiría a true
+  // y el diálogo reaparecería solo en cuanto la entrega volviera a ser posible,
+  // sin que el jugador lo hubiera pedido otra vez. Se ajusta durante el render
+  // —el patrón que documenta React para reaccionar a un cambio de valor— porque
+  // hacerlo desde un efecto encadena renders y el lint del repo lo prohíbe
+  // (react-hooks/set-state-in-effect).
+  const [wasSubmittable, setWasSubmittable] = useState(canSubmitScorecard);
+  if (wasSubmittable !== canSubmitScorecard) {
+    setWasSubmittable(canSubmitScorecard);
+    if (!canSubmitScorecard) {
+      setShowSubmitModal(false);
+    }
+  }
 
   // Derived: show early end modal when match is decided and user hasn't dismissed.
   // Not shown once the player has already submitted — the "continue to submit" CTA
@@ -405,6 +421,13 @@ const ScoringPage = () => {
               </button>
             )}
 
+            {/* Un partido decidido con algún hoyo sin validar no se puede
+                entregar. Sin este aviso, «no puedo entregar porque falta un
+                hoyo» se ve igual que «no puedo entregar y no sé por qué» */}
+            {scoringView?.isDecided && canScore && !hasSubmitted && !canSubmitScorecard && (
+              <p className="text-center text-sm text-gray-500">{t('submit.notReady')}</p>
+            )}
+
             {hasSubmitted && (
               <div className="text-center text-sm space-y-1">
                 <p className="text-green-600 font-medium">{t('submit.alreadySubmitted')}</p>
@@ -446,7 +469,13 @@ const ScoringPage = () => {
               ? (scoringView.teamBName || 'B')
               : scoringView.decidedResult.winner,
         } : null}
-        onConfirm={() => setEarlyEndDismissed(true)}
+        onConfirm={() => {
+          setEarlyEndDismissed(true);
+          // El botón de entregar vive en la pestaña de la tarjeta, y la pantalla
+          // abre en la de anotar: sin esto, «Continuar para Enviar» devolvía al
+          // jugador a los hoyos sin nada que pulsar
+          setActiveTab('scorecard');
+        }}
         onClose={() => setEarlyEndDismissed(true)}
       />
 
@@ -457,9 +486,9 @@ const ScoringPage = () => {
       />
 
       <SubmitScorecardModal
-        isOpen={showSubmitModal}
+        isOpen={showSubmitModal && canSubmitScorecard}
         validatedHoles={validatedHoles}
-        totalHoles={totalHoles}
+        totalHoles={holesToSubmit}
         isSubmitting={isSubmitting}
         onConfirm={handleSubmitScorecard}
         onClose={() => setShowSubmitModal(false)}

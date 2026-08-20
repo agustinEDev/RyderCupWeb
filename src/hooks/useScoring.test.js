@@ -217,6 +217,134 @@ describe('useScoring', () => {
     expect(result.current.validatedHoles).toBe(5);
   });
 
+  describe('submitting the scorecard', () => {
+    const scoredHoles = (count, { validated = true, from = 1 } = {}) =>
+      Array.from({ length: count }, (_, i) => ({
+        holeNumber: from + i,
+        playerScores: [{
+          userId: 'u1',
+          ownSubmitted: true,
+          validationStatus: validated ? 'match' : 'pending',
+        }],
+      }));
+
+    it('allows submitting a decided match with the holes actually played', async () => {
+      // Won 9&7: the last seven holes are not played on purpose, and the API
+      // takes the card — it only asks the played holes to be validated
+      getScoringViewUseCase.execute.mockResolvedValue({
+        ...mockScoringView,
+        isDecided: true,
+        decidedResult: { winner: 'A', score: '9&7' },
+        scores: scoredHoles(11),
+      });
+
+      const { result } = renderHook(() => useScoring('m-1', 'u1'));
+      await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+      expect(result.current.canSubmitScorecard).toBe(true);
+      // The card is complete at the hole it ended on: "11/18" would read unfinished
+      expect(result.current.holesToSubmit).toBe(11);
+    });
+
+    it('holds back a decided match while a played hole is still unvalidated', async () => {
+      getScoringViewUseCase.execute.mockResolvedValue({
+        ...mockScoringView,
+        isDecided: true,
+        decidedResult: { winner: 'A', score: '9&7' },
+        scores: [...scoredHoles(10), ...scoredHoles(1, { validated: false, from: 11 })],
+      });
+
+      const { result } = renderHook(() => useScoring('m-1', 'u1'));
+      await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+      expect(result.current.canSubmitScorecard).toBe(false);
+    });
+
+    it('still asks an undecided match for all 18 holes', async () => {
+      getScoringViewUseCase.execute.mockResolvedValue({
+        ...mockScoringView,
+        scores: scoredHoles(17),
+      });
+
+      const { result } = renderHook(() => useScoring('m-1', 'u1'));
+      await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+      expect(result.current.canSubmitScorecard).toBe(false);
+      expect(result.current.holesToSubmit).toBe(18);
+    });
+
+    it('allows submitting an undecided match once the 18 holes are validated', async () => {
+      getScoringViewUseCase.execute.mockResolvedValue({
+        ...mockScoringView,
+        scores: scoredHoles(18),
+      });
+
+      const { result } = renderHook(() => useScoring('m-1', 'u1'));
+      await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+      expect(result.current.canSubmitScorecard).toBe(true);
+    });
+
+    it('holds back a decided match with a hole only my marker scored', async () => {
+      // Hole 7: my marker entered my score from their phone and I never entered
+      // mine, so it sits PENDING. Submitting locks my own score for good and
+      // the hole drops out of the result, so the card is not ready.
+      getScoringViewUseCase.execute.mockResolvedValue({
+        ...mockScoringView,
+        isDecided: true,
+        decidedResult: { winner: 'A', score: '9&7' },
+        scores: [
+          ...scoredHoles(6),
+          {
+            holeNumber: 7,
+            playerScores: [{
+              userId: 'u1',
+              ownSubmitted: false,
+              markerSubmitted: true,
+              validationStatus: 'pending',
+            }],
+          },
+          ...scoredHoles(4, { from: 8 }),
+        ],
+      });
+
+      const { result } = renderHook(() => useScoring('m-1', 'u1'));
+      await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+      expect(result.current.canSubmitScorecard).toBe(false);
+    });
+
+    it('does not offer to submit an empty card in a decided match', async () => {
+      // Conceded or walked over without scoring: there is no card to sign
+      getScoringViewUseCase.execute.mockResolvedValue({
+        ...mockScoringView,
+        isDecided: true,
+        decidedResult: { winner: 'B', score: '3&2' },
+        scores: [],
+      });
+
+      const { result } = renderHook(() => useScoring('m-1', 'u1'));
+      await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+      expect(result.current.canSubmitScorecard).toBe(false);
+    });
+
+    it('does not offer to submit twice', async () => {
+      getScoringViewUseCase.execute.mockResolvedValue({
+        ...mockScoringView,
+        isDecided: true,
+        decidedResult: { winner: 'A', score: '9&7' },
+        scores: scoredHoles(11),
+        scorecardSubmittedBy: ['u1'],
+      });
+
+      const { result } = renderHook(() => useScoring('m-1', 'u1'));
+      await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+      expect(result.current.canSubmitScorecard).toBe(false);
+    });
+  });
+
   it('should try to acquire session lock for match players', async () => {
     const { result } = renderHook(() => useScoring('m-1', 'u1'));
 
