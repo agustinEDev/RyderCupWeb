@@ -69,16 +69,42 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
   // has an unresolved discrepancy — leaving no one able to fix it.
   const isFullyLocked = isOwnScoreLocked && isMarkerScoreLocked;
 
+  // My line on every hole, in hole order
+  const myHoleScores = scoringView?.scores?.map(
+    s => s.playerScores?.find(ps => ps.userId === currentUserId)
+  ) ?? [];
+
   // Count validated holes
-  const validatedHoles = scoringView?.scores?.filter(s => {
-    const playerScore = s.playerScores?.find(ps => ps.userId === currentUserId);
-    return playerScore?.validationStatus === 'match';
-  }).length ?? 0;
+  const validatedHoles = myHoleScores.filter(ps => ps?.validationStatus === 'match').length;
+
+  // A hole counts as played when EITHER side has put a score on my line: a
+  // decided match leaves the rest unplayed on purpose, but a hole my marker
+  // scored and I did not is a hole I still owe. Reading `ownSubmitted` alone
+  // hid exactly that hole — and once the card is in, `isOwnScoreLocked` makes
+  // the input read-only and the API drops a late own score without an error
+  // (`submit_hole_score_use_case.py`, `if not own_score_locked`), so the hole
+  // would be lost for good and fall out of the match result.
+  const playedHoles = myHoleScores.filter(ps => ps?.ownSubmitted || ps?.markerSubmitted);
+  const everyPlayedHoleValidated =
+    playedHoles.length > 0 && playedHoles.every(ps => ps.validationStatus === 'match');
 
   // Always allow navigating all 18 holes, even if match decided early
   const totalHoles = 18;
 
-  const canSubmitScorecard = canScore && !hasSubmitted && validatedHoles >= totalHoles;
+  // A match play match ends as soon as one side is more holes up than there are
+  // holes left, and the backend accepts that card: SubmitScorecardUseCase only
+  // requires the holes that WERE played to be validated. Asking for all 18 here
+  // left the "Partido Decidido" dialog offering a "Continuar para Enviar"
+  // button with nothing behind it, so a decided match could never be signed off
+  // by its players.
+  const canSubmitScorecard =
+    canScore &&
+    !hasSubmitted &&
+    (scoringView?.isDecided ? everyPlayedHoleValidated : validatedHoles >= totalHoles);
+
+  // What the confirmation dialog counts against: in a decided match the card is
+  // complete at the hole it ended on, so "12/18" would read as unfinished
+  const holesToSubmit = scoringView?.isDecided ? playedHoles.length : totalHoles;
 
   // --- Fetch scoring view ---
   const fetchScoringView = useCallback(async () => {
@@ -307,6 +333,7 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
     isFullyLocked,
     validatedHoles,
     totalHoles,
+    holesToSubmit,
     canSubmitScorecard,
 
     // Actions

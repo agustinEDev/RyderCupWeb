@@ -50,6 +50,7 @@ const ScoringPage = () => {
     isFullyLocked,
     validatedHoles,
     totalHoles,
+    holesToSubmit,
     canSubmitScorecard,
     setCurrentHole,
     submitScore,
@@ -405,6 +406,13 @@ const ScoringPage = () => {
               </button>
             )}
 
+            {/* Un partido decidido con algún hoyo sin validar no se puede
+                entregar. Sin este aviso, «no puedo entregar porque falta un
+                hoyo» se ve igual que «no puedo entregar y no sé por qué» */}
+            {scoringView?.isDecided && canScore && !hasSubmitted && !canSubmitScorecard && (
+              <p className="text-center text-sm text-gray-500">{t('submit.notReady')}</p>
+            )}
+
             {hasSubmitted && (
               <div className="text-center text-sm space-y-1">
                 <p className="text-green-600 font-medium">{t('submit.alreadySubmitted')}</p>
@@ -446,7 +454,13 @@ const ScoringPage = () => {
               ? (scoringView.teamBName || 'B')
               : scoringView.decidedResult.winner,
         } : null}
-        onConfirm={() => setEarlyEndDismissed(true)}
+        onConfirm={() => {
+          setEarlyEndDismissed(true);
+          // El botón de entregar vive en la pestaña de la tarjeta, y la pantalla
+          // abre en la de anotar: sin esto, «Continuar para Enviar» devolvía al
+          // jugador a los hoyos sin nada que pulsar
+          setActiveTab('scorecard');
+        }}
         onClose={() => setEarlyEndDismissed(true)}
       />
 
@@ -457,9 +471,12 @@ const ScoringPage = () => {
       />
 
       <SubmitScorecardModal
-        isOpen={showSubmitModal}
+        /* Si el marcador anota mientras el diálogo está abierto, la entrega
+           puede dejar de ser posible: confirmar entonces no enviaba nada y
+           cerraba el diálogo sin decir nada */
+        isOpen={showSubmitModal && canSubmitScorecard}
         validatedHoles={validatedHoles}
-        totalHoles={totalHoles}
+        totalHoles={holesToSubmit}
         isSubmitting={isSubmitting}
         onConfirm={handleSubmitScorecard}
         onClose={() => setShowSubmitModal(false)}
