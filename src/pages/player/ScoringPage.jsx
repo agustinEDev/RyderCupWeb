@@ -72,12 +72,17 @@ const ScoringPage = () => {
   // Confirmar la entrega deja de ser posible si el marcador anota mientras el
   // diálogo está abierto. Ocultarlo no basta: `showSubmitModal` seguiría a true
   // y el diálogo reaparecería solo en cuanto la entrega volviera a ser posible,
-  // sin que el jugador lo hubiera pedido otra vez.
-  useEffect(() => {
+  // sin que el jugador lo hubiera pedido otra vez. Se ajusta durante el render
+  // —el patrón que documenta React para reaccionar a un cambio de valor— porque
+  // hacerlo desde un efecto encadena renders y el lint del repo lo prohíbe
+  // (react-hooks/set-state-in-effect).
+  const [wasSubmittable, setWasSubmittable] = useState(canSubmitScorecard);
+  if (wasSubmittable !== canSubmitScorecard) {
+    setWasSubmittable(canSubmitScorecard);
     if (!canSubmitScorecard) {
       setShowSubmitModal(false);
     }
-  }, [canSubmitScorecard]);
+  }
 
   // Derived: show early end modal when match is decided and user hasn't dismissed.
   // Not shown once the player has already submitted — the "continue to submit" CTA
