@@ -50,7 +50,7 @@
       "slopeRatingRange": "El Slope Rating del tee {{index}} debe estar entre {{min}} y {{max}}",
       "strokeIndexRange": "El hándicap del hoyo {{index}} debe estar entre 1 y 18",
       "uniqueStrokeIndices": "Cada hoyo debe tener un hándicap único (1-18)",
-      "totalParRange": "El par total debe estar entre 66 y 76 (actual: {{totalPar}})",
+      "totalParRange": "El par total debe estar entre {{min}} y {{max}}, y es {{totalPar}}",
       "submitFailed": "Error al guardar el campo de golf",
       "duplicateTee": "Hay dos salidas iguales: mismo color y mismo género"
     },

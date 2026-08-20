@@ -24,6 +24,11 @@ const SLOPE_RANGE_BY_COURSE_TYPE = {
   PITCH_AND_PUTT: [40, 155],
   EXECUTIVE: [40, 155],
 };
+const PAR_RANGE_BY_COURSE_TYPE = {
+  STANDARD_18: [66, 76],
+  PITCH_AND_PUTT: [54, 60],
+  EXECUTIVE: [61, 65],
+};
 
 // Los diez colores admitidos, ordenados de barras mas largas a mas cortas
 // segun el uso habitual. OTHER cubre las salidas cuyo nombre no es un color
@@ -232,6 +237,17 @@ const GolfCourseForm = ({ initialData = null, onSubmit, onCancel }) => {
   };
 
   // Calculate total par
+  // Los rangos del tipo de campo elegido. Se usan en DOS sitios y los dos hacen
+  // falta: `validateForm` para el mensaje, y los `min`/`max` de los inputs
+  // porque el navegador valida con ellos ANTES de llamar al onSubmit — dejarlos
+  // fijos anulaba la validacion por tipo sin que ningun test lo viera, porque
+  // jsdom no aplica la validacion nativa.
+  const ratingRange =
+    RATING_RANGE_BY_COURSE_TYPE[courseType] ?? RATING_RANGE_BY_COURSE_TYPE.STANDARD_18;
+  const slopeRange =
+    SLOPE_RANGE_BY_COURSE_TYPE[courseType] ?? SLOPE_RANGE_BY_COURSE_TYPE.STANDARD_18;
+  const parRange = PAR_RANGE_BY_COURSE_TYPE[courseType] ?? PAR_RANGE_BY_COURSE_TYPE.STANDARD_18;
+
   const calculateTotalPar = () => {
     return holes.reduce((sum, hole) => sum + hole.par, 0);
   };
@@ -297,8 +313,7 @@ const GolfCourseForm = ({ initialData = null, onSubmit, onCancel }) => {
         return false;
       }
 
-      const [minRating, maxRating] =
-        RATING_RANGE_BY_COURSE_TYPE[courseType] ?? RATING_RANGE_BY_COURSE_TYPE.STANDARD_18;
+      const [minRating, maxRating] = ratingRange;
       const courseRating = parseFloat(tee.courseRating);
       if (isNaN(courseRating) || courseRating < minRating || courseRating > maxRating) {
         customToast.error(
@@ -307,8 +322,7 @@ const GolfCourseForm = ({ initialData = null, onSubmit, onCancel }) => {
         return false;
       }
 
-      const [minSlope, maxSlope] =
-        SLOPE_RANGE_BY_COURSE_TYPE[courseType] ?? SLOPE_RANGE_BY_COURSE_TYPE.STANDARD_18;
+      const [minSlope, maxSlope] = slopeRange;
       const slopeRating = parseInt(tee.slopeRating, 10);
       if (isNaN(slopeRating) || slopeRating < minSlope || slopeRating > maxSlope) {
         customToast.error(
@@ -335,9 +349,12 @@ const GolfCourseForm = ({ initialData = null, onSubmit, onCancel }) => {
       return false;
     }
 
+    const [minTotalPar, maxTotalPar] = parRange;
     const totalPar = calculateTotalPar();
-    if (totalPar < 66 || totalPar > 76) {
-      customToast.error(t('form.errors.totalParRange', { totalPar }));
+    if (totalPar < minTotalPar || totalPar > maxTotalPar) {
+      customToast.error(
+        t('form.errors.totalParRange', { totalPar, min: minTotalPar, max: maxTotalPar })
+      );
       return false;
     }
 
@@ -561,8 +578,8 @@ const GolfCourseForm = ({ initialData = null, onSubmit, onCancel }) => {
                   <input
                     type="number"
                     step="0.1"
-                    min="50"
-                    max="90"
+                    min={ratingRange[0]}
+                    max={ratingRange[1]}
                     value={tee.courseRating}
                     onChange={(e) => handleTeeChange(index, 'courseRating', e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
@@ -577,8 +594,8 @@ const GolfCourseForm = ({ initialData = null, onSubmit, onCancel }) => {
                   </label>
                   <input
                     type="number"
-                    min="55"
-                    max="155"
+                    min={slopeRange[0]}
+                    max={slopeRange[1]}
                     value={tee.slopeRating}
                     onChange={(e) => handleTeeChange(index, 'slopeRating', e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"

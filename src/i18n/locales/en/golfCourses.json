@@ -50,7 +50,7 @@
       "slopeRatingRange": "Tee {{index}} Slope Rating must be between {{min}} and {{max}}",
       "strokeIndexRange": "Hole {{index}} stroke index must be between 1 and 18",
       "uniqueStrokeIndices": "Each hole must have a unique stroke index (1-18)",
-      "totalParRange": "Total par must be between 66 and 76 (current: {{totalPar}})",
+      "totalParRange": "Total par must be between {{min}} and {{max}}, got {{totalPar}}",
       "submitFailed": "Failed to save golf course",
       "duplicateTee": "Two tees are identical: same colour and gender"
     },

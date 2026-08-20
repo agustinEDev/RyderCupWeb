@@ -43,7 +43,7 @@ describe('GolfCourseForm · rangos de valoracion por tipo de campo', () => {
 
   // Se entra por `initialData` para que la validacion llegue hasta los ratings:
   // se corta en el primer fallo, y antes de las barras exige nombre y pais.
-  const renderWith = (courseType, courseRating, slopeRating) =>
+  const renderWith = (courseType, courseRating, slopeRating, parPorHoyo = null) =>
     render(
       <GolfCourseForm
         onSubmit={vi.fn()}
@@ -56,6 +56,15 @@ describe('GolfCourseForm · rangos de valoracion por tipo de campo', () => {
             { color: 'YELLOW', teeGender: 'MALE', courseRating, slopeRating },
             { color: 'WHITE', teeGender: 'MALE', courseRating, slopeRating },
           ],
+          ...(parPorHoyo
+            ? {
+                holes: Array.from({ length: 18 }, (_, i) => ({
+                  holeNumber: i + 1,
+                  par: parPorHoyo,
+                  strokeIndex: i + 1,
+                })),
+              }
+            : {}),
         }}
       />
     );
@@ -101,5 +110,90 @@ describe('GolfCourseForm · rangos de valoracion por tipo de campo', () => {
     const mensaje = errores().find((m) => m.includes('courseRatingRange'));
     expect(mensaje).toContain('"min":"45.0"');
     expect(mensaje).toContain('"max":"90.0"');
+  });
+  /**
+   * El navegador valida los `min`/`max` del input ANTES de llamar al onSubmit,
+   * asi que con esos atributos fijos la validacion por tipo de arriba no llegaba
+   * a ejecutarse: en Chrome el formulario no se enviaba. jsdom no aplica la
+   * validacion nativa, asi que los tests de submit pasaban igual y no lo veian.
+   * Se comprueban los atributos directamente.
+   */
+  describe('los limites nativos de los inputs siguen al tipo de campo', () => {
+    const ratingsDeLaPrimeraBarra = () => {
+      const numeric = screen.getAllByRole('spinbutton');
+      return { courseRating: numeric[0], slopeRating: numeric[1] };
+    };
+
+    it('afloja los limites en un pitch & putt', () => {
+      renderWith('PITCH_AND_PUTT', 46.8, 47);
+
+      const { courseRating, slopeRating } = ratingsDeLaPrimeraBarra();
+      expect(courseRating).toHaveAttribute('min', '45');
+      expect(courseRating).toHaveAttribute('max', '90');
+      expect(slopeRating).toHaveAttribute('min', '40');
+      expect(slopeRating).toHaveAttribute('max', '155');
+    });
+
+    it('mantiene los del campo largo en un 18 hoyos, con el techo de slope en 160', () => {
+      renderWith('STANDARD_18', 73.1, 130);
+
+      const { courseRating, slopeRating } = ratingsDeLaPrimeraBarra();
+      expect(courseRating).toHaveAttribute('min', '50');
+      expect(slopeRating).toHaveAttribute('min', '55');
+      // 160 y no 155: hay campos federados por encima del maximo WHS
+      expect(slopeRating).toHaveAttribute('max', '160');
+    });
+  });
+
+  /**
+   * El par total tambien se validaba contra un rango fijo de 18 hoyos, asi que
+   * un pitch & putt de par 54 —el minimo del catalogo— se rechazaba.
+   */
+  describe('el par total sigue al tipo de campo', () => {
+    it('acepta el par 54 de un pitch & putt', () => {
+      renderWith('PITCH_AND_PUTT', 46.8, 47, 3);
+
+      submitForm();
+
+      expect(errores().some((m) => m.includes('totalParRange'))).toBe(false);
+    });
+
+    it('rechaza ese mismo par 54 en un campo de 18 hoyos, y dice su rango', () => {
+      renderWith('STANDARD_18', 73.1, 130, 3);
+
+      submitForm();
+
+      const mensaje = errores().find((m) => m.includes('totalParRange'));
+      expect(mensaje).toContain('"min":66');
+      expect(mensaje).toContain('"max":76');
+    });
+  });
+  /**
+   * Lo que ve el usuario: los limites tienen que moverse al CAMBIAR el tipo en
+   * el propio formulario, no solo al abrirlo con uno ya puesto.
+   */
+  describe('al cambiar el tipo en el formulario', () => {
+    it('afloja los limites en cuanto se elige pitch & putt', () => {
+      renderWith('STANDARD_18', 73.1, 130);
+
+      const antes = screen.getAllByRole('spinbutton')[0];
+      expect(antes).toHaveAttribute('min', '50');
+
+      fireEvent.click(screen.getByRole('button', { name: 'form.courseTypes.PITCH_AND_PUTT' }));
+
+      const [courseRating, slopeRating] = screen.getAllByRole('spinbutton');
+      expect(courseRating).toHaveAttribute('min', '45');
+      expect(slopeRating).toHaveAttribute('min', '40');
+    });
+
+    it('y los vuelve a apretar al volver a 18 hoyos', () => {
+      renderWith('PITCH_AND_PUTT', 46.8, 47);
+
+      fireEvent.click(screen.getByRole('button', { name: 'form.courseTypes.STANDARD_18' }));
+
+      const [courseRating, slopeRating] = screen.getAllByRole('spinbutton');
+      expect(courseRating).toHaveAttribute('min', '50');
+      expect(slopeRating).toHaveAttribute('min', '55');
+    });
   });
 });
