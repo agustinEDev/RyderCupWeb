@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [2.16.0] - 2026-08-22
+
+### Added
+
+- **Dos controles distintos en cada partida rápida del historial, donde antes había uno que hacía dos cosas.** La papelera borraba la partida de la lista **y** la sacaba de tus estadísticas, sin decirlo, sin confirmación y sin vuelta atrás. Salió en uso, después de que una partida desapareciera sin manera de recuperarla.
+
+  - **El ojo** decide si la partida cuenta en **tus** estadísticas. La partida se queda siempre en la lista. Volver a pulsarlo lo deshace, así que no pregunta nada. Solo aparece en partidas **terminadas**: una que sigue en juego no cuenta todavía en ningún sitio, y el servidor responde 409.
+  - **La papelera** la quita de tu lista para siempre, detrás de un modal que lo dice con esas palabras y que además señala el ojo, por si lo único que querías era que no contara.
+
+  **La fila excluida no se atenúa.** Atenuarla fue la primera idea y es la equivocada: esta aplicación se usa a pleno sol, y el texto apagado cae por debajo del contraste accesible justo donde peor se lee. La fila mantiene el contraste íntegro y se marca con un fondo tenue, una franja gris a la izquierda y la etiqueta **«No cuenta»**. El significado lo lleva la etiqueta, porque un color de fondo no le dice nada a un lector de pantalla ni a quien nunca vio esa fila en el otro estado. El ojo añade un `aria-label` que dice el estado actual **y** qué hace pulsarlo, más `aria-pressed`.
+
+  **El panel también la marca.** El backend ya envía `excluded_from_stats` en las partidas recientes y el mapper lo estaba descartando, así que el historial habría dicho «No cuenta» mientras el panel listaba la misma partida sin nada que la distinguiera. Arreglar el dato en una sola pantalla es peor que no arreglarlo.
+
+  Al desplegarse contra el backend v2.12.0, **las partidas que se ocultaron con la papelera vieja reaparecen en la lista** marcadas como que no cuentan, y desde ahí se pueden devolver a las estadísticas con el ojo.
+
 ## [2.15.2] - 2026-08-21
 
 ### Fixed
