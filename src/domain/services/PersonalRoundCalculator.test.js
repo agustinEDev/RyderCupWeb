@@ -244,4 +244,42 @@ describe('PersonalRoundCalculator · los golpes del bando en foursomes', () => {
     expect(result.matchToPar).toBeNull();
     expect(result.totalStrokes).toBe(5);
   });
+
+  /**
+   * La raya del bando: recogieron la bola. El hoyo esta jugado —el resultado
+   * del partido lo cuenta como cualquier otro—, asi que aqui tambien, con su
+   * doble bogey bruto. Dejandolo fuera, el total salia de menos hoyos de los
+   * que el propio partido dice que se jugaron.
+   *
+   * Misma cuenta que `_foursomes_side_strokes` en el backend.
+   */
+  it('cuenta la raya del bando como doble bogey bruto', () => {
+    const result = computeFoursomes([
+      { holeNumber: 1, participantId: 'p-1', score: 4 },
+      { holeNumber: 2, participantId: 'p-3', score: null },
+    ]);
+
+    // 4 en el hoyo 1, y el 2 es par 3 recogido -> 5
+    expect(result.totalStrokes).toBe(9);
+  });
+
+  it('prefiere el numero del companero a la raya del titular', () => {
+    // Una bola, dos anotaciones distintas: manda el numero, porque es con el
+    // que `_best_ball` adjudica el hoyo. Si aqui contara la raya, los golpes no
+    // explicarian el resultado del partido. Es la unica regla de estas dos que
+    // NO coincide con la de la tarjeta, que pinta la del primero del bando.
+    const result = computeFoursomes([
+      { holeNumber: 1, participantId: 'p-1', score: null },
+      { holeNumber: 1, participantId: 'p-3', score: 5 },
+    ]);
+
+    expect(result.totalStrokes).toBe(5);
+  });
+
+  it('sigue sin contar el hoyo que nadie anoto', () => {
+    // Solo el hoyo 1 tiene anotacion (una raya, par 4 -> 6); el 2 no existe.
+    const result = computeFoursomes([{ holeNumber: 1, participantId: 'p-1', score: null }]);
+
+    expect(result.totalStrokes).toBe(6);
+  });
 });

@@ -20,7 +20,11 @@ const GolfFigure = ({ score, par, pickedUp = false }) => {
         title={t('input.pickedUpLabel')}
         className="inline-flex items-center justify-center w-7 h-7 text-base font-bold text-gray-600"
       >
-        —
+        {/* El trazo es decorativo: no dice nada leído en voz alta, y el `title`
+            no llega a quien navega con teclado ni se anuncia igual en todos los
+            lectores. El texto va aparte, solo para ellos. */}
+        <span aria-hidden="true">—</span>
+        <span className="sr-only">{t('input.pickedUpLabel')}</span>
       </span>
     );
   }

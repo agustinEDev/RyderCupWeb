@@ -1,6 +1,6 @@
 import StablefordCalculator from './StablefordCalculator';
 import MatchPlayStrokeAllocator from './MatchPlayStrokeAllocator';
-import { groupParticipantsBySide, scoreAtOf, sideScoreOf } from './FoursomesSides';
+import { entryAtOf, groupParticipantsBySide } from './FoursomesSides';
 
 // Una vuelta personal se mide con el hándicap de juego entero. El allowance
 // —95% en juego libre, 90% en fourball, 50% en foursomes— equilibra un partido,
@@ -24,26 +24,47 @@ const PERSONAL_ROUND_ALLOWANCE = 100;
  * Sin `team` —partidas viejas, o un dato incompleto— el bando es el propio
  * jugador: se vuelve al comportamiento anterior en vez de mezclar a los cuatro.
  *
- * Cuál es la nota del bando lo decide `sideScoreOf`, la misma regla que usan la
+ * Cuál es la nota del bando lo decide `sideEntryOf`, la misma regla que usan la
  * pantalla de anotación y la tarjeta: aquí se recorrían los golpes anotados en
  * el orden del backend y allí los jugadores, así que con dos anotaciones del
  * mismo hoyo el total podía no cuadrar con lo que enseñaba la tarjeta.
+ *
+ * Un hoyo RECOGIDO cuenta: está jugado, y el resultado del partido lo trata
+ * como cualquier otro. Vale doble bogey BRUTO —`par + 2`, sin golpes
+ * recibidos—, porque este total es bruto y meterle un hoyo neto dentro
+ * mezclaría dos escalas en el mismo número. Es la misma cuenta que hace
+ * `_foursomes_side_strokes` en el backend, del que este total tiene que seguir
+ * sin separarse.
  */
+const GROSS_DOUBLE_BOGEY_OVER_PAR = 2;
+
 const sideTotals = (me, participants, holes, holeScores) => {
   const members =
     groupParticipantsBySide(participants).find((side) =>
       side.some((p) => p.participantId === me.participantId)
     ) ?? [me];
 
-  const scoreAt = scoreAtOf(holeScores);
+  const entryAt = entryAtOf(holeScores);
 
   let totalStrokes = 0;
   let holesPlayed = 0;
 
   for (const hole of holes) {
-    const score = sideScoreOf(members, scoreAt(hole.holeNumber));
-    if (score == null) continue;
-    totalStrokes += score;
+    const entries = members
+      .map((member) => entryAt(hole.holeNumber)(member.participantId))
+      .filter(Boolean);
+    // Sin ninguna anotación el hoyo está por jugar y no cuenta.
+    if (entries.length === 0) continue;
+
+    // Con dos anotaciones del mismo hoyo manda el MENOR de los números, que es
+    // con el que `ScoringService._best_ball` adjudica el hoyo: contar aquí uno
+    // y resolver el partido con otro dejaría unos golpes que no explican su
+    // resultado. Ojo, no es la regla de la tarjeta —allí manda el primero del
+    // bando, para que todas las pantallas pinten la misma bola—; aquí lo que se
+    // persigue es cuadrar con el resultado.
+    const numbers = entries.map((entry) => entry.score).filter((score) => score != null);
+    totalStrokes +=
+      numbers.length > 0 ? Math.min(...numbers) : hole.par + GROSS_DOUBLE_BOGEY_OVER_PAR;
     holesPlayed += 1;
   }
 
