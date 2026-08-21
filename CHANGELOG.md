@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [2.15.2] - 2026-08-21
+
+### Fixed
+
+- **La aplicación se ampliaba sola en el iPhone y se quedaba así.** Reportado desde producción: buscabas a un amigo, entrabas en su perfil y la pantalla aparecía gigante, con el botón ocupando todo el ancho. Pasaba en varias pantallas y por el mismo motivo: Safari en iOS amplía la página al tocar un campo de texto cuya letra mide menos de 16px, y no la devuelve al soltarlo. Como la aplicación no recarga al cambiar de pantalla, la siguiente se heredaba ampliada, aunque el campo pequeño se hubiera quedado atrás. Eran 38 campos repartidos por 19 formularios, así que se arregla de una vez para todos: en móvil y tableta los campos escriben a 16px. **El pinch para acercar sigue funcionando** — el atajo habitual para esto es desactivarlo, y deja sin ampliar a quien lo necesita para leer.
+
+- **Un doble toque rápido en un botón podía leerse como «amplía aquí»**, que es el otro camino por el que la pantalla acababa con un zoom que nadie había pedido.
+
 ## [2.15.1] - 2026-08-21
 
 ### Fixed
