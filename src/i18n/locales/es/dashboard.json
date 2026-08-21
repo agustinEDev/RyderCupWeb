@@ -1,5 +1,5 @@
 {
-  "welcome": "Bienvenido, {{name}}",
+  "welcome": "Bienvenido,\n{{name}}",
   "activitySummary": "Aquí está tu resumen de actividad",
   "statistics": {
     "tournaments": "Torneos",

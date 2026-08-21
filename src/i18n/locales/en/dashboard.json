@@ -1,5 +1,5 @@
 {
-  "welcome": "Welcome, {{name}}",
+  "welcome": "Welcome,\n{{name}}",
   "activitySummary": "Here's your activity summary",
   "statistics": {
     "tournaments": "Tournaments",
