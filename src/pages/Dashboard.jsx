@@ -272,7 +272,14 @@ const Dashboard = () => {
                 </span>
               </button>
               <div className="min-w-0">
-                <p className="truncate text-2xl md:text-3xl font-bold leading-tight tracking-tight text-gray-900">
+                {/* whitespace-pre-line y no truncate: el saludo lleva un salto de
+                    línea tras la coma porque en móvil el nombre se cortaba
+                    siempre ("Bienvenido, Agus…"), justo la parte que importa.
+                    El recorte es a TRES líneas, no a dos: el salto se lleva la
+                    primera, así que con line-clamp-2 al nombre le quedaba una
+                    sola y volvía a recortarse. Con tres, un nombre compuesto
+                    largo cabe entero y el bloque sigue sin crecer sin límite */}
+                <p className="whitespace-pre-line break-words line-clamp-3 text-2xl md:text-3xl font-bold leading-tight tracking-tight text-gray-900">
                   {t('welcome', { name: firstName })}
                 </p>
                 <p className="truncate text-sm text-gray-500">{user.email}</p>
