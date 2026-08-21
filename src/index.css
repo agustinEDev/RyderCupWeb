@@ -211,3 +211,57 @@
 #sentry-feedback {
   --actor-inset: auto auto 0 0;
 }
+
+/* Safari en iOS AMPLÍA la página al enfocar un campo de texto cuya letra mide
+   menos de 16px, y no la devuelve al soltarlo: la escala se queda puesta y, al
+   ser una SPA, la pantalla siguiente se hereda ampliada. De ahí el perfil de un
+   jugador gigante después de buscarlo, aunque el campo pequeño estuviera en la
+   pantalla anterior (FE #441).
+
+   Se arregla desde aquí y no campo a campo porque son 38 repartidos por 19
+   formularios, y el siguiente que se escriba volvería a caer.
+
+   La condición es el DISPOSITIVO, no el ancho: un iPhone en horizontal declara
+   932px y un iPad 768 o más, así que un `max-width: 767px` a secas deja fuera
+   justo los aparatos que hacen el zoom. `hover: none` + `pointer: coarse` es
+   táctil sin ratón —móvil y tablet— y no alcanza a un portátil con pantalla
+   táctil, que tiene hover. El `max-width` se queda detrás para el escritorio
+   estrecho, donde no hay zoom que evitar pero tampoco daño, y porque es la
+   única rama que se puede comprobar en un navegador de sobremesa.
+
+   Va FUERA de @layer a propósito: las utilidades de Tailwind viven en la capa
+   `utilities`, que gana a `base` por orden de capa y no por especificidad, así
+   que dentro de una capa esto no pintaría nada frente a `text-sm`. Un estilo
+   sin capa gana a todas ellas. El precio es que también gana a las utilidades
+   que vengan después, así que un campo que quiera letra MAYOR de 16px hay que
+   excluirlo a mano, como el panel de anotar golpes con su text-lg. La lista
+   cubre las clases literales del propio elemento: una variante (`sm:text-lg`),
+   un valor arbitrario (`text-[18px]`) o un tamaño heredado del contenedor NO
+   se libran solos, y hoy no hay ninguno, pero al añadir uno hay que pasar por
+   aquí.
+
+   Lo que NO se hace es meter maximum-scale/user-scalable=no en el viewport,
+   que es el remedio que sale en todas partes: quita el pinch-zoom a todo el
+   mundo, y hay quien lo necesita para leer. */
+@media (hover: none) and (pointer: coarse), (max-width: 767px) {
+  input:not([type='checkbox']):not([type='radio']):not(.text-base):not(.text-lg):not(.text-xl):not(.text-2xl):not(.text-3xl),
+  select:not(.text-base):not(.text-lg):not(.text-xl):not(.text-2xl):not(.text-3xl),
+  textarea:not(.text-base):not(.text-lg):not(.text-xl):not(.text-2xl):not(.text-3xl) {
+    font-size: 16px;
+  }
+}
+
+@layer base {
+  /* Sin esto, un doble toque rápido en un botón lo interpreta el móvil como
+     «amplía aquí». manipulation deja el toque y el desplazamiento intactos y
+     solo se lleva el doble-toque-para-ampliar; el pinch para acercar sigue.
+
+     Este sí va en @layer base, al revés que la regla de arriba: es un valor por
+     defecto, y así una utilidad `touch-none` puntual —un control que se
+     arrastre— le sigue ganando en vez de quedarse sin efecto sin explicación. */
+  button,
+  [role='button'],
+  a {
+    touch-action: manipulation;
+  }
+}
