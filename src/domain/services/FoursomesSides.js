@@ -66,16 +66,19 @@ export const sideScoreOf = (members = [], scoreOf) => {
  * número, que es lo único que permite distinguir un hoyo recogido —entrada con
  * `score` nulo— de uno sin anotar, donde no hay entrada ninguna.
  *
+ * Con dos anotaciones del mismo hoyo —una raya y un número— gana el NÚMERO,
+ * aunque la raya venga del primero del bando: es con el número con el que
+ * `ScoringService._best_ball` adjudica el hoyo, y una tarjeta que pintara la
+ * raya dejaría de explicar el resultado del partido. Entre dos números sigue
+ * mandando el del primero, que es la regla que iguala todas las pantallas.
+ *
  * @param {Array<Object>} members Miembros del bando, en orden
  * @param {(participantId: string) => Object|null|undefined} entryOf
  * @returns {Object|null}
  */
 export const sideEntryOf = (members = [], entryOf) => {
-  for (const member of members) {
-    const entry = entryOf(member.participantId);
-    if (entry) return entry;
-  }
-  return null;
+  const entries = members.map((member) => entryOf(member.participantId)).filter(Boolean);
+  return entries.find((entry) => entry.score != null) ?? entries[0] ?? null;
 };
 
 /**

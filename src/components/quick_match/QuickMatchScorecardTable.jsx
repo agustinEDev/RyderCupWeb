@@ -7,6 +7,10 @@ import {
 } from '../../domain/services/FoursomesSides';
 import GolfFigure from '../scoring/GolfFigure';
 import StablefordCalculator from '../../domain/services/StablefordCalculator';
+
+// Doble bogey BRUTO: lo que suma al total de golpes un hoyo que no se terminó.
+// Sin golpes recibidos a propósito — ver `getCountingScore`.
+const GROSS_DOUBLE_BOGEY_OVER_PAR = 2;
 import MatchPlayStrokeAllocator from '../../domain/services/MatchPlayStrokeAllocator';
 import PlayingHandicapCalculator from '../../domain/services/PlayingHandicapCalculator';
 
@@ -75,16 +79,15 @@ const QuickMatchScorecardTable = ({
     allocation[participantId]?.strokesByHole?.[holeNumber] ?? 0;
 
   // Los golpes con los que cuenta el hoyo, o null si está sin anotar. Un hoyo
-  // RECOGIDO —entrada sin número— vale su doble bogey neto: es lo que suma en
-  // la clasificación, así que es lo que tiene que sumar aquí. Con el número a
-  // secas, el total de la tarjeta y el de la clasificación no cuadraban.
-  const getCountingScore = (holeNumber, members, strokesId, par) => {
+  // RECOGIDO —entrada sin número— vale `par + 2`, el doble bogey que se
+  // escribe en la tarjeta, SIN golpes recibidos: este total es bruto y no puede
+  // moverse con el allowance. Es la misma cuenta que hacen el calculador y el
+  // backend, para que el total de aquí, el de la clasificación y el del
+  // historial sigan siendo el mismo número.
+  const getCountingScore = (holeNumber, members, par) => {
     const entry = getEntry(holeNumber, members);
     if (!entry) return null;
-    return (
-      entry.score ??
-      StablefordCalculator.netDoubleBogey(par, getStrokesReceived(holeNumber, strokesId))
-    );
+    return entry.score ?? par + GROSS_DOUBLE_BOGEY_OVER_PAR;
   };
 
   // Con signo: un hándicap plus suma negativo porque CEDE golpes. Sumarlo a
@@ -246,9 +249,9 @@ const QuickMatchScorecardTable = ({
     return `${name}${suffix}`;
   };
 
-  const sumStrokes = (holeRange, members, strokesId) =>
+  const sumStrokes = (holeRange, members) =>
     holeRange.reduce((sum, h) => {
-      const score = getCountingScore(h.holeNumber, members, strokesId, h.par);
+      const score = getCountingScore(h.holeNumber, members, h.par);
       return score != null ? sum + score : sum;
     }, 0);
 
@@ -290,9 +293,12 @@ const QuickMatchScorecardTable = ({
             {sectionHoles.map((h) => {
               const entry = getEntry(h.holeNumber, card.members);
               const strokesReceived = getStrokesReceived(h.holeNumber, card.strokesId);
-              // La raya es un hoyo anotado sin número: se pinta como raya, y
-              // puntúa con su doble bogey neto, que en Stableford son cero
-              // puntos. Sin entrada no hay hoyo que pintar.
+              // La raya es un hoyo anotado sin número: se pinta como raya y
+              // puntúa cero. Para los puntos del hoyo se usa el doble bogey
+              // NETO —lo que el WHS computa en un hoyo no terminado—, que no es
+              // lo mismo que el `par + 2` bruto con el que suma al total de la
+              // fila: el bruto no lleva golpes recibidos y el neto sí. Sin
+              // entrada no hay hoyo que pintar.
               const isPickedUp = entry != null && entry.score == null;
               const score = isPickedUp
                 ? StablefordCalculator.netDoubleBogey(h.par, strokesReceived)
@@ -349,7 +355,7 @@ const QuickMatchScorecardTable = ({
               );
             })}
             <td className="px-2 py-1 text-center font-bold">
-              {sumStrokes(sectionHoles, card.members, card.strokesId) || '-'}
+              {sumStrokes(sectionHoles, card.members) || '-'}
             </td>
           </tr>
         </tbody>

@@ -290,21 +290,29 @@ describe('StablefordCalculator', () => {
       expect(result.stablefordPoints).toBe(0);
     });
 
-    it('should raise the charge with the strokes received on that hole', () => {
+    it('should not let the strokes received move the gross charge', () => {
+      // El bruto es un dato objetivo: no puede cambiar con el allowance. El
+      // neto si es doble bogey NETO, de ahi los cero puntos.
       const participant = { participantId: 'p-1', handicap: 18 };
       const allocation = { 'p-1': { strokesByHole: { 1: 1 } } };
       const holeScores = [{ holeNumber: 1, participantId: 'p-1', score: null }];
 
-      const result = StablefordCalculator.computeParticipantTotals(
+      const conGolpe = StablefordCalculator.computeParticipantTotals(
         participant,
         holes,
         holeScores,
         allocation
       );
+      const scratch = StablefordCalculator.computeParticipantTotals(
+        { participantId: 'p-1', handicap: 0 },
+        holes,
+        holeScores
+      );
 
-      expect(result.totalStrokes).toBe(7);
-      expect(result.netStrokes).toBe(6);
-      expect(result.stablefordPoints).toBe(0);
+      expect(conGolpe.totalStrokes).toBe(6);
+      expect(conGolpe.totalStrokes).toBe(scratch.totalStrokes);
+      expect(conGolpe.netStrokes).toBe(6);
+      expect(conGolpe.stablefordPoints).toBe(0);
     });
 
     it('should still ignore a hole with no recorded entry at all', () => {
@@ -355,7 +363,9 @@ describe('StablefordCalculator', () => {
       );
 
       expect(result.stablefordPoints).toBe(30);
-      expect(result.totalStrokes).toBe(90);
+      // 89, el mismo bruto que a scratch: la raya vale par + 2 y el reparto no
+      // entra en un total de golpes. Lo que si cambia es el neto.
+      expect(result.totalStrokes).toBe(89);
       expect(result.netStrokes).toBe(78);
       expect(result.netStrokes - result.parPlayed).toBe(6);
     });

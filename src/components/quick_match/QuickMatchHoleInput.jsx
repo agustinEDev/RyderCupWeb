@@ -69,6 +69,10 @@ const QuickMatchHoleInput = ({ holeNumber, par, strokeIndex, meters = null, entr
     <span className="whitespace-nowrap">{t('input.meters')} {hole.meters ?? '-'}</span>
   );
 
+  // Ni golpes ni raya: el hoyo está por anotar. La raya SÍ tiene entrada, así
+  // que no cae aquí — es un hoyo cerrado y se dibuja como tal.
+  const isEmpty = (entry) => !entry.isPickedUp && entry.score == null;
+
   const handleSelect = (participantId, value) => {
     setOpenParticipantId(null);
     if (onScoreChange) onScoreChange(participantId, value);
@@ -114,11 +118,24 @@ const QuickMatchHoleInput = ({ holeNumber, par, strokeIndex, meters = null, entr
                 onClick={() => setOpenParticipantId(entry.participantId)}
                 className="w-full h-14 mt-auto flex items-center justify-center bg-gray-100 rounded-xl hover:bg-gray-200 active:bg-gray-300 transition-colors"
               >
-                <GolfFigure score={entry.score} par={parOf(entry)} pickedUp={entry.isPickedUp} />
+                {/* Sin anotar, la casilla lleva la palabra en vez de un hueco:
+                    en la tarjeta el vacío se lee bien, pero un botón en blanco
+                    no dice qué hace ni invita a pulsarlo. Y una palabra no se
+                    confunde con la raya, que es lo que pasaba con el guion. */}
+                {isEmpty(entry) ? (
+                  <span className="text-sm font-medium text-gray-400">{t('input.tapToScore')}</span>
+                ) : (
+                  <GolfFigure score={entry.score} par={parOf(entry)} pickedUp={entry.isPickedUp} />
+                )}
               </button>
             ) : (
               <div className="w-full h-14 mt-auto flex items-center justify-center">
-                <GolfFigure score={entry.score} par={parOf(entry)} pickedUp={entry.isPickedUp} />
+                {/* En solo lectura no hay nada que pulsar: se dice el estado. */}
+                {isEmpty(entry) ? (
+                  <span className="text-sm text-gray-400">{t('input.notEntered')}</span>
+                ) : (
+                  <GolfFigure score={entry.score} par={parOf(entry)} pickedUp={entry.isPickedUp} />
+                )}
               </div>
             )}
           </div>

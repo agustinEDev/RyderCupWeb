@@ -51,10 +51,20 @@ const HoleInput = ({
     if (onScoreChange) onScoreChange({ ownScore: ownValue, markedScore: val });
   };
 
+  // La raya (`null`, bola recogida) se pinta distinta del hoyo sin anotar
+  // (`undefined`): los dos llegan sin número y significan lo contrario, y con
+  // el mismo guion para ambos solo los distinguía quien usara lector de
+  // pantalla. Mismo trazo que `GolfFigure` en la tarjeta, para que la casilla y
+  // la tarjeta digan lo mismo.
   const displayScore = (val, ariaLabelNull = null) => {
-    if (val === undefined) return <span aria-label={t('input.notEntered')}>-</span>;
+    // Hoyo sin anotar: hueco, no guion. El guion se confundía con la raya
+    // (`null`, bola recogida), que es lo contrario: un hoyo ya cerrado. Se
+    // sigue anunciando a quien no lo ve.
+    if (val === undefined) {
+      return <span className="sr-only">{t('input.notEntered')}</span>;
+    }
     return val === null
-      ? <span aria-label={ariaLabelNull || undefined}>-</span>
+      ? <span aria-label={ariaLabelNull || undefined} className="text-gray-600">—</span>
       : val;
   };
 

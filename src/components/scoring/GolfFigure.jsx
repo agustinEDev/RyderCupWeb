@@ -29,8 +29,32 @@ const GolfFigure = ({ score, par, pickedUp = false }) => {
     );
   }
 
-  if (score === null || score === undefined || par === null || par === undefined) {
-    return <span data-testid="golf-figure" className="text-gray-400">-</span>;
+  // Hoyo sin anotar: la casilla se queda VACÍA. Un guion aquí se confundía con
+  // la raya —dos trazos horizontales que solo cambiaban de gris y de largo— y
+  // en el móvil no había forma de saber, de un vistazo, si al hoyo le faltaba
+  // el golpe o si ya estaba cerrado. El hueco conserva su tamaño para no
+  // descuadrar la fila, y se anuncia para quien no lo ve.
+  if (score === null || score === undefined) {
+    return (
+      <span data-testid="golf-figure" className="inline-flex w-7 h-7">
+        <span className="sr-only">{t('input.notEntered')}</span>
+      </span>
+    );
+  }
+
+  // Hay golpes pero no se sabe el par de ese hoyo: se enseña el número tal
+  // cual. Antes se escondía tras un guion, y perder el golpe anotado es peor
+  // que quedarse sin figura — además de ser el último guion que podía pasar
+  // por una raya.
+  if (par === null || par === undefined) {
+    return (
+      <span
+        data-testid="golf-figure"
+        className="inline-flex items-center justify-center w-7 h-7 text-xs font-bold text-gray-700"
+      >
+        {score}
+      </span>
+    );
   }
 
   const diff = score - par;

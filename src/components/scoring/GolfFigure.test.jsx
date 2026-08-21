@@ -46,16 +46,21 @@ describe('GolfFigure', () => {
     expect(fig.querySelectorAll('rect').length).toBe(2);
   });
 
-  it('should render dash for null score', () => {
+  it('should leave the cell empty when there is no score', () => {
+    // Hueco, no guion: un guion se confundia con la raya, que significa lo
+    // contrario —hoyo cerrado sin numero—. Solo queda el texto para lectores.
     render(<GolfFigure score={null} par={4} />);
     const fig = screen.getByTestId('golf-figure');
-    expect(fig).toHaveTextContent('-');
+    expect(fig).not.toHaveAttribute('data-picked-up');
+    expect(fig.querySelector('.sr-only')).toHaveTextContent('input.notEntered');
+    expect(fig.textContent.replace(/input\.notEntered/, '').trim()).toBe('');
   });
 
-  it('should render dash for undefined par', () => {
+  it('should still show the number when the par is unknown', () => {
+    // Sin par no hay figura que dibujar, pero perder el golpe anotado es peor
+    // que quedarse sin ella.
     render(<GolfFigure score={4} par={undefined} />);
-    const fig = screen.getByTestId('golf-figure');
-    expect(fig).toHaveTextContent('-');
+    expect(screen.getByTestId('golf-figure')).toHaveTextContent('4');
   });
 
   it('should render ace as eagle', () => {

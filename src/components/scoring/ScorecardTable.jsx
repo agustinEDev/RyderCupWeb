@@ -159,6 +159,11 @@ const ScorecardTable = ({ holes = [], scores = [], players = [], currentUserId, 
                 {sectionHoles.map(h => {
                   const ps = getRowScore(h.holeNumber, row);
                   const displayScore = showNet ? (ps?.netScore ?? ps?.ownScore) : ps?.ownScore;
+                  // La raya: hoyo anotado (`ownSubmitted`) y sin número porque
+                  // el jugador recogió. No es lo mismo que un hoyo pendiente,
+                  // aunque los dos lleguen aquí sin golpes, y con el mismo guion
+                  // gris para ambos no había forma de saber cuál era cuál.
+                  const isPickedUp = Boolean(ps?.ownSubmitted) && ps?.ownScore == null;
                   const strokeCount = ps?.strokesReceivedThisHole ?? 0;
                   const result = getHoleResult(h.holeNumber);
                   const isBestBall = matchFormat !== 'FOURSOMES' && (
@@ -177,12 +182,15 @@ const ScorecardTable = ({ holes = [], scores = [], players = [], currentUserId, 
                             </div>
                           )}
                           <GolfFigure
-                            score={displayScore}
+                            score={isPickedUp ? null : displayScore}
                             par={parFor(row.playerIds, h.holeNumber, h.par)}
+                            pickedUp={isPickedUp}
                           />
                         </div>
                       ) : (
-                        <span className="text-gray-300">-</span>
+                        // Sin anotación: hueco. Un guion aquí se confundía con
+                        // la raya, que significa lo contrario.
+                        <span className="inline-flex w-7 h-7" />
                       )}
                     </td>
                   );

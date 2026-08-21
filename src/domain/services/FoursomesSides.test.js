@@ -116,17 +116,26 @@ describe('entryAtOf y sideEntryOf', () => {
     expect(entryAt(2)('a1')).toBeNull();
   });
 
-  it('toma la raya del bando en vez de seguir buscando al companero', () => {
-    // Con `sideScoreOf`, que solo mira el numero, la raya del titular se
-    // ignoraba y el bando acababa ensenando el golpe del companero.
+  it('toma la raya del bando cuando es la unica anotacion', () => {
+    const holeScores = [{ participantId: 'a1', holeNumber: 1, score: null }];
+    const entryAt = entryAtOf(holeScores);
+
+    expect(sideEntryOf(side, entryAt(1))).not.toBeNull();
+    expect(sideEntryOf(side, entryAt(1)).score).toBeNull();
+  });
+
+  it('deja mandar al numero sobre la raya del titular', () => {
+    // Una bola, dos anotaciones: es con el NUMERO con el que `_best_ball`
+    // adjudica el hoyo, asi que pintar la raya dejaria una tarjeta que no
+    // explica el resultado del partido. Entre dos numeros sigue mandando el
+    // del primero del bando, que es lo que iguala todas las pantallas.
     const holeScores = [
       { participantId: 'a1', holeNumber: 1, score: null },
       { participantId: 'a2', holeNumber: 1, score: 6 },
     ];
     const entryAt = entryAtOf(holeScores);
 
-    expect(sideEntryOf(side, entryAt(1))?.score).toBeNull();
-    expect(sideScoreOf(side, (id) => entryAt(1)(id)?.score ?? null)).toBe(6);
+    expect(sideEntryOf(side, entryAt(1)).score).toBe(6);
   });
 
   it('devuelve null si el bando no ha anotado el hoyo', () => {
