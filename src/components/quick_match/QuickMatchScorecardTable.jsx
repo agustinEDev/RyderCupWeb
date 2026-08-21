@@ -1,9 +1,9 @@
 import { useTranslation } from 'react-i18next';
 import {
   groupParticipantsBySide,
-  scoreAtOf,
+  entryAtOf,
   sideCardHolder,
-  sideScoreOf,
+  sideEntryOf,
 } from '../../domain/services/FoursomesSides';
 import GolfFigure from '../scoring/GolfFigure';
 import StablefordCalculator from '../../domain/services/StablefordCalculator';
@@ -63,16 +63,29 @@ const QuickMatchScorecardTable = ({
     playMode,
   });
 
-  const scoreAt = scoreAtOf(holeScores);
+  const entryAt = entryAtOf(holeScores);
 
   // Recibe los participantes cuyos golpes forman UNA bola: uno en todos los
   // formatos menos foursomes, donde el bando comparte bola. Se elige recorriendo
   // el bando —no los golpes anotados, que llegan en el orden del backend— para
   // que esta tarjeta y la pantalla de anotación enseñen siempre la misma.
-  const getScore = (holeNumber, members) => sideScoreOf(members, scoreAt(holeNumber));
+  const getEntry = (holeNumber, members) => sideEntryOf(members, entryAt(holeNumber));
 
   const getStrokesReceived = (holeNumber, participantId) =>
     allocation[participantId]?.strokesByHole?.[holeNumber] ?? 0;
+
+  // Los golpes con los que cuenta el hoyo, o null si está sin anotar. Un hoyo
+  // RECOGIDO —entrada sin número— vale su doble bogey neto: es lo que suma en
+  // la clasificación, así que es lo que tiene que sumar aquí. Con el número a
+  // secas, el total de la tarjeta y el de la clasificación no cuadraban.
+  const getCountingScore = (holeNumber, members, strokesId, par) => {
+    const entry = getEntry(holeNumber, members);
+    if (!entry) return null;
+    return (
+      entry.score ??
+      StablefordCalculator.netDoubleBogey(par, getStrokesReceived(holeNumber, strokesId))
+    );
+  };
 
   // Con signo: un hándicap plus suma negativo porque CEDE golpes. Sumarlo a
   // secas y preguntar por "> 0" hacía que la cabecera dijese "no recibe golpes"
@@ -233,9 +246,9 @@ const QuickMatchScorecardTable = ({
     return `${name}${suffix}`;
   };
 
-  const sumStrokes = (holeRange, members) =>
+  const sumStrokes = (holeRange, members, strokesId) =>
     holeRange.reduce((sum, h) => {
-      const score = getScore(h.holeNumber, members);
+      const score = getCountingScore(h.holeNumber, members, strokesId, h.par);
       return score != null ? sum + score : sum;
     }, 0);
 
@@ -275,8 +288,15 @@ const QuickMatchScorecardTable = ({
               {label}
             </th>
             {sectionHoles.map((h) => {
-              const score = getScore(h.holeNumber, card.members);
+              const entry = getEntry(h.holeNumber, card.members);
               const strokesReceived = getStrokesReceived(h.holeNumber, card.strokesId);
+              // La raya es un hoyo anotado sin número: se pinta como raya, y
+              // puntúa con su doble bogey neto, que en Stableford son cero
+              // puntos. Sin entrada no hay hoyo que pintar.
+              const isPickedUp = entry != null && entry.score == null;
+              const score = isPickedUp
+                ? StablefordCalculator.netDoubleBogey(h.par, strokesReceived)
+                : (entry?.score ?? null);
               const dotCount = Math.min(Math.abs(strokesReceived), MAX_STROKE_DOTS);
               return (
                 <td
@@ -285,7 +305,7 @@ const QuickMatchScorecardTable = ({
                   className="px-1 py-1 text-center align-top"
                 >
                   <div className="flex flex-col items-center gap-0.5">
-                    <GolfFigure score={score} par={h.par} />
+                    <GolfFigure score={isPickedUp ? null : score} par={h.par} pickedUp={isPickedUp} />
                     {score != null && isStableford && (
                       <span
                         data-testid="hole-points"
@@ -329,7 +349,7 @@ const QuickMatchScorecardTable = ({
               );
             })}
             <td className="px-2 py-1 text-center font-bold">
-              {sumStrokes(sectionHoles, card.members) || '-'}
+              {sumStrokes(sectionHoles, card.members, card.strokesId) || '-'}
             </td>
           </tr>
         </tbody>

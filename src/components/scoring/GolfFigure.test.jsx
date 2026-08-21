@@ -64,4 +64,28 @@ describe('GolfFigure', () => {
     expect(fig).toHaveAttribute('title', 'figures.eagle');
     expect(fig.querySelector('circle')).not.toBeNull();
   });
+
+  describe('raya (bola recogida)', () => {
+    it('la pinta distinta del hoyo sin anotar', () => {
+      // Con el mismo guion gris para los dos, quien mira la tarjeta no sabe si
+      // al hoyo le falta el golpe o si ya esta cerrado.
+      const { unmount } = render(<GolfFigure score={null} par={4} pickedUp />);
+      const raya = screen.getByTestId('golf-figure');
+      expect(raya).toHaveAttribute('data-picked-up', 'true');
+      expect(raya).toHaveAttribute('title', 'input.pickedUpLabel');
+      unmount();
+
+      render(<GolfFigure score={null} par={4} />);
+      expect(screen.getByTestId('golf-figure')).not.toHaveAttribute('data-picked-up');
+    });
+
+    it('manda sobre el numero si llegan los dos', () => {
+      // El numero que acompana a una raya es el doble bogey neto con el que
+      // cuenta, no un golpe que se diera: en pantalla va la raya.
+      render(<GolfFigure score={6} par={4} pickedUp />);
+      const fig = screen.getByTestId('golf-figure');
+      expect(fig).toHaveAttribute('data-picked-up', 'true');
+      expect(fig).not.toHaveTextContent('6');
+    });
+  });
 });

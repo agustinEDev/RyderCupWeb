@@ -20,7 +20,7 @@ import GolfFigure from '../scoring/GolfFigure';
  * Quien anota no necesita excepción: su hoyo y la cabecera salen de la misma
  * resolución, así que no difiere de sí mismo y no se le duplica nada.
  */
-const QuickMatchHoleInput = ({ holeNumber, par, strokeIndex, meters = null, entries, isReadOnly = false, onScoreChange }) => {
+const QuickMatchHoleInput = ({ holeNumber, par, strokeIndex, meters = null, entries, isReadOnly = false, allowPickedUp = true, onScoreChange }) => {
   const { t } = useTranslation('scoring');
   const [openParticipantId, setOpenParticipantId] = useState(null);
 
@@ -114,11 +114,11 @@ const QuickMatchHoleInput = ({ holeNumber, par, strokeIndex, meters = null, entr
                 onClick={() => setOpenParticipantId(entry.participantId)}
                 className="w-full h-14 mt-auto flex items-center justify-center bg-gray-100 rounded-xl hover:bg-gray-200 active:bg-gray-300 transition-colors"
               >
-                <GolfFigure score={entry.score} par={parOf(entry)} />
+                <GolfFigure score={entry.score} par={parOf(entry)} pickedUp={entry.isPickedUp} />
               </button>
             ) : (
               <div className="w-full h-14 mt-auto flex items-center justify-center">
-                <GolfFigure score={entry.score} par={parOf(entry)} />
+                <GolfFigure score={entry.score} par={parOf(entry)} pickedUp={entry.isPickedUp} />
               </div>
             )}
           </div>
@@ -127,11 +127,15 @@ const QuickMatchHoleInput = ({ holeNumber, par, strokeIndex, meters = null, entr
 
       {openEntry && (
         <ScoreInputPanel
-          value={openEntry.score}
+          // `null` es la raya y deja su botón marcado; un hoyo sin anotar manda
+          // `undefined` para que no salga nada marcado. Con `null` para los dos,
+          // abrir un hoyo virgen enseñaba la raya como si ya estuviera elegida.
+          value={openEntry.isPickedUp ? null : (openEntry.score ?? undefined)}
           onSelect={(value) => handleSelect(openEntry.participantId, value)}
           onClose={() => setOpenParticipantId(null)}
           label={openEntry.name}
           par={parOf(openEntry)}
+          allowPickedUp={allowPickedUp}
         />
       )}
     </div>

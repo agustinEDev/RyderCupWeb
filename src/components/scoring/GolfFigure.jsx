@@ -1,7 +1,29 @@
 import { useTranslation } from 'react-i18next';
 
-const GolfFigure = ({ score, par }) => {
+/**
+ * La figura del hoyo: el golpe anotado con su forma, o un hueco.
+ *
+ * `pickedUp` es la RAYA —el jugador recogió la bola— y NO es lo mismo que un
+ * hoyo sin anotar, aunque los dos lleguen aquí sin número. Se dibujan distinto
+ * a propósito: con el mismo guion gris para ambos, quien mira la tarjeta no
+ * sabe si a ese hoyo le falta el golpe o si ya está cerrado, que es justo lo
+ * que hay que poder distinguir para dar la partida por terminada.
+ */
+const GolfFigure = ({ score, par, pickedUp = false }) => {
   const { t } = useTranslation('scoring');
+
+  if (pickedUp) {
+    return (
+      <span
+        data-testid="golf-figure"
+        data-picked-up="true"
+        title={t('input.pickedUpLabel')}
+        className="inline-flex items-center justify-center w-7 h-7 text-base font-bold text-gray-600"
+      >
+        —
+      </span>
+    );
+  }
 
   if (score === null || score === undefined || par === null || par === undefined) {
     return <span data-testid="golf-figure" className="text-gray-400">-</span>;

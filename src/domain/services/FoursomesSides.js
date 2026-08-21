@@ -42,6 +42,11 @@ export const groupParticipantsBySide = (participants = []) => {
  * —y no por los golpes anotados, que llegan en el orden del backend— es lo que
  * garantiza que las tres pantallas elijan la misma cuando hay más de una.
  *
+ * Una RAYA cuenta como nota del bando: el hoyo está anotado aunque no tenga
+ * número, así que la búsqueda para ahí en vez de seguir hasta el compañero.
+ * Por eso hace falta `sideEntryOf`, que mira si hay ENTRADA; `sideScoreOf` solo
+ * ve el número y no puede distinguir la raya de un hoyo sin anotar.
+ *
  * @param {Array<Object>} members Miembros del bando, en orden
  * @param {(participantId: string) => number|null|undefined} scoreOf
  * @returns {number|null}
@@ -50,6 +55,25 @@ export const sideScoreOf = (members = [], scoreOf) => {
   for (const member of members) {
     const score = scoreOf(member.participantId);
     if (score != null) return score;
+  }
+  return null;
+};
+
+/**
+ * La ANOTACIÓN del bando en un hoyo: la del primer miembro que tenga alguna.
+ *
+ * Igual que `sideScoreOf`, pero devolviendo la entrada entera en vez del
+ * número, que es lo único que permite distinguir un hoyo recogido —entrada con
+ * `score` nulo— de uno sin anotar, donde no hay entrada ninguna.
+ *
+ * @param {Array<Object>} members Miembros del bando, en orden
+ * @param {(participantId: string) => Object|null|undefined} entryOf
+ * @returns {Object|null}
+ */
+export const sideEntryOf = (members = [], entryOf) => {
+  for (const member of members) {
+    const entry = entryOf(member.participantId);
+    if (entry) return entry;
   }
   return null;
 };
@@ -66,12 +90,27 @@ export const sideScoreOf = (members = [], scoreOf) => {
 export const scoreAtOf =
   (holeScores = []) =>
   (holeNumber) =>
-  (participantId) => {
-    const entry = holeScores.find(
+  (participantId) =>
+    entryAtOf(holeScores)(holeNumber)(participantId)?.score ?? null;
+
+/**
+ * Lector de ANOTACIONES por participante para un hoyo.
+ *
+ * Devuelve la entrada, no el número: es la única forma de separar el hoyo
+ * recogido (entrada con `score` nulo, que sí está jugado) del hoyo sin anotar
+ * (sin entrada). Quien solo necesite el número tiene `scoreAtOf`, que se apoya
+ * en este para que la regla de búsqueda viva en un sitio.
+ *
+ * @param {Array<Object>} holeScores
+ * @returns {(holeNumber: number) => (participantId: string) => Object|null}
+ */
+export const entryAtOf =
+  (holeScores = []) =>
+  (holeNumber) =>
+  (participantId) =>
+    holeScores.find(
       (hs) => hs.participantId === participantId && hs.holeNumber === holeNumber
-    );
-    return entry?.score ?? null;
-  };
+    ) ?? null;
 
 /**
  * El participante a cuyo nombre se guarda la bola del bando: el primero.

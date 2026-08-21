@@ -21,6 +21,13 @@ import MatchPlayStrokeAllocator from './MatchPlayStrokeAllocator';
  *
  * Tabla de puntos por hoyo: max(0, 2 - (neto - par)).
  */
+
+// Doble bogey neto: lo que el WHS (Regla 3.1) manda anotar en un hoyo que no se
+// termina, y con lo que se cuenta la raya. El backend lleva la misma constante
+// en `stableford_calculator.py`; si una se mueve sin la otra, la clasificación
+// de la pantalla deja de cuadrar con la del historial.
+const NET_DOUBLE_BOGEY_OVER_PAR = 2;
+
 class StablefordCalculator {
   /**
    * Golpes que recibe un participante en un hoyo, según el reparto ya resuelto.
@@ -37,6 +44,21 @@ class StablefordCalculator {
    */
   static strokesOnHole(allocation, participantId, holeNumber) {
     return allocation?.[participantId]?.strokesByHole?.[holeNumber] ?? 0;
+  }
+
+  /**
+   * Golpes con los que cuenta un hoyo que no se terminó: la raya.
+   *
+   * `par + 2 + golpes recibidos`, que es lo que el WHS manda anotar cuando el
+   * jugador recoge la bola. En Stableford sale exactamente el cero que vale
+   * recoger, y el resultado contra el par queda penalizado en vez de regalado.
+   *
+   * @param {number} par
+   * @param {number} strokesReceived
+   * @returns {number}
+   */
+  static netDoubleBogey(par, strokesReceived) {
+    return par + NET_DOUBLE_BOGEY_OVER_PAR + strokesReceived;
   }
 
   /**
@@ -85,16 +107,22 @@ class StablefordCalculator {
       const entry = holeScores.find(
         (hs) => hs.participantId === participant.participantId && hs.holeNumber === hole.holeNumber
       );
-      if (!entry || entry.score == null) continue;
+      // Sin entrada, el hoyo está por jugar y no cuenta. Con entrada y sin
+      // número está RECOGIDO, que es un hoyo jugado: cuenta, y se carga a doble
+      // bogey neto. Los dos casos eran `score == null` y significan lo
+      // contrario, así que la diferencia está en si hay entrada.
+      if (!entry) continue;
 
       const strokesReceived = StablefordCalculator.strokesOnHole(
         allocation,
         participant.participantId,
         hole.holeNumber
       );
-      stablefordPoints += StablefordCalculator.holePoints(entry.score, hole.par, strokesReceived);
-      totalStrokes += entry.score;
-      netStrokes += entry.score - strokesReceived;
+      const score =
+        entry.score ?? StablefordCalculator.netDoubleBogey(hole.par, strokesReceived);
+      stablefordPoints += StablefordCalculator.holePoints(score, hole.par, strokesReceived);
+      totalStrokes += score;
+      netStrokes += score - strokesReceived;
       parPlayed += hole.par;
       holesPlayed += 1;
     }
