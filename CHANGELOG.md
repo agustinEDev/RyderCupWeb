@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [2.15.1] - 2026-08-21
+
+### Fixed
+
+- **El saludo de la portada siempre cortaba el nombre.** «Bienvenido, Agus…» en un móvil: el nombre, que es lo único que el saludo aporta, era justo lo que desaparecía. El texto iba en una sola línea recortada, así que cuanto más largo el nombre, menos se leía. Ahora el saludo baja el nombre a su propia línea y se lee entero — comprobado a 390 px con nombres compuestos largos, que caben sin recortarse. Cierra la issue #434.
+
 ## [2.15.0] - 2026-08-21
 
 ### Fixed
