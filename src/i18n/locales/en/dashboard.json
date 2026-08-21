@@ -73,6 +73,7 @@
     "emptyTitle": "Fancy a round?",
     "emptyDescription": "Start a quick match with friends, no tournament needed",
     "emptyAction": "New quick match",
+    "excludedBadge": "Not counted",
     "session": {
       "MORNING": "Morning",
       "AFTERNOON": "Afternoon",

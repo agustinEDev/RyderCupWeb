@@ -135,7 +135,18 @@
     "teamTotal": "Del equipo",
     "hide": "Quitar de mi historial",
     "hidden": "Partida quitada de tu historial",
-    "hideError": "No se pudo quitar la partida de tu historial"
+    "hideError": "No se pudo quitar la partida de tu historial",
+    "countsInStats": "Cuenta en tus estadísticas. Pulsa para dejarla fuera",
+    "excludedFromStats": "No cuenta en tus estadísticas. Pulsa para volver a contarla",
+    "excludedBadge": "No cuenta",
+    "excluded": "Ya no cuenta en tus estadísticas",
+    "included": "Vuelve a contar en tus estadísticas",
+    "statsToggleError": "No se pudo cambiar si la partida cuenta en tus estadísticas",
+    "deleteTitle": "¿Quitar la partida de tu historial?",
+    "deleteBody": "Desaparece de tu lista y no se puede recuperar desde la aplicación. También deja de contar en tus estadísticas.",
+    "deleteHint": "Si solo quieres que no cuente en tus estadísticas, cierra esto y usa el ojo: eso sí se puede deshacer.",
+    "deleteConfirm": "Quitar para siempre",
+    "deleteCancel": "Cancelar"
   },
   "scoring": {
     "matchHeader": "Partida rápida",

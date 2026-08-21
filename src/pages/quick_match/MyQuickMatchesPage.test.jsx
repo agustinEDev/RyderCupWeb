@@ -31,12 +31,16 @@ const mockListMyQuickMatches = vi.fn();
 const mockGetQuickMatch = vi.fn();
 const mockGetGolfCourse = vi.fn();
 const mockHideQuickMatch = vi.fn();
+const mockExcludeFromStats = vi.fn();
+const mockIncludeInStats = vi.fn();
 
 vi.mock('../../composition', () => ({
   listMyQuickMatchesUseCase: { execute: (...args) => mockListMyQuickMatches(...args) },
   getQuickMatchUseCase: { execute: (...args) => mockGetQuickMatch(...args) },
   getGolfCourseUseCase: { execute: (...args) => mockGetGolfCourse(...args) },
   hideQuickMatchUseCase: { execute: (...args) => mockHideQuickMatch(...args) },
+  excludeQuickMatchFromStatsUseCase: { execute: (...args) => mockExcludeFromStats(...args) },
+  includeQuickMatchInStatsUseCase: { execute: (...args) => mockIncludeInStats(...args) },
 }));
 
 vi.mock('../../utils/toast', () => ({
@@ -368,6 +372,121 @@ describe('MyQuickMatchesPage', () => {
     });
   });
 
+  describe('leaving a match out of the statistics', () => {
+    const matches = (overrides = {}) => ({
+      quickMatches: [
+        {
+          id: 'qm-1',
+          matchFormat: 'SINGLES',
+          status: 'COMPLETED',
+          createdAt: '2026-07-27T10:00:00Z',
+          excludedFromStats: false,
+          ...overrides,
+        },
+      ],
+      totalCount: 1,
+      page: 1,
+      limit: 50,
+    });
+
+    it('shows an open eye on a match that counts', async () => {
+      mockListMyQuickMatches.mockResolvedValue(matches());
+
+      renderPage();
+
+      const eye = await screen.findByTestId('quick-match-stats-toggle-qm-1');
+      expect(eye).toHaveAttribute('aria-pressed', 'false');
+      // El estado se anuncia con palabras, no solo con el icono ni con el color
+      expect(eye).toHaveAttribute('aria-label', 'history.countsInStats');
+      expect(screen.queryByTestId('quick-match-excluded-badge-qm-1')).not.toBeInTheDocument();
+    });
+
+    it('marks the row and the eye when the match does not count', async () => {
+      mockListMyQuickMatches.mockResolvedValue(matches({ excludedFromStats: true }));
+
+      renderPage();
+
+      const eye = await screen.findByTestId('quick-match-stats-toggle-qm-1');
+      expect(eye).toHaveAttribute('aria-pressed', 'true');
+      expect(eye).toHaveAttribute('aria-label', 'history.excludedFromStats');
+      // La etiqueta es lo que lo dice de verdad: el fondo no lo lee nadie
+      expect(screen.getByTestId('quick-match-excluded-badge-qm-1')).toBeInTheDocument();
+    });
+
+    it('does not offer the eye on a match still being played', async () => {
+      // Todavia no cuenta en ninguna estadistica: el control no diria nada, y
+      // el servidor lo rechaza con un 409
+      mockListMyQuickMatches.mockResolvedValue(matches({ status: 'IN_PROGRESS' }));
+
+      renderPage();
+
+      await screen.findByTestId('quick-match-history-item-qm-1');
+      expect(screen.queryByTestId('quick-match-stats-toggle-qm-1')).not.toBeInTheDocument();
+    });
+
+    it('leaves it out of the stats and repaints the row without reloading', async () => {
+      mockListMyQuickMatches.mockResolvedValue(matches());
+      mockExcludeFromStats.mockResolvedValue({ id: 'qm-1', excludedFromStats: true });
+
+      renderPage();
+
+      fireEvent.click(await screen.findByTestId('quick-match-stats-toggle-qm-1'));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('quick-match-excluded-badge-qm-1')).toBeInTheDocument();
+      });
+      expect(mockExcludeFromStats).toHaveBeenCalledWith('qm-1');
+      // La partida NO se va de la lista: eso es la papelera, no el ojo
+      expect(screen.getByTestId('quick-match-history-item-qm-1')).toBeInTheDocument();
+    });
+
+    it('brings it back into the stats when pressed again', async () => {
+      mockListMyQuickMatches.mockResolvedValue(matches({ excludedFromStats: true }));
+      mockIncludeInStats.mockResolvedValue({ id: 'qm-1', excludedFromStats: false });
+
+      renderPage();
+
+      fireEvent.click(await screen.findByTestId('quick-match-stats-toggle-qm-1'));
+
+      await waitFor(() => {
+        expect(screen.queryByTestId('quick-match-excluded-badge-qm-1')).not.toBeInTheDocument();
+      });
+      expect(mockIncludeInStats).toHaveBeenCalledWith('qm-1');
+    });
+
+    it('keeps the previous state when the request fails', async () => {
+      mockListMyQuickMatches.mockResolvedValue(matches());
+      mockExcludeFromStats.mockRejectedValue(new Error('boom'));
+
+      renderPage();
+
+      fireEvent.click(await screen.findByTestId('quick-match-stats-toggle-qm-1'));
+
+      await waitFor(() => {
+        expect(mockExcludeFromStats).toHaveBeenCalled();
+      });
+      expect(screen.queryByTestId('quick-match-excluded-badge-qm-1')).not.toBeInTheDocument();
+      expect(screen.getByTestId('quick-match-stats-toggle-qm-1')).toHaveAttribute(
+        'aria-pressed',
+        'false'
+      );
+    });
+
+    it('does not navigate to scoring when the eye is pressed', async () => {
+      mockListMyQuickMatches.mockResolvedValue(matches());
+      mockExcludeFromStats.mockResolvedValue({ id: 'qm-1', excludedFromStats: true });
+
+      renderPage();
+
+      fireEvent.click(await screen.findByTestId('quick-match-stats-toggle-qm-1'));
+
+      await waitFor(() => {
+        expect(mockExcludeFromStats).toHaveBeenCalled();
+      });
+      expect(mockNavigate).not.toHaveBeenCalled();
+    });
+  });
+
   describe('hiding a match from the history', () => {
     const twoMatches = {
       quickMatches: [
@@ -390,6 +509,32 @@ describe('MyQuickMatchesPage', () => {
       expect(screen.getByTestId('quick-match-hide-qm-2')).toBeInTheDocument();
     });
 
+    // La papelera ya no oculta directamente: abre un aviso, porque no se puede
+    // deshacer desde la aplicación. Pulsarla y aceptar es ahora el gesto.
+    const confirmarQuitar = async (id) => {
+      fireEvent.click(screen.getByTestId(`quick-match-hide-${id}`));
+      const confirmar = await screen.findByRole('button', { name: 'history.deleteConfirm' });
+      fireEvent.click(confirmar);
+    };
+
+    it('should ask before removing, and do nothing if you cancel', async () => {
+      mockListMyQuickMatches.mockResolvedValue(twoMatches);
+
+      renderPage();
+
+      await waitFor(() => {
+        expect(screen.getByTestId('quick-match-hide-qm-1')).toBeInTheDocument();
+      });
+
+      fireEvent.click(screen.getByTestId('quick-match-hide-qm-1'));
+
+      const cancelar = await screen.findByRole('button', { name: 'history.deleteCancel' });
+      fireEvent.click(cancelar);
+
+      expect(mockHideQuickMatch).not.toHaveBeenCalled();
+      expect(screen.getByTestId('quick-match-history-item-qm-1')).toBeInTheDocument();
+    });
+
     it('should hide the match and remove only that card from the list', async () => {
       mockListMyQuickMatches.mockResolvedValue(twoMatches);
       mockHideQuickMatch.mockResolvedValue({ id: 'qm-1' });
@@ -400,7 +545,7 @@ describe('MyQuickMatchesPage', () => {
         expect(screen.getByTestId('quick-match-hide-qm-1')).toBeInTheDocument();
       });
 
-      fireEvent.click(screen.getByTestId('quick-match-hide-qm-1'));
+      await confirmarQuitar('qm-1');
 
       await waitFor(() => {
         expect(screen.queryByTestId('quick-match-history-item-qm-1')).not.toBeInTheDocument();
@@ -420,7 +565,7 @@ describe('MyQuickMatchesPage', () => {
         expect(screen.getByTestId('quick-match-hide-qm-1')).toBeInTheDocument();
       });
 
-      fireEvent.click(screen.getByTestId('quick-match-hide-qm-1'));
+      await confirmarQuitar('qm-1');
 
       await waitFor(() => {
         expect(mockHideQuickMatch).toHaveBeenCalled();
@@ -438,7 +583,7 @@ describe('MyQuickMatchesPage', () => {
         expect(screen.getByTestId('quick-match-hide-qm-1')).toBeInTheDocument();
       });
 
-      fireEvent.click(screen.getByTestId('quick-match-hide-qm-1'));
+      await confirmarQuitar('qm-1');
 
       await waitFor(() => {
         expect(mockHideQuickMatch).toHaveBeenCalledWith('qm-1');
@@ -457,7 +602,7 @@ describe('MyQuickMatchesPage', () => {
         expect(screen.getByTestId('quick-match-hide-qm-1')).toBeInTheDocument();
       });
 
-      fireEvent.click(screen.getByTestId('quick-match-hide-qm-1'));
+      await confirmarQuitar('qm-1');
 
       await waitFor(() => {
         expect(screen.getByTestId('quick-match-hide-qm-1')).toBeDisabled();
@@ -483,8 +628,8 @@ describe('MyQuickMatchesPage', () => {
         expect(screen.getByTestId('quick-match-hide-qm-1')).toBeInTheDocument();
       });
 
-      fireEvent.click(screen.getByTestId('quick-match-hide-qm-1'));
-      fireEvent.click(screen.getByTestId('quick-match-hide-qm-2'));
+      await confirmarQuitar('qm-1');
+      await confirmarQuitar('qm-2');
 
       await waitFor(() => {
         expect(screen.getByTestId('quick-match-hide-qm-2')).toBeDisabled();

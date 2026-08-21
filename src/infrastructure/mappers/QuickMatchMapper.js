@@ -97,6 +97,7 @@ class QuickMatchMapper {
       standing,
       scoringAssignments,
       participantStrokes,
+      excludedFromStats: apiData.excluded_from_stats ?? false,
       createdAt: apiData.created_at,
       updatedAt: apiData.updated_at,
     });

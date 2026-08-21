@@ -125,6 +125,34 @@ class IQuickMatchRepository {
   }
 
   /**
+   * Leave the match out of the current user's statistics.
+   *
+   * Different from hide(): the match STAYS in their history, flagged, and the
+   * flag can be lifted with includeInStats(). Per-user and idempotent. Only on
+   * a finished match — the server answers 409 for anything else.
+   *
+   * @param {string} quickMatchId
+   * @returns {Promise<QuickMatch>} Updated quick match
+   * @throws {Error} If operation fails
+   */
+  async excludeFromStats(quickMatchId) {
+    throw new Error('Method excludeFromStats() must be implemented');
+  }
+
+  /**
+   * Count the match towards the current user's statistics again.
+   *
+   * Reverses excludeFromStats(). Idempotent, and allowed in any status.
+   *
+   * @param {string} quickMatchId
+   * @returns {Promise<QuickMatch>} Updated quick match
+   * @throws {Error} If operation fails
+   */
+  async includeInStats(quickMatchId) {
+    throw new Error('Method includeInStats() must be implemented');
+  }
+
+  /**
    * Submit/update the current user's own score for a hole (scorers only).
    *
    * @param {string} quickMatchId
