@@ -745,3 +745,63 @@ describe('QuickMatchScorecardTable · bando con una tarjeta de barra más corta'
     expect(screen.getByTestId('quick-match-par-p-3-1')).toHaveTextContent('5');
   });
 });
+
+describe('QuickMatchScorecardTable - raya (bola recogida)', () => {
+  it('pinta la raya en su casilla, distinta del hoyo sin anotar', () => {
+    const holeScores = [{ holeNumber: 1, participantId: 'p-1', score: null }];
+
+    render(
+      <QuickMatchScorecardTable
+        holes={holes}
+        holeScores={holeScores}
+        participants={[participants[0]]}
+        currentParticipantId="p-1"
+        scoringFormat="STABLEFORD"
+      />
+    );
+
+    const celda = screen.getByTestId('quick-match-score-cell-p-1-1');
+    const sinAnotar = screen.getByTestId('quick-match-score-cell-p-1-2');
+    expect(celda.querySelector('[data-picked-up="true"]')).not.toBeNull();
+    expect(sinAnotar.querySelector('[data-picked-up="true"]')).toBeNull();
+  });
+
+  it('le da cero puntos Stableford, no ninguno', () => {
+    // La raya vale cero, que no es lo mismo que un hoyo sin puntuar: sin el
+    // cero, la tarjeta parece tener un hoyo pendiente.
+    const holeScores = [{ holeNumber: 1, participantId: 'p-1', score: null }];
+
+    render(
+      <QuickMatchScorecardTable
+        holes={holes}
+        holeScores={holeScores}
+        participants={[participants[0]]}
+        currentParticipantId="p-1"
+        scoringFormat="STABLEFORD"
+      />
+    );
+
+    expect(screen.getByTestId('hole-points')).toHaveTextContent('0');
+  });
+
+  it('suma el doble bogey neto al total, para cuadrar con la clasificacion', () => {
+    // Un par 4 recogido a scratch cuenta 6. Con el hueco, el total de la
+    // tarjeta y el de la clasificacion daban numeros distintos.
+    const holeScores = [
+      { holeNumber: 1, participantId: 'p-1', score: null },
+      { holeNumber: 2, participantId: 'p-1', score: 3 },
+    ];
+
+    render(
+      <QuickMatchScorecardTable
+        holes={holes}
+        holeScores={holeScores}
+        participants={[participants[0]]}
+        currentParticipantId="p-1"
+        scoringFormat="STABLEFORD"
+      />
+    );
+
+    expect(screen.getByTestId('quick-match-scorecard-table')).toHaveTextContent('9');
+  });
+});

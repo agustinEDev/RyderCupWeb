@@ -1,12 +1,16 @@
 import { useTranslation } from 'react-i18next';
 import {
   groupParticipantsBySide,
-  scoreAtOf,
+  entryAtOf,
   sideCardHolder,
-  sideScoreOf,
+  sideEntryOf,
 } from '../../domain/services/FoursomesSides';
 import GolfFigure from '../scoring/GolfFigure';
 import StablefordCalculator from '../../domain/services/StablefordCalculator';
+
+// Doble bogey BRUTO: lo que suma al total de golpes un hoyo que no se terminó.
+// Sin golpes recibidos a propósito — ver `getCountingScore`.
+const GROSS_DOUBLE_BOGEY_OVER_PAR = 2;
 import MatchPlayStrokeAllocator from '../../domain/services/MatchPlayStrokeAllocator';
 import PlayingHandicapCalculator from '../../domain/services/PlayingHandicapCalculator';
 
@@ -63,16 +67,28 @@ const QuickMatchScorecardTable = ({
     playMode,
   });
 
-  const scoreAt = scoreAtOf(holeScores);
+  const entryAt = entryAtOf(holeScores);
 
   // Recibe los participantes cuyos golpes forman UNA bola: uno en todos los
   // formatos menos foursomes, donde el bando comparte bola. Se elige recorriendo
   // el bando —no los golpes anotados, que llegan en el orden del backend— para
   // que esta tarjeta y la pantalla de anotación enseñen siempre la misma.
-  const getScore = (holeNumber, members) => sideScoreOf(members, scoreAt(holeNumber));
+  const getEntry = (holeNumber, members) => sideEntryOf(members, entryAt(holeNumber));
 
   const getStrokesReceived = (holeNumber, participantId) =>
     allocation[participantId]?.strokesByHole?.[holeNumber] ?? 0;
+
+  // Los golpes con los que cuenta el hoyo, o null si está sin anotar. Un hoyo
+  // RECOGIDO —entrada sin número— vale `par + 2`, el doble bogey que se
+  // escribe en la tarjeta, SIN golpes recibidos: este total es bruto y no puede
+  // moverse con el allowance. Es la misma cuenta que hacen el calculador y el
+  // backend, para que el total de aquí, el de la clasificación y el del
+  // historial sigan siendo el mismo número.
+  const getCountingScore = (holeNumber, members, par) => {
+    const entry = getEntry(holeNumber, members);
+    if (!entry) return null;
+    return entry.score ?? par + GROSS_DOUBLE_BOGEY_OVER_PAR;
+  };
 
   // Con signo: un hándicap plus suma negativo porque CEDE golpes. Sumarlo a
   // secas y preguntar por "> 0" hacía que la cabecera dijese "no recibe golpes"
@@ -235,7 +251,7 @@ const QuickMatchScorecardTable = ({
 
   const sumStrokes = (holeRange, members) =>
     holeRange.reduce((sum, h) => {
-      const score = getScore(h.holeNumber, members);
+      const score = getCountingScore(h.holeNumber, members, h.par);
       return score != null ? sum + score : sum;
     }, 0);
 
@@ -275,8 +291,18 @@ const QuickMatchScorecardTable = ({
               {label}
             </th>
             {sectionHoles.map((h) => {
-              const score = getScore(h.holeNumber, card.members);
+              const entry = getEntry(h.holeNumber, card.members);
               const strokesReceived = getStrokesReceived(h.holeNumber, card.strokesId);
+              // La raya es un hoyo anotado sin número: se pinta como raya y
+              // puntúa cero. Para los puntos del hoyo se usa el doble bogey
+              // NETO —lo que el WHS computa en un hoyo no terminado—, que no es
+              // lo mismo que el `par + 2` bruto con el que suma al total de la
+              // fila: el bruto no lleva golpes recibidos y el neto sí. Sin
+              // entrada no hay hoyo que pintar.
+              const isPickedUp = entry != null && entry.score == null;
+              const score = isPickedUp
+                ? StablefordCalculator.netDoubleBogey(h.par, strokesReceived)
+                : (entry?.score ?? null);
               const dotCount = Math.min(Math.abs(strokesReceived), MAX_STROKE_DOTS);
               return (
                 <td
@@ -285,7 +311,7 @@ const QuickMatchScorecardTable = ({
                   className="px-1 py-1 text-center align-top"
                 >
                   <div className="flex flex-col items-center gap-0.5">
-                    <GolfFigure score={score} par={h.par} />
+                    <GolfFigure score={isPickedUp ? null : score} par={h.par} pickedUp={isPickedUp} />
                     {score != null && isStableford && (
                       <span
                         data-testid="hole-points"

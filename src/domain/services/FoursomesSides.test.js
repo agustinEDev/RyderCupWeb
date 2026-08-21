@@ -1,6 +1,12 @@
 import { describe, it, expect } from 'vitest';
 
-import { groupParticipantsBySide, sideCardHolder, sideScoreOf } from './FoursomesSides';
+import {
+  entryAtOf,
+  groupParticipantsBySide,
+  sideCardHolder,
+  sideEntryOf,
+  sideScoreOf,
+} from './FoursomesSides';
 
 const participants = [
   { participantId: 'a1', name: 'Yo', team: 'A' },
@@ -94,5 +100,45 @@ describe('sideCardHolder', () => {
 
   it('no revienta con un bando vacío', () => {
     expect(sideCardHolder([])).toBeUndefined();
+  });
+});
+
+describe('entryAtOf y sideEntryOf', () => {
+  const side = [participants[0], participants[1]];
+
+  it('distingue el hoyo recogido del hoyo sin anotar', () => {
+    // Los dos dan `score` nulo y significan lo contrario: recogido es un hoyo
+    // jugado y cerrado, sin anotar es uno que falta.
+    const holeScores = [{ participantId: 'a1', holeNumber: 1, score: null }];
+    const entryAt = entryAtOf(holeScores);
+
+    expect(entryAt(1)('a1')).toEqual({ participantId: 'a1', holeNumber: 1, score: null });
+    expect(entryAt(2)('a1')).toBeNull();
+  });
+
+  it('toma la raya del bando cuando es la unica anotacion', () => {
+    const holeScores = [{ participantId: 'a1', holeNumber: 1, score: null }];
+    const entryAt = entryAtOf(holeScores);
+
+    expect(sideEntryOf(side, entryAt(1))).not.toBeNull();
+    expect(sideEntryOf(side, entryAt(1)).score).toBeNull();
+  });
+
+  it('deja mandar al numero sobre la raya del titular', () => {
+    // Una bola, dos anotaciones: es con el NUMERO con el que `_best_ball`
+    // adjudica el hoyo, asi que pintar la raya dejaria una tarjeta que no
+    // explica el resultado del partido. Entre dos numeros sigue mandando el
+    // del primero del bando, que es lo que iguala todas las pantallas.
+    const holeScores = [
+      { participantId: 'a1', holeNumber: 1, score: null },
+      { participantId: 'a2', holeNumber: 1, score: 6 },
+    ];
+    const entryAt = entryAtOf(holeScores);
+
+    expect(sideEntryOf(side, entryAt(1)).score).toBe(6);
+  });
+
+  it('devuelve null si el bando no ha anotado el hoyo', () => {
+    expect(sideEntryOf(side, () => null)).toBeNull();
   });
 });

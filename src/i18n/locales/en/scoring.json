@@ -47,7 +47,8 @@
     "allSquare": "All Square",
     "halved": "Halved",
     "prevHole": "Previous",
-    "nextHole": "Next"
+    "nextHole": "Next",
+    "tapToScore": "Add score"
   },
   "scorecard": {
     "title": "Scorecard",

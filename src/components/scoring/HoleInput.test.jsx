@@ -76,10 +76,12 @@ describe('HoleInput', () => {
     expect(screen.getByTestId('hole-input')).toHaveTextContent('7');
   });
 
-  it('should show a dash (not the par) when no score has been submitted yet', () => {
+  it('should leave the box empty (not the par) when no score has been submitted yet', () => {
+    // Hueco, no guion: el guion se confundia con la raya, que es un hoyo ya
+    // cerrado. Queda solo el texto para lectores de pantalla.
     render(<HoleInput {...defaultProps} />);
-    expect(screen.getByTestId('own-score-value')).toHaveTextContent('-');
-    expect(screen.getByTestId('marked-score-value')).toHaveTextContent('-');
+    expect(screen.getByTestId('own-score-value')).toHaveTextContent('input.notEntered');
+    expect(screen.getByTestId('own-score-value').querySelector('.sr-only')).not.toBeNull();
   });
 
   it('should show the actual submitted score, styled differently from the unset state', () => {
@@ -117,11 +119,13 @@ describe('HoleInput', () => {
     expect(screen.getByTestId('own-score-value')).toHaveTextContent('3');
   });
 
-  it('should show dash when picked-up is selected', () => {
+  it('should show the dash figure when picked-up is selected', () => {
+    // El trazo de la raya, que ahora es el UNICO trazo de la casilla: el hoyo
+    // sin anotar se queda vacio.
     render(<HoleInput {...defaultProps} />);
     fireEvent.click(screen.getByTestId('own-score-button'));
     fireEvent.click(screen.getByTestId('picked-up-button'));
-    expect(screen.getByTestId('own-score-value')).toHaveTextContent('-');
+    expect(screen.getByTestId('own-score-value')).toHaveTextContent('—');
   });
 
   it('should open panel on marked score button click and select a value', () => {

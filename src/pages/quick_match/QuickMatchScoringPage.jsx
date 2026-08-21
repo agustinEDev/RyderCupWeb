@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next';
 import {
   groupParticipantsBySide,
   sideCardHolder,
-  sideScoreOf,
+  sideEntryOf,
 } from '../../domain/services/FoursomesSides';
 import HeaderAuth from '../../components/layout/HeaderAuth';
 import { useAuth } from '../../hooks/useAuth';
@@ -39,9 +39,18 @@ const LOAD_ERROR_KEY_BY_STATUS = {
   404: 'scoring.errors.notFound',
 };
 
-// Los endpoints de anotación devuelven 403, 404, 409 y 422; el resto cae en el
-// mensaje de "no se ha podido guardar", que es cierto sea cual sea la causa
+// Los endpoints de anotación devuelven 400, 403, 404, 409 y 422; el resto cae
+// en el mensaje de "no se ha podido guardar", que es cierto sea cual sea la
+// causa.
+//
+// El 400 y el 422 comparten mensaje porque son la misma queja vista desde dos
+// capas: el 422 es Pydantic rechazando el cuerpo y el 400 una regla de la
+// partida —hoy, la raya en Medal—. Importa para la aplicación ya instalada, que
+// sigue ofreciendo ese botón hasta que actualice: sin esta línea, quien lo
+// pulse en una partida Medal leería "no se ha podido guardar" en vez de que el
+// resultado no vale.
 const SAVE_ERROR_KEY_BY_STATUS = {
+  400: 'scoring.errors.saveInvalid',
   403: 'scoring.errors.saveForbidden',
   404: 'scoring.errors.saveNotFound',
   409: 'scoring.errors.saveConflict',
@@ -150,19 +159,24 @@ const QuickMatchScoringPage = () => {
   const participantOf = (participantId) =>
     quickMatch?.participants?.find((p) => p.participantId === participantId);
 
-  const scoreOf = (participantId) =>
+  // La ANOTACIÓN del hoyo, no el número: es lo único que separa el hoyo
+  // recogido —entrada con `score` nulo— del que está sin anotar, donde no hay
+  // entrada. Los dos dan `score` nulo y significan lo contrario.
+  const entryOf = (participantId) =>
     quickMatch?.holeScores?.find(
       (hs) => hs.holeNumber === currentHole && hs.participantId === participantId
-    )?.score ?? null;
+    ) ?? null;
 
   const playerEntries = () =>
     coveredParticipantIds.map((participantId) => {
       const participant = participantOf(participantId);
+      const entry = entryOf(participantId);
       return {
         participantId,
         scoreIds: [participantId],
         name: participant?.name ?? '',
-        score: scoreOf(participantId),
+        score: entry?.score ?? null,
+        isPickedUp: entry != null && entry.score == null,
         hole: holeFor(participant) ?? courseHoleData,
       };
     });
@@ -198,11 +212,13 @@ const QuickMatchScoringPage = () => {
         // golpe, se guarda bajo otro, y la pantalla te devuelve el viejo como
         // si la corrección se hubiera perdido.
         const readOrder = writable === cardHolder ? members : [writable, ...members];
+        const entry = sideEntryOf(readOrder, entryOf);
         return {
           participantId: writable.participantId,
           scoreIds: members.map((m) => m.participantId),
           name: members.map((m) => m.name).join(' & '),
-          score: sideScoreOf(readOrder, scoreOf),
+          score: entry?.score ?? null,
+          isPickedUp: entry != null && entry.score == null,
           // Comparten bola, así que comparten tarjeta: la del primero del bando,
           // la misma para los dos y no la de quien tenga el móvil.
           hole: holeFor(cardHolder) ?? courseHoleData,
@@ -210,6 +226,11 @@ const QuickMatchScoringPage = () => {
         };
       })
       .filter(Boolean);
+
+  // En Medal se emboca en todos los hoyos: quien no lo hace no entrega tarjeta,
+  // así que ahí la raya ni se ofrece —y el backend la rechaza—. En Stableford y
+  // en match play sí, que es donde recoger forma parte del juego.
+  const allowsPickedUp = quickMatch?.scoringFormat !== 'MEDAL';
 
   const isFoursomes = quickMatch?.matchFormat === 'FOURSOMES';
   const entries = isFoursomes ? sideEntries() : playerEntries();
@@ -327,6 +348,7 @@ const QuickMatchScoringPage = () => {
                     meters={currentHoleData.meters ?? null}
                     entries={entries}
                     isReadOnly={isReadOnly}
+                    allowPickedUp={allowsPickedUp}
                     onScoreChange={handleScoreChange}
                   />
                 )}

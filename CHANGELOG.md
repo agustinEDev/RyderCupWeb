@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [2.15.0] - 2026-08-21
+
+### Fixed
+
+- **La raya no se podía poner en una partida rápida.** El botón existía, se pulsaba, y la pantalla contestaba «Ese resultado no es válido» en rojo. Reportado desde producción, con la partida a medias: el jugador había recogido la bola y no había forma de dejarlo anotado. El botón mandaba `score: null`, que es lo que el módulo de competición lleva aceptando desde siempre, pero el de partida rápida lo rechazaba con un 422 desde la primera validación del cuerpo. Ahora se guarda. Necesita el servidor de RyderCupAm v2.11.0 o superior.
+
+- **La raya y el hoyo sin anotar se dibujaban igual**, los dos con un guion gris, así que mirando la tarjeta no se sabía si a un hoyo le faltaba el golpe o si ya estaba cerrado — y de eso depende saber si la partida se puede dar por terminada. **El hoyo sin anotar ahora se queda vacío** y la raya es el único trazo de la tarjeta, de modo que solo puede significar una cosa. En la casilla de anotar, donde un botón en blanco no diría nada ni invitaría a pulsarlo, aparece la palabra **«Anotar»**; una palabra tampoco se confunde con un trazo. El hueco conserva su tamaño para que las filas no se muevan, y se sigue anunciando a los lectores de pantalla.
+
+- **El total de golpes se movía con el allowance.** Al contar la raya con los golpes de hándicap incluidos, la misma vuelta daba 89 o 90 según con qué reparto se mirara, y el total de la tarjeta no cuadraba con el de la clasificación. Los golpes brutos vuelven a ser un dato objetivo —la raya vale `par + 2` y nada más— mientras lo que puntúa sigue siendo el doble bogey **neto**, que es lo que la Regla 3.1 del WHS manda anotar en un hoyo sin terminar y lo que la deja en cero puntos Stableford.
+
+- **En foursomes, el hoyo que el bando recogía desaparecía del total.** El partido lo contaba para decidir el resultado, pero los golpes que se enseñaban al lado salían de menos hoyos de los que el propio partido decía que se habían jugado. Y cuando un hoyo llegaba con dos anotaciones —una raya y un número, que pasa porque los dos anotadores se cubren entre sí— la tarjeta pintaba la raya mientras el resultado se adjudicaba con el número, así que la tarjeta dejaba de explicar el partido. Ahora manda el número en las dos.
+
+- **El golpe anotado se escondía tras un guion cuando no se sabía el par del hoyo.** Perder el número es peor que quedarse sin la figura: se enseña el número.
+
+### Added
+
+- **La raya se ve como una raya en las tarjetas de competición**, que hasta ahora la dibujaban como un hoyo cualquiera sin anotar aunque el servidor sí la guardaba desde el principio. Misma figura y mismo criterio que en partida rápida.
+
+### Changed
+
+- **En Medal ya no se ofrece recoger.** El stroke play exige embocar en todos los hoyos y quien no lo hace no entrega tarjeta, así que el botón no aparece en ese formato — y el servidor lo rechaza también. En Stableford y en match play sigue estando, que es donde recoger forma parte del juego.
+
 ## [2.14.0] - 2026-08-20
 
 ### Fixed

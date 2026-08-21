@@ -46,16 +46,21 @@ describe('GolfFigure', () => {
     expect(fig.querySelectorAll('rect').length).toBe(2);
   });
 
-  it('should render dash for null score', () => {
+  it('should leave the cell empty when there is no score', () => {
+    // Hueco, no guion: un guion se confundia con la raya, que significa lo
+    // contrario —hoyo cerrado sin numero—. Solo queda el texto para lectores.
     render(<GolfFigure score={null} par={4} />);
     const fig = screen.getByTestId('golf-figure');
-    expect(fig).toHaveTextContent('-');
+    expect(fig).not.toHaveAttribute('data-picked-up');
+    expect(fig.querySelector('.sr-only')).toHaveTextContent('input.notEntered');
+    expect(fig.textContent.replace(/input\.notEntered/, '').trim()).toBe('');
   });
 
-  it('should render dash for undefined par', () => {
+  it('should still show the number when the par is unknown', () => {
+    // Sin par no hay figura que dibujar, pero perder el golpe anotado es peor
+    // que quedarse sin ella.
     render(<GolfFigure score={4} par={undefined} />);
-    const fig = screen.getByTestId('golf-figure');
-    expect(fig).toHaveTextContent('-');
+    expect(screen.getByTestId('golf-figure')).toHaveTextContent('4');
   });
 
   it('should render ace as eagle', () => {
@@ -63,5 +68,29 @@ describe('GolfFigure', () => {
     const fig = screen.getByTestId('golf-figure');
     expect(fig).toHaveAttribute('title', 'figures.eagle');
     expect(fig.querySelector('circle')).not.toBeNull();
+  });
+
+  describe('raya (bola recogida)', () => {
+    it('la pinta distinta del hoyo sin anotar', () => {
+      // Con el mismo guion gris para los dos, quien mira la tarjeta no sabe si
+      // al hoyo le falta el golpe o si ya esta cerrado.
+      const { unmount } = render(<GolfFigure score={null} par={4} pickedUp />);
+      const raya = screen.getByTestId('golf-figure');
+      expect(raya).toHaveAttribute('data-picked-up', 'true');
+      expect(raya).toHaveAttribute('title', 'input.pickedUpLabel');
+      unmount();
+
+      render(<GolfFigure score={null} par={4} />);
+      expect(screen.getByTestId('golf-figure')).not.toHaveAttribute('data-picked-up');
+    });
+
+    it('manda sobre el numero si llegan los dos', () => {
+      // El numero que acompana a una raya es el doble bogey neto con el que
+      // cuenta, no un golpe que se diera: en pantalla va la raya.
+      render(<GolfFigure score={6} par={4} pickedUp />);
+      const fig = screen.getByTestId('golf-figure');
+      expect(fig).toHaveAttribute('data-picked-up', 'true');
+      expect(fig).not.toHaveTextContent('6');
+    });
   });
 });
