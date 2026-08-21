@@ -135,7 +135,18 @@
     "teamTotal": "Team total",
     "hide": "Remove from my history",
     "hidden": "Match removed from your history",
-    "hideError": "Could not remove the match from your history"
+    "hideError": "Could not remove the match from your history",
+    "countsInStats": "Counts towards your statistics. Tap to leave it out",
+    "excludedFromStats": "Not counted in your statistics. Tap to count it again",
+    "excludedBadge": "Not counted",
+    "excluded": "No longer counts towards your statistics",
+    "included": "Counts towards your statistics again",
+    "statsToggleError": "Could not change whether this match counts towards your statistics",
+    "deleteTitle": "Remove this match from your history?",
+    "deleteBody": "It disappears from your list and cannot be recovered from the app. It also stops counting towards your statistics.",
+    "deleteHint": "If you only want it out of your statistics, close this and use the eye instead: that one can be undone.",
+    "deleteConfirm": "Remove for good",
+    "deleteCancel": "Cancel"
   },
   "scoring": {
     "matchHeader": "Quick match",

@@ -73,6 +73,7 @@
     "emptyTitle": "¿Partido improvisado?",
     "emptyDescription": "Crea una partida rápida con amigos, sin necesidad de un torneo",
     "emptyAction": "Crear partida rápida",
+    "excludedBadge": "No cuenta",
     "session": {
       "MORNING": "Mañana",
       "AFTERNOON": "Tarde",

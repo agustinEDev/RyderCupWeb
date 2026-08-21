@@ -23,6 +23,7 @@ class RecentMatch {
   #holesPlayed;
   #partners;
   #opponents;
+  #excludedFromStats;
 
   constructor({
     id,
@@ -39,6 +40,7 @@ class RecentMatch {
     holesPlayed = null,
     partners = [],
     opponents = [],
+    excludedFromStats = false,
   }) {
     if (!id || typeof id !== 'string') {
       throw new TypeError('id must be a non-empty string');
@@ -58,6 +60,7 @@ class RecentMatch {
     this.#holesPlayed = holesPlayed;
     this.#partners = Object.freeze([...partners]);
     this.#opponents = Object.freeze([...opponents]);
+    this.#excludedFromStats = excludedFromStats;
   }
 
   static fromPersistence(props) {
@@ -128,6 +131,16 @@ class RecentMatch {
 
   get opponents() {
     return this.#opponents;
+  }
+
+  /**
+   * True si el jugador ha dejado esta partida fuera de sus estadísticas.
+   *
+   * El historial la sigue enseñando, marcada, pero el resumen de arriba no la
+   * cuenta: sin la marca, las dos cifras se contradicen sin explicación.
+   */
+  get excludedFromStats() {
+    return this.#excludedFromStats;
   }
 
   // === Business Rules ===

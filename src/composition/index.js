@@ -167,6 +167,8 @@ import StartQuickMatchUseCase from '../application/use_cases/quick_match/StartQu
 import CompleteQuickMatchUseCase from '../application/use_cases/quick_match/CompleteQuickMatchUseCase';
 import CancelQuickMatchUseCase from '../application/use_cases/quick_match/CancelQuickMatchUseCase';
 import HideQuickMatchUseCase from '../application/use_cases/quick_match/HideQuickMatchUseCase';
+import ExcludeQuickMatchFromStatsUseCase from '../application/use_cases/quick_match/ExcludeQuickMatchFromStatsUseCase';
+import IncludeQuickMatchInStatsUseCase from '../application/use_cases/quick_match/IncludeQuickMatchInStatsUseCase';
 import GetQuickMatchUseCase from '../application/use_cases/quick_match/GetQuickMatchUseCase';
 import ListMyQuickMatchesUseCase from '../application/use_cases/quick_match/ListMyQuickMatchesUseCase';
 import SubmitQuickMatchHoleScoreUseCase from '../application/use_cases/quick_match/SubmitQuickMatchHoleScoreUseCase';
@@ -325,6 +327,8 @@ const startQuickMatchUseCase = new StartQuickMatchUseCase({ quickMatchRepository
 const completeQuickMatchUseCase = new CompleteQuickMatchUseCase({ quickMatchRepository: apiQuickMatchRepository });
 const cancelQuickMatchUseCase = new CancelQuickMatchUseCase({ quickMatchRepository: apiQuickMatchRepository });
 const hideQuickMatchUseCase = new HideQuickMatchUseCase({ quickMatchRepository: apiQuickMatchRepository });
+const excludeQuickMatchFromStatsUseCase = new ExcludeQuickMatchFromStatsUseCase({ quickMatchRepository: apiQuickMatchRepository });
+const includeQuickMatchInStatsUseCase = new IncludeQuickMatchInStatsUseCase({ quickMatchRepository: apiQuickMatchRepository });
 const getQuickMatchUseCase = new GetQuickMatchUseCase({ quickMatchRepository: apiQuickMatchRepository });
 const listMyQuickMatchesUseCase = new ListMyQuickMatchesUseCase({ quickMatchRepository: apiQuickMatchRepository });
 const submitQuickMatchHoleScoreUseCase = new SubmitQuickMatchHoleScoreUseCase({ quickMatchRepository: apiQuickMatchRepository });
@@ -481,6 +485,8 @@ export {
   completeQuickMatchUseCase,
   cancelQuickMatchUseCase,
   hideQuickMatchUseCase,
+  excludeQuickMatchFromStatsUseCase,
+  includeQuickMatchInStatsUseCase,
   getQuickMatchUseCase,
   listMyQuickMatchesUseCase,
   submitQuickMatchHoleScoreUseCase,

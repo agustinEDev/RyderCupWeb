@@ -34,6 +34,7 @@ class QuickMatchAssembler {
       holeScores: quickMatch.holeScores,
       standing: quickMatch.standing,
       scoringAssignments: quickMatch.scoringAssignments,
+      excludedFromStats: quickMatch.excludedFromStats,
       createdAt: quickMatch.createdAt.toISOString(),
       updatedAt: quickMatch.updatedAt.toISOString(),
 

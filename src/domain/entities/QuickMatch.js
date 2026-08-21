@@ -30,6 +30,7 @@ class QuickMatch {
   #holeScores;
   #standing;
   #scoringAssignments;
+  #excludedFromStats;
   #createdAt;
   #updatedAt;
 
@@ -50,6 +51,7 @@ class QuickMatch {
     holeScores = [],
     standing = null,
     scoringAssignments = [],
+    excludedFromStats = false,
     createdAt = null,
     updatedAt = null,
   }) {
@@ -94,6 +96,7 @@ class QuickMatch {
     this.#holeScores = holeScores;
     this.#standing = standing;
     this.#scoringAssignments = scoringAssignments;
+    this.#excludedFromStats = excludedFromStats;
     this.#createdAt = createdAt ? new Date(createdAt) : new Date();
     this.#updatedAt = updatedAt ? new Date(updatedAt) : new Date();
   }
@@ -169,6 +172,16 @@ class QuickMatch {
     return this.#scorerIds;
   }
 
+  /**
+   * True si QUIEN pide la partida la ha dejado fuera de sus estadísticas.
+   *
+   * Es una marca por usuario, no un estado de la partida: la misma cuenta para
+   * un jugador y no para otro. La resuelve el servidor contra quien pregunta.
+   */
+  get excludedFromStats() {
+    return this.#excludedFromStats;
+  }
+
   get holeScores() {
     return this.#holeScores;
   }
@@ -240,6 +253,7 @@ class QuickMatch {
       name: this.#name,
       participants: this.#participants,
       scorerIds: this.#scorerIds,
+      excludedFromStats: this.#excludedFromStats,
       holeScores: this.#holeScores,
       standing: this.#standing,
       scoringAssignments: this.#scoringAssignments,
