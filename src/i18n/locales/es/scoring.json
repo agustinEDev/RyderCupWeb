@@ -47,7 +47,8 @@
     "allSquare": "Empate",
     "halved": "Empatado",
     "prevHole": "Anterior",
-    "nextHole": "Siguiente"
+    "nextHole": "Siguiente",
+    "tapToScore": "Anotar"
   },
   "scorecard": {
     "title": "Tarjeta",

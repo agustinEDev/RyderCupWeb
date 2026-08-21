@@ -7,8 +7,13 @@ const MAX_SCORE = 15;
  * Bottom-sheet numpad for picking a hole score (1-9, custom, or picked up).
  * Extracted out of HoleInput so it can be reused by any score entry surface
  * (tournament scoring and quick match scoring share the exact same picker).
+ *
+ * `allowPickedUp` esconde la raya donde no se puede recoger. En Medal hay que
+ * embocar en todos los hoyos —quien no lo hace no entrega tarjeta—, así que
+ * ofrecer ahí el botón es ofrecer algo que el backend rechaza. En Stableford y
+ * en match play sí: recoger es parte del juego.
  */
-const ScoreInputPanel = ({ value, onSelect, onClose, label, par }) => {
+const ScoreInputPanel = ({ value, onSelect, onClose, label, par, allowPickedUp = true }) => {
   const { t } = useTranslation('scoring');
   const [customMode, setCustomMode] = useState(false);
   const [customInput, setCustomInput] = useState('');
@@ -81,18 +86,20 @@ const ScoreInputPanel = ({ value, onSelect, onClose, label, par }) => {
               })}
             </div>
             <div className="flex flex-col gap-2">
-              <button
-                data-testid="picked-up-button"
-                onClick={() => onSelect(null)}
-                className={`h-12 w-full rounded-xl transition-colors flex flex-col items-center justify-center leading-none ${
-                  value === null
-                    ? 'bg-gray-600 text-white'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200 active:bg-gray-300'
-                }`}
-              >
-                <span className="text-xl font-bold">-</span>
-                <span className="text-xs font-medium opacity-75">{t('input.pickedUpLabel')}</span>
-              </button>
+              {allowPickedUp && (
+                <button
+                  data-testid="picked-up-button"
+                  onClick={() => onSelect(null)}
+                  className={`h-12 w-full rounded-xl transition-colors flex flex-col items-center justify-center leading-none ${
+                    value === null
+                      ? 'bg-gray-600 text-white'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200 active:bg-gray-300'
+                  }`}
+                >
+                  <span className="text-xl font-bold">-</span>
+                  <span className="text-xs font-medium opacity-75">{t('input.pickedUpLabel')}</span>
+                </button>
+              )}
               <button
                 onClick={() => setCustomMode(true)}
                 className="h-12 w-full rounded-xl text-base font-bold bg-gray-100 text-gray-600 hover:bg-gray-200 active:bg-gray-300"

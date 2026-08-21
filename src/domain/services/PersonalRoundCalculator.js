@@ -1,6 +1,6 @@
 import StablefordCalculator from './StablefordCalculator';
 import MatchPlayStrokeAllocator from './MatchPlayStrokeAllocator';
-import { groupParticipantsBySide, scoreAtOf, sideScoreOf } from './FoursomesSides';
+import { entryAtOf, groupParticipantsBySide } from './FoursomesSides';
 
 // Una vuelta personal se mide con el hándicap de juego entero. El allowance
 // —95% en juego libre, 90% en fourball, 50% en foursomes— equilibra un partido,
@@ -24,26 +24,67 @@ const PERSONAL_ROUND_ALLOWANCE = 100;
  * Sin `team` —partidas viejas, o un dato incompleto— el bando es el propio
  * jugador: se vuelve al comportamiento anterior en vez de mezclar a los cuatro.
  *
- * Cuál es la nota del bando lo decide `sideScoreOf`, la misma regla que usan la
+ * Cuál es la nota del bando lo decide `sideEntryOf`, la misma regla que usan la
  * pantalla de anotación y la tarjeta: aquí se recorrían los golpes anotados en
  * el orden del backend y allí los jugadores, así que con dos anotaciones del
  * mismo hoyo el total podía no cuadrar con lo que enseñaba la tarjeta.
+ *
+ * Un hoyo RECOGIDO cuenta: está jugado, y el resultado del partido lo trata
+ * como cualquier otro. Vale doble bogey BRUTO —`par + 2`, sin golpes
+ * recibidos—, porque este total es bruto y meterle un hoyo neto dentro
+ * mezclaría dos escalas en el mismo número. Es la misma cuenta que hace
+ * `_foursomes_side_strokes` en el backend, del que este total tiene que seguir
+ * sin separarse.
  */
-const sideTotals = (me, participants, holes, holeScores) => {
+const GROSS_DOUBLE_BOGEY_OVER_PAR = 2;
+
+const sideTotals = (me, participants, holes, holeScores, tees = []) => {
   const members =
     groupParticipantsBySide(participants).find((side) =>
       side.some((p) => p.participantId === me.participantId)
     ) ?? [me];
 
-  const scoreAt = scoreAtOf(holeScores);
+  const entryAt = entryAtOf(holeScores);
+  // El par de la raya sale de la tarjeta del PRIMERO del bando —a cuyo nombre se
+  // guarda la bola—, no de `holes`, que es la de la primera barra del campo: en
+  // 25 de los 800 campos federados el par cambia entre barras, y ahí el bruto de
+  // aquí y el del historial se separaban por un golpe. `_side_pars` en el
+  // backend resuelve la misma barra.
+  const sideCard = MatchPlayStrokeAllocator.holeCardFor(members[0], holes, tees);
+  const parAt = (holeNumber) =>
+    sideCard.find((h) => h.holeNumber === holeNumber)?.par ??
+    holes.find((h) => h.holeNumber === holeNumber)?.par ??
+    null;
 
   let totalStrokes = 0;
   let holesPlayed = 0;
 
   for (const hole of holes) {
-    const score = sideScoreOf(members, scoreAt(hole.holeNumber));
-    if (score == null) continue;
-    totalStrokes += score;
+    const entries = members
+      .map((member) => entryAt(hole.holeNumber)(member.participantId))
+      .filter(Boolean);
+    // Sin ninguna anotación el hoyo está por jugar y no cuenta.
+    if (entries.length === 0) continue;
+
+    // Con dos anotaciones del mismo hoyo manda el MENOR de los números, que es
+    // con el que `ScoringService._best_ball` adjudica el hoyo: contar aquí uno
+    // y resolver el partido con otro dejaría unos golpes que no explican su
+    // resultado. Ojo, no es la regla de la tarjeta —allí manda el primero del
+    // bando, para que todas las pantallas pinten la misma bola—; aquí lo que se
+    // persigue es cuadrar con el resultado.
+    const numbers = entries.map((entry) => entry.score).filter((score) => score != null);
+    if (numbers.length > 0) {
+      totalStrokes += Math.min(...numbers);
+      holesPlayed += 1;
+      continue;
+    }
+
+    // Solo rayas: el bando recogió. Sin el par de su barra no hay con qué
+    // contarlo, y antes que inventar un número se deja el hoyo fuera, igual que
+    // hace `_foursomes_side_strokes`.
+    const par = parAt(hole.holeNumber);
+    if (par == null) continue;
+    totalStrokes += par + GROSS_DOUBLE_BOGEY_OVER_PAR;
     holesPlayed += 1;
   }
 
@@ -119,8 +160,10 @@ class PersonalRoundCalculator {
     // formato nuevo a golpes alternos habría que acordarse de añadirlo en los
     // dos sitios.
     if (matchFormat === 'FOURSOMES') {
-      // Sin reparto: el bruto no depende de los golpes que se den.
-      const teamTotals = sideTotals(me, participants, holes, holeScores);
+      // Sin reparto: el bruto no depende de los golpes que se den. Las salidas
+      // sí hacen falta, para resolver el par de la barra del bando cuando hay
+      // una raya que contar.
+      const teamTotals = sideTotals(me, participants, holes, holeScores, tees);
       if (!teamTotals.holesPlayed) return null;
       return {
         personalToPar: null,

@@ -245,4 +245,129 @@ describe('StablefordCalculator', () => {
       expect(ranking.map((r) => r.participantId)).toEqual(['further-along', 'just-started']);
     });
   });
+
+  describe('picked-up holes (raya)', () => {
+    // El campo de paridad con el backend: los mismos pares, indices y golpes
+    // que `test_stableford_calculator.py`, para que los dos motores tengan que
+    // inventar el mismo numero cuando no hay ninguno anotado.
+    const PARS = [4, 5, 3, 4, 4, 3, 5, 4, 4, 4, 3, 5, 4, 4, 3, 4, 5, 4];
+    const STROKE_INDEXES = [7, 3, 15, 1, 11, 17, 5, 9, 13, 8, 16, 2, 10, 6, 18, 12, 4, 14];
+    const SCORES = [5, 6, 4, 6, 5, 3, 6, 5, 4, 5, 4, 7, 5, 4, 3, 5, 6, 5];
+
+    const parityHoles = () =>
+      PARS.map((par, i) => ({ holeNumber: i + 1, par, strokeIndex: STROKE_INDEXES[i] }));
+
+    const parityScores = (pickedUpHole = null) =>
+      SCORES.map((score, i) => ({
+        holeNumber: i + 1,
+        participantId: 'p-1',
+        score: i + 1 === pickedUpHole ? null : score,
+      }));
+
+    const holes = [
+      { holeNumber: 1, par: 4, strokeIndex: 5 },
+      { holeNumber: 2, par: 3, strokeIndex: 15 },
+    ];
+
+    it('should count a picked-up hole as played', () => {
+      const participant = { participantId: 'p-1', handicap: 0 };
+      const holeScores = [{ holeNumber: 1, participantId: 'p-1', score: null }];
+
+      const result = StablefordCalculator.computeParticipantTotals(participant, holes, holeScores);
+
+      expect(result.holesPlayed).toBe(1);
+      expect(result.parPlayed).toBe(4);
+    });
+
+    it('should charge a picked-up hole as a net double bogey, not as zero strokes', () => {
+      const participant = { participantId: 'p-1', handicap: 0 };
+      const holeScores = [{ holeNumber: 1, participantId: 'p-1', score: null }];
+
+      const result = StablefordCalculator.computeParticipantTotals(participant, holes, holeScores);
+
+      expect(result.totalStrokes).toBe(6);
+      expect(result.netStrokes).toBe(6);
+      expect(result.stablefordPoints).toBe(0);
+    });
+
+    it('should not let the strokes received move the gross charge', () => {
+      // El bruto es un dato objetivo: no puede cambiar con el allowance. El
+      // neto si es doble bogey NETO, de ahi los cero puntos.
+      const participant = { participantId: 'p-1', handicap: 18 };
+      const allocation = { 'p-1': { strokesByHole: { 1: 1 } } };
+      const holeScores = [{ holeNumber: 1, participantId: 'p-1', score: null }];
+
+      const conGolpe = StablefordCalculator.computeParticipantTotals(
+        participant,
+        holes,
+        holeScores,
+        allocation
+      );
+      const scratch = StablefordCalculator.computeParticipantTotals(
+        { participantId: 'p-1', handicap: 0 },
+        holes,
+        holeScores
+      );
+
+      expect(conGolpe.totalStrokes).toBe(6);
+      expect(conGolpe.totalStrokes).toBe(scratch.totalStrokes);
+      expect(conGolpe.netStrokes).toBe(6);
+      expect(conGolpe.stablefordPoints).toBe(0);
+    });
+
+    it('should still ignore a hole with no recorded entry at all', () => {
+      // La trampa del cambio: sin entrada y con entrada sin numero, el `score`
+      // es nulo en los dos casos y significan lo contrario.
+      const participant = { participantId: 'p-1', handicap: 0 };
+
+      const sinAnotar = StablefordCalculator.computeParticipantTotals(participant, holes, []);
+      const conRaya = StablefordCalculator.computeParticipantTotals(participant, holes, [
+        { holeNumber: 1, participantId: 'p-1', score: null },
+      ]);
+
+      expect(sinAnotar.holesPlayed).toBe(0);
+      expect(conRaya.holesPlayed).toBe(1);
+    });
+
+    it('should match the values the backend produces for a picked-up hole', () => {
+      // Mismos numeros que `test_a_picked_up_hole_matches_the_frontend_too`.
+      // Si uno de los dos motores cambia de criterio, esto se cae.
+      const scratch = StablefordCalculator.computeParticipantTotals(
+        { participantId: 'p-1', handicap: 0 },
+        parityHoles(),
+        parityScores(1)
+      );
+
+      expect(scratch.stablefordPoints).toBe(19);
+      expect(scratch.totalStrokes).toBe(89);
+      expect(scratch.netStrokes).toBe(89);
+      expect(scratch.netStrokes - scratch.parPlayed).toBe(17);
+    });
+
+    it('should match the backend for a picked-up hole where a stroke is received', () => {
+      // Handicap 12.4 recibe un golpe en el hoyo 1 (stroke index 7), asi que su
+      // raya vale 7 y no 6.
+      const allocation = {
+        'p-1': {
+          strokesByHole: Object.fromEntries(
+            STROKE_INDEXES.map((si, i) => [i + 1, si <= 12 ? 1 : 0])
+          ),
+        },
+      };
+
+      const result = StablefordCalculator.computeParticipantTotals(
+        { participantId: 'p-1', handicap: 12.4 },
+        parityHoles(),
+        parityScores(1),
+        allocation
+      );
+
+      expect(result.stablefordPoints).toBe(30);
+      // 89, el mismo bruto que a scratch: la raya vale par + 2 y el reparto no
+      // entra en un total de golpes. Lo que si cambia es el neto.
+      expect(result.totalStrokes).toBe(89);
+      expect(result.netStrokes).toBe(78);
+      expect(result.netStrokes - result.parPlayed).toBe(6);
+    });
+  });
 });

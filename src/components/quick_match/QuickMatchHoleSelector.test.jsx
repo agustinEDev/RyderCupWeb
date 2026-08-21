@@ -72,4 +72,23 @@ describe('QuickMatchHoleSelector', () => {
     // Falta la bola del otro bando, no los golpes de los otros tres jugadores.
     expect(screen.getByTestId('quick-match-hole-btn-4').className).toContain('bg-yellow-100');
   });
+
+  it('should count a picked-up hole as scored', () => {
+    // La raya cierra el hoyo aunque no traiga numero. Exigiendo numero, un
+    // hoyo recogido se quedaba en amarillo para siempre y la partida no se
+    // podia dar por terminada de un vistazo.
+    render(
+      <QuickMatchHoleSelector
+        currentHole={1}
+        onSelect={mockOnSelect}
+        expectedScoreIdGroups={[['p-1'], ['p-2']]}
+        holeScores={[
+          { holeNumber: 3, participantId: 'p-1', score: null },
+          { holeNumber: 3, participantId: 'p-2', score: 5 },
+        ]}
+      />
+    );
+
+    expect(screen.getByTestId('quick-match-hole-btn-3').className).toContain('bg-green-100');
+  });
 });

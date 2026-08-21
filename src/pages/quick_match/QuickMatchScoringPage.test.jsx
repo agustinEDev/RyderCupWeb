@@ -731,4 +731,71 @@ describe('QuickMatchScoringPage · foursomes anota una bola por bando', () => {
     expect(screen.getByTestId('quick-match-score-button-p-rival-1')).toBeInTheDocument();
     expect(screen.getByTestId('quick-match-score-button-p-rival-2')).toBeInTheDocument();
   });
+
+  describe('raya (bola recogida)', () => {
+    const scoringState = (overrides = {}) => ({
+      ...baseHookState,
+      quickMatch: {
+        ...baseQuickMatch,
+        status: 'IN_PROGRESS',
+        isCompleted: false,
+        ...(overrides.quickMatch || {}),
+      },
+      isScorer: true,
+      coveredParticipantIds: ['user-1'],
+      setCurrentHole: vi.fn(),
+      submitScore: vi.fn(),
+      completeMatch: vi.fn(),
+      refetch: vi.fn(),
+      ...overrides,
+    });
+
+    it('ofrece la raya en Stableford', () => {
+      mockUseQuickMatchScoring.mockReturnValue(scoringState());
+      renderPage();
+
+      fireEvent.click(screen.getByTestId('quick-match-score-button-user-1'));
+
+      expect(screen.getByTestId('picked-up-button')).toBeInTheDocument();
+    });
+
+    it('no ofrece la raya en Medal', () => {
+      // En stroke play hay que embocar en todos los hoyos: quien no lo hace no
+      // entrega tarjeta. El backend rechaza ahi el score nulo, asi que ofrecer
+      // el boton seria ofrecer algo que no se puede guardar.
+      mockUseQuickMatchScoring.mockReturnValue(
+        scoringState({ quickMatch: { scoringFormat: 'MEDAL' } })
+      );
+      renderPage();
+
+      fireEvent.click(screen.getByTestId('quick-match-score-button-user-1'));
+
+      expect(screen.queryByTestId('picked-up-button')).not.toBeInTheDocument();
+    });
+
+    it('ofrece la raya en match play, donde recoger es conceder el hoyo', () => {
+      mockUseQuickMatchScoring.mockReturnValue(
+        scoringState({ quickMatch: { scoringFormat: null, matchFormat: 'SINGLES' } })
+      );
+      renderPage();
+
+      fireEvent.click(screen.getByTestId('quick-match-score-button-user-1'));
+
+      expect(screen.getByTestId('picked-up-button')).toBeInTheDocument();
+    });
+
+    it('ensena la raya anotada distinta del hoyo sin anotar', () => {
+      mockUseQuickMatchScoring.mockReturnValue(
+        scoringState({
+          quickMatch: {
+            holeScores: [{ holeNumber: 1, participantId: 'user-1', score: null }],
+          },
+        })
+      );
+      renderPage();
+
+      const boton = screen.getByTestId('quick-match-score-button-user-1');
+      expect(boton.querySelector('[data-picked-up="true"]')).not.toBeNull();
+    });
+  });
 });
