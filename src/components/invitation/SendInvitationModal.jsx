@@ -24,21 +24,6 @@ const SendInvitationModalContent = ({ onClose, onSend, onSendByUserId, onSearchU
   const searchResultsRef = useRef(searchResults);
   // eslint-disable-next-line react-hooks/refs -- pre-existing pattern surfaced by eslint-plugin-react-hooks 7.1.1 bump; needs dedicated review (tracked in follow-up)
   onSearchUsersRef.current = onSearchUsers;
-  // eslint-disable-next-line react-hooks/refs -- pre-existing pattern surfaced by eslint-plugin-react-hooks 7.1.1 bump; needs dedicated review (tracked in follow-up)
-  showDropdownRef.current = showDropdown;
-  // eslint-disable-next-line react-hooks/refs -- pre-existing pattern surfaced by eslint-plugin-react-hooks 7.1.1 bump; needs dedicated review (tracked in follow-up)
-  searchResultsRef.current = searchResults;
-
-  // Close dropdown on outside click
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setShowDropdown(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
 
   // El resaltado se mueve SIEMPRE por aqui, y la ref se escribe a la vez que
   // el estado. Copiarla en el cuerpo del componente la dejaba al dia solo
@@ -50,6 +35,31 @@ const SendInvitationModalContent = ({ onClose, onSend, onSendByUserId, onSearchU
     highlightedIndexRef.current = next;
     setHighlightedIndex(next);
   }, []);
+
+  // Igual que `highlight`: el teclado las lee por ref, asi que se escriben en
+  // el momento y no al re-renderizar. Copiadas en el cuerpo del componente el
+  // hueco era mas estrecho, pero seguia ahi.
+  const openDropdown = useCallback((next) => {
+    showDropdownRef.current = next;
+    setShowDropdown(next);
+  }, []);
+
+  const putResults = useCallback((next) => {
+    searchResultsRef.current = next;
+    setSearchResults(next);
+  }, []);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        openDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [openDropdown]);
+
 
   // Keyboard navigation for dropdown (document-level to avoid focus issues)
   useEffect(() => {
@@ -73,18 +83,18 @@ const SendInvitationModalContent = ({ onClose, onSend, onSendByUserId, onSearchU
           const user = searchResultsRef.current[idx];
           setSelectedUser(user);
           setSearchQuery('');
-          setShowDropdown(false);
+          openDropdown(false);
           setError('');
         }
       } else if (e.key === 'Escape') {
-        setShowDropdown(false);
+        openDropdown(false);
         highlight(-1);
       }
     };
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [highlight]);
+  }, [highlight, openDropdown]);
 
   // Scroll highlighted item into view
   useEffect(() => {
@@ -103,8 +113,8 @@ const SendInvitationModalContent = ({ onClose, onSend, onSendByUserId, onSearchU
     const trimmed = searchQuery.trim();
     if (trimmed.length < 2) {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- pre-existing pattern surfaced by eslint-plugin-react-hooks 7.1.1 bump; needs dedicated review (tracked in follow-up)
-      setSearchResults([]);
-      setShowDropdown(false);
+      putResults([]);
+      openDropdown(false);
       setIsSearching(false);
       return;
     }
@@ -116,12 +126,12 @@ const SendInvitationModalContent = ({ onClose, onSend, onSendByUserId, onSearchU
       try {
         const results = await onSearchUsersRef.current(trimmed);
         if (currentRequestId !== searchRequestIdRef.current) return;
-        setSearchResults(results);
-        setShowDropdown(true);
+        putResults(results);
+        openDropdown(true);
         highlight(-1);
       } catch {
         if (currentRequestId !== searchRequestIdRef.current) return;
-        setSearchResults([]);
+        putResults([]);
       } finally {
         if (currentRequestId === searchRequestIdRef.current) {
           setIsSearching(false);
@@ -134,7 +144,7 @@ const SendInvitationModalContent = ({ onClose, onSend, onSendByUserId, onSearchU
         clearTimeout(searchTimerRef.current);
       }
     };
-  }, [searchQuery, highlight]);
+  }, [searchQuery, highlight, openDropdown, putResults]);
 
   const handleEmailSubmit = (e) => {
     e.preventDefault();
@@ -164,14 +174,14 @@ const SendInvitationModalContent = ({ onClose, onSend, onSendByUserId, onSearchU
   const handleSelectUser = (user) => {
     setSelectedUser(user);
     setSearchQuery('');
-    setShowDropdown(false);
+    openDropdown(false);
     setError('');
   };
 
   const handleClearUser = () => {
     setSelectedUser(null);
     setSearchQuery('');
-    setSearchResults([]);
+    putResults([]);
   };
 
   const handleTabChange = (tab) => {

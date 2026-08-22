@@ -31,8 +31,6 @@ const AddFriendModalContent = ({ onClose, onSearchUsers, t }) => {
   const openProfileRef = useRef(null);
   useEffect(() => { onSearchUsersRef.current = onSearchUsers; });
   useEffect(() => { onCloseRef.current = onClose; });
-  useEffect(() => { showDropdownRef.current = showDropdown; });
-  useEffect(() => { searchResultsRef.current = searchResults; });
 
   // El resaltado se mueve SIEMPRE por aqui, y la ref se escribe en el mismo
   // momento que el estado. Antes la ref la copiaba un efecto sin dependencias,
@@ -45,6 +43,21 @@ const AddFriendModalContent = ({ onClose, onSearchUsers, t }) => {
     setHighlightedIndex(next);
   }, []);
 
+  // Mismo motivo que `highlight`: el listener de teclado lee estas dos por
+  // ref, asi que tienen que estar al dia en el momento de la pulsacion y no
+  // despues del render. Con la copia tardia, dos `Escape` seguidos cerraban
+  // el desplegable dos veces —el segundo lo veia todavia abierto— y hacia
+  // falta un tercero para cerrar el modal.
+  const openDropdown = useCallback((next) => {
+    showDropdownRef.current = next;
+    setShowDropdown(next);
+  }, []);
+
+  const putResults = useCallback((next) => {
+    searchResultsRef.current = next;
+    setSearchResults(next);
+  }, []);
+
   useEffect(() => {
     searchInputRef.current?.focus();
   }, []);
@@ -52,18 +65,18 @@ const AddFriendModalContent = ({ onClose, onSearchUsers, t }) => {
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setShowDropdown(false);
+        openDropdown(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  }, [openDropdown]);
 
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === 'Escape') {
         if (showDropdownRef.current) {
-          setShowDropdown(false);
+          openDropdown(false);
           highlight(-1);
         } else {
           onCloseRef.current();
@@ -94,7 +107,7 @@ const AddFriendModalContent = ({ onClose, onSearchUsers, t }) => {
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [highlight]);
+  }, [highlight, openDropdown]);
 
   useEffect(() => {
     if (searchTimerRef.current) {
@@ -104,8 +117,8 @@ const AddFriendModalContent = ({ onClose, onSearchUsers, t }) => {
     const trimmed = searchQuery.trim();
     if (trimmed.length < 2) {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- pre-existing pattern surfaced by eslint-plugin-react-hooks 7.1.1 bump; needs dedicated review (tracked in follow-up)
-      setSearchResults([]);
-      setShowDropdown(false);
+      putResults([]);
+      openDropdown(false);
       setIsSearching(false);
       return;
     }
@@ -117,12 +130,12 @@ const AddFriendModalContent = ({ onClose, onSearchUsers, t }) => {
       try {
         const results = await onSearchUsersRef.current(trimmed);
         if (currentRequestId !== searchRequestIdRef.current) return;
-        setSearchResults(results);
-        setShowDropdown(true);
+        putResults(results);
+        openDropdown(true);
         highlight(-1);
       } catch {
         if (currentRequestId !== searchRequestIdRef.current) return;
-        setSearchResults([]);
+        putResults([]);
       } finally {
         if (currentRequestId === searchRequestIdRef.current) {
           setIsSearching(false);
@@ -135,10 +148,10 @@ const AddFriendModalContent = ({ onClose, onSearchUsers, t }) => {
         clearTimeout(searchTimerRef.current);
       }
     };
-  }, [searchQuery, highlight]);
+  }, [searchQuery, highlight, openDropdown, putResults]);
 
   const handleOpenProfile = (user) => {
-    setShowDropdown(false);
+    openDropdown(false);
     onClose();
     // De donde se viene, para que el perfil sepa adonde devolver: esta busqueda
     // se abre desde Amigos, y mandar de vuelta al feed obligaria a rehacer el

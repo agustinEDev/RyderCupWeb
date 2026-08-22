@@ -92,6 +92,34 @@ describe('AddFriendModal', () => {
     expect(navigate).toHaveBeenCalledWith('/players/u-1', { state: { from: 'friends' } });
   });
 
+  it('closes the modal on the second Escape, without needing a third', async () => {
+    // El primer Escape cierra el desplegable; el segundo debe cerrar el modal.
+    // Con `showDropdownRef` copiada despues del render, el segundo Escape lo
+    // veia todavia abierto y volvia a cerrarlo: hacian falta tres.
+    const { onClose } = pintar();
+    await buscar();
+
+    act(() => {
+      fireEvent.keyDown(document, { key: 'Escape' });
+      fireEvent.keyDown(document, { key: 'Escape' });
+    });
+
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('closes only the dropdown on the first Escape, leaving the modal open', async () => {
+    // La otra mitad del contrato: sin esto, alguien podria simplificar el
+    // manejador a un `onClose()` incondicional y el test de arriba seguiria
+    // en verde mientras el primer Escape se lleva el modal por delante.
+    const { onClose } = pintar();
+    await buscar();
+
+    fireEvent.keyDown(document, { key: 'Escape' });
+
+    expect(onClose).not.toHaveBeenCalled();
+    expect(screen.queryByTestId('search-results-dropdown')).not.toBeInTheDocument();
+  });
+
   it('no longer offers a way to send from here', async () => {
     pintar();
     await buscar();

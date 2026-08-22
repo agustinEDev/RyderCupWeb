@@ -400,6 +400,9 @@ describe('SendInvitationModal', () => {
       fireEvent.keyDown(document, { key: 'Enter' });
     });
 
-    expect(screen.getByTestId('selected-user-chip')).toBeInTheDocument();
+    // El chip a secas no basta: con dos resultados sembrados, pasaria aunque
+    // el Enter hubiera cogido a Jane. Lo que se prueba es que cogio al que
+    // resalto el ArrowDown.
+    expect(screen.getByTestId('selected-user-chip')).toHaveTextContent('John Doe');
   });
 });
