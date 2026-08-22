@@ -103,11 +103,10 @@ const InvitationsPage = () => {
 
   const handleSearchUsers = async (query) => {
     if (!query || query.trim().length < 2) return [];
-    try {
-      return await searchUsersUseCase.execute(query);
-    } catch {
-      return [];
-    }
+    // El fallo se propaga al modal, como en FriendsPage: devolviendo [] se
+    // presentaba una API caida como una busqueda sin resultados, y el modal
+    // enseñaba «no se ha encontrado a nadie» por un error de red.
+    return searchUsersUseCase.execute(query);
   };
 
   const isPageLoading = isLoadingUser || isLoadingRoles || isLoading;

@@ -107,6 +107,31 @@ describe('AddFriendModal', () => {
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
+  it('does not pass off a failed search as an empty one', async () => {
+    // Con la busqueda rota, dejar el desplegable abierto y vacio enseñaba
+    // «no se ha encontrado a nadie», que es mentira: no es que no haya nadie,
+    // es que no se ha podido preguntar.
+    // Hace falta una busqueda buena antes: si la que falla es la primera, el
+    // desplegable no llego a abrirse nunca y no se distingue un caso del otro.
+    const onSearchUsers = vi.fn()
+      .mockResolvedValueOnce(RESULTADOS)
+      .mockRejectedValueOnce(new Error('API caida'));
+    pintar({ onSearchUsers });
+
+    fireEvent.change(screen.getByTestId('user-search-input'), { target: { value: 'ana' } });
+    await waitFor(() => expect(screen.getByTestId('search-results-dropdown')).toBeInTheDocument(), {
+      timeout: 2000,
+    });
+
+    fireEvent.change(screen.getByTestId('user-search-input'), { target: { value: 'anas' } });
+    await waitFor(() => expect(onSearchUsers).toHaveBeenCalledTimes(2), { timeout: 2000 });
+
+    await waitFor(() => {
+      expect(screen.queryByTestId('search-results-dropdown')).not.toBeInTheDocument();
+    });
+    expect(screen.queryByTestId('no-users-found')).not.toBeInTheDocument();
+  });
+
   it('closes only the dropdown on the first Escape, leaving the modal open', async () => {
     // La otra mitad del contrato: sin esto, alguien podria simplificar el
     // manejador a un `onClose()` incondicional y el test de arriba seguiria

@@ -60,10 +60,19 @@ const SendInvitationModalContent = ({ onClose, onSend, onSendByUserId, onSearchU
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [openDropdown]);
 
-
   // Keyboard navigation for dropdown (document-level to avoid focus issues)
   useEffect(() => {
     const handleKeyDown = (e) => {
+      // Escape ANTES de la guarda: una busqueda sin resultados deja el
+      // desplegable abierto con el aviso de «no se ha encontrado a nadie», y
+      // la guarda de abajo —que pide lista con elementos— se llevaba por
+      // delante la unica tecla que podia cerrarlo.
+      if (e.key === 'Escape' && showDropdownRef.current) {
+        openDropdown(false);
+        highlight(-1);
+        return;
+      }
+
       if (!showDropdownRef.current || searchResultsRef.current.length === 0) return;
 
       if (e.key === 'ArrowDown') {
@@ -86,9 +95,6 @@ const SendInvitationModalContent = ({ onClose, onSend, onSendByUserId, onSearchU
           openDropdown(false);
           setError('');
         }
-      } else if (e.key === 'Escape') {
-        openDropdown(false);
-        highlight(-1);
       }
     };
 
@@ -131,7 +137,14 @@ const SendInvitationModalContent = ({ onClose, onSend, onSendByUserId, onSearchU
         highlight(-1);
       } catch {
         if (currentRequestId !== searchRequestIdRef.current) return;
+        // Cerrado, no «vacio»: dejarlo abierto enseñaba el aviso de «no se ha
+        // encontrado a nadie» para lo que en realidad fue un error de red.
         putResults([]);
+        openDropdown(false);
+        // Simetrico con el camino de exito: sin esto el `aria-activedescendant`
+        // se queda apuntando a una opcion que ya no esta en el DOM, y un lector
+        // de pantalla anuncia algo que no existe.
+        highlight(-1);
       } finally {
         if (currentRequestId === searchRequestIdRef.current) {
           setIsSearching(false);
@@ -187,6 +200,12 @@ const SendInvitationModalContent = ({ onClose, onSend, onSendByUserId, onSearchU
   const handleTabChange = (tab) => {
     setActiveTab(tab);
     setError('');
+    // El marcado del desplegable desaparece con la pestana, pero su estado no,
+    // y el listener de teclado es de `document`: dejandolo «abierto», en la
+    // pestana de correo el Enter no enviaba el formulario y las flechas no
+    // movian el cursor dentro del mensaje, porque las interceptaba el.
+    openDropdown(false);
+    highlight(-1);
   };
 
   return (

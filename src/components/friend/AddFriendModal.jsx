@@ -135,7 +135,14 @@ const AddFriendModalContent = ({ onClose, onSearchUsers, t }) => {
         highlight(-1);
       } catch {
         if (currentRequestId !== searchRequestIdRef.current) return;
+        // Cerrado, no «vacio»: el aviso de «no se ha encontrado a nadie» seria
+        // mentira para lo que en realidad fue un error de red.
         putResults([]);
+        openDropdown(false);
+        // Simetrico con el camino de exito: sin esto el `aria-activedescendant`
+        // se queda apuntando a una opcion que ya no esta en el DOM, y un lector
+        // de pantalla anuncia algo que no existe.
+        highlight(-1);
       } finally {
         if (currentRequestId === searchRequestIdRef.current) {
           setIsSearching(false);
