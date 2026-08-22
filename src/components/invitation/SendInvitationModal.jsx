@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { X, Search, Loader } from 'lucide-react';
 import Avatar from '../ui/Avatar';
 
@@ -25,8 +25,6 @@ const SendInvitationModalContent = ({ onClose, onSend, onSendByUserId, onSearchU
   // eslint-disable-next-line react-hooks/refs -- pre-existing pattern surfaced by eslint-plugin-react-hooks 7.1.1 bump; needs dedicated review (tracked in follow-up)
   onSearchUsersRef.current = onSearchUsers;
   // eslint-disable-next-line react-hooks/refs -- pre-existing pattern surfaced by eslint-plugin-react-hooks 7.1.1 bump; needs dedicated review (tracked in follow-up)
-  highlightedIndexRef.current = highlightedIndex;
-  // eslint-disable-next-line react-hooks/refs -- pre-existing pattern surfaced by eslint-plugin-react-hooks 7.1.1 bump; needs dedicated review (tracked in follow-up)
   showDropdownRef.current = showDropdown;
   // eslint-disable-next-line react-hooks/refs -- pre-existing pattern surfaced by eslint-plugin-react-hooks 7.1.1 bump; needs dedicated review (tracked in follow-up)
   searchResultsRef.current = searchResults;
@@ -42,6 +40,17 @@ const SendInvitationModalContent = ({ onClose, onSend, onSendByUserId, onSearchU
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // El resaltado se mueve SIEMPRE por aqui, y la ref se escribe a la vez que
+  // el estado. Copiarla en el cuerpo del componente la dejaba al dia solo
+  // DESPUES de re-renderizar: un `Enter` pisandole los talones al `ArrowDown`
+  // la leia todavia en -1 y no seleccionaba a nadie. El listener se registra
+  // una sola vez, asi que la ref es su unica fuente. Mismo fallo que FE #440
+  // en AddFriendModal, del que este modal es copia.
+  const highlight = useCallback((next) => {
+    highlightedIndexRef.current = next;
+    setHighlightedIndex(next);
+  }, []);
+
   // Keyboard navigation for dropdown (document-level to avoid focus issues)
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -50,11 +59,13 @@ const SendInvitationModalContent = ({ onClose, onSend, onSendByUserId, onSearchU
       if (e.key === 'ArrowDown') {
         e.preventDefault();
         const len = searchResultsRef.current.length;
-        setHighlightedIndex(prev => (prev < len - 1 ? prev + 1 : 0));
+        const prev = highlightedIndexRef.current;
+        highlight(prev < len - 1 ? prev + 1 : 0);
       } else if (e.key === 'ArrowUp') {
         e.preventDefault();
         const len = searchResultsRef.current.length;
-        setHighlightedIndex(prev => (prev > 0 ? prev - 1 : len - 1));
+        const prev = highlightedIndexRef.current;
+        highlight(prev > 0 ? prev - 1 : len - 1);
       } else if (e.key === 'Enter') {
         const idx = highlightedIndexRef.current;
         if (idx >= 0 && idx < searchResultsRef.current.length) {
@@ -67,13 +78,13 @@ const SendInvitationModalContent = ({ onClose, onSend, onSendByUserId, onSearchU
         }
       } else if (e.key === 'Escape') {
         setShowDropdown(false);
-        setHighlightedIndex(-1);
+        highlight(-1);
       }
     };
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, [highlight]);
 
   // Scroll highlighted item into view
   useEffect(() => {
@@ -107,7 +118,7 @@ const SendInvitationModalContent = ({ onClose, onSend, onSendByUserId, onSearchU
         if (currentRequestId !== searchRequestIdRef.current) return;
         setSearchResults(results);
         setShowDropdown(true);
-        setHighlightedIndex(-1);
+        highlight(-1);
       } catch {
         if (currentRequestId !== searchRequestIdRef.current) return;
         setSearchResults([]);
@@ -123,7 +134,7 @@ const SendInvitationModalContent = ({ onClose, onSend, onSendByUserId, onSearchU
         clearTimeout(searchTimerRef.current);
       }
     };
-  }, [searchQuery]);
+  }, [searchQuery, highlight]);
 
   const handleEmailSubmit = (e) => {
     e.preventDefault();
@@ -269,7 +280,7 @@ const SendInvitationModalContent = ({ onClose, onSend, onSendByUserId, onSearchU
                           id={`search-option-${index}`}
                           type="button"
                           onClick={() => handleSelectUser(user)}
-                          onMouseEnter={() => setHighlightedIndex(index)}
+                          onMouseEnter={() => highlight(index)}
                           className={`w-full px-3 py-2 text-left transition-colors border-b border-gray-100 last:border-b-0 ${
                             index === highlightedIndex ? 'bg-blue-100' : 'hover:bg-gray-50'
                           }`}

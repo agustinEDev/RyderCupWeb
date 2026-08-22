@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router';
 import { X, Search, Loader } from 'lucide-react';
 import Avatar from '../ui/Avatar';
@@ -31,9 +31,19 @@ const AddFriendModalContent = ({ onClose, onSearchUsers, t }) => {
   const openProfileRef = useRef(null);
   useEffect(() => { onSearchUsersRef.current = onSearchUsers; });
   useEffect(() => { onCloseRef.current = onClose; });
-  useEffect(() => { highlightedIndexRef.current = highlightedIndex; });
   useEffect(() => { showDropdownRef.current = showDropdown; });
   useEffect(() => { searchResultsRef.current = searchResults; });
+
+  // El resaltado se mueve SIEMPRE por aqui, y la ref se escribe en el mismo
+  // momento que el estado. Antes la ref la copiaba un efecto sin dependencias,
+  // es decir despues del render: entre el `ArrowDown` y ese efecto cabia un
+  // `Enter`, que leia el indice todavia en -1 y se tragaba la pulsacion. El
+  // listener de teclado se registra una sola vez, asi que no puede leer el
+  // estado y la ref es su unica fuente: tiene que estar al dia ya.
+  const highlight = useCallback((next) => {
+    highlightedIndexRef.current = next;
+    setHighlightedIndex(next);
+  }, []);
 
   useEffect(() => {
     searchInputRef.current?.focus();
@@ -54,7 +64,7 @@ const AddFriendModalContent = ({ onClose, onSearchUsers, t }) => {
       if (e.key === 'Escape') {
         if (showDropdownRef.current) {
           setShowDropdown(false);
-          setHighlightedIndex(-1);
+          highlight(-1);
         } else {
           onCloseRef.current();
         }
@@ -66,11 +76,13 @@ const AddFriendModalContent = ({ onClose, onSearchUsers, t }) => {
       if (e.key === 'ArrowDown') {
         e.preventDefault();
         const len = searchResultsRef.current.length;
-        setHighlightedIndex((prev) => (prev < len - 1 ? prev + 1 : 0));
+        const prev = highlightedIndexRef.current;
+        highlight(prev < len - 1 ? prev + 1 : 0);
       } else if (e.key === 'ArrowUp') {
         e.preventDefault();
         const len = searchResultsRef.current.length;
-        setHighlightedIndex((prev) => (prev > 0 ? prev - 1 : len - 1));
+        const prev = highlightedIndexRef.current;
+        highlight(prev > 0 ? prev - 1 : len - 1);
       } else if (e.key === 'Enter') {
         const idx = highlightedIndexRef.current;
         if (idx >= 0 && idx < searchResultsRef.current.length) {
@@ -82,7 +94,7 @@ const AddFriendModalContent = ({ onClose, onSearchUsers, t }) => {
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, [highlight]);
 
   useEffect(() => {
     if (searchTimerRef.current) {
@@ -107,7 +119,7 @@ const AddFriendModalContent = ({ onClose, onSearchUsers, t }) => {
         if (currentRequestId !== searchRequestIdRef.current) return;
         setSearchResults(results);
         setShowDropdown(true);
-        setHighlightedIndex(-1);
+        highlight(-1);
       } catch {
         if (currentRequestId !== searchRequestIdRef.current) return;
         setSearchResults([]);
@@ -123,7 +135,7 @@ const AddFriendModalContent = ({ onClose, onSearchUsers, t }) => {
         clearTimeout(searchTimerRef.current);
       }
     };
-  }, [searchQuery]);
+  }, [searchQuery, highlight]);
 
   const handleOpenProfile = (user) => {
     setShowDropdown(false);
@@ -206,7 +218,7 @@ const AddFriendModalContent = ({ onClose, onSearchUsers, t }) => {
                     id={`friend-search-option-${index}`}
                     type="button"
                     onClick={() => handleOpenProfile(user)}
-                    onMouseEnter={() => setHighlightedIndex(index)}
+                    onMouseEnter={() => highlight(index)}
                     className={`w-full px-3 py-2 text-left transition-colors border-b border-gray-100 last:border-b-0 ${
                       index === highlightedIndex ? 'bg-blue-100' : 'hover:bg-gray-50'
                     }`}

@@ -376,4 +376,30 @@ describe('SendInvitationModal', () => {
     expect(screen.getByTestId('search-result-u2').getAttribute('aria-selected')).toBe('true');
     expect(screen.getByTestId('search-result-u1').getAttribute('aria-selected')).toBe('false');
   });
+
+  it('should select the highlighted result even if Enter arrives before React re-renders', async () => {
+    // Las dos teclas en el MISMO acto: React no llega a pintar entre una y
+    // otra, que es lo que pasa cuando alguien teclea rapido. Con el indice
+    // copiado a la ref despues del render, el `Enter` leia todavia -1 y no
+    // seleccionaba a nadie. Mismo fallo que FE #440 en AddFriendModal.
+    const mockResults = [
+      { id: 'u1', firstName: 'John', lastName: 'Doe', email: 'john@test.com', countryCode: 'ES' },
+      { id: 'u2', firstName: 'Jane', lastName: 'Smith', email: 'jane@test.com', countryCode: 'US' },
+    ];
+    onSearchUsers.mockResolvedValue(mockResults);
+
+    renderModal();
+    fireEvent.change(screen.getByTestId('user-search-input'), { target: { value: 'Jo' } });
+
+    await act(async () => {
+      vi.advanceTimersByTime(350);
+    });
+
+    act(() => {
+      fireEvent.keyDown(document, { key: 'ArrowDown' });
+      fireEvent.keyDown(document, { key: 'Enter' });
+    });
+
+    expect(screen.getByTestId('selected-user-chip')).toBeInTheDocument();
+  });
 });
