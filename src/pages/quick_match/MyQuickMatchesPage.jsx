@@ -224,18 +224,33 @@ const MyQuickMatchesPage = () => {
               <li
                 key={qm.id}
                 data-testid={`quick-match-row-${qm.id}`}
-                className={`flex items-stretch border rounded-lg overflow-hidden hover:shadow-sm transition-all ${
+                // En un movil estrecho la fila NO cabe en una linea: padding,
+                // icono, resultado, estado, chevron, ojo y papelera suman mas
+                // que los 358px utiles de un iPhone, y el unico bloque que
+                // encoge —el del nombre— se quedaba en 8px, con la etiqueta
+                // partida en dos lineas y pintada encima del resultado. Se
+                // apila: nombre arriba a todo lo ancho, y debajo el resultado
+                // con sus acciones. A partir de `sm` vuelve a una sola linea.
+                className={`relative flex flex-col sm:flex-row sm:items-stretch border rounded-lg overflow-hidden hover:shadow-sm transition-all ${
                   excludedIds.has(qm.id)
                     ? 'bg-gray-50 border-gray-200 border-l-4 border-l-gray-400'
                     : 'bg-white border-gray-200 hover:border-primary-300'
                 }`}
               >
+                {/* Capa clicable que cubre la fila entera en vez de envolver
+                    el contenido. Envolviendolo, el resultado quedaba DENTRO
+                    del boton y no podia compartir linea con el ojo y la
+                    papelera, que son hermanos suyos: en movil salia una
+                    tercera franja casi vacia. Lleva su propio nombre
+                    accesible porque ya no contiene el texto. */}
                 <button
                   onClick={() => navigate(`/quick-matches/${qm.id}/scoring`)}
                   data-testid={`quick-match-history-item-${qm.id}`}
-                  className="flex-1 min-w-0 flex items-center justify-between p-4 text-left"
-                >
-                  <div className="flex items-center gap-3 min-w-0">
+                  aria-label={qm.name || t(`history.format.${qm.matchFormat ?? qm.scoringFormat}`, qm.matchFormat ?? qm.scoringFormat)}
+                  className="absolute inset-0 z-0"
+                />
+                <div className="relative z-10 pointer-events-none w-full sm:flex-1 min-w-0 flex items-center gap-3 p-4 pb-2 sm:pb-4">
+                  <div className="flex items-center gap-3 min-w-0 w-full sm:w-auto">
                     <div className="p-2 bg-primary-100 rounded-lg flex-shrink-0">
                       <Zap className="w-4 h-4 text-primary-600" />
                     </div>
@@ -250,14 +265,23 @@ const MyQuickMatchesPage = () => {
                       {excludedIds.has(qm.id) && (
                         <span
                           data-testid={`quick-match-excluded-badge-${qm.id}`}
-                          className="inline-block mt-1 px-2 py-0.5 rounded-full bg-gray-200 text-gray-700 text-[10px] font-semibold"
+                          className="inline-block mt-1 px-2 py-0.5 rounded-full bg-gray-200 text-gray-700 text-[10px] font-semibold whitespace-nowrap"
                         >
                           {t('history.excludedBadge')}
                         </span>
                       )}
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 flex-shrink-0">
+                </div>
+                {/* Resultado, estado y acciones comparten franja: en movil es
+                    la segunda linea de la tarjeta, y a partir de `sm` vuelve a
+                    ser la parte derecha de la fila de siempre. */}
+                {/* En movil se reparte —resultado a la izquierda, alineado
+                    bajo el nombre por el `pl-11`, y acciones a la derecha—
+                    para no dejar la linea entera vacia a un lado. En `sm`
+                    todo vuelve a la derecha, como la fila de siempre. */}
+                <div className="relative z-10 flex items-center gap-2 justify-between sm:justify-end pl-11 pr-4 pb-3 sm:pl-0 sm:pr-0 sm:pb-0 sm:self-stretch">
+                  <div className="pointer-events-none flex items-center gap-2 flex-shrink-0">
                     {resultsByMatchId[qm.id] && (
                       <div className="text-right" data-testid={`quick-match-result-${qm.id}`}>
                         {/* En foursomes no hay vuelta propia —una sola bola a
@@ -302,9 +326,10 @@ const MyQuickMatchesPage = () => {
                     <span className={`text-xs font-semibold px-2 py-1 rounded-full ${STATUS_STYLES[qm.status] ?? 'bg-gray-100 text-gray-700'}`}>
                       {t(`history.status.${qm.status}`, qm.status)}
                     </span>
-                    <ChevronRight className="w-4 h-4 text-gray-400" />
+                    {/* El chevron sobra en movil: la tarjeta entera es
+                        pulsable y ahi solo roba ancho. */}
+                    <ChevronRight className="hidden sm:block w-4 h-4 text-gray-400" />
                   </div>
-                </button>
                 {/* El ojo solo en las terminadas: una partida a medias no
                     cuenta todavía en ninguna estadística, así que el control
                     no diría nada —y el servidor lo rechaza con un 409. */}
@@ -324,7 +349,7 @@ const MyQuickMatchesPage = () => {
                     }
                     aria-pressed={excludedIds.has(qm.id)}
                     data-testid={`quick-match-stats-toggle-${qm.id}`}
-                    className="px-3 flex items-center justify-center text-gray-400 hover:text-primary-600 hover:bg-primary-50 border-l border-gray-100 transition-colors disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-gray-400"
+                    className="px-2 sm:px-3 sm:self-stretch flex items-center justify-center text-gray-400 hover:text-primary-600 hover:bg-primary-50 sm:border-l border-gray-100 transition-colors disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-gray-400"
                   >
                     {excludedIds.has(qm.id) ? (
                       <EyeOff className="w-4 h-4" />
@@ -339,10 +364,11 @@ const MyQuickMatchesPage = () => {
                   aria-label={t('history.hide')}
                   title={t('history.hide')}
                   data-testid={`quick-match-hide-${qm.id}`}
-                  className="px-3 flex items-center justify-center text-gray-400 hover:text-red-600 hover:bg-red-50 border-l border-gray-100 transition-colors disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-gray-400"
+                  className="px-2 sm:px-3 sm:self-stretch flex items-center justify-center text-gray-400 hover:text-red-600 hover:bg-red-50 sm:border-l border-gray-100 transition-colors disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-gray-400"
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>
+                </div>
               </li>
             ))}
           </ul>

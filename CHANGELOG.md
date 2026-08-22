@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [2.16.1] - 2026-08-22
+
+### Fixed
+
+- **En un iPhone, la tarjeta de una partida terminada se pintaba encima de sí misma.** Reportado desde producción con la v2.16.0 recién desplegada: el nombre desaparecía —quedaba una letra— y la etiqueta «No cuenta» salía partida en dos líneas y superpuesta al resultado.
+
+  No cabía, literalmente. En los 358px útiles de un iPhone, el relleno, el icono, el resultado, el estado, el chevron, el ojo y la papelera suman más que la fila entera, y el único bloque que encoge es el del nombre: medido, se quedaba en **8px**, y la etiqueta —que necesita 48— se salía de él y se dibujaba sobre lo que hubiera detrás. El ojo de la v2.16.0 no lo causó solo, lo destapó: sin él ese bloque ya bajaba a 49px, así que el nombre llevaba tiempo saliendo cortado en móvil y nadie lo había medido.
+
+  En móvil la tarjeta pasa a **dos líneas**: arriba el nombre, la fecha y la etiqueta, a todo lo ancho; debajo el resultado, el estado y los dos botones, compartiendo franja. A partir de `sm` vuelve exactamente a la fila de una línea de siempre. El chevron se retira en móvil, donde solo robaba ancho: la tarjeta entera ya es pulsable.
+
+  Para que el resultado pudiera compartir línea con el ojo y la papelera hubo que sacarlo del botón de navegar —eran hermanos suyos, así que nunca podían ir juntos— y convertir ese botón en una **capa que cubre la tarjeta**. Lleva su propio `aria-label` con el nombre de la partida, porque ya no contiene el texto que se lo daba.
+
 ## [2.16.0] - 2026-08-22
 
 ### Added
