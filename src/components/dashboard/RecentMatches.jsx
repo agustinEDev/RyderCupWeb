@@ -67,6 +67,17 @@ const MatchRow = ({ match, onOpen, t, formatDate }) => {
             .filter(Boolean)
             .join(' · ')}
         </span>
+        {/* La misma marca que en el historial. Sin ella, el resumen de arriba
+            —que no la cuenta— y esta lista —que la enseña— se contradicen sin
+            que nada lo explique: la vuelta está a la vista pero no suma. */}
+        {match.excludedFromStats && (
+          <span
+            data-testid={`recent-match-excluded-${match.id}`}
+            className="mt-1 inline-block rounded-full bg-gray-200 px-2 py-0.5 text-[10px] font-semibold text-gray-700"
+          >
+            {t('recentMatches.excludedBadge')}
+          </span>
+        )}
       </span>
 
       <span className="flex flex-shrink-0 flex-col items-end">

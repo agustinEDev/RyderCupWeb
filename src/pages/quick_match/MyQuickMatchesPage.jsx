@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
-import { Loader, Zap, ChevronRight, Trash2 } from 'lucide-react';
+import { Loader, Zap, ChevronRight, Trash2, Eye, EyeOff } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import HeaderAuth from '../../components/layout/HeaderAuth';
 import { useAuth } from '../../hooks/useAuth';
@@ -9,7 +9,10 @@ import {
   getQuickMatchUseCase,
   getGolfCourseUseCase,
   hideQuickMatchUseCase,
+  excludeQuickMatchFromStatsUseCase,
+  includeQuickMatchInStatsUseCase,
 } from '../../composition';
+import ConfirmModal from '../../components/modals/ConfirmModal';
 import PersonalRoundCalculator from '../../domain/services/PersonalRoundCalculator';
 import customToast from '../../utils/toast';
 
@@ -32,9 +35,58 @@ const MyQuickMatchesPage = () => {
   // Un Set y no un único id: si se ocultan dos partidas seguidas, la primera en
   // responder no debe reactivar el botón de la que sigue en vuelo.
   const [hidingIds, setHidingIds] = useState(() => new Set());
+  const [togglingIds, setTogglingIds] = useState(() => new Set());
+  // La marca de "no cuenta" se guarda APARTE de `quickMatches` a propósito. Si
+  // se actualizara dentro de la lista, cada pulsación del ojo crearía un array
+  // nuevo, y de ese array depende el efecto que carga el resultado de cada
+  // partida: un toque disparaba dos peticiones por cada partida terminada
+  // —justo el aluvión de la FE #418, pero provocado a mano—.
+  const [excludedIds, setExcludedIds] = useState(() => new Set());
+  // La papelera es irreversible desde la aplicación, así que pregunta antes.
+  // El ojo no: se deshace pulsándolo otra vez, y un modal ahí solo estorbaría.
+  const [matchPendingDeletion, setMatchPendingDeletion] = useState(null);
+
+  // El ojo: la partida deja de contar en MIS estadísticas, pero sigue en la
+  // lista. Es la otra mitad de la separación que dejó a la papelera como
+  // «quitar de mi lista» y nada más.
+  const handleToggleStats = async (quickMatchId) => {
+    const id = quickMatchId;
+    const estabaExcluida = excludedIds.has(id);
+    setTogglingIds((prev) => new Set(prev).add(id));
+    try {
+      const updated = estabaExcluida
+        ? await includeQuickMatchInStatsUseCase.execute(id)
+        : await excludeQuickMatchFromStatsUseCase.execute(id);
+      setExcludedIds((prev) => {
+        const next = new Set(prev);
+        if (updated.excludedFromStats) next.add(id);
+        else next.delete(id);
+        return next;
+      });
+      customToast.success(updated.excludedFromStats ? t('history.excluded') : t('history.included'));
+    } catch {
+      customToast.error(t('history.statsToggleError'));
+    } finally {
+      setTogglingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
+    }
+  };
 
   // Quitar la partida del historial propio. No borra nada ni afecta a lo que
   // ven los demás participantes: cada uno la oculta solo para sí mismo.
+  const handleConfirmHide = async () => {
+    const quickMatchId = matchPendingDeletion;
+    if (!quickMatchId) return;
+    // El aviso se cierra DESPUÉS, no antes: cerrarlo al confirmar dejaba la
+    // petición en vuelo sin nada en pantalla que lo dijera, y con la lista
+    // intacta. Con una red lenta parecía que el botón no había hecho nada.
+    await handleHide(quickMatchId);
+    setMatchPendingDeletion(null);
+  };
+
   const handleHide = async (quickMatchId) => {
     setHidingIds((prev) => new Set(prev).add(quickMatchId));
     try {
@@ -57,7 +109,12 @@ const MyQuickMatchesPage = () => {
 
     listMyQuickMatchesUseCase
       .execute({ page: 1, limit: 50 })
-      .then((result) => setQuickMatches(result.quickMatches))
+      .then((result) => {
+        setQuickMatches(result.quickMatches);
+        setExcludedIds(
+          new Set(result.quickMatches.filter((qm) => qm.excludedFromStats).map((qm) => qm.id))
+        );
+      })
       .catch((err) => setError(err))
       .finally(() => setIsLoading(false));
   }, [user]);
@@ -159,9 +216,19 @@ const MyQuickMatchesPage = () => {
             {quickMatches.map((qm) => (
               // El botón de quitar es hermano del de navegar, no hijo: anidar
               // botones es HTML inválido y rompe la navegación por teclado.
+              // Una partida que no cuenta NO se atenúa: esto se usa al sol, y
+              // el texto apagado baja del contraste legible justo donde peor se
+              // lee. Se distingue por el fondo, la franja de la izquierda y,
+              // sobre todo, por la etiqueta, que es lo único que también
+              // entiende un lector de pantalla.
               <li
                 key={qm.id}
-                className="flex items-stretch bg-white border border-gray-200 rounded-lg overflow-hidden hover:border-primary-300 hover:shadow-sm transition-all"
+                data-testid={`quick-match-row-${qm.id}`}
+                className={`flex items-stretch border rounded-lg overflow-hidden hover:shadow-sm transition-all ${
+                  excludedIds.has(qm.id)
+                    ? 'bg-gray-50 border-gray-200 border-l-4 border-l-gray-400'
+                    : 'bg-white border-gray-200 hover:border-primary-300'
+                }`}
               >
                 <button
                   onClick={() => navigate(`/quick-matches/${qm.id}/scoring`)}
@@ -180,6 +247,14 @@ const MyQuickMatchesPage = () => {
                         {qm.name && `${t(`history.format.${qm.matchFormat ?? qm.scoringFormat}`, qm.matchFormat ?? qm.scoringFormat)} · `}
                         {new Date(qm.createdAt).toLocaleDateString()}
                       </p>
+                      {excludedIds.has(qm.id) && (
+                        <span
+                          data-testid={`quick-match-excluded-badge-${qm.id}`}
+                          className="inline-block mt-1 px-2 py-0.5 rounded-full bg-gray-200 text-gray-700 text-[10px] font-semibold"
+                        >
+                          {t('history.excludedBadge')}
+                        </span>
+                      )}
                     </div>
                   </div>
                   <div className="flex items-center gap-2 flex-shrink-0">
@@ -230,8 +305,36 @@ const MyQuickMatchesPage = () => {
                     <ChevronRight className="w-4 h-4 text-gray-400" />
                   </div>
                 </button>
+                {/* El ojo solo en las terminadas: una partida a medias no
+                    cuenta todavía en ninguna estadística, así que el control
+                    no diría nada —y el servidor lo rechaza con un 409. */}
+                {qm.status === 'COMPLETED' && (
+                  <button
+                    onClick={() => handleToggleStats(qm.id)}
+                    disabled={togglingIds.has(qm.id)}
+                    aria-label={
+                      excludedIds.has(qm.id)
+                        ? t('history.excludedFromStats')
+                        : t('history.countsInStats')
+                    }
+                    title={
+                      excludedIds.has(qm.id)
+                        ? t('history.excludedFromStats')
+                        : t('history.countsInStats')
+                    }
+                    aria-pressed={excludedIds.has(qm.id)}
+                    data-testid={`quick-match-stats-toggle-${qm.id}`}
+                    className="px-3 flex items-center justify-center text-gray-400 hover:text-primary-600 hover:bg-primary-50 border-l border-gray-100 transition-colors disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-gray-400"
+                  >
+                    {excludedIds.has(qm.id) ? (
+                      <EyeOff className="w-4 h-4" />
+                    ) : (
+                      <Eye className="w-4 h-4" />
+                    )}
+                  </button>
+                )}
                 <button
-                  onClick={() => handleHide(qm.id)}
+                  onClick={() => setMatchPendingDeletion(qm.id)}
                   disabled={hidingIds.has(qm.id)}
                   aria-label={t('history.hide')}
                   title={t('history.hide')}
@@ -245,6 +348,23 @@ const MyQuickMatchesPage = () => {
           </ul>
         )}
       </div>
+
+      {/* La papelera no se puede deshacer desde la aplicación, así que se
+          pregunta antes y se dice de qué va: el motivo más probable para
+          pulsarla —que la partida no cuente— tiene su propio botón, que sí se
+          deshace. Por eso el aviso lo menciona en vez de dejar al usuario
+          descubrirlo cuando ya no hay vuelta. */}
+      <ConfirmModal
+        isOpen={matchPendingDeletion !== null}
+        title={t('history.deleteTitle')}
+        message={`${t('history.deleteBody')} ${t('history.deleteHint')}`}
+        confirmText={t('history.deleteConfirm')}
+        cancelText={t('history.deleteCancel')}
+        isDestructive
+        isLoading={matchPendingDeletion !== null && hidingIds.has(matchPendingDeletion)}
+        onConfirm={handleConfirmHide}
+        onCancel={() => setMatchPendingDeletion(null)}
+      />
     </div>
   );
 };

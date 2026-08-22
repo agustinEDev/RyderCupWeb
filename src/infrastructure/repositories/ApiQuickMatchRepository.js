@@ -146,6 +146,25 @@ class ApiQuickMatchRepository extends IQuickMatchRepository {
     return QuickMatchMapper.toDomain(apiData);
   }
 
+  // El ojo: la partida deja de contar en las estadísticas de quien llama, pero
+  // sigue en su historial. Es otra marca distinta de `hide`, que sí la quita de
+  // la lista y no tiene vuelta atrás desde la aplicación.
+  async excludeFromStats(quickMatchId) {
+    const apiData = await apiRequest(`/api/v1/quick-matches/${quickMatchId}/stats-exclusion`, {
+      method: 'POST',
+    });
+
+    return QuickMatchMapper.toDomain(apiData);
+  }
+
+  async includeInStats(quickMatchId) {
+    const apiData = await apiRequest(`/api/v1/quick-matches/${quickMatchId}/stats-exclusion`, {
+      method: 'DELETE',
+    });
+
+    return QuickMatchMapper.toDomain(apiData);
+  }
+
   async submitHoleScore(quickMatchId, holeNumber, score) {
     return await apiRequest(`/api/v1/quick-matches/${quickMatchId}/holes/${holeNumber}/score`, {
       method: 'POST',
