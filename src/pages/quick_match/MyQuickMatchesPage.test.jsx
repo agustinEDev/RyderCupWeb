@@ -105,6 +105,31 @@ describe('MyQuickMatchesPage', () => {
     expect(mockNavigate).toHaveBeenCalledWith('/quick-matches/qm-1/scoring');
   });
 
+  // El control de navegar es una capa que cubre la tarjeta y ya no contiene el
+  // texto, asi que sin `aria-label` propio se quedaria sin nombre accesible:
+  // un lector de pantalla anunciaria «boton» a secas en cada partida.
+  it('should give the row link an accessible name even though it holds no text', async () => {
+    mockListMyQuickMatches.mockResolvedValue({
+      quickMatches: [
+        { id: 'qm-1', name: 'Sábado en Meis', matchFormat: 'SINGLES', status: 'IN_PROGRESS', createdAt: '2026-07-27T10:00:00Z' },
+        { id: 'qm-2', matchFormat: 'FOURBALL', status: 'COMPLETED', createdAt: '2026-07-20T10:00:00Z' },
+      ],
+      totalCount: 2,
+      page: 1,
+      limit: 50,
+    });
+
+    renderPage();
+
+    await waitFor(() => {
+      expect(screen.getByTestId('quick-match-history-item-qm-1')).toBeInTheDocument();
+    });
+
+    expect(screen.getByTestId('quick-match-history-item-qm-1')).toHaveAttribute('aria-label', 'Sábado en Meis');
+    // Sin nombre propio, el de la modalidad: el mismo texto que se ve.
+    expect(screen.getByTestId('quick-match-history-item-qm-2')).toHaveAttribute('aria-label', 'history.format.FOURBALL');
+  });
+
   it('should show the custom name instead of the format when the match has one', async () => {
     mockListMyQuickMatches.mockResolvedValue({
       quickMatches: [
