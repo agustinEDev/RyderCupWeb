@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 import AddFriendModal from './AddFriendModal';
 
@@ -72,6 +72,52 @@ describe('AddFriendModal', () => {
     fireEvent.keyDown(document, { key: 'Enter' });
 
     expect(navigate).toHaveBeenCalledWith('/players/u-1', { state: { from: 'friends' } });
+  });
+
+  it('opens the highlighted result even if Enter arrives before React re-renders', async () => {
+    // Las dos teclas en el MISMO acto: React no llega a pintar entre una y
+    // otra, que es justo lo que pasa cuando alguien teclea rapido. Con el
+    // indice copiado a la ref por un efecto posterior al render, el `Enter`
+    // leia todavia -1 y no abria nada. Separadas en dos `fireEvent`, cada
+    // una hace su propio commit y el fallo depende de lo rapida que sea la
+    // maquina: por eso el test de arriba se caia en CI y aqui no.
+    pintar();
+    await buscar();
+
+    act(() => {
+      fireEvent.keyDown(document, { key: 'ArrowDown' });
+      fireEvent.keyDown(document, { key: 'Enter' });
+    });
+
+    expect(navigate).toHaveBeenCalledWith('/players/u-1', { state: { from: 'friends' } });
+  });
+
+  it('closes the modal on the second Escape, without needing a third', async () => {
+    // El primer Escape cierra el desplegable; el segundo debe cerrar el modal.
+    // Con `showDropdownRef` copiada despues del render, el segundo Escape lo
+    // veia todavia abierto y volvia a cerrarlo: hacian falta tres.
+    const { onClose } = pintar();
+    await buscar();
+
+    act(() => {
+      fireEvent.keyDown(document, { key: 'Escape' });
+      fireEvent.keyDown(document, { key: 'Escape' });
+    });
+
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('closes only the dropdown on the first Escape, leaving the modal open', async () => {
+    // La otra mitad del contrato: sin esto, alguien podria simplificar el
+    // manejador a un `onClose()` incondicional y el test de arriba seguiria
+    // en verde mientras el primer Escape se lleva el modal por delante.
+    const { onClose } = pintar();
+    await buscar();
+
+    fireEvent.keyDown(document, { key: 'Escape' });
+
+    expect(onClose).not.toHaveBeenCalled();
+    expect(screen.queryByTestId('search-results-dropdown')).not.toBeInTheDocument();
   });
 
   it('no longer offers a way to send from here', async () => {
