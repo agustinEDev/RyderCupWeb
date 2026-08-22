@@ -282,6 +282,13 @@ const MyQuickMatchesPage = () => {
                     todo vuelve a la derecha, como la fila de siempre. */}
                 <div className="relative z-10 flex items-center gap-2 justify-between sm:justify-end pl-11 pr-4 pb-3 sm:pl-0 sm:pr-0 sm:pb-0 sm:self-stretch">
                   <div className="pointer-events-none flex items-center gap-2 flex-shrink-0">
+                    {/* La columna del resultado mide siempre lo mismo en movil
+                        y se reserva aunque la partida no traiga cifras: sin
+                        ancho fijo, cada tarjeta empujaba el estado y los
+                        botones a una vertical distinta —«+21 / 93 golpes» no
+                        ocupa lo que «+7 / 98 golpes / (+8 en el partido)»— y
+                        la lista se leia desordenada. */}
+                    <div className="w-24 sm:w-auto shrink-0">
                     {resultsByMatchId[qm.id] && (
                       <div className="text-right" data-testid={`quick-match-result-${qm.id}`}>
                         {/* En foursomes no hay vuelta propia —una sola bola a
@@ -323,6 +330,7 @@ const MyQuickMatchesPage = () => {
                         )}
                       </div>
                     )}
+                    </div>
                     <span className={`text-xs font-semibold px-2 py-1 rounded-full ${STATUS_STYLES[qm.status] ?? 'bg-gray-100 text-gray-700'}`}>
                       {t(`history.status.${qm.status}`, qm.status)}
                     </span>

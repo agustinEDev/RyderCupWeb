@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [2.16.2] - 2026-08-22
+
+### Fixed
+
+- **La lista de partidas rápidas se leía desordenada en el móvil.** Con la tarjeta ya en dos líneas, el estado y los botones caían en una vertical distinta en cada una: el bloque del resultado mide lo que mide su contenido, y «+21 · 93 golpes» no ocupa lo mismo que «+7 · 98 golpes · (+8 en el partido)», así que todo lo que venía detrás se corría. La columna del resultado pasa a medir siempre igual en móvil y se reserva aunque la partida no traiga cifras, de modo que el estado, el ojo y la papelera quedan alineados de una tarjeta a otra. En escritorio no cambia nada.
+
 ## [2.16.1] - 2026-08-22
 
 ### Fixed
