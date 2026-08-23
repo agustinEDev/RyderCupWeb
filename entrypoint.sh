@@ -65,8 +65,9 @@ echo "✅ Archivo config.js creado exitosamente"
 # Ojo con lo que este `?v=` NO hace: a un cliente que ya tenga el service
 # worker instalado no le llega, porque index.html esta precacheado y su
 # revision es el hash del build, que no se mueve al cambiar una variable de
-# entorno. A esos les llega por la cabecera `no-cache` de config.js. El sello
-# sirve para el resto: navegador sin SW, o primera carga.
+# entorno. A esos la configuracion nueva les llega UNA CARGA TARDE: el service
+# worker sirve la copia guardada y la refresca por detras. El sello sirve para
+# el resto: navegador sin SW, o primera carga.
 #
 # Se REESCRIBE la etiqueta si ya estaba, en vez de saltarsela: un contenedor
 # reiniciado en sitio conserva su index.html y se quedaba con la etiqueta
