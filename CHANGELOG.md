@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [2.17.1] - 2026-08-24
+
+### Fixed
+
+- **La configuración de un despliegue se quedaba pegada un año en el navegador** (#407). `config.js` lo escribe el contenedor al arrancar y lleva, entre otras cosas, **la URL de la API**; como su nombre no lleva hash, caía en la regla que sirve los recursos con `immutable` y un año de caché. Un navegador que ya hubiera estado en la aplicación seguía usando la configuración del despliegue viejo sin forma de forzarlo desde el servidor. Ahora se sirve con `no-cache`, y la etiqueta que lo pide lleva un sello que sale del contenido de la configuración: dos réplicas con la misma configuración sirven lo mismo, y la URL solo cambia cuando cambia lo que dice.
+
+  De paso, el service worker guarda ese fichero —antes no lo tocaba, y con `no-cache` la aplicación instalada no levantaba sin cobertura—. Pide red primero, porque este fichero dice contra qué API se habla, y solo cae a la copia guardada si no hay red o si tarda demasiado. Se rechaza lo que no llegue como JavaScript, para que el HTML de la SPA o el de un portal cautivo no acaben ejecutándose como configuración.
+
+- **Un 404 de un recurso estático se contestaba con el HTML de la aplicación**, que el navegador reporta como `Unexpected token '<'` en vez de decir que el fichero no está.
+
+### Changed
+
+- **Las tarjetas del historial de partidas rápidas, reordenadas** (#461). Salió de mirar la lista en un iPhone con la versión anterior recién desplegada: se amontonaba todo a la izquierda, el lado derecho quedaba vacío arriba y en las partidas sin resultado la papelera se quedaba colgando sola en una segunda fila.
+
+  Ahora el texto va en una columna —nombre, fecha, etiqueta y cifras, todo arrancando en la misma vertical, con los golpes alineados con el nombre y no bajo el icono— y a la derecha los dos botones con el estado justo debajo. Lo que no se usa no reserva sitio: una partida sin resultado no pinta esa línea. Una sola estructura para móvil y escritorio, en vez de la maquetación condicional que ya costó dos hotfix. Los botones pasan de 32 px a 40, con 8 de separación en vez de 4: en el campo un toque desviado navegaba a la pantalla de anotar, y uno de los dos abre el borrado.
+
+### Security
+
+- Actualizadas seis dependencias del grupo de versiones menores (#406) y `trufflesecurity/trufflehog` de 3.96.0 a 3.97.0 en CI (#405).
+
 ## [2.17.0] - 2026-08-23
 
 ### Added
