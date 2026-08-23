@@ -957,8 +957,11 @@ describe('QuickMatchScoringPage · cancelar una partida en curso', () => {
     expect(screen.getByTestId('quick-match-cancel-confirm')).toBeInTheDocument();
     // Y con un aviso propio: el general habla de anotar y ademas queda detras
     // del velo del dialogo, fuera de la vista
-    expect(screen.getByTestId('quick-match-cancel-error')).toHaveTextContent(
-      'scoring.cancelMatch.failed'
+    // Exacto: `toHaveTextContent` casa por subcadena, y con «failed» a secas
+    // este test pasaba tambien con `failedServer` y `failedOffline` —que es lo
+    // que de verdad salia aqui—.
+    expect(screen.getByTestId('quick-match-cancel-error').textContent).toBe(
+      'scoring.cancelMatch.failedServer'
     );
   });
 
@@ -975,7 +978,7 @@ describe('QuickMatchScoringPage · cancelar una partida en curso', () => {
       fireEvent.click(screen.getByTestId('quick-match-cancel-confirm'));
     });
 
-    expect(screen.getByTestId('quick-match-cancel-error')).toHaveTextContent(
+    expect(screen.getByTestId('quick-match-cancel-error').textContent).toBe(
       'scoring.cancelMatch.failedOffline'
     );
   });
@@ -992,7 +995,7 @@ describe('QuickMatchScoringPage · cancelar una partida en curso', () => {
       fireEvent.click(screen.getByTestId('quick-match-cancel-confirm'));
     });
 
-    expect(screen.getByTestId('quick-match-cancel-error')).toHaveTextContent(
+    expect(screen.getByTestId('quick-match-cancel-error').textContent).toBe(
       'scoring.cancelMatch.failed'
     );
   });
@@ -1001,15 +1004,47 @@ describe('QuickMatchScoringPage · cancelar una partida en curso', () => {
     // El boton que abrio el aviso desaparece al cancelar de verdad, asi que
     // devolver el foco «a donde estaba» lo mandaba a un nodo desmontado y de
     // ahi al principio de la pagina.
-    comoCreador({ cancelMatch: vi.fn().mockResolvedValue({ ok: true }) });
+    // Al cancelarse de verdad la partida pasa a CANCELLED y el boton desaparece,
+    // que es justo lo que deja el foco huerfano. Con un mock fijo eso no pasa.
+    const cancelMatch = vi.fn(() => {
+      mockUseQuickMatchScoring.mockReturnValue({
+        ...baseHookState,
+        quickMatch: { ...enCurso, isCancelled: true },
+        isCreator: true,
+        setCurrentHole: vi.fn(),
+        submitScore: vi.fn(),
+        completeMatch: vi.fn().mockResolvedValue({ ok: true }),
+        cancelMatch: vi.fn().mockResolvedValue({ ok: true }),
+        refetch: vi.fn(),
+      });
+      return Promise.resolve({ ok: true });
+    });
+    comoCreador({ cancelMatch });
     renderPage();
 
-    fireEvent.click(await screen.findByTestId('quick-match-cancel-button'));
+    // Enfocar de verdad el boton: `fireEvent.click` no mueve el foco, y sin
+    // esto el test pasaba por el foco que la pagina ponia al montarse, no por
+    // lo que dice comprobar.
+    const boton = await screen.findByTestId('quick-match-cancel-button');
+    boton.focus();
+    expect(document.activeElement).toBe(boton);
+
+    fireEvent.click(boton);
     await act(async () => {
       fireEvent.click(screen.getByTestId('quick-match-cancel-confirm'));
     });
 
     expect(document.activeElement).toBe(screen.getByTestId('quick-match-scoring-tabs'));
+  });
+
+  it('does not touch the focus when the page just loads', async () => {
+    // El efecto corre tambien al montar, con los dos avisos cerrados: si toca
+    // el foco ahi, se lo lleva a las pestanas en cada carga de la pantalla.
+    comoCreador();
+    renderPage();
+
+    await screen.findByTestId('quick-match-scoring-tabs');
+    expect(document.activeElement).toBe(document.body);
   });
 
   it('blames the server, not the connection, on a 403 or a 404', async () => {
@@ -1027,7 +1062,7 @@ describe('QuickMatchScoringPage · cancelar una partida en curso', () => {
       fireEvent.click(screen.getByTestId('quick-match-cancel-confirm'));
     });
 
-    expect(screen.getByTestId('quick-match-cancel-error')).toHaveTextContent(
+    expect(screen.getByTestId('quick-match-cancel-error').textContent).toBe(
       'scoring.cancelMatch.failedServer'
     );
   });

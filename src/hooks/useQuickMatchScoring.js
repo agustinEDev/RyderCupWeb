@@ -121,12 +121,28 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
 
     setIsSubmitting(true);
     try {
-      // La partida que devuelve el servidor se aplica directamente: si se
-      // dependiera del refetch y este fallara —se cae la red justo despues del
-      // POST—, la pantalla seguiria creyendo la partida viva, con las casillas
-      // editables y anotando contra 409 en bucle.
+      // Del DTO que devuelve la accion se toma SOLO el estado: es el DTO base
+      // —sin `holeScores`, `standing` ni `participantStrokes`—, y aplicarlo
+      // entero borraba la tarjeta y recalculaba el neto con cero golpes, es
+      // decir numeros equivocados, no huecos. Se aplica igualmente y no se
+      // espera al refetch porque si este falla —se cae la red justo despues
+      // del POST— la pantalla seguiria creyendo la partida viva, editable y
+      // anotando contra 409 en bucle.
       const actualizada = await cancelQuickMatchUseCase.execute(quickMatchId);
-      if (actualizada) setQuickMatch(actualizada);
+      if (actualizada) {
+        setQuickMatch((previa) =>
+          previa
+            ? {
+                ...previa,
+                status: actualizada.status,
+                isPending: actualizada.isPending,
+                isInProgress: actualizada.isInProgress,
+                isCompleted: actualizada.isCompleted,
+                isCancelled: actualizada.isCancelled,
+              }
+            : actualizada
+        );
+      }
       setSaveError(null);
       await fetchQuickMatch();
       return { ok: true };
@@ -146,12 +162,28 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
 
     setIsSubmitting(true);
     try {
-      // La partida que devuelve el servidor se aplica directamente: si se
-      // dependiera del refetch y este fallara —se cae la red justo despues del
-      // POST—, la pantalla seguiria creyendo la partida viva, con las casillas
-      // editables y anotando contra 409 en bucle.
+      // Del DTO que devuelve la accion se toma SOLO el estado: es el DTO base
+      // —sin `holeScores`, `standing` ni `participantStrokes`—, y aplicarlo
+      // entero borraba la tarjeta y recalculaba el neto con cero golpes, es
+      // decir numeros equivocados, no huecos. Se aplica igualmente y no se
+      // espera al refetch porque si este falla —se cae la red justo despues
+      // del POST— la pantalla seguiria creyendo la partida viva, editable y
+      // anotando contra 409 en bucle.
       const actualizada = await completeQuickMatchUseCase.execute(quickMatchId);
-      if (actualizada) setQuickMatch(actualizada);
+      if (actualizada) {
+        setQuickMatch((previa) =>
+          previa
+            ? {
+                ...previa,
+                status: actualizada.status,
+                isPending: actualizada.isPending,
+                isInProgress: actualizada.isInProgress,
+                isCompleted: actualizada.isCompleted,
+                isCancelled: actualizada.isCancelled,
+              }
+            : actualizada
+        );
+      }
       setSaveError(null);
       await fetchQuickMatch();
       return { ok: true };

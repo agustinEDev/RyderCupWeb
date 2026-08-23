@@ -109,7 +109,11 @@ const QuickMatchScoringPage = () => {
     // de pantalla no llega a leer ni la advertencia ni el fallo. El
     // atrapamiento completo del foco es otra cosa, y va en #389.
     if (showCancelConfirm || showFinishConfirm) {
-      focoPrevioRef.current = document.activeElement;
+      // `body` no cuenta como foco previo: en Safari tocar un boton no lo
+      // enfoca, y guardarlo hacia que al cerrar se «restaurara» a body —que no
+      // hace nada— y el respaldo de las pestanas no se usara jamas.
+      const activo = document.activeElement;
+      focoPrevioRef.current = activo && activo !== document.body ? activo : null;
       (showCancelConfirm ? cancelDialogRef : finishDialogRef).current?.focus();
       return;
     }
@@ -118,9 +122,13 @@ const QuickMatchScoringPage = () => {
     // con teclado o lector de pantalla. Si el boton que lo abrio ya no existe
     // —al cancelar de verdad, desaparece— el foco va a las pestanas, que
     // siguen ahi.
+    // Sin foco guardado no ha habido ningun aviso abierto —esto corre tambien
+    // al montar la pagina— y aqui no hay nada que devolver: tocarlo movia el
+    // foco a las pestanas en cada carga.
     const previo = focoPrevioRef.current;
+    if (!previo) return;
     focoPrevioRef.current = null;
-    if (previo?.isConnected) {
+    if (previo.isConnected) {
       previo.focus?.();
       return;
     }
@@ -304,11 +312,13 @@ const QuickMatchScoringPage = () => {
   const claveDeFallo = (base, error) => {
     if (error?.status === 409) return `${base}.failed`;
     if (error?.status) return `${base}.failedServer`;
-    // Sin error no hubo ni intento —la guarda de creador—, y un fallo de CSRF
-    // llega sin `status` pero con la sesion cayendose: ninguno de los dos es
-    // «mira la cobertura», que es lo unico que queda para un fetch que no
-    // llega a salir.
-    if (!error || error.errorCode === 'CSRF_VALIDATION_FAILED') return `${base}.failedServer`;
+    // Sin error no hubo ni intento: es la guarda de creador, no la cobertura.
+    if (!error) return `${base}.failedServer`;
+    // OJO: un fallo de CSRF cae aqui, en «mira la conexion», porque `api.js`
+    // lo lanza pelado —sin `status` ni `errorCode`, al contrario que el resto—
+    // y no hay forma de distinguirlo sin tocar ese servicio, que usa toda la
+    // aplicacion. Da igual de cara al usuario: ese mismo fallo arranca el
+    // cierre de sesion, asi que no se queda leyendo este aviso.
     return `${base}.failedOffline`;
   };
 
@@ -543,7 +553,7 @@ const QuickMatchScoringPage = () => {
           >
             <h3 id="quick-match-finish-title" className="text-lg font-semibold text-gray-900 mb-1">{t('scoring.finish.confirmTitle')}</h3>
             <p className="text-sm text-gray-500 mb-4">{t('scoring.finish.confirmBody')}</p>
-            {yaCerrada && !finishFailedKey && (
+            {yaCerrada && !finishFailedKey && !isSubmitting && (
               <p role="alert" className="text-sm text-red-600 mb-4" data-testid="quick-match-finish-stale">
                 {t('scoring.finish.failed')}
               </p>
@@ -589,7 +599,7 @@ const QuickMatchScoringPage = () => {
             <p className="text-sm text-gray-500 mb-4" data-testid="quick-match-cancel-body">
               {t('scoring.cancelMatch.confirmBody')}
             </p>
-            {yaCerrada && !cancelFailedKey && (
+            {yaCerrada && !cancelFailedKey && !isSubmitting && (
               <p role="alert" className="text-sm text-red-600 mb-4" data-testid="quick-match-cancel-stale">
                 {t('scoring.cancelMatch.failed')}
               </p>
