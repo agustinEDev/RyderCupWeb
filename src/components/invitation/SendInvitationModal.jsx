@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { X, Search, Loader } from 'lucide-react';
 import Avatar from '../ui/Avatar';
 
@@ -24,37 +24,67 @@ const SendInvitationModalContent = ({ onClose, onSend, onSendByUserId, onSearchU
   const searchResultsRef = useRef(searchResults);
   // eslint-disable-next-line react-hooks/refs -- pre-existing pattern surfaced by eslint-plugin-react-hooks 7.1.1 bump; needs dedicated review (tracked in follow-up)
   onSearchUsersRef.current = onSearchUsers;
-  // eslint-disable-next-line react-hooks/refs -- pre-existing pattern surfaced by eslint-plugin-react-hooks 7.1.1 bump; needs dedicated review (tracked in follow-up)
-  highlightedIndexRef.current = highlightedIndex;
-  // eslint-disable-next-line react-hooks/refs -- pre-existing pattern surfaced by eslint-plugin-react-hooks 7.1.1 bump; needs dedicated review (tracked in follow-up)
-  showDropdownRef.current = showDropdown;
-  // eslint-disable-next-line react-hooks/refs -- pre-existing pattern surfaced by eslint-plugin-react-hooks 7.1.1 bump; needs dedicated review (tracked in follow-up)
-  searchResultsRef.current = searchResults;
+
+  // El resaltado se mueve SIEMPRE por aqui, y la ref se escribe a la vez que
+  // el estado. Copiarla en el cuerpo del componente la dejaba al dia solo
+  // DESPUES de re-renderizar: un `Enter` pisandole los talones al `ArrowDown`
+  // la leia todavia en -1 y no seleccionaba a nadie. El listener se registra
+  // una sola vez, asi que la ref es su unica fuente. Mismo fallo que FE #440
+  // en AddFriendModal, del que este modal es copia.
+  const highlight = useCallback((next) => {
+    highlightedIndexRef.current = next;
+    setHighlightedIndex(next);
+  }, []);
+
+  // Igual que `highlight`: el teclado las lee por ref, asi que se escriben en
+  // el momento y no al re-renderizar. Copiadas en el cuerpo del componente el
+  // hueco era mas estrecho, pero seguia ahi.
+  const openDropdown = useCallback((next) => {
+    showDropdownRef.current = next;
+    setShowDropdown(next);
+  }, []);
+
+  const putResults = useCallback((next) => {
+    searchResultsRef.current = next;
+    setSearchResults(next);
+  }, []);
 
   // Close dropdown on outside click
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setShowDropdown(false);
+        openDropdown(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  }, [openDropdown]);
 
   // Keyboard navigation for dropdown (document-level to avoid focus issues)
   useEffect(() => {
     const handleKeyDown = (e) => {
+      // Escape ANTES de la guarda: una busqueda sin resultados deja el
+      // desplegable abierto con el aviso de «no se ha encontrado a nadie», y
+      // la guarda de abajo —que pide lista con elementos— se llevaba por
+      // delante la unica tecla que podia cerrarlo.
+      if (e.key === 'Escape' && showDropdownRef.current) {
+        openDropdown(false);
+        highlight(-1);
+        return;
+      }
+
       if (!showDropdownRef.current || searchResultsRef.current.length === 0) return;
 
       if (e.key === 'ArrowDown') {
         e.preventDefault();
         const len = searchResultsRef.current.length;
-        setHighlightedIndex(prev => (prev < len - 1 ? prev + 1 : 0));
+        const prev = highlightedIndexRef.current;
+        highlight(prev < len - 1 ? prev + 1 : 0);
       } else if (e.key === 'ArrowUp') {
         e.preventDefault();
         const len = searchResultsRef.current.length;
-        setHighlightedIndex(prev => (prev > 0 ? prev - 1 : len - 1));
+        const prev = highlightedIndexRef.current;
+        highlight(prev > 0 ? prev - 1 : len - 1);
       } else if (e.key === 'Enter') {
         const idx = highlightedIndexRef.current;
         if (idx >= 0 && idx < searchResultsRef.current.length) {
@@ -62,18 +92,15 @@ const SendInvitationModalContent = ({ onClose, onSend, onSendByUserId, onSearchU
           const user = searchResultsRef.current[idx];
           setSelectedUser(user);
           setSearchQuery('');
-          setShowDropdown(false);
+          openDropdown(false);
           setError('');
         }
-      } else if (e.key === 'Escape') {
-        setShowDropdown(false);
-        setHighlightedIndex(-1);
       }
     };
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, [highlight, openDropdown]);
 
   // Scroll highlighted item into view
   useEffect(() => {
@@ -92,8 +119,8 @@ const SendInvitationModalContent = ({ onClose, onSend, onSendByUserId, onSearchU
     const trimmed = searchQuery.trim();
     if (trimmed.length < 2) {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- pre-existing pattern surfaced by eslint-plugin-react-hooks 7.1.1 bump; needs dedicated review (tracked in follow-up)
-      setSearchResults([]);
-      setShowDropdown(false);
+      putResults([]);
+      openDropdown(false);
       setIsSearching(false);
       return;
     }
@@ -105,12 +132,19 @@ const SendInvitationModalContent = ({ onClose, onSend, onSendByUserId, onSearchU
       try {
         const results = await onSearchUsersRef.current(trimmed);
         if (currentRequestId !== searchRequestIdRef.current) return;
-        setSearchResults(results);
-        setShowDropdown(true);
-        setHighlightedIndex(-1);
+        putResults(results);
+        openDropdown(true);
+        highlight(-1);
       } catch {
         if (currentRequestId !== searchRequestIdRef.current) return;
-        setSearchResults([]);
+        // Cerrado, no «vacio»: dejarlo abierto enseñaba el aviso de «no se ha
+        // encontrado a nadie» para lo que en realidad fue un error de red.
+        putResults([]);
+        openDropdown(false);
+        // Simetrico con el camino de exito: sin esto el `aria-activedescendant`
+        // se queda apuntando a una opcion que ya no esta en el DOM, y un lector
+        // de pantalla anuncia algo que no existe.
+        highlight(-1);
       } finally {
         if (currentRequestId === searchRequestIdRef.current) {
           setIsSearching(false);
@@ -123,7 +157,7 @@ const SendInvitationModalContent = ({ onClose, onSend, onSendByUserId, onSearchU
         clearTimeout(searchTimerRef.current);
       }
     };
-  }, [searchQuery]);
+  }, [searchQuery, highlight, openDropdown, putResults]);
 
   const handleEmailSubmit = (e) => {
     e.preventDefault();
@@ -153,19 +187,25 @@ const SendInvitationModalContent = ({ onClose, onSend, onSendByUserId, onSearchU
   const handleSelectUser = (user) => {
     setSelectedUser(user);
     setSearchQuery('');
-    setShowDropdown(false);
+    openDropdown(false);
     setError('');
   };
 
   const handleClearUser = () => {
     setSelectedUser(null);
     setSearchQuery('');
-    setSearchResults([]);
+    putResults([]);
   };
 
   const handleTabChange = (tab) => {
     setActiveTab(tab);
     setError('');
+    // El marcado del desplegable desaparece con la pestana, pero su estado no,
+    // y el listener de teclado es de `document`: dejandolo «abierto», en la
+    // pestana de correo el Enter no enviaba el formulario y las flechas no
+    // movian el cursor dentro del mensaje, porque las interceptaba el.
+    openDropdown(false);
+    highlight(-1);
   };
 
   return (
@@ -269,7 +309,7 @@ const SendInvitationModalContent = ({ onClose, onSend, onSendByUserId, onSearchU
                           id={`search-option-${index}`}
                           type="button"
                           onClick={() => handleSelectUser(user)}
-                          onMouseEnter={() => setHighlightedIndex(index)}
+                          onMouseEnter={() => highlight(index)}
                           className={`w-full px-3 py-2 text-left transition-colors border-b border-gray-100 last:border-b-0 ${
                             index === highlightedIndex ? 'bg-blue-100' : 'hover:bg-gray-50'
                           }`}

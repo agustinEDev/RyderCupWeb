@@ -376,4 +376,86 @@ describe('SendInvitationModal', () => {
     expect(screen.getByTestId('search-result-u2').getAttribute('aria-selected')).toBe('true');
     expect(screen.getByTestId('search-result-u1').getAttribute('aria-selected')).toBe('false');
   });
+
+  it('should stop intercepting keys after switching to the email tab', async () => {
+    // El desplegable desaparece de la pantalla al cambiar de pestana, pero su
+    // estado sobrevivia y el listener es de `document`: en la pestana de
+    // correo se tragaba el Enter, asi que el formulario no se enviaba.
+    const mockResults = [
+      { id: 'u1', firstName: 'John', lastName: 'Doe', email: 'john@test.com', countryCode: 'ES' },
+    ];
+    onSearchUsers.mockResolvedValue(mockResults);
+
+    renderModal();
+    fireEvent.change(screen.getByTestId('user-search-input'), { target: { value: 'Jo' } });
+
+    await act(async () => {
+      vi.advanceTimersByTime(350);
+    });
+
+    fireEvent.click(screen.getByTestId('tab-by-email'));
+
+    act(() => {
+      fireEvent.keyDown(document, { key: 'ArrowDown' });
+      fireEvent.keyDown(document, { key: 'Enter' });
+    });
+
+    // El chip vive en el marcado de la otra pestana, asi que hay que volver
+    // para ver el efecto: si el listener siguiera vivo, el Enter habria
+    // seleccionado a John a espaldas del usuario.
+    fireEvent.click(screen.getByTestId('tab-search-user'));
+
+    expect(screen.queryByTestId('selected-user-chip')).not.toBeInTheDocument();
+  });
+
+  it('should dismiss the no-results notice with Escape', async () => {
+    // Una busqueda sin resultados deja el desplegable abierto con el aviso,
+    // pero la guarda del manejador pedia lista con elementos y salia antes de
+    // llegar al Escape: el aviso no habia manera de quitarlo con el teclado.
+    onSearchUsers.mockResolvedValue([]);
+
+    renderModal();
+    fireEvent.change(screen.getByTestId('user-search-input'), { target: { value: 'zzz' } });
+
+    await act(async () => {
+      vi.advanceTimersByTime(350);
+    });
+
+    expect(screen.getByTestId('no-users-found')).toBeInTheDocument();
+
+    act(() => {
+      fireEvent.keyDown(document, { key: 'Escape' });
+    });
+
+    expect(screen.queryByTestId('no-users-found')).not.toBeInTheDocument();
+  });
+
+  it('should select the highlighted result even if Enter arrives before React re-renders', async () => {
+    // Las dos teclas en el MISMO acto: React no llega a pintar entre una y
+    // otra, que es lo que pasa cuando alguien teclea rapido. Con el indice
+    // copiado a la ref despues del render, el `Enter` leia todavia -1 y no
+    // seleccionaba a nadie. Mismo fallo que FE #440 en AddFriendModal.
+    const mockResults = [
+      { id: 'u1', firstName: 'John', lastName: 'Doe', email: 'john@test.com', countryCode: 'ES' },
+      { id: 'u2', firstName: 'Jane', lastName: 'Smith', email: 'jane@test.com', countryCode: 'US' },
+    ];
+    onSearchUsers.mockResolvedValue(mockResults);
+
+    renderModal();
+    fireEvent.change(screen.getByTestId('user-search-input'), { target: { value: 'Jo' } });
+
+    await act(async () => {
+      vi.advanceTimersByTime(350);
+    });
+
+    act(() => {
+      fireEvent.keyDown(document, { key: 'ArrowDown' });
+      fireEvent.keyDown(document, { key: 'Enter' });
+    });
+
+    // El chip a secas no basta: con dos resultados sembrados, pasaria aunque
+    // el Enter hubiera cogido a Jane. Lo que se prueba es que cogio al que
+    // resalto el ArrowDown.
+    expect(screen.getByTestId('selected-user-chip')).toHaveTextContent('John Doe');
+  });
 });
