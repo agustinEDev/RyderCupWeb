@@ -123,6 +123,46 @@ describe('useQuickMatchScoring · cancelar la partida', () => {
     expect(getQuickMatchUseCase.execute).toHaveBeenCalled();
   });
 
+  it('un sondeo viejo no resucita una partida ya cancelada', async () => {
+    // El sondeo cada 10 s puede salir ANTES del POST y contestar DESPUES: si se
+    // aplicara, devolveria la partida a IN_PROGRESS, la pantalla dejaria anotar
+    // otra vez y cada guardado se estrellaria contra un 409.
+    let contestarSondeo;
+    getQuickMatchUseCase.execute
+      .mockResolvedValueOnce(mockQuickMatch)
+      .mockImplementationOnce(() => new Promise((res) => { contestarSondeo = res; }));
+
+    const { result } = renderHook(() => useQuickMatchScoring('qm-1', 'user-1'));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    // El sondeo sale y se queda en vuelo
+    await act(async () => { result.current.refetch(); });
+
+    cancelQuickMatchUseCase.execute.mockResolvedValue({
+      ...mockQuickMatch,
+      status: 'CANCELLED',
+      isCancelled: true,
+      isInProgress: false,
+    });
+    getQuickMatchUseCase.execute.mockResolvedValue({
+      ...mockQuickMatch,
+      status: 'CANCELLED',
+      isCancelled: true,
+      isInProgress: false,
+    });
+
+    await act(async () => { await result.current.cancelMatch(); });
+    expect(result.current.quickMatch.isCancelled).toBe(true);
+
+    // Y ahora contesta el sondeo viejo, con la foto de antes
+    await act(async () => {
+      contestarSondeo(mockQuickMatch);
+      await Promise.resolve();
+    });
+
+    expect(result.current.quickMatch.isCancelled).toBe(true);
+  });
+
   it('dice que no cuando el servidor lo rechaza, sin ensuciar el aviso de anotar', async () => {
     // El fallo lo cuenta el dialogo. Si acabara en `saveError`, la pantalla
     // pintaria «no se ha podido guardar el resultado» —que no es lo que ha

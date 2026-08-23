@@ -37,6 +37,11 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const holesLoadedRef = useRef(false);
+  // Numero de orden del estado: lo toman tanto el sondeo como las acciones que
+  // cierran la partida. Un sondeo que salio ANTES del POST podia resolver
+  // DESPUES y volver a aplicar su `IN_PROGRESS`, borrando el cierre: la
+  // pantalla volvia a dejar anotar y cada guardado se estrellaba con un 409.
+  const estadoSeqRef = useRef(0);
   const pollIntervalRef = useRef(null);
 
   const fetchQuickMatch = useCallback(async () => {
@@ -44,8 +49,12 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
       setIsLoading(false);
       return;
     }
+    const miSeq = ++estadoSeqRef.current;
     try {
       const data = await getQuickMatchUseCase.execute(quickMatchId);
+      // Si mientras tanto se cerro la partida —o entro otro sondeo—, esta
+      // respuesta ya no es la ultima palabra y aplicarla retrocederia el estado
+      if (miSeq !== estadoSeqRef.current) return;
       setQuickMatch(data);
       setLoadError(null);
 
@@ -129,6 +138,8 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
       // del POST— la pantalla seguiria creyendo la partida viva, editable y
       // anotando contra 409 en bucle.
       const actualizada = await cancelQuickMatchUseCase.execute(quickMatchId);
+      // Invalida cualquier sondeo en vuelo: su foto es anterior al cierre
+      estadoSeqRef.current += 1;
       if (actualizada) {
         setQuickMatch((previa) =>
           previa
@@ -170,6 +181,7 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
       // del POST— la pantalla seguiria creyendo la partida viva, editable y
       // anotando contra 409 en bucle.
       const actualizada = await completeQuickMatchUseCase.execute(quickMatchId);
+      estadoSeqRef.current += 1;
       if (actualizada) {
         setQuickMatch((previa) =>
           previa
