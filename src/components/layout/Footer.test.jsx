@@ -35,6 +35,10 @@ describe('Footer', () => {
 
   afterEach(() => {
     window.matchMedia = originalMatchMedia;
+    Object.defineProperty(window.navigator, 'userAgent', {
+      value: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) Chrome/140.0',
+      configurable: true,
+    });
     Object.defineProperty(window.navigator, 'standalone', { value: undefined, configurable: true });
   });
 
@@ -58,6 +62,13 @@ describe('Footer', () => {
   it('disappears when installed on iOS', () => {
     // iOS no implementa display-mode de forma fiable
     mockMatchMedia(false);
+    // Con el userAgent: `navigator.standalone` solo existe en iOS, y la
+    // deteccion se apoya en el para no fiarse de `display-mode` en los
+    // navegadores de alli basados en WebView
+    Object.defineProperty(window.navigator, 'userAgent', {
+      value: 'Mozilla/5.0 (iPhone; CPU iPhone OS 26_0 like Mac OS X) AppleWebKit/605.1.15',
+      configurable: true,
+    });
     Object.defineProperty(window.navigator, 'standalone', { value: true, configurable: true });
 
     const { container } = renderFooter();

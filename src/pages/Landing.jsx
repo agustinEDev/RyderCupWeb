@@ -6,6 +6,9 @@ import { BarChart3, Download, Share, Trophy, Users, Zap } from 'lucide-react';
 import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
 import { useInstallPrompt } from '../hooks/useInstallPrompt';
+import { useRedirectIfAuthenticated } from '../hooks/useRedirectIfAuthenticated';
+import { useStandalone } from '../hooks/useStandalone';
+import FullScreenLoader from '../components/ui/FullScreenLoader';
 import InstallInstructionsModal from '../components/ui/InstallInstructionsModal';
 import { useEntryMotion } from '../hooks/useEntryMotion';
 import {
@@ -16,14 +19,65 @@ import {
   getRevealProps
 } from '../utils/animations';
 
+// Solo el ARRANQUE, no cualquier visita a `/`. Sin esto, dentro de la
+// aplicacion instalada el logo de la cabecera y «Caracteristicas» —que apuntan
+// a `/` y a `/#features`— rebotaban al panel desde Terminos o Privacidad, y la
+// portada quedaba inalcanzable.
+//
+// La marca vive en `sessionStorage` y no en el modulo: un modulo se reevalua en
+// CADA carga de pagina, y el service worker recarga por su cuenta al entrar una
+// version nueva —tambien al volver de segundo plano—. Con la marca en el
+// modulo, esa recarga contaba como arranque y se llevaba al panel a quien
+// estuviera leyendo la portada. `sessionStorage` dura lo que la pestana, que es
+// justo «esta vez que he abierto la aplicacion».
+const MARCA_DE_ARRANQUE = 'landing:arranque-consumido';
+
+const esElArranqueDeLaApp = () => {
+  try {
+    if (sessionStorage.getItem(MARCA_DE_ARRANQUE)) return false;
+    sessionStorage.setItem(MARCA_DE_ARRANQUE, '1');
+    return true;
+  } catch {
+    // Sin almacenamiento —modo privado de algunos navegadores— se prefiere no
+    // redirigir: ensenar la portada de mas es mucho menos molesto que sacar a
+    // alguien de ella cada vez que entra.
+    return false;
+  }
+};
+
 const Landing = () => {
   const { t } = useTranslation('landing');
   const { t: tCommon } = useTranslation('common');
   const navigate = useNavigate();
   const { canInstall, isIOS, iosInstallRoute, isDesktopSafari, isInstalled, install } = useInstallPrompt();
+  const esAplicacionInstalada = useStandalone();
+  // Se resuelve en el primer render y se queda fijo. Consultarlo aqui y no en
+  // un efecto es deliberado: la decision tiene que estar tomada ANTES de que el
+  // hook mire la sesion, y un efecto llega tarde.
+  const [esElArranque] = useState(esElArranqueDeLaApp);
+  const comprobandoSesion = useRedirectIfAuthenticated({
+    enabled: esAplicacionInstalada && esElArranque,
+  });
   const [showInstallHint, setShowInstallHint] = useState(false);
   const [showInstallModal, setShowInstallModal] = useState(false);
   const { animateEntry, animateOnScroll } = useEntryMotion();
+
+  // Abrir la aplicacion desde su icono con la sesion abierta lleva al panel, no
+  // a la portada: quien la tiene instalada ya sabe lo que es y solo quiere
+  // entrar. En el navegador la portada se sigue viendo con sesion, que es donde
+  // tiene sentido enseñarla o compartirla.
+  //
+  // Se reutiliza el hook del login y no `useAuth` por lo que documenta el
+  // propio hook: en una pagina publica el interceptor NO refresca ante un 401
+  // de `/current-user`, y esta —`/`— es publica. Con `useAuth`, abrir la
+  // aplicacion pasados los 15 minutos del access dejaba a un usuario con
+  // sesion renovable mirando la portada, que es justo lo que esto arregla.
+  //
+  // Y mientras comprueba no se pinta la portada: apareceria entera para
+  // desaparecer un segundo despues.
+  if (comprobandoSesion) {
+    return <FullScreenLoader />;
+  }
 
   const handleGetStarted = () => {
     navigate('/register');

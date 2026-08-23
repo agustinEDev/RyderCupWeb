@@ -104,6 +104,23 @@ describe('useRedirectIfAuthenticated', () => {
     });
   });
 
+  describe('desactivado', () => {
+    beforeEach(() => {
+      storedUser = { id: 'u1' };
+    });
+
+    it('no toca la red ni redirige aunque haya sesión guardada', () => {
+      // La portada lo usa así en el navegador: ahí no debe rebotar al panel, y
+      // tampoco gastar una petición autenticada en cada visita anónima a la
+      // página pública más visitada.
+      const { result } = renderHook(() => useRedirectIfAuthenticated({ enabled: false }));
+
+      expect(result.current).toBe(false);
+      expect(globalThis.fetch).not.toHaveBeenCalled();
+      expect(navigate).not.toHaveBeenCalled();
+    });
+  });
+
   describe('con sesión guardada', () => {
     beforeEach(() => {
       storedUser = { id: 'u1' };
