@@ -146,7 +146,9 @@
     "deleteBody": "It disappears from your list and cannot be recovered from the app. It also stops counting towards your statistics.",
     "deleteHint": "If you only want it out of your statistics, close this and use the eye instead: that one can be undone.",
     "deleteConfirm": "Remove for good",
-    "deleteCancel": "Cancel"
+    "deleteCancel": "Cancel",
+    "deleteBodyInPlay": "It disappears from your list and cannot be recovered from the app. The match carries on for everyone else: you are the one left without it.",
+    "deleteBodyPlain": "It disappears from your list and cannot be recovered from the app."
   },
   "scoring": {
     "matchHeader": "Quick match",

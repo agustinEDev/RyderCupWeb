@@ -66,6 +66,22 @@ const renderPage = () => {
   );
 };
 
+  const matches = (overrides = {}) => ({
+    quickMatches: [
+      {
+        id: 'qm-1',
+        matchFormat: 'SINGLES',
+        status: 'COMPLETED',
+        createdAt: '2026-07-27T10:00:00Z',
+        excludedFromStats: false,
+        ...overrides,
+      },
+    ],
+    totalCount: 1,
+    page: 1,
+    limit: 50,
+  });
+
 describe('MyQuickMatchesPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -398,21 +414,6 @@ describe('MyQuickMatchesPage', () => {
   });
 
   describe('leaving a match out of the statistics', () => {
-    const matches = (overrides = {}) => ({
-      quickMatches: [
-        {
-          id: 'qm-1',
-          matchFormat: 'SINGLES',
-          status: 'COMPLETED',
-          createdAt: '2026-07-27T10:00:00Z',
-          excludedFromStats: false,
-          ...overrides,
-        },
-      ],
-      totalCount: 1,
-      page: 1,
-      limit: 50,
-    });
 
     it('shows an open eye on a match that counts', async () => {
       mockListMyQuickMatches.mockResolvedValue(matches());
@@ -436,6 +437,40 @@ describe('MyQuickMatchesPage', () => {
       expect(eye).toHaveAttribute('aria-label', 'history.excludedFromStats');
       // La etiqueta es lo que lo dice de verdad: el fondo no lo lee nadie
       expect(screen.getByTestId('quick-match-excluded-badge-qm-1')).toBeInTheDocument();
+    });
+
+    it('does not label a cancelled match as not counting', async () => {
+      // La migracion dejo la marca puesta en partidas canceladas, que no
+      // puntuan nunca: ahi la etiqueta no dice nada y, sin ojo, tampoco se
+      // podia quitar.
+      mockListMyQuickMatches.mockResolvedValue(
+        matches({ status: 'CANCELLED', excludedFromStats: true })
+      );
+
+      renderPage();
+
+      await screen.findByTestId('quick-match-history-item-qm-1');
+      expect(screen.queryByTestId('quick-match-excluded-badge-qm-1')).not.toBeInTheDocument();
+      // Ni la etiqueta ni el gris: una tarjeta apagada sin nada que lo
+      // explique es peor que no marcarla
+      expect(screen.getByTestId('quick-match-row-qm-1').className).not.toContain('bg-gray-50');
+    });
+
+    it('does label a match still in play that will not count', async () => {
+      // La migracion pudo dejar la marca puesta en una partida sin terminar, y
+      // ahi si significa algo: cuando la vuelta acabe, no contara. El ojo para
+      // quitarla no aparece hasta que termine, pero enterarse entonces —al
+      // recargar el historial y ver la etiqueta salir de la nada— es peor.
+      mockListMyQuickMatches.mockResolvedValue(
+        matches({ status: 'IN_PROGRESS', excludedFromStats: true })
+      );
+
+      renderPage();
+
+      await screen.findByTestId('quick-match-history-item-qm-1');
+      expect(screen.getByTestId('quick-match-excluded-badge-qm-1')).toBeInTheDocument();
+      // El gris viaja con la etiqueta, nunca por su cuenta
+      expect(screen.getByTestId('quick-match-row-qm-1').className).toContain('bg-gray-50');
     });
 
     it('does not offer the eye on a match still being played', async () => {
@@ -541,6 +576,62 @@ describe('MyQuickMatchesPage', () => {
       const confirmar = await screen.findByRole('button', { name: 'history.deleteConfirm' });
       fireEvent.click(confirmar);
     };
+
+    it.each([['IN_PROGRESS'], ['PENDING']])(
+      'warns that the others keep playing when the %s match is still alive',
+      async (status) => {
+      // «Se va tal y como esta» sugiere que la partida se congela, y no: los
+      // demas siguen anotandola y el unico que la pierde es el que la quita
+      // —con ella se va su unico acceso a la pantalla de anotacion—.
+        mockListMyQuickMatches.mockResolvedValue(matches({ status }));
+
+        renderPage();
+        fireEvent.click(await screen.findByTestId('quick-match-hide-qm-1'));
+
+        expect(screen.getByText(/history.deleteBodyInPlay/)).toBeInTheDocument();
+        expect(screen.queryByText(/history.deleteHint/)).not.toBeInTheDocument();
+      }
+    );
+
+    it('warns plainly on a cancelled match, which is over and never counted', async () => {
+        // Ninguna de las dos existe ahi: no cuenta en ninguna estadistica y no
+        // hay ojo. Y una cancelada SI esta terminada, asi que tampoco vale
+        // decirle que no lo esta.
+      mockListMyQuickMatches.mockResolvedValue(matches({ status: 'CANCELLED' }));
+
+      renderPage();
+      fireEvent.click(await screen.findByTestId('quick-match-hide-qm-1'));
+
+      expect(screen.getByText(/history.deleteBodyPlain/)).toBeInTheDocument();
+      expect(screen.queryByText(/history.deleteHint/)).not.toBeInTheDocument();
+    });
+
+    it('does not repeat the eye advice to someone who already used it', async () => {
+      // Ya la dejo fuera de sus estadisticas: decirle que al quitarla «tambien
+      // dejara de contar», y mandarle a usar el ojo, es contarle como novedad
+      // lo que acaba de hacer.
+      mockListMyQuickMatches.mockResolvedValue(
+        matches({ status: 'COMPLETED', excludedFromStats: true })
+      );
+
+      renderPage();
+      fireEvent.click(await screen.findByTestId('quick-match-hide-qm-1'));
+
+      expect(screen.queryByText(/history.deleteHint/)).not.toBeInTheDocument();
+      expect(screen.getByText(/history.deleteBodyPlain/)).toBeInTheDocument();
+    });
+
+    it('keeps the usual warning, with the eye, on a finished match', async () => {
+      // La otra rama del ternario: sin esto nadie prueba que una terminada
+      // sigue viendo el aviso de siempre. Se comprueba con `deleteHint`, que
+      // es la unica clave que no es prefijo de otra.
+      mockListMyQuickMatches.mockResolvedValue(matches({ status: 'COMPLETED' }));
+
+      renderPage();
+      fireEvent.click(await screen.findByTestId('quick-match-hide-qm-1'));
+
+      expect(screen.getByText(/history.deleteHint/)).toBeInTheDocument();
+    });
 
     it('should ask before removing, and do nothing if you cancel', async () => {
       mockListMyQuickMatches.mockResolvedValue(twoMatches);
