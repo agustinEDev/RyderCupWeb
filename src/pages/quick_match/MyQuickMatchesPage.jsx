@@ -46,6 +46,20 @@ const MyQuickMatchesPage = () => {
   // El ojo no: se deshace pulsándolo otra vez, y un modal ahí solo estorbaría.
   const [matchPendingDeletion, setMatchPendingDeletion] = useState(null);
 
+  // Donde aplica el OJO: solo una partida terminada se puede marcar, el
+  // servidor rechaza el resto con un 409. Ojo con el nombre —no dice si la
+  // partida cuenta: una terminada y excluida es elegible y no cuenta—.
+  const esElegibleParaElOjo = (qm) => qm.status === 'COMPLETED';
+
+  // Y la marca de «no cuenta»: la etiqueta y el gris de la fila van SIEMPRE
+  // juntos —una tarjeta apagada sin nada que lo explique es lo peor de los dos
+  // mundos— asi que la regla vive en un solo sitio. Es mas amplia que la del
+  // ojo a proposito: una marca heredada sobre una partida a medias si dice
+  // algo, porque cuando termine no contara. En una cancelada no, que no contara
+  // nunca.
+  const llevaMarcaDeNoCuenta = (qm) => qm.status !== 'CANCELLED' && excludedIds.has(qm.id);
+
+
   // El ojo: la partida deja de contar en MIS estadísticas, pero sigue en la
   // lista. Es la otra mitad de la separación que dejó a la papelera como
   // «quitar de mi lista» y nada más.
@@ -78,8 +92,8 @@ const MyQuickMatchesPage = () => {
   // Quitar la partida del historial propio. No borra nada ni afecta a lo que
   // ven los demás participantes: cada uno la oculta solo para sí mismo.
   const handleConfirmHide = async () => {
-    const quickMatchId = matchPendingDeletion;
-    if (!quickMatchId) return;
+    if (!matchPendingDeletion) return;
+    const quickMatchId = matchPendingDeletion.id;
     // El aviso se cierra DESPUÉS, no antes: cerrarlo al confirmar dejaba la
     // petición en vuelo sin nada en pantalla que lo dijera, y con la lista
     // intacta. Con una red lenta parecía que el botón no había hecho nada.
@@ -231,8 +245,13 @@ const MyQuickMatchesPage = () => {
                 // partida en dos lineas y pintada encima del resultado. Se
                 // apila: nombre arriba a todo lo ancho, y debajo el resultado
                 // con sus acciones. A partir de `sm` vuelve a una sola linea.
+                // El fondo y la franja van con la etiqueta, no por su cuenta:
+                // el color no lo lee un lector de pantalla ni le dice nada a
+                // quien no vio la fila en el otro estado, asi que una tarjeta
+                // gris sin etiqueta que la explique es lo peor de los dos
+                // mundos.
                 className={`relative flex flex-col sm:flex-row sm:items-stretch border rounded-lg overflow-hidden hover:shadow-sm transition-all ${
-                  excludedIds.has(qm.id)
+                  llevaMarcaDeNoCuenta(qm)
                     ? 'bg-gray-50 border-gray-200 border-l-4 border-l-gray-400'
                     : 'bg-white border-gray-200 hover:border-primary-300'
                 }`}
@@ -262,7 +281,9 @@ const MyQuickMatchesPage = () => {
                         {qm.name && `${t(`history.format.${qm.matchFormat ?? qm.scoringFormat}`, qm.matchFormat ?? qm.scoringFormat)} · `}
                         {new Date(qm.createdAt).toLocaleDateString()}
                       </p>
-                      {excludedIds.has(qm.id) && (
+                      {/* En todo menos en las canceladas: ver
+                          `llevaMarcaDeNoCuenta`. */}
+                      {llevaMarcaDeNoCuenta(qm) && (
                         <span
                           data-testid={`quick-match-excluded-badge-${qm.id}`}
                           className="inline-block mt-1 px-2 py-0.5 rounded-full bg-gray-200 text-gray-700 text-[10px] font-semibold whitespace-nowrap"
@@ -341,7 +362,7 @@ const MyQuickMatchesPage = () => {
                 {/* El ojo solo en las terminadas: una partida a medias no
                     cuenta todavía en ninguna estadística, así que el control
                     no diría nada —y el servidor lo rechaza con un 409. */}
-                {qm.status === 'COMPLETED' && (
+                {esElegibleParaElOjo(qm) && (
                   <button
                     onClick={() => handleToggleStats(qm.id)}
                     disabled={togglingIds.has(qm.id)}
@@ -366,8 +387,16 @@ const MyQuickMatchesPage = () => {
                     )}
                   </button>
                 )}
+                {/* La papelera sigue en todas las filas. Al creador le vendria
+                    bien no tenerla mientras se juega —es el unico que puede
+                    iniciar, terminar o cancelar, asi que al salirse deja la
+                    partida viva y sin nadie que la cierre—, pero hoy no hay
+                    forma de cancelar una en curso desde la aplicacion, y sin
+                    papelera su unica salida seria darla por TERMINADA, metiendo
+                    una vuelta a medias en las estadisticas de todo el grupo. La
+                    guarda va con la accion de cancelar, en #455. */}
                 <button
-                  onClick={() => setMatchPendingDeletion(qm.id)}
+                  onClick={() => setMatchPendingDeletion(qm)}
                   disabled={hidingIds.has(qm.id)}
                   aria-label={t('history.hide')}
                   title={t('history.hide')}
@@ -391,11 +420,31 @@ const MyQuickMatchesPage = () => {
       <ConfirmModal
         isOpen={matchPendingDeletion !== null}
         title={t('history.deleteTitle')}
-        message={`${t('history.deleteBody')} ${t('history.deleteHint')}`}
+        // El texto de siempre habla de estadisticas y remite al ojo. Las dos
+        // cosas son falsas en una partida que no ha terminado: no cuenta en
+        // ninguna estadistica, y ahi no hay ojo al que mandar a nadie.
+        message={(() => {
+          const pendiente = matchPendingDeletion;
+          // El aviso de siempre habla de estadisticas y remite al ojo, y eso
+          // solo es cierto en una partida terminada que todavia cuenta. Fuera
+          // de ahi: una cancelada SI esta terminada, una que se esta jugando
+          // sigue para los demas, y a quien ya uso el ojo no hay que mandarle
+          // a usarlo otra vez.
+          if (pendiente && esElegibleParaElOjo(pendiente) && !excludedIds.has(pendiente.id)) {
+            return `${t('history.deleteBody')} ${t('history.deleteHint')}`;
+          }
+          // PENDING va con IN_PROGRESS, no con CANCELLED: es una partida viva
+          // que el grupo va a jugar, y quitarla deja al usuario sin forma de
+          // volver a entrar. Lo que separa los dos avisos es si la partida
+          // sigue su curso, no si ha empezado.
+          return ['PENDING', 'IN_PROGRESS'].includes(pendiente?.status)
+            ? t('history.deleteBodyInPlay')
+            : t('history.deleteBodyPlain');
+        })()}
         confirmText={t('history.deleteConfirm')}
         cancelText={t('history.deleteCancel')}
         isDestructive
-        isLoading={matchPendingDeletion !== null && hidingIds.has(matchPendingDeletion)}
+        isLoading={matchPendingDeletion !== null && hidingIds.has(matchPendingDeletion.id)}
         onConfirm={handleConfirmHide}
         onCancel={() => setMatchPendingDeletion(null)}
       />

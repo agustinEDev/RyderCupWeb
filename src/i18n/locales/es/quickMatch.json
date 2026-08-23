@@ -146,7 +146,9 @@
     "deleteBody": "Desaparece de tu lista y no se puede recuperar desde la aplicación. También deja de contar en tus estadísticas.",
     "deleteHint": "Si solo quieres que no cuente en tus estadísticas, cierra esto y usa el ojo: eso sí se puede deshacer.",
     "deleteConfirm": "Quitar para siempre",
-    "deleteCancel": "Cancelar"
+    "deleteCancel": "Cancelar",
+    "deleteBodyInPlay": "Desaparece de tu lista y no se puede recuperar desde la aplicación. La partida sigue en juego para los demás: el que se queda sin ella eres tú.",
+    "deleteBodyPlain": "Desaparece de tu lista y no se puede recuperar desde la aplicación."
   },
   "scoring": {
     "matchHeader": "Partida rápida",
