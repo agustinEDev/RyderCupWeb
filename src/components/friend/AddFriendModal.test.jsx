@@ -130,6 +130,90 @@ describe('AddFriendModal', () => {
       expect(screen.queryByTestId('search-results-dropdown')).not.toBeInTheDocument();
     });
     expect(screen.queryByTestId('no-users-found')).not.toBeInTheDocument();
+    // Y lo dice: sin mensaje, la pantalla se queda igual que si no hubieras
+    // buscado, y lo natural es reescribir y volver a fallar en silencio.
+    expect(screen.getByTestId('search-error')).toBeInTheDocument();
+  });
+
+  it('clears the failure notice when a new search starts', async () => {
+    // Si se queda pegado, el usuario ve un error viejo sobre resultados buenos.
+    const onSearchUsers = vi.fn()
+      .mockRejectedValueOnce(new Error('API caida'))
+      .mockResolvedValueOnce(RESULTADOS);
+    pintar({ onSearchUsers });
+
+    fireEvent.change(screen.getByTestId('user-search-input'), { target: { value: 'ana' } });
+    await waitFor(() => expect(screen.getByTestId('search-error')).toBeInTheDocument(), {
+      timeout: 2000,
+    });
+
+    fireEvent.change(screen.getByTestId('user-search-input'), { target: { value: 'anas' } });
+
+    await waitFor(() => {
+      expect(screen.queryByTestId('search-error')).not.toBeInTheDocument();
+    });
+    expect(await screen.findByTestId('search-results-dropdown')).toBeInTheDocument();
+  });
+
+  it('drops the failure notice when the field is emptied', async () => {
+    // Si no, el aviso rojo se queda debajo de un buscador vacio, denunciando
+    // un fallo de una busqueda que ya no existe.
+    const onSearchUsers = vi.fn().mockRejectedValue(new Error('API caida'));
+    pintar({ onSearchUsers });
+
+    fireEvent.change(screen.getByTestId('user-search-input'), { target: { value: 'ana' } });
+    await waitFor(() => expect(screen.getByTestId('search-error')).toBeInTheDocument(), {
+      timeout: 2000,
+    });
+
+    fireEvent.change(screen.getByTestId('user-search-input'), { target: { value: '' } });
+
+    await waitFor(() => {
+      expect(screen.queryByTestId('search-error')).not.toBeInTheDocument();
+    });
+  });
+
+  it('does not let a late failure land on an already-emptied field', async () => {
+    // La rama de menos de dos caracteres no invalidaba la peticion en vuelo,
+    // asi que el rechazo llegaba despues y plantaba el aviso rojo debajo de un
+    // buscador vacio.
+    let rechazar;
+    const onSearchUsers = vi.fn(() => new Promise((_, reject) => { rechazar = reject; }));
+    pintar({ onSearchUsers });
+
+    fireEvent.change(screen.getByTestId('user-search-input'), { target: { value: 'ana' } });
+    await waitFor(() => expect(onSearchUsers).toHaveBeenCalled(), { timeout: 2000 });
+
+    fireEvent.change(screen.getByTestId('user-search-input'), { target: { value: '' } });
+
+    // El rechazo se deja correr del todo ANTES de comprobar: una asercion
+    // negativa dentro de `waitFor` se cumple en la primera pasada —antes de que
+    // el `catch` haya llegado a ejecutarse— y bendecia el fallo que vigila.
+    await act(async () => {
+      rechazar(new Error('API caida'));
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(screen.queryByTestId('search-error')).not.toBeInTheDocument();
+  });
+
+  it('stops pointing at an option that is no longer there when the field is emptied', async () => {
+    // `putResults([])` desmonta las opciones, pero sin limpiar el resaltado el
+    // `aria-activedescendant` seguia nombrando una que ya no existe, y un lector
+    // de pantalla anuncia algo que no esta.
+    pintar();
+    await buscar();
+
+    fireEvent.keyDown(document, { key: 'ArrowDown' });
+    const input = screen.getByTestId('user-search-input');
+    expect(input.getAttribute('aria-activedescendant')).toBeTruthy();
+
+    fireEvent.change(input, { target: { value: '' } });
+
+    await waitFor(() => {
+      expect(input.getAttribute('aria-activedescendant')).toBeFalsy();
+    });
   });
 
   it('closes only the dropdown on the first Escape, leaving the modal open', async () => {

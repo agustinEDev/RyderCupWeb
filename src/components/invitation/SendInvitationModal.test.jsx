@@ -408,6 +408,344 @@ describe('SendInvitationModal', () => {
     expect(screen.queryByTestId('selected-user-chip')).not.toBeInTheDocument();
   });
 
+  it('says so when the search fails, instead of going quiet', async () => {
+    onSearchUsers.mockRejectedValue(new Error('API caida'));
+
+    renderModal();
+    fireEvent.change(screen.getByTestId('user-search-input'), { target: { value: 'Jo' } });
+
+    await act(async () => {
+      vi.advanceTimersByTime(350);
+    });
+
+    expect(screen.getByTestId('search-error')).toBeInTheDocument();
+    // Y no lo hace pasar por «no hay nadie», que es otra cosa
+    expect(screen.queryByTestId('no-users-found')).not.toBeInTheDocument();
+  });
+
+  it('brings the results back when returning to the search tab', async () => {
+    // El campo conservaba el texto pero el desplegable no volvia: el efecto del
+    // debounce solo se relanza si cambia la busqueda, asi que no habia forma de
+    // recuperar los resultados sin editar lo escrito.
+    const mockResults = [
+      { id: 'u1', firstName: 'John', lastName: 'Doe', email: 'john@test.com', countryCode: 'ES' },
+    ];
+    onSearchUsers.mockResolvedValue(mockResults);
+
+    renderModal();
+    fireEvent.change(screen.getByTestId('user-search-input'), { target: { value: 'Jo' } });
+
+    await act(async () => {
+      vi.advanceTimersByTime(350);
+    });
+
+    fireEvent.click(screen.getByTestId('tab-by-email'));
+    fireEvent.click(screen.getByTestId('tab-search-user'));
+
+    expect(screen.getByTestId('search-results-dropdown')).toBeInTheDocument();
+    expect(screen.getByTestId('user-search-input')).toHaveValue('Jo');
+  });
+
+  it('does not open the dropdown when the results land on the email tab', async () => {
+    // Los resultados que llegan tarde reabrian el desplegable estando ya en la
+    // otra pestana: volvia a comerse el Enter del formulario y encima dejaba a
+    // un usuario seleccionado sin que nadie lo eligiera.
+    const mockResults = [
+      { id: 'u1', firstName: 'John', lastName: 'Doe', email: 'john@test.com', countryCode: 'ES' },
+    ];
+    onSearchUsers.mockResolvedValue(mockResults);
+
+    renderModal();
+    fireEvent.change(screen.getByTestId('user-search-input'), { target: { value: 'Jo' } });
+    fireEvent.click(screen.getByTestId('tab-by-email'));
+
+    await act(async () => {
+      vi.advanceTimersByTime(350);
+    });
+
+    act(() => {
+      fireEvent.keyDown(document, { key: 'ArrowDown' });
+      fireEvent.keyDown(document, { key: 'Enter' });
+    });
+
+    fireEvent.click(screen.getByTestId('tab-search-user'));
+    expect(screen.queryByTestId('selected-user-chip')).not.toBeInTheDocument();
+  });
+
+  it('shows the results found while away when returning to the search tab', async () => {
+    // Cambiar de pestana con la peticion en vuelo dejaba el desplegable
+    // cerrado sin que el usuario lo hubiera cerrado, y al volver no habia forma
+    // de ver los resultados sin editar lo escrito.
+    const mockResults = [
+      { id: 'u1', firstName: 'John', lastName: 'Doe', email: 'john@test.com', countryCode: 'ES' },
+    ];
+    onSearchUsers.mockResolvedValue(mockResults);
+
+    renderModal();
+    fireEvent.change(screen.getByTestId('user-search-input'), { target: { value: 'Jo' } });
+    fireEvent.click(screen.getByTestId('tab-by-email'));
+
+    await act(async () => {
+      vi.advanceTimersByTime(350);
+    });
+
+    fireEvent.click(screen.getByTestId('tab-search-user'));
+
+    expect(screen.getByTestId('search-results-dropdown')).toBeInTheDocument();
+  });
+
+  it('does not resurrect results that no longer match what is typed', async () => {
+    // Busca «Jo», cambia a «zzz» y se va a la otra pestana con la peticion en
+    // vuelo: al volver, reabrir la lista de «Jo» le ofreceria a John para una
+    // busqueda en la que nunca aparecio.
+    const mockResults = [
+      { id: 'u1', firstName: 'John', lastName: 'Doe', email: 'john@test.com', countryCode: 'ES' },
+    ];
+    onSearchUsers.mockResolvedValue(mockResults);
+
+    renderModal();
+    fireEvent.change(screen.getByTestId('user-search-input'), { target: { value: 'Jo' } });
+    await act(async () => {
+      vi.advanceTimersByTime(350);
+    });
+
+    fireEvent.change(screen.getByTestId('user-search-input'), { target: { value: 'zzz' } });
+    fireEvent.click(screen.getByTestId('tab-by-email'));
+    fireEvent.click(screen.getByTestId('tab-search-user'));
+
+    expect(screen.queryByTestId('search-result-u1')).not.toBeInTheDocument();
+  });
+
+  it('restores the dropdown even when the tab was clicked with a real mousedown', async () => {
+    // El `mousedown` de la propia pestana llega antes que su `click`, asi que
+    // cualquier intento de recordar «lo cerro el usuario» lo marcaba como
+    // cerrado y la restauracion no ocurria nunca fuera de los tests.
+    const mockResults = [
+      { id: 'u1', firstName: 'John', lastName: 'Doe', email: 'john@test.com', countryCode: 'ES' },
+    ];
+    onSearchUsers.mockResolvedValue(mockResults);
+
+    renderModal();
+    fireEvent.change(screen.getByTestId('user-search-input'), { target: { value: 'Jo' } });
+    await act(async () => {
+      vi.advanceTimersByTime(350);
+    });
+
+    fireEvent.mouseDown(screen.getByTestId('tab-by-email'));
+    fireEvent.click(screen.getByTestId('tab-by-email'));
+    fireEvent.mouseDown(screen.getByTestId('tab-search-user'));
+    fireEvent.click(screen.getByTestId('tab-search-user'));
+
+    expect(screen.getByTestId('search-results-dropdown')).toBeInTheDocument();
+  });
+
+  it('respects a dropdown the user dismissed, even across a tab round trip', async () => {
+    const mockResults = [
+      { id: 'u1', firstName: 'John', lastName: 'Doe', email: 'john@test.com', countryCode: 'ES' },
+    ];
+    onSearchUsers.mockResolvedValue(mockResults);
+
+    renderModal();
+    fireEvent.change(screen.getByTestId('user-search-input'), { target: { value: 'Jo' } });
+    await act(async () => {
+      vi.advanceTimersByTime(350);
+    });
+
+    act(() => {
+      fireEvent.keyDown(document, { key: 'Escape' });
+    });
+    fireEvent.mouseDown(screen.getByTestId('tab-by-email'));
+    fireEvent.click(screen.getByTestId('tab-by-email'));
+    fireEvent.mouseDown(screen.getByTestId('tab-search-user'));
+    fireEvent.click(screen.getByTestId('tab-search-user'));
+
+    expect(screen.queryByTestId('search-results-dropdown')).not.toBeInTheDocument();
+  });
+
+  it('stops pointing at an option that is no longer there when the field is emptied', async () => {
+    const mockResults = [
+      { id: 'u1', firstName: 'John', lastName: 'Doe', email: 'john@test.com', countryCode: 'ES' },
+    ];
+    onSearchUsers.mockResolvedValue(mockResults);
+
+    renderModal();
+    const input = screen.getByTestId('user-search-input');
+    fireEvent.change(input, { target: { value: 'Jo' } });
+    await act(async () => { vi.advanceTimersByTime(350); });
+
+    act(() => { fireEvent.keyDown(document, { key: 'ArrowDown' }); });
+    expect(input.getAttribute('aria-activedescendant')).toBeTruthy();
+
+    fireEvent.change(input, { target: { value: '' } });
+    expect(input.getAttribute('aria-activedescendant')).toBeFalsy();
+  });
+
+  it('restores the dropdown after clicking into the message box and back', async () => {
+    // Pinchar en el mensaje cierra el desplegable pero no es descartarlo: es
+    // seguir usando el formulario. Contarlo como descarte dejaba la
+    // restauracion inservible en el camino mas normal.
+    const mockResults = [
+      { id: 'u1', firstName: 'John', lastName: 'Doe', email: 'john@test.com', countryCode: 'ES' },
+    ];
+    onSearchUsers.mockResolvedValue(mockResults);
+
+    renderModal();
+    fireEvent.change(screen.getByTestId('user-search-input'), { target: { value: 'Jo' } });
+    await act(async () => { vi.advanceTimersByTime(350); });
+
+    fireEvent.mouseDown(screen.getByTestId('invitation-message-input'));
+    fireEvent.click(screen.getByTestId('tab-by-email'));
+    fireEvent.click(screen.getByTestId('tab-search-user'));
+
+    expect(screen.getByTestId('search-results-dropdown')).toBeInTheDocument();
+  });
+
+  it('closes the dropdown with Escape even when focus moved to the message box', async () => {
+    // Se llega tabulando, sin ningun clic que lo cierre: si la guarda de foco
+    // va por delante, Escape deja de funcionar y no queda forma de cerrarlo.
+    const mockResults = [
+      { id: 'u1', firstName: 'John', lastName: 'Doe', email: 'john@test.com', countryCode: 'ES' },
+    ];
+    onSearchUsers.mockResolvedValue(mockResults);
+
+    renderModal();
+    fireEvent.change(screen.getByTestId('user-search-input'), { target: { value: 'Jo' } });
+    await act(async () => { vi.advanceTimersByTime(350); });
+
+    screen.getByTestId('invitation-message-input').focus();
+    act(() => { fireEvent.keyDown(document, { key: 'Escape' }); });
+
+    expect(screen.queryByTestId('search-results-dropdown')).not.toBeInTheDocument();
+  });
+
+  it('still drives the dropdown from the keyboard while typing in the search box', async () => {
+    // La otra cara de la guarda de foco, que ningun test tocaba: si se perdiera
+    // el `ref` del buscador, la guarda se tragaria las flechas y el Enter y la
+    // navegacion con teclado moriria en el navegador con la suite en verde.
+    const mockResults = [
+      { id: 'u1', firstName: 'John', lastName: 'Doe', email: 'john@test.com', countryCode: 'ES' },
+    ];
+    onSearchUsers.mockResolvedValue(mockResults);
+
+    renderModal();
+    const input = screen.getByTestId('user-search-input');
+    fireEvent.change(input, { target: { value: 'Jo' } });
+    await act(async () => { vi.advanceTimersByTime(350); });
+
+    input.focus();
+    act(() => {
+      fireEvent.keyDown(document, { key: 'ArrowDown' });
+      fireEvent.keyDown(document, { key: 'Enter' });
+    });
+
+    expect(screen.getByTestId('selected-user-chip')).toHaveTextContent('John Doe');
+  });
+
+  it('leaves the keyboard alone while the user writes the personal message', async () => {
+    // El listener es de `document`: con el desplegable abierto se comia las
+    // flechas y el Enter de quien estaba escribiendo el mensaje, y el Enter
+    // llegaba a seleccionar a alguien por su cuenta.
+    const mockResults = [
+      { id: 'u1', firstName: 'John', lastName: 'Doe', email: 'john@test.com', countryCode: 'ES' },
+    ];
+    onSearchUsers.mockResolvedValue(mockResults);
+
+    renderModal();
+    fireEvent.change(screen.getByTestId('user-search-input'), { target: { value: 'Jo' } });
+    await act(async () => { vi.advanceTimersByTime(350); });
+
+    screen.getByTestId('invitation-message-input').focus();
+
+    act(() => {
+      fireEvent.keyDown(document, { key: 'ArrowDown' });
+      fireEvent.keyDown(document, { key: 'Enter' });
+    });
+
+    expect(screen.queryByTestId('selected-user-chip')).not.toBeInTheDocument();
+  });
+
+  it('holds a failure that lands on the other tab, and raises it on return', async () => {
+    // Ni saltarselo en la cara al usuario en la pestana de correo, ni perderlo:
+    // sin guardarlo, al volver quedaba el campo escrito y ni lista, ni aviso de
+    // «no hay nadie», ni error. Justo el silencio que este cambio quita.
+    onSearchUsers.mockRejectedValue(new Error('API caida'));
+
+    renderModal();
+    fireEvent.change(screen.getByTestId('user-search-input'), { target: { value: 'Jo' } });
+    fireEvent.click(screen.getByTestId('tab-by-email'));
+
+    await act(async () => { vi.advanceTimersByTime(350); });
+
+    expect(screen.queryByTestId('search-error')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId('tab-search-user'));
+    expect(screen.getByTestId('search-error')).toBeInTheDocument();
+  });
+
+  it('forgets an old dismissal once a new search opens the dropdown', async () => {
+    // Guardar el descarte por texto y no limpiarlo dejaba esa cadena envenenada
+    // para siempre: quien pulso Escape una vez sobre «Jo» no recuperaba ningun
+    // «Jo» futuro al volver de la otra pestana.
+    const mockResults = [
+      { id: 'u1', firstName: 'John', lastName: 'Doe', email: 'john@test.com', countryCode: 'ES' },
+    ];
+    onSearchUsers.mockResolvedValue(mockResults);
+
+    renderModal();
+    fireEvent.change(screen.getByTestId('user-search-input'), { target: { value: 'Jo' } });
+    await act(async () => { vi.advanceTimersByTime(350); });
+
+    act(() => { fireEvent.keyDown(document, { key: 'Escape' }); });
+
+    // Se vacia y se vuelve a escribir lo mismo: es una busqueda nueva
+    fireEvent.change(screen.getByTestId('user-search-input'), { target: { value: '' } });
+    fireEvent.change(screen.getByTestId('user-search-input'), { target: { value: 'Jo' } });
+    await act(async () => { vi.advanceTimersByTime(350); });
+
+    fireEvent.click(screen.getByTestId('tab-by-email'));
+    fireEvent.click(screen.getByTestId('tab-search-user'));
+
+    expect(screen.getByTestId('search-results-dropdown')).toBeInTheDocument();
+  });
+
+  it('does not let a late response land on an already-emptied field', async () => {
+    // La rama de menos de dos caracteres no invalidaba la peticion en vuelo.
+    let resolver;
+    onSearchUsers.mockImplementation(() => new Promise((res) => { resolver = res; }));
+
+    renderModal();
+    fireEvent.change(screen.getByTestId('user-search-input'), { target: { value: 'Jo' } });
+    await act(async () => {
+      vi.advanceTimersByTime(350);
+    });
+
+    fireEvent.change(screen.getByTestId('user-search-input'), { target: { value: '' } });
+
+    await act(async () => {
+      resolver([{ id: 'u1', firstName: 'John', lastName: 'Doe', email: 'john@test.com', countryCode: 'ES' }]);
+      await Promise.resolve();
+    });
+
+    expect(screen.queryByTestId('search-results-dropdown')).not.toBeInTheDocument();
+  });
+
+  it('brings back the no-results notice too, not just the list', async () => {
+    // Con cero resultados el desplegable no se reabria y el aviso depende de
+    // el: se volvia a un campo con texto y ni lista ni explicacion.
+    onSearchUsers.mockResolvedValue([]);
+
+    renderModal();
+    fireEvent.change(screen.getByTestId('user-search-input'), { target: { value: 'zzz' } });
+    await act(async () => {
+      vi.advanceTimersByTime(350);
+    });
+
+    fireEvent.click(screen.getByTestId('tab-by-email'));
+    fireEvent.click(screen.getByTestId('tab-search-user'));
+
+    expect(screen.getByTestId('no-users-found')).toBeInTheDocument();
+  });
+
   it('should dismiss the no-results notice with Escape', async () => {
     // Una busqueda sin resultados deja el desplegable abierto con el aviso,
     // pero la guarda del manejador pedia lista con elementos y salia antes de
