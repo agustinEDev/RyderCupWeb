@@ -18,6 +18,10 @@ const AddFriendModalContent = ({ onClose, onSearchUsers, t }) => {
   const [searchResults, setSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
+  // Un booleano y no el texto ya traducido: `t` llega por props y cambia de
+  // identidad en cada render, asi que meterlo en las dependencias del efecto
+  // de busqueda relanzaria la peticion. Se traduce al pintar.
+  const [searchFailed, setSearchFailed] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const dropdownRef = useRef(null);
   const searchInputRef = useRef(null);
@@ -116,14 +120,24 @@ const AddFriendModalContent = ({ onClose, onSearchUsers, t }) => {
 
     const trimmed = searchQuery.trim();
     if (trimmed.length < 2) {
+      // Invalida lo que este en vuelo: sin esto, una respuesta tardia
+      // aterrizaba sobre el campo ya vacio —la buena reabriendo resultados de
+      // una busqueda que ya no se lee, y la mala plantando el aviso rojo bajo
+      // un buscador en blanco—.
+      searchRequestIdRef.current += 1;
       // eslint-disable-next-line react-hooks/set-state-in-effect -- pre-existing pattern surfaced by eslint-plugin-react-hooks 7.1.1 bump; needs dedicated review (tracked in follow-up)
       putResults([]);
       openDropdown(false);
       setIsSearching(false);
+      setSearchFailed(false);
+      // Como en el camino de error: sin esto el `aria-activedescendant` se
+      // queda apuntando a una opcion que ya no esta en el DOM.
+      highlight(-1);
       return;
     }
 
     setIsSearching(true);
+    setSearchFailed(false);
     searchRequestIdRef.current += 1;
     const currentRequestId = searchRequestIdRef.current;
     searchTimerRef.current = setTimeout(async () => {
@@ -136,7 +150,10 @@ const AddFriendModalContent = ({ onClose, onSearchUsers, t }) => {
       } catch {
         if (currentRequestId !== searchRequestIdRef.current) return;
         // Cerrado, no «vacio»: el aviso de «no se ha encontrado a nadie» seria
-        // mentira para lo que en realidad fue un error de red.
+        // mentira para lo que en realidad fue un error de red. Y con un mensaje
+        // propio: sin el, la pantalla se queda igual que si nunca hubieras
+        // buscado y lo natural es reescribir y volver a fallar en silencio.
+        setSearchFailed(true);
         putResults([]);
         openDropdown(false);
         // Simetrico con el camino de exito: sin esto el `aria-activedescendant`
@@ -262,6 +279,10 @@ const AddFriendModalContent = ({ onClose, onSearchUsers, t }) => {
 
             {showDropdown && searchResults.length === 0 && searchQuery.trim().length >= 2 && !isSearching && (
               <p className="text-xs text-gray-500 mt-1" data-testid="no-users-found">{t('add.noUsersFound')}</p>
+            )}
+
+            {searchFailed && (
+              <p role="alert" className="text-sm text-red-600 mt-1" data-testid="search-error">{t('add.searchFailed')}</p>
             )}
           </div>
 

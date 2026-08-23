@@ -19,7 +19,8 @@
     "searchPlaceholder": "Buscar por nombre...",
     "searchMinChars": "Escribe al menos 2 caracteres",
     "noUsersFound": "No se encontraron usuarios",
-    "opensProfileHint": "Toca a un jugador para ver su perfil y enviarle la solicitud desde ahí."
+    "opensProfileHint": "Toca a un jugador para ver su perfil y enviarle la solicitud desde ahí.",
+    "searchFailed": "No se ha podido buscar. Inténtalo otra vez."
   },
   "status": {
     "PENDING": "Pendiente",
