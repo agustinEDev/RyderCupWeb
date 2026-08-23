@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router';
+import { useNavigate, useNavigationType } from 'react-router';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { BarChart3, Download, Share, Trophy, Users, Zap } from 'lucide-react';
@@ -8,6 +8,7 @@ import Footer from '../components/layout/Footer';
 import { useInstallPrompt } from '../hooks/useInstallPrompt';
 import { useRedirectIfAuthenticated } from '../hooks/useRedirectIfAuthenticated';
 import { useStandalone } from '../hooks/useStandalone';
+import { ARRANCO_EN_LA_PORTADA } from '../utils/appStartup';
 import FullScreenLoader from '../components/ui/FullScreenLoader';
 import InstallInstructionsModal from '../components/ui/InstallInstructionsModal';
 import { useEntryMotion } from '../hooks/useEntryMotion';
@@ -19,42 +20,28 @@ import {
   getRevealProps
 } from '../utils/animations';
 
-// Solo el ARRANQUE, no cualquier visita a `/`. Sin esto, dentro de la
-// aplicacion instalada el logo de la cabecera y «Caracteristicas» —que apuntan
-// a `/` y a `/#features`— rebotaban al panel desde Terminos o Privacidad, y la
-// portada quedaba inalcanzable.
-//
-// La marca vive en `sessionStorage` y no en el modulo: un modulo se reevalua en
-// CADA carga de pagina, y el service worker recarga por su cuenta al entrar una
-// version nueva —tambien al volver de segundo plano—. Con la marca en el
-// modulo, esa recarga contaba como arranque y se llevaba al panel a quien
-// estuviera leyendo la portada. `sessionStorage` dura lo que la pestana, que es
-// justo «esta vez que he abierto la aplicacion».
-const MARCA_DE_ARRANQUE = 'landing:arranque-consumido';
-
-const esElArranqueDeLaApp = () => {
-  try {
-    if (sessionStorage.getItem(MARCA_DE_ARRANQUE)) return false;
-    sessionStorage.setItem(MARCA_DE_ARRANQUE, '1');
-    return true;
-  } catch {
-    // Sin almacenamiento —modo privado de algunos navegadores— se prefiere no
-    // redirigir: ensenar la portada de mas es mucho menos molesto que sacar a
-    // alguien de ella cada vez que entra.
-    return false;
-  }
-};
-
 const Landing = () => {
   const { t } = useTranslation('landing');
   const { t: tCommon } = useTranslation('common');
   const navigate = useNavigate();
   const { canInstall, isIOS, iosInstallRoute, isDesktopSafari, isInstalled, install } = useInstallPrompt();
   const esAplicacionInstalada = useStandalone();
-  // Se resuelve en el primer render y se queda fijo. Consultarlo aqui y no en
-  // un efecto es deliberado: la decision tiene que estar tomada ANTES de que el
-  // hook mire la sesion, y un efecto llega tarde.
-  const [esElArranque] = useState(esElArranqueDeLaApp);
+  // Solo el ARRANQUE, no cualquier visita a `/`: dentro de la aplicación
+  // instalada el logo de la cabecera y «Características» apuntan a `/` y a
+  // `/#features`, y sin esta condición rebotaban al panel desde Términos o
+  // Privacidad dejando la portada inalcanzable.
+  //
+  // Son dos preguntas distintas y hacen falta las dos. `ARRANCO_EN_LA_PORTADA`
+  // mira por dónde se entró, que se decide en el arranque. El tipo de
+  // navegación distingue esa entrada de una llegada por enlace dentro de la
+  // aplicación: la primera es `POP` y un enlace es `PUSH`, así que quien se
+  // registre desde la portada y luego pulse el logo ya no sale rebotado.
+  //
+  // Ninguna de las dos escribe nada aquí: la marca se anota al cargar el
+  // paquete, y un render descartado y reintentado no puede consumirla en
+  // silencio.
+  const tipoDeNavegacion = useNavigationType();
+  const esElArranque = ARRANCO_EN_LA_PORTADA && tipoDeNavegacion === 'POP';
   const comprobandoSesion = useRedirectIfAuthenticated({
     enabled: esAplicacionInstalada && esElArranque,
   });

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
-import { MemoryRouter, Routes, Route } from 'react-router';
+import { render, screen, fireEvent } from '@testing-library/react';
+import { MemoryRouter, Routes, Route, Link } from 'react-router';
 
 // Lo que deciden: si la aplicacion corre instalada, y que hace el hook que
 // resuelve la sesion —redirigir, seguir comprobando o no hacer nada—.
@@ -34,7 +34,11 @@ vi.mock('../hooks/useEntryMotion', () => ({
   useEntryMotion: () => ({ animateEntry: false, animateOnScroll: false }),
 }));
 
-vi.mock('../components/layout/Header', () => ({ default: () => <div /> }));
+// La cabecera de verdad lleva el enlace por el que se sale de la portada; aqui
+// basta con uno que navegue igual —PUSH— para poder volver por el logo
+vi.mock('../components/layout/Header', () => ({
+  default: () => <Link to="/terms">a terminos</Link>,
+}));
 vi.mock('../components/layout/Footer', () => ({ default: () => <div /> }));
 vi.mock('../components/ui/InstallInstructionsModal', () => ({ default: () => null }));
 
@@ -42,17 +46,37 @@ vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (k) => k, i18n: { language: 'es' } }),
 }));
 
-// Cada prueba parte de una aplicacion recien abierta: la marca de arranque
-// vive en `sessionStorage`, asi que sin limpiarla la primera se la come y las
-// siguientes correrian todas como «ya arrancada» —que es lo que hacia que
-// estos tests pasaran incluso borrando la comprobacion que dicen vigilar—.
-const pintar = async () => {
-  const { default: LandingRecienAbierta } = await import('./Landing');
+/**
+ * Abre la aplicacion por `rutaDeEntrada` y devuelve lo pintado.
+ *
+ * Se recargan los modulos y se pone la URL ANTES de importar: por donde se
+ * entro se decide al cargar el paquete, no al montar la portada, asi que sin
+ * las dos cosas todas las pruebas correrian como si siempre se hubiera
+ * arrancado en `/` —que es justo lo que hacia que pasaran incluso borrando la
+ * comprobacion que dicen vigilar—.
+ */
+const abrirLaAplicacion = async (rutaDeEntrada = '/') => {
+  sessionStorage.clear();
+  return recargarLaPagina(rutaDeEntrada);
+};
+
+/**
+ * Recarga la pagina sin cerrar la pestana: vuelve a evaluar los modulos pero
+ * respeta `sessionStorage`. Es lo que hace el service worker por su cuenta al
+ * entrar una version nueva.
+ */
+const recargarLaPagina = async (rutaDeEntrada = '/') => {
+  vi.resetModules();
+  window.history.replaceState({}, '', rutaDeEntrada);
+
+  const { default: Landing } = await import('./Landing');
+
   return render(
-    <MemoryRouter initialEntries={['/']}>
+    <MemoryRouter initialEntries={[rutaDeEntrada]}>
       <Routes>
-        <Route path="/" element={<LandingRecienAbierta />} />
+        <Route path="/" element={<Landing />} />
         <Route path="/dashboard" element={<div data-testid="panel" />} />
+        <Route path="/terms" element={<Link to="/">al inicio</Link>} />
       </Routes>
     </MemoryRouter>
   );
@@ -63,14 +87,12 @@ describe('Landing · abrir la aplicacion instalada', () => {
     instalada = false;
     comprobando = false;
     usosDelHook.length = 0;
-    sessionStorage.clear();
-    vi.resetModules();
   });
 
   it('busca la sesion cuando se abre desde el icono', async () => {
     instalada = true;
 
-    await pintar();
+    await abrirLaAplicacion();
 
     expect(usosDelHook.at(-1)).toEqual({ enabled: true });
   });
@@ -78,39 +100,77 @@ describe('Landing · abrir la aplicacion instalada', () => {
   it('no la busca en el navegador: ahi la portada tiene sentido', async () => {
     instalada = false;
 
-    await pintar();
+    await abrirLaAplicacion();
 
     // Y de paso no se gasta una peticion autenticada en cada visita anonima a
     // la pagina publica mas visitada
     expect(usosDelHook.at(-1)).toEqual({ enabled: false });
   });
 
-  it('solo mira la sesion al arrancar, no al volver a la portada', async () => {
-    // Dentro de la aplicacion, el logo de la cabecera y «Caracteristicas»
-    // apuntan a `/`: si cada visita rebotara al panel, la portada quedaria
-    // inalcanzable desde Terminos o Privacidad.
+  it('no la busca al volver a la portada desde dentro de la aplicacion', async () => {
+    // El logo de la cabecera y «Caracteristicas» apuntan a `/`: si cada visita
+    // rebotara al panel, la portada quedaria inalcanzable desde Terminos o
+    // Privacidad. Se llega por enlace, que es una navegacion PUSH, y no por la
+    // entrada de la aplicacion.
     instalada = true;
 
-    // El «ya arranque» vive en el modulo y sobrevive entre pruebas, asi que se
-    // recarga para partir de una aplicacion recien abierta
-    vi.resetModules();
-    const { default: LandingRecienAbierta } = await import('./Landing');
+    await abrirLaAplicacion('/terms');
+    expect(usosDelHook).toHaveLength(0);
 
-    const pintarLa = () =>
+    fireEvent.click(screen.getByText('al inicio'));
+
+    expect(usosDelHook.at(-1)).toEqual({ enabled: false });
+  });
+
+  it('no la busca al volver a la portada tras haber arrancado en ella', async () => {
+    // El caso que la ruta de entrada sola no cubre: se arranco en `/`, se
+    // navego dentro y se vuelve por el logo. Es PUSH, no la entrada, y quien se
+    // acaba de registrar desde la portada no puede salir rebotado al pulsarlo.
+    instalada = true;
+
+    await abrirLaAplicacion('/');
+    expect(usosDelHook.at(-1)).toEqual({ enabled: true });
+
+    fireEvent.click(screen.getByText('a terminos'));
+    fireEvent.click(screen.getByText('al inicio'));
+
+    expect(usosDelHook.at(-1)).toEqual({ enabled: false });
+  });
+
+  it('no la busca cuando el service worker recarga la pagina', async () => {
+    // Al entrar una version nueva, el service worker recarga solo. Si esa
+    // recarga contara como arranque, se llevaria al panel a quien estuviera
+    // leyendo la portada.
+    instalada = true;
+
+    await abrirLaAplicacion('/');
+    expect(usosDelHook.at(-1)).toEqual({ enabled: true });
+
+    // Sin tocar `sessionStorage`: la pestana es la misma
+    await recargarLaPagina('/');
+
+    expect(usosDelHook.at(-1)).toEqual({ enabled: false });
+  });
+
+  it('no la busca si la aplicacion arranco en otra pantalla', async () => {
+    // La aplicacion instalada de Android captura los enlaces de su ambito: un
+    // enlace compartido a una clasificacion abre AHI, y el primer toque en el
+    // logo montaba la portada por primera vez. Si eso contara como arranque,
+    // quien entrara por un enlace no veria la portada nunca.
+    instalada = true;
+
+    await abrirLaAplicacion('/competitions/7/leaderboard');
+    window.history.replaceState({}, '', '/');
+    await import('./Landing').then(({ default: Landing }) =>
       render(
         <MemoryRouter initialEntries={['/']}>
           <Routes>
-            <Route path="/" element={<LandingRecienAbierta />} />
-            <Route path="/dashboard" element={<div data-testid="panel" />} />
+            <Route path="/" element={<Landing />} />
           </Routes>
         </MemoryRouter>
-      );
+      )
+    );
 
-    const primera = pintarLa();
-    expect(usosDelHook.at(-1)).toEqual({ enabled: true });
-    primera.unmount();
-
-    pintarLa();
     expect(usosDelHook.at(-1)).toEqual({ enabled: false });
   });
 
@@ -120,7 +180,7 @@ describe('Landing · abrir la aplicacion instalada', () => {
     instalada = true;
     comprobando = true;
 
-    await pintar();
+    await abrirLaAplicacion();
 
     expect(screen.queryByText('hero.title')).not.toBeInTheDocument();
   });
@@ -131,7 +191,7 @@ describe('Landing · abrir la aplicacion instalada', () => {
     instalada = true;
     comprobando = false;
 
-    await pintar();
+    await abrirLaAplicacion();
 
     expect(screen.getByText('hero.title')).toBeInTheDocument();
   });

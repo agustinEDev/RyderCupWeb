@@ -37,7 +37,11 @@ const FullScreenLoader = () => {
         height="72"
         style={{ borderRadius: '16px' }}
       />
-      <span style={{ marginTop: '1rem' }}>{t('loading')}</span>
+      {/* Con `defaultValue` porque este componente es tambien el fallback del
+          `Suspense` raiz: ahi se pinta antes de que baje el namespace `common`
+          —i18next va con `useSuspense: false` y un backend perezoso— y `t()`
+          devolveria la clave en crudo, un «loading» en minuscula. */}
+      <span style={{ marginTop: '1rem' }}>{t('loading', { defaultValue: 'Loading…' })}</span>
     </div>
   );
 };

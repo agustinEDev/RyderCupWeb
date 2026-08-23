@@ -9,12 +9,6 @@ import { useState, useEffect } from 'react';
  * mira SOLO eso: no valen los dos a la vez, porque los navegadores de iOS
  * basados en WebView —Chrome— dicen que si a `display-mode` estando en una
  * pestana normal.
- *
- * Ojo: esta deteccion no sirve para decidir si mostrar las instrucciones de
- * "Anadir a pantalla de inicio" en iOS. Ahi `useInstallPrompt` mira solo
- * `navigator.standalone`, porque algunos navegadores basados en WebView
- * (Chrome en iOS) devuelven cierto en `display-mode: standalone` estando en una
- * pestana normal, y las instrucciones desaparecerian sin motivo.
  */
 export function detectStandalone() {
   const ua = navigator.userAgent;
