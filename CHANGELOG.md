@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [2.17.0] - 2026-08-23
+
+### Added
+
+- **Se puede cancelar una partida rápida que está en curso** (#455). Una vuelta que se empieza en el campo y se abandona —lo normal cuando se corta el día— se quedaba en juego **para siempre**: no había forma de cancelarla desde la aplicación, y a quien la creó, que es el único que puede cerrarla, solo le quedaba **darla por terminada**, metiendo una vuelta a medias en las estadísticas de todo el grupo.
+
+  El botón vive junto al de finalizar, en la pantalla de anotación y solo para el creador —el servidor rechaza al resto—, con un aviso que dice lo que hay: se cancela para todo el grupo, no se puede deshacer, lo anotado se conserva y no contará para nadie. Una vez cancelada, la partida **deja de admitir anotaciones** y lo dice en pantalla, porque el resto del grupo no vio el aviso: solo el sondeo cada diez segundos.
+
+### Fixed
+
+- **El `Enter` se perdía al pulsarlo justo después de la flecha abajo** en los buscadores de usuario (#440). El índice resaltado vivía en el estado y se copiaba a una referencia **después** de pintar, mientras que el teclado la lee en el momento: una pulsación rápida leía el valor viejo y no abría nada. Pasaba en el buscador de amigos y en el de invitaciones, que es copia suya. De paso desaparece uno de los dos tests que fallaban a capricho en CI: no estaba mal escrito, es que ganaba o perdía la carrera según la máquina.
+
+- **El desplegable de búsqueda se comía las teclas en la pestaña «Por correo»** (#440). Su marcado desaparecía al cambiar de pestaña pero su estado no, y el manejador es del documento entero: el `Enter` no enviaba el formulario y las flechas no movían el cursor dentro del mensaje.
+
+- **Una búsqueda que fallaba se quedaba muda** (#453). El indicador de carga paraba y la pantalla quedaba igual que si nunca hubieras buscado, así que lo natural era reescribir y volver a fallar en el mismo silencio. Ahora lo dice, y se anuncia también a un lector de pantalla. El aviso **no culpa a la conexión**: el error llega a ciegas y puede ser igual un fallo del servidor o una sesión caducada.
+
+- **Un fallo de red se presentaba como «no se ha encontrado a nadie»** (#453), que es otra cosa: no es que no haya nadie, es que no se ha podido preguntar.
+
+- **Al volver de la pestaña «Por correo», la búsqueda se quedaba colgada** (#453): el campo conservaba el texto pero los resultados no volvían hasta editarlo. Ahora vuelven, sin repetir la petición, salvo que hayas cerrado tú ese desplegable.
+
+- **La etiqueta «No cuenta» aparecía donde no significa nada** (#454). La migración de la versión anterior dejó la marca puesta en partidas **canceladas**, que no puntúan nunca y donde además no hay ojo para quitarla. Ahora la etiqueta —y el fondo gris que la acompaña, que viajan siempre juntos— solo salen donde la marca dice algo, incluidas las partidas a medias: cuando terminen, no contarán.
+
+- **El aviso de la papelera hablaba de estadísticas y remitía al ojo en filas donde no existe ninguna de las dos cosas** (#454). Ahora son tres avisos: el de siempre en una partida terminada que aún cuenta; que la partida sigue para los demás si está viva; y el escueto en una cancelada, que **sí** está terminada. A quien acaba de usar el ojo no se le repite el consejo del ojo.
+
 ## [2.16.2] - 2026-08-22
 
 ### Fixed
