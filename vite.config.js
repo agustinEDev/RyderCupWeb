@@ -211,6 +211,24 @@ export default defineConfig(() => ({
             handler: 'NetworkOnly',
           },
           {
+            // config.js NO entra en el precache: lo escribe entrypoint.sh al
+            // arrancar el contenedor, cuando el manifiesto ya esta hecho. Y sin
+            // el la aplicacion no arranca —`window.APP_CONFIG` se lee una vez
+            // al cargar el modulo, y sin el la URL de la API cae a '' y todas
+            // las peticiones se vuelven relativas—. Como ademas se sirve con
+            // `no-cache`, que NO permite reutilizar la copia cuando no se puede
+            // revalidar, sin esta regla la aplicacion instalada no levantaba
+            // sin cobertura. `StaleWhileRevalidate`: sirve lo guardado y lo
+            // refresca por detras, asi que arranca sin red y se pone al dia en
+            // cuanto la haya.
+            urlPattern: ({ url }) => url.pathname === '/config.js',
+            handler: 'StaleWhileRevalidate',
+            options: {
+              cacheName: 'runtime-config',
+              expiration: { maxEntries: 1 },
+            },
+          },
+          {
             // Google Fonts
             urlPattern: /^https:\/\/fonts\.(googleapis|gstatic)\.com\//,
             handler: 'CacheFirst',
