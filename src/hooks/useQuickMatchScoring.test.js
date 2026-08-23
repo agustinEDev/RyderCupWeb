@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { renderHook, waitFor } from '@testing-library/react';
+import { renderHook, waitFor, act } from '@testing-library/react';
 import { useQuickMatchScoring } from './useQuickMatchScoring';
 
 vi.mock('../composition', () => ({
@@ -8,11 +8,13 @@ vi.mock('../composition', () => ({
   submitQuickMatchHoleScoreUseCase: { execute: vi.fn() },
   submitQuickMatchProxyHoleScoreUseCase: { execute: vi.fn() },
   completeQuickMatchUseCase: { execute: vi.fn() },
+  cancelQuickMatchUseCase: { execute: vi.fn() },
 }));
 
 import {
   getQuickMatchUseCase,
   getGolfCourseUseCase,
+  cancelQuickMatchUseCase,
 } from '../composition';
 
 const mockQuickMatch = {
@@ -92,5 +94,70 @@ describe('useQuickMatchScoring', () => {
     renderHook(() => useQuickMatchScoring('qm-1', 'user-1'));
 
     await waitFor(() => expect(getGolfCourseUseCase.execute).toHaveBeenCalledWith('course-1'));
+  });
+});
+
+describe('useQuickMatchScoring · cancelar la partida', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    getQuickMatchUseCase.execute.mockResolvedValue(mockQuickMatch);
+    getGolfCourseUseCase.execute.mockResolvedValue({ id: 'course-1', name: 'Club', tees: [] });
+  });
+
+  it('dice que si cuando se cancela, y recarga la partida', async () => {
+    // El aviso del dialogo se cierra o no segun este valor: sin contrato, un
+    // `return` sin valor lo dejaria abierto para siempre y ningun test lo veria.
+    cancelQuickMatchUseCase.execute.mockResolvedValue({});
+
+    const { result } = renderHook(() => useQuickMatchScoring('qm-1', 'user-1'));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    getQuickMatchUseCase.execute.mockClear();
+
+    let resultado;
+    await act(async () => {
+      resultado = await result.current.cancelMatch();
+    });
+
+    expect(resultado.ok).toBe(true);
+    expect(cancelQuickMatchUseCase.execute).toHaveBeenCalledWith('qm-1');
+    expect(getQuickMatchUseCase.execute).toHaveBeenCalled();
+  });
+
+  it('dice que no cuando el servidor lo rechaza, sin ensuciar el aviso de anotar', async () => {
+    // El fallo lo cuenta el dialogo. Si acabara en `saveError`, la pantalla
+    // pintaria «no se ha podido guardar el resultado» —que no es lo que ha
+    // pasado— y ademas se quedaria pegado hasta el siguiente guardado bueno.
+    const fallo = new Error('conflicto');
+    fallo.status = 409;
+    cancelQuickMatchUseCase.execute.mockRejectedValue(fallo);
+
+    const { result } = renderHook(() => useQuickMatchScoring('qm-1', 'user-1'));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    let resultado;
+    await act(async () => {
+      resultado = await result.current.cancelMatch();
+    });
+
+    expect(resultado.ok).toBe(false);
+    // Y devuelve el error, para que el dialogo pueda distinguir un 409 —ya
+    // estaba cerrada— de haberse quedado sin cobertura
+    expect(resultado.error).toBe(fallo);
+    expect(result.current.saveError).toBeNull();
+  });
+
+  it('no llama al servidor si no es quien creo la partida', async () => {
+    // El backend lo rechaza con NotQuickMatchCreatorError; pedirselo igual solo
+    // sirve para gastar una peticion y pintar un error.
+    const { result } = renderHook(() => useQuickMatchScoring('qm-1', 'user-2'));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    let resultado;
+    await act(async () => {
+      resultado = await result.current.cancelMatch();
+    });
+
+    expect(resultado.ok).toBe(false);
+    expect(cancelQuickMatchUseCase.execute).not.toHaveBeenCalled();
   });
 });

@@ -94,7 +94,7 @@ describe('QuickMatchClassificationTable', () => {
         participants={participants}
         currentParticipantId="p-1"
         scoringFormat="STABLEFORD"
-        isCompleted={false}
+        showFinalBadge={false}
       />
     );
 
@@ -111,7 +111,7 @@ describe('QuickMatchClassificationTable', () => {
         participants={participants}
         currentParticipantId="p-1"
         scoringFormat="STABLEFORD"
-        isCompleted
+        showFinalBadge
       />
     );
 
