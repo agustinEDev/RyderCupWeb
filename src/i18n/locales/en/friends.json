@@ -19,7 +19,8 @@
     "searchPlaceholder": "Search by name...",
     "searchMinChars": "Type at least 2 characters",
     "noUsersFound": "No users found",
-    "opensProfileHint": "Tap a player to open their profile and send the request from there."
+    "opensProfileHint": "Tap a player to open their profile and send the request from there.",
+    "searchFailed": "The search could not be completed. Try again."
   },
   "status": {
     "PENDING": "Pending",

@@ -146,7 +146,9 @@
     "deleteBody": "Desaparece de tu lista y no se puede recuperar desde la aplicación. También deja de contar en tus estadísticas.",
     "deleteHint": "Si solo quieres que no cuente en tus estadísticas, cierra esto y usa el ojo: eso sí se puede deshacer.",
     "deleteConfirm": "Quitar para siempre",
-    "deleteCancel": "Cancelar"
+    "deleteCancel": "Cancelar",
+    "deleteBodyInPlay": "Desaparece de tu lista y no se puede recuperar desde la aplicación. La partida sigue en juego para los demás: el que se queda sin ella eres tú.",
+    "deleteBodyPlain": "Desaparece de tu lista y no se puede recuperar desde la aplicación."
   },
   "scoring": {
     "matchHeader": "Partida rápida",
@@ -169,8 +171,11 @@
       "confirmTitle": "¿Finalizar la partida?",
       "confirmBody": "Se marcará como completada. Podrás seguir viendo la tarjeta después.",
       "confirm": "Finalizar",
-      "cancel": "Cancelar",
-      "completed": "Partida finalizada"
+      "cancel": "Seguir jugando",
+      "completed": "Partida finalizada",
+      "failed": "No se ha podido finalizar. Puede que otro dispositivo la haya cerrado ya: cierra esto y mira cómo está.",
+      "failedOffline": "No se ha podido finalizar. Comprueba la conexión e inténtalo otra vez.",
+      "failedServer": "No se ha podido finalizar. Vuelve a la lista de partidas y mira cómo está."
     },
     "classification": {
       "title": "Clasificación",
@@ -189,7 +194,9 @@
       "decidedResult": "{{lead}}&{{remaining}}",
       "leads": "{{name}} lidera",
       "holesPlayed": "{{count}} hoyo(s) jugados",
-      "yourRound": "Tu vuelta:"
+      "yourRound": "Tu vuelta:",
+      "cancelledBadge": "C",
+      "cancelledTooltip": "Partida cancelada"
     },
     "scorecard": {
       "strokeReceived": "Recibe {{count}} golpe(s) extra en este hoyo",
@@ -215,7 +222,17 @@
       "saveConflict": "La partida ha cambiado mientras anotabas. Vuelve a cargarla.",
       "saveInvalid": "Ese resultado no es válido."
     },
-    "retry": "Reintentar"
+    "retry": "Reintentar",
+    "cancelMatch": {
+      "button": "Cancelar partida",
+      "confirmTitle": "¿Cancelar la partida?",
+      "confirmBody": "Se cancela para todo el grupo, no solo para ti, y no se puede deshacer. Lo anotado se conserva pero la partida no contará en las estadísticas de nadie.",
+      "confirm": "Cancelar la partida",
+      "cancel": "Seguir jugando",
+      "failed": "No se ha podido cancelar. Puede que otro dispositivo ya la haya cerrado: cierra esto y mira cómo está.",
+      "failedOffline": "No se ha podido cancelar. Comprueba la conexión e inténtalo otra vez.",
+      "failedServer": "No se ha podido cancelar. Vuelve a la lista de partidas y mira cómo está."
+    }
   },
   "personalRound": {
     "inMatch": "({{value}} en el partido)"

@@ -15,7 +15,8 @@
     "personalMessage": "Personal Message (optional)",
     "personalMessagePlaceholder": "Add a personal message to the invitation...",
     "send": "Send Invitation",
-    "sending": "Sending..."
+    "sending": "Sending...",
+    "searchFailed": "The search could not be completed. Try again."
   },
   "status": {
     "PENDING": "Pending",

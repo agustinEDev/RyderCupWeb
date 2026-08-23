@@ -5,6 +5,7 @@ import {
   submitQuickMatchHoleScoreUseCase,
   submitQuickMatchProxyHoleScoreUseCase,
   completeQuickMatchUseCase,
+  cancelQuickMatchUseCase,
 } from '../composition';
 
 const POLL_INTERVAL = 10000; // 10 seconds
@@ -36,6 +37,11 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const holesLoadedRef = useRef(false);
+  // Numero de orden del estado: lo toman tanto el sondeo como las acciones que
+  // cierran la partida. Un sondeo que salio ANTES del POST podia resolver
+  // DESPUES y volver a aplicar su `IN_PROGRESS`, borrando el cierre: la
+  // pantalla volvia a dejar anotar y cada guardado se estrellaba con un 409.
+  const estadoSeqRef = useRef(0);
   const pollIntervalRef = useRef(null);
 
   const fetchQuickMatch = useCallback(async () => {
@@ -43,8 +49,12 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
       setIsLoading(false);
       return;
     }
+    const miSeq = ++estadoSeqRef.current;
     try {
       const data = await getQuickMatchUseCase.execute(quickMatchId);
+      // Si mientras tanto se cerro la partida —o entro otro sondeo—, esta
+      // respuesta ya no es la ultima palabra y aplicarla retrocederia el estado
+      if (miSeq !== estadoSeqRef.current) return;
       setQuickMatch(data);
       setLoadError(null);
 
@@ -113,16 +123,85 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
     [quickMatchId, isScorer, myParticipant, fetchQuickMatch]
   );
 
-  const completeMatch = useCallback(async () => {
-    if (!quickMatchId || !isCreator) return;
+  // Espejo de `completeMatch`: el backend exige creador para las dos
+  // (`NotQuickMatchCreatorError`), asi que el boton vive donde el de terminar.
+  const cancelMatch = useCallback(async () => {
+    if (!quickMatchId || !isCreator) return { ok: false };
 
     setIsSubmitting(true);
     try {
-      await completeQuickMatchUseCase.execute(quickMatchId);
+      // Del DTO que devuelve la accion se toma SOLO el estado: es el DTO base
+      // —sin `holeScores`, `standing` ni `participantStrokes`—, y aplicarlo
+      // entero borraba la tarjeta y recalculaba el neto con cero golpes, es
+      // decir numeros equivocados, no huecos. Se aplica igualmente y no se
+      // espera al refetch porque si este falla —se cae la red justo despues
+      // del POST— la pantalla seguiria creyendo la partida viva, editable y
+      // anotando contra 409 en bucle.
+      const actualizada = await cancelQuickMatchUseCase.execute(quickMatchId);
+      // Invalida cualquier sondeo en vuelo: su foto es anterior al cierre
+      estadoSeqRef.current += 1;
+      if (actualizada) {
+        setQuickMatch((previa) =>
+          previa
+            ? {
+                ...previa,
+                status: actualizada.status,
+                isPending: actualizada.isPending,
+                isInProgress: actualizada.isInProgress,
+                isCompleted: actualizada.isCompleted,
+                isCancelled: actualizada.isCancelled,
+              }
+            : actualizada
+        );
+      }
       setSaveError(null);
       await fetchQuickMatch();
+      return { ok: true };
     } catch (err) {
-      setSaveError(err);
+      // El error NO va a `saveError`: ese banner lo traduce el mapa de errores
+      // de anotar —«no se ha podido guardar el resultado»— y se queda pegado
+      // hasta el siguiente guardado bueno. Se devuelve para que el dialogo
+      // distinga un 409 —ya estaba cerrada— de quedarse sin cobertura.
+      return { ok: false, error: err };
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [quickMatchId, isCreator, fetchQuickMatch]);
+
+  const completeMatch = useCallback(async () => {
+    if (!quickMatchId || !isCreator) return { ok: false };
+
+    setIsSubmitting(true);
+    try {
+      // Del DTO que devuelve la accion se toma SOLO el estado: es el DTO base
+      // —sin `holeScores`, `standing` ni `participantStrokes`—, y aplicarlo
+      // entero borraba la tarjeta y recalculaba el neto con cero golpes, es
+      // decir numeros equivocados, no huecos. Se aplica igualmente y no se
+      // espera al refetch porque si este falla —se cae la red justo despues
+      // del POST— la pantalla seguiria creyendo la partida viva, editable y
+      // anotando contra 409 en bucle.
+      const actualizada = await completeQuickMatchUseCase.execute(quickMatchId);
+      estadoSeqRef.current += 1;
+      if (actualizada) {
+        setQuickMatch((previa) =>
+          previa
+            ? {
+                ...previa,
+                status: actualizada.status,
+                isPending: actualizada.isPending,
+                isInProgress: actualizada.isInProgress,
+                isCompleted: actualizada.isCompleted,
+                isCancelled: actualizada.isCancelled,
+              }
+            : actualizada
+        );
+      }
+      setSaveError(null);
+      await fetchQuickMatch();
+      return { ok: true };
+    } catch (err) {
+      // Mismo motivo que en `cancelMatch`: su fallo no es un fallo de anotar.
+      return { ok: false, error: err };
     } finally {
       setIsSubmitting(false);
     }
@@ -148,6 +227,7 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
     setCurrentHole,
     submitScore,
     completeMatch,
+    cancelMatch,
     refetch: fetchQuickMatch,
   };
 };

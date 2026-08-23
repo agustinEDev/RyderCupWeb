@@ -146,7 +146,9 @@
     "deleteBody": "It disappears from your list and cannot be recovered from the app. It also stops counting towards your statistics.",
     "deleteHint": "If you only want it out of your statistics, close this and use the eye instead: that one can be undone.",
     "deleteConfirm": "Remove for good",
-    "deleteCancel": "Cancel"
+    "deleteCancel": "Cancel",
+    "deleteBodyInPlay": "It disappears from your list and cannot be recovered from the app. The match carries on for everyone else: you are the one left without it.",
+    "deleteBodyPlain": "It disappears from your list and cannot be recovered from the app."
   },
   "scoring": {
     "matchHeader": "Quick match",
@@ -169,8 +171,11 @@
       "confirmTitle": "Finish the match?",
       "confirmBody": "It will be marked as completed. You'll still be able to view the scorecard afterwards.",
       "confirm": "Finish",
-      "cancel": "Cancel",
-      "completed": "Match completed"
+      "cancel": "Keep playing",
+      "completed": "Match completed",
+      "failed": "The match could not be finished. Another device may have closed it already: dismiss this and check how it stands.",
+      "failedOffline": "The match could not be finished. Check your connection and try again.",
+      "failedServer": "The match could not be finished. Go back to your matches and check how it stands."
     },
     "classification": {
       "title": "Classification",
@@ -189,7 +194,9 @@
       "decidedResult": "{{lead}}&{{remaining}}",
       "leads": "{{name}} leads",
       "holesPlayed": "{{count}} hole(s) played",
-      "yourRound": "Your round:"
+      "yourRound": "Your round:",
+      "cancelledBadge": "C",
+      "cancelledTooltip": "Match cancelled"
     },
     "scorecard": {
       "strokeReceived": "Receives {{count}} extra stroke(s) on this hole",
@@ -215,7 +222,17 @@
       "saveConflict": "The match changed while you were scoring. Reload it.",
       "saveInvalid": "That score is not valid."
     },
-    "retry": "Retry"
+    "retry": "Retry",
+    "cancelMatch": {
+      "button": "Cancel match",
+      "confirmTitle": "Cancel this match?",
+      "confirmBody": "It is cancelled for the whole group, not just for you, and cannot be undone. What was scored is kept, but the match will not count towards anyone's statistics.",
+      "confirm": "Cancel the match",
+      "cancel": "Keep playing",
+      "failed": "The match could not be cancelled. Another device may have closed it already: dismiss this and check how it stands.",
+      "failedOffline": "The match could not be cancelled. Check your connection and try again.",
+      "failedServer": "The match could not be cancelled. Go back to your matches and check how it stands."
+    }
   },
   "personalRound": {
     "inMatch": "({{value}} in the match)"

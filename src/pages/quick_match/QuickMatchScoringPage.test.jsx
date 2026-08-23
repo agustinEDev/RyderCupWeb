@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import QuickMatchScoringPage from './QuickMatchScoringPage';
 
@@ -78,6 +78,7 @@ describe('QuickMatchScoringPage', () => {
       setCurrentHole: vi.fn(),
       submitScore: vi.fn(),
       completeMatch: vi.fn(),
+      cancelMatch: vi.fn(),
       refetch: vi.fn(),
     });
   });
@@ -797,5 +798,314 @@ describe('QuickMatchScoringPage · foursomes anota una bola por bando', () => {
       const boton = screen.getByTestId('quick-match-score-button-user-1');
       expect(boton.querySelector('[data-picked-up="true"]')).not.toBeNull();
     });
+  });
+
+});
+
+describe('QuickMatchScoringPage · cancelar una partida en curso', () => {
+  // `baseQuickMatch` esta COMPLETADA; esto es una que se esta jugando
+  const enCurso = { ...baseQuickMatch, status: 'IN_PROGRESS', isCompleted: false };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  const comoCreador = (extra = {}) => {
+    const cancelMatch = vi.fn();
+    mockUseQuickMatchScoring.mockReturnValue({
+      ...baseHookState,
+      quickMatch: enCurso,
+      isCreator: true,
+      setCurrentHole: vi.fn(),
+      submitScore: vi.fn(),
+      completeMatch: vi.fn().mockResolvedValue({ ok: true }),
+      cancelMatch,
+      refetch: vi.fn(),
+      // Al final: antes iba antes y el helper pisaba en silencio cualquier
+      // funcion que le pasaran, asi que el `cancelMatch` de quien lo llamara
+      // no se invocaba nunca y no habia pista de por que.
+      ...extra,
+    });
+    return { cancelMatch };
+  };
+
+  it('offers cancelling to the creator of a match under way', async () => {
+    // Hasta ahora no habia salida para una vuelta que se abandona: el unico
+    // que puede cerrarla acababa dandola por TERMINADA, metiendo una vuelta a
+    // medias en las estadisticas de todo el grupo.
+    comoCreador();
+    renderPage();
+
+    expect(await screen.findByTestId('quick-match-cancel-button')).toBeInTheDocument();
+  });
+
+  it('does not offer it to someone who did not create the match', async () => {
+    // El servidor lo rechaza con NotQuickMatchCreatorError, asi que ofrecerlo
+    // seria enseñar un boton que solo sabe fallar.
+    mockUseQuickMatchScoring.mockReturnValue({
+      ...baseHookState,
+      quickMatch: enCurso,
+      isCreator: false,
+      setCurrentHole: vi.fn(),
+      submitScore: vi.fn(),
+      completeMatch: vi.fn(),
+      cancelMatch: vi.fn(),
+      refetch: vi.fn(),
+    });
+    renderPage();
+
+    await screen.findByTestId('quick-match-scoring-tabs');
+    expect(screen.queryByTestId('quick-match-cancel-button')).not.toBeInTheDocument();
+  });
+
+  it('asks first, and says that it affects the whole group', async () => {
+    comoCreador();
+    renderPage();
+
+    fireEvent.click(await screen.findByTestId('quick-match-cancel-button'));
+
+    expect(screen.getByTestId('quick-match-cancel-body')).toHaveTextContent(
+      'scoring.cancelMatch.confirmBody'
+    );
+  });
+
+  it('does nothing until it is confirmed', async () => {
+    const { cancelMatch } = comoCreador();
+    renderPage();
+
+    fireEvent.click(await screen.findByTestId('quick-match-cancel-button'));
+    expect(cancelMatch).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByTestId('quick-match-cancel-confirm'));
+    expect(cancelMatch).toHaveBeenCalledTimes(1);
+  });
+
+  it('stops accepting scores once the match is cancelled', async () => {
+    // Sin esto la pantalla seguia editable y cada guardado se estrellaba contra
+    // un 409 que se traduce como «vuelve a cargarla»; recargar no la resucita,
+    // asi que el usuario se quedaba reintentando para siempre.
+    mockUseQuickMatchScoring.mockReturnValue({
+      ...baseHookState,
+      quickMatch: { ...enCurso, isCancelled: true },
+      isCreator: true,
+      isScorer: true,
+      myParticipant: enCurso.participants[0],
+      coveredParticipantIds: ['user-1'],
+      setCurrentHole: vi.fn(),
+      submitScore: vi.fn(),
+      completeMatch: vi.fn(),
+      cancelMatch: vi.fn(),
+      refetch: vi.fn(),
+    });
+    const { unmount } = renderPage();
+
+    await screen.findByTestId('quick-match-scoring-tabs');
+    // En modo lectura la casilla deja de ser un boton: no hay donde pulsar
+    expect(screen.queryByTestId('quick-match-score-button-user-1')).not.toBeInTheDocument();
+    unmount();
+
+    // Y la misma partida sin cancelar si deja anotar, que si no esto pasaria
+    // igual con la pantalla rota de cualquier otra forma
+    mockUseQuickMatchScoring.mockReturnValue({
+      ...baseHookState,
+      quickMatch: enCurso,
+      isCreator: true,
+      isScorer: true,
+      myParticipant: enCurso.participants[0],
+      coveredParticipantIds: ['user-1'],
+      setCurrentHole: vi.fn(),
+      submitScore: vi.fn(),
+      completeMatch: vi.fn(),
+      cancelMatch: vi.fn(),
+      refetch: vi.fn(),
+    });
+    renderPage();
+
+    expect(await screen.findByTestId('quick-match-score-button-user-1')).toBeInTheDocument();
+  });
+
+  it('says on screen that the match is cancelled', async () => {
+    // Los demas no vieron el aviso: se enteran por aqui cuando el sondeo traiga
+    // el estado nuevo. Sin esto su pantalla quedaba igual que antes.
+    comoCreador({ quickMatch: { ...enCurso, isCancelled: true } });
+    renderPage();
+
+    expect(await screen.findByTestId('quick-match-cancelled-badge')).toBeInTheDocument();
+  });
+
+  it('keeps the dialog open when cancelling fails', async () => {
+    // Cerrandolo pase lo que pase, un fallo dejaba al usuario delante de la
+    // misma pantalla, con los botones intactos y sin saber que no se cancelo.
+    const cancelMatch = vi.fn().mockResolvedValue({ ok: false });
+    mockUseQuickMatchScoring.mockReturnValue({
+      ...baseHookState,
+      quickMatch: enCurso,
+      isCreator: true,
+      setCurrentHole: vi.fn(),
+      submitScore: vi.fn(),
+      completeMatch: vi.fn().mockResolvedValue({ ok: true }),
+      cancelMatch,
+      refetch: vi.fn(),
+    });
+    renderPage();
+
+    fireEvent.click(await screen.findByTestId('quick-match-cancel-button'));
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('quick-match-cancel-confirm'));
+    });
+
+    expect(screen.getByTestId('quick-match-cancel-confirm')).toBeInTheDocument();
+    // Y con un aviso propio: el general habla de anotar y ademas queda detras
+    // del velo del dialogo, fuera de la vista
+    // Exacto: `toHaveTextContent` casa por subcadena, y con «failed» a secas
+    // este test pasaba tambien con `failedServer` y `failedOffline` —que es lo
+    // que de verdad salia aqui—.
+    expect(screen.getByTestId('quick-match-cancel-error').textContent).toBe(
+      'scoring.cancelMatch.failedServer'
+    );
+  });
+
+  it('blames the connection, not another device, when there is no 409', async () => {
+    // «Puede que otro dispositivo ya la haya cerrado» es una explicacion
+    // concreta y equivocada para el caso mas probable en un campo: sin
+    // cobertura. Solo un 409 significa que ya estaba cerrada.
+    const cancelMatch = vi.fn().mockResolvedValue({ ok: false, error: new Error('sin red') });
+    comoCreador({ cancelMatch });
+    renderPage();
+
+    fireEvent.click(await screen.findByTestId('quick-match-cancel-button'));
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('quick-match-cancel-confirm'));
+    });
+
+    expect(screen.getByTestId('quick-match-cancel-error').textContent).toBe(
+      'scoring.cancelMatch.failedOffline'
+    );
+  });
+
+  it('says it was already closed when the server answers 409', async () => {
+    const conflicto = new Error('conflicto');
+    conflicto.status = 409;
+    const cancelMatch = vi.fn().mockResolvedValue({ ok: false, error: conflicto });
+    comoCreador({ cancelMatch });
+    renderPage();
+
+    fireEvent.click(await screen.findByTestId('quick-match-cancel-button'));
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('quick-match-cancel-confirm'));
+    });
+
+    expect(screen.getByTestId('quick-match-cancel-error').textContent).toBe(
+      'scoring.cancelMatch.failed'
+    );
+  });
+
+  it('leaves the focus somewhere usable after cancelling', async () => {
+    // El boton que abrio el aviso desaparece al cancelar de verdad, asi que
+    // devolver el foco «a donde estaba» lo mandaba a un nodo desmontado y de
+    // ahi al principio de la pagina.
+    // Al cancelarse de verdad la partida pasa a CANCELLED y el boton desaparece,
+    // que es justo lo que deja el foco huerfano. Con un mock fijo eso no pasa.
+    const cancelMatch = vi.fn(() => {
+      mockUseQuickMatchScoring.mockReturnValue({
+        ...baseHookState,
+        quickMatch: { ...enCurso, isCancelled: true },
+        isCreator: true,
+        setCurrentHole: vi.fn(),
+        submitScore: vi.fn(),
+        completeMatch: vi.fn().mockResolvedValue({ ok: true }),
+        cancelMatch: vi.fn().mockResolvedValue({ ok: true }),
+        refetch: vi.fn(),
+      });
+      return Promise.resolve({ ok: true });
+    });
+    comoCreador({ cancelMatch });
+    renderPage();
+
+    // Enfocar de verdad el boton: `fireEvent.click` no mueve el foco, y sin
+    // esto el test pasaba por el foco que la pagina ponia al montarse, no por
+    // lo que dice comprobar.
+    const boton = await screen.findByTestId('quick-match-cancel-button');
+    boton.focus();
+    expect(document.activeElement).toBe(boton);
+
+    fireEvent.click(boton);
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('quick-match-cancel-confirm'));
+    });
+
+    expect(document.activeElement).toBe(screen.getByTestId('quick-match-scoring-tabs'));
+  });
+
+  it('does not touch the focus when the page just loads', async () => {
+    // El efecto corre tambien al montar, con los dos avisos cerrados: si toca
+    // el foco ahi, se lo lleva a las pestanas en cada carga de la pantalla.
+    comoCreador();
+    renderPage();
+
+    await screen.findByTestId('quick-match-scoring-tabs');
+    expect(document.activeElement).toBe(document.body);
+  });
+
+  it('blames the server, not the connection, on a 403 or a 404', async () => {
+    // El backend usa 403 para «ya no eres quien la creo» y 404 para «esa
+    // partida ya no existe»: mandar a mirar el wifi con buena cobertura deja al
+    // usuario reintentando sin enterarse nunca del motivo.
+    const prohibido = new Error('prohibido');
+    prohibido.status = 403;
+    const cancelMatch = vi.fn().mockResolvedValue({ ok: false, error: prohibido });
+    comoCreador({ cancelMatch });
+    renderPage();
+
+    fireEvent.click(await screen.findByTestId('quick-match-cancel-button'));
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('quick-match-cancel-confirm'));
+    });
+
+    expect(screen.getByTestId('quick-match-cancel-error').textContent).toBe(
+      'scoring.cancelMatch.failedServer'
+    );
+  });
+
+  it('forgets the failure notice once the dialog is dismissed with Escape', async () => {
+    // Si no, la proxima vez que abra el dialogo se lo encuentra ya con el error
+    // de la vez anterior, sin haber confirmado nada.
+    const cancelMatch = vi.fn().mockResolvedValue({ ok: false });
+    comoCreador({ cancelMatch });
+    renderPage();
+
+    fireEvent.click(await screen.findByTestId('quick-match-cancel-button'));
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('quick-match-cancel-confirm'));
+    });
+    expect(screen.getByTestId('quick-match-cancel-error')).toBeInTheDocument();
+
+    act(() => { fireEvent.keyDown(document, { key: 'Escape' }); });
+    fireEvent.click(screen.getByTestId('quick-match-cancel-button'));
+
+    expect(screen.queryByTestId('quick-match-cancel-error')).not.toBeInTheDocument();
+  });
+
+  it('keeps the finish dialog open and says so when finishing fails', async () => {
+    // El hermano de al lado se quedaba peor que el nuevo: cerraba pasara lo que
+    // pasara, y la partida seguia en curso sin que nadie dijera que fallo.
+    const completeMatch = vi.fn().mockResolvedValue({ ok: false });
+    comoCreador({ completeMatch });
+    renderPage();
+
+    fireEvent.click(await screen.findByText('scoring.finish.button'));
+    await act(async () => {
+      fireEvent.click(screen.getByText('scoring.finish.confirm'));
+    });
+
+    expect(screen.getByTestId('quick-match-finish-error')).toBeInTheDocument();
+  });
+
+  it('is gone once the match is already cancelled', async () => {
+    comoCreador({ quickMatch: { ...enCurso, isCancelled: true } });
+    renderPage();
+
+    await screen.findByTestId('quick-match-scoring-tabs');
+    expect(screen.queryByTestId('quick-match-cancel-button')).not.toBeInTheDocument();
   });
 });

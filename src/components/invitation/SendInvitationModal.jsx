@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { X, Search, Loader } from 'lucide-react';
 import Avatar from '../ui/Avatar';
 
@@ -7,6 +7,9 @@ const SendInvitationModalContent = ({ onClose, onSend, onSendByUserId, onSearchU
   const [email, setEmail] = useState('');
   const [personalMessage, setPersonalMessage] = useState('');
   const [error, setError] = useState('');
+  // Booleano, no el texto traducido: `t` viene por props y meterlo en las
+  // dependencias del efecto de busqueda relanzaria la peticion.
+  const [searchFailed, setSearchFailed] = useState(false);
 
   // Search state
   const [searchQuery, setSearchQuery] = useState('');
@@ -22,39 +25,108 @@ const SendInvitationModalContent = ({ onClose, onSend, onSendByUserId, onSearchU
   const highlightedIndexRef = useRef(highlightedIndex);
   const showDropdownRef = useRef(showDropdown);
   const searchResultsRef = useRef(searchResults);
+  // A que busqueda pertenecen los resultados que hay en memoria
+  const resultsQueryRef = useRef('');
   // eslint-disable-next-line react-hooks/refs -- pre-existing pattern surfaced by eslint-plugin-react-hooks 7.1.1 bump; needs dedicated review (tracked in follow-up)
   onSearchUsersRef.current = onSearchUsers;
-  // eslint-disable-next-line react-hooks/refs -- pre-existing pattern surfaced by eslint-plugin-react-hooks 7.1.1 bump; needs dedicated review (tracked in follow-up)
-  highlightedIndexRef.current = highlightedIndex;
-  // eslint-disable-next-line react-hooks/refs -- pre-existing pattern surfaced by eslint-plugin-react-hooks 7.1.1 bump; needs dedicated review (tracked in follow-up)
-  showDropdownRef.current = showDropdown;
-  // eslint-disable-next-line react-hooks/refs -- pre-existing pattern surfaced by eslint-plugin-react-hooks 7.1.1 bump; needs dedicated review (tracked in follow-up)
-  searchResultsRef.current = searchResults;
+
+  // El resaltado se mueve SIEMPRE por aqui, y la ref se escribe a la vez que
+  // el estado. Copiarla en el cuerpo del componente la dejaba al dia solo
+  // DESPUES de re-renderizar: un `Enter` pisandole los talones al `ArrowDown`
+  // la leia todavia en -1 y no seleccionaba a nadie. El listener se registra
+  // una sola vez, asi que la ref es su unica fuente. Mismo fallo que FE #440
+  // en AddFriendModal, del que este modal es copia.
+  const highlight = useCallback((next) => {
+    highlightedIndexRef.current = next;
+    setHighlightedIndex(next);
+  }, []);
+
+  // Igual que `highlight`: el teclado las lee por ref, asi que se escriben en
+  // el momento y no al re-renderizar. Copiadas en el cuerpo del componente el
+  // hueco era mas estrecho, pero seguia ahi.
+  const openDropdown = useCallback((next) => {
+    showDropdownRef.current = next;
+    setShowDropdown(next);
+  }, []);
+
+  // La pestana activa, legible desde el efecto de busqueda sin meterla en sus
+  // dependencias; y la busqueda cuyo desplegable cerro el propio usuario.
+  const activeTabRef = useRef('search');
+  const searchInputRef = useRef(null);
+  const modalRef = useRef(null);
+  const descartadaRef = useRef('');
+  // La busqueda que fallo mientras el usuario estaba en la otra pestana
+  const falloPendienteRef = useRef('');
+
+  const putResults = useCallback((next, deQuery = '') => {
+    searchResultsRef.current = next;
+    resultsQueryRef.current = deQuery;
+    setSearchResults(next);
+  }, []);
 
   // Close dropdown on outside click
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setShowDropdown(false);
+        // Pulsar una pestana NO es descartar el desplegable: su `mousedown`
+        // llega antes que su `click`, asi que contarlo como tal impedia
+        // devolver los resultados al volver.
+        // Descartar es pulsar Escape o el fondo. Pinchar en el mensaje, en la
+        // barra de pestanas o en cualquier otro sitio del propio formulario es
+        // seguir usandolo: cierra el desplegable, pero no cuenta como que el
+        // usuario lo haya descartado, o la restauracion al volver de la otra
+        // pestana no llegaba a ocurrir nunca en el camino mas normal.
+        if (showDropdownRef.current && !modalRef.current?.contains(event.target)) {
+          descartadaRef.current = resultsQueryRef.current;
+        }
+        openDropdown(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  }, [openDropdown]);
 
   // Keyboard navigation for dropdown (document-level to avoid focus issues)
   useEffect(() => {
     const handleKeyDown = (e) => {
+      // Escape el PRIMERO de todos: es la unica tecla que cierra el
+      // desplegable, y tiene que funcionar aunque el foco se haya ido al
+      // mensaje —se llega tabulando, sin ningun clic que lo cierre— y aunque la
+      // busqueda no haya devuelto a nadie, que deja el desplegable abierto con
+      // el aviso y la guarda de mas abajo pide lista con elementos.
+      if (e.key === 'Escape' && showDropdownRef.current) {
+        descartadaRef.current = resultsQueryRef.current;
+        openDropdown(false);
+        highlight(-1);
+        return;
+      }
+
+      // El listener es de `document` a proposito, para que las flechas
+      // funcionen sin tener que enfocar el desplegable. Pero eso mismo hacia
+      // que se comiera las flechas y el Enter de quien estaba escribiendo el
+      // mensaje: si el foco esta en otro campo de escritura, el teclado es
+      // suyo, no del desplegable.
+      const enfocado = document.activeElement;
+      const escribiendoEnOtroSitio =
+        enfocado &&
+        enfocado !== searchInputRef.current &&
+        (enfocado.tagName === 'TEXTAREA' ||
+          enfocado.tagName === 'INPUT' ||
+          enfocado.isContentEditable);
+      if (escribiendoEnOtroSitio) return;
+
       if (!showDropdownRef.current || searchResultsRef.current.length === 0) return;
 
       if (e.key === 'ArrowDown') {
         e.preventDefault();
         const len = searchResultsRef.current.length;
-        setHighlightedIndex(prev => (prev < len - 1 ? prev + 1 : 0));
+        const prev = highlightedIndexRef.current;
+        highlight(prev < len - 1 ? prev + 1 : 0);
       } else if (e.key === 'ArrowUp') {
         e.preventDefault();
         const len = searchResultsRef.current.length;
-        setHighlightedIndex(prev => (prev > 0 ? prev - 1 : len - 1));
+        const prev = highlightedIndexRef.current;
+        highlight(prev > 0 ? prev - 1 : len - 1);
       } else if (e.key === 'Enter') {
         const idx = highlightedIndexRef.current;
         if (idx >= 0 && idx < searchResultsRef.current.length) {
@@ -62,18 +134,15 @@ const SendInvitationModalContent = ({ onClose, onSend, onSendByUserId, onSearchU
           const user = searchResultsRef.current[idx];
           setSelectedUser(user);
           setSearchQuery('');
-          setShowDropdown(false);
+          openDropdown(false);
           setError('');
         }
-      } else if (e.key === 'Escape') {
-        setShowDropdown(false);
-        setHighlightedIndex(-1);
       }
     };
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, [highlight, openDropdown]);
 
   // Scroll highlighted item into view
   useEffect(() => {
@@ -91,26 +160,62 @@ const SendInvitationModalContent = ({ onClose, onSend, onSendByUserId, onSearchU
 
     const trimmed = searchQuery.trim();
     if (trimmed.length < 2) {
+      // Invalida lo que este en vuelo: sin esto, una respuesta tardia
+      // aterrizaba sobre el campo ya vacio —la buena reabriendo resultados de
+      // una busqueda que ya no se lee, y la mala plantando el aviso rojo bajo
+      // un buscador en blanco—.
+      searchRequestIdRef.current += 1;
       // eslint-disable-next-line react-hooks/set-state-in-effect -- pre-existing pattern surfaced by eslint-plugin-react-hooks 7.1.1 bump; needs dedicated review (tracked in follow-up)
-      setSearchResults([]);
-      setShowDropdown(false);
+      putResults([]);
+      openDropdown(false);
       setIsSearching(false);
+      setSearchFailed(false);
+      // Como en el camino de error: sin esto el `aria-activedescendant` se
+      // queda apuntando a una opcion que ya no esta en el DOM.
+      highlight(-1);
       return;
     }
 
     setIsSearching(true);
+    setSearchFailed(false);
+    falloPendienteRef.current = '';
     searchRequestIdRef.current += 1;
     const currentRequestId = searchRequestIdRef.current;
     searchTimerRef.current = setTimeout(async () => {
       try {
         const results = await onSearchUsersRef.current(trimmed);
         if (currentRequestId !== searchRequestIdRef.current) return;
-        setSearchResults(results);
-        setShowDropdown(true);
-        setHighlightedIndex(-1);
+        putResults(results, trimmed);
+        // Una busqueda nueva borra el descarte anterior: guardarlo por texto y
+        // no limpiarlo dejaba esa cadena envenenada para siempre —quien pulso
+        // Escape una vez sobre «Jo» ya no podia recuperar ningun «Jo» futuro
+        // al volver de la otra pestana—.
+        descartadaRef.current = '';
+        // Solo si seguimos en la busqueda: si el usuario ya se fue a la pestana
+        // de correo, abrirlo aqui resucita el listener de `document` y le come
+        // el Enter del formulario —y le selecciona a alguien sin decirselo—.
+        openDropdown(activeTabRef.current === 'search');
+        highlight(-1);
       } catch {
         if (currentRequestId !== searchRequestIdRef.current) return;
-        setSearchResults([]);
+        // Cerrado, no «vacio»: dejarlo abierto enseñaba el aviso de «no se ha
+        // encontrado a nadie» para lo que en realidad fue un error de red. Y
+        // con un mensaje propio, que si no la pantalla se queda igual que si
+        // nunca hubieras buscado y lo natural es reescribir y volver a fallar.
+        // Si el usuario ya se fue a la otra pestana, el aviso no se pinta ahi
+        // —le saltaria a la cara denunciando una busqueda que dejo atras—,
+        // pero se guarda: al volver se levanta, que si no se queda el campo
+        // escrito y sin lista, sin aviso y sin error, que es justo el silencio
+        // que este cambio viene a quitar.
+        const enBusqueda = activeTabRef.current === 'search';
+        falloPendienteRef.current = enBusqueda ? '' : trimmed;
+        setSearchFailed(enBusqueda);
+        putResults([]);
+        openDropdown(false);
+        // Simetrico con el camino de exito: sin esto el `aria-activedescendant`
+        // se queda apuntando a una opcion que ya no esta en el DOM, y un lector
+        // de pantalla anuncia algo que no existe.
+        highlight(-1);
       } finally {
         if (currentRequestId === searchRequestIdRef.current) {
           setIsSearching(false);
@@ -123,7 +228,7 @@ const SendInvitationModalContent = ({ onClose, onSend, onSendByUserId, onSearchU
         clearTimeout(searchTimerRef.current);
       }
     };
-  }, [searchQuery]);
+  }, [searchQuery, highlight, openDropdown, putResults]);
 
   const handleEmailSubmit = (e) => {
     e.preventDefault();
@@ -153,24 +258,55 @@ const SendInvitationModalContent = ({ onClose, onSend, onSendByUserId, onSearchU
   const handleSelectUser = (user) => {
     setSelectedUser(user);
     setSearchQuery('');
-    setShowDropdown(false);
+    openDropdown(false);
     setError('');
   };
 
   const handleClearUser = () => {
     setSelectedUser(null);
     setSearchQuery('');
-    setSearchResults([]);
+    putResults([]);
   };
 
   const handleTabChange = (tab) => {
     setActiveTab(tab);
     setError('');
+    highlight(-1);
+    activeTabRef.current = tab;
+    if (tab !== 'search') {
+      // Al salir de la busqueda hay que cerrar el desplegable: su marcado
+      // desaparece con la pestana pero su estado no, y el listener de teclado
+      // es de `document`, asi que en la pestana de correo se tragaba el Enter y
+      // las flechas del mensaje.
+      openDropdown(false);
+      return;
+    }
+    // Al volver se recupera lo que ya se habia encontrado —sigue en memoria, no
+    // hace falta repetir la peticion—, porque el campo conservaba el texto y no
+    // habia forma de ver los resultados otra vez sin editarlo. Con dos
+    // condiciones: que el usuario no lo hubiera cerrado el mismo, y que la
+    // lista sea de la busqueda que se lee ahora en el campo —si la cambio y hay
+    // una peticion en vuelo, resucitar la anterior le ofreceria a alguien que
+    // no ha buscado—.
+    // Se devuelve lo que corresponda a lo que se lee en el campo —vacio
+    // tambien, que entonces toca el aviso de «no se ha encontrado a nadie»,
+    // que depende de esto mismo—, salvo que el usuario cerrara el desplegable
+    // de esa misma busqueda: eso si se respeta.
+    const consulta = searchQuery.trim();
+    if (falloPendienteRef.current === consulta && consulta.length >= 2) {
+      falloPendienteRef.current = '';
+      setSearchFailed(true);
+    }
+    openDropdown(
+      consulta.length >= 2 &&
+        resultsQueryRef.current === consulta &&
+        descartadaRef.current !== consulta
+    );
   };
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
+      <div ref={modalRef} className="bg-white rounded-lg shadow-xl w-full max-w-md">
         <div className="flex items-center justify-between p-4 border-b border-gray-200">
           <h2 className="text-lg font-semibold text-gray-900">{t('send.title')}</h2>
           <button
@@ -243,6 +379,7 @@ const SendInvitationModalContent = ({ onClose, onSend, onSendByUserId, onSearchU
                       placeholder={t('send.searchPlaceholder')}
                       disabled={isProcessing}
                       className="w-full pl-9 pr-8 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:opacity-50"
+                                    ref={searchInputRef}
                       data-testid="user-search-input"
                       role="combobox"
                       aria-expanded={showDropdown && searchResults.length > 0}
@@ -269,7 +406,7 @@ const SendInvitationModalContent = ({ onClose, onSend, onSendByUserId, onSearchU
                           id={`search-option-${index}`}
                           type="button"
                           onClick={() => handleSelectUser(user)}
-                          onMouseEnter={() => setHighlightedIndex(index)}
+                          onMouseEnter={() => highlight(index)}
                           className={`w-full px-3 py-2 text-left transition-colors border-b border-gray-100 last:border-b-0 ${
                             index === highlightedIndex ? 'bg-blue-100' : 'hover:bg-gray-50'
                           }`}
@@ -296,6 +433,10 @@ const SendInvitationModalContent = ({ onClose, onSend, onSendByUserId, onSearchU
                     <p className="text-xs text-gray-500 mt-1" data-testid="no-users-found">{t('send.noUsersFound')}</p>
                   )}
                 </div>
+              )}
+
+              {searchFailed && (
+                <p role="alert" className="text-sm text-red-600 mt-1" data-testid="search-error">{t('send.searchFailed')}</p>
               )}
 
               {error && (

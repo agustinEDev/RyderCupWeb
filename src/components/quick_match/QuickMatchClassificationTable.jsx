@@ -96,15 +96,22 @@ const PersonalRound = ({ round, className = '' }) => {
  * standing instead — an individual points ranking doesn't mean anything there.
  * Split out of the hole-by-hole scorecard so each lives in its own tab.
  */
-const FinishedBadge = ({ t }) => (
-  <span
-    className="ml-1 text-[10px] font-bold text-gray-400 align-super"
-    title={t('scoring.classification.finishedTooltip')}
-    aria-label={t('scoring.classification.finishedTooltip')}
-  >
-    {t('scoring.classification.finishedBadge')}
-  </span>
-);
+// El texto lo decide el estado: «finalizada» en una partida terminada y
+// «cancelada» en una que se abandono. Con un solo texto, un lector de pantalla
+// leia «Partida finalizada» en cada celda de una vuelta que la propia pantalla
+// estaba marcando como CANCELADA.
+const FinishedBadge = ({ t, isCancelled = false }) => {
+  const clave = isCancelled ? 'cancelled' : 'finished';
+  return (
+    <span
+      className="ml-1 text-[10px] font-bold text-gray-400 align-super"
+      title={t(`scoring.classification.${clave}Tooltip`)}
+      aria-label={t(`scoring.classification.${clave}Tooltip`)}
+    >
+      {t(`scoring.classification.${clave}Badge`)}
+    </span>
+  );
+};
 
 const QuickMatchClassificationTable = ({
   holes = [],
@@ -117,7 +124,11 @@ const QuickMatchClassificationTable = ({
   allowancePercentage = 100,
   playMode = 'HANDICAP',
   participantStrokes = [],
-  isCompleted = false,
+  // No es «esta terminada», es «pinta el distintivo de partida cerrada»: se le
+  // pasa true tambien para una cancelada, y con el nombre viejo la siguiente
+  // condicion que alguien colgara de el se activaria ahi sin querer.
+  showFinalBadge = false,
+  isCancelled = false,
   matchFormat = null,
 }) => {
   const { t } = useTranslation('quickMatch');
@@ -213,22 +224,22 @@ const QuickMatchClassificationTable = ({
                   <>
                     <td className="px-2 py-1.5 text-center font-bold text-primary">
                       {row.holesPlayed ? StablefordCalculator.formatToPar(row.netStrokes - row.parPlayed) : '-'}
-                      {isCompleted && <FinishedBadge t={t} />}
+                      {showFinalBadge && <FinishedBadge t={t} isCancelled={isCancelled} />}
                     </td>
                     <td className="px-2 py-1.5 text-center text-gray-700">
                       {row.holesPlayed ? row.netStrokes : '-'}
-                      {isCompleted && <FinishedBadge t={t} />}
+                      {showFinalBadge && <FinishedBadge t={t} isCancelled={isCancelled} />}
                     </td>
                   </>
                 ) : (
                   <td className="px-2 py-1.5 text-center font-bold text-primary">
                     {row.stablefordPoints}
-                    {isCompleted && <FinishedBadge t={t} />}
+                    {showFinalBadge && <FinishedBadge t={t} isCancelled={isCancelled} />}
                   </td>
                 )}
                 <td className="px-2 py-1.5 text-center text-gray-700">
                   {row.totalStrokes || '-'}
-                  {isCompleted && <FinishedBadge t={t} />}
+                  {showFinalBadge && <FinishedBadge t={t} isCancelled={isCancelled} />}
                 </td>
                 <td className="px-2 py-1.5 text-center text-gray-500">{row.holesPlayed || '-'}</td>
               </tr>

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router';
 import { X, Search, Loader } from 'lucide-react';
 import Avatar from '../ui/Avatar';
@@ -18,6 +18,10 @@ const AddFriendModalContent = ({ onClose, onSearchUsers, t }) => {
   const [searchResults, setSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
+  // Un booleano y no el texto ya traducido: `t` llega por props y cambia de
+  // identidad en cada render, asi que meterlo en las dependencias del efecto
+  // de busqueda relanzaria la peticion. Se traduce al pintar.
+  const [searchFailed, setSearchFailed] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const dropdownRef = useRef(null);
   const searchInputRef = useRef(null);
@@ -31,9 +35,32 @@ const AddFriendModalContent = ({ onClose, onSearchUsers, t }) => {
   const openProfileRef = useRef(null);
   useEffect(() => { onSearchUsersRef.current = onSearchUsers; });
   useEffect(() => { onCloseRef.current = onClose; });
-  useEffect(() => { highlightedIndexRef.current = highlightedIndex; });
-  useEffect(() => { showDropdownRef.current = showDropdown; });
-  useEffect(() => { searchResultsRef.current = searchResults; });
+
+  // El resaltado se mueve SIEMPRE por aqui, y la ref se escribe en el mismo
+  // momento que el estado. Antes la ref la copiaba un efecto sin dependencias,
+  // es decir despues del render: entre el `ArrowDown` y ese efecto cabia un
+  // `Enter`, que leia el indice todavia en -1 y se tragaba la pulsacion. El
+  // listener de teclado se registra una sola vez, asi que no puede leer el
+  // estado y la ref es su unica fuente: tiene que estar al dia ya.
+  const highlight = useCallback((next) => {
+    highlightedIndexRef.current = next;
+    setHighlightedIndex(next);
+  }, []);
+
+  // Mismo motivo que `highlight`: el listener de teclado lee estas dos por
+  // ref, asi que tienen que estar al dia en el momento de la pulsacion y no
+  // despues del render. Con la copia tardia, dos `Escape` seguidos cerraban
+  // el desplegable dos veces —el segundo lo veia todavia abierto— y hacia
+  // falta un tercero para cerrar el modal.
+  const openDropdown = useCallback((next) => {
+    showDropdownRef.current = next;
+    setShowDropdown(next);
+  }, []);
+
+  const putResults = useCallback((next) => {
+    searchResultsRef.current = next;
+    setSearchResults(next);
+  }, []);
 
   useEffect(() => {
     searchInputRef.current?.focus();
@@ -42,19 +69,19 @@ const AddFriendModalContent = ({ onClose, onSearchUsers, t }) => {
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setShowDropdown(false);
+        openDropdown(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  }, [openDropdown]);
 
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === 'Escape') {
         if (showDropdownRef.current) {
-          setShowDropdown(false);
-          setHighlightedIndex(-1);
+          openDropdown(false);
+          highlight(-1);
         } else {
           onCloseRef.current();
         }
@@ -66,11 +93,13 @@ const AddFriendModalContent = ({ onClose, onSearchUsers, t }) => {
       if (e.key === 'ArrowDown') {
         e.preventDefault();
         const len = searchResultsRef.current.length;
-        setHighlightedIndex((prev) => (prev < len - 1 ? prev + 1 : 0));
+        const prev = highlightedIndexRef.current;
+        highlight(prev < len - 1 ? prev + 1 : 0);
       } else if (e.key === 'ArrowUp') {
         e.preventDefault();
         const len = searchResultsRef.current.length;
-        setHighlightedIndex((prev) => (prev > 0 ? prev - 1 : len - 1));
+        const prev = highlightedIndexRef.current;
+        highlight(prev > 0 ? prev - 1 : len - 1);
       } else if (e.key === 'Enter') {
         const idx = highlightedIndexRef.current;
         if (idx >= 0 && idx < searchResultsRef.current.length) {
@@ -82,7 +111,7 @@ const AddFriendModalContent = ({ onClose, onSearchUsers, t }) => {
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, [highlight, openDropdown]);
 
   useEffect(() => {
     if (searchTimerRef.current) {
@@ -91,26 +120,46 @@ const AddFriendModalContent = ({ onClose, onSearchUsers, t }) => {
 
     const trimmed = searchQuery.trim();
     if (trimmed.length < 2) {
+      // Invalida lo que este en vuelo: sin esto, una respuesta tardia
+      // aterrizaba sobre el campo ya vacio —la buena reabriendo resultados de
+      // una busqueda que ya no se lee, y la mala plantando el aviso rojo bajo
+      // un buscador en blanco—.
+      searchRequestIdRef.current += 1;
       // eslint-disable-next-line react-hooks/set-state-in-effect -- pre-existing pattern surfaced by eslint-plugin-react-hooks 7.1.1 bump; needs dedicated review (tracked in follow-up)
-      setSearchResults([]);
-      setShowDropdown(false);
+      putResults([]);
+      openDropdown(false);
       setIsSearching(false);
+      setSearchFailed(false);
+      // Como en el camino de error: sin esto el `aria-activedescendant` se
+      // queda apuntando a una opcion que ya no esta en el DOM.
+      highlight(-1);
       return;
     }
 
     setIsSearching(true);
+    setSearchFailed(false);
     searchRequestIdRef.current += 1;
     const currentRequestId = searchRequestIdRef.current;
     searchTimerRef.current = setTimeout(async () => {
       try {
         const results = await onSearchUsersRef.current(trimmed);
         if (currentRequestId !== searchRequestIdRef.current) return;
-        setSearchResults(results);
-        setShowDropdown(true);
-        setHighlightedIndex(-1);
+        putResults(results);
+        openDropdown(true);
+        highlight(-1);
       } catch {
         if (currentRequestId !== searchRequestIdRef.current) return;
-        setSearchResults([]);
+        // Cerrado, no «vacio»: el aviso de «no se ha encontrado a nadie» seria
+        // mentira para lo que en realidad fue un error de red. Y con un mensaje
+        // propio: sin el, la pantalla se queda igual que si nunca hubieras
+        // buscado y lo natural es reescribir y volver a fallar en silencio.
+        setSearchFailed(true);
+        putResults([]);
+        openDropdown(false);
+        // Simetrico con el camino de exito: sin esto el `aria-activedescendant`
+        // se queda apuntando a una opcion que ya no esta en el DOM, y un lector
+        // de pantalla anuncia algo que no existe.
+        highlight(-1);
       } finally {
         if (currentRequestId === searchRequestIdRef.current) {
           setIsSearching(false);
@@ -123,10 +172,10 @@ const AddFriendModalContent = ({ onClose, onSearchUsers, t }) => {
         clearTimeout(searchTimerRef.current);
       }
     };
-  }, [searchQuery]);
+  }, [searchQuery, highlight, openDropdown, putResults]);
 
   const handleOpenProfile = (user) => {
-    setShowDropdown(false);
+    openDropdown(false);
     onClose();
     // De donde se viene, para que el perfil sepa adonde devolver: esta busqueda
     // se abre desde Amigos, y mandar de vuelta al feed obligaria a rehacer el
@@ -206,7 +255,7 @@ const AddFriendModalContent = ({ onClose, onSearchUsers, t }) => {
                     id={`friend-search-option-${index}`}
                     type="button"
                     onClick={() => handleOpenProfile(user)}
-                    onMouseEnter={() => setHighlightedIndex(index)}
+                    onMouseEnter={() => highlight(index)}
                     className={`w-full px-3 py-2 text-left transition-colors border-b border-gray-100 last:border-b-0 ${
                       index === highlightedIndex ? 'bg-blue-100' : 'hover:bg-gray-50'
                     }`}
@@ -230,6 +279,10 @@ const AddFriendModalContent = ({ onClose, onSearchUsers, t }) => {
 
             {showDropdown && searchResults.length === 0 && searchQuery.trim().length >= 2 && !isSearching && (
               <p className="text-xs text-gray-500 mt-1" data-testid="no-users-found">{t('add.noUsersFound')}</p>
+            )}
+
+            {searchFailed && (
+              <p role="alert" className="text-sm text-red-600 mt-1" data-testid="search-error">{t('add.searchFailed')}</p>
             )}
           </div>
 

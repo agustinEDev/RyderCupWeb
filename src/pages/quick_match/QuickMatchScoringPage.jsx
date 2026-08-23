@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router';
 import { Loader, ChevronLeft, ChevronRight, MapPin } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -71,6 +71,15 @@ const QuickMatchScoringPage = () => {
 
   const [activeTab, setActiveTab] = useState('input');
   const [showFinishConfirm, setShowFinishConfirm] = useState(false);
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  // La clave del aviso, no un booleano: un 409 —ya la cerro otro— y quedarse
+  // sin cobertura piden explicaciones distintas.
+  const [cancelFailedKey, setCancelFailedKey] = useState(null);
+  const [finishFailedKey, setFinishFailedKey] = useState(null);
+  const cancelDialogRef = useRef(null);
+  const finishDialogRef = useRef(null);
+  const focoPrevioRef = useRef(null);
+  const tabsRef = useRef(null);
 
   const {
     quickMatch,
@@ -90,17 +99,56 @@ const QuickMatchScoringPage = () => {
     setCurrentHole,
     submitScore,
     completeMatch,
+    cancelMatch,
     refetch,
   } = useQuickMatchScoring(quickMatchId, user?.id);
 
   useEffect(() => {
-    if (!showFinishConfirm) return;
+    // El foco entra en el aviso al abrirse. Sin esto se queda en el boton de
+    // debajo del velo: el tabulador pasea por la pagina de detras y un lector
+    // de pantalla no llega a leer ni la advertencia ni el fallo. El
+    // atrapamiento completo del foco es otra cosa, y va en #389.
+    if (showCancelConfirm || showFinishConfirm) {
+      // `body` no cuenta como foco previo: en Safari tocar un boton no lo
+      // enfoca, y guardarlo hacia que al cerrar se «restaurara» a body —que no
+      // hace nada— y el respaldo de las pestanas no se usara jamas.
+      const activo = document.activeElement;
+      focoPrevioRef.current = activo && activo !== document.body ? activo : null;
+      (showCancelConfirm ? cancelDialogRef : finishDialogRef).current?.focus();
+      return;
+    }
+    // Y al cerrarse vuelve donde estaba: el contenedor enfocado se desmonta y
+    // el foco caeria al principio de la pagina, dejando tirado a quien navega
+    // con teclado o lector de pantalla. Si el boton que lo abrio ya no existe
+    // —al cancelar de verdad, desaparece— el foco va a las pestanas, que
+    // siguen ahi.
+    // Sin foco guardado no ha habido ningun aviso abierto —esto corre tambien
+    // al montar la pagina— y aqui no hay nada que devolver: tocarlo movia el
+    // foco a las pestanas en cada carga.
+    const previo = focoPrevioRef.current;
+    if (!previo) return;
+    focoPrevioRef.current = null;
+    if (previo.isConnected) {
+      previo.focus?.();
+      return;
+    }
+    tabsRef.current?.focus?.();
+  }, [showFinishConfirm, showCancelConfirm]);
+
+  useEffect(() => {
+    if (!showFinishConfirm && !showCancelConfirm) return;
     const handleKeyDown = (e) => {
-      if (e.key === 'Escape' && !isSubmitting) setShowFinishConfirm(false);
+      if (e.key !== 'Escape' || isSubmitting) return;
+      // Tambien el aviso de fallo: si no, el dialogo se volvia a abrir la
+      // proxima vez con el error de la vez anterior ya puesto.
+      setFinishFailedKey(null);
+      setCancelFailedKey(null);
+      setShowFinishConfirm(false);
+      setShowCancelConfirm(false);
     };
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [showFinishConfirm, isSubmitting]);
+  }, [showFinishConfirm, showCancelConfirm, isSubmitting]);
 
   if (isLoadingUser || isLoading) {
     return (
@@ -235,7 +283,11 @@ const QuickMatchScoringPage = () => {
   const isFoursomes = quickMatch?.matchFormat === 'FOURSOMES';
   const entries = isFoursomes ? sideEntries() : playerEntries();
 
-  const isReadOnly = !isScorer || quickMatch?.isCompleted || isSubmitting;
+  // `isCancelled` cuenta igual que `isCompleted`: la partida ya no admite
+  // anotaciones. Sin el, la pantalla seguia viva y cada guardado se estrellaba
+  // contra un 409 que se traduce como «vuelve a cargarla» —y recargar no la
+  // resucita, asi que el usuario se queda reintentando para siempre—.
+  const isReadOnly = !isScorer || quickMatch?.isCompleted || quickMatch?.isCancelled || isSubmitting;
 
   const handleScoreChange = (participantId, score) => {
     submitScore(currentHole, participantId, score);
@@ -249,9 +301,53 @@ const QuickMatchScoringPage = () => {
     if (currentHole < totalHoles) setCurrentHole(currentHole + 1);
   };
 
+  // Tres explicaciones, porque son tres cosas distintas: un 409 es que la
+  // partida ya esta cerrada —otro dispositivo se adelanto—; sin `status` no ha
+  // llegado a haber respuesta, que en un campo suele ser la cobertura; y un
+  // 403, un 404 o un 5xx son un no del servidor que no sabemos explicar, asi
+  // que no se inventa ninguno.
+  // El sondeo puede cerrar la partida mientras el aviso esta abierto
+  const yaCerrada = !!quickMatch?.isCompleted || !!quickMatch?.isCancelled;
+
+  const claveDeFallo = (base, error) => {
+    if (error?.status === 409) return `${base}.failed`;
+    if (error?.status) return `${base}.failedServer`;
+    // Sin error no hubo ni intento: es la guarda de creador, no la cobertura.
+    if (!error) return `${base}.failedServer`;
+    // OJO: un fallo de CSRF cae aqui, en «mira la conexion», porque `api.js`
+    // lo lanza pelado —sin `status` ni `errorCode`, al contrario que el resto—
+    // y no hay forma de distinguirlo sin tocar ese servicio, que usa toda la
+    // aplicacion. Da igual de cara al usuario: ese mismo fallo arranca el
+    // cierre de sesion, asi que no se queda leyendo este aviso.
+    return `${base}.failedOffline`;
+  };
+
   const handleFinishConfirm = async () => {
-    await completeMatch();
-    setShowFinishConfirm(false);
+    setFinishFailedKey(null);
+    const { ok, error } = (await completeMatch()) ?? {};
+    if (ok) {
+      setShowFinishConfirm(false);
+      return;
+    }
+    setFinishFailedKey(claveDeFallo('scoring.finish', error));
+    refetch();
+  };
+
+  const handleCancelConfirm = async () => {
+    // Solo se cierra si de verdad se cancelo, y el fallo se cuenta AQUI dentro:
+    // el aviso general vive detras del velo del dialogo y su texto habla de
+    // anotar —«no se ha podido guardar el resultado»—, que no es lo que acaba
+    // de pasar.
+    setCancelFailedKey(null);
+    const { ok, error } = (await cancelMatch()) ?? {};
+    if (ok) {
+      setShowCancelConfirm(false);
+      return;
+    }
+    setCancelFailedKey(claveDeFallo('scoring.cancelMatch', error));
+    // Recargar: si fallo porque otro dispositivo ya la cerro, el estado nuevo
+    // se lleva por delante los botones que ya no valen.
+    refetch();
   };
 
   return (
@@ -303,9 +399,20 @@ const QuickMatchScoringPage = () => {
               {t('scoring.finish.completed')}
             </span>
           )}
+          {/* El resto del grupo no vio el aviso: se entera por aqui, cuando el
+              sondeo traiga el estado nuevo. Sin esto su pantalla quedaba
+              exactamente igual que antes de cancelarse la partida. */}
+          {quickMatch?.isCancelled && (
+            <span
+              data-testid="quick-match-cancelled-badge"
+              className="text-sm font-medium text-red-700 bg-red-100 px-2.5 py-1 rounded-full"
+            >
+              {t('history.status.CANCELLED')}
+            </span>
+          )}
         </div>
 
-        <div className="flex border-b border-gray-200 mb-4" data-testid="quick-match-scoring-tabs">
+        <div ref={tabsRef} tabIndex={-1} className="flex border-b border-gray-200 mb-4 focus:outline-none" data-testid="quick-match-scoring-tabs">
           {TABS.map((tab) => (
             <button
               key={tab}
@@ -376,13 +483,26 @@ const QuickMatchScoringPage = () => {
               </>
             )}
 
-            {isCreator && !quickMatch?.isCompleted && (
-              <button
-                onClick={() => setShowFinishConfirm(true)}
-                className="w-full px-4 py-2 text-red-600 border border-red-200 rounded-lg text-sm font-medium hover:bg-red-50"
-              >
-                {t('scoring.finish.button')}
-              </button>
+            {isCreator && !quickMatch?.isCompleted && !quickMatch?.isCancelled && (
+              <div className="flex flex-col gap-2">
+                <button
+                  onClick={() => setShowFinishConfirm(true)}
+                  className="w-full px-4 py-2 text-red-600 border border-red-200 rounded-lg text-sm font-medium hover:bg-red-50"
+                >
+                  {t('scoring.finish.button')}
+                </button>
+                {/* Cancelar es la salida de una vuelta que se abandona: hasta
+                    ahora no habia ninguna, y quien la habia creado —el unico
+                    que puede cerrarla— acababa dandola por TERMINADA, metiendo
+                    una vuelta a medias en las estadisticas de todo el grupo. */}
+                <button
+                  onClick={() => setShowCancelConfirm(true)}
+                  data-testid="quick-match-cancel-button"
+                  className="w-full px-4 py-2 text-gray-600 border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50"
+                >
+                  {t('scoring.cancelMatch.button')}
+                </button>
+              </div>
             )}
           </div>
         )}
@@ -400,7 +520,8 @@ const QuickMatchScoringPage = () => {
             playMode={quickMatch?.playMode}
             participantStrokes={quickMatch?.participantStrokes ?? []}
             matchFormat={quickMatch?.matchFormat}
-            isCompleted={!!quickMatch?.isCompleted}
+            showFinalBadge={yaCerrada}
+            isCancelled={!!quickMatch?.isCancelled}
           />
         )}
 
@@ -423,16 +544,28 @@ const QuickMatchScoringPage = () => {
       {showFinishConfirm && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div
-            className="bg-white rounded-lg shadow-xl w-full max-w-sm p-4"
+            ref={finishDialogRef}
+            tabIndex={-1}
+            className="bg-white rounded-lg shadow-xl w-full max-w-sm p-4 focus:outline-none"
             role="dialog"
             aria-modal="true"
             aria-labelledby="quick-match-finish-title"
           >
             <h3 id="quick-match-finish-title" className="text-lg font-semibold text-gray-900 mb-1">{t('scoring.finish.confirmTitle')}</h3>
             <p className="text-sm text-gray-500 mb-4">{t('scoring.finish.confirmBody')}</p>
+            {yaCerrada && !finishFailedKey && !isSubmitting && (
+              <p role="alert" className="text-sm text-red-600 mb-4" data-testid="quick-match-finish-stale">
+                {t('scoring.finish.failed')}
+              </p>
+            )}
+            {finishFailedKey && (
+              <p role="alert" className="text-sm text-red-600 mb-4" data-testid="quick-match-finish-error">
+                {t(finishFailedKey)}
+              </p>
+            )}
             <div className="flex justify-end gap-3">
               <button
-                onClick={() => setShowFinishConfirm(false)}
+                onClick={() => { setFinishFailedKey(null); setShowFinishConfirm(false); }}
                 disabled={isSubmitting}
                 className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
               >
@@ -440,10 +573,57 @@ const QuickMatchScoringPage = () => {
               </button>
               <button
                 onClick={handleFinishConfirm}
-                disabled={isSubmitting}
+                disabled={isSubmitting || yaCerrada}
                 className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 disabled:opacity-50"
               >
                 {t('scoring.finish.confirm')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showCancelConfirm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div
+            ref={cancelDialogRef}
+            tabIndex={-1}
+            className="bg-white rounded-lg shadow-xl w-full max-w-sm p-4 focus:outline-none"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="quick-match-cancel-title"
+          >
+            <h3 id="quick-match-cancel-title" className="text-lg font-semibold text-gray-900 mb-1">
+              {t('scoring.cancelMatch.confirmTitle')}
+            </h3>
+            <p className="text-sm text-gray-500 mb-4" data-testid="quick-match-cancel-body">
+              {t('scoring.cancelMatch.confirmBody')}
+            </p>
+            {yaCerrada && !cancelFailedKey && !isSubmitting && (
+              <p role="alert" className="text-sm text-red-600 mb-4" data-testid="quick-match-cancel-stale">
+                {t('scoring.cancelMatch.failed')}
+              </p>
+            )}
+            {cancelFailedKey && (
+              <p role="alert" className="text-sm text-red-600 mb-4" data-testid="quick-match-cancel-error">
+                {t(cancelFailedKey)}
+              </p>
+            )}
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => { setCancelFailedKey(null); setShowCancelConfirm(false); }}
+                disabled={isSubmitting}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
+              >
+                {t('scoring.cancelMatch.cancel')}
+              </button>
+              <button
+                onClick={handleCancelConfirm}
+                disabled={isSubmitting || yaCerrada}
+                data-testid="quick-match-cancel-confirm"
+                className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 disabled:opacity-50"
+              >
+                {t('scoring.cancelMatch.confirm')}
               </button>
             </div>
           </div>
