@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
-import { Loader, Zap, ChevronRight, Trash2, Eye, EyeOff } from 'lucide-react';
+import { Loader, Zap, Trash2, Eye, EyeOff } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import HeaderAuth from '../../components/layout/HeaderAuth';
 import { useAuth } from '../../hooks/useAuth';
@@ -238,173 +238,151 @@ const MyQuickMatchesPage = () => {
               <li
                 key={qm.id}
                 data-testid={`quick-match-row-${qm.id}`}
-                // En un movil estrecho la fila NO cabe en una linea: padding,
-                // icono, resultado, estado, chevron, ojo y papelera suman mas
-                // que los 358px utiles de un iPhone, y el unico bloque que
-                // encoge —el del nombre— se quedaba en 8px, con la etiqueta
-                // partida en dos lineas y pintada encima del resultado. Se
-                // apila: nombre arriba a todo lo ancho, y debajo el resultado
-                // con sus acciones. A partir de `sm` vuelve a una sola linea.
-                // El fondo y la franja van con la etiqueta, no por su cuenta:
-                // el color no lo lee un lector de pantalla ni le dice nada a
-                // quien no vio la fila en el otro estado, asi que una tarjeta
-                // gris sin etiqueta que la explique es lo peor de los dos
-                // mundos.
-                className={`relative flex flex-col sm:flex-row sm:items-stretch border rounded-lg overflow-hidden hover:shadow-sm transition-all ${
+                className={`relative border rounded-lg hover:shadow-sm transition-all ${
                   llevaMarcaDeNoCuenta(qm)
                     ? 'bg-gray-50 border-gray-200 border-l-4 border-l-gray-400'
                     : 'bg-white border-gray-200 hover:border-primary-300'
                 }`}
               >
-                {/* Capa clicable que cubre la fila entera en vez de envolver
-                    el contenido. Envolviendolo, el resultado quedaba DENTRO
-                    del boton y no podia compartir linea con el ojo y la
-                    papelera, que son hermanos suyos: en movil salia una
-                    tercera franja casi vacia. Lleva su propio nombre
-                    accesible porque ya no contiene el texto. */}
+                {/* Capa clicable que cubre la tarjeta entera en vez de envolver
+                    el contenido: envolviendolo, los botones quedaban dentro de
+                    un boton —HTML invalido— o fuera de la zona pulsable. Lleva
+                    su propio nombre accesible porque no contiene el texto. */}
                 <button
                   onClick={() => navigate(`/quick-matches/${qm.id}/scoring`)}
                   data-testid={`quick-match-history-item-${qm.id}`}
                   aria-label={qm.name || t(`history.format.${qm.matchFormat ?? qm.scoringFormat}`, qm.matchFormat ?? qm.scoringFormat)}
-                  className="absolute inset-0 z-0"
+                  className="absolute inset-0 z-0 rounded-lg"
                 />
-                <div className="relative z-10 pointer-events-none w-full sm:flex-1 min-w-0 flex items-center gap-3 p-4 pb-2 sm:pb-4">
-                  <div className="flex items-center gap-3 min-w-0 w-full sm:w-auto">
-                    <div className="p-2 bg-primary-100 rounded-lg flex-shrink-0">
-                      <Zap className="w-4 h-4 text-primary-600" />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-sm font-semibold text-gray-900 truncate">
-                        {qm.name || t(`history.format.${qm.matchFormat ?? qm.scoringFormat}`, qm.matchFormat ?? qm.scoringFormat)}
-                      </p>
-                      <p className="text-xs text-gray-500 truncate">
-                        {qm.name && `${t(`history.format.${qm.matchFormat ?? qm.scoringFormat}`, qm.matchFormat ?? qm.scoringFormat)} · `}
-                        {new Date(qm.createdAt).toLocaleDateString()}
-                      </p>
-                      {/* En todo menos en las canceladas: ver
-                          `llevaMarcaDeNoCuenta`. */}
-                      {llevaMarcaDeNoCuenta(qm) && (
-                        <span
-                          data-testid={`quick-match-excluded-badge-${qm.id}`}
-                          className="inline-block mt-1 px-2 py-0.5 rounded-full bg-gray-200 text-gray-700 text-[10px] font-semibold whitespace-nowrap"
-                        >
-                          {t('history.excludedBadge')}
-                        </span>
-                      )}
-                    </div>
+
+                <div className="relative z-10 pointer-events-none flex items-start gap-3 p-4">
+                  <div className="p-2 bg-primary-100 rounded-lg flex-shrink-0">
+                    <Zap className="w-4 h-4 text-primary-600" />
                   </div>
-                </div>
-                {/* Resultado, estado y acciones comparten franja: en movil es
-                    la segunda linea de la tarjeta, y a partir de `sm` vuelve a
-                    ser la parte derecha de la fila de siempre. */}
-                {/* En movil se reparte —resultado a la izquierda, alineado
-                    bajo el nombre por el `pl-11`, y acciones a la derecha—
-                    para no dejar la linea entera vacia a un lado. En `sm`
-                    todo vuelve a la derecha, como la fila de siempre. */}
-                <div className="relative z-10 flex items-center gap-2 justify-between sm:justify-end pl-11 pr-4 pb-3 sm:pl-0 sm:pr-0 sm:pb-0 sm:self-stretch">
-                  <div className="pointer-events-none flex items-center gap-2 flex-shrink-0">
-                    {/* La columna del resultado mide siempre lo mismo en movil
-                        y se reserva aunque la partida no traiga cifras: sin
-                        ancho fijo, cada tarjeta empujaba el estado y los
-                        botones a una vertical distinta —«+21 / 93 golpes» no
-                        ocupa lo que «+7 / 98 golpes / (+8 en el partido)»— y
-                        la lista se leia desordenada. */}
-                    <div className="w-24 sm:w-auto shrink-0">
-                    {resultsByMatchId[qm.id] && (
-                      <div className="text-right" data-testid={`quick-match-result-${qm.id}`}>
-                        {/* En foursomes no hay vuelta propia —una sola bola a
-                            golpes alternos—, así que el calculador deja las dos
-                            lecturas en null. Los golpes del equipo pasan
-                            entonces a ser el titular, con su etiqueta: dejarlos
-                            en la línea de apoyo de 10px y sin nada encima hacía
-                            que la tarjeta pareciera a medio pintar. */}
-                        {resultsByMatchId[qm.id].personalToPar ? (
-                          <>
-                            <p className="text-sm font-bold text-gray-900">
-                              {resultsByMatchId[qm.id].personalToPar}
-                            </p>
-                            <p className="text-[10px] text-gray-500">
-                              {t('history.grossStrokes', { count: resultsByMatchId[qm.id].totalStrokes })}
-                            </p>
-                          </>
-                        ) : (
-                          <>
-                            <p className="text-sm font-bold text-gray-900">
-                              {t('history.grossStrokes', { count: resultsByMatchId[qm.id].totalStrokes })}
-                            </p>
-                            <p className="text-[10px] text-gray-500">{t('history.teamTotal')}</p>
-                          </>
-                        )}
-                        {/* En su propia línea, no al lado del resultado: esta
-                            columna no encoge (`flex-shrink-0`), así que el
-                            paréntesis se llevaba unos 100px del ancho, y el
-                            único bloque que sí encoge es el del nombre y la
-                            fecha —el del `truncate`—, que en un móvil de 375px
-                            se quedaba en cuatro letras. */}
-                        {resultsByMatchId[qm.id].matchToPar && (
-                          <p
-                            className="text-[10px] text-gray-500"
-                            data-testid={`quick-match-result-in-match-${qm.id}`}
-                          >
-                            {t('personalRound.inMatch', { value: resultsByMatchId[qm.id].matchToPar })}
-                          </p>
-                        )}
-                      </div>
+
+                  {/* Todo el texto en una columna: asi la linea de datos de
+                      abajo arranca en la misma vertical que el nombre y la
+                      fecha, y no debajo del icono. */}
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold text-gray-900 truncate">
+                      {qm.name || t(`history.format.${qm.matchFormat ?? qm.scoringFormat}`, qm.matchFormat ?? qm.scoringFormat)}
+                    </p>
+                    <p className="text-xs text-gray-500 truncate">
+                      {qm.name && `${t(`history.format.${qm.matchFormat ?? qm.scoringFormat}`, qm.matchFormat ?? qm.scoringFormat)} · `}
+                      {new Date(qm.createdAt).toLocaleDateString()}
+                    </p>
+
+                    {/* En todo menos en las canceladas: ver `llevaMarcaDeNoCuenta` */}
+                    {llevaMarcaDeNoCuenta(qm) && (
+                      <span
+                        data-testid={`quick-match-excluded-badge-${qm.id}`}
+                        className="inline-block mt-1 px-2 py-0.5 rounded-full bg-gray-200 text-gray-700 text-[10px] font-semibold whitespace-nowrap"
+                      >
+                        {t('history.excludedBadge')}
+                      </span>
                     )}
-                    </div>
-                    <span className={`text-xs font-semibold px-2 py-1 rounded-full ${STATUS_STYLES[qm.status] ?? 'bg-gray-100 text-gray-700'}`}>
+
+                    {/* La linea de las cifras, arrancando en la misma vertical
+                        que el nombre. Solo existe si hay resultado: una partida
+                        sin el no reserva la linea, y la tarjeta no queda hueca. */}
+                    {resultsByMatchId[qm.id] && (
+                      <span
+                        className="mt-2 flex items-baseline flex-wrap gap-x-2 gap-y-1"
+                        data-testid={`quick-match-result-${qm.id}`}
+                      >
+                          {/* En foursomes no hay vuelta propia —una sola bola a
+                              golpes alternos—, asi que el calculador deja las
+                              dos lecturas en null y los golpes del equipo pasan
+                              a ser el titular, con su etiqueta detras. */}
+                          {resultsByMatchId[qm.id].personalToPar ? (
+                            <>
+                              <span className="text-sm font-bold text-gray-900">
+                                {resultsByMatchId[qm.id].personalToPar}
+                              </span>
+                              <span className="text-xs text-gray-500">
+                                {t('history.grossStrokes', { count: resultsByMatchId[qm.id].totalStrokes })}
+                              </span>
+                            </>
+                          ) : (
+                            <>
+                              <span className="text-sm font-bold text-gray-900">
+                                {t('history.grossStrokes', { count: resultsByMatchId[qm.id].totalStrokes })}
+                              </span>
+                              <span className="text-xs text-gray-500">{t('history.teamTotal')}</span>
+                            </>
+                          )}
+                          {resultsByMatchId[qm.id].matchToPar && (
+                            <span
+                              className="text-xs text-gray-500"
+                              data-testid={`quick-match-result-in-match-${qm.id}`}
+                            >
+                              {t('personalRound.inMatch', { value: resultsByMatchId[qm.id].matchToPar })}
+                            </span>
+                          )}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* La columna derecha: los botones arriba y el estado justo
+                      debajo, los dos pegados al borde. Asi cada cosa cae en su
+                      vertical en todas las tarjetas. */}
+                  {/* `flex-col-reverse`: el estado va PRIMERO en el DOM y se
+                      pinta debajo. Con el orden natural, un lector de pantalla
+                      ofrecia «quitar de tus estadisticas» y «quitar del
+                      historial» antes de decir si la partida esta en curso,
+                      terminada o cancelada, que es justo lo que hace falta
+                      saber para decidir si pulsarlos. */}
+                  <div className="flex flex-col-reverse items-end gap-1 flex-shrink-0">
+                    <span className={`whitespace-nowrap text-xs font-semibold px-2 py-1 rounded-full ${STATUS_STYLES[qm.status] ?? 'bg-gray-100 text-gray-700'}`}>
                       {t(`history.status.${qm.status}`, qm.status)}
                     </span>
-                    {/* El chevron sobra en movil: la tarjeta entera es
-                        pulsable y ahi solo roba ancho. */}
-                    <ChevronRight className="hidden sm:block w-4 h-4 text-gray-400" />
+                    <div className="pointer-events-auto flex items-center gap-2">
+                      {/* El ojo solo en las terminadas: una partida a medias no
+                          cuenta todavia en ninguna estadistica, asi que el
+                          control no diria nada —y el servidor lo rechaza con un
+                          409—. */}
+                      {esElegibleParaElOjo(qm) && (
+                        <button
+                          onClick={() => handleToggleStats(qm.id)}
+                          disabled={togglingIds.has(qm.id)}
+                          aria-label={
+                            excludedIds.has(qm.id)
+                              ? t('history.excludedFromStats')
+                              : t('history.countsInStats')
+                          }
+                          title={
+                            excludedIds.has(qm.id)
+                              ? t('history.excludedFromStats')
+                              : t('history.countsInStats')
+                          }
+                          aria-pressed={excludedIds.has(qm.id)}
+                          data-testid={`quick-match-stats-toggle-${qm.id}`}
+                          className="p-3 rounded-lg flex items-center justify-center text-gray-400 hover:text-primary-600 hover:bg-primary-50 transition-colors disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-gray-400"
+                        >
+                          {excludedIds.has(qm.id) ? (
+                            <EyeOff className="w-4 h-4" />
+                          ) : (
+                            <Eye className="w-4 h-4" />
+                          )}
+                        </button>
+                      )}
+                      {/* La papelera sigue en todas las tarjetas. Al creador le
+                          vendria bien no tenerla mientras se juega, pero sin
+                          accion de cancelar su unica salida seria dar la partida
+                          por TERMINADA, metiendo una vuelta a medias en las
+                          estadisticas del grupo. Esa guarda va con #455. */}
+                      <button
+                        onClick={() => setMatchPendingDeletion(qm)}
+                        disabled={hidingIds.has(qm.id)}
+                        aria-label={t('history.hide')}
+                        title={t('history.hide')}
+                        data-testid={`quick-match-hide-${qm.id}`}
+                        className="p-3 rounded-lg flex items-center justify-center text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-gray-400"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
-                {/* El ojo solo en las terminadas: una partida a medias no
-                    cuenta todavía en ninguna estadística, así que el control
-                    no diría nada —y el servidor lo rechaza con un 409. */}
-                {esElegibleParaElOjo(qm) && (
-                  <button
-                    onClick={() => handleToggleStats(qm.id)}
-                    disabled={togglingIds.has(qm.id)}
-                    aria-label={
-                      excludedIds.has(qm.id)
-                        ? t('history.excludedFromStats')
-                        : t('history.countsInStats')
-                    }
-                    title={
-                      excludedIds.has(qm.id)
-                        ? t('history.excludedFromStats')
-                        : t('history.countsInStats')
-                    }
-                    aria-pressed={excludedIds.has(qm.id)}
-                    data-testid={`quick-match-stats-toggle-${qm.id}`}
-                    className="px-2 sm:px-3 sm:self-stretch flex items-center justify-center text-gray-400 hover:text-primary-600 hover:bg-primary-50 sm:border-l border-gray-100 transition-colors disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-gray-400"
-                  >
-                    {excludedIds.has(qm.id) ? (
-                      <EyeOff className="w-4 h-4" />
-                    ) : (
-                      <Eye className="w-4 h-4" />
-                    )}
-                  </button>
-                )}
-                {/* La papelera sigue en todas las filas. Al creador le vendria
-                    bien no tenerla mientras se juega —es el unico que puede
-                    iniciar, terminar o cancelar, asi que al salirse deja la
-                    partida viva y sin nadie que la cierre—, pero hoy no hay
-                    forma de cancelar una en curso desde la aplicacion, y sin
-                    papelera su unica salida seria darla por TERMINADA, metiendo
-                    una vuelta a medias en las estadisticas de todo el grupo. La
-                    guarda va con la accion de cancelar, en #455. */}
-                <button
-                  onClick={() => setMatchPendingDeletion(qm)}
-                  disabled={hidingIds.has(qm.id)}
-                  aria-label={t('history.hide')}
-                  title={t('history.hide')}
-                  data-testid={`quick-match-hide-${qm.id}`}
-                  className="px-2 sm:px-3 sm:self-stretch flex items-center justify-center text-gray-400 hover:text-red-600 hover:bg-red-50 sm:border-l border-gray-100 transition-colors disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-gray-400"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
                 </div>
               </li>
             ))}
