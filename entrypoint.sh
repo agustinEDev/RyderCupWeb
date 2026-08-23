@@ -28,6 +28,8 @@ echo "   VITE_ENVIRONMENT: $VITE_ENVIRONMENT"
 # PASO 2: Crear archivo de configuración runtime
 # ==========================================
 # Generamos un archivo config.js que será cargado por index.html
+BUILD_TIME_ISO="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+
 cat > /usr/share/nginx/html/config.js <<EOF
 // ==========================================
 // RUNTIME CONFIGURATION - Generado por entrypoint.sh
@@ -41,7 +43,7 @@ window.APP_CONFIG = {
   APP_NAME: "${VITE_APP_NAME}",
   ENVIRONMENT: "${VITE_ENVIRONMENT}",
   VERSION: "1.0.0",
-  BUILD_TIME: "$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+  BUILD_TIME: "${BUILD_TIME_ISO}"
 };
 
 console.log("✅ Runtime configuration loaded:", window.APP_CONFIG);
@@ -52,15 +54,50 @@ echo "✅ Archivo config.js creado exitosamente"
 # ==========================================
 # PASO 3: Inyectar script en index.html
 # ==========================================
-# Añadir <script src="/config.js"></script> antes de </head>
-# Solo si no existe ya (para evitar duplicados en reinicios)
-if ! grep -q "config.js" /usr/share/nginx/html/index.html; then
-  echo "📝 Inyectando script config.js en index.html..."
-  sed -i 's|</head>|  <script src="/config.js"></script>\n  </head>|' /usr/share/nginx/html/index.html
-  echo "✅ Script inyectado exitosamente"
+# Añadir <script src="/config.js?v=..."></script> antes de </head>.
+#
+# El sello sale del CONTENIDO del fichero, no del reloj: con dos replicas, una
+# marca de tiempo daba un index.html distinto por replica, y un navegador que
+# revalidara contra otra recibia 200 con bytes nuevos en cada salto en vez de
+# un 304. Con el hash, dos replicas con la misma configuracion sirven lo mismo
+# y la URL solo cambia cuando cambia la configuracion, que es lo que dice.
+#
+# Ojo con lo que este `?v=` NO hace: a un cliente que ya tenga el service
+# worker instalado no le llega, porque index.html esta precacheado y su
+# revision es el hash del build, que no se mueve al cambiar una variable de
+# entorno. A esos les sigue llegando la configuracion nueva igual, pero por
+# otra via: el service worker pide config.js por red primero, y solo cae a la
+# copia guardada si no hay red o si tarda demasiado —con cobertura mala pero
+# viva, esa carga entera va con la configuracion anterior y la siguiente ya
+# trae la nueva—. El sello sirve para el resto: navegador sin SW, o primera
+# carga.
+#
+# Se REESCRIBE la etiqueta si ya estaba, en vez de saltarsela: un contenedor
+# reiniciado en sitio conserva su index.html y se quedaba con la etiqueta
+# vieja.
+# Del contenido de la CONFIGURACION, no del fichero: dentro va tambien
+# BUILD_TIME, que es la hora de arranque, y hashear eso devolveria un sello
+# distinto por replica —justo lo que se quiere evitar—.
+CONFIG_STAMP="$(printf '%s|%s|%s' "${VITE_API_BASE_URL}" "${VITE_APP_NAME}" "${VITE_ENVIRONMENT}" | md5sum | cut -c1-12)"
+ETIQUETA="<script src=\"/config.js?v=${CONFIG_STAMP}\"></script>"
+
+if grep -qE '<script src="/config\.js[^"]*"></script>' /usr/share/nginx/html/index.html; then
+  echo "📝 Actualizando la etiqueta de config.js en index.html..."
+  sed -i -E "s|<script src=\"/config\.js[^\"]*\"></script>|${ETIQUETA}|" /usr/share/nginx/html/index.html
 else
-  echo "ℹ️  Script config.js ya existe en index.html, saltando inyección"
+  echo "📝 Inyectando script config.js en index.html..."
+  sed -i "s|</head>|  ${ETIQUETA}\n  </head>|" /usr/share/nginx/html/index.html
 fi
+
+# El `grep` y el `sed` de arriba miran el mismo patron, pero si alguna vez
+# dejan de coincidir —una etiqueta con `defer`, pongamos— `sed` no sustituiria
+# nada, saldria con 0 y `set -e` no se enteraria: el index se quedaria sin
+# sello y sin una sola linea que lo dijera.
+if ! grep -q "config.js?v=${CONFIG_STAMP}" /usr/share/nginx/html/index.html; then
+  echo "❌ ERROR: index.html no ha quedado apuntando a config.js?v=${CONFIG_STAMP}"
+  exit 1
+fi
+echo "✅ index.html pide config.js?v=${CONFIG_STAMP}"
 
 # ==========================================
 # PASO 4: Verificar archivos críticos

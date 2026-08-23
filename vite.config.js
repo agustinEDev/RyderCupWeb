@@ -211,6 +211,86 @@ export default defineConfig(() => ({
             handler: 'NetworkOnly',
           },
           {
+            // config.js NO entra en el precache: lo escribe entrypoint.sh al
+            // arrancar el contenedor, cuando el manifiesto ya esta hecho. Y sin
+            // el la aplicacion no arranca —`window.APP_CONFIG` se lee una vez
+            // al cargar el modulo, y sin el la URL de la API cae a '' y todas
+            // las peticiones se vuelven relativas—. Como ademas se sirve con
+            // `no-cache`, que NO permite reutilizar la copia cuando no se puede
+            // revalidar, sin esta regla la aplicacion instalada no levantaba
+            // sin cobertura.
+            //
+            // `NetworkFirst` y no `StaleWhileRevalidate`: este fichero DICE
+            // contra que API habla la aplicacion, y servir el guardado primero
+            // dejaba una carga entera hablando con el host viejo tras un
+            // cambio de configuracion —justo lo que la regla de nginx arregla—.
+            // Con red se pide red; sin ella, o si tarda mas de la cuenta —una
+            // conexion colgada, no una caida limpia, que falla al instante—,
+            // se arranca con la ultima que se vio. Ojo: eso exige haberla visto
+            // antes, asi que la primera apertura sin cobertura tras instalar
+            // sigue sin levantar; para entonces el service worker todavia no
+            // controlaba la pagina cuando se pidio este fichero.
+            urlPattern: ({ url }) => url.pathname === '/config.js',
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'runtime-config-v2',
+              // Corto a proposito: este fichero es un `<script>` que bloquea
+              // el pintado, asi que el timeout se paga en CADA arranque en
+              // frio, no solo tras cambiar la configuracion. Con mala cobertura
+              // pero viva —un campo de golf— tres segundos eran tres segundos
+              // de pantalla en blanco. La respuesta de red se guarda aunque
+              // gane el timeout, asi que la carga siguiente ya trae lo nuevo.
+              networkTimeoutSeconds: 1.5,
+              plugins: [
+                {
+                  // Una sola clave, sin el `?v=` del sello. Leer ignorando la
+                  // query y escribir con ella no valia: son claves distintas,
+                  // y la copia buena acababa borrada por la caducidad al
+                  // cambiar el sello, que es cuando mas falta hace.
+                  // Por `globalThis` porque esta funcion se serializa dentro
+                  // del service worker: aqui, en la configuracion de Vite, no
+                  // hay ni `Request` ni `URL` que valgan
+                  cacheKeyWillBeUsed: async ({ request }) =>
+                    new globalThis.Request(
+                      new globalThis.URL('/config.js', request.url).href
+                    ),
+                  // Aqui solo vale JavaScript, y se comprueba en
+                  // POSITIVO. Rechazar «lo que parezca HTML» dejaba pasar los
+                  // dos casos que mas duelen: una respuesta opaca —un portal
+                  // cautivo que redirige a otro origen— no trae cabeceras, y
+                  // Workbox la guarda, porque su filtro por defecto acepta 200
+                  // O opaca; y un HTML servido sin `content-type` tampoco
+                  // parece HTML. El `!response.ok` cubre ademas el 502 o el
+                  // 503 de un ingress con cuerpo JSON, que no es HTML y
+                  // llegaria igual al `<script>`.
+                  //
+                  // El regex va sin distinguir mayusculas: los tipos MIME no
+                  // las distinguen, y un proxy que normalizara
+                  // «Application/JavaScript» habria hecho fallar TODAS las
+                  // respuestas buenas —con copia guardada, la aplicacion se
+                  // quedaria pegada al host viejo para siempre, que es justo
+                  // lo que esto viene a arreglar—.
+                  //
+                  // Se rechaza en el fetch y no al guardar: `NetworkFirst` cae
+                  // entonces a la copia guardada, asi que ni se envenena la
+                  // cache ni se le entrega basura a un `<script>`. Solo mira
+                  // hacia la red: lo que ya estuviera guardado no se
+                  // revalida, y por eso el nombre de la cache cambia —una
+                  // instalacion que hubiera guardado basura con la regla
+                  // anterior arrancaria con ella para siempre, porque sin
+                  // caducidad la red es el unico escritor—.
+                  fetchDidSucceed: async ({ response }) => {
+                    const tipo = response.headers.get('content-type') || '';
+                    if (!response.ok || !/javascript|ecmascript/i.test(tipo)) {
+                      throw new Error('config.js no ha llegado como JavaScript');
+                    }
+                    return response;
+                  },
+                },
+              ],
+            },
+          },
+          {
             // Google Fonts
             urlPattern: /^https:\/\/fonts\.(googleapis|gstatic)\.com\//,
             handler: 'CacheFirst',
