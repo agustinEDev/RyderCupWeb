@@ -48,7 +48,7 @@ const Login = () => {
 
             {/* Logo */}
             <Link to="/" className="flex items-center gap-3 group">
-              <BrandMark className="size-10 text-white" />
+              <BrandMark className="size-10" tinta="blanco" />
               <div className="flex flex-col group-hover:opacity-80 transition-opacity">
                 <h1 className="text-2xl font-bold font-poppins">RyderCupFriends</h1>
                 <span className="text-sm font-semibold text-accent -mt-1">RCF</span>
@@ -108,7 +108,7 @@ const Login = () => {
 
             {/* Mobile Logo */}
             <Link to="/" className="flex lg:hidden items-center gap-3 mb-8 justify-center group">
-              <BrandMark className="size-10 text-primary-600" />
+              <BrandMark className="size-10" />
               <div className="flex flex-col group-hover:opacity-80 transition-opacity">
                 <h1 className="text-2xl font-bold font-poppins text-gray-900">RyderCupFriends</h1>
                 <span className="text-sm font-semibold text-primary -mt-1">RCF</span>
@@ -156,7 +156,7 @@ const Login = () => {
               <svg className="w-4 h-4 group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
               </svg>
-              <span className="text-sm font-medium">Back to home</span>
+              <span className="text-sm font-medium">{t('login.backToHome')}</span>
             </Link>
 
           </motion.div>

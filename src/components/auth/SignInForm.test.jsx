@@ -87,7 +87,9 @@ describe('SignInForm', () => {
     escribir(campoContrasena(), 'secreta');
     enviar();
 
-    await waitFor(() => expect(screen.getByText(/valid email/i)).toBeInTheDocument());
+    // El mock de i18n devuelve la clave, que es justo lo que se quiere comprobar:
+    // el mensaje ya no es un literal en ingles sino una cadena traducible
+    await waitFor(() => expect(screen.getByText('validation.emailInvalid')).toBeInTheDocument());
     expect(ejecutarLogin).not.toHaveBeenCalled();
   });
 

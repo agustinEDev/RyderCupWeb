@@ -26,7 +26,7 @@ const ForgotPassword = () => {
 
     const emailValidation = validateEmail(email);
     if (!emailValidation.isValid) {
-      newErrors.email = emailValidation.message;
+      newErrors.email = t(emailValidation.messageKey, emailValidation.messageOptions);
     }
 
     setErrors(newErrors);
@@ -98,7 +98,7 @@ const ForgotPassword = () => {
 
               {/* Logo */}
               <Link to="/" className="flex items-center gap-3 group">
-                <BrandMark className="size-10 text-white" />
+                <BrandMark className="size-10" tinta="blanco" />
                 <div className="flex flex-col group-hover:opacity-80 transition-opacity">
                   <h1 className="text-2xl font-bold font-poppins">RyderCupFriends</h1>
                   <span className="text-sm font-semibold text-accent -mt-1">RCF</span>
@@ -135,7 +135,7 @@ const ForgotPassword = () => {
 
               {/* Mobile Logo */}
               <Link to="/" className="flex lg:hidden items-center gap-3 mb-8 justify-center group">
-                <BrandMark className="size-10 text-primary-600" />
+                <BrandMark className="size-10" />
                 <div className="flex flex-col group-hover:opacity-80 transition-opacity">
                   <h1 className="text-2xl font-bold font-poppins text-gray-900">RyderCupFriends</h1>
                   <span className="text-sm font-semibold text-primary -mt-1">RCF</span>
@@ -253,7 +253,7 @@ const ForgotPassword = () => {
 
             {/* Logo */}
             <Link to="/" className="flex items-center gap-3 group">
-              <BrandMark className="size-10 text-white" />
+              <BrandMark className="size-10" tinta="blanco" />
               <div className="flex flex-col group-hover:opacity-80 transition-opacity">
                 <h1 className="text-2xl font-bold font-poppins">RyderCupFriends</h1>
                 <span className="text-sm font-semibold text-accent -mt-1">RCF</span>
@@ -312,7 +312,7 @@ const ForgotPassword = () => {
 
             {/* Mobile Logo */}
             <Link to="/" className="flex lg:hidden items-center gap-3 mb-8 justify-center group">
-              <BrandMark className="size-10 text-primary-600" />
+              <BrandMark className="size-10" />
               <div className="flex flex-col group-hover:opacity-80 transition-opacity">
                 <h1 className="text-2xl font-bold font-poppins text-gray-900">RyderCupFriends</h1>
                 <span className="text-sm font-semibold text-primary -mt-1">RCF</span>
@@ -412,7 +412,7 @@ const ForgotPassword = () => {
                   <div className="w-full border-t border-gray-200"></div>
                 </div>
                 <div className="relative flex justify-center text-sm">
-                  <span className="px-4 bg-white text-gray-500">or</span>
+                  <span className="px-4 bg-white text-gray-500">{t('google.orDivider')}</span>
                 </div>
               </div>
 

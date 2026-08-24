@@ -96,24 +96,24 @@ const Register = () => {
   const validateForm = () => {
     const newErrors = {};
 
-    const firstNameValidation = validateName(formData.firstName, 'First name');
+    const firstNameValidation = validateName(formData.firstName, 'First name', 'firstName');
     if (!firstNameValidation.isValid) {
-      newErrors.firstName = firstNameValidation.message;
+      newErrors.firstName = t(firstNameValidation.messageKey, firstNameValidation.messageOptions);
     }
 
-    const lastNameValidation = validateName(formData.lastName, 'Last name');
+    const lastNameValidation = validateName(formData.lastName, 'Last name', 'lastName');
     if (!lastNameValidation.isValid) {
-      newErrors.lastName = lastNameValidation.message;
+      newErrors.lastName = t(lastNameValidation.messageKey, lastNameValidation.messageOptions);
     }
 
     const emailValidation = validateEmail(formData.email);
     if (!emailValidation.isValid) {
-      newErrors.email = emailValidation.message;
+      newErrors.email = t(emailValidation.messageKey, emailValidation.messageOptions);
     }
 
     const passwordValidation = validatePassword(formData.password);
     if (!passwordValidation.isValid) {
-      newErrors.password = passwordValidation.message;
+      newErrors.password = t(passwordValidation.messageKey, passwordValidation.messageOptions);
     }
 
     if (!formData.confirmPassword) {
@@ -198,7 +198,7 @@ const Register = () => {
 
             {/* Logo */}
             <Link to="/" className="flex items-center gap-3 group">
-              <BrandMark className="size-10 text-white" />
+              <BrandMark className="size-10" tinta="blanco" />
               <div className="flex flex-col group-hover:opacity-80 transition-opacity">
                 <h1 className="text-2xl font-bold font-poppins">RyderCupFriends</h1>
                 <span className="text-sm font-semibold text-white/90 -mt-1">RCF</span>
@@ -274,7 +274,7 @@ const Register = () => {
 
             {/* Mobile Logo */}
             <Link to="/" className="flex lg:hidden items-center gap-3 mb-8 justify-center group">
-              <BrandMark className="size-10 text-primary-600" />
+              <BrandMark className="size-10" />
               <div className="flex flex-col group-hover:opacity-80 transition-opacity">
                 <h1 className="text-2xl font-bold font-poppins text-gray-900">RyderCupFriends</h1>
                 <span className="text-sm font-semibold text-primary -mt-1">RCF</span>

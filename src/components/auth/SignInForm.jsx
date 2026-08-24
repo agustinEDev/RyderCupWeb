@@ -53,7 +53,7 @@ const SignInForm = () => {
 
     const emailValidation = validateEmail(formData.email);
     if (!emailValidation.isValid) {
-      newErrors.email = emailValidation.message;
+      newErrors.email = t(emailValidation.messageKey, emailValidation.messageOptions);
     }
 
     if (!formData.password) {

@@ -1,12 +1,21 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { resendVerificationEmailUseCase } from '../composition';
 
 const EmailVerificationBanner = ({ userEmail }) => {
+  // `ready` porque este banner usa el namespace `auth`, que su pantalla —el
+  // panel— no carga: si ese chunk tarda o falla, sin esto se quedaria pintando
+  // las claves en crudo donde antes habia texto en ingles correcto
+  const { t, ready } = useTranslation('auth');
   const [isVisible, setIsVisible] = useState(true);
   const [isResending, setIsResending] = useState(false);
   const [message, setMessage] = useState('');
+  // Si fue error se guarda aparte y no se deduce del texto: mirar si empieza por
+  // «Failed» dejaba de funcionar en cuanto el mensaje se traducia, y un fallo se
+  // habria pintado en verde
+  const [esError, setEsError] = useState(false);
 
-  if (!isVisible) {
+  if (!isVisible || !ready) {
     return null;
   }
 
@@ -16,10 +25,12 @@ const EmailVerificationBanner = ({ userEmail }) => {
 
     try {
       await resendVerificationEmailUseCase.execute(userEmail);
-      setMessage('Verification email sent! Please check your inbox.');
+      setEsError(false);
+      setMessage(t('emailVerification.sent'));
     } catch (error) {
       console.error('Error resending email:', error);
-      setMessage(`Failed to resend email: ${error.message}`);
+      setEsError(true);
+      setMessage(t('emailVerification.failed', { error: error.message }));
     } finally {
       setIsResending(false);
     }
@@ -39,16 +50,16 @@ const EmailVerificationBanner = ({ userEmail }) => {
         </div>
         <div className="ml-3 flex-1">
           <h3 className="text-sm font-medium text-yellow-800">
-            Email Verification Required
+            {t('emailVerification.title')}
           </h3>
           <div className="mt-2 text-sm text-yellow-700">
             <p>
-              Please verify your email address <strong>{userEmail}</strong> to unlock all features.
-              Check your inbox for the verification link.
+              {t('emailVerification.beforeEmail')} <strong>{userEmail}</strong>{' '}
+              {t('emailVerification.afterEmail')}
             </p>
           </div>
           {message && (
-            <div className={`mt-2 text-sm ${message.startsWith('Failed') ? 'text-red-700' : 'text-green-700'}`}>
+            <div className={`mt-2 text-sm ${esError ? 'text-red-700' : 'text-green-700'}`}>
               {message}
             </div>
           )}
@@ -59,14 +70,14 @@ const EmailVerificationBanner = ({ userEmail }) => {
               disabled={isResending}
               className="text-sm font-medium text-yellow-800 hover:text-yellow-900 underline disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isResending ? 'Sending...' : 'Resend verification email'}
+              {isResending ? t('emailVerification.sending') : t('emailVerification.resend')}
             </button>
             <button
               type="button"
               onClick={handleDismiss}
               className="text-sm font-medium text-yellow-800 hover:text-yellow-900"
             >
-              Dismiss
+              {t('emailVerification.dismiss')}
             </button>
           </div>
         </div>
@@ -76,7 +87,7 @@ const EmailVerificationBanner = ({ userEmail }) => {
             onClick={handleDismiss}
             className="inline-flex rounded-md text-yellow-400 hover:text-yellow-500 focus:outline-none"
           >
-            <span className="sr-only">Dismiss</span>
+            <span className="sr-only">{t('emailVerification.dismiss')}</span>
             <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
             </svg>
