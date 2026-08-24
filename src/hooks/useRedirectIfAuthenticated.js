@@ -65,7 +65,10 @@ const isSessionRejected = (error) =>
  * @returns {boolean} `true` mientras se resuelve la sesión: el formulario no
  *   debe pintarse todavía o parpadea antes de la redirección.
  */
-export const useRedirectIfAuthenticated = ({ enabled = true } = {}) => {
+export const useRedirectIfAuthenticated = ({
+  enabled = true,
+  entrarSinRed = false,
+} = {}) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, setUser, clearAuth } = useAuthContext();
@@ -157,7 +160,17 @@ export const useRedirectIfAuthenticated = ({ enabled = true } = {}) => {
           // Caída, corte de red o respuesta rara. El usuario guardado se queda
           // donde está: borrarlo por un tropiezo inutilizaría esta redirección
           // durante los 7 días que al refresh token le quedan de vida
-          console.warn('[auth] no se pudo comprobar la sesión, se muestra el formulario:', error);
+          console.warn('[auth] no se pudo comprobar la sesión:', error);
+
+          if (entrarSinRed) {
+            // Quien arranca la aplicación instalada en el campo, sin cobertura,
+            // no puede quedarse ante un formulario que no hay forma de enviar:
+            // anotar sin conexión es el caso de uso, no un extra. La sesión no
+            // se ha rechazado —solo no se ha podido preguntar—, así que se entra
+            // con la que hay guardada.
+            navigate(resolvePostAuthTarget(location.state?.from?.pathname), { replace: true });
+            return;
+          }
         }
 
         showForm();
@@ -171,7 +184,7 @@ export const useRedirectIfAuthenticated = ({ enabled = true } = {}) => {
       clearTimeout(deadline);
       controller.abort();
     };
-  }, [hadStoredUser, navigate, location.state, setUser, clearAuth]);
+  }, [hadStoredUser, navigate, location.state, setUser, clearAuth, entrarSinRed]);
 
   return isChecking;
 };

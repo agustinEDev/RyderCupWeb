@@ -14,6 +14,9 @@
  * @module tokenRefreshInterceptor
  */
 
+import { sinSesionEnRutaPublica } from './rutasPublicas';
+
+
 import { setCsrfTokenGlobal } from '../contexts/csrfTokenSync'; // v1.13.0: CSRF Protection
 import {
   isDeviceRevoked,
@@ -21,6 +24,21 @@ import {
   handleDeviceRevocationLogout,
   handleSessionExpiredLogout
 } from './deviceRevocationLogout'; // v1.13.1: Device Revocation, v2.0.4: Separated expiration
+
+/**
+ * Si queda sesion guardada. Va envuelto porque `localStorage` LANZA en varios
+ * sitios reales —Safari bloqueando cookies, un WebView incrustado, politicas de
+ * empresa— y esto vive dentro de una funcion cuyo `catch` relanza: sin la
+ * envoltura, cualquier 401 dejaria de ser una respuesta y pasaria a ser una
+ * excepcion, que acaba echando al usuario a `/login`.
+ */
+const hayUsuarioGuardado = () => {
+  try {
+    return Boolean(localStorage.getItem('user'));
+  } catch {
+    return false;
+  }
+};
 
 const API_URL = globalThis.APP_CONFIG?.API_BASE_URL || import.meta.env.VITE_API_BASE_URL || '';
 
@@ -188,7 +206,10 @@ export const fetchWithTokenRefresh = async (url, options = {}) => {
 
     // Special case: If we're on public pages (login, register, etc), don't attempt refresh
     const currentPath = globalThis.location?.pathname || '';
-    const isPublicPage = ['/login', '/register', '/forgot-password', '/reset-password', '/'].includes(currentPath);
+    // La lista vive en un solo sitio: esta copia iba dos entradas por detras.
+    // Y se mira tambien si hay sesion guardada: en una clasificacion compartida
+    // —que es publica— un usuario con sesion SI tiene que refrescar.
+    const isPublicPage = sinSesionEnRutaPublica(currentPath, hayUsuarioGuardado());
     if (isPublicPage && url.includes('/current-user')) {
       console.log('🚫 [TokenRefresh] On public page, not attempting refresh for current-user check');
       return response;

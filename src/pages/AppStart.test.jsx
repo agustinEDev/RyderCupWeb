@@ -74,3 +74,21 @@ describe('AppStart', () => {
     expect(salida.closest('a')).toHaveAttribute('href', '/');
   });
 });
+
+/**
+ * El mock de i18n devuelve la clave, asi que los tests de arriba pasarian aunque
+ * la traduccion no existiera — que es EXACTAMENTE el fallo que este mismo trabajo
+ * corrige en el panel, donde se leyo `recentMatches.excludedBadge` en crudo en
+ * produccion. Esto ata las claves de esta pantalla a los dos idiomas.
+ */
+describe('los textos de la pantalla existen en los dos idiomas', () => {
+  it('appStart.title y appStart.whatIsThis', async () => {
+    const es = (await import('../i18n/locales/es/auth.json')).default;
+    const en = (await import('../i18n/locales/en/auth.json')).default;
+
+    for (const clave of ['title', 'whatIsThis']) {
+      expect(es.appStart?.[clave], `falta en es: ${clave}`).toBeTruthy();
+      expect(en.appStart?.[clave], `falta en en: ${clave}`).toBeTruthy();
+    }
+  });
+});

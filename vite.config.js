@@ -189,10 +189,16 @@ export default defineConfig(() => ({
         // portada (FE #465): asi `/` deja de hacer dos papeles y no hay que
         // adivinar, mirando el tipo de navegacion, si una visita es un arranque.
         //
-        // OJO: las instalaciones que YA existen conservan el `start_url` viejo
-        // hasta que el navegador refresque el manifiesto por su cuenta, asi que
-        // durante un tiempo seguiran abriendo en `/`. Por eso la deteccion
-        // antigua sigue en `Landing` una release mas, en vez de retirarse ahora.
+        // `id` FIJO y distinto de `start_url`. Sin el, la identidad de la
+        // aplicacion ES su `start_url`: cambiarlo la convertiria en otra
+        // aplicacion distinta a ojos del navegador, las instalaciones que ya
+        // existen no adoptarian nunca la ruta nueva y el sitio volveria a ser
+        // instalable, apareciendo un SEGUNDO icono. Con `id` la identidad no se
+        // mueve y el manifiesto se refresca sobre la instalacion de siempre.
+        id: '/',
+        // Las instalaciones existentes tardan en adoptarlo —y en iOS, donde el
+        // acceso directo guarda la URL al añadirlo, no lo adoptan—, asi que la
+        // deteccion antigua sigue en `Landing` una release mas.
         start_url: '/start',
         scope: '/',
         icons: [

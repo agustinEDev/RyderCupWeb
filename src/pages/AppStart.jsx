@@ -26,10 +26,22 @@ const AppStart = () => {
   const esAplicacionInstalada = useStandalone();
   const comprobandoSesion = useRedirectIfAuthenticated({
     enabled: esAplicacionInstalada,
+    // En el campo no hay cobertura, y esta es la pantalla por la que se entra:
+    // si la sesion no se puede COMPROBAR —que no es lo mismo que ser rechazada—
+    // se entra con la guardada, en vez de dejar un formulario que no se puede
+    // enviar. Solo aqui: en el navegador la portada sigue siendo utilizable.
+    entrarSinRed: true,
   });
 
   // En el navegador esta ruta no pinta nada: la puerta es la portada. Puede
   // llegarse por un enlace copiado o por una instalacion que se desinstalo.
+  //
+  // Si un arranque instalado NO llegara a detectarse —modo `minimal-ui`, un
+  // acceso directo que abre en pestaña—, quien tenga sesion aterrizaria aqui en
+  // la portada en vez de en el panel. No hay red para eso: la deteccion antigua
+  // de `Landing` exige `useStandalone()`, que es justo lo que habria fallado, y
+  // ademas se llega con `REPLACE`, no con `POP`. Se asume: el caso es raro y la
+  // portada sigue siendo utilizable, con su boton de entrar.
   if (!esAplicacionInstalada) {
     return <Navigate to="/" replace />;
   }
