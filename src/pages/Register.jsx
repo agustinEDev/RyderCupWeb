@@ -96,12 +96,12 @@ const Register = () => {
   const validateForm = () => {
     const newErrors = {};
 
-    const firstNameValidation = validateName(formData.firstName, 'First name', 'firstName');
+    const firstNameValidation = validateName(formData.firstName, 'First name');
     if (!firstNameValidation.isValid) {
       newErrors.firstName = t(firstNameValidation.messageKey, firstNameValidation.messageOptions);
     }
 
-    const lastNameValidation = validateName(formData.lastName, 'Last name', 'lastName');
+    const lastNameValidation = validateName(formData.lastName, 'Last name');
     if (!lastNameValidation.isValid) {
       newErrors.lastName = t(lastNameValidation.messageKey, lastNameValidation.messageOptions);
     }

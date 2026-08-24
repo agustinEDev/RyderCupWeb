@@ -119,7 +119,7 @@ const HeaderAuth = ({ user, title, backTo }) => {
       ) : (
         <Link to="/dashboard" className="md:hidden flex items-center gap-3 text-gray-900 hover:opacity-80 transition-opacity">
           <div className="h-10 w-10 flex-shrink-0 flex items-center justify-center overflow-visible">
-            <BrandMark className="block h-full w-auto  transform -translate-y-[2px] scale-105" title="RCF Logo" />
+            <BrandMark className="block h-full w-auto  transform -translate-y-[2px] scale-105" title={t('brandMarkAlt')} />
           </div>
           <h2 className="text-gray-900 text-lg font-bold leading-tight tracking-tight font-poppins">
             RyderCupFriends
@@ -130,7 +130,7 @@ const HeaderAuth = ({ user, title, backTo }) => {
       {/* Escritorio: la marca no se toca */}
       <Link to="/dashboard" className="hidden md:flex items-center gap-3 text-gray-900 hover:opacity-80 transition-opacity">
         <div className="h-12 w-12 flex-shrink-0 flex items-center justify-center overflow-visible">
-          <BrandMark className="block h-full w-auto  transform -translate-y-[2px] scale-110" title="RCF Logo" />
+          <BrandMark className="block h-full w-auto  transform -translate-y-[2px] scale-110" title={t('brandMarkAlt')} />
         </div>
         <h2 className="text-gray-900 text-xl font-bold leading-tight tracking-tight font-poppins">
           RyderCupFriends

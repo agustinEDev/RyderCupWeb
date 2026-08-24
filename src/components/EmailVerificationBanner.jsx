@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useTranslation } from 'react-i18next';
+import { Trans, useTranslation } from 'react-i18next';
 import { resendVerificationEmailUseCase } from '../composition';
 
 const EmailVerificationBanner = ({ userEmail }) => {
@@ -30,7 +30,7 @@ const EmailVerificationBanner = ({ userEmail }) => {
     } catch (error) {
       console.error('Error resending email:', error);
       setEsError(true);
-      setMessage(t('emailVerification.failed', { error: error.message }));
+      setMessage(t('emailVerification.failed'));
     } finally {
       setIsResending(false);
     }
@@ -54,8 +54,12 @@ const EmailVerificationBanner = ({ userEmail }) => {
           </h3>
           <div className="mt-2 text-sm text-yellow-700">
             <p>
-              {t('emailVerification.beforeEmail')} <strong>{userEmail}</strong>{' '}
-              {t('emailVerification.afterEmail')}
+              <Trans
+                t={t}
+                i18nKey="emailVerification.description"
+                values={{ email: userEmail }}
+                components={{ correo: <strong /> }}
+              />
             </p>
           </div>
           {message && (

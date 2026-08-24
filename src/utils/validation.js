@@ -255,7 +255,21 @@ export const validateHandicap = (handicap) => {
  * @param {string} fieldName - Field name for error messages
  * @returns {Object} - { isValid: boolean, message: string }
  */
-export const validateName = (name, fieldName = 'Name', campoClave = 'name') => {
+export const validateName = (name, fieldName = 'Name') => {
+  // La clave sale del propio `fieldName` («First name» -> «firstName») en vez de
+  // recibirse aparte: dos parametros paralelos podian divergir en silencio
+  // —`validateName(x, 'Last name', 'firstName')` no fallaba en ningun sitio— y
+  // olvidar el tercero pintaba la clave en crudo en el formulario.
+  const campoClave = fieldName
+    .trim()
+    .split(/\s+/)
+    .map((parte, i) =>
+      i === 0
+        ? parte.toLowerCase()
+        : parte.charAt(0).toUpperCase() + parte.slice(1).toLowerCase()
+    )
+    .join('');
+
   const trimmed = name.trim();
 
   if (!trimmed) {
