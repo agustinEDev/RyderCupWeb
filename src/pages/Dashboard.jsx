@@ -15,6 +15,7 @@ import CreateQuickMatchModal from '../components/quick_match/CreateQuickMatchMod
 import { useAuth } from '../hooks/useAuth';
 import { useEntryMotion } from '../hooks/useEntryMotion';
 import { slideUp, staggerContainer, getEntryProps } from '../utils/animations';
+import FullScreenLoader from '../components/ui/FullScreenLoader';
 import {
   listUserCompetitionsUseCase,
   getPlayerStatsUseCase,
@@ -216,14 +217,13 @@ const Dashboard = () => {
   const isLoading = (isLoadingUser && !user) || isLoadingCompetitions;
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-gray-600">{t('common:loading')}</p>
-        </div>
-      </div>
-    );
+    // La MISMA espera que el resto de la aplicacion, no un circulo propio. Al
+    // abrir la aplicacion instalada se encadenan tres esperas antes de llegar
+    // aqui —el paquete de la pantalla de arranque, la consulta de sesion y el
+    // paquete del panel— y todas pintan esta. Cambiar de dibujo justo en la
+    // ultima es lo que se percibia como parpadeo: no son los cortes, es que la
+    // imagen cambiaba.
+    return <FullScreenLoader />;
   }
 
   if (!user) {

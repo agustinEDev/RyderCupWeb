@@ -34,8 +34,47 @@
     <meta name="twitter:description" content="The ultimate amateur golf tournament management platform" />
 
     <title>RyderCupFriends - RCF | Amateur Golf Tournament Platform</title>
+    <style>
+      /* El primer instante, antes de que cargue el codigo. Se pinta lo MISMO que
+         pintara React un momento despues —verde instalada, blanco en el
+         navegador—, asi que el relevo no se ve.
+
+         Y por eso retirarla es trivial: como debajo aparece la misma pantalla,
+         basta quitarla cuando React monta. No hay que averiguar si ya hay
+         contenido, que es lo que complico un intento anterior. */
+      #arranque {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #ffffff;
+        /* Red de seguridad sin JavaScript: si el codigo nunca llega a cargar
+           —un paquete que un despliegue borro, la red caida— esto se aparta solo
+           a los 6 s en vez de dejar una pantalla fija tapandolo todo. Lo normal
+           es que `main.jsx` la retire mucho antes —en una carga corriente, en
+           menos de un segundo—, asi que este plazo solo se alcanza cuando algo
+           ha ido mal de verdad. Corto a proposito: este mecanismo ya se quedo
+           colgado una vez, y el peor caso debe ser una espera fea, no una
+           aplicacion inservible. */
+        animation: arranque-rendirse 0.4s ease-out 6s forwards;
+      }
+      @keyframes arranque-rendirse {
+        to { opacity: 0; visibility: hidden; }
+      }
+      @media (display-mode: standalone) {
+        #arranque { background: #335d35; }
+      }
+    </style>
   </head>
   <body>
+    <div id="arranque" aria-hidden="true">
+      <picture>
+        <source media="(display-mode: standalone)" srcset="/images/rcf-monogram-white.png" />
+        <img src="/images/rcf-monogram-green.png" alt="" width="88" height="78" />
+      </picture>
+    </div>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>

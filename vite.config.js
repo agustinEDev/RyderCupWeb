@@ -183,7 +183,11 @@ export default defineConfig(() => ({
         short_name: 'RCF',
         description: 'Amateur golf tournament management platform',
         theme_color: '#15803d',
-        background_color: '#ffffff',
+        // El mismo verde que la pantalla de espera: Android pinta este color en
+        // su arranque, ANTES de que cargue el documento, asi que en blanco metia
+        // un salto justo delante. Instalaciones existentes: lo adoptan cuando el
+        // sistema refresque el manifiesto.
+        background_color: '#335d35',
         display: 'standalone',
         // La aplicacion instalada arranca en su propia pantalla, no en la
         // portada (FE #465): asi `/` deja de hacer dos papeles y no hay que

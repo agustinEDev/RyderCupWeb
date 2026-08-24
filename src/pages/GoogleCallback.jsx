@@ -5,6 +5,7 @@ import { useAuthContext } from '../hooks/useAuthContext';
 import { googleLoginUseCase, linkGoogleAccountUseCase } from '../composition';
 import { verifyOAuthState } from '../utils/googleOAuth';
 import customToast from '../utils/toast';
+import FullScreenLoader from '../components/ui/FullScreenLoader';
 
 const GoogleCallback = () => {
   const { t } = useTranslation('auth');
@@ -110,15 +111,9 @@ const GoogleCallback = () => {
     );
   }
 
-  // Loading state while processing
-  return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-50">
-      <div className="text-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-        <p className="text-gray-600">{t('google.processing')}</p>
-      </div>
-    </div>
-  );
+  // La misma espera que el resto del arranque: entrar con Google es otro camino
+  // de entrada, y cambiar de dibujo a mitad es lo que se nota como parpadeo
+  return <FullScreenLoader />;
 };
 
 export default GoogleCallback;
