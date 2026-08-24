@@ -185,7 +185,21 @@ export default defineConfig(() => ({
         theme_color: '#15803d',
         background_color: '#ffffff',
         display: 'standalone',
-        start_url: '/',
+        // La aplicacion instalada arranca en su propia pantalla, no en la
+        // portada (FE #465): asi `/` deja de hacer dos papeles y no hay que
+        // adivinar, mirando el tipo de navegacion, si una visita es un arranque.
+        //
+        // `id` FIJO y distinto de `start_url`. Sin el, la identidad de la
+        // aplicacion ES su `start_url`: cambiarlo la convertiria en otra
+        // aplicacion distinta a ojos del navegador, las instalaciones que ya
+        // existen no adoptarian nunca la ruta nueva y el sitio volveria a ser
+        // instalable, apareciendo un SEGUNDO icono. Con `id` la identidad no se
+        // mueve y el manifiesto se refresca sobre la instalacion de siempre.
+        id: '/',
+        // Las instalaciones existentes tardan en adoptarlo —y en iOS, donde el
+        // acceso directo guarda la URL al añadirlo, no lo adoptan—, asi que la
+        // deteccion antigua sigue en `Landing` una release mas.
+        start_url: '/start',
         scope: '/',
         icons: [
           { src: '/icons/pwa-192x192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
