@@ -7,6 +7,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [2.18.0] - 2026-08-24
+
+### Added
+
+- **La aplicación instalada abre directamente en el panel** (#466). Quien la tiene en la pantalla de inicio y ya ha entrado alguna vez veía primero la portada de marketing —el titular, las características, el botón de instalar— antes de poder hacer nada. Eso es una página web, no una aplicación: quien la instaló ya sabe lo que es y solo quiere entrar.
+
+  Solo cuenta el **arranque**, no cualquier visita a `/`: dentro de la aplicación, el logo de la cabecera y «Características» apuntan ahí, y sin esa distinción rebotaban al panel desde Términos o Privacidad dejando la portada inalcanzable. La decisión se toma al cargar el paquete, que es cuando la aplicación arranca de verdad, y no al montarse la portada, que es perezosa y puede aparecer mucho después. En el navegador la portada se sigue viendo con sesión, que es donde tiene sentido enseñarla o compartirla.
+
+### Changed
+
+- **La aplicación enseñaba dos marcas distintas y ahora enseña una** (#464, #470, #473). Las cabeceras pintaban el monograma redondo; el pie y las cuatro pantallas de autenticación pintaban un triángulo. Llevaban así mucho tiempo, producción incluida, y nadie las había visto juntas. Ahora las **trece** salen del mismo sitio.
+
+  La marca se sirve en dos tintas recortadas del original —verde sobre fondo claro, blanca sobre el panel oscuro de las pantallas de autenticación—, con transparencia real: el JPEG anterior no la tenía y su fondo blanco habría enmarcado la marca en un recuadro sobre el panel oscuro. Pesan 6,5 KB y 3,4 KB, menos que los 39 KB del JPEG al que sustituyen, y a diferencia de él la aplicación instalada los guarda para funcionar sin cobertura. Se retiran del sitio publicado ~235 KB de imágenes que ya no usaba nadie; el arte original queda en el repositorio, fuera de lo que se publica.
+
+### Fixed
+
+- **El formulario de registro mezclaba dos idiomas en la misma pantalla**. Con la aplicación en español y el formulario vacío, salían «El correo es obligatorio» y «Por favor confirma tu contraseña» junto a «First name is required», «Last name is required» y «Password is required». Los mensajes venían escritos en inglés dentro del código de validación, mientras las traducciones existían sin usarse. Ahora las usa, y hay una comprobación que recorre todas las validaciones y verifica que cada mensaje que pueden dar existe en los dos idiomas.
+
+- **El aviso de verificar el correo estaba entero en inglés** en el panel. Al traducirlo apareció otro fallo: el color del mensaje se decidía mirando si el texto empezaba por «Failed», así que en español **un error se habría pintado en verde**.
+
+- Los límites de caracteres estaban escritos dentro de las traducciones mientras el código los sacaba de una constante: cambiar el límite dejaba el mensaje mintiendo en los dos idiomas sin que fallara nada.
+
+- Textos sueltos sin traducir: «Back to home» al pie del inicio de sesión, y el «or» que separa el formulario del acceso con Google en recuperar y restablecer contraseña.
+
+- **Entrar por un enlace compartido y llegar luego a la portada podía echarte al panel** (#466). La aplicación solo anotaba el arranque cuando empezaba en la portada, así que quien entraba por una clasificación no dejaba rastro; si después navegaba a la portada y el service worker recargaba la pestaña —lo hace por su cuenta al llegar una versión nueva—, esa recarga se leía como un arranque y se lo llevaba al panel mientras leía.
+
+- La pantalla de espera del arranque decía `Loading…` en inglés mientras bajaba el idioma, en una aplicación en español.
+
+- El botón de entrar se quedaba girando indefinidamente si la pantalla que lo contiene seguía en pie después de iniciar sesión.
+
+### Security
+
+- Actualizadas nueve dependencias del grupo de versiones menores (#471), entre ellas `vite` 8.2.2, `vitest` 4.1.11 e `i18next` 26.4.0.
+
 ## [2.17.1] - 2026-08-24
 
 ### Fixed
