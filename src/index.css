@@ -265,3 +265,31 @@
     touch-action: manipulation;
   }
 }
+
+/* La pantalla de espera, la MISMA en toda la cadena del arranque: al abrir la
+   aplicacion instalada se encadenan el paquete de la pantalla de arranque, la
+   consulta de sesion y el paquete del panel, y las tres pintan esto. Que el
+   dibujo cambiara justo en la ultima era lo que se percibia como parpadeo.
+
+   Instalada va en el verde de la marca; en el navegador, en blanco como el resto
+   del sitio. La distincion se hace con `display-mode`, sin JavaScript. */
+.pantalla-de-espera {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background: #ffffff;
+  color: #6b7280;
+}
+
+.pantalla-de-espera__texto {
+  margin-top: 1rem;
+}
+
+@media (display-mode: standalone) {
+  .pantalla-de-espera {
+    background: #335d35;
+    color: rgba(255, 255, 255, 0.92);
+  }
+}

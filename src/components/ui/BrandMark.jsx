@@ -12,7 +12,10 @@
  * sobre el panel oscuro habrian dejado un recuadro blanco.
  *
  * @param {string} className - Clases del elemento, normalmente el tamaño
- * @param {'verde'|'blanco'} tinta - Cual de las dos versiones se pinta
+ * @param {'verde'|'blanco'|'auto'} tinta - Cual de las dos se pinta. `auto` la
+ *        elige segun la aplicacion este instalada o no, con una media query: lo
+ *        necesita la pantalla de espera, que va sobre verde instalada y sobre
+ *        blanco en el navegador, y eso no se sabe al escribir la prop.
  * @param {string} title - Nombre accesible; omitir cuando es decorativa
  */
 const FUENTES = {
@@ -25,8 +28,23 @@ const BrandMark = ({ className = 'size-8', tinta = 'verde', title }) => {
   // oscuro de las pantallas de autenticacion: casi invisible, y sin que fallen
   // ni el lint ni los tests. Es la divergencia silenciosa que este componente
   // viene a evitar, asi que al menos se avisa mientras se desarrolla.
-  if (import.meta.env.DEV && !FUENTES[tinta]) {
+  if (import.meta.env.DEV && tinta !== 'auto' && !FUENTES[tinta]) {
     console.warn(`BrandMark: tinta desconocida "${tinta}"; se pinta la verde. Use "verde" o "blanco".`);
+  }
+
+  if (tinta === 'auto') {
+    return (
+      <picture>
+        <source media="(display-mode: standalone)" srcSet={FUENTES.blanco} />
+        <img
+          src={FUENTES.verde}
+          className={`${className} object-contain`}
+          alt={title || ''}
+          aria-hidden={title ? undefined : 'true'}
+          draggable="false"
+        />
+      </picture>
+    );
   }
 
   return (
