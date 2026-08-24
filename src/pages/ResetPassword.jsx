@@ -7,6 +7,7 @@ import { validatePassword } from '../utils/validation';
 import { broadcastLogout } from '../utils/broadcastAuth';
 import PasswordInput from '../components/ui/PasswordInput';
 import PasswordStrengthIndicator from '../components/ui/PasswordStrengthIndicator';
+import BrandMark from '../components/ui/BrandMark';
 import {
   validateResetTokenUseCase,
   resetPasswordUseCase,
@@ -123,7 +124,7 @@ const ResetPassword = () => {
     // Validación 1: Nueva contraseña con requisitos OWASP
     const passwordValidation = validatePassword(formData.newPassword);
     if (!passwordValidation.isValid) {
-      newErrors.newPassword = passwordValidation.message;
+      newErrors.newPassword = t(passwordValidation.messageKey, passwordValidation.messageOptions);
     }
 
     // Validación 2: Confirmación de contraseña
@@ -318,14 +319,7 @@ const ResetPassword = () => {
           <div className="relative z-10 flex flex-col justify-between p-12 text-white w-full">
             {/* Logo */}
             <Link to="/" className="flex items-center gap-3 group">
-              <div className="size-10">
-                <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path
-                    d="M13.8261 17.4264C16.7203 18.1174 20.2244 18.5217 24 18.5217C27.7756 18.5217 31.2797 18.1174 34.1739 17.4264C36.9144 16.7722 39.9967 15.2331 41.3563 14.1648L24.8486 40.6391C24.4571 41.267 23.5429 41.267 23.1514 40.6391L6.64374 14.1648C8.00331 15.2331 11.0856 16.7722 13.8261 17.4264Z"
-                    fill="white"
-                  />
-                </svg>
-              </div>
+              <BrandMark className="size-10" tinta="blanco" />
               <div className="flex flex-col group-hover:opacity-80 transition-opacity">
                 <h1 className="text-2xl font-bold font-poppins">RyderCupFriends</h1>
                 <span className="text-sm font-semibold text-accent -mt-1">RCF</span>
@@ -382,14 +376,7 @@ const ResetPassword = () => {
           >
             {/* Mobile Logo */}
             <Link to="/" className="flex lg:hidden items-center gap-3 mb-8 justify-center group">
-              <div className="size-10">
-                <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path
-                    d="M13.8261 17.4264C16.7203 18.1174 20.2244 18.5217 24 18.5217C27.7756 18.5217 31.2797 18.1174 34.1739 17.4264C36.9144 16.7722 39.9967 15.2331 41.3563 14.1648L24.8486 40.6391C24.4571 41.267 23.5429 41.267 23.1514 40.6391L6.64374 14.1648C8.00331 15.2331 11.0856 16.7722 13.8261 17.4264Z"
-                    fill="#2d7b3e"
-                  />
-                </svg>
-              </div>
+              <BrandMark className="size-10" />
               <div className="flex flex-col group-hover:opacity-80 transition-opacity">
                 <h1 className="text-2xl font-bold font-poppins text-gray-900">RyderCupFriends</h1>
                 <span className="text-sm font-semibold text-primary -mt-1">RCF</span>
@@ -570,7 +557,7 @@ const ResetPassword = () => {
                   <div className="w-full border-t border-gray-200"></div>
                 </div>
                 <div className="relative flex justify-center text-sm">
-                  <span className="px-4 bg-white text-gray-500">or</span>
+                  <span className="px-4 bg-white text-gray-500">{t('google.orDivider')}</span>
                 </div>
               </div>
 

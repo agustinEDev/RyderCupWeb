@@ -74,7 +74,8 @@ describe('HeaderAuth', () => {
     renderHeader('/auth/complete-profile');
 
     expect(screen.queryByRole('heading', { level: 1 })).not.toBeInTheDocument();
-    expect(screen.getAllByAltText('RCF Logo').length).toBeGreaterThan(0);
+    // El mock de i18n devuelve la clave: el alt de la marca ya no es un literal
+    expect(screen.getAllByAltText('brandMarkAlt').length).toBeGreaterThan(0);
   });
 
   it('keeps the desktop navigation untouched', () => {

@@ -4,6 +4,7 @@ import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-route
 import { Toaster } from 'react-hot-toast';
 import * as Sentry from '@sentry/react';
 import ProtectedRoute from './components/auth/ProtectedRoute';
+import FullScreenLoader from './components/ui/FullScreenLoader';
 import RoleGuard from './components/auth/RoleGuard';
 import LazyLoadErrorBoundary from './components/errors/LazyLoadErrorBoundary';
 import { getUserData } from './hooks/useAuth';
@@ -235,18 +236,7 @@ function AppContent() {
         }}
       />
       {location.pathname !== '/' && <InstallBanner aboveBottomNav={showBottomNav} />}
-      <Suspense fallback={
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          height: '100vh',
-          fontFamily: 'system-ui, sans-serif',
-          color: '#6b7280'
-        }}>
-          Loading...
-        </div>
-      }>
+      <Suspense fallback={<FullScreenLoader />}>
         <SentryRoutes>
         {/* Public routes */}
         <Route path="/" element={<Landing />} />

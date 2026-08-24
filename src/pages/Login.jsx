@@ -1,126 +1,16 @@
-import { useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router';
+import { Link, useLocation } from 'react-router';
 import { motion } from 'framer-motion';
-import customToast from '../utils/toast';
 import { useTranslation } from 'react-i18next';
-import { validateEmail, checkRateLimit, resetRateLimit } from '../utils/validation';
-import { safeLog, resolvePostAuthTarget } from '../utils/auth';
-import PasswordInput from '../components/ui/PasswordInput';
-import { loginUseCase } from '../composition';
-import { useAuthContext } from '../hooks/useAuthContext'; // v1.13.0: CSRF Protection
 import { useRedirectIfAuthenticated } from '../hooks/useRedirectIfAuthenticated';
-import GoogleSignInButton from '../components/ui/GoogleSignInButton';
+import SignInForm from '../components/auth/SignInForm';
 import FullScreenLoader from '../components/ui/FullScreenLoader';
+import BrandMark from '../components/ui/BrandMark';
 
 const Login = () => {
   const { t } = useTranslation(['auth', 'common']);
-  const navigate = useNavigate();
   const location = useLocation();
   const successMessage = location.state?.message;
-  const { setUser, updateCsrfToken } = useAuthContext(); // v1.13.0: CSRF Protection
   const isCheckingSession = useRedirectIfAuthenticated();
-
-  const [formData, setFormData] = useState({
-    email: '',
-    password: ''
-  });
-  const [errors, setErrors] = useState({});
-  const [isLoading, setIsLoading] = useState(false);
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-    if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: '' }));
-    }
-  };
-
-  const validateForm = () => {
-    const newErrors = {};
-
-    const emailValidation = validateEmail(formData.email);
-    if (!emailValidation.isValid) {
-      newErrors.email = emailValidation.message;
-    }
-
-    if (!formData.password) {
-      newErrors.password = t('validation.passwordRequired');
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    if (!validateForm()) {
-      return;
-    }
-
-    const rateLimit = checkRateLimit('login', 5, 300000);
-    if (!rateLimit.allowed) {
-      customToast.error(t('errors.rateLimitSeconds', { seconds: rateLimit.remainingTime }), {
-        duration: 5000,
-      });
-      return;
-    }
-
-    setIsLoading(true);
-
-    try {
-      // v1.13.0: LoginUseCase now returns { user, csrfToken }
-      const { user: authenticatedUser, csrfToken, needsHandicap } = await loginUseCase.execute(formData.email, formData.password);
-
-      // Update auth context with user and CSRF token
-      setUser(authenticatedUser);
-      updateCsrfToken(csrfToken);
-
-      if (needsHandicap) {
-        localStorage.setItem('needs_handicap', 'true');
-      } else {
-        localStorage.removeItem('needs_handicap');
-      }
-
-      resetRateLimit('login');
-      customToast.success(t('login.welcomeMessage', { name: authenticatedUser.firstName }));
-
-      if (!authenticatedUser.emailVerified) {
-        safeLog('info', 'Email verification required');
-        customToast.info(t('login.verifyEmailMessage'), {
-          duration: 5000,
-        });
-      }
-
-      navigate(resolvePostAuthTarget(location.state?.from?.pathname), { replace: true });
-
-    } catch (error) {
-      console.error('Login error:', error);
-
-      // Limpiar el password por seguridad (OWASP A07 - Authentication Failures)
-      setFormData(prev => ({
-        ...prev,
-        password: ''
-      }));
-
-      // v1.13.0: Handle Account Lockout (HTTP 423) with special UI treatment
-      if (error.message && error.message.includes('Account locked')) {
-        customToast.error(error.message, {
-          duration: 10000, // Longer duration for important security message
-          icon: '🔒',
-        });
-      } else {
-        customToast.error(error.message || t('login.error'), {
-          duration: 5000,
-        });
-      }
-
-      setIsLoading(false);
-    }
-  };
 
   // Con sesión guardada por confirmar, el formulario no se pinta: quien llega
   // aquí desde el icono de la PWA se va al dashboard sin verlo (FE #305)
@@ -158,14 +48,7 @@ const Login = () => {
 
             {/* Logo */}
             <Link to="/" className="flex items-center gap-3 group">
-              <div className="size-10">
-                <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path
-                    d="M13.8261 17.4264C16.7203 18.1174 20.2244 18.5217 24 18.5217C27.7756 18.5217 31.2797 18.1174 34.1739 17.4264C36.9144 16.7722 39.9967 15.2331 41.3563 14.1648L24.8486 40.6391C24.4571 41.267 23.5429 41.267 23.1514 40.6391L6.64374 14.1648C8.00331 15.2331 11.0856 16.7722 13.8261 17.4264Z"
-                    fill="white"
-                  />
-                </svg>
-              </div>
+              <BrandMark className="size-10" tinta="blanco" />
               <div className="flex flex-col group-hover:opacity-80 transition-opacity">
                 <h1 className="text-2xl font-bold font-poppins">RyderCupFriends</h1>
                 <span className="text-sm font-semibold text-accent -mt-1">RCF</span>
@@ -225,14 +108,7 @@ const Login = () => {
 
             {/* Mobile Logo */}
             <Link to="/" className="flex lg:hidden items-center gap-3 mb-8 justify-center group">
-              <div className="size-10">
-                <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path
-                    d="M13.8261 17.4264C16.7203 18.1174 20.2244 18.5217 24 18.5217C27.7756 18.5217 31.2797 18.1174 34.1739 17.4264C36.9144 16.7722 39.9967 15.2331 41.3563 14.1648L24.8486 40.6391C24.4571 41.267 23.5429 41.267 23.1514 40.6391L6.64374 14.1648C8.00331 15.2331 11.0856 16.7722 13.8261 17.4264Z"
-                    fill="#2d7b3e"
-                  />
-                </svg>
-              </div>
+              <BrandMark className="size-10" />
               <div className="flex flex-col group-hover:opacity-80 transition-opacity">
                 <h1 className="text-2xl font-bold font-poppins text-gray-900">RyderCupFriends</h1>
                 <span className="text-sm font-semibold text-primary -mt-1">RCF</span>
@@ -268,136 +144,7 @@ const Login = () => {
                 </motion.div>
               )}
 
-              {/* Form */}
-              <form onSubmit={handleSubmit} className="space-y-5">
-
-                {/* Email */}
-                <div>
-                  <label htmlFor="email" className="block text-sm font-semibold text-gray-700 mb-2">
-                    {t('login.emailLabel')}
-                  </label>
-                  <input
-                    id="email"
-                    type="email"
-                    name="email"
-                    placeholder={t('login.emailPlaceholder')}
-                    value={formData.email}
-                    onChange={handleChange}
-                    className={`w-full px-4 py-3 rounded-lg border-2 transition-all duration-200 ${
-                      errors.email
-                        ? 'border-red-300 focus:border-red-500 focus:ring-2 focus:ring-red-200'
-                        : 'border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/20'
-                    } outline-none text-gray-900 placeholder:text-gray-400`}
-                    disabled={isLoading}
-                  />
-                  {errors.email && (
-                    <motion.p
-                      initial={{ opacity: 0, y: -10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="text-red-500 text-xs mt-2 flex items-center gap-1"
-                    >
-                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                      </svg>
-                      {errors.email}
-                    </motion.p>
-                  )}
-                </div>
-
-                {/* Password */}
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <label htmlFor="password" className="block text-sm font-semibold text-gray-700">
-                      {t('login.passwordLabel')}
-                    </label>
-                    <Link
-                      to="/forgot-password"
-                      className="text-xs font-medium text-primary hover:text-primary-600 transition-colors"
-                    >
-                      {t('login.forgotPassword')}
-                    </Link>
-                  </div>
-                  <PasswordInput
-                    name="password"
-                    value={formData.password}
-                    onChange={handleChange}
-                    placeholder={t('login.passwordPlaceholder')}
-                    error={!!errors.password}
-                    disabled={isLoading}
-                    label=""
-                    autoComplete="current-password"
-                    className={`w-full px-4 py-3 rounded-lg border-2 transition-all duration-200 ${
-                      errors.password
-                        ? 'border-red-300 focus:border-red-500 focus:ring-2 focus:ring-red-200'
-                        : 'border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/20'
-                    } outline-none`}
-                  />
-                  {errors.password && (
-                    <motion.p
-                      initial={{ opacity: 0, y: -10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="text-red-500 text-xs mt-2 flex items-center gap-1"
-                    >
-                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                      </svg>
-                      {errors.password}
-                    </motion.p>
-                  )}
-                </div>
-
-                {/* Submit Button */}
-                <motion.button
-                  type="submit"
-                  disabled={isLoading}
-                  whileHover={{ scale: isLoading ? 1 : 1.02 }}
-                  whileTap={{ scale: isLoading ? 1 : 0.98 }}
-                  className={`w-full py-3.5 rounded-lg font-bold text-white transition-all duration-300 shadow-lg ${
-                    isLoading
-                      ? 'bg-gray-400 cursor-not-allowed'
-                      : 'bg-primary hover:bg-primary-600 hover:shadow-xl'
-                  }`}
-                >
-                  {isLoading ? (
-                    <span className="flex items-center justify-center gap-2">
-                      <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                      {t('loading', { ns: 'common' })}
-                    </span>
-                  ) : (
-                    t('login.signInButton')
-                  )}
-                </motion.button>
-
-              </form>
-
-              {/* Divider */}
-              <div className="relative my-6">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-gray-200"></div>
-                </div>
-                <div className="relative flex justify-center text-sm">
-                  <span className="px-4 bg-white text-gray-500">{t('google.orDivider')}</span>
-                </div>
-              </div>
-
-              {/* Google Sign In */}
-              <GoogleSignInButton flow="login" disabled={isLoading} />
-
-              {/* Register Link */}
-              <div className="text-center mt-6">
-                <p className="text-gray-600 text-sm">
-                  {t('login.noAccount')}{' '}
-                  <Link
-                    to="/register"
-                    className="font-semibold text-primary hover:text-primary-600 transition-colors"
-                  >
-                    {t('login.signUpLink')}
-                  </Link>
-                </p>
-              </div>
+              <SignInForm />
 
             </div>
 
@@ -409,7 +156,7 @@ const Login = () => {
               <svg className="w-4 h-4 group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
               </svg>
-              <span className="text-sm font-medium">Back to home</span>
+              <span className="text-sm font-medium">{t('login.backToHome')}</span>
             </Link>
 
           </motion.div>
