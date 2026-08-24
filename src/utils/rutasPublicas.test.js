@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { esRutaPublica, sinSesionEnRutaPublica } from './rutasPublicas';
+import { esRutaPublica, sinSesionEnRutaPublica, esPuertaDeEntrada } from './rutasPublicas';
 
 /**
  * En una ruta publica, un `401` de la consulta de sesion es lo ESPERABLE: no hay
@@ -65,6 +65,18 @@ describe('rutas publicas', () => {
     expect(sinSesionEnRutaPublica('/start', true)).toBe(true);
     expect(sinSesionEnRutaPublica('/login', true)).toBe(true);
     expect(sinSesionEnRutaPublica('/', true)).toBe(true);
+  });
+
+  it('una barra final no cambia lo que es una ruta', () => {
+    // Llegan asi desde enlaces copiados y correos: sin normalizar, `/start/`
+    // pasaba por privada y la pantalla de entrada hacia la consulta de sesion
+    expect(esRutaPublica('/start/')).toBe(true);
+    expect(esRutaPublica('/login/')).toBe(true);
+    expect(esRutaPublica('/competitions/1/leaderboard/')).toBe(true);
+    expect(esPuertaDeEntrada('/start/')).toBe(true);
+    expect(sinSesionEnRutaPublica('/start/', true)).toBe(true);
+    // Y no convierte en publica una privada
+    expect(esRutaPublica('/dashboard/')).toBe(false);
   });
 
   it('los patrones van anclados, no por subcadena', () => {

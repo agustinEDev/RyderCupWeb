@@ -103,6 +103,16 @@ export const useRedirectIfAuthenticated = ({
       // Se abandona la comprobación, pero NO se toca el usuario guardado: no
       // sabemos nada de la sesión, solo que el backend no contestó a tiempo
       controller.abort();
+
+      if (entrarSinRed) {
+        // Este es el camino de VERDAD sin cobertura: la petición no falla
+        // rápido, se queda colgada hasta agotar el plazo. Tratarlo distinto del
+        // rechazo de red dejaba el arreglo cubriendo solo el caso raro.
+        settled = true;
+        navigate(resolvePostAuthTarget(location.state?.from?.pathname), { replace: true });
+        return;
+      }
+
       showForm();
     }, SESSION_CHECK_TIMEOUT_MS);
 

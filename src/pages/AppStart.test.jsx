@@ -87,8 +87,12 @@ describe('los textos de la pantalla existen en los dos idiomas', () => {
     const en = (await import('../i18n/locales/en/auth.json')).default;
 
     for (const clave of ['title', 'whatIsThis']) {
+      // Que exista no basta: si el valor fuera la propia clave, `toBeTruthy`
+      // pasaria y en pantalla se leeria «appStart.title»
       expect(es.appStart?.[clave], `falta en es: ${clave}`).toBeTruthy();
+      expect(es.appStart?.[clave]).not.toContain('appStart.');
       expect(en.appStart?.[clave], `falta en en: ${clave}`).toBeTruthy();
+      expect(en.appStart?.[clave]).not.toContain('appStart.');
     }
   });
 });

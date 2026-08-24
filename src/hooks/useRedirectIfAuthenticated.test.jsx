@@ -159,6 +159,22 @@ describe('useRedirectIfAuthenticated', () => {
         expect(navigate).not.toHaveBeenCalled();
       });
 
+      it('entra también cuando la petición se queda COLGADA', async () => {
+        // Este es el caso de verdad sin cobertura: la peticion no falla rapido,
+        // se cuelga hasta agotar el plazo. Cubrir solo el rechazo dejaba el
+        // arreglo sirviendo para el caso raro y no para el habitual.
+        vi.useFakeTimers();
+        globalThis.fetch.mockReturnValue(new Promise(() => {}));
+
+        renderHook(() => useRedirectIfAuthenticated({ entrarSinRed: true }));
+
+        await act(async () => {
+          await vi.advanceTimersByTimeAsync(5000);
+        });
+
+        expect(navigate).toHaveBeenCalledWith('/dashboard', { replace: true });
+      });
+
       it('sin la opción, un corte de red sigue enseñando el formulario', async () => {
         globalThis.fetch.mockRejectedValue(new TypeError('Failed to fetch'));
 
