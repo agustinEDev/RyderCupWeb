@@ -288,6 +288,28 @@
 }
 
 @media (display-mode: standalone) {
+  /* La franja del reloj, la bateria y la cobertura NO la pinta esta pantalla:
+     la pinta el fondo del documento. Sin esta regla el `html` se quedaba en su
+     blanco por defecto y quedaba una banda blanca cruzando la parte de arriba
+     de una pantalla verde. Va en `html` y no en `body` porque el body lleva el
+     padding lateral de las areas seguras y su fondo no llega a los bordes.
+
+     Y va condicionado a que HAYA una pantalla de espera delante. Pintar el
+     `html` a secas tenia el verde puesto durante toda la sesion, y se colaba
+     por debajo de cualquier pantalla que no traiga fondo propio: las esperas de
+     Perfil, Editar perfil, Crear competicion y detalle de competicion son un
+     `min-h-screen` sin fondo con texto gris, que sobre este verde no se lee; y
+     las dos pantallas de error, que son precisamente las que tienen que leerse.
+     Ademas asomaba en las bandas laterales de las areas seguras al girar el
+     movil y en el rebote al tirar de una lista.
+
+     Si `:has` no estuviera disponible no se aplica nada y vuelve la banda
+     blanca del arranque: se degrada al defecto de antes, no a uno peor. */
+  html:has(#arranque),
+  html:has(.pantalla-de-espera) {
+    background: #335d35;
+  }
+
   .pantalla-de-espera {
     background: #335d35;
     color: rgba(255, 255, 255, 0.92);

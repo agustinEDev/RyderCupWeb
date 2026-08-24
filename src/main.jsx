@@ -129,16 +129,3 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     </AuthProviderWithGlobalSync>
   </React.StrictMode>,
 );
-
-// Retira la capa de espera que pinta `index.html`. Se hace aqui, sin mas
-// comprobaciones, porque lo que React acaba de montar es la MISMA pantalla:
-// mientras haya algo cargando pinta `FullScreenLoader`, identico a la capa. Un
-// intento anterior fallo por lo contrario —debajo aparecia otra cosa, asi que
-// habia que averiguar si ya habia pantalla de verdad—.
-//
-// Y va DIRECTO, no dentro de un `requestAnimationFrame`: esa funcion no se
-// ejecuta si la pagina no esta pintando —pestaña en segundo plano, ahorro de
-// energia—, y entonces la capa se quedaba encima para siempre tapando una
-// aplicacion que por debajo funcionaba. Comprobado.
-document.getElementById('arranque')?.remove();
-
