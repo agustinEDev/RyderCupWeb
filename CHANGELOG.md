@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [2.19.0] - 2026-08-24
+
+### Added
+
+- **La aplicación instalada arranca en su propia pantalla** (#465). Abierta desde su icono ya no pasa por la portada de marketing: con la sesión abierta va directa al panel, y sin ella enseña el acceso, que es lo que uno espera de una aplicación. La portada sigue a un toque, en un enlace discreto al pie, y en el navegador todo sigue igual — quien abra ahí la dirección de arranque acaba en la portada, que es la puerta cuando no hay aplicación instalada.
+
+  El motivo de fondo es que `/` hacía dos papeles a la vez —«la portada» y «por donde arranca la aplicación»—, así que el código tenía que **adivinar**, mirando el tipo de navegación, cuál de las dos cosas estaba pasando. Adivinar falló dos veces: a quien entraba por un enlace compartido y luego pulsaba el logo, y a quien volvía atrás desde el panel. Ahora hay una pantalla a la que solo se llega arrancando, y no queda nada que deducir.
+
+  **Si abres la aplicación en el campo y no hay cobertura, entras igual.** La sesión no se puede *comprobar* sin red, pero eso no es lo mismo que estar rechazada: se entra con la que hay guardada, en vez de dejar un formulario que no hay forma de enviar. Si el servidor responde y dice que la sesión no vale, entonces sí se pide entrar de nuevo.
+
+### Changed
+
+- **La dirección de arranque de la aplicación instalada pasa a ser `/start`**. El manifiesto conserva su identidad, así que las instalaciones que ya existen se actualizan solas y **no aparece un segundo icono**; eso sí, tardan en adoptarlo lo que su navegador tarde en refrescar el manifiesto, y hasta entonces siguen abriendo por la portada. Por eso la detección anterior se queda dentro una versión más, en vez de retirarse ahora.
+
+- La lista de pantallas que se pueden ver sin haber entrado vivía escrita **dos veces**, y la segunda copia se había quedado atrás. Ahora está en un solo sitio, con una comprobación que impide que nadie vuelva a guardarse la suya. Cada olvido en esa copia significaba consultar la sesión donde no la hay, encontrarse un rechazo esperable y echar al usuario diciéndole que su sesión había expirado.
+
 ## [2.18.1] - 2026-08-24
 
 ### Fixed
