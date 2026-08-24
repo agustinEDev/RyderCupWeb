@@ -127,7 +127,11 @@ const SignInForm = () => {
           duration: 5000,
         });
       }
-
+    } finally {
+      // Tambien al entrar bien: el camino de exito no puede dar por hecho que
+      // `navigate` desmonte el formulario. En `Login` hoy lo desmonta, pero este
+      // componente esta hecho para montarse en otras pantallas, y en una que
+      // siguiera en pie el boton se quedaria desactivado girando para siempre
       setIsLoading(false);
     }
   };

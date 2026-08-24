@@ -117,6 +117,27 @@ describe('SignInForm', () => {
     expect(navegar).toHaveBeenCalledWith('/dashboard', { replace: true });
   });
 
+  it('deja el boton utilizable tras entrar, sin depender de que la pantalla se desmonte', async () => {
+    // El camino de exito no puede dar por hecho que `navigate` desmonte el
+    // formulario: en una pantalla que siguiera en pie, el boton se quedaria
+    // desactivado girando para siempre
+    ejecutarLogin.mockResolvedValue({
+      user: { firstName: 'Agustin', emailVerified: true },
+      csrfToken: 'tok',
+      needsHandicap: false,
+    });
+    pintar();
+
+    escribir(campoCorreo(), 'alguien@ejemplo.com');
+    escribir(campoContrasena(), 'secreta');
+    enviar();
+
+    await waitFor(() => expect(navegar).toHaveBeenCalled());
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'login.signInButton' })).toBeEnabled()
+    );
+  });
+
   it('borra la contrasena cuando el acceso falla', async () => {
     ejecutarLogin.mockRejectedValue(new Error('Invalid credentials'));
     pintar();
