@@ -40,7 +40,14 @@
          uno espera al abrir una aplicacion desde su icono. La distincion se hace
          con `display-mode`, sin JavaScript: la CSP no admite scripts en linea.
          iOS entiende `display-mode: standalone` desde 16.4; en versiones
-         anteriores se queda en blanco, que es el caso seguro. */
+         anteriores se queda en blanco, que es el caso seguro.
+
+         OJO: esta condicion es mas amplia que la de `detectStandalone()`, que
+         descarta a proposito los navegadores incrustados en otras aplicaciones
+         —Instagram, Facebook— porque dicen que si a `display-mode` sin serlo.
+         Aqui no se puede afinar sin JavaScript, asi que quien abra un enlace
+         desde ahi vera el verde y luego la portada blanca. Es un salto de color
+         en un caso de paso, no un fallo de funcionamiento. */
       #arranque {
         position: fixed;
         inset: 0;

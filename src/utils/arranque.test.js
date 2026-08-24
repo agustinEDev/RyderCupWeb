@@ -195,3 +195,44 @@ describe('quien retira y quien retiene, juntos', () => {
     }
   });
 });
+
+/**
+ * El caso que se colo en la septima revision, y el peor de todos: la capa se
+ * quedaba puesta hasta el tope —doce segundos tapando la aplicacion y comiendose
+ * los toques— en CUALQUIER ruta protegida.
+ *
+ * Pasaba porque las dos condiciones llegan en momentos distintos: primero se
+ * declara que hay pantalla (con la guarda todavia reteniendo, asi que se
+ * descarta) y despues la guarda suelta. Y nadie volvia a pedirlo, porque React
+ * no repite los efectos pasivos cuando un `Suspense` oculta y reaparece un
+ * subarbol.
+ */
+describe('cuando se declara pantalla ANTES de que suelten la retencion', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    document.body.innerHTML = '';
+  });
+
+  it('la capa se va igualmente, sin esperar al tope', async () => {
+    document.body.innerHTML = '<div id="arranque"></div>';
+    vi.resetModules();
+    const { retenerEspera, soltarEspera, retirarPantallaDeArranque } = await import('./arranque');
+
+    // Una guarda retiene mientras consulta la sesion
+    retenerEspera();
+    // Y en ese mismo momento se declara que hay pantalla: se descarta
+    retirarPantallaDeArranque();
+    vi.advanceTimersByTime(50);
+    expect(document.getElementById('arranque')).not.toBeNull();
+
+    // La consulta termina y la guarda suelta: aqui nadie volvia a pedirlo
+    soltarEspera();
+    vi.advanceTimersByTime(300);
+
+    expect(document.getElementById('arranque')).toBeNull();
+  });
+});

@@ -31,6 +31,12 @@ let retirada = false;
  *  pantalla, el parpadeo de siempre. */
 let retenciones = 0;
 
+/** Si alguien ya dijo «hay pantalla». Hace falta porque las dos condiciones
+ *  —hay pantalla, y nadie retiene— se cumplen en momentos distintos y en
+ *  cualquier orden: sin recordar la primera, quien llegaba segundo no tenia a
+ *  quien avisar y la capa se quedaba puesta hasta el tope. */
+let pantallaDeclarada = false;
+
 /** La llama quien esta a punto de enseñar SU propia espera. */
 export const retenerEspera = () => {
   retenciones += 1;
@@ -46,6 +52,16 @@ export const retenerEspera = () => {
  *  —y el tope, como red—. */
 export const soltarEspera = () => {
   retenciones = Math.max(0, retenciones - 1);
+
+  // Si ya se habia declarado pantalla mientras esto retenia, aquel intento se
+  // descarto y NADIE va a volver a pedirlo: React no repite los efectos pasivos
+  // cuando un `Suspense` oculta y reaparece un subarbol —comprobado—, asi que el
+  // aviso no vuelve. Sin este reintento la capa se quedaba hasta el tope: doce
+  // segundos tapando la aplicacion entera y comiendose los toques, que es MUCHO
+  // peor que el parpadeo que todo esto viene a quitar.
+  if (retenciones === 0 && pantallaDeclarada) {
+    intentarRetirada();
+  }
 };
 
 export const retirarPantallaDeArranque = ({ forzar = false } = {}) => {
@@ -57,15 +73,25 @@ export const retirarPantallaDeArranque = ({ forzar = false } = {}) => {
   // este aplazamiento el resultado dependia del orden de los componentes en el
   // arbol, y eso ya se colo cuatro revisiones seguidas. Aplazando, cuando llega
   // el momento de decidir todas las retenciones del commit estan hechas.
+  pantallaDeclarada = true;
+
   if (!forzar) {
-    setTimeout(() => {
-      if (retirada || retenciones > 0) return;
-      aplicarRetirada();
-    }, 0);
+    intentarRetirada();
     return;
   }
 
   aplicarRetirada();
+};
+
+/** La decision se aplaza un tick: React ejecuta los efectos de izquierda a
+ *  derecha dentro del mismo commit, asi que quien retira puede correr antes de
+ *  que quien enseña su propia espera haya podido retener. Aplazando, cuando
+ *  toca decidir todas las retenciones de ese render ya estan hechas. */
+const intentarRetirada = () => {
+  setTimeout(() => {
+    if (retirada || retenciones > 0) return;
+    aplicarRetirada();
+  }, 0);
 };
 
 const aplicarRetirada = () => {
