@@ -65,14 +65,19 @@ const isSessionRejected = (error) =>
  * @returns {boolean} `true` mientras se resuelve la sesión: el formulario no
  *   debe pintarse todavía o parpadea antes de la redirección.
  */
-export const useRedirectIfAuthenticated = () => {
+export const useRedirectIfAuthenticated = ({ enabled = true } = {}) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, setUser, clearAuth } = useAuthContext();
 
+  // `enabled` para quien solo quiere esto en algunos casos —la portada, que
+  // redirige al panel si se abre desde el icono de la aplicación pero no en el
+  // navegador—. Va como parámetro y no como un `if` en quien llama porque un
+  // hook no se puede llamar condicionalmente.
+  //
   // Se congela el valor del primer render. Después del login `user` cambia, y
   // sin esto el efecto volvería a dispararse sobre una página que ya se va.
-  const [hadStoredUser] = useState(() => Boolean(user));
+  const [hadStoredUser] = useState(() => enabled && Boolean(user));
   const [isChecking, setIsChecking] = useState(hadStoredUser);
 
   useEffect(() => {

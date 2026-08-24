@@ -5,6 +5,9 @@ import App from './App.jsx';
 import { startCapturingInstallPrompt } from './utils/installPromptCapture';
 import { registerServiceWorker } from './utils/serviceWorkerRegistration';
 import { scrubUrl } from './utils/scrubUrl';
+// Solo por el efecto de módulo: anota si la aplicación arrancó en la portada
+// antes de que React navegue a ningún sitio
+import './utils/appStartup';
 import './index.css';
 import './i18n'; // Import i18n initialization
 import { AuthProviderWithGlobalSync } from './contexts/AuthContext'; // v1.13.0: CSRF Protection

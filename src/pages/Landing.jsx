@@ -1,11 +1,15 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router';
+import { useNavigate, useNavigationType } from 'react-router';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { BarChart3, Download, Share, Trophy, Users, Zap } from 'lucide-react';
 import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
 import { useInstallPrompt } from '../hooks/useInstallPrompt';
+import { useRedirectIfAuthenticated } from '../hooks/useRedirectIfAuthenticated';
+import { useStandalone } from '../hooks/useStandalone';
+import { ARRANCO_EN_LA_PORTADA } from '../utils/appStartup';
+import FullScreenLoader from '../components/ui/FullScreenLoader';
 import InstallInstructionsModal from '../components/ui/InstallInstructionsModal';
 import { useEntryMotion } from '../hooks/useEntryMotion';
 import {
@@ -21,9 +25,46 @@ const Landing = () => {
   const { t: tCommon } = useTranslation('common');
   const navigate = useNavigate();
   const { canInstall, isIOS, iosInstallRoute, isDesktopSafari, isInstalled, install } = useInstallPrompt();
+  const esAplicacionInstalada = useStandalone();
+  // Solo el ARRANQUE, no cualquier visita a `/`: dentro de la aplicación
+  // instalada el logo de la cabecera y «Características» apuntan a `/` y a
+  // `/#features`, y sin esta condición rebotaban al panel desde Términos o
+  // Privacidad dejando la portada inalcanzable.
+  //
+  // Son dos preguntas distintas y hacen falta las dos. `ARRANCO_EN_LA_PORTADA`
+  // mira por dónde se entró, que se decide en el arranque. El tipo de
+  // navegación distingue esa entrada de una llegada por enlace dentro de la
+  // aplicación: la primera es `POP` y un enlace es `PUSH`, así que quien se
+  // registre desde la portada y luego pulse el logo ya no sale rebotado.
+  //
+  // Ninguna de las dos escribe nada aquí: la marca se anota al cargar el
+  // paquete, y un render descartado y reintentado no puede consumirla en
+  // silencio.
+  const tipoDeNavegacion = useNavigationType();
+  const esElArranque = ARRANCO_EN_LA_PORTADA && tipoDeNavegacion === 'POP';
+  const comprobandoSesion = useRedirectIfAuthenticated({
+    enabled: esAplicacionInstalada && esElArranque,
+  });
   const [showInstallHint, setShowInstallHint] = useState(false);
   const [showInstallModal, setShowInstallModal] = useState(false);
   const { animateEntry, animateOnScroll } = useEntryMotion();
+
+  // Abrir la aplicacion desde su icono con la sesion abierta lleva al panel, no
+  // a la portada: quien la tiene instalada ya sabe lo que es y solo quiere
+  // entrar. En el navegador la portada se sigue viendo con sesion, que es donde
+  // tiene sentido enseñarla o compartirla.
+  //
+  // Se reutiliza el hook del login y no `useAuth` por lo que documenta el
+  // propio hook: en una pagina publica el interceptor NO refresca ante un 401
+  // de `/current-user`, y esta —`/`— es publica. Con `useAuth`, abrir la
+  // aplicacion pasados los 15 minutos del access dejaba a un usuario con
+  // sesion renovable mirando la portada, que es justo lo que esto arregla.
+  //
+  // Y mientras comprueba no se pinta la portada: apareceria entera para
+  // desaparecer un segundo despues.
+  if (comprobandoSesion) {
+    return <FullScreenLoader />;
+  }
 
   const handleGetStarted = () => {
     navigate('/register');
