@@ -307,11 +307,13 @@
      blanca del arranque: se degrada al defecto de antes, no a uno peor. */
   html:has(#arranque),
   html:has(.pantalla-de-espera) {
-    background: #335d35;
+    background: #3e8642;
   }
 
   .pantalla-de-espera {
-    background: #335d35;
-    color: rgba(255, 255, 255, 0.92);
+    background: #3e8642;
+    /* Blanco puro y no un 92%: sobre este verde, mas claro que el anterior, el
+       velo bajaba el contraste del texto por debajo de lo legible. */
+    color: #ffffff;
   }
 }
