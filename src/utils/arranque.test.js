@@ -102,12 +102,27 @@ describe('retirarPantallaDeArranque', () => {
     expect(document.getElementById('arranque')).toBeNull();
   });
 
-  it('soltar la ultima retencion la retira sin que nadie mas lo pida', async () => {
+  it('soltar la ultima retencion NO la retira por si solo', async () => {
     montarCapa();
     const { retenerEspera, soltarEspera } = await cargarModulo();
 
     retenerEspera();
     soltarEspera();
+    vi.advanceTimersByTime(300);
+
+    // Quien suelta sabe que EL termino, no que haya pantalla: al resolver la
+    // sesion el paquete del destino puede no haberse pedido aun. Retirar ahi
+    // destapaba la espera blanca durante toda la descarga.
+    expect(document.getElementById('arranque')).not.toBeNull();
+  });
+
+  it('tras soltar, quien sabe que hay pantalla si la retira', async () => {
+    montarCapa();
+    const { retenerEspera, soltarEspera, retirarPantallaDeArranque } = await cargarModulo();
+
+    retenerEspera();
+    soltarEspera();
+    retirarPantallaDeArranque();
     vi.advanceTimersByTime(300);
 
     expect(document.getElementById('arranque')).toBeNull();

@@ -388,7 +388,16 @@ function AppContent() {
 /**
  * Error Fallback Component for Sentry ErrorBoundary
  */
-const ErrorFallback = ({ error, componentStack, resetError }) => (
+const ErrorFallback = ({ error, componentStack, resetError }) => {
+  // La capa del arranque es opaca y esta por encima de todo: taparia este aviso
+  // y su boton hasta que venciera el tope. El otro boundary hace lo mismo, pero
+  // solo cubre lo que pasa dentro del `Suspense`; un fallo en el cuerpo de
+  // `AppContent` o de sus hooks llega hasta aqui.
+  useEffect(() => {
+    retirarPantallaDeArranque({ forzar: true });
+  }, []);
+
+  return (
   <div style={{
     display: 'flex',
     flexDirection: 'column',
@@ -444,7 +453,8 @@ const ErrorFallback = ({ error, componentStack, resetError }) => (
       </details>
     )}
   </div>
-);
+  );
+};
 
 /**
  * Componente principal App con Router y ErrorBoundary

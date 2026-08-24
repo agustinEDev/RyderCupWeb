@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { Navigate, useLocation } from 'react-router';
 import { useAuth } from '../../hooks/useAuth';
 import FullScreenLoader from '../ui/FullScreenLoader';
-import { retenerEspera, soltarEspera, retirarPantallaDeArranque } from '../../utils/arranque';
+import { retenerEspera, soltarEspera } from '../../utils/arranque';
 
 /**
  * Protected Route Component
@@ -19,19 +19,13 @@ const ProtectedRoute = ({ children }) => {
   // acabar se suelta y se retira: la espera dura una sola vez, hasta que hay
   // pantalla de verdad.
   useEffect(() => {
-    if (!loading) {
-      // Sin sesion se sale a `/login`, que es otro paquete perezoso y puede no
-      // estar descargado: retirar aqui destaparia la espera blanca mientras
-      // baja. Se deja puesta y la retira el destino, o el tope.
-      if (user) retirarPantallaDeArranque();
-      return undefined;
-    }
+    if (!loading) return undefined;
     // Solo la limpieza suelta: hacerlo tambien en el cuerpo del efecto siguiente
     // soltaba dos veces la misma retencion, y con dos pantallas reteniendo a la
     // vez una de las dos se habria perdido sin que nada fallara
     retenerEspera();
     return () => soltarEspera();
-  }, [loading, user]);
+  }, [loading]);
 
   if (loading) {
     // La misma espera que el resto de la aplicacion: antes era un div sin

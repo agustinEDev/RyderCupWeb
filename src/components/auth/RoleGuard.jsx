@@ -3,7 +3,7 @@ import { Navigate, useLocation } from 'react-router';
 import PropTypes from 'prop-types';
 import { useAuth } from '../../hooks/useAuth';
 import FullScreenLoader from '../ui/FullScreenLoader';
-import { retenerEspera, soltarEspera, retirarPantallaDeArranque } from '../../utils/arranque';
+import { retenerEspera, soltarEspera } from '../../utils/arranque';
 
 /**
  * RoleGuard Component
@@ -44,10 +44,7 @@ const RoleGuard = ({
   // su propia consulta, y sin retener la espera del arranque se iba dejando ver
   // esta pantalla de carga por debajo. En `/admin` van los dos encadenados.
   useEffect(() => {
-    if (!loading) {
-      retirarPantallaDeArranque();
-      return undefined;
-    }
+    if (!loading) return undefined;
     retenerEspera();
     return () => soltarEspera();
   }, [loading]);

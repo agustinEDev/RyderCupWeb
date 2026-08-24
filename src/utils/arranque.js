@@ -36,12 +36,16 @@ export const retenerEspera = () => {
   retenciones += 1;
 };
 
-/** Y esta cuando ya tiene algo que enseñar. Al soltar la ultima, la capa se va:
- *  asi da igual quien suelte y en que orden, y una pantalla que se desmonte
- *  mientras carga no deja la espera colgada hasta que vence el tope. */
+/** Y esta cuando ya tiene algo que enseñar.
+ *
+ *  Soltar NO retira la capa, a proposito. Quien suelta sabe que EL ya termino,
+ *  no que haya pantalla: al resolver la sesion, el paquete del panel puede no
+ *  haberse pedido siquiera, y retirar ahi destapaba la espera blanca durante
+ *  toda la descarga. La unica autoridad para retirar es `RetiraLaEspera`, que
+ *  vive dentro del `Suspense` y por tanto solo corre cuando hay algo montado
+ *  —y el tope, como red—. */
 export const soltarEspera = () => {
   retenciones = Math.max(0, retenciones - 1);
-  if (retenciones === 0) retirarPantallaDeArranque();
 };
 
 export const retirarPantallaDeArranque = ({ forzar = false } = {}) => {
