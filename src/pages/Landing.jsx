@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, useNavigationType } from 'react-router';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
@@ -12,6 +12,7 @@ import { ARRANCO_EN_LA_PORTADA } from '../utils/appStartup';
 import FullScreenLoader from '../components/ui/FullScreenLoader';
 import InstallInstructionsModal from '../components/ui/InstallInstructionsModal';
 import { useEntryMotion } from '../hooks/useEntryMotion';
+import { retirarPantallaDeArranque } from '../utils/arranque';
 import {
   fadeInUp,
   slideUp,
@@ -48,6 +49,22 @@ const Landing = () => {
   const [showInstallHint, setShowInstallHint] = useState(false);
   const [showInstallModal, setShowInstallModal] = useState(false);
   const { animateEntry, animateOnScroll } = useEntryMotion();
+
+  // La espera del arranque se va cuando ESTA pantalla es la definitiva. Si
+  // todavia se comprueba la sesion no: de aqui se sale al panel, y retirarla
+  // antes enseñaria la portada un instante para taparla acto seguido.
+  useEffect(() => {
+    if (!comprobandoSesion) {
+      retirarPantallaDeArranque();
+      return;
+    }
+    // Mientras se comprueba, se pide ya el paquete del panel: es a donde se va
+    // en cuanto la sesion se confirme, y asi esa espera no se ve. Con `catch`
+    // porque una promesa rechazada aqui —chunk viejo tras un despliegue, o sin
+    // red— no la atiende nadie: acabaria en Sentry como error sin serlo,
+    // mientras el `lazy` de App reintenta por su cuenta.
+    import('./Dashboard').catch(() => {});
+  }, [comprobandoSesion]);
 
   // Abrir la aplicacion desde su icono con la sesion abierta lleva al panel, no
   // a la portada: quien la tiene instalada ya sabe lo que es y solo quiere

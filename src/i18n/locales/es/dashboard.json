@@ -110,7 +110,8 @@
       "STABLEFORD": "Stableford"
     },
     "strokesOverHoles_one": "{{strokes}} golpes · {{count}} hoyo",
-    "strokesOverHoles_other": "{{strokes}} golpes · {{count}} hoyos"
+    "strokesOverHoles_other": "{{strokes}} golpes · {{count}} hoyos",
+    "excludedBadge": "No cuenta"
   },
   "playerStats": {
     "title": "Mis estadísticas",

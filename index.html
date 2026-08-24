@@ -34,8 +34,53 @@
     <meta name="twitter:description" content="The ultimate amateur golf tournament management platform" />
 
     <title>RyderCupFriends - RCF | Amateur Golf Tournament Platform</title>
+    <style>
+      /* La espera del arranque. En el navegador va en blanco, que es como se ve
+         el resto del sitio; instalada va en el verde del icono, que es lo que
+         uno espera al abrir una aplicacion desde su icono. La distincion se hace
+         con `display-mode`, sin JavaScript: la CSP no admite scripts en linea.
+         iOS entiende `display-mode: standalone` desde 16.4; en versiones
+         anteriores se queda en blanco, que es el caso seguro. */
+      #arranque {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #ffffff;
+        transition: opacity 0.18s ease-out;
+      }
+      @media (display-mode: standalone) {
+        #arranque {
+          background: #335d35;
+        }
+      }
+    </style>
   </head>
   <body>
+    <!-- La espera del arranque se pinta AQUI, fuera de React, y no dentro de
+         `#root`: React la borraria al montar, que es justo antes de que haya
+         pantalla que enseñar. Se retira desde `utils/arranque.js` cuando la
+         primera pantalla real esta montada.
+
+         Vivia dentro de la aplicacion y se veia hasta TRES veces seguidas al
+         abrir con sesion —al bajar la portada, al comprobar la sesion y al bajar
+         el panel—, desmontandose y volviendose a montar entre medias: eso es lo
+         que parpadeaba. Aqui se pinta una vez, desde el primer byte y antes de
+         que baje el JavaScript, y desaparece una vez.
+
+         Los estilos van en linea porque la CSP admite `style-src 'unsafe-inline'`
+         pero NO scripts en linea: por eso quien la retira es la aplicacion. -->
+    <div id="arranque" aria-hidden="true">
+      <!-- El monograma suelto, no el icono de la aplicacion: aquel trae su
+           propio fondo verde y se recorta como un cuadrado. `<picture>` elige la
+           tinta segun el fondo y descarga solo una de las dos. -->
+      <picture>
+        <source media="(display-mode: standalone)" srcset="/images/rcf-monogram-white.png" />
+        <img src="/images/rcf-monogram-green.png" alt="" width="88" height="78" style="display:block" />
+      </picture>
+    </div>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>

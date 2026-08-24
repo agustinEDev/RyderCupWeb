@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [2.18.1] - 2026-08-24
+
+### Fixed
+
+- **La marca de «No cuenta» se leía en crudo en el panel**. La lista de últimas partidas enseñaba el texto `recentMatches.excludedBadge` dentro de la etiqueta gris, en vez de «No cuenta». La etiqueta se trajo del historial de partidas rápidas copiando el diseño, pero su texto vive allí bajo otro nombre y aquí nunca se creó: cuando falta una traducción, lo que se pinta es la clave. No había ninguna comprobación que lo vigilara; ahora sí, y verifica además que el texto existe en los dos idiomas.
+
+### Changed
+
+- **La espera del arranque deja de parpadear**. Al abrir la aplicación con la sesión abierta se veía la misma pantalla de espera hasta tres veces seguidas —al bajar la portada, al comprobar la sesión y al bajar el panel—, desmontándose y volviéndose a montar entre medias: esos cortes son lo que parpadeaba.
+
+  Ahora la pinta el propio documento, fuera de la aplicación, así que aparece **desde el primer byte** —antes incluso de que baje el código— y desaparece una sola vez, cuando ya hay pantalla de verdad. De paso el arranque se ve más rápido, porque hasta ahora no había nada que mirar hasta que llegaba el paquete.
+
+  Va en blanco en el navegador y en el verde del icono cuando la aplicación está instalada, que es lo que uno espera al abrirla desde su icono; el color del arranque de Android se ha igualado a ese mismo verde, que estaba en blanco y metía otro salto. Las esperas de después siguen en blanco, como el resto del sitio. Lleva un tope de seguridad: si algo impidiera que llegue a haber pantalla, la espera se retira igualmente en vez de dejar la aplicación tapada.
+
 ## [2.18.0] - 2026-08-24
 
 ### Added

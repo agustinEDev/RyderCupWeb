@@ -47,6 +47,16 @@ describe('BrandMark', () => {
 describe('la marca no vuelve a duplicarse', () => {
   const PERMITIDOS = ['src/components/ui/BrandMark.jsx', 'src/components/ui/BrandMark.test.jsx'];
 
+  /** `index.html` es el unico sitio donde la marca puede vivir fuera del
+   *  componente: la espera del arranque se pinta antes de que exista React. Pero
+   *  no se le da via libre al fichero entero —eso apagaria el guardia justo
+   *  ahi—, sino a las DOS referencias que necesita el `<picture>`. Una tercera
+   *  copia, en un `og:image` o en otro splash, vuelve a fallar. */
+  const REFERENCIAS_ESPERADAS = [
+    '/images/rcf-monogram-white.png',
+    '/images/rcf-monogram-green.png',
+  ];
+
   /** `index.html`, `public/` y `vite.config.js` llevan marcado escrito a mano
    *  —la pantalla sin conexion, el manifiesto, el service worker— donde cabe un
    *  logo de arranque: si el guardia no los mira, una copia pegada ahi se queda
@@ -77,8 +87,15 @@ describe('la marca no vuelve a duplicarse', () => {
         const texto = readFileSync(resolve(process.cwd(), ruta), 'utf8');
         return RASTROS.some((r) => r.test(texto));
       })
-      .filter((ruta) => !PERMITIDOS.includes(ruta));
+      .filter((ruta) => !PERMITIDOS.includes(ruta) && ruta !== 'index.html');
 
     expect(conLaMarca).toEqual([]);
+  });
+
+  it('en index.html solo estan las dos referencias de la espera del arranque', () => {
+    const html = readFileSync(resolve(process.cwd(), 'index.html'), 'utf8');
+    const encontradas = html.match(/\/images\/rcf-[a-z-]+\.(png|jpeg|jpg|svg)/g) || [];
+
+    expect([...new Set(encontradas)].sort()).toEqual([...REFERENCIAS_ESPERADAS].sort());
   });
 });

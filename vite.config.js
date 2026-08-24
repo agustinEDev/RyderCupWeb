@@ -183,7 +183,11 @@ export default defineConfig(() => ({
         short_name: 'RCF',
         description: 'Amateur golf tournament management platform',
         theme_color: '#15803d',
-        background_color: '#ffffff',
+        // El mismo verde que la espera de `index.html`: en Android este color lo
+        // pinta el sistema en su pantalla de arranque, justo ANTES de que cargue
+        // el documento. Con blanco aqui y verde alli se veia blanco, verde y
+        // pantalla, un salto de color en el mismo camino que esto viene a pulir.
+        background_color: '#335d35',
         display: 'standalone',
         start_url: '/',
         scope: '/',

@@ -16,6 +16,7 @@ import { useLogout } from './hooks/useLogout';
 import { useDeviceRevocationMonitor } from './hooks/useDeviceRevocationMonitor';
 import InstallBanner from './components/ui/InstallBanner';
 import BottomNav from './components/layout/BottomNav';
+import { retirarPantallaDeArranque } from './utils/arranque';
 
 // Lazy loading con retry automático para fallos de red transitorios
 // Si el primer import() falla, reintenta tras 1.5s antes de propagar el error
@@ -89,6 +90,22 @@ const SentryRoutes = Sentry.withSentryReactRouterV7Routing(Routes);
  * Componente interno que contiene la lógica de la app
  * (necesita estar dentro de <Router> para usar useNavigate)
  */
+/**
+ * Retira la espera del arranque en cuanto hay pantalla. En la portada NO: desde
+ * ella se sale al panel cuando hay sesion, y quitarla antes enseñaria la portada
+ * un instante para taparla acto seguido. Alli la retira `Landing`, que es quien
+ * sabe si sigue comprobando.
+ */
+function RetiraLaEspera() {
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    if (pathname !== '/') retirarPantallaDeArranque();
+  }, [pathname]);
+
+  return null;
+}
+
 function AppContent() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const { logout } = useLogout();
@@ -237,6 +254,17 @@ function AppContent() {
       />
       {location.pathname !== '/' && <InstallBanner aboveBottomNav={showBottomNav} />}
       <Suspense fallback={<FullScreenLoader />}>
+        {/* DENTRO del Suspense a proposito: aqui solo se monta cuando el chunk
+            de la ruta ya resolvio, o sea cuando hay pantalla de verdad. Fuera
+            —que es donde estuvo— el efecto corria antes, la capa se iba y debajo
+            asomaba el `FullScreenLoader` en blanco: verde, blanco y pantalla,
+            que es el parpadeo que esto viene a quitar.
+
+            Antes la retiraban solo la portada y el panel, asi que entrar por
+            cualquier otro sitio —`/login`, un enlace de correo, la vuelta de
+            Google, o recargar en una pantalla profunda— dejaba la capa tapando
+            la aplicacion entera. */}
+        <RetiraLaEspera />
         <SentryRoutes>
         {/* Public routes */}
         <Route path="/" element={<Landing />} />

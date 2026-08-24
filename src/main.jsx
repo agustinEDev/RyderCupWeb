@@ -9,6 +9,8 @@ import { scrubUrl } from './utils/scrubUrl';
 // antes de que React navegue a ningún sitio
 import './utils/appStartup';
 import './index.css';
+// Arma el tope de seguridad de la espera del arranque en CUALQUIER ruta
+import './utils/arranque';
 import './i18n'; // Import i18n initialization
 import { AuthProviderWithGlobalSync } from './contexts/AuthContext'; // v1.13.0: CSRF Protection
 
