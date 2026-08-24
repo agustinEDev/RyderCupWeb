@@ -124,7 +124,7 @@ const ResetPassword = () => {
     // Validación 1: Nueva contraseña con requisitos OWASP
     const passwordValidation = validatePassword(formData.newPassword);
     if (!passwordValidation.isValid) {
-      newErrors.newPassword = passwordValidation.message;
+      newErrors.newPassword = t(passwordValidation.messageKey, passwordValidation.messageOptions);
     }
 
     // Validación 2: Confirmación de contraseña
@@ -319,7 +319,7 @@ const ResetPassword = () => {
           <div className="relative z-10 flex flex-col justify-between p-12 text-white w-full">
             {/* Logo */}
             <Link to="/" className="flex items-center gap-3 group">
-              <BrandMark className="size-10 text-white" />
+              <BrandMark className="size-10" tinta="blanco" />
               <div className="flex flex-col group-hover:opacity-80 transition-opacity">
                 <h1 className="text-2xl font-bold font-poppins">RyderCupFriends</h1>
                 <span className="text-sm font-semibold text-accent -mt-1">RCF</span>
@@ -376,7 +376,7 @@ const ResetPassword = () => {
           >
             {/* Mobile Logo */}
             <Link to="/" className="flex lg:hidden items-center gap-3 mb-8 justify-center group">
-              <BrandMark className="size-10 text-primary-600" />
+              <BrandMark className="size-10" />
               <div className="flex flex-col group-hover:opacity-80 transition-opacity">
                 <h1 className="text-2xl font-bold font-poppins text-gray-900">RyderCupFriends</h1>
                 <span className="text-sm font-semibold text-primary -mt-1">RCF</span>
@@ -557,7 +557,7 @@ const ResetPassword = () => {
                   <div className="w-full border-t border-gray-200"></div>
                 </div>
                 <div className="relative flex justify-center text-sm">
-                  <span className="px-4 bg-white text-gray-500">or</span>
+                  <span className="px-4 bg-white text-gray-500">{t('google.orDivider')}</span>
                 </div>
               </div>
 

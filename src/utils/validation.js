@@ -11,6 +11,7 @@ export const validatePassword = (password) => {
   if (!password) {
     return {
       isValid: false,
+      messageKey: 'validation.passwordRequired',
       message: 'Password is required',
       strength: 0
     };
@@ -35,6 +36,8 @@ export const validatePassword = (password) => {
   if (password.length < minLength) {
     return {
       isValid: false,
+      messageKey: 'validation.passwordTooShort',
+      messageOptions: { min: minLength },
       message: `Password must be at least ${minLength} characters`,
       strength
     };
@@ -44,6 +47,8 @@ export const validatePassword = (password) => {
   if (password.length > maxLength) {
     return {
       isValid: false,
+      messageKey: 'validation.passwordTooLong',
+      messageOptions: { max: maxLength },
       message: `Password must not exceed ${maxLength} characters`,
       strength
     };
@@ -53,6 +58,7 @@ export const validatePassword = (password) => {
   if (!(hasUpperCase && hasLowerCase && hasNumbers)) {
     return {
       isValid: false,
+      messageKey: 'validation.passwordWeak',
       message: 'Password must contain uppercase, lowercase, and numbers',
       strength
     };
@@ -151,6 +157,10 @@ export const validateEmail = (email) => {
   if (!email || !email.trim()) {
     return {
       isValid: false,
+      // `messageKey` es lo que pinta la interfaz. `message` se conserva en
+      // ingles porque de el dependen los tests de esta utilidad; ningun sitio de
+      // la aplicacion lo enseña ya
+      messageKey: 'validation.emailRequired',
       message: 'Email is required'
     };
   }
@@ -161,6 +171,8 @@ export const validateEmail = (email) => {
   if (email.length > maxLength) {
     return {
       isValid: false,
+      messageKey: 'validation.emailTooLong',
+      messageOptions: { max: maxLength },
       message: `Email must not exceed ${maxLength} characters`
     };
   }
@@ -171,6 +183,7 @@ export const validateEmail = (email) => {
   if (!emailRegex.test(email)) {
     return {
       isValid: false,
+      messageKey: 'validation.emailInvalid',
       message: 'Please enter a valid email address'
     };
   }
@@ -243,11 +256,26 @@ export const validateHandicap = (handicap) => {
  * @returns {Object} - { isValid: boolean, message: string }
  */
 export const validateName = (name, fieldName = 'Name') => {
+  // La clave sale del propio `fieldName` («First name» -> «firstName») en vez de
+  // recibirse aparte: dos parametros paralelos podian divergir en silencio
+  // —`validateName(x, 'Last name', 'firstName')` no fallaba en ningun sitio— y
+  // olvidar el tercero pintaba la clave en crudo en el formulario.
+  const campoClave = fieldName
+    .trim()
+    .split(/\s+/)
+    .map((parte, i) =>
+      i === 0
+        ? parte.toLowerCase()
+        : parte.charAt(0).toUpperCase() + parte.slice(1).toLowerCase()
+    )
+    .join('');
+
   const trimmed = name.trim();
 
   if (!trimmed) {
     return {
       isValid: false,
+      messageKey: `validation.${campoClave}Required`,
       message: `${fieldName} is required`
     };
   }
@@ -258,6 +286,8 @@ export const validateName = (name, fieldName = 'Name') => {
   if (trimmed.length < minLength) {
     return {
       isValid: false,
+      messageKey: `validation.${campoClave}TooShort`,
+      messageOptions: { min: minLength },
       message: `${fieldName} must be at least ${minLength} characters`
     };
   }
@@ -265,6 +295,8 @@ export const validateName = (name, fieldName = 'Name') => {
   if (trimmed.length > maxLength) {
     return {
       isValid: false,
+      messageKey: `validation.${campoClave}TooLong`,
+      messageOptions: { max: maxLength },
       message: `${fieldName} must not exceed ${maxLength} characters`
     };
   }
@@ -274,6 +306,7 @@ export const validateName = (name, fieldName = 'Name') => {
   if (!nameRegex.test(trimmed)) {
     return {
       isValid: false,
+      messageKey: `validation.${campoClave}Invalid`,
       message: `${fieldName} contains invalid characters`
     };
   }

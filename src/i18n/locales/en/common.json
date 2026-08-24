@@ -125,5 +125,6 @@
     "clear": "Clear selection",
     "moreResults_one": "1 more country — keep typing to narrow it down",
     "moreResults_other": "{{count}} more countries — keep typing to narrow it down"
-  }
+  },
+  "brandMarkAlt": "RyderCupFriends logo"
 }

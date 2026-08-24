@@ -125,5 +125,6 @@
     "clear": "Quitar el país elegido",
     "moreResults_one": "1 país más — sigue escribiendo para afinar",
     "moreResults_other": "{{count}} países más — sigue escribiendo para afinar"
-  }
+  },
+  "brandMarkAlt": "Logo de RyderCupFriends"
 }
