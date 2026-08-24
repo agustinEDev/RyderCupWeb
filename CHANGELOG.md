@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [2.19.1] - 2026-08-24
+
+### Fixed
+
+- **Una sola pantalla de carga al abrir la aplicación, en vez de tres imágenes distintas.** Abrir la aplicación instalada encadena varias esperas —el primer instante antes de que cargue el código, el paquete de la pantalla de arranque, la consulta de la sesión, el paquete del panel y los datos del panel— y cada tramo pintaba algo diferente: primero blanco, luego el icono de la aplicación, y al final un círculo girando. Ese cambio de imagen es lo que se percibía como parpadeo; los cortes por sí solos no se notan cuando lo que hay a los dos lados es idéntico.
+
+  Ahora todos los tramos pintan lo mismo: el monograma sobre el verde de la marca cuando la aplicación está instalada, y sobre blanco en el navegador, como el resto del sitio. Se ve una sola pantalla continua hasta que aparece el panel —o el acceso, si no hay sesión—. El color del arranque de Android se iguala a ese verde, que era lo que metía el primer salto de todos.
+
 ## [2.19.0] - 2026-08-24
 
 ### Added

@@ -77,8 +77,34 @@ describe('la marca no vuelve a duplicarse', () => {
         const texto = readFileSync(resolve(process.cwd(), ruta), 'utf8');
         return RASTROS.some((r) => r.test(texto));
       })
-      .filter((ruta) => !PERMITIDOS.includes(ruta));
+      .filter((ruta) => !PERMITIDOS.includes(ruta) && ruta !== 'index.html');
 
     expect(conLaMarca).toEqual([]);
+  });
+});
+
+/**
+ * `index.html` es el unico sitio donde la marca vive fuera del componente: la
+ * espera del arranque se pinta ANTES de que exista React. No se le da via libre
+ * al fichero entero —eso apagaria el guardia justo ahi— sino a las dos
+ * referencias que necesita el `<picture>`.
+ */
+describe('la marca en index.html', () => {
+  const ESPERADAS = ['/images/rcf-monogram-white.png', '/images/rcf-monogram-green.png'];
+
+  it('solo estan las dos referencias de la espera del arranque', () => {
+    const html = readFileSync(resolve(process.cwd(), 'index.html'), 'utf8');
+    // Sin deduplicar: una tercera copia que repita una ruta —un `og:image`
+    // apuntando al mismo PNG— se colaba si se agrupaban
+    const encontradas = html.match(/[\w./-]*rcf-monogram[\w-]*\.\w+/g) || [];
+
+    expect(encontradas.sort()).toEqual([...ESPERADAS].sort());
+  });
+
+  it('el trazo del triangulo tampoco puede colarse ahi', () => {
+    const html = readFileSync(resolve(process.cwd(), 'index.html'), 'utf8');
+
+    expect(html).not.toMatch(/M13\.8261 17\.4264/);
+    expect(html).not.toMatch(/rcf-logo/);
   });
 });
