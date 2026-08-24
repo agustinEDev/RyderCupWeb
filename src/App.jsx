@@ -16,6 +16,7 @@ import { useLogout } from './hooks/useLogout';
 import { useDeviceRevocationMonitor } from './hooks/useDeviceRevocationMonitor';
 import InstallBanner from './components/ui/InstallBanner';
 import BottomNav from './components/layout/BottomNav';
+import { esRutaPublica, esPuertaDeEntrada } from './utils/rutasPublicas';
 
 // Lazy loading con retry automático para fallos de red transitorios
 // Si el primer import() falla, reintenta tras 1.5s antes de propagar el error
@@ -29,6 +30,7 @@ function lazyWithRetry(importFn) {
 }
 
 const Landing = lazyWithRetry(() => import('./pages/Landing'));
+const AppStart = lazyWithRetry(() => import('./pages/AppStart'));
 const Login = lazyWithRetry(() => import('./pages/Login'));
 const Register = lazyWithRetry(() => import('./pages/Register'));
 const VerifyEmail = lazyWithRetry(() => import('./pages/VerifyEmail'));
@@ -97,28 +99,11 @@ function AppContent() {
   // ============================================
   // RUTAS PÚBLICAS (no requieren autenticación)
   // ============================================
-  const PUBLIC_ROUTES = [
-    '/',
-    '/login',
-    '/register',
-    '/verify-email',
-    '/forgot-password',
-    '/reset-password',
-    '/pricing',
-    '/contact',
-    '/terms',
-    '/privacy',
-    '/cookies',
-    '/auth/google/callback',
-  ];
-
-  // Also check dynamic public routes
-  const isDynamicPublicRoute = location.pathname.match(/^\/competitions\/[^/]+\/leaderboard$/);
-
-
-  const isPublicRoute = PUBLIC_ROUTES.includes(location.pathname) ||
-                       location.pathname.startsWith('/reset-password/') ||
-                       isDynamicPublicRoute;
+  // La lista vive en `utils/rutasPublicas`: estaba escrita dos veces, aquí y en
+  // el interceptor de refresco, y esa copia ya iba dos entradas por detrás. Cada
+  // olvido significa consultar la sesión donde no la hay, comerse un 401 y echar
+  // al usuario a `/login` diciendo que expiró.
+  const isPublicRoute = esRutaPublica(location.pathname);
 
   // La anotación en vivo es inmersiva: la navegación inferior le robaría
   // el espacio vertical que necesita el flujo hoyo a hoyo (FE #306)
@@ -235,11 +220,19 @@ function AppContent() {
           },
         }}
       />
-      {location.pathname !== '/' && <InstallBanner aboveBottomNav={showBottomNav} />}
+      {/* Ni en la portada ni en el arranque de la aplicacion instalada: ofrecer
+          «instala la aplicacion» sobre la pantalla por la que se entra a la
+          aplicacion ya instalada no tiene sentido */}
+      {!esPuertaDeEntrada(location.pathname) && (
+        <InstallBanner aboveBottomNav={showBottomNav} />
+      )}
       <Suspense fallback={<FullScreenLoader />}>
         <SentryRoutes>
         {/* Public routes */}
         <Route path="/" element={<Landing />} />
+        {/* Por donde arranca la aplicacion instalada (FE #465): es el `start_url`
+            del manifiesto. Abierta en un navegador redirige a la portada. */}
+        <Route path="/start" element={<AppStart />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/verify-email" element={<VerifyEmail />} />

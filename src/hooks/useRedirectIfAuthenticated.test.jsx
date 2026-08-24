@@ -134,6 +134,57 @@ describe('useRedirectIfAuthenticated', () => {
       expect(result.current).toBe(true);
     });
 
+    describe('entrarSinRed, para el arranque de la aplicación instalada', () => {
+      it('entra con la sesión guardada si no se pudo PREGUNTAR', async () => {
+        // En el campo no hay cobertura y esta es la pantalla de entrada: dejar
+        // un formulario que no se puede enviar deja al usuario sin poder anotar,
+        // que es el caso de uso del producto
+        globalThis.fetch.mockRejectedValue(new TypeError('Failed to fetch'));
+
+        renderHook(() => useRedirectIfAuthenticated({ entrarSinRed: true }));
+
+        await waitFor(() =>
+          expect(navigate).toHaveBeenCalledWith('/dashboard', { replace: true })
+        );
+      });
+
+      it('pero NO si el backend rechaza la sesión', async () => {
+        // Aquí sí hubo respuesta y dice que no: entrar seria colar a alguien
+        // cuya sesión ya no vale
+        globalThis.fetch.mockResolvedValue(errorResponse(401));
+
+        const { result } = renderHook(() => useRedirectIfAuthenticated({ entrarSinRed: true }));
+
+        await waitFor(() => expect(result.current).toBe(false));
+        expect(navigate).not.toHaveBeenCalled();
+      });
+
+      it('entra también cuando la petición se queda COLGADA', async () => {
+        // Este es el caso de verdad sin cobertura: la peticion no falla rapido,
+        // se cuelga hasta agotar el plazo. Cubrir solo el rechazo dejaba el
+        // arreglo sirviendo para el caso raro y no para el habitual.
+        vi.useFakeTimers();
+        globalThis.fetch.mockReturnValue(new Promise(() => {}));
+
+        renderHook(() => useRedirectIfAuthenticated({ entrarSinRed: true }));
+
+        await act(async () => {
+          await vi.advanceTimersByTimeAsync(5000);
+        });
+
+        expect(navigate).toHaveBeenCalledWith('/dashboard', { replace: true });
+      });
+
+      it('sin la opción, un corte de red sigue enseñando el formulario', async () => {
+        globalThis.fetch.mockRejectedValue(new TypeError('Failed to fetch'));
+
+        const { result } = renderHook(() => useRedirectIfAuthenticated());
+
+        await waitFor(() => expect(result.current).toBe(false));
+        expect(navigate).not.toHaveBeenCalled();
+      });
+    });
+
     it('lleva al dashboard cuando el backend confirma la sesión', async () => {
       globalThis.fetch.mockResolvedValue(okResponse(BACKEND_USER));
 
