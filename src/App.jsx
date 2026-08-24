@@ -29,6 +29,7 @@ function lazyWithRetry(importFn) {
 }
 
 const Landing = lazyWithRetry(() => import('./pages/Landing'));
+const AppStart = lazyWithRetry(() => import('./pages/AppStart'));
 const Login = lazyWithRetry(() => import('./pages/Login'));
 const Register = lazyWithRetry(() => import('./pages/Register'));
 const VerifyEmail = lazyWithRetry(() => import('./pages/VerifyEmail'));
@@ -240,6 +241,9 @@ function AppContent() {
         <SentryRoutes>
         {/* Public routes */}
         <Route path="/" element={<Landing />} />
+        {/* Por donde arranca la aplicacion instalada (FE #465): es el `start_url`
+            del manifiesto. Abierta en un navegador redirige a la portada. */}
+        <Route path="/start" element={<AppStart />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/verify-email" element={<VerifyEmail />} />

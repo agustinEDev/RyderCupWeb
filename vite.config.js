@@ -185,7 +185,15 @@ export default defineConfig(() => ({
         theme_color: '#15803d',
         background_color: '#ffffff',
         display: 'standalone',
-        start_url: '/',
+        // La aplicacion instalada arranca en su propia pantalla, no en la
+        // portada (FE #465): asi `/` deja de hacer dos papeles y no hay que
+        // adivinar, mirando el tipo de navegacion, si una visita es un arranque.
+        //
+        // OJO: las instalaciones que YA existen conservan el `start_url` viejo
+        // hasta que el navegador refresque el manifiesto por su cuenta, asi que
+        // durante un tiempo seguiran abriendo en `/`. Por eso la deteccion
+        // antigua sigue en `Landing` una release mas, en vez de retirarse ahora.
+        start_url: '/start',
         scope: '/',
         icons: [
           { src: '/icons/pwa-192x192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
