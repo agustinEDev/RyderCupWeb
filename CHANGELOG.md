@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [2.19.2] - 2026-08-25
+
+### Fixed
+
+- **Se acaban los saltos que quedaban al abrir la aplicación instalada.** La pantalla de espera verde ya era una sola, pero entre ella y el panel se colaban tres cosas que no deberían verse.
+
+  El **destello blanco**: la capa de espera se retiraba justo después de pedirle a React que pintara, y React en ese instante todavía no ha pintado nada, solo lo ha programado. La capa se iba antes de que hubiera nada debajo y se veía el fondo blanco de la página. Ahora se retira cuando el contenido ya está puesto y antes de que se dibuje, así que no hay ningún momento con la pantalla vacía.
+
+  La **barra inferior apareciendo sola**: el aviso de instalación y la barra de navegación se pintaban fuera de la espera de la página, de modo que salían encima de la pantalla de carga antes que la pantalla a la que pertenecen. Ahora esperan con ella y entran a la vez que el panel.
+
+  La **banda blanca de la parte de arriba**: la franja del reloj, la cobertura y la batería no la pinta la pantalla de carga, la pinta el fondo del documento, que se quedaba en su blanco por defecto. Cruzaba de lado a lado una pantalla por lo demás verde. Ahora es del mismo verde mientras se espera, y solo mientras se espera.
+
+  Y el **salto del monograma** justo en el cambio: la primera pantalla centraba solo el dibujo y la segunda el dibujo con su texto debajo, así que la marca se desplazaba unos veinte píxeles en el relevo. Antes quedaba oculto tras el destello blanco; al quitar el destello se veía. Ahora las dos lo colocan en el mismo sitio.
+
+- **La pantalla de carga pasa a un verde césped, para que el reloj se lea.** La franja de arriba ya no era blanca, pero los símbolos del sistema —hora, cobertura, batería— son oscuros y sobre el verde anterior quedaban en 2,8 a 1, por debajo de lo legible. El verde nuevo los deja en 4,7 a 1 sin perder el monograma ni el texto en blanco, que se quedan en 4,5. Es el punto en el que las dos cosas que van encima se leen: aclararlo más ayuda al reloj y empieza a comerse el blanco.
+
+- **La pantalla de error vuelve a verse cuando la aplicación no llega a arrancar.** Si algo fallaba durante el arranque —leer los datos guardados del navegador lanza un error en Safari con las cookies bloqueadas—, la pantalla de carga se quedaba encima de la de error y la tapaba durante seis segundos. Ahora se aparta igual, arranque la aplicación o falle.
+
 ## [2.19.1] - 2026-08-24
 
 ### Fixed

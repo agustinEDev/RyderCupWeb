@@ -1,5 +1,5 @@
 /* eslint-disable react-refresh/only-export-components */
-import { useEffect, useCallback, lazy, Suspense, useState } from 'react';
+import { useEffect, useLayoutEffect, useCallback, lazy, Suspense, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router';
 import { Toaster } from 'react-hot-toast';
 import * as Sentry from '@sentry/react';
@@ -91,6 +91,23 @@ const SentryRoutes = Sentry.withSentryReactRouterV7Routing(Routes);
  * Componente interno que contiene la lógica de la app
  * (necesita estar dentro de <Router> para usar useNavigate)
  */
+/**
+ * Retira la capa de espera que pinta `index.html`.
+ *
+ * Con `useLayoutEffect` porque corre cuando React YA ha puesto su contenido en
+ * el DOM y ANTES de que el navegador pinte: el relevo ocurre en el mismo
+ * fotograma y no se ve. Quitarla justo despues de pedir el render —que es lo
+ * que se hacia— la retiraba antes de que hubiera nada debajo, y se veia el
+ * fondo blanco de la pagina hasta que React llegaba: ese era el pantallazo.
+ */
+function RetiraLaCapaDeEspera() {
+  useLayoutEffect(() => {
+    document.getElementById('arranque')?.remove();
+  }, []);
+
+  return null;
+}
+
 function AppContent() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const { logout } = useLogout();
@@ -220,13 +237,14 @@ function AppContent() {
           },
         }}
       />
-      {/* Ni en la portada ni en el arranque de la aplicacion instalada: ofrecer
-          «instala la aplicacion» sobre la pantalla por la que se entra a la
-          aplicacion ya instalada no tiene sentido */}
-      {!esPuertaDeEntrada(location.pathname) && (
-        <InstallBanner aboveBottomNav={showBottomNav} />
-      )}
       <Suspense fallback={<FullScreenLoader />}>
+        {/* Dentro de la espera a proposito: fuera se pintaba ENCIMA de ella,
+            apareciendo antes que la pantalla a la que acompaña. Ni en la portada
+            ni en el arranque: ofrecer «instala la aplicacion» en la pantalla por
+            la que se entra a la aplicacion ya instalada no tiene sentido. */}
+        {!esPuertaDeEntrada(location.pathname) && (
+          <InstallBanner aboveBottomNav={showBottomNav} />
+        )}
         <SentryRoutes>
         {/* Public routes */}
         <Route path="/" element={<Landing />} />
@@ -342,7 +360,6 @@ function AppContent() {
         {/* Error routes */}
         <Route path="/unauthorized" element={<Unauthorized />} />
         </SentryRoutes>
-      </Suspense>
       {showBottomNav && (
         <>
           {/* Espaciador en el flujo: la nav es fixed y taparía el final de la página */}
@@ -350,6 +367,9 @@ function AppContent() {
           <BottomNav />
         </>
       )}
+
+      </Suspense>
+
     </LazyLoadErrorBoundary>
   );
 }
@@ -420,14 +440,24 @@ const ErrorFallback = ({ error, componentStack, resetError }) => (
  */
 function App() {
   return (
-    <Sentry.ErrorBoundary
-      fallback={ErrorFallback}
-      showDialog={false}
-    >
-      <Router>
-        <AppContent />
-      </Router>
-    </Sentry.ErrorBoundary>
+    <>
+      {/* Fuera de los dos error boundaries a proposito. Dentro, la capa solo se
+          retiraba si el arbol de la aplicacion llegaba a montarse: si algo
+          lanzaba durante el render —`useInstallPrompt` lee `localStorage`, que
+          en Safari con las cookies bloqueadas lanza— el boundary pintaba su
+          pantalla de error y la capa se quedaba encima tapandola hasta que la
+          red de seguridad del CSS la apartaba, seis segundos despues. Aqui
+          corre igual, se pinte la aplicacion o se pinte el error. */}
+      <RetiraLaCapaDeEspera />
+      <Sentry.ErrorBoundary
+        fallback={ErrorFallback}
+        showDialog={false}
+      >
+        <Router>
+          <AppContent />
+        </Router>
+      </Sentry.ErrorBoundary>
+    </>
   );
 }
 
