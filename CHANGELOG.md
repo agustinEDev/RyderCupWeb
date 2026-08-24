@@ -19,7 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
   Ahora la pinta el propio documento, fuera de la aplicación, así que aparece **desde el primer byte** —antes incluso de que baje el código— y desaparece una sola vez, cuando ya hay pantalla de verdad. De paso el arranque se ve más rápido, porque hasta ahora no había nada que mirar hasta que llegaba el paquete.
 
-  Va en blanco en el navegador y en el verde del icono cuando la aplicación está instalada, que es lo que uno espera al abrirla desde su icono; el color del arranque de Android se ha igualado a ese mismo verde, que estaba en blanco y metía otro salto. Las esperas de después siguen en blanco, como el resto del sitio. Lleva un tope de seguridad: si algo impidiera que llegue a haber pantalla, la espera se retira igualmente en vez de dejar la aplicación tapada.
+  Va en blanco en el navegador y en el verde del icono cuando la aplicación está instalada, que es lo que uno espera al abrirla desde su icono; el color del arranque de Android se ha puesto en ese mismo verde, que estaba en blanco y metía un salto mayor. Ojo: Android cocina ese color al instalar, así que las instalaciones que ya existen seguirán viendo el anterior hasta que el sistema refresque el manifiesto por su cuenta, y la barra de estado usa todavía otro verde. Las esperas de después siguen en blanco, como el resto del sitio. Lleva un tope de seguridad: si algo impidiera que llegue a haber pantalla, la espera se retira igualmente en vez de dejar la aplicación tapada.
 
 ## [2.18.0] - 2026-08-24
 

@@ -73,9 +73,11 @@ describe('retirarPantallaDeArranque', () => {
 
   /** El tope tiene que ser CORTO: la capa es opaca y esta por encima de todo, asi
    *  que mientras siga puesta tapa tambien el aviso de error y su boton de
-   *  recargar. Se comprueba el valor, no «que en algun momento se vaya»: pasar de
-   *  4 a 8 segundos no debe colar. */
-  const LIMITE_ESPERADO_MS = 4000;
+   *  recargar —de eso se encarga el error boundary—. Pero tampoco puede quedarse
+   *  CORTO: por debajo de los 5 s que se concede la comprobacion de sesion, la
+   *  capa se levanta a mitad y vuelve el parpadeo. Se comprueba el valor, no
+   *  «que en algun momento se vaya». */
+  const LIMITE_ESPERADO_MS = 12000;
 
   it('el tope de seguridad la retira aunque nadie la llame', async () => {
     montarCapa();

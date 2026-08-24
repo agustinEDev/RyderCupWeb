@@ -20,7 +20,7 @@ const ID = 'arranque';
  *  siquiera se programaba en el resto de rutas: abrir `/login`, volver de Google,
  *  seguir un enlace de correo o simplemente recargar en una pantalla profunda
  *  dejaba la capa puesta para siempre, tapando la aplicacion entera. */
-const LIMITE_MS = 4000;
+const LIMITE_MS = 12000;
 
 let retirada = false;
 
@@ -84,9 +84,15 @@ const aplicarRetirada = () => {
 
 if (typeof window !== 'undefined') {
   // `forzar` porque el tope existe justo para los casos en que nadie llega a
-  // soltar su retencion. Y son 4 s, no 8: la capa es opaca y esta por encima de
-  // todo, asi que si un paquete falla y salta la pantalla de error, tapa tambien
-  // su boton de recargar hasta que se cumpla el plazo.
+  // soltar su retencion.
+  //
+  // Es holgado, y a proposito: la propia aplicacion se concede 5 s para decidir
+  // la sesion (`useRedirectIfAuthenticated`) y el `fetch` de `useAuth` no tiene
+  // tope. Con 4 s la capa se levantaba A MITAD de una comprobacion lenta —una
+  // instancia de Render arrancando en frio— y dejaba ver la espera blanca justo
+  // en el caso que esto viene a arreglar. Que no tape la pantalla de error no
+  // depende de este plazo: de eso se encarga `LazyLoadErrorBoundary`, que la
+  // retira en cuanto hay error.
   setTimeout(() => retirarPantallaDeArranque({ forzar: true }), LIMITE_MS);
 }
 

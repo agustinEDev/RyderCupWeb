@@ -36,6 +36,7 @@ import { isDeviceRevoked, handleDeviceRevocationLogout } from '../utils/deviceRe
 // copias de una comprobación de seguridad acaban divergiendo
 import { resolvePostAuthTarget } from '../utils/auth';
 import User from '../domain/entities/User.js';
+import { retenerEspera, soltarEspera } from '../utils/arranque';
 
 // Misma prioridad que `api.js` y el interceptor: la configuración de ejecución
 // manda sobre la del build. Sin esto, `/current-user` y el refresco de aquí
@@ -79,6 +80,16 @@ export const useRedirectIfAuthenticated = ({ enabled = true } = {}) => {
   // sin esto el efecto volvería a dispararse sobre una página que ya se va.
   const [hadStoredUser] = useState(() => enabled && Boolean(user));
   const [isChecking, setIsChecking] = useState(hadStoredUser);
+
+  // Quien usa este hook pinta su propia espera mientras decide —la portada, el
+  // inicio de sesion y el registro—, asi que se retiene la del arranque durante
+  // ese rato. Va aqui y no en cada pantalla: son tres, y el fallo de olvidar una
+  // no se ve hasta que alguien entra justo por ella.
+  useEffect(() => {
+    if (!isChecking) return undefined;
+    retenerEspera();
+    return () => soltarEspera();
+  }, [isChecking]);
 
   useEffect(() => {
     if (!hadStoredUser) return undefined;

@@ -20,7 +20,10 @@ const ProtectedRoute = ({ children }) => {
   // pantalla de verdad.
   useEffect(() => {
     if (!loading) {
-      retirarPantallaDeArranque();
+      // Sin sesion se sale a `/login`, que es otro paquete perezoso y puede no
+      // estar descargado: retirar aqui destaparia la espera blanca mientras
+      // baja. Se deja puesta y la retira el destino, o el tope.
+      if (user) retirarPantallaDeArranque();
       return undefined;
     }
     // Solo la limpieza suelta: hacerlo tambien en el cuerpo del efecto siguiente
@@ -28,7 +31,7 @@ const ProtectedRoute = ({ children }) => {
     // vez una de las dos se habria perdido sin que nada fallara
     retenerEspera();
     return () => soltarEspera();
-  }, [loading]);
+  }, [loading, user]);
 
   if (loading) {
     // La misma espera que el resto de la aplicacion: antes era un div sin

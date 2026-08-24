@@ -182,6 +182,14 @@ describe('la marca de partida que no cuenta', () => {
     expect(screen.getByTestId('recent-match-excluded-qm-2')).toBeInTheDocument();
   });
 
+  it('pide exactamente la clave que existe en los locales', () => {
+    // Lo que fallo fue justo esto: el componente pedia una clave que nadie habia
+    // creado. Con el mock de i18n devolviendo la clave tal cual, esto ata la
+    // cadena entera —componente y JSON— en vez de comprobar cada extremo aparte
+    renderList({ matches: [excludedRound] });
+    expect(screen.getByText('recentMatches.excludedBadge')).toBeInTheDocument();
+  });
+
   it('no se pinta en las que si cuentan', () => {
     renderList({ matches: [stablefordRound] });
     expect(screen.queryByTestId('recent-match-excluded-qm-1')).not.toBeInTheDocument();

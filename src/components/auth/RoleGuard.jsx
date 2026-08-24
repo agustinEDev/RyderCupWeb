@@ -1,6 +1,9 @@
+import { useEffect } from 'react';
 import { Navigate, useLocation } from 'react-router';
 import PropTypes from 'prop-types';
 import { useAuth } from '../../hooks/useAuth';
+import FullScreenLoader from '../ui/FullScreenLoader';
+import { retenerEspera, soltarEspera, retirarPantallaDeArranque } from '../../utils/arranque';
 
 /**
  * RoleGuard Component
@@ -37,21 +40,22 @@ const RoleGuard = ({
   const location = useLocation();
   const { user, loading } = useAuth();
 
-  // Show loading state while checking authentication
+  // El mismo caso que `ProtectedRoute`, del que esto es copia: no suspende, hace
+  // su propia consulta, y sin retener la espera del arranque se iba dejando ver
+  // esta pantalla de carga por debajo. En `/admin` van los dos encadenados.
+  useEffect(() => {
+    if (!loading) {
+      retirarPantallaDeArranque();
+      return undefined;
+    }
+    retenerEspera();
+    return () => soltarEspera();
+  }, [loading]);
+
   if (loading) {
-    return (
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        height: '100vh',
-        fontFamily: 'system-ui, sans-serif',
-        color: '#6b7280'
-      }}>
-        Loading...
-      </div>
-    );
+    return <FullScreenLoader />;
   }
+
 
   // If no user, redirect to login (this shouldn't happen if ProtectedRoute is also used)
   if (!user) {
