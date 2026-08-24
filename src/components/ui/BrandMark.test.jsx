@@ -94,8 +94,19 @@ describe('la marca no vuelve a duplicarse', () => {
 
   it('en index.html solo estan las dos referencias de la espera del arranque', () => {
     const html = readFileSync(resolve(process.cwd(), 'index.html'), 'utf8');
+    // Sin deduplicar a proposito: una tercera copia que REPITA una de las dos
+    // rutas —un `og:image` apuntando al mismo PNG— se colaba si se agrupaban
     const encontradas = html.match(/\/images\/rcf-[a-z-]+\.(png|jpeg|jpg|svg)/g) || [];
 
-    expect([...new Set(encontradas)].sort()).toEqual([...REFERENCIAS_ESPERADAS].sort());
+    expect(encontradas.sort()).toEqual([...REFERENCIAS_ESPERADAS].sort());
+  });
+
+  it('el trazo del triangulo tampoco puede colarse en index.html', () => {
+    // `index.html` queda fuera del barrido general por las dos referencias de
+    // arriba, asi que el trazo antiguo se comprueba aqui explicitamente
+    const html = readFileSync(resolve(process.cwd(), 'index.html'), 'utf8');
+
+    expect(html).not.toMatch(/M13\.8261 17\.4264/);
+    expect(html).not.toMatch(/rcf-logo/);
   });
 });

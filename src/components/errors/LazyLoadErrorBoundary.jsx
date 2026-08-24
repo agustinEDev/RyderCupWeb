@@ -1,5 +1,6 @@
 import { Component } from 'react';
 import * as Sentry from '@sentry/react';
+import { retirarPantallaDeArranque } from '../../utils/arranque';
 
 /**
  * Error Boundary specifically for handling lazy loading failures
@@ -48,6 +49,11 @@ class LazyLoadErrorBoundary extends Component {
       window.location.reload();
       return;
     }
+
+    // Se va a enseñar el aviso de error: la capa del arranque es opaca y esta
+    // por encima de todo, asi que taparia el aviso y su boton de recargar hasta
+    // que venciera el tope
+    retirarPantallaDeArranque({ forzar: true });
 
     // v2.0.4: Report to Sentry with full context for mobile debugging
     Sentry.withScope((scope) => {
