@@ -36,14 +36,36 @@ export const retenerEspera = () => {
   retenciones += 1;
 };
 
-/** Y esta cuando ya tiene algo que enseñar. */
+/** Y esta cuando ya tiene algo que enseñar. Al soltar la ultima, la capa se va:
+ *  asi da igual quien suelte y en que orden, y una pantalla que se desmonte
+ *  mientras carga no deja la espera colgada hasta que vence el tope. */
 export const soltarEspera = () => {
   retenciones = Math.max(0, retenciones - 1);
+  if (retenciones === 0) retirarPantallaDeArranque();
 };
 
 export const retirarPantallaDeArranque = ({ forzar = false } = {}) => {
   if (retirada) return;
-  if (retenciones > 0 && !forzar) return;
+
+  // La decision se aplaza un tick a proposito. React ejecuta los efectos de
+  // izquierda a derecha dentro del mismo commit, asi que quien retira puede
+  // correr ANTES de que quien enseña su propia espera haya podido retener: sin
+  // este aplazamiento el resultado dependia del orden de los componentes en el
+  // arbol, y eso ya se colo cuatro revisiones seguidas. Aplazando, cuando llega
+  // el momento de decidir todas las retenciones del commit estan hechas.
+  if (!forzar) {
+    setTimeout(() => {
+      if (retirada || retenciones > 0) return;
+      aplicarRetirada();
+    }, 0);
+    return;
+  }
+
+  aplicarRetirada();
+};
+
+const aplicarRetirada = () => {
+  if (retirada) return;
   retirada = true;
 
   const capa = document.getElementById(ID);

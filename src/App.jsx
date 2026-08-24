@@ -254,17 +254,6 @@ function AppContent() {
       />
       {location.pathname !== '/' && <InstallBanner aboveBottomNav={showBottomNav} />}
       <Suspense fallback={<FullScreenLoader />}>
-        {/* DENTRO del Suspense a proposito: aqui solo se monta cuando el chunk
-            de la ruta ya resolvio, o sea cuando hay pantalla de verdad. Fuera
-            —que es donde estuvo— el efecto corria antes, la capa se iba y debajo
-            asomaba el `FullScreenLoader` en blanco: verde, blanco y pantalla,
-            que es el parpadeo que esto viene a quitar.
-
-            Antes la retiraban solo la portada y el panel, asi que entrar por
-            cualquier otro sitio —`/login`, un enlace de correo, la vuelta de
-            Google, o recargar en una pantalla profunda— dejaba la capa tapando
-            la aplicacion entera. */}
-        <RetiraLaEspera />
         <SentryRoutes>
         {/* Public routes */}
         <Route path="/" element={<Landing />} />
@@ -377,6 +366,13 @@ function AppContent() {
         {/* Error routes */}
         <Route path="/unauthorized" element={<Unauthorized />} />
         </SentryRoutes>
+        {/* DESPUES de las rutas y DENTRO del Suspense, las dos cosas a proposito.
+            Dentro, porque montarse aqui significa que el paquete de la ruta ya
+            resolvio. Y despues, porque React ejecuta los efectos de izquierda a
+            derecha: puesto antes, el suyo corria antes de que `ProtectedRoute`
+            pudiera retener la espera, retiraba la capa y dejaba ver su pantalla
+            de carga por debajo. Aqui corre el ultimo y ve la retencion ya hecha. */}
+        <RetiraLaEspera />
       </Suspense>
       {showBottomNav && (
         <>

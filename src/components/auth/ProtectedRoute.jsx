@@ -20,10 +20,12 @@ const ProtectedRoute = ({ children }) => {
   // pantalla de verdad.
   useEffect(() => {
     if (!loading) {
-      soltarEspera();
       retirarPantallaDeArranque();
       return undefined;
     }
+    // Solo la limpieza suelta: hacerlo tambien en el cuerpo del efecto siguiente
+    // soltaba dos veces la misma retencion, y con dos pantallas reteniendo a la
+    // vez una de las dos se habria perdido sin que nada fallara
     retenerEspera();
     return () => soltarEspera();
   }, [loading]);

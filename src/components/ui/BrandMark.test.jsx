@@ -95,9 +95,13 @@ describe('la marca no vuelve a duplicarse', () => {
   it('en index.html solo estan las dos referencias de la espera del arranque', () => {
     const html = readFileSync(resolve(process.cwd(), 'index.html'), 'utf8');
     // Sin deduplicar a proposito: una tercera copia que REPITA una de las dos
-    // rutas —un `og:image` apuntando al mismo PNG— se colaba si se agrupaban
-    const encontradas = html.match(/\/images\/rcf-[a-z-]+\.(png|jpeg|jpg|svg)/g) || [];
+    // rutas —un `og:image` apuntando al mismo PNG— se colaba si se agrupaban.
+    // Y se cuenta el nombre a secas, no la ruta absoluta con una lista de
+    // extensiones: asi tambien cae una ruta relativa o un `.webp`.
+    const nombradas = html.match(/rcf-monogram/g) || [];
+    expect(nombradas).toHaveLength(REFERENCIAS_ESPERADAS.length);
 
+    const encontradas = html.match(/[\w./-]*rcf-monogram[\w-]*\.\w+/g) || [];
     expect(encontradas.sort()).toEqual([...REFERENCIAS_ESPERADAS].sort());
   });
 
