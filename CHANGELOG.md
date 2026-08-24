@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [2.18.1] - 2026-08-24
+
+### Fixed
+
+- **La marca de «No cuenta» se leía en crudo en el panel**. En la lista de últimas partidas, las que están fuera de tus estadísticas mostraban el texto `recentMatches.excludedBadge` dentro de la etiqueta gris, en vez de «No cuenta». La etiqueta se trajo del historial de partidas rápidas copiando el diseño, pero allí su texto vive con otro nombre y el de esta pantalla nunca llegó a crearse: cuando falta una traducción, lo que se pinta es su nombre interno. No había ninguna comprobación que lo vigilara; ahora sí, y verifica además que el texto es el correcto en los dos idiomas, no solo que exista.
+
 ## [2.18.0] - 2026-08-24
 
 ### Added

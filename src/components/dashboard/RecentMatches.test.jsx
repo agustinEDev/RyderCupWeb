@@ -38,6 +38,15 @@ const stablefordRound = RecentMatch.fromPersistence({
   stablefordPoints: 34,
 });
 
+const excludedRound = RecentMatch.fromPersistence({
+  id: 'qm-2',
+  date: '2026-08-06',
+  scoringFormat: 'STABLEFORD',
+  golfCourseName: 'Valderrama',
+  stablefordPoints: 30,
+  excludedFromStats: true,
+});
+
 const renderList = (props = {}) =>
   render(
     <MemoryRouter>
@@ -157,5 +166,43 @@ describe('RecentMatches', () => {
 
     expect(screen.getByTestId('recent-matches')).toHaveAttribute('aria-busy', 'true');
     expect(screen.queryByTestId('recent-matches-empty')).not.toBeInTheDocument();
+  });
+});
+
+/**
+ * La etiqueta se anadio aqui copiando la del historial, pero sin crear su clave:
+ * el historial la tiene en `quickMatch.history.excludedBadge` y esta pantalla
+ * pide `dashboard.recentMatches.excludedBadge`, que no existia. i18next devuelve
+ * la clave cuando falta, asi que en produccion se leia «recentMatches.excludedBadge»
+ * dentro de la etiqueta gris. Nadie lo vigilaba.
+ */
+describe('la marca de partida que no cuenta', () => {
+  it('se pinta en las partidas excluidas', () => {
+    renderList({ matches: [excludedRound] });
+    expect(screen.getByTestId('recent-match-excluded-qm-2')).toBeInTheDocument();
+  });
+
+  it('pide exactamente la clave que existe en los locales', () => {
+    // Lo que fallo fue justo esto: el componente pedia una clave que nadie habia
+    // creado. Con el mock de i18n devolviendo la clave tal cual, esto ata la
+    // cadena entera —componente y JSON— en vez de comprobar cada extremo aparte
+    renderList({ matches: [excludedRound] });
+    expect(screen.getByText('recentMatches.excludedBadge')).toBeInTheDocument();
+  });
+
+  it('no se pinta en las que si cuentan', () => {
+    renderList({ matches: [stablefordRound] });
+    expect(screen.queryByTestId('recent-match-excluded-qm-1')).not.toBeInTheDocument();
+  });
+
+  it('su texto existe en los dos idiomas, no es la clave en crudo', async () => {
+    const es = (await import('../../i18n/locales/es/dashboard.json')).default;
+    const en = (await import('../../i18n/locales/en/dashboard.json')).default;
+
+    // Se comprueba el TEXTO, no que haya algo: con `toBeTruthy` bastaba con que
+    // el JSON contuviera la propia clave para pasar, que es el fallo que esto
+    // viene a vigilar
+    expect(es.recentMatches?.excludedBadge).toBe('No cuenta');
+    expect(en.recentMatches?.excludedBadge).toBe('Not counted');
   });
 });
