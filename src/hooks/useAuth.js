@@ -1,148 +1,67 @@
 /**
- * Custom hook for authentication
- * Provides access to the authenticated user via httpOnly cookies
+ * El usuario de la sesión, leído de la consulta compartida (FE #489).
  *
- * This replaces the old getUserData() from sessionStorage approach.
- * Now we fetch user data from the backend which validates the httpOnly cookie.
+ * Este hook hacia su propio `fetch` al montar, asi que **cada componente que lo
+ * llamaba preguntaba por su cuenta** y lo llaman veinte ficheros: un arranque
+ * pedia `/current-user` cuatro veces antes de que el panel pidiera su primer
+ * dato. Ahora todos leen de `services/sesionCompartida`, que pregunta una sola
+ * vez por carga de pagina.
+ *
+ * La forma que devuelve no cambia —`user`, `loading`, `error`, `refetch`—, que
+ * es lo que permite no tocar a esos veinte ni a sus pruebas.
  */
 
-import { useState, useEffect, useCallback } from 'react';
-import { isDeviceRevoked, handleDeviceRevocationLogout, clearDeviceRevocationFlag } from '../utils/deviceRevocationLogout';
-import { fetchWithTokenRefresh } from '../utils/tokenRefreshInterceptor';
+import { useCallback, useEffect, useSyncExternalStore } from 'react';
+import {
+  consultaLaSesion,
+  loQueHaySobreLaSesion,
+  suscribeALaSesion,
+} from '../services/sesionCompartida';
 
-// Prioridad: 1. Runtime config (globalThis.APP_CONFIG, inyectado por entrypoint.sh en
-// despliegues en contenedor) 2. Build-time env 3. Cadena vacia -> URLs relativas (proxy)
-const API_URL = globalThis.APP_CONFIG?.API_BASE_URL || import.meta.env.VITE_API_BASE_URL || '';
-
-/**
- * Hook to get the current authenticated user
- * Fetches from /api/v1/auth/current-user endpoint which validates the httpOnly cookie
- * 
- * @returns {Object} { user, loading, error, refetch }
- */
 export const useAuth = () => {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  // `useSyncExternalStore` y no un `useState` con suscripcion a mano: es lo que
+  // React ofrece para leer de algo que vive fuera, y evita que dos componentes
+  // vean instantaneas distintas en el mismo render
+  const estado = useSyncExternalStore(suscribeALaSesion, loQueHaySobreLaSesion);
 
-  const fetchUser = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      const response = await fetchWithTokenRefresh(`${API_URL}/api/v1/auth/current-user`, {
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        if (response.status === 401) {
-          // Check if 401 is due to device revocation
-          try {
-            const errorData = await response.clone().json();
-            if (isDeviceRevoked(response, errorData)) {
-              // Device was revoked - handle logout
-              handleDeviceRevocationLogout(errorData);
-              return; // Logout handler will redirect
-            }
-          } catch {
-            // Could not parse response body, treat as normal 401
-          }
-
-          // Normal 401 (not device revocation) - clear user and stop
-          // Don't try to parse response if already redirecting to login
-          setUser(null);
-          setError(null);
-          setLoading(false); // Set loading to false immediately to prevent blank page
-          return;
-        }
-
-        if (response.status === 404) {
-          setUser(null);
-          setError(null);
-          return;
-        }
-
-        throw new Error(`Failed to fetch user: ${response.status}`);
-      }
-
-      const userData = await response.json();
-      setUser(userData);
-
-      // Clear device revocation flag on successful authentication
-      clearDeviceRevocationFlag();
-    } catch (err) {
-      console.error('Error loading user:', err);
-      setError(err.message);
-      setUser(null);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
+  // Sin `[]`: tambien hay que volver a preguntar si el estado pasa a «no se sabe
+  // nada» —lo que hace `olvidaLaSesion` al entrar o al salir— con este
+  // componente ya montado. Con dependencias vacias, un `clearAuth` que no fuera
+  // seguido de una navegacion dejaba a los guardias en «Cargando...» para
+  // siempre. Hoy todas las salidas navegan, pero eso es suerte, no diseño.
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- pre-existing pattern surfaced by eslint-plugin-react-hooks 7.1.1 bump; needs dedicated review (tracked in follow-up)
-    fetchUser();
-  }, [fetchUser]);
+    if (estado.resuelta) return;
 
-  return { 
-    user, 
-    loading, 
-    error, 
-    refetch: fetchUser 
+    // La primera llamada dispara la consulta; las demas se enganchan a ella o
+    // reciben lo que ya se sabe, sin tocar la red
+    consultaLaSesion();
+  }, [estado.resuelta]);
+
+  const refetch = useCallback(() => consultaLaSesion({ forzar: true }), []);
+
+  return {
+    user: estado.user,
+    loading: estado.cargando,
+    error: estado.error,
+    refetch,
   };
 };
 
 /**
- * Function to get user data (for backwards compatibility)
- * Use the useAuth hook instead when possible
- * 
- * @returns {Promise<Object|null>} User object or null
+ * La misma sesión, para lo que no es un componente —el contexto de usuario de
+ * Sentry en `App.jsx`—. Antes abria su propia peticion.
+ *
+ * @returns {Promise<Object|null>} El usuario, o `null` si no hay sesión
  */
 export const getUserData = async () => {
-  try {
-    const response = await fetchWithTokenRefresh(`${API_URL}/api/v1/auth/current-user`, {
-      credentials: 'include',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
+  await consultaLaSesion();
 
-    if (!response.ok) {
-      // Check if 401 is due to device revocation
-      if (response.status === 401) {
-        try {
-          const errorData = await response.clone().json();
-          if (isDeviceRevoked(response, errorData)) {
-            // Device was revoked - handle logout
-            handleDeviceRevocationLogout(errorData);
-            return null; // Logout handler will redirect
-          }
-        } catch {
-          // Could not parse response body, treat as normal 401
-        }
-
-        // Normal 401 (not device revocation) - return null immediately
-        // Don't try to parse response if already redirecting to login
-        return null;
-      }
-
-      // Si no está autenticado o el endpoint no existe, retornar null
-      return null;
-    }
-
-    const userData = await response.json();
-
-    // Clear device revocation flag on successful authentication
-    clearDeviceRevocationFlag();
-
-    return userData;
-  } catch (error) {
-    console.error('Error fetching user data:', error);
-    return null;
-  }
+  // Lo que sepa el estado al final, y no lo que devuelva ESTA consulta: si otra
+  // la adelanta —un login, un refresco forzado—, la superada resuelve a `null`,
+  // y `App.jsx` lo lee como «no hay sesion». Se quedaba sin cierre por
+  // inactividad, sin vigilancia de dispositivo revocado y sin refresco proactivo
+  // el resto de la visita
+  return loQueHaySobreLaSesion().user;
 };
 
 export default useAuth;
