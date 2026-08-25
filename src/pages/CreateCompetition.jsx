@@ -20,6 +20,7 @@ import CountryAutocomplete from '../components/ui/CountryAutocomplete';
 import GolfCourseSearchBox from '../components/golf_course/GolfCourseSearchBox';
 import GolfCourseRequestModal from '../components/golf_course/GolfCourseRequestModal';
 import customToast from '../utils/toast';
+import FullScreenLoader from '../components/ui/FullScreenLoader';
 
 
 // Helper function to get message className
@@ -510,12 +511,7 @@ const CreateCompetition = () => {
 
   if (isLoading || loadingCompetition) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-gray-600">{loadingCompetition ? (t('edit.loading') || 'Loading competition...') : t('common:loading')}</p>
-        </div>
-      </div>
+      <FullScreenLoader texto={loadingCompetition ? t('edit.loading') : t('common:loading')} />
     );
   }
 

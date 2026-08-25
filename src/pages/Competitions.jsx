@@ -1,10 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router';
 import { motion } from 'framer-motion';
-import {
-  Users, Calendar, MapPin, Plus,
-  Filter, Search, AlertCircle, Loader, Crown, Flag
-} from 'lucide-react';
+import { Users, Calendar, MapPin, Plus, Filter, Search, AlertCircle, Crown, Flag } from 'lucide-react';
 import customToast from '../utils/toast';
 import { useTranslation } from 'react-i18next';
 import HeaderAuth from '../components/layout/HeaderAuth';
@@ -15,6 +12,7 @@ import {
 } from '../services/competitions';
 import { useAuth } from '../hooks/useAuth';
 import { CountryFlag } from '../utils/countryUtils';
+import BlockLoader from '../components/ui/BlockLoader';
 
 // Helper function to get enrollment status classes
 const getEnrollmentStatusClasses = (status) => {
@@ -106,10 +104,7 @@ const Competitions = () => {
   const renderCompetitionsList = () => {
     if (isLoading) {
       return (
-        <div className="flex flex-col items-center justify-center py-12">
-          <Loader className="w-12 h-12 text-primary animate-spin mb-4" />
-          <p className="text-gray-600">{t('myCompetitions.loadingCompetitions')}</p>
-        </div>
+        <BlockLoader texto={t('myCompetitions.loadingCompetitions')} />
       );
     }
     if (filteredCompetitions.length === 0) {

@@ -153,3 +153,42 @@ describe('la cara no cambia a media espera', () => {
     expect(screen.getByRole('status')).not.toHaveClass('pantalla-de-espera--transicion');
   });
 });
+
+/**
+ * El anillo no solo gira a la misma velocidad que el de la capa de
+ * `index.html`: arranca en la misma FASE. El reloj de una animacion CSS empieza
+ * cuando nace su elemento, asi que sin esto el arco saltaba a otro angulo justo
+ * en el relevo.
+ */
+describe('la fase del anillo', () => {
+  beforeEach(() => {
+    estadoI18n.language = 'es';
+    estadoI18n.resolvedLanguage = 'es';
+    reiniciaLaCortina();
+  });
+
+  it('cuando la capa sigue puesta, copia SU fase, no la del documento', () => {
+    // Aproximar con `performance.now()` deja fuera lo que el navegador tarda en
+    // analizar la pagina: son las decenas de milisegundos que separan el
+    // arranque del documento del nacimiento de la capa
+    document.body.innerHTML = '<div id="arranque"><span id="arranque-anillo"></span></div>';
+    const capa = document.getElementById('arranque-anillo');
+    capa.getAnimations = () => [{ currentTime: 250 }];
+
+    render(<FullScreenLoader />);
+
+    expect(document.querySelector('.espera-anillo').style.animationDelay).toBe('-250ms');
+    document.body.innerHTML = '';
+  });
+
+  it('arranca donde estaria si llevara girando desde el principio', () => {
+    render(<FullScreenLoader />);
+
+    const anillo = document.querySelector('.espera-anillo');
+    expect(anillo).not.toBeNull();
+    const retraso = anillo.style.animationDelay;
+    expect(retraso, 'sin retraso negativo, el arco salta en el relevo').toMatch(/^-\d+(\.\d+)?ms$/);
+    // Dentro de la vuelta: un desfase mayor que el ciclo no significa nada
+    expect(Math.abs(parseFloat(retraso))).toBeLessThan(1000);
+  });
+});

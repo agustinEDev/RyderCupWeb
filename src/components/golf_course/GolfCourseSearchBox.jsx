@@ -3,6 +3,7 @@ import { Search, MapPin, AlertCircle, Navigation } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { listGolfCoursesUseCase } from '../../composition';
 import { roundCoordinate } from '../../utils/geo';
+import BlockLoader from '../ui/BlockLoader';
 
 /**
  * GolfCourseSearchBox Component
@@ -270,7 +271,13 @@ const GolfCourseSearchBox = ({
           disabled={!countryCode}
           className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all disabled:bg-gray-50 disabled:cursor-not-allowed"
         />
-        {isLoading && (
+        {/* Se aparta solo cuando el desplegable esta contando YA que busca: con
+            los dos a la vez se veian dos dibujos de espera distintos, que es el
+            sintoma que FE #495 vino a quitar. Mirar solo si el desplegable esta
+            abierto no vale: al afinar una busqueda con resultados en pantalla,
+            el desplegable enseña la lista vieja —no la espera— y entonces este
+            es el unico aviso de que algo esta pasando. */}
+        {isLoading && !(showDropdown && countryCode && courses.length === 0) && (
           <div className="absolute right-3 top-1/2 -translate-y-1/2">
             <div className="animate-spin rounded-full h-4 w-4 border-2 border-primary border-t-transparent"></div>
           </div>
@@ -364,8 +371,7 @@ const GolfCourseSearchBox = ({
             // Mientras la primera búsqueda está en vuelo no se puede decir que
             // no hay campos: aún no se sabe
             <div className="py-8 px-4 text-center">
-              <div className="animate-spin rounded-full h-6 w-6 border-2 border-primary border-t-transparent mx-auto mb-3"></div>
-              <p className="text-sm text-gray-500">{t('searchBox.searching', 'Searching...')}</p>
+              <BlockLoader sinRelleno texto={t('searchBox.searching', 'Searching...')} />
             </div>
           ) : (
             <div className="py-8 px-4 text-center">

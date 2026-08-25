@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { readFileSync } from 'fs';
-import { resolve } from 'path';
+import { readFileSync, readdirSync } from 'fs';
+import { resolve, join, relative } from 'path';
 
 /**
  * La franja de arriba —reloj, cobertura, bateria— no la pinta la pantalla de
@@ -110,6 +110,60 @@ describe('donde vive la cortina del arranque', () => {
 });
 
 /**
+ * Las dos mitades del arranque —la capa de `index.html` y la pantalla de React
+ * que la releva— tienen que pintar el MISMO dibujo (FE #495). El anillo puesto
+ * en una sola de las dos apareceria de la nada a mitad del arranque, que es la
+ * clase de salto que esta saga viene arreglando.
+ */
+describe('las dos mitades del arranque pintan lo mismo', () => {
+  const lee = (ruta) => readFileSync(resolve(process.cwd(), ruta), 'utf8');
+
+  it('la capa de index.html tambien lleva el anillo', () => {
+    const fuente = lee('index.html');
+
+    expect(fuente).toContain('<span id="arranque-anillo"></span>');
+    expect(fuente).toMatch(/#arranque-anillo\s*\{[^}]*animation:\s*arranque-gira/);
+  });
+
+  it('el anillo se detiene si se pide menos movimiento, en las dos', () => {
+    expect(lee('index.html')).toMatch(/prefers-reduced-motion[\s\S]{0,140}#arranque-anillo\s*\{\s*animation:\s*none/);
+    expect(lee('src/components/ui/LoadingMark.jsx')).toContain('motion-reduce:animate-none');
+  });
+
+  it('el anillo lleva el mismo color en las dos', () => {
+    // La capa no puede leer el tema —ahi todavia no hay CSS de Tailwind—, asi
+    // que el color va escrito a mano y solo un test impide que se separen
+    const primario = lee('src/index.css').match(/--color-primary-600:\s*(#[0-9a-f]{6})/i)?.[1];
+    const html = lee('index.html');
+
+    expect(primario?.toLowerCase()).toBe('#2d7b3e');
+    expect(html).toContain('#2d7b3e');
+    expect(html).toContain('rgba(45, 123, 62, 0.18)');   // el mismo, al 18%
+  });
+
+  it('el anillo gira a la MISMA velocidad en las dos', () => {
+    // `animate-spin` de Tailwind es 1s. Con otra duracion aqui, el relevo
+    // cambia el ritmo justo en el fotograma que esta saga viene cuidando
+    expect(lee('index.html')).toMatch(/animation:\s*arranque-gira\s+1s\s+linear/);
+  });
+
+  it('las medidas del dibujo coinciden en las dos', () => {
+    // Marco de 128 y marca de 76: si una mitad cambia y la otra no, el
+    // monograma da un salto justo en el relevo. Ya paso con el hueco del texto
+    const html = lee('index.html');
+    const jsx = lee('src/components/ui/LoadingMark.jsx');
+
+    // En la misma unidad las dos, que es justo lo que falta con `size-32`:
+    // son 8rem, y con la fuente base en 20px una mitad mide 128 y la otra 160
+    expect(html).toMatch(/#arranque-marco\s*\{[^}]*width:\s*128px/);
+    expect(html).toMatch(/<img[^>]*width="76"/);
+    expect(jsx).toContain("marco: 'w-[128px] h-[128px]'");
+    expect(jsx).toContain("marca: 'w-[76px]'");
+    expect(jsx, 'las medidas en rem no casan con los pixeles de la capa').not.toMatch(/marco: 'size-\d/);
+  });
+});
+
+/**
  * El monograma tiene que caer en el mismo sitio en la capa de `index.html` y en
  * la pantalla que la releva, o se ve dar un salto justo en el cambio.
  */
@@ -177,5 +231,65 @@ describe('el verde del arranque deja leer lo que va encima', () => {
 
   it('el monograma y el texto en blanco se leen encima', () => {
     expect(contraste(verdeDeArranque(), '#ffffff')).toBeGreaterThanOrEqual(4.4);
+  });
+});
+
+/**
+ * El dibujo de las esperas es UNO (FE #495). Este test recorre el fuente porque
+ * la primera pasada dejo tres esperas de bloque sin migrar —vivian en
+ * `components/`, y el inventario solo habia mirado `pages/`—, y nada lo delataba:
+ * la suite seguia verde mientras la aplicacion cambiaba de dibujo por el camino.
+ */
+describe('no quedan esperas con dibujo propio', () => {
+  // Lo que SI puede girar por su cuenta, y por que. Son indicadores de que una
+  // ACCION esta en curso —«este boton esta trabajando», «se esta añadiendo»—, no
+  // de que un contenido viene de camino: otra cosa, y quedaron fuera del
+  // encargo. Cualquier sitio nuevo que aparezca aqui hay que mirarlo, no
+  // añadirlo a la lista sin pensar.
+  const PERMITIDOS = new Set([
+    'components/ui/LoadingMark.jsx',                        // la pieza compartida
+    'components/admin/ManageAccountModal.jsx',              // boton de procesar
+    'components/auth/SignInForm.jsx',                       // boton de entrar
+    'components/modals/ConfirmModal.jsx',                   // boton de confirmar
+    'components/competition/CompetitionGolfCoursesSection.jsx', // «añadiendo campo»
+    'components/golf_course/GolfCourseSearchBox.jsx',       // indicador dentro del campo
+    'pages/ForgotPassword.jsx',                             // boton de enviar
+    'pages/Register.jsx',                                   // boton de registrarse
+    'pages/ResetPassword.jsx',                              // boton de guardar
+    'pages/EditProfile.jsx',                                // boton de guardar
+    'pages/admin/AdminPanel.jsx',                           // botones de accion
+    'pages/player/FeedPage.jsx',                            // boton de cargar mas
+    'pages/player/PlayerProfilePage.jsx',                   // boton de cargar mas
+    'components/admin/AdminEditCompetitionModal.jsx',       // boton de guardar
+    'components/admin/EditUserModal.jsx',                   // boton de guardar
+    'components/friend/AddFriendModal.jsx',                 // indicador dentro del buscador
+    'components/invitation/SendInvitationModal.jsx',        // boton de enviar
+  ]);
+
+  const ficheros = () => {
+    const salida = [];
+    const recorre = (dir) => {
+      for (const entrada of readdirSync(dir, { withFileTypes: true })) {
+        const ruta = join(dir, entrada.name);
+        if (entrada.isDirectory()) recorre(ruta);
+        else if (/\.jsx?$/.test(entrada.name) && !/\.test\./.test(entrada.name)) salida.push(ruta);
+      }
+    };
+    recorre(resolve(process.cwd(), 'src'));
+    return salida;
+  };
+
+  it('ninguna pantalla se pinta su propia espera', () => {
+    const sueltos = [];
+    for (const ruta of ficheros()) {
+      // `relative` y no partir por '/src/': si la copia de trabajo vive en una
+      // ruta que ya contiene '/src/', ninguna exencion casaria y la suite se
+      // pondria roja por donde esta el repositorio
+      const relativa = relative(resolve(process.cwd(), 'src'), ruta);
+      if (PERMITIDOS.has(relativa)) continue;
+      if (readFileSync(ruta, 'utf8').includes('animate-spin')) sueltos.push(relativa);
+    }
+
+    expect(sueltos, `esperas con dibujo propio: ${sueltos.join(', ')}`).toEqual([]);
   });
 });

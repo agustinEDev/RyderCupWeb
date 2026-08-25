@@ -7,6 +7,7 @@ import HeaderAuth from '../../components/layout/HeaderAuth';
 import { useAuth } from '../../hooks/useAuth';
 import ActivityEventCard from '../../components/feed/ActivityEventCard';
 import { getFriendsFeedUseCase, markFeedAsSeenUseCase } from '../../composition';
+import BlockLoader from '../../components/ui/BlockLoader';
 
 const PAGE_SIZE = 20;
 
@@ -97,13 +98,13 @@ const FeedPage = () => {
   };
 
   if (isLoadingUser || isLoading) {
+    // La cabecera se queda puesta durante la espera: aparecer de golpe al
+    // terminar es un salto, y de eso va justamente FE #495. El dibujo si es el
+    // compartido.
     return (
       <div className="min-h-screen bg-gray-50">
         <HeaderAuth />
-        <div className="flex items-center justify-center py-20" role="status">
-          <Loader className="w-6 h-6 animate-spin text-primary" />
-          <span className="sr-only">{t('feed:loading')}</span>
-        </div>
+        <BlockLoader texto={t('feed:loading')} />
       </div>
     );
   }

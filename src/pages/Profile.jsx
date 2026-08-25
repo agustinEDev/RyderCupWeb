@@ -18,6 +18,7 @@ import { CountryFlag } from '../utils/countryUtils';
 import { broadcastLogout } from '../utils/broadcastAuth';
 import { formatFullDate } from '../utils/dateFormatters';
 import { fetchCountriesUseCase, listUserCompetitionsUseCase, logoutUseCase } from '../composition';
+import FullScreenLoader from '../components/ui/FullScreenLoader';
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -97,12 +98,7 @@ const Profile = () => {
 
   if (isLoadingUser || isLoadingData) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-gray-600">{t('common:loading')}</p>
-        </div>
-      </div>
+      <FullScreenLoader texto={t('common:loading')} />
     );
   }
 

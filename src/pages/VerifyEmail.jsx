@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router';
 import { verifyEmailUseCase } from '../composition';
+import BlockLoader from '../components/ui/BlockLoader';
 
 
 const VerifyEmail = () => {
@@ -74,7 +75,12 @@ const VerifyEmail = () => {
               {/* Verifying state */}
               {status === 'verifying' && (
                 <>
-                  <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary mb-6"></div>
+                  {/* `mb-6` y sin relleno propio: sus hermanas —el icono de
+                      exito y el de error— miden asi, y con el `py-12` de serie
+                      la tarjeta daba un salto al cambiar de estado */}
+                  <div className="flex justify-center mb-6">
+                    <BlockLoader sinRelleno />
+                  </div>
                   <h1 className="text-gray-900 text-2xl font-bold mb-4 text-center">
                     Verifying your email...
                   </h1>

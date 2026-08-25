@@ -29,6 +29,8 @@ import {
   revertCompetitionStatusUseCase,
   revertCompetitionToInProgressUseCase,
 } from '../../composition';
+import FullScreenLoader from '../../components/ui/FullScreenLoader';
+import BlockLoader from '../../components/ui/BlockLoader';
 
 const TRANSITION_USE_CASES = {
   activate: activateCompetitionUseCase,
@@ -228,12 +230,7 @@ const AdminPanel = () => {
 
   if (isLoadingUser) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <Loader className="w-12 h-12 text-primary animate-spin mx-auto mb-4" />
-          <p className="text-gray-600">{t('common:loading')}</p>
-        </div>
-      </div>
+      <FullScreenLoader texto={t('common:loading')} />
     );
   }
 
@@ -304,9 +301,7 @@ const AdminPanel = () => {
                   transition={{ duration: 0.5 }}
                 >
                   {isLoadingStats ? (
-                    <div className="flex justify-center py-12">
-                      <Loader className="w-8 h-8 text-primary animate-spin" />
-                    </div>
+                    <BlockLoader />
                   ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                       <div className="bg-primary-50 border border-primary-200 rounded-xl p-5">
@@ -404,9 +399,7 @@ const AdminPanel = () => {
                   </p>
 
                   {isLoadingUsers ? (
-                    <div className="flex justify-center py-12">
-                      <Loader className="w-8 h-8 text-primary animate-spin" />
-                    </div>
+                    <BlockLoader />
                   ) : (
                     <>
                       <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
@@ -477,9 +470,7 @@ const AdminPanel = () => {
                   </p>
 
                   {isLoadingCompetitions ? (
-                    <div className="flex justify-center py-12">
-                      <Loader className="w-8 h-8 text-primary animate-spin" />
-                    </div>
+                    <BlockLoader />
                   ) : (
                     <>
                       <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">

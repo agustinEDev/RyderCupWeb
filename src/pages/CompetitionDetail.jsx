@@ -1,11 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router';
 import { motion } from 'framer-motion';
-import {
-  Users, Calendar, MapPin, Settings, ArrowLeft,
-  Edit, Trash2, Play, CheckCircle, XCircle, Pause,
-  AlertCircle, Loader, UserPlus, Shield, Mail, BarChart3, Undo2
-} from 'lucide-react';
+import { Users, Calendar, MapPin, Settings, ArrowLeft, Edit, Trash2, Play, CheckCircle, XCircle, Pause, AlertCircle, UserPlus, Shield, Mail, BarChart3, Undo2 } from 'lucide-react';
 import customToast from '../utils/toast';
 import { useTranslation } from 'react-i18next';
 import HeaderAuth from '../components/layout/HeaderAuth';
@@ -39,6 +35,7 @@ import {
   getEnrollmentStatusColor,
   formatDateRange,
 } from '../services/competitions';
+import FullScreenLoader from '../components/ui/FullScreenLoader';
 
 const CompetitionDetail = () => {
   const navigate = useNavigate();
@@ -332,12 +329,7 @@ const CompetitionDetail = () => {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <Loader className="w-12 h-12 text-primary animate-spin mx-auto mb-4" />
-          <p className="text-gray-600">{t('detail.loadingCompetition')}</p>
-        </div>
-      </div>
+      <FullScreenLoader texto={t('detail.loadingCompetition')} />
     );
   }
 

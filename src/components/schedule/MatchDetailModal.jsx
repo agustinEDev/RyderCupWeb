@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import { motion } from 'framer-motion';
-import { X, Loader, Trophy, AlertTriangle, ClipboardList } from 'lucide-react';
+import { X, Trophy, AlertTriangle, ClipboardList } from 'lucide-react';
 import { getMatchDetailUseCase } from '../../composition';
+import BlockLoader from '../ui/BlockLoader';
 
 const MatchDetailModal = ({
   isOpen,
@@ -94,7 +95,7 @@ const MatchDetailModal = ({
         <div className="p-6">
           {isLoading && (
             <div className="flex items-center justify-center py-8">
-              <Loader className="w-8 h-8 text-primary animate-spin" />
+              <BlockLoader sinRelleno />
             </div>
           )}
 

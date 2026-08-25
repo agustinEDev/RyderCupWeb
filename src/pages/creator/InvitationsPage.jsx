@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router';
-import { ArrowLeft, Plus, Loader, Mail } from 'lucide-react';
+import { ArrowLeft, Plus, Mail } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import customToast from '../../utils/toast';
 import HeaderAuth from '../../components/layout/HeaderAuth';
@@ -15,6 +15,7 @@ import {
   sendInvitationUseCase,
   searchUsersUseCase,
 } from '../../composition';
+import BlockLoader from '../../components/ui/BlockLoader';
 
 const InvitationsPage = () => {
   const navigate = useNavigate();
@@ -112,13 +113,13 @@ const InvitationsPage = () => {
   const isPageLoading = isLoadingUser || isLoadingRoles || isLoading;
 
   if (isPageLoading) {
+    // La cabecera se queda puesta durante la espera: aparecer de golpe al
+    // terminar es un salto, y de eso va justamente FE #495. El dibujo si es el
+    // compartido.
     return (
       <div className="min-h-screen bg-gray-50">
         <HeaderAuth user={user} />
-        <div className="flex items-center justify-center h-64">
-          <Loader className="h-8 w-8 animate-spin text-primary" />
-          <span className="ml-2 text-gray-500">{t('loading')}</span>
-        </div>
+        <BlockLoader texto={t('loading')} />
       </div>
     );
   }

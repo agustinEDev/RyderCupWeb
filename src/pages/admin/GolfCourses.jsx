@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, Loader } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import customToast from '../../utils/toast';
 import HeaderAuth from '../../components/layout/HeaderAuth';
@@ -13,6 +13,8 @@ import {
   createGolfCourseAdminUseCase,
   updateGolfCourseUseCase,
 } from '../../composition';
+import FullScreenLoader from '../../components/ui/FullScreenLoader';
+import BlockLoader from '../../components/ui/BlockLoader';
 
 /**
  * GolfCourses Page (Admin)
@@ -120,13 +122,12 @@ const GolfCourses = ({ embedded = false }) => {
   };
 
   if (isLoadingUser || isLoading) {
-    return (
-      <div className={`flex items-center justify-center ${embedded ? 'py-12' : 'min-h-screen'}`}>
-        <div className="text-center">
-          <Loader className={`${embedded ? 'w-8 h-8' : 'w-12 h-12'} text-primary animate-spin mx-auto mb-4`} />
-          {!embedded && <p className="text-gray-600">{t('common:loading')}</p>}
-        </div>
-      </div>
+    // `embedded` sigue mandando: dentro de la pestaña del panel de admin, una
+    // espera de pantalla completa empuja las pestañas un viewport hacia abajo
+    return embedded ? (
+      <BlockLoader />
+    ) : (
+      <FullScreenLoader texto={t('common:loading')} />
     );
   }
 
@@ -197,9 +198,12 @@ const GolfCourses = ({ embedded = false }) => {
           />
           {/* Abrir la edición ahora pide el campo entero, así que hay una
               espera corta donde antes no había ninguna */}
+          {/* El velo NO es decorativo: mientras se pide el campo entero, tapa la
+              tabla y evita que se pulse «Editar» en otra fila, cuya respuesta
+              podia llegar despues y abrir el modal con el campo equivocado */}
           {isLoadingCourse && (
             <div className="absolute inset-0 bg-white/70 flex items-center justify-center">
-              <Loader className="w-8 h-8 text-primary animate-spin" />
+              <BlockLoader sinRelleno />
             </div>
           )}
         </div>
