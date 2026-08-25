@@ -31,7 +31,7 @@ const RECENT_MATCHES_SHOWN = 3;
 // que la cortina del arranque: esperar a las cuatro peticiones evita que la
 // pantalla se monte a trozos, pero una que no vuelva no puede dejar el panel
 // muerto detras de una espera (FE #485).
-const ESPERA_MAXIMA_MS = 3000;
+export const ESPERA_MAXIMA_MS = 3000;
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -81,14 +81,23 @@ const Dashboard = () => {
 
   useEffect(() => {
     const loadDashboardData = async () => {
+      // Mientras la sesion se resuelve no se pide nada NI se declara nada
+      // terminado. `useAuth` no es un contexto: arranca siempre sin usuario y
+      // con `loading` en alto, y bajar la bandera en esa primera pasada dejaba
+      // las cinco a false justo en el render en que llega el usuario —antes de
+      // que hubiera salido una sola peticion—. La cortina del arranque se
+      // levantaba ahi, que es el defecto entero de vuelta (FE #485).
+      //
+      // Y salir aqui evita ademas pedirlo todo por duplicado: `refetchUser`
+      // —al guardar el handicap— sube `loading` con el usuario VIEJO todavia
+      // puesto, y sin este corte esa pasada lanzaba las cuatro peticiones una
+      // vez, y el usuario nuevo otra.
+      if (isLoadingUser) {
+        return;
+      }
+
       if (!user) {
-        // Mientras la sesion se resuelve NO se declara nada terminado. `useAuth`
-        // no es un contexto: arranca siempre sin usuario y con `loading` en
-        // alto, y bajar la bandera en esa primera pasada dejaba las cinco a
-        // false justo en el render en que llega el usuario —antes de que
-        // hubiera salido una sola peticion—. La cortina del arranque se
-        // levantaba ahi, que es el defecto entero de vuelta (FE #485).
-        if (!isLoadingUser) setIsLoadingCompetitions(false);
+        setIsLoadingCompetitions(false);
         return;
       }
 
@@ -112,24 +121,33 @@ const Dashboard = () => {
   }, [user, isLoadingUser]);
 
   useEffect(() => {
-    // Las estadísticas van por su cuenta y no bloquean la página: son un
-    // resumen, y si el backend tarda o falla, el resto del panel sigue siendo
-    // útil. Un fallo deja las cifras en "--", que es lo mismo que enseña una
-    // cuenta sin vueltas.
+    // Las estadísticas ya no llegan tarde a proposito: desde FE #485 la primera
+    // carga espera a las cuatro peticiones, porque encenderlas una a una era el
+    // parpadeo que se veia. Un fallo deja las cifras en "--", que es lo mismo
+    // que enseña una cuenta sin vueltas, y no detiene al resto.
     // Son datos personales: si el usuario cambia mientras una petición está en
     // vuelo, la respuesta vieja no debe escribir nada. Sin este guardia podría
     // llegar después de la nueva y dejar en pantalla las cifras de otra cuenta
     let cancelled = false;
 
     const loadPlayerStats = async () => {
+      // Mientras la sesion se resuelve no se pide nada NI se declara nada
+      // terminado. `useAuth` no es un contexto: arranca siempre sin usuario y
+      // con `loading` en alto, y bajar la bandera en esa primera pasada dejaba
+      // las cinco a false justo en el render en que llega el usuario —antes de
+      // que hubiera salido una sola peticion—. La cortina del arranque se
+      // levantaba ahi, que es el defecto entero de vuelta (FE #485).
+      //
+      // Y salir aqui evita ademas pedirlo todo por duplicado: `refetchUser`
+      // —al guardar el handicap— sube `loading` con el usuario VIEJO todavia
+      // puesto, y sin este corte esa pasada lanzaba las cuatro peticiones una
+      // vez, y el usuario nuevo otra.
+      if (isLoadingUser) {
+        return;
+      }
+
       if (!user) {
-        // Mientras la sesion se resuelve NO se declara nada terminado. `useAuth`
-        // no es un contexto: arranca siempre sin usuario y con `loading` en
-        // alto, y bajar la bandera en esa primera pasada dejaba las cinco a
-        // false justo en el render en que llega el usuario —antes de que
-        // hubiera salido una sola peticion—. La cortina del arranque se
-        // levantaba ahi, que es el defecto entero de vuelta (FE #485).
-        if (!isLoadingUser) setIsLoadingStats(false);
+        setIsLoadingStats(false);
         return;
       }
 
@@ -159,19 +177,28 @@ const Dashboard = () => {
   }, [user, isLoadingUser]);
 
   useEffect(() => {
-    // Mismo guardia que las estadísticas: una respuesta en vuelo no debe
-    // escribir sobre la de otra cuenta
+    // Mismo guardia de cuenta que las estadísticas: una respuesta en vuelo no
+    // debe escribir sobre la de otra cuenta
     let cancelled = false;
 
     const loadRecentMatches = async () => {
+      // Mientras la sesion se resuelve no se pide nada NI se declara nada
+      // terminado. `useAuth` no es un contexto: arranca siempre sin usuario y
+      // con `loading` en alto, y bajar la bandera en esa primera pasada dejaba
+      // las cinco a false justo en el render en que llega el usuario —antes de
+      // que hubiera salido una sola peticion—. La cortina del arranque se
+      // levantaba ahi, que es el defecto entero de vuelta (FE #485).
+      //
+      // Y salir aqui evita ademas pedirlo todo por duplicado: `refetchUser`
+      // —al guardar el handicap— sube `loading` con el usuario VIEJO todavia
+      // puesto, y sin este corte esa pasada lanzaba las cuatro peticiones una
+      // vez, y el usuario nuevo otra.
+      if (isLoadingUser) {
+        return;
+      }
+
       if (!user) {
-        // Mientras la sesion se resuelve NO se declara nada terminado. `useAuth`
-        // no es un contexto: arranca siempre sin usuario y con `loading` en
-        // alto, y bajar la bandera en esa primera pasada dejaba las cinco a
-        // false justo en el render en que llega el usuario —antes de que
-        // hubiera salido una sola peticion—. La cortina del arranque se
-        // levantaba ahi, que es el defecto entero de vuelta (FE #485).
-        if (!isLoadingUser) setIsLoadingRecent(false);
+        setIsLoadingRecent(false);
         return;
       }
 
@@ -208,14 +235,23 @@ const Dashboard = () => {
     let cancelled = false;
 
     const loadUpcomingMatches = async () => {
+      // Mientras la sesion se resuelve no se pide nada NI se declara nada
+      // terminado. `useAuth` no es un contexto: arranca siempre sin usuario y
+      // con `loading` en alto, y bajar la bandera en esa primera pasada dejaba
+      // las cinco a false justo en el render en que llega el usuario —antes de
+      // que hubiera salido una sola peticion—. La cortina del arranque se
+      // levantaba ahi, que es el defecto entero de vuelta (FE #485).
+      //
+      // Y salir aqui evita ademas pedirlo todo por duplicado: `refetchUser`
+      // —al guardar el handicap— sube `loading` con el usuario VIEJO todavia
+      // puesto, y sin este corte esa pasada lanzaba las cuatro peticiones una
+      // vez, y el usuario nuevo otra.
+      if (isLoadingUser) {
+        return;
+      }
+
       if (!user) {
-        // Mientras la sesion se resuelve NO se declara nada terminado. `useAuth`
-        // no es un contexto: arranca siempre sin usuario y con `loading` en
-        // alto, y bajar la bandera en esa primera pasada dejaba las cinco a
-        // false justo en el render en que llega el usuario —antes de que
-        // hubiera salido una sola peticion—. La cortina del arranque se
-        // levantaba ahi, que es el defecto entero de vuelta (FE #485).
-        if (!isLoadingUser) setIsLoadingUpcoming(false);
+        setIsLoadingUpcoming(false);
         return;
       }
 
@@ -282,6 +318,11 @@ const Dashboard = () => {
   // que es como se comportaba siempre.
   const [seAgotoLaEspera, setSeAgotoLaEspera] = useState(false);
 
+  // Con `[]`: el techo cuenta desde que esta pantalla se monta. Si `Suspense`
+  // llegara a esconderla y devolverla, la cuenta empezaria de cero —lo dice la
+  // nota de arriba: React no reejecuta los efectos pasivos de un subarbol que
+  // reaparece, pero si vuelve a montarlo—. No importa: la cortina del arranque
+  // lleva su propio techo, independiente de este.
   useEffect(() => {
     const plazo = setTimeout(() => setSeAgotoLaEspera(true), ESPERA_MAXIMA_MS);
 
@@ -301,7 +342,11 @@ const Dashboard = () => {
     setYaSePinto(true);
   }
 
-  const isLoading = !yaSePinto && !puedePintar;
+  // El segundo termino es el gate de siempre y no se puede perder: al agotarse
+  // el techo con la sesion todavia sin resolver, `isLoading` bajaba y tres
+  // lineas mas abajo `if (!user) return null` dejaba la pagina EN BLANCO. Una
+  // instancia fria de Render tardando mas de tres segundos bastaba.
+  const isLoading = (!yaSePinto && !puedePintar) || (isLoadingUser && !user);
 
   // El aviso a la cortina del arranque: en cuanto esta pantalla deja de
   // esperar —porque ya lo tiene todo, o porque se agoto el techo y va a

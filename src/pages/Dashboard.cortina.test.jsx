@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, act } from '@testing-library/react';
 
 /**
@@ -32,11 +32,18 @@ const reiniciaLasPeticiones = () => {
 
 reiniciaLasPeticiones();
 
+const veces = { competiciones: 0, estadisticas: 0, recientes: 0, proximos: 0 };
+
+const pide = (nombre) => {
+  veces[nombre] += 1;
+  return peticiones[nombre].promesa;
+};
+
 vi.mock('../composition', () => ({
-  listUserCompetitionsUseCase: { execute: () => peticiones.competiciones.promesa },
-  getPlayerStatsUseCase: { execute: () => peticiones.estadisticas.promesa },
-  getRecentMatchesUseCase: { execute: () => peticiones.recientes.promesa },
-  getUpcomingMatchesUseCase: { execute: () => peticiones.proximos.promesa },
+  listUserCompetitionsUseCase: { execute: () => pide('competiciones') },
+  getPlayerStatsUseCase: { execute: () => pide('estadisticas') },
+  getRecentMatchesUseCase: { execute: () => pide('recientes') },
+  getUpcomingMatchesUseCase: { execute: () => pide('proximos') },
 }));
 
 // El usuario, la funcion y el objeto entero son CONSTANTES a proposito: los
@@ -92,6 +99,7 @@ vi.doMock('../components/ui/FullScreenLoader', () => ({
 }));
 
 const { esperaElAviso, reiniciaLaCortina } = await import('../utils/cortinaDeArranque');
+const { ESPERA_MAXIMA_MS } = await import('./Dashboard');
 const Dashboard = (await import('./Dashboard')).default;
 
 const sigueLaCortina = () => Boolean(document.getElementById('arranque'));
@@ -175,6 +183,65 @@ describe('el panel no se pinta a medias', () => {
     await asienta();
 
     expect(estaEsperando()).toBe(false);
+  });
+});
+
+/**
+ * El techo de la espera no puede convertirse en una pagina en blanco, ni las
+ * dependencias nuevas en el doble de peticiones.
+ */
+describe('los bordes de la espera del panel', () => {
+  beforeEach(() => {
+    window.matchMedia = () => ({ matches: false, addEventListener: () => {}, removeEventListener: () => {} });
+    almacenLimpio();
+    textos.listos = true;
+    sesion.user = usuario;
+    sesion.loading = false;
+    reiniciaLaCortina();
+    reiniciaLasPeticiones();
+    for (const nombre of Object.keys(veces)) veces[nombre] = 0;
+    document.body.innerHTML = '';
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('agotado el techo con la sesion sin resolver, sigue la espera y no un blanco', () => {
+    // Sin el gate de siempre, aqui bajaba `isLoading` y el `if (!user) return
+    // null` de tres lineas mas abajo dejaba la pagina EN BLANCO. Una instancia
+    // fria de Render tardando mas de tres segundos basta para llegar aqui
+    vi.useFakeTimers();
+    sesion.user = null;
+    sesion.loading = true;
+
+    render(<Dashboard />);
+    act(() => { vi.advanceTimersByTime(ESPERA_MAXIMA_MS + 100); });
+
+    expect(estaEsperando()).toBe(true);
+  });
+
+  it('mientras se recarga la sesion no se vuelve a pedir todo', async () => {
+    // `refetchUser` —al guardar el handicap— sube `loading` con el usuario
+    // VIEJO todavia puesto. Sin cortar ahi, esa pasada pedia las cuatro cosas
+    // una vez y el usuario nuevo otra: ocho peticiones por cada guardado
+    const { rerender } = render(<Dashboard />);
+    await act(async () => {
+      peticiones.competiciones.resolver([]);
+      peticiones.estadisticas.resolver(null);
+      peticiones.recientes.resolver([]);
+    });
+    await asienta();
+    await act(async () => { peticiones.proximos.resolver([]); });
+    await asienta();
+    const pedidasAlPrincipio = veces.estadisticas;
+
+    reiniciaLasPeticiones();
+    sesion.loading = true;
+    rerender(<Dashboard />);
+    await asienta();
+
+    expect(veces.estadisticas).toBe(pedidasAlPrincipio);
   });
 });
 

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router';
 
@@ -96,6 +96,13 @@ describe('AppStart y la cortina del arranque', () => {
     document.body.innerHTML = '<div id="arranque"></div>';
     // La ruta `/start` avisa: al llegar, la cortina se queda esperando
     esperaElAviso();
+  });
+
+  // El plazo de la cortina es un `setTimeout` de verdad sobre el modulo: sin
+  // esto, el ultimo test del bloque lo deja vivo y salta sobre lo que venga
+  // despues en el mismo worker
+  afterEach(() => {
+    reiniciaLaCortina();
   });
 
   it('mientras se resuelve la sesion, la cortina se queda', () => {
