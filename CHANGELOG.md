@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [2.22.0] - 2026-08-26
+
+### Changed
+
+- **La sesión se consulta una sola vez al abrir la aplicación** (#489). Cada pantalla que necesitaba saber quién eres lo preguntaba por su cuenta, y hay veinte que lo hacen: al abrir la aplicación instalada se pedían **tres** veces los mismos datos antes de que el panel pidiera el primero de los suyos. Y no en paralelo: la tercera no salía hasta que respondían las dos primeras, así que en producción —donde cada viaje cuesta entre 200 y 300 milisegundos— el panel no empezaba a cargar hasta pasado medio segundo largo.
+
+  Ahora la pregunta vive en un solo sitio: quien llega mientras hay una en curso se engancha a ella, y quien llega después recibe la respuesta sin volver a preguntar. Se espera que el panel empiece a cargar unos **200-280 milisegundos antes**; en local no se nota, porque allí cada viaje cuesta milisegundos y los tres se solapan hasta parecer uno.
+
+### Fixed
+
+- **Un corte de red al abrir la aplicación ya no te deja fuera.** Si la consulta de sesión fallaba, cada pantalla que se montaba abría la suya —justo cuando el servidor menos lo aguanta— y, peor, quien llegaba mientras tanto leía «no hay sesión» y acababa en la pantalla de acceso **con la sesión abierta**. Ahora un fallo se reintenta solo, con esperas crecientes y un tope, y mientras tanto la aplicación sabe que todavía no sabe, en vez de dar por hecho que no hay nadie.
+
+- **Al entrar ya no se puede quedar dando vueltas entre el acceso y su destino.** Bastaba haber abierto antes un enlace público sin sesión: aquello quedaba guardado como «aquí no hay nadie», y al entrar sin recargar la página el guardia leía eso y devolvía al formulario, que confirmaba la sesión y mandaba de vuelta, sin fin.
+
 ## [2.21.0] - 2026-08-25
 
 ### Changed

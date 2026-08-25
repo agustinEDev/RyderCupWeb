@@ -260,3 +260,33 @@ function TokenSyncComponent({ children }) {
 
   return children;
 }
+
+/**
+ * Entrar y salir invalidan la consulta compartida, las dos (FE #489).
+ *
+ * Con solo invalidar al salir habia un ida y vuelta sin fin: si antes se habia
+ * guardado un 401 —abrir un enlace publico sin sesion basta—, al entrar sin
+ * recargar el guardia leia «no hay usuario» y devolvia al formulario, que
+ * confirmaba la sesion y volvia a mandar al destino.
+ */
+describe('AuthContext y la consulta compartida', () => {
+  it('entrar Y salir invalidan lo que la consulta compartida tuviera guardado', async () => {
+    // Invalidar solo al salir dejaba un ida y vuelta sin fin: con un 401 ya
+    // guardado —abrir un enlace publico sin sesion basta—, al entrar sin
+    // recargar el guardia leia «no hay usuario» y devolvia al formulario, que
+    // confirmaba la sesion y volvia a mandar al destino
+    const modulo = await import('../services/sesionCompartida');
+    const olvido = vi.spyOn(modulo, 'olvidaLaSesion');
+
+    const { result } = renderHook(() => useAuthContext(), {
+      wrapper: ({ children }) => <AuthProvider>{children}</AuthProvider>,
+    });
+
+    act(() => result.current.setUser({ id: 'recien-entrado', email: 'a@b.c' }));
+    expect(olvido, 'entrar tiene que invalidar').toHaveBeenCalled();
+
+    olvido.mockClear();
+    act(() => result.current.setUser(null));
+    expect(olvido, 'salir tambien').toHaveBeenCalled();
+  });
+});
