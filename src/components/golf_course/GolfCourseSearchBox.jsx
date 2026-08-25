@@ -3,6 +3,7 @@ import { Search, MapPin, AlertCircle, Navigation } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { listGolfCoursesUseCase } from '../../composition';
 import { roundCoordinate } from '../../utils/geo';
+import BlockLoader from '../ui/BlockLoader';
 
 /**
  * GolfCourseSearchBox Component
@@ -364,8 +365,7 @@ const GolfCourseSearchBox = ({
             // Mientras la primera búsqueda está en vuelo no se puede decir que
             // no hay campos: aún no se sabe
             <div className="py-8 px-4 text-center">
-              <div className="animate-spin rounded-full h-6 w-6 border-2 border-primary border-t-transparent mx-auto mb-3"></div>
-              <p className="text-sm text-gray-500">{t('searchBox.searching', 'Searching...')}</p>
+              <BlockLoader sinRelleno texto={t('searchBox.searching', 'Searching...')} />
             </div>
           ) : (
             <div className="py-8 px-4 text-center">

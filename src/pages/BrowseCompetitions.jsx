@@ -240,8 +240,10 @@ const BrowseCompetitions = () => {
   // Prepare content for explore competitions
   let exploreContent;
   if (isLoadingExplore) {
+    // Silenciosa: las dos secciones cargan a la vez y se anunciaban dos
+    // «Cargando...» seguidos, sin nada que los distinguiera
     exploreContent = (
-      <BlockLoader texto={t('common:loading')} />
+      <BlockLoader silencioso texto={t('common:loading')} />
     );
   } else if (filteredExploreCompetitions.length === 0) {
     exploreContent = (

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { readFileSync } from 'fs';
-import { resolve } from 'path';
+import { readFileSync, readdirSync } from 'fs';
+import { resolve, join } from 'path';
 
 /**
  * La franja de arriba —reloj, cobertura, bateria— no la pinta la pantalla de
@@ -217,5 +217,62 @@ describe('el verde del arranque deja leer lo que va encima', () => {
 
   it('el monograma y el texto en blanco se leen encima', () => {
     expect(contraste(verdeDeArranque(), '#ffffff')).toBeGreaterThanOrEqual(4.4);
+  });
+});
+
+/**
+ * El dibujo de las esperas es UNO (FE #495). Este test recorre el fuente porque
+ * la primera pasada dejo tres esperas de bloque sin migrar —vivian en
+ * `components/`, y el inventario solo habia mirado `pages/`—, y nada lo delataba:
+ * la suite seguia verde mientras la aplicacion cambiaba de dibujo por el camino.
+ */
+describe('no quedan esperas con dibujo propio', () => {
+  // Lo que SI puede girar por su cuenta, y por que. Son indicadores de que una
+  // ACCION esta en curso —«este boton esta trabajando», «se esta añadiendo»—, no
+  // de que un contenido viene de camino: otra cosa, y quedaron fuera del
+  // encargo. Cualquier sitio nuevo que aparezca aqui hay que mirarlo, no
+  // añadirlo a la lista sin pensar.
+  const PERMITIDOS = new Set([
+    'components/ui/LoadingMark.jsx',                        // la pieza compartida
+    'components/admin/ManageAccountModal.jsx',              // boton de procesar
+    'components/auth/SignInForm.jsx',                       // boton de entrar
+    'components/modals/ConfirmModal.jsx',                   // boton de confirmar
+    'components/competition/CompetitionGolfCoursesSection.jsx', // «añadiendo campo»
+    'components/golf_course/GolfCourseSearchBox.jsx',       // indicador dentro del campo
+    'pages/ForgotPassword.jsx',                             // boton de enviar
+    'pages/Register.jsx',                                   // boton de registrarse
+    'pages/ResetPassword.jsx',                              // boton de guardar
+    'pages/EditProfile.jsx',                                // boton de guardar
+    'pages/admin/AdminPanel.jsx',                           // botones de accion
+    'pages/player/FeedPage.jsx',                            // boton de cargar mas
+    'pages/player/PlayerProfilePage.jsx',                   // boton de cargar mas
+    'components/admin/AdminEditCompetitionModal.jsx',       // boton de guardar
+    'components/admin/EditUserModal.jsx',                   // boton de guardar
+    'components/friend/AddFriendModal.jsx',                 // indicador dentro del buscador
+    'components/invitation/SendInvitationModal.jsx',        // boton de enviar
+  ]);
+
+  const ficheros = () => {
+    const salida = [];
+    const recorre = (dir) => {
+      for (const entrada of readdirSync(dir, { withFileTypes: true })) {
+        const ruta = join(dir, entrada.name);
+        if (entrada.isDirectory()) recorre(ruta);
+        else if (/\.jsx$/.test(entrada.name) && !/\.test\./.test(entrada.name)) salida.push(ruta);
+      }
+    };
+    recorre(resolve(process.cwd(), 'src'));
+    return salida;
+  };
+
+  it('ninguna pantalla se pinta su propia espera', () => {
+    const sueltos = [];
+    for (const ruta of ficheros()) {
+      const relativa = ruta.split('/src/')[1];
+      if (PERMITIDOS.has(relativa)) continue;
+      if (readFileSync(ruta, 'utf8').includes('animate-spin')) sueltos.push(relativa);
+    }
+
+    expect(sueltos, `esperas con dibujo propio: ${sueltos.join(', ')}`).toEqual([]);
   });
 });

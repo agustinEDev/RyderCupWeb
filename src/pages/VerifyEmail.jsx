@@ -75,7 +75,12 @@ const VerifyEmail = () => {
               {/* Verifying state */}
               {status === 'verifying' && (
                 <>
-                  <BlockLoader />
+                  {/* `mb-6` y sin relleno propio: sus hermanas —el icono de
+                      exito y el de error— miden asi, y con el `py-12` de serie
+                      la tarjeta daba un salto al cambiar de estado */}
+                  <div className="flex justify-center mb-6">
+                    <BlockLoader sinRelleno />
+                  </div>
                   <h1 className="text-gray-900 text-2xl font-bold mb-4 text-center">
                     Verifying your email...
                   </h1>

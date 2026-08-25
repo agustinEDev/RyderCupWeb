@@ -1,19 +1,9 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import LoadingMark from './LoadingMark';
+import { respaldoDeCarga } from './textoDeEspera';
 import { elArranqueHaTerminado } from '../../utils/cortinaDeArranque';
 
-/**
- * El respaldo mientras el namespace `common` no ha bajado. Va por idioma
- * porque un texto fijo en ingles se cuela justo en la pantalla de arranque de
- * una aplicacion en español. La etiqueta del detector no viene de una lista
- * cerrada —sale de `i18nextLng`—, asi que lo que no se reconozca cae en ingles,
- * igual que el `fallbackLng` de la configuracion.
- */
-const RESPALDO_LOADING = new Map([
-  ['es', 'Cargando...'],
-  ['en', 'Loading...'],
-]);
 
 /**
  * La misma pantalla que muestra el `Suspense` de `App.jsx` mientras baja un
@@ -28,16 +18,7 @@ const FullScreenLoader = ({ texto }) => {
   const { t, i18n } = useTranslation('common');
   // `es_ES` con guion bajo es una forma que este proyecto ya ha visto —es la que
   // hacia estallar `localeCompare`—, asi que se parte por los dos separadores
-  // Con opcionales: esta pantalla la usan ya casi todas las paginas, y sus
-  // pruebas mockean `useTranslation` de mil formas —varias sin `i18n`—. Una
-  // pieza compartida no puede caerse porque le falte eso
-  const idioma = String(i18n?.resolvedLanguage || i18n?.language || 'en')
-    .split(/[-_]/)[0]
-    .toLowerCase();
-  // Un `Map` y no un objeto: `i18nextLng` es texto libre, y en un objeto una
-  // etiqueta como `constructor` devolveria una funcion en vez de no encontrarse,
-  // que React no sabe pintar
-  const respaldo = RESPALDO_LOADING.get(idioma) ?? RESPALDO_LOADING.get('en');
+  const respaldo = respaldoDeCarga(i18n);
 
   // Dos caras, y la diferencia importa dentro de la aplicacion instalada
   // (FE #492): el verde de la marca es la pantalla con la que la aplicacion se
