@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router';
+import { useNavigate, Navigate, useLocation } from 'react-router';
 import { motion } from 'framer-motion';
 import { Trophy, Zap, Pencil } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -34,6 +34,7 @@ const RECENT_MATCHES_SHOWN = 3;
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { t, ready: textosListos } = useTranslation('dashboard');
   const { t: tQuickMatch, ready: textosDeRapidaListos } = useTranslation('quickMatch');
   const { user, loading: isLoadingUser, refetch: refetchUser } = useAuth();
@@ -406,7 +407,13 @@ const Dashboard = () => {
   }
 
   if (!user) {
-    return null;
+    // Al formulario, no un `null` que deja la pagina EN BLANCO. `ProtectedRoute`
+    // dejo pasar porque SU consulta de sesion dijo que si, pero cada uno tiene
+    // la suya —`useAuth` no es un contexto, FE #489— y la de aqui puede resolver
+    // sin usuario: el token rotado entre las dos, o quedarse sin red. Como el
+    // guardia sigue viendo su usuario, nadie redirigia y la pantalla se quedaba
+    // vacia. La misma salida que usa el guardia, con el mismo `from`.
+    return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
   const firstName = user.first_name || 'User';

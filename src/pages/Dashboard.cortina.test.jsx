@@ -67,7 +67,12 @@ vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (clave) => clave, i18n: { language: 'es' }, ready: textos.listos }),
 }));
 
-vi.mock('react-router', () => ({ useNavigate: () => vi.fn() }));
+vi.mock('react-router', () => ({
+  useNavigate: () => () => {},
+  useLocation: () => ({ pathname: '/dashboard' }),
+  // Deja rastro para poder comprobar a donde manda
+  Navigate: ({ to }) => <div data-testid="redirigido" data-a={to} />,
+}));
 
 // Descarta las props a proposito: aqui solo se mira si la capa del arranque
 // sigue puesta, no lo que pinta el panel
@@ -382,6 +387,17 @@ describe('el panel avisa a la cortina cuando NO le queda nada cargando', () => {
     await asienta();
 
     expect(sigueLaCortina()).toBe(true);
+  });
+
+  it('sin usuario manda al formulario, no deja la pantalla vacia', () => {
+    // `ProtectedRoute` dejo pasar porque SU consulta dijo que si, pero la de
+    // esta pantalla puede resolver sin usuario —el token rotado entre las dos—.
+    // Devolver `null` dejaba una pagina en blanco sin que nadie redirigiera
+    sesion.user = null;
+
+    render(<Dashboard />);
+
+    expect(document.querySelector('[data-testid="redirigido"]')?.getAttribute('data-a')).toBe('/login');
   });
 
   it('sin usuario NO avisa: destaparia una pagina en blanco', () => {
