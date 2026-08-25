@@ -29,6 +29,7 @@ vi.mock('../components/auth/SignInForm', () => ({
   default: () => <div data-testid="formulario-de-acceso" />,
 }));
 
+const { esperaElAviso, reiniciaLaCortina } = await import('../utils/cortinaDeArranque');
 const AppStart = (await import('./AppStart')).default;
 
 const pintar = () =>
@@ -72,6 +73,38 @@ describe('AppStart', () => {
     pintar();
     const salida = screen.getByText('appStart.whatIsThis');
     expect(salida.closest('a')).toHaveAttribute('href', '/');
+  });
+});
+
+/**
+ * El aviso a la cortina del arranque (FE #485). Esta pantalla es una de las dos
+ * salidas del arranque: la cortina verde no se levanta hasta que la de destino
+ * dice que ha terminado.
+ */
+describe('AppStart y la cortina del arranque', () => {
+  const sigueLaCortina = () => Boolean(document.getElementById('arranque'));
+
+  beforeEach(() => {
+    estado.instalada = true;
+    estado.comprobando = false;
+    reiniciaLaCortina();
+    document.body.innerHTML = '<div id="arranque"></div>';
+    // La ruta `/start` avisa: al llegar, la cortina se queda esperando
+    esperaElAviso();
+  });
+
+  it('mientras se resuelve la sesion, la cortina se queda', () => {
+    estado.comprobando = true;
+
+    pintar();
+
+    expect(sigueLaCortina()).toBe(true);
+  });
+
+  it('con el formulario ya en pantalla, se levanta', () => {
+    pintar();
+
+    expect(sigueLaCortina()).toBe(false);
   });
 });
 

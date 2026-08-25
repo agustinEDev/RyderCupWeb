@@ -16,6 +16,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useEntryMotion } from '../hooks/useEntryMotion';
 import { slideUp, staggerContainer, getEntryProps } from '../utils/animations';
 import FullScreenLoader from '../components/ui/FullScreenLoader';
+import { laPantallaEstaLista } from '../utils/cortinaDeArranque';
 import {
   listUserCompetitionsUseCase,
   getPlayerStatsUseCase,
@@ -183,7 +184,18 @@ const Dashboard = () => {
     let cancelled = false;
 
     const loadUpcomingMatches = async () => {
-      if (!user || isLoadingCompetitions) {
+      if (!user) {
+        // Sin usuario no hay nada que pedir, y el flag arranca en `true`: sin
+        // bajarlo aqui se quedaba arriba para siempre y el aviso a la cortina
+        // del arranque no llegaba a mandarse nunca (FE #485). Mientras las
+        // competiciones sigan en vuelo NO se toca: esta peticion todavia esta
+        // por venir, y darla por terminada levantaria la cortina antes de
+        // tiempo.
+        setIsLoadingUpcoming(false);
+        return;
+      }
+
+      if (isLoadingCompetitions) {
         return;
       }
 
@@ -215,6 +227,28 @@ const Dashboard = () => {
   // Only gate the full-page spinner on the initial load (no user yet).
   // Subsequent refetches (e.g. after saving handicap) shouldn't unmount the current UI.
   const isLoading = (isLoadingUser && !user) || isLoadingCompetitions;
+
+  // El aviso a la cortina del arranque (FE #485): esta pantalla pide CUATRO
+  // cosas y hasta ahora se daba por cargada con dos —las de `isLoading`—. Las
+  // otras dos aterrizaban despues y encendian su bloque cada una por su lado:
+  // esos eran los dos parpadeos del iPhone. Aqui se avisa cuando no queda nada
+  // en vuelo, ni siquiera lo que no bloquea la pagina.
+  //
+  // Las dependencias son los propios estados, no una lista vacia: React no
+  // vuelve a ejecutar los efectos pasivos de un subarbol que `Suspense`
+  // esconde y reaparece, y con `[]` el aviso se perderia.
+  const noQuedaNadaCargando =
+    !isLoadingUser &&
+    !isLoadingCompetitions &&
+    !isLoadingStats &&
+    !isLoadingRecent &&
+    !isLoadingUpcoming;
+
+  useEffect(() => {
+    if (noQuedaNadaCargando) {
+      laPantallaEstaLista();
+    }
+  }, [noQuedaNadaCargando]);
 
   if (isLoading) {
     // La MISMA espera que el resto de la aplicacion, no un circulo propio. Al
