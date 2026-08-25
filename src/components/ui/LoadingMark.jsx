@@ -33,12 +33,25 @@ const LoadingMark = ({ tamano = 'grande', tinta = 'auto' }) => {
 
   // La MISMA fase que el anillo de la capa de `index.html`, no solo la misma
   // velocidad. El reloj de una animacion CSS empieza cuando nace su elemento:
-  // el de la capa lleva girando desde el primer pintado y este nace al montar
-  // React, cientos de milisegundos despues, asi que en el relevo el arco
-  // saltaba a otro angulo. Con un retraso negativo arranca donde estaria si
-  // llevara girando desde el principio. Se calcula una vez, al montar: en cada
-  // render cambiaria el desfase y el anillo daria tirones.
-  const [desfase] = useState(() => -(globalThis.performance.now() % 1000));
+  // el de la capa lleva girando desde que el navegador la pinta y este nace al
+  // montar React, cientos de milisegundos despues, asi que en el relevo el arco
+  // saltaba a otro angulo.
+  //
+  // Se le pregunta a la capa por su fase EXACTA mientras siga puesta —que es
+  // justo el caso del relevo—. Aproximarla con `performance.now()` deja fuera
+  // lo que el navegador tarda en analizar la pagina y aplicar el estilo, que
+  // son las decenas de milisegundos que separan el arranque del documento del
+  // nacimiento de esa capa. Sin capa delante no hay relevo que cuidar, y la
+  // aproximacion sobra igual.
+  //
+  // Se calcula una vez, al montar: en cada render cambiaria el desfase y el
+  // anillo daria tirones.
+  const [desfase] = useState(() => {
+    const anillo = document.getElementById('arranque-anillo');
+    const fase = anillo?.getAnimations?.()[0]?.currentTime;
+
+    return -((typeof fase === 'number' ? fase : globalThis.performance.now()) % 1000);
+  });
 
   return (
     <div className={`relative grid place-items-center ${medida.marco}`}>

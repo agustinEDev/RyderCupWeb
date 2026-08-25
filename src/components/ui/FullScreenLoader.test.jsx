@@ -167,6 +167,20 @@ describe('la fase del anillo', () => {
     reiniciaLaCortina();
   });
 
+  it('cuando la capa sigue puesta, copia SU fase, no la del documento', () => {
+    // Aproximar con `performance.now()` deja fuera lo que el navegador tarda en
+    // analizar la pagina: son las decenas de milisegundos que separan el
+    // arranque del documento del nacimiento de la capa
+    document.body.innerHTML = '<div id="arranque"><span id="arranque-anillo"></span></div>';
+    const capa = document.getElementById('arranque-anillo');
+    capa.getAnimations = () => [{ currentTime: 250 }];
+
+    render(<FullScreenLoader />);
+
+    expect(document.querySelector('.espera-anillo').style.animationDelay).toBe('-250ms');
+    document.body.innerHTML = '';
+  });
+
   it('arranca donde estaria si llevara girando desde el principio', () => {
     render(<FullScreenLoader />);
 
