@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [2.20.0] - 2026-08-25
+
+### Fixed
+
+- **La pantalla verde se queda puesta hasta que el panel está entero** (#485). Al abrir la aplicación instalada se veía el verde y, justo después, dos parpadeos más antes de que el panel se asentara. No era un fallo de la pantalla de carga: era que el panel se daba por cargado antes de tiempo. Pide **cuatro** cosas —tus competiciones, tus estadísticas, tus últimas partidas y las próximas— y se declaraba listo con **dos**; las otras dos llegaban después y encendían su bloque cada una por su lado.
+
+  Ahora la pantalla verde funciona como un telón: no se levanta hasta que la pantalla que hay detrás avisa de que no le queda nada cargando. Como cubre la pantalla entera, lo que pasa por debajo mientras tanto —la consulta de la sesión, la descarga del panel, sus cuatro peticiones— deja de verse. Se ve el verde, y después el panel terminado.
+
+  **Con un tope de tres segundos**, que no es opcional: sin él, un teléfono sin cobertura se quedaría mirando un verde eterno, que es peor defecto que el que esto viene a arreglar. Cumplido el plazo, el telón se levanta y cada pantalla enseña sus propias esperas, como hasta ahora.
+
+  Quién espera lo decide **la ruta por la que se entra**, no el orden en que se monten las piezas. Ese detalle es el arreglo: este mismo defecto volvió cuatro veces con caras distintas, y las cuatro fueron lo mismo, un resultado que dependía de qué se montara antes. Las pantallas que no avisan retiran el telón al llegar, así que ninguna se queda esperando una señal que nadie manda.
+
+- **La portada también cuenta como arranque, para los iconos de siempre.** Quien añadió la aplicación a la pantalla de inicio antes de la versión 2.19.0 tiene un icono que abre por la portada, no por la pantalla de arranque nueva: iOS guarda la dirección al crear el acceso directo y no la cambia cuando cambia la del manifiesto. Sin cubrir ese camino, todo lo anterior no habría hecho nada para esa gente. En el navegador no cambia nada: el telón solo se sostiene con la aplicación instalada, así que una recarga o un enlace guardado siguen enseñando la página cargando como siempre.
+
+- **El panel deja de montarse a trozos también fuera del arranque.** Entrando desde el formulario de acceso, o llegando a él dentro de la aplicación, se veía lo mismo: la espera, el panel a medias y sus bloques encendiéndose uno detrás de otro. Ahora espera a tener sus cuatro peticiones antes de pintarse. **Solo la primera vez**: volver al panel desde la barra inferior no repite la espera, y guardar el hándicap tampoco desmonta lo que ya hay en pantalla.
+
+- **Los textos cuentan como carga.** Las traducciones de cada pantalla se descargan aparte, así que una pantalla podía darse por terminada enseñando `appStart.title` en crudo y cambiando el texto un instante después. Es el mismo parpadeo con otra cara, y ahora se espera también a ellas.
+
+- **Una sesión perdida lleva al acceso, no a una pantalla en blanco.** El guardia que protege el panel y el panel mismo comprueban la sesión **por separado**, así que la del panel puede resolverse sin usuario aunque el guardia acabe de dar el visto bueno: el testigo caducado entre una comprobación y la otra, o quedarse sin red. El panel devolvía una pantalla vacía y el guardia, que seguía viendo su usuario, no tenía motivo para redirigir: quedaba una pantalla en blanco sin nada que hacer. Ahora sale por donde sale el guardia, y se vuelve a donde se iba tras entrar.
+
 ## [2.19.2] - 2026-08-25
 
 ### Fixed
