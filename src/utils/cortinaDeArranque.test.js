@@ -10,6 +10,7 @@ vi.mock('../hooks/useStandalone', () => ({
   useStandalone: () => equipo.instalada,
 }));
 import {
+  elArranqueHaTerminado,
   rutaQueAvisa,
   esperaElAviso,
   retiraLaCortina,
@@ -121,6 +122,29 @@ describe('la cortina del arranque', () => {
     esperaElAviso();
 
     expect(sigueLaCortina()).toBe(false);
+  });
+
+  it('el aviso de la pantalla consuma el arranque', () => {
+    // A partir de ahi, la espera se pinta sobria: el verde es del arranque y
+    // solo del arranque (FE #492)
+    esperaElAviso();
+    expect(elArranqueHaTerminado()).toBe(false);
+
+    laPantallaEstaLista();
+
+    expect(elArranqueHaTerminado()).toBe(true);
+  });
+
+  it('el plazo NO consuma el arranque', () => {
+    // Al vencer, la cortina se levanta sobre una pantalla que sigue cargando:
+    // sigue siendo el arranque, y volverla blanca ahi devolveria el salto de
+    // color que se arreglo en la 2.19.1
+    esperaElAviso();
+
+    vi.advanceTimersByTime(PLAZO_MAXIMO_MS);
+
+    expect(sigueLaCortina()).toBe(false);
+    expect(elArranqueHaTerminado()).toBe(false);
   });
 
   it('no falla si la capa no existe', () => {

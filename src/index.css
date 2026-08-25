@@ -305,12 +305,17 @@
 
      Si `:has` no estuviera disponible no se aplica nada y vuelve la banda
      blanca del arranque: se degrada al defecto de antes, no a uno peor. */
+  /* Solo las esperas DEL ARRANQUE, no cualquiera: la misma pantalla la usan
+     las transiciones de dentro de la aplicacion —volver a Inicio desde la barra
+     inferior, cambiar de pestaña—, y alli el verde de la marca se lee como si
+     la aplicacion se reiniciara (FE #492). Las de transicion se marcan con su
+     propia clase y se quedan en la cara sobria, la misma que en el navegador. */
   html:has(#arranque),
-  html:has(.pantalla-de-espera) {
+  html:has(.pantalla-de-espera:not(.pantalla-de-espera--transicion)) {
     background: #3e8642;
   }
 
-  .pantalla-de-espera {
+  .pantalla-de-espera:not(.pantalla-de-espera--transicion) {
     background: #3e8642;
     /* Blanco puro y no un 92%: sobre este verde, mas claro que el anterior, el
        velo bajaba el contraste del texto por debajo de lo legible. */

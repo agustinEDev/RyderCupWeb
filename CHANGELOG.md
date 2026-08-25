@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [2.20.1] - 2026-08-25
+
+### Fixed
+
+- **La pantalla verde deja de salir dentro de la aplicación** (#492). Estando ya dentro, volver a Inicio desde la barra inferior enseñaba otra vez la pantalla de arranque —el verde de la marca con el monograma—, y eso se lee como si la aplicación se reiniciara. Dentro solo debe verse la espera de siempre, la misma que al pasar de una pantalla a otra.
+
+  Venía de la 2.20.0 hacia atrás: esa espera se pintó de verde para que la cadena del arranque no cambiara de imagen a mitad, que era el parpadeo que se estaba persiguiendo. Pero la misma pantalla la usan todas las esperas de la aplicación, así que el verde se coló en todas. Ahora tiene dos caras y sabe cuál le toca: la del arranque sigue igual, y la de dentro va sobre fondo claro con el monograma verde —el blanco desaparecería sobre él—.
+
+  El arranque se da por terminado cuando la pantalla de destino avisa de que está lista, o al llegar a una pantalla que no avisa, como un enlace profundo. **No** cuando vence el plazo de tres segundos: ahí la cortina se levanta sobre algo que todavía está cargando, sigue siendo el arranque, y volverlo blanco justo en ese instante devolvería el salto de color que se arregló en la 2.19.1.
+
 ## [2.20.0] - 2026-08-25
 
 ### Fixed
