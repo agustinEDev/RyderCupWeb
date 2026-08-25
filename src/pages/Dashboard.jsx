@@ -27,6 +27,12 @@ import {
 // El panel enseña un resumen, no el historial entero
 const RECENT_MATCHES_SHOWN = 3;
 
+// Mas alla de esto el panel se pinta con lo que tenga. Es el mismo compromiso
+// que la cortina del arranque: esperar a las cuatro peticiones evita que la
+// pantalla se monte a trozos, pero una que no vuelva no puede dejar el panel
+// muerto detras de una espera (FE #485).
+const ESPERA_MAXIMA_MS = 3000;
+
 const Dashboard = () => {
   const navigate = useNavigate();
   const { t, ready: textosListos } = useTranslation('dashboard');
@@ -242,9 +248,6 @@ const Dashboard = () => {
     };
   }, [user, isLoadingUser, competitions, isLoadingCompetitions]);
 
-  // Only gate the full-page spinner on the initial load (no user yet).
-  // Subsequent refetches (e.g. after saving handicap) shouldn't unmount the current UI.
-  const isLoading = (isLoadingUser && !user) || isLoadingCompetitions;
 
   // El aviso a la cortina del arranque (FE #485): esta pantalla pide CUATRO
   // cosas y hasta ahora se daba por cargada con dos —las de `isLoading`—. Las
@@ -268,11 +271,46 @@ const Dashboard = () => {
     !isLoadingRecent &&
     !isLoadingUpcoming;
 
+  // La espera de pantalla completa dura hasta que la PRIMERA carga esta entera.
+  // Antes bastaban dos de las cuatro peticiones, asi que el panel aparecia a
+  // medias y sus bloques se encendian uno detras de otro: tapado por la cortina
+  // en el arranque, pero a la vista al entrar desde el formulario o al navegar
+  // aqui dentro de la aplicacion.
+  //
+  // Con techo, por lo mismo que la cortina: una peticion que no vuelve no puede
+  // dejar el panel en una espera eterna. Al agotarse se pinta con lo que haya,
+  // que es como se comportaba siempre.
+  const [seAgotoLaEspera, setSeAgotoLaEspera] = useState(false);
+
   useEffect(() => {
-    if (noQuedaNadaCargando) {
+    const plazo = setTimeout(() => setSeAgotoLaEspera(true), ESPERA_MAXIMA_MS);
+
+    return () => clearTimeout(plazo);
+  }, []);
+
+  const puedePintar = noQuedaNadaCargando || seAgotoLaEspera;
+
+  // Solo la PRIMERA carga manda: una recarga posterior —al guardar el
+  // handicap— no debe desmontar lo que ya hay en pantalla, que es lo que hacia
+  // el criterio de antes. Se ajusta durante el render, no en un efecto: React
+  // descarta este render y rehace el componente antes de pintar nada, sin
+  // pasar por el DOM.
+  const [yaSePinto, setYaSePinto] = useState(false);
+
+  if (puedePintar && !yaSePinto) {
+    setYaSePinto(true);
+  }
+
+  const isLoading = !yaSePinto && !puedePintar;
+
+  // El aviso a la cortina del arranque: en cuanto esta pantalla deja de
+  // esperar —porque ya lo tiene todo, o porque se agoto el techo y va a
+  // pintarse con lo que haya— no queda nada que tapar
+  useEffect(() => {
+    if (puedePintar) {
       laPantallaEstaLista();
     }
-  }, [noQuedaNadaCargando]);
+  }, [puedePintar]);
 
   if (isLoading) {
     // La MISMA espera que el resto de la aplicacion, no un circulo propio. Al

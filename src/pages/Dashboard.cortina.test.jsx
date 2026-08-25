@@ -82,20 +82,101 @@ for (const ruta of [
   '../components/dashboard/NextMatchBanner',
   '../components/dashboard/RecentMatches',
   '../components/quick_match/CreateQuickMatchModal',
-  '../components/ui/FullScreenLoader',
 ]) {
   vi.doMock(ruta, () => ({ default: () => null }));
 }
+
+// Este si deja rastro: lo que se mira abajo es si el panel esta esperando
+vi.doMock('../components/ui/FullScreenLoader', () => ({
+  default: () => <div data-testid="espera" />,
+}));
 
 const { esperaElAviso, reiniciaLaCortina } = await import('../utils/cortinaDeArranque');
 const Dashboard = (await import('./Dashboard')).default;
 
 const sigueLaCortina = () => Boolean(document.getElementById('arranque'));
+// jsdom no trae `localStorage` con el origen que usa vitest aqui, y el panel lo
+// lee al montar. Mismo apaño que el resto de la suite
+const almacenLimpio = () => {
+  const guardado = {};
+  globalThis.localStorage = {
+    getItem: (clave) => guardado[clave] ?? null,
+    setItem: (clave, valor) => { guardado[clave] = String(valor); },
+    removeItem: (clave) => { delete guardado[clave]; },
+    clear: () => { for (const clave of Object.keys(guardado)) delete guardado[clave]; },
+  };
+};
+
+const estaEsperando = () => Boolean(document.querySelector('[data-testid="espera"]'));
 
 // Deja que las promesas ya resueltas terminen de propagarse por los efectos
 const asienta = async () => {
   await act(async () => { await Promise.resolve(); await Promise.resolve(); });
 };
+
+/**
+ * Y lo mismo sin cortina delante: al entrar desde el formulario o al navegar
+ * aqui dentro de la aplicacion, el panel no puede montarse a trozos. Antes le
+ * bastaban dos de sus cuatro peticiones para pintarse, y las otras dos
+ * encendian su bloque despues.
+ */
+describe('el panel no se pinta a medias', () => {
+  beforeEach(() => {
+    window.matchMedia = () => ({ matches: false, addEventListener: () => {}, removeEventListener: () => {} });
+    textos.listos = true;
+    sesion.user = usuario;
+    sesion.loading = false;
+    almacenLimpio();
+    reiniciaLaCortina();
+    reiniciaLasPeticiones();
+    document.body.innerHTML = '';
+  });
+
+  it('con las DOS que antes bastaban, sigue esperando', async () => {
+    render(<Dashboard />);
+
+    await act(async () => { peticiones.competiciones.resolver([]); });
+    await asienta();
+
+    expect(estaEsperando()).toBe(true);
+  });
+
+  it('cuando llegan las cuatro, deja de esperar', async () => {
+    render(<Dashboard />);
+
+    await act(async () => {
+      peticiones.competiciones.resolver([]);
+      peticiones.estadisticas.resolver(null);
+      peticiones.recientes.resolver([]);
+    });
+    await asienta();
+    await act(async () => { peticiones.proximos.resolver([]); });
+    await asienta();
+
+    expect(estaEsperando()).toBe(false);
+  });
+
+  it('una recarga posterior no devuelve la pantalla a la espera', async () => {
+    // Al guardar el handicap se vuelve a pedir todo. Desmontar el panel entero
+    // ahi es justo lo que evitaba el criterio de antes
+    const { rerender } = render(<Dashboard />);
+    await act(async () => {
+      peticiones.competiciones.resolver([]);
+      peticiones.estadisticas.resolver(null);
+      peticiones.recientes.resolver([]);
+    });
+    await asienta();
+    await act(async () => { peticiones.proximos.resolver([]); });
+    await asienta();
+
+    reiniciaLasPeticiones();
+    sesion.user = { ...usuario };
+    rerender(<Dashboard />);
+    await asienta();
+
+    expect(estaEsperando()).toBe(false);
+  });
+});
 
 describe('el panel avisa a la cortina cuando NO le queda nada cargando', () => {
   beforeEach(() => {
@@ -109,15 +190,7 @@ describe('el panel avisa a la cortina cuando NO le queda nada cargando', () => {
     sesion.loading = false;
     reiniciaLaCortina();
     reiniciaLasPeticiones();
-    // jsdom no trae `localStorage` con el origen que usa vitest aqui, y el
-    // panel lo lee al montar. Mismo apaño que el resto de la suite
-    const guardado = {};
-    globalThis.localStorage = {
-      getItem: (clave) => guardado[clave] ?? null,
-      setItem: (clave, valor) => { guardado[clave] = String(valor); },
-      removeItem: (clave) => { delete guardado[clave]; },
-      clear: () => { for (const clave of Object.keys(guardado)) delete guardado[clave]; },
-    };
+    almacenLimpio();
     document.body.innerHTML = '<div id="arranque"></div>';
     // La ruta `/dashboard` avisa: la cortina se queda esperando
     esperaElAviso();
