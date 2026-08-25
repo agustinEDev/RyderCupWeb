@@ -271,7 +271,11 @@ const GolfCourseSearchBox = ({
           disabled={!countryCode}
           className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all disabled:bg-gray-50 disabled:cursor-not-allowed"
         />
-        {isLoading && (
+        {/* Solo cuando el desplegable NO esta contando ya que busca: con los dos
+            a la vez se veian DOS dibujos de espera distintos en la misma
+            pantalla, que es el sintoma que FE #495 vino a quitar. Este se queda
+            para cuando el desplegable esta cerrado, que es su caso util. */}
+        {isLoading && !showDropdown && (
           <div className="absolute right-3 top-1/2 -translate-y-1/2">
             <div className="animate-spin rounded-full h-4 w-4 border-2 border-primary border-t-transparent"></div>
           </div>

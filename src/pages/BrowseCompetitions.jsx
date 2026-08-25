@@ -14,7 +14,6 @@ import {
 import { CountryFlag } from '../utils/countryUtils';
 import { useAuth } from '../hooks/useAuth';
 import EnrollmentRequestModal from '../components/enrollment/EnrollmentRequestModal';
-import FullScreenLoader from '../components/ui/FullScreenLoader';
 import BlockLoader from '../components/ui/BlockLoader';
 
 const BrowseCompetitions = () => {
@@ -191,8 +190,13 @@ const BrowseCompetitions = () => {
 
   // Early returns
   if (isLoading) {
+    // Con el fondo de la pagina, no el blanco de serie: esta es la unica de las
+    // migradas que trae `bg-*` propio, y sin esto la pantalla pasaba de blanco
+    // a gris en el instante en que llegan los datos
     return (
-      <FullScreenLoader texto={t('common:loading')} />
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <BlockLoader texto={t('common:loading')} />
+      </div>
     );
   }
 

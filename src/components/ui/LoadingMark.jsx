@@ -18,9 +18,13 @@ import BrandMark from './BrandMark';
  * decide `index.css` junto al resto de la pantalla, que es donde ya vive esa
  * distincion. Aqui solo se elige el tamaño.
  */
+/* En pixeles y no en `size-32`, que son 8rem: la capa de `index.html` mide en
+   pixeles, y en un navegador con la fuente base en 20px una mitad mediria 128 y
+   la otra 160. El monograma daria un salto justo en el relevo, que es el
+   fotograma del que va toda esta historia. */
 const MEDIDAS = {
-  grande: { marco: 'size-32', anillo: 'border-[3px]', marca: 'w-[76px]' },
-  pequeno: { marco: 'size-16', anillo: 'border-2', marca: 'w-[38px]' },
+  grande: { marco: 'w-[128px] h-[128px]', anillo: 'border-[3px]', marca: 'w-[76px]' },
+  pequeno: { marco: 'w-[64px] h-[64px]', anillo: 'border-2', marca: 'w-[38px]' },
 };
 
 const LoadingMark = ({ tamano = 'grande', tinta = 'auto' }) => {

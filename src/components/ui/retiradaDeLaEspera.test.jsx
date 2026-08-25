@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync, readdirSync } from 'fs';
-import { resolve, join } from 'path';
+import { resolve, join, relative } from 'path';
 
 /**
  * La franja de arriba —reloj, cobertura, bateria— no la pinta la pantalla de
@@ -130,6 +130,17 @@ describe('las dos mitades del arranque pintan lo mismo', () => {
     expect(lee('src/components/ui/LoadingMark.jsx')).toContain('motion-reduce:animate-none');
   });
 
+  it('el anillo lleva el mismo color en las dos', () => {
+    // La capa no puede leer el tema —ahi todavia no hay CSS de Tailwind—, asi
+    // que el color va escrito a mano y solo un test impide que se separen
+    const primario = lee('src/index.css').match(/--color-primary-600:\s*(#[0-9a-f]{6})/i)?.[1];
+    const html = lee('index.html');
+
+    expect(primario?.toLowerCase()).toBe('#2d7b3e');
+    expect(html).toContain('#2d7b3e');
+    expect(html).toContain('rgba(45, 123, 62, 0.18)');   // el mismo, al 18%
+  });
+
   it('el anillo gira a la MISMA velocidad en las dos', () => {
     // `animate-spin` de Tailwind es 1s. Con otra duracion aqui, el relevo
     // cambia el ritmo justo en el fotograma que esta saga viene cuidando
@@ -142,10 +153,13 @@ describe('las dos mitades del arranque pintan lo mismo', () => {
     const html = lee('index.html');
     const jsx = lee('src/components/ui/LoadingMark.jsx');
 
+    // En la misma unidad las dos, que es justo lo que falta con `size-32`:
+    // son 8rem, y con la fuente base en 20px una mitad mide 128 y la otra 160
     expect(html).toMatch(/#arranque-marco\s*\{[^}]*width:\s*128px/);
     expect(html).toMatch(/<img[^>]*width="76"/);
-    expect(jsx).toContain("marco: 'size-32'");   // 32 * 4px = 128
+    expect(jsx).toContain("marco: 'w-[128px] h-[128px]'");
     expect(jsx).toContain("marca: 'w-[76px]'");
+    expect(jsx, 'las medidas en rem no casan con los pixeles de la capa').not.toMatch(/marco: 'size-\d/);
   });
 });
 
@@ -258,7 +272,7 @@ describe('no quedan esperas con dibujo propio', () => {
       for (const entrada of readdirSync(dir, { withFileTypes: true })) {
         const ruta = join(dir, entrada.name);
         if (entrada.isDirectory()) recorre(ruta);
-        else if (/\.jsx$/.test(entrada.name) && !/\.test\./.test(entrada.name)) salida.push(ruta);
+        else if (/\.jsx?$/.test(entrada.name) && !/\.test\./.test(entrada.name)) salida.push(ruta);
       }
     };
     recorre(resolve(process.cwd(), 'src'));
@@ -268,7 +282,10 @@ describe('no quedan esperas con dibujo propio', () => {
   it('ninguna pantalla se pinta su propia espera', () => {
     const sueltos = [];
     for (const ruta of ficheros()) {
-      const relativa = ruta.split('/src/')[1];
+      // `relative` y no partir por '/src/': si la copia de trabajo vive en una
+      // ruta que ya contiene '/src/', ninguna exencion casaria y la suite se
+      // pondria roja por donde esta el repositorio
+      const relativa = relative(resolve(process.cwd(), 'src'), ruta);
       if (PERMITIDOS.has(relativa)) continue;
       if (readFileSync(ruta, 'utf8').includes('animate-spin')) sueltos.push(relativa);
     }
