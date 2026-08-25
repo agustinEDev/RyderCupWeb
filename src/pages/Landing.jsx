@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useNavigationType } from 'react-router';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
@@ -10,6 +10,7 @@ import { useRedirectIfAuthenticated } from '../hooks/useRedirectIfAuthenticated'
 import { useStandalone } from '../hooks/useStandalone';
 import { ARRANCO_EN_LA_PORTADA } from '../utils/appStartup';
 import FullScreenLoader from '../components/ui/FullScreenLoader';
+import { laPantallaEstaLista } from '../utils/cortinaDeArranque';
 import InstallInstructionsModal from '../components/ui/InstallInstructionsModal';
 import { useEntryMotion } from '../hooks/useEntryMotion';
 import {
@@ -21,8 +22,8 @@ import {
 } from '../utils/animations';
 
 const Landing = () => {
-  const { t } = useTranslation('landing');
-  const { t: tCommon } = useTranslation('common');
+  const { t, ready: textosListos } = useTranslation('landing');
+  const { t: tCommon, ready: textosComunesListos } = useTranslation('common');
   const navigate = useNavigate();
   const { canInstall, isIOS, iosInstallRoute, isDesktopSafari, isInstalled, install } = useInstallPrompt();
   const esAplicacionInstalada = useStandalone();
@@ -62,6 +63,22 @@ const Landing = () => {
   //
   // Y mientras comprueba no se pinta la portada: apareceria entera para
   // desaparecer un segundo despues.
+  // El aviso a la cortina del arranque (FE #485). La portada tambien es puerta
+  // de entrada: los iconos instalados ANTES de FE #465 llevan `/` cocido como
+  // ruta de arranque —iOS guarda la URL al crear el acceso directo y no la
+  // cambia al cambiar el manifiesto—, asi que para esa gente el arranque sigue
+  // pasando por aqui. Sin esto, la cortina se retiraba nada mas llegar y todo
+  // el arreglo no les hacia nada.
+  //
+  // Con sesion NO se avisa: `useRedirectIfAuthenticated` deja `comprobandoSesion`
+  // arriba mientras redirige al panel, y alli se avisa cuando toca. Los textos
+  // cuentan como carga, igual que en las otras dos pantallas.
+  useEffect(() => {
+    if (!comprobandoSesion && textosListos && textosComunesListos) {
+      laPantallaEstaLista();
+    }
+  }, [comprobandoSesion, textosListos, textosComunesListos]);
+
   if (comprobandoSesion) {
     return <FullScreenLoader />;
   }

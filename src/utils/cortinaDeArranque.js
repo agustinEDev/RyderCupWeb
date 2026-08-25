@@ -48,21 +48,15 @@ export const PLAZO_MAXIMO_MS = 3000;
  * Cualquier otra —la portada, un enlace profundo, el formulario de acceso—
  * conserva lo de siempre: la cortina se retira al llegar.
  */
-const RUTAS_QUE_AVISAN = ['/start', '/dashboard'];
-
 /**
- * `/` NO esta en la lista, y con ella se queda fuera una poblacion: los iconos
- * instalados ANTES de FE #465 llevan la portada cocida como `start_url` —iOS no
- * relee el manifiesto al cambiar—, asi que esos arranques siguen entrando por
- * ahi, donde `Landing` conserva la deteccion antigua. Al llegar a `/` la cortina
- * se retira, y como la retirada es definitiva, el salto posterior al panel ya no
- * la vuelve a armar: para esas instalaciones esto no hace nada.
- *
- * Se deja asi a proposito. Meter `/` en la lista obligaria a que la portada
- * avisara tambien, y la portada es la pantalla de todos los dias en el
- * navegador. FE #469 —retirar la deteccion antigua— cierra el caso; hasta
- * entonces, esos arranques se comportan como hasta ahora, ni mejor ni peor.
+ * `/` esta en la lista porque tambien es puerta de entrada: los iconos
+ * instalados ANTES de FE #465 llevan la portada cocida como ruta de arranque
+ * —iOS guarda la URL al crear el acceso directo y no la cambia cuando cambia el
+ * manifiesto—, y sin ella todo esto no les haria nada. Que la portada sea
+ * ademas la pantalla de todos los dias en el navegador no estorba: la cortina
+ * solo se sostiene con la aplicacion instalada.
  */
+const RUTAS_QUE_AVISAN = ['/', '/start', '/dashboard'];
 
 let plazo = null;
 let retirada = false;

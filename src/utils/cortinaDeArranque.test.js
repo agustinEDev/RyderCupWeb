@@ -29,10 +29,11 @@ describe('la cortina del arranque', () => {
   it('las rutas por las que se entra a la aplicacion avisan; las demas, no', () => {
     expect(rutaQueAvisa('/start')).toBe(true);
     expect(rutaQueAvisa('/dashboard')).toBe(true);
+    // La portada tambien: es por donde arrancan los iconos anteriores a FE #465
+    expect(rutaQueAvisa('/')).toBe(true);
 
-    // La portada, el formulario y cualquier enlace profundo conservan lo de
-    // siempre: la capa se retira al llegar
-    expect(rutaQueAvisa('/')).toBe(false);
+    // El formulario y cualquier enlace profundo conservan lo de siempre: la
+    // capa se retira al llegar
     expect(rutaQueAvisa('/login')).toBe(false);
     expect(rutaQueAvisa('/competitions/7/leaderboard')).toBe(false);
   });

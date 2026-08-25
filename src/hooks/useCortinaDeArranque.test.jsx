@@ -24,7 +24,7 @@ describe('la cortina, segun la ruta', () => {
 
   const sigueLaCortina = () => Boolean(document.getElementById('arranque'));
 
-  it.each([['/start'], ['/dashboard']])(
+  it.each([['/'], ['/start'], ['/dashboard']])(
     'en %s la cortina se queda esperando el aviso',
     (ruta) => {
       renderHook(() => useCortinaDeArranque(ruta));
@@ -33,7 +33,7 @@ describe('la cortina, segun la ruta', () => {
     }
   );
 
-  it.each([['/'], ['/login'], ['/competitions/7/leaderboard']])(
+  it.each([['/login'], ['/competitions/7/leaderboard']])(
     'en %s se retira al llegar, como siempre',
     (ruta) => {
       renderHook(() => useCortinaDeArranque(ruta));
@@ -41,6 +41,19 @@ describe('la cortina, segun la ruta', () => {
       expect(sigueLaCortina()).toBe(false);
     }
   );
+
+  it('la portada tambien sostiene: es por donde arrancan los iconos viejos', () => {
+    // iOS guarda la URL al crear el acceso directo y no la cambia al cambiar el
+    // manifiesto, asi que los iconos anteriores a FE #465 siguen entrando por
+    // `/`. Sin sostenerla ahi, para esa gente esto no hace nada
+    const { rerender } = renderHook(({ ruta }) => useCortinaDeArranque(ruta), {
+      initialProps: { ruta: '/' },
+    });
+
+    rerender({ ruta: '/dashboard' });
+
+    expect(sigueLaCortina()).toBe(true);
+  });
 
   it('el salto de /start al panel no la levanta por el camino', () => {
     // Es el arranque de la aplicacion instalada con sesion: una pantalla releva
@@ -83,7 +96,7 @@ describe('la cortina, segun la ruta', () => {
     // hubiera nada debajo, y se veia el fondo blanco de la pagina
     const visto = [];
     renderHook(() => {
-      useCortinaDeArranque('/');
+      useCortinaDeArranque('/login');
       visto.push(Boolean(document.getElementById('arranque')));
     });
 
