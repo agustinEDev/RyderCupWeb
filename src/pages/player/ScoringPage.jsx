@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router';
-import { Loader } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import HeaderAuth from '../../components/layout/HeaderAuth';
 import { useAuth } from '../../hooks/useAuth';
@@ -17,6 +16,7 @@ import SessionBlockedModal from '../../components/scoring/SessionBlockedModal';
 import EarlyEndModal from '../../components/scoring/EarlyEndModal';
 import ConcedeMatchModal from '../../components/scoring/ConcedeMatchModal';
 import SubmitScorecardModal from '../../components/scoring/SubmitScorecardModal';
+import FullScreenLoader from '../../components/ui/FullScreenLoader';
 
 const TABS = ['input', 'scorecard', 'leaderboard'];
 
@@ -181,13 +181,7 @@ const ScoringPage = () => {
 
   if (isLoadingUser || isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <HeaderAuth user={user} />
-        <div className="flex items-center justify-center h-64">
-          <Loader className="h-8 w-8 animate-spin text-primary" />
-          <span className="ml-2 text-gray-500">{t('loading')}</span>
-        </div>
-      </div>
+      <FullScreenLoader texto={t('loading')} />
     );
   }
 

@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, Link, useLocation } from 'react-router';
-import { Loader } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import Header from '../../components/layout/Header';
 import HeaderAuth from '../../components/layout/HeaderAuth';
@@ -8,6 +7,7 @@ import Footer from '../../components/layout/Footer';
 import LeaderboardView from '../../components/scoring/LeaderboardView';
 import { useAuth } from '../../hooks/useAuth';
 import { getLeaderboardUseCase } from '../../composition';
+import BlockLoader from '../../components/ui/BlockLoader';
 
 const POLL_INTERVAL = 30000; // 30 seconds
 
@@ -70,10 +70,7 @@ const LeaderboardPage = () => {
         <h1 className="text-2xl font-bold text-gray-900 mb-6">{t('leaderboard.title')}</h1>
 
         {isLoading && (
-          <div className="flex items-center justify-center h-64">
-            <Loader className="h-8 w-8 animate-spin text-primary" />
-            <span className="ml-2 text-gray-500">{t('loading')}</span>
-          </div>
+          <BlockLoader texto={t('loading')} />
         )}
 
         {error && !isLoading && (

@@ -287,6 +287,16 @@
   margin-top: 1rem;
 }
 
+/* El anillo de carga que rodea la marca (FE #495). Su tinta va aqui, con el
+   resto de la pantalla, y no en las clases del componente: la distincion entre
+   el arranque y lo demas ya vive en este fichero, y repartirla en dos sitios es
+   como acaban divergiendo. La pista tenue detras es lo que lo hace legible como
+   circulo de carga incluso cuando el arco esta arriba. */
+.espera-anillo {
+  border-color: color-mix(in srgb, var(--color-primary-600) 18%, transparent);
+  border-top-color: var(--color-primary-600);
+}
+
 @media (display-mode: standalone) {
   /* La franja del reloj, la bateria y la cobertura NO la pinta esta pantalla:
      la pinta el fondo del documento. Sin esta regla el `html` se quedaba en su
@@ -320,5 +330,12 @@
     /* Blanco puro y no un 92%: sobre este verde, mas claro que el anterior, el
        velo bajaba el contraste del texto por debajo de lo legible. */
     color: #ffffff;
+  }
+
+  /* El anillo acompaña a la tinta de su pantalla: el verde del primario sobre
+     este fondo verde no se distinguiria */
+  .pantalla-de-espera:not(.pantalla-de-espera--transicion) .espera-anillo {
+    border-color: rgba(255, 255, 255, 0.28);
+    border-top-color: #ffffff;
   }
 }

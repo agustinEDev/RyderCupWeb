@@ -14,6 +14,8 @@ import {
 import { CountryFlag } from '../utils/countryUtils';
 import { useAuth } from '../hooks/useAuth';
 import EnrollmentRequestModal from '../components/enrollment/EnrollmentRequestModal';
+import FullScreenLoader from '../components/ui/FullScreenLoader';
+import BlockLoader from '../components/ui/BlockLoader';
 
 const BrowseCompetitions = () => {
   const navigate = useNavigate();
@@ -190,12 +192,7 @@ const BrowseCompetitions = () => {
   // Early returns
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-          <p className="mt-4 text-gray-600">{t('common:loading')}</p>
-        </div>
-      </div>
+      <FullScreenLoader texto={t('common:loading')} />
     );
   }
 
@@ -208,7 +205,7 @@ const BrowseCompetitions = () => {
   if (isLoadingJoinable) {
     joinableContent = (
       <div className="text-center py-12">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+        <BlockLoader />
         <p className="mt-4 text-gray-600">{t('common:loading')}</p>
       </div>
     );
@@ -248,7 +245,7 @@ const BrowseCompetitions = () => {
   if (isLoadingExplore) {
     exploreContent = (
       <div className="text-center py-12">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+        <BlockLoader />
         <p className="mt-4 text-gray-600">{t('common:loading')}</p>
       </div>
     );

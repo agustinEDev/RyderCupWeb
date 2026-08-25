@@ -12,6 +12,7 @@ import {
   getRecentMatchesUseCase,
   getPlayerStatsByGolfCourseUseCase,
 } from '../composition';
+import FullScreenLoader from '../components/ui/FullScreenLoader';
 
 /**
  * Las estadísticas completas del jugador (FE #306, fase 2).
@@ -153,9 +154,7 @@ const PlayerStatsPage = () => {
 
   if (isLoadingUser && !user) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="h-12 w-12 animate-spin rounded-full border-b-2 border-primary" />
-      </div>
+      <FullScreenLoader />
     );
   }
 

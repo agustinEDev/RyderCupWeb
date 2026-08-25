@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import BrandMark from './BrandMark';
+import LoadingMark from './LoadingMark';
 import { elArranqueHaTerminado } from '../../utils/cortinaDeArranque';
 
 /**
@@ -24,11 +24,14 @@ const RESPALDO_LOADING = new Map([
  * sí vive dentro del alcance de i18n, y se anuncia como `status` para que un
  * lector de pantalla no se encuentre una página muda.
  */
-const FullScreenLoader = () => {
+const FullScreenLoader = ({ texto }) => {
   const { t, i18n } = useTranslation('common');
   // `es_ES` con guion bajo es una forma que este proyecto ya ha visto —es la que
   // hacia estallar `localeCompare`—, asi que se parte por los dos separadores
-  const idioma = String(i18n.resolvedLanguage || i18n.language || 'en')
+  // Con opcionales: esta pantalla la usan ya casi todas las paginas, y sus
+  // pruebas mockean `useTranslation` de mil formas —varias sin `i18n`—. Una
+  // pieza compartida no puede caerse porque le falte eso
+  const idioma = String(i18n?.resolvedLanguage || i18n?.language || 'en')
     .split(/[-_]/)[0]
     .toLowerCase();
   // Un `Map` y no un objeto: `i18nextLng` es texto libre, y en un objeto una
@@ -56,20 +59,24 @@ const FullScreenLoader = () => {
       aria-live="polite"
       className={esTransicion ? 'pantalla-de-espera pantalla-de-espera--transicion' : 'pantalla-de-espera'}
     >
-      {/* Instalada, el monograma en blanco sobre el verde de la marca; en el
-          navegador, en verde sobre blanco, que es como se ve el resto del sitio.
-          `<picture>` elige segun `display-mode` y descarga solo una de las dos.
-          Los dos van precacheados por el service worker —`png` entra en
-          `globPatterns`—, asi que aparecen sin depender de la red. */}
-      {/* En la transicion, la tinta VERDE a la fuerza: `auto` la pinta blanca
-          con la aplicacion instalada, y sobre el blanco de esta cara el
+      {/* En el arranque, `auto`: instalada el monograma va en blanco sobre el
+          verde de la marca, y en el navegador en verde sobre blanco. `<picture>`
+          elige segun `display-mode` y descarga solo una de las dos; las dos van
+          precacheadas por el service worker, asi que aparecen sin depender de la
+          red.
+
+          En la transicion, la tinta VERDE a la fuerza: `auto` la pintaria blanca
+          con la aplicacion instalada, y sobre el fondo claro de esta cara el
           monograma desapareceria. */}
-      <BrandMark tinta={esTransicion ? 'verde' : 'auto'} className="w-[88px]" />
+      <LoadingMark tinta={esTransicion ? 'verde' : 'auto'} />
       {/* Con `defaultValue` porque este componente es tambien el fallback del
           `Suspense` raiz: ahi se pinta antes de que baje el namespace `common`
           —i18next va con `useSuspense: false` y un backend perezoso— y `t()`
           devolveria la clave en crudo, un «loading» en minuscula. */}
-      <span className="pantalla-de-espera__texto">{t('loading', { defaultValue: respaldo })}</span>
+      {/* Cada pantalla puede traer el suyo —«Cargando competiciones...»— y las
+          que no, se quedan con el generico. Lo que se unifica es el DIBUJO; el
+          texto es informacion util y perderlo no mejora nada (FE #495). */}
+      <span className="pantalla-de-espera__texto">{texto ?? t('loading', { defaultValue: respaldo })}</span>
     </div>
   );
 };

@@ -110,6 +110,40 @@ describe('donde vive la cortina del arranque', () => {
 });
 
 /**
+ * Las dos mitades del arranque —la capa de `index.html` y la pantalla de React
+ * que la releva— tienen que pintar el MISMO dibujo (FE #495). El anillo puesto
+ * en una sola de las dos apareceria de la nada a mitad del arranque, que es la
+ * clase de salto que esta saga viene arreglando.
+ */
+describe('las dos mitades del arranque pintan lo mismo', () => {
+  const lee = (ruta) => readFileSync(resolve(process.cwd(), ruta), 'utf8');
+
+  it('la capa de index.html tambien lleva el anillo', () => {
+    const fuente = lee('index.html');
+
+    expect(fuente).toContain('<span id="arranque-anillo"></span>');
+    expect(fuente).toMatch(/#arranque-anillo\s*\{[^}]*animation:\s*arranque-gira/);
+  });
+
+  it('el anillo se detiene si se pide menos movimiento, en las dos', () => {
+    expect(lee('index.html')).toMatch(/prefers-reduced-motion[\s\S]{0,140}#arranque-anillo\s*\{\s*animation:\s*none/);
+    expect(lee('src/components/ui/LoadingMark.jsx')).toContain('motion-reduce:animate-none');
+  });
+
+  it('las medidas del dibujo coinciden en las dos', () => {
+    // Marco de 128 y marca de 76: si una mitad cambia y la otra no, el
+    // monograma da un salto justo en el relevo. Ya paso con el hueco del texto
+    const html = lee('index.html');
+    const jsx = lee('src/components/ui/LoadingMark.jsx');
+
+    expect(html).toMatch(/#arranque-marco\s*\{[^}]*width:\s*128px/);
+    expect(html).toMatch(/<img[^>]*width="76"/);
+    expect(jsx).toContain("marco: 'size-32'");   // 32 * 4px = 128
+    expect(jsx).toContain("marca: 'w-[76px]'");
+  });
+});
+
+/**
  * El monograma tiene que caer en el mismo sitio en la capa de `index.html` y en
  * la pantalla que la releva, o se ve dar un salto justo en el cambio.
  */

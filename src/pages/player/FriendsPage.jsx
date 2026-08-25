@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router';
-import { ArrowLeft, Loader, Users, UserPlus } from 'lucide-react';
+import { ArrowLeft, Users, UserPlus } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import customToast from '../../utils/toast';
 import HeaderAuth from '../../components/layout/HeaderAuth';
@@ -15,6 +15,7 @@ import {
   blockUserUseCase,
   searchUsersUseCase,
 } from '../../composition';
+import FullScreenLoader from '../../components/ui/FullScreenLoader';
 
 const TABS = ['friends', 'received', 'sent'];
 
@@ -140,13 +141,7 @@ const FriendsPage = () => {
 
   if (isPageLoading) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <HeaderAuth user={user} />
-        <div className="flex items-center justify-center h-64">
-          <Loader className="h-8 w-8 animate-spin text-primary" />
-          <span className="ml-2 text-gray-500">{t('loading')}</span>
-        </div>
-      </div>
+      <FullScreenLoader texto={t('loading')} />
     );
   }
 
