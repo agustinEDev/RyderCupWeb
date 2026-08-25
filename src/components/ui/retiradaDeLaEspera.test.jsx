@@ -1,54 +1,6 @@
-import { describe, it, expect, beforeEach } from 'vitest';
-import { render } from '@testing-library/react';
+import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
-import { useLayoutEffect } from 'react';
-
-/**
- * La capa de espera de `index.html` se retira cuando React YA ha puesto su
- * contenido en el DOM. El orden importa y ya fallo dos veces:
- *
- * - Con `requestAnimationFrame`: esa funcion no se ejecuta si la pagina no esta
- *   pintando, asi que la capa se quedaba encima para siempre tapando una
- *   aplicacion que por debajo funcionaba.
- * - Retirandola justo despues de pedir el render: React no pinta en ese
- *   instante, solo lo programa, asi que la capa se iba antes de que hubiera
- *   nada debajo y se veia el fondo blanco de la pagina.
- *
- * Aqui se comprueba lo unico que evita las dos: cuando la capa desaparece, ya
- * hay contenido.
- */
-const Retira = () => {
-  useLayoutEffect(() => {
-    document.getElementById('arranque')?.remove();
-  }, []);
-  return null;
-};
-
-describe('la retirada de la capa de espera', () => {
-  beforeEach(() => {
-    document.body.innerHTML = '<div id="arranque"></div>';
-  });
-
-  it('cuando la capa se va, ya hay contenido pintado', () => {
-    const { container } = render(
-      <>
-        <Retira />
-        <main data-testid="contenido">pantalla</main>
-      </>
-    );
-
-    // Las dos cosas, en el mismo commit: sin capa y con contenido
-    expect(document.getElementById('arranque')).toBeNull();
-    expect(container.querySelector('[data-testid="contenido"]')).toBeInTheDocument();
-  });
-
-  it('no falla si la capa no existe', () => {
-    document.body.innerHTML = '';
-
-    expect(() => render(<Retira />)).not.toThrow();
-  });
-});
 
 /**
  * La franja de arriba —reloj, cobertura, bateria— no la pinta la pantalla de
@@ -97,33 +49,51 @@ describe('el fondo del documento en la app instalada', () => {
 });
 
 /**
- * Lo de arriba comprueba la MECANICA sobre una copia del componente, y por si
- * sola una copia no prueba nada: borrar `<RetiraLaCapaDeEspera />` de `App.jsx`
- * o devolverlo a `main.jsx` dejaria la suite en verde. Estas tres, sobre el
- * fuente, son las que atan el arreglo a donde tiene que estar —la misma forma
- * que usan `toastPlacement.test.jsx` y `rutasPublicas.test.js`—.
+ * La MECANICA de la cortina se prueba en `hooks/useCortinaDeArranque.test.jsx`
+ * y en `utils/cortinaDeArranque.test.js`, sobre el codigo de verdad. Lo que
+ * falta es atarla a donde tiene que estar: si nadie la monta, o si se monta en
+ * un sitio donde no llega a correr, aquellos tests siguen en verde y la
+ * aplicacion arranca rota. La misma forma que usan `toastPlacement.test.jsx` y
+ * `rutasPublicas.test.js`.
  */
-describe('donde vive la retirada de la capa', () => {
+describe('donde vive la cortina del arranque', () => {
   const lee = (ruta) => readFileSync(resolve(process.cwd(), ruta), 'utf8');
 
-  it('App.jsx monta el componente', () => {
-    expect(lee('src/App.jsx')).toContain('<RetiraLaCapaDeEspera />');
+  it('App.jsx la engancha a la ruta que hay en pantalla', () => {
+    expect(lee('src/App.jsx')).toContain('useCortinaDeArranque(location.pathname)');
   });
 
-  it('main.jsx ya no la retira: ahi React todavia no ha pintado nada', () => {
+  it('main.jsx no la retira: ahi React todavia no ha pintado nada', () => {
     expect(lee('src/main.jsx')).not.toContain("getElementById('arranque')");
   });
 
-  it('se monta fuera de los dos error boundaries', () => {
-    // Dentro, una excepcion durante el render dejaba la capa tapando la
-    // pantalla de error hasta que el CSS la apartaba seis segundos despues.
-    const fuente = lee('src/App.jsx');
-    const montaje = fuente.indexOf('<RetiraLaCapaDeEspera />');
-    const boundary = fuente.indexOf('<Sentry.ErrorBoundary');
+  it('solo el modulo de la cortina toca la capa', () => {
+    // Un `remove()` suelto por ahi la levantaria antes de tiempo y nadie se
+    // enteraria: volveria el pantallazo, y esta vez sin dejar rastro
+    const sospechosos = ['src/App.jsx', 'src/main.jsx', 'src/pages/Dashboard.jsx', 'src/pages/AppStart.jsx'];
 
-    expect(montaje).toBeGreaterThan(-1);
-    expect(boundary).toBeGreaterThan(-1);
-    expect(montaje).toBeLessThan(boundary);
+    for (const ruta of sospechosos) {
+      expect(lee(ruta), `${ruta} manipula la capa por su cuenta`).not.toContain("getElementById('arranque')");
+    }
+  });
+
+  it('las TRES pantallas de destino avisan', () => {
+    // Una por cada entrada de `RUTAS_QUE_AVISAN`. Sin el aviso, esa ruta se come
+    // el plazo entero en cada arranque, y la portada es justo por donde entran
+    // los iconos anteriores a FE #465
+    expect(lee('src/pages/Dashboard.jsx')).toContain('laPantallaEstaLista()');
+    expect(lee('src/pages/AppStart.jsx')).toContain('laPantallaEstaLista()');
+    expect(lee('src/pages/Landing.jsx')).toContain('laPantallaEstaLista()');
+  });
+
+  it('las dos pantallas de error la levantan', () => {
+    // Antes la retirada vivia FUERA de los error boundaries por esto: dentro,
+    // una excepcion durante el render dejaba la capa tapando la pantalla de
+    // error hasta que el CSS la apartaba seis segundos despues. Ahora la
+    // decision es de la ruta y va dentro, asi que cada fallback tiene que
+    // levantarla el mismo.
+    expect(lee('src/App.jsx')).toMatch(/const ErrorFallback[\s\S]{0,600}retiraLaCortina\(\)/);
+    expect(lee('src/components/errors/LazyLoadErrorBoundary.jsx')).toContain('retiraLaCortina()');
   });
 });
 

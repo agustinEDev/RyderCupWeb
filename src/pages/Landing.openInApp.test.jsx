@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { MemoryRouter, Routes, Route, Link } from 'react-router';
 
@@ -6,6 +6,7 @@ import { MemoryRouter, Routes, Route, Link } from 'react-router';
 // resuelve la sesion —redirigir, seguir comprobando o no hacer nada—.
 let instalada = false;
 let comprobando = false;
+let textosListos = true;
 const usosDelHook = [];
 
 vi.mock('../hooks/useRedirectIfAuthenticated', () => ({
@@ -17,6 +18,9 @@ vi.mock('../hooks/useRedirectIfAuthenticated', () => ({
 
 vi.mock('../hooks/useStandalone', () => ({
   useStandalone: () => instalada,
+  // La cortina del arranque tambien lo usa: solo se sostiene con la aplicacion
+  // instalada
+  detectStandalone: () => instalada,
 }));
 
 vi.mock('../hooks/useInstallPrompt', () => ({
@@ -43,7 +47,7 @@ vi.mock('../components/layout/Footer', () => ({ default: () => <div /> }));
 vi.mock('../components/ui/InstallInstructionsModal', () => ({ default: () => null }));
 
 vi.mock('react-i18next', () => ({
-  useTranslation: () => ({ t: (k) => k, i18n: { language: 'es' } }),
+  useTranslation: () => ({ t: (k) => k, i18n: { language: 'es' }, ready: textosListos }),
 }));
 
 /**
@@ -86,6 +90,7 @@ describe('Landing · abrir la aplicacion instalada', () => {
   beforeEach(() => {
     instalada = false;
     comprobando = false;
+    textosListos = true;
     usosDelHook.length = 0;
   });
 
@@ -194,5 +199,56 @@ describe('Landing · abrir la aplicacion instalada', () => {
     await abrirLaAplicacion();
 
     expect(screen.getByText('hero.title')).toBeInTheDocument();
+  });
+});
+
+/**
+ * La portada tambien es puerta de entrada: los iconos instalados ANTES de
+ * FE #465 llevan `/` cocido como ruta de arranque, porque iOS guarda la URL al
+ * crear el acceso directo y no la cambia cuando cambia el manifiesto. Sin
+ * sostener la cortina aqui, para toda esa gente el arreglo del arranque no hace
+ * nada (FE #485).
+ */
+describe('Landing y la cortina del arranque', () => {
+  const sigueLaCortina = () => Boolean(document.getElementById('arranque'));
+  let cortina;
+
+  beforeEach(async () => {
+    instalada = true;
+    comprobando = false;
+    textosListos = true;
+    usosDelHook.length = 0;
+    cortina = await import('../utils/cortinaDeArranque');
+    cortina.reiniciaLaCortina();
+    document.body.innerHTML = '<div id="arranque"></div>';
+    window.matchMedia = () => ({ matches: true, addEventListener: () => {}, removeEventListener: () => {} });
+    // La ruta `/` avisa: al llegar, la cortina se queda esperando
+    cortina.esperaElAviso();
+  });
+
+  afterEach(() => {
+    cortina.reiniciaLaCortina();
+  });
+
+  it('mientras busca la sesion, la cortina se queda', async () => {
+    comprobando = true;
+
+    await abrirLaAplicacion();
+
+    expect(sigueLaCortina()).toBe(true);
+  });
+
+  it('con la portada ya en pantalla, se levanta', async () => {
+    await abrirLaAplicacion();
+
+    expect(sigueLaCortina()).toBe(false);
+  });
+
+  it('sin los textos todavia, la cortina se queda', async () => {
+    textosListos = false;
+
+    await abrirLaAplicacion();
+
+    expect(sigueLaCortina()).toBe(true);
   });
 });

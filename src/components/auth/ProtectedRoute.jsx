@@ -10,7 +10,14 @@ const ProtectedRoute = ({ children }) => {
   const location = useLocation();
   const { user, loading } = useAuth();
 
-  // Show loading state while checking authentication
+  // Una espera sobria y no la pantalla de marca, aunque esta sea la que asoma
+  // si la cortina del arranque agota su plazo (FE #485). `ProtectedRoute` se
+  // remonta en CADA navegacion protegida y su `useAuth` vuelve a preguntar por
+  // la sesion, asi que poner aqui el arranque verde convertia cada salto
+  // —Panel, Perfil, Amigos— en un relampago de pantalla de bienvenida, como si
+  // la aplicacion se reiniciara. Se prefiere que la imagen cambie en el caso
+  // raro —vencer el plazo con mala red— a meter un parpadeo en el corriente.
+  // Deja de hacer falta cuando la sesion se resuelva una sola vez: FE #489.
   if (loading) {
     return (
       <div style={{

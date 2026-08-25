@@ -17,6 +17,8 @@ import { useDeviceRevocationMonitor } from './hooks/useDeviceRevocationMonitor';
 import InstallBanner from './components/ui/InstallBanner';
 import BottomNav from './components/layout/BottomNav';
 import { esRutaPublica, esPuertaDeEntrada } from './utils/rutasPublicas';
+import { retiraLaCortina } from './utils/cortinaDeArranque';
+import { useCortinaDeArranque } from './hooks/useCortinaDeArranque';
 
 // Lazy loading con retry automático para fallos de red transitorios
 // Si el primer import() falla, reintenta tras 1.5s antes de propagar el error
@@ -91,23 +93,6 @@ const SentryRoutes = Sentry.withSentryReactRouterV7Routing(Routes);
  * Componente interno que contiene la lógica de la app
  * (necesita estar dentro de <Router> para usar useNavigate)
  */
-/**
- * Retira la capa de espera que pinta `index.html`.
- *
- * Con `useLayoutEffect` porque corre cuando React YA ha puesto su contenido en
- * el DOM y ANTES de que el navegador pinte: el relevo ocurre en el mismo
- * fotograma y no se ve. Quitarla justo despues de pedir el render —que es lo
- * que se hacia— la retiraba antes de que hubiera nada debajo, y se veia el
- * fondo blanco de la pagina hasta que React llegaba: ese era el pantallazo.
- */
-function RetiraLaCapaDeEspera() {
-  useLayoutEffect(() => {
-    document.getElementById('arranque')?.remove();
-  }, []);
-
-  return null;
-}
-
 function AppContent() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const { logout } = useLogout();
@@ -121,6 +106,10 @@ function AppContent() {
   // olvido significa consultar la sesión donde no la hay, comerse un 401 y echar
   // al usuario a `/login` diciendo que expiró.
   const isPublicRoute = esRutaPublica(location.pathname);
+
+  // La cortina del arranque: se queda puesta hasta que la pantalla de destino
+  // avisa de que no le queda nada cargando (FE #485)
+  useCortinaDeArranque(location.pathname);
 
   // La anotación en vivo es inmersiva: la navegación inferior le robaría
   // el espacio vertical que necesita el flujo hoyo a hoyo (FE #306)
@@ -377,7 +366,16 @@ function AppContent() {
 /**
  * Error Fallback Component for Sentry ErrorBoundary
  */
-const ErrorFallback = ({ error, componentStack, resetError }) => (
+const ErrorFallback = ({ error, componentStack, resetError }) => {
+  // Si el arbol revienta, la cortina se queda encima tapando esta misma
+  // pantalla hasta que la red del CSS la aparta seis segundos despues. Ya paso:
+  // `useInstallPrompt` lee `localStorage`, y en Safari con las cookies
+  // bloqueadas eso lanza.
+  useLayoutEffect(() => {
+    retiraLaCortina();
+  }, []);
+
+  return (
   <div style={{
     display: 'flex',
     flexDirection: 'column',
@@ -433,31 +431,22 @@ const ErrorFallback = ({ error, componentStack, resetError }) => (
       </details>
     )}
   </div>
-);
+  );
+};
 
 /**
  * Componente principal App con Router y ErrorBoundary
  */
 function App() {
   return (
-    <>
-      {/* Fuera de los dos error boundaries a proposito. Dentro, la capa solo se
-          retiraba si el arbol de la aplicacion llegaba a montarse: si algo
-          lanzaba durante el render —`useInstallPrompt` lee `localStorage`, que
-          en Safari con las cookies bloqueadas lanza— el boundary pintaba su
-          pantalla de error y la capa se quedaba encima tapandola hasta que la
-          red de seguridad del CSS la apartaba, seis segundos despues. Aqui
-          corre igual, se pinte la aplicacion o se pinte el error. */}
-      <RetiraLaCapaDeEspera />
-      <Sentry.ErrorBoundary
-        fallback={ErrorFallback}
-        showDialog={false}
-      >
-        <Router>
-          <AppContent />
-        </Router>
-      </Sentry.ErrorBoundary>
-    </>
+    <Sentry.ErrorBoundary
+      fallback={ErrorFallback}
+      showDialog={false}
+    >
+      <Router>
+        <AppContent />
+      </Router>
+    </Sentry.ErrorBoundary>
   );
 }
 

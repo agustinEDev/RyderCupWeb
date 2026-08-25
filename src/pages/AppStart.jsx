@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { Link, Navigate } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { useStandalone } from '../hooks/useStandalone';
@@ -5,6 +6,7 @@ import { useRedirectIfAuthenticated } from '../hooks/useRedirectIfAuthenticated'
 import SignInForm from '../components/auth/SignInForm';
 import FullScreenLoader from '../components/ui/FullScreenLoader';
 import BrandMark from '../components/ui/BrandMark';
+import { laPantallaEstaLista } from '../utils/cortinaDeArranque';
 
 /**
  * Por donde arranca la aplicacion instalada (FE #465).
@@ -22,7 +24,7 @@ import BrandMark from '../components/ui/BrandMark';
  * del pie.
  */
 const AppStart = () => {
-  const { t } = useTranslation(['auth', 'common']);
+  const { t, ready: textosListos } = useTranslation(['auth', 'common']);
   const esAplicacionInstalada = useStandalone();
   const comprobandoSesion = useRedirectIfAuthenticated({
     enabled: esAplicacionInstalada,
@@ -32,6 +34,22 @@ const AppStart = () => {
     // enviar. Solo aqui: en el navegador la portada sigue siendo utilizable.
     entrarSinRed: true,
   });
+
+  // El aviso a la cortina del arranque (FE #485). Esta es la otra salida: sin
+  // sesion se entra por aqui, y el formulario es la pantalla terminada.
+  //
+  // Con sesion NO se avisa, y no hace falta ningun guardia para ello:
+  // `useRedirectIfAuthenticated` deja `comprobandoSesion` arriba mientras
+  // redirige —a proposito, para no pintar el formulario un instante—, asi que
+  // la cortina sigue puesta hasta que el panel avise por su cuenta.
+  // Los textos cuentan: los trozos de i18n llegan en diferido y sin ellos esta
+  // pantalla enseña `appStart.title` en crudo, con su cambio de texto un
+  // instante despues. Es el mismo parpadeo con otra cara.
+  useEffect(() => {
+    if (!comprobandoSesion && esAplicacionInstalada && textosListos) {
+      laPantallaEstaLista();
+    }
+  }, [comprobandoSesion, esAplicacionInstalada, textosListos]);
 
   // En el navegador esta ruta no pinta nada: la puerta es la portada. Puede
   // llegarse por un enlace copiado o por una instalacion que se desinstalo.
