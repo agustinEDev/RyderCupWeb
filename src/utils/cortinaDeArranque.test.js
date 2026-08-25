@@ -14,6 +14,8 @@ import {
 describe('la cortina del arranque', () => {
   beforeEach(() => {
     vi.useFakeTimers();
+    // La cortina solo se sostiene en la aplicacion instalada
+    window.matchMedia = () => ({ matches: true, addEventListener: () => {}, removeEventListener: () => {} });
     reiniciaLaCortina();
     document.body.innerHTML = '<div id="arranque"></div>';
   });
@@ -83,6 +85,17 @@ describe('la cortina del arranque', () => {
     vi.advanceTimersByTime(PLAZO_MAXIMO_MS);
 
     expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it('en el navegador no se sostiene: se retira al llegar', () => {
+    // Ahi esta capa es blanca con el monograma y la pagina se abre sola.
+    // Sostenerla convertiria un F5 en el panel en una espera en blanco donde
+    // antes se veia la aplicacion cargando
+    window.matchMedia = () => ({ matches: false, addEventListener: () => {}, removeEventListener: () => {} });
+
+    esperaElAviso();
+
+    expect(sigueLaCortina()).toBe(false);
   });
 
   it('no falla si la capa no existe', () => {

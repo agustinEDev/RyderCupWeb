@@ -29,8 +29,8 @@ const RECENT_MATCHES_SHOWN = 3;
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const { t } = useTranslation('dashboard');
-  const { t: tQuickMatch } = useTranslation('quickMatch');
+  const { t, ready: textosListos } = useTranslation('dashboard');
+  const { t: tQuickMatch, ready: textosDeRapidaListos } = useTranslation('quickMatch');
   const { user, loading: isLoadingUser, refetch: refetchUser } = useAuth();
   const { animateEntry } = useEntryMotion();
   const [competitions, setCompetitions] = useState([]);
@@ -76,7 +76,13 @@ const Dashboard = () => {
   useEffect(() => {
     const loadDashboardData = async () => {
       if (!user) {
-        setIsLoadingCompetitions(false);
+        // Mientras la sesion se resuelve NO se declara nada terminado. `useAuth`
+        // no es un contexto: arranca siempre sin usuario y con `loading` en
+        // alto, y bajar la bandera en esa primera pasada dejaba las cinco a
+        // false justo en el render en que llega el usuario —antes de que
+        // hubiera salido una sola peticion—. La cortina del arranque se
+        // levantaba ahi, que es el defecto entero de vuelta (FE #485).
+        if (!isLoadingUser) setIsLoadingCompetitions(false);
         return;
       }
 
@@ -97,7 +103,7 @@ const Dashboard = () => {
     };
 
     loadDashboardData();
-  }, [user]);
+  }, [user, isLoadingUser]);
 
   useEffect(() => {
     // Las estadísticas van por su cuenta y no bloquean la página: son un
@@ -111,7 +117,13 @@ const Dashboard = () => {
 
     const loadPlayerStats = async () => {
       if (!user) {
-        setIsLoadingStats(false);
+        // Mientras la sesion se resuelve NO se declara nada terminado. `useAuth`
+        // no es un contexto: arranca siempre sin usuario y con `loading` en
+        // alto, y bajar la bandera en esa primera pasada dejaba las cinco a
+        // false justo en el render en que llega el usuario —antes de que
+        // hubiera salido una sola peticion—. La cortina del arranque se
+        // levantaba ahi, que es el defecto entero de vuelta (FE #485).
+        if (!isLoadingUser) setIsLoadingStats(false);
         return;
       }
 
@@ -138,7 +150,7 @@ const Dashboard = () => {
     return () => {
       cancelled = true;
     };
-  }, [user]);
+  }, [user, isLoadingUser]);
 
   useEffect(() => {
     // Mismo guardia que las estadísticas: una respuesta en vuelo no debe
@@ -147,7 +159,13 @@ const Dashboard = () => {
 
     const loadRecentMatches = async () => {
       if (!user) {
-        setIsLoadingRecent(false);
+        // Mientras la sesion se resuelve NO se declara nada terminado. `useAuth`
+        // no es un contexto: arranca siempre sin usuario y con `loading` en
+        // alto, y bajar la bandera en esa primera pasada dejaba las cinco a
+        // false justo en el render en que llega el usuario —antes de que
+        // hubiera salido una sola peticion—. La cortina del arranque se
+        // levantaba ahi, que es el defecto entero de vuelta (FE #485).
+        if (!isLoadingUser) setIsLoadingRecent(false);
         return;
       }
 
@@ -174,7 +192,7 @@ const Dashboard = () => {
     return () => {
       cancelled = true;
     };
-  }, [user]);
+  }, [user, isLoadingUser]);
 
   useEffect(() => {
     // Se cargan aquí, y no dentro de cada componente, porque el banner de
@@ -185,13 +203,13 @@ const Dashboard = () => {
 
     const loadUpcomingMatches = async () => {
       if (!user) {
-        // Sin usuario no hay nada que pedir, y el flag arranca en `true`: sin
-        // bajarlo aqui se quedaba arriba para siempre y el aviso a la cortina
-        // del arranque no llegaba a mandarse nunca (FE #485). Mientras las
-        // competiciones sigan en vuelo NO se toca: esta peticion todavia esta
-        // por venir, y darla por terminada levantaria la cortina antes de
-        // tiempo.
-        setIsLoadingUpcoming(false);
+        // Mientras la sesion se resuelve NO se declara nada terminado. `useAuth`
+        // no es un contexto: arranca siempre sin usuario y con `loading` en
+        // alto, y bajar la bandera en esa primera pasada dejaba las cinco a
+        // false justo en el render en que llega el usuario —antes de que
+        // hubiera salido una sola peticion—. La cortina del arranque se
+        // levantaba ahi, que es el defecto entero de vuelta (FE #485).
+        if (!isLoadingUser) setIsLoadingUpcoming(false);
         return;
       }
 
@@ -222,7 +240,7 @@ const Dashboard = () => {
     return () => {
       cancelled = true;
     };
-  }, [user, competitions, isLoadingCompetitions]);
+  }, [user, isLoadingUser, competitions, isLoadingCompetitions]);
 
   // Only gate the full-page spinner on the initial load (no user yet).
   // Subsequent refetches (e.g. after saving handicap) shouldn't unmount the current UI.
@@ -237,7 +255,13 @@ const Dashboard = () => {
   // Las dependencias son los propios estados, no una lista vacia: React no
   // vuelve a ejecutar los efectos pasivos de un subarbol que `Suspense`
   // esconde y reaparece, y con `[]` el aviso se perderia.
+  //
+  // Los textos cuentan como carga: los trozos de i18n llegan en diferido, y
+  // levantar la cortina sin ellos enseña las claves en crudo y un cambio de
+  // texto a continuacion, que es el mismo parpadeo con otra cara.
   const noQuedaNadaCargando =
+    textosListos &&
+    textosDeRapidaListos &&
     !isLoadingUser &&
     !isLoadingCompetitions &&
     !isLoadingStats &&

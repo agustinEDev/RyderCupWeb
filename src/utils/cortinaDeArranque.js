@@ -23,6 +23,8 @@
  * avisan retiran la cortina al llegar, y ademas hay un plazo maximo.
  */
 
+import { detectStandalone } from '../hooks/useStandalone';
+
 const ID_DE_LA_CAPA = 'arranque';
 
 /**
@@ -31,6 +33,13 @@ const ID_DE_LA_CAPA = 'arranque';
  * telefono sin cobertura se queda mirando un verde eterno, que es peor defecto
  * que el que esto viene a arreglar. La red de seguridad del CSS —6s, sin
  * JavaScript— sigue detras por si nada de esto llega a ejecutarse.
+ *
+ * Queda POR DEBAJO de los 5s que `useRedirectIfAuthenticated` espera a
+ * `/current-user` antes de entrar sin red, asi que el arranque en el campo sin
+ * cobertura no sale entero de detras de la cortina: se levanta a los 3s y
+ * quedan un par de segundos de espera propia antes del salto al panel. Es a
+ * proposito —tres segundos de verde ya son muchos— y se prefiere eso a atar
+ * este plazo al de la sesion.
  */
 export const PLAZO_MAXIMO_MS = 3000;
 
@@ -68,6 +77,16 @@ export const retiraLaCortina = () => {
  */
 export const esperaElAviso = () => {
   if (retirada || plazo !== null) return;
+
+  // Solo en la aplicacion instalada. En el navegador esta capa es blanca con el
+  // monograma y la pagina se abre por su cuenta: sostenerla ahi convertiria un
+  // F5 en el panel, o un enlace guardado, en una espera en blanco de hasta tres
+  // segundos donde antes se veia la aplicacion cargando sus bloques. La saga de
+  // los parpadeos es de la aplicacion instalada; el navegador no la sufre.
+  if (!detectStandalone()) {
+    retiraLaCortina();
+    return;
+  }
 
   plazo = setTimeout(retiraLaCortina, PLAZO_MAXIMO_MS);
 };

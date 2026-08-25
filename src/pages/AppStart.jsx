@@ -24,7 +24,7 @@ import { laPantallaEstaLista } from '../utils/cortinaDeArranque';
  * del pie.
  */
 const AppStart = () => {
-  const { t } = useTranslation(['auth', 'common']);
+  const { t, ready: textosListos } = useTranslation(['auth', 'common']);
   const esAplicacionInstalada = useStandalone();
   const comprobandoSesion = useRedirectIfAuthenticated({
     enabled: esAplicacionInstalada,
@@ -42,11 +42,14 @@ const AppStart = () => {
   // `useRedirectIfAuthenticated` deja `comprobandoSesion` arriba mientras
   // redirige —a proposito, para no pintar el formulario un instante—, asi que
   // la cortina sigue puesta hasta que el panel avise por su cuenta.
+  // Los textos cuentan: los trozos de i18n llegan en diferido y sin ellos esta
+  // pantalla enseña `appStart.title` en crudo, con su cambio de texto un
+  // instante despues. Es el mismo parpadeo con otra cara.
   useEffect(() => {
-    if (!comprobandoSesion && esAplicacionInstalada) {
+    if (!comprobandoSesion && esAplicacionInstalada && textosListos) {
       laPantallaEstaLista();
     }
-  }, [comprobandoSesion, esAplicacionInstalada]);
+  }, [comprobandoSesion, esAplicacionInstalada, textosListos]);
 
   // En el navegador esta ruta no pinta nada: la puerta es la portada. Puede
   // llegarse por un enlace copiado o por una instalacion que se desinstalo.

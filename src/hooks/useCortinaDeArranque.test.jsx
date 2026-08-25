@@ -12,6 +12,8 @@ import { reiniciaLaCortina, laPantallaEstaLista, PLAZO_MAXIMO_MS } from '../util
 describe('la cortina, segun la ruta', () => {
   beforeEach(() => {
     vi.useFakeTimers();
+    // La cortina solo se sostiene en la aplicacion instalada
+    window.matchMedia = () => ({ matches: true, addEventListener: () => {}, removeEventListener: () => {} });
     reiniciaLaCortina();
     document.body.innerHTML = '<div id="arranque"></div>';
   });

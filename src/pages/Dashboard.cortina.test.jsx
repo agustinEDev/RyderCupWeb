@@ -52,8 +52,12 @@ const sesion = {
 
 vi.mock('../hooks/useAuth', () => ({ useAuth: () => sesion }));
 
+// `ready` dice si el trozo de i18n de esta pantalla ya ha llegado: sus textos
+// se cargan en diferido y cuentan como carga
+const textos = { listos: true };
+
 vi.mock('react-i18next', () => ({
-  useTranslation: () => ({ t: (clave) => clave, i18n: { language: 'es' } }),
+  useTranslation: () => ({ t: (clave) => clave, i18n: { language: 'es' }, ready: textos.listos }),
 }));
 
 vi.mock('react-router', () => ({ useNavigate: () => vi.fn() }));
@@ -98,7 +102,11 @@ describe('el panel avisa a la cortina cuando NO le queda nada cargando', () => {
     // Sin relojes falsos: pelean con `await act`. El plazo maximo de la cortina
     // son 3s reales y estos tests terminan en milisegundos; `reiniciaLaCortina`
     // cancela el temporizador antes de cada uno
+    // La cortina solo se sostiene en la aplicacion instalada
+    window.matchMedia = () => ({ matches: true, addEventListener: () => {}, removeEventListener: () => {} });
+    textos.listos = true;
     sesion.user = usuario;
+    sesion.loading = false;
     reiniciaLaCortina();
     reiniciaLasPeticiones();
     // jsdom no trae `localStorage` con el origen que usa vitest aqui, y el
@@ -160,6 +168,27 @@ describe('el panel avisa a la cortina cuando NO le queda nada cargando', () => {
     expect(sigueLaCortina()).toBe(false);
   });
 
+  it('no se levanta en el render en que llega el usuario', async () => {
+    // `useAuth` no es un contexto: arranca SIEMPRE sin usuario y con `loading`
+    // en alto, y pide `/current-user` al montar. En esa primera pasada los
+    // cuatro cargadores se van por su guardia sin pedir nada. Si alguno bajara
+    // ahi su bandera, al llegar el usuario estarian las cinco a false —sin que
+    // hubiera salido una sola peticion— y la cortina se levantaria justo en ese
+    // render, con el panel entero todavia por cargar detras
+    sesion.user = null;
+    sesion.loading = true;
+    const { rerender } = render(<Dashboard />);
+    await asienta();
+
+    sesion.user = usuario;
+    sesion.loading = false;
+    // Elemento nuevo: con el mismo objeto React se salta la reconciliacion
+    rerender(<Dashboard />);
+    await asienta();
+
+    expect(sigueLaCortina()).toBe(true);
+  });
+
   it('sin usuario tampoco se queda esperando', () => {
     // La sesion se cae a media carga: los cuatro cargadores se van sin pedir
     // nada. Si alguno se dejara su flag arriba, el aviso no se mandaria nunca y
@@ -170,6 +199,24 @@ describe('el panel avisa a la cortina cuando NO le queda nada cargando', () => {
     render(<Dashboard />);
 
     expect(sigueLaCortina()).toBe(false);
+  });
+
+  it('con las cuatro aterrizadas pero sin los textos, la cortina se queda', async () => {
+    // Levantarla aqui enseña las claves en crudo y un cambio de texto un
+    // instante despues: el mismo parpadeo con otra cara
+    textos.listos = false;
+    render(<Dashboard />);
+
+    await act(async () => {
+      peticiones.competiciones.resolver([]);
+      peticiones.estadisticas.resolver(null);
+      peticiones.recientes.resolver([]);
+    });
+    await asienta();
+    await act(async () => { peticiones.proximos.resolver([]); });
+    await asienta();
+
+    expect(sigueLaCortina()).toBe(true);
   });
 
   it('una peticion que falla tambien cuenta como terminada', async () => {
