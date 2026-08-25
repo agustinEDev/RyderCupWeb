@@ -60,8 +60,12 @@ const RUTAS_QUE_AVISAN = ['/', '/start', '/dashboard'];
 
 let plazo = null;
 let retirada = false;
+let arranqueTerminado = false;
 
 export const rutaQueAvisa = (pathname) => RUTAS_QUE_AVISAN.includes(pathname);
+
+/** Si la capa sigue tapando la pantalla. */
+export const laCortinaSiguePuesta = () => Boolean(document.getElementById(ID_DE_LA_CAPA));
 
 /**
  * Levanta la cortina. Idempotente: da igual quien llegue primero.
@@ -112,10 +116,32 @@ export const esperaElAviso = () => {
 };
 
 /**
+ * Si el arranque ya se ha consumado: hay una pantalla de destino puesta y lo que
+ * venga a partir de ahora son transiciones de la aplicacion, no el arranque.
+ *
+ * Lo consulta la pantalla de espera para saber cual de las dos caras pintar
+ * (FE #492): el verde de la marca es del arranque y solo del arranque. Dentro de
+ * la aplicacion, esa misma pantalla verde se lee como si la aplicacion se
+ * reiniciara.
+ */
+export const elArranqueHaTerminado = () => arranqueTerminado;
+
+/**
+ * Da el arranque por consumado. NO lo llama el vencimiento del plazo: alli la
+ * cortina se levanta sobre una pantalla que sigue cargando, todavia parte del
+ * arranque, y volverla blanca justo en ese instante devolveria el salto de color
+ * que se arreglo en la 2.19.1.
+ */
+export const terminaElArranque = () => {
+  arranqueTerminado = true;
+};
+
+/**
  * El aviso: la pantalla de destino no tiene nada mas cargando.
  */
 export const laPantallaEstaLista = () => {
   retiraLaCortina();
+  terminaElArranque();
 };
 
 /**
@@ -126,4 +152,5 @@ export const reiniciaLaCortina = () => {
   if (plazo !== null) clearTimeout(plazo);
   plazo = null;
   retirada = false;
+  arranqueTerminado = false;
 };

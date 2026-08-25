@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { renderHook } from '@testing-library/react';
 import { useCortinaDeArranque } from './useCortinaDeArranque';
-import { reiniciaLaCortina, laPantallaEstaLista, PLAZO_MAXIMO_MS } from '../utils/cortinaDeArranque';
+import { reiniciaLaCortina, laPantallaEstaLista, elArranqueHaTerminado, PLAZO_MAXIMO_MS } from '../utils/cortinaDeArranque';
 
 /**
  * Quien decide si la cortina del arranque se queda o se levanta (FE #485).
@@ -104,6 +104,47 @@ describe('la cortina, segun la ruta', () => {
     // retirada llega despues, ya con el contenido en el DOM
     expect(visto[0]).toBe(true);
     expect(sigueLaCortina()).toBe(false);
+  });
+
+  it('caer en una pantalla que no avisa NO consuma el arranque', () => {
+    // `/login`, `/register` y la vuelta de Google siguen pintando la espera a
+    // pantalla completa mientras resuelven, y eso todavia es el arranque: la
+    // aplicacion acaba de abrirse. Darlo por terminado aqui cortaba el verde a
+    // media espera (FE #492)
+    renderHook(() => useCortinaDeArranque('/login'));
+
+    expect(sigueLaCortina()).toBe(false);
+    expect(elArranqueHaTerminado()).toBe(false);
+  });
+
+  it('navegar con la cortina ya fuera SI lo consuma', () => {
+    // Eso solo pasa moviendose por la aplicacion
+    const { rerender } = renderHook(({ ruta }) => useCortinaDeArranque(ruta), {
+      initialProps: { ruta: '/login' },
+    });
+    expect(elArranqueHaTerminado()).toBe(false);
+
+    rerender({ ruta: '/register' });
+
+    expect(elArranqueHaTerminado()).toBe(true);
+  });
+
+  it('los tramos del propio arranque no lo consuman', () => {
+    // `/start` al panel pasa con la cortina PUESTA: es una sola entrada
+    const { rerender } = renderHook(({ ruta }) => useCortinaDeArranque(ruta), {
+      initialProps: { ruta: '/start' },
+    });
+
+    rerender({ ruta: '/dashboard' });
+
+    expect(sigueLaCortina()).toBe(true);
+    expect(elArranqueHaTerminado()).toBe(false);
+  });
+
+  it('en una ruta que espera, el arranque sigue vivo', () => {
+    renderHook(() => useCortinaDeArranque('/dashboard'));
+
+    expect(elArranqueHaTerminado()).toBe(false);
   });
 
   it('el aviso de la pantalla la levanta estando en una ruta que espera', () => {
