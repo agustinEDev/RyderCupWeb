@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router';
-import { Loader, ChevronLeft, ChevronRight, MapPin } from 'lucide-react';
+import { ChevronLeft, ChevronRight, MapPin } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import {
@@ -16,6 +16,7 @@ import QuickMatchHoleInput from '../../components/quick_match/QuickMatchHoleInpu
 import QuickMatchClassificationTable from '../../components/quick_match/QuickMatchClassificationTable';
 import QuickMatchScorecardTable from '../../components/quick_match/QuickMatchScorecardTable';
 import MatchPlayStrokeAllocator from '../../domain/services/MatchPlayStrokeAllocator';
+import BlockLoader from '../../components/ui/BlockLoader';
 
 const TABS = ['input', 'classification', 'scorecard'];
 
@@ -151,13 +152,12 @@ const QuickMatchScoringPage = () => {
   }, [showFinishConfirm, showCancelConfirm, isSubmitting]);
 
   if (isLoadingUser || isLoading) {
+    // La cabecera se queda puesta durante la espera: aparecer de golpe al
+    // terminar es un salto, y de eso va justamente FE #495
     return (
       <div className="min-h-screen bg-gray-50">
         <HeaderAuth user={user} />
-        <div className="flex items-center justify-center h-64">
-          <Loader className="h-8 w-8 animate-spin text-primary" />
-          <span className="ml-2 text-gray-500">{t('scoring.loading')}</span>
-        </div>
+        <BlockLoader texto={t('scoring.loading')} />
       </div>
     );
   }

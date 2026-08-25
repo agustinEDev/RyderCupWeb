@@ -14,6 +14,7 @@ import {
 import { CountryFlag } from '../utils/countryUtils';
 import { useAuth } from '../hooks/useAuth';
 import EnrollmentRequestModal from '../components/enrollment/EnrollmentRequestModal';
+import BlockLoader from '../components/ui/BlockLoader';
 
 const BrowseCompetitions = () => {
   const navigate = useNavigate();
@@ -189,12 +190,12 @@ const BrowseCompetitions = () => {
 
   // Early returns
   if (isLoading) {
+    // Con el fondo de la pagina, no el blanco de serie: esta es la unica de las
+    // migradas que trae `bg-*` propio, y sin esto la pantalla pasaba de blanco
+    // a gris en el instante en que llegan los datos
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-          <p className="mt-4 text-gray-600">{t('common:loading')}</p>
-        </div>
+        <BlockLoader texto={t('common:loading')} />
       </div>
     );
   }
@@ -207,10 +208,7 @@ const BrowseCompetitions = () => {
   let joinableContent;
   if (isLoadingJoinable) {
     joinableContent = (
-      <div className="text-center py-12">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-        <p className="mt-4 text-gray-600">{t('common:loading')}</p>
-      </div>
+      <BlockLoader texto={t('common:loading')} />
     );
   } else if (filteredJoinableCompetitions.length === 0) {
     joinableContent = (
@@ -246,11 +244,10 @@ const BrowseCompetitions = () => {
   // Prepare content for explore competitions
   let exploreContent;
   if (isLoadingExplore) {
+    // Silenciosa: las dos secciones cargan a la vez y se anunciaban dos
+    // «Cargando...» seguidos, sin nada que los distinguiera
     exploreContent = (
-      <div className="text-center py-12">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-        <p className="mt-4 text-gray-600">{t('common:loading')}</p>
-      </div>
+      <BlockLoader silencioso texto={t('common:loading')} />
     );
   } else if (filteredExploreCompetitions.length === 0) {
     exploreContent = (

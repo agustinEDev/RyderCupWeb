@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Loader, X, Flag, MapPin } from 'lucide-react';
+import { X, Flag, MapPin } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import customToast from '../../utils/toast';
 import HeaderAuth from '../../components/layout/HeaderAuth';
@@ -17,6 +17,8 @@ import {
   rejectGolfCourseUpdateUseCase,
   fetchCountriesUseCase,
 } from '../../composition';
+import FullScreenLoader from '../../components/ui/FullScreenLoader';
+import BlockLoader from '../../components/ui/BlockLoader';
 
 /**
  * PendingGolfCourses Page (Admin)
@@ -169,13 +171,13 @@ const PendingGolfCourses = ({ embedded = false }) => {
   };
 
   if (isLoadingUser || isLoading) {
-    return (
-      <div className={`flex items-center justify-center ${embedded ? 'py-12' : 'min-h-screen'}`}>
-        <div className="text-center">
-          <Loader className={`${embedded ? 'w-8 h-8' : 'w-12 h-12'} text-primary animate-spin mx-auto mb-4`} />
-          {!embedded && <p className="text-gray-600">{t('common:loading')}</p>}
-        </div>
-      </div>
+    // `embedded` sigue mandando: esta pantalla vive tambien como pestaña del
+    // panel de admin, y alli cada aprobar/rechazar vuelve a cargar. Una espera
+    // de pantalla completa empujaria las pestañas un viewport hacia abajo
+    return embedded ? (
+      <BlockLoader />
+    ) : (
+      <FullScreenLoader texto={t('common:loading')} />
     );
   }
 

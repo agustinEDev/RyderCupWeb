@@ -13,6 +13,7 @@ import {
   sendFriendRequestUseCase,
   respondFriendRequestUseCase,
 } from '../../composition';
+import BlockLoader from '../../components/ui/BlockLoader';
 
 const PAGE_SIZE = 20;
 const HTTP_NOT_FOUND = 404;
@@ -157,13 +158,13 @@ const PlayerProfilePage = () => {
   }
 
   if (isLoadingUser || isLoading) {
+    // La cabecera se queda puesta durante la espera: aparecer de golpe al
+    // terminar es un salto, y de eso va justamente FE #495. El dibujo si es el
+    // compartido.
     return (
       <div className="min-h-screen bg-gray-50">
         <HeaderAuth />
-        <div className="flex items-center justify-center py-20" role="status">
-          <Loader className="w-6 h-6 animate-spin text-primary" />
-          <span className="sr-only">{t('playerProfile:loading')}</span>
-        </div>
+        <BlockLoader texto={t('playerProfile:loading')} />
       </div>
     );
   }

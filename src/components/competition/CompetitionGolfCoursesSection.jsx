@@ -27,6 +27,7 @@ import {
   removeGolfCourseFromCompetitionUseCase,
   reorderGolfCoursesUseCase,
 } from '../../composition';
+import BlockLoader from '../ui/BlockLoader';
 
 /**
  * Get course type display info
@@ -334,7 +335,7 @@ const CompetitionGolfCoursesSection = ({ competition, canManage }) => {
       <div className="p-4">
         <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
           <div className="flex items-center justify-center py-8">
-            <Loader className="w-8 h-8 text-primary animate-spin" />
+            <BlockLoader sinRelleno />
           </div>
         </div>
       </div>

@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef } from 'react';
+import { useLayoutEffect, useState } from 'react';
 import {
   rutaQueAvisa,
   esperaElAviso,
@@ -23,25 +23,28 @@ import {
  * queda esperando un aviso que nadie manda.
  */
 export const useCortinaDeArranque = (pathname) => {
-  const rutaAnterior = useRef(null);
+  // La ruta anterior en ESTADO y comparada durante el render, no en un `ref`
+  // dentro del efecto. Los efectos de este componente corren DESPUES de que
+  // hayan renderizado las rutas que cuelgan de el, asi que marcar ahi el fin del
+  // arranque llegaba tarde: la pantalla de destino ya habia decidido su cara y
+  // pintaba el verde del arranque a media sesion, que es justo el defecto de
+  // FE #492. Ajustar estado durante el render es el patron que React documenta
+  // para esto: descarta este render y rehace el componente antes de pintar.
+  const [rutaAnterior, setRutaAnterior] = useState(pathname);
 
-  useLayoutEffect(() => {
-    // El arranque se da por consumado en la primera navegacion que ocurre con
-    // la cortina ya fuera: eso solo pasa moviendose por la aplicacion (FE #492).
-    //
-    // Ni antes ni por otro camino. Llegar a una ruta que no avisa NO basta:
-    // `/login`, `/register` y la vuelta de Google siguen pintando la espera a
-    // pantalla completa mientras resuelven, igual que el `Suspense` de
-    // cualquier enlace profundo, y eso todavia es el arranque —la aplicacion
-    // acaba de abrirse—. Darlo por terminado alli cortaba el verde a media
-    // espera. Y los tramos del propio arranque —`/start` al panel, el panel al
-    // formulario— pasan con la cortina PUESTA, asi que no cuentan.
-    const veniaDeOtraRuta = rutaAnterior.current !== null && rutaAnterior.current !== pathname;
-    if (veniaDeOtraRuta && !laCortinaSiguePuesta()) {
+  if (rutaAnterior !== pathname) {
+    setRutaAnterior(pathname);
+
+    // El arranque se consuma en la primera navegacion que ocurre con la cortina
+    // ya fuera: eso solo pasa moviendose por la aplicacion. Los tramos del
+    // propio arranque —`/start` al panel, el panel al formulario— pasan con la
+    // cortina PUESTA, asi que no cuentan.
+    if (!laCortinaSiguePuesta()) {
       terminaElArranque();
     }
-    rutaAnterior.current = pathname;
+  }
 
+  useLayoutEffect(() => {
     if (rutaQueAvisa(pathname)) {
       esperaElAviso();
     } else {

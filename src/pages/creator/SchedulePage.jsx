@@ -1,9 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { motion } from 'framer-motion';
-import {
-  ArrowLeft, Plus, Loader, Calendar
-} from 'lucide-react';
+import { ArrowLeft, Plus, Calendar } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import customToast from '../../utils/toast';
 import HeaderAuth from '../../components/layout/HeaderAuth';
@@ -31,6 +29,7 @@ import {
   declareWalkoverUseCase,
   reassignPlayersUseCase,
 } from '../../composition';
+import FullScreenLoader from '../../components/ui/FullScreenLoader';
 
 const SchedulePage = () => {
   const navigate = useNavigate();
@@ -320,12 +319,7 @@ const SchedulePage = () => {
   // --- Loading ---
   if (isLoadingUser || isLoading || isLoadingRoles) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <Loader className="w-12 h-12 text-primary animate-spin mx-auto mb-4" />
-          <p className="text-gray-600">{t('loading')}</p>
-        </div>
-      </div>
+      <FullScreenLoader texto={t('loading')} />
     );
   }
 

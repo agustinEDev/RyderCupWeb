@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router';
-import { Loader, Flag, Calendar, Play } from 'lucide-react';
+import { Flag, Calendar, Play } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import HeaderAuth from '../../components/layout/HeaderAuth';
 import { useAuth } from '../../hooks/useAuth';
 import { getUpcomingMatchesUseCase } from '../../composition';
+import BlockLoader from '../../components/ui/BlockLoader';
 
 const UpcomingMatchesPage = () => {
   const { t } = useTranslation('dashboard');
@@ -55,13 +56,12 @@ const UpcomingMatchesPage = () => {
   const isPageLoading = isLoadingUser || isLoading;
 
   if (isPageLoading) {
+    // La cabecera se queda puesta durante la espera: aparecer de golpe al
+    // terminar es un salto, y de eso va justamente FE #495
     return (
       <div className="min-h-screen bg-gray-50">
         <HeaderAuth user={user} />
-        <div className="flex items-center justify-center h-64">
-          <Loader className="h-8 w-8 animate-spin text-primary" />
-          <span className="ml-2 text-gray-500">{t('upcomingMatches.loading')}</span>
-        </div>
+        <BlockLoader texto={t('upcomingMatches.loading')} />
       </div>
     );
   }
