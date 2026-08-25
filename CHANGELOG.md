@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [2.21.0] - 2026-08-25
+
+### Changed
+
+- **Una sola pantalla de espera en toda la aplicación** (#495). Convivían cinco dibujos distintos —el monograma a secas, un «Loading...» gris, un círculo, el icono de carga y su versión dentro del contenido—, así que moverse por la aplicación era ver cambiar la imagen a cada paso. Que es exactamente lo que se percibía como parpadeo al arrancar: no son los cortes, es que el dibujo cambia.
+
+  Ahora hay uno: **el monograma dentro de un anillo de carga**. En dos tamaños —la pantalla entera y una versión pequeña para lo que carga dentro de una página ya pintada— y en dos tintas: el verde de la marca con el monograma en blanco al arrancar la aplicación instalada, y fondo claro con el monograma verde en todo lo demás. La capa que se ve antes de que cargue nada dibuja lo mismo, con el mismo tamaño, el mismo color, la misma velocidad y **arrancando en el mismo punto del giro**, para que al tomar el relevo no se note el cambio.
+
+  Lo que carga dentro de una página **sigue cargando ahí**: vaciar una pantalla que ya está a la vista para enseñar una espera es peor que la espera. Y los indicadores de los botones se quedan como estaban: esos dicen «este botón está trabajando», no «esto viene cargando».
+
+### Fixed
+
+- **La cabecera ya no desaparece mientras carga** en Amigos, Anotación, Próximos partidos, Actividad, Perfil de jugador, las dos de invitaciones y las de partida rápida. Verla aparecer justo al terminar de cargar es un salto igual que los demás.
+
+- **La espera dejó de anunciarse en español a los lectores de pantalla** cuando la aplicación está en inglés. Y donde no había texto que leer, ahora lo hay: el anillo y el monograma son decorativos, así que quien usa un lector se encontraba con que algo cambiaba en la pantalla y nada que lo contara.
+
 ## [2.20.1] - 2026-08-25
 
 ### Fixed
