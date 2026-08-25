@@ -36,6 +36,18 @@ describe('el fondo del documento en la app instalada', () => {
     }
   );
 
+  it('el verde de la espera es del ARRANQUE, no de cualquier espera', () => {
+    // La misma pantalla la usan las transiciones de dentro de la aplicacion
+    // —volver a Inicio desde la barra inferior—, y alli el verde de la marca se
+    // lee como si la aplicacion se reiniciara (FE #492)
+    const bloque = bloqueStandalone(lee('src/index.css'));
+
+    expect(bloque).toMatch(/\.pantalla-de-espera:not\(\.pantalla-de-espera--transicion\)\s*\{[^}]*background:\s*#3e8642/);
+    expect(bloque).toContain('html:has(.pantalla-de-espera:not(.pantalla-de-espera--transicion))');
+    // Y sin una regla suelta que vuelva a pintarlas todas
+    expect(bloque).not.toMatch(/(^|\n)\s*\.pantalla-de-espera\s*\{/);
+  });
+
   it('el verde va condicionado, no puesto en el html a secas', () => {
     // Sin condicion, el verde se quedaba toda la sesion por debajo de las
     // pantallas sin fondo propio —las esperas de Perfil, Editar perfil, Crear

@@ -1,5 +1,11 @@
-import { useLayoutEffect } from 'react';
-import { rutaQueAvisa, esperaElAviso, retiraLaCortina } from '../utils/cortinaDeArranque';
+import { useLayoutEffect, useRef } from 'react';
+import {
+  rutaQueAvisa,
+  esperaElAviso,
+  retiraLaCortina,
+  terminaElArranque,
+  laCortinaSiguePuesta,
+} from '../utils/cortinaDeArranque';
 
 /**
  * Decide, en cada cambio de ruta, si la cortina del arranque se queda o se
@@ -17,7 +23,25 @@ import { rutaQueAvisa, esperaElAviso, retiraLaCortina } from '../utils/cortinaDe
  * queda esperando un aviso que nadie manda.
  */
 export const useCortinaDeArranque = (pathname) => {
+  const rutaAnterior = useRef(null);
+
   useLayoutEffect(() => {
+    // El arranque se da por consumado en la primera navegacion que ocurre con
+    // la cortina ya fuera: eso solo pasa moviendose por la aplicacion (FE #492).
+    //
+    // Ni antes ni por otro camino. Llegar a una ruta que no avisa NO basta:
+    // `/login`, `/register` y la vuelta de Google siguen pintando la espera a
+    // pantalla completa mientras resuelven, igual que el `Suspense` de
+    // cualquier enlace profundo, y eso todavia es el arranque —la aplicacion
+    // acaba de abrirse—. Darlo por terminado alli cortaba el verde a media
+    // espera. Y los tramos del propio arranque —`/start` al panel, el panel al
+    // formulario— pasan con la cortina PUESTA, asi que no cuentan.
+    const veniaDeOtraRuta = rutaAnterior.current !== null && rutaAnterior.current !== pathname;
+    if (veniaDeOtraRuta && !laCortinaSiguePuesta()) {
+      terminaElArranque();
+    }
+    rutaAnterior.current = pathname;
+
     if (rutaQueAvisa(pathname)) {
       esperaElAviso();
     } else {

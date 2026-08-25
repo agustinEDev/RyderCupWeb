@@ -1,5 +1,7 @@
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import BrandMark from './BrandMark';
+import { elArranqueHaTerminado } from '../../utils/cortinaDeArranque';
 
 /**
  * El respaldo mientras el namespace `common` no ha bajado. Va por idioma
@@ -34,18 +36,35 @@ const FullScreenLoader = () => {
   // que React no sabe pintar
   const respaldo = RESPALDO_LOADING.get(idioma) ?? RESPALDO_LOADING.get('en');
 
+  // Dos caras, y la diferencia importa dentro de la aplicacion instalada
+  // (FE #492): el verde de la marca es la pantalla con la que la aplicacion se
+  // abre. Verlo otra vez al volver a Inicio desde la barra inferior se lee como
+  // si la aplicacion se reiniciara, cuando eso solo es una transicion.
+  //
+  // Se decide UNA sola vez, al montar, y por eso va en estado y no leyendo la
+  // bandera en cada render: el valor vive en un modulo y cambia sola. Este
+  // componente se vuelve a pintar sin desmontarse —react-i18next lo fuerza
+  // cuando baja el namespace `common`, que va perezoso—, y leerla en el render
+  // hacia que una espera EN CURSO pasara de verde a blanco delante de los ojos,
+  // con su franja de estado incluida. Un parpadeo nuevo justo en la saga de los
+  // parpadeos.
+  const [esTransicion] = useState(() => elArranqueHaTerminado());
+
   return (
     <div
       role="status"
       aria-live="polite"
-      className="pantalla-de-espera"
+      className={esTransicion ? 'pantalla-de-espera pantalla-de-espera--transicion' : 'pantalla-de-espera'}
     >
       {/* Instalada, el monograma en blanco sobre el verde de la marca; en el
           navegador, en verde sobre blanco, que es como se ve el resto del sitio.
           `<picture>` elige segun `display-mode` y descarga solo una de las dos.
           Los dos van precacheados por el service worker —`png` entra en
           `globPatterns`—, asi que aparecen sin depender de la red. */}
-      <BrandMark tinta="auto" className="w-[88px]" />
+      {/* En la transicion, la tinta VERDE a la fuerza: `auto` la pinta blanca
+          con la aplicacion instalada, y sobre el blanco de esta cara el
+          monograma desapareceria. */}
+      <BrandMark tinta={esTransicion ? 'verde' : 'auto'} className="w-[88px]" />
       {/* Con `defaultValue` porque este componente es tambien el fallback del
           `Suspense` raiz: ahi se pinta antes de que baje el namespace `common`
           —i18next va con `useSuspense: false` y un backend perezoso— y `t()`
