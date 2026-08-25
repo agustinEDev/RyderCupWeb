@@ -7,6 +7,7 @@
 
 import { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { setCsrfTokenGlobal } from './csrfTokenSync';
+import { anotaLaSesion, olvidaLaSesion } from '../services/sesionCompartida';
 
 // Create the context
 const AuthContext = createContext(null);
@@ -54,10 +55,14 @@ export const AuthProvider = ({ children }) => {
    */
   const setUserData = useCallback((userData) => {
     setUser(userData);
+    // La consulta compartida se entera por aqui (FE #489): quien acaba de entrar
+    // ya se sabe, y volver a preguntarselo al backend seria un viaje de mas
     if (userData) {
+      anotaLaSesion(userData);
       // Keep localStorage sync for legacy compatibility
       localStorage.setItem('user', JSON.stringify(userData));
     } else {
+      olvidaLaSesion();
       localStorage.removeItem('user');
     }
   }, []);
@@ -78,6 +83,12 @@ export const AuthProvider = ({ children }) => {
   const clearAuth = useCallback(() => {
     setUser(null);
     setCsrfToken(null);
+    // Sin esto, lo que la consulta compartida tuviera guardado sobreviviria al
+    // cierre de sesion y el siguiente componente que montara veria un usuario
+    // que ya no esta (FE #489). Todos los caminos de salida pasan por aqui:
+    // el boton, la inactividad, el aviso de otra pestaña y el dispositivo
+    // revocado
+    olvidaLaSesion();
     localStorage.removeItem('user');
     localStorage.removeItem('access_token'); // Legacy cleanup
   }, []);
