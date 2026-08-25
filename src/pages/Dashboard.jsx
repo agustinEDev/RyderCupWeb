@@ -18,6 +18,11 @@ import { slideUp, staggerContainer, getEntryProps } from '../utils/animations';
 import FullScreenLoader from '../components/ui/FullScreenLoader';
 import { laPantallaEstaLista } from '../utils/cortinaDeArranque';
 import {
+  elPanelYaSePinto,
+  anotaQueElPanelSePinto,
+  ESPERA_MAXIMA_MS,
+} from '../utils/primeraCargaDelPanel';
+import {
   listUserCompetitionsUseCase,
   getPlayerStatsUseCase,
   getRecentMatchesUseCase,
@@ -26,12 +31,6 @@ import {
 
 // El panel enseña un resumen, no el historial entero
 const RECENT_MATCHES_SHOWN = 3;
-
-// Mas alla de esto el panel se pinta con lo que tenga. Es el mismo compromiso
-// que la cortina del arranque: esperar a las cuatro peticiones evita que la
-// pantalla se monte a trozos, pero una que no vuelva no puede dejar el panel
-// muerto detras de una espera (FE #485).
-export const ESPERA_MAXIMA_MS = 3000;
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -80,6 +79,13 @@ const Dashboard = () => {
   }, [navigate]);
 
   useEffect(() => {
+    // El mismo guardia que sus tres hermanos, que era el unico que no lo tenia:
+    // dos peticiones solapadas —guardar el handicap con una en vuelo— podian
+    // resolverse al reves, escribir competiciones rancias Y bajar la bandera
+    // con la actual todavia abierta. Desde FE #485 esa bandera decide ademas
+    // cuando se levanta la cortina.
+    let cancelled = false;
+
     const loadDashboardData = async () => {
       // Mientras la sesion se resuelve no se pide nada NI se declara nada
       // terminado. `useAuth` no es un contexto: arranca siempre sin usuario y
@@ -107,17 +113,27 @@ const Dashboard = () => {
         // Fetch competitions using the same use case as My Competitions page
         // This ensures the count matches (user's competitions: created OR enrolled)
         const competitionsData = await listUserCompetitionsUseCase.execute(user.id);
-        setCompetitions(Array.isArray(competitionsData) ? competitionsData : []);
+        if (!cancelled) {
+          setCompetitions(Array.isArray(competitionsData) ? competitionsData : []);
+        }
 
       } catch (error) {
         console.error("Failed to load dashboard data:", error);
-        setCompetitions([]);
+        if (!cancelled) {
+          setCompetitions([]);
+        }
       } finally {
-        setIsLoadingCompetitions(false);
+        if (!cancelled) {
+          setIsLoadingCompetitions(false);
+        }
       }
     };
 
     loadDashboardData();
+
+    return () => {
+      cancelled = true;
+    };
   }, [user, isLoadingUser]);
 
   useEffect(() => {
@@ -336,16 +352,24 @@ const Dashboard = () => {
 
   const puedePintar = noQuedaNadaCargando || seAgotoLaEspera;
 
-  // Solo la PRIMERA carga manda: una recarga posterior —al guardar el
-  // handicap— no debe desmontar lo que ya hay en pantalla, que es lo que hacia
-  // el criterio de antes. Se ajusta durante el render, no en un efecto: React
-  // descarta este render y rehace el componente antes de pintar nada, sin
-  // pasar por el DOM.
-  const [yaSePinto, setYaSePinto] = useState(false);
+  // Solo la PRIMERA vez manda: ni una recarga posterior —al guardar el
+  // handicap— debe desmontar lo que ya hay en pantalla, ni volver aqui desde la
+  // barra inferior debe repetir la espera entera. Se ajusta durante el render,
+  // no en un efecto: React descarta este render y rehace el componente antes de
+  // pintar nada, sin pasar por el DOM.
+  const [yaSePinto, setYaSePinto] = useState(elPanelYaSePinto);
 
   if (puedePintar && !yaSePinto) {
     setYaSePinto(true);
   }
+
+  // La marca de modulo se anota en un efecto: reasignarla durante el render es
+  // un efecto secundario, y React puede descartar un render y rehacerlo
+  useEffect(() => {
+    if (yaSePinto) {
+      anotaQueElPanelSePinto();
+    }
+  }, [yaSePinto]);
 
   // El segundo termino es el gate de siempre y no se puede perder: al agotarse
   // el techo con la sesion todavia sin resolver, `isLoading` bajaba y tres

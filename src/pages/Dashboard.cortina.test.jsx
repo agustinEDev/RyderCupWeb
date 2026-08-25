@@ -99,7 +99,7 @@ vi.doMock('../components/ui/FullScreenLoader', () => ({
 }));
 
 const { esperaElAviso, reiniciaLaCortina } = await import('../utils/cortinaDeArranque');
-const { ESPERA_MAXIMA_MS } = await import('./Dashboard');
+const { ESPERA_MAXIMA_MS, olvidaQueElPanelSePinto } = await import('../utils/primeraCargaDelPanel');
 const Dashboard = (await import('./Dashboard')).default;
 
 const sigueLaCortina = () => Boolean(document.getElementById('arranque'));
@@ -135,6 +135,7 @@ describe('el panel no se pinta a medias', () => {
     sesion.user = usuario;
     sesion.loading = false;
     almacenLimpio();
+    olvidaQueElPanelSePinto();
     reiniciaLaCortina();
     reiniciaLasPeticiones();
     document.body.innerHTML = '';
@@ -159,6 +160,29 @@ describe('el panel no se pinta a medias', () => {
     });
     await asienta();
     await act(async () => { peticiones.proximos.resolver([]); });
+    await asienta();
+
+    expect(estaEsperando()).toBe(false);
+  });
+
+  it('volver al panel a media sesion ya no repite la espera entera', async () => {
+    // `Dashboard` se remonta en cada toque de «Inicio» en la barra inferior. Con
+    // el rastro en el componente, cada vuelta se quedaba hasta tres segundos en
+    // la pantalla de espera, donde antes aparecia en cuanto llegaban las
+    // competiciones
+    const primera = render(<Dashboard />);
+    await act(async () => {
+      peticiones.competiciones.resolver([]);
+      peticiones.estadisticas.resolver(null);
+      peticiones.recientes.resolver([]);
+    });
+    await asienta();
+    await act(async () => { peticiones.proximos.resolver([]); });
+    await asienta();
+    primera.unmount();
+
+    reiniciaLasPeticiones();
+    render(<Dashboard />);
     await asienta();
 
     expect(estaEsperando()).toBe(false);
@@ -194,6 +218,7 @@ describe('los bordes de la espera del panel', () => {
   beforeEach(() => {
     window.matchMedia = () => ({ matches: false, addEventListener: () => {}, removeEventListener: () => {} });
     almacenLimpio();
+    olvidaQueElPanelSePinto();
     textos.listos = true;
     sesion.user = usuario;
     sesion.loading = false;
@@ -217,6 +242,35 @@ describe('los bordes de la espera del panel', () => {
 
     render(<Dashboard />);
     act(() => { vi.advanceTimersByTime(ESPERA_MAXIMA_MS + 100); });
+
+    expect(estaEsperando()).toBe(true);
+  });
+
+  it('una respuesta vieja no baja la bandera de la peticion en curso', async () => {
+    // El unico de los cuatro cargadores que no tenia guardia. Dos peticiones
+    // solapadas podian resolverse al reves: la vieja escribia sus datos Y bajaba
+    // la bandera con la actual todavia abierta, sacando al panel de su espera
+    const primeraTanda = peticiones.competiciones;
+    const { rerender } = render(<Dashboard />);
+    await asienta();
+
+    // Llega otro usuario: se relanza todo y la peticion vieja queda descolgada
+    reiniciaLasPeticiones();
+    sesion.user = { ...usuario, id: 'u-2' };
+    rerender(<Dashboard />);
+    await asienta();
+
+    // De la tanda nueva llega todo MENOS las competiciones, para que sea esa
+    // bandera —y solo esa— la que decide
+    await act(async () => {
+      peticiones.estadisticas.resolver(null);
+      peticiones.recientes.resolver([]);
+      peticiones.proximos.resolver([]);
+    });
+    await asienta();
+
+    await act(async () => { primeraTanda.resolver([{ id: 'vieja' }]); });
+    await asienta();
 
     expect(estaEsperando()).toBe(true);
   });
@@ -258,6 +312,7 @@ describe('el panel avisa a la cortina cuando NO le queda nada cargando', () => {
     reiniciaLaCortina();
     reiniciaLasPeticiones();
     almacenLimpio();
+    olvidaQueElPanelSePinto();
     document.body.innerHTML = '<div id="arranque"></div>';
     // La ruta `/dashboard` avisa: la cortina se queda esperando
     esperaElAviso();

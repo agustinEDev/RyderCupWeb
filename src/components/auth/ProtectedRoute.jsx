@@ -1,6 +1,5 @@
 import { Navigate, useLocation } from 'react-router';
 import { useAuth } from '../../hooks/useAuth';
-import FullScreenLoader from '../ui/FullScreenLoader';
 
 /**
  * Protected Route Component
@@ -11,12 +10,27 @@ const ProtectedRoute = ({ children }) => {
   const location = useLocation();
   const { user, loading } = useAuth();
 
-  // La MISMA espera que el resto de la cadena, no un «Loading...» gris propio.
-  // Esta pantalla es la que asoma cuando la cortina del arranque agota su plazo
-  // (FE #485), y un dibujo distinto justo ahi es lo que se percibe como
-  // parpadeo: no son los cortes, es que la imagen cambia.
+  // Una espera sobria y no la pantalla de marca, aunque esta sea la que asoma
+  // si la cortina del arranque agota su plazo (FE #485). `ProtectedRoute` se
+  // remonta en CADA navegacion protegida y su `useAuth` vuelve a preguntar por
+  // la sesion, asi que poner aqui el arranque verde convertia cada salto
+  // —Panel, Perfil, Amigos— en un relampago de pantalla de bienvenida, como si
+  // la aplicacion se reiniciara. Se prefiere que la imagen cambie en el caso
+  // raro —vencer el plazo con mala red— a meter un parpadeo en el corriente.
+  // Deja de hacer falta cuando la sesion se resuelva una sola vez: FE #489.
   if (loading) {
-    return <FullScreenLoader />;
+    return (
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        height: '100vh',
+        fontFamily: 'system-ui, sans-serif',
+        color: '#6b7280'
+      }}>
+        Loading...
+      </div>
+    );
   }
 
   // If no user, redirect to login

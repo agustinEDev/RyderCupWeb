@@ -73,6 +73,11 @@ const Landing = () => {
   // Con sesion NO se avisa: `useRedirectIfAuthenticated` deja `comprobandoSesion`
   // arriba mientras redirige al panel, y alli se avisa cuando toca. Los textos
   // cuentan como carga, igual que en las otras dos pantallas.
+  //
+  // Sin preguntar si la aplicacion esta instalada, al reves que `AppStart`: alli
+  // hace falta porque en el navegador esa ruta redirige y no llega a pintarse.
+  // Aqui no: en el navegador la cortina ya se ha retirado sola —no se sostiene
+  // fuera de la aplicacion instalada— y avisar es no hacer nada.
   useEffect(() => {
     if (!comprobandoSesion && textosListos && textosComunesListos) {
       laPantallaEstaLista();
