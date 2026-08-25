@@ -46,13 +46,20 @@ const API_URL = globalThis.APP_CONFIG?.API_BASE_URL || import.meta.env.VITE_API_
 /** Lo que se espera antes de volver a intentarlo cuando la consulta falla. */
 export const ESPERA_TRAS_FALLO_MS = 3_000;
 
+/**
+ * Cuantas veces se reintenta solo. Con espera creciente y un tope: un corte
+ * breve se recupera sin que nadie haga nada, y un backend caido no se lleva una
+ * peticion cada tres segundos por pestaña abierta durante el resto del dia.
+ */
+const REINTENTOS_AUTOMATICOS = 3;
+
 const NADA_SABIDO = { user: null, cargando: true, refrescando: false, error: null, resuelta: false };
 
 let instantanea = NADA_SABIDO;
 let enVuelo = null;
 let generacion = 0;
-let ultimoFallo = 0;
 let reintento = null;
+let fallosSeguidos = 0;
 const oyentes = new Set();
 
 /**
@@ -63,6 +70,29 @@ const oyentes = new Set();
 const anota = (cambios) => {
   instantanea = { ...instantanea, ...cambios };
   for (const oyente of oyentes) oyente();
+};
+
+/**
+ * Lo programa quien FALLA, no quien llegue despues.
+ *
+ * Antes se armaba dentro de la rama de espera de `consultaLaSesion`, asi que
+ * hacia falta que llegara otra llamada durante esos tres segundos. En un
+ * arranque corriente no llega ninguna: todos los consumidores han preguntado ya
+ * y comparten la misma peticion, asi que al fallar no quedaba nadie que la
+ * rearmara y la pagina se quedaba sin sesion hasta recargar.
+ */
+const programaReintento = () => {
+  if (reintento !== null) return;
+  if (fallosSeguidos > REINTENTOS_AUTOMATICOS) return;
+
+  // Creciente: 3s, 6s, 12s. Un corte breve se recupera solo; uno largo no se
+  // convierte en una peticion cada tres segundos hasta que alguien cierre la app
+  const espera = ESPERA_TRAS_FALLO_MS * 2 ** (fallosSeguidos - 1);
+
+  reintento = setTimeout(() => {
+    reintento = null;
+    consultaLaSesion();
+  }, espera);
 };
 
 const pideAlBackend = async (miGeneracion) => {
@@ -114,6 +144,7 @@ const pideAlBackend = async (miGeneracion) => {
     // re-sincronizar es justo lo que se espera
 
     clearDeviceRevocationFlag();
+    fallosSeguidos = 0;
     anota({ user: usuario, cargando: false, refrescando: false, error: null, resuelta: true });
 
     return usuario;
@@ -123,8 +154,11 @@ const pideAlBackend = async (miGeneracion) => {
 
     // `resuelta` se queda como estaba: un tropiezo no es una respuesta, y
     // guardarlo como tal dejaba a quien montara despues sin volver a intentarlo
-    ultimoFallo = Date.now();
-    anota({ cargando: false, refrescando: false, error: error.message });
+    fallosSeguidos += 1;
+    programaReintento();
+    // `cargando` se queda arriba mientras haya reintento en camino: para quien
+    // mira, esto sigue siendo «no se sabe», no «no hay sesion»
+    anota({ cargando: reintento !== null, refrescando: false, error: error.message });
 
     return null;
   }
@@ -158,19 +192,10 @@ export const consultaLaSesion = ({ forzar = false } = {}) => {
     // la sesion abierta. Y al vencer se reintenta solo: si dependiera de que
     // monte otro componente, un tropiezo de red se llevaria por delante toda la
     // carga de pagina
-    const enEspera = ultimoFallo && Date.now() - ultimoFallo < ESPERA_TRAS_FALLO_MS;
-    if (enEspera) {
-      if (!instantanea.cargando) anota({ cargando: true });
-      if (reintento === null) {
-        reintento = setTimeout(() => {
-          reintento = null;
-          ultimoFallo = 0;
-          consultaLaSesion();
-        }, ESPERA_TRAS_FALLO_MS - (Date.now() - ultimoFallo));
-      }
-
-      return Promise.resolve(instantanea.user);
-    }
+    // Con un reintento ya en camino, quien llegue se espera a el en vez de abrir
+    // otra: es el abanico de peticiones que esto vino a quitar, justo cuando el
+    // backend menos lo aguanta
+    if (reintento !== null) return Promise.resolve(instantanea.user);
   }
 
   generacion += 1;
@@ -201,7 +226,6 @@ export const olvidaLaSesion = () => {
   // acaba de cerrarse
   generacion += 1;
   enVuelo = null;
-  ultimoFallo = 0;
   if (reintento !== null) clearTimeout(reintento);
   reintento = null;
   // Vuelve al estado de partida, `cargando` incluido. Publicarlo con `cargando`
@@ -235,7 +259,7 @@ export const reiniciaLaSesionCompartida = () => {
   enVuelo = null;
   if (reintento !== null) clearTimeout(reintento);
   reintento = null;
-  ultimoFallo = 0;
+  fallosSeguidos = 0;
   instantanea = NADA_SABIDO;
   // Los oyentes NO se tocan: darlos de baja aquí dejaría a los componentes
   // montados sin enterarse de nada mas, sin que nada lo delatara

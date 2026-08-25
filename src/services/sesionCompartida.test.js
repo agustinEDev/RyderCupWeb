@@ -110,15 +110,18 @@ describe('la consulta compartida de la sesión', () => {
     expect(loQueHaySobreLaSesion()).toMatchObject({ user: null, cargando: false, error: null, resuelta: true });
   });
 
-  it('un fallo de red se cuenta como error y no deja la espera colgada', async () => {
+  it('un fallo de red se anota como error, y sigue sin saberse', async () => {
+    // `cargando` se queda ARRIBA mientras haya un reintento en camino: para
+    // quien mira, esto es «todavia no se sabe», no «no hay sesion». Lo segundo
+    // hacia que los guardias mandaran al formulario sin llegar a preguntar
     vi.spyOn(console, 'error').mockImplementation(() => {});
     respuestas.push(() => Promise.reject(new Error('sin red')));
 
     const leido = await consultaLaSesion();
 
     expect(leido).toBeNull();
-    expect(loQueHaySobreLaSesion().cargando).toBe(false);
     expect(loQueHaySobreLaSesion().error).toBe('sin red');
+    expect(loQueHaySobreLaSesion().cargando).toBe(true);
   });
 
   it('avisa a quien se haya suscrito, y deja de hacerlo al darse de baja', async () => {
@@ -179,20 +182,36 @@ describe('la consulta compartida de la sesión', () => {
     expect(loQueHaySobreLaSesion().resuelta).toBe(false);
   });
 
-  it('y reintenta sola al vencer la espera', async () => {
-    // Si dependiera de que monte otro componente, un tropiezo de red se llevaria
-    // por delante toda la carga de pagina
+  it('reintenta sola aunque NO vuelva a llamarla nadie', async () => {
+    // En un arranque corriente todos los consumidores han preguntado ya y
+    // comparten la misma peticion, asi que cuando falla no queda nadie que la
+    // rearme. Si el reintento dependiera de que llegue otra llamada, la pagina
+    // se quedaba sin sesion hasta recargar
     vi.useFakeTimers();
     vi.spyOn(console, 'error').mockImplementation(() => {});
     respuestas.push(() => Promise.reject(new Error('sin red')), usuario());
 
-    await consultaLaSesion();
-    await consultaLaSesion();          // deja programado el reintento
+    await consultaLaSesion();          // una sola, y nadie mas pregunta
     expect(peticiones).toHaveLength(1);
 
     await vi.advanceTimersByTimeAsync(ESPERA_TRAS_FALLO_MS + 50);
 
     expect(peticiones).toHaveLength(2);
+    expect(loQueHaySobreLaSesion().user).toEqual({ id: 'u-1' });
+    vi.useRealTimers();
+  });
+
+  it('con el backend caido no reintenta para siempre', async () => {
+    // Cada tres segundos por pestaña abierta, el resto del dia, es peor que
+    // rendirse: la espera crece y hay un tope
+    vi.useFakeTimers();
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    for (let i = 0; i < 10; i += 1) respuestas.push(() => Promise.reject(new Error('sin red')));
+
+    await consultaLaSesion();
+    await vi.advanceTimersByTimeAsync(10 * 60 * 1000);
+
+    expect(peticiones.length).toBeLessThanOrEqual(4);
     vi.useRealTimers();
   });
 
