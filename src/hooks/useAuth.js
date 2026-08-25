@@ -24,11 +24,18 @@ export const useAuth = () => {
   // vean instantaneas distintas en el mismo render
   const estado = useSyncExternalStore(suscribeALaSesion, loQueHaySobreLaSesion);
 
+  // Sin `[]`: tambien hay que volver a preguntar si el estado pasa a «no se sabe
+  // nada» —lo que hace `olvidaLaSesion` al entrar o al salir— con este
+  // componente ya montado. Con dependencias vacias, un `clearAuth` que no fuera
+  // seguido de una navegacion dejaba a los guardias en «Cargando...» para
+  // siempre. Hoy todas las salidas navegan, pero eso es suerte, no diseño.
   useEffect(() => {
+    if (estado.resuelta) return;
+
     // La primera llamada dispara la consulta; las demas se enganchan a ella o
     // reciben lo que ya se sabe, sin tocar la red
     consultaLaSesion();
-  }, []);
+  }, [estado.resuelta]);
 
   const refetch = useCallback(() => consultaLaSesion({ forzar: true }), []);
 
@@ -46,6 +53,15 @@ export const useAuth = () => {
  *
  * @returns {Promise<Object|null>} El usuario, o `null` si no hay sesión
  */
-export const getUserData = () => consultaLaSesion();
+export const getUserData = async () => {
+  await consultaLaSesion();
+
+  // Lo que sepa el estado al final, y no lo que devuelva ESTA consulta: si otra
+  // la adelanta —un login, un refresco forzado—, la superada resuelve a `null`,
+  // y `App.jsx` lo lee como «no hay sesion». Se quedaba sin cierre por
+  // inactividad, sin vigilancia de dispositivo revocado y sin refresco proactivo
+  // el resto de la visita
+  return loQueHaySobreLaSesion().user;
+};
 
 export default useAuth;

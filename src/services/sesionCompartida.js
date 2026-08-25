@@ -43,13 +43,6 @@ import { fetchWithTokenRefresh } from '../utils/tokenRefreshInterceptor';
 // build, o en un despliegue en contenedor se acaba preguntando a hosts distintos
 const API_URL = globalThis.APP_CONFIG?.API_BASE_URL || import.meta.env.VITE_API_BASE_URL || '';
 
-/**
- * Cada cuánto se vuelve a preguntar al volver a la aplicación. La instalada vive
- * días abierta y el refresco dura 7, así que sin esto la pantalla seguiría
- * enseñando una sesión que el backend ya rechazó hasta que otra llamada fallara.
- */
-const MINIMO_ENTRE_REVALIDACIONES_MS = 60_000;
-
 /** Lo que se espera antes de volver a intentarlo cuando la consulta falla. */
 const ESPERA_TRAS_FALLO_MS = 3_000;
 
@@ -58,7 +51,6 @@ const NADA_SABIDO = { user: null, cargando: true, refrescando: false, error: nul
 let instantanea = NADA_SABIDO;
 let enVuelo = null;
 let generacion = 0;
-let ultimaRespuesta = 0;
 let ultimoFallo = 0;
 const oyentes = new Set();
 
@@ -105,7 +97,13 @@ const pideAlBackend = async (miGeneracion) => {
       }
 
       if (respuesta.status === 401 || respuesta.status === 404) {
-        ultimaRespuesta = Date.now();
+        // Otra vez, y aqui hacia falta de verdad: entre el `clone().json()` de
+        // arriba y esta linea hay un `await`, y en ese hueco cabe un login. Sin
+        // comprobar, esta respuesta vieja escribia «resuelto y sin usuario»
+        // encima de la sesion recien abierta y reabria el ida y vuelta al
+        // formulario que cerro el commit anterior
+        if (!sigoValiendo()) return null;
+
         anota({ user: null, cargando: false, refrescando: false, error: null, resuelta: true });
         return null;
       }
@@ -125,7 +123,6 @@ const pideAlBackend = async (miGeneracion) => {
     const usuario = anterior && JSON.stringify(anterior) === JSON.stringify(recibido) ? anterior : recibido;
 
     clearDeviceRevocationFlag();
-    ultimaRespuesta = Date.now();
     anota({ user: usuario, cargando: false, refrescando: false, error: null, resuelta: true });
 
     return usuario;
@@ -196,7 +193,6 @@ export const olvidaLaSesion = () => {
   // acaba de cerrarse
   generacion += 1;
   enVuelo = null;
-  ultimaRespuesta = 0;
   ultimoFallo = 0;
   // Vuelve al estado de partida, `cargando` incluido. Publicarlo con `cargando`
   // en falso le decía a los guardias «resuelto y sin usuario», y `ProtectedRoute`
@@ -206,28 +202,27 @@ export const olvidaLaSesion = () => {
   anota(NADA_SABIDO);
 };
 
-/**
- * Al volver a la aplicación se vuelve a preguntar, de fondo y sin levantar
- * `cargando`. La instalada vive días abierta: sin esto seguiría enseñando una
- * sesión que el backend ya rechazó.
+/*
+ * Aquí hubo una revalidación al volver a la aplicación, y se retiró.
+ *
+ * La idea era buena —la instalada vive días abierta y el refresco dura siete, así
+ * que la pantalla puede estar enseñando una sesión que el backend ya rechazó—,
+ * pero el precio no lo era: esa consulta pasa por `fetchWithTokenRefresh` con un
+ * access caducado, así que intenta refrescar, y si ese refresco falla **sin
+ * respuesta** —un corte a media petición, un tiempo agotado— el interceptor no
+ * lo distingue de una sesión muerta y cierra sesión con una redirección dura.
+ *
+ * Es decir: volver a la aplicación con mala cobertura podía echar a alguien de
+ * la pantalla de anotación en mitad de una vuelta. Anotar sin conexión es el caso
+ * de uso de esta aplicación, no un extra, así que la sesión rancia es el menor de
+ * los dos males: cualquier llamada que falle con un 401 ya dispara ese camino
+ * cuando toca, y antes de todo esto tampoco se revalidaba.
  */
-const alVolverAlFrente = () => {
-  if (document.visibilityState !== 'visible') return;
-  if (!instantanea.resuelta || !instantanea.user) return;
-  if (Date.now() - ultimaRespuesta < MINIMO_ENTRE_REVALIDACIONES_MS) return;
-
-  consultaLaSesion({ forzar: true });
-};
-
-if (typeof document !== 'undefined') {
-  document.addEventListener('visibilitychange', alVolverAlFrente);
-}
 
 /** Solo para las pruebas: esto vive en el módulo y sobrevive de una a otra. */
 export const reiniciaLaSesionCompartida = () => {
   generacion += 1;
   enVuelo = null;
-  ultimaRespuesta = 0;
   ultimoFallo = 0;
   instantanea = NADA_SABIDO;
   // Los oyentes NO se tocan: darlos de baja aquí dejaría a los componentes
