@@ -93,6 +93,9 @@ describe('AppStart y la cortina del arranque', () => {
     estado.comprobando = false;
     estado.textosListos = true;
     reiniciaLaCortina();
+    // La cortina pide las dos cosas: aplicacion instalada y la capa pintandose
+    // de verde por el CSS
+    window.matchMedia = () => ({ matches: true, addEventListener: () => {}, removeEventListener: () => {} });
     document.body.innerHTML = '<div id="arranque"></div>';
     // La ruta `/start` avisa: al llegar, la cortina se queda esperando
     esperaElAviso();

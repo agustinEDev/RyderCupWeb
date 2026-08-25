@@ -256,6 +256,11 @@ const Dashboard = () => {
       }
 
       if (isLoadingCompetitions) {
+        // Se sale, pero esta peticion NO esta terminada: llega en cuanto las
+        // competiciones aterricen. Dejar la bandera abajo abria un render con
+        // las cinco a false y la peticion sin salir —el mismo «depende del
+        // orden» que ya volvio cuatro veces—
+        setIsLoadingUpcoming(true);
         return;
       }
 
@@ -350,12 +355,21 @@ const Dashboard = () => {
 
   // El aviso a la cortina del arranque: en cuanto esta pantalla deja de
   // esperar —porque ya lo tiene todo, o porque se agoto el techo y va a
-  // pintarse con lo que haya— no queda nada que tapar
+  // pintarse con lo que haya— no queda nada que tapar.
+  //
+  // Con usuario, ademas de sin esperas: sin esa condicion, un `/current-user`
+  // que falle aqui —el token rotado entre la comprobacion de `ProtectedRoute` y
+  // esta, o quedarse sin red— baja las cuatro banderas por la rama sin usuario,
+  // y el aviso destapaba el `return null` de mas abajo: una pagina EN BLANCO a
+  // pantalla completa. Si el usuario no llega, la cortina se va por su plazo,
+  // que es justo para lo que esta.
+  const noQuedaNadaQueTapar = !isLoading && Boolean(user);
+
   useEffect(() => {
-    if (puedePintar) {
+    if (noQuedaNadaQueTapar) {
       laPantallaEstaLista();
     }
-  }, [puedePintar]);
+  }, [noQuedaNadaQueTapar]);
 
   if (isLoading) {
     // La MISMA espera que el resto de la aplicacion, no un circulo propio. Al

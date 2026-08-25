@@ -1,5 +1,6 @@
 import { Navigate, useLocation } from 'react-router';
 import { useAuth } from '../../hooks/useAuth';
+import FullScreenLoader from '../ui/FullScreenLoader';
 
 /**
  * Protected Route Component
@@ -10,20 +11,12 @@ const ProtectedRoute = ({ children }) => {
   const location = useLocation();
   const { user, loading } = useAuth();
 
-  // Show loading state while checking authentication
+  // La MISMA espera que el resto de la cadena, no un «Loading...» gris propio.
+  // Esta pantalla es la que asoma cuando la cortina del arranque agota su plazo
+  // (FE #485), y un dibujo distinto justo ahi es lo que se percibe como
+  // parpadeo: no son los cortes, es que la imagen cambia.
   if (loading) {
-    return (
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        height: '100vh',
-        fontFamily: 'system-ui, sans-serif',
-        color: '#6b7280'
-      }}>
-        Loading...
-      </div>
-    );
+    return <FullScreenLoader />;
   }
 
   // If no user, redirect to login

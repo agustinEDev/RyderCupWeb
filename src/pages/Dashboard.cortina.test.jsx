@@ -329,32 +329,15 @@ describe('el panel avisa a la cortina cuando NO le queda nada cargando', () => {
     expect(sigueLaCortina()).toBe(true);
   });
 
-  it('sin usuario tampoco se queda esperando', () => {
-    // La sesion se cae a media carga: los cuatro cargadores se van sin pedir
-    // nada. Si alguno se dejara su flag arriba, el aviso no se mandaria nunca y
-    // la cortina se comeria el plazo entero de verde antes de que
-    // `ProtectedRoute` llegue a mandar al formulario
+  it('sin usuario NO avisa: destaparia una pagina en blanco', () => {
+    // La sesion se cae a media carga —el token rotado entre la comprobacion de
+    // `ProtectedRoute` y esta, o quedarse sin red—. Los cuatro cargadores se van
+    // sin pedir nada y el panel devuelve `null`: avisar aqui levantaba la
+    // cortina sobre un blanco a pantalla completa. Se queda puesta hasta que
+    // `ProtectedRoute` cambie de ruta, o hasta que venza su plazo
     sesion.user = null;
 
     render(<Dashboard />);
-
-    expect(sigueLaCortina()).toBe(false);
-  });
-
-  it('con las cuatro aterrizadas pero sin los textos, la cortina se queda', async () => {
-    // Levantarla aqui enseña las claves en crudo y un cambio de texto un
-    // instante despues: el mismo parpadeo con otra cara
-    textos.listos = false;
-    render(<Dashboard />);
-
-    await act(async () => {
-      peticiones.competiciones.resolver([]);
-      peticiones.estadisticas.resolver(null);
-      peticiones.recientes.resolver([]);
-    });
-    await asienta();
-    await act(async () => { peticiones.proximos.resolver([]); });
-    await asienta();
 
     expect(sigueLaCortina()).toBe(true);
   });

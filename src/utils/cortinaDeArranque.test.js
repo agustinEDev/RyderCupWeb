@@ -1,4 +1,14 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+
+// Lo que la aplicacion ES —en iOS, `navigator.standalone`— va por su lado de lo
+// que el CSS PINTA con `display-mode: standalone`. En iOS anterior a 16.4 no
+// coinciden, y ese desacuerdo es lo que se prueba abajo
+const equipo = { instalada: true };
+
+vi.mock('../hooks/useStandalone', () => ({
+  detectStandalone: () => equipo.instalada,
+  useStandalone: () => equipo.instalada,
+}));
 import {
   rutaQueAvisa,
   esperaElAviso,
@@ -14,6 +24,7 @@ import {
 describe('la cortina del arranque', () => {
   beforeEach(() => {
     vi.useFakeTimers();
+    equipo.instalada = true;
     // La cortina solo se sostiene en la aplicacion instalada
     window.matchMedia = () => ({ matches: true, addEventListener: () => {}, removeEventListener: () => {} });
     reiniciaLaCortina();
@@ -88,10 +99,23 @@ describe('la cortina del arranque', () => {
     expect(vi.getTimerCount()).toBe(0);
   });
 
+  it('si la capa no se pinta de verde tampoco se sostiene', () => {
+    // iOS anterior a 16.4: `navigator.standalone` dice que si, pero el CSS no
+    // casa `display-mode: standalone`, asi que la capa es BLANCA. Sostenerla
+    // ahi convierte un parpadeo blanco en tres segundos de blanco
+    equipo.instalada = true;
+    window.matchMedia = () => ({ matches: false, addEventListener: () => {}, removeEventListener: () => {} });
+
+    esperaElAviso();
+
+    expect(sigueLaCortina()).toBe(false);
+  });
+
   it('en el navegador no se sostiene: se retira al llegar', () => {
     // Ahi esta capa es blanca con el monograma y la pagina se abre sola.
     // Sostenerla convertiria un F5 en el panel en una espera en blanco donde
     // antes se veia la aplicacion cargando
+    equipo.instalada = false;
     window.matchMedia = () => ({ matches: false, addEventListener: () => {}, removeEventListener: () => {} });
 
     esperaElAviso();

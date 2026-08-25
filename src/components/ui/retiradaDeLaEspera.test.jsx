@@ -77,10 +77,13 @@ describe('donde vive la cortina del arranque', () => {
     }
   });
 
-  it('las dos pantallas de destino avisan', () => {
-    // Sin el aviso, la cortina se come el plazo entero en cada arranque
+  it('las TRES pantallas de destino avisan', () => {
+    // Una por cada entrada de `RUTAS_QUE_AVISAN`. Sin el aviso, esa ruta se come
+    // el plazo entero en cada arranque, y la portada es justo por donde entran
+    // los iconos anteriores a FE #465
     expect(lee('src/pages/Dashboard.jsx')).toContain('laPantallaEstaLista()');
     expect(lee('src/pages/AppStart.jsx')).toContain('laPantallaEstaLista()');
+    expect(lee('src/pages/Landing.jsx')).toContain('laPantallaEstaLista()');
   });
 
   it('las dos pantallas de error la levantan', () => {

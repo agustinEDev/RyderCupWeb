@@ -91,7 +91,19 @@ export const esperaElAviso = () => {
   // F5 en el panel, o un enlace guardado, en una espera en blanco de hasta tres
   // segundos donde antes se veia la aplicacion cargando sus bloques. La saga de
   // los parpadeos es de la aplicacion instalada; el navegador no la sufre.
-  if (!detectStandalone()) {
+  //
+  // Y hacen falta las DOS preguntas. `detectStandalone` mira lo que de verdad
+  // es —en iOS, `navigator.standalone`—, mientras que de pintar la capa de
+  // verde se encarga el CSS con `display-mode: standalone`. En iOS anterior a
+  // 16.4 la primera dice que si y la segunda no casa, asi que la capa es BLANCA:
+  // sostenerla ahi convierte un parpadeo blanco en tres segundos de blanco,
+  // exactamente lo contrario de lo que esto busca. Sin las dos, se retira al
+  // llegar, que es como se comportaba hasta ahora.
+  const laCapaSePintaDeVerde =
+    typeof window.matchMedia === 'function' &&
+    window.matchMedia('(display-mode: standalone)').matches;
+
+  if (!detectStandalone() || !laCapaSePintaDeVerde) {
     retiraLaCortina();
     return;
   }
