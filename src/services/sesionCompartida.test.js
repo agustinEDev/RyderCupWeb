@@ -89,6 +89,10 @@ describe('la consulta compartida de la sesión', () => {
 
     olvidaLaSesion();
     expect(loQueHaySobreLaSesion().user).toBeNull();
+    // Y `cargando` ARRIBA: publicar «no se sabe nada» con `cargando` en falso le
+    // dice a los guardias «resuelto y sin usuario», y `ProtectedRoute` rebota al
+    // formulario en su primer render, justo despues de entrar
+    expect(loQueHaySobreLaSesion().cargando).toBe(true);
 
     await consultaLaSesion();
     expect(peticiones).toHaveLength(2);
@@ -152,10 +156,24 @@ describe('la consulta compartida de la sesión', () => {
     await consultaLaSesion();
     expect(loQueHaySobreLaSesion().resuelta).toBe(false);
 
-    const reintento = await consultaLaSesion();
+    const reintento = await consultaLaSesion({ forzar: true });
 
     expect(peticiones).toHaveLength(2);
     expect(reintento).toEqual({ id: 'u-1' });
+  });
+
+  it('pero tampoco se reintenta a lo loco: hay una espera', async () => {
+    // Con el backend caido, cada componente que montara abriria la suya —los
+    // guardias redirigen, las pantallas se montan— y saldria una peticion por
+    // componente, que es el abanico que esto vino a quitar
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    respuestas.push(() => Promise.reject(new Error('sin red')));
+
+    await consultaLaSesion();
+    await consultaLaSesion();
+    await consultaLaSesion();
+
+    expect(peticiones).toHaveLength(1);
   });
 
   it('refrescar no levanta `cargando`, que desmontaria media aplicación', async () => {
@@ -181,6 +199,19 @@ describe('la consulta compartida de la sesión', () => {
     await consultaLaSesion();
 
     expect(loQueHaySobreLaSesion()).toMatchObject({ user: null, cargando: false, resuelta: true });
+  });
+
+  it('la misma persona no vuelve como objeto distinto', async () => {
+    // Media aplicacion depende del OBJETO: los cuatro cargadores del panel
+    // llevan `[user]` en sus dependencias, asi que uno nuevo con el mismo
+    // contenido relanza las cuatro peticiones cada vez que se revalida
+    respuestas.push(usuario('u-1'), usuario('u-1'));
+    const primera = await consultaLaSesion();
+
+    const tras = await consultaLaSesion({ forzar: true });
+
+    expect(peticiones).toHaveLength(2);
+    expect(tras).toBe(primera);
   });
 
   it('la instantánea es la MISMA mientras no cambie nada', () => {

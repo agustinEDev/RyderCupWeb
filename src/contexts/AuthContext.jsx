@@ -55,15 +55,21 @@ export const AuthProvider = ({ children }) => {
    */
   const setUserData = useCallback((userData) => {
     setUser(userData);
+    // Entrar o salir INVALIDAN la consulta compartida, las dos (FE #489). Al
+    // entrar no se siembra con esto aunque ahorraria un viaje: aqui llega una
+    // **entidad de dominio** —camelCase, con el correo como objeto— y quien lee
+    // de `useAuth` espera el DTO del backend en snake_case.
+    //
+    // Y no basta con invalidar al salir: si antes hubo un 401 —un enlace publico
+    // abierto sin sesion basta— quedaba guardado como «no hay usuario», y al
+    // entrar sin recargar el guardia leia eso y devolvia al formulario, que
+    // confirmaba la sesion y volvia a mandar al destino. Un ida y vuelta sin fin
+    // que solo cortaba una recarga.
+    olvidaLaSesion();
+
     if (userData) {
-      // Y NO se siembra con esto la consulta compartida, aunque ahorraria un
-      // viaje: aqui llega una **entidad de dominio** —camelCase, con el correo
-      // como objeto— y quien lee de `useAuth` espera el DTO del backend en
-      // snake_case. El panel habria intentado pintar un objeto como texto y un
-      // administrador recien entrado se habria quedado sin `is_admin` (FE #489)
       localStorage.setItem('user', JSON.stringify(userData));
     } else {
-      olvidaLaSesion();
       localStorage.removeItem('user');
     }
   }, []);
@@ -86,9 +92,13 @@ export const AuthProvider = ({ children }) => {
     setCsrfToken(null);
     // Sin esto, lo que la consulta compartida tuviera guardado sobreviviria al
     // cierre de sesion y el siguiente componente que montara veria un usuario
-    // que ya no esta (FE #489). Todos los caminos de salida pasan por aqui:
-    // el boton, la inactividad, el aviso de otra pestaña y el dispositivo
-    // revocado
+    // que ya no esta (FE #489).
+    //
+    // Por aqui pasan el boton, la inactividad y el aviso de otra pestaña. El
+    // dispositivo revocado NO: `handleDeviceRevocationLogout` limpia a mano y
+    // sale con `window.location.href`, y esa recarga se lleva por delante el
+    // estado del modulo. Si algun dia esa salida pasa a ser navegacion de
+    // cliente, tendra que invalidar tambien
     olvidaLaSesion();
     localStorage.removeItem('user');
     localStorage.removeItem('access_token'); // Legacy cleanup

@@ -50,12 +50,16 @@ const API_URL = globalThis.APP_CONFIG?.API_BASE_URL || import.meta.env.VITE_API_
  */
 const MINIMO_ENTRE_REVALIDACIONES_MS = 60_000;
 
+/** Lo que se espera antes de volver a intentarlo cuando la consulta falla. */
+const ESPERA_TRAS_FALLO_MS = 3_000;
+
 const NADA_SABIDO = { user: null, cargando: true, refrescando: false, error: null, resuelta: false };
 
 let instantanea = NADA_SABIDO;
 let enVuelo = null;
 let generacion = 0;
 let ultimaRespuesta = 0;
+let ultimoFallo = 0;
 const oyentes = new Set();
 
 /**
@@ -109,8 +113,16 @@ const pideAlBackend = async (miGeneracion) => {
       throw new Error(`Failed to fetch user: ${respuesta.status}`);
     }
 
-    const usuario = await respuesta.json();
+    const recibido = await respuesta.json();
     if (!sigoValiendo()) return null;
+
+    // Si es la misma persona con los mismos datos se conserva el objeto de
+    // antes. Media aplicacion depende del OBJETO —los cuatro cargadores del
+    // panel llevan `[user]` en sus dependencias—, asi que uno nuevo con el mismo
+    // contenido relanza las cuatro peticiones y sus esqueletos cada vez que se
+    // revalida, es decir cada vez que se vuelve a la aplicacion
+    const anterior = instantanea.user;
+    const usuario = anterior && JSON.stringify(anterior) === JSON.stringify(recibido) ? anterior : recibido;
 
     clearDeviceRevocationFlag();
     ultimaRespuesta = Date.now();
@@ -123,6 +135,7 @@ const pideAlBackend = async (miGeneracion) => {
 
     // `resuelta` se queda como estaba: un tropiezo no es una respuesta, y
     // guardarlo como tal dejaba a quien montara despues sin volver a intentarlo
+    ultimoFallo = Date.now();
     anota({ cargando: false, refrescando: false, error: error.message });
 
     return null;
@@ -147,6 +160,12 @@ export const consultaLaSesion = ({ forzar = false } = {}) => {
   if (!forzar) {
     if (instantanea.resuelta) return Promise.resolve(instantanea.user);
     if (enVuelo) return enVuelo;
+    // Con el backend caido, cada componente que montara abriria la suya: guardias
+    // que redirigen, pantallas que se montan, y vuelta a empezar. Es el abanico
+    // de peticiones que esto vino a quitar, justo cuando menos se aguanta
+    if (ultimoFallo && Date.now() - ultimoFallo < ESPERA_TRAS_FALLO_MS) {
+      return Promise.resolve(instantanea.user);
+    }
   }
 
   generacion += 1;
@@ -178,9 +197,13 @@ export const olvidaLaSesion = () => {
   generacion += 1;
   enVuelo = null;
   ultimaRespuesta = 0;
-  // `resuelta` en falso: se olvida lo que se sabía, no se guarda un «aquí no hay
-  // sesión», que se quedaría rancio en cuanto la sesión vuelva por otro lado
-  anota({ user: null, cargando: false, refrescando: false, error: null, resuelta: false });
+  ultimoFallo = 0;
+  // Vuelve al estado de partida, `cargando` incluido. Publicarlo con `cargando`
+  // en falso le decía a los guardias «resuelto y sin usuario», y `ProtectedRoute`
+  // rebotaba al formulario en su primer render —antes de que a nadie le diera
+  // tiempo a preguntar—, justo despues de entrar. `resuelta` en falso porque se
+  // olvida lo que se sabia, no se guarda un «aqui no hay sesion»
+  anota(NADA_SABIDO);
 };
 
 /**
@@ -205,6 +228,7 @@ export const reiniciaLaSesionCompartida = () => {
   generacion += 1;
   enVuelo = null;
   ultimaRespuesta = 0;
+  ultimoFallo = 0;
   instantanea = NADA_SABIDO;
   // Los oyentes NO se tocan: darlos de baja aquí dejaría a los componentes
   // montados sin enterarse de nada mas, sin que nada lo delatara
