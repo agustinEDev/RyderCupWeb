@@ -16,7 +16,7 @@ import QuickMatchHoleInput from '../../components/quick_match/QuickMatchHoleInpu
 import QuickMatchClassificationTable from '../../components/quick_match/QuickMatchClassificationTable';
 import QuickMatchScorecardTable from '../../components/quick_match/QuickMatchScorecardTable';
 import MatchPlayStrokeAllocator from '../../domain/services/MatchPlayStrokeAllocator';
-import FullScreenLoader from '../../components/ui/FullScreenLoader';
+import BlockLoader from '../../components/ui/BlockLoader';
 
 const TABS = ['input', 'classification', 'scorecard'];
 
@@ -152,8 +152,13 @@ const QuickMatchScoringPage = () => {
   }, [showFinishConfirm, showCancelConfirm, isSubmitting]);
 
   if (isLoadingUser || isLoading) {
+    // La cabecera se queda puesta durante la espera: aparecer de golpe al
+    // terminar es un salto, y de eso va justamente FE #495
     return (
-      <FullScreenLoader texto={t('scoring.loading')} />
+      <div className="min-h-screen bg-gray-50">
+        <HeaderAuth user={user} />
+        <BlockLoader texto={t('scoring.loading')} />
+      </div>
     );
   }
 

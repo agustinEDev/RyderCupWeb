@@ -16,7 +16,7 @@ import SessionBlockedModal from '../../components/scoring/SessionBlockedModal';
 import EarlyEndModal from '../../components/scoring/EarlyEndModal';
 import ConcedeMatchModal from '../../components/scoring/ConcedeMatchModal';
 import SubmitScorecardModal from '../../components/scoring/SubmitScorecardModal';
-import FullScreenLoader from '../../components/ui/FullScreenLoader';
+import BlockLoader from '../../components/ui/BlockLoader';
 
 const TABS = ['input', 'scorecard', 'leaderboard'];
 
@@ -180,8 +180,13 @@ const ScoringPage = () => {
   };
 
   if (isLoadingUser || isLoading) {
+    // La cabecera se queda puesta durante la espera: aparecer de golpe al
+    // terminar es un salto, y de eso va justamente FE #495
     return (
-      <FullScreenLoader texto={t('loading')} />
+      <div className="min-h-screen bg-gray-50">
+        <HeaderAuth user={user} />
+        <BlockLoader texto={t('loading')} />
+      </div>
     );
   }
 

@@ -204,10 +204,7 @@ const BrowseCompetitions = () => {
   let joinableContent;
   if (isLoadingJoinable) {
     joinableContent = (
-      <div className="text-center py-12">
-        <BlockLoader />
-        <p className="mt-4 text-gray-600">{t('common:loading')}</p>
-      </div>
+      <BlockLoader texto={t('common:loading')} />
     );
   } else if (filteredJoinableCompetitions.length === 0) {
     joinableContent = (
@@ -244,10 +241,7 @@ const BrowseCompetitions = () => {
   let exploreContent;
   if (isLoadingExplore) {
     exploreContent = (
-      <div className="text-center py-12">
-        <BlockLoader />
-        <p className="mt-4 text-gray-600">{t('common:loading')}</p>
-      </div>
+      <BlockLoader texto={t('common:loading')} />
     );
   } else if (filteredExploreCompetitions.length === 0) {
     exploreContent = (

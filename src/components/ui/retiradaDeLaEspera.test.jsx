@@ -130,6 +130,12 @@ describe('las dos mitades del arranque pintan lo mismo', () => {
     expect(lee('src/components/ui/LoadingMark.jsx')).toContain('motion-reduce:animate-none');
   });
 
+  it('el anillo gira a la MISMA velocidad en las dos', () => {
+    // `animate-spin` de Tailwind es 1s. Con otra duracion aqui, el relevo
+    // cambia el ritmo justo en el fotograma que esta saga viene cuidando
+    expect(lee('index.html')).toMatch(/animation:\s*arranque-gira\s+1s\s+linear/);
+  });
+
   it('las medidas del dibujo coinciden en las dos', () => {
     // Marco de 128 y marca de 76: si una mitad cambia y la otra no, el
     // monograma da un salto justo en el relevo. Ya paso con el hueco del texto

@@ -18,6 +18,7 @@ import {
   fetchCountriesUseCase,
 } from '../../composition';
 import FullScreenLoader from '../../components/ui/FullScreenLoader';
+import BlockLoader from '../../components/ui/BlockLoader';
 
 /**
  * PendingGolfCourses Page (Admin)
@@ -170,7 +171,12 @@ const PendingGolfCourses = ({ embedded = false }) => {
   };
 
   if (isLoadingUser || isLoading) {
-    return (
+    // `embedded` sigue mandando: esta pantalla vive tambien como pestaña del
+    // panel de admin, y alli cada aprobar/rechazar vuelve a cargar. Una espera
+    // de pantalla completa empujaria las pestañas un viewport hacia abajo
+    return embedded ? (
+      <BlockLoader />
+    ) : (
       <FullScreenLoader texto={t('common:loading')} />
     );
   }

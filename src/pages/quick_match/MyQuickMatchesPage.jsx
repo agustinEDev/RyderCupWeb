@@ -15,7 +15,7 @@ import {
 import ConfirmModal from '../../components/modals/ConfirmModal';
 import PersonalRoundCalculator from '../../domain/services/PersonalRoundCalculator';
 import customToast from '../../utils/toast';
-import FullScreenLoader from '../../components/ui/FullScreenLoader';
+import BlockLoader from '../../components/ui/BlockLoader';
 
 const STATUS_STYLES = {
   PENDING: 'bg-amber-100 text-amber-800',
@@ -196,8 +196,13 @@ const MyQuickMatchesPage = () => {
   }, [quickMatches, user]);
 
   if (isLoadingUser || isLoading) {
+    // La cabecera se queda puesta durante la espera: aparecer de golpe al
+    // terminar es un salto, y de eso va justamente FE #495
     return (
-      <FullScreenLoader />
+      <div className="min-h-screen bg-gray-50">
+        <HeaderAuth user={user} />
+        <BlockLoader />
+      </div>
     );
   }
 

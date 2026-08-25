@@ -15,7 +15,7 @@ import {
   blockUserUseCase,
   searchUsersUseCase,
 } from '../../composition';
-import FullScreenLoader from '../../components/ui/FullScreenLoader';
+import BlockLoader from '../../components/ui/BlockLoader';
 
 const TABS = ['friends', 'received', 'sent'];
 
@@ -140,8 +140,13 @@ const FriendsPage = () => {
   const isPageLoading = isLoadingUser || isLoading;
 
   if (isPageLoading) {
+    // La cabecera se queda puesta durante la espera: aparecer de golpe al
+    // terminar es un salto, y de eso va justamente FE #495
     return (
-      <FullScreenLoader texto={t('loading')} />
+      <div className="min-h-screen bg-gray-50">
+        <HeaderAuth user={user} />
+        <BlockLoader texto={t('loading')} />
+      </div>
     );
   }
 

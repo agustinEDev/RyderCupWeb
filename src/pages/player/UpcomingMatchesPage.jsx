@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import HeaderAuth from '../../components/layout/HeaderAuth';
 import { useAuth } from '../../hooks/useAuth';
 import { getUpcomingMatchesUseCase } from '../../composition';
-import FullScreenLoader from '../../components/ui/FullScreenLoader';
+import BlockLoader from '../../components/ui/BlockLoader';
 
 const UpcomingMatchesPage = () => {
   const { t } = useTranslation('dashboard');
@@ -56,8 +56,13 @@ const UpcomingMatchesPage = () => {
   const isPageLoading = isLoadingUser || isLoading;
 
   if (isPageLoading) {
+    // La cabecera se queda puesta durante la espera: aparecer de golpe al
+    // terminar es un salto, y de eso va justamente FE #495
     return (
-      <FullScreenLoader texto={t('upcomingMatches.loading')} />
+      <div className="min-h-screen bg-gray-50">
+        <HeaderAuth user={user} />
+        <BlockLoader texto={t('upcomingMatches.loading')} />
+      </div>
     );
   }
 

@@ -122,7 +122,11 @@ const GolfCourses = ({ embedded = false }) => {
   };
 
   if (isLoadingUser || isLoading) {
-    return (
+    // `embedded` sigue mandando: dentro de la pestaña del panel de admin, una
+    // espera de pantalla completa empuja las pestañas un viewport hacia abajo
+    return embedded ? (
+      <BlockLoader />
+    ) : (
       <FullScreenLoader texto={t('common:loading')} />
     );
   }
@@ -194,8 +198,13 @@ const GolfCourses = ({ embedded = false }) => {
           />
           {/* Abrir la edición ahora pide el campo entero, así que hay una
               espera corta donde antes no había ninguna */}
+          {/* El velo NO es decorativo: mientras se pide el campo entero, tapa la
+              tabla y evita que se pulse «Editar» en otra fila, cuya respuesta
+              podia llegar despues y abrir el modal con el campo equivocado */}
           {isLoadingCourse && (
-            <BlockLoader />
+            <div className="absolute inset-0 bg-white/70 flex items-center justify-center">
+              <BlockLoader sinRelleno />
+            </div>
           )}
         </div>
       </motion.div>

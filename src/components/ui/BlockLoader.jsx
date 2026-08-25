@@ -13,10 +13,17 @@ import LoadingMark from './LoadingMark';
  * Siempre en la tinta verde: estas esperas viven sobre el fondo claro de la
  * aplicacion, nunca sobre el verde del arranque.
  */
-const BlockLoader = ({ texto }) => (
-  <div role="status" aria-live="polite" className="flex flex-col items-center justify-center gap-3 py-12">
+const BlockLoader = ({ texto, sinRelleno = false }) => (
+  <div
+    role="status"
+    aria-live="polite"
+    className={`flex flex-col items-center justify-center gap-3 ${sinRelleno ? '' : 'py-12'}`}
+  >
     <LoadingMark tamano="pequeno" tinta="verde" />
-    {texto ? <p className="text-gray-600">{texto}</p> : null}
+    {/* Sin texto visible, la region seguiria anunciandose VACIA: el anillo va
+        `aria-hidden` y el monograma es decorativo. Un lector de pantalla se
+        encontraba con que algo cambia y nada que leer. */}
+    {texto ? <p className="text-gray-600">{texto}</p> : <span className="sr-only">Cargando...</span>}
   </div>
 );
 

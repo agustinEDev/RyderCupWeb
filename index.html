@@ -91,7 +91,10 @@
         border-radius: 9999px;
         border: 3px solid rgba(45, 123, 62, 0.18);
         border-top-color: #2d7b3e;
-        animation: arranque-gira 0.9s linear infinite;
+        /* 1s, el mismo que `animate-spin` de Tailwind en la otra mitad. Con
+           velocidades distintas, el relevo cambia el ritmo del anillo en el
+           unico fotograma del que va todo esto. */
+        animation: arranque-gira 1s linear infinite;
       }
       @keyframes arranque-gira {
         to { transform: rotate(360deg); }

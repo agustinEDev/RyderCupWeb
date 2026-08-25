@@ -511,7 +511,7 @@ const CreateCompetition = () => {
 
   if (isLoading || loadingCompetition) {
     return (
-      <FullScreenLoader />
+      <FullScreenLoader texto={loadingCompetition ? t('edit.loading') : t('common:loading')} />
     );
   }
 
