@@ -1,5 +1,6 @@
 import { Component } from 'react';
 import * as Sentry from '@sentry/react';
+import { retiraLaCortina } from '../../utils/cortinaDeArranque';
 
 /**
  * Error Boundary specifically for handling lazy loading failures
@@ -48,6 +49,12 @@ class LazyLoadErrorBoundary extends Component {
       window.location.reload();
       return;
     }
+
+    // La cortina del arranque tapa la pantalla entera: sin esto se quedaria
+    // encima de este mismo aviso hasta que la red del CSS la aparta. En el
+    // camino de arriba no se toca a proposito: la pagina se esta recargando y
+    // levantarla solo enseñaria un blanco antes del viaje (FE #485).
+    retiraLaCortina();
 
     // v2.0.4: Report to Sentry with full context for mobile debugging
     Sentry.withScope((scope) => {
