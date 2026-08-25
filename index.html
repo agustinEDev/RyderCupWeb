@@ -47,6 +47,7 @@
         inset: 0;
         z-index: 9999;
         display: flex;
+        flex-direction: column;
         align-items: center;
         justify-content: center;
         background: #ffffff;
@@ -63,8 +64,29 @@
       @keyframes arranque-rendirse {
         to { opacity: 0; visibility: hidden; }
       }
+      /* La pantalla que toma el relevo —`.pantalla-de-espera`— centra el
+         monograma Y una linea de texto debajo. Esta capa centra solo el
+         monograma, asi que al cambiar la una por la otra el dibujo saltaba unos
+         20 px hacia arriba. Este hueco reserva exactamente lo que ocupa esa
+         linea (1rem de separacion + 1.5rem de altura), de modo que el monograma
+         cae en el mismo sitio en las dos y el relevo no se ve. Sin texto: el
+         idioma no se sabe todavia, y una palabra en el idioma equivocado se
+         nota mas que su ausencia. */
+      #arranque-hueco {
+        margin-top: 1rem;
+        height: 1.5rem;
+      }
+
       @media (display-mode: standalone) {
-        #arranque { background: #335d35; }
+        /* El mismo verde en el documento: la franja de la barra de estado la
+           pinta el fondo del `html`, no esta capa, y sin esto quedaba una banda
+           blanca cruzando la parte de arriba. Repetido aqui porque este estilo
+           va en linea y se aplica antes de que llegue `index.css`.
+           Condicionado a que la capa siga puesta: sin esa condicion el verde se
+           quedaba toda la sesion por debajo de las pantallas que no traen fondo
+           propio, y ahi el texto gris no se lee. */
+        html:has(#arranque) { background: #3e8642; }
+        #arranque { background: #3e8642; }
       }
     </style>
   </head>
@@ -74,6 +96,7 @@
         <source media="(display-mode: standalone)" srcset="/images/rcf-monogram-white.png" />
         <img src="/images/rcf-monogram-green.png" alt="" width="88" height="78" />
       </picture>
+      <div id="arranque-hueco"></div>
     </div>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
