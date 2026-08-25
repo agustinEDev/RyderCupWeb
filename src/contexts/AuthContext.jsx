@@ -7,7 +7,7 @@
 
 import { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { setCsrfTokenGlobal } from './csrfTokenSync';
-import { anotaLaSesion, olvidaLaSesion } from '../services/sesionCompartida';
+import { olvidaLaSesion } from '../services/sesionCompartida';
 
 // Create the context
 const AuthContext = createContext(null);
@@ -55,11 +55,12 @@ export const AuthProvider = ({ children }) => {
    */
   const setUserData = useCallback((userData) => {
     setUser(userData);
-    // La consulta compartida se entera por aqui (FE #489): quien acaba de entrar
-    // ya se sabe, y volver a preguntarselo al backend seria un viaje de mas
     if (userData) {
-      anotaLaSesion(userData);
-      // Keep localStorage sync for legacy compatibility
+      // Y NO se siembra con esto la consulta compartida, aunque ahorraria un
+      // viaje: aqui llega una **entidad de dominio** —camelCase, con el correo
+      // como objeto— y quien lee de `useAuth` espera el DTO del backend en
+      // snake_case. El panel habria intentado pintar un objeto como texto y un
+      // administrador recien entrado se habria quedado sin `is_admin` (FE #489)
       localStorage.setItem('user', JSON.stringify(userData));
     } else {
       olvidaLaSesion();

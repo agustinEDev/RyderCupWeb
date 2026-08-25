@@ -17,8 +17,10 @@ vi.mock('../utils/tokenRefreshInterceptor', () => ({
   },
 }));
 
+const revocado = { si: false };
+
 vi.mock('../utils/deviceRevocationLogout', () => ({
-  isDeviceRevoked: () => false,
+  isDeviceRevoked: () => revocado.si,
   handleDeviceRevocationLogout: vi.fn(),
   clearDeviceRevocationFlag: vi.fn(),
 }));
@@ -28,7 +30,6 @@ const {
   loQueHaySobreLaSesion,
   suscribeALaSesion,
   olvidaLaSesion,
-  anotaLaSesion,
   reiniciaLaSesionCompartida,
 } = await import('./sesionCompartida');
 
@@ -39,6 +40,7 @@ describe('la consulta compartida de la sesión', () => {
     reiniciaLaSesionCompartida();
     peticiones.length = 0;
     respuestas.length = 0;
+    revocado.si = false;
   });
 
   afterEach(() => {
@@ -92,16 +94,6 @@ describe('la consulta compartida de la sesión', () => {
     expect(peticiones).toHaveLength(2);
   });
 
-  it('quien acaba de entrar se anota sin gastar una consulta', async () => {
-    anotaLaSesion({ id: 'recien-entrado' });
-
-    const leido = await consultaLaSesion();
-
-    expect(peticiones).toHaveLength(0);
-    expect(leido).toEqual({ id: 'recien-entrado' });
-    expect(loQueHaySobreLaSesion().cargando).toBe(false);
-  });
-
   it('un 401 deja la sesión vacía, sin error', async () => {
     respuestas.push({ ok: false, status: 401, clone: () => ({ json: async () => ({}) }) });
 
@@ -134,6 +126,61 @@ describe('la consulta compartida de la sesión', () => {
 
     expect(tras).toBeGreaterThan(0);
     expect(avisos).toHaveLength(tras);
+  });
+
+  it('una respuesta que llega tarde NO resucita una sesión cerrada', async () => {
+    // Otra pestaña cierra sesión mientras la consulta esta en vuelo: si la
+    // respuesta escribiera, el guardia dejaria entrar a quien acaba de salir
+    let resolver;
+    respuestas.push(() => new Promise((r) => { resolver = r; }));
+    const enCurso = consultaLaSesion();
+
+    olvidaLaSesion();
+    resolver(usuario());
+    await enCurso;
+
+    expect(loQueHaySobreLaSesion().user).toBeNull();
+    expect(loQueHaySobreLaSesion().resuelta).toBe(false);
+  });
+
+  it('un tropiezo de red NO se guarda como respuesta', async () => {
+    // Guardarlo dejaba al arranque sin cobertura en un ida y vuelta entre el
+    // guardia y el formulario, sin que ninguno volviera a preguntar
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    respuestas.push(() => Promise.reject(new Error('sin red')), usuario());
+
+    await consultaLaSesion();
+    expect(loQueHaySobreLaSesion().resuelta).toBe(false);
+
+    const reintento = await consultaLaSesion();
+
+    expect(peticiones).toHaveLength(2);
+    expect(reintento).toEqual({ id: 'u-1' });
+  });
+
+  it('refrescar no levanta `cargando`, que desmontaria media aplicación', async () => {
+    // `ProtectedRoute` y `RoleGuard` desmontan a sus hijos mientras eso este en
+    // alto: guardar el perfil desmontaria el formulario a media faena
+    respuestas.push(usuario(), usuario('u-2'));
+    await consultaLaSesion();
+
+    const refresco = consultaLaSesion({ forzar: true });
+    expect(loQueHaySobreLaSesion().cargando).toBe(false);
+    expect(loQueHaySobreLaSesion().refrescando).toBe(true);
+
+    await refresco;
+    expect(loQueHaySobreLaSesion().refrescando).toBe(false);
+  });
+
+  it('el dispositivo revocado deja la sesión resuelta, no cargando', async () => {
+    // Si no, los guardias se quedan en «Cargando...» hasta que la redireccion
+    // ocurra, y cada componente nuevo abre otra consulta
+    revocado.si = true;
+    respuestas.push({ ok: false, status: 401, clone: () => ({ json: async () => ({ code: 'DEVICE_REVOKED' }) }) });
+
+    await consultaLaSesion();
+
+    expect(loQueHaySobreLaSesion()).toMatchObject({ user: null, cargando: false, resuelta: true });
   });
 
   it('la instantánea es la MISMA mientras no cambie nada', () => {

@@ -9,22 +9,31 @@
  * en serie: el guardia no pinta nada hasta que la suya vuelve, y solo entonces
  * monta el panel, que arranca la suya.
  *
- * Aquí la consulta vive una sola vez:
+ * Aquí la consulta vive una sola vez: quien llega mientras hay una en vuelo se
+ * engancha a ella, quien llega después recibe lo que ya se sabe sin tocar la
+ * red, y quien quiera enterarse de los cambios se suscribe.
  *
- * - Si hay una **en vuelo**, quien llegue se engancha a ella en vez de abrir otra.
- * - Si ya está **resuelta**, se devuelve lo que se sabe sin tocar la red.
- * - Quien quiera saber cuándo cambia, **se suscribe**.
+ * ## Lo que se aprendió montándolo
  *
- * Efecto de propina: a partir de la primera respuesta, un componente que monte
- * después ya nace con el usuario puesto en vez de con `loading` en alto. Eso
- * arregla de paso lo que costó una ronda entera en FE #485 —el panel se daba por
- * cargado en el render en que llegaba el usuario, con las peticiones sin salir—.
+ * - **Solo se guarda lo que dice el backend.** Sembrar esto con el usuario de
+ *   `AuthContext` parecía gratis y no lo era: ahí vive una **entidad de dominio**
+ *   —camelCase, con el correo como objeto— y quien lee de aquí espera el DTO en
+ *   snake_case. El panel habría intentado pintar un objeto como texto, y un
+ *   administrador recién entrado se habría quedado sin `is_admin`.
+ * - **Un fallo no se guarda como respuesta.** Cachear «no hay sesión» tras un
+ *   error de red dejaba el arranque sin cobertura en un ida y vuelta entre el
+ *   guardia y el formulario, cada uno rebotando al otro sin volver a preguntar.
+ * - **Refrescar no es cargar.** `ProtectedRoute` y `RoleGuard` desmontan a sus
+ *   hijos mientras `loading` esté en alto: si `refetch` lo levantara, guardar el
+ *   perfil desmontaría el formulario a media faena.
+ * - **Una respuesta que llega tarde no manda.** Si entre la pregunta y la
+ *   respuesta se cierra la sesión, la respuesta no puede resucitarla; por eso
+ *   cada consulta lleva su número y solo escribe la que sigue siendo la actual.
  *
  * Lo que NO entra aquí, a propósito: la consulta de `useRedirectIfAuthenticated`.
  * Esa no puede pasar por `fetchWithTokenRefresh` —en una ruta pública el
  * interceptor se niega a refrescar ante un 401, que es justo el caso de la
- * aplicación abierta horas después— y lo documenta su propio fichero. Compartirla
- * es otra conversación; esta issue quita las tres que sí son la misma.
+ * aplicación abierta horas después— y lo documenta su propio fichero.
  */
 
 import { isDeviceRevoked, handleDeviceRevocationLogout, clearDeviceRevocationFlag } from '../utils/deviceRevocationLogout';
@@ -34,28 +43,43 @@ import { fetchWithTokenRefresh } from '../utils/tokenRefreshInterceptor';
 // build, o en un despliegue en contenedor se acaba preguntando a hosts distintos
 const API_URL = globalThis.APP_CONFIG?.API_BASE_URL || import.meta.env.VITE_API_BASE_URL || '';
 
-const SIN_RESOLVER = { user: null, cargando: true, error: null, resuelta: false };
+/**
+ * Cada cuánto se vuelve a preguntar al volver a la aplicación. La instalada vive
+ * días abierta y el refresco dura 7, así que sin esto la pantalla seguiría
+ * enseñando una sesión que el backend ya rechazó hasta que otra llamada fallara.
+ */
+const MINIMO_ENTRE_REVALIDACIONES_MS = 60_000;
 
-let instantanea = SIN_RESOLVER;
+const NADA_SABIDO = { user: null, cargando: true, refrescando: false, error: null, resuelta: false };
+
+let instantanea = NADA_SABIDO;
 let enVuelo = null;
+let generacion = 0;
+let ultimaRespuesta = 0;
 const oyentes = new Set();
 
 /**
  * La instantánea es inmutable y se comparte tal cual: `useSyncExternalStore`
- * compara por identidad, y devolver un objeto nuevo en cada lectura lo dejaría
- * repintando sin parar.
+ * compara por identidad, y devolver un objeto nuevo en cada lectura dejaría la
+ * aplicación repintando sin parar.
  */
 const anota = (cambios) => {
   instantanea = { ...instantanea, ...cambios };
   for (const oyente of oyentes) oyente();
 };
 
-const pideAlBackend = async () => {
+const pideAlBackend = async (miGeneracion) => {
+  // Una respuesta de una consulta ya invalidada —porque entre medias se cerró la
+  // sesión, o porque alguien forzó otra— no escribe nada
+  const sigoValiendo = () => miGeneracion === generacion;
+
   try {
     const respuesta = await fetchWithTokenRefresh(`${API_URL}/api/v1/auth/current-user`, {
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
     });
+
+    if (!sigoValiendo()) return null;
 
     if (!respuesta.ok) {
       if (respuesta.status === 401) {
@@ -65,7 +89,11 @@ const pideAlBackend = async () => {
           const datos = await respuesta.clone().json();
           if (isDeviceRevoked(respuesta, datos)) {
             handleDeviceRevocationLogout(datos);
-            return null; // el propio manejador redirige
+            // Se deja resuelta y sin usuario aunque el manejador vaya a redirigir:
+            // si no, los guardias se quedan en «Cargando...» hasta que la
+            // redirección ocurra, y cada componente nuevo abre otra consulta
+            if (sigoValiendo()) anota({ user: null, cargando: false, refrescando: false, error: null, resuelta: true });
+            return null;
           }
         } catch {
           // El cuerpo no se pudo leer: se trata como un 401 corriente
@@ -73,7 +101,8 @@ const pideAlBackend = async () => {
       }
 
       if (respuesta.status === 401 || respuesta.status === 404) {
-        anota({ user: null, cargando: false, error: null, resuelta: true });
+        ultimaRespuesta = Date.now();
+        anota({ user: null, cargando: false, refrescando: false, error: null, resuelta: true });
         return null;
       }
 
@@ -81,13 +110,20 @@ const pideAlBackend = async () => {
     }
 
     const usuario = await respuesta.json();
+    if (!sigoValiendo()) return null;
+
     clearDeviceRevocationFlag();
-    anota({ user: usuario, cargando: false, error: null, resuelta: true });
+    ultimaRespuesta = Date.now();
+    anota({ user: usuario, cargando: false, refrescando: false, error: null, resuelta: true });
 
     return usuario;
   } catch (error) {
     console.error('Error loading user:', error);
-    anota({ user: null, cargando: false, error: error.message, resuelta: true });
+    if (!sigoValiendo()) return null;
+
+    // `resuelta` se queda como estaba: un tropiezo no es una respuesta, y
+    // guardarlo como tal dejaba a quien montara despues sin volver a intentarlo
+    anota({ cargando: false, refrescando: false, error: error.message });
 
     return null;
   }
@@ -113,38 +149,63 @@ export const consultaLaSesion = ({ forzar = false } = {}) => {
     if (enVuelo) return enVuelo;
   }
 
-  if (!instantanea.cargando) anota({ cargando: true, error: null });
+  generacion += 1;
+  const mia = generacion;
 
-  enVuelo = pideAlBackend().finally(() => {
-    enVuelo = null;
+  // Con un usuario ya sabido esto es un REFRESCO, y no puede levantar `cargando`:
+  // los guardias desmontan a sus hijos mientras eso este en alto, asi que
+  // guardar el perfil desmontaria el formulario a media faena
+  anota(instantanea.user ? { refrescando: true, error: null } : { cargando: true, error: null });
+
+  const promesa = pideAlBackend(mia).finally(() => {
+    // Por identidad: con dos refrescos solapados, el primero en terminar borraba
+    // la referencia del segundo y quien llegara despues no veia ninguno en vuelo
+    if (enVuelo === promesa) enVuelo = null;
   });
+  enVuelo = promesa;
 
-  return enVuelo;
+  return promesa;
 };
 
 /**
  * La sesión se acabó: al salir, por inactividad o porque otra pestaña lo dijo.
- * Sin esto, lo que quedara guardado aquí sobreviviría al logout.
+ * Sin esto, lo que quedara guardado aquí sobreviviría al cierre de sesión.
  */
 export const olvidaLaSesion = () => {
+  // Sube la generación: si hay una respuesta en vuelo, ya no manda. Si no,
+  // llegaría con el usuario de antes y volvería a dar por buena una sesión que
+  // acaba de cerrarse
+  generacion += 1;
   enVuelo = null;
-  // `resuelta` en falso: se olvida lo que se sabia, no se guarda un «aqui no hay
-  // sesion». Guardarlo ahorraria una peticion y se quedaria rancio en cuanto la
-  // sesion vuelva por otro lado —otra pestaña entrando, que este proyecto
-  // sincroniza por Broadcast Channel—. `cargando` en falso para no dejar
-  // esperando a nadie mientras nadie pregunte.
-  anota({ user: null, cargando: false, error: null, resuelta: false });
+  ultimaRespuesta = 0;
+  // `resuelta` en falso: se olvida lo que se sabía, no se guarda un «aquí no hay
+  // sesión», que se quedaría rancio en cuanto la sesión vuelva por otro lado
+  anota({ user: null, cargando: false, refrescando: false, error: null, resuelta: false });
 };
 
-/** Acaba de entrar alguien: se anota sin gastar otra consulta. */
-export const anotaLaSesion = (usuario) => {
-  enVuelo = null;
-  anota({ user: usuario, cargando: false, error: null, resuelta: true });
+/**
+ * Al volver a la aplicación se vuelve a preguntar, de fondo y sin levantar
+ * `cargando`. La instalada vive días abierta: sin esto seguiría enseñando una
+ * sesión que el backend ya rechazó.
+ */
+const alVolverAlFrente = () => {
+  if (document.visibilityState !== 'visible') return;
+  if (!instantanea.resuelta || !instantanea.user) return;
+  if (Date.now() - ultimaRespuesta < MINIMO_ENTRE_REVALIDACIONES_MS) return;
+
+  consultaLaSesion({ forzar: true });
 };
+
+if (typeof document !== 'undefined') {
+  document.addEventListener('visibilitychange', alVolverAlFrente);
+}
 
 /** Solo para las pruebas: esto vive en el módulo y sobrevive de una a otra. */
 export const reiniciaLaSesionCompartida = () => {
+  generacion += 1;
   enVuelo = null;
-  oyentes.clear();
-  instantanea = SIN_RESOLVER;
+  ultimaRespuesta = 0;
+  instantanea = NADA_SABIDO;
+  // Los oyentes NO se tocan: darlos de baja aquí dejaría a los componentes
+  // montados sin enterarse de nada mas, sin que nada lo delatara
 };
