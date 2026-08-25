@@ -36,7 +36,7 @@
  * aplicación abierta horas después— y lo documenta su propio fichero.
  */
 
-import { isDeviceRevoked, handleDeviceRevocationLogout, clearDeviceRevocationFlag } from '../utils/deviceRevocationLogout';
+import { clearDeviceRevocationFlag } from '../utils/deviceRevocationLogout';
 import { fetchWithTokenRefresh } from '../utils/tokenRefreshInterceptor';
 
 // Misma prioridad que el resto: la configuración de ejecución manda sobre la del
@@ -44,7 +44,7 @@ import { fetchWithTokenRefresh } from '../utils/tokenRefreshInterceptor';
 const API_URL = globalThis.APP_CONFIG?.API_BASE_URL || import.meta.env.VITE_API_BASE_URL || '';
 
 /** Lo que se espera antes de volver a intentarlo cuando la consulta falla. */
-const ESPERA_TRAS_FALLO_MS = 3_000;
+export const ESPERA_TRAS_FALLO_MS = 3_000;
 
 const NADA_SABIDO = { user: null, cargando: true, refrescando: false, error: null, resuelta: false };
 
@@ -52,6 +52,7 @@ let instantanea = NADA_SABIDO;
 let enVuelo = null;
 let generacion = 0;
 let ultimoFallo = 0;
+let reintento = null;
 const oyentes = new Set();
 
 /**
@@ -78,24 +79,12 @@ const pideAlBackend = async (miGeneracion) => {
     if (!sigoValiendo()) return null;
 
     if (!respuesta.ok) {
-      if (respuesta.status === 401) {
-        // Sin esto, el dispositivo revocado desde otro navegador se queda sin su
-        // aviso y aterriza en el formulario sin saber por qué
-        try {
-          const datos = await respuesta.clone().json();
-          if (isDeviceRevoked(respuesta, datos)) {
-            handleDeviceRevocationLogout(datos);
-            // Se deja resuelta y sin usuario aunque el manejador vaya a redirigir:
-            // si no, los guardias se quedan en «Cargando...» hasta que la
-            // redirección ocurra, y cada componente nuevo abre otra consulta
-            if (sigoValiendo()) anota({ user: null, cargando: false, refrescando: false, error: null, resuelta: true });
-            return null;
-          }
-        } catch {
-          // El cuerpo no se pudo leer: se trata como un 401 corriente
-        }
-      }
-
+      // El dispositivo revocado NO se atiende aqui: `fetchWithTokenRefresh` lo
+      // detecta antes, llama a `handleDeviceRevocationLogout` y se queda
+      // esperando una promesa que no resuelve, asi que ese 401 no llega. Habia
+      // una rama para ello heredada del `useAuth` de antes, y se quito: codigo
+      // que no se alcanza, con un test que solo pasaba porque el propio test
+      // sustituia al interceptor, es peor que no tenerlo
       if (respuesta.status === 401 || respuesta.status === 404) {
         // Otra vez, y aqui hacia falta de verdad: entre el `clone().json()` de
         // arriba y esta linea hay un `await`, y en ese hueco cabe un login. Sin
@@ -111,16 +100,18 @@ const pideAlBackend = async (miGeneracion) => {
       throw new Error(`Failed to fetch user: ${respuesta.status}`);
     }
 
-    const recibido = await respuesta.json();
+    const usuario = await respuesta.json();
     if (!sigoValiendo()) return null;
 
-    // Si es la misma persona con los mismos datos se conserva el objeto de
-    // antes. Media aplicacion depende del OBJETO —los cuatro cargadores del
-    // panel llevan `[user]` en sus dependencias—, asi que uno nuevo con el mismo
-    // contenido relanza las cuatro peticiones y sus esqueletos cada vez que se
-    // revalida, es decir cada vez que se vuelve a la aplicacion
-    const anterior = instantanea.user;
-    const usuario = anterior && JSON.stringify(anterior) === JSON.stringify(recibido) ? anterior : recibido;
+    // El objeto se publica tal cual, sin conservar el de antes cuando el
+    // contenido coincide. Se probo, y rompia un contrato que hay escrito en
+    // `useEditProfile`: ese formulario se re-sincroniza con `useEffect([user])`,
+    // asi que con la identidad conservada, pulsar «Actualizar datos» sobre datos
+    // que no han cambiado dejaba en pantalla lo que el usuario habia escrito sin
+    // guardar, como si viniera del servidor. Aquello hacia falta mientras la
+    // sesion se revalidaba sola al volver a la aplicacion; retirada esa
+    // revalidacion, `refetch` solo ocurre cuando alguien lo pide, y entonces
+    // re-sincronizar es justo lo que se espera
 
     clearDeviceRevocationFlag();
     anota({ user: usuario, cargando: false, refrescando: false, error: null, resuelta: true });
@@ -159,8 +150,25 @@ export const consultaLaSesion = ({ forzar = false } = {}) => {
     if (enVuelo) return enVuelo;
     // Con el backend caido, cada componente que montara abriria la suya: guardias
     // que redirigen, pantallas que se montan, y vuelta a empezar. Es el abanico
-    // de peticiones que esto vino a quitar, justo cuando menos se aguanta
-    if (ultimoFallo && Date.now() - ultimoFallo < ESPERA_TRAS_FALLO_MS) {
+    // de peticiones que esto vino a quitar, justo cuando menos se aguanta.
+    //
+    // Pero esperar NO es haber contestado: mientras dura, esto sigue siendo
+    // «no se sabe» —`cargando` arriba—, o `ProtectedRoute` leeria «resuelto y sin
+    // usuario» en su primer render y mandaria al formulario a alguien que tiene
+    // la sesion abierta. Y al vencer se reintenta solo: si dependiera de que
+    // monte otro componente, un tropiezo de red se llevaria por delante toda la
+    // carga de pagina
+    const enEspera = ultimoFallo && Date.now() - ultimoFallo < ESPERA_TRAS_FALLO_MS;
+    if (enEspera) {
+      if (!instantanea.cargando) anota({ cargando: true });
+      if (reintento === null) {
+        reintento = setTimeout(() => {
+          reintento = null;
+          ultimoFallo = 0;
+          consultaLaSesion();
+        }, ESPERA_TRAS_FALLO_MS - (Date.now() - ultimoFallo));
+      }
+
       return Promise.resolve(instantanea.user);
     }
   }
@@ -194,6 +202,8 @@ export const olvidaLaSesion = () => {
   generacion += 1;
   enVuelo = null;
   ultimoFallo = 0;
+  if (reintento !== null) clearTimeout(reintento);
+  reintento = null;
   // Vuelve al estado de partida, `cargando` incluido. Publicarlo con `cargando`
   // en falso le decía a los guardias «resuelto y sin usuario», y `ProtectedRoute`
   // rebotaba al formulario en su primer render —antes de que a nadie le diera
@@ -223,6 +233,8 @@ export const olvidaLaSesion = () => {
 export const reiniciaLaSesionCompartida = () => {
   generacion += 1;
   enVuelo = null;
+  if (reintento !== null) clearTimeout(reintento);
+  reintento = null;
   ultimoFallo = 0;
   instantanea = NADA_SABIDO;
   // Los oyentes NO se tocan: darlos de baja aquí dejaría a los componentes

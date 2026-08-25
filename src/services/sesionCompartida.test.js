@@ -33,6 +33,7 @@ const {
   suscribeALaSesion,
   olvidaLaSesion,
   reiniciaLaSesionCompartida,
+  ESPERA_TRAS_FALLO_MS,
 } = await import('./sesionCompartida');
 
 const usuario = (id = 'u-1') => ({ ok: true, status: 200, json: async () => ({ id }) });
@@ -164,6 +165,37 @@ describe('la consulta compartida de la sesión', () => {
     expect(reintento).toEqual({ id: 'u-1' });
   });
 
+  it('mientras espera para reintentar, sigue siendo «no se sabe»', async () => {
+    // Publicarlo como «resuelto y sin usuario» hacia que `ProtectedRoute`
+    // mandara al formulario, en su primer render, a alguien con la sesion
+    // abierta: la aplicacion decidia que no habia sesion sin llegar a preguntar
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    respuestas.push(() => Promise.reject(new Error('sin red')));
+
+    await consultaLaSesion();
+    await consultaLaSesion();
+
+    expect(loQueHaySobreLaSesion().cargando).toBe(true);
+    expect(loQueHaySobreLaSesion().resuelta).toBe(false);
+  });
+
+  it('y reintenta sola al vencer la espera', async () => {
+    // Si dependiera de que monte otro componente, un tropiezo de red se llevaria
+    // por delante toda la carga de pagina
+    vi.useFakeTimers();
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    respuestas.push(() => Promise.reject(new Error('sin red')), usuario());
+
+    await consultaLaSesion();
+    await consultaLaSesion();          // deja programado el reintento
+    expect(peticiones).toHaveLength(1);
+
+    await vi.advanceTimersByTimeAsync(ESPERA_TRAS_FALLO_MS + 50);
+
+    expect(peticiones).toHaveLength(2);
+    vi.useRealTimers();
+  });
+
   it('pero tampoco se reintenta a lo loco: hay una espera', async () => {
     // Con el backend caido, cada componente que montara abriria la suya —los
     // guardias redirigen, las pantallas se montan— y saldria una peticion por
@@ -192,39 +224,6 @@ describe('la consulta compartida de la sesión', () => {
     expect(loQueHaySobreLaSesion().refrescando).toBe(false);
   });
 
-  it('el dispositivo revocado deja la sesión resuelta, no cargando', async () => {
-    // Si no, los guardias se quedan en «Cargando...» hasta que la redireccion
-    // ocurra, y cada componente nuevo abre otra consulta
-    revocado.si = true;
-    respuestas.push({ ok: false, status: 401, clone: () => ({ json: async () => ({ code: 'DEVICE_REVOKED' }) }) });
-
-    await consultaLaSesion();
-
-    expect(loQueHaySobreLaSesion()).toMatchObject({ user: null, cargando: false, resuelta: true });
-  });
-
-  it('un 401 que llega tarde tampoco resucita nada', async () => {
-    // El hueco esta DENTRO del 401: entre leer su cuerpo y escribir hay un
-    // `await`, y ahi cabe un login. El corte de despues del `fetch` no lo cubre,
-    // porque para entonces la respuesta ya habia llegado
-    let soltarElCuerpo;
-    respuestas.push({
-      ok: false,
-      status: 401,
-      clone: () => ({ json: () => new Promise((r) => { soltarElCuerpo = () => r({}); }) }),
-    });
-
-    const enCurso = consultaLaSesion();
-    await new Promise((r) => setTimeout(r, 0));   // deja que llegue al `clone().json()`
-
-    olvidaLaSesion();
-    soltarElCuerpo();
-    await enCurso;
-
-    expect(loQueHaySobreLaSesion().resuelta, 'la respuesta vieja no puede resolver la sesión').toBe(false);
-    expect(loQueHaySobreLaSesion().cargando).toBe(true);
-  });
-
   it('no queda ninguna revalidación al volver al frente', () => {
     // Se retiro a proposito: pasaba por el interceptor con el access caducado, y
     // un refresco que falla sin respuesta acaba en cierre de sesion con
@@ -235,17 +234,19 @@ describe('la consulta compartida de la sesión', () => {
     expect(fuente).not.toContain("addEventListener('visibilitychange'");
   });
 
-  it('la misma persona no vuelve como objeto distinto', async () => {
-    // Media aplicacion depende del OBJETO: los cuatro cargadores del panel
-    // llevan `[user]` en sus dependencias, asi que uno nuevo con el mismo
-    // contenido relanza las cuatro peticiones cada vez que se revalida
+  it('un refresco publica un objeto NUEVO, aunque sea la misma persona', async () => {
+    // Se probo a conservar el de antes cuando el contenido coincidia, para no
+    // relanzar los cuatro cargadores del panel. Rompia un contrato escrito en
+    // `useEditProfile`: ese formulario se re-sincroniza con `useEffect([user])`,
+    // asi que pulsar «Actualizar datos» sobre datos que no han cambiado dejaba
+    // en pantalla lo escrito sin guardar como si viniera del servidor
     respuestas.push(usuario('u-1'), usuario('u-1'));
     const primera = await consultaLaSesion();
 
     const tras = await consultaLaSesion({ forzar: true });
 
-    expect(peticiones).toHaveLength(2);
-    expect(tras).toBe(primera);
+    expect(tras).toEqual(primera);
+    expect(tras).not.toBe(primera);
   });
 
   it('la instantánea es la MISMA mientras no cambie nada', () => {
