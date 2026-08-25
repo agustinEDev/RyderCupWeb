@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import BrandMark from './BrandMark';
 
 /**
@@ -30,6 +31,15 @@ const MEDIDAS = {
 const LoadingMark = ({ tamano = 'grande', tinta = 'auto' }) => {
   const medida = MEDIDAS[tamano] ?? MEDIDAS.grande;
 
+  // La MISMA fase que el anillo de la capa de `index.html`, no solo la misma
+  // velocidad. El reloj de una animacion CSS empieza cuando nace su elemento:
+  // el de la capa lleva girando desde el primer pintado y este nace al montar
+  // React, cientos de milisegundos despues, asi que en el relevo el arco
+  // saltaba a otro angulo. Con un retraso negativo arranca donde estaria si
+  // llevara girando desde el principio. Se calcula una vez, al montar: en cada
+  // render cambiaria el desfase y el anillo daria tirones.
+  const [desfase] = useState(() => -(globalThis.performance.now() % 1000));
+
   return (
     <div className={`relative grid place-items-center ${medida.marco}`}>
       {/* `motion-reduce`: quien pide menos movimiento se queda con la marca y el
@@ -37,6 +47,7 @@ const LoadingMark = ({ tamano = 'grande', tinta = 'auto' }) => {
       <span
         aria-hidden="true"
         className={`espera-anillo absolute inset-0 rounded-full ${medida.anillo} animate-spin motion-reduce:animate-none`}
+        style={{ animationDelay: `${desfase}ms` }}
       />
       <BrandMark tinta={tinta} className={medida.marca} />
     </div>
