@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router';
 import { motion } from 'framer-motion';
 import { Mail, Users, Flag, TrendingUp, ChevronRight, Bell, UserPlus, Zap } from 'lucide-react';
@@ -11,16 +11,34 @@ import {
   listPendingFriendRequestsUseCase,
   listMyQuickMatchesUseCase,
 } from '../../composition';
+import { loQueSeEnseñoAntes, recuerdaLasAccionesPendientes } from '../../services/accionesPendientes';
 
 const PendingActionsCard = ({ user, competitions, onHandicapAction, handicapPending = false , upcomingMatches = 0 }) => {
   const navigate = useNavigate();
   const { t } = useTranslation('dashboard');
   const { animateEntry } = useEntryMotion();
-  const [pendingInvitations, setPendingInvitations] = useState(0);
-  const [pendingEnrollments, setPendingEnrollments] = useState([]);
-  const [pendingFriendRequests, setPendingFriendRequests] = useState(0);
-  const [activeQuickMatches, setActiveQuickMatches] = useState([]);
+  // Arranca con lo ultimo que esta tarjeta llego a enseñar (FE #502). El panel
+  // se remonta cada vez que se vuelve a Inicio desde la barra inferior, asi que
+  // sin esto cada vuelta empezaba de cero y pintaba el esqueleto amarillo
+  const recordado = loQueSeEnseñoAntes();
+
+  const [pendingInvitations, setPendingInvitations] = useState(recordado?.pendingInvitations ?? 0);
+  const [pendingEnrollments, setPendingEnrollments] = useState(recordado?.pendingEnrollments ?? []);
+  const [pendingFriendRequests, setPendingFriendRequests] = useState(recordado?.pendingFriendRequests ?? 0);
+  const [activeQuickMatches, setActiveQuickMatches] = useState(recordado?.activeQuickMatches ?? []);
+  // Solo se enseña la espera cuando NO hay nada que enseñar: con lo de antes en
+  // pantalla, el refresco va en silencio
   const [isLoading, setIsLoading] = useState(false);
+
+  // Lo ultimo que se llego a APLICAR, que es lo que hay que recordar. En una ref
+  // y no leyendo los estados dentro del efecto: eso obligaria a meterlos en sus
+  // dependencias y el efecto se relanzaria a si mismo
+  const ultimoAplicado = useRef({
+    pendingInvitations: recordado?.pendingInvitations ?? 0,
+    pendingEnrollments: recordado?.pendingEnrollments ?? [],
+    pendingFriendRequests: recordado?.pendingFriendRequests ?? 0,
+    activeQuickMatches: recordado?.activeQuickMatches ?? [],
+  });
 
   const isCreator = useMemo(() => user?.is_admin ||
     (user?.roles && Array.isArray(user.roles) &&
@@ -29,8 +47,10 @@ const PendingActionsCard = ({ user, competitions, onHandicapAction, handicapPend
   useEffect(() => {
     if (!user) return;
 
+    let cancelado = false;
+
     const loadPendingData = async () => {
-      setIsLoading(true);
+      if (!loQueSeEnseñoAntes()) setIsLoading(true);
       try {
         const results = await Promise.allSettled([
           listMyInvitationsUseCase.execute({ status: 'PENDING' }),
@@ -39,27 +59,52 @@ const PendingActionsCard = ({ user, competitions, onHandicapAction, handicapPend
           listMyQuickMatchesUseCase.execute({ status: 'IN_PROGRESS' }),
         ]);
 
+        // Una respuesta que llega cuando ya nos hemos ido no escribe: antes solo
+        // tocaba el estado de un componente muerto, pero ahora deja memoria que
+        // pinta el SIGUIENTE montaje. Aceptar unas solicitudes y volver a Inicio
+        // enseñaba las de antes, ya atendidas
+        if (cancelado) return;
+
+        // Lo que se aplica es tambien lo que se recuerda. Guardar ceros de las
+        // que fallaron dejaba la memoria diciendo «no hay nada» mientras la
+        // pantalla seguia enseñando lo de antes, y a la vuelta desaparecian
+        const aplicado = ultimoAplicado.current;
+
         if (results[0].status === 'fulfilled') {
           const invitations = results[0].value?.invitations;
-          setPendingInvitations(Array.isArray(invitations) ? invitations.length : 0);
+          aplicado.pendingInvitations = Array.isArray(invitations) ? invitations.length : 0;
+          setPendingInvitations(aplicado.pendingInvitations);
         }
-        if (results[1].status === 'fulfilled') {
-          setPendingEnrollments(results[1].value);
+        // Las inscripciones se sacan de las competiciones, y al volver a Inicio
+        // el panel se pinta antes de tenerlas: sin esta condicion se ponian a
+        // cero en cada vuelta y la fila del creador parpadeaba
+        if (results[1].status === 'fulfilled' && (competitions.length > 0 || !isCreator)) {
+          aplicado.pendingEnrollments = results[1].value;
+          setPendingEnrollments(aplicado.pendingEnrollments);
         }
         if (results[2].status === 'fulfilled') {
-          setPendingFriendRequests(results[2].value?.totalCount || 0);
+          aplicado.pendingFriendRequests = results[2].value?.totalCount || 0;
+          setPendingFriendRequests(aplicado.pendingFriendRequests);
         }
         if (results[3].status === 'fulfilled') {
-          setActiveQuickMatches(results[3].value?.quickMatches || []);
+          aplicado.activeQuickMatches = results[3].value?.quickMatches || [];
+          setActiveQuickMatches(aplicado.activeQuickMatches);
         }
+
+        ultimoAplicado.current = aplicado;
+        recuerdaLasAccionesPendientes({ ...aplicado });
       } catch (error) {
         console.error('Error loading pending actions:', error);
       } finally {
-        setIsLoading(false);
+        if (!cancelado) setIsLoading(false);
       }
     };
 
     loadPendingData();
+
+    return () => {
+      cancelado = true;
+    };
   }, [user, competitions, isCreator]);
 
   const totalItems = pendingInvitations + pendingEnrollments.length + (upcomingMatches > 0 ? 1 : 0) + (handicapPending ? 1 : 0) + (pendingFriendRequests > 0 ? 1 : 0) + activeQuickMatches.length;

@@ -217,6 +217,29 @@ export const consultaLaSesion = ({ forzar = false } = {}) => {
 };
 
 /**
+ * Acaba de confirmarse la sesión: se anota sin gastar otra consulta.
+ *
+ * **Solo con lo que devuelve el backend.** Lo que hay en `AuthContext` es una
+ * entidad de dominio —camelCase, el correo como objeto— y quien lee de aquí
+ * espera el DTO: sembrar con aquello hacía que el panel pintara un objeto como
+ * texto y que un administrador recién entrado se quedara sin `is_admin`.
+ */
+export const anotaLaSesion = (usuarioDelBackend) => {
+  // Como el camino de exito de arriba: es el UNICO sitio de la aplicacion que
+  // limpia la marca de dispositivo revocado, y sin esto los dos caminos
+  // divergen. Con la sesion ya sembrada, `consultaLaSesion` no vuelve a
+  // preguntar en toda la carga de pagina, asi que la marca se quedaba puesta y
+  // el siguiente cierre de sesion salia sin su aviso
+  clearDeviceRevocationFlag();
+  generacion += 1;
+  enVuelo = null;
+  fallosSeguidos = 0;
+  if (reintento !== null) clearTimeout(reintento);
+  reintento = null;
+  anota({ user: usuarioDelBackend, cargando: false, refrescando: false, error: null, resuelta: true });
+};
+
+/**
  * La sesión se acabó: al salir, por inactividad o porque otra pestaña lo dijo.
  * Sin esto, lo que quedara guardado aquí sobreviviría al cierre de sesión.
  */

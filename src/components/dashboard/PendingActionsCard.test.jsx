@@ -71,7 +71,11 @@ const renderCard = (user = baseUser, competitions = [], upcomingMatches = 0) => 
 };
 
 describe('PendingActionsCard', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
+    // La memoria de lo ultimo enseñado vive en un modulo y se colaba de un test
+    // al siguiente: uno pasaba solo porque el anterior dejaba ceros puestos
+    const { olvidaLasAccionesPendientes } = await import('../../services/accionesPendientes');
+    olvidaLasAccionesPendientes();
     vi.clearAllMocks();
     mockListMyInvitations.mockResolvedValue({ invitations: [], totalCount: 0 });
     mockListEnrollments.mockResolvedValue([]);
@@ -236,5 +240,60 @@ describe('PendingActionsCard', () => {
   it('should not render when user is null', () => {
     const { container } = renderCard(null);
     expect(container).toBeEmptyDOMElement();
+  });
+});
+
+/**
+ * Volver a Inicio desde la barra inferior remonta el panel entero, así que sin
+ * memoria esta tarjeta empezaba de cero en cada vuelta y pintaba su esqueleto
+ * amarillo. Antes quedaba escondido detrás de la espera a pantalla completa del
+ * panel; al quitarla (FE #495) se quedó a la vista (FE #502).
+ */
+describe('PendingActionsCard al volver al panel', () => {
+  const memoria = () => import('../../services/accionesPendientes');
+
+  beforeEach(async () => {
+    const { olvidaLasAccionesPendientes } = await memoria();
+    olvidaLasAccionesPendientes();
+  });
+
+  it('la primera vez sí enseña que está cargando', async () => {
+    mockListMyQuickMatches.mockReturnValue(new Promise(() => {}));
+
+    const { container } = renderCard();
+
+    expect(container.querySelector('.animate-pulse')).not.toBeNull();
+  });
+
+  it('una respuesta que llega tras irse no escribe en la memoria', async () => {
+    // Antes solo tocaba el estado de un componente muerto; ahora deja memoria
+    // que pinta el SIGUIENTE montaje: aceptar unas solicitudes y volver a Inicio
+    // enseñaba las de antes, ya atendidas
+    const { loQueSeEnseñoAntes } = await memoria();
+    let soltar;
+    mockListMyQuickMatches.mockReturnValue(new Promise((r) => { soltar = () => r({ quickMatches: [{ id: 'fantasma' }] }); }));
+
+    const { unmount } = renderCard();
+    unmount();
+    soltar();
+    await new Promise((r) => setTimeout(r, 10));
+
+    expect(loQueSeEnseñoAntes(), 'no puede quedar memoria de una pantalla que ya no esta').toBeNull();
+  });
+
+  it('al volver enseña lo de antes, sin esqueleto', async () => {
+    const { recuerdaLasAccionesPendientes } = await memoria();
+    recuerdaLasAccionesPendientes({
+      pendingInvitations: 0,
+      pendingEnrollments: [],
+      pendingFriendRequests: 0,
+      activeQuickMatches: [{ id: 'q1', name: 'Partida en curso' }],
+    });
+    // La recarga se queda en vuelo: lo que se vea viene de la memoria
+    mockListMyQuickMatches.mockReturnValue(new Promise(() => {}));
+
+    const { container } = renderCard();
+
+    expect(container.querySelector('.animate-pulse'), 'no debe verse el esqueleto').toBeNull();
   });
 });

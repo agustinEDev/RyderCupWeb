@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [2.22.1] - 2026-08-26
+
+### Fixed
+
+- **La aplicación instalada ya no enseña la portada al abrirse sin sesión.** Quien añadió el acceso directo antes de la versión 2.19.0 lo tiene apuntando a la portada —iOS guarda la dirección al crearlo y no la cambia—, así que al abrir la aplicación sin sesión aparecía la página de presentación en vez del acceso. Ahora lleva al acceso, y la portada solo se ve pulsando su enlace del pie. Alcanza a cualquier entrada por la portada desde la aplicación, no solo a esos accesos directos: dentro de la aplicación, la página de presentación no aparece sola.
+
+- **Al entrar ya no se ve una segunda espera.** Después de comprobar la sesión y llevarte a tu pantalla, la aplicación volvía a preguntar lo mismo y enseñaba una espera gris por el camino. Ahora quien comprueba la sesión la deja anotada, así que la pantalla de destino no repite la pregunta.
+
+- **Volver a Inicio ya no enseña el bloque de avisos cargando.** «Requiere tu Atención» pide sus propios datos, y como el panel se rehace en cada vuelta desde la barra inferior, cada vez se veía su recuadro amarillo a medio pintar. Ahora conserva lo último que enseñó y se actualiza en silencio: solo se ve cargar la primera vez.
+
+- **Y el arranque sin cobertura vuelve a ser una sola espera.** Abriendo la aplicación desde uno de esos accesos directos antiguos y sin señal, se agotaba una espera de cinco segundos y a continuación otra, así que entrar a anotar en el campo costaba diez.
+
 ## [2.22.0] - 2026-08-26
 
 ### Changed

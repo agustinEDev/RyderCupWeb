@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, useNavigationType } from 'react-router';
+import { Navigate, useNavigate, useNavigationType } from 'react-router';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { BarChart3, Download, Share, Trophy, Users, Zap } from 'lucide-react';
@@ -43,8 +43,15 @@ const Landing = () => {
   // silencio.
   const tipoDeNavegacion = useNavigationType();
   const esElArranque = ARRANCO_EN_LA_PORTADA && tipoDeNavegacion === 'POP';
+  // Arrancando la aplicacion instalada, esta pantalla no se pinta: manda al
+  // formulario. Hay que saberlo ANTES del aviso a la cortina
+  const vaAlAcceso = esAplicacionInstalada && esElArranque;
   const comprobandoSesion = useRedirectIfAuthenticated({
     enabled: esAplicacionInstalada && esElArranque,
+    // Igual que `/start`: sin este, un arranque sin cobertura agotaba aqui los
+    // cinco segundos de la comprobacion, redirigia al formulario y alli se
+    // gastaban otros cinco. Diez segundos para entrar a anotar en el campo
+    entrarSinRed: true,
   });
   const [showInstallHint, setShowInstallHint] = useState(false);
   const [showInstallModal, setShowInstallModal] = useState(false);
@@ -79,13 +86,35 @@ const Landing = () => {
   // Aqui no: en el navegador la cortina ya se ha retirado sola —no se sostiene
   // fuera de la aplicacion instalada— y avisar es no hacer nada.
   useEffect(() => {
+    // Y NO cuando esta pantalla va a redirigir: avisar ahi levantaba la cortina
+    // antes de que existiera `/start`, y ademas daba el arranque por terminado,
+    // asi que la espera de la pantalla siguiente salia en su cara clara a media
+    // sesion —el defecto de FE #492— y sus textos podian leerse en crudo
+    if (vaAlAcceso) return;
+
     if (!comprobandoSesion && textosListos && textosComunesListos) {
       laPantallaEstaLista();
     }
-  }, [comprobandoSesion, textosListos, textosComunesListos]);
+  }, [vaAlAcceso, comprobandoSesion, textosListos, textosComunesListos]);
 
   if (comprobandoSesion) {
     return <FullScreenLoader />;
+  }
+
+  // Arrancando la aplicacion instalada, al formulario y no a la portada. Los
+  // iconos anteriores a FE #465 abren por aqui —iOS guarda la URL al crear el
+  // acceso directo y no la cambia al cambiar el manifiesto—, asi que quien no
+  // tenga sesion se quedaba mirando la pagina de marketing al abrir SU
+  // aplicacion. Dentro, la portada solo debe verse pulsando su enlace del pie,
+  // y eso llega como navegacion `PUSH`, que `esElArranque` distingue.
+  //
+  // Alcanza a MAS que a los iconos viejos, y es a proposito: cualquier entrada
+  // en `/` desde la aplicacion instalada cuenta, incluido un enlace compartido
+  // que Android abra dentro de ella. Quien lo reciba vera el acceso en vez de la
+  // portada que le querian enseñar, y llegara a ella por «que es esto». Se
+  // asume: dentro de la aplicacion, la pagina de marketing no aparece sola.
+  if (vaAlAcceso) {
+    return <Navigate to="/start" replace />;
   }
 
   const handleGetStarted = () => {
