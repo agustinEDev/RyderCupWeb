@@ -501,6 +501,17 @@ const Dashboard = () => {
             {/* Next match: the centrepiece. Falls back to the quick match CTA
                 that used to live above, so the band is never empty */}
             <motion.div variants={slideUp} className="px-4 pb-2">
+              {/* El anuncio para lectores de pantalla lo da el panel, una sola
+                  vez, y no las tarjetas: cada una va `silenciosa` porque montan
+                  a la vez y se oiria «Cargando...» tres veces. Y ponerlo en una
+                  de ellas tampoco vale: acciones pendientes no enseña espera
+                  cuando recuerda lo de antes, asi que en una vuelta al panel
+                  podia no quedar ninguna que anunciara nada */}
+              {(isLoadingStats || isLoadingRecent || isLoadingUpcoming) && (
+                <span role="status" aria-live="polite" className="sr-only">
+                  {t('common:loading', { defaultValue: 'Cargando...' })}
+                </span>
+              )}
               <NextMatchBanner
                 match={upcomingMatches[0] ?? null}
                 isLoading={isLoadingUpcoming}

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync, readdirSync } from 'fs';
-import { resolve, join, relative } from 'path';
+import { resolve, join, relative, sep } from 'path';
 
 /**
  * La franja de arriba —reloj, cobertura, bateria— no la pinta la pantalla de
@@ -300,8 +300,14 @@ describe('no quedan esperas con dibujo propio', () => {
     const panel = readFileSync(resolve(process.cwd(), 'src/pages/Dashboard.jsx'), 'utf8');
     const banner = readFileSync(resolve(process.cwd(), 'src/components/dashboard/NextMatchBanner.jsx'), 'utf8');
 
+    const acciones = readFileSync(resolve(process.cwd(), 'src/components/dashboard/PendingActionsCard.jsx'), 'utf8');
+
     expect(banner).toContain('<BlockLoader silencioso');
+    expect(acciones, 'acciones pendientes tambien calla').toContain('<BlockLoader silencioso');
     expect(panel, 'ultimas partidas acompaña, asi que se calla').toMatch(/<RecentMatches[\s\S]{0,200}esperaSilenciosa/);
+    // Y el anuncio lo da el panel: si lo diera una tarjeta, en una vuelta con
+    // acciones pendientes recordadas no quedaria ninguna que anunciara nada
+    expect(panel, 'el anuncio va en el panel').toMatch(/role="status"[\s\S]{0,80}sr-only/);
   });
 
   it('ni su propio esqueleto', () => {
@@ -322,7 +328,9 @@ describe('no quedan esperas con dibujo propio', () => {
 
     const sueltos = [];
     for (const ruta of ficheros()) {
-      const relativa = relative(resolve(process.cwd(), 'src'), ruta);
+      // Con separadores de barra siempre: en Windows `relative` devuelve
+      // `pages\\Competitions.jsx` y ninguna entrada de la lista casaria
+      const relativa = relative(resolve(process.cwd(), 'src'), ruta).split(sep).join('/');
       if (LATIDOS_QUE_NO_SON_ESPERAS.has(relativa)) continue;
       if (readFileSync(ruta, 'utf8').includes('animate-pulse')) sueltos.push(relativa);
     }

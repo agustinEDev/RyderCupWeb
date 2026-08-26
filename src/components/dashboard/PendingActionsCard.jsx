@@ -120,7 +120,7 @@ const PendingActionsCard = ({ user, competitions, onHandicapAction, handicapPend
         {/* El dibujo compartido, no un recuadro amarillo a medio pintar: la
             aplicacion espera siempre con la misma imagen (FE #495) */}
         <div className="rounded-xl border-2 border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50">
-          <BlockLoader />
+          <BlockLoader silencioso />
         </div>
       </motion.div>
     );

@@ -25,14 +25,16 @@ const NextMatchBanner = ({ match, isLoading = false, onCreateQuickMatch }) => {
     // pantalla oiria «Cargando...» tres veces seguidas sin nada que las
     // distinga. Anuncia una, la de acciones pendientes, que va la primera.
     //
-    // `sinRelleno` y `min-h-24`: con el relleno de serie esto medía mas que el
-    // banner ya cargado, asi que al resolverse el panel encogia y empujaba
-    // hacia arriba todo lo de abajo
+    // `sinRelleno` y una altura minima parecida a la del banner ya cargado —que
+    // lleva `p-5` y dos lineas—: con el relleno de serie esto medía bastante
+    // mas y al resolverse el panel encogia, empujando hacia arriba todo lo de
+    // abajo. La altura no puede ser exacta, porque el banner cargado crece con
+    // su contenido; se acerca lo suficiente para que el salto no se lea
     return (
       <div
         data-testid="next-match-banner"
         aria-busy="true"
-        className="flex min-h-24 items-center justify-center rounded-xl bg-gray-50"
+        className="flex min-h-[6.5rem] items-center justify-center rounded-xl bg-gray-50"
       >
         <BlockLoader silencioso sinRelleno />
       </div>
