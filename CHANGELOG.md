@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [2.22.2] - 2026-08-26
+
+### Fixed
+
+- **Las esperas de cada bloque pasan a ser la misma que las demás.** La aplicación ya esperaba con un solo dibujo —el monograma dentro de su anillo—, pero se habían quedado fuera los recuadros a medio pintar: el amarillo de «Requiere tu Atención» y los rectángulos grises del panel, de la lista de dispositivos, de las estadísticas y del selector de avatar. Eran un dibujo más, y ahora son el mismo que el resto.
+
+  Se veían desde la versión 2.21.0, cuando el panel dejó de repetir la espera de pantalla completa cada vez que se vuelve a Inicio: hasta entonces esa espera los tapaba.
+
+- **Un lector de pantalla ya no oye «Cargando...» tres veces seguidas.** El panel carga tres bloques a la vez, y cada uno anunciaba lo suyo. Ahora el aviso lo da la pantalla una sola vez.
+
+- **El bloque de próximo partido ya no encoge al cargar.** Su espera medía más que el bloque terminado, así que al aparecer el partido todo lo de abajo daba un salto hacia arriba.
+
 ## [2.22.1] - 2026-08-26
 
 ### Fixed
