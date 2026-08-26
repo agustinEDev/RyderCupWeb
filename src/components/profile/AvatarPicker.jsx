@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Upload, X, Check } from 'lucide-react';
 import Avatar from '../ui/Avatar';
 import { getApiBaseUrl } from '../../services/api';
+import BlockLoader from '../ui/BlockLoader';
 
 const AvatarPicker = ({
   user,
@@ -53,7 +54,7 @@ const AvatarPicker = ({
       </div>
 
       {isLoadingOptions ? (
-        <div className="animate-pulse text-sm text-gray-400">…</div>
+        <BlockLoader silencioso sinRelleno />
       ) : (
         <>
           <div className="mb-4">

@@ -18,10 +18,23 @@ const NextMatchBanner = ({ match, isLoading = false, onCreateQuickMatch }) => {
   if (isLoading) {
     // El dibujo compartido, no un rectangulo gris propio (FE #495): la
     // aplicacion espera siempre con la misma imagen, y un placeholder aqui era
-    // el sexto dibujo distinto
+    // el sexto dibujo distinto.
+    //
+    // `silencioso` porque nunca esta solo: el panel monta a la vez esta espera,
+    // la de ultimas partidas y la de acciones pendientes, y un lector de
+    // pantalla oiria «Cargando...» tres veces seguidas sin nada que las
+    // distinga. Anuncia una, la de acciones pendientes, que va la primera.
+    //
+    // `sinRelleno` y `min-h-24`: con el relleno de serie esto medía mas que el
+    // banner ya cargado, asi que al resolverse el panel encogia y empujaba
+    // hacia arriba todo lo de abajo
     return (
-      <div data-testid="next-match-banner" aria-busy="true" className="rounded-xl bg-gray-50">
-        <BlockLoader />
+      <div
+        data-testid="next-match-banner"
+        aria-busy="true"
+        className="flex min-h-24 items-center justify-center rounded-xl bg-gray-50"
+      >
+        <BlockLoader silencioso sinRelleno />
       </div>
     );
   }

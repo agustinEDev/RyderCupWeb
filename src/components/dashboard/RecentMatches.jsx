@@ -112,6 +112,9 @@ const RecentMatches = ({
   isLoading = false,
   onCreateQuickMatch,
   titleKey = 'recentMatches.title',
+  // Cuando otra espera de la misma pantalla ya se anuncia. Sin esto, un lector
+  // de pantalla oye «Cargando...» dos veces seguidas sin nada que las distinga
+  esperaSilenciosa = false,
 }) => {
   const { t, i18n } = useTranslation('dashboard');
   const navigate = useNavigate();
@@ -124,8 +127,10 @@ const RecentMatches = ({
       <section data-testid="recent-matches" aria-busy="true">
         <h2 className="mb-3 text-xl font-bold text-gray-900">{t(titleKey)}</h2>
         {/* El dibujo compartido, no tres rectangulos grises: la aplicacion
-            espera siempre con la misma imagen (FE #495) */}
-        <BlockLoader />
+            espera siempre con la misma imagen (FE #495). `silencioso` cuando
+            acompaña a otra espera en la misma pantalla, o un lector oiria
+            «Cargando...» dos veces seguidas */}
+        <BlockLoader silencioso={esperaSilenciosa} />
       </section>
     );
   }

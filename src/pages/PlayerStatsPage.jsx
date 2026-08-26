@@ -326,6 +326,7 @@ const PlayerStatsPage = () => {
             {/* Historial completo: el "ver todas" que la lista del panel no tenía */}
             <motion.div variants={slideUp} className="p-4">
               <RecentMatches
+                esperaSilenciosa
                 matches={matches}
                 isLoading={isLoading}
                 titleKey="playerStats.historyTitle"

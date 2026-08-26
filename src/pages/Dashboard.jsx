@@ -513,6 +513,7 @@ const Dashboard = () => {
               <RecentMatches
                 matches={recentMatches}
                 isLoading={isLoadingRecent}
+                esperaSilenciosa
                 onCreateQuickMatch={() => setShowQuickMatchModal(true)}
               />
               <button

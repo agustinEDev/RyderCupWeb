@@ -293,6 +293,17 @@ describe('no quedan esperas con dibujo propio', () => {
     expect(sueltos, `esperas con dibujo propio: ${sueltos.join(', ')}`).toEqual([]);
   });
 
+  it('donde hay varias esperas a la vez, solo una se anuncia', () => {
+    // El panel monta a la vez la de acciones pendientes, la de proximo partido y
+    // la de ultimas partidas: sin callar a las demas, un lector de pantalla oye
+    // «Cargando...» tres veces seguidas sin nada que las distinga
+    const panel = readFileSync(resolve(process.cwd(), 'src/pages/Dashboard.jsx'), 'utf8');
+    const banner = readFileSync(resolve(process.cwd(), 'src/components/dashboard/NextMatchBanner.jsx'), 'utf8');
+
+    expect(banner).toContain('<BlockLoader silencioso');
+    expect(panel, 'ultimas partidas acompaña, asi que se calla').toMatch(/<RecentMatches[\s\S]{0,200}esperaSilenciosa/);
+  });
+
   it('ni su propio esqueleto', () => {
     // `animate-pulse` es la otra forma de decir «esto esta cargando», y el
     // barrido solo miraba los spinners: por ahi se colaron el recuadro amarillo
@@ -300,9 +311,13 @@ describe('no quedan esperas con dibujo propio', () => {
     // sexto dibujo distinto
     // Lo que late sin ser una espera. Ojo al añadir: `animate-pulse` casi
     // siempre significa «esto esta cargando», y ahi va el dibujo compartido
+    // Lo que late sin decir «esto esta cargando». La lista es corta a proposito:
+    // el selector de avatar estuvo aqui un rato y no debia —«los tres puntos
+    // mientras llegan las opciones» es una espera, y el propio comentario lo
+    // delataba—, asi que si algo entra aqui, que sea por no ser una espera, no
+    // por no querer migrarlo
     const LATIDOS_QUE_NO_SON_ESPERAS = new Set([
-      'pages/Competitions.jsx',            // el punto naranja de «solicitudes pendientes»
-      'components/profile/AvatarPicker.jsx', // los tres puntos mientras llegan las opciones
+      'pages/Competitions.jsx',   // el punto naranja de «solicitudes pendientes»
     ]);
 
     const sueltos = [];
