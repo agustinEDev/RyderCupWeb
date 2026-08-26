@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router';
 import { Calendar, Zap, ChevronRight } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import BlockLoader from '../ui/BlockLoader';
 
 /**
  * La pieza central del panel: cuándo juego y contra quién.
@@ -15,12 +16,28 @@ const NextMatchBanner = ({ match, isLoading = false, onCreateQuickMatch }) => {
   const navigate = useNavigate();
 
   if (isLoading) {
+    // El dibujo compartido, no un rectangulo gris propio (FE #495): la
+    // aplicacion espera siempre con la misma imagen, y un placeholder aqui era
+    // el sexto dibujo distinto.
+    //
+    // `silencioso` porque nunca esta solo: el panel monta a la vez esta espera,
+    // la de ultimas partidas y la de acciones pendientes, y un lector de
+    // pantalla oiria «Cargando...» tres veces seguidas sin nada que las
+    // distinga. Anuncia una, la de acciones pendientes, que va la primera.
+    //
+    // `sinRelleno` y una altura minima parecida a la del banner ya cargado —que
+    // lleva `p-5` y dos lineas—: con el relleno de serie esto medía bastante
+    // mas y al resolverse el panel encogia, empujando hacia arriba todo lo de
+    // abajo. La altura no puede ser exacta, porque el banner cargado crece con
+    // su contenido; se acerca lo suficiente para que el salto no se lea
     return (
       <div
         data-testid="next-match-banner"
         aria-busy="true"
-        className="h-24 animate-pulse rounded-xl bg-gray-100"
-      />
+        className="flex min-h-[6.5rem] items-center justify-center rounded-xl bg-gray-50"
+      >
+        <BlockLoader silencioso sinRelleno />
+      </div>
     );
   }
 

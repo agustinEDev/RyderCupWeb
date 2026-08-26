@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync, readdirSync } from 'fs';
-import { resolve, join, relative } from 'path';
+import { resolve, join, relative, sep } from 'path';
 
 /**
  * La franja de arriba —reloj, cobertura, bateria— no la pinta la pantalla de
@@ -291,5 +291,50 @@ describe('no quedan esperas con dibujo propio', () => {
     }
 
     expect(sueltos, `esperas con dibujo propio: ${sueltos.join(', ')}`).toEqual([]);
+  });
+
+  it('donde hay varias esperas a la vez, solo una se anuncia', () => {
+    // El panel monta a la vez la de acciones pendientes, la de proximo partido y
+    // la de ultimas partidas: sin callar a las demas, un lector de pantalla oye
+    // «Cargando...» tres veces seguidas sin nada que las distinga
+    const panel = readFileSync(resolve(process.cwd(), 'src/pages/Dashboard.jsx'), 'utf8');
+    const banner = readFileSync(resolve(process.cwd(), 'src/components/dashboard/NextMatchBanner.jsx'), 'utf8');
+
+    const acciones = readFileSync(resolve(process.cwd(), 'src/components/dashboard/PendingActionsCard.jsx'), 'utf8');
+
+    expect(banner).toContain('<BlockLoader silencioso');
+    expect(acciones, 'acciones pendientes tambien calla').toContain('<BlockLoader silencioso');
+    expect(panel, 'ultimas partidas acompaña, asi que se calla').toMatch(/<RecentMatches[\s\S]{0,200}esperaSilenciosa/);
+    // Y el anuncio lo da el panel: si lo diera una tarjeta, en una vuelta con
+    // acciones pendientes recordadas no quedaria ninguna que anunciara nada
+    expect(panel, 'el anuncio va en el panel').toMatch(/role="status"[\s\S]{0,80}sr-only/);
+  });
+
+  it('ni su propio esqueleto', () => {
+    // `animate-pulse` es la otra forma de decir «esto esta cargando», y el
+    // barrido solo miraba los spinners: por ahi se colaron el recuadro amarillo
+    // de «Requiere tu Atencion» y los rectangulos grises del panel, que eran un
+    // sexto dibujo distinto
+    // Lo que late sin ser una espera. Ojo al añadir: `animate-pulse` casi
+    // siempre significa «esto esta cargando», y ahi va el dibujo compartido
+    // Lo que late sin decir «esto esta cargando». La lista es corta a proposito:
+    // el selector de avatar estuvo aqui un rato y no debia —«los tres puntos
+    // mientras llegan las opciones» es una espera, y el propio comentario lo
+    // delataba—, asi que si algo entra aqui, que sea por no ser una espera, no
+    // por no querer migrarlo
+    const LATIDOS_QUE_NO_SON_ESPERAS = new Set([
+      'pages/Competitions.jsx',   // el punto naranja de «solicitudes pendientes»
+    ]);
+
+    const sueltos = [];
+    for (const ruta of ficheros()) {
+      // Con separadores de barra siempre: en Windows `relative` devuelve
+      // `pages\\Competitions.jsx` y ninguna entrada de la lista casaria
+      const relativa = relative(resolve(process.cwd(), 'src'), ruta).split(sep).join('/');
+      if (LATIDOS_QUE_NO_SON_ESPERAS.has(relativa)) continue;
+      if (readFileSync(ruta, 'utf8').includes('animate-pulse')) sueltos.push(relativa);
+    }
+
+    expect(sueltos, `esqueletos propios: ${sueltos.join(', ')}`).toEqual([]);
   });
 });

@@ -133,6 +133,42 @@ const asienta = async () => {
  * bastaban dos de sus cuatro peticiones para pintarse, y las otras dos
  * encendian su bloque despues.
  */
+/**
+ * Un solo anuncio para lectores de pantalla, y lo da el panel (FE #495).
+ */
+describe('el aviso de carga del panel', () => {
+  beforeEach(() => {
+    window.matchMedia = () => ({ matches: false, addEventListener: () => {}, removeEventListener: () => {} });
+    almacenLimpio();
+    olvidaQueElPanelSePinto();
+    textos.listos = true;
+    sesion.user = usuario;
+    sesion.loading = false;
+    reiniciaLaCortina();
+    reiniciaLasPeticiones();
+    document.body.innerHTML = '';
+  });
+
+  it('mientras carga hay UNA region que lo anuncia, no tres', async () => {
+    // Las tarjetas van calladas porque montan a la vez; el anuncio lo da el
+    // panel. Y no puede darlo una de ellas: acciones pendientes no enseña
+    // espera cuando recuerda lo de antes, asi que en una vuelta podia no quedar
+    // ninguna que anunciara nada
+    const { container } = render(<Dashboard />);
+    await act(async () => {
+      peticiones.competiciones.resolver([]);
+      peticiones.estadisticas.resolver(null);
+      peticiones.recientes.resolver([]);
+    });
+    await asienta();
+
+    // Con `proximos` todavia en vuelo, el panel esta pintado y sigue cargando
+    const anuncios = container.querySelectorAll('[role="status"][aria-live="polite"]');
+
+    expect(anuncios.length).toBeLessThanOrEqual(1);
+  });
+});
+
 describe('el panel no se pinta a medias', () => {
   beforeEach(() => {
     window.matchMedia = () => ({ matches: false, addEventListener: () => {}, removeEventListener: () => {} });
