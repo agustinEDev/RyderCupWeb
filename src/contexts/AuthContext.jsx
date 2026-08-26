@@ -8,6 +8,7 @@
 import { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { setCsrfTokenGlobal } from './csrfTokenSync';
 import { olvidaLaSesion } from '../services/sesionCompartida';
+import { olvidaLasAccionesPendientes } from '../services/accionesPendientes';
 
 // Create the context
 const AuthContext = createContext(null);
@@ -100,6 +101,9 @@ export const AuthProvider = ({ children }) => {
     // estado del modulo. Si algun dia esa salida pasa a ser navegacion de
     // cliente, tendra que invalidar tambien
     olvidaLaSesion();
+    // Y lo que el panel llegara a enseñar: son datos de ESTA cuenta, y asomarian
+    // un instante en la siguiente que entrara sin recargar (FE #502)
+    olvidaLasAccionesPendientes();
     localStorage.removeItem('user');
     localStorage.removeItem('access_token'); // Legacy cleanup
   }, []);

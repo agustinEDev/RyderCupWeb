@@ -11,15 +11,23 @@ import {
   listPendingFriendRequestsUseCase,
   listMyQuickMatchesUseCase,
 } from '../../composition';
+import { loQueSeEnseñoAntes, recuerdaLasAccionesPendientes } from '../../services/accionesPendientes';
 
 const PendingActionsCard = ({ user, competitions, onHandicapAction, handicapPending = false , upcomingMatches = 0 }) => {
   const navigate = useNavigate();
   const { t } = useTranslation('dashboard');
   const { animateEntry } = useEntryMotion();
-  const [pendingInvitations, setPendingInvitations] = useState(0);
-  const [pendingEnrollments, setPendingEnrollments] = useState([]);
-  const [pendingFriendRequests, setPendingFriendRequests] = useState(0);
-  const [activeQuickMatches, setActiveQuickMatches] = useState([]);
+  // Arranca con lo ultimo que esta tarjeta llego a enseñar (FE #502). El panel
+  // se remonta cada vez que se vuelve a Inicio desde la barra inferior, asi que
+  // sin esto cada vuelta empezaba de cero y pintaba el esqueleto amarillo
+  const recordado = loQueSeEnseñoAntes();
+
+  const [pendingInvitations, setPendingInvitations] = useState(recordado?.pendingInvitations ?? 0);
+  const [pendingEnrollments, setPendingEnrollments] = useState(recordado?.pendingEnrollments ?? []);
+  const [pendingFriendRequests, setPendingFriendRequests] = useState(recordado?.pendingFriendRequests ?? 0);
+  const [activeQuickMatches, setActiveQuickMatches] = useState(recordado?.activeQuickMatches ?? []);
+  // Solo se enseña la espera cuando NO hay nada que enseñar: con lo de antes en
+  // pantalla, el refresco va en silencio
   const [isLoading, setIsLoading] = useState(false);
 
   const isCreator = useMemo(() => user?.is_admin ||
@@ -30,7 +38,9 @@ const PendingActionsCard = ({ user, competitions, onHandicapAction, handicapPend
     if (!user) return;
 
     const loadPendingData = async () => {
-      setIsLoading(true);
+      // `recordado` se lee al montar y no cambia despues, asi que no entra en
+      // las dependencias del efecto
+      if (!loQueSeEnseñoAntes()) setIsLoading(true);
       try {
         const results = await Promise.allSettled([
           listMyInvitationsUseCase.execute({ status: 'PENDING' }),
@@ -52,6 +62,12 @@ const PendingActionsCard = ({ user, competitions, onHandicapAction, handicapPend
         if (results[3].status === 'fulfilled') {
           setActiveQuickMatches(results[3].value?.quickMatches || []);
         }
+        recuerdaLasAccionesPendientes({
+          pendingInvitations: results[0].status === 'fulfilled' && Array.isArray(results[0].value?.invitations) ? results[0].value.invitations.length : 0,
+          pendingEnrollments: results[1].status === 'fulfilled' ? results[1].value : [],
+          pendingFriendRequests: results[2].status === 'fulfilled' ? (results[2].value?.totalCount || 0) : 0,
+          activeQuickMatches: results[3].status === 'fulfilled' ? (results[3].value?.quickMatches || []) : [],
+        });
       } catch (error) {
         console.error('Error loading pending actions:', error);
       } finally {

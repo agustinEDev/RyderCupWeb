@@ -35,6 +35,7 @@ import { isDeviceRevoked, handleDeviceRevocationLogout } from '../utils/deviceRe
 // El mismo guard que usa el login manual. Compartirlo es lo que importa: dos
 // copias de una comprobación de seguridad acaban divergiendo
 import { resolvePostAuthTarget } from '../utils/auth';
+import { anotaLaSesion } from '../services/sesionCompartida';
 import User from '../domain/entities/User.js';
 
 // Misma prioridad que `api.js` y el interceptor: la configuración de ejecución
@@ -150,12 +151,23 @@ export const useRedirectIfAuthenticated = ({
           throw new Error(`current-user respondió ${response.status}`);
         }
 
-        const currentUser = new User(await response.json());
+        const datosDelBackend = await response.json();
+        const currentUser = new User(datosDelBackend);
         if (cancelled || settled) return;
 
         settled = true;
         clearTimeout(deadline);
         setUser(currentUser);
+        // DESPUES de `setUser`, y el orden importa: `setUser` invalida la
+        // consulta compartida —tiene que hacerlo, o un 401 guardado de antes
+        // sobrevive al login y deja al guardia mandando al formulario en
+        // bucle—, asi que sembrar antes no serviria de nada.
+        //
+        // Y se siembra con el DTO, no con la entidad: acabamos de preguntar y
+        // el backend ha dicho que si, de modo que el destino no tiene por que
+        // volver a preguntarlo. Sin esto, `ProtectedRoute` pintaba su espera
+        // gris a pantalla completa en cada arranque con sesion (FE #489)
+        anotaLaSesion(datosDelBackend);
         navigate(resolvePostAuthTarget(location.state?.from?.pathname), { replace: true });
         // `isChecking` se queda arriba a propósito: la página se está yendo y
         // bajarlo pintaría el formulario un instante

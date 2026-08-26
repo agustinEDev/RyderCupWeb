@@ -80,6 +80,7 @@ const recargarLaPagina = async (rutaDeEntrada = '/') => {
       <Routes>
         <Route path="/" element={<Landing />} />
         <Route path="/dashboard" element={<div data-testid="panel" />} />
+        <Route path="/start" element={<div data-testid="acceso"><Link to="/">que es esto</Link></div>} />
         <Route path="/terms" element={<Link to="/">al inicio</Link>} />
       </Routes>
     </MemoryRouter>
@@ -127,18 +128,19 @@ describe('Landing · abrir la aplicacion instalada', () => {
     expect(usosDelHook.at(-1)).toEqual({ enabled: false });
   });
 
-  it('no la busca al volver a la portada tras haber arrancado en ella', async () => {
-    // El caso que la ruta de entrada sola no cubre: se arranco en `/`, se
-    // navego dentro y se vuelve por el logo. Es PUSH, no la entrada, y quien se
-    // acaba de registrar desde la portada no puede salir rebotado al pulsarlo.
+  it('a la portada se llega por su enlace, y ahi no rebota', async () => {
+    // Arrancar en `/` ya no enseña la portada —lleva al formulario—, asi que el
+    // camino que queda es el enlace del pie. Y por ahi no puede rebotar: quien
+    // pulsa «que es esto» quiere ver la portada, no volver al panel. Es PUSH,
+    // no la entrada de la aplicacion
     instalada = true;
 
     await abrirLaAplicacion('/');
-    expect(usosDelHook.at(-1)).toEqual({ enabled: true });
+    expect(screen.getByTestId('acceso')).toBeInTheDocument();
 
-    fireEvent.click(screen.getByText('a terminos'));
-    fireEvent.click(screen.getByText('al inicio'));
+    fireEvent.click(screen.getByText('que es esto'));
 
+    expect(screen.getByText('hero.title')).toBeInTheDocument();
     expect(usosDelHook.at(-1)).toEqual({ enabled: false });
   });
 
@@ -171,6 +173,7 @@ describe('Landing · abrir la aplicacion instalada', () => {
         <MemoryRouter initialEntries={['/']}>
           <Routes>
             <Route path="/" element={<Landing />} />
+            <Route path="/start" element={<div data-testid="acceso" />} />
           </Routes>
         </MemoryRouter>
       )
@@ -190,10 +193,21 @@ describe('Landing · abrir la aplicacion instalada', () => {
     expect(screen.queryByText('hero.title')).not.toBeInTheDocument();
   });
 
-  it('enseña la portada cuando no hay sesion que resolver', async () => {
-    // Afirmando el CONTENIDO: comprobar que no esta el panel pasaba igual si
-    // la pagina no pintara nada, porque a `/dashboard` no se llega desde aqui
+  it('arrancando la aplicacion SIN sesion, al formulario y no a la portada', async () => {
+    // Los iconos anteriores a FE #465 abren por aqui, asi que quien no tenga
+    // sesion se quedaba mirando la pagina de marketing al abrir SU aplicacion.
+    // Dentro, la portada solo se ve pulsando su enlace del pie
     instalada = true;
+    comprobando = false;
+
+    await abrirLaAplicacion();
+
+    expect(screen.getByTestId('acceso')).toBeInTheDocument();
+    expect(screen.queryByText('hero.title')).not.toBeInTheDocument();
+  });
+
+  it('en el navegador la portada se sigue viendo', async () => {
+    instalada = false;
     comprobando = false;
 
     await abrirLaAplicacion();

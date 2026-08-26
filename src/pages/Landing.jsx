@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, useNavigationType } from 'react-router';
+import { Navigate, useNavigate, useNavigationType } from 'react-router';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { BarChart3, Download, Share, Trophy, Users, Zap } from 'lucide-react';
@@ -86,6 +86,16 @@ const Landing = () => {
 
   if (comprobandoSesion) {
     return <FullScreenLoader />;
+  }
+
+  // Arrancando la aplicacion instalada y SIN sesion, al formulario, no a la
+  // portada. Los iconos anteriores a FE #465 abren por aqui —iOS guarda la URL
+  // al crear el acceso directo y no la cambia al cambiar el manifiesto—, asi
+  // que quien no tenga sesion se quedaba mirando la pagina de marketing al
+  // abrir SU aplicacion. Dentro, la portada solo debe verse pulsando su enlace
+  // del pie, y eso llega como navegacion `PUSH`, que `esElArranque` distingue.
+  if (esAplicacionInstalada && esElArranque) {
+    return <Navigate to="/start" replace />;
   }
 
   const handleGetStarted = () => {

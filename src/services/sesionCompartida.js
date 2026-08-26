@@ -217,6 +217,23 @@ export const consultaLaSesion = ({ forzar = false } = {}) => {
 };
 
 /**
+ * Acaba de confirmarse la sesión: se anota sin gastar otra consulta.
+ *
+ * **Solo con lo que devuelve el backend.** Lo que hay en `AuthContext` es una
+ * entidad de dominio —camelCase, el correo como objeto— y quien lee de aquí
+ * espera el DTO: sembrar con aquello hacía que el panel pintara un objeto como
+ * texto y que un administrador recién entrado se quedara sin `is_admin`.
+ */
+export const anotaLaSesion = (usuarioDelBackend) => {
+  generacion += 1;
+  enVuelo = null;
+  fallosSeguidos = 0;
+  if (reintento !== null) clearTimeout(reintento);
+  reintento = null;
+  anota({ user: usuarioDelBackend, cargando: false, refrescando: false, error: null, resuelta: true });
+};
+
+/**
  * La sesión se acabó: al salir, por inactividad o porque otra pestaña lo dijo.
  * Sin esto, lo que quedara guardado aquí sobreviviría al cierre de sesión.
  */
