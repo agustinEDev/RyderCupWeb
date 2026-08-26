@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router';
 import { Calendar, Zap, ChevronRight } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import BlockLoader from '../ui/BlockLoader';
 
 /**
  * La pieza central del panel: cuándo juego y contra quién.
@@ -15,12 +16,13 @@ const NextMatchBanner = ({ match, isLoading = false, onCreateQuickMatch }) => {
   const navigate = useNavigate();
 
   if (isLoading) {
+    // El dibujo compartido, no un rectangulo gris propio (FE #495): la
+    // aplicacion espera siempre con la misma imagen, y un placeholder aqui era
+    // el sexto dibujo distinto
     return (
-      <div
-        data-testid="next-match-banner"
-        aria-busy="true"
-        className="h-24 animate-pulse rounded-xl bg-gray-100"
-      />
+      <div data-testid="next-match-banner" aria-busy="true" className="rounded-xl bg-gray-50">
+        <BlockLoader />
+      </div>
     );
   }
 

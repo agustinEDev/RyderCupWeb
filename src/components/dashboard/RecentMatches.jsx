@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router';
 import { Zap, Flag } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import BlockLoader from '../ui/BlockLoader';
 
 /**
  * Las últimas partidas del jugador: la respuesta a "¿cómo quedó lo último?".
@@ -122,11 +123,9 @@ const RecentMatches = ({
     return (
       <section data-testid="recent-matches" aria-busy="true">
         <h2 className="mb-3 text-xl font-bold text-gray-900">{t(titleKey)}</h2>
-        <div className="space-y-2">
-          {[0, 1, 2].map((row) => (
-            <div key={row} className="h-14 animate-pulse rounded-lg bg-gray-100" />
-          ))}
-        </div>
+        {/* El dibujo compartido, no tres rectangulos grises: la aplicacion
+            espera siempre con la misma imagen (FE #495) */}
+        <BlockLoader />
       </section>
     );
   }

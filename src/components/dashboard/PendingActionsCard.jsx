@@ -12,6 +12,7 @@ import {
   listMyQuickMatchesUseCase,
 } from '../../composition';
 import { loQueSeEnseñoAntes, recuerdaLasAccionesPendientes } from '../../services/accionesPendientes';
+import BlockLoader from '../ui/BlockLoader';
 
 const PendingActionsCard = ({ user, competitions, onHandicapAction, handicapPending = false , upcomingMatches = 0 }) => {
   const navigate = useNavigate();
@@ -116,12 +117,10 @@ const PendingActionsCard = ({ user, competitions, onHandicapAction, handicapPend
         variants={slideUp}
         className="px-4 mb-2"
       >
-        <div className="rounded-xl border-2 border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 p-5 animate-pulse">
-          <div className="h-6 bg-amber-200/50 rounded w-48 mb-4" />
-          <div className="space-y-3">
-            <div className="h-10 bg-amber-200/30 rounded" />
-            <div className="h-10 bg-amber-200/30 rounded" />
-          </div>
+        {/* El dibujo compartido, no un recuadro amarillo a medio pintar: la
+            aplicacion espera siempre con la misma imagen (FE #495) */}
+        <div className="rounded-xl border-2 border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50">
+          <BlockLoader />
         </div>
       </motion.div>
     );

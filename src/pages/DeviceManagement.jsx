@@ -7,6 +7,7 @@ import { useDeviceManagement } from '../hooks/useDeviceManagement';
 import { useAuth } from '../hooks/useAuth';
 import { useLogout } from '../hooks/useLogout';
 import { formatDateTime } from '../utils/dateFormatters';
+import BlockLoader from '../components/ui/BlockLoader';
 
 const DeviceManagement = () => {
   const { t } = useTranslation('devices');
@@ -126,39 +127,10 @@ const DeviceManagement = () => {
 
             {/* Devices List */}
             <div className="px-4">
+              {/* El dibujo compartido, no tres tarjetas fantasma: la aplicacion
+                  espera siempre con la misma imagen (FE #495) */}
               {isLoading ? (
-                // Skeleton Loader (v1.14.0)
-                <div className="space-y-4">
-                  {[1, 2, 3].map((skeleton) => (
-                    <div key={skeleton} className="border border-gray-200 rounded-lg p-4 md:p-5 animate-pulse">
-                      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-                        {/* Device Info Skeleton */}
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-2">
-                            <div className="w-5 h-5 bg-gray-300 rounded flex-shrink-0"></div>
-                            <div className="h-5 bg-gray-300 rounded w-48"></div>
-                          </div>
-                          <div className="space-y-2">
-                            <div className="flex items-center gap-2">
-                              <div className="w-4 h-4 bg-gray-200 rounded flex-shrink-0"></div>
-                              <div className="h-4 bg-gray-200 rounded w-32"></div>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <div className="w-4 h-4 bg-gray-200 rounded flex-shrink-0"></div>
-                              <div className="h-4 bg-gray-200 rounded w-40"></div>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <div className="w-4 h-4 bg-gray-200 rounded flex-shrink-0"></div>
-                              <div className="h-4 bg-gray-200 rounded w-36"></div>
-                            </div>
-                          </div>
-                        </div>
-                        {/* Revoke Button Skeleton */}
-                        <div className="h-10 bg-gray-200 rounded-lg w-full sm:w-24 flex-shrink-0"></div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                <BlockLoader />
               ) : devices.length === 0 ? (
                 <div className="text-center py-12 border border-gray-200 rounded-lg">
                   <svg className="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">

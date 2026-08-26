@@ -292,4 +292,26 @@ describe('no quedan esperas con dibujo propio', () => {
 
     expect(sueltos, `esperas con dibujo propio: ${sueltos.join(', ')}`).toEqual([]);
   });
+
+  it('ni su propio esqueleto', () => {
+    // `animate-pulse` es la otra forma de decir «esto esta cargando», y el
+    // barrido solo miraba los spinners: por ahi se colaron el recuadro amarillo
+    // de «Requiere tu Atencion» y los rectangulos grises del panel, que eran un
+    // sexto dibujo distinto
+    // Lo que late sin ser una espera. Ojo al añadir: `animate-pulse` casi
+    // siempre significa «esto esta cargando», y ahi va el dibujo compartido
+    const LATIDOS_QUE_NO_SON_ESPERAS = new Set([
+      'pages/Competitions.jsx',            // el punto naranja de «solicitudes pendientes»
+      'components/profile/AvatarPicker.jsx', // los tres puntos mientras llegan las opciones
+    ]);
+
+    const sueltos = [];
+    for (const ruta of ficheros()) {
+      const relativa = relative(resolve(process.cwd(), 'src'), ruta);
+      if (LATIDOS_QUE_NO_SON_ESPERAS.has(relativa)) continue;
+      if (readFileSync(ruta, 'utf8').includes('animate-pulse')) sueltos.push(relativa);
+    }
+
+    expect(sueltos, `esqueletos propios: ${sueltos.join(', ')}`).toEqual([]);
+  });
 });

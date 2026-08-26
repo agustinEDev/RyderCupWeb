@@ -262,7 +262,8 @@ describe('PendingActionsCard al volver al panel', () => {
 
     const { container } = renderCard();
 
-    expect(container.querySelector('.animate-pulse')).not.toBeNull();
+    // El dibujo compartido, no un recuadro amarillo propio (FE #495)
+    expect(container.querySelector('.espera-anillo')).not.toBeNull();
   });
 
   it('una respuesta que llega tras irse no escribe en la memoria', async () => {
@@ -294,6 +295,6 @@ describe('PendingActionsCard al volver al panel', () => {
 
     const { container } = renderCard();
 
-    expect(container.querySelector('.animate-pulse'), 'no debe verse el esqueleto').toBeNull();
+    expect(container.querySelector('.espera-anillo'), 'no debe verse la espera').toBeNull();
   });
 });

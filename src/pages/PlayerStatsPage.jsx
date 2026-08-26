@@ -13,6 +13,7 @@ import {
   getPlayerStatsByGolfCourseUseCase,
 } from '../composition';
 import FullScreenLoader from '../components/ui/FullScreenLoader';
+import BlockLoader from '../components/ui/BlockLoader';
 
 /**
  * Las estadísticas completas del jugador (FE #306, fase 2).
@@ -223,11 +224,10 @@ const PlayerStatsPage = () => {
 
             {/* Resumen */}
             <motion.div variants={slideUp} className="p-4">
+              {/* El dibujo compartido, no cuatro rectangulos grises (FE #495) */}
               {isLoading || isLoadingCourse ? (
-                <div className="grid grid-cols-2 gap-3 md:grid-cols-4" aria-busy="true">
-                  {[0, 1, 2, 3].map((block) => (
-                    <div key={block} className="h-24 animate-pulse rounded-xl bg-gray-100" />
-                  ))}
+                <div aria-busy="true">
+                  <BlockLoader />
                 </div>
               ) : shown && shown.roundsPlayed > 0 ? (
                 <>
