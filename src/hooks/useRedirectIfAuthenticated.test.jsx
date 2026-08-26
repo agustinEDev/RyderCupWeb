@@ -35,6 +35,7 @@ vi.mock('../utils/tokenRefreshInterceptor', () => ({
 vi.mock('../utils/deviceRevocationLogout', () => ({
   isDeviceRevoked: vi.fn(() => false),
   handleDeviceRevocationLogout: vi.fn(),
+  clearDeviceRevocationFlag: vi.fn(),
 }));
 
 const { refreshAccessToken } = await import('../utils/tokenRefreshInterceptor');
@@ -124,6 +125,24 @@ describe('useRedirectIfAuthenticated', () => {
   describe('con sesión guardada', () => {
     beforeEach(() => {
       storedUser = { id: 'u1' };
+    });
+
+    it('deja la sesión confirmada anotada, para que el destino no vuelva a preguntar', async () => {
+      // Sin esto, `ProtectedRoute` pintaba su espera gris a pantalla completa en
+      // cada arranque con sesion y abria una SEGUNDA consulta, justo despues de
+      // que esta acabara de confirmarla (FE #489)
+      const { reiniciaLaSesionCompartida, loQueHaySobreLaSesion } = await import('../services/sesionCompartida');
+      reiniciaLaSesionCompartida();
+      const delBackend = { id: 'u1', email: 'a@b.c', first_name: 'Agustin', last_name: 'Estevez' };
+      globalThis.fetch.mockResolvedValue({ ok: true, status: 200, json: async () => delBackend });
+
+      renderHook(() => useRedirectIfAuthenticated());
+
+      await waitFor(() => expect(navigate).toHaveBeenCalled());
+      // El DTO tal cual, no la entidad de dominio: quien lee de `useAuth` espera
+      // `first_name`, no `firstName`
+      expect(loQueHaySobreLaSesion().user).toEqual(delBackend);
+      expect(loQueHaySobreLaSesion().resuelta).toBe(true);
     });
 
     it('oculta el formulario mientras comprueba', () => {

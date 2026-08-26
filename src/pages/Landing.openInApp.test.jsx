@@ -80,6 +80,7 @@ const recargarLaPagina = async (rutaDeEntrada = '/') => {
       <Routes>
         <Route path="/" element={<Landing />} />
         <Route path="/dashboard" element={<div data-testid="panel" />} />
+        <Route path="/start" element={<div data-testid="acceso"><Link to="/">que es esto</Link></div>} />
         <Route path="/terms" element={<Link to="/">al inicio</Link>} />
       </Routes>
     </MemoryRouter>
@@ -99,7 +100,7 @@ describe('Landing · abrir la aplicacion instalada', () => {
 
     await abrirLaAplicacion();
 
-    expect(usosDelHook.at(-1)).toEqual({ enabled: true });
+    expect(usosDelHook.at(-1)).toMatchObject({ enabled: true, entrarSinRed: true });
   });
 
   it('no la busca en el navegador: ahi la portada tiene sentido', async () => {
@@ -109,7 +110,7 @@ describe('Landing · abrir la aplicacion instalada', () => {
 
     // Y de paso no se gasta una peticion autenticada en cada visita anonima a
     // la pagina publica mas visitada
-    expect(usosDelHook.at(-1)).toEqual({ enabled: false });
+    expect(usosDelHook.at(-1)).toMatchObject({ enabled: false });
   });
 
   it('no la busca al volver a la portada desde dentro de la aplicacion', async () => {
@@ -124,22 +125,23 @@ describe('Landing · abrir la aplicacion instalada', () => {
 
     fireEvent.click(screen.getByText('al inicio'));
 
-    expect(usosDelHook.at(-1)).toEqual({ enabled: false });
+    expect(usosDelHook.at(-1)).toMatchObject({ enabled: false });
   });
 
-  it('no la busca al volver a la portada tras haber arrancado en ella', async () => {
-    // El caso que la ruta de entrada sola no cubre: se arranco en `/`, se
-    // navego dentro y se vuelve por el logo. Es PUSH, no la entrada, y quien se
-    // acaba de registrar desde la portada no puede salir rebotado al pulsarlo.
+  it('a la portada se llega por su enlace, y ahi no rebota', async () => {
+    // Arrancar en `/` ya no enseña la portada —lleva al formulario—, asi que el
+    // camino que queda es el enlace del pie. Y por ahi no puede rebotar: quien
+    // pulsa «que es esto» quiere ver la portada, no volver al panel. Es PUSH,
+    // no la entrada de la aplicacion
     instalada = true;
 
     await abrirLaAplicacion('/');
-    expect(usosDelHook.at(-1)).toEqual({ enabled: true });
+    expect(screen.getByTestId('acceso')).toBeInTheDocument();
 
-    fireEvent.click(screen.getByText('a terminos'));
-    fireEvent.click(screen.getByText('al inicio'));
+    fireEvent.click(screen.getByText('que es esto'));
 
-    expect(usosDelHook.at(-1)).toEqual({ enabled: false });
+    expect(screen.getByText('hero.title')).toBeInTheDocument();
+    expect(usosDelHook.at(-1)).toMatchObject({ enabled: false });
   });
 
   it('no la busca cuando el service worker recarga la pagina', async () => {
@@ -149,12 +151,12 @@ describe('Landing · abrir la aplicacion instalada', () => {
     instalada = true;
 
     await abrirLaAplicacion('/');
-    expect(usosDelHook.at(-1)).toEqual({ enabled: true });
+    expect(usosDelHook.at(-1)).toMatchObject({ enabled: true, entrarSinRed: true });
 
     // Sin tocar `sessionStorage`: la pestana es la misma
     await recargarLaPagina('/');
 
-    expect(usosDelHook.at(-1)).toEqual({ enabled: false });
+    expect(usosDelHook.at(-1)).toMatchObject({ enabled: false });
   });
 
   it('no la busca si la aplicacion arranco en otra pantalla', async () => {
@@ -171,12 +173,13 @@ describe('Landing · abrir la aplicacion instalada', () => {
         <MemoryRouter initialEntries={['/']}>
           <Routes>
             <Route path="/" element={<Landing />} />
+            <Route path="/start" element={<div data-testid="acceso" />} />
           </Routes>
         </MemoryRouter>
       )
     );
 
-    expect(usosDelHook.at(-1)).toEqual({ enabled: false });
+    expect(usosDelHook.at(-1)).toMatchObject({ enabled: false });
   });
 
   it('no pinta la portada mientras resuelve la sesion', async () => {
@@ -190,10 +193,21 @@ describe('Landing · abrir la aplicacion instalada', () => {
     expect(screen.queryByText('hero.title')).not.toBeInTheDocument();
   });
 
-  it('enseña la portada cuando no hay sesion que resolver', async () => {
-    // Afirmando el CONTENIDO: comprobar que no esta el panel pasaba igual si
-    // la pagina no pintara nada, porque a `/dashboard` no se llega desde aqui
+  it('arrancando la aplicacion SIN sesion, al formulario y no a la portada', async () => {
+    // Los iconos anteriores a FE #465 abren por aqui, asi que quien no tenga
+    // sesion se quedaba mirando la pagina de marketing al abrir SU aplicacion.
+    // Dentro, la portada solo se ve pulsando su enlace del pie
     instalada = true;
+    comprobando = false;
+
+    await abrirLaAplicacion();
+
+    expect(screen.getByTestId('acceso')).toBeInTheDocument();
+    expect(screen.queryByText('hero.title')).not.toBeInTheDocument();
+  });
+
+  it('en el navegador la portada se sigue viendo', async () => {
+    instalada = false;
     comprobando = false;
 
     await abrirLaAplicacion();
@@ -238,9 +252,22 @@ describe('Landing y la cortina del arranque', () => {
     expect(sigueLaCortina()).toBe(true);
   });
 
-  it('con la portada ya en pantalla, se levanta', async () => {
+  it('arrancando la aplicacion, NO la levanta: esta pantalla se va al formulario', async () => {
+    // Avisar aqui la levantaba antes de que existiera `/start`, y ademas daba el
+    // arranque por terminado: la espera de la pantalla siguiente salia en su
+    // cara clara a media sesion, que es el defecto de FE #492
     await abrirLaAplicacion();
 
+    expect(screen.getByTestId('acceso')).toBeInTheDocument();
+    expect(sigueLaCortina()).toBe(true);
+  });
+
+  it('llegando por el enlace del pie, la portada SI la levanta', async () => {
+    // Ahi la portada se pinta de verdad, asi que es ella quien releva a la capa
+    await abrirLaAplicacion('/terms');
+    fireEvent.click(screen.getByText('al inicio'));
+
+    expect(screen.getByText('hero.title')).toBeInTheDocument();
     expect(sigueLaCortina()).toBe(false);
   });
 
