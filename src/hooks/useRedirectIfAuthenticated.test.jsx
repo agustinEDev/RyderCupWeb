@@ -35,6 +35,7 @@ vi.mock('../utils/tokenRefreshInterceptor', () => ({
 vi.mock('../utils/deviceRevocationLogout', () => ({
   isDeviceRevoked: vi.fn(() => false),
   handleDeviceRevocationLogout: vi.fn(),
+  clearDeviceRevocationFlag: vi.fn(),
 }));
 
 const { refreshAccessToken } = await import('../utils/tokenRefreshInterceptor');

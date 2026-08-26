@@ -100,7 +100,7 @@ describe('Landing · abrir la aplicacion instalada', () => {
 
     await abrirLaAplicacion();
 
-    expect(usosDelHook.at(-1)).toEqual({ enabled: true });
+    expect(usosDelHook.at(-1)).toMatchObject({ enabled: true, entrarSinRed: true });
   });
 
   it('no la busca en el navegador: ahi la portada tiene sentido', async () => {
@@ -110,7 +110,7 @@ describe('Landing · abrir la aplicacion instalada', () => {
 
     // Y de paso no se gasta una peticion autenticada en cada visita anonima a
     // la pagina publica mas visitada
-    expect(usosDelHook.at(-1)).toEqual({ enabled: false });
+    expect(usosDelHook.at(-1)).toMatchObject({ enabled: false });
   });
 
   it('no la busca al volver a la portada desde dentro de la aplicacion', async () => {
@@ -125,7 +125,7 @@ describe('Landing · abrir la aplicacion instalada', () => {
 
     fireEvent.click(screen.getByText('al inicio'));
 
-    expect(usosDelHook.at(-1)).toEqual({ enabled: false });
+    expect(usosDelHook.at(-1)).toMatchObject({ enabled: false });
   });
 
   it('a la portada se llega por su enlace, y ahi no rebota', async () => {
@@ -141,7 +141,7 @@ describe('Landing · abrir la aplicacion instalada', () => {
     fireEvent.click(screen.getByText('que es esto'));
 
     expect(screen.getByText('hero.title')).toBeInTheDocument();
-    expect(usosDelHook.at(-1)).toEqual({ enabled: false });
+    expect(usosDelHook.at(-1)).toMatchObject({ enabled: false });
   });
 
   it('no la busca cuando el service worker recarga la pagina', async () => {
@@ -151,12 +151,12 @@ describe('Landing · abrir la aplicacion instalada', () => {
     instalada = true;
 
     await abrirLaAplicacion('/');
-    expect(usosDelHook.at(-1)).toEqual({ enabled: true });
+    expect(usosDelHook.at(-1)).toMatchObject({ enabled: true, entrarSinRed: true });
 
     // Sin tocar `sessionStorage`: la pestana es la misma
     await recargarLaPagina('/');
 
-    expect(usosDelHook.at(-1)).toEqual({ enabled: false });
+    expect(usosDelHook.at(-1)).toMatchObject({ enabled: false });
   });
 
   it('no la busca si la aplicacion arranco en otra pantalla', async () => {
@@ -179,7 +179,7 @@ describe('Landing · abrir la aplicacion instalada', () => {
       )
     );
 
-    expect(usosDelHook.at(-1)).toEqual({ enabled: false });
+    expect(usosDelHook.at(-1)).toMatchObject({ enabled: false });
   });
 
   it('no pinta la portada mientras resuelve la sesion', async () => {
@@ -252,9 +252,22 @@ describe('Landing y la cortina del arranque', () => {
     expect(sigueLaCortina()).toBe(true);
   });
 
-  it('con la portada ya en pantalla, se levanta', async () => {
+  it('arrancando la aplicacion, NO la levanta: esta pantalla se va al formulario', async () => {
+    // Avisar aqui la levantaba antes de que existiera `/start`, y ademas daba el
+    // arranque por terminado: la espera de la pantalla siguiente salia en su
+    // cara clara a media sesion, que es el defecto de FE #492
     await abrirLaAplicacion();
 
+    expect(screen.getByTestId('acceso')).toBeInTheDocument();
+    expect(sigueLaCortina()).toBe(true);
+  });
+
+  it('llegando por el enlace del pie, la portada SI la levanta', async () => {
+    // Ahi la portada se pinta de verdad, asi que es ella quien releva a la capa
+    await abrirLaAplicacion('/terms');
+    fireEvent.click(screen.getByText('al inicio'));
+
+    expect(screen.getByText('hero.title')).toBeInTheDocument();
     expect(sigueLaCortina()).toBe(false);
   });
 

@@ -225,6 +225,12 @@ export const consultaLaSesion = ({ forzar = false } = {}) => {
  * texto y que un administrador recién entrado se quedara sin `is_admin`.
  */
 export const anotaLaSesion = (usuarioDelBackend) => {
+  // Como el camino de exito de arriba: es el UNICO sitio de la aplicacion que
+  // limpia la marca de dispositivo revocado, y sin esto los dos caminos
+  // divergen. Con la sesion ya sembrada, `consultaLaSesion` no vuelve a
+  // preguntar en toda la carga de pagina, asi que la marca se quedaba puesta y
+  // el siguiente cierre de sesion salia sin su aviso
+  clearDeviceRevocationFlag();
   generacion += 1;
   enVuelo = null;
   fallosSeguidos = 0;
