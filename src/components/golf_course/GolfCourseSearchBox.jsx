@@ -3,6 +3,7 @@ import { Search, MapPin, AlertCircle, Navigation } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { listGolfCoursesUseCase } from '../../composition';
 import { roundCoordinate } from '../../utils/geo';
+import { getCountryFlag } from '../../utils/countryUtils';
 import BlockLoader from '../ui/BlockLoader';
 
 /**
@@ -88,7 +89,7 @@ const GolfCourseSearchBox = ({
   // Los resultados guardan de qué país son. Así, al cambiar de país, no se
   // pintan un instante los del anterior mientras llega la respuesta nueva, y
   // no hace falta vaciarlos desde el cuerpo del efecto.
-  const [result, setResult] = useState({ countryCode: null, courses: [], total: 0 });
+  const [result, setResult] = useState({ countryCode: null, courses: [], total: 0, widened: false });
   const [isLoading, setIsLoading] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const [error, setError] = useState(null);
@@ -103,6 +104,8 @@ const GolfCourseSearchBox = ({
   // de identidad en cada lectura del GPS y dispararía búsquedas de más.
   const nearbyLat = isNearbyActive ? position.lat : null;
   const nearbyLon = isNearbyActive ? position.lon : null;
+  // Se busca por cercanía cuando hay posición y no se ha escrito nada
+  const searchingNearby = nearbyLat !== null && nearbyLon !== null;
 
   // Ask the backend on every change of country or search term.
   //
@@ -121,9 +124,9 @@ const GolfCourseSearchBox = ({
       setIsLoading(true);
       setError(null);
 
-      try {
-        const page = await listGolfCoursesUseCase.execute({
-          countryCode,
+      const buscar = (pais) =>
+        listGolfCoursesUseCase.execute({
+          countryCode: pais,
           approvalStatus: 'APPROVED',
           name: searchQuery.trim() || undefined,
           limit: PAGE_SIZE,
@@ -134,13 +137,34 @@ const GolfCourseSearchBox = ({
           lat: nearbyLat ?? undefined,
           lon: nearbyLon ?? undefined,
         });
+
+      try {
+        // Estando sobre el campo, la nacionalidad del jugador no dice nada del
+        // campo que pisa: Ponte de Lima está a 30 km de la frontera, y filtrar
+        // por país dejaba "el más cercano" buscando solo en el país de uno
+        const page = await buscar(searchingNearby ? undefined : countryCode);
         if (cancelled) return;
-        setResult({ countryCode, courses: page.courses, total: page.total });
+
+        // Un campo de fuera existía y la búsqueda por nombre lo escondía, así
+        // que "no hay campos" era mentira. Se reintenta sin país antes de
+        // decirlo, y se avisa de que lo que se ve ya no es del país propio
+        let { courses, total } = page;
+        let widened = false;
+        if (courses.length === 0 && countryCode && !searchingNearby && searchQuery.trim()) {
+          const worldwide = await buscar(undefined);
+          if (cancelled) return;
+          if (worldwide.courses.length > 0) {
+            ({ courses, total } = worldwide);
+            widened = true;
+          }
+        }
+
+        setResult({ countryCode, courses, total, widened });
       } catch (err) {
         if (cancelled) return;
         console.error('Error loading golf courses:', err);
         setError(err.message || t('searchBox.errorLoading', 'Error loading golf courses'));
-        setResult({ countryCode, courses: [], total: 0 });
+        setResult({ countryCode, courses: [], total: 0, widened: false });
       } finally {
         if (!cancelled) setIsLoading(false);
       }
@@ -150,11 +174,12 @@ const GolfCourseSearchBox = ({
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [countryCode, searchQuery, t, nearbyLat, nearbyLon]);
+  }, [countryCode, searchQuery, t, nearbyLat, nearbyLon, searchingNearby]);
 
   // Solo valen los resultados del país que se está mirando ahora
   const courses = result.countryCode === countryCode ? result.courses : [];
   const total = result.countryCode === countryCode ? result.total : 0;
+  const widened = result.countryCode === countryCode && result.widened;
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -337,6 +362,21 @@ const GolfCourseSearchBox = ({
             </div>
           )}
 
+          {/* Sin este aviso, ver campos de otro país en un buscador que
+              siempre ha enseñado los tuyos parece un fallo. Se anuncia porque
+              aparece solo, sin que nadie haya pulsado nada */}
+          {widened && courses.length > 0 && (
+            <p
+              role="status"
+              data-testid="golf-course-widened-notice"
+              className="border-b border-gray-200 px-4 py-2 text-xs text-gray-500"
+            >
+              {t('searchBox.widenedToOtherCountries', {
+                defaultValue: 'No courses in your country match. Showing courses abroad.',
+              })}
+            </p>
+          )}
+
           {courses.length > 0 ? (
             <ul className="py-1">
               {courses.map((course) => (
@@ -352,6 +392,16 @@ const GolfCourseSearchBox = ({
                         {course.name}
                       </p>
                       <p className="text-xs text-gray-500">
+                        {/* Solo en los de fuera: repetir "ES" en los 802 campos
+                            españoles es ruido, y aquí el país es justo lo que
+                            distingue dos campos que se llaman igual a un lado y
+                            otro de la frontera */}
+                        {course.countryCode && course.countryCode !== countryCode && (
+                          <span data-testid={`golf-course-country-${course.id}`}>
+                            <span aria-hidden="true">{getCountryFlag(course.countryCode)} </span>
+                            {course.countryCode} •{' '}
+                          </span>
+                        )}
                         {t(`courseTypes.${course.courseType}`, course.courseType)} • {course.tees.length} {t('searchBox.tees', 'tees')}
                         {/* Comparado con null y no por verdadero: un campo a
                             menos de 50 m devuelve 0, que es una distancia real */}
