@@ -492,12 +492,12 @@ describe('GolfCourseSearchBox', () => {
         .mockResolvedValueOnce({ courses: [], total: 0 })
         .mockResolvedValueOnce({ courses: [abroad('9', 'Axis Golfe Ponte de Lima', 'PT')], total: 1 });
 
-      renderBox();
+      renderBox({ allowOtherCountries: true });
       await openDropdown();
       fireEvent.change(screen.getByRole('textbox'), { target: { value: 'Axis' } });
 
       expect(await screen.findByText('Axis Golfe Ponte de Lima')).toBeInTheDocument();
-      expect(screen.getByTestId('golf-course-widened-notice')).toBeInTheDocument();
+      expect(screen.getByTestId('golf-course-widened-notice')).not.toHaveTextContent('');
 
       const consultas = mockList.mock.calls.map(([f]) => f);
       const porNombre = consultas.filter((f) => f.name === 'Axis');
@@ -521,14 +521,43 @@ describe('GolfCourseSearchBox', () => {
     it('no anuncia la ampliación si fuera tampoco hay nada', async () => {
       mockList.mockResolvedValue({ courses: [], total: 0 });
 
-      renderBox();
+      renderBox({ allowOtherCountries: true });
       await openDropdown();
       fireEvent.change(screen.getByRole('textbox'), { target: { value: 'Inexistente' } });
 
       await waitFor(() => expect(ultimaConsulta().name).toBe('Inexistente'));
       await waitFor(() =>
-        expect(screen.queryByTestId('golf-course-widened-notice')).not.toBeInTheDocument()
+        expect(screen.getByTestId('golf-course-widened-notice')).toHaveTextContent('')
       );
+    });
+
+    it('no amplía a otros países en los buscadores de competición', async () => {
+      // Ahí el país no es "el tuyo", es una restricción del formulario:
+      // `handleGolfCourseSelect` archiva el campo bajo el país del recuadro, y
+      // uno de fuera quedaría guardado como español y se perdería al cambiar
+      // de país (CreateCompetition.jsx:289)
+      mockList.mockResolvedValue({ courses: [], total: 0 });
+
+      renderBox();
+      await openDropdown();
+      fireEvent.change(screen.getByRole('textbox'), { target: { value: 'Axis' } });
+
+      await waitFor(() => expect(ultimaConsulta().name).toBe('Axis'));
+      const porNombre = mockList.mock.calls.map(([f]) => f).filter((f) => f.name === 'Axis');
+      expect(porNombre).toHaveLength(1);
+      expect(porNombre[0].countryCode).toBe('ES');
+    });
+
+    it('no marca como extranjeros los campos del país propio escrito en minúsculas', async () => {
+      // Hay cuentas con `country_code: 'es'` (countryUtils.test.js), y el
+      // buscador recibe ese valor tal cual desde `currentUser.country_code`
+      mockList.mockResolvedValue({ courses: [abroad('1', 'Real Club de Golf', 'ES')], total: 1 });
+
+      renderBox({ countryCode: 'es' });
+      await openDropdown();
+
+      await screen.findByText('Real Club de Golf');
+      expect(screen.queryByTestId('golf-course-country-1')).not.toBeInTheDocument();
     });
 
     it('enseña el país solo en los campos que no son del tuyo', async () => {

@@ -144,6 +144,7 @@ const CourseStep = ({
         onCourseSelect={onCourseSelect}
         onRequestNewCourse={onRequestNewCourse}
         allowNearby
+        allowOtherCountries
       />
     </div>
 
