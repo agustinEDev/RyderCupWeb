@@ -135,4 +135,37 @@ describe('useProactiveTokenRefresh', () => {
 
     expect(refreshAccessToken).not.toHaveBeenCalled();
   });
+  describe('cuando el refresco falla por falta de cobertura (FE #514)', () => {
+    // Un intento fallido no mueve la marca del último refresco, así que la
+    // ventana se queda abierta y CADA ACTIVIDAD del usuario dispararía otro
+    // intento —no hay comprobación periódica: solo la actividad y el
+    // temporizador inicial despiertan al hook—. Antes lo cortaba el cierre de
+    // sesión; ahora la sesión se conserva y hace falta un descanso propio
+    beforeEach(() => {
+      refreshAccessToken.mockReset();
+      refreshAccessToken.mockRejectedValue(new TypeError('Failed to fetch'));
+    });
+
+    it('vuelve a intentarlo, pasado el descanso, en cuanto hay actividad', async () => {
+      // El descanso no es una renuncia: quien sigue anotando vuelve a
+      // despertarlo. Sin esta comprobación, un freno permanente pasaría
+      // igual de desapercibido que no tener freno
+      renderHook(() => useProactiveTokenRefresh({ enabled: true }));
+
+      vi.advanceTimersByTime(ACCESS_TOKEN_TTL_MS - REFRESH_BEFORE_MS);
+      await vi.advanceTimersByTimeAsync(0);
+      expect(refreshAccessToken).toHaveBeenCalledTimes(1);
+
+      // Tocar la pantalla dentro del descanso no dispara nada
+      document.dispatchEvent(new globalThis.Event('click'));
+      await vi.advanceTimersByTimeAsync(600);
+      expect(refreshAccessToken).toHaveBeenCalledTimes(1);
+
+      // Pasado el descanso, la siguiente actividad sí
+      await vi.advanceTimersByTimeAsync(31 * 1000);
+      document.dispatchEvent(new globalThis.Event('click'));
+      await vi.advanceTimersByTimeAsync(600);
+      expect(refreshAccessToken).toHaveBeenCalledTimes(2);
+    });
+  });
 });
