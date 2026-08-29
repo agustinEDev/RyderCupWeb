@@ -46,7 +46,9 @@ const Profile = () => {
           try {
             const countries = await fetchCountriesUseCase.execute();
             const suyo = countries.find(c => c.code === user.country_code);
-            if (suyo) setCountry(suyo);
+            // Y se limpia si no aparece: dejando el anterior, la bandera —que sale
+            // del código nuevo— y el nombre —el viejo— se contradicen
+            setCountry(suyo ?? null);
           } catch (error) {
             console.error('Error fetching country name:', error);
           }

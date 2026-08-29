@@ -119,4 +119,10 @@ describe('formatCountryName con la forma que arma CompetitionAssembler (FE #513)
   it('cae al nombre suelto solo si no hay ninguno de los dos', () => {
     expect(formatCountryName({ code: 'FR', name: 'France' }, 'es')).toBe('France');
   });
+  it('con solo el código devuelve cadena vacía, no el código', () => {
+    // Por esto la ficha del campo dentro de una competición enseñaba una
+    // etiqueta VACÍA al lado de la bandera: el backend solo manda
+    // `country_code` ahí, y quien pinta tiene que poner su propia reserva
+    expect(formatCountryName({ code: 'ES' }, 'es')).toBe('');
+  });
 });

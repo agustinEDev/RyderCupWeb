@@ -14,6 +14,7 @@ import { useAuth } from '../hooks/useAuth';
 import { CountryFlag } from '../utils/countryUtils';
 import BlockLoader from '../components/ui/BlockLoader';
 import { formatCountryName } from '../services/countries';
+import { ubicacionDe } from '../utils/ubicacionDeCompeticion';
 
 // Helper function to get enrollment status classes
 const getEnrollmentStatusClasses = (status) => {
@@ -202,10 +203,14 @@ const Competitions = () => {
               </div>
 
               {/* Location */}
-              {competition.location && (
+              {/* La ubicación se rehace aquí y no se usa la del backend: allí se
+                  arma uniendo `name_en`, así que en una aplicación en español la
+                  tarjeta decía «Spain, France» mientras la bandera de dos líneas
+                  más abajo ya decía «España, Francia» (FE #513) */}
+              {ubicacionDe(competition, i18n.language) && (
                 <div className="flex items-center gap-2 text-gray-600 text-sm">
                   <MapPin className="w-4 h-4" />
-                  <span>{competition.location}</span>
+                  <span>{ubicacionDe(competition, i18n.language)}</span>
                 </div>
               )}
 

@@ -110,7 +110,7 @@ const SortableGolfCourseItem = ({ course, onRemove, canEdit, i18n, t }) => {
             <div className="flex items-center gap-2 mb-3">
               <CountryFlag countryCode={course.country_code} style={{ width: '20px', height: 'auto' }} />
               <span className="text-sm text-gray-700">
-                {formatCountryName({ code: course.country_code, name_en: course.country_name }, i18n.language)}
+                {formatCountryName({ code: course.country_code }, i18n.language) || course.country_code}
               </span>
             </div>
           )}
@@ -166,7 +166,7 @@ const SortableGolfCourseItem = ({ course, onRemove, canEdit, i18n, t }) => {
           </h4>
           {course.country_code && (
             <p className="text-sm text-gray-500 truncate">
-              {formatCountryName({ code: course.country_code, name_en: course.country_name }, i18n.language)}
+              {formatCountryName({ code: course.country_code }, i18n.language) || course.country_code}
             </p>
           )}
         </div>
