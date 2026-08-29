@@ -70,7 +70,10 @@ const Competitions = () => {
       filtered = filtered.filter(
         (comp) =>
           comp.name?.toLowerCase().includes(query) ||
-          comp.location?.toLowerCase().includes(query)
+          // Se busca sobre lo que se ve: la tarjeta enseña los países en el
+          // idioma de la aplicación, así que buscar «España» tenía que
+          // encontrar una competición cuya `location` del backend dice «Spain»
+          ubicacionDe(comp, i18n.language).toLowerCase().includes(query)
       );
     }
 
@@ -80,7 +83,7 @@ const Competitions = () => {
     }
 
     setFilteredCompetitions(filtered);
-  }, [competitions, searchQuery, statusFilter]);
+  }, [competitions, searchQuery, statusFilter, i18n.language]);
 
   useEffect(() => {
     if (user?.id) {

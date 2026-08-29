@@ -109,7 +109,11 @@ describe('public content', () => {
     for (const f of files) {
       for (const uso of f.content.matchAll(llamadas)) {
         const abre = f.content.indexOf('(', uso.index);
-        if (!/\byear\b/.test(argumentosDe(f.content, abre))) {
+        // `year` como propiedad, no en cualquier sitio: un
+        // `t('footer', { defaultValue: 'year' })` no interpola nada y pasaba
+        const pasaElAno = /\byear\s*:/.test(argumentosDe(f.content, abre))
+          || /\{[^}]*\byear\b\s*[,}]/.test(argumentosDe(f.content, abre));
+        if (!pasaElAno) {
           offenders.push(`${relative(f.path)}: ${uso[0]}`);
         }
       }

@@ -46,9 +46,23 @@ const getCourseTypeInfo = (courseType) => {
 };
 
 /**
+ * El nombre del país de un campo, en el idioma de la aplicación.
+ *
+ * El campo solo trae `country_code`: el backend no manda su nombre, así que
+ * formatearlo a secas devolvía cadena vacía y se veía una bandera con la
+ * etiqueta en blanco. La competición sí trae sus países con los dos idiomas, y
+ * un campo suyo es de uno de ellos, de modo que se resuelve ahí sin pedir nada.
+ * El código queda de reserva para lo que no se pueda resolver.
+ */
+const nombreDelPais = (codigo, paises, idioma) => {
+  const pais = paises?.find((c) => c.code === codigo);
+  return formatCountryName(pais ?? { code: codigo }, idioma) || codigo;
+};
+
+/**
  * Sortable Item Component (used by dnd-kit)
  */
-const SortableGolfCourseItem = ({ course, onRemove, canEdit, i18n, t }) => {
+const SortableGolfCourseItem = ({ course, onRemove, canEdit, i18n, t, paises }) => {
   const {
     attributes,
     listeners,
@@ -110,7 +124,7 @@ const SortableGolfCourseItem = ({ course, onRemove, canEdit, i18n, t }) => {
             <div className="flex items-center gap-2 mb-3">
               <CountryFlag countryCode={course.country_code} style={{ width: '20px', height: 'auto' }} />
               <span className="text-sm text-gray-700">
-                {formatCountryName({ code: course.country_code }, i18n.language) || course.country_code}
+                {nombreDelPais(course.country_code, paises, i18n.language)}
               </span>
             </div>
           )}
@@ -166,7 +180,7 @@ const SortableGolfCourseItem = ({ course, onRemove, canEdit, i18n, t }) => {
           </h4>
           {course.country_code && (
             <p className="text-sm text-gray-500 truncate">
-              {formatCountryName({ code: course.country_code }, i18n.language) || course.country_code}
+              {nombreDelPais(course.country_code, paises, i18n.language)}
             </p>
           )}
         </div>
@@ -237,6 +251,7 @@ const CompetitionGolfCoursesSection = ({ competition, canManage }) => {
   // Get compatible countries for the search box
   // Use country code from countries array (competition.location is a display string, not a code)
   const mainCountryCode = competition.countries?.[0]?.code;
+
   const compatibleCountries = [
     mainCountryCode,
     ...(competition.countries?.slice(1).map(c => c.code) || [])
@@ -419,6 +434,7 @@ const CompetitionGolfCoursesSection = ({ competition, canManage }) => {
                     canEdit={canEdit}
                     i18n={i18n}
                     t={t}
+                    paises={competition.countries}
                   />
                 ))}
               </div>
