@@ -141,3 +141,109 @@ describe('scoringOfflineQueue', () => {
     });
   });
 });
+
+describe('anotaciones por participante (FE #515)', () => {
+  beforeEach(() => localStorage.clear());
+
+  it('dos participantes del mismo hoyo no se pisan', () => {
+    // En una partida rápida cada participante se envía por separado. Sin el
+    // participante en la clave, anotar el segundo borraba el primero
+    enqueue('qm-1', 7, { score: 5 }, 'p-1');
+    enqueue('qm-1', 7, { score: 4 }, 'p-2');
+
+    const guardadas = getByMatch('qm-1');
+    expect(guardadas).toHaveLength(2);
+    expect(guardadas.map((e) => e.participantId).sort()).toEqual(['p-1', 'p-2']);
+  });
+
+  it('reanotar el mismo hoyo del mismo participante reemplaza, no duplica', () => {
+    enqueue('qm-1', 7, { score: 5 }, 'p-1');
+    enqueue('qm-1', 7, { score: 6 }, 'p-1');
+
+    const guardadas = getByMatch('qm-1');
+    expect(guardadas).toHaveLength(1);
+    expect(guardadas[0].scoreData).toEqual({ score: 6 });
+  });
+
+  it('quita solo la anotación de ese participante', () => {
+    enqueue('qm-1', 7, { score: 5 }, 'p-1');
+    enqueue('qm-1', 7, { score: 4 }, 'p-2');
+
+    remove('qm-1', 7, 'p-1');
+
+    const guardadas = getByMatch('qm-1');
+    expect(guardadas).toHaveLength(1);
+    expect(guardadas[0].participantId).toBe('p-2');
+  });
+
+  it('dos bolas recogidas en el mismo hoyo son dos anotaciones, no una', () => {
+    // Un hoyo recogido llega con `score` nulo, igual que llegaría el de
+    // cualquier otro. Sin el participante en la clave, la segunda pisaba a la
+    // primera y el hoyo quedaba anotado a medias
+    enqueue('qm-1', 7, { score: null }, 'p-1');
+    enqueue('qm-1', 7, { score: null }, 'p-2');
+
+    const guardadas = getByMatch('qm-1');
+    expect(guardadas).toHaveLength(2);
+    expect(guardadas.every((e) => e.scoreData.score === null)).toBe(true);
+    expect(guardadas.map((e) => e.participantId).sort()).toEqual(['p-1', 'p-2']);
+  });
+
+  it('reanotar sobre una entrada guardada por una versión anterior la reemplaza', () => {
+    // El caso que de verdad duplicaría: la entrada vieja no tiene el campo, y
+    // competición reanota ese mismo hoyo
+    localStorage.setItem(
+      'rydercup-scoring-queue',
+      JSON.stringify([{ matchId: 'm-1', holeNumber: 7, scoreData: { ownScore: 5 }, timestamp: 1 }])
+    );
+
+    enqueue('m-1', 7, { ownScore: 6 });
+
+    const guardadas = getByMatch('m-1');
+    expect(guardadas).toHaveLength(1);
+    expect(guardadas[0].scoreData).toEqual({ ownScore: 6 });
+  });
+
+  it('la cuenta puede pedirse solo de una partida', () => {
+    // La cola la comparten los dos modos: contarla entera enseñaba «N
+    // pendientes» incluyendo anotaciones de otra partida
+    enqueue('m-1', 7, { ownScore: 5 });
+    enqueue('qm-1', 7, { score: 4 }, 'p-1');
+    enqueue('qm-1', 8, { score: 3 }, 'p-1');
+
+    expect(size()).toBe(3);
+    expect(size('m-1')).toBe(1);
+    expect(size('qm-1')).toBe(2);
+  });
+
+  it('una partida sin id no tiene pendientes, no los tiene todos', () => {
+    // Decidir por veracidad devolvía la cuenta global con una cadena vacía,
+    // que es justo lo que se venía a quitar
+    enqueue('m-1', 7, { ownScore: 5 });
+    enqueue('qm-1', 7, { score: 4 }, 'p-1');
+
+    expect(size('')).toBe(0);
+    expect(size()).toBe(2);
+  });
+
+  it('no confunde una anotación de competición con una de partida rápida', () => {
+    // Competición no manda participante: su entrada va sin él y no debe
+    // borrarse al guardar una de partida rápida del mismo hoyo
+    enqueue('m-1', 7, { ownScore: 5 });
+    enqueue('m-1', 7, { score: 4 }, 'p-1');
+
+    expect(getByMatch('m-1')).toHaveLength(2);
+  });
+
+  it('entiende una cola guardada por una versión anterior', () => {
+    // Sin el campo `participantId`: `undefined` cuenta como «de nadie»
+    localStorage.setItem(
+      'rydercup-scoring-queue',
+      JSON.stringify([{ matchId: 'm-1', holeNumber: 7, scoreData: { ownScore: 5 }, timestamp: 1 }])
+    );
+
+    remove('m-1', 7);
+
+    expect(getByMatch('m-1')).toHaveLength(0);
+  });
+});
