@@ -19,14 +19,17 @@ import { broadcastLogout } from '../utils/broadcastAuth';
 import { formatFullDate } from '../utils/dateFormatters';
 import { fetchCountriesUseCase, listUserCompetitionsUseCase, logoutUseCase } from '../composition';
 import FullScreenLoader from '../components/ui/FullScreenLoader';
+import { formatCountryName } from '../services/countries';
 
 const Profile = () => {
   const navigate = useNavigate();
-  const { t } = useTranslation('profile');
+  const { t, i18n } = useTranslation('profile');
   const { t: tCommon } = useTranslation('common');
   const { user, loading: isLoadingUser } = useAuth();
   const isStandalone = useStandalone();
-  const [countryName, setCountryName] = useState(null);
+  // Se guarda el país, no su nombre ya traducido: así cambiar de idioma lo
+  // repinta sin tener que volver a pedir la lista de países
+  const [country, setCountry] = useState(null);
   const [competitionsCount, setCompetitionsCount] = useState(0);
   const [isLoadingData, setIsLoadingData] = useState(true);
 
@@ -42,10 +45,10 @@ const Profile = () => {
         if (user.country_code) {
           try {
             const countries = await fetchCountriesUseCase.execute();
-            const country = countries.find(c => c.code === user.country_code);
-            if (country) {
-              setCountryName(country.name_en || country.name);
-            }
+            const suyo = countries.find(c => c.code === user.country_code);
+            // Y se limpia si no aparece: dejando el anterior, la bandera —que sale
+            // del código nuevo— y el nombre —el viejo— se contradicen
+            setCountry(suyo ?? null);
           } catch (error) {
             console.error('Error fetching country name:', error);
           }
@@ -218,7 +221,7 @@ const Profile = () => {
                           <span>{t('nationality')}</span>
                           <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-xs font-semibold border border-blue-200">
                             <CountryFlag countryCode={user.country_code} className="w-4 h-4" />
-                            <span>{countryName || user.country_code}</span>
+                            <span>{formatCountryName(country, i18n.language) || user.country_code}</span>
                           </span>
                         </span>
                       ) : (

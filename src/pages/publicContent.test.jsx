@@ -72,4 +72,58 @@ describe('public content', () => {
       expect(common.footer.copyrightShort).toContain('{{year}}');
     }
   });
+  it('passes the year wherever a footer copyright string is rendered', () => {
+    // Interpolar la clave no sirve si quien la pinta no manda `year`: en el
+    // calendario de competición se leía «© {{year}} RyderCupFriends» tal cual,
+    // porque `SchedulePage` llamaba a `t('footer')` a secas mientras las otras
+    // tres páginas de competición sí lo pasaban (FE #513)
+    //
+    // Se acepta cualquier nombre de traductor —la página que falló usaba
+    // `tComp`—, las tres comillas y también `<Trans i18nKey=...>`. Un barrido
+    // sobre el fuente que no reconoce una forma no falla: dice que no hay nada
+    const clave = "(?:[\\w-]+:)?footer(?:\\.copyright(?:Short|Long)?)?";
+    const llamadas = new RegExp(`\\b[A-Za-z_$][\\w$]*\\(\\s*['"\`]${clave}['"\`]`, 'g');
+    const enTrans = new RegExp(`i18nKey\\s*=\\s*[{"']+${clave}["'}]+`, 'g');
+
+    // Solo los argumentos de ESA llamada: mirar los siguientes N caracteres
+    // daba por bueno un `year:` de una llamada vecina.
+    //
+    // Un `t('footer', opciones)` con el objeto en una variable SÍ se marca como
+    // fallo, aunque sea correcto: desde el fuente no hay forma de mirar dentro
+    // de la variable. Se prefiere ese ruido a lo contrario, porque una guarda
+    // que no ve una forma nueva no avisa de nada — dice que no hay fallos. Si
+    // aparece ese caso, lo que toca es pasar `year` en la propia llamada
+    const argumentosDe = (texto, desde) => {
+      let nivel = 0;
+      for (let i = desde; i < texto.length; i++) {
+        if (texto[i] === '(') nivel++;
+        else if (texto[i] === ')') {
+          nivel--;
+          if (nivel === 0) return texto.slice(desde, i);
+        }
+      }
+      return texto.slice(desde);
+    };
+
+    const offenders = [];
+    for (const f of files) {
+      for (const uso of f.content.matchAll(llamadas)) {
+        const abre = f.content.indexOf('(', uso.index);
+        // `year` como propiedad, no en cualquier sitio: un
+        // `t('footer', { defaultValue: 'year' })` no interpola nada y pasaba
+        const pasaElAno = /\byear\s*:/.test(argumentosDe(f.content, abre))
+          || /\{[^}]*\byear\b\s*[,}]/.test(argumentosDe(f.content, abre));
+        if (!pasaElAno) {
+          offenders.push(`${relative(f.path)}: ${uso[0]}`);
+        }
+      }
+      // `<Trans>` no lleva argumentos: el año va por `values` o por un hijo,
+      // así que se pide a mano en vez de adivinarlo
+      for (const uso of f.content.matchAll(enTrans)) {
+        offenders.push(`${relative(f.path)}: ${uso[0]} (usa t() con year, no <Trans>)`);
+      }
+    }
+
+    expect(offenders).toEqual([]);
+  });
 });
