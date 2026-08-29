@@ -18,6 +18,7 @@ import { sinSesionEnRutaPublica } from './rutasPublicas';
 
 
 import { setCsrfTokenGlobal } from '../contexts/csrfTokenSync'; // v1.13.0: CSRF Protection
+
 import {
   isDeviceRevoked,
   isSessionExpired,
@@ -180,6 +181,7 @@ export const fetchWithTokenRefresh = async (url, options = {}) => {
     // Clone response to avoid consuming the body
     const responseClone = response.clone();
     let errorData = {};
+    let revocado = false;
 
     try {
       errorData = await responseClone.json();
@@ -187,15 +189,22 @@ export const fetchWithTokenRefresh = async (url, options = {}) => {
 
       if (isRevoked) {
         handleDeviceRevocationLogout(errorData);
-        // Don't return response (body already consumed by clone)
-        // Wait for redirect (happens in 500ms) with safety timeout that rejects
-        await Promise.race([
-          new Promise(() => {}), // Never resolves - redirect will interrupt
-          new Promise((_, reject) => setTimeout(() => reject(new Error('Redirect timeout after device revocation')), 5000))
-        ]);
+        revocado = true;
       }
     } catch {
       // If JSON parsing fails, continue with normal refresh flow
+    }
+
+    // Fuera del `try`: aquí había una espera de cinco segundos a que la
+    // redirección interrumpiera, y su rechazo lo tragaba el `catch` de arriba,
+    // así que un dispositivo ya revocado acababa siguiendo el flujo normal de
+    // refresco como si nada. Es el mismo patrón que se quitó de las otras dos
+    // ramas; esta se había quedado
+    if (revocado) {
+      const revocacion = new Error('Device revoked');
+      revocacion.response = response;
+      revocacion.errorData = errorData;
+      throw revocacion;
     }
 
     // Special case: Don't retry login endpoint - let it fail naturally
@@ -242,6 +251,13 @@ export const fetchWithTokenRefresh = async (url, options = {}) => {
       // Attempt to refresh the token
       await refreshAccessToken();
 
+      // OJO: `isRefreshing` sigue en cierto hasta el `finally`, también durante
+      // el reintento de abajo. Una petición que dé 401 en esa ventana se encola
+      // en una cola ya vaciada y su promesa no se resuelve. Se dejó como estaba
+      // a propósito: soltarlo antes quita la exclusión que impide dos refrescos
+      // a la vez, y con dos en vuelo el fallo de uno rechaza las peticiones que
+      // esperaban al otro. Arreglarlo pide una promesa compartida, no mover
+      // esta línea
       // Refresh successful - process queued requests
       processQueue();
 
@@ -255,40 +271,55 @@ export const fetchWithTokenRefresh = async (url, options = {}) => {
       // Refresh failed - reject all queued requests
       processQueue(refreshError);
 
+      // Solo el servidor puede decir que una sesión ya no vale. Un fallo de red
+      // o un 5xx significan que no se ha podido preguntar, no que la respuesta
+      // sea que no, y tratarlos igual echaba al jugador de la aplicación en
+      // mitad de una vuelta cada vez que el campo se quedaba sin cobertura
+      // (FE #514). El token de acceso dura 15 minutos y el marcador pregunta
+      // cada 10 segundos, así que la ocasión se presentaba muchas veces.
+      const respuestaDelServidor = refreshError.response ?? null;
+      const credencialesRechazadas = respuestaDelServidor?.status === 401;
+
       // v2.0.4: Properly differentiate between device revocation and session expiration
-      if (refreshError.response && refreshError.errorData) {
+      if (respuestaDelServidor && refreshError.errorData) {
         // Check if refresh failed due to EXPLICIT device revocation
-        if (isDeviceRevoked(refreshError.response, refreshError.errorData)) {
+        if (isDeviceRevoked(respuestaDelServidor, refreshError.errorData)) {
           console.log('🔒 [TokenRefresh] Device was revoked - logging out with revocation message');
           handleDeviceRevocationLogout(refreshError.errorData);
-          // Wait for redirect (happens in 500ms) with safety timeout
-          await Promise.race([
-            new Promise(() => {}),
-            new Promise((_, reject) => setTimeout(() => reject(new Error('Redirect timeout after device revocation')), 5000))
-          ]);
+          throw refreshError;
         }
 
         // Check if refresh failed due to session expiration (refresh token expired)
-        if (isSessionExpired(refreshError.response, refreshError.errorData)) {
+        if (isSessionExpired(respuestaDelServidor, refreshError.errorData)) {
           console.log('⏱️ [TokenRefresh] Session expired - logging out with expiration message');
           handleSessionExpiredLogout(refreshError.errorData);
-          // Wait for redirect (happens in 500ms) with safety timeout
-          await Promise.race([
-            new Promise(() => {}),
-            new Promise((_, reject) => setTimeout(() => reject(new Error('Redirect timeout after session expiration')), 5000))
-          ]);
+          throw refreshError;
         }
       }
 
-      // Fallback: Token refresh failed for unknown reason - use generic expiration message
-      console.log('❓ [TokenRefresh] Refresh failed for unknown reason - logging out');
-      handleSessionExpiredLogout(refreshError.errorData || null);
+      // Un 401 del propio refresco es la única respuesta que significa "estas
+      // credenciales ya no sirven". Se comprueba el estado y no solo el texto
+      // porque `isSessionExpired` exige además que el `detail` hable del
+      // refresh token, y un 401 con otro mensaje también cierra la sesión
+      if (credencialesRechazadas) {
+        console.log('⏱️ [TokenRefresh] Refresh rejected with 401 - logging out');
+        handleSessionExpiredLogout(refreshError.errorData || null);
+      } else {
+        // Nadie ha dicho que la sesión no valga: se conserva. El marcador
+        // vuelve a preguntar en su siguiente vuelta y lo anotado sin conexión
+        // sigue donde estaba
+        console.log('📡 [TokenRefresh] Refresh unreachable - keeping the session');
+      }
 
-      // Pause execution - redirect will interrupt
-      await Promise.race([
-        new Promise(() => {}),
-        new Promise((_, reject) => setTimeout(() => reject(new Error('Redirect timeout after session expiration')), 5000))
-      ]);
+      // Todas las salidas de aquí terminan igual: el error sube a quien llamó.
+      // Antes cada rama esperaba a que la redirección interrumpiera, con un
+      // tope de cinco segundos. Eso dejaba `isRefreshing` bloqueado ese rato,
+      // y cualquier petición que diera 401 mientras tanto se encolaba DESPUÉS
+      // de haberse vaciado la cola: su promesa no se resolvía nunca. Peor aún,
+      // si el cierre de sesión no llegaba a redirigir —ya estaba marcado como
+      // atendido— nadie interrumpía nada y quien llamó recibía a los cinco
+      // segundos un 'Redirect timeout' en vez del error de verdad
+      throw refreshError;
 
     } finally {
       isRefreshing = false;
