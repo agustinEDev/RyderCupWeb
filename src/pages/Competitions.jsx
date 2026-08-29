@@ -13,6 +13,7 @@ import {
 import { useAuth } from '../hooks/useAuth';
 import { CountryFlag } from '../utils/countryUtils';
 import BlockLoader from '../components/ui/BlockLoader';
+import { formatCountryName } from '../services/countries';
 
 // Helper function to get enrollment status classes
 const getEnrollmentStatusClasses = (status) => {
@@ -30,7 +31,7 @@ const getEnrollmentStatusClasses = (status) => {
 
 const Competitions = () => {
   const navigate = useNavigate();
-  const { t } = useTranslation('competitions');
+  const { t, i18n } = useTranslation('competitions');
   const { user } = useAuth();
   const [competitions, setCompetitions] = useState([]);
   const [filteredCompetitions, setFilteredCompetitions] = useState([]);
@@ -227,7 +228,7 @@ const Competitions = () => {
                         key={country.code || index}
                         countryCode={country.code}
                         style={{ width: '20px', height: 'auto' }}
-                        title={country.name || country.nameEn || country.code}
+                        title={formatCountryName(country, i18n.language) || country.code}
                       />
                     ))}
                     {/* Show count text only if golf_courses_count is available */}

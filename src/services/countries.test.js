@@ -93,3 +93,30 @@ describe('sortCountriesByName', () => {
     expect(sortCountriesByName([], 'es')).toEqual([]);
   });
 });
+
+describe('formatCountryName con la forma que arma CompetitionAssembler (FE #513)', () => {
+  // El assembler expone `nameEs`/`nameEn` y rellena `name` con el inglés fijo,
+  // así que un país que llegara así caía al `name` de reserva y en español se
+  // leía «Spain» dentro de una aplicación en español
+  const comoElAssembler = { code: 'ES', name: 'Spain', nameEn: 'Spain', nameEs: 'España' };
+
+  it('usa el español cuando la aplicación está en español', () => {
+    expect(formatCountryName(comoElAssembler, 'es')).toBe('España');
+  });
+
+  it('también con la etiqueta larga del navegador', () => {
+    expect(formatCountryName(comoElAssembler, 'es-ES')).toBe('España');
+  });
+
+  it('usa el inglés cuando la aplicación está en inglés', () => {
+    expect(formatCountryName(comoElAssembler, 'en')).toBe('Spain');
+  });
+
+  it('sigue entendiendo la forma del backend', () => {
+    expect(formatCountryName({ code: 'PT', name_es: 'Portugal', name_en: 'Portugal' }, 'es')).toBe('Portugal');
+  });
+
+  it('cae al nombre suelto solo si no hay ninguno de los dos', () => {
+    expect(formatCountryName({ code: 'FR', name: 'France' }, 'es')).toBe('France');
+  });
+});

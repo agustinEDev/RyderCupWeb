@@ -72,4 +72,23 @@ describe('public content', () => {
       expect(common.footer.copyrightShort).toContain('{{year}}');
     }
   });
+  it('passes the year wherever a footer copyright string is rendered', () => {
+    // Interpolar la clave no sirve si quien la pinta no manda `year`: en el
+    // calendario de competición se leía «© {{year}} RyderCupFriends» tal cual,
+    // porque `SchedulePage` llamaba a `t('footer')` a secas mientras las otras
+    // tres páginas de competición sí lo pasaban (FE #513)
+    // Cualquier nombre, no solo `t`: la página que falló usaba `tComp`
+    const usos = /\b[A-Za-z_$][\w$]*\(\s*'(?:[\w-]+:)?footer(?:\.copyright(?:Short)?)?'\s*(,|\))/g;
+
+    const offenders = [];
+    for (const f of files) {
+      for (const uso of f.content.matchAll(usos)) {
+        const desde = uso.index;
+        const trozo = f.content.slice(desde, desde + 200);
+        if (!/year\s*:/.test(trozo)) offenders.push(`${relative(f.path)}: ${uso[0]}`);
+      }
+    }
+
+    expect(offenders).toEqual([]);
+  });
 });
