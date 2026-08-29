@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [2.23.0] - 2026-08-29
+
+### Added
+
+- **Ya se pueden elegir campos de otros países.** Al crear una partida rápida, un campo de fuera de tu país no aparecía por ningún camino: el buscador preguntaba siempre por el tuyo, y «campos cerca de mí» lo seguía haciendo aunque la aplicación supiera dónde estabas, así que estando en el aparcamiento de un campo portugués la lista de «los más cercanos» seguía siendo de campos españoles.
+
+  Ahora, cuando conoce tu posición, busca el campo que estás pisando sin mirar de qué país es. Y si escribes un nombre que no existe en tu país, lo busca en el resto y te avisa de que lo que estás viendo ya no es de aquí.
+
+  Al crear una competición no cambia nada: allí el país no es el tuyo, es una condición de la competición, y sus campos siguen limitados a los países que tenga declarados.
+
+- **Los campos de fuera enseñan de dónde son.** En la lista, junto al tipo de campo y el número de barras, los que no son de tu país muestran su bandera y su código. Dos campos pueden llamarse igual a un lado y otro de la frontera, y elegir el que no era estropea la tarjeta sin decir nada.
+
 ## [2.22.2] - 2026-08-26
 
 ### Fixed

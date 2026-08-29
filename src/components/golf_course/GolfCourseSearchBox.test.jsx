@@ -441,4 +441,139 @@ describe('GolfCourseSearchBox', () => {
       expect(screen.getByRole('textbox')).not.toBeDisabled();
     });
   });
+  describe('campos de otros países (FE #509)', () => {
+    const MADRID = { coords: { latitude: 40.41677382, longitude: -3.70379409 } };
+
+    const abroad = (id, name, countryCode) => ({ ...course(id, name), countryCode });
+
+    const openDropdown = async () => {
+      await waitFor(() => expect(mockList).toHaveBeenCalled());
+      fireEvent.focus(screen.getByRole('textbox'));
+    };
+
+    const ultimaConsulta = () => mockList.mock.calls[mockList.mock.calls.length - 1][0];
+
+    beforeEach(() => {
+      Object.defineProperty(navigator, 'geolocation', {
+        value: { getCurrentPosition: vi.fn((success) => success(MADRID)) },
+        configurable: true,
+        writable: true,
+      });
+    });
+
+    it('busca sin país al pedir los campos cercanos', async () => {
+      // Estando sobre el campo, la nacionalidad del jugador no dice nada del
+      // campo que pisa: con el país puesto, "el más cercano" a Ponte de Lima
+      // seguía buscando entre los españoles
+      renderBox({ allowNearby: true });
+      await openDropdown();
+
+      fireEvent.click(await screen.findByTestId('golf-course-nearby-button'));
+
+      await waitFor(() => expect(ultimaConsulta().lat).toBe(40.417));
+      expect(ultimaConsulta().countryCode).toBeUndefined();
+    });
+
+    it('mantiene el país cuando se busca por nombre', async () => {
+      // Quitarlo siempre llenaría de campos de fuera la lista de quien juega en
+      // su país, que son casi todos
+      renderBox();
+      await openDropdown();
+
+      fireEvent.change(screen.getByRole('textbox'), { target: { value: 'Real' } });
+
+      await waitFor(() => expect(ultimaConsulta().name).toBe('Real'));
+      expect(ultimaConsulta().countryCode).toBe('ES');
+    });
+
+    it('amplía a todos los países cuando en el tuyo no hay ninguno', async () => {
+      mockList
+        .mockResolvedValueOnce({ courses: [], total: 0 })
+        .mockResolvedValueOnce({ courses: [], total: 0 })
+        .mockResolvedValueOnce({ courses: [abroad('9', 'Axis Golfe Ponte de Lima', 'PT')], total: 1 });
+
+      renderBox({ allowOtherCountries: true });
+      await openDropdown();
+      fireEvent.change(screen.getByRole('textbox'), { target: { value: 'Axis' } });
+
+      expect(await screen.findByText('Axis Golfe Ponte de Lima')).toBeInTheDocument();
+      expect(screen.getByTestId('golf-course-widened-notice')).not.toHaveTextContent('');
+
+      const consultas = mockList.mock.calls.map(([f]) => f);
+      const porNombre = consultas.filter((f) => f.name === 'Axis');
+      expect(porNombre).toHaveLength(2);
+      expect(porNombre[0].countryCode).toBe('ES');
+      expect(porNombre[1].countryCode).toBeUndefined();
+    });
+
+    it('no amplía cuando no hay nada escrito', async () => {
+      // La lista que se abre sin teclear es la del país propio: sin texto no
+      // hay nada que buscar fuera, y saldría un mundo entero por orden alfabético
+      mockList.mockResolvedValue({ courses: [], total: 0 });
+
+      renderBox();
+      await waitFor(() => expect(mockList).toHaveBeenCalled());
+
+      expect(mockList).toHaveBeenCalledTimes(1);
+      expect(mockList.mock.calls[0][0].countryCode).toBe('ES');
+    });
+
+    it('no anuncia la ampliación si fuera tampoco hay nada', async () => {
+      mockList.mockResolvedValue({ courses: [], total: 0 });
+
+      renderBox({ allowOtherCountries: true });
+      await openDropdown();
+      fireEvent.change(screen.getByRole('textbox'), { target: { value: 'Inexistente' } });
+
+      await waitFor(() => expect(ultimaConsulta().name).toBe('Inexistente'));
+      await waitFor(() =>
+        expect(screen.getByTestId('golf-course-widened-notice')).toHaveTextContent('')
+      );
+    });
+
+    it('no amplía a otros países en los buscadores de competición', async () => {
+      // Ahí el país no es "el tuyo", es una restricción del formulario:
+      // `handleGolfCourseSelect` archiva el campo bajo el país del recuadro, y
+      // uno de fuera quedaría guardado como español y se perdería al cambiar
+      // de país (CreateCompetition.jsx:289)
+      mockList.mockResolvedValue({ courses: [], total: 0 });
+
+      renderBox();
+      await openDropdown();
+      fireEvent.change(screen.getByRole('textbox'), { target: { value: 'Axis' } });
+
+      await waitFor(() => expect(ultimaConsulta().name).toBe('Axis'));
+      const porNombre = mockList.mock.calls.map(([f]) => f).filter((f) => f.name === 'Axis');
+      expect(porNombre).toHaveLength(1);
+      expect(porNombre[0].countryCode).toBe('ES');
+    });
+
+    it('no marca como extranjeros los campos del país propio escrito en minúsculas', async () => {
+      // Hay cuentas con `country_code: 'es'` (countryUtils.test.js), y el
+      // buscador recibe ese valor tal cual desde `currentUser.country_code`
+      mockList.mockResolvedValue({ courses: [abroad('1', 'Real Club de Golf', 'ES')], total: 1 });
+
+      renderBox({ countryCode: 'es' });
+      await openDropdown();
+
+      await screen.findByText('Real Club de Golf');
+      expect(screen.queryByTestId('golf-course-country-1')).not.toBeInTheDocument();
+    });
+
+    it('enseña el país solo en los campos que no son del tuyo', async () => {
+      mockList.mockResolvedValue({
+        courses: [abroad('9', 'Axis Golfe Ponte de Lima', 'PT'), abroad('1', 'Real Club de Golf', 'ES')],
+        total: 2,
+      });
+
+      renderBox();
+      await openDropdown();
+
+      await screen.findByText('Axis Golfe Ponte de Lima');
+      // Dos campos con el mismo nombre a un lado y otro de la frontera se
+      // eligen a ciegas si la fila no dice de dónde es cada uno
+      expect(screen.getByTestId('golf-course-country-9')).toHaveTextContent('PT');
+      expect(screen.queryByTestId('golf-course-country-1')).not.toBeInTheDocument();
+    });
+  });
 });
