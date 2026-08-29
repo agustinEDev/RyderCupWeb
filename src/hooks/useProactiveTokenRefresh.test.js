@@ -136,24 +136,14 @@ describe('useProactiveTokenRefresh', () => {
     expect(refreshAccessToken).not.toHaveBeenCalled();
   });
   describe('cuando el refresco falla por falta de cobertura (FE #514)', () => {
+    // Un intento fallido no mueve la marca del último refresco, así que la
+    // ventana se queda abierta y CADA ACTIVIDAD del usuario dispararía otro
+    // intento —no hay comprobación periódica: solo la actividad y el
+    // temporizador inicial despiertan al hook—. Antes lo cortaba el cierre de
+    // sesión; ahora la sesión se conserva y hace falta un descanso propio
     beforeEach(() => {
       refreshAccessToken.mockReset();
       refreshAccessToken.mockRejectedValue(new TypeError('Failed to fetch'));
-    });
-
-    it('no encadena intentos: espera antes de volver a probar', async () => {
-      // Un intento fallido no mueve la marca del último refresco, así que la
-      // ventana se queda abierta y cada comprobación dispararía otra petición.
-      // Antes lo cortaba el cierre de sesión; ahora la sesión se conserva
-      renderHook(() => useProactiveTokenRefresh({ enabled: true }));
-
-      vi.advanceTimersByTime(ACCESS_TOKEN_TTL_MS - REFRESH_BEFORE_MS);
-      await vi.advanceTimersByTimeAsync(0);
-      expect(refreshAccessToken).toHaveBeenCalledTimes(1);
-
-      // Diez minutos de comprobaciones más: no debe volver a intentarlo enseguida
-      await vi.advanceTimersByTimeAsync(10 * 1000);
-      expect(refreshAccessToken).toHaveBeenCalledTimes(1);
     });
 
     it('vuelve a intentarlo, pasado el descanso, en cuanto hay actividad', async () => {

@@ -41,6 +41,10 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
   const pollIntervalRef = useRef(null);
   // Si hay un sondeo sin terminar, para no apilar peticiones sin cobertura
   const enVueloRef = useRef(false);
+  // Número de la última lectura pedida, para descartar respuestas superadas
+  const turnoRef = useRef(0);
+  // Si ya se está vaciando la cola de hoyos, para no mandar el mismo dos veces
+  const vaciandoRef = useRef(false);
   const sessionRefreshRef = useRef(null);
 
   // Determine if user is a player in this match
@@ -115,27 +119,41 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
   const holesToSubmit = scoringView?.isDecided ? playedHoles.length : totalHoles;
 
   // --- Fetch scoring view ---
-  const fetchScoringView = useCallback(async () => {
+  const fetchScoringView = useCallback(async ({ esSondeo = false } = {}) => {
     if (!matchId) return;
-    // Una cada vez. Con cobertura la petición tarda milisegundos y esto no
-    // llega a notarse; sin ella puede tardar decenas de segundos en rendirse, y
-    // sin esta guarda el sondeo apilaría varias en vuelo a la vez peleando por
-    // la radio. Con ella, el ritmo lo marca lo que tarde cada intento
-    if (enVueloRef.current) return;
-    enVueloRef.current = true;
+
+    // La guarda es SOLO del sondeo. Con cobertura la petición tarda
+    // milisegundos y no llega a notarse; sin ella puede tardar decenas de
+    // segundos en rendirse, y el sondeo apilaría varias en vuelo peleando por
+    // la radio. Pero aplicarla también a quien pide a propósito —enviar la
+    // tarjeta, conceder, vaciar la cola, el botón de reintentar— haría que esas
+    // llamadas no hicieran nada cuando coincidieran con un sondeo
+    if (esSondeo && enVueloRef.current) return;
+    if (esSondeo) enVueloRef.current = true;
+
+    // Cada lectura lleva su número: una respuesta vieja no debe pisar a una
+    // nueva. Sin esto, el sondeo lanzado ANTES de enviar la tarjeta llegaba
+    // después y devolvía la pantalla al estado de antes del envío
+    const miTurno = ++turnoRef.current;
+
     try {
       const data = await getScoringViewUseCase.execute(matchId);
+      if (miTurno !== turnoRef.current) return;
       setScoringView(data);
       setError(null);
     } catch (err) {
-      if (!isOffline) {
-        setError(err);
-      }
+      if (miTurno !== turnoRef.current) return;
+      // Se pregunta al estado compartido en vez de mirar `isOffline`, que aquí
+      // es el valor del render que creó esta función: la petición cuyo fallo
+      // provoca el corte todavía lo ve en falso, así que pintaba un error rojo
+      // debajo del aviso amarillo y allí se quedaba hasta la siguiente que
+      // saliera bien
+      if (hayConexion()) setError(err);
     } finally {
-      enVueloRef.current = false;
+      if (esSondeo) enVueloRef.current = false;
       setIsLoading(false);
     }
-  }, [matchId, isOffline]);
+  }, [matchId]);
 
   // --- Submit hole score ---
   // Allow submission if own scores OR marker scores are still editable
@@ -207,6 +225,15 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
 
   // --- Process offline queue ---
   const processQueue = useCallback(async () => {
+    // Una vaciada a la vez. El aviso de que ha vuelto la conexión llega ahora
+    // en cuanto una petición sale bien, no solo con el evento del navegador, y
+    // con la cobertura yendo y viniendo puede llegar varias veces seguidas. Sin
+    // esto, una segunda vaciada empezaría a recorrer la misma cola —cada hoyo
+    // se borra al confirmarse su envío, no antes— y mandaría el mismo hoyo dos
+    // veces
+    if (vaciandoRef.current) return;
+    vaciandoRef.current = true;
+    try {
     const entries = offlineQueue.getByMatch(matchId);
     for (const entry of entries) {
       try {
@@ -224,6 +251,9 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
     }
     setPendingQueueSize(offlineQueue.size());
     await fetchScoringView();
+    } finally {
+      vaciandoRef.current = false;
+    }
   }, [matchId, fetchScoringView]);
 
   // --- Take over session (force-acquire lock) ---
@@ -304,8 +334,11 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
 
   // --- Initial fetch + polling ---
   useEffect(() => {
+    // La primera lectura cuenta como sondeo: es automática, no la ha pedido
+    // nadie, y si se queda esperando sin cobertura el primer sondeo no debe
+    // apilarse encima
     // eslint-disable-next-line react-hooks/set-state-in-effect -- pre-existing pattern surfaced by eslint-plugin-react-hooks 7.1.1 bump; needs dedicated review (tracked in follow-up)
-    fetchScoringView();
+    fetchScoringView({ esSondeo: true });
 
     // Se pregunta igual haya cobertura o no. Pararlo sin conexión convertía ese
     // modo en una trampa: el estado vuelve a «conectado» cuando una petición
@@ -316,12 +349,16 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
     // La misma cadencia en los dos casos y no una más lenta a ojo: quien espacia
     // los intentos sin cobertura es la guarda de `fetchScoringView`, que no
     // deja empezar uno con otro en vuelo
-    pollIntervalRef.current = setInterval(fetchScoringView, POLL_INTERVAL);
+    pollIntervalRef.current = setInterval(() => fetchScoringView({ esSondeo: true }), POLL_INTERVAL);
 
     return () => {
       if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
     };
-  }, [fetchScoringView, isOffline]);
+    // `isOffline` ya no está en las dependencias: cada cambio de conexión
+    // rehacía el efecto, y su cuerpo pide nada más montarse. Como el cambio lo
+    // provoca precisamente una petición al resolverse, con cobertura
+    // intermitente eso encadenaba peticiones sin ningún espaciado
+  }, [fetchScoringView]);
 
   // --- Update pending queue size on mount ---
   useEffect(() => {

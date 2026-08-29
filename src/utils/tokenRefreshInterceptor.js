@@ -205,6 +205,7 @@ export const fetchWithTokenRefresh = async (url, options = {}) => {
     // Clone response to avoid consuming the body
     const responseClone = response.clone();
     let errorData = {};
+    let revocado = false;
 
     try {
       errorData = await responseClone.json();
@@ -212,15 +213,22 @@ export const fetchWithTokenRefresh = async (url, options = {}) => {
 
       if (isRevoked) {
         handleDeviceRevocationLogout(errorData);
-        // Don't return response (body already consumed by clone)
-        // Wait for redirect (happens in 500ms) with safety timeout that rejects
-        await Promise.race([
-          new Promise(() => {}), // Never resolves - redirect will interrupt
-          new Promise((_, reject) => setTimeout(() => reject(new Error('Redirect timeout after device revocation')), 5000))
-        ]);
+        revocado = true;
       }
     } catch {
       // If JSON parsing fails, continue with normal refresh flow
+    }
+
+    // Fuera del `try`: aquí había una espera de cinco segundos a que la
+    // redirección interrumpiera, y su rechazo lo tragaba el `catch` de arriba,
+    // así que un dispositivo ya revocado acababa siguiendo el flujo normal de
+    // refresco como si nada. Es el mismo patrón que se quitó de las otras dos
+    // ramas; esta se había quedado
+    if (revocado) {
+      const revocacion = new Error('Device revoked');
+      revocacion.response = response;
+      revocacion.errorData = errorData;
+      throw revocacion;
     }
 
     // Special case: Don't retry login endpoint - let it fail naturally
@@ -266,6 +274,14 @@ export const fetchWithTokenRefresh = async (url, options = {}) => {
     try {
       // Attempt to refresh the token
       await refreshAccessToken();
+
+      // El refresco ya está hecho, así que a partir de aquí nadie tiene que
+      // esperar en la cola. Se suelta ANTES de vaciarla y antes de reintentar:
+      // mientras este `await` estaba en marcha, `isRefreshing` seguía en cierto
+      // y una petición que diera 401 se encolaba en una cola ya vaciada, para
+      // no resolverse nunca. Con una vuelta de sondeo cada 10 segundos y
+      // cobertura lenta, esa ventana son segundos
+      isRefreshing = false;
 
       // Refresh successful - process queued requests
       processQueue();

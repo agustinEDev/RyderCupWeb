@@ -455,11 +455,7 @@ describe('tokenRefreshInterceptor', () => {
       // Por este `catch` pasan también errores propios —el 'Redirect timeout'
       // de la revocación, un fallo de programación—: darlos por falta de
       // cobertura sacaría el aviso sin motivo
-      const { apuntaFalloDeRed } = await import('../services/estadoDeConexion');
-      const espia = vi.fn();
-      const { seSuscribeALaConexion, hayConexion } = await import('../services/estadoDeConexion');
-      seSuscribeALaConexion(espia);
-      void apuntaFalloDeRed;
+      const { hayConexion } = await import('../services/estadoDeConexion');
 
       globalThis.fetch.mockRejectedValueOnce(new Error('Redirect timeout after device revocation'));
 

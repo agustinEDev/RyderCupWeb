@@ -608,6 +608,65 @@ describe('useScoring', () => {
       }
     });
 
+    it('una respuesta vieja no pisa a una más nueva', async () => {
+      // El sondeo lanzado ANTES de enviar la tarjeta llega después y traía el
+      // estado de antes del envío: la pantalla volvía a ofrecer el botón de
+      // enviar con los golpes editables
+      let sueltaVieja;
+      getScoringViewUseCase.execute
+        .mockImplementationOnce(() => new Promise((resolve) => { sueltaVieja = resolve; }))
+        .mockResolvedValue({ scores: [{ holeNumber: 1 }], marca: 'nueva' });
+
+      const { result } = renderHook(() => useScoring('m-1', 'u1'));
+      await act(async () => {});
+
+      // Quien pide a propósito, después: su respuesta llega la primera
+      await act(async () => { await result.current.refetch(); });
+      expect(result.current.scoringView?.marca).toBe('nueva');
+
+      // Y ahora contesta la vieja: no debe devolver la pantalla atrás
+      await act(async () => { sueltaVieja({ scores: [], marca: 'vieja' }); });
+      expect(result.current.scoringView?.marca).toBe('nueva');
+    });
+
+    it('la guarda no frena a quien pide a propósito', async () => {
+      // `refetch`, enviar la tarjeta, conceder y vaciar la cola también llaman
+      // a la misma función. Si la guarda los frenara, el botón de reintentar no
+      // haría nada cuando coincidiera con un sondeo, y tras enviar la tarjeta
+      // la pantalla se quedaría con los datos de antes del envío
+      vi.useFakeTimers();
+      try {
+        let suelta;
+        getScoringViewUseCase.execute.mockImplementation(
+          () => new Promise((resolve) => { suelta = resolve; })
+        );
+
+        const { result } = renderHook(() => useScoring('m-1', 'u1'));
+        await act(async () => { await vi.advanceTimersByTimeAsync(0); });
+        const conUnaEnVuelo = getScoringViewUseCase.execute.mock.calls.length;
+
+        await act(async () => { result.current.refetch(); await vi.advanceTimersByTimeAsync(0); });
+
+        expect(getScoringViewUseCase.execute.mock.calls.length).toBeGreaterThan(conUnaEnVuelo);
+        suelta({ scores: [] });
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('sin conexión no pinta el error rojo debajo del aviso', async () => {
+      // La petición cuyo fallo provoca el corte veía `isOffline` todavía en
+      // falso —es el valor del render que creó la función—, así que pintaba un
+      // error que no se iba hasta la siguiente lectura buena
+      getScoringViewUseCase.execute.mockRejectedValue(new TypeError('Failed to fetch'));
+      apuntaFalloDeRed();
+
+      const { result } = renderHook(() => useScoring('m-1', 'u1'));
+      await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+      expect(result.current.error).toBeNull();
+    });
+
     it('no apila peticiones cuando la anterior no ha terminado', async () => {
       // Sin cobertura un intento puede tardar decenas de segundos en rendirse.
       // Sin esta guarda, un sondeo cada 10 s dejaría varias en vuelo a la vez

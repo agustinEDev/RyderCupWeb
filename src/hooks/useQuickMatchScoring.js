@@ -7,6 +7,7 @@ import {
   completeQuickMatchUseCase,
   cancelQuickMatchUseCase,
 } from '../composition';
+import { hayConexion } from '../services/estadoDeConexion';
 
 const POLL_INTERVAL = 10000; // 10 seconds
 
@@ -70,7 +71,11 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
         }
       }
     } catch (err) {
-      setLoadError(err);
+      // Sin conexión no se pinta el error genérico: la pantalla ya avisa de que
+      // no hay cobertura, y salían los dos a la vez —el aviso amarillo y un
+      // recuadro rojo con «error» y un botón de reintentar—, repintado en cada
+      // sondeo. El aviso explica lo que pasa; el rojo solo alarma
+      if (hayConexion()) setLoadError(err);
     } finally {
       setIsLoading(false);
     }
