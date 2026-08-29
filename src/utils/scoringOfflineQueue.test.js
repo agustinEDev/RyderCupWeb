@@ -176,18 +176,17 @@ describe('anotaciones por participante (FE #515)', () => {
     expect(guardadas[0].participantId).toBe('p-2');
   });
 
-  it('la bola recogida se guarda; el hoyo sin anotar no existe', () => {
-    // Los dos llegan sin número y significan lo contrario. Lo que los separa no
-    // es el valor sino si HAY anotación, así que se comprueba el contraste: el
-    // recogido deja entrada y el que nadie tocó no deja ninguna
+  it('dos bolas recogidas en el mismo hoyo son dos anotaciones, no una', () => {
+    // Un hoyo recogido llega con `score` nulo, igual que llegaría el de
+    // cualquier otro. Sin el participante en la clave, la segunda pisaba a la
+    // primera y el hoyo quedaba anotado a medias
     enqueue('qm-1', 7, { score: null }, 'p-1');
-    // el hoyo 8 no se anota: nadie llama a enqueue
+    enqueue('qm-1', 7, { score: null }, 'p-2');
 
     const guardadas = getByMatch('qm-1');
-    expect(guardadas).toHaveLength(1);
-    expect(guardadas[0].holeNumber).toBe(7);
-    expect(guardadas[0].scoreData).toEqual({ score: null });
-    expect(guardadas.some((e) => e.holeNumber === 8)).toBe(false);
+    expect(guardadas).toHaveLength(2);
+    expect(guardadas.every((e) => e.scoreData.score === null)).toBe(true);
+    expect(guardadas.map((e) => e.participantId).sort()).toEqual(['p-1', 'p-2']);
   });
 
   it('reanotar sobre una entrada guardada por una versión anterior la reemplaza', () => {
@@ -215,6 +214,16 @@ describe('anotaciones por participante (FE #515)', () => {
     expect(size()).toBe(3);
     expect(size('m-1')).toBe(1);
     expect(size('qm-1')).toBe(2);
+  });
+
+  it('una partida sin id no tiene pendientes, no los tiene todos', () => {
+    // Decidir por veracidad devolvía la cuenta global con una cadena vacía,
+    // que es justo lo que se venía a quitar
+    enqueue('m-1', 7, { ownScore: 5 });
+    enqueue('qm-1', 7, { score: 4 }, 'p-1');
+
+    expect(size('')).toBe(0);
+    expect(size()).toBe(2);
   });
 
   it('no confunde una anotación de competición con una de partida rápida', () => {

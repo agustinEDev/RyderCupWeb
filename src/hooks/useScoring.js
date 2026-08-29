@@ -194,6 +194,14 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
   const processQueue = useCallback(async () => {
     const entries = offlineQueue.getByMatch(matchId);
     for (const entry of entries) {
+      // Este vaciado es el de competición. Una anotación con participante es de
+      // una partida rápida: va por otro endpoint y con otro cuerpo, así que
+      // enviarla desde aquí la guardaría mal y la borraría a continuación. Se
+      // deja para quien sepa mandarla. Hoy no debería llegar ninguna —la cola
+      // se filtra por partida y los ids no coinciden—, pero perder un golpe en
+      // silencio es demasiado caro para fiarlo a eso (FE #515)
+      if (entry.participantId != null) continue;
+
       try {
         await submitHoleScoreUseCase.execute(entry.matchId, entry.holeNumber, entry.scoreData);
         // Con el participante: `remove` distingue por él desde FE #515, así que

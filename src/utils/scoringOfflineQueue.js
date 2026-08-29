@@ -110,7 +110,9 @@ export const clear = () => {
  * @returns {number}
  */
 export const size = (matchId) => {
-  return matchId ? getByMatch(matchId).length : getAll().length;
+  // Por `undefined` y no por veracidad: con una cadena vacía devolvía la cuenta
+  // global, que es justo lo que se venía a quitar
+  return matchId === undefined ? getAll().length : getByMatch(matchId).length;
 };
 
 /**

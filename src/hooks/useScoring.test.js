@@ -575,13 +575,36 @@ describe('useScoring', () => {
     });
   });
   describe('vaciar la cola con anotaciones por participante (FE #515)', () => {
-    it('borra la entrada que envía, lleve participante o no', async () => {
-      // Hoy competición no encola con participante, así que este caso no se da
-      // todavía; se cubre porque `remove` distingue por él desde FE #515 y, en
-      // cuanto partida rápida empiece a encolar, omitirlo dejaría la anotación
-      // sin borrar y se reenviaría en cada reconexión para siempre
+    afterEach(() => {
+      // `vi.clearAllMocks()` limpia las llamadas pero NO los valores de
+      // retorno, y aquí se fija uno: sin esto, el siguiente test que se
+      // añadiera detrás montaría el hook con una cola que nunca se vacía
+      offlineQueue.getByMatch.mockReturnValue([]);
+      offlineQueue.size.mockReturnValue(0);
+    });
+
+    it('no envía por aquí una anotación de partida rápida', async () => {
+      // Va por otro endpoint y con otro cuerpo: mandarla desde el vaciado de
+      // competición la guardaría mal y la borraría a continuación
       offlineQueue.getByMatch.mockReturnValue([
-        { matchId: 'm-1', holeNumber: 7, participantId: 'p-1', scoreData: { ownScore: 5 } },
+        { matchId: 'm-1', holeNumber: 7, participantId: 'p-1', scoreData: { score: 5 } },
+      ]);
+
+      renderHook(() => useScoring('m-1', 'u1'));
+      await waitFor(() => expect(getScoringViewUseCase.execute).toHaveBeenCalled());
+
+      await act(async () => {
+        window.dispatchEvent(new globalThis.Event('online'));
+        await Promise.resolve();
+      });
+
+      expect(submitHoleScoreUseCase.execute).not.toHaveBeenCalled();
+      expect(offlineQueue.remove).not.toHaveBeenCalled();
+    });
+
+    it('envía y borra las suyas, que no llevan participante', async () => {
+      offlineQueue.getByMatch.mockReturnValue([
+        { matchId: 'm-1', holeNumber: 7, scoreData: { ownScore: 5 } },
       ]);
       submitHoleScoreUseCase.execute.mockResolvedValue({});
 
@@ -594,8 +617,37 @@ describe('useScoring', () => {
       });
 
       await waitFor(() =>
-        expect(offlineQueue.remove).toHaveBeenCalledWith('m-1', 7, 'p-1')
+        expect(offlineQueue.remove).toHaveBeenCalledWith('m-1', 7, undefined)
       );
+    });
+
+    it('descarta la que el servidor rechaza sin vuelta atrás', async () => {
+      // Un 4xx no se reintenta: se quita de la cola o se queda ahí para siempre
+      offlineQueue.getByMatch.mockReturnValue([
+        { matchId: 'm-1', holeNumber: 7, scoreData: { ownScore: 5 } },
+      ]);
+      const rechazo = new Error('Bad request');
+      rechazo.status = 400;
+      submitHoleScoreUseCase.execute.mockRejectedValue(rechazo);
+
+      renderHook(() => useScoring('m-1', 'u1'));
+      await waitFor(() => expect(getScoringViewUseCase.execute).toHaveBeenCalled());
+
+      await act(async () => {
+        window.dispatchEvent(new globalThis.Event('online'));
+        await Promise.resolve();
+      });
+
+      await waitFor(() =>
+        expect(offlineQueue.remove).toHaveBeenCalledWith('m-1', 7, undefined)
+      );
+    });
+
+    it('cuenta los pendientes de esta partida, no los de todas', async () => {
+      // La cola la comparten los dos modos de juego
+      renderHook(() => useScoring('m-1', 'u1'));
+
+      await waitFor(() => expect(offlineQueue.size).toHaveBeenCalledWith('m-1'));
     });
   });
 });
