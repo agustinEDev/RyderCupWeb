@@ -130,7 +130,7 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
 
     if (isOffline) {
       offlineQueue.enqueue(matchId, holeNumber, scoreData);
-      setPendingQueueSize(offlineQueue.size());
+      setPendingQueueSize(offlineQueue.size(matchId));
       return;
     }
 
@@ -148,7 +148,7 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
       const isRetryable = !status || status >= 500;
       if (isRetryable) {
         offlineQueue.enqueue(matchId, holeNumber, scoreData);
-        setPendingQueueSize(offlineQueue.size());
+        setPendingQueueSize(offlineQueue.size(matchId));
       }
       setError(err);
     } finally {
@@ -196,18 +196,21 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
     for (const entry of entries) {
       try {
         await submitHoleScoreUseCase.execute(entry.matchId, entry.holeNumber, entry.scoreData);
-        offlineQueue.remove(entry.matchId, entry.holeNumber);
+        // Con el participante: `remove` distingue por él desde FE #515, así que
+        // omitirlo dejaría sin borrar cualquier entrada que lo lleve, y se
+        // reenviaría en cada reconexión sin que la cuenta bajara nunca
+        offlineQueue.remove(entry.matchId, entry.holeNumber, entry.participantId);
       } catch (err) {
         const status = err?.response?.status ?? err?.status;
         if (status && status >= 400 && status < 500) {
           // Non-retryable client error — discard and continue
-          offlineQueue.remove(entry.matchId, entry.holeNumber);
+          offlineQueue.remove(entry.matchId, entry.holeNumber, entry.participantId);
           continue;
         }
         break; // Stop on network or server error
       }
     }
-    setPendingQueueSize(offlineQueue.size());
+    setPendingQueueSize(offlineQueue.size(matchId));
     await fetchScoringView();
   }, [matchId, fetchScoringView]);
 
@@ -309,8 +312,8 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
   // --- Update pending queue size on mount ---
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- pre-existing pattern surfaced by eslint-plugin-react-hooks 7.1.1 bump; needs dedicated review (tracked in follow-up)
-    setPendingQueueSize(offlineQueue.size());
-  }, []);
+    setPendingQueueSize(offlineQueue.size(matchId));
+  }, [matchId]);
 
   return {
     // State

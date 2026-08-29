@@ -16,10 +16,6 @@
 const STORAGE_KEY = 'rydercup-scoring-queue';
 
 /**
- * Get all queued scores from localStorage.
- * @returns {Array} Array of queued score entries
- */
-/**
  * Si una entrada guardada es la misma anotación que la que se busca.
  *
  * El participante se compara normalizando lo que falta: las entradas escritas
@@ -32,6 +28,10 @@ const mismaAnotacion = (entry, matchId, holeNumber, participantId) =>
   && entry.holeNumber === holeNumber
   && (entry.participantId ?? null) === (participantId ?? null);
 
+/**
+ * Get all queued scores from localStorage.
+ * @returns {Array} Array of queued score entries
+ */
 export const getAll = () => {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -43,7 +43,7 @@ export const getAll = () => {
 
 /**
  * Add a score to the offline queue.
- * If a score for the same match+hole already exists, it is replaced.
+ * If a score for the same match+hole+participant already exists, it is replaced.
  * @param {string} matchId
  * @param {number} holeNumber
  * @param {Object} scoreData - { ownScore, markedPlayerId, markedScore }
@@ -100,10 +100,17 @@ export const clear = () => {
 
 /**
  * Get the number of queued entries.
+ *
+ * Con `matchId`, solo las de esa partida. La cola es una sola y la comparten
+ * los dos modos de juego, así que contarla entera hacía que una pantalla
+ * enseñara «N pendientes» incluyendo anotaciones de otra partida que ella no
+ * va a enviar nunca (FE #515).
+ *
+ * @param {string} [matchId]
  * @returns {number}
  */
-export const size = () => {
-  return getAll().length;
+export const size = (matchId) => {
+  return matchId ? getByMatch(matchId).length : getAll().length;
 };
 
 /**

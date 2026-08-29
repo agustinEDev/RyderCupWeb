@@ -574,4 +574,28 @@ describe('useScoring', () => {
       expect(submitHoleScoreUseCase.execute).not.toHaveBeenCalled();
     });
   });
+  describe('vaciar la cola con anotaciones por participante (FE #515)', () => {
+    it('borra la entrada que envía, lleve participante o no', async () => {
+      // Hoy competición no encola con participante, así que este caso no se da
+      // todavía; se cubre porque `remove` distingue por él desde FE #515 y, en
+      // cuanto partida rápida empiece a encolar, omitirlo dejaría la anotación
+      // sin borrar y se reenviaría en cada reconexión para siempre
+      offlineQueue.getByMatch.mockReturnValue([
+        { matchId: 'm-1', holeNumber: 7, participantId: 'p-1', scoreData: { ownScore: 5 } },
+      ]);
+      submitHoleScoreUseCase.execute.mockResolvedValue({});
+
+      renderHook(() => useScoring('m-1', 'u1'));
+      await waitFor(() => expect(getScoringViewUseCase.execute).toHaveBeenCalled());
+
+      await act(async () => {
+        window.dispatchEvent(new globalThis.Event('online'));
+        await Promise.resolve();
+      });
+
+      await waitFor(() =>
+        expect(offlineQueue.remove).toHaveBeenCalledWith('m-1', 7, 'p-1')
+      );
+    });
+  });
 });

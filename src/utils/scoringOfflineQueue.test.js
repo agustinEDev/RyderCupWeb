@@ -176,14 +176,45 @@ describe('anotaciones por participante (FE #515)', () => {
     expect(guardadas[0].participantId).toBe('p-2');
   });
 
-  it('guarda la bola recogida, que es una anotación sin número', () => {
-    // Un hoyo recogido llega con `score` nulo y significa lo contrario que un
-    // hoyo sin anotar, donde no hay entrada ninguna
+  it('la bola recogida se guarda; el hoyo sin anotar no existe', () => {
+    // Los dos llegan sin número y significan lo contrario. Lo que los separa no
+    // es el valor sino si HAY anotación, así que se comprueba el contraste: el
+    // recogido deja entrada y el que nadie tocó no deja ninguna
     enqueue('qm-1', 7, { score: null }, 'p-1');
+    // el hoyo 8 no se anota: nadie llama a enqueue
 
-    const [guardada] = getByMatch('qm-1');
-    expect(guardada.scoreData).toEqual({ score: null });
-    expect(guardada).toHaveProperty('participantId', 'p-1');
+    const guardadas = getByMatch('qm-1');
+    expect(guardadas).toHaveLength(1);
+    expect(guardadas[0].holeNumber).toBe(7);
+    expect(guardadas[0].scoreData).toEqual({ score: null });
+    expect(guardadas.some((e) => e.holeNumber === 8)).toBe(false);
+  });
+
+  it('reanotar sobre una entrada guardada por una versión anterior la reemplaza', () => {
+    // El caso que de verdad duplicaría: la entrada vieja no tiene el campo, y
+    // competición reanota ese mismo hoyo
+    localStorage.setItem(
+      'rydercup-scoring-queue',
+      JSON.stringify([{ matchId: 'm-1', holeNumber: 7, scoreData: { ownScore: 5 }, timestamp: 1 }])
+    );
+
+    enqueue('m-1', 7, { ownScore: 6 });
+
+    const guardadas = getByMatch('m-1');
+    expect(guardadas).toHaveLength(1);
+    expect(guardadas[0].scoreData).toEqual({ ownScore: 6 });
+  });
+
+  it('la cuenta puede pedirse solo de una partida', () => {
+    // La cola la comparten los dos modos: contarla entera enseñaba «N
+    // pendientes» incluyendo anotaciones de otra partida
+    enqueue('m-1', 7, { ownScore: 5 });
+    enqueue('qm-1', 7, { score: 4 }, 'p-1');
+    enqueue('qm-1', 8, { score: 3 }, 'p-1');
+
+    expect(size()).toBe(3);
+    expect(size('m-1')).toBe(1);
+    expect(size('qm-1')).toBe(2);
   });
 
   it('no confunde una anotación de competición con una de partida rápida', () => {
