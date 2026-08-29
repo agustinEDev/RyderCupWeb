@@ -12,9 +12,6 @@ import { hayConexion, seSuscribeALaConexion } from '../services/estadoDeConexion
 
 const POLL_INTERVAL = 10000; // 10 seconds
 
-// Sin conexión se pregunta más de tarde en tarde: es solo para enterarse de
-// que ha vuelto, y cada intento fallido gasta batería y radio
-const POLL_INTERVAL_SIN_CONEXION = 30000;
 const SESSION_REFRESH_INTERVAL = 30000; // 30 seconds
 
 /**
@@ -42,6 +39,8 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
   // eslint-disable-next-line react-hooks/purity -- pre-existing pattern surfaced by eslint-plugin-react-hooks 7.1.1 bump; needs dedicated review (tracked in follow-up)
   const sessionIdRef = useRef(`${Date.now()}-${Math.random().toString(36).slice(2)}`);
   const pollIntervalRef = useRef(null);
+  // Si hay un sondeo sin terminar, para no apilar peticiones sin cobertura
+  const enVueloRef = useRef(false);
   const sessionRefreshRef = useRef(null);
 
   // Determine if user is a player in this match
@@ -118,6 +117,12 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
   // --- Fetch scoring view ---
   const fetchScoringView = useCallback(async () => {
     if (!matchId) return;
+    // Una cada vez. Con cobertura la petición tarda milisegundos y esto no
+    // llega a notarse; sin ella puede tardar decenas de segundos en rendirse, y
+    // sin esta guarda el sondeo apilaría varias en vuelo a la vez peleando por
+    // la radio. Con ella, el ritmo lo marca lo que tarde cada intento
+    if (enVueloRef.current) return;
+    enVueloRef.current = true;
     try {
       const data = await getScoringViewUseCase.execute(matchId);
       setScoringView(data);
@@ -127,6 +132,7 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
         setError(err);
       }
     } finally {
+      enVueloRef.current = false;
       setIsLoading(false);
     }
   }, [matchId, isOffline]);
@@ -301,16 +307,16 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- pre-existing pattern surfaced by eslint-plugin-react-hooks 7.1.1 bump; needs dedicated review (tracked in follow-up)
     fetchScoringView();
 
-    // Sin conexión se sigue preguntando, más despacio. Dejar de hacerlo
-    // convertía el modo sin conexión en una trampa: el estado vuelve a
-    // «conectado» cuando una petición llega, así que sin peticiones no había
-    // quien lo despertara y el aviso y la cola se quedaban pegados aunque
-    // volviera la cobertura. Antes no se notaba porque `navigator.onLine`
-    // decía que sí y el sondeo nunca se paraba
-    pollIntervalRef.current = setInterval(
-      fetchScoringView,
-      isOffline ? POLL_INTERVAL_SIN_CONEXION : POLL_INTERVAL
-    );
+    // Se pregunta igual haya cobertura o no. Pararlo sin conexión convertía ese
+    // modo en una trampa: el estado vuelve a «conectado» cuando una petición
+    // llega, así que sin peticiones no había quien lo despertara y el aviso y
+    // la cola se quedaban pegados aunque volviera la cobertura. Antes no se
+    // notaba porque `navigator.onLine` decía que sí y el sondeo nunca paraba.
+    //
+    // La misma cadencia en los dos casos y no una más lenta a ojo: quien espacia
+    // los intentos sin cobertura es la guarda de `fetchScoringView`, que no
+    // deja empezar uno con otro en vuelo
+    pollIntervalRef.current = setInterval(fetchScoringView, POLL_INTERVAL);
 
     return () => {
       if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);

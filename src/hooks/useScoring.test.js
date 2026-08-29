@@ -608,17 +608,29 @@ describe('useScoring', () => {
       }
     });
 
-    it('pregunta más despacio que con conexión', async () => {
+    it('no apila peticiones cuando la anterior no ha terminado', async () => {
+      // Sin cobertura un intento puede tardar decenas de segundos en rendirse.
+      // Sin esta guarda, un sondeo cada 10 s dejaría varias en vuelo a la vez
+      // peleando por la radio, y no recuperaría antes: lo que tarda es el
+      // intento, no la espera
       vi.useFakeTimers();
       try {
-        const { result } = renderHook(() => useScoring('m-1', 'u1'));
-        await vi.waitFor(() => expect(result.current.isLoading).toBe(false));
+        let suelta;
+        getScoringViewUseCase.execute.mockImplementation(
+          () => new Promise((resolve) => { suelta = resolve; })
+        );
 
-        const asentado = await asientaElCorte();
+        renderHook(() => useScoring('m-1', 'u1'));
+        await act(async () => { await vi.advanceTimersByTimeAsync(0); });
+        const enVuelo = getScoringViewUseCase.execute.mock.calls.length;
 
-        // A los 11 s —pasada la cadencia normal de 10— todavía no toca
-        await act(async () => { await vi.advanceTimersByTimeAsync(11000); });
-        expect(getScoringViewUseCase.execute.mock.calls.length).toBe(asentado);
+        // Medio minuto de sondeos con la primera todavía sin contestar
+        await act(async () => { await vi.advanceTimersByTimeAsync(30000); });
+        expect(getScoringViewUseCase.execute.mock.calls.length).toBe(enVuelo);
+
+        // En cuanto contesta, el siguiente sondeo vuelve a pedir
+        await act(async () => { suelta({ scores: [] }); await vi.advanceTimersByTimeAsync(11000); });
+        expect(getScoringViewUseCase.execute.mock.calls.length).toBeGreaterThan(enVuelo);
       } finally {
         vi.useRealTimers();
       }
