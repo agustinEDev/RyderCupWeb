@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import QuickMatchScoringPage from './QuickMatchScoringPage';
+import { apuntaFalloDeRed, apuntaRespuestaDelServidor, olvidaElEstadoDeConexion } from '../../services/estadoDeConexion';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -1107,5 +1108,36 @@ describe('QuickMatchScoringPage · cancelar una partida en curso', () => {
 
     await screen.findByTestId('quick-match-scoring-tabs');
     expect(screen.queryByTestId('quick-match-cancel-button')).not.toBeInTheDocument();
+  });
+  describe('sin cobertura (FE #514)', () => {
+    beforeEach(() => olvidaElEstadoDeConexion());
+
+    it('no enseña el aviso mientras se llega al servidor', () => {
+      renderPage();
+      expect(screen.queryByTestId('quick-match-offline-banner')).not.toBeInTheDocument();
+    });
+
+    it('avisa en cuanto una petición deja de llegar', () => {
+      renderPage();
+      act(() => { apuntaFalloDeRed(); });
+      expect(screen.getByTestId('quick-match-offline-banner')).toBeInTheDocument();
+    });
+
+    it('el aviso no promete guardar nada: aquí no hay cola', () => {
+      // El texto de competición dice que se sincronizará al reconectar, y en
+      // partida rápida eso sería mentira: el golpe se pierde
+      renderPage();
+      act(() => { apuntaFalloDeRed(); });
+      const aviso = screen.getByTestId('quick-match-offline-banner');
+      expect(aviso).toHaveAttribute('role', 'status');
+      expect(aviso.textContent).toMatch(/scoring\.offline\.banner|no se guardar/i);
+    });
+
+    it('lo retira cuando el servidor vuelve a contestar', () => {
+      renderPage();
+      act(() => { apuntaFalloDeRed(); });
+      act(() => { apuntaRespuestaDelServidor(); });
+      expect(screen.queryByTestId('quick-match-offline-banner')).not.toBeInTheDocument();
+    });
   });
 });

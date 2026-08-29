@@ -232,6 +232,9 @@
       "failed": "The match could not be cancelled. Another device may have closed it already: dismiss this and check how it stands.",
       "failedOffline": "The match could not be cancelled. Check your connection and try again.",
       "failedServer": "The match could not be cancelled. Go back to your matches and check how it stands."
+    },
+    "offline": {
+      "banner": "No connection. Anything you enter now will not be saved: enter it again once you have coverage."
     }
   },
   "personalRound": {

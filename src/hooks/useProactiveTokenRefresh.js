@@ -26,6 +26,9 @@ export const REFRESH_BEFORE_MS = 1 * 60 * 1000;
  * la primera comprobacion cae un minuto despues de cargar. A partir de ahi la
  * referencia es real, porque el refresco reactivo por 401 tambien se anota.
  */
+// Lo que se espera antes de volver a intentar un refresco que acaba de fallar
+const ESPERA_TRAS_FALLO_MS = 30000;
+
 const initialLastRefresh = (tokenTTL, refreshBefore) =>
   getLastRefreshAt() ?? Date.now() - tokenTTL + refreshBefore * 2;
 
@@ -58,6 +61,8 @@ const useProactiveTokenRefresh = ({
 } = {}) => {
   // Track when the token was last refreshed
   const lastRefreshRef = useRef(initialLastRefresh(tokenTTL, refreshBefore));
+  // Cuándo falló el último intento, para no encadenarlos sin descanso
+  const lastFailedRefreshRef = useRef(0);
 
   // Track if a refresh is in progress
   const isRefreshingRef = useRef(false);
@@ -91,6 +96,16 @@ const useProactiveTokenRefresh = ({
     }
 
     const now = Date.now();
+
+    // Un intento que falla no mueve `lastRefreshRef`, así que la ventana de
+    // refresco se queda abierta para siempre y cada toque de pantalla dispara
+    // otro intento. Antes lo cortaba el cierre de sesión; desde FE #514 la
+    // sesión se conserva, así que hace falta un descanso propio: sin él, en un
+    // campo sin cobertura son peticiones cada medio segundo y batería para nada
+    if (now - lastFailedRefreshRef.current < ESPERA_TRAS_FALLO_MS) {
+      return;
+    }
+
     const timeSinceLastRefresh = now - syncLastRefresh();
     const timeUntilExpiry = tokenTTL - timeSinceLastRefresh;
 
@@ -106,9 +121,11 @@ const useProactiveTokenRefresh = ({
     try {
       await refreshAccessToken();
       lastRefreshRef.current = Date.now();
+      lastFailedRefreshRef.current = 0;
       console.log('✅ [ProactiveRefresh] Token refreshed successfully');
     } catch (error) {
       // If refresh fails, let the normal 401 handling take over
+      lastFailedRefreshRef.current = Date.now();
       console.warn('⚠️ [ProactiveRefresh] Proactive refresh failed:', error.message);
     } finally {
       isRefreshingRef.current = false;

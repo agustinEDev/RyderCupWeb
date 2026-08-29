@@ -232,6 +232,9 @@
       "failed": "No se ha podido cancelar. Puede que otro dispositivo ya la haya cerrado: cierra esto y mira cómo está.",
       "failedOffline": "No se ha podido cancelar. Comprueba la conexión e inténtalo otra vez.",
       "failedServer": "No se ha podido cancelar. Vuelve a la lista de partidas y mira cómo está."
+    },
+    "offline": {
+      "banner": "Sin conexión. Lo que anotes ahora no se guardará: vuelve a anotarlo cuando tengas cobertura."
     }
   },
   "personalRound": {

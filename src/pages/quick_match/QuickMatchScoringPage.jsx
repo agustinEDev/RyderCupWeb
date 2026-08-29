@@ -17,6 +17,7 @@ import QuickMatchClassificationTable from '../../components/quick_match/QuickMat
 import QuickMatchScorecardTable from '../../components/quick_match/QuickMatchScorecardTable';
 import MatchPlayStrokeAllocator from '../../domain/services/MatchPlayStrokeAllocator';
 import BlockLoader from '../../components/ui/BlockLoader';
+import { useConexion } from '../../hooks/useConexion';
 
 const TABS = ['input', 'classification', 'scorecard'];
 
@@ -69,6 +70,7 @@ const QuickMatchScoringPage = () => {
   const navigate = useNavigate();
   const { t } = useTranslation('quickMatch');
   const { user, loading: isLoadingUser } = useAuth();
+  const sinConexion = !useConexion();
 
   const [activeTab, setActiveTab] = useState('input');
   const [showFinishConfirm, setShowFinishConfirm] = useState(false);
@@ -353,6 +355,22 @@ const QuickMatchScoringPage = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <HeaderAuth user={user} />
+
+      {/* Sin cobertura no se avisaba de nada y el golpe anotado se perdía: aquí
+          no hay cola que lo guarde para después, a diferencia de competición
+          (FE #514). El texto lo dice tal cual en vez de reusar el de
+          competición, que promete una sincronización que aquí no existe */}
+      {sinConexion && quickMatch && (
+        <div className="max-w-4xl mx-auto px-4 pt-4">
+          <div
+            role="status"
+            data-testid="quick-match-offline-banner"
+            className="bg-yellow-50 border-l-4 border-yellow-400 p-3 rounded-r-lg"
+          >
+            <p className="text-sm text-yellow-800">{t('scoring.offline.banner')}</p>
+          </div>
+        </div>
+      )}
 
       {/* El aviso de arriba cubre los dos: un guardado rechazado y un sondeo que
           falla con la partida ya cargada. Cada uno con su copia, y el de

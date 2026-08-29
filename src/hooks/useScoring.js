@@ -7,6 +7,8 @@ import {
 } from '../composition';
 import * as offlineQueue from '../utils/scoringOfflineQueue';
 import * as sessionLock from '../utils/scoringSessionLock';
+import { useConexion } from './useConexion';
+import { hayConexion, seSuscribeALaConexion } from '../services/estadoDeConexion';
 
 const POLL_INTERVAL = 10000; // 10 seconds
 const SESSION_REFRESH_INTERVAL = 30000; // 30 seconds
@@ -26,7 +28,10 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
   const [error, setError] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [matchSummary, setMatchSummary] = useState(null);
-  const [isOffline, setIsOffline] = useState(!navigator.onLine);
+  // No sale de `navigator.onLine`: con dos rayas de cobertura vale `true`
+  // mientras ninguna petición llega, así que ni se avisaba ni se guardaba
+  // nada para después (FE #514). Lo dice quien ve si las peticiones vuelven
+  const isOffline = !useConexion();
   const [isSessionBlocked, setIsSessionBlocked] = useState(false);
   const [pendingQueueSize, setPendingQueueSize] = useState(0);
 
@@ -225,20 +230,15 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
     }, SESSION_REFRESH_INTERVAL);
   }, [matchId, currentUserId]);
 
-  // --- Online/offline listeners ---
+  // --- Al recuperar la conexión, se envía lo que quedó anotado ---
+  // Los oyentes del navegador viven ahora en `services/estadoDeConexion`, que
+  // es quien decide si se llega al servidor. Aquí se escucha ese aviso en vez
+  // de mirar el valor desde un efecto: vaciar la cola cambia estado, y hacerlo
+  // como reacción a un render lo prohíbe `react-hooks/set-state-in-effect`
   useEffect(() => {
-    const handleOnline = () => {
-      setIsOffline(false);
-      processQueue();
-    };
-    const handleOffline = () => setIsOffline(true);
-
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-    };
+    return seSuscribeALaConexion(() => {
+      if (hayConexion()) processQueue();
+    });
   }, [processQueue]);
 
   // --- Session lock (scoped per userId) ---

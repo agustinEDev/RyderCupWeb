@@ -41,6 +41,7 @@ import {
 } from '../composition';
 import * as offlineQueue from '../utils/scoringOfflineQueue';
 import * as sessionLock from '../utils/scoringSessionLock';
+import { apuntaFalloDeRed, olvidaElEstadoDeConexion } from '../services/estadoDeConexion';
 
 const mockScoringView = {
   matchId: 'm-1',
@@ -65,6 +66,8 @@ const mockScoringView = {
 
 describe('useScoring', () => {
   beforeEach(() => {
+    // Cada caso arranca creyendo que hay conexión
+    olvidaElEstadoDeConexion();
     vi.clearAllMocks();
     getScoringViewUseCase.execute.mockResolvedValue(mockScoringView);
     Object.defineProperty(navigator, 'onLine', { value: true, configurable: true });
@@ -134,7 +137,10 @@ describe('useScoring', () => {
   });
 
   it('should queue score when offline', async () => {
-    Object.defineProperty(navigator, 'onLine', { value: false, configurable: true });
+    // Sin conexión ya no es `navigator.onLine`, que con cobertura débil sigue
+    // diciendo que sí: lo dice el estado compartido, que mira si las peticiones
+    // llegan de verdad (FE #514)
+    apuntaFalloDeRed();
 
     const { result } = renderHook(() => useScoring('m-1', 'u1'));
     await waitFor(() => expect(result.current.isLoading).toBe(false));
