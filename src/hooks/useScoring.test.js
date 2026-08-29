@@ -643,11 +643,18 @@ describe('useScoring', () => {
       );
     });
 
-    it('cuenta los pendientes de esta partida, no los de todas', async () => {
-      // La cola la comparten los dos modos de juego
-      renderHook(() => useScoring('m-1', 'u1'));
+    it('cuenta solo las anotaciones que este vaciado sabe enviar', async () => {
+      // La cola la comparten los dos modos. Contar también las de partida
+      // rápida —que aquí no se envían nunca— dejaba el número en algo distinto
+      // de cero para siempre
+      offlineQueue.getByMatch.mockReturnValue([
+        { matchId: 'm-1', holeNumber: 7, scoreData: { ownScore: 5 } },
+        { matchId: 'm-1', holeNumber: 8, participantId: 'p-1', scoreData: { score: 4 } },
+      ]);
 
-      await waitFor(() => expect(offlineQueue.size).toHaveBeenCalledWith('m-1'));
+      const { result } = renderHook(() => useScoring('m-1', 'u1'));
+
+      await waitFor(() => expect(result.current.pendingQueueSize).toBe(1));
     });
   });
 });

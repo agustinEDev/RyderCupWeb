@@ -107,6 +107,17 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
   const holesToSubmit = scoringView?.isDecided ? playedHoles.length : totalHoles;
 
   // --- Fetch scoring view ---
+  /**
+   * Cuántas anotaciones de esta partida quedan por enviar, contando solo las
+   * que este vaciado sabe mandar: las que llevan participante son de una
+   * partida rápida y aquí se dejan estar, así que contarlas dejaba el número
+   * en algo distinto de cero para siempre (FE #515).
+   */
+  const pendientesPropias = useCallback(
+    () => offlineQueue.getByMatch(matchId).filter((e) => e.participantId == null).length,
+    [matchId]
+  );
+
   const fetchScoringView = useCallback(async () => {
     if (!matchId) return;
     try {
@@ -130,7 +141,7 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
 
     if (isOffline) {
       offlineQueue.enqueue(matchId, holeNumber, scoreData);
-      setPendingQueueSize(offlineQueue.size(matchId));
+      setPendingQueueSize(pendientesPropias());
       return;
     }
 
@@ -148,13 +159,13 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
       const isRetryable = !status || status >= 500;
       if (isRetryable) {
         offlineQueue.enqueue(matchId, holeNumber, scoreData);
-        setPendingQueueSize(offlineQueue.size(matchId));
+        setPendingQueueSize(pendientesPropias());
       }
       setError(err);
     } finally {
       setIsSubmitting(false);
     }
-  }, [matchId, canScore, isOwnScoreLocked, isMarkerScoreLocked, isOffline]);
+  }, [matchId, canScore, isOwnScoreLocked, isMarkerScoreLocked, isOffline, pendientesPropias]);
 
   // --- Submit scorecard ---
   const submitScorecard = useCallback(async () => {
@@ -218,9 +229,9 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
         break; // Stop on network or server error
       }
     }
-    setPendingQueueSize(offlineQueue.size(matchId));
+    setPendingQueueSize(pendientesPropias());
     await fetchScoringView();
-  }, [matchId, fetchScoringView]);
+  }, [matchId, fetchScoringView, pendientesPropias]);
 
   // --- Take over session (force-acquire lock) ---
   const takeOverSession = useCallback(() => {
@@ -320,8 +331,8 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
   // --- Update pending queue size on mount ---
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- pre-existing pattern surfaced by eslint-plugin-react-hooks 7.1.1 bump; needs dedicated review (tracked in follow-up)
-    setPendingQueueSize(offlineQueue.size(matchId));
-  }, [matchId]);
+    setPendingQueueSize(pendientesPropias());
+  }, [matchId, pendientesPropias]);
 
   return {
     // State
