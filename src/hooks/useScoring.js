@@ -11,6 +11,10 @@ import { useConexion } from './useConexion';
 import { hayConexion, seSuscribeALaConexion } from '../services/estadoDeConexion';
 
 const POLL_INTERVAL = 10000; // 10 seconds
+
+// Sin conexión se pregunta más de tarde en tarde: es solo para enterarse de
+// que ha vuelto, y cada intento fallido gasta batería y radio
+const POLL_INTERVAL_SIN_CONEXION = 30000;
 const SESSION_REFRESH_INTERVAL = 30000; // 30 seconds
 
 /**
@@ -297,9 +301,16 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- pre-existing pattern surfaced by eslint-plugin-react-hooks 7.1.1 bump; needs dedicated review (tracked in follow-up)
     fetchScoringView();
 
-    pollIntervalRef.current = setInterval(() => {
-      if (!isOffline) fetchScoringView();
-    }, POLL_INTERVAL);
+    // Sin conexión se sigue preguntando, más despacio. Dejar de hacerlo
+    // convertía el modo sin conexión en una trampa: el estado vuelve a
+    // «conectado» cuando una petición llega, así que sin peticiones no había
+    // quien lo despertara y el aviso y la cola se quedaban pegados aunque
+    // volviera la cobertura. Antes no se notaba porque `navigator.onLine`
+    // decía que sí y el sondeo nunca se paraba
+    pollIntervalRef.current = setInterval(
+      fetchScoringView,
+      isOffline ? POLL_INTERVAL_SIN_CONEXION : POLL_INTERVAL
+    );
 
     return () => {
       if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);

@@ -311,6 +311,12 @@ const QuickMatchScoringPage = () => {
   // El sondeo puede cerrar la partida mientras el aviso esta abierto
   const yaCerrada = !!quickMatch?.isCompleted || !!quickMatch?.isCancelled;
 
+  // El aviso habla de lo que se anote «ahora», así que solo tiene sentido donde
+  // se anota. En una partida terminada o cancelada, o mirando la clasificación,
+  // decir que no se guardará lo que anotes es un texto cierto para un caso y
+  // escrito para todos
+  const puedeAnotarAhora = isScorer && !yaCerrada && activeTab === 'input';
+
   const claveDeFallo = (base, error) => {
     if (error?.status === 409) return `${base}.failed`;
     if (error?.status) return `${base}.failedServer`;
@@ -360,7 +366,7 @@ const QuickMatchScoringPage = () => {
           no hay cola que lo guarde para después, a diferencia de competición
           (FE #514). El texto lo dice tal cual en vez de reusar el de
           competición, que promete una sincronización que aquí no existe */}
-      {sinConexion && quickMatch && (
+      {sinConexion && quickMatch && puedeAnotarAhora && (
         <div className="max-w-4xl mx-auto px-4 pt-4">
           <div
             role="status"

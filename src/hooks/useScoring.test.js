@@ -580,4 +580,48 @@ describe('useScoring', () => {
       expect(submitHoleScoreUseCase.execute).not.toHaveBeenCalled();
     });
   });
+  describe('el modo sin conexión no es una trampa (FE #514)', () => {
+    // Al pasar a sin conexión el efecto se rehace y pide una vez por su cuenta.
+    // Esa no cuenta: lo que se comprueba es que el sondeo PERIÓDICO siga vivo,
+    // así que se deja asentar y se cuenta a partir de ahí
+    const asientaElCorte = async () => {
+      act(() => { apuntaFalloDeRed(); });
+      await act(async () => { await vi.advanceTimersByTimeAsync(100); });
+      return getScoringViewUseCase.execute.mock.calls.length;
+    };
+
+    it('sigue preguntando sin conexión, para poder enterarse de que ha vuelto', async () => {
+      // Si el sondeo se para, nada vuelve a pedir; y el estado solo vuelve a
+      // «conectado» cuando una petición llega. Sin esto, el aviso y la cola se
+      // quedaban pegados aunque la cobertura volviese
+      vi.useFakeTimers();
+      try {
+        const { result } = renderHook(() => useScoring('m-1', 'u1'));
+        await vi.waitFor(() => expect(result.current.isLoading).toBe(false));
+
+        const asentado = await asientaElCorte();
+        await act(async () => { await vi.advanceTimersByTimeAsync(31000); });
+
+        expect(getScoringViewUseCase.execute.mock.calls.length).toBeGreaterThan(asentado);
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('pregunta más despacio que con conexión', async () => {
+      vi.useFakeTimers();
+      try {
+        const { result } = renderHook(() => useScoring('m-1', 'u1'));
+        await vi.waitFor(() => expect(result.current.isLoading).toBe(false));
+
+        const asentado = await asientaElCorte();
+
+        // A los 11 s —pasada la cadencia normal de 10— todavía no toca
+        await act(async () => { await vi.advanceTimersByTimeAsync(11000); });
+        expect(getScoringViewUseCase.execute.mock.calls.length).toBe(asentado);
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+  });
 });

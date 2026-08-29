@@ -19,6 +19,18 @@ import { sinSesionEnRutaPublica } from './rutasPublicas';
 
 import { setCsrfTokenGlobal } from '../contexts/csrfTokenSync'; // v1.13.0: CSRF Protection
 import { apuntaRespuestaDelServidor, apuntaFalloDeRed } from '../services/estadoDeConexion';
+
+/**
+ * Si un error viene de que la petición no llegó a completarse.
+ *
+ * Un `fetch` que no sale del dispositivo rechaza con `TypeError`, y no trae ni
+ * respuesta ni estado. No basta con mirar que falten esos dos campos: por aquí
+ * pasan también errores propios —el `Redirect timeout` de la revocación de
+ * dispositivo, un fallo de programación dentro del `try`— y darlos por falta de
+ * cobertura declararía la aplicación entera sin conexión sin motivo.
+ */
+const esFalloDeRed = (error) =>
+  error instanceof TypeError && !error?.response && !error?.status;
 import {
   isDeviceRevoked,
   isSessionExpired,
@@ -136,6 +148,12 @@ export const refreshAccessToken = async () => {
 
     return true;
   } catch (error) {
+    // También aquí: `useProactiveTokenRefresh` llama a esta función
+    // directamente, sin pasar por el interceptor, así que sin esto un refresco
+    // que no sale del móvil no levantaba el aviso de sin conexión
+    if (esFalloDeRed(error)) {
+      apuntaFalloDeRed();
+    }
     console.error('❌ [TokenRefresh] Error refreshing token:', error);
     throw error;
   }
@@ -317,10 +335,7 @@ export const fetchWithTokenRefresh = async (url, options = {}) => {
     }
 
   } catch (error) {
-    // Un `fetch` que no llega a completarse no da respuesta ni estado: es la
-    // única señal fiable de que no hay conexión, y es la que `navigator.onLine`
-    // no da en cobertura débil
-    if (!error?.response && !error?.status) {
+    if (esFalloDeRed(error)) {
       apuntaFalloDeRed();
     }
     console.error('❌ [TokenRefresh] Error in fetch interceptor:', error);

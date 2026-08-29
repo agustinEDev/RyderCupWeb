@@ -451,6 +451,25 @@ describe('tokenRefreshInterceptor', () => {
       expect(handleSessionExpiredLogout).not.toHaveBeenCalled();
     });
 
+    it('un error que no es de red no declara la aplicación sin conexión', async () => {
+      // Por este `catch` pasan también errores propios —el 'Redirect timeout'
+      // de la revocación, un fallo de programación—: darlos por falta de
+      // cobertura sacaría el aviso sin motivo
+      const { apuntaFalloDeRed } = await import('../services/estadoDeConexion');
+      const espia = vi.fn();
+      const { seSuscribeALaConexion, hayConexion } = await import('../services/estadoDeConexion');
+      seSuscribeALaConexion(espia);
+      void apuntaFalloDeRed;
+
+      globalThis.fetch.mockRejectedValueOnce(new Error('Redirect timeout after device revocation'));
+
+      await expect(
+        fetchWithTokenRefresh('http://localhost:8000/api/v1/test')
+      ).rejects.toThrow('Redirect timeout');
+
+      expect(hayConexion()).toBe(true);
+    });
+
     it('sigue cerrando la sesión si el refresco responde 401', async () => {
       // Lo único que de verdad significa "estas credenciales ya no sirven"
       globalThis.fetch

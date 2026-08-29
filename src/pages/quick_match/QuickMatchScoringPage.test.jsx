@@ -1110,7 +1110,21 @@ describe('QuickMatchScoringPage · cancelar una partida en curso', () => {
     expect(screen.queryByTestId('quick-match-cancel-button')).not.toBeInTheDocument();
   });
   describe('sin cobertura (FE #514)', () => {
-    beforeEach(() => olvidaElEstadoDeConexion());
+    // Estado propio: `vi.clearAllMocks()` no borra los `mockReturnValue`, así
+    // que sin esto estos casos vivirían de lo que dejara el último test de
+    // arriba, y bastaría reordenarlos para que dejaran de probar nada
+    beforeEach(() => {
+      olvidaElEstadoDeConexion();
+      mockUseQuickMatchScoring.mockReturnValue({
+        ...baseHookState,
+        isScorer: true,
+        quickMatch: { ...baseQuickMatch, isCompleted: false, isCancelled: false },
+        setCurrentHole: vi.fn(),
+        submitScore: vi.fn(),
+        completeMatch: vi.fn(),
+        refetch: vi.fn(),
+      });
+    });
 
     it('no enseña el aviso mientras se llega al servidor', () => {
       renderPage();
@@ -1131,6 +1145,24 @@ describe('QuickMatchScoringPage · cancelar una partida en curso', () => {
       const aviso = screen.getByTestId('quick-match-offline-banner');
       expect(aviso).toHaveAttribute('role', 'status');
       expect(aviso.textContent).toMatch(/scoring\.offline\.banner|no se guardar/i);
+    });
+
+    it('no lo enseña en una partida ya terminada', () => {
+      // El texto habla de lo que se anote «ahora»; ahí no hay nada que anotar
+      mockUseQuickMatchScoring.mockReturnValue({
+        ...baseHookState,
+        isScorer: true,
+        quickMatch: { ...baseQuickMatch, isCompleted: true },
+        setCurrentHole: vi.fn(),
+        submitScore: vi.fn(),
+        completeMatch: vi.fn(),
+        refetch: vi.fn(),
+      });
+
+      renderPage();
+      act(() => { apuntaFalloDeRed(); });
+
+      expect(screen.queryByTestId('quick-match-offline-banner')).not.toBeInTheDocument();
     });
 
     it('lo retira cuando el servidor vuelve a contestar', () => {

@@ -48,4 +48,28 @@ describe('estadoDeConexion', () => {
     apuntaFalloDeRed();
     expect(oyente).not.toHaveBeenCalled();
   });
+  it('arranca sin conexión si el navegador dice que no hay red', () => {
+    // El único caso en que el navegador acierta seguro: modo avión. Antes se
+    // arrancaba siempre optimista y la primera anotación se iba por el camino
+    // de red, fallaba y salía un error rojo en vez del aviso
+    const original = Object.getOwnPropertyDescriptor(globalThis.navigator, 'onLine');
+    Object.defineProperty(globalThis.navigator, 'onLine', { value: false, configurable: true });
+    try {
+      olvidaElEstadoDeConexion();
+      expect(hayConexion()).toBe(false);
+    } finally {
+      if (original) Object.defineProperty(globalThis.navigator, 'onLine', original);
+    }
+  });
+
+  it('un oyente que se apunta durante el aviso no se llama en esa misma vuelta', () => {
+    // El de la pantalla de anotación vacía la cola de hoyos: llamarlo dos veces
+    // mandaría el mismo hoyo dos veces
+    const tardio = vi.fn();
+    seSuscribeALaConexion(() => seSuscribeALaConexion(tardio));
+
+    apuntaFalloDeRed();
+
+    expect(tardio).not.toHaveBeenCalled();
+  });
 });
