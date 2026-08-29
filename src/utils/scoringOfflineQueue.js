@@ -5,7 +5,12 @@
  * Scores are queued and processed when connectivity is restored.
  *
  * Storage key: 'rydercup-scoring-queue'
- * Each entry: { matchId, holeNumber, scoreData, timestamp }
+ * Each entry: { matchId, holeNumber, participantId, scoreData, timestamp }
+ *
+ * `participantId` distingue anotaciones del mismo hoyo en una partida rápida,
+ * donde cada participante se envía por separado. En competición no hay tal
+ * cosa —una anotación lleva dentro el golpe propio y el del jugador marcado—,
+ * así que allí va `null` y todo se comporta como antes (FE #515).
  */
 
 const STORAGE_KEY = 'rydercup-scoring-queue';
@@ -14,6 +19,19 @@ const STORAGE_KEY = 'rydercup-scoring-queue';
  * Get all queued scores from localStorage.
  * @returns {Array} Array of queued score entries
  */
+/**
+ * Si una entrada guardada es la misma anotación que la que se busca.
+ *
+ * El participante se compara normalizando lo que falta: las entradas escritas
+ * antes de FE #515 no tienen el campo, y `undefined` y `null` significan aquí
+ * lo mismo —«esta anotación no es de nadie en concreto»—, así que una cola
+ * guardada por una versión anterior se sigue entendiendo.
+ */
+const mismaAnotacion = (entry, matchId, holeNumber, participantId) =>
+  entry.matchId === matchId
+  && entry.holeNumber === holeNumber
+  && (entry.participantId ?? null) === (participantId ?? null);
+
 export const getAll = () => {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -29,15 +47,18 @@ export const getAll = () => {
  * @param {string} matchId
  * @param {number} holeNumber
  * @param {Object} scoreData - { ownScore, markedPlayerId, markedScore }
+ * @param {string|null} [participantId] - A quién pertenece la anotación, en las
+ *   partidas rápidas. Sin él, dos participantes del mismo hoyo se pisarían
  */
-export const enqueue = (matchId, holeNumber, scoreData) => {
+export const enqueue = (matchId, holeNumber, scoreData, participantId = null) => {
   const queue = getAll();
   const filtered = queue.filter(
-    entry => !(entry.matchId === matchId && entry.holeNumber === holeNumber)
+    entry => !mismaAnotacion(entry, matchId, holeNumber, participantId)
   );
   filtered.push({
     matchId,
     holeNumber,
+    participantId,
     scoreData,
     timestamp: Date.now(),
   });
@@ -57,14 +78,15 @@ export const dequeue = () => {
 };
 
 /**
- * Remove a specific entry from the queue by matchId and holeNumber.
+ * Remove a specific entry from the queue.
  * @param {string} matchId
  * @param {number} holeNumber
+ * @param {string|null} [participantId]
  */
-export const remove = (matchId, holeNumber) => {
+export const remove = (matchId, holeNumber, participantId = null) => {
   const queue = getAll();
   const filtered = queue.filter(
-    entry => !(entry.matchId === matchId && entry.holeNumber === holeNumber)
+    entry => !mismaAnotacion(entry, matchId, holeNumber, participantId)
   );
   localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered));
 };

@@ -141,3 +141,69 @@ describe('scoringOfflineQueue', () => {
     });
   });
 });
+
+describe('anotaciones por participante (FE #515)', () => {
+  beforeEach(() => localStorage.clear());
+
+  it('dos participantes del mismo hoyo no se pisan', () => {
+    // En una partida rápida cada participante se envía por separado. Sin el
+    // participante en la clave, anotar el segundo borraba el primero
+    enqueue('qm-1', 7, { score: 5 }, 'p-1');
+    enqueue('qm-1', 7, { score: 4 }, 'p-2');
+
+    const guardadas = getByMatch('qm-1');
+    expect(guardadas).toHaveLength(2);
+    expect(guardadas.map((e) => e.participantId).sort()).toEqual(['p-1', 'p-2']);
+  });
+
+  it('reanotar el mismo hoyo del mismo participante reemplaza, no duplica', () => {
+    enqueue('qm-1', 7, { score: 5 }, 'p-1');
+    enqueue('qm-1', 7, { score: 6 }, 'p-1');
+
+    const guardadas = getByMatch('qm-1');
+    expect(guardadas).toHaveLength(1);
+    expect(guardadas[0].scoreData).toEqual({ score: 6 });
+  });
+
+  it('quita solo la anotación de ese participante', () => {
+    enqueue('qm-1', 7, { score: 5 }, 'p-1');
+    enqueue('qm-1', 7, { score: 4 }, 'p-2');
+
+    remove('qm-1', 7, 'p-1');
+
+    const guardadas = getByMatch('qm-1');
+    expect(guardadas).toHaveLength(1);
+    expect(guardadas[0].participantId).toBe('p-2');
+  });
+
+  it('guarda la bola recogida, que es una anotación sin número', () => {
+    // Un hoyo recogido llega con `score` nulo y significa lo contrario que un
+    // hoyo sin anotar, donde no hay entrada ninguna
+    enqueue('qm-1', 7, { score: null }, 'p-1');
+
+    const [guardada] = getByMatch('qm-1');
+    expect(guardada.scoreData).toEqual({ score: null });
+    expect(guardada).toHaveProperty('participantId', 'p-1');
+  });
+
+  it('no confunde una anotación de competición con una de partida rápida', () => {
+    // Competición no manda participante: su entrada va sin él y no debe
+    // borrarse al guardar una de partida rápida del mismo hoyo
+    enqueue('m-1', 7, { ownScore: 5 });
+    enqueue('m-1', 7, { score: 4 }, 'p-1');
+
+    expect(getByMatch('m-1')).toHaveLength(2);
+  });
+
+  it('entiende una cola guardada por una versión anterior', () => {
+    // Sin el campo `participantId`: `undefined` cuenta como «de nadie»
+    localStorage.setItem(
+      'rydercup-scoring-queue',
+      JSON.stringify([{ matchId: 'm-1', holeNumber: 7, scoreData: { ownScore: 5 }, timestamp: 1 }])
+    );
+
+    remove('m-1', 7);
+
+    expect(getByMatch('m-1')).toHaveLength(0);
+  });
+});
