@@ -18,6 +18,18 @@ import { sinSesionEnRutaPublica } from './rutasPublicas';
 
 
 import { setCsrfTokenGlobal } from '../contexts/csrfTokenSync'; // v1.13.0: CSRF Protection
+import { apuntaRespuestaDelServidor, apuntaFalloDeRed } from '../services/estadoDeConexion';
+
+/**
+ * Si un error viene de que la petición no llegó a completarse.
+ *
+ * Un `fetch` que no sale del dispositivo rechaza con `TypeError`, y no trae ni
+ * respuesta ni estado. No basta con mirar que falten esos dos campos: por aquí
+ * pasan también errores propios y darlos por falta de cobertura declararía la
+ * aplicación entera sin conexión sin motivo.
+ */
+const esFalloDeRed = (error) =>
+  error instanceof TypeError && !error?.response && !error?.status;
 
 import {
   isDeviceRevoked,
@@ -92,6 +104,9 @@ export const refreshAccessToken = async () => {
       },
     });
 
+    // El refresco es una petición más: si contesta, hay conexión
+    apuntaRespuestaDelServidor();
+
     if (!response.ok) {
       console.error('❌ [TokenRefresh] Refresh failed:', response.status, response.statusText);
 
@@ -133,6 +148,10 @@ export const refreshAccessToken = async () => {
 
     return true;
   } catch (error) {
+    // También aquí: `useProactiveTokenRefresh` llama a esta función
+    // directamente, sin pasar por el interceptor, así que sin esto un refresco
+    // que no sale del móvil no levantaría el aviso
+    if (esFalloDeRed(error)) apuntaFalloDeRed();
     console.error('❌ [TokenRefresh] Error refreshing token:', error);
     throw error;
   }
@@ -163,6 +182,9 @@ export const fetchWithTokenRefresh = async (url, options = {}) => {
   try {
     // Execute original request
     const response = await fetch(url, fetchOptions);
+
+    // Volvió una respuesta: hay conexión, aunque traiga un error del servidor
+    apuntaRespuestaDelServidor();
 
     // If not 401, return response immediately
     if (response.status !== 401) {
@@ -235,9 +257,18 @@ export const fetchWithTokenRefresh = async (url, options = {}) => {
           resolve: () => {
             // Retry the original request after refresh completes
             console.log('🔄 [TokenRefresh] Retrying queued request...');
+            // También informa: este reintento no pasa por el `try` de abajo,
+            // así que si varias escrituras esperaban el refresco y la cobertura
+            // se cae justo después, todas fallarían sin que nadie se enterara
             fetch(url, fetchOptions)
-              .then(resolve)
-              .catch(reject);
+              .then((respuesta) => {
+                apuntaRespuestaDelServidor();
+                resolve(respuesta);
+              })
+              .catch((error) => {
+                if (esFalloDeRed(error)) apuntaFalloDeRed();
+                reject(error);
+              });
           },
           reject,
         });
@@ -326,6 +357,7 @@ export const fetchWithTokenRefresh = async (url, options = {}) => {
     }
 
   } catch (error) {
+    if (esFalloDeRed(error)) apuntaFalloDeRed();
     console.error('❌ [TokenRefresh] Error in fetch interceptor:', error);
     // Re-throw to let the caller handle the error appropriately
     throw error;

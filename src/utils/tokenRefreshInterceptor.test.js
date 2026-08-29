@@ -469,4 +469,59 @@ describe('tokenRefreshInterceptor', () => {
       expect(handleSessionExpiredLogout).toHaveBeenCalled();
     });
   });
+  describe('saber si se está llegando al servidor (FE #515)', () => {
+    let estado;
+
+    beforeEach(async () => {
+      vi.resetModules();
+      estado = await import('../services/estadoDeConexion');
+      estado.olvidaElEstadoDeConexion();
+      vi.clearAllMocks();
+    });
+
+    const conModuloLimpio = async () => (await import('./tokenRefreshInterceptor')).fetchWithTokenRefresh;
+
+    it('una petición que no llega deja la aplicación sin conexión', async () => {
+      const fetchConRefresco = await conModuloLimpio();
+      globalThis.fetch.mockRejectedValueOnce(new TypeError('Failed to fetch'));
+
+      await expect(fetchConRefresco('http://localhost:8000/api/v1/test')).rejects.toThrow();
+
+      expect(estado.hayConexion()).toBe(false);
+    });
+
+    it('cualquier respuesta la devuelve, aunque sea un error del servidor', async () => {
+      const fetchConRefresco = await conModuloLimpio();
+      estado.apuntaFalloDeRed();
+
+      globalThis.fetch.mockResolvedValueOnce({ ok: false, status: 500, statusText: 'Server Error', json: async () => ({}) });
+      await fetchConRefresco('http://localhost:8000/api/v1/test');
+
+      expect(estado.hayConexion()).toBe(true);
+    });
+
+    it('un error que no es de red no la declara sin conexión', async () => {
+      // Por este camino pasan también errores propios: darlos por falta de
+      // cobertura sacaría el aviso sin motivo
+      const fetchConRefresco = await conModuloLimpio();
+      globalThis.fetch.mockRejectedValueOnce(new Error('Algo se rompió'));
+
+      await expect(fetchConRefresco('http://localhost:8000/api/v1/test')).rejects.toThrow();
+
+      expect(estado.hayConexion()).toBe(true);
+    });
+
+    it('un refresco que no sale del móvil también lo dice', async () => {
+      // `useProactiveTokenRefresh` llama a `refreshAccessToken` directamente,
+      // sin pasar por el interceptor
+      // Sin `resetModules` aquí: crearía una segunda instancia del estado,
+      // distinta de la que observa este test
+      const { refreshAccessToken } = await import('./tokenRefreshInterceptor');
+      globalThis.fetch.mockRejectedValueOnce(new TypeError('Failed to fetch'));
+
+      await expect(refreshAccessToken()).rejects.toThrow();
+
+      expect(estado.hayConexion()).toBe(false);
+    });
+  });
 });
