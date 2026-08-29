@@ -3,6 +3,7 @@ import { Search, MapPin, AlertCircle, Navigation } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { listGolfCoursesUseCase } from '../../composition';
 import { roundCoordinate } from '../../utils/geo';
+import { getCountryFlag } from '../../utils/countryUtils';
 import BlockLoader from '../ui/BlockLoader';
 
 /**
@@ -17,6 +18,10 @@ import BlockLoader from '../ui/BlockLoader';
  * - onCourseSelect: function - Callback when a course is selected
  * - onRequestNewCourse: function - Callback when "Request new course" is clicked
  * - allowNearby: boolean - Offer the "courses near me" button. Off by default
+ * - allowOtherCountries: boolean - Widen the search beyond `countryCode` when it
+ *   yields nothing. Off by default: for the competition builders `countryCode` is
+ *   not "the user's country" but a constraint of the form, and a course from
+ *   elsewhere gets filed under the wrong country and silently dropped
  */
 // Cuántos campos se piden por vuelta. Es una lista para elegir en el móvil, no
 // un catálogo: más de esto no cabe en pantalla y solo alarga la respuesta.
@@ -75,7 +80,8 @@ const GolfCourseSearchBox = ({
   selectedCourse,
   onCourseSelect,
   onRequestNewCourse,
-  allowNearby = false
+  allowNearby = false,
+  allowOtherCountries = false
 }) => {
   const { t, i18n } = useTranslation('golfCourses');
   const [searchQuery, setSearchQuery] = useState('');
@@ -88,7 +94,7 @@ const GolfCourseSearchBox = ({
   // Los resultados guardan de qué país son. Así, al cambiar de país, no se
   // pintan un instante los del anterior mientras llega la respuesta nueva, y
   // no hace falta vaciarlos desde el cuerpo del efecto.
-  const [result, setResult] = useState({ countryCode: null, courses: [], total: 0 });
+  const [result, setResult] = useState({ countryCode: null, courses: [], total: 0, widened: false });
   const [isLoading, setIsLoading] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const [error, setError] = useState(null);
@@ -103,6 +109,8 @@ const GolfCourseSearchBox = ({
   // de identidad en cada lectura del GPS y dispararía búsquedas de más.
   const nearbyLat = isNearbyActive ? position.lat : null;
   const nearbyLon = isNearbyActive ? position.lon : null;
+  // Se busca por cercanía cuando hay posición y no se ha escrito nada
+  const searchingNearby = nearbyLat !== null && nearbyLon !== null;
 
   // Ask the backend on every change of country or search term.
   //
@@ -121,9 +129,9 @@ const GolfCourseSearchBox = ({
       setIsLoading(true);
       setError(null);
 
-      try {
-        const page = await listGolfCoursesUseCase.execute({
-          countryCode,
+      const buscar = (pais) =>
+        listGolfCoursesUseCase.execute({
+          countryCode: pais,
           approvalStatus: 'APPROVED',
           name: searchQuery.trim() || undefined,
           limit: PAGE_SIZE,
@@ -134,13 +142,39 @@ const GolfCourseSearchBox = ({
           lat: nearbyLat ?? undefined,
           lon: nearbyLon ?? undefined,
         });
+
+      try {
+        // Estando sobre el campo, la nacionalidad del jugador no dice nada del
+        // campo que pisa: Ponte de Lima está a 30 km de la frontera, y filtrar
+        // por país dejaba "el más cercano" buscando solo en el país de uno
+        const page = await buscar(searchingNearby ? undefined : countryCode);
         if (cancelled) return;
-        setResult({ countryCode, courses: page.courses, total: page.total });
+
+        // Un campo de fuera existía y la búsqueda por nombre lo escondía, así
+        // que "no hay campos" era mentira. Se reintenta sin país antes de
+        // decirlo, y se avisa de que lo que se ve ya no es del país propio
+        let { courses, total } = page;
+        let widened = false;
+        // No se amplía tras elegir un campo: la casilla pasa a mostrar su
+        // nombre, y el de uno extranjero no casa en tu país, así que elegirlo
+        // costaba dos peticiones más sin que nadie estuviera buscando
+        const puedeAmpliar =
+          allowOtherCountries && countryCode && !searchingNearby && !selectedCourse;
+        if (courses.length === 0 && puedeAmpliar && searchQuery.trim()) {
+          const worldwide = await buscar(undefined);
+          if (cancelled) return;
+          if (worldwide.courses.length > 0) {
+            ({ courses, total } = worldwide);
+            widened = true;
+          }
+        }
+
+        setResult({ countryCode, courses, total, widened });
       } catch (err) {
         if (cancelled) return;
         console.error('Error loading golf courses:', err);
         setError(err.message || t('searchBox.errorLoading', 'Error loading golf courses'));
-        setResult({ countryCode, courses: [], total: 0 });
+        setResult({ countryCode, courses: [], total: 0, widened: false });
       } finally {
         if (!cancelled) setIsLoading(false);
       }
@@ -150,11 +184,17 @@ const GolfCourseSearchBox = ({
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [countryCode, searchQuery, t, nearbyLat, nearbyLon]);
+  }, [countryCode, searchQuery, t, nearbyLat, nearbyLon, searchingNearby, allowOtherCountries, selectedCourse]);
 
   // Solo valen los resultados del país que se está mirando ahora
   const courses = result.countryCode === countryCode ? result.courses : [];
   const total = result.countryCode === countryCode ? result.total : 0;
+  const widened = result.countryCode === countryCode && result.widened;
+  // El código del usuario llega tal cual lo guardó el backend y hay cuentas con
+  // 'es' en minúsculas (`countryUtils.test.js`). Sin normalizar, los 802 campos
+  // españoles saldrían marcados como extranjeros
+  const normalizeCountry = (code) => (code || '').trim().toUpperCase();
+  const ownCountry = normalizeCountry(countryCode);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -337,6 +377,28 @@ const GolfCourseSearchBox = ({
             </div>
           )}
 
+          {/* Sin este aviso, ver campos de otro país en un buscador que
+              siempre ha enseñado los tuyos parece un fallo. Se anuncia porque
+              aparece solo, sin que nadie haya pulsado nada */}
+          {/* La región vive siempre y solo cambia su texto: montada ya con el
+              contenido dentro, un lector de pantalla no la anuncia, y este aviso
+              aparece sin que nadie haya pulsado nada */}
+          <p
+            role="status"
+            data-testid="golf-course-widened-notice"
+            className={
+              widened && courses.length > 0
+                ? 'border-b border-gray-200 px-4 py-2 text-xs text-gray-500'
+                : 'sr-only'
+            }
+          >
+            {widened && courses.length > 0
+              ? t('searchBox.widenedToOtherCountries', {
+                  defaultValue: 'No courses in your country match. Showing courses abroad.',
+                })
+              : ''}
+          </p>
+
           {courses.length > 0 ? (
             <ul className="py-1">
               {courses.map((course) => (
@@ -352,6 +414,19 @@ const GolfCourseSearchBox = ({
                         {course.name}
                       </p>
                       <p className="text-xs text-gray-500">
+                        {/* Solo en los de fuera: repetir "ES" en los 802 campos
+                            españoles es ruido, y aquí el país es justo lo que
+                            distingue dos campos que se llaman igual a un lado y
+                            otro de la frontera */}
+                        {normalizeCountry(course.countryCode) &&
+                          normalizeCountry(course.countryCode) !== ownCountry && (
+                            <span data-testid={`golf-course-country-${course.id}`}>
+                              <span aria-hidden="true">
+                                {getCountryFlag(normalizeCountry(course.countryCode))}{' '}
+                              </span>
+                              {normalizeCountry(course.countryCode)} •{' '}
+                            </span>
+                          )}
                         {t(`courseTypes.${course.courseType}`, course.courseType)} • {course.tees.length} {t('searchBox.tees', 'tees')}
                         {/* Comparado con null y no por verdadero: un campo a
                             menos de 50 m devuelve 0, que es una distancia real */}
