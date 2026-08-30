@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [2.24.0] - 2026-08-30
+
+### Added
+
+- **Ya se puede anotar sin cobertura.** En el campo, donde la señal va y viene, anotar un golpe fallaba y no quedaba constancia: había que acordarse y volver a intentarlo más tarde. Ahora el golpe se guarda en el móvil y se envía solo en cuanto hay conexión, sin que nadie tenga que hacer nada. La aplicación dice cuántos quedan por enviar, y la casilla enseña el resultado desde el momento en que se anota, esté enviado o no.
+
+  Y no hace falta esperar a que vuelva la señal para seguir jugando: si se anota el mismo hoyo dos veces, vale la última; y si un golpe no llega a salir, se avisa por su número de hoyo en vez de perderse en silencio.
+
+- **La aplicación se abre y deja anotar aunque no haya señal.** Se guarda en el móvil lo último que se supo de cada partida —con su campo, sus pares y sus índices— y la lista de partidas para poder llegar hasta ellas. Al abrir sin cobertura, la pantalla se pinta con eso y avisa de que lo que se ve puede no estar al día.
+
+- **Cada uno ve sus propios números.** En una partida rápida terminada, la tarjeta enseña el resultado de tu vuelta, y marca el de las partidas cuyos datos no están al día.
+
+### Fixed
+
+- **Abrir la aplicación sin cobertura ya no tarda veinte segundos.** Al arrancar sin señal, la aplicación insistía en preguntar quién eres —a los 3 segundos, a los 9, a los 21— y hasta que no se rendía no enseñaba nada: veintiún segundos de pantalla en blanco antes siquiera de pedir la partida. Ahora usa lo que ya sabe del dispositivo y pinta enseguida, mientras sigue preguntando por detrás. Medido en el mismo sitio: de 21,5 segundos a medio segundo.
+
+- **Y ya no te manda al formulario de acceso en mitad de la vuelta.** Sin cobertura, la aplicación no podía confirmar la sesión y concluía que no habías entrado, así que aparecía la pantalla de acceso justo cuando hacía falta anotar. La sesión sigue siendo del servidor: esto solo evita darla por perdida mientras no hay a quién preguntar.
+
+- **Cerrar sesión se lleva tus datos del dispositivo.** Se quedaban en el móvil tu nombre, tu correo, tu hándicap y la lista de partidas con sus resultados, así que la siguiente persona que entrara en ese teléfono podía verlos. En el móvil no se limpiaba nada en absoluto, porque la única salida que hay allí no pasaba por donde se limpia.
+
+- **Anotar sobre un hoyo que ya tenías anotado ya no pregunta nada en una partida que juegas solo.** Salía un aviso diciendo «habla con tu compañero y decidid cuál vale» en partidas de un único anotador, donde el compañero eras tú mismo. Ahora ese aviso aparece solo donde la anotación se comparte de verdad; corregir lo que uno mismo anotó es una corrección, y se envía sin preguntar.
+
+- **Y el número corregido se ve al momento.** Sin cobertura, cambiar el resultado de un hoyo que ya tenía uno dejaba la casilla con el número viejo: parecía que no se había guardado, y lo natural era anotarlo otra vez.
+
+- **Ir de una partida a otra ya no arrastra la anterior.** Al cambiar de partida sin recargar, la nueva podía quedarse con los pares y los índices del campo de la anterior mientras cargaba, y con ellos calculaba mal el resultado neto.
+
+- **Quedarse sin señal ya no se cuenta como un error.** La pantalla decía «ha ocurrido un error», que suena a que algo se ha roto, cuando lo único que pasaba es que no había cobertura.
+
+- **El año y el país salen en tu idioma.** En el calendario de una competición aparecía `© {{year}}` sin resolver, y el país sin traducir.
+
 ## [2.23.0] - 2026-08-29
 
 ### Added
