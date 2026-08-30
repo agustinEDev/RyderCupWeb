@@ -247,3 +247,29 @@ describe('anotaciones por participante (FE #515)', () => {
     expect(getByMatch('m-1')).toHaveLength(0);
   });
 });
+
+describe('scoringOfflineQueue · cuando el móvil no puede guardar', () => {
+  const seNiega = () => {
+    localStorage.setItem.mockImplementationOnce(() => {
+      throw Object.assign(new Error('quota'), { name: 'QuotaExceededError' });
+    });
+  };
+
+  it('enqueue dice que no en vez de reventar', () => {
+    // Un iPhone sin espacio, o una ventana privada: `setItem` se niega. Si el
+    // fallo sube, sale del `catch` de quien anota como un rechazo que nadie
+    // recoge, y el golpe desaparece sin recuadro rojo ni aviso ámbar
+    seNiega();
+    expect(enqueue('m-1', 7, { score: 5 }, 'p-1')).toBe(false);
+  });
+
+  it('enqueue dice que sí cuando guarda', () => {
+    expect(enqueue('m-1', 7, { score: 5 }, 'p-1')).toBe(true);
+  });
+
+  it('remove no revienta si el almacenamiento se niega', () => {
+    enqueue('m-1', 7, { score: 5 }, 'p-1');
+    seNiega();
+    expect(() => remove('m-1', 7, 'p-1')).not.toThrow();
+  });
+});

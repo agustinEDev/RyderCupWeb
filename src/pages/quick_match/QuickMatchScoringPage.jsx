@@ -125,6 +125,8 @@ const QuickMatchScoringPage = () => {
   const comoSeLee = (valor) =>
     valor === null || valor === undefined ? t('scoring.offline.pickedUp') : valor;
 
+  const hoyosPerdidos = [...new Set((perdidos ?? []).map((x) => x.holeNumber))].sort((a, b) => a - b);
+
   const avisoDePendientes = pendientes > 0 && (
     <div className="max-w-4xl mx-auto px-4 pt-4">
       <p
@@ -410,9 +412,13 @@ const QuickMatchScoringPage = () => {
             data-testid="quick-match-perdidos"
             className="bg-red-50 border border-red-200 text-red-700 rounded-lg p-3 text-sm"
           >
+            {/* Un anotador cubre a varios jugadores, así que el mismo hoyo
+                puede perderse varias veces: sin agrupar salía «Los hoyos 7, 7,
+                7, 8, 8, 8». Lo que el jugador necesita es la lista de hoyos que
+                tiene que volver a anotar, cada uno una vez */}
             {t('scoring.offline.lost', {
-              count: perdidos.length,
-              holes: perdidos.map((x) => x.holeNumber).join(', '),
+              count: hoyosPerdidos.length,
+              holes: hoyosPerdidos.join(', '),
             })}
           </p>
         </div>

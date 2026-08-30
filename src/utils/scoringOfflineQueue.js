@@ -49,7 +49,21 @@ export const getAll = () => {
  * @param {Object} scoreData - { ownScore, markedPlayerId, markedScore }
  * @param {string|null} [participantId] - A quién pertenece la anotación, en las
  *   partidas rápidas. Sin él, dos participantes del mismo hoyo se pisarían
+ * @returns {boolean} Si de verdad quedó guardada. Un iPhone sin espacio, o una
+ *   ventana privada, rechazan el guardado: quien llame tiene que poder decirlo,
+ *   porque callarlo hace desaparecer el golpe sin ningún aviso
  */
+const guarda = (cola) => {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(cola));
+    return true;
+  } catch {
+    // Sin espacio, o en una ventana privada. Dejar que suba convertiría esto en
+    // un rechazo que nadie recoge dentro del `catch` de quien anota
+    return false;
+  }
+};
+
 export const enqueue = (matchId, holeNumber, scoreData, participantId = null) => {
   const queue = getAll();
   const filtered = queue.filter(
@@ -62,7 +76,7 @@ export const enqueue = (matchId, holeNumber, scoreData, participantId = null) =>
     scoreData,
     timestamp: Date.now(),
   });
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered));
+  return guarda(filtered);
 };
 
 /**
@@ -73,7 +87,7 @@ export const dequeue = () => {
   const queue = getAll();
   if (queue.length === 0) return null;
   const [first, ...rest] = queue;
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(rest));
+  if (!guarda(rest)) return null;
   return first;
 };
 
@@ -82,20 +96,25 @@ export const dequeue = () => {
  * @param {string} matchId
  * @param {number} holeNumber
  * @param {string|null} [participantId]
+ * @returns {boolean} Si de verdad quedó guardado el cambio
  */
 export const remove = (matchId, holeNumber, participantId = null) => {
   const queue = getAll();
   const filtered = queue.filter(
     entry => !mismaAnotacion(entry, matchId, holeNumber, participantId)
   );
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered));
+  return guarda(filtered);
 };
 
 /**
  * Clear all entries from the queue.
  */
 export const clear = () => {
-  localStorage.removeItem(STORAGE_KEY);
+  try {
+    localStorage.removeItem(STORAGE_KEY);
+  } catch {
+    // Nada que hacer: si no se puede tocar, la cola se queda como esté
+  }
 };
 
 /**

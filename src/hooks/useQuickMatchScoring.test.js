@@ -823,3 +823,133 @@ describe('useQuickMatchScoring · lo guardado se ve (FE #515, tabla E)', () => {
     expect(result.current.holeScoresVisibles).toEqual(conAnotacionDe(6).holeScores);
   });
 });
+
+/**
+ * LA TABLA G — cuando lo guardado y lo enviado hablan del MISMO hoyo.
+ *
+ * La cola guarda una anotación por hoyo y jugador, y el envío directo escribe
+ * sobre ese mismo hoyo. Cuando los dos caminos se cruzan, gana el último que
+ * el jugador hizo: cualquier otra cosa le devuelve un resultado que ya había
+ * corregido, y encima preguntándoselo con su propio nombre.
+ *
+ *   caso                                    | qué pasa
+ *   ----------------------------------------|-------------------------------
+ *   corrijo un hoyo que tenía guardado y     | lo guardado sobra y se tira: el
+ *   esta vez sí llega                        | servidor ya tiene lo bueno
+ *   lo reanoto mientras se envía lo de antes | al acabar el envío viejo no se
+ *                                            | borra lo nuevo
+ *   el móvil no puede guardar                | se dice en rojo; el golpe no
+ *                                            | desaparece en silencio
+ *   resuelvo y la entrada ya no está         | el aviso se cierra igual
+ */
+describe('useQuickMatchScoring · lo guardado y lo enviado, mismo hoyo (FE #515, tabla G)', () => {
+  // Aquí la cola guarda de verdad. Con los mocks inertes de los otros bloques,
+  // un `remove` que no quita nada deja pasar justo los defectos de este grupo:
+  // el efecto que se comprueba es que lo borrado deje de salir
+  let cola;
+  const mismo = (e, hoyo, quien) => e.holeNumber === hoyo && e.participantId === quien;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    cola = [];
+    offlineQueue.getByMatch.mockImplementation(() => cola);
+    offlineQueue.size.mockImplementation(() => cola.length);
+    offlineQueue.enqueue.mockImplementation((matchId, holeNumber, scoreData, participantId) => {
+      cola = cola.filter((e) => !mismo(e, holeNumber, participantId));
+      cola.push({ matchId, holeNumber, participantId, scoreData });
+      return true;
+    });
+    offlineQueue.remove.mockImplementation((matchId, holeNumber, participantId) => {
+      cola = cola.filter((e) => !mismo(e, holeNumber, participantId));
+      return true;
+    });
+    getGolfCourseUseCase.execute.mockResolvedValue({ holes: [], tees: [], name: 'Campo' });
+    getQuickMatchUseCase.execute.mockResolvedValue(mockQuickMatch);
+    submitQuickMatchHoleScoreUseCase.execute.mockResolvedValue({});
+    submitQuickMatchProxyHoleScoreUseCase.execute.mockResolvedValue({});
+  });
+
+  const pendiente = (holeNumber, score, participantId = 'user-1') =>
+    ({ matchId: 'qm-1', holeNumber, participantId, scoreData: { score } });
+
+  const monta = async () => {
+    const { result } = renderHook(() => useQuickMatchScoring('qm-1', 'user-1'));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    return result;
+  };
+
+  it('corregir un hoyo que estaba guardado tira lo guardado', async () => {
+    // Tal y como pasa: el jugador ya está en la pantalla, anota sin cobertura
+    // —el golpe se queda en el móvil— y corrige ese mismo hoyo cuando vuelve.
+    // Si lo viejo no se tira, el siguiente vaciado lo manda y PISA la
+    // corrección en el servidor; y si el servidor ya la tuviera, le preguntaría
+    // al jugador si quiere recuperar el resultado que él mismo corrigió, con su
+    // propio nombre al lado
+    const result = await monta();
+
+    submitQuickMatchHoleScoreUseCase.execute.mockRejectedValueOnce(new TypeError('Failed to fetch'));
+    await act(async () => { await result.current.submitScore(5, 'user-1', 4); });
+    expect(cola).toHaveLength(1);
+    // El intento de antes también fue con un 4, y era legítimo: lo que no
+    // puede volver a salir es el reenvío de lo guardado
+    submitQuickMatchHoleScoreUseCase.execute.mockClear();
+
+    await act(async () => { await result.current.submitScore(5, 'user-1', 6); });
+
+    await waitFor(() => expect(cola).toHaveLength(0));
+    expect(submitQuickMatchHoleScoreUseCase.execute).not.toHaveBeenCalledWith('qm-1', 5, 4);
+    expect(result.current.discrepancias).toHaveLength(0);
+  });
+
+  it('el envío que acaba no borra una anotación más nueva del mismo hoyo', async () => {
+    // Mientras el golpe viejo está en vuelo, el jugador reanota ese hoyo y
+    // tampoco llega: lo nuevo entra en la cola. Borrar «el hoyo 5» a secas se
+    // lleva por delante la corrección, y el servidor se queda con lo viejo
+    let suelta;
+    submitQuickMatchHoleScoreUseCase.execute.mockImplementationOnce(
+      () => new Promise((r) => { suelta = r; })
+    );
+    cola = [pendiente(5, 4)];
+
+    await monta();
+    await waitFor(() => expect(submitQuickMatchHoleScoreUseCase.execute).toHaveBeenCalledTimes(1));
+
+    cola = [pendiente(5, 6)];
+    await act(async () => { suelta?.({}); });
+
+    expect(cola).toContainEqual(expect.objectContaining({ holeNumber: 5, scoreData: { score: 6 } }));
+  });
+
+  it('si el móvil no puede guardar el golpe, se dice', async () => {
+    // En un iPhone sin espacio, o en una ventana privada, `localStorage` se
+    // niega. Callarlo es lo peor de todo: ni recuadro rojo ni aviso ámbar, y
+    // el golpe desaparecido
+    offlineQueue.enqueue.mockReturnValue(false);
+    submitQuickMatchHoleScoreUseCase.execute.mockRejectedValue(new TypeError('Failed to fetch'));
+
+
+    const result = await monta();
+    await act(async () => { await result.current.submitScore(5, 'user-1', 4); });
+
+    expect(result.current.saveError).toBeTruthy();
+  });
+
+  it('resolver un conflicto cuya entrada ya no está cierra el aviso igual', async () => {
+    // Si no, el velo se queda encima para siempre: no se puede anotar, ni
+    // terminar, ni cancelar, y recargar devuelve al mismo sitio
+    const conAnotacion = {
+      ...mockQuickMatch,
+      holeScores: [{ holeNumber: 7, participantId: 'user-1', score: 6, recordedByParticipantId: 'user-2' }],
+    };
+    getQuickMatchUseCase.execute.mockResolvedValue(conAnotacion);
+    cola = [pendiente(7, 5)];
+
+    const result = await monta();
+    await waitFor(() => expect(result.current.discrepancias).toHaveLength(1));
+
+    cola = [];
+    await act(async () => { result.current.resuelveDiscrepancia(7, 'user-1', 'mio'); });
+
+    expect(result.current.discrepancias).toHaveLength(0);
+  });
+});

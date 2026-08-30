@@ -296,7 +296,16 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
           } else {
             algoLlegoAlServidor = true;
           }
-          offlineQueue.remove(quickMatchId, entrada.holeNumber, entrada.participantId);
+          // Se borra solo si sigue siendo la que se envió: mientras estaba en
+          // vuelo, el jugador ha podido reanotar ese mismo hoyo y guardar otro
+          // resultado. Borrar «el hoyo 5» a secas se lleva la corrección, el
+          // servidor se queda con lo viejo, y nadie se entera
+          const ahora = offlineQueue
+            .getByMatch(quickMatchId)
+            .find((e) => e.holeNumber === entrada.holeNumber && e.participantId === entrada.participantId);
+          if (ahora && ahora.scoreData.score === entrada.scoreData.score) {
+            offlineQueue.remove(quickMatchId, entrada.holeNumber, entrada.participantId);
+          }
         }
 
         setPendientes(offlineQueue.size(quickMatchId));
@@ -333,13 +342,18 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
         const entrada = offlineQueue
           .getByMatch(quickMatchId)
           .find((e) => e.holeNumber === holeNumber && e.participantId === participantId);
-        if (!entrada) return;
-        offlineQueue.enqueue(
-          quickMatchId,
-          holeNumber,
-          { ...entrada.scoreData, decidido: true },
-          participantId
-        );
+        // Si ya no está —el vaciado la mandó, o el móvil no pudo guardarla— no
+        // hay nada que decidir, pero el aviso tiene que cerrarse igual: es un
+        // velo a pantalla completa sin salida, y quedarse debajo deja la
+        // partida sin poder anotar, ni terminar, ni cancelar
+        if (entrada) {
+            offlineQueue.enqueue(
+            quickMatchId,
+            holeNumber,
+            { ...entrada.scoreData, decidido: true },
+            participantId
+          );
+        }
       } else if (cual === 'elQueHay') {
         offlineQueue.remove(quickMatchId, holeNumber, participantId);
       } else {
@@ -375,14 +389,26 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
           await submitQuickMatchProxyHoleScoreUseCase.execute(quickMatchId, participantId, holeNumber, score);
         }
         setSaveError(null);
+        // El servidor ya tiene lo bueno, así que lo que quedaba guardado de
+        // ese mismo hoyo sobra. Dejarlo hace que el siguiente vaciado compare
+        // lo viejo con lo que acaba de entrar, no coincidan, y se le pregunte
+        // al jugador si quiere recuperar el resultado que él mismo corrigió
+        offlineQueue.remove(quickMatchId, holeNumber, participantId);
+        setPendientes(offlineQueue.size(quickMatchId));
         await fetchQuickMatch();
       } catch (err) {
         if (seGuardaParaDespues(err)) {
           // Se guarda en el móvil y NO se enseña error: para el jugador el
           // golpe está anotado, solo que todavía no ha salido de aquí
-          offlineQueue.enqueue(quickMatchId, holeNumber, { score }, participantId);
-          setPendientes(offlineQueue.size(quickMatchId));
-          setSaveError(null);
+          // Puede negarse: un iPhone sin espacio, o una ventana privada. Ahí
+          // el golpe no está en ninguna parte, y callarlo es lo peor de todo
+          if (offlineQueue.enqueue(quickMatchId, holeNumber, { score }, participantId) === false) {
+            err.holeNumber = holeNumber;
+            setSaveError(err);
+          } else {
+            setPendientes(offlineQueue.size(quickMatchId));
+            setSaveError(null);
+          }
         } else {
           // El servidor lo rechaza por algo que no cambia con el tiempo. Se
           // dice, y se dice DE QUÉ HOYO: el caso realista es anotar sin

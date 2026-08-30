@@ -1192,6 +1192,23 @@ describe('QuickMatchScoringPage · lo que quedó sin enviar (FE #515, tabla D)',
     expect(aviso.className).not.toContain('red');
   });
 
+  it('con varios jugadores, cada hoyo se nombra una vez', () => {
+    // El caso real: el creador termina la partida mientras un anotador está
+    // sin cobertura cubriendo a tres invitados. Todo lo suyo se rechaza, y
+    // «Los hoyos 7, 7, 7, 8, 8, 8» es lo que sale si se listan sin agrupar
+    pinta({
+      perdidos: [
+        { holeNumber: 7, participantId: 'user-1' },
+        { holeNumber: 7, participantId: 'user-2' },
+        { holeNumber: 8, participantId: 'user-1' },
+      ],
+    });
+
+    const aviso = screen.getByTestId('quick-match-perdidos');
+    expect(aviso.textContent).toContain('7, 8');
+    expect(aviso.textContent).not.toContain('7, 7');
+  });
+
   it('los golpes que el servidor rechazó se cuentan aparte, y en rojo', () => {
     pinta({ perdidos: [{ holeNumber: 4, participantId: 'user-1' }] });
     const aviso = screen.getByTestId('quick-match-perdidos');
