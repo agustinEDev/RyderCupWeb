@@ -102,7 +102,18 @@ const QuickMatchScoringPage = () => {
     completeMatch,
     cancelMatch,
     refetch,
+    pendientes,
+    perdidos,
+    discrepancias,
+    resuelveDiscrepancia,
   } = useQuickMatchScoring(quickMatchId, user?.id);
+
+  // De una en una: dos avisos superpuestos no se pueden usar, y la siguiente
+  // no se pierde porque el hook la mantiene en la lista hasta resolverla
+  const discrepancia = discrepancias?.[0] ?? null;
+  const nombreDelAnotador = discrepancia
+    ? quickMatch?.participants?.find((p) => p.participantId === discrepancia.anotadoPor)?.name
+    : null;
 
   useEffect(() => {
     // El foco entra en el aviso al abrirse. Sin esto se queda en el boton de
@@ -357,6 +368,32 @@ const QuickMatchScoringPage = () => {
       {/* El aviso de arriba cubre los dos: un guardado rechazado y un sondeo que
           falla con la partida ya cargada. Cada uno con su copia, y el de
           guardar primero porque es lo que el anotador acaba de intentar. */}
+      {pendientes > 0 && (
+        <div className="max-w-4xl mx-auto px-4 pt-4">
+          <p
+            data-testid="quick-match-pendientes"
+            className="bg-amber-50 border border-amber-200 text-amber-800 rounded-lg p-3 text-sm"
+          >
+            {t('scoring.offline.pending', { count: pendientes })}
+          </p>
+        </div>
+      )}
+
+      {perdidos?.length > 0 && (
+        <div className="max-w-4xl mx-auto px-4 pt-4">
+          <p
+            role="alert"
+            data-testid="quick-match-perdidos"
+            className="bg-red-50 border border-red-200 text-red-700 rounded-lg p-3 text-sm"
+          >
+            {t('scoring.offline.lost', {
+              count: perdidos.length,
+              holes: perdidos.map((x) => x.holeNumber).join(', '),
+            })}
+          </p>
+        </div>
+      )}
+
       {(saveError || loadError) && quickMatch && (
         <div className="max-w-4xl mx-auto px-4 pt-4">
           <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-center justify-between">
@@ -577,6 +614,45 @@ const QuickMatchScoringPage = () => {
                 className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 disabled:opacity-50"
               >
                 {t('scoring.finish.confirm')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {discrepancia && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div
+            data-testid="quick-match-discrepancia"
+            className="bg-white rounded-lg shadow-xl w-full max-w-sm p-4 focus:outline-none"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="quick-match-discrepancia-title"
+          >
+            <h3 id="quick-match-discrepancia-title" className="text-lg font-semibold text-gray-900 mb-1">
+              {t('scoring.offline.conflictTitle', { hole: discrepancia.holeNumber })}
+            </h3>
+            <p className="text-sm text-gray-500 mb-4" data-testid="quick-match-discrepancia-body">
+              {t('scoring.offline.conflictBody', {
+                scorer: nombreDelAnotador || t('scoring.offline.conflictScorerUnknown'),
+                theirs: discrepancia.enElServidor,
+                mine: discrepancia.mio,
+              })}
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                data-testid="quick-match-discrepancia-servidor"
+                onClick={() => resuelveDiscrepancia(discrepancia.holeNumber, discrepancia.participantId, 'servidor')}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
+              >
+                {t('scoring.offline.conflictTheirs', { theirs: discrepancia.enElServidor })}
+              </button>
+              <button
+                data-testid="quick-match-discrepancia-mio"
+                onClick={() => resuelveDiscrepancia(discrepancia.holeNumber, discrepancia.participantId, 'mio')}
+                className="px-4 py-2 text-sm font-medium text-white bg-emerald-600 rounded-md hover:bg-emerald-700"
+              >
+                {t('scoring.offline.conflictMine', { mine: discrepancia.mio })}
               </button>
             </div>
           </div>

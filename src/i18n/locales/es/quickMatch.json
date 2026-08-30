@@ -232,6 +232,17 @@
       "failed": "No se ha podido cancelar. Puede que otro dispositivo ya la haya cerrado: cierra esto y mira cómo está.",
       "failedOffline": "No se ha podido cancelar. Comprueba la conexión e inténtalo otra vez.",
       "failedServer": "No se ha podido cancelar. Vuelve a la lista de partidas y mira cómo está."
+    },
+    "offline": {
+      "pending_one": "{{count}} golpe guardado en el móvil. Se enviará solo en cuanto haya cobertura.",
+      "pending_other": "{{count}} golpes guardados en el móvil. Se enviarán solos en cuanto haya cobertura.",
+      "lost_one": "El hoyo {{holes}} no se pudo guardar. Vuelve a anotarlo.",
+      "lost_other": "Los hoyos {{holes}} no se pudieron guardar. Vuelve a anotarlos.",
+      "conflictTitle": "El hoyo {{hole}} ya tiene otra anotación",
+      "conflictBody": "{{scorer}} anotó {{theirs}} y tú ibas a anotar {{mine}}. Habla con tu compañero y decidid cuál vale.",
+      "conflictScorerUnknown": "Otro anotador",
+      "conflictMine": "Poner el mío ({{mine}})",
+      "conflictTheirs": "Dejar el que hay ({{theirs}})"
     }
   },
   "personalRound": {

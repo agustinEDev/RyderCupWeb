@@ -5,7 +5,10 @@ import QuickMatchScoringPage from './QuickMatchScoringPage';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key) => key,
+    // Los valores se pegan detrás de la clave: sin esto, un texto al que no le
+    // llega el número —o al que le llega el que no es— pasaría el test igual
+    t: (key, opts) =>
+      opts && Object.keys(opts).length ? `${key} ${Object.values(opts).join(' ')}` : key,
     i18n: { language: 'en' },
   }),
 }));
@@ -1107,5 +1110,132 @@ describe('QuickMatchScoringPage · cancelar una partida en curso', () => {
 
     await screen.findByTestId('quick-match-scoring-tabs');
     expect(screen.queryByTestId('quick-match-cancel-button')).not.toBeInTheDocument();
+  });
+});
+
+/**
+ * LA TABLA D — qué enseña la pantalla de lo que la cola trae de vuelta.
+ *
+ * El aviso NO se apoya en `navigator.onLine`: en un campo con dos barras dice
+ * que hay conexión mientras no pasa nada. Lo que se cuenta es un hecho —
+ * cuántos golpes siguen en el móvil—, no un estado de la red que la aplicación
+ * no puede conocer.
+ *
+ *   estado                    | qué se ve
+ *   --------------------------|---------------------------------------------
+ *   nada pendiente            | ningún aviso
+ *   golpes sin enviar         | aviso en ámbar, con el número. NO el rojo:
+ *                             | para el jugador están anotados
+ *   golpes que se perdieron   | aviso en rojo con los hoyos: el servidor los
+ *                             | rechazó y reintentar no cambiaría nada
+ *   anotación distinta        | modal: lo mío, lo suyo, y quién lo anotó
+ *   «pongo el mío»            | resuelve a mi favor
+ *   «dejo el que hay»         | resuelve a favor del servidor
+ *   dos discrepancias         | de una en una; al cerrar la primera sigue la
+ *                             | segunda, sin perderla
+ */
+describe('QuickMatchScoringPage · lo que quedó sin enviar (FE #515, tabla D)', () => {
+  const resuelveDiscrepancia = vi.fn();
+
+  const pinta = (extra) => {
+    mockUseQuickMatchScoring.mockReturnValue({
+      ...baseHookState,
+      quickMatch: { ...baseQuickMatch, status: 'IN_PROGRESS', isCompleted: false },
+      isScorer: true,
+      coveredParticipantIds: ['user-1'],
+      setCurrentHole: vi.fn(),
+      submitScore: vi.fn(),
+      completeMatch: vi.fn(),
+      cancelMatch: vi.fn(),
+      refetch: vi.fn(),
+      pendientes: 0,
+      perdidos: [],
+      discrepancias: [],
+      resuelveDiscrepancia,
+      ...extra,
+    });
+    return renderPage();
+  };
+
+  const unaDiscrepancia = (holeNumber = 7) => ({
+    holeNumber,
+    participantId: 'user-1',
+    mio: 5,
+    enElServidor: 6,
+    anotadoPor: 'user-2',
+  });
+
+  beforeEach(() => vi.clearAllMocks());
+
+  it('sin nada pendiente no enseña ningún aviso', () => {
+    pinta();
+    expect(screen.queryByTestId('quick-match-pendientes')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('quick-match-perdidos')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('quick-match-discrepancia')).not.toBeInTheDocument();
+  });
+
+  it('con golpes sin enviar lo dice, y no como un error', () => {
+    // Para el jugador el golpe está anotado: solo no ha salido del móvil.
+    // El recuadro rojo se reserva para lo que de verdad no se pudo guardar.
+    pinta({ pendientes: 3 });
+    const aviso = screen.getByTestId('quick-match-pendientes');
+    expect(aviso).toBeInTheDocument();
+    expect(aviso.className).toContain('amber');
+    expect(aviso.className).not.toContain('red');
+  });
+
+  it('los golpes que el servidor rechazó se cuentan aparte, y en rojo', () => {
+    pinta({ perdidos: [{ holeNumber: 4, participantId: 'user-1' }] });
+    const aviso = screen.getByTestId('quick-match-perdidos');
+    expect(aviso).toBeInTheDocument();
+    expect(aviso.className).toContain('red');
+    expect(aviso.textContent).toContain('4');
+  });
+
+  it('una anotación distinta abre el modal con los dos resultados', () => {
+    pinta({ discrepancias: [unaDiscrepancia()] });
+    const modal = screen.getByTestId('quick-match-discrepancia');
+    expect(modal).toBeInTheDocument();
+    expect(modal.getAttribute('aria-modal')).toBe('true');
+    expect(modal.textContent).toContain('5');
+    expect(modal.textContent).toContain('6');
+  });
+
+  it('el modal dice quién anotó qué, y qué ibas a anotar tú', () => {
+    // Los dos números salen también en los botones: si esto se mirara sobre el
+    // modal entero, un cuerpo que no dijera nada pasaría igual
+    pinta({ discrepancias: [unaDiscrepancia()] });
+    const cuerpo = screen.getByTestId('quick-match-discrepancia-body');
+    expect(cuerpo.textContent).toContain('Friend');
+    expect(cuerpo.textContent).toContain('6');
+    expect(cuerpo.textContent).toContain('5');
+  });
+
+  it('si el que anotó ya no está en la partida, no deja el hueco en blanco', () => {
+    pinta({ discrepancias: [{ ...unaDiscrepancia(), anotadoPor: 'se-fue' }] });
+    const cuerpo = screen.getByTestId('quick-match-discrepancia-body');
+    expect(cuerpo.textContent).toContain('conflictScorerUnknown');
+  });
+
+  it('«pongo el mío» resuelve a mi favor', () => {
+    pinta({ discrepancias: [unaDiscrepancia()] });
+    fireEvent.click(screen.getByTestId('quick-match-discrepancia-mio'));
+    expect(resuelveDiscrepancia).toHaveBeenCalledWith(7, 'user-1', 'mio');
+  });
+
+  it('«dejo el que hay» resuelve a favor del servidor', () => {
+    pinta({ discrepancias: [unaDiscrepancia()] });
+    fireEvent.click(screen.getByTestId('quick-match-discrepancia-servidor'));
+    expect(resuelveDiscrepancia).toHaveBeenCalledWith(7, 'user-1', 'servidor');
+  });
+
+  it('con dos discrepancias enseña la primera, no las dos a la vez', () => {
+    // Se resuelven de una en una: dos modales superpuestos no se pueden usar,
+    // y la segunda no se pierde porque el hook la mantiene en la lista
+    pinta({ discrepancias: [unaDiscrepancia(7), unaDiscrepancia(12)] });
+    expect(screen.getAllByTestId('quick-match-discrepancia')).toHaveLength(1);
+    fireEvent.click(screen.getByTestId('quick-match-discrepancia-mio'));
+    expect(resuelveDiscrepancia).toHaveBeenCalledWith(7, 'user-1', 'mio');
+    expect(resuelveDiscrepancia).toHaveBeenCalledTimes(1);
   });
 });
