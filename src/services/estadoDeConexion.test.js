@@ -1,6 +1,7 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import {
   hayConexion,
+  vigilaUnaPeticion,
   apuntaFalloDeRed,
   apuntaRespuestaDelServidor,
   seSuscribeALaConexion,
@@ -52,14 +53,24 @@ describe('estadoDeConexion', () => {
     // El único caso en que el navegador acierta seguro: modo avión. Antes se
     // arrancaba siempre optimista y la primera anotación se iba por el camino
     // de red, fallaba y salía un error rojo en vez del aviso
-    const original = Object.getOwnPropertyDescriptor(globalThis.navigator, 'onLine');
+    // `onLine` vive en el prototipo, no en la instancia, así que no hay
+    // descriptor propio que devolver: se define uno y luego se borra. Con el
+    // `if (original)` de antes no se restauraba nada y el resto del fichero se
+    // quedaba con `navigator.onLine === false`, lo que hacía que otro test
+    // pasara sin comprobar nada
+    const propio = Object.getOwnPropertyDescriptor(globalThis.navigator, 'onLine');
     Object.defineProperty(globalThis.navigator, 'onLine', { value: false, configurable: true });
     try {
       olvidaElEstadoDeConexion();
       expect(hayConexion()).toBe(false);
     } finally {
-      if (original) Object.defineProperty(globalThis.navigator, 'onLine', original);
+      if (propio) Object.defineProperty(globalThis.navigator, 'onLine', propio);
+      else delete globalThis.navigator.onLine;
     }
+
+    // Y queda de verdad restaurado para los siguientes
+    olvidaElEstadoDeConexion();
+    expect(hayConexion()).toBe(true);
   });
 
   it('un oyente que se apunta durante el aviso no se llama en esa misma vuelta', () => {
@@ -71,5 +82,56 @@ describe('estadoDeConexion', () => {
     apuntaFalloDeRed();
 
     expect(tardio).not.toHaveBeenCalled();
+  });
+});
+
+describe('la petición que se queda colgada (FE #515)', () => {
+  beforeEach(() => {
+    olvidaElEstadoDeConexion();
+    vi.useFakeTimers();
+  });
+  afterEach(() => vi.useRealTimers());
+
+  it('una petición que no vuelve a tiempo cuenta como que no hay conexión', () => {
+    // Es el caso de verdad en un campo: la petición no falla rápido, se queda
+    // colgada. Esperar a que rechace cubría solo la interfaz caída, que es lo
+    // que `navigator.onLine` ya sabía
+    vigilaUnaPeticion();
+
+    vi.advanceTimersByTime(5000);
+
+    expect(hayConexion()).toBe(false);
+  });
+
+  it('si vuelve a tiempo no dice nada', () => {
+    const suelta = vigilaUnaPeticion();
+
+    vi.advanceTimersByTime(1000);
+    suelta();
+    vi.advanceTimersByTime(30000);
+
+    expect(hayConexion()).toBe(true);
+  });
+
+  it('la petición no se cancela: solo se mide', () => {
+    // Cancelar una escritura sería peor que no avisar: pudo llegar al servidor
+    // y no habría forma de saberlo. `vigilaUnaPeticion` no recibe la petición
+    // ni un AbortController, así que no puede tocarla
+    expect(vigilaUnaPeticion.length).toBe(0);
+  });
+});
+
+describe('darse de baja de los avisos', () => {
+  it('un oyente dado de baja deja de contar, y el conjunto no crece', () => {
+    olvidaElEstadoDeConexion();
+    const oyente = vi.fn();
+
+    const baja = seSuscribeALaConexion(oyente);
+    baja();
+    baja(); // idempotente: darse de baja dos veces no rompe nada
+
+    apuntaFalloDeRed();
+
+    expect(oyente).not.toHaveBeenCalled();
   });
 });

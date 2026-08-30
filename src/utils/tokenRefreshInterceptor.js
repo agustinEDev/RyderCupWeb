@@ -18,7 +18,7 @@ import { sinSesionEnRutaPublica } from './rutasPublicas';
 
 
 import { setCsrfTokenGlobal } from '../contexts/csrfTokenSync'; // v1.13.0: CSRF Protection
-import { apuntaRespuestaDelServidor, apuntaFalloDeRed } from '../services/estadoDeConexion';
+import { apuntaRespuestaDelServidor, apuntaFalloDeRed, vigilaUnaPeticion } from '../services/estadoDeConexion';
 
 /**
  * Si un error viene de que la petición no llegó a completarse.
@@ -29,7 +29,14 @@ import { apuntaRespuestaDelServidor, apuntaFalloDeRed } from '../services/estado
  * aplicación entera sin conexión sin motivo.
  */
 const esFalloDeRed = (error) =>
-  error instanceof TypeError && !error?.response && !error?.status;
+  error instanceof TypeError
+  && !error?.response
+  && !error?.status
+  // Un `TypeError` de dentro de este fichero —leer `.detail` de un cuerpo que
+  // vino vacío, por ejemplo— no dice nada de la red, y darlo por falta de
+  // cobertura declaraba la aplicación sin conexión justo después de que el
+  // servidor hubiera contestado. Los de `fetch` hablan de la petición
+  && /fetch|network|load failed|conexión/i.test(error?.message ?? '');
 
 import {
   isDeviceRevoked,
@@ -96,16 +103,13 @@ export const refreshAccessToken = async () => {
   try {
     console.log('🔄 [TokenRefresh] Attempting to refresh access token...');
 
-    const response = await fetch(`${API_URL}/api/v1/auth/refresh-token`, {
+    const response = await fetchVigilado(`${API_URL}/api/v1/auth/refresh-token`, {
       method: 'POST',
       credentials: 'include', // Critical: sends httpOnly cookies
       headers: {
         'Content-Type': 'application/json',
       },
     });
-
-    // El refresco es una petición más: si contesta, hay conexión
-    apuntaRespuestaDelServidor();
 
     if (!response.ok) {
       console.error('❌ [TokenRefresh] Refresh failed:', response.status, response.statusText);
@@ -172,6 +176,26 @@ export const refreshAccessToken = async () => {
  * @param {RequestInit} options - Fetch options
  * @returns {Promise<Response>} - Fetch response
  */
+/**
+ * Un `fetch` que además cuenta si se está llegando al servidor.
+ *
+ * El plazo corre desde que sale y se cancela cuando vuelve, pase lo que pase:
+ * lo que interesa no es si respondió bien, sino si respondió.
+ */
+const fetchVigilado = async (url, opciones) => {
+  const suelta = vigilaUnaPeticion();
+  try {
+    const respuesta = await fetch(url, opciones);
+    apuntaRespuestaDelServidor();
+    return respuesta;
+  } catch (error) {
+    if (esFalloDeRed(error)) apuntaFalloDeRed();
+    throw error;
+  } finally {
+    suelta();
+  }
+};
+
 export const fetchWithTokenRefresh = async (url, options = {}) => {
   // Ensure credentials are always included for httpOnly cookies
   const fetchOptions = {
@@ -181,10 +205,7 @@ export const fetchWithTokenRefresh = async (url, options = {}) => {
 
   try {
     // Execute original request
-    const response = await fetch(url, fetchOptions);
-
-    // Volvió una respuesta: hay conexión, aunque traiga un error del servidor
-    apuntaRespuestaDelServidor();
+    const response = await fetchVigilado(url, fetchOptions);
 
     // If not 401, return response immediately
     if (response.status !== 401) {
@@ -257,18 +278,12 @@ export const fetchWithTokenRefresh = async (url, options = {}) => {
           resolve: () => {
             // Retry the original request after refresh completes
             console.log('🔄 [TokenRefresh] Retrying queued request...');
-            // También informa: este reintento no pasa por el `try` de abajo,
+            // Vigilado también: este reintento no pasa por ningún otro sitio,
             // así que si varias escrituras esperaban el refresco y la cobertura
             // se cae justo después, todas fallarían sin que nadie se enterara
-            fetch(url, fetchOptions)
-              .then((respuesta) => {
-                apuntaRespuestaDelServidor();
-                resolve(respuesta);
-              })
-              .catch((error) => {
-                if (esFalloDeRed(error)) apuntaFalloDeRed();
-                reject(error);
-              });
+            fetchVigilado(url, fetchOptions)
+              .then(resolve)
+              .catch(reject);
           },
           reject,
         });
@@ -294,7 +309,7 @@ export const fetchWithTokenRefresh = async (url, options = {}) => {
 
       // Retry the original request
       console.log('🔄 [TokenRefresh] Retrying original request...');
-      const retryResponse = await fetch(url, fetchOptions);
+      const retryResponse = await fetchVigilado(url, fetchOptions);
 
       return retryResponse;
 
