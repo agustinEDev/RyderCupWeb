@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router';
 import { useTranslation } from 'react-i18next';
+import { mensajeDeError } from '../../utils/sinCobertura';
 import { X } from 'lucide-react';
 import HandicapInputPanel from './HandicapInputPanel';
 import CourseStep from './CourseStep';
@@ -34,6 +35,7 @@ import {
 
 const CreateQuickMatchModal = ({ onClose, onStarted, currentUser }) => {
   const { t } = useTranslation('quickMatch');
+  const { t: tComun } = useTranslation('common');
   const navigate = useNavigate();
 
   const [step, setStep] = useState(1);
@@ -173,7 +175,7 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser }) => {
       setQuickMatch(created);
       setStep(2);
     } catch (err) {
-      setError(err.message || t('create.errors.generic'));
+      setError(mensajeDeError(err, { sinConexion: tComun('sinConexion.mensaje'), generico: t('create.errors.generic') }));
     } finally {
       setIsProcessing(false);
     }
@@ -199,7 +201,7 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser }) => {
       );
       setQuickMatch(updated);
     } catch (err) {
-      setError(err.message || t('create.errors.generic'));
+      setError(mensajeDeError(err, { sinConexion: tComun('sinConexion.mensaje'), generico: t('create.errors.generic') }));
     } finally {
       setIsProcessing(false);
     }
@@ -232,7 +234,7 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser }) => {
       setGuestForm(initialGuestForm);
       setGuestTeeKey(NO_TEE_KEY);
     } catch (err) {
-      setError(err.message || t('create.errors.generic'));
+      setError(mensajeDeError(err, { sinConexion: tComun('sinConexion.mensaje'), generico: t('create.errors.generic') }));
     } finally {
       setIsProcessing(false);
     }
@@ -246,7 +248,7 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser }) => {
       setQuickMatch(updated);
       setScorerIds((prev) => prev.filter((id) => id !== participantId));
     } catch (err) {
-      setError(err.message || t('create.errors.generic'));
+      setError(mensajeDeError(err, { sinConexion: tComun('sinConexion.mensaje'), generico: t('create.errors.generic') }));
     } finally {
       setIsProcessing(false);
     }
@@ -352,7 +354,7 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser }) => {
       );
       setQuickMatch(updated);
     } catch (err) {
-      setError(err.message || t('create.errors.generic'));
+      setError(mensajeDeError(err, { sinConexion: tComun('sinConexion.mensaje'), generico: t('create.errors.generic') }));
     } finally {
       setIsProcessing(false);
     }
@@ -370,7 +372,7 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser }) => {
       const started = await startQuickMatchUseCase.execute(quickMatch.id, scorerIds);
       onStarted(started.id);
     } catch (err) {
-      setError(err.message || t('create.errors.generic'));
+      setError(mensajeDeError(err, { sinConexion: tComun('sinConexion.mensaje'), generico: t('create.errors.generic') }));
     } finally {
       setIsProcessing(false);
     }

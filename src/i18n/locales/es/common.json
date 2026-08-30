@@ -126,5 +126,12 @@
     "moreResults_one": "1 país más — sigue escribiendo para afinar",
     "moreResults_other": "{{count}} países más — sigue escribiendo para afinar"
   },
-  "brandMarkAlt": "Logo de RyderCupFriends"
+  "brandMarkAlt": "Logo de RyderCupFriends",
+  "sinConexion": {
+    "aviso": "Sin conexión. Lo que ves puede no estar al día.",
+    "mensaje": "Sin conexión. Vuelve a intentarlo cuando tengas cobertura."
+  },
+  "errors": {
+    "generic": "No se ha podido completar la operación. Inténtalo de nuevo."
+  }
 }

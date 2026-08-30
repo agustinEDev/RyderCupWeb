@@ -2,6 +2,7 @@
 import { useEffect, useLayoutEffect, useCallback, lazy, Suspense, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router';
 import { Toaster } from 'react-hot-toast';
+import AvisoSinConexion from './components/ui/AvisoSinConexion';
 import * as Sentry from '@sentry/react';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import FullScreenLoader from './components/ui/FullScreenLoader';
@@ -227,6 +228,13 @@ function AppContent() {
         }}
       />
       <Suspense fallback={<FullScreenLoader />}>
+        {/* Que no haya red se dice UNA vez y para toda la aplicacion: sin esto
+            solo se notaba por lo que no pasaba —listas vacias, buscadores que
+            no traen nada— y el jugador no sabia si le fallaba el movil o esto.
+            Dentro de la espera por lo mismo que el aviso de instalar: fuera, su
+            barra se suma a los 100vh de la pantalla de arranque, y eso saca la
+            barra de desplazamiento y descentra el monograma */}
+        <AvisoSinConexion />
         {/* Dentro de la espera a proposito: fuera se pintaba ENCIMA de ella,
             apareciendo antes que la pantalla a la que acompaña. Ni en la portada
             ni en el arranque: ofrecer «instala la aplicacion» en la pantalla por

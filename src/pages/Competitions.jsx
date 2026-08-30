@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router';
 import { motion } from 'framer-motion';
-import { Users, Calendar, MapPin, Plus, Filter, Search, AlertCircle, Crown, Flag } from 'lucide-react';
+import { Users, Calendar, MapPin, Plus, Filter, Search, AlertCircle, Crown, Flag, WifiOff } from 'lucide-react';
 import customToast from '../utils/toast';
+import { esFalloDeRed } from '../utils/sinCobertura';
 import { useTranslation } from 'react-i18next';
 import HeaderAuth from '../components/layout/HeaderAuth';
 import { listUserCompetitionsUseCase } from '../composition';
@@ -33,8 +34,10 @@ const getEnrollmentStatusClasses = (status) => {
 const Competitions = () => {
   const navigate = useNavigate();
   const { t, i18n } = useTranslation('competitions');
+  const { t: tComun } = useTranslation('common');
   const { user } = useAuth();
   const [competitions, setCompetitions] = useState([]);
+  const [sinCobertura, setSinCobertura] = useState(false);
   const [filteredCompetitions, setFilteredCompetitions] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -51,10 +54,21 @@ const Competitions = () => {
       // Use the use case instead of direct service call
       const data = await listUserCompetitionsUseCase.execute(user.id);
       setCompetitions(data);
+      // Y se baja la bandera: sin esto, una carga buena después de un rato sin
+      // señal dejaba la pantalla diciendo «sin conexión» mientras el aviso de
+      // arriba ya había desaparecido, contradiciéndose
+      setSinCobertura(false);
     } catch (error) {
       console.error('Error loading competitions:', error);
-      customToast.error(error.message || t('detail.failedToLoadCompetitions'));
-      setCompetitions([]);
+      // Sin red no se sabe si hay competiciones o no, asi que NO se vacia la
+      // lista: hacerlo pintaba «Mostrando 0 de 0» y ofrecia «crear tu primera»
+      // a quien tiene las suyas, que es afirmar algo que nadie ha comprobado.
+      // Y el aviso lleva texto propio, no el `message` del error: sin cobertura
+      // ahi venia el mensaje crudo del service worker, en ingles y con la URL
+      const deRed = esFalloDeRed(error);
+      setSinCobertura(deRed);
+      customToast.error(deRed ? tComun('sinConexion.mensaje') : t('detail.failedToLoadCompetitions'));
+      if (!deRed) setCompetitions([]);
     } finally {
       setIsLoading(false);
     }
@@ -110,6 +124,28 @@ const Competitions = () => {
     if (isLoading) {
       return (
         <BlockLoader texto={t('myCompetitions.loadingCompetitions')} />
+      );
+    }
+    // Vacio porque no se ha podido preguntar NO es vacio: decir «no tienes
+    // ninguna» —y ofrecer crear la primera— es afirmar algo que nadie ha
+    // comprobado, y quien tenga las suyas las ve desaparecer
+    // Por la lista entera, no por lo filtrado: sin cobertura la lista se
+    // conserva, así que un filtro que no casa con nada no es falta de red —se
+    // consultó, y no había coincidencias— y merece su propio mensaje
+    if (competitions.length === 0 && sinCobertura) {
+      return (
+        <div
+          data-testid="competiciones-sin-cobertura"
+          className="flex flex-col items-center justify-center py-12 bg-gray-50 border border-gray-200 rounded-xl"
+        >
+          <WifiOff className="w-16 h-16 text-gray-400 mb-4" aria-hidden="true" />
+          <p className="text-gray-900 font-semibold text-lg mb-2">
+            {tComun('sinConexion.aviso')}
+          </p>
+          <p className="text-gray-500 text-sm max-w-md text-center">
+            {t('myCompetitions.sinCoberturaDetalle')}
+          </p>
+        </div>
       );
     }
     if (filteredCompetitions.length === 0) {

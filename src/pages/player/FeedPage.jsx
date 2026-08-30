@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Link } from 'react-router';
-import { Loader, Sparkles, UserPlus } from 'lucide-react';
+import { Loader, Sparkles, UserPlus, WifiOff } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import customToast from '../../utils/toast';
+import { esFalloDeRed } from '../../utils/sinCobertura';
 import HeaderAuth from '../../components/layout/HeaderAuth';
 import { useAuth } from '../../hooks/useAuth';
 import ActivityEventCard from '../../components/feed/ActivityEventCard';
@@ -27,6 +28,7 @@ const FeedPage = () => {
   const [nextCursor, setNextCursor] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [sinCobertura, setSinCobertura] = useState(false);
 
   // Se marca como visto una sola vez por visita. Sin esto, cada paginación
   // volvería a marcarlo, y el aviso se apagaría por refrescar en vez de por
@@ -58,6 +60,7 @@ const FeedPage = () => {
       setAuthors(page.authors);
       setCourses(page.courses);
       setNextCursor(page.nextCursor);
+      setSinCobertura(false);
 
       if (!yaMarcado.current) {
         yaMarcado.current = true;
@@ -65,8 +68,14 @@ const FeedPage = () => {
         // pasa es que la insignia siga puesta hasta la próxima visita.
         markFeedAsSeenUseCase.execute().catch(() => {});
       }
-    } catch {
-      customToast.error(tRef.current('common:errors.generic'));
+    } catch (err) {
+      // `catch` sin el error no dejaba distinguir un backend roto de no tener
+      // cobertura, y las dos cosas acababan en el mismo aviso
+      const deRed = esFalloDeRed(err);
+      setSinCobertura(deRed);
+      customToast.error(
+        tRef.current(deRed ? 'common:sinConexion.mensaje' : 'common:errors.generic')
+      );
     } finally {
       setIsLoading(false);
     }
@@ -90,8 +99,10 @@ const FeedPage = () => {
       setAuthors((prev) => ({ ...prev, ...page.authors }));
       setCourses((prev) => ({ ...prev, ...page.courses }));
       setNextCursor(page.nextCursor);
-    } catch {
-      customToast.error(t('common:errors.generic'));
+    } catch (err) {
+      customToast.error(
+        t(esFalloDeRed(err) ? 'common:sinConexion.mensaje' : 'common:errors.generic')
+      );
     } finally {
       setIsLoadingMore(false);
     }
@@ -129,7 +140,18 @@ const FeedPage = () => {
           </Link>
         </div>
 
-        {events.length === 0 ? (
+        {events.length === 0 && sinCobertura ? (
+          // «Aún no hay nada que contar» es una afirmación, y sin haber podido
+          // preguntar no se sostiene: lo que hay puede estar ahí esperando
+          <div
+            data-testid="feed-sin-cobertura"
+            className="flex flex-col items-center justify-center py-12 text-center"
+          >
+            <WifiOff className="w-12 h-12 text-gray-400 mb-3" aria-hidden="true" />
+            <p className="text-gray-900 font-semibold mb-1">{t('common:sinConexion.aviso')}</p>
+            <p className="text-gray-500 text-sm">{t('feed:sinCoberturaDetalle')}</p>
+          </div>
+        ) : events.length === 0 ? (
           <EmptyFeed t={t} />
         ) : (
           <>
