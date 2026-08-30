@@ -22,6 +22,37 @@ import { captureError } from '../utils/sentryHelpers';
  * servidor y no habría forma de saberlo.
  */
 
+/**
+ * LA TABLA. Qué debe pasar en cada caso, y no hay más casos que estos.
+ *
+ * Dos ejes: cómo termina la petición, y si llegó alguna respuesta —de la que
+ * sea— en los últimos cinco segundos.
+ *
+ *   termina  | ¿respuesta reciente? | qué pasa
+ *   ---------|----------------------|--------------------------------------
+ *   llega    |          —           | hay conexión; se deja de vigilar
+ *   rechaza  |          sí          | no se dice nada, y PARA: su respuesta
+ *            |                      | no va a llegar nunca
+ *   rechaza  |          no          | no hay conexión; para
+ *   cuelga   |          sí          | no se dice nada, pero VUELVE A MIRAR:
+ *            |                      | todavía no se sabe
+ *   cuelga   |          no          | no hay conexión; deja de mirar hasta
+ *            |                      | que llegue o falle
+ *   (nunca ha llegado ninguna)      | cuenta como «no reciente»
+ *
+ * Y dos reglas que atraviesan la tabla:
+ *
+ * - **El empate cae a favor de la conexión**: una respuesta llegada
+ *   exactamente hace un plazo cuenta como reciente. Ante la duda no se declara
+ *   una caída.
+ * - **Nunca se cancela la petición.** Vigilar es mirar, no intervenir:
+ *   cancelar una escritura sería peor, porque pudo llegar al servidor.
+ *
+ * Esta tabla se escribió DESPUÉS de cinco rondas de revisión, y las cinco
+ * fueron por casillas que nadie había escrito. Si hay que tocar el
+ * comportamiento, se cambia aquí primero.
+ */
+
 // Lo que se espera a una petición antes de darla por no llegada. Es el mismo
 // plazo que usa el arranque para no quedarse esperando a `/current-user`
 const PLAZO_SIN_RESPUESTA_MS = 5000;

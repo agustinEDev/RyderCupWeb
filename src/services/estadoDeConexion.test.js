@@ -107,6 +107,17 @@ describe('la petición que se queda colgada (FE #515)', () => {
     expect(hayConexion()).toBe(false);
   });
 
+  it('cuando llega, se deja de vigilar en el acto', () => {
+    // No basta con que no declare nada: el plazo tiene que morir ahí. Si no,
+    // cada petición correcta deja un temporizador vivo cinco segundos, y con el
+    // marcador sondeando son cientos a lo largo de una vuelta
+    const v = vigilaUnaPeticion();
+
+    v.llego();
+
+    expect(plazosVivos()).toBe(0);
+  });
+
   it('si vuelve a tiempo no dice nada', () => {
     const v = vigilaUnaPeticion();
 
@@ -166,6 +177,29 @@ describe('la petición que se queda colgada (FE #515)', () => {
     apuntaRespuestaDelServidor();
 
     expect(hayConexion()).toBe(true);
+  });
+
+  it('el empate cae a favor de la conexión', () => {
+    // Una respuesta llegada EXACTAMENTE hace un plazo cuenta como reciente.
+    // Con `<` se perdía el empate y se declaraba una caída con la red bien
+    const v = vigilaUnaPeticion();
+    v.fallo();
+    apuntaRespuestaDelServidor();
+
+    vi.advanceTimersByTime(5000);   // justo el plazo, ni uno más
+
+    expect(hayConexion()).toBe(true);
+  });
+
+  it('en el arranque, sin ninguna respuesta todavía, la caída se declara igual', () => {
+    // «Nunca ha contestado nadie» no puede confundirse con «contestó al cargar
+    // la página»: si se confundiera, durante los primeros segundos de vida
+    // ningún plazo podría decir nada
+    vigilaUnaPeticion();
+
+    vi.advanceTimersByTime(5001);
+
+    expect(hayConexion()).toBe(false);
   });
 
   it('una petición que falló decide una vez y para', () => {
