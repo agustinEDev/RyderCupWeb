@@ -30,19 +30,29 @@ const CLAVE = 'rydercup-ultimo-conocido';
  *  cobertura no encontraba nada, y jugar dos partidas el mismo día es normal. */
 const CUANTAS_CABEN = 3;
 
+/** Puesto al cerrar sesión: ver `olvidaLoDeEstaCuenta`. */
+let cerrado = false;
+
+/**
+ * Una LISTA y no un objeto por id: en un objeto el turno para desalojar sale
+ * del orden de las claves, y ese orden no es el de inserción para las que
+ * parecen números enteros. Hoy los identificadores son UUID y no pasa, pero
+ * atar a eso el «cuál se tira» es frágil de balde. Aquí el orden es el que se
+ * ve: la última es la más reciente.
+ */
 const leeTodo = () => {
   try {
     const crudo = localStorage.getItem(CLAVE);
     const guardado = crudo ? JSON.parse(crudo) : null;
-    return guardado && typeof guardado === 'object' && !Array.isArray(guardado) ? guardado : {};
+    return Array.isArray(guardado) ? guardado : [];
   } catch {
-    return {};
+    return [];
   }
 };
 
-const escribe = (todo) => {
+const escribe = (todas) => {
   try {
-    localStorage.setItem(CLAVE, JSON.stringify(todo));
+    localStorage.setItem(CLAVE, JSON.stringify(todas));
     return true;
   } catch {
     // Sin espacio, o en una ventana privada. Se seguirá sin poder pintar la
@@ -57,52 +67,42 @@ const escribe = (todo) => {
  * @returns {boolean} Si de verdad quedó guardado
  */
 export const recuerda = (id, lo) => {
-  if (!id) return false;
+  if (!id || cerrado) return false;
 
-  const todo = leeTodo();
+  const todas = leeTodo();
+  const donde = todas.findIndex((x) => x.id === id);
 
   // Si no ha cambiado nada Y ya es la última, no se toca el almacenamiento:
   // esto corre en cada sondeo, toda la vuelta, y es un parseo, un serializado y
   // una escritura síncronos en el hilo que atiende los botones de anotar.
-  //
-  // Lo de «ya es la última» no es un detalle: el turno para desalojar sale del
-  // orden de las claves, así que saltarse la escritura sin más dejaba la
-  // partida que se está jugando clavada en su sitio de la primera vez, y volvía
-  // a ser la primera en caer al abrir otra
-  const ids = Object.keys(todo);
-  const comoEstaba = todo[id];
-  const yaEsLaUltima = ids[ids.length - 1] === id;
-  if (yaEsLaUltima && comoEstaba && JSON.stringify(comoEstaba) === JSON.stringify(lo)) return true;
-
-  // Se quita antes de volver a poner: escribir sobre una clave que ya está NO
-  // la mueve al final
-  delete todo[id];
-  todo[id] = lo;
-
-  // Las más viejas se van: el orden de las claves da el turno, y la que se
-  // acaba de escribir queda siempre la última
-  const conLaNueva = Object.keys(todo);
-  for (const viejo of conLaNueva.slice(0, Math.max(0, conLaNueva.length - CUANTAS_CABEN))) {
-    delete todo[viejo];
+  // Lo de «ya es la última» no es un detalle: de ahí sale el turno para
+  // desalojar, y saltarse la escritura sin más dejaba la partida que se está
+  // jugando clavada en su sitio y la convertía en la primera en caer
+  if (donde === todas.length - 1 && JSON.stringify(todas[donde]) === JSON.stringify({ id, ...lo })) {
+    return true;
   }
 
-  return escribe(todo);
+  if (donde !== -1) todas.splice(donde, 1);
+  todas.push({ id, ...lo });
+
+  // Las más viejas se van por delante
+  return escribe(todas.slice(-CUANTAS_CABEN));
 };
 
 /** @returns {{partida: Object, campo: Object|null}|null} */
 export const loQueSeSupo = (id) => {
   if (!id) return null;
-  const lo = leeTodo()[id];
-  return lo && typeof lo === 'object' && lo.partida ? lo : null;
+  const lo = leeTodo().find((x) => x.id === id);
+  return lo && lo.partida ? lo : null;
 };
 
 /** Se olvida: la partida ya no está, o ya no es nuestra. */
 export const olvida = (id) => {
   if (!id) return;
-  const todo = leeTodo();
-  if (!(id in todo)) return;
-  delete todo[id];
-  escribe(todo);
+  const todas = leeTodo();
+  const quedan = todas.filter((x) => x.id !== id);
+  if (quedan.length === todas.length) return;
+  escribe(quedan);
 };
 
 const CLAVE_LISTA = 'rydercup-ultima-lista';
@@ -117,6 +117,7 @@ const CLAVE_LISTA = 'rydercup-ultima-lista';
 const CUANTAS_EN_LA_LISTA = 20;
 
 export const recuerdaLaLista = (partidas) => {
+  if (cerrado) return false;
   try {
     localStorage.setItem(CLAVE_LISTA, JSON.stringify((partidas ?? []).slice(0, CUANTAS_EN_LA_LISTA)));
     return true;
@@ -142,16 +143,27 @@ export const laUltimaLista = () => {
  * la siguiente persona que entrara y se quedara sin señal vería la lista de
  * partidas de la anterior, con sus nombres y sus resultados.
  */
-export const olvidaLoDeEstaCuenta = () => {
-  olvidaTodo();
-};
-
-/** Solo para las pruebas. */
-export const olvidaTodo = () => {
+const borra = () => {
   try {
     localStorage.removeItem(CLAVE_LISTA);
     localStorage.removeItem(CLAVE);
   } catch {
     // Nada que hacer
   }
+};
+
+export const olvidaLoDeEstaCuenta = () => {
+  // Y no se vuelve a escribir en lo que queda de página. Los cierres duros
+  // —CSRF, dispositivo revocado— salen con una redirección, que NO es
+  // instantánea: una petición en vuelo puede contestar después de este borrado
+  // y reponer justo lo que se acaba de quitar, y eso sí sobrevive a la
+  // redirección. El cerrojo se va solo con la recarga, que es lo que viene
+  borra();
+  cerrado = true;
+};
+
+/** Solo para las pruebas: borra Y levanta el cerrojo. */
+export const olvidaTodo = () => {
+  borra();
+  cerrado = false;
 };

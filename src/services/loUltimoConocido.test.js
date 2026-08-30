@@ -136,6 +136,21 @@ describe('loUltimoConocido', () => {
     expect(escrituras).toBe(0);
   });
 
+  it('cerrada la sesión ya no se vuelve a escribir', () => {
+    // El cierre duro sale con una redirección, y esa navegación no es
+    // instantánea: una petición en vuelo contesta después del borrado y repone
+    // lo que se acaba de quitar, y eso sí sobrevive a la redirección
+    recuerda('m-1', lo(1));
+    recuerdaLaLista([{ id: 'm-1' }]);
+
+    olvidaLoDeEstaCuenta();
+    recuerda('m-1', lo(1));
+    recuerdaLaLista([{ id: 'm-1' }]);
+
+    expect(loQueSeSupo('m-1')).toBeNull();
+    expect(laUltimaLista()).toBeNull();
+  });
+
   it('pero un cambio sí se guarda', () => {
     recuerda('m-1', lo(1));
 
