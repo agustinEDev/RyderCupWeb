@@ -30,7 +30,10 @@ const SE_ARREGLA_SOLO = new Set([401, 408, 429]);
 
 const seGuardaParaDespues = (error) => {
   const estado = error?.status ?? error?.response?.status;
-  // Sin estado es que no llegó respuesta: se guarda
+  // Sin estado es que no llegó respuesta: se guarda. Ahí cae también el fallo
+  // de CSRF, que `api.js` lanza como un Error pelado tras cerrar la sesión, y
+  // guardarlo es lo que toca: la cola vive en el móvil, así que el golpe sigue
+  // ahí cuando el jugador vuelva a entrar. Descartarlo sería perderlo.
   if (estado === undefined) return true;
   // El 401 es la sesión, el 408 y el 429 son el momento: ninguno es el golpe,
   // y descartarlos sería tirar una anotación buena por algo que pasa solo
@@ -124,6 +127,16 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
     }
   }, [quickMatchId]);
 
+  // La ruta no lleva `key`, así que ir de una partida a otra reutiliza este
+  // hook: sin limpiar, el aviso rojo y el conflicto de la partida anterior se
+  // quedarían en pantalla contra los hoyos de la nueva
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- reset on match change, same pattern as the fetch effect below
+    setPerdidos([]);
+    setDiscrepancias([]);
+    setPendientes(quickMatchId ? offlineQueue.size(quickMatchId) : 0);
+  }, [quickMatchId]);
+
   useEffect(() => {
     holesLoadedRef.current = false;
     // eslint-disable-next-line react-hooks/set-state-in-effect -- initial fetch + polling, same pattern as useScoring.js
@@ -210,21 +223,27 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
   const vaciaLoGuardado = useCallback(
     async (partida) => {
       if (!quickMatchId) return;
-      // Todo sale de la respuesta, no del estado: cuando el primer sondeo
-      // dispara el vaciado, `quickMatch` todavia es null y `myParticipant`
-      // seria null, asi que un golpe propio se enviaria como proxy
-      const anotadosEnElServidor = partida?.holeScores;
-      const miParticipanteId = partida?.participants?.find(
-        (p) => p.userId === currentUserId
-      )?.participantId;
       // Una vez a la vez: un golpe no puede enviarse por duplicado
       if (vaciandoRef.current) return;
       vaciandoRef.current = true;
 
       try {
+        // Todo sale de la respuesta, no del estado: cuando el primer sondeo
+        // dispara el vaciado, `quickMatch` todavia es null y `myParticipant`
+        // seria null, asi que un golpe propio se enviaria como proxy
+        const anotadosEnElServidor = partida?.holeScores ?? [];
+        const miParticipanteId = partida?.participants?.find(
+          (p) => p.userId === currentUserId
+        )?.participantId;
+
+        // Primero se clasifica la cola ENTERA, y solo despues se envia. Al
+        // reves, un envio que se atasca corta el bucle antes de mirar los
+        // hoyos que vienen detras, y el aviso de un conflicto que el jugador
+        // estaba leyendo se cerraria solo
         const enConflicto = [];
+        const porEnviar = [];
         for (const entrada of offlineQueue.getByMatch(quickMatchId)) {
-          const enElServidor = (anotadosEnElServidor ?? []).find(
+          const enElServidor = anotadosEnElServidor.find(
             (hs) => hs.holeNumber === entrada.holeNumber && hs.participantId === entrada.participantId
           );
 
@@ -250,22 +269,49 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
             continue;
           }
 
+          porEnviar.push(entrada);
+        }
+        setDiscrepancias(enConflicto);
+
+        let algoLlegoAlServidor = false;
+        for (const apuntada of porEnviar) {
+          // Se relee justo antes de mandarla: entre el reparto de arriba y
+          // este momento hay envios en vuelo, y el jugador puede haber
+          // decidido sobre ella. Mandar la copia vieja seria enviar un golpe
+          // que acaba de descartar
+          const entrada = offlineQueue
+            .getByMatch(quickMatchId)
+            .find((e) => e.holeNumber === apuntada.holeNumber && e.participantId === apuntada.participantId);
+          if (!entrada) continue;
+
           const queHacer = await enviaGuardado(entrada, miParticipanteId);
           if (queHacer === 'para') break;
 
           if (queHacer === 'descartar') {
-            setPerdidos((antes) => [...antes, { holeNumber: entrada.holeNumber, participantId: entrada.participantId }]);
+            setPerdidos((antes) =>
+              antes.some((x) => x.holeNumber === entrada.holeNumber && x.participantId === entrada.participantId)
+                ? antes
+                : [...antes, { holeNumber: entrada.holeNumber, participantId: entrada.participantId }]
+            );
+          } else {
+            algoLlegoAlServidor = true;
           }
           offlineQueue.remove(quickMatchId, entrada.holeNumber, entrada.participantId);
         }
 
-        setDiscrepancias(enConflicto);
         setPendientes(offlineQueue.size(quickMatchId));
+
+        // Lo enviado ya no esta en la cola, y la foto que hay en memoria es de
+        // ANTES del envio, asi que tampoco lo trae: sin volver a pedirla, la
+        // casilla vuelve a decir «Anotar» durante diez segundos y el jugador
+        // anota el mismo hoyo dos veces. El cerrojo sigue puesto, de modo que
+        // este sondeo no vuelve a vaciar y no hay vuelta sin fin
+        if (algoLlegoAlServidor) await fetchQuickMatch();
       } finally {
         vaciandoRef.current = false;
       }
     },
-    [quickMatchId, currentUserId, enviaGuardado]
+    [quickMatchId, currentUserId, enviaGuardado, fetchQuickMatch]
   );
 
   // La ref se asigna en un efecto, no durante el render. El sondeo la lee
@@ -315,6 +361,13 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
       if (!quickMatchId || !isScorer) return;
 
       setIsSubmitting(true);
+      // El aviso rojo pedía volver a anotarlo: ya está hecho. Se retira aquí y
+      // no en la rama del envío bueno, porque si el golpe se queda otra vez en
+      // el móvil sigue habiendo anotación —lo que ya no hay es nada perdido—, y
+      // dejarlo puesto pediría repetir un hoyo que la tarjeta ya enseña
+      setPerdidos((antes) =>
+        antes.filter((x) => !(x.holeNumber === holeNumber && x.participantId === participantId))
+      );
       try {
         if (participantId === myParticipant?.participantId) {
           await submitQuickMatchHoleScoreUseCase.execute(quickMatchId, holeNumber, score);
@@ -322,11 +375,6 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
           await submitQuickMatchProxyHoleScoreUseCase.execute(quickMatchId, participantId, holeNumber, score);
         }
         setSaveError(null);
-        // El aviso rojo pedía volver a anotarlo: ya está hecho, así que se
-        // retira. Si siguiera ahí, estaría pidiendo algo que ya no toca
-        setPerdidos((antes) =>
-          antes.filter((x) => !(x.holeNumber === holeNumber && x.participantId === participantId))
-        );
         await fetchQuickMatch();
       } catch (err) {
         if (seGuardaParaDespues(err)) {

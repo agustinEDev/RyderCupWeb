@@ -1352,3 +1352,42 @@ describe('QuickMatchScoringPage · lo guardado se ve y se entiende (FE #515, tab
     expect(screen.getByTestId('quick-match-save-error').textContent).toContain('12');
   });
 });
+
+describe('QuickMatchScoringPage · dos avisos a la vez (FE #515)', () => {
+  const pinta = (extra) => {
+    mockUseQuickMatchScoring.mockReturnValue({
+      ...baseHookState,
+      quickMatch: { ...baseQuickMatch, status: 'IN_PROGRESS', isCompleted: false },
+      isScorer: true,
+      isCreator: true,
+      coveredParticipantIds: ['user-1'],
+      setCurrentHole: vi.fn(),
+      submitScore: vi.fn(),
+      completeMatch: vi.fn(),
+      cancelMatch: vi.fn(),
+      refetch: vi.fn(),
+      pendientes: 0,
+      perdidos: [],
+      discrepancias: [],
+      resuelveDiscrepancia: vi.fn(),
+      ...extra,
+    });
+    return renderPage();
+  };
+
+  beforeEach(() => vi.clearAllMocks());
+
+  it('el conflicto espera si ya hay otro aviso abierto', () => {
+    // El conflicto lo destapa el sondeo, no un toque del jugador, así que
+    // puede aparecer con el aviso de cancelar ya abierto. Dos ventanas a la
+    // misma altura se tapan, y el foco guardado para volver se pierde
+    pinta({
+      discrepancias: [{ holeNumber: 7, participantId: 'user-1', mio: 5, enElServidor: 6, anotadoPor: 'user-2' }],
+    });
+
+    fireEvent.click(screen.getByText('scoring.cancelMatch.button'));
+
+    expect(screen.getByTestId('quick-match-cancel-body')).toBeInTheDocument();
+    expect(screen.queryByTestId('quick-match-discrepancia')).not.toBeInTheDocument();
+  });
+});

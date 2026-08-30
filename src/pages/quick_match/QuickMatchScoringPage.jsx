@@ -113,7 +113,10 @@ const QuickMatchScoringPage = () => {
   // De una en una: dos avisos superpuestos no se pueden usar, y la siguiente
   // no se pierde porque el hook la mantiene en la lista hasta resolverla
   const discrepancia = discrepancias?.[0] ?? null;
-  const hayDiscrepancia = discrepancia != null;
+  // El conflicto lo destapa el sondeo, no un toque del jugador, así que puede
+  // aparecer con otro aviso ya abierto. Espera su turno: dos ventanas a la
+  // misma altura se tapan, y el foco guardado para volver se perdería
+  const hayDiscrepancia = discrepancia != null && !showCancelConfirm && !showFinishConfirm;
   const jugadorEnDisputa = discrepancia
     ? quickMatch?.participants?.find((p) => p.participantId === discrepancia.participantId)
     : null;
@@ -145,8 +148,13 @@ const QuickMatchScoringPage = () => {
       // `body` no cuenta como foco previo: en Safari tocar un boton no lo
       // enfoca, y guardarlo hacia que al cerrar se «restaurara» a body —que no
       // hace nada— y el respaldo de las pestanas no se usara jamas.
-      const activo = document.activeElement;
-      focoPrevioRef.current = activo && activo !== document.body ? activo : null;
+      // Solo al abrirse el primero: si se reescribiera al abrirse otro, lo
+      // guardado seria el contenedor del aviso anterior, que al cerrarse ya no
+      // esta en la pagina, y el foco caeria en las pestanas
+      if (!focoPrevioRef.current) {
+        const activo = document.activeElement;
+        focoPrevioRef.current = activo && activo !== document.body ? activo : null;
+      }
       const cual = showCancelConfirm ? cancelDialogRef
         : showFinishConfirm ? finishDialogRef
         : discrepanciaDialogRef;
@@ -642,7 +650,7 @@ const QuickMatchScoringPage = () => {
         </div>
       )}
 
-      {discrepancia && (
+      {hayDiscrepancia && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div
             ref={discrepanciaDialogRef}
