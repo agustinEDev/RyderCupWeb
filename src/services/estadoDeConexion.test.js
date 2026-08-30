@@ -113,11 +113,44 @@ describe('la petición que se queda colgada (FE #515)', () => {
     expect(hayConexion()).toBe(true);
   });
 
-  it('la petición no se cancela: solo se mide', () => {
-    // Cancelar una escritura sería peor que no avisar: pudo llegar al servidor
-    // y no habría forma de saberlo. `vigilaUnaPeticion` no recibe la petición
-    // ni un AbortController, así que no puede tocarla
-    expect(vigilaUnaPeticion.length).toBe(0);
+  it('una petición lenta no declara sin conexión si otras están llegando', () => {
+    // Subir una foto del carrete por datos, o despertar una instancia dormida,
+    // tarda más del plazo. Culpar de eso a la red apagaba toda la aplicación
+    vigilaUnaPeticion();
+
+    vi.advanceTimersByTime(2000);
+    apuntaRespuestaDelServidor();     // otra petición sí llegó
+    vi.advanceTimersByTime(4000);     // y la lenta agota su plazo
+
+    expect(hayConexion()).toBe(true);
+  });
+
+  it('pero si no llega nada más, la lenta sí cuenta', () => {
+    vigilaUnaPeticion();
+
+    vi.advanceTimersByTime(6000);
+
+    expect(hayConexion()).toBe(false);
+  });
+
+  it('un oyente que falla no deja sin avisar a los demás', () => {
+    // Avisar ocurre dentro de la petición: una excepción aquí llegaría a
+    // sustituir la respuesta del servidor
+    const segundo = vi.fn();
+    seSuscribeALaConexion(() => { throw new Error('la cola está llena'); });
+    seSuscribeALaConexion(segundo);
+
+    expect(() => apuntaFalloDeRed()).not.toThrow();
+    expect(segundo).toHaveBeenCalled();
+  });
+
+  it('reiniciar el módulo para los plazos en marcha', () => {
+    vigilaUnaPeticion();
+
+    olvidaElEstadoDeConexion();
+    vi.advanceTimersByTime(30000);
+
+    expect(hayConexion()).toBe(true);
   });
 });
 

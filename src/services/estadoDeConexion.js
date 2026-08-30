@@ -32,11 +32,30 @@ let llegaAlServidor = globalThis.navigator?.onLine !== false;
 
 const oyentes = new Set();
 
+// Cuándo llegó la última respuesta, para no culpar a la red de una petición
+// que simplemente tarda mientras otras van y vienen
+let ultimaRespuesta = 0;
+
+// Los plazos en marcha, para poder pararlos al reiniciar el módulo en pruebas
+const temporizadores = new Set();
+
+const ahora = () => globalThis.performance?.now?.() ?? 0;
+
 const avisa = () => {
   // Sobre una copia: un oyente que se apunte durante el aviso entraría en este
   // mismo recorrido, y el de la pantalla de anotación vacía la cola de hoyos.
   // Llamarlo dos veces mandaría el mismo hoyo dos veces
-  for (const oyente of [...oyentes]) oyente();
+  for (const oyente of [...oyentes]) {
+    // Cada uno por su cuenta: si uno falla —la cola llena, un JSON roto— no
+    // puede dejar sin avisar a los demás. Y avisar ocurre dentro de la
+    // petición, así que su excepción llegaría a sustituir a la respuesta del
+    // servidor: quien pidió recibiría un error habiendo contestado el servidor
+    try {
+      oyente();
+    } catch (error) {
+      console.error('[conexión] un oyente falló al ser avisado:', error);
+    }
+  }
 };
 
 const cambiaA = (valor) => {
@@ -46,7 +65,10 @@ const cambiaA = (valor) => {
 };
 
 /** Una petición volvió: hay conexión, aunque la respuesta sea un error. */
-export const apuntaRespuestaDelServidor = () => cambiaA(true);
+export const apuntaRespuestaDelServidor = () => {
+  ultimaRespuesta = ahora();
+  cambiaA(true);
+};
 
 /** Una petición no llegó a completarse: no hay conexión. */
 export const apuntaFalloDeRed = () => cambiaA(false);
@@ -59,8 +81,21 @@ export const apuntaFalloDeRed = () => cambiaA(false);
  * cuando la petición termine, haya ido bien o mal.
  */
 export const vigilaUnaPeticion = () => {
-  const temporizador = setTimeout(() => cambiaA(false), PLAZO_SIN_RESPUESTA_MS);
-  return () => clearTimeout(temporizador);
+  const arrancado = ahora();
+  const temporizador = setTimeout(() => {
+    // Solo cuenta como falta de cobertura si NADA ha llegado mientras tanto.
+    // Una petición legítimamente lenta —subir una foto del carrete por datos,
+    // o despertar una instancia dormida— tardaba más del plazo y declaraba sin
+    // conexión a toda la aplicación aunque el resto fuera bien
+    if (ultimaRespuesta > arrancado) return;
+    cambiaA(false);
+  }, PLAZO_SIN_RESPUESTA_MS);
+
+  temporizadores.add(temporizador);
+  return () => {
+    clearTimeout(temporizador);
+    temporizadores.delete(temporizador);
+  };
 };
 
 export const hayConexion = () => llegaAlServidor;
@@ -80,6 +115,11 @@ export const seSuscribeALaConexion = (oyente) => {
  */
 export const olvidaElEstadoDeConexion = () => {
   if (import.meta.env?.MODE !== 'test') return;
+  // También los plazos en marcha: uno superviviente dispararía un «sin
+  // conexión» diferido sobre el estado ya reiniciado
+  for (const t of temporizadores) clearTimeout(t);
+  temporizadores.clear();
+  ultimaRespuesta = 0;
   llegaAlServidor = globalThis.navigator?.onLine !== false;
   oyentes.clear();
 };

@@ -32,11 +32,16 @@ const esFalloDeRed = (error) =>
   error instanceof TypeError
   && !error?.response
   && !error?.status
-  // Un `TypeError` de dentro de este fichero —leer `.detail` de un cuerpo que
-  // vino vacío, por ejemplo— no dice nada de la red, y darlo por falta de
-  // cobertura declaraba la aplicación sin conexión justo después de que el
-  // servidor hubiera contestado. Los de `fetch` hablan de la petición
-  && /fetch|network|load failed|conexión/i.test(error?.message ?? '');
+  // Se mira el mensaje SOLO en los `catch` anchos, donde conviven errores de
+  // red y errores propios de este fichero —leer `.detail` de un cuerpo vacío,
+  // por ejemplo—, que no dicen nada de la cobertura.
+  //
+  // Es una heurística y falla por defecto a propósito: iOS rechaza con el texto
+  // del sistema («The Internet connection appears to be offline», «cancelled»),
+  // así que la lista nunca estará completa. Por eso el camino que importa no
+  // pasa por aquí: en `fetchVigilado` el `try` solo ejecuta `fetch`, de modo que
+  // cualquier rechazo suyo ES de red y se apunta sin preguntar por el texto
+  && !/is not a function|cannot read propert|undefined is not/i.test(error?.message ?? '');
 
 import {
   isDeviceRevoked,
@@ -162,6 +167,33 @@ export const refreshAccessToken = async () => {
 };
 
 /**
+ * Un `fetch` que además cuenta si se está llegando al servidor.
+ *
+ * El plazo corre desde que sale y se cancela cuando vuelve, pase lo que pase:
+ * lo que interesa no es si respondió bien, sino si respondió.
+ */
+const fetchVigilado = async (url, opciones) => {
+  const suelta = vigilaUnaPeticion();
+  let respuesta;
+  try {
+    // El `try` envuelve SOLO el `fetch`: así, lo que rechace aquí es de red por
+    // construcción y no hay que adivinarlo por el texto del mensaje, que en iOS
+    // es el del sistema y cambia con el idioma del teléfono
+    respuesta = await fetch(url, opciones);
+  } catch (error) {
+    // Abortar es lo único que rechaza aquí sin ser falta de cobertura: lo hace
+    // la propia aplicación al desmontar una pantalla o al agotar su plazo, y
+    // decir «sin conexión» por eso sería mentir
+    if (error?.name !== 'AbortError') apuntaFalloDeRed();
+    suelta();
+    throw error;
+  }
+  suelta();
+  apuntaRespuestaDelServidor();
+  return respuesta;
+};
+
+/**
  * Interceptor for fetch requests that handles 401 responses with automatic token refresh
  *
  * Flow:
@@ -176,26 +208,6 @@ export const refreshAccessToken = async () => {
  * @param {RequestInit} options - Fetch options
  * @returns {Promise<Response>} - Fetch response
  */
-/**
- * Un `fetch` que además cuenta si se está llegando al servidor.
- *
- * El plazo corre desde que sale y se cancela cuando vuelve, pase lo que pase:
- * lo que interesa no es si respondió bien, sino si respondió.
- */
-const fetchVigilado = async (url, opciones) => {
-  const suelta = vigilaUnaPeticion();
-  try {
-    const respuesta = await fetch(url, opciones);
-    apuntaRespuestaDelServidor();
-    return respuesta;
-  } catch (error) {
-    if (esFalloDeRed(error)) apuntaFalloDeRed();
-    throw error;
-  } finally {
-    suelta();
-  }
-};
-
 export const fetchWithTokenRefresh = async (url, options = {}) => {
   // Ensure credentials are always included for httpOnly cookies
   const fetchOptions = {

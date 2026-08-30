@@ -500,13 +500,63 @@ describe('tokenRefreshInterceptor', () => {
       expect(estado.hayConexion()).toBe(true);
     });
 
-    it('un error que no es de red no la declara sin conexión', async () => {
-      // Por este camino pasan también errores propios: darlos por falta de
-      // cobertura sacaría el aviso sin motivo
+    it('abortar una petición no es quedarse sin cobertura', async () => {
+      // Lo aborta la propia aplicación —al desmontar una pantalla, o al agotar
+      // su propio plazo—, así que decir «sin conexión» sería mentir
       const fetchConRefresco = await conModuloLimpio();
-      globalThis.fetch.mockRejectedValueOnce(new Error('Algo se rompió'));
+      const aborto = new Error('The operation was aborted');
+      aborto.name = 'AbortError';
+      globalThis.fetch.mockRejectedValueOnce(aborto);
 
       await expect(fetchConRefresco('http://localhost:8000/api/v1/test')).rejects.toThrow();
+
+      expect(estado.hayConexion()).toBe(true);
+    });
+
+    it('un fallo de red con el texto que pone iOS también cuenta', async () => {
+      // El mensaje lo escribe el sistema y cambia con el idioma del teléfono:
+      // «The Internet connection appears to be offline» no casaba con ninguna
+      // lista razonable, y ese es justo el iPhone del que salió el informe
+      const fetchConRefresco = await conModuloLimpio();
+      globalThis.fetch.mockRejectedValueOnce(
+        new TypeError('The Internet connection appears to be offline.')
+      );
+
+      await expect(fetchConRefresco('http://localhost:8000/api/v1/test')).rejects.toThrow();
+
+      expect(estado.hayConexion()).toBe(false);
+    });
+
+    it('una petición que se queda colgada acaba contando como sin conexión', async () => {
+      // El caso de verdad en un campo: no rechaza, cuelga. Y no se cancela:
+      // `fetch` no recibe ningún `signal`
+      vi.useFakeTimers();
+      try {
+        const fetchConRefresco = await conModuloLimpio();
+        globalThis.fetch.mockReturnValueOnce(new Promise(() => {}));
+
+        fetchConRefresco('http://localhost:8000/api/v1/test');
+        await vi.advanceTimersByTimeAsync(5000);
+
+        expect(estado.hayConexion()).toBe(false);
+        expect(globalThis.fetch.mock.calls[0][1]?.signal).toBeUndefined();
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('un error propio del interceptor no la declara sin conexión', async () => {
+      // Leer un campo de un cuerpo vacío lanza `TypeError` y no dice nada de la
+      // red: pasa por el `catch` ancho, no por el del `fetch`
+      const { refreshAccessToken } = await import('./tokenRefreshInterceptor');
+      globalThis.fetch.mockResolvedValueOnce({
+        ok: false,
+        status: 401,
+        statusText: 'Unauthorized',
+        json: async () => null,
+      });
+
+      await expect(refreshAccessToken()).rejects.toThrow();
 
       expect(estado.hayConexion()).toBe(true);
     });
