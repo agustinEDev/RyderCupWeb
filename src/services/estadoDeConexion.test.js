@@ -118,16 +118,6 @@ describe('la petición que se queda colgada (FE #515)', () => {
     expect(plazosVivos()).toBe(0);
   });
 
-  it('si vuelve a tiempo no dice nada', () => {
-    const v = vigilaUnaPeticion();
-
-    vi.advanceTimersByTime(1000);
-    v.llego();
-    vi.advanceTimersByTime(30000);
-
-    expect(hayConexion()).toBe(true);
-  });
-
   it('una petición lenta no declara sin conexión si otras están llegando', () => {
     // Subir una foto del carrete por datos, o despertar una instancia dormida,
     // tarda más del plazo. Culpar de eso a la red apagaba toda la aplicación
@@ -164,19 +154,58 @@ describe('la petición que se queda colgada (FE #515)', () => {
     expect(hayConexion()).toBe(false);
   });
 
-  it('mientras siga llegando algo, una petición colgada no declara nada', () => {
-    // Con la cadencia REAL del marcador, 10 s, que es más larga que el plazo:
-    // con 3 s el re-armado se tomaba siempre por construcción y el test no
-    // podía fallar
-    vigilaUnaPeticion();   // sigue pendiente: nunca llega ni falla
+  it('una petición colgada sigue vigilando: no se rinde tras el primer plazo', () => {
+    // La fila 4 de la tabla. El test anterior terminaba con
+    // `apuntaRespuestaDelServidor()`, que ponía a `true` justo lo que afirmaba:
+    // sobrevivía incluso a vaciar `vigilaUnaPeticion` por completo.
+    //
+    // Se mide lo que de verdad distingue rendirse de seguir mirando: que el
+    // plazo sigue vivo, y que acaba declarando la caída cuando el tráfico cesa
+    vigilaUnaPeticion();          // sigue pendiente: ni llega ni falla
+    apuntaRespuestaDelServidor(); // hubo respuesta reciente
 
-    for (let i = 0; i < 5; i++) {
-      apuntaRespuestaDelServidor();
-      vi.advanceTimersByTime(9000);
-    }
-    apuntaRespuestaDelServidor();
+    vi.advanceTimersByTime(5000); // su primer plazo vence y NO se rinde
+    expect(plazosVivos()).toBe(1);
+    expect(hayConexion()).toBe(true);
+
+    // y cuando deja de llegar nada, concluye
+    vi.advanceTimersByTime(11000);
+    expect(hayConexion()).toBe(false);
+  });
+
+  it('una petición que cancelamos nosotros no dice nada de la red', () => {
+    // Entrar en el acceso y volver atrás aborta la comprobación: eso no es
+    // quedarse sin cobertura, y declararlo dejaba la aplicación «sin conexión»
+    // cinco segundos después con la red perfecta
+    const v = vigilaUnaPeticion();
+
+    v.cancelada();
+    vi.advanceTimersByTime(60000);
 
     expect(hayConexion()).toBe(true);
+    expect(plazosVivos()).toBe(0);
+  });
+
+  it('si el teléfono se durmió, el plazo no concluye nada', () => {
+    // En el bolsillo entre hoyo y hoyo el reloj sigue pero los temporizadores
+    // se estrangulan: el plazo llega tarde y compararía contra una respuesta de
+    // hace minutos.
+    //
+    // No se puede simular avanzando el reloj falso —ahí el temporizador se
+    // dispara puntual—: hay que hacer que el reloj SALTE mientras el
+    // temporizador sigue esperando su turno
+    const reloj = vi.spyOn(globalThis.performance, 'now');
+    reloj.mockReturnValue(0);
+
+    vigilaUnaPeticion();
+    apuntaRespuestaDelServidor();
+
+    // El teléfono estuvo dos minutos dormido; el temporizador despierta ahora
+    reloj.mockReturnValue(120000);
+    vi.advanceTimersByTime(5000);
+
+    expect(hayConexion()).toBe(true);
+    reloj.mockRestore();
   });
 
   it('el empate cae a favor de la conexión', () => {
@@ -224,18 +253,6 @@ describe('la petición que se queda colgada (FE #515)', () => {
     vi.advanceTimersByTime(5000);
 
     expect(hayConexion()).toBe(false);
-  });
-
-  it('soltar la petición para el re-armado', () => {
-    // Si no, una petición ya terminada seguiría vigilando para siempre
-    const v = vigilaUnaPeticion();
-
-    vi.advanceTimersByTime(200);
-    apuntaRespuestaDelServidor();
-    v.llego();
-    vi.advanceTimersByTime(60000);
-
-    expect(hayConexion()).toBe(true);
   });
 
   it('reiniciar deja el módulo escuchando al navegador, no sordo', () => {

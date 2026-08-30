@@ -543,6 +543,32 @@ describe('tokenRefreshInterceptor', () => {
       }
     });
 
+    it('si la cancelamos nosotros, no se declara nada', async () => {
+      // Desmontar una pantalla aborta sus peticiones. Sin distinguirlo, entrar
+      // en el acceso y volver atrás dejaba la aplicación «sin conexión» cinco
+      // segundos después con la red perfecta
+      vi.useFakeTimers();
+      try {
+        const fetchConRefresco = await conModuloLimpio();
+        const control = new AbortController();
+        const aborto = Object.assign(new Error('aborted'), { name: 'AbortError' });
+        globalThis.fetch.mockImplementationOnce(() => {
+          control.abort();
+          return Promise.reject(aborto);
+        });
+
+        await expect(
+          fetchConRefresco('http://localhost:8000/api/v1/test', { signal: control.signal })
+        ).rejects.toThrow();
+        await vi.advanceTimersByTimeAsync(60000);
+
+        expect(estado.hayConexion()).toBe(true);
+        expect(estado.plazosVivos()).toBe(0);
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
     it('una respuesta suelta la vigilancia, no deja el plazo corriendo', async () => {
       // Si no se soltara, cada petición correcta dejaría un temporizador vivo:
       // con el marcador sondeando son cientos a lo largo de una vuelta

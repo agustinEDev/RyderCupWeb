@@ -31,6 +31,8 @@ import { captureError } from '../utils/sentryHelpers';
  *   termina  | ¿respuesta reciente? | qué pasa
  *   ---------|----------------------|--------------------------------------
  *   llega    |          —           | hay conexión; se deja de vigilar
+ *   la cancelamos nosotros          | no se dice nada; para. No es la red:
+ *            |                      | es la aplicación desmontando algo
  *   rechaza  |          sí          | no se dice nada, y PARA: su respuesta
  *            |                      | no va a llegar nunca
  *   rechaza  |          no          | no hay conexión; para
@@ -47,6 +49,10 @@ import { captureError } from '../utils/sentryHelpers';
  *   una caída.
  * - **Nunca se cancela la petición.** Vigilar es mirar, no intervenir:
  *   cancelar una escritura sería peor, porque pudo llegar al servidor.
+ * - **Si el reloj ha dado un salto, no se concluye nada.** El teléfono se
+ *   duerme en el bolsillo entre hoyo y hoyo: el reloj sigue pero los
+ *   temporizadores se estrangulan, así que un plazo puede dispararse mucho
+ *   después de su hora y compararse contra una respuesta de hace minutos.
  *
  * Esta tabla se escribió DESPUÉS de cinco rondas de revisión, y las cinco
  * fueron por casillas que nadie había escrito. Si hay que tocar el
@@ -108,10 +114,17 @@ const cambiaA = (valor) => {
 };
 
 /** Una petición volvió: hay conexión, aunque la respuesta sea un error. */
-export const apuntaRespuestaDelServidor = () => {
+const apunta = () => {
   ultimaRespuesta = ahora();
   cambiaA(true);
 };
+
+/**
+ * Una petición volvió sin pasar por `vigilaUnaPeticion`.
+ *
+ * Puerta estrecha: lo normal es vigilar la petición, que ya lo hace al llegar.
+ */
+export const apuntaRespuestaDelServidor = apunta;
 
 /** Una petición no llegó a completarse: no hay conexión. */
 export const apuntaFalloDeRed = () => cambiaA(false);
@@ -125,7 +138,6 @@ export const apuntaFalloDeRed = () => cambiaA(false);
  */
 export const vigilaUnaPeticion = () => {
   let temporizador = null;
-  let vigilando = true;
   // Una petición que ya terminó en rechazo no va a traer respuesta nunca, así
   // que su plazo debe decidir UNA vez y parar. Re-armarlo la volvía inmortal:
   // seguía buscando una ventana de cinco segundos sin respuestas y, con el
@@ -135,12 +147,12 @@ export const vigilaUnaPeticion = () => {
   let seguiraPendiente = true;
 
   const arma = () => {
+    const armadoEn = ahora();
     temporizador = setTimeout(() => {
       // El temporizador ya se ha disparado: fuera del conjunto. Si no, una
       // petición que cuelga para siempre —el caso que da nombre a esto— dejaba
       // su rastro ahí de por vida
       temporizadores.delete(temporizador);
-      if (!vigilando) return;
 
       // Solo cuenta como falta de cobertura si no ha llegado nada hace poco.
       // Una petición legítimamente lenta —subir una foto del carrete por datos,
@@ -149,6 +161,14 @@ export const vigilaUnaPeticion = () => {
       // `<=` y no `<`: la frescura y el plazo son el mismo número, así que el
       // empate exacto cae a favor de «hay conexión». Ante la duda no se declara
       // una caída
+      // Si desde que se armó ha pasado MUCHO más que el plazo, el teléfono
+      // estuvo dormido: el temporizador llega tarde y compararía contra una
+      // respuesta vieja. No se concluye nada, se vuelve a mirar
+      if (ahora() - armadoEn > PLAZO_SIN_RESPUESTA_MS * 2) {
+        if (seguiraPendiente) arma();
+        return;
+      }
+
       if (ultimaRespuesta !== null && ahora() - ultimaRespuesta <= PLAZO_SIN_RESPUESTA_MS) {
         // Se vuelve a mirar SOLO si la petición sigue pendiente: ahí todavía no
         // se sabe nada, y rendirse dejaba sin detectar la caída de después. Si
@@ -166,9 +186,26 @@ export const vigilaUnaPeticion = () => {
   arma();
 
   return {
-    /** La respuesta llegó: se deja de vigilar. */
+    /**
+     * La respuesta llegó: hay conexión y se deja de vigilar.
+     *
+     * Las dos cosas aquí dentro, que es lo que dice la tabla. Antes marcar la
+     * conexión era otra llamada aparte que cada quien tenía que acordarse de
+     * hacer, y el primero que leyera la tabla y usara solo esto dejaría la
+     * aplicación sin conexión para siempre tras el primer corte.
+     */
     llego: () => {
-      vigilando = false;
+      seguiraPendiente = false;
+      clearTimeout(temporizador);
+      temporizadores.delete(temporizador);
+      apunta();
+    },
+
+    /**
+     * La cancelamos nosotros —al desmontar una pantalla, al agotar un plazo
+     * propio—. No dice nada de la red: se para y ya está.
+     */
+    cancelada: () => {
       seguiraPendiente = false;
       clearTimeout(temporizador);
       temporizadores.delete(temporizador);

@@ -37,7 +37,7 @@ import { isDeviceRevoked, handleDeviceRevocationLogout } from '../utils/deviceRe
 import { resolvePostAuthTarget } from '../utils/auth';
 import { anotaLaSesion } from '../services/sesionCompartida';
 import User from '../domain/entities/User.js';
-import { vigilaUnaPeticion, apuntaRespuestaDelServidor } from '../services/estadoDeConexion';
+import { vigilaUnaPeticion } from '../services/estadoDeConexion';
 
 // Misma prioridad que `api.js` y el interceptor: la configuración de ejecución
 // manda sobre la del build. Sin esto, `/current-user` y el refresco de aquí
@@ -77,15 +77,17 @@ const requestCurrentUser = async (signal) => {
       signal,
     });
   } catch (error) {
-    // Por coherencia con el resto: aquí no cambia nada observable —el plazo
-    // vence justo cuando este hook aborta, y hasta entonces no ha llegado
-    // ninguna respuesta que lo desmienta—, pero dejarlo fuera invitaría a
-    // copiar el patrón incompleto
-    vigilancia.fallo();
+    // Este hook aborta por su cuenta: al agotar su plazo y al desmontarse. Sin
+    // distinguirlo, entrar en el acceso y volver atrás dejaba la aplicación
+    // «sin conexión» cinco segundos después, con la red perfecta
+    if (signal?.aborted) {
+      vigilancia.cancelada();
+    } else {
+      vigilancia.fallo();
+    }
     throw error;
   }
   vigilancia.llego();
-  apuntaRespuestaDelServidor();
   return respuesta;
 };
 

@@ -18,7 +18,7 @@ import { sinSesionEnRutaPublica } from './rutasPublicas';
 
 
 import { setCsrfTokenGlobal } from '../contexts/csrfTokenSync'; // v1.13.0: CSRF Protection
-import { apuntaRespuestaDelServidor, vigilaUnaPeticion } from '../services/estadoDeConexion';
+import { vigilaUnaPeticion } from '../services/estadoDeConexion';
 
 
 import {
@@ -167,17 +167,24 @@ const fetchVigilado = async (url, opciones) => {
   try {
     respuesta = await fetch(url, opciones);
   } catch (error) {
-    // El plazo sigue corriendo —puede que no haya conexión— pero se le dice que
-    // esta petición ya no va a volver, para que decida una vez y no se quede
-    // buscando eternamente una ventana sin respuestas
-    vigilancia.fallo();
+    // La cancelación la pide la propia aplicación —al desmontar una pantalla, o
+    // al agotar un plazo suyo—, y no dice nada de la red. Se mira nuestra
+    // propia señal, no el tipo ni el texto del error, que es lo que ya falló
+    // dos veces por escribirlo cada navegador a su manera
+    if (opciones?.signal?.aborted) {
+      vigilancia.cancelada();
+    } else {
+      // El plazo sigue corriendo —puede que no haya conexión— pero se le dice
+      // que esta petición ya no va a volver, para que decida una vez y no se
+      // quede buscando eternamente una ventana sin respuestas
+      vigilancia.fallo();
+    }
     throw error;
   }
 
   // Lo único que prueba que se está llegando: una respuesta, con el estado que
   // traiga. Un 500 demuestra que hay conexión igual que un 200
   vigilancia.llego();
-  apuntaRespuestaDelServidor();
   return respuesta;
 };
 
