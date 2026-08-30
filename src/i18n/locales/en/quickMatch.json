@@ -196,7 +196,8 @@
       "holesPlayed": "{{count}} hole(s) played",
       "yourRound": "Your round:",
       "cancelledBadge": "C",
-      "cancelledTooltip": "Match cancelled"
+      "cancelledTooltip": "Match cancelled",
+      "stale": "not updated"
     },
     "scorecard": {
       "strokeReceived": "Receives {{count}} extra stroke(s) on this hole",
@@ -232,6 +233,23 @@
       "failed": "The match could not be cancelled. Another device may have closed it already: dismiss this and check how it stands.",
       "failedOffline": "The match could not be cancelled. Check your connection and try again.",
       "failedServer": "The match could not be cancelled. Go back to your matches and check how it stands."
+    },
+    "offline": {
+      "pending_one": "{{count}} stroke saved on your phone. It will be sent as soon as there is coverage.",
+      "pending_other": "{{count}} strokes saved on your phone. They will be sent as soon as there is coverage.",
+      "lost_one": "Hole {{holes}} could not be saved. Score it again.",
+      "lost_other": "Holes {{holes}} could not be saved. Score them again.",
+      "conflictTitle": "Hole {{hole}} already has another score",
+      "conflictBody": "{{scorer}} scored {{theirs}} and you were about to score {{mine}}. Talk to your partner and decide which one stands.",
+      "conflictScorerUnknown": "Another scorer",
+      "conflictMine": "Use mine ({{mine}})",
+      "conflictTheirs": "Keep the current one ({{theirs}})",
+      "pickedUp": "picked up",
+      "conflictTitlePlayer": "{{player}}'s hole {{hole}} already has another score",
+      "atHole": "Hole {{hole}}.",
+      "classificationStale": "The standing is not up to date: strokes are still to be sent, and other players' still to arrive.",
+      "noSeActualiza": "No connection to the server: what you see may not be up to date.",
+      "standingStale": "The result is not up to date: there are strokes still to send, and the server computes it."
     }
   },
   "personalRound": {

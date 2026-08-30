@@ -9,6 +9,7 @@ import { createContext, useContext, useState, useCallback, useEffect } from 'rea
 import { setCsrfTokenGlobal } from './csrfTokenSync';
 import { olvidaLaSesion } from '../services/sesionCompartida';
 import { olvidaLasAccionesPendientes } from '../services/accionesPendientes';
+import { olvidaLoDeEstaCuenta } from '../services/loUltimoConocido';
 
 // Create the context
 const AuthContext = createContext(null);
@@ -95,15 +96,24 @@ export const AuthProvider = ({ children }) => {
     // cierre de sesion y el siguiente componente que montara veria un usuario
     // que ya no esta (FE #489).
     //
-    // Por aqui pasan el boton, la inactividad y el aviso de otra pestaña. El
-    // dispositivo revocado NO: `handleDeviceRevocationLogout` limpia a mano y
-    // sale con `window.location.href`, y esa recarga se lleva por delante el
-    // estado del modulo. Si algun dia esa salida pasa a ser navegacion de
-    // cliente, tendra que invalidar tambien
+    // Por aqui pasan la inactividad, el aviso de otra pestaña y —desde FE
+    // #531— el boton de salir, que antes se limpiaba a medias: hacia su
+    // peticion y redirigia, y el almacenamiento se quedaba entero.
+    //
+    // Los dos cierres duros NO pasan: `handleDeviceRevocationLogout` y
+    // `handleCsrfLogout` limpian a mano y salen con `window.location.href`, y
+    // esa recarga se lleva por delante el estado del modulo. Lo que la recarga
+    // NO se lleva es el almacenamiento, asi que lo que viva ahi hay que
+    // borrarlo en los tres sitios. Si algun dia esas salidas pasan a ser
+    // navegacion de cliente, tendran que invalidar tambien
     olvidaLaSesion();
     // Y lo que el panel llegara a enseñar: son datos de ESTA cuenta, y asomarian
     // un instante en la siguiente que entrara sin recargar (FE #502)
     olvidaLasAccionesPendientes();
+    // Y las partidas guardadas para poder anotar sin cobertura (FE #524): en un
+    // móvil compartido, la siguiente persona que entrara y se quedara sin señal
+    // vería la lista de la anterior, con sus nombres y sus resultados
+    olvidaLoDeEstaCuenta();
     localStorage.removeItem('user');
     localStorage.removeItem('access_token'); // Legacy cleanup
   }, []);

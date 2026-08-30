@@ -15,6 +15,11 @@ import {
 import ConfirmModal from '../../components/modals/ConfirmModal';
 import PersonalRoundCalculator from '../../domain/services/PersonalRoundCalculator';
 import customToast from '../../utils/toast';
+import { laUltimaLista, olvidaLoDeEstaCuenta, recuerdaLaLista } from '../../services/loUltimoConocido';
+
+/** `fetch` avisa de que no hubo respuesta con un `TypeError`; un fallo del
+ *  código llega como cualquier otro Error y no debe disfrazarse de red. */
+const esFalloDeRed = (err) => err instanceof TypeError || !globalThis.navigator?.onLine;
 import BlockLoader from '../../components/ui/BlockLoader';
 
 const STATUS_STYLES = {
@@ -32,6 +37,10 @@ const MyQuickMatchesPage = () => {
   const [quickMatches, setQuickMatches] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  // Lo que falla SIN respuesta es falta de cobertura; un fallo del código
+  // —un mapeador que revienta con un dato inesperado— también llega sin
+  // estado, y decir «sin conexión» ahí esconde un defecto de verdad
+  const [sinCobertura, setSinCobertura] = useState(false);
   const [resultsByMatchId, setResultsByMatchId] = useState({});
   // Un Set y no un único id: si se ocultan dos partidas seguidas, la primera en
   // responder no debe reactivar el botón de la que sigue en vuelo.
@@ -106,7 +115,14 @@ const MyQuickMatchesPage = () => {
     setHidingIds((prev) => new Set(prev).add(quickMatchId));
     try {
       await hideQuickMatchUseCase.execute(quickMatchId);
-      setQuickMatches((prev) => prev.filter((qm) => qm.id !== quickMatchId));
+      setQuickMatches((prev) => {
+        const quedan = prev.filter((qm) => qm.id !== quickMatchId);
+        // También de lo guardado: la papelera la quita de la lista «para
+        // siempre», y sin esto volvía a salir —y a poder pulsarse— la primera
+        // vez que se abriera la pantalla sin cobertura
+        recuerdaLaLista(quedan);
+        return quedan;
+      });
       customToast.success(t('history.hidden'));
     } catch {
       customToast.error(t('history.hideError'));
@@ -122,16 +138,54 @@ const MyQuickMatchesPage = () => {
   useEffect(() => {
     if (!user) return;
 
+    // La respuesta puede llegar DESPUÉS de cerrar sesión, y entonces volvería a
+    // guardar las partidas de la cuenta anterior —justo lo que el cierre acaba
+    // de borrar— dejándolas para la siguiente carga sin cobertura
+    let vigente = true;
+
     listMyQuickMatchesUseCase
       .execute({ page: 1, limit: 50 })
       .then((result) => {
+        if (!vigente) return;
         setQuickMatches(result.quickMatches);
         setExcludedIds(
           new Set(result.quickMatches.filter((qm) => qm.excludedFromStats).map((qm) => qm.id))
         );
+        // Para poder LLEGAR a una partida sin cobertura: la pantalla de
+        // anotación sabe pintarse sola, pero hay que poder pulsar en ella
+        recuerdaLaLista(result.quickMatches);
+        setSinCobertura(false);
       })
-      .catch((err) => setError(err))
-      .finally(() => setIsLoading(false));
+      .catch((err) => {
+        if (!vigente) return;
+        // El 401 y el 403 desmienten: no hemos entrado, o esto no es nuestro.
+        // Lo demás —sin respuesta, o el backend caído— no dice nada de la
+        // lista, y sin ella el jugador se queda sin puerta de entrada
+        const estado = err?.status ?? err?.response?.status;
+        // Y además se borra lo guardado: no usarlo esta vez no basta, porque
+        // seguía ahí para el siguiente fallo de red.
+        //
+        // Con `err.status` a secas, que es el de ESTA petición: cuando el
+        // interceptor no consigue refrescar, propaga su propio error con
+        // `.response` puesta a la respuesta de `/auth/refresh-token`. Un 403
+        // ahí —un proxy delante de la API— es un caso en el que el interceptor
+        // decide a propósito NO tirar la sesión (FE #514), y borrar aquí se
+        // llevaría por delante la partida que se está jugando, sin vuelta atrás
+        // y sin cobertura con la que recuperarla
+        if (err?.status === 401 || err?.status === 403) olvidaLoDeEstaCuenta();
+        const guardadas = estado === 401 || estado === 403 ? null : laUltimaLista();
+        setSinCobertura(esFalloDeRed(err));
+        if (guardadas?.length) {
+          setQuickMatches(guardadas);
+          setExcludedIds(new Set(guardadas.filter((qm) => qm.excludedFromStats).map((qm) => qm.id)));
+        }
+        setError(err);
+      })
+      .finally(() => {
+        if (vigente) setIsLoading(false);
+      });
+
+    return () => { vigente = false; };
   }, [user]);
 
   // For each finished quick match, compute the current user's own result
@@ -220,7 +274,14 @@ const MyQuickMatchesPage = () => {
 
         <h1 className="hidden md:block text-xl font-bold text-gray-900 mb-4">{t('history.title')}</h1>
 
-        {error && (
+        {/* Quedarse sin cobertura no es un error, y aquí además puede haber
+            partidas en pantalla —las últimas que se vieron—: llamarlo error
+            sobre una lista que se está usando es contradecirse */}
+        {sinCobertura ? (
+          <p className="text-sm text-amber-800 mb-4" data-testid="quick-matches-sin-conexion">
+            {t('scoring.offline.noSeActualiza')}
+          </p>
+        ) : error && (
           <p className="text-sm text-red-600 mb-4">{error.message || t('scoring.errors.generic')}</p>
         )}
 

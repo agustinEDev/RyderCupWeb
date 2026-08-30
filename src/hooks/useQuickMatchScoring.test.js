@@ -2,6 +2,14 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, waitFor, act } from '@testing-library/react';
 import { useQuickMatchScoring } from './useQuickMatchScoring';
 
+vi.mock('../utils/scoringOfflineQueue', () => ({
+  enqueue: vi.fn(),
+  remove: vi.fn(),
+  getByMatch: vi.fn(() => []),
+  size: vi.fn(() => 0),
+  clear: vi.fn(),
+}));
+
 vi.mock('../composition', () => ({
   getQuickMatchUseCase: { execute: vi.fn() },
   getGolfCourseUseCase: { execute: vi.fn() },
@@ -15,7 +23,12 @@ import {
   getQuickMatchUseCase,
   getGolfCourseUseCase,
   cancelQuickMatchUseCase,
+  completeQuickMatchUseCase,
+  submitQuickMatchHoleScoreUseCase,
+  submitQuickMatchProxyHoleScoreUseCase,
 } from '../composition';
+import * as offlineQueue from '../utils/scoringOfflineQueue';
+import { olvidaTodo, recuerda, loQueSeSupo } from '../services/loUltimoConocido';
 
 const mockQuickMatch = {
   id: 'qm-1',
@@ -199,5 +212,1330 @@ describe('useQuickMatchScoring · cancelar la partida', () => {
 
     expect(resultado.ok).toBe(false);
     expect(cancelQuickMatchUseCase.execute).not.toHaveBeenCalled();
+  });
+});
+
+/**
+ * LA TABLA A — qué pasa al anotar un golpe, según cómo termine SU envío.
+ *
+ * Se decide por el resultado del envío y no por lo que crea el estado de
+ * conexión: así no hay ninguna ventana en la que la aplicación se crea
+ * conectada y pierda el golpe en silencio.
+ *
+ *   cómo termina el envío        | qué pasa
+ *   -----------------------------|------------------------------------------
+ *   llega bien                   | guardado en el servidor; nada pendiente
+ *   no llega respuesta (red)     | se guarda en el móvil
+ *   401 la sesión no vale        | se guarda: el problema no es el golpe
+ *   5xx el servidor falla        | se guarda: ahora está mal, luego quizá no
+ *   404 / 403 / 409 / 400        | NO se guarda; se dice por qué. Reintentar
+ *                                | no cambiaría nada
+ *
+ * Y una regla que atraviesa la tabla: **guardar no es un error**. Para el
+ * jugador el golpe está anotado, solo que todavía no ha salido del móvil, así
+ * que no se le enseña el recuadro rojo; eso se reserva para lo que de verdad no
+ * se pudo guardar.
+ */
+describe('useQuickMatchScoring · anotar sin conexión (FE #515, tabla A)', () => {
+  const rechazo = (status) => Object.assign(new Error(`HTTP ${status}`), { status });
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    offlineQueue.enqueue.mockClear();
+    getQuickMatchUseCase.execute.mockResolvedValue(mockQuickMatch);
+    getGolfCourseUseCase.execute.mockResolvedValue({ holes: [], tees: [], name: 'Campo' });
+  });
+
+  const anota = async (fallo) => {
+    if (fallo) submitQuickMatchHoleScoreUseCase.execute.mockRejectedValue(fallo);
+    else submitQuickMatchHoleScoreUseCase.execute.mockResolvedValue({});
+
+    const { result } = renderHook(() => useQuickMatchScoring('qm-1', 'user-1'));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    await act(async () => { await result.current.submitScore(7, 'user-1', 5); });
+    return result;
+  };
+
+  it('llega bien: no se guarda nada en el móvil', async () => {
+    await anota(null);
+
+    expect(offlineQueue.enqueue).not.toHaveBeenCalled();
+  });
+
+  it('no llega respuesta: se guarda en el móvil', async () => {
+    await anota(new TypeError('Failed to fetch'));
+
+    expect(offlineQueue.enqueue).toHaveBeenCalledWith('qm-1', 7, { score: 5 }, 'user-1');
+  });
+
+  it('401: se guarda, porque el problema es la sesión y no el golpe', async () => {
+    await anota(rechazo(401));
+
+    expect(offlineQueue.enqueue).toHaveBeenCalled();
+  });
+
+  it('5xx: se guarda, porque el servidor puede ir bien después', async () => {
+    await anota(rechazo(503));
+
+    expect(offlineQueue.enqueue).toHaveBeenCalled();
+  });
+
+  it.each([404, 403, 409, 400])('%i: NO se guarda, reintentarlo no cambiaría nada', async (status) => {
+    const result = await anota(rechazo(status));
+
+    expect(offlineQueue.enqueue).not.toHaveBeenCalled();
+    expect(result.current.saveError).not.toBeNull();
+  });
+
+  it('guardar para después no es un error: no sale el recuadro rojo', async () => {
+    // Para el jugador el golpe está anotado. Enseñarle un error diría lo
+    // contrario de lo que ha pasado
+    const result = await anota(new TypeError('Failed to fetch'));
+
+    expect(offlineQueue.enqueue).toHaveBeenCalled();
+    expect(result.current.saveError).toBeNull();
+  });
+
+  it('la partida ya cerrada (409) dice qué hoyo no se pudo guardar', async () => {
+    // Es el caso realista de perder un golpe: anotas sin cobertura y alguien
+    // termina la partida mientras tanto. Al menos hay que decir cuál era
+    const result = await anota(rechazo(409));
+
+    expect(result.current.saveError?.holeNumber).toBe(7);
+  });
+
+  it('el golpe de otro jugador se guarda a su nombre, no al mío', async () => {
+    // Cada participante va por separado: sin eso, anotar al segundo del hoyo
+    // borraba al primero
+    submitQuickMatchProxyHoleScoreUseCase.execute.mockRejectedValue(new TypeError('Failed to fetch'));
+
+    const { result } = renderHook(() => useQuickMatchScoring('qm-1', 'user-1'));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    await act(async () => { await result.current.submitScore(7, 'user-2', 4); });
+
+    expect(offlineQueue.enqueue).toHaveBeenCalledWith('qm-1', 7, { score: 4 }, 'user-2');
+  });
+
+  it('la bola recogida se guarda: es una anotación, no la ausencia de una', async () => {
+    submitQuickMatchHoleScoreUseCase.execute.mockRejectedValue(new TypeError('Failed to fetch'));
+
+    const { result } = renderHook(() => useQuickMatchScoring('qm-1', 'user-1'));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    await act(async () => { await result.current.submitScore(7, 'user-1', null); });
+
+    expect(offlineQueue.enqueue).toHaveBeenCalledWith('qm-1', 7, { score: null }, 'user-1');
+  });
+  it('un 422 no se guarda para luego: es el resultado el que no vale', async () => {
+    // Es el código real de Pydantic, y el que la pantalla traduce por «ese
+    // resultado no es válido». Guardarlo dejaría una entrada imposible a la
+    // cabeza de la cola bloqueando todo lo que viene detrás, en cada sondeo.
+    const result = await anota(rechazo(422));
+    expect(offlineQueue.enqueue).not.toHaveBeenCalled();
+    expect(result.current.saveError).toBeTruthy();
+  });
+
+  it.each([[401], [408], [429], [500]])('un %i sí se guarda: el golpe no tiene la culpa', async (status) => {
+    await anota(rechazo(status));
+    expect(offlineQueue.enqueue).toHaveBeenCalled();
+  });
+
+});
+
+/**
+ * LA TABLA B — vaciar los golpes guardados.
+ *
+ * Se dispara cuando el sondeo de la pantalla responde: si responde, hay
+ * conexión. No hace falta deducir un estado global de la red — el propio
+ * tráfico de esta pantalla ya es la señal, y es la más fiable que hay.
+ *
+ *   situación                          | qué pasa
+ *   hay pendientes y el sondeo responde| se envían en orden; el que llega se borra
+ *   uno no llega, o 401, o 5xx         | se para ahí; los demás esperan al siguiente
+ *   uno da 404/403/409/400             | se descarta ESE, sigue con los demás
+ *   el hoyo ya tiene anotación DISTINTA| no se envía: se aparta como discrepancia
+ *   el hoyo tiene la MISMA anotación   | se envía; no hay nada que contar
+ *   ya se estaba vaciando              | no se empieza otra vez
+ *
+ * LA TABLA C — resolver una discrepancia. La app no sabe quién tiene razón, así
+ * que no elige: lo hace el jugador después de hablar con su compañero.
+ *
+ *   elige el suyo   | se envía y sale de la lista
+ *   elige el que hay| se descarta el suyo y sale de la lista
+ */
+describe('useQuickMatchScoring · vaciar lo guardado (FE #515, tablas B y C)', () => {
+  const rechazo = (status) => Object.assign(new Error(`HTTP ${status}`), { status });
+  const conAnotacionDe = (score) => ({
+    ...mockQuickMatch,
+    holeScores: [{ holeNumber: 7, participantId: 'user-1', score, recordedByParticipantId: 'user-2' }],
+  });
+
+  const pendiente = (holeNumber, score, participantId = 'user-1') =>
+    ({ matchId: 'qm-1', holeNumber, participantId, scoreData: { score } });
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    getGolfCourseUseCase.execute.mockResolvedValue({ holes: [], tees: [], name: 'Campo' });
+    getQuickMatchUseCase.execute.mockResolvedValue(mockQuickMatch);
+    offlineQueue.getByMatch.mockReturnValue([]);
+    submitQuickMatchHoleScoreUseCase.execute.mockResolvedValue({});
+    // `clearAllMocks` borra las llamadas, no la implementación: sin esto llega
+    // rechazando desde el test de proxy de la tabla A
+    submitQuickMatchProxyHoleScoreUseCase.execute.mockResolvedValue({});
+  });
+
+  const montaCon = async (pendientes, partida = mockQuickMatch) => {
+    offlineQueue.getByMatch.mockReturnValue(pendientes);
+    getQuickMatchUseCase.execute.mockResolvedValue(partida);
+    const { result } = renderHook(() => useQuickMatchScoring('qm-1', 'user-1'));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    return result;
+  };
+
+  it('envía lo guardado en cuanto el sondeo responde, y lo borra', async () => {
+    await montaCon([pendiente(7, 5)]);
+
+    await waitFor(() =>
+      expect(submitQuickMatchHoleScoreUseCase.execute).toHaveBeenCalledWith('qm-1', 7, 5)
+    );
+    await waitFor(() => expect(offlineQueue.remove).toHaveBeenCalledWith('qm-1', 7, 'user-1'));
+  });
+
+  it('al volver a anotar bien un hoyo perdido, el aviso rojo se retira', async () => {
+    // El aviso pide volver a anotarlo. Si al hacerlo siguiera ahí, estaría
+    // pidiendo algo que ya está hecho, y el jugador no sabría cuándo parar.
+    submitQuickMatchHoleScoreUseCase.execute
+      .mockRejectedValueOnce(rechazo(409))
+      .mockResolvedValueOnce({});
+
+    const result = await montaCon([pendiente(7, 5)]);
+    await waitFor(() =>
+      expect(result.current.perdidos).toContainEqual(expect.objectContaining({ holeNumber: 7 }))
+    );
+
+    await act(async () => { await result.current.submitScore(7, 'user-1', 6); });
+
+    expect(result.current.perdidos).toEqual([]);
+  });
+
+  it('al abrir la pantalla ya sin cobertura, cuenta lo que quedó de antes', async () => {
+    // El caso que originó todo: el jugador vuelve a la app en el campo. Si el
+    // contador empezara en cero, el aviso no saldría hasta el primer vaciado
+    // —que sin cobertura no llega— y sus golpes parecerían no existir.
+    offlineQueue.getByMatch.mockReturnValue([pendiente(7, 5), pendiente(8, 4)]);
+    offlineQueue.size.mockReturnValue(2);
+    getQuickMatchUseCase.execute.mockRejectedValue(new TypeError('Failed to fetch'));
+
+    const { result } = renderHook(() => useQuickMatchScoring('qm-1', 'user-1'));
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    expect(result.current.pendientes).toBe(2);
+  });
+
+  it('un golpe de otro jugador sale por la ruta de proxy, no por la propia', async () => {
+    // Un anotador cubre a invitados —y en foursomes, a los cuatro—, así que en
+    // la cola hay golpes que no son suyos. Y el vaciado del primer sondeo corre
+    // cuando `quickMatch` todavía es null: si el participante saliera del
+    // estado, TODO iría por proxy, incluido lo propio.
+    await montaCon([pendiente(7, 5, 'guest-1'), pendiente(8, 4, 'user-1')]);
+
+    await waitFor(() =>
+      expect(submitQuickMatchProxyHoleScoreUseCase.execute)
+        .toHaveBeenCalledWith('qm-1', 'guest-1', 7, 5)
+    );
+    await waitFor(() =>
+      expect(submitQuickMatchHoleScoreUseCase.execute).toHaveBeenCalledWith('qm-1', 8, 4)
+    );
+    expect(submitQuickMatchProxyHoleScoreUseCase.execute).toHaveBeenCalledTimes(1);
+  });
+
+  it('si uno no llega, para ahí y no toca los demás', async () => {
+    submitQuickMatchHoleScoreUseCase.execute
+      .mockRejectedValueOnce(new TypeError('Failed to fetch'));
+
+    await montaCon([pendiente(7, 5), pendiente(8, 4)]);
+
+    await waitFor(() => expect(submitQuickMatchHoleScoreUseCase.execute).toHaveBeenCalledTimes(1));
+    expect(offlineQueue.remove).not.toHaveBeenCalled();
+  });
+
+  it.each([[401], [503]])('con %i tampoco sigue: no es culpa del golpe', async (status) => {
+    submitQuickMatchHoleScoreUseCase.execute.mockRejectedValueOnce(rechazo(status));
+
+    await montaCon([pendiente(7, 5), pendiente(8, 4)]);
+
+    await waitFor(() => expect(submitQuickMatchHoleScoreUseCase.execute).toHaveBeenCalledTimes(1));
+    expect(offlineQueue.remove).not.toHaveBeenCalled();
+  });
+
+  it('descarta el que el servidor rechaza y sigue con el resto', async () => {
+    submitQuickMatchHoleScoreUseCase.execute
+      .mockRejectedValueOnce(rechazo(409))
+      .mockResolvedValueOnce({});
+
+    const result = await montaCon([pendiente(7, 5), pendiente(8, 4)]);
+
+    await waitFor(() => expect(submitQuickMatchHoleScoreUseCase.execute).toHaveBeenCalledTimes(2));
+    expect(offlineQueue.remove).toHaveBeenCalledWith('qm-1', 7, 'user-1');
+    expect(result.current.perdidos).toContainEqual(expect.objectContaining({ holeNumber: 7 }));
+  });
+
+  it('un hoyo con anotación DISTINTA no se envía: se aparta', async () => {
+    // La app no sabe quién tiene razón, así que no elige
+    const conAnotacion = {
+      ...mockQuickMatch,
+      holeScores: [{ holeNumber: 7, participantId: 'user-1', score: 6, recordedByParticipantId: 'user-2' }],
+    };
+
+    const result = await montaCon([pendiente(7, 5)], conAnotacion);
+
+    expect(submitQuickMatchHoleScoreUseCase.execute).not.toHaveBeenCalled();
+    expect(result.current.discrepancias).toContainEqual(
+      expect.objectContaining({ holeNumber: 7, mio: 5, enElServidor: 6 })
+    );
+  });
+
+  it('con un solo anotador no hay a quién preguntar: se envía', async () => {
+    // «Habla con tu compañero y decidid cuál vale» en una partida que anota una
+    // sola persona: el compañero era el propio jugador (FE #528)
+    const unSoloAnotador = {
+      ...mockQuickMatch,
+      scorerIds: ['user-1'],
+      holeScores: [{ holeNumber: 7, participantId: 'user-1', score: 6, recordedByParticipantId: 'user-1' }],
+    };
+
+    const result = await montaCon([pendiente(7, 5)], unSoloAnotador);
+
+    await waitFor(() =>
+      expect(submitQuickMatchHoleScoreUseCase.execute).toHaveBeenCalledWith('qm-1', 7, 5)
+    );
+    expect(result.current.discrepancias).toHaveLength(0);
+  });
+
+  it('corregir lo que uno mismo anotó tampoco se pregunta', async () => {
+    // Aunque la anotación se comparta: cambiar el 6 que puse por el 5 que jugué
+    // es corregir, no discrepar. Nadie con quien hablarlo
+    const loAnoteYo = {
+      ...mockQuickMatch,
+      holeScores: [{ holeNumber: 7, participantId: 'user-1', score: 6, recordedByParticipantId: 'user-1' }],
+    };
+
+    const result = await montaCon([pendiente(7, 5)], loAnoteYo);
+
+    await waitFor(() =>
+      expect(submitQuickMatchHoleScoreUseCase.execute).toHaveBeenCalledWith('qm-1', 7, 5)
+    );
+    expect(result.current.discrepancias).toHaveLength(0);
+  });
+
+  it('pero si lo anotó otro, se sigue preguntando', async () => {
+    // Lo que no cambia: ahí sí hay dos opiniones y una tiene que ganar
+    const loAnotoOtro = {
+      ...mockQuickMatch,
+      holeScores: [{ holeNumber: 7, participantId: 'user-1', score: 6, recordedByParticipantId: 'user-2' }],
+    };
+
+    const result = await montaCon([pendiente(7, 5)], loAnotoOtro);
+
+    expect(submitQuickMatchHoleScoreUseCase.execute).not.toHaveBeenCalled();
+    expect(result.current.discrepancias).toHaveLength(1);
+  });
+
+  it('sin cobertura, la casilla enseña lo que se acaba de anotar', async () => {
+    // El golpe se guardaba y el aviso lo decía, pero la casilla seguía con el
+    // número de antes: para el jugador no había pasado nada, y lo anotaba otra
+    // vez (FE #530)
+    submitQuickMatchHoleScoreUseCase.execute.mockRejectedValue(new TypeError('Failed to fetch'));
+    const conLoViejo = {
+      ...mockQuickMatch,
+      scorerIds: ['user-1'],
+      holeScores: [{ holeNumber: 7, participantId: 'user-1', score: 3, recordedByParticipantId: 'user-1' }],
+    };
+
+    const result = await montaCon([pendiente(7, 5)], conLoViejo);
+
+    expect(result.current.holeScoresVisibles).toContainEqual(
+      expect.objectContaining({ holeNumber: 7, participantId: 'user-1', score: 5 })
+    );
+  });
+
+  it('y compartiendo anotación, si lo del servidor lo puse yo, manda lo mío', async () => {
+    // La rama que FE #530 describe de verdad: con DOS anotadores, corregir un
+    // hoyo que anoté yo. Los otros dos casos de la tarjeta se van por el atajo
+    // del anotador único y dejaban esto sin vigilar
+    submitQuickMatchHoleScoreUseCase.execute.mockRejectedValue(new TypeError('Failed to fetch'));
+    const loMioEnCompartida = {
+      ...mockQuickMatch,
+      holeScores: [{ holeNumber: 7, participantId: 'user-1', score: 3, recordedByParticipantId: 'user-1' }],
+    };
+
+    const result = await montaCon([pendiente(7, 5)], loMioEnCompartida);
+
+    expect(result.current.holeScoresVisibles).toContainEqual(
+      expect.objectContaining({ holeNumber: 7, participantId: 'user-1', score: 5 })
+    );
+  });
+
+  it('sin saber quién soy no se da por propio: se pregunta', async () => {
+    // Dos `undefined` se daban por iguales, y lo desconocido pasaba por propio:
+    // el golpe se enviaba encima del de otro anotador sin preguntar nada
+    const sinRecordedBy = {
+      ...mockQuickMatch,
+      participants: [{ participantId: 'p-otro', userId: 'user-9', name: 'Otro', isGuest: false }],
+      holeScores: [{ holeNumber: 7, participantId: 'user-1', score: 3 }],
+    };
+
+    const result = await montaCon([pendiente(7, 5)], sinRecordedBy);
+
+    expect(result.current.discrepancias).toHaveLength(1);
+  });
+
+  it('y en un desacuerdo de verdad sigue mandando el del servidor', async () => {
+    // Hasta que el jugador decida: lo suyo está en cuestión, y elegirlo por él
+    // es justo lo que no se hace
+    const desacuerdo = {
+      ...mockQuickMatch,
+      holeScores: [{ holeNumber: 7, participantId: 'user-1', score: 3, recordedByParticipantId: 'user-2' }],
+    };
+
+    const result = await montaCon([pendiente(7, 5)], desacuerdo);
+
+    expect(result.current.holeScoresVisibles).toContainEqual(
+      expect.objectContaining({ holeNumber: 7, participantId: 'user-1', score: 3 })
+    );
+  });
+
+  it('una bola recogida frente a un número es una discrepancia', async () => {
+    // Los dos llegan sin número y significan lo contrario, así que el valor
+    // cuenta: `null` no es «no hay anotación»
+    const conNumero = {
+      ...mockQuickMatch,
+      holeScores: [{ holeNumber: 7, participantId: 'user-1', score: 5, recordedByParticipantId: 'user-2' }],
+    };
+
+    const result = await montaCon([pendiente(7, null)], conNumero);
+
+    expect(result.current.discrepancias).toHaveLength(1);
+    expect(submitQuickMatchHoleScoreUseCase.execute).not.toHaveBeenCalled();
+  });
+
+  it('no se vacía dos veces a la vez', async () => {
+    let suelta;
+    submitQuickMatchHoleScoreUseCase.execute.mockImplementation(
+      () => new Promise((resolve) => { suelta = resolve; })
+    );
+
+    const result = await montaCon([pendiente(7, 5)]);
+    await act(async () => { await result.current.refetch(); });
+
+    expect(submitQuickMatchHoleScoreUseCase.execute).toHaveBeenCalledTimes(1);
+    suelta?.({});
+  });
+
+  it('lo que ya coincide se quita de la cola sin volver a enviarlo', async () => {
+    // Reenviarlo no añade nada y sí puede restar: si entre medias alguien
+    // termina la partida, el 409 lo daría por perdido y le pediría al jugador
+    // que volviera a anotar un hoyo que el servidor ya tiene, con ese resultado
+    const igual = {
+      ...mockQuickMatch,
+      holeScores: [{ holeNumber: 7, participantId: 'user-1', score: 5, recordedByParticipantId: 'user-2' }],
+    };
+
+    const result = await montaCon([pendiente(7, 5)], igual);
+
+    await waitFor(() => expect(offlineQueue.remove).toHaveBeenCalledWith('qm-1', 7, 'user-1'));
+    expect(submitQuickMatchHoleScoreUseCase.execute).not.toHaveBeenCalled();
+    expect(result.current.discrepancias).toHaveLength(0);
+    expect(result.current.perdidos).toEqual([]);
+  });
+
+  it('resolver a mi favor no envía en el acto: deja la decisión tomada', async () => {
+    // Enviar aquí mismo abría tres agujeros: si no llega no se entera nadie, el
+    // sondeo puede estar vaciando a la vez y mandarlo dos veces, y la decisión
+    // se perdía al cerrar la app. Guardada en la entrada, la envía el vaciado.
+    const result = await montaCon([pendiente(7, 5)], conAnotacionDe(6));
+
+    await act(async () => { await result.current.resuelveDiscrepancia(7, 'user-1', 'mio'); });
+
+    expect(offlineQueue.enqueue).toHaveBeenCalledWith(
+      'qm-1', 7, expect.objectContaining({ score: 5, decidido: true }), 'user-1'
+    );
+    expect(result.current.discrepancias).toHaveLength(0);
+  });
+
+  it('lo ya decidido se envía sin volver a preguntar', async () => {
+    const decidida = { ...pendiente(7, 5), scoreData: { score: 5, decidido: true } };
+
+    const result = await montaCon([decidida], conAnotacionDe(6));
+
+    await waitFor(() => expect(submitQuickMatchHoleScoreUseCase.execute).toHaveBeenCalledWith('qm-1', 7, 5));
+    expect(result.current.discrepancias).toHaveLength(0);
+  });
+
+  it('resolver a favor del que hay descarta el mío sin enviarlo', async () => {
+    const result = await montaCon([pendiente(7, 5)], conAnotacionDe(6));
+
+    await act(async () => { await result.current.resuelveDiscrepancia(7, 'user-1', 'elQueHay'); });
+
+    expect(submitQuickMatchHoleScoreUseCase.execute).not.toHaveBeenCalled();
+    expect(offlineQueue.remove).toHaveBeenCalledWith('qm-1', 7, 'user-1');
+    expect(result.current.discrepancias).toHaveLength(0);
+  });
+
+  it('con un valor que no es ninguno de los dos no toca nada', async () => {
+    // Las dos ramas hacen cosas opuestas y una de ellas descarta la anotación
+    // del jugador: si un tercer valor cayera en cualquiera de ellas, un error
+    // de escritura en quien llame borraría un golpe sin decir nada
+    const result = await montaCon([pendiente(7, 5)], conAnotacionDe(6));
+    await waitFor(() => expect(result.current.discrepancias).toHaveLength(1));
+
+    await act(async () => { await result.current.resuelveDiscrepancia(7, 'user-1', 'servidor'); });
+
+    expect(offlineQueue.remove).not.toHaveBeenCalled();
+    expect(offlineQueue.enqueue).not.toHaveBeenCalled();
+    expect(result.current.discrepancias).toHaveLength(1);
+  });
+});
+
+/**
+ * LA TABLA E — lo guardado en el móvil se VE.
+ *
+ * Sin esto la función engaña: el jugador anota, no sale ningún error porque
+ * para él está anotado, y la casilla sigue diciendo «Anotar». Lo natural es
+ * volver a pulsar. La tarjeta, el selector de hoyo y la clasificación salen
+ * todos de la misma lista, y la clasificación se calcula aquí, así que basta
+ * con sumar la cola a esa lista para que las tres lo vean.
+ *
+ * Y «no coincide» no basta para hablar de disputa: para eso hace falta alguien
+ * con quien discrepar. Con un solo anotador no lo hay, y lo que uno mismo anotó
+ * tampoco se discute consigo mismo — ahí lo nuevo es una corrección, y
+ * esconderla era FE #530.
+ *
+ *   caso                                   | qué se ve en la casilla
+ *   ---------------------------------------|--------------------------------
+ *   el servidor no tiene el hoyo           | lo guardado en el móvil
+ *   el servidor lo tiene y coincide        | lo del servidor (da igual)
+ *   no coincide, y anota UNO SOLO          | lo guardado: es una corrección
+ *   no coincide, y lo del servidor lo      | lo guardado: es una corrección
+ *     anoté YO                             |
+ *   no coincide, y lo anotó OTRO           | lo del SERVIDOR: está en disputa
+ *                                          | y la aplicación no elige
+ *   no coincide y no se sabe quién lo      | lo del SERVIDOR: se pregunta, que
+ *     anotó (o quién soy)                  | es lo que no rompe nada de nadie
+ *   ...y el jugador ya decidió que el suyo | lo suyo, en cuanto lo decide
+ */
+/**
+ * LA TABLA F — los huecos entre el móvil y el servidor.
+ *
+ * Todo lo de aquí sale de mirar qué pasa MIENTRAS: mientras un envío está en
+ * vuelo, mientras el jugador decide, mientras se cambia de partida. Son los
+ * casos que no se ven leyendo el camino feliz de arriba abajo.
+ */
+const rechazoF = (status) => Object.assign(new Error(`HTTP ${status}`), { status });
+
+describe('useQuickMatchScoring · lo que pasa mientras (FE #515, tabla F)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    getGolfCourseUseCase.execute.mockResolvedValue({ holes: [], tees: [], name: 'Campo' });
+    getQuickMatchUseCase.execute.mockResolvedValue(mockQuickMatch);
+    offlineQueue.getByMatch.mockReturnValue([]);
+    offlineQueue.size.mockReturnValue(0);
+    submitQuickMatchHoleScoreUseCase.execute.mockResolvedValue({});
+    submitQuickMatchProxyHoleScoreUseCase.execute.mockResolvedValue({});
+  });
+
+  const pendiente = (holeNumber, score, participantId = 'user-1') =>
+    ({ matchId: 'qm-1', holeNumber, participantId, scoreData: { score } });
+
+  const conAnotacionDe = (score, holeNumber = 7) => ({
+    ...mockQuickMatch,
+    holeScores: [{ holeNumber, participantId: 'user-1', score, recordedByParticipantId: 'user-2' }],
+  });
+
+  const montaCon = async (pendientes, partida = mockQuickMatch) => {
+    offlineQueue.getByMatch.mockReturnValue(pendientes);
+    getQuickMatchUseCase.execute.mockResolvedValue(partida);
+    const { result } = renderHook(() => useQuickMatchScoring('qm-1', 'user-1'));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    return result;
+  };
+
+  it('al enviar lo guardado vuelve a pedir la partida, para que el golpe no se esfume', async () => {
+    // Se quita de la cola, pero la foto que hay en memoria es de ANTES del
+    // envío y no lo trae: sin volver a pedirla, la casilla vuelve a decir
+    // «Anotar» durante diez segundos y el jugador anota el mismo hoyo dos veces
+    await montaCon([pendiente(7, 5)]);
+
+    await waitFor(() => expect(submitQuickMatchHoleScoreUseCase.execute).toHaveBeenCalled());
+    await waitFor(() => expect(getQuickMatchUseCase.execute).toHaveBeenCalledTimes(2));
+  });
+
+  it('y no se queda dando vueltas: pedir la partida no vuelve a vaciar', async () => {
+    // El vaciado lo dispara el sondeo, y aquí el vaciado pide otro sondeo: sin
+    // el cerrojo puesto, cada envío pediría otra partida, sin fin
+    await montaCon([pendiente(7, 5)]);
+
+    await waitFor(() => expect(getQuickMatchUseCase.execute).toHaveBeenCalledTimes(2));
+    await new Promise((r) => setTimeout(r, 60));
+    expect(getQuickMatchUseCase.execute).toHaveBeenCalledTimes(2);
+    expect(submitQuickMatchHoleScoreUseCase.execute).toHaveBeenCalledTimes(1);
+  });
+
+  it('si no se envió nada, no pide la partida otra vez', async () => {
+    // Un vaciado que solo encuentra conflictos no ha cambiado nada en el
+    // servidor: volver a pedirla es una petición de más en cada sondeo
+    await montaCon([pendiente(7, 5)], conAnotacionDe(6));
+
+    await new Promise((r) => setTimeout(r, 60));
+    expect(getQuickMatchUseCase.execute).toHaveBeenCalledTimes(1);
+  });
+
+  it('un envío atascado no se lleva por delante el conflicto de otro hoyo', async () => {
+    // El aviso está abierto y el jugador leyéndolo. Si los conflictos se
+    // calcularan sobre la marcha, cortar el bucle antes de llegar al hoyo en
+    // disputa lo borraría de la lista y el aviso se cerraría solo
+    submitQuickMatchHoleScoreUseCase.execute.mockRejectedValue(rechazoF(429));
+
+    const result = await montaCon(
+      [pendiente(1, 4), pendiente(7, 5)],
+      conAnotacionDe(6)
+    );
+
+    await waitFor(() => expect(submitQuickMatchHoleScoreUseCase.execute).toHaveBeenCalled());
+    expect(result.current.discrepancias).toHaveLength(1);
+    expect(result.current.discrepancias[0].holeNumber).toBe(7);
+  });
+
+  it('lo que el jugador resuelve mientras se envía otra cosa no se deshace', async () => {
+    // El bucle trabaja sobre la foto de la cola de cuando empezó. Si no la
+    // relee, manda un golpe que el jugador acaba de descartar
+    let suelta;
+    submitQuickMatchHoleScoreUseCase.execute.mockImplementationOnce(
+      () => new Promise((r) => { suelta = r; })
+    );
+
+    const result = await montaCon([pendiente(1, 4), pendiente(7, 5)]);
+    await waitFor(() => expect(submitQuickMatchHoleScoreUseCase.execute).toHaveBeenCalledTimes(1));
+
+    // El jugador descarta el hoyo 7 mientras el 1 sigue en vuelo
+    offlineQueue.getByMatch.mockReturnValue([pendiente(1, 4)]);
+    await act(async () => {
+      result.current.resuelveDiscrepancia(7, 'user-1', 'elQueHay');
+      suelta?.({});
+    });
+
+    expect(submitQuickMatchHoleScoreUseCase.execute).not.toHaveBeenCalledWith('qm-1', 7, 5);
+  });
+
+  it('el aviso de un hoyo perdido no se repite dos veces', async () => {
+    // «Los hoyos 7, 7 no se pudieron guardar» es lo que sale si se apila sin
+    // mirar si ya estaba
+    submitQuickMatchHoleScoreUseCase.execute.mockRejectedValue(rechazoF(409));
+
+    const result = await montaCon([pendiente(7, 5)]);
+    await waitFor(() => expect(result.current.perdidos).toHaveLength(1));
+
+    await act(async () => { await result.current.refetch(); });
+
+    expect(result.current.perdidos).toHaveLength(1);
+  });
+
+  it('al reanotar un hoyo perdido, el aviso se va aunque tampoco llegue', async () => {
+    // El aviso pide volver a anotarlo. Si al hacerlo el golpe se queda otra vez
+    // en el móvil, sigue habiendo anotación: lo que ya no hay es nada perdido
+    submitQuickMatchHoleScoreUseCase.execute.mockRejectedValueOnce(rechazoF(409));
+
+    const result = await montaCon([pendiente(7, 5)]);
+    await waitFor(() => expect(result.current.perdidos).toHaveLength(1));
+
+    submitQuickMatchHoleScoreUseCase.execute.mockRejectedValue(new TypeError('Failed to fetch'));
+    await act(async () => { await result.current.submitScore(7, 'user-1', 6); });
+
+    expect(result.current.perdidos).toEqual([]);
+  });
+
+  it('al cambiar de partida no se queda en pantalla la anterior', async () => {
+    // Si la nueva no llega a cargar y no hay nada guardado de ella, antes se
+    // quedaba la partida ANTERIOR con sus hoyos y su campo, lista para anotar
+    // encima como si fuera esta
+    offlineQueue.getByMatch.mockReturnValue([]);
+    const { result, rerender } = renderHook(({ id }) => useQuickMatchScoring(id, 'user-1'), {
+      initialProps: { id: 'qm-1' },
+    });
+    await waitFor(() => expect(result.current.quickMatch).not.toBeNull());
+
+    getQuickMatchUseCase.execute.mockRejectedValue(new TypeError('Failed to fetch'));
+    rerender({ id: 'qm-2' });
+
+    await waitFor(() => expect(result.current.quickMatch).toBeNull());
+    expect(result.current.holes).toEqual([]);
+    expect(result.current.courseName).toBeNull();
+  });
+
+  it('el campo de la partida anterior no cae sobre la nueva', async () => {
+    // El campo tarda mas que la partida, y `holes` no se vuelve a escribir
+    // nunca: la nueva se quedaba con los pares y los indices de la anterior el
+    // resto de la sesion, y el siguiente sondeo los guardaba dentro de SU
+    // entrada, con lo que sin cobertura el neto salia con el par equivocado
+    offlineQueue.getByMatch.mockReturnValue([]);
+    let sueltaElCampo;
+    getGolfCourseUseCase.execute.mockImplementation(
+      () => new Promise((r) => { sueltaElCampo = () => r({ holes: [{ holeNumber: 1, par: 3 }], tees: [], name: 'El de antes' }); })
+    );
+
+    const { result, rerender } = renderHook(({ id }) => useQuickMatchScoring(id, 'user-1'), {
+      initialProps: { id: 'qm-1' },
+    });
+    await waitFor(() => expect(getGolfCourseUseCase.execute).toHaveBeenCalled());
+
+    rerender({ id: 'qm-2' });
+    await act(async () => { sueltaElCampo(); });
+
+    expect(result.current.holes).toEqual([]);
+    expect(result.current.courseName).toBeNull();
+  });
+
+  it('una respuesta rezagada no quita la espera de la partida nueva', async () => {
+    // Sin esto la pantalla pasa de largo por sus dos guardas y pinta la tarjeta
+    // vacia: sin nombre, sin jugadores y con dieciocho casillas diciendo «Anotar»
+    offlineQueue.getByMatch.mockReturnValue([]);
+    let sueltaLaVieja;
+    getQuickMatchUseCase.execute.mockImplementation(
+      () => new Promise((_, rechaza) => { sueltaLaVieja = () => rechaza(new TypeError('Failed to fetch')); })
+    );
+
+    const { result, rerender } = renderHook(({ id }) => useQuickMatchScoring(id, 'user-1'), {
+      initialProps: { id: 'qm-1' },
+    });
+    await waitFor(() => expect(getQuickMatchUseCase.execute).toHaveBeenCalledWith('qm-1'));
+
+    const laDeAntes = sueltaLaVieja;
+    rerender({ id: 'qm-2' });
+    await act(async () => { laDeAntes(); });
+
+    expect(result.current.isLoading).toBe(true);
+    expect(result.current.loadError).toBeNull();
+  });
+
+  it('al cambiar de partida no se arrastra lo de la anterior', async () => {
+    // La ruta no lleva `key`, así que ir de una partida a otra reutiliza el
+    // hook: sin limpiar, el aviso rojo y el conflicto de la partida de antes se
+    // quedan en pantalla contra los hoyos de la nueva
+    submitQuickMatchHoleScoreUseCase.execute.mockRejectedValue(rechazoF(409));
+    offlineQueue.getByMatch.mockReturnValue([pendiente(7, 5)]);
+
+    const { result, rerender } = renderHook(({ id }) => useQuickMatchScoring(id, 'user-1'), {
+      initialProps: { id: 'qm-1' },
+    });
+    await waitFor(() => expect(result.current.perdidos).toHaveLength(1));
+
+    offlineQueue.getByMatch.mockReturnValue([]);
+    offlineQueue.size.mockReturnValue(0);
+    rerender({ id: 'qm-2' });
+
+    await waitFor(() => expect(result.current.perdidos).toEqual([]));
+    expect(result.current.discrepancias).toEqual([]);
+    expect(result.current.pendientes).toBe(0);
+  });
+});
+
+describe('useQuickMatchScoring · lo guardado se ve (FE #515, tabla E)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    getGolfCourseUseCase.execute.mockResolvedValue({ holes: [], tees: [], name: 'Campo' });
+    getQuickMatchUseCase.execute.mockResolvedValue(mockQuickMatch);
+    offlineQueue.getByMatch.mockReturnValue([]);
+    submitQuickMatchHoleScoreUseCase.execute.mockResolvedValue({});
+    submitQuickMatchProxyHoleScoreUseCase.execute.mockResolvedValue({});
+  });
+
+  const conAnotacionDe = (score) => ({
+    ...mockQuickMatch,
+    holeScores: [{ holeNumber: 7, participantId: 'user-1', score, recordedByParticipantId: 'user-2' }],
+  });
+
+  const pendiente = (holeNumber, score, participantId = 'user-1') =>
+    ({ matchId: 'qm-1', holeNumber, participantId, scoreData: { score } });
+
+  const montaCon = async (pendientes, partida = mockQuickMatch) => {
+    offlineQueue.getByMatch.mockReturnValue(pendientes);
+    getQuickMatchUseCase.execute.mockResolvedValue(partida);
+    const { result } = renderHook(() => useQuickMatchScoring('qm-1', 'user-1'));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    return result;
+  };
+
+  it('un hoyo que solo está en el móvil sale en la lista que se pinta', async () => {
+    // Aquí el envío no llega: la entrada se queda en la cola, que es el caso
+    submitQuickMatchHoleScoreUseCase.execute.mockRejectedValue(new TypeError('Failed to fetch'));
+
+    const result = await montaCon([pendiente(7, 5)]);
+
+    expect(result.current.holeScoresVisibles).toContainEqual(
+      expect.objectContaining({ holeNumber: 7, participantId: 'user-1', score: 5 })
+    );
+  });
+
+  it('una bola recogida guardada en el móvil también se ve', async () => {
+    // `null` no es «no hay anotación»: es la raya, y significa lo contrario
+    submitQuickMatchHoleScoreUseCase.execute.mockRejectedValue(new TypeError('Failed to fetch'));
+
+    const result = await montaCon([pendiente(7, null)]);
+
+    expect(result.current.holeScoresVisibles).toContainEqual(
+      expect.objectContaining({ holeNumber: 7, participantId: 'user-1', score: null })
+    );
+  });
+
+  it('en disputa manda el del servidor hasta que el jugador decida', async () => {
+    const result = await montaCon([pendiente(7, 5)], conAnotacionDe(6));
+
+    const fila = result.current.holeScoresVisibles.find((hs) => hs.holeNumber === 7);
+    expect(fila.score).toBe(6);
+    expect(result.current.holeScoresVisibles.filter((hs) => hs.holeNumber === 7)).toHaveLength(1);
+  });
+
+  it('en cuanto decide que vale el suyo, es el suyo el que se ve', async () => {
+    const decidida = { ...pendiente(7, 5), scoreData: { score: 5, decidido: true } };
+    submitQuickMatchHoleScoreUseCase.execute.mockRejectedValue(new TypeError('Failed to fetch'));
+
+    const result = await montaCon([decidida], conAnotacionDe(6));
+
+    expect(result.current.holeScoresVisibles.find((hs) => hs.holeNumber === 7).score).toBe(5);
+  });
+
+  it('sin nada guardado, es exactamente lo que dice el servidor', async () => {
+    const result = await montaCon([], conAnotacionDe(6));
+    expect(result.current.holeScoresVisibles).toEqual(conAnotacionDe(6).holeScores);
+  });
+});
+
+/**
+ * LA TABLA G — cuando lo guardado y lo enviado hablan del MISMO hoyo.
+ *
+ * La cola guarda una anotación por hoyo y jugador, y el envío directo escribe
+ * sobre ese mismo hoyo. Cuando los dos caminos se cruzan, gana el último que
+ * el jugador hizo: cualquier otra cosa le devuelve un resultado que ya había
+ * corregido, y encima preguntándoselo con su propio nombre.
+ *
+ *   caso                                    | qué pasa
+ *   ----------------------------------------|-------------------------------
+ *   corrijo un hoyo que tenía guardado y     | lo guardado sobra y se tira: el
+ *   esta vez sí llega                        | servidor ya tiene lo bueno
+ *   lo reanoto mientras se envía lo de antes | al acabar el envío viejo no se
+ *                                            | borra lo nuevo
+ *   el móvil no puede guardar                | se dice en rojo; el golpe no
+ *                                            | desaparece en silencio
+ *   resuelvo y la entrada ya no está         | el aviso se cierra igual
+ */
+describe('useQuickMatchScoring · lo guardado y lo enviado, mismo hoyo (FE #515, tabla G)', () => {
+  // Aquí la cola guarda de verdad. Con los mocks inertes de los otros bloques,
+  // un `remove` que no quita nada deja pasar justo los defectos de este grupo:
+  // el efecto que se comprueba es que lo borrado deje de salir
+  let cola;
+  const mismo = (e, hoyo, quien) => e.holeNumber === hoyo && e.participantId === quien;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    cola = [];
+    offlineQueue.getByMatch.mockImplementation(() => cola);
+    offlineQueue.size.mockImplementation(() => cola.length);
+    offlineQueue.enqueue.mockImplementation((matchId, holeNumber, scoreData, participantId) => {
+      cola = cola.filter((e) => !mismo(e, holeNumber, participantId));
+      cola.push({ matchId, holeNumber, participantId, scoreData });
+      return true;
+    });
+    offlineQueue.remove.mockImplementation((matchId, holeNumber, participantId) => {
+      cola = cola.filter((e) => !mismo(e, holeNumber, participantId));
+      return true;
+    });
+    getGolfCourseUseCase.execute.mockResolvedValue({ holes: [], tees: [], name: 'Campo' });
+    getQuickMatchUseCase.execute.mockResolvedValue(mockQuickMatch);
+    submitQuickMatchHoleScoreUseCase.execute.mockResolvedValue({});
+    submitQuickMatchProxyHoleScoreUseCase.execute.mockResolvedValue({});
+  });
+
+  const pendiente = (holeNumber, score, participantId = 'user-1') =>
+    ({ matchId: 'qm-1', holeNumber, participantId, scoreData: { score } });
+
+  const monta = async () => {
+    const { result } = renderHook(() => useQuickMatchScoring('qm-1', 'user-1'));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    return result;
+  };
+
+  it('corregir un hoyo que estaba guardado tira lo guardado', async () => {
+    // Tal y como pasa: el jugador ya está en la pantalla, anota sin cobertura
+    // —el golpe se queda en el móvil— y corrige ese mismo hoyo cuando vuelve.
+    // Si lo viejo no se tira, el siguiente vaciado lo manda y PISA la
+    // corrección en el servidor; y si el servidor ya la tuviera, le preguntaría
+    // al jugador si quiere recuperar el resultado que él mismo corrigió, con su
+    // propio nombre al lado
+    const result = await monta();
+
+    submitQuickMatchHoleScoreUseCase.execute.mockRejectedValueOnce(new TypeError('Failed to fetch'));
+    await act(async () => { await result.current.submitScore(5, 'user-1', 4); });
+    expect(cola).toHaveLength(1);
+    // El intento de antes también fue con un 4, y era legítimo: lo que no
+    // puede volver a salir es el reenvío de lo guardado
+    submitQuickMatchHoleScoreUseCase.execute.mockClear();
+
+    await act(async () => { await result.current.submitScore(5, 'user-1', 6); });
+
+    await waitFor(() => expect(cola).toHaveLength(0));
+    expect(submitQuickMatchHoleScoreUseCase.execute).not.toHaveBeenCalledWith('qm-1', 5, 4);
+    expect(result.current.discrepancias).toHaveLength(0);
+  });
+
+  it('el envío que acaba no borra una anotación más nueva del mismo hoyo', async () => {
+    // Mientras el golpe viejo está en vuelo, el jugador reanota ese hoyo y
+    // tampoco llega: lo nuevo entra en la cola. Borrar «el hoyo 5» a secas se
+    // lleva por delante la corrección, y el servidor se queda con lo viejo
+    let suelta;
+    submitQuickMatchHoleScoreUseCase.execute.mockImplementationOnce(
+      () => new Promise((r) => { suelta = r; })
+    );
+    cola = [pendiente(5, 4)];
+
+    await monta();
+    await waitFor(() => expect(submitQuickMatchHoleScoreUseCase.execute).toHaveBeenCalledTimes(1));
+
+    cola = [pendiente(5, 6)];
+    await act(async () => { suelta?.({}); });
+
+    expect(cola).toContainEqual(expect.objectContaining({ holeNumber: 5, scoreData: { score: 6 } }));
+  });
+
+  it('si el móvil no puede guardar el golpe, se dice', async () => {
+    // En un iPhone sin espacio, o en una ventana privada, `localStorage` se
+    // niega. Callarlo es lo peor de todo: ni recuadro rojo ni aviso ámbar, y
+    // el golpe desaparecido
+    offlineQueue.enqueue.mockReturnValue(false);
+    submitQuickMatchHoleScoreUseCase.execute.mockRejectedValue(new TypeError('Failed to fetch'));
+
+
+    const result = await monta();
+    await act(async () => { await result.current.submitScore(5, 'user-1', 4); });
+
+    expect(result.current.saveError).toBeTruthy();
+  });
+
+  it('resolver un conflicto cuya entrada ya no está cierra el aviso igual', async () => {
+    // Si no, el velo se queda encima para siempre: no se puede anotar, ni
+    // terminar, ni cancelar, y recargar devuelve al mismo sitio
+    const conAnotacion = {
+      ...mockQuickMatch,
+      holeScores: [{ holeNumber: 7, participantId: 'user-1', score: 6, recordedByParticipantId: 'user-2' }],
+    };
+    getQuickMatchUseCase.execute.mockResolvedValue(conAnotacion);
+    cola = [pendiente(7, 5)];
+
+    const result = await monta();
+    await waitFor(() => expect(result.current.discrepancias).toHaveLength(1));
+
+    cola = [];
+    await act(async () => { result.current.resuelveDiscrepancia(7, 'user-1', 'mio'); });
+
+    expect(result.current.discrepancias).toHaveLength(0);
+  });
+});
+
+/**
+ * LA TABLA H — nunca dos escrituras a la vez sobre el mismo hoyo.
+ *
+ * El vaciado y el envío directo escriben en el mismo sitio, y el orden de
+ * llegada no lo decide nadie: si el golpe viejo sale primero y llega el
+ * último, el servidor se queda con el viejo y la corrección no está en ninguna
+ * parte —ni en la cola, que ya se vació, ni en el servidor—. Con un solo
+ * cerrojo para las dos, el orden deja de importar porque no se solapan.
+ *
+ *   caso                          | qué pasa
+ *   ------------------------------|-----------------------------------------
+ *   anoto mientras se vacía       | el golpe se guarda; sale en el siguiente
+ *                                 | sondeo, detrás de lo que ya iba
+ *   llega un sondeo mientras       | el vaciado no arranca; lo hará el
+ *   estoy anotando                | siguiente
+ */
+describe('useQuickMatchScoring · una escritura cada vez (FE #515, tabla H)', () => {
+  let cola;
+  const mismo = (e, hoyo, quien) => e.holeNumber === hoyo && e.participantId === quien;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    cola = [];
+    offlineQueue.getByMatch.mockImplementation(() => cola);
+    offlineQueue.size.mockImplementation(() => cola.length);
+    offlineQueue.enqueue.mockImplementation((matchId, holeNumber, scoreData, participantId) => {
+      cola = cola.filter((e) => !mismo(e, holeNumber, participantId));
+      cola.push({ matchId, holeNumber, participantId, scoreData });
+      return true;
+    });
+    offlineQueue.remove.mockImplementation((matchId, holeNumber, participantId) => {
+      cola = cola.filter((e) => !mismo(e, holeNumber, participantId));
+      return true;
+    });
+    getGolfCourseUseCase.execute.mockResolvedValue({ holes: [], tees: [], name: 'Campo' });
+    getQuickMatchUseCase.execute.mockResolvedValue(mockQuickMatch);
+    submitQuickMatchHoleScoreUseCase.execute.mockResolvedValue({});
+    submitQuickMatchProxyHoleScoreUseCase.execute.mockResolvedValue({});
+  });
+
+  it('anotar mientras se vacía guarda el golpe en vez de mandarlo', async () => {
+    // Mandarlo abre justo la carrera: el 4 ya está en vuelo, y si el 6 llega
+    // antes, el servidor se queda con el 4 y del 6 no queda ni rastro
+    let suelta;
+    submitQuickMatchHoleScoreUseCase.execute.mockImplementationOnce(
+      () => new Promise((r) => { suelta = r; })
+    );
+    cola = [{ matchId: 'qm-1', holeNumber: 5, participantId: 'user-1', scoreData: { score: 4 } }];
+
+    const { result } = renderHook(() => useQuickMatchScoring('qm-1', 'user-1'));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    await waitFor(() => expect(submitQuickMatchHoleScoreUseCase.execute).toHaveBeenCalledTimes(1));
+
+    await act(async () => { await result.current.submitScore(5, 'user-1', 6); });
+
+    expect(submitQuickMatchHoleScoreUseCase.execute).toHaveBeenCalledTimes(1);
+    expect(cola).toContainEqual(expect.objectContaining({ holeNumber: 5, scoreData: { score: 6 } }));
+    expect(result.current.saveError).toBeNull();
+
+    suelta?.({});
+  });
+
+  it('el vaciado no arranca si hay un golpe en vuelo', async () => {
+    let suelta;
+    const { result } = renderHook(() => useQuickMatchScoring('qm-1', 'user-1'));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    submitQuickMatchHoleScoreUseCase.execute.mockImplementationOnce(
+      () => new Promise((r) => { suelta = r; })
+    );
+    let anotando;
+    act(() => { anotando = result.current.submitScore(5, 'user-1', 6); });
+
+    // Con el golpe en vuelo entra un sondeo y encuentra otra cosa guardada
+    cola = [{ matchId: 'qm-1', holeNumber: 8, participantId: 'user-1', scoreData: { score: 3 } }];
+    await act(async () => { await result.current.refetch(); });
+
+    expect(submitQuickMatchHoleScoreUseCase.execute).not.toHaveBeenCalledWith('qm-1', 8, 3);
+
+    await act(async () => { suelta?.({}); await anotando; });
+  });
+});
+
+/**
+ * LA TABLA N — poder anotar tras volver a abrir la aplicación sin cobertura.
+ *
+ * Es la finalidad de todo esto. Guardar los golpes no basta: si al abrir no se
+ * puede pintar la partida —ni hoyos, ni pares, ni quién juega— no hay nada que
+ * anotar. Y el service worker no ayuda a propósito: las llamadas a la API son
+ * `NetworkOnly` para no dar por buenos datos rancios sin decirlo.
+ *
+ *   caso                                | qué pasa
+ *   ------------------------------------|-----------------------------------
+ *   carga bien                          | se guarda la partida y su campo
+ *   sin señal, con lo guardado          | se pinta, y se puede anotar
+ *   sin señal, sin nada guardado        | como antes: no hay nada que pintar
+ *   el servidor dice 404 o 403          | NO se usa lo guardado: esa partida
+ *                                       | ya no está, o no es nuestra
+ *   vuelve la señal                     | manda el servidor
+ */
+describe('useQuickMatchScoring · volver a abrir sin cobertura (FE #524, tabla N)', () => {
+  beforeEach(() => {
+    // Este fichero corre sin almacenamiento, y el módulo lo envuelve en
+    // try/catch: sin esto los tests pasarían por no haber dónde guardar
+    const guardado = new Map();
+    globalThis.localStorage = {
+      getItem: (k) => (guardado.has(k) ? guardado.get(k) : null),
+      setItem: (k, v) => guardado.set(k, String(v)),
+      removeItem: (k) => guardado.delete(k),
+    };
+    vi.clearAllMocks();
+    olvidaTodo();
+    offlineQueue.getByMatch.mockReturnValue([]);
+    offlineQueue.size.mockReturnValue(0);
+    getGolfCourseUseCase.execute.mockResolvedValue({ id: 'course-1', name: 'Son Parc', holes: [{ holeNumber: 1, par: 4 }], tees: [] });
+    getQuickMatchUseCase.execute.mockResolvedValue(mockQuickMatch);
+  });
+
+  const monta = async () => {
+    const { result } = renderHook(() => useQuickMatchScoring('qm-1', 'user-1'));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    return result;
+  };
+
+  const sinSenal = () => getQuickMatchUseCase.execute.mockRejectedValue(new TypeError('Failed to fetch'));
+
+  it('al cargarla se guarda la partida y su campo', async () => {
+    await monta();
+
+    await waitFor(() => expect(loQueSeSupo('qm-1')).not.toBeNull());
+    expect(loQueSeSupo('qm-1').partida.id).toBe('qm-1');
+    expect(loQueSeSupo('qm-1').campo.holes).toHaveLength(1);
+  });
+
+  it('sin señal se pinta lo guardado, y se puede anotar', async () => {
+    // Lo que se busca: el jugador vuelve a la aplicación en el campo. Sin esto
+    // se encuentra una pantalla vacía y ahí ya no hay nada que anotar
+    recuerda('qm-1', { partida: mockQuickMatch, campo: { holes: [{ holeNumber: 1, par: 4 }], tees: [], name: 'Son Parc' } });
+    sinSenal();
+
+    const result = await monta();
+
+    expect(result.current.quickMatch?.id).toBe('qm-1');
+    expect(result.current.holes).toHaveLength(1);
+    expect(result.current.isScorer).toBe(true);
+    expect(result.current.courseName).toBe('Son Parc');
+  });
+
+  it('y se dice que puede no estar al día', async () => {
+    // La pantalla lo pinta en ámbar mirando este error: sin él se leería como
+    // si fuera lo que hay ahora mismo en el servidor
+    recuerda('qm-1', { partida: mockQuickMatch, campo: { holes: [], tees: [] } });
+    sinSenal();
+
+    const result = await monta();
+
+    expect(result.current.loadError).toBeTruthy();
+  });
+
+  it('sin señal y sin nada guardado, no hay nada que pintar', async () => {
+    sinSenal();
+
+    const result = await monta();
+
+    expect(result.current.quickMatch).toBeNull();
+  });
+
+  it('si el servidor dice que ya no está, no se resucita', async () => {
+    // Un 404 es una respuesta: esa partida se borró. Pintarla desde el móvil
+    // sería enseñar algo que ya no existe, y dejar anotar sobre ello
+    recuerda('qm-1', { partida: mockQuickMatch, campo: { holes: [], tees: [] } });
+    getQuickMatchUseCase.execute.mockRejectedValue(Object.assign(new Error('no está'), { status: 404 }));
+
+    const result = await monta();
+
+    expect(result.current.quickMatch).toBeNull();
+    expect(loQueSeSupo('qm-1')).toBeNull();
+  });
+
+  it('con la sesión caducada no se pinta lo guardado', async () => {
+    // Un 401 sí desmiente: no hemos entrado, y enseñar la partida de todas
+    // formas dejaría anotar a quien la aplicación no sabe quién es
+    recuerda('qm-1', { partida: mockQuickMatch, campo: { holes: [], tees: [] } });
+    getQuickMatchUseCase.execute.mockRejectedValue(Object.assign(new Error('fuera'), { status: 401 }));
+
+    const result = await monta();
+
+    expect(result.current.quickMatch).toBeNull();
+  });
+
+  it('con el servidor caído sí se pinta: un 5xx no desmiente nada', async () => {
+    // La partida sigue ahí, es el backend el que está mal. Y así tampoco se
+    // puede anotar, que es justo lo que esto viene a evitar
+    recuerda('qm-1', { partida: mockQuickMatch, campo: { holes: [{ holeNumber: 1, par: 4 }], tees: [] } });
+    getQuickMatchUseCase.execute.mockRejectedValue(Object.assign(new Error('boom'), { status: 500 }));
+
+    const result = await monta();
+
+    expect(result.current.quickMatch?.id).toBe('qm-1');
+    expect(result.current.isScorer).toBe(true);
+  });
+
+  it('cuando vuelve la señal manda el servidor', async () => {
+    recuerda('qm-1', { partida: { ...mockQuickMatch, holeScores: [{ holeNumber: 1, participantId: 'user-1', score: 9 }] }, campo: { holes: [], tees: [] } });
+
+    const result = await monta();
+
+    expect(result.current.quickMatch.holeScores).toHaveLength(0);
+  });
+});
+
+/**
+ * LA TABLA P — lo guardado no puede pisar lo que ya hay en pantalla.
+ *
+ * Salió de la revisión, y es lo contrario de lo que la tabla N buscaba: lo
+ * guardado sirve para ARRANCAR sin señal, no para corregir a la pantalla que
+ * ya está funcionando. Cerrar la partida se aplica en local a propósito —para
+ * que un corte justo después del POST no la deje viva—, y restaurar en cada
+ * sondeo fallido devolvía esa partida a «en curso».
+ *
+ *   caso                                   | qué pasa
+ *   ---------------------------------------|-------------------------------
+ *   no hay nada en pantalla y falla        | se pinta lo guardado
+ *   YA hay partida en pantalla y falla     | no se toca: manda la pantalla
+ *   se cierra la partida y se cae la red   | sigue cerrada
+ *   se pinta de memoria                    | se dice, sea cual sea el fallo
+ */
+describe('useQuickMatchScoring · lo guardado no pisa la pantalla (FE #524, tabla P)', () => {
+  beforeEach(() => {
+    const almacen = new Map();
+    globalThis.localStorage = {
+      getItem: (k) => (almacen.has(k) ? almacen.get(k) : null),
+      setItem: (k, v) => almacen.set(k, String(v)),
+      removeItem: (k) => almacen.delete(k),
+    };
+    vi.clearAllMocks();
+    olvidaTodo();
+    offlineQueue.getByMatch.mockReturnValue([]);
+    offlineQueue.size.mockReturnValue(0);
+    getGolfCourseUseCase.execute.mockResolvedValue({ id: 'course-1', name: 'Son Parc', holes: [{ holeNumber: 1, par: 4 }], tees: [] });
+    getQuickMatchUseCase.execute.mockResolvedValue(mockQuickMatch);
+  });
+
+  const monta = async () => {
+    const { result } = renderHook(() => useQuickMatchScoring('qm-1', 'user-1'));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    return result;
+  };
+
+  it('cerrar la partida y perder la red la deja cerrada', async () => {
+    // El cierre se aplica en local justo para esto. Si al fallar el sondeo se
+    // repusiera la foto guardada —de cuando estaba en curso— la pantalla
+    // volvería a dejar anotar y cada guardado se estrellaría contra un 409
+    const result = await monta();
+    completeQuickMatchUseCase.execute.mockResolvedValue({ ...mockQuickMatch, status: 'COMPLETED', isCompleted: true });
+    getQuickMatchUseCase.execute.mockRejectedValue(new TypeError('Failed to fetch'));
+
+    await act(async () => { await result.current.completeMatch(); });
+
+    expect(result.current.quickMatch.status).toBe('COMPLETED');
+  });
+
+  it('con la partida ya en pantalla, un sondeo que falla no la retrasa', async () => {
+    const result = await monta();
+    const antes = result.current.quickMatch;
+    getQuickMatchUseCase.execute.mockRejectedValue(new TypeError('Failed to fetch'));
+
+    await act(async () => { await result.current.refetch(); });
+
+    expect(result.current.quickMatch).toBe(antes);
+  });
+
+  it('dice cuándo lo que se ve sale de la memoria del móvil', async () => {
+    // Y no según el código del fallo: con un 5xx también se pinta de memoria, y
+    // ahí salía la pantalla entera bajo un error rojo, sin avisar de nada
+    recuerda('qm-1', { partida: mockQuickMatch, campo: { holes: [], tees: [] } });
+    getQuickMatchUseCase.execute.mockRejectedValue(Object.assign(new Error('boom'), { status: 500 }));
+
+    const result = await monta();
+
+    expect(result.current.pintadoDeMemoria).toBe(true);
+  });
+
+  it('con la partida recién traída del servidor, no se dice nada de memoria', async () => {
+    const result = await monta();
+
+    expect(result.current.pintadoDeMemoria).toBe(false);
+  });
+
+  it('el sondeo no degrada el campo que ya tenía guardado', async () => {
+    // Cada sondeo reescribe la entrada. Releyendo lo que está a punto de
+    // sobrescribir, si se hubiera desalojado escribía `campo: null` y la
+    // siguiente vez sin señal no había hoyos con los que pintar la tarjeta
+    const result = await monta();
+    // Como si la entrada se hubiera desalojado para dejar sitio a otra partida
+    olvidaTodo();
+
+    await act(async () => { await result.current.refetch(); });
+
+    expect(loQueSeSupo('qm-1')?.campo?.holes).toHaveLength(1);
+  });
+});
+
+/**
+ * LA TABLA Q — cuándo se pregunta al servidor.
+ *
+ * Esto es golf: entre hoyo y hoyo pasan minutos, y preguntar cada diez
+ * segundos gasta batería y datos para nada. Pero el sondeo hace DOS trabajos y
+ * solo uno tolera esperar: traer lo que anotan otros aguanta un minuto; enviar
+ * lo que quedó guardado en el móvil, no —esa es la razón de ser de todo esto—.
+ *
+ * Así que se pregunta cada minuto, y además en los dos momentos en los que de
+ * verdad importa: cuando el navegador dice que vuelve la red, y cuando el
+ * jugador vuelve a la aplicación —saca el móvil del bolsillo al llegar al
+ * hoyo—. `navigator.onLine` no vale como verdad, pero como excusa para probar
+ * sí: si el intento sale, había red.
+ *
+ *   caso                          | qué pasa
+ *   ------------------------------|-------------------------------------
+ *   nadie toca nada               | se pregunta cada minuto
+ *   vuelve la red                 | se pregunta en el acto
+ *   se vuelve a la aplicación     | se pregunta en el acto
+ *   la aplicación se va al fondo  | no se pregunta por eso
+ */
+describe('useQuickMatchScoring · cuándo se pregunta (FE #524, tabla Q)', () => {
+  beforeEach(() => {
+    const almacen = new Map();
+    globalThis.localStorage = {
+      getItem: (k) => (almacen.has(k) ? almacen.get(k) : null),
+      setItem: (k, v) => almacen.set(k, String(v)),
+      removeItem: (k) => almacen.delete(k),
+    };
+    vi.clearAllMocks();
+    olvidaTodo();
+    offlineQueue.getByMatch.mockReturnValue([]);
+    offlineQueue.size.mockReturnValue(0);
+    getGolfCourseUseCase.execute.mockResolvedValue({ holes: [], tees: [] });
+    getQuickMatchUseCase.execute.mockResolvedValue(mockQuickMatch);
+  });
+
+  const monta = async () => {
+    const { result, unmount } = renderHook(() => useQuickMatchScoring('qm-1', 'user-1'));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    getQuickMatchUseCase.execute.mockClear();
+    return { result, unmount };
+  };
+
+  const conVisibilidad = (estado) => {
+    Object.defineProperty(document, 'visibilityState', { value: estado, configurable: true });
+    document.dispatchEvent(new window.Event('visibilitychange'));
+  };
+
+  it('cuando vuelve la red se pregunta sin esperar al reloj', async () => {
+    await monta();
+
+    await act(async () => { window.dispatchEvent(new window.Event('online')); });
+
+    expect(getQuickMatchUseCase.execute).toHaveBeenCalledTimes(1);
+  });
+
+  it('al volver a la aplicación se pregunta', async () => {
+    // El gesto de siempre: llegas al hoyo y sacas el móvil del bolsillo
+    await monta();
+
+    await act(async () => { conVisibilidad('visible'); });
+
+    expect(getQuickMatchUseCase.execute).toHaveBeenCalledTimes(1);
+  });
+
+  it('la vuelta de la red se aprovecha aunque no se esté mirando', async () => {
+    // Es una ocasión de sacar del móvil lo que quedó guardado. Perderla porque
+    // la pantalla esté en segundo plano no le ahorra nada a nadie
+    await monta();
+    conVisibilidad('hidden');
+    getQuickMatchUseCase.execute.mockClear();
+
+    await act(async () => { window.dispatchEvent(new window.Event('online')); });
+
+    expect(getQuickMatchUseCase.execute).toHaveBeenCalledTimes(1);
+  });
+
+  it('irse al fondo no dispara ninguna pregunta', async () => {
+    await monta();
+
+    await act(async () => { conVisibilidad('hidden'); });
+
+    expect(getQuickMatchUseCase.execute).not.toHaveBeenCalled();
+  });
+
+  it('al salir de la pantalla se dejan de escuchar los avisos', async () => {
+    // Si no, cada partida abierta deja su oyente colgado y una vuelta a la
+    // aplicación dispara tantas peticiones como pantallas se hayan visitado
+    const { unmount } = await monta();
+
+    unmount();
+    await act(async () => { window.dispatchEvent(new window.Event('online')); });
+
+    expect(getQuickMatchUseCase.execute).not.toHaveBeenCalled();
   });
 });

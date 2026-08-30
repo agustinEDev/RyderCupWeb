@@ -235,12 +235,19 @@ export const formatCountryName = (country, language = 'en') => {
   // Normalize language to base code (es-ES -> es, en-US -> en)
   const baseLang = toBaseLanguage(language) || 'en';
 
+  // Se aceptan las dos grafías que conviven en el código: la del backend
+  // (`name_es`) y la que arma `CompetitionAssembler` (`nameEs`). Sin esto, un
+  // país que llegara con la segunda caía al `name` de reserva, que el assembler
+  // rellena con el inglés fijo, y en español se leía «Spain»
+  const enEspanol = country.name_es || country.nameEs;
+  const enIngles = country.name_en || country.nameEn;
+
   // Always prefer the requested language, fallback to the other language
   if (baseLang === 'es') {
-    return country.name_es || country.name_en || country.name || '';
+    return enEspanol || enIngles || country.name || '';
   }
 
-  return country.name_en || country.name_es || country.name || '';
+  return enIngles || enEspanol || country.name || '';
 };
 
 /**

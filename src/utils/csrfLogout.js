@@ -10,6 +10,8 @@
  * @see docs/FRONTEND_INTEGRATION_v1.13.0.md - CSRF Protection section
  */
 
+import { olvidaLoDeEstaCuenta } from '../services/loUltimoConocido';
+
 /**
  * Handle CSRF validation failure
  * - Clears authentication state from localStorage
@@ -28,6 +30,11 @@ export const handleCsrfLogout = (errorData = {}) => {
   // NOTE: httpOnly cookies are managed by the browser and will be cleared on next login
   localStorage.removeItem('user');
   localStorage.removeItem('access_token'); // Legacy cleanup
+  // Y las partidas guardadas para anotar sin cobertura (FE #524). Es el cuarto
+  // camino de salida, y como el del dispositivo revocado tampoco pasa por
+  // `clearAuth`: sin esto, tras un fallo de CSRF en un móvil compartido la
+  // siguiente persona que se quedara sin señal vería las partidas de la anterior
+  olvidaLoDeEstaCuenta();
 
   // Hard redirect to login page
   // This is intentional - CSRF failures require a complete app reset

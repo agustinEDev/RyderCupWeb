@@ -189,17 +189,16 @@ describe('tokenRefreshInterceptor', () => {
         statusText: 'Unauthorized',
       }));
 
-      // Call fetchWithTokenRefresh but don't await - it will hang after redirect
-      fetchWithTokenRefresh('http://localhost:8000/api/v1/test');
+      // La petición ahora rechaza en vez de quedarse colgada para siempre
+      // (FE #514). Colgarla escondía el fallo a quien la había pedido, que se
+      // quedaba esperando una respuesta que no iba a llegar nunca; la
+      // redirección sigue ocurriendo igual
+      const peticion = fetchWithTokenRefresh('http://localhost:8000/api/v1/test');
 
-      // Wait a bit for the redirect to happen
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await expect(peticion).rejects.toThrow();
 
       // Should redirect to login
       expect(globalThis.location.href).toBe('/login');
-
-      // The promise will never resolve (hangs after redirect)
-      // This is expected behavior to prevent race conditions
     });
 
     it('should not retry refresh endpoint itself', async () => {
@@ -397,6 +396,77 @@ describe('tokenRefreshInterceptor', () => {
       // Tokens should only be in httpOnly cookies (invisible to JavaScript)
       expect(localStorage.getItem('access_token')).toBeNull();
       expect(sessionStorage.getItem('access_token')).toBeNull();
+    });
+  });
+  describe('sin cobertura en mitad de una vuelta (FE #514)', () => {
+    // Módulo limpio en cada caso: el flag `isRefreshing` es estado del módulo,
+    // y el camino que cierra sesión se queda esperando una promesa que nunca
+    // resuelve, así que su `finally` no llega a soltarlo y el siguiente test
+    // se encolaría para siempre
+    let fetchWithTokenRefresh;
+    let handleSessionExpiredLogout;
+    let handleDeviceRevocationLogout;
+
+    beforeEach(async () => {
+      vi.resetModules();
+      ({ fetchWithTokenRefresh } = await import('./tokenRefreshInterceptor'));
+      ({ handleSessionExpiredLogout, handleDeviceRevocationLogout } = await import('./deviceRevocationLogout'));
+      vi.clearAllMocks();
+    });
+
+    // El token de acceso dura 15 minutos y el marcador pregunta cada 10
+    // segundos, así que en un campo con mala cobertura el 401 y la falta de
+    // red coinciden muchas veces por vuelta
+    const respuesta401 = () => ({
+      ok: false,
+      status: 401,
+      statusText: 'Unauthorized',
+      clone: () => ({ json: async () => ({ detail: 'Not authenticated' }) }),
+      json: async () => ({ detail: 'Not authenticated' }),
+    });
+
+    it('conserva la sesión cuando el refresco no sale del móvil', async () => {
+      globalThis.fetch
+        .mockResolvedValueOnce(respuesta401())
+        .mockRejectedValueOnce(new TypeError('Failed to fetch'));
+
+      await expect(
+        fetchWithTokenRefresh('http://localhost:8000/api/v1/quick-matches/1/scores', { method: 'POST' })
+      ).rejects.toThrow('Failed to fetch');
+
+      expect(handleSessionExpiredLogout).not.toHaveBeenCalled();
+      expect(handleDeviceRevocationLogout).not.toHaveBeenCalled();
+    });
+
+    it('conserva la sesión cuando el proxy contesta 502', async () => {
+      // Un servidor con un mal momento no dice nada sobre las credenciales
+      globalThis.fetch
+        .mockResolvedValueOnce(respuesta401())
+        .mockResolvedValueOnce({ ok: false, status: 502, statusText: 'Bad Gateway', json: async () => ({}) });
+
+      await expect(
+        fetchWithTokenRefresh('http://localhost:8000/api/v1/quick-matches/1/scores', { method: 'POST' })
+      ).rejects.toThrow('Failed to refresh token');
+
+      expect(handleSessionExpiredLogout).not.toHaveBeenCalled();
+    });
+
+    it('sigue cerrando la sesión si el refresco responde 401', async () => {
+      // Lo único que de verdad significa "estas credenciales ya no sirven"
+      globalThis.fetch
+        .mockResolvedValueOnce(respuesta401())
+        .mockResolvedValueOnce({
+          ok: false,
+          status: 401,
+          statusText: 'Unauthorized',
+          json: async () => ({ detail: 'Refresh token inválido o expirado' }),
+        });
+
+      await expect(
+        fetchWithTokenRefresh('http://localhost:8000/api/v1/quick-matches/1/scores', { method: 'POST' })
+      ).rejects.toThrow('Refresh token inválido o expirado');
+
+      expect(handleSessionExpiredLogout).toHaveBeenCalled();
     });
   });
 });

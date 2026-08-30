@@ -13,6 +13,8 @@ import {
 import { useAuth } from '../hooks/useAuth';
 import { CountryFlag } from '../utils/countryUtils';
 import BlockLoader from '../components/ui/BlockLoader';
+import { formatCountryName } from '../services/countries';
+import { ubicacionDe } from '../utils/ubicacionDeCompeticion';
 
 // Helper function to get enrollment status classes
 const getEnrollmentStatusClasses = (status) => {
@@ -30,7 +32,7 @@ const getEnrollmentStatusClasses = (status) => {
 
 const Competitions = () => {
   const navigate = useNavigate();
-  const { t } = useTranslation('competitions');
+  const { t, i18n } = useTranslation('competitions');
   const { user } = useAuth();
   const [competitions, setCompetitions] = useState([]);
   const [filteredCompetitions, setFilteredCompetitions] = useState([]);
@@ -68,7 +70,10 @@ const Competitions = () => {
       filtered = filtered.filter(
         (comp) =>
           comp.name?.toLowerCase().includes(query) ||
-          comp.location?.toLowerCase().includes(query)
+          // Se busca sobre lo que se ve: la tarjeta enseña los países en el
+          // idioma de la aplicación, así que buscar «España» tenía que
+          // encontrar una competición cuya `location` del backend dice «Spain»
+          ubicacionDe(comp, i18n.language).toLowerCase().includes(query)
       );
     }
 
@@ -78,7 +83,7 @@ const Competitions = () => {
     }
 
     setFilteredCompetitions(filtered);
-  }, [competitions, searchQuery, statusFilter]);
+  }, [competitions, searchQuery, statusFilter, i18n.language]);
 
   useEffect(() => {
     if (user?.id) {
@@ -201,10 +206,14 @@ const Competitions = () => {
               </div>
 
               {/* Location */}
-              {competition.location && (
+              {/* La ubicación se rehace aquí y no se usa la del backend: allí se
+                  arma uniendo `name_en`, así que en una aplicación en español la
+                  tarjeta decía «Spain, France» mientras la bandera de dos líneas
+                  más abajo ya decía «España, Francia» (FE #513) */}
+              {ubicacionDe(competition, i18n.language) && (
                 <div className="flex items-center gap-2 text-gray-600 text-sm">
                   <MapPin className="w-4 h-4" />
-                  <span>{competition.location}</span>
+                  <span>{ubicacionDe(competition, i18n.language)}</span>
                 </div>
               )}
 
@@ -227,7 +236,7 @@ const Competitions = () => {
                         key={country.code || index}
                         countryCode={country.code}
                         style={{ width: '20px', height: 'auto' }}
-                        title={country.name || country.nameEn || country.code}
+                        title={formatCountryName(country, i18n.language) || country.code}
                       />
                     ))}
                     {/* Show count text only if golf_courses_count is available */}

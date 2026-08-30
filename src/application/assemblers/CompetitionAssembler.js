@@ -25,6 +25,11 @@ class CompetitionAssembler {
         name: country.name_en,
         nameEn: country.name_en,
         nameEs: country.name_es,
+        // También con la grafía del backend: es la que entienden `countries.js`
+        // y sus ayudantes. Sin ella, un país de aquí se pintaba bien pero el
+        // buscador de países lo filtraba a cero en cuanto se tecleaba algo
+        name_en: country.name_en,
+        name_es: country.name_es,
         flag: getCountryFlag(country.code),
         isMain: index === 0
       }));

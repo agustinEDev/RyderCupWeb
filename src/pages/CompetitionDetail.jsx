@@ -36,12 +36,13 @@ import {
   formatDateRange,
 } from '../services/competitions';
 import FullScreenLoader from '../components/ui/FullScreenLoader';
+import { formatCountryName } from '../services/countries';
 
 const CompetitionDetail = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { id } = useParams();
-  const { t } = useTranslation('competitions');
+  const { t, i18n } = useTranslation('competitions');
   const { user, loading: isLoadingUser } = useAuth();
   const { isAdmin, isCreator: hasCreatorRole, isLoading: isLoadingRoles } = useUserRoles(id);
   const [competition, setCompetition] = useState(null);
@@ -458,7 +459,7 @@ const CompetitionDetail = () => {
                               className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 text-primary rounded-full text-sm font-medium border border-primary/20"
                             >
                               <CountryFlag countryCode={country.code} className="w-5 h-5" />
-                              <span>{country.name}</span>
+                              <span>{formatCountryName(country, i18n.language)}</span>
                             </span>
                           ))}
                         </div>

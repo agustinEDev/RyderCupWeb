@@ -53,7 +53,70 @@ export const ESPERA_TRAS_FALLO_MS = 3_000;
  */
 const REINTENTOS_AUTOMATICOS = 3;
 
-const NADA_SABIDO = { user: null, cargando: true, refrescando: false, error: null, resuelta: false };
+/**
+ * A quién pertenece la sesión, apuntado en el dispositivo (FE #524).
+ *
+ * Al agotar los reintentos, esto bajaba a «resuelto y sin usuario», y para
+ * `ProtectedRoute` eso es «no has entrado»: al formulario de acceso, en mitad
+ * del campo, con la sesión intacta —comprobado: en cuanto vuelve la señal,
+ * `/current-user` responde 200 sin volver a entrar—. Y ahí ya no se puede
+ * anotar, que es justo para lo que hace falta la aplicación sin cobertura.
+ *
+ * Se guarda lo que devuelve el backend, no la entidad de dominio de
+ * `AuthContext`: quien lee de aquí espera el DTO, y sembrar con aquello hacía
+ * que el panel pintara un objeto como texto.
+ *
+ * El servidor sigue mandando. Esto solo evita el rebote al formulario mientras
+ * no hay a quién preguntar: la primera petición que llegue dirá si vale.
+ */
+const RECUERDO = 'rydercup-sesion-conocida';
+
+const apunta = (usuario) => {
+  try {
+    localStorage.setItem(RECUERDO, JSON.stringify(usuario));
+  } catch {
+    // Sin espacio, o en una ventana privada. Se seguirá echando al formulario
+    // sin cobertura, que es como estaba antes: no hay nada peor que perder
+  }
+};
+
+const olvidaElApunte = () => {
+  try {
+    localStorage.removeItem(RECUERDO);
+  } catch {
+    // Nada que hacer
+  }
+};
+
+/**
+ * Sin privilegios: esto vive en el dispositivo y se puede tocar a mano. El
+ * panel de administración lo defiende el backend de todas formas, pero enseñar
+ * sus botones sin poder confirmar nada sobra.
+ */
+const loApuntado = () => {
+  try {
+    const crudo = localStorage.getItem(RECUERDO);
+    if (!crudo) return null;
+    const usuario = JSON.parse(crudo);
+    return usuario && typeof usuario === 'object' ? { ...usuario, is_admin: false } : null;
+  } catch {
+    return null;
+  }
+};
+
+/** `sinConfirmar`: lo que se enseña sale del apunte del dispositivo y el
+ *  servidor todavia no lo ha respaldado. Es SUYO y no se deduce de
+ *  `refrescando`, que tambien se levanta en un refresco corriente de una sesion
+ *  ya confirmada: derivarlo de ahi bloqueaba la pantalla entera en cada
+ *  `refetch`, que es justo lo que el comentario de `consultaLaSesion` prohibe. */
+const NADA_SABIDO = {
+  user: null,
+  cargando: true,
+  refrescando: false,
+  error: null,
+  resuelta: false,
+  sinConfirmar: false,
+};
 
 let instantanea = NADA_SABIDO;
 let enVuelo = null;
@@ -91,7 +154,12 @@ const programaReintento = () => {
 
   reintento = setTimeout(() => {
     reintento = null;
-    consultaLaSesion();
+    // Forzando: el reintento quiere preguntar de verdad, y desde que se pinta
+    // con la sesión apuntada (FE #529) esto se publica como resuelto —para que
+    // el guardia deje pasar y nadie abra su propia petición—, así que el atajo
+    // de «ya está resuelta» lo cortaba en seco y no se volvía a preguntar
+    // nunca: la aplicación se quedaba con lo apuntado hasta recargar
+    consultaLaSesion({ forzar: true });
   }, espera);
 };
 
@@ -123,7 +191,8 @@ const pideAlBackend = async (miGeneracion) => {
         // formulario que cerro el commit anterior
         if (!sigoValiendo()) return null;
 
-        anota({ user: null, cargando: false, refrescando: false, error: null, resuelta: true });
+        olvidaElApunte();
+        anota({ user: null, cargando: false, refrescando: false, error: null, resuelta: true, sinConfirmar: false });
         return null;
       }
 
@@ -145,22 +214,82 @@ const pideAlBackend = async (miGeneracion) => {
 
     clearDeviceRevocationFlag();
     fallosSeguidos = 0;
-    anota({ user: usuario, cargando: false, refrescando: false, error: null, resuelta: true });
+    // Y el reintento que quedara armado se cancela. Antes daba igual —llegaba
+    // sin forzar y salia por «ya esta resuelta» sin tocar la red—, pero desde
+    // que fuerza (FE #529) dispararia una peticion de mas, que es justo el
+    // abanico que este modulo existe para evitar (FE #489); y al forzar sube la
+    // generacion, con lo que un `refetch` en vuelo veria su respuesta
+    // descartada y resolveria a nada
+    if (reintento !== null) clearTimeout(reintento);
+    reintento = null;
+    apunta(usuario);
+    anota({ user: usuario, cargando: false, refrescando: false, error: null, resuelta: true, sinConfirmar: false });
 
     return usuario;
   } catch (error) {
     console.error('Error loading user:', error);
     if (!sigoValiendo()) return null;
 
-    // `resuelta` se queda como estaba: un tropiezo no es una respuesta, y
-    // guardarlo como tal dejaba a quien montara despues sin volver a intentarlo
+    // Un tropiezo no es una respuesta. Con nada apuntado, `resuelta` se queda
+    // como estaba: darlo por resuelto dejaba a quien montara despues sin volver
+    // a intentarlo. Con la sesion apuntada SI se resuelve —abajo—, para que el
+    // guardia deje pasar y nadie abra su propia peticion; a cambio, recuperarse
+    // pasa a depender solo del temporizador, que por eso fuerza la consulta
     fallosSeguidos += 1;
     programaReintento();
-    // `cargando` se queda arriba mientras haya reintento en camino: para quien
-    // mira, esto sigue siendo «no se sabe», no «no hay sesion»
-    anota({ cargando: reintento !== null, refrescando: false, error: error.message });
 
-    return null;
+    if (reintento !== null) {
+      // Con la sesión apuntada en el dispositivo no hace falta esperar a nadie:
+      // se pinta YA y se sigue preguntando por detrás.
+      //
+      // Antes esto mantenía `cargando` arriba hasta agotar los reintentos, y
+      // como van a 3, 6 y 12 segundos, abrir la aplicación sin cobertura eran
+      // **21 segundos de pantalla en blanco** antes siquiera de pedir la
+      // partida —medido—. En el campo eso es una aplicación rota, y es justo el
+      // caso para el que se guarda todo esto (FE #529).
+      //
+      // No se arriesga nada que no estuviera decidido ya: aquí solo se llega
+      // por un fallo de red o un 5xx. Un 401 o un 404 no pasan por el `catch`,
+      // se resuelven arriba borrando el apunte y mandando al formulario, así
+      // que una sesión que de verdad no vale se corrige en cuanto haya
+      // respuesta. El servidor sigue mandando; esto solo evita esperarle
+      // mirando una pantalla vacía
+      const recordado = instantanea.user ?? loApuntado();
+      if (recordado) {
+        anota({
+          user: recordado,
+          cargando: false,
+          // Lo que dice que aún se está preguntando, sin bloquear a nadie
+          refrescando: true,
+          error: error.message,
+          resuelta: true,
+          // Solo si sale del apunte: un usuario que ya venía confirmado sigue
+          // estándolo aunque ahora no se pueda preguntar
+          sinConfirmar: instantanea.user === null,
+        });
+        return recordado;
+      }
+
+      // Sin nada apuntado no hay qué pintar, y esto sigue siendo «no se sabe»,
+      // no «no hay sesión»: bajarlo a resuelto es el rebote al formulario
+      anota({ cargando: true, refrescando: false, error: error.message });
+      return null;
+    }
+
+    // Se acabaron los reintentos y no hay a quién preguntar. Antes se bajaba
+    // aquí a «resuelto y sin usuario» y el guardia mandaba al formulario
+    const deLaMemoria = instantanea.user === null;
+    const recordado = instantanea.user ?? loApuntado();
+    anota({
+      user: recordado,
+      cargando: false,
+      refrescando: false,
+      error: error.message,
+      resuelta: recordado !== null,
+      sinConfirmar: deLaMemoria && recordado !== null,
+    });
+
+    return recordado;
   }
 };
 
@@ -244,6 +373,15 @@ export const anotaLaSesion = (usuarioDelBackend) => {
  * Sin esto, lo que quedara guardado aquí sobreviviría al cierre de sesión.
  */
 export const olvidaLaSesion = () => {
+  // Y lo apuntado se va con ella: si no, la próxima vez sin cobertura se
+  // entraría como quien acaba de salir
+  olvidaElApunte();
+  // Y los fallos se cuentan desde cero. Si no, un arranque sin cobertura que
+  // quemara los cuatro intentos dejaba el contador arriba, y el siguiente fallo
+  // —ya con la sesión cerrada por inactividad o por otra pestaña— se pasaba del
+  // tope: sin reintento, sin apunte, y al formulario a la primera, que es
+  // justo lo que no puede pasar en mitad del campo
+  fallosSeguidos = 0;
   // Sube la generación: si hay una respuesta en vuelo, ya no manda. Si no,
   // llegaría con el usuario de antes y volvería a dar por buena una sesión que
   // acaba de cerrarse
@@ -265,15 +403,19 @@ export const olvidaLaSesion = () => {
  * La idea era buena —la instalada vive días abierta y el refresco dura siete, así
  * que la pantalla puede estar enseñando una sesión que el backend ya rechazó—,
  * pero el precio no lo era: esa consulta pasa por `fetchWithTokenRefresh` con un
- * access caducado, así que intenta refrescar, y si ese refresco falla **sin
+ * access caducado, así que intenta refrescar, y si ese refresco fallaba **sin
  * respuesta** —un corte a media petición, un tiempo agotado— el interceptor no
- * lo distingue de una sesión muerta y cierra sesión con una redirección dura.
+ * lo distinguía de una sesión muerta y cerraba sesión con una redirección dura.
  *
  * Es decir: volver a la aplicación con mala cobertura podía echar a alguien de
- * la pantalla de anotación en mitad de una vuelta. Anotar sin conexión es el caso
- * de uso de esta aplicación, no un extra, así que la sesión rancia es el menor de
- * los dos males: cualquier llamada que falle con un 401 ya dispara ese camino
- * cuando toca, y antes de todo esto tampoco se revalidaba.
+ * la pantalla de anotación en mitad de una vuelta.
+ *
+ * **Ese motivo concreto ya no existe** (FE #514): el interceptor solo cierra
+ * sesión cuando el refresco responde un 401, y un fallo de red la conserva. Si
+ * se quiere recuperar la revalidación al volver, ahora se puede sin ese riesgo
+ * —queda por decidir en FE #505—. Se mantiene retirada de momento porque nadie
+ * ha medido que haga falta: cualquier llamada que falle con un 401 ya dispara
+ * ese camino cuando toca, y antes de todo esto tampoco se revalidaba.
  */
 
 /** Solo para las pruebas: esto vive en el módulo y sobrevive de una a otra. */

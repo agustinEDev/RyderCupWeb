@@ -118,6 +118,9 @@ const QuickMatchClassificationTable = ({
   holeScores = [],
   participants = [],
   currentParticipantId,
+  // Quiénes anotamos nosotros: de esos sabemos lo último, porque sale de este
+  // móvil. Del resto solo tenemos la última foto que dio el servidor
+  participantesAlDia = null,
   scoringFormat = null,
   standing = null,
   tees = [],
@@ -208,16 +211,35 @@ const QuickMatchClassificationTable = ({
             </tr>
           </thead>
           <tbody>
-            {ranking.map((row, index) => (
+            {ranking.map((row, index) => {
+              const atrasado = participantesAlDia !== null
+                && !participantesAlDia.includes(row.participantId);
+              return (
               <tr
                 key={row.participantId}
+                data-testid={`quick-match-clasificacion-fila-${row.participantId}`}
                 className={row.participantId === currentParticipantId ? 'bg-blue-50' : index % 2 === 1 ? 'bg-gray-50' : ''}
               >
-                <td className="px-2 py-1.5 text-left text-gray-500">{index + 1}</td>
+                {/* Sin puesto mientras falten datos: el orden mezclaría lo
+                    nuestro al día con lo suyo de hace rato, y pondría un «1»
+                    al lado de nuestro nombre solo porque a ellos no se les ha
+                    contado lo que llevan hecho desde el corte */}
+                <td className="px-2 py-1.5 text-left text-gray-500">
+                  {participantesAlDia === null
+                    ? <span data-testid="quick-match-clasificacion-puesto">{index + 1}</span>
+                    : '·'}
+                </td>
                 <td className="px-2 py-1.5 text-left font-medium text-gray-900">
                   {row.name}
                   {row.participantId === currentParticipantId && (
                     <span className="ml-1 text-xs text-primary">({t('scoring.classification.you')})</span>
+                  )}
+                  {/* Con texto y no solo con un gris: al sol el texto apagado
+                      no se lee, y un lector de pantalla no ve el color */}
+                  {atrasado && (
+                    <span className="ml-1 rounded bg-gray-100 px-1 text-xs text-gray-600">
+                      {t('scoring.classification.stale')}
+                    </span>
                   )}
                 </td>
                 {isMedal ? (
@@ -243,7 +265,8 @@ const QuickMatchClassificationTable = ({
                 </td>
                 <td className="px-2 py-1.5 text-center text-gray-500">{row.holesPlayed || '-'}</td>
               </tr>
-            ))}
+              );
+            })}
           </tbody>
         </table>
       </div>
