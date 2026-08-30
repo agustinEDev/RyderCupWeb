@@ -10,7 +10,11 @@ import {
 import * as offlineQueue from '../utils/scoringOfflineQueue';
 import { loQueSeSupo, olvida, recuerda } from '../services/loUltimoConocido';
 
-const POLL_INTERVAL = 10000; // 10 seconds
+// Un minuto, y no diez segundos: esto es golf, entre hoyo y hoyo pasan minutos
+// y preguntar seis veces por minuto gasta batería y datos para nada. Lo que no
+// puede esperar —enviar lo que quedó guardado en el móvil— no depende del
+// reloj: se dispara al volver la red y al volver a la aplicación, más abajo
+const POLL_INTERVAL = 60000; // 1 minute
 
 /**
  * Rechazos que no mejoran esperando, así que el golpe no se guarda para después.
@@ -204,6 +208,26 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
     setDiscrepancias([]);
     setPendientes(quickMatchId ? offlineQueue.size(quickMatchId) : 0);
   }, [quickMatchId]);
+
+  // Los dos momentos en los que de verdad importa preguntar, y que el reloj no
+  // ve: cuando el navegador dice que vuelve la red, y cuando el jugador vuelve
+  // a la aplicación —saca el móvil del bolsillo al llegar al hoyo—. El aviso
+  // del navegador no vale como verdad —en un campo con dos barras dice que hay
+  // conexión sin haberla— pero sí como excusa para probar: si el intento sale,
+  // es que había
+  useEffect(() => {
+    const alVolver = () => {
+      if (document.visibilityState !== 'visible') return;
+      fetchQuickMatch();
+    };
+    window.addEventListener('online', alVolver);
+    document.addEventListener('visibilitychange', alVolver);
+
+    return () => {
+      window.removeEventListener('online', alVolver);
+      document.removeEventListener('visibilitychange', alVolver);
+    };
+  }, [fetchQuickMatch]);
 
   useEffect(() => {
     holesLoadedRef.current = false;

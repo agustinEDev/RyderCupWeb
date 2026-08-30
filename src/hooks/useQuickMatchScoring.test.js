@@ -1258,3 +1258,89 @@ describe('useQuickMatchScoring · lo guardado no pisa la pantalla (FE #524, tabl
     expect(loQueSeSupo('qm-1')?.campo?.holes).toHaveLength(1);
   });
 });
+
+/**
+ * LA TABLA Q — cuándo se pregunta al servidor.
+ *
+ * Esto es golf: entre hoyo y hoyo pasan minutos, y preguntar cada diez
+ * segundos gasta batería y datos para nada. Pero el sondeo hace DOS trabajos y
+ * solo uno tolera esperar: traer lo que anotan otros aguanta un minuto; enviar
+ * lo que quedó guardado en el móvil, no —esa es la razón de ser de todo esto—.
+ *
+ * Así que se pregunta cada minuto, y además en los dos momentos en los que de
+ * verdad importa: cuando el navegador dice que vuelve la red, y cuando el
+ * jugador vuelve a la aplicación —saca el móvil del bolsillo al llegar al
+ * hoyo—. `navigator.onLine` no vale como verdad, pero como excusa para probar
+ * sí: si el intento sale, había red.
+ *
+ *   caso                          | qué pasa
+ *   ------------------------------|-------------------------------------
+ *   nadie toca nada               | se pregunta cada minuto
+ *   vuelve la red                 | se pregunta en el acto
+ *   se vuelve a la aplicación     | se pregunta en el acto
+ *   la aplicación se va al fondo  | no se pregunta por eso
+ */
+describe('useQuickMatchScoring · cuándo se pregunta (FE #524, tabla Q)', () => {
+  beforeEach(() => {
+    const almacen = new Map();
+    globalThis.localStorage = {
+      getItem: (k) => (almacen.has(k) ? almacen.get(k) : null),
+      setItem: (k, v) => almacen.set(k, String(v)),
+      removeItem: (k) => almacen.delete(k),
+    };
+    vi.clearAllMocks();
+    olvidaTodo();
+    offlineQueue.getByMatch.mockReturnValue([]);
+    offlineQueue.size.mockReturnValue(0);
+    getGolfCourseUseCase.execute.mockResolvedValue({ holes: [], tees: [] });
+    getQuickMatchUseCase.execute.mockResolvedValue(mockQuickMatch);
+  });
+
+  const monta = async () => {
+    const { result, unmount } = renderHook(() => useQuickMatchScoring('qm-1', 'user-1'));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    getQuickMatchUseCase.execute.mockClear();
+    return { result, unmount };
+  };
+
+  const conVisibilidad = (estado) => {
+    Object.defineProperty(document, 'visibilityState', { value: estado, configurable: true });
+    document.dispatchEvent(new window.Event('visibilitychange'));
+  };
+
+  it('cuando vuelve la red se pregunta sin esperar al reloj', async () => {
+    await monta();
+
+    await act(async () => { window.dispatchEvent(new window.Event('online')); });
+
+    expect(getQuickMatchUseCase.execute).toHaveBeenCalledTimes(1);
+  });
+
+  it('al volver a la aplicación se pregunta', async () => {
+    // El gesto de siempre: llegas al hoyo y sacas el móvil del bolsillo
+    await monta();
+
+    await act(async () => { conVisibilidad('visible'); });
+
+    expect(getQuickMatchUseCase.execute).toHaveBeenCalledTimes(1);
+  });
+
+  it('irse al fondo no dispara ninguna pregunta', async () => {
+    await monta();
+
+    await act(async () => { conVisibilidad('hidden'); });
+
+    expect(getQuickMatchUseCase.execute).not.toHaveBeenCalled();
+  });
+
+  it('al salir de la pantalla se dejan de escuchar los avisos', async () => {
+    // Si no, cada partida abierta deja su oyente colgado y una vuelta a la
+    // aplicación dispara tantas peticiones como pantallas se hayan visitado
+    const { unmount } = await monta();
+
+    unmount();
+    await act(async () => { window.dispatchEvent(new window.Event('online')); });
+
+    expect(getQuickMatchUseCase.execute).not.toHaveBeenCalled();
+  });
+});
