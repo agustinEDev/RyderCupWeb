@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import MyQuickMatchesPage from './MyQuickMatchesPage';
 
@@ -837,6 +837,47 @@ describe('MyQuickMatchesPage · llegar a la partida sin cobertura (FE #524, tabl
     await screen.findByText('Meis Foursomes');
 
     expect(JSON.parse(localStorage.getItem('rydercup-ultima-lista'))).toHaveLength(1);
+  });
+
+  it.each([[401], [403]])('un %i además BORRA lo guardado, no solo lo ignora', async (status) => {
+    // No usarlo esta vez no basta: seguía ahí para el siguiente fallo de red,
+    // y entonces sí se pintaba
+    localStorage.setItem('rydercup-ultima-lista', JSON.stringify(guardadas));
+    mockListMyQuickMatches.mockRejectedValue(Object.assign(new Error('fuera'), { status }));
+
+    renderPage();
+    await screen.findByText('fuera');
+
+    expect(localStorage.getItem('rydercup-ultima-lista')).toBeNull();
+  });
+
+  it('un 403 del REFRESCO no borra nada: no es la respuesta de la lista', async () => {
+    // Cuando el interceptor no consigue refrescar, propaga su propio error con
+    // `.response` puesta a la respuesta de `/auth/refresh-token`. Un 403 ahí es
+    // un caso en el que se decide a propósito NO tirar la sesión (FE #514), y
+    // borrar se llevaría la partida que se está jugando, sin vuelta atrás
+    localStorage.setItem('rydercup-ultima-lista', JSON.stringify(guardadas));
+    mockListMyQuickMatches.mockRejectedValue(
+      Object.assign(new Error('Failed to refresh token'), { response: { status: 403 } })
+    );
+
+    renderPage();
+    await waitFor(() => expect(mockListMyQuickMatches).toHaveBeenCalled());
+
+    expect(JSON.parse(localStorage.getItem('rydercup-ultima-lista'))).toHaveLength(1);
+  });
+
+  it('una respuesta que llega tras cerrar sesión no vuelve a guardar nada', async () => {
+    // El cierre de sesión acaba de borrarlo; si esta respuesta lo repusiera,
+    // quedarían para la siguiente carga sin cobertura de OTRA cuenta
+    let contesta;
+    mockListMyQuickMatches.mockImplementation(() => new Promise((r) => { contesta = r; }));
+
+    const { unmount } = renderPage();
+    unmount();
+    await act(async () => { contesta({ quickMatches: guardadas, total: 1 }); });
+
+    expect(localStorage.getItem('rydercup-ultima-lista')).toBeNull();
   });
 
   it('con la sesión caducada no enseña lo guardado', async () => {

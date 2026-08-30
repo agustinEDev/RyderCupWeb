@@ -15,7 +15,7 @@ import {
 import ConfirmModal from '../../components/modals/ConfirmModal';
 import PersonalRoundCalculator from '../../domain/services/PersonalRoundCalculator';
 import customToast from '../../utils/toast';
-import { laUltimaLista, recuerdaLaLista } from '../../services/loUltimoConocido';
+import { laUltimaLista, olvidaLoDeEstaCuenta, recuerdaLaLista } from '../../services/loUltimoConocido';
 
 /** `fetch` avisa de que no hubo respuesta con un `TypeError`; un fallo del
  *  código llega como cualquier otro Error y no debe disfrazarse de red. */
@@ -138,9 +138,15 @@ const MyQuickMatchesPage = () => {
   useEffect(() => {
     if (!user) return;
 
+    // La respuesta puede llegar DESPUÉS de cerrar sesión, y entonces volvería a
+    // guardar las partidas de la cuenta anterior —justo lo que el cierre acaba
+    // de borrar— dejándolas para la siguiente carga sin cobertura
+    let vigente = true;
+
     listMyQuickMatchesUseCase
       .execute({ page: 1, limit: 50 })
       .then((result) => {
+        if (!vigente) return;
         setQuickMatches(result.quickMatches);
         setExcludedIds(
           new Set(result.quickMatches.filter((qm) => qm.excludedFromStats).map((qm) => qm.id))
@@ -151,10 +157,22 @@ const MyQuickMatchesPage = () => {
         setSinCobertura(false);
       })
       .catch((err) => {
+        if (!vigente) return;
         // El 401 y el 403 desmienten: no hemos entrado, o esto no es nuestro.
         // Lo demás —sin respuesta, o el backend caído— no dice nada de la
         // lista, y sin ella el jugador se queda sin puerta de entrada
         const estado = err?.status ?? err?.response?.status;
+        // Y además se borra lo guardado: no usarlo esta vez no basta, porque
+        // seguía ahí para el siguiente fallo de red.
+        //
+        // Con `err.status` a secas, que es el de ESTA petición: cuando el
+        // interceptor no consigue refrescar, propaga su propio error con
+        // `.response` puesta a la respuesta de `/auth/refresh-token`. Un 403
+        // ahí —un proxy delante de la API— es un caso en el que el interceptor
+        // decide a propósito NO tirar la sesión (FE #514), y borrar aquí se
+        // llevaría por delante la partida que se está jugando, sin vuelta atrás
+        // y sin cobertura con la que recuperarla
+        if (err?.status === 401 || err?.status === 403) olvidaLoDeEstaCuenta();
         const guardadas = estado === 401 || estado === 403 ? null : laUltimaLista();
         setSinCobertura(esFalloDeRed(err));
         if (guardadas?.length) {
@@ -163,7 +181,11 @@ const MyQuickMatchesPage = () => {
         }
         setError(err);
       })
-      .finally(() => setIsLoading(false));
+      .finally(() => {
+        if (vigente) setIsLoading(false);
+      });
+
+    return () => { vigente = false; };
   }, [user]);
 
   // For each finished quick match, compute the current user's own result
