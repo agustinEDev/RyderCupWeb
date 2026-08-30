@@ -55,6 +55,14 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
   const [loadError, setLoadError] = useState(null);
   const [saveError, setSaveError] = useState(null);
   const [pendientes, setPendientes] = useState(0);
+  // Hoyos que el servidor rechazó para siempre, para poder decir cuáles fueron
+  const [perdidos, setPerdidos] = useState([]);
+  // Hoyos donde lo guardado no coincide con lo que hay: los resuelve el jugador
+  const [discrepancias, setDiscrepancias] = useState([]);
+  const vaciandoRef = useRef(false);
+  // El vaciado se declara más abajo y el sondeo está más arriba: la ref evita
+  // reordenarlo todo y el ciclo de dependencias entre los dos
+  const vaciarRef = useRef(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const holesLoadedRef = useRef(false);
@@ -78,6 +86,11 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
       if (miSeq !== estadoSeqRef.current) return;
       setQuickMatch(data);
       setLoadError(null);
+
+      // El sondeo ha respondido, así que hay conexión: es el momento de enviar
+      // lo que quedó guardado. Se le pasan los hoyos que el servidor ya tiene,
+      // que vienen en esta misma respuesta, para poder comparar sin pedir nada
+      vaciarRef.current?.(data);
 
       if (!holesLoadedRef.current) {
         holesLoadedRef.current = true;
@@ -121,6 +134,113 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
     : [];
 
   const totalHoles = holes.length || 18;
+
+  /**
+   * Envía un golpe guardado. Devuelve qué hacer con él.
+   */
+  const enviaGuardado = useCallback(
+    async (entrada, miParticipanteId) => {
+      const { holeNumber, participantId, scoreData } = entrada;
+      try {
+        if (participantId === miParticipanteId) {
+          await submitQuickMatchHoleScoreUseCase.execute(quickMatchId, holeNumber, scoreData.score);
+        } else {
+          await submitQuickMatchProxyHoleScoreUseCase.execute(quickMatchId, participantId, holeNumber, scoreData.score);
+        }
+        return 'enviado';
+      } catch (err) {
+        // Mismo criterio que al anotar: lo que no mejora esperando se descarta,
+        // y lo demás para el vaciado entero para reintentarlo luego
+        return seGuardaParaDespues(err) ? 'para' : 'descartar';
+      }
+    },
+    [quickMatchId]
+  );
+
+  /**
+   * Vacía lo guardado. Lo dispara el sondeo al responder: si responde, hay
+   * conexión, y no hace falta deducir un estado global de la red.
+   */
+  const vaciaLoGuardado = useCallback(
+    async (partida) => {
+      if (!quickMatchId) return;
+      // Todo sale de la respuesta, no del estado: cuando el primer sondeo
+      // dispara el vaciado, `quickMatch` todavia es null y `myParticipant`
+      // seria null, asi que un golpe propio se enviaria como proxy
+      const anotadosEnElServidor = partida?.holeScores;
+      const miParticipanteId = partida?.participants?.find(
+        (p) => p.userId === currentUserId
+      )?.participantId;
+      // Una vez a la vez: un golpe no puede enviarse por duplicado
+      if (vaciandoRef.current) return;
+      vaciandoRef.current = true;
+
+      try {
+        const enConflicto = [];
+        for (const entrada of offlineQueue.getByMatch(quickMatchId)) {
+          const enElServidor = (anotadosEnElServidor ?? []).find(
+            (hs) => hs.holeNumber === entrada.holeNumber && hs.participantId === entrada.participantId
+          );
+
+          // Ya hay anotación y no coincide: no se envía. La aplicación no sabe
+          // quién tiene razón, así que lo decide el jugador
+          if (enElServidor && enElServidor.score !== entrada.scoreData.score) {
+            enConflicto.push({
+              holeNumber: entrada.holeNumber,
+              participantId: entrada.participantId,
+              mio: entrada.scoreData.score,
+              enElServidor: enElServidor.score,
+              anotadoPor: enElServidor.recordedByParticipantId,
+            });
+            continue;
+          }
+
+          const queHacer = await enviaGuardado(entrada, miParticipanteId);
+          if (queHacer === 'para') break;
+
+          if (queHacer === 'descartar') {
+            setPerdidos((antes) => [...antes, { holeNumber: entrada.holeNumber, participantId: entrada.participantId }]);
+          }
+          offlineQueue.remove(quickMatchId, entrada.holeNumber, entrada.participantId);
+        }
+
+        setDiscrepancias(enConflicto);
+        setPendientes(offlineQueue.size(quickMatchId));
+      } finally {
+        vaciandoRef.current = false;
+      }
+    },
+    [quickMatchId, currentUserId, enviaGuardado]
+  );
+
+  // La ref se asigna en un efecto, no durante el render. El sondeo la lee
+  // despues de su `await`, para entonces este efecto ya ha corrido
+  useEffect(() => {
+    vaciarRef.current = vaciaLoGuardado;
+  }, [vaciaLoGuardado]);
+
+  /**
+   * El jugador decide, tras hablar con su compañero, qué anotación vale.
+   */
+  const resuelveDiscrepancia = useCallback(
+    async (holeNumber, participantId, cual) => {
+      const entrada = offlineQueue
+        .getByMatch(quickMatchId)
+        .find((e) => e.holeNumber === holeNumber && e.participantId === participantId);
+
+      if (cual === 'mio' && entrada) {
+        const queHacer = await enviaGuardado(entrada, myParticipant?.participantId);
+        if (queHacer === 'para') return;
+      }
+
+      offlineQueue.remove(quickMatchId, holeNumber, participantId);
+      setDiscrepancias((antes) =>
+        antes.filter((d) => !(d.holeNumber === holeNumber && d.participantId === participantId))
+      );
+      setPendientes(offlineQueue.size(quickMatchId));
+    },
+    [quickMatchId, enviaGuardado, myParticipant]
+  );
 
   const submitScore = useCallback(
     async (holeNumber, participantId, score) => {
@@ -261,6 +381,9 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
     setCurrentHole,
     submitScore,
     pendientes,
+    perdidos,
+    discrepancias,
+    resuelveDiscrepancia,
     completeMatch,
     cancelMatch,
     refetch: fetchQuickMatch,

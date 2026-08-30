@@ -324,3 +324,187 @@ describe('useQuickMatchScoring · anotar sin conexión (FE #515, tabla A)', () =
     expect(offlineQueue.enqueue).toHaveBeenCalledWith('qm-1', 7, { score: null }, 'user-1');
   });
 });
+
+/**
+ * LA TABLA B — vaciar los golpes guardados.
+ *
+ * Se dispara cuando el sondeo de la pantalla responde: si responde, hay
+ * conexión. No hace falta deducir un estado global de la red — el propio
+ * tráfico de esta pantalla ya es la señal, y es la más fiable que hay.
+ *
+ *   situación                          | qué pasa
+ *   hay pendientes y el sondeo responde| se envían en orden; el que llega se borra
+ *   uno no llega, o 401, o 5xx         | se para ahí; los demás esperan al siguiente
+ *   uno da 404/403/409/400             | se descarta ESE, sigue con los demás
+ *   el hoyo ya tiene anotación DISTINTA| no se envía: se aparta como discrepancia
+ *   el hoyo tiene la MISMA anotación   | se envía; no hay nada que contar
+ *   ya se estaba vaciando              | no se empieza otra vez
+ *
+ * LA TABLA C — resolver una discrepancia. La app no sabe quién tiene razón, así
+ * que no elige: lo hace el jugador después de hablar con su compañero.
+ *
+ *   elige el suyo   | se envía y sale de la lista
+ *   elige el que hay| se descarta el suyo y sale de la lista
+ */
+describe('useQuickMatchScoring · vaciar lo guardado (FE #515, tablas B y C)', () => {
+  const rechazo = (status) => Object.assign(new Error(`HTTP ${status}`), { status });
+  const pendiente = (holeNumber, score, participantId = 'user-1') =>
+    ({ matchId: 'qm-1', holeNumber, participantId, scoreData: { score } });
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    getGolfCourseUseCase.execute.mockResolvedValue({ holes: [], tees: [], name: 'Campo' });
+    getQuickMatchUseCase.execute.mockResolvedValue(mockQuickMatch);
+    offlineQueue.getByMatch.mockReturnValue([]);
+    submitQuickMatchHoleScoreUseCase.execute.mockResolvedValue({});
+    // `clearAllMocks` borra las llamadas, no la implementación: sin esto llega
+    // rechazando desde el test de proxy de la tabla A
+    submitQuickMatchProxyHoleScoreUseCase.execute.mockResolvedValue({});
+  });
+
+  const montaCon = async (pendientes, partida = mockQuickMatch) => {
+    offlineQueue.getByMatch.mockReturnValue(pendientes);
+    getQuickMatchUseCase.execute.mockResolvedValue(partida);
+    const { result } = renderHook(() => useQuickMatchScoring('qm-1', 'user-1'));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    return result;
+  };
+
+  it('envía lo guardado en cuanto el sondeo responde, y lo borra', async () => {
+    await montaCon([pendiente(7, 5)]);
+
+    await waitFor(() =>
+      expect(submitQuickMatchHoleScoreUseCase.execute).toHaveBeenCalledWith('qm-1', 7, 5)
+    );
+    await waitFor(() => expect(offlineQueue.remove).toHaveBeenCalledWith('qm-1', 7, 'user-1'));
+  });
+
+  it('un golpe de otro jugador sale por la ruta de proxy, no por la propia', async () => {
+    // Un anotador cubre a invitados —y en foursomes, a los cuatro—, así que en
+    // la cola hay golpes que no son suyos. Y el vaciado del primer sondeo corre
+    // cuando `quickMatch` todavía es null: si el participante saliera del
+    // estado, TODO iría por proxy, incluido lo propio.
+    await montaCon([pendiente(7, 5, 'guest-1'), pendiente(8, 4, 'user-1')]);
+
+    await waitFor(() =>
+      expect(submitQuickMatchProxyHoleScoreUseCase.execute)
+        .toHaveBeenCalledWith('qm-1', 'guest-1', 7, 5)
+    );
+    await waitFor(() =>
+      expect(submitQuickMatchHoleScoreUseCase.execute).toHaveBeenCalledWith('qm-1', 8, 4)
+    );
+    expect(submitQuickMatchProxyHoleScoreUseCase.execute).toHaveBeenCalledTimes(1);
+  });
+
+  it('si uno no llega, para ahí y no toca los demás', async () => {
+    submitQuickMatchHoleScoreUseCase.execute
+      .mockRejectedValueOnce(new TypeError('Failed to fetch'));
+
+    await montaCon([pendiente(7, 5), pendiente(8, 4)]);
+
+    await waitFor(() => expect(submitQuickMatchHoleScoreUseCase.execute).toHaveBeenCalledTimes(1));
+    expect(offlineQueue.remove).not.toHaveBeenCalled();
+  });
+
+  it.each([[401], [503]])('con %i tampoco sigue: no es culpa del golpe', async (status) => {
+    submitQuickMatchHoleScoreUseCase.execute.mockRejectedValueOnce(rechazo(status));
+
+    await montaCon([pendiente(7, 5), pendiente(8, 4)]);
+
+    await waitFor(() => expect(submitQuickMatchHoleScoreUseCase.execute).toHaveBeenCalledTimes(1));
+    expect(offlineQueue.remove).not.toHaveBeenCalled();
+  });
+
+  it('descarta el que el servidor rechaza y sigue con el resto', async () => {
+    submitQuickMatchHoleScoreUseCase.execute
+      .mockRejectedValueOnce(rechazo(409))
+      .mockResolvedValueOnce({});
+
+    const result = await montaCon([pendiente(7, 5), pendiente(8, 4)]);
+
+    await waitFor(() => expect(submitQuickMatchHoleScoreUseCase.execute).toHaveBeenCalledTimes(2));
+    expect(offlineQueue.remove).toHaveBeenCalledWith('qm-1', 7, 'user-1');
+    expect(result.current.perdidos).toContainEqual(expect.objectContaining({ holeNumber: 7 }));
+  });
+
+  it('un hoyo con anotación DISTINTA no se envía: se aparta', async () => {
+    // La app no sabe quién tiene razón, así que no elige
+    const conAnotacion = {
+      ...mockQuickMatch,
+      holeScores: [{ holeNumber: 7, participantId: 'user-1', score: 6, recordedByParticipantId: 'user-2' }],
+    };
+
+    const result = await montaCon([pendiente(7, 5)], conAnotacion);
+
+    expect(submitQuickMatchHoleScoreUseCase.execute).not.toHaveBeenCalled();
+    expect(result.current.discrepancias).toContainEqual(
+      expect.objectContaining({ holeNumber: 7, mio: 5, enElServidor: 6 })
+    );
+  });
+
+  it('si coincide, se envía y no se cuenta nada', async () => {
+    const igual = {
+      ...mockQuickMatch,
+      holeScores: [{ holeNumber: 7, participantId: 'user-1', score: 5, recordedByParticipantId: 'user-2' }],
+    };
+
+    const result = await montaCon([pendiente(7, 5)], igual);
+
+    await waitFor(() => expect(submitQuickMatchHoleScoreUseCase.execute).toHaveBeenCalled());
+    expect(result.current.discrepancias).toHaveLength(0);
+  });
+
+  it('una bola recogida frente a un número es una discrepancia', async () => {
+    // Los dos llegan sin número y significan lo contrario, así que el valor
+    // cuenta: `null` no es «no hay anotación»
+    const conNumero = {
+      ...mockQuickMatch,
+      holeScores: [{ holeNumber: 7, participantId: 'user-1', score: 5, recordedByParticipantId: 'user-2' }],
+    };
+
+    const result = await montaCon([pendiente(7, null)], conNumero);
+
+    expect(result.current.discrepancias).toHaveLength(1);
+    expect(submitQuickMatchHoleScoreUseCase.execute).not.toHaveBeenCalled();
+  });
+
+  it('no se vacía dos veces a la vez', async () => {
+    let suelta;
+    submitQuickMatchHoleScoreUseCase.execute.mockImplementation(
+      () => new Promise((resolve) => { suelta = resolve; })
+    );
+
+    const result = await montaCon([pendiente(7, 5)]);
+    await act(async () => { await result.current.refetch(); });
+
+    expect(submitQuickMatchHoleScoreUseCase.execute).toHaveBeenCalledTimes(1);
+    suelta?.({});
+  });
+
+  it('resolver a mi favor lo envía y lo saca de la lista', async () => {
+    const conAnotacion = {
+      ...mockQuickMatch,
+      holeScores: [{ holeNumber: 7, participantId: 'user-1', score: 6, recordedByParticipantId: 'user-2' }],
+    };
+    const result = await montaCon([pendiente(7, 5)], conAnotacion);
+
+    await act(async () => { await result.current.resuelveDiscrepancia(7, 'user-1', 'mio'); });
+
+    expect(submitQuickMatchHoleScoreUseCase.execute).toHaveBeenCalledWith('qm-1', 7, 5);
+    expect(result.current.discrepancias).toHaveLength(0);
+  });
+
+  it('resolver a favor del que hay descarta el mío sin enviarlo', async () => {
+    const conAnotacion = {
+      ...mockQuickMatch,
+      holeScores: [{ holeNumber: 7, participantId: 'user-1', score: 6, recordedByParticipantId: 'user-2' }],
+    };
+    const result = await montaCon([pendiente(7, 5)], conAnotacion);
+
+    await act(async () => { await result.current.resuelveDiscrepancia(7, 'user-1', 'elQueHay'); });
+
+    expect(submitQuickMatchHoleScoreUseCase.execute).not.toHaveBeenCalled();
+    expect(offlineQueue.remove).toHaveBeenCalledWith('qm-1', 7, 'user-1');
+    expect(result.current.discrepancias).toHaveLength(0);
+  });
+});
