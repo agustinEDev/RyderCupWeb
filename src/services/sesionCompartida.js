@@ -53,6 +53,57 @@ export const ESPERA_TRAS_FALLO_MS = 3_000;
  */
 const REINTENTOS_AUTOMATICOS = 3;
 
+/**
+ * A quién pertenece la sesión, apuntado en el dispositivo (FE #524).
+ *
+ * Al agotar los reintentos, esto bajaba a «resuelto y sin usuario», y para
+ * `ProtectedRoute` eso es «no has entrado»: al formulario de acceso, en mitad
+ * del campo, con la sesión intacta —comprobado: en cuanto vuelve la señal,
+ * `/current-user` responde 200 sin volver a entrar—. Y ahí ya no se puede
+ * anotar, que es justo para lo que hace falta la aplicación sin cobertura.
+ *
+ * Se guarda lo que devuelve el backend, no la entidad de dominio de
+ * `AuthContext`: quien lee de aquí espera el DTO, y sembrar con aquello hacía
+ * que el panel pintara un objeto como texto.
+ *
+ * El servidor sigue mandando. Esto solo evita el rebote al formulario mientras
+ * no hay a quién preguntar: la primera petición que llegue dirá si vale.
+ */
+const RECUERDO = 'rydercup-sesion-conocida';
+
+const apunta = (usuario) => {
+  try {
+    localStorage.setItem(RECUERDO, JSON.stringify(usuario));
+  } catch {
+    // Sin espacio, o en una ventana privada. Se seguirá echando al formulario
+    // sin cobertura, que es como estaba antes: no hay nada peor que perder
+  }
+};
+
+const olvidaElApunte = () => {
+  try {
+    localStorage.removeItem(RECUERDO);
+  } catch {
+    // Nada que hacer
+  }
+};
+
+/**
+ * Sin privilegios: esto vive en el dispositivo y se puede tocar a mano. El
+ * panel de administración lo defiende el backend de todas formas, pero enseñar
+ * sus botones sin poder confirmar nada sobra.
+ */
+const loApuntado = () => {
+  try {
+    const crudo = localStorage.getItem(RECUERDO);
+    if (!crudo) return null;
+    const usuario = JSON.parse(crudo);
+    return usuario && typeof usuario === 'object' ? { ...usuario, is_admin: false } : null;
+  } catch {
+    return null;
+  }
+};
+
 const NADA_SABIDO = { user: null, cargando: true, refrescando: false, error: null, resuelta: false };
 
 let instantanea = NADA_SABIDO;
@@ -123,6 +174,7 @@ const pideAlBackend = async (miGeneracion) => {
         // formulario que cerro el commit anterior
         if (!sigoValiendo()) return null;
 
+        olvidaElApunte();
         anota({ user: null, cargando: false, refrescando: false, error: null, resuelta: true });
         return null;
       }
@@ -145,6 +197,7 @@ const pideAlBackend = async (miGeneracion) => {
 
     clearDeviceRevocationFlag();
     fallosSeguidos = 0;
+    apunta(usuario);
     anota({ user: usuario, cargando: false, refrescando: false, error: null, resuelta: true });
 
     return usuario;
@@ -158,9 +211,24 @@ const pideAlBackend = async (miGeneracion) => {
     programaReintento();
     // `cargando` se queda arriba mientras haya reintento en camino: para quien
     // mira, esto sigue siendo «no se sabe», no «no hay sesion»
-    anota({ cargando: reintento !== null, refrescando: false, error: error.message });
+    if (reintento !== null) {
+      // Mientras quede reintento esto sigue siendo «no se sabe»
+      anota({ cargando: true, refrescando: false, error: error.message });
+      return null;
+    }
 
-    return null;
+    // Se acabaron los reintentos y no hay a quién preguntar. Antes se bajaba
+    // aquí a «resuelto y sin usuario» y el guardia mandaba al formulario
+    const recordado = instantanea.user ?? loApuntado();
+    anota({
+      user: recordado,
+      cargando: false,
+      refrescando: false,
+      error: error.message,
+      resuelta: recordado !== null,
+    });
+
+    return recordado;
   }
 };
 
@@ -244,6 +312,9 @@ export const anotaLaSesion = (usuarioDelBackend) => {
  * Sin esto, lo que quedara guardado aquí sobreviviría al cierre de sesión.
  */
 export const olvidaLaSesion = () => {
+  // Y lo apuntado se va con ella: si no, la próxima vez sin cobertura se
+  // entraría como quien acaba de salir
+  olvidaElApunte();
   // Sube la generación: si hay una respuesta en vuelo, ya no manda. Si no,
   // llegaría con el usuario de antes y volvería a dar por buena una sesión que
   // acaba de cerrarse

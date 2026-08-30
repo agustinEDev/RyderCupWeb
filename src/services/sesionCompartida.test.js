@@ -274,3 +274,130 @@ describe('la consulta compartida de la sesión', () => {
     expect(loQueHaySobreLaSesion()).toBe(loQueHaySobreLaSesion());
   });
 });
+
+/**
+ * LA TABLA L — sin señal, la app no te echa (FE #524).
+ *
+ * Al agotar los reintentos, `cargando` bajaba con el usuario en nulo, y para
+ * `ProtectedRoute` eso es «no has entrado»: al formulario de acceso, en mitad
+ * del campo, con la sesión intacta. Y ahí ya no se puede anotar, que es justo
+ * lo que hace falta cuando no hay cobertura.
+ *
+ * Así que quien confirma la sesión deja apuntado a quién pertenece, y si luego
+ * no hay forma de preguntar, se sigue con eso. El servidor sigue mandando: la
+ * primera petición que reciba dirá si vale o no.
+ *
+ *   caso                             | qué pasa
+ *   ---------------------------------|-----------------------------------------
+ *   el backend confirma              | se apunta quién eres
+ *   sin señal, con eso apuntado      | se sigue con ello: se puede anotar
+ *   sin señal, sin nada apuntado     | al formulario: no hay nada que recordar
+ *   el backend dice 401              | se borra lo apuntado
+ *   se cierra sesión                 | se borra lo apuntado
+ *   sin confirmar, no hay privilegios| `is_admin` no se hereda de lo apuntado
+ */
+describe('sesionCompartida · sin señal no se echa a nadie (FE #524)', () => {
+  const RECUERDO = 'rydercup-sesion-conocida';
+  const sinRed = () => Promise.reject(new TypeError('Failed to fetch'));
+
+  // Este fichero corre sin navegador, así que el almacenamiento se pone aquí:
+  // el módulo lo envuelve en try/catch, y sin esto los tests pasarían por no
+  // haber almacenamiento en vez de por lo que dicen comprobar
+  beforeEach(() => {
+    const guardado = new Map();
+    globalThis.localStorage = {
+      getItem: (k) => (guardado.has(k) ? guardado.get(k) : null),
+      setItem: (k, v) => guardado.set(k, String(v)),
+      removeItem: (k) => guardado.delete(k),
+    };
+    localStorage.removeItem(RECUERDO);
+    reiniciaLaSesionCompartida();
+    peticiones.length = 0;
+    respuestas.length = 0;
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.restoreAllMocks();
+  });
+
+  // Los reintentos son tres, con espera creciente: al agotarlos es cuando el
+  // estado bajaba a «resuelto y sin usuario»
+  const agotaLosReintentos = async () => {
+    vi.useFakeTimers();
+    for (let i = 0; i < 5; i += 1) respuestas.push(sinRed);
+    const p = consultaLaSesion();
+    await vi.advanceTimersByTimeAsync(60_000);
+    await p;
+  };
+
+  it('al confirmar la sesión apunta a quién pertenece', async () => {
+    respuestas.push({ ok: true, status: 200, json: async () => ({ id: 'u-1', email: 'a@b.c', is_admin: false }) });
+
+    await consultaLaSesion();
+
+    expect(JSON.parse(localStorage.getItem(RECUERDO)).id).toBe('u-1');
+  });
+
+  it('sin señal sigue con lo apuntado, en vez de mandar al formulario', async () => {
+    localStorage.setItem(RECUERDO, JSON.stringify({ id: 'u-1', email: 'a@b.c', is_admin: false }));
+
+    await agotaLosReintentos();
+
+    const estado = loQueHaySobreLaSesion();
+    expect(estado.user?.id).toBe('u-1');
+    expect(estado.cargando).toBe(false);
+  });
+
+  it('sin señal y sin nada apuntado, al formulario como siempre', async () => {
+    await agotaLosReintentos();
+
+    const estado = loQueHaySobreLaSesion();
+    expect(estado.user).toBeNull();
+    expect(estado.cargando).toBe(false);
+  });
+
+  it('sin nada apuntado, un tropiezo no se guarda como respuesta', async () => {
+    // Con esto por resuelto, quien montara después leería «aquí no hay sesión»
+    // y no volvería a preguntar en toda la carga: un corte de red se llevaría
+    // por delante la visita entera
+    await agotaLosReintentos();
+    peticiones.length = 0;
+    // El helper deja fallos de sobra en la cola: si no se vacían, esta consulta
+    // consumiría uno y el test pasaría por el motivo equivocado
+    respuestas.length = 0;
+
+    respuestas.push({ ok: true, status: 200, json: async () => ({ id: 'u-1' }) });
+    await consultaLaSesion();
+
+    expect(peticiones).toHaveLength(1);
+    expect(loQueHaySobreLaSesion().user?.id).toBe('u-1');
+  });
+
+  it('sin confirmar no se heredan privilegios', async () => {
+    // Lo apuntado vive en el dispositivo y se puede tocar. El panel lo defiende
+    // el backend, pero enseñar sus botones sin poder confirmar nada sobra
+    localStorage.setItem(RECUERDO, JSON.stringify({ id: 'u-1', email: 'a@b.c', is_admin: true }));
+
+    await agotaLosReintentos();
+
+    expect(loQueHaySobreLaSesion().user.is_admin).toBe(false);
+  });
+
+  it('un 401 borra lo apuntado: esa sesión ya no vale', async () => {
+    localStorage.setItem(RECUERDO, JSON.stringify({ id: 'u-1' }));
+    respuestas.push({ ok: false, status: 401 });
+
+    await consultaLaSesion();
+
+    expect(localStorage.getItem(RECUERDO)).toBeNull();
+  });
+
+  it('cerrar sesión borra lo apuntado', () => {
+    localStorage.setItem(RECUERDO, JSON.stringify({ id: 'u-1' }));
+
+    olvidaLaSesion();
+
+    expect(localStorage.getItem(RECUERDO)).toBeNull();
+  });
+});
