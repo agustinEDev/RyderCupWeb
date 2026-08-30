@@ -1521,3 +1521,110 @@ describe('QuickMatchScoringPage · la clasificación no se inventa (FE #515, tab
     expect(screen.getByTestId('quick-match-hole-btn-1').className).toContain('green');
   });
 });
+
+/**
+ * LA TABLA K — lo que se avisa, avisado donde toca. De probarlo en el campo.
+ *
+ * Quedarse sin cobertura NO es un error: la aplicación ya lo cuenta en ámbar y
+ * guarda el golpe. Pintar además el recuadro rojo del sondeo deja dos avisos
+ * juntos diciendo lo contrario el uno del otro.
+ *
+ * Y avisar de que faltan datos «de los demás» solo tiene sentido si hay
+ * alguien a quien no anotamos nosotros. Cuando el grupo entero se anota desde
+ * este móvil —lo normal en un cuarteto con invitados— la clasificación está
+ * completa, así que ni se avisa ni se le quita el puesto.
+ *
+ *   caso                                  | qué se ve
+ *   --------------------------------------|-------------------------------
+ *   el sondeo falla por RED               | ámbar, nunca el rojo
+ *   el sondeo falla con un estado (5xx…)  | el rojo, como siempre
+ *   anoto yo a todo el grupo, juego libre | puestos, y sin aviso: está entera
+ *   hay alguien a quien no anoto          | aviso, marca y sin puestos
+ *   match play con golpes sin enviar      | aviso propio: el resultado lo
+ *                                         | calcula el servidor, y le faltan
+ */
+describe('QuickMatchScoringPage · los avisos, tras probarlo en el campo (FE #515, tabla K)', () => {
+  const conGolpes = [{ holeNumber: 1, participantId: 'user-1', score: 5, recordedByParticipantId: null }];
+
+  const pinta = (extra) => {
+    mockUseQuickMatchScoring.mockReturnValue({
+      ...baseHookState,
+      quickMatch: { ...baseQuickMatch, status: 'IN_PROGRESS', isCompleted: false, holeScores: [] },
+      isScorer: true,
+      coveredParticipantIds: ['user-1'],
+      holes: [{ holeNumber: 1, par: 4, strokeIndex: 5 }],
+      totalHoles: 1,
+      setCurrentHole: vi.fn(),
+      submitScore: vi.fn(),
+      completeMatch: vi.fn(),
+      cancelMatch: vi.fn(),
+      refetch: vi.fn(),
+      holeScoresVisibles: [],
+      pendientes: 0,
+      perdidos: [],
+      discrepancias: [],
+      resuelveDiscrepancia: vi.fn(),
+      ...extra,
+    });
+    return renderPage();
+  };
+
+  const verClasificacion = () => fireEvent.click(screen.getByTestId('quick-match-tab-classification'));
+
+  beforeEach(() => vi.clearAllMocks());
+
+  it('un sondeo que no llega no pinta el recuadro rojo', () => {
+    // Sin cobertura el sondeo falla cada diez segundos. El rojo diría «ha
+    // ocurrido un error» justo debajo del ámbar que dice que está todo guardado
+    pinta({ pendientes: 1, loadError: new TypeError('Failed to fetch') });
+
+    expect(screen.getByTestId('quick-match-pendientes')).toBeInTheDocument();
+    expect(screen.queryByTestId('quick-match-save-error')).not.toBeInTheDocument();
+  });
+
+  it('sin nada guardado, un sondeo que no llega lo dice en ámbar', () => {
+    // Que no haya golpes pendientes no quita que la pantalla lleve un rato sin
+    // actualizarse: si no se dice, se lee como si estuviera al día
+    pinta({ pendientes: 0, loadError: new TypeError('Failed to fetch') });
+
+    expect(screen.getByTestId('quick-match-sin-conexion')).toBeInTheDocument();
+    expect(screen.queryByTestId('quick-match-save-error')).not.toBeInTheDocument();
+  });
+
+  it('un fallo del servidor sí es un error, y sale en rojo', () => {
+    pinta({ pendientes: 0, loadError: Object.assign(new Error('boom'), { status: 500 }) });
+
+    expect(screen.getByTestId('quick-match-save-error')).toBeInTheDocument();
+    expect(screen.queryByTestId('quick-match-sin-conexion')).not.toBeInTheDocument();
+  });
+
+  it('si anoto yo a todo el grupo, la clasificación está entera', () => {
+    // Todos los golpes salen de este móvil: no falta nada de nadie
+    pinta({ pendientes: 1, holeScoresVisibles: conGolpes, coveredParticipantIds: ['user-1', 'user-2'] });
+    verClasificacion();
+
+    expect(screen.queryByTestId('quick-match-clasificacion-atrasada')).not.toBeInTheDocument();
+    expect(screen.getAllByTestId('quick-match-clasificacion-puesto').length).toBeGreaterThan(0);
+  });
+
+  it('con alguien a quien no anoto, avisa y quita los puestos', () => {
+    pinta({ pendientes: 1, holeScoresVisibles: conGolpes, coveredParticipantIds: ['user-1'] });
+    verClasificacion();
+
+    expect(screen.getByTestId('quick-match-clasificacion-atrasada')).toBeInTheDocument();
+    expect(screen.queryByTestId('quick-match-clasificacion-puesto')).not.toBeInTheDocument();
+  });
+
+  it('en match play el aviso es otro: el resultado lo calcula el servidor', () => {
+    // Aquí no hay tabla que recalcular, y el «2 up» viene ya hecho de fuera:
+    // aunque anotemos nosotros a todos, le faltan los golpes sin enviar
+    pinta({
+      pendientes: 1,
+      coveredParticipantIds: ['user-1', 'user-2'],
+      quickMatch: { ...baseQuickMatch, status: 'IN_PROGRESS', isCompleted: false, holeScores: [], scoringFormat: null, matchFormat: 'SINGLES' },
+    });
+    verClasificacion();
+
+    expect(screen.getByTestId('quick-match-resultado-atrasado')).toBeInTheDocument();
+  });
+});

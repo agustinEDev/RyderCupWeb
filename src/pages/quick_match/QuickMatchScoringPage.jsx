@@ -116,6 +116,15 @@ const QuickMatchScoringPage = () => {
   // El conflicto lo destapa el sondeo, no un toque del jugador, así que puede
   // aparecer con otro aviso ya abierto. Espera su turno: dos ventanas a la
   // misma altura se tapan, y el foco guardado para volver se perdería
+  // Si el grupo entero se anota desde este móvil —lo normal en un cuarteto con
+  // invitados— no falta nada de nadie: la clasificación está completa, así que
+  // ni se avisa ni se le quita el puesto a nadie
+  const hayQuienNoAnoto = (quickMatch?.participants ?? []).some(
+    (p) => !coveredParticipantIds.includes(p.participantId)
+  );
+  const esJuegoLibre = quickMatch?.scoringFormat === 'MEDAL' || quickMatch?.scoringFormat === 'STABLEFORD';
+  const faltanDatosDeOtros = pendientes > 0 && hayQuienNoAnoto;
+
   const hayDiscrepancia = discrepancia != null && !showCancelConfirm && !showFinishConfirm;
   const jugadorEnDisputa = discrepancia
     ? quickMatch?.participants?.find((p) => p.participantId === discrepancia.participantId)
@@ -124,6 +133,13 @@ const QuickMatchScoringPage = () => {
   // anotación: sin esto los botones leían «Poner el mío ()»
   const comoSeLee = (valor) =>
     valor === null || valor === undefined ? t('scoring.offline.pickedUp') : valor;
+
+  // Quedarse sin cobertura no es un error: el sondeo falla cada diez segundos
+  // y la pantalla ya lo cuenta en ámbar. El rojo, además, quedaba justo debajo
+  // del ámbar diciendo lo contrario. Un fallo CON estado sí es un error de
+  // verdad —el servidor contestó algo— y ese se sigue enseñando
+  const sondeoSinRespuesta = !!loadError && (loadError.status ?? loadError.response?.status) === undefined;
+  const errorDeVerdad = saveError || (loadError && !sondeoSinRespuesta);
 
   const hoyosPerdidos = [...new Set((perdidos ?? []).map((x) => x.holeNumber))].sort((a, b) => a - b);
 
@@ -405,6 +421,19 @@ const QuickMatchScoringPage = () => {
           guardar primero porque es lo que el anotador acaba de intentar. */}
       {avisoDePendientes}
 
+      {/* Que no haya golpes pendientes no quita que la pantalla lleve un rato
+          sin actualizarse: sin decirlo, se lee como si estuviera al día */}
+      {sondeoSinRespuesta && quickMatch && pendientes === 0 && (
+        <div className="max-w-4xl mx-auto px-4 pt-4">
+          <p
+            data-testid="quick-match-sin-conexion"
+            className="bg-amber-50 border border-amber-200 text-amber-800 rounded-lg p-3 text-sm"
+          >
+            {t('scoring.offline.noSeActualiza')}
+          </p>
+        </div>
+      )}
+
       {perdidos?.length > 0 && (
         <div className="max-w-4xl mx-auto px-4 pt-4">
           <p
@@ -424,7 +453,7 @@ const QuickMatchScoringPage = () => {
         </div>
       )}
 
-      {(saveError || loadError) && quickMatch && (
+      {errorDeVerdad && quickMatch && (
         <div className="max-w-4xl mx-auto px-4 pt-4">
           <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-center justify-between">
             <p className="text-sm text-red-600" data-testid="quick-match-scoring-error">
@@ -586,7 +615,7 @@ const QuickMatchScoringPage = () => {
               solo tenemos la última foto del servidor: lo que hayan anotado
               desde el corte no ha llegado. Así que se pintan los dos, cada
               jugador atrasado va marcado, y no se afirma quién va primero */}
-          {pendientes > 0 && (
+          {esJuegoLibre && faltanDatosDeOtros && (
             <p
               data-testid="quick-match-clasificacion-atrasada"
               className="bg-amber-50 border border-amber-200 text-amber-800 rounded-lg p-3 text-sm mb-3"
@@ -594,12 +623,24 @@ const QuickMatchScoringPage = () => {
               {t('scoring.offline.classificationStale')}
             </p>
           )}
+
+          {/* En match play no hay tabla que recalcular: el «2 up» viene ya
+              hecho del servidor, y le faltan los golpes que siguen en el móvil
+              aunque los hayamos anotado nosotros todos */}
+          {!esJuegoLibre && pendientes > 0 && (
+            <p
+              data-testid="quick-match-resultado-atrasado"
+              className="bg-amber-50 border border-amber-200 text-amber-800 rounded-lg p-3 text-sm mb-3"
+            >
+              {t('scoring.offline.standingStale')}
+            </p>
+          )}
           <QuickMatchClassificationTable
             holes={holes}
             holeScores={holeScoresVisibles}
             participants={quickMatch?.participants ?? []}
             currentParticipantId={myParticipant?.participantId}
-            participantesAlDia={pendientes > 0 ? coveredParticipantIds : null}
+            participantesAlDia={faltanDatosDeOtros ? coveredParticipantIds : null}
             scoringFormat={quickMatch?.scoringFormat}
             standing={quickMatch?.standing}
             tees={tees}
