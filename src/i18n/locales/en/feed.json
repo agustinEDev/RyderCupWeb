@@ -44,5 +44,6 @@
     "confirmOff": "Turning this off deletes what you already published, and turning it back on won't restore it. Continue?",
     "turnedOff": "Your activity is no longer published",
     "turnedOn": "Your activity is published again"
-  }
+  },
+  "sinCoberturaDetalle": "The activity could not be fetched. Check again when you have coverage."
 }

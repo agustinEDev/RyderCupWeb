@@ -17,10 +17,8 @@ import PersonalRoundCalculator from '../../domain/services/PersonalRoundCalculat
 import customToast from '../../utils/toast';
 import { laUltimaLista, olvidaLoDeEstaCuenta, recuerdaLaLista } from '../../services/loUltimoConocido';
 
-/** `fetch` avisa de que no hubo respuesta con un `TypeError`; un fallo del
- *  código llega como cualquier otro Error y no debe disfrazarse de red. */
-const esFalloDeRed = (err) => err instanceof TypeError || !globalThis.navigator?.onLine;
 import BlockLoader from '../../components/ui/BlockLoader';
+import { esFalloDeRed } from '../../utils/sinCobertura';
 
 const STATUS_STYLES = {
   PENDING: 'bg-amber-100 text-amber-800',

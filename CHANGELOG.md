@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [2.24.1] - 2026-08-30
+
+### Fixed
+
+- **Sin cobertura, la aplicación lo dice.** Quedarse sin red solo se notaba por lo que NO pasaba: listas vacías, buscadores que no traían nada y avisos de error donde no había ningún error. Ahora un aviso lo anuncia en toda la aplicación mientras dure.
+
+  Aparece cuando el móvil afirma que no hay conexión. Que no aparezca no garantiza que la haya —con dos barras en el campo el teléfono se sigue considerando conectado—, así que cada pantalla sigue avisando por su cuenta cuando una petición se queda sin respuesta.
+
+- **Ya no aparecen mensajes técnicos en inglés.** Sin cobertura, en la aplicación instalada, dentro del formulario de nueva partida salía en rojo `FetchEvent.respondWith received an error`, con la dirección de la API dentro. Era el aviso interno del navegador, que se estaba enseñando tal cual. Pasa a la consola, que es su sitio.
+
+- **Y en Actividad salía `errors.generic`**, literalmente: el texto de ese aviso no existía y se pintaba el nombre interno de la clave.
+
+- **La aplicación ya no dice que no tienes nada cuando lo que pasa es que no ha podido preguntar.** Sin cobertura, «Mis Competiciones» enseñaba «Mostrando 0 de 0» y ofrecía crear tu primera competición, y Actividad decía «Aún no hay nada que contar». A quien tiene las suyas, además, le desaparecían de la pantalla. Ahora se conserva lo que hubiera y se explica que no se ha podido consultar.
+
+- **El buscador de campos tampoco da por hecho que un campo no existe.** Sin red decía «no se han encontrado campos» y ofrecía darlo de alta —que también necesita red— sobre una búsqueda que nunca llegó a responderse.
+
+- **Y cuando el error viene del servidor, se sigue viendo el motivo.** «Ese jugador ya es participante» o «el hándicap se sale de rango» son cosas que hay que poder leer para saber qué cambiar.
+
 ## [2.24.0] - 2026-08-30
 
 ### Added

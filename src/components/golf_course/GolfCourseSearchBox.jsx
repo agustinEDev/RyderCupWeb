@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Search, MapPin, AlertCircle, Navigation } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { esFalloDeRed, mensajeDeError } from '../../utils/sinCobertura';
 import { listGolfCoursesUseCase } from '../../composition';
 import { roundCoordinate } from '../../utils/geo';
 import { getCountryFlag } from '../../utils/countryUtils';
@@ -84,6 +85,7 @@ const GolfCourseSearchBox = ({
   allowOtherCountries = false
 }) => {
   const { t, i18n } = useTranslation('golfCourses');
+  const { t: tComun } = useTranslation('common');
   const [searchQuery, setSearchQuery] = useState('');
   // null mientras no se haya concedido el permiso. Se pide solo al pulsar el
   // botón: hacerlo al abrir dispara el diálogo del navegador a quien únicamente
@@ -173,8 +175,21 @@ const GolfCourseSearchBox = ({
       } catch (err) {
         if (cancelled) return;
         console.error('Error loading golf courses:', err);
-        setError(err.message || t('searchBox.errorLoading', 'Error loading golf courses'));
-        setResult({ countryCode, courses: [], total: 0, widened: false });
+        // El `message` va a la consola y NO a la pantalla: sin cobertura, en la
+        // aplicación instalada, ahí venía el aviso crudo del service worker
+        // —«FetchEvent.respondWith received an error»— con la URL de la API
+        // dentro, en rojo y en inglés, dentro del formulario
+        setError(
+          mensajeDeError(err, {
+            sinConexion: tComun('sinConexion.mensaje'),
+            generico: t('searchBox.errorLoading', 'Error loading golf courses'),
+          })
+        );
+        // Sin red NO se vacían los resultados: hacerlo pintaba «no se han
+        // encontrado campos» y ofrecía dar de alta uno nuevo —que también
+        // necesita red— sobre una pregunta que nunca tuvo respuesta. Y se
+        // llevaba por delante lo que ya estaba en pantalla
+        if (!esFalloDeRed(err)) setResult({ countryCode, courses: [], total: 0, widened: false });
       } finally {
         if (!cancelled) setIsLoading(false);
       }
@@ -184,7 +199,7 @@ const GolfCourseSearchBox = ({
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [countryCode, searchQuery, t, nearbyLat, nearbyLon, searchingNearby, allowOtherCountries, selectedCourse]);
+  }, [countryCode, searchQuery, t, tComun, nearbyLat, nearbyLon, searchingNearby, allowOtherCountries, selectedCourse]);
 
   // Solo valen los resultados del país que se está mirando ahora
   const courses = result.countryCode === countryCode ? result.courses : [];

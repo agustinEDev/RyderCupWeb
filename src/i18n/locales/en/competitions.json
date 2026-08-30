@@ -26,7 +26,8 @@
     "golfCoursesCount_one": "{{count}} golf course",
     "golfCoursesCount_other": "{{count}} golf courses",
     "countriesCount_one": "{{count}} country",
-    "countriesCount_other": "{{count}} countries"
+    "countriesCount_other": "{{count}} countries",
+    "sinCoberturaDetalle": "The list could not be fetched. Whatever you have is still there: check again when you have coverage."
   },
   "create": {
     "title": "Create Competition",

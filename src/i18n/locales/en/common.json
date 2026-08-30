@@ -126,5 +126,12 @@
     "moreResults_one": "1 more country — keep typing to narrow it down",
     "moreResults_other": "{{count}} more countries — keep typing to narrow it down"
   },
-  "brandMarkAlt": "RyderCupFriends logo"
+  "brandMarkAlt": "RyderCupFriends logo",
+  "sinConexion": {
+    "aviso": "No connection. What you see may be out of date.",
+    "mensaje": "No connection. Try again when you have coverage."
+  },
+  "errors": {
+    "generic": "The operation could not be completed. Please try again."
+  }
 }
