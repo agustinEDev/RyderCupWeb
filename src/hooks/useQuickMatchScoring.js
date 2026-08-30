@@ -7,8 +7,28 @@ import {
   completeQuickMatchUseCase,
   cancelQuickMatchUseCase,
 } from '../composition';
+import * as offlineQueue from '../utils/scoringOfflineQueue';
 
 const POLL_INTERVAL = 10000; // 10 seconds
+
+/**
+ * Rechazos que no mejoran esperando, así que el golpe no se guarda para después.
+ *
+ * - 404: la partida ya no existe
+ * - 403: no eres anotador, o no te toca ese jugador
+ * - 409: la partida está terminada o cancelada
+ * - 400: el golpe no es válido
+ *
+ * El 401 NO está: ahí el problema es la sesión, no el golpe, y descartarlo sería
+ * tirar una anotación buena por un motivo que se arregla solo.
+ */
+const NO_MEJORA_ESPERANDO = new Set([400, 403, 404, 409]);
+
+const seGuardaParaDespues = (error) => {
+  const estado = error?.status ?? error?.response?.status;
+  // Sin estado es que no llegó respuesta: se guarda
+  return estado === undefined || !NO_MEJORA_ESPERANDO.has(estado);
+};
 
 /**
  * Central hook for quick match scoring: fetches the match + course holes,
@@ -34,6 +54,7 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
   // pantalla por un fallo de red pasajero.
   const [loadError, setLoadError] = useState(null);
   const [saveError, setSaveError] = useState(null);
+  const [pendientes, setPendientes] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const holesLoadedRef = useRef(false);
@@ -115,7 +136,20 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
         setSaveError(null);
         await fetchQuickMatch();
       } catch (err) {
-        setSaveError(err);
+        if (seGuardaParaDespues(err)) {
+          // Se guarda en el móvil y NO se enseña error: para el jugador el
+          // golpe está anotado, solo que todavía no ha salido de aquí
+          offlineQueue.enqueue(quickMatchId, holeNumber, { score }, participantId);
+          setPendientes(offlineQueue.size(quickMatchId));
+          setSaveError(null);
+        } else {
+          // El servidor lo rechaza por algo que no cambia con el tiempo. Se
+          // dice, y se dice DE QUÉ HOYO: el caso realista es anotar sin
+          // cobertura y que alguien termine la partida mientras tanto, y ahí lo
+          // menos que se puede hacer es decir cuál se perdió
+          err.holeNumber = holeNumber;
+          setSaveError(err);
+        }
       } finally {
         setIsSubmitting(false);
       }
@@ -226,6 +260,7 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
 
     setCurrentHole,
     submitScore,
+    pendientes,
     completeMatch,
     cancelMatch,
     refetch: fetchQuickMatch,

@@ -2,6 +2,14 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, waitFor, act } from '@testing-library/react';
 import { useQuickMatchScoring } from './useQuickMatchScoring';
 
+vi.mock('../utils/scoringOfflineQueue', () => ({
+  enqueue: vi.fn(),
+  remove: vi.fn(),
+  getByMatch: vi.fn(() => []),
+  size: vi.fn(() => 0),
+  clear: vi.fn(),
+}));
+
 vi.mock('../composition', () => ({
   getQuickMatchUseCase: { execute: vi.fn() },
   getGolfCourseUseCase: { execute: vi.fn() },
@@ -15,7 +23,10 @@ import {
   getQuickMatchUseCase,
   getGolfCourseUseCase,
   cancelQuickMatchUseCase,
+  submitQuickMatchHoleScoreUseCase,
+  submitQuickMatchProxyHoleScoreUseCase,
 } from '../composition';
+import * as offlineQueue from '../utils/scoringOfflineQueue';
 
 const mockQuickMatch = {
   id: 'qm-1',
@@ -199,5 +210,117 @@ describe('useQuickMatchScoring · cancelar la partida', () => {
 
     expect(resultado.ok).toBe(false);
     expect(cancelQuickMatchUseCase.execute).not.toHaveBeenCalled();
+  });
+});
+
+/**
+ * LA TABLA A — qué pasa al anotar un golpe, según cómo termine SU envío.
+ *
+ * Se decide por el resultado del envío y no por lo que crea el estado de
+ * conexión: así no hay ninguna ventana en la que la aplicación se crea
+ * conectada y pierda el golpe en silencio.
+ *
+ *   cómo termina el envío        | qué pasa
+ *   -----------------------------|------------------------------------------
+ *   llega bien                   | guardado en el servidor; nada pendiente
+ *   no llega respuesta (red)     | se guarda en el móvil
+ *   401 la sesión no vale        | se guarda: el problema no es el golpe
+ *   5xx el servidor falla        | se guarda: ahora está mal, luego quizá no
+ *   404 / 403 / 409 / 400        | NO se guarda; se dice por qué. Reintentar
+ *                                | no cambiaría nada
+ *
+ * Y una regla que atraviesa la tabla: **guardar no es un error**. Para el
+ * jugador el golpe está anotado, solo que todavía no ha salido del móvil, así
+ * que no se le enseña el recuadro rojo; eso se reserva para lo que de verdad no
+ * se pudo guardar.
+ */
+describe('useQuickMatchScoring · anotar sin conexión (FE #515, tabla A)', () => {
+  const rechazo = (status) => Object.assign(new Error(`HTTP ${status}`), { status });
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    offlineQueue.enqueue.mockClear();
+    getQuickMatchUseCase.execute.mockResolvedValue(mockQuickMatch);
+    getGolfCourseUseCase.execute.mockResolvedValue({ holes: [], tees: [], name: 'Campo' });
+  });
+
+  const anota = async (fallo) => {
+    if (fallo) submitQuickMatchHoleScoreUseCase.execute.mockRejectedValue(fallo);
+    else submitQuickMatchHoleScoreUseCase.execute.mockResolvedValue({});
+
+    const { result } = renderHook(() => useQuickMatchScoring('qm-1', 'user-1'));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    await act(async () => { await result.current.submitScore(7, 'user-1', 5); });
+    return result;
+  };
+
+  it('llega bien: no se guarda nada en el móvil', async () => {
+    await anota(null);
+
+    expect(offlineQueue.enqueue).not.toHaveBeenCalled();
+  });
+
+  it('no llega respuesta: se guarda en el móvil', async () => {
+    await anota(new TypeError('Failed to fetch'));
+
+    expect(offlineQueue.enqueue).toHaveBeenCalledWith('qm-1', 7, { score: 5 }, 'user-1');
+  });
+
+  it('401: se guarda, porque el problema es la sesión y no el golpe', async () => {
+    await anota(rechazo(401));
+
+    expect(offlineQueue.enqueue).toHaveBeenCalled();
+  });
+
+  it('5xx: se guarda, porque el servidor puede ir bien después', async () => {
+    await anota(rechazo(503));
+
+    expect(offlineQueue.enqueue).toHaveBeenCalled();
+  });
+
+  it.each([404, 403, 409, 400])('%i: NO se guarda, reintentarlo no cambiaría nada', async (status) => {
+    const result = await anota(rechazo(status));
+
+    expect(offlineQueue.enqueue).not.toHaveBeenCalled();
+    expect(result.current.saveError).not.toBeNull();
+  });
+
+  it('guardar para después no es un error: no sale el recuadro rojo', async () => {
+    // Para el jugador el golpe está anotado. Enseñarle un error diría lo
+    // contrario de lo que ha pasado
+    const result = await anota(new TypeError('Failed to fetch'));
+
+    expect(offlineQueue.enqueue).toHaveBeenCalled();
+    expect(result.current.saveError).toBeNull();
+  });
+
+  it('la partida ya cerrada (409) dice qué hoyo no se pudo guardar', async () => {
+    // Es el caso realista de perder un golpe: anotas sin cobertura y alguien
+    // termina la partida mientras tanto. Al menos hay que decir cuál era
+    const result = await anota(rechazo(409));
+
+    expect(result.current.saveError?.holeNumber).toBe(7);
+  });
+
+  it('el golpe de otro jugador se guarda a su nombre, no al mío', async () => {
+    // Cada participante va por separado: sin eso, anotar al segundo del hoyo
+    // borraba al primero
+    submitQuickMatchProxyHoleScoreUseCase.execute.mockRejectedValue(new TypeError('Failed to fetch'));
+
+    const { result } = renderHook(() => useQuickMatchScoring('qm-1', 'user-1'));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    await act(async () => { await result.current.submitScore(7, 'user-2', 4); });
+
+    expect(offlineQueue.enqueue).toHaveBeenCalledWith('qm-1', 7, { score: 4 }, 'user-2');
+  });
+
+  it('la bola recogida se guarda: es una anotación, no la ausencia de una', async () => {
+    submitQuickMatchHoleScoreUseCase.execute.mockRejectedValue(new TypeError('Failed to fetch'));
+
+    const { result } = renderHook(() => useQuickMatchScoring('qm-1', 'user-1'));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    await act(async () => { await result.current.submitScore(7, 'user-1', null); });
+
+    expect(offlineQueue.enqueue).toHaveBeenCalledWith('qm-1', 7, { score: null }, 'user-1');
   });
 });
