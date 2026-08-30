@@ -109,6 +109,10 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
   // DESPUES y volver a aplicar su `IN_PROGRESS`, borrando el cierre: la
   // pantalla volvia a dejar anotar y cada guardado se estrellaba con un 409.
   const estadoSeqRef = useRef(0);
+  // La partida que se está mirando AHORA. `estadoSeqRef` es un contador global
+  // que no distingue de quién es cada respuesta: al ir de una partida a otra,
+  // una petición de la anterior que siga en vuelo se aplicaba sobre la nueva
+  const idVigenteRef = useRef(quickMatchId);
   const pollIntervalRef = useRef(null);
 
   const fetchQuickMatch = useCallback(async () => {
@@ -121,7 +125,7 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
       const data = await getQuickMatchUseCase.execute(quickMatchId);
       // Si mientras tanto se cerro la partida —o entro otro sondeo—, esta
       // respuesta ya no es la ultima palabra y aplicarla retrocederia el estado
-      if (miSeq !== estadoSeqRef.current) return;
+      if (miSeq !== estadoSeqRef.current || quickMatchId !== idVigenteRef.current) return;
       setQuickMatch(data);
       hayPartidaRef.current = true;
       setLoadError(null);
@@ -135,6 +139,11 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
         holesLoadedRef.current = true;
         try {
           const course = await getGolfCourseUseCase.execute(data.golfCourseId);
+          // El campo tarda más que la partida, así que es el que más fácil
+          // llega tarde. Y `holes` no se vuelve a escribir nunca: aplicarlo
+          // aquí dejaba la partida nueva con los pares y los índices de la
+          // anterior el resto de la sesión, y el siguiente sondeo los guardaba
+          if (quickMatchId !== idVigenteRef.current) return;
           setHoles(course.holes || []);
           setTees(course.tees || []);
           setCourseName(course.name ?? null);
@@ -143,6 +152,7 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
           campoRef.current = course;
           recuerda(quickMatchId, { partida: data, campo: course });
         } catch {
+          if (quickMatchId !== idVigenteRef.current) return;
           holesLoadedRef.current = false;
           recuerda(quickMatchId, { partida: data, campo: campoRef.current });
         }
@@ -178,7 +188,7 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
       // justo después del POST no la deje viva— y reponer aquí la foto de
       // antes la devolvía a «en curso», con la pantalla dejando anotar otra vez
       const recordado = desmentido || hayPartidaRef.current ? null : loQueSeSupo(quickMatchId);
-      if (recordado && miSeq === estadoSeqRef.current) {
+      if (recordado && miSeq === estadoSeqRef.current && quickMatchId === idVigenteRef.current) {
         setQuickMatch(recordado.partida);
         hayPartidaRef.current = true;
         setPintadoDeMemoria(true);
@@ -191,9 +201,12 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
         }
       }
 
-      setLoadError(err);
+      if (quickMatchId === idVigenteRef.current) setLoadError(err);
     } finally {
-      setIsLoading(false);
+      // Si no, una respuesta rezagada de la partida anterior quitaba la espera
+      // de la nueva estando todavía sin datos, y la pantalla pintaba la tarjeta
+      // vacía —sin nombre, sin jugadores y con dieciocho «Anotar»—
+      if (quickMatchId === idVigenteRef.current) setIsLoading(false);
     }
   }, [quickMatchId]);
 
@@ -201,9 +214,21 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
   // hook: sin limpiar, el aviso rojo y el conflicto de la partida anterior se
   // quedarían en pantalla contra los hoyos de la nueva
   useEffect(() => {
+    idVigenteRef.current = quickMatchId;
     hayPartidaRef.current = false;
     campoRef.current = null;
+    holesLoadedRef.current = false;
+    // Y lo que se está viendo: si la nueva no llega a cargar —y no hay nada
+    // guardado de ella— se quedaba en pantalla la partida ANTERIOR, con sus
+    // hoyos y su campo, lista para anotar encima
     // eslint-disable-next-line react-hooks/set-state-in-effect -- reset on match change, same pattern as the fetch effect below
+    setQuickMatch(null);
+    setHoles([]);
+    setTees([]);
+    setCourseName(null);
+    setPintadoDeMemoria(false);
+    setIsLoading(true);
+    setLoadError(null);
     setPerdidos([]);
     setDiscrepancias([]);
     setPendientes(quickMatchId ? offlineQueue.size(quickMatchId) : 0);

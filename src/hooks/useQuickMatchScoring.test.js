@@ -733,6 +733,69 @@ describe('useQuickMatchScoring · lo que pasa mientras (FE #515, tabla F)', () =
     expect(result.current.perdidos).toEqual([]);
   });
 
+  it('al cambiar de partida no se queda en pantalla la anterior', async () => {
+    // Si la nueva no llega a cargar y no hay nada guardado de ella, antes se
+    // quedaba la partida ANTERIOR con sus hoyos y su campo, lista para anotar
+    // encima como si fuera esta
+    offlineQueue.getByMatch.mockReturnValue([]);
+    const { result, rerender } = renderHook(({ id }) => useQuickMatchScoring(id, 'user-1'), {
+      initialProps: { id: 'qm-1' },
+    });
+    await waitFor(() => expect(result.current.quickMatch).not.toBeNull());
+
+    getQuickMatchUseCase.execute.mockRejectedValue(new TypeError('Failed to fetch'));
+    rerender({ id: 'qm-2' });
+
+    await waitFor(() => expect(result.current.quickMatch).toBeNull());
+    expect(result.current.holes).toEqual([]);
+    expect(result.current.courseName).toBeNull();
+  });
+
+  it('el campo de la partida anterior no cae sobre la nueva', async () => {
+    // El campo tarda mas que la partida, y `holes` no se vuelve a escribir
+    // nunca: la nueva se quedaba con los pares y los indices de la anterior el
+    // resto de la sesion, y el siguiente sondeo los guardaba dentro de SU
+    // entrada, con lo que sin cobertura el neto salia con el par equivocado
+    offlineQueue.getByMatch.mockReturnValue([]);
+    let sueltaElCampo;
+    getGolfCourseUseCase.execute.mockImplementation(
+      () => new Promise((r) => { sueltaElCampo = () => r({ holes: [{ holeNumber: 1, par: 3 }], tees: [], name: 'El de antes' }); })
+    );
+
+    const { result, rerender } = renderHook(({ id }) => useQuickMatchScoring(id, 'user-1'), {
+      initialProps: { id: 'qm-1' },
+    });
+    await waitFor(() => expect(getGolfCourseUseCase.execute).toHaveBeenCalled());
+
+    rerender({ id: 'qm-2' });
+    await act(async () => { sueltaElCampo(); });
+
+    expect(result.current.holes).toEqual([]);
+    expect(result.current.courseName).toBeNull();
+  });
+
+  it('una respuesta rezagada no quita la espera de la partida nueva', async () => {
+    // Sin esto la pantalla pasa de largo por sus dos guardas y pinta la tarjeta
+    // vacia: sin nombre, sin jugadores y con dieciocho casillas diciendo «Anotar»
+    offlineQueue.getByMatch.mockReturnValue([]);
+    let sueltaLaVieja;
+    getQuickMatchUseCase.execute.mockImplementation(
+      () => new Promise((_, rechaza) => { sueltaLaVieja = () => rechaza(new TypeError('Failed to fetch')); })
+    );
+
+    const { result, rerender } = renderHook(({ id }) => useQuickMatchScoring(id, 'user-1'), {
+      initialProps: { id: 'qm-1' },
+    });
+    await waitFor(() => expect(getQuickMatchUseCase.execute).toHaveBeenCalledWith('qm-1'));
+
+    const laDeAntes = sueltaLaVieja;
+    rerender({ id: 'qm-2' });
+    await act(async () => { laDeAntes(); });
+
+    expect(result.current.isLoading).toBe(true);
+    expect(result.current.loadError).toBeNull();
+  });
+
   it('al cambiar de partida no se arrastra lo de la anterior', async () => {
     // La ruta no lleva `key`, así que ir de una partida a otra reutiliza el
     // hook: sin limpiar, el aviso rojo y el conflicto de la partida de antes se
