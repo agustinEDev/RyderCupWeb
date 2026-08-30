@@ -104,6 +104,7 @@ const QuickMatchScoringPage = () => {
     cancelMatch,
     refetch,
     holeScoresVisibles,
+    pintadoDeMemoria,
     pendientes,
     perdidos,
     discrepancias,
@@ -138,7 +139,13 @@ const QuickMatchScoringPage = () => {
   // y la pantalla ya lo cuenta en ámbar. El rojo, además, quedaba justo debajo
   // del ámbar diciendo lo contrario. Un fallo CON estado sí es un error de
   // verdad —el servidor contestó algo— y ese se sigue enseñando
-  const sondeoSinRespuesta = !!loadError && (loadError.status ?? loadError.response?.status) === undefined;
+  // O bien no hubo respuesta, o bien lo que se está viendo sale de la memoria
+  // del móvil: en los dos casos lo que hay en pantalla puede no estar al día, y
+  // en ninguno es un error. Con un 5xx la pantalla se pintaba entera desde el
+  // móvil bajo un recuadro rojo, sin decir que era una foto de antes
+  const sondeoSinRespuesta =
+    (!!loadError && (loadError.status ?? loadError.response?.status) === undefined)
+    || !!pintadoDeMemoria;
   const errorDeVerdad = saveError || (loadError && !sondeoSinRespuesta);
 
   const hoyosPerdidos = [...new Set((perdidos ?? []).map((x) => x.holeNumber))].sort((a, b) => a - b);

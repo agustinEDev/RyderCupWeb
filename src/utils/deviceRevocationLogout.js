@@ -20,6 +20,7 @@
  * @see src/config/dependencies.py:576-583 (backend)
  */
 
+import { olvidaLoDeEstaCuenta } from '../services/loUltimoConocido';
 import i18next from 'i18next';
 import customToast from './toast';
 
@@ -157,6 +158,11 @@ const handleLogout = (errorData = null, reason = 'unknown') => {
   // Clear localStorage
   localStorage.removeItem('user');
   localStorage.removeItem('access_token'); // Legacy cleanup
+  // Y las partidas guardadas para anotar sin cobertura (FE #524). Este camino
+  // NO pasa por `clearAuth` —sale con una redirección dura—, y una redirección
+  // no vacía el almacenamiento: sin esto, quien entrara después en ese móvil
+  // podría ver sin cobertura las partidas de la cuenta que acaba de revocarse
+  olvidaLoDeEstaCuenta();
 
   // Clear Sentry user context (if Sentry is initialized)
   if (window.Sentry && typeof window.Sentry.setUser === 'function') {

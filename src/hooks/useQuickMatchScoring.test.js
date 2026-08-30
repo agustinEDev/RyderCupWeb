@@ -23,10 +23,12 @@ import {
   getQuickMatchUseCase,
   getGolfCourseUseCase,
   cancelQuickMatchUseCase,
+  completeQuickMatchUseCase,
   submitQuickMatchHoleScoreUseCase,
   submitQuickMatchProxyHoleScoreUseCase,
 } from '../composition';
 import * as offlineQueue from '../utils/scoringOfflineQueue';
+import { olvidaTodo, recuerda, loQueSeSupo } from '../services/loUltimoConocido';
 
 const mockQuickMatch = {
   id: 'qm-1',
@@ -731,6 +733,69 @@ describe('useQuickMatchScoring · lo que pasa mientras (FE #515, tabla F)', () =
     expect(result.current.perdidos).toEqual([]);
   });
 
+  it('al cambiar de partida no se queda en pantalla la anterior', async () => {
+    // Si la nueva no llega a cargar y no hay nada guardado de ella, antes se
+    // quedaba la partida ANTERIOR con sus hoyos y su campo, lista para anotar
+    // encima como si fuera esta
+    offlineQueue.getByMatch.mockReturnValue([]);
+    const { result, rerender } = renderHook(({ id }) => useQuickMatchScoring(id, 'user-1'), {
+      initialProps: { id: 'qm-1' },
+    });
+    await waitFor(() => expect(result.current.quickMatch).not.toBeNull());
+
+    getQuickMatchUseCase.execute.mockRejectedValue(new TypeError('Failed to fetch'));
+    rerender({ id: 'qm-2' });
+
+    await waitFor(() => expect(result.current.quickMatch).toBeNull());
+    expect(result.current.holes).toEqual([]);
+    expect(result.current.courseName).toBeNull();
+  });
+
+  it('el campo de la partida anterior no cae sobre la nueva', async () => {
+    // El campo tarda mas que la partida, y `holes` no se vuelve a escribir
+    // nunca: la nueva se quedaba con los pares y los indices de la anterior el
+    // resto de la sesion, y el siguiente sondeo los guardaba dentro de SU
+    // entrada, con lo que sin cobertura el neto salia con el par equivocado
+    offlineQueue.getByMatch.mockReturnValue([]);
+    let sueltaElCampo;
+    getGolfCourseUseCase.execute.mockImplementation(
+      () => new Promise((r) => { sueltaElCampo = () => r({ holes: [{ holeNumber: 1, par: 3 }], tees: [], name: 'El de antes' }); })
+    );
+
+    const { result, rerender } = renderHook(({ id }) => useQuickMatchScoring(id, 'user-1'), {
+      initialProps: { id: 'qm-1' },
+    });
+    await waitFor(() => expect(getGolfCourseUseCase.execute).toHaveBeenCalled());
+
+    rerender({ id: 'qm-2' });
+    await act(async () => { sueltaElCampo(); });
+
+    expect(result.current.holes).toEqual([]);
+    expect(result.current.courseName).toBeNull();
+  });
+
+  it('una respuesta rezagada no quita la espera de la partida nueva', async () => {
+    // Sin esto la pantalla pasa de largo por sus dos guardas y pinta la tarjeta
+    // vacia: sin nombre, sin jugadores y con dieciocho casillas diciendo «Anotar»
+    offlineQueue.getByMatch.mockReturnValue([]);
+    let sueltaLaVieja;
+    getQuickMatchUseCase.execute.mockImplementation(
+      () => new Promise((_, rechaza) => { sueltaLaVieja = () => rechaza(new TypeError('Failed to fetch')); })
+    );
+
+    const { result, rerender } = renderHook(({ id }) => useQuickMatchScoring(id, 'user-1'), {
+      initialProps: { id: 'qm-1' },
+    });
+    await waitFor(() => expect(getQuickMatchUseCase.execute).toHaveBeenCalledWith('qm-1'));
+
+    const laDeAntes = sueltaLaVieja;
+    rerender({ id: 'qm-2' });
+    await act(async () => { laDeAntes(); });
+
+    expect(result.current.isLoading).toBe(true);
+    expect(result.current.loadError).toBeNull();
+  });
+
   it('al cambiar de partida no se arrastra lo de la anterior', async () => {
     // La ruta no lleva `key`, así que ir de una partida a otra reutiliza el
     // hook: sin limpiar, el aviso rojo y el conflicto de la partida de antes se
@@ -1034,5 +1099,323 @@ describe('useQuickMatchScoring · una escritura cada vez (FE #515, tabla H)', ()
     expect(submitQuickMatchHoleScoreUseCase.execute).not.toHaveBeenCalledWith('qm-1', 8, 3);
 
     await act(async () => { suelta?.({}); await anotando; });
+  });
+});
+
+/**
+ * LA TABLA N — poder anotar tras volver a abrir la aplicación sin cobertura.
+ *
+ * Es la finalidad de todo esto. Guardar los golpes no basta: si al abrir no se
+ * puede pintar la partida —ni hoyos, ni pares, ni quién juega— no hay nada que
+ * anotar. Y el service worker no ayuda a propósito: las llamadas a la API son
+ * `NetworkOnly` para no dar por buenos datos rancios sin decirlo.
+ *
+ *   caso                                | qué pasa
+ *   ------------------------------------|-----------------------------------
+ *   carga bien                          | se guarda la partida y su campo
+ *   sin señal, con lo guardado          | se pinta, y se puede anotar
+ *   sin señal, sin nada guardado        | como antes: no hay nada que pintar
+ *   el servidor dice 404 o 403          | NO se usa lo guardado: esa partida
+ *                                       | ya no está, o no es nuestra
+ *   vuelve la señal                     | manda el servidor
+ */
+describe('useQuickMatchScoring · volver a abrir sin cobertura (FE #524, tabla N)', () => {
+  beforeEach(() => {
+    // Este fichero corre sin almacenamiento, y el módulo lo envuelve en
+    // try/catch: sin esto los tests pasarían por no haber dónde guardar
+    const guardado = new Map();
+    globalThis.localStorage = {
+      getItem: (k) => (guardado.has(k) ? guardado.get(k) : null),
+      setItem: (k, v) => guardado.set(k, String(v)),
+      removeItem: (k) => guardado.delete(k),
+    };
+    vi.clearAllMocks();
+    olvidaTodo();
+    offlineQueue.getByMatch.mockReturnValue([]);
+    offlineQueue.size.mockReturnValue(0);
+    getGolfCourseUseCase.execute.mockResolvedValue({ id: 'course-1', name: 'Son Parc', holes: [{ holeNumber: 1, par: 4 }], tees: [] });
+    getQuickMatchUseCase.execute.mockResolvedValue(mockQuickMatch);
+  });
+
+  const monta = async () => {
+    const { result } = renderHook(() => useQuickMatchScoring('qm-1', 'user-1'));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    return result;
+  };
+
+  const sinSenal = () => getQuickMatchUseCase.execute.mockRejectedValue(new TypeError('Failed to fetch'));
+
+  it('al cargarla se guarda la partida y su campo', async () => {
+    await monta();
+
+    await waitFor(() => expect(loQueSeSupo('qm-1')).not.toBeNull());
+    expect(loQueSeSupo('qm-1').partida.id).toBe('qm-1');
+    expect(loQueSeSupo('qm-1').campo.holes).toHaveLength(1);
+  });
+
+  it('sin señal se pinta lo guardado, y se puede anotar', async () => {
+    // Lo que se busca: el jugador vuelve a la aplicación en el campo. Sin esto
+    // se encuentra una pantalla vacía y ahí ya no hay nada que anotar
+    recuerda('qm-1', { partida: mockQuickMatch, campo: { holes: [{ holeNumber: 1, par: 4 }], tees: [], name: 'Son Parc' } });
+    sinSenal();
+
+    const result = await monta();
+
+    expect(result.current.quickMatch?.id).toBe('qm-1');
+    expect(result.current.holes).toHaveLength(1);
+    expect(result.current.isScorer).toBe(true);
+    expect(result.current.courseName).toBe('Son Parc');
+  });
+
+  it('y se dice que puede no estar al día', async () => {
+    // La pantalla lo pinta en ámbar mirando este error: sin él se leería como
+    // si fuera lo que hay ahora mismo en el servidor
+    recuerda('qm-1', { partida: mockQuickMatch, campo: { holes: [], tees: [] } });
+    sinSenal();
+
+    const result = await monta();
+
+    expect(result.current.loadError).toBeTruthy();
+  });
+
+  it('sin señal y sin nada guardado, no hay nada que pintar', async () => {
+    sinSenal();
+
+    const result = await monta();
+
+    expect(result.current.quickMatch).toBeNull();
+  });
+
+  it('si el servidor dice que ya no está, no se resucita', async () => {
+    // Un 404 es una respuesta: esa partida se borró. Pintarla desde el móvil
+    // sería enseñar algo que ya no existe, y dejar anotar sobre ello
+    recuerda('qm-1', { partida: mockQuickMatch, campo: { holes: [], tees: [] } });
+    getQuickMatchUseCase.execute.mockRejectedValue(Object.assign(new Error('no está'), { status: 404 }));
+
+    const result = await monta();
+
+    expect(result.current.quickMatch).toBeNull();
+    expect(loQueSeSupo('qm-1')).toBeNull();
+  });
+
+  it('con la sesión caducada no se pinta lo guardado', async () => {
+    // Un 401 sí desmiente: no hemos entrado, y enseñar la partida de todas
+    // formas dejaría anotar a quien la aplicación no sabe quién es
+    recuerda('qm-1', { partida: mockQuickMatch, campo: { holes: [], tees: [] } });
+    getQuickMatchUseCase.execute.mockRejectedValue(Object.assign(new Error('fuera'), { status: 401 }));
+
+    const result = await monta();
+
+    expect(result.current.quickMatch).toBeNull();
+  });
+
+  it('con el servidor caído sí se pinta: un 5xx no desmiente nada', async () => {
+    // La partida sigue ahí, es el backend el que está mal. Y así tampoco se
+    // puede anotar, que es justo lo que esto viene a evitar
+    recuerda('qm-1', { partida: mockQuickMatch, campo: { holes: [{ holeNumber: 1, par: 4 }], tees: [] } });
+    getQuickMatchUseCase.execute.mockRejectedValue(Object.assign(new Error('boom'), { status: 500 }));
+
+    const result = await monta();
+
+    expect(result.current.quickMatch?.id).toBe('qm-1');
+    expect(result.current.isScorer).toBe(true);
+  });
+
+  it('cuando vuelve la señal manda el servidor', async () => {
+    recuerda('qm-1', { partida: { ...mockQuickMatch, holeScores: [{ holeNumber: 1, participantId: 'user-1', score: 9 }] }, campo: { holes: [], tees: [] } });
+
+    const result = await monta();
+
+    expect(result.current.quickMatch.holeScores).toHaveLength(0);
+  });
+});
+
+/**
+ * LA TABLA P — lo guardado no puede pisar lo que ya hay en pantalla.
+ *
+ * Salió de la revisión, y es lo contrario de lo que la tabla N buscaba: lo
+ * guardado sirve para ARRANCAR sin señal, no para corregir a la pantalla que
+ * ya está funcionando. Cerrar la partida se aplica en local a propósito —para
+ * que un corte justo después del POST no la deje viva—, y restaurar en cada
+ * sondeo fallido devolvía esa partida a «en curso».
+ *
+ *   caso                                   | qué pasa
+ *   ---------------------------------------|-------------------------------
+ *   no hay nada en pantalla y falla        | se pinta lo guardado
+ *   YA hay partida en pantalla y falla     | no se toca: manda la pantalla
+ *   se cierra la partida y se cae la red   | sigue cerrada
+ *   se pinta de memoria                    | se dice, sea cual sea el fallo
+ */
+describe('useQuickMatchScoring · lo guardado no pisa la pantalla (FE #524, tabla P)', () => {
+  beforeEach(() => {
+    const almacen = new Map();
+    globalThis.localStorage = {
+      getItem: (k) => (almacen.has(k) ? almacen.get(k) : null),
+      setItem: (k, v) => almacen.set(k, String(v)),
+      removeItem: (k) => almacen.delete(k),
+    };
+    vi.clearAllMocks();
+    olvidaTodo();
+    offlineQueue.getByMatch.mockReturnValue([]);
+    offlineQueue.size.mockReturnValue(0);
+    getGolfCourseUseCase.execute.mockResolvedValue({ id: 'course-1', name: 'Son Parc', holes: [{ holeNumber: 1, par: 4 }], tees: [] });
+    getQuickMatchUseCase.execute.mockResolvedValue(mockQuickMatch);
+  });
+
+  const monta = async () => {
+    const { result } = renderHook(() => useQuickMatchScoring('qm-1', 'user-1'));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    return result;
+  };
+
+  it('cerrar la partida y perder la red la deja cerrada', async () => {
+    // El cierre se aplica en local justo para esto. Si al fallar el sondeo se
+    // repusiera la foto guardada —de cuando estaba en curso— la pantalla
+    // volvería a dejar anotar y cada guardado se estrellaría contra un 409
+    const result = await monta();
+    completeQuickMatchUseCase.execute.mockResolvedValue({ ...mockQuickMatch, status: 'COMPLETED', isCompleted: true });
+    getQuickMatchUseCase.execute.mockRejectedValue(new TypeError('Failed to fetch'));
+
+    await act(async () => { await result.current.completeMatch(); });
+
+    expect(result.current.quickMatch.status).toBe('COMPLETED');
+  });
+
+  it('con la partida ya en pantalla, un sondeo que falla no la retrasa', async () => {
+    const result = await monta();
+    const antes = result.current.quickMatch;
+    getQuickMatchUseCase.execute.mockRejectedValue(new TypeError('Failed to fetch'));
+
+    await act(async () => { await result.current.refetch(); });
+
+    expect(result.current.quickMatch).toBe(antes);
+  });
+
+  it('dice cuándo lo que se ve sale de la memoria del móvil', async () => {
+    // Y no según el código del fallo: con un 5xx también se pinta de memoria, y
+    // ahí salía la pantalla entera bajo un error rojo, sin avisar de nada
+    recuerda('qm-1', { partida: mockQuickMatch, campo: { holes: [], tees: [] } });
+    getQuickMatchUseCase.execute.mockRejectedValue(Object.assign(new Error('boom'), { status: 500 }));
+
+    const result = await monta();
+
+    expect(result.current.pintadoDeMemoria).toBe(true);
+  });
+
+  it('con la partida recién traída del servidor, no se dice nada de memoria', async () => {
+    const result = await monta();
+
+    expect(result.current.pintadoDeMemoria).toBe(false);
+  });
+
+  it('el sondeo no degrada el campo que ya tenía guardado', async () => {
+    // Cada sondeo reescribe la entrada. Releyendo lo que está a punto de
+    // sobrescribir, si se hubiera desalojado escribía `campo: null` y la
+    // siguiente vez sin señal no había hoyos con los que pintar la tarjeta
+    const result = await monta();
+    // Como si la entrada se hubiera desalojado para dejar sitio a otra partida
+    olvidaTodo();
+
+    await act(async () => { await result.current.refetch(); });
+
+    expect(loQueSeSupo('qm-1')?.campo?.holes).toHaveLength(1);
+  });
+});
+
+/**
+ * LA TABLA Q — cuándo se pregunta al servidor.
+ *
+ * Esto es golf: entre hoyo y hoyo pasan minutos, y preguntar cada diez
+ * segundos gasta batería y datos para nada. Pero el sondeo hace DOS trabajos y
+ * solo uno tolera esperar: traer lo que anotan otros aguanta un minuto; enviar
+ * lo que quedó guardado en el móvil, no —esa es la razón de ser de todo esto—.
+ *
+ * Así que se pregunta cada minuto, y además en los dos momentos en los que de
+ * verdad importa: cuando el navegador dice que vuelve la red, y cuando el
+ * jugador vuelve a la aplicación —saca el móvil del bolsillo al llegar al
+ * hoyo—. `navigator.onLine` no vale como verdad, pero como excusa para probar
+ * sí: si el intento sale, había red.
+ *
+ *   caso                          | qué pasa
+ *   ------------------------------|-------------------------------------
+ *   nadie toca nada               | se pregunta cada minuto
+ *   vuelve la red                 | se pregunta en el acto
+ *   se vuelve a la aplicación     | se pregunta en el acto
+ *   la aplicación se va al fondo  | no se pregunta por eso
+ */
+describe('useQuickMatchScoring · cuándo se pregunta (FE #524, tabla Q)', () => {
+  beforeEach(() => {
+    const almacen = new Map();
+    globalThis.localStorage = {
+      getItem: (k) => (almacen.has(k) ? almacen.get(k) : null),
+      setItem: (k, v) => almacen.set(k, String(v)),
+      removeItem: (k) => almacen.delete(k),
+    };
+    vi.clearAllMocks();
+    olvidaTodo();
+    offlineQueue.getByMatch.mockReturnValue([]);
+    offlineQueue.size.mockReturnValue(0);
+    getGolfCourseUseCase.execute.mockResolvedValue({ holes: [], tees: [] });
+    getQuickMatchUseCase.execute.mockResolvedValue(mockQuickMatch);
+  });
+
+  const monta = async () => {
+    const { result, unmount } = renderHook(() => useQuickMatchScoring('qm-1', 'user-1'));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    getQuickMatchUseCase.execute.mockClear();
+    return { result, unmount };
+  };
+
+  const conVisibilidad = (estado) => {
+    Object.defineProperty(document, 'visibilityState', { value: estado, configurable: true });
+    document.dispatchEvent(new window.Event('visibilitychange'));
+  };
+
+  it('cuando vuelve la red se pregunta sin esperar al reloj', async () => {
+    await monta();
+
+    await act(async () => { window.dispatchEvent(new window.Event('online')); });
+
+    expect(getQuickMatchUseCase.execute).toHaveBeenCalledTimes(1);
+  });
+
+  it('al volver a la aplicación se pregunta', async () => {
+    // El gesto de siempre: llegas al hoyo y sacas el móvil del bolsillo
+    await monta();
+
+    await act(async () => { conVisibilidad('visible'); });
+
+    expect(getQuickMatchUseCase.execute).toHaveBeenCalledTimes(1);
+  });
+
+  it('la vuelta de la red se aprovecha aunque no se esté mirando', async () => {
+    // Es una ocasión de sacar del móvil lo que quedó guardado. Perderla porque
+    // la pantalla esté en segundo plano no le ahorra nada a nadie
+    await monta();
+    conVisibilidad('hidden');
+    getQuickMatchUseCase.execute.mockClear();
+
+    await act(async () => { window.dispatchEvent(new window.Event('online')); });
+
+    expect(getQuickMatchUseCase.execute).toHaveBeenCalledTimes(1);
+  });
+
+  it('irse al fondo no dispara ninguna pregunta', async () => {
+    await monta();
+
+    await act(async () => { conVisibilidad('hidden'); });
+
+    expect(getQuickMatchUseCase.execute).not.toHaveBeenCalled();
+  });
+
+  it('al salir de la pantalla se dejan de escuchar los avisos', async () => {
+    // Si no, cada partida abierta deja su oyente colgado y una vuelta a la
+    // aplicación dispara tantas peticiones como pantallas se hayan visitado
+    const { unmount } = await monta();
+
+    unmount();
+    await act(async () => { window.dispatchEvent(new window.Event('online')); });
+
+    expect(getQuickMatchUseCase.execute).not.toHaveBeenCalled();
   });
 });

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import MyQuickMatchesPage from './MyQuickMatchesPage';
 
@@ -403,14 +403,40 @@ describe('MyQuickMatchesPage', () => {
     expect(screen.queryByTestId('quick-match-result-qm-1')).not.toBeInTheDocument();
   });
 
-  it('should show an error message when the fetch fails', async () => {
-    mockListMyQuickMatches.mockRejectedValue(new Error('Network error'));
+  it('un fallo del servidor se enseña con su mensaje', async () => {
+    mockListMyQuickMatches.mockRejectedValue(Object.assign(new Error('Server error'), { status: 500 }));
 
     renderPage();
 
     await waitFor(() => {
-      expect(screen.getByText('Network error')).toBeInTheDocument();
+      expect(screen.getByText('Server error')).toBeInTheDocument();
     });
+  });
+
+  it('un fallo de red se dice como falta de señal, no como error', async () => {
+    // Antes salía el mensaje crudo del fallo en rojo. Ahora puede haber además
+    // partidas en pantalla, las últimas que se vieron: llamarlo error sobre
+    // una lista que se está usando es contradecirse
+    mockListMyQuickMatches.mockRejectedValue(new TypeError('Failed to fetch'));
+
+    renderPage();
+
+    await waitFor(() => {
+      expect(screen.getByTestId('quick-matches-sin-conexion')).toBeInTheDocument();
+    });
+    expect(screen.queryByText('Failed to fetch')).not.toBeInTheDocument();
+  });
+
+  it('un fallo del código NO se disfraza de falta de señal', async () => {
+    // Un mapeador que revienta con un dato inesperado también llega sin
+    // estado. Decir «sin conexión» ahí esconde un defecto de verdad, y quien
+    // lo reporte contará algo que no pasó
+    mockListMyQuickMatches.mockRejectedValue(new Error('cannot read x of undefined'));
+
+    renderPage();
+
+    expect(await screen.findByText('cannot read x of undefined')).toBeInTheDocument();
+    expect(screen.queryByTestId('quick-matches-sin-conexion')).not.toBeInTheDocument();
   });
 
   describe('leaving a match out of the statistics', () => {
@@ -761,5 +787,111 @@ describe('MyQuickMatchesPage', () => {
 
       resolvers['qm-2']({ id: 'qm-2' });
     });
+  });
+});
+
+/**
+ * LA TABLA O — poder LLEGAR a la partida sin cobertura (FE #524).
+ *
+ * La pantalla de anotación ya sabe pintarse con lo último que se supo, pero si
+ * la lista no carga no hay por dónde entrar en ella. Es el último tramo del
+ * camino: abrir la aplicación → llegar a la partida → anotar.
+ *
+ *   caso                         | qué se ve
+ *   -----------------------------|--------------------------------------
+ *   carga bien                   | la lista, y se guarda
+ *   sin señal, con lista guardada| las últimas que se vieron, con aviso
+ *   sin señal, sin nada guardado | como antes
+ *   el servidor dice 401 o 403   | no se usa lo guardado
+ */
+describe('MyQuickMatchesPage · llegar a la partida sin cobertura (FE #524, tabla O)', () => {
+  const guardadas = [{
+    id: 'qm-9', name: 'Meis Foursomes', status: 'IN_PROGRESS', matchFormat: 'FOURSOMES',
+    golfCourseId: 'c-1', playedAt: '2026-08-29T10:00:00Z', excludedFromStats: false,
+  }];
+
+  beforeEach(() => {
+    const almacen = new Map();
+    globalThis.localStorage = {
+      getItem: (k) => (almacen.has(k) ? almacen.get(k) : null),
+      setItem: (k, v) => almacen.set(k, String(v)),
+      removeItem: (k) => almacen.delete(k),
+    };
+    vi.clearAllMocks();
+  });
+
+  it('sin señal enseña las últimas partidas que se vieron', async () => {
+    localStorage.setItem('rydercup-ultima-lista', JSON.stringify(guardadas));
+    mockListMyQuickMatches.mockRejectedValue(new TypeError('Failed to fetch'));
+
+    renderPage();
+
+    expect(await screen.findByText('Meis Foursomes')).toBeInTheDocument();
+    expect(screen.getByTestId('quick-matches-sin-conexion')).toBeInTheDocument();
+  });
+
+  it('al cargar bien, las guarda para la próxima vez', async () => {
+    mockListMyQuickMatches.mockResolvedValue({ quickMatches: guardadas, total: 1 });
+
+    renderPage();
+    await screen.findByText('Meis Foursomes');
+
+    expect(JSON.parse(localStorage.getItem('rydercup-ultima-lista'))).toHaveLength(1);
+  });
+
+  it.each([[401], [403]])('un %i además BORRA lo guardado, no solo lo ignora', async (status) => {
+    // No usarlo esta vez no basta: seguía ahí para el siguiente fallo de red,
+    // y entonces sí se pintaba
+    localStorage.setItem('rydercup-ultima-lista', JSON.stringify(guardadas));
+    mockListMyQuickMatches.mockRejectedValue(Object.assign(new Error('fuera'), { status }));
+
+    renderPage();
+    await screen.findByText('fuera');
+
+    expect(localStorage.getItem('rydercup-ultima-lista')).toBeNull();
+  });
+
+  it('un 403 del REFRESCO no borra nada: no es la respuesta de la lista', async () => {
+    // Cuando el interceptor no consigue refrescar, propaga su propio error con
+    // `.response` puesta a la respuesta de `/auth/refresh-token`. Un 403 ahí es
+    // un caso en el que se decide a propósito NO tirar la sesión (FE #514), y
+    // borrar se llevaría la partida que se está jugando, sin vuelta atrás
+    localStorage.setItem('rydercup-ultima-lista', JSON.stringify(guardadas));
+    mockListMyQuickMatches.mockRejectedValue(
+      Object.assign(new Error('Failed to refresh token'), { response: { status: 403 } })
+    );
+
+    renderPage();
+    await waitFor(() => expect(mockListMyQuickMatches).toHaveBeenCalled());
+
+    expect(JSON.parse(localStorage.getItem('rydercup-ultima-lista'))).toHaveLength(1);
+  });
+
+  it('una respuesta que llega tras cerrar sesión no vuelve a guardar nada', async () => {
+    // El cierre de sesión acaba de borrarlo; si esta respuesta lo repusiera,
+    // quedarían para la siguiente carga sin cobertura de OTRA cuenta
+    let contesta;
+    mockListMyQuickMatches.mockImplementation(() => new Promise((r) => { contesta = r; }));
+
+    const { unmount } = renderPage();
+    unmount();
+    await act(async () => { contesta({ quickMatches: guardadas, total: 1 }); });
+
+    expect(localStorage.getItem('rydercup-ultima-lista')).toBeNull();
+  });
+
+  it('con la sesión caducada no enseña lo guardado', async () => {
+    // Un 401 desmiente: enseñar sus partidas a quien la aplicación no sabe
+    // quién es no procede
+    localStorage.setItem('rydercup-ultima-lista', JSON.stringify(guardadas));
+    mockListMyQuickMatches.mockRejectedValue(Object.assign(new Error('fuera'), { status: 401 }));
+
+    renderPage();
+
+    // Se espera a que la pantalla haya reaccionado —el 401 sale con su mensaje—
+    // y solo entonces se mira la ausencia: si no, la comprobación gana la
+    // carrera y pasaría igual aunque la lista se pintara un instante después
+    expect(await screen.findByText('fuera')).toBeInTheDocument();
+    expect(screen.queryByText('Meis Foursomes')).not.toBeInTheDocument();
   });
 });

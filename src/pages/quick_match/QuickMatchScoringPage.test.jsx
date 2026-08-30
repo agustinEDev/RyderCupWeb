@@ -1611,6 +1611,15 @@ describe('QuickMatchScoringPage · los avisos, tras probarlo en el campo (FE #51
     expect(screen.queryByTestId('quick-match-save-error')).not.toBeInTheDocument();
   });
 
+  it('si lo que se ve sale de la memoria, se dice aunque el fallo tenga estado', () => {
+    // Con un 5xx la pantalla se pinta igual desde el móvil, y salía entera
+    // bajo un error rojo sin avisar de que era una foto de antes
+    pinta({ pintadoDeMemoria: true, loadError: Object.assign(new Error('boom'), { status: 500 }) });
+
+    expect(screen.getByTestId('quick-match-sin-conexion')).toBeInTheDocument();
+    expect(screen.queryByTestId('quick-match-save-error')).not.toBeInTheDocument();
+  });
+
   it('un fallo del servidor sí es un error, y sale en rojo', () => {
     pinta({ pendientes: 0, loadError: Object.assign(new Error('boom'), { status: 500 }) });
 
