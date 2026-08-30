@@ -15,6 +15,7 @@ import {
 import ConfirmModal from '../../components/modals/ConfirmModal';
 import PersonalRoundCalculator from '../../domain/services/PersonalRoundCalculator';
 import customToast from '../../utils/toast';
+import { laUltimaLista, recuerdaLaLista } from '../../services/loUltimoConocido';
 import BlockLoader from '../../components/ui/BlockLoader';
 
 const STATUS_STYLES = {
@@ -129,8 +130,22 @@ const MyQuickMatchesPage = () => {
         setExcludedIds(
           new Set(result.quickMatches.filter((qm) => qm.excludedFromStats).map((qm) => qm.id))
         );
+        // Para poder LLEGAR a una partida sin cobertura: la pantalla de
+        // anotación sabe pintarse sola, pero hay que poder pulsar en ella
+        recuerdaLaLista(result.quickMatches);
       })
-      .catch((err) => setError(err))
+      .catch((err) => {
+        // El 401 y el 403 desmienten: no hemos entrado, o esto no es nuestro.
+        // Lo demás —sin respuesta, o el backend caído— no dice nada de la
+        // lista, y sin ella el jugador se queda sin puerta de entrada
+        const estado = err?.status ?? err?.response?.status;
+        const guardadas = estado === 401 || estado === 403 ? null : laUltimaLista();
+        if (guardadas?.length) {
+          setQuickMatches(guardadas);
+          setExcludedIds(new Set(guardadas.filter((qm) => qm.excludedFromStats).map((qm) => qm.id)));
+        }
+        setError(err);
+      })
       .finally(() => setIsLoading(false));
   }, [user]);
 
@@ -220,7 +235,14 @@ const MyQuickMatchesPage = () => {
 
         <h1 className="hidden md:block text-xl font-bold text-gray-900 mb-4">{t('history.title')}</h1>
 
-        {error && (
+        {/* Quedarse sin cobertura no es un error, y aquí además puede haber
+            partidas en pantalla —las últimas que se vieron—: llamarlo error
+            sobre una lista que se está usando es contradecirse */}
+        {error && (error.status ?? error.response?.status) === undefined ? (
+          <p className="text-sm text-amber-800 mb-4" data-testid="quick-matches-sin-conexion">
+            {t('scoring.offline.noSeActualiza')}
+          </p>
+        ) : error && (
           <p className="text-sm text-red-600 mb-4">{error.message || t('scoring.errors.generic')}</p>
         )}
 

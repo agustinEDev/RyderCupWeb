@@ -27,6 +27,7 @@ import {
   submitQuickMatchProxyHoleScoreUseCase,
 } from '../composition';
 import * as offlineQueue from '../utils/scoringOfflineQueue';
+import { olvidaTodo, recuerda, loQueSeSupo } from '../services/loUltimoConocido';
 
 const mockQuickMatch = {
   id: 'qm-1',
@@ -1034,5 +1035,133 @@ describe('useQuickMatchScoring · una escritura cada vez (FE #515, tabla H)', ()
     expect(submitQuickMatchHoleScoreUseCase.execute).not.toHaveBeenCalledWith('qm-1', 8, 3);
 
     await act(async () => { suelta?.({}); await anotando; });
+  });
+});
+
+/**
+ * LA TABLA N — poder anotar tras volver a abrir la aplicación sin cobertura.
+ *
+ * Es la finalidad de todo esto. Guardar los golpes no basta: si al abrir no se
+ * puede pintar la partida —ni hoyos, ni pares, ni quién juega— no hay nada que
+ * anotar. Y el service worker no ayuda a propósito: las llamadas a la API son
+ * `NetworkOnly` para no dar por buenos datos rancios sin decirlo.
+ *
+ *   caso                                | qué pasa
+ *   ------------------------------------|-----------------------------------
+ *   carga bien                          | se guarda la partida y su campo
+ *   sin señal, con lo guardado          | se pinta, y se puede anotar
+ *   sin señal, sin nada guardado        | como antes: no hay nada que pintar
+ *   el servidor dice 404 o 403          | NO se usa lo guardado: esa partida
+ *                                       | ya no está, o no es nuestra
+ *   vuelve la señal                     | manda el servidor
+ */
+describe('useQuickMatchScoring · volver a abrir sin cobertura (FE #524, tabla N)', () => {
+  beforeEach(() => {
+    // Este fichero corre sin almacenamiento, y el módulo lo envuelve en
+    // try/catch: sin esto los tests pasarían por no haber dónde guardar
+    const guardado = new Map();
+    globalThis.localStorage = {
+      getItem: (k) => (guardado.has(k) ? guardado.get(k) : null),
+      setItem: (k, v) => guardado.set(k, String(v)),
+      removeItem: (k) => guardado.delete(k),
+    };
+    vi.clearAllMocks();
+    olvidaTodo();
+    offlineQueue.getByMatch.mockReturnValue([]);
+    offlineQueue.size.mockReturnValue(0);
+    getGolfCourseUseCase.execute.mockResolvedValue({ id: 'course-1', name: 'Son Parc', holes: [{ holeNumber: 1, par: 4 }], tees: [] });
+    getQuickMatchUseCase.execute.mockResolvedValue(mockQuickMatch);
+  });
+
+  const monta = async () => {
+    const { result } = renderHook(() => useQuickMatchScoring('qm-1', 'user-1'));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    return result;
+  };
+
+  const sinSenal = () => getQuickMatchUseCase.execute.mockRejectedValue(new TypeError('Failed to fetch'));
+
+  it('al cargarla se guarda la partida y su campo', async () => {
+    await monta();
+
+    await waitFor(() => expect(loQueSeSupo('qm-1')).not.toBeNull());
+    expect(loQueSeSupo('qm-1').partida.id).toBe('qm-1');
+    expect(loQueSeSupo('qm-1').campo.holes).toHaveLength(1);
+  });
+
+  it('sin señal se pinta lo guardado, y se puede anotar', async () => {
+    // Lo que se busca: el jugador vuelve a la aplicación en el campo. Sin esto
+    // se encuentra una pantalla vacía y ahí ya no hay nada que anotar
+    recuerda('qm-1', { partida: mockQuickMatch, campo: { holes: [{ holeNumber: 1, par: 4 }], tees: [], name: 'Son Parc' } });
+    sinSenal();
+
+    const result = await monta();
+
+    expect(result.current.quickMatch?.id).toBe('qm-1');
+    expect(result.current.holes).toHaveLength(1);
+    expect(result.current.isScorer).toBe(true);
+    expect(result.current.courseName).toBe('Son Parc');
+  });
+
+  it('y se dice que puede no estar al día', async () => {
+    // La pantalla lo pinta en ámbar mirando este error: sin él se leería como
+    // si fuera lo que hay ahora mismo en el servidor
+    recuerda('qm-1', { partida: mockQuickMatch, campo: { holes: [], tees: [] } });
+    sinSenal();
+
+    const result = await monta();
+
+    expect(result.current.loadError).toBeTruthy();
+  });
+
+  it('sin señal y sin nada guardado, no hay nada que pintar', async () => {
+    sinSenal();
+
+    const result = await monta();
+
+    expect(result.current.quickMatch).toBeNull();
+  });
+
+  it('si el servidor dice que ya no está, no se resucita', async () => {
+    // Un 404 es una respuesta: esa partida se borró. Pintarla desde el móvil
+    // sería enseñar algo que ya no existe, y dejar anotar sobre ello
+    recuerda('qm-1', { partida: mockQuickMatch, campo: { holes: [], tees: [] } });
+    getQuickMatchUseCase.execute.mockRejectedValue(Object.assign(new Error('no está'), { status: 404 }));
+
+    const result = await monta();
+
+    expect(result.current.quickMatch).toBeNull();
+    expect(loQueSeSupo('qm-1')).toBeNull();
+  });
+
+  it('con la sesión caducada no se pinta lo guardado', async () => {
+    // Un 401 sí desmiente: no hemos entrado, y enseñar la partida de todas
+    // formas dejaría anotar a quien la aplicación no sabe quién es
+    recuerda('qm-1', { partida: mockQuickMatch, campo: { holes: [], tees: [] } });
+    getQuickMatchUseCase.execute.mockRejectedValue(Object.assign(new Error('fuera'), { status: 401 }));
+
+    const result = await monta();
+
+    expect(result.current.quickMatch).toBeNull();
+  });
+
+  it('con el servidor caído sí se pinta: un 5xx no desmiente nada', async () => {
+    // La partida sigue ahí, es el backend el que está mal. Y así tampoco se
+    // puede anotar, que es justo lo que esto viene a evitar
+    recuerda('qm-1', { partida: mockQuickMatch, campo: { holes: [{ holeNumber: 1, par: 4 }], tees: [] } });
+    getQuickMatchUseCase.execute.mockRejectedValue(Object.assign(new Error('boom'), { status: 500 }));
+
+    const result = await monta();
+
+    expect(result.current.quickMatch?.id).toBe('qm-1');
+    expect(result.current.isScorer).toBe(true);
+  });
+
+  it('cuando vuelve la señal manda el servidor', async () => {
+    recuerda('qm-1', { partida: { ...mockQuickMatch, holeScores: [{ holeNumber: 1, participantId: 'user-1', score: 9 }] }, campo: { holes: [], tees: [] } });
+
+    const result = await monta();
+
+    expect(result.current.quickMatch.holeScores).toHaveLength(0);
   });
 });

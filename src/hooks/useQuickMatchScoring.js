@@ -8,6 +8,7 @@ import {
   cancelQuickMatchUseCase,
 } from '../composition';
 import * as offlineQueue from '../utils/scoringOfflineQueue';
+import { loQueSeSupo, olvida, recuerda } from '../services/loUltimoConocido';
 
 const POLL_INTERVAL = 10000; // 10 seconds
 
@@ -122,11 +123,47 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
           setHoles(course.holes || []);
           setTees(course.tees || []);
           setCourseName(course.name ?? null);
+          // La partida Y su campo: sin hoyos no hay par ni índice, y la
+          // pantalla no se puede dibujar aunque se sepa quién juega
+          recuerda(quickMatchId, { partida: data, campo: course });
         } catch {
           holesLoadedRef.current = false;
+          // El campo no llegó, pero la partida sí: se guarda con lo que hubiera
+          // de antes, que es mejor que nada
+          recuerda(quickMatchId, { partida: data, campo: loQueSeSupo(quickMatchId)?.campo ?? null });
         }
+      } else {
+        recuerda(quickMatchId, { partida: data, campo: loQueSeSupo(quickMatchId)?.campo ?? null });
       }
     } catch (err) {
+      const estado = err?.status ?? err?.response?.status;
+
+      // Una respuesta CON estado es una respuesta: si el servidor dice que esa
+      // partida ya no está —o que no es nuestra— pintarla desde el móvil sería
+      // enseñar algo que no existe, y dejar anotar encima
+      if (estado === 404 || estado === 403) olvida(quickMatchId);
+
+      // Se pinta lo último que se supo, que es lo que permite seguir anotando
+      // al volver a abrir la aplicación en el campo. `loadError` se queda
+      // puesto a propósito: es lo que la pantalla mira para decir que puede no
+      // estar al día.
+      //
+      // Salvo que el servidor haya dicho algo que lo desmienta: que la partida
+      // no está o no es nuestra (404, 403), o que no hemos entrado (401). Un
+      // 5xx no desmiente nada —el backend está mal, la partida sigue ahí— y con
+      // él tampoco se puede anotar, así que ahí lo guardado hace falta igual
+      const desmentido = estado === 401 || estado === 403 || estado === 404;
+      const recordado = desmentido ? null : loQueSeSupo(quickMatchId);
+      if (recordado && miSeq === estadoSeqRef.current) {
+        setQuickMatch(recordado.partida);
+        if (recordado.campo) {
+          setHoles(recordado.campo.holes || []);
+          setTees(recordado.campo.tees || []);
+          setCourseName(recordado.campo.name ?? null);
+          holesLoadedRef.current = true;
+        }
+      }
+
       setLoadError(err);
     } finally {
       setIsLoading(false);
