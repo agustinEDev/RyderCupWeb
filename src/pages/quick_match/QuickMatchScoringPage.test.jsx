@@ -5,7 +5,10 @@ import QuickMatchScoringPage from './QuickMatchScoringPage';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key) => key,
+    // Los valores se pegan detrás de la clave: sin esto, un texto al que no le
+    // llega el número —o al que le llega el que no es— pasaría el test igual
+    t: (key, opts) =>
+      opts && Object.keys(opts).length ? `${key} ${Object.values(opts).join(' ')}` : key,
     i18n: { language: 'en' },
   }),
 }));
@@ -20,7 +23,15 @@ vi.mock('../../components/layout/HeaderAuth', () => ({
 
 const mockUseQuickMatchScoring = vi.fn();
 vi.mock('../../hooks/useQuickMatchScoring', () => ({
-  useQuickMatchScoring: (...args) => mockUseQuickMatchScoring(...args),
+  useQuickMatchScoring: (...args) => {
+    const estado = mockUseQuickMatchScoring(...args);
+    // El hook real siempre devuelve esta lista, y sin nada guardado en el móvil
+    // es exactamente la del servidor: los tests que no la fijan describen ese
+    // caso, y así no hay que repetirla en los veintiún montajes de aquí
+    return estado && estado.holeScoresVisibles === undefined
+      ? { ...estado, holeScoresVisibles: estado.quickMatch?.holeScores ?? [] }
+      : estado;
+  },
 }));
 
 // Regression fixture: the shape ListMyQuickMatchesUseCase/GetQuickMatchUseCase
@@ -1107,5 +1118,406 @@ describe('QuickMatchScoringPage · cancelar una partida en curso', () => {
 
     await screen.findByTestId('quick-match-scoring-tabs');
     expect(screen.queryByTestId('quick-match-cancel-button')).not.toBeInTheDocument();
+  });
+});
+
+/**
+ * LA TABLA D — qué enseña la pantalla de lo que la cola trae de vuelta.
+ *
+ * El aviso NO se apoya en `navigator.onLine`: en un campo con dos barras dice
+ * que hay conexión mientras no pasa nada. Lo que se cuenta es un hecho —
+ * cuántos golpes siguen en el móvil—, no un estado de la red que la aplicación
+ * no puede conocer.
+ *
+ *   estado                    | qué se ve
+ *   --------------------------|---------------------------------------------
+ *   nada pendiente            | ningún aviso
+ *   golpes sin enviar         | aviso en ámbar, con el número. NO el rojo:
+ *                             | para el jugador están anotados
+ *   golpes que se perdieron   | aviso en rojo con los hoyos: el servidor los
+ *                             | rechazó y reintentar no cambiaría nada
+ *   anotación distinta        | modal: lo mío, lo suyo, y quién lo anotó
+ *   «pongo el mío»            | resuelve a mi favor
+ *   «dejo el que hay»         | resuelve a favor del servidor
+ *   dos discrepancias         | de una en una; al cerrar la primera sigue la
+ *                             | segunda, sin perderla
+ */
+describe('QuickMatchScoringPage · lo que quedó sin enviar (FE #515, tabla D)', () => {
+  const resuelveDiscrepancia = vi.fn();
+
+  const pinta = (extra) => {
+    mockUseQuickMatchScoring.mockReturnValue({
+      ...baseHookState,
+      quickMatch: { ...baseQuickMatch, status: 'IN_PROGRESS', isCompleted: false },
+      isScorer: true,
+      coveredParticipantIds: ['user-1'],
+      setCurrentHole: vi.fn(),
+      submitScore: vi.fn(),
+      completeMatch: vi.fn(),
+      cancelMatch: vi.fn(),
+      refetch: vi.fn(),
+      pendientes: 0,
+      perdidos: [],
+      discrepancias: [],
+      resuelveDiscrepancia,
+      ...extra,
+    });
+    return renderPage();
+  };
+
+  const unaDiscrepancia = (holeNumber = 7) => ({
+    holeNumber,
+    participantId: 'user-1',
+    mio: 5,
+    enElServidor: 6,
+    anotadoPor: 'user-2',
+  });
+
+  beforeEach(() => vi.clearAllMocks());
+
+  it('sin nada pendiente no enseña ningún aviso', () => {
+    pinta();
+    expect(screen.queryByTestId('quick-match-pendientes')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('quick-match-perdidos')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('quick-match-discrepancia')).not.toBeInTheDocument();
+  });
+
+  it('con golpes sin enviar lo dice, y no como un error', () => {
+    // Para el jugador el golpe está anotado: solo no ha salido del móvil.
+    // El recuadro rojo se reserva para lo que de verdad no se pudo guardar.
+    pinta({ pendientes: 3 });
+    const aviso = screen.getByTestId('quick-match-pendientes');
+    expect(aviso).toBeInTheDocument();
+    expect(aviso.className).toContain('amber');
+    expect(aviso.className).not.toContain('red');
+  });
+
+  it('con varios jugadores, cada hoyo se nombra una vez', () => {
+    // El caso real: el creador termina la partida mientras un anotador está
+    // sin cobertura cubriendo a tres invitados. Todo lo suyo se rechaza, y
+    // «Los hoyos 7, 7, 7, 8, 8, 8» es lo que sale si se listan sin agrupar
+    pinta({
+      perdidos: [
+        { holeNumber: 7, participantId: 'user-1' },
+        { holeNumber: 7, participantId: 'user-2' },
+        { holeNumber: 8, participantId: 'user-1' },
+      ],
+    });
+
+    const aviso = screen.getByTestId('quick-match-perdidos');
+    expect(aviso.textContent).toContain('7, 8');
+    expect(aviso.textContent).not.toContain('7, 7');
+  });
+
+  it('los golpes que el servidor rechazó se cuentan aparte, y en rojo', () => {
+    pinta({ perdidos: [{ holeNumber: 4, participantId: 'user-1' }] });
+    const aviso = screen.getByTestId('quick-match-perdidos');
+    expect(aviso).toBeInTheDocument();
+    expect(aviso.className).toContain('red');
+    expect(aviso.textContent).toContain('4');
+  });
+
+  it('una anotación distinta abre el modal con los dos resultados', () => {
+    pinta({ discrepancias: [unaDiscrepancia()] });
+    const modal = screen.getByTestId('quick-match-discrepancia');
+    expect(modal).toBeInTheDocument();
+    expect(modal.getAttribute('aria-modal')).toBe('true');
+    expect(modal.textContent).toContain('5');
+    expect(modal.textContent).toContain('6');
+  });
+
+  it('el modal dice quién anotó qué, y qué ibas a anotar tú', () => {
+    // Los dos números salen también en los botones: si esto se mirara sobre el
+    // modal entero, un cuerpo que no dijera nada pasaría igual
+    pinta({ discrepancias: [unaDiscrepancia()] });
+    const cuerpo = screen.getByTestId('quick-match-discrepancia-body');
+    expect(cuerpo.textContent).toContain('Friend');
+    expect(cuerpo.textContent).toContain('6');
+    expect(cuerpo.textContent).toContain('5');
+  });
+
+  it('si el que anotó ya no está en la partida, no deja el hueco en blanco', () => {
+    pinta({ discrepancias: [{ ...unaDiscrepancia(), anotadoPor: 'se-fue' }] });
+    const cuerpo = screen.getByTestId('quick-match-discrepancia-body');
+    expect(cuerpo.textContent).toContain('conflictScorerUnknown');
+  });
+
+  it('«pongo el mío» resuelve a mi favor', () => {
+    pinta({ discrepancias: [unaDiscrepancia()] });
+    fireEvent.click(screen.getByTestId('quick-match-discrepancia-mio'));
+    expect(resuelveDiscrepancia).toHaveBeenCalledWith(7, 'user-1', 'mio');
+  });
+
+  it('«dejo el que hay» resuelve a favor del servidor', () => {
+    pinta({ discrepancias: [unaDiscrepancia()] });
+    fireEvent.click(screen.getByTestId('quick-match-discrepancia-servidor'));
+    // El hook solo entiende 'mio' y 'elQueHay': cualquier otra cosa no hace
+    // nada, así que un nombre distinto aquí dejaba el botón muerto en silencio
+    expect(resuelveDiscrepancia).toHaveBeenCalledWith(7, 'user-1', 'elQueHay');
+  });
+
+  it('con dos discrepancias enseña la primera, no las dos a la vez', () => {
+    // Se resuelven de una en una: dos modales superpuestos no se pueden usar,
+    // y la segunda no se pierde porque el hook la mantiene en la lista
+    pinta({ discrepancias: [unaDiscrepancia(7), unaDiscrepancia(12)] });
+    expect(screen.getAllByTestId('quick-match-discrepancia')).toHaveLength(1);
+    fireEvent.click(screen.getByTestId('quick-match-discrepancia-mio'));
+    expect(resuelveDiscrepancia).toHaveBeenCalledWith(7, 'user-1', 'mio');
+    expect(resuelveDiscrepancia).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('QuickMatchScoringPage · lo guardado se ve y se entiende (FE #515, tabla D bis)', () => {
+  const resuelveDiscrepancia = vi.fn();
+
+  const pinta = (extra) => {
+    mockUseQuickMatchScoring.mockReturnValue({
+      ...baseHookState,
+      quickMatch: { ...baseQuickMatch, status: 'IN_PROGRESS', isCompleted: false },
+      isScorer: true,
+      coveredParticipantIds: ['user-1'],
+      holes: [{ holeNumber: 1, par: 4, strokeIndex: 5 }],
+      totalHoles: 1,
+      setCurrentHole: vi.fn(),
+      submitScore: vi.fn(),
+      completeMatch: vi.fn(),
+      cancelMatch: vi.fn(),
+      refetch: vi.fn(),
+      holeScoresVisibles: [],
+      pendientes: 0,
+      perdidos: [],
+      discrepancias: [],
+      resuelveDiscrepancia,
+      ...extra,
+    });
+    return renderPage();
+  };
+
+  beforeEach(() => vi.clearAllMocks());
+
+  it('un golpe que solo está en el móvil marca el hoyo como anotado', () => {
+    // Lo pinta todo la misma lista. Si la pantalla siguiera leyendo la del
+    // servidor, el jugador anotaría, no vería error —para él está anotado— y
+    // la casilla seguiría diciendo «Anotar»: lo natural es volver a pulsar
+    pinta({
+      holeScoresVisibles: [{ holeNumber: 1, participantId: 'user-1', score: 5, recordedByParticipantId: null }],
+    });
+
+    expect(screen.getByTestId('quick-match-hole-btn-1').className).toContain('green');
+  });
+
+  it('si la partida no llegó a cargar, dice igualmente lo que queda sin enviar', () => {
+    // Es el caso que motivó todo: se vuelve a la app en el campo, la carga
+    // falla y esta pantalla es la única que se ve. Sin esto, los golpes
+    // guardados no aparecen por ningún lado
+    pinta({ quickMatch: null, loadError: { status: 0 }, pendientes: 2 });
+
+    expect(screen.getByTestId('quick-match-scoring-error')).toBeInTheDocument();
+    expect(screen.getByTestId('quick-match-pendientes')).toBeInTheDocument();
+  });
+
+  it('una bola recogida no deja un hueco en blanco en el modal', () => {
+    pinta({
+      discrepancias: [{ holeNumber: 7, participantId: 'user-1', mio: null, enElServidor: 6, anotadoPor: 'user-2' }],
+    });
+
+    const boton = screen.getByTestId('quick-match-discrepancia-mio');
+    expect(boton.textContent).toContain('pickedUp');
+    expect(boton.textContent).not.toMatch(/\(\s*\)/);
+  });
+
+  it('cuando el hoyo es de otro jugador, el modal dice de quién', () => {
+    // Un anotador cubre a invitados, y en foursomes a los cuatro: sin el
+    // nombre no hay forma de saber qué tarjeta está en disputa
+    pinta({
+      // El que anotó soy yo: así el nombre del jugador solo puede venir del
+      // título, y no se cuela por el cuerpo, que nombra al anotador
+      discrepancias: [{ holeNumber: 7, participantId: 'user-2', mio: 5, enElServidor: 6, anotadoPor: 'user-1' }],
+    });
+
+    const titulo = screen.getByTestId('quick-match-discrepancia-title');
+    expect(titulo.textContent).toContain('conflictTitlePlayer');
+    expect(titulo.textContent).toContain('Friend');
+  });
+
+  it('cuando el hoyo es mío, el modal no me nombra a mí', () => {
+    // «El hoyo 7 de Test User» leído por Test User sobra y suena raro
+    pinta({
+      discrepancias: [{ holeNumber: 7, participantId: 'user-1', mio: 5, enElServidor: 6, anotadoPor: 'user-2' }],
+    });
+
+    const titulo = screen.getByTestId('quick-match-discrepancia-title');
+    expect(titulo.textContent).not.toContain('conflictTitlePlayer');
+    expect(titulo.textContent).not.toContain('Test User');
+  });
+
+  it('el modal se lleva el foco al abrirse', () => {
+    // Bloquea la anotación: sin foco, el tabulador pasea por la página de
+    // detrás y un lector de pantalla no llega a leer ni la pregunta
+    pinta({
+      discrepancias: [{ holeNumber: 7, participantId: 'user-1', mio: 5, enElServidor: 6, anotadoPor: 'user-2' }],
+    });
+
+    expect(document.activeElement).toBe(screen.getByTestId('quick-match-discrepancia'));
+  });
+
+  it('el aviso de error dice de qué hoyo se trata', () => {
+    // El hook lo apunta en el error desde la tabla A. Si no se pinta, el
+    // jugador lee la misma frase genérica y no sabe qué hoyo repetir
+    pinta({ saveError: Object.assign(new Error('nope'), { status: 409, holeNumber: 12 }) });
+
+    expect(screen.getByTestId('quick-match-save-error').textContent).toContain('12');
+  });
+});
+
+describe('QuickMatchScoringPage · dos avisos a la vez (FE #515)', () => {
+  const pinta = (extra) => {
+    mockUseQuickMatchScoring.mockReturnValue({
+      ...baseHookState,
+      quickMatch: { ...baseQuickMatch, status: 'IN_PROGRESS', isCompleted: false },
+      isScorer: true,
+      isCreator: true,
+      coveredParticipantIds: ['user-1'],
+      setCurrentHole: vi.fn(),
+      submitScore: vi.fn(),
+      completeMatch: vi.fn(),
+      cancelMatch: vi.fn(),
+      refetch: vi.fn(),
+      pendientes: 0,
+      perdidos: [],
+      discrepancias: [],
+      resuelveDiscrepancia: vi.fn(),
+      ...extra,
+    });
+    return renderPage();
+  };
+
+  beforeEach(() => vi.clearAllMocks());
+
+  it('el conflicto espera si ya hay otro aviso abierto', () => {
+    // El conflicto lo destapa el sondeo, no un toque del jugador, así que
+    // puede aparecer con el aviso de cancelar ya abierto. Dos ventanas a la
+    // misma altura se tapan, y el foco guardado para volver se pierde
+    pinta({
+      discrepancias: [{ holeNumber: 7, participantId: 'user-1', mio: 5, enElServidor: 6, anotadoPor: 'user-2' }],
+    });
+
+    fireEvent.click(screen.getByText('scoring.cancelMatch.button'));
+
+    expect(screen.getByTestId('quick-match-cancel-body')).toBeInTheDocument();
+    expect(screen.queryByTestId('quick-match-discrepancia')).not.toBeInTheDocument();
+  });
+});
+
+/**
+ * LA TABLA I — la clasificación NO se inventa.
+ *
+ * Sin cobertura tenemos nuestros golpes, pero de los demás solo la última foto
+ * que dio el servidor: lo que hayan anotado desde el corte no ha llegado. Con
+ * eso no se puede saber cómo va el partido.
+ *
+ * Y recalcularla solo con lo nuestro es PEOR que dejarla quieta: sube nuestra
+ * puntuación y deja la de los demás congelada, así que dice que vamos por
+ * delante sin saberlo. Quieta al menos está atrasada por igual para todos.
+ *
+ *   caso                          | qué se ve
+ *   ------------------------------|-----------------------------------------
+ *   nada sin enviar               | la clasificación, como siempre
+ *   golpes sin enviar             | la del servidor, sin tocar, y un aviso de
+ *                                 | que no está al día
+ *   la tarjeta y el selector      | esos SÍ llevan lo guardado: son nuestros
+ *                                 | golpes, y de esos no dependemos de nadie
+ */
+describe('QuickMatchScoringPage · la clasificación no se inventa (FE #515, tabla I)', () => {
+  const conGolpes = [{ holeNumber: 1, participantId: 'user-1', score: 5, recordedByParticipantId: null }];
+
+  const pinta = (extra) => {
+    mockUseQuickMatchScoring.mockReturnValue({
+      ...baseHookState,
+      quickMatch: { ...baseQuickMatch, status: 'IN_PROGRESS', isCompleted: false, holeScores: [] },
+      isScorer: true,
+      coveredParticipantIds: ['user-1'],
+      holes: [{ holeNumber: 1, par: 4, strokeIndex: 5 }],
+      totalHoles: 1,
+      setCurrentHole: vi.fn(),
+      submitScore: vi.fn(),
+      completeMatch: vi.fn(),
+      cancelMatch: vi.fn(),
+      refetch: vi.fn(),
+      holeScoresVisibles: [],
+      pendientes: 0,
+      perdidos: [],
+      discrepancias: [],
+      resuelveDiscrepancia: vi.fn(),
+      ...extra,
+    });
+    return renderPage();
+  };
+
+  const vePestanaClasificacion = () => {
+    fireEvent.click(screen.getByTestId('quick-match-tab-classification'));
+  };
+
+  beforeEach(() => vi.clearAllMocks());
+
+  it('con golpes sin enviar, avisa de que no está al día', () => {
+    pinta({ pendientes: 1, holeScoresVisibles: conGolpes });
+    vePestanaClasificacion();
+
+    expect(screen.getByTestId('quick-match-clasificacion-atrasada')).toBeInTheDocument();
+  });
+
+  it('nuestros datos sí están al día en la clasificación', () => {
+    // De lo nuestro no dependemos de nadie: son nuestros golpes
+    pinta({ pendientes: 1, holeScoresVisibles: conGolpes });
+    vePestanaClasificacion();
+
+    expect(screen.getByTestId('quick-match-classification-table').textContent).toContain('5');
+  });
+
+  it('los jugadores que no anotamos salen marcados como sin actualizar', () => {
+    // Y con TEXTO, no solo con un gris: al sol el texto apagado no se lee, y
+    // un lector de pantalla no ve el color. Es lo mismo que se decidió para la
+    // etiqueta «No cuenta» de las partidas rápidas
+    pinta({ pendientes: 1, holeScoresVisibles: conGolpes });
+    vePestanaClasificacion();
+
+    const suya = screen.getByTestId('quick-match-clasificacion-fila-user-2');
+    expect(suya.textContent).toContain('scoring.classification.stale');
+    const mia = screen.getByTestId('quick-match-clasificacion-fila-user-1');
+    expect(mia.textContent).not.toContain('scoring.classification.stale');
+  });
+
+  it('mientras falten datos no se afirma quién va primero', () => {
+    // El orden mezcla lo nuestro al día con lo suyo de hace rato: pondría un
+    // «1» al lado de nuestro nombre por la única razón de que a ellos no se
+    // les ha contado lo que llevan hecho desde el corte
+    pinta({ pendientes: 1, holeScoresVisibles: conGolpes });
+    vePestanaClasificacion();
+
+    expect(screen.queryByTestId('quick-match-clasificacion-puesto')).not.toBeInTheDocument();
+  });
+
+  it('con todo enviado vuelve a haber puestos y nadie sale marcado', () => {
+    pinta({ pendientes: 0 });
+    vePestanaClasificacion();
+
+    expect(screen.getAllByTestId('quick-match-clasificacion-puesto').length).toBeGreaterThan(0);
+    expect(screen.getByTestId('quick-match-clasificacion-fila-user-2').textContent)
+      .not.toContain('scoring.classification.stale');
+  });
+
+  it('sin nada pendiente no avisa de nada', () => {
+    pinta({ pendientes: 0 });
+    vePestanaClasificacion();
+
+    expect(screen.queryByTestId('quick-match-clasificacion-atrasada')).not.toBeInTheDocument();
+  });
+
+  it('la tarjeta sí lleva lo guardado, aunque la clasificación no', () => {
+    // Nuestros golpes son nuestros: para pintarlos no dependemos de nadie
+    pinta({ pendientes: 1, holeScoresVisibles: conGolpes });
+
+    expect(screen.getByTestId('quick-match-hole-btn-1').className).toContain('green');
   });
 });
