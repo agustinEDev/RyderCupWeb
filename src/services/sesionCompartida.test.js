@@ -429,6 +429,39 @@ describe('sesionCompartida · sin señal no se echa a nadie (FE #524)', () => {
     vi.useRealTimers();
   });
 
+  it('un refresco corriente NO marca la sesión como sin confirmar', async () => {
+    // `refrescando` se levanta en cualquier refresco de una sesión ya buena, así
+    // que deducir de ahí «sin confirmar» bloqueaba la pantalla entera en cada
+    // `refetch` —y durante los reintentos si ese refresco fallaba—
+    respuestas.push(usuario('u-1'));
+    await consultaLaSesion();
+    expect(loQueHaySobreLaSesion().sinConfirmar).toBe(false);
+
+    respuestas.push(usuario('u-1'));
+    const enCurso = consultaLaSesion({ forzar: true });
+    expect(loQueHaySobreLaSesion().refrescando).toBe(true);
+    expect(loQueHaySobreLaSesion().sinConfirmar).toBe(false);
+
+    await enCurso;
+    expect(loQueHaySobreLaSesion().sinConfirmar).toBe(false);
+  });
+
+  it('lo que sale del apunte sí queda marcado, y deja de estarlo al confirmarse', async () => {
+    vi.useFakeTimers();
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    localStorage.setItem(RECUERDO, JSON.stringify({ id: 'u-1', email: 'a@b.c', is_admin: false }));
+    respuestas.length = 0;
+    respuestas.push(() => Promise.reject(new Error('sin red')), usuario('u-1'));
+
+    await consultaLaSesion();
+    expect(loQueHaySobreLaSesion().sinConfirmar).toBe(true);
+
+    await vi.advanceTimersByTimeAsync(ESPERA_TRAS_FALLO_MS + 50);
+
+    expect(loQueHaySobreLaSesion().sinConfirmar).toBe(false);
+    vi.useRealTimers();
+  });
+
   it('sin señal y sin nada apuntado, al formulario como siempre', async () => {
     await agotaLosReintentos();
 

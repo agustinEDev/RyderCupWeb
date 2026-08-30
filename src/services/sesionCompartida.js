@@ -104,7 +104,19 @@ const loApuntado = () => {
   }
 };
 
-const NADA_SABIDO = { user: null, cargando: true, refrescando: false, error: null, resuelta: false };
+/** `sinConfirmar`: lo que se enseña sale del apunte del dispositivo y el
+ *  servidor todavia no lo ha respaldado. Es SUYO y no se deduce de
+ *  `refrescando`, que tambien se levanta en un refresco corriente de una sesion
+ *  ya confirmada: derivarlo de ahi bloqueaba la pantalla entera en cada
+ *  `refetch`, que es justo lo que el comentario de `consultaLaSesion` prohibe. */
+const NADA_SABIDO = {
+  user: null,
+  cargando: true,
+  refrescando: false,
+  error: null,
+  resuelta: false,
+  sinConfirmar: false,
+};
 
 let instantanea = NADA_SABIDO;
 let enVuelo = null;
@@ -180,7 +192,7 @@ const pideAlBackend = async (miGeneracion) => {
         if (!sigoValiendo()) return null;
 
         olvidaElApunte();
-        anota({ user: null, cargando: false, refrescando: false, error: null, resuelta: true });
+        anota({ user: null, cargando: false, refrescando: false, error: null, resuelta: true, sinConfirmar: false });
         return null;
       }
 
@@ -211,7 +223,7 @@ const pideAlBackend = async (miGeneracion) => {
     if (reintento !== null) clearTimeout(reintento);
     reintento = null;
     apunta(usuario);
-    anota({ user: usuario, cargando: false, refrescando: false, error: null, resuelta: true });
+    anota({ user: usuario, cargando: false, refrescando: false, error: null, resuelta: true, sinConfirmar: false });
 
     return usuario;
   } catch (error) {
@@ -251,6 +263,9 @@ const pideAlBackend = async (miGeneracion) => {
           refrescando: true,
           error: error.message,
           resuelta: true,
+          // Solo si sale del apunte: un usuario que ya venía confirmado sigue
+          // estándolo aunque ahora no se pueda preguntar
+          sinConfirmar: instantanea.user === null,
         });
         return recordado;
       }
@@ -263,6 +278,7 @@ const pideAlBackend = async (miGeneracion) => {
 
     // Se acabaron los reintentos y no hay a quién preguntar. Antes se bajaba
     // aquí a «resuelto y sin usuario» y el guardia mandaba al formulario
+    const deLaMemoria = instantanea.user === null;
     const recordado = instantanea.user ?? loApuntado();
     anota({
       user: recordado,
@@ -270,6 +286,7 @@ const pideAlBackend = async (miGeneracion) => {
       refrescando: false,
       error: error.message,
       resuelta: recordado !== null,
+      sinConfirmar: deLaMemoria && recordado !== null,
     });
 
     return recordado;
