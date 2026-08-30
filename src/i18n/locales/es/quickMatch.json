@@ -247,7 +247,9 @@
       "pickedUp": "bola recogida",
       "conflictTitlePlayer": "El hoyo {{hole}} de {{player}} ya tiene otra anotación",
       "atHole": "Hoyo {{hole}}.",
-      "classificationStale": "La clasificación no está al día: faltan golpes por enviar, y los de los demás por recibir."
+      "classificationStale": "La clasificación no está al día: faltan golpes por enviar, y los de los demás por recibir.",
+      "noSeActualiza": "Sin conexión con el servidor: lo que ves puede no estar al día.",
+      "standingStale": "El resultado no está al día: hay golpes sin enviar y lo calcula el servidor."
     }
   },
   "personalRound": {

@@ -247,7 +247,9 @@
       "pickedUp": "picked up",
       "conflictTitlePlayer": "{{player}}'s hole {{hole}} already has another score",
       "atHole": "Hole {{hole}}.",
-      "classificationStale": "The standing is not up to date: strokes are still to be sent, and other players' still to arrive."
+      "classificationStale": "The standing is not up to date: strokes are still to be sent, and other players' still to arrive.",
+      "noSeActualiza": "No connection to the server: what you see may not be up to date.",
+      "standingStale": "The result is not up to date: there are strokes still to send, and the server computes it."
     }
   },
   "personalRound": {
