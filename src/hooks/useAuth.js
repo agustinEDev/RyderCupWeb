@@ -43,6 +43,10 @@ export const useAuth = () => {
     user: estado.user,
     loading: estado.cargando,
     error: estado.error,
+    // Se esta enseñando algo que el servidor todavia no ha confirmado: la
+    // sesion apuntada en el dispositivo, mientras se sigue preguntando por
+    // detras (FE #529). Lo mira quien no pueda permitirse decidir con ella
+    sinConfirmar: estado.refrescando && estado.user !== null,
     refetch,
   };
 };

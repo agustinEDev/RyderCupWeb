@@ -35,10 +35,16 @@ const RoleGuard = ({
   redirectTo = '/unauthorized',
 }) => {
   const location = useLocation();
-  const { user, loading } = useAuth();
+  const { user, loading, sinConfirmar } = useAuth();
 
-  // Show loading state while checking authentication
-  if (loading) {
+  // Show loading state while checking authentication.
+  //
+  // Y tambien mientras la sesion este sin confirmar: la que se apunta en el
+  // dispositivo no lleva privilegios a proposito —`is_admin: false`—, asi que
+  // decidir con ella mandaba a `/unauthorized` a un administrador que recargara
+  // `/admin` con un bache de red. Y con `replace`: la respuesta buena que llega
+  // tres segundos despues ya no lo devuelve donde estaba (FE #529)
+  if (loading || sinConfirmar) {
     return (
       <div style={{
         display: 'flex',

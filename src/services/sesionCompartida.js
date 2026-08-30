@@ -142,7 +142,12 @@ const programaReintento = () => {
 
   reintento = setTimeout(() => {
     reintento = null;
-    consultaLaSesion();
+    // Forzando: el reintento quiere preguntar de verdad, y desde que se pinta
+    // con la sesión apuntada (FE #529) esto se publica como resuelto —para que
+    // el guardia deje pasar y nadie abra su propia petición—, así que el atajo
+    // de «ya está resuelta» lo cortaba en seco y no se volvía a preguntar
+    // nunca: la aplicación se quedaba con lo apuntado hasta recargar
+    consultaLaSesion({ forzar: true });
   }, espera);
 };
 
@@ -197,6 +202,14 @@ const pideAlBackend = async (miGeneracion) => {
 
     clearDeviceRevocationFlag();
     fallosSeguidos = 0;
+    // Y el reintento que quedara armado se cancela. Antes daba igual —llegaba
+    // sin forzar y salia por «ya esta resuelta» sin tocar la red—, pero desde
+    // que fuerza (FE #529) dispararia una peticion de mas, que es justo el
+    // abanico que este modulo existe para evitar (FE #489); y al forzar sube la
+    // generacion, con lo que un `refetch` en vuelo veria su respuesta
+    // descartada y resolveria a nada
+    if (reintento !== null) clearTimeout(reintento);
+    reintento = null;
     apunta(usuario);
     anota({ user: usuario, cargando: false, refrescando: false, error: null, resuelta: true });
 
@@ -205,14 +218,45 @@ const pideAlBackend = async (miGeneracion) => {
     console.error('Error loading user:', error);
     if (!sigoValiendo()) return null;
 
-    // `resuelta` se queda como estaba: un tropiezo no es una respuesta, y
-    // guardarlo como tal dejaba a quien montara despues sin volver a intentarlo
+    // Un tropiezo no es una respuesta. Con nada apuntado, `resuelta` se queda
+    // como estaba: darlo por resuelto dejaba a quien montara despues sin volver
+    // a intentarlo. Con la sesion apuntada SI se resuelve —abajo—, para que el
+    // guardia deje pasar y nadie abra su propia peticion; a cambio, recuperarse
+    // pasa a depender solo del temporizador, que por eso fuerza la consulta
     fallosSeguidos += 1;
     programaReintento();
-    // `cargando` se queda arriba mientras haya reintento en camino: para quien
-    // mira, esto sigue siendo «no se sabe», no «no hay sesion»
+
     if (reintento !== null) {
-      // Mientras quede reintento esto sigue siendo «no se sabe»
+      // Con la sesión apuntada en el dispositivo no hace falta esperar a nadie:
+      // se pinta YA y se sigue preguntando por detrás.
+      //
+      // Antes esto mantenía `cargando` arriba hasta agotar los reintentos, y
+      // como van a 3, 6 y 12 segundos, abrir la aplicación sin cobertura eran
+      // **21 segundos de pantalla en blanco** antes siquiera de pedir la
+      // partida —medido—. En el campo eso es una aplicación rota, y es justo el
+      // caso para el que se guarda todo esto (FE #529).
+      //
+      // No se arriesga nada que no estuviera decidido ya: aquí solo se llega
+      // por un fallo de red o un 5xx. Un 401 o un 404 no pasan por el `catch`,
+      // se resuelven arriba borrando el apunte y mandando al formulario, así
+      // que una sesión que de verdad no vale se corrige en cuanto haya
+      // respuesta. El servidor sigue mandando; esto solo evita esperarle
+      // mirando una pantalla vacía
+      const recordado = instantanea.user ?? loApuntado();
+      if (recordado) {
+        anota({
+          user: recordado,
+          cargando: false,
+          // Lo que dice que aún se está preguntando, sin bloquear a nadie
+          refrescando: true,
+          error: error.message,
+          resuelta: true,
+        });
+        return recordado;
+      }
+
+      // Sin nada apuntado no hay qué pintar, y esto sigue siendo «no se sabe»,
+      // no «no hay sesión»: bajarlo a resuelto es el rebote al formulario
       anota({ cargando: true, refrescando: false, error: error.message });
       return null;
     }
@@ -315,6 +359,12 @@ export const olvidaLaSesion = () => {
   // Y lo apuntado se va con ella: si no, la próxima vez sin cobertura se
   // entraría como quien acaba de salir
   olvidaElApunte();
+  // Y los fallos se cuentan desde cero. Si no, un arranque sin cobertura que
+  // quemara los cuatro intentos dejaba el contador arriba, y el siguiente fallo
+  // —ya con la sesión cerrada por inactividad o por otra pestaña— se pasaba del
+  // tope: sin reintento, sin apunte, y al formulario a la primera, que es
+  // justo lo que no puede pasar en mitad del campo
+  fallosSeguidos = 0;
   // Sube la generación: si hay una respuesta en vuelo, ya no manda. Si no,
   // llegaría con el usuario de antes y volvería a dar por buena una sesión que
   // acaba de cerrarse
