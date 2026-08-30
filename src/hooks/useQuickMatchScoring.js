@@ -216,16 +216,22 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
   // conexión sin haberla— pero sí como excusa para probar: si el intento sale,
   // es que había
   useEffect(() => {
-    const alVolver = () => {
+    // La vuelta de la red se aprovecha SIEMPRE, se esté mirando o no: es una
+    // ocasión de sacar del móvil lo que quedó guardado, y desaprovecharla
+    // porque la pantalla esté en segundo plano no le ahorra nada a nadie
+    const alVolverLaRed = () => fetchQuickMatch();
+    // La visibilidad, en cambio, solo cuando se vuelve: el mismo evento avisa
+    // de que la aplicación se va al fondo, y ahí no hay nada que preguntar
+    const alVolverALaApp = () => {
       if (document.visibilityState !== 'visible') return;
       fetchQuickMatch();
     };
-    window.addEventListener('online', alVolver);
-    document.addEventListener('visibilitychange', alVolver);
+    window.addEventListener('online', alVolverLaRed);
+    document.addEventListener('visibilitychange', alVolverALaApp);
 
     return () => {
-      window.removeEventListener('online', alVolver);
-      document.removeEventListener('visibilitychange', alVolver);
+      window.removeEventListener('online', alVolverLaRed);
+      document.removeEventListener('visibilitychange', alVolverALaApp);
     };
   }, [fetchQuickMatch]);
 

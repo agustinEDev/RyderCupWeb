@@ -1325,6 +1325,18 @@ describe('useQuickMatchScoring · cuándo se pregunta (FE #524, tabla Q)', () =>
     expect(getQuickMatchUseCase.execute).toHaveBeenCalledTimes(1);
   });
 
+  it('la vuelta de la red se aprovecha aunque no se esté mirando', async () => {
+    // Es una ocasión de sacar del móvil lo que quedó guardado. Perderla porque
+    // la pantalla esté en segundo plano no le ahorra nada a nadie
+    await monta();
+    conVisibilidad('hidden');
+    getQuickMatchUseCase.execute.mockClear();
+
+    await act(async () => { window.dispatchEvent(new window.Event('online')); });
+
+    expect(getQuickMatchUseCase.execute).toHaveBeenCalledTimes(1);
+  });
+
   it('irse al fondo no dispara ninguna pregunta', async () => {
     await monta();
 
