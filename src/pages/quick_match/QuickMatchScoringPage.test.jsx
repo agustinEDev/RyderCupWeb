@@ -185,11 +185,14 @@ describe('QuickMatchScoringPage - copia de los errores', () => {
     );
   });
 
-  it('cae al mensaje genérico cuando el error de carga no trae status', () => {
+  it('un error de carga sin status es falta de señal, y se dice como tal', () => {
+    // Antes caía en el mensaje genérico —«ha ocurrido un error»—, que suena a
+    // que algo se ha roto. Sin status es que no hubo respuesta: quedarse sin
+    // cobertura no es un error, y es la misma regla del resto de la pantalla
     renderWithError(new Error('Failed to fetch'));
 
     const shown = screen.getByTestId('quick-match-scoring-error');
-    expect(shown).toHaveTextContent('scoring.errors.generic');
+    expect(shown).toHaveTextContent('scoring.offline.noSeActualiza');
     expect(shown).not.toHaveTextContent('Failed to fetch');
   });
 
@@ -1304,6 +1307,23 @@ describe('QuickMatchScoringPage · lo guardado se ve y se entiende (FE #515, tab
     });
 
     expect(screen.getByTestId('quick-match-hole-btn-1').className).toContain('green');
+  });
+
+  it('si la partida no llegó a cargar por falta de señal, no lo llama error', () => {
+    // Es la misma regla del resto de la pantalla: quedarse sin cobertura no es
+    // un error. Aquí llegaba con «Ha ocurrido un error. Inténtalo de nuevo»,
+    // que suena a que algo se ha roto
+    pinta({ quickMatch: null, loadError: new TypeError('Failed to fetch') });
+
+    expect(screen.getByTestId('quick-match-scoring-error').textContent)
+      .toContain('scoring.offline.noSeActualiza');
+  });
+
+  it('si no llegó a cargar por un fallo del servidor, sí lo llama error', () => {
+    pinta({ quickMatch: null, loadError: Object.assign(new Error('boom'), { status: 500 }) });
+
+    expect(screen.getByTestId('quick-match-scoring-error').textContent)
+      .not.toContain('scoring.offline.noSeActualiza');
   });
 
   it('si la partida no llegó a cargar, dice igualmente lo que queda sin enviar', () => {
