@@ -37,7 +37,7 @@ import { isDeviceRevoked, handleDeviceRevocationLogout } from '../utils/deviceRe
 import { resolvePostAuthTarget } from '../utils/auth';
 import { anotaLaSesion } from '../services/sesionCompartida';
 import User from '../domain/entities/User.js';
-import { apuntaFalloDeRed } from '../services/estadoDeConexion';
+import { vigilaUnaPeticion, apuntaRespuestaDelServidor } from '../services/estadoDeConexion';
 
 // Misma prioridad que `api.js` y el interceptor: la configuración de ejecución
 // manda sobre la del build. Sin esto, `/current-user` y el refresco de aquí
@@ -50,12 +50,30 @@ const API_URL = globalThis.APP_CONFIG?.API_BASE_URL || import.meta.env.VITE_API_
  */
 const SESSION_CHECK_TIMEOUT_MS = 5000;
 
-const requestCurrentUser = (signal) =>
-  fetch(`${API_URL}/api/v1/auth/current-user`, {
+/**
+ * La comprobación del arranque, vigilada como cualquier otra petición.
+ *
+ * Va con `fetch` a pelo y no por el interceptor —tiene su propio plazo y su
+ * propia forma de rendirse—, así que sin esto era el único sitio de la
+ * aplicación que veía una caída y no la contaba: se entraba «sin red» mientras
+ * el resto seguía creyendo que había conexión.
+ *
+ * Se vigila en vez de declarar la caída a mano: así hereda la misma regla que
+ * todas —no culpar a la red si otra petición está llegando—, que es justo lo
+ * que hacía falta para que una instancia dormida de Render, que tarda más del
+ * plazo, no apagara la aplicación entera.
+ */
+const requestCurrentUser = async (signal) => {
+  const suelta = vigilaUnaPeticion();
+  const respuesta = await fetch(`${API_URL}/api/v1/auth/current-user`, {
     credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
     signal,
   });
+  suelta();
+  apuntaRespuestaDelServidor();
+  return respuesta;
+};
 
 /** El backend ha contestado que no: la sesión está muerta, no es un tropiezo. */
 class SessionRejectedError extends Error {}
@@ -106,11 +124,7 @@ export const useRedirectIfAuthenticated = ({
       // sabemos nada de la sesión, solo que el backend no contestó a tiempo
       controller.abort();
 
-      // Y se cuenta: esta petición va con `fetch` a pelo, no por el
-      // interceptor, así que es el único sitio que ve esta caída. Sin esto se
-      // entraba «sin red» mientras la aplicación seguía creyendo que había
-      // conexión, justo en el arranque sin cobertura (FE #515)
-      apuntaFalloDeRed();
+
 
       if (entrarSinRed) {
         // Este es el camino de VERDAD sin cobertura: la petición no falla

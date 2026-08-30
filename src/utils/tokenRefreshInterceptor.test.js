@@ -481,16 +481,7 @@ describe('tokenRefreshInterceptor', () => {
 
     const conModuloLimpio = async () => (await import('./tokenRefreshInterceptor')).fetchWithTokenRefresh;
 
-    it('una petición que no llega deja la aplicación sin conexión', async () => {
-      const fetchConRefresco = await conModuloLimpio();
-      globalThis.fetch.mockRejectedValueOnce(new TypeError('Failed to fetch'));
-
-      await expect(fetchConRefresco('http://localhost:8000/api/v1/test')).rejects.toThrow();
-
-      expect(estado.hayConexion()).toBe(false);
-    });
-
-    it('cualquier respuesta la devuelve, aunque sea un error del servidor', async () => {
+    it('cualquier respuesta cuenta, aunque sea un error del servidor', async () => {
       const fetchConRefresco = await conModuloLimpio();
       estado.apuntaFalloDeRed();
 
@@ -500,50 +491,52 @@ describe('tokenRefreshInterceptor', () => {
       expect(estado.hayConexion()).toBe(true);
     });
 
-    it('abortar una petición no es quedarse sin cobertura', async () => {
-      // Lo aborta la propia aplicación —al desmontar una pantalla, o al agotar
-      // su propio plazo—, así que decir «sin conexión» sería mentir
-      const fetchConRefresco = await conModuloLimpio();
-      const aborto = new Error('The operation was aborted');
-      aborto.name = 'AbortError';
-      globalThis.fetch.mockRejectedValueOnce(aborto);
+    it.each([
+      ['un TypeError, como en Chrome', () => new TypeError('Failed to fetch')],
+      ['el texto que pone iOS', () => new TypeError('The Internet connection appears to be offline.')],
+      ['un aborto', () => Object.assign(new Error('aborted'), { name: 'AbortError' })],
+      ['un plazo agotado', () => Object.assign(new Error('timed out'), { name: 'TimeoutError' })],
+      ['cualquier otra cosa', () => new Error('vete a saber')],
+    ])('con %s, lo que cuenta es que no llegó respuesta', async (_, construye) => {
+      // El tipo y el texto del rechazo ya no se miran: los escribe cada
+      // navegador y la lista nunca estaba completa. Un rechazo es simplemente
+      // que no llegó nada, y de eso se encarga el plazo
+      vi.useFakeTimers();
+      try {
+        const fetchConRefresco = await conModuloLimpio();
+        globalThis.fetch.mockRejectedValueOnce(construye());
 
-      await expect(fetchConRefresco('http://localhost:8000/api/v1/test')).rejects.toThrow();
+        await expect(fetchConRefresco('http://localhost:8000/api/v1/test')).rejects.toThrow();
+        expect(estado.hayConexion()).toBe(true);   // todavía no se sabe
 
-      expect(estado.hayConexion()).toBe(true);
+        await vi.advanceTimersByTimeAsync(5000);
+        expect(estado.hayConexion()).toBe(false);  // y ahora sí
+      } finally {
+        vi.useRealTimers();
+      }
     });
 
-    it('agotar el propio plazo tampoco es quedarse sin cobertura', async () => {
-      // Hoy nadie usa `AbortSignal.timeout()`, pero el arranque implementa ese
-      // patrón a mano y el día que se acorte, esto evita que su plazo se lea
-      // como falta de red
-      const fetchConRefresco = await conModuloLimpio();
-      const agotado = new Error('The operation timed out');
-      agotado.name = 'TimeoutError';
-      globalThis.fetch.mockRejectedValueOnce(agotado);
+    it('pero si mientras tanto llega otra respuesta, no se dice nada', async () => {
+      // Es lo que salva a un aborto al desmontar una pantalla, y a una petición
+      // que rechaza por una cabecera mal construida
+      vi.useFakeTimers();
+      try {
+        const fetchConRefresco = await conModuloLimpio();
+        globalThis.fetch.mockRejectedValueOnce(new TypeError('Failed to fetch'));
 
-      await expect(fetchConRefresco('http://localhost:8000/api/v1/test')).rejects.toThrow();
+        await expect(fetchConRefresco('http://localhost:8000/api/v1/test')).rejects.toThrow();
+        await vi.advanceTimersByTimeAsync(2000);
+        estado.apuntaRespuestaDelServidor();
+        await vi.advanceTimersByTimeAsync(4000);
 
-      expect(estado.hayConexion()).toBe(true);
+        expect(estado.hayConexion()).toBe(true);
+      } finally {
+        vi.useRealTimers();
+      }
     });
 
-    it('un fallo de red con el texto que pone iOS también cuenta', async () => {
-      // El mensaje lo escribe el sistema y cambia con el idioma del teléfono:
-      // «The Internet connection appears to be offline» no casaba con ninguna
-      // lista razonable, y ese es justo el iPhone del que salió el informe
-      const fetchConRefresco = await conModuloLimpio();
-      globalThis.fetch.mockRejectedValueOnce(
-        new TypeError('The Internet connection appears to be offline.')
-      );
-
-      await expect(fetchConRefresco('http://localhost:8000/api/v1/test')).rejects.toThrow();
-
-      expect(estado.hayConexion()).toBe(false);
-    });
-
-    it('una petición que se queda colgada acaba contando como sin conexión', async () => {
-      // El caso de verdad en un campo: no rechaza, cuelga. Y no se cancela:
-      // `fetch` no recibe ningún `signal`
+    it('una petición que se queda colgada acaba contando, y no se cancela', async () => {
+      // El caso de verdad en un campo: no rechaza, cuelga
       vi.useFakeTimers();
       try {
         const fetchConRefresco = await conModuloLimpio();
@@ -557,35 +550,6 @@ describe('tokenRefreshInterceptor', () => {
       } finally {
         vi.useRealTimers();
       }
-    });
-
-    it('un error propio del interceptor no la declara sin conexión', async () => {
-      // Leer un campo de un cuerpo vacío lanza `TypeError` y no dice nada de la
-      // red: pasa por el `catch` ancho, no por el del `fetch`
-      const { refreshAccessToken } = await import('./tokenRefreshInterceptor');
-      globalThis.fetch.mockResolvedValueOnce({
-        ok: false,
-        status: 401,
-        statusText: 'Unauthorized',
-        json: async () => null,
-      });
-
-      await expect(refreshAccessToken()).rejects.toThrow();
-
-      expect(estado.hayConexion()).toBe(true);
-    });
-
-    it('un refresco que no sale del móvil también lo dice', async () => {
-      // `useProactiveTokenRefresh` llama a `refreshAccessToken` directamente,
-      // sin pasar por el interceptor
-      // Sin `resetModules` aquí: crearía una segunda instancia del estado,
-      // distinta de la que observa este test
-      const { refreshAccessToken } = await import('./tokenRefreshInterceptor');
-      globalThis.fetch.mockRejectedValueOnce(new TypeError('Failed to fetch'));
-
-      await expect(refreshAccessToken()).rejects.toThrow();
-
-      expect(estado.hayConexion()).toBe(false);
     });
   });
 });

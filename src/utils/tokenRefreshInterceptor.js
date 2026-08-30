@@ -18,30 +18,8 @@ import { sinSesionEnRutaPublica } from './rutasPublicas';
 
 
 import { setCsrfTokenGlobal } from '../contexts/csrfTokenSync'; // v1.13.0: CSRF Protection
-import { apuntaRespuestaDelServidor, apuntaFalloDeRed, vigilaUnaPeticion } from '../services/estadoDeConexion';
+import { apuntaRespuestaDelServidor, vigilaUnaPeticion } from '../services/estadoDeConexion';
 
-/**
- * Si un error viene de que la petición no llegó a completarse.
- *
- * Un `fetch` que no sale del dispositivo rechaza con `TypeError`, y no trae ni
- * respuesta ni estado. No basta con mirar que falten esos dos campos: por aquí
- * pasan también errores propios y darlos por falta de cobertura declararía la
- * aplicación entera sin conexión sin motivo.
- */
-const esFalloDeRed = (error) =>
-  error instanceof TypeError
-  && !error?.response
-  && !error?.status
-  // Se mira el mensaje SOLO en los `catch` anchos, donde conviven errores de
-  // red y errores propios de este fichero —leer `.detail` de un cuerpo vacío,
-  // por ejemplo—, que no dicen nada de la cobertura.
-  //
-  // Es una heurística y falla por defecto a propósito: iOS rechaza con el texto
-  // del sistema («The Internet connection appears to be offline», «cancelled»),
-  // así que la lista nunca estará completa. Por eso el camino que importa no
-  // pasa por aquí: en `fetchVigilado` el `try` solo ejecuta `fetch`, de modo que
-  // cualquier rechazo suyo ES de red y se apunta sin preguntar por el texto
-  && !/is not a function|cannot read propert|undefined is not/i.test(error?.message ?? '');
 
 import {
   isDeviceRevoked,
@@ -157,10 +135,6 @@ export const refreshAccessToken = async () => {
 
     return true;
   } catch (error) {
-    // También aquí: `useProactiveTokenRefresh` llama a esta función
-    // directamente, sin pasar por el interceptor, así que sin esto un refresco
-    // que no sale del móvil no levantaría el aviso
-    if (esFalloDeRed(error)) apuntaFalloDeRed();
     console.error('❌ [TokenRefresh] Error refreshing token:', error);
     throw error;
   }
@@ -174,26 +148,25 @@ export const refreshAccessToken = async () => {
  */
 const fetchVigilado = async (url, opciones) => {
   const suelta = vigilaUnaPeticion();
-  let respuesta;
-  try {
-    // El `try` envuelve SOLO el `fetch`: así, lo que rechace aquí es de red por
-    // construcción y no hay que adivinarlo por el texto del mensaje, que en iOS
-    // es el del sistema y cambia con el idioma del teléfono
-    respuesta = await fetch(url, opciones);
-  } catch (error) {
-    // Abortar es lo único que rechaza aquí sin ser falta de cobertura: lo hace
-    // la propia aplicación al desmontar una pantalla o al agotar su plazo, y
-    // decir «sin conexión» por eso sería mentir.
-    //
-    // `TimeoutError` va en la misma lista aunque hoy nadie lo produzca: es lo
-    // que lanza `AbortSignal.timeout()`, y el arranque ya implementa ese patrón
-    // a mano. El día que se cambie por la forma corta, «se agotó mi plazo» se
-    // convertiría en silencio en «no hay cobertura»
-    const abortado = error?.name === 'AbortError' || error?.name === 'TimeoutError';
-    if (!abortado) apuntaFalloDeRed();
-    suelta();
-    throw error;
-  }
+
+  // Un rechazo NO se interpreta. Antes se miraba de qué tipo era y qué decía su
+  // mensaje, y eso falló dos veces en el mismo sitio: la redacción la escribe
+  // cada navegador —WebKit usa el texto del sistema, y cambia con el idioma del
+  // teléfono—, así que la lista nunca estaba completa y un error propio acababa
+  // apagando la aplicación entera.
+  //
+  // Aquí un rechazo es simplemente que no llegó respuesta, que es lo único que
+  // significa de verdad. Por eso tampoco se suelta la vigilancia: se deja correr
+  // el plazo y que él decida. Si en esos segundos llega cualquier otra
+  // respuesta, no se dice nada; si no llega ninguna, es que no hay conexión.
+  //
+  // De regalo, abortar deja de ser un caso especial sin escribir una condición:
+  // al desmontar una pantalla la petición termina, no llega respuesta, y basta
+  // con que otra cualquiera conteste para que no se declare nada.
+  const respuesta = await fetch(url, opciones);
+
+  // Lo único que prueba que se está llegando: una respuesta, con el estado que
+  // traiga. Un 500 demuestra que hay conexión igual que un 200
   suelta();
   apuntaRespuestaDelServidor();
   return respuesta;
@@ -390,7 +363,6 @@ export const fetchWithTokenRefresh = async (url, options = {}) => {
     }
 
   } catch (error) {
-    if (esFalloDeRed(error)) apuntaFalloDeRed();
     console.error('❌ [TokenRefresh] Error in fetch interceptor:', error);
     // Re-throw to let the caller handle the error appropriately
     throw error;

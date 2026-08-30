@@ -41,7 +41,10 @@ let ultimaRespuesta = 0;
 // Los plazos en marcha, para poder pararlos al reiniciar el módulo en pruebas
 const temporizadores = new Set();
 
-const ahora = () => globalThis.performance?.now?.() ?? 0;
+// `Date.now()` de respaldo y no cero: con cero, `ultimaRespuesta` valdría
+// siempre 0, la comprobación de frescura sería siempre cierta y ningún plazo
+// declararía jamás una caída, girando además en un re-armado sin fin
+const ahora = () => globalThis.performance?.now?.() ?? Date.now();
 
 const avisa = () => {
   // Sobre una copia: un oyente que se apunte durante el aviso entraría en este
@@ -152,10 +155,10 @@ export const olvidaElEstadoDeConexion = () => {
   for (const t of temporizadores) clearTimeout(t);
   temporizadores.clear();
   ultimaRespuesta = 0;
-  // Y los del navegador: sin esto, cada reinicio dejaba un par más vivo sobre
-  // `globalThis`, atado a una instancia del módulo ya muerta
-  globalThis.removeEventListener?.('offline', seCayoLaRed);
-  globalThis.removeEventListener?.('online', volvioLaRed);
+  // Los oyentes del navegador NO se tocan. Quitarlos aquí —que es lo que se
+  // hacía— dejaba el módulo sordo a `offline`/`online` para siempre, justo lo
+  // contrario de «devolverlo a su estado de arranque». Y volver a ponerlos
+  // sería redundante: nunca se quitaron
   llegaAlServidor = globalThis.navigator?.onLine !== false;
   oyentes.clear();
 };
@@ -172,7 +175,13 @@ export const olvidaElEstadoDeConexion = () => {
 const seCayoLaRed = () => cambiaA(false);
 const volvioLaRed = () => cambiaA(true);
 
-if (typeof globalThis.addEventListener === 'function') {
+const escuchaAlNavegador = () => {
+  if (typeof globalThis.addEventListener !== 'function') return;
+  // Se quita antes de poner: así llamarlo dos veces no deja pares duplicados
+  globalThis.removeEventListener('offline', seCayoLaRed);
+  globalThis.removeEventListener('online', volvioLaRed);
   globalThis.addEventListener('offline', seCayoLaRed);
   globalThis.addEventListener('online', volvioLaRed);
-}
+};
+
+escuchaAlNavegador();

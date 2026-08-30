@@ -177,18 +177,39 @@ describe('la petición que se queda colgada (FE #515)', () => {
     expect(hayConexion()).toBe(true);
   });
 
-  it('reiniciar da de baja también los oyentes del navegador', () => {
-    // Sin esto, cada reinicio dejaba un par más vivo sobre `globalThis`, atado
-    // a una instancia del módulo ya muerta: hoy inocuo, pero el día que un test
-    // despache `offline` reaccionarían varias a la vez
-    const baja = vi.spyOn(globalThis, 'removeEventListener');
-
+  it('reiniciar deja el módulo escuchando al navegador, no sordo', () => {
+    // Comprobar que se llamó a `removeEventListener` bendecía justo la mitad
+    // rota: quitarlos y ya está dejaba el módulo sin oír `offline` nunca más
     olvidaElEstadoDeConexion();
 
-    const eventos = baja.mock.calls.map(([evento]) => evento);
-    expect(eventos).toContain('offline');
-    expect(eventos).toContain('online');
-    baja.mockRestore();
+    globalThis.dispatchEvent(new globalThis.Event('offline'));
+
+    expect(hayConexion()).toBe(false);
+  });
+
+  it('y reiniciar dos veces no deja el aviso duplicado', () => {
+    olvidaElEstadoDeConexion();
+    olvidaElEstadoDeConexion();
+    const oyente = vi.fn();
+    seSuscribeALaConexion(oyente);
+
+    globalThis.dispatchEvent(new globalThis.Event('offline'));
+
+    expect(oyente).toHaveBeenCalledTimes(1);
+  });
+
+  it('tampoco se queda cuando se re-arma', () => {
+    // La rama del re-armado vuelve a meter uno: si no se quita el anterior, una
+    // petición colgada con tráfico alrededor los acumula durante horas
+    vigilaUnaPeticion();
+
+    vi.advanceTimersByTime(4000);
+    apuntaRespuestaDelServidor();
+    vi.advanceTimersByTime(4000);
+    apuntaRespuestaDelServidor();
+    vi.advanceTimersByTime(4000);
+
+    expect(plazosVivos()).toBe(1);
   });
 
   it('el plazo que se dispara no se queda en la lista', () => {

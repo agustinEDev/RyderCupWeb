@@ -167,6 +167,29 @@ describe('useRedirectIfAuthenticated', () => {
         );
       });
 
+      afterEach(async () => {
+        // Estos casos tocan estado de módulo compartido: dejarlo tocado hacía
+        // que el siguiente pasara por contaminación y no por lo que afirma
+        const { olvidaElEstadoDeConexion } = await import('../services/estadoDeConexion');
+        olvidaElEstadoDeConexion();
+      });
+
+      it('y que sí la hay en cuanto contesta, aunque tarde', async () => {
+        // La otra mitad: sin esto el arranque solo sabía dar malas noticias, y
+        // en el formulario de acceso el estado se quedaba en «sin conexión»
+        // sin nada que lo corrigiera
+        const { hayConexion, apuntaFalloDeRed, olvidaElEstadoDeConexion } =
+          await import('../services/estadoDeConexion');
+        olvidaElEstadoDeConexion();
+        apuntaFalloDeRed();
+
+        globalThis.fetch.mockResolvedValue(okResponse({ id: 'u1' }));
+
+        renderHook(() => useRedirectIfAuthenticated({ entrarSinRed: true }));
+
+        await waitFor(() => expect(hayConexion()).toBe(true));
+      });
+
       it('deja dicho que no hay conexión cuando la comprobación se cuelga', async () => {
         // Esta petición va con `fetch` a pelo, no por el interceptor, así que
         // es el único sitio que ve esta caída. Sin esto se entraba «sin red»
