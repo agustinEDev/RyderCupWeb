@@ -76,7 +76,13 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
   const [perdidos, setPerdidos] = useState([]);
   // Hoyos donde lo guardado no coincide con lo que hay: los resuelve el jugador
   const [discrepancias, setDiscrepancias] = useState([]);
-  const vaciandoRef = useRef(false);
+  // Un solo cerrojo para las DOS escrituras —el vaciado y el envío directo—,
+  // porque las dos escriben en el mismo sitio y el orden de llegada no lo
+  // decide nadie: si el golpe viejo sale primero y llega el último, el servidor
+  // se queda con el viejo y la corrección no está en ninguna parte, ni en la
+  // cola —ya vaciada— ni en el servidor. Sin solaparse, el orden deja de
+  // importar. Guardar en la cola no cuenta como escritura: no sale del móvil.
+  const escribiendoRef = useRef(false);
   // El vaciado se declara más abajo y el sondeo está más arriba: la ref evita
   // reordenarlo todo y el ciclo de dependencias entre los dos
   const vaciarRef = useRef(null);
@@ -224,8 +230,8 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
     async (partida) => {
       if (!quickMatchId) return;
       // Una vez a la vez: un golpe no puede enviarse por duplicado
-      if (vaciandoRef.current) return;
-      vaciandoRef.current = true;
+      if (escribiendoRef.current) return;
+      escribiendoRef.current = true;
 
       try {
         // Todo sale de la respuesta, no del estado: cuando el primer sondeo
@@ -317,7 +323,7 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
         // este sondeo no vuelve a vaciar y no hay vuelta sin fin
         if (algoLlegoAlServidor) await fetchQuickMatch();
       } finally {
-        vaciandoRef.current = false;
+        escribiendoRef.current = false;
       }
     },
     [quickMatchId, currentUserId, enviaGuardado, fetchQuickMatch]
@@ -374,6 +380,25 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
     async (holeNumber, participantId, score) => {
       if (!quickMatchId || !isScorer) return;
 
+      // Con un vaciado en marcha no se manda: se guarda, y sale en el
+      // siguiente sondeo detrás de lo que ya iba. Mandarlo ahora es la carrera
+      // de arriba, y ahí lo que se pierde es la corrección del jugador
+      if (escribiendoRef.current) {
+        if (offlineQueue.enqueue(quickMatchId, holeNumber, { score }, participantId) === false) {
+          const fallo = new Error('No se pudo guardar el golpe en el dispositivo');
+          fallo.holeNumber = holeNumber;
+          setSaveError(fallo);
+          return;
+        }
+        setPendientes(offlineQueue.size(quickMatchId));
+        setSaveError(null);
+        setPerdidos((antes) =>
+          antes.filter((x) => !(x.holeNumber === holeNumber && x.participantId === participantId))
+        );
+        return;
+      }
+
+      escribiendoRef.current = true;
       setIsSubmitting(true);
       // El aviso rojo pedía volver a anotarlo: ya está hecho. Se retira aquí y
       // no en la rama del envío bueno, porque si el golpe se queda otra vez en
@@ -418,6 +443,7 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
           setSaveError(err);
         }
       } finally {
+        escribiendoRef.current = false;
         setIsSubmitting(false);
       }
     },

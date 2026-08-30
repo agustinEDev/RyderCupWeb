@@ -953,3 +953,86 @@ describe('useQuickMatchScoring · lo guardado y lo enviado, mismo hoyo (FE #515,
     expect(result.current.discrepancias).toHaveLength(0);
   });
 });
+
+/**
+ * LA TABLA H — nunca dos escrituras a la vez sobre el mismo hoyo.
+ *
+ * El vaciado y el envío directo escriben en el mismo sitio, y el orden de
+ * llegada no lo decide nadie: si el golpe viejo sale primero y llega el
+ * último, el servidor se queda con el viejo y la corrección no está en ninguna
+ * parte —ni en la cola, que ya se vació, ni en el servidor—. Con un solo
+ * cerrojo para las dos, el orden deja de importar porque no se solapan.
+ *
+ *   caso                          | qué pasa
+ *   ------------------------------|-----------------------------------------
+ *   anoto mientras se vacía       | el golpe se guarda; sale en el siguiente
+ *                                 | sondeo, detrás de lo que ya iba
+ *   llega un sondeo mientras       | el vaciado no arranca; lo hará el
+ *   estoy anotando                | siguiente
+ */
+describe('useQuickMatchScoring · una escritura cada vez (FE #515, tabla H)', () => {
+  let cola;
+  const mismo = (e, hoyo, quien) => e.holeNumber === hoyo && e.participantId === quien;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    cola = [];
+    offlineQueue.getByMatch.mockImplementation(() => cola);
+    offlineQueue.size.mockImplementation(() => cola.length);
+    offlineQueue.enqueue.mockImplementation((matchId, holeNumber, scoreData, participantId) => {
+      cola = cola.filter((e) => !mismo(e, holeNumber, participantId));
+      cola.push({ matchId, holeNumber, participantId, scoreData });
+      return true;
+    });
+    offlineQueue.remove.mockImplementation((matchId, holeNumber, participantId) => {
+      cola = cola.filter((e) => !mismo(e, holeNumber, participantId));
+      return true;
+    });
+    getGolfCourseUseCase.execute.mockResolvedValue({ holes: [], tees: [], name: 'Campo' });
+    getQuickMatchUseCase.execute.mockResolvedValue(mockQuickMatch);
+    submitQuickMatchHoleScoreUseCase.execute.mockResolvedValue({});
+    submitQuickMatchProxyHoleScoreUseCase.execute.mockResolvedValue({});
+  });
+
+  it('anotar mientras se vacía guarda el golpe en vez de mandarlo', async () => {
+    // Mandarlo abre justo la carrera: el 4 ya está en vuelo, y si el 6 llega
+    // antes, el servidor se queda con el 4 y del 6 no queda ni rastro
+    let suelta;
+    submitQuickMatchHoleScoreUseCase.execute.mockImplementationOnce(
+      () => new Promise((r) => { suelta = r; })
+    );
+    cola = [{ matchId: 'qm-1', holeNumber: 5, participantId: 'user-1', scoreData: { score: 4 } }];
+
+    const { result } = renderHook(() => useQuickMatchScoring('qm-1', 'user-1'));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    await waitFor(() => expect(submitQuickMatchHoleScoreUseCase.execute).toHaveBeenCalledTimes(1));
+
+    await act(async () => { await result.current.submitScore(5, 'user-1', 6); });
+
+    expect(submitQuickMatchHoleScoreUseCase.execute).toHaveBeenCalledTimes(1);
+    expect(cola).toContainEqual(expect.objectContaining({ holeNumber: 5, scoreData: { score: 6 } }));
+    expect(result.current.saveError).toBeNull();
+
+    suelta?.({});
+  });
+
+  it('el vaciado no arranca si hay un golpe en vuelo', async () => {
+    let suelta;
+    const { result } = renderHook(() => useQuickMatchScoring('qm-1', 'user-1'));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    submitQuickMatchHoleScoreUseCase.execute.mockImplementationOnce(
+      () => new Promise((r) => { suelta = r; })
+    );
+    let anotando;
+    act(() => { anotando = result.current.submitScore(5, 'user-1', 6); });
+
+    // Con el golpe en vuelo entra un sondeo y encuentra otra cosa guardada
+    cola = [{ matchId: 'qm-1', holeNumber: 8, participantId: 'user-1', scoreData: { score: 3 } }];
+    await act(async () => { await result.current.refetch(); });
+
+    expect(submitQuickMatchHoleScoreUseCase.execute).not.toHaveBeenCalledWith('qm-1', 8, 3);
+
+    await act(async () => { suelta?.({}); await anotando; });
+  });
+});
