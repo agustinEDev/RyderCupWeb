@@ -2,8 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { ArrowLeft } from 'lucide-react';
-import { broadcastLogout } from '../../utils/broadcastAuth';
-import { logoutUseCase } from '../../composition';
+import { useLogout } from '../../hooks/useLogout';
 import { resolveScreen } from './screenTitles';
 import { useGoBack } from '../../hooks/useGoBack';
 import LanguageSwitcher from '../ui/LanguageSwitcher';
@@ -21,6 +20,7 @@ const HeaderAuth = ({ user, title, backTo }) => {
   const location = useLocation();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const desktopDropdownRef = useRef(null);
+  const { logout } = useLogout();
 
   // En movil la cabecera dice donde estas y como volver; repetir la marca en
   // cada pantalla es lenguaje de sitio web, no de aplicacion (FE #310)
@@ -42,19 +42,9 @@ const HeaderAuth = ({ user, title, backTo }) => {
     setIsDropdownOpen(false);
   };
 
-  const handleLogout = async () => {
-    // Broadcast logout event to all other tabs FIRST
-    broadcastLogout();
-
-    try {
-      await logoutUseCase.execute();
-    } catch {
-      // Continue with logout anyway to clear frontend state
-    }
-
-    // Force full page reload to clear all state
-    window.location.href = '/';
-  };
+  // La salida es una sola y vive en `useLogout` (FE #531): esta hacia su
+  // peticion y redirigia, sin limpiar nada, y lo mismo la del perfil
+  const handleLogout = () => logout({ recargarEn: '/' });
 
   const toggleDropdown = () => {
     setIsDropdownOpen(!isDropdownOpen);

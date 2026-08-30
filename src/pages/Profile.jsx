@@ -14,10 +14,10 @@ import { SettingsGroup, SettingsRow, SettingsControlRow } from '../components/pr
 import ActivitySharingToggle from '../components/profile/ActivitySharingToggle';
 import { useAuth } from '../hooks/useAuth';
 import { useStandalone } from '../hooks/useStandalone';
+import { useLogout } from '../hooks/useLogout';
 import { CountryFlag } from '../utils/countryUtils';
-import { broadcastLogout } from '../utils/broadcastAuth';
 import { formatFullDate } from '../utils/dateFormatters';
-import { fetchCountriesUseCase, listUserCompetitionsUseCase, logoutUseCase } from '../composition';
+import { fetchCountriesUseCase, listUserCompetitionsUseCase } from '../composition';
 import FullScreenLoader from '../components/ui/FullScreenLoader';
 import { formatCountryName } from '../services/countries';
 
@@ -26,6 +26,7 @@ const Profile = () => {
   const { t, i18n } = useTranslation('profile');
   const { t: tCommon } = useTranslation('common');
   const { user, loading: isLoadingUser } = useAuth();
+  const { logout } = useLogout();
   const isStandalone = useStandalone();
   // Se guarda el país, no su nombre ya traducido: así cambiar de idioma lo
   // repinta sin tener que volver a pedir la lista de países
@@ -85,18 +86,11 @@ const Profile = () => {
     navigate('/profile/edit');
   };
 
-  const handleLogout = async () => {
-    broadcastLogout();
-
-    try {
-      await logoutUseCase.execute();
-    } catch {
-      // Continue with logout anyway to clear frontend state
-    }
-
-    // Force full page reload to clear all state
-    window.location.href = '/';
-  };
+  // Esta es la UNICA salida que hay en movil —la cabecera no tiene menu alli
+  // (FE #306)—, y no limpiaba nada: el nombre, el correo, el handicap y las
+  // partidas guardadas se quedaban en el dispositivo (FE #531). Ahora sale por
+  // donde salen todas
+  const handleLogout = () => logout({ recargarEn: '/' });
 
 
   if (isLoadingUser || isLoadingData) {

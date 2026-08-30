@@ -1,7 +1,8 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router';
 import HeaderAuth from './HeaderAuth';
+import { logoutUseCase } from '../../composition';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -20,6 +21,11 @@ vi.mock('../../composition', () => ({
 
 vi.mock('../../utils/broadcastAuth', () => ({
   broadcastLogout: vi.fn(),
+}));
+
+const clearAuth = vi.fn();
+vi.mock('../../hooks/useAuthContext', () => ({
+  useAuthContext: () => ({ clearAuth }),
 }));
 
 const user = { first_name: 'Ana', last_name: 'Soto', is_admin: false };
@@ -162,6 +168,46 @@ describe('HeaderAuth', () => {
       } finally {
         window.history.replaceState(previous, '');
       }
+    });
+  });
+  describe('salir deja el dispositivo limpio (FE #531)', () => {
+    /**
+     * LA TABLA — pulsar «Cerrar Sesión».
+     *
+     *   caso                              | qué pasa
+     *   ----------------------------------|--------------------------------------
+     *   el backend contesta               | se limpia lo de la cuenta
+     *   el backend no contesta            | se limpia igual
+     */
+    const abreElMenuYSale = () => {
+      const botones = screen.getAllByRole('button');
+      fireEvent.click(botones[botones.length - 1]);
+      fireEvent.click(screen.getByText('header.logout'));
+    };
+
+    it('lo de la cuenta se va del dispositivo', async () => {
+      // Salía con una redirección dura y nada más, y una redirección no vacía
+      // el almacenamiento: quedaban el nombre, el correo, el hándicap y las
+      // partidas guardadas, para quien entrara después en ese móvil
+      clearAuth.mockClear();
+      logoutUseCase.execute.mockResolvedValue(undefined);
+
+      renderHeader('/dashboard');
+      abreElMenuYSale();
+
+      await waitFor(() => expect(clearAuth).toHaveBeenCalled());
+    });
+
+    it('y también cuando el backend no contesta', async () => {
+      // Quedarse sin cobertura al salir no es motivo para dejar los datos
+      // puestos: la sesión se cierra igual de este lado
+      clearAuth.mockClear();
+      logoutUseCase.execute.mockRejectedValue(new TypeError('Failed to fetch'));
+
+      renderHeader('/dashboard');
+      abreElMenuYSale();
+
+      await waitFor(() => expect(clearAuth).toHaveBeenCalled());
     });
   });
 });
