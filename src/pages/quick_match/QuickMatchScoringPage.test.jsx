@@ -1408,3 +1408,87 @@ describe('QuickMatchScoringPage · dos avisos a la vez (FE #515)', () => {
     expect(screen.queryByTestId('quick-match-discrepancia')).not.toBeInTheDocument();
   });
 });
+
+/**
+ * LA TABLA I — la clasificación NO se inventa.
+ *
+ * Sin cobertura tenemos nuestros golpes, pero de los demás solo la última foto
+ * que dio el servidor: lo que hayan anotado desde el corte no ha llegado. Con
+ * eso no se puede saber cómo va el partido.
+ *
+ * Y recalcularla solo con lo nuestro es PEOR que dejarla quieta: sube nuestra
+ * puntuación y deja la de los demás congelada, así que dice que vamos por
+ * delante sin saberlo. Quieta al menos está atrasada por igual para todos.
+ *
+ *   caso                          | qué se ve
+ *   ------------------------------|-----------------------------------------
+ *   nada sin enviar               | la clasificación, como siempre
+ *   golpes sin enviar             | la del servidor, sin tocar, y un aviso de
+ *                                 | que no está al día
+ *   la tarjeta y el selector      | esos SÍ llevan lo guardado: son nuestros
+ *                                 | golpes, y de esos no dependemos de nadie
+ */
+describe('QuickMatchScoringPage · la clasificación no se inventa (FE #515, tabla I)', () => {
+  const conGolpes = [{ holeNumber: 1, participantId: 'user-1', score: 5, recordedByParticipantId: null }];
+
+  const pinta = (extra) => {
+    mockUseQuickMatchScoring.mockReturnValue({
+      ...baseHookState,
+      quickMatch: { ...baseQuickMatch, status: 'IN_PROGRESS', isCompleted: false, holeScores: [] },
+      isScorer: true,
+      coveredParticipantIds: ['user-1'],
+      holes: [{ holeNumber: 1, par: 4, strokeIndex: 5 }],
+      totalHoles: 1,
+      setCurrentHole: vi.fn(),
+      submitScore: vi.fn(),
+      completeMatch: vi.fn(),
+      cancelMatch: vi.fn(),
+      refetch: vi.fn(),
+      holeScoresVisibles: [],
+      pendientes: 0,
+      perdidos: [],
+      discrepancias: [],
+      resuelveDiscrepancia: vi.fn(),
+      ...extra,
+    });
+    return renderPage();
+  };
+
+  const vePestanaClasificacion = () => {
+    fireEvent.click(screen.getByTestId('quick-match-tab-classification'));
+  };
+
+  beforeEach(() => vi.clearAllMocks());
+
+  it('con golpes sin enviar, avisa de que no está al día', () => {
+    pinta({ pendientes: 1, holeScoresVisibles: conGolpes });
+    vePestanaClasificacion();
+
+    expect(screen.getByTestId('quick-match-clasificacion-atrasada')).toBeInTheDocument();
+  });
+
+  it('la clasificación NO cuenta el golpe que sigue en el móvil', () => {
+    // Es el fondo del asunto: contarlo sube lo nuestro y deja lo de los demás
+    // congelado en la última foto del servidor, así que la tabla diría que
+    // vamos por delante sin que nadie lo sepa. Mejor quieta y avisada.
+    pinta({ pendientes: 1, holeScoresVisibles: conGolpes });
+    vePestanaClasificacion();
+
+    const tabla = screen.getByTestId('quick-match-classification-table');
+    expect(tabla.textContent).not.toContain('5');
+  });
+
+  it('sin nada pendiente no avisa de nada', () => {
+    pinta({ pendientes: 0 });
+    vePestanaClasificacion();
+
+    expect(screen.queryByTestId('quick-match-clasificacion-atrasada')).not.toBeInTheDocument();
+  });
+
+  it('la tarjeta sí lleva lo guardado, aunque la clasificación no', () => {
+    // Nuestros golpes son nuestros: para pintarlos no dependemos de nadie
+    pinta({ pendientes: 1, holeScoresVisibles: conGolpes });
+
+    expect(screen.getByTestId('quick-match-hole-btn-1').className).toContain('green');
+  });
+});

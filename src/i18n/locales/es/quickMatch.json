@@ -245,7 +245,8 @@
       "conflictTheirs": "Dejar el que hay ({{theirs}})",
       "pickedUp": "bola recogida",
       "conflictTitlePlayer": "El hoyo {{hole}} de {{player}} ya tiene otra anotación",
-      "atHole": "Hoyo {{hole}}."
+      "atHole": "Hoyo {{hole}}.",
+      "classificationStale": "La clasificación no está al día: faltan golpes por enviar, y los de los demás por recibir."
     }
   },
   "personalRound": {

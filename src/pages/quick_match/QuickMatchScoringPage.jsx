@@ -581,9 +581,24 @@ const QuickMatchScoringPage = () => {
         )}
 
         {activeTab === 'classification' && (
+          <>
+          {/* Con golpes sin enviar no se puede saber cómo va el partido: de los
+              demás solo tenemos la última foto del servidor, y lo que hayan
+              anotado desde el corte no ha llegado. Recalcularla solo con lo
+              nuestro es PEOR que dejarla quieta —sube lo nuestro y congela lo
+              suyo, así que dice que vamos por delante sin saberlo—, de modo que
+              aquí va el dato del servidor tal cual, y se avisa */}
+          {pendientes > 0 && (
+            <p
+              data-testid="quick-match-clasificacion-atrasada"
+              className="bg-amber-50 border border-amber-200 text-amber-800 rounded-lg p-3 text-sm mb-3"
+            >
+              {t('scoring.offline.classificationStale')}
+            </p>
+          )}
           <QuickMatchClassificationTable
             holes={holes}
-            holeScores={holeScoresVisibles}
+            holeScores={quickMatch?.holeScores ?? []}
             participants={quickMatch?.participants ?? []}
             currentParticipantId={myParticipant?.participantId}
             scoringFormat={quickMatch?.scoringFormat}
@@ -596,6 +611,7 @@ const QuickMatchScoringPage = () => {
             showFinalBadge={yaCerrada}
             isCancelled={!!quickMatch?.isCancelled}
           />
+          </>
         )}
 
         {activeTab === 'scorecard' && (

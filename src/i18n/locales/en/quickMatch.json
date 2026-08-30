@@ -245,7 +245,8 @@
       "conflictTheirs": "Keep the current one ({{theirs}})",
       "pickedUp": "picked up",
       "conflictTitlePlayer": "{{player}}'s hole {{hole}} already has another score",
-      "atHole": "Hole {{hole}}."
+      "atHole": "Hole {{hole}}.",
+      "classificationStale": "The standing is not up to date: strokes are still to be sent, and other players' still to arrive."
     }
   },
   "personalRound": {
