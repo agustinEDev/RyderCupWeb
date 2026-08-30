@@ -54,7 +54,12 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
   // pantalla por un fallo de red pasajero.
   const [loadError, setLoadError] = useState(null);
   const [saveError, setSaveError] = useState(null);
-  const [pendientes, setPendientes] = useState(0);
+  // Arranca contando lo que ya hay guardado: si empezara en cero, al volver a
+  // la app sin cobertura el aviso no saldría hasta el primer vaciado, que sin
+  // cobertura no llega, y los golpes del jugador parecerían no existir
+  const [pendientes, setPendientes] = useState(() =>
+    quickMatchId ? offlineQueue.size(quickMatchId) : 0
+  );
   // Hoyos que el servidor rechazó para siempre, para poder decir cuáles fueron
   const [perdidos, setPerdidos] = useState([]);
   // Hoyos donde lo guardado no coincide con lo que hay: los resuelve el jugador

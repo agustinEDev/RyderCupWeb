@@ -379,6 +379,20 @@ describe('useQuickMatchScoring · vaciar lo guardado (FE #515, tablas B y C)', (
     await waitFor(() => expect(offlineQueue.remove).toHaveBeenCalledWith('qm-1', 7, 'user-1'));
   });
 
+  it('al abrir la pantalla ya sin cobertura, cuenta lo que quedó de antes', async () => {
+    // El caso que originó todo: el jugador vuelve a la app en el campo. Si el
+    // contador empezara en cero, el aviso no saldría hasta el primer vaciado
+    // —que sin cobertura no llega— y sus golpes parecerían no existir.
+    offlineQueue.getByMatch.mockReturnValue([pendiente(7, 5), pendiente(8, 4)]);
+    offlineQueue.size.mockReturnValue(2);
+    getQuickMatchUseCase.execute.mockRejectedValue(new TypeError('Failed to fetch'));
+
+    const { result } = renderHook(() => useQuickMatchScoring('qm-1', 'user-1'));
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    expect(result.current.pendientes).toBe(2);
+  });
+
   it('un golpe de otro jugador sale por la ruta de proxy, no por la propia', async () => {
     // Un anotador cubre a invitados —y en foursomes, a los cuatro—, así que en
     // la cola hay golpes que no son suyos. Y el vaciado del primer sondeo corre
