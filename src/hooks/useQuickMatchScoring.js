@@ -48,6 +48,45 @@ const seGuardaParaDespues = (error) => {
 };
 
 /**
+ * Si lo guardado y lo que hay en el servidor son un DESACUERDO, que es lo unico
+ * que el jugador tiene que resolver (FE #528, FE #530).
+ *
+ * No basta con que los numeros difieran. Para que haya desacuerdo tiene que
+ * haber alguien con quien discrepar:
+ *
+ * - Con un solo anotador no lo hay. Nadie mas ha podido anotar ese hoyo, asi
+ *   que lo que hay en el servidor lo puso este mismo movil y lo nuevo es una
+ *   correccion. Preguntaba «habla con tu companero y decidid cual vale» en una
+ *   partida individual, y el companero era el propio jugador.
+ * - Y aunque se comparta la anotacion, lo que anoto uno mismo tampoco se
+ *   discute consigo mismo: corregir el 4 que puse por el 5 que jugue es
+ *   corregir, no discrepar.
+ *
+ * Vale para las dos caras del mismo asunto: si se pregunta (la cola) y si se
+ * pinta lo guardado encima de lo que hay (la tarjeta). Eran la misma decision
+ * tomada en dos sitios, y solo una de ellas miraba quien habia anotado.
+ *
+ * LO QUE ESTO NO CUBRE: la misma cuenta en dos dispositivos. Si el movil tiene
+ * un hoyo guardado sin enviar y desde la tableta se anota otro numero en ese
+ * hoyo, lo de la tableta llega al servidor tambien como «lo anote yo», y al
+ * volver la cobertura el movil lo pisa sin preguntar. Antes se preguntaba.
+ * Compararlo por fecha pide un `recorded_at` que el DTO de hoyos no trae, asi
+ * que se acepta a sabiendas: en el mismo dispositivo la cola se vacia al
+ * enviar, y dos dispositivos a la vez con la misma cuenta es raro al lado de
+ * preguntar «habla con tu companero» en una partida que juega uno solo.
+ */
+const esDesacuerdo = (enElServidor, entrada, partida, miParticipanteId) => {
+  if (!enElServidor) return false;
+  if (enElServidor.score === entrada.scoreData.score) return false;
+  if ((partida?.scorerIds?.length ?? 0) <= 1) return false;
+  // Sin saber quien lo anoto —o sin saber quien soy— se pregunta: es lo que no
+  // rompe nada de nadie. Sin el primer termino, dos `undefined` se daban por
+  // iguales y lo desconocido pasaba por propio, que es justo lo contrario
+  if (miParticipanteId && enElServidor.recordedByParticipantId === miParticipanteId) return false;
+  return true;
+};
+
+/**
  * Central hook for quick match scoring: fetches the match + course holes,
  * polls for updates, and exposes score submission (own + delegated).
  *
@@ -270,6 +309,10 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
     };
   }, [fetchQuickMatch]);
 
+  // Quién soy yo en esta partida. Arriba de la lista porque de ahí sale si lo
+  // que hay en el servidor lo anoté yo
+  const myParticipant = quickMatch?.participants?.find((p) => p.userId === currentUserId) ?? null;
+
   // La tarjeta, el selector y la clasificación salen todos de esta lista, y la
   // clasificación se calcula aquí mismo: sumándole la cola, los tres ven el
   // golpe. Sin esto la casilla seguiría diciendo «Anotar» después de anotar.
@@ -282,7 +325,6 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
     const guardados = offlineQueue.getByMatch(quickMatchId);
     if (guardados.length === 0) return delServidor;
 
-    const enDisputa = (fila, entrada) => fila.score !== entrada.scoreData.score;
     const salida = [...delServidor];
     for (const entrada of guardados) {
       const i = salida.findIndex(
@@ -295,14 +337,21 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
         recordedByParticipantId: null,
       };
       if (i === -1) salida.push(mio);
-      // En disputa manda el del servidor hasta que el jugador decida: lo suyo
-      // está en cuestión, y elegirlo por él es justo lo que no se hace
-      else if (entrada.scoreData.decidido || !enDisputa(salida[i], entrada)) salida[i] = mio;
+      // En un desacuerdo manda el del servidor hasta que el jugador decida: lo
+      // suyo está en cuestión, y elegirlo por él es justo lo que no se hace.
+      // Fuera de ahí se pinta lo guardado, que es lo que el jugador acaba de
+      // anotar: sin esto, corregir un hoyo sin cobertura no se veía —la casilla
+      // seguía con el número de antes— y se anotaba dos veces (FE #530)
+      else if (
+        entrada.scoreData.decidido ||
+        !esDesacuerdo(salida[i], entrada, quickMatch, myParticipant?.participantId)
+      ) {
+        salida[i] = mio;
+      }
     }
     return salida;
   })();
 
-  const myParticipant = quickMatch?.participants?.find((p) => p.userId === currentUserId) ?? null;
   const isCreator = quickMatch?.creatorId === currentUserId;
   const isScorer = myParticipant ? quickMatch.scorerIds.includes(myParticipant.participantId) : false;
 
@@ -378,10 +427,12 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
             continue;
           }
 
-          // Ya hay anotación y no coincide: no se envía. La aplicación no sabe
-          // quién tiene razón, así que lo decide el jugador. Salvo que ya lo
-          // haya decidido: entonces no se le vuelve a preguntar lo mismo
-          if (enElServidor && !entrada.scoreData.decidido) {
+          // Hay desacuerdo con OTRO anotador: no se envía. La aplicación no
+          // sabe quién tiene razón, así que lo decide el jugador. Salvo que ya
+          // lo haya decidido: entonces no se le vuelve a preguntar lo mismo.
+          // Lo que no es desacuerdo —una corrección propia, o una partida que
+          // anota una sola persona— se envía sin preguntar nada (FE #528)
+          if (!entrada.scoreData.decidido && esDesacuerdo(enElServidor, entrada, partida, miParticipanteId)) {
             enConflicto.push({
               holeNumber: entrada.holeNumber,
               participantId: entrada.participantId,

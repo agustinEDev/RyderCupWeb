@@ -494,6 +494,116 @@ describe('useQuickMatchScoring · vaciar lo guardado (FE #515, tablas B y C)', (
     );
   });
 
+  it('con un solo anotador no hay a quién preguntar: se envía', async () => {
+    // «Habla con tu compañero y decidid cuál vale» en una partida que anota una
+    // sola persona: el compañero era el propio jugador (FE #528)
+    const unSoloAnotador = {
+      ...mockQuickMatch,
+      scorerIds: ['user-1'],
+      holeScores: [{ holeNumber: 7, participantId: 'user-1', score: 6, recordedByParticipantId: 'user-1' }],
+    };
+
+    const result = await montaCon([pendiente(7, 5)], unSoloAnotador);
+
+    await waitFor(() =>
+      expect(submitQuickMatchHoleScoreUseCase.execute).toHaveBeenCalledWith('qm-1', 7, 5)
+    );
+    expect(result.current.discrepancias).toHaveLength(0);
+  });
+
+  it('corregir lo que uno mismo anotó tampoco se pregunta', async () => {
+    // Aunque la anotación se comparta: cambiar el 6 que puse por el 5 que jugué
+    // es corregir, no discrepar. Nadie con quien hablarlo
+    const loAnoteYo = {
+      ...mockQuickMatch,
+      holeScores: [{ holeNumber: 7, participantId: 'user-1', score: 6, recordedByParticipantId: 'user-1' }],
+    };
+
+    const result = await montaCon([pendiente(7, 5)], loAnoteYo);
+
+    await waitFor(() =>
+      expect(submitQuickMatchHoleScoreUseCase.execute).toHaveBeenCalledWith('qm-1', 7, 5)
+    );
+    expect(result.current.discrepancias).toHaveLength(0);
+  });
+
+  it('pero si lo anotó otro, se sigue preguntando', async () => {
+    // Lo que no cambia: ahí sí hay dos opiniones y una tiene que ganar
+    const loAnotoOtro = {
+      ...mockQuickMatch,
+      holeScores: [{ holeNumber: 7, participantId: 'user-1', score: 6, recordedByParticipantId: 'user-2' }],
+    };
+
+    const result = await montaCon([pendiente(7, 5)], loAnotoOtro);
+
+    expect(submitQuickMatchHoleScoreUseCase.execute).not.toHaveBeenCalled();
+    expect(result.current.discrepancias).toHaveLength(1);
+  });
+
+  it('sin cobertura, la casilla enseña lo que se acaba de anotar', async () => {
+    // El golpe se guardaba y el aviso lo decía, pero la casilla seguía con el
+    // número de antes: para el jugador no había pasado nada, y lo anotaba otra
+    // vez (FE #530)
+    submitQuickMatchHoleScoreUseCase.execute.mockRejectedValue(new TypeError('Failed to fetch'));
+    const conLoViejo = {
+      ...mockQuickMatch,
+      scorerIds: ['user-1'],
+      holeScores: [{ holeNumber: 7, participantId: 'user-1', score: 3, recordedByParticipantId: 'user-1' }],
+    };
+
+    const result = await montaCon([pendiente(7, 5)], conLoViejo);
+
+    expect(result.current.holeScoresVisibles).toContainEqual(
+      expect.objectContaining({ holeNumber: 7, participantId: 'user-1', score: 5 })
+    );
+  });
+
+  it('y compartiendo anotación, si lo del servidor lo puse yo, manda lo mío', async () => {
+    // La rama que FE #530 describe de verdad: con DOS anotadores, corregir un
+    // hoyo que anoté yo. Los otros dos casos de la tarjeta se van por el atajo
+    // del anotador único y dejaban esto sin vigilar
+    submitQuickMatchHoleScoreUseCase.execute.mockRejectedValue(new TypeError('Failed to fetch'));
+    const loMioEnCompartida = {
+      ...mockQuickMatch,
+      holeScores: [{ holeNumber: 7, participantId: 'user-1', score: 3, recordedByParticipantId: 'user-1' }],
+    };
+
+    const result = await montaCon([pendiente(7, 5)], loMioEnCompartida);
+
+    expect(result.current.holeScoresVisibles).toContainEqual(
+      expect.objectContaining({ holeNumber: 7, participantId: 'user-1', score: 5 })
+    );
+  });
+
+  it('sin saber quién soy no se da por propio: se pregunta', async () => {
+    // Dos `undefined` se daban por iguales, y lo desconocido pasaba por propio:
+    // el golpe se enviaba encima del de otro anotador sin preguntar nada
+    const sinRecordedBy = {
+      ...mockQuickMatch,
+      participants: [{ participantId: 'p-otro', userId: 'user-9', name: 'Otro', isGuest: false }],
+      holeScores: [{ holeNumber: 7, participantId: 'user-1', score: 3 }],
+    };
+
+    const result = await montaCon([pendiente(7, 5)], sinRecordedBy);
+
+    expect(result.current.discrepancias).toHaveLength(1);
+  });
+
+  it('y en un desacuerdo de verdad sigue mandando el del servidor', async () => {
+    // Hasta que el jugador decida: lo suyo está en cuestión, y elegirlo por él
+    // es justo lo que no se hace
+    const desacuerdo = {
+      ...mockQuickMatch,
+      holeScores: [{ holeNumber: 7, participantId: 'user-1', score: 3, recordedByParticipantId: 'user-2' }],
+    };
+
+    const result = await montaCon([pendiente(7, 5)], desacuerdo);
+
+    expect(result.current.holeScoresVisibles).toContainEqual(
+      expect.objectContaining({ holeNumber: 7, participantId: 'user-1', score: 3 })
+    );
+  });
+
   it('una bola recogida frente a un número es una discrepancia', async () => {
     // Los dos llegan sin número y significan lo contrario, así que el valor
     // cuenta: `null` no es «no hay anotación»
@@ -595,12 +705,22 @@ describe('useQuickMatchScoring · vaciar lo guardado (FE #515, tablas B y C)', (
  * todos de la misma lista, y la clasificación se calcula aquí, así que basta
  * con sumar la cola a esa lista para que las tres lo vean.
  *
+ * Y «no coincide» no basta para hablar de disputa: para eso hace falta alguien
+ * con quien discrepar. Con un solo anotador no lo hay, y lo que uno mismo anotó
+ * tampoco se discute consigo mismo — ahí lo nuevo es una corrección, y
+ * esconderla era FE #530.
+ *
  *   caso                                   | qué se ve en la casilla
  *   ---------------------------------------|--------------------------------
  *   el servidor no tiene el hoyo           | lo guardado en el móvil
  *   el servidor lo tiene y coincide        | lo del servidor (da igual)
- *   el servidor lo tiene y NO coincide     | lo del SERVIDOR: está en disputa
+ *   no coincide, y anota UNO SOLO          | lo guardado: es una corrección
+ *   no coincide, y lo del servidor lo      | lo guardado: es una corrección
+ *     anoté YO                             |
+ *   no coincide, y lo anotó OTRO           | lo del SERVIDOR: está en disputa
  *                                          | y la aplicación no elige
+ *   no coincide y no se sabe quién lo      | lo del SERVIDOR: se pregunta, que
+ *     anotó (o quién soy)                  | es lo que no rompe nada de nadie
  *   ...y el jugador ya decidió que el suyo | lo suyo, en cuanto lo decide
  */
 /**
