@@ -259,6 +259,11 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
           await submitQuickMatchProxyHoleScoreUseCase.execute(quickMatchId, participantId, holeNumber, score);
         }
         setSaveError(null);
+        // El aviso rojo pedía volver a anotarlo: ya está hecho, así que se
+        // retira. Si siguiera ahí, estaría pidiendo algo que ya no toca
+        setPerdidos((antes) =>
+          antes.filter((x) => !(x.holeNumber === holeNumber && x.participantId === participantId))
+        );
         await fetchQuickMatch();
       } catch (err) {
         if (seGuardaParaDespues(err)) {

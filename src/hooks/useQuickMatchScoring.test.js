@@ -379,6 +379,23 @@ describe('useQuickMatchScoring · vaciar lo guardado (FE #515, tablas B y C)', (
     await waitFor(() => expect(offlineQueue.remove).toHaveBeenCalledWith('qm-1', 7, 'user-1'));
   });
 
+  it('al volver a anotar bien un hoyo perdido, el aviso rojo se retira', async () => {
+    // El aviso pide volver a anotarlo. Si al hacerlo siguiera ahí, estaría
+    // pidiendo algo que ya está hecho, y el jugador no sabría cuándo parar.
+    submitQuickMatchHoleScoreUseCase.execute
+      .mockRejectedValueOnce(rechazo(409))
+      .mockResolvedValueOnce({});
+
+    const result = await montaCon([pendiente(7, 5)]);
+    await waitFor(() =>
+      expect(result.current.perdidos).toContainEqual(expect.objectContaining({ holeNumber: 7 }))
+    );
+
+    await act(async () => { await result.current.submitScore(7, 'user-1', 6); });
+
+    expect(result.current.perdidos).toEqual([]);
+  });
+
   it('al abrir la pantalla ya sin cobertura, cuenta lo que quedó de antes', async () => {
     // El caso que originó todo: el jugador vuelve a la app en el campo. Si el
     // contador empezara en cero, el aviso no saldría hasta el primer vaciado
