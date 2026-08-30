@@ -10,6 +10,8 @@ import { resolve } from 'path';
  */
 const respuestas = [];
 const peticiones = [];
+/** Donde el servicio apunta de quién es la sesión. */
+const RECUERDO = 'rydercup-sesion-conocida';
 
 vi.mock('../utils/tokenRefreshInterceptor', () => ({
   fetchWithTokenRefresh: (url) => {
@@ -44,6 +46,11 @@ describe('la consulta compartida de la sesión', () => {
     peticiones.length = 0;
     respuestas.length = 0;
     revocado.si = false;
+    // Y el apunte del dispositivo: lo escribe SOLA cualquier consulta que
+    // confirme la sesión, así que sin esto un test se encontraba con el de
+    // otro. Desde que el primer fallo pinta con lo apuntado (FE #529) eso ya
+    // no da igual: cambia lo que publica el módulo
+    try { localStorage.removeItem(RECUERDO); } catch { /* sin almacenamiento */ }
   });
 
   afterEach(() => {
@@ -297,7 +304,6 @@ describe('la consulta compartida de la sesión', () => {
  *   sin confirmar, no hay privilegios| `is_admin` no se hereda de lo apuntado
  */
 describe('sesionCompartida · sin señal no se echa a nadie (FE #524)', () => {
-  const RECUERDO = 'rydercup-sesion-conocida';
   const sinRed = () => Promise.reject(new TypeError('Failed to fetch'));
 
   // Este fichero corre sin navegador, así que el almacenamiento se pone aquí:
@@ -347,6 +353,119 @@ describe('sesionCompartida · sin señal no se echa a nadie (FE #524)', () => {
     const estado = loQueHaySobreLaSesion();
     expect(estado.user?.id).toBe('u-1');
     expect(estado.cargando).toBe(false);
+  });
+
+  it('con lo apuntado se pinta al PRIMER fallo, sin esperar los reintentos', async () => {
+    // Los reintentos van a 3, 6 y 12 segundos: esperarlos eran 21 segundos de
+    // pantalla en blanco antes siquiera de pedir la partida —medido—, y es
+    // justo el caso para el que se guarda la sesión (FE #529)
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    localStorage.setItem(RECUERDO, JSON.stringify({ id: 'u-1', email: 'a@b.c', is_admin: false }));
+    respuestas.push(() => Promise.reject(new Error('sin red')));
+
+    await consultaLaSesion();
+
+    const estado = loQueHaySobreLaSesion();
+    expect(estado.user?.id).toBe('u-1');
+    expect(estado.cargando).toBe(false);
+    // Y queda dicho que se sigue preguntando por detrás
+    expect(estado.refrescando).toBe(true);
+  });
+
+  it('y lo que conteste el servidor manda sobre lo apuntado', async () => {
+    // Lo apuntado solo tapa el hueco: la primera respuesta que llegue decide
+    vi.useFakeTimers();
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    localStorage.setItem(RECUERDO, JSON.stringify({ id: 'u-1', email: 'a@b.c', is_admin: false }));
+    respuestas.push(() => Promise.reject(new Error('sin red')), usuario('u-2'));
+
+    await consultaLaSesion();
+    expect(loQueHaySobreLaSesion().user?.id).toBe('u-1');
+
+    await vi.advanceTimersByTimeAsync(ESPERA_TRAS_FALLO_MS + 50);
+
+    expect(loQueHaySobreLaSesion().user).toEqual({ id: 'u-2' });
+    expect(loQueHaySobreLaSesion().refrescando).toBe(false);
+    vi.useRealTimers();
+  });
+
+  it('confirmada la sesión, el reintento armado no dispara otra petición', async () => {
+    // Desde que el reintento fuerza, uno huérfano abría una petición de más
+    // —el abanico que este módulo existe para evitar— y de paso subía la
+    // generación, con lo que un refresco en vuelo resolvía a nada
+    vi.useFakeTimers();
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    localStorage.setItem(RECUERDO, JSON.stringify({ id: 'u-1', email: 'a@b.c', is_admin: false }));
+    respuestas.push(() => Promise.reject(new Error('sin red')), usuario('u-1'));
+
+    await consultaLaSesion();            // falla y arma el reintento
+    await consultaLaSesion({ forzar: true }); // vuelve la señal y alguien refresca
+    expect(peticiones).toHaveLength(2);
+
+    await vi.advanceTimersByTimeAsync(ESPERA_TRAS_FALLO_MS + 50);
+
+    expect(peticiones).toHaveLength(2);
+    vi.useRealTimers();
+  });
+
+  it('tras salir, los reintentos vuelven a contarse desde cero', async () => {
+    // Un arranque sin cobertura que quemara los cuatro intentos dejaba el
+    // contador arriba: el siguiente fallo se pasaba del tope y echaba al
+    // formulario a la primera, sin un solo reintento
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    await agotaLosReintentos();
+
+    olvidaLaSesion();
+    vi.useFakeTimers();
+    // La cola es global y `agotaLosReintentos` deja restos: sin vaciarla, el
+    // reintento consume una respuesta que no es la de este caso
+    respuestas.length = 0;
+    peticiones.length = 0;
+    respuestas.push(() => Promise.reject(new Error('sin red')), usuario('u-1'));
+
+    await consultaLaSesion();
+    expect(peticiones).toHaveLength(1);
+
+    // Lo que hay que ver es que QUEDA reintento: sin reiniciar el contador se
+    // pasaba del tope y no se programaba ninguno
+    await vi.advanceTimersByTimeAsync(ESPERA_TRAS_FALLO_MS + 50);
+
+    expect(peticiones).toHaveLength(2);
+    expect(loQueHaySobreLaSesion().user).toEqual({ id: 'u-1' });
+    vi.useRealTimers();
+  });
+
+  it('un refresco corriente NO marca la sesión como sin confirmar', async () => {
+    // `refrescando` se levanta en cualquier refresco de una sesión ya buena, así
+    // que deducir de ahí «sin confirmar» bloqueaba la pantalla entera en cada
+    // `refetch` —y durante los reintentos si ese refresco fallaba—
+    respuestas.push(usuario('u-1'));
+    await consultaLaSesion();
+    expect(loQueHaySobreLaSesion().sinConfirmar).toBe(false);
+
+    respuestas.push(usuario('u-1'));
+    const enCurso = consultaLaSesion({ forzar: true });
+    expect(loQueHaySobreLaSesion().refrescando).toBe(true);
+    expect(loQueHaySobreLaSesion().sinConfirmar).toBe(false);
+
+    await enCurso;
+    expect(loQueHaySobreLaSesion().sinConfirmar).toBe(false);
+  });
+
+  it('lo que sale del apunte sí queda marcado, y deja de estarlo al confirmarse', async () => {
+    vi.useFakeTimers();
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    localStorage.setItem(RECUERDO, JSON.stringify({ id: 'u-1', email: 'a@b.c', is_admin: false }));
+    respuestas.length = 0;
+    respuestas.push(() => Promise.reject(new Error('sin red')), usuario('u-1'));
+
+    await consultaLaSesion();
+    expect(loQueHaySobreLaSesion().sinConfirmar).toBe(true);
+
+    await vi.advanceTimersByTimeAsync(ESPERA_TRAS_FALLO_MS + 50);
+
+    expect(loQueHaySobreLaSesion().sinConfirmar).toBe(false);
+    vi.useRealTimers();
   });
 
   it('sin señal y sin nada apuntado, al formulario como siempre', async () => {
