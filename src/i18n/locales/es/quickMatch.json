@@ -196,7 +196,8 @@
       "holesPlayed": "{{count}} hoyo(s) jugados",
       "yourRound": "Tu vuelta:",
       "cancelledBadge": "C",
-      "cancelledTooltip": "Partida cancelada"
+      "cancelledTooltip": "Partida cancelada",
+      "stale": "sin actualizar"
     },
     "scorecard": {
       "strokeReceived": "Recibe {{count}} golpe(s) extra en este hoyo",

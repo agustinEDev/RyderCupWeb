@@ -1467,15 +1467,44 @@ describe('QuickMatchScoringPage · la clasificación no se inventa (FE #515, tab
     expect(screen.getByTestId('quick-match-clasificacion-atrasada')).toBeInTheDocument();
   });
 
-  it('la clasificación NO cuenta el golpe que sigue en el móvil', () => {
-    // Es el fondo del asunto: contarlo sube lo nuestro y deja lo de los demás
-    // congelado en la última foto del servidor, así que la tabla diría que
-    // vamos por delante sin que nadie lo sepa. Mejor quieta y avisada.
+  it('nuestros datos sí están al día en la clasificación', () => {
+    // De lo nuestro no dependemos de nadie: son nuestros golpes
     pinta({ pendientes: 1, holeScoresVisibles: conGolpes });
     vePestanaClasificacion();
 
-    const tabla = screen.getByTestId('quick-match-classification-table');
-    expect(tabla.textContent).not.toContain('5');
+    expect(screen.getByTestId('quick-match-classification-table').textContent).toContain('5');
+  });
+
+  it('los jugadores que no anotamos salen marcados como sin actualizar', () => {
+    // Y con TEXTO, no solo con un gris: al sol el texto apagado no se lee, y
+    // un lector de pantalla no ve el color. Es lo mismo que se decidió para la
+    // etiqueta «No cuenta» de las partidas rápidas
+    pinta({ pendientes: 1, holeScoresVisibles: conGolpes });
+    vePestanaClasificacion();
+
+    const suya = screen.getByTestId('quick-match-clasificacion-fila-user-2');
+    expect(suya.textContent).toContain('scoring.classification.stale');
+    const mia = screen.getByTestId('quick-match-clasificacion-fila-user-1');
+    expect(mia.textContent).not.toContain('scoring.classification.stale');
+  });
+
+  it('mientras falten datos no se afirma quién va primero', () => {
+    // El orden mezcla lo nuestro al día con lo suyo de hace rato: pondría un
+    // «1» al lado de nuestro nombre por la única razón de que a ellos no se
+    // les ha contado lo que llevan hecho desde el corte
+    pinta({ pendientes: 1, holeScoresVisibles: conGolpes });
+    vePestanaClasificacion();
+
+    expect(screen.queryByTestId('quick-match-clasificacion-puesto')).not.toBeInTheDocument();
+  });
+
+  it('con todo enviado vuelve a haber puestos y nadie sale marcado', () => {
+    pinta({ pendientes: 0 });
+    vePestanaClasificacion();
+
+    expect(screen.getAllByTestId('quick-match-clasificacion-puesto').length).toBeGreaterThan(0);
+    expect(screen.getByTestId('quick-match-clasificacion-fila-user-2').textContent)
+      .not.toContain('scoring.classification.stale');
   });
 
   it('sin nada pendiente no avisa de nada', () => {

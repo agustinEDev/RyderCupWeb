@@ -582,12 +582,10 @@ const QuickMatchScoringPage = () => {
 
         {activeTab === 'classification' && (
           <>
-          {/* Con golpes sin enviar no se puede saber cómo va el partido: de los
-              demás solo tenemos la última foto del servidor, y lo que hayan
-              anotado desde el corte no ha llegado. Recalcularla solo con lo
-              nuestro es PEOR que dejarla quieta —sube lo nuestro y congela lo
-              suyo, así que dice que vamos por delante sin saberlo—, de modo que
-              aquí va el dato del servidor tal cual, y se avisa */}
+          {/* Lo nuestro sí está al día —sale de este móvil—, pero de los demás
+              solo tenemos la última foto del servidor: lo que hayan anotado
+              desde el corte no ha llegado. Así que se pintan los dos, cada
+              jugador atrasado va marcado, y no se afirma quién va primero */}
           {pendientes > 0 && (
             <p
               data-testid="quick-match-clasificacion-atrasada"
@@ -598,9 +596,10 @@ const QuickMatchScoringPage = () => {
           )}
           <QuickMatchClassificationTable
             holes={holes}
-            holeScores={quickMatch?.holeScores ?? []}
+            holeScores={holeScoresVisibles}
             participants={quickMatch?.participants ?? []}
             currentParticipantId={myParticipant?.participantId}
+            participantesAlDia={pendientes > 0 ? coveredParticipantIds : null}
             scoringFormat={quickMatch?.scoringFormat}
             standing={quickMatch?.standing}
             tees={tees}

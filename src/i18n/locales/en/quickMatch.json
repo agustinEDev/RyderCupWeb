@@ -196,7 +196,8 @@
       "holesPlayed": "{{count}} hole(s) played",
       "yourRound": "Your round:",
       "cancelledBadge": "C",
-      "cancelledTooltip": "Match cancelled"
+      "cancelledTooltip": "Match cancelled",
+      "stale": "not updated"
     },
     "scorecard": {
       "strokeReceived": "Receives {{count}} extra stroke(s) on this hole",
