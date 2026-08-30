@@ -23,7 +23,15 @@ vi.mock('../../components/layout/HeaderAuth', () => ({
 
 const mockUseQuickMatchScoring = vi.fn();
 vi.mock('../../hooks/useQuickMatchScoring', () => ({
-  useQuickMatchScoring: (...args) => mockUseQuickMatchScoring(...args),
+  useQuickMatchScoring: (...args) => {
+    const estado = mockUseQuickMatchScoring(...args);
+    // El hook real siempre devuelve esta lista, y sin nada guardado en el móvil
+    // es exactamente la del servidor: los tests que no la fijan describen ese
+    // caso, y así no hay que repetirla en los veintiún montajes de aquí
+    return estado && estado.holeScoresVisibles === undefined
+      ? { ...estado, holeScoresVisibles: estado.quickMatch?.holeScores ?? [] }
+      : estado;
+  },
 }));
 
 // Regression fixture: the shape ListMyQuickMatchesUseCase/GetQuickMatchUseCase
@@ -1226,7 +1234,9 @@ describe('QuickMatchScoringPage · lo que quedó sin enviar (FE #515, tabla D)',
   it('«dejo el que hay» resuelve a favor del servidor', () => {
     pinta({ discrepancias: [unaDiscrepancia()] });
     fireEvent.click(screen.getByTestId('quick-match-discrepancia-servidor'));
-    expect(resuelveDiscrepancia).toHaveBeenCalledWith(7, 'user-1', 'servidor');
+    // El hook solo entiende 'mio' y 'elQueHay': cualquier otra cosa no hace
+    // nada, así que un nombre distinto aquí dejaba el botón muerto en silencio
+    expect(resuelveDiscrepancia).toHaveBeenCalledWith(7, 'user-1', 'elQueHay');
   });
 
   it('con dos discrepancias enseña la primera, no las dos a la vez', () => {
@@ -1237,5 +1247,108 @@ describe('QuickMatchScoringPage · lo que quedó sin enviar (FE #515, tabla D)',
     fireEvent.click(screen.getByTestId('quick-match-discrepancia-mio'));
     expect(resuelveDiscrepancia).toHaveBeenCalledWith(7, 'user-1', 'mio');
     expect(resuelveDiscrepancia).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('QuickMatchScoringPage · lo guardado se ve y se entiende (FE #515, tabla D bis)', () => {
+  const resuelveDiscrepancia = vi.fn();
+
+  const pinta = (extra) => {
+    mockUseQuickMatchScoring.mockReturnValue({
+      ...baseHookState,
+      quickMatch: { ...baseQuickMatch, status: 'IN_PROGRESS', isCompleted: false },
+      isScorer: true,
+      coveredParticipantIds: ['user-1'],
+      holes: [{ holeNumber: 1, par: 4, strokeIndex: 5 }],
+      totalHoles: 1,
+      setCurrentHole: vi.fn(),
+      submitScore: vi.fn(),
+      completeMatch: vi.fn(),
+      cancelMatch: vi.fn(),
+      refetch: vi.fn(),
+      holeScoresVisibles: [],
+      pendientes: 0,
+      perdidos: [],
+      discrepancias: [],
+      resuelveDiscrepancia,
+      ...extra,
+    });
+    return renderPage();
+  };
+
+  beforeEach(() => vi.clearAllMocks());
+
+  it('un golpe que solo está en el móvil marca el hoyo como anotado', () => {
+    // Lo pinta todo la misma lista. Si la pantalla siguiera leyendo la del
+    // servidor, el jugador anotaría, no vería error —para él está anotado— y
+    // la casilla seguiría diciendo «Anotar»: lo natural es volver a pulsar
+    pinta({
+      holeScoresVisibles: [{ holeNumber: 1, participantId: 'user-1', score: 5, recordedByParticipantId: null }],
+    });
+
+    expect(screen.getByTestId('quick-match-hole-btn-1').className).toContain('green');
+  });
+
+  it('si la partida no llegó a cargar, dice igualmente lo que queda sin enviar', () => {
+    // Es el caso que motivó todo: se vuelve a la app en el campo, la carga
+    // falla y esta pantalla es la única que se ve. Sin esto, los golpes
+    // guardados no aparecen por ningún lado
+    pinta({ quickMatch: null, loadError: { status: 0 }, pendientes: 2 });
+
+    expect(screen.getByTestId('quick-match-scoring-error')).toBeInTheDocument();
+    expect(screen.getByTestId('quick-match-pendientes')).toBeInTheDocument();
+  });
+
+  it('una bola recogida no deja un hueco en blanco en el modal', () => {
+    pinta({
+      discrepancias: [{ holeNumber: 7, participantId: 'user-1', mio: null, enElServidor: 6, anotadoPor: 'user-2' }],
+    });
+
+    const boton = screen.getByTestId('quick-match-discrepancia-mio');
+    expect(boton.textContent).toContain('pickedUp');
+    expect(boton.textContent).not.toMatch(/\(\s*\)/);
+  });
+
+  it('cuando el hoyo es de otro jugador, el modal dice de quién', () => {
+    // Un anotador cubre a invitados, y en foursomes a los cuatro: sin el
+    // nombre no hay forma de saber qué tarjeta está en disputa
+    pinta({
+      // El que anotó soy yo: así el nombre del jugador solo puede venir del
+      // título, y no se cuela por el cuerpo, que nombra al anotador
+      discrepancias: [{ holeNumber: 7, participantId: 'user-2', mio: 5, enElServidor: 6, anotadoPor: 'user-1' }],
+    });
+
+    const titulo = screen.getByTestId('quick-match-discrepancia-title');
+    expect(titulo.textContent).toContain('conflictTitlePlayer');
+    expect(titulo.textContent).toContain('Friend');
+  });
+
+  it('cuando el hoyo es mío, el modal no me nombra a mí', () => {
+    // «El hoyo 7 de Test User» leído por Test User sobra y suena raro
+    pinta({
+      discrepancias: [{ holeNumber: 7, participantId: 'user-1', mio: 5, enElServidor: 6, anotadoPor: 'user-2' }],
+    });
+
+    const titulo = screen.getByTestId('quick-match-discrepancia-title');
+    expect(titulo.textContent).not.toContain('conflictTitlePlayer');
+    expect(titulo.textContent).not.toContain('Test User');
+  });
+
+  it('el modal se lleva el foco al abrirse', () => {
+    // Bloquea la anotación: sin foco, el tabulador pasea por la página de
+    // detrás y un lector de pantalla no llega a leer ni la pregunta
+    pinta({
+      discrepancias: [{ holeNumber: 7, participantId: 'user-1', mio: 5, enElServidor: 6, anotadoPor: 'user-2' }],
+    });
+
+    expect(document.activeElement).toBe(screen.getByTestId('quick-match-discrepancia'));
+  });
+
+  it('el aviso de error dice de qué hoyo se trata', () => {
+    // El hook lo apunta en el error desde la tabla A. Si no se pinta, el
+    // jugador lee la misma frase genérica y no sabe qué hoyo repetir
+    pinta({ saveError: Object.assign(new Error('nope'), { status: 409, holeNumber: 12 }) });
+
+    expect(screen.getByTestId('quick-match-save-error').textContent).toContain('12');
   });
 });

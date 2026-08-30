@@ -323,6 +323,20 @@ describe('useQuickMatchScoring · anotar sin conexión (FE #515, tabla A)', () =
 
     expect(offlineQueue.enqueue).toHaveBeenCalledWith('qm-1', 7, { score: null }, 'user-1');
   });
+  it('un 422 no se guarda para luego: es el resultado el que no vale', async () => {
+    // Es el código real de Pydantic, y el que la pantalla traduce por «ese
+    // resultado no es válido». Guardarlo dejaría una entrada imposible a la
+    // cabeza de la cola bloqueando todo lo que viene detrás, en cada sondeo.
+    const result = await anota(rechazo(422));
+    expect(offlineQueue.enqueue).not.toHaveBeenCalled();
+    expect(result.current.saveError).toBeTruthy();
+  });
+
+  it.each([[401], [408], [429], [500]])('un %i sí se guarda: el golpe no tiene la culpa', async (status) => {
+    await anota(rechazo(status));
+    expect(offlineQueue.enqueue).toHaveBeenCalled();
+  });
+
 });
 
 /**
@@ -348,6 +362,11 @@ describe('useQuickMatchScoring · anotar sin conexión (FE #515, tabla A)', () =
  */
 describe('useQuickMatchScoring · vaciar lo guardado (FE #515, tablas B y C)', () => {
   const rechazo = (status) => Object.assign(new Error(`HTTP ${status}`), { status });
+  const conAnotacionDe = (score) => ({
+    ...mockQuickMatch,
+    holeScores: [{ holeNumber: 7, participantId: 'user-1', score, recordedByParticipantId: 'user-2' }],
+  });
+
   const pendiente = (holeNumber, score, participantId = 'user-1') =>
     ({ matchId: 'qm-1', holeNumber, participantId, scoreData: { score } });
 
@@ -473,18 +492,6 @@ describe('useQuickMatchScoring · vaciar lo guardado (FE #515, tablas B y C)', (
     );
   });
 
-  it('si coincide, se envía y no se cuenta nada', async () => {
-    const igual = {
-      ...mockQuickMatch,
-      holeScores: [{ holeNumber: 7, participantId: 'user-1', score: 5, recordedByParticipantId: 'user-2' }],
-    };
-
-    const result = await montaCon([pendiente(7, 5)], igual);
-
-    await waitFor(() => expect(submitQuickMatchHoleScoreUseCase.execute).toHaveBeenCalled());
-    expect(result.current.discrepancias).toHaveLength(0);
-  });
-
   it('una bola recogida frente a un número es una discrepancia', async () => {
     // Los dos llegan sin número y significan lo contrario, así que el valor
     // cuenta: `null` no es «no hay anotación»
@@ -512,30 +519,155 @@ describe('useQuickMatchScoring · vaciar lo guardado (FE #515, tablas B y C)', (
     suelta?.({});
   });
 
-  it('resolver a mi favor lo envía y lo saca de la lista', async () => {
-    const conAnotacion = {
+  it('lo que ya coincide se quita de la cola sin volver a enviarlo', async () => {
+    // Reenviarlo no añade nada y sí puede restar: si entre medias alguien
+    // termina la partida, el 409 lo daría por perdido y le pediría al jugador
+    // que volviera a anotar un hoyo que el servidor ya tiene, con ese resultado
+    const igual = {
       ...mockQuickMatch,
-      holeScores: [{ holeNumber: 7, participantId: 'user-1', score: 6, recordedByParticipantId: 'user-2' }],
+      holeScores: [{ holeNumber: 7, participantId: 'user-1', score: 5, recordedByParticipantId: 'user-2' }],
     };
-    const result = await montaCon([pendiente(7, 5)], conAnotacion);
+
+    const result = await montaCon([pendiente(7, 5)], igual);
+
+    await waitFor(() => expect(offlineQueue.remove).toHaveBeenCalledWith('qm-1', 7, 'user-1'));
+    expect(submitQuickMatchHoleScoreUseCase.execute).not.toHaveBeenCalled();
+    expect(result.current.discrepancias).toHaveLength(0);
+    expect(result.current.perdidos).toEqual([]);
+  });
+
+  it('resolver a mi favor no envía en el acto: deja la decisión tomada', async () => {
+    // Enviar aquí mismo abría tres agujeros: si no llega no se entera nadie, el
+    // sondeo puede estar vaciando a la vez y mandarlo dos veces, y la decisión
+    // se perdía al cerrar la app. Guardada en la entrada, la envía el vaciado.
+    const result = await montaCon([pendiente(7, 5)], conAnotacionDe(6));
 
     await act(async () => { await result.current.resuelveDiscrepancia(7, 'user-1', 'mio'); });
 
-    expect(submitQuickMatchHoleScoreUseCase.execute).toHaveBeenCalledWith('qm-1', 7, 5);
+    expect(offlineQueue.enqueue).toHaveBeenCalledWith(
+      'qm-1', 7, expect.objectContaining({ score: 5, decidido: true }), 'user-1'
+    );
+    expect(result.current.discrepancias).toHaveLength(0);
+  });
+
+  it('lo ya decidido se envía sin volver a preguntar', async () => {
+    const decidida = { ...pendiente(7, 5), scoreData: { score: 5, decidido: true } };
+
+    const result = await montaCon([decidida], conAnotacionDe(6));
+
+    await waitFor(() => expect(submitQuickMatchHoleScoreUseCase.execute).toHaveBeenCalledWith('qm-1', 7, 5));
     expect(result.current.discrepancias).toHaveLength(0);
   });
 
   it('resolver a favor del que hay descarta el mío sin enviarlo', async () => {
-    const conAnotacion = {
-      ...mockQuickMatch,
-      holeScores: [{ holeNumber: 7, participantId: 'user-1', score: 6, recordedByParticipantId: 'user-2' }],
-    };
-    const result = await montaCon([pendiente(7, 5)], conAnotacion);
+    const result = await montaCon([pendiente(7, 5)], conAnotacionDe(6));
 
     await act(async () => { await result.current.resuelveDiscrepancia(7, 'user-1', 'elQueHay'); });
 
     expect(submitQuickMatchHoleScoreUseCase.execute).not.toHaveBeenCalled();
     expect(offlineQueue.remove).toHaveBeenCalledWith('qm-1', 7, 'user-1');
     expect(result.current.discrepancias).toHaveLength(0);
+  });
+
+  it('con un valor que no es ninguno de los dos no toca nada', async () => {
+    // Las dos ramas hacen cosas opuestas y una de ellas descarta la anotación
+    // del jugador: si un tercer valor cayera en cualquiera de ellas, un error
+    // de escritura en quien llame borraría un golpe sin decir nada
+    const result = await montaCon([pendiente(7, 5)], conAnotacionDe(6));
+    await waitFor(() => expect(result.current.discrepancias).toHaveLength(1));
+
+    await act(async () => { await result.current.resuelveDiscrepancia(7, 'user-1', 'servidor'); });
+
+    expect(offlineQueue.remove).not.toHaveBeenCalled();
+    expect(offlineQueue.enqueue).not.toHaveBeenCalled();
+    expect(result.current.discrepancias).toHaveLength(1);
+  });
+});
+
+/**
+ * LA TABLA E — lo guardado en el móvil se VE.
+ *
+ * Sin esto la función engaña: el jugador anota, no sale ningún error porque
+ * para él está anotado, y la casilla sigue diciendo «Anotar». Lo natural es
+ * volver a pulsar. La tarjeta, el selector de hoyo y la clasificación salen
+ * todos de la misma lista, y la clasificación se calcula aquí, así que basta
+ * con sumar la cola a esa lista para que las tres lo vean.
+ *
+ *   caso                                   | qué se ve en la casilla
+ *   ---------------------------------------|--------------------------------
+ *   el servidor no tiene el hoyo           | lo guardado en el móvil
+ *   el servidor lo tiene y coincide        | lo del servidor (da igual)
+ *   el servidor lo tiene y NO coincide     | lo del SERVIDOR: está en disputa
+ *                                          | y la aplicación no elige
+ *   ...y el jugador ya decidió que el suyo | lo suyo, en cuanto lo decide
+ */
+describe('useQuickMatchScoring · lo guardado se ve (FE #515, tabla E)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    getGolfCourseUseCase.execute.mockResolvedValue({ holes: [], tees: [], name: 'Campo' });
+    getQuickMatchUseCase.execute.mockResolvedValue(mockQuickMatch);
+    offlineQueue.getByMatch.mockReturnValue([]);
+    submitQuickMatchHoleScoreUseCase.execute.mockResolvedValue({});
+    submitQuickMatchProxyHoleScoreUseCase.execute.mockResolvedValue({});
+  });
+
+  const conAnotacionDe = (score) => ({
+    ...mockQuickMatch,
+    holeScores: [{ holeNumber: 7, participantId: 'user-1', score, recordedByParticipantId: 'user-2' }],
+  });
+
+  const pendiente = (holeNumber, score, participantId = 'user-1') =>
+    ({ matchId: 'qm-1', holeNumber, participantId, scoreData: { score } });
+
+  const montaCon = async (pendientes, partida = mockQuickMatch) => {
+    offlineQueue.getByMatch.mockReturnValue(pendientes);
+    getQuickMatchUseCase.execute.mockResolvedValue(partida);
+    const { result } = renderHook(() => useQuickMatchScoring('qm-1', 'user-1'));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    return result;
+  };
+
+  it('un hoyo que solo está en el móvil sale en la lista que se pinta', async () => {
+    // Aquí el envío no llega: la entrada se queda en la cola, que es el caso
+    submitQuickMatchHoleScoreUseCase.execute.mockRejectedValue(new TypeError('Failed to fetch'));
+
+    const result = await montaCon([pendiente(7, 5)]);
+
+    expect(result.current.holeScoresVisibles).toContainEqual(
+      expect.objectContaining({ holeNumber: 7, participantId: 'user-1', score: 5 })
+    );
+  });
+
+  it('una bola recogida guardada en el móvil también se ve', async () => {
+    // `null` no es «no hay anotación»: es la raya, y significa lo contrario
+    submitQuickMatchHoleScoreUseCase.execute.mockRejectedValue(new TypeError('Failed to fetch'));
+
+    const result = await montaCon([pendiente(7, null)]);
+
+    expect(result.current.holeScoresVisibles).toContainEqual(
+      expect.objectContaining({ holeNumber: 7, participantId: 'user-1', score: null })
+    );
+  });
+
+  it('en disputa manda el del servidor hasta que el jugador decida', async () => {
+    const result = await montaCon([pendiente(7, 5)], conAnotacionDe(6));
+
+    const fila = result.current.holeScoresVisibles.find((hs) => hs.holeNumber === 7);
+    expect(fila.score).toBe(6);
+    expect(result.current.holeScoresVisibles.filter((hs) => hs.holeNumber === 7)).toHaveLength(1);
+  });
+
+  it('en cuanto decide que vale el suyo, es el suyo el que se ve', async () => {
+    const decidida = { ...pendiente(7, 5), scoreData: { score: 5, decidido: true } };
+    submitQuickMatchHoleScoreUseCase.execute.mockRejectedValue(new TypeError('Failed to fetch'));
+
+    const result = await montaCon([decidida], conAnotacionDe(6));
+
+    expect(result.current.holeScoresVisibles.find((hs) => hs.holeNumber === 7).score).toBe(5);
+  });
+
+  it('sin nada guardado, es exactamente lo que dice el servidor', async () => {
+    const result = await montaCon([], conAnotacionDe(6));
+    expect(result.current.holeScoresVisibles).toEqual(conAnotacionDe(6).holeScores);
   });
 });

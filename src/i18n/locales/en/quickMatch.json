@@ -242,7 +242,10 @@
       "conflictBody": "{{scorer}} scored {{theirs}} and you were about to score {{mine}}. Talk to your partner and decide which one stands.",
       "conflictScorerUnknown": "Another scorer",
       "conflictMine": "Use mine ({{mine}})",
-      "conflictTheirs": "Keep the current one ({{theirs}})"
+      "conflictTheirs": "Keep the current one ({{theirs}})",
+      "pickedUp": "picked up",
+      "conflictTitlePlayer": "{{player}}'s hole {{hole}} already has another score",
+      "atHole": "Hole {{hole}}."
     }
   },
   "personalRound": {

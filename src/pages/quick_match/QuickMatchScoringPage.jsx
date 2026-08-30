@@ -79,6 +79,7 @@ const QuickMatchScoringPage = () => {
   const [finishFailedKey, setFinishFailedKey] = useState(null);
   const cancelDialogRef = useRef(null);
   const finishDialogRef = useRef(null);
+  const discrepanciaDialogRef = useRef(null);
   const focoPrevioRef = useRef(null);
   const tabsRef = useRef(null);
 
@@ -102,6 +103,7 @@ const QuickMatchScoringPage = () => {
     completeMatch,
     cancelMatch,
     refetch,
+    holeScoresVisibles,
     pendientes,
     perdidos,
     discrepancias,
@@ -111,6 +113,25 @@ const QuickMatchScoringPage = () => {
   // De una en una: dos avisos superpuestos no se pueden usar, y la siguiente
   // no se pierde porque el hook la mantiene en la lista hasta resolverla
   const discrepancia = discrepancias?.[0] ?? null;
+  const hayDiscrepancia = discrepancia != null;
+  const jugadorEnDisputa = discrepancia
+    ? quickMatch?.participants?.find((p) => p.participantId === discrepancia.participantId)
+    : null;
+  // Una bola recogida llega sin número y significa lo contrario que no tener
+  // anotación: sin esto los botones leían «Poner el mío ()»
+  const comoSeLee = (valor) =>
+    valor === null || valor === undefined ? t('scoring.offline.pickedUp') : valor;
+
+  const avisoDePendientes = pendientes > 0 && (
+    <div className="max-w-4xl mx-auto px-4 pt-4">
+      <p
+        data-testid="quick-match-pendientes"
+        className="bg-amber-50 border border-amber-200 text-amber-800 rounded-lg p-3 text-sm"
+      >
+        {t('scoring.offline.pending', { count: pendientes })}
+      </p>
+    </div>
+  );
   const nombreDelAnotador = discrepancia
     ? quickMatch?.participants?.find((p) => p.participantId === discrepancia.anotadoPor)?.name
     : null;
@@ -120,13 +141,16 @@ const QuickMatchScoringPage = () => {
     // debajo del velo: el tabulador pasea por la pagina de detras y un lector
     // de pantalla no llega a leer ni la advertencia ni el fallo. El
     // atrapamiento completo del foco es otra cosa, y va en #389.
-    if (showCancelConfirm || showFinishConfirm) {
+    if (showCancelConfirm || showFinishConfirm || hayDiscrepancia) {
       // `body` no cuenta como foco previo: en Safari tocar un boton no lo
       // enfoca, y guardarlo hacia que al cerrar se «restaurara» a body —que no
       // hace nada— y el respaldo de las pestanas no se usara jamas.
       const activo = document.activeElement;
       focoPrevioRef.current = activo && activo !== document.body ? activo : null;
-      (showCancelConfirm ? cancelDialogRef : finishDialogRef).current?.focus();
+      const cual = showCancelConfirm ? cancelDialogRef
+        : showFinishConfirm ? finishDialogRef
+        : discrepanciaDialogRef;
+      cual.current?.focus();
       return;
     }
     // Y al cerrarse vuelve donde estaba: el contenedor enfocado se desmonta y
@@ -145,7 +169,7 @@ const QuickMatchScoringPage = () => {
       return;
     }
     tabsRef.current?.focus?.();
-  }, [showFinishConfirm, showCancelConfirm]);
+  }, [showFinishConfirm, showCancelConfirm, hayDiscrepancia]);
 
   useEffect(() => {
     if (!showFinishConfirm && !showCancelConfirm) return;
@@ -177,6 +201,7 @@ const QuickMatchScoringPage = () => {
     return (
       <div className="min-h-screen bg-gray-50">
         <HeaderAuth user={user} />
+        {avisoDePendientes}
         <div className="max-w-4xl mx-auto px-4 py-6 text-center">
           <p className="text-red-600" data-testid="quick-match-scoring-error">
             {t(loadErrorKeyFor(loadError))}
@@ -222,7 +247,7 @@ const QuickMatchScoringPage = () => {
   // recogido —entrada con `score` nulo— del que está sin anotar, donde no hay
   // entrada. Los dos dan `score` nulo y significan lo contrario.
   const entryOf = (participantId) =>
-    quickMatch?.holeScores?.find(
+    holeScoresVisibles.find(
       (hs) => hs.holeNumber === currentHole && hs.participantId === participantId
     ) ?? null;
 
@@ -368,16 +393,7 @@ const QuickMatchScoringPage = () => {
       {/* El aviso de arriba cubre los dos: un guardado rechazado y un sondeo que
           falla con la partida ya cargada. Cada uno con su copia, y el de
           guardar primero porque es lo que el anotador acaba de intentar. */}
-      {pendientes > 0 && (
-        <div className="max-w-4xl mx-auto px-4 pt-4">
-          <p
-            data-testid="quick-match-pendientes"
-            className="bg-amber-50 border border-amber-200 text-amber-800 rounded-lg p-3 text-sm"
-          >
-            {t('scoring.offline.pending', { count: pendientes })}
-          </p>
-        </div>
-      )}
+      {avisoDePendientes}
 
       {perdidos?.length > 0 && (
         <div className="max-w-4xl mx-auto px-4 pt-4">
@@ -398,7 +414,13 @@ const QuickMatchScoringPage = () => {
         <div className="max-w-4xl mx-auto px-4 pt-4">
           <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-center justify-between">
             <p className="text-sm text-red-600" data-testid="quick-match-scoring-error">
-              {saveError ? t(saveErrorKeyFor(saveError)) : t(loadErrorKeyFor(loadError))}
+              <span data-testid="quick-match-save-error">
+                {saveError ? t(saveErrorKeyFor(saveError)) : t(loadErrorKeyFor(loadError))}
+                {/* El hook apunta el hoyo en el error: sin decirlo, el jugador
+                    lee la misma frase genérica y no sabe cuál repetir */}
+                {saveError?.holeNumber != null
+                  && ` ${t('scoring.offline.atHole', { hole: saveError.holeNumber })}`}
+              </span>
             </p>
             <button onClick={refetch} className="px-3 py-1 text-xs bg-red-600 text-white rounded hover:bg-red-700">
               {t('scoring.retry')}
@@ -475,7 +497,7 @@ const QuickMatchScoringPage = () => {
                 <QuickMatchHoleSelector
                   currentHole={currentHole}
                   onSelect={setCurrentHole}
-                  holeScores={quickMatch?.holeScores ?? []}
+                  holeScores={holeScoresVisibles}
                   // Los golpes que espera cada casilla de la pantalla: una por
                   // bando en foursomes —donde el hoyo está completo con las dos
                   // bolas, no con cuatro— y una por jugador en el resto.
@@ -547,7 +569,7 @@ const QuickMatchScoringPage = () => {
         {activeTab === 'classification' && (
           <QuickMatchClassificationTable
             holes={holes}
-            holeScores={quickMatch?.holeScores ?? []}
+            holeScores={holeScoresVisibles}
             participants={quickMatch?.participants ?? []}
             currentParticipantId={myParticipant?.participantId}
             scoringFormat={quickMatch?.scoringFormat}
@@ -565,7 +587,7 @@ const QuickMatchScoringPage = () => {
         {activeTab === 'scorecard' && (
           <QuickMatchScorecardTable
             holes={holes}
-            holeScores={quickMatch?.holeScores ?? []}
+            holeScores={holeScoresVisibles}
             participants={quickMatch?.participants ?? []}
             currentParticipantId={myParticipant?.participantId}
             scoringFormat={quickMatch?.scoringFormat}
@@ -623,36 +645,46 @@ const QuickMatchScoringPage = () => {
       {discrepancia && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div
+            ref={discrepanciaDialogRef}
+            tabIndex={-1}
             data-testid="quick-match-discrepancia"
             className="bg-white rounded-lg shadow-xl w-full max-w-sm p-4 focus:outline-none"
             role="dialog"
             aria-modal="true"
             aria-labelledby="quick-match-discrepancia-title"
           >
-            <h3 id="quick-match-discrepancia-title" className="text-lg font-semibold text-gray-900 mb-1">
-              {t('scoring.offline.conflictTitle', { hole: discrepancia.holeNumber })}
+            <h3 id="quick-match-discrepancia-title" data-testid="quick-match-discrepancia-title" className="text-lg font-semibold text-gray-900 mb-1">
+              {/* Un anotador cubre a invitados, y en foursomes a los cuatro:
+                  sin el nombre no se sabe qué tarjeta está en disputa. Cuando
+                  es la propia, el nombre sobra y queda raro */}
+              {discrepancia.participantId === myParticipant?.participantId
+                ? t('scoring.offline.conflictTitle', { hole: discrepancia.holeNumber })
+                : t('scoring.offline.conflictTitlePlayer', {
+                    hole: discrepancia.holeNumber,
+                    player: jugadorEnDisputa?.name ?? '',
+                  })}
             </h3>
             <p className="text-sm text-gray-500 mb-4" data-testid="quick-match-discrepancia-body">
               {t('scoring.offline.conflictBody', {
                 scorer: nombreDelAnotador || t('scoring.offline.conflictScorerUnknown'),
-                theirs: discrepancia.enElServidor,
-                mine: discrepancia.mio,
+                theirs: comoSeLee(discrepancia.enElServidor),
+                mine: comoSeLee(discrepancia.mio),
               })}
             </p>
             <div className="flex justify-end gap-3">
               <button
                 data-testid="quick-match-discrepancia-servidor"
-                onClick={() => resuelveDiscrepancia(discrepancia.holeNumber, discrepancia.participantId, 'servidor')}
+                onClick={() => resuelveDiscrepancia(discrepancia.holeNumber, discrepancia.participantId, 'elQueHay')}
                 className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
               >
-                {t('scoring.offline.conflictTheirs', { theirs: discrepancia.enElServidor })}
+                {t('scoring.offline.conflictTheirs', { theirs: comoSeLee(discrepancia.enElServidor) })}
               </button>
               <button
                 data-testid="quick-match-discrepancia-mio"
                 onClick={() => resuelveDiscrepancia(discrepancia.holeNumber, discrepancia.participantId, 'mio')}
                 className="px-4 py-2 text-sm font-medium text-white bg-emerald-600 rounded-md hover:bg-emerald-700"
               >
-                {t('scoring.offline.conflictMine', { mine: discrepancia.mio })}
+                {t('scoring.offline.conflictMine', { mine: comoSeLee(discrepancia.mio) })}
               </button>
             </div>
           </div>

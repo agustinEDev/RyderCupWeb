@@ -22,12 +22,21 @@ const POLL_INTERVAL = 10000; // 10 seconds
  * El 401 NO está: ahí el problema es la sesión, no el golpe, y descartarlo sería
  * tirar una anotación buena por un motivo que se arregla solo.
  */
-const NO_MEJORA_ESPERANDO = new Set([400, 403, 404, 409]);
+// Por rango y no por lista: una lista se olvida de códigos, y el que se olvida
+// no se descarta sino que se guarda, con lo que una entrada imposible se queda
+// a la cabeza de la cola bloqueando en cada sondeo todo lo que viene detrás.
+// El 422 —Pydantic rechazando el cuerpo— es justo el que faltaba.
+const SE_ARREGLA_SOLO = new Set([401, 408, 429]);
 
 const seGuardaParaDespues = (error) => {
   const estado = error?.status ?? error?.response?.status;
   // Sin estado es que no llegó respuesta: se guarda
-  return estado === undefined || !NO_MEJORA_ESPERANDO.has(estado);
+  if (estado === undefined) return true;
+  // El 401 es la sesión, el 408 y el 429 son el momento: ninguno es el golpe,
+  // y descartarlos sería tirar una anotación buena por algo que pasa solo
+  if (SE_ARREGLA_SOLO.has(estado)) return true;
+  // Lo demás del rango 4xx es la petición: reintentarla no cambiaría nada
+  return !(estado >= 400 && estado < 500);
 };
 
 /**
@@ -125,6 +134,38 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
     };
   }, [fetchQuickMatch]);
 
+  // La tarjeta, el selector y la clasificación salen todos de esta lista, y la
+  // clasificación se calcula aquí mismo: sumándole la cola, los tres ven el
+  // golpe. Sin esto la casilla seguiría diciendo «Anotar» después de anotar.
+  // Se lee en cada render a propósito: memorizarlo pedía saber cuándo cambia la
+  // cola, y decidir a mi favor la cambia sin cambiarle el tamaño.
+  const holeScoresVisibles = (() => {
+    const delServidor = quickMatch?.holeScores ?? [];
+    if (!quickMatchId) return delServidor;
+
+    const guardados = offlineQueue.getByMatch(quickMatchId);
+    if (guardados.length === 0) return delServidor;
+
+    const enDisputa = (fila, entrada) => fila.score !== entrada.scoreData.score;
+    const salida = [...delServidor];
+    for (const entrada of guardados) {
+      const i = salida.findIndex(
+        (hs) => hs.holeNumber === entrada.holeNumber && hs.participantId === entrada.participantId
+      );
+      const mio = {
+        holeNumber: entrada.holeNumber,
+        participantId: entrada.participantId,
+        score: entrada.scoreData.score,
+        recordedByParticipantId: null,
+      };
+      if (i === -1) salida.push(mio);
+      // En disputa manda el del servidor hasta que el jugador decida: lo suyo
+      // está en cuestión, y elegirlo por él es justo lo que no se hace
+      else if (entrada.scoreData.decidido || !enDisputa(salida[i], entrada)) salida[i] = mio;
+    }
+    return salida;
+  })();
+
   const myParticipant = quickMatch?.participants?.find((p) => p.userId === currentUserId) ?? null;
   const isCreator = quickMatch?.creatorId === currentUserId;
   const isScorer = myParticipant ? quickMatch.scorerIds.includes(myParticipant.participantId) : false;
@@ -187,9 +228,18 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
             (hs) => hs.holeNumber === entrada.holeNumber && hs.participantId === entrada.participantId
           );
 
+          // Ya está en el servidor con ese mismo resultado: enviarlo otra vez
+          // no añade nada, y sí puede restar —un 409 lo daría por perdido y le
+          // pediría al jugador que volviera a anotar lo que ya está anotado
+          if (enElServidor && enElServidor.score === entrada.scoreData.score) {
+            offlineQueue.remove(quickMatchId, entrada.holeNumber, entrada.participantId);
+            continue;
+          }
+
           // Ya hay anotación y no coincide: no se envía. La aplicación no sabe
-          // quién tiene razón, así que lo decide el jugador
-          if (enElServidor && enElServidor.score !== entrada.scoreData.score) {
+          // quién tiene razón, así que lo decide el jugador. Salvo que ya lo
+          // haya decidido: entonces no se le vuelve a preguntar lo mismo
+          if (enElServidor && !entrada.scoreData.decidido) {
             enConflicto.push({
               holeNumber: entrada.holeNumber,
               participantId: entrada.participantId,
@@ -228,23 +278,36 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
    * El jugador decide, tras hablar con su compañero, qué anotación vale.
    */
   const resuelveDiscrepancia = useCallback(
-    async (holeNumber, participantId, cual) => {
-      const entrada = offlineQueue
-        .getByMatch(quickMatchId)
-        .find((e) => e.holeNumber === holeNumber && e.participantId === participantId);
-
-      if (cual === 'mio' && entrada) {
-        const queHacer = await enviaGuardado(entrada, myParticipant?.participantId);
-        if (queHacer === 'para') return;
+    (holeNumber, participantId, cual) => {
+      // No se envía aquí: se deja la decisión tomada y la envía el vaciado del
+      // siguiente sondeo. Enviar en este punto abría tres agujeros —si no
+      // llegaba no se enteraba nadie, el sondeo podía estar vaciando a la vez y
+      // mandarlo dos veces, y la decisión se perdía al cerrar la aplicación.
+      if (cual === 'mio') {
+        const entrada = offlineQueue
+          .getByMatch(quickMatchId)
+          .find((e) => e.holeNumber === holeNumber && e.participantId === participantId);
+        if (!entrada) return;
+        offlineQueue.enqueue(
+          quickMatchId,
+          holeNumber,
+          { ...entrada.scoreData, decidido: true },
+          participantId
+        );
+      } else if (cual === 'elQueHay') {
+        offlineQueue.remove(quickMatchId, holeNumber, participantId);
+      } else {
+        // Las dos ramas hacen lo contrario la una de la otra y una descarta la
+        // anotación del jugador: un tercer valor no cae en ninguna
+        return;
       }
 
-      offlineQueue.remove(quickMatchId, holeNumber, participantId);
       setDiscrepancias((antes) =>
         antes.filter((d) => !(d.holeNumber === holeNumber && d.participantId === participantId))
       );
       setPendientes(offlineQueue.size(quickMatchId));
     },
-    [quickMatchId, enviaGuardado, myParticipant]
+    [quickMatchId]
   );
 
   const submitScore = useCallback(
@@ -390,6 +453,7 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
 
     setCurrentHole,
     submitScore,
+    holeScoresVisibles,
     pendientes,
     perdidos,
     discrepancias,

@@ -242,7 +242,10 @@
       "conflictBody": "{{scorer}} anotó {{theirs}} y tú ibas a anotar {{mine}}. Habla con tu compañero y decidid cuál vale.",
       "conflictScorerUnknown": "Otro anotador",
       "conflictMine": "Poner el mío ({{mine}})",
-      "conflictTheirs": "Dejar el que hay ({{theirs}})"
+      "conflictTheirs": "Dejar el que hay ({{theirs}})",
+      "pickedUp": "bola recogida",
+      "conflictTitlePlayer": "El hoyo {{hole}} de {{player}} ya tiene otra anotación",
+      "atHole": "Hoyo {{hole}}."
     }
   },
   "personalRound": {
