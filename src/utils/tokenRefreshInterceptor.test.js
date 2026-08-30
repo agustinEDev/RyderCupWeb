@@ -513,6 +513,20 @@ describe('tokenRefreshInterceptor', () => {
       expect(estado.hayConexion()).toBe(true);
     });
 
+    it('agotar el propio plazo tampoco es quedarse sin cobertura', async () => {
+      // Hoy nadie usa `AbortSignal.timeout()`, pero el arranque implementa ese
+      // patrón a mano y el día que se acorte, esto evita que su plazo se lea
+      // como falta de red
+      const fetchConRefresco = await conModuloLimpio();
+      const agotado = new Error('The operation timed out');
+      agotado.name = 'TimeoutError';
+      globalThis.fetch.mockRejectedValueOnce(agotado);
+
+      await expect(fetchConRefresco('http://localhost:8000/api/v1/test')).rejects.toThrow();
+
+      expect(estado.hayConexion()).toBe(true);
+    });
+
     it('un fallo de red con el texto que pone iOS también cuenta', async () => {
       // El mensaje lo escribe el sistema y cambia con el idioma del teléfono:
       // «The Internet connection appears to be offline» no casaba con ninguna

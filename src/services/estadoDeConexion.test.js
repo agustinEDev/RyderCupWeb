@@ -1,12 +1,16 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { captureError } from '../utils/sentryHelpers';
 import {
   hayConexion,
+  plazosVivos,
   vigilaUnaPeticion,
   apuntaFalloDeRed,
   apuntaRespuestaDelServidor,
   seSuscribeALaConexion,
   olvidaElEstadoDeConexion,
 } from './estadoDeConexion';
+
+vi.mock('../utils/sentryHelpers', () => ({ captureError: vi.fn() }));
 
 describe('estadoDeConexion', () => {
   beforeEach(() => olvidaElEstadoDeConexion());
@@ -133,6 +137,70 @@ describe('la petición que se queda colgada (FE #515)', () => {
     expect(hayConexion()).toBe(false);
   });
 
+  it('la caída de DESPUÉS también se detecta', () => {
+    // Reproducción del caso que se escapaba: sale la escritura, llega la
+    // respuesta de otra petición anterior, y justo entonces se cae la
+    // cobertura. Rendirse al primer plazo dejaba «conectado» para siempre en
+    // cualquier pantalla que no sondee
+    vigilaUnaPeticion();
+
+    vi.advanceTimersByTime(200);
+    apuntaRespuestaDelServidor();   // todavía había cobertura
+
+    // Y a partir de aquí no llega nada más
+    vi.advanceTimersByTime(20000);
+
+    expect(hayConexion()).toBe(false);
+  });
+
+  it('mientras siga llegando algo, no se declara nada', () => {
+    // El re-armado no puede convertirse en un «sin conexión» inevitable
+    vigilaUnaPeticion();
+
+    for (let i = 0; i < 10; i++) {
+      vi.advanceTimersByTime(3000);
+      apuntaRespuestaDelServidor();
+    }
+
+    expect(hayConexion()).toBe(true);
+  });
+
+  it('soltar la petición para el re-armado', () => {
+    // Si no, una petición ya terminada seguiría vigilando para siempre
+    const suelta = vigilaUnaPeticion();
+
+    vi.advanceTimersByTime(200);
+    apuntaRespuestaDelServidor();
+    suelta();
+    vi.advanceTimersByTime(60000);
+
+    expect(hayConexion()).toBe(true);
+  });
+
+  it('reiniciar da de baja también los oyentes del navegador', () => {
+    // Sin esto, cada reinicio dejaba un par más vivo sobre `globalThis`, atado
+    // a una instancia del módulo ya muerta: hoy inocuo, pero el día que un test
+    // despache `offline` reaccionarían varias a la vez
+    const baja = vi.spyOn(globalThis, 'removeEventListener');
+
+    olvidaElEstadoDeConexion();
+
+    const eventos = baja.mock.calls.map(([evento]) => evento);
+    expect(eventos).toContain('offline');
+    expect(eventos).toContain('online');
+    baja.mockRestore();
+  });
+
+  it('el plazo que se dispara no se queda en la lista', () => {
+    // Una petición que cuelga para siempre —el caso que da nombre a esto—
+    // dejaba su rastro ahí de por vida, y con el marcador sondeando son cientos
+    vigilaUnaPeticion();
+
+    vi.advanceTimersByTime(20000);
+
+    expect(plazosVivos()).toBe(0);
+  });
+
   it('un oyente que falla no deja sin avisar a los demás', () => {
     // Avisar ocurre dentro de la petición: una excepción aquí llegaría a
     // sustituir la respuesta del servidor
@@ -142,6 +210,17 @@ describe('la petición que se queda colgada (FE #515)', () => {
 
     expect(() => apuntaFalloDeRed()).not.toThrow();
     expect(segundo).toHaveBeenCalled();
+  });
+
+  it('y el fallo del oyente se reporta, no se queda en la consola', () => {
+    // Ese oyente es quien vacía la cola de hoyos: su fallo son golpes sin
+    // enviar. Y como el valor ya está escrito, no habrá otro aviso para esta
+    // misma transición, así que nadie lo volvería a intentar
+    seSuscribeALaConexion(() => { throw new Error('la cola está llena'); });
+
+    apuntaFalloDeRed();
+
+    expect(captureError).toHaveBeenCalled();
   });
 
   it('reiniciar el módulo para los plazos en marcha', () => {

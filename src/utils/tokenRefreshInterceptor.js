@@ -183,8 +183,14 @@ const fetchVigilado = async (url, opciones) => {
   } catch (error) {
     // Abortar es lo único que rechaza aquí sin ser falta de cobertura: lo hace
     // la propia aplicación al desmontar una pantalla o al agotar su plazo, y
-    // decir «sin conexión» por eso sería mentir
-    if (error?.name !== 'AbortError') apuntaFalloDeRed();
+    // decir «sin conexión» por eso sería mentir.
+    //
+    // `TimeoutError` va en la misma lista aunque hoy nadie lo produzca: es lo
+    // que lanza `AbortSignal.timeout()`, y el arranque ya implementa ese patrón
+    // a mano. El día que se cambie por la forma corta, «se agotó mi plazo» se
+    // convertiría en silencio en «no hay cobertura»
+    const abortado = error?.name === 'AbortError' || error?.name === 'TimeoutError';
+    if (!abortado) apuntaFalloDeRed();
     suelta();
     throw error;
   }

@@ -37,6 +37,7 @@ import { isDeviceRevoked, handleDeviceRevocationLogout } from '../utils/deviceRe
 import { resolvePostAuthTarget } from '../utils/auth';
 import { anotaLaSesion } from '../services/sesionCompartida';
 import User from '../domain/entities/User.js';
+import { apuntaFalloDeRed } from '../services/estadoDeConexion';
 
 // Misma prioridad que `api.js` y el interceptor: la configuración de ejecución
 // manda sobre la del build. Sin esto, `/current-user` y el refresco de aquí
@@ -104,6 +105,12 @@ export const useRedirectIfAuthenticated = ({
       // Se abandona la comprobación, pero NO se toca el usuario guardado: no
       // sabemos nada de la sesión, solo que el backend no contestó a tiempo
       controller.abort();
+
+      // Y se cuenta: esta petición va con `fetch` a pelo, no por el
+      // interceptor, así que es el único sitio que ve esta caída. Sin esto se
+      // entraba «sin red» mientras la aplicación seguía creyendo que había
+      // conexión, justo en el arranque sin cobertura (FE #515)
+      apuntaFalloDeRed();
 
       if (entrarSinRed) {
         // Este es el camino de VERDAD sin cobertura: la petición no falla

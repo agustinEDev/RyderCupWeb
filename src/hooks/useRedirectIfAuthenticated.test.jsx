@@ -167,6 +167,25 @@ describe('useRedirectIfAuthenticated', () => {
         );
       });
 
+      it('deja dicho que no hay conexión cuando la comprobación se cuelga', async () => {
+        // Esta petición va con `fetch` a pelo, no por el interceptor, así que
+        // es el único sitio que ve esta caída. Sin esto se entraba «sin red»
+        // mientras la aplicación seguía creyendo que había conexión (FE #515)
+        const { hayConexion, olvidaElEstadoDeConexion } = await import('../services/estadoDeConexion');
+        olvidaElEstadoDeConexion();
+        vi.useFakeTimers();
+        try {
+          globalThis.fetch.mockReturnValue(new Promise(() => {}));
+
+          renderHook(() => useRedirectIfAuthenticated({ entrarSinRed: true }));
+          await act(async () => { await vi.advanceTimersByTimeAsync(6000); });
+
+          expect(hayConexion()).toBe(false);
+        } finally {
+          vi.useRealTimers();
+        }
+      });
+
       it('pero NO si el backend rechaza la sesión', async () => {
         // Aquí sí hubo respuesta y dice que no: entrar seria colar a alguien
         // cuya sesión ya no vale

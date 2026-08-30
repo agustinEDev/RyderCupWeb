@@ -1,3 +1,5 @@
+import { captureError } from '../utils/sentryHelpers';
+
 /**
  * Si la aplicación está llegando al servidor o no.
  *
@@ -53,7 +55,12 @@ const avisa = () => {
     try {
       oyente();
     } catch (error) {
-      console.error('[conexión] un oyente falló al ser avisado:', error);
+      // Aislado para que uno no deje sin avisar a los demás ni sustituya la
+      // respuesta del servidor. Pero NO se traga: el oyente de la pantalla de
+      // anotación es quien vacía la cola de hoyos, y un fallo suyo son golpes
+      // sin enviar. Como el valor ya está escrito, no habrá otro aviso para
+      // esta misma transición, así que si se queda en la consola no lo ve nadie
+      captureError(error, { tags: { modulo: 'estadoDeConexion' } });
     }
   }
 };
@@ -81,18 +88,39 @@ export const apuntaFalloDeRed = () => cambiaA(false);
  * cuando la petición termine, haya ido bien o mal.
  */
 export const vigilaUnaPeticion = () => {
-  const arrancado = ahora();
-  const temporizador = setTimeout(() => {
-    // Solo cuenta como falta de cobertura si NADA ha llegado mientras tanto.
-    // Una petición legítimamente lenta —subir una foto del carrete por datos,
-    // o despertar una instancia dormida— tardaba más del plazo y declaraba sin
-    // conexión a toda la aplicación aunque el resto fuera bien
-    if (ultimaRespuesta > arrancado) return;
-    cambiaA(false);
-  }, PLAZO_SIN_RESPUESTA_MS);
+  let temporizador = null;
+  let vigilando = true;
 
-  temporizadores.add(temporizador);
+  const arma = () => {
+    temporizador = setTimeout(() => {
+      // El temporizador ya se ha disparado: fuera del conjunto. Si no, una
+      // petición que cuelga para siempre —el caso que da nombre a esto— dejaba
+      // su rastro ahí de por vida
+      temporizadores.delete(temporizador);
+      if (!vigilando) return;
+
+      // Solo cuenta como falta de cobertura si no ha llegado nada hace poco.
+      // Una petición legítimamente lenta —subir una foto del carrete por datos,
+      // o despertar una instancia dormida— tardaba más del plazo y declaraba
+      // sin conexión a toda la aplicación aunque el resto fuera bien
+      if (ahora() - ultimaRespuesta < PLAZO_SIN_RESPUESTA_MS) {
+        // Y se vuelve a mirar: rendirse aquí dejaba sin detectar la caída de
+        // después. Bastaba una respuesta reciente para que esta petición, que
+        // ya no va a volver, no dijera nunca nada
+        arma();
+        return;
+      }
+
+      cambiaA(false);
+    }, PLAZO_SIN_RESPUESTA_MS);
+
+    temporizadores.add(temporizador);
+  };
+
+  arma();
+
   return () => {
+    vigilando = false;
     clearTimeout(temporizador);
     temporizadores.delete(temporizador);
   };
@@ -104,6 +132,10 @@ export const seSuscribeALaConexion = (oyente) => {
   oyentes.add(oyente);
   return () => oyentes.delete(oyente);
 };
+
+/** Solo para los tests: cuántos plazos siguen vivos. */
+export const plazosVivos = () =>
+  (import.meta.env?.MODE === 'test' ? temporizadores.size : 0);
 
 /**
  * Solo para los tests: devuelve el módulo a su estado de arranque.
@@ -120,6 +152,10 @@ export const olvidaElEstadoDeConexion = () => {
   for (const t of temporizadores) clearTimeout(t);
   temporizadores.clear();
   ultimaRespuesta = 0;
+  // Y los del navegador: sin esto, cada reinicio dejaba un par más vivo sobre
+  // `globalThis`, atado a una instancia del módulo ya muerta
+  globalThis.removeEventListener?.('offline', seCayoLaRed);
+  globalThis.removeEventListener?.('online', volvioLaRed);
   llegaAlServidor = globalThis.navigator?.onLine !== false;
   oyentes.clear();
 };
@@ -133,7 +169,10 @@ export const olvidaElEstadoDeConexion = () => {
 // equivoca la corrección llega sola, porque la primera petición que no complete
 // devuelve el estado a «sin conexión». Quitarlo dejaría la recuperación
 // dependiendo solo del sondeo.
+const seCayoLaRed = () => cambiaA(false);
+const volvioLaRed = () => cambiaA(true);
+
 if (typeof globalThis.addEventListener === 'function') {
-  globalThis.addEventListener('offline', () => cambiaA(false));
-  globalThis.addEventListener('online', () => cambiaA(true));
+  globalThis.addEventListener('offline', seCayoLaRed);
+  globalThis.addEventListener('online', volvioLaRed);
 }
