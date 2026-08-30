@@ -516,9 +516,14 @@ describe('tokenRefreshInterceptor', () => {
       }
     });
 
-    it('pero si mientras tanto llega otra respuesta, no se dice nada', async () => {
+    it('pero si mientras tanto llega otra respuesta, no se dice nada — y no vuelve', async () => {
       // Es lo que salva a un aborto al desmontar una pantalla, y a una petición
-      // que rechaza por una cabecera mal construida
+      // que rechaza por una cabecera mal construida.
+      //
+      // La segunda mitad importa tanto como la primera: antes el vigilante se
+      // re-armaba y acababa encontrando una ventana sin respuestas, así que el
+      // «sin conexión» llegaba igual unos segundos después. El test terminaba
+      // justo antes de ese momento y lo daba por bueno
       vi.useFakeTimers();
       try {
         const fetchConRefresco = await conModuloLimpio();
@@ -528,8 +533,44 @@ describe('tokenRefreshInterceptor', () => {
         await vi.advanceTimersByTimeAsync(2000);
         estado.apuntaRespuestaDelServidor();
         await vi.advanceTimersByTimeAsync(4000);
-
         expect(estado.hayConexion()).toBe(true);
+
+        // Y mucho después tampoco: esa petición ya decidió
+        await vi.advanceTimersByTimeAsync(60000);
+        expect(estado.hayConexion()).toBe(true);
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('una respuesta suelta la vigilancia, no deja el plazo corriendo', async () => {
+      // Si no se soltara, cada petición correcta dejaría un temporizador vivo:
+      // con el marcador sondeando son cientos a lo largo de una vuelta
+      vi.useFakeTimers();
+      try {
+        const fetchConRefresco = await conModuloLimpio();
+        globalThis.fetch.mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({}) });
+
+        await fetchConRefresco('http://localhost:8000/api/v1/test');
+
+        expect(estado.plazosVivos()).toBe(0);
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('y un rechazo no deja el vigilante dando vueltas', async () => {
+      // Decide una vez y para: esa petición ya no va a traer respuesta
+      vi.useFakeTimers();
+      try {
+        const fetchConRefresco = await conModuloLimpio();
+        globalThis.fetch.mockRejectedValueOnce(new TypeError('Failed to fetch'));
+
+        await expect(fetchConRefresco('http://localhost:8000/api/v1/test')).rejects.toThrow();
+        estado.apuntaRespuestaDelServidor();
+        await vi.advanceTimersByTimeAsync(60000);
+
+        expect(estado.plazosVivos()).toBe(0);
       } finally {
         vi.useRealTimers();
       }

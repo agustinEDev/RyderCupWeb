@@ -147,7 +147,7 @@ export const refreshAccessToken = async () => {
  * lo que interesa no es si respondió bien, sino si respondió.
  */
 const fetchVigilado = async (url, opciones) => {
-  const suelta = vigilaUnaPeticion();
+  const vigilancia = vigilaUnaPeticion();
 
   // Un rechazo NO se interpreta. Antes se miraba de qué tipo era y qué decía su
   // mensaje, y eso falló dos veces en el mismo sitio: la redacción la escribe
@@ -163,11 +163,20 @@ const fetchVigilado = async (url, opciones) => {
   // De regalo, abortar deja de ser un caso especial sin escribir una condición:
   // al desmontar una pantalla la petición termina, no llega respuesta, y basta
   // con que otra cualquiera conteste para que no se declare nada.
-  const respuesta = await fetch(url, opciones);
+  let respuesta;
+  try {
+    respuesta = await fetch(url, opciones);
+  } catch (error) {
+    // El plazo sigue corriendo —puede que no haya conexión— pero se le dice que
+    // esta petición ya no va a volver, para que decida una vez y no se quede
+    // buscando eternamente una ventana sin respuestas
+    vigilancia.fallo();
+    throw error;
+  }
 
   // Lo único que prueba que se está llegando: una respuesta, con el estado que
   // traiga. Un 500 demuestra que hay conexión igual que un 200
-  suelta();
+  vigilancia.llego();
   apuntaRespuestaDelServidor();
   return respuesta;
 };

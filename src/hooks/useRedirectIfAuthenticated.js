@@ -58,19 +58,33 @@ const SESSION_CHECK_TIMEOUT_MS = 5000;
  * aplicación que veía una caída y no la contaba: se entraba «sin red» mientras
  * el resto seguía creyendo que había conexión.
  *
- * Se vigila en vez de declarar la caída a mano: así hereda la misma regla que
- * todas —no culpar a la red si otra petición está llegando—, que es justo lo
- * que hacía falta para que una instancia dormida de Render, que tarda más del
- * plazo, no apagara la aplicación entera.
+ * Se vigila en vez de declarar la caída a mano, para heredar la misma regla que
+ * todas: no culpar a la red si otra petición está llegando.
+ *
+ * OJO: eso no salva al arranque contra una instancia dormida de Render. Aquí
+ * todavía no ha contestado nadie, así que no hay ninguna respuesta reciente que
+ * lo desmienta y a los cinco segundos se dirá «sin conexión» aunque la red esté
+ * perfecta. Dura hasta que llegue la primera respuesta, y se prefiere eso a
+ * callar en el arranque sin cobertura, que es el caso que importa.
  */
 const requestCurrentUser = async (signal) => {
-  const suelta = vigilaUnaPeticion();
-  const respuesta = await fetch(`${API_URL}/api/v1/auth/current-user`, {
-    credentials: 'include',
-    headers: { 'Content-Type': 'application/json' },
-    signal,
-  });
-  suelta();
+  const vigilancia = vigilaUnaPeticion();
+  let respuesta;
+  try {
+    respuesta = await fetch(`${API_URL}/api/v1/auth/current-user`, {
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      signal,
+    });
+  } catch (error) {
+    // Por coherencia con el resto: aquí no cambia nada observable —el plazo
+    // vence justo cuando este hook aborta, y hasta entonces no ha llegado
+    // ninguna respuesta que lo desmienta—, pero dejarlo fuera invitaría a
+    // copiar el patrón incompleto
+    vigilancia.fallo();
+    throw error;
+  }
+  vigilancia.llego();
   apuntaRespuestaDelServidor();
   return respuesta;
 };

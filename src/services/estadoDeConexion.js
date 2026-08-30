@@ -34,9 +34,11 @@ let llegaAlServidor = globalThis.navigator?.onLine !== false;
 
 const oyentes = new Set();
 
-// Cuándo llegó la última respuesta, para no culpar a la red de una petición
-// que simplemente tarda mientras otras van y vienen
-let ultimaRespuesta = 0;
+// Cuándo llegó la última respuesta, para no culpar a la red de una petición que
+// simplemente tarda mientras otras van y vienen. `null` es «todavía ninguna»:
+// con 0 no se distinguía de «contestó justo al cargar la página», y durante los
+// primeros segundos de vida ningún plazo podía declarar una caída
+let ultimaRespuesta = null;
 
 // Los plazos en marcha, para poder pararlos al reiniciar el módulo en pruebas
 const temporizadores = new Set();
@@ -93,6 +95,13 @@ export const apuntaFalloDeRed = () => cambiaA(false);
 export const vigilaUnaPeticion = () => {
   let temporizador = null;
   let vigilando = true;
+  // Una petición que ya terminó en rechazo no va a traer respuesta nunca, así
+  // que su plazo debe decidir UNA vez y parar. Re-armarlo la volvía inmortal:
+  // seguía buscando una ventana de cinco segundos sin respuestas y, con el
+  // marcador sondeando cada diez, siempre acababa encontrándola. Eso convertía
+  // cualquier rechazo ajeno a la red —un aborto al desmontar, una cabecera mal
+  // construida— en un «sin conexión» falso, y además dejaba el vigilante vivo
+  let seguiraPendiente = true;
 
   const arma = () => {
     temporizador = setTimeout(() => {
@@ -106,11 +115,14 @@ export const vigilaUnaPeticion = () => {
       // Una petición legítimamente lenta —subir una foto del carrete por datos,
       // o despertar una instancia dormida— tardaba más del plazo y declaraba
       // sin conexión a toda la aplicación aunque el resto fuera bien
-      if (ahora() - ultimaRespuesta < PLAZO_SIN_RESPUESTA_MS) {
-        // Y se vuelve a mirar: rendirse aquí dejaba sin detectar la caída de
-        // después. Bastaba una respuesta reciente para que esta petición, que
-        // ya no va a volver, no dijera nunca nada
-        arma();
+      // `<=` y no `<`: la frescura y el plazo son el mismo número, así que el
+      // empate exacto cae a favor de «hay conexión». Ante la duda no se declara
+      // una caída
+      if (ultimaRespuesta !== null && ahora() - ultimaRespuesta <= PLAZO_SIN_RESPUESTA_MS) {
+        // Se vuelve a mirar SOLO si la petición sigue pendiente: ahí todavía no
+        // se sabe nada, y rendirse dejaba sin detectar la caída de después. Si
+        // ya terminó en rechazo, no hay nada más que esperar
+        if (seguiraPendiente) arma();
         return;
       }
 
@@ -122,10 +134,21 @@ export const vigilaUnaPeticion = () => {
 
   arma();
 
-  return () => {
-    vigilando = false;
-    clearTimeout(temporizador);
-    temporizadores.delete(temporizador);
+  return {
+    /** La respuesta llegó: se deja de vigilar. */
+    llego: () => {
+      vigilando = false;
+      seguiraPendiente = false;
+      clearTimeout(temporizador);
+      temporizadores.delete(temporizador);
+    },
+    /**
+     * La petición terminó en rechazo. El plazo sigue —puede que no haya
+     * conexión— pero no se re-armará: no hay respuesta que esperar.
+     */
+    fallo: () => {
+      seguiraPendiente = false;
+    },
   };
 };
 
@@ -154,7 +177,7 @@ export const olvidaElEstadoDeConexion = () => {
   // conexión» diferido sobre el estado ya reiniciado
   for (const t of temporizadores) clearTimeout(t);
   temporizadores.clear();
-  ultimaRespuesta = 0;
+  ultimaRespuesta = null;
   // Los oyentes del navegador NO se tocan. Quitarlos aquí —que es lo que se
   // hacía— dejaba el módulo sordo a `offline`/`online` para siempre, justo lo
   // contrario de «devolverlo a su estado de arranque». Y volver a ponerlos

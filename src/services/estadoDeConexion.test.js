@@ -108,10 +108,10 @@ describe('la petición que se queda colgada (FE #515)', () => {
   });
 
   it('si vuelve a tiempo no dice nada', () => {
-    const suelta = vigilaUnaPeticion();
+    const v = vigilaUnaPeticion();
 
     vi.advanceTimersByTime(1000);
-    suelta();
+    v.llego();
     vi.advanceTimersByTime(30000);
 
     expect(hayConexion()).toBe(true);
@@ -153,25 +153,52 @@ describe('la petición que se queda colgada (FE #515)', () => {
     expect(hayConexion()).toBe(false);
   });
 
-  it('mientras siga llegando algo, no se declara nada', () => {
-    // El re-armado no puede convertirse en un «sin conexión» inevitable
-    vigilaUnaPeticion();
+  it('mientras siga llegando algo, una petición colgada no declara nada', () => {
+    // Con la cadencia REAL del marcador, 10 s, que es más larga que el plazo:
+    // con 3 s el re-armado se tomaba siempre por construcción y el test no
+    // podía fallar
+    vigilaUnaPeticion();   // sigue pendiente: nunca llega ni falla
 
-    for (let i = 0; i < 10; i++) {
-      vi.advanceTimersByTime(3000);
+    for (let i = 0; i < 5; i++) {
       apuntaRespuestaDelServidor();
+      vi.advanceTimersByTime(9000);
     }
+    apuntaRespuestaDelServidor();
 
     expect(hayConexion()).toBe(true);
   });
 
+  it('una petición que falló decide una vez y para', () => {
+    // No se queda buscando una ventana sin respuestas: esa petición ya terminó
+    const v = vigilaUnaPeticion();
+    v.fallo();
+
+    apuntaRespuestaDelServidor();      // hubo respuesta hace nada
+    vi.advanceTimersByTime(5000);      // su plazo vence y no dice nada
+    expect(hayConexion()).toBe(true);
+
+    // Y no vuelve: por mucho que pase el tiempo sin nada más
+    vi.advanceTimersByTime(60000);
+    expect(hayConexion()).toBe(true);
+    expect(plazosVivos()).toBe(0);
+  });
+
+  it('pero si no había nada reciente, el fallo sí cuenta', () => {
+    const v = vigilaUnaPeticion();
+    v.fallo();
+
+    vi.advanceTimersByTime(5000);
+
+    expect(hayConexion()).toBe(false);
+  });
+
   it('soltar la petición para el re-armado', () => {
     // Si no, una petición ya terminada seguiría vigilando para siempre
-    const suelta = vigilaUnaPeticion();
+    const v = vigilaUnaPeticion();
 
     vi.advanceTimersByTime(200);
     apuntaRespuestaDelServidor();
-    suelta();
+    v.llego();
     vi.advanceTimersByTime(60000);
 
     expect(hayConexion()).toBe(true);
