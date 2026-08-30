@@ -44,5 +44,6 @@
     "confirmOff": "Al apagarlo se borrará lo que ya habías publicado, y volver a encenderlo no lo recupera. ¿Seguimos?",
     "turnedOff": "Ya no se publica tu actividad",
     "turnedOn": "Tu actividad vuelve a publicarse"
-  }
+  },
+  "sinCoberturaDetalle": "No se ha podido consultar la actividad. Vuelve a mirar cuando haya cobertura."
 }

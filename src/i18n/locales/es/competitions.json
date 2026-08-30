@@ -26,7 +26,8 @@
     "golfCoursesCount_one": "{{count}} campo",
     "golfCoursesCount_other": "{{count}} campos",
     "countriesCount_one": "{{count}} país",
-    "countriesCount_other": "{{count}} países"
+    "countriesCount_other": "{{count}} países",
+    "sinCoberturaDetalle": "No se ha podido consultar la lista. Lo que tengas sigue ahí: vuelve a mirar cuando haya cobertura."
   },
   "create": {
     "title": "Crear Competición",
