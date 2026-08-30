@@ -10,6 +10,8 @@ import { resolve } from 'path';
  */
 const respuestas = [];
 const peticiones = [];
+/** Donde el servicio apunta de quién es la sesión. */
+const RECUERDO = 'rydercup-sesion-conocida';
 
 vi.mock('../utils/tokenRefreshInterceptor', () => ({
   fetchWithTokenRefresh: (url) => {
@@ -44,6 +46,11 @@ describe('la consulta compartida de la sesión', () => {
     peticiones.length = 0;
     respuestas.length = 0;
     revocado.si = false;
+    // Y el apunte del dispositivo: lo escribe SOLA cualquier consulta que
+    // confirme la sesión, así que sin esto un test se encontraba con el de
+    // otro. Desde que el primer fallo pinta con lo apuntado (FE #529) eso ya
+    // no da igual: cambia lo que publica el módulo
+    try { localStorage.removeItem(RECUERDO); } catch { /* sin almacenamiento */ }
   });
 
   afterEach(() => {
@@ -297,7 +304,6 @@ describe('la consulta compartida de la sesión', () => {
  *   sin confirmar, no hay privilegios| `is_admin` no se hereda de lo apuntado
  */
 describe('sesionCompartida · sin señal no se echa a nadie (FE #524)', () => {
-  const RECUERDO = 'rydercup-sesion-conocida';
   const sinRed = () => Promise.reject(new TypeError('Failed to fetch'));
 
   // Este fichero corre sin navegador, así que el almacenamiento se pone aquí:
