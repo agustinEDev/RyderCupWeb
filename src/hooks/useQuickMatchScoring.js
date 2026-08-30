@@ -75,6 +75,10 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
   );
   // Hoyos que el servidor rechazó para siempre, para poder decir cuáles fueron
   const [perdidos, setPerdidos] = useState([]);
+  // Si lo que se está viendo sale de la memoria del móvil. Lo mira la pantalla
+  // para avisar: sin esto, con un 5xx salía la partida entera bajo un error
+  // rojo y sin decir que era una foto de antes
+  const [pintadoDeMemoria, setPintadoDeMemoria] = useState(false);
   // Hoyos donde lo guardado no coincide con lo que hay: los resuelve el jugador
   const [discrepancias, setDiscrepancias] = useState([]);
   // Un solo cerrojo para las DOS escrituras —el vaciado y el envío directo—,
@@ -90,6 +94,12 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const holesLoadedRef = useRef(false);
+  // El campo tal y como lo dio el backend, para poder volver a guardarlo sin
+  // releerlo del almacenamiento
+  const campoRef = useRef(null);
+  // Si hay ya una partida pintada. Por referencia y no por estado: ponerlo en
+  // las dependencias del sondeo lo reiniciaba en cada cambio de la partida
+  const hayPartidaRef = useRef(false);
   // Numero de orden del estado: lo toman tanto el sondeo como las acciones que
   // cierran la partida. Un sondeo que salio ANTES del POST podia resolver
   // DESPUES y volver a aplicar su `IN_PROGRESS`, borrando el cierre: la
@@ -109,6 +119,7 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
       // respuesta ya no es la ultima palabra y aplicarla retrocederia el estado
       if (miSeq !== estadoSeqRef.current) return;
       setQuickMatch(data);
+      hayPartidaRef.current = true;
       setLoadError(null);
 
       // El sondeo ha respondido, así que hay conexión: es el momento de enviar
@@ -125,16 +136,20 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
           setCourseName(course.name ?? null);
           // La partida Y su campo: sin hoyos no hay par ni índice, y la
           // pantalla no se puede dibujar aunque se sepa quién juega
+          campoRef.current = course;
           recuerda(quickMatchId, { partida: data, campo: course });
         } catch {
           holesLoadedRef.current = false;
-          // El campo no llegó, pero la partida sí: se guarda con lo que hubiera
-          // de antes, que es mejor que nada
-          recuerda(quickMatchId, { partida: data, campo: loQueSeSupo(quickMatchId)?.campo ?? null });
+          recuerda(quickMatchId, { partida: data, campo: campoRef.current });
         }
       } else {
-        recuerda(quickMatchId, { partida: data, campo: loQueSeSupo(quickMatchId)?.campo ?? null });
+        // Desde lo que ya se tiene, y NO releyendo lo que se va a sobrescribir:
+        // si la entrada se hubiera desalojado, esa relectura daba `null` y el
+        // sondeo dejaba sin campo la partida que está en pantalla, con lo que
+        // la siguiente vez sin señal no había hoyos con los que pintar nada
+        recuerda(quickMatchId, { partida: data, campo: campoRef.current });
       }
+      setPintadoDeMemoria(false);
     } catch (err) {
       const estado = err?.status ?? err?.response?.status;
 
@@ -153,10 +168,18 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
       // 5xx no desmiente nada —el backend está mal, la partida sigue ahí— y con
       // él tampoco se puede anotar, así que ahí lo guardado hace falta igual
       const desmentido = estado === 401 || estado === 403 || estado === 404;
-      const recordado = desmentido ? null : loQueSeSupo(quickMatchId);
+      // Y solo cuando no hay NADA en pantalla. Lo guardado sirve para arrancar
+      // sin señal, no para corregir a una pantalla que ya está funcionando:
+      // cerrar la partida se aplica en local a propósito —para que un corte
+      // justo después del POST no la deje viva— y reponer aquí la foto de
+      // antes la devolvía a «en curso», con la pantalla dejando anotar otra vez
+      const recordado = desmentido || hayPartidaRef.current ? null : loQueSeSupo(quickMatchId);
       if (recordado && miSeq === estadoSeqRef.current) {
         setQuickMatch(recordado.partida);
+        hayPartidaRef.current = true;
+        setPintadoDeMemoria(true);
         if (recordado.campo) {
+          campoRef.current = recordado.campo;
           setHoles(recordado.campo.holes || []);
           setTees(recordado.campo.tees || []);
           setCourseName(recordado.campo.name ?? null);
@@ -174,6 +197,8 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
   // hook: sin limpiar, el aviso rojo y el conflicto de la partida anterior se
   // quedarían en pantalla contra los hoyos de la nueva
   useEffect(() => {
+    hayPartidaRef.current = false;
+    campoRef.current = null;
     // eslint-disable-next-line react-hooks/set-state-in-effect -- reset on match change, same pattern as the fetch effect below
     setPerdidos([]);
     setDiscrepancias([]);
@@ -591,6 +616,7 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
     setCurrentHole,
     submitScore,
     holeScoresVisibles,
+    pintadoDeMemoria,
     pendientes,
     perdidos,
     discrepancias,

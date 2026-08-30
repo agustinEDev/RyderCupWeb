@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { recuerda, loQueSeSupo, olvida, olvidaTodo, recuerdaLaLista, laUltimaLista } from './loUltimoConocido';
+import { recuerda, loQueSeSupo, olvida, olvidaTodo, recuerdaLaLista, laUltimaLista, olvidaLoDeEstaCuenta } from './loUltimoConocido';
 
 /**
  * LA TABLA M — lo último que se supo de una partida.
@@ -93,5 +93,54 @@ describe('loUltimoConocido', () => {
     localStorage.setItem('rydercup-ultima-lista', '{"no":"es una lista"}');
 
     expect(laUltimaLista()).toBeNull();
+  });
+
+  it('la que se está jugando no es la primera en caer', () => {
+    // El sondeo reescribe su entrada cada diez segundos. Si eso no la moviera
+    // al final, al abrir una cuarta partida se iría justo la que se está
+    // jugando, que es la única que de verdad hace falta sin cobertura
+    for (const n of [1, 2, 3]) recuerda(`m-${n}`, lo(n));
+    recuerda('m-1', lo(1));
+
+    recuerda('m-4', lo(4));
+
+    expect(loQueSeSupo('m-1')).not.toBeNull();
+    expect(loQueSeSupo('m-2')).toBeNull();
+  });
+
+  it('la lista no se guarda entera: comparte sitio con los golpes sin enviar', () => {
+    recuerdaLaLista(Array.from({ length: 50 }, (_, i) => ({ id: `m-${i}` })));
+
+    expect(laUltimaLista().length).toBeLessThanOrEqual(20);
+  });
+
+  it('al cerrar sesión se va todo: son datos de esta cuenta', () => {
+    recuerda('m-1', lo(1));
+    recuerdaLaLista([{ id: 'm-1' }]);
+
+    olvidaLoDeEstaCuenta();
+
+    expect(loQueSeSupo('m-1')).toBeNull();
+    expect(laUltimaLista()).toBeNull();
+  });
+
+  it('guardar lo mismo no vuelve a escribir', () => {
+    // Corre en cada sondeo, toda la vuelta, en el hilo que atiende los botones
+    recuerda('m-1', lo(1));
+    let escrituras = 0;
+    const original = localStorage.setItem;
+    localStorage.setItem = (...a) => { escrituras += 1; return original(...a); };
+
+    recuerda('m-1', lo(1));
+
+    expect(escrituras).toBe(0);
+  });
+
+  it('pero un cambio sí se guarda', () => {
+    recuerda('m-1', lo(1));
+
+    recuerda('m-1', { partida: { id: 'm-1', holeScores: [{ holeNumber: 1 }] }, campo: null });
+
+    expect(loQueSeSupo('m-1').partida.holeScores).toHaveLength(1);
   });
 });

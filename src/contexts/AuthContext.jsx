@@ -9,6 +9,7 @@ import { createContext, useContext, useState, useCallback, useEffect } from 'rea
 import { setCsrfTokenGlobal } from './csrfTokenSync';
 import { olvidaLaSesion } from '../services/sesionCompartida';
 import { olvidaLasAccionesPendientes } from '../services/accionesPendientes';
+import { olvidaLoDeEstaCuenta } from '../services/loUltimoConocido';
 
 // Create the context
 const AuthContext = createContext(null);
@@ -104,6 +105,10 @@ export const AuthProvider = ({ children }) => {
     // Y lo que el panel llegara a enseñar: son datos de ESTA cuenta, y asomarian
     // un instante en la siguiente que entrara sin recargar (FE #502)
     olvidaLasAccionesPendientes();
+    // Y las partidas guardadas para poder anotar sin cobertura (FE #524): en un
+    // móvil compartido, la siguiente persona que entrara y se quedara sin señal
+    // vería la lista de la anterior, con sus nombres y sus resultados
+    olvidaLoDeEstaCuenta();
     localStorage.removeItem('user');
     localStorage.removeItem('access_token'); // Legacy cleanup
   }, []);

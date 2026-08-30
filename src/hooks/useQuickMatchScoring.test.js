@@ -23,6 +23,7 @@ import {
   getQuickMatchUseCase,
   getGolfCourseUseCase,
   cancelQuickMatchUseCase,
+  completeQuickMatchUseCase,
   submitQuickMatchHoleScoreUseCase,
   submitQuickMatchProxyHoleScoreUseCase,
 } from '../composition';
@@ -1163,5 +1164,97 @@ describe('useQuickMatchScoring · volver a abrir sin cobertura (FE #524, tabla N
     const result = await monta();
 
     expect(result.current.quickMatch.holeScores).toHaveLength(0);
+  });
+});
+
+/**
+ * LA TABLA P — lo guardado no puede pisar lo que ya hay en pantalla.
+ *
+ * Salió de la revisión, y es lo contrario de lo que la tabla N buscaba: lo
+ * guardado sirve para ARRANCAR sin señal, no para corregir a la pantalla que
+ * ya está funcionando. Cerrar la partida se aplica en local a propósito —para
+ * que un corte justo después del POST no la deje viva—, y restaurar en cada
+ * sondeo fallido devolvía esa partida a «en curso».
+ *
+ *   caso                                   | qué pasa
+ *   ---------------------------------------|-------------------------------
+ *   no hay nada en pantalla y falla        | se pinta lo guardado
+ *   YA hay partida en pantalla y falla     | no se toca: manda la pantalla
+ *   se cierra la partida y se cae la red   | sigue cerrada
+ *   se pinta de memoria                    | se dice, sea cual sea el fallo
+ */
+describe('useQuickMatchScoring · lo guardado no pisa la pantalla (FE #524, tabla P)', () => {
+  beforeEach(() => {
+    const almacen = new Map();
+    globalThis.localStorage = {
+      getItem: (k) => (almacen.has(k) ? almacen.get(k) : null),
+      setItem: (k, v) => almacen.set(k, String(v)),
+      removeItem: (k) => almacen.delete(k),
+    };
+    vi.clearAllMocks();
+    olvidaTodo();
+    offlineQueue.getByMatch.mockReturnValue([]);
+    offlineQueue.size.mockReturnValue(0);
+    getGolfCourseUseCase.execute.mockResolvedValue({ id: 'course-1', name: 'Son Parc', holes: [{ holeNumber: 1, par: 4 }], tees: [] });
+    getQuickMatchUseCase.execute.mockResolvedValue(mockQuickMatch);
+  });
+
+  const monta = async () => {
+    const { result } = renderHook(() => useQuickMatchScoring('qm-1', 'user-1'));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    return result;
+  };
+
+  it('cerrar la partida y perder la red la deja cerrada', async () => {
+    // El cierre se aplica en local justo para esto. Si al fallar el sondeo se
+    // repusiera la foto guardada —de cuando estaba en curso— la pantalla
+    // volvería a dejar anotar y cada guardado se estrellaría contra un 409
+    const result = await monta();
+    completeQuickMatchUseCase.execute.mockResolvedValue({ ...mockQuickMatch, status: 'COMPLETED', isCompleted: true });
+    getQuickMatchUseCase.execute.mockRejectedValue(new TypeError('Failed to fetch'));
+
+    await act(async () => { await result.current.completeMatch(); });
+
+    expect(result.current.quickMatch.status).toBe('COMPLETED');
+  });
+
+  it('con la partida ya en pantalla, un sondeo que falla no la retrasa', async () => {
+    const result = await monta();
+    const antes = result.current.quickMatch;
+    getQuickMatchUseCase.execute.mockRejectedValue(new TypeError('Failed to fetch'));
+
+    await act(async () => { await result.current.refetch(); });
+
+    expect(result.current.quickMatch).toBe(antes);
+  });
+
+  it('dice cuándo lo que se ve sale de la memoria del móvil', async () => {
+    // Y no según el código del fallo: con un 5xx también se pinta de memoria, y
+    // ahí salía la pantalla entera bajo un error rojo, sin avisar de nada
+    recuerda('qm-1', { partida: mockQuickMatch, campo: { holes: [], tees: [] } });
+    getQuickMatchUseCase.execute.mockRejectedValue(Object.assign(new Error('boom'), { status: 500 }));
+
+    const result = await monta();
+
+    expect(result.current.pintadoDeMemoria).toBe(true);
+  });
+
+  it('con la partida recién traída del servidor, no se dice nada de memoria', async () => {
+    const result = await monta();
+
+    expect(result.current.pintadoDeMemoria).toBe(false);
+  });
+
+  it('el sondeo no degrada el campo que ya tenía guardado', async () => {
+    // Cada sondeo reescribe la entrada. Releyendo lo que está a punto de
+    // sobrescribir, si se hubiera desalojado escribía `campo: null` y la
+    // siguiente vez sin señal no había hoyos con los que pintar la tarjeta
+    const result = await monta();
+    // Como si la entrada se hubiera desalojado para dejar sitio a otra partida
+    olvidaTodo();
+
+    await act(async () => { await result.current.refetch(); });
+
+    expect(loQueSeSupo('qm-1')?.campo?.holes).toHaveLength(1);
   });
 });

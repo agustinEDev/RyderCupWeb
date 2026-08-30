@@ -60,12 +60,29 @@ export const recuerda = (id, lo) => {
   if (!id) return false;
 
   const todo = leeTodo();
+
+  // Si no ha cambiado nada Y ya es la última, no se toca el almacenamiento:
+  // esto corre en cada sondeo, toda la vuelta, y es un parseo, un serializado y
+  // una escritura síncronos en el hilo que atiende los botones de anotar.
+  //
+  // Lo de «ya es la última» no es un detalle: el turno para desalojar sale del
+  // orden de las claves, así que saltarse la escritura sin más dejaba la
+  // partida que se está jugando clavada en su sitio de la primera vez, y volvía
+  // a ser la primera en caer al abrir otra
+  const ids = Object.keys(todo);
+  const comoEstaba = todo[id];
+  const yaEsLaUltima = ids[ids.length - 1] === id;
+  if (yaEsLaUltima && comoEstaba && JSON.stringify(comoEstaba) === JSON.stringify(lo)) return true;
+
+  // Se quita antes de volver a poner: escribir sobre una clave que ya está NO
+  // la mueve al final
+  delete todo[id];
   todo[id] = lo;
 
-  // Las más viejas se van: el orden de inserción de las claves da el turno, y
-  // la que se acaba de escribir queda siempre la última
-  const ids = Object.keys(todo);
-  for (const viejo of ids.slice(0, Math.max(0, ids.length - CUANTAS_CABEN))) {
+  // Las más viejas se van: el orden de las claves da el turno, y la que se
+  // acaba de escribir queda siempre la última
+  const conLaNueva = Object.keys(todo);
+  for (const viejo of conLaNueva.slice(0, Math.max(0, conLaNueva.length - CUANTAS_CABEN))) {
     delete todo[viejo];
   }
 
@@ -95,9 +112,13 @@ const CLAVE_LISTA = 'rydercup-ultima-lista';
  * abre la aplicación en el campo no tiene por dónde entrar: la pantalla de
  * anotación sabe pintarse sola, pero hay que poder pulsar en la partida.
  */
+/** Las que caben en la puerta de entrada. La pantalla pide 50, y guardarlas
+ *  todas con su DTO entero comparte sitio con la cola de golpes sin enviar. */
+const CUANTAS_EN_LA_LISTA = 20;
+
 export const recuerdaLaLista = (partidas) => {
   try {
-    localStorage.setItem(CLAVE_LISTA, JSON.stringify(partidas ?? []));
+    localStorage.setItem(CLAVE_LISTA, JSON.stringify((partidas ?? []).slice(0, CUANTAS_EN_LA_LISTA)));
     return true;
   } catch {
     return false;
@@ -114,6 +135,15 @@ export const laUltimaLista = () => {
   } catch {
     return null;
   }
+};
+
+/**
+ * Al cerrar sesión: son datos de ESTA cuenta. En un móvil compartido, sin esto
+ * la siguiente persona que entrara y se quedara sin señal vería la lista de
+ * partidas de la anterior, con sus nombres y sus resultados.
+ */
+export const olvidaLoDeEstaCuenta = () => {
+  olvidaTodo();
 };
 
 /** Solo para las pruebas. */

@@ -413,18 +413,30 @@ describe('MyQuickMatchesPage', () => {
     });
   });
 
-  it('un fallo SIN respuesta es falta de señal, y no se llama error', async () => {
-    // Antes salía el mensaje crudo del fallo —«Network error»— en rojo. Ahora
-    // puede haber además partidas en pantalla, las últimas que se vieron:
-    // llamarlo error sobre una lista que se está usando es contradecirse
-    mockListMyQuickMatches.mockRejectedValue(new Error('Network error'));
+  it('un fallo de red se dice como falta de señal, no como error', async () => {
+    // Antes salía el mensaje crudo del fallo en rojo. Ahora puede haber además
+    // partidas en pantalla, las últimas que se vieron: llamarlo error sobre
+    // una lista que se está usando es contradecirse
+    mockListMyQuickMatches.mockRejectedValue(new TypeError('Failed to fetch'));
 
     renderPage();
 
     await waitFor(() => {
       expect(screen.getByTestId('quick-matches-sin-conexion')).toBeInTheDocument();
     });
-    expect(screen.queryByText('Network error')).not.toBeInTheDocument();
+    expect(screen.queryByText('Failed to fetch')).not.toBeInTheDocument();
+  });
+
+  it('un fallo del código NO se disfraza de falta de señal', async () => {
+    // Un mapeador que revienta con un dato inesperado también llega sin
+    // estado. Decir «sin conexión» ahí esconde un defecto de verdad, y quien
+    // lo reporte contará algo que no pasó
+    mockListMyQuickMatches.mockRejectedValue(new Error('cannot read x of undefined'));
+
+    renderPage();
+
+    expect(await screen.findByText('cannot read x of undefined')).toBeInTheDocument();
+    expect(screen.queryByTestId('quick-matches-sin-conexion')).not.toBeInTheDocument();
   });
 
   describe('leaving a match out of the statistics', () => {
