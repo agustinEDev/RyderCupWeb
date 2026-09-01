@@ -488,3 +488,61 @@ describe('useEditProfile — el alias (FE #435)', () => {
     expect(result.current.aliasError).toBeNull();
   });
 });
+
+describe('useEditProfile — quitar el alias desde el botón (FE #435)', () => {
+  const usuario = {
+    id: '123',
+    first_name: 'Agustin',
+    last_name: 'Estevez',
+    email: 'agustin@example.com',
+    handicap: null,
+    email_verified: true,
+    country_code: null,
+    alias: 'Chuchi',
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    composition.updateUserProfileUseCase.execute.mockResolvedValue({});
+    useAuth.mockReturnValue({ user: usuario, loading: false, error: null, refetch: vi.fn() });
+  });
+
+  it('vaciar el campo deja la petición pidiendo que se borre', async () => {
+    // El botón de la pantalla hace exactamente esto: un cambio a cadena vacía
+    const { result } = renderHook(() => useEditProfile());
+
+    await act(async () => {
+      result.current.handleInputChange({ target: { name: 'alias', value: '' } });
+    });
+    await act(async () => {
+      await result.current.handleUpdateProfile({ preventDefault: vi.fn() });
+    });
+
+    expect(composition.updateUserProfileUseCase.execute).toHaveBeenCalledWith(
+      '123',
+      expect.objectContaining({ alias: '' }),
+    );
+  });
+
+  it('vaciar el campo también retira el aviso del campo', async () => {
+    const conflicto = new Error('ya está en uso');
+    conflicto.status = 409;
+    composition.updateUserProfileUseCase.execute.mockRejectedValue(conflicto);
+    const { result } = renderHook(() => useEditProfile());
+
+    await act(async () => {
+      result.current.handleInputChange({ target: { name: 'alias', value: 'Repetido' } });
+    });
+    await act(async () => {
+      await result.current.handleUpdateProfile({ preventDefault: vi.fn() });
+    });
+    expect(result.current.aliasError).toBe('alias.errors.taken');
+
+    await act(async () => {
+      result.current.handleInputChange({ target: { name: 'alias', value: '' } });
+    });
+
+    expect(result.current.aliasError).toBeNull();
+    expect(result.current.formData.alias).toBe('');
+  });
+});

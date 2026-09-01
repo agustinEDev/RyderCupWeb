@@ -167,22 +167,47 @@ const EditProfile = () => {
                     <label htmlFor="alias" className="block text-sm font-medium text-gray-700 mb-1">
                       {t('edit.personalInfo.alias')}
                     </label>
-                    <input
-                      id="alias"
-                      type="text"
-                      name="alias"
-                      value={formData.alias}
-                      onChange={handleInputChange}
-                      placeholder={t('edit.personalInfo.aliasPlaceholder')}
-                      maxLength={ALIAS_MAX_LENGTH}
-                      aria-describedby={aliasError ? 'alias-error' : 'alias-help'}
-                      aria-invalid={aliasError ? 'true' : undefined}
-                      className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 ${
-                        aliasError
-                          ? 'border-red-400 focus:ring-red-400'
-                          : 'border-gray-300 focus:ring-primary'
-                      }`}
-                    />
+                    <div className="relative">
+                      <input
+                        id="alias"
+                        type="text"
+                        name="alias"
+                        value={formData.alias}
+                        onChange={handleInputChange}
+                        placeholder={t('edit.personalInfo.aliasPlaceholder')}
+                        maxLength={ALIAS_MAX_LENGTH}
+                        aria-describedby={aliasError ? 'alias-error' : 'alias-help'}
+                        aria-invalid={aliasError ? 'true' : undefined}
+                        /* Sitio a la derecha para el botón de quitarlo, que si
+                           no se come las últimas letras de lo escrito */
+                        className={`w-full py-2 pl-3 pr-12 border rounded-lg focus:outline-none focus:ring-2 ${
+                          aliasError
+                            ? 'border-red-400 focus:ring-red-400'
+                            : 'border-gray-300 focus:ring-primary'
+                        }`}
+                      />
+                      {formData.alias && (
+                        /* Solo cuando hay algo que quitar: un botón que no
+                           hace nada es ruido. `type="button"` porque dentro de
+                           un formulario el defecto es «submit», y pulsarlo
+                           guardaría el perfil entero.
+                           Vacía el campo y ya está: se guarda con el resto del
+                           formulario, para que no haya dos maneras distintas
+                           de guardar lo mismo */
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handleInputChange({ target: { name: 'alias', value: '' } })
+                          }
+                          aria-label={t('edit.personalInfo.aliasClear')}
+                          className="absolute inset-y-0 right-0 flex h-full w-12 items-center justify-center text-gray-400 hover:text-gray-600 active:text-gray-800"
+                        >
+                          <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                            <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                          </svg>
+                        </button>
+                      )}
+                    </div>
                     {aliasError ? (
                       /* El aviso ocupa el sitio de la ayuda en vez de sumarse:
                          los dos a la vez empujan el formulario y dejan al

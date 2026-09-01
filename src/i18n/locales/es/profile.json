@@ -60,6 +60,7 @@
       "alias": "Alias",
       "aliasPlaceholder": "Cómo quieres que te vean",
       "aliasHelp": "Sustituye a tu nombre en toda la aplicación, y tus amigos podrán encontrarte por él. Déjalo vacío para volver a tu nombre.",
+      "aliasClear": "Quitar el alias",
       "nationality": "Nacionalidad",
       "nationalityOptional": "(Opcional)",
       "selectNationality": "Ninguna nacionalidad seleccionada",
