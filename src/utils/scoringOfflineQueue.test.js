@@ -300,6 +300,20 @@ describe('scoringOfflineQueue — de quién es cada anotación (FE #521)', () =>
     expect(getAll()[0].scoreData).toEqual({ ownScore: 4 });
   });
 
+  it('borrar sin decir de quién solo se lleva lo huérfano', () => {
+    // Al revés que al leer: `getByMatch` sin dueño devuelve las de todos, y
+    // `remove` sin dueño no toca ninguna de ellas. Queda fijado aquí porque es
+    // asimétrico y se presta a confusión
+    enqueue('m-1', 7, { ownScore: 5 }, null, 'usuario-A');
+    enqueue('m-1', 7, { ownScore: 4 }, null, null);
+
+    remove('m-1', 7);
+
+    const quedan = getAll();
+    expect(quedan).toHaveLength(1);
+    expect(quedan[0].userId).toBe('usuario-A');
+  });
+
   it('borrar lo de uno no se lleva lo del otro', () => {
     enqueue('m-1', 7, { ownScore: 5 }, null, 'usuario-A');
     enqueue('m-1', 7, { ownScore: 4 }, null, 'usuario-B');

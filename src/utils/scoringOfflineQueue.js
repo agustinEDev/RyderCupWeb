@@ -112,9 +112,16 @@ export const dequeue = () => {
  * @param {string} matchId
  * @param {number} holeNumber
  * @param {string|null} [participantId]
- * @param {string|null} [userId] - De quién es. Dos personas pueden tener
- *   guardado el mismo hoyo de la misma partida en un móvil compartido, y
- *   borrar «el hoyo 7» a secas se llevaría las dos.
+ * @param {string|null} [userId] - De quién es la anotación que se quiere
+ *   quitar. **Es obligatorio en la práctica**: omitirlo NO borra «el hoyo 7 de
+ *   quien sea», borra solo la que no tiene dueño, porque `null` es un dueño
+ *   más. Quien llame sin él sobre una anotación con dueño no borra nada, y esa
+ *   anotación se reenvía en cada reconexión para siempre.
+ *
+ *   Ojo, porque omitirlo significa lo CONTRARIO que al leer: `getByMatch` sin
+ *   dueño devuelve las de todo el mundo, y `remove` sin dueño no toca ninguna
+ *   de ellas. Es asimétrico a propósito —leer de más es inofensivo y borrar de
+ *   más no lo es— pero se presta a confusión, así que aquí queda dicho.
  * @returns {boolean} Si de verdad quedó guardado el cambio
  */
 export const remove = (matchId, holeNumber, participantId = null, userId = null) => {

@@ -20,6 +20,17 @@ const SESSION_REFRESH_INTERVAL = 30000; // 30 seconds
  * @param {string} currentUserId
  * @returns {Object} Scoring state and actions
  */
+/**
+ * El aviso de que el móvil no pudo guardar el golpe. Sin espacio o en una
+ * ventana privada, el golpe no está en el servidor NI en el dispositivo.
+ */
+const errorDeGuardado = (holeNumber) => {
+  const fallo = new Error('No se pudo guardar el golpe en el móvil');
+  fallo.holeNumber = holeNumber;
+  fallo.noSeGuardo = true;
+  return fallo;
+};
+
 export const useScoring = (matchId, currentUserId, isAdmin = false) => {
   const [scoringView, setScoringView] = useState(null);
   const [currentHole, setCurrentHole] = useState(1);
@@ -152,10 +163,14 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
       if (guardado === false) {
         // Sin cobertura Y sin sitio donde guardarlo: el golpe no existe en
         // ninguna parte, y eso hay que decirlo
-        const fallo = new Error('No se pudo guardar el golpe en el móvil');
-        fallo.holeNumber = holeNumber;
-        fallo.noSeGuardo = true;
-        setError(fallo);
+        setError(errorDeGuardado(holeNumber));
+      } else {
+        // Y se retira el aviso anterior si lo había: sin esto, un hoyo que no
+        // se pudo guardar dejaba el cartel puesto el RESTO de la vuelta,
+        // mientras los siguientes se guardaban bien. Sin cobertura no hay
+        // ninguna otra ocasión de limpiarlo —el sondeo no corre—, así que el
+        // jugador reanotaba hoyos creyendo que no se estaban guardando
+        setError(null);
       }
       return;
     }
@@ -185,13 +200,12 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
         // Si el móvil no pudo guardarla —sin espacio, ventana privada— hay que
         // decirlo: callarlo deja al jugador creyendo que su golpe está a salvo
         // en algún sitio, y no está en ninguno
-        if (guardado === false) {
-          const fallo = new Error('No se pudo guardar el golpe en el móvil');
-          fallo.holeNumber = holeNumber;
-          fallo.noSeGuardo = true;
-          setError(fallo);
-          return;
-        }
+        setError(guardado === false ? errorDeGuardado(holeNumber) : null);
+        // Y si SÍ se guardó, no se enseña error: para el jugador el golpe está
+        // anotado, solo que todavía no ha salido del móvil. Decirle que ha
+        // fallado le hace reanotarlo, que es como se anota dos veces el mismo
+        // hoyo. Es lo que ya hacía la pantalla de partida rápida
+        return;
       }
       setError(err);
     } finally {
