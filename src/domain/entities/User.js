@@ -89,6 +89,10 @@ class User {
       password: this.password instanceof Password ? this.password.getValue() : this.password,
       first_name: this.firstName,
       last_name: this.lastName,
+      alias: this.alias,
+      // `display_name` NO se persiste: lo resuelve el servidor y volver a
+      // guardarlo aquí sería quedarse con una copia que envejece en cuanto
+      // alguien cambia su alias. Al reconstruir, el constructor lo deriva
       handicap: this.handicap,
       handicap_updated_at: this.handicapUpdatedAt,
       created_at: this.createdAt,

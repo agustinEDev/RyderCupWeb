@@ -150,6 +150,10 @@ const AliasSheet = ({ aliasActual, onGuardar, onClose }) => {
           onChange={alEscribir}
           placeholder={t('edit.personalInfo.aliasPlaceholder')}
           maxLength={ALIAS_MAX_LENGTH}
+          /* Bloqueado mientras se guarda: si se cambiara el texto con la
+             peticion en vuelo, un 409 del valor ANTERIOR marcaria como
+             ocupado el que se acaba de escribir */
+          readOnly={guardando}
           aria-label={t('edit.personalInfo.alias')}
           aria-describedby={error ? 'alias-sheet-error' : 'alias-sheet-help'}
           aria-invalid={error ? 'true' : undefined}
@@ -181,7 +185,8 @@ const AliasSheet = ({ aliasActual, onGuardar, onClose }) => {
                 setValor('');
                 campoRef.current?.focus();
               }}
-              className="rounded-lg border border-gray-300 px-4 py-3 text-sm font-medium text-gray-700 active:bg-gray-100"
+              disabled={guardando}
+              className="rounded-lg border border-gray-300 px-4 py-3 text-sm font-medium text-gray-700 active:bg-gray-100 disabled:opacity-40"
             >
               {t('edit.personalInfo.aliasClear')}
             </button>

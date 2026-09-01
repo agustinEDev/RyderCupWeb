@@ -132,6 +132,7 @@ describe('User Entity', () => {
         password: undefined,
         first_name: 'John',
         last_name: 'Doe',
+        alias: null,
         handicap: 15.5,
         handicap_updated_at: null,
         created_at: '2025-11-23T10:00:00Z',
@@ -436,5 +437,45 @@ describe('User Entity', () => {
       expect(user.emailVerified).toBe(true);
       expect(user.verificationToken).toBeNull();
     });
+  });
+});
+
+describe('User — el alias (FE #435)', () => {
+  const datos = {
+    id: 'u1',
+    email: 'agustin@example.com',
+    first_name: 'Agustin',
+    last_name: 'Estevez',
+  };
+
+  it('guarda el alias y el nombre resuelto que manda el servidor', () => {
+    const user = new User({ ...datos, alias: 'Chuchi', display_name: 'Chuchi' });
+
+    expect(user.alias).toBe('Chuchi');
+    expect(user.displayName).toBe('Chuchi');
+  });
+
+  it('deriva el nombre a mostrar cuando el servidor no lo manda', () => {
+    // Respuestas anteriores a BE #239, u objetos armados en el cliente
+    expect(new User(datos).displayName).toBe('Agustin Estevez');
+    expect(new User({ ...datos, alias: 'Chuchi' }).displayName).toBe('Chuchi');
+  });
+
+  it('el alias sobrevive a toPersistence', () => {
+    // Sin esto, guardar y reconstruir perdía el alias por el camino
+    const user = new User({ ...datos, alias: 'Chuchi', display_name: 'Chuchi' });
+
+    const guardado = user.toPersistence();
+
+    expect(guardado.alias).toBe('Chuchi');
+    expect(new User(guardado).displayName).toBe('Chuchi');
+  });
+
+  it('toPersistence NO guarda el nombre resuelto', () => {
+    // Lo resuelve el servidor: una copia aquí envejece en cuanto alguien
+    // cambia su alias, y al reconstruir se deriva solo
+    const user = new User({ ...datos, alias: 'Chuchi', display_name: 'Chuchi' });
+
+    expect(user.toPersistence()).not.toHaveProperty('display_name');
   });
 });
