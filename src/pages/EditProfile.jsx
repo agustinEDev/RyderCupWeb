@@ -4,6 +4,7 @@ import HeaderAuth from '../components/layout/HeaderAuth';
 import AvatarPicker from '../components/profile/AvatarPicker';
 import { useEditProfile } from '../hooks/useEditProfile'; // <- ¡NUEVA IMPORTACIÓN!
 import { useAvatar } from '../hooks/useAvatar';
+import { ALIAS_MAX_LENGTH } from '../utils/alias';
 import { canUseRFEG } from '../utils/countryUtils';
 import CountryAutocomplete from '../components/ui/CountryAutocomplete';
 import FullScreenLoader from '../components/ui/FullScreenLoader';
@@ -15,6 +16,7 @@ const EditProfile = () => {
     user,
     refetchUser,
     formData,
+    aliasError,
     isLoading,
     isSaving,
     isUpdatingRFEG,
@@ -159,6 +161,40 @@ const EditProfile = () => {
                       maxLength={100}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                     />
+                  </div>
+
+                  <div>
+                    <label htmlFor="alias" className="block text-sm font-medium text-gray-700 mb-1">
+                      {t('edit.personalInfo.alias')}
+                    </label>
+                    <input
+                      id="alias"
+                      type="text"
+                      name="alias"
+                      value={formData.alias}
+                      onChange={handleInputChange}
+                      placeholder={t('edit.personalInfo.aliasPlaceholder')}
+                      maxLength={ALIAS_MAX_LENGTH}
+                      aria-describedby={aliasError ? 'alias-error' : 'alias-help'}
+                      aria-invalid={aliasError ? 'true' : undefined}
+                      className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 ${
+                        aliasError
+                          ? 'border-red-400 focus:ring-red-400'
+                          : 'border-gray-300 focus:ring-primary'
+                      }`}
+                    />
+                    {aliasError ? (
+                      /* El aviso ocupa el sitio de la ayuda en vez de sumarse:
+                         los dos a la vez empujan el formulario y dejan al
+                         usuario leyendo dos cosas que dicen lo contrario */
+                      <p id="alias-error" role="alert" className="mt-1 text-sm text-red-600">
+                        {t(aliasError)}
+                      </p>
+                    ) : (
+                      <p id="alias-help" className="mt-1 text-sm text-gray-500">
+                        {t('edit.personalInfo.aliasHelp')}
+                      </p>
+                    )}
                   </div>
 
                   {/* Nationality Selector */}

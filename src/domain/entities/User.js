@@ -9,6 +9,8 @@ class User {
     password, // Aunque el hashing se maneja externamente, la entidad puede poseerlo.
     first_name,
     last_name,
+    alias = null, // Apodo publico opcional (BE #239)
+    display_name = null, // El nombre ya resuelto por el backend: alias o nombre completo
     handicap = null, // Valor por defecto para Optional
     handicap_updated_at = null,
     created_at = null,
@@ -38,6 +40,11 @@ class User {
     this.password = password instanceof Password ? password : password; // Si no es un VO, se asume que es la cadena (hasheada)
     this.firstName = first_name;
     this.lastName = last_name;
+    this.alias = alias;
+    // Lo manda resuelto el backend. El `||` de aqui NO es el fallback de
+    // negocio —ese vive en el servidor—, es para los objetos que se construyen
+    // en el cliente o vienen de una respuesta anterior a BE #239
+    this.displayName = display_name || alias || `${first_name} ${last_name}`.trim();
     this.handicap = handicap;
     this.handicapUpdatedAt = handicap_updated_at; // Mantener como string de fecha o null
     this.createdAt = created_at; // Mantener como string de fecha o null

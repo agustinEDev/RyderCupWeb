@@ -44,6 +44,12 @@ class ApiUserRepository extends IUserRepository {
     if (updateData.gender !== undefined) {
       payload.gender = updateData.gender;
     }
+    if (updateData.alias !== undefined) {
+      // La cadena vacia BORRA el alias y devuelve al nombre real; `null` no,
+      // que para la API significa "no lo toques" igual que en el resto de
+      // campos de este endpoint (BE #239). Por eso se envia tal cual llega
+      payload.alias = updateData.alias;
+    }
 
     const data = await apiRequest('/api/v1/users/profile', {
       method: 'PATCH',
