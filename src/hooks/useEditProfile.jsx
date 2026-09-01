@@ -264,8 +264,12 @@ export const useEditProfile = () => {
       console.error('Error updating profile:', error);
       // 409: el alias lo tiene otra persona. Va al campo y NO como toast,
       // conservando lo tecleado para que se pueda retocar en vez de escribirlo
-      // otra vez
-      if (error.status === CONFLICTO) {
+      // otra vez.
+      //
+      // Solo si el alias iba en la peticion: un 409 por cualquier otra causa
+      // colgaba «ese alias ya esta en uso» de un campo que no se habia tocado,
+      // y ademas se comia el aviso del error de verdad
+      if (isAliasChanged && error.status === CONFLICTO) {
         setAliasError('alias.errors.taken');
         return;
       }

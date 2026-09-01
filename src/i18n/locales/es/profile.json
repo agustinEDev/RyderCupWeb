@@ -59,7 +59,7 @@
       "lastName": "Apellido",
       "alias": "Alias",
       "aliasPlaceholder": "Cómo quieres que te vean",
-      "aliasHelp": "Sustituye a tu nombre en toda la aplicación, y tus amigos podrán encontrarte por él. Déjalo vacío para volver a tu nombre.",
+      "aliasHelp": "Es el nombre con el que te ven tus amigos: en el saludo, en las búsquedas y en tus partidas. Déjalo vacío para volver a tu nombre.",
       "aliasClear": "Quitar el alias",
       "nationality": "Nacionalidad",
       "nationalityOptional": "(Opcional)",

@@ -44,7 +44,8 @@ const AliasSheet = ({ aliasActual, onGuardar, onClose }) => {
     const alPulsarTecla = (e) => {
       if (e.key === 'Escape') {
         e.stopPropagation();
-        onClose();
+        // Igual que el fondo y la ✕: con una peticion en vuelo, no
+        if (!guardando) onClose();
         return;
       }
 
@@ -71,7 +72,9 @@ const AliasSheet = ({ aliasActual, onGuardar, onClose }) => {
 
     document.addEventListener('keydown', alPulsarTecla, true);
     return () => document.removeEventListener('keydown', alPulsarTecla, true);
-  }, [onClose]);
+    // `guardando` entra en las dependencias a proposito: el listener tiene que
+    // leer el valor de ahora, no el del primer render
+  }, [onClose, guardando]);
 
   const alEscribir = (e) => {
     if (error) setError(null);
@@ -111,7 +114,11 @@ const AliasSheet = ({ aliasActual, onGuardar, onClose }) => {
     <div
       className="fixed inset-0 z-50 flex items-end justify-center bg-black/40"
       role="presentation"
-      onClick={onClose}
+      /* Con una peticion en vuelo no se cierra: si se cerrara y esa peticion
+         acabara en 409, el aviso caeria sobre un componente desmontado y el
+         conflicto desapareceria sin decir nada, dejando a quien lo escribio
+         creyendo que su alias quedo puesto */
+      onClick={guardando ? undefined : onClose}
     >
       <div
         ref={panelRef}
@@ -128,8 +135,9 @@ const AliasSheet = ({ aliasActual, onGuardar, onClose }) => {
           <button
             type="button"
             onClick={onClose}
+            disabled={guardando}
             aria-label={t('alias.sheet.close')}
-            className="flex-shrink-0 text-lg leading-none text-gray-400 hover:text-gray-600"
+            className="flex-shrink-0 text-lg leading-none text-gray-400 hover:text-gray-600 disabled:opacity-40"
           >
             ✕
           </button>

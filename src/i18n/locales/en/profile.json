@@ -59,7 +59,7 @@
       "lastName": "Last Name",
       "alias": "Alias",
       "aliasPlaceholder": "How you want to be seen",
-      "aliasHelp": "It replaces your name across the app, and your friends can find you by it. Leave it empty to go back to your name.",
+      "aliasHelp": "It is the name your friends see: in the greeting, in searches and in your matches. Leave it empty to go back to your name.",
       "aliasClear": "Clear alias",
       "nationality": "Nationality",
       "nationalityOptional": "(Optional)",

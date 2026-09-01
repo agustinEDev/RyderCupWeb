@@ -437,9 +437,16 @@ const Dashboard = () => {
           onClose={() => setMostrarAlias(false)}
           onGuardar={async (alias) => {
             await updateUserProfileUseCase.execute(user.id, { alias });
-            // Sin recargar: `refetchUser` trae el usuario nuevo y el saludo se
-            // vuelve a pintar con el alias recién puesto
-            await refetchUser();
+            // El refresco va DESPUÉS y con su propio catch: si fallara —sin
+            // cobertura, que aquí es lo normal— su excepción llegaría al catch
+            // de la hoja y le diría a la persona que no se ha guardado algo
+            // que sí se guardó. Lo peor que pasa tragándoselo es que el saludo
+            // tarde en enterarse
+            try {
+              await refetchUser();
+            } catch (err) {
+              console.error('No se pudo refrescar el usuario tras el alias:', err);
+            }
           }}
         />
       )}
@@ -490,7 +497,12 @@ const Dashboard = () => {
                     sola y volvía a recortarse. Con tres, un nombre compuesto
                     largo cabe entero y el bloque sigue sin crecer sin límite */}
                 <div className="flex items-start gap-1">
-                  <p className="whitespace-pre-line break-words line-clamp-3 text-2xl md:text-3xl font-bold leading-tight tracking-tight text-gray-900">
+                  {/* `min-w-0` obligatorio: el ancho mínimo de un hijo de flex
+                      es el de su contenido, y `break-words` no lo reduce. Sin
+                      esto, un alias largo a este tamaño de letra empuja el
+                      lápiz —que es flex-shrink-0— fuera de la pantalla en un
+                      móvil estrecho */}
+                  <p className="min-w-0 whitespace-pre-line break-words line-clamp-3 text-2xl md:text-3xl font-bold leading-tight tracking-tight text-gray-900">
                     {t('welcome', { name: firstName })}
                   </p>
                   {/* El lápiz vive AQUÍ y no en el perfil porque este es el

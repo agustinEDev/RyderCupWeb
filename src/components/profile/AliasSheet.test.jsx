@@ -124,3 +124,23 @@ describe('AliasSheet (FE #435)', () => {
     expect(onClose).toHaveBeenCalled();
   });
 });
+
+describe('AliasSheet — lo que no se puede afirmar (FE #435)', () => {
+  it('no se cierra mientras hay una petición en vuelo', async () => {
+    // Si se cerrara y esa petición acabara en 409, el aviso caería sobre un
+    // componente desmontado: el conflicto desaparecería sin decir nada
+    let resolver;
+    const onGuardar = vi.fn(() => new Promise((r) => { resolver = r; }));
+    const onClose = vi.fn();
+    render(<AliasSheet aliasActual="" onGuardar={onGuardar} onClose={onClose} />);
+
+    fireEvent.change(screen.getByTestId('alias-sheet-input'), { target: { value: 'Chuchi' } });
+    fireEvent.click(screen.getByTestId('alias-sheet-save'));
+
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(onClose).not.toHaveBeenCalled();
+
+    resolver();
+    await waitFor(() => expect(onClose).toHaveBeenCalled());
+  });
+});
