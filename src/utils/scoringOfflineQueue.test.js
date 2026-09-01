@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { enqueue, dequeue, getAll, remove, clear, size, getByMatch } from './scoringOfflineQueue';
+import { enqueue, dequeue, getAll, remove, clear, size, getByMatch, deQuien } from './scoringOfflineQueue';
 
 // Mock localStorage for non-jsdom environment
 const localStorageMock = (() => {
@@ -271,5 +271,71 @@ describe('scoringOfflineQueue · cuando el móvil no puede guardar', () => {
     enqueue('m-1', 7, { score: 5 }, 'p-1');
     seNiega();
     expect(() => remove('m-1', 7, 'p-1')).not.toThrow();
+  });
+});
+
+describe('scoringOfflineQueue — de quién es cada anotación (FE #521)', () => {
+  beforeEach(() => {
+    localStorageMock.clear();
+    vi.clearAllMocks();
+  });
+
+  it('dos personas pueden tener guardado el mismo hoyo sin pisarse', () => {
+    // Antes el dueño no formaba parte de la identidad: mismo partido y mismo
+    // hoyo era «la misma anotación», así que la segunda borraba la primera y
+    // un golpe desaparecía sin dejar rastro
+    enqueue('m-1', 7, { ownScore: 5 }, null, 'usuario-A');
+    enqueue('m-1', 7, { ownScore: 4 }, null, 'usuario-B');
+
+    const todas = getAll();
+    expect(todas).toHaveLength(2);
+    expect(todas.map((e) => e.userId).sort()).toEqual(['usuario-A', 'usuario-B']);
+  });
+
+  it('la misma persona sí se corrige a sí misma', () => {
+    enqueue('m-1', 7, { ownScore: 5 }, null, 'usuario-A');
+    enqueue('m-1', 7, { ownScore: 4 }, null, 'usuario-A');
+
+    expect(getAll()).toHaveLength(1);
+    expect(getAll()[0].scoreData).toEqual({ ownScore: 4 });
+  });
+
+  it('borrar lo de uno no se lleva lo del otro', () => {
+    enqueue('m-1', 7, { ownScore: 5 }, null, 'usuario-A');
+    enqueue('m-1', 7, { ownScore: 4 }, null, 'usuario-B');
+
+    remove('m-1', 7, null, 'usuario-B');
+
+    const quedan = getAll();
+    expect(quedan).toHaveLength(1);
+    expect(quedan[0].userId).toBe('usuario-A');
+  });
+
+  it('getByMatch trae lo tuyo y lo huérfano, nunca lo de otro', () => {
+    // Lo huérfano es de una versión anterior a este campo: dejarlo fuera de la
+    // pantalla de su propia partida sería condenarlo a no enviarse jamás
+    enqueue('m-1', 1, { ownScore: 4 }, null, 'usuario-A');
+    enqueue('m-1', 2, { ownScore: 5 }, null, 'usuario-B');
+    enqueue('m-1', 3, { ownScore: 6 }, null, null);
+
+    const deA = getByMatch('m-1', 'usuario-A');
+
+    expect(deA.map((e) => e.holeNumber).sort()).toEqual([1, 3]);
+  });
+
+  it('deQuien deja fuera lo huérfano: ahí no hay nadie mirando', () => {
+    enqueue('m-1', 1, { ownScore: 4 }, null, 'usuario-A');
+    enqueue('m-1', 3, { ownScore: 6 }, null, null);
+
+    expect(deQuien('usuario-A').map((e) => e.holeNumber)).toEqual([1]);
+    expect(deQuien(null)).toEqual([]);
+  });
+
+  it('sin userId se sigue viendo todo, como antes', () => {
+    // Quien todavía no pasa el dueño no puede quedarse sin ver su cola
+    enqueue('m-1', 1, { ownScore: 4 }, null, 'usuario-A');
+
+    expect(getByMatch('m-1')).toHaveLength(1);
+    expect(size('m-1')).toBe(1);
   });
 });

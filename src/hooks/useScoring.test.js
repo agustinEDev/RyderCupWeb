@@ -143,11 +143,15 @@ describe('useScoring', () => {
       await result.current.submitScore(1, { ownScore: 5, markedPlayerId: 'u2', markedScore: 4 });
     });
 
-    expect(offlineQueue.enqueue).toHaveBeenCalledWith('m-1', 1, {
-      ownScore: 5,
-      markedPlayerId: 'u2',
-      markedScore: 4,
-    });
+    // Con participante (null: es competición) y de quién es la anotación, para
+    // que en un móvil compartido no la envíe ni la borre otra persona (FE #521)
+    expect(offlineQueue.enqueue).toHaveBeenCalledWith(
+      'm-1',
+      1,
+      { ownScore: 5, markedPlayerId: 'u2', markedScore: 4 },
+      null,
+      'u1',
+    );
     expect(submitHoleScoreUseCase.execute).not.toHaveBeenCalled();
   });
 
@@ -617,7 +621,7 @@ describe('useScoring', () => {
       });
 
       await waitFor(() =>
-        expect(offlineQueue.remove).toHaveBeenCalledWith('m-1', 7, undefined)
+        expect(offlineQueue.remove).toHaveBeenCalledWith('m-1', 7, undefined, null)
       );
     });
 
@@ -639,7 +643,7 @@ describe('useScoring', () => {
       });
 
       await waitFor(() =>
-        expect(offlineQueue.remove).toHaveBeenCalledWith('m-1', 7, undefined)
+        expect(offlineQueue.remove).toHaveBeenCalledWith('m-1', 7, undefined, null)
       );
     });
 
@@ -656,5 +660,41 @@ describe('useScoring', () => {
 
       await waitFor(() => expect(result.current.pendingQueueSize).toBe(1));
     });
+  });
+});
+
+describe('useScoring · un móvil compartido (FE #521)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('no envía ni borra lo que anotó otra persona', async () => {
+    // A anota sin cobertura, caduca su sesión, entra B y abre esa partida.
+    // Sin esto, el golpe de A salía con la sesión de B, se escribía en la
+    // tarjeta de B y desaparecía de la cola
+    offlineQueue.getByMatch.mockImplementation((matchId, userId) =>
+      // La cola real ya filtra por dueño: aquí se imita para comprobar que el
+      // hook pregunta por lo SUYO y no por todo
+      userId === 'u-b' ? [] : [{ matchId, holeNumber: 3, participantId: null, userId: 'u-a', scoreData: { ownScore: 4 } }]
+    );
+
+    const { result } = renderHook(() => useScoring('m-1', 'u-b'));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    submitHoleScoreUseCase.execute.mockClear();
+    await act(async () => {
+      window.dispatchEvent(new globalThis.Event('online'));
+    });
+
+    expect(submitHoleScoreUseCase.execute).not.toHaveBeenCalled();
+    expect(offlineQueue.remove).not.toHaveBeenCalled();
+  });
+
+  it('pide su cola con su propio identificador', async () => {
+    offlineQueue.getByMatch.mockReturnValue([]);
+
+    const { result } = renderHook(() => useScoring('m-1', 'u-b'));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    expect(offlineQueue.getByMatch).toHaveBeenCalledWith('m-1', 'u-b');
   });
 });

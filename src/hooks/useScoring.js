@@ -114,8 +114,8 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
    * en algo distinto de cero para siempre (FE #515).
    */
   const pendientesPropias = useCallback(
-    () => offlineQueue.getByMatch(matchId).filter((e) => e.participantId == null).length,
-    [matchId]
+    () => offlineQueue.getByMatch(matchId, currentUserId).filter((e) => e.participantId == null).length,
+    [matchId, currentUserId]
   );
 
   const fetchScoringView = useCallback(async () => {
@@ -140,7 +140,7 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
     if (isOwnScoreLocked && isMarkerScoreLocked) return;
 
     if (isOffline) {
-      offlineQueue.enqueue(matchId, holeNumber, scoreData);
+      offlineQueue.enqueue(matchId, holeNumber, scoreData, null, currentUserId);
       setPendingQueueSize(pendientesPropias());
       return;
     }
@@ -158,14 +158,14 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
       const status = err?.response?.status ?? err?.status;
       const isRetryable = !status || status >= 500;
       if (isRetryable) {
-        offlineQueue.enqueue(matchId, holeNumber, scoreData);
+        offlineQueue.enqueue(matchId, holeNumber, scoreData, null, currentUserId);
         setPendingQueueSize(pendientesPropias());
       }
       setError(err);
     } finally {
       setIsSubmitting(false);
     }
-  }, [matchId, canScore, isOwnScoreLocked, isMarkerScoreLocked, isOffline, pendientesPropias]);
+  }, [matchId, canScore, isOwnScoreLocked, isMarkerScoreLocked, isOffline, pendientesPropias, currentUserId]);
 
   // --- Submit scorecard ---
   const submitScorecard = useCallback(async () => {
@@ -203,7 +203,7 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
 
   // --- Process offline queue ---
   const processQueue = useCallback(async () => {
-    const entries = offlineQueue.getByMatch(matchId);
+    const entries = offlineQueue.getByMatch(matchId, currentUserId);
     for (const entry of entries) {
       // Este vaciado es el de competición. Una anotación con participante es de
       // una partida rápida: va por otro endpoint y con otro cuerpo, así que
@@ -218,12 +218,12 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
         // Con el participante: `remove` distingue por él desde FE #515, así que
         // omitirlo dejaría sin borrar cualquier entrada que lo lleve, y se
         // reenviaría en cada reconexión sin que la cuenta bajara nunca
-        offlineQueue.remove(entry.matchId, entry.holeNumber, entry.participantId);
+        offlineQueue.remove(entry.matchId, entry.holeNumber, entry.participantId, entry.userId ?? null);
       } catch (err) {
         const status = err?.response?.status ?? err?.status;
         if (status && status >= 400 && status < 500) {
           // Non-retryable client error — discard and continue
-          offlineQueue.remove(entry.matchId, entry.holeNumber, entry.participantId);
+          offlineQueue.remove(entry.matchId, entry.holeNumber, entry.participantId, entry.userId ?? null);
           continue;
         }
         break; // Stop on network or server error
@@ -231,7 +231,7 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
     }
     setPendingQueueSize(pendientesPropias());
     await fetchScoringView();
-  }, [matchId, fetchScoringView, pendientesPropias]);
+  }, [matchId, fetchScoringView, pendientesPropias, currentUserId]);
 
   // --- Take over session (force-acquire lock) ---
   const takeOverSession = useCallback(() => {
