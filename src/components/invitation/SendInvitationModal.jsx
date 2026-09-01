@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { nombreRealSiAporta, nombreVisible } from '../../utils/nombreVisible';
 import { X, Search, Loader } from 'lucide-react';
 import Avatar from '../ui/Avatar';
 
@@ -355,7 +356,7 @@ const SendInvitationModalContent = ({ onClose, onSend, onSendByUserId, onSearchU
                   <Avatar userId={selectedUser.id} size="sm" />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-gray-900 truncate">
-                      {selectedUser.firstName} {selectedUser.lastName}
+                      {nombreVisible(selectedUser)}
                     </p>
                   </div>
                   <button
@@ -419,9 +420,21 @@ const SendInvitationModalContent = ({ onClose, onSend, onSendByUserId, onSearchU
                             {/* `truncate` no basta en un hijo de flex: sin `min-w-0`
                                 su ancho mínimo es el del contenido, así que un
                                 nombre largo desborda en vez de recortarse */}
-                            <p className="min-w-0 flex-1 text-sm font-medium text-gray-900 truncate">
-                              {user.firstName} {user.lastName}
-                            </p>
+                            {/* Gemelo de AddFriendModal: los dos consumen la
+                                misma busqueda, que desde BE #239 casa tambien
+                                por alias. Sin el nombre real debajo, una
+                                busqueda por apodo devuelve filas donde no
+                                aparece por ningun lado lo que se escribio */}
+                            <div className="min-w-0 flex-1">
+                              <p className="text-sm font-medium text-gray-900 truncate">
+                                {nombreVisible(user)}
+                              </p>
+                              {nombreRealSiAporta(user) && (
+                                <p className="text-xs text-gray-500 truncate">
+                                  {nombreRealSiAporta(user)}
+                                </p>
+                              )}
+                            </div>
                           </div>
                         </button>
                       ))}

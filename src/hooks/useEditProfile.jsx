@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { loQueHayQueMandar, queLePasaAlAlias } from '../utils/alias';
 import customToast from '../utils/toast';
 
 import {
@@ -13,6 +14,9 @@ import {
 import { buildGoogleOAuthUrl } from '../utils/googleOAuth';
 
 import { useAuth } from './useAuth';
+
+// 409 Conflict: el alias pedido ya lo tiene otra persona (BE #239)
+const CONFLICTO = 409;
 
 export const useEditProfile = () => {
   const { t } = useTranslation('profile');
@@ -28,9 +32,14 @@ export const useEditProfile = () => {
   const [countries, setCountries] = useState([]);
   const [isLoadingCountries, setIsLoadingCountries] = useState(true);
 
+  // El 409 del alias se pinta JUNTO AL CAMPO, no como toast: un aviso que se
+  // va solo no dice cual de los datos del formulario hay que cambiar (FE #435)
+  const [aliasError, setAliasError] = useState(null);
+
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
+    alias: '',
     email: '',
     currentPassword: '',
     newPassword: '',
@@ -54,6 +63,7 @@ export const useEditProfile = () => {
         setFormData({
           firstName: authUser.first_name || '',
           lastName: authUser.last_name || '',
+          alias: authUser.alias || '',
           email: authUser.email || '',
           currentPassword: '',
           newPassword: '',
@@ -93,6 +103,12 @@ export const useEditProfile = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
+
+    // Escribir en el alias retira el aviso de «ya esta en uso»: si no, se
+    // queda debajo del campo contradiciendo lo que se acaba de teclear
+    if (name === 'alias' && aliasError) {
+      setAliasError(null);
+    }
 
     setFormData((prev) => ({
       ...prev,
@@ -184,11 +200,25 @@ export const useEditProfile = () => {
       trimmedCountryCode !== (user.country_code || '');
     const isGenderChanged =
       formData.gender !== (user.gender || '');
+    // `undefined` significa «el alias no viaja»: ni ha cambiado, ni se esta
+    // pidiendo borrar uno que nunca existio. La cadena vacia SI viaja, y es
+    // lo que le dice al servidor que lo quite
+    const aliasAEnviar = loQueHayQueMandar(formData.alias, user.alias);
+    const isAliasChanged = aliasAEnviar !== undefined;
 
-    if (!isNameChanged && !isCountryChanged && !isGenderChanged) {
+    if (!isNameChanged && !isCountryChanged && !isGenderChanged && !isAliasChanged) {
       customToast.info(t('toasts.noProfileChanges'));
       return;
     }
+
+    // Lo que ya se sabe aqui no hace falta preguntarlo al servidor. El aviso
+    // va bajo el campo, que es donde esta el problema
+    const problemaDelAlias = queLePasaAlAlias(formData.alias);
+    if (problemaDelAlias) {
+      setAliasError(problemaDelAlias);
+      return;
+    }
+    setAliasError(null);
 
     if (trimmedFirstName.length < 2) {
       customToast.error(t('toasts.firstNameTooShort'));
@@ -217,6 +247,10 @@ export const useEditProfile = () => {
           formData.gender === '' ? null : formData.gender;
       }
 
+      if (isAliasChanged) {
+        updateData.alias = aliasAEnviar;
+      }
+
       await updateUserProfileUseCase.execute(
         user.id,
         updateData,
@@ -228,6 +262,17 @@ export const useEditProfile = () => {
       customToast.success(t('toasts.profileUpdated'));
     } catch (error) {
       console.error('Error updating profile:', error);
+      // 409: el alias lo tiene otra persona. Va al campo y NO como toast,
+      // conservando lo tecleado para que se pueda retocar en vez de escribirlo
+      // otra vez.
+      //
+      // Solo si el alias iba en la peticion: un 409 por cualquier otra causa
+      // colgaba «ese alias ya esta en uso» de un campo que no se habia tocado,
+      // y ademas se comia el aviso del error de verdad
+      if (isAliasChanged && error.status === CONFLICTO) {
+        setAliasError('alias.errors.taken');
+        return;
+      }
       customToast.error(error.message || t('toasts.failedToUpdateProfile'));
     } finally {
       setIsSaving(false);
@@ -361,6 +406,7 @@ export const useEditProfile = () => {
     isLoadingCountries,
 
     // Public handlers
+    aliasError,
     handleInputChange,
     handleRefreshUserData,
     handleUpdateHandicapManually,

@@ -84,6 +84,7 @@ describe('ApiAdminRepository', () => {
         id: 'u1',
         firstName: 'Agus',
         lastName: 'Estevez',
+        alias: null,
         email: 'agus@test.com',
         handicap: 17.7,
         isAdmin: true,

@@ -42,7 +42,15 @@ const AdminUsersTable = ({ users, onEdit, onToggleActive, onManageDelete }) => {
                     {initials(user)}
                   </div>
                   <div className="min-w-0">
-                    <p className="font-semibold text-gray-900 truncate">{user.firstName} {user.lastName}</p>
+                    <p className="font-semibold text-gray-900 truncate">
+                      {user.firstName} {user.lastName}
+                      {user.alias && (
+                        /* El alias va detrás y en gris: aquí manda el nombre
+                           legal, pero el listado se puede buscar por apodo y
+                           hay que ver por qué ha salido esta fila */
+                        <span className="ml-2 font-normal text-gray-500">«{user.alias}»</span>
+                      )}
+                    </p>
                     <p className="text-xs text-gray-500 truncate">{user.email}</p>
                   </div>
                 </div>

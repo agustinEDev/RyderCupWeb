@@ -223,12 +223,16 @@ describe('ApiUserRepository', () => {
         id: 'u1',
         firstName: 'John',
         lastName: 'Doe',
+        alias: null,
+        displayName: null,
         countryCode: null,
       });
       expect(results[1]).toEqual({
         id: 'u2',
         firstName: 'Jane',
         lastName: 'Smith',
+        alias: null,
+        displayName: null,
         countryCode: null,
       });
     });
@@ -288,6 +292,8 @@ describe('ApiUserRepository', () => {
         id: 'u4',
         firstName: 'John',
         lastName: 'Doe',
+        alias: null,
+        displayName: null,
         countryCode: null,
       });
     });
@@ -378,5 +384,54 @@ describe('ApiUserRepository', () => {
       expect(user).toBeInstanceOf(User);
       expect(user.email.getValue()).toBe('newemail@example.com');
     });
+  });
+});
+
+describe('ApiUserRepository — el alias en la búsqueda (FE #435)', () => {
+  let apiUserRepository;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    apiUserRepository = new ApiUserRepository();
+  });
+
+  it('trae el alias y el nombre resuelto de cada resultado', async () => {
+    // Los dos hacen falta: esta lista es la única que enseña alias y nombre
+    // real juntos, para distinguir a dos jugadores parecidos
+    apiRequest.mockResolvedValue({
+      users: [
+        {
+          user_id: 'u9',
+          full_name: 'Agustin Estevez',
+          first_name: 'Agustin',
+          last_name: 'Estevez',
+          alias: 'Chuchi',
+          display_name: 'Chuchi',
+        },
+      ],
+    });
+
+    const results = await apiUserRepository.searchUsers('Chu');
+
+    expect(results[0]).toEqual({
+      id: 'u9',
+      firstName: 'Agustin',
+      lastName: 'Estevez',
+      alias: 'Chuchi',
+      displayName: 'Chuchi',
+      countryCode: null,
+    });
+  });
+
+  it('deja alias y nombre resuelto en null cuando no vienen', async () => {
+    // Respuestas de un backend anterior a BE #239: la pantalla cae al nombre
+    apiRequest.mockResolvedValue({
+      users: [{ user_id: 'u10', full_name: 'Ana Garcia', first_name: 'Ana', last_name: 'Garcia' }],
+    });
+
+    const results = await apiUserRepository.searchUsers('Ana');
+
+    expect(results[0].alias).toBeNull();
+    expect(results[0].displayName).toBeNull();
   });
 });

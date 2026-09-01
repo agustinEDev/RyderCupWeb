@@ -38,6 +38,8 @@ class ApiSocialFeedRepository extends ISocialFeedRepository {
       id: data.id,
       firstName: data.first_name,
       lastName: data.last_name,
+      // Ya resuelto por el servidor: alias si lo tiene (BE #239)
+      displayName: data.display_name || null,
       avatarSource: data.avatar_source,
       avatarPresetId: data.avatar_preset_id,
       hasAvatarUpload: data.has_avatar_upload,

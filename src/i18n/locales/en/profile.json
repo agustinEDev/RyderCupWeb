@@ -57,6 +57,10 @@
       "subtitle": "Update your name and last name. No password required.",
       "firstName": "First Name",
       "lastName": "Last Name",
+      "alias": "Alias",
+      "aliasPlaceholder": "How you want to be seen",
+      "aliasHelp": "It is the name your friends see: in the greeting, in searches and in your matches. Leave it empty to go back to your name.",
+      "aliasClear": "Clear alias",
       "nationality": "Nationality",
       "nationalityOptional": "(Optional)",
       "selectNationality": "No nationality selected",
@@ -162,5 +166,22 @@
     "turnedOff_one": "Your achievements are no longer published. 1 entry was removed",
     "turnedOff_other": "Your achievements are no longer published. {{count}} entries were removed",
     "saveFailed": "Could not save. Please try again"
+  },
+  "alias": {
+    "errors": {
+      "tooShort": "An alias needs at least 2 characters",
+      "tooLong": "An alias cannot be longer than 20 characters",
+      "invalidChars": "An alias only takes letters, digits, spaces and . _ -",
+      "needsLetterOrDigit": "An alias needs at least one letter or digit",
+      "taken": "That alias is already taken",
+      "saveFailed": "It could not be saved. Try again."
+    },
+    "sheet": {
+      "title": "Your alias",
+      "close": "Close",
+      "save": "Save",
+      "saving": "Saving…",
+      "edit": "Edit your alias"
+    }
   }
 }

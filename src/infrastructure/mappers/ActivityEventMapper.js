@@ -25,6 +25,8 @@ class ActivityEventMapper {
       id: apiAuthor.id,
       firstName: apiAuthor.first_name,
       lastName: apiAuthor.last_name,
+      // Ya resuelto por el servidor: alias si lo tiene (BE #239)
+      displayName: apiAuthor.display_name || null,
       avatarSource: apiAuthor.avatar_source,
       avatarPresetId: apiAuthor.avatar_preset_id,
     };

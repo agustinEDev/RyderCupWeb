@@ -57,6 +57,10 @@
       "subtitle": "Actualiza tu nombre y apellido. No se requiere contraseña.",
       "firstName": "Nombre",
       "lastName": "Apellido",
+      "alias": "Alias",
+      "aliasPlaceholder": "Cómo quieres que te vean",
+      "aliasHelp": "Es el nombre con el que te ven tus amigos: en el saludo, en las búsquedas y en tus partidas. Déjalo vacío para volver a tu nombre.",
+      "aliasClear": "Quitar el alias",
       "nationality": "Nacionalidad",
       "nationalityOptional": "(Opcional)",
       "selectNationality": "Ninguna nacionalidad seleccionada",
@@ -162,5 +166,22 @@
     "turnedOff_one": "Ya no se publican tus logros. Se ha retirado 1 entrada",
     "turnedOff_other": "Ya no se publican tus logros. Se han retirado {{count}} entradas",
     "saveFailed": "No se ha podido guardar. Vuelve a intentarlo"
+  },
+  "alias": {
+    "errors": {
+      "tooShort": "El alias necesita al menos 2 caracteres",
+      "tooLong": "El alias no puede pasar de 20 caracteres",
+      "invalidChars": "El alias solo admite letras, números, espacios y los signos . _ -",
+      "needsLetterOrDigit": "El alias necesita alguna letra o algún número",
+      "taken": "Ese alias ya está en uso",
+      "saveFailed": "No se ha podido guardar. Inténtalo otra vez."
+    },
+    "sheet": {
+      "title": "Tu alias",
+      "close": "Cerrar",
+      "save": "Guardar",
+      "saving": "Guardando…",
+      "edit": "Editar tu alias"
+    }
   }
 }

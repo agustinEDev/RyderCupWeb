@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { nombreRealSiAporta, nombreVisible } from '../../utils/nombreVisible';
 import { useNavigate } from 'react-router';
 import { X, Search, Loader } from 'lucide-react';
 import Avatar from '../ui/Avatar';
@@ -268,9 +269,20 @@ const AddFriendModalContent = ({ onClose, onSearchUsers, t }) => {
                       {/* `truncate` no basta en un hijo de flex: sin `min-w-0`
                           su ancho mínimo es el del contenido, así que un
                           nombre largo desborda en vez de recortarse */}
-                      <p className="min-w-0 flex-1 text-sm font-medium text-gray-900 truncate">
-                        {user.firstName} {user.lastName}
-                      </p>
+                      {/* Alias arriba y nombre real debajo, y solo cuando son
+                          distintos (FE #435). Desde que se puede buscar por
+                          alias, esta lista puede devolver dos «Chuchi»: sin el
+                          nombre real no hay forma de saber a cuál añadir */}
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium text-gray-900 truncate">
+                          {nombreVisible(user)}
+                        </p>
+                        {nombreRealSiAporta(user) && (
+                          <p className="text-xs text-gray-500 truncate">
+                            {nombreRealSiAporta(user)}
+                          </p>
+                        )}
+                      </div>
                     </div>
                   </button>
                 ))}

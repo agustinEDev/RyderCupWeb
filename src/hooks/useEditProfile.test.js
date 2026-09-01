@@ -83,6 +83,7 @@ describe('useEditProfile Hook', () => {
     expect(result.current.formData).toEqual({
       firstName: '',
       lastName: '',
+      alias: '',
       email: '',
       currentPassword: '',
       newPassword: '',
@@ -126,6 +127,7 @@ describe('useEditProfile Hook', () => {
     expect(result.current.formData).toEqual({ // El formulario se ha rellenado con los datos del usuario
       firstName: mockUserPlain.first_name,
       lastName: mockUserPlain.last_name,
+      alias: '',
       email: mockUserPlain.email,
       currentPassword: '',
       newPassword: '',
@@ -357,5 +359,190 @@ describe('useEditProfile Hook', () => {
     expect(customToast.success).toHaveBeenCalledWith('toasts.handicapUpdatedRFEG');
     expect(result.current.isUpdatingRFEG).toBe(false); // Asegurarse de que el estado se resetea
     expect(result.current.formData.handicap).toBe(rfegHandicap.toString()); // Verificar que formData se actualizó
+  });
+});
+
+describe('useEditProfile — el alias (FE #435)', () => {
+  const usuarioBase = {
+    id: '123',
+    first_name: 'Agustin',
+    last_name: 'Estevez',
+    email: 'agustin@example.com',
+    handicap: null,
+    email_verified: true,
+    country_code: null,
+  };
+
+  const montaCon = (extra = {}) => {
+    useAuth.mockReturnValue({
+      user: { ...usuarioBase, ...extra },
+      loading: false,
+      error: null,
+      refetch: vi.fn(),
+    });
+    return renderHook(() => useEditProfile());
+  };
+
+  const escribeAlias = async (result, valor) => {
+    await act(async () => {
+      result.current.handleInputChange({ target: { name: 'alias', value: valor } });
+    });
+  };
+
+  const guarda = async (result) => {
+    await act(async () => {
+      await result.current.handleUpdateProfile({ preventDefault: vi.fn() });
+    });
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    composition.updateUserProfileUseCase.execute.mockResolvedValue({});
+  });
+
+  it('manda el alias nuevo', async () => {
+    const { result } = montaCon();
+    await escribeAlias(result, 'Chuchi');
+    await guarda(result);
+
+    expect(composition.updateUserProfileUseCase.execute).toHaveBeenCalledWith(
+      '123',
+      expect.objectContaining({ alias: 'Chuchi' }),
+    );
+  });
+
+  it('manda la cadena vacía cuando se borra un alias que había', async () => {
+    // Es lo que le dice al servidor que lo quite y devuelva el nombre real
+    const { result } = montaCon({ alias: 'Chuchi' });
+    await escribeAlias(result, '');
+    await guarda(result);
+
+    expect(composition.updateUserProfileUseCase.execute).toHaveBeenCalledWith(
+      '123',
+      expect.objectContaining({ alias: '' }),
+    );
+  });
+
+  it('NO manda el alias si nunca hubo y el campo sigue vacío', async () => {
+    // Mandar '' aquí sería pedir que borren algo que no existe
+    const { result } = montaCon();
+    await escribeAlias(result, '   ');
+    await act(async () => {
+      result.current.handleInputChange({ target: { name: 'firstName', value: 'Agus' } });
+    });
+    await guarda(result);
+
+    const datos = composition.updateUserProfileUseCase.execute.mock.calls[0][1];
+    expect(datos).not.toHaveProperty('alias');
+  });
+
+  it('para un alias inválido antes de llamar a la API', async () => {
+    const { result } = montaCon();
+    await escribeAlias(result, 'C');
+    await guarda(result);
+
+    expect(composition.updateUserProfileUseCase.execute).not.toHaveBeenCalled();
+    expect(result.current.aliasError).toBe('alias.errors.tooShort');
+  });
+
+  it('un 409 se enseña en el campo y no como aviso suelto', async () => {
+    const conflicto = new Error('El alias ya está en uso.');
+    conflicto.status = 409;
+    composition.updateUserProfileUseCase.execute.mockRejectedValue(conflicto);
+
+    const { result } = montaCon();
+    await escribeAlias(result, 'Chuchi');
+    await guarda(result);
+
+    expect(result.current.aliasError).toBe('alias.errors.taken');
+    expect(customToast.error).not.toHaveBeenCalled();
+    // Y lo tecleado sigue ahí: se retoca, no se vuelve a escribir
+    expect(result.current.formData.alias).toBe('Chuchi');
+  });
+
+  it('otro error sí sale como aviso, no colgado del campo del alias', async () => {
+    const fallo = new Error('Se ha caído todo');
+    fallo.status = 500;
+    composition.updateUserProfileUseCase.execute.mockRejectedValue(fallo);
+
+    const { result } = montaCon();
+    await escribeAlias(result, 'Chuchi');
+    await guarda(result);
+
+    expect(result.current.aliasError).toBeNull();
+    expect(customToast.error).toHaveBeenCalled();
+  });
+
+  it('escribir otra vez retira el aviso de «ya está en uso»', async () => {
+    const conflicto = new Error('ya está en uso');
+    conflicto.status = 409;
+    composition.updateUserProfileUseCase.execute.mockRejectedValue(conflicto);
+
+    const { result } = montaCon();
+    await escribeAlias(result, 'Chuchi');
+    await guarda(result);
+    expect(result.current.aliasError).toBe('alias.errors.taken');
+
+    await escribeAlias(result, 'Chuchito');
+
+    expect(result.current.aliasError).toBeNull();
+  });
+});
+
+describe('useEditProfile — quitar el alias desde el botón (FE #435)', () => {
+  const usuario = {
+    id: '123',
+    first_name: 'Agustin',
+    last_name: 'Estevez',
+    email: 'agustin@example.com',
+    handicap: null,
+    email_verified: true,
+    country_code: null,
+    alias: 'Chuchi',
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    composition.updateUserProfileUseCase.execute.mockResolvedValue({});
+    useAuth.mockReturnValue({ user: usuario, loading: false, error: null, refetch: vi.fn() });
+  });
+
+  it('vaciar el campo deja la petición pidiendo que se borre', async () => {
+    // El botón de la pantalla hace exactamente esto: un cambio a cadena vacía
+    const { result } = renderHook(() => useEditProfile());
+
+    await act(async () => {
+      result.current.handleInputChange({ target: { name: 'alias', value: '' } });
+    });
+    await act(async () => {
+      await result.current.handleUpdateProfile({ preventDefault: vi.fn() });
+    });
+
+    expect(composition.updateUserProfileUseCase.execute).toHaveBeenCalledWith(
+      '123',
+      expect.objectContaining({ alias: '' }),
+    );
+  });
+
+  it('vaciar el campo también retira el aviso del campo', async () => {
+    const conflicto = new Error('ya está en uso');
+    conflicto.status = 409;
+    composition.updateUserProfileUseCase.execute.mockRejectedValue(conflicto);
+    const { result } = renderHook(() => useEditProfile());
+
+    await act(async () => {
+      result.current.handleInputChange({ target: { name: 'alias', value: 'Repetido' } });
+    });
+    await act(async () => {
+      await result.current.handleUpdateProfile({ preventDefault: vi.fn() });
+    });
+    expect(result.current.aliasError).toBe('alias.errors.taken');
+
+    await act(async () => {
+      result.current.handleInputChange({ target: { name: 'alias', value: '' } });
+    });
+
+    expect(result.current.aliasError).toBeNull();
+    expect(result.current.formData.alias).toBe('');
   });
 });

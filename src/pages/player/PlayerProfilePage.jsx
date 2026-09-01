@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { nombreVisible } from '../../utils/nombreVisible';
 import { Link, Navigate, useLocation, useParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { ArrowLeft, Check, Loader, Lock, Mail, UserPlus, UserX, X } from 'lucide-react';
@@ -195,7 +196,7 @@ const PlayerProfilePage = () => {
     );
   }
 
-  const nombre = `${profile.firstName} ${profile.lastName}`.trim();
+  const nombre = nombreVisible(profile);
 
   return (
     <div className="min-h-screen bg-gray-50">
