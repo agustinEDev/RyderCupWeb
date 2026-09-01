@@ -218,11 +218,11 @@ describe('tokenRefreshInterceptor', () => {
       expect(globalThis.fetch).toHaveBeenCalledTimes(1);
     });
 
-    it.skip('should queue multiple 401 requests and retry all after refresh', async () => {
-      // SKIP: This test has issues with shared module state (isRefreshing, failedQueue)
-      // that persists between tests causing timeouts. The functionality is covered
-      // by other tests and works correctly in production.
-      // TODO: Refactor module to expose state reset method for testing
+    it('should queue multiple 401 requests and retry all after refresh', async () => {
+      // Estuvo saltado por el estado compartido del módulo —`isRefreshing` y
+      // su cola— que se quedaba colgado entre casos. Con el refresco en una
+      // promesa que se suelta sola al terminar (FE #518), ya no hay nada que
+      // limpiar y el caso vuelve a ejercitarse.
       
       // Mock all fetch calls upfront
       // First two calls: 401 for both requests
@@ -468,5 +468,108 @@ describe('tokenRefreshInterceptor', () => {
 
       expect(handleSessionExpiredLogout).toHaveBeenCalled();
     });
+  });
+});
+
+describe('un refresco, muchas peticiones (FE #518)', () => {
+  // Módulo limpio en cada caso: el refresco en vuelo es estado del módulo
+  let fetchWithTokenRefresh;
+
+  beforeEach(async () => {
+    vi.resetModules();
+    ({ fetchWithTokenRefresh } = await import('./tokenRefreshInterceptor'));
+    vi.clearAllMocks();
+  });
+
+  const respuesta = (status, cuerpo = {}) => ({
+    ok: status < 400,
+    status,
+    statusText: status === 401 ? 'Unauthorized' : 'OK',
+    clone: () => ({ json: async () => cuerpo }),
+    json: async () => cuerpo,
+  });
+
+  const conRetraso = (valor) => {
+    let suelta;
+    const promesa = new Promise((resolve) => {
+      suelta = () => resolve(valor);
+    });
+    return { promesa, suelta };
+  };
+
+  it('una petición que da 401 mientras otra reintenta también termina', async () => {
+    // EL caso de la issue. A da 401, refresca, y mientras reintenta llega B
+    // con otro 401. Antes B se encolaba en una cola ya vaciada y su promesa no
+    // se resolvía JAMÁS: en submitScore, un hoyo que ni se envía ni se guarda.
+    //
+    // El mock responde por URL y no por orden de llamada: el orden real
+    // depende del planificador de promesas y encadenar respuestas hacía que el
+    // test probara otra cosa cada vez
+    const llamadas = {};
+    const reintentoDeA = conRetraso(respuesta(200, { ok: 'A' }));
+
+    globalThis.fetch.mockImplementation((url) => {
+      llamadas[url] = (llamadas[url] || 0) + 1;
+      if (String(url).includes('/auth/refresh-token')) {
+        return Promise.resolve(respuesta(200, { refreshed: true }));
+      }
+      if (llamadas[url] === 1) return Promise.resolve(respuesta(401));
+      // El reintento de A se queda colgado a propósito: es la ventana
+      if (String(url).includes('/algo')) return reintentoDeA.promesa;
+      return Promise.resolve(respuesta(200, { ok: 'B' }));
+    });
+
+    const a = fetchWithTokenRefresh('/api/v1/algo');
+    // Se deja avanzar a A hasta que su reintento queda pendiente
+    for (let i = 0; i < 10; i += 1) await Promise.resolve();
+
+    const b = fetchWithTokenRefresh('/api/v1/otra-cosa');
+    for (let i = 0; i < 10; i += 1) await Promise.resolve();
+    reintentoDeA.suelta();
+
+    // Las DOS se resuelven. Antes, la segunda se quedaba pendiente para siempre
+    const [resA, resB] = await Promise.all([a, b]);
+    expect(resA.status).toBe(200);
+    expect(resB.status).toBe(200);
+  });
+
+  it('dos peticiones que dan 401 a la vez comparten un solo refresco', async () => {
+    // Lo que el booleano protegía y hay que seguir cumpliendo: no se piden dos
+    // refrescos a la vez
+    const llamadas = {};
+    globalThis.fetch.mockImplementation((url) => {
+      llamadas[url] = (llamadas[url] || 0) + 1;
+      if (String(url).includes('/auth/refresh-token')) {
+        return Promise.resolve(respuesta(200, { refreshed: true }));
+      }
+      return Promise.resolve(llamadas[url] === 1 ? respuesta(401) : respuesta(200, { ok: true }));
+    });
+
+    const [a, b] = await Promise.all([
+      fetchWithTokenRefresh('/api/v1/una'),
+      fetchWithTokenRefresh('/api/v1/otra'),
+    ]);
+
+    const refrescos = globalThis.fetch.mock.calls.filter((c) =>
+      String(c[0]).includes('/auth/refresh-token'),
+    );
+    expect(refrescos).toHaveLength(1);
+    expect(a.status).toBe(200);
+    expect(b.status).toBe(200);
+  });
+
+  it('si el refresco falla, las dos peticiones reciben el error', async () => {
+    // Y ninguna se queda esperando a un refresco que ya no va a llegar
+    globalThis.fetch.mockImplementation(async (url) => {
+      if (url.includes('/auth/refresh-token')) return respuesta(500, { detail: 'boom' });
+      return respuesta(401);
+    });
+
+    const resultados = await Promise.allSettled([
+      fetchWithTokenRefresh('/api/v1/una'),
+      fetchWithTokenRefresh('/api/v1/otra'),
+    ]);
+
+    expect(resultados.map((r) => r.status)).toEqual(['rejected', 'rejected']);
   });
 });
