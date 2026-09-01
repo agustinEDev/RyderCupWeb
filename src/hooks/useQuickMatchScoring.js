@@ -488,6 +488,27 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
   /**
    * El jugador decide, tras hablar con su compañero, qué anotación vale.
    */
+  /**
+   * Quita de la cola lo guardado de un hoyo, sea de quien sea.
+   *
+   * Con el dueño REAL de la entrada y no con el de quien está mirando: una
+   * guardada por una versión anterior a FE #521 no tiene dueño, y borrarla a
+   * nombre de alguien concreto no la borraría en absoluto. Aquí eso significa
+   * que el siguiente vaciado compararía lo viejo con lo que acaba de entrar y
+   * le preguntaría al jugador si quiere recuperar el resultado que él mismo
+   * corrigió.
+   */
+  const borraLoGuardadoDe = useCallback(
+    (holeNumber, participantId) => {
+      const guardada = offlineQueue
+        .getByMatch(quickMatchId, currentUserId)
+        .find((e) => e.holeNumber === holeNumber && e.participantId === participantId);
+      if (!guardada) return;
+      offlineQueue.remove(quickMatchId, holeNumber, participantId, guardada.userId ?? null);
+    },
+    [quickMatchId, currentUserId]
+  );
+
   const resuelveDiscrepancia = useCallback(
     (holeNumber, participantId, cual) => {
       // No se envía aquí: se deja la decisión tomada y la envía el vaciado del
@@ -512,19 +533,7 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
           );
         }
       } else if (cual === 'elQueHay') {
-        // Se borra con el dueño QUE TIENE la entrada, no con el de quien está
-        // decidiendo: una guardada por una versión anterior no tiene dueño, y
-        // borrarla a nombre de nadie en particular no la borraría — el aviso de
-        // desacuerdo se quedaría abierto y el golpe descartado seguiría vivo
-        const guardada = offlineQueue
-          .getByMatch(quickMatchId, currentUserId)
-          .find((e) => e.holeNumber === holeNumber && e.participantId === participantId);
-        offlineQueue.remove(
-          quickMatchId,
-          holeNumber,
-          participantId,
-          guardada?.userId ?? null
-        );
+        borraLoGuardadoDe(holeNumber, participantId);
       } else {
         // Las dos ramas hacen lo contrario la una de la otra y una descarta la
         // anotación del jugador: un tercer valor no cae en ninguna
@@ -536,7 +545,7 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
       );
       setPendientes(offlineQueue.size(quickMatchId, currentUserId));
     },
-    [quickMatchId, currentUserId]
+    [quickMatchId, currentUserId, borraLoGuardadoDe]
   );
 
   const submitScore = useCallback(
@@ -581,7 +590,7 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
         // ese mismo hoyo sobra. Dejarlo hace que el siguiente vaciado compare
         // lo viejo con lo que acaba de entrar, no coincidan, y se le pregunte
         // al jugador si quiere recuperar el resultado que él mismo corrigió
-        offlineQueue.remove(quickMatchId, holeNumber, participantId, currentUserId);
+        borraLoGuardadoDe(holeNumber, participantId);
         setPendientes(offlineQueue.size(quickMatchId, currentUserId));
         await fetchQuickMatch();
       } catch (err) {
@@ -610,7 +619,7 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
         setIsSubmitting(false);
       }
     },
-    [quickMatchId, isScorer, myParticipant, fetchQuickMatch, currentUserId]
+    [quickMatchId, isScorer, myParticipant, fetchQuickMatch, currentUserId, borraLoGuardadoDe]
   );
 
   // Espejo de `completeMatch`: el backend exige creador para las dos

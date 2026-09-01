@@ -1572,3 +1572,33 @@ describe('useQuickMatchScoring · un móvil compartido (FE #521)', () => {
     expect(offlineQueue.size).toHaveBeenCalledWith('qm-1', 'user-1');
   });
 });
+
+describe('useQuickMatchScoring · borrar lo guardado sin dueño (FE #521)', () => {
+  const pendienteHuerfana = (holeNumber, score, participantId = 'user-1') =>
+    ({ matchId: 'qm-1', holeNumber, participantId, scoreData: { score } });
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    getGolfCourseUseCase.execute.mockResolvedValue({ holes: [], tees: [], name: 'Campo' });
+    getQuickMatchUseCase.execute.mockResolvedValue(mockQuickMatch);
+    submitQuickMatchHoleScoreUseCase.execute.mockResolvedValue({});
+    offlineQueue.enqueue.mockReturnValue(true);
+  });
+
+  it('borra la entrada con el dueño que tiene, no con el de quien mira', async () => {
+    // Una guardada por una versión anterior no tiene dueño. Borrarla a nombre
+    // de quien está anotando no la borraría, y el siguiente vaciado
+    // preguntaría si quiere recuperar el resultado que él mismo corrigió
+    offlineQueue.getByMatch.mockReturnValue([pendienteHuerfana(7, 5)]);
+
+    const { result } = renderHook(() => useQuickMatchScoring('qm-1', 'user-1'));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    offlineQueue.remove.mockClear();
+
+    await act(async () => { await result.current.submitScore(7, 'user-1', 4); });
+
+    await waitFor(() =>
+      expect(offlineQueue.remove).toHaveBeenCalledWith('qm-1', 7, 'user-1', null)
+    );
+  });
+});
