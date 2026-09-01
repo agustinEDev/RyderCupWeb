@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [2.25.0] - 2026-09-01
+
+### Added
+
+- **El alias: elige con qué nombre te ven.** Un apodo opcional que sustituye a tu nombre en el saludo, en las búsquedas y en tus partidas. Quien no ponga ninguno no nota ningún cambio. Necesita el backend v2.13.0, que es quien lo guarda y quien resuelve con qué nombre se pinta a cada persona.
+
+- **Un lápiz junto al saludo del panel**, que es donde uno lee su propio nombre y por tanto donde espera poder cambiarlo. Está siempre, no solo la primera vez: sirve para poner el alias, para cambiarlo y para quitarlo. Abre una hoja inferior con el alias actual ya escrito, y al guardar el saludo se actualiza sin recargar.
+
+  A diferencia de las tres hojas que ya había, **esta gestiona el foco**: lo lleva al campo al abrirse, lo mantiene dentro mientras está abierta y lo devuelve a quien la abrió al cerrarse. Las otras declaran `aria-modal` y dejan que el tabulador se escape a los controles de detrás (#389); añadir una cuarta con el mismo agujero habría sido empeorar el problema a sabiendas.
+
+- **Campo de alias en Editar perfil**, con un botón para quitarlo que aparece solo cuando hay algo que quitar. Dejar el campo vacío borra el alias y devuelve tu nombre real; si nunca tuviste uno, el campo ni siquiera viaja en la petición.
+
+- **Los buscadores enseñan el alias y el nombre real juntos.** Desde que se puede buscar por apodo, una búsqueda puede devolver dos «Chuchi»: sin el nombre real debajo no habría forma de saber a cuál añadir o invitar. Es la única pantalla donde se ven los dos, en el buscador de amigos y en el de invitar a una competición.
+
+- **El panel de administración conserva el nombre legal** y enseña el alias detrás, en gris. Quien administra necesita saber de quién es la cuenta, pero ese listado ya se puede buscar por alias.
+
+### Fixed
+
+- **Un alias ya cogido se avisa junto al campo, no como aviso flotante.** Un mensaje que se desvanece no dice cuál de los seis campos hay que corregir. Lo tecleado se conserva —se retoca, no se reescribe— y el aviso desaparece al escribir de nuevo.
+
+- **La pantalla ya no dice que algo no se ha guardado cuando sí se guardó.** El refresco posterior al guardado tiene su propio tratamiento de errores: si falla —sin cobertura, que en esta aplicación es lo normal— ya no se confunde con un fallo al guardar.
+
+- **La hoja no se puede cerrar con una petición en vuelo**, ni cambiar el texto mientras guarda. Cerrarla y que esa petición volviera con un conflicto hacía desaparecer el aviso sin decir nada, dejando a quien lo escribió creyendo que su alias había quedado puesto.
+
 ## [2.24.1] - 2026-08-30
 
 ### Fixed
