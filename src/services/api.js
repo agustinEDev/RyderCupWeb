@@ -34,7 +34,7 @@ export const getApiBaseUrl = () => API_URL;
  * - When access token expires (401), automatically calls /auth/refresh-token
  * - Retries the original request with the new token
  * - Only redirects to login if refresh token also expired
- * - Queues multiple 401s to prevent duplicate refresh calls
+ * - Shares one refresh promise so multiple 401s do not each ask for a refresh
  */
 export const apiRequest = async (endpoint, options = {}) => {
   // FormData (file uploads): the browser must set its own Content-Type header
