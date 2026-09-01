@@ -3,6 +3,7 @@ import { useNavigate, Navigate, useLocation } from 'react-router';
 import { motion } from 'framer-motion';
 import { Trophy, Zap, Pencil } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import AliasSheet from '../components/profile/AliasSheet';
 import HeaderAuth from '../components/layout/HeaderAuth';
 import Avatar from '../components/ui/Avatar';
 import HandicapRequestModal from '../components/profile/HandicapRequestModal';
@@ -27,6 +28,7 @@ import {
   getPlayerStatsUseCase,
   getRecentMatchesUseCase,
   getUpcomingMatchesUseCase,
+  updateUserProfileUseCase,
 } from '../composition';
 
 // El panel enseña un resumen, no el historial entero
@@ -37,7 +39,9 @@ const Dashboard = () => {
   const location = useLocation();
   const { t, ready: textosListos } = useTranslation('dashboard');
   const { t: tQuickMatch, ready: textosDeRapidaListos } = useTranslation('quickMatch');
+  const { t: tProfile } = useTranslation('profile');
   const { user, loading: isLoadingUser, refetch: refetchUser } = useAuth();
+  const [mostrarAlias, setMostrarAlias] = useState(false);
   const { animateEntry } = useEntryMotion();
   const [competitions, setCompetitions] = useState([]);
   const [isLoadingCompetitions, setIsLoadingCompetitions] = useState(true);
@@ -427,6 +431,19 @@ const Dashboard = () => {
 
   return (
     <div className="relative flex h-auto min-h-screen w-full flex-col bg-white">
+      {mostrarAlias && (
+        <AliasSheet
+          aliasActual={user.alias || ''}
+          onClose={() => setMostrarAlias(false)}
+          onGuardar={async (alias) => {
+            await updateUserProfileUseCase.execute(user.id, { alias });
+            // Sin recargar: `refetchUser` trae el usuario nuevo y el saludo se
+            // vuelve a pintar con el alias recién puesto
+            await refetchUser();
+          }}
+        />
+      )}
+
       <HandicapRequestModal
         isOpen={showHandicapModal}
         user={user}
@@ -472,9 +489,29 @@ const Dashboard = () => {
                     primera, así que con line-clamp-2 al nombre le quedaba una
                     sola y volvía a recortarse. Con tres, un nombre compuesto
                     largo cabe entero y el bloque sigue sin crecer sin límite */}
-                <p className="whitespace-pre-line break-words line-clamp-3 text-2xl md:text-3xl font-bold leading-tight tracking-tight text-gray-900">
-                  {t('welcome', { name: firstName })}
-                </p>
+                <div className="flex items-start gap-1">
+                  <p className="whitespace-pre-line break-words line-clamp-3 text-2xl md:text-3xl font-bold leading-tight tracking-tight text-gray-900">
+                    {t('welcome', { name: firstName })}
+                  </p>
+                  {/* El lápiz vive AQUÍ y no en el perfil porque este es el
+                      sitio donde uno lee su propio nombre, así que es donde
+                      espera poder cambiarlo (FE #435). Está siempre, tenga
+                      alias o no: también sirve para quitarlo o cambiarlo, no
+                      solo para ponerlo la primera vez.
+                      Etiqueta propia porque un icono junto a un saludo no dice
+                      nada por sí solo */}
+                  <button
+                    type="button"
+                    onClick={() => setMostrarAlias(true)}
+                    aria-label={tProfile('alias.sheet.edit')}
+                    data-testid="editar-alias"
+                    className="mt-1 flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full text-gray-400 hover:text-gray-600 active:bg-gray-100"
+                  >
+                    <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                      <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                    </svg>
+                  </button>
+                </div>
                 <p className="truncate text-sm text-gray-500">{user.email}</p>
               </div>
             </motion.div>

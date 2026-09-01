@@ -173,7 +173,15 @@
       "tooLong": "El alias no puede pasar de 20 caracteres",
       "invalidChars": "El alias solo admite letras, números, espacios y los signos . _ -",
       "needsLetterOrDigit": "El alias necesita alguna letra o algún número",
-      "taken": "Ese alias ya está en uso"
+      "taken": "Ese alias ya está en uso",
+      "saveFailed": "No se ha podido guardar. Inténtalo otra vez."
+    },
+    "sheet": {
+      "title": "Tu alias",
+      "close": "Cerrar",
+      "save": "Guardar",
+      "saving": "Guardando…",
+      "edit": "Editar tu alias"
     }
   }
 }
