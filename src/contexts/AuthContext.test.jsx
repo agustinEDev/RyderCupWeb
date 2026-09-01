@@ -197,12 +197,12 @@ describe('AuthContext', () => {
       expect(localStorage.getItem('user')).toBeNull();
     });
 
-    it('se lleva los avisos de golpes de ESTA cuenta, no los de la otra', async () => {
-      // En un móvil compartido, los avisos sin leer de la otra persona no se
-      // pueden regenerar: el golpe que describen ya se borró de la cola al
-      // escribirlos. Un `removeItem` a secas se los llevaba por delante
+    it('NO borra los avisos de golpes perdidos, de nadie', async () => {
+      // No se pueden regenerar: el golpe que describen ya salió de la cola al
+      // escribirlos. Y borrarlos aquí llegaba a dispararse dentro del propio
+      // vaciado, porque un 403 de CSRF cierra la sesión desde `api.js` en
+      // mitad del bucle. La privacidad se resuelve al LEER, no al borrar
       const golpesPerdidos = await import('../utils/golpesPerdidos');
-      localStorage.setItem('user', JSON.stringify({ id: 'yo' }));
       golpesPerdidos.apunta({ matchId: 'm-1', matchName: 'Meis', holeNumber: 3, userId: 'yo' });
       golpesPerdidos.apunta({ matchId: 'm-2', matchName: 'Meis', holeNumber: 4, userId: 'la-otra' });
 
@@ -211,9 +211,9 @@ describe('AuthContext', () => {
         result.current.clearAuth();
       });
 
-      expect(golpesPerdidos.pendientes(null)).toEqual([
-        expect.objectContaining({ userId: 'la-otra' }),
-      ]);
+      expect(golpesPerdidos.pendientes('yo')).toHaveLength(1);
+      // Y la siguiente persona que entre en ese móvil no ve los de la anterior
+      expect(golpesPerdidos.pendientes('otra-cuenta-cualquiera')).toHaveLength(0);
     });
 
     it('should clear legacy access_token from localStorage', () => {

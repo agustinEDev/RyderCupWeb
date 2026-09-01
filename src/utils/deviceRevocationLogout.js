@@ -21,8 +21,6 @@
  */
 
 import { olvidaLoDeEstaCuenta } from '../services/loUltimoConocido';
-import { idDeLaCuentaGuardada } from './auth';
-import * as golpesPerdidos from './golpesPerdidos';
 import i18next from 'i18next';
 import customToast from './toast';
 
@@ -158,7 +156,6 @@ const handleLogout = (errorData = null, reason = 'unknown') => {
   localStorage.setItem(REVOCATION_HANDLED_KEY, 'true');
 
   // Clear localStorage
-  const quienEra = idDeLaCuentaGuardada();
   localStorage.removeItem('user');
   localStorage.removeItem('access_token'); // Legacy cleanup
   // Y las partidas guardadas para anotar sin cobertura (FE #524). Este camino
@@ -166,11 +163,6 @@ const handleLogout = (errorData = null, reason = 'unknown') => {
   // no vacía el almacenamiento: sin esto, quien entrara después en ese móvil
   // podría ver sin cobertura las partidas de la cuenta que acaba de revocarse
   olvidaLoDeEstaCuenta();
-  // Y los avisos de golpes que el servidor rechazó (FE #521). Este camino
-  // tampoco pasa por `clearAuth`, y una redirección dura no vacía el
-  // almacenamiento: sin esto, los avisos de esta cuenta se quedan aquí para
-  // que los lea quien entre después, que no puede hacer nada con ellos
-  golpesPerdidos.olvidaLosDeLaCuenta(quienEra);
 
   // Clear Sentry user context (if Sentry is initialized)
   if (window.Sentry && typeof window.Sentry.setUser === 'function') {

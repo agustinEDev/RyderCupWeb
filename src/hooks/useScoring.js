@@ -12,6 +12,7 @@ import {
   seGuardaParaDespues,
 } from '../utils/politicaDeLaCola';
 import { apartaLaRechazada } from '../services/vaciadoDeLaCola';
+import * as golpesPerdidos from '../utils/golpesPerdidos';
 import * as offlineQueue from '../utils/scoringOfflineQueue';
 import * as sessionLock from '../utils/scoringSessionLock';
 
@@ -177,6 +178,14 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
   const submitScore = useCallback(async (holeNumber, scoreData) => {
     if (!matchId || !canScore) return;
     if (isOwnScoreLocked && isMarkerScoreLocked) return;
+
+    // Volver a anotar este hoyo retira el aviso de «no se pudo guardar» que
+    // hubiera de él: el aviso pide repetirlo, y eso es lo que se acaba de
+    // hacer. Sin esto, el panel seguía pidiendo repetir un hoyo que ya está en
+    // la tarjeta, y la única salida era «Entendido», que se lleva TODOS los
+    // avisos de esa partida, incluidos los que sí siguen perdidos. Va antes de
+    // los dos caminos —con y sin cobertura— porque en los dos hay anotación
+    golpesPerdidos.olvidaEl(matchId, holeNumber, currentUserId);
 
     if (isOffline) {
       const guardado = offlineQueue.enqueue(

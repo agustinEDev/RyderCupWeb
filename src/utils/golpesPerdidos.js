@@ -12,9 +12,11 @@
  * después de cerrarla y volver a abrirla.
  *
  * **Todo lleva dueño**, igual que la cola: en un móvil compartido, quien entre
- * después no puede leer el nombre de las partidas de la persona anterior. Y no
- * basta con limpiar al cerrar sesión, porque los dos cierres duros —revocación
- * del dispositivo y fallo de CSRF— no pasan por ahí.
+ * después no puede leer el nombre de las partidas de la persona anterior. Eso
+ * se resuelve al LEER (`pendientes`), no borrando al cerrar sesión: un aviso
+ * no se puede regenerar —el golpe que describe ya salió de la cola al
+ * escribirlo— y el borrado llegaba a dispararse dentro del propio vaciado,
+ * porque un 403 de CSRF cierra la sesión desde `api.js` en mitad del bucle.
  */
 
 const CLAVE = 'rydercup-golpes-perdidos';
@@ -45,15 +47,25 @@ const guarda = (avisos) => {
 const esVisiblePara = (aviso, userId) =>
   (aviso.userId ?? null) === null || aviso.userId === userId;
 
-const esDelMismo = (aviso, matchId, holeNumber, userId) =>
+/**
+ * Dos avisos son el mismo si hablan del mismo golpe. Y un golpe lleva
+ * participante: en una partida rápida se anota a varios jugadores desde un
+ * móvil, así que del hoyo 7 hay una entrada POR PARTICIPANTE. Sin mirarlo, el
+ * segundo rechazo del mismo hoyo se daba por ya apuntado, `apunta` devolvía
+ * true sin escribir nada, y quien llamaba borraba el golpe igualmente: cuatro
+ * golpes perdidos y un solo aviso.
+ */
+const esDelMismo = (aviso, matchId, holeNumber, userId, participantId) =>
   aviso.matchId === matchId
   && aviso.holeNumber === holeNumber
+  && (aviso.participantId ?? null) === (participantId ?? null)
   && (aviso.userId ?? null) === (userId ?? null);
 
 /**
  * Apunta que una anotación no se pudo guardar.
  *
- * @param {{matchId: string, matchName: string|null, holeNumber: number, userId: string|null}} aviso
+ * @param {{matchId: string, matchName: string|null, matchNumber: number|null,
+ *   holeNumber: number, participantId: string|null, userId: string|null}} aviso
  * @returns {boolean} Si de verdad quedó apuntado. **Hay que mirarlo**: si no
  *   cupo, el golpe no puede borrarse de la cola, o desaparecería sin dejar ni
  *   el aviso.
@@ -64,7 +76,7 @@ export const apunta = (aviso) => {
   // se tragaba el de otra sobre el mismo hoyo de la misma partida, y a la
   // segunda se le decía que había quedado registrado cuando no
   const yaEstaba = avisos.some((a) =>
-    esDelMismo(a, aviso.matchId, aviso.holeNumber, aviso.userId)
+    esDelMismo(a, aviso.matchId, aviso.holeNumber, aviso.userId, aviso.participantId)
   );
   if (yaEstaba) return true;
 
@@ -100,27 +112,18 @@ export const olvidaLosDe = (matchId, userId = null) =>
  * Retira el aviso de UN hoyo: su dueño acaba de volver a anotarlo, así que ya
  * no hay nada perdido que contarle.
  */
-export const olvidaEl = (matchId, holeNumber, userId = null) =>
+export const olvidaEl = (matchId, holeNumber, userId = null, participantId = undefined) =>
   guarda(
-    leeTodo().filter(
-      (a) => !(a.matchId === matchId && a.holeNumber === holeNumber && esVisiblePara(a, userId))
-    )
+    leeTodo().filter((a) => {
+      if (a.matchId !== matchId || a.holeNumber !== holeNumber) return true;
+      if (!esVisiblePara(a, userId)) return true;
+      // Sin participante se van todos los de ese hoyo: es lo que quiere una
+      // competición, donde no hay más que uno. Con participante, solo el suyo,
+      // o reanotar a un jugador borraría el aviso de los otros tres
+      if (participantId === undefined) return false;
+      return (a.participantId ?? null) !== (participantId ?? null);
+    })
   );
-
-/**
- * Retira los avisos de una cuenta. Lo usan las TRES salidas de la sesión: el
- * cierre normal, el fallo de CSRF y la revocación del dispositivo.
- *
- * Solo los suyos y los huérfanos. Borrarlo todo con un `removeItem` se lleva
- * por delante los avisos sin leer de la otra cuenta de un móvil compartido, y
- * esos **no se pueden regenerar**: el golpe que describen ya se borró de la
- * cola al escribirlos. Sin `userId` no se puede distinguir, y entonces sí se
- * va todo: es la única lectura posible de «no sé de quién es esta sesión».
- */
-export const olvidaLosDeLaCuenta = (userId = null) => {
-  if (userId == null) return olvidaTodos();
-  return guarda(leeTodo().filter((a) => !esVisiblePara(a, userId)));
-};
 
 /** Retira todos, sea de quien sea. */
 export const olvidaTodos = () => {

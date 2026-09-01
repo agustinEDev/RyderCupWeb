@@ -11,8 +11,6 @@
  */
 
 import { olvidaLoDeEstaCuenta } from '../services/loUltimoConocido';
-import { idDeLaCuentaGuardada } from './auth';
-import * as golpesPerdidos from './golpesPerdidos';
 
 /**
  * Handle CSRF validation failure
@@ -30,7 +28,6 @@ export const handleCsrfLogout = (errorData = {}) => {
 
   // Clear auth state (legacy localStorage cleanup)
   // NOTE: httpOnly cookies are managed by the browser and will be cleared on next login
-  const quienEra = idDeLaCuentaGuardada();
   localStorage.removeItem('user');
   localStorage.removeItem('access_token'); // Legacy cleanup
   // Y las partidas guardadas para anotar sin cobertura (FE #524). Es el cuarto
@@ -38,11 +35,6 @@ export const handleCsrfLogout = (errorData = {}) => {
   // `clearAuth`: sin esto, tras un fallo de CSRF en un móvil compartido la
   // siguiente persona que se quedara sin señal vería las partidas de la anterior
   olvidaLoDeEstaCuenta();
-  // Y los avisos de golpes que el servidor rechazó (FE #521). Este camino
-  // tampoco pasa por `clearAuth`, y una redirección dura no vacía el
-  // almacenamiento: sin esto, los avisos de esta cuenta se quedan aquí para
-  // que los lea quien entre después, que no puede hacer nada con ellos
-  golpesPerdidos.olvidaLosDeLaCuenta(quienEra);
 
   // Hard redirect to login page
   // This is intentional - CSRF failures require a complete app reset

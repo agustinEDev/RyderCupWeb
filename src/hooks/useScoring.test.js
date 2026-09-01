@@ -708,6 +708,26 @@ describe('useScoring', () => {
       await waitFor(() => expect(submitHoleScoreUseCase.execute).toHaveBeenCalled());
     });
 
+    it('reanotar el hoyo retira su aviso de perdido', async () => {
+      // El aviso pide repetirlo, y eso es lo que se acaba de hacer. Sin esto,
+      // el panel seguía pidiendo repetir un hoyo ya anotado, y la única salida
+      // era «Entendido», que borra TODOS los de esa partida
+      golpesPerdidos.apunta({ matchId: 'm-1', matchName: 'Meis', holeNumber: 7, userId: 'u1' });
+      golpesPerdidos.apunta({ matchId: 'm-1', matchName: 'Meis', holeNumber: 9, userId: 'u1' });
+      submitHoleScoreUseCase.execute.mockResolvedValue(mockScoringView);
+
+      const { result } = renderHook(() => useScoring('m-1', 'u1'));
+      await waitFor(() => expect(result.current.isLoading).toBe(false));
+      await act(async () => {
+        await result.current.submitScore(7, { ownScore: 4, markedPlayerId: 'u2', markedScore: 5 });
+      });
+
+      // Solo el suyo: el hoyo 9 sigue perdido y hay que seguir diciéndolo
+      expect(golpesPerdidos.pendientes('u1')).toEqual([
+        expect.objectContaining({ holeNumber: 9 }),
+      ]);
+    });
+
     it('la que el servidor rechaza se descarta DEJANDO AVISO, no en silencio', async () => {
       // Un 4xx no se reintenta. Pero quitarla y callar hace desaparecer un
       // golpe sin que su dueño se entere, que es la mitad de la FE #521: aquí

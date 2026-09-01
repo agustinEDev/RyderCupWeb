@@ -61,27 +61,6 @@ export const clearAuthData = () => {
 };
 
 /**
- * De quién es la sesión que hay guardada, solo el id.
- *
- * Distinto de `getCurrentUser`, que exige un `access_token` en el
- * almacenamiento y hoy siempre devuelve null porque la sesión va en cookies
- * httpOnly. Aquí solo hace falta saber A QUIÉN pertenece lo que se va a
- * limpiar, y eso hay que leerlo ANTES de borrar el `user`: los tres caminos de
- * salida —cierre normal, fallo de CSRF y revocación del dispositivo— tienen
- * almacenes que solo se pueden vaciar por cuenta (FE #521).
- *
- * @returns {string|null}
- */
-export const idDeLaCuentaGuardada = () => {
-  try {
-    const crudo = localStorage.getItem('user');
-    return crudo ? (JSON.parse(crudo)?.id ?? null) : null;
-  } catch {
-    return null;
-  }
-};
-
-/**
  * Gets the current authenticated user
  * @returns {Object|null} - User object or null if not authenticated
  */

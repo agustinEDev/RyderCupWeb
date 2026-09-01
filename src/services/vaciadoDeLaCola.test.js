@@ -71,17 +71,18 @@ describe('vaciaLaColaEntera (FE #521)', () => {
     expect(cola.deQuien(OTRO)).toHaveLength(1);
   });
 
-  it('envía lo huérfano: es toda la cola que hay hoy en los móviles', async () => {
-    // La versión que está en producción no guarda dueño. Dejar lo huérfano
-    // fuera del vaciado condenaba a no enviarse nunca justo a los golpes que
-    // esta issue existe para rescatar, el día que se actualice la aplicación
+  it('NO envía lo huérfano: se escribiría en la tarjeta de quien esté dentro', async () => {
+    // El servidor atribuye el golpe al usuario autenticado. En un móvil
+    // compartido donde los dos juegan el mismo partido lo acepta con un 200 y
+    // pisa la tarjeta del segundo, sin rechazo y por tanto sin aviso. Lo
+    // huérfano se rescata desde la pantalla de su partida, con alguien delante
     cola.enqueue('partida', 1, { ownScore: 4 }, null, null);
 
     const resultado = await vaciaLaColaEntera({ userId: YO });
 
-    expect(submitHoleScoreUseCase.execute).toHaveBeenCalledTimes(1);
-    expect(resultado.enviadas).toBe(1);
-    expect(cola.getAll()).toHaveLength(0);
+    expect(submitHoleScoreUseCase.execute).not.toHaveBeenCalled();
+    expect(resultado.enviadas).toBe(0);
+    expect(cola.getAll()).toHaveLength(1);
   });
 
   it('pero no toca lo de la otra cuenta del móvil', async () => {

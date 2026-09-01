@@ -507,6 +507,46 @@ describe('useQuickMatchScoring · vaciar lo guardado (FE #515, tablas B y C)', (
     expect(result.current.perdidos).toContainEqual(expect.objectContaining({ holeNumber: 7 }));
   });
 
+  it('un hoyo corregido mientras se enviaba no se apunta como perdido', async () => {
+    // El aviso pediría repetir un hoyo que el jugador ya corrigió, y nada lo
+    // retira: se queda pidiéndolo para siempre. Aquí la cola devuelve un
+    // resultado DISTINTO del que se envió, que es lo que ve el vaciado cuando
+    // el jugador reanota mientras la petición está en vuelo
+    // La cola devuelve 5 hasta que el envío sale, y 4 a partir de ahí: es lo
+    // que ve el vaciado cuando el jugador reanota con la petición en vuelo
+    let yaSeEnvio = false;
+    submitQuickMatchHoleScoreUseCase.execute.mockImplementation(async () => {
+      yaSeEnvio = true;
+      throw rechazo(409);
+    });
+    offlineQueue.getByMatch.mockImplementation(() => [pendiente(7, yaSeEnvio ? 4 : 5)]);
+    getQuickMatchUseCase.execute.mockResolvedValue(mockQuickMatch);
+
+    renderHook(() => useQuickMatchScoring('qm-1', 'user-1'));
+
+    await waitFor(() => expect(submitQuickMatchHoleScoreUseCase.execute).toHaveBeenCalled());
+    expect(golpesPerdidos.pendientes('user-1')).toEqual([]);
+    expect(offlineQueue.remove).not.toHaveBeenCalled();
+  });
+
+  it('sin sitio para el aviso, al menos se ve en la pantalla', async () => {
+    // El móvil lleno es justo cuando más falta hace decir qué hoyo repetir. El
+    // aviso de pantalla vive en memoria y no necesita disco: dejarlo fuera del
+    // guardado quitaba la única señal que no dependía de él
+    submitQuickMatchHoleScoreUseCase.execute.mockRejectedValue(rechazo(409));
+    vi.spyOn(elDisco, 'setItem').mockImplementation(() => {
+      throw new Error('QuotaExceededError');
+    });
+
+    const result = await montaCon([pendiente(7, 5)]);
+
+    await waitFor(() =>
+      expect(result.current.perdidos).toContainEqual(expect.objectContaining({ holeNumber: 7 }))
+    );
+    // Y el golpe sigue en la cola, porque el aviso duradero no se pudo escribir
+    expect(offlineQueue.remove).not.toHaveBeenCalledWith('qm-1', 7, 'user-1', null);
+  });
+
   it('y lo apunta donde sobrevive a salir de esta pantalla', async () => {
     // En la pantalla se enseña para poder repetir el hoyo, pero eso vive en
     // memoria: navegar, o cerrar la aplicación, se lo llevaba. Y el golpe ya

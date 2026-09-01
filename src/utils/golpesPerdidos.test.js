@@ -13,7 +13,7 @@ const almacen = (() => {
 })();
 Object.defineProperty(globalThis, 'localStorage', { value: almacen, writable: true });
 
-import { apunta, olvidaLosDe, olvidaTodos, pendientes } from './golpesPerdidos';
+import { apunta, olvidaEl, olvidaLosDe, olvidaTodos, pendientes } from './golpesPerdidos';
 
 const aviso = (holeNumber, userId, matchId = 'm-1') =>
   ({ matchId, matchName: 'Meis', holeNumber, userId });
@@ -22,6 +22,36 @@ describe('golpesPerdidos (FE #521)', () => {
   beforeEach(() => {
     almacen.clear();
     vi.restoreAllMocks();
+  });
+
+  it('el mismo hoyo de dos jugadores son DOS avisos, no uno', () => {
+    // En una partida rápida se anota a varios desde un móvil: del hoyo 7 hay
+    // una entrada por participante. Sin mirar el participante, el segundo
+    // rechazo se daba por apuntado, `apunta` devolvía true sin escribir, y
+    // quien llamaba borraba el golpe igual: cuatro perdidos y un solo aviso
+    expect(apunta({ ...aviso(7, 'usuario-A'), participantId: 'p-1' })).toBe(true);
+    expect(apunta({ ...aviso(7, 'usuario-A'), participantId: 'p-2' })).toBe(true);
+
+    expect(pendientes('usuario-A')).toHaveLength(2);
+  });
+
+  it('y reanotar a uno no borra el aviso de los otros', () => {
+    apunta({ ...aviso(7, 'usuario-A'), participantId: 'p-1' });
+    apunta({ ...aviso(7, 'usuario-A'), participantId: 'p-2' });
+
+    olvidaEl('m-1', 7, 'usuario-A', 'p-1');
+
+    expect(pendientes('usuario-A')).toEqual([
+      expect.objectContaining({ participantId: 'p-2' }),
+    ]);
+  });
+
+  it('en competición, sin participante, se va el del hoyo', () => {
+    apunta(aviso(7, 'usuario-A'));
+
+    olvidaEl('m-1', 7, 'usuario-A');
+
+    expect(pendientes('usuario-A')).toHaveLength(0);
   });
 
   it('apunta un golpe que no se pudo guardar', () => {

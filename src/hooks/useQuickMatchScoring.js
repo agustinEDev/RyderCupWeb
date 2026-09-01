@@ -452,39 +452,45 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
           const queHacer = await enviaGuardado(entrada, miParticipanteId);
           if (queHacer === 'para') break;
 
+          // ¿Sigue siendo la que se envió? Mientras estaba en vuelo, el
+          // jugador ha podido reanotar ese mismo hoyo y guardar otro
+          // resultado. Se mira ANTES de nada: si ya no es la misma, ni se
+          // borra —se llevaría la corrección— ni se apunta como perdida, que
+          // dejaba un aviso permanente pidiendo repetir un hoyo ya corregido
+          const ahora = offlineQueue
+            .getByMatch(quickMatchId, currentUserId)
+            .find((e) => e.holeNumber === entrada.holeNumber && e.participantId === entrada.participantId);
+          const sigueSiendoLaMisma = Boolean(ahora && ahora.scoreData.score === entrada.scoreData.score);
+
           if (queHacer === 'descartar') {
-            // En la pantalla, para poder decir qué hoyos repetir. Y TAMBIÉN en
-            // el almacén, que sobrevive a salir de aquí: sin eso, el jugador
-            // que navega o cierra la aplicación se queda sin el aviso y sin el
-            // golpe, que ya se borró de la cola (FE #521)
-            if (
-              !golpesPerdidos.apunta({
-                matchId: quickMatchId,
-                matchName: laPartidaRef.current.matchName,
-                matchNumber: null,
-                holeNumber: entrada.holeNumber,
-                userId: entrada.userId ?? currentUserId ?? null,
-              })
-            ) {
-              // Sin aviso no se borra: preferible reintentarlo mil veces
-              continue;
-            }
+            if (!sigueSiendoLaMisma) continue;
+            // En la pantalla, para poder decir qué hoyos repetir. Va PRIMERO y
+            // no depende de que el aviso quepa en el disco: es lo único que se
+            // le puede enseñar a alguien cuyo móvil está lleno, que es
+            // justamente cuando más falta hace
             setPerdidos((antes) =>
               antes.some((x) => x.holeNumber === entrada.holeNumber && x.participantId === entrada.participantId)
                 ? antes
                 : [...antes, { holeNumber: entrada.holeNumber, participantId: entrada.participantId }]
             );
+            // Y TAMBIÉN en el almacén, que sobrevive a salir de aquí: sin eso,
+            // quien navega o cierra la aplicación se queda sin el aviso y sin
+            // el golpe, que ya se borró de la cola (FE #521)
+            const apuntado = golpesPerdidos.apunta({
+              matchId: quickMatchId,
+              matchName: laPartidaRef.current.matchName,
+              matchNumber: null,
+              holeNumber: entrada.holeNumber,
+              participantId: entrada.participantId ?? null,
+              userId: entrada.userId ?? currentUserId ?? null,
+            });
+            // Sin aviso no se borra: preferible reintentarlo mil veces
+            if (!apuntado) continue;
           } else {
             algoLlegoAlServidor = true;
           }
-          // Se borra solo si sigue siendo la que se envió: mientras estaba en
-          // vuelo, el jugador ha podido reanotar ese mismo hoyo y guardar otro
-          // resultado. Borrar «el hoyo 5» a secas se lleva la corrección, el
-          // servidor se queda con lo viejo, y nadie se entera
-          const ahora = offlineQueue
-            .getByMatch(quickMatchId, currentUserId)
-            .find((e) => e.holeNumber === entrada.holeNumber && e.participantId === entrada.participantId);
-          if (ahora && ahora.scoreData.score === entrada.scoreData.score) {
+
+          if (sigueSiendoLaMisma) {
             offlineQueue.remove(quickMatchId, entrada.holeNumber, entrada.participantId, entrada.userId ?? null);
           }
         }
@@ -597,7 +603,7 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
         }
         setPendientes(offlineQueue.size(quickMatchId, currentUserId));
         setSaveError(null);
-        golpesPerdidos.olvidaEl(quickMatchId, holeNumber, currentUserId);
+        golpesPerdidos.olvidaEl(quickMatchId, holeNumber, currentUserId, participantId);
         setPerdidos((antes) =>
           antes.filter((x) => !(x.holeNumber === holeNumber && x.participantId === participantId))
         );
@@ -610,7 +616,7 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
       // no en la rama del envío bueno, porque si el golpe se queda otra vez en
       // el móvil sigue habiendo anotación —lo que ya no hay es nada perdido—, y
       // dejarlo puesto pediría repetir un hoyo que la tarjeta ya enseña
-      golpesPerdidos.olvidaEl(quickMatchId, holeNumber, currentUserId);
+      golpesPerdidos.olvidaEl(quickMatchId, holeNumber, currentUserId, participantId);
       setPerdidos((antes) =>
         antes.filter((x) => !(x.holeNumber === holeNumber && x.participantId === participantId))
       );

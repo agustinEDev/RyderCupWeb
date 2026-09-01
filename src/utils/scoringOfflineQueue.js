@@ -200,22 +200,15 @@ export const getByMatch = (matchId, userId) => {
 };
 
 /**
- * Si una anotación guardada le corresponde a quien tiene la sesión abierta.
+ * Si una anotación guardada se le puede ENSEÑAR a quien tiene la sesión.
  *
- * **Las que no llevan dueño cuentan como suyas.** No es un detalle: hasta esta
- * versión la cola no guardaba de quién era nada, así que en el momento de
- * actualizar TODO lo que hay en los móviles es huérfano. Dejarlo fuera hacía
- * que los golpes que esta issue existe para rescatar fueran, justamente, los
- * únicos invisibles: ni se enviaban de fondo ni se enseñaban en el panel, y
- * solo se llegaba a ellos volviendo a abrir esa partida, que es exactamente lo
- * que la issue dice que no pasa.
+ * Las que no llevan dueño cuentan como suyas: hasta esta versión la cola no
+ * guardaba de quién era nada, así que el día de actualizar todo lo que hay en
+ * los móviles es huérfano, y dejarlo invisible sería no rescatar justo lo que
+ * esta issue viene a rescatar.
  *
- * El riesgo que abre —un móvil compartido donde quien entra después manda lo
- * de la persona anterior— está acotado y es temporal: el servidor autoriza por
- * sesión, así que una anotación ajena se rechaza y acaba en un aviso visible
- * en vez de desaparecer en silencio; y en cuanto se anota una vez con esta
- * versión ya no quedan huérfanas. Es la misma regla que
- * `golpesPerdidos.pendientes` aplica a su propio almacén.
+ * **Enseñar no es enviar.** Para enviar de fondo está `deQuien`, que es más
+ * estricto y explica por qué.
  */
 const esVisiblePara = (entrada, userId) =>
   (entrada.userId ?? null) === null || entrada.userId === userId;
@@ -257,16 +250,26 @@ export const resumenPorPartida = (userId = null) => {
 };
 
 /**
- * Las anotaciones que puede enviar quien tiene la sesión abierta.
+ * Las anotaciones que el vaciado DE FONDO puede enviar. Solo las suyas.
  *
- * Es lo que usa el vaciado de fondo. Incluye las huérfanas por el motivo que
- * explica `esVisiblePara`: si no, las de todo el parque instalado se quedan
- * sin enviar el día que se actualice.
+ * **Lo huérfano no se manda desde aquí**, y esto se intentó al revés: se probó
+ * a incluirlo para rescatar la cola del parque instalado, que no lleva dueño.
+ * Es un error, y de los caros. El servidor atribuye `own_score` al usuario
+ * AUTENTICADO (`submit_hole_score_use_case.py:61-83`), así que en un móvil
+ * compartido donde las dos personas juegan el mismo partido —lo normal en una
+ * Ryder— los golpes de la primera se escriben en la tarjeta de la segunda,
+ * pisando los suyos, con un 200 y sin rechazo. Sin rechazo no hay aviso: la
+ * anotación desaparece en silencio, que es peor que no enviarla.
+ *
+ * Lo huérfano se rescata por otro camino, y con alguien delante: el panel SÍ
+ * lo enseña (`resumenPorPartida`), y al tocar el aviso se abre esa partida,
+ * cuya pantalla vacía al entrar y sí incluye lo huérfano (`getByMatch`). Ahí
+ * hay contexto y un acto explícito de una persona, que es la diferencia.
  *
  * @param {string} userId
  * @returns {Array}
  */
 export const deQuien = (userId) => {
   if (!userId) return [];
-  return getAll().filter((entry) => esVisiblePara(entry, userId));
+  return getAll().filter((entry) => entry.userId === userId);
 };
