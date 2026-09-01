@@ -151,8 +151,35 @@ describe('useScoring', () => {
       { ownScore: 5, markedPlayerId: 'u2', markedScore: 4 },
       null,
       'u1',
+      null,
     );
     expect(submitHoleScoreUseCase.execute).not.toHaveBeenCalled();
+  });
+
+  it('guarda el nombre del campo, para que el aviso diga de qué partida es', async () => {
+    // Sin él, quien vuelve a casa con golpes sin enviar de tres partidas ve
+    // tres avisos idénticos y no sabe cuál mirar (FE #521)
+    Object.defineProperty(navigator, 'onLine', { value: false, configurable: true });
+    getScoringViewUseCase.execute.mockResolvedValue({
+      ...mockScoringView,
+      roundInfo: { golfCourseName: 'La Herrería' },
+    });
+
+    const { result } = renderHook(() => useScoring('m-1', 'u1'));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    await act(async () => {
+      await result.current.submitScore(1, { ownScore: 5, markedPlayerId: 'u2', markedScore: 4 });
+    });
+
+    expect(offlineQueue.enqueue).toHaveBeenCalledWith(
+      'm-1',
+      1,
+      expect.anything(),
+      null,
+      'u1',
+      'La Herrería',
+    );
   });
 
   it('should submit scorecard', async () => {

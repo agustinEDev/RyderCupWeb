@@ -139,5 +139,15 @@
     "playingAverage": "Playing to",
     "estimatedIndexExplained": "It comes from your best rounds, not all of them: it says what you are capable of, not the level you have been playing at. With few rounds it is calculated from your best one, so it is slow to reflect a bad run."
   },
-  "changePhoto": "Change profile photo"
+  "changePhoto": "Change profile photo",
+  "golpesSinEnviar": {
+    "aviso_one": "You have 1 stroke not sent from {{partida}}",
+    "aviso_other": "You have {{count}} strokes not sent from {{partida}}",
+    "partidaSinNombre": "an earlier match",
+    "perdidos_one": "One stroke from {{partida}} could not be saved:",
+    "perdidos_other": "{{count}} strokes from {{partida}} could not be saved:",
+    "perdido": "Hole {{hoyo}} — the server did not accept it",
+    "entendido": "Got it",
+    "descartarDe": "Got it, dismiss the notice for {{partida}}"
+  }
 }

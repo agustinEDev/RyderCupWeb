@@ -8,6 +8,7 @@ import HeaderAuth from '../components/layout/HeaderAuth';
 import Avatar from '../components/ui/Avatar';
 import HandicapRequestModal from '../components/profile/HandicapRequestModal';
 import EmailVerificationBanner from '../components/EmailVerificationBanner';
+import GolpesSinEnviar from '../components/dashboard/GolpesSinEnviar';
 import PendingActionsCard from '../components/dashboard/PendingActionsCard';
 import PlayerStatsCards from '../components/dashboard/PlayerStatsCards';
 import NextMatchBanner from '../components/dashboard/NextMatchBanner';
@@ -536,6 +537,12 @@ const Dashboard = () => {
             )}
 
             {/* Pending Actions */}
+            {/* Antes de las acciones pendientes: un golpe que no llegó al
+                servidor es más urgente que una invitación por contestar.
+                `key` con la cuenta: al cambiar de usuario sin recargar, el
+                aviso se rehace en vez de seguir enseñando lo del anterior */}
+            <GolpesSinEnviar key={user?.id ?? 'sin-sesion'} userId={user?.id ?? null} />
+
             <PendingActionsCard
               user={user}
               competitions={competitions}

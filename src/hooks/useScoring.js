@@ -125,6 +125,17 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
    * partida rápida y aquí se dejan estar, así que contarlas dejaba el número
    * en algo distinto de cero para siempre (FE #515).
    */
+  /**
+   * Con qué nombre aparece esta partida en el aviso de golpes sin enviar
+   * (FE #521). Solo el nombre del campo: componer aquí un «Partido 3 · …»
+   * congelaría texto español en el almacenamiento, y seguiría en español para
+   * quien tenga la aplicación en inglés.
+   */
+  const nombreParaElAviso = useCallback(
+    () => scoringView?.roundInfo?.golfCourseName ?? null,
+    [scoringView]
+  );
+
   const pendientesPropias = useCallback(
     () => offlineQueue.getByMatch(matchId, currentUserId).filter((e) => e.participantId == null).length,
     [matchId, currentUserId]
@@ -157,7 +168,8 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
         holeNumber,
         scoreData,
         null,
-        currentUserId
+        currentUserId,
+        nombreParaElAviso()
       );
       setPendingQueueSize(pendientesPropias());
       if (guardado === false) {
@@ -194,7 +206,8 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
           holeNumber,
           scoreData,
           null,
-          currentUserId
+          currentUserId,
+          nombreParaElAviso()
         );
         setPendingQueueSize(pendientesPropias());
         // Si el móvil no pudo guardarla —sin espacio, ventana privada— hay que
@@ -211,7 +224,7 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
     } finally {
       setIsSubmitting(false);
     }
-  }, [matchId, canScore, isOwnScoreLocked, isMarkerScoreLocked, isOffline, pendientesPropias, currentUserId]);
+  }, [matchId, canScore, isOwnScoreLocked, isMarkerScoreLocked, isOffline, pendientesPropias, currentUserId, nombreParaElAviso]);
 
   // --- Submit scorecard ---
   const submitScorecard = useCallback(async () => {

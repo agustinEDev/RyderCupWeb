@@ -10,6 +10,7 @@ import { setCsrfTokenGlobal } from './csrfTokenSync';
 import { olvidaLaSesion } from '../services/sesionCompartida';
 import { olvidaLasAccionesPendientes } from '../services/accionesPendientes';
 import { olvidaLoDeEstaCuenta } from '../services/loUltimoConocido';
+import * as golpesPerdidos from '../utils/golpesPerdidos';
 
 // Create the context
 const AuthContext = createContext(null);
@@ -114,6 +115,10 @@ export const AuthProvider = ({ children }) => {
     // móvil compartido, la siguiente persona que entrara y se quedara sin señal
     // vería la lista de la anterior, con sus nombres y sus resultados
     olvidaLoDeEstaCuenta();
+    // Y los avisos de golpes que no se pudieron guardar. La cola en sí NO se
+    // toca: ahí puede haber golpes que su dueño todavía no ha podido enviar, y
+    // llevan su nombre para que nadie más los mande (FE #521)
+    golpesPerdidos.olvidaTodos();
     localStorage.removeItem('user');
     localStorage.removeItem('access_token'); // Legacy cleanup
   }, []);

@@ -529,7 +529,8 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
             holeNumber,
             { ...entrada.scoreData, decidido: true },
             participantId,
-            entrada.userId ?? currentUserId
+            entrada.userId ?? currentUserId,
+            quickMatch?.name ?? null
           );
         }
       } else if (cual === 'elQueHay') {
@@ -545,7 +546,7 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
       );
       setPendientes(offlineQueue.size(quickMatchId, currentUserId));
     },
-    [quickMatchId, currentUserId, borraLoGuardadoDe]
+    [quickMatchId, currentUserId, borraLoGuardadoDe, quickMatch?.name]
   );
 
   const submitScore = useCallback(
@@ -556,7 +557,7 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
       // siguiente sondeo detrás de lo que ya iba. Mandarlo ahora es la carrera
       // de arriba, y ahí lo que se pierde es la corrección del jugador
       if (escribiendoRef.current) {
-        if (offlineQueue.enqueue(quickMatchId, holeNumber, { score }, participantId, currentUserId) === false) {
+        if (offlineQueue.enqueue(quickMatchId, holeNumber, { score }, participantId, currentUserId, quickMatch?.name ?? null) === false) {
           const fallo = new Error('No se pudo guardar el golpe en el dispositivo');
           fallo.holeNumber = holeNumber;
           setSaveError(fallo);
@@ -599,7 +600,7 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
           // golpe está anotado, solo que todavía no ha salido de aquí
           // Puede negarse: un iPhone sin espacio, o una ventana privada. Ahí
           // el golpe no está en ninguna parte, y callarlo es lo peor de todo
-          if (offlineQueue.enqueue(quickMatchId, holeNumber, { score }, participantId, currentUserId) === false) {
+          if (offlineQueue.enqueue(quickMatchId, holeNumber, { score }, participantId, currentUserId, quickMatch?.name ?? null) === false) {
             err.holeNumber = holeNumber;
             setSaveError(err);
           } else {
@@ -619,7 +620,7 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
         setIsSubmitting(false);
       }
     },
-    [quickMatchId, isScorer, myParticipant, fetchQuickMatch, currentUserId, borraLoGuardadoDe]
+    [quickMatchId, isScorer, myParticipant, fetchQuickMatch, currentUserId, borraLoGuardadoDe, quickMatch?.name]
   );
 
   // Espejo de `completeMatch`: el backend exige creador para las dos

@@ -265,7 +265,7 @@ describe('useQuickMatchScoring · anotar sin conexión (FE #515, tabla A)', () =
   it('no llega respuesta: se guarda en el móvil', async () => {
     await anota(new TypeError('Failed to fetch'));
 
-    expect(offlineQueue.enqueue).toHaveBeenCalledWith('qm-1', 7, { score: 5 }, 'user-1', 'user-1');
+    expect(offlineQueue.enqueue).toHaveBeenCalledWith('qm-1', 7, { score: 5 }, 'user-1', 'user-1', null);
   });
 
   it('401: se guarda, porque el problema es la sesión y no el golpe', async () => {
@@ -313,7 +313,7 @@ describe('useQuickMatchScoring · anotar sin conexión (FE #515, tabla A)', () =
     await waitFor(() => expect(result.current.isLoading).toBe(false));
     await act(async () => { await result.current.submitScore(7, 'user-2', 4); });
 
-    expect(offlineQueue.enqueue).toHaveBeenCalledWith('qm-1', 7, { score: 4 }, 'user-2', 'user-1');
+    expect(offlineQueue.enqueue).toHaveBeenCalledWith('qm-1', 7, { score: 4 }, 'user-2', 'user-1', null);
   });
 
   it('la bola recogida se guarda: es una anotación, no la ausencia de una', async () => {
@@ -323,7 +323,7 @@ describe('useQuickMatchScoring · anotar sin conexión (FE #515, tabla A)', () =
     await waitFor(() => expect(result.current.isLoading).toBe(false));
     await act(async () => { await result.current.submitScore(7, 'user-1', null); });
 
-    expect(offlineQueue.enqueue).toHaveBeenCalledWith('qm-1', 7, { score: null }, 'user-1', 'user-1');
+    expect(offlineQueue.enqueue).toHaveBeenCalledWith('qm-1', 7, { score: null }, 'user-1', 'user-1', null);
   });
   it('un 422 no se guarda para luego: es el resultado el que no vale', async () => {
     // Es el código real de Pydantic, y el que la pantalla traduce por «ese
@@ -657,7 +657,7 @@ describe('useQuickMatchScoring · vaciar lo guardado (FE #515, tablas B y C)', (
     await act(async () => { await result.current.resuelveDiscrepancia(7, 'user-1', 'mio'); });
 
     expect(offlineQueue.enqueue).toHaveBeenCalledWith(
-      'qm-1', 7, expect.objectContaining({ score: 5, decidido: true }), 'user-1', 'user-1'
+      'qm-1', 7, expect.objectContaining({ score: 5, decidido: true }), 'user-1', 'user-1', null
     );
     expect(result.current.discrepancias).toHaveLength(0);
   });

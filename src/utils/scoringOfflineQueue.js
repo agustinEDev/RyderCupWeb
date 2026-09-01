@@ -75,9 +75,13 @@ export const enqueue = (
   holeNumber,
   scoreData,
   participantId = null,
-  userId = null
+  userId = null,
+  matchName = null
 ) => {
   const queue = getAll();
+  const anterior = queue.find(
+    entry => mismaAnotacion(entry, matchId, holeNumber, participantId, userId)
+  );
   const filtered = queue.filter(
     entry => !mismaAnotacion(entry, matchId, holeNumber, participantId, userId)
   );
@@ -91,6 +95,12 @@ export const enqueue = (
     // de saber a quién pertenece un golpe guardado, ni de impedir que lo envíe
     // otra persona con SU sesión (FE #521)
     userId,
+    // Cómo se llama esta partida, apuntado AL ENCOLAR: el aviso de «tienes
+    // golpes sin enviar» tiene que decir de cuál son, y cuando haya que
+    // enseñarlo puede no haber cobertura para preguntárselo al servidor. Si
+    // quien reencola no lo sabe —al resolver un desacuerdo solo se toca el
+    // resultado— se conserva el que ya había
+    matchName: matchName ?? anterior?.matchName ?? null,
   });
   return guarda(filtered);
 };
@@ -192,6 +202,31 @@ export const getByMatch = (matchId, userId) => {
  * @param {string} userId
  * @returns {Array}
  */
+export const resumenPorPartida = (userId = null) => {
+  const porPartida = new Map();
+
+  for (const entrada of getAll()) {
+    // Solo lo de quien está mirando: en un móvil compartido, enseñar lo de la
+    // persona anterior filtra el nombre de sus partidas a quien entre después
+    if (userId != null && (entrada.userId ?? null) !== userId) continue;
+
+    const actual = porPartida.get(entrada.matchId) ?? {
+      matchId: entrada.matchId,
+      matchName: entrada.matchName ?? null,
+      cuantas: 0,
+      // Una anotación con participante es de una partida rápida: allí cada
+      // participante se envía por separado
+      esPartidaRapida: false,
+    };
+    actual.cuantas += 1;
+    if (entrada.participantId != null) actual.esPartidaRapida = true;
+    if (!actual.matchName && entrada.matchName) actual.matchName = entrada.matchName;
+    porPartida.set(entrada.matchId, actual);
+  }
+
+  return [...porPartida.values()];
+};
+
 export const deQuien = (userId) => {
   if (!userId) return [];
   return getAll().filter((entry) => entry.userId === userId);

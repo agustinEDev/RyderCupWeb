@@ -139,5 +139,15 @@
     "playingAverage": "Juegas a",
     "estimatedIndexExplained": "Sale de tus mejores vueltas, no de todas: dice de lo que eres capaz, no el nivel al que vienes jugando. Con pocas vueltas se calcula sobre la mejor, así que tarda en reflejar una mala racha."
   },
-  "changePhoto": "Cambiar foto de perfil"
+  "changePhoto": "Cambiar foto de perfil",
+  "golpesSinEnviar": {
+    "aviso_one": "Tienes 1 golpe sin enviar de {{partida}}",
+    "aviso_other": "Tienes {{count}} golpes sin enviar de {{partida}}",
+    "partidaSinNombre": "una partida anterior",
+    "perdidos_one": "Un golpe de {{partida}} no se pudo guardar:",
+    "perdidos_other": "{{count}} golpes de {{partida}} no se pudieron guardar:",
+    "perdido": "Hoyo {{hoyo}} — el servidor no lo aceptó",
+    "entendido": "Entendido",
+    "descartarDe": "Entendido, quitar el aviso de {{partida}}"
+  }
 }
