@@ -5,6 +5,7 @@ import {
   submitScorecardUseCase,
   concedeMatchUseCase,
 } from '../composition';
+import { esRechazoDefinitivo, seGuardaParaDespues } from '../utils/politicaDeLaCola';
 import * as offlineQueue from '../utils/scoringOfflineQueue';
 import * as sessionLock from '../utils/scoringSessionLock';
 
@@ -19,6 +20,17 @@ const SESSION_REFRESH_INTERVAL = 30000; // 30 seconds
  * @param {string} currentUserId
  * @returns {Object} Scoring state and actions
  */
+/**
+ * El aviso de que el móvil no pudo guardar el golpe. Sin espacio o en una
+ * ventana privada, el golpe no está en el servidor NI en el dispositivo.
+ */
+const errorDeGuardado = (holeNumber) => {
+  const fallo = new Error('No se pudo guardar el golpe en el móvil');
+  fallo.holeNumber = holeNumber;
+  fallo.noSeGuardo = true;
+  return fallo;
+};
+
 export const useScoring = (matchId, currentUserId, isAdmin = false) => {
   const [scoringView, setScoringView] = useState(null);
   const [currentHole, setCurrentHole] = useState(1);
@@ -114,8 +126,8 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
    * en algo distinto de cero para siempre (FE #515).
    */
   const pendientesPropias = useCallback(
-    () => offlineQueue.getByMatch(matchId).filter((e) => e.participantId == null).length,
-    [matchId]
+    () => offlineQueue.getByMatch(matchId, currentUserId).filter((e) => e.participantId == null).length,
+    [matchId, currentUserId]
   );
 
   const fetchScoringView = useCallback(async () => {
@@ -140,8 +152,26 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
     if (isOwnScoreLocked && isMarkerScoreLocked) return;
 
     if (isOffline) {
-      offlineQueue.enqueue(matchId, holeNumber, scoreData);
+      const guardado = offlineQueue.enqueue(
+        matchId,
+        holeNumber,
+        scoreData,
+        null,
+        currentUserId
+      );
       setPendingQueueSize(pendientesPropias());
+      if (guardado === false) {
+        // Sin cobertura Y sin sitio donde guardarlo: el golpe no existe en
+        // ninguna parte, y eso hay que decirlo
+        setError(errorDeGuardado(holeNumber));
+      } else {
+        // Y se retira el aviso anterior si lo había: sin esto, un hoyo que no
+        // se pudo guardar dejaba el cartel puesto el RESTO de la vuelta,
+        // mientras los siguientes se guardaban bien. Sin cobertura no hay
+        // ninguna otra ocasión de limpiarlo —el sondeo no corre—, así que el
+        // jugador reanotaba hoyos creyendo que no se estaban guardando
+        setError(null);
+      }
       return;
     }
 
@@ -155,17 +185,33 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
       }));
       setError(null);
     } catch (err) {
-      const status = err?.response?.status ?? err?.status;
-      const isRetryable = !status || status >= 500;
-      if (isRetryable) {
-        offlineQueue.enqueue(matchId, holeNumber, scoreData);
+      // La misma política que el resto de la aplicación: un 401, un 408 o un
+      // 429 NO son culpa del golpe y se guardan. Antes aquí solo se guardaba a
+      // partir del 500, así que una sesión caducada tiraba la anotación
+      if (seGuardaParaDespues(err)) {
+        const guardado = offlineQueue.enqueue(
+          matchId,
+          holeNumber,
+          scoreData,
+          null,
+          currentUserId
+        );
         setPendingQueueSize(pendientesPropias());
+        // Si el móvil no pudo guardarla —sin espacio, ventana privada— hay que
+        // decirlo: callarlo deja al jugador creyendo que su golpe está a salvo
+        // en algún sitio, y no está en ninguno
+        setError(guardado === false ? errorDeGuardado(holeNumber) : null);
+        // Y si SÍ se guardó, no se enseña error: para el jugador el golpe está
+        // anotado, solo que todavía no ha salido del móvil. Decirle que ha
+        // fallado le hace reanotarlo, que es como se anota dos veces el mismo
+        // hoyo. Es lo que ya hacía la pantalla de partida rápida
+        return;
       }
       setError(err);
     } finally {
       setIsSubmitting(false);
     }
-  }, [matchId, canScore, isOwnScoreLocked, isMarkerScoreLocked, isOffline, pendientesPropias]);
+  }, [matchId, canScore, isOwnScoreLocked, isMarkerScoreLocked, isOffline, pendientesPropias, currentUserId]);
 
   // --- Submit scorecard ---
   const submitScorecard = useCallback(async () => {
@@ -203,7 +249,7 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
 
   // --- Process offline queue ---
   const processQueue = useCallback(async () => {
-    const entries = offlineQueue.getByMatch(matchId);
+    const entries = offlineQueue.getByMatch(matchId, currentUserId);
     for (const entry of entries) {
       // Este vaciado es el de competición. Una anotación con participante es de
       // una partida rápida: va por otro endpoint y con otro cuerpo, así que
@@ -218,12 +264,11 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
         // Con el participante: `remove` distingue por él desde FE #515, así que
         // omitirlo dejaría sin borrar cualquier entrada que lo lleve, y se
         // reenviaría en cada reconexión sin que la cuenta bajara nunca
-        offlineQueue.remove(entry.matchId, entry.holeNumber, entry.participantId);
+        offlineQueue.remove(entry.matchId, entry.holeNumber, entry.participantId, entry.userId ?? null);
       } catch (err) {
-        const status = err?.response?.status ?? err?.status;
-        if (status && status >= 400 && status < 500) {
-          // Non-retryable client error — discard and continue
-          offlineQueue.remove(entry.matchId, entry.holeNumber, entry.participantId);
+        if (esRechazoDefinitivo(err)) {
+          // El servidor dice que esta anotación no entra y no va a entrar
+          offlineQueue.remove(entry.matchId, entry.holeNumber, entry.participantId, entry.userId ?? null);
           continue;
         }
         break; // Stop on network or server error
@@ -231,7 +276,7 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
     }
     setPendingQueueSize(pendientesPropias());
     await fetchScoringView();
-  }, [matchId, fetchScoringView, pendientesPropias]);
+  }, [matchId, fetchScoringView, pendientesPropias, currentUserId]);
 
   // --- Take over session (force-acquire lock) ---
   const takeOverSession = useCallback(() => {

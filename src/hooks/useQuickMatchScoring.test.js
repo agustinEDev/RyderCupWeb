@@ -265,7 +265,7 @@ describe('useQuickMatchScoring · anotar sin conexión (FE #515, tabla A)', () =
   it('no llega respuesta: se guarda en el móvil', async () => {
     await anota(new TypeError('Failed to fetch'));
 
-    expect(offlineQueue.enqueue).toHaveBeenCalledWith('qm-1', 7, { score: 5 }, 'user-1');
+    expect(offlineQueue.enqueue).toHaveBeenCalledWith('qm-1', 7, { score: 5 }, 'user-1', 'user-1');
   });
 
   it('401: se guarda, porque el problema es la sesión y no el golpe', async () => {
@@ -313,7 +313,7 @@ describe('useQuickMatchScoring · anotar sin conexión (FE #515, tabla A)', () =
     await waitFor(() => expect(result.current.isLoading).toBe(false));
     await act(async () => { await result.current.submitScore(7, 'user-2', 4); });
 
-    expect(offlineQueue.enqueue).toHaveBeenCalledWith('qm-1', 7, { score: 4 }, 'user-2');
+    expect(offlineQueue.enqueue).toHaveBeenCalledWith('qm-1', 7, { score: 4 }, 'user-2', 'user-1');
   });
 
   it('la bola recogida se guarda: es una anotación, no la ausencia de una', async () => {
@@ -323,7 +323,7 @@ describe('useQuickMatchScoring · anotar sin conexión (FE #515, tabla A)', () =
     await waitFor(() => expect(result.current.isLoading).toBe(false));
     await act(async () => { await result.current.submitScore(7, 'user-1', null); });
 
-    expect(offlineQueue.enqueue).toHaveBeenCalledWith('qm-1', 7, { score: null }, 'user-1');
+    expect(offlineQueue.enqueue).toHaveBeenCalledWith('qm-1', 7, { score: null }, 'user-1', 'user-1');
   });
   it('un 422 no se guarda para luego: es el resultado el que no vale', async () => {
     // Es el código real de Pydantic, y el que la pantalla traduce por «ese
@@ -397,7 +397,7 @@ describe('useQuickMatchScoring · vaciar lo guardado (FE #515, tablas B y C)', (
     await waitFor(() =>
       expect(submitQuickMatchHoleScoreUseCase.execute).toHaveBeenCalledWith('qm-1', 7, 5)
     );
-    await waitFor(() => expect(offlineQueue.remove).toHaveBeenCalledWith('qm-1', 7, 'user-1'));
+    await waitFor(() => expect(offlineQueue.remove).toHaveBeenCalledWith('qm-1', 7, 'user-1', null));
   });
 
   it('al volver a anotar bien un hoyo perdido, el aviso rojo se retira', async () => {
@@ -475,7 +475,7 @@ describe('useQuickMatchScoring · vaciar lo guardado (FE #515, tablas B y C)', (
     const result = await montaCon([pendiente(7, 5), pendiente(8, 4)]);
 
     await waitFor(() => expect(submitQuickMatchHoleScoreUseCase.execute).toHaveBeenCalledTimes(2));
-    expect(offlineQueue.remove).toHaveBeenCalledWith('qm-1', 7, 'user-1');
+    expect(offlineQueue.remove).toHaveBeenCalledWith('qm-1', 7, 'user-1', null);
     expect(result.current.perdidos).toContainEqual(expect.objectContaining({ holeNumber: 7 }));
   });
 
@@ -642,7 +642,7 @@ describe('useQuickMatchScoring · vaciar lo guardado (FE #515, tablas B y C)', (
 
     const result = await montaCon([pendiente(7, 5)], igual);
 
-    await waitFor(() => expect(offlineQueue.remove).toHaveBeenCalledWith('qm-1', 7, 'user-1'));
+    await waitFor(() => expect(offlineQueue.remove).toHaveBeenCalledWith('qm-1', 7, 'user-1', null));
     expect(submitQuickMatchHoleScoreUseCase.execute).not.toHaveBeenCalled();
     expect(result.current.discrepancias).toHaveLength(0);
     expect(result.current.perdidos).toEqual([]);
@@ -657,7 +657,7 @@ describe('useQuickMatchScoring · vaciar lo guardado (FE #515, tablas B y C)', (
     await act(async () => { await result.current.resuelveDiscrepancia(7, 'user-1', 'mio'); });
 
     expect(offlineQueue.enqueue).toHaveBeenCalledWith(
-      'qm-1', 7, expect.objectContaining({ score: 5, decidido: true }), 'user-1'
+      'qm-1', 7, expect.objectContaining({ score: 5, decidido: true }), 'user-1', 'user-1'
     );
     expect(result.current.discrepancias).toHaveLength(0);
   });
@@ -677,7 +677,7 @@ describe('useQuickMatchScoring · vaciar lo guardado (FE #515, tablas B y C)', (
     await act(async () => { await result.current.resuelveDiscrepancia(7, 'user-1', 'elQueHay'); });
 
     expect(submitQuickMatchHoleScoreUseCase.execute).not.toHaveBeenCalled();
-    expect(offlineQueue.remove).toHaveBeenCalledWith('qm-1', 7, 'user-1');
+    expect(offlineQueue.remove).toHaveBeenCalledWith('qm-1', 7, 'user-1', null);
     expect(result.current.discrepancias).toHaveLength(0);
   });
 
@@ -1537,5 +1537,68 @@ describe('useQuickMatchScoring · cuándo se pregunta (FE #524, tabla Q)', () =>
     await act(async () => { window.dispatchEvent(new window.Event('online')); });
 
     expect(getQuickMatchUseCase.execute).not.toHaveBeenCalled();
+  });
+});
+
+describe('useQuickMatchScoring · un móvil compartido (FE #521)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    getGolfCourseUseCase.execute.mockResolvedValue({ holes: [], tees: [], name: 'Campo' });
+    getQuickMatchUseCase.execute.mockResolvedValue(mockQuickMatch);
+    submitQuickMatchHoleScoreUseCase.execute.mockResolvedValue({});
+  });
+
+  it('pide la cola con su propio identificador, no la entera', async () => {
+    // La cola real filtra por dueño. Si el hook no le dice quién es, recibe
+    // también lo que anotó la persona anterior en ese móvil — y lo envía con
+    // ESTA sesión, pisando la tarjeta de quien esté dentro ahora
+    offlineQueue.getByMatch.mockReturnValue([]);
+
+    const { result } = renderHook(() => useQuickMatchScoring('qm-1', 'user-1'));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    expect(offlineQueue.getByMatch).toHaveBeenCalledWith('qm-1', 'user-1');
+    // Nunca a secas: eso traería lo de todo el mundo
+    expect(offlineQueue.getByMatch).not.toHaveBeenCalledWith('qm-1');
+  });
+
+  it('cuenta como pendientes solo las suyas', async () => {
+    offlineQueue.getByMatch.mockReturnValue([]);
+    offlineQueue.size.mockReturnValue(0);
+
+    const { result } = renderHook(() => useQuickMatchScoring('qm-1', 'user-1'));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    expect(offlineQueue.size).toHaveBeenCalledWith('qm-1', 'user-1');
+  });
+});
+
+describe('useQuickMatchScoring · borrar lo guardado sin dueño (FE #521)', () => {
+  const pendienteHuerfana = (holeNumber, score, participantId = 'user-1') =>
+    ({ matchId: 'qm-1', holeNumber, participantId, scoreData: { score } });
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    getGolfCourseUseCase.execute.mockResolvedValue({ holes: [], tees: [], name: 'Campo' });
+    getQuickMatchUseCase.execute.mockResolvedValue(mockQuickMatch);
+    submitQuickMatchHoleScoreUseCase.execute.mockResolvedValue({});
+    offlineQueue.enqueue.mockReturnValue(true);
+  });
+
+  it('borra la entrada con el dueño que tiene, no con el de quien mira', async () => {
+    // Una guardada por una versión anterior no tiene dueño. Borrarla a nombre
+    // de quien está anotando no la borraría, y el siguiente vaciado
+    // preguntaría si quiere recuperar el resultado que él mismo corrigió
+    offlineQueue.getByMatch.mockReturnValue([pendienteHuerfana(7, 5)]);
+
+    const { result } = renderHook(() => useQuickMatchScoring('qm-1', 'user-1'));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    offlineQueue.remove.mockClear();
+
+    await act(async () => { await result.current.submitScore(7, 'user-1', 4); });
+
+    await waitFor(() =>
+      expect(offlineQueue.remove).toHaveBeenCalledWith('qm-1', 7, 'user-1', null)
+    );
   });
 });

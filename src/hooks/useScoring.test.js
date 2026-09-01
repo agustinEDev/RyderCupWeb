@@ -143,11 +143,15 @@ describe('useScoring', () => {
       await result.current.submitScore(1, { ownScore: 5, markedPlayerId: 'u2', markedScore: 4 });
     });
 
-    expect(offlineQueue.enqueue).toHaveBeenCalledWith('m-1', 1, {
-      ownScore: 5,
-      markedPlayerId: 'u2',
-      markedScore: 4,
-    });
+    // Con participante (null: es competición) y de quién es la anotación, para
+    // que en un móvil compartido no la envíe ni la borre otra persona (FE #521)
+    expect(offlineQueue.enqueue).toHaveBeenCalledWith(
+      'm-1',
+      1,
+      { ownScore: 5, markedPlayerId: 'u2', markedScore: 4 },
+      null,
+      'u1',
+    );
     expect(submitHoleScoreUseCase.execute).not.toHaveBeenCalled();
   });
 
@@ -617,7 +621,7 @@ describe('useScoring', () => {
       });
 
       await waitFor(() =>
-        expect(offlineQueue.remove).toHaveBeenCalledWith('m-1', 7, undefined)
+        expect(offlineQueue.remove).toHaveBeenCalledWith('m-1', 7, undefined, null)
       );
     });
 
@@ -639,7 +643,7 @@ describe('useScoring', () => {
       });
 
       await waitFor(() =>
-        expect(offlineQueue.remove).toHaveBeenCalledWith('m-1', 7, undefined)
+        expect(offlineQueue.remove).toHaveBeenCalledWith('m-1', 7, undefined, null)
       );
     });
 
@@ -656,5 +660,138 @@ describe('useScoring', () => {
 
       await waitFor(() => expect(result.current.pendingQueueSize).toBe(1));
     });
+  });
+});
+
+describe('useScoring · un móvil compartido (FE #521)', () => {
+  // Escenario propio y completo: `clearAllMocks` limpia las llamadas pero NO
+  // las implementaciones, así que un bloque que no monta las suyas pasa
+  // heredando las del vecino — y falla en cuanto se ejecuta solo, se filtra
+  // por nombre o se baraja el orden
+  beforeEach(() => {
+    vi.clearAllMocks();
+    getScoringViewUseCase.execute.mockResolvedValue(mockScoringView);
+    submitHoleScoreUseCase.execute.mockResolvedValue(mockScoringView);
+    Object.defineProperty(navigator, 'onLine', { value: true, configurable: true });
+  });
+
+  it('no envía ni borra lo que anotó otra persona', async () => {
+    // A anota sin cobertura, caduca su sesión, entra B y abre esa partida.
+    // Sin esto, el golpe de A salía con la sesión de B, se escribía en la
+    // tarjeta de B y desaparecía de la cola
+    offlineQueue.getByMatch.mockImplementation((matchId, userId) =>
+      // La cola real ya filtra por dueño: aquí se imita para comprobar que el
+      // hook pregunta por lo SUYO y no por todo
+      userId === 'u-b' ? [] : [{ matchId, holeNumber: 3, participantId: null, userId: 'u-a', scoreData: { ownScore: 4 } }]
+    );
+
+    const { result } = renderHook(() => useScoring('m-1', 'u-b'));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    submitHoleScoreUseCase.execute.mockClear();
+    await act(async () => {
+      window.dispatchEvent(new globalThis.Event('online'));
+    });
+
+    expect(submitHoleScoreUseCase.execute).not.toHaveBeenCalled();
+    expect(offlineQueue.remove).not.toHaveBeenCalled();
+  });
+
+  it('pide su cola con su propio identificador', async () => {
+    offlineQueue.getByMatch.mockReturnValue([]);
+
+    const { result } = renderHook(() => useScoring('m-1', 'u-b'));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    expect(offlineQueue.getByMatch).toHaveBeenCalledWith('m-1', 'u-b');
+  });
+});
+
+describe('useScoring · lo que no se puede perder en silencio (FE #521)', () => {
+  // Igual que arriba: escenario propio, sin heredar implementaciones de nadie
+  beforeEach(() => {
+    vi.clearAllMocks();
+    getScoringViewUseCase.execute.mockResolvedValue(mockScoringView);
+    Object.defineProperty(navigator, 'onLine', { value: true, configurable: true });
+    offlineQueue.getByMatch.mockReturnValue([]);
+    offlineQueue.enqueue.mockReturnValue(true);
+  });
+
+  const anotaCon = async (error) => {
+    submitHoleScoreUseCase.execute.mockRejectedValueOnce(error);
+    const { result } = renderHook(() => useScoring('m-1', 'u1'));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    await act(async () => {
+      await result.current.submitScore(1, { ownScore: 5, markedPlayerId: 'u2', markedScore: 4 });
+    });
+    return result;
+  };
+
+  it.each([401, 408, 429])('un %s guarda el golpe en vez de tirarlo', async (codigo) => {
+    // Antes solo se guardaba a partir del 500, así que una sesión caducada
+    // —lo normal al volver tras un rato— tiraba la anotación
+    await anotaCon(Object.assign(new Error('x'), { status: codigo }));
+
+    expect(offlineQueue.enqueue).toHaveBeenCalled();
+  });
+
+  it('si el móvil no puede guardarlo, se dice', async () => {
+    // Sin espacio o en ventana privada. Callarlo deja al jugador creyendo que
+    // su golpe está a salvo en algún sitio, y no está en ninguno
+    offlineQueue.enqueue.mockReturnValue(false);
+
+    const result = await anotaCon(new TypeError('Failed to fetch'));
+
+    expect(result.current.error).toBeTruthy();
+    expect(result.current.error.noSeGuardo).toBe(true);
+  });
+});
+
+describe('useScoring · el aviso dice la verdad (FE #521)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    getScoringViewUseCase.execute.mockResolvedValue(mockScoringView);
+    submitHoleScoreUseCase.execute.mockResolvedValue(mockScoringView);
+    Object.defineProperty(navigator, 'onLine', { value: true, configurable: true });
+    offlineQueue.getByMatch.mockReturnValue([]);
+    offlineQueue.enqueue.mockReturnValue(true);
+  });
+
+  const anota = async (result, hole) => {
+    await act(async () => {
+      await result.current.submitScore(hole, { ownScore: 5, markedPlayerId: 'u2', markedScore: 4 });
+    });
+  };
+
+  it('un golpe encolado no se enseña como fallo', async () => {
+    // Se guardó: para el jugador está anotado, solo que no ha salido del móvil.
+    // Decirle que ha fallado es lo que le hace anotarlo dos veces
+    submitHoleScoreUseCase.execute.mockRejectedValueOnce(
+      Object.assign(new Error('sesión'), { status: 401 })
+    );
+    const { result } = renderHook(() => useScoring('m-1', 'u1'));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    await anota(result, 1);
+
+    expect(offlineQueue.enqueue).toHaveBeenCalled();
+    expect(result.current.error).toBeNull();
+  });
+
+  it('el aviso de «no se pudo guardar» se retira en cuanto uno sí se guarda', async () => {
+    // Sin cobertura no hay sondeo que limpie nada, así que sin esto el cartel
+    // del hoyo 1 se quedaba puesto el resto de la vuelta mientras los demás
+    // hoyos se guardaban perfectamente
+    Object.defineProperty(navigator, 'onLine', { value: false, configurable: true });
+    const { result } = renderHook(() => useScoring('m-1', 'u1'));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    offlineQueue.enqueue.mockReturnValueOnce(false);
+    await anota(result, 1);
+    expect(result.current.error?.noSeGuardo).toBe(true);
+
+    offlineQueue.enqueue.mockReturnValue(true);
+    await anota(result, 2);
+
+    expect(result.current.error).toBeNull();
   });
 });
