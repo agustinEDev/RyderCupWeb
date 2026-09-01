@@ -197,6 +197,25 @@ describe('AuthContext', () => {
       expect(localStorage.getItem('user')).toBeNull();
     });
 
+    it('se lleva los avisos de golpes de ESTA cuenta, no los de la otra', async () => {
+      // En un móvil compartido, los avisos sin leer de la otra persona no se
+      // pueden regenerar: el golpe que describen ya se borró de la cola al
+      // escribirlos. Un `removeItem` a secas se los llevaba por delante
+      const golpesPerdidos = await import('../utils/golpesPerdidos');
+      localStorage.setItem('user', JSON.stringify({ id: 'yo' }));
+      golpesPerdidos.apunta({ matchId: 'm-1', matchName: 'Meis', holeNumber: 3, userId: 'yo' });
+      golpesPerdidos.apunta({ matchId: 'm-2', matchName: 'Meis', holeNumber: 4, userId: 'la-otra' });
+
+      const { result } = renderHook(() => useAuthContext(), { wrapper: AuthProvider });
+      act(() => {
+        result.current.clearAuth();
+      });
+
+      expect(golpesPerdidos.pendientes(null)).toEqual([
+        expect.objectContaining({ userId: 'la-otra' }),
+      ]);
+    });
+
     it('should clear legacy access_token from localStorage', () => {
       localStorage.setItem('access_token', 'legacy-token-123');
 

@@ -7,7 +7,8 @@
  * hoyos en la cola y no volvía a abrir esa partida —se completaba desde otro
  * móvil, se cancelaba, o simplemente la dejaba— los perdía sin enterarse.
  *
- * Aquí se recorren las anotaciones de quien tiene la sesión abierta, y se
+ * Aquí se recorren las anotaciones de quien tiene la sesión abierta —incluidas
+ * las que no llevan dueño, que son todas las que hay hoy en los móviles— y se
  * distingue:
  *
  * - **Competición** (sin `participantId`): se envía. No hay negociación
@@ -23,7 +24,11 @@
 
 import { submitHoleScoreUseCase } from '../composition';
 import * as golpesPerdidos from '../utils/golpesPerdidos';
-import { esRechazoDefinitivo } from '../utils/politicaDeLaCola';
+import {
+  esFalloDeTodaLaSesion,
+  esRechazoDefinitivo,
+  noLlegoAlServidor,
+} from '../utils/politicaDeLaCola';
 import * as cola from '../utils/scoringOfflineQueue';
 
 // Un solo vaciado a la vez. El evento de vuelta de la red puede llegar dos
@@ -34,39 +39,23 @@ let vaciando = false;
 /** Se emite cuando el vaciado ha enviado o descartado algo. */
 export const COLA_VACIADA = 'rydercup:cola-vaciada';
 
-/**
- * Si un error viene de no haber podido hablar con el servidor.
- *
- * Se distingue de un error que trae código porque las consecuencias son
- * opuestas: sin red no tiene sentido seguir intentando con el resto de la
- * cola, pero una anotación que revienta por su propio contenido —el caso de
- * uso valida antes de enviar, y lanza un Error pelado— NO puede parar el
- * vaciado, o una sola entrada mala a la cabeza dejaría sin enviar los golpes
- * de todas las demás partidas, en cada reconexión, para siempre.
- */
-const pareceFalloDeRed = (err) => {
-  if (err?.status ?? err?.response?.status) return false;
-  if (err instanceof TypeError) return true;
-  // Los mensajes que de verdad dan los navegadores cuando no hay red, y ni uno
-  // más. Un patrón laxo se vuelve en contra: con `/red/` dentro, un
-  // «Marked player ID is required» se leía como caída de red —por «requi-RED»—
-  // y paraba el vaciado de toda la cola
-  return /failed to fetch|networkerror|network error|load failed/i.test(err?.message ?? '');
-};
 
 /**
  * Envía lo que se pueda de la cola de esta persona.
  *
- * @param {{saltaPartida?: string|null, userId?: string|null}} [opciones] -
+ * @param {{saltaPartida?: string|null|(() => string|null), userId?: string|null}} [opciones] -
  *   `saltaPartida` deja fuera una partida concreta: la que el usuario tiene
  *   abierta la vacía su propia pantalla, que además sabe resolver desacuerdos.
+ *   Admite una función porque el vaciado tarda, y durante ese rato el usuario
+ *   puede ENTRAR en una de las partidas que se están enviando: con un valor
+ *   congelado se seguiría vaciando por debajo de una pantalla ya montada.
  *   `userId` es de quién es la sesión.
  * @returns {Promise<{enviadas: number, descartadas: number, pendientes: number}>}
  */
 export const vaciaLaColaEntera = async ({ saltaPartida = null, userId = null } = {}) => {
-  // Solo lo de esta persona, y nunca lo huérfano: aquí no hay nadie mirando,
-  // así que una anotación sin dueño no se manda con la sesión de quien resulte
-  // estar dentro. Esa se envía desde la pantalla de su propia partida
+  const cualSalta = () => (typeof saltaPartida === 'function' ? saltaPartida() : saltaPartida);
+  // Lo de esta persona y lo huérfano, que es toda la cola que hay hoy en los
+  // móviles: ver `esVisiblePara` en la cola
   const mias = userId ? cola.deQuien(userId) : [];
   if (mias.length === 0 || vaciando) {
     return { enviadas: 0, descartadas: 0, pendientes: mias.length };
@@ -78,7 +67,7 @@ export const vaciaLaColaEntera = async ({ saltaPartida = null, userId = null } =
 
   try {
     for (const entrada of mias) {
-      if (entrada.matchId === saltaPartida) continue;
+      if (entrada.matchId === cualSalta()) continue;
       // Las de partida rápida se dejan para su pantalla, que sabe preguntar
       if (entrada.participantId != null) continue;
 
@@ -88,8 +77,20 @@ export const vaciaLaColaEntera = async ({ saltaPartida = null, userId = null } =
           entrada.holeNumber,
           entrada.scoreData
         );
-        if (siguesiendoLaMisma(entrada)) {
-          cola.remove(entrada.matchId, entrada.holeNumber, entrada.participantId, entrada.userId);
+        if (!siguesiendoLaMisma(entrada)) {
+          // Se reanotó mientras iba en camino: lo que hay guardado es más
+          // nuevo que lo que se acaba de enviar, y se queda para enviarse él
+          continue;
+        }
+        if (
+          !cola.remove(entrada.matchId, entrada.holeNumber, entrada.participantId, entrada.userId)
+        ) {
+          // El golpe llegó pero no se pudo sacar de la cola: sin espacio, o en
+          // una ventana privada. Contarlo como enviado lo dejaría reenviándose
+          // en cada reconexión para siempre, así que se para: si el
+          // almacenamiento no admite una escritura, tampoco admitirá las
+          // siguientes, y cada una repetiría el mismo envío duplicado
+          break;
         }
         enviadas += 1;
       } catch (err) {
@@ -97,10 +98,15 @@ export const vaciaLaColaEntera = async ({ saltaPartida = null, userId = null } =
           descartadas += apartaLaRechazada(entrada) ? 1 : 0;
           continue;
         }
-        if (pareceFalloDeRed(err)) break;
-        // Ni rechazo ni red: esta entrada no se puede enviar por lo que trae
-        // dentro. Se deja donde está —no se pierde— y se sigue con las demás,
-        // para que una sola no bloquee la cola de todo el mundo
+        // El fallo no es de esta anotación sino de la sesión o del servidor:
+        // mientras siga así, las demás fallarían igual. Seguir el bucle es lo
+        // que convertía un 403 de CSRF en un cierre de sesión por cada golpe
+        // guardado, y un 503 en la cola entera reintentada a cada rato
+        if (esFalloDeTodaLaSesion(err) || noLlegoAlServidor(err)) break;
+        // Ni rechazo ni red ni sesión: esta entrada no se puede enviar por lo
+        // que trae dentro —el caso de uso valida antes de enviar—. Se deja
+        // donde está —no se pierde— y se sigue con las demás, para que una
+        // sola no bloquee la cola de todo el mundo
         continue;
       }
     }
@@ -143,6 +149,11 @@ const siguesiendoLaMisma = (entrada) => {
 /**
  * Saca de la cola una anotación que el servidor ha rechazado, dejando aviso.
  *
+ * **Se exporta**: la pantalla de competición vacía su propia cola y tiene que
+ * hacer exactamente esto mismo. Cuando cada una tenía su versión, el mismo 409
+ * dejaba aviso desde el vaciado de fondo y borraba el golpe en silencio desde
+ * la pantalla.
+ *
  * **Solo se borra si el aviso ha quedado escrito.** Si el móvil no tiene sitio
  * para el aviso, la anotación se queda en la cola: es preferible que se
  * reintente mil veces a que desaparezca sin que nadie lo sepa, que es
@@ -150,10 +161,11 @@ const siguesiendoLaMisma = (entrada) => {
  *
  * @returns {boolean} Si de verdad se apartó
  */
-const apartaLaRechazada = (entrada) => {
+export const apartaLaRechazada = (entrada) => {
   const apuntado = golpesPerdidos.apunta({
     matchId: entrada.matchId,
     matchName: entrada.matchName ?? null,
+    matchNumber: entrada.matchNumber ?? null,
     holeNumber: entrada.holeNumber,
     userId: entrada.userId ?? null,
   });

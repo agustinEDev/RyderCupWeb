@@ -87,8 +87,14 @@ export const apiRequest = async (endpoint, options = {}) => {
       if (response.status === 403 && errorData.error_code === 'CSRF_VALIDATION_FAILED') {
         // Use centralized CSRF logout handler
         handleCsrfLogout(errorData);
-        // Throw error after initiating logout (error will be caught by caller)
-        throw new Error('CSRF validation failed. Please log in again.');
+        // Throw error after initiating logout (error will be caught by caller).
+        // El error va MARCADO: quien vacía la cola de anotaciones necesita
+        // distinguirlo de un error sin código cualquiera, porque este vale
+        // para toda la sesión y no para una anotación. Sin la marca, cada
+        // golpe de la cola disparaba su propio cierre de sesión (FE #521)
+        const csrfError = new Error('CSRF validation failed. Please log in again.');
+        csrfError.errorCode = 'CSRF_VALIDATION_FAILED';
+        throw csrfError;
       }
 
       // Extract error message with proper fallback chain

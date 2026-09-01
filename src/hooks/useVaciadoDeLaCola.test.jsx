@@ -1,4 +1,4 @@
-import { renderHook } from '@testing-library/react';
+import { renderHook, act } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('../services/vaciadoDeLaCola', () => ({
@@ -14,27 +14,56 @@ import { vaciaLaColaEntera } from '../services/vaciadoDeLaCola';
 import { useVaciadoDeLaCola } from './useVaciadoDeLaCola';
 
 describe('useVaciadoDeLaCola (FE #521)', () => {
+  // El vaciado al montar va aplazado un tick, para no meter peticiones en el
+  // camino crítico del arranque: hay que dejar correr la microtarea
+  const monta = async (opciones = { activo: true, userId: 'u1' }) => {
+    let devuelto;
+    await act(async () => {
+      devuelto = renderHook(() => useVaciadoDeLaCola(opciones));
+    });
+    return devuelto;
+  };
+
+  /** Cómo quedó la llamada, con `saltaPartida` ya resuelta. */
+  const loQuePidio = () => {
+    const [args] = vaciaLaColaEntera.mock.calls.at(-1);
+    return { userId: args.userId, saltaPartida: args.saltaPartida() };
+  };
+
   beforeEach(() => {
+    vi.restoreAllMocks();
     vi.clearAllMocks();
     rutaActual = '/dashboard';
     Object.defineProperty(document, 'visibilityState', { value: 'visible', configurable: true });
+    Object.defineProperty(globalThis.navigator, 'onLine', { value: true, configurable: true });
   });
 
-  it('vacía al entrar', () => {
-    renderHook(() => useVaciadoDeLaCola({ activo: true, userId: 'u1' }));
+  it('vacía al entrar', async () => {
+    await monta();
 
-    expect(vaciaLaColaEntera).toHaveBeenCalledWith({ saltaPartida: null, userId: 'u1' });
+    expect(loQuePidio()).toEqual({ saltaPartida: null, userId: 'u1' });
   });
 
-  it('no hace nada sin sesión', () => {
-    renderHook(() => useVaciadoDeLaCola({ activo: false, userId: 'u1' }));
-    renderHook(() => useVaciadoDeLaCola({ activo: true, userId: null }));
+  it('no hace nada sin sesión', async () => {
+    await monta({ activo: false, userId: 'u1' });
+    await monta({ activo: true, userId: null });
 
     expect(vaciaLaColaEntera).not.toHaveBeenCalled();
   });
 
-  it('vacía cuando vuelve la cobertura', () => {
-    renderHook(() => useVaciadoDeLaCola({ activo: true, userId: 'u1' }));
+  it('no lo intenta sin cobertura: la petición se quedaría colgada', async () => {
+    // Es el caso PARA el que existe esto. Sin la guarda, el arranque disparaba
+    // una petición condenada y esperaba a que venciera —en iOS, decenas de
+    // segundos en blanco— para descubrir lo que `navigator` ya decía
+    Object.defineProperty(globalThis.navigator, 'onLine', { value: false, configurable: true });
+
+    await monta();
+
+    expect(vaciaLaColaEntera).not.toHaveBeenCalled();
+  });
+
+  it('vacía cuando vuelve la cobertura', async () => {
+    await monta();
     vi.clearAllMocks();
 
     window.dispatchEvent(new globalThis.Event('online'));
@@ -42,10 +71,10 @@ describe('useVaciadoDeLaCola (FE #521)', () => {
     expect(vaciaLaColaEntera).toHaveBeenCalledTimes(1);
   });
 
-  it('vacía al volver a la aplicación', () => {
+  it('vacía al volver a la aplicación', async () => {
     // En iOS una página suspendida no suele recibir `online`, y el caso típico
     // es terminar sin cobertura, guardar el móvil y sacarlo con wifi
-    renderHook(() => useVaciadoDeLaCola({ activo: true, userId: 'u1' }));
+    await monta();
     vi.clearAllMocks();
 
     document.dispatchEvent(new globalThis.Event('visibilitychange'));
@@ -53,9 +82,9 @@ describe('useVaciadoDeLaCola (FE #521)', () => {
     expect(vaciaLaColaEntera).toHaveBeenCalledTimes(1);
   });
 
-  it('no vacía cuando la aplicación se va al fondo', () => {
+  it('no vacía cuando la aplicación se va al fondo', async () => {
     // El mismo evento avisa de las dos cosas, y ahí no hay nada que enviar
-    renderHook(() => useVaciadoDeLaCola({ activo: true, userId: 'u1' }));
+    await monta();
     vi.clearAllMocks();
     Object.defineProperty(document, 'visibilityState', { value: 'hidden', configurable: true });
 
@@ -64,27 +93,42 @@ describe('useVaciadoDeLaCola (FE #521)', () => {
     expect(vaciaLaColaEntera).not.toHaveBeenCalled();
   });
 
-  it('deja fuera la partida que se está anotando', () => {
+  it('deja fuera la partida que se está anotando', async () => {
     // Esa la vacía su propia pantalla, que sabe resolver desacuerdos
     rutaActual = '/player/matches/m-7/scoring';
 
-    renderHook(() => useVaciadoDeLaCola({ activo: true, userId: 'u1' }));
+    await monta();
 
-    expect(vaciaLaColaEntera).toHaveBeenCalledWith({ saltaPartida: 'm-7', userId: 'u1' });
+    expect(loQuePidio()).toEqual({ saltaPartida: 'm-7', userId: 'u1' });
   });
 
-  it('también en partida rápida', () => {
+  it('y también la partida en la que se ENTRA mientras vacía', async () => {
+    // El vaciado tarda, y en ese rato el jugador puede abrir una de las
+    // partidas que se están enviando. Por eso `saltaPartida` va como función:
+    // congelada, se seguía vaciando por debajo de una pantalla ya montada
+    const { rerender } = await monta();
+    const [args] = vaciaLaColaEntera.mock.calls.at(-1);
+    expect(args.saltaPartida()).toBeNull();
+
+    // Navegar a la pantalla de esa partida mientras el envío sigue en vuelo
+    rutaActual = '/player/matches/m-7/scoring';
+    await act(async () => { rerender(); });
+
+    expect(args.saltaPartida()).toBe('m-7');
+  });
+
+  it('también en partida rápida', async () => {
     rutaActual = '/quick-matches/qm-3/scoring';
 
-    renderHook(() => useVaciadoDeLaCola({ activo: true, userId: 'u1' }));
+    await monta();
 
-    expect(vaciaLaColaEntera).toHaveBeenCalledWith({ saltaPartida: 'qm-3', userId: 'u1' });
+    expect(loQuePidio()).toEqual({ saltaPartida: 'qm-3', userId: 'u1' });
   });
 
-  it('no se relanza en cada cambio de pantalla', () => {
+  it('no se relanza en cada cambio de pantalla', async () => {
     // Colgado de la ruta, el efecto se rearmaba en cada navegación y disparaba
     // un vaciado entero cada vez
-    const { rerender } = renderHook(() => useVaciadoDeLaCola({ activo: true, userId: 'u1' }));
+    const { rerender } = await monta();
     expect(vaciaLaColaEntera).toHaveBeenCalledTimes(1);
 
     rutaActual = '/competitions';
@@ -96,11 +140,18 @@ describe('useVaciadoDeLaCola (FE #521)', () => {
   });
 
   it('un fallo del vaciado no sube a la pantalla', async () => {
+    // El rechazo llega en una microtarea POSTERIOR a montar, así que un
+    // `expect(...).not.toThrow()` alrededor de `renderHook` pasa igual con
+    // `catch` y sin él: no probaba nada. Hay que esperarlo y mirar dónde acabó
     vaciaLaColaEntera.mockRejectedValueOnce(new Error('boom'));
-    vi.spyOn(console, 'error').mockImplementation(() => {});
+    const enLaConsola = vi.spyOn(console, 'error').mockImplementation(() => {});
 
-    expect(() =>
-      renderHook(() => useVaciadoDeLaCola({ activo: true, userId: 'u1' }))
-    ).not.toThrow();
+    await monta();
+    await act(async () => { await Promise.resolve(); });
+
+    expect(enLaConsola).toHaveBeenCalledWith(
+      '[VaciadoDeLaCola] No se pudo vaciar la cola:',
+      expect.objectContaining({ message: 'boom' })
+    );
   });
 });

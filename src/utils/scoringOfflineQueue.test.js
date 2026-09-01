@@ -337,11 +337,26 @@ describe('scoringOfflineQueue — de quién es cada anotación (FE #521)', () =>
     expect(deA.map((e) => e.holeNumber).sort()).toEqual([1, 3]);
   });
 
-  it('deQuien deja fuera lo huérfano: ahí no hay nadie mirando', () => {
+  it('deQuien recoge lo huérfano: es toda la cola que hay hoy en los móviles', () => {
+    // La versión que está en producción no guarda dueño. Si el vaciado dejara
+    // fuera lo huérfano, el día de actualizar los únicos golpes invisibles
+    // serían justamente los que esta issue existe para rescatar
     enqueue('m-1', 1, { ownScore: 4 }, null, 'usuario-A');
     enqueue('m-1', 3, { ownScore: 6 }, null, null);
 
+    expect(deQuien('usuario-A').map((e) => e.holeNumber)).toEqual([1, 3]);
+  });
+
+  it('pero no recoge lo de otra cuenta del mismo móvil', () => {
+    enqueue('m-1', 1, { ownScore: 4 }, null, 'usuario-A');
+    enqueue('m-1', 3, { ownScore: 6 }, null, 'usuario-B');
+
     expect(deQuien('usuario-A').map((e) => e.holeNumber)).toEqual([1]);
+  });
+
+  it('sin sesión no se envía nada, ni siquiera lo huérfano', () => {
+    enqueue('m-1', 3, { ownScore: 6 }, null, null);
+
     expect(deQuien(null)).toEqual([]);
   });
 

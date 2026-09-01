@@ -47,8 +47,18 @@ export const useVaciadoDeLaCola = ({ activo, userId = null }) => {
 
   const vacia = useCallback(() => {
     if (!activo || !userId) return;
+    // Sin red no se intenta. Sin esta guarda, el vaciado al montar disparaba la
+    // primera petición durante el arranque y se quedaba esperando a que
+    // venciera —diez o treinta segundos en iOS— para descubrir que no hay
+    // cobertura, justo en el caso para el que existe esta función. La vuelta de
+    // la red ya la cubre el evento `online`
+    if (globalThis.navigator?.onLine === false) return;
     vaciaLaColaEntera({
-      saltaPartida: partidaQueSeEstaAnotando(rutaActual.current),
+      // Una función y no un valor: el vaciado tarda, y en ese rato el usuario
+      // puede ENTRAR en una de las partidas que se están enviando. Congelado,
+      // se seguiría vaciando por debajo de una pantalla ya montada, que además
+      // enseña su propio contador de pendientes
+      saltaPartida: () => partidaQueSeEstaAnotando(rutaActual.current),
       userId,
     }).catch((err) => {
       // Nunca hacia arriba: esto corre de fondo y un fallo aquí no puede
@@ -61,8 +71,10 @@ export const useVaciadoDeLaCola = ({ activo, userId = null }) => {
     if (!activo || !userId) return undefined;
 
     // Al entrar: puede haber quedado algo de la última vez que se cerró la
-    // aplicación sin cobertura
-    vacia();
+    // aplicación sin cobertura. Aplazado un tick, para no meter peticiones en
+    // el camino crítico del arranque: `activo` se pone a cierto en el mismo
+    // instante en que el panel lanza sus consultas
+    globalThis.queueMicrotask(() => vacia());
 
     const alVolverALaApp = () => {
       if (document.visibilityState !== 'visible') return;

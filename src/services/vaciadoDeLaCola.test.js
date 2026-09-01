@@ -71,15 +71,122 @@ describe('vaciaLaColaEntera (FE #521)', () => {
     expect(cola.deQuien(OTRO)).toHaveLength(1);
   });
 
-  it('no envía lo huérfano: aquí no hay nadie mirando', async () => {
-    // Lo guardado por una versión anterior no lleva dueño. Se envía desde la
-    // pantalla de su partida, donde hay contexto, no desde un vaciado de fondo
+  it('envía lo huérfano: es toda la cola que hay hoy en los móviles', async () => {
+    // La versión que está en producción no guarda dueño. Dejar lo huérfano
+    // fuera del vaciado condenaba a no enviarse nunca justo a los golpes que
+    // esta issue existe para rescatar, el día que se actualice la aplicación
     cola.enqueue('partida', 1, { ownScore: 4 }, null, null);
+
+    const resultado = await vaciaLaColaEntera({ userId: YO });
+
+    expect(submitHoleScoreUseCase.execute).toHaveBeenCalledTimes(1);
+    expect(resultado.enviadas).toBe(1);
+    expect(cola.getAll()).toHaveLength(0);
+  });
+
+  it('pero no toca lo de la otra cuenta del móvil', async () => {
+    cola.enqueue('partida', 1, { ownScore: 4 }, null, 'otra-persona');
 
     await vaciaLaColaEntera({ userId: YO });
 
     expect(submitHoleScoreUseCase.execute).not.toHaveBeenCalled();
     expect(cola.getAll()).toHaveLength(1);
+  });
+
+  describe('un fallo que no es de esta anotación para el vaciado entero', () => {
+    const tresGolpesMios = () => {
+      cola.enqueue('m-1', 1, { ownScore: 4 }, null, YO);
+      cola.enqueue('m-2', 2, { ownScore: 5 }, null, YO);
+      cola.enqueue('m-3', 3, { ownScore: 6 }, null, YO);
+    };
+
+    beforeEach(() => {
+      submitHoleScoreUseCase.execute.mockResolvedValue({});
+    });
+
+    it('el fallo de CSRF se intenta UNA vez, no una por golpe', async () => {
+      // `api.js` responde a un 403 de CSRF cerrando la sesión y redirigiendo a
+      // la fuerza. Poner `location.href` no detiene el JavaScript: con doce
+      // golpes en la cola salían doce peticiones condenadas y doce cierres de
+      // sesión antes de que la navegación llegara a ocurrir
+      tresGolpesMios();
+      const csrf = Object.assign(new Error('CSRF validation failed. Please log in again.'), {
+        errorCode: 'CSRF_VALIDATION_FAILED',
+      });
+      submitHoleScoreUseCase.execute.mockRejectedValue(csrf);
+
+      const resultado = await vaciaLaColaEntera({ userId: YO });
+
+      expect(submitHoleScoreUseCase.execute).toHaveBeenCalledTimes(1);
+      expect(resultado.enviadas).toBe(0);
+      expect(cola.deQuien(YO)).toHaveLength(3);
+    });
+
+    it.each([401, 408, 429, 500, 503])(
+      'un %i se intenta UNA vez: mientras dure, las demás fallarían igual',
+      async (status) => {
+        // Un 503 durante un despliegue reintentaba la cola entera en cada
+        // vuelta a la aplicación, veinte o cuarenta veces al día
+        tresGolpesMios();
+        submitHoleScoreUseCase.execute.mockRejectedValue(errorCon(status));
+
+        await vaciaLaColaEntera({ userId: YO });
+
+        expect(submitHoleScoreUseCase.execute).toHaveBeenCalledTimes(1);
+        expect(cola.deQuien(YO)).toHaveLength(3);
+      }
+    );
+
+    it('pero un error de la propia anotación no para a las demás', async () => {
+      // El caso de uso valida ANTES de enviar y lanza un Error pelado. Si una
+      // entrada mala a la cabeza parara la cola, los golpes de todas las demás
+      // partidas no saldrían nunca
+      tresGolpesMios();
+      submitHoleScoreUseCase.execute
+        .mockRejectedValueOnce(new Error('Marked player ID is required'))
+        .mockResolvedValue({});
+
+      const resultado = await vaciaLaColaEntera({ userId: YO });
+
+      expect(submitHoleScoreUseCase.execute).toHaveBeenCalledTimes(3);
+      expect(resultado.enviadas).toBe(2);
+      // La mala se queda: no se pierde
+      expect(cola.deQuien(YO).map((e) => e.matchId)).toEqual(['m-1']);
+    });
+  });
+
+  it('si el golpe llegó pero no se puede sacar de la cola, se para', async () => {
+    // Sin espacio, o en ventana privada. Contarlo como enviado lo dejaría
+    // reenviándose en cada reconexión para siempre
+    cola.enqueue('m-1', 1, { ownScore: 4 }, null, YO);
+    cola.enqueue('m-2', 2, { ownScore: 5 }, null, YO);
+    vi.spyOn(almacen, 'setItem').mockImplementation(() => {
+      throw new Error('QuotaExceededError');
+    });
+
+    const resultado = await vaciaLaColaEntera({ userId: YO });
+
+    expect(submitHoleScoreUseCase.execute).toHaveBeenCalledTimes(1);
+    expect(resultado.enviadas).toBe(0);
+  });
+
+  it('no vacía por debajo de una partida que se acaba de abrir', async () => {
+    // El vaciado tarda, y en ese rato el jugador puede entrar en una de las
+    // partidas que se están enviando. Con el valor congelado se seguía
+    // enviando bajo una pantalla ya montada, que además enseña su propio
+    // contador de pendientes
+    cola.enqueue('m-1', 1, { ownScore: 4 }, null, YO);
+    cola.enqueue('m-2', 2, { ownScore: 5 }, null, YO);
+    let abierta = null;
+    submitHoleScoreUseCase.execute.mockImplementation(async () => {
+      abierta = 'm-2';
+      return {};
+    });
+
+    await vaciaLaColaEntera({ userId: YO, saltaPartida: () => abierta });
+
+    expect(submitHoleScoreUseCase.execute).toHaveBeenCalledTimes(1);
+    expect(cola.deQuien(YO).map((e) => e.matchId)).toEqual(['m-2']);
   });
 
   it('no envía las de partida rápida: las decide su pantalla', async () => {

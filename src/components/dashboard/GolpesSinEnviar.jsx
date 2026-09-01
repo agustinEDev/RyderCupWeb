@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { AlertTriangle, ChevronRight, CloudOff } from 'lucide-react';
@@ -26,6 +26,26 @@ const GolpesSinEnviar = ({ userId = null }) => {
   // almacenamiento al montar es dar el estado inicial, no sincronizar nada
   const [pendientes, setPendientes] = useState(() => resumenPorPartida(userId));
   const [perdidos, setPerdidos] = useState(() => golpesPerdidos.pendientes(userId));
+  const [noSePudoDescartar, setNoSePudoDescartar] = useState(false);
+
+  // Los perdidos, agrupados por la partida a la que pertenecen: con avisos de
+  // dos partidas, una lista mezclada y dos botones iguales no dejan saber cuál
+  // quita qué
+  const perdidosPorPartida = useMemo(() => {
+    const mapa = new Map();
+    for (const aviso of perdidos) {
+      const delGrupo = mapa.get(aviso.matchId);
+      if (delGrupo) delGrupo.push(aviso);
+      else mapa.set(aviso.matchId, [aviso]);
+    }
+    return [...mapa];
+  }, [perdidos]);
+
+  // Dónde devolver el foco al quitar un aviso: sin esto, desmontar el bloque
+  // que contiene el botón pulsado deja el foco en `<body>` y quien navega con
+  // teclado o lector de pantalla se queda en la nada, con avisos todavía en
+  // pantalla
+  const contenedorRef = useRef(null);
 
   const relee = useCallback(() => {
     setPendientes(resumenPorPartida(userId));
@@ -49,22 +69,46 @@ const GolpesSinEnviar = ({ userId = null }) => {
     );
   };
 
-  // Los perdidos, agrupados por la partida a la que pertenecen: con avisos de
-  // dos partidas, una lista mezclada y dos botones iguales no dejan saber cuál
-  // quita qué
-  const perdidosPorPartida = [
-    ...perdidos.reduce((mapa, aviso) => {
-      mapa.set(aviso.matchId, [...(mapa.get(aviso.matchId) ?? []), aviso]);
-      return mapa;
-    }, new Map()),
-  ];
 
-  const nombreDe = (algo) => algo.matchName || t('golpesSinEnviar.partidaSinNombre');
+  /**
+   * Cómo se nombra una partida en el aviso. Tres formas y no una, porque en
+   * una jornada se juegan VARIOS partidos en el mismo campo: solo con el campo
+   * salían dos avisos idénticos y no se sabía cuál mirar. Lo redacta la
+   * traducción con los datos crudos, no el almacenamiento
+   */
+  const nombreDe = (algo) => {
+    if (algo.matchNumber != null && algo.matchName) {
+      return t('golpesSinEnviar.partidaConNumero', {
+        numero: algo.matchNumber,
+        campo: algo.matchName,
+      });
+    }
+    if (algo.matchNumber != null) {
+      return t('golpesSinEnviar.soloNumero', { numero: algo.matchNumber });
+    }
+    return algo.matchName || t('golpesSinEnviar.partidaSinNombre');
+  };
 
   return (
     /* `px-4` como el resto de bloques del panel: sin él estas tarjetas van de
        borde a borde y desalinean la columna entera */
-    <div className="mb-4 space-y-2 px-4" data-testid="golpes-sin-enviar">
+    <div
+      ref={contenedorRef}
+      tabIndex={-1}
+      className="mb-4 space-y-2 px-4"
+      data-testid="golpes-sin-enviar"
+    >
+      {/* El anuncio lo da el bloque UNA vez, como el resto del panel: un
+          `role="alert"` por partida monta varios a la vez y se interrumpen
+          entre ellos, y creados ya con su texto dentro hay lectores que no
+          anuncian ninguno. `polite` y no `assertive` porque esto se lee en el
+          panel, no en mitad de una tarea */}
+      <span role="status" aria-live="polite" className="sr-only">
+        {t('golpesSinEnviar.resumen', {
+          sinEnviar: pendientes.reduce((suma, p) => suma + p.cuantas, 0),
+          perdidos: perdidos.length,
+        })}
+      </span>
       {pendientes.map((partida) => (
         <button
           key={partida.matchId}
@@ -83,7 +127,7 @@ const GolpesSinEnviar = ({ userId = null }) => {
       ))}
 
       {perdidosPorPartida.map(([matchId, delGrupo]) => (
-        <div key={matchId} className="rounded-lg border border-red-200 bg-red-50 p-3" role="alert">
+        <div key={matchId} className="rounded-lg border border-red-200 bg-red-50 p-3">
           <div className="flex items-start gap-3">
             <AlertTriangle className="mt-0.5 h-5 w-5 flex-shrink-0 text-red-600" aria-hidden="true" />
             <div className="min-w-0 flex-1">
@@ -103,14 +147,31 @@ const GolpesSinEnviar = ({ userId = null }) => {
               <button
                 type="button"
                 onClick={() => {
-                  golpesPerdidos.olvidaLosDe(matchId, userId);
+                  // Si el almacenamiento no admite la escritura —un móvil sin
+                  // espacio, que es el estado que produjo el rechazo— el aviso
+                  // sigue ahí. Callarlo deja un botón que no hace nada y no
+                  // dice por qué; se avisa y no se relee, para no repintar lo
+                  // mismo fingiendo que pasó algo
+                  if (!golpesPerdidos.olvidaLosDe(matchId, userId)) {
+                    setNoSePudoDescartar(true);
+                    return;
+                  }
+                  setNoSePudoDescartar(false);
                   relee();
+                  // El bloque con el botón pulsado desaparece: el foco vuelve
+                  // al contenedor, que sigue en pantalla con los demás avisos
+                  contenedorRef.current?.focus();
                 }}
                 aria-label={t('golpesSinEnviar.descartarDe', { partida: nombreDe(delGrupo[0]) })}
-                className="mt-2 text-xs font-medium text-red-700 underline active:text-red-900"
+                className="mt-2 min-h-11 px-1 py-2 text-xs font-medium text-red-700 underline active:text-red-900"
               >
                 {t('golpesSinEnviar.entendido')}
               </button>
+              {noSePudoDescartar && (
+                <p className="mt-1 text-xs text-red-800">
+                  {t('golpesSinEnviar.noSePudoDescartar')}
+                </p>
+              )}
             </div>
           </div>
         </div>

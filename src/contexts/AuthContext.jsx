@@ -11,6 +11,7 @@ import { olvidaLaSesion } from '../services/sesionCompartida';
 import { olvidaLasAccionesPendientes } from '../services/accionesPendientes';
 import { olvidaLoDeEstaCuenta } from '../services/loUltimoConocido';
 import * as golpesPerdidos from '../utils/golpesPerdidos';
+import { idDeLaCuentaGuardada } from '../utils/auth';
 
 // Create the context
 const AuthContext = createContext(null);
@@ -91,6 +92,10 @@ export const AuthProvider = ({ children }) => {
    * Called on logout or session expiration
    */
   const clearAuth = useCallback(() => {
+    // Quién se va, leído ANTES de borrar nada: hay almacenes que solo se
+    // pueden limpiar por cuenta, y una vez borrado el `user` no hay forma de
+    // saber de quién era esta sesión
+    const quienEra = idDeLaCuentaGuardada();
     setUser(null);
     setCsrfToken(null);
     // Sin esto, lo que la consulta compartida tuviera guardado sobreviviria al
@@ -115,10 +120,12 @@ export const AuthProvider = ({ children }) => {
     // móvil compartido, la siguiente persona que entrara y se quedara sin señal
     // vería la lista de la anterior, con sus nombres y sus resultados
     olvidaLoDeEstaCuenta();
-    // Y los avisos de golpes que no se pudieron guardar. La cola en sí NO se
-    // toca: ahí puede haber golpes que su dueño todavía no ha podido enviar, y
-    // llevan su nombre para que nadie más los mande (FE #521)
-    golpesPerdidos.olvidaTodos();
+    // Y los avisos de golpes que no se pudieron guardar, SOLO los de esta
+    // cuenta: los de la otra persona de un móvil compartido no se pueden
+    // regenerar, porque el golpe que describen ya se borró de la cola al
+    // escribirlos. La cola en sí NO se toca: ahí puede haber golpes que su
+    // dueño todavía no ha podido enviar (FE #521)
+    golpesPerdidos.olvidaLosDeLaCuenta(quienEra);
     localStorage.removeItem('user');
     localStorage.removeItem('access_token'); // Legacy cleanup
   }, []);

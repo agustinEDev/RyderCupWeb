@@ -141,13 +141,17 @@
   },
   "changePhoto": "Change profile photo",
   "golpesSinEnviar": {
-    "aviso_one": "You have 1 stroke not sent from {{partida}}",
-    "aviso_other": "You have {{count}} strokes not sent from {{partida}}",
+    "aviso_one": "You have 1 stroke left to send from {{partida}}",
+    "aviso_other": "You have {{count}} strokes left to send from {{partida}}",
     "partidaSinNombre": "an earlier match",
+    "partidaConNumero": "Match {{numero}} · {{campo}}",
+    "soloNumero": "Match {{numero}}",
     "perdidos_one": "One stroke from {{partida}} could not be saved:",
     "perdidos_other": "{{count}} strokes from {{partida}} could not be saved:",
     "perdido": "Hole {{hoyo}} — the server did not accept it",
     "entendido": "Got it",
-    "descartarDe": "Got it, dismiss the notice for {{partida}}"
+    "descartarDe": "Got it, dismiss the notice for {{partida}}",
+    "noSePudoDescartar": "The notice could not be dismissed: the device is out of space.",
+    "resumen": "{{sinEnviar}} strokes left to send and {{perdidos}} that could not be saved"
   }
 }

@@ -41,6 +41,10 @@ const guarda = (avisos) => {
   }
 };
 
+/** Los huérfanos son de quien esté mirando: ver `scoringOfflineQueue`. */
+const esVisiblePara = (aviso, userId) =>
+  (aviso.userId ?? null) === null || aviso.userId === userId;
+
 const esDelMismo = (aviso, matchId, holeNumber, userId) =>
   aviso.matchId === matchId
   && aviso.holeNumber === holeNumber
@@ -77,7 +81,7 @@ export const apunta = (aviso) => {
 export const pendientes = (userId = null) => {
   const todos = leeTodo();
   if (userId == null) return todos;
-  return todos.filter((a) => (a.userId ?? null) === null || a.userId === userId);
+  return todos.filter((a) => esVisiblePara(a, userId));
 };
 
 /**
@@ -90,16 +94,35 @@ export const pendientes = (userId = null) => {
  * hacer con ellos.
  */
 export const olvidaLosDe = (matchId, userId = null) =>
+  guarda(leeTodo().filter((a) => a.matchId !== matchId || !esVisiblePara(a, userId)));
+
+/**
+ * Retira el aviso de UN hoyo: su dueño acaba de volver a anotarlo, así que ya
+ * no hay nada perdido que contarle.
+ */
+export const olvidaEl = (matchId, holeNumber, userId = null) =>
   guarda(
     leeTodo().filter(
-      (a) =>
-        a.matchId !== matchId
-          ? true
-          : !((a.userId ?? null) === null || a.userId === userId)
+      (a) => !(a.matchId === matchId && a.holeNumber === holeNumber && esVisiblePara(a, userId))
     )
   );
 
-/** Retira todos. Lo usa el cierre de sesión. */
+/**
+ * Retira los avisos de una cuenta. Lo usan las TRES salidas de la sesión: el
+ * cierre normal, el fallo de CSRF y la revocación del dispositivo.
+ *
+ * Solo los suyos y los huérfanos. Borrarlo todo con un `removeItem` se lleva
+ * por delante los avisos sin leer de la otra cuenta de un móvil compartido, y
+ * esos **no se pueden regenerar**: el golpe que describen ya se borró de la
+ * cola al escribirlos. Sin `userId` no se puede distinguir, y entonces sí se
+ * va todo: es la única lectura posible de «no sé de quién es esta sesión».
+ */
+export const olvidaLosDeLaCuenta = (userId = null) => {
+  if (userId == null) return olvidaTodos();
+  return guarda(leeTodo().filter((a) => !esVisiblePara(a, userId)));
+};
+
+/** Retira todos, sea de quien sea. */
 export const olvidaTodos = () => {
   try {
     localStorage.removeItem(CLAVE);

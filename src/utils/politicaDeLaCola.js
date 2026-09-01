@@ -50,3 +50,47 @@ export const seGuardaParaDespues = (error) => {
  * vacía la cola no tenga que negar una condición y equivocarse al hacerlo.
  */
 export const esRechazoDefinitivo = (error) => !seGuardaParaDespues(error);
+
+/**
+ * Si el fallo no es de ESTA anotación, sino de la sesión o del servidor
+ * entero: mientras siga así, cualquier otra fallaría igual.
+ *
+ * Sirve para decidir si se para el vaciado o se sigue con la siguiente. Sin
+ * esto, un 403 de CSRF —que `api.js` responde cerrando la sesión y redirigiendo
+ * a la fuerza— se repetía una vez por golpe guardado: doce peticiones
+ * condenadas y doce cierres de sesión antes de que la navegación llegara a
+ * ocurrir. Y un 503 durante un despliegue reintentaba la cola entera en cada
+ * vuelta a la aplicación, sin espera de ningún tipo.
+ *
+ * Un `Error` pelado que NO sea el de CSRF es lo contrario: lo lanza el caso de
+ * uso al validar, antes de enviar, y habla solo de esa anotación. Ese no puede
+ * parar la cola, o una entrada mala a la cabeza dejaría sin enviar los golpes
+ * de todas las demás partidas para siempre.
+ */
+export const esFalloDeTodaLaSesion = (error) => {
+  if (error?.errorCode === 'CSRF_VALIDATION_FAILED') return true;
+  const codigo = codigoDe(error);
+  if (codigo === undefined) return false;
+  return seGuardaParaDespues(error);
+};
+
+/**
+ * Si la petición no llegó a tener respuesta del servidor.
+ *
+ * Sirve para decidir si se sigue vaciando la cola: sin red no tiene sentido
+ * intentar la siguiente. **No es lo mismo que `sinCobertura.esFalloDeRed`**, y
+ * por eso no se reutiliza: aquella responde «qué le enseño al usuario» y
+ * cuenta `navigator.onLine === false` como motivo suficiente; esta responde
+ * «paro el bucle», donde ese dato no vale —el navegador puede decir que hay
+ * red mientras la petición muere igual— y donde equivocarse cuesta golpes.
+ *
+ * El patrón de mensajes es corto a propósito. Con `/red/` dentro, un «Marked
+ * player ID is required» se leía como caída de red —por «requi-RED»— y paraba
+ * el vaciado de toda la cola.
+ */
+export const noLlegoAlServidor = (error) => {
+  if (codigoDe(error)) return false;
+  if (error?.errorCode === 'CSRF_VALIDATION_FAILED') return false;
+  if (error instanceof TypeError) return true;
+  return /failed to fetch|networkerror|network error|load failed/i.test(error?.message ?? '');
+};

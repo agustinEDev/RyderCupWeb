@@ -55,6 +55,10 @@ export const getAll = () => {
  * @param {Object} scoreData - { ownScore, markedPlayerId, markedScore }
  * @param {string|null} [participantId] - A quién pertenece la anotación, en las
  *   partidas rápidas. Sin él, dos participantes del mismo hoyo se pisarían
+ * @param {string|null} [userId] - De quién es la anotación
+ * @param {{matchName?: string|null, matchNumber?: number|null}} [laPartida] -
+ *   Cómo se llama la partida, para el aviso del panel. Va en un objeto y no
+ *   como dos parámetros más porque ya son cinco por delante
  * @returns {boolean} Si de verdad quedó guardada. Un iPhone sin espacio, o una
  *   ventana privada, rechazan el guardado: quien llame tiene que poder decirlo,
  *   porque callarlo hace desaparecer el golpe sin ningún aviso
@@ -76,8 +80,9 @@ export const enqueue = (
   scoreData,
   participantId = null,
   userId = null,
-  matchName = null
+  laPartida = {}
 ) => {
+  const { matchName = null, matchNumber = null } = laPartida;
   const queue = getAll();
   const anterior = queue.find(
     entry => mismaAnotacion(entry, matchId, holeNumber, participantId, userId)
@@ -101,6 +106,12 @@ export const enqueue = (
     // quien reencola no lo sabe —al resolver un desacuerdo solo se toca el
     // resultado— se conserva el que ya había
     matchName: matchName ?? anterior?.matchName ?? null,
+    // Y con qué número: en una jornada se juegan varios partidos en el MISMO
+    // campo, así que solo con el nombre del campo el panel enseña dos avisos
+    // idénticos y no se sabe cuál mirar. El número es un dato, no texto: se
+    // guarda crudo y lo redacta la traducción, para que quien tenga la
+    // aplicación en inglés no lea un rótulo congelado en español
+    matchNumber: matchNumber ?? anterior?.matchNumber ?? null,
   });
   return guarda(filtered);
 };
@@ -173,12 +184,8 @@ export const size = (matchId, userId) => {
 /**
  * Las anotaciones guardadas de una partida.
  *
- * Con `userId`, solo las de esa persona **y las que no tienen dueño**. Las
- * huérfanas son las que guardó una versión anterior a FE #521, y quedan aquí
- * dentro a propósito: dejarlas fuera de la pantalla de su propia partida sería
- * condenarlas a no enviarse nunca. Quien está mirando esa partida es, casi con
- * seguridad, quien las anotó — y ahí hay contexto para verlo. El vaciado que
- * corre de fondo no las toca, que es donde no hay nadie mirando.
+ * Con `userId`, solo las de esa persona **y las que no tienen dueño**: ver
+ * `esVisiblePara`.
  *
  * @param {string} matchId
  * @param {string|null} [userId]
@@ -188,31 +195,50 @@ export const getByMatch = (matchId, userId) => {
   return getAll().filter((entry) => {
     if (entry.matchId !== matchId) return false;
     if (userId === undefined || userId === null) return true;
-    return (entry.userId ?? null) === null || entry.userId === userId;
+    return esVisiblePara(entry, userId);
   });
 };
 
 /**
- * Las anotaciones de una persona, sin contar las huérfanas.
+ * Si una anotación guardada le corresponde a quien tiene la sesión abierta.
  *
- * Es lo que usa el vaciado de fondo: ahí no hay nadie mirando, así que una
- * anotación sin dueño no se manda con la sesión de quien resulte estar dentro
- * (FE #521).
+ * **Las que no llevan dueño cuentan como suyas.** No es un detalle: hasta esta
+ * versión la cola no guardaba de quién era nada, así que en el momento de
+ * actualizar TODO lo que hay en los móviles es huérfano. Dejarlo fuera hacía
+ * que los golpes que esta issue existe para rescatar fueran, justamente, los
+ * únicos invisibles: ni se enviaban de fondo ni se enseñaban en el panel, y
+ * solo se llegaba a ellos volviendo a abrir esa partida, que es exactamente lo
+ * que la issue dice que no pasa.
  *
- * @param {string} userId
- * @returns {Array}
+ * El riesgo que abre —un móvil compartido donde quien entra después manda lo
+ * de la persona anterior— está acotado y es temporal: el servidor autoriza por
+ * sesión, así que una anotación ajena se rechaza y acaba en un aviso visible
+ * en vez de desaparecer en silencio; y en cuanto se anota una vez con esta
+ * versión ya no quedan huérfanas. Es la misma regla que
+ * `golpesPerdidos.pendientes` aplica a su propio almacén.
+ */
+const esVisiblePara = (entrada, userId) =>
+  (entrada.userId ?? null) === null || entrada.userId === userId;
+
+/**
+ * Lo guardado de una persona, agrupado por partida, para el aviso del panel.
+ *
+ * @param {string|null} [userId]
+ * @returns {Array<{matchId: string, matchName: string|null, matchNumber: number|null,
+ *   cuantas: number, esPartidaRapida: boolean}>}
  */
 export const resumenPorPartida = (userId = null) => {
   const porPartida = new Map();
 
   for (const entrada of getAll()) {
-    // Solo lo de quien está mirando: en un móvil compartido, enseñar lo de la
-    // persona anterior filtra el nombre de sus partidas a quien entre después
-    if (userId != null && (entrada.userId ?? null) !== userId) continue;
+    // Solo lo de quien está mirando —lo suyo y lo huérfano—: en un móvil
+    // compartido, enseñar lo de otra cuenta filtra el nombre de sus partidas
+    if (userId != null && !esVisiblePara(entrada, userId)) continue;
 
     const actual = porPartida.get(entrada.matchId) ?? {
       matchId: entrada.matchId,
       matchName: entrada.matchName ?? null,
+      matchNumber: entrada.matchNumber ?? null,
       cuantas: 0,
       // Una anotación con participante es de una partida rápida: allí cada
       // participante se envía por separado
@@ -221,13 +247,26 @@ export const resumenPorPartida = (userId = null) => {
     actual.cuantas += 1;
     if (entrada.participantId != null) actual.esPartidaRapida = true;
     if (!actual.matchName && entrada.matchName) actual.matchName = entrada.matchName;
+    if (actual.matchNumber == null && entrada.matchNumber != null) {
+      actual.matchNumber = entrada.matchNumber;
+    }
     porPartida.set(entrada.matchId, actual);
   }
 
   return [...porPartida.values()];
 };
 
+/**
+ * Las anotaciones que puede enviar quien tiene la sesión abierta.
+ *
+ * Es lo que usa el vaciado de fondo. Incluye las huérfanas por el motivo que
+ * explica `esVisiblePara`: si no, las de todo el parque instalado se quedan
+ * sin enviar el día que se actualice.
+ *
+ * @param {string} userId
+ * @returns {Array}
+ */
 export const deQuien = (userId) => {
   if (!userId) return [];
-  return getAll().filter((entry) => entry.userId === userId);
+  return getAll().filter((entry) => esVisiblePara(entry, userId));
 };
