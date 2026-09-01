@@ -123,6 +123,11 @@ class ApiUserRepository extends IUserRepository {
         id: user.user_id,
         firstName: user.first_name ?? (spaceIndex > 0 ? fullName.substring(0, spaceIndex) : fullName),
         lastName: user.last_name ?? (spaceIndex > 0 ? fullName.substring(spaceIndex + 1) : ''),
+        // Los dos, y a propósito (BE #239): esta lista es la única pantalla
+        // que enseña alias y nombre real juntos, porque ahora se puede buscar
+        // por alias y hace falta saber cuál de los dos «Chuchi» es cuál
+        alias: user.alias ?? null,
+        displayName: user.display_name || null,
         countryCode: null,
       };
     });

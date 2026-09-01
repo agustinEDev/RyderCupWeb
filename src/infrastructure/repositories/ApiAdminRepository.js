@@ -91,6 +91,11 @@ class ApiAdminRepository extends IAdminRepository {
       id: userData.id,
       firstName: userData.first_name,
       lastName: userData.last_name,
+      // JUNTO al nombre real, nunca en su lugar: quien administra necesita
+      // saber de quién es la cuenta. Pero el listado ya se puede buscar por
+      // alias (BE #239), así que sin esto una búsqueda por apodo devolvía
+      // filas donde no aparece por ningún lado lo que se buscó
+      alias: userData.alias ?? null,
       email: userData.email,
       handicap: userData.handicap ?? null,
       isAdmin: userData.is_admin,

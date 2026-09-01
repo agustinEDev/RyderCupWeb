@@ -416,7 +416,14 @@ const Dashboard = () => {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  const firstName = user.first_name || 'User';
+  // El saludo dice el alias de quien lo tenga (FE #435). Es donde uno lee su
+  // propio nombre, asi que es el primer sitio donde el alias tiene que verse.
+  //
+  // Y NO se usa `nombreVisible` aqui, aunque parezca su sitio: este saludo va
+  // con el nombre de PILA, y ese ayudante devuelve el nombre completo cuando
+  // no hay alias. Quien no tenga alias —hoy, todo el mundo— pasaria de
+  // «Bienvenido, Agustin» a «Bienvenido, Agustin Estevez»
+  const firstName = user.alias || user.first_name || 'User';
 
   return (
     <div className="relative flex h-auto min-h-screen w-full flex-col bg-white">

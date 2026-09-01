@@ -1,4 +1,5 @@
 import { Link } from 'react-router';
+import { nombreVisible } from '../../utils/nombreVisible';
 import { useTranslation } from 'react-i18next';
 import { Award, Flag, Star, TrendingDown, Trophy, Zap } from 'lucide-react';
 import Avatar from '../ui/Avatar';
@@ -48,7 +49,7 @@ const ActivityEventCard = ({ event, author, courseName }) => {
   const count = event.payload?.count ?? 1;
   const holes = event.payload?.holes ?? [];
 
-  const nombre = author ? `${author.firstName} ${author.lastName}`.trim() : '';
+  const nombre = nombreVisible(author);
   const titulo = t(`feed:events.${event.type}`, { count, defaultValue: event.type });
 
   const fecha = event.occurredAt
