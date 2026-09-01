@@ -7,6 +7,7 @@ import {
   completeQuickMatchUseCase,
   cancelQuickMatchUseCase,
 } from '../composition';
+import { seGuardaParaDespues } from '../utils/politicaDeLaCola';
 import * as offlineQueue from '../utils/scoringOfflineQueue';
 import { loQueSeSupo, olvida, recuerda } from '../services/loUltimoConocido';
 
@@ -27,25 +28,6 @@ const POLL_INTERVAL = 60000; // 1 minute
  * El 401 NO está: ahí el problema es la sesión, no el golpe, y descartarlo sería
  * tirar una anotación buena por un motivo que se arregla solo.
  */
-// Por rango y no por lista: una lista se olvida de códigos, y el que se olvida
-// no se descarta sino que se guarda, con lo que una entrada imposible se queda
-// a la cabeza de la cola bloqueando en cada sondeo todo lo que viene detrás.
-// El 422 —Pydantic rechazando el cuerpo— es justo el que faltaba.
-const SE_ARREGLA_SOLO = new Set([401, 408, 429]);
-
-const seGuardaParaDespues = (error) => {
-  const estado = error?.status ?? error?.response?.status;
-  // Sin estado es que no llegó respuesta: se guarda. Ahí cae también el fallo
-  // de CSRF, que `api.js` lanza como un Error pelado tras cerrar la sesión, y
-  // guardarlo es lo que toca: la cola vive en el móvil, así que el golpe sigue
-  // ahí cuando el jugador vuelva a entrar. Descartarlo sería perderlo.
-  if (estado === undefined) return true;
-  // El 401 es la sesión, el 408 y el 429 son el momento: ninguno es el golpe,
-  // y descartarlos sería tirar una anotación buena por algo que pasa solo
-  if (SE_ARREGLA_SOLO.has(estado)) return true;
-  // Lo demás del rango 4xx es la petición: reintentarla no cambiaría nada
-  return !(estado >= 400 && estado < 500);
-};
 
 /**
  * Si lo guardado y lo que hay en el servidor son un DESACUERDO, que es lo unico

@@ -5,6 +5,7 @@ import {
   submitScorecardUseCase,
   concedeMatchUseCase,
 } from '../composition';
+import { esRechazoDefinitivo, seGuardaParaDespues } from '../utils/politicaDeLaCola';
 import * as offlineQueue from '../utils/scoringOfflineQueue';
 import * as sessionLock from '../utils/scoringSessionLock';
 
@@ -140,8 +141,22 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
     if (isOwnScoreLocked && isMarkerScoreLocked) return;
 
     if (isOffline) {
-      offlineQueue.enqueue(matchId, holeNumber, scoreData, null, currentUserId);
+      const guardado = offlineQueue.enqueue(
+        matchId,
+        holeNumber,
+        scoreData,
+        null,
+        currentUserId
+      );
       setPendingQueueSize(pendientesPropias());
+      if (guardado === false) {
+        // Sin cobertura Y sin sitio donde guardarlo: el golpe no existe en
+        // ninguna parte, y eso hay que decirlo
+        const fallo = new Error('No se pudo guardar el golpe en el móvil');
+        fallo.holeNumber = holeNumber;
+        fallo.noSeGuardo = true;
+        setError(fallo);
+      }
       return;
     }
 
@@ -155,11 +170,28 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
       }));
       setError(null);
     } catch (err) {
-      const status = err?.response?.status ?? err?.status;
-      const isRetryable = !status || status >= 500;
-      if (isRetryable) {
-        offlineQueue.enqueue(matchId, holeNumber, scoreData, null, currentUserId);
+      // La misma política que el resto de la aplicación: un 401, un 408 o un
+      // 429 NO son culpa del golpe y se guardan. Antes aquí solo se guardaba a
+      // partir del 500, así que una sesión caducada tiraba la anotación
+      if (seGuardaParaDespues(err)) {
+        const guardado = offlineQueue.enqueue(
+          matchId,
+          holeNumber,
+          scoreData,
+          null,
+          currentUserId
+        );
         setPendingQueueSize(pendientesPropias());
+        // Si el móvil no pudo guardarla —sin espacio, ventana privada— hay que
+        // decirlo: callarlo deja al jugador creyendo que su golpe está a salvo
+        // en algún sitio, y no está en ninguno
+        if (guardado === false) {
+          const fallo = new Error('No se pudo guardar el golpe en el móvil');
+          fallo.holeNumber = holeNumber;
+          fallo.noSeGuardo = true;
+          setError(fallo);
+          return;
+        }
       }
       setError(err);
     } finally {
@@ -220,9 +252,8 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
         // reenviaría en cada reconexión sin que la cuenta bajara nunca
         offlineQueue.remove(entry.matchId, entry.holeNumber, entry.participantId, entry.userId ?? null);
       } catch (err) {
-        const status = err?.response?.status ?? err?.status;
-        if (status && status >= 400 && status < 500) {
-          // Non-retryable client error — discard and continue
+        if (esRechazoDefinitivo(err)) {
+          // El servidor dice que esta anotación no entra y no va a entrar
           offlineQueue.remove(entry.matchId, entry.holeNumber, entry.participantId, entry.userId ?? null);
           continue;
         }

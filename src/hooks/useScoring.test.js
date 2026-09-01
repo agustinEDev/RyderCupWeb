@@ -698,3 +698,40 @@ describe('useScoring · un móvil compartido (FE #521)', () => {
     expect(offlineQueue.getByMatch).toHaveBeenCalledWith('m-1', 'u-b');
   });
 });
+
+describe('useScoring · lo que no se puede perder en silencio (FE #521)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    offlineQueue.getByMatch.mockReturnValue([]);
+    offlineQueue.enqueue.mockReturnValue(true);
+  });
+
+  const anotaCon = async (error) => {
+    submitHoleScoreUseCase.execute.mockRejectedValueOnce(error);
+    const { result } = renderHook(() => useScoring('m-1', 'u1'));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    await act(async () => {
+      await result.current.submitScore(1, { ownScore: 5, markedPlayerId: 'u2', markedScore: 4 });
+    });
+    return result;
+  };
+
+  it.each([401, 408, 429])('un %s guarda el golpe en vez de tirarlo', async (codigo) => {
+    // Antes solo se guardaba a partir del 500, así que una sesión caducada
+    // —lo normal al volver tras un rato— tiraba la anotación
+    await anotaCon(Object.assign(new Error('x'), { status: codigo }));
+
+    expect(offlineQueue.enqueue).toHaveBeenCalled();
+  });
+
+  it('si el móvil no puede guardarlo, se dice', async () => {
+    // Sin espacio o en ventana privada. Callarlo deja al jugador creyendo que
+    // su golpe está a salvo en algún sitio, y no está en ninguno
+    offlineQueue.enqueue.mockReturnValue(false);
+
+    const result = await anotaCon(new TypeError('Failed to fetch'));
+
+    expect(result.current.error).toBeTruthy();
+    expect(result.current.error.noSeGuardo).toBe(true);
+  });
+});
