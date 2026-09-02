@@ -92,5 +92,12 @@ export const noLlegoAlServidor = (error) => {
   if (codigoDe(error)) return false;
   if (error?.errorCode === 'CSRF_VALIDATION_FAILED') return false;
   if (error instanceof TypeError) return true;
+  // La petición abortada cuenta: es lo que lanza el refresco del token al
+  // vencer su tope de 15 s. No es un TypeError sino un DOMException, y su
+  // mensaje no se parece a ninguno de los de abajo, así que se colaba entre
+  // las tres categorías y el bucle seguía con la siguiente: doce golpes
+  // guardados eran tres minutos de peticiones condenadas, en cada arranque y
+  // en cada vuelta a la aplicación
+  if (error?.name === 'AbortError' || error?.name === 'TimeoutError') return true;
   return /failed to fetch|networkerror|network error|load failed/i.test(error?.message ?? '');
 };

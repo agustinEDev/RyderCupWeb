@@ -5,13 +5,8 @@ import {
   submitScorecardUseCase,
   concedeMatchUseCase,
 } from '../composition';
-import {
-  esFalloDeTodaLaSesion,
-  esRechazoDefinitivo,
-  noLlegoAlServidor,
-  seGuardaParaDespues,
-} from '../utils/politicaDeLaCola';
-import { apartaLaRechazada } from '../services/vaciadoDeLaCola';
+import { seGuardaParaDespues } from '../utils/politicaDeLaCola';
+import { vaciaAnotaciones } from '../services/vaciaAnotaciones';
 import * as golpesPerdidos from '../utils/golpesPerdidos';
 import * as offlineQueue from '../utils/scoringOfflineQueue';
 import * as sessionLock from '../utils/scoringSessionLock';
@@ -151,7 +146,14 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
       matchName: scoringView?.roundInfo?.golfCourseName ?? null,
       matchNumber: scoringView?.matchNumber ?? null,
     };
-  }, [scoringView?.roundInfo?.golfCourseName, scoringView?.matchNumber]);
+    // Y se le pone nombre a lo que se guardó sin él: en un arranque en frío
+    // sin cobertura esta vista no llega nunca, así que todo lo anotado ese día
+    // quedó sin nombre y el panel enseñaba «una partida anterior». En cuanto
+    // la vista carga, aunque sea al día siguiente, se rellena (FE #551)
+    if (matchId && (laPartidaRef.current.matchName || laPartidaRef.current.matchNumber != null)) {
+      offlineQueue.ponleNombre(matchId, laPartidaRef.current);
+    }
+  }, [matchId, scoringView?.roundInfo?.golfCourseName, scoringView?.matchNumber]);
 
   const pendientesPropias = useCallback(
     () => offlineQueue.getByMatch(matchId, currentUserId).filter((e) => e.participantId == null).length,
@@ -289,41 +291,19 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
 
   // --- Process offline queue ---
   const vaciaLaDeEstaPartida = useCallback(async () => {
-    const entries = offlineQueue.getByMatch(matchId, currentUserId);
-    for (const entry of entries) {
-      // Este vaciado es el de competición. Una anotación con participante es de
-      // una partida rápida: va por otro endpoint y con otro cuerpo, así que
-      // enviarla desde aquí la guardaría mal y la borraría a continuación. Se
-      // deja para quien sepa mandarla. Hoy no debería llegar ninguna —la cola
-      // se filtra por partida y los ids no coinciden—, pero perder un golpe en
-      // silencio es demasiado caro para fiarlo a eso (FE #515)
-      if (entry.participantId != null) continue;
-
-      try {
-        await submitHoleScoreUseCase.execute(entry.matchId, entry.holeNumber, entry.scoreData);
-        // Con el participante: `remove` distingue por él desde FE #515, así que
-        // omitirlo dejaría sin borrar cualquier entrada que lo lleve, y se
-        // reenviaría en cada reconexión sin que la cuenta bajara nunca
-        offlineQueue.remove(entry.matchId, entry.holeNumber, entry.participantId, entry.userId ?? null);
-      } catch (err) {
-        if (esRechazoDefinitivo(err)) {
-          // El servidor dice que esta anotación no entra y no va a entrar. Se
-          // aparta DEJANDO AVISO, con la misma función que usa el vaciado de
-          // fondo: cuando esta pantalla tenía su propia versión, el mismo 409
-          // dejaba aviso desde el panel y borraba el golpe en silencio aquí,
-          // que es la mitad del problema que esta issue viene a arreglar
-          apartaLaRechazada(entry);
-          continue;
-        }
-        // Si el fallo es de la sesión o del servidor, o no hay red, las demás
-        // fallarían igual: se para. Pero un Error pelado del propio caso de
-        // uso —valida antes de enviar— habla solo de ESTA anotación, y parar
-        // por él dejaba el resto de los hoyos de la partida sin enviar en cada
-        // reconexión, para siempre
-        if (esFalloDeTodaLaSesion(err) || noLlegoAlServidor(err)) break;
-        continue;
-      }
-    }
+    // La política —qué se manda, qué se aparta, qué para el bucle— vive en un
+    // solo sitio (FE #551). Aquí solo se dice CUÁLES son las de esta pantalla
+    // y CÓMO se mandan. Cuando esto era una copia del bucle, le faltaban dos
+    // guardas que el de fondo sí tenía, y perdía correcciones del jugador
+    await vaciaAnotaciones({
+      entradas: offlineQueue.getByMatch(matchId, currentUserId),
+      manda: (entrada) =>
+        submitHoleScoreUseCase.execute(entrada.matchId, entrada.holeNumber, entrada.scoreData),
+      // Una anotación con participante es de una partida rápida: va por otro
+      // endpoint y con otro cuerpo, así que enviarla desde aquí la guardaría
+      // mal y la borraría a continuación (FE #515)
+      seSalta: (entrada) => entrada.participantId != null,
+    });
     setPendingQueueSize(pendientesPropias());
     await fetchScoringView();
   }, [matchId, fetchScoringView, pendientesPropias, currentUserId]);

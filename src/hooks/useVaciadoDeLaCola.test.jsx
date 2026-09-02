@@ -139,6 +139,45 @@ describe('useVaciadoDeLaCola (FE #521)', () => {
     expect(vaciaLaColaEntera).toHaveBeenCalledTimes(1);
   });
 
+  it('reintenta cuando el vaciado se para por algo que no es del golpe', async () => {
+    // Portal cautivo de un club: el primer envío muere, se para, y al aceptar
+    // las condiciones ya no vuelve a saltar `online` —el navegador nunca dejó
+    // de decir que había red— ni `visibilitychange` —no se sale de la app—.
+    // Sin reintento, la cola se quedaba llena, CON cobertura, hasta cerrar
+    vi.useFakeTimers();
+    vaciaLaColaEntera.mockResolvedValue({
+      enviadas: 0, descartadas: 0, pendientes: 3, paroPor: 'no-es-de-esta',
+    });
+
+    await monta();
+    expect(vaciaLaColaEntera).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      vi.advanceTimersByTime(30_000);
+      await Promise.resolve();
+    });
+
+    expect(vaciaLaColaEntera).toHaveBeenCalledTimes(2);
+    vi.useRealTimers();
+  });
+
+  it('pero no reintenta cuando ha ido bien', async () => {
+    vi.useFakeTimers();
+    vaciaLaColaEntera.mockResolvedValue({
+      enviadas: 3, descartadas: 0, pendientes: 0, paroPor: null,
+    });
+
+    await monta();
+
+    await act(async () => {
+      vi.advanceTimersByTime(600_000);
+      await Promise.resolve();
+    });
+
+    expect(vaciaLaColaEntera).toHaveBeenCalledTimes(1);
+    vi.useRealTimers();
+  });
+
   it('un fallo del vaciado no sube a la pantalla', async () => {
     // El rechazo llega en una microtarea POSTERIOR a montar, así que un
     // `expect(...).not.toThrow()` alrededor de `renderHook` pasa igual con

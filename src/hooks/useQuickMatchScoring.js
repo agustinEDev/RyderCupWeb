@@ -8,6 +8,7 @@ import {
   cancelQuickMatchUseCase,
 } from '../composition';
 import * as golpesPerdidos from '../utils/golpesPerdidos';
+import { apartaLaRechazada } from '../services/vaciaAnotaciones';
 import { seGuardaParaDespues } from '../utils/politicaDeLaCola';
 import * as offlineQueue from '../utils/scoringOfflineQueue';
 import { loQueSeSupo, olvida, recuerda } from '../services/loUltimoConocido';
@@ -109,6 +110,9 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
    * por minuto en la pantalla que más se usa.
    */
   const laPartidaRef = useRef({ matchName: null, matchNumber: null });
+  // De quién es la sesión, en una ref: `fetchQuickMatch` dispara el sondeo, y
+  // colgarlo de este valor le cambiaría la identidad y lo relanzaría
+  const quienMiraRef = useRef(currentUserId);
   // Si lo que se está viendo sale de la memoria del móvil. Lo mira la pantalla
   // para avisar: sin esto, con un 5xx salía la partida entera bajo un error
   // rojo y sin decir que era una foto de antes
@@ -200,7 +204,20 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
       // Una respuesta CON estado es una respuesta: si el servidor dice que esa
       // partida ya no está —o que no es nuestra— pintarla desde el móvil sería
       // enseñar algo que no existe, y dejar anotar encima
-      if (estado === 404 || estado === 403) olvida(quickMatchId);
+      if (estado === 404 || estado === 403) {
+        olvida(quickMatchId);
+        // Y lo que quedara guardado de ella no se va a poder enviar NUNCA: el
+        // vaciado de fondo no toca las partidas rápidas, y el único que las
+        // toca es este, que solo corre cuando el sondeo responde bien. Sin
+        // esto, el aviso del panel decía «tienes 3 golpes sin enviar» para
+        // siempre y su botón llevaba a una pantalla que da error. Se apartan
+        // con la misma regla que cualquier rechazo definitivo: con aviso, y
+        // solo si el aviso ha quedado escrito (FE #551)
+        for (const entrada of offlineQueue.getByMatch(quickMatchId, quienMiraRef.current)) {
+          apartaLaRechazada(entrada);
+        }
+        setPendientes(offlineQueue.size(quickMatchId, quienMiraRef.current));
+      }
 
       // Se pinta lo último que se supo, que es lo que permite seguir anotando
       // al volver a abrir la aplicación en el campo. `loadError` se queda
@@ -532,6 +549,10 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
   useEffect(() => {
     laPartidaRef.current = { matchName: quickMatch?.name ?? null, matchNumber: null };
   }, [quickMatch?.name]);
+
+  useEffect(() => {
+    quienMiraRef.current = currentUserId;
+  }, [currentUserId]);
 
   const borraLoGuardadoDe = useCallback(
     (holeNumber, participantId) => {

@@ -24,18 +24,24 @@
  */
 
 import { submitHoleScoreUseCase } from '../composition';
-import * as golpesPerdidos from '../utils/golpesPerdidos';
-import {
-  esFalloDeTodaLaSesion,
-  esRechazoDefinitivo,
-  noLlegoAlServidor,
-} from '../utils/politicaDeLaCola';
 import * as cola from '../utils/scoringOfflineQueue';
+import { vaciaAnotaciones } from './vaciaAnotaciones';
 
 // Un solo vaciado a la vez. El evento de vuelta de la red puede llegar dos
 // veces, y la pantalla de anotación tiene el suyo: sin esto, la misma
-// anotación se enviaría dos veces
-let vaciando = false;
+// anotación se enviaría dos veces.
+//
+// Se guarda CUÁNDO empezó, no un simple sí/no: `apiRequest` no tiene tope de
+// tiempo, así que una petición que no resuelve nunca dejaba esta bandera
+// puesta el resto de la vida de la página, y todos los intentos posteriores se
+// volvían un no-op silencioso. Pasado el plazo se da por colgado y se vuelve a
+// intentar: repetir un envío es recuperable —el servidor recibe el mismo
+// resultado dos veces—, quedarse sin vaciar no lo es (FE #551)
+let vaciandoDesde = null;
+const SE_DA_POR_COLGADO_MS = 2 * 60 * 1000;
+
+const hayOtroVaciadoVivo = () =>
+  vaciandoDesde !== null && Date.now() - vaciandoDesde < SE_DA_POR_COLGADO_MS;
 
 /** Se emite cuando el vaciado ha enviado o descartado algo. */
 export const COLA_VACIADA = 'rydercup:cola-vaciada';
@@ -59,124 +65,30 @@ export const vaciaLaColaEntera = async ({ saltaPartida = null, userId = null } =
   // explica el precio de no hacerlo. Lo huérfano se rescata desde la pantalla
   // de su partida, donde hay alguien mirando
   const mias = userId ? cola.deQuien(userId) : [];
-  if (mias.length === 0 || vaciando) {
+  if (mias.length === 0 || hayOtroVaciadoVivo()) {
     return { enviadas: 0, descartadas: 0, pendientes: mias.length };
   }
 
-  vaciando = true;
-  let enviadas = 0;
-  let descartadas = 0;
-
+  vaciandoDesde = Date.now();
+  let resultado;
   try {
-    for (const entrada of mias) {
-      if (entrada.matchId === cualSalta()) continue;
-      // Las de partida rápida se dejan para su pantalla, que sabe preguntar
-      if (entrada.participantId != null) continue;
-
-      try {
-        await submitHoleScoreUseCase.execute(
-          entrada.matchId,
-          entrada.holeNumber,
-          entrada.scoreData
-        );
-        if (!siguesiendoLaMisma(entrada)) {
-          // Se reanotó mientras iba en camino: lo que hay guardado es más
-          // nuevo que lo que se acaba de enviar, y se queda para enviarse él
-          continue;
-        }
-        if (
-          !cola.remove(entrada.matchId, entrada.holeNumber, entrada.participantId, entrada.userId)
-        ) {
-          // El golpe llegó pero no se pudo sacar de la cola: sin espacio, o en
-          // una ventana privada. Contarlo como enviado lo dejaría reenviándose
-          // en cada reconexión para siempre, así que se para: si el
-          // almacenamiento no admite una escritura, tampoco admitirá las
-          // siguientes, y cada una repetiría el mismo envío duplicado
-          break;
-        }
-        enviadas += 1;
-      } catch (err) {
-        if (esRechazoDefinitivo(err)) {
-          descartadas += apartaLaRechazada(entrada) ? 1 : 0;
-          continue;
-        }
-        // El fallo no es de esta anotación sino de la sesión o del servidor:
-        // mientras siga así, las demás fallarían igual. Seguir el bucle es lo
-        // que convertía un 403 de CSRF en un cierre de sesión por cada golpe
-        // guardado, y un 503 en la cola entera reintentada a cada rato
-        if (esFalloDeTodaLaSesion(err) || noLlegoAlServidor(err)) break;
-        // Ni rechazo ni red ni sesión: esta entrada no se puede enviar por lo
-        // que trae dentro —el caso de uso valida antes de enviar—. Se deja
-        // donde está —no se pierde— y se sigue con las demás, para que una
-        // sola no bloquee la cola de todo el mundo
-        continue;
-      }
-    }
+    resultado = await vaciaAnotaciones({
+      entradas: mias,
+      manda: (entrada) =>
+        submitHoleScoreUseCase.execute(entrada.matchId, entrada.holeNumber, entrada.scoreData),
+      // La partida abierta la vacía su propia pantalla; y una anotación con
+      // participante que no sea de partida rápida en solitario se deja para
+      // ella, que sabe preguntar cuando otro anotador puso otra cosa
+      seSalta: (entrada) =>
+        entrada.matchId === cualSalta() || entrada.participantId != null,
+    });
   } finally {
-    vaciando = false;
+    vaciandoDesde = null;
   }
 
-  if (enviadas > 0 || descartadas > 0) {
+  if (resultado.enviadas > 0 || resultado.descartadas > 0) {
     globalThis.dispatchEvent?.(new globalThis.CustomEvent(COLA_VACIADA));
   }
 
-  return { enviadas, descartadas, pendientes: cola.deQuien(userId).length };
-};
-
-/**
- * Si lo que hay guardado ahora es exactamente lo que se acaba de enviar.
- *
- * Mientras la petición estaba en vuelo, el jugador ha podido abrir esa partida
- * y reanotar ese hoyo. Borrar «el hoyo 5» a secas se lleva la corrección, el
- * servidor se queda con lo viejo, y nadie se entera. Se compara lo ANOTADO y
- * no solo el momento: `enqueue` sella con `Date.now()`, y una corrección hecha
- * en el mismo milisegundo lleva el mismo sello.
- */
-const siguesiendoLaMisma = (entrada) => {
-  const ahora = cola
-    .getByMatch(entrada.matchId, entrada.userId)
-    .find(
-      (e) =>
-        e.holeNumber === entrada.holeNumber
-        && (e.participantId ?? null) === (entrada.participantId ?? null)
-        && (e.userId ?? null) === (entrada.userId ?? null)
-    );
-  return Boolean(
-    ahora
-      && ahora.timestamp === entrada.timestamp
-      && JSON.stringify(ahora.scoreData) === JSON.stringify(entrada.scoreData)
-  );
-};
-
-/**
- * Saca de la cola una anotación que el servidor ha rechazado, dejando aviso.
- *
- * **Se exporta**: la pantalla de competición vacía su propia cola y tiene que
- * hacer exactamente esto mismo. Cuando cada una tenía su versión, el mismo 409
- * dejaba aviso desde el vaciado de fondo y borraba el golpe en silencio desde
- * la pantalla.
- *
- * **Solo se borra si el aviso ha quedado escrito.** Si el móvil no tiene sitio
- * para el aviso, la anotación se queda en la cola: es preferible que se
- * reintente mil veces a que desaparezca sin que nadie lo sepa, que es
- * exactamente lo que esta issue existe para impedir.
- *
- * @returns {boolean} Si de verdad se apartó
- */
-export const apartaLaRechazada = (entrada) => {
-  const apuntado = golpesPerdidos.apunta({
-    matchId: entrada.matchId,
-    matchName: entrada.matchName ?? null,
-    matchNumber: entrada.matchNumber ?? null,
-    holeNumber: entrada.holeNumber,
-    userId: entrada.userId ?? null,
-  });
-  if (!apuntado) return false;
-
-  return cola.remove(
-    entrada.matchId,
-    entrada.holeNumber,
-    entrada.participantId,
-    entrada.userId
-  );
+  return { ...resultado, pendientes: cola.deQuien(userId).length };
 };

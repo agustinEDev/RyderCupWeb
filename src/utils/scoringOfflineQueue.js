@@ -269,6 +269,37 @@ export const resumenPorPartida = (userId = null) => {
  * @param {string} userId
  * @returns {Array}
  */
+/**
+ * Le pone nombre a lo que se guardó sin él.
+ *
+ * En un arranque en frío sin cobertura la vista de la partida no llega nunca,
+ * así que todo lo que se anota se guarda sin nombre ni número y el panel
+ * enseña «una partida anterior» — o dos avisos iguales si hay dos partidas.
+ * En cuanto la vista SÍ carga, aunque sea días después, se rellena lo que
+ * quedó suelto. No se pisa lo que ya tenga nombre: lo guardado es de cuando se
+ * anotó, y es más fiable que lo de ahora.
+ *
+ * @returns {boolean} Si hizo falta escribir y se pudo
+ */
+export const ponleNombre = (matchId, { matchName = null, matchNumber = null } = {}) => {
+  if (!matchName && matchNumber == null) return true;
+  const queue = getAll();
+  let hayQueEscribir = false;
+
+  const conNombre = queue.map((entry) => {
+    if (entry.matchId !== matchId) return entry;
+    if (entry.matchName && entry.matchNumber != null) return entry;
+    hayQueEscribir = true;
+    return {
+      ...entry,
+      matchName: entry.matchName ?? matchName,
+      matchNumber: entry.matchNumber ?? matchNumber,
+    };
+  });
+
+  return hayQueEscribir ? guarda(conNombre) : true;
+};
+
 export const deQuien = (userId) => {
   if (!userId) return [];
   return getAll().filter((entry) => entry.userId === userId);

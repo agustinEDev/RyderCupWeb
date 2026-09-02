@@ -1701,3 +1701,56 @@ describe('useQuickMatchScoring · borrar lo guardado sin dueño (FE #521)', () =
     );
   });
 });
+
+describe('useQuickMatchScoring · la partida ya no está (FE #551)', () => {
+  const pendiente = (holeNumber, score, participantId = 'user-1') =>
+    ({ matchId: 'qm-1', holeNumber, participantId, scoreData: { score } });
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    getGolfCourseUseCase.execute.mockResolvedValue({ holes: [], tees: [], name: 'Campo' });
+    offlineQueue.getByMatch.mockReturnValue([]);
+    offlineQueue.size.mockReturnValue(0);
+  });
+
+  it('un 404 aparta lo guardado con aviso, en vez de dejarlo colgado', async () => {
+    // El vaciado de fondo no toca las partidas rápidas, y el único que las
+    // toca corre solo cuando el sondeo responde bien. Sin esto, el panel decía
+    // «tienes golpes sin enviar» para siempre y su botón llevaba a una
+    // pantalla que da error: ni se enviaban, ni se descartaban, ni se podía
+    // quitar el aviso
+    offlineQueue.getByMatch.mockReturnValue([pendiente(7, 5)]);
+    getQuickMatchUseCase.execute.mockRejectedValue(
+      Object.assign(new Error('Not found'), { status: 404 })
+    );
+
+    const { unmount } = renderHook(() => useQuickMatchScoring('qm-1', 'user-1'));
+
+    await waitFor(() =>
+      expect(golpesPerdidos.pendientes('user-1')).toContainEqual(
+        expect.objectContaining({ matchId: 'qm-1', holeNumber: 7 })
+      )
+    );
+    expect(offlineQueue.remove).toHaveBeenCalledWith('qm-1', 7, 'user-1', null);
+    // Se desmonta: el sondeo sigue vivo si no, y su siguiente vuelta escribe
+    // en el test de al lado, después de que este haya limpiado el disco
+    unmount();
+  });
+
+  it('pero un 500 no: el backend está mal, la partida sigue ahí', async () => {
+    // Con su propio id: el sondeo del test anterior puede resolver todavía, y
+    // mirar por partida deja este test mirando solo lo suyo
+    offlineQueue.getByMatch.mockReturnValue([{ ...pendiente(7, 5), matchId: 'qm-9' }]);
+    getQuickMatchUseCase.execute.mockRejectedValue(
+      Object.assign(new Error('Boom'), { status: 500 })
+    );
+
+    renderHook(() => useQuickMatchScoring('qm-9', 'user-1'));
+
+    await waitFor(() => expect(getQuickMatchUseCase.execute).toHaveBeenCalled());
+    expect(
+      golpesPerdidos.pendientes('user-1').filter((a) => a.matchId === 'qm-9')
+    ).toEqual([]);
+    expect(offlineQueue.remove).not.toHaveBeenCalledWith('qm-9', 7, 'user-1', null);
+  });
+});

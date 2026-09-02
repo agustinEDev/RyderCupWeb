@@ -45,6 +45,32 @@ export const useVaciadoDeLaCola = ({ activo, userId = null }) => {
     rutaActual.current = location.pathname;
   }, [location.pathname]);
 
+  // Reintento cuando el vaciado se para por algo que no es de la anotación.
+  //
+  // Todos los disparadores son de flanco —montar, `online`, volver a la app— y
+  // parar el bucle no programaba nada. Con un portal cautivo de un club, el
+  // primer envío muere, se para, y al aceptar las condiciones ya no vuelve a
+  // saltar `online` —el navegador nunca dejó de decir que había red— ni
+  // `visibilitychange` —no se sale de la aplicación—: la cola se quedaba
+  // llena, con cobertura, hasta cerrar la app (FE #551)
+  const reintentoRef = useRef(null);
+  const cuantosFallosRef = useRef(0);
+  const ESPERAS_MS = [30_000, 120_000, 300_000];
+
+  const vaciaRef = useRef(null);
+  const programaReintento = useCallback(() => {
+    if (reintentoRef.current) return;
+    // Espera creciente y con tope: insistir cada pocos segundos contra un
+    // servidor caído gasta batería sin arreglar nada
+    const espera = ESPERAS_MS[Math.min(cuantosFallosRef.current, ESPERAS_MS.length - 1)];
+    cuantosFallosRef.current += 1;
+    reintentoRef.current = globalThis.setTimeout(() => {
+      reintentoRef.current = null;
+      vaciaRef.current?.();
+    }, espera);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const vacia = useCallback(() => {
     if (!activo || !userId) return;
     // Sin red no se intenta. Sin esta guarda, el vaciado al montar disparaba la
@@ -60,12 +86,20 @@ export const useVaciadoDeLaCola = ({ activo, userId = null }) => {
       // enseña su propio contador de pendientes
       saltaPartida: () => partidaQueSeEstaAnotando(rutaActual.current),
       userId,
+    }).then((resultado) => {
+      if (resultado?.paroPor && resultado.pendientes > 0) programaReintento();
+      else cuantosFallosRef.current = 0;
     }).catch((err) => {
       // Nunca hacia arriba: esto corre de fondo y un fallo aquí no puede
       // tumbar la pantalla que el usuario esté mirando
       console.error('[VaciadoDeLaCola] No se pudo vaciar la cola:', err);
+      programaReintento();
     });
-  }, [activo, userId]);
+  }, [activo, userId, programaReintento]);
+
+  useEffect(() => {
+    vaciaRef.current = vacia;
+  }, [vacia]);
 
   useEffect(() => {
     if (!activo || !userId) return undefined;
@@ -86,6 +120,10 @@ export const useVaciadoDeLaCola = ({ activo, userId = null }) => {
     return () => {
       window.removeEventListener('online', vacia);
       document.removeEventListener('visibilitychange', alVolverALaApp);
+      if (reintentoRef.current) {
+        globalThis.clearTimeout(reintentoRef.current);
+        reintentoRef.current = null;
+      }
     };
   }, [activo, userId, vacia]);
 };

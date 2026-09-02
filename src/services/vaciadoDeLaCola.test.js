@@ -190,6 +190,29 @@ describe('vaciaLaColaEntera (FE #521)', () => {
     expect(cola.deQuien(YO).map((e) => e.matchId)).toEqual(['m-2']);
   });
 
+  it('no manda una anotación que se corrigió mientras iba por otras', async () => {
+    // El bucle tarda: entre leer la lista y llegar a esta entrada, el jugador
+    // ha podido corregir ese hoyo. Mandar la copia vieja escribe en el
+    // servidor un resultado que el jugador ya cambió, y el suyo se queda en la
+    // cola esperando a un vaciado que ya pasó por ahí
+    cola.enqueue('m-1', 1, { ownScore: 4 }, null, YO);
+    cola.enqueue('m-2', 7, { ownScore: 6 }, null, YO);
+    submitHoleScoreUseCase.execute.mockImplementation(async (matchId) => {
+      // Al ir a por la primera, el jugador corrige la segunda
+      if (matchId === 'm-1') cola.enqueue('m-2', 7, { ownScore: 4 }, null, YO);
+      return {};
+    });
+
+    await vaciaLaColaEntera({ userId: YO });
+
+    const enviados = submitHoleScoreUseCase.execute.mock.calls.map((c) => c[2]);
+    expect(enviados).toEqual([{ ownScore: 4 }]);
+    // Y la corregida sigue guardada, para salir en el siguiente vaciado
+    expect(cola.deQuien(YO)).toEqual([
+      expect.objectContaining({ matchId: 'm-2', scoreData: { ownScore: 4 } }),
+    ]);
+  });
+
   it('no envía las de partida rápida: las decide su pantalla', async () => {
     // Su vaciado compara con el servidor y pregunta al jugador cuando hay
     // desacuerdo (FE #528). Mandarlas desde aquí las enviaría a ciegas
