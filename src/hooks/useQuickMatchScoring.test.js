@@ -296,7 +296,7 @@ describe('useQuickMatchScoring · anotar sin conexión (FE #515, tabla A)', () =
       cola = cola.filter(
         (e) => fuera(e, holeNumber, participantId) || (e.userId ?? null) !== (userId ?? null)
       );
-      cola.push({ matchId, holeNumber, scoreData, participantId, userId });
+      cola.push({ matchId, holeNumber, scoreData, participantId, userId, timestamp: Date.now() });
       return true;
     });
     offlineQueue.getByMatch.mockImplementation(() => cola);
@@ -400,6 +400,39 @@ describe('useQuickMatchScoring · anotar sin conexión (FE #515, tabla A)', () =
 
     // Por esta puerta, que usa el mismo borrado y no dispara ningún sondeo
     await act(async () => { result.current.resuelveDiscrepancia(7, 'user-1', 'elQueHay'); });
+
+    expect(cola).toEqual([]);
+  });
+
+  it('una corrección hecha con el golpe en vuelo no se pierde al confirmarse el envío', async () => {
+    // Desde que la pantalla no se bloquea mientras el golpe va de camino
+    // (FE #564), esto es posible: borrar «lo de ese hoyo» sin mirar cuándo se
+    // guardó se llevaba la corrección y en el servidor quedaba el número viejo
+    guardaEnMemoria();
+    let dejaLlegar;
+    submitQuickMatchHoleScoreUseCase.execute.mockImplementation(
+      () => new Promise((resolve) => { dejaLlegar = () => resolve({}); })
+    );
+    const { result } = renderHook(() => useQuickMatchScoring('qm-1', 'user-1'));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    let primera;
+    await act(async () => { primera = result.current.submitScore(7, 'user-1', 5); await Promise.resolve(); });
+    // El jugador se corrige con la petición todavía en vuelo
+    await act(async () => { await result.current.submitScore(7, 'user-1', 6); });
+    await act(async () => { dejaLlegar(); await primera; });
+
+    expect(cola).toEqual([expect.objectContaining({ holeNumber: 7, scoreData: { score: 6 } })]);
+  });
+
+  it('una anotación vieja del mismo hoyo sí se va, o pisaría lo que acaba de entrar', async () => {
+    guardaEnMemoria();
+    cola.push({ matchId: 'qm-1', holeNumber: 7, participantId: 'user-1', scoreData: { score: 9 }, userId: null, timestamp: 1 });
+    submitQuickMatchHoleScoreUseCase.execute.mockResolvedValue({});
+    const { result } = renderHook(() => useQuickMatchScoring('qm-1', 'user-1'));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    await act(async () => { await result.current.submitScore(7, 'user-1', 5); });
 
     expect(cola).toEqual([]);
   });

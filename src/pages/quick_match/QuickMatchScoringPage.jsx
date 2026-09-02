@@ -367,7 +367,14 @@ const QuickMatchScoringPage = () => {
   // anotaciones. Sin el, la pantalla seguia viva y cada guardado se estrellaba
   // contra un 409 que se traduce como «vuelve a cargarla» —y recargar no la
   // resucita, asi que el usuario se queda reintentando para siempre—.
-  const isReadOnly = !isScorer || quickMatch?.isCompleted || quickMatch?.isCancelled || isSubmitting;
+  // `isSubmitting` NO entra aquí: dejaba la casilla de solo lectura mientras
+  // el golpe estaba de camino, y sin cobertura eso son los diez segundos que
+  // el móvil tarda en rendirse. El jugador que anotaba un hoyo no podía anotar
+  // el siguiente hasta que la petición del anterior muriera (FE #564).
+  // Bloquear ya no protege de nada: el golpe se guarda antes de enviarse
+  // (FE #561) y el hook serializa los envíos, así que una anotación que llega
+  // con otra en vuelo se guarda y sale en el vaciado siguiente
+  const isReadOnly = !isScorer || quickMatch?.isCompleted || quickMatch?.isCancelled;
 
   const handleScoreChange = (participantId, score) => {
     submitScore(currentHole, participantId, score);
