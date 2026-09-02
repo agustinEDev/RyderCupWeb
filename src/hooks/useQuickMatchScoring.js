@@ -155,7 +155,7 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
       setLoadError(null);
       // La partida está: si alguna vez se marcó como desaparecida, aquel 404
       // era mentira y la marca se retira
-      offlineQueue.marcaDesaparecida(quickMatchId, false);
+      offlineQueue.marcaDesaparecida(quickMatchId, currentUserId ?? null, false);
 
       // El sondeo ha respondido, así que hay conexión: es el momento de enviar
       // lo que quedó guardado. Se le pasan los hoyos que el servidor ya tiene,
@@ -199,13 +199,28 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
       // enseñar algo que no existe, y dejar anotar encima
       if (estado === 404 || estado === 403) {
         olvida(quickMatchId);
-        // Y lo que quedó guardado de ella se marca, no se borra: esta pantalla
-        // es la ÚNICA que sabe enviar anotaciones de partida rápida, así que
-        // si no carga, lo suyo se queda en la cola para siempre y el panel
-        // avisa de golpes que nadie puede mandar. Marcado, el panel puede
-        // ofrecer descartarlo; borrarlo aquí perdería un golpe bueno cada vez
-        // que el 404 lo devuelva un proxy o el portal cautivo de un club
-        offlineQueue.marcaDesaparecida(quickMatchId, true);
+      }
+
+      // Solo el 404, y solo si esta respuesta sigue siendo la última palabra.
+      //
+      // Lo que quedó guardado se marca, no se borra: esta pantalla es la ÚNICA
+      // que sabe enviar anotaciones de partida rápida, así que si no carga, lo
+      // suyo se queda en la cola para siempre y el panel avisa de golpes que
+      // nadie puede mandar. Marcado, el panel puede ofrecer descartarlo;
+      // borrarlo aquí perdería un golpe bueno cada vez que el 404 lo devuelva
+      // un proxy o el portal cautivo de un club.
+      //
+      // El 403 NO se marca: ahí la partida existe, lo que pasa es que no es
+      // nuestra —o es un tropiezo de CSRF—, y marcarla ofrecía tirar unos
+      // golpes perfectamente enviables. Y sin la guarda de secuencia, un 404
+      // lento de un portal cautivo aterrizaba DESPUÉS del sondeo que ya había
+      // cargado bien la partida, y volvía a marcarla
+      if (
+        estado === 404
+        && miSeq === estadoSeqRef.current
+        && quickMatchId === idVigenteRef.current
+      ) {
+        offlineQueue.marcaDesaparecida(quickMatchId, currentUserId ?? null, true);
       }
 
       // Se pinta lo último que se supo, que es lo que permite seguir anotando
@@ -244,7 +259,7 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
       // vacía —sin nombre, sin jugadores y con dieciocho «Anotar»—
       if (quickMatchId === idVigenteRef.current) setIsLoading(false);
     }
-  }, [quickMatchId]);
+  }, [quickMatchId, currentUserId]);
 
   // La ruta no lleva `key`, así que ir de una partida a otra reutiliza este
   // hook: sin limpiar, el aviso rojo y el conflicto de la partida anterior se

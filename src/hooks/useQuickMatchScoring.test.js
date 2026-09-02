@@ -1900,21 +1900,52 @@ describe('useQuickMatchScoring · la partida que ya no existe (FE #557)', () => 
     const { result } = renderHook(() => useQuickMatchScoring('qm-1', 'user-1'));
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
-    expect(offlineQueue.marcaDesaparecida).toHaveBeenCalledWith('qm-1', true);
+    expect(offlineQueue.marcaDesaparecida).toHaveBeenCalledWith('qm-1', 'user-1', true);
     // Borrar por un 404 perdería un golpe bueno: eso lo decide el jugador
     expect(offlineQueue.olvidaLasDe).not.toHaveBeenCalled();
     expect(offlineQueue.clear).not.toHaveBeenCalled();
   });
 
-  it('un 503 no la marca: eso no es una negativa sobre la partida', async () => {
+  it.each([
+    ['un 503', 503, 'eso no es una negativa sobre la partida'],
+    // El 403 dice que la partida EXISTE y no es nuestra —o que ha sido un
+    // tropiezo de CSRF—: marcarla ofrecía tirar golpes perfectamente enviables
+    ['un 403', 403, 'la partida existe, y esos golpes se pueden enviar'],
+  ])('%s no la marca: %s', async (_, estado) => {
     getQuickMatchUseCase.execute.mockRejectedValue(
-      Object.assign(new Error('HTTP 503'), { status: 503 })
+      Object.assign(new Error(`HTTP ${estado}`), { status: estado })
     );
 
     const { result } = renderHook(() => useQuickMatchScoring('qm-1', 'user-1'));
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
-    expect(offlineQueue.marcaDesaparecida).not.toHaveBeenCalledWith('qm-1', true);
+    expect(offlineQueue.marcaDesaparecida).not.toHaveBeenCalledWith(
+      'qm-1', expect.anything(), true
+    );
+  });
+
+  it('un 404 que llega tarde no vuelve a marcar la partida ya cargada', async () => {
+    // Un portal cautivo responde 404 despacio; mientras, el sondeo siguiente
+    // carga bien y quita la marca. Sin la guarda, el rechazo lento la repone y
+    // el panel ofrece tirar los golpes de una partida viva
+    let fallaTarde;
+    getQuickMatchUseCase.execute
+      .mockImplementationOnce(() => new Promise((_r, reject) => {
+        fallaTarde = () => reject(Object.assign(new Error('HTTP 404'), { status: 404 }));
+      }))
+      .mockResolvedValue(mockQuickMatch);
+    const { result, rerender } = renderHook(({ id }) => useQuickMatchScoring(id, 'user-1'), {
+      initialProps: { id: 'qm-1' },
+    });
+    // Otra partida entra en pantalla y carga bien
+    rerender({ id: 'qm-2' });
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    await act(async () => { fallaTarde(); await Promise.resolve(); });
+
+    expect(offlineQueue.marcaDesaparecida).not.toHaveBeenCalledWith(
+      'qm-1', expect.anything(), true
+    );
   });
 
   it('si vuelve a cargar, la marca se retira: aquel 404 era mentira', async () => {
@@ -1923,6 +1954,6 @@ describe('useQuickMatchScoring · la partida que ya no existe (FE #557)', () => 
     const { result } = renderHook(() => useQuickMatchScoring('qm-1', 'user-1'));
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
-    expect(offlineQueue.marcaDesaparecida).toHaveBeenCalledWith('qm-1', false);
+    expect(offlineQueue.marcaDesaparecida).toHaveBeenCalledWith('qm-1', 'user-1', false);
   });
 });

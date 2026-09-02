@@ -446,7 +446,7 @@ describe('la partida que ya no existe (FE #557)', () => {
     enqueue('qm-1', 7, { score: 5 }, 'p-1', 'u1');
     enqueue('m-2', 3, { ownScore: 4 }, null, 'u1');
 
-    expect(marcaDesaparecida('qm-1')).toBe(true);
+    expect(marcaDesaparecida('qm-1', 'u1')).toBe(true);
 
     expect(size()).toBe(2);
     const resumen = resumenPorPartida('u1');
@@ -456,9 +456,9 @@ describe('la partida que ya no existe (FE #557)', () => {
 
   it('se quita cuando la partida vuelve a cargar: aquel 404 era mentira', () => {
     enqueue('qm-1', 7, { score: 5 }, 'p-1', 'u1');
-    marcaDesaparecida('qm-1');
+    marcaDesaparecida('qm-1', 'u1');
 
-    marcaDesaparecida('qm-1', false);
+    marcaDesaparecida('qm-1', 'u1', false);
 
     expect(resumenPorPartida('u1')[0].desaparecida).toBe(false);
   });
@@ -468,9 +468,19 @@ describe('la partida que ya no existe (FE #557)', () => {
     // `localStorage.setItem` ya es un espía en este fichero
     localStorage.setItem.mockClear();
 
-    expect(marcaDesaparecida('qm-1', false)).toBe(true);
+    expect(marcaDesaparecida('qm-1', 'u1', false)).toBe(true);
 
     expect(localStorage.setItem).not.toHaveBeenCalled();
+  });
+
+  it('no marca lo de otra cuenta del mismo móvil', () => {
+    // Una cuenta que recibe un 403 porque esa partida es de OTRA marcaba lo de
+    // esa otra, y a su dueño se le ofrecía tirarlo
+    enqueue('qm-1', 7, { score: 5 }, 'p-1', 'u2');
+
+    marcaDesaparecida('qm-1', 'u1');
+
+    expect(resumenPorPartida('u2')[0].desaparecida).toBe(false);
   });
 
   it('olvidarlas se lleva las de esa partida, y solo las que esa cuenta ve', () => {

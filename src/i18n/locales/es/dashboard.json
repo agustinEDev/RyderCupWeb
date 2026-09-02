@@ -155,6 +155,8 @@
     "resumen": "Golpes sin enviar: {{sinEnviar}}. No se pudieron guardar: {{perdidos}}",
     "desaparecida_one": "Un golpe de {{partida}} no se puede enviar: esa partida ya no está.",
     "desaparecida_other": "{{count}} golpes de {{partida}} no se pueden enviar: esa partida ya no está.",
-    "descartar": "Descartar y perderlos"
+    "descartar": "Descartar y perderlos",
+    "abrir": "Abrir la partida",
+    "descartarYPerderDe": "Descartar y perder los golpes de {{partida}}"
   }
 }

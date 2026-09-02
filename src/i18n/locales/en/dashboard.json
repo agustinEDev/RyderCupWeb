@@ -155,6 +155,8 @@
     "resumen": "Strokes left to send: {{sinEnviar}}. Could not be saved: {{perdidos}}",
     "desaparecida_one": "One stroke from {{partida}} cannot be sent: that match is gone.",
     "desaparecida_other": "{{count}} strokes from {{partida}} cannot be sent: that match is gone.",
-    "descartar": "Discard and lose them"
+    "descartar": "Discard and lose them",
+    "abrir": "Open the match",
+    "descartarYPerderDe": "Discard and lose the strokes from {{partida}}"
   }
 }

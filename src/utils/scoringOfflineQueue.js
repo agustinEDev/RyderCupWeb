@@ -264,14 +264,20 @@ export const resumenPorPartida = (userId = null) => {
  * quien lo anotó. Y se quita en cuanto la partida vuelve a cargar: entonces el
  * 404 era mentira.
  *
+ * @param {string} matchId
+ * @param {string|null} [userId] - De quién es lo que se marca
+ * @param {boolean} [desaparecida]
  * @returns {boolean} Si hizo falta escribir y se pudo
  */
-export const marcaDesaparecida = (matchId, desaparecida = true) => {
+export const marcaDesaparecida = (matchId, userId = null, desaparecida = true) => {
   const queue = getAll();
   let hayQueEscribir = false;
 
   const marcada = queue.map((entry) => {
-    if (entry.matchId !== matchId) return entry;
+    // Con el mismo criterio de visibilidad que el aviso que la enseña: en un
+    // móvil compartido, una cuenta que recibe un 403 porque esa partida es de
+    // OTRA marcaba lo de esa otra, y a su dueño se le ofrecía tirarlo
+    if (entry.matchId !== matchId || !esVisiblePara(entry, userId)) return entry;
     if (Boolean(entry.partidaDesaparecida) === desaparecida) return entry;
     hayQueEscribir = true;
     return { ...entry, partidaDesaparecida: desaparecida };
