@@ -34,7 +34,7 @@ export const getApiBaseUrl = () => API_URL;
  * - When access token expires (401), automatically calls /auth/refresh-token
  * - Retries the original request with the new token
  * - Only redirects to login if refresh token also expired
- * - Queues multiple 401s to prevent duplicate refresh calls
+ * - Shares one refresh promise so multiple 401s do not each ask for a refresh
  */
 export const apiRequest = async (endpoint, options = {}) => {
   // FormData (file uploads): the browser must set its own Content-Type header
@@ -87,8 +87,14 @@ export const apiRequest = async (endpoint, options = {}) => {
       if (response.status === 403 && errorData.error_code === 'CSRF_VALIDATION_FAILED') {
         // Use centralized CSRF logout handler
         handleCsrfLogout(errorData);
-        // Throw error after initiating logout (error will be caught by caller)
-        throw new Error('CSRF validation failed. Please log in again.');
+        // Throw error after initiating logout (error will be caught by caller).
+        // El error va MARCADO: quien vacía la cola de anotaciones necesita
+        // distinguirlo de un error sin código cualquiera, porque este vale
+        // para toda la sesión y no para una anotación. Sin la marca, cada
+        // golpe de la cola disparaba su propio cierre de sesión (FE #521)
+        const csrfError = new Error('CSRF validation failed. Please log in again.');
+        csrfError.errorCode = 'CSRF_VALIDATION_FAILED';
+        throw csrfError;
       }
 
       // Extract error message with proper fallback chain

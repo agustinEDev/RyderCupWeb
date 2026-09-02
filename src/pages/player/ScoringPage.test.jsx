@@ -378,4 +378,23 @@ describe('ScoringPage', () => {
       expect(screen.getByTestId('match-summary-card')).not.toHaveTextContent('USA');
     });
   });
+
+  describe('el aviso del vaciado (FE #551)', () => {
+    afterEach(() => {
+      mockUseScoring.avisoDelVaciado = null;
+    });
+
+    it('no pinta nada si no lo hay', () => {
+      render(<ScoringPage />);
+      expect(screen.queryByText(/errors\.vaciado/)).toBeNull();
+    });
+
+    it('pinta el paro con la clave compartida de anotación', () => {
+      // Con espacio de nombres: el texto vive en `scoring` y lo comparten las
+      // dos pantallas, así que la clave no depende del `t` de cada una
+      mockUseScoring.avisoDelVaciado = 'no-se-pudo-borrar';
+      render(<ScoringPage />);
+      expect(screen.getByRole('status')).toHaveTextContent('scoring:errors.vaciado.no-se-pudo-borrar');
+    });
+  });
 });

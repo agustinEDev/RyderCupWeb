@@ -114,6 +114,14 @@ export const AuthProvider = ({ children }) => {
     // móvil compartido, la siguiente persona que entrara y se quedara sin señal
     // vería la lista de la anterior, con sus nombres y sus resultados
     olvidaLoDeEstaCuenta();
+    // Los avisos de golpes que no se pudieron guardar NO se tocan, ni aquí ni
+    // en los cierres duros. Se intentó borrarlos y es un error: no se pueden
+    // regenerar —el golpe que describen ya salió de la cola al escribirlos— y
+    // el borrado llega a dispararse DENTRO del propio vaciado, porque un 403
+    // de CSRF cierra la sesión desde `api.js` en mitad del bucle y se lleva
+    // avisos escritos milisegundos antes. La privacidad ya está resuelta sin
+    // borrar nada: `golpesPerdidos.pendientes(userId)` solo devuelve los de
+    // quien mira, así que la siguiente persona del móvil no los ve (FE #521)
     localStorage.removeItem('user');
     localStorage.removeItem('access_token'); // Legacy cleanup
   }, []);

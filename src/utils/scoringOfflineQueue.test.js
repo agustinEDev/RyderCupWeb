@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { enqueue, dequeue, getAll, remove, clear, size, getByMatch } from './scoringOfflineQueue';
+import { enqueue, dequeue, getAll, remove, clear, size, getByMatch, deQuien, resumenPorPartida, ponleNombre, marcaDesaparecida, olvidaLasDe} from './scoringOfflineQueue';
 
 // Mock localStorage for non-jsdom environment
 const localStorageMock = (() => {
@@ -271,5 +271,227 @@ describe('scoringOfflineQueue · cuando el móvil no puede guardar', () => {
     enqueue('m-1', 7, { score: 5 }, 'p-1');
     seNiega();
     expect(() => remove('m-1', 7, 'p-1')).not.toThrow();
+  });
+});
+
+describe('scoringOfflineQueue — de quién es cada anotación (FE #521)', () => {
+  beforeEach(() => {
+    localStorageMock.clear();
+    vi.clearAllMocks();
+  });
+
+  it('dos personas pueden tener guardado el mismo hoyo sin pisarse', () => {
+    // Antes el dueño no formaba parte de la identidad: mismo partido y mismo
+    // hoyo era «la misma anotación», así que la segunda borraba la primera y
+    // un golpe desaparecía sin dejar rastro
+    enqueue('m-1', 7, { ownScore: 5 }, null, 'usuario-A');
+    enqueue('m-1', 7, { ownScore: 4 }, null, 'usuario-B');
+
+    const todas = getAll();
+    expect(todas).toHaveLength(2);
+    expect(todas.map((e) => e.userId).sort()).toEqual(['usuario-A', 'usuario-B']);
+  });
+
+  it('la misma persona sí se corrige a sí misma', () => {
+    enqueue('m-1', 7, { ownScore: 5 }, null, 'usuario-A');
+    enqueue('m-1', 7, { ownScore: 4 }, null, 'usuario-A');
+
+    expect(getAll()).toHaveLength(1);
+    expect(getAll()[0].scoreData).toEqual({ ownScore: 4 });
+  });
+
+  it('borrar sin decir de quién solo se lleva lo huérfano', () => {
+    // Al revés que al leer: `getByMatch` sin dueño devuelve las de todos, y
+    // `remove` sin dueño no toca ninguna de ellas. Queda fijado aquí porque es
+    // asimétrico y se presta a confusión
+    enqueue('m-1', 7, { ownScore: 5 }, null, 'usuario-A');
+    enqueue('m-1', 7, { ownScore: 4 }, null, null);
+
+    remove('m-1', 7);
+
+    const quedan = getAll();
+    expect(quedan).toHaveLength(1);
+    expect(quedan[0].userId).toBe('usuario-A');
+  });
+
+  it('borrar lo de uno no se lleva lo del otro', () => {
+    enqueue('m-1', 7, { ownScore: 5 }, null, 'usuario-A');
+    enqueue('m-1', 7, { ownScore: 4 }, null, 'usuario-B');
+
+    remove('m-1', 7, null, 'usuario-B');
+
+    const quedan = getAll();
+    expect(quedan).toHaveLength(1);
+    expect(quedan[0].userId).toBe('usuario-A');
+  });
+
+  it('getByMatch trae lo tuyo y lo huérfano, nunca lo de otro', () => {
+    // Lo huérfano es de una versión anterior a este campo: dejarlo fuera de la
+    // pantalla de su propia partida sería condenarlo a no enviarse jamás
+    enqueue('m-1', 1, { ownScore: 4 }, null, 'usuario-A');
+    enqueue('m-1', 2, { ownScore: 5 }, null, 'usuario-B');
+    enqueue('m-1', 3, { ownScore: 6 }, null, null);
+
+    const deA = getByMatch('m-1', 'usuario-A');
+
+    expect(deA.map((e) => e.holeNumber).sort()).toEqual([1, 3]);
+  });
+
+  it('deQuien NO recoge lo huérfano: el servidor lo daría por bueno', () => {
+    // Se probó al revés, para rescatar la cola del parque instalado, y es un
+    // error caro: el servidor atribuye el golpe al usuario AUTENTICADO, así
+    // que en un móvil compartido donde los dos juegan el mismo partido, los
+    // golpes del primero se escriben en la tarjeta del segundo con un 200. Sin
+    // rechazo no hay aviso, y desaparecen en silencio
+    enqueue('m-1', 1, { ownScore: 4 }, null, 'usuario-A');
+    enqueue('m-1', 3, { ownScore: 6 }, null, null);
+
+    expect(deQuien('usuario-A').map((e) => e.holeNumber)).toEqual([1]);
+  });
+
+  it('pero el panel SÍ lo enseña: se rescata con alguien delante', () => {
+    // El aviso lleva a la pantalla de esa partida, que sí incluye lo huérfano.
+    // Ahí hay contexto y un acto explícito, que es la diferencia
+    enqueue('m-1', 3, { ownScore: 6 }, null, null);
+
+    expect(resumenPorPartida('usuario-A')).toEqual([
+      expect.objectContaining({ matchId: 'm-1', cuantas: 1 }),
+    ]);
+    expect(getByMatch('m-1', 'usuario-A')).toHaveLength(1);
+  });
+
+  it('pero no recoge lo de otra cuenta del mismo móvil', () => {
+    enqueue('m-1', 1, { ownScore: 4 }, null, 'usuario-A');
+    enqueue('m-1', 3, { ownScore: 6 }, null, 'usuario-B');
+
+    expect(deQuien('usuario-A').map((e) => e.holeNumber)).toEqual([1]);
+  });
+
+  it('sin sesión no se envía nada, ni siquiera lo huérfano', () => {
+    enqueue('m-1', 3, { ownScore: 6 }, null, null);
+
+    expect(deQuien(null)).toEqual([]);
+  });
+
+  it('sin userId se sigue viendo todo, como antes', () => {
+    // Quien todavía no pasa el dueño no puede quedarse sin ver su cola
+    enqueue('m-1', 1, { ownScore: 4 }, null, 'usuario-A');
+
+    expect(getByMatch('m-1')).toHaveLength(1);
+    expect(size('m-1')).toBe(1);
+  });
+});
+
+describe('ponleNombre (FE #551)', () => {
+  beforeEach(() => {
+    clear();
+  });
+
+  it('rellena lo que se guardó sin nombre', () => {
+    // Arranque en frío sin cobertura: la vista de la partida no llega nunca y
+    // todo lo anotado ese día queda sin nombre, así que el panel enseña «una
+    // partida anterior» — o dos avisos iguales si hay dos partidas
+    enqueue('m-1', 3, { ownScore: 4 }, null, 'u1');
+    enqueue('m-1', 4, { ownScore: 5 }, null, 'u1');
+
+    expect(ponleNombre('m-1', { matchName: 'La Herrería', matchNumber: 3 })).toBe(true);
+
+    expect(resumenPorPartida('u1')).toEqual([
+      expect.objectContaining({ matchName: 'La Herrería', matchNumber: 3, cuantas: 2 }),
+    ]);
+  });
+
+  it('pero no pisa lo que ya tenía nombre', () => {
+    // Lo guardado es de cuando se anotó, y es más fiable que lo de ahora
+    enqueue('m-1', 3, { ownScore: 4 }, null, 'u1', { matchName: 'El de aquel día', matchNumber: 1 });
+
+    ponleNombre('m-1', { matchName: 'Otro', matchNumber: 9 });
+
+    expect(resumenPorPartida('u1')).toEqual([
+      expect.objectContaining({ matchName: 'El de aquel día', matchNumber: 1 }),
+    ]);
+  });
+
+  it('con nombre pero sin número, conserva el nombre y gana el número', () => {
+    // El caso que de verdad ejercita el `??`: la entrada entra en el cuerpo
+    // del bucle porque le falta el número, y ahí el nombre no se puede pisar
+    enqueue('m-1', 3, { ownScore: 4 }, null, 'u1', { matchName: 'El de aquel día' });
+
+    ponleNombre('m-1', { matchName: 'Otro', matchNumber: 9 });
+
+    expect(resumenPorPartida('u1')).toEqual([
+      expect.objectContaining({ matchName: 'El de aquel día', matchNumber: 9 }),
+    ]);
+  });
+
+  it('y no toca las de otras partidas', () => {
+    enqueue('m-1', 3, { ownScore: 4 }, null, 'u1');
+    enqueue('m-2', 3, { ownScore: 4 }, null, 'u1');
+
+    ponleNombre('m-1', { matchName: 'La Herrería' });
+
+    const otra = resumenPorPartida('u1').find((p) => p.matchId === 'm-2');
+    expect(otra.matchName).toBeNull();
+  });
+});
+
+describe('la partida que ya no existe (FE #557)', () => {
+  beforeEach(() => {
+    clear();
+  });
+
+  it('marcarla no borra nada, y el resumen lo dice', () => {
+    // Un 404 lo devuelve igual el portal cautivo de un club: borrar por eso
+    // perdería un golpe bueno
+    enqueue('qm-1', 7, { score: 5 }, 'p-1', 'u1');
+    enqueue('m-2', 3, { ownScore: 4 }, null, 'u1');
+
+    expect(marcaDesaparecida('qm-1', 'u1')).toBe(true);
+
+    expect(size()).toBe(2);
+    const resumen = resumenPorPartida('u1');
+    expect(resumen.find((p) => p.matchId === 'qm-1').desaparecida).toBe(true);
+    expect(resumen.find((p) => p.matchId === 'm-2').desaparecida).toBe(false);
+  });
+
+  it('se quita cuando la partida vuelve a cargar: aquel 404 era mentira', () => {
+    enqueue('qm-1', 7, { score: 5 }, 'p-1', 'u1');
+    marcaDesaparecida('qm-1', 'u1');
+
+    marcaDesaparecida('qm-1', 'u1', false);
+
+    expect(resumenPorPartida('u1')[0].desaparecida).toBe(false);
+  });
+
+  it('no escribe si no hay nada que cambiar', () => {
+    enqueue('qm-1', 7, { score: 5 }, 'p-1', 'u1');
+    // `localStorage.setItem` ya es un espía en este fichero
+    localStorage.setItem.mockClear();
+
+    expect(marcaDesaparecida('qm-1', 'u1', false)).toBe(true);
+
+    expect(localStorage.setItem).not.toHaveBeenCalled();
+  });
+
+  it('no marca lo de otra cuenta del mismo móvil', () => {
+    // Una cuenta que recibe un 403 porque esa partida es de OTRA marcaba lo de
+    // esa otra, y a su dueño se le ofrecía tirarlo
+    enqueue('qm-1', 7, { score: 5 }, 'p-1', 'u2');
+
+    marcaDesaparecida('qm-1', 'u1');
+
+    expect(resumenPorPartida('u2')[0].desaparecida).toBe(false);
+  });
+
+  it('olvidarlas se lleva las de esa partida, y solo las que esa cuenta ve', () => {
+    enqueue('qm-1', 7, { score: 5 }, 'p-1', 'u1');
+    enqueue('qm-1', 8, { score: 4 }, 'p-2', 'u2');
+    // Sin dueño: de una versión anterior a FE #521, y la ve cualquiera
+    enqueue('qm-1', 9, { score: 3 }, 'p-3', null);
+    enqueue('m-2', 3, { ownScore: 4 }, null, 'u1');
+
+    expect(olvidaLasDe('qm-1', 'u1')).toBe(true);
+
+    expect(getAll().map((e) => [e.matchId, e.holeNumber])).toEqual([['qm-1', 8], ['m-2', 3]]);
   });
 });

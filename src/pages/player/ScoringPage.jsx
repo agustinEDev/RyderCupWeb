@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import HeaderAuth from '../../components/layout/HeaderAuth';
 import { useAuth } from '../../hooks/useAuth';
 import { useScoring } from '../../hooks/useScoring';
+import { claveDelAvisoDelVaciado } from '../../utils/erroresDeAnotacion';
 import { getLeaderboardUseCase } from '../../composition';
 import HoleInput from '../../components/scoring/HoleInput';
 import HoleSelector from '../../components/scoring/HoleSelector';
@@ -43,6 +44,7 @@ const ScoringPage = () => {
     isOffline,
     isSessionBlocked,
     pendingQueueSize,
+    avisoDelVaciado,
     canScore,
     hasSubmitted,
     isOwnScoreLocked,
@@ -59,6 +61,10 @@ const ScoringPage = () => {
     takeOverSession,
     refetch,
   } = useScoring(matchId, user?.id, user?.is_admin ?? false);
+
+  // Un error del hook puede traer la CLAVE de su texto: la pantalla pintaba
+  // `error.message` tal cual, y así salía castellano fijo en la app en inglés
+  const textoDe = (err) => (err?.i18nKey ? t(err.i18nKey) : err?.message || t('errors.generic'));
 
   // Load leaderboard when tab changes to leaderboard
   useEffect(() => {
@@ -196,7 +202,7 @@ const ScoringPage = () => {
       <div className="min-h-screen bg-gray-50">
         <HeaderAuth user={user} />
         <div className="max-w-4xl mx-auto px-4 py-6 text-center">
-          <p className="text-red-600">{error.message || t('errors.generic')}</p>
+          <p className="text-red-600">{textoDe(error)}</p>
           <button onClick={refetch} className="mt-4 px-4 py-2 bg-primary text-white rounded-lg">
             {t('retry')}
           </button>
@@ -255,12 +261,26 @@ const ScoringPage = () => {
       <HeaderAuth user={user} />
 
       {isOffline && <OfflineBanner pendingCount={pendingQueueSize} />}
+
+      {/* El vaciado se paró porque el móvil no admite escrituras. Aparte del
+          error general: ese lo limpia cada sondeo, y esto tiene que durar
+          hasta que un vaciado termine bien (FE #551) */}
+      {avisoDelVaciado && (
+        <div className="max-w-4xl mx-auto px-4 pt-4">
+          <p
+            role="status"
+            className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900"
+          >
+            {t(claveDelAvisoDelVaciado(avisoDelVaciado))}
+          </p>
+        </div>
+      )}
       
       {/* Inline error banner for post-load errors */}
       {error && scoringView && (
         <div className="max-w-4xl mx-auto px-4 pt-4">
           <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-center justify-between">
-            <p className="text-sm text-red-600">{error.message || t('errors.generic')}</p>
+            <p className="text-sm text-red-600">{textoDe(error)}</p>
             <button
               onClick={refetch}
               className="px-3 py-1 text-xs bg-red-600 text-white rounded hover:bg-red-700"

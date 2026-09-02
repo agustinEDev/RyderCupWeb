@@ -5,7 +5,7 @@
  * Uses httpOnly cookies for secure token management.
  *
  * Security Features:
- * - Prevents multiple simultaneous refresh attempts with a request queue
+ * - Prevents multiple simultaneous refresh attempts by sharing one refresh promise
  * - Automatically retries failed requests after refreshing
  * - Handles refresh token expiration with automatic logout
  * - Uses httpOnly cookies (XSS protection)
@@ -43,9 +43,26 @@ const hayUsuarioGuardado = () => {
 
 const API_URL = globalThis.APP_CONFIG?.API_BASE_URL || import.meta.env.VITE_API_BASE_URL || '';
 
-// State management for refresh token flow
-let isRefreshing = false;
-let failedQueue = [];
+// El refresco que hay en vuelo ahora mismo, o null si no hay ninguno.
+//
+// Una PROMESA y no un booleano con su cola aparte (FE #518). Con el booleano,
+// «se ha terminado el refresco» y «se ha vaciado la cola» eran dos momentos
+// distintos, y entre ellos cabia una peticion: la que daba 401 mientras el que
+// refresco reintentaba su peticion original se encolaba en una cola ya vaciada
+// y su promesa no se resolvia NUNCA. En `submitScore` eso era un `await`
+// eterno y un hoyo que ni se enviaba ni se guardaba para luego.
+//
+// Con la promesa, esperar al refresco y saber que ha terminado son lo mismo,
+// asi que no hay hueco donde caerse. Y se sigue cumpliendo lo que el booleano
+// protegia: mientras haya una en vuelo, quien llega se engancha a ella en vez
+// de pedir otro refresco.
+let refrescoEnCurso = null;
+
+// Cuanto se espera a que el servidor conteste al refresco antes de darlo por
+// perdido. Generoso a proposito: una red lenta no es una sesion invalida, y
+// abortar demasiado pronto echaria a alguien de la aplicacion en mitad de una
+// vuelta (FE #514). Lo que no puede es esperar para siempre
+const TOPE_DEL_REFRESCO_MS = 15000;
 
 // Momento del ultimo refresco con exito en esta carga de la pagina, o null si
 // todavia no ha habido ninguno. Lo consulta el refresco proactivo, que de otro
@@ -53,27 +70,17 @@ let failedQueue = [];
 // puede consultar desde JavaScript (FE #392).
 let lastRefreshAt = null;
 
+// Cuantos refrescos con exito van en esta carga de la pagina. Un CONTADOR y no
+// la marca de tiempo de arriba: `Date.now()` va en milisegundos, y un refresco
+// rapido puede caer en el mismo milisegundo en que salio la peticion, con lo
+// que «ya se refresco despues» daba falso justo cuando era cierto
+let refrescosCompletados = 0;
+
 /**
  * @returns {number|null} Timestamp del ultimo refresco con exito, o null si no
  * ha habido ninguno desde que se cargo la pagina.
  */
 export const getLastRefreshAt = () => lastRefreshAt;
-
-/**
- * Process the queue of failed requests after successful token refresh
- * @param {Error|null} error - Error if refresh failed, null if successful
- */
-const processQueue = (error = null) => {
-  failedQueue.forEach(promise => {
-    if (error) {
-      promise.reject(error);
-    } else {
-      promise.resolve();
-    }
-  });
-
-  failedQueue = [];
-};
 
 /**
  * Refresh the access token using the refresh token cookie
@@ -84,13 +91,28 @@ export const refreshAccessToken = async () => {
   try {
     console.log('🔄 [TokenRefresh] Attempting to refresh access token...');
 
-    const response = await fetch(`${API_URL}/api/v1/auth/refresh-token`, {
-      method: 'POST',
-      credentials: 'include', // Critical: sends httpOnly cookies
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
+    // Con tope de tiempo, y no es un adorno: desde FE #518 TODA peticion que
+    // reciba un 401 espera a este refresco. Un `fetch` que se queda colgado
+    // —lo normal en un movil con mala cobertura, donde la conexion no falla,
+    // simplemente no contesta— dejaria esperando indefinidamente a todas. Que
+    // es exactamente el fallo que aquella issue vino a cerrar, alcanzado por
+    // otro camino
+    const corte = new AbortController();
+    const temporizador = setTimeout(() => corte.abort(), TOPE_DEL_REFRESCO_MS);
+
+    let response;
+    try {
+      response = await fetch(`${API_URL}/api/v1/auth/refresh-token`, {
+        method: 'POST',
+        credentials: 'include', // Critical: sends httpOnly cookies
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        signal: corte.signal,
+      });
+    } finally {
+      clearTimeout(temporizador);
+    }
 
     if (!response.ok) {
       console.error('❌ [TokenRefresh] Refresh failed:', response.status, response.statusText);
@@ -130,6 +152,7 @@ export const refreshAccessToken = async () => {
     // No need to handle token manually
 
     lastRefreshAt = Date.now();
+    refrescosCompletados += 1;
 
     return true;
   } catch (error) {
@@ -144,9 +167,9 @@ export const refreshAccessToken = async () => {
  * Flow:
  * 1. Execute original request
  * 2. If 401 response:
- *    a. Add request to queue
- *    b. Attempt to refresh token (only once, even if multiple 401s)
- *    c. If refresh succeeds: retry all queued requests
+ *    a. If a refresh is already in flight, await that same one
+ *    b. Otherwise start it (only one at a time, however many 401s arrive)
+ *    c. If refresh succeeds: retry the request
  *    d. If refresh fails: logout and redirect
  *
  * @param {string} url - Request URL
@@ -159,6 +182,10 @@ export const fetchWithTokenRefresh = async (url, options = {}) => {
     ...options,
     credentials: 'include',
   };
+
+  // Cuantos refrescos habia cuando sale esta peticion. Si al volver con un 401
+  // hay mas, es que el token que uso ya esta sustituido y basta con reintentar
+  const refrescosAlSalir = refrescosCompletados;
 
   try {
     // Execute original request
@@ -226,40 +253,41 @@ export const fetchWithTokenRefresh = async (url, options = {}) => {
 
     console.log('⚠️ [TokenRefresh] Received 401 Unauthorized. Attempting token refresh...');
 
-    // If a refresh is already in progress, queue this request
-    if (isRefreshing) {
-      console.log('⏳ [TokenRefresh] Refresh already in progress. Queueing request...');
-
-      return new Promise((resolve, reject) => {
-        failedQueue.push({
-          resolve: () => {
-            // Retry the original request after refresh completes
-            console.log('🔄 [TokenRefresh] Retrying queued request...');
-            fetch(url, fetchOptions)
-              .then(resolve)
-              .catch(reject);
-          },
-          reject,
-        });
-      });
+    // Si alguien ya refresco DESPUES de que esta peticion saliera, su 401 es de
+    // un token que ya esta sustituido: se reintenta y punto, sin pedir otro
+    // refresco. Sin esto, quien sale con el token viejo justo antes de que
+    // termine el refresco arranca uno nuevo e innecesario — y si ese segundo
+    // falla por red, tumba tambien a quien se hubiera enganchado a el, aunque
+    // la cookie que consiguio el primero fuera perfectamente valida
+    const yaSeRefrescoDespues = refrescosCompletados > refrescosAlSalir;
+    if (!refrescoEnCurso && yaSeRefrescoDespues) {
+      console.log('🔄 [TokenRefresh] A refresh already happened after this request left. Retrying...');
+      return await fetch(url, fetchOptions);
     }
 
-    // Start refresh process
-    isRefreshing = true;
+    // Si ya hay un refresco en vuelo, esta peticion se engancha a el en vez de
+    // pedir otro. Al terminar, reintenta lo suyo. Si el refresco falla, el
+    // error sube por aqui: ya lo ha tratado quien lo arranco
+    if (refrescoEnCurso) {
+      console.log('⏳ [TokenRefresh] Refresh already in progress. Waiting for it...');
+      await refrescoEnCurso;
+      console.log('🔄 [TokenRefresh] Retrying queued request...');
+      // `return await` y no `return` a secas: sin esperar aqui, un fallo de red
+      // en este reintento se escapa del catch de abajo y el mismo suceso deja
+      // dos rastros distintos segun quien lo sufra
+      return await fetch(url, fetchOptions);
+    }
 
     try {
-      // Attempt to refresh the token
-      await refreshAccessToken();
-
-      // OJO: `isRefreshing` sigue en cierto hasta el `finally`, también durante
-      // el reintento de abajo. Una petición que dé 401 en esa ventana se encola
-      // en una cola ya vaciada y su promesa no se resuelve. Se dejó como estaba
-      // a propósito: soltarlo antes quita la exclusión que impide dos refrescos
-      // a la vez, y con dos en vuelo el fallo de uno rechaza las peticiones que
-      // esperaban al otro. Arreglarlo pide una promesa compartida, no mover
-      // esta línea
-      // Refresh successful - process queued requests
-      processQueue();
+      // El refresco se guarda ANTES de esperarlo, para que quien llegue
+      // mientras tanto lo encuentre. Y se suelta en cuanto termina —no cuando
+      // termina el reintento de abajo—: una peticion que de 401 durante ese
+      // reintento salio con el token viejo y necesita su propio refresco, que
+      // es exactamente lo que antes se quedaba colgado para siempre
+      refrescoEnCurso = refreshAccessToken().finally(() => {
+        refrescoEnCurso = null;
+      });
+      await refrescoEnCurso;
 
       // Retry the original request
       console.log('🔄 [TokenRefresh] Retrying original request...');
@@ -268,9 +296,6 @@ export const fetchWithTokenRefresh = async (url, options = {}) => {
       return retryResponse;
 
     } catch (refreshError) {
-      // Refresh failed - reject all queued requests
-      processQueue(refreshError);
-
       // Solo el servidor puede decir que una sesión ya no vale. Un fallo de red
       // o un 5xx significan que no se ha podido preguntar, no que la respuesta
       // sea que no, y tratarlos igual echaba al jugador de la aplicación en
@@ -313,16 +338,13 @@ export const fetchWithTokenRefresh = async (url, options = {}) => {
 
       // Todas las salidas de aquí terminan igual: el error sube a quien llamó.
       // Antes cada rama esperaba a que la redirección interrumpiera, con un
-      // tope de cinco segundos. Eso dejaba `isRefreshing` bloqueado ese rato,
-      // y cualquier petición que diera 401 mientras tanto se encolaba DESPUÉS
-      // de haberse vaciado la cola: su promesa no se resolvía nunca. Peor aún,
+      // tope de cinco segundos. Eso dejaba el refresco bloqueado ese rato, y
+      // cualquier petición que diera 401 mientras tanto se quedaba esperándolo
+      // sin que nadie lo terminara. Peor aún,
       // si el cierre de sesión no llegaba a redirigir —ya estaba marcado como
       // atendido— nadie interrumpía nada y quien llamó recibía a los cinco
       // segundos un 'Redirect timeout' en vez del error de verdad
       throw refreshError;
-
-    } finally {
-      isRefreshing = false;
     }
 
   } catch (error) {
