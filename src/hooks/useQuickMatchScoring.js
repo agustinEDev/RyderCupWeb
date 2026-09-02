@@ -8,7 +8,7 @@ import {
   cancelQuickMatchUseCase,
 } from '../composition';
 import * as golpesPerdidos from '../utils/golpesPerdidos';
-import { apartaLaRechazada } from '../services/vaciaAnotaciones';
+import { apartaLaRechazada, vaciaAnotaciones } from '../services/vaciaAnotaciones';
 import { seGuardaParaDespues } from '../utils/politicaDeLaCola';
 import * as offlineQueue from '../utils/scoringOfflineQueue';
 import { loQueSeSupo, olvida, recuerda } from '../services/loUltimoConocido';
@@ -204,19 +204,45 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
       // Una respuesta CON estado es una respuesta: si el servidor dice que esa
       // partida ya no está —o que no es nuestra— pintarla desde el móvil sería
       // enseñar algo que no existe, y dejar anotar encima
-      if (estado === 404 || estado === 403) {
-        olvida(quickMatchId);
-        // Y lo que quedara guardado de ella no se va a poder enviar NUNCA: el
-        // vaciado de fondo no toca las partidas rápidas, y el único que las
-        // toca es este, que solo corre cuando el sondeo responde bien. Sin
-        // esto, el aviso del panel decía «tienes 3 golpes sin enviar» para
-        // siempre y su botón llevaba a una pantalla que da error. Se apartan
-        // con la misma regla que cualquier rechazo definitivo: con aviso, y
-        // solo si el aviso ha quedado escrito (FE #551)
-        for (const entrada of offlineQueue.getByMatch(quickMatchId, quienMiraRef.current)) {
-          apartaLaRechazada(entrada);
+      if (estado === 404 || estado === 403) olvida(quickMatchId);
+
+      // Y si la partida ya no existe PARA NADIE, lo que quedara guardado de
+      // ella no se va a poder enviar nunca: el vaciado de fondo no toca las
+      // partidas rápidas, y el único que las toca es este, que solo corre
+      // cuando el sondeo responde bien. Sin esto, el aviso del panel decía
+      // «tienes 3 golpes sin enviar» para siempre y su botón llevaba a una
+      // pantalla que da error (FE #551).
+      //
+      // **Solo con un 404, y solo lo que es de esta cuenta.** Un 403 dice que
+      // no es TUYA, no que no exista: en un móvil compartido, abrir la partida
+      // de otra persona borraba sus golpes para siempre. Y se lee con
+      // `deQuien`, que es estricto, no con `getByMatch`, que incluye lo
+      // huérfano a propósito para poder ENSEÑARLO: leer de más es inofensivo y
+      // borrar de más no lo es.
+      //
+      // Con el mismo cerrojo que el vaciado: sin él, esto vaciaba la cola
+      // mientras un envío iba en vuelo, y el golpe acababa en el servidor Y
+      // marcado como perdido
+      if (estado === 404 && !escribiendoRef.current) {
+        escribiendoRef.current = true;
+        try {
+          const mias = offlineQueue
+            .deQuien(quienMiraRef.current)
+            .filter((e) => e.matchId === quickMatchId);
+          for (const entrada of mias) {
+            // Si el aviso no cabe, la anotación se queda: preferible que el
+            // panel siga avisando a que desaparezca sin dejar rastro
+            if (!apartaLaRechazada(entrada, quienMiraRef.current)) break;
+          }
+        } finally {
+          escribiendoRef.current = false;
         }
-        setPendientes(offlineQueue.size(quickMatchId, quienMiraRef.current));
+        // Con la guarda de respuesta rezagada, como el resto de este bloque:
+        // sin ella, una respuesta de la partida anterior escribía el contador
+        // de la que ya está en pantalla
+        if (miSeq === estadoSeqRef.current && quickMatchId === idVigenteRef.current) {
+          setPendientes(offlineQueue.size(quickMatchId, quienMiraRef.current));
+        }
       }
 
       // Se pinta lo último que se supo, que es lo que permite seguir anotando
@@ -377,25 +403,6 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
   /**
    * Envía un golpe guardado. Devuelve qué hacer con él.
    */
-  const enviaGuardado = useCallback(
-    async (entrada, miParticipanteId) => {
-      const { holeNumber, participantId, scoreData } = entrada;
-      try {
-        if (participantId === miParticipanteId) {
-          await submitQuickMatchHoleScoreUseCase.execute(quickMatchId, holeNumber, scoreData.score);
-        } else {
-          await submitQuickMatchProxyHoleScoreUseCase.execute(quickMatchId, participantId, holeNumber, scoreData.score);
-        }
-        return 'enviado';
-      } catch (err) {
-        // Mismo criterio que al anotar: lo que no mejora esperando se descarta,
-        // y lo demás para el vaciado entero para reintentarlo luego
-        return seGuardaParaDespues(err) ? 'para' : 'descartar';
-      }
-    },
-    [quickMatchId]
-  );
-
   /**
    * Vacía lo guardado. Lo dispara el sondeo al responder: si responde, hay
    * conexión, y no hace falta deducir un estado global de la red.
@@ -455,62 +462,45 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
         }
         setDiscrepancias(enConflicto);
 
-        let algoLlegoAlServidor = false;
-        for (const apuntada of porEnviar) {
-          // Se relee justo antes de mandarla: entre el reparto de arriba y
-          // este momento hay envios en vuelo, y el jugador puede haber
-          // decidido sobre ella. Mandar la copia vieja seria enviar un golpe
-          // que acaba de descartar
-          const entrada = offlineQueue
-            .getByMatch(quickMatchId, currentUserId)
-            .find((e) => e.holeNumber === apuntada.holeNumber && e.participantId === apuntada.participantId);
-          if (!entrada) continue;
-
-          const queHacer = await enviaGuardado(entrada, miParticipanteId);
-          if (queHacer === 'para') break;
-
-          // ¿Sigue siendo la que se envió? Mientras estaba en vuelo, el
-          // jugador ha podido reanotar ese mismo hoyo y guardar otro
-          // resultado. Se mira ANTES de nada: si ya no es la misma, ni se
-          // borra —se llevaría la corrección— ni se apunta como perdida, que
-          // dejaba un aviso permanente pidiendo repetir un hoyo ya corregido
-          const ahora = offlineQueue
-            .getByMatch(quickMatchId, currentUserId)
-            .find((e) => e.holeNumber === entrada.holeNumber && e.participantId === entrada.participantId);
-          const sigueSiendoLaMisma = Boolean(ahora && ahora.scoreData.score === entrada.scoreData.score);
-
-          if (queHacer === 'descartar') {
-            if (!sigueSiendoLaMisma) continue;
-            // En la pantalla, para poder decir qué hoyos repetir. Va PRIMERO y
-            // no depende de que el aviso quepa en el disco: es lo único que se
-            // le puede enseñar a alguien cuyo móvil está lleno, que es
-            // justamente cuando más falta hace
+        // El envío, la decisión y el borrado los hace el bucle único
+        // (FE #551). Aquí solo se dice CÓMO se manda una anotación de partida
+        // rápida —propia o por delegación— y quién avisa en pantalla. Cuando
+        // esto era un bucle propio le faltaba la tercera rama: un error de la
+        // propia anotación —una huérfana sin participante, que el caso de uso
+        // rechaza antes de enviar— se tomaba por «reintentar luego» y atascaba
+        // la cola entera en cada sondeo, para siempre
+        const { enviadas } = await vaciaAnotaciones({
+          entradas: porEnviar,
+          manda: (entrada) =>
+            entrada.participantId === miParticipanteId
+              ? submitQuickMatchHoleScoreUseCase.execute(
+                quickMatchId,
+                entrada.holeNumber,
+                entrada.scoreData.score
+              )
+              : submitQuickMatchProxyHoleScoreUseCase.execute(
+                quickMatchId,
+                entrada.participantId,
+                entrada.holeNumber,
+                entrada.scoreData.score
+              ),
+          alDescartar: (entrada) => {
+            // El aviso en pantalla, para poder decir qué hoyos repetir. Lo
+            // pone el bucle antes de tocar el disco: es lo único que se le
+            // puede enseñar a alguien cuyo móvil está lleno, que es justo
+            // cuando más falta hace
             setPerdidos((antes) =>
-              antes.some((x) => x.holeNumber === entrada.holeNumber && x.participantId === entrada.participantId)
+              antes.some(
+                (x) => x.holeNumber === entrada.holeNumber
+                  && x.participantId === entrada.participantId
+              )
                 ? antes
                 : [...antes, { holeNumber: entrada.holeNumber, participantId: entrada.participantId }]
             );
-            // Y TAMBIÉN en el almacén, que sobrevive a salir de aquí: sin eso,
-            // quien navega o cierra la aplicación se queda sin el aviso y sin
-            // el golpe, que ya se borró de la cola (FE #521)
-            const apuntado = golpesPerdidos.apunta({
-              matchId: quickMatchId,
-              matchName: laPartidaRef.current.matchName,
-              matchNumber: null,
-              holeNumber: entrada.holeNumber,
-              participantId: entrada.participantId ?? null,
-              userId: entrada.userId ?? currentUserId ?? null,
-            });
-            // Sin aviso no se borra: preferible reintentarlo mil veces
-            if (!apuntado) continue;
-          } else {
-            algoLlegoAlServidor = true;
-          }
-
-          if (sigueSiendoLaMisma) {
-            offlineQueue.remove(quickMatchId, entrada.holeNumber, entrada.participantId, entrada.userId ?? null);
-          }
-        }
+          },
+          dueñoSiNoLoTiene: currentUserId ?? null,
+        });
+        const algoLlegoAlServidor = enviadas > 0;
 
         setPendientes(offlineQueue.size(quickMatchId, currentUserId));
 
@@ -524,7 +514,7 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
         escribiendoRef.current = false;
       }
     },
-    [quickMatchId, currentUserId, enviaGuardado, fetchQuickMatch]
+    [quickMatchId, currentUserId, fetchQuickMatch]
   );
 
   // La ref se asigna en un efecto, no durante el render. El sondeo la lee
@@ -548,7 +538,14 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
    */
   useEffect(() => {
     laPartidaRef.current = { matchName: quickMatch?.name ?? null, matchNumber: null };
-  }, [quickMatch?.name]);
+    // Y se le pone nombre a lo que se guardó sin él: en un arranque en frío
+    // sin cobertura la partida no llega nunca, así que todo lo anotado quedó
+    // sin nombre y el panel enseñaba «una partida anterior» —dos avisos
+    // idénticos con dos partidas—. El gemelo de competición ya lo hacía
+    if (quickMatchId && quickMatch?.name) {
+      offlineQueue.ponleNombre(quickMatchId, { matchName: quickMatch.name });
+    }
+  }, [quickMatchId, quickMatch?.name]);
 
   useEffect(() => {
     quienMiraRef.current = currentUserId;

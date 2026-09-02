@@ -38,6 +38,10 @@ import * as cola from '../utils/scoringOfflineQueue';
  * y una corrección hecha en el mismo milisegundo lleva el mismo sello.
  */
 const siguesiendoLaMisma = (entrada) => {
+  // Por `getByMatch` y no por `getAll`: es la lectura que las pantallas
+  // sustituyen en sus tests, y cambiarla dejaba la mitad de este bucle sin
+  // ejercitar. Sale más caro —dos lecturas del almacenamiento por entrada—,
+  // y se acepta a sabiendas: leer de más aquí no pierde golpes
   const ahora = cola
     .getByMatch(entrada.matchId, entrada.userId)
     .find(
@@ -63,14 +67,17 @@ const siguesiendoLaMisma = (entrada) => {
  *
  * @returns {boolean} Si de verdad se apartó
  */
-export const apartaLaRechazada = (entrada) => {
+export const apartaLaRechazada = (entrada, dueñoSiNoLoTiene = null) => {
   const apuntado = golpesPerdidos.apunta({
     matchId: entrada.matchId,
     matchName: entrada.matchName ?? null,
     matchNumber: entrada.matchNumber ?? null,
     holeNumber: entrada.holeNumber,
     participantId: entrada.participantId ?? null,
-    userId: entrada.userId ?? null,
+    // Con a quién atribuir lo huérfano: un aviso sin dueño lo ve TODA cuenta
+    // del móvil, y el primero que pulse «Entendido» se lo lleva antes de que
+    // lo vea el suyo
+    userId: entrada.userId ?? dueñoSiNoLoTiene ?? null,
   });
   if (!apuntado) return false;
 
@@ -89,18 +96,40 @@ export const apartaLaRechazada = (entrada) => {
  * @param {Array} opciones.entradas - Qué anotaciones, ya elegidas por quien llama
  * @param {(entrada: object) => Promise<void>} opciones.manda - Cómo se envía una.
  *   Lanza si no se pudo
+ * @param {() => void} [opciones.sigoVivo] - Se llama en cada vuelta, para que
+ *   quien vigile pueda distinguir un bucle lento de uno colgado
+ * @param {(entrada: object) => void} [opciones.alDescartar] - Aviso en
+ *   pantalla de una anotación rechazada, antes de tocar el disco
+ * @param {string|null} [opciones.dueñoSiNoLoTiene] - A quién se le atribuye el
+ *   aviso de una anotación huérfana
  * @param {(entrada: object) => boolean} [opciones.seSalta] - Cuáles no toca
  *   este vaciado. Se consulta EN CADA VUELTA, no una vez al principio: el
  *   bucle tarda, y en ese rato el usuario puede entrar en una partida que se
  *   está enviando
  * @returns {Promise<{enviadas: number, descartadas: number, paroPor: string|null}>}
+ *   `paroPor` dice POR QUÉ se salió antes de tiempo, y no es decorativo: quien
+ *   llama decide con él si reintentar. `'no-es-de-esta'` se arregla solo con
+ *   el tiempo; `'no-se-pudo-borrar'` y `'no-se-pudo-escribir'` son el
+ *   almacenamiento lleno y reintentar solo repite envíos que ya llegaron
  */
-export const vaciaAnotaciones = async ({ entradas, manda, seSalta = () => false }) => {
+export const vaciaAnotaciones = async ({
+  entradas,
+  manda,
+  seSalta = () => false,
+  sigoVivo = () => {},
+  alDescartar = () => {},
+  dueñoSiNoLoTiene = null,
+}) => {
   let enviadas = 0;
   let descartadas = 0;
   let paroPor = null;
 
   for (const entrada of entradas) {
+    // Señal de vida por vuelta: quien vigila que este bucle no se haya
+    // colgado necesita distinguir «lento» de «muerto». Dieciocho hoyos a
+    // siete segundos son más de dos minutos, y sin esto un vaciado que va
+    // bien se daba por colgado y se lanzaba otro encima
+    sigoVivo();
     if (seSalta(entrada)) continue;
     // Se relee justo antes de mandarla: entre la lista de arriba y este
     // momento hay envíos en vuelo, y el jugador puede haber corregido este
@@ -111,8 +140,24 @@ export const vaciaAnotaciones = async ({ entradas, manda, seSalta = () => false 
       await manda(entrada);
     } catch (err) {
       if (esRechazoDefinitivo(err)) {
-        descartadas += apartaLaRechazada(entrada) ? 1 : 0;
-        continue;
+        // Salvo que el jugador la haya corregido mientras iba en camino: lo
+        // que hay guardado ya no es esto. Apuntarla como perdida dejaría un
+        // aviso permanente pidiendo repetir un hoyo que ya está corregido, y
+        // no hay nada que lo retire
+        if (!siguesiendoLaMisma(entrada)) continue;
+        // Primero el aviso en pantalla, que no depende del disco: es lo único
+        // que se le puede enseñar a alguien cuyo móvil está lleno
+        alDescartar(entrada);
+        if (apartaLaRechazada(entrada, dueñoSiNoLoTiene)) {
+          descartadas += 1;
+          continue;
+        }
+        // El aviso no cupo, así que la anotación se queda. Es el MISMO
+        // almacenamiento que falla al borrar, y por el mismo motivo: seguir
+        // con las demás son N peticiones condenadas y N escrituras fallidas en
+        // cada reconexión, sin que nadie se entere de que el móvil está lleno
+        paroPor = 'no-se-pudo-escribir';
+        break;
       }
       // El fallo no es de esta anotación sino de la sesión, del servidor o de
       // la red: mientras siga así, las demás fallarían igual. Seguir el bucle
@@ -132,7 +177,10 @@ export const vaciaAnotaciones = async ({ entradas, manda, seSalta = () => false 
 
     // Llegó. Solo se borra si sigue siendo la que se mandó
     if (!siguesiendoLaMisma(entrada)) {
-      enviadas += 1;
+      // Y NO se cuenta como enviada: la corrección del jugador sigue en la
+      // cola esperando. Contarla daba un «se envió todo» con cosas dentro, que
+      // apagaba el reintento y dejaba la corrección esperando a un evento que
+      // en un móvil que nunca perdió cobertura no vuelve a llegar
       continue;
     }
     const borrada = cola.remove(

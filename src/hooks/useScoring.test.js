@@ -29,7 +29,10 @@ vi.mock('../utils/scoringOfflineQueue', () => ({
   enqueue: vi.fn(),
   dequeue: vi.fn(),
   getAll: vi.fn(() => []),
-  remove: vi.fn(),
+  // Devuelve `true` como el de verdad: con `undefined`, el vaciado creía que
+  // no había podido borrar y cortaba tras el primer envío, así que la mitad de
+  // las ramas de estos tests no se ejecutaba nunca
+  remove: vi.fn(() => true),
   clear: vi.fn(),
   size: vi.fn(() => 0),
   getByMatch: vi.fn(() => []),

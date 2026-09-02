@@ -139,7 +139,10 @@ const GolpesSinEnviar = ({ userId = null }) => {
               </p>
               <ul className="mt-1 space-y-0.5 text-xs text-red-800">
                 {delGrupo.map((aviso) => (
-                  <li key={`${aviso.matchId}-${aviso.holeNumber}`}>
+                  // Con el participante: en una partida rápida de cuatro hay
+                  // un aviso por jugador del mismo hoyo, y sin él las claves
+                  // se repiten
+                  <li key={`${aviso.matchId}-${aviso.holeNumber}-${aviso.participantId ?? ''}`}>
                     {t('golpesSinEnviar.perdido', { hoyo: aviso.holeNumber })}
                   </li>
                 ))}

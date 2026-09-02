@@ -295,7 +295,7 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
     // solo sitio (FE #551). Aquí solo se dice CUÁLES son las de esta pantalla
     // y CÓMO se mandan. Cuando esto era una copia del bucle, le faltaban dos
     // guardas que el de fondo sí tenía, y perdía correcciones del jugador
-    await vaciaAnotaciones({
+    const { paroPor } = await vaciaAnotaciones({
       entradas: offlineQueue.getByMatch(matchId, currentUserId),
       manda: (entrada) =>
         submitHoleScoreUseCase.execute(entrada.matchId, entrada.holeNumber, entrada.scoreData),
@@ -304,6 +304,13 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
       // mal y la borraría a continuación (FE #515)
       seSalta: (entrada) => entrada.participantId != null,
     });
+    // Si el vaciado paró porque el móvil no admite escrituras, el resto de la
+    // vuelta no ha salido y no hay nadie que lo reintente: el vaciado de fondo
+    // deja fuera a propósito la partida que se está anotando. Callarlo deja al
+    // jugador mirando un contador que no baja, sin saber por qué
+    if (paroPor === 'no-se-pudo-borrar' || paroPor === 'no-se-pudo-escribir') {
+      setError(errorDeGuardado(null));
+    }
     setPendingQueueSize(pendientesPropias());
     await fetchScoringView();
   }, [matchId, fetchScoringView, pendientesPropias, currentUserId]);

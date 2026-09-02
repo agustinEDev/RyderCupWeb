@@ -1,5 +1,5 @@
 import { renderHook, act } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('../services/vaciadoDeLaCola', () => ({
   vaciaLaColaEntera: vi.fn(() => Promise.resolve({ enviadas: 0, descartadas: 0, pendientes: 0 })),
@@ -36,6 +36,12 @@ describe('useVaciadoDeLaCola (FE #521)', () => {
     rutaActual = '/dashboard';
     Object.defineProperty(document, 'visibilityState', { value: 'visible', configurable: true });
     Object.defineProperty(globalThis.navigator, 'onLine', { value: true, configurable: true });
+  });
+
+  // Los temporizadores falsos se devuelven SIEMPRE, aunque el test falle a
+  // mitad: dejarlo al final del cuerpo los filtraba a los dos siguientes
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it('vacía al entrar', async () => {
@@ -158,7 +164,6 @@ describe('useVaciadoDeLaCola (FE #521)', () => {
     });
 
     expect(vaciaLaColaEntera).toHaveBeenCalledTimes(2);
-    vi.useRealTimers();
   });
 
   it('pero no reintenta cuando ha ido bien', async () => {
@@ -175,7 +180,41 @@ describe('useVaciadoDeLaCola (FE #521)', () => {
     });
 
     expect(vaciaLaColaEntera).toHaveBeenCalledTimes(1);
-    vi.useRealTimers();
+  });
+
+  it('no reintenta cuando el móvil no pudo escribir: reenviaría lo ya enviado', async () => {
+    // El corte del bucle existe precisamente para no repetir un golpe que el
+    // servidor ya tiene. Reintentarlo lo convertía en automático
+    vi.useFakeTimers();
+    vaciaLaColaEntera.mockResolvedValue({
+      enviadas: 0, descartadas: 0, pendientes: 2, paroPor: 'no-se-pudo-borrar',
+    });
+
+    await monta();
+
+    await act(async () => {
+      vi.advanceTimersByTime(600_000);
+      await Promise.resolve();
+    });
+
+    expect(vaciaLaColaEntera).toHaveBeenCalledTimes(1);
+  });
+
+  it('y si otro vaciado tenía el cerrojo, no se da por bueno', async () => {
+    // Confundirlo con «ha ido bien» desarmaba el reintento ya programado
+    vi.useFakeTimers();
+    vaciaLaColaEntera.mockResolvedValue({
+      enviadas: 0, descartadas: 0, pendientes: 3, paroPor: 'ya-hay-otro',
+    });
+
+    await monta();
+
+    await act(async () => {
+      vi.advanceTimersByTime(30_000);
+      await Promise.resolve();
+    });
+
+    expect(vaciaLaColaEntera).toHaveBeenCalledTimes(2);
   });
 
   it('un fallo del vaciado no sube a la pantalla', async () => {

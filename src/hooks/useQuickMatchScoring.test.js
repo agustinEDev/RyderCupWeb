@@ -18,8 +18,13 @@ import { useQuickMatchScoring } from './useQuickMatchScoring';
 
 vi.mock('../utils/scoringOfflineQueue', () => ({
   enqueue: vi.fn(),
-  remove: vi.fn(),
+  // Devuelve `true` como el de verdad: con `undefined`, el vaciado creía que
+  // no había podido borrar y cortaba tras el primer envío, así que la mitad de
+  // las ramas de estos tests no se ejecutaba nunca
+  remove: vi.fn(() => true),
   getByMatch: vi.fn(() => []),
+  deQuien: vi.fn(() => []),
+  ponleNombre: vi.fn(() => true),
   size: vi.fn(() => 0),
   clear: vi.fn(),
 }));
@@ -1710,7 +1715,9 @@ describe('useQuickMatchScoring · la partida ya no está (FE #551)', () => {
     vi.clearAllMocks();
     getGolfCourseUseCase.execute.mockResolvedValue({ holes: [], tees: [], name: 'Campo' });
     offlineQueue.getByMatch.mockReturnValue([]);
+    offlineQueue.deQuien.mockReturnValue([]);
     offlineQueue.size.mockReturnValue(0);
+    offlineQueue.remove.mockReturnValue(true);
   });
 
   it('un 404 aparta lo guardado con aviso, en vez de dejarlo colgado', async () => {
@@ -1719,7 +1726,7 @@ describe('useQuickMatchScoring · la partida ya no está (FE #551)', () => {
     // «tienes golpes sin enviar» para siempre y su botón llevaba a una
     // pantalla que da error: ni se enviaban, ni se descartaban, ni se podía
     // quitar el aviso
-    offlineQueue.getByMatch.mockReturnValue([pendiente(7, 5)]);
+    offlineQueue.deQuien.mockReturnValue([{ ...pendiente(7, 5), userId: 'user-1' }]);
     getQuickMatchUseCase.execute.mockRejectedValue(
       Object.assign(new Error('Not found'), { status: 404 })
     );
@@ -1731,16 +1738,48 @@ describe('useQuickMatchScoring · la partida ya no está (FE #551)', () => {
         expect.objectContaining({ matchId: 'qm-1', holeNumber: 7 })
       )
     );
-    expect(offlineQueue.remove).toHaveBeenCalledWith('qm-1', 7, 'user-1', null);
+    expect(offlineQueue.remove).toHaveBeenCalledWith('qm-1', 7, 'user-1', 'user-1');
     // Se desmonta: el sondeo sigue vivo si no, y su siguiente vuelta escribe
     // en el test de al lado, después de que este haya limpiado el disco
     unmount();
   });
 
+  it('pero un 403 NO: dice que no es tuya, no que no exista', async () => {
+    // En un móvil compartido, abrir la partida de otra persona borraba sus
+    // golpes para siempre. Un 403 es por usuario, no por partida
+    offlineQueue.deQuien.mockReturnValue([{ ...pendiente(7, 5), matchId: 'qm-8', userId: 'user-1' }]);
+    getQuickMatchUseCase.execute.mockRejectedValue(
+      Object.assign(new Error('Forbidden'), { status: 403 })
+    );
+
+    renderHook(() => useQuickMatchScoring('qm-8', 'user-1'));
+
+    await waitFor(() => expect(getQuickMatchUseCase.execute).toHaveBeenCalled());
+    expect(
+      golpesPerdidos.pendientes('user-1').filter((a) => a.matchId === 'qm-8')
+    ).toEqual([]);
+    expect(offlineQueue.remove).not.toHaveBeenCalledWith('qm-8', 7, 'user-1', 'user-1');
+  });
+
+  it('y nunca lo de otra cuenta: se lee con deQuien, no con getByMatch', async () => {
+    // `getByMatch` incluye lo huérfano a propósito, para poder ENSEÑARLO.
+    // Leer de más es inofensivo; borrar de más no lo es
+    offlineQueue.getByMatch.mockReturnValue([{ ...pendiente(7, 5), matchId: 'qm-7', userId: 'otra' }]);
+    offlineQueue.deQuien.mockReturnValue([]);
+    getQuickMatchUseCase.execute.mockRejectedValue(
+      Object.assign(new Error('Not found'), { status: 404 })
+    );
+
+    renderHook(() => useQuickMatchScoring('qm-7', 'user-1'));
+
+    await waitFor(() => expect(getQuickMatchUseCase.execute).toHaveBeenCalled());
+    expect(offlineQueue.remove).not.toHaveBeenCalled();
+  });
+
   it('pero un 500 no: el backend está mal, la partida sigue ahí', async () => {
     // Con su propio id: el sondeo del test anterior puede resolver todavía, y
     // mirar por partida deja este test mirando solo lo suyo
-    offlineQueue.getByMatch.mockReturnValue([{ ...pendiente(7, 5), matchId: 'qm-9' }]);
+    offlineQueue.deQuien.mockReturnValue([{ ...pendiente(7, 5), matchId: 'qm-9', userId: 'user-1' }]);
     getQuickMatchUseCase.execute.mockRejectedValue(
       Object.assign(new Error('Boom'), { status: 500 })
     );

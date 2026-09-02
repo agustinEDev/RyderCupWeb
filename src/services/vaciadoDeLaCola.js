@@ -31,17 +31,21 @@ import { vaciaAnotaciones } from './vaciaAnotaciones';
 // veces, y la pantalla de anotación tiene el suyo: sin esto, la misma
 // anotación se enviaría dos veces.
 //
-// Se guarda CUÁNDO empezó, no un simple sí/no: `apiRequest` no tiene tope de
-// tiempo, así que una petición que no resuelve nunca dejaba esta bandera
-// puesta el resto de la vida de la página, y todos los intentos posteriores se
-// volvían un no-op silencioso. Pasado el plazo se da por colgado y se vuelve a
-// intentar: repetir un envío es recuperable —el servidor recibe el mismo
-// resultado dos veces—, quedarse sin vaciar no lo es (FE #551)
-let vaciandoDesde = null;
+// El cerrojo lleva DUEÑO y SEÑAL DE VIDA, y las dos cosas hicieron falta:
+//
+// - Dueño, porque `apiRequest` no tiene tope de tiempo y una petición que no
+//   resuelve nunca dejaba la bandera puesta el resto de la vida de la página.
+//   Se puede tomar el relevo, pero solo lo suelta quien lo tiene: sin esto, el
+//   vaciado viejo al terminar liberaba el hueco del que ya le había sustituido
+//   y acababa habiendo dos a la vez enviando el mismo hoyo.
+// - Señal de vida, porque un vaciado LENTO no es un vaciado colgado. Dieciocho
+//   hoyos a siete segundos pasan de dos minutos, y con un plazo fijo desde el
+//   principio se daba por muerto uno que iba perfectamente (FE #551)
+let cerrojo = null;
 const SE_DA_POR_COLGADO_MS = 2 * 60 * 1000;
 
 const hayOtroVaciadoVivo = () =>
-  vaciandoDesde !== null && Date.now() - vaciandoDesde < SE_DA_POR_COLGADO_MS;
+  cerrojo !== null && Date.now() - cerrojo.ultimaSenal < SE_DA_POR_COLGADO_MS;
 
 /** Se emite cuando el vaciado ha enviado o descartado algo. */
 export const COLA_VACIADA = 'rydercup:cola-vaciada';
@@ -57,7 +61,10 @@ export const COLA_VACIADA = 'rydercup:cola-vaciada';
  *   puede ENTRAR en una de las partidas que se están enviando: con un valor
  *   congelado se seguiría vaciando por debajo de una pantalla ya montada.
  *   `userId` es de quién es la sesión.
- * @returns {Promise<{enviadas: number, descartadas: number, pendientes: number}>}
+ * @returns {Promise<{enviadas: number, descartadas: number, pendientes: number,
+ *   paroPor: string|null}>} `paroPor` dice por qué se salió antes de tiempo, o
+ *   `'ya-hay-otro'` si ni llegó a empezar. Quien llama lo necesita para saber
+ *   si reintentar
  */
 export const vaciaLaColaEntera = async ({ saltaPartida = null, userId = null } = {}) => {
   const cualSalta = () => (typeof saltaPartida === 'function' ? saltaPartida() : saltaPartida);
@@ -65,15 +72,28 @@ export const vaciaLaColaEntera = async ({ saltaPartida = null, userId = null } =
   // explica el precio de no hacerlo. Lo huérfano se rescata desde la pantalla
   // de su partida, donde hay alguien mirando
   const mias = userId ? cola.deQuien(userId) : [];
-  if (mias.length === 0 || hayOtroVaciadoVivo()) {
-    return { enviadas: 0, descartadas: 0, pendientes: mias.length };
+  if (hayOtroVaciadoVivo()) {
+    // Se dice POR QUÉ no se hizo nada: quien llama tiene un reintento
+    // programado, y confundir esto con «ha ido bien» se lo desarmaba. Es real:
+    // el reintento salta mientras otro vaciado está en vuelo, se encuentra el
+    // cerrojo puesto, y sin este dato daba por buena una vuelta que ni empezó
+    return { enviadas: 0, descartadas: 0, pendientes: mias.length, paroPor: 'ya-hay-otro' };
+  }
+  if (mias.length === 0) {
+    return { enviadas: 0, descartadas: 0, pendientes: 0, paroPor: null };
   }
 
-  vaciandoDesde = Date.now();
+  const miTurno = Symbol('vaciado');
+  cerrojo = { quien: miTurno, ultimaSenal: Date.now() };
   let resultado;
   try {
     resultado = await vaciaAnotaciones({
       entradas: mias,
+      sigoVivo: () => {
+        // Solo mientras el cerrojo siga siendo mío: si me lo quitaron por
+        // colgado, refrescarlo echaría al que entró en mi lugar
+        if (cerrojo?.quien === miTurno) cerrojo.ultimaSenal = Date.now();
+      },
       manda: (entrada) =>
         submitHoleScoreUseCase.execute(entrada.matchId, entrada.holeNumber, entrada.scoreData),
       // La partida abierta la vacía su propia pantalla; y una anotación con
@@ -83,7 +103,8 @@ export const vaciaLaColaEntera = async ({ saltaPartida = null, userId = null } =
         entrada.matchId === cualSalta() || entrada.participantId != null,
     });
   } finally {
-    vaciandoDesde = null;
+    // Solo lo suelta quien lo tiene
+    if (cerrojo?.quien === miTurno) cerrojo = null;
   }
 
   if (resultado.enviadas > 0 || resultado.descartadas > 0) {

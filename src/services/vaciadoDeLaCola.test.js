@@ -213,6 +213,79 @@ describe('vaciaLaColaEntera (FE #521)', () => {
     ]);
   });
 
+  describe('el cerrojo (FE #551)', () => {
+    /** Un envío que se queda en vuelo hasta que se le dice que termine. */
+    const enVuelo = () => {
+      let suelta;
+      const promesa = new Promise((r) => { suelta = r; });
+      return { promesa, suelta: () => suelta({}) };
+    };
+
+    it('un vaciado lento no se da por colgado mientras siga dando señal', async () => {
+      // Dieciocho hoyos a siete segundos pasan del plazo. Con un plazo fijo
+      // desde el principio se daba por muerto uno que iba perfectamente, y el
+      // que entraba encima enviaba los mismos hoyos otra vez
+      vi.useFakeTimers();
+      cola.enqueue('m-1', 1, { ownScore: 4 }, null, YO);
+      cola.enqueue('m-2', 2, { ownScore: 5 }, null, YO);
+      const primero = enVuelo();
+      const segundo = enVuelo();
+      submitHoleScoreUseCase.execute
+        .mockImplementationOnce(() => primero.promesa)
+        .mockImplementationOnce(() => segundo.promesa);
+
+      const vaciado = vaciaLaColaEntera({ userId: YO });
+      await Promise.resolve();
+
+      // El primer envío tarda más que el plazo entero
+      vi.advanceTimersByTime(3 * 60 * 1000);
+      primero.suelta();
+      await Promise.resolve();
+      await Promise.resolve();
+
+      // Al pasar a la segunda anotación ha dado señal de vida, así que nadie
+      // puede tomarle el relevo aunque haya tardado un siglo
+      const intruso = await vaciaLaColaEntera({ userId: YO });
+      expect(intruso.paroPor).toBe('ya-hay-otro');
+
+      segundo.suelta();
+      await vaciado;
+      vi.useRealTimers();
+    });
+
+    it('y el que se dio por colgado no suelta el cerrojo del que le relevó', async () => {
+      // Al terminar liberaba el hueco del que ya le había sustituido, y
+      // acababa habiendo dos a la vez enviando el mismo hoyo
+      vi.useFakeTimers();
+      cola.enqueue('m-1', 1, { ownScore: 4 }, null, YO);
+      const colgado = enVuelo();
+      const relevo = enVuelo();
+      submitHoleScoreUseCase.execute
+        .mockImplementationOnce(() => colgado.promesa)
+        .mockImplementationOnce(() => relevo.promesa);
+
+      const primero = vaciaLaColaEntera({ userId: YO });
+      await Promise.resolve();
+
+      // Pasa el plazo sin señal de vida: se le puede tomar el relevo
+      vi.advanceTimersByTime(3 * 60 * 1000);
+      const segundo = vaciaLaColaEntera({ userId: YO });
+      await Promise.resolve();
+
+      // Y ahora termina el colgado, que ya no tiene el cerrojo
+      colgado.suelta();
+      await primero;
+
+      // Con el relevo todavía en vuelo, nadie más puede entrar
+      const tercero = await vaciaLaColaEntera({ userId: YO });
+      expect(tercero.paroPor).toBe('ya-hay-otro');
+
+      relevo.suelta();
+      await segundo;
+      vi.useRealTimers();
+    });
+  });
+
   it('no envía las de partida rápida: las decide su pantalla', async () => {
     // Su vaciado compara con el servidor y pregunta al jugador cuando hay
     // desacuerdo (FE #528). Mandarlas desde aquí las enviaría a ciegas
