@@ -27,8 +27,19 @@ const GolpesSinEnviar = ({ userId = null }) => {
   // almacenamiento al montar es dar el estado inicial, no sincronizar nada
   const [pendientes, setPendientes] = useState(() => resumenPorPartida(userId));
   const [perdidos, setPerdidos] = useState(() => golpesPerdidos.pendientes(userId));
-  // Qué partida no se pudo descartar, no si alguna: el aviso va en su tarjeta
-  const [noSePudoDescartar, setNoSePudoDescartar] = useState(null);
+  // QUÉ partidas no se pudieron descartar, no si alguna ni cuál la última: el
+  // aviso va en su tarjeta, y con un solo identificador el descarte que salía
+  // bien en otra partida borraba el aviso de la que había fallado
+  const [noSePudoDescartar, setNoSePudoDescartar] = useState(() => new Set());
+
+  const apunta = (matchId, fallo) =>
+    setNoSePudoDescartar((antes) => {
+      if (antes.has(matchId) === fallo) return antes;
+      const ahora = new Set(antes);
+      if (fallo) ahora.add(matchId);
+      else ahora.delete(matchId);
+      return ahora;
+    });
 
   // Los perdidos, agrupados por la partida a la que pertenecen: con avisos de
   // dos partidas, una lista mezclada y dos botones iguales no dejan saber cuál
@@ -62,10 +73,10 @@ const GolpesSinEnviar = ({ userId = null }) => {
     // aviso para todas: con dos tarjetas, el fallo de una salía debajo de las
     // dos, incluida la que nadie tocó
     if (!offlineQueue.olvidaLasDe(partida.matchId, userId)) {
-      setNoSePudoDescartar(partida.matchId);
+      apunta(partida.matchId, true);
       return;
     }
-    setNoSePudoDescartar(null);
+    apunta(partida.matchId, false);
     releeYDevuelveElFoco(pendientes.length > 1 || perdidos.length > 0);
   };
 
@@ -207,7 +218,7 @@ const GolpesSinEnviar = ({ userId = null }) => {
                   </button>
                 )}
               </div>
-              {noSePudoDescartar === partida.matchId && (
+              {noSePudoDescartar.has(partida.matchId) && (
                 <p className="mt-1 text-xs text-amber-800">
                   {t('golpesSinEnviar.noSePudoDescartar')}
                 </p>
@@ -264,10 +275,10 @@ const GolpesSinEnviar = ({ userId = null }) => {
                   // dice por qué; se avisa y no se relee, para no repintar lo
                   // mismo fingiendo que pasó algo
                   if (!golpesPerdidos.olvidaLosDe(matchId, userId)) {
-                    setNoSePudoDescartar(matchId);
+                    apunta(matchId, true);
                     return;
                   }
-                  setNoSePudoDescartar(null);
+                  apunta(matchId, false);
                   releeYDevuelveElFoco(
                     pendientes.length > 0 || perdidos.length > delGrupo.length
                   );
@@ -277,7 +288,7 @@ const GolpesSinEnviar = ({ userId = null }) => {
               >
                 {t('golpesSinEnviar.entendido')}
               </button>
-              {noSePudoDescartar === matchId && (
+              {noSePudoDescartar.has(matchId) && (
                 <p className="mt-1 text-xs text-red-800">
                   {t('golpesSinEnviar.noSePudoDescartar')}
                 </p>

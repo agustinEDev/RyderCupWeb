@@ -1948,6 +1948,26 @@ describe('useQuickMatchScoring · la partida que ya no existe (FE #557)', () => 
     );
   });
 
+  it('un 404 que llega tarde tampoco borra la foto guardada ni pisa el error', async () => {
+    // Esa foto es lo que deja seguir anotando sin señal: una petición vieja no
+    // puede deshacer lo que hizo la que sí cargó
+    let fallaTarde;
+    getQuickMatchUseCase.execute
+      .mockImplementationOnce(() => new Promise((_r, reject) => {
+        fallaTarde = () => reject(Object.assign(new Error('HTTP 404'), { status: 404 }));
+      }))
+      .mockResolvedValue(mockQuickMatch);
+    const { result } = renderHook(() => useQuickMatchScoring('qm-1', 'user-1'));
+    // Un segundo sondeo del MISMO id adelanta al primero y guarda la foto
+    await act(async () => { await result.current.refetch(); });
+    await waitFor(() => expect(loQueSeSupo('qm-1')?.partida).toBeTruthy());
+
+    await act(async () => { fallaTarde(); await Promise.resolve(); });
+
+    expect(loQueSeSupo('qm-1')?.partida).toBeTruthy();
+    expect(result.current.loadError).toBeNull();
+  });
+
   it('si vuelve a cargar, la marca se retira: aquel 404 era mentira', async () => {
     getQuickMatchUseCase.execute.mockResolvedValue(mockQuickMatch);
 

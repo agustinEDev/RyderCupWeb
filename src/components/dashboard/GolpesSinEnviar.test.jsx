@@ -182,6 +182,43 @@ describe('GolpesSinEnviar', () => {
     expect(screen.getAllByText('golpesSinEnviar.noSePudoDescartar')).toHaveLength(1);
   });
 
+  it('un descarte que sale bien en otra partida no borra el aviso del que falló', () => {
+    // Con un solo identificador guardado, el éxito de la segunda tarjeta
+    // quitaba el aviso de la primera, que seguía sin poder descartarse
+    cola.enqueue('qm-1', 7, { score: 5 }, 'p-1', 'u1', { matchName: 'Meis' });
+    cola.enqueue('qm-2', 3, { score: 4 }, 'p-1', 'u1', { matchName: 'Domaio' });
+    cola.marcaDesaparecida('qm-1', 'u1');
+    cola.marcaDesaparecida('qm-2', 'u1');
+    render(<GolpesSinEnviar userId="u1" />);
+    vi.spyOn(almacen, 'setItem').mockImplementationOnce(() => {
+      throw Object.assign(new Error('quota'), { name: 'QuotaExceededError' });
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /descartarYPerderDe.*Meis/ }));
+    fireEvent.click(screen.getByRole('button', { name: /descartarYPerderDe.*Domaio/ }));
+
+    expect(screen.queryByText(/desaparecida.*Domaio/)).toBeNull();
+    expect(screen.getByText(/desaparecida.*Meis/)).toBeInTheDocument();
+    expect(screen.getAllByText('golpesSinEnviar.noSePudoDescartar')).toHaveLength(1);
+  });
+
+  it('si fallan las dos, las dos lo dicen', () => {
+    // Guardando solo la última, el segundo fallo borraba el aviso del primero
+    cola.enqueue('qm-1', 7, { score: 5 }, 'p-1', 'u1', { matchName: 'Meis' });
+    cola.enqueue('qm-2', 3, { score: 4 }, 'p-1', 'u1', { matchName: 'Domaio' });
+    cola.marcaDesaparecida('qm-1', 'u1');
+    cola.marcaDesaparecida('qm-2', 'u1');
+    render(<GolpesSinEnviar userId="u1" />);
+    vi.spyOn(almacen, 'setItem').mockImplementation(() => {
+      throw Object.assign(new Error('quota'), { name: 'QuotaExceededError' });
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /descartarYPerderDe.*Meis/ }));
+    fireEvent.click(screen.getByRole('button', { name: /descartarYPerderDe.*Domaio/ }));
+
+    expect(screen.getAllByText('golpesSinEnviar.noSePudoDescartar')).toHaveLength(2);
+  });
+
   it('sin sesión resuelta no ofrece descartar: no borraría lo que enseña', () => {
     // `olvidaLasDe` solo se llevaría lo que no tiene dueño, diría que sí, y la
     // tarjeta se repintaría igual
