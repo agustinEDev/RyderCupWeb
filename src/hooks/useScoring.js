@@ -5,7 +5,14 @@ import {
   submitScorecardUseCase,
   concedeMatchUseCase,
 } from '../composition';
-import { esRechazoDefinitivo, seGuardaParaDespues } from '../utils/politicaDeLaCola';
+import {
+  esFalloDeTodaLaSesion,
+  esRechazoDefinitivo,
+  noLlegoAlServidor,
+  seGuardaParaDespues,
+} from '../utils/politicaDeLaCola';
+import { apartaLaRechazada } from '../services/vaciadoDeLaCola';
+import * as golpesPerdidos from '../utils/golpesPerdidos';
 import * as offlineQueue from '../utils/scoringOfflineQueue';
 import * as sessionLock from '../utils/scoringSessionLock';
 
@@ -125,6 +132,27 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
    * partida rápida y aquí se dejan estar, así que contarlas dejaba el número
    * en algo distinto de cero para siempre (FE #515).
    */
+  /**
+   * Cómo se identifica esta partida en el aviso de golpes sin enviar (FE #521).
+   *
+   * El campo Y el número, porque una jornada juega varios partidos en el mismo
+   * campo: solo con el nombre del campo el panel enseña dos avisos idénticos.
+   * Van como datos crudos y los redacta la traducción — componer aquí un
+   * «Partido 3 · La Herrería» congelaría texto español en el almacenamiento,
+   * y seguiría en español para quien tenga la aplicación en inglés.
+   *
+   * Se guarda en una ref y no se deriva de `scoringView`: el sondeo lo
+   * reemplaza cada 10 s, y colgar de él un `useCallback` reconstruía
+   * `submitScore` seis veces por minuto en la pantalla más caliente.
+   */
+  const laPartidaRef = useRef({ matchName: null, matchNumber: null });
+  useEffect(() => {
+    laPartidaRef.current = {
+      matchName: scoringView?.roundInfo?.golfCourseName ?? null,
+      matchNumber: scoringView?.matchNumber ?? null,
+    };
+  }, [scoringView?.roundInfo?.golfCourseName, scoringView?.matchNumber]);
+
   const pendientesPropias = useCallback(
     () => offlineQueue.getByMatch(matchId, currentUserId).filter((e) => e.participantId == null).length,
     [matchId, currentUserId]
@@ -151,13 +179,21 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
     if (!matchId || !canScore) return;
     if (isOwnScoreLocked && isMarkerScoreLocked) return;
 
+    // El aviso de «no se pudo guardar» de este hoyo se retira, pero SOLO
+    // cuando el reemplazo está a salvo: enviado, o guardado en la cola. Se
+    // hacía aquí arriba y era un error — si el reemplazo lo rechazan también,
+    // o el móvil no tiene sitio para encolarlo, el jugador se quedaba sin
+    // golpe Y sin aviso, que es justo lo que esta issue existe para impedir
+    const yaNoSePierde = () => golpesPerdidos.olvidaEl(matchId, holeNumber, currentUserId);
+
     if (isOffline) {
       const guardado = offlineQueue.enqueue(
         matchId,
         holeNumber,
         scoreData,
         null,
-        currentUserId
+        currentUserId,
+        laPartidaRef.current
       );
       setPendingQueueSize(pendientesPropias());
       if (guardado === false) {
@@ -171,6 +207,7 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
         // ninguna otra ocasión de limpiarlo —el sondeo no corre—, así que el
         // jugador reanotaba hoyos creyendo que no se estaban guardando
         setError(null);
+        yaNoSePierde();
       }
       return;
     }
@@ -184,6 +221,7 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
         holes: updatedView.holes?.length > 0 ? updatedView.holes : (prev?.holes || []),
       }));
       setError(null);
+      yaNoSePierde();
     } catch (err) {
       // La misma política que el resto de la aplicación: un 401, un 408 o un
       // 429 NO son culpa del golpe y se guardan. Antes aquí solo se guardaba a
@@ -194,13 +232,15 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
           holeNumber,
           scoreData,
           null,
-          currentUserId
+          currentUserId,
+          laPartidaRef.current
         );
         setPendingQueueSize(pendientesPropias());
         // Si el móvil no pudo guardarla —sin espacio, ventana privada— hay que
         // decirlo: callarlo deja al jugador creyendo que su golpe está a salvo
         // en algún sitio, y no está en ninguno
         setError(guardado === false ? errorDeGuardado(holeNumber) : null);
+        if (guardado !== false) yaNoSePierde();
         // Y si SÍ se guardó, no se enseña error: para el jugador el golpe está
         // anotado, solo que todavía no ha salido del móvil. Decirle que ha
         // fallado le hace reanotarlo, que es como se anota dos veces el mismo
@@ -248,7 +288,7 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
   }, [matchId, fetchScoringView]);
 
   // --- Process offline queue ---
-  const processQueue = useCallback(async () => {
+  const vaciaLaDeEstaPartida = useCallback(async () => {
     const entries = offlineQueue.getByMatch(matchId, currentUserId);
     for (const entry of entries) {
       // Este vaciado es el de competición. Una anotación con participante es de
@@ -267,16 +307,43 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
         offlineQueue.remove(entry.matchId, entry.holeNumber, entry.participantId, entry.userId ?? null);
       } catch (err) {
         if (esRechazoDefinitivo(err)) {
-          // El servidor dice que esta anotación no entra y no va a entrar
-          offlineQueue.remove(entry.matchId, entry.holeNumber, entry.participantId, entry.userId ?? null);
+          // El servidor dice que esta anotación no entra y no va a entrar. Se
+          // aparta DEJANDO AVISO, con la misma función que usa el vaciado de
+          // fondo: cuando esta pantalla tenía su propia versión, el mismo 409
+          // dejaba aviso desde el panel y borraba el golpe en silencio aquí,
+          // que es la mitad del problema que esta issue viene a arreglar
+          apartaLaRechazada(entry);
           continue;
         }
-        break; // Stop on network or server error
+        // Si el fallo es de la sesión o del servidor, o no hay red, las demás
+        // fallarían igual: se para. Pero un Error pelado del propio caso de
+        // uso —valida antes de enviar— habla solo de ESTA anotación, y parar
+        // por él dejaba el resto de los hoyos de la partida sin enviar en cada
+        // reconexión, para siempre
+        if (esFalloDeTodaLaSesion(err) || noLlegoAlServidor(err)) break;
+        continue;
       }
     }
     setPendingQueueSize(pendientesPropias());
     await fetchScoringView();
   }, [matchId, fetchScoringView, pendientesPropias, currentUserId]);
+
+  // Un solo vaciado a la vez. Ahora hay tres disparadores —montar, `online` y
+  // volver a la aplicación— y llegan juntos: al entrar desde el aviso del
+  // panel, el de montar y el de visibilidad caen en el mismo instante. Sin
+  // esto, el segundo lee la cola todavía sin vaciar y reenvía los mismos hoyos
+  const vaciandoRef = useRef(false);
+  const processQueue = useCallback(async () => {
+    if (vaciandoRef.current) return;
+    vaciandoRef.current = true;
+    try {
+      await vaciaLaDeEstaPartida();
+    } finally {
+      vaciandoRef.current = false;
+    }
+  }, [vaciaLaDeEstaPartida]);
+
+
 
   // --- Take over session (force-acquire lock) ---
   const takeOverSession = useCallback(() => {
@@ -299,12 +366,28 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
       processQueue();
     };
     const handleOffline = () => setIsOffline(true);
+    // iOS no le entrega `online` a una página suspendida: al volver a la
+    // aplicación desde el bloqueo, esto es lo único que llega. La pantalla de
+    // partida rápida ya lo escuchaba; esta no, y era su gemela sin arreglar
+    const alVolver = () => {
+      if (document.visibilityState === 'visible' && navigator.onLine) processQueue();
+    };
+
+    // Y al entrar: quien llega aquí desde el aviso del panel —«tienes 3 golpes
+    // sin enviar»— ya estaba con cobertura, así que `online` no se dispara.
+    // Sin esto, seguir la instrucción de ese aviso no enviaba absolutamente
+    // nada y la partida quedaba además excluida del vaciado de fondo.
+    // Aplazado un tick: así la pantalla pinta antes de empezar a enviar, y no
+    // se cambia estado dentro del propio efecto
+    if (navigator.onLine) globalThis.queueMicrotask(() => processQueue());
 
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
+    document.addEventListener('visibilitychange', alVolver);
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
+      document.removeEventListener('visibilitychange', alVolver);
     };
   }, [processQueue]);
 

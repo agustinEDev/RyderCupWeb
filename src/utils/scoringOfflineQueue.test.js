@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { enqueue, dequeue, getAll, remove, clear, size, getByMatch, deQuien } from './scoringOfflineQueue';
+import { enqueue, dequeue, getAll, remove, clear, size, getByMatch, deQuien, resumenPorPartida} from './scoringOfflineQueue';
 
 // Mock localStorage for non-jsdom environment
 const localStorageMock = (() => {
@@ -337,11 +337,39 @@ describe('scoringOfflineQueue — de quién es cada anotación (FE #521)', () =>
     expect(deA.map((e) => e.holeNumber).sort()).toEqual([1, 3]);
   });
 
-  it('deQuien deja fuera lo huérfano: ahí no hay nadie mirando', () => {
+  it('deQuien NO recoge lo huérfano: el servidor lo daría por bueno', () => {
+    // Se probó al revés, para rescatar la cola del parque instalado, y es un
+    // error caro: el servidor atribuye el golpe al usuario AUTENTICADO, así
+    // que en un móvil compartido donde los dos juegan el mismo partido, los
+    // golpes del primero se escriben en la tarjeta del segundo con un 200. Sin
+    // rechazo no hay aviso, y desaparecen en silencio
     enqueue('m-1', 1, { ownScore: 4 }, null, 'usuario-A');
     enqueue('m-1', 3, { ownScore: 6 }, null, null);
 
     expect(deQuien('usuario-A').map((e) => e.holeNumber)).toEqual([1]);
+  });
+
+  it('pero el panel SÍ lo enseña: se rescata con alguien delante', () => {
+    // El aviso lleva a la pantalla de esa partida, que sí incluye lo huérfano.
+    // Ahí hay contexto y un acto explícito, que es la diferencia
+    enqueue('m-1', 3, { ownScore: 6 }, null, null);
+
+    expect(resumenPorPartida('usuario-A')).toEqual([
+      expect.objectContaining({ matchId: 'm-1', cuantas: 1 }),
+    ]);
+    expect(getByMatch('m-1', 'usuario-A')).toHaveLength(1);
+  });
+
+  it('pero no recoge lo de otra cuenta del mismo móvil', () => {
+    enqueue('m-1', 1, { ownScore: 4 }, null, 'usuario-A');
+    enqueue('m-1', 3, { ownScore: 6 }, null, 'usuario-B');
+
+    expect(deQuien('usuario-A').map((e) => e.holeNumber)).toEqual([1]);
+  });
+
+  it('sin sesión no se envía nada, ni siquiera lo huérfano', () => {
+    enqueue('m-1', 3, { ownScore: 6 }, null, null);
+
     expect(deQuien(null)).toEqual([]);
   });
 

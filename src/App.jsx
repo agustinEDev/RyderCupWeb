@@ -9,6 +9,7 @@ import FullScreenLoader from './components/ui/FullScreenLoader';
 import RoleGuard from './components/auth/RoleGuard';
 import LazyLoadErrorBoundary from './components/errors/LazyLoadErrorBoundary';
 import { getUserData } from './hooks/useAuth';
+import { useVaciadoDeLaCola } from './hooks/useVaciadoDeLaCola';
 import { setUserContext } from './utils/sentryHelpers';
 import useInactivityLogout from './hooks/useInactivityLogout.jsx';
 import useProactiveTokenRefresh from './hooks/useProactiveTokenRefresh';
@@ -96,6 +97,8 @@ const SentryRoutes = Sentry.withSentryReactRouterV7Routing(Routes);
  */
 function AppContent() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  // De quién es la sesión: el vaciado de la cola solo manda lo de esta persona
+  const [usuarioActualId, setUsuarioActualId] = useState(null);
   const { logout } = useLogout();
   const location = useLocation();
 
@@ -116,6 +119,13 @@ function AppContent() {
   // el espacio vertical que necesita el flujo hoyo a hoyo (FE #306)
   const isScoringRoute = /\/scoring$/.test(location.pathname);
 
+  // Los golpes que quedaron sin enviar de CUALQUIER partida salen en cuanto
+  // vuelve la cobertura o se vuelve a la aplicación, no solo los de la pantalla
+  // que se esté mirando (FE #521). Va aquí arriba a propósito: colgado de una
+  // pantalla dependería de que el usuario volviera a ella, que es justo lo que
+  // no pasa
+  useVaciadoDeLaCola({ activo: isAuthenticated, userId: usuarioActualId });
+
   // Navegación inferior: solo móvil, solo con sesión y fuera del scoring
   const showBottomNav = isAuthenticated && !isPublicRoute && !isScoringRoute;
 
@@ -131,6 +141,7 @@ function AppContent() {
       // FIX: No verificar sesión en rutas públicas (previene bucle infinito en /login después de logout)
       if (isPublicRoute) {
         setIsAuthenticated(false);
+        setUsuarioActualId(null);
         return;
       }
 
@@ -138,8 +149,10 @@ function AppContent() {
       if (user) {
         setUserContext(user);
         setIsAuthenticated(true);
+        setUsuarioActualId(user.id ?? null);
       } else {
         setIsAuthenticated(false);
+        setUsuarioActualId(null);
       }
     };
     initUserContext();

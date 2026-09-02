@@ -7,6 +7,7 @@ import {
   completeQuickMatchUseCase,
   cancelQuickMatchUseCase,
 } from '../composition';
+import * as golpesPerdidos from '../utils/golpesPerdidos';
 import { seGuardaParaDespues } from '../utils/politicaDeLaCola';
 import * as offlineQueue from '../utils/scoringOfflineQueue';
 import { loQueSeSupo, olvida, recuerda } from '../services/loUltimoConocido';
@@ -100,6 +101,14 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
   );
   // Hoyos que el servidor rechazó para siempre, para poder decir cuáles fueron
   const [perdidos, setPerdidos] = useState([]);
+  /**
+   * Cómo se identifica esta partida en el aviso del panel (FE #521). En una
+   * partida rápida no hay número, así que va solo el nombre que le puso quien
+   * la creó. En una ref y no derivado del objeto: el sondeo lo reemplaza cada
+   * 10 s, y colgar de él un `useCallback` reconstruía `submitScore` seis veces
+   * por minuto en la pantalla que más se usa.
+   */
+  const laPartidaRef = useRef({ matchName: null, matchNumber: null });
   // Si lo que se está viendo sale de la memoria del móvil. Lo mira la pantalla
   // para avisar: sin esto, con un 5xx salía la partida entera bajo un error
   // rojo y sin decir que era una foto de antes
@@ -436,30 +445,52 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
           // decidido sobre ella. Mandar la copia vieja seria enviar un golpe
           // que acaba de descartar
           const entrada = offlineQueue
-            .getByMatch(quickMatchId)
+            .getByMatch(quickMatchId, currentUserId)
             .find((e) => e.holeNumber === apuntada.holeNumber && e.participantId === apuntada.participantId);
           if (!entrada) continue;
 
           const queHacer = await enviaGuardado(entrada, miParticipanteId);
           if (queHacer === 'para') break;
 
+          // ¿Sigue siendo la que se envió? Mientras estaba en vuelo, el
+          // jugador ha podido reanotar ese mismo hoyo y guardar otro
+          // resultado. Se mira ANTES de nada: si ya no es la misma, ni se
+          // borra —se llevaría la corrección— ni se apunta como perdida, que
+          // dejaba un aviso permanente pidiendo repetir un hoyo ya corregido
+          const ahora = offlineQueue
+            .getByMatch(quickMatchId, currentUserId)
+            .find((e) => e.holeNumber === entrada.holeNumber && e.participantId === entrada.participantId);
+          const sigueSiendoLaMisma = Boolean(ahora && ahora.scoreData.score === entrada.scoreData.score);
+
           if (queHacer === 'descartar') {
+            if (!sigueSiendoLaMisma) continue;
+            // En la pantalla, para poder decir qué hoyos repetir. Va PRIMERO y
+            // no depende de que el aviso quepa en el disco: es lo único que se
+            // le puede enseñar a alguien cuyo móvil está lleno, que es
+            // justamente cuando más falta hace
             setPerdidos((antes) =>
               antes.some((x) => x.holeNumber === entrada.holeNumber && x.participantId === entrada.participantId)
                 ? antes
                 : [...antes, { holeNumber: entrada.holeNumber, participantId: entrada.participantId }]
             );
+            // Y TAMBIÉN en el almacén, que sobrevive a salir de aquí: sin eso,
+            // quien navega o cierra la aplicación se queda sin el aviso y sin
+            // el golpe, que ya se borró de la cola (FE #521)
+            const apuntado = golpesPerdidos.apunta({
+              matchId: quickMatchId,
+              matchName: laPartidaRef.current.matchName,
+              matchNumber: null,
+              holeNumber: entrada.holeNumber,
+              participantId: entrada.participantId ?? null,
+              userId: entrada.userId ?? currentUserId ?? null,
+            });
+            // Sin aviso no se borra: preferible reintentarlo mil veces
+            if (!apuntado) continue;
           } else {
             algoLlegoAlServidor = true;
           }
-          // Se borra solo si sigue siendo la que se envió: mientras estaba en
-          // vuelo, el jugador ha podido reanotar ese mismo hoyo y guardar otro
-          // resultado. Borrar «el hoyo 5» a secas se lleva la corrección, el
-          // servidor se queda con lo viejo, y nadie se entera
-          const ahora = offlineQueue
-            .getByMatch(quickMatchId)
-            .find((e) => e.holeNumber === entrada.holeNumber && e.participantId === entrada.participantId);
-          if (ahora && ahora.scoreData.score === entrada.scoreData.score) {
+
+          if (sigueSiendoLaMisma) {
             offlineQueue.remove(quickMatchId, entrada.holeNumber, entrada.participantId, entrada.userId ?? null);
           }
         }
@@ -498,6 +529,10 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
    * le preguntaría al jugador si quiere recuperar el resultado que él mismo
    * corrigió.
    */
+  useEffect(() => {
+    laPartidaRef.current = { matchName: quickMatch?.name ?? null, matchNumber: null };
+  }, [quickMatch?.name]);
+
   const borraLoGuardadoDe = useCallback(
     (holeNumber, participantId) => {
       const guardada = offlineQueue
@@ -516,8 +551,11 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
       // llegaba no se enteraba nadie, el sondeo podía estar vaciando a la vez y
       // mandarlo dos veces, y la decisión se perdía al cerrar la aplicación.
       if (cual === 'mio') {
+        // Con el dueño, como las demás lecturas: sin él, en un móvil
+        // compartido se recogía la anotación de la otra cuenta y se
+        // reencolaba a nombre de quien estuviera dentro
         const entrada = offlineQueue
-          .getByMatch(quickMatchId)
+          .getByMatch(quickMatchId, currentUserId)
           .find((e) => e.holeNumber === holeNumber && e.participantId === participantId);
         // Si ya no está —el vaciado la mandó, o el móvil no pudo guardarla— no
         // hay nada que decidir, pero el aviso tiene que cerrarse igual: es un
@@ -529,7 +567,8 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
             holeNumber,
             { ...entrada.scoreData, decidido: true },
             participantId,
-            entrada.userId ?? currentUserId
+            entrada.userId ?? currentUserId,
+            laPartidaRef.current
           );
         }
       } else if (cual === 'elQueHay') {
@@ -556,7 +595,7 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
       // siguiente sondeo detrás de lo que ya iba. Mandarlo ahora es la carrera
       // de arriba, y ahí lo que se pierde es la corrección del jugador
       if (escribiendoRef.current) {
-        if (offlineQueue.enqueue(quickMatchId, holeNumber, { score }, participantId, currentUserId) === false) {
+        if (offlineQueue.enqueue(quickMatchId, holeNumber, { score }, participantId, currentUserId, laPartidaRef.current) === false) {
           const fallo = new Error('No se pudo guardar el golpe en el dispositivo');
           fallo.holeNumber = holeNumber;
           setSaveError(fallo);
@@ -564,6 +603,9 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
         }
         setPendientes(offlineQueue.size(quickMatchId, currentUserId));
         setSaveError(null);
+        // Aquí sí se puede retirar el aviso: el `enqueue` de arriba devolvió
+        // bien, así que el reemplazo está guardado en el móvil
+        golpesPerdidos.olvidaEl(quickMatchId, holeNumber, currentUserId, participantId);
         setPerdidos((antes) =>
           antes.filter((x) => !(x.holeNumber === holeNumber && x.participantId === participantId))
         );
@@ -572,13 +614,16 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
 
       escribiendoRef.current = true;
       setIsSubmitting(true);
-      // El aviso rojo pedía volver a anotarlo: ya está hecho. Se retira aquí y
-      // no en la rama del envío bueno, porque si el golpe se queda otra vez en
-      // el móvil sigue habiendo anotación —lo que ya no hay es nada perdido—, y
-      // dejarlo puesto pediría repetir un hoyo que la tarjeta ya enseña
-      setPerdidos((antes) =>
-        antes.filter((x) => !(x.holeNumber === holeNumber && x.participantId === participantId))
-      );
+      // El aviso rojo pedía volver a anotarlo, y ya está hecho — pero NO se
+      // retira todavía: si este reemplazo lo rechazan también, o
+      // el móvil no puede encolarlo, el jugador se quedaría sin golpe y sin
+      // aviso. Se retira abajo, cuando conste que está a salvo
+      const yaNoSePierde = () => {
+        golpesPerdidos.olvidaEl(quickMatchId, holeNumber, currentUserId, participantId);
+        setPerdidos((antes) =>
+          antes.filter((x) => !(x.holeNumber === holeNumber && x.participantId === participantId))
+        );
+      };
       try {
         if (participantId === myParticipant?.participantId) {
           await submitQuickMatchHoleScoreUseCase.execute(quickMatchId, holeNumber, score);
@@ -592,6 +637,7 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
         // al jugador si quiere recuperar el resultado que él mismo corrigió
         borraLoGuardadoDe(holeNumber, participantId);
         setPendientes(offlineQueue.size(quickMatchId, currentUserId));
+        yaNoSePierde();
         await fetchQuickMatch();
       } catch (err) {
         if (seGuardaParaDespues(err)) {
@@ -599,12 +645,15 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
           // golpe está anotado, solo que todavía no ha salido de aquí
           // Puede negarse: un iPhone sin espacio, o una ventana privada. Ahí
           // el golpe no está en ninguna parte, y callarlo es lo peor de todo
-          if (offlineQueue.enqueue(quickMatchId, holeNumber, { score }, participantId, currentUserId) === false) {
+          if (offlineQueue.enqueue(quickMatchId, holeNumber, { score }, participantId, currentUserId, laPartidaRef.current) === false) {
             err.holeNumber = holeNumber;
             setSaveError(err);
           } else {
             setPendientes(offlineQueue.size(quickMatchId, currentUserId));
             setSaveError(null);
+            // Guardado en el móvil también cuenta: sigue habiendo anotación,
+            // lo que ya no hay es nada perdido
+            yaNoSePierde();
           }
         } else {
           // El servidor lo rechaza por algo que no cambia con el tiempo. Se

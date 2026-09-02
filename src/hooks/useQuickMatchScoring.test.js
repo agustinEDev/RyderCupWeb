@@ -1,4 +1,18 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+
+// Este entorno no trae `localStorage`, y ahí vive el aviso de «no se pudo
+// guardar» que ahora sobrevive a salir de la pantalla. Se define arriba del
+// todo: en un `beforeEach` los módulos ya importados leerían otro objeto
+const elDisco = (() => {
+  let datos = {};
+  return {
+    getItem: (clave) => datos[clave] ?? null,
+    setItem: (clave, valor) => { datos[clave] = String(valor); },
+    removeItem: (clave) => { delete datos[clave]; },
+    clear: () => { datos = {}; },
+  };
+})();
+Object.defineProperty(globalThis, 'localStorage', { value: elDisco, writable: true });
 import { renderHook, waitFor, act } from '@testing-library/react';
 import { useQuickMatchScoring } from './useQuickMatchScoring';
 
@@ -27,8 +41,21 @@ import {
   submitQuickMatchHoleScoreUseCase,
   submitQuickMatchProxyHoleScoreUseCase,
 } from '../composition';
+import * as golpesPerdidos from '../utils/golpesPerdidos';
 import * as offlineQueue from '../utils/scoringOfflineQueue';
 import { olvidaTodo, recuerda, loQueSeSupo } from '../services/loUltimoConocido';
+
+// El disco se vacía para TODOS los bloques de este fichero, no solo el
+// primero: los avisos de golpes perdidos viven ahí, y colgados de un solo
+// `describe` se filtraban a los demás y hacían pasar tests que no probaban
+// nada
+beforeEach(() => {
+  elDisco.clear();
+  // Y se deshacen los espías: `clearAllMocks` borra las llamadas pero NO la
+  // implementación, así que el que simula el disco lleno se quedaba puesto
+  // para todos los bloques siguientes y los hacía pasar por el motivo que no
+  vi.restoreAllMocks();
+});
 
 const mockQuickMatch = {
   id: 'qm-1',
@@ -54,6 +81,7 @@ const mockQuickMatch = {
 
 describe('useQuickMatchScoring', () => {
   beforeEach(() => {
+    vi.restoreAllMocks();
     vi.clearAllMocks();
     getQuickMatchUseCase.execute.mockResolvedValue(mockQuickMatch);
     getGolfCourseUseCase.execute.mockResolvedValue({ holes: [] });
@@ -265,7 +293,7 @@ describe('useQuickMatchScoring · anotar sin conexión (FE #515, tabla A)', () =
   it('no llega respuesta: se guarda en el móvil', async () => {
     await anota(new TypeError('Failed to fetch'));
 
-    expect(offlineQueue.enqueue).toHaveBeenCalledWith('qm-1', 7, { score: 5 }, 'user-1', 'user-1');
+    expect(offlineQueue.enqueue).toHaveBeenCalledWith('qm-1', 7, { score: 5 }, 'user-1', 'user-1', { matchName: null, matchNumber: null });
   });
 
   it('401: se guarda, porque el problema es la sesión y no el golpe', async () => {
@@ -313,7 +341,7 @@ describe('useQuickMatchScoring · anotar sin conexión (FE #515, tabla A)', () =
     await waitFor(() => expect(result.current.isLoading).toBe(false));
     await act(async () => { await result.current.submitScore(7, 'user-2', 4); });
 
-    expect(offlineQueue.enqueue).toHaveBeenCalledWith('qm-1', 7, { score: 4 }, 'user-2', 'user-1');
+    expect(offlineQueue.enqueue).toHaveBeenCalledWith('qm-1', 7, { score: 4 }, 'user-2', 'user-1', { matchName: null, matchNumber: null });
   });
 
   it('la bola recogida se guarda: es una anotación, no la ausencia de una', async () => {
@@ -323,7 +351,7 @@ describe('useQuickMatchScoring · anotar sin conexión (FE #515, tabla A)', () =
     await waitFor(() => expect(result.current.isLoading).toBe(false));
     await act(async () => { await result.current.submitScore(7, 'user-1', null); });
 
-    expect(offlineQueue.enqueue).toHaveBeenCalledWith('qm-1', 7, { score: null }, 'user-1', 'user-1');
+    expect(offlineQueue.enqueue).toHaveBeenCalledWith('qm-1', 7, { score: null }, 'user-1', 'user-1', { matchName: null, matchNumber: null });
   });
   it('un 422 no se guarda para luego: es el resultado el que no vale', async () => {
     // Es el código real de Pydantic, y el que la pantalla traduce por «ese
@@ -477,6 +505,76 @@ describe('useQuickMatchScoring · vaciar lo guardado (FE #515, tablas B y C)', (
     await waitFor(() => expect(submitQuickMatchHoleScoreUseCase.execute).toHaveBeenCalledTimes(2));
     expect(offlineQueue.remove).toHaveBeenCalledWith('qm-1', 7, 'user-1', null);
     expect(result.current.perdidos).toContainEqual(expect.objectContaining({ holeNumber: 7 }));
+  });
+
+  it('un hoyo corregido mientras se enviaba no se apunta como perdido', async () => {
+    // El aviso pediría repetir un hoyo que el jugador ya corrigió, y nada lo
+    // retira: se queda pidiéndolo para siempre. Aquí la cola devuelve un
+    // resultado DISTINTO del que se envió, que es lo que ve el vaciado cuando
+    // el jugador reanota mientras la petición está en vuelo
+    // La cola devuelve 5 hasta que el envío sale, y 4 a partir de ahí: es lo
+    // que ve el vaciado cuando el jugador reanota con la petición en vuelo
+    let yaSeEnvio = false;
+    submitQuickMatchHoleScoreUseCase.execute.mockImplementation(async () => {
+      yaSeEnvio = true;
+      throw rechazo(409);
+    });
+    offlineQueue.getByMatch.mockImplementation(() => [pendiente(7, yaSeEnvio ? 4 : 5)]);
+    getQuickMatchUseCase.execute.mockResolvedValue(mockQuickMatch);
+
+    renderHook(() => useQuickMatchScoring('qm-1', 'user-1'));
+
+    await waitFor(() => expect(submitQuickMatchHoleScoreUseCase.execute).toHaveBeenCalled());
+    expect(golpesPerdidos.pendientes('user-1')).toEqual([]);
+    expect(offlineQueue.remove).not.toHaveBeenCalled();
+  });
+
+  it('sin sitio para el aviso, al menos se ve en la pantalla', async () => {
+    // El móvil lleno es justo cuando más falta hace decir qué hoyo repetir. El
+    // aviso de pantalla vive en memoria y no necesita disco: dejarlo fuera del
+    // guardado quitaba la única señal que no dependía de él
+    submitQuickMatchHoleScoreUseCase.execute.mockRejectedValue(rechazo(409));
+    vi.spyOn(elDisco, 'setItem').mockImplementation(() => {
+      throw new Error('QuotaExceededError');
+    });
+
+    const result = await montaCon([pendiente(7, 5)]);
+
+    await waitFor(() =>
+      expect(result.current.perdidos).toContainEqual(expect.objectContaining({ holeNumber: 7 }))
+    );
+    // Y el golpe sigue en la cola, porque el aviso duradero no se pudo escribir
+    expect(offlineQueue.remove).not.toHaveBeenCalledWith('qm-1', 7, 'user-1', null);
+  });
+
+  it('y lo apunta donde sobrevive a salir de esta pantalla', async () => {
+    // En la pantalla se enseña para poder repetir el hoyo, pero eso vive en
+    // memoria: navegar, o cerrar la aplicación, se lo llevaba. Y el golpe ya
+    // se había borrado de la cola, así que no quedaba ni el aviso ni el golpe
+    submitQuickMatchHoleScoreUseCase.execute.mockRejectedValueOnce(rechazo(409));
+
+    await montaCon([pendiente(7, 5)]);
+
+    await waitFor(() =>
+      expect(golpesPerdidos.pendientes('user-1')).toContainEqual(
+        expect.objectContaining({ matchId: 'qm-1', holeNumber: 7 })
+      )
+    );
+  });
+
+  it('y si ese apunte no cabe, el golpe NO se borra de la cola', async () => {
+    // Preferible reintentarlo mil veces a que desaparezca sin dejar rastro
+    // Rechazo SIEMPRE: con `Once`, el siguiente sondeo lo enviaba bien y lo
+    // borraba, y el test dejaba de mirar lo que venía a mirar
+    submitQuickMatchHoleScoreUseCase.execute.mockRejectedValue(rechazo(409));
+    vi.spyOn(elDisco, 'setItem').mockImplementation(() => {
+      throw new Error('QuotaExceededError');
+    });
+
+    await montaCon([pendiente(7, 5)]);
+
+    await waitFor(() => expect(submitQuickMatchHoleScoreUseCase.execute).toHaveBeenCalled());
+    expect(offlineQueue.remove).not.toHaveBeenCalledWith('qm-1', 7, 'user-1', null);
   });
 
   it('un hoyo con anotación DISTINTA no se envía: se aparta', async () => {
@@ -657,7 +755,8 @@ describe('useQuickMatchScoring · vaciar lo guardado (FE #515, tablas B y C)', (
     await act(async () => { await result.current.resuelveDiscrepancia(7, 'user-1', 'mio'); });
 
     expect(offlineQueue.enqueue).toHaveBeenCalledWith(
-      'qm-1', 7, expect.objectContaining({ score: 5, decidido: true }), 'user-1', 'user-1'
+      'qm-1', 7, expect.objectContaining({ score: 5, decidido: true }), 'user-1', 'user-1',
+      { matchName: null, matchNumber: null }
     );
     expect(result.current.discrepancias).toHaveLength(0);
   });
