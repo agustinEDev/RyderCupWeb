@@ -7,6 +7,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [2.26.0] - 2026-09-02
+
+### Added
+
+- **Los golpes que quedaron sin enviar salen solos, aunque no vuelvas a abrir esa partida.** Hasta ahora cada pantalla de anotación enviaba lo suyo, así que quien terminaba una vuelta con tres hoyos guardados y no volvía a entrar en esa partida —porque la cerró otro desde su móvil, porque se canceló, o simplemente porque ya no había motivo— los perdía en silencio. Ahora el envío corre por encima de las pantallas: al volver la cobertura y al volver a la aplicación, esté uno donde esté. Lo segundo hace falta porque en iOS una página suspendida no recibe el aviso de que ha vuelto la red, y el caso típico es justo ese: acabar la vuelta sin cobertura, guardar el móvil y sacarlo en la casa club con wifi (#521).
+
+- **El panel dice lo que queda por enviar y lo que no se pudo guardar**, partida por partida, con su nombre y su número —una jornada juega varios partidos en el mismo campo, y sin el número salían dos avisos idénticos—. Cada aviso lleva a la pantalla de su partida, y los que el servidor rechazó se pueden dar por leídos uno a uno (#521).
+
+- **Una partida que ya no está deja de dar la lata para siempre.** Si una partida rápida se borra o se cancela en el servidor con golpes todavía guardados en el móvil, nadie podía enviarlos: solo los envía la pantalla de esa partida, y esa pantalla ya no carga. El aviso se quedaba en el panel vuelta tras vuelta y su botón llevaba a una pantalla que no existe. Ahora esos golpes se marcan —no se borran—, el aviso dice que la partida ya no está, y ofrece dos salidas: abrirla igualmente o descartarlos, avisando de que se pierden. Nada se borra solo: ese mismo 404 lo devuelve un proxy mal configurado o el portal cautivo de un club, y ahí el golpe era bueno. Si la partida vuelve a cargar, la marca se retira sola (#557).
+
+### Fixed
+
+- **Un golpe anotado sin cobertura ya no puede desaparecer.** Lo que le pasaba a tu golpe cuando la petición fallaba dependía de en qué pantalla estuvieras: había tres respuestas distintas a la misma pregunta. La peor, en competición, tiraba el golpe ante un **401** —la sesión caducada, que es lo normal al volver un rato después—, y también ante un 408 o un 429. Ahora solo hay dos desenlaces, y ninguno es que el golpe se esfume: se guarda para más tarde, o el servidor ha dicho que no lo va a aceptar nunca y entonces se avisa de qué hoyo hay que repetir (#521).
+
+- **En un móvil compartido, el golpe de uno ya no acaba en la tarjeta del otro.** Lo guardado no recordaba de quién era, así que dos socios con un solo dispositivo se pisaban la anotación del mismo hoyo, y quien abriera esa partida después enviaba el golpe del otro con su propia sesión: el servidor lo apunta a quien ha iniciado sesión, así que aterrizaba en la tarjeta equivocada con un 200 y sin una sola señal (#521).
+
+- **La aplicación ya no se queda colgada al caducar la sesión.** Una petición que recibía un 401 en el momento justo se ponía en una cola que ya se había vaciado y no se resolvía nunca: al anotar, eso era un hoyo que ni se enviaba ni se guardaba, con la pantalla esperando indefinidamente. Y el refresco se disparaba dos veces a la vez (#518).
+
+- **Sin cobertura, la aplicación ya no dice que un golpe ha fallado cuando sí lo ha guardado**, ni deja un aviso rojo encendido el resto de la vuelta cuando no había nada que reintentar. Y cuando el móvil de verdad no puede guardar —sin espacio, o en una ventana privada— lo dice, en vez de seguir como si el golpe estuviera a salvo en alguna parte (#521).
+
+- **El aviso de un golpe perdido se mantiene hasta que su sustituto está a salvo.** Volver a anotar ese hoyo lo borraba antes de saber si el nuevo llegaba a alguna parte: si el servidor lo rechazaba, el jugador se quedaba sin golpe y sin aviso, que es justo la desaparición que ese aviso existe para evitar (#521).
+
+- **Un envío que se quedaba a medias ya no bloquea el resto.** Una petición abortada —lo que lanza el refresco de sesión al agotar sus 15 segundos— no era ni rechazo, ni fallo de sesión, ni fallo de red, así que la cola entera se recorría a quince segundos por golpe. Y tras un portal cautivo de un club no se volvía a intentar nada en toda la sesión: ahora hay reintentos a los 30 segundos, 2 minutos y 5 minutos, y la vuelta de la red o de la aplicación empieza de cero (#551).
+
+- **Una corrección hecha mientras el golpe iba de camino ya no se pierde.** La pantalla de competición borraba lo guardado después de enviar sin comprobar que siguiera siendo la misma anotación, así que el valor corregido se borraba y en el servidor quedaba el viejo (#551).
+
+- **Con el móvil sin espacio, la aplicación lo dice en vez de reenviar sin fin.** Si el golpe llega al servidor pero el móvil no puede actualizar su lista de pendientes, el contador no baja: antes se reintentaba en cada sondeo, y ahora se para y se explica qué hacer. El aviso aguanta hasta que se libera espacio, sin que lo pise el siguiente sondeo (#551).
+
+- **Con la aplicación abierta en dos pestañas, un golpe ya no se envía dos veces.** El envío de fondo solo veía su propia pantalla, así que no sabía que en otra pestaña se estaba anotando esa misma partida (#551).
+
+### Changed
+
+- **La decisión sobre un golpe guardado vive en un solo sitio.** Enviar, apartar, parar o borrar estaba escrito tres veces, una por pantalla, y dos rondas de revisión dieron treinta hallazgos con la misma forma: algo resuelto bien en una copia y no en las otras. Ahora hay un solo bucle; cada pantalla dice únicamente cuáles son sus anotaciones y cómo se manda una (#551).
+
+- Actualizadas dependencias de compilación señaladas por `npm audit` (`fast-uri`, `@humanfs/node`, `browserslist`). No llegan al navegador, pero bloqueaban el CI.
+
 ## [2.25.0] - 2026-09-01
 
 ### Added
