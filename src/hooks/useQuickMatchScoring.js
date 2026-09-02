@@ -560,7 +560,7 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
   }, [quickMatchId, quickMatch?.id, quickMatch?.name]);
 
   const borraLoGuardadoDe = useCallback(
-    (holeNumber, participantId) => {
+    (holeNumber, participantId, loEnviado = null) => {
       // TODAS las que haya de ese hoyo, no la primera: una anotación huérfana
       // —de antes de que la cola guardara dueño— y la de ahora son entradas
       // distintas, porque el dueño es parte de la identidad. Borrando solo la
@@ -568,7 +568,25 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
       // decía «1 golpe guardado» justo después de un envío que sí llegó
       const guardadas = offlineQueue
         .getByMatch(quickMatchId, currentUserId)
-        .filter((e) => e.holeNumber === holeNumber && e.participantId === participantId);
+        .filter((e) => e.holeNumber === holeNumber && e.participantId === participantId)
+        // Y solo lo que ya está superado por lo que se acaba de enviar, cuando
+        // se dice qué se envió. Desde que la pantalla no se bloquea mientras el
+        // golpe va de camino (FE #564), el jugador puede corregir ese mismo
+        // hoyo con la petición todavía en vuelo: eso se queda, para salir en el
+        // vaciado siguiente. Lo anterior —una anotación vieja del mismo hoyo, o
+        // la huérfana de una versión sin dueño— sí se va: dejarla haría que el
+        // vaciado pisara con ella lo que acaba de entrar.
+        //
+        // El empate de reloj se decide por el valor, no por el tiempo: dos
+        // anotaciones seguidas caen en el MISMO milisegundo más a menudo de lo
+        // que parece —lo cazó el CI, no esta máquina—, y comparando solo el
+        // reloj se borraba la corrección
+        .filter((e) => {
+          if (loEnviado === null) return true;
+          const cuando = e.timestamp ?? 0;
+          if (cuando < loEnviado.cuando) return true;
+          return cuando === loEnviado.cuando && e.scoreData?.score === loEnviado.score;
+        });
       for (const guardada of guardadas) {
         offlineQueue.remove(quickMatchId, holeNumber, participantId, guardada.userId ?? null);
       }
@@ -654,6 +672,14 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
       const seGuardo = offlineQueue.enqueue(
         quickMatchId, holeNumber, { score }, participantId, currentUserId, laPartidaRef.current
       );
+      // Cuándo quedó guardado esto, para saber después qué es anterior —y hay
+      // que borrar— y qué llegó DESPUÉS, que es una corrección del jugador y
+      // se respeta
+      const cuandoSeGuardo = offlineQueue
+        .getByMatch(quickMatchId, currentUserId)
+        .find((e) => e.holeNumber === holeNumber && e.participantId === participantId
+          && (e.userId ?? null) === (currentUserId ?? null))
+        ?.timestamp ?? Date.now();
       // El contador de pendientes NO se toca aquí: con cobertura buena el
       // envío tarda un suspiro, y actualizarlo ya enseñaría «1 golpe guardado
       // en el móvil» en cada anotación para retirarlo acto seguido. Se pone
@@ -680,7 +706,7 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
         // ese mismo hoyo sobra. Dejarlo hace que el siguiente vaciado compare
         // lo viejo con lo que acaba de entrar, no coincidan, y se le pregunte
         // al jugador si quiere recuperar el resultado que él mismo corrigió
-        borraLoGuardadoDe(holeNumber, participantId);
+        borraLoGuardadoDe(holeNumber, participantId, { cuando: cuandoSeGuardo, score });
         setPendientes(offlineQueue.size(quickMatchId, currentUserId));
         yaNoSePierde();
         await fetchQuickMatch();
