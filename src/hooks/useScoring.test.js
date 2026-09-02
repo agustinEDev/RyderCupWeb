@@ -60,6 +60,14 @@ import {
 import * as golpesPerdidos from '../utils/golpesPerdidos';
 import * as offlineQueue from '../utils/scoringOfflineQueue';
 import * as sessionLock from '../utils/scoringSessionLock';
+import * as motor from '../services/vaciaAnotaciones';
+
+// El motor de verdad, pero espiado: cuántas PASADAS da un disparador es lo
+// que se quiere vigilar, y por el número de envíos no se distingue
+vi.mock('../services/vaciaAnotaciones', async (importOriginal) => {
+  const real = await importOriginal();
+  return { ...real, vaciaAnotaciones: vi.fn(real.vaciaAnotaciones) };
+});
 
 const mockScoringView = {
   matchId: 'm-1',
@@ -1022,5 +1030,223 @@ describe('useScoring · el aviso dice la verdad (FE #521)', () => {
     await anota(result, 2);
 
     expect(result.current.error).toBeNull();
+  });
+});
+
+describe('useScoring · cuando el vaciado se para, y lo que se nombra (FE #551)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    getScoringViewUseCase.execute.mockResolvedValue(mockScoringView);
+    submitHoleScoreUseCase.execute.mockResolvedValue({});
+    Object.defineProperty(navigator, 'onLine', { value: true, configurable: true });
+    offlineQueue.getByMatch.mockReturnValue([]);
+    offlineQueue.remove.mockReturnValue(true);
+  });
+
+  const vuelveLaRed = async () => {
+    await act(async () => {
+      window.dispatchEvent(new globalThis.Event('online'));
+      await Promise.resolve();
+    });
+  };
+
+  it('si no se pudo borrar, el aviso queda puesto AUNQUE la vista se vuelva a pedir', async () => {
+    // Antes iba en `error`, que la propia recarga y cada sondeo dejan a null:
+    // el aviso vivía menos de un render y nadie lo llegó a ver
+    offlineQueue.getByMatch.mockReturnValue([
+      { matchId: 'm-1', holeNumber: 7, scoreData: { ownScore: 5 }, userId: 'u1' },
+    ]);
+    offlineQueue.remove.mockReturnValue(false);
+    const { result } = renderHook(() => useScoring('m-1', 'u1'));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    const vecesAntes = getScoringViewUseCase.execute.mock.calls.length;
+
+    await vuelveLaRed();
+
+    await waitFor(() => expect(result.current.avisoDelVaciado).toBe('no-se-pudo-borrar'));
+    // La vista se volvió a pedir después, y el aviso sigue
+    await waitFor(() =>
+      expect(getScoringViewUseCase.execute.mock.calls.length).toBeGreaterThan(vecesAntes)
+    );
+    expect(result.current.avisoDelVaciado).toBe('no-se-pudo-borrar');
+    expect(result.current.error).toBeNull();
+
+    // Y se quita solo cuando otro vaciado termina sin ese paro
+    offlineQueue.remove.mockReturnValue(true);
+    await vuelveLaRed();
+    await waitFor(() => expect(result.current.avisoDelVaciado).toBeNull());
+  });
+
+  it('un paro por red o servidor no deja aviso: se arregla esperando', async () => {
+    offlineQueue.getByMatch.mockReturnValue([
+      { matchId: 'm-1', holeNumber: 7, scoreData: { ownScore: 5 }, userId: 'u1' },
+    ]);
+    submitHoleScoreUseCase.execute.mockRejectedValue(
+      Object.assign(new Error('HTTP 503'), { status: 503 })
+    );
+    const { result } = renderHook(() => useScoring('m-1', 'u1'));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    await vuelveLaRed();
+
+    await waitFor(() => expect(submitHoleScoreUseCase.execute).toHaveBeenCalled());
+    expect(result.current.avisoDelVaciado).toBeNull();
+  });
+
+  it('el aviso puesto sobrevive a una pasada que para por la red', async () => {
+    // Esa pasada no ha tocado el disco: quitarlo por una caída de red dejaba
+    // al jugador sin saber que su móvil no guarda mientras la entrada seguía
+    offlineQueue.getByMatch.mockReturnValue([
+      { matchId: 'm-1', holeNumber: 7, scoreData: { ownScore: 5 }, userId: 'u1' },
+    ]);
+    offlineQueue.remove.mockReturnValue(false);
+    // El vaciado de entrar ya lo pone
+    const { result } = renderHook(() => useScoring('m-1', 'u1'));
+    await waitFor(() => expect(result.current.avisoDelVaciado).toBe('no-se-pudo-borrar'));
+
+    submitHoleScoreUseCase.execute.mockRejectedValue(
+      Object.assign(new Error('HTTP 503'), { status: 503 })
+    );
+    await vuelveLaRed();
+    await waitFor(() => expect(submitHoleScoreUseCase.execute).toHaveBeenCalledTimes(2));
+    expect(result.current.avisoDelVaciado).toBe('no-se-pudo-borrar');
+  });
+
+  it('lo corregido MIENTRAS iba la pasada sale en la misma vuelta', async () => {
+    // El bucle no manda un valor que no leyó al empezar: sin una pasada más,
+    // la corrección esperaba al siguiente disparador, que puede no llegar
+    const enCola = [{ matchId: 'm-1', holeNumber: 7, scoreData: { ownScore: 5 }, userId: 'u1' }];
+    offlineQueue.getByMatch.mockImplementation(() => enCola.map((e) => ({ ...e })));
+    submitHoleScoreUseCase.execute.mockImplementationOnce(async () => {
+      // El jugador corrige el 5 por un 6 con la petición en vuelo
+      enCola[0] = { ...enCola[0], scoreData: { ownScore: 6 } };
+      return {};
+    });
+    // El vaciado de entrar es el que lo manda
+    renderHook(() => useScoring('m-1', 'u1'));
+
+    await waitFor(() => expect(submitHoleScoreUseCase.execute).toHaveBeenCalledTimes(2));
+    expect(submitHoleScoreUseCase.execute.mock.calls.map((c) => c[2])).toEqual([
+      { ownScore: 5 },
+      { ownScore: 6 },
+    ]);
+    // Y la segunda pasada no hace una tercera: no es un bucle
+    await new Promise((r) => setTimeout(r, 20));
+    expect(submitHoleScoreUseCase.execute).toHaveBeenCalledTimes(2);
+  });
+
+  it('sin corrección no hay pasada de más', async () => {
+    // Sin corrección no hay nada que releer: cada disparador haría dos
+    // lecturas de la cola por una
+    offlineQueue.getByMatch.mockReturnValue([
+      { matchId: 'm-1', holeNumber: 7, scoreData: { ownScore: 5 }, userId: 'u1' },
+    ]);
+    renderHook(() => useScoring('m-1', 'u1'));
+    await waitFor(() => expect(submitHoleScoreUseCase.execute).toHaveBeenCalledTimes(1));
+    await new Promise((r) => setTimeout(r, 20));
+    expect(motor.vaciaAnotaciones).toHaveBeenCalledTimes(1);
+  });
+
+  it('con corrección pero parado por el disco, no se insiste: es el mismo disco', async () => {
+    // El 7 se corrige en vuelo (no se toca el disco por él); el 9 llega y no
+    // se puede borrar: paro. La corrección del 7 espera al siguiente disparador
+    const enCola = [
+      { matchId: 'm-1', holeNumber: 7, scoreData: { ownScore: 5 }, userId: 'u1' },
+      { matchId: 'm-1', holeNumber: 9, scoreData: { ownScore: 4 }, userId: 'u1' },
+    ];
+    offlineQueue.getByMatch.mockImplementation(() => enCola.map((e) => ({ ...e })));
+    offlineQueue.remove.mockReturnValue(false);
+    submitHoleScoreUseCase.execute.mockImplementationOnce(async () => {
+      enCola[0] = { ...enCola[0], scoreData: { ownScore: 6 } };
+      return {};
+    });
+    const { result } = renderHook(() => useScoring('m-1', 'u1'));
+
+    await waitFor(() => expect(result.current.avisoDelVaciado).toBe('no-se-pudo-borrar'));
+    await new Promise((r) => setTimeout(r, 20));
+    expect(submitHoleScoreUseCase.execute.mock.calls.map((c) => [c[1], c[2]])).toEqual([
+      [7, { ownScore: 5 }],
+      [9, { ownScore: 4 }],
+    ]);
+    expect(motor.vaciaAnotaciones).toHaveBeenCalledTimes(1);
+  });
+
+  it('el aviso de una anotación huérfana queda a nombre de quien la rescató', async () => {
+    // Sin dueño lo ve toda cuenta del móvil, y el primero que pulse
+    // «Entendido» se lo lleva antes de que lo vea el suyo
+    offlineQueue.getByMatch.mockReturnValue([
+      { matchId: 'm-1', holeNumber: 7, scoreData: { ownScore: 5 } },
+    ]);
+    submitHoleScoreUseCase.execute.mockRejectedValue(
+      Object.assign(new Error('Conflict'), { status: 409 })
+    );
+    const { result } = renderHook(() => useScoring('m-1', 'u1'));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    await vuelveLaRed();
+
+    await waitFor(() =>
+      expect(golpesPerdidos.pendientes('u1')).toEqual([
+        expect.objectContaining({ matchId: 'm-1', holeNumber: 7, userId: 'u1' }),
+      ])
+    );
+    expect(golpesPerdidos.pendientes('otra')).toEqual([]);
+  });
+
+  it('pone nombre también a los avisos ya apartados, no solo a la cola', async () => {
+    golpesPerdidos.apunta({ matchId: 'm-1', matchName: null, matchNumber: null, holeNumber: 7, userId: 'u1' });
+    getScoringViewUseCase.execute.mockResolvedValue({
+      ...mockScoringView,
+      roundInfo: { golfCourseName: 'Meis' },
+    });
+
+    const { result } = renderHook(() => useScoring('m-1', 'u1'));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    expect(offlineQueue.ponleNombre).toHaveBeenCalledWith('m-1', { matchName: 'Meis', matchNumber: 1 });
+    expect(golpesPerdidos.pendientes('u1')).toEqual([
+      expect.objectContaining({ holeNumber: 7, matchName: 'Meis', matchNumber: 1 }),
+    ]);
+  });
+
+  it('no pone a la partida nueva el nombre de la que se acaba de dejar', async () => {
+    // La vista no se vacía al cambiar de partida: hay un render con el
+    // `matchId` de B y la vista de A
+    getScoringViewUseCase.execute.mockResolvedValue({
+      ...mockScoringView,
+      roundInfo: { golfCourseName: 'Meis' },
+    });
+    const { result, rerender } = renderHook(({ id }) => useScoring(id, 'u1'), {
+      initialProps: { id: 'm-1' },
+    });
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    offlineQueue.ponleNombre.mockClear();
+    getScoringViewUseCase.execute.mockRejectedValue(new TypeError('Failed to fetch'));
+
+    rerender({ id: 'm-2' });
+
+    await waitFor(() => expect(getScoringViewUseCase.execute).toHaveBeenCalledWith('m-2'));
+    expect(offlineQueue.ponleNombre).not.toHaveBeenCalledWith('m-2', expect.anything());
+  });
+
+  it('los avisos del cerrojo del vaciado de fondo no le dicen nada a esta pantalla', async () => {
+    // El mismo usuario tiene ahora dos cerrojos: el de anotar y el del
+    // vaciado, con ámbito. Cuando el vaciado suelta el suyo, esta pantalla no
+    // tiene que volver a pedir el de anotar
+    const { result } = renderHook(() => useScoring('m-1', 'u1'));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    const escucha = sessionLock.onLockEvent.mock.calls.at(-1)[0];
+    sessionLock.acquire.mockClear();
+
+    act(() => {
+      escucha({ type: 'LOCK_RELEASED', sessionId: 'vaciado-1', userId: 'u1', scope: 'vaciado' });
+    });
+    expect(sessionLock.acquire).not.toHaveBeenCalled();
+
+    // El del propio ámbito de anotar sí se atiende
+    act(() => {
+      escucha({ type: 'LOCK_RELEASED', sessionId: 'otra-pestaña', userId: 'u1', scope: '' });
+    });
+    expect(sessionLock.acquire).toHaveBeenCalledWith('m-1', expect.any(String), 'u1');
   });
 });

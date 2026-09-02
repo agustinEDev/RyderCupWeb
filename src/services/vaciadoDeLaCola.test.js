@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('../composition', () => ({
   submitHoleScoreUseCase: { execute: vi.fn() },
@@ -214,12 +214,41 @@ describe('vaciaLaColaEntera (FE #521)', () => {
   });
 
   describe('el cerrojo (FE #551)', () => {
+    // Es el de la pantalla de anotación con ámbito propio, y vive en
+    // `localStorage`: así vale también contra la segunda pestaña
+    const CLAVE = `rydercup-scoring-session-${YO}-vaciado`;
+
     /** Un envío que se queda en vuelo hasta que se le dice que termine. */
     const enVuelo = () => {
       let suelta;
       const promesa = new Promise((r) => { suelta = r; });
       return { promesa, suelta: () => suelta({}) };
     };
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it('se toma en el almacenamiento compartido y se suelta al acabar', async () => {
+      cola.enqueue('m-1', 1, { ownScore: 4 }, null, YO);
+      const envio = enVuelo();
+      submitHoleScoreUseCase.execute.mockImplementationOnce(() => envio.promesa);
+
+      const vaciado = vaciaLaColaEntera({ userId: YO });
+      await Promise.resolve();
+
+      // Mientras va, cualquier otra pestaña de esta cuenta lo ve
+      expect(JSON.parse(almacen.getItem(CLAVE))).toEqual(
+        expect.objectContaining({ userId: YO, scope: 'vaciado' })
+      );
+      const otraPestana = await vaciaLaColaEntera({ userId: YO });
+      expect(otraPestana.paroPor).toBe('ya-hay-otro');
+      expect(submitHoleScoreUseCase.execute).toHaveBeenCalledTimes(1);
+
+      envio.suelta();
+      await vaciado;
+      expect(almacen.getItem(CLAVE)).toBeNull();
+    });
 
     it('un vaciado lento no se da por colgado mientras siga dando señal', async () => {
       // Dieciocho hoyos a siete segundos pasan del plazo. Con un plazo fijo
@@ -250,39 +279,101 @@ describe('vaciaLaColaEntera (FE #521)', () => {
 
       segundo.suelta();
       await vaciado;
-      vi.useRealTimers();
     });
 
-    it('y el que se dio por colgado no suelta el cerrojo del que le relevó', async () => {
-      // Al terminar liberaba el hueco del que ya le había sustituido, y
-      // acababa habiendo dos a la vez enviando el mismo hoyo
+    it('el que se dio por colgado PARA al despertar, y no suelta el cerrojo del relevo', async () => {
+      // Antes el relevo solo impedía que el viejo liberara el cerrojo del
+      // nuevo; el viejo seguía enviando, y acababa habiendo dos bucles con
+      // los mismos hoyos
       vi.useFakeTimers();
       cola.enqueue('m-1', 1, { ownScore: 4 }, null, YO);
+      cola.enqueue('m-2', 2, { ownScore: 5 }, null, YO);
       const colgado = enVuelo();
-      const relevo = enVuelo();
+      const relevoH1 = enVuelo();
       submitHoleScoreUseCase.execute
         .mockImplementationOnce(() => colgado.promesa)
-        .mockImplementationOnce(() => relevo.promesa);
+        .mockImplementationOnce(() => relevoH1.promesa);
 
       const primero = vaciaLaColaEntera({ userId: YO });
       await Promise.resolve();
 
-      // Pasa el plazo sin señal de vida: se le puede tomar el relevo
-      vi.advanceTimersByTime(3 * 60 * 1000);
+      // Muere sin señal de vida. No se puede simular avanzando el reloj: el
+      // bucle da señal también con la petición en vuelo, y con el reloj
+      // avanzado el cerrojo seguiría fresco —que es justo lo que se quiere en
+      // un bucle VIVO—. Un proceso muerto no da señal: se le atrasa la última
+      const guardado = JSON.parse(almacen.getItem(CLAVE));
+      guardado.timestamp -= 3 * 60 * 1000;
+      almacen.setItem(CLAVE, JSON.stringify(guardado));
       const segundo = vaciaLaColaEntera({ userId: YO });
       await Promise.resolve();
 
-      // Y ahora termina el colgado, que ya no tiene el cerrojo
+      // Despierta el colgado: su hoyo llegó, pero ya no manda, así que NO va
+      // a por el hoyo 2
       colgado.suelta();
-      await primero;
+      const resultadoDelViejo = await primero;
+      expect(resultadoDelViejo.paroPor).toBe('ya-hay-otro');
+      const hoyosPedidos = submitHoleScoreUseCase.execute.mock.calls.map((c) => c[1]);
+      expect(hoyosPedidos.filter((h) => h === 2)).toHaveLength(0);
 
-      // Con el relevo todavía en vuelo, nadie más puede entrar
+      // Y el cerrojo sigue siendo del relevo: nadie más entra
       const tercero = await vaciaLaColaEntera({ userId: YO });
       expect(tercero.paroPor).toBe('ya-hay-otro');
 
-      relevo.suelta();
+      relevoH1.suelta();
       await segundo;
-      vi.useRealTimers();
+      // El relevo sí terminó la cola entera
+      expect(cola.deQuien(YO)).toHaveLength(0);
+    });
+
+    it('y si el relevo ya terminó y soltó el cerrojo, el dormido tampoco sigue', async () => {
+      // Con «sin cerrojo escrito = mío» el que despertaba veía el hueco que
+      // dejó el relevo al terminar y mandaba su copia vieja de la cola detrás
+      vi.useFakeTimers();
+      cola.enqueue('m-1', 1, { ownScore: 4 }, null, YO);
+      cola.enqueue('m-2', 2, { ownScore: 5 }, null, YO);
+      const colgado = enVuelo();
+      submitHoleScoreUseCase.execute.mockImplementationOnce(() => colgado.promesa);
+
+      const primero = vaciaLaColaEntera({ userId: YO });
+      await Promise.resolve();
+      const guardado = JSON.parse(almacen.getItem(CLAVE));
+      guardado.timestamp -= 3 * 60 * 1000;
+      almacen.setItem(CLAVE, JSON.stringify(guardado));
+
+      // El relevo entra, se le cae la red en el primer envío y termina
+      // soltando el cerrojo, con el hoyo 2 todavía en la cola
+      submitHoleScoreUseCase.execute.mockRejectedValueOnce(
+        Object.assign(new Error('HTTP 503'), { status: 503 })
+      );
+      const relevo = await vaciaLaColaEntera({ userId: YO });
+      expect(relevo.paroPor).toBe('no-es-de-esta');
+      expect(almacen.getItem(CLAVE)).toBeNull();
+
+      colgado.suelta();
+      const viejo = await primero;
+
+      // Su hoyo llegó y se borra, pero de ahí no pasa: el 2 se queda para el
+      // reintento de quien tenga el cerrojo entonces, no para una copia vieja
+      expect(viejo.paroPor).toBe('ya-hay-otro');
+      const hoyosPedidos = submitHoleScoreUseCase.execute.mock.calls.map((c) => c[1]);
+      expect(hoyosPedidos).toEqual([1, 1]);
+      expect(cola.deQuien(YO).map((e) => e.matchId)).toEqual(['m-2']);
+    });
+
+    it('con un almacenamiento que no escribe, el vaciado sigue: el cerrojo falla abierto', async () => {
+      cola.enqueue('m-1', 1, { ownScore: 4 }, null, YO);
+      cola.enqueue('m-2', 2, { ownScore: 5 }, null, YO);
+      // El cerrojo no llega a escribirse; la cola sí
+      const escribeDeVerdad = almacen.setItem;
+      vi.spyOn(almacen, 'setItem').mockImplementation((clave, valor) => {
+        if (clave.startsWith('rydercup-scoring-session')) throw new Error('QuotaExceededError');
+        escribeDeVerdad(clave, valor);
+      });
+
+      const r = await vaciaLaColaEntera({ userId: YO });
+
+      expect(r.paroPor).toBeNull();
+      expect(submitHoleScoreUseCase.execute).toHaveBeenCalledTimes(2);
     });
   });
 

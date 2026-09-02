@@ -8,7 +8,8 @@ import {
   cancelQuickMatchUseCase,
 } from '../composition';
 import * as golpesPerdidos from '../utils/golpesPerdidos';
-import { apartaLaRechazada, vaciaAnotaciones } from '../services/vaciaAnotaciones';
+import { PARO, avisoTrasElVaciado, vaciaAnotaciones } from '../services/vaciaAnotaciones';
+import { errorDeGuardado } from '../utils/erroresDeAnotacion';
 import { seGuardaParaDespues } from '../utils/politicaDeLaCola';
 import * as offlineQueue from '../utils/scoringOfflineQueue';
 import { loQueSeSupo, olvida, recuerda } from '../services/loUltimoConocido';
@@ -18,18 +19,6 @@ import { loQueSeSupo, olvida, recuerda } from '../services/loUltimoConocido';
 // puede esperar —enviar lo que quedó guardado en el móvil— no depende del
 // reloj: se dispara al volver la red y al volver a la aplicación, más abajo
 const POLL_INTERVAL = 60000; // 1 minute
-
-/**
- * Rechazos que no mejoran esperando, así que el golpe no se guarda para después.
- *
- * - 404: la partida ya no existe
- * - 403: no eres anotador, o no te toca ese jugador
- * - 409: la partida está terminada o cancelada
- * - 400: el golpe no es válido
- *
- * El 401 NO está: ahí el problema es la sesión, no el golpe, y descartarlo sería
- * tirar una anotación buena por un motivo que se arregla solo.
- */
 
 /**
  * Si lo guardado y lo que hay en el servidor son un DESACUERDO, que es lo unico
@@ -94,6 +83,10 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
   // pantalla por un fallo de red pasajero.
   const [loadError, setLoadError] = useState(null);
   const [saveError, setSaveError] = useState(null);
+  // El vaciado se paró porque el móvil no admite escrituras (ver `PARO`).
+  // Estado propio y no dentro de `saveError`: ese lo pisa cada anotación que
+  // sale bien y cada sondeo, y el aviso duraba lo que tardaba el siguiente
+  const [avisoDelVaciado, setAvisoDelVaciado] = useState(null);
   // Arranca contando lo que ya hay guardado: si empezara en cero, al volver a
   // la app sin cobertura el aviso no saldría hasta el primer vaciado, que sin
   // cobertura no llega, y los golpes del jugador parecerían no existir
@@ -110,9 +103,6 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
    * por minuto en la pantalla que más se usa.
    */
   const laPartidaRef = useRef({ matchName: null, matchNumber: null });
-  // De quién es la sesión, en una ref: `fetchQuickMatch` dispara el sondeo, y
-  // colgarlo de este valor le cambiaría la identidad y lo relanzaría
-  const quienMiraRef = useRef(currentUserId);
   // Si lo que se está viendo sale de la memoria del móvil. Lo mira la pantalla
   // para avisar: sin esto, con un 5xx salía la partida entera bajo un error
   // rojo y sin decir que era una foto de antes
@@ -205,45 +195,6 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
       // partida ya no está —o que no es nuestra— pintarla desde el móvil sería
       // enseñar algo que no existe, y dejar anotar encima
       if (estado === 404 || estado === 403) olvida(quickMatchId);
-
-      // Y si la partida ya no existe PARA NADIE, lo que quedara guardado de
-      // ella no se va a poder enviar nunca: el vaciado de fondo no toca las
-      // partidas rápidas, y el único que las toca es este, que solo corre
-      // cuando el sondeo responde bien. Sin esto, el aviso del panel decía
-      // «tienes 3 golpes sin enviar» para siempre y su botón llevaba a una
-      // pantalla que da error (FE #551).
-      //
-      // **Solo con un 404, y solo lo que es de esta cuenta.** Un 403 dice que
-      // no es TUYA, no que no exista: en un móvil compartido, abrir la partida
-      // de otra persona borraba sus golpes para siempre. Y se lee con
-      // `deQuien`, que es estricto, no con `getByMatch`, que incluye lo
-      // huérfano a propósito para poder ENSEÑARLO: leer de más es inofensivo y
-      // borrar de más no lo es.
-      //
-      // Con el mismo cerrojo que el vaciado: sin él, esto vaciaba la cola
-      // mientras un envío iba en vuelo, y el golpe acababa en el servidor Y
-      // marcado como perdido
-      if (estado === 404 && !escribiendoRef.current) {
-        escribiendoRef.current = true;
-        try {
-          const mias = offlineQueue
-            .deQuien(quienMiraRef.current)
-            .filter((e) => e.matchId === quickMatchId);
-          for (const entrada of mias) {
-            // Si el aviso no cabe, la anotación se queda: preferible que el
-            // panel siga avisando a que desaparezca sin dejar rastro
-            if (!apartaLaRechazada(entrada, quienMiraRef.current)) break;
-          }
-        } finally {
-          escribiendoRef.current = false;
-        }
-        // Con la guarda de respuesta rezagada, como el resto de este bloque:
-        // sin ella, una respuesta de la partida anterior escribía el contador
-        // de la que ya está en pantalla
-        if (miSeq === estadoSeqRef.current && quickMatchId === idVigenteRef.current) {
-          setPendientes(offlineQueue.size(quickMatchId, quienMiraRef.current));
-        }
-      }
 
       // Se pinta lo último que se supo, que es lo que permite seguir anotando
       // al volver a abrir la aplicación en el campo. `loadError` se queda
@@ -401,9 +352,6 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
   const totalHoles = holes.length || 18;
 
   /**
-   * Envía un golpe guardado. Devuelve qué hacer con él.
-   */
-  /**
    * Vacía lo guardado. Lo dispara el sondeo al responder: si responde, hay
    * conexión, y no hace falta deducir un estado global de la red.
    */
@@ -429,6 +377,7 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
         // estaba leyendo se cerraria solo
         const enConflicto = [];
         const porEnviar = [];
+        let elDiscoNoBorra = false;
         for (const entrada of offlineQueue.getByMatch(quickMatchId, currentUserId)) {
           const enElServidor = anotadosEnElServidor.find(
             (hs) => hs.holeNumber === entrada.holeNumber && hs.participantId === entrada.participantId
@@ -438,7 +387,14 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
           // no añade nada, y sí puede restar —un 409 lo daría por perdido y le
           // pediría al jugador que volviera a anotar lo que ya está anotado
           if (enElServidor && enElServidor.score === entrada.scoreData.score) {
-            offlineQueue.remove(quickMatchId, entrada.holeNumber, entrada.participantId, entrada.userId ?? null);
+            // Si el borrado no entra, este disco no admite escrituras: mandar
+            // el resto lo enviaría y lo dejaría en la cola, para volver a
+            // enviarlo en el siguiente sondeo. Se avisa y no se manda nada;
+            // se sigue clasificando para no cerrar un desacuerdo que el
+            // jugador esté leyendo
+            if (!offlineQueue.remove(quickMatchId, entrada.holeNumber, entrada.participantId, entrada.userId ?? null)) {
+              elDiscoNoBorra = true;
+            }
             continue;
           }
 
@@ -469,47 +425,56 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
         // propia anotación —una huérfana sin participante, que el caso de uso
         // rechaza antes de enviar— se tomaba por «reintentar luego» y atascaba
         // la cola entera en cada sondeo, para siempre
-        const { enviadas } = await vaciaAnotaciones({
-          entradas: porEnviar,
-          manda: (entrada) =>
-            entrada.participantId === miParticipanteId
-              ? submitQuickMatchHoleScoreUseCase.execute(
-                quickMatchId,
-                entrada.holeNumber,
-                entrada.scoreData.score
-              )
-              : submitQuickMatchProxyHoleScoreUseCase.execute(
-                quickMatchId,
-                entrada.participantId,
-                entrada.holeNumber,
-                entrada.scoreData.score
-              ),
-          alDescartar: (entrada) => {
-            // El aviso en pantalla, para poder decir qué hoyos repetir. Lo
-            // pone el bucle antes de tocar el disco: es lo único que se le
-            // puede enseñar a alguien cuyo móvil está lleno, que es justo
-            // cuando más falta hace
-            setPerdidos((antes) =>
-              antes.some(
-                (x) => x.holeNumber === entrada.holeNumber
-                  && x.participantId === entrada.participantId
-              )
-                ? antes
-                : [...antes, { holeNumber: entrada.holeNumber, participantId: entrada.participantId }]
-            );
-          },
-          dueñoSiNoLoTiene: currentUserId ?? null,
-        });
-        const algoLlegoAlServidor = enviadas > 0;
+        const { llegaron, paroPor } = elDiscoNoBorra
+          ? { llegaron: 0, paroPor: PARO.NO_SE_PUDO_BORRAR }
+          : await vaciaAnotaciones({
+              entradas: porEnviar,
+              manda: (entrada) =>
+                entrada.participantId === miParticipanteId
+                  ? submitQuickMatchHoleScoreUseCase.execute(
+                    quickMatchId,
+                    entrada.holeNumber,
+                    entrada.scoreData.score
+                  )
+                  : submitQuickMatchProxyHoleScoreUseCase.execute(
+                    quickMatchId,
+                    entrada.participantId,
+                    entrada.holeNumber,
+                    entrada.scoreData.score
+                  ),
+              alDescartar: (entrada) => {
+                // El aviso en pantalla, para poder decir qué hoyos repetir. Lo
+                // pone el bucle antes de tocar el disco: es lo único que se le
+                // puede enseñar a alguien cuyo móvil está lleno, que es justo
+                // cuando más falta hace
+                setPerdidos((antes) =>
+                  antes.some(
+                    (x) => x.holeNumber === entrada.holeNumber
+                      && x.participantId === entrada.participantId
+                  )
+                    ? antes
+                    : [...antes, { holeNumber: entrada.holeNumber, participantId: entrada.participantId }]
+                );
+              },
+              dueñoSiNoLoTiene: currentUserId ?? null,
+            });
 
         setPendientes(offlineQueue.size(quickMatchId, currentUserId));
+        // Si el bucle paró porque el móvil no admite escrituras, se dice: el
+        // contador no va a bajar y nadie más va a vaciar esta partida. Lo
+        // quita una pasada que termina sin pararse, no una que paró por la
+        // red: esa no ha llegado a saber nada del disco
+        setAvisoDelVaciado((antes) => avisoTrasElVaciado(antes, paroPor));
 
-        // Lo enviado ya no esta en la cola, y la foto que hay en memoria es de
-        // ANTES del envio, asi que tampoco lo trae: sin volver a pedirla, la
-        // casilla vuelve a decir «Anotar» durante diez segundos y el jugador
-        // anota el mismo hoyo dos veces. El cerrojo sigue puesto, de modo que
-        // este sondeo no vuelve a vaciar y no hay vuelta sin fin
-        if (algoLlegoAlServidor) await fetchQuickMatch();
+        // Algo LLEGÓ al servidor —se haya podido borrar de la cola o no— y la
+        // foto que hay en memoria es de ANTES del envío, así que no lo trae:
+        // sin volver a pedirla, la casilla vuelve a decir «Anotar» durante un
+        // minuto y el jugador anota el mismo hoyo dos veces. Por `llegaron` y
+        // no por `enviadas`: con el móvil lleno el golpe está en el servidor y
+        // sigue en la cola, y es justo entonces cuando más falta hace la foto
+        // nueva. El cerrojo sigue puesto, de modo que este sondeo no vuelve a
+        // vaciar y no hay vuelta sin fin
+        if (llegaron > 0) await fetchQuickMatch();
       } finally {
         escribiendoRef.current = false;
       }
@@ -537,19 +502,22 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
    * corrigió.
    */
   useEffect(() => {
-    laPartidaRef.current = { matchName: quickMatch?.name ?? null, matchNumber: null };
+    // Solo si la partida cargada ES esta: el efecto que limpia al cambiar de
+    // ruta pone `quickMatch` a null, pero eso aterriza un render después, y en
+    // este todavía se ve la anterior. Sin la guarda, a la nueva se le ponía
+    // el nombre de la vieja, y como no se pisa, para siempre
+    const esDeEsta = Boolean(quickMatchId) && quickMatch?.id === quickMatchId;
+    laPartidaRef.current = { matchName: esDeEsta ? quickMatch?.name ?? null : null, matchNumber: null };
     // Y se le pone nombre a lo que se guardó sin él: en un arranque en frío
     // sin cobertura la partida no llega nunca, así que todo lo anotado quedó
     // sin nombre y el panel enseñaba «una partida anterior» —dos avisos
-    // idénticos con dos partidas—. El gemelo de competición ya lo hacía
-    if (quickMatchId && quickMatch?.name) {
+    // idénticos con dos partidas—. A la cola y a los avisos ya apartados, que
+    // ya no están en la cola: el gemelo de competición hace lo mismo
+    if (esDeEsta && quickMatch?.name) {
       offlineQueue.ponleNombre(quickMatchId, { matchName: quickMatch.name });
+      golpesPerdidos.ponleNombre(quickMatchId, { matchName: quickMatch.name });
     }
-  }, [quickMatchId, quickMatch?.name]);
-
-  useEffect(() => {
-    quienMiraRef.current = currentUserId;
-  }, [currentUserId]);
+  }, [quickMatchId, quickMatch?.id, quickMatch?.name]);
 
   const borraLoGuardadoDe = useCallback(
     (holeNumber, participantId) => {
@@ -614,9 +582,7 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
       // de arriba, y ahí lo que se pierde es la corrección del jugador
       if (escribiendoRef.current) {
         if (offlineQueue.enqueue(quickMatchId, holeNumber, { score }, participantId, currentUserId, laPartidaRef.current) === false) {
-          const fallo = new Error('No se pudo guardar el golpe en el dispositivo');
-          fallo.holeNumber = holeNumber;
-          setSaveError(fallo);
+          setSaveError(errorDeGuardado(holeNumber));
           return;
         }
         setPendientes(offlineQueue.size(quickMatchId, currentUserId));
@@ -664,8 +630,9 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
           // Puede negarse: un iPhone sin espacio, o una ventana privada. Ahí
           // el golpe no está en ninguna parte, y callarlo es lo peor de todo
           if (offlineQueue.enqueue(quickMatchId, holeNumber, { score }, participantId, currentUserId, laPartidaRef.current) === false) {
-            err.holeNumber = holeNumber;
-            setSaveError(err);
+            // El error de red no es lo que hay que contar: lo que ha pasado es
+            // que el móvil no lo ha podido guardar
+            setSaveError(errorDeGuardado(holeNumber));
           } else {
             setPendientes(offlineQueue.size(quickMatchId, currentUserId));
             setSaveError(null);
@@ -782,6 +749,7 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
     isLoading,
     loadError,
     saveError,
+    avisoDelVaciado,
     isSubmitting,
 
     myParticipant,

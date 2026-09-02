@@ -6,6 +6,12 @@
  *
  * Storage key is scoped per userId: `rydercup-scoring-session-{userId}`
  * BroadcastChannel messages include userId for filtering.
+ *
+ * An optional `scope` keeps a second, independent lock for the same user —
+ * `rydercup-scoring-session-{userId}-{scope}` — so other single-worker jobs
+ * (the background queue drain, FE #551) reuse this owner/heartbeat/stale logic
+ * instead of re-implementing it per tab. Messages carry the scope so listeners
+ * that only care about the scoring screen can ignore the rest.
  */
 
 const CHANNEL_NAME = 'rydercup-scoring-lock';
@@ -26,18 +32,19 @@ const initChannel = () => {
   }
 };
 
-const storageKey = (userId) => `${STORAGE_PREFIX}${userId}`;
+const storageKey = (userId, scope = '') => `${STORAGE_PREFIX}${userId}${scope ? `-${scope}` : ''}`;
 
 /**
  * Try to acquire a scoring session lock for a match.
  * @param {string} matchId
  * @param {string} sessionId - Unique identifier for this tab/session
  * @param {string} userId - Current user ID (scopes the lock)
+ * @param {string} [scope] - Independent lock name for the same user (see top)
  * @returns {boolean} true if lock acquired, false if another session is active
  */
-export const acquire = (matchId, sessionId, userId) => {
+export const acquire = (matchId, sessionId, userId, scope = '') => {
   if (!userId) return true;
-  const existing = getSession(userId);
+  const existing = getSession(userId, scope);
   if (existing && existing.sessionId !== sessionId) {
     // Check if the existing session is stale (older than 2 minutes)
     if (Date.now() - existing.timestamp < STALE_SESSION_THRESHOLD_MS) {
@@ -45,9 +52,9 @@ export const acquire = (matchId, sessionId, userId) => {
     }
   }
 
-  const session = { matchId, sessionId, userId, timestamp: Date.now() };
+  const session = { matchId, sessionId, userId, scope, timestamp: Date.now() };
   try {
-    localStorage.setItem(storageKey(userId), JSON.stringify(session));
+    localStorage.setItem(storageKey(userId, scope), JSON.stringify(session));
   } catch {
     // Fail open if storage unavailable
   }
@@ -69,13 +76,14 @@ export const acquire = (matchId, sessionId, userId) => {
  * Release the scoring session lock.
  * @param {string} sessionId - The session that owns the lock
  * @param {string} userId - Current user ID
+ * @param {string} [scope]
  */
-export const release = (sessionId, userId) => {
+export const release = (sessionId, userId, scope = '') => {
   if (!userId) return;
-  const existing = getSession(userId);
+  const existing = getSession(userId, scope);
   if (existing && existing.sessionId === sessionId) {
     try {
-      localStorage.removeItem(storageKey(userId));
+      localStorage.removeItem(storageKey(userId, scope));
     } catch {
       // Fail open if storage unavailable
     }
@@ -83,7 +91,7 @@ export const release = (sessionId, userId) => {
     const channel = initChannel();
     if (channel) {
       try {
-        channel.postMessage({ type: 'LOCK_RELEASED', sessionId, userId });
+        channel.postMessage({ type: 'LOCK_RELEASED', sessionId, userId, scope });
       } catch {
         // Silent fail
       }
@@ -95,14 +103,15 @@ export const release = (sessionId, userId) => {
  * Refresh the lock timestamp to prevent staleness.
  * @param {string} sessionId
  * @param {string} userId
+ * @param {string} [scope]
  */
-export const refresh = (sessionId, userId) => {
+export const refresh = (sessionId, userId, scope = '') => {
   if (!userId) return;
-  const existing = getSession(userId);
+  const existing = getSession(userId, scope);
   if (existing && existing.sessionId === sessionId) {
     existing.timestamp = Date.now();
     try {
-      localStorage.setItem(storageKey(userId), JSON.stringify(existing));
+      localStorage.setItem(storageKey(userId, scope), JSON.stringify(existing));
     } catch {
       // Fail open if storage unavailable
     }
@@ -112,12 +121,13 @@ export const refresh = (sessionId, userId) => {
 /**
  * Get the current session info for a user.
  * @param {string} userId
+ * @param {string} [scope]
  * @returns {Object|null} { matchId, sessionId, userId, timestamp } or null
  */
-export const getSession = (userId) => {
+export const getSession = (userId, scope = '') => {
   if (!userId) return null;
   try {
-    const raw = localStorage.getItem(storageKey(userId));
+    const raw = localStorage.getItem(storageKey(userId, scope));
     return raw ? JSON.parse(raw) : null;
   } catch {
     return null;

@@ -165,7 +165,12 @@
     "failedToSubmitScorecard": "Failed to submit scorecard",
     "failedToLoadLeaderboard": "Failed to load leaderboard",
     "failedToConcede": "Failed to concede match",
-    "matchNotInProgress": "Match is not in progress"
+    "matchNotInProgress": "Match is not in progress",
+    "noSeGuardoEnElMovil": "The stroke could not be saved on this device: no space left, or a private window. Enter it again once space is freed.",
+    "vaciado": {
+      "no-se-pudo-borrar": "The stroke reached the server, but this device could not update its pending list. Do not enter it again: free up space on the device and the rest will go out on its own.",
+      "no-se-pudo-escribir": "The server did not accept a saved stroke and this device has no space to note it. Free up space on the device and open the match again."
+    }
   },
   "navigation": {
     "liveScoring": "Live Scoring",

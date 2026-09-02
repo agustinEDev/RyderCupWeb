@@ -1390,6 +1390,35 @@ describe('QuickMatchScoringPage · lo guardado se ve y se entiende (FE #515, tab
   });
 });
 
+describe('QuickMatchScoringPage · el aviso del vaciado (FE #551)', () => {
+  const pinta = (extra) => {
+    mockUseQuickMatchScoring.mockReturnValue({
+      ...baseHookState,
+      quickMatch: { ...baseQuickMatch, status: 'IN_PROGRESS', isCompleted: false },
+      isScorer: true,
+      coveredParticipantIds: ['user-1'],
+      setCurrentHole: vi.fn(),
+      submitScore: vi.fn(),
+      ...extra,
+    });
+    return renderPage();
+  };
+
+  it('no pinta nada si no lo hay', () => {
+    pinta({ avisoDelVaciado: null });
+    expect(screen.queryByTestId('quick-match-aviso-vaciado')).toBeNull();
+  });
+
+  it('pinta el paro con la clave compartida de anotación, aparte del error general', () => {
+    // Estado propio del hook: en `saveError` lo pisaba la siguiente anotación
+    pinta({ avisoDelVaciado: 'no-se-pudo-escribir', saveError: null });
+    expect(screen.getByTestId('quick-match-aviso-vaciado')).toHaveTextContent(
+      'scoring:errors.vaciado.no-se-pudo-escribir'
+    );
+    expect(screen.queryByTestId('quick-match-save-error')).toBeNull();
+  });
+});
+
 describe('QuickMatchScoringPage · dos avisos a la vez (FE #515)', () => {
   const pinta = (extra) => {
     mockUseQuickMatchScoring.mockReturnValue({

@@ -25,31 +25,37 @@
 
 import { submitHoleScoreUseCase } from '../composition';
 import * as cola from '../utils/scoringOfflineQueue';
-import { vaciaAnotaciones } from './vaciaAnotaciones';
+import * as cerrojo from '../utils/scoringSessionLock';
+import { PARO, vaciaAnotaciones } from './vaciaAnotaciones';
 
-// Un solo vaciado a la vez. El evento de vuelta de la red puede llegar dos
-// veces, y la pantalla de anotación tiene el suyo: sin esto, la misma
-// anotación se enviaría dos veces.
+// Un solo vaciado a la vez, ENTRE PESTAÑAS. El evento de vuelta de la red
+// puede llegar dos veces, y dos pestañas de la misma cuenta leen la misma
+// cola: sin esto, la misma anotación se enviaría dos veces.
 //
-// El cerrojo lleva DUEÑO y SEÑAL DE VIDA, y las dos cosas hicieron falta:
+// El cerrojo es el de la pantalla de anotación, con ámbito propio: ya tiene
+// dueño, señal de vida y plazo para dar por colgado al que no la da (dos
+// minutos). Hubo aquí uno propio, por pestaña, con las mismas reglas
+// reescritas; no servía contra la segunda pestaña, y dos plazos iguales en dos
+// ficheros se desajustan en cuanto alguien toca uno (FE #551)
 //
-// - Dueño, porque `apiRequest` no tiene tope de tiempo y una petición que no
-//   resuelve nunca dejaba la bandera puesta el resto de la vida de la página.
-//   Se puede tomar el relevo, pero solo lo suelta quien lo tiene: sin esto, el
-//   vaciado viejo al terminar liberaba el hueco del que ya le había sustituido
-//   y acababa habiendo dos a la vez enviando el mismo hoyo.
-// - Señal de vida, porque un vaciado LENTO no es un vaciado colgado. Dieciocho
-//   hoyos a siete segundos pasan de dos minutos, y con un plazo fijo desde el
-//   principio se daba por muerto uno que iba perfectamente (FE #551)
-let cerrojo = null;
-const SE_DA_POR_COLGADO_MS = 2 * 60 * 1000;
-
-const hayOtroVaciadoVivo = () =>
-  cerrojo !== null && Date.now() - cerrojo.ultimaSenal < SE_DA_POR_COLGADO_MS;
+// Tiene un precio, asumido: si el sistema mata la aplicación a mitad de un
+// vaciado, el cerrojo queda escrito y el siguiente arranque se lo encuentra
+// puesto hasta que caduque. Son como mucho dos minutos y medio de retraso del
+// vaciado de fondo —el reintento cae a los 30 s y a los 150 s—, y la pantalla
+// de anotación vacía lo suyo sin pasar por aquí. La alternativa, un cerrojo
+// que muera con la pestaña, es la que no servía contra la segunda pestaña
+const AMBITO = 'vaciado';
 
 /** Se emite cuando el vaciado ha enviado o descartado algo. */
 export const COLA_VACIADA = 'rydercup:cola-vaciada';
 
+const nada = (pendientes, paroPor) => ({
+  enviadas: 0,
+  llegaron: 0,
+  descartadas: 0,
+  pendientes,
+  paroPor,
+});
 
 /**
  * Envía lo que se pueda de la cola de esta persona.
@@ -61,10 +67,10 @@ export const COLA_VACIADA = 'rydercup:cola-vaciada';
  *   puede ENTRAR en una de las partidas que se están enviando: con un valor
  *   congelado se seguiría vaciando por debajo de una pantalla ya montada.
  *   `userId` es de quién es la sesión.
- * @returns {Promise<{enviadas: number, descartadas: number, pendientes: number,
- *   paroPor: string|null}>} `paroPor` dice por qué se salió antes de tiempo, o
- *   `'ya-hay-otro'` si ni llegó a empezar. Quien llama lo necesita para saber
- *   si reintentar
+ * @returns {Promise<{enviadas: number, llegaron: number, descartadas: number,
+ *   pendientes: number, paroPor: string|null}>} `paroPor` dice por qué se
+ *   salió antes de tiempo, o `PARO.YA_HAY_OTRO` si ni llegó a empezar. Quien
+ *   llama lo necesita para saber si reintentar
  */
 export const vaciaLaColaEntera = async ({ saltaPartida = null, userId = null } = {}) => {
   const cualSalta = () => (typeof saltaPartida === 'function' ? saltaPartida() : saltaPartida);
@@ -72,27 +78,37 @@ export const vaciaLaColaEntera = async ({ saltaPartida = null, userId = null } =
   // explica el precio de no hacerlo. Lo huérfano se rescata desde la pantalla
   // de su partida, donde hay alguien mirando
   const mias = userId ? cola.deQuien(userId) : [];
-  if (hayOtroVaciadoVivo()) {
+  if (mias.length === 0) return nada(0, null);
+
+  const miTurno = `${AMBITO}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  if (!cerrojo.acquire(null, miTurno, userId, AMBITO)) {
     // Se dice POR QUÉ no se hizo nada: quien llama tiene un reintento
     // programado, y confundir esto con «ha ido bien» se lo desarmaba. Es real:
     // el reintento salta mientras otro vaciado está en vuelo, se encuentra el
     // cerrojo puesto, y sin este dato daba por buena una vuelta que ni empezó
-    return { enviadas: 0, descartadas: 0, pendientes: mias.length, paroPor: 'ya-hay-otro' };
+    return nada(mias.length, PARO.YA_HAY_OTRO);
   }
-  if (mias.length === 0) {
-    return { enviadas: 0, descartadas: 0, pendientes: 0, paroPor: null };
-  }
+  // Sigue siendo mío mientras nadie lo haya tomado dándome por colgado. Con
+  // el cerrojo sin escribir NO se da por mío: es lo que ve el que se quedó
+  // dormido cuando el relevo ya terminó y lo soltó, y seguir era mandar su
+  // copia vieja de la cola detrás de la del relevo. La excepción es un
+  // almacenamiento que no admite escrituras: ahí el cerrojo falla abierto y
+  // no se leerá nunca nada, así que se decide UNA vez al tomarlo, no en cada
+  // vuelta
+  const sinAlmacen = cerrojo.getSession(userId, AMBITO)?.sessionId !== miTurno;
+  const sigueSiendoMio = () =>
+    sinAlmacen || cerrojo.getSession(userId, AMBITO)?.sessionId === miTurno;
 
-  const miTurno = Symbol('vaciado');
-  cerrojo = { quien: miTurno, ultimaSenal: Date.now() };
   let resultado;
   try {
     resultado = await vaciaAnotaciones({
       entradas: mias,
       sigoVivo: () => {
-        // Solo mientras el cerrojo siga siendo mío: si me lo quitaron por
-        // colgado, refrescarlo echaría al que entró en mi lugar
-        if (cerrojo?.quien === miTurno) cerrojo.ultimaSenal = Date.now();
+        // Si me lo quitaron por colgado, refrescarlo echaría al que entró en
+        // mi lugar; se contesta que no, y el bucle para
+        if (!sigueSiendoMio()) return false;
+        cerrojo.refresh(miTurno, userId, AMBITO);
+        return true;
       },
       manda: (entrada) =>
         submitHoleScoreUseCase.execute(entrada.matchId, entrada.holeNumber, entrada.scoreData),
@@ -103,8 +119,8 @@ export const vaciaLaColaEntera = async ({ saltaPartida = null, userId = null } =
         entrada.matchId === cualSalta() || entrada.participantId != null,
     });
   } finally {
-    // Solo lo suelta quien lo tiene
-    if (cerrojo?.quien === miTurno) cerrojo = null;
+    // Solo lo suelta quien lo tiene: `release` ya lo comprueba
+    cerrojo.release(miTurno, userId, AMBITO);
   }
 
   if (resultado.enviadas > 0 || resultado.descartadas > 0) {

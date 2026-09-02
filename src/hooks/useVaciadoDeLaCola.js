@@ -1,25 +1,23 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { useLocation } from 'react-router';
 
+import { SE_ARREGLA_ESPERANDO } from '../services/vaciaAnotaciones';
 import { vaciaLaColaEntera } from '../services/vaciadoDeLaCola';
+
+// Espera creciente Y con tope de intentos: insistir cada pocos segundos contra
+// un servidor caído gasta batería sin arreglar nada, y sin tope una sesión
+// muerta con la cola llena despertaba el móvil cada cinco minutos el resto del
+// día. Agotada la escalera se espera a un disparador de verdad —la vuelta de
+// la red, volver a la aplicación—, como hace `sesionCompartida`. Fuera del
+// hook a propósito: dentro obligaba a silenciar el aviso de dependencias en
+// bloque, y ese silencio tapaba las de verdad
+const ESPERAS_MS = [30_000, 120_000, 300_000];
 
 /**
  * La partida que se está anotando ahora mismo, si es que se está anotando
  * alguna. Sale de la ruta porque este vaciado vive por encima de las pantallas
  * y no tiene otra forma de saberlo.
  */
-// Espera creciente y con tope: insistir cada pocos segundos contra un servidor
-// caído gasta batería sin arreglar nada. Fuera del hook a propósito: dentro
-// obligaba a silenciar el aviso de dependencias en bloque, y ese silencio
-// tapaba las de verdad
-const ESPERAS_MS = [30_000, 120_000, 300_000];
-
-// Solo se reintenta lo que se arregla con el tiempo. Que el móvil no pueda
-// escribir NO se arregla esperando: reintentar ahí reenvía a cada rato un
-// golpe que el servidor ya tiene, que es justo lo que el corte del bucle venía
-// a impedir
-const SE_ARREGLA_ESPERANDO = new Set(['no-es-de-esta', 'ya-hay-otro']);
-
 const partidaQueSeEstaAnotando = (pathname) => {
   const encaje = /\/(?:player\/matches|quick-matches)\/([^/]+)\/scoring$/.exec(pathname);
   return encaje ? encaje[1] : null;
@@ -67,13 +65,22 @@ export const useVaciadoDeLaCola = ({ activo, userId = null }) => {
   // llena, con cobertura, hasta cerrar la app (FE #551)
   const reintentoRef = useRef(null);
   const cuantosFallosRef = useRef(0);
+  // Si el hook sigue montado: un vaciado que resuelve DESPUÉS de desmontar no
+  // puede dejar armado un temporizador que ya nadie va a cancelar
+  const vivoRef = useRef(true);
+
+  const cancelaReintento = useCallback(() => {
+    if (!reintentoRef.current) return;
+    globalThis.clearTimeout(reintentoRef.current);
+    reintentoRef.current = null;
+  }, []);
 
   const vaciaRef = useRef(null);
   const programaReintento = useCallback(() => {
-    if (reintentoRef.current) return;
-    // Espera creciente y con tope: insistir cada pocos segundos contra un
-    // servidor caído gasta batería sin arreglar nada
-    const espera = ESPERAS_MS[Math.min(cuantosFallosRef.current, ESPERAS_MS.length - 1)];
+    if (!vivoRef.current || reintentoRef.current) return;
+    // Escalera agotada: se deja de insistir hasta que algo cambie de verdad
+    if (cuantosFallosRef.current >= ESPERAS_MS.length) return;
+    const espera = ESPERAS_MS[cuantosFallosRef.current];
     cuantosFallosRef.current += 1;
     reintentoRef.current = globalThis.setTimeout(() => {
       reintentoRef.current = null;
@@ -88,13 +95,7 @@ export const useVaciadoDeLaCola = ({ activo, userId = null }) => {
     // venciera —diez o treinta segundos en iOS— para descubrir que no hay
     // cobertura, justo en el caso para el que existe esta función. La vuelta de
     // la red ya la cubre el evento `online`
-    if (globalThis.navigator?.onLine === false) {
-      // No se pierde el turno: un bache de tres segundos justo cuando salta el
-      // reintento dejaba la cola a merced de un evento de flanco que en un
-      // móvil que no llegó a perder la cobertura ya no vuelve
-      if (cuantosFallosRef.current > 0) programaReintento();
-      return;
-    }
+    if (globalThis.navigator?.onLine === false) return;
     vaciaLaColaEntera({
       // Una función y no un valor: el vaciado tarda, y en ese rato el usuario
       // puede ENTRAR en una de las partidas que se están enviando. Congelado,
@@ -103,10 +104,24 @@ export const useVaciadoDeLaCola = ({ activo, userId = null }) => {
       saltaPartida: () => partidaQueSeEstaAnotando(rutaActual.current),
       userId,
     }).then((resultado) => {
-      if (SE_ARREGLA_ESPERANDO.has(resultado?.paroPor) && resultado.pendientes > 0) {
-        programaReintento();
-      } else if (!resultado?.paroPor) {
+      if (!resultado) return;
+      // La escalera se reinicia con PROGRESO —algo llegó, algo se descartó, o
+      // ya no queda nada—, no con «terminó sin parar»: un bucle que se saltó
+      // todo porque el jugador está dentro de la única partida con cola
+      // termina limpio sin haber enviado nada, y contarlo como éxito dejaba el
+      // reintento clavado en el primer peldaño mientras el servidor seguía
+      // caído. Y con progreso se cancela el que hubiera armado: ya no hace
+      // falta esa vuelta, y sin cancelarlo cada contención dejaba un despertar
+      // de más
+      const huboProgreso = resultado.enviadas > 0
+        || resultado.descartadas > 0
+        || resultado.pendientes === 0;
+      if (huboProgreso) {
         cuantosFallosRef.current = 0;
+        cancelaReintento();
+      }
+      if (SE_ARREGLA_ESPERANDO.has(resultado.paroPor) && resultado.pendientes > 0) {
+        programaReintento();
       }
     }).catch((err) => {
       // Nunca hacia arriba: esto corre de fondo y un fallo aquí no puede
@@ -114,7 +129,7 @@ export const useVaciadoDeLaCola = ({ activo, userId = null }) => {
       console.error('[VaciadoDeLaCola] No se pudo vaciar la cola:', err);
       programaReintento();
     });
-  }, [activo, userId, programaReintento]);
+  }, [activo, userId, programaReintento, cancelaReintento]);
 
   useEffect(() => {
     vaciaRef.current = vacia;
@@ -123,16 +138,14 @@ export const useVaciadoDeLaCola = ({ activo, userId = null }) => {
   // La limpieza del reintento va en su propio efecto, sin condiciones: colgada
   // del de abajo, un temporizador armado por un fallo que llega DESPUÉS de que
   // `activo` se apague se quedaba sin nadie que lo cancelara
-  useEffect(
-    () => () => {
-      if (reintentoRef.current) {
-        globalThis.clearTimeout(reintentoRef.current);
-        reintentoRef.current = null;
-      }
+  useEffect(() => {
+    vivoRef.current = true;
+    return () => {
+      vivoRef.current = false;
+      cancelaReintento();
       cuantosFallosRef.current = 0;
-    },
-    []
-  );
+    };
+  }, [cancelaReintento]);
 
   useEffect(() => {
     if (!activo || !userId) return undefined;
@@ -143,16 +156,26 @@ export const useVaciadoDeLaCola = ({ activo, userId = null }) => {
     // instante en que el panel lanza sus consultas
     globalThis.queueMicrotask(() => vacia());
 
-    const alVolverALaApp = () => {
-      if (document.visibilityState !== 'visible') return;
+    // Una señal de fuera es OTRO episodio: la red que vuelve, o el jugador que
+    // saca el móvil, no tienen nada que ver con la caída contra la que se
+    // agotó la escalera, y desde cero es como se estrena. Sin esto, agotada
+    // una vez, el siguiente fallo de la tarde ya no se reintentaba nunca; y
+    // el reintento que hubiera armado se cancela, que esta pasada lo suple
+    const porSenal = () => {
+      cuantosFallosRef.current = 0;
+      cancelaReintento();
       vacia();
     };
+    const alVolverALaApp = () => {
+      if (document.visibilityState !== 'visible') return;
+      porSenal();
+    };
 
-    window.addEventListener('online', vacia);
+    window.addEventListener('online', porSenal);
     document.addEventListener('visibilitychange', alVolverALaApp);
     return () => {
-      window.removeEventListener('online', vacia);
+      window.removeEventListener('online', porSenal);
       document.removeEventListener('visibilitychange', alVolverALaApp);
     };
-  }, [activo, userId, vacia]);
+  }, [activo, userId, vacia, cancelaReintento]);
 };

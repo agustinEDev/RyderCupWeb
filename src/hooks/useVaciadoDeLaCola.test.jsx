@@ -217,6 +217,171 @@ describe('useVaciadoDeLaCola (FE #521)', () => {
     expect(vaciaLaColaEntera).toHaveBeenCalledTimes(2);
   });
 
+  describe('la escalera de reintentos (FE #551)', () => {
+    const paradoCon = (pendientes = 3) =>
+      ({ enviadas: 0, descartadas: 0, pendientes, paroPor: 'no-es-de-esta' });
+    const avanza = async (ms) => {
+      await act(async () => {
+        vi.advanceTimersByTime(ms);
+        await Promise.resolve();
+      });
+    };
+
+    it('sube un peldaño por fallo y se para en el tercero', async () => {
+      // Sin tope, una sesión muerta con la cola llena despertaba el móvil
+      // cada cinco minutos el resto del día
+      vi.useFakeTimers();
+      vaciaLaColaEntera.mockResolvedValue(paradoCon());
+
+      await monta();
+      expect(vaciaLaColaEntera).toHaveBeenCalledTimes(1);
+      await avanza(30_000);
+      expect(vaciaLaColaEntera).toHaveBeenCalledTimes(2);
+      await avanza(120_000);
+      expect(vaciaLaColaEntera).toHaveBeenCalledTimes(3);
+      await avanza(300_000);
+      expect(vaciaLaColaEntera).toHaveBeenCalledTimes(4);
+
+      // Agotada: ya no hay más, por mucho que pase
+      await avanza(3_600_000);
+      expect(vaciaLaColaEntera).toHaveBeenCalledTimes(4);
+
+      // Hasta que algo cambia de verdad
+      window.dispatchEvent(new globalThis.Event('online'));
+      expect(vaciaLaColaEntera).toHaveBeenCalledTimes(5);
+    });
+
+    it('una vuelta limpia pero sin progreso no arma reintento ni cuenta como éxito', async () => {
+      // El jugador está dentro de la única partida con cola: el bucle termina
+      // limpio sin hacer nada. No hay nada que reintentar —no se paró—, y
+      // tampoco es un éxito que reinicie nada
+      vi.useFakeTimers();
+      vaciaLaColaEntera.mockResolvedValue(paradoCon());
+      await monta();
+      // Al primer reintento, vuelta limpia sin progreso
+      vaciaLaColaEntera.mockResolvedValueOnce(
+        { enviadas: 0, descartadas: 0, pendientes: 3, paroPor: null }
+      );
+      await avanza(30_000);
+      expect(vaciaLaColaEntera).toHaveBeenCalledTimes(2);
+
+      // Ni a los 120 s ni nunca: no se paró, así que no se reintenta
+      await avanza(3_600_000);
+      expect(vaciaLaColaEntera).toHaveBeenCalledTimes(2);
+    });
+
+    it('una señal de fuera es otro episodio: reinicia la escalera agotada', async () => {
+      // Agotada una vez, el siguiente fallo de la tarde ya no se reintentaba
+      // nunca: la vuelta de la red o volver a la app no tienen nada que ver
+      // con la caída contra la que se agotó
+      vi.useFakeTimers();
+      vaciaLaColaEntera.mockResolvedValue(paradoCon());
+      await monta();
+      await avanza(30_000);
+      await avanza(120_000);
+      await avanza(300_000);
+      expect(vaciaLaColaEntera).toHaveBeenCalledTimes(4);
+
+      await act(async () => {
+        window.dispatchEvent(new globalThis.Event('online'));
+        await Promise.resolve();
+      });
+      expect(vaciaLaColaEntera).toHaveBeenCalledTimes(5);
+      // Falló otra vez: vuelve a empezar por los 30 s, no se queda muda
+      await avanza(30_000);
+      expect(vaciaLaColaEntera).toHaveBeenCalledTimes(6);
+      await avanza(120_000);
+      expect(vaciaLaColaEntera).toHaveBeenCalledTimes(7);
+    });
+
+    it('una señal de fuera cancela el reintento que hubiera armado', async () => {
+      // Sin cancelarlo, volver a la app a los 20 s dejaba el temporizador de
+      // antes vivo, y disparaba a los 30 s una pasada que la suya ya suplía
+      vi.useFakeTimers();
+      vaciaLaColaEntera.mockResolvedValue(paradoCon());
+      await monta();
+      await avanza(20_000);
+      await act(async () => {
+        document.dispatchEvent(new globalThis.Event('visibilitychange'));
+        await Promise.resolve();
+      });
+      expect(vaciaLaColaEntera).toHaveBeenCalledTimes(2);
+      // A los 30 s del arranque no dispara el viejo
+      await avanza(10_000);
+      expect(vaciaLaColaEntera).toHaveBeenCalledTimes(2);
+      // A los 30 s de la señal, el nuevo
+      await avanza(20_000);
+      expect(vaciaLaColaEntera).toHaveBeenCalledTimes(3);
+    });
+
+    it('el progreso reinicia la escalera y cancela el reintento armado', async () => {
+      vi.useFakeTimers();
+      vaciaLaColaEntera.mockResolvedValue(paradoCon());
+      await monta();
+      await avanza(30_000);
+      expect(vaciaLaColaEntera).toHaveBeenCalledTimes(2);
+      // Hay uno armado a 120 s
+
+      vaciaLaColaEntera.mockResolvedValueOnce(
+        { enviadas: 3, descartadas: 0, pendientes: 0, paroPor: null }
+      );
+      await act(async () => {
+        window.dispatchEvent(new globalThis.Event('online'));
+        await Promise.resolve();
+      });
+      expect(vaciaLaColaEntera).toHaveBeenCalledTimes(3);
+
+      // El armado se canceló: a los 120 s no salta
+      await avanza(120_000);
+      expect(vaciaLaColaEntera).toHaveBeenCalledTimes(3);
+
+      // Y el siguiente fallo vuelve a empezar por 30 s
+      await act(async () => {
+        window.dispatchEvent(new globalThis.Event('online'));
+        await Promise.resolve();
+      });
+      expect(vaciaLaColaEntera).toHaveBeenCalledTimes(4);
+      await avanza(30_000);
+      expect(vaciaLaColaEntera).toHaveBeenCalledTimes(5);
+    });
+
+    it('sin cobertura no arma nada: la vuelta de la red ya dispara', async () => {
+      vi.useFakeTimers();
+      vaciaLaColaEntera.mockResolvedValue(paradoCon());
+      await monta();
+      expect(vaciaLaColaEntera).toHaveBeenCalledTimes(1);
+      // Se armó el de 30 s. Antes de que salte, se va la red
+      Object.defineProperty(globalThis.navigator, 'onLine', { value: false, configurable: true });
+
+      await avanza(30_000);
+      expect(vaciaLaColaEntera).toHaveBeenCalledTimes(1);
+
+      // Y tampoco dejó otra armada: si la hubiera, al volver la red saltaría
+      // sola, sin esperar al evento `online`, que es quien tiene que disparar
+      Object.defineProperty(globalThis.navigator, 'onLine', { value: true, configurable: true });
+      await avanza(3_600_000);
+      expect(vaciaLaColaEntera).toHaveBeenCalledTimes(1);
+    });
+
+    it('un vaciado que resuelve después de desmontar no arma nada', async () => {
+      // Nadie lo cancelaría: seguiría llamando con la sesión ya cerrada
+      vi.useFakeTimers();
+      let resuelve;
+      vaciaLaColaEntera.mockReturnValue(new Promise((r) => { resuelve = r; }));
+      const { unmount } = await monta();
+      expect(vaciaLaColaEntera).toHaveBeenCalledTimes(1);
+
+      unmount();
+      await act(async () => {
+        resuelve(paradoCon());
+        await Promise.resolve();
+      });
+
+      await avanza(3_600_000);
+      expect(vaciaLaColaEntera).toHaveBeenCalledTimes(1);
+    });
+  });
+
   it('un fallo del vaciado no sube a la pantalla', async () => {
     // El rechazo llega en una microtarea POSTERIOR a montar, así que un
     // `expect(...).not.toThrow()` alrededor de `renderHook` pasa igual con

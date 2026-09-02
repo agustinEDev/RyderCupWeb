@@ -89,6 +89,9 @@ const GolpesSinEnviar = ({ userId = null }) => {
     return algo.matchName || t('golpesSinEnviar.partidaSinNombre');
   };
 
+  const hoyosDe = (avisos) =>
+    [...new Set(avisos.map((a) => a.holeNumber))].sort((a, b) => a - b);
+
   return (
     /* `px-4` como el resto de bloques del panel: sin él estas tarjetas van de
        borde a borde y desalinean la columna entera */
@@ -132,19 +135,21 @@ const GolpesSinEnviar = ({ userId = null }) => {
             <AlertTriangle className="mt-0.5 h-5 w-5 flex-shrink-0 text-red-600" aria-hidden="true" />
             <div className="min-w-0 flex-1">
               <p className="text-sm text-red-900">
+                {/* Cuenta HOYOS, como la lista de abajo: por avisos decía
+                    «4 golpes» sobre una lista de un solo hoyo */}
                 {t('golpesSinEnviar.perdidos', {
-                  count: delGrupo.length,
+                  count: hoyosDe(delGrupo).length,
                   partida: nombreDe(delGrupo[0]),
                 })}
               </p>
               <ul className="mt-1 space-y-0.5 text-xs text-red-800">
-                {delGrupo.map((aviso) => (
-                  // Con el participante: en una partida rápida de cuatro hay
-                  // un aviso por jugador del mismo hoyo, y sin él las claves
-                  // se repiten
-                  <li key={`${aviso.matchId}-${aviso.holeNumber}-${aviso.participantId ?? ''}`}>
-                    {t('golpesSinEnviar.perdido', { hoyo: aviso.holeNumber })}
-                  </li>
+                {/* Por HOYO, no por aviso: en una partida rápida de cuatro
+                    hay un aviso por jugador del mismo hoyo, y por aviso
+                    salían cuatro líneas «Hoyo 7» iguales —y claves repetidas
+                    si además había una huérfana y una con dueño—. Lo que hay
+                    que repetir es el hoyo, una vez */}
+                {hoyosDe(delGrupo).map((hoyo) => (
+                  <li key={hoyo}>{t('golpesSinEnviar.perdido', { hoyo })}</li>
                 ))}
               </ul>
               <button

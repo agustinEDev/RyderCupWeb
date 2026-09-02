@@ -164,4 +164,39 @@ describe('scoringSessionLock', () => {
       expect(typeof cleanup).toBe('function');
     });
   });
+
+  describe('scope (FE #551)', () => {
+    // El vaciado de fondo usa el mismo cerrojo con ámbito propio: así vale
+    // entre pestañas sin reescribir las reglas, y sin estorbar a la pantalla
+    // de anotación, que tiene el suyo
+    it('a scoped lock lives in its own key and does not block the default one', () => {
+      expect(acquire(null, 'vaciado-1', USER_A, 'vaciado')).toBe(true);
+
+      expect(localStorageMock.getItem('rydercup-scoring-session-user-a-vaciado')).not.toBeNull();
+      expect(localStorageMock.getItem('rydercup-scoring-session-user-a')).toBeNull();
+      expect(acquire('m-1', 'session-1', USER_A)).toBe(true);
+      expect(getSession(USER_A, 'vaciado')).toEqual(
+        expect.objectContaining({ sessionId: 'vaciado-1', scope: 'vaciado' })
+      );
+    });
+
+    it('a second holder of the same scope is refused, and release/refresh stay scoped', () => {
+      acquire(null, 'vaciado-1', USER_A, 'vaciado');
+
+      expect(acquire(null, 'vaciado-2', USER_A, 'vaciado')).toBe(false);
+
+      // Releasing the default scope must not free the scoped lock
+      release('vaciado-1', USER_A);
+      expect(getSession(USER_A, 'vaciado')?.sessionId).toBe('vaciado-1');
+
+      const before = getSession(USER_A, 'vaciado').timestamp;
+      vi.spyOn(Date, 'now').mockReturnValue(before + 5000);
+      refresh('vaciado-1', USER_A, 'vaciado');
+      expect(getSession(USER_A, 'vaciado').timestamp).toBe(before + 5000);
+
+      release('vaciado-1', USER_A, 'vaciado');
+      expect(getSession(USER_A, 'vaciado')).toBeNull();
+      expect(acquire(null, 'vaciado-2', USER_A, 'vaciado')).toBe(true);
+    });
+  });
 });
