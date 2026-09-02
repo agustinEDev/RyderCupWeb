@@ -281,7 +281,39 @@ describe('useQuickMatchScoring · anotar sin conexión (FE #515, tabla A)', () =
     getGolfCourseUseCase.execute.mockResolvedValue({ holes: [], tees: [], name: 'Campo' });
   });
 
+  // Una cola de verdad, en memoria: desde FE #561 el golpe se guarda ANTES de
+  // enviarlo y se retira si el envío sale bien, así que lo que hay que mirar
+  // es QUÉ QUEDA guardado, no si se llamó a `enqueue`
+  let cola;
+  const guardaEnMemoria = () => {
+    cola = [];
+    const fuera = (e, holeNumber, participantId) =>
+      !(e.holeNumber === holeNumber && e.participantId === participantId);
+    // Reemplaza solo lo del MISMO dueño, como el de verdad: el dueño es parte
+    // de la identidad de una anotación, así que una huérfana del mismo hoyo
+    // convive con la nueva en vez de ser sustituida por ella
+    offlineQueue.enqueue.mockImplementation((matchId, holeNumber, scoreData, participantId, userId) => {
+      cola = cola.filter(
+        (e) => fuera(e, holeNumber, participantId) || (e.userId ?? null) !== (userId ?? null)
+      );
+      cola.push({ matchId, holeNumber, scoreData, participantId, userId });
+      return true;
+    });
+    offlineQueue.getByMatch.mockImplementation(() => cola);
+    // Con el DUEÑO, como el de verdad: sin él, borrar con el dueño equivocado
+    // no borra nada —y su JSDoc avisa de que esa anotación se reenvía en cada
+    // reconexión para siempre—, así que el doble tapaba justo ese fallo
+    offlineQueue.remove.mockImplementation((matchId, holeNumber, participantId, userId = null) => {
+      cola = cola.filter(
+        (e) => fuera(e, holeNumber, participantId) || (e.userId ?? null) !== (userId ?? null)
+      );
+      return true;
+    });
+    offlineQueue.size.mockImplementation(() => cola.length);
+  };
+
   const anota = async (fallo) => {
+    guardaEnMemoria();
     if (fallo) submitQuickMatchHoleScoreUseCase.execute.mockRejectedValue(fallo);
     else submitQuickMatchHoleScoreUseCase.execute.mockResolvedValue({});
 
@@ -291,34 +323,134 @@ describe('useQuickMatchScoring · anotar sin conexión (FE #515, tabla A)', () =
     return result;
   };
 
-  it('llega bien: no se guarda nada en el móvil', async () => {
+  it('llega bien: no queda nada guardado en el móvil', async () => {
     await anota(null);
 
-    expect(offlineQueue.enqueue).not.toHaveBeenCalled();
+    // Se guardó antes de enviar —para que la casilla se pinte al momento— y
+    // se retiró al confirmarse: dejarlo haría que el siguiente vaciado
+    // comparase lo viejo con lo que acaba de entrar
+    expect(offlineQueue.enqueue).toHaveBeenCalled();
+    expect(cola).toEqual([]);
   });
 
-  it('no llega respuesta: se guarda en el móvil', async () => {
-    await anota(new TypeError('Failed to fetch'));
+  it('se guarda ANTES de enviar, no después de que el envío falle', async () => {
+    // Lo que se ve en la casilla sale de la cola: esperando al fallo, sin
+    // cobertura la casilla decía «Anotar» los diez segundos que el móvil tarda
+    // en rendirse (FE #561)
+    guardaEnMemoria();
+    let dejaFallar;
+    submitQuickMatchHoleScoreUseCase.execute.mockImplementation(
+      () => new Promise((_r, reject) => { dejaFallar = () => reject(new TypeError('Failed to fetch')); })
+    );
+    const { result } = renderHook(() => useQuickMatchScoring('qm-1', 'user-1'));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    let anotando;
+    await act(async () => { anotando = result.current.submitScore(7, 'user-1', 5); await Promise.resolve(); });
+
+    // Con la petición todavía en vuelo, el golpe ya está guardado y visible
+    expect(cola).toHaveLength(1);
+    expect(result.current.holeScoresVisibles.find((h) => h.holeNumber === 7)?.score).toBe(5);
+
+    await act(async () => { dejaFallar(); await anotando; });
+    expect(cola).toHaveLength(1);
+  });
+
+  it('el golpe que el servidor rechaza queda apuntado, no solo en el recuadro rojo', async () => {
+    // Ahora existe en el disco, así que borrarlo sin dejar constancia lo haría
+    // desaparecer en cuanto la siguiente anotación buena limpie el aviso
+    const result = await anota(rechazo(409));
+
+    expect(golpesPerdidos.pendientes('user-1')).toEqual([
+      expect.objectContaining({ matchId: 'qm-1', holeNumber: 7, participantId: 'user-1' }),
+    ]);
+    expect(result.current.perdidos).toEqual([{ holeNumber: 7, participantId: 'user-1' }]);
+    expect(cola).toEqual([]);
+  });
+
+  it('si el aviso no se puede escribir, el golpe rechazado NO se borra', async () => {
+    // Mejor reintentado mil veces que desaparecido sin que nadie lo sepa
+    guardaEnMemoria();
+    submitQuickMatchHoleScoreUseCase.execute.mockRejectedValue(rechazo(409));
+    const { result } = renderHook(() => useQuickMatchScoring('qm-1', 'user-1'));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    // El disco solo se niega para los avisos: la cola ya está en memoria
+    vi.spyOn(elDisco, 'setItem').mockImplementation(() => {
+      throw Object.assign(new Error('quota'), { name: 'QuotaExceededError' });
+    });
+
+    await act(async () => { await result.current.submitScore(7, 'user-1', 5); });
+
+    expect(cola).toHaveLength(1);
+  });
+
+  it('quitar lo guardado de un hoyo se lleva también la anotación huérfana', async () => {
+    // El dueño es parte de la identidad, así que una huérfana —de antes de que
+    // la cola guardara dueño— y la de ahora son entradas distintas. Borrando
+    // solo la primera quedaba la otra viva, y la pantalla decía «1 golpe
+    // guardado» justo después de un envío que sí había llegado
+    guardaEnMemoria();
+    cola.push({ matchId: 'qm-1', holeNumber: 7, participantId: 'user-1', scoreData: { score: 9 }, userId: null });
+    cola.push({ matchId: 'qm-1', holeNumber: 7, participantId: 'user-1', scoreData: { score: 5 }, userId: 'user-1' });
+    // Sin esto, el vaciado del montaje envía las dos y las borra, y el test
+    // pasaría sin llegar a probar el borrado
+    submitQuickMatchHoleScoreUseCase.execute.mockRejectedValue(rechazo(503));
+    const { result } = renderHook(() => useQuickMatchScoring('qm-1', 'user-1'));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    // Por esta puerta, que usa el mismo borrado y no dispara ningún sondeo
+    await act(async () => { result.current.resuelveDiscrepancia(7, 'user-1', 'elQueHay'); });
+
+    expect(cola).toEqual([]);
+  });
+
+  it('con cobertura buena, el contador de pendientes no parpadea', async () => {
+    // Se guarda antes de enviar, pero eso no puede enseñar «1 golpe guardado
+    // en el móvil» en cada anotación que sale bien
+    guardaEnMemoria();
+    let dejaLlegar;
+    submitQuickMatchHoleScoreUseCase.execute.mockImplementation(
+      () => new Promise((resolve) => { dejaLlegar = () => resolve({}); })
+    );
+    const { result } = renderHook(() => useQuickMatchScoring('qm-1', 'user-1'));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    let anotando;
+    await act(async () => { anotando = result.current.submitScore(7, 'user-1', 5); await Promise.resolve(); });
+    expect(result.current.pendientes).toBe(0);
+
+    await act(async () => { dejaLlegar(); await anotando; });
+    expect(result.current.pendientes).toBe(0);
+  });
+
+  it('no llega respuesta: el golpe se queda guardado y el contador lo dice', async () => {
+    const result = await anota(new TypeError('Failed to fetch'));
 
     expect(offlineQueue.enqueue).toHaveBeenCalledWith('qm-1', 7, { score: 5 }, 'user-1', 'user-1', { matchName: null, matchNumber: null });
+    expect(cola).toHaveLength(1);
+    // Y se dice en pantalla: es lo que sostiene el «1 golpe guardado en el
+    // móvil» de la cabecera
+    expect(result.current.pendientes).toBe(1);
   });
 
-  it('401: se guarda, porque el problema es la sesión y no el golpe', async () => {
+  it('401: se queda guardado, porque el problema es la sesión y no el golpe', async () => {
     await anota(rechazo(401));
 
-    expect(offlineQueue.enqueue).toHaveBeenCalled();
+    expect(cola).toHaveLength(1);
   });
 
-  it('5xx: se guarda, porque el servidor puede ir bien después', async () => {
+  it('5xx: se queda guardado, porque el servidor puede ir bien después', async () => {
     await anota(rechazo(503));
 
-    expect(offlineQueue.enqueue).toHaveBeenCalled();
+    expect(cola).toHaveLength(1);
   });
 
-  it.each([404, 403, 409, 400])('%i: NO se guarda, reintentarlo no cambiaría nada', async (status) => {
+  it.each([404, 403, 409, 400])('%i: NO se queda guardado, reintentarlo no cambiaría nada', async (status) => {
     const result = await anota(rechazo(status));
 
-    expect(offlineQueue.enqueue).not.toHaveBeenCalled();
+    // Se guardó para pintarlo, y sale de la cola al saberse que no hay nada
+    // que reintentar: dentro, el vaciado lo reenviaría en cada sondeo
+    expect(cola).toEqual([]);
     expect(result.current.saveError).not.toBeNull();
   });
 
@@ -327,7 +459,7 @@ describe('useQuickMatchScoring · anotar sin conexión (FE #515, tabla A)', () =
     // contrario de lo que ha pasado
     const result = await anota(new TypeError('Failed to fetch'));
 
-    expect(offlineQueue.enqueue).toHaveBeenCalled();
+    expect(cola).toHaveLength(1);
     expect(result.current.saveError).toBeNull();
   });
 
@@ -365,13 +497,13 @@ describe('useQuickMatchScoring · anotar sin conexión (FE #515, tabla A)', () =
     // resultado no es válido». Guardarlo dejaría una entrada imposible a la
     // cabeza de la cola bloqueando todo lo que viene detrás, en cada sondeo.
     const result = await anota(rechazo(422));
-    expect(offlineQueue.enqueue).not.toHaveBeenCalled();
+    expect(cola).toEqual([]);
     expect(result.current.saveError).toBeTruthy();
   });
 
-  it.each([[401], [408], [429], [500]])('un %i sí se guarda: el golpe no tiene la culpa', async (status) => {
+  it.each([[401], [408], [429], [500]])('un %i sí se queda guardado: el golpe no tiene la culpa', async (status) => {
     await anota(rechazo(status));
-    expect(offlineQueue.enqueue).toHaveBeenCalled();
+    expect(cola).toHaveLength(1);
   });
 
 });

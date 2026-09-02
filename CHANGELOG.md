@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [2.26.1] - 2026-09-02
+
+### Fixed
+
+- **Sin cobertura, el golpe aparece al momento en vez de tardar diez segundos.** Al anotar un hoyo en una partida rápida, la casilla seguía diciendo «Anotar» todo el rato que el móvil tardaba en rendirse con la petición, y solo después salía el resultado y el aviso de que estaba guardado. Ahora el golpe **se guarda antes de intentar enviarlo** —guardarlo es lo que hace que exista—, así que se pinta al instante; y si la aplicación se cierra durante esa espera, ya no se pierde. Con cobertura buena no cambia nada de lo que se ve: el aviso de «guardado en el móvil» solo aparece si el envío no llega (#561).
+
 ## [2.26.0] - 2026-09-02
 
 ### Added
