@@ -416,11 +416,16 @@ describe('useQuickMatchScoring · anotar sin conexión (FE #515, tabla A)', () =
     const { result } = renderHook(() => useQuickMatchScoring('qm-1', 'user-1'));
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
+    // Con el reloj clavado: dos anotaciones seguidas caen en el mismo
+    // milisegundo más a menudo de lo que parece, y así el test lo vigila
+    // siempre y no cuando la máquina quiera —el CI lo cazó, esta máquina no—
+    const reloj = vi.spyOn(Date, 'now').mockReturnValue(1_000_000);
     let primera;
     await act(async () => { primera = result.current.submitScore(7, 'user-1', 5); await Promise.resolve(); });
     // El jugador se corrige con la petición todavía en vuelo
     await act(async () => { await result.current.submitScore(7, 'user-1', 6); });
     await act(async () => { dejaLlegar(); await primera; });
+    reloj.mockRestore();
 
     expect(cola).toEqual([expect.objectContaining({ holeNumber: 7, scoreData: { score: 6 } })]);
   });
