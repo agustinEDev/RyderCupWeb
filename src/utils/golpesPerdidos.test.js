@@ -13,7 +13,7 @@ const almacen = (() => {
 })();
 Object.defineProperty(globalThis, 'localStorage', { value: almacen, writable: true });
 
-import { apunta, olvidaEl, olvidaLosDe, olvidaTodos, pendientes } from './golpesPerdidos';
+import { apunta, olvidaEl, olvidaLosDe, olvidaTodos, pendientes, ponleNombre } from './golpesPerdidos';
 
 const aviso = (holeNumber, userId, matchId = 'm-1') =>
   ({ matchId, matchName: 'Meis', holeNumber, userId });
@@ -129,5 +129,43 @@ describe('golpesPerdidos (FE #521)', () => {
     almacen.setItem('rydercup-golpes-perdidos', 'esto no es json');
 
     expect(pendientes('usuario-A')).toEqual([]);
+  });
+
+  describe('ponleNombre (FE #551)', () => {
+    it('rellena solo lo que falta, y no pisa lo que ya tenía', () => {
+      apunta({ matchId: 'm-1', matchName: null, matchNumber: null, holeNumber: 7, userId: 'usuario-A' });
+      apunta({ matchId: 'm-1', matchName: 'Como se apuntó', matchNumber: null, holeNumber: 8, userId: 'usuario-A' });
+      apunta({ matchId: 'm-2', matchName: null, matchNumber: null, holeNumber: 1, userId: 'usuario-A' });
+
+      expect(ponleNombre('m-1', { matchName: 'Meis', matchNumber: 3 })).toBe(true);
+
+      expect(pendientes('usuario-A')).toEqual([
+        expect.objectContaining({ holeNumber: 7, matchName: 'Meis', matchNumber: 3 }),
+        expect.objectContaining({ holeNumber: 8, matchName: 'Como se apuntó', matchNumber: 3 }),
+        // La otra partida no se toca
+        expect.objectContaining({ matchId: 'm-2', matchName: null, matchNumber: null }),
+      ]);
+    });
+
+    it('no escribe si no hay nada que rellenar', () => {
+      // Corre en cada carga de la vista: escribir siempre desgasta el disco y
+      // hace fallar en un móvil lleno algo que no necesitaba escribir
+      apunta({ matchId: 'm-1', matchName: 'Meis', matchNumber: 3, holeNumber: 7, userId: 'usuario-A' });
+      const escribe = vi.spyOn(almacen, 'setItem');
+
+      expect(ponleNombre('m-1', { matchName: 'Otro', matchNumber: 9 })).toBe(true);
+      expect(ponleNombre('m-1', {})).toBe(true);
+
+      expect(escribe).not.toHaveBeenCalled();
+    });
+
+    it('dice que NO si hacía falta escribir y no se pudo', () => {
+      apunta({ matchId: 'm-1', matchName: null, matchNumber: null, holeNumber: 7, userId: 'usuario-A' });
+      vi.spyOn(almacen, 'setItem').mockImplementation(() => {
+        throw new Error('QuotaExceededError');
+      });
+
+      expect(ponleNombre('m-1', { matchName: 'Meis' })).toBe(false);
+    });
   });
 });

@@ -18,8 +18,13 @@ import { useQuickMatchScoring } from './useQuickMatchScoring';
 
 vi.mock('../utils/scoringOfflineQueue', () => ({
   enqueue: vi.fn(),
-  remove: vi.fn(),
+  // Devuelve `true` como el de verdad: con `undefined`, el vaciado creía que
+  // no había podido borrar y cortaba tras el primer envío, así que la mitad de
+  // las ramas de estos tests no se ejecutaba nunca
+  remove: vi.fn(() => true),
   getByMatch: vi.fn(() => []),
+  deQuien: vi.fn(() => []),
+  ponleNombre: vi.fn(() => true),
   size: vi.fn(() => 0),
   clear: vi.fn(),
 }));
@@ -1699,5 +1704,177 @@ describe('useQuickMatchScoring · borrar lo guardado sin dueño (FE #521)', () =
     await waitFor(() =>
       expect(offlineQueue.remove).toHaveBeenCalledWith('qm-1', 7, 'user-1', null)
     );
+  });
+});
+
+describe('useQuickMatchScoring · la partida ya no está (FE #551)', () => {
+  const pendiente = (matchId, holeNumber, score, participantId = 'user-1') =>
+    ({ matchId, holeNumber, participantId, scoreData: { score }, userId: 'user-1' });
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    getGolfCourseUseCase.execute.mockResolvedValue({ holes: [], tees: [], name: 'Campo' });
+    offlineQueue.getByMatch.mockReturnValue([]);
+    offlineQueue.deQuien.mockReturnValue([]);
+    offlineQueue.size.mockReturnValue(0);
+    offlineQueue.remove.mockReturnValue(true);
+  });
+
+  // Hubo aquí una limpieza que, ante un 404, apartaba lo guardado con aviso.
+  // Se quitó: el 404 de este cliente no distingue «la partida se borró» de un
+  // despliegue a medias o de un proxy que contesta por él, y borrar golpes por
+  // una respuesta que puede ser transitoria es peor que dejar el aviso del
+  // panel de más. Ningún estado del sondeo toca la cola; solo el vaciado, y
+  // solo cuando el servidor rechaza ESA anotación
+  it.each([404, 403, 500])('un %i del sondeo no toca la cola ni apunta perdidos', async (status) => {
+    const matchId = `qm-${status}`;
+    offlineQueue.deQuien.mockReturnValue([pendiente(matchId, 7, 5)]);
+    getQuickMatchUseCase.execute.mockRejectedValue(
+      Object.assign(new Error(`HTTP ${status}`), { status })
+    );
+
+    const { unmount } = renderHook(() => useQuickMatchScoring(matchId, 'user-1'));
+
+    await waitFor(() => expect(getQuickMatchUseCase.execute).toHaveBeenCalled());
+    expect(offlineQueue.remove).not.toHaveBeenCalled();
+    expect(golpesPerdidos.pendientes('user-1').filter((a) => a.matchId === matchId)).toEqual([]);
+    // Se desmonta: el sondeo sigue vivo si no, y su siguiente vuelta pisa el
+    // test de al lado
+    unmount();
+  });
+});
+
+describe('useQuickMatchScoring · cuando el vaciado se para (FE #551)', () => {
+  const pendiente = (holeNumber, score, participantId = 'user-1') =>
+    ({ matchId: 'qm-1', holeNumber, participantId, scoreData: { score }, userId: 'user-1' });
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    getGolfCourseUseCase.execute.mockResolvedValue({ holes: [], tees: [], name: 'Campo' });
+    getQuickMatchUseCase.execute.mockResolvedValue(mockQuickMatch);
+    offlineQueue.deQuien.mockReturnValue([]);
+    offlineQueue.size.mockReturnValue(0);
+    offlineQueue.remove.mockReturnValue(true);
+    submitQuickMatchHoleScoreUseCase.execute.mockResolvedValue({});
+  });
+
+  const montaCon = async (pendientes) => {
+    offlineQueue.getByMatch.mockReturnValue(pendientes);
+    const { result } = renderHook(() => useQuickMatchScoring('qm-1', 'user-1'));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    return result;
+  };
+
+  it('si no se pudo borrar, lo dice en su propio aviso y vuelve a pedir la partida', async () => {
+    // El golpe LLEGÓ y sigue en la cola: sin aviso el contador no baja y nadie
+    // sabe por qué; sin la foto nueva, la casilla dice «Anotar» y se anota dos
+    // veces
+    offlineQueue.remove.mockReturnValue(false);
+
+    const result = await montaCon([pendiente(7, 5)]);
+
+    await waitFor(() => expect(result.current.avisoDelVaciado).toBe('no-se-pudo-borrar'));
+    // No va en `saveError`: ese lo pisa la siguiente anotación
+    expect(result.current.saveError).toBeNull();
+    // Y solo se envió una vez: el móvil lleno no se arregla reintentando
+    expect(submitQuickMatchHoleScoreUseCase.execute).toHaveBeenCalledTimes(1);
+    // La foto se pidió de nuevo tras el envío
+    await waitFor(() => expect(getQuickMatchUseCase.execute).toHaveBeenCalledTimes(2));
+  });
+
+  it('el aviso sobrevive a una anotación que sale bien y a una pasada que para por la red', async () => {
+    offlineQueue.remove.mockReturnValue(false);
+    const result = await montaCon([pendiente(7, 5)]);
+    await waitFor(() => expect(result.current.avisoDelVaciado).toBe('no-se-pudo-borrar'));
+
+    // Una anotación que llega limpia el error de guardado, no este aviso: el
+    // disco sigue sin admitir escrituras
+    await act(async () => { await result.current.submitScore(8, 'user-1', 4); });
+    expect(result.current.saveError).toBeNull();
+    expect(result.current.avisoDelVaciado).toBe('no-se-pudo-borrar');
+
+    // Una pasada que para por la red no ha tocado el disco: no sabe nada nuevo
+    submitQuickMatchHoleScoreUseCase.execute.mockRejectedValue(
+      Object.assign(new Error('HTTP 503'), { status: 503 })
+    );
+    await act(async () => { await result.current.refetch(); });
+    expect(result.current.avisoDelVaciado).toBe('no-se-pudo-borrar');
+
+    // Una que termina sin pararse sí lo retira
+    offlineQueue.remove.mockReturnValue(true);
+    submitQuickMatchHoleScoreUseCase.execute.mockResolvedValue({});
+    await act(async () => { await result.current.refetch(); });
+    expect(result.current.avisoDelVaciado).toBeNull();
+  });
+
+  it('si no puede borrar lo que ya está igual en el servidor, avisa y no manda el resto', async () => {
+    // Mandar el resto con un disco que no borra lo enviaría y lo dejaría en
+    // la cola, para volver a enviarlo en el siguiente sondeo
+    offlineQueue.remove.mockReturnValue(false);
+    getQuickMatchUseCase.execute.mockResolvedValue({
+      ...mockQuickMatch,
+      holeScores: [{ holeNumber: 7, participantId: 'user-1', score: 5, recordedByParticipantId: 'user-1' }],
+    });
+
+    const result = await montaCon([pendiente(7, 5), pendiente(9, 4)]);
+
+    await waitFor(() => expect(result.current.avisoDelVaciado).toBe('no-se-pudo-borrar'));
+    expect(submitQuickMatchHoleScoreUseCase.execute).not.toHaveBeenCalled();
+    // Nada llegó: la foto no se vuelve a pedir
+    expect(getQuickMatchUseCase.execute).toHaveBeenCalledTimes(1);
+  });
+
+  it('un paro por red o servidor no es un error de guardado: se calla y se espera', async () => {
+    submitQuickMatchHoleScoreUseCase.execute.mockRejectedValue(
+      Object.assign(new Error('HTTP 503'), { status: 503 })
+    );
+
+    const result = await montaCon([pendiente(7, 5)]);
+
+    await waitFor(() => expect(submitQuickMatchHoleScoreUseCase.execute).toHaveBeenCalled());
+    expect(result.current.saveError).toBeNull();
+    expect(result.current.avisoDelVaciado).toBeNull();
+    // Nada llegó: la foto no se vuelve a pedir
+    expect(getQuickMatchUseCase.execute).toHaveBeenCalledTimes(1);
+  });
+
+  it('lo que quedó del vaciado de la partida anterior no se pinta en la nueva', async () => {
+    // El envío tarda, y en ese rato se cambia de partida: el contador y el
+    // aviso de la vieja aterrizaban encima de la nueva
+    let dejaPasar;
+    submitQuickMatchHoleScoreUseCase.execute.mockImplementation(
+      () => new Promise((resolve) => { dejaPasar = () => resolve({}); })
+    );
+    offlineQueue.getByMatch.mockReturnValue([pendiente(7, 5)]);
+    // Solo la vieja tiene cola: así se ve de cuál salió el contador
+    offlineQueue.size.mockImplementation((id) => (id === 'qm-1' ? 9 : 0));
+    const { result, rerender } = renderHook(({ id }) => useQuickMatchScoring(id, 'user-1'), {
+      initialProps: { id: 'qm-1' },
+    });
+    await waitFor(() => expect(submitQuickMatchHoleScoreUseCase.execute).toHaveBeenCalled());
+
+    // Se cambia de partida con el golpe en vuelo, y entonces responde
+    rerender({ id: 'qm-2' });
+    await act(async () => { dejaPasar(); await Promise.resolve(); });
+
+    expect(result.current.pendientes).toBe(0);
+  });
+
+  it('no pone a la partida nueva el nombre de la anterior', async () => {
+    // Al cambiar de ruta, `quickMatch` todavía es la vieja durante un render
+    getQuickMatchUseCase.execute.mockResolvedValue({ ...mockQuickMatch, id: 'qm-1', name: 'La vieja' });
+    const { result, rerender } = renderHook(({ id }) => useQuickMatchScoring(id, 'user-1'), {
+      initialProps: { id: 'qm-1' },
+    });
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    expect(offlineQueue.ponleNombre).toHaveBeenCalledWith('qm-1', { matchName: 'La vieja' });
+    offlineQueue.ponleNombre.mockClear();
+    // La nueva no llega nunca: sin cobertura
+    getQuickMatchUseCase.execute.mockRejectedValue(new TypeError('Failed to fetch'));
+
+    rerender({ id: 'qm-2' });
+
+    await waitFor(() => expect(getQuickMatchUseCase.execute).toHaveBeenCalledWith('qm-2'));
+    expect(offlineQueue.ponleNombre).not.toHaveBeenCalledWith('qm-2', expect.anything());
   });
 });

@@ -24,22 +24,38 @@
  */
 
 import { submitHoleScoreUseCase } from '../composition';
-import * as golpesPerdidos from '../utils/golpesPerdidos';
-import {
-  esFalloDeTodaLaSesion,
-  esRechazoDefinitivo,
-  noLlegoAlServidor,
-} from '../utils/politicaDeLaCola';
 import * as cola from '../utils/scoringOfflineQueue';
+import * as cerrojo from '../utils/scoringSessionLock';
+import { PARO, vaciaAnotaciones } from './vaciaAnotaciones';
 
-// Un solo vaciado a la vez. El evento de vuelta de la red puede llegar dos
-// veces, y la pantalla de anotación tiene el suyo: sin esto, la misma
-// anotación se enviaría dos veces
-let vaciando = false;
+// Un solo vaciado a la vez, ENTRE PESTAÑAS. El evento de vuelta de la red
+// puede llegar dos veces, y dos pestañas de la misma cuenta leen la misma
+// cola: sin esto, la misma anotación se enviaría dos veces.
+//
+// El cerrojo es el de la pantalla de anotación, con ámbito propio: ya tiene
+// dueño, señal de vida y plazo para dar por colgado al que no la da (dos
+// minutos). Hubo aquí uno propio, por pestaña, con las mismas reglas
+// reescritas; no servía contra la segunda pestaña, y dos plazos iguales en dos
+// ficheros se desajustan en cuanto alguien toca uno (FE #551)
+//
+// Tiene un precio, asumido: si el sistema mata la aplicación a mitad de un
+// vaciado, el cerrojo queda escrito y el siguiente arranque se lo encuentra
+// puesto hasta que caduque. Son como mucho dos minutos y medio de retraso del
+// vaciado de fondo —el reintento cae a los 30 s y a los 150 s—, y la pantalla
+// de anotación vacía lo suyo sin pasar por aquí. La alternativa, un cerrojo
+// que muera con la pestaña, es la que no servía contra la segunda pestaña
+const AMBITO = 'vaciado';
 
 /** Se emite cuando el vaciado ha enviado o descartado algo. */
 export const COLA_VACIADA = 'rydercup:cola-vaciada';
 
+const nada = (pendientes, paroPor) => ({
+  enviadas: 0,
+  llegaron: 0,
+  descartadas: 0,
+  pendientes,
+  paroPor,
+});
 
 /**
  * Envía lo que se pueda de la cola de esta persona.
@@ -51,7 +67,10 @@ export const COLA_VACIADA = 'rydercup:cola-vaciada';
  *   puede ENTRAR en una de las partidas que se están enviando: con un valor
  *   congelado se seguiría vaciando por debajo de una pantalla ya montada.
  *   `userId` es de quién es la sesión.
- * @returns {Promise<{enviadas: number, descartadas: number, pendientes: number}>}
+ * @returns {Promise<{enviadas: number, llegaron: number, descartadas: number,
+ *   pendientes: number, paroPor: string|null}>} `paroPor` dice por qué se
+ *   salió antes de tiempo, o `PARO.YA_HAY_OTRO` si ni llegó a empezar. Quien
+ *   llama lo necesita para saber si reintentar
  */
 export const vaciaLaColaEntera = async ({ saltaPartida = null, userId = null } = {}) => {
   const cualSalta = () => (typeof saltaPartida === 'function' ? saltaPartida() : saltaPartida);
@@ -59,124 +78,54 @@ export const vaciaLaColaEntera = async ({ saltaPartida = null, userId = null } =
   // explica el precio de no hacerlo. Lo huérfano se rescata desde la pantalla
   // de su partida, donde hay alguien mirando
   const mias = userId ? cola.deQuien(userId) : [];
-  if (mias.length === 0 || vaciando) {
-    return { enviadas: 0, descartadas: 0, pendientes: mias.length };
+  if (mias.length === 0) return nada(0, null);
+
+  const miTurno = `${AMBITO}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  if (!cerrojo.acquire(null, miTurno, userId, AMBITO)) {
+    // Se dice POR QUÉ no se hizo nada: quien llama tiene un reintento
+    // programado, y confundir esto con «ha ido bien» se lo desarmaba. Es real:
+    // el reintento salta mientras otro vaciado está en vuelo, se encuentra el
+    // cerrojo puesto, y sin este dato daba por buena una vuelta que ni empezó
+    return nada(mias.length, PARO.YA_HAY_OTRO);
   }
+  // Sigue siendo mío mientras nadie lo haya tomado dándome por colgado. Con
+  // el cerrojo sin escribir NO se da por mío: es lo que ve el que se quedó
+  // dormido cuando el relevo ya terminó y lo soltó, y seguir era mandar su
+  // copia vieja de la cola detrás de la del relevo. La excepción es un
+  // almacenamiento que no admite escrituras: ahí el cerrojo falla abierto y
+  // no se leerá nunca nada, así que se decide UNA vez al tomarlo, no en cada
+  // vuelta
+  const sinAlmacen = cerrojo.getSession(userId, AMBITO)?.sessionId !== miTurno;
+  const sigueSiendoMio = () =>
+    sinAlmacen || cerrojo.getSession(userId, AMBITO)?.sessionId === miTurno;
 
-  vaciando = true;
-  let enviadas = 0;
-  let descartadas = 0;
-
+  let resultado;
   try {
-    for (const entrada of mias) {
-      if (entrada.matchId === cualSalta()) continue;
-      // Las de partida rápida se dejan para su pantalla, que sabe preguntar
-      if (entrada.participantId != null) continue;
-
-      try {
-        await submitHoleScoreUseCase.execute(
-          entrada.matchId,
-          entrada.holeNumber,
-          entrada.scoreData
-        );
-        if (!siguesiendoLaMisma(entrada)) {
-          // Se reanotó mientras iba en camino: lo que hay guardado es más
-          // nuevo que lo que se acaba de enviar, y se queda para enviarse él
-          continue;
-        }
-        if (
-          !cola.remove(entrada.matchId, entrada.holeNumber, entrada.participantId, entrada.userId)
-        ) {
-          // El golpe llegó pero no se pudo sacar de la cola: sin espacio, o en
-          // una ventana privada. Contarlo como enviado lo dejaría reenviándose
-          // en cada reconexión para siempre, así que se para: si el
-          // almacenamiento no admite una escritura, tampoco admitirá las
-          // siguientes, y cada una repetiría el mismo envío duplicado
-          break;
-        }
-        enviadas += 1;
-      } catch (err) {
-        if (esRechazoDefinitivo(err)) {
-          descartadas += apartaLaRechazada(entrada) ? 1 : 0;
-          continue;
-        }
-        // El fallo no es de esta anotación sino de la sesión o del servidor:
-        // mientras siga así, las demás fallarían igual. Seguir el bucle es lo
-        // que convertía un 403 de CSRF en un cierre de sesión por cada golpe
-        // guardado, y un 503 en la cola entera reintentada a cada rato
-        if (esFalloDeTodaLaSesion(err) || noLlegoAlServidor(err)) break;
-        // Ni rechazo ni red ni sesión: esta entrada no se puede enviar por lo
-        // que trae dentro —el caso de uso valida antes de enviar—. Se deja
-        // donde está —no se pierde— y se sigue con las demás, para que una
-        // sola no bloquee la cola de todo el mundo
-        continue;
-      }
-    }
+    resultado = await vaciaAnotaciones({
+      entradas: mias,
+      sigoVivo: () => {
+        // Si me lo quitaron por colgado, refrescarlo echaría al que entró en
+        // mi lugar; se contesta que no, y el bucle para
+        if (!sigueSiendoMio()) return false;
+        cerrojo.refresh(miTurno, userId, AMBITO);
+        return true;
+      },
+      manda: (entrada) =>
+        submitHoleScoreUseCase.execute(entrada.matchId, entrada.holeNumber, entrada.scoreData),
+      // La partida abierta la vacía su propia pantalla; y una anotación con
+      // participante que no sea de partida rápida en solitario se deja para
+      // ella, que sabe preguntar cuando otro anotador puso otra cosa
+      seSalta: (entrada) =>
+        entrada.matchId === cualSalta() || entrada.participantId != null,
+    });
   } finally {
-    vaciando = false;
+    // Solo lo suelta quien lo tiene: `release` ya lo comprueba
+    cerrojo.release(miTurno, userId, AMBITO);
   }
 
-  if (enviadas > 0 || descartadas > 0) {
+  if (resultado.enviadas > 0 || resultado.descartadas > 0) {
     globalThis.dispatchEvent?.(new globalThis.CustomEvent(COLA_VACIADA));
   }
 
-  return { enviadas, descartadas, pendientes: cola.deQuien(userId).length };
-};
-
-/**
- * Si lo que hay guardado ahora es exactamente lo que se acaba de enviar.
- *
- * Mientras la petición estaba en vuelo, el jugador ha podido abrir esa partida
- * y reanotar ese hoyo. Borrar «el hoyo 5» a secas se lleva la corrección, el
- * servidor se queda con lo viejo, y nadie se entera. Se compara lo ANOTADO y
- * no solo el momento: `enqueue` sella con `Date.now()`, y una corrección hecha
- * en el mismo milisegundo lleva el mismo sello.
- */
-const siguesiendoLaMisma = (entrada) => {
-  const ahora = cola
-    .getByMatch(entrada.matchId, entrada.userId)
-    .find(
-      (e) =>
-        e.holeNumber === entrada.holeNumber
-        && (e.participantId ?? null) === (entrada.participantId ?? null)
-        && (e.userId ?? null) === (entrada.userId ?? null)
-    );
-  return Boolean(
-    ahora
-      && ahora.timestamp === entrada.timestamp
-      && JSON.stringify(ahora.scoreData) === JSON.stringify(entrada.scoreData)
-  );
-};
-
-/**
- * Saca de la cola una anotación que el servidor ha rechazado, dejando aviso.
- *
- * **Se exporta**: la pantalla de competición vacía su propia cola y tiene que
- * hacer exactamente esto mismo. Cuando cada una tenía su versión, el mismo 409
- * dejaba aviso desde el vaciado de fondo y borraba el golpe en silencio desde
- * la pantalla.
- *
- * **Solo se borra si el aviso ha quedado escrito.** Si el móvil no tiene sitio
- * para el aviso, la anotación se queda en la cola: es preferible que se
- * reintente mil veces a que desaparezca sin que nadie lo sepa, que es
- * exactamente lo que esta issue existe para impedir.
- *
- * @returns {boolean} Si de verdad se apartó
- */
-export const apartaLaRechazada = (entrada) => {
-  const apuntado = golpesPerdidos.apunta({
-    matchId: entrada.matchId,
-    matchName: entrada.matchName ?? null,
-    matchNumber: entrada.matchNumber ?? null,
-    holeNumber: entrada.holeNumber,
-    userId: entrada.userId ?? null,
-  });
-  if (!apuntado) return false;
-
-  return cola.remove(
-    entrada.matchId,
-    entrada.holeNumber,
-    entrada.participantId,
-    entrada.userId
-  );
+  return { ...resultado, pendientes: cola.deQuien(userId).length };
 };

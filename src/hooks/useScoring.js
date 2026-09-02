@@ -5,13 +5,9 @@ import {
   submitScorecardUseCase,
   concedeMatchUseCase,
 } from '../composition';
-import {
-  esFalloDeTodaLaSesion,
-  esRechazoDefinitivo,
-  noLlegoAlServidor,
-  seGuardaParaDespues,
-} from '../utils/politicaDeLaCola';
-import { apartaLaRechazada } from '../services/vaciadoDeLaCola';
+import { seGuardaParaDespues } from '../utils/politicaDeLaCola';
+import { avisoTrasElVaciado, vaciaAnotaciones } from '../services/vaciaAnotaciones';
+import { errorDeGuardado } from '../utils/erroresDeAnotacion';
 import * as golpesPerdidos from '../utils/golpesPerdidos';
 import * as offlineQueue from '../utils/scoringOfflineQueue';
 import * as sessionLock from '../utils/scoringSessionLock';
@@ -27,17 +23,6 @@ const SESSION_REFRESH_INTERVAL = 30000; // 30 seconds
  * @param {string} currentUserId
  * @returns {Object} Scoring state and actions
  */
-/**
- * El aviso de que el móvil no pudo guardar el golpe. Sin espacio o en una
- * ventana privada, el golpe no está en el servidor NI en el dispositivo.
- */
-const errorDeGuardado = (holeNumber) => {
-  const fallo = new Error('No se pudo guardar el golpe en el móvil');
-  fallo.holeNumber = holeNumber;
-  fallo.noSeGuardo = true;
-  return fallo;
-};
-
 export const useScoring = (matchId, currentUserId, isAdmin = false) => {
   const [scoringView, setScoringView] = useState(null);
   const [currentHole, setCurrentHole] = useState(1);
@@ -48,6 +33,13 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
   const [isSessionBlocked, setIsSessionBlocked] = useState(false);
   const [pendingQueueSize, setPendingQueueSize] = useState(0);
+  // Por qué se paró el último vaciado, si fue por el almacenamiento del móvil
+  // (ver `PARO`). Estado PROPIO y no `error`: el sondeo pone `error` a null
+  // cada diez segundos al cargar bien la vista, así que un aviso puesto ahí
+  // duraba lo que tardaba la siguiente respuesta —y en el propio vaciado, ni
+  // eso: se ponía y tres líneas después el refetch lo quitaba—. Esto solo lo
+  // toca el vaciado, y solo se quita cuando otro vaciado termina sin ese paro
+  const [avisoDelVaciado, setAvisoDelVaciado] = useState(null);
 
   // eslint-disable-next-line react-hooks/purity -- pre-existing pattern surfaced by eslint-plugin-react-hooks 7.1.1 bump; needs dedicated review (tracked in follow-up)
   const sessionIdRef = useRef(`${Date.now()}-${Math.random().toString(36).slice(2)}`);
@@ -147,11 +139,28 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
    */
   const laPartidaRef = useRef({ matchName: null, matchNumber: null });
   useEffect(() => {
-    laPartidaRef.current = {
-      matchName: scoringView?.roundInfo?.golfCourseName ?? null,
-      matchNumber: scoringView?.matchNumber ?? null,
-    };
-  }, [scoringView?.roundInfo?.golfCourseName, scoringView?.matchNumber]);
+    // Solo si la vista ES de esta partida: la ruta no lleva `key` y la vista
+    // no se vacía al cambiar de partida, así que al ir de A a B hay un render
+    // con `matchId` de B y la vista de A. Sin esta guarda se le ponía a B el
+    // nombre de A, y como el nombre no se pisa, para siempre
+    const esDeEsta = Boolean(matchId) && scoringView?.matchId === matchId;
+    laPartidaRef.current = esDeEsta
+      ? {
+        matchName: scoringView?.roundInfo?.golfCourseName ?? null,
+        matchNumber: scoringView?.matchNumber ?? null,
+      }
+      : { matchName: null, matchNumber: null };
+    // Y se le pone nombre a lo que se guardó sin él: en un arranque en frío
+    // sin cobertura esta vista no llega nunca, así que todo lo anotado ese día
+    // quedó sin nombre y el panel enseñaba «una partida anterior». En cuanto
+    // la vista carga, aunque sea al día siguiente, se rellena (FE #551). A la
+    // cola y a los avisos de golpes perdidos: un aviso apartado antes de que
+    // llegara la vista ya no está en la cola, y sin esto se quedaba sin nombre
+    if (esDeEsta && (laPartidaRef.current.matchName || laPartidaRef.current.matchNumber != null)) {
+      offlineQueue.ponleNombre(matchId, laPartidaRef.current);
+      golpesPerdidos.ponleNombre(matchId, laPartidaRef.current);
+    }
+  }, [matchId, scoringView?.matchId, scoringView?.roundInfo?.golfCourseName, scoringView?.matchNumber]);
 
   const pendientesPropias = useCallback(
     () => offlineQueue.getByMatch(matchId, currentUserId).filter((e) => e.participantId == null).length,
@@ -289,41 +298,39 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
 
   // --- Process offline queue ---
   const vaciaLaDeEstaPartida = useCallback(async () => {
-    const entries = offlineQueue.getByMatch(matchId, currentUserId);
-    for (const entry of entries) {
-      // Este vaciado es el de competición. Una anotación con participante es de
-      // una partida rápida: va por otro endpoint y con otro cuerpo, así que
-      // enviarla desde aquí la guardaría mal y la borraría a continuación. Se
-      // deja para quien sepa mandarla. Hoy no debería llegar ninguna —la cola
-      // se filtra por partida y los ids no coinciden—, pero perder un golpe en
-      // silencio es demasiado caro para fiarlo a eso (FE #515)
-      if (entry.participantId != null) continue;
-
-      try {
-        await submitHoleScoreUseCase.execute(entry.matchId, entry.holeNumber, entry.scoreData);
-        // Con el participante: `remove` distingue por él desde FE #515, así que
-        // omitirlo dejaría sin borrar cualquier entrada que lo lleve, y se
-        // reenviaría en cada reconexión sin que la cuenta bajara nunca
-        offlineQueue.remove(entry.matchId, entry.holeNumber, entry.participantId, entry.userId ?? null);
-      } catch (err) {
-        if (esRechazoDefinitivo(err)) {
-          // El servidor dice que esta anotación no entra y no va a entrar. Se
-          // aparta DEJANDO AVISO, con la misma función que usa el vaciado de
-          // fondo: cuando esta pantalla tenía su propia versión, el mismo 409
-          // dejaba aviso desde el panel y borraba el golpe en silencio aquí,
-          // que es la mitad del problema que esta issue viene a arreglar
-          apartaLaRechazada(entry);
-          continue;
-        }
-        // Si el fallo es de la sesión o del servidor, o no hay red, las demás
-        // fallarían igual: se para. Pero un Error pelado del propio caso de
-        // uso —valida antes de enviar— habla solo de ESTA anotación, y parar
-        // por él dejaba el resto de los hoyos de la partida sin enviar en cada
-        // reconexión, para siempre
-        if (esFalloDeTodaLaSesion(err) || noLlegoAlServidor(err)) break;
-        continue;
-      }
+    // La política —qué se manda, qué se aparta, qué para el bucle— vive en un
+    // solo sitio (FE #551). Aquí solo se dice CUÁLES son las de esta pantalla
+    // y CÓMO se mandan. Cuando esto era una copia del bucle, le faltaban dos
+    // guardas que el de fondo sí tenía, y perdía correcciones del jugador
+    const unaPasada = () =>
+      vaciaAnotaciones({
+        entradas: offlineQueue.getByMatch(matchId, currentUserId),
+        manda: (entrada) =>
+          submitHoleScoreUseCase.execute(entrada.matchId, entrada.holeNumber, entrada.scoreData),
+        // Una anotación con participante es de una partida rápida: va por otro
+        // endpoint y con otro cuerpo, así que enviarla desde aquí la guardaría
+        // mal y la borraría a continuación (FE #515)
+        seSalta: (entrada) => entrada.participantId != null,
+        // Las huérfanas se rescatan desde aquí, y su aviso tiene que quedar a
+        // nombre de quien las rescató: sin dueño lo ve toda cuenta del móvil
+        dueñoSiNoLoTiene: currentUserId ?? null,
+      });
+    let resultado = await unaPasada();
+    // Lo que el jugador corrigió MIENTRAS iba la pasada se quedó sin mandar:
+    // el bucle no manda un valor que no leyó al empezar. Aquí no hay nada que
+    // mirar antes de mandarlo —en competición no se pregunta por desacuerdos—,
+    // así que se da una pasada más, que lo relee. Una y no un bucle: cada
+    // corrección nueva tendrá su propio disparador, y sin tope un jugador
+    // corrigiendo sin parar lo mantenía vivo
+    if (resultado.cambiadas > 0 && resultado.paroPor === null) {
+      resultado = await unaPasada();
     }
+    // Si el vaciado paró porque el móvil no admite escrituras, el resto de la
+    // vuelta no ha salido y no hay nadie que lo reintente: el vaciado de fondo
+    // deja fuera a propósito la partida que se está anotando. Callarlo deja al
+    // jugador mirando un contador que no baja, sin saber por qué. Y no lo
+    // quita una pasada que paró por la red: esa no sabe nada del disco
+    setAvisoDelVaciado((antes) => avisoTrasElVaciado(antes, resultado.paroPor));
     setPendingQueueSize(pendientesPropias());
     await fetchScoringView();
   }, [matchId, fetchScoringView, pendientesPropias, currentUserId]);
@@ -414,6 +421,9 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
       // Strict filter: only react to events from the SAME user
       // Using !== ensures undefined/null events are also filtered out
       if (event.userId !== currentUserId) return;
+      // And only the scoring-screen lock: the same user also holds a scoped
+      // one for the background queue drain, which has nothing to block here
+      if (event.scope) return;
 
       if (event.type === 'LOCK_ACQUIRED' && event.sessionId !== sessionIdRef.current) {
         if (event.matchId === matchId) {
@@ -473,6 +483,7 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
     isOffline,
     isSessionBlocked,
     pendingQueueSize,
+    avisoDelVaciado,
 
     // Derived
     isMatchPlayer,

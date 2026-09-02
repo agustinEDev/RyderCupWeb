@@ -165,7 +165,12 @@
     "failedToSubmitScorecard": "Error al enviar tarjeta",
     "failedToLoadLeaderboard": "Error al cargar clasificación",
     "failedToConcede": "Error al conceder partido",
-    "matchNotInProgress": "El partido no está en curso"
+    "matchNotInProgress": "El partido no está en curso",
+    "noSeGuardoEnElMovil": "No se pudo guardar el golpe en el móvil: no hay espacio o la ventana es privada. Anótalo de nuevo cuando lo hayas liberado.",
+    "vaciado": {
+      "no-se-pudo-borrar": "El golpe llegó al servidor, pero el móvil no ha podido actualizar su lista de pendientes. No lo vuelvas a anotar: libera espacio en el dispositivo y el resto saldrá solo.",
+      "no-se-pudo-escribir": "El servidor no aceptó un golpe guardado y el móvil no tiene espacio para apuntarlo. Libera espacio en el dispositivo y vuelve a abrir la partida."
+    }
   },
   "navigation": {
     "liveScoring": "Anotación en Vivo",

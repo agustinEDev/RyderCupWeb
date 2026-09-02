@@ -125,6 +125,39 @@ export const olvidaEl = (matchId, holeNumber, userId = null, participantId = und
     })
   );
 
+/**
+ * Pone nombre a los avisos de una partida que se apuntaron sin él.
+ *
+ * El aviso copia el nombre de la anotación en el momento de apartarla, y en
+ * un arranque en frío sin cobertura la anotación todavía no lo tiene: la
+ * pantalla vacía la cola en cuanto monta, antes de que llegue la vista con el
+ * nombre. La cola se repara con `scoringOfflineQueue.ponleNombre` cuando la
+ * vista carga; sin esto, el aviso ya apartado se quedaba con «una partida
+ * anterior» para siempre, porque ya no estaba en la cola que se repara.
+ * Mismo criterio que allí: solo se rellena lo vacío, y solo se escribe si
+ * hizo falta.
+ *
+ * @returns {boolean} Si hizo falta escribir y se pudo
+ */
+export const ponleNombre = (matchId, { matchName = null, matchNumber = null } = {}) => {
+  const leFalta = (valor) => valor == null || valor === '';
+  if (leFalta(matchName) && matchNumber == null) return true;
+  let hayQueEscribir = false;
+  const conNombre = leeTodo().map((aviso) => {
+    if (aviso.matchId !== matchId) return aviso;
+    const faltaNombre = leFalta(aviso.matchName) && !leFalta(matchName);
+    const faltaNumero = aviso.matchNumber == null && matchNumber != null;
+    if (!faltaNombre && !faltaNumero) return aviso;
+    hayQueEscribir = true;
+    return {
+      ...aviso,
+      matchName: faltaNombre ? matchName : aviso.matchName,
+      matchNumber: faltaNumero ? matchNumber : aviso.matchNumber,
+    };
+  });
+  return hayQueEscribir ? guarda(conNombre) : true;
+};
+
 /** Retira todos, sea de quien sea. */
 export const olvidaTodos = () => {
   try {

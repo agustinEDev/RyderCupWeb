@@ -123,6 +123,27 @@ describe('GolpesSinEnviar', () => {
     expect(golpesPerdidos.pendientes('u1')).toHaveLength(1);
   });
 
+  it('el mismo hoyo perdido para cuatro jugadores es UNA línea, no cuatro', () => {
+    // En una partida rápida de cuatro hay un aviso por jugador del mismo
+    // hoyo: por aviso salían cuatro «Hoyo 7» iguales, y claves repetidas
+    for (const participante of ['p-1', 'p-2', 'p-3', 'p-4']) {
+      golpesPerdidos.apunta({
+        matchId: 'qm-1', matchName: 'Meis', holeNumber: 7, participantId: participante, userId: 'u1',
+      });
+    }
+    golpesPerdidos.apunta({ matchId: 'qm-1', matchName: 'Meis', holeNumber: 3, participantId: 'p-1', userId: 'u1' });
+
+    render(<GolpesSinEnviar userId="u1" />);
+
+    const lineas = screen.getAllByRole('listitem').map((li) => li.textContent);
+    expect(lineas).toEqual(['golpesSinEnviar.perdido(hoyo=3)', 'golpesSinEnviar.perdido(hoyo=7)']);
+    // Y la cabecera cuenta lo mismo que la lista: dos hoyos, no cinco avisos
+    expect(screen.getByText(/golpesSinEnviar\.perdidos\(count=2,/)).toBeInTheDocument();
+    // El anuncio del lector de pantalla, también: decía cinco fallos sobre una
+    // lista de dos líneas
+    expect(screen.getByRole('status')).toHaveTextContent('perdidos=2');
+  });
+
   it('distingue dos partidos del MISMO campo por su número', () => {
     // Una jornada juega varios partidos en un solo campo: solo con el nombre
     // del campo salían dos avisos idénticos y no se sabía cuál mirar

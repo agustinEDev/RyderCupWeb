@@ -250,6 +250,47 @@ export const resumenPorPartida = (userId = null) => {
 };
 
 /**
+ * Le pone nombre a lo que se guardó sin él.
+ *
+ * En un arranque en frío sin cobertura la vista de la partida no llega nunca,
+ * así que todo lo que se anota se guarda sin nombre ni número y el panel
+ * enseña «una partida anterior» — o dos avisos iguales si hay dos partidas.
+ * En cuanto la vista SÍ carga, aunque sea días después, se rellena lo que
+ * quedó suelto. No se pisa lo que ya tenga nombre: lo guardado es de cuando se
+ * anotó, y es más fiable que lo de ahora.
+ *
+ * @returns {boolean} Si hizo falta escribir y se pudo
+ */
+export const ponleNombre = (matchId, { matchName = null, matchNumber = null } = {}) => {
+  if (matchName == null && matchNumber == null) return true;
+  const queue = getAll();
+  let hayQueEscribir = false;
+
+  // El MISMO criterio para decidir si falta y para rellenarlo. Con truthiness
+  // arriba y `??` abajo, un nombre vacío se daba por ausente, entraba al
+  // cuerpo, y salía igual de vacío: reescritura completa del almacenamiento
+  // para nada, en cada montaje de la pantalla, y el panel seguía diciendo «una
+  // partida anterior». Y con `matchNumber` nulo —que es lo normal en partida
+  // rápida— pasaba con la cola entera
+  const leFalta = (valor) => valor == null || valor === '';
+
+  const conNombre = queue.map((entry) => {
+    if (entry.matchId !== matchId) return entry;
+    const faltaNombre = leFalta(entry.matchName) && !leFalta(matchName);
+    const faltaNumero = entry.matchNumber == null && matchNumber != null;
+    if (!faltaNombre && !faltaNumero) return entry;
+    hayQueEscribir = true;
+    return {
+      ...entry,
+      matchName: faltaNombre ? matchName : entry.matchName,
+      matchNumber: faltaNumero ? matchNumber : entry.matchNumber,
+    };
+  });
+
+  return hayQueEscribir ? guarda(conNombre) : true;
+};
+
+/**
  * Las anotaciones que el vaciado DE FONDO puede enviar. Solo las suyas.
  *
  * **Lo huérfano no se manda desde aquí**, y esto se intentó al revés: se probó

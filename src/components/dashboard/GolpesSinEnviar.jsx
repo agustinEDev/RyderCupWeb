@@ -31,6 +31,9 @@ const GolpesSinEnviar = ({ userId = null }) => {
   // Los perdidos, agrupados por la partida a la que pertenecen: con avisos de
   // dos partidas, una lista mezclada y dos botones iguales no dejan saber cuál
   // quita qué
+  const hoyosDe = (avisos) =>
+    [...new Set(avisos.map((a) => a.holeNumber))].sort((a, b) => a - b);
+
   const perdidosPorPartida = useMemo(() => {
     const mapa = new Map();
     for (const aviso of perdidos) {
@@ -106,7 +109,12 @@ const GolpesSinEnviar = ({ userId = null }) => {
       <span role="status" aria-live="polite" className="sr-only">
         {t('golpesSinEnviar.resumen', {
           sinEnviar: pendientes.reduce((suma, p) => suma + p.cuantas, 0),
-          perdidos: perdidos.length,
+          // Hoyos, como lo que se ve: por avisos, cuatro jugadores del mismo
+          // hoyo se anunciaban como cuatro fallos sobre una lista de uno
+          perdidos: perdidosPorPartida.reduce(
+            (suma, [, delGrupo]) => suma + hoyosDe(delGrupo).length,
+            0
+          ),
         })}
       </span>
       {pendientes.map((partida) => (
@@ -132,16 +140,21 @@ const GolpesSinEnviar = ({ userId = null }) => {
             <AlertTriangle className="mt-0.5 h-5 w-5 flex-shrink-0 text-red-600" aria-hidden="true" />
             <div className="min-w-0 flex-1">
               <p className="text-sm text-red-900">
+                {/* Cuenta HOYOS, como la lista de abajo: por avisos decía
+                    «4 golpes» sobre una lista de un solo hoyo */}
                 {t('golpesSinEnviar.perdidos', {
-                  count: delGrupo.length,
+                  count: hoyosDe(delGrupo).length,
                   partida: nombreDe(delGrupo[0]),
                 })}
               </p>
               <ul className="mt-1 space-y-0.5 text-xs text-red-800">
-                {delGrupo.map((aviso) => (
-                  <li key={`${aviso.matchId}-${aviso.holeNumber}`}>
-                    {t('golpesSinEnviar.perdido', { hoyo: aviso.holeNumber })}
-                  </li>
+                {/* Por HOYO, no por aviso: en una partida rápida de cuatro
+                    hay un aviso por jugador del mismo hoyo, y por aviso
+                    salían cuatro líneas «Hoyo 7» iguales —y claves repetidas
+                    si además había una huérfana y una con dueño—. Lo que hay
+                    que repetir es el hoyo, una vez */}
+                {hoyosDe(delGrupo).map((hoyo) => (
+                  <li key={hoyo}>{t('golpesSinEnviar.perdido', { hoyo })}</li>
                 ))}
               </ul>
               <button

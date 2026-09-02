@@ -11,6 +11,7 @@ import {
 import HeaderAuth from '../../components/layout/HeaderAuth';
 import { useAuth } from '../../hooks/useAuth';
 import { useQuickMatchScoring } from '../../hooks/useQuickMatchScoring';
+import { claveDelAvisoDelVaciado } from '../../utils/erroresDeAnotacion';
 import QuickMatchHoleSelector from '../../components/quick_match/QuickMatchHoleSelector';
 import QuickMatchHoleInput from '../../components/quick_match/QuickMatchHoleInput';
 import QuickMatchClassificationTable from '../../components/quick_match/QuickMatchClassificationTable';
@@ -61,8 +62,11 @@ const SAVE_ERROR_KEY_BY_STATUS = {
 const loadErrorKeyFor = (error) =>
   LOAD_ERROR_KEY_BY_STATUS[error?.status] ?? 'scoring.errors.generic';
 
+// Un error del hook puede traer su propia clave: los del almacenamiento del
+// móvil no tienen estado HTTP, y por estado caían en el genérico «inténtalo de
+// nuevo», que es lo contrario de lo que hay que hacer con el móvil lleno
 const saveErrorKeyFor = (error) =>
-  SAVE_ERROR_KEY_BY_STATUS[error?.status] ?? 'scoring.errors.saveFailed';
+  error?.i18nKey ?? SAVE_ERROR_KEY_BY_STATUS[error?.status] ?? 'scoring.errors.saveFailed';
 
 const QuickMatchScoringPage = () => {
   const { quickMatchId } = useParams();
@@ -92,6 +96,7 @@ const QuickMatchScoringPage = () => {
     isLoading,
     loadError,
     saveError,
+    avisoDelVaciado,
     isSubmitting,
     myParticipant,
     isCreator,
@@ -462,6 +467,21 @@ const QuickMatchScoringPage = () => {
               count: hoyosPerdidos.length,
               holes: hoyosPerdidos.join(', '),
             })}
+          </p>
+        </div>
+      )}
+
+      {/* El vaciado se paró porque el móvil no admite escrituras. Aparte del
+          error general: ese lo limpia cada anotación que sale bien, y esto
+          tiene que durar hasta que un vaciado termine bien (FE #551) */}
+      {avisoDelVaciado && quickMatch && (
+        <div className="max-w-4xl mx-auto px-4 pt-4">
+          <p
+            role="status"
+            data-testid="quick-match-aviso-vaciado"
+            className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900"
+          >
+            {t(claveDelAvisoDelVaciado(avisoDelVaciado))}
           </p>
         </div>
       )}

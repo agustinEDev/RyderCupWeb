@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { enqueue, dequeue, getAll, remove, clear, size, getByMatch, deQuien, resumenPorPartida} from './scoringOfflineQueue';
+import { enqueue, dequeue, getAll, remove, clear, size, getByMatch, deQuien, resumenPorPartida, ponleNombre} from './scoringOfflineQueue';
 
 // Mock localStorage for non-jsdom environment
 const localStorageMock = (() => {
@@ -379,5 +379,58 @@ describe('scoringOfflineQueue — de quién es cada anotación (FE #521)', () =>
 
     expect(getByMatch('m-1')).toHaveLength(1);
     expect(size('m-1')).toBe(1);
+  });
+});
+
+describe('ponleNombre (FE #551)', () => {
+  beforeEach(() => {
+    clear();
+  });
+
+  it('rellena lo que se guardó sin nombre', () => {
+    // Arranque en frío sin cobertura: la vista de la partida no llega nunca y
+    // todo lo anotado ese día queda sin nombre, así que el panel enseña «una
+    // partida anterior» — o dos avisos iguales si hay dos partidas
+    enqueue('m-1', 3, { ownScore: 4 }, null, 'u1');
+    enqueue('m-1', 4, { ownScore: 5 }, null, 'u1');
+
+    expect(ponleNombre('m-1', { matchName: 'La Herrería', matchNumber: 3 })).toBe(true);
+
+    expect(resumenPorPartida('u1')).toEqual([
+      expect.objectContaining({ matchName: 'La Herrería', matchNumber: 3, cuantas: 2 }),
+    ]);
+  });
+
+  it('pero no pisa lo que ya tenía nombre', () => {
+    // Lo guardado es de cuando se anotó, y es más fiable que lo de ahora
+    enqueue('m-1', 3, { ownScore: 4 }, null, 'u1', { matchName: 'El de aquel día', matchNumber: 1 });
+
+    ponleNombre('m-1', { matchName: 'Otro', matchNumber: 9 });
+
+    expect(resumenPorPartida('u1')).toEqual([
+      expect.objectContaining({ matchName: 'El de aquel día', matchNumber: 1 }),
+    ]);
+  });
+
+  it('con nombre pero sin número, conserva el nombre y gana el número', () => {
+    // El caso que de verdad ejercita el `??`: la entrada entra en el cuerpo
+    // del bucle porque le falta el número, y ahí el nombre no se puede pisar
+    enqueue('m-1', 3, { ownScore: 4 }, null, 'u1', { matchName: 'El de aquel día' });
+
+    ponleNombre('m-1', { matchName: 'Otro', matchNumber: 9 });
+
+    expect(resumenPorPartida('u1')).toEqual([
+      expect.objectContaining({ matchName: 'El de aquel día', matchNumber: 9 }),
+    ]);
+  });
+
+  it('y no toca las de otras partidas', () => {
+    enqueue('m-1', 3, { ownScore: 4 }, null, 'u1');
+    enqueue('m-2', 3, { ownScore: 4 }, null, 'u1');
+
+    ponleNombre('m-1', { matchName: 'La Herrería' });
+
+    const otra = resumenPorPartida('u1').find((p) => p.matchId === 'm-2');
+    expect(otra.matchName).toBeNull();
   });
 });

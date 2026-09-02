@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { esRechazoDefinitivo, seGuardaParaDespues } from './politicaDeLaCola';
+import { esRechazoDefinitivo, seGuardaParaDespues, noLlegoAlServidor} from './politicaDeLaCola';
 
 const errorCon = (status) => Object.assign(new Error(`HTTP ${status}`), { status });
 const errorDeRespuesta = (status) => Object.assign(new Error('boom'), { response: { status } });
@@ -39,5 +39,31 @@ describe('politicaDeLaCola', () => {
       const err = codigo === undefined ? new Error('sin código') : errorCon(codigo);
       expect(esRechazoDefinitivo(err)).toBe(!seGuardaParaDespues(err));
     }
+  });
+});
+
+describe('noLlegoAlServidor · la petición abortada (FE #551)', () => {
+  it('una petición abortada cuenta como que no llegó', () => {
+    // Es lo que lanza el refresco del token al vencer su tope de 15 s. Sin
+    // esto no era rechazo, ni sesión, ni red: el bucle seguía con la
+    // siguiente y doce golpes eran tres minutos de peticiones condenadas
+    const abortada = new Error('The operation was aborted.');
+    abortada.name = 'AbortError';
+
+    expect(noLlegoAlServidor(abortada)).toBe(true);
+    expect(esRechazoDefinitivo(abortada)).toBe(false);
+  });
+
+  it('y una que vence por tiempo, igual', () => {
+    const vencida = new Error('The operation timed out.');
+    vencida.name = 'TimeoutError';
+
+    expect(noLlegoAlServidor(vencida)).toBe(true);
+  });
+
+  it('pero un error de validación del caso de uso NO', () => {
+    // Ese habla solo de esa anotación: parar por él dejaría las demás sin
+    // enviar en cada reconexión, para siempre
+    expect(noLlegoAlServidor(new Error('Marked player ID is required'))).toBe(false);
   });
 });
