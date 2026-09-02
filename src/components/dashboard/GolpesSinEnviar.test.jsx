@@ -139,6 +139,9 @@ describe('GolpesSinEnviar', () => {
     expect(lineas).toEqual(['golpesSinEnviar.perdido(hoyo=3)', 'golpesSinEnviar.perdido(hoyo=7)']);
     // Y la cabecera cuenta lo mismo que la lista: dos hoyos, no cinco avisos
     expect(screen.getByText(/golpesSinEnviar\.perdidos\(count=2,/)).toBeInTheDocument();
+    // El anuncio del lector de pantalla, también: decía cinco fallos sobre una
+    // lista de dos líneas
+    expect(screen.getByRole('status')).toHaveTextContent('perdidos=2');
   });
 
   it('distingue dos partidos del MISMO campo por su número', () => {

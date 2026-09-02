@@ -1838,6 +1838,28 @@ describe('useQuickMatchScoring · cuando el vaciado se para (FE #551)', () => {
     expect(getQuickMatchUseCase.execute).toHaveBeenCalledTimes(1);
   });
 
+  it('lo que quedó del vaciado de la partida anterior no se pinta en la nueva', async () => {
+    // El envío tarda, y en ese rato se cambia de partida: el contador y el
+    // aviso de la vieja aterrizaban encima de la nueva
+    let dejaPasar;
+    submitQuickMatchHoleScoreUseCase.execute.mockImplementation(
+      () => new Promise((resolve) => { dejaPasar = () => resolve({}); })
+    );
+    offlineQueue.getByMatch.mockReturnValue([pendiente(7, 5)]);
+    // Solo la vieja tiene cola: así se ve de cuál salió el contador
+    offlineQueue.size.mockImplementation((id) => (id === 'qm-1' ? 9 : 0));
+    const { result, rerender } = renderHook(({ id }) => useQuickMatchScoring(id, 'user-1'), {
+      initialProps: { id: 'qm-1' },
+    });
+    await waitFor(() => expect(submitQuickMatchHoleScoreUseCase.execute).toHaveBeenCalled());
+
+    // Se cambia de partida con el golpe en vuelo, y entonces responde
+    rerender({ id: 'qm-2' });
+    await act(async () => { dejaPasar(); await Promise.resolve(); });
+
+    expect(result.current.pendientes).toBe(0);
+  });
+
   it('no pone a la partida nueva el nombre de la anterior', async () => {
     // Al cambiar de ruta, `quickMatch` todavía es la vieja durante un render
     getQuickMatchUseCase.execute.mockResolvedValue({ ...mockQuickMatch, id: 'qm-1', name: 'La vieja' });

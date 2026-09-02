@@ -31,6 +31,9 @@ const GolpesSinEnviar = ({ userId = null }) => {
   // Los perdidos, agrupados por la partida a la que pertenecen: con avisos de
   // dos partidas, una lista mezclada y dos botones iguales no dejan saber cuál
   // quita qué
+  const hoyosDe = (avisos) =>
+    [...new Set(avisos.map((a) => a.holeNumber))].sort((a, b) => a - b);
+
   const perdidosPorPartida = useMemo(() => {
     const mapa = new Map();
     for (const aviso of perdidos) {
@@ -89,9 +92,6 @@ const GolpesSinEnviar = ({ userId = null }) => {
     return algo.matchName || t('golpesSinEnviar.partidaSinNombre');
   };
 
-  const hoyosDe = (avisos) =>
-    [...new Set(avisos.map((a) => a.holeNumber))].sort((a, b) => a - b);
-
   return (
     /* `px-4` como el resto de bloques del panel: sin él estas tarjetas van de
        borde a borde y desalinean la columna entera */
@@ -109,7 +109,12 @@ const GolpesSinEnviar = ({ userId = null }) => {
       <span role="status" aria-live="polite" className="sr-only">
         {t('golpesSinEnviar.resumen', {
           sinEnviar: pendientes.reduce((suma, p) => suma + p.cuantas, 0),
-          perdidos: perdidos.length,
+          // Hoyos, como lo que se ve: por avisos, cuatro jugadores del mismo
+          // hoyo se anunciaban como cuatro fallos sobre una lista de uno
+          perdidos: perdidosPorPartida.reduce(
+            (suma, [, delGrupo]) => suma + hoyosDe(delGrupo).length,
+            0
+          ),
         })}
       </span>
       {pendientes.map((partida) => (

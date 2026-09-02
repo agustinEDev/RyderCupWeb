@@ -14,7 +14,7 @@ const localStorageMock = (() => {
 Object.defineProperty(globalThis, 'localStorage', { value: localStorageMock, writable: true });
 
 // Must import after localStorage mock is set up
-import { acquire, release, refresh, getSession, onLockEvent, forceRelease, closeChannel } from './scoringSessionLock';
+import { acquire, release, refresh, getSession, onLockEvent, forceRelease, closeChannel, partidaConSesionViva } from './scoringSessionLock';
 
 const USER_A = 'user-a';
 const USER_B = 'user-b';
@@ -197,6 +197,29 @@ describe('scoringSessionLock', () => {
       release('vaciado-1', USER_A, 'vaciado');
       expect(getSession(USER_A, 'vaciado')).toBeNull();
       expect(acquire(null, 'vaciado-2', USER_A, 'vaciado')).toBe(true);
+    });
+  });
+
+  describe('partidaConSesionViva (FE #551)', () => {
+    it('devuelve la partida que se está anotando, sea de la pestaña que sea', () => {
+      acquire('m-9', 'otra-pestaña', 'u1');
+
+      expect(partidaConSesionViva('u1')).toBe('m-9');
+    });
+
+    it('no devuelve la de un cerrojo caducado: esa pestaña ya no existe', () => {
+      // Respetarlo dejaría esa partida sin vaciar para siempre
+      acquire('m-9', 'muerta', 'u1');
+      const clave = 'rydercup-scoring-session-u1';
+      const guardado = JSON.parse(localStorage.getItem(clave));
+      guardado.timestamp -= 3 * 60 * 1000;
+      localStorage.setItem(clave, JSON.stringify(guardado));
+
+      expect(partidaConSesionViva('u1')).toBeNull();
+    });
+
+    it('sin cerrojo, nada', () => {
+      expect(partidaConSesionViva('u1')).toBeNull();
     });
   });
 });

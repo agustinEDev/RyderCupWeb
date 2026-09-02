@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef } from 'react';
 import { useLocation } from 'react-router';
 
 import { SE_ARREGLA_ESPERANDO } from '../services/vaciaAnotaciones';
+import * as cerrojo from '../utils/scoringSessionLock';
 import { vaciaLaColaEntera } from '../services/vaciadoDeLaCola';
 
 // Espera creciente Y con tope de intentos: insistir cada pocos segundos contra
@@ -101,7 +102,12 @@ export const useVaciadoDeLaCola = ({ activo, userId = null }) => {
       // puede ENTRAR en una de las partidas que se están enviando. Congelado,
       // se seguiría vaciando por debajo de una pantalla ya montada, que además
       // enseña su propio contador de pendientes
-      saltaPartida: () => partidaQueSeEstaAnotando(rutaActual.current),
+      // La de la ruta, y la que tenga la anotación abierta en OTRA pestaña:
+      // esta solo ve su propia ruta, así que con dos pestañas de la misma
+      // cuenta —una anotando, otra en el panel— las dos leían la misma entrada
+      // y la enviaban dos veces
+      saltaPartida: () =>
+        partidaQueSeEstaAnotando(rutaActual.current) ?? cerrojo.partidaConSesionViva(userId),
       userId,
     }).then((resultado) => {
       if (!resultado) return;

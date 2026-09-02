@@ -135,6 +135,26 @@ export const getSession = (userId, scope = '') => {
 };
 
 /**
+ * La partida que alguien está anotando AHORA, sea esta pestaña u otra.
+ *
+ * Sale del cerrojo de la pantalla de anotación, que guarda su `matchId`. El
+ * vaciado de fondo la necesita porque solo conoce SU ruta: con la anotación
+ * abierta en otra pestaña, las dos leían la misma entrada de la cola y la
+ * enviaban dos veces.
+ *
+ * Solo si el cerrojo está fresco: uno caducado es de una pestaña que ya no
+ * existe, y respetarlo dejaría esa partida sin vaciar para siempre.
+ *
+ * @param {string} userId
+ * @returns {string|null}
+ */
+export const partidaConSesionViva = (userId) => {
+  const sesion = getSession(userId);
+  if (!sesion?.matchId) return null;
+  return Date.now() - sesion.timestamp < STALE_SESSION_THRESHOLD_MS ? sesion.matchId : null;
+};
+
+/**
  * Listen for lock events from other tabs.
  * @param {Function} callback - Receives { type, matchId, sessionId, userId }
  * @returns {Function} Cleanup function

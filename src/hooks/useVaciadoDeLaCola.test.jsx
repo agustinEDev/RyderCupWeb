@@ -5,12 +5,17 @@ vi.mock('../services/vaciadoDeLaCola', () => ({
   vaciaLaColaEntera: vi.fn(() => Promise.resolve({ enviadas: 0, descartadas: 0, pendientes: 0 })),
 }));
 
+vi.mock('../utils/scoringSessionLock', () => ({
+  partidaConSesionViva: vi.fn(() => null),
+}));
+
 let rutaActual = '/dashboard';
 vi.mock('react-router', () => ({
   useLocation: () => ({ pathname: rutaActual }),
 }));
 
 import { vaciaLaColaEntera } from '../services/vaciadoDeLaCola';
+import * as cerrojo from '../utils/scoringSessionLock';
 import { useVaciadoDeLaCola } from './useVaciadoDeLaCola';
 
 describe('useVaciadoDeLaCola (FE #521)', () => {
@@ -34,6 +39,9 @@ describe('useVaciadoDeLaCola (FE #521)', () => {
     vi.restoreAllMocks();
     vi.clearAllMocks();
     rutaActual = '/dashboard';
+    // `clearAllMocks` borra las llamadas, no el valor devuelto: sin esto, el
+    // 'm-9' de un test se llevaba por delante al siguiente
+    cerrojo.partidaConSesionViva.mockReturnValue(null);
     Object.defineProperty(document, 'visibilityState', { value: 'visible', configurable: true });
     Object.defineProperty(globalThis.navigator, 'onLine', { value: true, configurable: true });
   });
@@ -106,6 +114,18 @@ describe('useVaciadoDeLaCola (FE #521)', () => {
     await monta();
 
     expect(loQuePidio()).toEqual({ saltaPartida: 'm-7', userId: 'u1' });
+  });
+
+  it('y la que se está anotando en OTRA pestaña', async () => {
+    // Aquí solo se ve la ruta propia: con la anotación abierta en otra
+    // pestaña de la misma cuenta, las dos leían la misma entrada y la
+    // enviaban dos veces. Un cerrojo caducado no cuenta, y de eso responde
+    // `partidaConSesionViva`
+    cerrojo.partidaConSesionViva.mockReturnValue('m-9');
+
+    await monta();
+
+    expect(loQuePidio()).toEqual({ saltaPartida: 'm-9', userId: 'u1' });
   });
 
   it('y también la partida en la que se ENTRA mientras vacía', async () => {

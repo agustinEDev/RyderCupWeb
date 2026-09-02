@@ -443,6 +443,11 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
                     entrada.scoreData.score
                   ),
               alDescartar: (entrada) => {
+            // Solo si la pantalla sigue en esta partida: el envío tarda, y en
+            // ese rato se puede haber cambiado de partida. Los golpes de la
+            // vieja hay que seguir mandándolos —son reales—, pero su aviso no
+            // se pinta encima de la nueva
+            if (quickMatchId !== idVigenteRef.current) return;
                 // El aviso en pantalla, para poder decir qué hoyos repetir. Lo
                 // pone el bucle antes de tocar el disco: es lo único que se le
                 // puede enseñar a alguien cuyo móvil está lleno, que es justo
@@ -459,6 +464,9 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
               dueñoSiNoLoTiene: currentUserId ?? null,
             });
 
+        // Lo mismo con todo lo que se pinta después del envío: sin esto, el
+        // contador y el aviso de la partida anterior aterrizaban en la nueva
+        if (quickMatchId !== idVigenteRef.current) return;
         setPendientes(offlineQueue.size(quickMatchId, currentUserId));
         // Si el bucle paró porque el móvil no admite escrituras, se dice: el
         // contador no va a bajar y nadie más va a vaciar esta partida. Lo
