@@ -5,6 +5,7 @@ import { AlertTriangle, ChevronRight, CloudOff } from 'lucide-react';
 
 import { COLA_VACIADA } from '../../services/vaciadoDeLaCola';
 import * as golpesPerdidos from '../../utils/golpesPerdidos';
+import * as offlineQueue from '../../utils/scoringOfflineQueue';
 import { resumenPorPartida } from '../../utils/scoringOfflineQueue';
 
 /**
@@ -26,11 +27,59 @@ const GolpesSinEnviar = ({ userId = null }) => {
   // almacenamiento al montar es dar el estado inicial, no sincronizar nada
   const [pendientes, setPendientes] = useState(() => resumenPorPartida(userId));
   const [perdidos, setPerdidos] = useState(() => golpesPerdidos.pendientes(userId));
-  const [noSePudoDescartar, setNoSePudoDescartar] = useState(false);
+  // QUÉ partidas no se pudieron descartar, no si alguna ni cuál la última: el
+  // aviso va en su tarjeta, y con un solo identificador el descarte que salía
+  // bien en otra partida borraba el aviso de la que había fallado
+  const [noSePudoDescartar, setNoSePudoDescartar] = useState(() => new Set());
+
+  const apunta = (matchId, fallo) =>
+    setNoSePudoDescartar((antes) => {
+      if (antes.has(matchId) === fallo) return antes;
+      const ahora = new Set(antes);
+      if (fallo) ahora.add(matchId);
+      else ahora.delete(matchId);
+      return ahora;
+    });
 
   // Los perdidos, agrupados por la partida a la que pertenecen: con avisos de
   // dos partidas, una lista mezclada y dos botones iguales no dejan saber cuál
   // quita qué
+  /**
+   * Relee dejando el foco donde se pueda: si el aviso que se acaba de quitar
+   * era el último, el componente entero deja de existir y el foco caería a
+   * `<body>`, con lo que quien navega con teclado o lector se queda en la nada.
+   *
+   * @param {boolean} quedaAlgoQueVer - Decidido ANTES de repintar
+   */
+  const releeYDevuelveElFoco = (quedaAlgoQueVer) => {
+    const destino = quedaAlgoQueVer
+      ? contenedorRef.current
+      : contenedorRef.current?.parentElement;
+    relee();
+    if (!destino) return;
+    // El padre no es enfocable por sí mismo; se le da un destino de foco sin
+    // meterlo en el orden de tabulación
+    if (!destino.hasAttribute('tabindex')) destino.tabIndex = -1;
+    destino.focus();
+  };
+
+  /**
+   * Tirar lo guardado de una partida que ya no existe. Solo por decisión
+   * expresa: el aviso dice que se pierden, y esto es lo que lo cumple.
+   */
+  const descarta = (partida) => {
+    // Si el almacenamiento no admite la escritura, el aviso sigue ahí: callarlo
+    // deja un botón que no hace nada y no dice por qué. Por partida y no un
+    // aviso para todas: con dos tarjetas, el fallo de una salía debajo de las
+    // dos, incluida la que nadie tocó
+    if (!offlineQueue.olvidaLasDe(partida.matchId, userId)) {
+      apunta(partida.matchId, true);
+      return;
+    }
+    apunta(partida.matchId, false);
+    releeYDevuelveElFoco(pendientes.length > 1 || perdidos.length > 0);
+  };
+
   const hoyosDe = (avisos) =>
     [...new Set(avisos.map((a) => a.holeNumber))].sort((a, b) => a - b);
 
@@ -117,7 +166,67 @@ const GolpesSinEnviar = ({ userId = null }) => {
           ),
         })}
       </span>
-      {pendientes.map((partida) => (
+      {pendientes.map((partida) => partida.desaparecida ? (
+        /* Esa partida ya no está en el servidor, así que sus golpes no los
+           puede mandar nadie: la de partida rápida solo la vacía su propia
+           pantalla, que es la que responde 404. No es un botón que navegue
+           —llevaba a la pantalla de una partida que no existe— y no se borra
+           solo: se ofrece, y decide quien lo anotó (FE #557) */
+        <div
+          key={partida.matchId}
+          className="rounded-lg border border-amber-200 bg-amber-50 p-3"
+        >
+          <div className="flex items-start gap-3">
+            <CloudOff className="mt-0.5 h-5 w-5 flex-shrink-0 text-amber-600" aria-hidden="true" />
+            <div className="min-w-0 flex-1">
+              <p className="text-sm text-amber-900">
+                {t('golpesSinEnviar.desaparecida', {
+                  count: partida.cuantas,
+                  partida: nombreDe(partida),
+                })}
+              </p>
+              {/* Abrir la partida sigue estando: su pantalla es la única que
+                  puede enviar esos golpes o retirar la marca si aquel 404 lo
+                  dio un portal cautivo. Sin ella, la única salida que ofrecía
+                  el aviso era borrarlos para siempre */}
+              <div className="mt-2 flex flex-wrap items-center gap-4">
+                <button
+                  type="button"
+                  onClick={() => abre(partida)}
+                  className="min-h-11 px-1 py-2 text-xs font-medium text-amber-800 underline active:text-amber-900"
+                >
+                  {t('golpesSinEnviar.abrir')}
+                </button>
+                {/* Sin sesión resuelta no se ofrece: `olvidaLasDe` solo se
+                    llevaría las anotaciones sin dueño, diría que sí, y la
+                    tarjeta se repintaría igual — un botón que dice haber hecho
+                    algo y no hizo nada */}
+                {userId != null && (
+                  <button
+                    type="button"
+                    onClick={() => descarta(partida)}
+                    /* Su propio texto, y no el del botón gemelo: aquel dice
+                       «quitar el aviso» y esto tira los golpes. Y el nombre
+                       accesible empieza por lo que se lee en pantalla, o el
+                       control por voz no lo activa */
+                    aria-label={t('golpesSinEnviar.descartarYPerderDe', {
+                      partida: nombreDe(partida),
+                    })}
+                    className="min-h-11 px-1 py-2 text-xs font-medium text-amber-800 underline active:text-amber-900"
+                  >
+                    {t('golpesSinEnviar.descartar')}
+                  </button>
+                )}
+              </div>
+              {noSePudoDescartar.has(partida.matchId) && (
+                <p className="mt-1 text-xs text-amber-800">
+                  {t('golpesSinEnviar.noSePudoDescartar')}
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      ) : (
         <button
           key={partida.matchId}
           type="button"
@@ -166,33 +275,20 @@ const GolpesSinEnviar = ({ userId = null }) => {
                   // dice por qué; se avisa y no se relee, para no repintar lo
                   // mismo fingiendo que pasó algo
                   if (!golpesPerdidos.olvidaLosDe(matchId, userId)) {
-                    setNoSePudoDescartar(true);
+                    apunta(matchId, true);
                     return;
                   }
-                  setNoSePudoDescartar(false);
-                  // Dónde va a poder ir el foco DESPUÉS, decidido antes de
-                  // repintar: si este era el último aviso, el componente entero
-                  // deja de existir y el contenedor con él, así que el foco
-                  // caería a `<body>`. En ese caso se sube al bloque del panel
-                  // que lo contiene, que sigue ahí
-                  const quedaAlgoQueVer = pendientes.length > 0 || perdidos.length > delGrupo.length;
-                  const destino = quedaAlgoQueVer
-                    ? contenedorRef.current
-                    : contenedorRef.current?.parentElement;
-                  relee();
-                  if (destino) {
-                    // El padre no es enfocable por sí mismo; se le da un
-                    // destino de foco sin meterlo en el orden de tabulación
-                    if (!destino.hasAttribute('tabindex')) destino.tabIndex = -1;
-                    destino.focus();
-                  }
+                  apunta(matchId, false);
+                  releeYDevuelveElFoco(
+                    pendientes.length > 0 || perdidos.length > delGrupo.length
+                  );
                 }}
                 aria-label={t('golpesSinEnviar.descartarDe', { partida: nombreDe(delGrupo[0]) })}
                 className="mt-2 min-h-11 px-1 py-2 text-xs font-medium text-red-700 underline active:text-red-900"
               >
                 {t('golpesSinEnviar.entendido')}
               </button>
-              {noSePudoDescartar && (
+              {noSePudoDescartar.has(matchId) && (
                 <p className="mt-1 text-xs text-red-800">
                   {t('golpesSinEnviar.noSePudoDescartar')}
                 </p>

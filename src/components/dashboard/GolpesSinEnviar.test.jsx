@@ -144,6 +144,123 @@ describe('GolpesSinEnviar', () => {
     expect(screen.getByRole('status')).toHaveTextContent('perdidos=2');
   });
 
+  it('una partida que ya no existe no navega: ofrece descartar', () => {
+    // Su pantalla es la única que sabe enviar lo de una partida rápida, y esa
+    // pantalla es la que responde 404: el aviso se quedaba para siempre y el
+    // botón llevaba a una pantalla muerta
+    cola.enqueue('qm-1', 7, { score: 5 }, 'p-1', 'u1', { matchName: 'Meis' });
+    cola.marcaDesaparecida('qm-1', 'u1');
+
+    render(<GolpesSinEnviar userId="u1" />);
+
+    expect(screen.queryByRole('button', { name: /golpesSinEnviar.aviso/ })).toBeNull();
+    expect(screen.getByText(/golpesSinEnviar\.desaparecida\(count=1,partida=Meis\)/)).toBeInTheDocument();
+    // Y sigue habiendo forma de abrirla: su pantalla es la única que puede
+    // enviar esos golpes si el 404 fue de un portal cautivo
+    expect(screen.getByRole('button', { name: 'golpesSinEnviar.abrir' })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /descartarYPerderDe/ }));
+
+    expect(cola.size()).toBe(0);
+    expect(screen.queryByTestId('golpes-sin-enviar')).toBeNull();
+  });
+
+  it('el fallo de una tarjeta no sale debajo de la otra', () => {
+    // Un aviso para todas decía «no hay espacio» bajo la tarjeta que nadie
+    // había tocado
+    cola.enqueue('qm-1', 7, { score: 5 }, 'p-1', 'u1', { matchName: 'Meis' });
+    cola.enqueue('qm-2', 3, { score: 4 }, 'p-1', 'u1', { matchName: 'Domaio' });
+    cola.marcaDesaparecida('qm-1', 'u1');
+    cola.marcaDesaparecida('qm-2', 'u1');
+    render(<GolpesSinEnviar userId="u1" />);
+    vi.spyOn(almacen, 'setItem').mockImplementationOnce(() => {
+      throw Object.assign(new Error('quota'), { name: 'QuotaExceededError' });
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /descartarYPerderDe.*Meis/ }));
+
+    expect(screen.getAllByText('golpesSinEnviar.noSePudoDescartar')).toHaveLength(1);
+  });
+
+  it('un descarte que sale bien en otra partida no borra el aviso del que falló', () => {
+    // Con un solo identificador guardado, el éxito de la segunda tarjeta
+    // quitaba el aviso de la primera, que seguía sin poder descartarse
+    cola.enqueue('qm-1', 7, { score: 5 }, 'p-1', 'u1', { matchName: 'Meis' });
+    cola.enqueue('qm-2', 3, { score: 4 }, 'p-1', 'u1', { matchName: 'Domaio' });
+    cola.marcaDesaparecida('qm-1', 'u1');
+    cola.marcaDesaparecida('qm-2', 'u1');
+    render(<GolpesSinEnviar userId="u1" />);
+    vi.spyOn(almacen, 'setItem').mockImplementationOnce(() => {
+      throw Object.assign(new Error('quota'), { name: 'QuotaExceededError' });
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /descartarYPerderDe.*Meis/ }));
+    fireEvent.click(screen.getByRole('button', { name: /descartarYPerderDe.*Domaio/ }));
+
+    expect(screen.queryByText(/desaparecida.*Domaio/)).toBeNull();
+    expect(screen.getByText(/desaparecida.*Meis/)).toBeInTheDocument();
+    expect(screen.getAllByText('golpesSinEnviar.noSePudoDescartar')).toHaveLength(1);
+  });
+
+  it('si fallan las dos, las dos lo dicen', () => {
+    // Guardando solo la última, el segundo fallo borraba el aviso del primero
+    cola.enqueue('qm-1', 7, { score: 5 }, 'p-1', 'u1', { matchName: 'Meis' });
+    cola.enqueue('qm-2', 3, { score: 4 }, 'p-1', 'u1', { matchName: 'Domaio' });
+    cola.marcaDesaparecida('qm-1', 'u1');
+    cola.marcaDesaparecida('qm-2', 'u1');
+    render(<GolpesSinEnviar userId="u1" />);
+    vi.spyOn(almacen, 'setItem').mockImplementation(() => {
+      throw Object.assign(new Error('quota'), { name: 'QuotaExceededError' });
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /descartarYPerderDe.*Meis/ }));
+    fireEvent.click(screen.getByRole('button', { name: /descartarYPerderDe.*Domaio/ }));
+
+    expect(screen.getAllByText('golpesSinEnviar.noSePudoDescartar')).toHaveLength(2);
+  });
+
+  it('sin sesión resuelta no ofrece descartar: no borraría lo que enseña', () => {
+    // `olvidaLasDe` solo se llevaría lo que no tiene dueño, diría que sí, y la
+    // tarjeta se repintaría igual
+    cola.enqueue('qm-1', 7, { score: 5 }, 'p-1', 'u1', { matchName: 'Meis' });
+    cola.marcaDesaparecida('qm-1', 'u1');
+
+    render(<GolpesSinEnviar userId={null} />);
+
+    expect(screen.queryByRole('button', { name: /descartarYPerderDe/ })).toBeNull();
+    expect(screen.getByRole('button', { name: 'golpesSinEnviar.abrir' })).toBeInTheDocument();
+  });
+
+  it('al descartar el último aviso, el foco no se cae al body', () => {
+    // El componente entero deja de existir con el botón dentro: quien navega
+    // con teclado o lector se queda en la nada
+    cola.enqueue('qm-1', 7, { score: 5 }, 'p-1', 'u1', { matchName: 'Meis' });
+    cola.marcaDesaparecida('qm-1', 'u1');
+    const { container } = render(<GolpesSinEnviar userId="u1" />);
+    const padre = container.firstChild.parentElement;
+
+    fireEvent.click(screen.getByRole('button', { name: /descartarYPerderDe/ }));
+
+    expect(screen.queryByTestId('golpes-sin-enviar')).toBeNull();
+    expect(document.activeElement).toBe(padre);
+  });
+
+  it('si el móvil no admite la escritura, lo dice en vez de callarse', () => {
+    // Un botón que no hace nada y no dice por qué es peor que no tenerlo
+    cola.enqueue('qm-1', 7, { score: 5 }, 'p-1', 'u1', { matchName: 'Meis' });
+    cola.marcaDesaparecida('qm-1', 'u1');
+    render(<GolpesSinEnviar userId="u1" />);
+    // El almacén de este fichero es propio, no el de jsdom: espiar
+    // `Storage.prototype` no lo tocaría y el test pasaría sin probar nada
+    vi.spyOn(almacen, 'setItem').mockImplementationOnce(() => {
+      throw Object.assign(new Error('quota'), { name: 'QuotaExceededError' });
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /descartarYPerderDe/ }));
+
+    expect(screen.getByText('golpesSinEnviar.noSePudoDescartar')).toBeInTheDocument();
+  });
+
   it('distingue dos partidos del MISMO campo por su número', () => {
     // Una jornada juega varios partidos en un solo campo: solo con el nombre
     // del campo salían dos avisos idénticos y no se sabía cuál mirar

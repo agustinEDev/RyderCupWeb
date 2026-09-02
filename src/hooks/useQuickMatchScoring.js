@@ -153,6 +153,9 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
       setQuickMatch(data);
       hayPartidaRef.current = true;
       setLoadError(null);
+      // La partida está: si alguna vez se marcó como desaparecida, aquel 404
+      // era mentira y la marca se retira
+      offlineQueue.marcaDesaparecida(quickMatchId, currentUserId ?? null, false);
 
       // El sondeo ha respondido, así que hay conexión: es el momento de enviar
       // lo que quedó guardado. Se le pasan los hoyos que el servidor ya tiene,
@@ -190,11 +193,37 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
       setPintadoDeMemoria(false);
     } catch (err) {
       const estado = err?.status ?? err?.response?.status;
+      // Si esta respuesta sigue siendo la última palabra. Una petición vieja
+      // que muere DESPUÉS de que otra haya cargado bien la partida no puede
+      // deshacer nada de lo que hizo la buena: le borraba la foto guardada, le
+      // ponía su error encima y le quitaba la espera
+      const esLaUltimaPalabra =
+        miSeq === estadoSeqRef.current && quickMatchId === idVigenteRef.current;
 
       // Una respuesta CON estado es una respuesta: si el servidor dice que esa
       // partida ya no está —o que no es nuestra— pintarla desde el móvil sería
       // enseñar algo que no existe, y dejar anotar encima
-      if (estado === 404 || estado === 403) olvida(quickMatchId);
+      if ((estado === 404 || estado === 403) && esLaUltimaPalabra) {
+        olvida(quickMatchId);
+      }
+
+      // Solo el 404, y solo si esta respuesta sigue siendo la última palabra.
+      //
+      // Lo que quedó guardado se marca, no se borra: esta pantalla es la ÚNICA
+      // que sabe enviar anotaciones de partida rápida, así que si no carga, lo
+      // suyo se queda en la cola para siempre y el panel avisa de golpes que
+      // nadie puede mandar. Marcado, el panel puede ofrecer descartarlo;
+      // borrarlo aquí perdería un golpe bueno cada vez que el 404 lo devuelva
+      // un proxy o el portal cautivo de un club.
+      //
+      // El 403 NO se marca: ahí la partida existe, lo que pasa es que no es
+      // nuestra —o es un tropiezo de CSRF—, y marcarla ofrecía tirar unos
+      // golpes perfectamente enviables. Y sin la guarda de secuencia, un 404
+      // lento de un portal cautivo aterrizaba DESPUÉS del sondeo que ya había
+      // cargado bien la partida, y volvía a marcarla
+      if (estado === 404 && esLaUltimaPalabra) {
+        offlineQueue.marcaDesaparecida(quickMatchId, currentUserId ?? null, true);
+      }
 
       // Se pinta lo último que se supo, que es lo que permite seguir anotando
       // al volver a abrir la aplicación en el campo. `loadError` se queda
@@ -212,7 +241,7 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
       // justo después del POST no la deje viva— y reponer aquí la foto de
       // antes la devolvía a «en curso», con la pantalla dejando anotar otra vez
       const recordado = desmentido || hayPartidaRef.current ? null : loQueSeSupo(quickMatchId);
-      if (recordado && miSeq === estadoSeqRef.current && quickMatchId === idVigenteRef.current) {
+      if (recordado && esLaUltimaPalabra) {
         setQuickMatch(recordado.partida);
         hayPartidaRef.current = true;
         setPintadoDeMemoria(true);
@@ -225,14 +254,17 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
         }
       }
 
-      if (quickMatchId === idVigenteRef.current) setLoadError(err);
+      if (esLaUltimaPalabra) setLoadError(err);
     } finally {
-      // Si no, una respuesta rezagada de la partida anterior quitaba la espera
-      // de la nueva estando todavía sin datos, y la pantalla pintaba la tarjeta
-      // vacía —sin nombre, sin jugadores y con dieciocho «Anotar»—
-      if (quickMatchId === idVigenteRef.current) setIsLoading(false);
+      // Si no, una respuesta rezagada —de la partida anterior, o de un sondeo
+      // que otro adelantó— quitaba la espera de la nueva estando todavía sin
+      // datos, y la pantalla pintaba la tarjeta vacía —sin nombre, sin
+      // jugadores y con dieciocho «Anotar»—
+      if (miSeq === estadoSeqRef.current && quickMatchId === idVigenteRef.current) {
+        setIsLoading(false);
+      }
     }
-  }, [quickMatchId]);
+  }, [quickMatchId, currentUserId]);
 
   // La ruta no lleva `key`, así que ir de una partida a otra reutiliza este
   // hook: sin limpiar, el aviso rojo y el conflicto de la partida anterior se

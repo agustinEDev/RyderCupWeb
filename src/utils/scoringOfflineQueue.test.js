@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { enqueue, dequeue, getAll, remove, clear, size, getByMatch, deQuien, resumenPorPartida, ponleNombre} from './scoringOfflineQueue';
+import { enqueue, dequeue, getAll, remove, clear, size, getByMatch, deQuien, resumenPorPartida, ponleNombre, marcaDesaparecida, olvidaLasDe} from './scoringOfflineQueue';
 
 // Mock localStorage for non-jsdom environment
 const localStorageMock = (() => {
@@ -432,5 +432,66 @@ describe('ponleNombre (FE #551)', () => {
 
     const otra = resumenPorPartida('u1').find((p) => p.matchId === 'm-2');
     expect(otra.matchName).toBeNull();
+  });
+});
+
+describe('la partida que ya no existe (FE #557)', () => {
+  beforeEach(() => {
+    clear();
+  });
+
+  it('marcarla no borra nada, y el resumen lo dice', () => {
+    // Un 404 lo devuelve igual el portal cautivo de un club: borrar por eso
+    // perdería un golpe bueno
+    enqueue('qm-1', 7, { score: 5 }, 'p-1', 'u1');
+    enqueue('m-2', 3, { ownScore: 4 }, null, 'u1');
+
+    expect(marcaDesaparecida('qm-1', 'u1')).toBe(true);
+
+    expect(size()).toBe(2);
+    const resumen = resumenPorPartida('u1');
+    expect(resumen.find((p) => p.matchId === 'qm-1').desaparecida).toBe(true);
+    expect(resumen.find((p) => p.matchId === 'm-2').desaparecida).toBe(false);
+  });
+
+  it('se quita cuando la partida vuelve a cargar: aquel 404 era mentira', () => {
+    enqueue('qm-1', 7, { score: 5 }, 'p-1', 'u1');
+    marcaDesaparecida('qm-1', 'u1');
+
+    marcaDesaparecida('qm-1', 'u1', false);
+
+    expect(resumenPorPartida('u1')[0].desaparecida).toBe(false);
+  });
+
+  it('no escribe si no hay nada que cambiar', () => {
+    enqueue('qm-1', 7, { score: 5 }, 'p-1', 'u1');
+    // `localStorage.setItem` ya es un espía en este fichero
+    localStorage.setItem.mockClear();
+
+    expect(marcaDesaparecida('qm-1', 'u1', false)).toBe(true);
+
+    expect(localStorage.setItem).not.toHaveBeenCalled();
+  });
+
+  it('no marca lo de otra cuenta del mismo móvil', () => {
+    // Una cuenta que recibe un 403 porque esa partida es de OTRA marcaba lo de
+    // esa otra, y a su dueño se le ofrecía tirarlo
+    enqueue('qm-1', 7, { score: 5 }, 'p-1', 'u2');
+
+    marcaDesaparecida('qm-1', 'u1');
+
+    expect(resumenPorPartida('u2')[0].desaparecida).toBe(false);
+  });
+
+  it('olvidarlas se lleva las de esa partida, y solo las que esa cuenta ve', () => {
+    enqueue('qm-1', 7, { score: 5 }, 'p-1', 'u1');
+    enqueue('qm-1', 8, { score: 4 }, 'p-2', 'u2');
+    // Sin dueño: de una versión anterior a FE #521, y la ve cualquiera
+    enqueue('qm-1', 9, { score: 3 }, 'p-3', null);
+    enqueue('m-2', 3, { ownScore: 4 }, null, 'u1');
+
+    expect(olvidaLasDe('qm-1', 'u1')).toBe(true);
+
+    expect(getAll().map((e) => [e.matchId, e.holeNumber])).toEqual([['qm-1', 8], ['m-2', 3]]);
   });
 });
