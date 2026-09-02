@@ -5,6 +5,7 @@ import { AlertTriangle, ChevronRight, CloudOff } from 'lucide-react';
 
 import { COLA_VACIADA } from '../../services/vaciadoDeLaCola';
 import * as golpesPerdidos from '../../utils/golpesPerdidos';
+import * as offlineQueue from '../../utils/scoringOfflineQueue';
 import { resumenPorPartida } from '../../utils/scoringOfflineQueue';
 
 /**
@@ -31,6 +32,21 @@ const GolpesSinEnviar = ({ userId = null }) => {
   // Los perdidos, agrupados por la partida a la que pertenecen: con avisos de
   // dos partidas, una lista mezclada y dos botones iguales no dejan saber cuál
   // quita qué
+  /**
+   * Tirar lo guardado de una partida que ya no existe. Solo por decisión
+   * expresa: el aviso dice que se pierden, y esto es lo que lo cumple.
+   */
+  const descarta = (partida) => {
+    // Si el almacenamiento no admite la escritura, el aviso sigue ahí: callarlo
+    // deja un botón que no hace nada y no dice por qué
+    if (!offlineQueue.olvidaLasDe(partida.matchId, userId)) {
+      setNoSePudoDescartar(true);
+      return;
+    }
+    setNoSePudoDescartar(false);
+    relee();
+  };
+
   const hoyosDe = (avisos) =>
     [...new Set(avisos.map((a) => a.holeNumber))].sort((a, b) => a - b);
 
@@ -117,7 +133,42 @@ const GolpesSinEnviar = ({ userId = null }) => {
           ),
         })}
       </span>
-      {pendientes.map((partida) => (
+      {pendientes.map((partida) => partida.desaparecida ? (
+        /* Esa partida ya no está en el servidor, así que sus golpes no los
+           puede mandar nadie: la de partida rápida solo la vacía su propia
+           pantalla, que es la que responde 404. No es un botón que navegue
+           —llevaba a la pantalla de una partida que no existe— y no se borra
+           solo: se ofrece, y decide quien lo anotó (FE #557) */
+        <div
+          key={partida.matchId}
+          className="rounded-lg border border-amber-200 bg-amber-50 p-3"
+        >
+          <div className="flex items-start gap-3">
+            <CloudOff className="mt-0.5 h-5 w-5 flex-shrink-0 text-amber-600" aria-hidden="true" />
+            <div className="min-w-0 flex-1">
+              <p className="text-sm text-amber-900">
+                {t('golpesSinEnviar.desaparecida', {
+                  count: partida.cuantas,
+                  partida: nombreDe(partida),
+                })}
+              </p>
+              <button
+                type="button"
+                onClick={() => descarta(partida)}
+                aria-label={t('golpesSinEnviar.descartarDe', { partida: nombreDe(partida) })}
+                className="mt-2 min-h-11 px-1 py-2 text-xs font-medium text-amber-800 underline active:text-amber-900"
+              >
+                {t('golpesSinEnviar.descartar')}
+              </button>
+              {noSePudoDescartar && (
+                <p className="mt-1 text-xs text-amber-800">
+                  {t('golpesSinEnviar.noSePudoDescartar')}
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      ) : (
         <button
           key={partida.matchId}
           type="button"

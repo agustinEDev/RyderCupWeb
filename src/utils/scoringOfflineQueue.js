@@ -218,7 +218,7 @@ const esVisiblePara = (entrada, userId) =>
  *
  * @param {string|null} [userId]
  * @returns {Array<{matchId: string, matchName: string|null, matchNumber: number|null,
- *   cuantas: number, esPartidaRapida: boolean}>}
+ *   cuantas: number, esPartidaRapida: boolean, desaparecida: boolean}>}
  */
 export const resumenPorPartida = (userId = null) => {
   const porPartida = new Map();
@@ -236,8 +236,13 @@ export const resumenPorPartida = (userId = null) => {
       // Una anotación con participante es de una partida rápida: allí cada
       // participante se envía por separado
       esPartidaRapida: false,
+      // El servidor dijo que esa partida ya no existe. No se borra nada por
+      // eso: se le ofrece al jugador, que es quien sabe si la borró él o si
+      // ese 404 lo devolvió el portal cautivo de un club
+      desaparecida: false,
     };
     actual.cuantas += 1;
+    if (entrada.partidaDesaparecida) actual.desaparecida = true;
     if (entrada.participantId != null) actual.esPartidaRapida = true;
     if (!actual.matchName && entrada.matchName) actual.matchName = entrada.matchName;
     if (actual.matchNumber == null && entrada.matchNumber != null) {
@@ -247,6 +252,49 @@ export const resumenPorPartida = (userId = null) => {
   }
 
   return [...porPartida.values()];
+};
+
+/**
+ * Marca —o desmarca— lo guardado de una partida que el servidor ya no conoce
+ * (FE #557).
+ *
+ * Solo marca: borrar por un 404 es lo que NO hay que hacer, porque ese 404 lo
+ * devuelve igual un proxy mal configurado o el portal cautivo de un club, y el
+ * golpe era bueno. Con la marca, el panel puede ofrecer descartarlo y decidirlo
+ * quien lo anotó. Y se quita en cuanto la partida vuelve a cargar: entonces el
+ * 404 era mentira.
+ *
+ * @returns {boolean} Si hizo falta escribir y se pudo
+ */
+export const marcaDesaparecida = (matchId, desaparecida = true) => {
+  const queue = getAll();
+  let hayQueEscribir = false;
+
+  const marcada = queue.map((entry) => {
+    if (entry.matchId !== matchId) return entry;
+    if (Boolean(entry.partidaDesaparecida) === desaparecida) return entry;
+    hayQueEscribir = true;
+    return { ...entry, partidaDesaparecida: desaparecida };
+  });
+
+  return hayQueEscribir ? guarda(marcada) : true;
+};
+
+/**
+ * Quita de la cola TODO lo de una partida: lo que el jugador ha decidido no
+ * volver a intentar (FE #557).
+ *
+ * Con el mismo criterio de visibilidad que el aviso que lo ofrece: se borra lo
+ * que esa persona está viendo —lo suyo y lo huérfano—, no lo de otra cuenta
+ * del mismo móvil.
+ *
+ * @returns {boolean} Si se pudo escribir
+ */
+export const olvidaLasDe = (matchId, userId = null) => {
+  const queue = getAll();
+  return guarda(
+    queue.filter((entry) => !(entry.matchId === matchId && esVisiblePara(entry, userId)))
+  );
 };
 
 /**

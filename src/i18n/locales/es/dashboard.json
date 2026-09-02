@@ -152,6 +152,9 @@
     "entendido": "Entendido",
     "descartarDe": "Entendido, quitar el aviso de {{partida}}",
     "noSePudoDescartar": "No se pudo quitar el aviso: el dispositivo no tiene espacio.",
-    "resumen": "Golpes sin enviar: {{sinEnviar}}. No se pudieron guardar: {{perdidos}}"
+    "resumen": "Golpes sin enviar: {{sinEnviar}}. No se pudieron guardar: {{perdidos}}",
+    "desaparecida_one": "Un golpe de {{partida}} no se puede enviar: esa partida ya no está.",
+    "desaparecida_other": "{{count}} golpes de {{partida}} no se pueden enviar: esa partida ya no está.",
+    "descartar": "Descartar y perderlos"
   }
 }

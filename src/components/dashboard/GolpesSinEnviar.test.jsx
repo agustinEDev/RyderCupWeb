@@ -144,6 +144,40 @@ describe('GolpesSinEnviar', () => {
     expect(screen.getByRole('status')).toHaveTextContent('perdidos=2');
   });
 
+  it('una partida que ya no existe no navega: ofrece descartar', () => {
+    // Su pantalla es la única que sabe enviar lo de una partida rápida, y esa
+    // pantalla es la que responde 404: el aviso se quedaba para siempre y el
+    // botón llevaba a una pantalla muerta
+    cola.enqueue('qm-1', 7, { score: 5 }, 'p-1', 'u1', { matchName: 'Meis' });
+    cola.marcaDesaparecida('qm-1');
+
+    render(<GolpesSinEnviar userId="u1" />);
+
+    expect(screen.queryByRole('button', { name: /golpesSinEnviar.aviso/ })).toBeNull();
+    expect(screen.getByText(/golpesSinEnviar\.desaparecida\(count=1,partida=Meis\)/)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /descartarDe/ }));
+
+    expect(cola.size()).toBe(0);
+    expect(screen.queryByTestId('golpes-sin-enviar')).toBeNull();
+  });
+
+  it('si el móvil no admite la escritura, lo dice en vez de callarse', () => {
+    // Un botón que no hace nada y no dice por qué es peor que no tenerlo
+    cola.enqueue('qm-1', 7, { score: 5 }, 'p-1', 'u1', { matchName: 'Meis' });
+    cola.marcaDesaparecida('qm-1');
+    render(<GolpesSinEnviar userId="u1" />);
+    // El almacén de este fichero es propio, no el de jsdom: espiar
+    // `Storage.prototype` no lo tocaría y el test pasaría sin probar nada
+    vi.spyOn(almacen, 'setItem').mockImplementationOnce(() => {
+      throw Object.assign(new Error('quota'), { name: 'QuotaExceededError' });
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /descartarDe/ }));
+
+    expect(screen.getByText('golpesSinEnviar.noSePudoDescartar')).toBeInTheDocument();
+  });
+
   it('distingue dos partidos del MISMO campo por su número', () => {
     // Una jornada juega varios partidos en un solo campo: solo con el nombre
     // del campo salían dos avisos idénticos y no se sabía cuál mirar

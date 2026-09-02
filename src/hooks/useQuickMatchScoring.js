@@ -153,6 +153,9 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
       setQuickMatch(data);
       hayPartidaRef.current = true;
       setLoadError(null);
+      // La partida está: si alguna vez se marcó como desaparecida, aquel 404
+      // era mentira y la marca se retira
+      offlineQueue.marcaDesaparecida(quickMatchId, false);
 
       // El sondeo ha respondido, así que hay conexión: es el momento de enviar
       // lo que quedó guardado. Se le pasan los hoyos que el servidor ya tiene,
@@ -194,7 +197,16 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
       // Una respuesta CON estado es una respuesta: si el servidor dice que esa
       // partida ya no está —o que no es nuestra— pintarla desde el móvil sería
       // enseñar algo que no existe, y dejar anotar encima
-      if (estado === 404 || estado === 403) olvida(quickMatchId);
+      if (estado === 404 || estado === 403) {
+        olvida(quickMatchId);
+        // Y lo que quedó guardado de ella se marca, no se borra: esta pantalla
+        // es la ÚNICA que sabe enviar anotaciones de partida rápida, así que
+        // si no carga, lo suyo se queda en la cola para siempre y el panel
+        // avisa de golpes que nadie puede mandar. Marcado, el panel puede
+        // ofrecer descartarlo; borrarlo aquí perdería un golpe bueno cada vez
+        // que el 404 lo devuelva un proxy o el portal cautivo de un club
+        offlineQueue.marcaDesaparecida(quickMatchId, true);
+      }
 
       // Se pinta lo último que se supo, que es lo que permite seguir anotando
       // al volver a abrir la aplicación en el campo. `loadError` se queda

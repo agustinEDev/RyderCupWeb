@@ -37,6 +37,8 @@ vi.mock('../utils/scoringOfflineQueue', () => ({
   size: vi.fn(() => 0),
   getByMatch: vi.fn(() => []),
   ponleNombre: vi.fn(() => true),
+  marcaDesaparecida: vi.fn(() => true),
+  olvidaLasDe: vi.fn(() => true),
 }));
 
 // Mock session lock

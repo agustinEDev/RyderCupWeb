@@ -25,6 +25,8 @@ vi.mock('../utils/scoringOfflineQueue', () => ({
   getByMatch: vi.fn(() => []),
   deQuien: vi.fn(() => []),
   ponleNombre: vi.fn(() => true),
+  marcaDesaparecida: vi.fn(() => true),
+  olvidaLasDe: vi.fn(() => true),
   size: vi.fn(() => 0),
   clear: vi.fn(),
 }));
@@ -1876,5 +1878,51 @@ describe('useQuickMatchScoring · cuando el vaciado se para (FE #551)', () => {
 
     await waitFor(() => expect(getQuickMatchUseCase.execute).toHaveBeenCalledWith('qm-2'));
     expect(offlineQueue.ponleNombre).not.toHaveBeenCalledWith('qm-2', expect.anything());
+  });
+});
+
+describe('useQuickMatchScoring · la partida que ya no existe (FE #557)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    getGolfCourseUseCase.execute.mockResolvedValue({ holes: [], tees: [], name: 'Campo' });
+    offlineQueue.getByMatch.mockReturnValue([]);
+    offlineQueue.size.mockReturnValue(0);
+  });
+
+  it('un 404 la marca, y no borra nada', async () => {
+    // Esta pantalla es la ÚNICA que sabe enviar anotaciones de partida rápida:
+    // si no carga, lo suyo se queda en la cola para siempre y el panel avisa de
+    // golpes que nadie puede mandar
+    getQuickMatchUseCase.execute.mockRejectedValue(
+      Object.assign(new Error('HTTP 404'), { status: 404 })
+    );
+
+    const { result } = renderHook(() => useQuickMatchScoring('qm-1', 'user-1'));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    expect(offlineQueue.marcaDesaparecida).toHaveBeenCalledWith('qm-1', true);
+    // Borrar por un 404 perdería un golpe bueno: eso lo decide el jugador
+    expect(offlineQueue.olvidaLasDe).not.toHaveBeenCalled();
+    expect(offlineQueue.clear).not.toHaveBeenCalled();
+  });
+
+  it('un 503 no la marca: eso no es una negativa sobre la partida', async () => {
+    getQuickMatchUseCase.execute.mockRejectedValue(
+      Object.assign(new Error('HTTP 503'), { status: 503 })
+    );
+
+    const { result } = renderHook(() => useQuickMatchScoring('qm-1', 'user-1'));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    expect(offlineQueue.marcaDesaparecida).not.toHaveBeenCalledWith('qm-1', true);
+  });
+
+  it('si vuelve a cargar, la marca se retira: aquel 404 era mentira', async () => {
+    getQuickMatchUseCase.execute.mockResolvedValue(mockQuickMatch);
+
+    const { result } = renderHook(() => useQuickMatchScoring('qm-1', 'user-1'));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    expect(offlineQueue.marcaDesaparecida).toHaveBeenCalledWith('qm-1', false);
   });
 });
