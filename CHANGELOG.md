@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [2.26.2] - 2026-09-02
+
+### Fixed
+
+- **Sin cobertura ya se puede anotar un hoyo detrás de otro.** La pantalla se quedaba de solo lectura mientras el golpe anterior estaba de camino, y sin cobertura eso son los diez segundos que el móvil tarda en rendirse: hasta que la petición no moría, la casilla del hoyo siguiente no respondía. Bloquear ya no hacía falta —el golpe se guarda antes de enviarse— y se ha quitado. Y lo que eso abre queda cubierto: si se corrige un hoyo mientras su envío va de camino, la corrección se respeta en vez de perderse al confirmarse el envío (#564).
+
 ## [2.26.1] - 2026-09-02
 
 ### Fixed

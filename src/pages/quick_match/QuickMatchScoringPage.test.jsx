@@ -1390,6 +1390,37 @@ describe('QuickMatchScoringPage · lo guardado se ve y se entiende (FE #515, tab
   });
 });
 
+describe('QuickMatchScoringPage · anotar el hoyo siguiente sin esperar (FE #564)', () => {
+  const pinta = (extra) => {
+    mockUseQuickMatchScoring.mockReturnValue({
+      ...baseHookState,
+      quickMatch: { ...baseQuickMatch, status: 'IN_PROGRESS', isCompleted: false },
+      isScorer: true,
+      coveredParticipantIds: ['user-1'],
+      setCurrentHole: vi.fn(),
+      submitScore: vi.fn(),
+      ...extra,
+    });
+    return renderPage();
+  };
+
+  it('con un golpe todavía de camino, la casilla se sigue pudiendo pulsar', () => {
+    // Sin cobertura ese envío dura los diez segundos que el móvil tarda en
+    // rendirse: dejar la casilla de solo lectura mientras tanto impedía anotar
+    // el hoyo siguiente hasta que muriera la petición del anterior
+    pinta({ isSubmitting: true });
+
+    expect(screen.getByTestId('quick-match-score-button-user-1')).toBeInTheDocument();
+  });
+
+  it('una partida terminada sí deja la casilla de solo lectura', () => {
+    // Lo que sigue bloqueando es lo que de verdad no admite anotaciones
+    pinta({ quickMatch: { ...baseQuickMatch, status: 'COMPLETED', isCompleted: true } });
+
+    expect(screen.queryByTestId('quick-match-score-button-user-1')).not.toBeInTheDocument();
+  });
+});
+
 describe('QuickMatchScoringPage · el aviso del vaciado (FE #551)', () => {
   const pinta = (extra) => {
     mockUseQuickMatchScoring.mockReturnValue({
