@@ -8,7 +8,7 @@ import {
   cancelQuickMatchUseCase,
 } from '../composition';
 import * as golpesPerdidos from '../utils/golpesPerdidos';
-import { PARO, avisoTrasElVaciado, vaciaAnotaciones } from '../services/vaciaAnotaciones';
+import { PARO, apartaLaRechazada, avisoTrasElVaciado, vaciaAnotaciones } from '../services/vaciaAnotaciones';
 import { errorDeGuardado } from '../utils/erroresDeAnotacion';
 import { seGuardaParaDespues } from '../utils/politicaDeLaCola';
 import * as offlineQueue from '../utils/scoringOfflineQueue';
@@ -561,11 +561,17 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
 
   const borraLoGuardadoDe = useCallback(
     (holeNumber, participantId) => {
-      const guardada = offlineQueue
+      // TODAS las que haya de ese hoyo, no la primera: una anotación huérfana
+      // —de antes de que la cola guardara dueño— y la de ahora son entradas
+      // distintas, porque el dueño es parte de la identidad. Borrando solo la
+      // primera se iba la huérfana y quedaba la recién creada, y la pantalla
+      // decía «1 golpe guardado» justo después de un envío que sí llegó
+      const guardadas = offlineQueue
         .getByMatch(quickMatchId, currentUserId)
-        .find((e) => e.holeNumber === holeNumber && e.participantId === participantId);
-      if (!guardada) return;
-      offlineQueue.remove(quickMatchId, holeNumber, participantId, guardada.userId ?? null);
+        .filter((e) => e.holeNumber === holeNumber && e.participantId === participantId);
+      for (const guardada of guardadas) {
+        offlineQueue.remove(quickMatchId, holeNumber, participantId, guardada.userId ?? null);
+      }
     },
     [quickMatchId, currentUserId]
   );
@@ -638,6 +644,21 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
 
       escribiendoRef.current = true;
       setIsSubmitting(true);
+      // Se guarda ANTES de intentar enviarlo, no después de que el envío
+      // falle. Guardarlo es lo que hace que el golpe exista: lo que se pinta
+      // en la casilla sale de la cola, así que esperando a que muriera la
+      // petición la casilla decía «Anotar» los diez segundos que el móvil
+      // tarda en rendirse sin cobertura, y si la aplicación se cerraba en ese
+      // rato el golpe no estaba en ninguna parte (FE #561). Si el envío sale
+      // bien se retira unas líneas más abajo, que es lo que ya se hacía
+      const seGuardo = offlineQueue.enqueue(
+        quickMatchId, holeNumber, { score }, participantId, currentUserId, laPartidaRef.current
+      );
+      // El contador de pendientes NO se toca aquí: con cobertura buena el
+      // envío tarda un suspiro, y actualizarlo ya enseñaría «1 golpe guardado
+      // en el móvil» en cada anotación para retirarlo acto seguido. Se pone
+      // abajo, cuando se sabe cómo acabó. La casilla, en cambio, se pinta sola:
+      // sale de la cola, y el render que provoca `setIsSubmitting` ya la lee
       // El aviso rojo pedía volver a anotarlo, y ya está hecho — pero NO se
       // retira todavía: si este reemplazo lo rechazan también, o
       // el móvil no puede encolarlo, el jugador se quedaría sin golpe y sin
@@ -665,11 +686,13 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
         await fetchQuickMatch();
       } catch (err) {
         if (seGuardaParaDespues(err)) {
-          // Se guarda en el móvil y NO se enseña error: para el jugador el
-          // golpe está anotado, solo que todavía no ha salido de aquí
-          // Puede negarse: un iPhone sin espacio, o una ventana privada. Ahí
-          // el golpe no está en ninguna parte, y callarlo es lo peor de todo
-          if (offlineQueue.enqueue(quickMatchId, holeNumber, { score }, participantId, currentUserId, laPartidaRef.current) === false) {
+          // Ya está guardado de antes de enviar, así que aquí no hay nada que
+          // hacer salvo mirar si aquello se pudo. NO se enseña error: para el
+          // jugador el golpe está anotado, solo que todavía no ha salido de
+          // aquí. Puede haberse negado —un iPhone sin espacio, o una ventana
+          // privada—, y entonces el golpe no está en ninguna parte: callarlo
+          // es lo peor de todo
+          if (seGuardo === false) {
             // El error de red no es lo que hay que contar: lo que ha pasado es
             // que el móvil no lo ha podido guardar
             setSaveError(errorDeGuardado(holeNumber));
@@ -681,8 +704,30 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
             yaNoSePierde();
           }
         } else {
-          // El servidor lo rechaza por algo que no cambia con el tiempo. Se
-          // dice, y se dice DE QUÉ HOYO: el caso realista es anotar sin
+          // El servidor lo rechaza por algo que no cambia con el tiempo:
+          // reintentarlo no lo va a salvar, así que sale de la cola. Sin esto,
+          // lo que se guardó antes de enviar se quedaría dentro y el vaciado
+          // lo reenviaría en cada sondeo para que lo rechazaran otra vez.
+          //
+          // Por el mismo camino que el vaciado, y no borrando a secas: escribe
+          // el aviso primero y solo borra si quedó escrito. El recuadro rojo
+          // se lo lleva la siguiente anotación que salga bien, y entonces del
+          // golpe no quedaría constancia en ninguna parte —ni en la lista de
+          // hoyos que repetir, ni en el panel—. Y si el disco no admite la
+          // escritura, la anotación se queda: mejor reintentada mil veces que
+          // desaparecida sin que nadie lo sepa (FE #521)
+          apartaLaRechazada(
+            { matchId: quickMatchId, holeNumber, participantId, userId: currentUserId ?? null,
+              ...laPartidaRef.current },
+            currentUserId ?? null
+          );
+          setPerdidos((antes) =>
+            antes.some((x) => x.holeNumber === holeNumber && x.participantId === participantId)
+              ? antes
+              : [...antes, { holeNumber, participantId }]
+          );
+          setPendientes(offlineQueue.size(quickMatchId, currentUserId));
+          // Se dice, y se dice DE QUÉ HOYO: el caso realista es anotar sin
           // cobertura y que alguien termine la partida mientras tanto, y ahí lo
           // menos que se puede hacer es decir cuál se perdió
           err.holeNumber = holeNumber;
