@@ -728,6 +728,38 @@ describe('useScoring', () => {
       ]);
     });
 
+    it('pero si el reemplazo tampoco se puede guardar, el aviso SIGUE', async () => {
+      // Retirarlo antes de saberlo dejaba al jugador sin golpe y sin aviso:
+      // ni en la tarjeta, ni en la cola, ni en el panel
+      golpesPerdidos.apunta({ matchId: 'm-1', matchName: 'Meis', holeNumber: 7, userId: 'u1' });
+      Object.defineProperty(navigator, 'onLine', { value: false, configurable: true });
+      offlineQueue.enqueue.mockReturnValue(false);
+
+      const { result } = renderHook(() => useScoring('m-1', 'u1'));
+      await waitFor(() => expect(result.current.isLoading).toBe(false));
+      await act(async () => {
+        await result.current.submitScore(7, { ownScore: 4, markedPlayerId: 'u2', markedScore: 5 });
+      });
+
+      expect(golpesPerdidos.pendientes('u1')).toHaveLength(1);
+      expect(result.current.error).toBeTruthy();
+    });
+
+    it('ni cuando el servidor rechaza el reemplazo para siempre', async () => {
+      golpesPerdidos.apunta({ matchId: 'm-1', matchName: 'Meis', holeNumber: 7, userId: 'u1' });
+      submitHoleScoreUseCase.execute.mockRejectedValue(
+        Object.assign(new Error('Match completed'), { status: 409 })
+      );
+
+      const { result } = renderHook(() => useScoring('m-1', 'u1'));
+      await waitFor(() => expect(result.current.isLoading).toBe(false));
+      await act(async () => {
+        await result.current.submitScore(7, { ownScore: 4, markedPlayerId: 'u2', markedScore: 5 });
+      });
+
+      expect(golpesPerdidos.pendientes('u1')).toHaveLength(1);
+    });
+
     it('la que el servidor rechaza se descarta DEJANDO AVISO, no en silencio', async () => {
       // Un 4xx no se reintenta. Pero quitarla y callar hace desaparecer un
       // golpe sin que su dueño se entere, que es la mitad de la FE #521: aquí

@@ -179,13 +179,12 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
     if (!matchId || !canScore) return;
     if (isOwnScoreLocked && isMarkerScoreLocked) return;
 
-    // Volver a anotar este hoyo retira el aviso de «no se pudo guardar» que
-    // hubiera de él: el aviso pide repetirlo, y eso es lo que se acaba de
-    // hacer. Sin esto, el panel seguía pidiendo repetir un hoyo que ya está en
-    // la tarjeta, y la única salida era «Entendido», que se lleva TODOS los
-    // avisos de esa partida, incluidos los que sí siguen perdidos. Va antes de
-    // los dos caminos —con y sin cobertura— porque en los dos hay anotación
-    golpesPerdidos.olvidaEl(matchId, holeNumber, currentUserId);
+    // El aviso de «no se pudo guardar» de este hoyo se retira, pero SOLO
+    // cuando el reemplazo está a salvo: enviado, o guardado en la cola. Se
+    // hacía aquí arriba y era un error — si el reemplazo lo rechazan también,
+    // o el móvil no tiene sitio para encolarlo, el jugador se quedaba sin
+    // golpe Y sin aviso, que es justo lo que esta issue existe para impedir
+    const yaNoSePierde = () => golpesPerdidos.olvidaEl(matchId, holeNumber, currentUserId);
 
     if (isOffline) {
       const guardado = offlineQueue.enqueue(
@@ -208,6 +207,7 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
         // ninguna otra ocasión de limpiarlo —el sondeo no corre—, así que el
         // jugador reanotaba hoyos creyendo que no se estaban guardando
         setError(null);
+        yaNoSePierde();
       }
       return;
     }
@@ -221,6 +221,7 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
         holes: updatedView.holes?.length > 0 ? updatedView.holes : (prev?.holes || []),
       }));
       setError(null);
+      yaNoSePierde();
     } catch (err) {
       // La misma política que el resto de la aplicación: un 401, un 408 o un
       // 429 NO son culpa del golpe y se guardan. Antes aquí solo se guardaba a
@@ -239,6 +240,7 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
         // decirlo: callarlo deja al jugador creyendo que su golpe está a salvo
         // en algún sitio, y no está en ninguno
         setError(guardado === false ? errorDeGuardado(holeNumber) : null);
+        if (guardado !== false) yaNoSePierde();
         // Y si SÍ se guardó, no se enseña error: para el jugador el golpe está
         // anotado, solo que todavía no ha salido del móvil. Decirle que ha
         // fallado le hace reanotarlo, que es como se anota dos veces el mismo

@@ -157,10 +157,22 @@ const GolpesSinEnviar = ({ userId = null }) => {
                     return;
                   }
                   setNoSePudoDescartar(false);
+                  // Dónde va a poder ir el foco DESPUÉS, decidido antes de
+                  // repintar: si este era el último aviso, el componente entero
+                  // deja de existir y el contenedor con él, así que el foco
+                  // caería a `<body>`. En ese caso se sube al bloque del panel
+                  // que lo contiene, que sigue ahí
+                  const quedaAlgoQueVer = pendientes.length > 0 || perdidos.length > delGrupo.length;
+                  const destino = quedaAlgoQueVer
+                    ? contenedorRef.current
+                    : contenedorRef.current?.parentElement;
                   relee();
-                  // El bloque con el botón pulsado desaparece: el foco vuelve
-                  // al contenedor, que sigue en pantalla con los demás avisos
-                  contenedorRef.current?.focus();
+                  if (destino) {
+                    // El padre no es enfocable por sí mismo; se le da un
+                    // destino de foco sin meterlo en el orden de tabulación
+                    if (!destino.hasAttribute('tabindex')) destino.tabIndex = -1;
+                    destino.focus();
+                  }
                 }}
                 aria-label={t('golpesSinEnviar.descartarDe', { partida: nombreDe(delGrupo[0]) })}
                 className="mt-2 min-h-11 px-1 py-2 text-xs font-medium text-red-700 underline active:text-red-900"

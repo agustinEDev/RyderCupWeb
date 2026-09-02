@@ -211,8 +211,15 @@ describe('AuthContext', () => {
         result.current.clearAuth();
       });
 
-      expect(golpesPerdidos.pendientes('yo')).toHaveLength(1);
-      // Y la siguiente persona que entre en ese móvil no ve los de la anterior
+      expect(golpesPerdidos.pendientes('yo')).toEqual([
+        expect.objectContaining({ matchId: 'm-1' }),
+      ]);
+      // Y el de la otra cuenta también sigue: sin mirarlo, este test pasaba
+      // igual aunque se hubiera borrado
+      expect(golpesPerdidos.pendientes('la-otra')).toEqual([
+        expect.objectContaining({ matchId: 'm-2' }),
+      ]);
+      // Y la siguiente persona que entre en ese móvil no ve ninguno de los dos
       expect(golpesPerdidos.pendientes('otra-cuenta-cualquiera')).toHaveLength(0);
     });
 

@@ -152,6 +152,6 @@
     "entendido": "Entendido",
     "descartarDe": "Entendido, quitar el aviso de {{partida}}",
     "noSePudoDescartar": "No se pudo quitar el aviso: el dispositivo no tiene espacio.",
-    "resumen": "{{sinEnviar}} golpes sin enviar y {{perdidos}} que no se pudieron guardar"
+    "resumen": "Golpes sin enviar: {{sinEnviar}}. No se pudieron guardar: {{perdidos}}"
   }
 }

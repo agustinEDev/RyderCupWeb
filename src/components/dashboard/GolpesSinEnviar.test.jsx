@@ -176,6 +176,19 @@ describe('GolpesSinEnviar', () => {
     expect(document.activeElement).toBe(screen.getByTestId('golpes-sin-enviar'));
   });
 
+  it('y al quitar el ÚLTIMO, tampoco: sube al bloque del panel', () => {
+    // Aquí el componente entero deja de existir, así que el contenedor al que
+    // se devolvía el foco desaparece con él
+    golpesPerdidos.apunta({ matchId: 'm-1', matchName: 'La Herrería', holeNumber: 3, userId: 'u1' });
+    const { container } = render(<GolpesSinEnviar userId="u1" />);
+    const bloqueDelPanel = screen.getByTestId('golpes-sin-enviar').parentElement;
+
+    fireEvent.click(screen.getByRole('button', { name: /descartarDe/ }));
+
+    expect(container).toBeEmptyDOMElement();
+    expect(document.activeElement).toBe(bloqueDelPanel);
+  });
+
   it('deja de contar los golpes que el vaciado ya ha enviado', () => {
     cola.enqueue('m-1', 3, { ownScore: 4 }, null, 'u1', { matchName: 'La Herrería' });
     render(<GolpesSinEnviar userId="u1" />);

@@ -603,6 +603,8 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
         }
         setPendientes(offlineQueue.size(quickMatchId, currentUserId));
         setSaveError(null);
+        // Aquí sí se puede retirar el aviso: el `enqueue` de arriba devolvió
+        // bien, así que el reemplazo está guardado en el móvil
         golpesPerdidos.olvidaEl(quickMatchId, holeNumber, currentUserId, participantId);
         setPerdidos((antes) =>
           antes.filter((x) => !(x.holeNumber === holeNumber && x.participantId === participantId))
@@ -612,14 +614,16 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
 
       escribiendoRef.current = true;
       setIsSubmitting(true);
-      // El aviso rojo pedía volver a anotarlo: ya está hecho. Se retira aquí y
-      // no en la rama del envío bueno, porque si el golpe se queda otra vez en
-      // el móvil sigue habiendo anotación —lo que ya no hay es nada perdido—, y
-      // dejarlo puesto pediría repetir un hoyo que la tarjeta ya enseña
-      golpesPerdidos.olvidaEl(quickMatchId, holeNumber, currentUserId, participantId);
-      setPerdidos((antes) =>
-        antes.filter((x) => !(x.holeNumber === holeNumber && x.participantId === participantId))
-      );
+      // El aviso rojo pedía volver a anotarlo, y ya está hecho — pero NO se
+      // retira todavía: si este reemplazo lo rechazan también, o
+      // el móvil no puede encolarlo, el jugador se quedaría sin golpe y sin
+      // aviso. Se retira abajo, cuando conste que está a salvo
+      const yaNoSePierde = () => {
+        golpesPerdidos.olvidaEl(quickMatchId, holeNumber, currentUserId, participantId);
+        setPerdidos((antes) =>
+          antes.filter((x) => !(x.holeNumber === holeNumber && x.participantId === participantId))
+        );
+      };
       try {
         if (participantId === myParticipant?.participantId) {
           await submitQuickMatchHoleScoreUseCase.execute(quickMatchId, holeNumber, score);
@@ -633,6 +637,7 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
         // al jugador si quiere recuperar el resultado que él mismo corrigió
         borraLoGuardadoDe(holeNumber, participantId);
         setPendientes(offlineQueue.size(quickMatchId, currentUserId));
+        yaNoSePierde();
         await fetchQuickMatch();
       } catch (err) {
         if (seGuardaParaDespues(err)) {
@@ -646,6 +651,9 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
           } else {
             setPendientes(offlineQueue.size(quickMatchId, currentUserId));
             setSaveError(null);
+            // Guardado en el móvil también cuenta: sigue habiendo anotación,
+            // lo que ya no hay es nada perdido
+            yaNoSePierde();
           }
         } else {
           // El servidor lo rechaza por algo que no cambia con el tiempo. Se

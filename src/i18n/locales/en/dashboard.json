@@ -152,6 +152,6 @@
     "entendido": "Got it",
     "descartarDe": "Got it, dismiss the notice for {{partida}}",
     "noSePudoDescartar": "The notice could not be dismissed: the device is out of space.",
-    "resumen": "{{sinEnviar}} strokes left to send and {{perdidos}} that could not be saved"
+    "resumen": "Strokes left to send: {{sinEnviar}}. Could not be saved: {{perdidos}}"
   }
 }

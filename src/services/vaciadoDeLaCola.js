@@ -7,9 +7,10 @@
  * hoyos en la cola y no volvía a abrir esa partida —se completaba desde otro
  * móvil, se cancelaba, o simplemente la dejaba— los perdía sin enterarse.
  *
- * Aquí se recorren las anotaciones de quien tiene la sesión abierta —incluidas
- * las que no llevan dueño, que son todas las que hay hoy en los móviles— y se
- * distingue:
+ * Aquí se recorren las anotaciones de quien tiene la sesión abierta, **y solo
+ * las suyas**: lo huérfano no se manda desde aquí, porque el servidor lo
+ * escribiría en la tarjeta de quien resulte estar dentro. El porqué completo
+ * está en `deQuien`. Entre las suyas se distingue:
  *
  * - **Competición** (sin `participantId`): se envía. No hay negociación
  *   posible; la anotación lleva dentro el golpe propio y el del marcado, y el
@@ -54,8 +55,9 @@ export const COLA_VACIADA = 'rydercup:cola-vaciada';
  */
 export const vaciaLaColaEntera = async ({ saltaPartida = null, userId = null } = {}) => {
   const cualSalta = () => (typeof saltaPartida === 'function' ? saltaPartida() : saltaPartida);
-  // Lo de esta persona y lo huérfano, que es toda la cola que hay hoy en los
-  // móviles: ver `esVisiblePara` en la cola
+  // Solo lo de esta persona: `deQuien` deja fuera lo huérfano a propósito, y
+  // explica el precio de no hacerlo. Lo huérfano se rescata desde la pantalla
+  // de su partida, donde hay alguien mirando
   const mias = userId ? cola.deQuien(userId) : [];
   if (mias.length === 0 || vaciando) {
     return { enviadas: 0, descartadas: 0, pendientes: mias.length };
