@@ -12,6 +12,7 @@ import HeaderAuth from '../../components/layout/HeaderAuth';
 import { useAuth } from '../../hooks/useAuth';
 import { useQuickMatchScoring } from '../../hooks/useQuickMatchScoring';
 import { claveDelAvisoDelVaciado } from '../../utils/erroresDeAnotacion';
+import { conMiNombrePrimero } from '../../utils/ordenDeLasTarjetas';
 import QuickMatchHoleSelector from '../../components/quick_match/QuickMatchHoleSelector';
 import QuickMatchHoleInput from '../../components/quick_match/QuickMatchHoleInput';
 import QuickMatchClassificationTable from '../../components/quick_match/QuickMatchClassificationTable';
@@ -344,7 +345,16 @@ const QuickMatchScoringPage = () => {
         return {
           participantId: writable.participantId,
           scoreIds: members.map((m) => m.participantId),
-          name: members.map((m) => m.name).join(' & '),
+          // El mismo bando se llama igual aquí que en la tarjeta: quien mira va
+          // delante (FE #550). Se ordena SOLO el texto —`scoreIds`, `side` y el
+          // participante bajo el que se escribe salen de `members` sin tocar—,
+          // que es lo que mantiene la bola a nombre del titular del bando.
+          name: conMiNombrePrimero(
+            members,
+            (m) => m.participantId === myParticipant?.participantId
+          )
+            .map((m) => m.name)
+            .join(' & '),
           score: entry?.score ?? null,
           isPickedUp: entry != null && entry.score == null,
           // Comparten bola, así que comparten tarjeta: la del primero del bando,

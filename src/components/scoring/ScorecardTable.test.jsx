@@ -363,3 +363,107 @@ describe('ScorecardTable · foursomes con los dos jugadores en barras distintas'
     expect(titles).toEqual(['figures.birdie', 'figures.birdie']);
   });
 });
+
+/**
+ * FE #550: la tarjeta se lee de pie en el tee, así que la fila propia es la
+ * primera. Se ordena solo lo que se pinta —`players` sigue como llega— porque
+ * la posición dentro de ese array decide a nombre de quién se guarda la bola de
+ * un bando y qué jugador hace de bando A en el reparto de golpes.
+ */
+describe('ScorecardTable — la fila de quien mira va primero', () => {
+  const cuatro = [
+    { userId: 'u1', userName: 'Ana', team: 'A' },
+    { userId: 'u2', userName: 'Beto', team: 'A' },
+    { userId: 'u3', userName: 'Carlos', team: 'B' },
+    { userId: 'u4', userName: 'Diana', team: 'B' },
+  ];
+
+  // La primera celda de cada fila del cuerpo lleva la etiqueta; la última fila
+  // es la del resultado del hoyo, no un jugador.
+  // Solo la primera mitad —la ida—: la vuelta repite las mismas filas en otra
+  // tabla, y contarlas dos veces no dice nada más sobre el orden.
+  const filasDeLaIda = (container) =>
+    [...container.querySelector('tbody').querySelectorAll('tr')].slice(0, -1);
+
+  const etiquetasEnOrden = (container) =>
+    filasDeLaIda(container).map((tr) => tr.querySelector('td')?.textContent ?? '');
+
+  it('saca la fila propia delante en individuales', () => {
+    const { container } = render(
+      <ScorecardTable holes={holes} players={players} currentUserId="u2" matchFormat="SINGLES" />
+    );
+
+    expect(etiquetasEnOrden(container)).toEqual(['Player B', 'Player A']);
+  });
+
+  it('en fourball sube al compañero detrás y deja a los rivales en su orden', () => {
+    const { container } = render(
+      <ScorecardTable holes={holes} players={cuatro} currentUserId="u4" matchFormat="FOURBALL" teamAName="Rojos" teamBName="Azules" />
+    );
+
+    expect(etiquetasEnOrden(container)).toEqual([
+      'AzulesDiana',
+      'AzulesCarlos',
+      'RojosAna',
+      'RojosBeto',
+    ]);
+  });
+
+  it('en foursomes sube el bando propio y escribe delante el nombre de quien mira', () => {
+    const { container } = render(
+      <ScorecardTable holes={holes} players={cuatro} currentUserId="u2" matchFormat="FOURSOMES" teamAName="Rojos" teamBName="Azules" />
+    );
+
+    // La etiqueta del equipo sigue pegada a su fila: se resuelve por `row.team`
+    // y no por la posición, así que subir el bando no la descoloca.
+    expect(etiquetasEnOrden(container)).toEqual(['RojosBeto / Ana', 'AzulesCarlos / Diana']);
+  });
+
+  it('deja el orden del servidor a quien no juega la partida', () => {
+    const { container } = render(
+      <ScorecardTable holes={holes} players={cuatro} currentUserId="organizador" matchFormat="FOURSOMES" teamAName="Rojos" teamBName="Azules" />
+    );
+
+    expect(etiquetasEnOrden(container)).toEqual(['RojosAna / Beto', 'AzulesCarlos / Diana']);
+  });
+
+  /**
+   * La bola del bando se busca por `playerIds`, y esos salen de `players` en su
+   * orden. Reordenar la etiqueta no puede mover un golpe de fila.
+   */
+  it('no cambia los golpes que pinta cada fila al reordenarla', () => {
+    const scores = [
+      {
+        holeNumber: 1,
+        playerScores: [
+          { userId: 'u1', ownScore: 5, netScore: 5 },
+          { userId: 'u3', ownScore: 3, netScore: 3 },
+        ],
+      },
+    ];
+
+    // Quien mira es del bando B, el segundo que manda el servidor: si no
+    // cambiase de sitio, comparar las dos vistas no probaría nada.
+    const comoJugador = render(
+      <ScorecardTable holes={holes} players={cuatro} scores={scores} currentUserId="u4" matchFormat="FOURSOMES" />
+    );
+    const filasDelJugador = filasDeLaIda(comoJugador.container).map(
+      (tr) => [...tr.querySelectorAll('td')].slice(1, 3).map((td) => td.textContent)
+    );
+
+    comoJugador.unmount();
+
+    const comoEspectador = render(
+      <ScorecardTable holes={holes} players={cuatro} scores={scores} currentUserId="nadie" matchFormat="FOURSOMES" />
+    );
+    const filasDelEspectador = filasDeLaIda(comoEspectador.container).map(
+      (tr) => [...tr.querySelectorAll('td')].slice(1, 3).map((td) => td.textContent)
+    );
+
+    // Las mismas casillas, intercambiadas de sitio: el 3 del bando B sube con su
+    // fila y el 5 del bando A baja con la suya.
+    expect(filasDelJugador[0]).toEqual(filasDelEspectador[1]);
+    expect(filasDelJugador[1]).toEqual(filasDelEspectador[0]);
+    expect(filasDelJugador[0]).not.toEqual(filasDelJugador[1]);
+  });
+});
