@@ -1,6 +1,6 @@
 {
   "name": "rydercup-web",
-  "version": "2.26.2",
+  "version": "2.27.0",
   "type": "module",
   "description": "Frontend web para Ryder Cup Amateur Manager",
   "scripts": {

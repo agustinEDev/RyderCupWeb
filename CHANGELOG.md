@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [2.27.0] - 2026-09-03
+
+### Added
+
+- **Tu tarjeta sale la primera.** La tarjeta se lee de pie en el tee y con una mano, y la fila que se busca es siempre la propia; hasta ahora había que cazarla, porque se pintaban en el orden que manda el servidor —equipo A y luego B en competición, orden de alta en partida rápida— y lo tuyo solo se teñía de azul. Ahora tu fila va delante en las dos modalidades, y en parejas sube tu bando entero, contigo delante dentro de él. Todo lo demás conserva su orden, y mirando un partido que no juegas no cambia nada. La pantalla de anotación llama al bando igual que la tarjeta, para que cambiar de pestaña no te lo renombre a media vuelta (#550).
+
+### Fixed
+
+- **En un bando de foursomes, la barra de la cabecera es la de quien mira.** Ahí solo cabe una, y era la del jugador a cuyo nombre se guarda la bola. Con el nombre propio ya delante, un mixto corriente —rojas masculinas con rojas femeninas— te dejaba tu nombre pegado a la barra de tu compañero (#550).
+
+- **Los avisos de la anotación se comportan como avisos.** Los tres —final anticipado, conceder y enviar la tarjeta— eran la misma caja repetida: ninguno se cerraba con Escape ni tocando fuera, ninguno se anunciaba como tal, y con el teclado el foco seguía paseándose por los botones de detrás. Ahora se anuncian con su título, retienen el foco mientras están abiertos y lo devuelven donde estaba al cerrarse. Con dos matices que no son adorno: el de conceder **no se cierra al tocar el fondo**, porque dentro hay un motivo escrito a mano y en un móvil el fondo es justo lo que se toca sin querer; y el de enviar no se cierra de ninguna de las dos formas mientras la tarjeta va de camino, y ahora lo dice en vez de ignorar la tecla en silencio. Además, seleccionar el texto de un aviso y soltar el ratón fuera ya no lo descarta (#389).
+
 ## [2.26.2] - 2026-09-02
 
 ### Fixed

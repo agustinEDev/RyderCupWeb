@@ -805,3 +805,151 @@ describe('QuickMatchScorecardTable - raya (bola recogida)', () => {
     expect(screen.getByTestId('quick-match-scorecard-table')).toHaveTextContent('9');
   });
 });
+
+/**
+ * FE #550: la tarjeta propia se lee la primera, y en parejas sube el bando
+ * entero. Lo que se ordena es la lista de tarjetas: `participants` no se toca
+ * porque la bola de un bando se guarda a nombre de su primer miembro
+ * (`sideCardHolder`) y el reparto usa `[0]` y `[1]` como bandos cuando no hay
+ * `team`.
+ */
+describe('QuickMatchScorecardTable — la tarjeta de quien mira va primero', () => {
+  const cuatro = [
+    { participantId: 'p-1', name: 'Ana', handicap: 0, team: 'A', isGuest: false },
+    { participantId: 'p-2', name: 'Beto', handicap: 0, team: 'A', isGuest: false },
+    { participantId: 'p-3', name: 'Carlos', handicap: 0, team: 'B', isGuest: false },
+    { participantId: 'p-4', name: 'Diana', handicap: 0, team: 'B', isGuest: false },
+  ];
+
+  const tarjetas = (container) => [
+    ...container.querySelectorAll('[data-testid^="quick-match-player-card-"]'),
+  ];
+
+  const clavesEnOrden = (container) =>
+    tarjetas(container).map((card) => card.dataset.testid.replace('quick-match-player-card-', ''));
+
+  it('sube la tarjeta propia en una partida sin bandos', () => {
+    const { container } = render(
+      <QuickMatchScorecardTable holes={holes} holeScores={[]} participants={participants} currentParticipantId="p-2" />
+    );
+
+    expect(clavesEnOrden(container)).toEqual(['p-2', 'p-1']);
+  });
+
+  it('en fourball sube al compañero detrás y respeta el orden de los rivales', () => {
+    const { container } = render(
+      <QuickMatchScorecardTable holes={holes} holeScores={[]} participants={cuatro} currentParticipantId="p-4" matchFormat="FOURBALL" />
+    );
+
+    expect(clavesEnOrden(container)).toEqual(['p-4', 'p-3', 'p-1', 'p-2']);
+  });
+
+  it('en foursomes sube el bando propio y escribe delante a quien mira', () => {
+    const { container } = render(
+      <QuickMatchScorecardTable holes={holes} holeScores={[]} participants={cuatro} currentParticipantId="p-4" matchFormat="FOURSOMES" />
+    );
+
+    // La tarjeta sigue siendo la del dueño de la bola —el primer miembro del
+    // bando, p-3—: lo que cambia de sitio es la tarjeta, no el bando.
+    expect(clavesEnOrden(container)).toEqual(['p-3', 'p-1']);
+    expect(tarjetas(container)[0]).toHaveTextContent('Diana & Carlos');
+    expect(tarjetas(container)[1]).toHaveTextContent('Ana & Beto');
+  });
+
+  it('deja el orden de alta a quien no juega la partida', () => {
+    const { container } = render(
+      <QuickMatchScorecardTable holes={holes} holeScores={[]} participants={cuatro} currentParticipantId="p-9" matchFormat="FOURSOMES" />
+    );
+
+    expect(clavesEnOrden(container)).toEqual(['p-1', 'p-3']);
+    expect(tarjetas(container)[0]).toHaveTextContent('Ana & Beto');
+  });
+
+  /**
+   * La prueba que pide la issue: mover la tarjeta de sitio no mueve un golpe.
+   * Los mismos hoyos anotados se leen igual jugando el bando B —que sube— que
+   * mirándolo desde fuera.
+   */
+  it('no cambia los golpes de cada bando al reordenar las tarjetas', () => {
+    const holeScores = [
+      { holeNumber: 1, participantId: 'p-1', score: 5 },
+      { holeNumber: 1, participantId: 'p-3', score: 3 },
+    ];
+
+    const comoJugador = render(
+      <QuickMatchScorecardTable holes={holes} holeScores={holeScores} participants={cuatro} currentParticipantId="p-4" matchFormat="FOURSOMES" />
+    );
+    const golpesDelJugador = tarjetas(comoJugador.container).map(
+      (card) => card.querySelector('table').textContent
+    );
+
+    comoJugador.unmount();
+
+    const comoEspectador = render(
+      <QuickMatchScorecardTable holes={holes} holeScores={holeScores} participants={cuatro} currentParticipantId="p-9" matchFormat="FOURSOMES" />
+    );
+    const golpesDelEspectador = tarjetas(comoEspectador.container).map(
+      (card) => card.querySelector('table').textContent
+    );
+
+    expect(golpesDelJugador[0]).toEqual(golpesDelEspectador[1]);
+    expect(golpesDelJugador[1]).toEqual(golpesDelEspectador[0]);
+    expect(golpesDelJugador[0]).not.toEqual(golpesDelJugador[1]);
+  });
+});
+
+/**
+ * En un bando de foursomes la cabecera enseña UNA barra. Con el nombre propio
+ * delante, esa barra tiene que ser la suya: el foursomes mixto corriente son
+ * rojas masculinas con rojas femeninas —dos entradas distintas de `tees`—, así
+ * que la del compañero al lado del nombre propio es el defecto de #417 otra vez.
+ */
+describe('QuickMatchScorecardTable — la barra sigue al nombre que encabeza', () => {
+  const dieciocho = Array.from({ length: 18 }, (_, i) => ({
+    holeNumber: i + 1,
+    par: 4,
+    strokeIndex: i + 1,
+  }));
+
+  const bandoMixto = [
+    { participantId: 'p-1', name: 'Carlos', handicap: 10, team: 'A', color: 'RED', teeGender: 'MALE' },
+    { participantId: 'p-2', name: 'Diana', handicap: 10, team: 'A', color: 'RED', teeGender: 'FEMALE' },
+  ];
+
+  const tees = [
+    { color: 'RED', gender: 'MALE', identifier: 'Rojas M', courseRating: 70, slopeRating: 113 },
+    { color: 'RED', gender: 'FEMALE', identifier: 'Rojas F', courseRating: 72, slopeRating: 120 },
+  ];
+
+  it('enseña la barra de quien mira cuando su nombre sube al frente', () => {
+    render(
+      <QuickMatchScorecardTable
+        holes={dieciocho}
+        holeScores={[]}
+        participants={bandoMixto}
+        currentParticipantId="p-2"
+        matchFormat="FOURSOMES"
+        tees={tees}
+      />
+    );
+
+    const cabecera = screen.getByTestId('quick-match-player-handicap-p-1');
+    expect(cabecera).toHaveTextContent('Rojas F (F)');
+    expect(cabecera).not.toHaveTextContent('Rojas M');
+  });
+
+  it('mantiene la del dueño de la bola para quien solo mira', () => {
+    render(
+      <QuickMatchScorecardTable
+        holes={dieciocho}
+        holeScores={[]}
+        participants={bandoMixto}
+        currentParticipantId="p-9"
+        matchFormat="FOURSOMES"
+        tees={tees}
+      />
+    );
+
+    expect(screen.getByTestId('quick-match-player-handicap-p-1')).toHaveTextContent('Rojas M (M)');
+  });
+});
