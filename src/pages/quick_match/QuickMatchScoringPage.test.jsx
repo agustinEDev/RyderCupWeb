@@ -566,6 +566,32 @@ describe('QuickMatchScoringPage · foursomes anota una bola por bando', () => {
   });
 
   /**
+   * El bando se llama igual aquí que en la tarjeta: quien anota va delante (FE
+   * #550). Solo cambia el texto —la bola sigue escribiéndose bajo el titular del
+   * bando—, así que la casilla es la misma antes y después.
+   */
+  it('escribe delante al que mira, sin mover la bola del bando', () => {
+    mockUseQuickMatchScoring.mockReturnValue({
+      ...baseHookState,
+      quickMatch: foursomesMatch,
+      myParticipant: foursomesMatch.participants[1],
+      isScorer: true,
+      coveredParticipantIds: ['user-1', 'p-partner', 'p-rival-1', 'p-rival-2'],
+      setCurrentHole: vi.fn(),
+      submitScore: vi.fn(),
+      completeMatch: vi.fn(),
+      refetch: vi.fn(),
+    });
+    renderPage();
+
+    expect(screen.getByText('Socio & Yo')).toBeInTheDocument();
+    // El bando rival no lo juega: se queda como viene.
+    expect(screen.getByText('Rival Uno & Rival Dos')).toBeInTheDocument();
+    expect(screen.getByTestId('quick-match-score-button-user-1')).toBeInTheDocument();
+    expect(screen.queryByTestId('quick-match-score-button-p-partner')).not.toBeInTheDocument();
+  });
+
+  /**
    * La bola del bando la anota cualquiera de los dos: si la metió el compañero,
    * la casilla del bando tiene que enseñarla igual. Antes, cada jugador solo
    * veía la suya y el hoyo parecía sin anotar.

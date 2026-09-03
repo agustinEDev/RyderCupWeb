@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import GolfFigure from './GolfFigure';
+import { conLaMiaPrimero, conMiNombrePrimero } from '../../utils/ordenDeLasTarjetas';
 
 /**
  * La coincidencia entre los dos anotadores no se marca aquí. Es un dato de la
@@ -41,6 +42,15 @@ const ScorecardTable = ({ holes = [], scores = [], players = [], currentUserId, 
 
   const isTeamFormat = matchFormat === 'FOURBALL' || matchFormat === 'FOURSOMES';
 
+  // El bando de foursomes ocupa UNA fila, así que subirla no basta para que
+  // quien mira se lea a sí mismo primero: el nombre propio va delante dentro de
+  // la etiqueta. Se ordenan los nombres, no `teamA` / `teamB`: de esos arrays
+  // salen los `playerIds` con los que se busca el golpe del bando.
+  const nombreDelBando = (miembros) =>
+    conMiNombrePrimero(miembros, p => p.userId === currentUserId)
+      .map(p => p.userName)
+      .join(' / ');
+
   // Build display rows based on match format
   const displayRows = (() => {
     if (matchFormat === 'FOURSOMES') {
@@ -50,7 +60,7 @@ const ScorecardTable = ({ holes = [], scores = [], players = [], currentUserId, 
       if (teamA.length > 0) {
         rows.push({
           id: 'team-a',
-          label: teamA.map(p => p.userName).join(' / '),
+          label: nombreDelBando(teamA),
           team: 'A',
           playerIds: teamA.map(p => p.userId),
           isCurrentUser: teamA.some(p => p.userId === currentUserId),
@@ -59,7 +69,7 @@ const ScorecardTable = ({ holes = [], scores = [], players = [], currentUserId, 
       if (teamB.length > 0) {
         rows.push({
           id: 'team-b',
-          label: teamB.map(p => p.userName).join(' / '),
+          label: nombreDelBando(teamB),
           team: 'B',
           playerIds: teamB.map(p => p.userId),
           isCurrentUser: teamB.some(p => p.userId === currentUserId),
@@ -75,6 +85,16 @@ const ScorecardTable = ({ holes = [], scores = [], players = [], currentUserId, 
       isCurrentUser: p.userId === currentUserId,
     }));
   })();
+
+  // La fila de quien mira, delante; detrás la de su compañero, que en fourball
+  // es otra fila y en foursomes viaja ya dentro de la suya. Se ordena la lista
+  // PINTADA y no `players`: la etiqueta del equipo se resuelve por `row.team`,
+  // así que viaja con su fila, y el reparto de golpes sigue leyendo el array
+  // original. Mirando una partida que no se juega, esto no cambia nada.
+  const filasOrdenadas = conLaMiaPrimero(displayRows, {
+    esMia: row => row.isCurrentUser,
+    equipoDe: row => row.team,
+  });
 
   const getPlayerScore = (holeNumber, userId) => {
     const holeData = scores.find(s => s.holeNumber === holeNumber);
@@ -144,7 +164,7 @@ const ScorecardTable = ({ holes = [], scores = [], players = [], currentUserId, 
           </tr>
         </thead>
         <tbody>
-          {displayRows.map(row => {
+          {filasOrdenadas.map(row => {
             const borderClass = getTeamBorderClass(row.team);
             return (
               <tr key={row.id} className={row.isCurrentUser ? 'bg-blue-50' : ''}>

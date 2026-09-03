@@ -12,6 +12,7 @@ import StablefordCalculator from '../../domain/services/StablefordCalculator';
 // Sin golpes recibidos a propósito — ver `getCountingScore`.
 const GROSS_DOUBLE_BOGEY_OVER_PAR = 2;
 import MatchPlayStrokeAllocator from '../../domain/services/MatchPlayStrokeAllocator';
+import { conLaMiaPrimero, conMiNombrePrimero } from '../../utils/ordenDeLasTarjetas';
 import PlayingHandicapCalculator from '../../domain/services/PlayingHandicapCalculator';
 
 const MAX_STROKE_DOTS = 2;
@@ -149,14 +150,31 @@ const QuickMatchScorecardTable = ({
       }));
     }
 
-    return groupParticipantsBySide(participants).map((members) => ({
-      key: sideCardHolder(members).participantId,
-      title: members.map((m) => m.name).join(' & '),
-      members,
-      strokesId: sideCardHolder(members).participantId,
-      teeParticipant: sideCardHolder(members),
-      isMine: members.some((m) => m.participantId === currentParticipantId),
-    }));
+    return groupParticipantsBySide(participants).map((members) => {
+      // Solo el NOMBRE se reordena para dejar delante al que mira: `members`
+      // sigue como viene porque de él salen el dueño de la bola, los hoyos que
+      // se pintan y el hándicap del bando.
+      const comoSeLee = conMiNombrePrimero(
+        members,
+        (m) => m.participantId === currentParticipantId
+      );
+
+      return {
+        key: sideCardHolder(members).participantId,
+        title: comoSeLee.map((m) => m.name).join(' & '),
+        members,
+        strokesId: sideCardHolder(members).participantId,
+        // La barra sigue al nombre que ENCABEZA, no al dueño de la bola: debajo
+        // del título hay una sola barra, y el foursomes mixto normal son rojas
+        // masculinas con rojas femeninas —`findTee` las separa por género a
+        // propósito—, así que con el nombre propio delante y la barra del
+        // compañero detrás la línea decía dos cosas de personas distintas.
+        // Mismo defecto que #417 y #423, y aquí no cambia ningún cálculo:
+        // `teeParticipant` solo escribe esta etiqueta.
+        teeParticipant: comoSeLee[0],
+        isMine: members.some((m) => m.participantId === currentParticipantId),
+      };
+    });
   };
 
   // La tarjeta que se PINTA es la de la barra de quien la juega. `holes` es
@@ -232,11 +250,22 @@ const QuickMatchScorecardTable = ({
   // Cada tarjeta resuelve sus hoyos y su hándicap UNA vez: los dos recorren a
   // los miembros y a los 18 hoyos, y se leían varias veces por tarjeta en cada
   // render.
-  const cards = buildCards().map((card) => ({
-    ...card,
-    holes: holesForCard(card),
-    playingHandicap: playingHandicapOf(card),
-  }));
+  // La tarjeta de quien mira va la primera, y en cuanto hay bandos la de su
+  // pareja detrás (FE #550). Se ordena la lista que se PINTA, nunca
+  // `participants`: `sideCardHolder` guarda la bola del bando a nombre de su
+  // primer miembro y el reparto toma `[0]` y `[1]` como bandos cuando no hay
+  // `team`, así que mover una tarjeta de sitio no puede mover un golpe.
+  const cards = conLaMiaPrimero(
+    buildCards().map((card) => ({
+      ...card,
+      holes: holesForCard(card),
+      playingHandicap: playingHandicapOf(card),
+    })),
+    {
+      esMia: (card) => card.isMine,
+      equipoDe: (card) => card.members[0]?.team,
+    }
+  );
 
   const renderTeeLabel = (participant) => {
     const tee = MatchPlayStrokeAllocator.findTee(participant, tees);
