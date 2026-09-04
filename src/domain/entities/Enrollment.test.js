@@ -631,6 +631,79 @@ describe('Enrollment', () => {
     });
   });
 
+  // FE #571: elegir alias o nombre legal por inscripción
+  describe('useRealName', () => {
+    it('nace en true: una competición muestra el nombre legal mientras nadie pida el alias', () => {
+      const enrollment = new Enrollment(createValidEnrollmentProps());
+
+      expect(enrollment.useRealName).toBe(true);
+    });
+
+    it('rechaza cualquier cosa que no sea un booleano', () => {
+      expect(
+        () => new Enrollment(createValidEnrollmentProps({ useRealName: 'true' }))
+      ).toThrow(TypeError);
+      expect(
+        () => new Enrollment(createValidEnrollmentProps({ useRealName: null }))
+      ).toThrow(TypeError);
+    });
+
+    it('setNamePreference() devuelve una instancia nueva con la preferencia elegida', () => {
+      const enrollment = new Enrollment(createValidEnrollmentProps());
+
+      const conAlias = enrollment.setNamePreference(false);
+
+      expect(conAlias).not.toBe(enrollment);
+      expect(conAlias.useRealName).toBe(false);
+      expect(enrollment.useRealName).toBe(true);
+    });
+
+    it('setNamePreference() exige un booleano', () => {
+      const enrollment = new Enrollment(createValidEnrollmentProps());
+
+      expect(() => enrollment.setNamePreference('si')).toThrow(TypeError);
+      expect(() => enrollment.setNamePreference(undefined)).toThrow(TypeError);
+    });
+
+    // Se prueba con `false` —el alias, que es la elección explícita— porque un
+    // campo perdido por el camino volvería al valor por defecto, que es `true`:
+    // con `true` el test pasaría igual sin conservar nada
+    it('sobrevive a aprobar, asignar equipo y tocar el hándicap', () => {
+      const enrollment = new Enrollment(
+        createValidEnrollmentProps({ useRealName: false })
+      );
+
+      const aprobado = enrollment.approve();
+      expect(aprobado.useRealName).toBe(false);
+
+      const conEquipo = aprobado.assignToTeam('1');
+      expect(conEquipo.useRealName).toBe(false);
+
+      const conHandicap = conEquipo.setCustomHandicap(12.5);
+      expect(conHandicap.useRealName).toBe(false);
+
+      expect(conHandicap.removeCustomHandicap().useRealName).toBe(false);
+    });
+
+    it('sobrevive a retirarse, y a rechazar o cancelar una solicitud', () => {
+      const pendiente = new Enrollment(
+        createValidEnrollmentProps({ useRealName: false })
+      );
+
+      expect(pendiente.reject().useRealName).toBe(false);
+      expect(pendiente.cancel().useRealName).toBe(false);
+      expect(pendiente.approve().withdraw().useRealName).toBe(false);
+    });
+
+    it('toPersistence() lo incluye', () => {
+      const enrollment = new Enrollment(
+        createValidEnrollmentProps({ useRealName: false })
+      );
+
+      expect(enrollment.toPersistence().useRealName).toBe(false);
+    });
+  });
+
   describe('Immutability', () => {
     it('should return new instances for all state changes', () => {
       const original = Enrollment.request({

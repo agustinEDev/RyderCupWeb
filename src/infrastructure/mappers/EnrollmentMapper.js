@@ -2,6 +2,7 @@ import Enrollment from '../../domain/entities/Enrollment';
 import EnrollmentId from '../../domain/value_objects/EnrollmentId';
 import EnrollmentStatus from '../../domain/value_objects/EnrollmentStatus';
 import TeeColor from '../../domain/value_objects/TeeColor';
+import { nombreVisible } from '../../utils/nombreVisible';
 
 /**
  * EnrollmentMapper - Anti-Corruption Layer
@@ -64,6 +65,11 @@ class EnrollmentMapper {
           ? Number(apiData.custom_handicap)
           : null,
       color: apiData.color == null ? null : TeeColor.fromString(apiData.color),
+      // El campo llega siempre desde BE #254. Si falta es que responde un
+      // backend anterior, y ese resuelve TODOS los nombres con el alias: leerlo
+      // como `false` es describir lo que esa respuesta trae, no el valor por
+      // defecto de hoy, que es el nombre legal
+      useRealName: apiData.use_real_name === true,
       createdAt: apiData.created_at,
       updatedAt: apiData.updated_at,
     });
@@ -109,6 +115,7 @@ class EnrollmentMapper {
       team_id: enrollment.teamId,
       custom_handicap: enrollment.customHandicap,
       color: enrollment.color ? enrollment.color.toString() : null,
+      use_real_name: enrollment.useRealName,
       created_at: enrollment.createdAt.toISOString(),
       updated_at: enrollment.updatedAt.toISOString(),
     };
@@ -135,6 +142,7 @@ class EnrollmentMapper {
       teamId: enrollment.teamId,
       customHandicap: enrollment.customHandicap,
       color: enrollment.color ? enrollment.color.toString() : null,
+      useRealName: enrollment.useRealName,
       createdAt: enrollment.createdAt.toISOString(),
       updatedAt: enrollment.updatedAt.toISOString(),
 
@@ -163,7 +171,10 @@ class EnrollmentMapper {
 
       // Caso 2: objeto user anidado (nuevo formato del backend)
       if (apiData.user) {
-        simpleDTO.userName = `${apiData.user.first_name} ${apiData.user.last_name}`;
+        // El nombre ya resuelto por el servidor, igual que en
+        // EnrollmentAssembler: componerlo de nombre + apellidos se saltaba el
+        // alias y la preferencia de esta inscripción (FE #571)
+        simpleDTO.userName = nombreVisible(apiData.user);
         simpleDTO.userEmail = apiData.user.email;
         simpleDTO.userHandicap = apiData.user.handicap;
         simpleDTO.userCountryCode = apiData.user.country_code;

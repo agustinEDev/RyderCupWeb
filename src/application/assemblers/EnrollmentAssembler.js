@@ -1,4 +1,5 @@
 import Enrollment from '../../domain/entities/Enrollment';
+import { nombreVisible } from '../../utils/nombreVisible';
 
 /**
  * EnrollmentAssembler - Application Layer
@@ -28,6 +29,7 @@ class EnrollmentAssembler {
       teamId: enrollment.teamId,
       customHandicap: enrollment.customHandicap,
       color: enrollment.color ? enrollment.color.toString() : null,
+      useRealName: enrollment.useRealName,
       createdAt: enrollment.createdAt.toISOString(),
       updatedAt: enrollment.updatedAt.toISOString(),
 
@@ -45,10 +47,11 @@ class EnrollmentAssembler {
     // Nested apiData.user takes precedence over flat fields
     if (apiData) {
       if (apiData.user) {
-        const firstName = apiData.user.first_name || '';
-        const lastName = apiData.user.last_name || '';
-        const fullName = [firstName, lastName].filter(Boolean).join(' ') || null;
-        simpleDTO.userName = fullName;
+        // `display_name` y no nombre + apellidos: es el nombre que el servidor
+        // ya resolvió —alias, o nombre legal si esta inscripción lo pidió
+        // (FE #571)—. Componiéndolo aquí, esta lista era el único sitio de la
+        // aplicación donde el alias no se veía nunca
+        simpleDTO.userName = nombreVisible(apiData.user) || null;
         simpleDTO.userEmail = apiData.user.email || null;
         simpleDTO.userHandicap = apiData.user.handicap;
         simpleDTO.userCountryCode = apiData.user.country_code;

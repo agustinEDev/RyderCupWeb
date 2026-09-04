@@ -43,6 +43,7 @@ class Enrollment {
   #teamId;
   #customHandicap;
   #color;
+  #useRealName;
   #createdAt;
   #updatedAt;
 
@@ -56,6 +57,7 @@ class Enrollment {
    * @param {EnrollmentStatus} props.status - Estado actual
    * @param {string|null} props.teamId - ID del equipo asignado (opcional)
    * @param {number|null} props.customHandicap - Handicap personalizado (opcional)
+   * @param {boolean} props.useRealName - Si esta inscripción muestra el nombre legal en vez del alias (FE #571). Por defecto sí: en una competición manda el nombre legal salvo que el jugador pida su alias
    * @param {Date|string|null} props.createdAt - Fecha de creación
    * @param {Date|string|null} props.updatedAt - Fecha de última actualización
    */
@@ -67,6 +69,7 @@ class Enrollment {
     teamId = null,
     customHandicap = null,
     color = null,
+    useRealName = true,
     createdAt = null,
     updatedAt = null,
   }) {
@@ -96,6 +99,12 @@ class Enrollment {
       );
     }
 
+    // La preferencia de nombre es un sí o un no: un `undefined` que se colara
+    // aquí se leería como «alias» sin que nadie lo hubiera decidido
+    if (typeof useRealName !== 'boolean') {
+      throw new TypeError(`useRealName must be a boolean, got: ${typeof useRealName}`);
+    }
+
     // Asignar campos privados
     this.#enrollmentId = enrollmentId;
     this.#competitionId = competitionId;
@@ -104,6 +113,7 @@ class Enrollment {
     this.#teamId = teamId;
     this.#customHandicap = customHandicap;
     this.#color = color;
+    this.#useRealName = useRealName;
     this.#createdAt = createdAt ? new Date(createdAt) : new Date();
     this.#updatedAt = updatedAt ? new Date(updatedAt) : new Date();
   }
@@ -221,6 +231,10 @@ class Enrollment {
     return this.#color;
   }
 
+  get useRealName() {
+    return this.#useRealName;
+  }
+
   get createdAt() {
     return this.#createdAt;
   }
@@ -290,6 +304,41 @@ class Enrollment {
   }
 
   // ===========================================
+  // COPIA INMUTABLE
+  // ===========================================
+
+  /**
+   * La misma inscripción con lo que se le pase cambiado.
+   *
+   * Existe porque siete métodos reconstruían la entidad enumerando campo a
+   * campo: al añadir `useRealName` (FE #571) había que acordarse de los siete,
+   * y el que se olvidara lo perdería en silencio en cuanto alguien aprobara la
+   * inscripción o le asignara equipo. Aquí el campo se escribe una vez.
+   *
+   * `updatedAt` se refresca por defecto porque eso es lo que hacían los siete;
+   * quien no quiera tocarlo, lo pasa en `cambios`.
+   *
+   * @param {Object} cambios - Campos a sobrescribir
+   * @returns {Enrollment} Nueva instancia
+   * @private
+   */
+  #copiaCon(cambios = {}) {
+    return new Enrollment({
+      enrollmentId: this.#enrollmentId,
+      competitionId: this.#competitionId,
+      userId: this.#userId,
+      status: this.#status,
+      teamId: this.#teamId,
+      customHandicap: this.#customHandicap,
+      color: this.#color,
+      useRealName: this.#useRealName,
+      createdAt: this.#createdAt,
+      updatedAt: new Date(),
+      ...cambios,
+    });
+  }
+
+  // ===========================================
   // MÉTODOS DE COMANDO (TRANSICIONES DE ESTADO)
   // ===========================================
 
@@ -307,17 +356,7 @@ class Enrollment {
     const newStatus = EnrollmentStatus.approved();
     this.#status.validateTransition(newStatus);
 
-    return new Enrollment({
-      enrollmentId: this.#enrollmentId,
-      competitionId: this.#competitionId,
-      userId: this.#userId,
-      status: newStatus,
-      teamId: this.#teamId,
-      customHandicap: this.#customHandicap,
-      color: this.#color,
-      createdAt: this.#createdAt,
-      updatedAt: new Date(),
-    });
+    return this.#copiaCon({ status: newStatus });
   }
 
   /**
@@ -334,17 +373,7 @@ class Enrollment {
     const newStatus = EnrollmentStatus.rejected();
     this.#status.validateTransition(newStatus);
 
-    return new Enrollment({
-      enrollmentId: this.#enrollmentId,
-      competitionId: this.#competitionId,
-      userId: this.#userId,
-      status: newStatus,
-      teamId: this.#teamId,
-      customHandicap: this.#customHandicap,
-      color: this.#color,
-      createdAt: this.#createdAt,
-      updatedAt: new Date(),
-    });
+    return this.#copiaCon({ status: newStatus });
   }
 
   /**
@@ -361,17 +390,7 @@ class Enrollment {
     const newStatus = EnrollmentStatus.cancelled();
     this.#status.validateTransition(newStatus);
 
-    return new Enrollment({
-      enrollmentId: this.#enrollmentId,
-      competitionId: this.#competitionId,
-      userId: this.#userId,
-      status: newStatus,
-      teamId: this.#teamId,
-      customHandicap: this.#customHandicap,
-      color: this.#color,
-      createdAt: this.#createdAt,
-      updatedAt: new Date(),
-    });
+    return this.#copiaCon({ status: newStatus });
   }
 
   /**
@@ -387,17 +406,7 @@ class Enrollment {
     const newStatus = EnrollmentStatus.withdrawn();
     this.#status.validateTransition(newStatus);
 
-    return new Enrollment({
-      enrollmentId: this.#enrollmentId,
-      competitionId: this.#competitionId,
-      userId: this.#userId,
-      status: newStatus,
-      teamId: this.#teamId,
-      customHandicap: this.#customHandicap,
-      color: this.#color,
-      createdAt: this.#createdAt,
-      updatedAt: new Date(),
-    });
+    return this.#copiaCon({ status: newStatus });
   }
 
   // ===========================================
@@ -425,17 +434,7 @@ class Enrollment {
       throw new Error('El ID del equipo no puede estar vacío');
     }
 
-    return new Enrollment({
-      enrollmentId: this.#enrollmentId,
-      competitionId: this.#competitionId,
-      userId: this.#userId,
-      status: this.#status,
-      teamId: teamId.trim(),
-      customHandicap: this.#customHandicap,
-      color: this.#color,
-      createdAt: this.#createdAt,
-      updatedAt: new Date(),
-    });
+    return this.#copiaCon({ teamId: teamId.trim() });
   }
 
   /**
@@ -451,17 +450,7 @@ class Enrollment {
   setCustomHandicap(handicap) {
     this._validateCustomHandicap(handicap);
 
-    return new Enrollment({
-      enrollmentId: this.#enrollmentId,
-      competitionId: this.#competitionId,
-      userId: this.#userId,
-      status: this.#status,
-      teamId: this.#teamId,
-      customHandicap: handicap,
-      color: this.#color,
-      createdAt: this.#createdAt,
-      updatedAt: new Date(),
-    });
+    return this.#copiaCon({ customHandicap: handicap });
   }
 
   /**
@@ -472,17 +461,27 @@ class Enrollment {
    * @returns {Enrollment} Nueva instancia sin handicap personalizado
    */
   removeCustomHandicap() {
-    return new Enrollment({
-      enrollmentId: this.#enrollmentId,
-      competitionId: this.#competitionId,
-      userId: this.#userId,
-      status: this.#status,
-      teamId: this.#teamId,
-      customHandicap: null,
-      color: this.#color,
-      createdAt: this.#createdAt,
-      updatedAt: new Date(),
-    });
+    return this.#copiaCon({ customHandicap: null });
+  }
+
+  /**
+   * Elegir con qué nombre aparece el jugador en ESTA competición (FE #571).
+   *
+   * Decide el dueño de la inscripción, no quien la organiza —al revés que el
+   * hándicap personalizado—, y se puede cambiar en cualquier momento, torneo
+   * en marcha incluido. El backend es quien resuelve el nombre a partir de
+   * esto: aquí solo se guarda la elección.
+   *
+   * @param {boolean} useRealName - true: nombre legal; false: alias
+   * @returns {Enrollment} Nueva instancia con la preferencia elegida
+   * @throws {TypeError} Si no es un booleano
+   */
+  setNamePreference(useRealName) {
+    if (typeof useRealName !== 'boolean') {
+      throw new TypeError(`useRealName must be a boolean, got: ${typeof useRealName}`);
+    }
+
+    return this.#copiaCon({ useRealName });
   }
 
   // ===========================================
@@ -532,6 +531,7 @@ class Enrollment {
       teamId: this.#teamId,
       customHandicap: this.#customHandicap,
       color: this.#color?.toString() ?? null,
+      useRealName: this.#useRealName,
       createdAt: this.#createdAt.toISOString(),
       updatedAt: this.#updatedAt.toISOString(),
     };
