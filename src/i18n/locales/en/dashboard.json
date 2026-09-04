@@ -87,6 +87,7 @@
   },
   "recentMatches": {
     "title": "Recent matches",
+    "versus": "vs {{opponents}}",
     "emptyTitle": "You have not played any matches yet",
     "emptyDescription": "Once you finish one, it will show up here with its result",
     "emptyAction": "Play a quick match",
