@@ -147,6 +147,13 @@
       "teamAssignmentFailed": "Las inscripciones se cerraron, pero la asignación automática de equipos falló. Puedes asignar los equipos manualmente."
     },
     "enrollmentStatus": "Tu estado de inscripción:",
+    "namePreference": {
+      "label": "Usar mi alias en esta competición",
+      "helpUsingRealName": "En esta competición apareces como {{realName}}. En las partidas rápidas sigues siendo {{alias}}.",
+      "helpUsingAlias": "En esta competición apareces como {{alias}}, igual que en las partidas rápidas.",
+      "visibility": "Los demás lo ven en la clasificación y en las tarjetas.",
+      "failed": "No se pudo guardar cómo se muestra tu nombre. Inténtalo de nuevo."
+    },
     "settings": {
       "title": "Configuración de la Competición",
       "teamOne": "Equipo 1:",

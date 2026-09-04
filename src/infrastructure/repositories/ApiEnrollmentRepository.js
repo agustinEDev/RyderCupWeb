@@ -24,6 +24,7 @@ import apiRequest from '../../services/api.js';
  * - POST   /api/v1/competitions/{competitionId}/enrollments/{enrollmentId}/cancel
  * - POST   /api/v1/competitions/{competitionId}/enrollments/{enrollmentId}/withdraw
  * - PUT    /api/v1/competitions/{competitionId}/enrollments/{enrollmentId}/handicap
+ * - PUT    /api/v1/enrollments/{enrollmentId}/name-preference
  * - POST   /api/v1/competitions/{competitionId}/enrollments/direct
  * - DELETE /api/v1/competitions/{competitionId}/enrollments/{enrollmentId}
  */
@@ -343,6 +344,29 @@ class ApiEnrollmentRepository extends IEnrollmentRepository {
       `/api/v1/enrollments/${enrollmentId}/handicap`,
       {
         method: 'DELETE',
+      }
+    );
+
+    return EnrollmentMapper.toDomain(apiData);
+  }
+
+  /**
+   * Elegir si esta inscripción se muestra con el nombre legal o con el alias
+   *
+   * Decide el dueño de la inscripción; a cualquier otro el backend le responde
+   * 403. El cuerpo lleva SOLO la preferencia: el enrollment repetido dentro
+   * hacía que FastAPI devolviera un 422 antes de entrar al endpoint (BE #254).
+   *
+   * @param {string} enrollmentId
+   * @param {boolean} useRealName
+   * @returns {Promise<Enrollment>}
+   */
+  async setNamePreference(enrollmentId, useRealName) {
+    const apiData = await this.#request(
+      `/api/v1/enrollments/${enrollmentId}/name-preference`,
+      {
+        method: 'PUT',
+        body: JSON.stringify({ use_real_name: useRealName }),
       }
     );
 

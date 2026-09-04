@@ -174,6 +174,21 @@ class IEnrollmentRepository {
   }
 
   /**
+   * Elegir si la inscripción muestra el nombre legal del jugador o su alias
+   *
+   * Solo el dueño de la inscripción puede cambiarlo (el backend responde 403 a
+   * cualquier otro), y se puede cambiar en cualquier momento.
+   *
+   * @param {string} enrollmentId - UUID del enrollment
+   * @param {boolean} useRealName - true: nombre legal; false: alias
+   * @returns {Promise<Enrollment>} Enrollment con la preferencia actualizada
+   * @throws {Error} Si falla la operación
+   */
+  async setNamePreference(enrollmentId, useRealName) {
+    throw new Error('Method setNamePreference() must be implemented');
+  }
+
+  /**
    * Inscripción directa por el creador (sin solicitud previa)
    *
    * @param {string} competitionId - UUID de la competición
