@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import CompetitionDetail from './CompetitionDetail';
@@ -63,6 +63,7 @@ const mockListEnrollments = vi.fn().mockResolvedValue([
   },
 ]);
 
+const mockSetNamePreference = vi.fn().mockResolvedValue({});
 const mockSetCustomHandicap = vi.fn().mockResolvedValue({});
 const mockRemoveCustomHandicap = vi.fn().mockResolvedValue({});
 
@@ -85,6 +86,7 @@ vi.mock('../composition', () => ({
   assignTeamsUseCase: { execute: (...args) => mockAssignTeams(...args) },
   setCustomHandicapUseCase: { execute: (...args) => mockSetCustomHandicap(...args) },
   removeCustomHandicapUseCase: { execute: (...args) => mockRemoveCustomHandicap(...args) },
+  setNamePreferenceUseCase: { execute: (...args) => mockSetNamePreference(...args) },
 }));
 
 vi.mock('../utils/toast', () => ({
@@ -371,5 +373,185 @@ describe('CompetitionDetail - reabrir torneo completado', () => {
     });
     expect(customToast.success).toHaveBeenCalledWith('detail.success.revertedToInProgress');
     expect(screen.getByText('detail.actions.complete')).toBeInTheDocument();
+  });
+});
+
+
+// FE #571: elegir alias o nombre legal en ESTA competición
+describe('CompetitionDetail - alias o nombre real', () => {
+  const miInscripcion = (overrides = {}) => ({
+    id: 'enrollment-mia',
+    status: 'APPROVED',
+    userId: 'creator-1',
+    userName: 'Chuchi',
+    userHandicap: 12.4,
+    hasCustomHandicap: false,
+    customHandicap: null,
+    team: null,
+    useRealName: true,
+    ...overrides,
+  });
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockAuthUser.alias = 'Chuchi';
+    mockAuthUser.first_name = 'Agustín';
+    mockAuthUser.last_name = 'Estévez';
+    mockGetCompetitionDetail.mockResolvedValue({
+      id: 'comp-1',
+      name: 'Summer Cup',
+      status: 'ACTIVE',
+      creatorId: 'creator-1',
+      maxPlayers: 20,
+      countries: [],
+    });
+    mockListEnrollments.mockResolvedValue([miInscripcion()]);
+    mockSetNamePreference.mockResolvedValue({});
+  });
+
+  afterEach(() => {
+    // El usuario del mock es compartido por todo el fichero: dejarlo tocado
+    // haría pasar por casualidad a cualquier test que se añada detrás
+    delete mockAuthUser.alias;
+    mockAuthUser.first_name = 'Test';
+    mockAuthUser.last_name = 'Creator';
+  });
+
+  const encuentraElInterruptor = () => {
+    renderPage();
+    return screen.findByRole('switch');
+  };
+
+  it('sale apagado de fábrica: la competición muestra el nombre legal', async () => {
+    const interruptor = await encuentraElInterruptor();
+
+    expect(interruptor).toHaveAttribute('aria-checked', 'false');
+    expect(
+      screen.getByText('detail.namePreference.helpUsingRealName')
+    ).toBeInTheDocument();
+  });
+
+  it('sale encendido si el jugador pidió su alias para esta competición', async () => {
+    mockListEnrollments.mockResolvedValue([miInscripcion({ useRealName: false })]);
+
+    const interruptor = await encuentraElInterruptor();
+
+    expect(interruptor).toHaveAttribute('aria-checked', 'true');
+    expect(screen.getByText('detail.namePreference.helpUsingAlias')).toBeInTheDocument();
+  });
+
+  it.each(['REJECTED', 'CANCELLED', 'WITHDRAWN'])(
+    'no lo ofrece en una inscripción %s: ese nombre no se ve en ninguna pantalla',
+    async (status) => {
+      mockListEnrollments.mockResolvedValue([miInscripcion({ status })]);
+
+      renderPage();
+
+      await waitFor(() => expect(mockListEnrollments).toHaveBeenCalled());
+      expect(screen.queryByRole('switch')).not.toBeInTheDocument();
+    }
+  );
+
+  it('no lo ofrece a quien no tiene alias: las dos opciones pintarían lo mismo', async () => {
+    mockAuthUser.alias = null;
+
+    renderPage();
+
+    await waitFor(() => expect(mockListEnrollments).toHaveBeenCalled());
+    expect(screen.queryByRole('switch')).not.toBeInTheDocument();
+  });
+
+  it('no lo ofrece si la inscripción propia no llegó en la lista: sin id no hay PUT', async () => {
+    // `competition.enrollment_status` basta para saber que estás inscrito, pero
+    // viene sin el id del enrollment
+    mockGetCompetitionDetail.mockResolvedValue({
+      id: 'comp-1',
+      name: 'Summer Cup',
+      status: 'ACTIVE',
+      creatorId: 'creator-1',
+      maxPlayers: 20,
+      countries: [],
+      enrollment_status: 'APPROVED',
+    });
+    mockListEnrollments.mockResolvedValue([]);
+
+    renderPage();
+
+    await waitFor(() => expect(mockListEnrollments).toHaveBeenCalled());
+    expect(screen.getByText('detail.enrollmentStatus')).toBeInTheDocument();
+    expect(screen.queryByRole('switch')).not.toBeInTheDocument();
+  });
+
+  it('no lo ofrece sobre la inscripción de otro jugador', async () => {
+    mockListEnrollments.mockResolvedValue([
+      miInscripcion({ id: 'enrollment-ajena', userId: 'otro-jugador', userName: 'Meis' }),
+    ]);
+
+    renderPage();
+
+    await waitFor(() => expect(mockListEnrollments).toHaveBeenCalled());
+    expect(screen.queryByRole('switch')).not.toBeInTheDocument();
+  });
+
+  it('guarda la elección y vuelve a pedir la lista, que es quien resuelve el nombre', async () => {
+    mockSetNamePreference.mockResolvedValue({ useRealName: false });
+    const interruptor = await encuentraElInterruptor();
+    mockListEnrollments.mockResolvedValue([
+      miInscripcion({ useRealName: false, userName: 'Chuchi' }),
+    ]);
+
+    fireEvent.click(interruptor);
+
+    await waitFor(() => {
+      expect(mockSetNamePreference).toHaveBeenCalledWith('enrollment-mia', false);
+    });
+    await waitFor(() => {
+      expect(screen.getByRole('switch')).toHaveAttribute('aria-checked', 'true');
+    });
+    expect(screen.getByText('Chuchi')).toBeInTheDocument();
+    expect(customToast.error).not.toHaveBeenCalled();
+  });
+
+  it('si el guardado falla, avisa con el texto traducido y el interruptor se queda donde estaba', async () => {
+    mockSetNamePreference.mockRejectedValue(new Error('403 Forbidden'));
+
+    const interruptor = await encuentraElInterruptor();
+    fireEvent.click(interruptor);
+
+    await waitFor(() =>
+      expect(customToast.error).toHaveBeenCalledWith('detail.namePreference.failed')
+    );
+    expect(screen.getByRole('switch')).toHaveAttribute('aria-checked', 'false');
+  });
+
+  it('si lo que falla es recargar la lista, no dice que no se guardó', async () => {
+    // El PUT fue bien: el interruptor tiene que reflejarlo, y un aviso de
+    // fallo mandaría al jugador a repetir el cambio y dejarlo como estaba
+    mockSetNamePreference.mockResolvedValue({ useRealName: false });
+    const interruptor = await encuentraElInterruptor();
+    mockListEnrollments.mockRejectedValue(new Error('500 Internal Server Error'));
+
+    fireEvent.click(interruptor);
+
+    await waitFor(() => {
+      expect(screen.getByRole('switch')).toHaveAttribute('aria-checked', 'true');
+    });
+    expect(customToast.error).not.toHaveBeenCalled();
+    expect(screen.getByRole('switch')).not.toBeDisabled();
+  });
+
+  it('se deshabilita mientras guarda, para que no salgan dos peticiones', async () => {
+    let resuelve;
+    mockSetNamePreference.mockReturnValue(new Promise((r) => { resuelve = r; }));
+
+    const interruptor = await encuentraElInterruptor();
+    fireEvent.click(interruptor);
+
+    await waitFor(() => expect(screen.getByRole('switch')).toBeDisabled());
+    fireEvent.click(screen.getByRole('switch'));
+    expect(mockSetNamePreference).toHaveBeenCalledTimes(1);
+
+    resuelve({ useRealName: false });
+    await waitFor(() => expect(screen.getByRole('switch')).not.toBeDisabled());
   });
 });

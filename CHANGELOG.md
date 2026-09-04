@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [2.28.0] - 2026-09-04
+
+### Added
+
+- **Puedes pedir que una competición te llame por tu alias.** En el bloque de tu inscripción hay un interruptor, «Usar mi alias en esta competición», y sale **apagado**: un torneo tiene lista de salida y clasificación pública, así que de partida aparece tu nombre legal y el alias es lo que se pide. Debajo, escrito con tus dos nombres de verdad, dice cómo apareces ahora y qué pasa si lo cambias, y recuerda que **en las partidas rápidas sigues siendo tu alias**, que eso no se toca. Al encenderlo, tu nombre cambia en la lista de inscritos sin recargar nada, y también en la clasificación y en las tarjetas, que es justo lo que avisa el texto (#571).
+
+  - **Solo se ofrece a quien tiene alias**: sin alias las dos opciones pintarían lo mismo, y ofrecer una elección sin efecto es peor que no ofrecerla.
+  - **Solo sobre tu propia inscripción**, nunca sobre la de otro jugador.
+  - **No se ofrece en una inscripción rechazada, cancelada o retirada**, porque ese nombre ya no aparece en ninguna pantalla.
+  - Se puede cambiar tantas veces como haga falta, con el torneo en marcha incluido.
+
+### Fixed
+
+- **La lista de inscritos nunca había enseñado el alias de nadie.** Componía el nombre a partir del nombre y los apellidos e ignoraba el que ya venía resuelto del servidor, así que era el único sitio de la aplicación donde ponerse un apodo no servía de nada. Ahora pinta el nombre que manda el servidor, con lo que además arrastra el arreglo a la asignación de equipos, la reasignación de jugadores, la generación de partidos y los próximos partidos del panel, que leían todos ese mismo dato (#571).
+
+### Notes
+
+- **Necesita RyderCupAm 2.14.0**, que es quien impone el valor por defecto. Con el backend anterior el interruptor aparece encendido para todo el mundo, porque ese sigue prefiriendo el alias. **El backend se despliega primero, y los dos seguidos.**
+
 ## [2.27.0] - 2026-09-03
 
 ### Added

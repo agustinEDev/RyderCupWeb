@@ -154,6 +154,7 @@ import CancelEnrollmentUseCase from '../application/use_cases/enrollment/CancelE
 import WithdrawEnrollmentUseCase from '../application/use_cases/enrollment/WithdrawEnrollmentUseCase';
 import SetCustomHandicapUseCase from '../application/use_cases/enrollment/SetCustomHandicapUseCase';
 import RemoveCustomHandicapUseCase from '../application/use_cases/enrollment/RemoveCustomHandicapUseCase';
+import SetNamePreferenceUseCase from '../application/use_cases/enrollment/SetNamePreferenceUseCase';
 import DirectEnrollUseCase from '../application/use_cases/enrollment/DirectEnrollUseCase';
 
 // Quick Match Use Cases (FE #236)
@@ -315,6 +316,7 @@ const userCancelEnrollmentUseCase = new CancelEnrollmentUseCase(apiEnrollmentRep
 const withdrawEnrollmentUseCase = new WithdrawEnrollmentUseCase(apiEnrollmentRepository);
 const setCustomHandicapUseCase = new SetCustomHandicapUseCase(apiEnrollmentRepository);
 const removeCustomHandicapUseCase = new RemoveCustomHandicapUseCase(apiEnrollmentRepository);
+const setNamePreferenceUseCase = new SetNamePreferenceUseCase(apiEnrollmentRepository);
 const directEnrollUseCase = new DirectEnrollUseCase(apiEnrollmentRepository);
 
 // Quick Match Use Cases (FE #236)
@@ -408,6 +410,7 @@ export {
   withdrawEnrollmentUseCase,
   setCustomHandicapUseCase,
   removeCustomHandicapUseCase,
+  setNamePreferenceUseCase,
   directEnrollUseCase,
   // Device Management Use Cases (v1.13.0)
   getActiveDevicesUseCase,

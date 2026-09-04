@@ -147,6 +147,13 @@
       "teamAssignmentFailed": "Enrollments were closed, but automatic team assignment failed. You can assign teams manually."
     },
     "enrollmentStatus": "Your enrollment status:",
+    "namePreference": {
+      "label": "Use my alias in this competition",
+      "helpUsingRealName": "In this competition you appear as {{realName}}. In quick matches you are still {{alias}}.",
+      "helpUsingAlias": "In this competition you appear as {{alias}}, same as in quick matches.",
+      "visibility": "Others see it on the standings and the scorecards.",
+      "failed": "Could not save how your name is shown. Please try again."
+    },
     "settings": {
       "title": "Competition Settings",
       "teamOne": "Team 1:",

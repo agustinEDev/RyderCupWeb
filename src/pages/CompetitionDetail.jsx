@@ -29,6 +29,7 @@ import {
   assignTeamsUseCase,
   setCustomHandicapUseCase,
   removeCustomHandicapUseCase,
+  setNamePreferenceUseCase,
 } from '../composition';
 import {
   getStatusColor,
@@ -54,6 +55,7 @@ const CompetitionDetail = () => {
   const [handicapInput, setHandicapInput] = useState('');
   const [savingHandicapId, setSavingHandicapId] = useState(null);
   const [revertingHandicapId, setRevertingHandicapId] = useState(null);
+  const [savingNamePreference, setSavingNamePreference] = useState(false);
 
   // Determine where user came from (browse or my competitions)
   const fromBrowse = location.state?.from === 'browse';
@@ -93,6 +95,51 @@ const CompetitionDetail = () => {
       loadCompetition();
     }
   }, [id, user, loadCompetition]);
+
+  /**
+   * Elegir alias o nombre legal para ESTA competición (FE #571).
+   *
+   * El interruptor se pinta desde el estado, y el estado solo cambia con lo que
+   * el backend confirma: si el guardado falla, el interruptor no se ha movido y
+   * basta con decir que no se guardó.
+   *
+   * Guardar y recargar la lista van en dos `try` distintos a propósito. Con los
+   * dos juntos, una recarga fallida detrás de un guardado bueno decía «no se
+   * pudo guardar» sobre algo que sí se había guardado, y el reintento natural
+   * lo dejaba como estaba al principio.
+   */
+  const handleToggleNamePreference = async (enrollmentId, siguiente) => {
+    setSavingNamePreference(true);
+    try {
+      const guardado = await setNamePreferenceUseCase.execute(enrollmentId, siguiente);
+
+      // Lo confirmado por el backend, no lo que se pidió
+      setEnrollments((previos) =>
+        previos.map((e) =>
+          e.id === enrollmentId ? { ...e, useRealName: guardado.useRealName } : e
+        )
+      );
+    } catch (error) {
+      // El mensaje de la API es técnico y viene en inglés: a la consola
+      console.error('Error updating name preference:', error);
+      customToast.error(t('detail.namePreference.failed'));
+      setSavingNamePreference(false);
+      return;
+    }
+
+    try {
+      // El nombre de la lista lo resuelve el servidor, así que se vuelve a
+      // pedir en vez de recomponerlo aquí. Si esto falla, la preferencia ya
+      // está guardada: el nombre se verá al siguiente refresco, y decir que no
+      // se guardó sería mentir
+      const enrollmentsData = await listEnrollmentsUseCase.execute(competition.id);
+      setEnrollments(enrollmentsData);
+    } catch (error) {
+      console.error('Error reloading enrollments after name preference:', error);
+    } finally {
+      setSavingNamePreference(false);
+    }
+  };
 
   const isLoading = isLoadingUser || isLoadingCompetition || isLoadingRoles;
 
@@ -358,6 +405,24 @@ const CompetitionDetail = () => {
   // 2. From competition.enrollment_status (mapped from backend's user_enrollment_status)
   const userEnrollment = enrollments.find((e) => e.userId === user.id);
   const hasEnrollment = userEnrollment || competition.enrollment_status;
+
+  // Elegir entre alias y nombre legal solo tiene sentido si (FE #571):
+  // - hay alias: sin él las dos opciones pintan lo mismo,
+  // - la inscripción es la propia y llega de la lista, porque
+  //   `competition.enrollment_status` viene sin `id` y sin él no hay PUT,
+  // - y el nombre se ve en algún sitio: una inscripción rechazada, cancelada o
+  //   retirada no aparece en ninguna pantalla.
+  const NOMBRE_A_LA_VISTA = ['APPROVED', 'REQUESTED', 'INVITED'];
+  const puedeElegirNombre =
+    Boolean(user.alias) &&
+    Boolean(userEnrollment?.id) &&
+    NOMBRE_A_LA_VISTA.includes(userEnrollment.status);
+  const nombreLegal = [user.first_name, user.last_name].filter(Boolean).join(' ');
+
+  // El interruptor es el del ALIAS, no el del nombre real: una competición
+  // muestra el nombre legal salvo que su dueño pida lo contrario, así que de
+  // fábrica sale apagado
+  const usaSuAlias = userEnrollment ? !userEnrollment.useRealName : false;
 
   return (
     <div className="relative flex h-auto min-h-screen w-full flex-col bg-white">
@@ -689,6 +754,50 @@ const CompetitionDetail = () => {
                         t(`enrollmentStatus.${userEnrollment?.status || competition.enrollment_status}`)}
                     </span>
                   </div>
+
+                  {puedeElegirNombre && (
+                    <div className="mt-3 pt-3 border-t border-blue-200">
+                      <div className="flex items-center justify-between gap-3">
+                        <span id="name-preference-label" className="text-blue-900 font-medium text-sm">
+                          {t('detail.namePreference.label')}
+                        </span>
+                        <button
+                          type="button"
+                          role="switch"
+                          aria-checked={usaSuAlias}
+                          aria-labelledby="name-preference-label"
+                          aria-describedby="name-preference-help"
+                          disabled={savingNamePreference}
+                          onClick={() =>
+                            handleToggleNamePreference(userEnrollment.id, usaSuAlias)
+                          }
+                          className={`relative w-11 h-6 shrink-0 rounded-full transition-colors disabled:opacity-50 ${
+                            usaSuAlias ? 'bg-primary' : 'bg-gray-300'
+                          }`}
+                        >
+                          <span
+                            className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform ${
+                              usaSuAlias ? 'translate-x-5' : ''
+                            }`}
+                          />
+                        </button>
+                      </div>
+                      <p id="name-preference-help" className="text-blue-800 text-sm mt-2">
+                        {usaSuAlias
+                          ? t('detail.namePreference.helpUsingAlias', {
+                              realName: nombreLegal,
+                              alias: user.alias,
+                            })
+                          : t('detail.namePreference.helpUsingRealName', {
+                              realName: nombreLegal,
+                              alias: user.alias,
+                            })}
+                      </p>
+                      <p className="text-blue-700 text-sm mt-1">
+                        {t('detail.namePreference.visibility')}
+                      </p>
+                    </div>
+                  )}
                 </div>
               </motion.div>
             )}
