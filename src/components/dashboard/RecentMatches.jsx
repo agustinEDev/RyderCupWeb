@@ -21,11 +21,23 @@ const MatchRow = ({ match, onOpen, t, formatDate }) => {
   const opponents = match.opponents.join(', ');
   const format = match.matchFormat || match.scoringFormat;
   const formatLabel = format ? t(`recentMatches.format.${format}`, format) : null;
-  // El titular es el rival, o el torneo, o —en una vuelta en solitario— el
-  // propio formato. En ese último caso el subtítulo no lo repite: decir
+  // El titular es el NOMBRE: el que le puso quien creó la partida rápida, o el
+  // de la competición si es de torneo. Es como uno reconoce la partida que
+  // jugó, y titular con el rival dejaba el nombre sin aparecer en ningún sitio
+  // (#575). Una partida rápida puede no tener nombre, y entonces el rival
+  // vuelve arriba; en una vuelta en solitario no hay ni una cosa ni la otra y
+  // queda el propio formato, que el subtítulo entonces no repite: decir
   // "Medal / Medal · St Andrews" no añade nada
-  const headline = opponents || match.tournamentName || formatLabel;
-  const repeatsHeadline = headline === formatLabel;
+  const name = match.matchName || match.tournamentName;
+  const headline = name || opponents || formatLabel;
+  // Se compara con lo que HAY, no con el texto: una partida rápida que su
+  // creador llamara «Medal» daba igualdad por casualidad y se quedaba sin
+  // formato en el subtítulo
+  const repeatsHeadline = !name && !opponents;
+  // El rival, cuando no es él quien titula. Repetirlo arriba y abajo gastaría
+  // la única línea que queda para el formato, el marcador y el campo
+  const opponentsLine =
+    name && opponents ? t('recentMatches.versus', { opponents }) : null;
 
   return (
     <button
@@ -55,14 +67,24 @@ const MatchRow = ({ match, onOpen, t, formatDate }) => {
         <span className="block truncate text-sm font-semibold text-gray-900">
           {headline}
         </span>
+        {/* Contra quién, en su propia línea. Medido en un móvil de 390: el
+            subtítulo tiene 224 px y «vs Rivalillo, Cuarto Prueba · Foursomes ·
+            Son Parc - Par 71» pide 329, así que en una sola línea las parejas
+            se comían el campo. Cualquier apaño en una línea —resumir los
+            rivales, quitar el campo— se vuelve a cortar en cuanto los nombres
+            crecen un poco (#575) */}
+        {opponentsLine && (
+          <span className="block truncate text-xs text-gray-500">{opponentsLine}</span>
+        )}
         {/* El formato va aquí y no como último recurso: es lo que distingue dos
-            partidas contra el mismo rival, en el mismo campo y el mismo día. El
-            marcador del match play le acompaña, porque es con lo que uno cuenta
-            la partida después ("le gané 3 y 2") */}
+            partidas contra el mismo rival, en el mismo campo y el mismo día */}
         <span className="block truncate text-xs text-gray-500">
           {[
             repeatsHeadline ? null : formatLabel,
-            match.hasResult() ? match.score : null,
+            // El marcador solo cuando la columna de la derecha está ocupada por
+            // los puntos: si no, esa columna ya lo enseña en grande, y
+            // repetirlo aquí volvía a dejar el campo fuera
+            match.hasResult() && match.stablefordPoints !== null ? match.score : null,
             match.golfCourseName,
           ]
             .filter(Boolean)

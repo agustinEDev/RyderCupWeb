@@ -87,6 +87,7 @@
   },
   "recentMatches": {
     "title": "Últimas partidas",
+    "versus": "vs {{opponents}}",
     "emptyTitle": "Todavía no has jugado ninguna partida",
     "emptyDescription": "Cuando termines una, aparecerá aquí con su resultado",
     "emptyAction": "Jugar una partida rápida",
