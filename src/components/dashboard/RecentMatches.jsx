@@ -38,6 +38,18 @@ const MatchRow = ({ match, onOpen, t, formatDate }) => {
   // la única línea que queda para el formato, el marcador y el campo
   const opponentsLine =
     name && opponents ? t('recentMatches.versus', { opponents }) : null;
+  // Los golpes y los hoyos viven aquí y no en la columna de la derecha: medido
+  // en el iPhone, «85 golpes · 18 hoyos» ensanchaba esa columna a 107 px —el
+  // resultado pide 31 y la fecha 33— y estrangulaba al nombre y al rival, que
+  // se cortaban los dos. Abajo tiene la línea entera y es el dato que menos
+  // duele truncar (#575)
+  const strokesLabel =
+    match.totalStrokes !== null
+      ? t('recentMatches.strokesOverHoles', {
+          strokes: match.totalStrokes,
+          count: match.holesPlayed ?? 18,
+        })
+      : null;
 
   return (
     <button
@@ -90,6 +102,14 @@ const MatchRow = ({ match, onOpen, t, formatDate }) => {
             .filter(Boolean)
             .join(' · ')}
         </span>
+        {/* Los golpes, en su propia línea. Puestos delante del campo se lo
+            comían entero —«Stableford · 85 golpes · 18 hoyos · Axis…»— y el
+            campo es lo que dice dónde jugaste; con el campo delante, los
+            golpes no se veían nunca en campos de nombre largo. Aquí caben los
+            dos: la línea de arriba pide 211 px de 235, y esta 120 (#575) */}
+        {strokesLabel && (
+          <span className="block truncate text-xs text-gray-500">{strokesLabel}</span>
+        )}
         {/* La misma marca que en el historial. Sin ella, el resumen de arriba
             —que no la cuenta— y esta lista —que la enseña— se contradicen sin
             que nada lo explique: la vuelta está a la vista pero no suma. */}
@@ -114,14 +134,6 @@ const MatchRow = ({ match, onOpen, t, formatDate }) => {
           match.score && (
             <span className="text-base font-bold text-gray-900">{match.score}</span>
           )
-        )}
-        {match.totalStrokes !== null && (
-          <span className="text-[11px] text-gray-500">
-            {t('recentMatches.strokesOverHoles', {
-              strokes: match.totalStrokes,
-              count: match.holesPlayed ?? 18,
-            })}
-          </span>
         )}
         <span className="text-[10px] text-gray-400">{formatDate(match.date)}</span>
       </span>
