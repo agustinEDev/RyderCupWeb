@@ -168,6 +168,57 @@ describe('RecentMatches', () => {
       expect(fila.textContent.match(/Medal/g)).toHaveLength(2);
     });
 
+    it('los golpes van en la línea de abajo, no en la columna del resultado', () => {
+      // Medido en el iPhone: «85 golpes · 18 hoyos» ensanchaba esa columna a
+      // 107 px y cortaba el nombre y el rival, que es lo que se viene a leer
+      const conGolpes = RecentMatch.fromPersistence({
+        id: 'qm-strokes',
+        scoringFormat: 'STABLEFORD',
+        matchName: 'Ponte da Lima Sábado',
+        golfCourseName: 'Axis Golfe',
+        stablefordPoints: 40,
+        totalStrokes: 85,
+        holesPlayed: 18,
+      });
+
+      renderList({ matches: [conGolpes] });
+
+      const fila = screen.getByTestId('recent-match-qm-strokes');
+      const lineas = [...fila.querySelectorAll('span.block')];
+      const ultima = lineas[lineas.length - 1];
+      const penultima = lineas[lineas.length - 2];
+
+      // Los golpes, en su propia línea: delante del campo se lo comían entero
+      expect(ultima).toHaveTextContent('recentMatches.strokesOverHoles');
+      expect(ultima).not.toHaveTextContent('Axis Golfe');
+      // Y el campo, en la suya, sin los golpes por delante
+      expect(penultima).toHaveTextContent('Axis Golfe');
+      expect(penultima).not.toHaveTextContent('recentMatches.strokesOverHoles');
+      // Y sobre todo: NO en la columna del resultado, que es de donde vinieron
+      // y donde estrangulaban al nombre. Los spans de esa columna no llevan
+      // `block`, así que mirar solo la izquierda dejaba la regresión abierta
+      const columnaDerecha = fila.lastElementChild;
+      expect(columnaDerecha).not.toHaveTextContent('recentMatches.strokesOverHoles');
+    });
+
+    it('no dice cuántos hoyos si el backend no lo manda', () => {
+      // «45 golpes · 18 hoyos» en una vuelta de nueve parece un juegazo. Antes
+      // se asumían 18 con un `?? 18`
+      const sinHoyos = RecentMatch.fromPersistence({
+        id: 'qm-sin-hoyos',
+        scoringFormat: 'MEDAL',
+        matchName: 'Vuelta suelta',
+        totalStrokes: 45,
+        holesPlayed: null,
+      });
+
+      renderList({ matches: [sinHoyos] });
+
+      const fila = screen.getByTestId('recent-match-qm-sin-hoyos');
+      expect(fila).toHaveTextContent('recentMatches.strokesOnly');
+      expect(fila).not.toHaveTextContent('recentMatches.strokesOverHoles');
+    });
+
     it('el nombre manda sobre el del torneo cuando llegan los dos', () => {
       // No debería pasar —un partido de torneo no tiene nombre propio—, pero si
       // pasara, lo específico gana a lo general

@@ -112,6 +112,7 @@
     },
     "strokesOverHoles_one": "{{strokes}} golpes · {{count}} hoyo",
     "strokesOverHoles_other": "{{strokes}} golpes · {{count}} hoyos",
+    "strokesOnly": "{{strokes}} golpes",
     "excludedBadge": "No cuenta"
   },
   "playerStats": {
