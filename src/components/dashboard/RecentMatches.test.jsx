@@ -168,6 +168,28 @@ describe('RecentMatches', () => {
       expect(fila.textContent.match(/Medal/g)).toHaveLength(2);
     });
 
+    it('los golpes van en la línea de abajo, no en la columna del resultado', () => {
+      // Medido en el iPhone: «85 golpes · 18 hoyos» ensanchaba esa columna a
+      // 107 px y cortaba el nombre y el rival, que es lo que se viene a leer
+      const conGolpes = RecentMatch.fromPersistence({
+        id: 'qm-strokes',
+        scoringFormat: 'STABLEFORD',
+        matchName: 'Ponte da Lima Sábado',
+        golfCourseName: 'Axis Golfe',
+        stablefordPoints: 40,
+        totalStrokes: 85,
+        holesPlayed: 18,
+      });
+
+      renderList({ matches: [conGolpes] });
+
+      const fila = screen.getByTestId('recent-match-qm-strokes');
+      const lineas = fila.querySelectorAll('span.block');
+      const ultima = lineas[lineas.length - 1];
+      expect(ultima).toHaveTextContent('recentMatches.strokesOverHoles');
+      expect(ultima).toHaveTextContent('Axis Golfe');
+    });
+
     it('el nombre manda sobre el del torneo cuando llegan los dos', () => {
       // No debería pasar —un partido de torneo no tiene nombre propio—, pero si
       // pasara, lo específico gana a lo general
