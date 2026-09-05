@@ -194,6 +194,29 @@ describe('RecentMatches', () => {
       // Y el campo, en la suya, sin los golpes por delante
       expect(penultima).toHaveTextContent('Axis Golfe');
       expect(penultima).not.toHaveTextContent('recentMatches.strokesOverHoles');
+      // Y sobre todo: NO en la columna del resultado, que es de donde vinieron
+      // y donde estrangulaban al nombre. Los spans de esa columna no llevan
+      // `block`, así que mirar solo la izquierda dejaba la regresión abierta
+      const columnaDerecha = fila.lastElementChild;
+      expect(columnaDerecha).not.toHaveTextContent('recentMatches.strokesOverHoles');
+    });
+
+    it('no dice cuántos hoyos si el backend no lo manda', () => {
+      // «45 golpes · 18 hoyos» en una vuelta de nueve parece un juegazo. Antes
+      // se asumían 18 con un `?? 18`
+      const sinHoyos = RecentMatch.fromPersistence({
+        id: 'qm-sin-hoyos',
+        scoringFormat: 'MEDAL',
+        matchName: 'Vuelta suelta',
+        totalStrokes: 45,
+        holesPlayed: null,
+      });
+
+      renderList({ matches: [sinHoyos] });
+
+      const fila = screen.getByTestId('recent-match-qm-sin-hoyos');
+      expect(fila).toHaveTextContent('recentMatches.strokesOnly');
+      expect(fila).not.toHaveTextContent('recentMatches.strokesOverHoles');
     });
 
     it('el nombre manda sobre el del torneo cuando llegan los dos', () => {
