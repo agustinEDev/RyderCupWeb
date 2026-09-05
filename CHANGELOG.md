@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [2.28.2] - 2026-09-05
+
+### Fixed
+
+- **En el móvil, la fila de «Últimas partidas» se leía entera por primera vez.** Con nombres reales se cortaban las tres líneas a la vez —«Ponte da Lima Sá…», «vs Carlos Couso Rodrí…», «Stableford · Golf de Mei…»—, justo lo que uno abre esa tarjeta a mirar. La culpa era de la columna de la derecha: se llevaba 107 px de ancho, y de esos el resultado usaba 31 y la fecha 33; el resto lo reservaba «85 golpes · 18 hoyos», el dato menos importante de la fila. Los golpes bajan a una línea propia y devuelven ese ancho al nombre, al rival y al campo, que ahora caben enteros (#575).
+
+  Medido en un móvil de 390 con los nombres de verdad: la línea de formato y campo pide 211 px de los 235 disponibles, y la de golpes 120. Nada se corta.
+
+- **La fila decía «18 hoyos» aunque no supiera cuántos se jugaron.** Se rellenaba a mano cuando el dato no venía, y «45 golpes · 18 hoyos» al lado de un 90 parece un juegazo. Ahora, sin ese número, dice solo los golpes. En la práctica el servidor siempre lo manda —lo cuenta hoyo a hoyo junto con los golpes—, así que esto cubre respuestas guardadas de antes, no algo que se viera hoy (#575).
+
 ## [2.28.1] - 2026-09-05
 
 ### Fixed
