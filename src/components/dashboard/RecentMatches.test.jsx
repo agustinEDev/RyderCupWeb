@@ -184,10 +184,16 @@ describe('RecentMatches', () => {
       renderList({ matches: [conGolpes] });
 
       const fila = screen.getByTestId('recent-match-qm-strokes');
-      const lineas = fila.querySelectorAll('span.block');
+      const lineas = [...fila.querySelectorAll('span.block')];
       const ultima = lineas[lineas.length - 1];
+      const penultima = lineas[lineas.length - 2];
+
+      // Los golpes, en su propia línea: delante del campo se lo comían entero
       expect(ultima).toHaveTextContent('recentMatches.strokesOverHoles');
-      expect(ultima).toHaveTextContent('Axis Golfe');
+      expect(ultima).not.toHaveTextContent('Axis Golfe');
+      // Y el campo, en la suya, sin los golpes por delante
+      expect(penultima).toHaveTextContent('Axis Golfe');
+      expect(penultima).not.toHaveTextContent('recentMatches.strokesOverHoles');
     });
 
     it('el nombre manda sobre el del torneo cuando llegan los dos', () => {

@@ -97,12 +97,19 @@ const MatchRow = ({ match, onOpen, t, formatDate }) => {
             // los puntos: si no, esa columna ya lo enseña en grande, y
             // repetirlo aquí volvía a dejar el campo fuera
             match.hasResult() && match.stablefordPoints !== null ? match.score : null,
-            strokesLabel,
             match.golfCourseName,
           ]
             .filter(Boolean)
             .join(' · ')}
         </span>
+        {/* Los golpes, en su propia línea. Puestos delante del campo se lo
+            comían entero —«Stableford · 85 golpes · 18 hoyos · Axis…»— y el
+            campo es lo que dice dónde jugaste; con el campo delante, los
+            golpes no se veían nunca en campos de nombre largo. Aquí caben los
+            dos: la línea de arriba pide 211 px de 235, y esta 120 (#575) */}
+        {strokesLabel && (
+          <span className="block truncate text-xs text-gray-500">{strokesLabel}</span>
+        )}
         {/* La misma marca que en el historial. Sin ella, el resumen de arriba
             —que no la cuenta— y esta lista —que la enseña— se contradicen sin
             que nada lo explique: la vuelta está a la vista pero no suma. */}
