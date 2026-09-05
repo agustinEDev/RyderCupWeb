@@ -13,8 +13,18 @@ vi.mock('react-router', async () => {
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key, options) =>
-      options && typeof options.count === 'number' ? `${key}:${options.count}` : key,
+    t: (key, options) => {
+      if (options && typeof options.count === 'number') return `${key}:${options.count}`;
+      if (options && options.opponents) return `${key}:${options.opponents}`;
+      // Los formatos se traducen de verdad: con la clave cruda, una partida
+      // llamada como su formato nunca chocaría con él y el test no probaría
+      // nada (#575)
+      if (key.startsWith('recentMatches.format.')) {
+        const formato = key.slice('recentMatches.format.'.length);
+        return formato.charAt(0) + formato.slice(1).toLowerCase();
+      }
+      return key;
+    },
     i18n: { language: 'es' },
   }),
 }));
@@ -72,12 +82,8 @@ describe('RecentMatches', () => {
      */
     renderList({ matches: [tournamentWin, stablefordRound] });
 
-    expect(screen.getByTestId('recent-match-match-1')).toHaveTextContent(
-      'recentMatches.format.SINGLES'
-    );
-    expect(screen.getByTestId('recent-match-qm-1')).toHaveTextContent(
-      'recentMatches.format.STABLEFORD'
-    );
+    expect(screen.getByTestId('recent-match-match-1')).toHaveTextContent('Singles');
+    expect(screen.getByTestId('recent-match-qm-1')).toHaveTextContent('Stableford');
   });
 
   it('does not repeat the format when it is already the headline', () => {
@@ -96,14 +102,86 @@ describe('RecentMatches', () => {
     renderList({ matches: [soloRound] });
 
     const row = screen.getByTestId('recent-match-qm-solo');
-    expect(row.textContent.match(/recentMatches\.format\.MEDAL/g)).toHaveLength(1);
+    expect(row.textContent.match(/Medal/g)).toHaveLength(1);
     expect(row).toHaveTextContent('St Andrews');
   });
 
-  it('still shows the opponent as the headline', () => {
-    renderList({ matches: [tournamentWin] });
+  // #575: el titular es el NOMBRE de la partida, y el rival baja al subtítulo
+  describe('con qué se titula la fila', () => {
+    const conNombre = RecentMatch.fromPersistence({
+      id: 'qm-named',
+      matchFormat: 'FOURBALL',
+      matchName: 'Meis Fourball',
+      golfCourseName: 'Miño',
+      opponents: ['Ana Soto'],
+      result: 'WON',
+      score: '3&2',
+    });
 
-    expect(screen.getByTestId('recent-match-match-1')).toHaveTextContent('Ana Soto');
+    it('titula la partida rápida con su nombre y deja al rival debajo', () => {
+      renderList({ matches: [conNombre] });
+
+      const fila = screen.getByTestId('recent-match-qm-named');
+      expect(fila).toHaveTextContent('Meis Fourball');
+      expect(fila).toHaveTextContent('recentMatches.versus:Ana Soto');
+    });
+
+    it('titula el partido de torneo con su competición, y el rival también baja', () => {
+      renderList({ matches: [tournamentWin] });
+
+      const fila = screen.getByTestId('recent-match-match-1');
+      expect(fila).toHaveTextContent('Ryder Cup Amigos');
+      expect(fila).toHaveTextContent('recentMatches.versus:Ana Soto');
+    });
+
+    it('sin nombre, el rival vuelve al titular y no se repite abajo', () => {
+      const sinNombre = RecentMatch.fromPersistence({
+        id: 'qm-nameless',
+        matchFormat: 'SINGLES',
+        golfCourseName: 'Miño',
+        opponents: ['Ana Soto'],
+        result: 'WON',
+        score: '3&2',
+      });
+
+      renderList({ matches: [sinNombre] });
+
+      const fila = screen.getByTestId('recent-match-qm-nameless');
+      expect(fila).toHaveTextContent('Ana Soto');
+      expect(fila).not.toHaveTextContent('recentMatches.versus');
+    });
+
+    it('una partida llamada como su formato no se queda sin formato abajo', () => {
+      // El titular ya no es el formato aunque se lea igual: es un nombre que
+      // eligió una persona, y el subtítulo tiene que seguir diciendo a qué se
+      // jugó
+      const llamadaComoElFormato = RecentMatch.fromPersistence({
+        id: 'qm-medal',
+        scoringFormat: 'MEDAL',
+        matchName: 'Medal',
+        golfCourseName: 'Miño',
+      });
+
+      renderList({ matches: [llamadaComoElFormato] });
+
+      const fila = screen.getByTestId('recent-match-qm-medal');
+      expect(fila.textContent.match(/Medal/g)).toHaveLength(2);
+    });
+
+    it('el nombre manda sobre el del torneo cuando llegan los dos', () => {
+      // No debería pasar —un partido de torneo no tiene nombre propio—, pero si
+      // pasara, lo específico gana a lo general
+      const ambos = RecentMatch.fromPersistence({
+        id: 'qm-both',
+        matchName: 'Meis Fourball',
+        tournamentName: 'Ryder Cup Amigos',
+        golfCourseName: 'Miño',
+      });
+
+      renderList({ matches: [ambos] });
+
+      expect(screen.getByTestId('recent-match-qm-both')).toHaveTextContent('Meis Fourball');
+    });
   });
 
   it('badges a match play result and spells it out for screen readers', () => {

@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [2.28.1] - 2026-09-05
+
+### Fixed
+
+- **Las últimas partidas del panel dicen qué partida fue, no contra quién.** La fila se titulaba con el rival, así que una partida rápida que llamaste «Meis Fourball» se leía «Rival Real» y su nombre no aparecía por ningún lado. Ahora arriba va el nombre —el de la partida rápida, o el de la competición si es de torneo— y el rival baja debajo. Una partida sin nombre se queda como estaba: sin nombre no hay nada mejor con lo que empezar, y el rival vuelve al titular (#575).
+
+  El rival va en **su propia línea**, y no pegado al formato y al campo, porque medido en un móvil de 390 no cabía: esa línea da 224 px y «vs Rivalillo, Cuarto Prueba · Foursomes · Son Parc - Par 71» pide 329. Las alternativas de una sola línea se midieron también —resumir a «vs Rivalillo +1» pide 256, y quitar el campo entra por 3 px—, y todas se vuelven a cortar en cuanto un nombre crece.
+
+- **Una partida rápida llamada como su formato se quedaba sin formato en el subtítulo.** La regla que evita repetir el titular comparaba TEXTOS, así que una partida llamada «Medal» coincidía por casualidad con la etiqueta del formato. Ahora se mira si hay nombre o rival, no cómo se leen (#575).
+
+- **El marcador salía dos veces en la misma fila**, en el subtítulo y en grande a la derecha. Sale solo a la derecha, y ese hueco es el que devuelve el nombre del campo a las filas que lo perdían.
+
+### Notes
+
+- **Necesita RyderCupAm 2.15.0**, que es quien manda el nombre de la partida rápida. Sin él las filas de partida rápida siguen titulándose con el rival, y las de torneo ya mejoran solas: el nombre de la competición sí llegaba.
+
 ## [2.28.0] - 2026-09-04
 
 ### Added

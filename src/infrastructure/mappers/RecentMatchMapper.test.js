@@ -22,6 +22,8 @@ describe('RecentMatchMapper', () => {
     expect(match.matchFormat).toBe('SINGLES');
     expect(match.golfCourseName).toBe('St Andrews');
     expect(match.tournamentName).toBe('Ryder Cup Amigos');
+    // Un partido de torneo no tiene nombre propio: tiene el de su competición
+    expect(match.matchName).toBeNull();
     expect(match.result).toBe('WON');
     expect(match.opponents).toEqual(['Ana Soto']);
     expect(match.isFromTournament()).toBe(true);
@@ -40,6 +42,26 @@ describe('RecentMatchMapper', () => {
     expect(match.matchFormat).toBeNull();
     expect(match.tournamentName).toBeNull();
     expect(match.isFromTournament()).toBe(false);
+  });
+
+  // #575: es la única línea que ata el campo de la API al dominio, y el nombre
+  // del campo no es evidente — la partida rápida lo llama `name` en su propio
+  // endpoint y `match_name` en este
+  it('maps the name a quick match was created with', () => {
+    const match = RecentMatchMapper.toDomain({
+      id: 'qm-named',
+      match_format: 'FOURBALL',
+      match_name: 'Meis Fourball',
+      opponents: ['Ana Soto'],
+    });
+
+    expect(match.matchName).toBe('Meis Fourball');
+  });
+
+  it('leaves the name null when the quick match was created without one', () => {
+    const match = RecentMatchMapper.toDomain({ id: 'qm-nameless' });
+
+    expect(match.matchName).toBeNull();
   });
 
   it('keeps zero stableford points, which is a real score', () => {

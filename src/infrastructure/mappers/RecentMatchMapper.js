@@ -25,6 +25,7 @@ class RecentMatchMapper {
       scoringFormat: apiData.scoring_format ?? null,
       golfCourseId: apiData.golf_course_id ?? null,
       golfCourseName: apiData.golf_course_name ?? null,
+      matchName: apiData.match_name ?? null,
       tournamentName: apiData.tournament_name ?? null,
       excludedFromStats: apiData.excluded_from_stats ?? false,
       result: apiData.result ?? null,

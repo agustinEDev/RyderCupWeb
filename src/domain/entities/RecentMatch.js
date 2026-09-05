@@ -15,6 +15,7 @@ class RecentMatch {
   #scoringFormat;
   #golfCourseId;
   #golfCourseName;
+  #matchName;
   #tournamentName;
   #result;
   #score;
@@ -32,6 +33,7 @@ class RecentMatch {
     scoringFormat = null,
     golfCourseId = null,
     golfCourseName = null,
+    matchName = null,
     tournamentName = null,
     result = null,
     score = null,
@@ -52,6 +54,9 @@ class RecentMatch {
     this.#scoringFormat = scoringFormat;
     this.#golfCourseId = golfCourseId;
     this.#golfCourseName = golfCourseName;
+    // El nombre que le puso quien creó la partida rápida. Un partido de torneo
+    // no tiene nombre propio: tiene el de su competición, en `tournamentName`
+    this.#matchName = matchName;
     this.#tournamentName = tournamentName;
     this.#result = result;
     this.#score = score;
@@ -89,6 +94,10 @@ class RecentMatch {
 
   get golfCourseName() {
     return this.#golfCourseName;
+  }
+
+  get matchName() {
+    return this.#matchName;
   }
 
   get tournamentName() {
