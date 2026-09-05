@@ -112,6 +112,7 @@
     },
     "strokesOverHoles_one": "{{strokes}} strokes · {{count}} hole",
     "strokesOverHoles_other": "{{strokes}} strokes · {{count}} holes",
+    "strokesOnly": "{{strokes}} strokes",
     "excludedBadge": "Not counted"
   },
   "playerStats": {

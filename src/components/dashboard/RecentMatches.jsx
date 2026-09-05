@@ -45,10 +45,17 @@ const MatchRow = ({ match, onOpen, t, formatDate }) => {
   // duele truncar (#575)
   const strokesLabel =
     match.totalStrokes !== null
-      ? t('recentMatches.strokesOverHoles', {
-          strokes: match.totalStrokes,
-          count: match.holesPlayed ?? 18,
-        })
+      ? // Sin `holesPlayed` no se dicen los hoyos. El `?? 18` de antes afirmaba
+        // dieciocho sin saberlo, y «45 golpes · 18 hoyos» en una vuelta de nueve
+        // parece un juegazo — es la confusión que la propia entidad documenta en
+        // `isHalfRound()`. Antes vivía arrinconado a la derecha; ahora tiene una
+        // línea entera, así que la mentira se lee
+        match.holesPlayed !== null && match.holesPlayed !== undefined
+        ? t('recentMatches.strokesOverHoles', {
+            strokes: match.totalStrokes,
+            count: match.holesPlayed,
+          })
+        : t('recentMatches.strokesOnly', { strokes: match.totalStrokes })
       : null;
 
   return (
