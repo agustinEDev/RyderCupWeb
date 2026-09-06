@@ -15,8 +15,6 @@
     "tees": "Tees",
     "tee": "Tee",
     "addTee": "Add Tee",
-    "maxTeesReached": "Maximum 10 tees allowed",
-    "minTeesRequired": "Minimum 2 tees required",
     "color": "Colour",
     "identifier": "Identifier",
     "identifierPlaceholder": "Yellow, White, etc.",
@@ -43,7 +41,7 @@
     "errors": {
       "nameRequired": "Course name must be at least 3 characters",
       "countryCodeRequired": "Country code must be 2 characters (ISO 3166-1)",
-      "teesRange": "Course must have between 2 and 10 tees",
+      "teesRange": "Course must have between {{min}} and {{max}} tees",
       "genderMixing": "Cannot mix gendered and unisex tees for the same colour",
       "teeIdentifierRequired": "Tee {{index}} identifier is required",
       "courseRatingRange": "Tee {{index}} Course Rating must be between {{min}} and {{max}}",

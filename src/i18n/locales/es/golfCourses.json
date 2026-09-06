@@ -15,8 +15,6 @@
     "tees": "Tees",
     "tee": "Tee",
     "addTee": "Agregar Tee",
-    "maxTeesReached": "Máximo 10 tees permitidos",
-    "minTeesRequired": "Mínimo 2 tees requeridos",
     "color": "Color",
     "identifier": "Identificador",
     "identifierPlaceholder": "Amarillo, Blanco, etc.",
@@ -43,7 +41,7 @@
     "errors": {
       "nameRequired": "El nombre del campo debe tener al menos 3 caracteres",
       "countryCodeRequired": "El código de país debe tener 2 caracteres (ISO 3166-1)",
-      "teesRange": "El campo debe tener entre 2 y 10 tees",
+      "teesRange": "El campo debe tener entre {{min}} y {{max}} tees",
       "genderMixing": "No se pueden mezclar tees con género y sin género para el mismo color",
       "teeIdentifierRequired": "El identificador del tee {{index}} es requerido",
       "courseRatingRange": "El Course Rating del tee {{index}} debe estar entre {{min}} y {{max}}",

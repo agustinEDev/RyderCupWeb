@@ -16,6 +16,28 @@
  * formulario aceptaba un par 54 que el caso de uso rechazaba justo despues.
  */
 
+/**
+ * El par de un hoyo y el numero de barras NO dependen del tipo de campo, asi
+ * que son constantes y no tablas. Estan aqui, y no en cada validador, por lo
+ * que cuenta la cabecera: mientras el rango del par por hoyo estuvo copiado en
+ * tres sitios —el value object, el caso de uso de peticion y el selector del
+ * formulario—, ninguno de los tres admitia el par 6 que el backend si guarda, y
+ * un campo federado real (La Marquesa, hoyo 9) reventaba la entidad al cargarlo.
+ *
+ * Los valores son los del backend: `VALID_PARS` en `golf_course/domain/
+ * entities/hole.py` y `MIN_TEES`/`MAX_TEES` en `.../entities/golf_course.py`.
+ * Los tees llegan hasta 14 porque un campo federado publica una barra por color
+ * y genero: hay 24 con mas de diez, y dos con una sola.
+ */
+export const VALID_HOLE_PARS = [3, 4, 5, 6];
+
+export const MIN_TEES = 1;
+export const MAX_TEES = 14;
+
+export const isHoleParValid = (par) => VALID_HOLE_PARS.includes(par);
+
+export const isTeeCountValid = (teeCount) => teeCount >= MIN_TEES && teeCount <= MAX_TEES;
+
 export const DEFAULT_COURSE_TYPE = 'STANDARD_18';
 
 export const COURSE_TYPES = ['STANDARD_18', 'PITCH_AND_PUTT', 'EXECUTIVE'];
