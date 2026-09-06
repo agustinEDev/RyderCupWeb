@@ -1,5 +1,6 @@
 import IPlayerStatsRepository from '../../domain/repositories/IPlayerStatsRepository';
 import PlayerStatsMapper from '../mappers/PlayerStatsMapper';
+import ScoringBreakdownMapper from '../mappers/ScoringBreakdownMapper';
 import RecentMatchMapper from '../mappers/RecentMatchMapper';
 import apiRequest from '../../services/api.js';
 
@@ -10,6 +11,7 @@ import apiRequest from '../../services/api.js';
  * - GET /api/v1/users/me/stats
  * - GET /api/v1/users/me/matches
  * - GET /api/v1/users/me/stats/golf-courses/{id}
+ * - GET /api/v1/users/me/stats/breakdown
  */
 class ApiPlayerStatsRepository extends IPlayerStatsRepository {
   constructor() {
@@ -25,6 +27,11 @@ class ApiPlayerStatsRepository extends IPlayerStatsRepository {
     const query = limit ? `?limit=${limit}` : '';
     const apiData = await apiRequest(`/api/v1/users/me/matches${query}`);
     return RecentMatchMapper.toDomainList(apiData?.matches);
+  }
+
+  async getScoringBreakdown() {
+    const apiData = await apiRequest('/api/v1/users/me/stats/breakdown');
+    return ScoringBreakdownMapper.toDomain(apiData);
   }
 
   async getPlayerStatsByGolfCourse(golfCourseId) {

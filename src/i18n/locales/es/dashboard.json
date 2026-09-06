@@ -160,5 +160,37 @@
     "descartar": "Descartar y perderlos",
     "abrir": "Abrir la partida",
     "descartarYPerderDe": "Descartar y perder los golpes de {{partida}}"
+  },
+  "breakdown": {
+    "title": "Dónde se te van los golpes",
+    "distribution": "En qué acabas los hoyos",
+    "gross": "Bruto",
+    "net": "Neto",
+    "buckets": {
+      "birdieOrBetter": "Birdie o mejor",
+      "par": "Par",
+      "bogey": "Bogey",
+      "doubleOrWorse": "Doble o peor"
+    },
+    "overHoles_one": "Sobre {{count}} hoyo contado",
+    "overHoles_other": "Sobre {{count}} hoyos contados",
+    "byPar": "Según el par del hoyo",
+    "parN": "Par {{par}}",
+    "perHoleOver_one": "por hoyo · {{count}} hoyo",
+    "perHoleOver_other": "por hoyo · {{count}} hoyos",
+    "nines": "Primeros nueve y segundos nueve",
+    "frontNine": "Ida (1-9)",
+    "backNine": "Vuelta (10-18)",
+    "nineNotPlayed": "No jugada",
+    "byCourse": "Por campo",
+    "unnamedCourse": "Campo sin nombre",
+    "roundsCount_one": "{{count}} vuelta",
+    "roundsCount_other": "{{count}} vueltas",
+    "perRoundHint": "Media por vuelta de 18 hoyos, la misma escala que tu media general.",
+    "emptyTitle": "Todavía no hay desglose",
+    "emptyDescription": "Solo cuentan las vueltas terminadas: una partida a medias, un foursomes o una tarjeta con hoyos sueltos no entran. Termina una vuelta y aparecerá aquí.",
+    "worstPar": "Donde más pierdes",
+    "errorTitle": "No se pudo cargar el desglose",
+    "errorDescription": "Tus estadísticas de arriba sí están al día. Vuelve a entrar en un rato."
   }
 }

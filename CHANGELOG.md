@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [2.30.0] - 2026-09-06
+
+### Added
+
+- **Tus estadísticas te dicen ahora dónde se te van los golpes.** La pantalla de estadísticas contaba *cuánto* juegas de bien —vueltas, media al par, índice estimado— y nada más. Debajo del resumen aparece **«Dónde se te van los golpes»**, con cuatro cosas que sí se pueden llevar al campo de prácticas (#592):
+
+  - **En qué acabas los hoyos**: qué parte terminas en birdie o mejor, en par, en bogey y en doble o peor.
+  - **Según el par del hoyo**: tu media por separado en los par 3, los par 4 y los par 5 —y en los par 6, si el campo los tiene—. Aquí es donde la mayoría descubre que lo pierde todo en los cortos.
+  - **Primeros nueve contra segundos nueve**, para saber si el problema es el juego o el cansancio.
+  - **Por campo**, de mejor a peor.
+
+  **El par donde más pierdes va señalado, y con palabras**, no solo con un color de fondo: al sol un matiz no se aprecia y un lector de pantalla no lo ve. Solo se señala si de verdad estás por encima del par ahí; a quien va bajo par en todo no se le marca nada.
+
+  **La distribución se puede ver en bruto y en neto.** Sale primero el bruto —un birdie es un birdie, que es lo que la palabra significa— y el interruptor enseña el neto, que es donde un jugador con hándicap ve los pares netos que está haciendo. Sobre una vuelta real, la misma tarjeta son 0 birdies y 3 dobles en bruto, y 2 birdies y ningún doble en neto.
+
+  Dos detalles que se decidieron a propósito: **una mitad de vuelta que no jugaste dice «No jugada»**, nunca un cero, porque cero significaría jugarla al par; y la media por campo **avisa de que es por vuelta de 18**, porque convive con medias por hoyo y nada más las distinguiría.
+
+  El desglose solo aparece en la vista de todos los campos: no se calcula por campo, así que enseñarlo junto a las cifras de uno solo mezclaría dos cosas distintas.
+
+  Si todavía no tienes vueltas que contar, la pantalla **explica por qué**: solo cuentan las vueltas terminadas, y una partida a medias, un foursomes o una tarjeta con hoyos sueltos no entran.
+
+### Notes
+
+- **Necesita RyderCupAm 2.16.0**, que es quien calcula el desglose. Sin él, esa sección avisa de que no se pudo cargar y **el resto de la pantalla sigue funcionando con normalidad**: las vueltas, la media y el historial no dependen de ella.
+
 ## [2.29.0] - 2026-09-06
 
 ### Added

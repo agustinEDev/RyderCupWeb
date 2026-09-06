@@ -23,6 +23,14 @@ class IPlayerStatsRepository {
   }
 
   /**
+   * Desglose de golpes del jugador: dónde gana y dónde pierde.
+   * @returns {Promise<Object>}
+   */
+  async getScoringBreakdown() {
+    throw new Error('Method not implemented: getScoringBreakdown');
+  }
+
+  /**
    * Estadísticas del jugador restringidas a un campo de golf
    * @param {string} golfCourseId
    * @returns {Promise<import('../entities/PlayerStats').default>}
