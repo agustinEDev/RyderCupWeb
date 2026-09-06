@@ -1,4 +1,9 @@
-import { parRangeFor } from '../../../domain/services/courseTypeRanges';
+import {
+  MAX_TEES,
+  MIN_TEES,
+  isTeeCountValid,
+  parRangeFor,
+} from '../../../domain/services/courseTypeRanges';
 
 /**
  * UpdateGolfCourseUseCase
@@ -49,11 +54,11 @@ class UpdateGolfCourseUseCase {
       throw new Error('Course type is required');
     }
 
-    // 10, no 6: es lo que deja meter el formulario (`handleAddTee`) y lo que
-    // dice su mensaje. Con 6 aqui, un campo de 7 barras se aceptaba arriba y
-    // reventaba justo despues. El backend admite de 1 a 14.
-    if (!data.tees || data.tees.length < 2 || data.tees.length > 10) {
-      throw new Error('Golf course must have between 2 and 10 tees');
+    // Los limites son los del backend (MIN_TEES/MAX_TEES). Con el tope en 10
+    // aqui, un campo federado de 12 barras se abria en el formulario y moria al
+    // guardar: se podia dar de alta y no se podia editar.
+    if (!data.tees || !isTeeCountValid(data.tees.length)) {
+      throw new Error(`Golf course must have between ${MIN_TEES} and ${MAX_TEES} tees`);
     }
 
     if (!data.holes || data.holes.length !== 18) {

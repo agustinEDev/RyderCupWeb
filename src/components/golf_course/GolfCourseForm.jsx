@@ -8,6 +8,10 @@ import TeeColor from '../../domain/value_objects/TeeColor';
 import CountryAutocomplete from '../ui/CountryAutocomplete';
 import {
   COURSE_TYPES,
+  MAX_TEES,
+  MIN_TEES,
+  VALID_HOLE_PARS,
+  isTeeCountValid,
   isTotalParValid,
   parRangeFor,
   ratingRangeFor,
@@ -25,7 +29,7 @@ const TEE_GENDERS = [null, 'MALE', 'FEMALE'];
 /**
  * GolfCourseForm Component
  * Complex form for creating/editing golf courses
- * Handles 18 holes + 2-10 tees with validations
+ * Handles 18 holes + MIN_TEES-MAX_TEES tees with validations
  */
 const GolfCourseForm = ({ initialData = null, onSubmit, onCancel }) => {
   const { t } = useTranslation('golfCourses');
@@ -38,7 +42,7 @@ const GolfCourseForm = ({ initialData = null, onSubmit, onCancel }) => {
   // Countries data
   const [allCountries, setAllCountries] = useState([]);
 
-  // Tees (2-10)
+  // Tees (MIN_TEES a MAX_TEES, los del backend)
   const [tees, setTees] = useState([
     { color: 'WHITE', teeGender: null, identifier: '', courseRating: '', slopeRating: '' },
     { color: 'YELLOW', teeGender: null, identifier: '', courseRating: '', slopeRating: '' },
@@ -124,8 +128,8 @@ const GolfCourseForm = ({ initialData = null, onSubmit, onCancel }) => {
 
   // Add tee
   const handleAddTee = () => {
-    if (tees.length >= 10) {
-      customToast.error(t('form.maxTeesReached'));
+    if (tees.length >= MAX_TEES) {
+      customToast.error(t('form.maxTeesReached', { max: MAX_TEES }));
       return;
     }
 
@@ -137,8 +141,8 @@ const GolfCourseForm = ({ initialData = null, onSubmit, onCancel }) => {
 
   // Remove tee
   const handleRemoveTee = (index) => {
-    if (tees.length <= 2) {
-      customToast.error(t('form.minTeesRequired'));
+    if (tees.length <= MIN_TEES) {
+      customToast.error(t('form.minTeesRequired', { count: MIN_TEES }));
       return;
     }
 
@@ -246,8 +250,8 @@ const GolfCourseForm = ({ initialData = null, onSubmit, onCancel }) => {
       return false;
     }
 
-    if (tees.length < 2 || tees.length > 10) {
-      customToast.error(t('form.errors.teesRange'));
+    if (!isTeeCountValid(tees.length)) {
+      customToast.error(t('form.errors.teesRange', { min: MIN_TEES, max: MAX_TEES }));
       return false;
     }
 
@@ -453,11 +457,11 @@ const GolfCourseForm = ({ initialData = null, onSubmit, onCancel }) => {
       {/* Tees Section */}
       <div className="bg-white border border-gray-200 rounded-lg p-6">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-bold text-gray-900">{t('form.tees')} ({tees.length}/10)</h3>
+          <h3 className="text-lg font-bold text-gray-900">{t('form.tees')} ({tees.length}/{MAX_TEES})</h3>
           <button
             type="button"
             onClick={handleAddTee}
-            disabled={tees.length >= 10}
+            disabled={tees.length >= MAX_TEES}
             className="flex items-center gap-2 px-3 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Plus className="w-4 h-4" />
@@ -477,7 +481,7 @@ const GolfCourseForm = ({ initialData = null, onSubmit, onCancel }) => {
                 <span className="text-sm font-medium text-gray-700">
                   {t('form.tee')} {index + 1}
                 </span>
-                {tees.length > 2 && (
+                {tees.length > MIN_TEES && (
                   <button
                     type="button"
                     onClick={() => handleRemoveTee(index)}
@@ -624,7 +628,7 @@ const GolfCourseForm = ({ initialData = null, onSubmit, onCancel }) => {
                   <td className="py-2 px-3 font-medium">{hole.holeNumber}</td>
                   <td className="py-2 px-3">
                     <div className="flex gap-1">
-                      {[3, 4, 5].map(p => (
+                      {VALID_HOLE_PARS.map(p => (
                         <button
                           key={p}
                           type="button"

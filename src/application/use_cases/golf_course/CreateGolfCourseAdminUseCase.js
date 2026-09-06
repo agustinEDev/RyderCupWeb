@@ -1,4 +1,9 @@
-import { parRangeFor } from '../../../domain/services/courseTypeRanges';
+import {
+  MAX_TEES,
+  MIN_TEES,
+  isTeeCountValid,
+  parRangeFor,
+} from '../../../domain/services/courseTypeRanges';
 
 /**
  * CreateGolfCourseAdminUseCase
@@ -40,11 +45,12 @@ class CreateGolfCourseAdminUseCase {
       throw new Error('Invalid course type');
     }
 
-    // 10, no 6: es lo que deja meter el formulario (`handleAddTee`) y lo que
-    // dice su mensaje. Con 6 aqui, un campo de 7 barras se aceptaba arriba y
-    // reventaba justo despues. El backend admite de 1 a 14.
-    if (!data.tees || data.tees.length < 2 || data.tees.length > 10) {
-      throw new Error('Golf course must have between 2 and 10 tees');
+    // Los limites son los del backend (MIN_TEES/MAX_TEES), no los que cupieran
+    // en el formulario: con el tope en 10 habia 24 campos federados —una barra
+    // por color y genero— que el panel no podia ni abrir, y dos de una sola
+    // barra que tampoco.
+    if (!data.tees || !isTeeCountValid(data.tees.length)) {
+      throw new Error(`Golf course must have between ${MIN_TEES} and ${MAX_TEES} tees`);
     }
 
     if (!data.holes || data.holes.length !== 18) {

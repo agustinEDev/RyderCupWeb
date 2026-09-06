@@ -1,4 +1,11 @@
-import { parRangeFor } from '../../../domain/services/courseTypeRanges';
+import {
+  MAX_TEES,
+  MIN_TEES,
+  VALID_HOLE_PARS,
+  isHoleParValid,
+  isTeeCountValid,
+  parRangeFor,
+} from '../../../domain/services/courseTypeRanges';
 
 /**
  * Create Golf Course Request Use Case
@@ -8,7 +15,7 @@ import { parRangeFor } from '../../../domain/services/courseTypeRanges';
  * - Any authenticated user can request a golf course
  * - Golf course is created with status PENDING_APPROVAL
  * - Admin must approve before it can be used in competitions
- * - Validates: name, country, tees (2-6), holes (18), total par (by course type)
+ * - Validates: name, country, tees (MIN_TEES-MAX_TEES), holes (18), total par (by course type)
  */
 class CreateGolfCourseRequestUseCase {
   constructor({ golfCourseRepository }) {
@@ -37,8 +44,10 @@ class CreateGolfCourseRequestUseCase {
     }
 
     // Validate tees
-    if (!Array.isArray(golfCourseData.tees) || golfCourseData.tees.length === 0) {
-      throw new Error('Golf course must have at least one tee');
+    // El techo lo pone el backend (MAX_TEES): sin el, un campo de 20 barras
+    // pasaba por aqui y lo rechazaba la API con un 422 generico.
+    if (!Array.isArray(golfCourseData.tees) || !isTeeCountValid(golfCourseData.tees.length)) {
+      throw new Error(`Golf course must have between ${MIN_TEES} and ${MAX_TEES} tees`);
     }
 
     // Validate each tee has required fields
@@ -69,8 +78,10 @@ class CreateGolfCourseRequestUseCase {
       if (typeof hole.par !== 'number') {
         throw new Error(`Hole ${index + 1} must have a numeric par value`);
       }
-      if (hole.par < 3 || hole.par > 5) {
-        throw new Error(`Hole ${index + 1} par must be between 3 and 5 (current: ${hole.par})`);
+      if (!isHoleParValid(hole.par)) {
+        throw new Error(
+          `Hole ${index + 1} par must be one of ${VALID_HOLE_PARS.join(', ')} (current: ${hole.par})`
+        );
       }
     });
 

@@ -144,13 +144,14 @@ describe('CreateGolfCourseAdminUseCase', () => {
     expect(result.tees).toHaveLength(6);
   });
 
-  it('should accept the 10 tees the form allows, not just 6', async () => {
-    // Arrange - el formulario deja llegar hasta 10 (`handleAddTee`) y su mensaje
-    // dice "entre 2 y 10". Con el limite en 6, un campo de 7 barras se aceptaba
-    // en pantalla y reventaba aqui.
+  // Los 14 son los del backend (MAX_TEES). Un campo federado publica una barra
+  // por color y genero, y en el dataset de la RFEG hay 24 que pasan de diez: con
+  // el tope en 10 el panel no podia abrirlos siquiera.
+  it('should accept the 14 tees the backend allows, not just 10', async () => {
+    // Arrange
     const courseData = {
       ...createValidCourseData(),
-      tees: Array.from({ length: 10 }, (_, i) => ({
+      tees: Array.from({ length: 14 }, (_, i) => ({
         color: 'OTHER',
         identifier: `Barra ${i + 1}`,
         courseRating: 70.0,
@@ -169,14 +170,42 @@ describe('CreateGolfCourseAdminUseCase', () => {
     const result = await useCase.execute(courseData);
 
     // Assert
-    expect(result.tees).toHaveLength(10);
+    expect(result.tees).toHaveLength(14);
   });
 
-  it('should reject 11 tees, which the form cannot produce either', async () => {
+  // Dos campos del dataset tienen una sola barra, y el suelo de 2 los dejaba
+  // fuera por el otro extremo.
+  it('should accept a single tee, which two federated courses have', async () => {
     // Arrange
     const courseData = {
       ...createValidCourseData(),
-      tees: Array.from({ length: 11 }, (_, i) => ({
+      tees: [{
+        color: 'YELLOW',
+        identifier: null,
+        courseRating: 70.0,
+        slopeRating: 120,
+        gender: 'MALE'
+      }]
+    };
+
+    golfCourseRepository.createAsAdmin.mockResolvedValue({
+      id: 'course-791',
+      ...courseData,
+      totalPar: 72
+    });
+
+    // Act
+    const result = await useCase.execute(courseData);
+
+    // Assert
+    expect(result.tees).toHaveLength(1);
+  });
+
+  it('should reject 15 tees, one past what the backend stores', async () => {
+    // Arrange
+    const courseData = {
+      ...createValidCourseData(),
+      tees: Array.from({ length: 15 }, (_, i) => ({
         color: 'OTHER',
         identifier: `Barra ${i + 1}`,
         courseRating: 70.0,
@@ -187,7 +216,18 @@ describe('CreateGolfCourseAdminUseCase', () => {
 
     // Act & Assert
     await expect(useCase.execute(courseData)).rejects.toThrow(
-      'Golf course must have between 2 and 10 tees'
+      'Golf course must have between 1 and 14 tees'
+    );
+    expect(golfCourseRepository.createAsAdmin).not.toHaveBeenCalled();
+  });
+
+  it('should reject a course with no tees at all', async () => {
+    // Arrange
+    const courseData = { ...createValidCourseData(), tees: [] };
+
+    // Act & Assert
+    await expect(useCase.execute(courseData)).rejects.toThrow(
+      'Golf course must have between 1 and 14 tees'
     );
     expect(golfCourseRepository.createAsAdmin).not.toHaveBeenCalled();
   });
