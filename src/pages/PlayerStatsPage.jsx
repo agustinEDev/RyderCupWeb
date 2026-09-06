@@ -4,6 +4,7 @@ import { Target, TrendingDown, TrendingUp, Minus, Flag, Award } from 'lucide-rea
 import { useTranslation } from 'react-i18next';
 import HeaderAuth from '../components/layout/HeaderAuth';
 import RecentMatches from '../components/dashboard/RecentMatches';
+import ScoringBreakdown from '../components/stats/ScoringBreakdown';
 import { useAuth } from '../hooks/useAuth';
 import { useEntryMotion } from '../hooks/useEntryMotion';
 import { slideUp, staggerContainer, getEntryProps } from '../utils/animations';
@@ -11,6 +12,7 @@ import {
   getPlayerStatsUseCase,
   getRecentMatchesUseCase,
   getPlayerStatsByGolfCourseUseCase,
+  getScoringBreakdownUseCase,
 } from '../composition';
 import FullScreenLoader from '../components/ui/FullScreenLoader';
 import BlockLoader from '../components/ui/BlockLoader';
@@ -42,6 +44,11 @@ const StatBlock = ({ icon: Icon, label, value, hint, testId }) => (
   </div>
 );
 
+// Distingue "el desglose falló" de "no hay desglose". Sin esto, un error de red
+// se pintaría como "todavía no tienes vueltas", que es afirmar algo que no se
+// ha podido preguntar.
+const FALLO_DEL_DESGLOSE = Symbol('fallo-del-desglose');
+
 const PlayerStatsPage = () => {
   const { t } = useTranslation('dashboard');
   const { user, loading: isLoadingUser } = useAuth();
@@ -49,6 +56,8 @@ const PlayerStatsPage = () => {
 
   const [globalStats, setGlobalStats] = useState(null);
   const [matches, setMatches] = useState([]);
+  const [breakdown, setBreakdown] = useState(null);
+  const [breakdownFailed, setBreakdownFailed] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedCourseId, setSelectedCourseId] = useState(null);
   const [courseStats, setCourseStats] = useState(null);
@@ -65,19 +74,32 @@ const PlayerStatsPage = () => {
 
       setIsLoading(true);
       try {
-        const [stats, history] = await Promise.all([
+        const [stats, history, scoringBreakdown] = await Promise.all([
           getPlayerStatsUseCase.execute(),
           getRecentMatchesUseCase.execute(),
+          // El desglose cae solo si falla, y no se lleva por delante el resumen
+          // ni el historial. Su endpoint es más nuevo que ellos: mientras no
+          // esté desplegado responde 404, y un `Promise.all` convertiría eso en
+          // una pantalla de estadísticas vacía para todo el mundo
+          getScoringBreakdownUseCase.execute().catch((error) => {
+            console.error('Failed to load the scoring breakdown:', error);
+            return FALLO_DEL_DESGLOSE;
+          }),
         ]);
         if (!cancelled) {
           setGlobalStats(stats);
           setMatches(history);
+          const fallo = scoringBreakdown === FALLO_DEL_DESGLOSE;
+          setBreakdown(fallo ? null : scoringBreakdown);
+          setBreakdownFailed(fallo);
         }
       } catch (error) {
         console.error('Failed to load player statistics:', error);
         if (!cancelled) {
           setGlobalStats(null);
           setMatches([]);
+          setBreakdown(null);
+          setBreakdownFailed(true);
         }
       } finally {
         if (!cancelled) {
@@ -322,6 +344,25 @@ const PlayerStatsPage = () => {
                 </div>
               )}
             </motion.div>
+
+            {/* Dónde se van los golpes.
+                Solo en la vista global: el desglose no se pide por campo, así
+                que enseñarlo con un campo elegido mezclaría dos ámbitos en la
+                misma pantalla. El reparto por campo ya va dentro. */}
+            {!selectedCourseId && (
+              <motion.div variants={slideUp} className="p-4">
+                <h2 className="mb-3 text-lg font-bold text-gray-900">
+                  {t('breakdown.title')}
+                </h2>
+                {isLoading ? (
+                  <div aria-busy="true">
+                    <BlockLoader />
+                  </div>
+                ) : (
+                  <ScoringBreakdown breakdown={breakdown} failed={breakdownFailed} />
+                )}
+              </motion.div>
+            )}
 
             {/* Historial completo: el "ver todas" que la lista del panel no tenía */}
             <motion.div variants={slideUp} className="p-4">

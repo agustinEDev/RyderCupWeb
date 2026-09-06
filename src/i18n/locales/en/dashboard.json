@@ -160,5 +160,37 @@
     "descartar": "Discard and lose them",
     "abrir": "Open the match",
     "descartarYPerderDe": "Discard and lose the strokes from {{partida}}"
+  },
+  "breakdown": {
+    "title": "Where your strokes go",
+    "distribution": "How your holes end",
+    "gross": "Gross",
+    "net": "Net",
+    "buckets": {
+      "birdieOrBetter": "Birdie or better",
+      "par": "Par",
+      "bogey": "Bogey",
+      "doubleOrWorse": "Double or worse"
+    },
+    "overHoles_one": "Over {{count}} hole counted",
+    "overHoles_other": "Over {{count}} holes counted",
+    "byPar": "By the par of the hole",
+    "parN": "Par {{par}}",
+    "perHoleOver_one": "per hole · {{count}} hole",
+    "perHoleOver_other": "per hole · {{count}} holes",
+    "nines": "Front nine and back nine",
+    "frontNine": "Front (1-9)",
+    "backNine": "Back (10-18)",
+    "nineNotPlayed": "Not played",
+    "byCourse": "By course",
+    "unnamedCourse": "Unnamed course",
+    "roundsCount_one": "{{count}} round",
+    "roundsCount_other": "{{count}} rounds",
+    "perRoundHint": "Average per 18-hole round, the same scale as your overall average.",
+    "emptyTitle": "No breakdown yet",
+    "emptyDescription": "Only finished rounds count: a match in progress, a foursomes or a card with odd holes missing do not. Finish a round and it will show up here.",
+    "worstPar": "Where you lose most",
+    "errorTitle": "Couldn't load the breakdown",
+    "errorDescription": "The figures above are up to date. Try again in a while."
   }
 }
