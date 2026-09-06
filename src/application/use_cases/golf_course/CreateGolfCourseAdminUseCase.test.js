@@ -232,6 +232,40 @@ describe('CreateGolfCourseAdminUseCase', () => {
     expect(golfCourseRepository.createAsAdmin).not.toHaveBeenCalled();
   });
 
+  // El total no basta: un par 7 compensado con un par 3 deja el total en 74,
+  // dentro del rango de un 18 hoyos, y solo lo rechazaba la API
+  it('should reject a par 7 hole even when the total par stays in range', async () => {
+    // Arrange
+    const holes = Array.from({ length: 18 }, (_, i) => ({
+      holeNumber: i + 1,
+      par: i === 0 ? 7 : i === 1 ? 3 : 4,
+      strokeIndex: i + 1
+    }));
+
+    // Act & Assert
+    await expect(useCase.execute({ ...createValidCourseData(), holes })).rejects.toThrow(
+      'Hole 1 par must be one of 3, 4, 5, 6 (current: 7)'
+    );
+    expect(golfCourseRepository.createAsAdmin).not.toHaveBeenCalled();
+  });
+
+  it('should accept a par 6 hole', async () => {
+    // Arrange
+    const holes = Array.from({ length: 18 }, (_, i) => ({
+      holeNumber: i + 1,
+      par: i === 0 ? 6 : i === 1 ? 3 : 4,
+      strokeIndex: i + 1
+    }));
+    const courseData = { ...createValidCourseData(), holes };
+    golfCourseRepository.createAsAdmin.mockResolvedValue({ id: 'course-792', ...courseData });
+
+    // Act
+    const result = await useCase.execute(courseData);
+
+    // Assert
+    expect(result.id).toBe('course-792');
+  });
+
   it('should create course with exactly 18 holes', async () => {
     // Arrange
     const courseData = createValidCourseData();

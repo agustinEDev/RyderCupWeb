@@ -8,7 +8,7 @@ import UpdateGolfCourseUseCase from './UpdateGolfCourseUseCase';
  * 1-14: un campo federado de 12 barras se abria en el formulario y moria al
  * guardar, asi que se podia crear y no se podia editar. Ver #584.
  */
-describe('UpdateGolfCourseUseCase · numero de barras', () => {
+describe('UpdateGolfCourseUseCase · limites del backend', () => {
   let golfCourseRepository;
   let useCase;
 
@@ -61,6 +61,33 @@ describe('UpdateGolfCourseUseCase · numero de barras', () => {
       'Golf course must have between 1 and 14 tees'
     );
     expect(golfCourseRepository.update).not.toHaveBeenCalled();
+  });
+
+  it('rejects a par 7 hole even when the total par stays in range', async () => {
+    // Arrange
+    const data = courseWith(2);
+    data.holes[0].par = 7;
+    data.holes[1].par = 3;
+
+    // Act & Assert
+    await expect(useCase.execute('course-1', data)).rejects.toThrow(
+      'Hole 1 par must be one of 3, 4, 5, 6 (current: 7)'
+    );
+    expect(golfCourseRepository.update).not.toHaveBeenCalled();
+  });
+
+  it('accepts a par 6 hole', async () => {
+    // Arrange
+    const data = courseWith(2);
+    data.holes[0].par = 6;
+    data.holes[1].par = 3;
+    golfCourseRepository.update.mockResolvedValue({ golfCourse: data, pendingUpdate: null });
+
+    // Act
+    const result = await useCase.execute('course-1', data);
+
+    // Assert
+    expect(result.golfCourse.holes[0].par).toBe(6);
   });
 
   it('rejects a course left with no tees', async () => {

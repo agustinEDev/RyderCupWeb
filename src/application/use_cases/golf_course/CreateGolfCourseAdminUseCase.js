@@ -1,6 +1,8 @@
 import {
   MAX_TEES,
   MIN_TEES,
+  VALID_HOLE_PARS,
+  isHoleParValid,
   isTeeCountValid,
   parRangeFor,
 } from '../../../domain/services/courseTypeRanges';
@@ -56,6 +58,17 @@ class CreateGolfCourseAdminUseCase {
     if (!data.holes || data.holes.length !== 18) {
       throw new Error('Golf course must have exactly 18 holes');
     }
+
+    // El par de cada hoyo, no solo el total: un par 7 compensado con un par 3
+    // deja el total dentro de rango y solo lo rechazaba la API, con un 422 sin
+    // traducir. Es la misma comprobacion que hace `CreateGolfCourseRequestUseCase`.
+    data.holes.forEach((hole, index) => {
+      if (!isHoleParValid(hole.par)) {
+        throw new Error(
+          `Hole ${index + 1} par must be one of ${VALID_HOLE_PARS.join(', ')} (current: ${hole.par})`
+        );
+      }
+    });
 
     // Validate unique stroke indices
     const strokeIndices = data.holes.map(h => h.strokeIndex || h.stroke_index);

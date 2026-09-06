@@ -15,7 +15,7 @@ import {
  * - Any authenticated user can request a golf course
  * - Golf course is created with status PENDING_APPROVAL
  * - Admin must approve before it can be used in competitions
- * - Validates: name, country, tees (MIN_TEES-MAX_TEES), holes (18), total par (by course type)
+ * - Validates: name, country, tees (1-14), holes (18), par per hole and total par
  */
 class CreateGolfCourseRequestUseCase {
   constructor({ golfCourseRepository }) {

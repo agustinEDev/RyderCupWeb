@@ -29,7 +29,8 @@ const TEE_GENDERS = [null, 'MALE', 'FEMALE'];
 /**
  * GolfCourseForm Component
  * Complex form for creating/editing golf courses
- * Handles 18 holes + MIN_TEES-MAX_TEES tees with validations
+ * Handles 18 holes + 1-14 tees with validations (the bounds live in
+ * `courseTypeRanges`, taken from the backend)
  */
 const GolfCourseForm = ({ initialData = null, onSubmit, onCancel }) => {
   const { t } = useTranslation('golfCourses');
@@ -42,7 +43,7 @@ const GolfCourseForm = ({ initialData = null, onSubmit, onCancel }) => {
   // Countries data
   const [allCountries, setAllCountries] = useState([]);
 
-  // Tees (MIN_TEES a MAX_TEES, los del backend)
+  // Tees (1 a 14: MIN_TEES/MAX_TEES en `courseTypeRanges`)
   const [tees, setTees] = useState([
     { color: 'WHITE', teeGender: null, identifier: '', courseRating: '', slopeRating: '' },
     { color: 'YELLOW', teeGender: null, identifier: '', courseRating: '', slopeRating: '' },
@@ -127,9 +128,14 @@ const GolfCourseForm = ({ initialData = null, onSubmit, onCancel }) => {
   }, [initialData]);
 
   // Add tee
+  //
+  // Las dos guardas son red, no aviso: el boton de anadir sale `disabled` al
+  // llegar al techo y el de borrar ni se pinta en el suelo, asi que por pantalla
+  // no hay forma de llegar aqui. Se quedan porque protegen la invariante si
+  // alguien cambia esas condiciones, pero sin mensaje, que seria una traduccion
+  // que nadie puede ver.
   const handleAddTee = () => {
     if (tees.length >= MAX_TEES) {
-      customToast.error(t('form.maxTeesReached', { max: MAX_TEES }));
       return;
     }
 
@@ -142,7 +148,6 @@ const GolfCourseForm = ({ initialData = null, onSubmit, onCancel }) => {
   // Remove tee
   const handleRemoveTee = (index) => {
     if (tees.length <= MIN_TEES) {
-      customToast.error(t('form.minTeesRequired', { count: MIN_TEES }));
       return;
     }
 
