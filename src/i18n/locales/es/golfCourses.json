@@ -129,8 +129,7 @@
       "totalCourses": "Total de Campos",
       "errorLoading": "Error al cargar los campos de golf",
       "createSuccess": "Campo de golf creado exitosamente",
-      "updateSuccess": "Campo de golf actualizado exitosamente",
-      "viewNotImplemented": "Vista de detalles próximamente"
+      "updateSuccess": "Campo de golf actualizado exitosamente"
     },
     "pending": {
       "title": "Campos Pendientes",
@@ -160,5 +159,26 @@
       "cancel": "Cancelar",
       "confirmReject": "Rechazar Campo"
     }
+  },
+  "detail": {
+    "subtitle": "Detalle del campo",
+    "close": "Cerrar",
+    "general": "Datos generales",
+    "location": "Ubicación",
+    "address": "Dirección",
+    "city": "Localidad",
+    "province": "Provincia",
+    "coordinates": "Coordenadas",
+    "tees_one": "{{count}} salida",
+    "tees_other": "{{count}} salidas",
+    "courseRatingShort": "CR",
+    "slopeRatingShort": "SR",
+    "scorecard": "Tarjeta",
+    "pickTee": "Barras:",
+    "inheritedCard": "Esta salida no tiene tarjeta propia: se muestra la del campo, sin distancias.",
+    "hole": "Hoyo",
+    "strokeIndex": "Índice",
+    "meters": "Metros",
+    "total": "Total"
   }
 }

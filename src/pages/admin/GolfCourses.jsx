@@ -7,6 +7,7 @@ import HeaderAuth from '../../components/layout/HeaderAuth';
 import { useAuth } from '../../hooks/useAuth';
 import GolfCourseTable from '../../components/golf_course/GolfCourseTable';
 import GolfCourseForm from '../../components/golf_course/GolfCourseForm';
+import GolfCourseDetailModal from '../../components/golf_course/GolfCourseDetailModal';
 import {
   listGolfCoursesUseCase,
   getGolfCourseUseCase,
@@ -19,7 +20,8 @@ import BlockLoader from '../../components/ui/BlockLoader';
 /**
  * GolfCourses Page (Admin)
  * Lists all APPROVED golf courses
- * Admin can create new courses (directly APPROVED) and edit existing ones
+ * Admin can create new courses (directly APPROVED), edit them, and open a
+ * read-only detail with the location and each tee's own scorecard
  *
  * @param {boolean} [embedded=false] - When true, renders just the content
  *   (no HeaderAuth/page shell) so it can be used as a tab inside AdminPanel.
@@ -33,6 +35,7 @@ const GolfCourses = ({ embedded = false }) => {
   const [isLoadingCourse, setIsLoadingCourse] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showDetailModal, setShowDetailModal] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState(null);
 
   // Derive isAdmin from authenticated user's roles or is_admin flag
@@ -94,31 +97,42 @@ const GolfCourses = ({ embedded = false }) => {
     }
   };
 
-  // Handle view
-  const handleView = (course) => {
-    setSelectedCourse(course);
-    // TODO: Implement detail modal
-    customToast.info(t('pages.admin.viewNotImplemented'));
-  };
-
-  // Open edit modal
-  //
   // El campo se pide entero por su id en vez de usar el del listado: el
   // listado no trae la tarjeta, y el formulario, al no encontrarla, arrancaría
   // con sus 18 hoyos por defecto de par 4. Guardar desde ahí sobrescribiría la
   // tarjeta real del campo. Es el mismo patrón que ya usa la partida rápida.
-  const handleOpenEdit = async (course) => {
+  //
+  // El detalle lo necesita por lo mismo, aunque no escriba: sin las tarjetas de
+  // cada salida no tiene nada que enseñar, y son justo lo que el listado omite.
+  const cargarCampoCompleto = async (course) => {
     setIsLoadingCourse(true);
     try {
-      const fullCourse = await getGolfCourseUseCase.execute(course.id);
-      setSelectedCourse(fullCourse);
-      setShowEditModal(true);
+      return await getGolfCourseUseCase.execute(course.id);
     } catch (error) {
       console.error('Error loading golf course:', error);
       customToast.error(error.message || t('pages.admin.errorLoading'));
+      return null;
     } finally {
       setIsLoadingCourse(false);
     }
+  };
+
+  // Handle view
+  const handleView = async (course) => {
+    const fullCourse = await cargarCampoCompleto(course);
+    if (!fullCourse) return;
+
+    setSelectedCourse(fullCourse);
+    setShowDetailModal(true);
+  };
+
+  // Open edit modal
+  const handleOpenEdit = async (course) => {
+    const fullCourse = await cargarCampoCompleto(course);
+    if (!fullCourse) return;
+
+    setSelectedCourse(fullCourse);
+    setShowEditModal(true);
   };
 
   if (isLoadingUser || isLoading) {
@@ -246,6 +260,17 @@ const GolfCourses = ({ embedded = false }) => {
             </div>
           </motion.div>
         </div>
+      )}
+
+      {/* Detail Modal */}
+      {showDetailModal && selectedCourse && (
+        <GolfCourseDetailModal
+          course={selectedCourse}
+          onClose={() => {
+            setShowDetailModal(false);
+            setSelectedCourse(null);
+          }}
+        />
       )}
 
       {/* Edit Modal */}

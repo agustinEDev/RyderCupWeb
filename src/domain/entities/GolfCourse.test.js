@@ -518,4 +518,70 @@ describe('GolfCourse', () => {
       expect(build({}).distanceKm).toBeNull();
     });
   });
+
+  describe('ubicación', () => {
+    const conUbicacion = (location) => new GolfCourse({
+      id: 'c1', name: 'Campo', country_code: 'ES', course_type: 'STANDARD_18',
+      approval_status: 'APPROVED', total_par: 72, tees: [], holes: [], location,
+    });
+
+    it('la lee de la respuesta de la API', () => {
+      const campo = conUbicacion({
+        latitude: 38.08, longitude: -0.71,
+        address: 'Ctra. San Miguel', city: 'Rojales', province: 'Alicante',
+      });
+
+      expect(campo.location).toEqual({
+        latitude: 38.08, longitude: -0.71,
+        address: 'Ctra. San Miguel', city: 'Rojales', province: 'Alicante',
+      });
+      expect(campo.hasLocation()).toBe(true);
+    });
+
+    it('la deja en null cuando la API no la manda', () => {
+      const campo = conUbicacion(undefined);
+
+      expect(campo.location).toBeNull();
+      expect(campo.hasLocation()).toBe(false);
+    });
+
+    // Un objeto con los cinco valores vacíos llega igual que uno ausente para
+    // quien lo pinta, y sin esto cada pantalla repetiría las comprobaciones
+    it('dice que no hay ubicación cuando viene entera a null', () => {
+      const campo = conUbicacion({ latitude: null, longitude: null, address: null, city: null, province: null });
+
+      expect(campo.hasLocation()).toBe(false);
+    });
+
+    it('dice que sí la hay con un solo dato', () => {
+      expect(conUbicacion({ city: 'Rojales' }).hasLocation()).toBe(true);
+    });
+
+    // Media coordenada no sitúa nada, y es la misma regla del backend. Sin
+    // esto, la pantalla pintaba el título de la ubicación sobre una lista vacía
+    it('no cuenta una coordenada suelta como ubicación', () => {
+      expect(conUbicacion({ latitude: 38.08 }).hasLocation()).toBe(false);
+      expect(conUbicacion({ longitude: -0.71 }).hasLocation()).toBe(false);
+    });
+
+    it('cuenta las coordenadas cuando están las dos', () => {
+      expect(conUbicacion({ latitude: 38.08, longitude: -0.71 }).hasLocation()).toBe(true);
+    });
+
+    it('devuelve la ubicación también en toDTO', () => {
+      const campo = conUbicacion({ city: 'Rojales' });
+
+      expect(campo.toDTO().location).toEqual({
+        latitude: null, longitude: null, address: null, city: 'Rojales', province: null,
+      });
+    });
+
+    it('completa a null los campos que la API omite', () => {
+      const campo = conUbicacion({ city: 'Rojales' });
+
+      expect(campo.location).toEqual({
+        latitude: null, longitude: null, address: null, city: 'Rojales', province: null,
+      });
+    });
+  });
 });
