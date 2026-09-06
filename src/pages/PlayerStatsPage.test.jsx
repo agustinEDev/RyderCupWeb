@@ -8,6 +8,7 @@ import RecentMatch from '../domain/entities/RecentMatch';
 const mockGetPlayerStats = vi.fn();
 const mockGetRecentMatches = vi.fn();
 const mockGetPlayerStatsByGolfCourse = vi.fn();
+const mockGetScoringBreakdown = vi.fn();
 
 vi.mock('../composition', () => ({
   getPlayerStatsUseCase: { execute: (...args) => mockGetPlayerStats(...args) },
@@ -15,6 +16,7 @@ vi.mock('../composition', () => ({
   getPlayerStatsByGolfCourseUseCase: {
     execute: (...args) => mockGetPlayerStatsByGolfCourse(...args),
   },
+  getScoringBreakdownUseCase: { execute: (...args) => mockGetScoringBreakdown(...args) },
   logoutUseCase: { execute: vi.fn() },
 }));
 
@@ -85,6 +87,7 @@ describe('PlayerStatsPage', () => {
     vi.clearAllMocks();
     mockGetPlayerStats.mockResolvedValue(fullStats);
     mockGetRecentMatches.mockResolvedValue(matches);
+    mockGetScoringBreakdown.mockResolvedValue(null);
     mockGetPlayerStatsByGolfCourse.mockResolvedValue(
       PlayerStats.fromPersistence({ roundsPlayed: 2, scoringAvg: 8, estimatedIndex: 11.1 })
     );
@@ -235,5 +238,57 @@ describe('PlayerStatsPage', () => {
     renderPage();
 
     await waitFor(() => expect(screen.getByTestId('player-stats-empty')).toBeInTheDocument());
+  });
+
+  describe('the scoring breakdown', () => {
+    const breakdown = {
+      holesCounted: 9,
+      roundsCounted: 1,
+      grossDistribution: { birdieOrBetter: 0, par: 2, bogey: 4, doubleOrWorse: 3, holes: 9 },
+      netDistribution: { birdieOrBetter: 2, par: 4, bogey: 3, doubleOrWorse: 0, holes: 9 },
+      byPar: [{ par: 3, holes: 3, averageToPar: 1 }],
+      frontNine: { holes: 9, averageToPar: 0.11 },
+      backNine: null,
+      byCourse: [],
+    };
+
+    it('renders it with the rest of the page', async () => {
+      mockGetScoringBreakdown.mockResolvedValue(breakdown);
+      renderPage();
+
+      expect(await screen.findByTestId('scoring-breakdown')).toBeInTheDocument();
+    });
+
+    // El desglose no se pide por campo, así que enseñarlo junto a las cifras de
+    // un campo concreto mezclaría dos ámbitos en la misma pantalla
+    it('hides it while a single course is selected', async () => {
+      mockGetScoringBreakdown.mockResolvedValue(breakdown);
+      renderPage();
+      await screen.findByTestId('scoring-breakdown');
+
+      fireEvent.click(screen.getByTestId('course-filter-course-2'));
+
+      await waitFor(() => expect(screen.queryByTestId('scoring-breakdown')).toBeNull());
+    });
+
+    // El endpoint del desglose es más nuevo que el resto: mientras no esté
+    // desplegado responde 404, y eso NO puede vaciar una pantalla que funciona
+    it('a failing breakdown does not take the rest of the page down', async () => {
+      mockGetScoringBreakdown.mockRejectedValue(new Error('404'));
+      renderPage();
+
+      await waitFor(() => {
+        expect(screen.getByTestId('stat-rounds')).toHaveTextContent('10');
+      });
+      expect(screen.getByTestId('breakdown-error')).toBeInTheDocument();
+    });
+
+    it('says the breakdown failed instead of claiming there are no rounds', async () => {
+      mockGetScoringBreakdown.mockRejectedValue(new Error('boom'));
+      renderPage();
+
+      expect(await screen.findByTestId('breakdown-error')).toBeInTheDocument();
+      expect(screen.queryByTestId('breakdown-empty')).toBeNull();
+    });
   });
 });

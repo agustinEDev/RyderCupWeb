@@ -135,6 +135,7 @@ import GetPlayerStatsUseCase from '../application/use_cases/player_stats/GetPlay
 import GetRecentMatchesUseCase from '../application/use_cases/player_stats/GetRecentMatchesUseCase';
 import GetUpcomingMatchesUseCase from '../application/use_cases/schedule/GetUpcomingMatchesUseCase';
 import GetPlayerStatsByGolfCourseUseCase from '../application/use_cases/player_stats/GetPlayerStatsByGolfCourseUseCase';
+import GetScoringBreakdownUseCase from '../application/use_cases/player_stats/GetScoringBreakdownUseCase';
 
 // Scoring Use Cases (Sprint 4)
 import ApiScoringRepository from '../infrastructure/repositories/ApiScoringRepository';
@@ -291,6 +292,7 @@ const apiPlayerStatsRepository = new ApiPlayerStatsRepository();
 const getPlayerStatsUseCase = new GetPlayerStatsUseCase({ playerStatsRepository: apiPlayerStatsRepository });
 const getRecentMatchesUseCase = new GetRecentMatchesUseCase({ playerStatsRepository: apiPlayerStatsRepository });
 const getPlayerStatsByGolfCourseUseCase = new GetPlayerStatsByGolfCourseUseCase({ playerStatsRepository: apiPlayerStatsRepository });
+const getScoringBreakdownUseCase = new GetScoringBreakdownUseCase({ playerStatsRepository: apiPlayerStatsRepository });
 
 // Scoring Use Cases (Sprint 4)
 const getScoringViewUseCase = new GetScoringViewUseCase({ scoringRepository: apiScoringRepository });
@@ -468,6 +470,7 @@ export {
   blockUserUseCase,
   listFriendsUseCase,
   getPlayerStatsUseCase,
+  getScoringBreakdownUseCase,
   getRecentMatchesUseCase,
   getUpcomingMatchesUseCase,
   getPlayerStatsByGolfCourseUseCase,
