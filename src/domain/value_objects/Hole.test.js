@@ -93,15 +93,25 @@ describe('Hole', () => {
         holeNumber: 1,
         par: 2,
         strokeIndex: 10
-      })).toThrow('Par must be between 3 and 5');
+      })).toThrow('Par must be one of 3, 4, 5, 6');
     });
 
-    it('should throw error for par above 5', () => {
+    // El hoyo 9 de La Marquesa es par 6 en sus ocho barras. Como la tarjeta del
+    // campo se deriva de una de ellas, siempre lo lleva: mientras esto lanzaba,
+    // pedir ese campo entero tumbaba el panel de administracion y tambien la
+    // creacion y la anotacion de una partida rapida.
+    it('accepts par 6, which the backend stores and a federated course has', () => {
+      const hole = new Hole({ holeNumber: 9, par: 6, strokeIndex: 1 });
+
+      expect(hole.par).toBe(6);
+    });
+
+    it('should throw error for par above 6', () => {
       expect(() => new Hole({
         holeNumber: 1,
-        par: 6,
+        par: 7,
         strokeIndex: 10
-      })).toThrow('Par must be between 3 and 5');
+      })).toThrow('Par must be one of 3, 4, 5, 6');
     });
 
     it('should throw error for stroke index below 1', () => {

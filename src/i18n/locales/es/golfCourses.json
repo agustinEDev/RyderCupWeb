@@ -15,8 +15,6 @@
     "tees": "Tees",
     "tee": "Tee",
     "addTee": "Agregar Tee",
-    "maxTeesReached": "Máximo 10 tees permitidos",
-    "minTeesRequired": "Mínimo 2 tees requeridos",
     "color": "Color",
     "identifier": "Identificador",
     "identifierPlaceholder": "Amarillo, Blanco, etc.",
@@ -43,7 +41,7 @@
     "errors": {
       "nameRequired": "El nombre del campo debe tener al menos 3 caracteres",
       "countryCodeRequired": "El código de país debe tener 2 caracteres (ISO 3166-1)",
-      "teesRange": "El campo debe tener entre 2 y 10 tees",
+      "teesRange": "El campo debe tener entre {{min}} y {{max}} tees",
       "genderMixing": "No se pueden mezclar tees con género y sin género para el mismo color",
       "teeIdentifierRequired": "El identificador del tee {{index}} es requerido",
       "courseRatingRange": "El Course Rating del tee {{index}} debe estar entre {{min}} y {{max}}",
@@ -131,8 +129,7 @@
       "totalCourses": "Total de Campos",
       "errorLoading": "Error al cargar los campos de golf",
       "createSuccess": "Campo de golf creado exitosamente",
-      "updateSuccess": "Campo de golf actualizado exitosamente",
-      "viewNotImplemented": "Vista de detalles próximamente"
+      "updateSuccess": "Campo de golf actualizado exitosamente"
     },
     "pending": {
       "title": "Campos Pendientes",
@@ -162,5 +159,26 @@
       "cancel": "Cancelar",
       "confirmReject": "Rechazar Campo"
     }
+  },
+  "detail": {
+    "subtitle": "Detalle del campo",
+    "close": "Cerrar",
+    "general": "Datos generales",
+    "location": "Ubicación",
+    "address": "Dirección",
+    "city": "Localidad",
+    "province": "Provincia",
+    "coordinates": "Coordenadas",
+    "tees_one": "{{count}} salida",
+    "tees_other": "{{count}} salidas",
+    "courseRatingShort": "CR",
+    "slopeRatingShort": "SR",
+    "scorecard": "Tarjeta",
+    "pickTee": "Barras:",
+    "inheritedCard": "Esta salida no tiene tarjeta propia: se muestra la del campo, sin distancias.",
+    "hole": "Hoyo",
+    "strokeIndex": "Índice",
+    "meters": "Metros",
+    "total": "Total"
   }
 }

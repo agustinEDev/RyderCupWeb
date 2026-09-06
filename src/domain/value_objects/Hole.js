@@ -2,6 +2,8 @@
  * Hole Value Object
  * Represents a hole on a golf course
  */
+import { VALID_HOLE_PARS, isHoleParValid } from '../services/courseTypeRanges';
+
 class Hole {
   constructor({ holeNumber, par, strokeIndex }) {
     this.holeNumber = holeNumber;
@@ -30,8 +32,8 @@ class Hole {
     if (!Number.isInteger(this.par)) {
       throw new Error('Par must be an integer');
     }
-    if (this.par < 3 || this.par > 5) {
-      throw new Error('Par must be between 3 and 5');
+    if (!isHoleParValid(this.par)) {
+      throw new Error(`Par must be one of ${VALID_HOLE_PARS.join(', ')}`);
     }
 
     // Validate strokeIndex type and presence
