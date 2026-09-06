@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [2.29.0] - 2026-09-06
+
+### Added
+
+- **El ojo de la tabla de campos abre por fin una ficha.** Hasta ahora solo sacaba un aviso de «Vista de detalles próximamente», así que para ver lo que guarda un campo había que abrir el formulario de EDICIÓN: una pantalla que escribe puesta delante de una pregunta que solo mira, y que además no sabe enseñar ni la ubicación ni las distancias. La ficha es de solo lectura y muestra los datos generales, la ubicación, cada salida con su CR y su SR, y **la tarjeta de la barra que elijas**, con par, índice, metros y sus totales (#586).
+
+  **La tarjeta se elige por barra porque es como se guarda.** Desde la importación de la RFEG el par, el índice y la distancia cuelgan de la salida, y la del campo es una vista derivada de la primera. En los 800 campos con dos o más barras, los metros cambian entre ellas en 574, el índice en 56 y el par en 25: una tarjeta única no puede describir eso, y hasta ahora no había ninguna pantalla que lo enseñara. Comprobado con La Marquesa, donde el mismo hoyo 9 mide 644 m desde las blancas y 590 desde las rojas.
+
+  Sin cambios en el servidor: el campo entero ya venía con todo, y el panel ya lo pedía para abrir la edición.
+
+  Detalles que se decidieron a propósito: la ubicación **solo aparece si hay algo que enseñar** —una sección vacía se lee como un dato perdido—, un hoyo sin distancia deja la celda **en blanco y nunca a cero**, que se leería como una distancia real, el total de metros **solo se suma si están los 18**, porque a medias parece la longitud del campo sin serlo, y una barra sin tarjeta propia **lo dice** en vez de hacer pasar la del campo por suya.
+
+### Fixed
+
+- **Un campo real tumbaba la pantalla: el hoyo 9 de La Marquesa es par 6.** La aplicación admitía pares del 3 al 5 y el servidor guarda del 3 al 6, así que pedir ese campo entero reventaba antes de pintar nada. Y no era solo cosa del panel de administración: también lo piden **crear y anotar una partida rápida**, de modo que ese campo no se podía ni elegir para jugar. El par 6 está en sus ocho barras, y la tarjeta del campo se deriva de una de ellas, así que no había forma de esquivarlo (#583).
+
+- **26 campos federados no se podían abrir desde el panel.** El formulario exigía entre 2 y 10 barras y el servidor admite entre 1 y 14. Un campo federado publica una barra por color y género: hay **24 con más de diez** —el Escorpión tiene 14— y **dos con una sola**. Ninguno de los 26 se podía abrir ni corregir. Ahora se abren, se editan y se guardan sin perder ninguna barra (#584).
+
+  El límite estaba escrito a mano en seis sitios, uno de ellos el que decidía si aparecía siquiera el botón de borrar una barra: por eso, aun arreglando los validadores, no se podía llegar a un campo de una sola barra. Ahora vive en un único lugar, junto a los rangos de par que ya estaban centralizados por esta misma razón.
+
+- **Editar un campo comprobaba el par total pero no el de cada hoyo.** Un par 7 compensado con un par 3 deja el total dentro del rango del tipo de campo, así que pasaba el filtro de la aplicación y solo lo rechazaba el servidor, con un error sin traducir. No se podía provocar desde la pantalla, porque el selector solo ofrece del 3 al 6, pero la comprobación faltaba en las rutas de alta de administrador y de edición.
+
 ## [2.28.2] - 2026-09-05
 
 ### Fixed
