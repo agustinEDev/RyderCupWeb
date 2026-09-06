@@ -129,8 +129,7 @@
       "totalCourses": "Total Courses",
       "errorLoading": "Error loading golf courses",
       "createSuccess": "Golf course created successfully",
-      "updateSuccess": "Golf course updated successfully",
-      "viewNotImplemented": "Detail view coming soon"
+      "updateSuccess": "Golf course updated successfully"
     },
     "pending": {
       "title": "Pending Courses",
@@ -160,5 +159,26 @@
       "cancel": "Cancel",
       "confirmReject": "Reject Course"
     }
+  },
+  "detail": {
+    "subtitle": "Course detail",
+    "close": "Close",
+    "general": "General",
+    "location": "Location",
+    "address": "Address",
+    "city": "Town",
+    "province": "Province",
+    "coordinates": "Coordinates",
+    "tees_one": "{{count}} tee",
+    "tees_other": "{{count}} tees",
+    "courseRatingShort": "CR",
+    "slopeRatingShort": "SR",
+    "scorecard": "Scorecard",
+    "pickTee": "Tee:",
+    "inheritedCard": "This tee has no card of its own: the course card is shown, without distances.",
+    "hole": "Hole",
+    "strokeIndex": "Index",
+    "meters": "Metres",
+    "total": "Total"
   }
 }

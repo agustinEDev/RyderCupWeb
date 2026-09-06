@@ -35,13 +35,23 @@ vi.mock('../../composition', () => ({
 // La tabla real necesita demasiado contexto; aquí solo hace falta poder pulsar
 // "editar" sobre un campo concreto
 vi.mock('../../components/golf_course/GolfCourseTable', () => ({
-  default: ({ courses, onEdit }) => (
+  default: ({ courses, onEdit, onView }) => (
     <div>
       {courses.map(course => (
-        <button key={course.id} onClick={() => onEdit(course)}>
-          editar {course.name}
-        </button>
+        <div key={course.id}>
+          <button onClick={() => onEdit(course)}>editar {course.name}</button>
+          <button onClick={() => onView(course)}>ver {course.name}</button>
+        </div>
       ))}
+    </div>
+  ),
+}));
+
+vi.mock('../../components/golf_course/GolfCourseDetailModal', () => ({
+  default: ({ course, onClose }) => (
+    <div data-testid="detalle">
+      detalle de {course?.name} · hoyos: {(course?.holes || []).length}
+      <button onClick={onClose}>cerrar detalle</button>
     </div>
   ),
 }));
@@ -108,5 +118,47 @@ describe('GolfCourses (admin)', () => {
     render(<GolfCourses embedded />);
 
     expect(await screen.findByText('editar Real Club de Golf')).toBeInTheDocument();
+  });
+
+  describe('detalle del campo', () => {
+    it('el ojo abre el detalle en lugar del aviso de «próximamente»', async () => {
+      mockGetById.mockResolvedValue(FULL);
+      render(<GolfCourses />);
+
+      fireEvent.click(await screen.findByText('ver Real Club de Golf'));
+
+      expect(await screen.findByTestId('detalle')).toHaveTextContent('detalle de Real Club de Golf');
+    });
+
+    // El listado no trae la tarjeta, que es justo lo que el detalle enseña
+    it('pide el campo entero, no usa el del listado', async () => {
+      mockGetById.mockResolvedValue(FULL);
+      render(<GolfCourses />);
+
+      fireEvent.click(await screen.findByText('ver Real Club de Golf'));
+
+      await waitFor(() => expect(mockGetById).toHaveBeenCalledWith('course-1'));
+      expect(await screen.findByTestId('detalle')).toHaveTextContent('hoyos: 18');
+    });
+
+    it('no abre el detalle si el campo no se puede cargar', async () => {
+      mockGetById.mockRejectedValue(new Error('boom'));
+      render(<GolfCourses />);
+
+      fireEvent.click(await screen.findByText('ver Real Club de Golf'));
+
+      await waitFor(() => expect(mockGetById).toHaveBeenCalled());
+      expect(screen.queryByTestId('detalle')).toBeNull();
+    });
+
+    it('se cierra', async () => {
+      mockGetById.mockResolvedValue(FULL);
+      render(<GolfCourses />);
+
+      fireEvent.click(await screen.findByText('ver Real Club de Golf'));
+      fireEvent.click(await screen.findByText('cerrar detalle'));
+
+      await waitFor(() => expect(screen.queryByTestId('detalle')).toBeNull());
+    });
   });
 });

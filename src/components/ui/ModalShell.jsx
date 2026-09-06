@@ -32,6 +32,17 @@ import { useEffect, useRef } from 'react';
  *   que se toca sin querer
  * @param {boolean} [props.busy=false] Marca el diálogo como ocupado mientras
  *   algo está en vuelo: sin esto, un Escape que no cierra no dice por qué
+ * @param {boolean} [props.scrollableBackdrop=false] Para un diálogo ALTO: el
+ *   fondo se desplaza y la caja se alinea arriba en vez de al centro. Centrada
+ *   y con el fondo sin desplazamiento, una caja más alta que la ventana se
+ *   recorta por LOS DOS extremos —se pierden el título y los botones— y no hay
+ *   forma de alcanzarlos. Pasa en un móvil apaisado, donde caben ~390 px de
+ *   alto. Va como opción y no por defecto porque los diálogos cortos, que son
+ *   todos los demás, se ven mejor centrados
+ * @param {string} [props.maxWidthClass='max-w-md'] Ancho máximo de la caja. El
+ *   valor por defecto es el de siempre, así que ningún diálogo cambia; lo pasa
+ *   quien enseña algo que no cabe en una columna estrecha, como la tarjeta de
+ *   18 hoyos del detalle de un campo
  * @param {React.ReactNode} props.children
  */
 
@@ -56,6 +67,8 @@ const ModalShell = ({
   closeOnEscape = true,
   closeOnBackdrop = true,
   busy = false,
+  maxWidthClass = 'max-w-md',
+  scrollableBackdrop = false,
   children,
 }) => {
   const cajaRef = useRef(null);
@@ -165,7 +178,9 @@ const ModalShell = ({
   return (
     <div
       data-testid={testId}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+      className={`fixed inset-0 z-50 flex justify-center bg-black/50 ${
+        scrollableBackdrop ? 'items-start overflow-y-auto py-8' : 'items-center'
+      }`}
       role="dialog"
       aria-modal="true"
       aria-labelledby={labelledBy}
@@ -177,7 +192,7 @@ const ModalShell = ({
       <div
         ref={cajaRef}
         tabIndex={-1}
-        className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 p-6"
+        className={`bg-white rounded-lg shadow-xl ${maxWidthClass} w-full mx-4 p-6`}
       >
         {children}
       </div>
