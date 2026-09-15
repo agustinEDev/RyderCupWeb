@@ -26,6 +26,14 @@ const mismoGolpe = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 // y en el otro se quedaba para reenviarse. El empate de reloj lo decide el
 // golpe: dos anotaciones caen en el mismo milisegundo más a menudo de lo que
 // parece, y comparando solo la hora se borraba la corrección
+// La respuesta de un envío trae la vista entera, pero a veces sin hoyos: se
+// conservan los que había (resiliencia ante ese fallo del backend). Una sola
+// vez, porque la pintan el envío directo y el vaciado
+const conHoyosDe = (vista, antes) => ({
+  ...vista,
+  holes: vista.holes?.length > 0 ? vista.holes : (antes?.holes || []),
+});
+
 const estaSuperada = (guardada, loEnviado) => {
   const cuando = guardada.timestamp ?? 0;
   if (cuando < loEnviado.cuando) return true;
@@ -184,14 +192,105 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
     [matchId, currentUserId]
   );
 
+  /**
+   * Lo que se ve de cada hoyo: lo del servidor con lo guardado en la cola encima
+   * (FE #606), como `holeScoresVisibles` en partida rápida.
+   *
+   * Desde la FE #601 el golpe entra en la cola ANTES de enviarse y sale al llegar
+   * o al rechazarse, así que la cola es justo «lo anotado que el servidor aún no
+   * tiene». Antes lo hacía una copia en la pantalla que nunca se vaciaba: un golpe
+   * rechazado seguía pintándose y el servidor no volvía a mandar sobre ese hoyo.
+   *
+   * Se lee en cada render, como allí: memorizarlo pedía saber cuándo cambia la
+   * cola. Lo validado y la entrega de la tarjeta NO salen de aquí sino del
+   * servidor: un golpe que no ha llegado no lo ha validado nadie.
+   */
+  const scoresVisibles = (() => {
+    const delServidor = scoringView?.scores ?? [];
+    if (!matchId) return delServidor;
+    // Las que llevan participante son de partida rápida
+    const guardadas = offlineQueue
+      .getByMatch(matchId, currentUserId)
+      .filter((e) => e.participantId == null);
+    if (guardadas.length === 0) return delServidor;
+
+    // Qué pone encima cada anotación. Guarda solo lo que se puso: un campo sin
+    // valor no tapa lo que tiene el servidor
+    const encimas = guardadas.flatMap((entrada) => {
+      const { ownScore, markedPlayerId, markedScore } = entrada.scoreData ?? {};
+      return [
+        ...(ownScore !== undefined && currentUserId
+          ? [{ hoyo: entrada.holeNumber, jugador: currentUserId, campo: 'ownScore', valor: ownScore, marca: 'ownSubmitted' }]
+          : []),
+        ...(markedScore !== undefined && markedPlayerId
+          ? [{ hoyo: entrada.holeNumber, jugador: markedPlayerId, campo: 'markerScore', valor: markedScore, marca: 'markerSubmitted' }]
+          : []),
+      ];
+    });
+    if (encimas.length === 0) return delServidor;
+
+    // Si la cola dice lo mismo que ya tiene el servidor, su validación sigue
+    // valiendo. Y si no, ya no: la coincidencia entre anotadores era con otro
+    // golpe. El neto propio, por lo mismo, es del golpe de antes
+    const conEncima = (fila, encima) => (
+      fila[encima.marca] && fila[encima.campo] === encima.valor
+        ? fila
+        : {
+          ...fila,
+          [encima.campo]: encima.valor,
+          [encima.marca]: true,
+          validationStatus: 'pending',
+          ...(encima.campo === 'ownScore' ? { netScore: null } : {}),
+        }
+    );
+
+    const hoyos = [...new Set([...delServidor.map((s) => s.holeNumber), ...encimas.map((e) => e.hoyo)])];
+    return hoyos.map((holeNumber) => {
+      const delHoyo = delServidor.find((s) => s.holeNumber === holeNumber) ?? { holeNumber, playerScores: [] };
+      const suyas = encimas.filter((e) => e.hoyo === holeNumber);
+      if (suyas.length === 0) return delHoyo;
+      const filas = delHoyo.playerScores ?? [];
+      const jugadores = [...new Set([...filas.map((p) => p.userId), ...suyas.map((e) => e.jugador)])];
+      return {
+        ...delHoyo,
+        playerScores: jugadores.map((userId) =>
+          suyas
+            .filter((e) => e.jugador === userId)
+            .reduce(conEncima, filas.find((p) => p.userId === userId) ?? { userId })
+        ),
+      };
+    });
+  })();
+
+  // Una vista más vieja que otra ya aplicada no puede aplicarse después: traería
+  // el hoyo como estaba y pisaría lo que acaba de entrar. Cada petición de la
+  // vista toma un número al salir; al aplicarse, ese número pasa a ser «lo último
+  // aplicado», y lo mismo cuando llega un envío, cuya respuesta ya trae el golpe.
+  // Se descarta solo lo más viejo que eso (FE #606; partida rápida, FE #607):
+  // - NO «salió otra después», como hace partida rápida: aquí se sondea cada 10 s
+  //   sin esperar al anterior y las peticiones no tienen tope, así que con mala
+  //   cobertura cada respuesta llegaría con otra ya en camino y la vista no se
+  //   movería nunca
+  // - NI solo «salió antes del último envío»: con dos sondeos solapados, el viejo
+  //   llegando detrás del nuevo hacía retroceder la vista
+  const relojRef = useRef(0);
+  const ultimaAplicadaRef = useRef(0);
+  const marcaEscritura = useCallback(() => {
+    ultimaAplicadaRef.current = ++relojRef.current;
+  }, []);
+
   const fetchScoringView = useCallback(async () => {
     if (!matchId) return;
+    const salio = ++relojRef.current;
+    const esVieja = () => salio < ultimaAplicadaRef.current;
     try {
       const data = await getScoringViewUseCase.execute(matchId);
+      if (esVieja()) return;
+      ultimaAplicadaRef.current = salio;
       setScoringView(data);
       setError(null);
     } catch (err) {
-      if (!isOffline) {
+      if (!isOffline && !esVieja()) {
         setError(err);
       }
     } finally {
@@ -220,8 +319,17 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
     const unaPasada = () =>
       vaciaAnotaciones({
         entradas: offlineQueue.getByMatch(matchId, currentUserId),
-        manda: (entrada) =>
-          submitHoleScoreUseCase.execute(entrada.matchId, entrada.holeNumber, entrada.scoreData),
+        // Lo que llega se pinta YA, con su respuesta, antes de que salga de la
+        // cola (FE #606): esperar a la vista del final dejaba ese hoyo sin golpe
+        // en pantalla —ni en la cola ni en la vista— mientras la pasada seguía
+        // con los demás, que con mala cobertura son segundos. Y cuenta como lo
+        // último aplicado, para que un sondeo de antes no lo deshaga
+        manda: async (entrada) => {
+          const vista = await submitHoleScoreUseCase.execute(entrada.matchId, entrada.holeNumber, entrada.scoreData);
+          if (!vista?.matchId) return;
+          marcaEscritura();
+          setScoringView((prev) => conHoyosDe(vista, prev));
+        },
         // Una anotación con participante es de una partida rápida: va por otro
         // endpoint y con otro cuerpo, así que enviarla desde aquí la guardaría
         // mal y la borraría a continuación (FE #515)
@@ -249,7 +357,7 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
     setPendingQueueSize(pendientesPropias());
     await fetchScoringView();
     return resultado.paroPor;
-  }, [matchId, fetchScoringView, pendientesPropias, currentUserId]);
+  }, [matchId, fetchScoringView, pendientesPropias, currentUserId, marcaEscritura]);
 
   // Un solo vaciado a la vez. Ahora hay tres disparadores —montar, `online` y
   // volver a la aplicación— y llegan juntos: al entrar desde el aviso del
@@ -375,11 +483,9 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
     try {
       const updatedView = await submitHoleScoreUseCase.execute(matchId, holeNumber, scoreData);
       contesto = true;
-      // Preserve holes data if the submit response returns empty holes (backend bug resilience)
-      setScoringView(prev => ({
-        ...updatedView,
-        holes: updatedView.holes?.length > 0 ? updatedView.holes : (prev?.holes || []),
-      }));
+      // La respuesta trae la vista con el golpe: una pedida antes ya no vale (FE #606)
+      marcaEscritura();
+      setScoringView((prev) => conHoyosDe(updatedView, prev));
       setError(null);
       borraLoSuperado(holeNumber, { cuando: cuandoSeGuardo, scoreData });
       yaNoSePierde();
@@ -424,7 +530,7 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
     }
     // Sin respuesta no se insiste: `online` y volver a la aplicación lo harán
     if (contesto && aplazadoRef.current) processQueue();
-  }, [matchId, canScore, isOwnScoreLocked, isMarkerScoreLocked, isOffline, pendientesPropias, currentUserId, loGuardadoDe, borraLoSuperado, processQueue]);
+  }, [matchId, canScore, isOwnScoreLocked, isMarkerScoreLocked, isOffline, pendientesPropias, currentUserId, loGuardadoDe, borraLoSuperado, processQueue, marcaEscritura]);
 
   // --- Submit scorecard ---
   const submitScorecard = useCallback(async () => {
@@ -433,6 +539,8 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
     setIsSubmitting(true);
     try {
       const summary = await submitScorecardUseCase.execute(matchId);
+      // Como un golpe que llega: una vista pedida antes ya no vale (FE #606)
+      marcaEscritura();
       setMatchSummary(summary);
       setError(null);
       // Refresh view to get updated submittedBy
@@ -442,7 +550,7 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
     } finally {
       setIsSubmitting(false);
     }
-  }, [matchId, canSubmitScorecard, fetchScoringView]);
+  }, [matchId, canSubmitScorecard, fetchScoringView, marcaEscritura]);
 
   // --- Concede match ---
   const concedeMatch = useCallback(async (concedingTeam, reason) => {
@@ -451,6 +559,7 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
     setIsSubmitting(true);
     try {
       await concedeMatchUseCase.execute(matchId, concedingTeam, reason);
+      marcaEscritura();
       await fetchScoringView();
       setError(null);
     } catch (err) {
@@ -458,7 +567,7 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
     } finally {
       setIsSubmitting(false);
     }
-  }, [matchId, fetchScoringView]);
+  }, [matchId, fetchScoringView, marcaEscritura]);
 
 
 
@@ -585,6 +694,8 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
   return {
     // State
     scoringView,
+    // Lo que se pinta: el servidor con la cola encima (FE #606)
+    scoresVisibles,
     currentHole,
     isLoading,
     error,

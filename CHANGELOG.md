@@ -35,6 +35,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   superado: ni se reenvía después pisando la corrección, ni se queda en la cola si el servidor
   la rechaza.
 
+- **La casilla del hoyo ya refleja lo que tiene el servidor aunque llegue después** (#606).
+  Tomaba su valor solo al montarse, y la pantalla no la vuelve a montar hasta cambiar de
+  hoyo. Al reabrir la app con golpes pendientes, la vista cargaba antes de que salieran, y la
+  casilla se quedaba vacía con el golpe ya en el servidor hasta ir a otro hoyo y volver. Ahora
+  adopta cada vista nueva, pero solo cuando lo que dice cambia: no pisa lo que el jugador
+  acaba de elegir.
+
+  Y lo que se pinta ahora sale de **juntar lo del servidor con lo que sigue en la cola**, como
+  en partida rápida, en vez de una copia que la pantalla guardaba de lo anotado y no vaciaba
+  nunca. Con eso:
+
+  - **un golpe guardado sin cobertura se ve** también al cambiar de hoyo y al reabrir la app;
+  - **un golpe rechazado deja de verse** en cuanto sale de la cola, y el servidor vuelve a
+    mandar sobre ese hoyo;
+  - **el selector de hoyos y la tarjeta** dicen lo mismo que la casilla;
+  - si hay en la cola un golpe distinto del que el servidor tenía validado, **la validación
+    pasa a pendiente**. Los hoyos validados y la entrega de la tarjeta siguen contando solo lo
+    que tiene el servidor.
+
+  Además, una vista del servidor **más vieja que otra ya aplicada se descarta**: un sondeo que
+  salió antes de guardar un golpe ya no lo borra de la pantalla al llegar tarde. No se descarta
+  por «ha salido otra petición después», que con mala cobertura dejaría la vista congelada.
+
 ## [2.31.0] - 2026-09-15
 
 Release de mantenimiento: **no cambia nada de lo que se ve ni de lo que se hace**. Actualiza

@@ -206,6 +206,68 @@ describe('HoleInput', () => {
  * mismo hoyo tiene dos pares. El teclado etiquetaba los dos contra el par de
  * quien anota. Ver RyderCupWeb#417.
  */
+describe('HoleInput · una vista más nueva llega a la casilla (FE #606)', () => {
+  // Cada `rerender` con un elemento NUEVO: con el mismo objeto React se salta
+  // la reconciliación y el test no prueba nada
+  const base = { holeNumber: 1, par: 4, strokeIndex: 3, onScoreChange: vi.fn() };
+  const sinAnotar = { ownSubmitted: false, ownScore: null };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('1 · la vista llega sin el golpe y luego con él: la casilla lo muestra', () => {
+    // Lo que se vio en Chrome: la vista carga antes de que el vaciado de
+    // entrada mande el golpe, y la casilla seguía vacía hasta cambiar de hoyo
+    const { rerender } = render(<HoleInput {...base} playerScore={sinAnotar} />);
+    expect(screen.getByTestId('own-score-value')).toHaveTextContent('input.notEntered');
+
+    rerender(<HoleInput {...base} playerScore={{ ownSubmitted: true, ownScore: 5 }} />);
+
+    expect(screen.getByTestId('own-score-value')).toHaveTextContent('5');
+  });
+
+  it('2 · si la vista nueva trae la bola recogida, sale la raya y no el hueco', () => {
+    const { rerender } = render(<HoleInput {...base} playerScore={sinAnotar} />);
+
+    rerender(<HoleInput {...base} playerScore={{ ownSubmitted: true, ownScore: null }} />);
+
+    expect(screen.getByTestId('own-score-value')).toHaveTextContent('—');
+  });
+
+  it('3 · lo que el jugador acaba de elegir no lo pisa una vista que no ha cambiado', () => {
+    const { rerender } = render(<HoleInput {...base} playerScore={sinAnotar} />);
+    fireEvent.click(screen.getByTestId('own-score-button'));
+    fireEvent.click(screen.getByRole('button', { name: /6/ }));
+
+    rerender(<HoleInput {...base} playerScore={{ ...sinAnotar }} />);
+
+    expect(screen.getByTestId('own-score-value')).toHaveTextContent('6');
+  });
+
+  it('4 · la casilla del marcado también muestra la vista nueva', () => {
+    const { rerender } = render(
+      <HoleInput {...base} markedPlayerScore={{ markerSubmitted: false, markerScore: null }} />
+    );
+
+    rerender(<HoleInput {...base} markedPlayerScore={{ markerSubmitted: true, markerScore: 4 }} />);
+
+    expect(screen.getByTestId('marked-score-value')).toHaveTextContent('4');
+  });
+
+  it('4b · y tampoco pisa lo que el marcador acaba de elegir', () => {
+    const { rerender } = render(
+      <HoleInput {...base} markedPlayerScore={{ markerSubmitted: false, markerScore: null }} />
+    );
+    fireEvent.click(screen.getByTestId('marked-score-button'));
+    fireEvent.click(screen.getByRole('button', { name: /7/ }));
+
+    rerender(<HoleInput {...base} markedPlayerScore={{ markerSubmitted: false, markerScore: null }} />);
+
+    expect(screen.getByTestId('marked-score-value')).toHaveTextContent('7');
+  });
+});
+
 describe('HoleInput · el teclado del marcado usa SU par', () => {
   const base = {
     holeNumber: 1,
