@@ -206,7 +206,11 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
    * servidor: un golpe que no ha llegado no lo ha validado nadie.
    */
   const scoresVisibles = (() => {
-    const delServidor = scoringView?.scores ?? [];
+    // Solo si la vista ES de este partido: al ir de uno a otro hay renders con el
+    // nuevo y la vista del anterior, y juntarla con la cola del nuevo mezclaba los dos
+    const delServidor = scoringView?.matchId === matchId
+      ? (scoringView.scores ?? [])
+      : [];
     if (!matchId) return delServidor;
     // Las que llevan participante son de partida rápida
     const guardadas = offlineQueue
@@ -279,10 +283,21 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
     ultimaAplicadaRef.current = ++relojRef.current;
   }, []);
 
+  // El partido que está en pantalla AHORA. La ruta no lleva `key`, así que ir de
+  // un partido a otro reutiliza este hook con las peticiones del anterior aún en
+  // camino: lo que conteste tarde no se pinta en el nuevo, ni cuenta como lo último
+  // aplicado, que haría descartar la vista del nuevo. Como `idVigenteRef` en
+  // partida rápida
+  const partidaVigenteRef = useRef(matchId);
+  useEffect(() => {
+    partidaVigenteRef.current = matchId;
+  }, [matchId]);
+  const esDeOtraPartida = useCallback((id) => id !== partidaVigenteRef.current, []);
+
   const fetchScoringView = useCallback(async () => {
     if (!matchId) return;
     const salio = ++relojRef.current;
-    const esVieja = () => salio < ultimaAplicadaRef.current;
+    const esVieja = () => esDeOtraPartida(matchId) || salio < ultimaAplicadaRef.current;
     try {
       const data = await getScoringViewUseCase.execute(matchId);
       if (esVieja()) return;
@@ -296,7 +311,7 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
     } finally {
       setIsLoading(false);
     }
-  }, [matchId, isOffline]);
+  }, [matchId, isOffline, esDeOtraPartida]);
 
   // --- Un escritor a la vez: el envío o el vaciado (FE #601) ---
   // El golpe se guarda en la cola ANTES de enviarlo, así que un vaciado que
@@ -326,7 +341,7 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
         // último aplicado, para que un sondeo de antes no lo deshaga
         manda: async (entrada) => {
           const vista = await submitHoleScoreUseCase.execute(entrada.matchId, entrada.holeNumber, entrada.scoreData);
-          if (!vista?.matchId) return;
+          if (!vista?.matchId || esDeOtraPartida(entrada.matchId)) return;
           marcaEscritura();
           setScoringView((prev) => conHoyosDe(vista, prev));
         },
@@ -357,7 +372,7 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
     setPendingQueueSize(pendientesPropias());
     await fetchScoringView();
     return resultado.paroPor;
-  }, [matchId, fetchScoringView, pendientesPropias, currentUserId, marcaEscritura]);
+  }, [matchId, fetchScoringView, pendientesPropias, currentUserId, marcaEscritura, esDeOtraPartida]);
 
   // Un solo vaciado a la vez. Ahora hay tres disparadores —montar, `online` y
   // volver a la aplicación— y llegan juntos: al entrar desde el aviso del
@@ -483,9 +498,12 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
     try {
       const updatedView = await submitHoleScoreUseCase.execute(matchId, holeNumber, scoreData);
       contesto = true;
-      // La respuesta trae la vista con el golpe: una pedida antes ya no vale (FE #606)
-      marcaEscritura();
-      setScoringView((prev) => conHoyosDe(updatedView, prev));
+      // La respuesta trae la vista con el golpe: una pedida antes ya no vale (FE #606).
+      // Salvo que ya se esté en otro partido: ni se pinta ni cuenta como aplicada
+      if (!esDeOtraPartida(matchId)) {
+        marcaEscritura();
+        setScoringView((prev) => conHoyosDe(updatedView, prev));
+      }
       setError(null);
       borraLoSuperado(holeNumber, { cuando: cuandoSeGuardo, scoreData });
       yaNoSePierde();
@@ -530,7 +548,7 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
     }
     // Sin respuesta no se insiste: `online` y volver a la aplicación lo harán
     if (contesto && aplazadoRef.current) processQueue();
-  }, [matchId, canScore, isOwnScoreLocked, isMarkerScoreLocked, isOffline, pendientesPropias, currentUserId, loGuardadoDe, borraLoSuperado, processQueue, marcaEscritura]);
+  }, [matchId, canScore, isOwnScoreLocked, isMarkerScoreLocked, isOffline, pendientesPropias, currentUserId, loGuardadoDe, borraLoSuperado, processQueue, marcaEscritura, esDeOtraPartida]);
 
   // --- Submit scorecard ---
   const submitScorecard = useCallback(async () => {
@@ -540,7 +558,7 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
     try {
       const summary = await submitScorecardUseCase.execute(matchId);
       // Como un golpe que llega: una vista pedida antes ya no vale (FE #606)
-      marcaEscritura();
+      if (!esDeOtraPartida(matchId)) marcaEscritura();
       setMatchSummary(summary);
       setError(null);
       // Refresh view to get updated submittedBy
@@ -550,7 +568,7 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
     } finally {
       setIsSubmitting(false);
     }
-  }, [matchId, canSubmitScorecard, fetchScoringView, marcaEscritura]);
+  }, [matchId, canSubmitScorecard, fetchScoringView, marcaEscritura, esDeOtraPartida]);
 
   // --- Concede match ---
   const concedeMatch = useCallback(async (concedingTeam, reason) => {
@@ -559,7 +577,7 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
     setIsSubmitting(true);
     try {
       await concedeMatchUseCase.execute(matchId, concedingTeam, reason);
-      marcaEscritura();
+      if (!esDeOtraPartida(matchId)) marcaEscritura();
       await fetchScoringView();
       setError(null);
     } catch (err) {
@@ -567,7 +585,7 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
     } finally {
       setIsSubmitting(false);
     }
-  }, [matchId, fetchScoringView, marcaEscritura]);
+  }, [matchId, fetchScoringView, marcaEscritura, esDeOtraPartida]);
 
 
 

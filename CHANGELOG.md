@@ -56,7 +56,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
   Además, una vista del servidor **más vieja que otra ya aplicada se descarta**: un sondeo que
   salió antes de guardar un golpe ya no lo borra de la pantalla al llegar tarde. No se descarta
-  por «ha salido otra petición después», que con mala cobertura dejaría la vista congelada.
+  por «ha salido otra petición después», que con mala cobertura dejaría la vista congelada. Y
+  todo va atado al partido que está en pantalla: si se pasa de uno a otro sin salir de la
+  pantalla, lo que conteste tarde el anterior no se pinta en el nuevo ni hace descartar su vista.
 
 ## [2.31.0] - 2026-09-15
 
