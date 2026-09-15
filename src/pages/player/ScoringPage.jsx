@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import HeaderAuth from '../../components/layout/HeaderAuth';
@@ -32,10 +32,9 @@ const ScoringPage = () => {
   const [showConcedeModal, setShowConcedeModal] = useState(false);
   const [showSubmitModal, setShowSubmitModal] = useState(false);
   const [earlyEndDismissed, setEarlyEndDismissed] = useState(false);
-  const localScoresRef = useRef({}); // last submitted values per hole, used to re-initialize HoleInput when scoringView is stale
-
   const {
     scoringView,
+    scoresVisibles,
     currentHole,
     isLoading,
     error,
@@ -123,7 +122,10 @@ const ScoringPage = () => {
   // Get current hole data
   const courseHoleData = scoringView?.holes?.find((h) => h.holeNumber === currentHole);
   const currentHoleData = holeFor(currentUserId) ?? courseHoleData;
-  const currentHoleScore = scoringView?.scores?.find((s) => s.holeNumber === currentHole);
+  // Lo que se ve del hoyo: el servidor con lo que está en la cola encima, que lo
+  // compone el hook (FE #606). La pantalla ya no guarda su propia copia de lo
+  // anotado: nunca se vaciaba, así que un golpe rechazado seguía pintándose
+  const currentHoleScore = scoresVisibles.find((s) => s.holeNumber === currentHole);
   const currentPlayerScore = currentHoleScore?.playerScores?.find(
     (ps) => ps.userId === currentUserId
   );
@@ -134,7 +136,6 @@ const ScoringPage = () => {
 
   const handleScoreChange = (scoreData) => {
     if (!markerAssignment) return;
-    localScoresRef.current[currentHole] = { ownScore: scoreData.ownScore, markedScore: scoreData.markedScore };
     submitScore(currentHole, {
       ownScore: scoreData.ownScore,
       markedPlayerId: markerAssignment.marksUserId,
@@ -242,20 +243,6 @@ const ScoringPage = () => {
     );
   }
 
-  // Use locally-tracked submitted values as fallback so HoleInput doesn't show stale
-  // server data when scoringView hasn't been updated yet (e.g. poll races submit response).
-  const localHoleScore = localScoresRef.current[currentHole];
-  // eslint-disable-next-line react-hooks/refs -- pre-existing pattern surfaced by eslint-plugin-react-hooks 7.1.1 bump; needs dedicated review (tracked in follow-up)
-  const effectivePlayerScore = localHoleScore
-    // eslint-disable-next-line react-hooks/refs -- pre-existing pattern surfaced by eslint-plugin-react-hooks 7.1.1 bump; needs dedicated review (tracked in follow-up)
-    ? { ...currentPlayerScore, ownScore: localHoleScore.ownScore }
-    : currentPlayerScore;
-  // eslint-disable-next-line react-hooks/refs -- pre-existing pattern surfaced by eslint-plugin-react-hooks 7.1.1 bump; needs dedicated review (tracked in follow-up)
-  const effectiveMarkedPlayerScore = localHoleScore
-    // eslint-disable-next-line react-hooks/refs -- pre-existing pattern surfaced by eslint-plugin-react-hooks 7.1.1 bump; needs dedicated review (tracked in follow-up)
-    ? { ...markedPlayerScore, markerScore: localHoleScore.markedScore }
-    : markedPlayerScore;
-
   return (
     <div className="min-h-screen bg-gray-50">
       <HeaderAuth user={user} />
@@ -357,7 +344,7 @@ const ScoringPage = () => {
             <HoleSelector
               currentHole={currentHole}
               onSelect={handleHoleSelect}
-              scores={scoringView?.scores}
+              scores={scoresVisibles}
               totalHoles={totalHoles}
             />
 
@@ -368,10 +355,8 @@ const ScoringPage = () => {
                 par={currentHoleData.par}
                 markedPar={holeFor(markerAssignment?.marksUserId)?.par ?? courseHoleData?.par ?? null}
                 strokeIndex={currentHoleData.strokeIndex}
-                // eslint-disable-next-line react-hooks/refs -- pre-existing pattern surfaced by eslint-plugin-react-hooks 7.1.1 bump; needs dedicated review (tracked in follow-up)
-                playerScore={effectivePlayerScore}
-                // eslint-disable-next-line react-hooks/refs -- pre-existing pattern surfaced by eslint-plugin-react-hooks 7.1.1 bump; needs dedicated review (tracked in follow-up)
-                markedPlayerScore={effectiveMarkedPlayerScore}
+                playerScore={currentPlayerScore}
+                markedPlayerScore={markedPlayerScore}
                 validationStatus={currentPlayerScore?.validationStatus}
                 markedValidationStatus={markedPlayerScore?.validationStatus}
                 netScore={currentPlayerScore?.netScore}
@@ -422,7 +407,7 @@ const ScoringPage = () => {
           <div className="space-y-4">
             <ScorecardTable
               holes={scoringView?.holes}
-              scores={scoringView?.scores}
+              scores={scoresVisibles}
               players={scoringView?.players}
               currentUserId={currentUserId}
               teamAName={scoringView?.teamAName}
