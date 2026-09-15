@@ -7,6 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+
+- **En competición, un golpe anotado con mala cobertura ya no se pierde si se cierra la
+  aplicación** (#601). Se guardaba en el móvil solo *después* de que el envío fallara, y con
+  la señal floja —la de una casa club o una barra de cobertura— la petición tarda unos diez
+  segundos en morir: si en ese rato se cerraba la aplicación, el golpe no estaba ni en el
+  servidor ni en el móvil. Ahora se guarda antes de enviarlo, como ya hacía partida rápida
+  desde la #561. En modo avión ya funcionaba y no cambia.
+
+  Guardar antes obligaba a tres cosas más, que son las que de verdad llevan el riesgo:
+
+  - **Un solo envío a la vez.** Un golpe anotado mientras otro va de camino, o mientras se
+    vacía la cola, solo se guarda. Antes salían dos peticiones a la vez y el resultado final
+    lo decidía la que llegara última, que podía ser la vieja.
+  - **Lo que se aplaza sale en cuanto el servidor contesta.** Competición no vacía la cola en
+    el sondeo, así que sin esto una corrección hecha con la petición en vuelo se quedaba en
+    el móvil hasta salir y volver a la aplicación. Si no hay respuesta no se insiste: ya lo
+    hacen la vuelta de la red y la vuelta a la aplicación.
+  - **Un rechazo del servidor deja constancia.** Sale de la cola y queda en el aviso de golpes
+    perdidos, igual que cuando lo rechaza el vaciado. Antes solo se enseñaba el error, que la
+    siguiente anotación buena retiraba, y del golpe no quedaba rastro.
+
+  Al llegar un envío se retira lo guardado de ese hoyo, pero no una corrección posterior del
+  jugador, tampoco si cae en el mismo milisegundo: el empate lo decide el golpe, no la hora. Y
+  si el móvil no tiene sitio para guardarlo, lo que quedara de antes de ese hoyo cuenta como
+  superado: ni se reenvía después pisando la corrección, ni se queda en la cola si el servidor
+  la rechaza.
+
 ## [2.31.0] - 2026-09-15
 
 Release de mantenimiento: **no cambia nada de lo que se ve ni de lo que se hace**. Actualiza
