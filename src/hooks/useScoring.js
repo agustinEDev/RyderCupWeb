@@ -19,13 +19,6 @@ const SESSION_REFRESH_INTERVAL = 30000; // 30 seconds
 // número como en partida rápida: se compara entero
 const mismoGolpe = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 
-// Si una anotación guardada queda superada por lo que se acaba de enviar: es
-// anterior, o es esa misma. Una posterior es una corrección hecha con la
-// petición en vuelo, y esa NO. Una sola regla para retirar lo que llegó y para
-// apartar lo rechazado: con dos, una anotación vieja se retiraba en un camino
-// y en el otro se quedaba para reenviarse. El empate de reloj lo decide el
-// golpe: dos anotaciones caen en el mismo milisegundo más a menudo de lo que
-// parece, y comparando solo la hora se borraba la corrección
 // La respuesta de un envío trae la vista entera, pero a veces sin hoyos: se
 // conservan los que había (resiliencia ante ese fallo del backend). Una sola
 // vez, porque la pintan el envío directo y el vaciado
@@ -34,6 +27,13 @@ const conHoyosDe = (vista, antes) => ({
   holes: vista.holes?.length > 0 ? vista.holes : (antes?.holes || []),
 });
 
+// Si una anotación guardada queda superada por lo que se acaba de enviar: es
+// anterior, o es esa misma. Una posterior es una corrección hecha con la
+// petición en vuelo, y esa NO. Una sola regla para retirar lo que llegó y para
+// apartar lo rechazado: con dos, una anotación vieja se retiraba en un camino
+// y en el otro se quedaba para reenviarse. El empate de reloj lo decide el
+// golpe: dos anotaciones caen en el mismo milisegundo más a menudo de lo que
+// parece, y comparando solo la hora se borraba la corrección
 const estaSuperada = (guardada, loEnviado) => {
   const cuando = guardada.timestamp ?? 0;
   if (cuando < loEnviado.cuando) return true;
