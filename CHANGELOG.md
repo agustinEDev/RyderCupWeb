@@ -7,6 +7,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [2.31.0] - 2026-09-15
+
+Release de mantenimiento: **no cambia nada de lo que se ve ni de lo que se hace**. Actualiza
+las dependencias y devuelve el CI a verde. Se corta aparte, y no mezclada con trabajo de
+producto, precisamente porque mueve React, Vite y la librería de animaciones: si algo se
+tuerce en producción, aquí se sabe exactamente dónde mirar.
+
+### Changed
+
+- **18 dependencias al día** (#598), entre ellas React y React DOM a 19.3, Vite a 8.3,
+  React Router a 8.3.1, framer-motion a 13.2, i18next a 26.4.2 y Sentry a 10.74. Todas son
+  versiones menores o de parche: no hay ningún salto mayor.
+
+  Verificado en el navegador sobre el **build de producción**, no solo con la suite: portada y
+  acceso pintan bien, las traducciones se resuelven —no queda ninguna clave sin traducir—, las
+  animaciones de entrada se completan y la consola no da un solo error. Los 3614 tests pasan,
+  incluidos los dos que suelen ser inestables.
+
+  El paquete servido crece 33 KB, de 1864 a **1897 KB**, y el presupuesto son 2000. Queda a
+  3 KB del umbral de aviso, así que el siguiente cambio de cualquier tamaño lo disparará.
+
+### Fixed
+
+- **El CI volvía a ejecutar los tests.** La auditoría de dependencias fallaba desde el 14 de
+  septiembre por `js-yaml` (GHSA-2883-xcg3-v3hh, alta), y ese fallo **abortaba el pipeline
+  antes de llegar a los tests, al build y a la comprobación de tipos**: los tres se saltaban.
+  Así que cualquier PR abierta contra `develop` heredaba un CI rojo cuyas comprobaciones útiles
+  no llegaban a correr — la propia #598 llevaba una semana parada sin que constara siquiera
+  que la aplicación compilaba (#599).
+
+  `js-yaml` llegaba a través de `eslint`, así que **nunca estuvo en el paquete que se sirve**:
+  el riesgo real era el pipeline detenido, no la vulnerabilidad. Se arregla subiendo la
+  dependencia a 4.3.2 en el fichero de bloqueo, sin tocar `package.json` ni arrastrar el salto
+  mayor de eslint 10, que es una decisión aparte.
+
+- **El escáner de secretos, al día**: trufflehog 3.97.4 (#596). Solo afecta al CI.
+
 ## [2.30.0] - 2026-09-06
 
 ### Added
