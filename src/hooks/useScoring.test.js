@@ -1252,3 +1252,283 @@ describe('useScoring · cuando el vaciado se para, y lo que se nombra (FE #551)'
     expect(sessionLock.acquire).toHaveBeenCalledWith('m-1', expect.any(String), 'u1');
   });
 });
+
+describe('useScoring · se guarda ANTES de enviar (FE #601)', () => {
+  // Una cola que se comporta como la de verdad —reemplaza, sella y borra— para
+  // poder mirar qué hay guardado en cada momento del envío. El reloj avanza
+  // uno por anotación salvo que se fije: dos anotaciones en el mismo
+  // milisegundo son un caso real (lo cazó el CI en partida rápida)
+  let enCola;
+  let reloj;
+  let relojFijo;
+
+  const esLaMisma = (e, matchId, holeNumber, participantId, userId) =>
+    e.matchId === matchId
+    && e.holeNumber === holeNumber
+    && (e.participantId ?? null) === (participantId ?? null)
+    && (e.userId ?? null) === (userId ?? null);
+
+  const golpe = (ownScore) => ({ ownScore, markedPlayerId: 'u2', markedScore: 4 });
+  const guardadaDe = (holeNumber, scoreData, timestamp = 1) =>
+    ({ matchId: 'm-1', holeNumber, participantId: null, scoreData, timestamp, userId: 'u1' });
+
+  const enVuelo = () => {
+    let suelta;
+    let falla;
+    const promesa = new Promise((resolve, reject) => { suelta = resolve; falla = reject; });
+    return { promesa, suelta, falla };
+  };
+
+  const esperaUnPoco = () => act(async () => { await new Promise((r) => setTimeout(r, 20)); });
+
+  // Montada y con el vaciado de entrar ya terminado, que con la cola vacía no
+  // manda nada pero sí tiene el cerrojo un momento
+  const monta = async () => {
+    const { result } = renderHook(() => useScoring('m-1', 'u1'));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    await esperaUnPoco();
+    return result;
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    almacen.clear();
+    enCola = [];
+    reloj = 1000;
+    relojFijo = false;
+    getScoringViewUseCase.execute.mockResolvedValue(mockScoringView);
+    submitHoleScoreUseCase.execute.mockResolvedValue(mockScoringView);
+    Object.defineProperty(navigator, 'onLine', { value: true, configurable: true });
+    offlineQueue.enqueue.mockImplementation((matchId, holeNumber, scoreData, participantId = null, userId = null) => {
+      enCola = enCola.filter((e) => !esLaMisma(e, matchId, holeNumber, participantId, userId));
+      enCola.push({ matchId, holeNumber, participantId, scoreData, timestamp: relojFijo ? reloj : reloj++, userId });
+      return true;
+    });
+    offlineQueue.getByMatch.mockImplementation((matchId) =>
+      enCola.filter((e) => e.matchId === matchId).map((e) => ({ ...e }))
+    );
+    offlineQueue.remove.mockImplementation((matchId, holeNumber, participantId = null, userId = null) => {
+      enCola = enCola.filter((e) => !esLaMisma(e, matchId, holeNumber, participantId, userId));
+      return true;
+    });
+  });
+
+  afterEach(() => {
+    // Las implementaciones sobreviven a `clearAllMocks`: sin esto, cualquier
+    // bloque que se añada detrás heredaría esta cola
+    offlineQueue.enqueue.mockReset();
+    offlineQueue.getByMatch.mockReset().mockReturnValue([]);
+    offlineQueue.remove.mockReset().mockReturnValue(true);
+    submitHoleScoreUseCase.execute.mockReset();
+  });
+
+  it('1 · el golpe ya está en la cola cuando sale la petición, y al llegar no queda nada', async () => {
+    const result = await monta();
+    let loGuardadoAlEnviar = null;
+    submitHoleScoreUseCase.execute.mockImplementationOnce(async () => {
+      loGuardadoAlEnviar = enCola.map((e) => [e.holeNumber, e.scoreData]);
+      return mockScoringView;
+    });
+
+    await act(async () => { await result.current.submitScore(5, golpe(5)); });
+
+    expect(loGuardadoAlEnviar).toEqual([[5, golpe(5)]]);
+    expect(enCola).toEqual([]);
+    expect(result.current.error).toBeNull();
+    expect(result.current.pendingQueueSize).toBe(0);
+  });
+
+  it('2 · si la aplicación muere con la petición muriendo, el golpe está a salvo', async () => {
+    const result = await monta();
+    const vuelo = enVuelo();
+    submitHoleScoreUseCase.execute.mockReturnValueOnce(vuelo.promesa);
+
+    let envio;
+    act(() => { envio = result.current.submitScore(5, golpe(5)); });
+    await waitFor(() => expect(submitHoleScoreUseCase.execute).toHaveBeenCalledTimes(1));
+
+    // Lo que hay aquí es lo único que sobrevive a cerrar la aplicación
+    expect(enCola).toEqual([expect.objectContaining({ holeNumber: 5, userId: 'u1', scoreData: golpe(5) })]);
+
+    await act(async () => { vuelo.falla(new TypeError('Failed to fetch')); await envio; });
+  });
+
+  it.each([
+    ['sin respuesta', new TypeError('Failed to fetch')],
+    ['con un 503', Object.assign(new Error('HTTP 503'), { status: 503 })],
+  ])('3 · %s se queda guardado una sola vez, y sin error', async (_, fallo) => {
+    const result = await monta();
+    submitHoleScoreUseCase.execute.mockRejectedValueOnce(fallo);
+
+    await act(async () => { await result.current.submitScore(5, golpe(5)); });
+
+    expect(offlineQueue.enqueue).toHaveBeenCalledTimes(1);
+    expect(enCola).toEqual([expect.objectContaining({ holeNumber: 5, scoreData: golpe(5) })]);
+    expect(result.current.error).toBeNull();
+    expect(result.current.pendingQueueSize).toBe(1);
+  });
+
+  it('4 · un rechazo definitivo sale de la cola y queda apuntado como perdido', async () => {
+    // Guardado antes de enviar, un rechazo que no lo sacara lo reenviaría en
+    // cada vaciado; y sacarlo sin apuntarlo lo haría desaparecer en cuanto la
+    // siguiente anotación buena retire el error (FE #521)
+    const result = await monta();
+    submitHoleScoreUseCase.execute.mockRejectedValueOnce(
+      Object.assign(new Error('Match completed'), { status: 409 })
+    );
+
+    await act(async () => { await result.current.submitScore(5, golpe(5)); });
+
+    expect(enCola).toEqual([]);
+    expect(golpesPerdidos.pendientes('u1')).toEqual([
+      expect.objectContaining({ matchId: 'm-1', holeNumber: 5, userId: 'u1' }),
+    ]);
+    expect(result.current.error).toBeTruthy();
+  });
+
+  it('5 · pero si el jugador lo corrigió con el rechazo en camino, no se aparta', async () => {
+    const result = await monta();
+    submitHoleScoreUseCase.execute.mockImplementationOnce(async () => {
+      offlineQueue.enqueue('m-1', 5, golpe(6), null, 'u1');
+      throw Object.assign(new Error('Conflict'), { status: 409 });
+    });
+
+    await act(async () => { await result.current.submitScore(5, golpe(5)); });
+
+    expect(enCola).toEqual([expect.objectContaining({ holeNumber: 5, scoreData: golpe(6) })]);
+    expect(golpesPerdidos.pendientes('u1')).toEqual([]);
+  });
+
+  it('6 · con el móvil lleno, si el envío llega no hay nada que avisar', async () => {
+    const result = await monta();
+    offlineQueue.enqueue.mockReturnValueOnce(false);
+
+    await act(async () => { await result.current.submitScore(5, golpe(5)); });
+
+    expect(submitHoleScoreUseCase.execute).toHaveBeenCalledTimes(1);
+    expect(result.current.error).toBeNull();
+  });
+
+  describe('con el móvil lleno y una anotación VIEJA de ese hoyo en la cola', () => {
+    // Sin poder guardar, lo que hay en la cola no es este golpe sino uno
+    // anterior. Tomarle la hora a ese lo confundía con lo recién enviado
+    const montaConLaVieja = async () => {
+      const result = await monta();
+      enCola = [guardadaDe(5, golpe(4))];
+      offlineQueue.enqueue.mockReturnValueOnce(false);
+      return result;
+    };
+
+    it('6b · si el envío llega, la vieja sale: el siguiente vaciado pisaría la corrección', async () => {
+      const result = await montaConLaVieja();
+
+      await act(async () => { await result.current.submitScore(5, golpe(5)); });
+
+      expect(enCola).toEqual([]);
+    });
+
+    it('4b · si lo rechazan, queda apuntado como perdido y la vieja no se reenvía', async () => {
+      const result = await montaConLaVieja();
+      submitHoleScoreUseCase.execute.mockRejectedValueOnce(
+        Object.assign(new Error('Match completed'), { status: 409 })
+      );
+
+      await act(async () => { await result.current.submitScore(5, golpe(5)); });
+
+      expect(enCola).toEqual([]);
+      expect(golpesPerdidos.pendientes('u1')).toEqual([
+        expect.objectContaining({ matchId: 'm-1', holeNumber: 5, userId: 'u1' }),
+      ]);
+    });
+  });
+
+  // Fila 7 (móvil lleno y sin respuesta): «si el móvil no puede guardarlo, se
+  // dice», más arriba. Fila 12 (modo avión): «should queue score when offline»
+
+  it.each([
+    ['8 · corregir el hoyo con el envío en vuelo', false],
+    ['9 · lo mismo en el mismo milisegundo, donde el empate lo decide el valor', true],
+  ])('%s: la corrección se guarda sin enviar, no se borra, y sale al llegar', async (_, mismoMilisegundo) => {
+    const result = await monta();
+    relojFijo = mismoMilisegundo;
+    const vuelo = enVuelo();
+    submitHoleScoreUseCase.execute.mockReturnValueOnce(vuelo.promesa);
+
+    let primero;
+    act(() => { primero = result.current.submitScore(5, golpe(5)); });
+    await waitFor(() => expect(submitHoleScoreUseCase.execute).toHaveBeenCalledTimes(1));
+
+    await act(async () => { await result.current.submitScore(5, golpe(6)); });
+    // Dos peticiones a la vez las decidiría el orden de llegada
+    expect(submitHoleScoreUseCase.execute).toHaveBeenCalledTimes(1);
+
+    await act(async () => { vuelo.suelta(mockScoringView); await primero; });
+
+    await waitFor(() => expect(submitHoleScoreUseCase.execute).toHaveBeenCalledTimes(2));
+    expect(submitHoleScoreUseCase.execute.mock.calls[1]).toEqual(['m-1', 5, golpe(6)]);
+    await waitFor(() => expect(enCola).toEqual([]));
+  });
+
+  it('10 · anotar con un vaciado enviando solo guarda, y sale al terminar ese vaciado', async () => {
+    // El 8 no estaba en la lista de ese vaciado: su pasada de repaso solo
+    // relee lo que leyó, así que sin relanzar esperaría al siguiente disparador
+    enCola = [guardadaDe(3, golpe(4))];
+    const vaciado = enVuelo();
+    submitHoleScoreUseCase.execute.mockReturnValueOnce(vaciado.promesa);
+    const { result } = renderHook(() => useScoring('m-1', 'u1'));
+    await waitFor(() => expect(submitHoleScoreUseCase.execute).toHaveBeenCalledWith('m-1', 3, golpe(4)));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    await act(async () => { await result.current.submitScore(8, golpe(5)); });
+
+    expect(submitHoleScoreUseCase.execute).toHaveBeenCalledTimes(1);
+    expect(enCola.map((e) => e.holeNumber)).toEqual([3, 8]);
+
+    await act(async () => { vaciado.suelta({}); });
+
+    await waitFor(() => expect(submitHoleScoreUseCase.execute).toHaveBeenCalledWith('m-1', 8, golpe(5)));
+    await waitFor(() => expect(enCola).toEqual([]));
+  });
+
+  describe('11 · un vaciado que salta con un envío en vuelo', () => {
+    const arrancaElEnvioYVuelveLaRed = async (result) => {
+      const vuelo = enVuelo();
+      submitHoleScoreUseCase.execute.mockReturnValueOnce(vuelo.promesa);
+      let envio;
+      act(() => { envio = result.current.submitScore(5, golpe(5)); });
+      await waitFor(() => expect(submitHoleScoreUseCase.execute).toHaveBeenCalledTimes(1));
+      // Un hoyo de antes, guardado sin cobertura
+      enCola.unshift(guardadaDe(3, golpe(4)));
+
+      await act(async () => {
+        window.dispatchEvent(new globalThis.Event('online'));
+        await Promise.resolve();
+      });
+      return { vuelo, envio };
+    };
+
+    it('no arranca, y lo que aplazó sale en cuanto llega el envío', async () => {
+      const result = await monta();
+      const { vuelo, envio } = await arrancaElEnvioYVuelveLaRed(result);
+
+      expect(submitHoleScoreUseCase.execute).toHaveBeenCalledTimes(1);
+
+      await act(async () => { vuelo.suelta(mockScoringView); await envio; });
+
+      await waitFor(() => expect(submitHoleScoreUseCase.execute).toHaveBeenCalledWith('m-1', 3, golpe(4)));
+      expect(submitHoleScoreUseCase.execute.mock.calls.filter((c) => c[1] === 5)).toHaveLength(1);
+      await waitFor(() => expect(enCola).toEqual([]));
+    });
+
+    it('y si el envío no llega por la red, no se relanza: ya lo harán `online` y volver a la app', async () => {
+      const result = await monta();
+      const { vuelo, envio } = await arrancaElEnvioYVuelveLaRed(result);
+
+      await act(async () => { vuelo.falla(new TypeError('Failed to fetch')); await envio; });
+      await esperaUnPoco();
+
+      expect(submitHoleScoreUseCase.execute).toHaveBeenCalledTimes(1);
+      expect(enCola.map((e) => e.holeNumber).sort()).toEqual([3, 5]);
+    });
+  });
+});
