@@ -19,15 +19,21 @@ class SubmitHoleScoreUseCase {
       throw new Error('Marked player ID is required');
     }
 
-    // Validate scores using HoleScore VO
-    const ownScore = new HoleScore(scoreData.ownScore);
-    const markedScore = new HoleScore(scoreData.markedScore);
+    // Omitir un golpe NO es lo mismo que mandarlo nulo (#609): nulo es una raya
+    // —conceder el hoyo, en match play— y el backend la guarda como tal
+    // (RyderCupAm#301). La casilla que el jugador no ha tocado llega como
+    // `undefined`, y pasarla por `HoleScore` la convertia en `null`: asi se
+    // concedia el hoyo del otro sin que nadie lo concediera, y su hoyo pasaba a
+    // desacuerdo si ya habia anotado. Se valida y se manda solo lo que viene
+    const aEnviar = { markedPlayerId: scoreData.markedPlayerId };
+    if (scoreData.ownScore !== undefined) {
+      aEnviar.ownScore = new HoleScore(scoreData.ownScore).getValue();
+    }
+    if (scoreData.markedScore !== undefined) {
+      aEnviar.markedScore = new HoleScore(scoreData.markedScore).getValue();
+    }
 
-    return await this.scoringRepository.submitHoleScore(matchId, holeNumber, {
-      ownScore: ownScore.getValue(),
-      markedPlayerId: scoreData.markedPlayerId,
-      markedScore: markedScore.getValue(),
-    });
+    return await this.scoringRepository.submitHoleScore(matchId, holeNumber, aEnviar);
   }
 }
 

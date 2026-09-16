@@ -60,6 +60,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   todo va atado al partido que está en pantalla: si se pasa de uno a otro sin salir de la
   pantalla, lo que conteste tarde el anterior no se pinta en el nuevo ni hace descartar su vista.
 
+- **Anotar solo tu golpe ya no concede el hoyo del rival** (#609). La app mandaba siempre las dos
+  casillas, y la que no habías tocado viajaba como `null`. Para el servidor `null` es una **raya**,
+  que en match play significa conceder el hoyo: anotar solo lo tuyo dejaba el hoyo del rival
+  concedido sin que nadie lo concediera, y si él ya había anotado su número, su hoyo pasaba a
+  **desacuerdo**, lo que además bloquea la entrega de la tarjeta. Al revés igual: anotar solo el
+  suyo te concedía el tuyo.
+
+  Ahora solo viaja el golpe que has puesto. La raya, elegida a propósito con el botón, se manda
+  como siempre. Lo guardado sin cobertura ya funcionaba así, y queda fijado con sus tests.
+
+  La otra mitad es RyderCupAm#301, ya mergeada en `develop` pero **pendiente de release**: el
+  servidor aplica solo los campos que llegan. **El backend tiene que salir antes** para que esto
+  se note. Si saliera al revés no se rompería nada —la API de hoy acepta el campo ausente y lo
+  lee como nulo, sin error—, simplemente no se arreglaría nada hasta desplegar el backend.
+
 ## [2.31.0] - 2026-09-15
 
 Release de mantenimiento: **no cambia nada de lo que se ve ni de lo que se hace**. Actualiza
