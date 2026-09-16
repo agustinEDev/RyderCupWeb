@@ -52,6 +52,7 @@ const mockUseScoring = {
   isOffline: false,
   isSessionBlocked: false,
   pendingQueueSize: 0,
+  scoresVisibles: [],
   isMatchPlayer: true,
   canScore: true,
   hasSubmitted: false,
@@ -82,15 +83,31 @@ vi.mock('../../components/layout/HeaderAuth', () => ({
   default: () => <div data-testid="header-auth">Header</div>,
 }));
 
+// Lo último que recibió la casilla, para mirar qué le llega (FE #606)
+const casilla = vi.hoisted(() => ({ props: null }));
+
 // Mock all scoring components to simple stubs
 vi.mock('../../components/scoring/HoleInput', () => ({
-  default: (props) => <div data-testid="hole-input">HoleInput {props.holeNumber}</div>,
+  default: (props) => {
+    casilla.props = props;
+    return <div data-testid="hole-input">HoleInput {props.holeNumber}</div>;
+  },
 }));
+// Y lo último que recibieron el selector y la tarjeta, por lo mismo
+const selector = vi.hoisted(() => ({ props: null }));
+const tarjeta = vi.hoisted(() => ({ props: null }));
+
 vi.mock('../../components/scoring/HoleSelector', () => ({
-  default: () => <div data-testid="hole-selector">HoleSelector</div>,
+  default: (props) => {
+    selector.props = props;
+    return <div data-testid="hole-selector">HoleSelector</div>;
+  },
 }));
 vi.mock('../../components/scoring/ScorecardTable', () => ({
-  default: () => <div data-testid="scorecard-table">ScorecardTable</div>,
+  default: (props) => {
+    tarjeta.props = props;
+    return <div data-testid="scorecard-table">ScorecardTable</div>;
+  },
 }));
 vi.mock('../../components/scoring/LeaderboardView', () => ({
   default: () => <div data-testid="leaderboard-view">LeaderboardView</div>,
@@ -127,6 +144,50 @@ vi.mock('../../components/scoring/SubmitScorecardModal', () => ({
 }));
 
 import ScoringPage from './ScoringPage';
+
+describe('ScoringPage · la casilla, el selector y la tarjeta leen lo que se ve (FE #606)', () => {
+  // Lo que se ve lo compone el hook con el servidor y la cola. La pantalla ya
+  // no superpone nada suyo: con una copia propia de lo anotado, un golpe
+  // rechazado seguía pintándose y el servidor no volvía a mandar nunca
+  const fila = (userId, campos) => ({ userId, ownScore: null, ownSubmitted: false, ...campos });
+
+  afterEach(() => {
+    mockUseScoring.scoresVisibles = [];
+  });
+
+  it('Q11 · los tres reciben la vista con la cola, no solo lo del servidor', () => {
+    // El servidor no tiene el hoyo 1 (`scoringView.scores` vacío); la cola sí
+    const conLaCola = [{
+      holeNumber: 1,
+      playerScores: [
+        fila('u1', { ownScore: 5, ownSubmitted: true }),
+        fila('u2', { markerScore: 4, markerSubmitted: true }),
+      ],
+    }];
+    mockUseScoring.scoresVisibles = conLaCola;
+
+    render(<ScoringPage />);
+    expect(casilla.props.playerScore).toEqual(conLaCola[0].playerScores[0]);
+    expect(casilla.props.markedPlayerScore).toEqual(conLaCola[0].playerScores[1]);
+    expect(selector.props.scores).toBe(conLaCola);
+
+    fireEvent.click(screen.getByTestId('tab-scorecard'));
+
+    expect(tarjeta.props.scores).toBe(conLaCola);
+  });
+
+  it('lo anotado en la casilla no se superpone en la pantalla: a la casilla le llega lo que da el hook', () => {
+    const delHook = [{ holeNumber: 1, playerScores: [fila('u1', { ownScore: 3, ownSubmitted: true })] }];
+    mockUseScoring.scoresVisibles = delHook;
+    const { rerender } = render(<ScoringPage />);
+
+    casilla.props.onScoreChange({ ownScore: 6, markedScore: undefined });
+    rerender(<ScoringPage />);
+
+    expect(casilla.props.playerScore).toEqual(delHook[0].playerScores[0]);
+    expect(mockUseScoring.submitScore).toHaveBeenCalledWith(1, { ownScore: 6, markedPlayerId: 'u2', markedScore: undefined });
+  });
+});
 
 describe('ScoringPage', () => {
   beforeEach(() => {

@@ -32,6 +32,25 @@ describe('scoringOfflineQueue', () => {
       expect(queue[0].timestamp).toBeGreaterThan(0);
     });
 
+    // Lo guardado viaja al servidor tal cual cuando vuelve la cobertura, y alli
+    // omitir un golpe no es lo mismo que mandarlo nulo (#609, RyderCupAm#301):
+    // nulo es una raya. Al serializar a JSON, una clave sin valor se cae sola;
+    // esto lo fija, porque de ello depende que el vaciado no conceda un hoyo
+    it('no guarda la clave de un golpe que no se ha anotado', () => {
+      enqueue('m-1', 3, { ownScore: 5, markedPlayerId: 'u2', markedScore: undefined });
+
+      const [guardada] = getAll();
+      expect('markedScore' in guardada.scoreData).toBe(false);
+      expect(guardada.scoreData).toEqual({ ownScore: 5, markedPlayerId: 'u2' });
+    });
+
+    it('pero si guarda una raya, que es un valor', () => {
+      enqueue('m-1', 3, { ownScore: null, markedPlayerId: 'u2', markedScore: null });
+
+      const [guardada] = getAll();
+      expect(guardada.scoreData).toEqual({ ownScore: null, markedPlayerId: 'u2', markedScore: null });
+    });
+
     it('should replace existing entry for same match+hole', () => {
       enqueue('m-1', 3, { ownScore: 5, markedPlayerId: 'u2', markedScore: 4 });
       enqueue('m-1', 3, { ownScore: 6, markedPlayerId: 'u2', markedScore: 5 });

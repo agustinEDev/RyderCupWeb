@@ -5,7 +5,75 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [2.32.0] - 2026-09-16
+
+### Fixed
+
+- **En competición, un golpe anotado con mala cobertura ya no se pierde si se cierra la
+  aplicación** (#601). Se guardaba en el móvil solo *después* de que el envío fallara, y con
+  la señal floja —la de una casa club o una barra de cobertura— la petición tarda unos diez
+  segundos en morir: si en ese rato se cerraba la aplicación, el golpe no estaba ni en el
+  servidor ni en el móvil. Ahora se guarda antes de enviarlo, como ya hacía partida rápida
+  desde la #561. En modo avión ya funcionaba y no cambia.
+
+  Guardar antes obligaba a tres cosas más, que son las que de verdad llevan el riesgo:
+
+  - **Un solo envío a la vez.** Un golpe anotado mientras otro va de camino, o mientras se
+    vacía la cola, solo se guarda. Antes salían dos peticiones a la vez y el resultado final
+    lo decidía la que llegara última, que podía ser la vieja.
+  - **Lo que se aplaza sale en cuanto el servidor contesta.** Competición no vacía la cola en
+    el sondeo, así que sin esto una corrección hecha con la petición en vuelo se quedaba en
+    el móvil hasta salir y volver a la aplicación. Si no hay respuesta no se insiste: ya lo
+    hacen la vuelta de la red y la vuelta a la aplicación.
+  - **Un rechazo del servidor deja constancia.** Sale de la cola y queda en el aviso de golpes
+    perdidos, igual que cuando lo rechaza el vaciado. Antes solo se enseñaba el error, que la
+    siguiente anotación buena retiraba, y del golpe no quedaba rastro.
+
+  Al llegar un envío se retira lo guardado de ese hoyo, pero no una corrección posterior del
+  jugador, tampoco si cae en el mismo milisegundo: el empate lo decide el golpe, no la hora. Y
+  si el móvil no tiene sitio para guardarlo, lo que quedara de antes de ese hoyo cuenta como
+  superado: ni se reenvía después pisando la corrección, ni se queda en la cola si el servidor
+  la rechaza.
+
+- **La casilla del hoyo ya refleja lo que tiene el servidor aunque llegue después** (#606).
+  Tomaba su valor solo al montarse, y la pantalla no la vuelve a montar hasta cambiar de
+  hoyo. Al reabrir la app con golpes pendientes, la vista cargaba antes de que salieran, y la
+  casilla se quedaba vacía con el golpe ya en el servidor hasta ir a otro hoyo y volver. Ahora
+  adopta cada vista nueva, pero solo cuando lo que dice cambia: no pisa lo que el jugador
+  acaba de elegir.
+
+  Y lo que se pinta ahora sale de **juntar lo del servidor con lo que sigue en la cola**, como
+  en partida rápida, en vez de una copia que la pantalla guardaba de lo anotado y no vaciaba
+  nunca. Con eso:
+
+  - **un golpe guardado sin cobertura se ve** también al cambiar de hoyo y al reabrir la app;
+  - **un golpe rechazado deja de verse** en cuanto sale de la cola, y el servidor vuelve a
+    mandar sobre ese hoyo;
+  - **el selector de hoyos y la tarjeta** dicen lo mismo que la casilla;
+  - si hay en la cola un golpe distinto del que el servidor tenía validado, **la validación
+    pasa a pendiente**. Los hoyos validados y la entrega de la tarjeta siguen contando solo lo
+    que tiene el servidor.
+
+  Además, una vista del servidor **más vieja que otra ya aplicada se descarta**: un sondeo que
+  salió antes de guardar un golpe ya no lo borra de la pantalla al llegar tarde. No se descarta
+  por «ha salido otra petición después», que con mala cobertura dejaría la vista congelada. Y
+  todo va atado al partido que está en pantalla: si se pasa de uno a otro sin salir de la
+  pantalla, lo que conteste tarde el anterior no se pinta en el nuevo ni hace descartar su vista.
+
+- **Anotar solo tu golpe ya no concede el hoyo del rival** (#609). La app mandaba siempre las dos
+  casillas, y la que no habías tocado viajaba como `null`. Para el servidor `null` es una **raya**,
+  que en match play significa conceder el hoyo: anotar solo lo tuyo dejaba el hoyo del rival
+  concedido sin que nadie lo concediera, y si él ya había anotado su número, su hoyo pasaba a
+  **desacuerdo**, lo que además bloquea la entrega de la tarjeta. Al revés igual: anotar solo el
+  suyo te concedía el tuyo.
+
+  Ahora solo viaja el golpe que has puesto. La raya, elegida a propósito con el botón, se manda
+  como siempre. Lo guardado sin cobertura ya funcionaba así, y queda fijado con sus tests.
+
+  La otra mitad es RyderCupAm#301, que **ya está en producción** con la v2.18.2 (16 sep): el
+  servidor aplica solo los campos que llegan. Ese era el requisito —el backend tenía que salir
+  primero—, así que este despliegue cierra el arreglo y se nota desde el primer golpe. Verificado
+  de punta a punta contra esa misma versión del backend antes de cortar la release.
 
 ## [2.31.0] - 2026-09-15
 

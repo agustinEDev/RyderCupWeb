@@ -67,6 +67,39 @@ describe('ApiScoringRepository', () => {
       expect(result.matchId).toBe('match-1');
     });
 
+    // El backend distingue omitido de nulo (RyderCupAm#301): nulo es una raya,
+    // y un campo que no viene deja esa anotacion como estaba. Asi que una
+    // casilla sin tocar no puede viajar
+    it('no pone en el cuerpo el golpe del marcado cuando no se ha anotado', async () => {
+      apiRequest.mockResolvedValue({
+        match_id: 'match-1',
+        match_number: 1,
+        match_format: 'SINGLES',
+        match_status: 'IN_PROGRESS',
+      });
+
+      await repo.submitHoleScore('match-1', 4, { ownScore: 4, markedPlayerId: 'u2' });
+
+      const cuerpo = JSON.parse(apiRequest.mock.calls[0][1].body);
+      expect('marked_score' in cuerpo).toBe(false);
+      expect(cuerpo).toEqual({ own_score: 4, marked_player_id: 'u2' });
+    });
+
+    it('no pone en el cuerpo el golpe propio cuando no se ha anotado', async () => {
+      apiRequest.mockResolvedValue({
+        match_id: 'match-1',
+        match_number: 1,
+        match_format: 'SINGLES',
+        match_status: 'IN_PROGRESS',
+      });
+
+      await repo.submitHoleScore('match-1', 6, { markedPlayerId: 'u2', markedScore: 5 });
+
+      const cuerpo = JSON.parse(apiRequest.mock.calls[0][1].body);
+      expect('own_score' in cuerpo).toBe(false);
+      expect(cuerpo).toEqual({ marked_player_id: 'u2', marked_score: 5 });
+    });
+
     it('should handle null scores (picked up ball)', async () => {
       apiRequest.mockResolvedValue({
         match_id: 'match-1',

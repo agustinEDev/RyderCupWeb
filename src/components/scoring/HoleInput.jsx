@@ -29,12 +29,28 @@ const HoleInput = ({
 }) => {
   const { t } = useTranslation('scoring');
   // undefined = hole not scored yet (nothing persisted); null = explicitly picked up.
-  const [ownValue, setOwnValue] = useState(
-    playerScore?.ownSubmitted ? playerScore.ownScore : undefined
-  );
-  const [markedValue, setMarkedValue] = useState(
-    markedPlayerScore?.markerSubmitted ? markedPlayerScore.markerScore : undefined
-  );
+  const ownDeLaVista = playerScore?.ownSubmitted ? playerScore.ownScore : undefined;
+  const markedDeLaVista = markedPlayerScore?.markerSubmitted ? markedPlayerScore.markerScore : undefined;
+  const [ownValue, setOwnValue] = useState(ownDeLaVista);
+  const [markedValue, setMarkedValue] = useState(markedDeLaVista);
+
+  // Una vista más nueva tiene que llegar a la casilla (FE #606). Solo se tomaba
+  // al montar, y la pantalla no la vuelve a montar hasta cambiar de hoyo: si la
+  // vista cargaba antes de que el vaciado de entrada mandara el golpe, la casilla
+  // seguía vacía con el golpe ya en el servidor. Se adopta solo cuando lo que dice
+  // la vista CAMBIA, no en cada render: así no se pisa lo que el jugador acaba de
+  // elegir mientras la vista sigue diciendo lo mismo. Durante el render y no en un
+  // efecto, que encadena renders y el lint del repo prohíbe
+  const [ownVisto, setOwnVisto] = useState(ownDeLaVista);
+  if (ownVisto !== ownDeLaVista) {
+    setOwnVisto(ownDeLaVista);
+    setOwnValue(ownDeLaVista);
+  }
+  const [markedVisto, setMarkedVisto] = useState(markedDeLaVista);
+  if (markedVisto !== markedDeLaVista) {
+    setMarkedVisto(markedDeLaVista);
+    setMarkedValue(markedDeLaVista);
+  }
   const [openPanel, setOpenPanel] = useState(null); // 'own' | 'marked' | null
 
   const handleOwnSelect = (val) => {
