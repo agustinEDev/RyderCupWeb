@@ -546,3 +546,160 @@ describe('ScoringPage · cuando lo que se ve sale de la foto del móvil (FE #614
     expect(screen.getByTestId('offline-banner')).toBeInTheDocument();
   });
 });
+
+describe('ScoringPage · servidor caido CON cobertura y sin foto (FE #617)', () => {
+  const laVista = mockUseScoring.scoringView;
+  const fallaLaRed = () => new TypeError('Failed to fetch (localhost:8000)');
+
+  afterEach(() => {
+    mockUseScoring.scoringView = laVista;
+    mockUseScoring.error = null;
+    mockUseScoring.isOffline = false;
+    mockUseScoring.pendingQueueSize = 0;
+  });
+
+  // El caso de campo mas probable: club con cobertura y la API caida. El hook SI
+  // pone error (no es `isOffline`), asi que la guarda de error se disparaba antes
+  // que la de «nada guardado» y el jugador veia el texto crudo de `fetch`
+  it('la pantalla de «nada guardado» gana a la de error genérico', () => {
+    mockUseScoring.scoringView = null;
+    mockUseScoring.error = fallaLaRed();
+
+    render(<ScoringPage />);
+
+    expect(screen.getByTestId('sin-nada-guardado')).toBeInTheDocument();
+  });
+
+  it('no se le enseña al jugador el texto técnico de fetch', () => {
+    mockUseScoring.scoringView = null;
+    mockUseScoring.error = fallaLaRed();
+
+    render(<ScoringPage />);
+
+    expect(screen.queryByText(/Failed to fetch/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/localhost:8000/i)).not.toBeInTheDocument();
+  });
+
+  // Lo que mas importa: el golpe esta a salvo en la cola, y callarlo es decirle
+  // lo contrario de lo que pasa.
+  //
+  // Esta fila nacio afirmando `offline-banner`, porque la primera version conto
+  // los pendientes por ahi. CodeRabbit senalo que ese banner dice «estas sin
+  // conexion» y con cobertura eso es falso, asi que ahora son dos avisos
+  // distintos: el suyo se comprueba abajo, y aqui lo que importa es que el
+  // jugador SEPA que su golpe esta guardado, cualquiera que sea el vehiculo
+  it('los golpes pendientes se anuncian aunque el navegador se crea en línea', () => {
+    mockUseScoring.scoringView = null;
+    mockUseScoring.error = fallaLaRed();
+    mockUseScoring.isOffline = false;
+    mockUseScoring.pendingQueueSize = 1;
+
+    render(<ScoringPage />);
+
+    expect(screen.getByTestId('pendientes-a-salvo')).toBeInTheDocument();
+    expect(screen.getByText(/offline\.pendingScores/)).toBeInTheDocument();
+  });
+
+  // Y un error de verdad del servidor sigue diciendo lo que pasa, pero con
+  // NUESTRO texto: el `detail` del backend viene en ingles, y sin cuerpo
+  // parseable `api.js` compone «HTTP 503: Service Unavailable». La primera
+  // version de esta fila usaba prosa espanola que la API nunca devuelve, asi que
+  // bendecia justo el defecto que la #617 venia a quitar (CodeRabbit)
+  it('un error con estado se cuenta con nuestro texto, no con el del backend', () => {
+    mockUseScoring.scoringView = null;
+    mockUseScoring.error = Object.assign(new Error('Match not found'), { status: 404 });
+
+    render(<ScoringPage />);
+
+    expect(screen.getByText('errors.notFound')).toBeInTheDocument();
+    expect(screen.queryByText(/Match not found/)).not.toBeInTheDocument();
+  });
+
+  it('un 503 no se le enseña como «HTTP 503: Service Unavailable»', () => {
+    mockUseScoring.scoringView = null;
+    mockUseScoring.error = Object.assign(new Error('HTTP 503: Service Unavailable'), { status: 503 });
+
+    render(<ScoringPage />);
+
+    expect(screen.queryByText(/HTTP 503/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Service Unavailable/)).not.toBeInTheDocument();
+  });
+
+  // Fila 2 de CodeRabbit: al cambiar `isOffline` por «hay pendientes» se perdio
+  // el aviso de que no hay red cuando la cola esta vacia — el caso mas comun al
+  // llegar al campo con un partido que nunca se abrio en ese movil
+  it('sin cobertura y sin golpes pendientes, sigue avisando de que no hay red', () => {
+    mockUseScoring.scoringView = null;
+    mockUseScoring.error = null;
+    mockUseScoring.isOffline = true;
+    mockUseScoring.pendingQueueSize = 0;
+
+    render(<ScoringPage />);
+
+    expect(screen.getByTestId('offline-banner')).toBeInTheDocument();
+  });
+
+  // Fila 3: con cobertura, ese banner afirma «Estas sin conexion», que es falso.
+  // Los pendientes se cuentan, pero no por ese vehiculo
+  it('con cobertura y golpes pendientes, se cuentan sin decir que no hay conexión', () => {
+    mockUseScoring.scoringView = null;
+    mockUseScoring.error = new TypeError('Failed to fetch');
+    mockUseScoring.isOffline = false;
+    mockUseScoring.pendingQueueSize = 2;
+
+    render(<ScoringPage />);
+
+    expect(screen.getByTestId('pendientes-a-salvo')).toBeInTheDocument();
+    expect(screen.queryByTestId('offline-banner')).not.toBeInTheDocument();
+  });
+
+  // Fila 4: la pista se escondia por «hay error», y un portal cautivo da error
+  // SIN respuesta. Es justo cuando «abrelo una vez con cobertura» es el consejo
+  it('si el servidor no contestó, la pista de abrirlo con cobertura sigue estando', () => {
+    mockUseScoring.scoringView = null;
+    mockUseScoring.error = new TypeError('Failed to fetch');
+
+    render(<ScoringPage />);
+
+    expect(screen.getByText('offline.nothingCachedHint')).toBeInTheDocument();
+  });
+});
+
+describe('ScoringPage · el gemelo: el recuadro con partido en pantalla (FE #617, CodeRabbit)', () => {
+  // CodeRabbit lo dijo en el resumen, no como comentario de linea: arregle solo
+  // el camino SIN vista, y el otro recuadro —el que sale con el partido ya
+  // pintado cuando falla un sondeo o un envio— seguia imprimiendo `textoDe`. Por
+  // ahi siguen llegando el `detail` en ingles del backend y el «HTTP 503:
+  // Service Unavailable» que compone `api.js`
+  afterEach(() => {
+    mockUseScoring.error = null;
+    mockUseScoring.pintadoDeMemoria = false;
+  });
+
+  it('un 503 con el partido en pantalla no se enseña como «HTTP 503: Service Unavailable»', () => {
+    mockUseScoring.error = Object.assign(new Error('HTTP 503: Service Unavailable'), { status: 503 });
+
+    render(<ScoringPage />);
+
+    expect(screen.queryByText(/HTTP 503/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Service Unavailable/)).not.toBeInTheDocument();
+  });
+
+  it('y el detail en inglés del backend tampoco', () => {
+    mockUseScoring.error = Object.assign(new Error('You are not a participant in this match'), { status: 403 });
+
+    render(<ScoringPage />);
+
+    expect(screen.queryByText(/You are not a participant/)).not.toBeInTheDocument();
+    expect(screen.getByText('errors.forbidden')).toBeInTheDocument();
+  });
+
+  it('un fallo sin respuesta tampoco enseña el texto interno de fetch', () => {
+    mockUseScoring.error = new TypeError('Failed to fetch (localhost:8000)');
+
+    render(<ScoringPage />);
+
+    expect(screen.queryByText(/Failed to fetch/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/localhost:8000/)).not.toBeInTheDocument();
+  });
+});
