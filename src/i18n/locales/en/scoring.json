@@ -149,7 +149,9 @@
     "pendingScores_other": "{{count}} scores pending sync",
     "nothingCached": "Nothing about this match is saved on this device",
     "nothingCachedHint": "Open it once with coverage and you will be able to score offline.",
-    "noSeActualiza": "This match could not be refreshed from the server. What you see may not be up to date."
+    "noSeActualiza": "This match could not be refreshed from the server. What you see may not be up to date.",
+    "noSePudoCargar": "This match could not be loaded. Try again in a moment.",
+    "pendientesASalvo": "Your strokes are saved on this device and will be sent when the match loads again."
   },
   "session": {
     "blocked": "Active Session Detected",
@@ -163,6 +165,8 @@
   },
   "errors": {
     "generic": "An error occurred",
+    "forbidden": "This match is not yours.",
+    "notFound": "This match is no longer there.",
     "failedToLoad": "Failed to load scoring data",
     "failedToSubmitScore": "Failed to submit score",
     "failedToSubmitScorecard": "Failed to submit scorecard",

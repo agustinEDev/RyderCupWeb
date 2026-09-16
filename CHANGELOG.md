@@ -9,6 +9,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- **Con el servidor caído y cobertura, la pantalla ya no suelta un error técnico ni se calla los
+  golpes pendientes** (#617). Es el caso de campo más probable —un club con señal y la API abajo, o
+  un error del servidor—, y salió al probar la #614 en local. Si el partido no se había abierto
+  nunca en ese dispositivo, lo que aparecía era `Failed to fetch (localhost:8000)` en crudo, sin
+  traducir, **y ni una palabra del golpe que seguía esperando en la cola**.
+
+  Dos causas sumadas: la pantalla de error genérico se decidía **antes** que la de «no hay nada
+  guardado», que así era inalcanzable en cuanto había error —y sin cobertura no lo hay, por eso solo
+  fallaba con señal—; y el aviso de golpes pendientes estaba atado a estar sin conexión, que es falso
+  cuando la red va bien y lo caído es el servidor.
+
+  Ahora hay **una sola pantalla** para los dos motivos, porque al jugador le pasa lo mismo en ambos:
+  el partido no se puede dibujar. Y lo que se le cuenta encaja con lo que de verdad pasa:
+
+  - **Los golpes pendientes se anuncian siempre que los haya**, pero por dos vías distintas: sin
+    conexión, con su aviso de siempre; **con cobertura y el servidor caído, con uno propio**, porque
+    el otro afirma «estás sin conexión» y ahí sí la hay.
+  - **El motivo lo contamos con nuestras palabras.** Antes se imprimía el mensaje del error, que
+    llega con el texto del backend en inglés o compuesto como `HTTP 503: Service Unavailable`: la
+    misma clase de texto técnico que este arreglo venía a quitar. Ahora el estado se traduce —«ese
+    partido ya no está», «ese partido no es tuyo»— y lo demás cae en un «no se ha podido cargar».
+  - **La pista de abrirlo una vez con cobertura se esconde solo si el servidor contestó.** Si el
+    partido no está o no es tuyo, abrirlo con red no arregla nada; pero con un fallo sin respuesta
+    —el wifi de un club con portal cautivo— es justo el consejo que hace falta, y antes desaparecía.
+
 - **Reabrir un partido de competición sin cobertura ya no deja una pantalla vacía** (#614). El
   golpe pendiente estaba a salvo —el aviso lo decía—, pero la partida no se podía dibujar: el
   título salía como «Partido #» sin número, la pestaña de anotar enseñaba el selector de hoyos

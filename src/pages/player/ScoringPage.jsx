@@ -198,41 +198,66 @@ const ScoringPage = () => {
     );
   }
 
-  // Only show full-page error if no data loaded yet (initial load failed)
-  if (error && !scoringView) {
-    return (
-      <div className="min-h-screen bg-gray-50">
-        <HeaderAuth user={user} />
-        <div className="max-w-4xl mx-auto px-4 py-6 text-center">
-          <p className="text-red-600">{textoDe(error)}</p>
-          <button onClick={refetch} className="mt-4 px-4 py-2 bg-primary text-white rounded-lg">
-            {t('retry')}
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  // Sin cobertura la petición muere sin respuesta, así que el hook NO pone
-  // error a propósito y aquí no hay nada que pintar: ni hoyos, ni pares, ni
-  // quién juega. Sin esto se caía al render normal y salía una carcasa —«Partido
-  // #» sin número, sin panel del hoyo y la tarjeta con solo las cabeceras—, que
-  // no dice qué ha pasado ni se puede usar. Con lo guardado del partido (FE #614)
-  // esto solo se ve si nunca se abrió en este dispositivo
+  // No hay nada que pintar: ni hoyos, ni pares, ni quién juega. Una sola pantalla
+  // para los dos motivos por los que se llega aquí (FE #617), porque al jugador
+  // le pasa lo mismo en ambos y lo que necesita saber es igual:
+  //
+  // - sin cobertura la petición muere sin respuesta y el hook NO pone error a
+  //   propósito;
+  // - con cobertura y el servidor caído —un club con señal y la API abajo, o un
+  //   5xx— el hook SÍ lo pone, y antes esta rama era inalcanzable: ganaba la de
+  //   error y salía el mensaje crudo de `fetch` («Failed to fetch (host:puerto)»),
+  //   sin una palabra de los golpes que seguían en la cola.
+  //
+  // Con la foto del partido (FE #614) esto solo se ve si nunca se abrió aquí
   if (!scoringView) {
+    // ¿Contestó el servidor? Preguntado por `=== undefined` y no por verdadero/
+    // falso, como en partida rápida: lo que importa es si hubo respuesta, y un
+    // `status` 0 —que algún proxy expone en una petición abortada— no lo es
+    const estado = error?.status ?? error?.response?.status;
+    const contestoElServidor = estado !== undefined;
+
+    // El motivo se cuenta con NUESTRO texto. El `message` del error no vale para
+    // esto: `api.js` lo rellena con el `detail` del backend, que viene en inglés,
+    // o compone «HTTP 503: Service Unavailable» cuando no hay cuerpo que parsear.
+    // Es la misma clase de texto técnico que esta pantalla venía a quitar, y el
+    // mapa es el que ya usa partida rápida (CodeRabbit)
+    const claveDelMotivo = { 403: 'errors.forbidden', 404: 'errors.notFound' }[estado];
     return (
       <div className="min-h-screen bg-gray-50">
         <HeaderAuth user={user} />
 
-        {/* Que no haya foto del partido no quiere decir que no haya golpes: la
-            foto pudo no caber, desalojarse, o borrarse por un 404 a media vuelta.
-            Sin esto, la pantalla dice «no hay nada guardado» mientras los golpes
-            del jugador siguen en la cola, que es decirle justo lo contrario */}
+        {/* Sin conexión, su aviso: se perdía cuando la cola estaba vacía, que es
+            el caso más común al llegar al campo con un partido nunca abierto aquí */}
         {isOffline && <OfflineBanner pendingCount={pendingQueueSize} />}
 
+        {/* Y con cobertura, los golpes pendientes se cuentan aparte: el banner de
+            arriba afirma «estás sin conexión», y aquí sí la hay —lo caído es el
+            servidor—, así que usarlo para esto sería decirle algo falso */}
+        {!isOffline && pendingQueueSize > 0 && (
+          <div className="max-w-4xl mx-auto px-4 pt-4">
+            <p
+              data-testid="pendientes-a-salvo"
+              className="bg-amber-50 border border-amber-200 text-amber-800 rounded-lg p-3 text-sm"
+            >
+              {t('offline.pendientesASalvo')} {t('offline.pendingScores', { count: pendingQueueSize })}
+            </p>
+          </div>
+        )}
+
         <div className="max-w-4xl mx-auto px-4 py-6 text-center" data-testid="sin-nada-guardado">
-          <p className="text-gray-700">{t('offline.nothingCached')}</p>
-          <p className="mt-2 text-sm text-gray-500">{t('offline.nothingCachedHint')}</p>
+          <p className="text-gray-700">
+            {claveDelMotivo
+              ? t(claveDelMotivo)
+              : t(error ? 'offline.noSePudoCargar' : 'offline.nothingCached')}
+          </p>
+          {/* La pista se esconde solo si el servidor contestó —si el partido no
+              está o no es tuyo, abrirlo con cobertura no arregla nada—. Con un
+              fallo sin respuesta, que es lo que da un portal cautivo, es justo el
+              consejo que hace falta */}
+          {!contestoElServidor && (
+            <p className="mt-2 text-sm text-gray-500">{t('offline.nothingCachedHint')}</p>
+          )}
           <button onClick={refetch} className="mt-4 px-4 py-2 bg-primary text-white rounded-lg">
             {t('retry')}
           </button>
