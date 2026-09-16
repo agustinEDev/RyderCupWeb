@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [2.32.0] - 2026-09-16
 
 ### Fixed
 
@@ -70,10 +70,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   Ahora solo viaja el golpe que has puesto. La raya, elegida a propósito con el botón, se manda
   como siempre. Lo guardado sin cobertura ya funcionaba así, y queda fijado con sus tests.
 
-  La otra mitad es RyderCupAm#301, ya mergeada en `develop` pero **pendiente de release**: el
-  servidor aplica solo los campos que llegan. **El backend tiene que salir antes** para que esto
-  se note. Si saliera al revés no se rompería nada —la API de hoy acepta el campo ausente y lo
-  lee como nulo, sin error—, simplemente no se arreglaría nada hasta desplegar el backend.
+  La otra mitad es RyderCupAm#301, que **ya está en producción** con la v2.18.2 (16 sep): el
+  servidor aplica solo los campos que llegan. Ese era el requisito —el backend tenía que salir
+  primero—, así que este despliegue cierra el arreglo y se nota desde el primer golpe. Verificado
+  de punta a punta contra esa misma versión del backend antes de cortar la release.
 
 ## [2.31.0] - 2026-09-15
 
