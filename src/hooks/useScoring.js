@@ -8,6 +8,9 @@ import {
 import { seGuardaParaDespues } from '../utils/politicaDeLaCola';
 import { apartaLaRechazada, avisoTrasElVaciado, vaciaAnotaciones } from '../services/vaciaAnotaciones';
 import { errorDeGuardado } from '../utils/erroresDeAnotacion';
+// Lo último que se supo del partido, para poder anotar sin cobertura al reabrir
+// (FE #614). El mismo servicio que usa partida rápida desde la FE #524
+import { loQueSeSupo, olvida, recuerda } from '../services/loUltimoConocido';
 import * as golpesPerdidos from '../utils/golpesPerdidos';
 import * as offlineQueue from '../utils/scoringOfflineQueue';
 import * as sessionLock from '../utils/scoringSessionLock';
@@ -294,6 +297,20 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
   }, [matchId]);
   const esDeOtraPartida = useCallback((id) => id !== partidaVigenteRef.current, []);
 
+  // Si lo que hay en pantalla salió de la foto del móvil y no del servidor. La
+  // pantalla lo dice en ámbar: sin esto se pintaba la vista entera —resultado,
+  // tarjeta, botón de entregar— como si fuera lo de ahora mismo, y con un 5xx eso
+  // pasa CON cobertura, donde nadie sospecha nada. Como `pintadoDeMemoria` en
+  // partida rápida
+  const [pintadoDeMemoria, setPintadoDeMemoria] = useState(false);
+
+  // Si hay algo pintado ya, sea del servidor o de la foto. Lo guardado sirve para
+  // ARRANCAR sin señal, no para corregir una pantalla que ya funciona, y con el
+  // estado no se puede mirar: meter `scoringView` en las dependencias de la
+  // petición la recrearía en cada cambio de vista y reiniciaría el sondeo. Como
+  // `hayPartidaRef` en partida rápida
+  const hayVistaRef = useRef(false);
+
   const fetchScoringView = useCallback(async () => {
     if (!matchId) return;
     const salio = ++relojRef.current;
@@ -304,14 +321,60 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
       ultimaAplicadaRef.current = salio;
       setScoringView(data);
       setError(null);
+      setPintadoDeMemoria(false);
+      hayVistaRef.current = true;
+      // La foto de lo último que se supo, para poder anotar al reabrir la
+      // aplicación en el campo (FE #614). Va DESPUÉS de la guarda: una respuesta
+      // vieja no pinta, así que tampoco puede guardarse. Solo lo que dio el
+      // backend, como en partida rápida; aquí basta con una cosa porque esta
+      // vista ya trae hoyos, pares, jugadores y golpes en la misma respuesta.
+      // Si no cabe, `recuerda` devuelve `false` y no pasa nada más: el sitio es
+      // compartido con la cola de golpes sin enviar, y perder eso sí sería grave.
+      //
+      // Solo las partidas que se juegan: las tres plazas que caben se comparten
+      // con partida rápida, y mirar dos partidos ajenos desde el calendario
+      // desalojaba la foto de la propia, que es la que hace falta en el campo.
+      // Sale de la RESPUESTA y no de `isMatchPlayer`, que se deriva del estado y
+      // en la primera carga todavía va vacío
+      const laJuego = data.players?.some((p) => p.userId === currentUserId);
+      if (laJuego) recuerda(matchId, { partida: data, campo: null });
     } catch (err) {
+      const estado = err?.status ?? err?.response?.status;
+      // Una respuesta CON estado es una respuesta: si el servidor dice que ese
+      // partido no está —o que no es tuyo— pintarlo desde el móvil sería enseñar
+      // algo que no existe, y dejar anotar encima
+      if ((estado === 404 || estado === 403) && !esVieja()) olvida(matchId);
+      // El 401 no borra la foto AQUÍ, pero que sobreviva no se puede prometer: si
+      // la sesión ha caducado de verdad, el interceptor cierra sesión antes de que
+      // esto corra y `olvidaLoDeEstaCuenta` la borra y cierra el almacén. Esta
+      // rama cubre los 401 que llegan sin cierre —sin sesión guardada no se
+      // intenta refrescar, y uno que no se clasifica como caducidad se relanza—.
+      // Un 5xx no desmiente nada —el backend está mal, el partido sigue ahí— y es
+      // justo cuando lo guardado hace falta
+      const desmentido = estado === 401 || estado === 403 || estado === 404;
+      // Solo si no hay NADA en pantalla: lo guardado sirve para ARRANCAR sin
+      // señal, no para corregir una pantalla que ya está funcionando
+      if (!desmentido && !esVieja() && !hayVistaRef.current) {
+        const recordado = loQueSeSupo(matchId);
+        if (recordado?.partida) {
+          setScoringView(recordado.partida);
+          hayVistaRef.current = true;
+          // Y que se sepa: la pantalla lo dice en ámbar. Con un 5xx esto ocurre
+          // CON cobertura, donde nadie sospecha que está viendo una foto de antes
+          setPintadoDeMemoria(true);
+        }
+      }
       if (!isOffline && !esVieja()) {
         setError(err);
       }
     } finally {
       setIsLoading(false);
     }
-  }, [matchId, isOffline, esDeOtraPartida]);
+    // `currentUserId` entra porque la guarda de arriba lo lee: solo se guarda la
+    // foto de las partidas que juegas. Recrea la petición —y reinicia el sondeo—
+    // al cambiar de cuenta, que es lo que se quiere: la cola es por dueño desde
+    // la FE #521, y la foto también
+  }, [matchId, isOffline, esDeOtraPartida, currentUserId]);
 
   // --- Un escritor a la vez: el envío o el vaciado (FE #601) ---
   // El golpe se guarda en la cola ANTES de enviarlo, así que un vaciado que
@@ -723,6 +786,9 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
     isSessionBlocked,
     pendingQueueSize,
     avisoDelVaciado,
+    // Si lo que se ve salió de la foto del móvil y no del servidor (FE #614): la
+    // pantalla tiene que decirlo, sobre todo con un 5xx, que ocurre CON cobertura
+    pintadoDeMemoria,
 
     // Derived
     isMatchPlayer,
