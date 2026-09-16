@@ -26,10 +26,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   - **Los golpes pendientes se anuncian siempre que los haya**, pero por dos vías distintas: sin
     conexión, con su aviso de siempre; **con cobertura y el servidor caído, con uno propio**, porque
     el otro afirma «estás sin conexión» y ahí sí la hay.
-  - **El motivo lo contamos con nuestras palabras.** Antes se imprimía el mensaje del error, que
-    llega con el texto del backend en inglés o compuesto como `HTTP 503: Service Unavailable`: la
-    misma clase de texto técnico que este arreglo venía a quitar. Ahora el estado se traduce —«ese
-    partido ya no está», «ese partido no es tuyo»— y lo demás cae en un «no se ha podido cargar».
+  - **El motivo lo contamos con nuestras palabras, en los dos sitios.** Antes se imprimía el mensaje
+    del error, que llega con el texto del backend en inglés o compuesto como `HTTP 503: Service
+    Unavailable`: la misma clase de texto técnico que este arreglo venía a quitar. Ahora el estado se
+    traduce —«ese partido ya no está», «ese partido no es tuyo»— y lo demás cae en un «no se ha
+    podido cargar». Y no solo en la pantalla sin datos: **el recuadro que sale con el partido ya
+    pintado**, cuando falla un sondeo o un envío, imprimía ese mismo texto crudo y se arregló con la
+    misma regla, no con una copia.
   - **La pista de abrirlo una vez con cobertura se esconde solo si el servidor contestó.** Si el
     partido no está o no es tuyo, abrirlo con red no arregla nada; pero con un fallo sin respuesta
     —el wifi de un club con portal cautivo— es justo el consejo que hace falta, y antes desaparecía.

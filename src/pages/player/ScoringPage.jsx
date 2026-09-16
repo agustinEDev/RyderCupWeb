@@ -64,7 +64,21 @@ const ScoringPage = () => {
 
   // Un error del hook puede traer la CLAVE de su texto: la pantalla pintaba
   // `error.message` tal cual, y así salía castellano fijo en la app en inglés
-  const textoDe = (err) => (err?.i18nKey ? t(err.i18nKey) : err?.message || t('errors.generic'));
+  // Lo que se le cuenta al jugador cuando algo falla, con NUESTRAS palabras.
+  //
+  // El `message` del error no sirve para esto: `api.js` lo rellena con el
+  // `detail` del backend —que viene en inglés— o compone «HTTP 503: Service
+  // Unavailable» cuando no hay cuerpo que parsear; y un fallo sin respuesta trae
+  // el texto interno de `fetch`. Nada de eso significa nada para quien lo lee.
+  //
+  // Una sola regla para los DOS sitios donde se enseña un fallo —la pantalla sin
+  // vista y el recuadro con el partido ya pintado—: arreglar solo el primero
+  // dejaba el mismo texto crudo saliendo por el otro (CodeRabbit en la PR #618)
+  const CLAVE_POR_ESTADO = { 403: 'errors.forbidden', 404: 'errors.notFound' };
+  const motivoDe = (err) => {
+    const clave = CLAVE_POR_ESTADO[err?.status ?? err?.response?.status];
+    return clave ? t(clave) : t('offline.noSePudoCargar');
+  };
 
   // Load leaderboard when tab changes to leaderboard
   useEffect(() => {
@@ -217,12 +231,7 @@ const ScoringPage = () => {
     const estado = error?.status ?? error?.response?.status;
     const contestoElServidor = estado !== undefined;
 
-    // El motivo se cuenta con NUESTRO texto. El `message` del error no vale para
-    // esto: `api.js` lo rellena con el `detail` del backend, que viene en inglés,
-    // o compone «HTTP 503: Service Unavailable» cuando no hay cuerpo que parsear.
-    // Es la misma clase de texto técnico que esta pantalla venía a quitar, y el
-    // mapa es el que ya usa partida rápida (CodeRabbit)
-    const claveDelMotivo = { 403: 'errors.forbidden', 404: 'errors.notFound' }[estado];
+    // El motivo sale de `motivoDe`, la misma regla que usa el recuadro de abajo
     return (
       <div className="min-h-screen bg-gray-50">
         <HeaderAuth user={user} />
@@ -247,9 +256,7 @@ const ScoringPage = () => {
 
         <div className="max-w-4xl mx-auto px-4 py-6 text-center" data-testid="sin-nada-guardado">
           <p className="text-gray-700">
-            {claveDelMotivo
-              ? t(claveDelMotivo)
-              : t(error ? 'offline.noSePudoCargar' : 'offline.nothingCached')}
+            {error ? motivoDe(error) : t('offline.nothingCached')}
           </p>
           {/* La pista se esconde solo si el servidor contestó —si el partido no
               está o no es tuyo, abrirlo con cobertura no arregla nada—. Con un
@@ -337,7 +344,7 @@ const ScoringPage = () => {
       {error && scoringView && !pintadoDeMemoria && (
         <div className="max-w-4xl mx-auto px-4 pt-4">
           <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-center justify-between">
-            <p className="text-sm text-red-600">{textoDe(error)}</p>
+            <p className="text-sm text-red-600">{motivoDe(error)}</p>
             <button
               onClick={refetch}
               className="px-3 py-1 text-xs bg-red-600 text-white rounded hover:bg-red-700"

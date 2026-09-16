@@ -664,3 +664,42 @@ describe('ScoringPage · servidor caido CON cobertura y sin foto (FE #617)', () 
     expect(screen.getByText('offline.nothingCachedHint')).toBeInTheDocument();
   });
 });
+
+describe('ScoringPage · el gemelo: el recuadro con partido en pantalla (FE #617, CodeRabbit)', () => {
+  // CodeRabbit lo dijo en el resumen, no como comentario de linea: arregle solo
+  // el camino SIN vista, y el otro recuadro —el que sale con el partido ya
+  // pintado cuando falla un sondeo o un envio— seguia imprimiendo `textoDe`. Por
+  // ahi siguen llegando el `detail` en ingles del backend y el «HTTP 503:
+  // Service Unavailable» que compone `api.js`
+  afterEach(() => {
+    mockUseScoring.error = null;
+    mockUseScoring.pintadoDeMemoria = false;
+  });
+
+  it('un 503 con el partido en pantalla no se enseña como «HTTP 503: Service Unavailable»', () => {
+    mockUseScoring.error = Object.assign(new Error('HTTP 503: Service Unavailable'), { status: 503 });
+
+    render(<ScoringPage />);
+
+    expect(screen.queryByText(/HTTP 503/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Service Unavailable/)).not.toBeInTheDocument();
+  });
+
+  it('y el detail en inglés del backend tampoco', () => {
+    mockUseScoring.error = Object.assign(new Error('You are not a participant in this match'), { status: 403 });
+
+    render(<ScoringPage />);
+
+    expect(screen.queryByText(/You are not a participant/)).not.toBeInTheDocument();
+    expect(screen.getByText('errors.forbidden')).toBeInTheDocument();
+  });
+
+  it('un fallo sin respuesta tampoco enseña el texto interno de fetch', () => {
+    mockUseScoring.error = new TypeError('Failed to fetch (localhost:8000)');
+
+    render(<ScoringPage />);
+
+    expect(screen.queryByText(/Failed to fetch/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/localhost:8000/)).not.toBeInTheDocument();
+  });
+});
