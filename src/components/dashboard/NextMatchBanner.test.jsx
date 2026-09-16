@@ -60,6 +60,25 @@ describe('NextMatchBanner', () => {
     expect(mockNavigate).toHaveBeenCalledWith('/player/matches/match-1/scoring');
   });
 
+  /**
+   * FE #615: sin poder preguntar no se sabe si hay partido. Ofrecer «¿partido
+   * improvisado?» ahí es decir que no lo hay, a quien quizá lo tiene en una hora.
+   */
+  describe('when the matches could not be asked for', () => {
+    it('says so instead of offering a quick match', () => {
+      renderBanner({ match: null, sinRespuesta: true });
+
+      expect(screen.getByTestId('next-match-sin-respuesta')).toHaveTextContent('nextMatch.sinRespuestaTitle');
+      expect(screen.queryByTestId('next-match-empty-cta')).not.toBeInTheDocument();
+    });
+
+    it('still shows a match it remembers', () => {
+      renderBanner({ match, sinRespuesta: true });
+
+      expect(screen.getByTestId('next-match-banner')).toHaveTextContent('Ryder Cup Amigos');
+    });
+  });
+
   describe('with no match scheduled', () => {
     /**
      * El punto del fallback: la mayoria de la gente no esta metida en un

@@ -37,6 +37,17 @@ class GetUpcomingMatchesUseCase {
    * @param {Array} [competitions] - Competiciones ya cargadas, para no pedirlas otra vez
    */
   async execute(userId, competitions = null) {
+    return (await this.executeWithCompleteness(userId, competitions)).matches;
+  }
+
+  /**
+   * Lo mismo, diciendo además si la lista está entera (FE #615). Media lista
+   * sirve para enseñarla, pero quien la guarda para el campo no puede pisar con
+   * ella una completa: faltaría justo el partido de la competición que falló.
+   *
+   * @returns {Promise<{matches: Array, complete: boolean}>}
+   */
+  async executeWithCompleteness(userId, competitions = null) {
     if (!userId) {
       throw new Error('GetUpcomingMatchesUseCase requires a userId');
     }
@@ -46,17 +57,20 @@ class GetUpcomingMatchesUseCase {
     // partido al que ir hoy
     const active = (all || []).filter((competition) => competition.status === 'IN_PROGRESS');
     if (active.length === 0) {
-      return [];
+      return { matches: [], complete: true };
     }
 
     const results = await Promise.allSettled(
       active.map((competition) => this.#matchesOf(competition, userId))
     );
 
-    return results
-      .filter((result) => result.status === 'fulfilled')
-      .flatMap((result) => result.value)
-      .sort(this.#byWhenItIsPlayed);
+    return {
+      matches: results
+        .filter((result) => result.status === 'fulfilled')
+        .flatMap((result) => result.value)
+        .sort(this.#byWhenItIsPlayed),
+      complete: results.every((result) => result.status === 'fulfilled'),
+    };
   }
 
   async #matchesOf(competition, userId) {

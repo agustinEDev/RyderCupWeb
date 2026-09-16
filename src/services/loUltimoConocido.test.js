@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { recuerda, loQueSeSupo, olvida, olvidaTodo, recuerdaLaLista, laUltimaLista, olvidaLoDeEstaCuenta } from './loUltimoConocido';
+import { recuerda, loQueSeSupo, olvida, olvidaTodo, recuerdaLaLista, laUltimaLista, olvidaLoDeEstaCuenta, precarga, recuerdaLosPartidos, losUltimosPartidos } from './loUltimoConocido';
 
 /**
  * LA TABLA M — lo último que se supo de una partida.
@@ -157,5 +157,166 @@ describe('loUltimoConocido', () => {
     recuerda('m-1', { partida: { id: 'm-1', holeScores: [{ holeNumber: 1 }] }, campo: null });
 
     expect(loQueSeSupo('m-1').partida.holeScores).toHaveLength(1);
+  });
+});
+
+/**
+ * LA TABLA P — lo precargado para el campo (FE #615).
+ *
+ *   caso                                        | qué pasa
+ *   --------------------------------------------|---------------------------------
+ *   6  hay sitio                                | se guarda, marcada como precargada
+ *   6  ya hay dos precargadas                   | se va la precargada más vieja, no
+ *                                               | una abierta
+ *   6  lleno, con golpes en la cola de una      | esa no se toca
+ *   6  lleno, la última abierta                 | esa no se toca
+ *   6  lleno y nada se puede ir                 | no se guarda, y lo dice
+ *   6b se abre de verdad una precargada         | deja de contar como precargada
+ *   6c se precarga una que ya estaba abierta    | no se toca: la pantalla guardó algo más nuevo
+ *   6d se vuelve a precargar una precargada     | se refresca
+ *   6e la tanda hace sitio                      | no se echa a sí misma (en partidosSinCobertura)
+ *   8  el almacenamiento se niega               | lo dice, no revienta
+ *   10 lista de partidos, y cierre de sesión    | clave propia, y se va con la cuenta
+ */
+describe('loUltimoConocido, lo precargado', () => {
+  beforeEach(() => {
+    const guardado = new Map();
+    globalThis.localStorage = {
+      getItem: (k) => (guardado.has(k) ? guardado.get(k) : null),
+      setItem: (k, v) => guardado.set(k, String(v)),
+      removeItem: (k) => guardado.delete(k),
+    };
+    olvidaTodo();
+  });
+
+  const lo = (n) => ({ partida: { id: `m-${n}`, holeScores: [] }, campo: null });
+  const guardadas = () => JSON.parse(localStorage.getItem('rydercup-ultimo-conocido'));
+
+  it('con sitio, se guarda y se puede pintar', () => {
+    expect(precarga('m-1', lo(1))).toBe(true);
+
+    expect(loQueSeSupo('m-1').partida.id).toBe('m-1');
+    expect(guardadas()[0].precargada).toBe(true);
+  });
+
+  it('nunca ocupa más de dos: la tercera echa a la precargada más vieja, no a una abierta', () => {
+    recuerda('a-1', lo(1));
+    precarga('p-1', lo(2));
+    precarga('p-2', lo(3));
+
+    expect(precarga('p-3', lo(4))).toBe(true);
+
+    expect(loQueSeSupo('a-1')).not.toBeNull();
+    expect(loQueSeSupo('p-1')).toBeNull();
+    expect(loQueSeSupo('p-2')).not.toBeNull();
+    expect(loQueSeSupo('p-3')).not.toBeNull();
+  });
+
+  it('con sitio libre pero dos precargadas ya, la tercera no ocupa el hueco de lo que se abra', () => {
+    precarga('p-1', lo(1));
+    precarga('p-2', lo(2));
+
+    precarga('p-3', lo(3));
+
+    expect(loQueSeSupo('p-1')).toBeNull();
+    expect(guardadas()).toHaveLength(2);
+  });
+
+  it('lleno, no echa a una partida con golpes en la cola', () => {
+    // Es la que hace falta para ver lo que falta por enviar
+    recuerda('a-1', lo(1));
+    recuerda('a-2', lo(2));
+    recuerda('a-3', lo(3));
+
+    precarga('p-1', lo(4), { protegidas: new Set(['a-1']) });
+
+    expect(loQueSeSupo('a-1')).not.toBeNull();
+    expect(loQueSeSupo('a-2')).toBeNull();
+    expect(loQueSeSupo('p-1')).not.toBeNull();
+  });
+
+  it('lleno, no echa a la última que se abrió de verdad', () => {
+    recuerda('a-1', lo(1));
+    recuerda('a-2', lo(2));
+    recuerda('a-3', lo(3));
+
+    precarga('p-1', lo(4), { protegidas: new Set(['a-1', 'a-2']) });
+
+    expect(loQueSeSupo('a-3')).not.toBeNull();
+    expect(loQueSeSupo('p-1')).toBeNull();
+  });
+
+  it('si no se puede echar a nadie, no se guarda y lo dice', () => {
+    recuerda('a-1', lo(1));
+    recuerda('a-2', lo(2));
+    recuerda('a-3', lo(3));
+
+    expect(precarga('p-1', lo(4), { protegidas: new Set(['a-1', 'a-2']) })).toBe(false);
+  });
+
+  it('abrir de verdad una precargada la convierte en abierta', () => {
+    precarga('p-1', lo(1));
+
+    recuerda('p-1', lo(1));
+
+    expect(guardadas()[0].precargada).toBeUndefined();
+  });
+
+  it('una que ya se abrió de verdad no la toca: lo de la pantalla de anotación es más nuevo', () => {
+    // La precarga sale del panel sin esperarla. Si el jugador abre el partido
+    // mientras tanto, esa pantalla guarda su foto —con los golpes ya enviados—
+    // y la respuesta tardía del panel la devolvía a la de antes
+    recuerda('a-1', { partida: { id: 'm-1', holeScores: [{ holeNumber: 1 }] }, campo: null });
+
+    expect(precarga('a-1', lo(1))).toBe(true);
+
+    expect(loQueSeSupo('a-1').partida.holeScores).toHaveLength(1);
+    expect(guardadas()[0].precargada).toBeUndefined();
+  });
+
+  it('una precargada sí se refresca', () => {
+    precarga('p-1', lo(1));
+
+    precarga('p-1', { partida: { id: 'm-1', holeScores: [{ holeNumber: 1 }] }, campo: null });
+
+    expect(loQueSeSupo('p-1').partida.holeScores).toHaveLength(1);
+  });
+
+  it('si el almacenamiento se niega, lo dice en vez de reventar', () => {
+    localStorage.setItem = () => { throw new Error('quota'); };
+
+    expect(precarga('p-1', lo(1))).toBe(false);
+  });
+
+  it('cerrada la sesión, tampoco se precarga', () => {
+    olvidaLoDeEstaCuenta();
+
+    expect(precarga('p-1', lo(1))).toBe(false);
+  });
+
+  it('la lista de partidos de competición no pisa la de partidas rápidas', () => {
+    recuerdaLaLista([{ id: 'qm-1' }]);
+
+    recuerdaLosPartidos([{ id: 'm-1' }, { id: 'm-2' }]);
+
+    expect(laUltimaLista()).toEqual([{ id: 'qm-1' }]);
+    expect(losUltimosPartidos()).toHaveLength(2);
+  });
+
+  it('sin partidos guardados no hay lista, y una rota no se da por buena', () => {
+    expect(losUltimosPartidos()).toBeNull();
+
+    localStorage.setItem('rydercup-ultimos-partidos', '{"no":"es una lista"}');
+
+    expect(losUltimosPartidos()).toBeNull();
+  });
+
+  it('al cerrar sesión se van también los partidos', () => {
+    recuerdaLosPartidos([{ id: 'm-1' }]);
+
+    olvidaLoDeEstaCuenta();
+    recuerdaLosPartidos([{ id: 'm-1' }]);
+
+    expect(losUltimosPartidos()).toBeNull();
   });
 });

@@ -11,7 +11,7 @@ import BlockLoader from '../ui/BlockLoader';
  * panel se lee como que algo ha fallado, y para la mayoría de la gente, que no
  * está metida en un torneo, ese sería el estado de siempre.
  */
-const NextMatchBanner = ({ match, isLoading = false, onCreateQuickMatch }) => {
+const NextMatchBanner = ({ match, isLoading = false, onCreateQuickMatch, sinRespuesta = false }) => {
   const { t, i18n } = useTranslation('dashboard');
   const navigate = useNavigate();
 
@@ -37,6 +37,26 @@ const NextMatchBanner = ({ match, isLoading = false, onCreateQuickMatch }) => {
         className="flex min-h-[6.5rem] items-center justify-center rounded-xl bg-gray-50"
       >
         <BlockLoader silencioso sinRelleno />
+      </div>
+    );
+  }
+
+  // Sin poder preguntar no se sabe si hay partido (FE #615). La invitación a
+  // una partida rápida dice justo que no lo hay, a quien quizá lo tiene en una
+  // hora; y sin conexión tampoco se podría crear
+  if (!match && sinRespuesta) {
+    return (
+      <div
+        data-testid="next-match-sin-respuesta"
+        className="flex w-full min-w-0 items-center gap-3 rounded-xl border-2 border-amber-200 bg-amber-50 p-5"
+      >
+        <span className="flex-shrink-0 rounded-lg bg-amber-500 p-2">
+          <Calendar className="h-5 w-5 text-white" aria-hidden="true" />
+        </span>
+        <span className="min-w-0">
+          <span className="block text-sm font-bold text-amber-900">{t('nextMatch.sinRespuestaTitle')}</span>
+          <span className="block text-xs text-amber-800">{t('nextMatch.sinRespuestaDesc')}</span>
+        </span>
       </div>
     );
   }
