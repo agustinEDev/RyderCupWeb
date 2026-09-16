@@ -1964,3 +1964,350 @@ describe('useScoring · lo que se ve junta el servidor y la cola (FE #606)', () 
     });
   });
 });
+
+// El servicio de verdad, como en partida rapida: lo que se quiere vigilar es
+// que la foto quede guardada y se sepa leer, no que se llame a una funcion
+import { recuerda, loQueSeSupo, olvidaTodo } from '../services/loUltimoConocido';
+
+describe('useScoring · lo último que se supo (FE #614)', () => {
+  const sinSenal = () =>
+    getScoringViewUseCase.execute.mockRejectedValue(new TypeError('Failed to fetch'));
+
+  const conEstado = (estado) =>
+    getScoringViewUseCase.execute.mockRejectedValue(
+      Object.assign(new Error('no'), { status: estado })
+    );
+
+  const monta = async (id = 'm-1', quien = 'u1') => {
+    const { result } = renderHook(() => useScoring(id, quien));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    return result;
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    almacen.clear();
+    olvidaTodo();
+    getScoringViewUseCase.execute.mockResolvedValue(mockScoringView);
+    offlineQueue.getByMatch.mockReturnValue([]);
+    Object.defineProperty(navigator, 'onLine', { value: true, configurable: true });
+  });
+
+  // Fila 1
+  it('al cargar bien se guarda la foto del partido', async () => {
+    await monta();
+
+    await waitFor(() => expect(loQueSeSupo('m-1')).not.toBeNull());
+    expect(loQueSeSupo('m-1').partida.matchId).toBe('m-1');
+    expect(loQueSeSupo('m-1').partida.holes).toHaveLength(18);
+  });
+
+  // Fila 2. Lo que se busca: el jugador reabre la aplicacion en el campo. Sin
+  // esto se encuentra la carcasa vacia y ahi ya no hay nada que anotar
+  it('sin señal se pinta lo guardado: hoyos, pares y jugadores', async () => {
+    recuerda('m-1', { partida: mockScoringView, campo: null });
+    Object.defineProperty(navigator, 'onLine', { value: false, configurable: true });
+    sinSenal();
+
+    const result = await monta();
+
+    expect(result.current.scoringView?.matchNumber).toBe(1);
+    expect(result.current.scoringView?.holes).toHaveLength(18);
+    expect(result.current.scoringView?.players).toHaveLength(2);
+  });
+
+  // Fila 3
+  it('sin señal, el golpe que sigue en la cola se ve en su casilla', async () => {
+    recuerda('m-1', { partida: mockScoringView, campo: null });
+    offlineQueue.getByMatch.mockReturnValue([
+      {
+        matchId: 'm-1',
+        holeNumber: 3,
+        scoreData: { ownScore: 5, markedPlayerId: 'u2' },
+        timestamp: Date.now(),
+        userId: 'u1',
+      },
+    ]);
+    Object.defineProperty(navigator, 'onLine', { value: false, configurable: true });
+    sinSenal();
+
+    const result = await monta();
+
+    // La vista restaurada trae `scores: []`, así que la fila del hoyo no existe
+    // y la compone la cola: eso es lo que se vigila aquí
+    const hoyo = result.current.scoresVisibles?.find((s) => s.holeNumber === 3);
+    const suyo = hoyo?.playerScores?.find((p) => p.userId === 'u1');
+    expect(suyo?.ownScore).toBe(5);
+    expect(suyo?.ownSubmitted).toBe(true);
+  });
+
+  // Fila 4. Callarlo deja la pantalla vacia sin decir por que
+  it('sin señal y sin nada guardado, no hay vista que pintar', async () => {
+    Object.defineProperty(navigator, 'onLine', { value: false, configurable: true });
+    sinSenal();
+
+    const result = await monta();
+
+    expect(result.current.scoringView).toBeNull();
+  });
+
+  // Fila 5
+  it('cuando vuelve la red, lo del servidor manda y pasa a ser la foto nueva', async () => {
+    recuerda('m-1', { partida: { ...mockScoringView, matchNumber: 99 }, campo: null });
+
+    const result = await monta();
+
+    expect(result.current.scoringView?.matchNumber).toBe(1);
+    await waitFor(() => expect(loQueSeSupo('m-1').partida.matchNumber).toBe(1));
+  });
+
+  // Fila 6. Un 404 es una respuesta: ese partido ya no esta. Pintarlo desde el
+  // movil seria enseñar algo que no existe, y dejar anotar encima
+  it('si el servidor dice que ya no está, ni se pinta ni se guarda', async () => {
+    recuerda('m-1', { partida: mockScoringView, campo: null });
+    conEstado(404);
+
+    const result = await monta();
+
+    expect(result.current.scoringView).toBeNull();
+    expect(loQueSeSupo('m-1')).toBeNull();
+  });
+
+  // Fila 7
+  it('si el partido no es tuyo (403), ni se pinta ni se guarda', async () => {
+    recuerda('m-1', { partida: mockScoringView, campo: null });
+    conEstado(403);
+
+    const result = await monta();
+
+    expect(result.current.scoringView).toBeNull();
+    expect(loQueSeSupo('m-1')).toBeNull();
+  });
+
+  // Fila 8. La sesion caduca, el partido sigue estando: no se pinta, pero
+  // tirar la foto obligaria a recuperarla con red para poder anotar despues
+  it('con la sesión caducada (401) no se pinta, pero la foto se conserva', async () => {
+    recuerda('m-1', { partida: mockScoringView, campo: null });
+    conEstado(401);
+
+    const result = await monta();
+
+    expect(result.current.scoringView).toBeNull();
+    expect(loQueSeSupo('m-1')).not.toBeNull();
+  });
+
+  // Fila 9. Un 5xx no desmiente nada: el backend esta mal, el partido sigue
+  // ahi, y sin poder anotar es justo cuando lo guardado hace falta
+  it('con un 5xx sí se pinta lo guardado', async () => {
+    recuerda('m-1', { partida: mockScoringView, campo: null });
+    conEstado(500);
+
+    const result = await monta();
+
+    expect(result.current.scoringView?.matchNumber).toBe(1);
+  });
+
+  // Fila 11. La ruta no lleva `key`: ir de un partido a otro reutiliza el hook
+  it('la foto de otro partido no se pinta en el que está en pantalla', async () => {
+    recuerda('m-1', { partida: mockScoringView, campo: null });
+    Object.defineProperty(navigator, 'onLine', { value: false, configurable: true });
+    sinSenal();
+
+    const result = await monta('m-2');
+
+    expect(result.current.scoringView).toBeNull();
+  });
+
+  // Fila 12. El almacenamiento es compartido con la cola de golpes sin enviar:
+  // fallar al guardar la foto no puede costar un golpe ni tumbar la pantalla
+  it('si no cabe en el móvil, la pantalla sigue funcionando', async () => {
+    const original = almacen.setItem;
+    almacen.setItem = () => {
+      throw new Error('lleno');
+    };
+
+    const result = await monta();
+
+    expect(result.current.scoringView?.matchNumber).toBe(1);
+    almacen.setItem = original;
+  });
+
+  // Fila 13. Lo guardado sirve para ARRANCAR sin señal, no para corregir una
+  // pantalla que ya está funcionando: repintar la foto encima devolvería el
+  // partido a como estaba hace un rato, con el jugador mirándolo
+  it('con la vista ya pintada, un fallo posterior no la sustituye por la foto', async () => {
+    const result = await monta();
+    recuerda('m-1', { partida: { ...mockScoringView, matchNumber: 99 }, campo: null });
+    conEstado(500);
+
+    await act(async () => {
+      await result.current.refetch();
+    });
+
+    expect(result.current.scoringView?.matchNumber).toBe(1);
+  });
+
+  // Fila 14. La ruta no lleva `key`: se pasa de un partido a otro con las
+  // peticiones del anterior en camino. Si la del anterior muere DESPUÉS, su
+  // foto no puede pintarse en el partido que está en pantalla — y aquí no hay
+  // vista que lo tape, que es justo cuando se notaría
+  it('el fallo tardío del partido anterior no mete su foto en el que se está viendo', async () => {
+    recuerda('m-1', { partida: { ...mockScoringView, matchNumber: 99 }, campo: null });
+
+    let mata;
+    const deM1 = new Promise((_, reject) => {
+      mata = reject;
+    });
+    // Ninguno de los dos contesta: así no hay vista pintada que disimule
+    getScoringViewUseCase.execute.mockImplementation((id) =>
+      id === 'm-1' ? deM1 : new Promise(() => {})
+    );
+
+    const app = renderHook(({ matchId }) => useScoring(matchId, 'u1'), {
+      initialProps: { matchId: 'm-1' },
+    });
+
+    app.rerender({ matchId: 'm-2' });
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 20));
+    });
+
+    // Y ahora muere la del partido anterior
+    await act(async () => {
+      mata(Object.assign(new Error('500'), { status: 500 }));
+      await new Promise((r) => setTimeout(r, 20));
+    });
+
+    expect(app.result.current.scoringView).toBeNull();
+  });
+
+  // Fila 15. La foto se guarda DESPUÉS de la guarda de descarte: una respuesta
+  // superada no se pinta, así que tampoco puede guardarse. Si no, el siguiente
+  // arranque sin señal pintaría una vuelta atrás — un estado que el jugador ya
+  // no vio— en vez de lo último que de verdad dijo el servidor
+  it('una respuesta superada no se guarda como foto', async () => {
+    let suelta;
+    const vieja = new Promise((resolve) => {
+      suelta = resolve;
+    });
+    getScoringViewUseCase.execute.mockReturnValueOnce(vieja);
+
+    const { result } = renderHook(() => useScoring('m-1', 'u1'));
+
+    // La segunda contesta y pasa a ser lo último aplicado: su foto es la buena
+    await act(async () => {
+      await result.current.refetch();
+    });
+    await waitFor(() => expect(loQueSeSupo('m-1')?.partida.matchNumber).toBe(1));
+
+    // Y ahora contesta la primera, que salió antes, con otra cosa
+    await act(async () => {
+      suelta({ ...mockScoringView, matchNumber: 77 });
+      await new Promise((r) => setTimeout(r, 20));
+    });
+
+    expect(loQueSeSupo('m-1').partida.matchNumber).toBe(1);
+    expect(result.current.scoringView?.matchNumber).toBe(1);
+  });
+
+  // Fila 16. Salió de la revisión: restaurar sin decirlo pinta la vista entera
+  // —resultado, tarjeta, botón de entregar— como si fuera lo de ahora mismo. Y
+  // con un 5xx eso ocurre CON cobertura, donde nadie sospecha nada
+  it('dice que lo que se ve salió de la foto, y deja de decirlo al cargar bien', async () => {
+    recuerda('m-1', { partida: mockScoringView, campo: null });
+    conEstado(500);
+
+    const result = await monta();
+
+    expect(result.current.pintadoDeMemoria).toBe(true);
+
+    // Y cuando el servidor vuelve a contestar, ya no es una foto
+    getScoringViewUseCase.execute.mockResolvedValue(mockScoringView);
+    await act(async () => {
+      await result.current.refetch();
+    });
+
+    expect(result.current.pintadoDeMemoria).toBe(false);
+  });
+
+  // Fila 17. También de la revisión: solo caben tres fotos y se comparten con
+  // partida rápida, así que mirar los partidos de los compañeros desde el
+  // calendario desalojaba la foto de la propia — la única que hace falta
+  it('un partido que no juegas no se guarda como foto', async () => {
+    const deOtros = {
+      ...mockScoringView,
+      players: [
+        { userId: 'u8', userName: 'Otro A', team: 'A' },
+        { userId: 'u9', userName: 'Otro B', team: 'B' },
+      ],
+    };
+    getScoringViewUseCase.execute.mockResolvedValue(deOtros);
+
+    const result = await monta();
+
+    expect(result.current.scoringView?.matchNumber).toBe(1);
+    expect(loQueSeSupo('m-1')).toBeNull();
+  });
+});
+
+describe('useScoring · cambiar de partido con una vista ya pintada (FE #614, CodeRabbit)', () => {
+  // El hueco que mi fila 14 NO cubria: alli la peticion del primer partido se
+  // quedaba colgada, asi que `hayVistaRef` nunca llegaba a ponerse. Si el
+  // primero carga BIEN, esa marca se queda puesta y la foto del segundo no se
+  // pinta — con la vista del primero siguiendo en pantalla bajo la URL del otro
+  beforeEach(() => {
+    vi.clearAllMocks();
+    almacen.clear();
+    olvidaTodo();
+    offlineQueue.getByMatch.mockReturnValue([]);
+    Object.defineProperty(navigator, 'onLine', { value: true, configurable: true });
+  });
+
+  it('tras cargar bien el primero, la foto del segundo sí se pinta', async () => {
+    const deM2 = { ...mockScoringView, matchId: 'm-2', matchNumber: 42 };
+    recuerda('m-2', { partida: deM2, campo: null });
+
+    getScoringViewUseCase.execute.mockImplementation(async (id) => {
+      if (id === 'm-1') return mockScoringView;
+      throw Object.assign(new Error('500'), { status: 500 });
+    });
+
+    const app = renderHook(({ matchId }) => useScoring(matchId, 'u1'), {
+      initialProps: { matchId: 'm-1' },
+    });
+    await waitFor(() => expect(app.result.current.scoringView?.matchNumber).toBe(1));
+
+    app.rerender({ matchId: 'm-2' });
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 20));
+    });
+
+    expect(app.result.current.scoringView?.matchNumber).toBe(42);
+    expect(app.result.current.pintadoDeMemoria).toBe(true);
+  });
+
+  // La mutacion destapo que esto no estaba probado, y es la razon por la que el
+  // estado guarda DE QUE partido es la foto en vez de un simple si/no: al pasar
+  // al siguiente partido, el ambar del anterior no puede seguir encendido
+  it('el aviso de «esto es una foto» no se hereda en el partido siguiente', async () => {
+    recuerda('m-1', { partida: mockScoringView, campo: null });
+    getScoringViewUseCase.execute.mockImplementation((id) =>
+      id === 'm-1'
+        ? Promise.reject(Object.assign(new Error('500'), { status: 500 }))
+        : new Promise(() => {})
+    );
+
+    const app = renderHook(({ matchId }) => useScoring(matchId, 'u1'), {
+      initialProps: { matchId: 'm-1' },
+    });
+    await waitFor(() => expect(app.result.current.pintadoDeMemoria).toBe(true));
+
+    // El siguiente no contesta todavia: no hay nada que diga que ESTO es una foto
+    app.rerender({ matchId: 'm-2' });
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 20));
+    });
+
+    expect(app.result.current.pintadoDeMemoria).toBe(false);
+  });
+});

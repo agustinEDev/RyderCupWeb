@@ -5,6 +5,45 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Fixed
+
+- **Reabrir un partido de competición sin cobertura ya no deja una pantalla vacía** (#614). El
+  golpe pendiente estaba a salvo —el aviso lo decía—, pero la partida no se podía dibujar: el
+  título salía como «Partido #» sin número, la pestaña de anotar enseñaba el selector de hoyos
+  **sin panel del hoyo**, la tarjeta solo las cabeceras y la clasificación en blanco. Sin par, sin
+  índice y sin casillas no hay nada que anotar, que es justo para lo que se abre esa pantalla.
+
+  La vista se pedía al servidor y no se guardaba en ninguna parte, así que al arrancar sin red no
+  había nada con lo que pintarla. Ahora **se recuerda lo último que se supo del partido** y se
+  pinta cuando no hay a quién preguntar, **diciéndolo**: la pantalla avisa en ámbar de que lo que
+  se ve puede no estar al día. Eso no es un detalle: con un error del servidor ocurre **con
+  cobertura**, y sin decirlo se lee como si fuera lo de ahora mismo —y se entrega una tarjeta o se
+  concede un hoyo contra una foto de hace rato—. Es el mismo mecanismo, y el mismo aviso, que
+  partida rápida usa desde la #524; competición se había quedado sin los dos.
+
+  Las reglas, que son lo que evita mentir con datos viejos:
+
+  - **Solo se guarda lo que respondió el backend**, y solo si esa respuesta llegó a pintarse: una
+    respuesta superada por otra más nueva no se pinta, así que tampoco se guarda.
+  - **Un 404 o un 403 no se resucitan.** Si el servidor dice que el partido ya no está —o que no es
+    tuyo—, lo guardado se olvida: enseñarlo sería pintar algo que no existe y dejar anotar encima.
+  - **Un 401 no borra la foto por este camino**, porque el partido sigue ahí y tirarla obligaría a
+    tener red otra vez para poder anotar. Pero que sobreviva no se promete: si la sesión ha caducado
+    de verdad, el cierre de sesión se adelanta y se lleva lo guardado de la cuenta, que es lo
+    correcto en un móvil compartido.
+  - **Un 5xx sí pinta lo guardado**: el servidor está mal, el partido sigue jugándose, y es justo
+    cuando hace falta.
+  - **Lo guardado sirve para arrancar sin señal, no para corregir una pantalla que ya funciona**:
+    nunca se repinta encima de lo que ya está en pantalla.
+  - **La cola de golpes sin enviar manda**: si no cabe en el dispositivo, se deja de guardar la
+    foto y no pasa nada más. Perder un golpe sería mucho peor.
+
+  Y si el partido **nunca se abrió en este dispositivo** no hay nada que pintar: ahora se dice, en
+  lugar de dejar la carcasa vacía. Que la foto se guarde antes de llegar al campo —con cobertura,
+  al ver los emparejamientos— es la #615.
+
 ## [2.32.0] - 2026-09-16
 
 ### Fixed

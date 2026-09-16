@@ -459,3 +459,90 @@ describe('ScoringPage', () => {
     });
   });
 });
+
+describe('ScoringPage · sin nada guardado se dice, no se deja la carcasa (FE #614)', () => {
+  // Sin cobertura la peticion muere sin respuesta, asi que el hook NO pone
+  // error a proposito: la pantalla caia al render normal con la vista a nulo y
+  // pintaba una carcasa —«Partido #» sin numero, sin panel del hoyo, tarjeta
+  // con cabeceras y nada mas—. Eso no dice que haya pasado, y el jugador se
+  // queda mirando una pantalla que no puede usar
+  const laVista = mockUseScoring.scoringView;
+
+  afterEach(() => {
+    mockUseScoring.scoringView = laVista;
+    mockUseScoring.error = null;
+    mockUseScoring.isOffline = false;
+  });
+
+  it('sin vista y sin error, lo dice en vez de pintar la carcasa vacía', () => {
+    mockUseScoring.scoringView = null;
+    mockUseScoring.error = null;
+    mockUseScoring.isOffline = true;
+
+    render(<ScoringPage />);
+
+    expect(screen.getByTestId('sin-nada-guardado')).toBeInTheDocument();
+  });
+
+  it('y no se enseña el selector ni la tarjeta de un partido que no se tiene', () => {
+    mockUseScoring.scoringView = null;
+    mockUseScoring.error = null;
+    mockUseScoring.isOffline = true;
+
+    render(<ScoringPage />);
+
+    expect(screen.queryByTestId('hole-selector')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('scorecard-table')).not.toBeInTheDocument();
+  });
+});
+
+describe('ScoringPage · cuando lo que se ve sale de la foto del móvil (FE #614)', () => {
+  const laVista = mockUseScoring.scoringView;
+
+  afterEach(() => {
+    mockUseScoring.scoringView = laVista;
+    mockUseScoring.pintadoDeMemoria = false;
+    mockUseScoring.error = null;
+    mockUseScoring.isOffline = false;
+    mockUseScoring.pendingQueueSize = 0;
+  });
+
+  // Salio de la revision: con un 5xx la pantalla se pintaba entera desde el
+  // movil bajo un recuadro rojo, sin decir que era una foto de antes. Y eso
+  // pasa CON cobertura, que es donde nadie sospecha
+  it('lo dice en ámbar, y el recuadro rojo deja de salir encima', () => {
+    mockUseScoring.pintadoDeMemoria = true;
+    mockUseScoring.error = Object.assign(new Error('500'), { status: 500 });
+
+    render(<ScoringPage />);
+
+    expect(screen.getByTestId('pintado-de-memoria')).toBeInTheDocument();
+    // El boton de reintentar del recuadro rojo: su texto es la clave, porque la
+    // `t` de este fichero devuelve la clave
+    expect(screen.queryAllByText('retry')).toHaveLength(0);
+  });
+
+  it('con un error de verdad y sin foto, sigue saliendo el recuadro rojo', () => {
+    mockUseScoring.pintadoDeMemoria = false;
+    mockUseScoring.error = Object.assign(new Error('500'), { status: 500 });
+
+    render(<ScoringPage />);
+
+    expect(screen.queryByTestId('pintado-de-memoria')).not.toBeInTheDocument();
+    expect(screen.getAllByText('retry').length).toBeGreaterThan(0);
+  });
+
+  // Tambien de la revision: la foto pudo no caber, desalojarse o borrarse por un
+  // 404 a media vuelta, y los golpes del jugador seguir en la cola. Decir «no
+  // hay nada guardado» sin contarlos es decirle lo contrario de lo que pasa
+  it('sin nada guardado, los golpes pendientes se siguen viendo', () => {
+    mockUseScoring.scoringView = null;
+    mockUseScoring.isOffline = true;
+    mockUseScoring.pendingQueueSize = 2;
+
+    render(<ScoringPage />);
+
+    expect(screen.getByTestId('sin-nada-guardado')).toBeInTheDocument();
+    expect(screen.getByTestId('offline-banner')).toBeInTheDocument();
+  });
+});

@@ -44,6 +44,7 @@ const ScoringPage = () => {
     isSessionBlocked,
     pendingQueueSize,
     avisoDelVaciado,
+    pintadoDeMemoria,
     canScore,
     hasSubmitted,
     isOwnScoreLocked,
@@ -212,6 +213,34 @@ const ScoringPage = () => {
     );
   }
 
+  // Sin cobertura la petición muere sin respuesta, así que el hook NO pone
+  // error a propósito y aquí no hay nada que pintar: ni hoyos, ni pares, ni
+  // quién juega. Sin esto se caía al render normal y salía una carcasa —«Partido
+  // #» sin número, sin panel del hoyo y la tarjeta con solo las cabeceras—, que
+  // no dice qué ha pasado ni se puede usar. Con lo guardado del partido (FE #614)
+  // esto solo se ve si nunca se abrió en este dispositivo
+  if (!scoringView) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <HeaderAuth user={user} />
+
+        {/* Que no haya foto del partido no quiere decir que no haya golpes: la
+            foto pudo no caber, desalojarse, o borrarse por un 404 a media vuelta.
+            Sin esto, la pantalla dice «no hay nada guardado» mientras los golpes
+            del jugador siguen en la cola, que es decirle justo lo contrario */}
+        {isOffline && <OfflineBanner pendingCount={pendingQueueSize} />}
+
+        <div className="max-w-4xl mx-auto px-4 py-6 text-center" data-testid="sin-nada-guardado">
+          <p className="text-gray-700">{t('offline.nothingCached')}</p>
+          <p className="mt-2 text-sm text-gray-500">{t('offline.nothingCachedHint')}</p>
+          <button onClick={refetch} className="mt-4 px-4 py-2 bg-primary text-white rounded-lg">
+            {t('retry')}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   // Match summary screen
   if (matchSummary) {
     const winnerTeam = matchSummary.result?.winner;
@@ -263,8 +292,24 @@ const ScoringPage = () => {
         </div>
       )}
       
-      {/* Inline error banner for post-load errors */}
-      {error && scoringView && (
+      {/* Lo que se ve salió de la foto del móvil, no del servidor (FE #614). Hay
+          que decirlo, y en ámbar y no en rojo: con un 5xx esto pasa CON cobertura,
+          y sin avisar se lee como si fuera lo de ahora mismo —con su resultado, su
+          tarjeta y su botón de entregar— cuando puede ser de hace rato */}
+      {pintadoDeMemoria && scoringView && (
+        <div className="max-w-4xl mx-auto px-4 pt-4">
+          <p
+            data-testid="pintado-de-memoria"
+            className="bg-amber-50 border border-amber-200 text-amber-800 rounded-lg p-3 text-sm"
+          >
+            {t('offline.noSeActualiza')}
+          </p>
+        </div>
+      )}
+
+      {/* Inline error banner for post-load errors. Si la pantalla viene de la
+          foto, el fallo ya está contado arriba: el recuadro rojo encima sobra */}
+      {error && scoringView && !pintadoDeMemoria && (
         <div className="max-w-4xl mx-auto px-4 pt-4">
           <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-center justify-between">
             <p className="text-sm text-red-600">{textoDe(error)}</p>
