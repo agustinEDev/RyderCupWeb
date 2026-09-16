@@ -22,6 +22,11 @@ class ApiScoringRepository extends IScoringRepository {
    * POST /api/v1/competitions/matches/{matchId}/scores/holes/{holeNumber}
    */
   async submitHoleScore(matchId, holeNumber, scoreData) {
+    // Un golpe que no viene NO llega al servidor, y eso importa: alli omitirlo
+    // deja esa anotacion como estaba, mientras que `null` es una raya —conceder
+    // el hoyo— (#609, RyderCupAm#301). Lo consigue `JSON.stringify`, que tira
+    // las claves con valor `undefined`; es un mecanismo invisible al leer, asi
+    // que queda dicho. Quien decide que se manda es el caso de uso
     const data = await apiRequest(`/api/v1/competitions/matches/${matchId}/scores/holes/${holeNumber}`, {
       method: 'POST',
       body: JSON.stringify({
