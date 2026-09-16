@@ -302,14 +302,28 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
   // tarjeta, botón de entregar— como si fuera lo de ahora mismo, y con un 5xx eso
   // pasa CON cobertura, donde nadie sospecha nada. Como `pintadoDeMemoria` en
   // partida rápida
-  const [pintadoDeMemoria, setPintadoDeMemoria] = useState(false);
+  // De qué partido es la foto que se está pintando, o `null` si lo que se ve
+  // viene del servidor. Guarda el identificador y no un booleano por lo mismo que
+  // `vistaDeRef`: así el aviso del partido anterior no se hereda sin tener que
+  // reiniciarlo en un efecto, y la comparación de la que sale se hace entre dos
+  // valores normales —estado y prop—, sin leer una referencia en el render, que
+  // es lo que prohíbe `react-hooks/refs`
+  const [memoriaDe, setMemoriaDe] = useState(null);
 
   // Si hay algo pintado ya, sea del servidor o de la foto. Lo guardado sirve para
   // ARRANCAR sin señal, no para corregir una pantalla que ya funciona, y con el
   // estado no se puede mirar: meter `scoringView` en las dependencias de la
   // petición la recrearía en cada cambio de vista y reiniciaría el sondeo. Como
   // `hayPartidaRef` en partida rápida
-  const hayVistaRef = useRef(false);
+  // De QUÉ partido es lo que hay pintado, no un simple «hay algo». Con un
+  // booleano había que reiniciarlo al cambiar de partido —si no, la vista del
+  // anterior contaba como pintada y bloqueaba la foto del nuevo, que se quedaba
+  // con los hoyos del viejo bajo su URL (CodeRabbit en la PR #616)— y ese
+  // reinicio tiene que vivir en un efecto, que es justo lo que
+  // `react-hooks/immutability` prohíbe para un valor que también se escribe en
+  // la petición. Guardando el identificador no hay nada que sincronizar: la
+  // pregunta «¿hay vista de ESTE partido?» se responde comparando
+  const vistaDeRef = useRef(null);
 
   const fetchScoringView = useCallback(async () => {
     if (!matchId) return;
@@ -321,8 +335,8 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
       ultimaAplicadaRef.current = salio;
       setScoringView(data);
       setError(null);
-      setPintadoDeMemoria(false);
-      hayVistaRef.current = true;
+      setMemoriaDe(null);
+      vistaDeRef.current = matchId;
       // La foto de lo último que se supo, para poder anotar al reabrir la
       // aplicación en el campo (FE #614). Va DESPUÉS de la guarda: una respuesta
       // vieja no pinta, así que tampoco puede guardarse. Solo lo que dio el
@@ -354,14 +368,14 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
       const desmentido = estado === 401 || estado === 403 || estado === 404;
       // Solo si no hay NADA en pantalla: lo guardado sirve para ARRANCAR sin
       // señal, no para corregir una pantalla que ya está funcionando
-      if (!desmentido && !esVieja() && !hayVistaRef.current) {
+      if (!desmentido && !esVieja() && vistaDeRef.current !== matchId) {
         const recordado = loQueSeSupo(matchId);
         if (recordado?.partida) {
           setScoringView(recordado.partida);
-          hayVistaRef.current = true;
+          vistaDeRef.current = matchId;
           // Y que se sepa: la pantalla lo dice en ámbar. Con un 5xx esto ocurre
           // CON cobertura, donde nadie sospecha que está viendo una foto de antes
-          setPintadoDeMemoria(true);
+          setMemoriaDe(matchId);
         }
       }
       if (!isOffline && !esVieja()) {
@@ -787,8 +801,10 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
     pendingQueueSize,
     avisoDelVaciado,
     // Si lo que se ve salió de la foto del móvil y no del servidor (FE #614): la
-    // pantalla tiene que decirlo, sobre todo con un 5xx, que ocurre CON cobertura
-    pintadoDeMemoria,
+    // pantalla tiene que decirlo, sobre todo con un 5xx, que ocurre CON cobertura.
+    // Derivado por partido: al cambiar de uno a otro, el ámbar del anterior no se
+    // hereda, y así no hay que reiniciar nada en un efecto
+    pintadoDeMemoria: memoriaDe === matchId,
 
     // Derived
     isMatchPlayer,

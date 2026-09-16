@@ -2249,3 +2249,65 @@ describe('useScoring · lo último que se supo (FE #614)', () => {
     expect(loQueSeSupo('m-1')).toBeNull();
   });
 });
+
+describe('useScoring · cambiar de partido con una vista ya pintada (FE #614, CodeRabbit)', () => {
+  // El hueco que mi fila 14 NO cubria: alli la peticion del primer partido se
+  // quedaba colgada, asi que `hayVistaRef` nunca llegaba a ponerse. Si el
+  // primero carga BIEN, esa marca se queda puesta y la foto del segundo no se
+  // pinta — con la vista del primero siguiendo en pantalla bajo la URL del otro
+  beforeEach(() => {
+    vi.clearAllMocks();
+    almacen.clear();
+    olvidaTodo();
+    offlineQueue.getByMatch.mockReturnValue([]);
+    Object.defineProperty(navigator, 'onLine', { value: true, configurable: true });
+  });
+
+  it('tras cargar bien el primero, la foto del segundo sí se pinta', async () => {
+    const deM2 = { ...mockScoringView, matchId: 'm-2', matchNumber: 42 };
+    recuerda('m-2', { partida: deM2, campo: null });
+
+    getScoringViewUseCase.execute.mockImplementation(async (id) => {
+      if (id === 'm-1') return mockScoringView;
+      throw Object.assign(new Error('500'), { status: 500 });
+    });
+
+    const app = renderHook(({ matchId }) => useScoring(matchId, 'u1'), {
+      initialProps: { matchId: 'm-1' },
+    });
+    await waitFor(() => expect(app.result.current.scoringView?.matchNumber).toBe(1));
+
+    app.rerender({ matchId: 'm-2' });
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 20));
+    });
+
+    expect(app.result.current.scoringView?.matchNumber).toBe(42);
+    expect(app.result.current.pintadoDeMemoria).toBe(true);
+  });
+
+  // La mutacion destapo que esto no estaba probado, y es la razon por la que el
+  // estado guarda DE QUE partido es la foto en vez de un simple si/no: al pasar
+  // al siguiente partido, el ambar del anterior no puede seguir encendido
+  it('el aviso de «esto es una foto» no se hereda en el partido siguiente', async () => {
+    recuerda('m-1', { partida: mockScoringView, campo: null });
+    getScoringViewUseCase.execute.mockImplementation((id) =>
+      id === 'm-1'
+        ? Promise.reject(Object.assign(new Error('500'), { status: 500 }))
+        : new Promise(() => {})
+    );
+
+    const app = renderHook(({ matchId }) => useScoring(matchId, 'u1'), {
+      initialProps: { matchId: 'm-1' },
+    });
+    await waitFor(() => expect(app.result.current.pintadoDeMemoria).toBe(true));
+
+    // El siguiente no contesta todavia: no hay nada que diga que ESTO es una foto
+    app.rerender({ matchId: 'm-2' });
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 20));
+    });
+
+    expect(app.result.current.pintadoDeMemoria).toBe(false);
+  });
+});

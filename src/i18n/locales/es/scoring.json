@@ -149,7 +149,7 @@
     "pendingScores_other": "{{count}} anotaciones pendientes de sincronizar",
     "nothingCached": "No hay nada guardado de este partido en este dispositivo",
     "nothingCachedHint": "Ábrelo una vez con cobertura y después podrás anotar sin conexión.",
-    "noSeActualiza": "Sin conexión con el servidor: lo que ves puede no estar al día."
+    "noSeActualiza": "No se ha podido actualizar el partido desde el servidor: lo que ves puede no estar al día."
   },
   "session": {
     "blocked": "Sesión Activa Detectada",

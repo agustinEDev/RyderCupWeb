@@ -149,7 +149,7 @@
     "pendingScores_other": "{{count}} scores pending sync",
     "nothingCached": "Nothing about this match is saved on this device",
     "nothingCachedHint": "Open it once with coverage and you will be able to score offline.",
-    "noSeActualiza": "No connection to the server: what you see may not be up to date."
+    "noSeActualiza": "This match could not be refreshed from the server. What you see may not be up to date."
   },
   "session": {
     "blocked": "Active Session Detected",
