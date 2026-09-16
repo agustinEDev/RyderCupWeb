@@ -4,7 +4,7 @@
  *   #   caso                                          | qué recibe el banner
  *   ----|---------------------------------------------|--------------------------------
  *   1   con red                                       | el partido; la lista se guarda
- *   2   sin red, con lista guardada                   | el partido guardado
+ *   2   sin red, con lista guardada                   | el partido guardado, avisando
  *   4   sin red y nada guardado                       | que no se pudo preguntar
  *   4b  fallan las COMPETICIONES y el caso de uso     | lo mismo: con `[]` el caso de
  *       |   recibiría `[]`                            | uso contesta «ninguno» sin error
@@ -59,8 +59,13 @@ for (const ruta of [
 
 // Deja rastro de lo que recibe, que es lo que se mira
 vi.doMock('../components/dashboard/NextMatchBanner', () => ({
-  default: ({ match, sinRespuesta }) => (
-    <div data-testid="banner" data-partido={match?.id ?? ''} data-sin-respuesta={String(Boolean(sinRespuesta))} />
+  default: ({ match, sinRespuesta, desdeMemoria }) => (
+    <div
+      data-testid="banner"
+      data-partido={match?.id ?? ''}
+      data-sin-respuesta={String(Boolean(sinRespuesta))}
+      data-desde-memoria={String(Boolean(desdeMemoria))}
+    />
   ),
 }));
 
@@ -108,10 +113,11 @@ describe('el próximo partido del panel sin cobertura', () => {
 
     expect(banner()).toHaveAttribute('data-partido', 'm-1');
     expect(banner()).toHaveAttribute('data-sin-respuesta', 'false');
+    expect(banner()).toHaveAttribute('data-desde-memoria', 'false');
     expect(losUltimosPartidos()).toHaveLength(1);
   });
 
-  it('sin red y con lista guardada: el banner recibe el partido guardado', async () => {
+  it('sin red y con lista guardada: el banner recibe el partido guardado, y sabe que es de memoria', async () => {
     recuerdaLosPartidos([partido]);
     mockLee.mockRejectedValue(new TypeError('Failed to fetch'));
 
@@ -119,6 +125,7 @@ describe('el próximo partido del panel sin cobertura', () => {
     await asienta();
 
     expect(banner()).toHaveAttribute('data-partido', 'm-1');
+    expect(banner()).toHaveAttribute('data-desde-memoria', 'true');
   });
 
   it('sin red y sin nada guardado: el banner sabe que no se pudo preguntar', async () => {

@@ -77,6 +77,20 @@ describe('NextMatchBanner', () => {
 
       expect(screen.getByTestId('next-match-banner')).toHaveTextContent('Ryder Cup Amigos');
     });
+
+    it('a remembered match says it may be out of date', () => {
+      // Lo mismo que avisa «Mis próximos partidos»: si el calendario cambió, el
+      // banner enseña un partido que ya no toca como si fuera el de ahora
+      renderBanner({ match, desdeMemoria: true });
+
+      expect(screen.getByTestId('next-match-desde-memoria')).toHaveTextContent('nextMatch.desdeMemoria');
+    });
+
+    it('a fresh match does not', () => {
+      renderBanner({ match });
+
+      expect(screen.queryByTestId('next-match-desde-memoria')).not.toBeInTheDocument();
+    });
   });
 
   describe('with no match scheduled', () => {

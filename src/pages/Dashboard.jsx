@@ -57,6 +57,7 @@ const Dashboard = () => {
   const [isLoadingRecent, setIsLoadingRecent] = useState(true);
   const [upcomingMatches, setUpcomingMatches] = useState([]);
   const [upcomingSinRespuesta, setUpcomingSinRespuesta] = useState(false);
+  const [upcomingDesdeMemoria, setUpcomingDesdeMemoria] = useState(false);
   const [isLoadingUpcoming, setIsLoadingUpcoming] = useState(true);
   const [showHandicapModal, setShowHandicapModal] = useState(false);
   const [showQuickMatchModal, setShowQuickMatchModal] = useState(false);
@@ -308,6 +309,7 @@ const Dashboard = () => {
       if (!cancelled) {
         setUpcomingMatches(leido.partidos);
         setUpcomingSinRespuesta(leido.sinRespuesta);
+        setUpcomingDesdeMemoria(leido.desdeMemoria);
         setIsLoadingUpcoming(false);
       }
     };
@@ -586,6 +588,7 @@ const Dashboard = () => {
               <NextMatchBanner
                 match={upcomingMatches[0] ?? null}
                 sinRespuesta={upcomingSinRespuesta}
+                desdeMemoria={upcomingDesdeMemoria}
                 isLoading={isLoadingUpcoming}
                 onCreateQuickMatch={() => setShowQuickMatchModal(true)}
               />

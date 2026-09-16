@@ -17,9 +17,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   así que solo pasa con la aplicación abierta.
 
   - **Sin cobertura, las dos pantallas enseñan lo guardado**, sin los partidos de días pasados, y
-    «Mis próximos partidos» avisa de que puede no estar al día. **Si no hay nada guardado dicen que
-    no se pudo preguntar**, no «no tienes próximos partidos», y el panel ya no ofrece una partida
-    rápida como si no hubiera partido.
+    **las dos avisan de que puede no estar al día**: la lista y el banner del próximo partido. **Si
+    no hay nada guardado dicen que no se pudo preguntar**, no «no tienes próximos partidos», y el
+    panel ya no ofrece una partida rápida como si no hubiera partido.
   - **Un partido de hoy que la lista guardada da como programado se puede anotar.** El móvil no
     puede saber si el creador ya lo arrancó. Si nadie llega a arrancarlo, el servidor rechaza los
     golpes y salen en el aviso de golpes perdidos. Con red manda el servidor, como siempre.

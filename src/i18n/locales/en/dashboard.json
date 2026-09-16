@@ -88,7 +88,8 @@
       "FOURSOMES": "Foursomes"
     },
     "sinRespuestaTitle": "Your next match could not be checked",
-    "sinRespuestaDesc": "Try again in a while."
+    "sinRespuestaDesc": "Try again in a while.",
+    "desdeMemoria": "Could not refresh: it may be out of date."
   },
   "recentMatches": {
     "title": "Recent matches",

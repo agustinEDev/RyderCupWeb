@@ -11,7 +11,7 @@ import BlockLoader from '../ui/BlockLoader';
  * panel se lee como que algo ha fallado, y para la mayoría de la gente, que no
  * está metida en un torneo, ese sería el estado de siempre.
  */
-const NextMatchBanner = ({ match, isLoading = false, onCreateQuickMatch, sinRespuesta = false }) => {
+const NextMatchBanner = ({ match, isLoading = false, onCreateQuickMatch, sinRespuesta = false, desdeMemoria = false }) => {
   const { t, i18n } = useTranslation('dashboard');
   const navigate = useNavigate();
 
@@ -131,6 +131,14 @@ const NextMatchBanner = ({ match, isLoading = false, onCreateQuickMatch, sinResp
           <span className="mt-0.5 block truncate text-xs text-gray-600">
             {t('nextMatch.versus', { opponents })}
             {partners ? ` · ${t('nextMatch.withPartners', { partners })}` : ''}
+          </span>
+        )}
+        {/* De lo guardado, como avisa «Mis próximos partidos» (FE #615): si el
+            calendario cambió, esto no es el partido de ahora. Sin `truncate`:
+            cortado a media frase el aviso no dice nada */}
+        {desdeMemoria && (
+          <span data-testid="next-match-desde-memoria" className="mt-0.5 block text-xs font-medium text-amber-900">
+            {t('nextMatch.desdeMemoria')}
           </span>
         )}
       </span>
