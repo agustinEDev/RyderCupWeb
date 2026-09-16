@@ -63,7 +63,10 @@
     "round": "Ronda",
     "loading": "Cargando partidos...",
     "teamA": "Equipo A",
-    "teamB": "Equipo B"
+    "teamB": "Equipo B",
+    "desdeMemoria": "No se ha podido actualizar: estos son los últimos partidos que se vieron y puede que no estén al día.",
+    "sinRespuesta": "No se han podido consultar tus partidos",
+    "sinRespuestaDesc": "Vuelve a intentarlo en un rato."
   },
   "nextMatch": {
     "label": "Tu próximo partido",
@@ -83,7 +86,10 @@
       "SINGLES": "Individual",
       "FOURBALL": "Fourball",
       "FOURSOMES": "Foursomes"
-    }
+    },
+    "sinRespuestaTitle": "No se ha podido comprobar tu próximo partido",
+    "sinRespuestaDesc": "Vuelve a intentarlo en un rato.",
+    "desdeMemoria": "No se ha podido actualizar: puede no estar al día."
   },
   "recentMatches": {
     "title": "Últimas partidas",

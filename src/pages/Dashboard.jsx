@@ -19,6 +19,7 @@ import { useEntryMotion } from '../hooks/useEntryMotion';
 import { slideUp, staggerContainer, getEntryProps } from '../utils/animations';
 import FullScreenLoader from '../components/ui/FullScreenLoader';
 import { laPantallaEstaLista } from '../utils/cortinaDeArranque';
+import { leeLosProximosPartidos } from '../services/partidosSinCobertura';
 import {
   elPanelYaSePinto,
   anotaQueElPanelSePinto,
@@ -29,6 +30,7 @@ import {
   getPlayerStatsUseCase,
   getRecentMatchesUseCase,
   getUpcomingMatchesUseCase,
+  getScoringViewUseCase,
   updateUserProfileUseCase,
 } from '../composition';
 
@@ -46,11 +48,16 @@ const Dashboard = () => {
   const { animateEntry } = useEntryMotion();
   const [competitions, setCompetitions] = useState([]);
   const [isLoadingCompetitions, setIsLoadingCompetitions] = useState(true);
+  // Si las competiciones fallaron, «no hay ninguna» no es verdad y los próximos
+  // partidos no pueden calcularse con esa lista vacía (FE #615)
+  const [competitionsError, setCompetitionsError] = useState(null);
   const [playerStats, setPlayerStats] = useState(null);
   const [isLoadingStats, setIsLoadingStats] = useState(true);
   const [recentMatches, setRecentMatches] = useState([]);
   const [isLoadingRecent, setIsLoadingRecent] = useState(true);
   const [upcomingMatches, setUpcomingMatches] = useState([]);
+  const [upcomingSinRespuesta, setUpcomingSinRespuesta] = useState(false);
+  const [upcomingDesdeMemoria, setUpcomingDesdeMemoria] = useState(false);
   const [isLoadingUpcoming, setIsLoadingUpcoming] = useState(true);
   const [showHandicapModal, setShowHandicapModal] = useState(false);
   const [showQuickMatchModal, setShowQuickMatchModal] = useState(false);
@@ -121,12 +128,14 @@ const Dashboard = () => {
         const competitionsData = await listUserCompetitionsUseCase.execute(user.id);
         if (!cancelled) {
           setCompetitions(Array.isArray(competitionsData) ? competitionsData : []);
+          setCompetitionsError(null);
         }
 
       } catch (error) {
         console.error("Failed to load dashboard data:", error);
         if (!cancelled) {
           setCompetitions([]);
+          setCompetitionsError(error);
         }
       } finally {
         if (!cancelled) {
@@ -287,20 +296,21 @@ const Dashboard = () => {
       }
 
       setIsLoadingUpcoming(true);
-      try {
-        const matches = await getUpcomingMatchesUseCase.execute(user.id, competitions);
-        if (!cancelled) {
-          setUpcomingMatches(matches);
-        }
-      } catch (error) {
-        console.error('Failed to load upcoming matches:', error);
-        if (!cancelled) {
-          setUpcomingMatches([]);
-        }
-      } finally {
-        if (!cancelled) {
-          setIsLoadingUpcoming(false);
-        }
+      // Sin cobertura, lo guardado; y si no hay nada, que no se pudo preguntar
+      // (FE #615). Con las competiciones caídas el caso de uso recibiría `[]` y
+      // contestaría «ninguno» sin error, así que ese fallo se le pasa tal cual
+      const leido = await leeLosProximosPartidos({
+        lee: () => (competitionsError
+          ? Promise.reject(competitionsError)
+          : getUpcomingMatchesUseCase.executeWithCompleteness(user.id, competitions)),
+        userId: user.id,
+        pideLaVista: (id) => getScoringViewUseCase.execute(id),
+      });
+      if (!cancelled) {
+        setUpcomingMatches(leido.partidos);
+        setUpcomingSinRespuesta(leido.sinRespuesta);
+        setUpcomingDesdeMemoria(leido.desdeMemoria);
+        setIsLoadingUpcoming(false);
       }
     };
 
@@ -309,7 +319,7 @@ const Dashboard = () => {
     return () => {
       cancelled = true;
     };
-  }, [user, isLoadingUser, competitions, isLoadingCompetitions]);
+  }, [user, isLoadingUser, competitions, competitionsError, isLoadingCompetitions]);
 
 
   // El aviso a la cortina del arranque (FE #485): esta pantalla pide CUATRO
@@ -577,6 +587,8 @@ const Dashboard = () => {
               )}
               <NextMatchBanner
                 match={upcomingMatches[0] ?? null}
+                sinRespuesta={upcomingSinRespuesta}
+                desdeMemoria={upcomingDesdeMemoria}
                 isLoading={isLoadingUpcoming}
                 onCreateQuickMatch={() => setShowQuickMatchModal(true)}
               />

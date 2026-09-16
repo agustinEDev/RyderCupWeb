@@ -4,7 +4,8 @@ import { Flag, Calendar, Play } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import HeaderAuth from '../../components/layout/HeaderAuth';
 import { useAuth } from '../../hooks/useAuth';
-import { getUpcomingMatchesUseCase } from '../../composition';
+import { getScoringViewUseCase, getUpcomingMatchesUseCase } from '../../composition';
+import { leeLosProximosPartidos, sePuedeAnotar } from '../../services/partidosSinCobertura';
 import BlockLoader from '../../components/ui/BlockLoader';
 
 const UpcomingMatchesPage = () => {
@@ -14,6 +15,10 @@ const UpcomingMatchesPage = () => {
 
   const [matches, setMatches] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  // Lo que se enseña puede venir de lo guardado, o no venir de ningún sitio
+  // (FE #615). Vacío porque no se pudo preguntar no es «no tienes partidos»
+  const [desdeMemoria, setDesdeMemoria] = useState(false);
+  const [sinRespuesta, setSinRespuesta] = useState(false);
 
   const loadMatches = useCallback(async () => {
     if (!user) {
@@ -22,17 +27,18 @@ const UpcomingMatchesPage = () => {
     }
 
     setIsLoading(true);
-    try {
-      // Mismo cálculo que usa el panel para su banner de próximo partido: si
-      // cada pantalla lo hiciera por su cuenta, acabarían discrepando sobre
-      // qué cuenta como "próximo"
-      setMatches(await getUpcomingMatchesUseCase.execute(user.id));
-    } catch (error) {
-      console.error('Error loading upcoming matches:', error);
-      setMatches([]);
-    } finally {
-      setIsLoading(false);
-    }
+    // Mismo cálculo que usa el panel para su banner de próximo partido: si
+    // cada pantalla lo hiciera por su cuenta, acabarían discrepando sobre
+    // qué cuenta como "próximo". Y la misma lectura sin cobertura, por lo mismo
+    const leido = await leeLosProximosPartidos({
+      lee: () => getUpcomingMatchesUseCase.executeWithCompleteness(user.id),
+      userId: user.id,
+      pideLaVista: (id) => getScoringViewUseCase.execute(id),
+    });
+    setMatches(leido.partidos);
+    setDesdeMemoria(leido.desdeMemoria);
+    setSinRespuesta(leido.sinRespuesta);
+    setIsLoading(false);
   }, [user]);
 
   useEffect(() => {
@@ -76,7 +82,19 @@ const UpcomingMatchesPage = () => {
           <p className="text-sm text-gray-500 mt-1">{t('upcomingMatches.subtitle')}</p>
         </div>
 
-        {matches.length === 0 ? (
+        {desdeMemoria && (
+          <p className="text-sm text-amber-800 mb-4" data-testid="upcoming-matches-desde-memoria">
+            {t('upcomingMatches.desdeMemoria')}
+          </p>
+        )}
+
+        {sinRespuesta ? (
+          <div className="text-center py-12">
+            <Flag className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+            <p className="text-gray-500 font-medium">{t('upcomingMatches.sinRespuesta')}</p>
+            <p className="text-sm text-gray-400 mt-1">{t('upcomingMatches.sinRespuestaDesc')}</p>
+          </div>
+        ) : matches.length === 0 ? (
           <div className="text-center py-12">
             <Flag className="h-12 w-12 text-gray-300 mx-auto mb-3" />
             <p className="text-gray-500 font-medium">{t('upcomingMatches.noMatches')}</p>
@@ -152,7 +170,7 @@ const UpcomingMatchesPage = () => {
                     >
                       {t('upcomingMatches.viewSchedule')}
                     </Link>
-                    {match.status === 'IN_PROGRESS' && (
+                    {sePuedeAnotar(match, { desdeMemoria }) && (
                       <Link
                         to={`/player/matches/${match.id}/scoring`}
                         className="inline-flex items-center gap-1 px-3 py-1.5 bg-primary text-white text-xs font-medium rounded-lg hover:bg-primary/90 transition-colors"

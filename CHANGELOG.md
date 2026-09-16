@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- **Un partido de competición se puede anotar en un campo sin cobertura aunque no se haya abierto
+  antes** (#615). La #614 pinta el partido de lo guardado, pero solo si se había abierto alguna vez
+  con señal. Ahora, **al abrir el panel o «Mis próximos partidos» con cobertura**, la aplicación
+  guarda la lista y la vista de los partidos del **próximo día con partidos**: la noche antes en el
+  hotel ya cuenta, que es lo normal. No hay trabajo en segundo plano porque Safari no lo permite,
+  así que solo pasa con la aplicación abierta.
+
+  - **Sin cobertura, las dos pantallas enseñan lo guardado**, sin los partidos de días pasados, y
+    **las dos avisan de que puede no estar al día**: la lista y el banner del próximo partido. **Si
+    no hay nada guardado dicen que no se pudo preguntar**, no «no tienes próximos partidos», y el
+    panel ya no ofrece una partida rápida como si no hubiera partido.
+  - **Un partido de hoy que la lista guardada da como programado se puede anotar.** El móvil no
+    puede saber si el creador ya lo arrancó. Si nadie llega a arrancarlo, el servidor rechaza los
+    golpes y salen en el aviso de golpes perdidos. Con red manda el servidor, como siempre.
+  - **Lo precargado no echa a lo que se abrió de verdad**: ocupa como mucho dos de los tres sitios,
+    y nunca desaloja una partida con golpes en la cola, la última que se abrió ni otra de su misma
+    tanda. **Tampoco pisa una partida ya abierta**: la precarga llega sin que nadie la espere, y lo
+    que guardó la pantalla de anotación mientras tanto es más nuevo.
+  - **Media lista no se guarda.** Si falla una competición, la lista se enseña pero no pisa la
+    completa que había, porque en el campo faltaría justo ese partido.
+  - **Una vista cada 15 minutos por partido como mucho**, porque cada petición gasta del límite
+    que comparte todo el campo. Un fallo de red no gasta el turno.
+  - La lista de competición tiene **su propia clave**, y se borra al cerrar sesión como el resto.
+
 ### Fixed
 
 - **Con el servidor caído y cobertura, la pantalla ya no suelta un error técnico ni se calla los

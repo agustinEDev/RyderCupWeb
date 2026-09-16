@@ -63,7 +63,10 @@
     "round": "Round",
     "loading": "Loading matches...",
     "teamA": "Team A",
-    "teamB": "Team B"
+    "teamB": "Team B",
+    "desdeMemoria": "Could not refresh: these are the last matches seen, and they may be out of date.",
+    "sinRespuesta": "Your matches could not be checked",
+    "sinRespuestaDesc": "Try again in a while."
   },
   "nextMatch": {
     "label": "Your next match",
@@ -83,7 +86,10 @@
       "SINGLES": "Singles",
       "FOURBALL": "Fourball",
       "FOURSOMES": "Foursomes"
-    }
+    },
+    "sinRespuestaTitle": "Your next match could not be checked",
+    "sinRespuestaDesc": "Try again in a while.",
+    "desdeMemoria": "Could not refresh: it may be out of date."
   },
   "recentMatches": {
     "title": "Recent matches",

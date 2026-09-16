@@ -43,7 +43,10 @@ vi.mock('../composition', () => ({
   listUserCompetitionsUseCase: { execute: () => pide('competiciones') },
   getPlayerStatsUseCase: { execute: () => pide('estadisticas') },
   getRecentMatchesUseCase: { execute: () => pide('recientes') },
-  getUpcomingMatchesUseCase: { execute: () => pide('proximos') },
+  getUpcomingMatchesUseCase: {
+    executeWithCompleteness: () => pide('proximos').then((matches) => ({ matches, complete: true })),
+  },
+  getScoringViewUseCase: { execute: () => new Promise(() => {}) },
 }));
 
 // El usuario, la funcion y el objeto entero son CONSTANTES a proposito: los
