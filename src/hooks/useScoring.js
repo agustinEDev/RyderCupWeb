@@ -23,28 +23,33 @@ const SESSION_REFRESH_INTERVAL = 30000; // 30 seconds
 // número como en partida rápida: se compara entero
 const mismoGolpe = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 
-// La respuesta de un envío trae la vista entera, pero a veces sin hoyos: se
-// conservan los que había (resiliencia ante ese fallo del backend). Una sola
-// vez, porque la pintan el envío directo y el vaciado
 // Un fallo y de dónde salió (FE #626). La pantalla cuenta distinto que no
 // cargara la vista que no se pudiera anotar, entregar o conceder: lo primero se
 // calla si lo que se ve sale de la foto —el aviso ámbar ya lo dice— y lo otro se
 // dice siempre, con su texto. Vivían en el mismo estado sin forma de
-// distinguirlos, y el recuadro rojo tomaba cualquier fallo por uno de carga
-const falloDe = (origen) => (err) => (err ? { err, origen } : null);
+// distinguirlos, y el recuadro rojo tomaba cualquier fallo por uno de carga.
+// Y de qué partido es: la ruta no lleva `key`, así que ir de uno a otro
+// reutiliza el hook, y el fallo del anterior no es del nuevo (CodeRabbit en la
+// PR #627)
+const falloDe = (origen) => (err, matchId) => (err ? { err, origen, matchId } : null);
 const deCarga = falloDe('carga');
 const delGolpe = falloDe('golpe');
 const deLaTarjeta = falloDe('tarjeta');
 const deLaConcesion = falloDe('concesion');
-// Un fallo de carga no pisa el de una acción: con el servidor caído el sondeo
-// falla cada 10 s, y el aviso de un golpe que no se guardó duraba hasta el
-// siguiente. Salvo que desmienta el partido —ya no está, no es tuyo, no hay
-// sesión—, que manda sobre todo. Fuera del hook y no en línea: una función
-// creada dentro del `catch` hace que el análisis de `react-hooks` abandone el
-// hook entero
-const trasFallarLaCarga = (err, desmiente) => (antes) =>
-  (antes && antes.origen !== 'carga' && !desmiente ? antes : deCarga(err));
+// Un fallo de carga no pisa el de una acción del mismo partido: con el servidor
+// caído el sondeo falla cada 10 s, y el aviso de un golpe que no se guardó
+// duraba hasta el siguiente. Salvo que desmienta el partido —ya no está, no es
+// tuyo, no hay sesión—, que manda sobre todo. Fuera del hook y no en línea: una
+// función creada dentro del `catch` hace que el análisis de `react-hooks`
+// abandone el hook entero
+const trasFallarLaCarga = (err, desmiente, matchId) => (antes) =>
+  (antes && antes.matchId === matchId && antes.origen !== 'carga' && !desmiente
+    ? antes
+    : deCarga(err, matchId));
 
+// La respuesta de un envío trae la vista entera, pero a veces sin hoyos: se
+// conservan los que había (resiliencia ante ese fallo del backend). Una sola
+// vez, porque la pintan el envío directo y el vaciado
 const conHoyosDe = (vista, antes) => ({
   ...vista,
   holes: vista.holes?.length > 0 ? vista.holes : (antes?.holes || []),
@@ -400,7 +405,7 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
       }
       if (!isOffline && !esVieja()) {
         // Sin pisar lo que falló al anotar, entregar o conceder (FE #626)
-        setFallo(trasFallarLaCarga(err, desmentido));
+        setFallo(trasFallarLaCarga(err, desmentido, matchId));
       }
     } finally {
       setIsLoading(false);
@@ -541,9 +546,12 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
     if (!matchId || !canScore) return;
     if (isOwnScoreLocked && isMarkerScoreLocked) return;
     const estaAnotacion = ++anotacionRef.current;
+    // Solo en este partido: lo llaman también después del envío, que tarda, y en
+    // ese rato se puede haber pasado a otro
     const avisaQueNoSeGuardo = () => {
+      if (esDeOtraPartida(matchId)) return;
       noSeGuardoRef.current = { holeNumber, anotacion: estaAnotacion };
-      setFallo(delGolpe(errorDeGuardado(holeNumber)));
+      setFallo(delGolpe(errorDeGuardado(holeNumber), matchId));
     };
     const hayUnFalloPosterior = () =>
       noSeGuardoRef.current?.holeNumber === holeNumber && noSeGuardoRef.current.anotacion > estaAnotacion;
@@ -617,8 +625,8 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
       if (!esDeOtraPartida(matchId)) {
         marcaEscritura();
         setScoringView((prev) => conHoyosDe(updatedView, prev));
+        setFallo(null);
       }
-      setFallo(null);
       borraLoSuperado(holeNumber, { cuando: cuandoSeGuardo, scoreData });
       yaNoSePierde();
     } catch (err) {
@@ -631,7 +639,7 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
         // decirlo: callarlo deja al jugador creyendo que su golpe está a salvo
         // en algún sitio, y no está en ninguno
         if (guardado === false) avisaQueNoSeGuardo();
-        else if (!hayUnFalloPosterior()) setFallo(null);
+        else if (!hayUnFalloPosterior() && !esDeOtraPartida(matchId)) setFallo(null);
         if (guardado !== false) yaNoSePierde();
         // Y si SÍ se guardó, no se enseña error: para el jugador el golpe está
         // anotado, solo que todavía no ha salido del móvil. Decirle que ha
@@ -654,7 +662,10 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
             currentUserId ?? null
           );
         }
-        setFallo(delGolpe(err));
+        // Con su hoyo, para poder decir cuál: el error del servidor no lo trae.
+        // Como partida rápida
+        err.holeNumber = holeNumber;
+        if (!esDeOtraPartida(matchId)) setFallo(delGolpe(err, matchId));
       }
     } finally {
       setPendingQueueSize(pendientesPropias());
@@ -675,11 +686,11 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
       // Como un golpe que llega: una vista pedida antes ya no vale (FE #606)
       if (!esDeOtraPartida(matchId)) marcaEscritura();
       setMatchSummary(summary);
-      setFallo(null);
+      if (!esDeOtraPartida(matchId)) setFallo(null);
       // Refresh view to get updated submittedBy
       await fetchScoringView();
     } catch (err) {
-      setFallo(deLaTarjeta(err));
+      if (!esDeOtraPartida(matchId)) setFallo(deLaTarjeta(err, matchId));
     } finally {
       setIsSubmitting(false);
     }
@@ -694,9 +705,9 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
       await concedeMatchUseCase.execute(matchId, concedingTeam, reason);
       if (!esDeOtraPartida(matchId)) marcaEscritura();
       await fetchScoringView();
-      setFallo(null);
+      if (!esDeOtraPartida(matchId)) setFallo(null);
     } catch (err) {
-      setFallo(deLaConcesion(err));
+      if (!esDeOtraPartida(matchId)) setFallo(deLaConcesion(err, matchId));
     } finally {
       setIsSubmitting(false);
     }
@@ -831,8 +842,10 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
     scoresVisibles,
     currentHole,
     isLoading,
-    error: fallo?.err ?? null,
-    origenDelError: fallo?.origen ?? null,
+    // Solo el de este partido: al cambiar de uno a otro, el del anterior no se
+    // hereda, sin tener que limpiarlo en un efecto (como `pintadoDeMemoria`)
+    error: fallo?.matchId === matchId ? fallo.err : null,
+    origenDelError: fallo?.matchId === matchId ? fallo.origen : null,
     isSubmitting,
     matchSummary,
     isOffline,
