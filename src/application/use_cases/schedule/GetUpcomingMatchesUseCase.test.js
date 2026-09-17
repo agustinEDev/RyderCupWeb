@@ -243,4 +243,46 @@ describe('GetUpcomingMatchesUseCase', () => {
 
     expect(listUserCompetitionsUseCase.execute).not.toHaveBeenCalled();
   });
+
+  /**
+   * FE #615, fila 5: quien guarda la lista para el campo tiene que saber si
+   * está entera. Media lista sirve para enseñarla, no para pisar una completa.
+   */
+  describe('executeWithCompleteness', () => {
+    it('says the list is complete when every competition answered', async () => {
+      const { useCase } = buildUseCase({
+        competitions: [{ id: 'c1', name: 'Cup', status: 'IN_PROGRESS' }],
+        schedules: {
+          c1: { rounds: [round([{ id: 'm1', status: 'SCHEDULED', teamAPlayers: [{ userId: USER }], teamBPlayers: [] }])] },
+        },
+      });
+
+      const result = await useCase.executeWithCompleteness(USER);
+
+      expect(result.complete).toBe(true);
+      expect(result.matches.map((m) => m.id)).toEqual(['m1']);
+    });
+
+    it('says it is not complete when one competition failed', async () => {
+      const { useCase, getScheduleUseCase } = buildUseCase({
+        competitions: [
+          { id: 'ok', name: 'Works', status: 'IN_PROGRESS' },
+          { id: 'broken', name: 'Fails', status: 'IN_PROGRESS' },
+        ],
+      });
+      getScheduleUseCase.execute.mockImplementation((id) =>
+        id === 'broken' ? Promise.reject(new TypeError('Failed to fetch')) : Promise.resolve({ rounds: [] })
+      );
+
+      const result = await useCase.executeWithCompleteness(USER);
+
+      expect(result.complete).toBe(false);
+    });
+
+    it('with no competition being played, the empty list is complete', async () => {
+      const { useCase } = buildUseCase({ competitions: [] });
+
+      expect(await useCase.executeWithCompleteness(USER)).toEqual({ matches: [], complete: true });
+    });
+  });
 });

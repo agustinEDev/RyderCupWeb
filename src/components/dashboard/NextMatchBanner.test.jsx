@@ -60,6 +60,39 @@ describe('NextMatchBanner', () => {
     expect(mockNavigate).toHaveBeenCalledWith('/player/matches/match-1/scoring');
   });
 
+  /**
+   * FE #615: sin poder preguntar no se sabe si hay partido. Ofrecer «¿partido
+   * improvisado?» ahí es decir que no lo hay, a quien quizá lo tiene en una hora.
+   */
+  describe('when the matches could not be asked for', () => {
+    it('says so instead of offering a quick match', () => {
+      renderBanner({ match: null, sinRespuesta: true });
+
+      expect(screen.getByTestId('next-match-sin-respuesta')).toHaveTextContent('nextMatch.sinRespuestaTitle');
+      expect(screen.queryByTestId('next-match-empty-cta')).not.toBeInTheDocument();
+    });
+
+    it('still shows a match it remembers', () => {
+      renderBanner({ match, sinRespuesta: true });
+
+      expect(screen.getByTestId('next-match-banner')).toHaveTextContent('Ryder Cup Amigos');
+    });
+
+    it('a remembered match says it may be out of date', () => {
+      // Lo mismo que avisa «Mis próximos partidos»: si el calendario cambió, el
+      // banner enseña un partido que ya no toca como si fuera el de ahora
+      renderBanner({ match, desdeMemoria: true });
+
+      expect(screen.getByTestId('next-match-desde-memoria')).toHaveTextContent('nextMatch.desdeMemoria');
+    });
+
+    it('a fresh match does not', () => {
+      renderBanner({ match });
+
+      expect(screen.queryByTestId('next-match-desde-memoria')).not.toBeInTheDocument();
+    });
+  });
+
   describe('with no match scheduled', () => {
     /**
      * El punto del fallback: la mayoria de la gente no esta metida en un

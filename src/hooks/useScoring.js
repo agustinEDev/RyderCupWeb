@@ -8,6 +8,10 @@ import {
 import { seGuardaParaDespues } from '../utils/politicaDeLaCola';
 import { apartaLaRechazada, avisoTrasElVaciado, vaciaAnotaciones } from '../services/vaciaAnotaciones';
 import { errorDeGuardado } from '../utils/erroresDeAnotacion';
+// Lo último que se supo del partido, para poder anotar sin cobertura al reabrir
+// (FE #614). El mismo servicio que usa partida rápida desde la FE #524
+import { loQueSeSupo, olvida, recuerda } from '../services/loUltimoConocido';
+import { guardaLaCorreccion } from '../utils/guardaLaCorreccion';
 import * as golpesPerdidos from '../utils/golpesPerdidos';
 import * as offlineQueue from '../utils/scoringOfflineQueue';
 import * as sessionLock from '../utils/scoringSessionLock';
@@ -18,6 +22,30 @@ const SESSION_REFRESH_INTERVAL = 30000; // 30 seconds
 // El golpe de competición es un objeto —propio, marcado y a quién—, no un
 // número como en partida rápida: se compara entero
 const mismoGolpe = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+
+// Un fallo y de dónde salió (FE #626). La pantalla cuenta distinto que no
+// cargara la vista que no se pudiera anotar, entregar o conceder: lo primero se
+// calla si lo que se ve sale de la foto —el aviso ámbar ya lo dice— y lo otro se
+// dice siempre, con su texto. Vivían en el mismo estado sin forma de
+// distinguirlos, y el recuadro rojo tomaba cualquier fallo por uno de carga.
+// Y de qué partido es: la ruta no lleva `key`, así que ir de uno a otro
+// reutiliza el hook, y el fallo del anterior no es del nuevo (CodeRabbit en la
+// PR #627)
+const falloDe = (origen) => (err, matchId) => (err ? { err, origen, matchId } : null);
+const deCarga = falloDe('carga');
+const delGolpe = falloDe('golpe');
+const deLaTarjeta = falloDe('tarjeta');
+const deLaConcesion = falloDe('concesion');
+// Un fallo de carga no pisa el de una acción del mismo partido: con el servidor
+// caído el sondeo falla cada 10 s, y el aviso de un golpe que no se guardó
+// duraba hasta el siguiente. Salvo que desmienta el partido —ya no está, no es
+// tuyo, no hay sesión—, que manda sobre todo. Fuera del hook y no en línea: una
+// función creada dentro del `catch` hace que el análisis de `react-hooks`
+// abandone el hook entero
+const trasFallarLaCarga = (err, desmiente, matchId) => (antes) =>
+  (antes && antes.matchId === matchId && antes.origen !== 'carga' && !desmiente
+    ? antes
+    : deCarga(err, matchId));
 
 // La respuesta de un envío trae la vista entera, pero a veces sin hoyos: se
 // conservan los que había (resiliencia ante ese fallo del backend). Una sola
@@ -52,7 +80,7 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
   const [scoringView, setScoringView] = useState(null);
   const [currentHole, setCurrentHole] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [fallo, setFallo] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [matchSummary, setMatchSummary] = useState(null);
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
@@ -271,7 +299,7 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
   // vista toma un número al salir; al aplicarse, ese número pasa a ser «lo último
   // aplicado», y lo mismo cuando llega un envío, cuya respuesta ya trae el golpe.
   // Se descarta solo lo más viejo que eso (FE #606; partida rápida, FE #607):
-  // - NO «salió otra después», como hace partida rápida: aquí se sondea cada 10 s
+  // - NO «salió otra después», como hacía partida rápida: aquí se sondea cada 10 s
   //   sin esperar al anterior y las peticiones no tienen tope, así que con mala
   //   cobertura cada respuesta llegaría con otra ya en camino y la vista no se
   //   movería nunca
@@ -294,6 +322,34 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
   }, [matchId]);
   const esDeOtraPartida = useCallback((id) => id !== partidaVigenteRef.current, []);
 
+  // Si lo que hay en pantalla salió de la foto del móvil y no del servidor. La
+  // pantalla lo dice en ámbar: sin esto se pintaba la vista entera —resultado,
+  // tarjeta, botón de entregar— como si fuera lo de ahora mismo, y con un 5xx eso
+  // pasa CON cobertura, donde nadie sospecha nada. Como `pintadoDeMemoria` en
+  // partida rápida
+  // De qué partido es la foto que se está pintando, o `null` si lo que se ve
+  // viene del servidor. Guarda el identificador y no un booleano por lo mismo que
+  // `vistaDeRef`: así el aviso del partido anterior no se hereda sin tener que
+  // reiniciarlo en un efecto, y la comparación de la que sale se hace entre dos
+  // valores normales —estado y prop—, sin leer una referencia en el render, que
+  // es lo que prohíbe `react-hooks/refs`
+  const [memoriaDe, setMemoriaDe] = useState(null);
+
+  // Si hay algo pintado ya, sea del servidor o de la foto. Lo guardado sirve para
+  // ARRANCAR sin señal, no para corregir una pantalla que ya funciona, y con el
+  // estado no se puede mirar: meter `scoringView` en las dependencias de la
+  // petición la recrearía en cada cambio de vista y reiniciaría el sondeo. Como
+  // `hayPartidaRef` en partida rápida
+  // De QUÉ partido es lo que hay pintado, no un simple «hay algo». Con un
+  // booleano había que reiniciarlo al cambiar de partido —si no, la vista del
+  // anterior contaba como pintada y bloqueaba la foto del nuevo, que se quedaba
+  // con los hoyos del viejo bajo su URL (CodeRabbit en la PR #616)— y ese
+  // reinicio tiene que vivir en un efecto, que es justo lo que
+  // `react-hooks/immutability` prohíbe para un valor que también se escribe en
+  // la petición. Guardando el identificador no hay nada que sincronizar: la
+  // pregunta «¿hay vista de ESTE partido?» se responde comparando
+  const vistaDeRef = useRef(null);
+
   const fetchScoringView = useCallback(async () => {
     if (!matchId) return;
     const salio = ++relojRef.current;
@@ -303,15 +359,62 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
       if (esVieja()) return;
       ultimaAplicadaRef.current = salio;
       setScoringView(data);
-      setError(null);
+      setFallo(null);
+      setMemoriaDe(null);
+      vistaDeRef.current = matchId;
+      // La foto de lo último que se supo, para poder anotar al reabrir la
+      // aplicación en el campo (FE #614). Va DESPUÉS de la guarda: una respuesta
+      // vieja no pinta, así que tampoco puede guardarse. Solo lo que dio el
+      // backend, como en partida rápida; aquí basta con una cosa porque esta
+      // vista ya trae hoyos, pares, jugadores y golpes en la misma respuesta.
+      // Si no cabe, `recuerda` devuelve `false` y no pasa nada más: el sitio es
+      // compartido con la cola de golpes sin enviar, y perder eso sí sería grave.
+      //
+      // Solo las partidas que se juegan: las tres plazas que caben se comparten
+      // con partida rápida, y mirar dos partidos ajenos desde el calendario
+      // desalojaba la foto de la propia, que es la que hace falta en el campo.
+      // Sale de la RESPUESTA y no de `isMatchPlayer`, que se deriva del estado y
+      // en la primera carga todavía va vacío
+      const laJuego = data.players?.some((p) => p.userId === currentUserId);
+      if (laJuego) recuerda(matchId, { partida: data, campo: null });
     } catch (err) {
+      const estado = err?.status ?? err?.response?.status;
+      // Una respuesta CON estado es una respuesta: si el servidor dice que ese
+      // partido no está —o que no es tuyo— pintarlo desde el móvil sería enseñar
+      // algo que no existe, y dejar anotar encima
+      if ((estado === 404 || estado === 403) && !esVieja()) olvida(matchId);
+      // El 401 no borra la foto AQUÍ, pero que sobreviva no se puede prometer: si
+      // la sesión ha caducado de verdad, el interceptor cierra sesión antes de que
+      // esto corra y `olvidaLoDeEstaCuenta` la borra y cierra el almacén. Esta
+      // rama cubre los 401 que llegan sin cierre —sin sesión guardada no se
+      // intenta refrescar, y uno que no se clasifica como caducidad se relanza—.
+      // Un 5xx no desmiente nada —el backend está mal, el partido sigue ahí— y es
+      // justo cuando lo guardado hace falta
+      const desmentido = estado === 401 || estado === 403 || estado === 404;
+      // Solo si no hay NADA en pantalla: lo guardado sirve para ARRANCAR sin
+      // señal, no para corregir una pantalla que ya está funcionando
+      if (!desmentido && !esVieja() && vistaDeRef.current !== matchId) {
+        const recordado = loQueSeSupo(matchId);
+        if (recordado?.partida) {
+          setScoringView(recordado.partida);
+          vistaDeRef.current = matchId;
+          // Y que se sepa: la pantalla lo dice en ámbar. Con un 5xx esto ocurre
+          // CON cobertura, donde nadie sospecha que está viendo una foto de antes
+          setMemoriaDe(matchId);
+        }
+      }
       if (!isOffline && !esVieja()) {
-        setError(err);
+        // Sin pisar lo que falló al anotar, entregar o conceder (FE #626)
+        setFallo(trasFallarLaCarga(err, desmentido, matchId));
       }
     } finally {
       setIsLoading(false);
     }
-  }, [matchId, isOffline, esDeOtraPartida]);
+    // `currentUserId` entra porque la guarda de arriba lo lee: solo se guarda la
+    // foto de las partidas que juegas. Recrea la petición —y reinicia el sondeo—
+    // al cambiar de cuenta, que es lo que se quiere: la cola es por dueño desde
+    // la FE #521, y la foto también
+  }, [matchId, isOffline, esDeOtraPartida, currentUserId]);
 
   // --- Un escritor a la vez: el envío o el vaciado (FE #601) ---
   // El golpe se guarda en la cola ANTES de enviarlo, así que un vaciado que
@@ -323,6 +426,15 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
   // porque competición no vacía en el sondeo, como partida rápida: sin esa
   // pasada, lo aplazado esperaba a que el jugador saliera y volviera
   const ocupadoRef = useRef(null);
+  // Qué anotación no se pudo guardar, y en qué turno (FE #605). Un envío que
+  // salió ANTES y acaba sin llegar no puede retirar ese aviso: es de una
+  // corrección posterior del mismo hoyo, y lo guardado de antes ya salió de la
+  // cola, así que sin aviso el hoyo se quedaba vacío sin que nadie lo dijera.
+  // Si llega, no hace falta: la vista que se pide después retira cualquier
+  // aviso, como siempre. Un contador y no la hora: la de la cola y la de aquí
+  // no son el mismo reloj
+  const anotacionRef = useRef(0);
+  const noSeGuardoRef = useRef(null);
   const aplazadoRef = useRef(false);
 
   // --- Process offline queue ---
@@ -433,6 +545,16 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
   const submitScore = useCallback(async (holeNumber, scoreData) => {
     if (!matchId || !canScore) return;
     if (isOwnScoreLocked && isMarkerScoreLocked) return;
+    const estaAnotacion = ++anotacionRef.current;
+    // Solo en este partido: lo llaman también después del envío, que tarda, y en
+    // ese rato se puede haber pasado a otro
+    const avisaQueNoSeGuardo = () => {
+      if (esDeOtraPartida(matchId)) return;
+      noSeGuardoRef.current = { holeNumber, anotacion: estaAnotacion };
+      setFallo(delGolpe(errorDeGuardado(holeNumber), matchId));
+    };
+    const hayUnFalloPosterior = () =>
+      noSeGuardoRef.current?.holeNumber === holeNumber && noSeGuardoRef.current.anotacion > estaAnotacion;
 
     // El aviso de «no se pudo guardar» de este hoyo se retira, pero SOLO
     // cuando el reemplazo está a salvo: enviado, o guardado en la cola. Se
@@ -445,7 +567,7 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
     // queda apuntado para la pasada que dé quien lo tiene al terminar
     if (isOffline || ocupadoRef.current) {
       if (ocupadoRef.current) aplazadoRef.current = true;
-      const guardado = offlineQueue.enqueue(
+      const guardado = guardaLaCorreccion(
         matchId,
         holeNumber,
         scoreData,
@@ -457,14 +579,14 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
       if (guardado === false) {
         // Sin cobertura Y sin sitio donde guardarlo: el golpe no existe en
         // ninguna parte, y eso hay que decirlo
-        setError(errorDeGuardado(holeNumber));
+        avisaQueNoSeGuardo();
       } else {
         // Y se retira el aviso anterior si lo había: sin esto, un hoyo que no
         // se pudo guardar dejaba el cartel puesto el RESTO de la vuelta,
         // mientras los siguientes se guardaban bien. Sin cobertura no hay
         // ninguna otra ocasión de limpiarlo —el sondeo no corre—, así que el
         // jugador reanotaba hoyos creyendo que no se estaban guardando
-        setError(null);
+        setFallo(null);
         yaNoSePierde();
       }
       return;
@@ -476,7 +598,7 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
     // petición tarda unos diez segundos en morir, y si la aplicación se cerraba
     // en ese rato el golpe no estaba ni en el servidor ni en el móvil. Es lo
     // que ya hacía partida rápida (FE #561). Si llega, se retira abajo
-    const guardado = offlineQueue.enqueue(
+    const guardado = guardaLaCorreccion(
       matchId,
       holeNumber,
       scoreData,
@@ -503,8 +625,8 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
       if (!esDeOtraPartida(matchId)) {
         marcaEscritura();
         setScoringView((prev) => conHoyosDe(updatedView, prev));
+        setFallo(null);
       }
-      setError(null);
       borraLoSuperado(holeNumber, { cuando: cuandoSeGuardo, scoreData });
       yaNoSePierde();
     } catch (err) {
@@ -516,7 +638,8 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
         // pudo. Si el móvil no pudo —sin espacio, ventana privada— hay que
         // decirlo: callarlo deja al jugador creyendo que su golpe está a salvo
         // en algún sitio, y no está en ninguno
-        setError(guardado === false ? errorDeGuardado(holeNumber) : null);
+        if (guardado === false) avisaQueNoSeGuardo();
+        else if (!hayUnFalloPosterior() && !esDeOtraPartida(matchId)) setFallo(null);
         if (guardado !== false) yaNoSePierde();
         // Y si SÍ se guardó, no se enseña error: para el jugador el golpe está
         // anotado, solo que todavía no ha salido del móvil. Decirle que ha
@@ -539,7 +662,10 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
             currentUserId ?? null
           );
         }
-        setError(err);
+        // Con su hoyo, para poder decir cuál: el error del servidor no lo trae.
+        // Como partida rápida
+        err.holeNumber = holeNumber;
+        if (!esDeOtraPartida(matchId)) setFallo(delGolpe(err, matchId));
       }
     } finally {
       setPendingQueueSize(pendientesPropias());
@@ -560,11 +686,11 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
       // Como un golpe que llega: una vista pedida antes ya no vale (FE #606)
       if (!esDeOtraPartida(matchId)) marcaEscritura();
       setMatchSummary(summary);
-      setError(null);
+      if (!esDeOtraPartida(matchId)) setFallo(null);
       // Refresh view to get updated submittedBy
       await fetchScoringView();
     } catch (err) {
-      setError(err);
+      if (!esDeOtraPartida(matchId)) setFallo(deLaTarjeta(err, matchId));
     } finally {
       setIsSubmitting(false);
     }
@@ -579,9 +705,9 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
       await concedeMatchUseCase.execute(matchId, concedingTeam, reason);
       if (!esDeOtraPartida(matchId)) marcaEscritura();
       await fetchScoringView();
-      setError(null);
+      if (!esDeOtraPartida(matchId)) setFallo(null);
     } catch (err) {
-      setError(err);
+      if (!esDeOtraPartida(matchId)) setFallo(deLaConcesion(err, matchId));
     } finally {
       setIsSubmitting(false);
     }
@@ -716,13 +842,21 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
     scoresVisibles,
     currentHole,
     isLoading,
-    error,
+    // Solo el de este partido: al cambiar de uno a otro, el del anterior no se
+    // hereda, sin tener que limpiarlo en un efecto (como `pintadoDeMemoria`)
+    error: fallo?.matchId === matchId ? fallo.err : null,
+    origenDelError: fallo?.matchId === matchId ? fallo.origen : null,
     isSubmitting,
     matchSummary,
     isOffline,
     isSessionBlocked,
     pendingQueueSize,
     avisoDelVaciado,
+    // Si lo que se ve salió de la foto del móvil y no del servidor (FE #614): la
+    // pantalla tiene que decirlo, sobre todo con un 5xx, que ocurre CON cobertura.
+    // Derivado por partido: al cambiar de uno a otro, el ámbar del anterior no se
+    // hereda, y así no hay que reiniciar nada en un efecto
+    pintadoDeMemoria: memoriaDe === matchId,
 
     // Derived
     isMatchPlayer,

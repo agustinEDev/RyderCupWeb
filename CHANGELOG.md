@@ -5,6 +5,166 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.33.0] - 2026-09-17
+
+### Added
+
+- **Un partido de competición se puede anotar en un campo sin cobertura aunque no se haya abierto
+  antes** (#615). La #614 pinta el partido de lo guardado, pero solo si se había abierto alguna vez
+  con señal. Ahora, **al abrir el panel o «Mis próximos partidos» con cobertura**, la aplicación
+  guarda la lista y la vista de los partidos del **próximo día con partidos**: la noche antes en el
+  hotel ya cuenta, que es lo normal. No hay trabajo en segundo plano porque Safari no lo permite,
+  así que solo pasa con la aplicación abierta.
+
+  - **Sin cobertura, las dos pantallas enseñan lo guardado**, sin los partidos de días pasados, y
+    **las dos avisan de que puede no estar al día**: la lista y el banner del próximo partido. **Si
+    no hay nada guardado dicen que no se pudo preguntar**, no «no tienes próximos partidos», y el
+    panel ya no ofrece una partida rápida como si no hubiera partido.
+  - **Un partido de hoy que la lista guardada da como programado se puede anotar.** El móvil no
+    puede saber si el creador ya lo arrancó. Si nadie llega a arrancarlo, el servidor rechaza los
+    golpes y salen en el aviso de golpes perdidos. Con red manda el servidor, como siempre.
+  - **Lo precargado no echa a lo que se abrió de verdad**: ocupa como mucho dos de los tres sitios,
+    y nunca desaloja una partida con golpes en la cola, la última que se abrió ni otra de su misma
+    tanda. **Tampoco pisa una partida ya abierta**: la precarga llega sin que nadie la espere, y lo
+    que guardó la pantalla de anotación mientras tanto es más nuevo.
+  - **Media lista no se guarda.** Si falla una competición, la lista se enseña pero no pisa la
+    completa que había, porque en el campo faltaría justo ese partido.
+  - **Una vista cada 15 minutos por partido como mucho**, porque cada petición gasta del límite
+    que comparte todo el campo. Un fallo de red no gasta el turno.
+  - La lista de competición tiene **su propia clave**, y se borra al cerrar sesión como el resto.
+
+### Fixed
+
+- **Una corrección que el móvil no puede guardar ya no deja salir el golpe que sustituía** (#605).
+  Sin cobertura se anotaba un 4; al corregirlo a 5 con el móvil lleno (o en una ventana privada) el
+  guardado fallaba y se avisaba, pero **el 4 seguía en la cola**: la cola solo quita lo anterior de
+  un hoyo cuando consigue escribir lo nuevo. Al volver la cobertura el vaciado mandaba el 4, y el
+  servidor se quedaba con un valor que el jugador había sustituido, sin aviso, mientras su pantalla
+  decía 5. Un hoyo vacío se ve y se pide otra vez; un golpe viejo parece bueno.
+
+  Ahora, si el guardado falla, **lo sustituido sale de la cola** y queda el aviso de volver a
+  anotarlo. Pasa en las dos pantallas y por todos los caminos: sin cobertura, con otro envío o un
+  vaciado en marcha, y con el envío directo, llegue o no. Cuatro cosas que se cuidan a propósito:
+
+  - **Sale solo el golpe que cambia de valor.** Competición manda los dos golpes del hoyo cada
+    vez: anotar el del marcado después del propio, con el móvil lleno, no puede llevarse por
+    delante un propio que nadie tocó. Si se corrige uno y el otro sigue igual, el otro se queda.
+    Volver a guardar el mismo golpe no quita nada.
+  - **Al resolver un desacuerdo no se quita nada.** Ahí se reencola la misma anotación con la
+    decisión tomada, y si esa escritura falla, quitarla perdería el golpe que el jugador eligió.
+  - **Se toca solo si sigue siendo lo que había antes de intentar guardar**, comparando hora y
+    valor, nunca por el número de hoyo: una corrección que entre justo entonces se queda. Y si
+    quitarlo también falla, no cambia nada y el aviso sigue puesto.
+  - **Un envío que ya iba de camino no retira ese aviso al acabar.** El aviso es de una corrección
+    posterior del mismo hoyo; sin esto, el envío anterior lo quitaba y el hoyo se quedaba vacío
+    sin que nadie lo dijera. En competición, si ese envío llega, la vista que se pide después
+    retira el aviso como con cada sondeo, igual que antes.
+
+  De paso, en partida rápida, cuando el guardado fallaba y el envío sí llegaba, se tomaba la hora
+  del golpe viejo como si fuera la del nuevo, así que el viejo no se borraba al llegar. Es el mismo
+  fallo que la #604 arregló en competición.
+
+- **Con mala cobertura, la pantalla de una partida rápida ya no se queda congelada** (#607). La
+  partida se preguntaba al servidor cada minuto sin esperar a la respuesta anterior, y también al
+  volver la red y al volver a la aplicación; como las peticiones no tienen tope de tiempo, una
+  respuesta lenta llegaba siempre con otra ya en camino y **se tiraba**, sus errores incluidos. La
+  pantalla se quedaba con lo último bueno, sin decir nada, hasta que una respuesta acertaba a ser la
+  última: exactamente la situación para la que existe todo lo demás.
+
+  Ahora una respuesta se descarta **solo si ya se aplicó algo más nuevo** —otra respuesta, terminar
+  o cancelar la partida, o un golpe que acaba de llegar—, que es la regla que competición usa desde
+  la #606. Lo que el contador protegía se mantiene: un 404 lento de un portal cautivo no borra una
+  partida ya cargada, un error viejo no pisa un estado bueno y una respuesta de la partida anterior
+  no se pinta en la nueva.
+
+  Y **el golpe que llega se pinta antes de salir de la cola**, tanto en el vaciado como en un envío
+  directo. Antes salía de la cola al llegar y la partida no se volvía a pedir hasta el final de la
+  pasada: en medio, ese hoyo no estaba ni en la cola ni en la pantalla, y con mala cobertura eso son
+  segundos con la casilla vacía —o con el número anterior si era una corrección—, que es justo lo
+  que invita a anotarlo dos veces. De paso, terminar o cancelar una partida que conteste cuando ya
+  se está mirando otra deja de pintarse encima de esa otra.
+
+- **El aviso rojo de un partido de competición dice qué ha fallado de verdad** (#626). Un fallo al
+  cargar la vista y uno al anotar, entregar la tarjeta o conceder compartían estado, y la pantalla
+  los trataba a todos como fallos de carga: si el partido se estaba pintando de lo guardado, el
+  recuadro **no salía**, así que «no se pudo guardar el golpe en el móvil» no se veía y la casilla
+  se vaciaba sin explicación; y en los demás casos se leía «no se ha podido cargar el partido»
+  aunque lo que hubiera pasado fuese un golpe rechazado por el servidor.
+
+  Ahora el fallo sabe de dónde viene y de qué partido es: el de carga se sigue callando bajo el
+  aviso ámbar, el de una acción **se dice siempre** con su texto y con el hoyo cuando lo hay, y un
+  sondeo que falla ya no borra el aviso de un golpe —con el servidor caído falla cada diez
+  segundos—, salvo que desmienta el partido. Los dos defectos eran de esta misma versión.
+
+- **El aviso de «no se pudo guardar el golpe en el móvil» explica los motivos de hoy.** Culpaba a
+  «una ventana privada», un caso de Safari en iOS 10 y anteriores: hoy la navegación privada guarda
+  datos y la aplicación instalada nunca va en privado. Ahora nombra lo que de verdad pasa —el
+  almacenamiento lleno, o el navegador con el guardado bloqueado— y qué hacer con cada uno. Vale
+  para competición y para partida rápida, que comparten el texto.
+
+- **Con el servidor caído y cobertura, la pantalla ya no suelta un error técnico ni se calla los
+  golpes pendientes** (#617). Es el caso de campo más probable —un club con señal y la API abajo, o
+  un error del servidor—, y salió al probar la #614 en local. Si el partido no se había abierto
+  nunca en ese dispositivo, lo que aparecía era `Failed to fetch (localhost:8000)` en crudo, sin
+  traducir, **y ni una palabra del golpe que seguía esperando en la cola**.
+
+  Dos causas sumadas: la pantalla de error genérico se decidía **antes** que la de «no hay nada
+  guardado», que así era inalcanzable en cuanto había error —y sin cobertura no lo hay, por eso solo
+  fallaba con señal—; y el aviso de golpes pendientes estaba atado a estar sin conexión, que es falso
+  cuando la red va bien y lo caído es el servidor.
+
+  Ahora hay **una sola pantalla** para los dos motivos, porque al jugador le pasa lo mismo en ambos:
+  el partido no se puede dibujar. Y lo que se le cuenta encaja con lo que de verdad pasa:
+
+  - **Los golpes pendientes se anuncian siempre que los haya**, pero por dos vías distintas: sin
+    conexión, con su aviso de siempre; **con cobertura y el servidor caído, con uno propio**, porque
+    el otro afirma «estás sin conexión» y ahí sí la hay.
+  - **El motivo lo contamos con nuestras palabras, en los dos sitios.** Antes se imprimía el mensaje
+    del error, que llega con el texto del backend en inglés o compuesto como `HTTP 503: Service
+    Unavailable`: la misma clase de texto técnico que este arreglo venía a quitar. Ahora el estado se
+    traduce —«ese partido ya no está», «ese partido no es tuyo»— y lo demás cae en un «no se ha
+    podido cargar». Y no solo en la pantalla sin datos: **el recuadro que sale con el partido ya
+    pintado**, cuando falla un sondeo o un envío, imprimía ese mismo texto crudo y se arregló con la
+    misma regla, no con una copia.
+  - **La pista de abrirlo una vez con cobertura se esconde solo si el servidor contestó.** Si el
+    partido no está o no es tuyo, abrirlo con red no arregla nada; pero con un fallo sin respuesta
+    —el wifi de un club con portal cautivo— es justo el consejo que hace falta, y antes desaparecía.
+
+- **Reabrir un partido de competición sin cobertura ya no deja una pantalla vacía** (#614). El
+  golpe pendiente estaba a salvo —el aviso lo decía—, pero la partida no se podía dibujar: el
+  título salía como «Partido #» sin número, la pestaña de anotar enseñaba el selector de hoyos
+  **sin panel del hoyo**, la tarjeta solo las cabeceras y la clasificación en blanco. Sin par, sin
+  índice y sin casillas no hay nada que anotar, que es justo para lo que se abre esa pantalla.
+
+  La vista se pedía al servidor y no se guardaba en ninguna parte, así que al arrancar sin red no
+  había nada con lo que pintarla. Ahora **se recuerda lo último que se supo del partido** y se
+  pinta cuando no hay a quién preguntar, **diciéndolo**: la pantalla avisa en ámbar de que lo que
+  se ve puede no estar al día. Eso no es un detalle: con un error del servidor ocurre **con
+  cobertura**, y sin decirlo se lee como si fuera lo de ahora mismo —y se entrega una tarjeta o se
+  concede un hoyo contra una foto de hace rato—. Es el mismo mecanismo, y el mismo aviso, que
+  partida rápida usa desde la #524; competición se había quedado sin los dos.
+
+  Las reglas, que son lo que evita mentir con datos viejos:
+
+  - **Solo se guarda lo que respondió el backend**, y solo si esa respuesta llegó a pintarse: una
+    respuesta superada por otra más nueva no se pinta, así que tampoco se guarda.
+  - **Un 404 o un 403 no se resucitan.** Si el servidor dice que el partido ya no está —o que no es
+    tuyo—, lo guardado se olvida: enseñarlo sería pintar algo que no existe y dejar anotar encima.
+  - **Un 401 no borra la foto por este camino**, porque el partido sigue ahí y tirarla obligaría a
+    tener red otra vez para poder anotar. Pero que sobreviva no se promete: si la sesión ha caducado
+    de verdad, el cierre de sesión se adelanta y se lleva lo guardado de la cuenta, que es lo
+    correcto en un móvil compartido.
+  - **Un 5xx sí pinta lo guardado**: el servidor está mal, el partido sigue jugándose, y es justo
+    cuando hace falta.
+  - **Lo guardado sirve para arrancar sin señal, no para corregir una pantalla que ya funciona**:
+    nunca se repinta encima de lo que ya está en pantalla.
+  - **La cola de golpes sin enviar manda**: si no cabe en el dispositivo, se deja de guardar la
+    foto y no pasa nada más. Perder un golpe sería mucho peor.
+
+  Y si el partido **nunca se abrió en este dispositivo** no hay nada que pintar: ahora se dice, en
+  lugar de dejar la carcasa vacía. Que la foto se guarde antes de llegar al campo —con cobertura,
+  al ver los emparejamientos— es la #615.
+
 ## [2.32.0] - 2026-09-16
 
 ### Fixed

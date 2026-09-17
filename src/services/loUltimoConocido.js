@@ -89,6 +89,63 @@ export const recuerda = (id, lo) => {
   return escribe(todas.slice(-CUANTAS_CABEN));
 };
 
+/** Lo precargado deja siempre un sitio para lo que se abre de verdad. */
+const CUANTAS_PRECARGADAS = CUANTAS_CABEN - 1;
+
+/**
+ * Guarda una partida que NADIE ha abierto: la que toca jugar, pedida mientras
+ * había cobertura para poder pintarla después en el campo (FE #615).
+ *
+ * No entra como `recuerda`, que echa sin mirar a la más vieja. Esto corre solo,
+ * al abrir el panel, y no puede llevarse por delante lo que el jugador sí
+ * abrió: ni una partida con golpes en la cola —es la que hace falta para ver
+ * lo que falta por enviar— ni la última que abrió, que es la que se está
+ * jugando. Lleva su propia marca (`precargada`) y no se deduce de nada: abrirla
+ * de verdad con `recuerda` la quita.
+ *
+ * @param {string} id
+ * @param {{partida: Object, campo: Object|null}} lo Tal y como lo dio el backend
+ * @param {{protegidas?: Set<string>}} [opciones] Las que no se pueden echar: las
+ *   partidas con golpes en la cola y las de la propia tanda que se precarga
+ * @returns {boolean} Si de verdad quedó guardada
+ */
+export const precarga = (id, lo, { protegidas = new Set() } = {}) => {
+  if (!id || cerrado) return false;
+
+  const todas = leeTodo();
+  const donde = todas.findIndex((x) => x.id === id);
+
+  if (donde !== -1) {
+    // Abierta de verdad: no se toca. Esta respuesta salió del panel sin que
+    // nadie la esperara, y si mientras tanto se abrió el partido, lo que guardó
+    // la pantalla de anotación es más nuevo —con los golpes ya enviados—.
+    // Se decide con lo que hay AHORA en el almacenamiento, no con lo que había
+    // al pedirla, y por eso cubre justo esa carrera
+    if (!todas[donde].precargada) return true;
+    const refrescada = { ...todas[donde], ...lo };
+    if (JSON.stringify(refrescada) === JSON.stringify(todas[donde])) return true;
+    todas[donde] = refrescada;
+    return escribe(todas);
+  }
+
+  const ultimaAbierta = todas.map((x) => !x.precargada).lastIndexOf(true);
+  const sePuedeIr = (x, i) => !protegidas.has(x.id) && i !== ultimaAbierta;
+  const precargadas = todas.filter((x) => x.precargada).length;
+
+  if (precargadas >= CUANTAS_PRECARGADAS || todas.length >= CUANTAS_CABEN) {
+    // Con las precargadas al tope se va una de ellas; si no, la más vieja que
+    // se pueda ir, sea lo que sea
+    const seVa = precargadas >= CUANTAS_PRECARGADAS
+      ? todas.findIndex((x, i) => x.precargada && sePuedeIr(x, i))
+      : todas.findIndex(sePuedeIr);
+    if (seVa === -1) return false;
+    todas.splice(seVa, 1);
+  }
+
+  todas.push({ id, ...lo, precargada: true });
+  return escribe(todas);
+};
+
 /** @returns {{partida: Object, campo: Object|null}|null} */
 export const loQueSeSupo = (id) => {
   if (!id) return null;
@@ -116,10 +173,10 @@ const CLAVE_LISTA = 'rydercup-ultima-lista';
  *  todas con su DTO entero comparte sitio con la cola de golpes sin enviar. */
 const CUANTAS_EN_LA_LISTA = 20;
 
-export const recuerdaLaLista = (partidas) => {
+const guardaLista = (clave, lista) => {
   if (cerrado) return false;
   try {
-    localStorage.setItem(CLAVE_LISTA, JSON.stringify((partidas ?? []).slice(0, CUANTAS_EN_LA_LISTA)));
+    localStorage.setItem(clave, JSON.stringify((lista ?? []).slice(0, CUANTAS_EN_LA_LISTA)));
     return true;
   } catch {
     return false;
@@ -127,9 +184,9 @@ export const recuerdaLaLista = (partidas) => {
 };
 
 /** @returns {Array|null} */
-export const laUltimaLista = () => {
+const leeLista = (clave) => {
   try {
-    const crudo = localStorage.getItem(CLAVE_LISTA);
+    const crudo = localStorage.getItem(clave);
     if (!crudo) return null;
     const lista = JSON.parse(crudo);
     return Array.isArray(lista) ? lista : null;
@@ -137,6 +194,24 @@ export const laUltimaLista = () => {
     return null;
   }
 };
+
+export const recuerdaLaLista = (partidas) => guardaLista(CLAVE_LISTA, partidas);
+
+/** @returns {Array|null} */
+export const laUltimaLista = () => leeLista(CLAVE_LISTA);
+
+/**
+ * Los próximos partidos de competición, la otra puerta de entrada (FE #615).
+ * Con clave propia: compartir la de partidas rápidas hacía que cada pantalla
+ * borrara la lista de la otra, y sin cobertura se quedaba sin entrada una de
+ * las dos.
+ */
+const CLAVE_PARTIDOS = 'rydercup-ultimos-partidos';
+
+export const recuerdaLosPartidos = (partidos) => guardaLista(CLAVE_PARTIDOS, partidos);
+
+/** @returns {Array|null} */
+export const losUltimosPartidos = () => leeLista(CLAVE_PARTIDOS);
 
 /**
  * Al cerrar sesión: son datos de ESTA cuenta. En un móvil compartido, sin esto
@@ -146,6 +221,7 @@ export const laUltimaLista = () => {
 const borra = () => {
   try {
     localStorage.removeItem(CLAVE_LISTA);
+    localStorage.removeItem(CLAVE_PARTIDOS);
     localStorage.removeItem(CLAVE);
   } catch {
     // Nada que hacer

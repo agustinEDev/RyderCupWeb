@@ -38,12 +38,14 @@ const ScoringPage = () => {
     currentHole,
     isLoading,
     error,
+    origenDelError,
     isSubmitting,
     matchSummary,
     isOffline,
     isSessionBlocked,
     pendingQueueSize,
     avisoDelVaciado,
+    pintadoDeMemoria,
     canScore,
     hasSubmitted,
     isOwnScoreLocked,
@@ -63,7 +65,40 @@ const ScoringPage = () => {
 
   // Un error del hook puede traer la CLAVE de su texto: la pantalla pintaba
   // `error.message` tal cual, y así salía castellano fijo en la app en inglés
-  const textoDe = (err) => (err?.i18nKey ? t(err.i18nKey) : err?.message || t('errors.generic'));
+  // Lo que se le cuenta al jugador cuando algo falla, con NUESTRAS palabras.
+  //
+  // El `message` del error no sirve para esto: `api.js` lo rellena con el
+  // `detail` del backend —que viene en inglés— o compone «HTTP 503: Service
+  // Unavailable» cuando no hay cuerpo que parsear; y un fallo sin respuesta trae
+  // el texto interno de `fetch`. Nada de eso significa nada para quien lo lee.
+  //
+  // Una sola regla para los DOS sitios donde se enseña un fallo —la pantalla sin
+  // vista y el recuadro con el partido ya pintado—: arreglar solo el primero
+  // dejaba el mismo texto crudo saliendo por el otro (CodeRabbit en la PR #618)
+  const CLAVE_POR_ESTADO = { 403: 'errors.forbidden', 404: 'errors.notFound' };
+  const motivoDe = (err) => {
+    const clave = CLAVE_POR_ESTADO[err?.status ?? err?.response?.status];
+    return clave ? t(clave) : t('offline.noSePudoCargar');
+  };
+
+  // Pero esa regla es la de NO HABER PODIDO CARGAR, y el recuadro enseña también
+  // lo que falla al anotar, entregar o conceder: con ella un golpe rechazado, o
+  // que no cupo en el móvil, se contaba como «no se ha podido cargar el
+  // partido» (FE #626). Lo de una acción dice primero lo suyo, si trae clave
+  // —el móvil lleno, que no tiene estado HTTP—, y si no, qué acción falló.
+  // Nunca el `message`, por lo mismo que arriba. Lo que no dice de dónde viene
+  // se sigue tomando por un fallo de carga, que es lo que era siempre
+  const CLAVE_POR_ACCION = {
+    golpe: 'errors.failedToSubmitScore',
+    tarjeta: 'errors.failedToSubmitScorecard',
+    concesion: 'errors.failedToConcede',
+  };
+  const falloDeUnaAccion = Boolean(CLAVE_POR_ACCION[origenDelError]);
+  const textoDelFallo = (err) => {
+    if (!falloDeUnaAccion) return motivoDe(err);
+    const texto = err?.i18nKey ? t(err.i18nKey) : t(CLAVE_POR_ACCION[origenDelError]);
+    return err?.holeNumber != null ? `${texto} ${t('errors.enElHoyo', { hole: err.holeNumber })}` : texto;
+  };
 
   // Load leaderboard when tab changes to leaderboard
   useEffect(() => {
@@ -197,13 +232,59 @@ const ScoringPage = () => {
     );
   }
 
-  // Only show full-page error if no data loaded yet (initial load failed)
-  if (error && !scoringView) {
+  // No hay nada que pintar: ni hoyos, ni pares, ni quién juega. Una sola pantalla
+  // para los dos motivos por los que se llega aquí (FE #617), porque al jugador
+  // le pasa lo mismo en ambos y lo que necesita saber es igual:
+  //
+  // - sin cobertura la petición muere sin respuesta y el hook NO pone error a
+  //   propósito;
+  // - con cobertura y el servidor caído —un club con señal y la API abajo, o un
+  //   5xx— el hook SÍ lo pone, y antes esta rama era inalcanzable: ganaba la de
+  //   error y salía el mensaje crudo de `fetch` («Failed to fetch (host:puerto)»),
+  //   sin una palabra de los golpes que seguían en la cola.
+  //
+  // Con la foto del partido (FE #614) esto solo se ve si nunca se abrió aquí
+  if (!scoringView) {
+    // ¿Contestó el servidor? Preguntado por `=== undefined` y no por verdadero/
+    // falso, como en partida rápida: lo que importa es si hubo respuesta, y un
+    // `status` 0 —que algún proxy expone en una petición abortada— no lo es
+    const estado = error?.status ?? error?.response?.status;
+    const contestoElServidor = estado !== undefined;
+
+    // El motivo sale de `motivoDe`, la misma regla que usa el recuadro de abajo
     return (
       <div className="min-h-screen bg-gray-50">
         <HeaderAuth user={user} />
-        <div className="max-w-4xl mx-auto px-4 py-6 text-center">
-          <p className="text-red-600">{textoDe(error)}</p>
+
+        {/* Sin conexión, su aviso: se perdía cuando la cola estaba vacía, que es
+            el caso más común al llegar al campo con un partido nunca abierto aquí */}
+        {isOffline && <OfflineBanner pendingCount={pendingQueueSize} />}
+
+        {/* Y con cobertura, los golpes pendientes se cuentan aparte: el banner de
+            arriba afirma «estás sin conexión», y aquí sí la hay —lo caído es el
+            servidor—, así que usarlo para esto sería decirle algo falso */}
+        {!isOffline && pendingQueueSize > 0 && (
+          <div className="max-w-4xl mx-auto px-4 pt-4">
+            <p
+              data-testid="pendientes-a-salvo"
+              className="bg-amber-50 border border-amber-200 text-amber-800 rounded-lg p-3 text-sm"
+            >
+              {t('offline.pendientesASalvo')} {t('offline.pendingScores', { count: pendingQueueSize })}
+            </p>
+          </div>
+        )}
+
+        <div className="max-w-4xl mx-auto px-4 py-6 text-center" data-testid="sin-nada-guardado">
+          <p className="text-gray-700">
+            {error ? motivoDe(error) : t('offline.nothingCached')}
+          </p>
+          {/* La pista se esconde solo si el servidor contestó —si el partido no
+              está o no es tuyo, abrirlo con cobertura no arregla nada—. Con un
+              fallo sin respuesta, que es lo que da un portal cautivo, es justo el
+              consejo que hace falta */}
+          {!contestoElServidor && (
+            <p className="mt-2 text-sm text-gray-500">{t('offline.nothingCachedHint')}</p>
+          )}
           <button onClick={refetch} className="mt-4 px-4 py-2 bg-primary text-white rounded-lg">
             {t('retry')}
           </button>
@@ -263,11 +344,29 @@ const ScoringPage = () => {
         </div>
       )}
       
-      {/* Inline error banner for post-load errors */}
-      {error && scoringView && (
+      {/* Lo que se ve salió de la foto del móvil, no del servidor (FE #614). Hay
+          que decirlo, y en ámbar y no en rojo: con un 5xx esto pasa CON cobertura,
+          y sin avisar se lee como si fuera lo de ahora mismo —con su resultado, su
+          tarjeta y su botón de entregar— cuando puede ser de hace rato */}
+      {pintadoDeMemoria && scoringView && (
+        <div className="max-w-4xl mx-auto px-4 pt-4">
+          <p
+            data-testid="pintado-de-memoria"
+            className="bg-amber-50 border border-amber-200 text-amber-800 rounded-lg p-3 text-sm"
+          >
+            {t('offline.noSeActualiza')}
+          </p>
+        </div>
+      )}
+
+      {/* Inline error banner for post-load errors. Si la pantalla viene de la
+          foto, el fallo AL CARGAR ya está contado arriba y el rojo encima sobra;
+          el de una acción no: callarlo dejaba una casilla vaciada sin decir que
+          el golpe no se pudo guardar (FE #626) */}
+      {error && scoringView && (!pintadoDeMemoria || falloDeUnaAccion) && (
         <div className="max-w-4xl mx-auto px-4 pt-4">
           <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-center justify-between">
-            <p className="text-sm text-red-600">{textoDe(error)}</p>
+            <p className="text-sm text-red-600">{textoDelFallo(error)}</p>
             <button
               onClick={refetch}
               className="px-3 py-1 text-xs bg-red-600 text-white rounded hover:bg-red-700"

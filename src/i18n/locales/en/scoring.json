@@ -146,7 +146,12 @@
     "syncing": "Syncing scores...",
     "syncComplete": "All scores synced",
     "pendingScores_one": "{{count}} score pending sync",
-    "pendingScores_other": "{{count}} scores pending sync"
+    "pendingScores_other": "{{count}} scores pending sync",
+    "nothingCached": "Nothing about this match is saved on this device",
+    "nothingCachedHint": "Open it once with coverage and you will be able to score offline.",
+    "noSeActualiza": "This match could not be refreshed from the server. What you see may not be up to date.",
+    "noSePudoCargar": "This match could not be loaded. Try again in a moment.",
+    "pendientesASalvo": "Your strokes are saved on this device and will be sent when the match loads again."
   },
   "session": {
     "blocked": "Active Session Detected",
@@ -160,13 +165,16 @@
   },
   "errors": {
     "generic": "An error occurred",
+    "forbidden": "This match is not yours.",
+    "notFound": "This match is no longer there.",
     "failedToLoad": "Failed to load scoring data",
     "failedToSubmitScore": "Failed to submit score",
     "failedToSubmitScorecard": "Failed to submit scorecard",
     "failedToLoadLeaderboard": "Failed to load leaderboard",
     "failedToConcede": "Failed to concede match",
     "matchNotInProgress": "Match is not in progress",
-    "noSeGuardoEnElMovil": "The stroke could not be saved on this device: no space left, or a private window. Enter it again once space is freed.",
+    "enElHoyo": "Hole {{hole}}.",
+    "noSeGuardoEnElMovil": "The stroke could not be saved on this device: storage is full or the browser is not allowing saved data. Free up space or allow saved data, then enter it again.",
     "vaciado": {
       "no-se-pudo-borrar": "The stroke reached the server, but this device could not update its pending list. Do not enter it again: free up space on the device and the rest will go out on its own.",
       "no-se-pudo-escribir": "The server did not accept a saved stroke and this device has no space to note it. Free up space on the device and open the match again."

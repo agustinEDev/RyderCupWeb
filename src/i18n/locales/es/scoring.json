@@ -146,7 +146,12 @@
     "syncing": "Sincronizando anotaciones...",
     "syncComplete": "Todas las anotaciones sincronizadas",
     "pendingScores_one": "{{count}} anotación pendiente de sincronizar",
-    "pendingScores_other": "{{count}} anotaciones pendientes de sincronizar"
+    "pendingScores_other": "{{count}} anotaciones pendientes de sincronizar",
+    "nothingCached": "No hay nada guardado de este partido en este dispositivo",
+    "nothingCachedHint": "Ábrelo una vez con cobertura y después podrás anotar sin conexión.",
+    "noSeActualiza": "No se ha podido actualizar el partido desde el servidor: lo que ves puede no estar al día.",
+    "noSePudoCargar": "No se ha podido cargar el partido. Vuelve a intentarlo en un momento.",
+    "pendientesASalvo": "Tus golpes están guardados en este dispositivo y se enviarán cuando el partido vuelva a cargarse."
   },
   "session": {
     "blocked": "Sesión Activa Detectada",
@@ -160,13 +165,16 @@
   },
   "errors": {
     "generic": "Ocurrió un error",
+    "forbidden": "Ese partido no es tuyo.",
+    "notFound": "Ese partido ya no está.",
     "failedToLoad": "Error al cargar datos de anotación",
     "failedToSubmitScore": "Error al enviar anotación",
     "failedToSubmitScorecard": "Error al enviar tarjeta",
     "failedToLoadLeaderboard": "Error al cargar clasificación",
     "failedToConcede": "Error al conceder partido",
     "matchNotInProgress": "El partido no está en curso",
-    "noSeGuardoEnElMovil": "No se pudo guardar el golpe en el móvil: no hay espacio o la ventana es privada. Anótalo de nuevo cuando lo hayas liberado.",
+    "enElHoyo": "Hoyo {{hole}}.",
+    "noSeGuardoEnElMovil": "No se pudo guardar el golpe en el móvil: el almacenamiento está lleno o el navegador no deja guardar datos. Libera espacio o permite guardar datos, y vuelve a anotarlo.",
     "vaciado": {
       "no-se-pudo-borrar": "El golpe llegó al servidor, pero el móvil no ha podido actualizar su lista de pendientes. No lo vuelvas a anotar: libera espacio en el dispositivo y el resto saldrá solo.",
       "no-se-pudo-escribir": "El servidor no aceptó un golpe guardado y el móvil no tiene espacio para apuntarlo. Libera espacio en el dispositivo y vuelve a abrir la partida."

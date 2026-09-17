@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 
 // Mock dependencies
@@ -457,5 +457,359 @@ describe('ScoringPage', () => {
       render(<ScoringPage />);
       expect(screen.getByRole('status')).toHaveTextContent('scoring:errors.vaciado.no-se-pudo-borrar');
     });
+  });
+});
+
+describe('ScoringPage · sin nada guardado se dice, no se deja la carcasa (FE #614)', () => {
+  // Sin cobertura la peticion muere sin respuesta, asi que el hook NO pone
+  // error a proposito: la pantalla caia al render normal con la vista a nulo y
+  // pintaba una carcasa —«Partido #» sin numero, sin panel del hoyo, tarjeta
+  // con cabeceras y nada mas—. Eso no dice que haya pasado, y el jugador se
+  // queda mirando una pantalla que no puede usar
+  const laVista = mockUseScoring.scoringView;
+
+  afterEach(() => {
+    mockUseScoring.scoringView = laVista;
+    mockUseScoring.error = null;
+    mockUseScoring.isOffline = false;
+  });
+
+  it('sin vista y sin error, lo dice en vez de pintar la carcasa vacía', () => {
+    mockUseScoring.scoringView = null;
+    mockUseScoring.error = null;
+    mockUseScoring.isOffline = true;
+
+    render(<ScoringPage />);
+
+    expect(screen.getByTestId('sin-nada-guardado')).toBeInTheDocument();
+  });
+
+  it('y no se enseña el selector ni la tarjeta de un partido que no se tiene', () => {
+    mockUseScoring.scoringView = null;
+    mockUseScoring.error = null;
+    mockUseScoring.isOffline = true;
+
+    render(<ScoringPage />);
+
+    expect(screen.queryByTestId('hole-selector')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('scorecard-table')).not.toBeInTheDocument();
+  });
+});
+
+describe('ScoringPage · cuando lo que se ve sale de la foto del móvil (FE #614)', () => {
+  const laVista = mockUseScoring.scoringView;
+
+  afterEach(() => {
+    mockUseScoring.scoringView = laVista;
+    mockUseScoring.pintadoDeMemoria = false;
+    mockUseScoring.error = null;
+    mockUseScoring.isOffline = false;
+    mockUseScoring.pendingQueueSize = 0;
+  });
+
+  // Salio de la revision: con un 5xx la pantalla se pintaba entera desde el
+  // movil bajo un recuadro rojo, sin decir que era una foto de antes. Y eso
+  // pasa CON cobertura, que es donde nadie sospecha
+  it('lo dice en ámbar, y el recuadro rojo deja de salir encima', () => {
+    mockUseScoring.pintadoDeMemoria = true;
+    mockUseScoring.error = Object.assign(new Error('500'), { status: 500 });
+
+    render(<ScoringPage />);
+
+    expect(screen.getByTestId('pintado-de-memoria')).toBeInTheDocument();
+    // El boton de reintentar del recuadro rojo: su texto es la clave, porque la
+    // `t` de este fichero devuelve la clave
+    expect(screen.queryAllByText('retry')).toHaveLength(0);
+  });
+
+  it('con un error de verdad y sin foto, sigue saliendo el recuadro rojo', () => {
+    mockUseScoring.pintadoDeMemoria = false;
+    mockUseScoring.error = Object.assign(new Error('500'), { status: 500 });
+
+    render(<ScoringPage />);
+
+    expect(screen.queryByTestId('pintado-de-memoria')).not.toBeInTheDocument();
+    expect(screen.getAllByText('retry').length).toBeGreaterThan(0);
+  });
+
+  // Tambien de la revision: la foto pudo no caber, desalojarse o borrarse por un
+  // 404 a media vuelta, y los golpes del jugador seguir en la cola. Decir «no
+  // hay nada guardado» sin contarlos es decirle lo contrario de lo que pasa
+  it('sin nada guardado, los golpes pendientes se siguen viendo', () => {
+    mockUseScoring.scoringView = null;
+    mockUseScoring.isOffline = true;
+    mockUseScoring.pendingQueueSize = 2;
+
+    render(<ScoringPage />);
+
+    expect(screen.getByTestId('sin-nada-guardado')).toBeInTheDocument();
+    expect(screen.getByTestId('offline-banner')).toBeInTheDocument();
+  });
+});
+
+describe('ScoringPage · servidor caido CON cobertura y sin foto (FE #617)', () => {
+  const laVista = mockUseScoring.scoringView;
+  const fallaLaRed = () => new TypeError('Failed to fetch (localhost:8000)');
+
+  afterEach(() => {
+    mockUseScoring.scoringView = laVista;
+    mockUseScoring.error = null;
+    mockUseScoring.isOffline = false;
+    mockUseScoring.pendingQueueSize = 0;
+  });
+
+  // El caso de campo mas probable: club con cobertura y la API caida. El hook SI
+  // pone error (no es `isOffline`), asi que la guarda de error se disparaba antes
+  // que la de «nada guardado» y el jugador veia el texto crudo de `fetch`
+  it('la pantalla de «nada guardado» gana a la de error genérico', () => {
+    mockUseScoring.scoringView = null;
+    mockUseScoring.error = fallaLaRed();
+
+    render(<ScoringPage />);
+
+    expect(screen.getByTestId('sin-nada-guardado')).toBeInTheDocument();
+  });
+
+  it('no se le enseña al jugador el texto técnico de fetch', () => {
+    mockUseScoring.scoringView = null;
+    mockUseScoring.error = fallaLaRed();
+
+    render(<ScoringPage />);
+
+    expect(screen.queryByText(/Failed to fetch/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/localhost:8000/i)).not.toBeInTheDocument();
+  });
+
+  // Lo que mas importa: el golpe esta a salvo en la cola, y callarlo es decirle
+  // lo contrario de lo que pasa.
+  //
+  // Esta fila nacio afirmando `offline-banner`, porque la primera version conto
+  // los pendientes por ahi. CodeRabbit senalo que ese banner dice «estas sin
+  // conexion» y con cobertura eso es falso, asi que ahora son dos avisos
+  // distintos: el suyo se comprueba abajo, y aqui lo que importa es que el
+  // jugador SEPA que su golpe esta guardado, cualquiera que sea el vehiculo
+  it('los golpes pendientes se anuncian aunque el navegador se crea en línea', () => {
+    mockUseScoring.scoringView = null;
+    mockUseScoring.error = fallaLaRed();
+    mockUseScoring.isOffline = false;
+    mockUseScoring.pendingQueueSize = 1;
+
+    render(<ScoringPage />);
+
+    expect(screen.getByTestId('pendientes-a-salvo')).toBeInTheDocument();
+    expect(screen.getByText(/offline\.pendingScores/)).toBeInTheDocument();
+  });
+
+  // Y un error de verdad del servidor sigue diciendo lo que pasa, pero con
+  // NUESTRO texto: el `detail` del backend viene en ingles, y sin cuerpo
+  // parseable `api.js` compone «HTTP 503: Service Unavailable». La primera
+  // version de esta fila usaba prosa espanola que la API nunca devuelve, asi que
+  // bendecia justo el defecto que la #617 venia a quitar (CodeRabbit)
+  it('un error con estado se cuenta con nuestro texto, no con el del backend', () => {
+    mockUseScoring.scoringView = null;
+    mockUseScoring.error = Object.assign(new Error('Match not found'), { status: 404 });
+
+    render(<ScoringPage />);
+
+    expect(screen.getByText('errors.notFound')).toBeInTheDocument();
+    expect(screen.queryByText(/Match not found/)).not.toBeInTheDocument();
+  });
+
+  it('un 503 no se le enseña como «HTTP 503: Service Unavailable»', () => {
+    mockUseScoring.scoringView = null;
+    mockUseScoring.error = Object.assign(new Error('HTTP 503: Service Unavailable'), { status: 503 });
+
+    render(<ScoringPage />);
+
+    expect(screen.queryByText(/HTTP 503/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Service Unavailable/)).not.toBeInTheDocument();
+  });
+
+  // Fila 2 de CodeRabbit: al cambiar `isOffline` por «hay pendientes» se perdio
+  // el aviso de que no hay red cuando la cola esta vacia — el caso mas comun al
+  // llegar al campo con un partido que nunca se abrio en ese movil
+  it('sin cobertura y sin golpes pendientes, sigue avisando de que no hay red', () => {
+    mockUseScoring.scoringView = null;
+    mockUseScoring.error = null;
+    mockUseScoring.isOffline = true;
+    mockUseScoring.pendingQueueSize = 0;
+
+    render(<ScoringPage />);
+
+    expect(screen.getByTestId('offline-banner')).toBeInTheDocument();
+  });
+
+  // Fila 3: con cobertura, ese banner afirma «Estas sin conexion», que es falso.
+  // Los pendientes se cuentan, pero no por ese vehiculo
+  it('con cobertura y golpes pendientes, se cuentan sin decir que no hay conexión', () => {
+    mockUseScoring.scoringView = null;
+    mockUseScoring.error = new TypeError('Failed to fetch');
+    mockUseScoring.isOffline = false;
+    mockUseScoring.pendingQueueSize = 2;
+
+    render(<ScoringPage />);
+
+    expect(screen.getByTestId('pendientes-a-salvo')).toBeInTheDocument();
+    expect(screen.queryByTestId('offline-banner')).not.toBeInTheDocument();
+  });
+
+  // Fila 4: la pista se escondia por «hay error», y un portal cautivo da error
+  // SIN respuesta. Es justo cuando «abrelo una vez con cobertura» es el consejo
+  it('si el servidor no contestó, la pista de abrirlo con cobertura sigue estando', () => {
+    mockUseScoring.scoringView = null;
+    mockUseScoring.error = new TypeError('Failed to fetch');
+
+    render(<ScoringPage />);
+
+    expect(screen.getByText('offline.nothingCachedHint')).toBeInTheDocument();
+  });
+});
+
+describe('ScoringPage · el gemelo: el recuadro con partido en pantalla (FE #617, CodeRabbit)', () => {
+  // CodeRabbit lo dijo en el resumen, no como comentario de linea: arregle solo
+  // el camino SIN vista, y el otro recuadro —el que sale con el partido ya
+  // pintado cuando falla un sondeo o un envio— seguia imprimiendo `textoDe`. Por
+  // ahi siguen llegando el `detail` en ingles del backend y el «HTTP 503:
+  // Service Unavailable» que compone `api.js`
+  afterEach(() => {
+    mockUseScoring.error = null;
+    mockUseScoring.pintadoDeMemoria = false;
+  });
+
+  it('un 503 con el partido en pantalla no se enseña como «HTTP 503: Service Unavailable»', () => {
+    mockUseScoring.error = Object.assign(new Error('HTTP 503: Service Unavailable'), { status: 503 });
+
+    render(<ScoringPage />);
+
+    expect(screen.queryByText(/HTTP 503/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Service Unavailable/)).not.toBeInTheDocument();
+  });
+
+  it('y el detail en inglés del backend tampoco', () => {
+    mockUseScoring.error = Object.assign(new Error('You are not a participant in this match'), { status: 403 });
+
+    render(<ScoringPage />);
+
+    expect(screen.queryByText(/You are not a participant/)).not.toBeInTheDocument();
+    expect(screen.getByText('errors.forbidden')).toBeInTheDocument();
+  });
+
+  it('un fallo sin respuesta tampoco enseña el texto interno de fetch', () => {
+    mockUseScoring.error = new TypeError('Failed to fetch (localhost:8000)');
+
+    render(<ScoringPage />);
+
+    expect(screen.queryByText(/Failed to fetch/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/localhost:8000/)).not.toBeInTheDocument();
+  });
+});
+
+/**
+ * LA TABLA — el recuadro rojo cuenta lo que falló (FE #626).
+ *
+ *   #   origen     | pintado de la foto | debe
+ *   ----|----------|--------------------|-----------------------------------------
+ *   1   golpe      | sí                 | rojo: no se guardó en el móvil, y el hoyo
+ *   2   golpe      | no                 | igual
+ *   3/4 golpe 4xx  | no                 | el texto de enviar la anotación
+ *   5   tarjeta    | no                 | el de enviar la tarjeta
+ *   5   concesión  | no                 | el de conceder
+ *   6   carga 5xx  | no                 | «no se ha podido cargar», como antes
+ *   7   carga      | sí                 | sin rojo: ya lo dice el ámbar
+ *   8   carga 404  | no                 | «ya no está», como antes
+ */
+describe('ScoringPage · el recuadro rojo cuenta lo que falló (FE #626)', () => {
+  const noSeGuardo = () => Object.assign(new Error('No se pudo guardar el golpe en el móvil'), {
+    holeNumber: 14, noSeGuardo: true, i18nKey: 'scoring:errors.noSeGuardoEnElMovil',
+  });
+  const rechazo = (status) => Object.assign(new Error(`HTTP ${status}`), { status });
+
+  afterEach(() => {
+    mockUseScoring.pintadoDeMemoria = false;
+    mockUseScoring.error = null;
+    mockUseScoring.origenDelError = null;
+  });
+
+  it('1 · pintado de la foto, el golpe que no se guardó en el móvil se dice, con su hoyo', () => {
+    mockUseScoring.pintadoDeMemoria = true;
+    mockUseScoring.error = noSeGuardo();
+    mockUseScoring.origenDelError = 'golpe';
+
+    render(<ScoringPage />);
+
+    expect(screen.getByTestId('pintado-de-memoria')).toBeInTheDocument();
+    expect(screen.getByText(/scoring:errors\.noSeGuardoEnElMovil/)).toBeInTheDocument();
+    expect(screen.getByText(/errors\.enElHoyo \{"hole":14\}/)).toBeInTheDocument();
+  });
+
+  it('2 · con la vista del servidor, el mismo texto y no el de carga', () => {
+    mockUseScoring.error = noSeGuardo();
+    mockUseScoring.origenDelError = 'golpe';
+
+    render(<ScoringPage />);
+
+    expect(screen.getByText(/scoring:errors\.noSeGuardoEnElMovil/)).toBeInTheDocument();
+    expect(screen.queryByText(/offline\.noSePudoCargar/)).not.toBeInTheDocument();
+  });
+
+  it.each([409, 400, 422])('3/4 · un golpe rechazado con %s dice que no se pudo enviar la anotación', (estado) => {
+    mockUseScoring.error = rechazo(estado);
+    mockUseScoring.origenDelError = 'golpe';
+
+    render(<ScoringPage />);
+
+    expect(screen.getByText('errors.failedToSubmitScore')).toBeInTheDocument();
+    expect(screen.queryByText(/offline\.noSePudoCargar/)).not.toBeInTheDocument();
+  });
+
+  it.each([
+    ['tarjeta', 'errors.failedToSubmitScorecard'],
+    ['concesion', 'errors.failedToConcede'],
+  ])('5 · un fallo al %s dice eso, no que no cargó', (origen, clave) => {
+    mockUseScoring.error = rechazo(409);
+    mockUseScoring.origenDelError = origen;
+
+    render(<ScoringPage />);
+
+    expect(screen.getByText(clave)).toBeInTheDocument();
+    expect(screen.queryByText(/offline\.noSePudoCargar/)).not.toBeInTheDocument();
+  });
+
+  it('un fallo de una acción sin hoyo no añade ningún hoyo', () => {
+    mockUseScoring.error = rechazo(409);
+    mockUseScoring.origenDelError = 'tarjeta';
+
+    render(<ScoringPage />);
+
+    expect(screen.queryByText(/errors\.enElHoyo/)).not.toBeInTheDocument();
+  });
+
+  it('6 · un fallo al cargar sigue diciendo que no se pudo cargar', () => {
+    mockUseScoring.error = rechazo(503);
+    mockUseScoring.origenDelError = 'carga';
+
+    render(<ScoringPage />);
+
+    expect(screen.getByText('offline.noSePudoCargar')).toBeInTheDocument();
+  });
+
+  it('7 · un fallo al cargar pintado de la foto no sale en rojo', () => {
+    mockUseScoring.pintadoDeMemoria = true;
+    mockUseScoring.error = rechazo(503);
+    mockUseScoring.origenDelError = 'carga';
+
+    render(<ScoringPage />);
+
+    expect(screen.queryAllByText('retry')).toHaveLength(0);
+    expect(screen.queryByText('offline.noSePudoCargar')).not.toBeInTheDocument();
+  });
+
+  it('8 · un 404 al cargar sigue diciendo que ya no está', () => {
+    mockUseScoring.error = rechazo(404);
+    mockUseScoring.origenDelError = 'carga';
+
+    render(<ScoringPage />);
+
+    expect(screen.getByText('errors.notFound')).toBeInTheDocument();
   });
 });

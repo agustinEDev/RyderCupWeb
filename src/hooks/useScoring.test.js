@@ -1964,3 +1964,888 @@ describe('useScoring · lo que se ve junta el servidor y la cola (FE #606)', () 
     });
   });
 });
+
+// El servicio de verdad, como en partida rapida: lo que se quiere vigilar es
+// que la foto quede guardada y se sepa leer, no que se llame a una funcion
+import { recuerda, loQueSeSupo, olvidaTodo } from '../services/loUltimoConocido';
+
+describe('useScoring · lo último que se supo (FE #614)', () => {
+  const sinSenal = () =>
+    getScoringViewUseCase.execute.mockRejectedValue(new TypeError('Failed to fetch'));
+
+  const conEstado = (estado) =>
+    getScoringViewUseCase.execute.mockRejectedValue(
+      Object.assign(new Error('no'), { status: estado })
+    );
+
+  const monta = async (id = 'm-1', quien = 'u1') => {
+    const { result } = renderHook(() => useScoring(id, quien));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    return result;
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    almacen.clear();
+    olvidaTodo();
+    getScoringViewUseCase.execute.mockResolvedValue(mockScoringView);
+    offlineQueue.getByMatch.mockReturnValue([]);
+    Object.defineProperty(navigator, 'onLine', { value: true, configurable: true });
+  });
+
+  // Fila 1
+  it('al cargar bien se guarda la foto del partido', async () => {
+    await monta();
+
+    await waitFor(() => expect(loQueSeSupo('m-1')).not.toBeNull());
+    expect(loQueSeSupo('m-1').partida.matchId).toBe('m-1');
+    expect(loQueSeSupo('m-1').partida.holes).toHaveLength(18);
+  });
+
+  // Fila 2. Lo que se busca: el jugador reabre la aplicacion en el campo. Sin
+  // esto se encuentra la carcasa vacia y ahi ya no hay nada que anotar
+  it('sin señal se pinta lo guardado: hoyos, pares y jugadores', async () => {
+    recuerda('m-1', { partida: mockScoringView, campo: null });
+    Object.defineProperty(navigator, 'onLine', { value: false, configurable: true });
+    sinSenal();
+
+    const result = await monta();
+
+    expect(result.current.scoringView?.matchNumber).toBe(1);
+    expect(result.current.scoringView?.holes).toHaveLength(18);
+    expect(result.current.scoringView?.players).toHaveLength(2);
+  });
+
+  // Fila 3
+  it('sin señal, el golpe que sigue en la cola se ve en su casilla', async () => {
+    recuerda('m-1', { partida: mockScoringView, campo: null });
+    offlineQueue.getByMatch.mockReturnValue([
+      {
+        matchId: 'm-1',
+        holeNumber: 3,
+        scoreData: { ownScore: 5, markedPlayerId: 'u2' },
+        timestamp: Date.now(),
+        userId: 'u1',
+      },
+    ]);
+    Object.defineProperty(navigator, 'onLine', { value: false, configurable: true });
+    sinSenal();
+
+    const result = await monta();
+
+    // La vista restaurada trae `scores: []`, así que la fila del hoyo no existe
+    // y la compone la cola: eso es lo que se vigila aquí
+    const hoyo = result.current.scoresVisibles?.find((s) => s.holeNumber === 3);
+    const suyo = hoyo?.playerScores?.find((p) => p.userId === 'u1');
+    expect(suyo?.ownScore).toBe(5);
+    expect(suyo?.ownSubmitted).toBe(true);
+  });
+
+  // Fila 4. Callarlo deja la pantalla vacia sin decir por que
+  it('sin señal y sin nada guardado, no hay vista que pintar', async () => {
+    Object.defineProperty(navigator, 'onLine', { value: false, configurable: true });
+    sinSenal();
+
+    const result = await monta();
+
+    expect(result.current.scoringView).toBeNull();
+  });
+
+  // Fila 5
+  it('cuando vuelve la red, lo del servidor manda y pasa a ser la foto nueva', async () => {
+    recuerda('m-1', { partida: { ...mockScoringView, matchNumber: 99 }, campo: null });
+
+    const result = await monta();
+
+    expect(result.current.scoringView?.matchNumber).toBe(1);
+    await waitFor(() => expect(loQueSeSupo('m-1').partida.matchNumber).toBe(1));
+  });
+
+  // Fila 6. Un 404 es una respuesta: ese partido ya no esta. Pintarlo desde el
+  // movil seria enseñar algo que no existe, y dejar anotar encima
+  it('si el servidor dice que ya no está, ni se pinta ni se guarda', async () => {
+    recuerda('m-1', { partida: mockScoringView, campo: null });
+    conEstado(404);
+
+    const result = await monta();
+
+    expect(result.current.scoringView).toBeNull();
+    expect(loQueSeSupo('m-1')).toBeNull();
+  });
+
+  // Fila 7
+  it('si el partido no es tuyo (403), ni se pinta ni se guarda', async () => {
+    recuerda('m-1', { partida: mockScoringView, campo: null });
+    conEstado(403);
+
+    const result = await monta();
+
+    expect(result.current.scoringView).toBeNull();
+    expect(loQueSeSupo('m-1')).toBeNull();
+  });
+
+  // Fila 8. La sesion caduca, el partido sigue estando: no se pinta, pero
+  // tirar la foto obligaria a recuperarla con red para poder anotar despues
+  it('con la sesión caducada (401) no se pinta, pero la foto se conserva', async () => {
+    recuerda('m-1', { partida: mockScoringView, campo: null });
+    conEstado(401);
+
+    const result = await monta();
+
+    expect(result.current.scoringView).toBeNull();
+    expect(loQueSeSupo('m-1')).not.toBeNull();
+  });
+
+  // Fila 9. Un 5xx no desmiente nada: el backend esta mal, el partido sigue
+  // ahi, y sin poder anotar es justo cuando lo guardado hace falta
+  it('con un 5xx sí se pinta lo guardado', async () => {
+    recuerda('m-1', { partida: mockScoringView, campo: null });
+    conEstado(500);
+
+    const result = await monta();
+
+    expect(result.current.scoringView?.matchNumber).toBe(1);
+  });
+
+  // Fila 11. La ruta no lleva `key`: ir de un partido a otro reutiliza el hook
+  it('la foto de otro partido no se pinta en el que está en pantalla', async () => {
+    recuerda('m-1', { partida: mockScoringView, campo: null });
+    Object.defineProperty(navigator, 'onLine', { value: false, configurable: true });
+    sinSenal();
+
+    const result = await monta('m-2');
+
+    expect(result.current.scoringView).toBeNull();
+  });
+
+  // Fila 12. El almacenamiento es compartido con la cola de golpes sin enviar:
+  // fallar al guardar la foto no puede costar un golpe ni tumbar la pantalla
+  it('si no cabe en el móvil, la pantalla sigue funcionando', async () => {
+    const original = almacen.setItem;
+    almacen.setItem = () => {
+      throw new Error('lleno');
+    };
+
+    const result = await monta();
+
+    expect(result.current.scoringView?.matchNumber).toBe(1);
+    almacen.setItem = original;
+  });
+
+  // Fila 13. Lo guardado sirve para ARRANCAR sin señal, no para corregir una
+  // pantalla que ya está funcionando: repintar la foto encima devolvería el
+  // partido a como estaba hace un rato, con el jugador mirándolo
+  it('con la vista ya pintada, un fallo posterior no la sustituye por la foto', async () => {
+    const result = await monta();
+    recuerda('m-1', { partida: { ...mockScoringView, matchNumber: 99 }, campo: null });
+    conEstado(500);
+
+    await act(async () => {
+      await result.current.refetch();
+    });
+
+    expect(result.current.scoringView?.matchNumber).toBe(1);
+  });
+
+  // Fila 14. La ruta no lleva `key`: se pasa de un partido a otro con las
+  // peticiones del anterior en camino. Si la del anterior muere DESPUÉS, su
+  // foto no puede pintarse en el partido que está en pantalla — y aquí no hay
+  // vista que lo tape, que es justo cuando se notaría
+  it('el fallo tardío del partido anterior no mete su foto en el que se está viendo', async () => {
+    recuerda('m-1', { partida: { ...mockScoringView, matchNumber: 99 }, campo: null });
+
+    let mata;
+    const deM1 = new Promise((_, reject) => {
+      mata = reject;
+    });
+    // Ninguno de los dos contesta: así no hay vista pintada que disimule
+    getScoringViewUseCase.execute.mockImplementation((id) =>
+      id === 'm-1' ? deM1 : new Promise(() => {})
+    );
+
+    const app = renderHook(({ matchId }) => useScoring(matchId, 'u1'), {
+      initialProps: { matchId: 'm-1' },
+    });
+
+    app.rerender({ matchId: 'm-2' });
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 20));
+    });
+
+    // Y ahora muere la del partido anterior
+    await act(async () => {
+      mata(Object.assign(new Error('500'), { status: 500 }));
+      await new Promise((r) => setTimeout(r, 20));
+    });
+
+    expect(app.result.current.scoringView).toBeNull();
+  });
+
+  // Fila 15. La foto se guarda DESPUÉS de la guarda de descarte: una respuesta
+  // superada no se pinta, así que tampoco puede guardarse. Si no, el siguiente
+  // arranque sin señal pintaría una vuelta atrás — un estado que el jugador ya
+  // no vio— en vez de lo último que de verdad dijo el servidor
+  it('una respuesta superada no se guarda como foto', async () => {
+    let suelta;
+    const vieja = new Promise((resolve) => {
+      suelta = resolve;
+    });
+    getScoringViewUseCase.execute.mockReturnValueOnce(vieja);
+
+    const { result } = renderHook(() => useScoring('m-1', 'u1'));
+
+    // La segunda contesta y pasa a ser lo último aplicado: su foto es la buena
+    await act(async () => {
+      await result.current.refetch();
+    });
+    await waitFor(() => expect(loQueSeSupo('m-1')?.partida.matchNumber).toBe(1));
+
+    // Y ahora contesta la primera, que salió antes, con otra cosa
+    await act(async () => {
+      suelta({ ...mockScoringView, matchNumber: 77 });
+      await new Promise((r) => setTimeout(r, 20));
+    });
+
+    expect(loQueSeSupo('m-1').partida.matchNumber).toBe(1);
+    expect(result.current.scoringView?.matchNumber).toBe(1);
+  });
+
+  // Fila 16. Salió de la revisión: restaurar sin decirlo pinta la vista entera
+  // —resultado, tarjeta, botón de entregar— como si fuera lo de ahora mismo. Y
+  // con un 5xx eso ocurre CON cobertura, donde nadie sospecha nada
+  it('dice que lo que se ve salió de la foto, y deja de decirlo al cargar bien', async () => {
+    recuerda('m-1', { partida: mockScoringView, campo: null });
+    conEstado(500);
+
+    const result = await monta();
+
+    expect(result.current.pintadoDeMemoria).toBe(true);
+
+    // Y cuando el servidor vuelve a contestar, ya no es una foto
+    getScoringViewUseCase.execute.mockResolvedValue(mockScoringView);
+    await act(async () => {
+      await result.current.refetch();
+    });
+
+    expect(result.current.pintadoDeMemoria).toBe(false);
+  });
+
+  // Fila 17. También de la revisión: solo caben tres fotos y se comparten con
+  // partida rápida, así que mirar los partidos de los compañeros desde el
+  // calendario desalojaba la foto de la propia — la única que hace falta
+  it('un partido que no juegas no se guarda como foto', async () => {
+    const deOtros = {
+      ...mockScoringView,
+      players: [
+        { userId: 'u8', userName: 'Otro A', team: 'A' },
+        { userId: 'u9', userName: 'Otro B', team: 'B' },
+      ],
+    };
+    getScoringViewUseCase.execute.mockResolvedValue(deOtros);
+
+    const result = await monta();
+
+    expect(result.current.scoringView?.matchNumber).toBe(1);
+    expect(loQueSeSupo('m-1')).toBeNull();
+  });
+});
+
+describe('useScoring · cambiar de partido con una vista ya pintada (FE #614, CodeRabbit)', () => {
+  // El hueco que mi fila 14 NO cubria: alli la peticion del primer partido se
+  // quedaba colgada, asi que `hayVistaRef` nunca llegaba a ponerse. Si el
+  // primero carga BIEN, esa marca se queda puesta y la foto del segundo no se
+  // pinta — con la vista del primero siguiendo en pantalla bajo la URL del otro
+  beforeEach(() => {
+    vi.clearAllMocks();
+    almacen.clear();
+    olvidaTodo();
+    offlineQueue.getByMatch.mockReturnValue([]);
+    Object.defineProperty(navigator, 'onLine', { value: true, configurable: true });
+  });
+
+  it('tras cargar bien el primero, la foto del segundo sí se pinta', async () => {
+    const deM2 = { ...mockScoringView, matchId: 'm-2', matchNumber: 42 };
+    recuerda('m-2', { partida: deM2, campo: null });
+
+    getScoringViewUseCase.execute.mockImplementation(async (id) => {
+      if (id === 'm-1') return mockScoringView;
+      throw Object.assign(new Error('500'), { status: 500 });
+    });
+
+    const app = renderHook(({ matchId }) => useScoring(matchId, 'u1'), {
+      initialProps: { matchId: 'm-1' },
+    });
+    await waitFor(() => expect(app.result.current.scoringView?.matchNumber).toBe(1));
+
+    app.rerender({ matchId: 'm-2' });
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 20));
+    });
+
+    expect(app.result.current.scoringView?.matchNumber).toBe(42);
+    expect(app.result.current.pintadoDeMemoria).toBe(true);
+  });
+
+  // La mutacion destapo que esto no estaba probado, y es la razon por la que el
+  // estado guarda DE QUE partido es la foto en vez de un simple si/no: al pasar
+  // al siguiente partido, el ambar del anterior no puede seguir encendido
+  it('el aviso de «esto es una foto» no se hereda en el partido siguiente', async () => {
+    recuerda('m-1', { partida: mockScoringView, campo: null });
+    getScoringViewUseCase.execute.mockImplementation((id) =>
+      id === 'm-1'
+        ? Promise.reject(Object.assign(new Error('500'), { status: 500 }))
+        : new Promise(() => {})
+    );
+
+    const app = renderHook(({ matchId }) => useScoring(matchId, 'u1'), {
+      initialProps: { matchId: 'm-1' },
+    });
+    await waitFor(() => expect(app.result.current.pintadoDeMemoria).toBe(true));
+
+    // El siguiente no contesta todavia: no hay nada que diga que ESTO es una foto
+    app.rerender({ matchId: 'm-2' });
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 20));
+    });
+
+    expect(app.result.current.pintadoDeMemoria).toBe(false);
+  });
+});
+
+/**
+ * LA TABLA — un guardado que falla no deja salir lo que sustituía (FE #605).
+ *
+ * Sin cobertura se anota un 4; se corrige a 5 y el móvil no puede guardarlo.
+ * `enqueue` no escribe nada, así que el 4 sigue en la cola, y al volver la
+ * cobertura el vaciado lo manda: el servidor se queda con un valor que el
+ * jugador sustituyó, sin aviso, mientras su pantalla dice 5. Un hoyo vacío se
+ * ve y se pide otra vez; un 4 viejo parece bueno.
+ *
+ * Aquí `golpe(n)` lleva además el golpe del marcado, que no cambia: sale el
+ * propio, que es lo sustituido, y el del marcado se queda.
+ *
+ *   #   camino                                   | qué pasa con el 4
+ *   ----|----------------------------------------|---------------------------------
+ *   1   sin cobertura                            | sale de la cola; se avisa
+ *   1b  lo nuevo no cambia nada de lo guardado   | se queda entero: solo AÑADE el
+ *       (añade el golpe del marcado)             | del marcado (revisión local)
+ *   1c  lo nuevo no trae el golpe del marcado    | ese se queda: sin clave no es raya
+ *   2   con otro escritor dentro                 | sale de la cola; se avisa
+ *   2b  y ese otro es un envío del 4 que acaba   | el aviso SIGUE: es de un guardado
+ *       sin llegar                               | posterior del mismo hoyo
+ *   3   envío directo que no llega               | sale de la cola; se avisa
+ *   9   quitarlo también falla                   | no cambia nada; el aviso sigue
+ *   10  una corrección nueva entra entre leer el | se queda: se compara con lo leído
+ *       4 y quitarlo                             | ANTES de guardar, nunca por clave
+ *   10b la misma, en el mismo milisegundo        | se queda: lo distingue el valor
+ *   10c el mismo 4 anotado otra vez, más nuevo   | se queda: lo distingue la hora
+ *
+ * La fila 4 (el envío llega o lo rechazan) la arregló la #604: 6b y 4b, arriba.
+ */
+describe('useScoring · un guardado que falla no deja salir lo sustituido (FE #605)', () => {
+  let enCola;
+  let reloj;
+  // El hoyo cuyo guardado se niega, como un móvil sin espacio, y cuántas veces
+  let fallaEnHoyo;
+  let vecesQueFalla;
+  // Lo que «otro» escribe justo cuando falla el guardado (fila 10)
+  let alFallar;
+
+  const esLaMisma = (e, matchId, holeNumber, participantId, userId) =>
+    e.matchId === matchId
+    && e.holeNumber === holeNumber
+    && (e.participantId ?? null) === (participantId ?? null)
+    && (e.userId ?? null) === (userId ?? null);
+
+  const golpe = (ownScore) => ({ ownScore, markedPlayerId: 'u2', markedScore: 4 });
+  const guardadaDe = (holeNumber, scoreData, timestamp = 1) =>
+    ({ matchId: 'm-1', holeNumber, participantId: null, scoreData, timestamp, userId: 'u1' });
+  const delHoyo = (holeNumber) => enCola.filter((e) => e.holeNumber === holeNumber).map((e) => e.scoreData);
+  // Lo que queda del 4 cuando sale el golpe propio: el del marcado, intacto
+  const soloElMarcado = { markedPlayerId: 'u2', markedScore: 4 };
+
+  const enVuelo = () => {
+    let suelta;
+    let falla;
+    const promesa = new Promise((resolve, reject) => { suelta = resolve; falla = reject; });
+    return { promesa, suelta, falla };
+  };
+
+  const esperaUnPoco = () => act(async () => { await new Promise((r) => setTimeout(r, 20)); });
+
+  const monta = async () => {
+    const { result } = renderHook(() => useScoring('m-1', 'u1'));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    await esperaUnPoco();
+    return result;
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    almacen.clear();
+    enCola = [];
+    reloj = 1000;
+    fallaEnHoyo = null;
+    vecesQueFalla = 1;
+    alFallar = null;
+    getScoringViewUseCase.execute.mockResolvedValue(mockScoringView);
+    submitHoleScoreUseCase.execute.mockResolvedValue(mockScoringView);
+    Object.defineProperty(navigator, 'onLine', { value: true, configurable: true });
+    offlineQueue.enqueue.mockImplementation((matchId, holeNumber, scoreData, participantId = null, userId = null) => {
+      if (holeNumber === fallaEnHoyo && vecesQueFalla > 0) {
+        vecesQueFalla -= 1;
+        alFallar?.();
+        return false;
+      }
+      const limpio = JSON.parse(JSON.stringify(scoreData));
+      enCola = enCola.filter((e) => !esLaMisma(e, matchId, holeNumber, participantId, userId));
+      enCola.push({ matchId, holeNumber, participantId, scoreData: limpio, timestamp: reloj++, userId });
+      return true;
+    });
+    offlineQueue.getByMatch.mockImplementation((matchId) =>
+      enCola.filter((e) => e.matchId === matchId).map((e) => ({ ...e }))
+    );
+    offlineQueue.remove.mockImplementation((matchId, holeNumber, participantId = null, userId = null) => {
+      enCola = enCola.filter((e) => !esLaMisma(e, matchId, holeNumber, participantId, userId));
+      return true;
+    });
+  });
+
+  afterEach(() => {
+    offlineQueue.enqueue.mockReset();
+    offlineQueue.getByMatch.mockReset().mockReturnValue([]);
+    offlineQueue.remove.mockReset().mockReturnValue(true);
+    submitHoleScoreUseCase.execute.mockReset();
+    Object.defineProperty(navigator, 'onLine', { value: true, configurable: true });
+  });
+
+  const sinCobertura = async () => {
+    Object.defineProperty(navigator, 'onLine', { value: false, configurable: true });
+    return monta();
+  };
+
+  it('1 · sin cobertura: el 4 sale de la cola y se avisa', async () => {
+    const result = await sinCobertura();
+    enCola = [guardadaDe(5, golpe(4))];
+    fallaEnHoyo = 5;
+
+    await act(async () => { await result.current.submitScore(5, golpe(5)); });
+
+    expect(delHoyo(5)).toEqual([soloElMarcado]);
+    expect(result.current.error).toBeTruthy();
+  });
+
+  it('1b · si lo nuevo solo añade el golpe del marcado, lo guardado se queda entero', async () => {
+    // Es el orden normal de anotar un hoyo: primero el propio, luego el del
+    // marcado. `HoleInput` manda los dos, y el propio no ha cambiado
+    const result = await sinCobertura();
+    const propio = { ownScore: 4, markedPlayerId: 'u2' };
+    enCola = [guardadaDe(5, propio)];
+    fallaEnHoyo = 5;
+
+    await act(async () => {
+      await result.current.submitScore(5, { ownScore: 4, markedPlayerId: 'u2', markedScore: 5 });
+    });
+
+    // Entero, hora incluida: reescribirlo lo haría pasar por una corrección nueva
+    expect(enCola).toEqual([guardadaDe(5, propio)]);
+    expect(result.current.error).toBeTruthy();
+  });
+
+  it('1c · un golpe que la corrección no trae no está sustituido: se queda', async () => {
+    // Sin clave no es una raya, es que no se anotó (#609)
+    const result = await sinCobertura();
+    enCola = [guardadaDe(5, golpe(4))];
+    fallaEnHoyo = 5;
+
+    await act(async () => {
+      await result.current.submitScore(5, { ownScore: 5, markedPlayerId: 'u2', markedScore: undefined });
+    });
+
+    expect(delHoyo(5)).toEqual([soloElMarcado]);
+  });
+
+  it('2 · con otro escritor dentro: el 4 sale de la cola y se avisa', async () => {
+    const result = await monta();
+    const vuelo = enVuelo();
+    submitHoleScoreUseCase.execute.mockReturnValueOnce(vuelo.promesa);
+    let primero;
+    act(() => { primero = result.current.submitScore(3, golpe(4)); });
+    await waitFor(() => expect(submitHoleScoreUseCase.execute).toHaveBeenCalledTimes(1));
+    enCola.push(guardadaDe(5, golpe(4)));
+    fallaEnHoyo = 5;
+
+    await act(async () => { await result.current.submitScore(5, golpe(5)); });
+
+    expect(delHoyo(5)).toEqual([soloElMarcado]);
+    expect(result.current.error).toBeTruthy();
+    await act(async () => { vuelo.suelta(mockScoringView); await primero; });
+    expect(submitHoleScoreUseCase.execute).not.toHaveBeenCalledWith('m-1', 5, golpe(4));
+  });
+
+  // Si llega no hace falta: la vista que se pide después retira cualquier aviso,
+  // como con cada sondeo. Partida rápida no sondea el aviso y prueba los dos
+  it.each([
+    ['no llega', (vuelo) => vuelo.falla(new TypeError('Failed to fetch'))],
+  ])('2b · el envío del 4 que %s no retira el aviso del 5 que no se pudo guardar', async (_, acaba) => {
+    const result = await monta();
+    const vuelo = enVuelo();
+    submitHoleScoreUseCase.execute.mockReturnValueOnce(vuelo.promesa);
+    let primero;
+    act(() => { primero = result.current.submitScore(5, golpe(4)); });
+    await waitFor(() => expect(submitHoleScoreUseCase.execute).toHaveBeenCalledTimes(1));
+    fallaEnHoyo = 5;
+
+    await act(async () => { await result.current.submitScore(5, golpe(5)); });
+    await act(async () => { acaba(vuelo); await primero; });
+
+    expect(result.current.error).toBeTruthy();
+  });
+
+  it('3 · envío directo que no llega: el 4 sale de la cola y se avisa', async () => {
+    const result = await monta();
+    enCola = [guardadaDe(5, golpe(4))];
+    fallaEnHoyo = 5;
+    submitHoleScoreUseCase.execute.mockRejectedValueOnce(new TypeError('Failed to fetch'));
+
+    await act(async () => { await result.current.submitScore(5, golpe(5)); });
+
+    expect(delHoyo(5)).toEqual([soloElMarcado]);
+    expect(result.current.error).toBeTruthy();
+  });
+
+  it('9 · si quitarlo también falla, no cambia nada y el aviso sigue', async () => {
+    const result = await sinCobertura();
+    enCola = [guardadaDe(5, golpe(4))];
+    fallaEnHoyo = 5;
+    vecesQueFalla = Infinity;
+    offlineQueue.remove.mockImplementation(() => false);
+
+    await act(async () => { await result.current.submitScore(5, golpe(5)); });
+
+    expect(enCola).toEqual([guardadaDe(5, golpe(4))]);
+    expect(result.current.error).toBeTruthy();
+  });
+
+  it('9b · y si el golpe entero está sustituido y quitarlo falla, igual', async () => {
+    const result = await sinCobertura();
+    const propio = { ownScore: 4, markedPlayerId: 'u2' };
+    enCola = [guardadaDe(5, propio)];
+    fallaEnHoyo = 5;
+    offlineQueue.remove.mockImplementation(() => false);
+
+    await act(async () => { await result.current.submitScore(5, { ownScore: 5, markedPlayerId: 'u2' }); });
+
+    expect(enCola).toEqual([guardadaDe(5, propio)]);
+    expect(result.current.error).toBeTruthy();
+  });
+
+  it('10 · una corrección que entra entre leer el 4 y quitarlo se queda', async () => {
+    const result = await sinCobertura();
+    enCola = [guardadaDe(5, golpe(4))];
+    fallaEnHoyo = 5;
+    // Otra escritura del mismo hoyo, justo en ese momento
+    alFallar = () => { enCola = [guardadaDe(5, golpe(7), 5000)]; };
+
+    await act(async () => { await result.current.submitScore(5, golpe(5)); });
+
+    expect(enCola).toEqual([guardadaDe(5, golpe(7), 5000)]);
+  });
+
+  it('10b · y también si entra en el mismo milisegundo: ahí lo distingue el valor', async () => {
+    const result = await sinCobertura();
+    enCola = [guardadaDe(5, golpe(4))];
+    fallaEnHoyo = 5;
+    alFallar = () => { enCola = [guardadaDe(5, golpe(7))]; };
+
+    await act(async () => { await result.current.submitScore(5, golpe(5)); });
+
+    expect(enCola).toEqual([guardadaDe(5, golpe(7))]);
+  });
+
+  it('10c · y si lo que entra es el mismo 4 anotado otra vez, también: es lo último del jugador', async () => {
+    const result = await sinCobertura();
+    enCola = [guardadaDe(5, golpe(4))];
+    fallaEnHoyo = 5;
+    alFallar = () => { enCola = [guardadaDe(5, golpe(4), 5000)]; };
+
+    await act(async () => { await result.current.submitScore(5, golpe(5)); });
+
+    expect(enCola).toEqual([guardadaDe(5, golpe(4), 5000)]);
+  });
+});
+
+/**
+ * LA TABLA — de dónde viene el fallo (FE #626).
+ *
+ * La pantalla enseña en el mismo recuadro un fallo al cargar la vista y uno al
+ * anotar, entregar o conceder, y no se tratan igual: el de carga se calla si lo
+ * que se ve sale de la foto —el aviso ámbar ya lo cuenta— y el de una acción
+ * se dice siempre, con su texto. Para eso el hook dice de dónde salió.
+ *
+ * Y un sondeo que falla no borra el de una acción: con el servidor caído falla
+ * cada 10 s. Solo lo que desmiente el partido (401/403/404) lo sustituye.
+ */
+describe('useScoring · de dónde viene el fallo (FE #626)', () => {
+  const rechazo = (status) => Object.assign(new Error(`HTTP ${status}`), { status });
+  const monta = async () => {
+    const app = renderHook(() => useScoring('m-1', 'u1'));
+    await waitFor(() => expect(app.result.current.isLoading).toBe(false));
+    return app;
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    almacen.clear();
+    Object.defineProperty(navigator, 'onLine', { value: true, configurable: true });
+    offlineQueue.getByMatch.mockReturnValue([]);
+    offlineQueue.enqueue.mockReturnValue(true);
+    getScoringViewUseCase.execute.mockResolvedValue(mockScoringView);
+  });
+
+  it('6 · el sondeo que falla es un fallo de carga', async () => {
+    getScoringViewUseCase.execute.mockRejectedValue(rechazo(503));
+    const { result } = await monta();
+
+    expect(result.current.error).toBeTruthy();
+    expect(result.current.origenDelError).toBe('carga');
+  });
+
+  it('1/2 · si el móvil no puede guardar el golpe, el fallo es del golpe', async () => {
+    const { result } = await monta();
+    offlineQueue.enqueue.mockReturnValue(false);
+    submitHoleScoreUseCase.execute.mockRejectedValue(new TypeError('Failed to fetch'));
+
+    await act(async () => { await result.current.submitScore(1, { ownScore: 5, markedPlayerId: 'u2' }); });
+
+    expect(result.current.error?.noSeGuardo).toBe(true);
+    expect(result.current.origenDelError).toBe('golpe');
+  });
+
+  it('1 · también sin cobertura, que no llega a enviar', async () => {
+    Object.defineProperty(navigator, 'onLine', { value: false, configurable: true });
+    const { result } = await monta();
+    offlineQueue.enqueue.mockReturnValue(false);
+
+    await act(async () => { await result.current.submitScore(1, { ownScore: 5, markedPlayerId: 'u2' }); });
+
+    expect(result.current.error?.noSeGuardo).toBe(true);
+    expect(result.current.origenDelError).toBe('golpe');
+  });
+
+  it.each([409, 400, 422])('3/4 · un golpe que el servidor rechaza con %s es un fallo del golpe', async (estado) => {
+    const { result } = await monta();
+    submitHoleScoreUseCase.execute.mockRejectedValue(rechazo(estado));
+
+    await act(async () => { await result.current.submitScore(1, { ownScore: 5, markedPlayerId: 'u2' }); });
+
+    expect(result.current.error?.status).toBe(estado);
+    expect(result.current.origenDelError).toBe('golpe');
+  });
+
+  it('5 · entregar la tarjeta que falla es un fallo de la tarjeta', async () => {
+    getScoringViewUseCase.execute.mockResolvedValue({
+      ...mockScoringView,
+      scores: Array.from({ length: 18 }, (_, i) => ({
+        holeNumber: i + 1,
+        playerScores: [{ userId: 'u1', validationStatus: 'match' }],
+      })),
+    });
+    const { result } = await monta();
+    submitScorecardUseCase.execute.mockRejectedValue(rechazo(409));
+
+    await act(async () => { await result.current.submitScorecard(); });
+
+    expect(result.current.error?.status).toBe(409);
+    expect(result.current.origenDelError).toBe('tarjeta');
+  });
+
+  it('5 · conceder que falla es un fallo de la concesión', async () => {
+    const { result } = await monta();
+    concedeMatchUseCase.execute.mockRejectedValue(rechazo(409));
+
+    await act(async () => { await result.current.concedeMatch('A', 'Lesión'); });
+
+    expect(result.current.error?.status).toBe(409);
+    expect(result.current.origenDelError).toBe('concesion');
+  });
+
+  it('9 · un sondeo bueno lo retira, con su origen', async () => {
+    const { result } = await monta();
+    submitHoleScoreUseCase.execute.mockRejectedValue(rechazo(409));
+    await act(async () => { await result.current.submitScore(1, { ownScore: 5, markedPlayerId: 'u2' }); });
+    expect(result.current.origenDelError).toBe('golpe');
+
+    await act(async () => { await result.current.refetch(); });
+
+    expect(result.current.error).toBeNull();
+    expect(result.current.origenDelError).toBeNull();
+  });
+
+  // Con el servidor caído el sondeo sigue fallando cada 10 s: si cada fallo de
+  // carga pisara el de la acción, el aviso de un golpe que no se guardó duraba
+  // hasta el siguiente sondeo y la casilla se quedaba vacía sin explicación
+  // (`/code-review` de la FE #626). Solo lo pisa lo que desmiente el partido
+  it.each([
+    ['sin respuesta', () => new TypeError('Failed to fetch')],
+    ['con un 503', () => rechazo(503)],
+  ])('11 · un sondeo que falla %s no pisa el aviso de un golpe', async (_, fallo) => {
+    const { result } = await monta();
+    offlineQueue.enqueue.mockReturnValue(false);
+    submitHoleScoreUseCase.execute.mockRejectedValue(new TypeError('Failed to fetch'));
+    await act(async () => { await result.current.submitScore(1, { ownScore: 5, markedPlayerId: 'u2' }); });
+    getScoringViewUseCase.execute.mockRejectedValue(fallo());
+
+    await act(async () => { await result.current.refetch(); });
+
+    expect(result.current.error?.noSeGuardo).toBe(true);
+    expect(result.current.origenDelError).toBe('golpe');
+  });
+
+  it.each([401, 403, 404])('11b · pero un %s al cargar sí: el partido ya no se puede anotar', async (estado) => {
+    const { result } = await monta();
+    submitHoleScoreUseCase.execute.mockRejectedValue(rechazo(409));
+    await act(async () => { await result.current.submitScore(1, { ownScore: 5, markedPlayerId: 'u2' }); });
+    getScoringViewUseCase.execute.mockRejectedValue(rechazo(estado));
+
+    await act(async () => { await result.current.refetch(); });
+
+    expect(result.current.error?.status).toBe(estado);
+    expect(result.current.origenDelError).toBe('carga');
+  });
+
+  it('2 · un golpe que el servidor rechaza lleva su hoyo, para poder decirlo (CodeRabbit)', async () => {
+    const { result } = await monta();
+    submitHoleScoreUseCase.execute.mockRejectedValue(rechazo(409));
+
+    await act(async () => { await result.current.submitScore(7, { ownScore: 5, markedPlayerId: 'u2' }); });
+
+    expect(result.current.error?.holeNumber).toBe(7);
+  });
+
+  // La ruta no lleva `key`: ir de un partido a otro reutiliza el hook, y un
+  // fallo es de SU partido (CodeRabbit en la PR #627)
+  describe('al cambiar de partido sin salir de la pantalla', () => {
+    const vistaDe = (id) => ({ ...mockScoringView, matchId: id });
+    const montaEn = async (id) => {
+      const app = renderHook(({ matchId }) => useScoring(matchId, 'u1'), { initialProps: { matchId: id } });
+      await waitFor(() => expect(app.result.current.isLoading).toBe(false));
+      return app;
+    };
+
+    // Con la carga del nuevo todavía en camino: si llegara, ella misma limpiaría
+    // el fallo y taparía que es de otro partido
+    it('12 · el fallo de una acción del partido anterior no se ve en el nuevo', async () => {
+      getScoringViewUseCase.execute.mockImplementation((id) =>
+        (id === 'm-1' ? Promise.resolve(vistaDe(id)) : new Promise(() => {})));
+      const app = await montaEn('m-1');
+      submitHoleScoreUseCase.execute.mockRejectedValue(rechazo(409));
+      await act(async () => { await app.result.current.submitScore(1, { ownScore: 5, markedPlayerId: 'u2' }); });
+      expect(app.result.current.origenDelError).toBe('golpe');
+
+      app.rerender({ matchId: 'm-2' });
+      await act(async () => { await new Promise((r) => setTimeout(r, 20)); });
+
+      expect(app.result.current.error).toBeNull();
+      expect(app.result.current.origenDelError).toBeNull();
+    });
+
+    it('12b · la carga fallida del nuevo no conserva el aviso del anterior', async () => {
+      getScoringViewUseCase.execute.mockImplementation((id) =>
+        (id === 'm-1' ? Promise.resolve(vistaDe(id)) : Promise.reject(rechazo(503))));
+      const app = await montaEn('m-1');
+      submitHoleScoreUseCase.execute.mockRejectedValue(rechazo(409));
+      await act(async () => { await app.result.current.submitScore(1, { ownScore: 5, markedPlayerId: 'u2' }); });
+
+      app.rerender({ matchId: 'm-2' });
+      await act(async () => { await new Promise((r) => setTimeout(r, 20)); });
+
+      expect(app.result.current.error?.status).toBe(503);
+      expect(app.result.current.origenDelError).toBe('carga');
+    });
+
+    it('12c · un rechazo tardío del anterior no pisa el fallo del nuevo', async () => {
+      getScoringViewUseCase.execute.mockImplementation((id) =>
+        (id === 'm-1' ? Promise.resolve(vistaDe(id)) : Promise.reject(rechazo(503))));
+      const app = await montaEn('m-1');
+      let rechazaTarde;
+      submitHoleScoreUseCase.execute.mockReturnValue(new Promise((_, rej) => { rechazaTarde = () => rej(rechazo(409)); }));
+      let envio;
+      act(() => { envio = app.result.current.submitScore(1, { ownScore: 5, markedPlayerId: 'u2' }); });
+
+      app.rerender({ matchId: 'm-2' });
+      await act(async () => { await new Promise((r) => setTimeout(r, 20)); });
+      expect(app.result.current.origenDelError).toBe('carga');
+
+      await act(async () => { rechazaTarde(); await envio; });
+
+      expect(app.result.current.error?.status).toBe(503);
+      expect(app.result.current.origenDelError).toBe('carga');
+    });
+
+    // Todo lo que escribe el fallo DESPUÉS de esperar al servidor: en ese rato se
+    // puede haber pasado a otro partido, y lo que conteste tarde el anterior —sea
+    // un fallo o un éxito que limpia— no toca el del nuevo
+    const conValidados = {
+      scores: Array.from({ length: 18 }, (_, i) => ({
+        holeNumber: i + 1,
+        playerScores: [{ userId: 'u1', validationStatus: 'match' }],
+      })),
+    };
+    const golpe = { ownScore: 5, markedPlayerId: 'u2' };
+    it.each([
+      ['un golpe que no se pudo guardar en el móvil', {
+        prepara: () => offlineQueue.enqueue.mockReturnValue(false),
+        casoDeUso: submitHoleScoreUseCase, lanza: (r) => r.submitScore(1, golpe),
+        acaba: (d) => d.falla(new TypeError('Failed to fetch')) }],
+      ['un golpe que llega', {
+        casoDeUso: submitHoleScoreUseCase, lanza: (r) => r.submitScore(1, golpe),
+        acaba: (d) => d.llega({ ...vistaDe('m-1') }) }],
+      ['un golpe que se queda en la cola por la red', {
+        casoDeUso: submitHoleScoreUseCase, lanza: (r) => r.submitScore(1, golpe),
+        acaba: (d) => d.falla(new TypeError('Failed to fetch')) }],
+      ['una tarjeta que falla', {
+        vista: conValidados, casoDeUso: submitScorecardUseCase, lanza: (r) => r.submitScorecard(),
+        acaba: (d) => d.falla(rechazo(409)) }],
+      ['una tarjeta que se entrega', {
+        vista: conValidados, casoDeUso: submitScorecardUseCase, lanza: (r) => r.submitScorecard(),
+        acaba: (d) => d.llega({ matchId: 'm-1' }) }],
+      ['una concesión que falla', {
+        casoDeUso: concedeMatchUseCase, lanza: (r) => r.concedeMatch('A', 'Lesión'),
+        acaba: (d) => d.falla(rechazo(409)) }],
+      ['una concesión que sale bien', {
+        casoDeUso: concedeMatchUseCase, lanza: (r) => r.concedeMatch('A', 'Lesión'),
+        acaba: (d) => d.llega({ status: 'CONCEDED' }) }],
+    ])('12d · %s del partido anterior no toca el fallo del nuevo', async (_, caso) => {
+      getScoringViewUseCase.execute.mockImplementation((id) =>
+        (id === 'm-1' ? Promise.resolve({ ...vistaDe(id), ...caso.vista }) : Promise.reject(rechazo(503))));
+      const app = await montaEn('m-1');
+      caso.prepara?.();
+      const d = {};
+      caso.casoDeUso.execute.mockReturnValue(new Promise((llega, falla) => { d.llega = llega; d.falla = falla; }));
+      let accion;
+      act(() => { accion = caso.lanza(app.result.current); });
+
+      app.rerender({ matchId: 'm-2' });
+      await act(async () => { await new Promise((r) => setTimeout(r, 20)); });
+      expect(app.result.current.error?.status).toBe(503);
+
+      await act(async () => { caso.acaba(d); await accion; await new Promise((r) => setTimeout(r, 20)); });
+
+      expect(app.result.current.error?.status).toBe(503);
+      expect(app.result.current.origenDelError).toBe('carga');
+    });
+  });
+
+  // Con un 503 y no con un 404, que ganaría igual por desmentir: la pantalla sin
+  // vista mira si el servidor CONTESTÓ, así que el último fallo de carga importa
+  it('11c · un fallo de carga sí pisa otro de carga', async () => {
+    getScoringViewUseCase.execute.mockRejectedValue(new TypeError('Failed to fetch'));
+    const { result } = await monta();
+    getScoringViewUseCase.execute.mockRejectedValue(rechazo(503));
+
+    await act(async () => { await result.current.refetch(); });
+
+    expect(result.current.error?.status).toBe(503);
+  });
+});
