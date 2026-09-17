@@ -652,6 +652,9 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
       const avisaQueNoSeGuardo = () => {
         noSeGuardoRef.current = { holeNumber, participantId, anotacion: estaAnotacion };
         setSaveError(errorDeGuardado(holeNumber));
+        // Lo sustituido ha podido salir de la cola, y el contador tiene que
+        // decirlo ya: el siguiente sondeo tarda un minuto (CodeRabbit, PR #620)
+        setPendientes(offlineQueue.size(quickMatchId, currentUserId));
       };
       const hayUnFalloPosterior = () => {
         const fallo = noSeGuardoRef.current;

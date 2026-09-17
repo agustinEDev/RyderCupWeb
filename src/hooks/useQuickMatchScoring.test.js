@@ -2225,6 +2225,8 @@ describe('useQuickMatchScoring · un guardado que falla no deja salir lo sustitu
 
     expect(cola.filter((e) => e.holeNumber === 5)).toEqual([]);
     expect(result.current.saveError).toBeTruthy();
+    // Y el contador lo dice ya, no en el siguiente sondeo (CodeRabbit, PR #620)
+    expect(result.current.pendientes).toBe(cola.length);
     await act(async () => { suelta?.({}); });
     await act(async () => { await new Promise((r) => setTimeout(r, 20)); });
     expect(submitQuickMatchHoleScoreUseCase.execute).not.toHaveBeenCalledWith('qm-1', 5, 4);
@@ -2287,15 +2289,20 @@ describe('useQuickMatchScoring · un guardado que falla no deja salir lo sustitu
   });
 
   it('7 · envío directo que no llega: el 4 sale de la cola y se avisa', async () => {
-    const result = await monta();
     cola = [guardada(5, 4)];
-    fallaEnHoyo = 5;
+    // Montada con el 4 en la cola, para que el contador parta de 1; sin
+    // cobertura en el vaciado de entrada, que si no lo mandaría
     submitQuickMatchHoleScoreUseCase.execute.mockRejectedValueOnce(new TypeError('Failed to fetch'));
+    const result = await monta();
+    await waitFor(() => expect(result.current.pendientes).toBe(1));
+    fallaEnHoyo = 5;
+    submitQuickMatchHoleScoreUseCase.execute.mockRejectedValue(new TypeError('Failed to fetch'));
 
     await act(async () => { await result.current.submitScore(5, 'user-1', 5); });
 
     expect(cola).toEqual([]);
     expect(result.current.saveError).toBeTruthy();
+    expect(result.current.pendientes).toBe(0);
   });
 
   it('8 · resolver un desacuerdo con el reencolado fallido deja la entrada: es el golpe elegido', async () => {
