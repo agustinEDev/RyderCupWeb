@@ -174,7 +174,7 @@
     "failedToConcede": "Error al conceder partido",
     "matchNotInProgress": "El partido no está en curso",
     "enElHoyo": "Hoyo {{hole}}.",
-    "noSeGuardoEnElMovil": "No se pudo guardar el golpe en el móvil: no hay espacio o la ventana es privada. Anótalo de nuevo cuando lo hayas liberado.",
+    "noSeGuardoEnElMovil": "No se pudo guardar el golpe en el móvil: el almacenamiento está lleno o el navegador no deja guardar datos. Libera espacio o permite guardar datos, y vuelve a anotarlo.",
     "vaciado": {
       "no-se-pudo-borrar": "El golpe llegó al servidor, pero el móvil no ha podido actualizar su lista de pendientes. No lo vuelvas a anotar: libera espacio en el dispositivo y el resto saldrá solo.",
       "no-se-pudo-escribir": "El servidor no aceptó un golpe guardado y el móvil no tiene espacio para apuntarlo. Libera espacio en el dispositivo y vuelve a abrir la partida."
