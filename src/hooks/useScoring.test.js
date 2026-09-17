@@ -2311,3 +2311,266 @@ describe('useScoring · cambiar de partido con una vista ya pintada (FE #614, Co
     expect(app.result.current.pintadoDeMemoria).toBe(false);
   });
 });
+
+/**
+ * LA TABLA — un guardado que falla no deja salir lo que sustituía (FE #605).
+ *
+ * Sin cobertura se anota un 4; se corrige a 5 y el móvil no puede guardarlo.
+ * `enqueue` no escribe nada, así que el 4 sigue en la cola, y al volver la
+ * cobertura el vaciado lo manda: el servidor se queda con un valor que el
+ * jugador sustituyó, sin aviso, mientras su pantalla dice 5. Un hoyo vacío se
+ * ve y se pide otra vez; un 4 viejo parece bueno.
+ *
+ * Aquí `golpe(n)` lleva además el golpe del marcado, que no cambia: sale el
+ * propio, que es lo sustituido, y el del marcado se queda.
+ *
+ *   #   camino                                   | qué pasa con el 4
+ *   ----|----------------------------------------|---------------------------------
+ *   1   sin cobertura                            | sale de la cola; se avisa
+ *   1b  lo nuevo no cambia nada de lo guardado   | se queda entero: solo AÑADE el
+ *       (añade el golpe del marcado)             | del marcado (revisión local)
+ *   1c  lo nuevo no trae el golpe del marcado    | ese se queda: sin clave no es raya
+ *   2   con otro escritor dentro                 | sale de la cola; se avisa
+ *   2b  y ese otro es un envío del 4 que acaba   | el aviso SIGUE: es de un guardado
+ *       sin llegar                               | posterior del mismo hoyo
+ *   3   envío directo que no llega               | sale de la cola; se avisa
+ *   9   quitarlo también falla                   | no cambia nada; el aviso sigue
+ *   10  una corrección nueva entra entre leer el | se queda: se compara con lo leído
+ *       4 y quitarlo                             | ANTES de guardar, nunca por clave
+ *   10b la misma, en el mismo milisegundo        | se queda: lo distingue el valor
+ *   10c el mismo 4 anotado otra vez, más nuevo   | se queda: lo distingue la hora
+ *
+ * La fila 4 (el envío llega o lo rechazan) la arregló la #604: 6b y 4b, arriba.
+ */
+describe('useScoring · un guardado que falla no deja salir lo sustituido (FE #605)', () => {
+  let enCola;
+  let reloj;
+  // El hoyo cuyo guardado se niega, como un móvil sin espacio, y cuántas veces
+  let fallaEnHoyo;
+  let vecesQueFalla;
+  // Lo que «otro» escribe justo cuando falla el guardado (fila 10)
+  let alFallar;
+
+  const esLaMisma = (e, matchId, holeNumber, participantId, userId) =>
+    e.matchId === matchId
+    && e.holeNumber === holeNumber
+    && (e.participantId ?? null) === (participantId ?? null)
+    && (e.userId ?? null) === (userId ?? null);
+
+  const golpe = (ownScore) => ({ ownScore, markedPlayerId: 'u2', markedScore: 4 });
+  const guardadaDe = (holeNumber, scoreData, timestamp = 1) =>
+    ({ matchId: 'm-1', holeNumber, participantId: null, scoreData, timestamp, userId: 'u1' });
+  const delHoyo = (holeNumber) => enCola.filter((e) => e.holeNumber === holeNumber).map((e) => e.scoreData);
+  // Lo que queda del 4 cuando sale el golpe propio: el del marcado, intacto
+  const soloElMarcado = { markedPlayerId: 'u2', markedScore: 4 };
+
+  const enVuelo = () => {
+    let suelta;
+    let falla;
+    const promesa = new Promise((resolve, reject) => { suelta = resolve; falla = reject; });
+    return { promesa, suelta, falla };
+  };
+
+  const esperaUnPoco = () => act(async () => { await new Promise((r) => setTimeout(r, 20)); });
+
+  const monta = async () => {
+    const { result } = renderHook(() => useScoring('m-1', 'u1'));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    await esperaUnPoco();
+    return result;
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    almacen.clear();
+    enCola = [];
+    reloj = 1000;
+    fallaEnHoyo = null;
+    vecesQueFalla = 1;
+    alFallar = null;
+    getScoringViewUseCase.execute.mockResolvedValue(mockScoringView);
+    submitHoleScoreUseCase.execute.mockResolvedValue(mockScoringView);
+    Object.defineProperty(navigator, 'onLine', { value: true, configurable: true });
+    offlineQueue.enqueue.mockImplementation((matchId, holeNumber, scoreData, participantId = null, userId = null) => {
+      if (holeNumber === fallaEnHoyo && vecesQueFalla > 0) {
+        vecesQueFalla -= 1;
+        alFallar?.();
+        return false;
+      }
+      const limpio = JSON.parse(JSON.stringify(scoreData));
+      enCola = enCola.filter((e) => !esLaMisma(e, matchId, holeNumber, participantId, userId));
+      enCola.push({ matchId, holeNumber, participantId, scoreData: limpio, timestamp: reloj++, userId });
+      return true;
+    });
+    offlineQueue.getByMatch.mockImplementation((matchId) =>
+      enCola.filter((e) => e.matchId === matchId).map((e) => ({ ...e }))
+    );
+    offlineQueue.remove.mockImplementation((matchId, holeNumber, participantId = null, userId = null) => {
+      enCola = enCola.filter((e) => !esLaMisma(e, matchId, holeNumber, participantId, userId));
+      return true;
+    });
+  });
+
+  afterEach(() => {
+    offlineQueue.enqueue.mockReset();
+    offlineQueue.getByMatch.mockReset().mockReturnValue([]);
+    offlineQueue.remove.mockReset().mockReturnValue(true);
+    submitHoleScoreUseCase.execute.mockReset();
+    Object.defineProperty(navigator, 'onLine', { value: true, configurable: true });
+  });
+
+  const sinCobertura = async () => {
+    Object.defineProperty(navigator, 'onLine', { value: false, configurable: true });
+    return monta();
+  };
+
+  it('1 · sin cobertura: el 4 sale de la cola y se avisa', async () => {
+    const result = await sinCobertura();
+    enCola = [guardadaDe(5, golpe(4))];
+    fallaEnHoyo = 5;
+
+    await act(async () => { await result.current.submitScore(5, golpe(5)); });
+
+    expect(delHoyo(5)).toEqual([soloElMarcado]);
+    expect(result.current.error).toBeTruthy();
+  });
+
+  it('1b · si lo nuevo solo añade el golpe del marcado, lo guardado se queda entero', async () => {
+    // Es el orden normal de anotar un hoyo: primero el propio, luego el del
+    // marcado. `HoleInput` manda los dos, y el propio no ha cambiado
+    const result = await sinCobertura();
+    const propio = { ownScore: 4, markedPlayerId: 'u2' };
+    enCola = [guardadaDe(5, propio)];
+    fallaEnHoyo = 5;
+
+    await act(async () => {
+      await result.current.submitScore(5, { ownScore: 4, markedPlayerId: 'u2', markedScore: 5 });
+    });
+
+    // Entero, hora incluida: reescribirlo lo haría pasar por una corrección nueva
+    expect(enCola).toEqual([guardadaDe(5, propio)]);
+    expect(result.current.error).toBeTruthy();
+  });
+
+  it('1c · un golpe que la corrección no trae no está sustituido: se queda', async () => {
+    // Sin clave no es una raya, es que no se anotó (#609)
+    const result = await sinCobertura();
+    enCola = [guardadaDe(5, golpe(4))];
+    fallaEnHoyo = 5;
+
+    await act(async () => {
+      await result.current.submitScore(5, { ownScore: 5, markedPlayerId: 'u2', markedScore: undefined });
+    });
+
+    expect(delHoyo(5)).toEqual([soloElMarcado]);
+  });
+
+  it('2 · con otro escritor dentro: el 4 sale de la cola y se avisa', async () => {
+    const result = await monta();
+    const vuelo = enVuelo();
+    submitHoleScoreUseCase.execute.mockReturnValueOnce(vuelo.promesa);
+    let primero;
+    act(() => { primero = result.current.submitScore(3, golpe(4)); });
+    await waitFor(() => expect(submitHoleScoreUseCase.execute).toHaveBeenCalledTimes(1));
+    enCola.push(guardadaDe(5, golpe(4)));
+    fallaEnHoyo = 5;
+
+    await act(async () => { await result.current.submitScore(5, golpe(5)); });
+
+    expect(delHoyo(5)).toEqual([soloElMarcado]);
+    expect(result.current.error).toBeTruthy();
+    await act(async () => { vuelo.suelta(mockScoringView); await primero; });
+    expect(submitHoleScoreUseCase.execute).not.toHaveBeenCalledWith('m-1', 5, golpe(4));
+  });
+
+  // Si llega no hace falta: la vista que se pide después retira cualquier aviso,
+  // como con cada sondeo. Partida rápida no sondea el aviso y prueba los dos
+  it.each([
+    ['no llega', (vuelo) => vuelo.falla(new TypeError('Failed to fetch'))],
+  ])('2b · el envío del 4 que %s no retira el aviso del 5 que no se pudo guardar', async (_, acaba) => {
+    const result = await monta();
+    const vuelo = enVuelo();
+    submitHoleScoreUseCase.execute.mockReturnValueOnce(vuelo.promesa);
+    let primero;
+    act(() => { primero = result.current.submitScore(5, golpe(4)); });
+    await waitFor(() => expect(submitHoleScoreUseCase.execute).toHaveBeenCalledTimes(1));
+    fallaEnHoyo = 5;
+
+    await act(async () => { await result.current.submitScore(5, golpe(5)); });
+    await act(async () => { acaba(vuelo); await primero; });
+
+    expect(result.current.error).toBeTruthy();
+  });
+
+  it('3 · envío directo que no llega: el 4 sale de la cola y se avisa', async () => {
+    const result = await monta();
+    enCola = [guardadaDe(5, golpe(4))];
+    fallaEnHoyo = 5;
+    submitHoleScoreUseCase.execute.mockRejectedValueOnce(new TypeError('Failed to fetch'));
+
+    await act(async () => { await result.current.submitScore(5, golpe(5)); });
+
+    expect(delHoyo(5)).toEqual([soloElMarcado]);
+    expect(result.current.error).toBeTruthy();
+  });
+
+  it('9 · si quitarlo también falla, no cambia nada y el aviso sigue', async () => {
+    const result = await sinCobertura();
+    enCola = [guardadaDe(5, golpe(4))];
+    fallaEnHoyo = 5;
+    vecesQueFalla = Infinity;
+    offlineQueue.remove.mockImplementation(() => false);
+
+    await act(async () => { await result.current.submitScore(5, golpe(5)); });
+
+    expect(enCola).toEqual([guardadaDe(5, golpe(4))]);
+    expect(result.current.error).toBeTruthy();
+  });
+
+  it('9b · y si el golpe entero está sustituido y quitarlo falla, igual', async () => {
+    const result = await sinCobertura();
+    const propio = { ownScore: 4, markedPlayerId: 'u2' };
+    enCola = [guardadaDe(5, propio)];
+    fallaEnHoyo = 5;
+    offlineQueue.remove.mockImplementation(() => false);
+
+    await act(async () => { await result.current.submitScore(5, { ownScore: 5, markedPlayerId: 'u2' }); });
+
+    expect(enCola).toEqual([guardadaDe(5, propio)]);
+    expect(result.current.error).toBeTruthy();
+  });
+
+  it('10 · una corrección que entra entre leer el 4 y quitarlo se queda', async () => {
+    const result = await sinCobertura();
+    enCola = [guardadaDe(5, golpe(4))];
+    fallaEnHoyo = 5;
+    // Otra escritura del mismo hoyo, justo en ese momento
+    alFallar = () => { enCola = [guardadaDe(5, golpe(7), 5000)]; };
+
+    await act(async () => { await result.current.submitScore(5, golpe(5)); });
+
+    expect(enCola).toEqual([guardadaDe(5, golpe(7), 5000)]);
+  });
+
+  it('10b · y también si entra en el mismo milisegundo: ahí lo distingue el valor', async () => {
+    const result = await sinCobertura();
+    enCola = [guardadaDe(5, golpe(4))];
+    fallaEnHoyo = 5;
+    alFallar = () => { enCola = [guardadaDe(5, golpe(7))]; };
+
+    await act(async () => { await result.current.submitScore(5, golpe(5)); });
+
+    expect(enCola).toEqual([guardadaDe(5, golpe(7))]);
+  });
+
+  it('10c · y si lo que entra es el mismo 4 anotado otra vez, también: es lo último del jugador', async () => {
+    const result = await sinCobertura();
+    enCola = [guardadaDe(5, golpe(4))];
+    fallaEnHoyo = 5;
+    alFallar = () => { enCola = [guardadaDe(5, golpe(4), 5000)]; };
+
+    await act(async () => { await result.current.submitScore(5, golpe(5)); });
+
+    expect(enCola).toEqual([guardadaDe(5, golpe(4), 5000)]);
+  });
+});

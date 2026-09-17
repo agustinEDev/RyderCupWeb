@@ -11,6 +11,7 @@ import { errorDeGuardado } from '../utils/erroresDeAnotacion';
 // Lo último que se supo del partido, para poder anotar sin cobertura al reabrir
 // (FE #614). El mismo servicio que usa partida rápida desde la FE #524
 import { loQueSeSupo, olvida, recuerda } from '../services/loUltimoConocido';
+import { guardaLaCorreccion } from '../utils/guardaLaCorreccion';
 import * as golpesPerdidos from '../utils/golpesPerdidos';
 import * as offlineQueue from '../utils/scoringOfflineQueue';
 import * as sessionLock from '../utils/scoringSessionLock';
@@ -400,6 +401,15 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
   // porque competición no vacía en el sondeo, como partida rápida: sin esa
   // pasada, lo aplazado esperaba a que el jugador saliera y volviera
   const ocupadoRef = useRef(null);
+  // Qué anotación no se pudo guardar, y en qué turno (FE #605). Un envío que
+  // salió ANTES y acaba sin llegar no puede retirar ese aviso: es de una
+  // corrección posterior del mismo hoyo, y lo guardado de antes ya salió de la
+  // cola, así que sin aviso el hoyo se quedaba vacío sin que nadie lo dijera.
+  // Si llega, no hace falta: la vista que se pide después retira cualquier
+  // aviso, como siempre. Un contador y no la hora: la de la cola y la de aquí
+  // no son el mismo reloj
+  const anotacionRef = useRef(0);
+  const noSeGuardoRef = useRef(null);
   const aplazadoRef = useRef(false);
 
   // --- Process offline queue ---
@@ -510,6 +520,13 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
   const submitScore = useCallback(async (holeNumber, scoreData) => {
     if (!matchId || !canScore) return;
     if (isOwnScoreLocked && isMarkerScoreLocked) return;
+    const estaAnotacion = ++anotacionRef.current;
+    const avisaQueNoSeGuardo = () => {
+      noSeGuardoRef.current = { holeNumber, anotacion: estaAnotacion };
+      setError(errorDeGuardado(holeNumber));
+    };
+    const hayUnFalloPosterior = () =>
+      noSeGuardoRef.current?.holeNumber === holeNumber && noSeGuardoRef.current.anotacion > estaAnotacion;
 
     // El aviso de «no se pudo guardar» de este hoyo se retira, pero SOLO
     // cuando el reemplazo está a salvo: enviado, o guardado en la cola. Se
@@ -522,7 +539,7 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
     // queda apuntado para la pasada que dé quien lo tiene al terminar
     if (isOffline || ocupadoRef.current) {
       if (ocupadoRef.current) aplazadoRef.current = true;
-      const guardado = offlineQueue.enqueue(
+      const guardado = guardaLaCorreccion(
         matchId,
         holeNumber,
         scoreData,
@@ -534,7 +551,7 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
       if (guardado === false) {
         // Sin cobertura Y sin sitio donde guardarlo: el golpe no existe en
         // ninguna parte, y eso hay que decirlo
-        setError(errorDeGuardado(holeNumber));
+        avisaQueNoSeGuardo();
       } else {
         // Y se retira el aviso anterior si lo había: sin esto, un hoyo que no
         // se pudo guardar dejaba el cartel puesto el RESTO de la vuelta,
@@ -553,7 +570,7 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
     // petición tarda unos diez segundos en morir, y si la aplicación se cerraba
     // en ese rato el golpe no estaba ni en el servidor ni en el móvil. Es lo
     // que ya hacía partida rápida (FE #561). Si llega, se retira abajo
-    const guardado = offlineQueue.enqueue(
+    const guardado = guardaLaCorreccion(
       matchId,
       holeNumber,
       scoreData,
@@ -593,7 +610,8 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
         // pudo. Si el móvil no pudo —sin espacio, ventana privada— hay que
         // decirlo: callarlo deja al jugador creyendo que su golpe está a salvo
         // en algún sitio, y no está en ninguno
-        setError(guardado === false ? errorDeGuardado(holeNumber) : null);
+        if (guardado === false) avisaQueNoSeGuardo();
+        else if (!hayUnFalloPosterior()) setError(null);
         if (guardado !== false) yaNoSePierde();
         // Y si SÍ se guardó, no se enseña error: para el jugador el golpe está
         // anotado, solo que todavía no ha salido del móvil. Decirle que ha
