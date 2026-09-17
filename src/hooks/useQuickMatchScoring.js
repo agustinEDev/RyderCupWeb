@@ -859,6 +859,11 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
       // del POST— la pantalla seguiria creyendo la partida viva, editable y
       // anotando contra 409 en bucle.
       const actualizada = await cancelQuickMatchUseCase.execute(quickMatchId);
+      // Si mientras tanto la pantalla pasó a otra partida —la ruta no lleva
+      // `key`—, lo cerrado es la anterior y aquí no queda nada que tocar: marcar
+      // haría vieja la carga en camino de la nueva, que se quedaba esperando, y
+      // con su vista todavía a `null` se pintaba encima la partida anterior
+      if (quickMatchId !== idVigenteRef.current) return { ok: true };
       // Invalida cualquier sondeo en vuelo: su foto es anterior al cierre
       marcaEscritura();
       if (actualizada) {
@@ -902,6 +907,11 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
       // del POST— la pantalla seguiria creyendo la partida viva, editable y
       // anotando contra 409 en bucle.
       const actualizada = await completeQuickMatchUseCase.execute(quickMatchId);
+      // Si mientras tanto la pantalla pasó a otra partida —la ruta no lleva
+      // `key`—, lo cerrado es la anterior y aquí no queda nada que tocar: marcar
+      // haría vieja la carga en camino de la nueva, que se quedaba esperando, y
+      // con su vista todavía a `null` se pintaba encima la partida anterior
+      if (quickMatchId !== idVigenteRef.current) return { ok: true };
       marcaEscritura();
       if (actualizada) {
         setQuickMatch((previa) =>

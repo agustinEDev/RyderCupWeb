@@ -2348,6 +2348,9 @@ describe('useQuickMatchScoring · un guardado que falla no deja salir lo sustitu
  *       que el campo                                 | partida ya estaba pintada
  *   12b y si mientras llega el campo se cambia de    | la nueva sigue esperando
  *       partida                                      |
+ *   13  terminar la anterior contesta con la nueva   | la nueva carga, y no se pinta
+ *       ya en pantalla                               | la anterior encima (CodeRabbit)
+ *   13b lo mismo con cancelar                        | igual
  */
 describe('useQuickMatchScoring · una respuesta lenta no se tira por salir otra después (FE #607)', () => {
   let cola;
@@ -2638,5 +2641,37 @@ describe('useQuickMatchScoring · una respuesta lenta no se tira por salir otra 
     });
 
     expect(app.result.current.isLoading).toBe(true);
+  });
+
+  // La ruta no lleva `key`: el diálogo de cerrar la partida puede contestar con
+  // otra ya en pantalla, cuya vista está a `null` y su carga en camino
+  it.each([
+    ['13', 'terminar', 'completeMatch', completeQuickMatchUseCase, { status: 'COMPLETED', isCompleted: true }],
+    ['13b', 'cancelar', 'cancelMatch', cancelQuickMatchUseCase, { status: 'CANCELLED', isCancelled: true }],
+  ])('%s · %s la anterior que contesta con la nueva en pantalla no la deja esperando ni se pinta encima', async (_, __, accion, casoDeUso, cierre) => {
+    const cierra = enVuelo();
+    casoDeUso.execute.mockReturnValueOnce(cierra.promesa);
+    const nueva = enVuelo();
+    getQuickMatchUseCase.execute.mockImplementation((id) =>
+      (id === 'qm-1' ? Promise.resolve(mockQuickMatch) : nueva.promesa));
+    const app = renderHook(({ id }) => useQuickMatchScoring(id, 'user-1'), { initialProps: { id: 'qm-1' } });
+    await waitFor(() => expect(app.result.current.isLoading).toBe(false));
+    let resultado;
+    act(() => { resultado = app.result.current[accion](); });
+    app.rerender({ id: 'qm-2' });
+    await act(async () => { await new Promise((r) => setTimeout(r, 20)); });
+
+    await act(async () => {
+      cierra.suelta({ ...mockQuickMatch, ...cierre, isInProgress: false });
+      await resultado;
+    });
+    expect(app.result.current.quickMatch).toBeNull();
+
+    await act(async () => {
+      nueva.suelta({ ...mockQuickMatch, id: 'qm-2' });
+      await new Promise((r) => setTimeout(r, 20));
+    });
+    expect(app.result.current.isLoading).toBe(false);
+    expect(app.result.current.quickMatch).toEqual(expect.objectContaining({ id: 'qm-2', status: 'IN_PROGRESS' }));
   });
 });
