@@ -2320,3 +2320,323 @@ describe('useQuickMatchScoring · un guardado que falla no deja salir lo sustitu
     expect(cola).toEqual([guardada(7, 5)]);
   });
 });
+
+/**
+ * LA TABLA — una respuesta lenta no se tira solo porque salió otra después (FE #607).
+ *
+ * Se descarta lo que es más viejo que algo YA aplicado —otra respuesta, cerrar
+ * la partida o un golpe que acaba de llegar—, no lo que salió antes de que
+ * saliera otra: con mala cobertura cada respuesta llega con otra en camino, y
+ * la pantalla no se movía nunca.
+ *
+ *   #   situación                                    | debe
+ *   ----|--------------------------------------------|---------------------------------
+ *   1   dos solapadas, la vieja llega antes          | se aplica
+ *   2   llega la nueva y luego la vieja              | la vieja se descarta
+ *   3   carga buena aplicada y luego un 404 viejo    | se descarta: no marca ni borra
+ *   4   terminar o cancelar, y luego un sondeo viejo | se descarta
+ *   5   respuesta de la partida anterior            | no se pinta en la nueva
+ *   5b  y un golpe de la anterior que llega tarde    | no hace descartar la vista nueva
+ *   6   error viejo tras un éxito más nuevo          | se descarta
+ *   7   todas lentas y solapadas, una tras otra      | la vista avanza con cada una
+ *   8   una sola en vuelo, lenta                     | se aplica
+ *   9   vaciado: el primero llega, el segundo no     | el primero sigue viéndose
+ *   10  envío directo que llega, vista en camino     | se ve el golpe enviado
+ *   11  y luego llega un sondeo que salió antes      | no deshace el golpe
+ *   11b lo mismo con un golpe del vaciado            | no deshace el golpe
+ *   12  al abrir, un golpe del vaciado llega antes   | la espera se quita igual: la
+ *       que el campo                                 | partida ya estaba pintada
+ *   12b y si mientras llega el campo se cambia de    | la nueva sigue esperando
+ *       partida                                      |
+ */
+describe('useQuickMatchScoring · una respuesta lenta no se tira por salir otra después (FE #607)', () => {
+  let cola;
+  let reloj;
+
+  const mismo = (e, hoyo, quien, userId = null) =>
+    e.holeNumber === hoyo && e.participantId === quien && (e.userId ?? null) === (userId ?? null);
+  const guardada = (holeNumber, score, timestamp) =>
+    ({ matchId: 'qm-1', holeNumber, participantId: 'user-1', scoreData: { score }, timestamp, userId: 'user-1' });
+  const hoyo = (holeNumber, score) =>
+    ({ holeNumber, participantId: 'user-1', score, recordedByParticipantId: 'user-1' });
+  const conHoyos = (holeScores, extra = {}) => ({ ...mockQuickMatch, holeScores, ...extra });
+  const enVuelo = () => {
+    let suelta;
+    let falla;
+    const promesa = new Promise((res, rej) => { suelta = res; falla = rej; });
+    return { promesa, suelta: (v) => suelta(v), falla: (e) => falla(e) };
+  };
+  const visible = (result, holeNumber) =>
+    result.current.holeScoresVisibles.find((hs) => hs.holeNumber === holeNumber && hs.participantId === 'user-1');
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    cola = [];
+    reloj = 1000;
+    offlineQueue.getByMatch.mockImplementation(() => cola.map((e) => ({ ...e })));
+    offlineQueue.size.mockImplementation(() => cola.length);
+    offlineQueue.enqueue.mockImplementation((matchId, holeNumber, scoreData, participantId, userId = null) => {
+      cola = cola.filter((e) => !mismo(e, holeNumber, participantId, userId));
+      cola.push({ matchId, holeNumber, participantId, scoreData, timestamp: reloj++, userId });
+      return true;
+    });
+    offlineQueue.remove.mockImplementation((matchId, holeNumber, participantId, userId = null) => {
+      cola = cola.filter((e) => !mismo(e, holeNumber, participantId, userId));
+      return true;
+    });
+    getGolfCourseUseCase.execute.mockResolvedValue({ holes: [], tees: [], name: 'Campo' });
+    getQuickMatchUseCase.execute.mockResolvedValue(mockQuickMatch);
+    submitQuickMatchHoleScoreUseCase.execute.mockResolvedValue({});
+    submitQuickMatchProxyHoleScoreUseCase.execute.mockResolvedValue({});
+  });
+
+  const monta = async () => {
+    const app = renderHook(() => useQuickMatchScoring('qm-1', 'user-1'));
+    await waitFor(() => expect(app.result.current.isLoading).toBe(false));
+    await act(async () => { await new Promise((r) => setTimeout(r, 20)); });
+    return app;
+  };
+
+  // Deja salir una petición de la partida que se queda en vuelo
+  const sale = (app) => {
+    const peticion = enVuelo();
+    getQuickMatchUseCase.execute.mockReturnValueOnce(peticion.promesa);
+    let pedida;
+    act(() => { pedida = app.result.current.refetch(); });
+    return { ...peticion, pedida: () => pedida };
+  };
+
+  it('1 · dos solapadas y la vieja llega antes: se aplica', async () => {
+    const app = await monta();
+    const vieja = sale(app);
+    sale(app);
+
+    await act(async () => { vieja.suelta(conHoyos([hoyo(2, 3)])); await vieja.pedida(); });
+
+    expect(app.result.current.quickMatch.holeScores).toEqual([hoyo(2, 3)]);
+  });
+
+  it('2 · llega la nueva y luego la vieja: la vieja se descarta', async () => {
+    const app = await monta();
+    const vieja = sale(app);
+    const nueva = sale(app);
+    await act(async () => { nueva.suelta(conHoyos([hoyo(2, 4)])); await nueva.pedida(); });
+
+    await act(async () => { vieja.suelta(conHoyos([])); await vieja.pedida(); });
+
+    expect(app.result.current.quickMatch.holeScores).toEqual([hoyo(2, 4)]);
+  });
+
+  it('3 · un 404 de una petición anterior a una carga buena ya aplicada no marca ni borra', async () => {
+    const app = await monta();
+    const vieja = sale(app);
+    const nueva = sale(app);
+    await act(async () => { nueva.suelta(mockQuickMatch); await nueva.pedida(); });
+    offlineQueue.marcaDesaparecida.mockClear();
+
+    await act(async () => {
+      vieja.falla(Object.assign(new Error('HTTP 404'), { status: 404 }));
+      await vieja.pedida();
+    });
+
+    expect(offlineQueue.marcaDesaparecida).not.toHaveBeenCalledWith('qm-1', expect.anything(), true);
+    expect(loQueSeSupo('qm-1')?.partida).toBeTruthy();
+    expect(app.result.current.loadError).toBeNull();
+  });
+
+  // La partida que se pide después del cierre se queda en camino: si llegara,
+  // ella misma haría descartar el sondeo viejo y taparía que el cierre no marca
+  it.each([
+    ['terminar', 'completeMatch', completeQuickMatchUseCase, { status: 'COMPLETED', isCompleted: true }, 'isCompleted'],
+    ['cancelar', 'cancelMatch', cancelQuickMatchUseCase, { status: 'CANCELLED', isCancelled: true }, 'isCancelled'],
+  ])('4 · %s aplicado en local y luego un sondeo que salió antes: se descarta', async (_, accion, casoDeUso, cierre, marca) => {
+    const app = await monta();
+    const vieja = sale(app);
+    casoDeUso.execute.mockResolvedValue({ ...mockQuickMatch, ...cierre, isInProgress: false });
+    getQuickMatchUseCase.execute.mockReturnValueOnce(new Promise(() => {}));
+    act(() => { app.result.current[accion](); });
+    await waitFor(() => expect(app.result.current.quickMatch[marca]).toBe(true));
+
+    await act(async () => { vieja.suelta(mockQuickMatch); await vieja.pedida(); });
+
+    expect(app.result.current.quickMatch[marca]).toBe(true);
+  });
+
+  it('5 · la respuesta de la partida anterior no se pinta en la nueva', async () => {
+    const vieja = enVuelo();
+    const nueva = enVuelo();
+    getQuickMatchUseCase.execute.mockImplementation((id) => (id === 'qm-1' ? vieja.promesa : nueva.promesa));
+    const app = renderHook(({ id }) => useQuickMatchScoring(id, 'user-1'), { initialProps: { id: 'qm-1' } });
+    app.rerender({ id: 'qm-2' });
+
+    await act(async () => { vieja.suelta(mockQuickMatch); await new Promise((r) => setTimeout(r, 20)); });
+    expect(app.result.current.quickMatch).toBeNull();
+    expect(app.result.current.isLoading).toBe(true);
+
+    await act(async () => {
+      nueva.suelta({ ...mockQuickMatch, id: 'qm-2' });
+      await new Promise((r) => setTimeout(r, 20));
+    });
+    expect(app.result.current.quickMatch.id).toBe('qm-2');
+  });
+
+  it('5b · un golpe de la partida anterior que llega tarde no hace descartar la vista de la nueva', async () => {
+    cola = [guardada(3, 4, 1)];
+    const envio = enVuelo();
+    submitQuickMatchHoleScoreUseCase.execute.mockReturnValueOnce(envio.promesa);
+    const app = renderHook(({ id }) => useQuickMatchScoring(id, 'user-1'), { initialProps: { id: 'qm-1' } });
+    await waitFor(() => expect(submitQuickMatchHoleScoreUseCase.execute).toHaveBeenCalled());
+    const nueva = enVuelo();
+    getQuickMatchUseCase.execute.mockReturnValue(nueva.promesa);
+    app.rerender({ id: 'qm-2' });
+    await act(async () => { await new Promise((r) => setTimeout(r, 20)); });
+
+    await act(async () => { envio.suelta(hoyo(3, 4)); await new Promise((r) => setTimeout(r, 20)); });
+    await act(async () => {
+      nueva.suelta({ ...mockQuickMatch, id: 'qm-2' });
+      await new Promise((r) => setTimeout(r, 20));
+    });
+
+    expect(app.result.current.quickMatch?.id).toBe('qm-2');
+    expect(app.result.current.quickMatch.holeScores).toEqual([]);
+  });
+
+  it('6 · un error viejo tras un éxito más nuevo se descarta', async () => {
+    const app = await monta();
+    const vieja = sale(app);
+    const nueva = sale(app);
+    await act(async () => { nueva.suelta(conHoyos([hoyo(2, 4)])); await nueva.pedida(); });
+
+    await act(async () => { vieja.falla(Object.assign(new Error('HTTP 503'), { status: 503 })); await vieja.pedida(); });
+
+    expect(app.result.current.loadError).toBeNull();
+    expect(app.result.current.pintadoDeMemoria).toBe(false);
+  });
+
+  it('7 · todas lentas y solapadas: la vista avanza con cada una que llega', async () => {
+    const app = await monta();
+    const primera = sale(app);
+    const segunda = sale(app);
+
+    await act(async () => { primera.suelta(conHoyos([hoyo(1, 4)])); await primera.pedida(); });
+    expect(app.result.current.quickMatch.holeScores).toEqual([hoyo(1, 4)]);
+
+    const tercera = sale(app);
+    await act(async () => { segunda.suelta(conHoyos([hoyo(1, 4), hoyo(2, 5)])); await segunda.pedida(); });
+    expect(app.result.current.quickMatch.holeScores).toEqual([hoyo(1, 4), hoyo(2, 5)]);
+
+    sale(app);
+    await act(async () => {
+      tercera.suelta(conHoyos([hoyo(1, 4), hoyo(2, 5), hoyo(3, 3)]));
+      await tercera.pedida();
+    });
+    expect(app.result.current.quickMatch.holeScores).toEqual([hoyo(1, 4), hoyo(2, 5), hoyo(3, 3)]);
+  });
+
+  it('8 · una sola en vuelo, lenta: se aplica', async () => {
+    const app = await monta();
+    const unica = sale(app);
+
+    await act(async () => { unica.suelta(conHoyos([hoyo(5, 6)])); await unica.pedida(); });
+
+    expect(app.result.current.quickMatch.holeScores).toEqual([hoyo(5, 6)]);
+  });
+
+  it('9 · en un vaciado, el golpe que ya llegó se ve aunque la pasada siga', async () => {
+    cola = [guardada(3, 4, 1), guardada(4, 5, 2)];
+    submitQuickMatchHoleScoreUseCase.execute
+      .mockResolvedValueOnce(hoyo(3, 4))
+      .mockReturnValueOnce(new Promise(() => {}));
+    const app = renderHook(() => useQuickMatchScoring('qm-1', 'user-1'));
+    // El 3 ya llegó y salió de la cola; el 4 sigue en camino
+    await waitFor(() => expect(cola.map((e) => e.holeNumber)).toEqual([4]));
+    app.rerender();
+
+    expect(visible(app.result, 3)).toEqual(expect.objectContaining({ score: 4 }));
+  });
+
+  it('10 · envío directo que llega con la vista en camino: se ve el golpe enviado', async () => {
+    getQuickMatchUseCase.execute.mockResolvedValue(conHoyos([hoyo(3, 5)]));
+    const app = await monta();
+    submitQuickMatchHoleScoreUseCase.execute.mockResolvedValueOnce(hoyo(3, 4));
+    getQuickMatchUseCase.execute.mockReturnValueOnce(new Promise(() => {}));
+
+    act(() => { app.result.current.submitScore(3, 'user-1', 4); });
+    await waitFor(() => expect(getQuickMatchUseCase.execute).toHaveBeenCalledTimes(2));
+    expect(cola).toEqual([]);
+    app.rerender();
+
+    expect(visible(app.result, 3)).toEqual(expect.objectContaining({ score: 4 }));
+  });
+
+  it('11 · y un sondeo que salió antes del envío no deshace el golpe', async () => {
+    getQuickMatchUseCase.execute.mockResolvedValue(conHoyos([hoyo(3, 5)]));
+    const app = await monta();
+    const vieja = sale(app);
+    submitQuickMatchHoleScoreUseCase.execute.mockResolvedValueOnce(hoyo(3, 4));
+    getQuickMatchUseCase.execute.mockReturnValueOnce(new Promise(() => {}));
+    act(() => { app.result.current.submitScore(3, 'user-1', 4); });
+    await waitFor(() => expect(getQuickMatchUseCase.execute).toHaveBeenCalledTimes(3));
+
+    await act(async () => { vieja.suelta(conHoyos([hoyo(3, 5)])); await vieja.pedida(); });
+
+    expect(visible(app.result, 3)).toEqual(expect.objectContaining({ score: 4 }));
+  });
+
+  it('11b · ni uno que salió antes de que llegara un golpe del vaciado', async () => {
+    const app = await monta();
+    const vieja = sale(app);
+    cola = [guardada(3, 4, 1), guardada(4, 5, 2)];
+    submitQuickMatchHoleScoreUseCase.execute
+      .mockResolvedValueOnce(hoyo(3, 4))
+      .mockReturnValueOnce(new Promise(() => {}));
+    getQuickMatchUseCase.execute.mockResolvedValueOnce(mockQuickMatch);
+    // Otra petición que llega bien dispara el vaciado
+    await act(async () => { await app.result.current.refetch(); });
+    await waitFor(() => expect(cola.map((e) => e.holeNumber)).toEqual([4]));
+
+    await act(async () => { vieja.suelta(conHoyos([])); await vieja.pedida(); });
+    app.rerender();
+
+    expect(visible(app.result, 3)).toEqual(expect.objectContaining({ score: 4 }));
+  });
+
+  it('12 · al abrir, un golpe del vaciado que llega antes que el campo no deja la espera puesta', async () => {
+    // La primera carga pinta la partida, lanza el vaciado sin esperarlo y
+    // espera al campo: si el golpe llega en ese rato cuenta como lo último
+    // aplicado, y la carga que ya pintó no puede quedar por vieja
+    cola = [guardada(3, 4, 1), guardada(4, 5, 2)];
+    const campo = enVuelo();
+    getGolfCourseUseCase.execute.mockReturnValueOnce(campo.promesa);
+    submitQuickMatchHoleScoreUseCase.execute
+      .mockResolvedValueOnce(hoyo(3, 4))
+      .mockReturnValueOnce(new Promise(() => {}));
+    const app = renderHook(() => useQuickMatchScoring('qm-1', 'user-1'));
+    await waitFor(() => expect(cola.map((e) => e.holeNumber)).toEqual([4]));
+
+    await act(async () => {
+      campo.suelta({ holes: [], tees: [], name: 'Campo' });
+      await new Promise((r) => setTimeout(r, 20));
+    });
+
+    expect(app.result.current.isLoading).toBe(false);
+  });
+
+  it('12b · pero si mientras llega el campo se cambia de partida, la nueva sigue esperando', async () => {
+    const campo = enVuelo();
+    getGolfCourseUseCase.execute.mockReturnValueOnce(campo.promesa);
+    getQuickMatchUseCase.execute.mockImplementation((id) =>
+      (id === 'qm-1' ? Promise.resolve(mockQuickMatch) : new Promise(() => {})));
+    const app = renderHook(({ id }) => useQuickMatchScoring(id, 'user-1'), { initialProps: { id: 'qm-1' } });
+    await waitFor(() => expect(getGolfCourseUseCase.execute).toHaveBeenCalled());
+    app.rerender({ id: 'qm-2' });
+    await act(async () => { await new Promise((r) => setTimeout(r, 20)); });
+
+    await act(async () => {
+      campo.suelta({ holes: [], tees: [], name: 'Campo' });
+      await new Promise((r) => setTimeout(r, 20));
+    });
+
+    expect(app.result.current.isLoading).toBe(true);
+  });
+});

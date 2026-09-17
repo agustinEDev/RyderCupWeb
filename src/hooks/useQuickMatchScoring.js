@@ -60,6 +60,17 @@ const esDesacuerdo = (enElServidor, entrada, partida, miParticipanteId) => {
   return true;
 };
 
+// La partida con ese golpe dentro, tal y como lo devolvió el envío. El envío de
+// partida rápida contesta con el hoyo y no con la partida entera, así que se
+// mete en su sitio —o se añade— y lo demás —clasificación, golpes recibidos—
+// espera a la partida que se pide después
+const conGolpe = (partida, golpe) => {
+  const mismo = (hs) => hs.holeNumber === golpe.holeNumber && hs.participantId === golpe.participantId;
+  const antes = partida.holeScores ?? [];
+  const holeScores = antes.some(mismo) ? antes.map((hs) => (mismo(hs) ? golpe : hs)) : [...antes, golpe];
+  return { ...partida, holeScores };
+};
+
 /**
  * Central hook for quick match scoring: fetches the match + course holes,
  * polls for updates, and exposes score submission (own + delegated).
@@ -136,14 +147,27 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
   // Si hay ya una partida pintada. Por referencia y no por estado: ponerlo en
   // las dependencias del sondeo lo reiniciaba en cada cambio de la partida
   const hayPartidaRef = useRef(false);
-  // Numero de orden del estado: lo toman tanto el sondeo como las acciones que
-  // cierran la partida. Un sondeo que salio ANTES del POST podia resolver
-  // DESPUES y volver a aplicar su `IN_PROGRESS`, borrando el cierre: la
-  // pantalla volvia a dejar anotar y cada guardado se estrellaba con un 409.
-  const estadoSeqRef = useRef(0);
-  // La partida que se está mirando AHORA. `estadoSeqRef` es un contador global
-  // que no distingue de quién es cada respuesta: al ir de una partida a otra,
-  // una petición de la anterior que siga en vuelo se aplicaba sobre la nueva
+  // Una respuesta más vieja que algo ya aplicado no puede aplicarse después:
+  // traería la partida como estaba y pisaría lo que acaba de entrar. Cada
+  // petición toma un número al salir; al aplicarse, ese número pasa a ser «lo
+  // último aplicado», y lo mismo al cerrar la partida o al llegar un golpe.
+  // Se descarta solo lo más viejo que eso (FE #607, como competición en la
+  // FE #606):
+  // - NO «salió otra después»: el sondeo no espera al anterior, la vuelta de la
+  //   red y a la aplicación piden otra, y las peticiones no tienen tope, así
+  //   que con mala cobertura cada respuesta llegaba con otra ya en camino y la
+  //   pantalla no se movía nunca —ni para decir que había un error—
+  // - Y sí lo que es más viejo que un cierre: un sondeo que salió ANTES del
+  //   POST volvía a aplicar su `IN_PROGRESS`, la pantalla dejaba anotar otra
+  //   vez y cada guardado se estrellaba con un 409
+  const relojRef = useRef(0);
+  const ultimaAplicadaRef = useRef(0);
+  const marcaEscritura = useCallback(() => {
+    ultimaAplicadaRef.current = ++relojRef.current;
+  }, []);
+  // La partida que se está mirando AHORA. El reloj es uno solo y no distingue
+  // de quién es cada respuesta: al ir de una partida a otra, una petición de la
+  // anterior que siga en vuelo se aplicaba sobre la nueva
   const idVigenteRef = useRef(quickMatchId);
   const pollIntervalRef = useRef(null);
 
@@ -152,12 +176,19 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
       setIsLoading(false);
       return;
     }
-    const miSeq = ++estadoSeqRef.current;
+    const salio = ++relojRef.current;
+    const esVieja = () => quickMatchId !== idVigenteRef.current || salio < ultimaAplicadaRef.current;
+    // Si esta respuesta contó cuando llegó. Se decide ahí y no en el `finally`:
+    // la primera carga espera al campo después de pintar, y un golpe del
+    // vaciado que llega en ese rato la dejaba por vieja con la espera puesta
+    let seAplico = false;
     try {
       const data = await getQuickMatchUseCase.execute(quickMatchId);
-      // Si mientras tanto se cerro la partida —o entro otro sondeo—, esta
-      // respuesta ya no es la ultima palabra y aplicarla retrocederia el estado
-      if (miSeq !== estadoSeqRef.current || quickMatchId !== idVigenteRef.current) return;
+      // Si mientras tanto se aplicó algo más nuevo —otra respuesta, un cierre o
+      // un golpe que llegó—, aplicar esta retrocedería lo que se ve
+      if (esVieja()) return;
+      ultimaAplicadaRef.current = salio;
+      seAplico = true;
       setQuickMatch(data);
       hayPartidaRef.current = true;
       setLoadError(null);
@@ -202,11 +233,11 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
     } catch (err) {
       const estado = err?.status ?? err?.response?.status;
       // Si esta respuesta sigue siendo la última palabra. Una petición vieja
-      // que muere DESPUÉS de que otra haya cargado bien la partida no puede
-      // deshacer nada de lo que hizo la buena: le borraba la foto guardada, le
-      // ponía su error encima y le quitaba la espera
-      const esLaUltimaPalabra =
-        miSeq === estadoSeqRef.current && quickMatchId === idVigenteRef.current;
+      // que muere DESPUÉS de que otra más nueva haya cargado bien la partida no
+      // puede deshacer nada de lo que hizo la buena: le borraba la foto
+      // guardada, le ponía su error encima y le quitaba la espera
+      const esLaUltimaPalabra = !esVieja();
+      seAplico = esLaUltimaPalabra;
 
       // Una respuesta CON estado es una respuesta: si el servidor dice que esa
       // partida ya no está —o que no es nuestra— pintarla desde el móvil sería
@@ -264,15 +295,29 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
 
       if (esLaUltimaPalabra) setLoadError(err);
     } finally {
-      // Si no, una respuesta rezagada —de la partida anterior, o de un sondeo
-      // que otro adelantó— quitaba la espera de la nueva estando todavía sin
-      // datos, y la pantalla pintaba la tarjeta vacía —sin nombre, sin
-      // jugadores y con dieciocho «Anotar»—
-      if (miSeq === estadoSeqRef.current && quickMatchId === idVigenteRef.current) {
-        setIsLoading(false);
-      }
+      // Si no, una respuesta rezagada de la partida anterior quitaba la espera
+      // de la nueva estando todavía sin datos, y la pantalla pintaba la tarjeta
+      // vacía —sin nombre, sin jugadores y con dieciocho «Anotar»—
+      if (seAplico && quickMatchId === idVigenteRef.current) setIsLoading(false);
     }
   }, [quickMatchId, currentUserId]);
+
+  // Un golpe que acaba de llegar se pinta YA, con la respuesta del envío, antes
+  // de que salga de la cola: esperar a la partida que se pide después dejaba
+  // ese hoyo sin golpe en pantalla —ni en la cola ni en la partida—, o con el
+  // número de antes si era una corrección, y con mala cobertura eso son
+  // segundos invitando a anotarlo otra vez (FE #607). Cuenta como lo último
+  // aplicado, para que un sondeo que salió antes no lo deshaga. Y solo si la
+  // pantalla sigue en esta partida: lo que llega de la anterior ni se pinta ni
+  // cuenta, que haría descartar la vista de la nueva
+  const pintaElGolpe = useCallback(
+    (golpe) => {
+      if (golpe?.holeNumber == null || quickMatchId !== idVigenteRef.current) return;
+      marcaEscritura();
+      setQuickMatch((previa) => (previa ? conGolpe(previa, golpe) : previa));
+    },
+    [quickMatchId, marcaEscritura]
+  );
 
   // La ruta no lleva `key`, así que ir de una partida a otra reutiliza este
   // hook: sin limpiar, el aviso rojo y el conflicto de la partida anterior se
@@ -469,19 +514,21 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
           ? { llegaron: 0, paroPor: PARO.NO_SE_PUDO_BORRAR }
           : await vaciaAnotaciones({
               entradas: porEnviar,
-              manda: (entrada) =>
-                entrada.participantId === miParticipanteId
-                  ? submitQuickMatchHoleScoreUseCase.execute(
+              manda: async (entrada) => {
+                const golpe = entrada.participantId === miParticipanteId
+                  ? await submitQuickMatchHoleScoreUseCase.execute(
                     quickMatchId,
                     entrada.holeNumber,
                     entrada.scoreData.score
                   )
-                  : submitQuickMatchProxyHoleScoreUseCase.execute(
+                  : await submitQuickMatchProxyHoleScoreUseCase.execute(
                     quickMatchId,
                     entrada.participantId,
                     entrada.holeNumber,
                     entrada.scoreData.score
-                  ),
+                  );
+                pintaElGolpe(golpe);
+              },
               alDescartar: (entrada) => {
             // Solo si la pantalla sigue en esta partida: el envío tarda, y en
             // ese rato se puede haber cambiado de partida. Los golpes de la
@@ -520,14 +567,15 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
         // minuto y el jugador anota el mismo hoyo dos veces. Por `llegaron` y
         // no por `enviadas`: con el móvil lleno el golpe está en el servidor y
         // sigue en la cola, y es justo entonces cuando más falta hace la foto
-        // nueva. El cerrojo sigue puesto, de modo que este sondeo no vuelve a
+        // nueva. Cada golpe ya se pintó al llegar, pero con su hoyo solo: la
+        // clasificación sale de aquí. El cerrojo sigue puesto, de modo que este sondeo no vuelve a
         // vaciar y no hay vuelta sin fin
         if (llegaron > 0) await fetchQuickMatch();
       } finally {
         escribiendoRef.current = false;
       }
     },
-    [quickMatchId, currentUserId, fetchQuickMatch]
+    [quickMatchId, currentUserId, fetchQuickMatch, pintaElGolpe]
   );
 
   // La ref se asigna en un efecto, no durante el render. El sondeo la lee
@@ -724,11 +772,12 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
         );
       };
       try {
-        if (participantId === myParticipant?.participantId) {
-          await submitQuickMatchHoleScoreUseCase.execute(quickMatchId, holeNumber, score);
-        } else {
-          await submitQuickMatchProxyHoleScoreUseCase.execute(quickMatchId, participantId, holeNumber, score);
-        }
+        const golpe = participantId === myParticipant?.participantId
+          ? await submitQuickMatchHoleScoreUseCase.execute(quickMatchId, holeNumber, score)
+          : await submitQuickMatchProxyHoleScoreUseCase.execute(quickMatchId, participantId, holeNumber, score);
+        // Antes de quitarlo de la cola: si no, hasta que llega la partida ese
+        // hoyo sale vacío, o con el número de antes (FE #607)
+        pintaElGolpe(golpe);
         if (!hayUnFalloPosterior()) setSaveError(null);
         // El servidor ya tiene lo bueno, así que lo que quedaba guardado de
         // ese mismo hoyo sobra. Dejarlo hace que el siguiente vaciado compare
@@ -792,7 +841,7 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
         setIsSubmitting(false);
       }
     },
-    [quickMatchId, isScorer, myParticipant, fetchQuickMatch, currentUserId, borraLoGuardadoDe]
+    [quickMatchId, isScorer, myParticipant, fetchQuickMatch, currentUserId, borraLoGuardadoDe, pintaElGolpe]
   );
 
   // Espejo de `completeMatch`: el backend exige creador para las dos
@@ -811,7 +860,7 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
       // anotando contra 409 en bucle.
       const actualizada = await cancelQuickMatchUseCase.execute(quickMatchId);
       // Invalida cualquier sondeo en vuelo: su foto es anterior al cierre
-      estadoSeqRef.current += 1;
+      marcaEscritura();
       if (actualizada) {
         setQuickMatch((previa) =>
           previa
@@ -838,7 +887,7 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
     } finally {
       setIsSubmitting(false);
     }
-  }, [quickMatchId, isCreator, fetchQuickMatch]);
+  }, [quickMatchId, isCreator, fetchQuickMatch, marcaEscritura]);
 
   const completeMatch = useCallback(async () => {
     if (!quickMatchId || !isCreator) return { ok: false };
@@ -853,7 +902,7 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
       // del POST— la pantalla seguiria creyendo la partida viva, editable y
       // anotando contra 409 en bucle.
       const actualizada = await completeQuickMatchUseCase.execute(quickMatchId);
-      estadoSeqRef.current += 1;
+      marcaEscritura();
       if (actualizada) {
         setQuickMatch((previa) =>
           previa
@@ -877,7 +926,7 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
     } finally {
       setIsSubmitting(false);
     }
-  }, [quickMatchId, isCreator, fetchQuickMatch]);
+  }, [quickMatchId, isCreator, fetchQuickMatch, marcaEscritura]);
 
   return {
     quickMatch,
