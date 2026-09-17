@@ -2147,3 +2147,169 @@ describe('useQuickMatchScoring · la partida que ya no existe (FE #557)', () => 
     expect(offlineQueue.marcaDesaparecida).toHaveBeenCalledWith('qm-1', 'user-1', false);
   });
 });
+
+/**
+ * LA TABLA — un guardado que falla no deja salir lo que sustituía (FE #605).
+ *
+ * El gemelo de competición: si la corrección no se puede guardar, el golpe
+ * viejo de ese hoyo sigue en la cola y un vaciado lo manda después.
+ *
+ *   #   camino                                   | qué pasa con el 4
+ *   ----|----------------------------------------|---------------------------------
+ *   5   con un vaciado en marcha                 | sale de la cola; se avisa
+ *   5b  se vuelve a guardar el MISMO golpe       | se queda: no sustituye nada
+ *   5c  el envío del 4 acaba, llegue o no        | el aviso del 5 SIGUE
+ *   6   envío directo que llega                  | sale de la cola
+ *   6b  y además no se pudo quitar al fallar     | sale al llegar: la hora de lo
+ *       |                                        | enviado no es la del 4 (gemelo
+ *       |                                        | del 6b de la #604)
+ *   7   envío directo que no llega               | sale de la cola; se avisa
+ *   8   resolver un desacuerdo, y el reencolado  | SE QUEDA: quitarlo perdería el
+ *       falla                                    | golpe que el jugador eligió
+ */
+describe('useQuickMatchScoring · un guardado que falla no deja salir lo sustituido (FE #605)', () => {
+  let cola;
+  let reloj;
+  let fallaEnHoyo;
+  let quitarFalla;
+
+  const mismo = (e, hoyo, quien, userId = null) =>
+    e.holeNumber === hoyo && e.participantId === quien && (e.userId ?? null) === (userId ?? null);
+  const guardada = (holeNumber, score, timestamp = 1) =>
+    ({ matchId: 'qm-1', holeNumber, participantId: 'user-1', scoreData: { score }, timestamp, userId: 'user-1' });
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    cola = [];
+    reloj = 1000;
+    fallaEnHoyo = null;
+    quitarFalla = false;
+    offlineQueue.getByMatch.mockImplementation(() => cola.map((e) => ({ ...e })));
+    offlineQueue.size.mockImplementation(() => cola.length);
+    offlineQueue.enqueue.mockImplementation((matchId, holeNumber, scoreData, participantId, userId = null) => {
+      if (holeNumber === fallaEnHoyo) return false;
+      cola = cola.filter((e) => !mismo(e, holeNumber, participantId, userId));
+      cola.push({ matchId, holeNumber, participantId, scoreData, timestamp: reloj++, userId });
+      return true;
+    });
+    offlineQueue.remove.mockImplementation((matchId, holeNumber, participantId, userId = null) => {
+      if (quitarFalla) {
+        quitarFalla = false;
+        return false;
+      }
+      cola = cola.filter((e) => !mismo(e, holeNumber, participantId, userId));
+      return true;
+    });
+    getGolfCourseUseCase.execute.mockResolvedValue({ holes: [], tees: [], name: 'Campo' });
+    getQuickMatchUseCase.execute.mockResolvedValue(mockQuickMatch);
+    submitQuickMatchHoleScoreUseCase.execute.mockResolvedValue({});
+    submitQuickMatchProxyHoleScoreUseCase.execute.mockResolvedValue({});
+  });
+
+  const monta = async () => {
+    const { result } = renderHook(() => useQuickMatchScoring('qm-1', 'user-1'));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    return result;
+  };
+
+  it('5 · con un vaciado en marcha: el 4 sale de la cola, no se manda, y se avisa', async () => {
+    // El vaciado va por el hoyo 3; el 4 del hoyo 5 espera detrás
+    let suelta;
+    submitQuickMatchHoleScoreUseCase.execute.mockImplementationOnce(() => new Promise((r) => { suelta = r; }));
+    cola = [{ ...guardada(3, 5), timestamp: 1 }, guardada(5, 4, 2)];
+    const result = await monta();
+    await waitFor(() => expect(submitQuickMatchHoleScoreUseCase.execute).toHaveBeenCalledTimes(1));
+    fallaEnHoyo = 5;
+
+    await act(async () => { await result.current.submitScore(5, 'user-1', 5); });
+
+    expect(cola.filter((e) => e.holeNumber === 5)).toEqual([]);
+    expect(result.current.saveError).toBeTruthy();
+    await act(async () => { suelta?.({}); });
+    await act(async () => { await new Promise((r) => setTimeout(r, 20)); });
+    expect(submitQuickMatchHoleScoreUseCase.execute).not.toHaveBeenCalledWith('qm-1', 5, 4);
+  });
+
+  it('5b · volver a guardar el MISMO golpe sin sitio no quita el que ya estaba', async () => {
+    // No sustituye nada: quitarlo perdería un golpe que el jugador no cambió
+    const result = await monta();
+    cola = [guardada(5, 4)];
+    fallaEnHoyo = 5;
+    submitQuickMatchHoleScoreUseCase.execute.mockRejectedValueOnce(new TypeError('Failed to fetch'));
+
+    await act(async () => { await result.current.submitScore(5, 'user-1', 4); });
+
+    expect(cola).toEqual([guardada(5, 4)]);
+  });
+
+  it.each([
+    ['no llega', (r) => r.falla(new TypeError('Failed to fetch'))],
+    ['llega', (r) => r.suelta({})],
+  ])('5c · el envío del 4 que %s no retira el aviso del 5 que no se pudo guardar', async (_, acaba) => {
+    const result = await monta();
+    let suelta;
+    let falla;
+    submitQuickMatchHoleScoreUseCase.execute.mockImplementationOnce(
+      () => new Promise((res, rej) => { suelta = res; falla = rej; })
+    );
+    let primero;
+    act(() => { primero = result.current.submitScore(5, 'user-1', 4); });
+    await waitFor(() => expect(submitQuickMatchHoleScoreUseCase.execute).toHaveBeenCalledTimes(1));
+    fallaEnHoyo = 5;
+
+    await act(async () => { await result.current.submitScore(5, 'user-1', 5); });
+    await act(async () => { acaba({ suelta, falla }); await primero; });
+
+    expect(result.current.saveError).toBeTruthy();
+  });
+
+  it('6 · envío directo que llega: el 4 no se queda en la cola', async () => {
+    const result = await monta();
+    cola = [guardada(5, 4)];
+    fallaEnHoyo = 5;
+
+    await act(async () => { await result.current.submitScore(5, 'user-1', 5); });
+
+    expect(cola).toEqual([]);
+  });
+
+  it('6b · si al fallar no se pudo quitar, sale al llegar el envío', async () => {
+    // La hora que se toma para decidir qué está superado no puede ser la del 4:
+    // si lo fuera, el 4 pasaría por lo recién enviado y se quedaría
+    const result = await monta();
+    cola = [guardada(5, 4)];
+    fallaEnHoyo = 5;
+    quitarFalla = true;
+
+    await act(async () => { await result.current.submitScore(5, 'user-1', 5); });
+
+    expect(cola).toEqual([]);
+  });
+
+  it('7 · envío directo que no llega: el 4 sale de la cola y se avisa', async () => {
+    const result = await monta();
+    cola = [guardada(5, 4)];
+    fallaEnHoyo = 5;
+    submitQuickMatchHoleScoreUseCase.execute.mockRejectedValueOnce(new TypeError('Failed to fetch'));
+
+    await act(async () => { await result.current.submitScore(5, 'user-1', 5); });
+
+    expect(cola).toEqual([]);
+    expect(result.current.saveError).toBeTruthy();
+  });
+
+  it('8 · resolver un desacuerdo con el reencolado fallido deja la entrada: es el golpe elegido', async () => {
+    getQuickMatchUseCase.execute.mockResolvedValue({
+      ...mockQuickMatch,
+      holeScores: [{ holeNumber: 7, participantId: 'user-1', score: 6, recordedByParticipantId: 'user-2' }],
+    });
+    cola = [guardada(7, 5)];
+    const result = await monta();
+    await waitFor(() => expect(result.current.discrepancias).toHaveLength(1));
+    fallaEnHoyo = 7;
+
+    await act(async () => { result.current.resuelveDiscrepancia(7, 'user-1', 'mio'); });
+
+    expect(cola).toEqual([guardada(7, 5)]);
+  });
+});

@@ -35,6 +35,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- **Una corrección que el móvil no puede guardar ya no deja salir el golpe que sustituía** (#605).
+  Sin cobertura se anotaba un 4; al corregirlo a 5 con el móvil lleno (o en una ventana privada) el
+  guardado fallaba y se avisaba, pero **el 4 seguía en la cola**: la cola solo quita lo anterior de
+  un hoyo cuando consigue escribir lo nuevo. Al volver la cobertura el vaciado mandaba el 4, y el
+  servidor se quedaba con un valor que el jugador había sustituido, sin aviso, mientras su pantalla
+  decía 5. Un hoyo vacío se ve y se pide otra vez; un golpe viejo parece bueno.
+
+  Ahora, si el guardado falla, **lo sustituido sale de la cola** y queda el aviso de volver a
+  anotarlo. Pasa en las dos pantallas y por todos los caminos: sin cobertura, con otro envío o un
+  vaciado en marcha, y con el envío directo, llegue o no. Cuatro cosas que se cuidan a propósito:
+
+  - **Sale solo el golpe que cambia de valor.** Competición manda los dos golpes del hoyo cada
+    vez: anotar el del marcado después del propio, con el móvil lleno, no puede llevarse por
+    delante un propio que nadie tocó. Si se corrige uno y el otro sigue igual, el otro se queda.
+    Volver a guardar el mismo golpe no quita nada.
+  - **Al resolver un desacuerdo no se quita nada.** Ahí se reencola la misma anotación con la
+    decisión tomada, y si esa escritura falla, quitarla perdería el golpe que el jugador eligió.
+  - **Se toca solo si sigue siendo lo que había antes de intentar guardar**, comparando hora y
+    valor, nunca por el número de hoyo: una corrección que entre justo entonces se queda. Y si
+    quitarlo también falla, no cambia nada y el aviso sigue puesto.
+  - **Un envío que ya iba de camino no retira ese aviso al acabar.** El aviso es de una corrección
+    posterior del mismo hoyo; sin esto, el envío anterior lo quitaba y el hoyo se quedaba vacío
+    sin que nadie lo dijera. En competición, si ese envío llega, la vista que se pide después
+    retira el aviso como con cada sondeo, igual que antes.
+
+  De paso, en partida rápida, cuando el guardado fallaba y el envío sí llegaba, se tomaba la hora
+  del golpe viejo como si fuera la del nuevo, así que el viejo no se borraba al llegar. Es el mismo
+  fallo que la #604 arregló en competición.
+
 - **Con el servidor caído y cobertura, la pantalla ya no suelta un error técnico ni se calla los
   golpes pendientes** (#617). Es el caso de campo más probable —un club con señal y la API abajo, o
   un error del servidor—, y salió al probar la #614 en local. Si el partido no se había abierto

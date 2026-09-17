@@ -13,6 +13,7 @@ import { errorDeGuardado } from '../utils/erroresDeAnotacion';
 import { seGuardaParaDespues } from '../utils/politicaDeLaCola';
 import * as offlineQueue from '../utils/scoringOfflineQueue';
 import { loQueSeSupo, olvida, recuerda } from '../services/loUltimoConocido';
+import { guardaLaCorreccion } from '../utils/guardaLaCorreccion';
 
 // Un minuto, y no diez segundos: esto es golf, entre hoyo y hoyo pasan minutos
 // y preguntar seis veces por minuto gasta batería y datos para nada. Lo que no
@@ -116,6 +117,13 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
   // cola —ya vaciada— ni en el servidor. Sin solaparse, el orden deja de
   // importar. Guardar en la cola no cuenta como escritura: no sale del móvil.
   const escribiendoRef = useRef(false);
+  // Qué anotación no se pudo guardar, y en qué turno (FE #605). Un envío que
+  // salió ANTES y acaba después no puede retirar ese aviso: es de una
+  // corrección posterior del mismo hoyo, y lo guardado de antes ya salió de la
+  // cola, así que sin aviso el hoyo se quedaba vacío sin que nadie lo dijera.
+  // Un contador y no la hora: la de la cola y la de aquí no son el mismo reloj
+  const anotacionRef = useRef(0);
+  const noSeGuardoRef = useRef(null);
   // El vaciado se declara más abajo y el sondeo está más arriba: la ref evita
   // reordenarlo todo y el ciclo de dependencias entre los dos
   const vaciarRef = useRef(null);
@@ -640,13 +648,25 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
   const submitScore = useCallback(
     async (holeNumber, participantId, score) => {
       if (!quickMatchId || !isScorer) return;
+      const estaAnotacion = ++anotacionRef.current;
+      const avisaQueNoSeGuardo = () => {
+        noSeGuardoRef.current = { holeNumber, participantId, anotacion: estaAnotacion };
+        setSaveError(errorDeGuardado(holeNumber));
+      };
+      const hayUnFalloPosterior = () => {
+        const fallo = noSeGuardoRef.current;
+        return Boolean(fallo)
+          && fallo.holeNumber === holeNumber
+          && fallo.participantId === participantId
+          && fallo.anotacion > estaAnotacion;
+      };
 
       // Con un vaciado en marcha no se manda: se guarda, y sale en el
       // siguiente sondeo detrás de lo que ya iba. Mandarlo ahora es la carrera
       // de arriba, y ahí lo que se pierde es la corrección del jugador
       if (escribiendoRef.current) {
-        if (offlineQueue.enqueue(quickMatchId, holeNumber, { score }, participantId, currentUserId, laPartidaRef.current) === false) {
-          setSaveError(errorDeGuardado(holeNumber));
+        if (guardaLaCorreccion(quickMatchId, holeNumber, { score }, participantId, currentUserId, laPartidaRef.current) === false) {
+          avisaQueNoSeGuardo();
           return;
         }
         setPendientes(offlineQueue.size(quickMatchId, currentUserId));
@@ -669,17 +689,22 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
       // tarda en rendirse sin cobertura, y si la aplicación se cerraba en ese
       // rato el golpe no estaba en ninguna parte (FE #561). Si el envío sale
       // bien se retira unas líneas más abajo, que es lo que ya se hacía
-      const seGuardo = offlineQueue.enqueue(
+      const seGuardo = guardaLaCorreccion(
         quickMatchId, holeNumber, { score }, participantId, currentUserId, laPartidaRef.current
       );
       // Cuándo quedó guardado esto, para saber después qué es anterior —y hay
       // que borrar— y qué llegó DESPUÉS, que es una corrección del jugador y
-      // se respeta
-      const cuandoSeGuardo = offlineQueue
-        .getByMatch(quickMatchId, currentUserId)
-        .find((e) => e.holeNumber === holeNumber && e.participantId === participantId
-          && (e.userId ?? null) === (currentUserId ?? null))
-        ?.timestamp ?? Date.now();
+      // se respeta. Si el móvil NO pudo guardarlo, lo que hay en la cola es una
+      // anotación anterior de ese hoyo, y tomarle la hora a esa la hacía pasar
+      // por esta: no se borraba al llegar el envío y el siguiente vaciado la
+      // mandaba encima (FE #605, gemelo del 6b de la #604 en competición)
+      const cuandoSeGuardo = seGuardo === false
+        ? Date.now()
+        : offlineQueue
+          .getByMatch(quickMatchId, currentUserId)
+          .find((e) => e.holeNumber === holeNumber && e.participantId === participantId
+            && (e.userId ?? null) === (currentUserId ?? null))
+          ?.timestamp ?? Date.now();
       // El contador de pendientes NO se toca aquí: con cobertura buena el
       // envío tarda un suspiro, y actualizarlo ya enseñaría «1 golpe guardado
       // en el móvil» en cada anotación para retirarlo acto seguido. Se pone
@@ -701,7 +726,7 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
         } else {
           await submitQuickMatchProxyHoleScoreUseCase.execute(quickMatchId, participantId, holeNumber, score);
         }
-        setSaveError(null);
+        if (!hayUnFalloPosterior()) setSaveError(null);
         // El servidor ya tiene lo bueno, así que lo que quedaba guardado de
         // ese mismo hoyo sobra. Dejarlo hace que el siguiente vaciado compare
         // lo viejo con lo que acaba de entrar, no coincidan, y se le pregunte
@@ -721,10 +746,10 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
           if (seGuardo === false) {
             // El error de red no es lo que hay que contar: lo que ha pasado es
             // que el móvil no lo ha podido guardar
-            setSaveError(errorDeGuardado(holeNumber));
+            avisaQueNoSeGuardo();
           } else {
             setPendientes(offlineQueue.size(quickMatchId, currentUserId));
-            setSaveError(null);
+            if (!hayUnFalloPosterior()) setSaveError(null);
             // Guardado en el móvil también cuenta: sigue habiendo anotación,
             // lo que ya no hay es nada perdido
             yaNoSePierde();
