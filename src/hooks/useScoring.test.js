@@ -2574,3 +2574,278 @@ describe('useScoring · un guardado que falla no deja salir lo sustituido (FE #6
     expect(enCola).toEqual([guardadaDe(5, golpe(4), 5000)]);
   });
 });
+
+/**
+ * LA TABLA — de dónde viene el fallo (FE #626).
+ *
+ * La pantalla enseña en el mismo recuadro un fallo al cargar la vista y uno al
+ * anotar, entregar o conceder, y no se tratan igual: el de carga se calla si lo
+ * que se ve sale de la foto —el aviso ámbar ya lo cuenta— y el de una acción
+ * se dice siempre, con su texto. Para eso el hook dice de dónde salió.
+ *
+ * Y un sondeo que falla no borra el de una acción: con el servidor caído falla
+ * cada 10 s. Solo lo que desmiente el partido (401/403/404) lo sustituye.
+ */
+describe('useScoring · de dónde viene el fallo (FE #626)', () => {
+  const rechazo = (status) => Object.assign(new Error(`HTTP ${status}`), { status });
+  const monta = async () => {
+    const app = renderHook(() => useScoring('m-1', 'u1'));
+    await waitFor(() => expect(app.result.current.isLoading).toBe(false));
+    return app;
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    almacen.clear();
+    Object.defineProperty(navigator, 'onLine', { value: true, configurable: true });
+    offlineQueue.getByMatch.mockReturnValue([]);
+    offlineQueue.enqueue.mockReturnValue(true);
+    getScoringViewUseCase.execute.mockResolvedValue(mockScoringView);
+  });
+
+  it('6 · el sondeo que falla es un fallo de carga', async () => {
+    getScoringViewUseCase.execute.mockRejectedValue(rechazo(503));
+    const { result } = await monta();
+
+    expect(result.current.error).toBeTruthy();
+    expect(result.current.origenDelError).toBe('carga');
+  });
+
+  it('1/2 · si el móvil no puede guardar el golpe, el fallo es del golpe', async () => {
+    const { result } = await monta();
+    offlineQueue.enqueue.mockReturnValue(false);
+    submitHoleScoreUseCase.execute.mockRejectedValue(new TypeError('Failed to fetch'));
+
+    await act(async () => { await result.current.submitScore(1, { ownScore: 5, markedPlayerId: 'u2' }); });
+
+    expect(result.current.error?.noSeGuardo).toBe(true);
+    expect(result.current.origenDelError).toBe('golpe');
+  });
+
+  it('1 · también sin cobertura, que no llega a enviar', async () => {
+    Object.defineProperty(navigator, 'onLine', { value: false, configurable: true });
+    const { result } = await monta();
+    offlineQueue.enqueue.mockReturnValue(false);
+
+    await act(async () => { await result.current.submitScore(1, { ownScore: 5, markedPlayerId: 'u2' }); });
+
+    expect(result.current.error?.noSeGuardo).toBe(true);
+    expect(result.current.origenDelError).toBe('golpe');
+  });
+
+  it.each([409, 400, 422])('3/4 · un golpe que el servidor rechaza con %s es un fallo del golpe', async (estado) => {
+    const { result } = await monta();
+    submitHoleScoreUseCase.execute.mockRejectedValue(rechazo(estado));
+
+    await act(async () => { await result.current.submitScore(1, { ownScore: 5, markedPlayerId: 'u2' }); });
+
+    expect(result.current.error?.status).toBe(estado);
+    expect(result.current.origenDelError).toBe('golpe');
+  });
+
+  it('5 · entregar la tarjeta que falla es un fallo de la tarjeta', async () => {
+    getScoringViewUseCase.execute.mockResolvedValue({
+      ...mockScoringView,
+      scores: Array.from({ length: 18 }, (_, i) => ({
+        holeNumber: i + 1,
+        playerScores: [{ userId: 'u1', validationStatus: 'match' }],
+      })),
+    });
+    const { result } = await monta();
+    submitScorecardUseCase.execute.mockRejectedValue(rechazo(409));
+
+    await act(async () => { await result.current.submitScorecard(); });
+
+    expect(result.current.error?.status).toBe(409);
+    expect(result.current.origenDelError).toBe('tarjeta');
+  });
+
+  it('5 · conceder que falla es un fallo de la concesión', async () => {
+    const { result } = await monta();
+    concedeMatchUseCase.execute.mockRejectedValue(rechazo(409));
+
+    await act(async () => { await result.current.concedeMatch('A', 'Lesión'); });
+
+    expect(result.current.error?.status).toBe(409);
+    expect(result.current.origenDelError).toBe('concesion');
+  });
+
+  it('9 · un sondeo bueno lo retira, con su origen', async () => {
+    const { result } = await monta();
+    submitHoleScoreUseCase.execute.mockRejectedValue(rechazo(409));
+    await act(async () => { await result.current.submitScore(1, { ownScore: 5, markedPlayerId: 'u2' }); });
+    expect(result.current.origenDelError).toBe('golpe');
+
+    await act(async () => { await result.current.refetch(); });
+
+    expect(result.current.error).toBeNull();
+    expect(result.current.origenDelError).toBeNull();
+  });
+
+  // Con el servidor caído el sondeo sigue fallando cada 10 s: si cada fallo de
+  // carga pisara el de la acción, el aviso de un golpe que no se guardó duraba
+  // hasta el siguiente sondeo y la casilla se quedaba vacía sin explicación
+  // (`/code-review` de la FE #626). Solo lo pisa lo que desmiente el partido
+  it.each([
+    ['sin respuesta', () => new TypeError('Failed to fetch')],
+    ['con un 503', () => rechazo(503)],
+  ])('11 · un sondeo que falla %s no pisa el aviso de un golpe', async (_, fallo) => {
+    const { result } = await monta();
+    offlineQueue.enqueue.mockReturnValue(false);
+    submitHoleScoreUseCase.execute.mockRejectedValue(new TypeError('Failed to fetch'));
+    await act(async () => { await result.current.submitScore(1, { ownScore: 5, markedPlayerId: 'u2' }); });
+    getScoringViewUseCase.execute.mockRejectedValue(fallo());
+
+    await act(async () => { await result.current.refetch(); });
+
+    expect(result.current.error?.noSeGuardo).toBe(true);
+    expect(result.current.origenDelError).toBe('golpe');
+  });
+
+  it.each([401, 403, 404])('11b · pero un %s al cargar sí: el partido ya no se puede anotar', async (estado) => {
+    const { result } = await monta();
+    submitHoleScoreUseCase.execute.mockRejectedValue(rechazo(409));
+    await act(async () => { await result.current.submitScore(1, { ownScore: 5, markedPlayerId: 'u2' }); });
+    getScoringViewUseCase.execute.mockRejectedValue(rechazo(estado));
+
+    await act(async () => { await result.current.refetch(); });
+
+    expect(result.current.error?.status).toBe(estado);
+    expect(result.current.origenDelError).toBe('carga');
+  });
+
+  it('2 · un golpe que el servidor rechaza lleva su hoyo, para poder decirlo (CodeRabbit)', async () => {
+    const { result } = await monta();
+    submitHoleScoreUseCase.execute.mockRejectedValue(rechazo(409));
+
+    await act(async () => { await result.current.submitScore(7, { ownScore: 5, markedPlayerId: 'u2' }); });
+
+    expect(result.current.error?.holeNumber).toBe(7);
+  });
+
+  // La ruta no lleva `key`: ir de un partido a otro reutiliza el hook, y un
+  // fallo es de SU partido (CodeRabbit en la PR #627)
+  describe('al cambiar de partido sin salir de la pantalla', () => {
+    const vistaDe = (id) => ({ ...mockScoringView, matchId: id });
+    const montaEn = async (id) => {
+      const app = renderHook(({ matchId }) => useScoring(matchId, 'u1'), { initialProps: { matchId: id } });
+      await waitFor(() => expect(app.result.current.isLoading).toBe(false));
+      return app;
+    };
+
+    // Con la carga del nuevo todavía en camino: si llegara, ella misma limpiaría
+    // el fallo y taparía que es de otro partido
+    it('12 · el fallo de una acción del partido anterior no se ve en el nuevo', async () => {
+      getScoringViewUseCase.execute.mockImplementation((id) =>
+        (id === 'm-1' ? Promise.resolve(vistaDe(id)) : new Promise(() => {})));
+      const app = await montaEn('m-1');
+      submitHoleScoreUseCase.execute.mockRejectedValue(rechazo(409));
+      await act(async () => { await app.result.current.submitScore(1, { ownScore: 5, markedPlayerId: 'u2' }); });
+      expect(app.result.current.origenDelError).toBe('golpe');
+
+      app.rerender({ matchId: 'm-2' });
+      await act(async () => { await new Promise((r) => setTimeout(r, 20)); });
+
+      expect(app.result.current.error).toBeNull();
+      expect(app.result.current.origenDelError).toBeNull();
+    });
+
+    it('12b · la carga fallida del nuevo no conserva el aviso del anterior', async () => {
+      getScoringViewUseCase.execute.mockImplementation((id) =>
+        (id === 'm-1' ? Promise.resolve(vistaDe(id)) : Promise.reject(rechazo(503))));
+      const app = await montaEn('m-1');
+      submitHoleScoreUseCase.execute.mockRejectedValue(rechazo(409));
+      await act(async () => { await app.result.current.submitScore(1, { ownScore: 5, markedPlayerId: 'u2' }); });
+
+      app.rerender({ matchId: 'm-2' });
+      await act(async () => { await new Promise((r) => setTimeout(r, 20)); });
+
+      expect(app.result.current.error?.status).toBe(503);
+      expect(app.result.current.origenDelError).toBe('carga');
+    });
+
+    it('12c · un rechazo tardío del anterior no pisa el fallo del nuevo', async () => {
+      getScoringViewUseCase.execute.mockImplementation((id) =>
+        (id === 'm-1' ? Promise.resolve(vistaDe(id)) : Promise.reject(rechazo(503))));
+      const app = await montaEn('m-1');
+      let rechazaTarde;
+      submitHoleScoreUseCase.execute.mockReturnValue(new Promise((_, rej) => { rechazaTarde = () => rej(rechazo(409)); }));
+      let envio;
+      act(() => { envio = app.result.current.submitScore(1, { ownScore: 5, markedPlayerId: 'u2' }); });
+
+      app.rerender({ matchId: 'm-2' });
+      await act(async () => { await new Promise((r) => setTimeout(r, 20)); });
+      expect(app.result.current.origenDelError).toBe('carga');
+
+      await act(async () => { rechazaTarde(); await envio; });
+
+      expect(app.result.current.error?.status).toBe(503);
+      expect(app.result.current.origenDelError).toBe('carga');
+    });
+
+    // Todo lo que escribe el fallo DESPUÉS de esperar al servidor: en ese rato se
+    // puede haber pasado a otro partido, y lo que conteste tarde el anterior —sea
+    // un fallo o un éxito que limpia— no toca el del nuevo
+    const conValidados = {
+      scores: Array.from({ length: 18 }, (_, i) => ({
+        holeNumber: i + 1,
+        playerScores: [{ userId: 'u1', validationStatus: 'match' }],
+      })),
+    };
+    const golpe = { ownScore: 5, markedPlayerId: 'u2' };
+    it.each([
+      ['un golpe que no se pudo guardar en el móvil', {
+        prepara: () => offlineQueue.enqueue.mockReturnValue(false),
+        casoDeUso: submitHoleScoreUseCase, lanza: (r) => r.submitScore(1, golpe),
+        acaba: (d) => d.falla(new TypeError('Failed to fetch')) }],
+      ['un golpe que llega', {
+        casoDeUso: submitHoleScoreUseCase, lanza: (r) => r.submitScore(1, golpe),
+        acaba: (d) => d.llega({ ...vistaDe('m-1') }) }],
+      ['un golpe que se queda en la cola por la red', {
+        casoDeUso: submitHoleScoreUseCase, lanza: (r) => r.submitScore(1, golpe),
+        acaba: (d) => d.falla(new TypeError('Failed to fetch')) }],
+      ['una tarjeta que falla', {
+        vista: conValidados, casoDeUso: submitScorecardUseCase, lanza: (r) => r.submitScorecard(),
+        acaba: (d) => d.falla(rechazo(409)) }],
+      ['una tarjeta que se entrega', {
+        vista: conValidados, casoDeUso: submitScorecardUseCase, lanza: (r) => r.submitScorecard(),
+        acaba: (d) => d.llega({ matchId: 'm-1' }) }],
+      ['una concesión que falla', {
+        casoDeUso: concedeMatchUseCase, lanza: (r) => r.concedeMatch('A', 'Lesión'),
+        acaba: (d) => d.falla(rechazo(409)) }],
+      ['una concesión que sale bien', {
+        casoDeUso: concedeMatchUseCase, lanza: (r) => r.concedeMatch('A', 'Lesión'),
+        acaba: (d) => d.llega({ status: 'CONCEDED' }) }],
+    ])('12d · %s del partido anterior no toca el fallo del nuevo', async (_, caso) => {
+      getScoringViewUseCase.execute.mockImplementation((id) =>
+        (id === 'm-1' ? Promise.resolve({ ...vistaDe(id), ...caso.vista }) : Promise.reject(rechazo(503))));
+      const app = await montaEn('m-1');
+      caso.prepara?.();
+      const d = {};
+      caso.casoDeUso.execute.mockReturnValue(new Promise((llega, falla) => { d.llega = llega; d.falla = falla; }));
+      let accion;
+      act(() => { accion = caso.lanza(app.result.current); });
+
+      app.rerender({ matchId: 'm-2' });
+      await act(async () => { await new Promise((r) => setTimeout(r, 20)); });
+      expect(app.result.current.error?.status).toBe(503);
+
+      await act(async () => { caso.acaba(d); await accion; await new Promise((r) => setTimeout(r, 20)); });
+
+      expect(app.result.current.error?.status).toBe(503);
+      expect(app.result.current.origenDelError).toBe('carga');
+    });
+  });
+
+  // Con un 503 y no con un 404, que ganaría igual por desmentir: la pantalla sin
+  // vista mira si el servidor CONTESTÓ, así que el último fallo de carga importa
+  it('11c · un fallo de carga sí pisa otro de carga', async () => {
+    getScoringViewUseCase.execute.mockRejectedValue(new TypeError('Failed to fetch'));
+    const { result } = await monta();
+    getScoringViewUseCase.execute.mockRejectedValue(rechazo(503));
+
+    await act(async () => { await result.current.refetch(); });
+
+    expect(result.current.error?.status).toBe(503);
+  });
+});
