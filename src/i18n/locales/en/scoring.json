@@ -173,6 +173,7 @@
     "failedToLoadLeaderboard": "Failed to load leaderboard",
     "failedToConcede": "Failed to concede match",
     "matchNotInProgress": "Match is not in progress",
+    "enElHoyo": "Hole {{hole}}.",
     "noSeGuardoEnElMovil": "The stroke could not be saved on this device: no space left, or a private window. Enter it again once space is freed.",
     "vaciado": {
       "no-se-pudo-borrar": "The stroke reached the server, but this device could not update its pending list. Do not enter it again: free up space on the device and the rest will go out on its own.",

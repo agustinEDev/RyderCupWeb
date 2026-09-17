@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 
 // Mock dependencies
@@ -701,5 +701,115 @@ describe('ScoringPage · el gemelo: el recuadro con partido en pantalla (FE #617
 
     expect(screen.queryByText(/Failed to fetch/)).not.toBeInTheDocument();
     expect(screen.queryByText(/localhost:8000/)).not.toBeInTheDocument();
+  });
+});
+
+/**
+ * LA TABLA — el recuadro rojo cuenta lo que falló (FE #626).
+ *
+ *   #   origen     | pintado de la foto | debe
+ *   ----|----------|--------------------|-----------------------------------------
+ *   1   golpe      | sí                 | rojo: no se guardó en el móvil, y el hoyo
+ *   2   golpe      | no                 | igual
+ *   3/4 golpe 4xx  | no                 | el texto de enviar la anotación
+ *   5   tarjeta    | no                 | el de enviar la tarjeta
+ *   5   concesión  | no                 | el de conceder
+ *   6   carga 5xx  | no                 | «no se ha podido cargar», como antes
+ *   7   carga      | sí                 | sin rojo: ya lo dice el ámbar
+ *   8   carga 404  | no                 | «ya no está», como antes
+ */
+describe('ScoringPage · el recuadro rojo cuenta lo que falló (FE #626)', () => {
+  const noSeGuardo = () => Object.assign(new Error('No se pudo guardar el golpe en el móvil'), {
+    holeNumber: 14, noSeGuardo: true, i18nKey: 'scoring:errors.noSeGuardoEnElMovil',
+  });
+  const rechazo = (status) => Object.assign(new Error(`HTTP ${status}`), { status });
+
+  afterEach(() => {
+    mockUseScoring.pintadoDeMemoria = false;
+    mockUseScoring.error = null;
+    mockUseScoring.origenDelError = null;
+  });
+
+  it('1 · pintado de la foto, el golpe que no se guardó en el móvil se dice, con su hoyo', () => {
+    mockUseScoring.pintadoDeMemoria = true;
+    mockUseScoring.error = noSeGuardo();
+    mockUseScoring.origenDelError = 'golpe';
+
+    render(<ScoringPage />);
+
+    expect(screen.getByTestId('pintado-de-memoria')).toBeInTheDocument();
+    expect(screen.getByText(/scoring:errors\.noSeGuardoEnElMovil/)).toBeInTheDocument();
+    expect(screen.getByText(/errors\.enElHoyo \{"hole":14\}/)).toBeInTheDocument();
+  });
+
+  it('2 · con la vista del servidor, el mismo texto y no el de carga', () => {
+    mockUseScoring.error = noSeGuardo();
+    mockUseScoring.origenDelError = 'golpe';
+
+    render(<ScoringPage />);
+
+    expect(screen.getByText(/scoring:errors\.noSeGuardoEnElMovil/)).toBeInTheDocument();
+    expect(screen.queryByText(/offline\.noSePudoCargar/)).not.toBeInTheDocument();
+  });
+
+  it.each([409, 400, 422])('3/4 · un golpe rechazado con %s dice que no se pudo enviar la anotación', (estado) => {
+    mockUseScoring.error = rechazo(estado);
+    mockUseScoring.origenDelError = 'golpe';
+
+    render(<ScoringPage />);
+
+    expect(screen.getByText('errors.failedToSubmitScore')).toBeInTheDocument();
+    expect(screen.queryByText(/offline\.noSePudoCargar/)).not.toBeInTheDocument();
+  });
+
+  it.each([
+    ['tarjeta', 'errors.failedToSubmitScorecard'],
+    ['concesion', 'errors.failedToConcede'],
+  ])('5 · un fallo al %s dice eso, no que no cargó', (origen, clave) => {
+    mockUseScoring.error = rechazo(409);
+    mockUseScoring.origenDelError = origen;
+
+    render(<ScoringPage />);
+
+    expect(screen.getByText(clave)).toBeInTheDocument();
+    expect(screen.queryByText(/offline\.noSePudoCargar/)).not.toBeInTheDocument();
+  });
+
+  it('un fallo de una acción sin hoyo no añade ningún hoyo', () => {
+    mockUseScoring.error = rechazo(409);
+    mockUseScoring.origenDelError = 'tarjeta';
+
+    render(<ScoringPage />);
+
+    expect(screen.queryByText(/errors\.enElHoyo/)).not.toBeInTheDocument();
+  });
+
+  it('6 · un fallo al cargar sigue diciendo que no se pudo cargar', () => {
+    mockUseScoring.error = rechazo(503);
+    mockUseScoring.origenDelError = 'carga';
+
+    render(<ScoringPage />);
+
+    expect(screen.getByText('offline.noSePudoCargar')).toBeInTheDocument();
+  });
+
+  it('7 · un fallo al cargar pintado de la foto no sale en rojo', () => {
+    mockUseScoring.pintadoDeMemoria = true;
+    mockUseScoring.error = rechazo(503);
+    mockUseScoring.origenDelError = 'carga';
+
+    render(<ScoringPage />);
+
+    expect(screen.queryAllByText('retry')).toHaveLength(0);
+    expect(screen.queryByText('offline.noSePudoCargar')).not.toBeInTheDocument();
+  });
+
+  it('8 · un 404 al cargar sigue diciendo que ya no está', () => {
+    mockUseScoring.error = rechazo(404);
+    mockUseScoring.origenDelError = 'carga';
+
+    render(<ScoringPage />);
+
+    expect(screen.getByText('errors.notFound')).toBeInTheDocument();
   });
 });

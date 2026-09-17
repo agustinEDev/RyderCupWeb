@@ -38,6 +38,7 @@ const ScoringPage = () => {
     currentHole,
     isLoading,
     error,
+    origenDelError,
     isSubmitting,
     matchSummary,
     isOffline,
@@ -78,6 +79,25 @@ const ScoringPage = () => {
   const motivoDe = (err) => {
     const clave = CLAVE_POR_ESTADO[err?.status ?? err?.response?.status];
     return clave ? t(clave) : t('offline.noSePudoCargar');
+  };
+
+  // Pero esa regla es la de NO HABER PODIDO CARGAR, y el recuadro enseña también
+  // lo que falla al anotar, entregar o conceder: con ella un golpe rechazado, o
+  // que no cupo en el móvil, se contaba como «no se ha podido cargar el
+  // partido» (FE #626). Lo de una acción dice primero lo suyo, si trae clave
+  // —el móvil lleno, que no tiene estado HTTP—, y si no, qué acción falló.
+  // Nunca el `message`, por lo mismo que arriba. Lo que no dice de dónde viene
+  // se sigue tomando por un fallo de carga, que es lo que era siempre
+  const CLAVE_POR_ACCION = {
+    golpe: 'errors.failedToSubmitScore',
+    tarjeta: 'errors.failedToSubmitScorecard',
+    concesion: 'errors.failedToConcede',
+  };
+  const falloDeUnaAccion = Boolean(CLAVE_POR_ACCION[origenDelError]);
+  const textoDelFallo = (err) => {
+    if (!falloDeUnaAccion) return motivoDe(err);
+    const texto = err?.i18nKey ? t(err.i18nKey) : t(CLAVE_POR_ACCION[origenDelError]);
+    return err?.holeNumber != null ? `${texto} ${t('errors.enElHoyo', { hole: err.holeNumber })}` : texto;
   };
 
   // Load leaderboard when tab changes to leaderboard
@@ -340,11 +360,13 @@ const ScoringPage = () => {
       )}
 
       {/* Inline error banner for post-load errors. Si la pantalla viene de la
-          foto, el fallo ya está contado arriba: el recuadro rojo encima sobra */}
-      {error && scoringView && !pintadoDeMemoria && (
+          foto, el fallo AL CARGAR ya está contado arriba y el rojo encima sobra;
+          el de una acción no: callarlo dejaba una casilla vaciada sin decir que
+          el golpe no se pudo guardar (FE #626) */}
+      {error && scoringView && (!pintadoDeMemoria || falloDeUnaAccion) && (
         <div className="max-w-4xl mx-auto px-4 pt-4">
           <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-center justify-between">
-            <p className="text-sm text-red-600">{motivoDe(error)}</p>
+            <p className="text-sm text-red-600">{textoDelFallo(error)}</p>
             <button
               onClick={refetch}
               className="px-3 py-1 text-xs bg-red-600 text-white rounded hover:bg-red-700"
