@@ -275,7 +275,7 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
   // vista toma un número al salir; al aplicarse, ese número pasa a ser «lo último
   // aplicado», y lo mismo cuando llega un envío, cuya respuesta ya trae el golpe.
   // Se descarta solo lo más viejo que eso (FE #606; partida rápida, FE #607):
-  // - NO «salió otra después», como hace partida rápida: aquí se sondea cada 10 s
+  // - NO «salió otra después», como hacía partida rápida: aquí se sondea cada 10 s
   //   sin esperar al anterior y las peticiones no tienen tope, así que con mala
   //   cobertura cada respuesta llegaría con otra ya en camino y la vista no se
   //   movería nunca
