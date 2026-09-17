@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [2.33.0] - 2026-09-17
 
 ### Added
 
@@ -63,6 +63,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   De paso, en partida rápida, cuando el guardado fallaba y el envío sí llegaba, se tomaba la hora
   del golpe viejo como si fuera la del nuevo, así que el viejo no se borraba al llegar. Es el mismo
   fallo que la #604 arregló en competición.
+
+- **Con mala cobertura, la pantalla de una partida rápida ya no se queda congelada** (#607). La
+  partida se preguntaba al servidor cada minuto sin esperar a la respuesta anterior, y también al
+  volver la red y al volver a la aplicación; como las peticiones no tienen tope de tiempo, una
+  respuesta lenta llegaba siempre con otra ya en camino y **se tiraba**, sus errores incluidos. La
+  pantalla se quedaba con lo último bueno, sin decir nada, hasta que una respuesta acertaba a ser la
+  última: exactamente la situación para la que existe todo lo demás.
+
+  Ahora una respuesta se descarta **solo si ya se aplicó algo más nuevo** —otra respuesta, terminar
+  o cancelar la partida, o un golpe que acaba de llegar—, que es la regla que competición usa desde
+  la #606. Lo que el contador protegía se mantiene: un 404 lento de un portal cautivo no borra una
+  partida ya cargada, un error viejo no pisa un estado bueno y una respuesta de la partida anterior
+  no se pinta en la nueva.
+
+  Y **el golpe que llega se pinta antes de salir de la cola**, tanto en el vaciado como en un envío
+  directo. Antes salía de la cola al llegar y la partida no se volvía a pedir hasta el final de la
+  pasada: en medio, ese hoyo no estaba ni en la cola ni en la pantalla, y con mala cobertura eso son
+  segundos con la casilla vacía —o con el número anterior si era una corrección—, que es justo lo
+  que invita a anotarlo dos veces. De paso, terminar o cancelar una partida que conteste cuando ya
+  se está mirando otra deja de pintarse encima de esa otra.
+
+- **El aviso rojo de un partido de competición dice qué ha fallado de verdad** (#626). Un fallo al
+  cargar la vista y uno al anotar, entregar la tarjeta o conceder compartían estado, y la pantalla
+  los trataba a todos como fallos de carga: si el partido se estaba pintando de lo guardado, el
+  recuadro **no salía**, así que «no se pudo guardar el golpe en el móvil» no se veía y la casilla
+  se vaciaba sin explicación; y en los demás casos se leía «no se ha podido cargar el partido»
+  aunque lo que hubiera pasado fuese un golpe rechazado por el servidor.
+
+  Ahora el fallo sabe de dónde viene y de qué partido es: el de carga se sigue callando bajo el
+  aviso ámbar, el de una acción **se dice siempre** con su texto y con el hoyo cuando lo hay, y un
+  sondeo que falla ya no borra el aviso de un golpe —con el servidor caído falla cada diez
+  segundos—, salvo que desmienta el partido. Los dos defectos eran de esta misma versión.
+
+- **El aviso de «no se pudo guardar el golpe en el móvil» explica los motivos de hoy.** Culpaba a
+  «una ventana privada», un caso de Safari en iOS 10 y anteriores: hoy la navegación privada guarda
+  datos y la aplicación instalada nunca va en privado. Ahora nombra lo que de verdad pasa —el
+  almacenamiento lleno, o el navegador con el guardado bloqueado— y qué hacer con cada uno. Vale
+  para competición y para partida rápida, que comparten el texto.
 
 - **Con el servidor caído y cobertura, la pantalla ya no suelta un error técnico ni se calla los
   golpes pendientes** (#617). Es el caso de campo más probable —un club con señal y la API abajo, o
