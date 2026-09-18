@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import {
+  horaDelCampo,
   partidosDelProximoDia,
   precargaElProximoDia,
   leeLosProximosPartidos,
@@ -312,6 +313,22 @@ describe('partidosSinCobertura', () => {
     });
   });
 
+  describe('la hora que se le enseña al jugador', () => {
+    it('es la del CAMPO, no la del móvil que mira', () => {
+      // Un torneo canario visto desde la península: `new Date(...)` más `Intl`
+      // habría dicho 07:00, que no es la hora a la que el servidor abre
+      expect(horaDelCampo('2026-09-19T06:00:00+01:00')).toBe('06:00');
+      expect(horaDelCampo('2026-09-19T06:00:00+02:00')).toBe('06:00');
+      expect(horaDelCampo('2026-09-19T18:00:00Z')).toBe('18:00');
+    });
+
+    it('una marca sin desfase no dice de dónde es: no se inventa', () => {
+      expect(horaDelCampo('2026-09-19T06:00:00')).toBeNull();
+      expect(horaDelCampo(null)).toBeNull();
+      expect(horaDelCampo('mañana')).toBeNull();
+    });
+  });
+
   describe('cuándo se puede anotar', () => {
     it('en juego, siempre', () => {
       expect(sePuedeAnotar(partido('m', '2026-09-17', { status: 'IN_PROGRESS' }), { desdeMemoria: false, ahora: HOY })).toBe(true);
@@ -327,6 +344,59 @@ describe('partidosSinCobertura', () => {
 
     it('programado para mañana, ni sin red', () => {
       expect(sePuedeAnotar(partido('m', '2026-09-18'), { desdeMemoria: true, ahora: HOY })).toBe(false);
+    });
+
+    /**
+     * LA TABLA de la FE #621 — la anotación abre sola a una hora (BE #305), y
+     * la hora la dice el servidor en `scoringOpensAt`, con el huso del CAMPO
+     * dentro. Aquí no se recalcula ninguna tabla de horas: se compara y ya.
+     *
+     *   #    caso                                          | se puede anotar
+     *   -----|----------------------------------------------|----------------
+     *   B2   programado y la hora ya pasó                    | sí
+     *   B3   programado y la hora no ha llegado              | no
+     *   B4   guardado por una versión vieja, sin la hora     | la regla de «es hoy»
+     *   B5   el servidor no manda hora (campo sin coordenadas)| no: solo con START
+     */
+    it('B2: programado y con red, si la hora de apertura ya pasó, sí', () => {
+      const abre = new Date(2026, 8, 17, 6, 0).toISOString();
+      expect(sePuedeAnotar(partido('m', '2026-09-17', { scoringOpensAt: abre }), { desdeMemoria: false, ahora: HOY })).toBe(true);
+    });
+
+    it('B3: programado y la hora aún no ha llegado, no', () => {
+      const abre = new Date(2026, 8, 17, 18, 0).toISOString();
+      expect(sePuedeAnotar(partido('m', '2026-09-17', { scoringOpensAt: abre }), { desdeMemoria: false, ahora: HOY })).toBe(false);
+    });
+
+    it('B3b: y sin red tampoco, que la hora la sigue diciendo el servidor', () => {
+      const abre = new Date(2026, 8, 17, 18, 0).toISOString();
+      expect(sePuedeAnotar(partido('m', '2026-09-17', { scoringOpensAt: abre }), { desdeMemoria: true, ahora: HOY })).toBe(false);
+    });
+
+    it('B4: lo guardado por una versión anterior no trae la hora: sigue la regla de «es hoy»', () => {
+      expect(sePuedeAnotar(partido('m'), { desdeMemoria: true, ahora: HOY })).toBe(true);
+      expect(sePuedeAnotar(partido('m', '2026-09-18'), { desdeMemoria: true, ahora: HOY })).toBe(false);
+    });
+
+    it('B5: un campo sin coordenadas no tiene hora, y con red manda el servidor', () => {
+      expect(sePuedeAnotar(partido('m', '2026-09-17', { scoringOpensAt: null }), { desdeMemoria: false, ahora: HOY })).toBe(false);
+    });
+
+    it('B5b: pero sin poder preguntar, el de HOY se sigue anotando aunque no tenga hora', () => {
+      // Si no, un campo sin coordenadas se queda sin anotación sin cobertura,
+      // que es justo lo que no se puede quitar (`/code-review`)
+      expect(sePuedeAnotar(partido('m', '2026-09-17', { scoringOpensAt: null }), { desdeMemoria: true, ahora: HOY })).toBe(true);
+      expect(sePuedeAnotar(partido('m', '2026-09-18', { scoringOpensAt: null }), { desdeMemoria: true, ahora: HOY })).toBe(false);
+    });
+
+    it('B5c: y una hora ilegible se trata igual que no tenerla', () => {
+      expect(sePuedeAnotar(partido('m', '2026-09-17', { scoringOpensAt: 'mañana' }), { desdeMemoria: true, ahora: HOY })).toBe(true);
+      expect(sePuedeAnotar(partido('m', '2026-09-17', { scoringOpensAt: 'mañana' }), { desdeMemoria: false, ahora: HOY })).toBe(false);
+    });
+
+    it('en juego manda el estado, aunque la hora no haya llegado', () => {
+      const abre = new Date(2026, 8, 17, 18, 0).toISOString();
+      expect(sePuedeAnotar(partido('m', '2026-09-17', { status: 'IN_PROGRESS', scoringOpensAt: abre }), { desdeMemoria: false, ahora: HOY })).toBe(true);
     });
   });
 });

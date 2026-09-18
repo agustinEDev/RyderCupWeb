@@ -21,6 +21,9 @@ class ScoringMapper {
       matchNumber: apiData.match_number,
       matchFormat: apiData.match_format,
       matchStatus: apiData.match_status,
+      // Cuando abre la anotacion de un partido aun programado (BE #305). Como
+      // en ScheduleMapper: ausente y null no son lo mismo
+      ...('scoring_opens_at' in apiData ? { scoringOpensAt: apiData.scoring_opens_at } : {}),
       isDecided: apiData.is_decided || false,
       decidedResult: apiData.decided_result
         ? {

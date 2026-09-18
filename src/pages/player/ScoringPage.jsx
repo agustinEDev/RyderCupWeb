@@ -5,6 +5,7 @@ import HeaderAuth from '../../components/layout/HeaderAuth';
 import { useAuth } from '../../hooks/useAuth';
 import { useScoring } from '../../hooks/useScoring';
 import { claveDelAvisoDelVaciado } from '../../utils/erroresDeAnotacion';
+import { abreMasTarde, horaDelCampo } from '../../services/partidosSinCobertura';
 import { getLeaderboardUseCase } from '../../composition';
 import HoleInput from '../../components/scoring/HoleInput';
 import HoleSelector from '../../components/scoring/HoleSelector';
@@ -21,6 +22,10 @@ import BlockLoader from '../../components/ui/BlockLoader';
 
 const TABS = ['input', 'scorecard', 'leaderboard'];
 
+// `setTimeout` no aguanta más de 2^31-1 ms: pasado eso dispara INMEDIATAMENTE y
+// en bucle. Una ronda a más de 24 días vista no necesita despertar a nadie
+const MAXIMO_TEMPORIZADOR_MS = 2 ** 31 - 1;
+
 const ScoringPage = () => {
   const { matchId } = useParams();
   const navigate = useNavigate();
@@ -32,6 +37,7 @@ const ScoringPage = () => {
   const [showConcedeModal, setShowConcedeModal] = useState(false);
   const [showSubmitModal, setShowSubmitModal] = useState(false);
   const [earlyEndDismissed, setEarlyEndDismissed] = useState(false);
+  const [, marcaLaHora] = useState(0);
   const {
     scoringView,
     scoresVisibles,
@@ -157,6 +163,31 @@ const ScoringPage = () => {
   // Get current hole data
   const courseHoleData = scoringView?.holes?.find((h) => h.holeNumber === currentHole);
   const currentHoleData = holeFor(currentUserId) ?? courseHoleData;
+
+  // La anotación de un partido programado abre sola a una hora (BE #305). Antes
+  // de esa hora no se ofrecen casillas: el servidor las rechazaría y el golpe
+  // se quedaría esperando en la cola sin que el jugador entienda por qué
+  const aunNoAbre = abreMasTarde({
+    status: scoringView?.matchStatus,
+    scoringOpensAt: scoringView?.scoringOpensAt,
+  });
+  // La hora del CAMPO, que es la que el servidor va a aplicar, no la del móvil:
+  // `Intl` sin `timeZone` formatea en el huso del aparato, y un torneo canario
+  // mirado desde la península anunciaba una hora que no era la suya. La cadena
+  // del servidor ya trae su desfase, así que se toma la hora TAL CUAL viene
+  const horaDeApertura = aunNoAbre ? horaDelCampo(scoringView?.scoringOpensAt) : null;
+
+  // Y que el aviso caduque solo: se calcula en el render, así que sin algo que
+  // vuelva a pintar se queda puesto. Con cobertura lo resuelve el sondeo, pero
+  // sin ella no corre —y es justo cuando el jugador está esperando a que abra
+  // para anotar en la cola—, así que se despierta a la hora en punto
+  useEffect(() => {
+    if (!aunNoAbre) return undefined;
+    const falta = aunNoAbre.getTime() - Date.now();
+    if (falta <= 0 || falta > MAXIMO_TEMPORIZADOR_MS) return undefined;
+    const aviso = setTimeout(() => marcaLaHora((n) => n + 1), falta + 1000);
+    return () => clearTimeout(aviso);
+  }, [aunNoAbre]);
   // Lo que se ve del hoyo: el servidor con lo que está en la cola encima, que lo
   // compone el hook (FE #606). La pantalla ya no guarda su propia copia de lo
   // anotado: nunca se vaciaba, así que un golpe rechazado seguía pintándose
@@ -447,7 +478,17 @@ const ScoringPage = () => {
               totalHoles={totalHoles}
             />
 
-            {currentHoleData && (
+            {aunNoAbre && (
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 text-sm">
+                <p className="font-medium text-amber-900">{t('notOpenYet.title')}</p>
+                <p className="mt-1 text-amber-800">
+                  {t('notOpenYet.opensAt', { hora: horaDeApertura })}
+                </p>
+                <p className="mt-1 text-amber-800">{t('notOpenYet.meanwhile')}</p>
+              </div>
+            )}
+
+            {currentHoleData && !aunNoAbre && (
               <HoleInput
                 key={currentHole}
                 holeNumber={currentHole}

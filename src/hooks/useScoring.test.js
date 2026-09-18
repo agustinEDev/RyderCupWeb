@@ -774,6 +774,47 @@ describe('useScoring', () => {
       expect(golpesPerdidos.pendientes('u1')).toHaveLength(1);
     });
 
+    /**
+     * LA TABLA de la FE #621 — no todo 409 es definitivo (BE #305).
+     *
+     *   #    rechazo                          | la anotación
+     *   -----|---------------------------------|---------------------------
+     *   A1   409 SCORING_NOT_OPEN_YET          | se QUEDA en la cola: abre luego
+     *   A2   409 de cualquier otro tipo        | se aparta, con aviso
+     */
+    it('A1: «aún no ha abierto» NO es definitivo: el golpe se queda en la cola', async () => {
+      // El partido abre a una hora (BE #305). Un golpe anotado antes —el reloj
+      // del móvil va adelantado, o se anotó sin cobertura— se arregla ESPERANDO,
+      // así que tirarlo es perder una vuelta que el servidor iba a aceptar
+      const rechazo = new Error('La anotacion de este partido abre a las 2026-09-19T06:00:00+02:00');
+      rechazo.status = 409;
+      rechazo.errorCode = 'SCORING_NOT_OPEN_YET';
+      submitHoleScoreUseCase.execute.mockRejectedValue(rechazo);
+
+      const { result } = renderHook(() => useScoring('m-1', 'u1'));
+      await waitFor(() => expect(result.current.isLoading).toBe(false));
+      await act(async () => {
+        await result.current.submitScore(7, { ownScore: 4, markedPlayerId: 'u2', markedScore: 5 });
+      });
+
+      expect(golpesPerdidos.pendientes('u1')).toHaveLength(0);
+      expect(offlineQueue.remove).not.toHaveBeenCalled();
+    });
+
+    it('A2: los demás 409 siguen siendo definitivos', async () => {
+      const rechazo = new Error('Partido no esta en estado para scoring');
+      rechazo.status = 409;
+      submitHoleScoreUseCase.execute.mockRejectedValue(rechazo);
+
+      const { result } = renderHook(() => useScoring('m-1', 'u1'));
+      await waitFor(() => expect(result.current.isLoading).toBe(false));
+      await act(async () => {
+        await result.current.submitScore(7, { ownScore: 4, markedPlayerId: 'u2', markedScore: 5 });
+      });
+
+      expect(golpesPerdidos.pendientes('u1')).toHaveLength(1);
+    });
+
     it('la que el servidor rechaza se descarta DEJANDO AVISO, no en silencio', async () => {
       // Un 4xx no se reintenta. Pero quitarla y callar hace desaparecer un
       // golpe sin que su dueño se entere, que es la mitad de la FE #521: aquí
