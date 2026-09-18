@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { esRechazoDefinitivo, seGuardaParaDespues, noLlegoAlServidor} from './politicaDeLaCola';
+import { esFalloDeTodaLaSesion, esRechazoDefinitivo, seGuardaParaDespues, noLlegoAlServidor} from './politicaDeLaCola';
 
 const errorCon = (status) => Object.assign(new Error(`HTTP ${status}`), { status });
 const errorDeRespuesta = (status) => Object.assign(new Error('boom'), { response: { status } });
@@ -32,6 +32,43 @@ describe('politicaDeLaCola', () => {
     // Unos errores lo traen arriba y otros dentro de `response`
     expect(esRechazoDefinitivo(errorDeRespuesta(409))).toBe(true);
     expect(seGuardaParaDespues(errorDeRespuesta(503))).toBe(true);
+  });
+
+  it('«aún no ha abierto» se guarda, aunque sea un 409: se arregla esperando', () => {
+    // BE #305: el partido abre a una hora. Un golpe anotado antes —reloj del
+    // móvil adelantado, o anotado sin cobertura— entrará cuando abra, así que
+    // descartarlo pierde una vuelta buena
+    const aunNoAbre = Object.assign(new Error('abre a las 06:00'), {
+      status: 409,
+      errorCode: 'SCORING_NOT_OPEN_YET',
+    });
+    expect(seGuardaParaDespues(aunNoAbre)).toBe(true);
+    expect(esRechazoDefinitivo(aunNoAbre)).toBe(false);
+  });
+
+  it('y lo lee también cuando el código viene dentro de la respuesta', () => {
+    const aunNoAbre = Object.assign(new Error('abre a las 06:00'), {
+      response: { status: 409, data: { error_code: 'SCORING_NOT_OPEN_YET' } },
+    });
+    expect(seGuardaParaDespues(aunNoAbre)).toBe(true);
+  });
+
+  it('y NO para el vaciado: es de esa anotación, no de la sesión', () => {
+    // El partido de la tarde aún no abre; el de la mañana sí. Tomarlo por un
+    // fallo de sesión dejaba sin enviar los golpes de la mañana que van detrás
+    const aunNoAbre = Object.assign(new Error('abre a las 18:00'), {
+      status: 409,
+      errorCode: 'SCORING_NOT_OPEN_YET',
+    });
+    expect(esFalloDeTodaLaSesion(aunNoAbre)).toBe(false);
+  });
+
+  it('otro 409 con código propio sigue siendo definitivo', () => {
+    const otro = Object.assign(new Error('tarjeta entregada'), {
+      status: 409,
+      errorCode: 'SCORECARD_ALREADY_SUBMITTED',
+    });
+    expect(esRechazoDefinitivo(otro)).toBe(true);
   });
 
   it('las dos preguntas son exactamente contrarias', () => {
