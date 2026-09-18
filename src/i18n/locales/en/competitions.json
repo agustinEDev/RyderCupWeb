@@ -223,7 +223,11 @@
       "dragToReorder": "Drag to reorder courses",
       "adding": "Adding course...",
       "requestNotAvailable": "Requesting new courses is not available in this view. Use the competition creation page.",
-      "tees": "Tees"
+      "tees": "Tees",
+      "manualStart": {
+        "title": "This course has to be started by hand",
+        "body": "Scoring will not open by itself: the competition's organiser has to start the match, and they need a connection. If the course has no signal, better done before setting off."
+      }
     }
   },
   "browse": {
