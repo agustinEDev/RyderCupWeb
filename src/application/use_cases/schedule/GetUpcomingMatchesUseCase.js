@@ -108,6 +108,11 @@ class GetUpcomingMatchesUseCase {
           competitionId: competition.id,
           competitionName: competition.name,
           roundDate: round.roundDate,
+          // La hora a la que abre la anotación la manda el servidor en la RONDA
+          // (BE #305) y quien decide si se ofrece anotar mira el PARTIDO, así
+          // que viaja con él. Si la ronda no la trae —servidor anterior— no se
+          // inventa: ausente y vacía significan cosas distintas
+          ...('scoringOpensAt' in round ? { scoringOpensAt: round.scoringOpensAt } : {}),
           sessionType: round.sessionType,
           matchFormat: round.matchFormat,
           golfCourseName: round.golfCourseName,
