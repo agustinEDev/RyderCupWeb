@@ -100,6 +100,26 @@ describe('Mis próximos partidos sin cobertura', () => {
     expect(screen.queryByTestId('upcoming-matches-desde-memoria')).not.toBeInTheDocument();
   });
 
+  it('cuando llega la hora de apertura, el botón sale solo (`/code-review`)', async () => {
+    // El jugador abre la lista esperando a que abra la anotación. La página se
+    // pinta UNA vez y no vuelve a hacerlo: sin un despertador, a la hora en
+    // punto el botón sigue sin estar y hay que recargar —en el tee y con mala
+    // cobertura—. Aquí la apertura se pone a dos segundos y el reloj se adelanta
+    // a mano, para que el temporizador de verdad sea el que dispare el repintado
+    const abre = new Date(Date.now() + 2000).toISOString();
+    mockLee.mockResolvedValue({ matches: [partido({ scoringOpensAt: abre })], complete: true });
+    mockVista.mockResolvedValue({ matchId: 'm-1', players: [{ userId: 'u-1' }] });
+
+    pinta();
+
+    await screen.findByTestId('upcoming-match-card');
+    expect(screen.queryByText('upcomingMatches.scoreMatch')).not.toBeInTheDocument();
+
+    vi.setSystemTime(new Date(2026, 8, 17, 9, 0));
+
+    expect(await screen.findByText('upcomingMatches.scoreMatch', {}, { timeout: 5000 })).toBeInTheDocument();
+  });
+
   it('sin red y con lista guardada: la enseña, lo avisa y deja anotar el de hoy', async () => {
     recuerdaLosPartidos([partido()]);
     mockLee.mockRejectedValue(new TypeError('Failed to fetch'));

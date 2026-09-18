@@ -58,6 +58,47 @@ describe('GetUpcomingMatchesUseCase', () => {
     expect(getScheduleUseCase.execute).not.toHaveBeenCalled();
   });
 
+  it('carries the round\'s opening hour onto each match', async () => {
+    // El servidor la manda en la RONDA (BE #305) y quien decide si se ofrece
+    // anotar mira el PARTIDO, así que tiene que viajar con él
+    const { useCase } = buildUseCase({
+      competitions: [{ id: 'c1', name: 'Cup', status: 'IN_PROGRESS' }],
+      schedules: {
+        c1: {
+          rounds: [
+            round(
+              [{ id: 'mine', status: 'SCHEDULED', teamAPlayers: [{ userId: USER }], teamBPlayers: [{ userId: RIVAL }] }],
+              { scoringOpensAt: '2026-08-10T06:00:00+02:00' }
+            ),
+          ],
+        },
+      },
+    });
+
+    const [partido] = await useCase.execute(USER);
+
+    expect(partido.scoringOpensAt).toBe('2026-08-10T06:00:00+02:00');
+  });
+
+  it('and does not invent one when the round has none', async () => {
+    // Una ronda de un servidor anterior a la BE #305: el campo no viene, y
+    // fingir un vacío quitaría el botón de anotar a TODO partido programado
+    const { useCase } = buildUseCase({
+      competitions: [{ id: 'c1', name: 'Cup', status: 'IN_PROGRESS' }],
+      schedules: {
+        c1: {
+          rounds: [
+            round([{ id: 'mine', status: 'SCHEDULED', teamAPlayers: [{ userId: USER }], teamBPlayers: [{ userId: RIVAL }] }]),
+          ],
+        },
+      },
+    });
+
+    const [partido] = await useCase.execute(USER);
+
+    expect('scoringOpensAt' in partido).toBe(false);
+  });
+
   it('keeps only the matches the player is actually in', async () => {
     const { useCase } = buildUseCase({
       competitions: [{ id: 'c1', name: 'Cup', status: 'IN_PROGRESS' }],

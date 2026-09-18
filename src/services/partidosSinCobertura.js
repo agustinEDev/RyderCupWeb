@@ -171,6 +171,19 @@ export const horaDelCampo = (iso, idioma = 'es') => {
 };
 
 /**
+ * De una lista de partidos, el instante de la PRÓXIMA apertura que queda por
+ * llegar, o `null` si no hay ninguna. Sirve para poner un solo despertador en
+ * la lista en vez de uno por tarjeta (FE #621, `/code-review`).
+ */
+export const laProximaApertura = (partidos, ahora = new Date()) => {
+  const pendientes = (partidos || [])
+    .map((partido) => abreMasTarde(partido, ahora))
+    .filter(Boolean)
+    .map((fecha) => fecha.getTime());
+  return pendientes.length > 0 ? Math.min(...pendientes) : null;
+};
+
+/**
  * La hora de apertura de un partido programado, si aún no ha llegado. La usa la
  * pantalla de anotación para decir CUÁNDO abre en vez de ofrecer casillas que
  * el servidor va a rechazar (FE #621). Devuelve la fecha, no un booleano,
