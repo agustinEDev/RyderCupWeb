@@ -29,7 +29,7 @@ const MAXIMO_TEMPORIZADOR_MS = 2 ** 31 - 1;
 const ScoringPage = () => {
   const { matchId } = useParams();
   const navigate = useNavigate();
-  const { t } = useTranslation('scoring');
+  const { t, i18n } = useTranslation('scoring');
   const { user, loading: isLoadingUser } = useAuth();
 
   const [activeTab, setActiveTab] = useState('input');
@@ -175,7 +175,9 @@ const ScoringPage = () => {
   // `Intl` sin `timeZone` formatea en el huso del aparato, y un torneo canario
   // mirado desde la península anunciaba una hora que no era la suya. La cadena
   // del servidor ya trae su desfase, así que se toma la hora TAL CUAL viene
-  const horaDeApertura = aunNoAbre ? horaDelCampo(scoringView?.scoringOpensAt) : null;
+  const horaDeApertura = aunNoAbre
+    ? horaDelCampo(scoringView?.scoringOpensAt, i18n.language)
+    : null;
 
   // Y que el aviso caduque solo: se calcula en el render, así que sin algo que
   // vuelva a pintar se queda puesto. Con cobertura lo resuelve el sondeo, pero

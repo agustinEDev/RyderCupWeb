@@ -147,11 +147,27 @@ export const leeLosProximosPartidos = async ({ lee, userId, pideLaVista, ahora =
  * pierde el desfase, y cualquier formateo posterior sale en la hora del móvil.
  * Una marca sin desfase no dice de dónde es, y ahí no se inventa nada.
  */
-export const horaDelCampo = (iso) => {
+export const horaDelCampo = (iso, idioma = 'es') => {
   const partes = /T(\d{2}):(\d{2})/.exec(String(iso ?? ''));
   if (!partes) return null;
-  const tieneDesfase = /(?:Z|[+-]\d{2}:?\d{2})$/.test(String(iso).trim());
-  return tieneDesfase ? `${partes[1]}:${partes[2]}` : null;
+  if (!/(?:Z|[+-]\d{2}:?\d{2})$/.test(String(iso).trim())) return null;
+
+  const [, hora, minuto] = partes;
+  // Una fecha de mentira con esa hora, formateada en UTC: así el huso del
+  // dispositivo no la mueve y el idioma sí decide cómo se escribe —«18:00» en
+  // español es «6:00 PM» en inglés—
+  const comoSeEscribe = new Date(Date.UTC(2000, 0, 1, Number(hora), Number(minuto)));
+  try {
+    return new Intl.DateTimeFormat(String(idioma || 'es').replace(/_/g, '-'), {
+      hour: '2-digit',
+      minute: '2-digit',
+      timeZone: 'UTC',
+    }).format(comoSeEscribe);
+  } catch {
+    // `Intl` lanza `RangeError` con una etiqueta que no entienda, y aquí eso
+    // tumbaría el render de la pantalla de anotación entera
+    return `${hora}:${minuto}`;
+  }
 };
 
 /**

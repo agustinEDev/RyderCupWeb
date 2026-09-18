@@ -327,6 +327,21 @@ describe('partidosSinCobertura', () => {
       expect(horaDelCampo(null)).toBeNull();
       expect(horaDelCampo('mañana')).toBeNull();
     });
+
+    it('y se escribe como se escriba en el idioma de quien mira (CodeRabbit)', () => {
+      // La hora es la del campo, pero el FORMATO es el del jugador: en inglés,
+      // «18:00» se lee como «6:00 PM». La hora en sí no se toca
+      expect(horaDelCampo('2026-09-19T18:00:00+02:00', 'en-US')).toMatch(/6:00\s?PM/i);
+      expect(horaDelCampo('2026-09-19T18:00:00+02:00', 'es-ES')).toBe('18:00');
+    });
+
+    it('una etiqueta de idioma rota no tumba la pantalla', () => {
+      // `Intl` lanza RangeError con `es_ES`, y aquí revienta el render entero de
+      // la anotación. Llega así desde `i18nextLng`
+      expect(horaDelCampo('2026-09-19T18:00:00+02:00', 'es_ES')).toBe('18:00');
+      expect(horaDelCampo('2026-09-19T18:00:00+02:00', 'en_US_POSIX')).toMatch(/6:00\s?PM/i);
+      expect(horaDelCampo('2026-09-19T18:00:00+02:00', '@@@')).toBe('18:00');
+    });
   });
 
   describe('cuándo se puede anotar', () => {
