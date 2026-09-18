@@ -1,3 +1,5 @@
+import { siViene } from '../../utils/campoSiViene';
+
 // src/infrastructure/mappers/ScheduleMapper.js
 
 /**
@@ -47,7 +49,7 @@ class ScheduleMapper {
       // y no abre solo», y que no venga el campo es «este servidor es anterior
       // a la BE #305». Con `?? null` un frontend desplegado antes que su
       // backend dejaba TODO partido programado sin boton de anotar
-      ...('scoring_opens_at' in apiRound ? { scoringOpensAt: apiRound.scoring_opens_at } : {}),
+      ...siViene(apiRound, 'scoring_opens_at', 'scoringOpensAt'),
       sessionType: apiRound.session_type,
       matchFormat: apiRound.match_format,
       handicapMode: apiRound.handicap_mode || null,

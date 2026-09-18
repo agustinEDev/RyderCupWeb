@@ -68,9 +68,27 @@ describe('ScheduleMapper · la hora a la que abre la anotación', () => {
     expect('scoringOpensAt' in dto).toBe(false);
   });
 
-  it('el partido no la lleva: buscarla ahí fue el fallo', () => {
-    const dto = ScheduleMapper.toMatchDTO(apiMatch());
+  it('el partido no la lleva ni aunque alguien la meta ahí: buscarla ahí fue el fallo', () => {
+    // Con `apiMatch()` a secas este test pasaba con el defecto dentro, porque
+    // el ejemplo tampoco traía el campo. Hay que dárselo para que signifique algo
+    const dto = ScheduleMapper.toMatchDTO(apiMatch({ scoring_opens_at: '2026-09-19T06:00:00+02:00' }));
 
     expect('scoringOpensAt' in dto).toBe(false);
+  });
+
+  // 3) Y por el punto de entrada de verdad: el fallo de la #631 fue de NIVEL de
+  // la respuesta, y un test que llama a `toRoundDTO` a pelo da por bueno el
+  // nivel que crea quien lo escribe. Este atraviesa el sobre `days[]` entero
+  it('y por el camino real, con el sobre de días que manda el servidor', () => {
+    const dto = ScheduleMapper.toScheduleDTO({
+      competition_id: 'c-1',
+      days: [{
+        date: '2026-09-19',
+        rounds: [apiRound({ scoring_opens_at: '2026-09-19T06:00:00+02:00' })],
+      }],
+    });
+
+    expect(dto.rounds[0].scoringOpensAt).toBe('2026-09-19T06:00:00+02:00');
+    expect('scoringOpensAt' in dto.rounds[0].matches[0]).toBe(false);
   });
 });

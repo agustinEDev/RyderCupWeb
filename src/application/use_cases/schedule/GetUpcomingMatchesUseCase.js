@@ -1,3 +1,5 @@
+import { siViene } from '../../../utils/campoSiViene';
+
 const SESSION_ORDER = { MORNING: 0, AFTERNOON: 1, EVENING: 2 };
 const UPCOMING_STATUSES = ['SCHEDULED', 'IN_PROGRESS'];
 
@@ -112,7 +114,7 @@ class GetUpcomingMatchesUseCase {
           // (BE #305) y quien decide si se ofrece anotar mira el PARTIDO, así
           // que viaja con él. Si la ronda no la trae —servidor anterior— no se
           // inventa: ausente y vacía significan cosas distintas
-          ...('scoringOpensAt' in round ? { scoringOpensAt: round.scoringOpensAt } : {}),
+          ...siViene(round, 'scoringOpensAt'),
           sessionType: round.sessionType,
           matchFormat: round.matchFormat,
           golfCourseName: round.golfCourseName,

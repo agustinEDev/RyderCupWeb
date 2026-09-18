@@ -5,8 +5,12 @@ import { useTranslation } from 'react-i18next';
 import HeaderAuth from '../../components/layout/HeaderAuth';
 import { useAuth } from '../../hooks/useAuth';
 import { getScoringViewUseCase, getUpcomingMatchesUseCase } from '../../composition';
-import { leeLosProximosPartidos, sePuedeAnotar } from '../../services/partidosSinCobertura';
+import { laProximaApertura, leeLosProximosPartidos, sePuedeAnotar } from '../../services/partidosSinCobertura';
 import BlockLoader from '../../components/ui/BlockLoader';
+
+// `setTimeout` no aguanta más de 2^31-1 ms: por encima dispara INMEDIATAMENTE y
+// en bucle. Una ronda a más de 24 días vista no necesita despertar a nadie
+const MAXIMO_TEMPORIZADOR_MS = 2 ** 31 - 1;
 
 const UpcomingMatchesPage = () => {
   const { t } = useTranslation('dashboard');
@@ -47,6 +51,20 @@ const UpcomingMatchesPage = () => {
       loadMatches();
     }
   }, [user, loadMatches]);
+
+  // Y un despertador para la hora en que abre el primero que esté por abrir: la
+  // lista se pinta UNA vez, así que quien la abre a las 05:50 esperando las
+  // 06:00 no vería aparecer el botón hasta recargar —en el tee y con mala
+  // cobertura, que es el peor momento para pedirle eso a nadie—
+  const [, marcaLaHora] = useState(0);
+  const proximaApertura = laProximaApertura(matches);
+  useEffect(() => {
+    if (proximaApertura === null) return undefined;
+    const falta = proximaApertura - Date.now();
+    if (falta <= 0 || falta > MAXIMO_TEMPORIZADOR_MS) return undefined;
+    const aviso = setTimeout(() => marcaLaHora((n) => n + 1), falta + 1000);
+    return () => clearTimeout(aviso);
+  }, [proximaApertura]);
 
   const formatDate = useCallback((dateStr) => {
       if (!dateStr) return '';
