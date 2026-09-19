@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Flag, Plus, Trash2, GripVertical, MapPin, Loader } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -255,6 +255,9 @@ const CompetitionGolfCoursesSection = ({ competition, canManage }) => {
   const [golfCourses, setGolfCourses] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isAdding, setIsAdding] = useState(false);
+  // Los campos cuya alta está viajando. Va en un ref y no en el estado porque se
+  // consulta y se apunta en el mismo suspiro, antes de que React vuelva a pintar
+  const enVuelo = useRef(new Set());
   const [showAddForm, setShowAddForm] = useState(false);
 
   // dnd-kit sensors
@@ -309,15 +312,21 @@ const CompetitionGolfCoursesSection = ({ competition, canManage }) => {
 
   const handleAddCourse = async (course) => {
     // El buscador ya no lo ofrece, pero la guarda se queda: así el aviso lo da la
-    // aplicación con sus palabras, en vez de enseñar el error crudo de la API
+    // aplicación con sus palabras, en vez de enseñar el error crudo de la API.
+    //
+    // Cuenta también los que están EN VUELO: el desplegable se puede volver a
+    // abrir mientras la petición viaja, y hasta que no vuelve `loadGolfCourses`
+    // la lista no sabe nada del que se acaba de elegir, así que el mismo campo
+    // pasaba la guarda dos veces y se mandaba dos veces
     const yaEsta =
       Boolean(course?.id) &&
-      golfCourses.some((gc) => gc.id === course.id);
+      (golfCourses.some((gc) => gc.id === course.id) || enVuelo.current.has(course.id));
     if (yaEsta) {
       customToast.info(t('detail.golfCourses.courseAlreadyAdded'));
       return;
     }
 
+    enVuelo.current.add(course.id);
     setIsAdding(true);
     try {
       await addGolfCourseToCompetitionUseCase.execute(competition.id, course.id);
@@ -328,6 +337,7 @@ const CompetitionGolfCoursesSection = ({ competition, canManage }) => {
       console.error('Error adding golf course:', error);
       customToast.error(error.message || t('detail.golfCourses.errorAdding'));
     } finally {
+      enVuelo.current.delete(course.id);
       setIsAdding(false);
     }
   };
@@ -425,7 +435,12 @@ const CompetitionGolfCoursesSection = ({ competition, canManage }) => {
               selectedCourse={null}
               // Los que ya tiene la competición, para no ofrecerlos otra vez: el
               // backend los rechaza, y sin esto el organizador se comía un error
-              // rojo de la API por elegir algo que la propia app le ofrecía (FE #644)
+              // rojo de la API por elegir algo que la propia app le ofrecía (FE #644).
+              //
+              // Los que están EN VUELO no se pasan aquí: viven en un ref, y leerlo
+              // durante el render no está permitido. De esos se encarga la guarda
+              // de `handleAddCourse`, que es donde importa: el segundo intento se
+              // para antes de salir
               idsYaElegidos={golfCourses.map((gc) => gc.id).filter(Boolean)}
               onCourseSelect={handleAddCourse}
               onRequestNewCourse={() => {

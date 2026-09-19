@@ -214,7 +214,12 @@ const GolfCourseSearchBox = ({
   // dos mentiras: que no hay campos cuando los hay pero ya son tuyos, y que
   // faltan resultados por ver cuando lo que falta ya lo tienes
   const yaAnadidos = encontrados.length - courses.length;
-  const total = (result.countryCode === countryCode ? result.total : 0) - yaAnadidos;
+  const totalServidor = result.countryCode === countryCode ? result.total : 0;
+  const total = totalServidor - yaAnadidos;
+  // Solo se puede decir «ya los tienes todos» si se han visto TODOS: el servidor
+  // manda como mucho PAGE_SIZE, y si hay más páginas puede quedar alguno sin
+  // añadir que no hemos llegado a ver. Entonces se calla y se pide afinar
+  const seHanVistoTodos = totalServidor <= PAGE_SIZE;
   const widened = result.countryCode === countryCode && result.widened;
   // El código del usuario llega tal cual lo guardó el backend y hay cuentas con
   // 'es' en minúsculas (`countryUtils.test.js`). Sin normalizar, los 802 campos
@@ -486,7 +491,7 @@ const GolfCourseSearchBox = ({
                   quien acaba de añadir el único que hay —y encima ofrecerle
                   pedirlo— es mandarle a los administradores un campo que ya
                   existe y que ya está en su lista (FE #644) */}
-              {yaAnadidos > 0 ? (
+              {yaAnadidos > 0 && seHanVistoTodos ? (
                 <p className="text-sm text-gray-600">
                   {t('searchBox.allAlreadyAdded', {
                     defaultValue: 'You have already added every course that matches',
@@ -499,7 +504,7 @@ const GolfCourseSearchBox = ({
                     {t('searchBox.noCoursesFound', 'No golf courses found')}
                   </p>
                   <p className="text-xs text-gray-500 mb-4">
-                    {searchQuery
+                    {searchQuery || yaAnadidos > 0
                       ? t('searchBox.tryDifferentSearch', 'Try a different search term or request a new course')
                       : t('searchBox.noCoursesInCountry', 'No approved courses in this country yet')}
                   </p>
