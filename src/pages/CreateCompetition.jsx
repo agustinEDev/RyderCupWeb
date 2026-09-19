@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router';
-import { Calendar, Trophy, MapPin, Settings, Plus, X, ChevronDown, Flag, Trash2 } from 'lucide-react';
+import { Trophy, Settings, Plus, X, ChevronDown, Flag, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import HeaderAuth from '../components/layout/HeaderAuth';
 import { useAuth } from '../hooks/useAuth';
@@ -22,6 +22,7 @@ import GolfCourseRequestModal from '../components/golf_course/GolfCourseRequestM
 import customToast from '../utils/toast';
 import FullScreenLoader from '../components/ui/FullScreenLoader';
 import CompetitionTypeChooser from '../components/competition/CompetitionTypeChooser';
+import { cupoDeJugadores, CUPO_POR_DEFECTO } from '../utils/cupoDeJugadores';
 
 
 // Helper function to get message className
@@ -30,6 +31,29 @@ const getMessageClassName = (type) => {
   if (type === 'error') return 'bg-red-50 text-red-800 border border-red-200';
   return 'bg-yellow-50 text-yellow-800 border border-yellow-200';
 };
+
+// Los avisos que apuntan a un campo de «Más opciones»: si salta uno de estos,
+// el plegable tiene que abrirse o el organizador no ve lo que le piden. El cupo
+// y el modo de juego ya no están aquí dentro: subieron al formulario
+// Para preguntar «¿vale lo que está plegado?» hay que dar por buenos los campos
+// de fuera: si no, el primer error de ellos taparía siempre al del plegable
+const FORMULARIO_MINIMO = {
+  competitionName: 'x',
+  startDate: '2026-01-01',
+  endDate: '2026-01-02',
+  country: { code: 'ES' },
+  adjacentCountry1: '',
+  adjacentCountry2: '',
+  golfCourses: [{ countryCode: 'ES' }],
+  numberOfPlayers: null,
+};
+
+const ERRORES_DE_LAS_OPCIONES = new Set([
+  'teamNamesRequired',
+  'teamNamesTooShort',
+  'teamNamesTooLong',
+  'handicapLimitRange',
+]);
 
 const CreateCompetition = () => {
   const navigate = useNavigate();
@@ -48,6 +72,11 @@ const CreateCompetition = () => {
   // El tipo se elige ANTES de rellenar nada (FE #639). Editando no se pregunta:
   // esa competición ya existe y su tipo no se cambia aquí
   const [tipoElegido, setTipoElegido] = useState(null);
+
+  // Lo que la API rellena sola no es una decisión que haya que tomar para poder
+  // crear nada: equipos, cupo, asignación y límite viven plegados, con lo que se
+  // acepta escrito debajo del botón (FE #637)
+  const [masOpciones, setMasOpciones] = useState(false);
 
   // Y al elegir, el formulario empieza por arriba. En el móvil los tres tipos
   // ocupan la pantalla y al tercero se llega con scroll: sin esto, el formulario
@@ -102,10 +131,26 @@ const CreateCompetition = () => {
 
     // RyderCup Settings
     playMode: 'HANDICAP',
-    numberOfPlayers: undefined,
-    teamAssignment: 'manual',
+    numberOfPlayers: CUPO_POR_DEFECTO,
+    teamAssignment: 'automatic',
     maxPlayingHandicap: undefined
   });
+
+  // El resumen del plegable no puede prometer un equipo que ya no está escrito
+  // Vaciar el campo en edición no puede recortar el cupo de una competición con
+  // gente ya aprobada: se conserva el que se cargó (`/code-review`)
+  const cupoCargado = useRef(CUPO_POR_DEFECTO);
+
+  // El aviso se pinta arriba del todo y el botón vive abajo: en un teléfono se
+  // pulsa «Crear» y no pasa nada visible. Hay que llevarlo a los ojos
+  // (`/code-review`)
+  const avisoRef = useRef(null);
+  // El resumen no puede prometer lo que el envío va a rechazar, y quien sabe si
+  // vale es la validación: aquí se le pregunta a ella, no a una copia de sus
+  // reglas que se quedaría vieja al añadir la siguiente (`/code-review`)
+  const faltaAlgoPlegado = ERRORES_DE_LAS_OPCIONES.has(
+    validateCompetitionForm({ ...formData, ...FORMULARIO_MINIMO })?.key
+  );
 
   // Golf Course Request Modal
   const [showRequestModal, setShowRequestModal] = useState(false);
@@ -207,11 +252,13 @@ const CreateCompetition = () => {
           showAdjacentCountry2: !!adjacentCountry2,
           golfCourses: golfCoursesData,
           playMode: competition.playMode || 'HANDICAP',
-          numberOfPlayers: competition.maxPlayers || undefined,
-          teamAssignment: competition.teamAssignment?.toLowerCase() || 'manual',
+          numberOfPlayers: competition.maxPlayers || CUPO_POR_DEFECTO,
+          teamAssignment: competition.teamAssignment?.toLowerCase() || 'automatic',
           maxPlayingHandicap: competition.maxPlayingHandicap ?? undefined
         };
 
+        // Lo que había guardado: vaciar el campo no puede recortarlo
+        cupoCargado.current = formDataToSet.numberOfPlayers;
         setFormData(formDataToSet);
 
       } catch (error) {
@@ -226,6 +273,13 @@ const CreateCompetition = () => {
     loadCompetitionData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [competitionId, allCountries]);
+
+  useEffect(() => {
+    if (!message.text) return;
+    // Instantáneo, no `smooth`: comprobado en Chrome, el suave no llega a
+    // ejecutarse desde aquí y el aviso se quedaba fuera de pantalla
+    avisoRef.current?.scrollIntoView({ block: 'center' });
+  }, [message.text]);
 
   const fetchCountries = async () => {
     try {
@@ -446,13 +500,18 @@ const CreateCompetition = () => {
       } else {
         setMessage({ type: 'error', text: t(`create.errors.${validationError.key}`) });
       }
+      // Si lo que falla vive dentro de «Más opciones», el aviso hablaba de un
+      // campo que no estaba en pantalla (`/code-review`)
+      if (ERRORES_DE_LAS_OPCIONES.has(validationError.key)) {
+        setMasOpciones(true);
+      }
       return;
     }
 
     setIsSubmitting(true);
 
     try {
-      const numPlayers = Number.parseInt(formData.numberOfPlayers, 10);
+      const numPlayers = cupoDeJugadores(formData.numberOfPlayers, cupoCargado.current);
       const countries = [];
       if (formData.adjacentCountry1) {
         countries.push(formData.adjacentCountry1);
@@ -546,14 +605,14 @@ const CreateCompetition = () => {
           <div className="layout-content-container flex flex-col max-w-[960px] flex-1">
             {/* Page Title */}
             <div className="flex flex-wrap justify-between gap-3 p-4">
-              <p className="text-gray-900 tracking-tight text-3xl md:text-[32px] font-bold leading-tight min-w-72">
+              <p data-testid="titulo-pantalla" className="hidden md:block text-gray-900 tracking-tight text-3xl md:text-[32px] font-bold leading-tight min-w-72">
                 {isEditMode ? (t('edit.title') || 'Edit Competition') : t('create.title')}
               </p>
             </div>
 
             {/* Message Display */}
             {message.text && (
-              <div className={`mx-4 mb-4 p-4 rounded-lg ${getMessageClassName(message.type)}`}>
+              <div ref={avisoRef} className={`mx-4 mb-4 p-4 rounded-lg ${getMessageClassName(message.type)}`}>
                 {message.text}
               </div>
             )}
@@ -580,16 +639,18 @@ const CreateCompetition = () => {
                 </button>
               )}
 
-              {/* Section 1: Competition Details */}
-              <div className="border border-gray-200 rounded-xl p-6">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                    <Trophy className="w-5 h-5 text-primary" />
+              {/* Lo básico de la competición, en UNA tarjeta: nombre, fechas y
+                  país eran tres, y cada una pagaba su icono y su marco. Medido a
+                  360 px, ese adorno costaba 230 px de scroll (Agustín, 19 sep) */}
+              <div data-testid="bloque-basico" className="border border-gray-200 rounded-xl p-4">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <Trophy className="w-4 h-4 text-primary" />
                   </div>
-                  <h3 className="text-gray-900 font-bold text-lg">{t('create.competitionDetails')}</h3>
+                  <h3 className="text-gray-900 font-bold text-base">{t('create.competitionDetails')}</h3>
                 </div>
 
-                <div className="space-y-4">
+                <div className="space-y-3">
                   <div>
                     <label htmlFor="competitionName" className="block text-sm font-medium text-gray-700 mb-1">
                       {t('create.competitionName')}
@@ -606,51 +667,7 @@ const CreateCompetition = () => {
                     />
                   </div>
 
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label htmlFor="teamOneName" className="block text-sm font-medium text-gray-700 mb-1">
-                        {t('create.teamOneName')}
-                      </label>
-                      <input
-                        id="teamOneName"
-                        type="text"
-                        name="teamOneName"
-                        value={formData.teamOneName}
-                        onChange={handleInputChange}
-                        placeholder={t('create.teamOneNamePlaceholder')}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-                      />
-                    </div>
-
-                    <div>
-                      <label htmlFor="teamTwoName" className="block text-sm font-medium text-gray-700 mb-1">
-                        {t('create.teamTwoName')}
-                      </label>
-                      <input
-                        id="teamTwoName"
-                        type="text"
-                        name="teamTwoName"
-                        value={formData.teamTwoName}
-                        onChange={handleInputChange}
-                        placeholder={t('create.teamTwoNamePlaceholder')}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Section 2: Schedule */}
-              <div className="border border-gray-200 rounded-xl p-6">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center">
-                    <Calendar className="w-5 h-5 text-accent" />
-                  </div>
-                  <h3 className="text-gray-900 font-bold text-lg">{t('create.schedule')}</h3>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div data-testid="fila-fechas" className="grid grid-cols-1 min-[400px]:grid-cols-2 gap-3">
                   <div>
                     <label htmlFor="startDate" className="block text-sm font-medium text-gray-700 mb-1">
                       {t('create.startDate')}
@@ -661,7 +678,7 @@ const CreateCompetition = () => {
                       name="startDate"
                       value={formData.startDate}
                       onChange={handleInputChange}
-                      className="w-auto px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                     />
                   </div>
 
@@ -675,22 +692,11 @@ const CreateCompetition = () => {
                       name="endDate"
                       value={formData.endDate}
                       onChange={handleInputChange}
-                      className="w-auto px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                     />
                   </div>
                 </div>
-              </div>
 
-              {/* Section 3: Location */}
-              <div className="border border-gray-200 rounded-xl p-6">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 rounded-lg bg-navy/10 flex items-center justify-center">
-                    <MapPin className="w-5 h-5 text-navy" />
-                  </div>
-                  <h3 className="text-gray-900 font-bold text-lg">{t('create.location')}</h3>
-                </div>
-
-                <div className="space-y-4">
                   {/* El país principal se elige entre los 200: es el único de
                       los tres selectores que necesita búsqueda, porque los
                       adyacentes ya listan solo países fronterizos */}
@@ -831,13 +837,13 @@ const CreateCompetition = () => {
 
               {/* Section 4: Golf Courses - Hidden in edit mode */}
               {!isEditMode && (
-              <div className="border border-gray-200 rounded-xl p-6">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center">
-                    <Flag className="w-5 h-5 text-green-700" />
+              <div className="border border-gray-200 rounded-xl p-4">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-8 h-8 rounded-lg bg-green-100 flex items-center justify-center">
+                    <Flag className="w-4 h-4 text-green-700" />
                   </div>
                   <div>
-                    <h3 className="text-gray-900 font-bold text-lg">{t('create.golfCourses')}</h3>
+                    <h3 className="text-gray-900 font-bold text-base">{t('create.golfCourses')}</h3>
                     <p className="text-sm text-gray-500">{t('create.golfCoursesSubtitle')}</p>
                   </div>
                 </div>
@@ -1008,13 +1014,15 @@ const CreateCompetition = () => {
               </div>
               )}
 
-              {/* Section 5: RyderCup Settings */}
-              <div className="border border-gray-200 rounded-xl p-6">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                    <Settings className="w-5 h-5 text-primary" />
+              {/* Section 5: RyderCup Settings — el formato se decide aquí, a la
+                  vista: cuántos sois y si se juega con hándicap son las dos
+                  preguntas que el organizador SÍ contesta (Agustín, 19 sep) */}
+              <div className="border border-gray-200 rounded-xl p-4">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <Settings className="w-4 h-4 text-primary" />
                   </div>
-                  <h3 className="text-gray-900 font-bold text-lg">{t('create.ryderCupSettings')}</h3>
+                  <h3 className="text-gray-900 font-bold text-base">{t('create.ryderCupSettings')}</h3>
                 </div>
 
                 <div className="space-y-4">
@@ -1049,17 +1057,90 @@ const CreateCompetition = () => {
                     </label>
                     <input
                       id="numberOfPlayers"
+                      data-testid="campo-jugadores"
                       type="number"
                       name="numberOfPlayers"
                       value={formData.numberOfPlayers === undefined ? '' : formData.numberOfPlayers}
                       onChange={handleInputChange}
+                      onBlur={() => setFormData(prev => ({
+                        ...prev,
+                        // Dejarlo en blanco no es «sin límite»: hay cupo igual, y
+                        // callárselo es enterarse con el jugador 13 fuera
+                        numberOfPlayers: cupoDeJugadores(prev.numberOfPlayers, cupoCargado.current),
+                      }))}
                       min="2"
                       max="100"
                       placeholder={t('create.numberOfPlayersPlaceholder')}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                     />
                   </div>
+                </div>
+              </div>
 
+              {/* Lo que no hay que decidir para crear: se pliega, pero se dice
+                  qué se acepta si nadie lo toca (FE #637) */}
+              <div className="border border-gray-200 rounded-xl">
+                <button
+                  type="button"
+                  data-testid="mas-opciones"
+                  onClick={() => setMasOpciones((abierto) => !abierto)}
+                  aria-expanded={masOpciones}
+                  className="flex w-full items-center justify-between gap-3 p-4 text-left"
+                >
+                  <span className="font-medium text-gray-900">{t('create.moreOptions')}</span>
+                  <span className="text-gray-500">{masOpciones ? '−' : '+'}</span>
+                </button>
+
+                {!masOpciones && (
+                  <p data-testid="resumen-opciones" className="px-4 pb-4 text-sm text-gray-600">
+                    {faltaAlgoPlegado
+                      ? t('create.moreOptionsIncomplete')
+                      : t('create.moreOptionsSummary', {
+                        equipo1: formData.teamOneName,
+                        equipo2: formData.teamTwoName,
+                        asignacion: t(`create.summary${formData.teamAssignment === 'automatic' ? 'Automatic' : 'Manual'}`),
+                        handicap: formData.maxPlayingHandicap
+                          ? t('create.summaryHandicapLimit', { limite: formData.maxPlayingHandicap })
+                          : t('create.summaryNoHandicapLimit'),
+                      })}
+                  </p>
+                )}
+
+                {masOpciones && (
+                  <div className="space-y-4 border-t border-gray-200 p-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label htmlFor="teamOneName" className="block text-sm font-medium text-gray-700 mb-1">
+                        {t('create.teamOneName')}
+                      </label>
+                      <input
+                        id="teamOneName"
+                        data-testid="campo-equipo-1"
+                        type="text"
+                        name="teamOneName"
+                        value={formData.teamOneName}
+                        onChange={handleInputChange}
+                        placeholder={t('create.teamOneNamePlaceholder')}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                      />
+                    </div>
+
+                    <div>
+                      <label htmlFor="teamTwoName" className="block text-sm font-medium text-gray-700 mb-1">
+                        {t('create.teamTwoName')}
+                      </label>
+                      <input
+                        id="teamTwoName"
+                        data-testid="campo-equipo-2"
+                        type="text"
+                        name="teamTwoName"
+                        value={formData.teamTwoName}
+                        onChange={handleInputChange}
+                        placeholder={t('create.teamTwoNamePlaceholder')}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                      />
+                    </div>
+                  </div>
                   {/* Team Assignment */}
                   <div>
                     <span className="block text-sm font-medium text-gray-700 mb-2">
@@ -1091,6 +1172,7 @@ const CreateCompetition = () => {
                     </label>
                     <input
                       id="maxPlayingHandicap"
+                      data-testid="campo-handicap"
                       type="number"
                       name="maxPlayingHandicap"
                       value={formData.maxPlayingHandicap === undefined ? '' : formData.maxPlayingHandicap}
@@ -1102,7 +1184,8 @@ const CreateCompetition = () => {
                     />
                     <p className="mt-1 text-xs text-gray-500">{t('create.maxPlayingHandicapHint')}</p>
                   </div>
-                </div>
+                  </div>
+                )}
               </div>
 
               {/* Submit Button */}

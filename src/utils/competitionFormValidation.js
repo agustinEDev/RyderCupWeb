@@ -1,4 +1,8 @@
 const MIN_PLAYERS = 2;
+const MIN_TEAM_NAME = 3;
+const MAX_TEAM_NAME = 50;
+const MIN_HANDICAP = 1;
+const MAX_HANDICAP = 54;
 const MAX_PLAYERS = 100;
 
 /**
@@ -19,8 +23,35 @@ export const validateCompetitionForm = (formData) => {
     return { key: 'nameRequired' };
   }
 
-  if (!formData.teamOneName?.trim() || !formData.teamTwoName?.trim()) {
+  // Los dos nombres se normalizan UNA vez y las tres comprobaciones miran lo
+  // mismo: la guarda de vacío usaba `?.trim()` y la de longitud `.trim()`, y esa
+  // asimetría convertía un valor no textual en un TypeError (`/code-review`)
+  const equipos = [formData.teamOneName, formData.teamTwoName].map(
+    (nombre) => (typeof nombre === 'string' ? nombre.trim() : '')
+  );
+  if (equipos.some((nombre) => !nombre)) {
     return { key: 'teamNamesRequired' };
+  }
+
+  // La API pide `min_length=3, max_length=50`: «EU» o un nombre kilométrico
+  // pasaban de largo y volvían como un 422 bajo el genérico «Error al crear la
+  // competición» (`/code-review`)
+  if (equipos.some((nombre) => nombre.length < MIN_TEAM_NAME)) {
+    return { key: 'teamNamesTooShort' };
+  }
+  if (equipos.some((nombre) => nombre.length > MAX_TEAM_NAME)) {
+    return { key: 'teamNamesTooLong' };
+  }
+
+  // El tope de hándicap vive dentro del plegable, y al plegarse el input se
+  // desmonta: con él se va el `min`/`max` del navegador, que era lo único que
+  // paraba un 99 camino de un 422 (`/code-review`)
+  const topeEscrito = formData.maxPlayingHandicap !== '' && formData.maxPlayingHandicap != null;
+  if (topeEscrito) {
+    const tope = Number.parseInt(formData.maxPlayingHandicap, 10);
+    if (Number.isNaN(tope) || tope < MIN_HANDICAP || tope > MAX_HANDICAP) {
+      return { key: 'handicapLimitRange' };
+    }
   }
 
   if (!formData.startDate || !formData.endDate) {
@@ -45,6 +76,13 @@ export const validateCompetitionForm = (formData) => {
   if (missingCourseCountryCodes.length > 0) {
     return { key: 'golfCoursesRequired', missingCourseCountryCodes };
   }
+
+  // Sin número no hay error: la competición sale con el cupo por defecto. Era
+  // obligatorio y nacía vacío, así que obligaba a decidir un tope de inscritos
+  // antes de poder crear nada — y quien monta una Ryder con sus amigos no tiene
+  // opinión sobre eso (FE #637)
+  const sinNumero = formData.numberOfPlayers === '' || formData.numberOfPlayers == null;
+  if (sinNumero) return null;
 
   const numPlayers = Number.parseInt(formData.numberOfPlayers, 10);
   if (Number.isNaN(numPlayers) || numPlayers < MIN_PLAYERS) {

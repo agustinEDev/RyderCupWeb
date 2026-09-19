@@ -123,4 +123,64 @@ describe('validateCompetitionForm', () => {
     });
     expect(result).toEqual({ key: 'nameRequired' });
   });
+
+  /**
+   * LA TABLA de la FE #637 — el formulario pedía ocho cosas obligatorias y la
+   * API solo exige cinco. Lo que el servidor rellena solo deja de ser una
+   * decisión del organizador:
+   *
+   *   #    caso                                   | qué pasa
+   *   -----|-----------------------------------------|---------------------
+   *   5    nº de jugadores vacío                     | vale: son 12
+   *   6    nº de jugadores 150                       | error: el tope es 100
+   *   7    un nombre de equipo en blanco             | error, como hasta ahora
+   */
+  it('5: sin número de jugadores es válido — serán 12', () => {
+    // Antes obligaba a escribirlo, y el campo nacía vacío: una decisión que
+    // nadie quería tomar antes de poder pulsar el botón
+    expect(validateCompetitionForm({ ...validFormData, numberOfPlayers: '' })).toBeNull();
+    expect(validateCompetitionForm({ ...validFormData, numberOfPlayers: null })).toBeNull();
+    expect(validateCompetitionForm({ ...validFormData, numberOfPlayers: undefined })).toBeNull();
+  });
+
+  it('6: pero un número imposible sigue siendo un error', () => {
+    // El tope de 100 no es del formulario: lo pone la API (`le=100`), así que
+    // saltárselo aquí solo cambia un aviso claro por un 422 del servidor
+    expect(validateCompetitionForm({ ...validFormData, numberOfPlayers: '150' })).toEqual({ key: 'playersMaximum' });
+    expect(validateCompetitionForm({ ...validFormData, numberOfPlayers: '1' })).toEqual({ key: 'playersMinimum' });
+    expect(validateCompetitionForm({ ...validFormData, numberOfPlayers: 'doce' })).toEqual({ key: 'playersMinimum' });
+  });
+
+  it('8: un nombre de equipo de dos letras lo para el formulario, no un 422', () => {
+    // La API pide `min_length=3` en `team_1_name`/`team_2_name`. «EU» y «US» son
+    // nombres perfectamente plausibles: pasaban de largo y volvían como un 422
+    // bajo el genérico «Error al crear la competición» (`/code-review`)
+    expect(validateCompetitionForm({ ...validFormData, teamOneName: 'EU' })).toEqual({ key: 'teamNamesTooShort' });
+    expect(validateCompetitionForm({ ...validFormData, teamTwoName: 'US' })).toEqual({ key: 'teamNamesTooShort' });
+    expect(validateCompetitionForm({ ...validFormData, teamOneName: 'Los' })).toBeNull();
+  });
+
+  it('9: y uno de 51 letras tampoco pasa: la API corta en 50 (el gemelo)', () => {
+    const largo = 'A'.repeat(51);
+    expect(validateCompetitionForm({ ...validFormData, teamOneName: largo })).toEqual({ key: 'teamNamesTooLong' });
+    expect(validateCompetitionForm({ ...validFormData, teamTwoName: largo })).toEqual({ key: 'teamNamesTooLong' });
+    expect(validateCompetitionForm({ ...validFormData, teamOneName: 'A'.repeat(50) })).toBeNull();
+  });
+
+  it('11: un nombre de equipo que no es texto da clave de error, no un TypeError', () => {
+    // La guarda de arriba usa `?.` y la de abajo no: hoy no se alcanza, pero la
+    // asimetría es la trampa (`/code-review`)
+    expect(() => validateCompetitionForm({ ...validFormData, teamOneName: 42 })).not.toThrow();
+    expect(validateCompetitionForm({ ...validFormData, teamOneName: 42 })).toHaveProperty('key');
+  });
+
+  it('10: el tope de hándicap fuera de 1–54 se para aquí', () => {
+    // Vive dentro del plegable, y al plegarse el input se desmonta: con él se
+    // fue el `min`/`max` del navegador, que era lo único que lo paraba
+    expect(validateCompetitionForm({ ...validFormData, maxPlayingHandicap: '99' })).toEqual({ key: 'handicapLimitRange' });
+    expect(validateCompetitionForm({ ...validFormData, maxPlayingHandicap: '0' })).toEqual({ key: 'handicapLimitRange' });
+    expect(validateCompetitionForm({ ...validFormData, maxPlayingHandicap: '54' })).toBeNull();
+    expect(validateCompetitionForm({ ...validFormData, maxPlayingHandicap: '' })).toBeNull();
+    expect(validateCompetitionForm({ ...validFormData, maxPlayingHandicap: undefined })).toBeNull();
+  });
 });
