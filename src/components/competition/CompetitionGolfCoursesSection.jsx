@@ -308,6 +308,16 @@ const CompetitionGolfCoursesSection = ({ competition, canManage }) => {
   };
 
   const handleAddCourse = async (course) => {
+    // El buscador ya no lo ofrece, pero la guarda se queda: así el aviso lo da la
+    // aplicación con sus palabras, en vez de enseñar el error crudo de la API
+    const yaEsta =
+      Boolean(course?.id) &&
+      golfCourses.some((gc) => gc.id === course.id);
+    if (yaEsta) {
+      customToast.info(t('detail.golfCourses.courseAlreadyAdded'));
+      return;
+    }
+
     setIsAdding(true);
     try {
       await addGolfCourseToCompetitionUseCase.execute(competition.id, course.id);
@@ -413,6 +423,10 @@ const CompetitionGolfCoursesSection = ({ competition, canManage }) => {
             <GolfCourseSearchBox
               countryCode={compatibleCountries[0] || null}
               selectedCourse={null}
+              // Los que ya tiene la competición, para no ofrecerlos otra vez: el
+              // backend los rechaza, y sin esto el organizador se comía un error
+              // rojo de la API por elegir algo que la propia app le ofrecía (FE #644)
+              idsYaElegidos={golfCourses.map((gc) => gc.id).filter(Boolean)}
               onCourseSelect={handleAddCourse}
               onRequestNewCourse={() => {
                 customToast.info(t('detail.golfCourses.requestNotAvailable'));

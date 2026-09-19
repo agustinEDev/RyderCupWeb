@@ -445,14 +445,23 @@ const CreateCompetition = () => {
   // campos, así que un duplicado que se colara dejaba el torneo hecho y un error
   // listando el mismo campo varias veces
   const handleGolfCourseSelect = (countryCode, course) => {
-    setFormData(prev => {
-      const yaEsta = prev.golfCourses.some(gc => gc.course?.id === course.id);
-      if (yaEsta) {
-        customToast.info(t('create.courseAlreadyAdded'));
-        return prev;
-      }
-      return { ...prev, golfCourses: [...prev.golfCourses, { countryCode, course }] };
-    });
+    // La comprobación va FUERA del `setFormData`: React ejecuta el actualizador
+    // dos veces en desarrollo (StrictMode) y puede repetirlo en un render que
+    // descarta, así que un aviso ahí dentro salía por duplicado. Un actualizador
+    // tiene que ser puro.
+    //
+    // Y se exige que el campo traiga `id`: sin eso, dos campos DISTINTOS sin id
+    // se tomaban por el mismo y el segundo se descartaba diciendo que ya estaba
+    const yaEsta =
+      Boolean(course?.id) && formData.golfCourses.some(gc => gc.course?.id === course.id);
+    if (yaEsta) {
+      customToast.info(t('create.courseAlreadyAdded'));
+      return;
+    }
+    setFormData(prev => ({
+      ...prev,
+      golfCourses: [...prev.golfCourses, { countryCode, course }],
+    }));
   };
 
   // Los que ya están, para que el buscador no vuelva a ofrecerlos

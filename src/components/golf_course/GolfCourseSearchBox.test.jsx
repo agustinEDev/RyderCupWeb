@@ -250,15 +250,50 @@ describe('GolfCourseSearchBox', () => {
       expect(screen.queryByText('Real Club de Golf')).not.toBeInTheDocument();
     });
 
-    it('ofrece pedir uno nuevo cuando ya están todos añadidos', async () => {
-      // Quedarse con la lista vacía y sin explicación es peor que no buscar:
-      // parece que el campo no existe cuando lo que pasa es que ya lo tienes
+    it('dice que ya los tienes, en vez de que no existen', async () => {
+      // Con el único campo del país ya añadido, la lista quedaba vacía y el
+      // buscador decía «no hay campos aprobados en este país» y ofrecía PEDIRLO:
+      // mandar a los administradores un campo que existe y que además ya está en
+      // tu lista. Le pasó a un organizador en Portugal, con el único campo que hay
       mockList.mockResolvedValue({ courses: [course('1', 'Real Club de Golf')], total: 1 });
 
       renderBox({ idsYaElegidos: ['1'] });
 
       fireEvent.focus(screen.getByRole('textbox'));
       fireEvent.change(screen.getByRole('textbox'), { target: { value: 'Real' } });
+
+      await waitFor(() => {
+        expect(screen.getByText(/already added every course/i)).toBeInTheDocument();
+      });
+      expect(screen.queryByText(/no golf courses found/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/request new golf course/i)).not.toBeInTheDocument();
+    });
+
+    it('no cuenta como pendientes los que ya tienes', async () => {
+      // Visto en el móvil: con dos campos y uno ya añadido, ponía «Mostrando 1 de
+      // 2. Sigue escribiendo para afinar» y el organizador buscaba un segundo que
+      // no iba a aparecer nunca, porque era el suyo
+      mockList.mockResolvedValue({
+        courses: [course('1', 'Real Club de Golf'), course('2', 'El Prat')],
+        total: 2,
+      });
+
+      renderBox({ idsYaElegidos: ['1'] });
+
+      fireEvent.focus(screen.getByRole('textbox'));
+      await waitFor(() => expect(screen.getByText('El Prat')).toBeInTheDocument());
+
+      expect(screen.queryByText(/showing 1 of 2|mostrando 1 de 2/i)).not.toBeInTheDocument();
+    });
+
+    it('sí ofrece pedir uno nuevo cuando de verdad no hay ninguno', async () => {
+      // El caso que SÍ debe ofrecerlo: la búsqueda no encuentra nada
+      mockList.mockResolvedValue({ courses: [], total: 0 });
+
+      renderBox();
+
+      fireEvent.focus(screen.getByRole('textbox'));
+      fireEvent.change(screen.getByRole('textbox'), { target: { value: 'Noexiste' } });
 
       await waitFor(() => {
         expect(screen.getByText(/request new golf course/i)).toBeInTheDocument();

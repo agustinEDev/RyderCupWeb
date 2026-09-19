@@ -208,10 +208,13 @@ const GolfCourseSearchBox = ({
   // Solo valen los resultados del país que se está mirando ahora, y sin los que
   // ya están en la lista de quien nos usa: ofrecerlos solo servía para añadir el
   // mismo campo dos veces (FE #644)
-  const courses = (result.countryCode === countryCode ? result.courses : []).filter(
-    (course) => !idsYaElegidos.includes(course.id)
-  );
-  const total = result.countryCode === countryCode ? result.total : 0;
+  const encontrados = result.countryCode === countryCode ? result.courses : [];
+  const courses = encontrados.filter((course) => !idsYaElegidos.includes(course.id));
+  // Cuántos se han quitado por estar ya en la lista. Hace falta para no decir
+  // dos mentiras: que no hay campos cuando los hay pero ya son tuyos, y que
+  // faltan resultados por ver cuando lo que falta ya lo tienes
+  const yaAnadidos = encontrados.length - courses.length;
+  const total = (result.countryCode === countryCode ? result.total : 0) - yaAnadidos;
   const widened = result.countryCode === countryCode && result.widened;
   // El código del usuario llega tal cual lo guardó el backend y hay cuentas con
   // 'es' en minúsculas (`countryUtils.test.js`). Sin normalizar, los 802 campos
@@ -478,22 +481,38 @@ const GolfCourseSearchBox = ({
           ) : (
             <div className="py-8 px-4 text-center">
               <AlertCircle className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-              <p className="text-sm text-gray-600 mb-2">
-                {t('searchBox.noCoursesFound', 'No golf courses found')}
-              </p>
-              <p className="text-xs text-gray-500 mb-4">
-                {searchQuery
-                  ? t('searchBox.tryDifferentSearch', 'Try a different search term or request a new course')
-                  : t('searchBox.noCoursesInCountry', 'No approved courses in this country yet')}
-              </p>
-              <button
-                type="button"
-                onClick={handleRequestNewCourse}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary/90 transition-colors"
-              >
-                <MapPin className="w-4 h-4" />
-                {t('searchBox.requestNewCourse', 'Request new golf course')}
-              </button>
+              {/* Que no quede nada por elegir PORQUE YA LO TIENES no es que no
+                  haya campos. Decir «no hay campos aprobados en este país» a
+                  quien acaba de añadir el único que hay —y encima ofrecerle
+                  pedirlo— es mandarle a los administradores un campo que ya
+                  existe y que ya está en su lista (FE #644) */}
+              {yaAnadidos > 0 ? (
+                <p className="text-sm text-gray-600">
+                  {t('searchBox.allAlreadyAdded', {
+                    defaultValue: 'You have already added every course that matches',
+                    count: yaAnadidos,
+                  })}
+                </p>
+              ) : (
+                <>
+                  <p className="text-sm text-gray-600 mb-2">
+                    {t('searchBox.noCoursesFound', 'No golf courses found')}
+                  </p>
+                  <p className="text-xs text-gray-500 mb-4">
+                    {searchQuery
+                      ? t('searchBox.tryDifferentSearch', 'Try a different search term or request a new course')
+                      : t('searchBox.noCoursesInCountry', 'No approved courses in this country yet')}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={handleRequestNewCourse}
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary/90 transition-colors"
+                  >
+                    <MapPin className="w-4 h-4" />
+                    {t('searchBox.requestNewCourse', 'Request new golf course')}
+                  </button>
+                </>
+              )}
             </div>
           )}
 
