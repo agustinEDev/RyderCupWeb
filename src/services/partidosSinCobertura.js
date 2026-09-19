@@ -140,12 +140,102 @@ export const leeLosProximosPartidos = async ({ lee, userId, pideLaVista, ahora =
 };
 
 /**
- * Con red manda el servidor: un partido se puede anotar cuando el creador lo
- * ha arrancado. Pintando de lo guardado el móvil no puede saberlo, y el de hoy
- * se deja anotar: si nadie llega a arrancarlo, el servidor rechaza los golpes
- * con un 409 y salen en el aviso de golpes perdidos, no en silencio.
+ * La hora «HH:MM» que trae una marca de tiempo del servidor, en el huso que ella
+ * misma declara —el del campo (BE #305)—, sin pasarla por el del dispositivo.
+ *
+ * Se lee de la propia cadena por eso: `new Date(iso)` conserva el instante pero
+ * pierde el desfase, y cualquier formateo posterior sale en la hora del móvil.
+ * Una marca sin desfase no dice de dónde es, y ahí no se inventa nada.
+ */
+export const horaDelCampo = (iso, idioma = 'es') => {
+  const partes = /T(\d{2}):(\d{2})/.exec(String(iso ?? ''));
+  if (!partes) return null;
+  if (!/(?:Z|[+-]\d{2}:?\d{2})$/.test(String(iso).trim())) return null;
+
+  const [, hora, minuto] = partes;
+  // Una fecha de mentira con esa hora, formateada en UTC: así el huso del
+  // dispositivo no la mueve y el idioma sí decide cómo se escribe —«18:00» en
+  // español es «6:00 PM» en inglés—
+  const comoSeEscribe = new Date(Date.UTC(2000, 0, 1, Number(hora), Number(minuto)));
+  try {
+    return new Intl.DateTimeFormat(String(idioma || 'es').replace(/_/g, '-'), {
+      hour: '2-digit',
+      minute: '2-digit',
+      timeZone: 'UTC',
+    }).format(comoSeEscribe);
+  } catch {
+    // `Intl` lanza `RangeError` con una etiqueta que no entienda, y aquí eso
+    // tumbaría el render de la pantalla de anotación entera
+    return `${hora}:${minuto}`;
+  }
+};
+
+/**
+ * De una lista de partidos, el instante de la PRÓXIMA apertura que queda por
+ * llegar, o `null` si no hay ninguna. Sirve para poner un solo despertador en
+ * la lista en vez de uno por tarjeta (FE #621, `/code-review`).
+ */
+export const laProximaApertura = (partidos, ahora = new Date()) => {
+  const pendientes = (partidos || [])
+    .map((partido) => abreMasTarde(partido, ahora))
+    .filter(Boolean)
+    .map((fecha) => fecha.getTime());
+  return pendientes.length > 0 ? Math.min(...pendientes) : null;
+};
+
+/**
+ * La hora de apertura de un partido programado, si aún no ha llegado. La usa la
+ * pantalla de anotación para decir CUÁNDO abre en vez de ofrecer casillas que
+ * el servidor va a rechazar (FE #621). Devuelve la fecha, no un booleano,
+ * porque quien pregunta necesita enseñarla.
+ */
+export const abreMasTarde = ({ status, scoringOpensAt }, ahora = new Date()) => {
+  if (status !== 'SCHEDULED' || !scoringOpensAt) return null;
+  const abre = new Date(scoringOpensAt);
+  if (Number.isNaN(abre.getTime()) || ahora >= abre) return null;
+  return abre;
+};
+
+/**
+ * Un partido en juego se anota siempre. Uno programado, desde la hora a la que
+ * la anotación abre sola (BE #305): la manda el servidor en `scoringOpensAt`,
+ * con el huso del CAMPO ya dentro, así que aquí solo se compara —la tabla de
+ * horas vive en el servidor y en un sitio solo (FE #621)—.
+ *
+ * Dos casos sin hora, que no son el mismo:
+ *
+ *   - El servidor la manda VACÍA: ese campo no tiene coordenadas, no abre solo
+ *     y hay que arrancarlo a mano. Con red no se ofrece anotar; sin ella se
+ *     aplica la misma regla de abajo, que anotar sin cobertura no se le quita
+ *     a nadie.
+ *   - No viene el campo: lo guardó una versión anterior a la BE #305. Se
+ *     conserva la regla de entonces —el programado de HOY se deja anotar sin
+ *     red—, para no dejar tirado en el campo a un móvil que se preparó con la
+ *     versión vieja. Si nadie lo arranca, el servidor rechaza los golpes y
+ *     salen en el aviso de golpes perdidos, no en silencio.
+ *
+ * El reloj del móvil es el único que hay sin cobertura, así que uno adelantado
+ * puede ofrecer anotar antes de tiempo. El servidor lo rechaza igual, y ese
+ * rechazo es reintentable: el golpe se queda en la cola, no se pierde.
  */
 export const sePuedeAnotar = (partido, { desdeMemoria, ahora = new Date() }) => {
   if (partido?.status === 'IN_PROGRESS') return true;
-  return Boolean(desdeMemoria && partido?.status === 'SCHEDULED' && partido.roundDate === fechaLocal(ahora));
+  if (partido?.status !== 'SCHEDULED') return false;
+
+  const deHoyYSinPoderPreguntar = () => Boolean(
+    desdeMemoria && partido.roundDate === fechaLocal(ahora)
+  );
+
+  if (partido.scoringOpensAt !== undefined) {
+    // Sin hora: ese campo no tiene coordenadas y no abre solo. Con red manda el
+    // servidor y no se ofrece. Sin red NO se le quita al jugador lo que ya
+    // tenía: el partido de hoy se deja anotar y los golpes esperan en la cola,
+    // que es la regla de producto de anotar sin cobertura
+    if (!partido.scoringOpensAt) return deHoyYSinPoderPreguntar();
+    const abre = new Date(partido.scoringOpensAt);
+    if (Number.isNaN(abre.getTime())) return deHoyYSinPoderPreguntar();
+    return ahora >= abre;
+  }
+
+  return deHoyYSinPoderPreguntar();
 };

@@ -155,6 +155,53 @@ describe('ScoringPage · la casilla, el selector y la tarjeta leen lo que se ve 
     mockUseScoring.scoresVisibles = [];
   });
 
+  /**
+   * LA TABLA de la FE #621, parte de pantalla — un partido programado abre a su
+   * hora (BE #305):
+   *
+   *   #    situación                          | la pantalla
+   *   -----|-----------------------------------|---------------------------
+   *   C1   programado y aún no abre            | dice cuándo, y sin casillas
+   *   C2   programado y ya abrió               | casillas: el golpe lo abre
+   *   C3   programado sin hora (sin coordenadas)| casillas, como siempre
+   */
+  // Con `afterEach`, no devolviéndola al final del test: si una aserción falla,
+  // el `scoringView` mutado se quedaba puesto y tumbaba los tests siguientes
+  // del fichero, que es como un fallo se convierte en veinte sin relación
+  const vistaOriginal = mockUseScoring.scoringView;
+  afterEach(() => { mockUseScoring.scoringView = vistaOriginal; });
+
+  const conVista = (extra) => {
+    mockUseScoring.scoringView = { ...vistaOriginal, ...extra };
+  };
+
+  it('C1 · programado y antes de su hora: dice cuándo abre y no ofrece casillas', () => {
+    const dentroDeUnaHora = new Date(Date.now() + 3600 * 1000).toISOString();
+    conVista({ matchStatus: 'SCHEDULED', scoringOpensAt: dentroDeUnaHora });
+
+    render(<ScoringPage />);
+
+    expect(screen.queryByTestId('hole-input')).not.toBeInTheDocument();
+    expect(screen.getByText(/notOpenYet.title|no ha abierto/i)).toBeInTheDocument();
+  });
+
+  it('C2 · programado pero su hora ya pasó: casillas, que el primer golpe lo abre', () => {
+    const haceUnaHora = new Date(Date.now() - 3600 * 1000).toISOString();
+    conVista({ matchStatus: 'SCHEDULED', scoringOpensAt: haceUnaHora });
+
+    render(<ScoringPage />);
+
+    expect(screen.getByTestId('hole-input')).toBeInTheDocument();
+  });
+
+  it('C3 · programado y sin hora —campo sin coordenadas—: como siempre', () => {
+    conVista({ matchStatus: 'SCHEDULED', scoringOpensAt: null });
+
+    render(<ScoringPage />);
+
+    expect(screen.getByTestId('hole-input')).toBeInTheDocument();
+  });
+
   it('Q11 · los tres reciben la vista con la cola, no solo lo del servidor', () => {
     // El servidor no tiene el hoyo 1 (`scoringView.scores` vacío); la cola sí
     const conLaCola = [{

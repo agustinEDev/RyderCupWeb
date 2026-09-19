@@ -10,7 +10,9 @@
  * - **Se guarda** para enviarlo más tarde. La cola vive en el móvil, así que
  *   el golpe sigue ahí cuando su dueño vuelva a entrar.
  * - **Se descarta**, porque el servidor ha dicho que esa anotación no entra y
- *   no va a entrar. Reintentarla en cada reconexión no la va a salvar.
+ *   no va a entrar. Reintentarla en cada reconexión no la va a salvar. Ojo al
+ *   matiz: «no entra AHORA» no es «no va a entrar» —la anotación que aún no ha
+ *   abierto se arregla esperando—, y por eso esa se guarda.
  *
  * Nunca hay un tercer desenlace en el que el golpe desaparece sin más.
  */
@@ -25,8 +27,19 @@ const SE_ARREGLA_SOLO = new Set([401, 408, 429]);
 const PRIMER_ERROR_DEL_CLIENTE = 400;
 const PRIMER_ERROR_DEL_SERVIDOR = 500;
 
+// El rechazo que se arregla ESPERANDO: la anotación de ese partido abre a una
+// hora y todavía no ha llegado (BE #305). Llega como 409 —el golpe no entra
+// AHORA—, pero entrará, así que descartarlo pierde una vuelta que el servidor
+// iba a aceptar. Pasa con el reloj del móvil adelantado, y con lo anotado sin
+// cobertura antes de la hora. El servidor lo manda en la RAÍZ del cuerpo, no
+// dentro de `detail`, precisamente para que se pueda leer aquí
+const CODIGOS_QUE_SE_ARREGLAN_ESPERANDO = new Set(['SCORING_NOT_OPEN_YET']);
+
 /** El código HTTP de un error, mire donde mire quien lo lanzó. */
 const codigoDe = (error) => error?.status ?? error?.response?.status;
+
+/** El código propio del servidor, que dice de qué rechazo se trata. */
+const codigoPropioDe = (error) => error?.errorCode ?? error?.response?.data?.error_code;
 
 /**
  * Si esta anotación hay que guardarla para intentarlo más tarde.
@@ -39,6 +52,7 @@ export const seGuardaParaDespues = (error) => {
   const codigo = codigoDe(error);
   if (codigo === undefined) return true;
   if (SE_ARREGLA_SOLO.has(codigo)) return true;
+  if (CODIGOS_QUE_SE_ARREGLAN_ESPERANDO.has(codigoPropioDe(error))) return true;
   // El resto del rango 4xx es la petición en sí: reintentarla no cambia nada
   return !(codigo >= PRIMER_ERROR_DEL_CLIENTE && codigo < PRIMER_ERROR_DEL_SERVIDOR);
 };
@@ -71,6 +85,11 @@ export const esFalloDeTodaLaSesion = (error) => {
   if (error?.errorCode === 'CSRF_VALIDATION_FAILED') return true;
   const codigo = codigoDe(error);
   if (codigo === undefined) return false;
+  // «Aún no ha abierto» se guarda, pero es de ESA anotación y de ninguna otra:
+  // el partido de la tarde no ha abierto, el de la mañana sí. Tomarlo por un
+  // fallo de sesión paraba el vaciado ENTERO, y los golpes de la mañana se
+  // quedaban sin salir en cada reconexión hasta que llegara la hora de la tarde
+  if (CODIGOS_QUE_SE_ARREGLAN_ESPERANDO.has(codigoPropioDe(error))) return false;
   return seGuardaParaDespues(error);
 };
 

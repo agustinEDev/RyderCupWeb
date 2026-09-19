@@ -1,3 +1,5 @@
+import { siViene } from '../../utils/campoSiViene';
+
 // src/infrastructure/mappers/ScheduleMapper.js
 
 /**
@@ -40,6 +42,14 @@ class ScheduleMapper {
       golfCourseId: apiRound.golf_course_id,
       golfCourseName: apiRound.golf_course_name || null,
       roundDate: apiRound.round_date || apiRound.date,
+      // La hora a la que abre sola la anotacion de esta ronda, con el huso del
+      // CAMPO dentro (BE #305). Viaja en la RONDA, no en cada partido. Y se
+      // respeta la diferencia entre las dos ausencias, porque `sePuedeAnotar`
+      // decide distinto con cada una: NULL es «este campo no tiene coordenadas
+      // y no abre solo», y que no venga el campo es «este servidor es anterior
+      // a la BE #305». Con `?? null` un frontend desplegado antes que su
+      // backend dejaba TODO partido programado sin boton de anotar
+      ...siViene(apiRound, 'scoring_opens_at', 'scoringOpensAt'),
       sessionType: apiRound.session_type,
       matchFormat: apiRound.match_format,
       handicapMode: apiRound.handicap_mode || null,

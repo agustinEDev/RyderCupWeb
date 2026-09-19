@@ -28,6 +28,7 @@ import {
   reorderGolfCoursesUseCase,
 } from '../../composition';
 import BlockLoader from '../ui/BlockLoader';
+import { hayQueArrancarloAMano } from '../../services/arranqueAMano';
 
 /**
  * Get course type display info
@@ -218,6 +219,24 @@ const SortableGolfCourseItem = ({ course, onRemove, canEdit, i18n, t, paises }) 
           </button>
         )}
       </div>
+
+      {/* Un campo sin coordenadas no tiene zona horaria, así que su anotación no
+          abre sola (BE #305) y alguien tiene que pulsar START, con cobertura. Se
+          dice aquí para que se sepa ANTES de conducir hasta un campo sin señal.
+          Va fuera de las dos variantes —móvil y escritorio— para decirlo una vez */}
+      {hayQueArrancarloAMano(course) && (
+        <div
+          data-testid={`arranque-a-mano-${course.id}`}
+          className="mx-4 mb-4 rounded-lg border border-amber-200 bg-amber-50 p-3"
+        >
+          <p className="text-sm font-medium text-amber-900">
+            {t('detail.golfCourses.manualStart.title')}
+          </p>
+          <p className="mt-1 text-sm text-amber-800">
+            {t('detail.golfCourses.manualStart.body')}
+          </p>
+        </div>
+      )}
     </div>
   );
 };

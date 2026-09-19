@@ -1,3 +1,5 @@
+import { siViene } from '../../utils/campoSiViene';
+
 // src/infrastructure/mappers/ScoringMapper.js
 
 /**
@@ -21,6 +23,9 @@ class ScoringMapper {
       matchNumber: apiData.match_number,
       matchFormat: apiData.match_format,
       matchStatus: apiData.match_status,
+      // Cuando abre la anotacion de un partido aun programado (BE #305). Como
+      // en ScheduleMapper: ausente y null no son lo mismo
+      ...siViene(apiData, 'scoring_opens_at', 'scoringOpensAt'),
       isDecided: apiData.is_decided || false,
       decidedResult: apiData.decided_result
         ? {
