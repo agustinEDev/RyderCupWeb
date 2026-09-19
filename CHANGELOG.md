@@ -5,6 +5,58 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.35.0] - 2026-09-20
+
+Primera tanda del rediseño de las competiciones (#409): crear un torneo era un formulario largo
+en el que casi todo parecía obligatorio. Y la primera vez que la aplicación se probó **en un
+iPhone de verdad**, que sacó tres defectos que no ve ningún navegador de escritorio.
+
+### Added
+
+- **Se pregunta primero qué tipo de competición es** (#639). Antes se entraba directamente a un
+  formulario de Ryder Cup sin decir que había más formas de jugar. Ahora se elige entre Ryder
+  Cup, Stableford y Medal —las dos últimas todavía por llegar— y el formulario aparece después.
+
+- **El formulario pregunta lo que hace falta y pliega el resto** (#637). Cinco decisiones
+  arriba: nombre, fechas, país y campos, cupo y modo de juego. Lo demás —nombres de los equipos,
+  cómo se forman, límite de hándicap— vive en «Más opciones» con un resumen de lo que hay
+  dentro, porque casi ningún torneo lo toca. De 1688 a 1253 px de formulario.
+
+### Fixed
+
+- **Cada pantalla empieza por el principio** (#643). Cambiar de pantalla conservaba el scroll de
+  la anterior, así que aparecías a media página: pulsar «Perfil» desde la lista de torneos
+  aterrizaba en «Cerrar Sesión» en vez de en tu nombre. No era una pantalla, eran las 24.
+  Medido: 1384 → 930, 930 → 1709, 1700 → 1384. Ahora toda navegación empieza arriba, también al
+  volver atrás. Devolverte a donde estabas exige migrar al router moderno y queda en #647, con
+  el piloto ya probado.
+
+- **El mismo campo de golf ya no se puede añadir cinco veces** (#644). El buscador se quedaba con
+  el nombre escrito al elegir, el resultado seguía en pantalla y cada pulsación añadía otra
+  copia: se llegó a «Portugal (5 campos seleccionados)» con el mismo campo repetido. Y no
+  quedaba en un susto, porque los campos se enganchan **después** de crear el torneo: al pulsar
+  «Crear» el torneo se creaba, el primer campo entraba, los otros cuatro los rechazaba el
+  servidor y te quedabas con un torneo hecho y un error listando cuatro veces el mismo campo.
+  Ahora el buscador se vacía al elegir y no vuelve a ofrecer lo que ya tienes.
+
+- **Y cuando ya los tienes todos, se dice** (#644). Al filtrar los ya añadidos la lista quedaba
+  vacía y la app respondía «no hay campos aprobados en este país» ofreciendo pedir uno nuevo: a
+  quien acababa de añadir el único que existe. Ahora distingue «no hay» de «ya son tuyos», y
+  solo lo afirma cuando ha visto todos los resultados.
+
+- **Los campos de fecha se salían de su recuadro en el iPhone** (#648). Medido en el propio
+  teléfono: con el mismo ancho declarado, el campo de texto medía 292 px y el de fecha 318.
+  Safari en iOS dibuja `input[type="date"]` como control nativo y **ese control impone su
+  ancho**; solo se corrige quitándole la apariencia nativa. No lo reproduce ningún navegador de
+  escritorio, ni WebKit. Arreglado también en el formulario del panel de administración, que
+  tenía los mismos dos campos y en dos columnas fijas.
+
+- **Los botones de crear y cancelar, y el texto del nombre** (#648). La fila de botones estaba
+  pegada a la derecha y en el móvil quedaba descolgada; ahora ocupa el ancho, y el que crece es
+  «Crear Competición», no «Cancelar» —que se lleva el formulario entero sin preguntar—. El texto
+  de ayuda del nombre se cortaba a media palabra y además repetía la etiqueta de encima: ahora
+  es un ejemplo, «Ej: Ryder Cup de amigos».
+
 ## [2.34.0] - 2026-09-19
 
 ### Added
