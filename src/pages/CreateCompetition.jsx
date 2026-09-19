@@ -1199,14 +1199,16 @@ const CreateCompetition = () => {
               </div>
 
               {/* Submit Button */}
-              {/* En el móvil los dos botones ocupan el ancho, alineados con las
-                  tarjetas: pegados a la derecha quedaban descolgados y «Cancelar»
-                  no casaba con nada (FE #650). En pantalla grande siguen a la derecha */}
+              {/* En el móvil la fila ocupa el ancho, alineada con las tarjetas:
+                  pegada a la derecha quedaba descolgada. Pero el que crece es
+                  «Crear», no «Cancelar»: con los dos a mitad y mitad, cancelar se
+                  convertía en un objetivo enorme justo bajo el pulgar, al lado del
+                  de enviar, y se lleva el formulario entero sin preguntar */}
               <div className="flex gap-3 pt-2 pb-6 sm:justify-end">
                 <button
                   type="button"
                   onClick={() => navigate('/competitions')}
-                  className="flex-1 sm:flex-none px-6 py-2.5 bg-gray-100 text-gray-900 text-sm font-bold rounded-lg hover:bg-gray-200 transition-colors"
+                  className="px-6 py-2.5 bg-gray-100 text-gray-900 text-sm font-bold rounded-lg hover:bg-gray-200 transition-colors"
                 >
                   {t('create.cancel')}
                 </button>
