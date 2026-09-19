@@ -21,6 +21,7 @@ import BottomNav from './components/layout/BottomNav';
 import { esRutaPublica, esPuertaDeEntrada } from './utils/rutasPublicas';
 import { retiraLaCortina } from './utils/cortinaDeArranque';
 import { useCortinaDeArranque } from './hooks/useCortinaDeArranque';
+import { useVolverArriba } from './hooks/useVolverArriba';
 
 // Lazy loading con retry automático para fallos de red transitorios
 // Si el primer import() falla, reintenta tras 1.5s antes de propagar el error
@@ -110,6 +111,11 @@ function AppContent() {
   // olvido significa consultar la sesión donde no la hay, comerse un 401 y echar
   // al usuario a `/login` diciendo que expiró.
   const isPublicRoute = esRutaPublica(location.pathname);
+
+  // Cada pantalla empieza por el principio, menos al volver atrás (FE #643).
+  // Va aquí arriba, colgado del router y no de cada pantalla: el defecto no era
+  // de una pantalla concreta, eran las 24
+  useVolverArriba();
 
   // La cortina del arranque: se queda puesta hasta que la pantalla de destino
   // avisa de que no le queda nada cargando (FE #485)
