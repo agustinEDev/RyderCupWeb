@@ -5,6 +5,43 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.34.0] - 2026-09-19
+
+### Added
+
+- **La anotación se ofrece desde la hora a la que el servidor la abre, no solo tras pulsar START**
+  (#621). El backend abre la anotación sola a las 6:00, las 12:00 o las 18:00 según la sesión, en la
+  hora **local del campo** (RyderCupAm#305). Hasta ahora la aplicación solo ofrecía anotar los
+  partidos en juego, así que un partido programado seguía esperando a que alguien pulsara START con
+  cobertura. Ahora «Mis próximos partidos» ofrece **Anotar** en cuanto llega esa hora, y si aún no
+  ha llegado, la pantalla de anotación **dice a qué hora abre** en vez de enseñar casillas que el
+  servidor va a rechazar.
+
+  La hora se enseña **en la del campo** —un torneo canario visto desde la península decía una hora
+  que no era la suya— y escrita como se escriba en el idioma de quien mira: «18:00» en español es
+  «6:00 PM» en inglés.
+
+  Y la lista se despierta sola a la hora de apertura: quien la abre a las 05:50 esperando las 06:00
+  ve aparecer el botón sin recargar, que en el tee y con mala cobertura no es cosa menor.
+
+- **La pantalla de la competición dice qué campos hay que arrancar a mano** (#630). Un campo sin
+  coordenadas no tiene zona horaria, así que su anotación **no abre sola**: tiene que arrancar el
+  partido el organizador, y con cobertura. Antes no lo decía nadie y se descubría en el tee del 1,
+  sin señal. Ahora sale un aviso en la ficha de ese campo, y solo en esa: si todos tienen su zona,
+  no se dice nada.
+
+### Fixed
+
+- **Un golpe anotado antes de que abra la anotación ya no se pierde.** El servidor lo rechaza con un
+  código propio —«aún no ha abierto»—, que es un rechazo que se arregla **esperando**. La aplicación
+  lo trataba como definitivo y lo tiraba, con aviso de golpe perdido. Ahora se queda en la cola y
+  sale cuando el partido abre. Pasa con el reloj del móvil adelantado y con lo anotado sin cobertura
+  antes de la hora.
+
+  Y ese rechazo **no para el resto de la cola**: es de esa anotación, no de la sesión. Sin esto, el
+  partido de la tarde que aún no ha abierto dejaba sin enviar los golpes de la mañana que iban
+  detrás, en cada reconexión.
+
 ## [2.33.0] - 2026-09-17
 
 ### Added
