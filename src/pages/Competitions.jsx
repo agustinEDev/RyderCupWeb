@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router';
+import { useNavigate, useLoaderData } from 'react-router';
 import { motion } from 'framer-motion';
 import { Users, Calendar, MapPin, Plus, Filter, Search, AlertCircle, Crown, Flag, WifiOff } from 'lucide-react';
 import customToast from '../utils/toast';
@@ -11,9 +11,8 @@ import {
   getStatusColor,
   formatDateRange
 } from '../services/competitions';
-import { useAuth } from '../hooks/useAuth';
+import { useAuth, getUserData } from '../hooks/useAuth';
 import { CountryFlag } from '../utils/countryUtils';
-import BlockLoader from '../components/ui/BlockLoader';
 import { formatCountryName } from '../services/countries';
 import { ubicacionDe } from '../utils/ubicacionDeCompeticion';
 
@@ -31,49 +30,47 @@ const getEnrollmentStatusClasses = (status) => {
   }
 };
 
+/**
+ * El router trae la lista ANTES de pintar la pantalla (FE #647).
+ *
+ * Eso es lo que hace que volver atrás te devuelva donde estabas: si los datos
+ * llegaran después, `<ScrollRestoration />` repondría el scroll sobre una
+ * pantalla todavía vacía y el navegador lo recortaría a lo que midiera.
+ *
+ * Sin red NO se devuelve una lista vacía: eso afirmaría «no tienes torneos» a
+ * quien sí los tiene. Se devuelve `null`, que la pantalla entiende como «no se
+ * sabe», y el aviso de sin cobertura.
+ */
+export async function loader() {
+  const user = await getUserData();
+  if (!user?.id) return { competitions: [], sinCobertura: false };
+
+  try {
+    return { competitions: await listUserCompetitionsUseCase.execute(user.id), sinCobertura: false };
+  } catch (error) {
+    console.error('Error loading competitions:', error);
+    if (esFalloDeRed(error)) return { competitions: null, sinCobertura: true };
+    return { competitions: [], sinCobertura: false, fallo: true };
+  }
+}
+
 const Competitions = () => {
+  const { competitions: cargadas, sinCobertura, fallo } = useLoaderData();
   const navigate = useNavigate();
   const { t, i18n } = useTranslation('competitions');
   const { t: tComun } = useTranslation('common');
   const { user } = useAuth();
-  const [competitions, setCompetitions] = useState([]);
-  const [sinCobertura, setSinCobertura] = useState(false);
-  const [filteredCompetitions, setFilteredCompetitions] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [competitions] = useState(cargadas ?? []);
+  const [filteredCompetitions, setFilteredCompetitions] = useState(cargadas ?? []);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
 
-  const loadCompetitions = useCallback(async () => {
-    if (!user?.id) {
-      return;
-    }
-
-    setIsLoading(true);
-
-    try {
-      // Use the use case instead of direct service call
-      const data = await listUserCompetitionsUseCase.execute(user.id);
-      setCompetitions(data);
-      // Y se baja la bandera: sin esto, una carga buena después de un rato sin
-      // señal dejaba la pantalla diciendo «sin conexión» mientras el aviso de
-      // arriba ya había desaparecido, contradiciéndose
-      setSinCobertura(false);
-    } catch (error) {
-      console.error('Error loading competitions:', error);
-      // Sin red no se sabe si hay competiciones o no, asi que NO se vacia la
-      // lista: hacerlo pintaba «Mostrando 0 de 0» y ofrecia «crear tu primera»
-      // a quien tiene las suyas, que es afirmar algo que nadie ha comprobado.
-      // Y el aviso lleva texto propio, no el `message` del error: sin cobertura
-      // ahi venia el mensaje crudo del service worker, en ingles y con la URL
-      const deRed = esFalloDeRed(error);
-      setSinCobertura(deRed);
-      customToast.error(deRed ? tComun('sinConexion.mensaje') : t('detail.failedToLoadCompetitions'));
-      if (!deRed) setCompetitions([]);
-    } finally {
-      setIsLoading(false);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
+  // La carga vive en el `loader` de arriba: la pantalla ya nace con sus datos.
+  // El aviso, en cambio, es cosa suya, porque es lo que se ve
+  useEffect(() => {
+    if (sinCobertura) customToast.error(tComun('sinConexion.mensaje'));
+    else if (fallo) customToast.error(t('detail.failedToLoadCompetitions'));
+  }, [sinCobertura, fallo, t, tComun]);
 
   const applyFilters = useCallback(() => {
     let filtered = [...competitions];
@@ -100,13 +97,6 @@ const Competitions = () => {
   }, [competitions, searchQuery, statusFilter, i18n.language]);
 
   useEffect(() => {
-    if (user?.id) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- pre-existing pattern surfaced by eslint-plugin-react-hooks 7.1.1 bump; needs dedicated review (tracked in follow-up)
-      loadCompetitions();
-    }
-  }, [user, loadCompetitions]);
-
-  useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- pre-existing pattern surfaced by eslint-plugin-react-hooks 7.1.1 bump; needs dedicated review (tracked in follow-up)
     applyFilters();
   }, [competitions, searchQuery, statusFilter, applyFilters]);
@@ -121,11 +111,7 @@ const Competitions = () => {
 
   // Renderiza el contenido de la lista de competiciones
   const renderCompetitionsList = () => {
-    if (isLoading) {
-      return (
-        <BlockLoader texto={t('myCompetitions.loadingCompetitions')} />
-      );
-    }
+    // Sin estado de carga: el router no pinta esta pantalla hasta tener la lista
     // Vacio porque no se ha podido preguntar NO es vacio: decir «no tienes
     // ninguna» —y ofrecer crear la primera— es afirmar algo que nadie ha
     // comprobado, y quien tenga las suyas las ve desaparecer
@@ -375,7 +361,7 @@ const Competitions = () => {
                   </div>
                 </div>
                 {/* Results Count */}
-                {!isLoading && (
+                {(
                   <div className="mt-3 text-sm text-gray-500">
                     {t('myCompetitions.showing', { filtered: filteredCompetitions.length, total: competitions.length })}
                   </div>

@@ -1,6 +1,14 @@
 /* eslint-disable react-refresh/only-export-components */
 import { useEffect, useLayoutEffect, useCallback, lazy, Suspense, useState } from 'react';
-import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router';
+import {
+  createBrowserRouter,
+  createRoutesFromElements,
+  RouterProvider,
+  Route,
+  Outlet,
+  ScrollRestoration,
+  useLocation,
+} from 'react-router';
 import { Toaster } from 'react-hot-toast';
 import AvisoSinConexion from './components/ui/AvisoSinConexion';
 import * as Sentry from '@sentry/react';
@@ -46,6 +54,9 @@ const Profile = lazyWithRetry(() => import('./pages/Profile'));
 const EditProfile = lazyWithRetry(() => import('./pages/EditProfile'));
 const DeviceManagement = lazyWithRetry(() => import('./pages/DeviceManagement'));
 const Competitions = lazyWithRetry(() => import('./pages/Competitions'));
+// El loader no puede ir en el `lazy`: el router lo necesita antes de cargar la
+// pantalla, así que se importa cuando toca
+const cargaTorneos = (...args) => import('./pages/Competitions').then((m) => m.loader(...args));
 const CreateCompetition = lazyWithRetry(() => import('./pages/CreateCompetition'));
 const CompetitionDetail = lazyWithRetry(() => import('./pages/CompetitionDetail'));
 const BrowseCompetitions = lazyWithRetry(() => import('./pages/BrowseCompetitions'));
@@ -89,7 +100,7 @@ const Unauthorized = lazyWithRetry(() => import('./pages/public/Unauthorized'));
 // ============================================
 
 // Crear Router con tracking de Sentry
-const SentryRoutes = Sentry.withSentryReactRouterV7Routing(Routes);
+const creaElRouter = Sentry.wrapCreateBrowserRouterV7(createBrowserRouter);
 
 /**
  * Componente interno que contiene la lógica de la app
@@ -255,121 +266,12 @@ function AppContent() {
         {!esPuertaDeEntrada(location.pathname) && (
           <InstallBanner aboveBottomNav={showBottomNav} />
         )}
-        <SentryRoutes>
-        {/* Public routes */}
-        <Route path="/" element={<Landing />} />
-        {/* Por donde arranca la aplicacion instalada (FE #465): es el `start_url`
-            del manifiesto. Abierta en un navegador redirige a la portada. */}
-        <Route path="/start" element={<AppStart />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        <Route path="/verify-email" element={<VerifyEmail />} />
-        <Route path="/forgot-password" element={<ForgotPassword />} />
-        <Route path="/reset-password/:token" element={<ResetPassword />} />
-        <Route path="/reset-password" element={<ResetPassword />} />
-        <Route path="/pricing" element={<Pricing />} />
-        <Route path="/contact" element={<Contact />} />
-        <Route path="/terms" element={<Terms />} />
-        <Route path="/privacy" element={<Privacy />} />
-        <Route path="/cookies" element={<Cookies />} />
-        <Route path="/auth/google/callback" element={<GoogleCallback />} />
-        <Route path="/competitions/:id/leaderboard" element={<LeaderboardPage />} />
-
-        {/* Protected routes */}
-        <Route path="/auth/complete-profile" element={<ProtectedRoute><CompleteProfile /></ProtectedRoute>} />
-        <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-        <Route path="/stats" element={<ProtectedRoute><PlayerStatsPage /></ProtectedRoute>} />
-        <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-        <Route path="/profile/edit" element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />
-        <Route path="/profile/devices" element={<ProtectedRoute><DeviceManagement /></ProtectedRoute>} />
-        <Route path="/competitions" element={<ProtectedRoute><Competitions /></ProtectedRoute>} />
-        <Route path="/competitions/create" element={<ProtectedRoute><CreateCompetition /></ProtectedRoute>} />
-        <Route path="/competitions/:id/edit" element={<ProtectedRoute><CreateCompetition /></ProtectedRoute>} />
-        <Route path="/competitions/:id" element={<ProtectedRoute><CompetitionDetail /></ProtectedRoute>} />
-        <Route path="/browse-competitions" element={<ProtectedRoute><BrowseCompetitions /></ProtectedRoute>} />
-
-        {/* Admin routes (v2.4.0) - Protected by ADMIN role */}
-        <Route path="/admin" element={
-          <ProtectedRoute>
-            <RoleGuard allowedRoles="ADMIN">
-              <AdminPanel />
-            </RoleGuard>
-          </ProtectedRoute>
-        } />
-
-        {/* Invitation routes (Sprint 3) */}
-        <Route path="/creator/competitions/:id/invitations" element={
-          <ProtectedRoute>
-            <InvitationsPage />
-          </ProtectedRoute>
-        } />
-        <Route path="/player/invitations" element={
-          <ProtectedRoute>
-            <MyInvitationsPage />
-          </ProtectedRoute>
-        } />
-
-        {/* Social routes */}
-        <Route path="/feed" element={
-          <ProtectedRoute>
-            <FeedPage />
-          </ProtectedRoute>
-        } />
-
-        <Route path="/players/:userId" element={
-          <ProtectedRoute>
-            <PlayerProfilePage />
-          </ProtectedRoute>
-        } />
-
-        {/* Friends routes */}
-        <Route path="/friends" element={
-          <ProtectedRoute>
-            <FriendsPage />
-          </ProtectedRoute>
-        } />
-
-        {/* Player routes (Sprint 4) */}
-        <Route path="/player/matches" element={
-          <ProtectedRoute>
-            <UpcomingMatchesPage />
-          </ProtectedRoute>
-        } />
-        <Route path="/player/matches/:matchId/scoring" element={
-          <ProtectedRoute>
-            <ScoringPage />
-          </ProtectedRoute>
-        } />
-
-        {/* Quick Match routes (FE #236) */}
-        <Route path="/quick-matches" element={
-          <ProtectedRoute>
-            <MyQuickMatchesPage />
-          </ProtectedRoute>
-        } />
-        <Route path="/quick-matches/:quickMatchId/scoring" element={
-          <ProtectedRoute>
-            <QuickMatchScoringPage />
-          </ProtectedRoute>
-        } />
-
-        {/* Schedule routes (v2.1.0 - Sprint 2) */}
-        {/* Creator route: full management. Player route: read-only (canManage=false) */}
-        {/* Authorization is per-competition (handled by useUserRoles inside SchedulePage) */}
-        <Route path="/creator/competitions/:id/schedule" element={
-          <ProtectedRoute>
-            <SchedulePage />
-          </ProtectedRoute>
-        } />
-        <Route path="/competitions/:id/schedule" element={
-          <ProtectedRoute>
-            <SchedulePage />
-          </ProtectedRoute>
-        } />
-
-        {/* Error routes */}
-        <Route path="/unauthorized" element={<Unauthorized />} />
-        </SentryRoutes>
+        {/* Cada pantalla empieza por el principio, y al volver atrás se vuelve
+            donde estabas. Lo hace el propio router (FE #643, FE #647): emularlo a
+            mano no salía, porque el navegador recorta el scroll al desmontarse la
+            pantalla que se deja, antes de que ningún código nuestro se entere */}
+        <ScrollRestoration />
+        <Outlet />
       {showBottomNav && (
         <>
           {/* Espaciador en el flujo: la nav es fixed y taparía el final de la página */}
@@ -456,6 +358,132 @@ const ErrorFallback = ({ error, componentStack, resetError }) => {
 };
 
 /**
+ * El árbol de rutas de siempre, colgado de `AppContent`, que es el marco común:
+ * la cortina del arranque, el aviso de sin conexión, la barra inferior y los
+ * vigilantes de la sesión. Se declara con JSX y `createRoutesFromElements` a
+ * propósito: las rutas no cambian de forma al pasar al router moderno.
+ */
+const rutas = createRoutesFromElements(
+  <Route element={<AppContent />}>
+        {/* Public routes */}
+        <Route path="/" element={<Landing />} />
+        {/* Por donde arranca la aplicacion instalada (FE #465): es el `start_url`
+            del manifiesto. Abierta en un navegador redirige a la portada. */}
+        <Route path="/start" element={<AppStart />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/verify-email" element={<VerifyEmail />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password/:token" element={<ResetPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/pricing" element={<Pricing />} />
+        <Route path="/contact" element={<Contact />} />
+        <Route path="/terms" element={<Terms />} />
+        <Route path="/privacy" element={<Privacy />} />
+        <Route path="/cookies" element={<Cookies />} />
+        <Route path="/auth/google/callback" element={<GoogleCallback />} />
+        <Route path="/competitions/:id/leaderboard" element={<LeaderboardPage />} />
+
+        {/* Protected routes */}
+        <Route path="/auth/complete-profile" element={<ProtectedRoute><CompleteProfile /></ProtectedRoute>} />
+        <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+        <Route path="/stats" element={<ProtectedRoute><PlayerStatsPage /></ProtectedRoute>} />
+        <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+        <Route path="/profile/edit" element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />
+        <Route path="/profile/devices" element={<ProtectedRoute><DeviceManagement /></ProtectedRoute>} />
+        <Route path="/competitions" loader={cargaTorneos} element={<ProtectedRoute><Competitions /></ProtectedRoute>} />
+        <Route path="/competitions/create" element={<ProtectedRoute><CreateCompetition /></ProtectedRoute>} />
+        <Route path="/competitions/:id/edit" element={<ProtectedRoute><CreateCompetition /></ProtectedRoute>} />
+        <Route path="/competitions/:id" element={<ProtectedRoute><CompetitionDetail /></ProtectedRoute>} />
+        <Route path="/browse-competitions" element={<ProtectedRoute><BrowseCompetitions /></ProtectedRoute>} />
+
+        {/* Admin routes (v2.4.0) - Protected by ADMIN role */}
+        <Route path="/admin" element={
+          <ProtectedRoute>
+            <RoleGuard allowedRoles="ADMIN">
+              <AdminPanel />
+            </RoleGuard>
+          </ProtectedRoute>
+        } />
+
+        {/* Invitation routes (Sprint 3) */}
+        <Route path="/creator/competitions/:id/invitations" element={
+          <ProtectedRoute>
+            <InvitationsPage />
+          </ProtectedRoute>
+        } />
+        <Route path="/player/invitations" element={
+          <ProtectedRoute>
+            <MyInvitationsPage />
+          </ProtectedRoute>
+        } />
+
+        {/* Social routes */}
+        <Route path="/feed" element={
+          <ProtectedRoute>
+            <FeedPage />
+          </ProtectedRoute>
+        } />
+
+        <Route path="/players/:userId" element={
+          <ProtectedRoute>
+            <PlayerProfilePage />
+          </ProtectedRoute>
+        } />
+
+        {/* Friends routes */}
+        <Route path="/friends" element={
+          <ProtectedRoute>
+            <FriendsPage />
+          </ProtectedRoute>
+        } />
+
+        {/* Player routes (Sprint 4) */}
+        <Route path="/player/matches" element={
+          <ProtectedRoute>
+            <UpcomingMatchesPage />
+          </ProtectedRoute>
+        } />
+        <Route path="/player/matches/:matchId/scoring" element={
+          <ProtectedRoute>
+            <ScoringPage />
+          </ProtectedRoute>
+        } />
+
+        {/* Quick Match routes (FE #236) */}
+        <Route path="/quick-matches" element={
+          <ProtectedRoute>
+            <MyQuickMatchesPage />
+          </ProtectedRoute>
+        } />
+        <Route path="/quick-matches/:quickMatchId/scoring" element={
+          <ProtectedRoute>
+            <QuickMatchScoringPage />
+          </ProtectedRoute>
+        } />
+
+        {/* Schedule routes (v2.1.0 - Sprint 2) */}
+        {/* Creator route: full management. Player route: read-only (canManage=false) */}
+        {/* Authorization is per-competition (handled by useUserRoles inside SchedulePage) */}
+        <Route path="/creator/competitions/:id/schedule" element={
+          <ProtectedRoute>
+            <SchedulePage />
+          </ProtectedRoute>
+        } />
+        <Route path="/competitions/:id/schedule" element={
+          <ProtectedRoute>
+            <SchedulePage />
+          </ProtectedRoute>
+        } />
+
+        {/* Error routes */}
+        <Route path="/unauthorized" element={<Unauthorized />} />
+  </Route>
+);
+
+const router = creaElRouter(rutas);
+
+/**
  * Componente principal App con Router y ErrorBoundary
  */
 function App() {
@@ -464,9 +492,7 @@ function App() {
       fallback={ErrorFallback}
       showDialog={false}
     >
-      <Router>
-        <AppContent />
-      </Router>
+      <RouterProvider router={router} />
     </Sentry.ErrorBoundary>
   );
 }
