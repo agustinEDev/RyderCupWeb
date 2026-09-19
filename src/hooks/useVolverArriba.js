@@ -1,10 +1,11 @@
 import { useEffect, useLayoutEffect, useRef } from 'react';
 import { useLocation, useNavigationType } from 'react-router';
 
-// Cuántas veces se reintenta reponer el scroll mientras la pantalla crece. Son
-// fotogramas: ~1 segundo a 60 Hz, de sobra para una pantalla que llega de la
-// caché y sin dejar colgado nada si el contenido nunca alcanza esa altura.
-const INTENTOS = 60;
+// Cuánto se espera, como mucho, a que la pantalla crezca lo suficiente para
+// reponer el scroll. En milisegundos y no en fotogramas: 60 fotogramas son un
+// segundo a 60 Hz pero medio a 120 Hz, que es la pantalla de medio catálogo de
+// móviles. Pasado el plazo se baja lo que se pueda, que es mejor que nada.
+const ESPERA_MAXIMA_MS = 1500;
 
 /**
  * Cada pantalla empieza por el principio, y al volver atrás se vuelve donde estabas
@@ -14,91 +15,129 @@ const INTENTOS = 60;
  * quedaba donde estaba y una pantalla se abría por la mitad: pulsar «Perfil» desde
  * la lista de torneos aterrizaba en «Cerrar Sesión» en vez de en tu nombre.
  *
- * La vuelta atrás **no se puede dejar en manos del navegador**. Medido en Chrome:
- * con las pantallas subiendo al principio, su restauración aterrizaba en 67 px en
- * vez de en los 1323 que tenía la lista, porque al volver la pantalla todavía no ha
- * cargado su contenido y no da de sí para ese scroll. Antes colaba de milagro,
- * porque el documento nunca había subido.
- *
- * Así que la posición se guarda por entrada de historial (`location.key`) y se
- * repone aquí, reintentando mientras la pantalla crece.
+ * La vuelta atrás no se puede dejar en manos del navegador. Medido en Chrome: con
+ * las pantallas subiendo al principio, su restauración aterrizaba en 67 px en vez
+ * de en los 1323 que tenía la lista, porque al volver la pantalla todavía no ha
+ * cargado su contenido y no da de sí para ese scroll. Así que se desactiva
+ * (`scrollRestoration = 'manual'`, que si no compite con esto en cada vuelta) y la
+ * posición se guarda por entrada de historial y se repone aquí, insistiendo
+ * mientras la pantalla crece.
  *
  * Lo que NO cuenta como cambiar de pantalla: cambiar solo el query. Filtrar una
- * lista dejaría de ver justo lo que se estaba mirando, y por eso esto mira el
- * `pathname`, no la `location` entera.
+ * lista dejaría de ver justo lo que se estaba mirando. Pulsar la pestaña en la que
+ * ya estás sí cuenta, aunque la ruta sea la misma: es el gesto de volver arriba.
  */
 export function useVolverArriba() {
-  const location = useLocation();
-  const { pathname, key } = location;
+  const { pathname, search, key } = useLocation();
   const tipoDeNavegacion = useNavigationType();
 
   const posiciones = useRef(new Map());
-  const rutaAnterior = useRef(pathname);
+  const anterior = useRef({ pathname, search, key });
+  // De quién son los scroll que lleguen a partir de ahora
   const claveActual = useRef(key);
-  // Lo que se está intentando reponer, mientras la pantalla acaba de pintarse
-  const pendiente = useRef(null);
+  // La reposición en curso. Lleva su propio número para que un bucle viejo se
+  // dé cuenta de que ya no es el suyo y se calle
+  const reposicion = useRef(null);
+  const contador = useRef(0);
 
-  // Se apunta dónde queda el scroll de la pantalla que se está mirando, para
-  // poder reponerlo cuando se vuelva a ella
+  // El navegador restaura por su cuenta, y lo hace mal en una SPA cuyo contenido
+  // llega después: desactivarlo es lo que deja mandar a lo de aquí abajo
   useEffect(() => {
-    claveActual.current = key;
-    const apunta = () => {
-      if (pendiente.current === null) {
-        posiciones.current.set(claveActual.current, window.scrollY);
-      }
+    if (!('scrollRestoration' in globalThis.history)) return undefined;
+    const previo = globalThis.history.scrollRestoration;
+    globalThis.history.scrollRestoration = 'manual';
+    return () => {
+      globalThis.history.scrollRestoration = previo;
     };
-    apunta();
+  }, []);
+
+  // Mientras se mira una pantalla se va apuntando dónde queda su scroll, en
+  // continuo. Apuntarlo al navegar es TARDE: la pantalla que se deja se desmonta,
+  // el documento se encoge y el navegador recorta el scroll a 0 antes de que
+  // corra nada nuestro, así que lo que se guardaba era ese 0.
+  //
+  // Bajo qué entrada se apunta lo decide `claveActual`, que se cambia en el
+  // layout effect, o sea antes de que llegue ningún scroll de la pantalla nueva:
+  // en un efecto pasivo llegaba tarde y la posición acababa en la entrada
+  // equivocada.
+  useEffect(() => {
+    const apunta = () => {
+      if (!reposicion.current) posiciones.current.set(claveActual.current, window.scrollY);
+    };
     window.addEventListener('scroll', apunta, { passive: true });
     return () => window.removeEventListener('scroll', apunta);
-  }, [key]);
+  }, []);
 
   useLayoutEffect(() => {
-    // La primera carga no es una navegación: ahí manda el navegador
-    if (rutaAnterior.current === pathname && pendiente.current === null) return;
-    rutaAnterior.current = pathname;
+    const previo = anterior.current;
+    // Mismo sitio que en el render anterior: la primera carga, o un render que no
+    // viene de navegar. Ahí no hay nada que hacer
+    if (previo.key === key) return;
+
+    // A partir de aquí, los scroll que lleguen son de la pantalla nueva. La
+    // posición de la que se deja ya está apuntada: la fue guardando el listener
+    // mientras se miraba, que es el único momento en que ese número es cierto
+    claveActual.current = key;
+    anterior.current = { pathname, search, key };
+
+    // Lo que hubiera en marcha ya no vale: sin esto, el bucle de la pantalla
+    // anterior seguía vivo y la tiraba a SU posición en cuanto esta crecía
+    if (reposicion.current) {
+      window.cancelAnimationFrame(reposicion.current.fotograma);
+      reposicion.current = null;
+    }
+
+    // Filtrar una lista no es cambiar de pantalla
+    const soloCambiaElQuery = previo.pathname === pathname && previo.search !== search;
+    if (soloCambiaElQuery) return;
 
     if (tipoDeNavegacion !== 'POP') {
-      pendiente.current = null;
       window.scrollTo(0, 0);
       return;
     }
 
-    const destino = posiciones.current.get(key);
-    if (destino === undefined || destino === 0) return;
+    // Sin posición guardada, o guardada arriba, se va arriba. Quedarse quieto
+    // dejaría la pantalla con el scroll de la anterior, que es el defecto de
+    // partida colándose por la puerta de atrás
+    const destino = posiciones.current.get(key) ?? 0;
+    if (destino <= 0) {
+      window.scrollTo(0, 0);
+      return;
+    }
 
-    // La pantalla puede estar todavía a medio pintar, y entonces el navegador
-    // recorta el scroll a lo que mide en ese momento. Se insiste mientras crece
-    pendiente.current = destino;
-    let intentos = 0;
+    const numero = ++contador.current;
+    const limite = globalThis.performance.now() + ESPERA_MAXIMA_MS;
 
     const repone = () => {
-      if (pendiente.current === null) return;
-      const alcanza =
-        document.documentElement.scrollHeight - window.innerHeight >= destino;
-      if (alcanza) {
+      const tarea = reposicion.current;
+      if (!tarea || tarea.numero !== numero) return;
+
+      const tope = document.documentElement.scrollHeight - window.innerHeight;
+      if (tope >= destino) {
+        reposicion.current = null;
         window.scrollTo(0, destino);
-        pendiente.current = null;
         return;
       }
-      if (++intentos < INTENTOS) window.requestAnimationFrame(repone);
-      else pendiente.current = null;
-    };
-    repone();
-  }, [pathname, key, tipoDeNavegacion]);
-
-  // Si el contenido llega tarde, el `scroll` que dispara al crecer la página es
-  // la última oportunidad de reponer la posición
-  useEffect(() => {
-    const alCrecer = () => {
-      const destino = pendiente.current;
-      if (destino === null) return;
-      if (document.documentElement.scrollHeight - window.innerHeight >= destino) {
-        window.scrollTo(0, destino);
-        pendiente.current = null;
+      if (globalThis.performance.now() < limite) {
+        tarea.fotograma = window.requestAnimationFrame(repone);
+        return;
       }
+      // Se acabó la espera: la pantalla ya no da para tanto (una lista que ahora
+      // tiene menos elementos). Se baja lo que se pueda en vez de no hacer nada
+      reposicion.current = null;
+      window.scrollTo(0, Math.max(0, Math.min(destino, tope)));
     };
-    window.addEventListener('scroll', alCrecer, { passive: true });
-    return () => window.removeEventListener('scroll', alCrecer);
+
+    reposicion.current = { numero, fotograma: 0 };
+    repone();
+  }, [pathname, search, key, tipoDeNavegacion]);
+
+  // Al desmontar no puede quedar un bucle suelto
+  useEffect(() => () => {
+    if (reposicion.current) {
+      window.cancelAnimationFrame(reposicion.current.fotograma);
+      reposicion.current = null;
+    }
   }, []);
 }
 
