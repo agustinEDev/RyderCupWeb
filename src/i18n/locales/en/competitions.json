@@ -74,6 +74,7 @@
     "selectGolfCourse": "Select Golf Course *",
     "selectedCourse": "Selected",
     "coursesSelected": "courses selected",
+    "courseAlreadyAdded": "That course is already added",
     "coursePendingApproval": "This course is pending approval. You won't be able to activate the competition until it's approved.",
     "ryderCupSettings": "RyderCup Settings",
     "playMode": "Play Mode",

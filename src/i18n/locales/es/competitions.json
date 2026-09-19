@@ -74,6 +74,7 @@
     "selectGolfCourse": "Selecciona Campo de Golf *",
     "selectedCourse": "Seleccionado",
     "coursesSelected": "campos seleccionados",
+    "courseAlreadyAdded": "Ese campo ya está añadido",
     "coursePendingApproval": "Este campo está pendiente de aprobación. No podrás activar la competición hasta que sea aprobado.",
     "ryderCupSettings": "Configuración RyderCup",
     "playMode": "Modo de Juego",

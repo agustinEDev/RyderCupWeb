@@ -204,6 +204,68 @@ describe('GolfCourseSearchBox', () => {
     expect(input).toHaveValue('rea');
   });
 
+  describe('usado como «añadir a una lista» (FE #644)', () => {
+    // El formulario de creación no mantiene una selección: pasa siempre
+    // `selectedCourse={null}` y va apilando campos. Ahí la casilla se quedaba
+    // con el nombre del último elegido, el resultado seguía en pantalla y cada
+    // pulsación añadía otra copia: se llegó a «Portugal (5 campos)» con el
+    // mismo campo cinco veces
+    it('deja la casilla vacía para poder buscar el siguiente', async () => {
+      const onCourseSelect = vi.fn();
+      renderBox({ onCourseSelect });
+
+      await waitFor(() => expect(mockList).toHaveBeenCalled());
+      fireEvent.focus(screen.getByRole('textbox'));
+      fireEvent.click(await screen.findByText('Real Club de Golf'));
+
+      expect(onCourseSelect).toHaveBeenCalledWith(
+        expect.objectContaining({ name: 'Real Club de Golf' })
+      );
+      expect(screen.getByRole('textbox')).toHaveValue('');
+    });
+
+    it('sigue enseñando el nombre a quien SÍ mantiene la selección', async () => {
+      // El otro uso del buscador es un selector de uno: ahí la casilla tiene
+      // que mostrar lo elegido, y eso no se toca
+      const onCourseSelect = vi.fn();
+      renderControlledBox({ onCourseSelect });
+
+      await waitFor(() => expect(mockList).toHaveBeenCalled());
+      fireEvent.focus(screen.getByRole('textbox'));
+      fireEvent.click(await screen.findByText('Real Club de Golf'));
+
+      expect(screen.getByRole('textbox')).toHaveValue('Real Club de Golf');
+    });
+
+    it('no ofrece los campos que ya están añadidos', async () => {
+      mockList.mockResolvedValue({
+        courses: [course('1', 'Real Club de Golf'), course('2', 'El Prat')],
+        total: 2,
+      });
+
+      renderBox({ idsYaElegidos: ['1'] });
+
+      fireEvent.focus(screen.getByRole('textbox'));
+      await waitFor(() => expect(screen.getByText('El Prat')).toBeInTheDocument());
+      expect(screen.queryByText('Real Club de Golf')).not.toBeInTheDocument();
+    });
+
+    it('ofrece pedir uno nuevo cuando ya están todos añadidos', async () => {
+      // Quedarse con la lista vacía y sin explicación es peor que no buscar:
+      // parece que el campo no existe cuando lo que pasa es que ya lo tienes
+      mockList.mockResolvedValue({ courses: [course('1', 'Real Club de Golf')], total: 1 });
+
+      renderBox({ idsYaElegidos: ['1'] });
+
+      fireEvent.focus(screen.getByRole('textbox'));
+      fireEvent.change(screen.getByRole('textbox'), { target: { value: 'Real' } });
+
+      await waitFor(() => {
+        expect(screen.getByText(/request new golf course/i)).toBeInTheDocument();
+      });
+    });
+  });
+
   describe('búsqueda por cercanía', () => {
     // Con toda la precisión que da una lectura real del GPS: es lo que hay que
     // demostrar que no sale del navegador

@@ -18,6 +18,9 @@ import BlockLoader from '../ui/BlockLoader';
  * - selectedCourse: object | null - Currently selected golf course
  * - onCourseSelect: function - Callback when a course is selected
  * - onRequestNewCourse: function - Callback when "Request new course" is clicked
+ * - idsYaElegidos: string[] - Courses already in the caller's list. They are not
+ *   offered again: the creation form stacks courses, and offering one that is
+ *   already there only served to add the same course twice
  * - allowNearby: boolean - Offer the "courses near me" button. Off by default
  * - allowOtherCountries: boolean - Widen the search beyond `countryCode` when it
  *   yields nothing. Off by default: for the competition builders `countryCode` is
@@ -82,7 +85,8 @@ const GolfCourseSearchBox = ({
   onCourseSelect,
   onRequestNewCourse,
   allowNearby = false,
-  allowOtherCountries = false
+  allowOtherCountries = false,
+  idsYaElegidos = []
 }) => {
   const { t, i18n } = useTranslation('golfCourses');
   const { t: tComun } = useTranslation('common');
@@ -201,8 +205,12 @@ const GolfCourseSearchBox = ({
     };
   }, [countryCode, searchQuery, t, tComun, nearbyLat, nearbyLon, searchingNearby, allowOtherCountries, selectedCourse]);
 
-  // Solo valen los resultados del país que se está mirando ahora
-  const courses = result.countryCode === countryCode ? result.courses : [];
+  // Solo valen los resultados del país que se está mirando ahora, y sin los que
+  // ya están en la lista de quien nos usa: ofrecerlos solo servía para añadir el
+  // mismo campo dos veces (FE #644)
+  const courses = (result.countryCode === countryCode ? result.courses : []).filter(
+    (course) => !idsYaElegidos.includes(course.id)
+  );
   const total = result.countryCode === countryCode ? result.total : 0;
   const widened = result.countryCode === countryCode && result.widened;
   // El código del usuario llega tal cual lo guardó el backend y hay cuentas con
@@ -239,7 +247,11 @@ const GolfCourseSearchBox = ({
 
   const handleCourseSelect = (course) => {
     onCourseSelect(course);
-    setSearchQuery(course.name);
+    // Vacía, no con el nombre de lo elegido (FE #644). Quien mantiene una
+    // selección enseña su nombre desde `selectedCourse`, así que no pierde nada;
+    // quien usa esto para apilar campos se quedaba con el texto puesto y el
+    // resultado delante, y cada pulsación añadía otra copia del mismo campo
+    setSearchQuery('');
     setShowDropdown(false);
   };
 
