@@ -223,7 +223,11 @@
       "dragToReorder": "Arrastra para reordenar los campos",
       "adding": "Añadiendo campo...",
       "requestNotAvailable": "La solicitud de nuevos campos no está disponible en esta vista. Usa la página de creación de competiciones.",
-      "tees": "Tees"
+      "tees": "Tees",
+      "manualStart": {
+        "title": "Este campo hay que arrancarlo a mano",
+        "body": "La anotación no se abrirá sola: tiene que arrancar el partido el organizador de la competición, y necesita cobertura. Si en el campo no hay señal, mejor que lo haga antes de salir."
+      }
     }
   },
   "browse": {
