@@ -1,3 +1,5 @@
+import { numeroEntero } from './numeroEntero';
+
 /**
  * Cuántos inscritos admite una competición (FE #637).
  *
@@ -13,6 +15,5 @@
 export const CUPO_POR_DEFECTO = 12;
 
 export const cupoDeJugadores = (valor, porDefecto = CUPO_POR_DEFECTO) => {
-  const numero = Number.parseInt(valor, 10);
-  return Number.isNaN(numero) ? porDefecto : numero;
+  return numeroEntero(valor) ?? porDefecto;
 };

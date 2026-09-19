@@ -90,9 +90,9 @@ describe('validateCompetitionForm', () => {
     expect(result).toBeNull();
   });
 
-  it('returns playersMinimum when numberOfPlayers is not a number', () => {
+  it('returns playersInvalid when numberOfPlayers is not a number', () => {
     const result = validateCompetitionForm({ ...validFormData, numberOfPlayers: 'abc' });
-    expect(result).toEqual({ key: 'playersMinimum' });
+    expect(result).toEqual({ key: 'playersInvalid' });
   });
 
   it('returns playersMinimum when numberOfPlayers is below 2', () => {
@@ -148,7 +148,9 @@ describe('validateCompetitionForm', () => {
     // saltárselo aquí solo cambia un aviso claro por un 422 del servidor
     expect(validateCompetitionForm({ ...validFormData, numberOfPlayers: '150' })).toEqual({ key: 'playersMaximum' });
     expect(validateCompetitionForm({ ...validFormData, numberOfPlayers: '1' })).toEqual({ key: 'playersMinimum' });
-    expect(validateCompetitionForm({ ...validFormData, numberOfPlayers: 'doce' })).toEqual({ key: 'playersMinimum' });
+    // «doce» no es un número pequeño: no es un número. Decir «mínimo 2» era
+    // contestar a otra cosa
+    expect(validateCompetitionForm({ ...validFormData, numberOfPlayers: 'doce' })).toEqual({ key: 'playersInvalid' });
   });
 
   it('8: un nombre de equipo de dos letras lo para el formulario, no un 422', () => {
@@ -182,5 +184,19 @@ describe('validateCompetitionForm', () => {
     expect(validateCompetitionForm({ ...validFormData, maxPlayingHandicap: '54' })).toBeNull();
     expect(validateCompetitionForm({ ...validFormData, maxPlayingHandicap: '' })).toBeNull();
     expect(validateCompetitionForm({ ...validFormData, maxPlayingHandicap: undefined })).toBeNull();
+  });
+
+  it('12: un tope de hándicap a medias no se trunca, se rechaza (CodeRabbit)', () => {
+    // `parseInt` convierte «24,5» y «24abc» en 24: con el panel plegado el
+    // navegador ya no protege, y al servidor llega un número que nadie escribió
+    expect(validateCompetitionForm({ ...validFormData, maxPlayingHandicap: '24.5' })).toEqual({ key: 'handicapLimitRange' });
+    expect(validateCompetitionForm({ ...validFormData, maxPlayingHandicap: '24abc' })).toEqual({ key: 'handicapLimitRange' });
+    expect(validateCompetitionForm({ ...validFormData, maxPlayingHandicap: '24' })).toBeNull();
+  });
+
+  it('13: y un cupo a medias, igual (el gemelo)', () => {
+    expect(validateCompetitionForm({ ...validFormData, numberOfPlayers: '12.5' })).toEqual({ key: 'playersInvalid' });
+    expect(validateCompetitionForm({ ...validFormData, numberOfPlayers: '12players' })).toEqual({ key: 'playersInvalid' });
+    expect(validateCompetitionForm({ ...validFormData, numberOfPlayers: '12' })).toBeNull();
   });
 });

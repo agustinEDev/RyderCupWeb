@@ -27,6 +27,14 @@ describe('cupoDeJugadores', () => {
   it('lo ilegible cae en el defecto, no en un NaN camino del servidor', () => {
     expect(cupoDeJugadores('doce')).toBe(12);
     expect(cupoDeJugadores('  ')).toBe(12);
+    expect(cupoDeJugadores(null)).toBe(12);
+  });
+
+  it('un número a medias no se trunca: «12.5» no son 12 jugadores (CodeRabbit)', () => {
+    // Con el defecto en 24 se distingue truncar de rechazar: truncando daría 12
+    expect(cupoDeJugadores('12.5', 24)).toBe(24);
+    expect(cupoDeJugadores('12players', 24)).toBe(24);
+    expect(cupoDeJugadores('12', 24)).toBe(12);
   });
 
   it('quien llama puede poner su propio defecto: editando es el cupo guardado', () => {

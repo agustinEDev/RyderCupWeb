@@ -102,7 +102,8 @@
       "playersMaximum": "El número de jugadores no puede exceder 100",
       "teamNamesTooShort": "Los nombres de los equipos necesitan al menos 3 letras",
       "teamNamesTooLong": "Los nombres de los equipos no pueden pasar de 50 letras",
-      "handicapLimitRange": "El límite de hándicap tiene que estar entre 1 y 54"
+      "handicapLimitRange": "El límite de hándicap tiene que estar entre 1 y 54",
+      "playersInvalid": "El número de jugadores tiene que ser un número entero"
     },
     "success": "¡Competición creada exitosamente!",
     "partialSuccess": "Competición creada, pero {{failed}} campo(s) no se pudieron añadir: {{courses}}. Se añadieron {{success}} campo(s) correctamente.",

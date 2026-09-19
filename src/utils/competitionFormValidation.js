@@ -1,3 +1,5 @@
+import { numeroEntero } from './numeroEntero';
+
 const MIN_PLAYERS = 2;
 const MIN_TEAM_NAME = 3;
 const MAX_TEAM_NAME = 50;
@@ -48,8 +50,8 @@ export const validateCompetitionForm = (formData) => {
   // paraba un 99 camino de un 422 (`/code-review`)
   const topeEscrito = formData.maxPlayingHandicap !== '' && formData.maxPlayingHandicap != null;
   if (topeEscrito) {
-    const tope = Number.parseInt(formData.maxPlayingHandicap, 10);
-    if (Number.isNaN(tope) || tope < MIN_HANDICAP || tope > MAX_HANDICAP) {
+    const tope = numeroEntero(formData.maxPlayingHandicap);
+    if (tope === null || tope < MIN_HANDICAP || tope > MAX_HANDICAP) {
       return { key: 'handicapLimitRange' };
     }
   }
@@ -84,8 +86,11 @@ export const validateCompetitionForm = (formData) => {
   const sinNumero = formData.numberOfPlayers === '' || formData.numberOfPlayers == null;
   if (sinNumero) return null;
 
-  const numPlayers = Number.parseInt(formData.numberOfPlayers, 10);
-  if (Number.isNaN(numPlayers) || numPlayers < MIN_PLAYERS) {
+  const numPlayers = numeroEntero(formData.numberOfPlayers);
+  if (numPlayers === null) {
+    return { key: 'playersInvalid' };
+  }
+  if (numPlayers < MIN_PLAYERS) {
     return { key: 'playersMinimum' };
   }
 
