@@ -21,6 +21,7 @@ import GolfCourseSearchBox from '../components/golf_course/GolfCourseSearchBox';
 import GolfCourseRequestModal from '../components/golf_course/GolfCourseRequestModal';
 import customToast from '../utils/toast';
 import FullScreenLoader from '../components/ui/FullScreenLoader';
+import CompetitionTypeChooser from '../components/competition/CompetitionTypeChooser';
 
 
 // Helper function to get message className
@@ -37,7 +38,25 @@ const CreateCompetition = () => {
   const { user, loading: isLoading } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loadingCompetition, setLoadingCompetition] = useState(false);
-  const [isEditMode, setIsEditMode] = useState(false);
+  // Editar o crear lo dice la URL, y se sabe desde el primer render. Vivía en un
+  // estado que se encendía DENTRO del efecto que carga la competición, y ese
+  // efecto sale antes si los países aún no han llegado: sin cobertura la
+  // pantalla de edición se quedaba con el modo de crear —enseñando el selector
+  // de tipo— y al enviar creaba una competición nueva en vez de editar la que
+  // se había abierto (`/code-review`)
+  const isEditMode = Boolean(competitionId);
+  // El tipo se elige ANTES de rellenar nada (FE #639). Editando no se pregunta:
+  // esa competición ya existe y su tipo no se cambia aquí
+  const [tipoElegido, setTipoElegido] = useState(null);
+
+  // Y al elegir, el formulario empieza por arriba. En el móvil los tres tipos
+  // ocupan la pantalla y al tercero se llega con scroll: sin esto, el formulario
+  // aparecía por donde se hubiera quedado y lo primero que se veía era el último
+  // campo de todos
+  const eligeElTipo = (tipo) => {
+    setTipoElegido(tipo);
+    globalThis.scrollTo?.(0, 0);
+  };
   const [message, setMessage] = useState({ type: '', text: '' });
 
   // Ref para cleanup del timer de navegación (prevenir memory leak)
@@ -117,7 +136,6 @@ const CreateCompetition = () => {
     const loadCompetitionData = async () => {
       if (!competitionId || !allCountries.length) return;
 
-      setIsEditMode(true);
       setLoadingCompetition(true);
 
       try {
@@ -540,7 +558,28 @@ const CreateCompetition = () => {
               </div>
             )}
 
+            {!isEditMode && !tipoElegido && (
+              <div className="px-4">
+                <CompetitionTypeChooser onSelect={eligeElTipo} />
+              </div>
+            )}
+
+            {(isEditMode || tipoElegido) && (
             <form onSubmit={handleSubmit} className="flex flex-col gap-6 px-4">
+              {/* Volver a elegir el tipo. Lo escrito se queda: `formData` no se
+                  toca al cambiar de paso, que perder el formulario por mirar
+                  los otros tipos es peor que no dejar mirarlos */}
+              {!isEditMode && (
+                <button
+                  type="button"
+                  data-testid="volver-al-tipo"
+                  onClick={() => setTipoElegido(null)}
+                  className="self-start text-sm text-gray-600 hover:text-gray-900"
+                >
+                  {t('create.type.back')}
+                </button>
+              )}
+
               {/* Section 1: Competition Details */}
               <div className="border border-gray-200 rounded-xl p-6">
                 <div className="flex items-center gap-3 mb-4">
@@ -557,6 +596,7 @@ const CreateCompetition = () => {
                     </label>
                     <input
                       id="competitionName"
+                      data-testid="campo-nombre"
                       type="text"
                       name="competitionName"
                       value={formData.competitionName}
@@ -1086,6 +1126,7 @@ const CreateCompetition = () => {
                 </button>
               </div>
             </form>
+            )}
 
             {/* Footer */}
             <footer className="flex flex-col gap-6 px-5 py-10 text-center">
