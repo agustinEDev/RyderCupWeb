@@ -51,7 +51,7 @@
     },
     "competitionDetails": "Competition Details",
     "competitionName": "Competition Name *",
-    "competitionNamePlaceholder": "Enter competition name",
+    "competitionNamePlaceholder": "e.g. Ryder Cup with friends",
     "teamOneName": "Team 1 Name *",
     "teamOneNamePlaceholder": "e.g., Europe",
     "teamTwoName": "Team 2 Name *",
