@@ -90,6 +90,16 @@ describe('CompetitionTypeChooser', () => {
     });
   });
 
+  it('5b: los que vienen se leen: atenuados no es descoloridos (CodeRabbit)', () => {
+    // `opacity-50` sobre la tarjeta entera apaga también el texto y la propia
+    // etiqueta. Tienen que verse como no disponibles y leerse igual: al sol, en
+    // un teléfono, un gris sobre gris no se lee
+    pinta();
+
+    const stableford = screen.getByTestId('tipo-STABLEFORD');
+    expect(stableford.className).not.toMatch(/opacity-/);
+  });
+
   it('6: cada tipo dice en una línea qué es', () => {
     pinta();
 
