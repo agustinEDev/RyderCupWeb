@@ -31,6 +31,24 @@
   },
   "create": {
     "title": "Crear Competición",
+    "type": {
+      "title": "¿Qué vais a jugar?",
+      "subtitle": "Elige el tipo de competición. Podrás cambiar el resto después.",
+      "comingSoon": "Próximamente",
+      "RYDER_CUP": {
+        "title": "Ryder Cup",
+        "blurb": "Dos equipos, partidos uno contra uno y por parejas. Gana el equipo con más puntos."
+      },
+      "STABLEFORD": {
+        "title": "Stableford",
+        "blurb": "Individual, por puntos según el resultado de cada hoyo."
+      },
+      "MEDAL": {
+        "title": "Medal",
+        "blurb": "Individual, al golpe: gana quien menos sume."
+      },
+      "back": "Cambiar de tipo"
+    },
     "competitionDetails": "Detalles de la Competición",
     "competitionName": "Nombre de la Competición *",
     "competitionNamePlaceholder": "Ingresa el nombre de la competición",

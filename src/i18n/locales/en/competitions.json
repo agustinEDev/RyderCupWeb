@@ -31,6 +31,24 @@
   },
   "create": {
     "title": "Create Competition",
+    "type": {
+      "title": "What are you playing?",
+      "subtitle": "Pick the type of competition. Everything else can be changed later.",
+      "comingSoon": "Coming soon",
+      "RYDER_CUP": {
+        "title": "Ryder Cup",
+        "blurb": "Two teams, singles and pairs. The team with most points wins."
+      },
+      "STABLEFORD": {
+        "title": "Stableford",
+        "blurb": "Individual, points for how you score on each hole."
+      },
+      "MEDAL": {
+        "title": "Medal",
+        "blurb": "Individual, stroke play: lowest total wins."
+      },
+      "back": "Change type"
+    },
     "competitionDetails": "Competition Details",
     "competitionName": "Competition Name *",
     "competitionNamePlaceholder": "Enter competition name",
