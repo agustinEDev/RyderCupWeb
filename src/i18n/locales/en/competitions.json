@@ -74,6 +74,7 @@
     "selectGolfCourse": "Select Golf Course *",
     "selectedCourse": "Selected",
     "coursesSelected": "courses selected",
+    "courseAlreadyAdded": "That course is already added",
     "coursePendingApproval": "This course is pending approval. You won't be able to activate the competition until it's approved.",
     "ryderCupSettings": "RyderCup Settings",
     "playMode": "Play Mode",
@@ -256,7 +257,8 @@
       "manualStart": {
         "title": "This course has to be started by hand",
         "body": "Scoring will not open by itself: the competition's organiser has to start the match, and they need a connection. If the course has no signal, better done before setting off."
-      }
+      },
+      "courseAlreadyAdded": "That course is already in the competition"
     }
   },
   "browse": {

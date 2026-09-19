@@ -440,12 +440,34 @@ const CreateCompetition = () => {
     });
   };
 
+  // Un campo ya añadido no se añade otra vez (FE #644). El buscador tampoco lo
+  // ofrece, pero la guarda se queda: el torneo se crea ANTES de enganchar los
+  // campos, así que un duplicado que se colara dejaba el torneo hecho y un error
+  // listando el mismo campo varias veces
   const handleGolfCourseSelect = (countryCode, course) => {
+    // La comprobación va FUERA del `setFormData`: React ejecuta el actualizador
+    // dos veces en desarrollo (StrictMode) y puede repetirlo en un render que
+    // descarta, así que un aviso ahí dentro salía por duplicado. Un actualizador
+    // tiene que ser puro.
+    //
+    // Y se exige que el campo traiga `id`: sin eso, dos campos DISTINTOS sin id
+    // se tomaban por el mismo y el segundo se descartaba diciendo que ya estaba
+    const yaEsta =
+      Boolean(course?.id) && formData.golfCourses.some(gc => gc.course?.id === course.id);
+    if (yaEsta) {
+      customToast.info(t('create.courseAlreadyAdded'));
+      return;
+    }
     setFormData(prev => ({
       ...prev,
-      golfCourses: [...prev.golfCourses, { countryCode, course }]
+      golfCourses: [...prev.golfCourses, { countryCode, course }],
     }));
   };
+
+  // Los que ya están, para que el buscador no vuelva a ofrecerlos
+  const idsDeLosCamposElegidos = formData.golfCourses
+    .map(gc => gc.course?.id)
+    .filter(Boolean);
 
   const handleRemoveGolfCourse = (index) => {
     setFormData(prev => ({
@@ -467,10 +489,7 @@ const CreateCompetition = () => {
   const handleRequestSuccess = (createdCourse) => {
     // Auto-select the newly requested course for its country
     if (requestModalCountry) {
-      setFormData(prev => ({
-        ...prev,
-        golfCourses: [...prev.golfCourses, { countryCode: requestModalCountry, course: createdCourse }]
-      }));
+      handleGolfCourseSelect(requestModalCountry, createdCourse);
     }
   };
 
@@ -904,6 +923,7 @@ const CreateCompetition = () => {
                         <GolfCourseSearchBox
                           countryCode={formData.country.code}
                           selectedCourse={null}
+                          idsYaElegidos={idsDeLosCamposElegidos}
                           onCourseSelect={(course) => handleGolfCourseSelect(formData.country.code, course)}
                           onRequestNewCourse={() => handleRequestNewCourse(formData.country.code)}
                         />
@@ -959,6 +979,7 @@ const CreateCompetition = () => {
                         <GolfCourseSearchBox
                           countryCode={formData.adjacentCountry1}
                           selectedCourse={null}
+                          idsYaElegidos={idsDeLosCamposElegidos}
                           onCourseSelect={(course) => handleGolfCourseSelect(formData.adjacentCountry1, course)}
                           onRequestNewCourse={() => handleRequestNewCourse(formData.adjacentCountry1)}
                         />
@@ -1014,6 +1035,7 @@ const CreateCompetition = () => {
                         <GolfCourseSearchBox
                           countryCode={formData.adjacentCountry2}
                           selectedCourse={null}
+                          idsYaElegidos={idsDeLosCamposElegidos}
                           onCourseSelect={(course) => handleGolfCourseSelect(formData.adjacentCountry2, course)}
                           onRequestNewCourse={() => handleRequestNewCourse(formData.adjacentCountry2)}
                         />
