@@ -667,8 +667,18 @@ const CreateCompetition = () => {
                     />
                   </div>
 
+                {/* Los campos de fecha se salían de la tarjeta en el iPhone (FE #648).
+                    Medido en un iPhone 14 real: con el mismo `w-full`, el campo de
+                    texto medía 292 px y el de fecha 318. Safari en iOS dibuja
+                    `input[type="date"]` como control nativo y ese control IMPONE su
+                    ancho: no lo arreglan `w-full`, ni `min-w-0`, ni `max-w-full`.
+                    Lo único que lo libera es quitarle la apariencia nativa
+                    (`appearance-none`), y entonces mide los mismos 292.
+
+                    No se reproduce en ningún navegador de escritorio, ni siquiera en
+                    WebKit, que ahí dibuja otro control. Solo se ve en un teléfono. */}
                 <div data-testid="fila-fechas" className="grid grid-cols-1 min-[400px]:grid-cols-2 gap-3">
-                  <div>
+                  <div className="min-w-0">
                     <label htmlFor="startDate" className="block text-sm font-medium text-gray-700 mb-1">
                       {t('create.startDate')}
                     </label>
@@ -678,11 +688,11 @@ const CreateCompetition = () => {
                       name="startDate"
                       value={formData.startDate}
                       onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                      className="w-full min-w-0 max-w-full appearance-none px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                     />
                   </div>
 
-                  <div>
+                  <div className="min-w-0">
                     <label htmlFor="endDate" className="block text-sm font-medium text-gray-700 mb-1">
                       {t('create.endDate')}
                     </label>
@@ -692,7 +702,7 @@ const CreateCompetition = () => {
                       name="endDate"
                       value={formData.endDate}
                       onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                      className="w-full min-w-0 max-w-full appearance-none px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                     />
                   </div>
                 </div>

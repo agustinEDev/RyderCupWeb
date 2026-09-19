@@ -375,6 +375,15 @@ export default defineConfig(() => ({
   server: {
     port: 5173,
     open: true,
+    // Vite solo atiende a los hosts que conoce, para que una web maliciosa no
+    // pueda hablar con tu servidor de desarrollo desde el navegador. Al probar
+    // en un movil se entra por otro nombre (una IP de la red, o el de Tailscale),
+    // asi que se declara al arrancar y no se escribe aqui:
+    //   VITE_ALLOWED_HOSTS=mimac.tailnet.ts.net npm run dev -- --host
+    allowedHosts: (process.env.VITE_ALLOWED_HOSTS || '')
+      .split(',')
+      .map((host) => host.trim())
+      .filter(Boolean),
     proxy: {
       '/api': {
         target: 'http://localhost:8000',
