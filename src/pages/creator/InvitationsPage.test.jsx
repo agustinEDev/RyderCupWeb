@@ -38,11 +38,16 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
+// La sesión, SIEMPRE el mismo objeto: devolver uno nuevo en cada render cambia
+// la identidad de `loadData` y el efecto que la llama se dispara sin parar. En
+// la app no pasa, porque `user` sale de un `useState`
+const sesionDePrueba = {
+  user: { id: 'user-1', first_name: 'Test', last_name: 'User' },
+  loading: false,
+};
+
 vi.mock('../../hooks/useAuth', () => ({
-  useAuth: () => ({
-    user: { id: 'user-1', first_name: 'Test', last_name: 'User' },
-    loading: false,
-  }),
+  useAuth: () => sesionDePrueba,
 }));
 
 const mockRefetchRoles = vi.hoisted(() => vi.fn());
@@ -361,6 +366,13 @@ describe('InvitationsPage', () => {
     beforeEach(() => {
       navegacionesAMano.length = 0;
       mockRefetchRoles.mockClear();
+      // `clearAllMocks` borra las llamadas, no las implementaciones: sin esto,
+      // la promesa que nunca resuelve de un test se cuela en el siguiente
+      mockGetCompetitionDetail.mockReset().mockResolvedValue({
+        id: 'comp-1',
+        name: 'Summer Cup',
+        status: 'ACTIVE',
+      });
       rolesActuales.valor = { isAdmin: false, isCreator: false, isLoading: false, error: null };
     });
 
@@ -418,7 +430,7 @@ describe('InvitationsPage', () => {
       expect(mockRefetchRoles).toHaveBeenCalled();
     });
 
-    it('cuando la pantalla no carga, tampoco se apila', async () => {
+    it('cuando la pantalla no carga, se sale, y tampoco se apila', async () => {
       // El gemelo del mismo fichero: el `catch` de la carga empujaba al detalle
       // apilando, así que atrás volvía aquí, fallaba otra vez y vuelta a empezar
       rolesActuales.valor = { isAdmin: false, isCreator: true, isLoading: false, error: null };
@@ -426,8 +438,52 @@ describe('InvitationsPage', () => {
 
       renderConHistorial();
 
-      await waitFor(() => expect(navegacionesAMano).toHaveLength(1));
-      expect(navegacionesAMano[0]).toEqual(['/competitions/comp-1', { replace: true }]);
+      expect(await screen.findByText('LA COMPETICION')).toBeInTheDocument();
+      expect(navegacionesAMano).toHaveLength(0);
+
+      fireEvent.click(screen.getByText('ATRAS'));
+      expect(await screen.findByText('DE DONDE VENGO')).toBeInTheDocument();
+    });
+
+    it('si fallan las dos cosas a la vez, manda el fallo de permisos', async () => {
+      // La carga y los permisos van por su cuenta: el `catch` de la carga echaba
+      // sin esperar a los permisos, así que el aviso con su «Reintentar» no
+      // llegaba a verse nunca. Con la API caída fallan las dos
+      rolesActuales.valor = {
+        isAdmin: false, isCreator: false, isLoading: false, error: new Error('500'),
+      };
+      mockGetCompetitionDetail.mockRejectedValueOnce(new Error('no se pudo'));
+
+      renderConHistorial();
+
+      expect(await screen.findByTestId('roles-error')).toBeInTheDocument();
+      expect(screen.queryByText('LA COMPETICION')).not.toBeInTheDocument();
+    });
+
+    it('si los permisos ya fallaron, no se espera a una carga que no vuelve', async () => {
+      // Con la API colgada, `isLoading` se queda en true para siempre. Enseñar
+      // el cargador delante del aviso dejaba la pantalla girando sin salida,
+      // cuando ya se sabía que no se iba a poder enseñar nada
+      rolesActuales.valor = {
+        isAdmin: false, isCreator: false, isLoading: false, error: new Error('500'),
+      };
+      mockGetCompetitionDetail.mockReturnValue(new Promise(() => {}));
+
+      renderConHistorial();
+
+      expect(await screen.findByTestId('roles-error')).toBeInTheDocument();
+    });
+
+    it('y mientras los permisos no contesten, no se echa a nadie', async () => {
+      // Salir a mitad de la pregunta es decidir sin la respuesta
+      rolesActuales.valor = { isAdmin: false, isCreator: false, isLoading: true, error: null };
+      mockGetCompetitionDetail.mockRejectedValueOnce(new Error('no se pudo'));
+
+      renderConHistorial();
+
+      await waitFor(() => expect(mockGetCompetitionDetail).toHaveBeenCalled());
+      expect(screen.queryByText('LA COMPETICION')).not.toBeInTheDocument();
+      expect(navegacionesAMano).toHaveLength(0);
     });
 
     it('a quien sí puede no se le mueve de sitio', async () => {

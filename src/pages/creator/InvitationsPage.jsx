@@ -73,6 +73,7 @@ const InvitationsPage = () => {
   const [cargandoAmigos, setCargandoAmigos] = useState(false);
   const [falloAlCargarAmigos, setFalloAlCargarAmigos] = useState(false);
   const [falloAlComprobarSituacion, setFalloAlComprobarSituacion] = useState(false);
+  const [falloAlCargar, setFalloAlCargar] = useState(false);
 
   const canManage = isAdmin || hasCreatorRole;
 
@@ -92,9 +93,10 @@ const InvitationsPage = () => {
     } catch (error) {
       console.error('Error loading invitations:', error);
       customToast.error(error.message || t('errors.failedToLoad'));
-      // `replace`, igual que el guard de permisos: dejarla en el historial hace
-      // que atrás vuelva aquí, vuelva a fallar y vuelva a empujar (FE #656)
-      navigate(`/competitions/${id}`, { replace: true });
+      // Marcar y que decida el render, en vez de irse desde aquí: esta carga y
+      // la de los permisos van por su cuenta, y salir corriendo la primera se
+      // llevaba por delante el aviso de la otra (FE #656)
+      setFalloAlCargar(true);
     } finally {
       setIsLoading(false);
     }
@@ -224,18 +226,6 @@ const InvitationsPage = () => {
 
   const isPageLoading = isLoadingUser || isLoadingRoles || isLoading;
 
-  if (isPageLoading) {
-    // La cabecera se queda puesta durante la espera: aparecer de golpe al
-    // terminar es un salto, y de eso va justamente FE #495. El dibujo si es el
-    // compartido.
-    return (
-      <div className="min-h-screen bg-gray-50">
-        <HeaderAuth user={user} />
-        <BlockLoader texto={t('loading')} />
-      </div>
-    );
-  }
-
   // `useUserRoles` deja los tres roles a false ante CUALQUIER error, así que un
   // 500 o un corte de red se parecen a «no tienes permiso». Echar por eso sería
   // afirmar lo que no se ha podido preguntar, y con `replace` ni siquiera
@@ -259,6 +249,24 @@ const InvitationsPage = () => {
         </div>
       </div>
     );
+  }
+
+  if (isPageLoading) {
+    // La cabecera se queda puesta durante la espera: aparecer de golpe al
+    // terminar es un salto, y de eso va justamente FE #495. El dibujo si es el
+    // compartido.
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <HeaderAuth user={user} />
+        <BlockLoader texto={t('loading')} />
+      </div>
+    );
+  }
+
+  // Sin datos no hay pantalla que enseñar, así que se sale — pero después del
+  // aviso de permisos, que es el que sabe si se puede reintentar
+  if (falloAlCargar) {
+    return <Navigate to={`/competitions/${id}`} replace />;
   }
 
   // Un elemento y no `navigate()`: llamarlo aquí cambia el router en pleno
