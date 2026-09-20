@@ -1,10 +1,24 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { nombreRealSiAporta, nombreVisible } from '../../utils/nombreVisible';
-import { X, Search, Loader } from 'lucide-react';
+import { Loader, Search, UserPlus, X } from 'lucide-react';
 import Avatar from '../ui/Avatar';
 
-const SendInvitationModalContent = ({ onClose, onSend, onSendByUserId, onSearchUsers, isProcessing, t }) => {
-  const [activeTab, setActiveTab] = useState('search');
+const SendInvitationModalContent = ({
+  onClose,
+  onSend,
+  onSendByUserId,
+  onSearchUsers,
+  isProcessing,
+  t,
+  // Los amigos de quien invita, y en qué situación está cada uno respecto a esta
+  // competición. Lo trae la pantalla, que es la que lo sabe (FE #409)
+  friends = [],
+  idsInvitados = [],
+  idsInscritos = [],
+}) => {
+  // Se abre por amigos: invitar a una competición es, casi siempre, invitar a
+  // los de siempre. Buscar y correo quedan para quien todavía no lo es
+  const [activeTab, setActiveTab] = useState('friends');
   const [email, setEmail] = useState('');
   const [personalMessage, setPersonalMessage] = useState('');
   const [error, setError] = useState('');
@@ -52,7 +66,7 @@ const SendInvitationModalContent = ({ onClose, onSend, onSendByUserId, onSearchU
 
   // La pestana activa, legible desde el efecto de busqueda sin meterla en sus
   // dependencias; y la busqueda cuyo desplegable cerro el propio usuario.
-  const activeTabRef = useRef('search');
+  const activeTabRef = useRef('friends');
   const searchInputRef = useRef(null);
   const modalRef = useRef(null);
   const descartadaRef = useRef('');
@@ -231,6 +245,15 @@ const SendInvitationModalContent = ({ onClose, onSend, onSendByUserId, onSearchU
     };
   }, [searchQuery, highlight, openDropdown, putResults]);
 
+  // Salen TODOS, y quien no se puede invitar lo dice. Esconderlos era peor: al
+  // no encontrar a alguien que sabes que está en tu lista, lo que parece es que
+  // la aplicación falla, no que esa persona ya está dentro
+  const amigosConSuSituacion = friends.map((amigo) => ({
+    ...amigo,
+    yaInscrito: idsInscritos.includes(amigo.otherUserId),
+    yaInvitado: idsInvitados.includes(amigo.otherUserId),
+  }));
+
   const handleEmailSubmit = (e) => {
     e.preventDefault();
     setError('');
@@ -323,6 +346,18 @@ const SendInvitationModalContent = ({ onClose, onSend, onSendByUserId, onSearchU
         <div className="flex border-b border-gray-200" data-testid="invitation-tabs">
           <button
             type="button"
+            onClick={() => handleTabChange('friends')}
+            className={`flex-1 px-4 py-2.5 text-sm font-medium transition-colors ${
+              activeTab === 'friends'
+                ? 'text-primary border-b-2 border-primary'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+            data-testid="tab-friends"
+          >
+            {t('send.tabFriends')}
+          </button>
+          <button
+            type="button"
             onClick={() => handleTabChange('search')}
             className={`flex-1 px-4 py-2.5 text-sm font-medium transition-colors ${
               activeTab === 'search'
@@ -346,6 +381,60 @@ const SendInvitationModalContent = ({ onClose, onSend, onSendByUserId, onSearchU
             {t('send.tabByEmail')}
           </button>
         </div>
+
+        {/* Amigos: la lista, sin teclear ni esperar a nada */}
+        {activeTab === 'friends' && (
+          <div className="p-4">
+            {amigosConSuSituacion.length === 0 ? (
+              <div className="py-8 text-center" data-testid="friends-empty">
+                <p className="text-sm text-gray-600 mb-2">{t('send.noFriends')}</p>
+                <button
+                  type="button"
+                  onClick={() => handleTabChange('search')}
+                  className="text-sm font-medium text-primary hover:text-primary/80"
+                >
+                  {t('send.tabSearchUser')}
+                </button>
+              </div>
+            ) : (
+              <ul className="space-y-2 max-h-72 overflow-y-auto">
+                {amigosConSuSituacion.map((amigo) => {
+                  const noSePuede = amigo.yaInscrito || amigo.yaInvitado;
+                  return (
+                    <li key={amigo.otherUserId}>
+                      <button
+                        type="button"
+                        onClick={() => onSendByUserId(amigo.otherUserId)}
+                        disabled={isProcessing || noSePuede}
+                        data-testid={`invite-friend-${amigo.otherUserId}`}
+                        className="w-full flex items-center justify-between gap-3 px-3 py-2.5 text-left border border-gray-200 rounded-lg enabled:hover:bg-gray-50 disabled:cursor-default"
+                      >
+                        <span
+                          className={`min-w-0 truncate text-sm font-medium ${
+                            noSePuede ? 'text-gray-400' : 'text-gray-900'
+                          }`}
+                        >
+                          {amigo.otherUserName}
+                        </span>
+                        {amigo.yaInscrito ? (
+                          <span className="shrink-0 text-xs text-gray-500">
+                            {t('send.alreadyEnrolled')}
+                          </span>
+                        ) : amigo.yaInvitado ? (
+                          <span className="shrink-0 text-xs text-gray-500">
+                            {t('send.alreadyInvited')}
+                          </span>
+                        ) : (
+                          <UserPlus className="w-5 h-5 shrink-0 text-primary" />
+                        )}
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
+        )}
 
         {/* Search User Tab */}
         {activeTab === 'search' && (
@@ -566,7 +655,18 @@ const SendInvitationModalContent = ({ onClose, onSend, onSendByUserId, onSearchU
   );
 };
 
-const SendInvitationModal = ({ isOpen, onClose, onSend, onSendByUserId, onSearchUsers, isProcessing, t }) => {
+const SendInvitationModal = ({
+  isOpen,
+  onClose,
+  onSend,
+  onSendByUserId,
+  onSearchUsers,
+  isProcessing,
+  t,
+  friends,
+  idsInvitados,
+  idsInscritos,
+}) => {
   if (!isOpen) return null;
   return (
     <SendInvitationModalContent
@@ -576,6 +676,9 @@ const SendInvitationModal = ({ isOpen, onClose, onSend, onSendByUserId, onSearch
       onSearchUsers={onSearchUsers}
       isProcessing={isProcessing}
       t={t}
+      friends={friends}
+      idsInvitados={idsInvitados}
+      idsInscritos={idsInscritos}
     />
   );
 };

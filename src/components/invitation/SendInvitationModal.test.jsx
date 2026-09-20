@@ -22,7 +22,17 @@ describe('SendInvitationModal', () => {
     vi.useRealTimers();
   });
 
+  /** Los tests de aquí abajo se escribieron cuando el modal abría por la pestaña
+   *  de búsqueda. Ahora abre por la de amigos, así que se pulsa la de búsqueda y
+   *  el resto del fichero sigue probando lo mismo que probaba. */
   const renderModal = (props = {}) => {
+    const resultado = renderModalCrudo(props);
+    const pestanaBuscar = screen.queryByTestId('tab-search-user');
+    if (pestanaBuscar) fireEvent.click(pestanaBuscar);
+    return resultado;
+  };
+
+  const renderModalCrudo = (props = {}) => {
     return render(
       <SendInvitationModal
         isOpen={true}
@@ -795,5 +805,85 @@ describe('SendInvitationModal', () => {
     // el Enter hubiera cogido a Jane. Lo que se prueba es que cogio al que
     // resalto el ArrowDown.
     expect(screen.getByTestId('selected-user-chip')).toHaveTextContent('John Doe');
+  });
+
+  describe('pestaña de amigos (FE #409)', () => {
+    // Invitar obligaba a recordar y teclear algo de alguien que ya está en tu
+    // lista de amigos: o el nombre, para esperar a una búsqueda, o el correo.
+    // La partida rápida ya lo resolvió con una pestaña de amigos que solo hay
+    // que tocar, y es la misma gente a la que se invita a una competición.
+    const amigos = [
+      { otherUserId: 'u-1', otherUserName: 'Ana Pérez' },
+      { otherUserId: 'u-2', otherUserName: 'Luis Gómez' },
+    ];
+
+    it('1: se abre por la pestaña de amigos', () => {
+      renderModalCrudo({ friends: amigos });
+
+      expect(screen.getByText('Ana Pérez')).toBeInTheDocument();
+      expect(screen.getByText('Luis Gómez')).toBeInTheDocument();
+    });
+
+    it('2: los amigos salen sin buscar ni escribir nada', () => {
+      renderModalCrudo({ friends: amigos });
+
+      // Sin teclear, sin esperar a un debounce, sin llamar al backend
+      expect(onSearchUsers).not.toHaveBeenCalled();
+    });
+
+    it('3: pulsar en un amigo lo invita por su id', () => {
+      renderModalCrudo({ friends: amigos });
+
+      fireEvent.click(screen.getByTestId('invite-friend-u-1'));
+
+      expect(onSendByUserId).toHaveBeenCalledWith('u-1');
+    });
+
+    it('4: quien ya está invitado SALE, y se dice que ya lo está', () => {
+      // Esconderlo es peor: al no encontrar a alguien que sabes que está en tu
+      // lista, lo que parece es que la aplicación falla
+      renderModalCrudo({ friends: amigos, idsInvitados: ['u-1'] });
+
+      expect(screen.getByText('Ana Pérez')).toBeInTheDocument();
+      expect(screen.getByText('send.alreadyInvited')).toBeInTheDocument();
+      expect(screen.getByTestId('invite-friend-u-1')).toBeDisabled();
+    });
+
+    it('4b: y quien ya está dentro, con su propio aviso', () => {
+      // Invitado y apuntado no son lo mismo: uno está pendiente de contestar
+      renderModalCrudo({ friends: amigos, idsInscritos: ['u-2'] });
+
+      expect(screen.getByText('Luis Gómez')).toBeInTheDocument();
+      expect(screen.getByText('send.alreadyEnrolled')).toBeInTheDocument();
+      expect(screen.getByTestId('invite-friend-u-2')).toBeDisabled();
+    });
+
+    it('4c: pulsar en uno que ya está no invita', () => {
+      renderModalCrudo({ friends: amigos, idsInscritos: ['u-1'] });
+
+      fireEvent.click(screen.getByTestId('invite-friend-u-1'));
+
+      expect(onSendByUserId).not.toHaveBeenCalled();
+    });
+
+    it('5: sin amigos, se explica y se ofrece buscar', () => {
+      renderModalCrudo({ friends: [] });
+
+      expect(screen.getByTestId('friends-empty')).toBeInTheDocument();
+    });
+
+    it('6: con todos dentro NO se ve el vacío: se ven ellos y por qué', () => {
+      renderModalCrudo({ friends: amigos, idsInscritos: ['u-1', 'u-2'] });
+
+      expect(screen.queryByTestId('friends-empty')).not.toBeInTheDocument();
+      expect(screen.getAllByText('send.alreadyEnrolled')).toHaveLength(2);
+    });
+
+    it('7: las otras dos pestañas siguen ahí', () => {
+      renderModalCrudo({ friends: amigos });
+
+      expect(screen.getByTestId('tab-search-user')).toBeInTheDocument();
+      expect(screen.getByTestId('tab-by-email')).toBeInTheDocument();
+    });
   });
 });

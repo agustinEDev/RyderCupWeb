@@ -16,7 +16,11 @@
     "personalMessagePlaceholder": "Add a personal message to the invitation...",
     "send": "Send Invitation",
     "sending": "Sending...",
-    "searchFailed": "The search could not be completed. Try again."
+    "searchFailed": "The search could not be completed. Try again.",
+    "tabFriends": "Friends",
+    "noFriends": "You have no friends on the app yet",
+    "alreadyInvited": "Already invited",
+    "alreadyEnrolled": "Already in the tournament"
   },
   "status": {
     "PENDING": "Pending",

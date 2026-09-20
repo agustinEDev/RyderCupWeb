@@ -16,7 +16,11 @@
     "personalMessagePlaceholder": "Añade un mensaje personal a la invitación...",
     "send": "Enviar invitación",
     "sending": "Enviando...",
-    "searchFailed": "No se ha podido buscar. Inténtalo otra vez."
+    "searchFailed": "No se ha podido buscar. Inténtalo otra vez.",
+    "tabFriends": "Amigos",
+    "noFriends": "Todavía no tienes amigos en la aplicación",
+    "alreadyInvited": "Ya invitado",
+    "alreadyEnrolled": "Ya está en el torneo"
   },
   "status": {
     "PENDING": "Pendiente",

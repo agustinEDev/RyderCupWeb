@@ -11,9 +11,11 @@ import SendInvitationModal from '../../components/invitation/SendInvitationModal
 import {
   getCompetitionDetailUseCase,
   listCompetitionInvitationsUseCase,
+  listEnrollmentsUseCase,
+  listFriendsUseCase,
+  searchUsersUseCase,
   sendInvitationByEmailUseCase,
   sendInvitationUseCase,
-  searchUsersUseCase,
 } from '../../composition';
 import BlockLoader from '../../components/ui/BlockLoader';
 
@@ -31,6 +33,9 @@ const InvitationsPage = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [statusFilter, setStatusFilter] = useState('');
   const [showSendModal, setShowSendModal] = useState(false);
+  // Para la pestaña de amigos del modal (FE #409)
+  const [friends, setFriends] = useState([]);
+  const [idsInscritos, setIdsInscritos] = useState([]);
 
   const canManage = isAdmin || hasCreatorRole;
 
@@ -56,6 +61,26 @@ const InvitationsPage = () => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, user, statusFilter, navigate]);
+
+  // Los amigos y quién está ya dentro se piden APARTE, no dentro del `Promise.all`
+  // de arriba: colgarlos ahí haría que un fallo suyo tumbara la pantalla entera,
+  // cuando lo único que se pierde es saber a quién no ofrecer (FE #409)
+  useEffect(() => {
+    if (!user?.id || !showSendModal) return;
+
+    listFriendsUseCase
+      .execute(user.id)
+      .then((res) => setFriends(res.friendships ?? []))
+      .catch(() => setFriends([]));
+
+    listEnrollmentsUseCase
+      .execute(id)
+      .then((res) => {
+        const inscripciones = Array.isArray(res) ? res : (res?.enrollments ?? []);
+        setIdsInscritos(inscripciones.map((e) => e.userId ?? e.user_id).filter(Boolean));
+      })
+      .catch(() => setIdsInscritos([]));
+  }, [user?.id, id, showSendModal]);
 
   useEffect(() => {
     if (user) {
@@ -216,6 +241,12 @@ const InvitationsPage = () => {
         onSearchUsers={handleSearchUsers}
         isProcessing={isProcessing}
         t={t}
+        friends={friends}
+        idsInvitados={invitations
+          .filter((inv) => inv.status === 'PENDING')
+          .map((inv) => inv.inviteeUserId)
+          .filter(Boolean)}
+        idsInscritos={idsInscritos}
       />
     </div>
   );
