@@ -20,7 +20,9 @@
     "tabFriends": "Friends",
     "noFriends": "You have no friends on the app yet",
     "alreadyInvited": "Already invited",
-    "alreadyEnrolled": "Already in the tournament"
+    "alreadyEnrolled": "Already in the tournament",
+    "loadingFriends": "Loading your friends…",
+    "friendsLoadFailed": "Could not load your friends list"
   },
   "status": {
     "PENDING": "Pending",

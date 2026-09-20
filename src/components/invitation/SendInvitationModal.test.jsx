@@ -836,7 +836,7 @@ describe('SendInvitationModal', () => {
 
       fireEvent.click(screen.getByTestId('invite-friend-u-1'));
 
-      expect(onSendByUserId).toHaveBeenCalledWith('u-1');
+      expect(onSendByUserId).toHaveBeenCalledWith('u-1', null);
     });
 
     it('4: quien ya está invitado SALE, y se dice que ya lo está', () => {
@@ -877,6 +877,39 @@ describe('SendInvitationModal', () => {
 
       expect(screen.queryByTestId('friends-empty')).not.toBeInTheDocument();
       expect(screen.getAllByText('send.alreadyEnrolled')).toHaveLength(2);
+    });
+
+    it('6b: mientras cargan, NO se dice que no tienes amigos', () => {
+      // Se abría con la lista vacía y parpadeaba «no tienes amigos» a quien sí
+      // los tiene, en cada apertura
+      renderModalCrudo({ friends: [], cargandoAmigos: true });
+
+      expect(screen.getByTestId('friends-loading')).toBeInTheDocument();
+      expect(screen.queryByTestId('friends-empty')).not.toBeInTheDocument();
+    });
+
+    it('6c: si falla la red, se dice que falló, no que no tienes amigos', () => {
+      // Vaciar la lista en el catch es afirmar lo que no se ha podido preguntar
+      renderModalCrudo({ friends: [], falloAlCargarAmigos: true });
+
+      expect(screen.getByTestId('friends-error')).toBeInTheDocument();
+      expect(screen.queryByTestId('friends-empty')).not.toBeInTheDocument();
+    });
+
+    it('6d: el mensaje escrito en otra pestaña no se cuela en la invitación', () => {
+      // El campo del mensaje vive en las pestañas de búsqueda y correo, y desde
+      // amigos no se ve. Conservarlo enviaría un texto que el organizador no
+      // tiene delante; por eso se limpia al cambiar de pestaña
+      renderModalCrudo({ friends: amigos });
+
+      fireEvent.click(screen.getByTestId('tab-by-email'));
+      const mensaje = document.querySelector('textarea');
+      fireEvent.change(mensaje, { target: { value: 'Te espero en el hoyo 1' } });
+
+      fireEvent.click(screen.getByTestId('tab-friends'));
+      fireEvent.click(screen.getByTestId('invite-friend-u-1'));
+
+      expect(onSendByUserId).toHaveBeenCalledWith('u-1', null);
     });
 
     it('7: las otras dos pestañas siguen ahí', () => {

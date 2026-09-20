@@ -15,6 +15,8 @@ const SendInvitationModalContent = ({
   friends = [],
   idsInvitados = [],
   idsInscritos = [],
+  cargandoAmigos = false,
+  falloAlCargarAmigos = false,
 }) => {
   // Se abre por amigos: invitar a una competición es, casi siempre, invitar a
   // los de siempre. Buscar y correo quedan para quien todavía no lo es
@@ -295,6 +297,10 @@ const SendInvitationModalContent = ({
   const handleTabChange = (tab) => {
     setActiveTab(tab);
     setError('');
+    // El mensaje personal se escribe en las pestañas de búsqueda y correo, y no
+    // se ve desde la de amigos: conservarlo enviaría, sin decirlo, un texto que
+    // el organizador no tiene delante. Se limpia al cambiar
+    setPersonalMessage('');
     highlight(-1);
     activeTabRef.current = tab;
     if (tab !== 'search') {
@@ -385,7 +391,17 @@ const SendInvitationModalContent = ({
         {/* Amigos: la lista, sin teclear ni esperar a nada */}
         {activeTab === 'friends' && (
           <div className="p-4">
-            {amigosConSuSituacion.length === 0 ? (
+            {cargandoAmigos ? (
+              <div className="py-8 text-center" data-testid="friends-loading">
+                <p className="text-sm text-gray-500">{t('send.loadingFriends')}</p>
+              </div>
+            ) : falloAlCargarAmigos ? (
+              // No es lo mismo que no tener amigos: decirlo sería afirmar lo que
+              // no se ha podido preguntar
+              <div className="py-8 text-center" data-testid="friends-error">
+                <p className="text-sm text-gray-600">{t('send.friendsLoadFailed')}</p>
+              </div>
+            ) : amigosConSuSituacion.length === 0 ? (
               <div className="py-8 text-center" data-testid="friends-empty">
                 <p className="text-sm text-gray-600 mb-2">{t('send.noFriends')}</p>
                 <button
@@ -404,7 +420,7 @@ const SendInvitationModalContent = ({
                     <li key={amigo.otherUserId}>
                       <button
                         type="button"
-                        onClick={() => onSendByUserId(amigo.otherUserId)}
+                        onClick={() => onSendByUserId(amigo.otherUserId, null)}
                         disabled={isProcessing || noSePuede}
                         data-testid={`invite-friend-${amigo.otherUserId}`}
                         className="w-full flex items-center justify-between gap-3 px-3 py-2.5 text-left border border-gray-200 rounded-lg enabled:hover:bg-gray-50 disabled:cursor-default"
@@ -666,6 +682,8 @@ const SendInvitationModal = ({
   friends,
   idsInvitados,
   idsInscritos,
+  cargandoAmigos,
+  falloAlCargarAmigos,
 }) => {
   if (!isOpen) return null;
   return (
@@ -679,6 +697,8 @@ const SendInvitationModal = ({
       friends={friends}
       idsInvitados={idsInvitados}
       idsInscritos={idsInscritos}
+      cargandoAmigos={cargandoAmigos}
+      falloAlCargarAmigos={falloAlCargarAmigos}
     />
   );
 };

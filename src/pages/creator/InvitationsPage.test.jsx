@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import InvitationsPage from './InvitationsPage';
 
@@ -43,6 +43,8 @@ const mockListCompetitionInvitations = vi.fn().mockResolvedValue({
   totalCount: 0,
 });
 
+const mockListFriends = vi.fn().mockResolvedValue({ friendships: [], totalCount: 0 });
+const mockListEnrollments = vi.fn().mockResolvedValue([]);
 const mockSendInvitationByEmail = vi.fn();
 const mockSendInvitation = vi.fn();
 const mockSearchUsers = vi.fn().mockResolvedValue([]);
@@ -53,6 +55,8 @@ vi.mock('../../composition', () => ({
   sendInvitationByEmailUseCase: { execute: (...args) => mockSendInvitationByEmail(...args) },
   sendInvitationUseCase: { execute: (...args) => mockSendInvitation(...args) },
   searchUsersUseCase: { execute: (...args) => mockSearchUsers(...args) },
+  listFriendsUseCase: { execute: (...args) => mockListFriends(...args) },
+  listEnrollmentsUseCase: { execute: (...args) => mockListEnrollments(...args) },
 }));
 
 vi.mock('../../utils/toast', () => ({
@@ -120,5 +124,62 @@ describe('InvitationsPage', () => {
   it('should have send invitation button', async () => {
     renderPage();
     expect(await screen.findByText('creator.sendNew')).toBeInTheDocument();
+  });
+
+  describe('la pestaña de amigos se alimenta bien (FE #409)', () => {
+    /** Abre el modal de invitar: es lo que dispara la carga de amigos. */
+    const abreElModal = async () => {
+      renderPage();
+      fireEvent.click(await screen.findByText('creator.sendNew'));
+    };
+
+    it('1: al abrirlo se piden amigos, inscritos e invitados', async () => {
+      await abreElModal();
+
+      await waitFor(() => expect(mockListFriends).toHaveBeenCalled());
+      expect(mockListEnrollments).toHaveBeenCalled();
+    });
+
+    it('2: de los inscritos solo interesan los APROBADOS', async () => {
+      // Sin filtro vienen también REQUESTED, REJECTED, CANCELLED y WITHDRAWN, y
+      // a quien se retiró o fue rechazado SÍ se le puede volver a invitar: el
+      // backend solo bloquea por enrollment APPROVED
+      await abreElModal();
+
+      await waitFor(() => expect(mockListEnrollments).toHaveBeenCalled());
+
+      expect(mockListEnrollments).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({ status: 'APPROVED' })
+      );
+    });
+
+    it('3: las invitaciones pendientes se piden aparte del listado de pantalla', async () => {
+      // El listado de arriba está filtrado por lo que elija el creador y
+      // paginado de 20 en 20: con el desplegable en «Aceptadas» no habría
+      // ninguna pendiente y se ofrecería invitar a quien ya está invitado
+      await abreElModal();
+
+      await waitFor(() => expect(mockListCompetitionInvitations).toHaveBeenCalled());
+
+      const llamadas = mockListCompetitionInvitations.mock.calls;
+      const pidePendientes = llamadas.some(
+        ([, filtros]) => filtros && filtros.status === 'PENDING'
+      );
+      expect(pidePendientes).toBe(true);
+    });
+
+    it('4: los amigos se piden con límite propio, no con el de por defecto', async () => {
+      // `/friends/me` pagina de 20 en 20 y la de amigos es ahora la pestaña de
+      // entrada: con 25 amigos se veían 20 y los otros no existían
+      await abreElModal();
+
+      await waitFor(() => expect(mockListFriends).toHaveBeenCalled());
+
+      expect(mockListFriends).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({ limit: expect.any(Number) })
+      );
+    });
   });
 });

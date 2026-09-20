@@ -36,6 +36,9 @@ const InvitationsPage = () => {
   // Para la pestaña de amigos del modal (FE #409)
   const [friends, setFriends] = useState([]);
   const [idsInscritos, setIdsInscritos] = useState([]);
+  const [idsInvitados, setIdsInvitados] = useState([]);
+  const [cargandoAmigos, setCargandoAmigos] = useState(false);
+  const [falloAlCargarAmigos, setFalloAlCargarAmigos] = useState(false);
 
   const canManage = isAdmin || hasCreatorRole;
 
@@ -62,24 +65,73 @@ const InvitationsPage = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, user, statusFilter, navigate]);
 
-  // Los amigos y quién está ya dentro se piden APARTE, no dentro del `Promise.all`
-  // de arriba: colgarlos ahí haría que un fallo suyo tumbara la pantalla entera,
-  // cuando lo único que se pierde es saber a quién no ofrecer (FE #409)
+  // Los amigos y la situación de cada uno se piden APARTE, no dentro del
+  // `Promise.all` de arriba: colgarlos ahí haría que un fallo suyo tumbara la
+  // pantalla entera, cuando lo único que se pierde es saber a quién no ofrecer
+  // (FE #409)
   useEffect(() => {
     if (!user?.id || !showSendModal) return;
 
-    listFriendsUseCase
-      .execute(user.id)
-      .then((res) => setFriends(res.friendships ?? []))
-      .catch(() => setFriends([]));
+    let vigente = true;
+    // En una microtarea y no aquí mismo: llamar a setState de forma síncrona
+    // dentro del efecto encadena renders, y el linter lo dice con razón
+    globalThis.queueMicrotask(() => {
+      if (!vigente) return;
+      setCargandoAmigos(true);
+      setFalloAlCargarAmigos(false);
+    });
 
-    listEnrollmentsUseCase
-      .execute(id)
+    // `limit` explícito: `/friends/me` pagina de 20 en 20, y la pestaña de
+    // amigos es ahora la primera que se ve. Con 25 amigos se veían 20 y los
+    // otros 5 simplemente no existían
+    listFriendsUseCase
+      .execute(user.id, { limit: 100 })
       .then((res) => {
+        if (!vigente) return;
+        setFriends(res.friendships ?? []);
+      })
+      .catch(() => {
+        if (!vigente) return;
+        // Vaciar la lista diría «no tienes amigos», que es afirmar lo que no se
+        // ha podido preguntar. Se distingue de no tenerlos
+        setFriends([]);
+        setFalloAlCargarAmigos(true);
+      })
+      .finally(() => {
+        if (vigente) setCargandoAmigos(false);
+      });
+
+    // Solo APPROVED: sin filtro vienen también REQUESTED, REJECTED, CANCELLED e
+    // INVITED, y quien se retiró o fue rechazado SÍ se puede volver a invitar.
+    // Marcarlos habría bloqueado a quien el backend acepta sin problema
+    listEnrollmentsUseCase
+      .execute(id, { status: 'APPROVED' })
+      .then((res) => {
+        if (!vigente) return;
         const inscripciones = Array.isArray(res) ? res : (res?.enrollments ?? []);
         setIdsInscritos(inscripciones.map((e) => e.userId ?? e.user_id).filter(Boolean));
       })
-      .catch(() => setIdsInscritos([]));
+      .catch(() => {
+        if (vigente) setIdsInscritos([]);
+      });
+
+    // Las invitaciones pendientes se piden aparte y sin el filtro de la pantalla:
+    // `invitations` está filtrada por lo que el creador haya elegido arriba y
+    // paginada de 20 en 20, así que con el desplegable en «Aceptadas» no habría
+    // ninguna pendiente y se ofrecería invitar a quien ya está invitado
+    listCompetitionInvitationsUseCase
+      .execute(id, { status: 'PENDING', limit: 100 })
+      .then((res) => {
+        if (!vigente) return;
+        setIdsInvitados((res.invitations ?? []).map((inv) => inv.inviteeUserId).filter(Boolean));
+      })
+      .catch(() => {
+        if (vigente) setIdsInvitados([]);
+      });
+
+    return () => {
+      vigente = false;
+    };
   }, [user?.id, id, showSendModal]);
 
   useEffect(() => {
@@ -242,11 +294,10 @@ const InvitationsPage = () => {
         isProcessing={isProcessing}
         t={t}
         friends={friends}
-        idsInvitados={invitations
-          .filter((inv) => inv.status === 'PENDING')
-          .map((inv) => inv.inviteeUserId)
-          .filter(Boolean)}
+        idsInvitados={idsInvitados}
         idsInscritos={idsInscritos}
+        cargandoAmigos={cargandoAmigos}
+        falloAlCargarAmigos={falloAlCargarAmigos}
       />
     </div>
   );
