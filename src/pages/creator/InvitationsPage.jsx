@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useNavigate, useParams } from 'react-router';
+import { Navigate, useNavigate, useParams } from 'react-router';
 import { ArrowLeft, Plus, Mail } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import customToast from '../../utils/toast';
@@ -51,7 +51,13 @@ const InvitationsPage = () => {
   const { id } = useParams();
   const { t } = useTranslation('invitations');
   const { user, loading: isLoadingUser } = useAuth();
-  const { isAdmin, isCreator: hasCreatorRole, isLoading: isLoadingRoles } = useUserRoles(id);
+  const {
+    isAdmin,
+    isCreator: hasCreatorRole,
+    isLoading: isLoadingRoles,
+    error: falloAlPedirLosPermisos,
+    refetch: volverAPedirLosPermisos,
+  } = useUserRoles(id);
 
   const [competition, setCompetition] = useState(null);
   const [invitations, setInvitations] = useState([]);
@@ -86,7 +92,9 @@ const InvitationsPage = () => {
     } catch (error) {
       console.error('Error loading invitations:', error);
       customToast.error(error.message || t('errors.failedToLoad'));
-      navigate(`/competitions/${id}`);
+      // `replace`, igual que el guard de permisos: dejarla en el historial hace
+      // que atrás vuelva aquí, vuelva a fallar y vuelva a empujar (FE #656)
+      navigate(`/competitions/${id}`, { replace: true });
     } finally {
       setIsLoading(false);
     }
@@ -228,9 +236,37 @@ const InvitationsPage = () => {
     );
   }
 
+  // `useUserRoles` deja los tres roles a false ante CUALQUIER error, así que un
+  // 500 o un corte de red se parecen a «no tienes permiso». Echar por eso sería
+  // afirmar lo que no se ha podido preguntar, y con `replace` ni siquiera
+  // quedaría el atrás para reintentar
+  if (falloAlPedirLosPermisos) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <HeaderAuth user={user} />
+        <div className="max-w-4xl mx-auto px-4 py-6">
+          <div className="py-12 text-center" data-testid="roles-error">
+            <p className="text-sm text-gray-600 mb-4">{t('errors.rolesCheckFailed')}</p>
+            <button
+              type="button"
+              onClick={volverAPedirLosPermisos}
+              data-testid="roles-retry"
+              className="px-4 py-2 text-sm font-medium text-white bg-primary rounded-lg hover:bg-primary/90 transition-colors"
+            >
+              {t('errors.retry')}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Un elemento y no `navigate()`: llamarlo aquí cambia el router en pleno
+  // render («Cannot update a component while rendering a different component»),
+  // y sin `replace` la pantalla prohibida se queda en el historial, así que
+  // atrás vuelve a ella y de ahí no se sale (FE #656)
   if (!canManage) {
-    navigate(`/competitions/${id}`);
-    return null;
+    return <Navigate to={`/competitions/${id}`} replace />;
   }
 
   return (

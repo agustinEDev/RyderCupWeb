@@ -61,7 +61,9 @@
     "failedToSend": "Error al enviar la invitación",
     "failedToRespond": "Error al responder a la invitación",
     "duplicateInvitation": "Ya se ha enviado una invitación a este email",
-    "invalidEmail": "Por favor, introduce un email válido"
+    "invalidEmail": "Por favor, introduce un email válido",
+    "rolesCheckFailed": "No se ha podido comprobar si puedes gestionar esta competición",
+    "retry": "Reintentar"
   },
   "creator": {
     "title": "Invitaciones",
