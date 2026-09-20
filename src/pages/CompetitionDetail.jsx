@@ -388,7 +388,10 @@ const CompetitionDetail = () => {
   // User is considered creator if they created the competition OR have CREATOR/ADMIN role
   const isCreator = competition.creatorId === user.id;
   const canManage = isCreator || hasCreatorRole || isAdmin;
-  const canEdit = canManage && competition.status === 'DRAFT';
+  // La configuración se corrige mientras haya inscripciones abiertas (BE #323):
+  // quien invita antes de poner el campo de golf tiene que poder ponerlo después
+  const canEdit = canManage && ['DRAFT', 'ACTIVE'].includes(competition.status);
+  // Borrar no: con gente invitada o dentro, lo que toca es cancelar
   const canDelete = canManage && competition.status === 'DRAFT';
   const canEditHandicap =
     canManage && ['DRAFT', 'ACTIVE', 'CLOSED'].includes(competition.status);
@@ -663,7 +666,17 @@ const CompetitionDetail = () => {
                     </button>
                   )}
 
-                  {competition.status !== 'DRAFT' && competition.status !== 'CANCELLED' && (
+                  {competition.status === 'DRAFT' && (
+                    // Invitar abre el torneo, y eso no se adivina mirando el botón
+                    <p
+                      className="w-full text-sm text-gray-600"
+                      data-testid="invitar-abre-inscripciones"
+                    >
+                      {t('detail.invitingOpensEnrollment')}
+                    </p>
+                  )}
+
+                  {competition.status !== 'CANCELLED' && (
                     <button
                       onClick={() => navigate(`/creator/competitions/${id}/invitations`)}
                       className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700 transition-colors shadow-md"

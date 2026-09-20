@@ -137,6 +137,7 @@
     "dates": "Fechas",
     "players": "Jugadores",
     "countries": "Países",
+    "invitingOpensEnrollment": "Al invitar a la primera persona se abren las inscripciones",
     "actions": {
       "edit": "Editar",
       "activate": "Activar",
