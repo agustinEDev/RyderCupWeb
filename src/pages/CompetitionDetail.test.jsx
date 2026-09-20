@@ -630,3 +630,43 @@ describe('CompetitionDetail - invitar desde el borrador (FE #660)', () => {
     expect(screen.queryByText('detail.actions.edit')).not.toBeInTheDocument();
   });
 });
+
+
+describe('CompetitionDetail - de quién es el torneo (FE #664)', () => {
+  const conVisibilidad = (visibility) => {
+    mockGetCompetitionDetail.mockResolvedValue({
+      id: 'comp-1',
+      name: 'Summer Cup',
+      status: 'ACTIVE',
+      creatorId: 'creator-1',
+      maxPlayers: 20,
+      countries: [],
+      visibility,
+    });
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockListEnrollments.mockResolvedValue([]);
+  });
+
+  it('una privada lo dice: quien la mira tiene que saber si le pueden encontrar', async () => {
+    conVisibilidad('PRIVATE');
+
+    renderPage();
+
+    expect(await screen.findByTestId('visibilidad-competicion')).toHaveTextContent(
+      'detail.visibilityPrivate'
+    );
+  });
+
+  it('y una pública también', async () => {
+    conVisibilidad('PUBLIC');
+
+    renderPage();
+
+    expect(await screen.findByTestId('visibilidad-competicion')).toHaveTextContent(
+      'detail.visibilityPublic'
+    );
+  });
+});

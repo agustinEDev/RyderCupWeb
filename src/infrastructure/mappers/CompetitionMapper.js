@@ -64,6 +64,9 @@ class CompetitionMapper {
       handicapSettings,
       maxPlayers,
       teamAssignment,
+      // Sin el campo, privada: una respuesta de antes de que existiera no
+      // convierte en pública una competición que no lo es (FE #664)
+      visibility: apiData.visibility || 'PRIVATE',
       status: new CompetitionStatus(apiData.status || 'DRAFT'),
       createdAt: new Date(apiData.created_at),
       updatedAt: new Date(apiData.updated_at)

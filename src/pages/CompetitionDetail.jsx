@@ -469,6 +469,18 @@ const CompetitionDetail = () => {
                       >
                         {competition.status && t(`status.${competition.status}`)}
                       </span>
+                      {/* Junto al estado: quien la mira tiene que saber si le
+                          pueden encontrar o si entra solo quien es invitado (FE #664) */}
+                      <span
+                        data-testid="visibilidad-competicion"
+                        className="px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-700"
+                      >
+                        {t(
+                          competition.visibility === 'PUBLIC'
+                            ? 'detail.visibilityPublic'
+                            : 'detail.visibilityPrivate'
+                        )}
+                      </span>
                       {isCreator && (
                         <div className="flex items-center gap-1.5 text-accent text-sm font-medium">
                           <Shield className="w-4 h-4" />
