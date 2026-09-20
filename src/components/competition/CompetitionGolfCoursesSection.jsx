@@ -268,7 +268,10 @@ const CompetitionGolfCoursesSection = ({ competition, canManage }) => {
     })
   );
 
-  const canEdit = canManage && competition.status === 'DRAFT';
+  // Los campos se pueden tocar mientras haya inscripciones abiertas (BE #323):
+  // quien invita antes de poner el campo —y con ello abre el torneo— tiene que
+  // poder ponerlo después, que es justo el caso que motivó el cambio
+  const canEdit = canManage && ['DRAFT', 'ACTIVE'].includes(competition.status);
 
   // Get compatible countries for the search box
   // Use country code from countries array (competition.location is a display string, not a code)
