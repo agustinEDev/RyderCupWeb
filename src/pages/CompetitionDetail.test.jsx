@@ -555,3 +555,78 @@ describe('CompetitionDetail - alias o nombre real', () => {
     await waitFor(() => expect(screen.getByRole('switch')).not.toBeDisabled());
   });
 });
+
+describe('CompetitionDetail - invitar desde el borrador (FE #660)', () => {
+  const conEstado = (status, extra = {}) => {
+    mockGetCompetitionDetail.mockResolvedValue({
+      id: 'comp-1',
+      name: 'Summer Cup',
+      status,
+      creatorId: 'creator-1',
+      maxPlayers: 20,
+      countries: [],
+      ...extra,
+    });
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockListEnrollments.mockResolvedValue([]);
+  });
+
+  it('en borrador se puede invitar: invitar es lo que abre el torneo', async () => {
+    // El servidor ya lo permite (BE #319): la primera invitación abre las
+    // inscripciones, así que esconder el botón dejaba el camino nuevo sin puerta
+    conEstado('DRAFT');
+
+    renderPage();
+
+    expect(await screen.findByText('detail.actions.manageInvitations')).toBeInTheDocument();
+  });
+
+  it('y se avisa de lo que hace, porque no es evidente', async () => {
+    conEstado('DRAFT');
+
+    renderPage();
+
+    expect(await screen.findByTestId('invitar-abre-inscripciones')).toBeInTheDocument();
+  });
+
+  it('en una competición cancelada no se invita', async () => {
+    conEstado('CANCELLED');
+
+    renderPage();
+
+    await screen.findByText('Summer Cup');
+    expect(screen.queryByText('detail.actions.manageInvitations')).not.toBeInTheDocument();
+  });
+
+  it('con las inscripciones abiertas todavía se edita', async () => {
+    // BE #323: la configuración se puede corregir mientras haya inscripciones
+    // abiertas, así que «Editar» ya no desaparece al abrir el torneo
+    conEstado('ACTIVE');
+
+    renderPage();
+
+    expect(await screen.findByText('detail.actions.edit')).toBeInTheDocument();
+  });
+
+  it('pero borrar sigue siendo solo del borrador', async () => {
+    // Con gente invitada o dentro, lo que toca es cancelar
+    conEstado('ACTIVE');
+
+    renderPage();
+
+    await screen.findByText('Summer Cup');
+    expect(screen.queryByText('detail.actions.delete')).not.toBeInTheDocument();
+  });
+
+  it('y al cerrarse las inscripciones ya no se edita', async () => {
+    conEstado('CLOSED');
+
+    renderPage();
+
+    await screen.findByText('Summer Cup');
+    expect(screen.queryByText('detail.actions.edit')).not.toBeInTheDocument();
+  });
+});

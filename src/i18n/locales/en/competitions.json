@@ -137,6 +137,7 @@
     "dates": "Dates",
     "players": "Players",
     "countries": "Countries",
+    "invitingOpensEnrollment": "Inviting the first person opens enrolment",
     "actions": {
       "edit": "Edit",
       "activate": "Activate",
