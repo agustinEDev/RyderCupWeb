@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useNavigate, useParams } from 'react-router';
+import { Navigate, useNavigate, useParams } from 'react-router';
 import { ArrowLeft, Plus, Mail } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import customToast from '../../utils/toast';
@@ -51,7 +51,13 @@ const InvitationsPage = () => {
   const { id } = useParams();
   const { t } = useTranslation('invitations');
   const { user, loading: isLoadingUser } = useAuth();
-  const { isAdmin, isCreator: hasCreatorRole, isLoading: isLoadingRoles } = useUserRoles(id);
+  const {
+    isAdmin,
+    isCreator: hasCreatorRole,
+    isLoading: isLoadingRoles,
+    error: falloAlPedirLosPermisos,
+    refetch: volverAPedirLosPermisos,
+  } = useUserRoles(id);
 
   const [competition, setCompetition] = useState(null);
   const [invitations, setInvitations] = useState([]);
@@ -67,6 +73,7 @@ const InvitationsPage = () => {
   const [cargandoAmigos, setCargandoAmigos] = useState(false);
   const [falloAlCargarAmigos, setFalloAlCargarAmigos] = useState(false);
   const [falloAlComprobarSituacion, setFalloAlComprobarSituacion] = useState(false);
+  const [falloAlCargar, setFalloAlCargar] = useState(false);
 
   const canManage = isAdmin || hasCreatorRole;
 
@@ -86,7 +93,10 @@ const InvitationsPage = () => {
     } catch (error) {
       console.error('Error loading invitations:', error);
       customToast.error(error.message || t('errors.failedToLoad'));
-      navigate(`/competitions/${id}`);
+      // Marcar y que decida el render, en vez de irse desde aquí: esta carga y
+      // la de los permisos van por su cuenta, y salir corriendo la primera se
+      // llevaba por delante el aviso de la otra (FE #656)
+      setFalloAlCargar(true);
     } finally {
       setIsLoading(false);
     }
@@ -216,6 +226,31 @@ const InvitationsPage = () => {
 
   const isPageLoading = isLoadingUser || isLoadingRoles || isLoading;
 
+  // `useUserRoles` deja los tres roles a false ante CUALQUIER error, así que un
+  // 500 o un corte de red se parecen a «no tienes permiso». Echar por eso sería
+  // afirmar lo que no se ha podido preguntar, y con `replace` ni siquiera
+  // quedaría el atrás para reintentar
+  if (falloAlPedirLosPermisos) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <HeaderAuth user={user} />
+        <div className="max-w-4xl mx-auto px-4 py-6">
+          <div className="py-12 text-center" data-testid="roles-error">
+            <p className="text-sm text-gray-600 mb-4">{t('errors.rolesCheckFailed')}</p>
+            <button
+              type="button"
+              onClick={volverAPedirLosPermisos}
+              data-testid="roles-retry"
+              className="px-4 py-2 text-sm font-medium text-white bg-primary rounded-lg hover:bg-primary/90 transition-colors"
+            >
+              {t('errors.retry')}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (isPageLoading) {
     // La cabecera se queda puesta durante la espera: aparecer de golpe al
     // terminar es un salto, y de eso va justamente FE #495. El dibujo si es el
@@ -228,9 +263,18 @@ const InvitationsPage = () => {
     );
   }
 
+  // Sin datos no hay pantalla que enseñar, así que se sale — pero después del
+  // aviso de permisos, que es el que sabe si se puede reintentar
+  if (falloAlCargar) {
+    return <Navigate to={`/competitions/${id}`} replace />;
+  }
+
+  // Un elemento y no `navigate()`: llamarlo aquí cambia el router en pleno
+  // render («Cannot update a component while rendering a different component»),
+  // y sin `replace` la pantalla prohibida se queda en el historial, así que
+  // atrás vuelve a ella y de ahí no se sale (FE #656)
   if (!canManage) {
-    navigate(`/competitions/${id}`);
-    return null;
+    return <Navigate to={`/competitions/${id}`} replace />;
   }
 
   return (
