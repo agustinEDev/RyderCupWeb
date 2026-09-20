@@ -11,11 +11,40 @@ import SendInvitationModal from '../../components/invitation/SendInvitationModal
 import {
   getCompetitionDetailUseCase,
   listCompetitionInvitationsUseCase,
+  listEnrollmentsUseCase,
+  listFriendsUseCase,
+  searchUsersUseCase,
   sendInvitationByEmailUseCase,
   sendInvitationUseCase,
-  searchUsersUseCase,
 } from '../../composition';
 import BlockLoader from '../../components/ui/BlockLoader';
+
+// Ni `/friends/me` ni el listado de invitaciones dan más de 100 filas por
+// página. Pedir una sola dejaba fuera al amigo 101 y a la invitación pendiente
+// 101, y una pendiente que no se ve es una invitación que se manda otra vez
+const POR_PAGINA = 100;
+// Una red por si el total promete más de lo que el servidor acaba dando: sin
+// ella, un `total_count` equivocado deja el bucle dando vueltas
+const TOPE_DE_PAGINAS = 20;
+
+/**
+ * Recorre las páginas de un listado hasta tenerlo entero.
+ *
+ * @param {(page: number) => Promise<Object>} pideLaPagina
+ * @param {(res: Object) => Array} sacaLasFilas
+ * @returns {Promise<Array>}
+ */
+const todasLasPaginas = async (pideLaPagina, sacaLasFilas) => {
+  const filas = [];
+  for (let pagina = 1; pagina <= TOPE_DE_PAGINAS; pagina++) {
+    const respuesta = await pideLaPagina(pagina);
+    const lote = sacaLasFilas(respuesta);
+    filas.push(...lote);
+    // Una página incompleta ya es la última, y el total manda sobre el resto
+    if (lote.length < POR_PAGINA || filas.length >= (respuesta?.totalCount ?? filas.length)) break;
+  }
+  return filas;
+};
 
 const InvitationsPage = () => {
   const navigate = useNavigate();
@@ -31,6 +60,13 @@ const InvitationsPage = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [statusFilter, setStatusFilter] = useState('');
   const [showSendModal, setShowSendModal] = useState(false);
+  // Para la pestaña de amigos del modal (FE #409)
+  const [friends, setFriends] = useState([]);
+  const [idsInscritos, setIdsInscritos] = useState([]);
+  const [idsInvitados, setIdsInvitados] = useState([]);
+  const [cargandoAmigos, setCargandoAmigos] = useState(false);
+  const [falloAlCargarAmigos, setFalloAlCargarAmigos] = useState(false);
+  const [falloAlComprobarSituacion, setFalloAlComprobarSituacion] = useState(false);
 
   const canManage = isAdmin || hasCreatorRole;
 
@@ -56,6 +92,74 @@ const InvitationsPage = () => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, user, statusFilter, navigate]);
+
+  // Los amigos y la situación de cada uno se piden APARTE, no dentro del
+  // `Promise.all` de arriba: colgarlos ahí haría que un fallo suyo tumbara la
+  // pantalla entera, cuando lo único que se pierde es saber a quién no ofrecer
+  // (FE #409)
+  useEffect(() => {
+    if (!user?.id || !showSendModal) return;
+
+    let vigente = true;
+    // En una microtarea y no aquí mismo: llamar a setState de forma síncrona
+    // dentro del efecto encadena renders, y el linter lo dice con razón
+    globalThis.queueMicrotask(() => {
+      if (!vigente) return;
+      setCargandoAmigos(true);
+      setFalloAlCargarAmigos(false);
+      setFalloAlComprobarSituacion(false);
+    });
+
+    const amigos = todasLasPaginas(
+      (page) => listFriendsUseCase.execute(user.id, { limit: POR_PAGINA, page }),
+      (res) => res.friendships ?? []
+    );
+
+    // Solo APPROVED: sin filtro vienen también REQUESTED, REJECTED, CANCELLED e
+    // INVITED, y quien se retiró o fue rechazado SÍ se puede volver a invitar.
+    // Marcarlos habría bloqueado a quien el backend acepta sin problema
+    const inscritos = listEnrollmentsUseCase
+      .execute(id, { status: 'APPROVED' })
+      .then((res) => {
+        const inscripciones = Array.isArray(res) ? res : (res?.enrollments ?? []);
+        return inscripciones.map((e) => e.userId ?? e.user_id).filter(Boolean);
+      });
+
+    // Las pendientes se piden aparte y sin el filtro de la pantalla:
+    // `invitations` está filtrada por lo que el creador haya elegido arriba y
+    // paginada, así que con el desplegable en «Aceptadas» no habría ninguna
+    // pendiente y se ofrecería invitar a quien ya está invitado
+    const invitados = todasLasPaginas(
+      (page) => listCompetitionInvitationsUseCase.execute(id, { status: 'PENDING', limit: POR_PAGINA, page }),
+      (res) => res.invitations ?? []
+    ).then((lista) => lista.map((inv) => inv.inviteeUserId).filter(Boolean));
+
+    // Las tres a la vez, pero la pestaña no se da por cargada hasta que están
+    // las tres: con solo los amigos, las filas salían pulsables durante un
+    // instante y se podía invitar a quien ya estaba dentro
+    Promise.allSettled([amigos, inscritos, invitados]).then(([losAmigos, losInscritos, losInvitados]) => {
+      if (!vigente) return;
+
+      // Vaciar la lista diría «no tienes amigos», que es afirmar lo que no se
+      // ha podido preguntar. Se distingue de no tenerlos
+      setFriends(losAmigos.status === 'fulfilled' ? losAmigos.value : []);
+      setFalloAlCargarAmigos(losAmigos.status === 'rejected');
+
+      setIdsInscritos(losInscritos.status === 'fulfilled' ? losInscritos.value : []);
+      setIdsInvitados(losInvitados.status === 'fulfilled' ? losInvitados.value : []);
+      // Si no se sabe quién está ya dentro, no se ofrece a nadie: darlo por
+      // vacío habilitaba justo a quien el servidor va a rechazar
+      setFalloAlComprobarSituacion(
+        losInscritos.status === 'rejected' || losInvitados.status === 'rejected'
+      );
+
+      setCargandoAmigos(false);
+    });
+
+    return () => {
+      vigente = false;
+    };
+  }, [user?.id, id, showSendModal]);
 
   useEffect(() => {
     if (user) {
@@ -216,6 +320,12 @@ const InvitationsPage = () => {
         onSearchUsers={handleSearchUsers}
         isProcessing={isProcessing}
         t={t}
+        friends={friends}
+        idsInvitados={idsInvitados}
+        idsInscritos={idsInscritos}
+        cargandoAmigos={cargandoAmigos}
+        falloAlCargarAmigos={falloAlCargarAmigos}
+        falloAlComprobarSituacion={falloAlComprobarSituacion}
       />
     </div>
   );
