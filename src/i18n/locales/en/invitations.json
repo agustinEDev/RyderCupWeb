@@ -22,7 +22,8 @@
     "alreadyInvited": "Already invited",
     "alreadyEnrolled": "Already in the tournament",
     "loadingFriends": "Loading your friends…",
-    "friendsLoadFailed": "Could not load your friends list"
+    "friendsLoadFailed": "Could not load your friends list",
+    "eligibilityLoadFailed": "Could not check who is already invited or in. Close this and open it again"
   },
   "status": {
     "PENDING": "Pending",

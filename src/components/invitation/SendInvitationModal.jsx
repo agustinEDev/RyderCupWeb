@@ -17,6 +17,7 @@ const SendInvitationModalContent = ({
   idsInscritos = [],
   cargandoAmigos = false,
   falloAlCargarAmigos = false,
+  falloAlComprobarSituacion = false,
 }) => {
   // Se abre por amigos: invitar a una competición es, casi siempre, invitar a
   // los de siempre. Buscar y correo quedan para quien todavía no lo es
@@ -349,7 +350,7 @@ const SendInvitationModalContent = ({
         </div>
 
         {/* Tabs */}
-        <div className="flex border-b border-gray-200" data-testid="invitation-tabs">
+        <div className="flex border-b border-gray-200" role="tablist" data-testid="invitation-tabs">
           <button
             type="button"
             onClick={() => handleTabChange('friends')}
@@ -359,6 +360,10 @@ const SendInvitationModalContent = ({
                 : 'text-gray-500 hover:text-gray-700'
             }`}
             data-testid="tab-friends"
+            role="tab"
+            id="tab-friends"
+            aria-selected={activeTab === 'friends'}
+            aria-controls="panel-friends"
           >
             {t('send.tabFriends')}
           </button>
@@ -371,6 +376,10 @@ const SendInvitationModalContent = ({
                 : 'text-gray-500 hover:text-gray-700'
             }`}
             data-testid="tab-search-user"
+            role="tab"
+            id="tab-search-user"
+            aria-selected={activeTab === 'search'}
+            aria-controls="panel-search"
           >
             {t('send.tabSearchUser')}
           </button>
@@ -383,6 +392,10 @@ const SendInvitationModalContent = ({
                 : 'text-gray-500 hover:text-gray-700'
             }`}
             data-testid="tab-by-email"
+            role="tab"
+            id="tab-by-email"
+            aria-selected={activeTab === 'email'}
+            aria-controls="panel-email"
           >
             {t('send.tabByEmail')}
           </button>
@@ -390,10 +403,17 @@ const SendInvitationModalContent = ({
 
         {/* Amigos: la lista, sin teclear ni esperar a nada */}
         {activeTab === 'friends' && (
-          <div className="p-4">
+          <div className="p-4" role="tabpanel" id="panel-friends" aria-labelledby="tab-friends">
             {cargandoAmigos ? (
               <div className="py-8 text-center" data-testid="friends-loading">
                 <p className="text-sm text-gray-500">{t('send.loadingFriends')}</p>
+              </div>
+            ) : falloAlComprobarSituacion ? (
+              // Distinto de no poder cargar los amigos: los amigos están, lo que
+              // no se sabe es quién de ellos ya está invitado o dentro. Ofrecerlos
+              // igualmente sería ofrecer lo que el servidor va a rechazar
+              <div className="py-8 text-center" data-testid="friends-eligibility-error">
+                <p className="text-sm text-gray-600">{t('send.eligibilityLoadFailed')}</p>
               </div>
             ) : falloAlCargarAmigos ? (
               // No es lo mismo que no tener amigos: decirlo sería afirmar lo que
@@ -454,7 +474,7 @@ const SendInvitationModalContent = ({
 
         {/* Search User Tab */}
         {activeTab === 'search' && (
-          <form onSubmit={handleUserSubmit} className="p-4 space-y-4">
+          <form onSubmit={handleUserSubmit} className="p-4 space-y-4" role="tabpanel" id="panel-search" aria-labelledby="tab-search-user">
             <div>
               {selectedUser ? (
                 <div className="flex items-center gap-2 px-3 py-2 bg-primary/5 border border-primary/20 rounded-md" data-testid="selected-user-chip">
@@ -605,7 +625,7 @@ const SendInvitationModalContent = ({
 
         {/* By Email Tab */}
         {activeTab === 'email' && (
-          <form onSubmit={handleEmailSubmit} className="p-4 space-y-4">
+          <form onSubmit={handleEmailSubmit} className="p-4 space-y-4" role="tabpanel" id="panel-email" aria-labelledby="tab-by-email">
             <div>
               <label htmlFor="invitation-email" className="block text-sm font-medium text-gray-700 mb-1">
                 {t('send.emailLabel')}
@@ -684,6 +704,7 @@ const SendInvitationModal = ({
   idsInscritos,
   cargandoAmigos,
   falloAlCargarAmigos,
+  falloAlComprobarSituacion,
 }) => {
   if (!isOpen) return null;
   return (
@@ -699,6 +720,7 @@ const SendInvitationModal = ({
       idsInscritos={idsInscritos}
       cargandoAmigos={cargandoAmigos}
       falloAlCargarAmigos={falloAlCargarAmigos}
+      falloAlComprobarSituacion={falloAlComprobarSituacion}
     />
   );
 };

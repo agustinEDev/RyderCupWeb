@@ -919,4 +919,38 @@ describe('SendInvitationModal', () => {
       expect(screen.getByTestId('tab-by-email')).toBeInTheDocument();
     });
   });
+
+  describe('lo que la revisión de la PR #657 encontró', () => {
+    it('avisa aparte cuando lo que no se ha podido comprobar es la situación de cada uno', () => {
+      renderModalCrudo({
+        friends: [{ otherUserId: 'u-1', otherUserName: 'Amigo' }],
+        falloAlComprobarSituacion: true,
+      });
+
+      expect(screen.getByTestId('friends-eligibility-error')).toBeInTheDocument();
+      // La lista no se enseña: ofrecer invitar sin saber quién está ya dentro
+      // es ofrecer lo que el servidor va a rechazar
+      expect(screen.queryByTestId('invite-friend-u-1')).not.toBeInTheDocument();
+    });
+
+    it('las pestañas se anuncian como pestañas', () => {
+      renderModalCrudo();
+
+      expect(screen.getByTestId('invitation-tabs')).toHaveAttribute('role', 'tablist');
+      const amigos = screen.getByTestId('tab-friends');
+      const buscar = screen.getByTestId('tab-search-user');
+      expect(amigos).toHaveAttribute('role', 'tab');
+      expect(amigos).toHaveAttribute('aria-selected', 'true');
+      expect(buscar).toHaveAttribute('aria-selected', 'false');
+    });
+
+    it('cada panel dice de qué pestaña es', () => {
+      renderModalCrudo();
+
+      const amigos = screen.getByTestId('tab-friends');
+      const panel = screen.getByRole('tabpanel');
+      expect(amigos).toHaveAttribute('aria-controls', panel.id);
+      expect(panel).toHaveAttribute('aria-labelledby', amigos.id);
+    });
+  });
 });

@@ -22,7 +22,8 @@
     "alreadyInvited": "Ya invitado",
     "alreadyEnrolled": "Ya está en el torneo",
     "loadingFriends": "Cargando tus amigos…",
-    "friendsLoadFailed": "No se ha podido cargar tu lista de amigos"
+    "friendsLoadFailed": "No se ha podido cargar tu lista de amigos",
+    "eligibilityLoadFailed": "No se ha podido comprobar quién está ya invitado o dentro. Ciérralo y vuelve a abrirlo"
   },
   "status": {
     "PENDING": "Pendiente",
