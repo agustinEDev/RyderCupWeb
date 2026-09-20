@@ -116,7 +116,12 @@
     "summaryManual": "equipos a mano",
     "summaryHandicapLimit": "límite de hándicap {{limite}}",
     "summaryNoHandicapLimit": "sin límite de hándicap",
-    "moreOptionsIncomplete": "Faltan datos en las opciones: despliégalas para completarlas"
+    "moreOptionsIncomplete": "Faltan datos en las opciones: despliégalas para completarlas",
+    "visibility": "¿Quién puede apuntarse?",
+    "visibilityPrivate": "Solo invitados",
+    "visibilityPublic": "Cualquiera",
+    "visibilityPrivateHelp": "No aparece al explorar: entran las personas a las que invites",
+    "visibilityPublicHelp": "Aparece al explorar y cualquiera puede pedir plaza; tú decides a quién aceptas"
   },
   "edit": {
     "title": "Editar Competición",
@@ -260,7 +265,9 @@
         "body": "La anotación no se abrirá sola: tiene que arrancar el partido el organizador de la competición, y necesita cobertura. Si en el campo no hay señal, mejor que lo haga antes de salir."
       },
       "courseAlreadyAdded": "Ese campo ya está en la competición"
-    }
+    },
+    "visibilityPrivate": "Solo invitados",
+    "visibilityPublic": "Abierta"
   },
   "browse": {
     "title": "Explorar Competiciones",

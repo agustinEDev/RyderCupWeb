@@ -22,6 +22,7 @@ export default class Competition {
   #team2Name;
   #handicapSettings;
   #maxPlayers;
+  #visibility;
   #teamAssignment;
   #status;
   #createdAt;
@@ -37,6 +38,7 @@ export default class Competition {
     team2Name,
     handicapSettings,
     maxPlayers = 24,
+    visibility = 'PRIVATE',
     teamAssignment,
     status = CompetitionStatus.DRAFT,
     createdAt = new Date(),
@@ -54,6 +56,7 @@ export default class Competition {
     this.#team2Name = team2Name;
     this.#handicapSettings = handicapSettings;
     this.#maxPlayers = maxPlayers;
+    this.#visibility = visibility;
     this.#teamAssignment = teamAssignment;
     this.#status = status;
     this.#createdAt = createdAt;
@@ -115,6 +118,11 @@ export default class Competition {
   get team1Name() { return this.#team1Name; }
   get team2Name() { return this.#team2Name; }
   get handicapSettings() { return this.#handicapSettings; }
+  /** Quién puede ver el torneo y pedir sitio: PRIVATE o PUBLIC (FE #664). */
+  get visibility() {
+    return this.#visibility;
+  }
+
   get maxPlayers() { return this.#maxPlayers; }
   get teamAssignment() { return this.#teamAssignment; }
   get status() { return this.#status; }
@@ -191,6 +199,7 @@ export default class Competition {
       team2Name: this.#team2Name,
       handicapSettings: this.#handicapSettings,
       maxPlayers: this.#maxPlayers,
+      visibility: this.#visibility,
       teamAssignment: this.#teamAssignment,
     };
 
@@ -222,6 +231,7 @@ export default class Competition {
       team2Name: this.#team2Name,
       handicapSettings: this.#handicapSettings,
       maxPlayers: this.#maxPlayers,
+      visibility: this.#visibility,
       teamAssignment: this.#teamAssignment,
       status: this.#status,
       createdAt: this.#createdAt,

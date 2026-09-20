@@ -56,6 +56,7 @@ class CompetitionAssembler {
       countries: countries,
       status: competition.status.value,
       maxPlayers: competition.maxPlayers,
+      visibility: competition.visibility,
       enrolledCount: apiData?.enrolled_count || 0,
       isCreator: apiData?.is_creator || false,
       creatorId: competition.creatorId,

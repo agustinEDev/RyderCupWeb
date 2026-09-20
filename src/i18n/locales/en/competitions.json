@@ -116,7 +116,12 @@
     "summaryManual": "teams by hand",
     "summaryHandicapLimit": "handicap limit {{limite}}",
     "summaryNoHandicapLimit": "no handicap limit",
-    "moreOptionsIncomplete": "Some options are missing: expand them to fill them in"
+    "moreOptionsIncomplete": "Some options are missing: expand them to fill them in",
+    "visibility": "Who can join?",
+    "visibilityPrivate": "Invited only",
+    "visibilityPublic": "Anyone",
+    "visibilityPrivateHelp": "It does not show when exploring: the people you invite are the ones who get in",
+    "visibilityPublicHelp": "It shows when exploring and anyone can ask for a place; you still decide who gets in"
   },
   "edit": {
     "title": "Edit Competition",
@@ -260,7 +265,9 @@
         "body": "Scoring will not open by itself: the competition's organiser has to start the match, and they need a connection. If the course has no signal, better done before setting off."
       },
       "courseAlreadyAdded": "That course is already in the competition"
-    }
+    },
+    "visibilityPrivate": "Invited only",
+    "visibilityPublic": "Open"
   },
   "browse": {
     "title": "Browse Competitions",
