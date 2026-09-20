@@ -18,6 +18,9 @@ import BlockLoader from '../ui/BlockLoader';
  * - selectedCourse: object | null - Currently selected golf course
  * - onCourseSelect: function - Callback when a course is selected
  * - onRequestNewCourse: function - Callback when "Request new course" is clicked
+ * - idsYaElegidos: string[] - Courses already in the caller's list. They are not
+ *   offered again: the creation form stacks courses, and offering one that is
+ *   already there only served to add the same course twice
  * - allowNearby: boolean - Offer the "courses near me" button. Off by default
  * - allowOtherCountries: boolean - Widen the search beyond `countryCode` when it
  *   yields nothing. Off by default: for the competition builders `countryCode` is
@@ -82,7 +85,8 @@ const GolfCourseSearchBox = ({
   onCourseSelect,
   onRequestNewCourse,
   allowNearby = false,
-  allowOtherCountries = false
+  allowOtherCountries = false,
+  idsYaElegidos = []
 }) => {
   const { t, i18n } = useTranslation('golfCourses');
   const { t: tComun } = useTranslation('common');
@@ -201,9 +205,21 @@ const GolfCourseSearchBox = ({
     };
   }, [countryCode, searchQuery, t, tComun, nearbyLat, nearbyLon, searchingNearby, allowOtherCountries, selectedCourse]);
 
-  // Solo valen los resultados del país que se está mirando ahora
-  const courses = result.countryCode === countryCode ? result.courses : [];
-  const total = result.countryCode === countryCode ? result.total : 0;
+  // Solo valen los resultados del país que se está mirando ahora, y sin los que
+  // ya están en la lista de quien nos usa: ofrecerlos solo servía para añadir el
+  // mismo campo dos veces (FE #644)
+  const encontrados = result.countryCode === countryCode ? result.courses : [];
+  const courses = encontrados.filter((course) => !idsYaElegidos.includes(course.id));
+  // Cuántos se han quitado por estar ya en la lista. Hace falta para no decir
+  // dos mentiras: que no hay campos cuando los hay pero ya son tuyos, y que
+  // faltan resultados por ver cuando lo que falta ya lo tienes
+  const yaAnadidos = encontrados.length - courses.length;
+  const totalServidor = result.countryCode === countryCode ? result.total : 0;
+  const total = totalServidor - yaAnadidos;
+  // Solo se puede decir «ya los tienes todos» si se han visto TODOS: el servidor
+  // manda como mucho PAGE_SIZE, y si hay más páginas puede quedar alguno sin
+  // añadir que no hemos llegado a ver. Entonces se calla y se pide afinar
+  const seHanVistoTodos = totalServidor <= PAGE_SIZE;
   const widened = result.countryCode === countryCode && result.widened;
   // El código del usuario llega tal cual lo guardó el backend y hay cuentas con
   // 'es' en minúsculas (`countryUtils.test.js`). Sin normalizar, los 802 campos
@@ -239,7 +255,11 @@ const GolfCourseSearchBox = ({
 
   const handleCourseSelect = (course) => {
     onCourseSelect(course);
-    setSearchQuery(course.name);
+    // Vacía, no con el nombre de lo elegido (FE #644). Quien mantiene una
+    // selección enseña su nombre desde `selectedCourse`, así que no pierde nada;
+    // quien usa esto para apilar campos se quedaba con el texto puesto y el
+    // resultado delante, y cada pulsación añadía otra copia del mismo campo
+    setSearchQuery('');
     setShowDropdown(false);
   };
 
@@ -466,22 +486,38 @@ const GolfCourseSearchBox = ({
           ) : (
             <div className="py-8 px-4 text-center">
               <AlertCircle className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-              <p className="text-sm text-gray-600 mb-2">
-                {t('searchBox.noCoursesFound', 'No golf courses found')}
-              </p>
-              <p className="text-xs text-gray-500 mb-4">
-                {searchQuery
-                  ? t('searchBox.tryDifferentSearch', 'Try a different search term or request a new course')
-                  : t('searchBox.noCoursesInCountry', 'No approved courses in this country yet')}
-              </p>
-              <button
-                type="button"
-                onClick={handleRequestNewCourse}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary/90 transition-colors"
-              >
-                <MapPin className="w-4 h-4" />
-                {t('searchBox.requestNewCourse', 'Request new golf course')}
-              </button>
+              {/* Que no quede nada por elegir PORQUE YA LO TIENES no es que no
+                  haya campos. Decir «no hay campos aprobados en este país» a
+                  quien acaba de añadir el único que hay —y encima ofrecerle
+                  pedirlo— es mandarle a los administradores un campo que ya
+                  existe y que ya está en su lista (FE #644) */}
+              {yaAnadidos > 0 && seHanVistoTodos ? (
+                <p className="text-sm text-gray-600">
+                  {t('searchBox.allAlreadyAdded', {
+                    defaultValue: 'You have already added every course that matches',
+                    count: yaAnadidos,
+                  })}
+                </p>
+              ) : (
+                <>
+                  <p className="text-sm text-gray-600 mb-2">
+                    {t('searchBox.noCoursesFound', 'No golf courses found')}
+                  </p>
+                  <p className="text-xs text-gray-500 mb-4">
+                    {searchQuery || yaAnadidos > 0
+                      ? t('searchBox.tryDifferentSearch', 'Try a different search term or request a new course')
+                      : t('searchBox.noCoursesInCountry', 'No approved courses in this country yet')}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={handleRequestNewCourse}
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary/90 transition-colors"
+                  >
+                    <MapPin className="w-4 h-4" />
+                    {t('searchBox.requestNewCourse', 'Request new golf course')}
+                  </button>
+                </>
+              )}
             </div>
           )}
 

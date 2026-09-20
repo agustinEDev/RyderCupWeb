@@ -78,8 +78,13 @@ const AdminEditCompetitionModal = ({ competition, onSubmit, onCancel }) => {
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div>
+          {/* Una columna hasta 400 px, y los campos sin apariencia nativa: en Safari
+              de iOS un `input[type="date"]` mide 318 px por su control nativo, así
+              que dos en fila pedían 636 px dentro del modal y sacaban la pantalla
+              de lado en un móvil. Mismo defecto que en el formulario de crear
+              (FE #648), que es de donde salió esto */}
+          <div className="grid grid-cols-1 min-[400px]:grid-cols-2 gap-3">
+            <div className="min-w-0">
               <label htmlFor="edit-competition-start-date" className="block text-sm font-medium text-gray-700 mb-1">
                 {t('competitions.editModal.startDate')}
               </label>
@@ -89,10 +94,10 @@ const AdminEditCompetitionModal = ({ competition, onSubmit, onCancel }) => {
                 value={formData.startDate}
                 onChange={handleChange('startDate')}
                 required
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-400 focus:border-primary-400 outline-none"
+                className="w-full min-w-0 max-w-full appearance-none px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-400 focus:border-primary-400 outline-none"
               />
             </div>
-            <div>
+            <div className="min-w-0">
               <label htmlFor="edit-competition-end-date" className="block text-sm font-medium text-gray-700 mb-1">
                 {t('competitions.editModal.endDate')}
               </label>
@@ -102,7 +107,7 @@ const AdminEditCompetitionModal = ({ competition, onSubmit, onCancel }) => {
                 value={formData.endDate}
                 onChange={handleChange('endDate')}
                 required
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-400 focus:border-primary-400 outline-none"
+                className="w-full min-w-0 max-w-full appearance-none px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-400 focus:border-primary-400 outline-none"
               />
             </div>
           </div>

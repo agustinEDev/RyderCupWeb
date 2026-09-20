@@ -102,7 +102,9 @@
     "locationDenied": "Location permission is off. Turn it on in your browser settings - on iPhone, also in the system settings - or search by name.",
     "locationUnavailable": "Could not get your location. Check that it is on in your device settings, or search by name.",
     "locationTimeout": "Locating you took too long. Try again or search by name.",
-    "distanceAway": "{{distance}} km away"
+    "distanceAway": "{{distance}} km away",
+    "allAlreadyAdded": "You have already added every course that matches",
+    "showingSome": "Showing {{shown}} of {{total}}. Keep typing to narrow it down."
   },
   "requestModal": {
     "title": "Request New Golf Course",

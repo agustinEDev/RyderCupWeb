@@ -31,9 +31,27 @@
   },
   "create": {
     "title": "Crear Competición",
+    "type": {
+      "title": "¿Qué vais a jugar?",
+      "subtitle": "Elige el tipo de competición. Podrás cambiar el resto después.",
+      "comingSoon": "Próximamente",
+      "RYDER_CUP": {
+        "title": "Ryder Cup",
+        "blurb": "Dos equipos, partidos uno contra uno y por parejas. Gana el equipo con más puntos."
+      },
+      "STABLEFORD": {
+        "title": "Stableford",
+        "blurb": "Individual, por puntos según el resultado de cada hoyo."
+      },
+      "MEDAL": {
+        "title": "Medal",
+        "blurb": "Individual, al golpe: gana quien menos sume."
+      },
+      "back": "Cambiar de tipo"
+    },
     "competitionDetails": "Detalles de la Competición",
     "competitionName": "Nombre de la Competición *",
-    "competitionNamePlaceholder": "Ingresa el nombre de la competición",
+    "competitionNamePlaceholder": "Ej: Ryder Cup de amigos",
     "teamOneName": "Nombre del Equipo 1 *",
     "teamOneNamePlaceholder": "ej., Europa",
     "teamTwoName": "Nombre del Equipo 2 *",
@@ -56,14 +74,15 @@
     "selectGolfCourse": "Selecciona Campo de Golf *",
     "selectedCourse": "Seleccionado",
     "coursesSelected": "campos seleccionados",
+    "courseAlreadyAdded": "Ese campo ya está añadido",
     "coursePendingApproval": "Este campo está pendiente de aprobación. No podrás activar la competición hasta que sea aprobado.",
     "ryderCupSettings": "Configuración RyderCup",
-    "playMode": "Modo de Juego *",
+    "playMode": "Modo de Juego",
     "scratch": "Scratch",
     "handicap": "Hándicap",
-    "numberOfPlayers": "Número de Jugadores *",
+    "numberOfPlayers": "Número de Jugadores",
     "numberOfPlayersPlaceholder": "Ingresa el número total de jugadores",
-    "teamAssignment": "Asignación de Equipos *",
+    "teamAssignment": "Asignación de Equipos",
     "manual": "Manual",
     "automatic": "Automática",
     "maxPlayingHandicap": "Límite de Hándicap de Juego",
@@ -81,12 +100,23 @@
       "golfCourseRequired": "Por favor selecciona un campo de golf",
       "golfCoursesRequired": "Por favor selecciona campos de golf para: {{countries}}",
       "playersMinimum": "El número de jugadores debe ser al menos 2",
-      "playersMaximum": "El número de jugadores no puede exceder 100"
+      "playersMaximum": "El número de jugadores no puede exceder 100",
+      "teamNamesTooShort": "Los nombres de los equipos necesitan al menos 3 letras",
+      "teamNamesTooLong": "Los nombres de los equipos no pueden pasar de 50 letras",
+      "handicapLimitRange": "El límite de hándicap tiene que estar entre 1 y 54",
+      "playersInvalid": "El número de jugadores tiene que ser un número entero"
     },
     "success": "¡Competición creada exitosamente!",
     "partialSuccess": "Competición creada, pero {{failed}} campo(s) no se pudieron añadir: {{courses}}. Se añadieron {{success}} campo(s) correctamente.",
     "errorAddingCourses": "Competición creada, pero no se pudieron añadir los campos de golf. Puedes añadirlos manualmente desde la página de detalle.",
-    "error": "Error al crear la competición"
+    "error": "Error al crear la competición",
+    "moreOptions": "Más opciones",
+    "moreOptionsSummary": "{{equipo1}} y {{equipo2}} · {{asignacion}} · {{handicap}}",
+    "summaryAutomatic": "equipos automáticos",
+    "summaryManual": "equipos a mano",
+    "summaryHandicapLimit": "límite de hándicap {{limite}}",
+    "summaryNoHandicapLimit": "sin límite de hándicap",
+    "moreOptionsIncomplete": "Faltan datos en las opciones: despliégalas para completarlas"
   },
   "edit": {
     "title": "Editar Competición",
@@ -227,7 +257,8 @@
       "manualStart": {
         "title": "Este campo hay que arrancarlo a mano",
         "body": "La anotación no se abrirá sola: tiene que arrancar el partido el organizador de la competición, y necesita cobertura. Si en el campo no hay señal, mejor que lo haga antes de salir."
-      }
+      },
+      "courseAlreadyAdded": "Ese campo ya está en la competición"
     }
   },
   "browse": {

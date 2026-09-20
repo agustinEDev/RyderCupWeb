@@ -102,7 +102,9 @@
     "locationDenied": "Falta el permiso de ubicación. Actívalo en los ajustes del navegador —en iPhone, también en los del sistema— o busca por nombre.",
     "locationUnavailable": "No se pudo obtener tu ubicación. Comprueba que esté activada en los ajustes del dispositivo, o busca por nombre.",
     "locationTimeout": "Se tardó demasiado en localizarte. Inténtalo de nuevo o busca por nombre.",
-    "distanceAway": "a {{distance}} km"
+    "distanceAway": "a {{distance}} km",
+    "allAlreadyAdded": "Ya has añadido todos los campos que coinciden",
+    "showingSome": "Mostrando {{shown}} de {{total}}. Sigue escribiendo para afinar."
   },
   "requestModal": {
     "title": "Solicitar Nuevo Campo de Golf",

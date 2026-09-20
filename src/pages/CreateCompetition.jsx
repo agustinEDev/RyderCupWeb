@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router';
-import { Calendar, Trophy, MapPin, Settings, Plus, X, ChevronDown, Flag, Trash2 } from 'lucide-react';
+import { Trophy, Settings, Plus, X, ChevronDown, Flag, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import HeaderAuth from '../components/layout/HeaderAuth';
 import { useAuth } from '../hooks/useAuth';
@@ -21,6 +21,8 @@ import GolfCourseSearchBox from '../components/golf_course/GolfCourseSearchBox';
 import GolfCourseRequestModal from '../components/golf_course/GolfCourseRequestModal';
 import customToast from '../utils/toast';
 import FullScreenLoader from '../components/ui/FullScreenLoader';
+import CompetitionTypeChooser from '../components/competition/CompetitionTypeChooser';
+import { cupoDeJugadores, CUPO_POR_DEFECTO } from '../utils/cupoDeJugadores';
 
 
 // Helper function to get message className
@@ -30,6 +32,29 @@ const getMessageClassName = (type) => {
   return 'bg-yellow-50 text-yellow-800 border border-yellow-200';
 };
 
+// Los avisos que apuntan a un campo de «Más opciones»: si salta uno de estos,
+// el plegable tiene que abrirse o el organizador no ve lo que le piden. El cupo
+// y el modo de juego ya no están aquí dentro: subieron al formulario
+// Para preguntar «¿vale lo que está plegado?» hay que dar por buenos los campos
+// de fuera: si no, el primer error de ellos taparía siempre al del plegable
+const FORMULARIO_MINIMO = {
+  competitionName: 'x',
+  startDate: '2026-01-01',
+  endDate: '2026-01-02',
+  country: { code: 'ES' },
+  adjacentCountry1: '',
+  adjacentCountry2: '',
+  golfCourses: [{ countryCode: 'ES' }],
+  numberOfPlayers: null,
+};
+
+const ERRORES_DE_LAS_OPCIONES = new Set([
+  'teamNamesRequired',
+  'teamNamesTooShort',
+  'teamNamesTooLong',
+  'handicapLimitRange',
+]);
+
 const CreateCompetition = () => {
   const navigate = useNavigate();
   const { id: competitionId } = useParams();
@@ -37,7 +62,30 @@ const CreateCompetition = () => {
   const { user, loading: isLoading } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loadingCompetition, setLoadingCompetition] = useState(false);
-  const [isEditMode, setIsEditMode] = useState(false);
+  // Editar o crear lo dice la URL, y se sabe desde el primer render. Vivía en un
+  // estado que se encendía DENTRO del efecto que carga la competición, y ese
+  // efecto sale antes si los países aún no han llegado: sin cobertura la
+  // pantalla de edición se quedaba con el modo de crear —enseñando el selector
+  // de tipo— y al enviar creaba una competición nueva en vez de editar la que
+  // se había abierto (`/code-review`)
+  const isEditMode = Boolean(competitionId);
+  // El tipo se elige ANTES de rellenar nada (FE #639). Editando no se pregunta:
+  // esa competición ya existe y su tipo no se cambia aquí
+  const [tipoElegido, setTipoElegido] = useState(null);
+
+  // Lo que la API rellena sola no es una decisión que haya que tomar para poder
+  // crear nada: equipos, cupo, asignación y límite viven plegados, con lo que se
+  // acepta escrito debajo del botón (FE #637)
+  const [masOpciones, setMasOpciones] = useState(false);
+
+  // Y al elegir, el formulario empieza por arriba. En el móvil los tres tipos
+  // ocupan la pantalla y al tercero se llega con scroll: sin esto, el formulario
+  // aparecía por donde se hubiera quedado y lo primero que se veía era el último
+  // campo de todos
+  const eligeElTipo = (tipo) => {
+    setTipoElegido(tipo);
+    globalThis.scrollTo?.(0, 0);
+  };
   const [message, setMessage] = useState({ type: '', text: '' });
 
   // Ref para cleanup del timer de navegación (prevenir memory leak)
@@ -83,10 +131,26 @@ const CreateCompetition = () => {
 
     // RyderCup Settings
     playMode: 'HANDICAP',
-    numberOfPlayers: undefined,
-    teamAssignment: 'manual',
+    numberOfPlayers: CUPO_POR_DEFECTO,
+    teamAssignment: 'automatic',
     maxPlayingHandicap: undefined
   });
+
+  // El resumen del plegable no puede prometer un equipo que ya no está escrito
+  // Vaciar el campo en edición no puede recortar el cupo de una competición con
+  // gente ya aprobada: se conserva el que se cargó (`/code-review`)
+  const cupoCargado = useRef(CUPO_POR_DEFECTO);
+
+  // El aviso se pinta arriba del todo y el botón vive abajo: en un teléfono se
+  // pulsa «Crear» y no pasa nada visible. Hay que llevarlo a los ojos
+  // (`/code-review`)
+  const avisoRef = useRef(null);
+  // El resumen no puede prometer lo que el envío va a rechazar, y quien sabe si
+  // vale es la validación: aquí se le pregunta a ella, no a una copia de sus
+  // reglas que se quedaría vieja al añadir la siguiente (`/code-review`)
+  const faltaAlgoPlegado = ERRORES_DE_LAS_OPCIONES.has(
+    validateCompetitionForm({ ...formData, ...FORMULARIO_MINIMO })?.key
+  );
 
   // Golf Course Request Modal
   const [showRequestModal, setShowRequestModal] = useState(false);
@@ -117,7 +181,6 @@ const CreateCompetition = () => {
     const loadCompetitionData = async () => {
       if (!competitionId || !allCountries.length) return;
 
-      setIsEditMode(true);
       setLoadingCompetition(true);
 
       try {
@@ -189,11 +252,13 @@ const CreateCompetition = () => {
           showAdjacentCountry2: !!adjacentCountry2,
           golfCourses: golfCoursesData,
           playMode: competition.playMode || 'HANDICAP',
-          numberOfPlayers: competition.maxPlayers || undefined,
-          teamAssignment: competition.teamAssignment?.toLowerCase() || 'manual',
+          numberOfPlayers: competition.maxPlayers || CUPO_POR_DEFECTO,
+          teamAssignment: competition.teamAssignment?.toLowerCase() || 'automatic',
           maxPlayingHandicap: competition.maxPlayingHandicap ?? undefined
         };
 
+        // Lo que había guardado: vaciar el campo no puede recortarlo
+        cupoCargado.current = formDataToSet.numberOfPlayers;
         setFormData(formDataToSet);
 
       } catch (error) {
@@ -208,6 +273,13 @@ const CreateCompetition = () => {
     loadCompetitionData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [competitionId, allCountries]);
+
+  useEffect(() => {
+    if (!message.text) return;
+    // Instantáneo, no `smooth`: comprobado en Chrome, el suave no llega a
+    // ejecutarse desde aquí y el aviso se quedaba fuera de pantalla
+    avisoRef.current?.scrollIntoView({ block: 'center' });
+  }, [message.text]);
 
   const fetchCountries = async () => {
     try {
@@ -368,12 +440,34 @@ const CreateCompetition = () => {
     });
   };
 
+  // Un campo ya añadido no se añade otra vez (FE #644). El buscador tampoco lo
+  // ofrece, pero la guarda se queda: el torneo se crea ANTES de enganchar los
+  // campos, así que un duplicado que se colara dejaba el torneo hecho y un error
+  // listando el mismo campo varias veces
   const handleGolfCourseSelect = (countryCode, course) => {
+    // La comprobación va FUERA del `setFormData`: React ejecuta el actualizador
+    // dos veces en desarrollo (StrictMode) y puede repetirlo en un render que
+    // descarta, así que un aviso ahí dentro salía por duplicado. Un actualizador
+    // tiene que ser puro.
+    //
+    // Y se exige que el campo traiga `id`: sin eso, dos campos DISTINTOS sin id
+    // se tomaban por el mismo y el segundo se descartaba diciendo que ya estaba
+    const yaEsta =
+      Boolean(course?.id) && formData.golfCourses.some(gc => gc.course?.id === course.id);
+    if (yaEsta) {
+      customToast.info(t('create.courseAlreadyAdded'));
+      return;
+    }
     setFormData(prev => ({
       ...prev,
-      golfCourses: [...prev.golfCourses, { countryCode, course }]
+      golfCourses: [...prev.golfCourses, { countryCode, course }],
     }));
   };
+
+  // Los que ya están, para que el buscador no vuelva a ofrecerlos
+  const idsDeLosCamposElegidos = formData.golfCourses
+    .map(gc => gc.course?.id)
+    .filter(Boolean);
 
   const handleRemoveGolfCourse = (index) => {
     setFormData(prev => ({
@@ -395,10 +489,7 @@ const CreateCompetition = () => {
   const handleRequestSuccess = (createdCourse) => {
     // Auto-select the newly requested course for its country
     if (requestModalCountry) {
-      setFormData(prev => ({
-        ...prev,
-        golfCourses: [...prev.golfCourses, { countryCode: requestModalCountry, course: createdCourse }]
-      }));
+      handleGolfCourseSelect(requestModalCountry, createdCourse);
     }
   };
 
@@ -428,13 +519,18 @@ const CreateCompetition = () => {
       } else {
         setMessage({ type: 'error', text: t(`create.errors.${validationError.key}`) });
       }
+      // Si lo que falla vive dentro de «Más opciones», el aviso hablaba de un
+      // campo que no estaba en pantalla (`/code-review`)
+      if (ERRORES_DE_LAS_OPCIONES.has(validationError.key)) {
+        setMasOpciones(true);
+      }
       return;
     }
 
     setIsSubmitting(true);
 
     try {
-      const numPlayers = Number.parseInt(formData.numberOfPlayers, 10);
+      const numPlayers = cupoDeJugadores(formData.numberOfPlayers, cupoCargado.current);
       const countries = [];
       if (formData.adjacentCountry1) {
         countries.push(formData.adjacentCountry1);
@@ -528,35 +624,59 @@ const CreateCompetition = () => {
           <div className="layout-content-container flex flex-col max-w-[960px] flex-1">
             {/* Page Title */}
             <div className="flex flex-wrap justify-between gap-3 p-4">
-              <p className="text-gray-900 tracking-tight text-3xl md:text-[32px] font-bold leading-tight min-w-72">
+              <p data-testid="titulo-pantalla" className="hidden md:block text-gray-900 tracking-tight text-3xl md:text-[32px] font-bold leading-tight min-w-72">
                 {isEditMode ? (t('edit.title') || 'Edit Competition') : t('create.title')}
               </p>
             </div>
 
             {/* Message Display */}
             {message.text && (
-              <div className={`mx-4 mb-4 p-4 rounded-lg ${getMessageClassName(message.type)}`}>
+              <div ref={avisoRef} className={`mx-4 mb-4 p-4 rounded-lg ${getMessageClassName(message.type)}`}>
                 {message.text}
               </div>
             )}
 
+            {!isEditMode && !tipoElegido && (
+              <div className="px-4">
+                <CompetitionTypeChooser onSelect={eligeElTipo} />
+              </div>
+            )}
+
+            {(isEditMode || tipoElegido) && (
             <form onSubmit={handleSubmit} className="flex flex-col gap-6 px-4">
-              {/* Section 1: Competition Details */}
-              <div className="border border-gray-200 rounded-xl p-6">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                    <Trophy className="w-5 h-5 text-primary" />
+              {/* Volver a elegir el tipo. Lo escrito se queda: `formData` no se
+                  toca al cambiar de paso, que perder el formulario por mirar
+                  los otros tipos es peor que no dejar mirarlos */}
+              {!isEditMode && (
+                <button
+                  type="button"
+                  data-testid="volver-al-tipo"
+                  onClick={() => setTipoElegido(null)}
+                  className="self-start text-sm text-gray-600 hover:text-gray-900"
+                >
+                  {t('create.type.back')}
+                </button>
+              )}
+
+              {/* Lo básico de la competición, en UNA tarjeta: nombre, fechas y
+                  país eran tres, y cada una pagaba su icono y su marco. Medido a
+                  360 px, ese adorno costaba 230 px de scroll (Agustín, 19 sep) */}
+              <div data-testid="bloque-basico" className="border border-gray-200 rounded-xl p-4">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <Trophy className="w-4 h-4 text-primary" />
                   </div>
-                  <h3 className="text-gray-900 font-bold text-lg">{t('create.competitionDetails')}</h3>
+                  <h3 className="text-gray-900 font-bold text-base">{t('create.competitionDetails')}</h3>
                 </div>
 
-                <div className="space-y-4">
+                <div className="space-y-3">
                   <div>
                     <label htmlFor="competitionName" className="block text-sm font-medium text-gray-700 mb-1">
                       {t('create.competitionName')}
                     </label>
                     <input
                       id="competitionName"
+                      data-testid="campo-nombre"
                       type="text"
                       name="competitionName"
                       value={formData.competitionName}
@@ -566,52 +686,18 @@ const CreateCompetition = () => {
                     />
                   </div>
 
+                {/* Los campos de fecha se salían de la tarjeta en el iPhone (FE #648).
+                    Medido en un iPhone 14 real: con el mismo `w-full`, el campo de
+                    texto medía 292 px y el de fecha 318. Safari en iOS dibuja
+                    `input[type="date"]` como control nativo y ese control IMPONE su
+                    ancho: no lo arreglan `w-full`, ni `min-w-0`, ni `max-w-full`.
+                    Lo único que lo libera es quitarle la apariencia nativa
+                    (`appearance-none`), y entonces mide los mismos 292.
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label htmlFor="teamOneName" className="block text-sm font-medium text-gray-700 mb-1">
-                        {t('create.teamOneName')}
-                      </label>
-                      <input
-                        id="teamOneName"
-                        type="text"
-                        name="teamOneName"
-                        value={formData.teamOneName}
-                        onChange={handleInputChange}
-                        placeholder={t('create.teamOneNamePlaceholder')}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-                      />
-                    </div>
-
-                    <div>
-                      <label htmlFor="teamTwoName" className="block text-sm font-medium text-gray-700 mb-1">
-                        {t('create.teamTwoName')}
-                      </label>
-                      <input
-                        id="teamTwoName"
-                        type="text"
-                        name="teamTwoName"
-                        value={formData.teamTwoName}
-                        onChange={handleInputChange}
-                        placeholder={t('create.teamTwoNamePlaceholder')}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Section 2: Schedule */}
-              <div className="border border-gray-200 rounded-xl p-6">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center">
-                    <Calendar className="w-5 h-5 text-accent" />
-                  </div>
-                  <h3 className="text-gray-900 font-bold text-lg">{t('create.schedule')}</h3>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
+                    No se reproduce en ningún navegador de escritorio, ni siquiera en
+                    WebKit, que ahí dibuja otro control. Solo se ve en un teléfono. */}
+                <div data-testid="fila-fechas" className="grid grid-cols-1 min-[400px]:grid-cols-2 gap-3">
+                  <div className="min-w-0">
                     <label htmlFor="startDate" className="block text-sm font-medium text-gray-700 mb-1">
                       {t('create.startDate')}
                     </label>
@@ -621,11 +707,11 @@ const CreateCompetition = () => {
                       name="startDate"
                       value={formData.startDate}
                       onChange={handleInputChange}
-                      className="w-auto px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                      className="w-full min-w-0 max-w-full appearance-none px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                     />
                   </div>
 
-                  <div>
+                  <div className="min-w-0">
                     <label htmlFor="endDate" className="block text-sm font-medium text-gray-700 mb-1">
                       {t('create.endDate')}
                     </label>
@@ -635,22 +721,11 @@ const CreateCompetition = () => {
                       name="endDate"
                       value={formData.endDate}
                       onChange={handleInputChange}
-                      className="w-auto px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                      className="w-full min-w-0 max-w-full appearance-none px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                     />
                   </div>
                 </div>
-              </div>
 
-              {/* Section 3: Location */}
-              <div className="border border-gray-200 rounded-xl p-6">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 rounded-lg bg-navy/10 flex items-center justify-center">
-                    <MapPin className="w-5 h-5 text-navy" />
-                  </div>
-                  <h3 className="text-gray-900 font-bold text-lg">{t('create.location')}</h3>
-                </div>
-
-                <div className="space-y-4">
                   {/* El país principal se elige entre los 200: es el único de
                       los tres selectores que necesita búsqueda, porque los
                       adyacentes ya listan solo países fronterizos */}
@@ -791,13 +866,13 @@ const CreateCompetition = () => {
 
               {/* Section 4: Golf Courses - Hidden in edit mode */}
               {!isEditMode && (
-              <div className="border border-gray-200 rounded-xl p-6">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center">
-                    <Flag className="w-5 h-5 text-green-700" />
+              <div className="border border-gray-200 rounded-xl p-4">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-8 h-8 rounded-lg bg-green-100 flex items-center justify-center">
+                    <Flag className="w-4 h-4 text-green-700" />
                   </div>
                   <div>
-                    <h3 className="text-gray-900 font-bold text-lg">{t('create.golfCourses')}</h3>
+                    <h3 className="text-gray-900 font-bold text-base">{t('create.golfCourses')}</h3>
                     <p className="text-sm text-gray-500">{t('create.golfCoursesSubtitle')}</p>
                   </div>
                 </div>
@@ -848,6 +923,7 @@ const CreateCompetition = () => {
                         <GolfCourseSearchBox
                           countryCode={formData.country.code}
                           selectedCourse={null}
+                          idsYaElegidos={idsDeLosCamposElegidos}
                           onCourseSelect={(course) => handleGolfCourseSelect(formData.country.code, course)}
                           onRequestNewCourse={() => handleRequestNewCourse(formData.country.code)}
                         />
@@ -903,6 +979,7 @@ const CreateCompetition = () => {
                         <GolfCourseSearchBox
                           countryCode={formData.adjacentCountry1}
                           selectedCourse={null}
+                          idsYaElegidos={idsDeLosCamposElegidos}
                           onCourseSelect={(course) => handleGolfCourseSelect(formData.adjacentCountry1, course)}
                           onRequestNewCourse={() => handleRequestNewCourse(formData.adjacentCountry1)}
                         />
@@ -958,6 +1035,7 @@ const CreateCompetition = () => {
                         <GolfCourseSearchBox
                           countryCode={formData.adjacentCountry2}
                           selectedCourse={null}
+                          idsYaElegidos={idsDeLosCamposElegidos}
                           onCourseSelect={(course) => handleGolfCourseSelect(formData.adjacentCountry2, course)}
                           onRequestNewCourse={() => handleRequestNewCourse(formData.adjacentCountry2)}
                         />
@@ -968,13 +1046,15 @@ const CreateCompetition = () => {
               </div>
               )}
 
-              {/* Section 5: RyderCup Settings */}
-              <div className="border border-gray-200 rounded-xl p-6">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                    <Settings className="w-5 h-5 text-primary" />
+              {/* Section 5: RyderCup Settings — el formato se decide aquí, a la
+                  vista: cuántos sois y si se juega con hándicap son las dos
+                  preguntas que el organizador SÍ contesta (Agustín, 19 sep) */}
+              <div className="border border-gray-200 rounded-xl p-4">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <Settings className="w-4 h-4 text-primary" />
                   </div>
-                  <h3 className="text-gray-900 font-bold text-lg">{t('create.ryderCupSettings')}</h3>
+                  <h3 className="text-gray-900 font-bold text-base">{t('create.ryderCupSettings')}</h3>
                 </div>
 
                 <div className="space-y-4">
@@ -1009,17 +1089,90 @@ const CreateCompetition = () => {
                     </label>
                     <input
                       id="numberOfPlayers"
+                      data-testid="campo-jugadores"
                       type="number"
                       name="numberOfPlayers"
                       value={formData.numberOfPlayers === undefined ? '' : formData.numberOfPlayers}
                       onChange={handleInputChange}
+                      onBlur={() => setFormData(prev => ({
+                        ...prev,
+                        // Dejarlo en blanco no es «sin límite»: hay cupo igual, y
+                        // callárselo es enterarse con el jugador 13 fuera
+                        numberOfPlayers: cupoDeJugadores(prev.numberOfPlayers, cupoCargado.current),
+                      }))}
                       min="2"
                       max="100"
                       placeholder={t('create.numberOfPlayersPlaceholder')}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                     />
                   </div>
+                </div>
+              </div>
 
+              {/* Lo que no hay que decidir para crear: se pliega, pero se dice
+                  qué se acepta si nadie lo toca (FE #637) */}
+              <div className="border border-gray-200 rounded-xl">
+                <button
+                  type="button"
+                  data-testid="mas-opciones"
+                  onClick={() => setMasOpciones((abierto) => !abierto)}
+                  aria-expanded={masOpciones}
+                  className="flex w-full items-center justify-between gap-3 p-4 text-left"
+                >
+                  <span className="font-medium text-gray-900">{t('create.moreOptions')}</span>
+                  <span className="text-gray-500">{masOpciones ? '−' : '+'}</span>
+                </button>
+
+                {!masOpciones && (
+                  <p data-testid="resumen-opciones" className="px-4 pb-4 text-sm text-gray-600">
+                    {faltaAlgoPlegado
+                      ? t('create.moreOptionsIncomplete')
+                      : t('create.moreOptionsSummary', {
+                        equipo1: formData.teamOneName,
+                        equipo2: formData.teamTwoName,
+                        asignacion: t(`create.summary${formData.teamAssignment === 'automatic' ? 'Automatic' : 'Manual'}`),
+                        handicap: formData.maxPlayingHandicap
+                          ? t('create.summaryHandicapLimit', { limite: formData.maxPlayingHandicap })
+                          : t('create.summaryNoHandicapLimit'),
+                      })}
+                  </p>
+                )}
+
+                {masOpciones && (
+                  <div className="space-y-4 border-t border-gray-200 p-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label htmlFor="teamOneName" className="block text-sm font-medium text-gray-700 mb-1">
+                        {t('create.teamOneName')}
+                      </label>
+                      <input
+                        id="teamOneName"
+                        data-testid="campo-equipo-1"
+                        type="text"
+                        name="teamOneName"
+                        value={formData.teamOneName}
+                        onChange={handleInputChange}
+                        placeholder={t('create.teamOneNamePlaceholder')}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                      />
+                    </div>
+
+                    <div>
+                      <label htmlFor="teamTwoName" className="block text-sm font-medium text-gray-700 mb-1">
+                        {t('create.teamTwoName')}
+                      </label>
+                      <input
+                        id="teamTwoName"
+                        data-testid="campo-equipo-2"
+                        type="text"
+                        name="teamTwoName"
+                        value={formData.teamTwoName}
+                        onChange={handleInputChange}
+                        placeholder={t('create.teamTwoNamePlaceholder')}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                      />
+                    </div>
+                  </div>
                   {/* Team Assignment */}
                   <div>
                     <span className="block text-sm font-medium text-gray-700 mb-2">
@@ -1051,6 +1204,7 @@ const CreateCompetition = () => {
                     </label>
                     <input
                       id="maxPlayingHandicap"
+                      data-testid="campo-handicap"
                       type="number"
                       name="maxPlayingHandicap"
                       value={formData.maxPlayingHandicap === undefined ? '' : formData.maxPlayingHandicap}
@@ -1062,11 +1216,17 @@ const CreateCompetition = () => {
                     />
                     <p className="mt-1 text-xs text-gray-500">{t('create.maxPlayingHandicapHint')}</p>
                   </div>
-                </div>
+                  </div>
+                )}
               </div>
 
               {/* Submit Button */}
-              <div className="flex justify-end gap-3 pt-2 pb-6">
+              {/* En el móvil la fila ocupa el ancho, alineada con las tarjetas:
+                  pegada a la derecha quedaba descolgada. Pero el que crece es
+                  «Crear», no «Cancelar»: con los dos a mitad y mitad, cancelar se
+                  convertía en un objetivo enorme justo bajo el pulgar, al lado del
+                  de enviar, y se lleva el formulario entero sin preguntar */}
+              <div className="flex gap-3 pt-2 pb-6 sm:justify-end">
                 <button
                   type="button"
                   onClick={() => navigate('/competitions')}
@@ -1077,7 +1237,7 @@ const CreateCompetition = () => {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="px-6 py-2.5 bg-primary text-white text-sm font-bold rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 sm:flex-none px-6 py-2.5 bg-primary text-white text-sm font-bold rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isSubmitting
                     ? (isEditMode ? (t('edit.updating') || 'Updating...') : t('create.creating'))
@@ -1086,6 +1246,7 @@ const CreateCompetition = () => {
                 </button>
               </div>
             </form>
+            )}
 
             {/* Footer */}
             <footer className="flex flex-col gap-6 px-5 py-10 text-center">
