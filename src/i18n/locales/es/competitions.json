@@ -331,5 +331,21 @@
     "PENDING": "PENDIENTE",
     "APPROVED": "APROBADA",
     "REJECTED": "RECHAZADA"
+  },
+  "apertura": {
+    "titulo": "¿Cuándo se abren las inscripciones?",
+    "explicacion": "Esta competición será pública: cualquiera podrá verla y pedir plaza.",
+    "ahora": "Ahora mismo",
+    "ahoraDetalle": "Se publica al crearla y la gente puede apuntarse ya.",
+    "programada": "Unos días antes del torneo",
+    "programadaDetalle": "Se anuncia ahora y las inscripciones abren solas ese día.",
+    "cuantosDias": "¿Cuántos días antes?",
+    "dias_one": "{{count}} día antes",
+    "dias_other": "{{count}} días antes",
+    "avisoAbreYa": "El torneo empieza antes de eso, así que las inscripciones se abrirán al crearla.",
+    "volver": "Volver",
+    "crear": "Crear competición",
+    "abreEl": "Abrirán el {{fecha}}.",
+    "creando": "Creando…"
   }
 }

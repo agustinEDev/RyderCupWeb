@@ -113,6 +113,10 @@ describe('CreateCompetition · de los amigos o de cualquiera (FE #664)', () => {
     fireEvent.click(screen.getByTestId('visibilidad-PUBLIC'));
     await rellenaYCrea();
 
+    // Crear una pública pasa por el modal que pregunta cuándo abren las
+    // inscripciones (FE #666): lo que se crea sale de ahí, no del submit
+    fireEvent.click(await screen.findByTestId('confirmar-apertura'));
+
     await waitFor(() => expect(mockCrear).toHaveBeenCalled());
     expect(mockCrear.mock.calls[0][0]).toMatchObject({ visibility: 'PUBLIC' });
   });

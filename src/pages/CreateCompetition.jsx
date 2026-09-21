@@ -19,6 +19,7 @@ import { validateCompetitionForm } from '../utils/competitionFormValidation';
 import CountryAutocomplete from '../components/ui/CountryAutocomplete';
 import GolfCourseSearchBox from '../components/golf_course/GolfCourseSearchBox';
 import GolfCourseRequestModal from '../components/golf_course/GolfCourseRequestModal';
+import EnrollmentOpeningModal from '../components/competition/EnrollmentOpeningModal';
 import customToast from '../utils/toast';
 import FullScreenLoader from '../components/ui/FullScreenLoader';
 import CompetitionTypeChooser from '../components/competition/CompetitionTypeChooser';
@@ -61,6 +62,7 @@ const CreateCompetition = () => {
   const { t, i18n } = useTranslation('competitions');
   const { user, loading: isLoading } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [preguntandoApertura, setPreguntandoApertura] = useState(false);
   const [loadingCompetition, setLoadingCompetition] = useState(false);
   // Editar o crear lo dice la URL, y se sabe desde el primer render. Vivía en un
   // estado que se encendía DENTRO del efecto que carga la competición, y ese
@@ -529,6 +531,28 @@ const CreateCompetition = () => {
       return;
     }
 
+    // Una pública se publica al crearse, y eso es lo que hay que decir antes de
+    // hacerlo. En una privada no hay nada que avisar: no la ve nadie y se entra
+    // por invitación (FE #666). Al editar tampoco: ya existe
+    if (!isEditMode && formData.visibility === 'PUBLIC') {
+      setPreguntandoApertura(true);
+      return;
+    }
+
+    await crear(null);
+  };
+
+  /**
+   * Crea la competición con los días de apertura elegidos.
+   *
+   * `diasDeApertura` en `null` significa que no hay apertura programada, que es
+   * como el backend entiende «ábrela ya» (RyderCupAM#332).
+   */
+  const crear = async (diasDeApertura) => {
+    // El modal NO se cierra aquí: se queda con su botón deshabilitado mientras
+    // la petición está en vuelo. Cerrándolo antes, el `isLoading` que recibe es
+    // siempre falso y devuelve el formulario a la mano justo cuando no se puede
+    // tocar. Se cierra al terminar, en el `finally`
     setIsSubmitting(true);
 
     try {
@@ -555,7 +579,13 @@ const CreateCompetition = () => {
         team_assignment: formData.teamAssignment.toUpperCase(),
         max_playing_handicap: formData.maxPlayingHandicap
           ? parseInt(formData.maxPlayingHandicap, 10)
-          : null
+          : null,
+        // Solo cuando hay apertura programada: mandarlo en `null` seria decir
+        // «quitale la programacion», que es lo mismo aqui pero ensucia el
+        // contrato de la creacion
+        ...(diasDeApertura != null
+          ? { enrollment_opens_days_before: diasDeApertura }
+          : {})
       };
 
       if (isEditMode) {
@@ -605,6 +635,9 @@ const CreateCompetition = () => {
       setMessage({ type: 'error', text: error.message || t(isEditMode ? 'edit.error' : 'create.error') });
     } finally {
       setIsSubmitting(false);
+      // Se cierra tanto si salió bien como si falló: si falló, el aviso está en
+      // el formulario, y dejarlo tapado por el modal lo esconde
+      setPreguntandoApertura(false);
     }
   };
 
@@ -1316,6 +1349,14 @@ const CreateCompetition = () => {
         onSuccess={handleRequestSuccess}
         countryCode={requestModalCountry}
         createGolfCourseRequestUseCase={createGolfCourseRequestUseCase}
+      />
+
+      <EnrollmentOpeningModal
+        isOpen={preguntandoApertura}
+        startDate={formData.startDate}
+        onConfirm={crear}
+        onClose={() => setPreguntandoApertura(false)}
+        isLoading={isSubmitting}
       />
     </div>
   );
