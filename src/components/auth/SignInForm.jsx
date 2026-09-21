@@ -83,17 +83,17 @@ const SignInForm = () => {
 
     try {
       // v1.13.0: LoginUseCase now returns { user, csrfToken }
-      const { user: authenticatedUser, csrfToken, needsHandicap } = await loginUseCase.execute(formData.email, formData.password);
+      const { user: authenticatedUser, csrfToken } = await loginUseCase.execute(formData.email, formData.password);
 
       // Update auth context with user and CSRF token
       setUser(authenticatedUser);
       updateCsrfToken(csrfToken);
 
-      if (needsHandicap) {
-        localStorage.setItem('needs_handicap', 'true');
-      } else {
-        localStorage.removeItem('needs_handicap');
-      }
+      // El hándicap ya no se refresca en el login, que esperaba a la RFEG antes
+      // de contestar (RyderCupAM#340): se deja pedido y lo hace el panel en
+      // segundo plano (FE #677). `needs_handicap` era el apunte de antes
+      localStorage.setItem('refrescar_handicap', 'true');
+      localStorage.removeItem('needs_handicap');
 
       resetRateLimit('login');
       customToast.success(t('login.welcomeMessage', { name: authenticatedUser.firstName }));

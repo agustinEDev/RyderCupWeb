@@ -19,6 +19,16 @@ class IHandicapRepository {
   async updateFromRfeg(userId) {
     throw new Error('Method not implemented: updateFromRfeg');
   }
+
+  /**
+   * Refresca desde la RFEG el hándicap del usuario autenticado, una vez al día
+   * y solo si es español (RyderCupAM#340).
+   * @returns {Promise<{needsHandicap: boolean, handicap: number|null}>} Si hay
+   *   que pedirle el hándicap al jugador, y el que tiene guardado ahora.
+   */
+  async refreshMine() {
+    throw new Error('Method not implemented: refreshMine');
+  }
 }
 
 export default IHandicapRepository;

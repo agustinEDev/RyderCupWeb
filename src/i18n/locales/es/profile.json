@@ -2,6 +2,7 @@
   "handicapModal": {
     "title": "Configura tu Hándicap",
     "subtitle": "Tu perfil no tiene hándicap configurado. Añádelo para participar en torneos con cálculos de juego precisos.",
+    "subtitleStale": "Tu hándicap guardado es {{handicap}}, pero hoy no se ha podido actualizar. Revísalo para que los partidos se calculen bien.",
     "rfegTab": "RFEG (Automático)",
     "manualTab": "Manual",
     "fetchRfeg": "Obtener desde RFEG",

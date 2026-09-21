@@ -1,0 +1,248 @@
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { render, screen, waitFor, act, cleanup } from '@testing-library/react';
+
+/**
+ * El refresco del hándicap al entrar, en segundo plano (FE #677).
+ *
+ * El login lo hacía antes de contestar y esperaba a la RFEG: hasta 20 s, y el
+ * 21 sep un minuto (RyderCupAM#340). Ahora el login solo deja el apunte y el
+ * panel lo pide por su cuenta, sin encadenarlo a sus otras peticiones: una RFEG
+ * lenta no puede retrasar ni dejar en blanco nada del panel.
+ */
+
+const refresco = vi.fn();
+vi.mock('../composition', () => ({
+  listUserCompetitionsUseCase: { execute: () => Promise.resolve([]) },
+  getPlayerStatsUseCase: { execute: () => Promise.resolve(null) },
+  getRecentMatchesUseCase: { execute: () => Promise.resolve([]) },
+  getUpcomingMatchesUseCase: {
+    executeWithCompleteness: () => Promise.resolve({ matches: [], complete: true }),
+  },
+  getScoringViewUseCase: { execute: () => new Promise(() => {}) },
+  refreshOwnHandicapUseCase: { execute: (...args) => refresco(...args) },
+}));
+
+const recargarUsuario = vi.fn();
+// Objeto CONSTANTE: los efectos del panel dependen de `user`, y uno nuevo en
+// cada render los relanzaría sin parar
+const sesion = {
+  user: { id: 'u-1', first_name: 'Ana', email: 'a@b.c', country_code: 'ES', handicap: 12.4 },
+  loading: false,
+  refetch: (...args) => recargarUsuario(...args),
+};
+vi.mock('../hooks/useAuth', () => ({ useAuth: () => sesion }));
+
+vi.mock('react-i18next', () => ({
+  useTranslation: () => ({ t: (clave) => clave, i18n: { language: 'es' }, ready: true }),
+}));
+
+vi.mock('react-router', () => ({
+  useNavigate: () => () => {},
+  useLocation: () => ({ pathname: '/dashboard' }),
+  Navigate: () => null,
+}));
+
+// Un componente ESTABLE por etiqueta: si cada acceso devolviera uno nuevo, React
+// lo tomaría por otro tipo y remontaría el panel entero en cada render, dejando
+// desconectado lo que el test acaba de encontrar
+vi.mock('framer-motion', () => {
+  const Caja = ({ children }) => <div>{children}</div>;
+  return { motion: new Proxy({}, { get: () => Caja }) };
+});
+
+vi.mock('../hooks/useEntryMotion', () => ({ useEntryMotion: () => ({ animateEntry: false }) }));
+
+// Deja rastro de con qué se abre: lo que se mira es el motivo
+vi.doMock('../components/profile/HandicapRequestModal', () => ({
+  default: ({ isOpen, handicapActual }) =>
+    isOpen ? <div data-testid="modal-handicap" data-handicap={String(handicapActual)} /> : null,
+}));
+
+for (const ruta of [
+  '../components/layout/HeaderAuth',
+  '../components/ui/Avatar',
+  '../components/EmailVerificationBanner',
+  '../components/dashboard/PendingActionsCard',
+  '../components/dashboard/PlayerStatsCards',
+  '../components/dashboard/NextMatchBanner',
+  '../components/dashboard/RecentMatches',
+  '../components/quick_match/CreateQuickMatchModal',
+  '../components/ui/FullScreenLoader',
+]) {
+  vi.doMock(ruta, () => ({ default: () => null }));
+}
+
+const guardado = {};
+globalThis.localStorage = {
+  getItem: (clave) => guardado[clave] ?? null,
+  setItem: (clave, valor) => {
+    guardado[clave] = String(valor);
+  },
+  removeItem: (clave) => {
+    delete guardado[clave];
+  },
+  clear: () => {
+    for (const clave of Object.keys(guardado)) delete guardado[clave];
+  },
+};
+
+const Dashboard = (await import('./Dashboard')).default;
+
+const panelPintado = () => screen.findByText('quickActions.title');
+
+describe('Dashboard · refresco del hándicap al entrar (FE #677)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    localStorage.clear();
+  });
+
+  // Sin esto el panel del test anterior sigue montado y `findByText` encuentra
+  // su copia, ya desmontada: pasa solo y falla en grupo
+  afterEach(cleanup);
+
+  it('D1: con el apunte, lo pide una vez; si no hace falta pedirlo, recarga el usuario y no abre nada', async () => {
+    localStorage.setItem('refrescar_handicap', 'true');
+    refresco.mockResolvedValue({ needsHandicap: false, handicap: 18 });
+
+    render(<Dashboard />);
+
+    await waitFor(() => expect(recargarUsuario).toHaveBeenCalled());
+    expect(refresco).toHaveBeenCalledTimes(1);
+    expect(screen.queryByTestId('modal-handicap')).not.toBeInTheDocument();
+    expect(localStorage.getItem('refrescar_handicap')).toBeNull();
+  });
+
+  it('D2: si hace falta y no tiene ninguno, abre el modal sin hándicap', async () => {
+    localStorage.setItem('refrescar_handicap', 'true');
+    refresco.mockResolvedValue({ needsHandicap: true, handicap: null });
+
+    render(<Dashboard />);
+
+    expect(await screen.findByTestId('modal-handicap')).toHaveAttribute('data-handicap', 'null');
+  });
+
+  it('D3: si hace falta y ya tiene uno, el modal lo sabe', async () => {
+    localStorage.setItem('refrescar_handicap', 'true');
+    refresco.mockResolvedValue({ needsHandicap: true, handicap: 18 });
+
+    render(<Dashboard />);
+
+    expect(await screen.findByTestId('modal-handicap')).toHaveAttribute('data-handicap', '18');
+  });
+
+  it('D4: sin el apunte no lo pide', async () => {
+    render(<Dashboard />);
+
+    await panelPintado();
+    expect(refresco).not.toHaveBeenCalled();
+  });
+
+  it('D5: si nuestra API falla no afirma nada, y el apunte se queda para la próxima', async () => {
+    localStorage.setItem('refrescar_handicap', 'true');
+    refresco.mockRejectedValue(new Error('sin cobertura'));
+
+    render(<Dashboard />);
+
+    await waitFor(() => expect(refresco).toHaveBeenCalled());
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(screen.queryByTestId('modal-handicap')).not.toBeInTheDocument();
+    expect(localStorage.getItem('refrescar_handicap')).toBe('true');
+  });
+
+  it('D6: una RFEG que no contesta no retiene el panel', async () => {
+    localStorage.setItem('refrescar_handicap', 'true');
+    refresco.mockReturnValue(new Promise(() => {}));
+
+    render(<Dashboard />);
+
+    expect(await panelPintado()).toBeInTheDocument();
+  });
+
+  it('D8: si la RFEG devuelve el mismo hándicap, no recarga el usuario', async () => {
+    // Recargarlo relanza las cuatro peticiones del panel: en el refresco diario
+    // de siempre, que devuelve lo mismo, eso es pedirlo todo dos veces
+    localStorage.setItem('refrescar_handicap', 'true');
+    refresco.mockResolvedValue({ needsHandicap: false, handicap: 12.4 });
+
+    render(<Dashboard />);
+
+    await waitFor(() => expect(localStorage.getItem('refrescar_handicap')).toBeNull());
+    expect(recargarUsuario).not.toHaveBeenCalled();
+  });
+
+  it('D9: si el usuario cambia con el refresco en vuelo, se pide una sola vez y no se pierde la respuesta', async () => {
+    localStorage.setItem('refrescar_handicap', 'true');
+    let responder;
+    refresco.mockReturnValue(new Promise((resolver) => { responder = resolver; }));
+
+    const { rerender } = render(<Dashboard />);
+    await waitFor(() => expect(refresco).toHaveBeenCalledTimes(1));
+
+    // Llega el usuario recién pedido: otro objeto, mismos datos
+    const anterior = sesion.user;
+    sesion.user = { ...anterior };
+    rerender(<Dashboard />);
+    await act(async () => {
+      responder({ needsHandicap: true, handicap: null });
+    });
+
+    try {
+      expect(refresco).toHaveBeenCalledTimes(1);
+      expect(await screen.findByTestId('modal-handicap')).toBeInTheDocument();
+    } finally {
+      sesion.user = anterior;
+    }
+  });
+
+  it('D10: si falló, se vuelve a intentar cuando cambia el usuario, sin esperar a otro montaje', async () => {
+    localStorage.setItem('refrescar_handicap', 'true');
+    refresco.mockRejectedValueOnce(new Error('sin cobertura'));
+    refresco.mockResolvedValueOnce({ needsHandicap: true, handicap: null });
+
+    const { rerender } = render(<Dashboard />);
+    await waitFor(() => expect(refresco).toHaveBeenCalledTimes(1));
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    const anterior = sesion.user;
+    sesion.user = { ...anterior };
+    try {
+      rerender(<Dashboard />);
+      expect(await screen.findByTestId('modal-handicap')).toBeInTheDocument();
+      expect(refresco).toHaveBeenCalledTimes(2);
+    } finally {
+      sesion.user = anterior;
+    }
+  });
+
+  it('D11: si el panel se cierra antes de la respuesta, el apunte se queda para la próxima', async () => {
+    // Nadie ha visto el resultado: darlo por hecho dejaría sin modal a quien
+    // lo necesitaba
+    localStorage.setItem('refrescar_handicap', 'true');
+    let responder;
+    refresco.mockReturnValue(new Promise((resolver) => { responder = resolver; }));
+
+    const { unmount } = render(<Dashboard />);
+    await waitFor(() => expect(refresco).toHaveBeenCalledTimes(1));
+    unmount();
+    await act(async () => {
+      responder({ needsHandicap: true, handicap: null });
+    });
+
+    expect(localStorage.getItem('refrescar_handicap')).toBe('true');
+  });
+
+  it('D7: un apunte viejo de needs_handicap ya no abre nada por sí solo', async () => {
+    // Lo escribía la versión anterior; su información es de otro día
+    localStorage.setItem('needs_handicap', 'true');
+
+    render(<Dashboard />);
+
+    await panelPintado();
+    expect(screen.queryByTestId('modal-handicap')).not.toBeInTheDocument();
+    expect(localStorage.getItem('needs_handicap')).toBeNull();
+  });
+});

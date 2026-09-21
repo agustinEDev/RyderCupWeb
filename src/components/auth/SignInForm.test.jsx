@@ -167,4 +167,24 @@ describe('SignInForm', () => {
     await waitFor(() => expect(errorToast).toHaveBeenCalled());
     expect(ejecutarLogin).not.toHaveBeenCalled();
   });
+
+  it('S1: al entrar deja pedido el refresco del hándicap, sin esperarlo (FE #677)', async () => {
+    // El login ya no consulta la RFEG ni trae `needs_handicap` (RyderCupAM#340):
+    // el panel lo pide aparte, en segundo plano. Un apunte viejo de
+    // `needs_handicap` abriría el modal con la información de otro día
+    window.localStorage.setItem('needs_handicap', 'true');
+    ejecutarLogin.mockResolvedValue({
+      user: { firstName: 'Agustin', emailVerified: true },
+      csrfToken: 'tok',
+    });
+    pintar();
+
+    escribir(campoCorreo(), 'alguien@ejemplo.com');
+    escribir(campoContrasena(), 'secreta');
+    enviar();
+
+    await waitFor(() => expect(navegar).toHaveBeenCalled());
+    expect(window.localStorage.getItem('refrescar_handicap')).toBe('true');
+    expect(window.localStorage.getItem('needs_handicap')).toBeNull();
+  });
 });

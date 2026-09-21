@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, Navigate, useLocation } from 'react-router';
 import { motion } from 'framer-motion';
 import { Trophy, Zap, Pencil } from 'lucide-react';
@@ -32,6 +32,7 @@ import {
   getUpcomingMatchesUseCase,
   getScoringViewUseCase,
   updateUserProfileUseCase,
+  refreshOwnHandicapUseCase,
 } from '../composition';
 
 // El panel enseña un resumen, no el historial entero
@@ -60,18 +61,58 @@ const Dashboard = () => {
   const [upcomingDesdeMemoria, setUpcomingDesdeMemoria] = useState(false);
   const [isLoadingUpcoming, setIsLoadingUpcoming] = useState(true);
   const [showHandicapModal, setShowHandicapModal] = useState(false);
+  // El hándicap guardado cuando se abre el modal: decide qué dice (FE #677)
+  const [handicapAlAbrir, setHandicapAlAbrir] = useState(null);
   const [showQuickMatchModal, setShowQuickMatchModal] = useState(false);
   const [handicapPending, setHandicapPending] = useState(
     () => typeof localStorage !== 'undefined' && localStorage.getItem('handicap_pending') === 'true'
   );
 
+  // El refresco del hándicap que antes hacía el login (FE #677). Va por su
+  // cuenta y en segundo plano, sin encadenarse a las peticiones del panel: una
+  // RFEG lenta no puede retrasar ni dejar en blanco nada de lo demás.
+  //
+  // Una sola petición por montaje, aunque `user` cambie con ella en vuelo (llega
+  // el usuario recién pedido y es otro objeto): cancelarla en cada cambio tiraba
+  // su respuesta y, con el apunte aún puesto, salía otra. Solo se descarta si el
+  // panel se desmonta
+  const refrescoPedido = useRef(false);
+  const panelMontado = useRef(true);
   useEffect(() => {
-    if (user && localStorage.getItem('needs_handicap') === 'true') {
-      localStorage.removeItem('needs_handicap');
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- pre-existing pattern surfaced by eslint-plugin-react-hooks 7.1.1 bump; needs dedicated review (tracked in follow-up)
-      setShowHandicapModal(true);
-    }
-  }, [user]);
+    panelMontado.current = true;
+    return () => {
+      panelMontado.current = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    // Apunte de la versión anterior: su información es de otro día
+    localStorage.removeItem('needs_handicap');
+    if (!user || refrescoPedido.current) return;
+    if (localStorage.getItem('refrescar_handicap') !== 'true') return;
+
+    refrescoPedido.current = true;
+    const handicapDeAntes = user.handicap ?? null;
+    refreshOwnHandicapUseCase
+      .execute()
+      .then(({ needsHandicap, handicap }) => {
+        if (!panelMontado.current) return;
+        localStorage.removeItem('refrescar_handicap');
+        if (needsHandicap) {
+          setHandicapAlAbrir(handicap);
+          setShowHandicapModal(true);
+        } else if (handicap !== handicapDeAntes) {
+          // Solo si cambió: recargar el usuario relanza las cuatro peticiones
+          // del panel, y el refresco diario de siempre devuelve lo mismo
+          refetchUser();
+        }
+      })
+      .catch(() => {
+        // Nuestra API no contestó: no se sabe nada, así que no se afirma nada.
+        // El apunte se queda y se vuelve a intentar la próxima vez
+        refrescoPedido.current = false;
+      });
+  }, [user, refetchUser]);
 
   const handleHandicapSaved = useCallback(async () => {
     setShowHandicapModal(false);
@@ -465,6 +506,7 @@ const Dashboard = () => {
       <HandicapRequestModal
         isOpen={showHandicapModal}
         user={user}
+        handicapActual={handicapAlAbrir}
         onClose={handleHandicapDismiss}
         onSaved={handleHandicapSaved}
       />
