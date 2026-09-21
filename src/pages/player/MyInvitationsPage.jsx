@@ -148,25 +148,6 @@ const MyInvitationsPage = () => {
             ))}
           </div>
         )}
-
-        {/* View competition links */}
-        {invitations.some((inv) => inv.isAccepted) && (
-          <div className="mt-6 p-4 bg-green-50 rounded-lg border border-green-200">
-            <p className="text-sm text-green-800">
-              {invitations
-                .filter((inv) => inv.isAccepted)
-                .map((inv) => (
-                  <button
-                    key={inv.id}
-                    onClick={() => navigate(`/competitions/${inv.competitionId}`)}
-                    className="underline hover:no-underline mr-4"
-                  >
-                    {inv.competitionName}
-                  </button>
-                ))}
-            </p>
-          </div>
-        )}
       </div>
     </div>
   );

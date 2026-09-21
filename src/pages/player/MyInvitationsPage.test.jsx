@@ -170,4 +170,35 @@ describe('MyInvitationsPage', () => {
     renderPage();
     expect(await screen.findByText('player.pendingCount_1')).toBeInTheDocument();
   });
+
+  it('P1: una aceptada se abre desde su tarjeta, sin la caja suelta de abajo (FE #682)', async () => {
+    mockListMyInvitations.mockResolvedValue({
+      invitations: [
+        {
+          id: 'inv-1',
+          competitionId: 'comp-123',
+          competitionName: 'Summer Cup',
+          inviterName: 'Creator',
+          inviteeEmail: 'player@test.com',
+          status: 'ACCEPTED',
+          isPending: false,
+          isAccepted: true,
+          isDeclined: false,
+          isExpired: false,
+          personalMessage: null,
+          expiresAt: null,
+          respondedAt: '2026-09-21T10:00:00Z',
+        },
+      ],
+      totalCount: 1,
+    });
+
+    renderPage();
+
+    const tarjeta = await screen.findByTestId('invitation-card');
+    const accesos = screen.getAllByText('Summer Cup');
+    expect(accesos).toHaveLength(1);
+    expect(tarjeta).toContainElement(accesos[0]);
+    expect(accesos[0].closest('a')).toHaveAttribute('href', '/competitions/comp-123');
+  });
 });
