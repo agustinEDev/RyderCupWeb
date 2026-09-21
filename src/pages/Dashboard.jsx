@@ -621,7 +621,10 @@ const Dashboard = () => {
               {/* Dos, no seis: Mis Torneos, Explorar, Amigos y Perfil ya viven
                   en la navegacion, y repetirlos aqui convertia el panel en un
                   menu con otro aspecto */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Dos columnas desde lg, no desde md: entre medias el panel deja
+                  160 px a cada lado y cada tarjeta se quedaba en ~210, con el
+                  titulo comiendose el relleno (FE #680) */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 {/* Quick Match Card - primary action */}
                 <motion.button
                   onClick={() => setShowQuickMatchModal(true)}
@@ -633,7 +636,7 @@ const Dashboard = () => {
                   <div className="p-3 bg-primary-500 rounded-lg">
                     <Zap className="w-7 h-7 text-white" />
                   </div>
-                  <div className="flex-1">
+                  <div className="flex-1 min-w-0">
                     <h3 className="text-gray-900 font-bold text-lg group-hover:text-primary-600 transition-colors">
                       {t('quickActions.quickMatch')}
                     </h3>
@@ -651,7 +654,7 @@ const Dashboard = () => {
                   <div className="p-3 bg-primary-100 rounded-lg group-hover:bg-primary-500 transition-colors">
                     <Trophy className="w-7 h-7 text-primary-600 group-hover:text-white transition-colors" />
                   </div>
-                  <div className="flex-1">
+                  <div className="flex-1 min-w-0">
                     <h3 className="text-gray-900 font-bold text-lg group-hover:text-primary-600 transition-colors">
                       {t('quickActions.createTournament')}
                     </h3>
