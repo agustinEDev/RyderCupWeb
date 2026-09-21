@@ -1351,13 +1351,18 @@ const CreateCompetition = () => {
         createGolfCourseRequestUseCase={createGolfCourseRequestUseCase}
       />
 
-      <EnrollmentOpeningModal
-        isOpen={preguntandoApertura}
-        startDate={formData.startDate}
-        onConfirm={crear}
-        onClose={() => setPreguntandoApertura(false)}
-        isLoading={isSubmitting}
-      />
+      {/* Montado solo mientras se pregunta: dejándolo puesto conservaba lo
+          elegido la vez anterior, y volver a entrar y confirmar mandaba unos
+          días que nadie había vuelto a elegir */}
+      {preguntandoApertura && (
+        <EnrollmentOpeningModal
+          isOpen
+          startDate={formData.startDate}
+          onConfirm={crear}
+          onClose={() => setPreguntandoApertura(false)}
+          isLoading={isSubmitting}
+        />
+      )}
     </div>
   );
 };

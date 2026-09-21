@@ -21,6 +21,7 @@ import { MemoryRouter } from 'react-router';
  *   7   más días que los que faltan                | avisa de que abrirá ya
  *   8   días elegidos                             | enseña la fecha de apertura
  *   9   los días JUSTOS que faltan                | no avisa: la apertura es hoy
+ *  10   volver y entrar otra vez                  | no conserva lo elegido antes
  */
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -33,13 +34,28 @@ vi.mock('react-i18next', () => ({
 vi.mock('../components/layout/HeaderAuth', () => ({ default: () => null }));
 vi.mock('../hooks/useAuth', () => ({ useAuth: () => ({ user: { id: 'u-1' }, loading: false }) }));
 vi.mock('../components/golf_course/GolfCourseSearchBox', () => ({ default: () => null }));
-vi.mock('../utils/toast', () => ({ default: { error: vi.fn(), success: vi.fn(), info: vi.fn() } }));
+const mockToastError = vi.fn();
+vi.mock('../utils/toast', () => ({
+  default: {
+    error: (...args) => mockToastError(...args),
+    success: vi.fn(),
+    info: vi.fn(),
+    warning: vi.fn(),
+  },
+}));
 vi.mock('../services/countries', () => ({
   formatCountryName: () => 'España',
   sortCountriesByName: (paises) => paises || [],
 }));
 
-const mockCrear = vi.fn().mockResolvedValue({ id: 'c-nueva' });
+// La forma que devuelve de verdad `CreateCompetitionWithGolfCoursesUseCase`:
+// con solo `{ id }`, el componente revienta al leer `failedCourses.length` y el
+// test acaba pasando por el `catch`, dando por buena una creación que falló
+const mockCrear = vi.fn().mockResolvedValue({
+  competition: { id: 'c-nueva' },
+  successCount: 1,
+  failedCourses: [],
+});
 const mockActualizar = vi.fn().mockResolvedValue({ id: 'c-1' });
 const mockDetalle = vi.fn();
 vi.mock('../composition', () => ({
@@ -65,6 +81,22 @@ vi.mock('../components/ui/FullScreenLoader', () => ({ default: () => null }));
 vi.mock('../utils/countryUtils', () => ({ CountryFlag: () => null }));
 
 const CreateCompetition = (await import('./CreateCompetition')).default;
+
+/**
+ * Una fecha a N días de hoy, en formato YYYY-MM-DD y por calendario LOCAL.
+ *
+ * Sumando milisegundos y pasando por `toISOString()` se cuenta en UTC: en un
+ * huso positivo, «dentro de 7 días» puede salir a 6 días de calendario local, y
+ * entonces elegir 7 días de antelación dispara el aviso y el test falla según
+ * dónde se ejecute.
+ */
+const enDias = (dias) => {
+  const fecha = new Date();
+  fecha.setDate(fecha.getDate() + dias);
+  const mes = String(fecha.getMonth() + 1).padStart(2, '0');
+  const dia = String(fecha.getDate()).padStart(2, '0');
+  return `${fecha.getFullYear()}-${mes}-${dia}`;
+};
 
 /** Entra al formulario: el tipo se elige antes (FE #639). */
 const abreElFormulario = async () => {
@@ -93,6 +125,7 @@ describe('CreateCompetition · cuándo se abren las inscripciones (FE #666)', ()
   beforeEach(() => {
     vi.spyOn(console, 'error').mockImplementation(() => {});
     mockCrear.mockClear();
+    mockToastError.mockClear();
   });
 
   it('1: una privada se crea sin preguntar nada', async () => {
@@ -140,6 +173,10 @@ describe('CreateCompetition · cuándo se abren las inscripciones (FE #666)', ()
     await waitFor(() => expect(mockCrear).toHaveBeenCalled());
     const [payload] = mockCrear.mock.calls[0];
     expect(payload.enrollment_opens_days_before ?? null).toBeNull();
+    // Y por el camino bueno: si el mock no cumpliera el contrato del caso de
+    // uso, el componente reventaría al leer la respuesta y acabaría en el
+    // `catch` con el assert de arriba en verde igualmente
+    expect(mockToastError).not.toHaveBeenCalled();
   });
 
   it('5: programarla manda los días elegidos', async () => {
@@ -179,7 +216,7 @@ describe('CreateCompetition · cuándo se abren las inscripciones (FE #666)', ()
       target: { name: 'name', value: 'Torneo inminente' },
     });
     // El torneo empieza pasado mañana: 14 días antes ya pasó
-    const pasadoManana = new Date(Date.now() + 2 * 86400000).toISOString().slice(0, 10);
+    const pasadoManana = enDias(2);
     fireEvent.change(screen.getByLabelText(/create\.startDate/), {
       target: { name: 'startDate', value: pasadoManana },
     });
@@ -201,7 +238,7 @@ describe('CreateCompetition · cuándo se abren las inscripciones (FE #666)', ()
     fireEvent.change(screen.getByLabelText(/create\.competitionName/), {
       target: { name: 'name', value: 'Torneo en una semana' },
     });
-    const enUnaSemana = new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10);
+    const enUnaSemana = enDias(7);
     fireEvent.change(screen.getByLabelText(/create\.startDate/), {
       target: { name: 'startDate', value: enUnaSemana },
     });
@@ -220,6 +257,34 @@ describe('CreateCompetition · cuándo se abren las inscripciones (FE #666)', ()
     // aviso de más justo en el borde
     expect(screen.queryByTestId('aviso-abre-ya')).not.toBeInTheDocument();
     expect(await screen.findByTestId('fecha-de-apertura')).toBeInTheDocument();
+  });
+
+  it('10: volver y entrar otra vez NO conserva lo elegido antes', async () => {
+    await abreElFormulario();
+    rellena();
+    haceLaPublica();
+
+    // Primera vez: se programa a 7 días y se vuelve al formulario
+    pulsaCrear();
+    await screen.findByTestId('modal-apertura');
+    fireEvent.click(screen.getByTestId('apertura-PROGRAMADA'));
+    fireEvent.change(screen.getByTestId('apertura-dias'), { target: { value: '7' } });
+    fireEvent.click(screen.getByTestId('volver-al-formulario'));
+    await waitFor(() =>
+      expect(screen.queryByTestId('modal-apertura')).not.toBeInTheDocument()
+    );
+
+    // Segunda vez: tiene que volver a empezar en «abrir ahora», o confirmar
+    // mandaría los 7 días de la vez anterior sin que nadie los haya elegido
+    pulsaCrear();
+    await screen.findByTestId('modal-apertura');
+    expect(screen.getByTestId('apertura-AHORA')).toBeChecked();
+
+    fireEvent.click(screen.getByTestId('confirmar-apertura'));
+
+    await waitFor(() => expect(mockCrear).toHaveBeenCalled());
+    const [payload] = mockCrear.mock.calls[0];
+    expect(payload.enrollment_opens_days_before ?? null).toBeNull();
   });
 
   it('8: enseña la fecha en que abrirá, no solo los días', async () => {

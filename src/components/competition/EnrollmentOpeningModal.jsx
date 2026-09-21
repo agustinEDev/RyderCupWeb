@@ -56,6 +56,9 @@ const EnrollmentOpeningModal = ({ isOpen, startDate, onConfirm, onClose, isLoadi
       describedBy="apertura-explicacion"
       // Con algo elegido dentro, un toque al lado no puede descartarlo
       closeOnBackdrop={false}
+      // Ni un Escape a media creación: `busy` solo lo anuncia, no lo impide, y
+      // cerrar aquí esconde el modal mientras la petición sigue en vuelo
+      closeOnEscape={!isLoading}
       busy={isLoading}
     >
       <div className="px-6 pt-6 pb-2">

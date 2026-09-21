@@ -34,7 +34,14 @@ vi.mock('../services/countries', () => ({
   sortCountriesByName: (paises) => paises || [],
 }));
 
-const mockCrear = vi.fn().mockResolvedValue({ id: 'c-nueva' });
+// La forma que devuelve de verdad `CreateCompetitionWithGolfCoursesUseCase`:
+// con solo `{ id }`, el componente revienta al leer `failedCourses.length` y el
+// test acaba pasando por el `catch`, dando por buena una creación que falló
+const mockCrear = vi.fn().mockResolvedValue({
+  competition: { id: 'c-nueva' },
+  successCount: 1,
+  failedCourses: [],
+});
 const mockActualizar = vi.fn().mockResolvedValue({ id: 'c-1' });
 const mockDetalle = vi.fn();
 vi.mock('../composition', () => ({
