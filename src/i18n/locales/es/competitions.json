@@ -143,6 +143,9 @@
     "players": "Jugadores",
     "countries": "Países",
     "invitingOpensEnrollment": "Al invitar a la primera persona se abren las inscripciones",
+    "invitingOpensScheduled": "Las inscripciones se abren solas el {{fecha}}. Si invitas a alguien antes, se abren en ese momento.",
+    "enrollment": "Inscripciones",
+    "enrollmentOpensOn": "A partir del {{fecha}}",
     "actions": {
       "edit": "Editar",
       "activate": "Activar",
@@ -267,7 +270,7 @@
       "courseAlreadyAdded": "Ese campo ya está en la competición"
     },
     "visibilityPrivate": "Solo invitados",
-    "visibilityPublic": "Abierta"
+    "visibilityPublic": "Pública"
   },
   "browse": {
     "title": "Explorar Competiciones",
@@ -346,6 +349,7 @@
     "volver": "Volver",
     "crear": "Crear competición",
     "abreEl": "Abrirán el {{fecha}}.",
+    "abreHoy": "Abrirán hoy.",
     "creando": "Creando…"
   }
 }

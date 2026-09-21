@@ -143,6 +143,9 @@
     "players": "Players",
     "countries": "Countries",
     "invitingOpensEnrollment": "Inviting the first person opens enrolment",
+    "invitingOpensScheduled": "Enrolment opens on its own on {{fecha}}. If you invite someone before then, it opens at that moment.",
+    "enrollment": "Enrolment",
+    "enrollmentOpensOn": "From {{fecha}}",
     "actions": {
       "edit": "Edit",
       "activate": "Activate",
@@ -267,7 +270,7 @@
       "courseAlreadyAdded": "That course is already in the competition"
     },
     "visibilityPrivate": "Invited only",
-    "visibilityPublic": "Open"
+    "visibilityPublic": "Public"
   },
   "browse": {
     "title": "Browse Competitions",
@@ -346,6 +349,7 @@
     "volver": "Back",
     "crear": "Create competition",
     "abreEl": "Opens on {{fecha}}.",
+    "abreHoy": "Opens today.",
     "creando": "Creating…"
   }
 }

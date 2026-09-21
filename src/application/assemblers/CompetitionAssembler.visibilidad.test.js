@@ -49,3 +49,25 @@ describe('CompetitionAssembler · la visibilidad llega a la pantalla (FE #664)',
     expect(dto.visibility).toBe('PRIVATE');
   });
 });
+
+describe('CompetitionAssembler · la apertura programada llega a la pantalla (FE #678)', () => {
+  // Sin esto la ficha de una programada no puede decir cuándo abre: el dato
+  // existe en la respuesta y se perdía por el camino, como la visibilidad
+  it('A1: los días de antelación llegan tal cual', () => {
+    const dto = loQueLlegaALaPantalla(respuestaDeLaApi({ enrollment_opens_days_before: 5 }));
+
+    expect(dto.enrollmentOpensDaysBefore).toBe(5);
+  });
+
+  it('A2: sin el campo, no está programada', () => {
+    const dto = loQueLlegaALaPantalla(respuestaDeLaApi());
+
+    expect(dto.enrollmentOpensDaysBefore).toBeNull();
+  });
+
+  it('A3: y con el campo a null, tampoco', () => {
+    const dto = loQueLlegaALaPantalla(respuestaDeLaApi({ enrollment_opens_days_before: null }));
+
+    expect(dto.enrollmentOpensDaysBefore).toBeNull();
+  });
+});

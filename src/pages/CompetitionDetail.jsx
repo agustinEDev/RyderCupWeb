@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router';
 import { motion } from 'framer-motion';
-import { Users, Calendar, MapPin, Settings, ArrowLeft, Edit, Trash2, Play, CheckCircle, XCircle, Pause, AlertCircle, UserPlus, Shield, Mail, BarChart3, Undo2 } from 'lucide-react';
+import { Users, Calendar, CalendarClock, MapPin, Settings, ArrowLeft, Edit, Trash2, Play, CheckCircle, XCircle, Pause, AlertCircle, UserPlus, Shield, Mail, BarChart3, Undo2 } from 'lucide-react';
 import customToast from '../utils/toast';
 import { useTranslation } from 'react-i18next';
 import HeaderAuth from '../components/layout/HeaderAuth';
@@ -38,6 +38,7 @@ import {
 } from '../services/competitions';
 import FullScreenLoader from '../components/ui/FullScreenLoader';
 import { formatCountryName } from '../services/countries';
+import { fechaDeApertura } from '../domain/services/aperturaDeInscripciones';
 
 const CompetitionDetail = () => {
   const navigate = useNavigate();
@@ -396,6 +397,19 @@ const CompetitionDetail = () => {
   const canEditHandicap =
     canManage && ['DRAFT', 'ACTIVE', 'CLOSED'].includes(competition.status);
 
+  // Una programada es un borrador con días de antelación (RyderCupAM#332). En
+  // cuanto abre deja de ser borrador, así que la fecha solo se enseña mientras
+  // espera: una vez abierta ya no dice nada (FE #678)
+  const aperturaProgramada =
+    competition.status === 'DRAFT'
+      ? fechaDeApertura(competition.startDate, competition.enrollmentOpensDaysBefore)
+      : null;
+  const fechaDeAperturaLegible = aperturaProgramada
+    ? new Intl.DateTimeFormat(i18n.language, { day: 'numeric', month: 'long' }).format(
+        aperturaProgramada
+      )
+    : null;
+
   // Check if competition has reached max players
   // For creators: use enrollments list. For non-creators: fallback to competition.enrolledCount from API
   const approvedCount = enrollments.length > 0
@@ -512,6 +526,19 @@ const CompetitionDetail = () => {
                       </p>
                     </div>
                   </div>
+                  {/* Para todos, no solo el creador: quien la encuentra al explorar
+                      ve «Borrador» sin botón y tiene que saber cuándo podrá entrar */}
+                  {fechaDeAperturaLegible && (
+                    <div className="flex items-center gap-2 text-gray-700">
+                      <CalendarClock className="w-5 h-5" />
+                      <div>
+                        <p className="text-xs text-gray-500">{t('detail.enrollment')}</p>
+                        <p className="text-sm font-medium" data-testid="apertura-programada">
+                          {t('detail.enrollmentOpensOn', { fecha: fechaDeAperturaLegible })}
+                        </p>
+                      </div>
+                    </div>
+                  )}
                   {competition.creator && (
                     <div className="flex items-center gap-2 text-gray-700">
                       <Shield className="w-5 h-5" />
@@ -679,12 +706,15 @@ const CompetitionDetail = () => {
                   )}
 
                   {competition.status === 'DRAFT' && (
-                    // Invitar abre el torneo, y eso no se adivina mirando el botón
+                    // Invitar abre el torneo, y eso no se adivina mirando el botón.
+                    // También una programada: la política solo mira el estado
                     <p
                       className="w-full text-sm text-gray-600"
                       data-testid="invitar-abre-inscripciones"
                     >
-                      {t('detail.invitingOpensEnrollment')}
+                      {fechaDeAperturaLegible
+                        ? t('detail.invitingOpensScheduled', { fecha: fechaDeAperturaLegible })
+                        : t('detail.invitingOpensEnrollment')}
                     </p>
                   )}
 

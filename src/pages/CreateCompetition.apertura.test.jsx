@@ -233,7 +233,7 @@ describe('CreateCompetition · cuándo se abren las inscripciones (FE #666)', ()
     expect(await screen.findByTestId('aviso-abre-ya')).toBeInTheDocument();
   });
 
-  it('9: pidiendo los días JUSTOS que faltan, no avisa: la apertura es hoy', async () => {
+  it('9: pidiendo los días JUSTOS que faltan, no avisa: dice que abre hoy', async () => {
     await abreElFormulario();
     fireEvent.change(screen.getByLabelText(/create\.competitionName/), {
       target: { name: 'name', value: 'Torneo en una semana' },
@@ -254,9 +254,10 @@ describe('CreateCompetition · cuándo se abren las inscripciones (FE #666)', ()
 
     // Siete días antes de un torneo que empieza dentro de siete es HOY: la
     // apertura no ha pasado, así que decir que abrirá «al crearla» sería un
-    // aviso de más justo en el borde
+    // aviso de más justo en el borde. Pero tampoco la fecha: «el 21 de
+    // septiembre» el propio 21 obliga a mirar el calendario (FE #678)
     expect(screen.queryByTestId('aviso-abre-ya')).not.toBeInTheDocument();
-    expect(await screen.findByTestId('fecha-de-apertura')).toBeInTheDocument();
+    expect(await screen.findByTestId('fecha-de-apertura')).toHaveTextContent('apertura.abreHoy');
   });
 
   it('10: volver y entrar otra vez NO conserva lo elegido antes', async () => {
@@ -302,5 +303,6 @@ describe('CreateCompetition · cuándo se abren las inscripciones (FE #666)', ()
     // si cae donde se quería
     const fecha = await screen.findByTestId('fecha-de-apertura');
     expect(fecha.textContent).toContain('27');
+    expect(fecha).toHaveTextContent('apertura.abreEl');
   });
 });
