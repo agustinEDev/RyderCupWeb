@@ -42,6 +42,8 @@ const EnrollmentOpeningModal = ({ isOpen, startDate, onConfirm, onClose, isLoadi
   // Estrictamente antes: pidiendo los días JUSTOS que faltan, la apertura cae
   // hoy y el torneo todavía no ha empezado, así que no hay nada que avisar
   const abriraYa = programada && faltan !== null && dias > faltan;
+  // Y en ese borde, «hoy»: la fecha del propio día obliga a mirar el calendario
+  const abreHoy = programada && faltan !== null && dias === faltan;
 
   const fechaLegible = abre
     ? new Intl.DateTimeFormat(i18n.language, { day: 'numeric', month: 'long' }).format(abre)
@@ -132,7 +134,7 @@ const EnrollmentOpeningModal = ({ isOpen, startDate, onConfirm, onClose, isLoadi
                 cuenta, y es la cuenta la que dice si eso cae donde se quería */}
             {fechaLegible && !abriraYa && (
               <p data-testid="fecha-de-apertura" className="text-xs text-gray-600">
-                {t('apertura.abreEl', { fecha: fechaLegible })}
+                {abreHoy ? t('apertura.abreHoy') : t('apertura.abreEl', { fecha: fechaLegible })}
               </p>
             )}
 

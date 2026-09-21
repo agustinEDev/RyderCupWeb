@@ -5,9 +5,11 @@ import CompetitionDetail from './CompetitionDetail';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
+    i18n: { language: 'es' },
     t: (key, params) => {
       if (params?.count !== undefined) return `${key}_${params.count}`;
       if (params?.handicap !== undefined) return `${key}_${params.handicap}`;
+      if (params?.fecha !== undefined) return `${key}_${params.fecha}`;
       return key;
     },
   }),
@@ -667,6 +669,84 @@ describe('CompetitionDetail - de quién es el torneo (FE #664)', () => {
 
     expect(await screen.findByTestId('visibilidad-competicion')).toHaveTextContent(
       'detail.visibilityPublic'
+    );
+  });
+});
+
+
+describe('CompetitionDetail - cuándo abre una programada (FE #678)', () => {
+  const programada = ({ status = 'DRAFT', dias = 5, creatorId = 'creator-1', isCreator = true } = {}) => {
+    mockGetCompetitionDetail.mockResolvedValue({
+      id: 'comp-1',
+      name: 'Summer Cup',
+      status,
+      creatorId,
+      isCreator,
+      maxPlayers: 20,
+      countries: [],
+      visibility: 'PUBLIC',
+      startDate: '2027-06-01',
+      endDate: '2027-06-03',
+      enrollmentOpensDaysBefore: dias,
+    });
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockListEnrollments.mockResolvedValue([]);
+  });
+
+  it('D1: quien la mira desde fuera ve la fecha en que abre', async () => {
+    // Un desconocido veía «Borrador» sin fecha y sin botón: no sabía si algún
+    // día podría apuntarse. 5 días antes del 1 de junio es el 27 de mayo
+    programada({ creatorId: 'otro', isCreator: false });
+
+    renderPage();
+
+    const aviso = await screen.findByTestId('apertura-programada');
+    expect(aviso).toHaveTextContent('detail.enrollmentOpensOn');
+    expect(aviso).toHaveTextContent('27');
+    expect(aviso).toHaveTextContent(/mayo/);
+  });
+
+  it('D2: un borrador sin programar no enseña ninguna fecha', async () => {
+    programada({ dias: null });
+
+    renderPage();
+
+    await screen.findByText('Summer Cup');
+    expect(screen.queryByTestId('apertura-programada')).not.toBeInTheDocument();
+  });
+
+  it('D3: una que ya abrió tampoco, aunque guarde los días', async () => {
+    programada({ status: 'ACTIVE' });
+
+    renderPage();
+
+    await screen.findByText('Summer Cup');
+    expect(screen.queryByTestId('apertura-programada')).not.toBeInTheDocument();
+  });
+
+  it('D4: al creador se le dice que abre sola ese día, y que invitar la adelanta', async () => {
+    // Invitar abre cualquier borrador, programado o no (CompetitionPolicy
+    // mira solo el estado): el aviso de siempre era cierto, pero se comía la
+    // fecha que el organizador acababa de elegir
+    programada();
+
+    renderPage();
+
+    const nota = await screen.findByTestId('invitar-abre-inscripciones');
+    expect(nota).toHaveTextContent('detail.invitingOpensScheduled');
+    expect(nota).toHaveTextContent('27');
+  });
+
+  it('D5: y en un borrador sin programar, el aviso de siempre', async () => {
+    programada({ dias: null });
+
+    renderPage();
+
+    expect(await screen.findByTestId('invitar-abre-inscripciones')).toHaveTextContent(
+      'detail.invitingOpensEnrollment'
     );
   });
 });
