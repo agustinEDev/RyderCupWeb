@@ -142,7 +142,10 @@ describe('MyInvitationsPage', () => {
       expect(mockRespondToInvitation).toHaveBeenCalledWith('inv-1', 'ACCEPT');
     });
     await waitFor(() => {
-      expect(mockNavigate).toHaveBeenCalledWith('/competitions/comp-123');
+      // Con el origen, para que «Volver» lleve de nuevo aquí (FE #682)
+      expect(mockNavigate).toHaveBeenCalledWith('/competitions/comp-123', {
+        state: { from: 'invitations' },
+      });
     });
   });
 

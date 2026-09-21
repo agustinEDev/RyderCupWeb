@@ -55,7 +55,8 @@ const MyInvitationsPage = () => {
       const result = await respondToInvitationUseCase.execute(invitationId, 'ACCEPT');
       customToast.success(t('success.accepted'));
       if (result?.competitionId) {
-        navigate(`/competitions/${result.competitionId}`);
+        // Con el origen, para que «Volver» de la ficha traiga de nuevo aqui
+        navigate(`/competitions/${result.competitionId}`, { state: { from: 'invitations' } });
       }
     } catch (error) {
       console.error('Error accepting invitation:', error);

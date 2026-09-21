@@ -33,7 +33,7 @@ vi.mock('../hooks/useUserRoles', () => ({
 }));
 
 vi.mock('../components/layout/HeaderAuth', () => ({
-  default: () => <div data-testid="header-auth">Header</div>,
+  default: ({ backTo }) => <div data-testid="header-auth" data-back-to={backTo}>Header</div>,
 }));
 
 vi.mock('../components/competition/CompetitionGolfCoursesSection', () => ({
@@ -748,5 +748,65 @@ describe('CompetitionDetail - cuándo abre una programada (FE #678)', () => {
     expect(await screen.findByTestId('invitar-abre-inscripciones')).toHaveTextContent(
       'detail.invitingOpensEnrollment'
     );
+  });
+});
+
+
+describe('CompetitionDetail - la vuelta lleva a donde se vino (FE #682)', () => {
+  const desde = (state) => {
+    mockGetCompetitionDetail.mockResolvedValue({
+      id: 'comp-1',
+      name: 'Summer Cup',
+      status: 'ACTIVE',
+      creatorId: 'otro',
+      maxPlayers: 20,
+      countries: [],
+    });
+    return render(
+      <MemoryRouter initialEntries={[{ pathname: '/competitions/comp-1', state }]}>
+        <Routes>
+          <Route path="/competitions/:id" element={<CompetitionDetail />} />
+          <Route path="/player/invitations" element={<div data-testid="en-invitaciones" />} />
+          <Route path="/competitions" element={<div data-testid="en-competiciones" />} />
+          <Route path="/browse-competitions" element={<div data-testid="en-explorar" />} />
+        </Routes>
+      </MemoryRouter>
+    );
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockListEnrollments.mockResolvedValue([]);
+  });
+
+  it('V1: desde invitaciones, vuelve a invitaciones', async () => {
+    desde({ from: 'invitations' });
+
+    fireEvent.click(await screen.findByText('detail.backToInvitations'));
+
+    expect(await screen.findByTestId('en-invitaciones')).toBeInTheDocument();
+  });
+
+  it('V2: y la flecha de la cabecera móvil, también', async () => {
+    desde({ from: 'invitations' });
+
+    await screen.findByText('Summer Cup');
+    expect(screen.getByTestId('header-auth')).toHaveAttribute('data-back-to', '/player/invitations');
+  });
+
+  it('V4: desde explorar, a explorar (ya lo hacía, pero no lo vigilaba nadie)', async () => {
+    desde({ from: 'browse' });
+
+    fireEvent.click(await screen.findByText('detail.backToBrowse'));
+
+    expect(await screen.findByTestId('en-explorar')).toBeInTheDocument();
+  });
+
+  it('V3: sin origen, a competiciones como siempre', async () => {
+    desde(undefined);
+
+    fireEvent.click(await screen.findByText('detail.backToCompetitions'));
+
+    expect(await screen.findByTestId('en-competiciones')).toBeInTheDocument();
   });
 });

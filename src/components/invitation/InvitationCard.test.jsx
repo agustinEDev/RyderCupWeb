@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render as renderSinRouter, screen, fireEvent } from '@testing-library/react';
-import { MemoryRouter } from 'react-router';
+import { MemoryRouter, Routes, Route, useLocation } from 'react-router';
 import InvitationCard from './InvitationCard';
 
 // La tarjeta aceptada enlaza a su competición (FE #682): necesita un router
@@ -161,6 +161,25 @@ describe('InvitationCard', () => {
       render(<InvitationCard invitation={acceptedInvitation} mode="creator" t={mockT} />);
 
       expect(screen.queryByRole('link')).not.toBeInTheDocument();
+    });
+
+    it('C1: la ficha sabe que se llegó desde las invitaciones, para volver ahí', () => {
+      const Origen = () => <div data-testid="origen">{useLocation().state?.from}</div>;
+      renderSinRouter(
+        <MemoryRouter initialEntries={['/player/invitations']}>
+          <Routes>
+            <Route
+              path="/player/invitations"
+              element={<InvitationCard invitation={acceptedInvitation} mode="player" t={mockT} />}
+            />
+            <Route path="/competitions/:id" element={<Origen />} />
+          </Routes>
+        </MemoryRouter>
+      );
+
+      fireEvent.click(screen.getByTestId('invitation-card'));
+
+      expect(screen.getByTestId('origen')).toHaveTextContent('invitations');
     });
   });
 });

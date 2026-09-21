@@ -33,6 +33,8 @@ const InvitationCard = ({ invitation, mode, onAccept, onDecline, isProcessing, t
   const propsDelContenedor = enlazaACompeticion
     ? {
         to: `/competitions/${invitation.competitionId}`,
+        // Para que «Volver» de la ficha lleve de nuevo aqui
+        state: { from: 'invitations' },
         className:
           'block bg-white rounded-lg border border-gray-200 p-4 shadow-sm hover:border-primary hover:shadow-md transition-all',
       }
