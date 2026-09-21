@@ -1,12 +1,27 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router';
 import { useTranslation } from 'react-i18next';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, ChevronDown, Globe } from 'lucide-react';
 import { useLogout } from '../../hooks/useLogout';
 import { resolveScreen } from './screenTitles';
 import { useGoBack } from '../../hooks/useGoBack';
 import LanguageSwitcher from '../ui/LanguageSwitcher';
 import BrandMark from '../ui/BrandMark';
+
+// Los destinos de la navegacion de escritorio. Se pintan dos veces —en linea
+// desde xl y dentro del desplegable del avatar por debajo—, asi que viven en
+// un solo sitio
+const NAVEGACION = [
+  { to: '/dashboard', clave: 'header.dashboard' },
+  { to: '/browse-competitions', clave: 'header.browseCompetitions' },
+  { to: '/competitions', clave: 'header.myCompetitions' },
+  { to: '/competitions/create', clave: 'header.createCompetition' },
+  { to: '/player/invitations', clave: 'header.myInvitations' },
+  // El feed solo se alcanzaba desde la navegacion inferior, que es md:hidden:
+  // en escritorio no habia forma de llegar salvo tecleando la URL. Amigos ya no
+  // va aqui suelto porque se entra desde dentro del propio feed, igual que en movil
+  { to: '/feed', clave: 'header.feed' },
+];
 
 /**
  * @param {string} [title] - Sustituye al titulo del mapa de rutas. Para
@@ -50,17 +65,22 @@ const HeaderAuth = ({ user, title, backTo }) => {
     setIsDropdownOpen(!isDropdownOpen);
   };
 
-  // Close dropdown when clicking outside
+  // Close dropdown when clicking outside, or on Escape
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (!desktopDropdownRef.current?.contains(event.target)) {
         setIsDropdownOpen(false);
       }
     };
+    const handleEscape = (event) => {
+      if (event.key === 'Escape') setIsDropdownOpen(false);
+    };
 
     document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleEscape);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleEscape);
     };
   }, []);
 
@@ -129,39 +149,26 @@ const HeaderAuth = ({ user, title, backTo }) => {
 
       {/* Desktop Navigation */}
       <div className="hidden md:flex flex-1 justify-end gap-8">
-        <div className="flex items-center gap-9">
-          <Link to="/dashboard" className="text-gray-900 text-sm font-medium leading-normal hover:text-primary transition-colors">
-            {t('header.dashboard')}
-          </Link>
-          <Link to="/browse-competitions" className="text-gray-900 text-sm font-medium leading-normal hover:text-primary transition-colors">
-            {t('header.browseCompetitions')}
-          </Link>
-          <Link to="/competitions" className="text-gray-900 text-sm font-medium leading-normal hover:text-primary transition-colors">
-            {t('header.myCompetitions')}
-          </Link>
-          <Link to="/competitions/create" className="text-gray-900 text-sm font-medium leading-normal hover:text-primary transition-colors">
-            {t('header.createCompetition')}
-          </Link>
-          <Link to="/player/invitations" className="text-gray-900 text-sm font-medium leading-normal hover:text-primary transition-colors">
-            {t('header.myInvitations')}
-          </Link>
-          {/* El feed solo se alcanzaba desde la navegacion inferior, que es
-              md:hidden: en escritorio no habia forma de llegar salvo tecleando
-              la URL. Amigos ya no va aqui suelto porque se entra desde dentro
-              del propio feed, igual que en movil */}
-          <Link to="/feed" className="text-gray-900 text-sm font-medium leading-normal hover:text-primary transition-colors">
-            {t('header.feed')}
-          </Link>
-
+        {/* En linea solo desde xl: con todo junto la cabecera pide ~1250 px, y por
+            debajo la pagina se desplazaba en horizontal (FE #680). Por debajo,
+            los mismos enlaces van al desplegable del avatar */}
+        <div data-testid="navegacion-en-linea" className="hidden xl:flex items-center gap-9">
+          {NAVEGACION.map(({ to, clave }) => (
+            <Link
+              key={to}
+              to={to}
+              className="text-gray-900 text-sm font-medium leading-normal hover:text-primary transition-colors"
+            >
+              {t(clave)}
+            </Link>
+          ))}
         </div>
-
-        {/* Language Switcher */}
-        <LanguageSwitcher />
 
         {/* Desktop Profile Dropdown */}
         <div className="relative" ref={desktopDropdownRef}>
           <button
             onClick={toggleDropdown}
+            aria-expanded={isDropdownOpen}
             className="flex items-center gap-2 hover:opacity-80 transition-opacity"
           >
             {user?.is_admin && (
@@ -172,17 +179,50 @@ const HeaderAuth = ({ user, title, backTo }) => {
             <div className="bg-primary bg-center bg-no-repeat aspect-square bg-cover rounded-full h-8 w-8 md:h-10 md:w-10 flex items-center justify-center text-white font-bold text-sm md:text-base">
               {getInitials()}
             </div>
+            {/* Por debajo de xl los enlaces viven aqui dentro: tiene que notarse
+                que el avatar se abre (FE #680) */}
+            <ChevronDown
+              data-testid="indicador-desplegable"
+              aria-hidden="true"
+              className={`-ml-1 h-4 w-4 text-gray-500 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`}
+            />
           </button>
 
           {/* Desktop Dropdown Menu */}
           {isDropdownOpen && (
             <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
+              <div data-testid="navegacion-en-desplegable" className="xl:hidden">
+                {NAVEGACION.map(({ to, clave }) => (
+                  <Link
+                    key={to}
+                    to={to}
+                    onClick={() => setIsDropdownOpen(false)}
+                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                  >
+                    {t(clave)}
+                  </Link>
+                ))}
+                <div className="border-t border-gray-200 my-1" />
+              </div>
               <button
                 onClick={handleProfileClick}
                 className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
               >
                 {t('header.viewProfile')}
               </button>
+              {/* El idioma vive aqui y no en la barra: es un ajuste de la cuenta y
+                  ocupaba el sitio que les faltaba a los enlaces (FE #680). En la
+                  portada sigue en la barra, que alli no hay cuenta */}
+              <div
+                data-testid="idioma-en-desplegable"
+                className="flex items-center justify-between gap-3 px-4 py-2 text-sm text-gray-700"
+              >
+                <span className="flex items-center gap-2">
+                  <Globe className="h-4 w-4 text-gray-500" aria-hidden="true" />
+                  {t('header.language')}
+                </span>
+                <LanguageSwitcher />
+              </div>
               {user?.is_admin && (
                 <>
                   <div className="border-t border-gray-200 my-1" />
