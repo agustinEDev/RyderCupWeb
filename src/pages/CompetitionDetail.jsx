@@ -40,6 +40,14 @@ import FullScreenLoader from '../components/ui/FullScreenLoader';
 import { formatCountryName } from '../services/countries';
 import { fechaDeApertura } from '../domain/services/aperturaDeInscripciones';
 
+// «Volver» lleva a donde se vino: explorar, las invitaciones (FE #682) o, por
+// defecto, las competiciones propias
+const VUELTAS = {
+  browse: { to: '/browse-competitions', clave: 'detail.backToBrowse' },
+  invitations: { to: '/player/invitations', clave: 'detail.backToInvitations' },
+};
+const VUELTA_POR_DEFECTO = { to: '/competitions', clave: 'detail.backToCompetitions' };
+
 const CompetitionDetail = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -59,9 +67,10 @@ const CompetitionDetail = () => {
   const [savingNamePreference, setSavingNamePreference] = useState(false);
 
   // Determine where user came from (browse or my competitions)
-  const fromBrowse = location.state?.from === 'browse';
-  const backLink = fromBrowse ? '/browse-competitions' : '/competitions';
-  const backText = fromBrowse ? t('detail.backToBrowse') : t('detail.backToCompetitions');
+  const origen = location.state?.from;
+  const vuelta = Object.hasOwn(VUELTAS, origen ?? '') ? VUELTAS[origen] : VUELTA_POR_DEFECTO;
+  const backLink = vuelta.to;
+  const backText = t(vuelta.clave);
 
   const loadCompetition = useCallback(async () => {
     if (!user) return;

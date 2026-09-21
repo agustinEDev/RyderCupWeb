@@ -1,4 +1,5 @@
-import { Mail, Clock, User, MessageSquare } from 'lucide-react';
+import { Link } from 'react-router';
+import { Mail, Clock, User, MessageSquare, ChevronRight } from 'lucide-react';
 import InvitationBadge from './InvitationBadge';
 
 const getExpirationText = (expiresAt, t) => {
@@ -20,14 +21,32 @@ const getExpirationText = (expiresAt, t) => {
 const InvitationCard = ({ invitation, mode, onAccept, onDecline, isProcessing, t }) => {
   const showActions = mode === 'player' && invitation.isPending;
   const expirationText = invitation.isPending ? getExpirationText(invitation.expiresAt, t) : null;
+  // Aceptada, la tarjeta lleva a su competicion (FE #682). Pendiente no: si un
+  // invitado puede abrir una privada antes de aceptar lo decide RyderCupAM#329.
+  // Y el organizador ya mira esta lista desde dentro de la competicion
+  const enlazaACompeticion = mode === 'player' && invitation.isAccepted && invitation.competitionId;
+  const nombre = invitation.competitionName || t('card.for');
+
+  // Aceptada, la tarjeta entera es el enlace: el titulo solo era un blanco
+  // demasiado pequeño, y sin raton no se notaba que se podia pulsar
+  const Contenedor = enlazaACompeticion ? Link : 'div';
+  const propsDelContenedor = enlazaACompeticion
+    ? {
+        to: `/competitions/${invitation.competitionId}`,
+        // Para que «Volver» de la ficha lleve de nuevo aqui
+        state: { from: 'invitations' },
+        className:
+          'block bg-white rounded-lg border border-gray-200 p-4 shadow-sm hover:border-primary hover:shadow-md transition-all',
+      }
+    : { className: 'bg-white rounded-lg border border-gray-200 p-4 shadow-sm' };
 
   return (
-    <div data-testid="invitation-card" className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
+    <Contenedor data-testid="invitation-card" {...propsDelContenedor}>
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
             <h3 className="text-sm font-semibold text-gray-900 truncate">
-              {invitation.competitionName || t('card.for')}
+              {nombre}
             </h3>
             <InvitationBadge status={invitation.status} />
           </div>
@@ -88,8 +107,16 @@ const InvitationCard = ({ invitation, mode, onAccept, onDecline, isProcessing, t
             </button>
           </div>
         )}
+
+        {enlazaACompeticion && (
+          <ChevronRight
+            data-testid="abre-competicion"
+            aria-hidden="true"
+            className="h-5 w-5 flex-shrink-0 self-center text-gray-400"
+          />
+        )}
       </div>
-    </div>
+    </Contenedor>
   );
 };
 

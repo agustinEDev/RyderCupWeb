@@ -55,7 +55,8 @@ const MyInvitationsPage = () => {
       const result = await respondToInvitationUseCase.execute(invitationId, 'ACCEPT');
       customToast.success(t('success.accepted'));
       if (result?.competitionId) {
-        navigate(`/competitions/${result.competitionId}`);
+        // Con el origen, para que «Volver» de la ficha traiga de nuevo aqui
+        navigate(`/competitions/${result.competitionId}`, { state: { from: 'invitations' } });
       }
     } catch (error) {
       console.error('Error accepting invitation:', error);
@@ -146,25 +147,6 @@ const MyInvitationsPage = () => {
                 t={t}
               />
             ))}
-          </div>
-        )}
-
-        {/* View competition links */}
-        {invitations.some((inv) => inv.isAccepted) && (
-          <div className="mt-6 p-4 bg-green-50 rounded-lg border border-green-200">
-            <p className="text-sm text-green-800">
-              {invitations
-                .filter((inv) => inv.isAccepted)
-                .map((inv) => (
-                  <button
-                    key={inv.id}
-                    onClick={() => navigate(`/competitions/${inv.competitionId}`)}
-                    className="underline hover:no-underline mr-4"
-                  >
-                    {inv.competitionName}
-                  </button>
-                ))}
-            </p>
           </div>
         )}
       </div>
