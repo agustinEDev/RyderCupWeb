@@ -35,6 +35,7 @@ const HeaderAuth = ({ user, title, backTo }) => {
   const location = useLocation();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const desktopDropdownRef = useRef(null);
+  const botonPerfilRef = useRef(null);
   const { logout } = useLogout();
 
   // En movil la cabecera dice donde estas y como volver; repetir la marca en
@@ -73,7 +74,13 @@ const HeaderAuth = ({ user, title, backTo }) => {
       }
     };
     const handleEscape = (event) => {
-      if (event.key === 'Escape') setIsDropdownOpen(false);
+      if (event.key !== 'Escape') return;
+      // Con el foco dentro, al desaparecer el desplegable caeria al body: se
+      // devuelve al avatar para que quien va con teclado no pierda el sitio
+      if (desktopDropdownRef.current?.contains(document.activeElement)) {
+        botonPerfilRef.current?.focus();
+      }
+      setIsDropdownOpen(false);
     };
 
     document.addEventListener('mousedown', handleClickOutside);
@@ -167,6 +174,7 @@ const HeaderAuth = ({ user, title, backTo }) => {
         {/* Desktop Profile Dropdown */}
         <div className="relative" ref={desktopDropdownRef}>
           <button
+            ref={botonPerfilRef}
             onClick={toggleDropdown}
             aria-expanded={isDropdownOpen}
             className="flex items-center gap-2 hover:opacity-80 transition-opacity"

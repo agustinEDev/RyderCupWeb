@@ -297,6 +297,19 @@ describe('HeaderAuth', () => {
       expect(fila).toContainElement(screen.getByTestId('language-switcher'));
     });
 
+    it('M4b: tras cerrarlo con Escape, el foco vuelve al avatar', () => {
+      // Si el foco estaba dentro del desplegable, al desaparecer caería al
+      // body y quien va con teclado perdería el sitio
+      renderHeader('/dashboard');
+      const botonPerfil = screen.getByText('AS').closest('button');
+      abrePerfil();
+      enDesplegable().querySelector('a[href="/feed"]').focus();
+
+      fireEvent.keyDown(document, { key: 'Escape' });
+
+      expect(document.activeElement).toBe(botonPerfil);
+    });
+
     it('M5: los enlaces en línea solo desde xl, y en el desplegable solo por debajo', () => {
       // jsdom no mide anchos: lo que se puede vigilar aquí es el contrato de
       // clases. Que de verdad quepa se mide en el navegador (FE #680).
