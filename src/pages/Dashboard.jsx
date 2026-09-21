@@ -107,9 +107,15 @@ const Dashboard = () => {
           refetchUser();
         }
       })
-      .catch(() => {
-        // Nuestra API no contestó: no se sabe nada, así que no se afirma nada.
-        // El apunte se queda y se vuelve a intentar la próxima vez
+      .catch((error) => {
+        // Un 4xx no se va a arreglar solo (el endpoint no existe, el usuario ya
+        // no): repetirlo en cada visita sería un POST fallido tras otro
+        if (error?.status >= 400 && error?.status < 500) {
+          localStorage.removeItem('refrescar_handicap');
+          return;
+        }
+        // Sin respuesta o un 5xx: no se sabe nada, así que no se afirma nada.
+        // El apunte se queda y se vuelve a intentar
         refrescoPedido.current = false;
       });
   }, [user, refetchUser]);

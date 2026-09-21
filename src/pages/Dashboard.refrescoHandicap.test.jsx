@@ -235,6 +235,41 @@ describe('Dashboard · refresco del hándicap al entrar (FE #677)', () => {
     expect(localStorage.getItem('refrescar_handicap')).toBe('true');
   });
 
+  it('D12: un 4xx no se va a arreglar solo: se borra el apunte y no se reintenta', async () => {
+    // Un 404 (el endpoint no existe, o el usuario ya no) repetido en cada
+    // visita al panel sería un POST fallido tras otro, para nada
+    localStorage.setItem('refrescar_handicap', 'true');
+    refresco.mockRejectedValue(Object.assign(new Error('Not Found'), { status: 404 }));
+
+    const { rerender } = render(<Dashboard />);
+    await waitFor(() => expect(localStorage.getItem('refrescar_handicap')).toBeNull());
+
+    const anterior = sesion.user;
+    sesion.user = { ...anterior };
+    try {
+      rerender(<Dashboard />);
+      await act(async () => {
+        await Promise.resolve();
+      });
+      expect(refresco).toHaveBeenCalledTimes(1);
+    } finally {
+      sesion.user = anterior;
+    }
+  });
+
+  it('D13: un 5xx sí puede arreglarse solo: el apunte se queda', async () => {
+    localStorage.setItem('refrescar_handicap', 'true');
+    refresco.mockRejectedValue(Object.assign(new Error('Service Unavailable'), { status: 503 }));
+
+    render(<Dashboard />);
+
+    await waitFor(() => expect(refresco).toHaveBeenCalled());
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(localStorage.getItem('refrescar_handicap')).toBe('true');
+  });
+
   it('D7: un apunte viejo de needs_handicap ya no abre nada por sí solo', async () => {
     // Lo escribía la versión anterior; su información es de otro día
     localStorage.setItem('needs_handicap', 'true');
