@@ -331,5 +331,21 @@
     "PENDING": "PENDING",
     "APPROVED": "APPROVED",
     "REJECTED": "REJECTED"
+  },
+  "apertura": {
+    "titulo": "When does enrolment open?",
+    "explicacion": "This competition will be public: anyone can see it and ask for a place.",
+    "ahora": "Right now",
+    "ahoraDetalle": "It goes up when you create it and people can enrol straight away.",
+    "programada": "A few days before the tournament",
+    "programadaDetalle": "It is announced now and enrolment opens by itself on that day.",
+    "cuantosDias": "How many days before?",
+    "dias_one": "{{count}} day before",
+    "dias_other": "{{count}} days before",
+    "avisoAbreYa": "The tournament starts before that, so enrolment will open as soon as you create it.",
+    "volver": "Back",
+    "crear": "Create competition",
+    "abreEl": "Opens on {{fecha}}.",
+    "creando": "Creating…"
   }
 }

@@ -34,7 +34,14 @@ vi.mock('../services/countries', () => ({
   sortCountriesByName: (paises) => paises || [],
 }));
 
-const mockCrear = vi.fn().mockResolvedValue({ id: 'c-nueva' });
+// La forma que devuelve de verdad `CreateCompetitionWithGolfCoursesUseCase`:
+// con solo `{ id }`, el componente revienta al leer `failedCourses.length` y el
+// test acaba pasando por el `catch`, dando por buena una creación que falló
+const mockCrear = vi.fn().mockResolvedValue({
+  competition: { id: 'c-nueva' },
+  successCount: 1,
+  failedCourses: [],
+});
 const mockActualizar = vi.fn().mockResolvedValue({ id: 'c-1' });
 const mockDetalle = vi.fn();
 vi.mock('../composition', () => ({
@@ -112,6 +119,10 @@ describe('CreateCompetition · de los amigos o de cualquiera (FE #664)', () => {
 
     fireEvent.click(screen.getByTestId('visibilidad-PUBLIC'));
     await rellenaYCrea();
+
+    // Crear una pública pasa por el modal que pregunta cuándo abren las
+    // inscripciones (FE #666): lo que se crea sale de ahí, no del submit
+    fireEvent.click(await screen.findByTestId('confirmar-apertura'));
 
     await waitFor(() => expect(mockCrear).toHaveBeenCalled());
     expect(mockCrear.mock.calls[0][0]).toMatchObject({ visibility: 'PUBLIC' });
