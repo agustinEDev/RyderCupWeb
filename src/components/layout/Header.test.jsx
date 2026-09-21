@@ -26,6 +26,14 @@ const renderHeader = () =>
  * hamburger menu on a phone (FE #314).
  */
 describe('Header', () => {
+  it('L3: en la portada el idioma sigue en la barra', () => {
+    // Quien llega por primera vez no tiene un desplegable de cuenta donde
+    // buscarlo; en la cabecera con sesión sí se movió ahí (FE #680)
+    renderHeader();
+
+    expect(screen.getAllByTestId('language-switcher').length).toBeGreaterThan(0);
+  });
+
   it('exposes sign in and register without opening the menu', () => {
     renderHeader();
 

@@ -210,4 +210,114 @@ describe('HeaderAuth', () => {
       await waitFor(() => expect(clearAuth).toHaveBeenCalled());
     });
   });
+
+  /**
+   * Entre md y xl los seis enlaces no caben: la cabecera pedía 1243 px y la
+   * página se desplazaba en horizontal (FE #680). Por debajo de xl se esconden y
+   * pasan al desplegable del avatar, que ya existía; desde xl, en línea como
+   * siempre. Nada de un botón «Menú» aparte.
+   */
+  describe('los enlaces que no caben van al desplegable del avatar (FE #680)', () => {
+    const ENLACES = [
+      '/dashboard',
+      '/browse-competitions',
+      '/competitions',
+      '/competitions/create',
+      '/player/invitations',
+      '/feed',
+    ];
+    const abrePerfil = () => fireEvent.click(screen.getByText('AS').closest('button'));
+    const enDesplegable = () => screen.queryByTestId('navegacion-en-desplegable');
+
+    it('M1: no hay un botón «Menú» aparte', () => {
+      renderHeader('/dashboard');
+
+      expect(screen.queryByRole('button', { name: /header\.menu/ })).not.toBeInTheDocument();
+    });
+
+    it('M2: el desplegable del avatar trae los seis enlaces, en el orden de siempre, antes del perfil', () => {
+      renderHeader('/dashboard');
+
+      abrePerfil();
+
+      const hrefs = [...enDesplegable().querySelectorAll('a')].map((a) => a.getAttribute('href'));
+      expect(hrefs).toEqual(ENLACES);
+      const verPerfil = screen.getByText('header.viewProfile');
+      expect(
+        enDesplegable().compareDocumentPosition(verPerfil) & globalThis.Node.DOCUMENT_POSITION_FOLLOWING
+      ).toBeTruthy();
+    });
+
+    it('M3: elegir uno de esos enlaces cierra el desplegable', () => {
+      renderHeader('/dashboard');
+      abrePerfil();
+
+      fireEvent.click(enDesplegable().querySelector('a[href="/feed"]'));
+
+      expect(screen.queryByText('header.logout')).not.toBeInTheDocument();
+    });
+
+    it('M4: Escape cierra el desplegable', () => {
+      renderHeader('/dashboard');
+      abrePerfil();
+
+      fireEvent.keyDown(document, { key: 'Escape' });
+
+      expect(screen.queryByText('header.logout')).not.toBeInTheDocument();
+    });
+
+    it('M6: el avatar indica que despliega algo, y si está abierto', () => {
+      // Con los enlaces dentro, el desplegable es ahora el único camino a ellos
+      // por debajo de xl: tiene que notarse que el avatar se abre
+      renderHeader('/dashboard');
+      const botonPerfil = screen.getByText('AS').closest('button');
+
+      expect(botonPerfil).toHaveAttribute('aria-expanded', 'false');
+      expect(screen.getByTestId('indicador-desplegable')).not.toHaveClass('rotate-180');
+
+      abrePerfil();
+
+      expect(botonPerfil).toHaveAttribute('aria-expanded', 'true');
+      expect(screen.getByTestId('indicador-desplegable')).toHaveClass('rotate-180');
+    });
+
+    it('L1: el idioma ya no ocupa sitio en la barra', () => {
+      renderHeader('/dashboard');
+
+      expect(screen.queryByTestId('language-switcher')).not.toBeInTheDocument();
+    });
+
+    it('L2: se cambia desde el desplegable del avatar, en su propia fila', () => {
+      renderHeader('/dashboard');
+
+      abrePerfil();
+
+      const fila = screen.getByTestId('idioma-en-desplegable');
+      expect(fila).toHaveTextContent('header.language');
+      expect(fila).toContainElement(screen.getByTestId('language-switcher'));
+    });
+
+    it('M4b: tras cerrarlo con Escape, el foco vuelve al avatar', () => {
+      // Si el foco estaba dentro del desplegable, al desaparecer caería al
+      // body y quien va con teclado perdería el sitio
+      renderHeader('/dashboard');
+      const botonPerfil = screen.getByText('AS').closest('button');
+      abrePerfil();
+      enDesplegable().querySelector('a[href="/feed"]').focus();
+
+      fireEvent.keyDown(document, { key: 'Escape' });
+
+      expect(document.activeElement).toBe(botonPerfil);
+    });
+
+    it('M5: los enlaces en línea solo desde xl, y en el desplegable solo por debajo', () => {
+      // jsdom no mide anchos: lo que se puede vigilar aquí es el contrato de
+      // clases. Que de verdad quepa se mide en el navegador (FE #680).
+      renderHeader('/dashboard');
+      abrePerfil();
+
+      expect(screen.getByTestId('navegacion-en-linea')).toHaveClass('hidden', 'xl:flex');
+      expect(enDesplegable()).toHaveClass('xl:hidden');
+    });
+  });
 });
