@@ -82,9 +82,6 @@
     "handicap": "Handicap",
     "numberOfPlayers": "Number of Players",
     "numberOfPlayersPlaceholder": "Enter total number of players",
-    "teamAssignment": "Team Assignment",
-    "manual": "Manual",
-    "automatic": "Automatic",
     "maxPlayingHandicap": "Playing Handicap Limit",
     "maxPlayingHandicapPlaceholder": "No limit (e.g. 28)",
     "maxPlayingHandicapHint": "Max 1–54. Leave empty for no limit.",
@@ -111,9 +108,7 @@
     "errorAddingCourses": "Competition created, but golf courses could not be added. You can add them manually from the detail page.",
     "error": "Failed to create competition",
     "moreOptions": "More options",
-    "moreOptionsSummary": "{{equipo1}} and {{equipo2}} · {{asignacion}} · {{handicap}}",
-    "summaryAutomatic": "automatic teams",
-    "summaryManual": "teams by hand",
+    "moreOptionsSummary": "{{equipo1}} and {{equipo2}} · {{handicap}}",
     "summaryHandicapLimit": "handicap limit {{limite}}",
     "summaryNoHandicapLimit": "no handicap limit",
     "moreOptionsIncomplete": "Some options are missing: expand them to fill them in",
@@ -121,7 +116,23 @@
     "visibilityPrivate": "Invited only",
     "visibilityPublic": "Anyone",
     "visibilityPrivateHelp": "It does not show when exploring: the people you invite are the ones who get in",
-    "visibilityPublicHelp": "It shows when exploring and anyone can ask for a place; you still decide who gets in"
+    "visibilityPublicHelp": "It shows when exploring and anyone can ask for a place; you still decide who gets in",
+    "setupMode": {
+      "title": "How much should the app do",
+      "subtitle": "You can change it while enrolment is open.",
+      "AUTOMATIC": {
+        "title": "Fully automatic",
+        "blurb": "The app builds the teams, names the captains and creates the matches. It only asks which days are played, in which slot and on which course."
+      },
+      "MANUAL": {
+        "title": "Fully manual",
+        "blurb": "You decide everything: teams, captains, rounds, matches and matchups."
+      },
+      "RYDER_CUP": {
+        "title": "Ryder Cup style",
+        "blurb": "A live player draft (or teams by hand), captains you name, configurable rounds and matchups from envelopes."
+      }
+    }
   },
   "edit": {
     "title": "Edit Competition",

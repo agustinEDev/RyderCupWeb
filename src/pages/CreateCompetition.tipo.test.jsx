@@ -71,10 +71,12 @@ describe('CreateCompetition · elegir el tipo primero (FE #639)', () => {
     expect(screen.queryByLabelText(/create\.competitionName/)).not.toBeInTheDocument();
   });
 
-  it('2: elegir Ryder Cup lleva al formulario de siempre', async () => {
+  it('2: elegir Ryder Cup lleva al modo y, con él, al formulario de siempre', async () => {
+    // El modo de configuración se pregunta en medio desde la FE #695
     pinta();
 
     fireEvent.click(await screen.findByTestId('tipo-RYDER_CUP'));
+    fireEvent.click(await screen.findByTestId('modo-RYDER_CUP'));
 
     expect(await screen.findByText('create.competitionDetails')).toBeInTheDocument();
     expect(screen.queryByTestId('tipo-RYDER_CUP')).not.toBeInTheDocument();
@@ -89,6 +91,7 @@ describe('CreateCompetition · elegir el tipo primero (FE #639)', () => {
 
     pinta();
     fireEvent.click(await screen.findByTestId('tipo-RYDER_CUP'));
+    fireEvent.click(await screen.findByTestId('modo-RYDER_CUP'));
 
     await screen.findByText('create.competitionDetails');
     expect(scrollTo).toHaveBeenCalled();
@@ -99,6 +102,7 @@ describe('CreateCompetition · elegir el tipo primero (FE #639)', () => {
     pinta();
 
     fireEvent.click(await screen.findByTestId('tipo-RYDER_CUP'));
+    fireEvent.click(await screen.findByTestId('modo-RYDER_CUP'));
     const nombre = await screen.findByTestId('campo-nombre');
     fireEvent.change(nombre, { target: { value: 'Ryder de los amigos' } });
 
@@ -106,6 +110,7 @@ describe('CreateCompetition · elegir el tipo primero (FE #639)', () => {
     expect(await screen.findByTestId('tipo-RYDER_CUP')).toBeInTheDocument();
 
     fireEvent.click(screen.getByTestId('tipo-RYDER_CUP'));
+    fireEvent.click(await screen.findByTestId('modo-RYDER_CUP'));
     expect(await screen.findByTestId('campo-nombre')).toHaveValue('Ryder de los amigos');
   });
 
@@ -139,6 +144,7 @@ describe('CreateCompetition · elegir el tipo primero (FE #639)', () => {
   const abreElFormulario = async () => {
     pinta();
     fireEvent.click(await screen.findByTestId('tipo-RYDER_CUP'));
+    fireEvent.click(await screen.findByTestId('modo-RYDER_CUP'));
     return screen.findByTestId('campo-nombre');
   };
 
@@ -188,17 +194,17 @@ describe('CreateCompetition · elegir el tipo primero (FE #639)', () => {
     expect(screen.getByTestId('resumen-opciones').textContent).toContain('Los Pinos');
   });
 
-  it('12: los equipos se reparten solos salvo que se diga lo contrario', async () => {
-    // Decisión de Agustín (19 sep): montar una Ryder con amigos no puede empezar
-    // por repartir a mano. Automático es lo que casi siempre se quiere
+  it('12: el reparto de equipos ya no se decide aquí: lo decide el modo', async () => {
+    // Antes esto preguntaba «automático o a mano» dentro del plegable, y podía
+    // contradecir al modo (FE #695). El modo está arriba, a la vista
     await abreElFormulario();
 
-    expect(screen.getByTestId('resumen-opciones').textContent).toContain('create.summaryAutomatic');
+    expect(screen.getByTestId('resumen-opciones').textContent).not.toContain('create.summaryAutomatic');
+    expect(screen.getByTestId('modo-RYDER_CUP')).toHaveAttribute('aria-pressed', 'true');
 
     fireEvent.click(screen.getByTestId('mas-opciones'));
-    const automatica = await screen.findByText('create.automatic');
-    expect(automatica).toHaveAttribute('aria-pressed', 'true');
-    expect(screen.getByText('create.manual')).toHaveAttribute('aria-pressed', 'false');
+
+    expect(screen.queryByText('create.teamAssignment')).not.toBeInTheDocument();
   });
 
   it('13: y el resumen dice si hay tope de hándicap o no', async () => {
