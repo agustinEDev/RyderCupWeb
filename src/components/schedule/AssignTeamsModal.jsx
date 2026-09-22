@@ -14,14 +14,27 @@ const AssignTeamsModalContent = ({
   enrollments,
   isProcessing,
   teamNames,
+  captains,
   t,
 }) => {
+  // Con los dos capitanes nombrados, cada uno queda fijo en su equipo (FE #692):
+  // nombrarlos ya los fijó, y el servidor rechaza un reparto que los mueva
+  // (RyderCupAM#320). Con uno solo no se fija a nadie: ese reparto lo va a
+  // rechazar igualmente pidiendo el capitán que falta
+  const hayCapitanes = Boolean(captains?.teamA && captains?.teamB);
+  // Con uno solo, el servidor rechaza el reparto en los dos modos pidiendo el
+  // que falta: mejor decirlo antes que después de rellenar doce nombres
+  const faltaUnCapitan = Boolean(captains?.teamA) !== Boolean(captains?.teamB);
   const [mode, setMode] = useState('automatic');
-  const [manualTeamA, setManualTeamA] = useState([]);
-  const [manualTeamB, setManualTeamB] = useState([]);
+  const [manualTeamA, setManualTeamA] = useState(hayCapitanes ? [captains.teamA] : []);
+  const [manualTeamB, setManualTeamB] = useState(hayCapitanes ? [captains.teamB] : []);
 
   const approvedPlayers = enrollments.filter(e => e.status === 'APPROVED');
+  const esCapitan = (playerId) =>
+    hayCapitanes && (playerId === captains.teamA || playerId === captains.teamB);
 
+  // Los capitanes no se mueven: sus botones van desactivados, y eso ya impide
+  // que llegue aquí un clic suyo
   const togglePlayer = (playerId, team) => {
     if (team === 'A') {
       setManualTeamB(prev => prev.filter(id => id !== playerId));
@@ -45,6 +58,12 @@ const AssignTeamsModalContent = ({
     if (manualTeamB.includes(playerId)) return 'B';
     return null;
   };
+
+  // En una Ryder juegan todos: un reparto incompleto borra el anterior y deja
+  // gente sin equipo, y el servidor no lo impide
+  const sinEquipo = approvedPlayers.filter(
+    (p) => !manualTeamA.includes(p.userId) && !manualTeamB.includes(p.userId)
+  ).length;
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -84,6 +103,9 @@ const AssignTeamsModalContent = ({
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          {faltaUnCapitan && (
+            <p className="text-sm text-amber-700">{t('teams.captainMissing')}</p>
+          )}
           {/* Mode selection */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -118,6 +140,14 @@ const AssignTeamsModalContent = ({
           {/* Manual player assignment */}
           {mode === 'manual' && (
             <>
+              {hayCapitanes && (
+                <p className="text-sm text-gray-600">{t('teams.captainsFixed')}</p>
+              )}
+              {sinEquipo > 0 && (
+                <p className="text-sm text-amber-700">
+                  {t('teams.everyoneNeedsTeam', { count: sinEquipo })}
+                </p>
+              )}
               <div className="space-y-2 max-h-60 overflow-y-auto">
                 {approvedPlayers.map((player) => {
                   const team = getPlayerTeam(player.userId);
@@ -130,7 +160,7 @@ const AssignTeamsModalContent = ({
                         'border-gray-200 bg-white'
                       }`}
                     >
-                      <div>
+                      <div className="min-w-0">
                         <span className="text-sm font-medium text-gray-900">
                           {player.userName || 'Unknown'}
                         </span>
@@ -139,12 +169,18 @@ const AssignTeamsModalContent = ({
                             HCP: {Number(player.userHandicap).toFixed(1)}
                           </span>
                         )}
+                        {esCapitan(player.userId) && (
+                          <span className="block text-xs text-yellow-800 truncate">
+                            {t('teams.captainTag')}
+                          </span>
+                        )}
                       </div>
                       <div className="flex gap-2">
                         <button
                           type="button"
                           onClick={() => togglePlayer(player.userId, 'A')}
-                          className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
+                          disabled={esCapitan(player.userId)}
+                          className={`px-3 py-1 rounded text-xs font-medium transition-colors disabled:opacity-60 ${
                             team === 'A'
                               ? 'bg-blue-600 text-white'
                               : 'bg-gray-100 text-gray-600 hover:bg-blue-100'
@@ -155,7 +191,8 @@ const AssignTeamsModalContent = ({
                         <button
                           type="button"
                           onClick={() => togglePlayer(player.userId, 'B')}
-                          className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
+                          disabled={esCapitan(player.userId)}
+                          className={`px-3 py-1 rounded text-xs font-medium transition-colors disabled:opacity-60 ${
                             team === 'B'
                               ? 'bg-red-600 text-white'
                               : 'bg-gray-100 text-gray-600 hover:bg-red-100'
@@ -196,7 +233,9 @@ const AssignTeamsModalContent = ({
             </button>
             <button
               type="submit"
-              disabled={isProcessing || (mode === 'manual' && (manualTeamA.length === 0 || manualTeamB.length === 0))}
+              disabled={
+                isProcessing || faltaUnCapitan || (mode === 'manual' && sinEquipo > 0)
+              }
               className="px-4 py-2 bg-primary text-white rounded-lg font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
             >
               {isProcessing ? '...' : t('teams.assign')}

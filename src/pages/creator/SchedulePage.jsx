@@ -122,6 +122,14 @@ const SchedulePage = () => {
     }
   }, [user, loadData]);
 
+  const recargarCompeticion = async () => {
+    try {
+      setCompetition(await getCompetitionDetailUseCase.execute(id));
+    } catch (error) {
+      console.error('Error reloading competition:', error);
+    }
+  };
+
   const reloadSchedule = async () => {
     try {
       const scheduleData = await getScheduleUseCase.execute(id);
@@ -278,7 +286,10 @@ const SchedulePage = () => {
       await assignTeamsUseCase.execute(id, teamData);
       customToast.success(t('success.teamsAssigned'));
       setShowTeamsModal(false);
-      await reloadSchedule();
+      // La competición también: repartir libera los subcapitanes en el servidor
+      // (RyderCupAM#320), y sin recargarla la etiqueta seguiría pegada a quien
+      // ya no lo es
+      await Promise.all([reloadSchedule(), recargarCompeticion()]);
     } catch (error) {
       console.error('Error assigning teams:', error);
       customToast.error(error.message || t('errors.failedToAssignTeams'));
@@ -393,6 +404,7 @@ const SchedulePage = () => {
                 enrollments={enrollments}
                 teamNames={teamNames}
                 maxPlayingHandicap={competition.maxPlayingHandicap ?? null}
+                captains={competition.captains}
                 t={t}
               />
             </motion.div>
@@ -542,6 +554,7 @@ const SchedulePage = () => {
           enrollments={enrollments}
           isProcessing={isProcessing}
           teamNames={teamNames}
+          captains={competition.captains}
           t={t}
         />
       )}

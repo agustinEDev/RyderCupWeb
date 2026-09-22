@@ -77,7 +77,13 @@
     "teamB": "Equipo B",
     "noTeamsAssigned": "Los equipos aún no han sido asignados",
     "playersCount_one": "{{count}} jugador",
-    "playersCount_other": "{{count}} jugadores"
+    "playersCount_other": "{{count}} jugadores",
+    "captainsFixed": "Los capitanes ya están puestos en su equipo y no se pueden mover.",
+    "captainTag": "Capitán",
+    "viceCaptainTag": "Subcapitán",
+    "everyoneNeedsTeam_one": "Falta {{count}} jugador por asignar: en una Ryder juegan todos.",
+    "everyoneNeedsTeam_other": "Faltan {{count}} jugadores por asignar: en una Ryder juegan todos.",
+    "captainMissing": "Falta nombrar un capitán. Hazlo en la competición antes de repartir los equipos."
   },
   "configuration": {
     "title": "Configuración del Calendario",
