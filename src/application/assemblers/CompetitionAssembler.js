@@ -64,6 +64,9 @@ class CompetitionAssembler {
       // misma regla que el borrado —estado, nada jugado y quién— y solo lo manda la
       // ficha (RyderCupAM#347); sin el campo, no se ofrece
       canDelete: apiData?.can_delete === true,
+      // Cuánto monta la app por su cuenta (FE #695). De él sale además cómo se
+      // reparten los equipos, que ya no se pregunta aparte (RyderCupAm#351)
+      setupMode: apiData?.setup_mode || 'RYDER_CUP',
       // Si ya hay equipos repartidos: con ellos los capitanes no se cambian, y una
       // reabierta se vuelve a cerrar con «Cerrar inscripciones» (FE #692). Solo lo
       // manda la ficha; sin el campo, no se afirma un reparto que nadie ha dicho

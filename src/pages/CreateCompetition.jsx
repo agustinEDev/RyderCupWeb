@@ -23,6 +23,7 @@ import EnrollmentOpeningModal from '../components/competition/EnrollmentOpeningM
 import customToast from '../utils/toast';
 import FullScreenLoader from '../components/ui/FullScreenLoader';
 import CompetitionTypeChooser from '../components/competition/CompetitionTypeChooser';
+import SetupModeChooser from '../components/competition/SetupModeChooser';
 import { cupoDeJugadores, CUPO_POR_DEFECTO } from '../utils/cupoDeJugadores';
 
 
@@ -88,6 +89,12 @@ const CreateCompetition = () => {
     setTipoElegido(tipo);
     globalThis.scrollTo?.(0, 0);
   };
+
+  // Igual que el tipo: al elegir, el formulario empieza por arriba
+  const eligeElModo = (modo) => {
+    setFormData(prev => ({ ...prev, setupMode: modo }));
+    globalThis.scrollTo?.(0, 0);
+  };
   const [message, setMessage] = useState({ type: '', text: '' });
 
   // Ref para cleanup del timer de navegación (prevenir memory leak)
@@ -135,7 +142,9 @@ const CreateCompetition = () => {
     playMode: 'HANDICAP',
     visibility: 'PRIVATE',
     numberOfPlayers: CUPO_POR_DEFECTO,
-    teamAssignment: 'automatic',
+    // Cuánto monta la app por su cuenta (FE #695). Al crear se elige en su paso;
+    // el reparto de equipos sale de él, así que ya no se pregunta aparte
+    setupMode: null,
     maxPlayingHandicap: undefined
   });
 
@@ -257,7 +266,7 @@ const CreateCompetition = () => {
           playMode: competition.playMode || 'HANDICAP',
           visibility: competition.visibility || 'PRIVATE',
           numberOfPlayers: competition.maxPlayers || CUPO_POR_DEFECTO,
-          teamAssignment: competition.teamAssignment?.toLowerCase() || 'automatic',
+          setupMode: competition.setupMode || 'RYDER_CUP',
           maxPlayingHandicap: competition.maxPlayingHandicap ?? undefined
         };
 
@@ -576,7 +585,8 @@ const CreateCompetition = () => {
         play_mode: formData.playMode.toUpperCase(),
         visibility: formData.visibility,
         number_of_players: numPlayers,
-        team_assignment: formData.teamAssignment.toUpperCase(),
+        // El reparto no se manda: lo deriva el servidor del modo (RyderCupAm#351)
+        setup_mode: formData.setupMode,
         max_playing_handicap: formData.maxPlayingHandicap
           ? parseInt(formData.maxPlayingHandicap, 10)
           : null,
@@ -678,7 +688,16 @@ const CreateCompetition = () => {
               </div>
             )}
 
-            {(isEditMode || tipoElegido) && (
+            {/* Y detrás del tipo, cuánto hace la app por su cuenta (FE #695).
+                Editando no es un paso: la competición ya existe y el modo se
+                cambia dentro del formulario, como el resto de su configuración */}
+            {!isEditMode && tipoElegido && !formData.setupMode && (
+              <div className="px-4">
+                <SetupModeChooser onSelect={eligeElModo} />
+              </div>
+            )}
+
+            {(isEditMode || (tipoElegido && formData.setupMode)) && (
             <form onSubmit={handleSubmit} className="flex flex-col gap-6 px-4">
               {/* Volver a elegir el tipo. Lo escrito se queda: `formData` no se
                   toca al cambiar de paso, que perder el formulario por mirar
@@ -687,7 +706,10 @@ const CreateCompetition = () => {
                 <button
                   type="button"
                   data-testid="volver-al-tipo"
-                  onClick={() => setTipoElegido(null)}
+                  onClick={() => {
+                    setTipoElegido(null);
+                    setFormData(prev => ({ ...prev, setupMode: null }));
+                  }}
                   className="self-start text-sm text-gray-600 hover:text-gray-900"
                 >
                   {t('create.type.back')}
@@ -697,6 +719,14 @@ const CreateCompetition = () => {
               {/* Lo básico de la competición, en UNA tarjeta: nombre, fechas y
                   país eran tres, y cada una pagaba su icono y su marco. Medido a
                   360 px, ese adorno costaba 230 px de scroll (Agustín, 19 sep) */}
+              {/* El modo, a la vista y no dentro de «más opciones»: decide qué
+                  pasos existen después, así que esconderlo sería esconder el
+                  resto del camino (FE #695). Al crear ya viene elegido del paso
+                  anterior; aquí se cambia */}
+              <div className="border border-gray-200 rounded-xl p-4">
+                <SetupModeChooser value={formData.setupMode} onSelect={eligeElModo} />
+              </div>
+
               <div data-testid="bloque-basico" className="border border-gray-200 rounded-xl p-4">
                 <div className="flex items-center gap-3 mb-3">
                   <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
@@ -1211,10 +1241,11 @@ const CreateCompetition = () => {
                   <p data-testid="resumen-opciones" className="px-4 pb-4 text-sm text-gray-600">
                     {faltaAlgoPlegado
                       ? t('create.moreOptionsIncomplete')
+                      // Sin el reparto de equipos: ya no se decide aquí, lo
+                      // decide el modo, que está a la vista arriba (FE #695)
                       : t('create.moreOptionsSummary', {
                         equipo1: formData.teamOneName,
                         equipo2: formData.teamTwoName,
-                        asignacion: t(`create.summary${formData.teamAssignment === 'automatic' ? 'Automatic' : 'Manual'}`),
                         handicap: formData.maxPlayingHandicap
                           ? t('create.summaryHandicapLimit', { limite: formData.maxPlayingHandicap })
                           : t('create.summaryNoHandicapLimit'),
@@ -1257,30 +1288,6 @@ const CreateCompetition = () => {
                       />
                     </div>
                   </div>
-                  {/* Team Assignment */}
-                  <div>
-                    <span className="block text-sm font-medium text-gray-700 mb-2">
-                      {t('create.teamAssignment')}
-                    </span>
-                    <div className="flex flex-wrap gap-2">
-                      {['manual', 'automatic'].map(mode => (
-                        <button
-                          key={mode}
-                          type="button"
-                          aria-pressed={formData.teamAssignment === mode}
-                          onClick={() => setFormData(prev => ({ ...prev, teamAssignment: mode }))}
-                          className={`border-2 rounded-lg text-sm px-3 py-2 transition-colors ${
-                            formData.teamAssignment === mode
-                              ? 'bg-primary text-white border-primary'
-                              : 'bg-white text-gray-600 border-gray-200 hover:border-primary hover:text-primary'
-                          }`}
-                        >
-                          {t(`create.${mode}`)}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
                   {/* Max Playing Handicap */}
                   <div>
                     <label htmlFor="maxPlayingHandicap" className="block text-sm font-medium text-gray-700 mb-1">

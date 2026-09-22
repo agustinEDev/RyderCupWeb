@@ -82,9 +82,6 @@
     "handicap": "Hándicap",
     "numberOfPlayers": "Número de Jugadores",
     "numberOfPlayersPlaceholder": "Ingresa el número total de jugadores",
-    "teamAssignment": "Asignación de Equipos",
-    "manual": "Manual",
-    "automatic": "Automática",
     "maxPlayingHandicap": "Límite de Hándicap de Juego",
     "maxPlayingHandicapPlaceholder": "Sin límite (ej: 28)",
     "maxPlayingHandicapHint": "Máximo 1–54. Deja vacío para no aplicar límite.",
@@ -111,9 +108,7 @@
     "errorAddingCourses": "Competición creada, pero no se pudieron añadir los campos de golf. Puedes añadirlos manualmente desde la página de detalle.",
     "error": "Error al crear la competición",
     "moreOptions": "Más opciones",
-    "moreOptionsSummary": "{{equipo1}} y {{equipo2}} · {{asignacion}} · {{handicap}}",
-    "summaryAutomatic": "equipos automáticos",
-    "summaryManual": "equipos a mano",
+    "moreOptionsSummary": "{{equipo1}} y {{equipo2}} · {{handicap}}",
     "summaryHandicapLimit": "límite de hándicap {{limite}}",
     "summaryNoHandicapLimit": "sin límite de hándicap",
     "moreOptionsIncomplete": "Faltan datos en las opciones: despliégalas para completarlas",
@@ -121,7 +116,23 @@
     "visibilityPrivate": "Solo invitados",
     "visibilityPublic": "Cualquiera",
     "visibilityPrivateHelp": "No aparece al explorar: entran las personas a las que invites",
-    "visibilityPublicHelp": "Aparece al explorar y cualquiera puede pedir plaza; tú decides a quién aceptas"
+    "visibilityPublicHelp": "Aparece al explorar y cualquiera puede pedir plaza; tú decides a quién aceptas",
+    "setupMode": {
+      "title": "Cuánto quieres que haga la app",
+      "subtitle": "Puedes cambiarlo mientras las inscripciones sigan abiertas.",
+      "AUTOMATIC": {
+        "title": "Todo automático",
+        "blurb": "La app forma los equipos, nombra capitanes y crea los partidos. Solo te pregunta qué días se juega, en qué franja y en qué campo."
+      },
+      "MANUAL": {
+        "title": "Todo manual",
+        "blurb": "Tú decides cada cosa: equipos, capitanes, rondas, partidos y enfrentamientos."
+      },
+      "RYDER_CUP": {
+        "title": "Estilo Ryder Cup",
+        "blurb": "Draft de jugadores en directo (o equipos a mano), capitanes que eliges tú, rondas configurables y enfrentamientos por sobres."
+      }
+    }
   },
   "edit": {
     "title": "Editar Competición",

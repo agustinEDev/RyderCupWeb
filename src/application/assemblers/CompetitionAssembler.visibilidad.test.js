@@ -126,3 +126,15 @@ describe('CompetitionAssembler · si ya hay equipos llega a la pantalla (FE #692
     expect(loQueLlegaALaPantalla(respuestaDeLaApi()).teamsAssigned).toBe(false);
   });
 });
+
+describe('CompetitionAssembler · el modo de configuración llega a la pantalla (FE #695)', () => {
+  it('M1: el modo llega tal cual', () => {
+    expect(loQueLlegaALaPantalla(respuestaDeLaApi({ setup_mode: 'AUTOMATIC' })).setupMode).toBe(
+      'AUTOMATIC'
+    );
+  });
+
+  it('M2: sin el campo, estilo RyderCup: es lo que son todas hoy', () => {
+    expect(loQueLlegaALaPantalla(respuestaDeLaApi()).setupMode).toBe('RYDER_CUP');
+  });
+});

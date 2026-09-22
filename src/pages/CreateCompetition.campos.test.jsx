@@ -85,6 +85,9 @@ const CreateCompetition = (await import('./CreateCompetition')).default;
 const abreElFormulario = async () => {
   render(<MemoryRouter><CreateCompetition /></MemoryRouter>);
   fireEvent.click(await screen.findByTestId('tipo-RYDER_CUP'));
+  // Y el modo de configuración, que es el paso siguiente (FE #695). Estilo
+  // RyderCup es lo que estas pantallas daban por hecho
+  fireEvent.click(await screen.findByTestId('modo-RYDER_CUP'));
   await screen.findByText('create.competitionDetails');
   // Los países llegan del backend: hasta que no están, elegir uno no prende.
   // Se espera a que estén (un tick de microtareas) en vez de repetir el click,

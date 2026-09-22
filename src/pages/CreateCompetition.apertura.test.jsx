@@ -102,6 +102,9 @@ const enDias = (dias) => {
 const abreElFormulario = async () => {
   render(<MemoryRouter><CreateCompetition /></MemoryRouter>);
   fireEvent.click(await screen.findByTestId('tipo-RYDER_CUP'));
+  // Y el modo de configuración, que es el paso siguiente (FE #695). Estilo
+  // RyderCup es lo que estas pantallas daban por hecho
+  fireEvent.click(await screen.findByTestId('modo-RYDER_CUP'));
   await screen.findByText('create.competitionDetails');
 };
 
