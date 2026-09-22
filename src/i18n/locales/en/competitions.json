@@ -164,6 +164,14 @@
       "revert-status": "Revert to Closed",
       "revert-to-in-progress": "Reopen Tournament"
     },
+    "deleteModal": {
+      "title": "Delete the competition?",
+      "nobodyElse": "It will be deleted for good. Nobody else is enrolled.",
+      "othersLosePlace_one": "It will be deleted for good, and {{count}} other player will lose their place.",
+      "othersLosePlace_other": "It will be deleted for good, and {{count}} other players will lose their place.",
+      "confirm": "Delete",
+      "keep": "No, keep it"
+    },
     "confirmations": {
       "activate": "Are you sure you want to activate this competition?",
       "close-enrollments": "Are you sure you want to close enrollments for this competition?",

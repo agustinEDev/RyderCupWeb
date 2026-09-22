@@ -164,6 +164,14 @@
       "revert-status": "Volver a Cerrada",
       "revert-to-in-progress": "Reabrir Torneo"
     },
+    "deleteModal": {
+      "title": "¿Eliminar la competición?",
+      "nobodyElse": "Se borrará para siempre. No hay nadie más inscrito.",
+      "othersLosePlace_one": "Se borrará para siempre, y {{count}} jugador más perderá su plaza.",
+      "othersLosePlace_other": "Se borrará para siempre, y {{count}} jugadores más perderán su plaza.",
+      "confirm": "Eliminar",
+      "keep": "No, mantenerla"
+    },
     "confirmations": {
       "activate": "¿Estás seguro de que quieres activar esta competición?",
       "close-enrollments": "¿Estás seguro de que quieres cerrar las inscripciones de esta competición?",

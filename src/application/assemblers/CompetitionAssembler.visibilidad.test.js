@@ -71,3 +71,19 @@ describe('CompetitionAssembler · la apertura programada llega a la pantalla (FE
     expect(dto.enrollmentOpensDaysBefore).toBeNull();
   });
 });
+
+describe('CompetitionAssembler · si se puede borrar (FE #667)', () => {
+  // Lo decide el backend con la misma regla que el borrado (RyderCupAM#347):
+  // estado, calendario y quién pregunta. Aquí solo tiene que llegar
+  it('A1: can_delete llega a la pantalla', () => {
+    const dto = loQueLlegaALaPantalla(respuestaDeLaApi({ can_delete: true }));
+
+    expect(dto.canDelete).toBe(true);
+  });
+
+  it('A2: sin el campo (listados, respuestas de otras operaciones), no se ofrece', () => {
+    const dto = loQueLlegaALaPantalla(respuestaDeLaApi());
+
+    expect(dto.canDelete).toBe(false);
+  });
+});

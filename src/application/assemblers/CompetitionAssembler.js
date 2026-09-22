@@ -60,6 +60,10 @@ class CompetitionAssembler {
       // Cuántos días antes del torneo abren solas las inscripciones, o null si
       // se abren al invitar (FE #678). Sin esto la ficha no puede decir cuándo
       enrollmentOpensDaysBefore: apiData?.enrollment_opens_days_before ?? null,
+      // Si quien la mira puede borrarla ahora (FE #667). Lo decide el backend con la
+      // misma regla que el borrado —estado, calendario y quién— y solo lo manda la
+      // ficha (RyderCupAM#347); sin el campo, no se ofrece
+      canDelete: apiData?.can_delete === true,
       enrolledCount: apiData?.enrolled_count || 0,
       isCreator: apiData?.is_creator || false,
       creatorId: competition.creatorId,

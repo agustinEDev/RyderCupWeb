@@ -50,6 +50,8 @@ const mockGetCompetitionDetail = vi.fn().mockResolvedValue({
 });
 
 const mockCloseEnrollments = vi.fn();
+const mockDelete = vi.fn();
+const mockCancel = vi.fn();
 const mockAssignTeams = vi.fn();
 const mockRevertToInProgress = vi.fn();
 
@@ -76,8 +78,8 @@ vi.mock('../composition', () => ({
   closeEnrollmentsUseCase: { execute: (...args) => mockCloseEnrollments(...args) },
   startCompetitionUseCase: { execute: vi.fn() },
   completeCompetitionUseCase: { execute: vi.fn() },
-  cancelCompetitionUseCase: { execute: vi.fn() },
-  deleteCompetitionUseCase: { execute: vi.fn() },
+  cancelCompetitionUseCase: { execute: (...args) => mockCancel(...args) },
+  deleteCompetitionUseCase: { execute: (...args) => mockDelete(...args) },
   reopenEnrollmentsUseCase: { execute: vi.fn() },
   revertCompetitionStatusUseCase: { execute: vi.fn() },
   revertCompetitionToInProgressUseCase: { execute: (...args) => mockRevertToInProgress(...args) },
@@ -613,8 +615,9 @@ describe('CompetitionDetail - invitar desde el borrador (FE #660)', () => {
     expect(await screen.findByText('detail.actions.edit')).toBeInTheDocument();
   });
 
-  it('pero borrar sigue siendo solo del borrador', async () => {
-    // Con gente invitada o dentro, lo que toca es cancelar
+  it('borrar no se ofrece si el servidor no lo permite, sea cual sea el estado', async () => {
+    // Quién puede y cuándo lo decide el backend (can_delete, RyderCupAM#347):
+    // la pantalla ya no copia la lista de estados (FE #667)
     conEstado('ACTIVE');
 
     renderPage();
@@ -808,5 +811,173 @@ describe('CompetitionDetail - la vuelta lleva a donde se vino (FE #682)', () => 
     fireEvent.click(await screen.findByText('detail.backToCompetitions'));
 
     expect(await screen.findByTestId('en-competiciones')).toBeInTheDocument();
+  });
+});
+
+
+describe('CompetitionDetail - borrar con confirmación (FE #667)', () => {
+  const ficha = (extra = {}) => {
+    mockGetCompetitionDetail.mockResolvedValue({
+      id: 'comp-1',
+      name: 'Summer Cup',
+      status: 'ACTIVE',
+      creatorId: 'creator-1',
+      maxPlayers: 20,
+      countries: [],
+      canDelete: true,
+      ...extra,
+    });
+  };
+  const inscritos = (...userIds) =>
+    mockListEnrollments.mockResolvedValue(
+      userIds.map((userId, i) => ({
+        id: `enr-${i}`,
+        userId,
+        status: 'APPROVED',
+        userName: `Jugador ${i}`,
+        userHandicap: 10,
+        hasCustomHandicap: false,
+        customHandicap: null,
+        team: null,
+      }))
+    );
+  const botonEliminar = () => screen.findByRole('button', { name: /detail\.actions\.delete/ });
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    inscritos('creator-1');
+  });
+
+  it('B1: si el servidor lo permite, se ofrece también en una abierta', async () => {
+    ficha({ status: 'ACTIVE' });
+
+    renderPage();
+
+    expect(await botonEliminar()).toBeInTheDocument();
+  });
+
+  it('B1b: y en una cancelada', async () => {
+    ficha({ status: 'CANCELLED' });
+
+    renderPage();
+
+    expect(await botonEliminar()).toBeInTheDocument();
+  });
+
+  it('B2: si no lo permite, no se ofrece aunque sea un borrador del creador', async () => {
+    ficha({ status: 'DRAFT', canDelete: false });
+
+    renderPage();
+
+    await screen.findByText('Summer Cup');
+    expect(screen.queryByRole('button', { name: /detail\.actions\.delete/ })).not.toBeInTheDocument();
+  });
+
+  it('B3: pulsar «Eliminar» abre la confirmación y todavía no borra nada', async () => {
+    ficha();
+
+    renderPage();
+    fireEvent.click(await botonEliminar());
+
+    expect(await screen.findByText('detail.deleteModal.title')).toBeInTheDocument();
+    expect(mockDelete).not.toHaveBeenCalled();
+  });
+
+  it('B4: cancelar en la confirmación no borra', async () => {
+    ficha();
+
+    renderPage();
+    fireEvent.click(await botonEliminar());
+    fireEvent.click(await screen.findByRole('button', { name: 'detail.deleteModal.keep' }));
+
+    await waitFor(() => expect(screen.queryByText('detail.deleteModal.title')).not.toBeInTheDocument());
+    expect(mockDelete).not.toHaveBeenCalled();
+  });
+
+  it('B5: si no hay nadie más inscrito, lo dice así', async () => {
+    ficha();
+    inscritos('creator-1');
+
+    renderPage();
+    fireEvent.click(await botonEliminar());
+
+    expect(await screen.findByText('detail.deleteModal.nobodyElse')).toBeInTheDocument();
+  });
+
+  it('B6: con más gente, dice cuántos pierden su plaza, sin contar a quien borra', async () => {
+    // El creador está inscrito desde que la crea: contarlo inflaría el aviso
+    ficha();
+    inscritos('creator-1', 'jugador-2', 'jugador-3');
+
+    renderPage();
+    fireEvent.click(await botonEliminar());
+
+    expect(await screen.findByText('detail.deleteModal.othersLosePlace_2')).toBeInTheDocument();
+  });
+
+  it('B7: confirmar borra una sola vez, aunque se pulse dos veces', async () => {
+    ficha();
+    let terminar;
+    mockDelete.mockReturnValue(new Promise((resolver) => { terminar = resolver; }));
+
+    renderPage();
+    fireEvent.click(await botonEliminar());
+    const confirmar = await screen.findByRole('button', { name: 'detail.deleteModal.confirm' });
+    fireEvent.click(confirmar);
+    fireEvent.click(confirmar);
+    terminar();
+
+    await waitFor(() => expect(mockDelete).toHaveBeenCalledTimes(1));
+  });
+
+  it('B8: si el borrado falla, avisa con el motivo del servidor y la competición sigue', async () => {
+    ficha();
+    mockDelete.mockRejectedValue(
+      Object.assign(new Error('No se puede eliminar una competición que ya tiene calendario'), { status: 400 })
+    );
+
+    renderPage();
+    fireEvent.click(await botonEliminar());
+    fireEvent.click(await screen.findByRole('button', { name: 'detail.deleteModal.confirm' }));
+
+    await waitFor(() =>
+      expect(customToast.error).toHaveBeenCalledWith(
+        'No se puede eliminar una competición que ya tiene calendario'
+      )
+    );
+    expect(screen.getByText('Summer Cup')).toBeInTheDocument();
+  });
+
+  it('B9: tras cambiar de estado, vuelve a preguntar si se puede borrar', async () => {
+    // Las respuestas de los cambios de estado no traen can_delete: quedarse con
+    // el de antes diría «se puede» de una que ya no, o al revés (RyderCupAM#347)
+    ficha({ status: 'ACTIVE', canDelete: false });
+    mockCancel.mockResolvedValue({ status: 'CANCELLED', updatedAt: '2026-09-22T10:00:00Z' });
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+
+    renderPage();
+    await screen.findByText('Summer Cup');
+    expect(screen.queryByRole('button', { name: /detail\.actions\.delete/ })).not.toBeInTheDocument();
+
+    ficha({ status: 'CANCELLED', canDelete: true });
+    fireEvent.click(screen.getByText('detail.actions.cancel'));
+
+    expect(await botonEliminar()).toBeInTheDocument();
+  });
+
+  it('B10: si ese refresco falla, deja de ofrecerlo: no se ofrece lo que no se sabe', async () => {
+    ficha({ status: 'ACTIVE', canDelete: true });
+    mockCancel.mockResolvedValue({ status: 'CANCELLED', updatedAt: '2026-09-22T10:00:00Z' });
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+
+    renderPage();
+    expect(await botonEliminar()).toBeInTheDocument();
+
+    mockGetCompetitionDetail.mockRejectedValue(new TypeError('Sin conexión'));
+    fireEvent.click(screen.getByText('detail.actions.cancel'));
+
+    await waitFor(() =>
+      expect(screen.queryByRole('button', { name: /detail\.actions\.delete/ })).not.toBeInTheDocument()
+    );
   });
 });
