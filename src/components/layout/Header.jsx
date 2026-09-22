@@ -54,8 +54,9 @@ const Header = () => {
         </Link>
       )}
 
-      {/* Desktop Menu */}
-      <div className="hidden md:flex flex-1 justify-end gap-8">
+      {/* Desktop Menu — desde lg y no desde md: completa pide 928 px en español, y
+          entre medias la página se desplazaba en horizontal (FE #689) */}
+      <div data-testid="cabecera-completa" className="hidden lg:flex flex-1 justify-end gap-8">
         <div className="flex items-center gap-9">
           <a className="text-gray-900 text-sm font-medium leading-normal" href="/#features">
             {t('header.features')}
@@ -85,8 +86,9 @@ const Header = () => {
         </div>
       </div>
 
-      {/* Mobile: the two actions the site exists for stay visible (#314) */}
-      <div className="md:hidden flex items-center gap-2 ml-auto mr-2">
+      {/* Mobile: the two actions the site exists for stay visible (#314). Hasta lg,
+          con el menú de al lado (FE #689) */}
+      <div data-testid="acciones-compactas" className="lg:hidden flex items-center gap-2 ml-auto mr-2">
         <Link to="/register">
           <button className="flex items-center justify-center rounded-lg h-10 px-3 bg-primary text-white text-sm font-bold tracking-wide active:bg-primary-600 transition-colors">
             {t('header.register')}
@@ -100,7 +102,7 @@ const Header = () => {
       </div>
 
       {/* Mobile Menu Button */}
-      <div className="md:hidden relative" ref={mobileMenuRef}>
+      <div className="lg:hidden relative" ref={mobileMenuRef}>
         <button
           onClick={toggleMobileMenu}
           className="flex items-center justify-center w-10 h-10 rounded-lg hover:bg-gray-100 transition-colors"

@@ -64,4 +64,26 @@ describe('Header', () => {
 
     expect(screen.getByText('RyderCupFriends').className).toContain('hidden sm:block');
   });
+
+  /**
+   * La versión completa necesita 928 px en español, y aparecía desde 768: entre
+   * medias la página se desplazaba en horizontal (FE #689). El modo compacto
+   * —marca, «Registrarse», «Entrar» y el menú— se mantiene hasta lg.
+   */
+  describe('el modo compacto llega hasta lg (FE #689)', () => {
+    it('C1: la versión completa, solo desde lg', () => {
+      // jsdom no mide anchos: se vigila el contrato de clases. Que de verdad
+      // quepa se midió con Playwright en los anchos que importan
+      renderHeader();
+
+      expect(screen.getByTestId('cabecera-completa')).toHaveClass('hidden', 'lg:flex');
+    });
+
+    it('C2: las dos acciones y el menú compactos, hasta lg', () => {
+      renderHeader();
+
+      expect(screen.getByTestId('acciones-compactas')).toHaveClass('lg:hidden');
+      expect(screen.getByLabelText('Toggle menu').parentElement).toHaveClass('lg:hidden');
+    });
+  });
 });
