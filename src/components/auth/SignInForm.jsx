@@ -9,6 +9,7 @@ import PasswordInput from '../ui/PasswordInput';
 import GoogleSignInButton from '../ui/GoogleSignInButton';
 import { loginUseCase } from '../../composition';
 import { useAuthContext } from '../../hooks/useAuthContext';
+import { lanzaElRefrescoDeHandicap, APUNTE_REFRESCAR } from '../../services/refrescoDeHandicap';
 
 /**
  * El acceso con correo y contraseña, con Google debajo: el formulario entero y
@@ -90,10 +91,13 @@ const SignInForm = () => {
       updateCsrfToken(csrfToken);
 
       // El hándicap ya no se refresca en el login, que esperaba a la RFEG antes
-      // de contestar (RyderCupAM#340): se deja pedido y lo hace el panel en
-      // segundo plano (FE #677). `needs_handicap` era el apunte de antes
-      localStorage.setItem('refrescar_handicap', 'true');
+      // de contestar (RyderCupAM#340). Se LANZA aquí y no se espera (FE #677):
+      // aquí y no en el panel porque se vuelve a la página pedida, que no
+      // siempre es el panel. El apunte queda por si no llega a contestar.
+      // `needs_handicap` era el apunte de la versión anterior
+      localStorage.setItem(APUNTE_REFRESCAR, 'true');
       localStorage.removeItem('needs_handicap');
+      lanzaElRefrescoDeHandicap({ handicapDeAntes: authenticatedUser.handicap ?? null });
 
       resetRateLimit('login');
       customToast.success(t('login.welcomeMessage', { name: authenticatedUser.firstName }));

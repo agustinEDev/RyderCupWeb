@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, Navigate, useLocation } from 'react-router';
 import { motion } from 'framer-motion';
 import { Trophy, Zap, Pencil } from 'lucide-react';
@@ -32,8 +32,13 @@ import {
   getUpcomingMatchesUseCase,
   getScoringViewUseCase,
   updateUserProfileUseCase,
-  refreshOwnHandicapUseCase,
 } from '../composition';
+import {
+  APUNTE_REFRESCAR,
+  EVENTO_HANDICAP_POR_PEDIR,
+  lanzaElRefrescoDeHandicap,
+  recogeElHandicapPorPedir,
+} from '../services/refrescoDeHandicap';
 
 // El panel enseña un resumen, no el historial entero
 const RECENT_MATCHES_SHOWN = 3;
@@ -68,57 +73,29 @@ const Dashboard = () => {
     () => typeof localStorage !== 'undefined' && localStorage.getItem('handicap_pending') === 'true'
   );
 
-  // El refresco del hándicap que antes hacía el login (FE #677). Va por su
-  // cuenta y en segundo plano, sin encadenarse a las peticiones del panel: una
-  // RFEG lenta no puede retrasar ni dejar en blanco nada de lo demás.
-  //
-  // Una sola petición por montaje, aunque `user` cambie con ella en vuelo (llega
-  // el usuario recién pedido y es otro objeto): cancelarla en cada cambio tiraba
-  // su respuesta y, con el apunte aún puesto, salía otra. Solo se descarta si el
-  // panel se desmonta
-  const refrescoPedido = useRef(false);
-  const panelMontado = useRef(true);
-  useEffect(() => {
-    panelMontado.current = true;
-    return () => {
-      panelMontado.current = false;
-    };
-  }, []);
-
+  // El refresco del hándicap al entrar lo lanza el login, sin esperarlo
+  // (FE #677). Aquí solo se abre el modal cuando su resultado lo pide: si llega
+  // con el panel montado, por el evento; si no, se encuentra guardado. Y si el
+  // apunte sigue puesto (no contestó), se relanza: el módulo no manda dos a la vez
   useEffect(() => {
     // Apunte de la versión anterior: su información es de otro día
     localStorage.removeItem('needs_handicap');
-    if (!user || refrescoPedido.current) return;
-    if (localStorage.getItem('refrescar_handicap') !== 'true') return;
+    if (!user) return undefined;
 
-    refrescoPedido.current = true;
-    const handicapDeAntes = user.handicap ?? null;
-    refreshOwnHandicapUseCase
-      .execute()
-      .then(({ needsHandicap, handicap }) => {
-        if (!panelMontado.current) return;
-        localStorage.removeItem('refrescar_handicap');
-        if (needsHandicap) {
-          setHandicapAlAbrir(handicap);
-          setShowHandicapModal(true);
-        } else if (handicap !== handicapDeAntes) {
-          // Solo si cambió: recargar el usuario relanza las cuatro peticiones
-          // del panel, y el refresco diario de siempre devuelve lo mismo
-          refetchUser();
-        }
-      })
-      .catch((error) => {
-        // Un 4xx no se va a arreglar solo (el endpoint no existe, el usuario ya
-        // no): repetirlo en cada visita sería un POST fallido tras otro
-        if (error?.status >= 400 && error?.status < 500) {
-          localStorage.removeItem('refrescar_handicap');
-          return;
-        }
-        // Sin respuesta o un 5xx: no se sabe nada, así que no se afirma nada.
-        // El apunte se queda y se vuelve a intentar
-        refrescoPedido.current = false;
-      });
-  }, [user, refetchUser]);
+    const abreSiHayQuePedirlo = () => {
+      const handicap = recogeElHandicapPorPedir();
+      if (handicap === undefined) return;
+      setHandicapAlAbrir(handicap);
+      setShowHandicapModal(true);
+    };
+
+    abreSiHayQuePedirlo();
+    window.addEventListener(EVENTO_HANDICAP_POR_PEDIR, abreSiHayQuePedirlo);
+    if (localStorage.getItem(APUNTE_REFRESCAR) === 'true') {
+      lanzaElRefrescoDeHandicap({ handicapDeAntes: user.handicap ?? null });
+    }
+    return () => window.removeEventListener(EVENTO_HANDICAP_POR_PEDIR, abreSiHayQuePedirlo);
+  }, [user]);
 
   const handleHandicapSaved = useCallback(async () => {
     setShowHandicapModal(false);

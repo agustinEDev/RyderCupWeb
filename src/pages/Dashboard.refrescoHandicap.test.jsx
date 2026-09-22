@@ -5,9 +5,9 @@ import { render, screen, waitFor, act, cleanup } from '@testing-library/react';
  * El refresco del hándicap al entrar, en segundo plano (FE #677).
  *
  * El login lo hacía antes de contestar y esperaba a la RFEG: hasta 20 s, y el
- * 21 sep un minuto (RyderCupAM#340). Ahora el login solo deja el apunte y el
- * panel lo pide por su cuenta, sin encadenarlo a sus otras peticiones: una RFEG
- * lenta no puede retrasar ni dejar en blanco nada del panel.
+ * 21 sep un minuto (RyderCupAM#340). Ahora el login lo LANZA sin esperarlo, y
+ * el panel solo abre el modal cuando el resultado lo pide, o lo relanza si el
+ * apunte sigue puesto. Aquí va con el módulo de verdad, solo con la API falsa.
  */
 
 const refresco = vi.fn();
@@ -20,6 +20,12 @@ vi.mock('../composition', () => ({
   },
   getScoringViewUseCase: { execute: () => new Promise(() => {}) },
   refreshOwnHandicapUseCase: { execute: (...args) => refresco(...args) },
+}));
+
+const consultaSesion = vi.fn();
+vi.mock('../services/sesionCompartida', async () => ({
+  ...(await vi.importActual('../services/sesionCompartida')),
+  consultaLaSesion: (...args) => consultaSesion(...args),
 }));
 
 const recargarUsuario = vi.fn();
@@ -87,6 +93,7 @@ globalThis.localStorage = {
 };
 
 const Dashboard = (await import('./Dashboard')).default;
+const { reiniciaElRefrescoDeHandicap } = await import('../services/refrescoDeHandicap');
 
 const panelPintado = () => screen.findByText('quickActions.title');
 
@@ -94,19 +101,21 @@ describe('Dashboard · refresco del hándicap al entrar (FE #677)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     localStorage.clear();
+    // Una petición colgada de un test no puede quedarse "en vuelo" para el siguiente
+    reiniciaElRefrescoDeHandicap();
   });
 
   // Sin esto el panel del test anterior sigue montado y `findByText` encuentra
   // su copia, ya desmontada: pasa solo y falla en grupo
   afterEach(cleanup);
 
-  it('D1: con el apunte, lo pide una vez; si no hace falta pedirlo, recarga el usuario y no abre nada', async () => {
+  it('D1: con el apunte pendiente, lo relanza una vez; si no hace falta pedirlo y cambió, recarga la sesión y no abre nada', async () => {
     localStorage.setItem('refrescar_handicap', 'true');
     refresco.mockResolvedValue({ needsHandicap: false, handicap: 18 });
 
     render(<Dashboard />);
 
-    await waitFor(() => expect(recargarUsuario).toHaveBeenCalled());
+    await waitFor(() => expect(consultaSesion).toHaveBeenCalledWith({ forzar: true }));
     expect(refresco).toHaveBeenCalledTimes(1);
     expect(screen.queryByTestId('modal-handicap')).not.toBeInTheDocument();
     expect(localStorage.getItem('refrescar_handicap')).toBeNull();
@@ -169,7 +178,7 @@ describe('Dashboard · refresco del hándicap al entrar (FE #677)', () => {
     render(<Dashboard />);
 
     await waitFor(() => expect(localStorage.getItem('refrescar_handicap')).toBeNull());
-    expect(recargarUsuario).not.toHaveBeenCalled();
+    expect(consultaSesion).not.toHaveBeenCalled();
   });
 
   it('D9: si el usuario cambia con el refresco en vuelo, se pide una sola vez y no se pierde la respuesta', async () => {
@@ -218,9 +227,8 @@ describe('Dashboard · refresco del hándicap al entrar (FE #677)', () => {
     }
   });
 
-  it('D11: si el panel se cierra antes de la respuesta, el apunte se queda para la próxima', async () => {
-    // Nadie ha visto el resultado: darlo por hecho dejaría sin modal a quien
-    // lo necesitaba
+  it('D11: si el panel se cierra antes de la respuesta, el siguiente la encuentra', async () => {
+    // Nadie ha visto el resultado todavía: se guarda y lo abre el próximo panel
     localStorage.setItem('refrescar_handicap', 'true');
     let responder;
     refresco.mockReturnValue(new Promise((resolver) => { responder = resolver; }));
@@ -231,8 +239,20 @@ describe('Dashboard · refresco del hándicap al entrar (FE #677)', () => {
     await act(async () => {
       responder({ needsHandicap: true, handicap: null });
     });
+    render(<Dashboard />);
 
-    expect(localStorage.getItem('refrescar_handicap')).toBe('true');
+    expect(await screen.findByTestId('modal-handicap')).toBeInTheDocument();
+    expect(refresco).toHaveBeenCalledTimes(1);
+  });
+
+  it('D14: si el login lo lanzó y se fue a otra página, al abrir el panel sale el modal sin volver a pedirlo', async () => {
+    localStorage.setItem('pedir_handicap', JSON.stringify({ handicap: 18 }));
+
+    render(<Dashboard />);
+
+    expect(await screen.findByTestId('modal-handicap')).toHaveAttribute('data-handicap', '18');
+    expect(refresco).not.toHaveBeenCalled();
+    expect(localStorage.getItem('pedir_handicap')).toBeNull();
   });
 
   it('D12: un 4xx no se va a arreglar solo: se borra el apunte y no se reintenta', async () => {

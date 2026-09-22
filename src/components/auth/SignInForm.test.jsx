@@ -58,6 +58,12 @@ vi.mock('../../utils/toast', () => ({
 
 vi.mock('../ui/GoogleSignInButton', () => ({ default: () => <div>google</div> }));
 
+const lanzarRefresco = vi.fn();
+vi.mock('../../services/refrescoDeHandicap', () => ({
+  APUNTE_REFRESCAR: 'refrescar_handicap',
+  lanzaElRefrescoDeHandicap: (...args) => lanzarRefresco(...args),
+}));
+
 const SignInForm = (await import('./SignInForm')).default;
 
 const pintar = () => render(<MemoryRouter><SignInForm /></MemoryRouter>);
@@ -168,13 +174,15 @@ describe('SignInForm', () => {
     expect(ejecutarLogin).not.toHaveBeenCalled();
   });
 
-  it('S1: al entrar deja pedido el refresco del hándicap, sin esperarlo (FE #677)', async () => {
-    // El login ya no consulta la RFEG ni trae `needs_handicap` (RyderCupAM#340):
-    // el panel lo pide aparte, en segundo plano. Un apunte viejo de
-    // `needs_handicap` abriría el modal con la información de otro día
+  it('S1: al entrar lanza el refresco del hándicap y NO lo espera (FE #677)', async () => {
+    // El login ya no consulta la RFEG ni trae `needs_handicap` (RyderCupAM#340).
+    // Una RFEG que no contesta no puede retener la entrada: la promesa que
+    // devuelve el refresco no se resuelve nunca y aun así se navega. Un apunte
+    // viejo de `needs_handicap` abriría el modal con información de otro día
     window.localStorage.setItem('needs_handicap', 'true');
+    lanzarRefresco.mockReturnValue(new Promise(() => {}));
     ejecutarLogin.mockResolvedValue({
-      user: { firstName: 'Agustin', emailVerified: true },
+      user: { firstName: 'Agustin', emailVerified: true, handicap: 12.4 },
       csrfToken: 'tok',
     });
     pintar();
@@ -184,6 +192,7 @@ describe('SignInForm', () => {
     enviar();
 
     await waitFor(() => expect(navegar).toHaveBeenCalled());
+    expect(lanzarRefresco).toHaveBeenCalledWith({ handicapDeAntes: 12.4 });
     expect(window.localStorage.getItem('refrescar_handicap')).toBe('true');
     expect(window.localStorage.getItem('needs_handicap')).toBeNull();
   });
