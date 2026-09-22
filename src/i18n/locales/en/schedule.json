@@ -83,7 +83,15 @@
     "viceCaptainTag": "Vice-captain",
     "everyoneNeedsTeam_one": "{{count}} player still has no team: in a Ryder everybody plays.",
     "everyoneNeedsTeam_other": "{{count}} players still have no team: in a Ryder everybody plays.",
-    "captainMissing": "One captain is missing. Name them in the competition before assigning the teams."
+    "captainMissing": "One captain is missing. Name them in the competition before assigning the teams.",
+    "fillCaptain": "Name a captain",
+    "fillCaptainTitle": "Name the {{team}} captain",
+    "fillCaptainExplanation": "That team has no captain: either they withdrew or none was ever named. Pick a player from that team.",
+    "fillCaptainChoose": "Choose a player",
+    "fillCaptainConfirm": "Name them",
+    "fillCaptainCancel": "Cancel",
+    "fillCaptainNobody": "Nobody is left enrolled in that team.",
+    "captainMissingWithTeams": "One captain is missing. With the teams already assigned, use \"Name a captain\" on the team that needs one."
   },
   "configuration": {
     "title": "Schedule Configuration",
@@ -132,7 +140,8 @@
     "failedToUpdateMatchStatus": "Failed to update match status",
     "failedToDeclareWalkover": "Failed to declare walkover",
     "failedToReassignPlayers": "Failed to reassign players",
-    "failedToLoadMatch": "Failed to load match details"
+    "failedToLoadMatch": "Failed to load match details",
+    "failedToFillCaptain": "The captain could not be named"
   },
   "success": {
     "roundCreated": "Round created successfully",
@@ -142,6 +151,7 @@
     "teamsAssigned": "Teams assigned successfully",
     "matchStatusUpdated": "Match status updated successfully",
     "walkoverDeclared": "Walkover declared successfully",
-    "playersReassigned": "Players reassigned successfully"
+    "playersReassigned": "Players reassigned successfully",
+    "captainFilled": "Captain named"
   }
 }

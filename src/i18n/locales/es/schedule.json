@@ -83,7 +83,15 @@
     "viceCaptainTag": "Subcapitán",
     "everyoneNeedsTeam_one": "Falta {{count}} jugador por asignar: en una Ryder juegan todos.",
     "everyoneNeedsTeam_other": "Faltan {{count}} jugadores por asignar: en una Ryder juegan todos.",
-    "captainMissing": "Falta nombrar un capitán. Hazlo en la competición antes de repartir los equipos."
+    "captainMissing": "Falta nombrar un capitán. Hazlo en la competición antes de repartir los equipos.",
+    "fillCaptain": "Nombrar capitán",
+    "fillCaptainTitle": "Nombrar capitán de {{team}}",
+    "fillCaptainExplanation": "Ese equipo no tiene capitán: o se dio de baja, o nunca se nombró. Elige a un jugador de ese equipo.",
+    "fillCaptainChoose": "Elige un jugador",
+    "fillCaptainConfirm": "Nombrar",
+    "fillCaptainCancel": "Cancelar",
+    "fillCaptainNobody": "No queda nadie inscrito en ese equipo.",
+    "captainMissingWithTeams": "Falta nombrar un capitán. Con los equipos ya repartidos se hace desde «Nombrar capitán», en el equipo que lo necesita."
   },
   "configuration": {
     "title": "Configuración del Calendario",
@@ -132,7 +140,8 @@
     "failedToUpdateMatchStatus": "Error al actualizar el estado del partido",
     "failedToDeclareWalkover": "Error al declarar el walkover",
     "failedToReassignPlayers": "Error al reasignar los jugadores",
-    "failedToLoadMatch": "Error al cargar los detalles del partido"
+    "failedToLoadMatch": "Error al cargar los detalles del partido",
+    "failedToFillCaptain": "No se ha podido nombrar al capitán"
   },
   "success": {
     "roundCreated": "Ronda creada exitosamente",
@@ -142,6 +151,7 @@
     "teamsAssigned": "Equipos asignados exitosamente",
     "matchStatusUpdated": "Estado del partido actualizado exitosamente",
     "walkoverDeclared": "Walkover declarado exitosamente",
-    "playersReassigned": "Jugadores reasignados exitosamente"
+    "playersReassigned": "Jugadores reasignados exitosamente",
+    "captainFilled": "Capitán nombrado"
   }
 }

@@ -15,6 +15,7 @@ const AssignTeamsModalContent = ({
   isProcessing,
   teamNames,
   captains,
+  hasTeams,
   t,
 }) => {
   // Con los dos capitanes nombrados, cada uno queda fijo en su equipo (FE #692):
@@ -103,8 +104,13 @@ const AssignTeamsModalContent = ({
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          {/* Con equipos ya repartidos el consejo cambia: ahí el servidor no
+              deja nombrar capitanes, y el puesto se cubre desde el panel de
+              equipos (FE #692) */}
           {faltaUnCapitan && (
-            <p className="text-sm text-amber-700">{t('teams.captainMissing')}</p>
+            <p className="text-sm text-amber-700">
+              {t(hasTeams ? 'teams.captainMissingWithTeams' : 'teams.captainMissing')}
+            </p>
           )}
           {/* Mode selection */}
           <div>

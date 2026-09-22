@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest';
-import { render, screen, within } from '@testing-library/react';
+import { describe, it, expect, vi } from 'vitest';
+import { render, screen, within, fireEvent } from '@testing-library/react';
 import TeamAssignmentSection from './TeamAssignmentSection';
 
 /**
@@ -25,18 +25,26 @@ const mapaDeNombres = new Map([
 ]);
 const REPARTO = { teamAPlayerIds: ['ana', 'carla'], teamBPlayerIds: ['bea', 'dani'] };
 
-const pintar = (captains) =>
+const INSCRITOS = ['ana', 'bea', 'carla', 'dani'].map((userId) => ({
+  userId,
+  status: 'APPROVED',
+}));
+
+const pintar = (captains, extra = {}) =>
   render(
     <TeamAssignmentSection
       teamAssignment={REPARTO}
       onAssignTeams={() => {}}
+      onFillCaptain={() => {}}
       canManage
       playerNameMap={mapaDeNombres}
-      enrollments={[]}
+      enrollments={INSCRITOS}
       teamNames={NOMBRES}
       maxPlayingHandicap={null}
       captains={captains}
+      status="CLOSED"
       t={t}
+      {...extra}
     />
   );
 
@@ -72,5 +80,46 @@ describe('TeamAssignmentSection · los capitanes se ven en el reparto (FE #692)'
 
     expect(within(filaDe('Dani Díaz')).queryByText('teams.viceCaptainTag')).not.toBeInTheDocument();
     expect(within(filaDe('Ana Alba')).getByText('teams.captainTag')).toBeInTheDocument();
+  });
+
+  it('T5: un equipo sin capitán ofrece cubrir el puesto, y el otro no', () => {
+    // Pasa si el capitán se retira tras el reparto sin subcapitán que ascienda:
+    // repartir otra vez pide los dos y nombrarlos ya no se puede (RyderCupAm#320)
+    pintar({ teamA: null, teamB: 'bea', viceTeamA: null, viceTeamB: null });
+
+    expect(screen.getByTestId('cubrir-capitan-A')).toBeInTheDocument();
+    expect(screen.queryByTestId('cubrir-capitan-B')).not.toBeInTheDocument();
+  });
+
+  it('T6: quien no organiza no lo ve', () => {
+    pintar({ teamA: null, teamB: 'bea', viceTeamA: null, viceTeamB: null }, { canManage: false });
+
+    expect(screen.queryByTestId('cubrir-capitan-A')).not.toBeInTheDocument();
+  });
+
+  it('T7: al pulsarlo dice qué equipo hay que cubrir', () => {
+    const cubrir = vi.fn();
+    pintar({ teamA: null, teamB: 'bea', viceTeamA: null, viceTeamB: null }, { onFillCaptain: cubrir });
+
+    fireEvent.click(screen.getByTestId('cubrir-capitan-A'));
+
+    expect(cubrir).toHaveBeenCalledWith('A');
+  });
+
+  it('T8: también cuando el capitán sigue puesto pero ya no está inscrito', () => {
+    // Se retiró con el torneo en marcha, donde las bajas no tocan a los
+    // capitanes, y luego se volvió a CERRADA (RyderCupAm#320)
+    pintar({ teamA: 'ana', teamB: 'bea', viceTeamA: null, viceTeamB: null }, {
+      enrollments: INSCRITOS.filter((e) => e.userId !== 'ana'),
+    });
+
+    expect(screen.getByTestId('cubrir-capitan-A')).toBeInTheDocument();
+    expect(screen.queryByTestId('cubrir-capitan-B')).not.toBeInTheDocument();
+  });
+
+  it.each(['IN_PROGRESS', 'COMPLETED'])('T9: con el torneo %s no se ofrece: el servidor lo rechaza', (estado) => {
+    pintar({ teamA: null, teamB: 'bea', viceTeamA: null, viceTeamB: null }, { status: estado });
+
+    expect(screen.queryByTestId('cubrir-capitan-A')).not.toBeInTheDocument();
   });
 });

@@ -180,6 +180,17 @@ class ICompetitionRepository {
   }
 
   /**
+   * Cubre el puesto de capitán de un equipo, vacío tras una baja (FE #692).
+   * @param {string} competitionId
+   * @param {'A'|'B'} team
+   * @param {{player_id: string}} jugador
+   * @returns {Promise<Object>}
+   */
+  async fillTeamCaptain(competitionId, team, jugador) {
+    throw new Error('ICompetitionRepository.fillTeamCaptain must be implemented');
+  }
+
+  /**
    * Starts a competition (CLOSED → IN_PROGRESS).
    * @param {string} competitionId
    * @returns {Promise<Object>} Updated competition data
