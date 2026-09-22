@@ -8,8 +8,24 @@ const TeamAssignmentSection = ({
   enrollments,
   teamNames,
   maxPlayingHandicap,
+  captains,
   t,
 }) => {
+  // Quién capitanea cada equipo, y quién es su segundo (FE #692): esta es la
+  // pantalla donde se preparan las sesiones, y las parejas las monta el capitán
+  // Sin el nombre del equipo: cada lista ya lo lleva en su título, y uno largo
+  // dejaba la etiqueta en «Capitán de E...»
+  // Mirando también en qué equipo se pinta: repartir de nuevo libera los
+  // subcapitanes en el servidor, y hasta que la pantalla se entere la etiqueta
+  // no puede aparecer en el equipo contrario
+  const papelDe = (playerId, equipo) => {
+    if (!captains) return null;
+    const capitan = equipo === 'A' ? captains.teamA : captains.teamB;
+    const subcapitan = equipo === 'A' ? captains.viceTeamA : captains.viceTeamB;
+    if (playerId === capitan) return t('teams.captainTag');
+    if (playerId === subcapitan) return t('teams.viceCaptainTag');
+    return null;
+  };
   // Build handicap lookup from enrollments
   const handicapMap = new Map();
   (enrollments || []).forEach((e) => {
@@ -81,8 +97,15 @@ const TeamAssignmentSection = ({
           </h4>
           <ul className="space-y-1.5">
             {teamA.map((playerId) => (
-              <li key={playerId} className="flex items-center justify-between text-sm">
-                <span className="text-gray-800">{playerNameMap.get(playerId) || playerId}</span>
+              <li key={playerId} className="flex items-center justify-between gap-2 text-sm">
+                <span className="text-gray-800 min-w-0">
+                  {playerNameMap.get(playerId) || playerId}
+                  {papelDe(playerId, 'A') && (
+                    <span className="block text-xs text-yellow-800 truncate">
+                      {papelDe(playerId, 'A')}
+                    </span>
+                  )}
+                </span>
                 {renderHandicap(playerId, 'text-blue-600')}
               </li>
             ))}
@@ -96,8 +119,15 @@ const TeamAssignmentSection = ({
           </h4>
           <ul className="space-y-1.5">
             {teamB.map((playerId) => (
-              <li key={playerId} className="flex items-center justify-between text-sm">
-                <span className="text-gray-800">{playerNameMap.get(playerId) || playerId}</span>
+              <li key={playerId} className="flex items-center justify-between gap-2 text-sm">
+                <span className="text-gray-800 min-w-0">
+                  {playerNameMap.get(playerId) || playerId}
+                  {papelDe(playerId, 'B') && (
+                    <span className="block text-xs text-yellow-800 truncate">
+                      {papelDe(playerId, 'B')}
+                    </span>
+                  )}
+                </span>
                 {renderHandicap(playerId, 'text-red-600')}
               </li>
             ))}

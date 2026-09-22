@@ -77,7 +77,13 @@
     "teamB": "Team B",
     "noTeamsAssigned": "Teams have not been assigned yet",
     "playersCount_one": "{{count}} player",
-    "playersCount_other": "{{count}} players"
+    "playersCount_other": "{{count}} players",
+    "captainsFixed": "The captains are already on their team and cannot be moved.",
+    "captainTag": "Captain",
+    "viceCaptainTag": "Vice-captain",
+    "everyoneNeedsTeam_one": "{{count}} player still has no team: in a Ryder everybody plays.",
+    "everyoneNeedsTeam_other": "{{count}} players still have no team: in a Ryder everybody plays.",
+    "captainMissing": "One captain is missing. Name them in the competition before assigning the teams."
   },
   "configuration": {
     "title": "Schedule Configuration",
