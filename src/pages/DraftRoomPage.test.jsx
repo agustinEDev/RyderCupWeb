@@ -207,6 +207,64 @@ describe('DraftRoomPage · la sala en directo (FE #653)', () => {
     expect(await screen.findByText('Boom')).toBeInTheDocument();
   });
 
+  it('D12: sin contador no se pinta un turno perdido en rojo', async () => {
+    // `null <= 10` es cierto: la sala en marcha sin reloj enseñaba «0:00» en
+    // rojo de alarma, dando por vencido un turno del que no se sabe nada
+    mockSala.mockReturnValue(estado({ segundosRestantes: null, esMiTurno: false }));
+    pintar();
+
+    const contador = await screen.findByTestId('contador');
+    expect(contador.className).not.toContain('text-red-600');
+  });
+
+  it('D13: sin saber quién mira, no se ofrece lanzar el sorteo', async () => {
+    // `undefined === undefined` es cierto: con la ficha sin cargar y la sesión
+    // sin hidratar, el botón salía para cualquiera y el servidor lo rechazaba
+    mockDetalle.mockRejectedValue(new Error('Boom'));
+    SESION.user = null;
+    mockSala.mockReturnValue(estado({ sala: null, segundosRestantes: null, esMiTurno: false }));
+    try {
+      pintar();
+
+      expect(await screen.findByTestId('sin-sorteo')).toBeInTheDocument();
+      expect(screen.queryByTestId('lanzar-sorteo')).not.toBeInTheDocument();
+    } finally {
+      SESION.user = { id: 'ana' };
+    }
+  });
+
+  it('D14: un sorteo rechazado no deja una promesa sin capturar', async () => {
+    // `abrirSala` relanza tras guardar el aviso: sin capturarlo, el 400 acaba
+    // en Sentry como error no controlado además de pintarse en pantalla
+    const fallo = new Error('La sala de draft ya estaba abierta');
+    mockAbrir.mockRejectedValue(fallo);
+    mockSala.mockReturnValue(estado({ sala: null, segundosRestantes: null, esMiTurno: false }));
+    const sinCapturar = vi.fn();
+    globalThis.addEventListener('unhandledrejection', sinCapturar);
+    try {
+      pintar();
+
+      fireEvent.click(await screen.findByTestId('lanzar-sorteo'));
+
+      await waitFor(() => expect(mockAbrir).toHaveBeenCalled());
+      await new Promise((r) => setTimeout(r, 10));
+      expect(sinCapturar).not.toHaveBeenCalled();
+    } finally {
+      globalThis.removeEventListener('unhandledrejection', sinCapturar);
+    }
+  });
+
+  it('D15: sin la ficha cargada, los equipos se llaman por su letra', async () => {
+    // El nombre de equipo no puede venir de un `||`: el mapper de la ficha ya
+    // rellena «Team 1» y «Team 2» cuando faltan, así que ese respaldo nunca
+    // entraba y la sala enseñaba inglés con la app en español
+    mockDetalle.mockRejectedValue(new Error('Boom'));
+    pintar();
+
+    const equipoA = await screen.findByTestId('equipo-A');
+    expect(within(equipoA).getByText('draft.teamA')).toBeInTheDocument();
+  });
+
   it('D11: cada disponible se ve con su hándicap, que es con lo que se elige', async () => {
     pintar();
 

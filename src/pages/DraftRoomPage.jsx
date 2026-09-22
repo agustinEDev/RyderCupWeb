@@ -52,8 +52,11 @@ const DraftRoomPage = () => {
     cargarCompeticion();
   }, [cargarCompeticion]);
 
+  // Lo que enseñe la ficha, que es lo que la gente ve en el resto de la app.
+  // La letra solo cuando NO hay ficha: si la hay, sus nombres nunca faltan
+  // —el mapper de competiciones ya rellena los que vengan vacíos—
   const nombreDe = (equipo) =>
-    (equipo === 'A' ? competition?.team1Name : competition?.team2Name) || t(`draft.team${equipo}`);
+    competition ? (equipo === 'A' ? competition.team1Name : competition.team2Name) : t(`draft.team${equipo}`);
 
   const capitanDe = (equipo) =>
     equipo === 'A' ? sala?.teamACaptainName : sala?.teamBCaptainName;
@@ -105,11 +108,16 @@ const DraftRoomPage = () => {
             <p className="mb-4 text-sm text-gray-600" data-testid="sin-sorteo">
               {t('draft.notStarted')}
             </p>
-            {competition?.creatorId === user?.id && (
+            {/* `user?.id &&` por delante: sin sesión hidratada y sin ficha,
+                los dos lados valían `undefined` y el botón salía para
+                cualquiera, para que el servidor lo rechazara con un 403 */}
+            {user?.id && competition?.creatorId === user.id && (
               <button
                 type="button"
                 data-testid="lanzar-sorteo"
-                onClick={abrirSala}
+                // El error ya se pinta desde el estado del hook; sin capturar
+                // aquí, además subía a Sentry como promesa rechazada
+                onClick={() => { abrirSala().catch(() => {}); }}
                 className="w-full rounded-lg bg-green-600 px-4 py-3 font-semibold text-white hover:bg-green-700"
               >
                 {t('draft.start')}
@@ -139,7 +147,12 @@ const DraftRoomPage = () => {
                   <span
                     data-testid="contador"
                     className={`flex items-center gap-1 font-mono text-lg font-bold ${
-                      segundosRestantes <= 10 ? 'text-red-600' : 'text-gray-900'
+                      // `null <= 10` es cierto: sin reloj no se pinta la
+                      // alarma, que daría por vencido un turno del que no se
+                      // sabe nada
+                      segundosRestantes !== null && segundosRestantes <= 10
+                        ? 'text-red-600'
+                        : 'text-gray-900'
                     }`}
                   >
                     <Timer className="h-4 w-4" />

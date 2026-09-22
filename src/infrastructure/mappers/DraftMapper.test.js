@@ -19,9 +19,11 @@ const RESPUESTA = {
   server_time: '2030-06-01T10:00:20',
   team_a_captain_id: 'ana',
   team_b_captain_id: 'bea',
+  team_a_captain_name: 'Ana Alba',
+  team_b_captain_name: 'Bea Blanco',
   team_a: ['ana', 'carla'],
   team_b: ['bea'],
-  picks: [{ user_id: 'carla', team: 'A', order: 1, automatic: false }],
+  picks: [{ user_id: 'carla', name: 'Carla Cruz', team: 'A', order: 1, automatic: false }],
   available_players: [{ user_id: 'dani', name: 'Dani Díaz', handicap: '12.0' }],
 };
 
@@ -40,11 +42,24 @@ describe('DraftMapper', () => {
       serverTime: '2030-06-01T10:00:20',
       teamACaptainId: 'ana',
       teamBCaptainId: 'bea',
+      teamACaptainName: 'Ana Alba',
+      teamBCaptainName: 'Bea Blanco',
       teamA: ['ana', 'carla'],
       teamB: ['bea'],
-      picks: [{ userId: 'carla', team: 'A', order: 1, automatic: false }],
+      picks: [{ userId: 'carla', name: 'Carla Cruz', team: 'A', order: 1, automatic: false }],
       availablePlayers: [{ userId: 'dani', name: 'Dani Díaz', handicap: 12 }],
     });
+  });
+
+  it('M1b: los nombres de la sala son lo único que hay para pintarla', () => {
+    // El servidor los manda precisamente porque quien entra a mitad de draft
+    // no tiene de dónde sacarlos. Perderlos aquí deja filas en blanco y un
+    // «Elige » sin nadie detrás, y ningún test de pantalla lo ve: la pantalla
+    // se prueba con un doble del hook que ya trae los nombres puestos
+    const sala = DraftMapper.toDraftDTO(RESPUESTA);
+
+    expect(sala.picks[0].name).toBe('Carla Cruz');
+    expect([sala.teamACaptainName, sala.teamBCaptainName]).toEqual(['Ana Alba', 'Bea Blanco']);
   });
 
   it('M2: el hándicap llega como texto y se usa como número', () => {

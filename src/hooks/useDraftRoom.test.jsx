@@ -105,10 +105,26 @@ describe('useDraftRoom (FE #653)', () => {
     const cargasIniciales = mockGet.mock.calls.length;
 
     await act(async () => {
-      vi.advanceTimersByTime(4000);
+      vi.advanceTimersByTime(6000);
     });
 
     expect(mockGet.mock.calls.length).toBeGreaterThan(cargasIniciales);
+  });
+
+  it('H5b: y no más de doce veces por minuto, que el cubo del límite es de todos', async () => {
+    // La sala la miran los doce a la vez y comparten el mismo cubo de rate
+    // limit (ADR-038): a tres segundos, doce móviles pasan de 240 peticiones
+    // por minuto y la ceremonia entera se cae con 429 —y con ella el turno
+    // agotado, que lo resuelve justo este GET—
+    const { result } = renderHook(() => useDraftRoom('c1', 'ana'));
+    await waitFor(() => expect(result.current.sala).not.toBeNull());
+    mockGet.mockClear();
+
+    await act(async () => {
+      vi.advanceTimersByTime(60000);
+    });
+
+    expect(mockGet.mock.calls.length).toBeLessThanOrEqual(12);
   });
 
   it('H6: terminada deja de preguntar: ya no cambia nada', async () => {
@@ -172,6 +188,52 @@ describe('useDraftRoom (FE #653)', () => {
 
     expect(result.current.error).toBe('turnoPerdido');
     expect(mockGet.mock.calls.length).toBeGreaterThan(cargas);
+  });
+
+  it('H11b: y el aviso no se lo lleva el refresco de tres segundos después', async () => {
+    // El refresco trae la sala nueva, que es lo que se quiere; borrar el aviso
+    // dejaría al capitán sin saber por qué eligió otro por él
+    mockPick.mockRejectedValue(Object.assign(new Error('No es tu turno'), { status: 409 }));
+    const { result } = renderHook(() => useDraftRoom('c1', 'ana'));
+    await waitFor(() => expect(result.current.sala).not.toBeNull());
+    await act(async () => {
+      await result.current.elegir('dani');
+    });
+
+    await act(async () => {
+      vi.advanceTimersByTime(30000);
+    });
+
+    expect(result.current.error).toBe('turnoPerdido');
+  });
+
+  it('H11c: una respuesta atrasada no resucita al jugador ya elegido', async () => {
+    // El GET que salió antes puede volver DESPUÉS del POST: sin secuenciar,
+    // la sala retrocede, el elegido reaparece en «por elegir» y el capitán
+    // vuelve a pulsar para llevarse un 409 que es mentira
+    let devolverLaVieja;
+    mockGet.mockImplementationOnce(() => Promise.resolve(sala()));
+    const { result } = renderHook(() => useDraftRoom('c1', 'ana'));
+    await waitFor(() => expect(result.current.sala).not.toBeNull());
+
+    mockGet.mockImplementationOnce(
+      () => new Promise((resolve) => { devolverLaVieja = () => resolve(sala()); })
+    );
+    await act(async () => {
+      vi.advanceTimersByTime(6000);
+    });
+    mockPick.mockResolvedValue(sala({ currentTeam: 'B', availablePlayers: [] }));
+    await act(async () => {
+      await result.current.elegir('dani');
+    });
+
+    await act(async () => {
+      devolverLaVieja();
+      await Promise.resolve();
+    });
+
+    expect(result.current.sala.availablePlayers).toEqual([]);
+    expect(result.current.sala.currentTeam).toBe('B');
   });
 
   it('H12: sin sala todavía, no hay contador ni error', async () => {

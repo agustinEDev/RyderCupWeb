@@ -18,7 +18,14 @@ import { getDraftUseCase, startDraftUseCase, makeDraftPickUseCase } from '../com
  * Sin websockets, como el resto de la aplicación: un draft son doce minutos,
  * y el polling ya se usa en la clasificación y en la anotación.
  */
-const INTERVALO_MS = 3000;
+// Cinco segundos: la sala la miran los doce a la vez y **comparten el mismo
+// cubo de rate limit** (ADR-038, un cubo por IP y el proxy es la misma IP para
+// todos). A tres segundos, doce móviles pasan de 240 peticiones por minuto
+// contra un endpoint limitado, y la ceremonia entera se cae con 429 —y con
+// ella el turno agotado, que lo resuelve justo este GET—. El resto de pollings
+// del producto van a 10 s, 30 s y 60 s; aquí se baja a 5 porque lo que se
+// espera es la elección del rival, y el contador no depende de esto
+const INTERVALO_MS = 5000;
 
 /**
  * @param {string} competitionId
@@ -34,8 +41,15 @@ const useDraftRoom = (competitionId, userId) => {
   // En una `ref` porque el contador lo lee cada segundo y cambiarlo no tiene
   // que volver a pintar nada por sí mismo
   const desfaseRef = useRef(0);
+  // Qué respuesta es la última pedida. Sin esto, el refresco que salió ANTES
+  // puede volver DESPUÉS de la elección y devolver la sala al estado anterior:
+  // el jugador recién elegido reaparece en «por elegir», el capitán vuelve a
+  // pulsar y se lleva un 409 que es mentira
+  const generacionRef = useRef(0);
 
-  const guardar = useCallback((nueva) => {
+  const guardar = useCallback((nueva, generacion = generacionRef.current) => {
+    // Una respuesta de antes ya no manda: lo que hay en pantalla es más nuevo
+    if (generacion < generacionRef.current) return;
     setSala(nueva);
     if (nueva?.serverTime) {
       desfaseRef.current = Date.parse(nueva.serverTime) - Date.now();
@@ -49,9 +63,11 @@ const useDraftRoom = (competitionId, userId) => {
    *   qué eligió otro por él
    */
   const cargar = useCallback(async (limpiaElAviso = true) => {
+    const generacion = (generacionRef.current += 1);
     try {
-      guardar(await getDraftUseCase.execute(competitionId));
-      if (limpiaElAviso) setError(null);
+      const nueva = await getDraftUseCase.execute(competitionId);
+      guardar(nueva, generacion);
+      if (limpiaElAviso && generacion >= generacionRef.current) setError(null);
     } catch (e) {
       setError(e.message);
     } finally {
@@ -68,7 +84,11 @@ const useDraftRoom = (competitionId, userId) => {
   // El refresco, solo mientras la sala está en marcha
   useEffect(() => {
     if (sala?.status !== 'IN_PROGRESS') return undefined;
-    const id = setInterval(cargar, INTERVALO_MS);
+    // `cargar(false)`: el refresco trae la sala nueva, pero no borra un aviso
+    // que la pantalla todavía tiene que enseñar, como el turno perdido. Pasarlo
+    // directo a `setInterval` lo llamaba sin argumentos y el aviso duraba tres
+    // segundos
+    const id = setInterval(() => cargar(false), INTERVALO_MS);
     return () => clearInterval(id);
   }, [sala?.status, cargar]);
 
@@ -107,7 +127,11 @@ const useDraftRoom = (competitionId, userId) => {
   const elegir = useCallback(
     async (playerId) => {
       try {
-        guardar(await makeDraftPickUseCase.execute(competitionId, playerId));
+        // La elección manda sobre cualquier refresco en vuelo: su respuesta es
+        // posterior a todos ellos
+        const nueva = await makeDraftPickUseCase.execute(competitionId, playerId);
+        generacionRef.current += 1;
+        guardar(nueva);
         setError(null);
       } catch (e) {
         // 409: se le acabó el minuto y la aplicación eligió por él. No es un

@@ -25,10 +25,15 @@ class DraftMapper {
       serverTime: apiData.server_time,
       teamACaptainId: apiData.team_a_captain_id,
       teamBCaptainId: apiData.team_b_captain_id,
+      // Los nombres son lo ÚNICO que hay para pintar la sala: quien entra a
+      // mitad de draft no tiene de dónde sacarlos
+      teamACaptainName: apiData.team_a_captain_name,
+      teamBCaptainName: apiData.team_b_captain_name,
       teamA: apiData.team_a || [],
       teamB: apiData.team_b || [],
       picks: (apiData.picks || []).map(pick => ({
         userId: pick.user_id,
+        name: pick.name,
         team: pick.team,
         order: pick.order,
         automatic: pick.automatic,
