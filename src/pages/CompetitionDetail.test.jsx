@@ -277,44 +277,6 @@ describe('CompetitionDetail - edición de hándicap', () => {
   });
 });
 
-describe('CompetitionDetail - cierre de inscripciones con asignación automática', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    mockGetCompetitionDetail.mockResolvedValue({
-      id: 'comp-1',
-      name: 'Summer Cup',
-      status: 'ACTIVE',
-      creatorId: 'creator-1',
-      maxPlayers: 20,
-      teamAssignment: 'AUTOMATIC',
-      countries: [],
-    });
-    mockListEnrollments.mockResolvedValue([]);
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
-  });
-
-  it('actualiza el estado a CLOSED aunque falle la asignación automática de equipos', async () => {
-    mockCloseEnrollments.mockResolvedValue({ status: 'CLOSED', updatedAt: '2026-07-05T00:00:00Z' });
-    mockAssignTeams.mockRejectedValue(new Error('assign failed'));
-
-    renderPage();
-
-    const closeButton = await screen.findByText('detail.actions.close-enrollments');
-    fireEvent.click(closeButton);
-
-    await waitFor(() => {
-      expect(mockAssignTeams).toHaveBeenCalledWith('comp-1', { mode: 'AUTOMATIC' });
-    });
-
-    // Status update from closeEnrollments must survive the assignTeams failure
-    await waitFor(() => {
-      expect(screen.getByText('detail.actions.start-competition')).toBeInTheDocument();
-    });
-    expect(customToast.error).toHaveBeenCalledWith('assign failed');
-    expect(customToast.success).toHaveBeenCalledWith('detail.success.enrollmentsClosed');
-  });
-});
-
 describe('CompetitionDetail - reabrir torneo completado', () => {
   beforeEach(() => {
     vi.clearAllMocks();

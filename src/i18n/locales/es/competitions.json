@@ -162,7 +162,9 @@
       "leaderboard": "Clasificación",
       "reopen-enrollments": "Reabrir Inscripciones",
       "revert-status": "Volver a Cerrada",
-      "revert-to-in-progress": "Reabrir Torneo"
+      "revert-to-in-progress": "Reabrir Torneo",
+      "nameCaptains": "Nombrar capitanes",
+      "changeCaptains": "Cambiar capitanes"
     },
     "deleteModal": {
       "title": "¿Eliminar la competición?",
@@ -246,7 +248,9 @@
       "enrollmentRequested": "Solicitud de inscripción enviada correctamente",
       "enrollmentsReopened": "Inscripciones reabiertas correctamente",
       "statusReverted": "Competición revertida al estado CERRADA correctamente",
-      "revertedToInProgress": "Torneo reabierto y de vuelta al estado EN CURSO"
+      "revertedToInProgress": "Torneo reabierto y de vuelta al estado EN CURSO",
+      "captainsNamed": "Capitanes nombrados. Las inscripciones quedan cerradas.",
+      "captainsChanged": "Capitanes cambiados."
     },
     "failedToApprove": "Error al aprobar la inscripción",
     "competitionFull": "La competición está completa. Se ha alcanzado el número máximo de jugadores ({{max}}).",
@@ -280,7 +284,22 @@
       "courseAlreadyAdded": "Ese campo ya está en la competición"
     },
     "visibilityPrivate": "Solo invitados",
-    "visibilityPublic": "Pública"
+    "visibilityPublic": "Pública",
+    "captains": {
+      "title": "Nombrar capitanes",
+      "explanation": "Uno por equipo, entre los jugadores inscritos. Los capitanes también juegan, y tú puedes ser uno.",
+      "closesEnrollment": "Al nombrarlos se cierran las inscripciones: ya no podrá apuntarse nadie más.",
+      "teamLabel": "Capitán de {{team}}",
+      "choose": "Elige un jugador",
+      "cancel": "Cancelar",
+      "confirm": "Nombrar",
+      "uneven_one": "Hay {{count}} jugador: los equipos no saldrán iguales. Los capitanes quedan nombrados, pero para repartir los equipos hará falta un número par.",
+      "uneven_other": "Hay {{count}} jugadores: los equipos no saldrán iguales. Los capitanes quedan nombrados, pero para repartir los equipos hará falta un número par.",
+      "failed": "No se han podido nombrar los capitanes.",
+      "captainOf": "Capitán de {{team}}",
+      "viceCaptainOf": "Subcapitán de {{team}}",
+      "playersUnavailable": "No se ha podido cargar la lista de inscritos. Vuelve a abrir la competición para intentarlo de nuevo."
+    }
   },
   "browse": {
     "title": "Explorar Competiciones",
