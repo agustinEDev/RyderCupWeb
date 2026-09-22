@@ -13,11 +13,15 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
+// Objeto CONSTANTE, como el de verdad: uno nuevo en cada render cambiaba `user`,
+// relanzaba la carga sin parar y los tests acababan mirando la pantalla a medio
+// cargar (FE #685)
+const sesion = {
+  user: { id: 'user-1', first_name: 'Test', last_name: 'User' },
+  loading: false,
+};
 vi.mock('../../hooks/useAuth', () => ({
-  useAuth: () => ({
-    user: { id: 'user-1', first_name: 'Test', last_name: 'User' },
-    loading: false,
-  }),
+  useAuth: () => sesion,
 }));
 
 vi.mock('../../components/layout/HeaderAuth', () => ({
@@ -203,5 +207,117 @@ describe('MyInvitationsPage', () => {
     expect(accesos).toHaveLength(1);
     expect(tarjeta).toContainElement(accesos[0]);
     expect(accesos[0].closest('a')).toHaveAttribute('href', '/competitions/comp-123');
+  });
+
+  /**
+   * Si la carga falla, la lista se quedaba vacía y la pantalla decía «No hay
+   * invitaciones todavía»: una afirmación que no se había podido comprobar
+   * (FE #685). Quien tenía una invitación pendiente entendía que no la tenía.
+   */
+  describe('si no se han podido cargar (FE #685)', () => {
+    it('E1: sin red, dice que no hay conexión y deja reintentar, no que no hay ninguna', async () => {
+      mockListMyInvitations.mockRejectedValue(new TypeError('Sin conexión'));
+
+      renderPage();
+
+      const aviso = await screen.findByTestId('invitaciones-sin-cargar');
+      // «mensaje» y no «aviso»: el aviso dice «lo que ves puede no estar al día»,
+      // y aquí no queda nada a la vista
+      expect(aviso).toHaveTextContent('common:sinConexion.mensaje');
+      expect(screen.getByRole('button', { name: 'errors.retry' })).toBeInTheDocument();
+      expect(screen.queryByText('noInvitations')).not.toBeInTheDocument();
+    });
+
+    it('E2: si falla el servidor, dice que no se han podido cargar', async () => {
+      mockListMyInvitations.mockRejectedValue(
+        Object.assign(new Error('Internal Server Error'), { status: 500 })
+      );
+
+      renderPage();
+
+      expect(await screen.findByTestId('invitaciones-sin-cargar')).toHaveTextContent(
+        'errors.failedToLoad'
+      );
+      expect(screen.queryByText('noInvitations')).not.toBeInTheDocument();
+    });
+
+    it('E3: reintentar vuelve a pedirlas y, si llegan, las enseña', async () => {
+      // Falla hasta que se pulsa «Reintentar»
+      let hayRed = false;
+      mockListMyInvitations.mockImplementation(() =>
+        hayRed
+          ? Promise.resolve({
+              invitations: [
+                {
+                  id: 'inv-1',
+                  competitionId: 'comp-1',
+                  competitionName: 'Summer Cup',
+                  inviterName: 'Creator',
+                  inviteeEmail: 'player@test.com',
+                  status: 'PENDING',
+                  isPending: true,
+                  isAccepted: false,
+                  isDeclined: false,
+                  isExpired: false,
+                  personalMessage: null,
+                  expiresAt: new Date(Date.now() + 86400000).toISOString(),
+                  respondedAt: null,
+                },
+              ],
+              totalCount: 1,
+            })
+          : Promise.reject(new TypeError('Sin conexión'))
+      );
+
+      renderPage();
+      const reintentar = await screen.findByRole('button', { name: 'errors.retry' });
+      hayRed = true;
+      fireEvent.click(reintentar);
+
+      expect(await screen.findByText('Summer Cup')).toBeInTheDocument();
+      expect(screen.queryByTestId('invitaciones-sin-cargar')).not.toBeInTheDocument();
+    });
+
+    it('E5: si falla tras haber cargado, el contador de pendientes no se queda a la vista', async () => {
+      // «3 pendientes» junto a «no se han podido cargar» se contradicen
+      const pendiente = {
+        id: 'inv-1',
+        competitionId: 'comp-1',
+        competitionName: 'Summer Cup',
+        inviterName: 'Creator',
+        inviteeEmail: 'player@test.com',
+        status: 'PENDING',
+        isPending: true,
+        isAccepted: false,
+        isDeclined: false,
+        isExpired: false,
+        personalMessage: null,
+        expiresAt: new Date(Date.now() + 86400000).toISOString(),
+        respondedAt: null,
+      };
+      let hayRed = true;
+      mockListMyInvitations.mockImplementation(() =>
+        hayRed
+          ? Promise.resolve({ invitations: [pendiente], totalCount: 1 })
+          : Promise.reject(new TypeError('Sin conexión'))
+      );
+
+      renderPage();
+      expect(await screen.findByText('player.pendingCount_1')).toBeInTheDocument();
+      hayRed = false;
+      fireEvent.change(screen.getByRole('combobox'), { target: { value: 'ACCEPTED' } });
+
+      await screen.findByTestId('invitaciones-sin-cargar');
+      expect(screen.queryByText('player.pendingCount_1')).not.toBeInTheDocument();
+    });
+
+    it('E4: si cargan y no hay ninguna, sí lo dice', async () => {
+      mockListMyInvitations.mockResolvedValue({ invitations: [], totalCount: 0 });
+
+      renderPage();
+
+      expect(await screen.findByText('noInvitations')).toBeInTheDocument();
+      expect(screen.queryByTestId('invitaciones-sin-cargar')).not.toBeInTheDocument();
+    });
   });
 });
