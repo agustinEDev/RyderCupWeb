@@ -3,6 +3,8 @@ import { useNavigate, useParams, useLocation } from 'react-router';
 import { motion } from 'framer-motion';
 import { Users, Calendar, CalendarClock, MapPin, Settings, ArrowLeft, Edit, Trash2, Play, CheckCircle, XCircle, Pause, AlertCircle, UserPlus, Shield, Mail, BarChart3, Undo2 } from 'lucide-react';
 import customToast from '../utils/toast';
+import ConfirmModal from '../components/modals/ConfirmModal';
+import { mensajeDeError } from '../utils/sinCobertura';
 import { useTranslation } from 'react-i18next';
 import HeaderAuth from '../components/layout/HeaderAuth';
 import { useAuth } from '../hooks/useAuth';
@@ -59,6 +61,13 @@ const CompetitionDetail = () => {
   const [enrollments, setEnrollments] = useState([]);
   const [isLoadingCompetition, setIsLoadingCompetition] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
+  // Borrar pide confirmación en un modal que dice quién pierde su plaza (FE #667)
+  const [confirmandoBorrado, setConfirmandoBorrado] = useState(false);
+  // Mientras borra, el modal desactiva sus botones: eso ya impide un segundo DELETE
+  const [borrando, setBorrando] = useState(false);
+  // Si la lista de inscripciones no llegó, el modal no puede decir cuántos pierden
+  // su plaza: «no hay nadie más» sería afirmar lo que no se ha comprobado
+  const [inscripcionesSinCargar, setInscripcionesSinCargar] = useState(false);
   const [showEnrollModal, setShowEnrollModal] = useState(false);
   const [editingHandicapId, setEditingHandicapId] = useState(null);
   const [handicapInput, setHandicapInput] = useState('');
@@ -86,8 +95,10 @@ const CompetitionDetail = () => {
       try {
         const enrollmentsData = await listEnrollmentsUseCase.execute(id);
         setEnrollments(enrollmentsData);
+        setInscripcionesSinCargar(false);
       } catch {
         setEnrollments([]);
+        setInscripcionesSinCargar(true);
       }
     } catch (error) {
       console.error('Error loading competition:', error);
@@ -258,6 +269,20 @@ const CompetitionDetail = () => {
         status: result.status,
         updatedAt: result.updatedAt
       }));
+      // Y si ahora se puede borrar: la respuesta de un cambio de estado no lo
+      // trae, y el de antes ya no vale —cancelar la vuelve borrable, cerrar
+      // inscripciones deja de serlo— (FE #667). En silencio, sin la espera de
+      // pantalla completa; si falla, no se ofrece lo que no se sabe
+      getCompetitionDetailUseCase
+        .execute(id)
+        // Solo si esa ficha es la del estado de ahora: con dos cambios seguidos, la
+        // del primero puede llegar tarde y decidiría el botón del segundo
+        .then((data) =>
+          setCompetition(prev =>
+            prev.status === data.status ? { ...prev, canDelete: data.canDelete } : prev
+          )
+        )
+        .catch(() => setCompetition(prev => ({ ...prev, canDelete: false })));
     } catch (error) {
       console.error(`Error ${action}:`, error);
       console.error('Error details:', error.stack || error.message || String(error));
@@ -267,20 +292,27 @@ const CompetitionDetail = () => {
     }
   };
 
-  const handleDelete = async () => {
-    if (!window.confirm(t('detail.confirmations.delete'))) {
-      return;
-    }
+  const handleDelete = () => setConfirmandoBorrado(true);
 
-    setIsProcessing(true);
+  const confirmarBorrado = async () => {
+    setBorrando(true);
     try {
       await deleteCompetitionUseCase.execute(id);
       customToast.success(t('detail.success.deleted'));
       navigate('/competitions');
     } catch (error) {
       console.error('Error deleting competition:', error);
-      customToast.error(error.message || t('detail.failedToDeleteCompetition'));
-      setIsProcessing(false);
+      // El motivo del servidor se enseña tal cual («ya tiene calendario»...):
+      // es lo que dice qué hacer. Sin red o sin respuesta, el texto de la app
+      customToast.error(
+        mensajeDeError(error, {
+          sinConexion: t('common:sinConexion.mensaje'),
+          generico: t('detail.failedToDeleteCompetition'),
+        })
+      );
+      setConfirmandoBorrado(false);
+    } finally {
+      setBorrando(false);
     }
   };
 
@@ -401,8 +433,13 @@ const CompetitionDetail = () => {
   // La configuración se corrige mientras haya inscripciones abiertas (BE #323):
   // quien invita antes de poner el campo de golf tiene que poder ponerlo después
   const canEdit = canManage && ['DRAFT', 'ACTIVE'].includes(competition.status);
-  // Borrar no: con gente invitada o dentro, lo que toca es cancelar
-  const canDelete = canManage && competition.status === 'DRAFT';
+  // Quién puede y cuándo lo decide el backend con la misma regla que el borrado
+  // (RyderCupAM#347): estado, calendario y rol. Copiar aquí la lista de estados
+  // ofrecería el botón en una cancelada ya jugada, donde siempre falla (FE #667)
+  const canDelete = competition.canDelete === true;
+  // Los que perderían su plaza, sin contar a quien borra: el creador está
+  // inscrito desde que la crea, y contarlo inflaría el aviso
+  const otrosInscritos = approvedEnrollments.filter((e) => e.userId !== user.id).length;
   const canEditHandicap =
     canManage && ['DRAFT', 'ACTIVE', 'CLOSED'].includes(competition.status);
 
@@ -460,6 +497,24 @@ const CompetitionDetail = () => {
             pasarsela, ocultar el enlace de la pagina en movil perderia
             comportamiento en lugar de quitar ruido (FE #338) */}
         <HeaderAuth user={user} title={competition.name} backTo={backLink} />
+
+        <ConfirmModal
+          isOpen={confirmandoBorrado}
+          title={t('detail.deleteModal.title')}
+          message={
+            inscripcionesSinCargar
+              ? t('detail.deleteModal.unknownOthers')
+              : otrosInscritos === 0
+                ? t('detail.deleteModal.nobodyElse')
+                : t('detail.deleteModal.othersLosePlace', { count: otrosInscritos })
+          }
+          confirmText={t('detail.deleteModal.confirm')}
+          cancelText={t('detail.deleteModal.keep')}
+          onConfirm={confirmarBorrado}
+          onCancel={() => setConfirmandoBorrado(false)}
+          isDestructive
+          isLoading={borrando}
+        />
 
         <div className="px-4 md:px-40 flex flex-1 justify-center py-5">
           <div className="layout-content-container flex flex-col max-w-[960px] flex-1">
