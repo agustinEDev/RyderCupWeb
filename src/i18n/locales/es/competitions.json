@@ -166,10 +166,10 @@
     },
     "deleteModal": {
       "title": "¿Eliminar la competición?",
-      "nobodyElse": "Se borrará para siempre. No hay nadie más inscrito.",
-      "unknownOthers": "Se borrará para siempre, con todas sus inscripciones. No se ha podido comprobar quién más está inscrito.",
-      "othersLosePlace_one": "Se borrará para siempre, y {{count}} jugador más perderá su plaza.",
-      "othersLosePlace_other": "Se borrará para siempre, y {{count}} jugadores más perderán su plaza.",
+      "nobodyElse": "Se borrará para siempre, con su calendario y sus equipos. No hay nadie más inscrito.",
+      "unknownOthers": "Se borrará para siempre, con sus inscripciones, su calendario y sus equipos. No se ha podido comprobar quién más está inscrito.",
+      "othersLosePlace_one": "Se borrará para siempre, con su calendario y sus equipos, y {{count}} jugador más perderá su plaza.",
+      "othersLosePlace_other": "Se borrará para siempre, con su calendario y sus equipos, y {{count}} jugadores más perderán su plaza.",
       "confirm": "Eliminar",
       "keep": "No, mantenerla"
     },

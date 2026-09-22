@@ -166,10 +166,10 @@
     },
     "deleteModal": {
       "title": "Delete the competition?",
-      "nobodyElse": "It will be deleted for good. Nobody else is enrolled.",
-      "unknownOthers": "It will be deleted for good, with all its enrolments. Who else is enrolled could not be checked.",
-      "othersLosePlace_one": "It will be deleted for good, and {{count}} other player will lose their place.",
-      "othersLosePlace_other": "It will be deleted for good, and {{count}} other players will lose their place.",
+      "nobodyElse": "It will be deleted for good, with its schedule and teams. Nobody else is enrolled.",
+      "unknownOthers": "It will be deleted for good, with its enrolments, schedule and teams. Who else is enrolled could not be checked.",
+      "othersLosePlace_one": "It will be deleted for good, with its schedule and teams, and {{count}} other player will lose their place.",
+      "othersLosePlace_other": "It will be deleted for good, with its schedule and teams, and {{count}} other players will lose their place.",
       "confirm": "Delete",
       "keep": "No, keep it"
     },
