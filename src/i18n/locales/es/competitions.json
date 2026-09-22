@@ -391,5 +391,22 @@
     "abreEl": "Abrirán el {{fecha}}.",
     "abreHoy": "Abrirán hoy.",
     "creando": "Creando…"
+  },
+  "draft": {
+    "title": "Sala de draft",
+    "back": "Volver a la competición",
+    "notStarted": "El organizador todavía no ha lanzado el sorteo.",
+    "start": "Lanzar el sorteo",
+    "yourTurn": "Te toca elegir",
+    "turnOf": "Elige {{name}}",
+    "teamA": "Equipo A",
+    "teamB": "Equipo B",
+    "captain": "Capitán",
+    "available": "Por elegir",
+    "pick": "Elegir",
+    "pickedByTheApp": "Lo eligió la aplicación al agotarse el minuto",
+    "finished": "Los equipos ya están hechos",
+    "turnLost": "Se te acabó el minuto y la aplicación eligió por ti. Ahora le toca al otro capitán.",
+    "open": "Ir a la sala de draft"
   }
 }
