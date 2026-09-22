@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, waitFor, act, cleanup } from '@testing-library/react';
+import { render, screen, waitFor, act, cleanup, fireEvent } from '@testing-library/react';
 
 /**
  * El refresco del hándicap al entrar, en segundo plano (FE #677).
@@ -64,11 +64,19 @@ vi.doMock('../components/profile/HandicapRequestModal', () => ({
     isOpen ? <div data-testid="modal-handicap" data-handicap={String(handicapActual)} /> : null,
 }));
 
+// Deja rastro del recordatorio y un botón para abrir el modal desde él
+vi.doMock('../components/dashboard/PendingActionsCard', () => ({
+  default: ({ handicapPending, onHandicapAction }) => (
+    <div data-testid="recordatorio" data-pendiente={String(handicapPending)}>
+      <button type="button" onClick={onHandicapAction}>configurar</button>
+    </div>
+  ),
+}));
+
 for (const ruta of [
   '../components/layout/HeaderAuth',
   '../components/ui/Avatar',
   '../components/EmailVerificationBanner',
-  '../components/dashboard/PendingActionsCard',
   '../components/dashboard/PlayerStatsCards',
   '../components/dashboard/NextMatchBanner',
   '../components/dashboard/RecentMatches',
@@ -299,5 +307,28 @@ describe('Dashboard · refresco del hándicap al entrar (FE #677)', () => {
     await panelPintado();
     expect(screen.queryByTestId('modal-handicap')).not.toBeInTheDocument();
     expect(localStorage.getItem('needs_handicap')).toBeNull();
+  });
+
+  it('D15: si un refresco dice que ya no hace falta, el recordatorio se retira con el panel abierto', async () => {
+    localStorage.setItem('handicap_pending', 'true');
+    localStorage.setItem('refrescar_handicap', 'true');
+    refresco.mockResolvedValue({ needsHandicap: false, handicap: 12.4 });
+
+    render(<Dashboard />);
+
+    await waitFor(() =>
+      expect(screen.getByTestId('recordatorio')).toHaveAttribute('data-pendiente', 'false')
+    );
+  });
+
+  it('D16: abrir el modal desde el recordatorio le pasa el hándicap guardado', async () => {
+    // Tras una recarga no hay resultado de refresco a mano: sin esto, el modal
+    // volvía a decir «no tienes hándicap» a quien tiene 12.4
+    localStorage.setItem('handicap_pending', 'true');
+
+    render(<Dashboard />);
+    fireEvent.click(await screen.findByText('configurar'));
+
+    expect(await screen.findByTestId('modal-handicap')).toHaveAttribute('data-handicap', '12.4');
   });
 });

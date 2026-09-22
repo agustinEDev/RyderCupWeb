@@ -35,6 +35,7 @@ import {
 } from '../composition';
 import {
   APUNTE_REFRESCAR,
+  EVENTO_HANDICAP_AL_DIA,
   EVENTO_HANDICAP_POR_PEDIR,
   lanzaElRefrescoDeHandicap,
   recogeElHandicapPorPedir,
@@ -89,12 +90,19 @@ const Dashboard = () => {
       setShowHandicapModal(true);
     };
 
+    // Y si un refresco dice que ya no hace falta, el recordatorio se retira
+    const retiraElRecordatorio = () => setHandicapPending(false);
+
     abreSiHayQuePedirlo();
     window.addEventListener(EVENTO_HANDICAP_POR_PEDIR, abreSiHayQuePedirlo);
+    window.addEventListener(EVENTO_HANDICAP_AL_DIA, retiraElRecordatorio);
     if (localStorage.getItem(APUNTE_REFRESCAR) === 'true') {
       lanzaElRefrescoDeHandicap({ handicapDeAntes: user.handicap ?? null });
     }
-    return () => window.removeEventListener(EVENTO_HANDICAP_POR_PEDIR, abreSiHayQuePedirlo);
+    return () => {
+      window.removeEventListener(EVENTO_HANDICAP_POR_PEDIR, abreSiHayQuePedirlo);
+      window.removeEventListener(EVENTO_HANDICAP_AL_DIA, retiraElRecordatorio);
+    };
   }, [user]);
 
   const handleHandicapSaved = useCallback(async () => {
@@ -582,7 +590,12 @@ const Dashboard = () => {
               user={user}
               competitions={competitions}
               handicapPending={handicapPending}
-              onHandicapAction={() => setShowHandicapModal(true)}
+              onHandicapAction={() => {
+                // Desde el recordatorio no hay resultado de refresco a mano: el
+                // modal tiene que saber si ya hay un hándicap guardado (FE #677)
+                setHandicapAlAbrir(user?.handicap ?? null);
+                setShowHandicapModal(true);
+              }}
               upcomingMatches={upcomingMatches.length}
             />
 

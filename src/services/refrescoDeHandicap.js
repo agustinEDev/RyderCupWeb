@@ -3,6 +3,7 @@ import { consultaLaSesion } from './sesionCompartida';
 import {
   APUNTE_REFRESCAR,
   HANDICAP_POR_PEDIR,
+  RECORDATORIO_HANDICAP,
   generacionDelRefresco,
 } from './refrescoDeHandicapApuntes';
 
@@ -22,6 +23,7 @@ export { APUNTE_REFRESCAR };
  */
 
 export const EVENTO_HANDICAP_POR_PEDIR = 'pedir-handicap';
+export const EVENTO_HANDICAP_AL_DIA = 'handicap-al-dia';
 
 // Uno a la vez: el login lo lanza y, un instante después, el panel ve el
 // apunte todavía puesto. Sin esto salían dos peticiones a la RFEG. Va con la
@@ -55,8 +57,12 @@ export const lanzaElRefrescoDeHandicap = ({ handicapDeAntes = null } = {}) => {
       if (needsHandicap) {
         localStorage.setItem(HANDICAP_POR_PEDIR, JSON.stringify({ handicap }));
         globalThis.dispatchEvent(new globalThis.Event(EVENTO_HANDICAP_POR_PEDIR));
-      } else if (handicap !== (handicapDeAntes ?? null)) {
-        consultaLaSesion({ forzar: true });
+      } else {
+        // Ya no hace falta pedirlo: el recordatorio de «Requiere tu atención»
+        // sobra, también si el panel está abierto
+        localStorage.removeItem(RECORDATORIO_HANDICAP);
+        globalThis.dispatchEvent(new globalThis.Event(EVENTO_HANDICAP_AL_DIA));
+        if (handicap !== (handicapDeAntes ?? null)) consultaLaSesion({ forzar: true });
       }
     })
     .catch((error) => {

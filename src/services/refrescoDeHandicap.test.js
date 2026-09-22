@@ -37,6 +37,7 @@ const {
   lanzaElRefrescoDeHandicap,
   recogeElHandicapPorPedir,
   EVENTO_HANDICAP_POR_PEDIR,
+  EVENTO_HANDICAP_AL_DIA,
   reiniciaElRefrescoDeHandicap,
 } = await import('./refrescoDeHandicap');
 const { olvidaElRefrescoDeHandicap } = await import('./refrescoDeHandicapApuntes');
@@ -187,5 +188,28 @@ describe('refrescoDeHandicap (FE #677)', () => {
     await deA;
 
     expect(localStorage.getItem('refrescar_handicap')).toBe('true');
+  });
+
+  it('F13: al salir también se olvida el recordatorio de «Requiere tu atención»', () => {
+    // Existía antes (FE #677 lo encontró por CodeRabbit): la siguiente cuenta
+    // del móvil veía el recordatorio de la anterior
+    localStorage.setItem('handicap_pending', 'true');
+
+    olvidaElRefrescoDeHandicap();
+
+    expect(localStorage.getItem('handicap_pending')).toBeNull();
+  });
+
+  it('F14: si ya no hace falta pedirlo, se retira el recordatorio y se avisa al panel', async () => {
+    localStorage.setItem('handicap_pending', 'true');
+    refresco.mockResolvedValue({ needsHandicap: false, handicap: 12.4 });
+    const aviso = vi.fn();
+    window.addEventListener(EVENTO_HANDICAP_AL_DIA, aviso);
+
+    await lanzaElRefrescoDeHandicap({ handicapDeAntes: 12.4 });
+
+    window.removeEventListener(EVENTO_HANDICAP_AL_DIA, aviso);
+    expect(localStorage.getItem('handicap_pending')).toBeNull();
+    expect(aviso).toHaveBeenCalledTimes(1);
   });
 });

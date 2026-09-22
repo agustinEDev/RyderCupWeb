@@ -9,6 +9,8 @@
 
 export const APUNTE_REFRESCAR = 'refrescar_handicap';
 export const HANDICAP_POR_PEDIR = 'pedir_handicap';
+// El recordatorio de «Requiere tu atención» que deja cerrar el modal con «Ahora no»
+export const RECORDATORIO_HANDICAP = 'handicap_pending';
 
 // Sube en cada cierre de sesión. Una respuesta de una generación anterior es de
 // una cuenta que ya salió, y no puede tocar nada de la siguiente
@@ -18,7 +20,7 @@ export const generacionDelRefresco = () => generacion;
 
 /**
  * Olvida todo lo del hándicap de la cuenta que sale: el apunte, lo pendiente de
- * pedir y cualquier respuesta que aún esté por llegar. En un móvil compartido,
+ * pedir, el recordatorio y cualquier respuesta que aún esté por llegar. En un móvil compartido,
  * si no, la siguiente persona vería el modal con el hándicap de la anterior, y
  * aceptarlo lo guardaría en su perfil.
  */
@@ -26,4 +28,5 @@ export const olvidaElRefrescoDeHandicap = () => {
   generacion += 1;
   localStorage.removeItem(APUNTE_REFRESCAR);
   localStorage.removeItem(HANDICAP_POR_PEDIR);
+  localStorage.removeItem(RECORDATORIO_HANDICAP);
 };
