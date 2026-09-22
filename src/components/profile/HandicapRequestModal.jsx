@@ -5,12 +5,24 @@ import { useTranslation } from 'react-i18next';
 import customToast from '../../utils/toast';
 import { updateRfegHandicapUseCase, updateManualHandicapUseCase } from '../../composition';
 
-const HandicapRequestModal = ({ isOpen, user, onClose, onSaved }) => {
+/**
+ * @param {number|null} [handicapActual] - El hándicap guardado cuando se abre.
+ *   Con uno, el modal no dice que falta: dice cuál es y que hoy no se ha podido
+ *   actualizar (FE #677). Antes decía «no tienes hándicap» en los dos casos.
+ */
+const HandicapRequestModal = ({ isOpen, user, handicapActual = null, onClose, onSaved }) => {
   if (!isOpen) return null;
-  return <HandicapRequestModalContent user={user} onClose={onClose} onSaved={onSaved} />;
+  return (
+    <HandicapRequestModalContent
+      user={user}
+      handicapActual={handicapActual}
+      onClose={onClose}
+      onSaved={onSaved}
+    />
+  );
 };
 
-const HandicapRequestModalContent = ({ user, onClose, onSaved }) => {
+const HandicapRequestModalContent = ({ user, handicapActual, onClose, onSaved }) => {
   const { t } = useTranslation('profile');
 
   const isSpanish = user?.country_code === 'ES';
@@ -80,7 +92,11 @@ const HandicapRequestModalContent = ({ user, onClose, onSaved }) => {
         <div className="p-6 space-y-5">
           <div className="flex items-start gap-3 p-3 bg-amber-50 rounded-lg border border-amber-200">
             <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5 shrink-0" />
-            <p className="text-sm text-amber-800">{t('handicapModal.subtitle')}</p>
+            <p className="text-sm text-amber-800">
+              {handicapActual == null
+                ? t('handicapModal.subtitle')
+                : t('handicapModal.subtitleStale', { handicap: Number(handicapActual).toFixed(1) })}
+            </p>
           </div>
 
           {/* Tabs — solo si el usuario es español */}

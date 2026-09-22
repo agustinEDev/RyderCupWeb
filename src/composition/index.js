@@ -22,6 +22,7 @@ import ResendVerificationEmailUseCase from '../application/use_cases/user/Resend
 import ApiHandicapRepository from '../infrastructure/repositories/ApiHandicapRepository';
 import UpdateManualHandicapUseCase from '../application/use_cases/handicap/UpdateManualHandicapUseCase';
 import UpdateRfegHandicapUseCase from '../application/use_cases/handicap/UpdateRfegHandicapUseCase';
+import RefreshOwnHandicapUseCase from '../application/use_cases/handicap/RefreshOwnHandicapUseCase';
 
 // Country Use Cases
 import ApiCountryRepository from '../infrastructure/repositories/ApiCountryRepository';
@@ -204,6 +205,7 @@ const updateRfegHandicapUseCase = new UpdateRfegHandicapUseCase({
   handicapRepository: apiHandicapRepository,
   userRepository: apiUserRepository
 });
+const refreshOwnHandicapUseCase = new RefreshOwnHandicapUseCase({ handicapRepository: apiHandicapRepository });
 const loginUseCase = new LoginUseCase({ authRepository: apiAuthRepository });
 const registerUseCase = new RegisterUseCase({ authRepository: apiAuthRepository });
 const verifyEmailUseCase = new VerifyEmailUseCase({ authRepository: apiAuthRepository });
@@ -369,6 +371,7 @@ export {
   searchUsersUseCase,
   updateManualHandicapUseCase,
   updateRfegHandicapUseCase,
+  refreshOwnHandicapUseCase,
   loginUseCase,
   registerUseCase,
   verifyEmailUseCase,

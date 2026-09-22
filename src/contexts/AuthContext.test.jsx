@@ -197,6 +197,21 @@ describe('AuthContext', () => {
       expect(localStorage.getItem('user')).toBeNull();
     });
 
+    it('se lleva lo pendiente del hándicap de esa cuenta (FE #677)', () => {
+      // En un móvil compartido, la siguiente persona vería el modal con el
+      // hándicap de la anterior, y aceptarlo lo guardaría en su perfil
+      localStorage.setItem('refrescar_handicap', 'true');
+      localStorage.setItem('pedir_handicap', JSON.stringify({ handicap: 18 }));
+      const { result } = renderHook(() => useAuthContext(), { wrapper: AuthProvider });
+
+      act(() => {
+        result.current.clearAuth();
+      });
+
+      expect(localStorage.getItem('refrescar_handicap')).toBeNull();
+      expect(localStorage.getItem('pedir_handicap')).toBeNull();
+    });
+
     it('NO borra los avisos de golpes perdidos, de nadie', async () => {
       // No se pueden regenerar: el golpe que describen ya salió de la cola al
       // escribirlos. Y borrarlos aquí llegaba a dispararse dentro del propio
