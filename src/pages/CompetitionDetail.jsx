@@ -65,6 +65,9 @@ const CompetitionDetail = () => {
   const [confirmandoBorrado, setConfirmandoBorrado] = useState(false);
   // Mientras borra, el modal desactiva sus botones: eso ya impide un segundo DELETE
   const [borrando, setBorrando] = useState(false);
+  // Si la lista de inscripciones no llegó, el modal no puede decir cuántos pierden
+  // su plaza: «no hay nadie más» sería afirmar lo que no se ha comprobado
+  const [inscripcionesSinCargar, setInscripcionesSinCargar] = useState(false);
   const [showEnrollModal, setShowEnrollModal] = useState(false);
   const [editingHandicapId, setEditingHandicapId] = useState(null);
   const [handicapInput, setHandicapInput] = useState('');
@@ -92,8 +95,10 @@ const CompetitionDetail = () => {
       try {
         const enrollmentsData = await listEnrollmentsUseCase.execute(id);
         setEnrollments(enrollmentsData);
+        setInscripcionesSinCargar(false);
       } catch {
         setEnrollments([]);
+        setInscripcionesSinCargar(true);
       }
     } catch (error) {
       console.error('Error loading competition:', error);
@@ -270,7 +275,13 @@ const CompetitionDetail = () => {
       // pantalla completa; si falla, no se ofrece lo que no se sabe
       getCompetitionDetailUseCase
         .execute(id)
-        .then((data) => setCompetition(prev => ({ ...prev, canDelete: data.canDelete })))
+        // Solo si esa ficha es la del estado de ahora: con dos cambios seguidos, la
+        // del primero puede llegar tarde y decidiría el botón del segundo
+        .then((data) =>
+          setCompetition(prev =>
+            prev.status === data.status ? { ...prev, canDelete: data.canDelete } : prev
+          )
+        )
         .catch(() => setCompetition(prev => ({ ...prev, canDelete: false })));
     } catch (error) {
       console.error(`Error ${action}:`, error);
@@ -491,9 +502,11 @@ const CompetitionDetail = () => {
           isOpen={confirmandoBorrado}
           title={t('detail.deleteModal.title')}
           message={
-            otrosInscritos === 0
-              ? t('detail.deleteModal.nobodyElse')
-              : t('detail.deleteModal.othersLosePlace', { count: otrosInscritos })
+            inscripcionesSinCargar
+              ? t('detail.deleteModal.unknownOthers')
+              : otrosInscritos === 0
+                ? t('detail.deleteModal.nobodyElse')
+                : t('detail.deleteModal.othersLosePlace', { count: otrosInscritos })
           }
           confirmText={t('detail.deleteModal.confirm')}
           cancelText={t('detail.deleteModal.keep')}

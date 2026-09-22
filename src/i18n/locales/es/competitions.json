@@ -167,6 +167,7 @@
     "deleteModal": {
       "title": "¿Eliminar la competición?",
       "nobodyElse": "Se borrará para siempre. No hay nadie más inscrito.",
+      "unknownOthers": "Se borrará para siempre, con todas sus inscripciones. No se ha podido comprobar quién más está inscrito.",
       "othersLosePlace_one": "Se borrará para siempre, y {{count}} jugador más perderá su plaza.",
       "othersLosePlace_other": "Se borrará para siempre, y {{count}} jugadores más perderán su plaza.",
       "confirm": "Eliminar",

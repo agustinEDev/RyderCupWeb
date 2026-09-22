@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { MemoryRouter, Route, Routes } from 'react-router';
+import { MemoryRouter, Route, Routes, Link } from 'react-router';
 import CompetitionDetail from './CompetitionDetail';
 
 vi.mock('react-i18next', () => ({
@@ -979,5 +979,68 @@ describe('CompetitionDetail - borrar con confirmación (FE #667)', () => {
     await waitFor(() =>
       expect(screen.queryByRole('button', { name: /detail\.actions\.delete/ })).not.toBeInTheDocument()
     );
+  });
+
+  it('B11: si no se han podido cargar las inscripciones, no dice que no hay nadie más', async () => {
+    // Afirmaría algo que no se ha podido comprobar, y el creador borraría
+    // creyendo que no afecta a nadie
+    ficha();
+    mockListEnrollments.mockRejectedValue(new TypeError('Sin conexión'));
+
+    renderPage();
+    fireEvent.click(await botonEliminar());
+
+    expect(await screen.findByText('detail.deleteModal.unknownOthers')).toBeInTheDocument();
+    expect(screen.queryByText('detail.deleteModal.nobodyElse')).not.toBeInTheDocument();
+  });
+
+  it('B12: una respuesta atrasada del refresco no pisa el estado de ahora', async () => {
+    // Dos cambios seguidos: la ficha pedida tras el primero llega tarde, con el
+    // estado de entonces, y no puede decidir el botón del estado actual
+    ficha({ status: 'ACTIVE', canDelete: false });
+    mockCancel.mockResolvedValue({ status: 'CANCELLED', updatedAt: '2026-09-22T10:00:00Z' });
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+
+    renderPage();
+    await screen.findByText('Summer Cup');
+
+    // La ficha que llega es la de un estado que ya no es el actual
+    mockGetCompetitionDetail.mockResolvedValue({
+      id: 'comp-1', name: 'Summer Cup', status: 'CLOSED', creatorId: 'creator-1',
+      maxPlayers: 20, countries: [], canDelete: true,
+    });
+    fireEvent.click(screen.getByText('detail.actions.cancel'));
+
+    await waitFor(() => expect(mockGetCompetitionDetail).toHaveBeenCalledTimes(2));
+    await new Promise((r) => setTimeout(r, 50));
+    expect(screen.queryByRole('button', { name: /detail\.actions\.delete/ })).not.toBeInTheDocument();
+  });
+
+  it('B13: el aviso de «no se ha podido comprobar» no se queda pegado al pasar a otra que sí carga', async () => {
+    ficha();
+    mockListEnrollments.mockRejectedValueOnce(new TypeError('Sin conexión'));
+    render(
+      <MemoryRouter initialEntries={['/competitions/comp-1']}>
+        <Routes>
+          <Route
+            path="/competitions/:id"
+            element={
+              <>
+                <CompetitionDetail />
+                <Link to="/competitions/comp-2">otra</Link>
+              </>
+            }
+          />
+        </Routes>
+      </MemoryRouter>
+    );
+    await botonEliminar();
+
+    inscritos('creator-1');
+    fireEvent.click(screen.getByText('otra'));
+    await waitFor(() => expect(mockListEnrollments).toHaveBeenCalledTimes(2));
+    fireEvent.click(await botonEliminar());
+
+    expect(await screen.findByText('detail.deleteModal.nobodyElse')).toBeInTheDocument();
   });
 });
