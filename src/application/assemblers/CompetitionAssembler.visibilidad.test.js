@@ -87,3 +87,42 @@ describe('CompetitionAssembler · si se puede borrar (FE #667)', () => {
     expect(dto.canDelete).toBe(false);
   });
 });
+
+describe('CompetitionAssembler · los capitanes llegan a la pantalla (FE #692)', () => {
+  // Los cuatro, o la ficha no puede decir quién capitanea ni quién es el segundo
+  it('K1: capitanes y subcapitanes llegan tal cual', () => {
+    const dto = loQueLlegaALaPantalla(
+      respuestaDeLaApi({
+        team_a_captain_id: 'ana',
+        team_b_captain_id: 'bea',
+        team_a_vice_captain_id: 'carla',
+        team_b_vice_captain_id: 'dani',
+      })
+    );
+
+    expect(dto.captains).toEqual({
+      teamA: 'ana',
+      teamB: 'bea',
+      viceTeamA: 'carla',
+      viceTeamB: 'dani',
+    });
+  });
+
+  it('K2: sin los campos, ninguno: una competición sin capitanes', () => {
+    const dto = loQueLlegaALaPantalla(respuestaDeLaApi());
+
+    expect(dto.captains).toEqual({ teamA: null, teamB: null, viceTeamA: null, viceTeamB: null });
+  });
+});
+
+describe('CompetitionAssembler · si ya hay equipos llega a la pantalla (FE #692)', () => {
+  // Con él la ficha elige entre «Nombrar capitanes», «Cambiar capitanes» y
+  // «Cerrar inscripciones»; solo lo manda la ficha
+  it('K3: teams_assigned llega tal cual', () => {
+    expect(loQueLlegaALaPantalla(respuestaDeLaApi({ teams_assigned: true })).teamsAssigned).toBe(true);
+  });
+
+  it('K4: sin el campo, no: no se afirma un reparto que nadie ha dicho', () => {
+    expect(loQueLlegaALaPantalla(respuestaDeLaApi()).teamsAssigned).toBe(false);
+  });
+});

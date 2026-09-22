@@ -1,9 +1,11 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router';
 import { motion } from 'framer-motion';
-import { Users, Calendar, CalendarClock, MapPin, Settings, ArrowLeft, Edit, Trash2, Play, CheckCircle, XCircle, Pause, AlertCircle, UserPlus, Shield, Mail, BarChart3, Undo2 } from 'lucide-react';
+import { Users, Calendar, CalendarClock, MapPin, Settings, ArrowLeft, Edit, Trash2, Play, CheckCircle, XCircle, AlertCircle, UserPlus, Shield, Mail, BarChart3, Undo2, Crown, Pause } from 'lucide-react';
 import customToast from '../utils/toast';
 import ConfirmModal from '../components/modals/ConfirmModal';
+import NameCaptainsModal from '../components/competition/NameCaptainsModal';
+import CaptainBadge from '../components/competition/CaptainBadge';
 import { mensajeDeError } from '../utils/sinCobertura';
 import { useTranslation } from 'react-i18next';
 import HeaderAuth from '../components/layout/HeaderAuth';
@@ -17,6 +19,7 @@ import {
   getCompetitionGolfCoursesUseCase,
   activateCompetitionUseCase,
   closeEnrollmentsUseCase,
+  nameCaptainsUseCase,
   startCompetitionUseCase,
   completeCompetitionUseCase,
   cancelCompetitionUseCase,
@@ -68,6 +71,9 @@ const CompetitionDetail = () => {
   // Si la lista de inscripciones no llegó, el modal no puede decir cuántos pierden
   // su plaza: «no hay nadie más» sería afirmar lo que no se ha comprobado
   const [inscripcionesSinCargar, setInscripcionesSinCargar] = useState(false);
+  // Nombrar a los capitanes es lo que cierra las inscripciones (FE #692)
+  const [nombrandoCapitanes, setNombrandoCapitanes] = useState(false);
+  const [guardandoCapitanes, setGuardandoCapitanes] = useState(false);
   const [showEnrollModal, setShowEnrollModal] = useState(false);
   const [editingHandicapId, setEditingHandicapId] = useState(null);
   const [handicapInput, setHandicapInput] = useState('');
@@ -269,26 +275,77 @@ const CompetitionDetail = () => {
         status: result.status,
         updatedAt: result.updatedAt
       }));
-      // Y si ahora se puede borrar: la respuesta de un cambio de estado no lo
-      // trae, y el de antes ya no vale —cancelar la vuelve borrable, cerrar
-      // inscripciones deja de serlo— (FE #667). En silencio, sin la espera de
-      // pantalla completa; si falla, no se ofrece lo que no se sabe
-      getCompetitionDetailUseCase
-        .execute(id)
-        // Solo si esa ficha es la del estado de ahora: con dos cambios seguidos, la
-        // del primero puede llegar tarde y decidiría el botón del segundo
-        .then((data) =>
-          setCompetition(prev =>
-            prev.status === data.status ? { ...prev, canDelete: data.canDelete } : prev
-          )
-        )
-        .catch(() => setCompetition(prev => ({ ...prev, canDelete: false })));
+      refrescarCanDelete();
     } catch (error) {
       console.error(`Error ${action}:`, error);
       console.error('Error details:', error.stack || error.message || String(error));
       customToast.error(error.message || t('detail.failedToUpdateCompetition'));
     } finally {
       setIsProcessing(false);
+    }
+  };
+
+  // Si ahora se puede borrar: la respuesta de un cambio de estado no lo trae, y
+  // el de antes ya no vale —cancelar la vuelve borrable— (FE #667). En silencio,
+  // sin la espera de pantalla completa; si falla, no se ofrece lo que no se sabe
+  const refrescarCanDelete = () =>
+    getCompetitionDetailUseCase
+      .execute(id)
+      // Solo si esa ficha es la del estado de ahora: con dos cambios seguidos, la
+      // del primero puede llegar tarde y decidiría el botón del segundo
+      .then((data) =>
+        setCompetition(prev =>
+          prev.status === data.status
+            ? { ...prev, canDelete: data.canDelete, teamsAssigned: data.teamsAssigned }
+            : prev
+        )
+      )
+      .catch(() => setCompetition(prev => ({ ...prev, canDelete: false })));
+
+  const confirmarCapitanes = async (capitanes) => {
+    const cerraba = competition.status === 'ACTIVE';
+    setGuardandoCapitanes(true);
+    try {
+      const result = await nameCaptainsUseCase.execute(id, capitanes);
+      setCompetition(prev => ({
+        ...prev,
+        status: result.status,
+        captains: { ...prev.captains, ...result.captains },
+      }));
+      setNombrandoCapitanes(false);
+      customToast.success(
+        t(cerraba ? 'detail.success.captainsNamed' : 'detail.success.captainsChanged')
+      );
+      if (result.unevenTeams) {
+        // Aviso, no bloqueo: los capitanes quedan nombrados. El reparto
+        // automático no se intenta, porque con impares el servidor lo rechaza
+        customToast.warning(t('detail.captains.uneven', { count: result.totalPlayers }));
+      } else if (cerraba && competition.teamAssignment === 'AUTOMATIC') {
+        // Lo mismo que hacía «Cerrar inscripciones»: el reparto automático vive
+        // aquí, en el navegador, hasta que lo haga el servidor
+        try {
+          await assignTeamsUseCase.execute(id, { mode: 'AUTOMATIC' });
+          // Con equipos, «Cambiar capitanes» ya no se ofrece: fallaría siempre
+          setCompetition(prev => ({ ...prev, teamsAssigned: true }));
+          customToast.success(t('detail.success.teamsAutoAssigned'));
+        } catch (assignError) {
+          console.error('Error auto-assigning teams:', assignError);
+          customToast.error(assignError.message || t('detail.errors.teamAssignmentFailed'));
+        }
+      }
+      refrescarCanDelete();
+    } catch (error) {
+      console.error('Error naming captains:', error);
+      // El motivo del servidor tal cual («ya hay equipos»...): dice qué hacer.
+      // El modal sigue abierto para corregir la elección
+      customToast.error(
+        mensajeDeError(error, {
+          sinConexion: t('common:sinConexion.mensaje'),
+          generico: t('detail.captains.failed'),
+        })
+      );
+    } finally {
+      setGuardandoCapitanes(false);
     }
   };
 
@@ -516,6 +573,23 @@ const CompetitionDetail = () => {
           isLoading={borrando}
         />
 
+        <NameCaptainsModal
+          // Montado de nuevo al abrir: arranca con los capitanes de ahora
+          key={nombrandoCapitanes ? 'capitanes-abierto' : 'capitanes-cerrado'}
+          isOpen={nombrandoCapitanes}
+          players={approvedEnrollments.map((e) => ({
+            userId: e.userId,
+            name: e.userName || t('detail.unknownUser'),
+          }))}
+          teamNames={{ a: competition.team1Name, b: competition.team2Name }}
+          current={competition.captains}
+          closesEnrollment={competition.status === 'ACTIVE'}
+          playersUnavailable={inscripcionesSinCargar}
+          onConfirm={confirmarCapitanes}
+          onClose={() => setNombrandoCapitanes(false)}
+          isLoading={guardandoCapitanes}
+        />
+
         <div className="px-4 md:px-40 flex flex-1 justify-center py-5">
           <div className="layout-content-container flex flex-col max-w-[960px] flex-1">
             {/* Header */}
@@ -671,7 +745,31 @@ const CompetitionDetail = () => {
                     </button>
                   )}
 
-                  {competition.status === 'ACTIVE' && (
+                  {/* Nombrar a los capitanes es lo que cierra las inscripciones:
+                      sustituye a «Cerrar inscripciones» (FE #692). Ya cerradas,
+                      se pueden cambiar mientras no haya equipos: con ellos el
+                      servidor lo rechaza, así que no se ofrece */}
+                  {['ACTIVE', 'CLOSED'].includes(competition.status) && !competition.teamsAssigned && (
+                    <button
+                      onClick={() => setNombrandoCapitanes(true)}
+                      disabled={isProcessing}
+                      className="flex items-center gap-2 px-4 py-2 bg-yellow-600 text-white rounded-lg font-medium hover:bg-yellow-700 transition-colors shadow-md disabled:opacity-50"
+                    >
+                      <Crown className="w-4 h-4" />
+                      <span>
+                        {t(
+                          competition.status === 'ACTIVE'
+                            ? 'detail.actions.nameCaptains'
+                            : 'detail.actions.changeCaptains'
+                        )}
+                      </span>
+                    </button>
+                  )}
+
+                  {/* Reabierta con los equipos ya repartidos: reabrir no deshace
+                      el reparto y los capitanes ya no se tocan, así que para
+                      volver a cerrar queda el botón de siempre (FE #692) */}
+                  {competition.status === 'ACTIVE' && competition.teamsAssigned && (
                     <button
                       onClick={() => handleStatusChange('close-enrollments')}
                       disabled={isProcessing}
@@ -1014,10 +1112,18 @@ const CompetitionDetail = () => {
                           key={enrollment.id}
                           className="flex items-center justify-between p-4 border border-gray-200 rounded-lg bg-green-50 hover:bg-green-100 transition-colors"
                         >
-                          <div className="flex-1">
+                          {/* `min-w-0`: sin él, la etiqueta de capitán con el nombre
+                              largo de un equipo estiraba la tarjeta y la ficha
+                              entera se salía por la derecha a 360 px (FE #692) */}
+                          <div className="flex-1 min-w-0">
                             <p className="text-gray-900 font-semibold">
                               {enrollment.userName || t('detail.unknownUser')}
                             </p>
+                            <CaptainBadge
+                              userId={enrollment.userId}
+                              captains={competition.captains}
+                              teamNames={{ a: competition.team1Name, b: competition.team2Name }}
+                            />
                             <div className="flex items-center gap-2 mt-1">
                               {editingHandicapId === enrollment.id ? (
                                 <div className="flex items-center gap-1.5">

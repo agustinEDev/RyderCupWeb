@@ -162,7 +162,9 @@
       "leaderboard": "Leaderboard",
       "reopen-enrollments": "Reopen Enrollments",
       "revert-status": "Revert to Closed",
-      "revert-to-in-progress": "Reopen Tournament"
+      "revert-to-in-progress": "Reopen Tournament",
+      "nameCaptains": "Name captains",
+      "changeCaptains": "Change captains"
     },
     "deleteModal": {
       "title": "Delete the competition?",
@@ -246,7 +248,9 @@
       "enrollmentRequested": "Enrollment request sent successfully",
       "enrollmentsReopened": "Enrollments reopened successfully",
       "statusReverted": "Competition reverted to CLOSED status successfully",
-      "revertedToInProgress": "Tournament reopened and back to IN_PROGRESS status"
+      "revertedToInProgress": "Tournament reopened and back to IN_PROGRESS status",
+      "captainsNamed": "Captains named. Enrolment is now closed.",
+      "captainsChanged": "Captains changed."
     },
     "failedToApprove": "Failed to approve enrollment",
     "competitionFull": "The competition is full. Maximum number of players ({{max}}) has been reached.",
@@ -280,7 +284,22 @@
       "courseAlreadyAdded": "That course is already in the competition"
     },
     "visibilityPrivate": "Invited only",
-    "visibilityPublic": "Public"
+    "visibilityPublic": "Public",
+    "captains": {
+      "title": "Name the captains",
+      "explanation": "One per team, from the enrolled players. Captains play too, and you can be one.",
+      "closesEnrollment": "Naming them closes enrolment: nobody else will be able to join.",
+      "teamLabel": "{{team}} captain",
+      "choose": "Choose a player",
+      "cancel": "Cancel",
+      "confirm": "Name them",
+      "uneven_one": "There is {{count}} player: the teams will not come out even. The captains stay named, but assigning the teams will need an even number.",
+      "uneven_other": "There are {{count}} players: the teams will not come out even. The captains stay named, but assigning the teams will need an even number.",
+      "failed": "The captains could not be named.",
+      "captainOf": "{{team}} captain",
+      "viceCaptainOf": "{{team}} vice-captain",
+      "playersUnavailable": "The list of enrolled players could not be loaded. Open the competition again to retry."
+    }
   },
   "browse": {
     "title": "Browse Competitions",

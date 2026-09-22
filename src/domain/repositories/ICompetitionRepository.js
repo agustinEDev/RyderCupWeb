@@ -170,6 +170,16 @@ class ICompetitionRepository {
   }
 
   /**
+   * Nombra a los dos capitanes; con las inscripciones abiertas, las cierra (FE #692).
+   * @param {string} competitionId
+   * @param {{team_a_captain_id: string, team_b_captain_id: string}} capitanes
+   * @returns {Promise<Object>}
+   */
+  async nameCaptains(competitionId, capitanes) {
+    throw new Error('ICompetitionRepository.nameCaptains must be implemented');
+  }
+
+  /**
    * Starts a competition (CLOSED → IN_PROGRESS).
    * @param {string} competitionId
    * @returns {Promise<Object>} Updated competition data

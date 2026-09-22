@@ -242,6 +242,20 @@ class ApiCompetitionRepository extends ICompetitionRepository {
   }
 
   /**
+   * Nombra a los dos capitanes; con las inscripciones abiertas, las cierra (FE #692).
+   * @override
+   * @param {string} competitionId
+   * @param {{team_a_captain_id: string, team_b_captain_id: string}} capitanes
+   * @returns {Promise<Object>} Estado, capitanes, total de inscritos y el aviso de impares
+   */
+  async nameCaptains(competitionId, capitanes) {
+    return await apiRequest(`/api/v1/competitions/${competitionId}/captains`, {
+      method: 'PUT',
+      body: JSON.stringify(capitanes),
+    });
+  }
+
+  /**
    * Starts a competition (CLOSED → IN_PROGRESS).
    * @override
    * @param {string} competitionId

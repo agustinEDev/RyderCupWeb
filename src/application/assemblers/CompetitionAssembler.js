@@ -61,9 +61,20 @@ class CompetitionAssembler {
       // se abren al invitar (FE #678). Sin esto la ficha no puede decir cuándo
       enrollmentOpensDaysBefore: apiData?.enrollment_opens_days_before ?? null,
       // Si quien la mira puede borrarla ahora (FE #667). Lo decide el backend con la
-      // misma regla que el borrado —estado, calendario y quién— y solo lo manda la
+      // misma regla que el borrado —estado, nada jugado y quién— y solo lo manda la
       // ficha (RyderCupAM#347); sin el campo, no se ofrece
       canDelete: apiData?.can_delete === true,
+      // Si ya hay equipos repartidos: con ellos los capitanes no se cambian, y una
+      // reabierta se vuelve a cerrar con «Cerrar inscripciones» (FE #692). Solo lo
+      // manda la ficha; sin el campo, no se afirma un reparto que nadie ha dicho
+      teamsAssigned: apiData?.teams_assigned === true,
+      // Capitanes y subcapitanes, uno por equipo (FE #692, RyderCupAM#320)
+      captains: {
+        teamA: apiData?.team_a_captain_id ?? null,
+        teamB: apiData?.team_b_captain_id ?? null,
+        viceTeamA: apiData?.team_a_vice_captain_id ?? null,
+        viceTeamB: apiData?.team_b_vice_captain_id ?? null,
+      },
       enrolledCount: apiData?.enrolled_count || 0,
       isCreator: apiData?.is_creator || false,
       creatorId: competition.creatorId,
