@@ -10,6 +10,7 @@ import { setCsrfTokenGlobal } from './csrfTokenSync';
 import { olvidaLaSesion } from '../services/sesionCompartida';
 import { olvidaLasAccionesPendientes } from '../services/accionesPendientes';
 import { olvidaLoDeEstaCuenta } from '../services/loUltimoConocido';
+import { olvidaElRefrescoDeHandicap } from '../services/refrescoDeHandicapApuntes';
 
 // Create the context
 const AuthContext = createContext(null);
@@ -114,6 +115,10 @@ export const AuthProvider = ({ children }) => {
     // móvil compartido, la siguiente persona que entrara y se quedara sin señal
     // vería la lista de la anterior, con sus nombres y sus resultados
     olvidaLoDeEstaCuenta();
+    // Y lo pendiente del hándicap (FE #677): en un móvil compartido, la
+    // siguiente persona vería el modal con el hándicap de esta cuenta, y
+    // aceptarlo lo guardaría en su perfil
+    olvidaElRefrescoDeHandicap();
     // Los avisos de golpes que no se pudieron guardar NO se tocan, ni aquí ni
     // en los cierres duros. Se intentó borrarlos y es un error: no se pueden
     // regenerar —el golpe que describen ya salió de la cola al escribirlos— y

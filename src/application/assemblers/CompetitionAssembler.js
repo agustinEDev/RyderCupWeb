@@ -56,6 +56,10 @@ class CompetitionAssembler {
       countries: countries,
       status: competition.status.value,
       maxPlayers: competition.maxPlayers,
+      visibility: competition.visibility,
+      // Cuántos días antes del torneo abren solas las inscripciones, o null si
+      // se abren al invitar (FE #678). Sin esto la ficha no puede decir cuándo
+      enrollmentOpensDaysBefore: apiData?.enrollment_opens_days_before ?? null,
       enrolledCount: apiData?.enrolled_count || 0,
       isCreator: apiData?.is_creator || false,
       creatorId: competition.creatorId,

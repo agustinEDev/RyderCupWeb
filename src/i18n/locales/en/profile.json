@@ -2,6 +2,7 @@
   "handicapModal": {
     "title": "Set Up Your Handicap",
     "subtitle": "Your profile has no handicap set. Add it to participate in tournaments with accurate playing calculations.",
+    "subtitleStale": "Your saved handicap is {{handicap}}, but it could not be updated today. Check it so matches are calculated correctly.",
     "rfegTab": "RFEG (Automatic)",
     "manualTab": "Manual",
     "fetchRfeg": "Fetch from RFEG",

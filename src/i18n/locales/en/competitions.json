@@ -116,7 +116,12 @@
     "summaryManual": "teams by hand",
     "summaryHandicapLimit": "handicap limit {{limite}}",
     "summaryNoHandicapLimit": "no handicap limit",
-    "moreOptionsIncomplete": "Some options are missing: expand them to fill them in"
+    "moreOptionsIncomplete": "Some options are missing: expand them to fill them in",
+    "visibility": "Who can join?",
+    "visibilityPrivate": "Invited only",
+    "visibilityPublic": "Anyone",
+    "visibilityPrivateHelp": "It does not show when exploring: the people you invite are the ones who get in",
+    "visibilityPublicHelp": "It shows when exploring and anyone can ask for a place; you still decide who gets in"
   },
   "edit": {
     "title": "Edit Competition",
@@ -132,11 +137,16 @@
     "failedToLoadCompetition": "Failed to load competition",
     "backToCompetitions": "Back to Competitions",
     "backToBrowse": "Back to Browse",
+    "backToInvitations": "Back to My invitations",
     "creator": "Creator",
     "organizedBy": "Organized by",
     "dates": "Dates",
     "players": "Players",
     "countries": "Countries",
+    "invitingOpensEnrollment": "Inviting the first person opens enrolment",
+    "invitingOpensScheduled": "Enrolment opens on its own on {{fecha}}. If you invite someone before then, it opens at that moment.",
+    "enrollment": "Enrolment",
+    "enrollmentOpensOn": "From {{fecha}}",
     "actions": {
       "edit": "Edit",
       "activate": "Activate",
@@ -259,7 +269,9 @@
         "body": "Scoring will not open by itself: the competition's organiser has to start the match, and they need a connection. If the course has no signal, better done before setting off."
       },
       "courseAlreadyAdded": "That course is already in the competition"
-    }
+    },
+    "visibilityPrivate": "Invited only",
+    "visibilityPublic": "Public"
   },
   "browse": {
     "title": "Browse Competitions",
@@ -323,5 +335,22 @@
     "PENDING": "PENDING",
     "APPROVED": "APPROVED",
     "REJECTED": "REJECTED"
+  },
+  "apertura": {
+    "titulo": "When does enrolment open?",
+    "explicacion": "This competition will be public: anyone can see it and ask for a place.",
+    "ahora": "Right now",
+    "ahoraDetalle": "It goes up when you create it and people can enrol straight away.",
+    "programada": "A few days before the tournament",
+    "programadaDetalle": "It is announced now and enrolment opens by itself on that day.",
+    "cuantosDias": "How many days before?",
+    "dias_one": "{{count}} day before",
+    "dias_other": "{{count}} days before",
+    "avisoAbreYa": "The tournament starts before that, so enrolment will open as soon as you create it.",
+    "volver": "Back",
+    "crear": "Create competition",
+    "abreEl": "Opens on {{fecha}}.",
+    "abreHoy": "Opens today.",
+    "creando": "Creating…"
   }
 }

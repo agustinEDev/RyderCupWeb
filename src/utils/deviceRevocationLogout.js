@@ -21,6 +21,7 @@
  */
 
 import { olvidaLoDeEstaCuenta } from '../services/loUltimoConocido';
+import { olvidaElRefrescoDeHandicap } from '../services/refrescoDeHandicapApuntes';
 import i18next from 'i18next';
 import customToast from './toast';
 
@@ -163,6 +164,9 @@ const handleLogout = (errorData = null, reason = 'unknown') => {
   // no vacía el almacenamiento: sin esto, quien entrara después en ese móvil
   // podría ver sin cobertura las partidas de la cuenta que acaba de revocarse
   olvidaLoDeEstaCuenta();
+  // Y lo pendiente del hándicap (FE #677): el modal de la siguiente persona
+  // saldría con el hándicap de esta cuenta
+  olvidaElRefrescoDeHandicap();
 
   // Clear Sentry user context (if Sentry is initialized)
   if (window.Sentry && typeof window.Sentry.setUser === 'function') {

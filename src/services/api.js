@@ -6,6 +6,25 @@
 import { fetchWithTokenRefresh } from '../utils/tokenRefreshInterceptor.js';
 import { getCsrfToken } from '../contexts/csrfTokenSync'; // v1.13.0: CSRF Protection
 import { handleCsrfLogout } from '../utils/csrfLogout'; // v1.13.0: Centralized CSRF logout
+import i18next from 'i18next';
+
+/**
+ * La llamada de red, con el aviso de «sin conexión» ya traducido (FE #685).
+ *
+ * Sin red, `fetch` rechaza con un `TypeError` y el texto del navegador —«Failed
+ * to fetch», «Load failed»…—, que 52 toasts enseñaban tal cual. Se cambia por el
+ * texto de la app, pero SIGUE SIENDO un `TypeError`: `esFalloDeRed` reconoce así
+ * la falta de cobertura, y todo lo que ya la trataba sigue igual. Solo se
+ * envuelve la llamada de red, para no disfrazar de cobertura un fallo de otro tipo.
+ */
+const llamaAlBackend = async (url, config) => {
+  try {
+    return await fetchWithTokenRefresh(url, config);
+  } catch (error) {
+    if (!(error instanceof TypeError)) throw error;
+    throw new TypeError(i18next.t('common:sinConexion.mensaje'), { cause: error });
+  }
+};
 
 // Prioridad: 1. Runtime config (globalThis.APP_CONFIG) 2. Build-time env 3. Empty string (relative URLs for proxy)
 // Si no hay API_URL configurado, usar '' para que las URLs sean relativas (/api/...)
@@ -71,7 +90,7 @@ export const apiRequest = async (endpoint, options = {}) => {
 
   try {
     // Use interceptor that handles automatic token refresh on 401
-    const response = await fetchWithTokenRefresh(url, config);
+    const response = await llamaAlBackend(url, config);
 
     if (!response.ok) {
       // Try to parse error response from backend

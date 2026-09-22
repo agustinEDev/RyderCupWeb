@@ -16,7 +16,14 @@
     "personalMessagePlaceholder": "Add a personal message to the invitation...",
     "send": "Send Invitation",
     "sending": "Sending...",
-    "searchFailed": "The search could not be completed. Try again."
+    "searchFailed": "The search could not be completed. Try again.",
+    "tabFriends": "Friends",
+    "noFriends": "You have no friends on the app yet",
+    "alreadyInvited": "Already invited",
+    "alreadyEnrolled": "Already in the tournament",
+    "loadingFriends": "Loading your friends…",
+    "friendsLoadFailed": "Could not load your friends list",
+    "eligibilityLoadFailed": "Could not check who is already invited or in. Close this and open it again"
   },
   "status": {
     "PENDING": "Pending",
@@ -54,7 +61,9 @@
     "failedToSend": "Failed to send invitation",
     "failedToRespond": "Failed to respond to invitation",
     "duplicateInvitation": "An invitation has already been sent to this email",
-    "invalidEmail": "Please enter a valid email address"
+    "invalidEmail": "Please enter a valid email address",
+    "rolesCheckFailed": "Could not check whether you can manage this competition",
+    "retry": "Try again"
   },
   "creator": {
     "title": "Invitations",

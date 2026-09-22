@@ -19,6 +19,7 @@ import { validateCompetitionForm } from '../utils/competitionFormValidation';
 import CountryAutocomplete from '../components/ui/CountryAutocomplete';
 import GolfCourseSearchBox from '../components/golf_course/GolfCourseSearchBox';
 import GolfCourseRequestModal from '../components/golf_course/GolfCourseRequestModal';
+import EnrollmentOpeningModal from '../components/competition/EnrollmentOpeningModal';
 import customToast from '../utils/toast';
 import FullScreenLoader from '../components/ui/FullScreenLoader';
 import CompetitionTypeChooser from '../components/competition/CompetitionTypeChooser';
@@ -61,6 +62,7 @@ const CreateCompetition = () => {
   const { t, i18n } = useTranslation('competitions');
   const { user, loading: isLoading } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [preguntandoApertura, setPreguntandoApertura] = useState(false);
   const [loadingCompetition, setLoadingCompetition] = useState(false);
   // Editar o crear lo dice la URL, y se sabe desde el primer render. Vivía en un
   // estado que se encendía DENTRO del efecto que carga la competición, y ese
@@ -131,6 +133,7 @@ const CreateCompetition = () => {
 
     // RyderCup Settings
     playMode: 'HANDICAP',
+    visibility: 'PRIVATE',
     numberOfPlayers: CUPO_POR_DEFECTO,
     teamAssignment: 'automatic',
     maxPlayingHandicap: undefined
@@ -252,6 +255,7 @@ const CreateCompetition = () => {
           showAdjacentCountry2: !!adjacentCountry2,
           golfCourses: golfCoursesData,
           playMode: competition.playMode || 'HANDICAP',
+          visibility: competition.visibility || 'PRIVATE',
           numberOfPlayers: competition.maxPlayers || CUPO_POR_DEFECTO,
           teamAssignment: competition.teamAssignment?.toLowerCase() || 'automatic',
           maxPlayingHandicap: competition.maxPlayingHandicap ?? undefined
@@ -527,6 +531,28 @@ const CreateCompetition = () => {
       return;
     }
 
+    // Una pública se publica al crearse, y eso es lo que hay que decir antes de
+    // hacerlo. En una privada no hay nada que avisar: no la ve nadie y se entra
+    // por invitación (FE #666). Al editar tampoco: ya existe
+    if (!isEditMode && formData.visibility === 'PUBLIC') {
+      setPreguntandoApertura(true);
+      return;
+    }
+
+    await crear(null);
+  };
+
+  /**
+   * Crea la competición con los días de apertura elegidos.
+   *
+   * `diasDeApertura` en `null` significa que no hay apertura programada, que es
+   * como el backend entiende «ábrela ya» (RyderCupAM#332).
+   */
+  const crear = async (diasDeApertura) => {
+    // El modal NO se cierra aquí: se queda con su botón deshabilitado mientras
+    // la petición está en vuelo. Cerrándolo antes, el `isLoading` que recibe es
+    // siempre falso y devuelve el formulario a la mano justo cuando no se puede
+    // tocar. Se cierra al terminar, en el `finally`
     setIsSubmitting(true);
 
     try {
@@ -548,11 +574,18 @@ const CreateCompetition = () => {
         main_country: formData.country?.code,
         countries: countries,
         play_mode: formData.playMode.toUpperCase(),
+        visibility: formData.visibility,
         number_of_players: numPlayers,
         team_assignment: formData.teamAssignment.toUpperCase(),
         max_playing_handicap: formData.maxPlayingHandicap
           ? parseInt(formData.maxPlayingHandicap, 10)
-          : null
+          : null,
+        // Solo cuando hay apertura programada: mandarlo en `null` seria decir
+        // «quitale la programacion», que es lo mismo aqui pero ensucia el
+        // contrato de la creacion
+        ...(diasDeApertura != null
+          ? { enrollment_opens_days_before: diasDeApertura }
+          : {})
       };
 
       if (isEditMode) {
@@ -602,6 +635,9 @@ const CreateCompetition = () => {
       setMessage({ type: 'error', text: error.message || t(isEditMode ? 'edit.error' : 'create.error') });
     } finally {
       setIsSubmitting(false);
+      // Se cierra tanto si salió bien como si falló: si falló, el aviso está en
+      // el formulario, y dejarlo tapado por el modal lo esconde
+      setPreguntandoApertura(false);
     }
   };
 
@@ -670,6 +706,54 @@ const CreateCompetition = () => {
                 </div>
 
                 <div className="space-y-3">
+                  {/* Arriba y pequeño: de quién es el torneo se decide al montarlo,
+                      no en «Más opciones». Privada por defecto, que es lo que hay
+                      hoy y lo que no enseña nada a nadie por error (FE #664) */}
+                  <div>
+                    <span
+                      id="etiqueta-visibilidad"
+                      className="block text-sm font-medium text-gray-700 mb-2"
+                    >
+                      {t('create.visibility')}
+                    </span>
+                    {/* Los dos botones van juntos y con su pregunta: sueltos, un
+                        lector de pantalla dice «Solo invitados, pulsado» sin
+                        decir a qué pregunta responde */}
+                    <div
+                      role="group"
+                      aria-labelledby="etiqueta-visibilidad"
+                      className="flex flex-wrap gap-2"
+                    >
+                      {['PRIVATE', 'PUBLIC'].map(cual => (
+                        <button
+                          key={cual}
+                          type="button"
+                          data-testid={`visibilidad-${cual}`}
+                          aria-pressed={formData.visibility === cual}
+                          onClick={() => setFormData(prev => ({ ...prev, visibility: cual }))}
+                          className={`border-2 rounded-lg text-sm px-3 py-2 transition-colors ${
+                            formData.visibility === cual
+                              ? 'bg-primary text-white border-primary'
+                              : 'bg-white text-gray-600 border-gray-200 hover:border-primary hover:text-primary'
+                          }`}
+                        >
+                          {t(`create.visibility${cual === 'PRIVATE' ? 'Private' : 'Public'}`)}
+                        </button>
+                      ))}
+                    </div>
+                    {/* «Privada» a secas no dice si la gente puede apuntarse sola */}
+                    <p
+                      data-testid="visibilidad-explicacion"
+                      className="text-xs text-gray-500 mt-1"
+                    >
+                      {t(
+                        formData.visibility === 'PUBLIC'
+                          ? 'create.visibilityPublicHelp'
+                          : 'create.visibilityPrivateHelp'
+                      )}
+                    </p>
+                  </div>
+
                   <div>
                     <label htmlFor="competitionName" className="block text-sm font-medium text-gray-700 mb-1">
                       {t('create.competitionName')}
@@ -1266,6 +1350,19 @@ const CreateCompetition = () => {
         countryCode={requestModalCountry}
         createGolfCourseRequestUseCase={createGolfCourseRequestUseCase}
       />
+
+      {/* Montado solo mientras se pregunta: dejándolo puesto conservaba lo
+          elegido la vez anterior, y volver a entrar y confirmar mandaba unos
+          días que nadie había vuelto a elegir */}
+      {preguntandoApertura && (
+        <EnrollmentOpeningModal
+          isOpen
+          startDate={formData.startDate}
+          onConfirm={crear}
+          onClose={() => setPreguntandoApertura(false)}
+          isLoading={isSubmitting}
+        />
+      )}
     </div>
   );
 };

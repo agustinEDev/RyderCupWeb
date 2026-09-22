@@ -116,7 +116,12 @@
     "summaryManual": "equipos a mano",
     "summaryHandicapLimit": "límite de hándicap {{limite}}",
     "summaryNoHandicapLimit": "sin límite de hándicap",
-    "moreOptionsIncomplete": "Faltan datos en las opciones: despliégalas para completarlas"
+    "moreOptionsIncomplete": "Faltan datos en las opciones: despliégalas para completarlas",
+    "visibility": "¿Quién puede apuntarse?",
+    "visibilityPrivate": "Solo invitados",
+    "visibilityPublic": "Cualquiera",
+    "visibilityPrivateHelp": "No aparece al explorar: entran las personas a las que invites",
+    "visibilityPublicHelp": "Aparece al explorar y cualquiera puede pedir plaza; tú decides a quién aceptas"
   },
   "edit": {
     "title": "Editar Competición",
@@ -132,11 +137,16 @@
     "failedToLoadCompetition": "Error al cargar la competición",
     "backToCompetitions": "Volver a Competiciones",
     "backToBrowse": "Volver a Explorar",
+    "backToInvitations": "Volver a Mis invitaciones",
     "creator": "Creador",
     "organizedBy": "Organizado por",
     "dates": "Fechas",
     "players": "Jugadores",
     "countries": "Países",
+    "invitingOpensEnrollment": "Al invitar a la primera persona se abren las inscripciones",
+    "invitingOpensScheduled": "Las inscripciones se abren solas el {{fecha}}. Si invitas a alguien antes, se abren en ese momento.",
+    "enrollment": "Inscripciones",
+    "enrollmentOpensOn": "A partir del {{fecha}}",
     "actions": {
       "edit": "Editar",
       "activate": "Activar",
@@ -259,7 +269,9 @@
         "body": "La anotación no se abrirá sola: tiene que arrancar el partido el organizador de la competición, y necesita cobertura. Si en el campo no hay señal, mejor que lo haga antes de salir."
       },
       "courseAlreadyAdded": "Ese campo ya está en la competición"
-    }
+    },
+    "visibilityPrivate": "Solo invitados",
+    "visibilityPublic": "Pública"
   },
   "browse": {
     "title": "Explorar Competiciones",
@@ -323,5 +335,22 @@
     "PENDING": "PENDIENTE",
     "APPROVED": "APROBADA",
     "REJECTED": "RECHAZADA"
+  },
+  "apertura": {
+    "titulo": "¿Cuándo se abren las inscripciones?",
+    "explicacion": "Esta competición será pública: cualquiera podrá verla y pedir plaza.",
+    "ahora": "Ahora mismo",
+    "ahoraDetalle": "Se publica al crearla y la gente puede apuntarse ya.",
+    "programada": "Unos días antes del torneo",
+    "programadaDetalle": "Se anuncia ahora y las inscripciones abren solas ese día.",
+    "cuantosDias": "¿Cuántos días antes?",
+    "dias_one": "{{count}} día antes",
+    "dias_other": "{{count}} días antes",
+    "avisoAbreYa": "El torneo empieza antes de eso, así que las inscripciones se abrirán al crearla.",
+    "volver": "Volver",
+    "crear": "Crear competición",
+    "abreEl": "Abrirán el {{fecha}}.",
+    "abreHoy": "Abrirán hoy.",
+    "creando": "Creando…"
   }
 }

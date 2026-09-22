@@ -11,6 +11,7 @@
  */
 
 import { olvidaLoDeEstaCuenta } from '../services/loUltimoConocido';
+import { olvidaElRefrescoDeHandicap } from '../services/refrescoDeHandicapApuntes';
 
 /**
  * Handle CSRF validation failure
@@ -35,6 +36,9 @@ export const handleCsrfLogout = (errorData = {}) => {
   // `clearAuth`: sin esto, tras un fallo de CSRF en un móvil compartido la
   // siguiente persona que se quedara sin señal vería las partidas de la anterior
   olvidaLoDeEstaCuenta();
+  // Y lo pendiente del hándicap (FE #677): el modal de la siguiente persona
+  // saldría con el hándicap de esta cuenta
+  olvidaElRefrescoDeHandicap();
 
   // Hard redirect to login page
   // This is intentional - CSRF failures require a complete app reset

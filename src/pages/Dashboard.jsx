@@ -33,6 +33,13 @@ import {
   getScoringViewUseCase,
   updateUserProfileUseCase,
 } from '../composition';
+import {
+  APUNTE_REFRESCAR,
+  EVENTO_HANDICAP_AL_DIA,
+  EVENTO_HANDICAP_POR_PEDIR,
+  lanzaElRefrescoDeHandicap,
+  recogeElHandicapPorPedir,
+} from '../services/refrescoDeHandicap';
 
 // El panel enseña un resumen, no el historial entero
 const RECENT_MATCHES_SHOWN = 3;
@@ -60,17 +67,42 @@ const Dashboard = () => {
   const [upcomingDesdeMemoria, setUpcomingDesdeMemoria] = useState(false);
   const [isLoadingUpcoming, setIsLoadingUpcoming] = useState(true);
   const [showHandicapModal, setShowHandicapModal] = useState(false);
+  // El hándicap guardado cuando se abre el modal: decide qué dice (FE #677)
+  const [handicapAlAbrir, setHandicapAlAbrir] = useState(null);
   const [showQuickMatchModal, setShowQuickMatchModal] = useState(false);
   const [handicapPending, setHandicapPending] = useState(
     () => typeof localStorage !== 'undefined' && localStorage.getItem('handicap_pending') === 'true'
   );
 
+  // El refresco del hándicap al entrar lo lanza el login, sin esperarlo
+  // (FE #677). Aquí solo se abre el modal cuando su resultado lo pide: si llega
+  // con el panel montado, por el evento; si no, se encuentra guardado. Y si el
+  // apunte sigue puesto (no contestó), se relanza: el módulo no manda dos a la vez
   useEffect(() => {
-    if (user && localStorage.getItem('needs_handicap') === 'true') {
-      localStorage.removeItem('needs_handicap');
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- pre-existing pattern surfaced by eslint-plugin-react-hooks 7.1.1 bump; needs dedicated review (tracked in follow-up)
+    // Apunte de la versión anterior: su información es de otro día
+    localStorage.removeItem('needs_handicap');
+    if (!user) return undefined;
+
+    const abreSiHayQuePedirlo = () => {
+      const handicap = recogeElHandicapPorPedir();
+      if (handicap === undefined) return;
+      setHandicapAlAbrir(handicap);
       setShowHandicapModal(true);
+    };
+
+    // Y si un refresco dice que ya no hace falta, el recordatorio se retira
+    const retiraElRecordatorio = () => setHandicapPending(false);
+
+    abreSiHayQuePedirlo();
+    window.addEventListener(EVENTO_HANDICAP_POR_PEDIR, abreSiHayQuePedirlo);
+    window.addEventListener(EVENTO_HANDICAP_AL_DIA, retiraElRecordatorio);
+    if (localStorage.getItem(APUNTE_REFRESCAR) === 'true') {
+      lanzaElRefrescoDeHandicap({ handicapDeAntes: user.handicap ?? null });
     }
+    return () => {
+      window.removeEventListener(EVENTO_HANDICAP_POR_PEDIR, abreSiHayQuePedirlo);
+      window.removeEventListener(EVENTO_HANDICAP_AL_DIA, retiraElRecordatorio);
+    };
   }, [user]);
 
   const handleHandicapSaved = useCallback(async () => {
@@ -465,6 +497,7 @@ const Dashboard = () => {
       <HandicapRequestModal
         isOpen={showHandicapModal}
         user={user}
+        handicapActual={handicapAlAbrir}
         onClose={handleHandicapDismiss}
         onSaved={handleHandicapSaved}
       />
@@ -557,7 +590,12 @@ const Dashboard = () => {
               user={user}
               competitions={competitions}
               handicapPending={handicapPending}
-              onHandicapAction={() => setShowHandicapModal(true)}
+              onHandicapAction={() => {
+                // Desde el recordatorio no hay resultado de refresco a mano: el
+                // modal tiene que saber si ya hay un hándicap guardado (FE #677)
+                setHandicapAlAbrir(user?.handicap ?? null);
+                setShowHandicapModal(true);
+              }}
               upcomingMatches={upcomingMatches.length}
             />
 
@@ -621,7 +659,10 @@ const Dashboard = () => {
               {/* Dos, no seis: Mis Torneos, Explorar, Amigos y Perfil ya viven
                   en la navegacion, y repetirlos aqui convertia el panel en un
                   menu con otro aspecto */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Dos columnas desde lg, no desde md: entre medias el panel deja
+                  160 px a cada lado y cada tarjeta se quedaba en ~210, con el
+                  titulo comiendose el relleno (FE #680) */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 {/* Quick Match Card - primary action */}
                 <motion.button
                   onClick={() => setShowQuickMatchModal(true)}
@@ -633,7 +674,7 @@ const Dashboard = () => {
                   <div className="p-3 bg-primary-500 rounded-lg">
                     <Zap className="w-7 h-7 text-white" />
                   </div>
-                  <div className="flex-1">
+                  <div className="flex-1 min-w-0">
                     <h3 className="text-gray-900 font-bold text-lg group-hover:text-primary-600 transition-colors">
                       {t('quickActions.quickMatch')}
                     </h3>
@@ -651,7 +692,7 @@ const Dashboard = () => {
                   <div className="p-3 bg-primary-100 rounded-lg group-hover:bg-primary-500 transition-colors">
                     <Trophy className="w-7 h-7 text-primary-600 group-hover:text-white transition-colors" />
                   </div>
-                  <div className="flex-1">
+                  <div className="flex-1 min-w-0">
                     <h3 className="text-gray-900 font-bold text-lg group-hover:text-primary-600 transition-colors">
                       {t('quickActions.createTournament')}
                     </h3>

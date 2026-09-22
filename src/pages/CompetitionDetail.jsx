@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router';
 import { motion } from 'framer-motion';
-import { Users, Calendar, MapPin, Settings, ArrowLeft, Edit, Trash2, Play, CheckCircle, XCircle, Pause, AlertCircle, UserPlus, Shield, Mail, BarChart3, Undo2 } from 'lucide-react';
+import { Users, Calendar, CalendarClock, MapPin, Settings, ArrowLeft, Edit, Trash2, Play, CheckCircle, XCircle, Pause, AlertCircle, UserPlus, Shield, Mail, BarChart3, Undo2 } from 'lucide-react';
 import customToast from '../utils/toast';
 import { useTranslation } from 'react-i18next';
 import HeaderAuth from '../components/layout/HeaderAuth';
@@ -38,6 +38,15 @@ import {
 } from '../services/competitions';
 import FullScreenLoader from '../components/ui/FullScreenLoader';
 import { formatCountryName } from '../services/countries';
+import { fechaDeApertura } from '../domain/services/aperturaDeInscripciones';
+
+// «Volver» lleva a donde se vino: explorar, las invitaciones (FE #682) o, por
+// defecto, las competiciones propias
+const VUELTAS = {
+  browse: { to: '/browse-competitions', clave: 'detail.backToBrowse' },
+  invitations: { to: '/player/invitations', clave: 'detail.backToInvitations' },
+};
+const VUELTA_POR_DEFECTO = { to: '/competitions', clave: 'detail.backToCompetitions' };
 
 const CompetitionDetail = () => {
   const navigate = useNavigate();
@@ -58,9 +67,10 @@ const CompetitionDetail = () => {
   const [savingNamePreference, setSavingNamePreference] = useState(false);
 
   // Determine where user came from (browse or my competitions)
-  const fromBrowse = location.state?.from === 'browse';
-  const backLink = fromBrowse ? '/browse-competitions' : '/competitions';
-  const backText = fromBrowse ? t('detail.backToBrowse') : t('detail.backToCompetitions');
+  const origen = location.state?.from;
+  const vuelta = Object.hasOwn(VUELTAS, origen ?? '') ? VUELTAS[origen] : VUELTA_POR_DEFECTO;
+  const backLink = vuelta.to;
+  const backText = t(vuelta.clave);
 
   const loadCompetition = useCallback(async () => {
     if (!user) return;
@@ -388,10 +398,26 @@ const CompetitionDetail = () => {
   // User is considered creator if they created the competition OR have CREATOR/ADMIN role
   const isCreator = competition.creatorId === user.id;
   const canManage = isCreator || hasCreatorRole || isAdmin;
-  const canEdit = canManage && competition.status === 'DRAFT';
+  // La configuración se corrige mientras haya inscripciones abiertas (BE #323):
+  // quien invita antes de poner el campo de golf tiene que poder ponerlo después
+  const canEdit = canManage && ['DRAFT', 'ACTIVE'].includes(competition.status);
+  // Borrar no: con gente invitada o dentro, lo que toca es cancelar
   const canDelete = canManage && competition.status === 'DRAFT';
   const canEditHandicap =
     canManage && ['DRAFT', 'ACTIVE', 'CLOSED'].includes(competition.status);
+
+  // Una programada es un borrador con días de antelación (RyderCupAM#332). En
+  // cuanto abre deja de ser borrador, así que la fecha solo se enseña mientras
+  // espera: una vez abierta ya no dice nada (FE #678)
+  const aperturaProgramada =
+    competition.status === 'DRAFT'
+      ? fechaDeApertura(competition.startDate, competition.enrollmentOpensDaysBefore)
+      : null;
+  const fechaDeAperturaLegible = aperturaProgramada
+    ? new Intl.DateTimeFormat(i18n.language, { day: 'numeric', month: 'long' }).format(
+        aperturaProgramada
+      )
+    : null;
 
   // Check if competition has reached max players
   // For creators: use enrollments list. For non-creators: fallback to competition.enrolledCount from API
@@ -466,6 +492,18 @@ const CompetitionDetail = () => {
                       >
                         {competition.status && t(`status.${competition.status}`)}
                       </span>
+                      {/* Junto al estado: quien la mira tiene que saber si le
+                          pueden encontrar o si entra solo quien es invitado (FE #664) */}
+                      <span
+                        data-testid="visibilidad-competicion"
+                        className="px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-700"
+                      >
+                        {t(
+                          competition.visibility === 'PUBLIC'
+                            ? 'detail.visibilityPublic'
+                            : 'detail.visibilityPrivate'
+                        )}
+                      </span>
                       {isCreator && (
                         <div className="flex items-center gap-1.5 text-accent text-sm font-medium">
                           <Shield className="w-4 h-4" />
@@ -497,6 +535,19 @@ const CompetitionDetail = () => {
                       </p>
                     </div>
                   </div>
+                  {/* Para todos, no solo el creador: quien la encuentra al explorar
+                      ve «Borrador» sin botón y tiene que saber cuándo podrá entrar */}
+                  {fechaDeAperturaLegible && (
+                    <div className="flex items-center gap-2 text-gray-700">
+                      <CalendarClock className="w-5 h-5" />
+                      <div>
+                        <p className="text-xs text-gray-500">{t('detail.enrollment')}</p>
+                        <p className="text-sm font-medium" data-testid="apertura-programada">
+                          {t('detail.enrollmentOpensOn', { fecha: fechaDeAperturaLegible })}
+                        </p>
+                      </div>
+                    </div>
+                  )}
                   {competition.creator && (
                     <div className="flex items-center gap-2 text-gray-700">
                       <Shield className="w-5 h-5" />
@@ -663,7 +714,20 @@ const CompetitionDetail = () => {
                     </button>
                   )}
 
-                  {competition.status !== 'DRAFT' && competition.status !== 'CANCELLED' && (
+                  {competition.status === 'DRAFT' && (
+                    // Invitar abre el torneo, y eso no se adivina mirando el botón.
+                    // También una programada: la política solo mira el estado
+                    <p
+                      className="w-full text-sm text-gray-600"
+                      data-testid="invitar-abre-inscripciones"
+                    >
+                      {fechaDeAperturaLegible
+                        ? t('detail.invitingOpensScheduled', { fecha: fechaDeAperturaLegible })
+                        : t('detail.invitingOpensEnrollment')}
+                    </p>
+                  )}
+
+                  {competition.status !== 'CANCELLED' && (
                     <button
                       onClick={() => navigate(`/creator/competitions/${id}/invitations`)}
                       className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700 transition-colors shadow-md"

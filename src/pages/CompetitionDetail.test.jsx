@@ -5,9 +5,11 @@ import CompetitionDetail from './CompetitionDetail';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
+    i18n: { language: 'es' },
     t: (key, params) => {
       if (params?.count !== undefined) return `${key}_${params.count}`;
       if (params?.handicap !== undefined) return `${key}_${params.handicap}`;
+      if (params?.fecha !== undefined) return `${key}_${params.fecha}`;
       return key;
     },
   }),
@@ -31,7 +33,7 @@ vi.mock('../hooks/useUserRoles', () => ({
 }));
 
 vi.mock('../components/layout/HeaderAuth', () => ({
-  default: () => <div data-testid="header-auth">Header</div>,
+  default: ({ backTo }) => <div data-testid="header-auth" data-back-to={backTo}>Header</div>,
 }));
 
 vi.mock('../components/competition/CompetitionGolfCoursesSection', () => ({
@@ -553,5 +555,258 @@ describe('CompetitionDetail - alias o nombre real', () => {
 
     resuelve({ useRealName: false });
     await waitFor(() => expect(screen.getByRole('switch')).not.toBeDisabled());
+  });
+});
+
+describe('CompetitionDetail - invitar desde el borrador (FE #660)', () => {
+  const conEstado = (status, extra = {}) => {
+    mockGetCompetitionDetail.mockResolvedValue({
+      id: 'comp-1',
+      name: 'Summer Cup',
+      status,
+      creatorId: 'creator-1',
+      maxPlayers: 20,
+      countries: [],
+      ...extra,
+    });
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockListEnrollments.mockResolvedValue([]);
+  });
+
+  it('en borrador se puede invitar: invitar es lo que abre el torneo', async () => {
+    // El servidor ya lo permite (BE #319): la primera invitación abre las
+    // inscripciones, así que esconder el botón dejaba el camino nuevo sin puerta
+    conEstado('DRAFT');
+
+    renderPage();
+
+    expect(await screen.findByText('detail.actions.manageInvitations')).toBeInTheDocument();
+  });
+
+  it('y se avisa de lo que hace, porque no es evidente', async () => {
+    conEstado('DRAFT');
+
+    renderPage();
+
+    expect(await screen.findByTestId('invitar-abre-inscripciones')).toBeInTheDocument();
+  });
+
+  it('en una competición cancelada no se invita', async () => {
+    conEstado('CANCELLED');
+
+    renderPage();
+
+    await screen.findByText('Summer Cup');
+    expect(screen.queryByText('detail.actions.manageInvitations')).not.toBeInTheDocument();
+  });
+
+  it('con las inscripciones abiertas todavía se edita', async () => {
+    // BE #323: la configuración se puede corregir mientras haya inscripciones
+    // abiertas, así que «Editar» ya no desaparece al abrir el torneo
+    conEstado('ACTIVE');
+
+    renderPage();
+
+    expect(await screen.findByText('detail.actions.edit')).toBeInTheDocument();
+  });
+
+  it('pero borrar sigue siendo solo del borrador', async () => {
+    // Con gente invitada o dentro, lo que toca es cancelar
+    conEstado('ACTIVE');
+
+    renderPage();
+
+    await screen.findByText('Summer Cup');
+    expect(screen.queryByText('detail.actions.delete')).not.toBeInTheDocument();
+  });
+
+  it('y al cerrarse las inscripciones ya no se edita', async () => {
+    conEstado('CLOSED');
+
+    renderPage();
+
+    await screen.findByText('Summer Cup');
+    expect(screen.queryByText('detail.actions.edit')).not.toBeInTheDocument();
+  });
+});
+
+
+describe('CompetitionDetail - de quién es el torneo (FE #664)', () => {
+  const conVisibilidad = (visibility) => {
+    mockGetCompetitionDetail.mockResolvedValue({
+      id: 'comp-1',
+      name: 'Summer Cup',
+      status: 'ACTIVE',
+      creatorId: 'creator-1',
+      maxPlayers: 20,
+      countries: [],
+      visibility,
+    });
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockListEnrollments.mockResolvedValue([]);
+  });
+
+  it('una privada lo dice: quien la mira tiene que saber si le pueden encontrar', async () => {
+    conVisibilidad('PRIVATE');
+
+    renderPage();
+
+    expect(await screen.findByTestId('visibilidad-competicion')).toHaveTextContent(
+      'detail.visibilityPrivate'
+    );
+  });
+
+  it('y una pública también', async () => {
+    conVisibilidad('PUBLIC');
+
+    renderPage();
+
+    expect(await screen.findByTestId('visibilidad-competicion')).toHaveTextContent(
+      'detail.visibilityPublic'
+    );
+  });
+});
+
+
+describe('CompetitionDetail - cuándo abre una programada (FE #678)', () => {
+  const programada = ({ status = 'DRAFT', dias = 5, creatorId = 'creator-1', isCreator = true } = {}) => {
+    mockGetCompetitionDetail.mockResolvedValue({
+      id: 'comp-1',
+      name: 'Summer Cup',
+      status,
+      creatorId,
+      isCreator,
+      maxPlayers: 20,
+      countries: [],
+      visibility: 'PUBLIC',
+      startDate: '2027-06-01',
+      endDate: '2027-06-03',
+      enrollmentOpensDaysBefore: dias,
+    });
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockListEnrollments.mockResolvedValue([]);
+  });
+
+  it('D1: quien la mira desde fuera ve la fecha en que abre', async () => {
+    // Un desconocido veía «Borrador» sin fecha y sin botón: no sabía si algún
+    // día podría apuntarse. 5 días antes del 1 de junio es el 27 de mayo
+    programada({ creatorId: 'otro', isCreator: false });
+
+    renderPage();
+
+    const aviso = await screen.findByTestId('apertura-programada');
+    expect(aviso).toHaveTextContent('detail.enrollmentOpensOn');
+    expect(aviso).toHaveTextContent('27');
+    expect(aviso).toHaveTextContent(/mayo/);
+  });
+
+  it('D2: un borrador sin programar no enseña ninguna fecha', async () => {
+    programada({ dias: null });
+
+    renderPage();
+
+    await screen.findByText('Summer Cup');
+    expect(screen.queryByTestId('apertura-programada')).not.toBeInTheDocument();
+  });
+
+  it('D3: una que ya abrió tampoco, aunque guarde los días', async () => {
+    programada({ status: 'ACTIVE' });
+
+    renderPage();
+
+    await screen.findByText('Summer Cup');
+    expect(screen.queryByTestId('apertura-programada')).not.toBeInTheDocument();
+  });
+
+  it('D4: al creador se le dice que abre sola ese día, y que invitar la adelanta', async () => {
+    // Invitar abre cualquier borrador, programado o no (CompetitionPolicy
+    // mira solo el estado): el aviso de siempre era cierto, pero se comía la
+    // fecha que el organizador acababa de elegir
+    programada();
+
+    renderPage();
+
+    const nota = await screen.findByTestId('invitar-abre-inscripciones');
+    expect(nota).toHaveTextContent('detail.invitingOpensScheduled');
+    expect(nota).toHaveTextContent('27');
+  });
+
+  it('D5: y en un borrador sin programar, el aviso de siempre', async () => {
+    programada({ dias: null });
+
+    renderPage();
+
+    expect(await screen.findByTestId('invitar-abre-inscripciones')).toHaveTextContent(
+      'detail.invitingOpensEnrollment'
+    );
+  });
+});
+
+
+describe('CompetitionDetail - la vuelta lleva a donde se vino (FE #682)', () => {
+  const desde = (state) => {
+    mockGetCompetitionDetail.mockResolvedValue({
+      id: 'comp-1',
+      name: 'Summer Cup',
+      status: 'ACTIVE',
+      creatorId: 'otro',
+      maxPlayers: 20,
+      countries: [],
+    });
+    return render(
+      <MemoryRouter initialEntries={[{ pathname: '/competitions/comp-1', state }]}>
+        <Routes>
+          <Route path="/competitions/:id" element={<CompetitionDetail />} />
+          <Route path="/player/invitations" element={<div data-testid="en-invitaciones" />} />
+          <Route path="/competitions" element={<div data-testid="en-competiciones" />} />
+          <Route path="/browse-competitions" element={<div data-testid="en-explorar" />} />
+        </Routes>
+      </MemoryRouter>
+    );
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockListEnrollments.mockResolvedValue([]);
+  });
+
+  it('V1: desde invitaciones, vuelve a invitaciones', async () => {
+    desde({ from: 'invitations' });
+
+    fireEvent.click(await screen.findByText('detail.backToInvitations'));
+
+    expect(await screen.findByTestId('en-invitaciones')).toBeInTheDocument();
+  });
+
+  it('V2: y la flecha de la cabecera móvil, también', async () => {
+    desde({ from: 'invitations' });
+
+    await screen.findByText('Summer Cup');
+    expect(screen.getByTestId('header-auth')).toHaveAttribute('data-back-to', '/player/invitations');
+  });
+
+  it('V4: desde explorar, a explorar (ya lo hacía, pero no lo vigilaba nadie)', async () => {
+    desde({ from: 'browse' });
+
+    fireEvent.click(await screen.findByText('detail.backToBrowse'));
+
+    expect(await screen.findByTestId('en-explorar')).toBeInTheDocument();
+  });
+
+  it('V3: sin origen, a competiciones como siempre', async () => {
+    desde(undefined);
+
+    fireEvent.click(await screen.findByText('detail.backToCompetitions'));
+
+    expect(await screen.findByTestId('en-competiciones')).toBeInTheDocument();
   });
 });

@@ -1,10 +1,27 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { nombreRealSiAporta, nombreVisible } from '../../utils/nombreVisible';
-import { X, Search, Loader } from 'lucide-react';
+import { Loader, Search, UserPlus, X } from 'lucide-react';
 import Avatar from '../ui/Avatar';
 
-const SendInvitationModalContent = ({ onClose, onSend, onSendByUserId, onSearchUsers, isProcessing, t }) => {
-  const [activeTab, setActiveTab] = useState('search');
+const SendInvitationModalContent = ({
+  onClose,
+  onSend,
+  onSendByUserId,
+  onSearchUsers,
+  isProcessing,
+  t,
+  // Los amigos de quien invita, y en qué situación está cada uno respecto a esta
+  // competición. Lo trae la pantalla, que es la que lo sabe (FE #409)
+  friends = [],
+  idsInvitados = [],
+  idsInscritos = [],
+  cargandoAmigos = false,
+  falloAlCargarAmigos = false,
+  falloAlComprobarSituacion = false,
+}) => {
+  // Se abre por amigos: invitar a una competición es, casi siempre, invitar a
+  // los de siempre. Buscar y correo quedan para quien todavía no lo es
+  const [activeTab, setActiveTab] = useState('friends');
   const [email, setEmail] = useState('');
   const [personalMessage, setPersonalMessage] = useState('');
   const [error, setError] = useState('');
@@ -52,7 +69,7 @@ const SendInvitationModalContent = ({ onClose, onSend, onSendByUserId, onSearchU
 
   // La pestana activa, legible desde el efecto de busqueda sin meterla en sus
   // dependencias; y la busqueda cuyo desplegable cerro el propio usuario.
-  const activeTabRef = useRef('search');
+  const activeTabRef = useRef('friends');
   const searchInputRef = useRef(null);
   const modalRef = useRef(null);
   const descartadaRef = useRef('');
@@ -231,6 +248,15 @@ const SendInvitationModalContent = ({ onClose, onSend, onSendByUserId, onSearchU
     };
   }, [searchQuery, highlight, openDropdown, putResults]);
 
+  // Salen TODOS, y quien no se puede invitar lo dice. Esconderlos era peor: al
+  // no encontrar a alguien que sabes que está en tu lista, lo que parece es que
+  // la aplicación falla, no que esa persona ya está dentro
+  const amigosConSuSituacion = friends.map((amigo) => ({
+    ...amigo,
+    yaInscrito: idsInscritos.includes(amigo.otherUserId),
+    yaInvitado: idsInvitados.includes(amigo.otherUserId),
+  }));
+
   const handleEmailSubmit = (e) => {
     e.preventDefault();
     setError('');
@@ -272,6 +298,10 @@ const SendInvitationModalContent = ({ onClose, onSend, onSendByUserId, onSearchU
   const handleTabChange = (tab) => {
     setActiveTab(tab);
     setError('');
+    // El mensaje personal se escribe en las pestañas de búsqueda y correo, y no
+    // se ve desde la de amigos: conservarlo enviaría, sin decirlo, un texto que
+    // el organizador no tiene delante. Se limpia al cambiar
+    setPersonalMessage('');
     highlight(-1);
     activeTabRef.current = tab;
     if (tab !== 'search') {
@@ -320,7 +350,23 @@ const SendInvitationModalContent = ({ onClose, onSend, onSendByUserId, onSearchU
         </div>
 
         {/* Tabs */}
-        <div className="flex border-b border-gray-200" data-testid="invitation-tabs">
+        <div className="flex border-b border-gray-200" role="tablist" data-testid="invitation-tabs">
+          <button
+            type="button"
+            onClick={() => handleTabChange('friends')}
+            className={`flex-1 px-4 py-2.5 text-sm font-medium transition-colors ${
+              activeTab === 'friends'
+                ? 'text-primary border-b-2 border-primary'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+            data-testid="tab-friends"
+            role="tab"
+            id="tab-friends"
+            aria-selected={activeTab === 'friends'}
+            aria-controls="panel-friends"
+          >
+            {t('send.tabFriends')}
+          </button>
           <button
             type="button"
             onClick={() => handleTabChange('search')}
@@ -330,6 +376,10 @@ const SendInvitationModalContent = ({ onClose, onSend, onSendByUserId, onSearchU
                 : 'text-gray-500 hover:text-gray-700'
             }`}
             data-testid="tab-search-user"
+            role="tab"
+            id="tab-search-user"
+            aria-selected={activeTab === 'search'}
+            aria-controls="panel-search"
           >
             {t('send.tabSearchUser')}
           </button>
@@ -342,14 +392,89 @@ const SendInvitationModalContent = ({ onClose, onSend, onSendByUserId, onSearchU
                 : 'text-gray-500 hover:text-gray-700'
             }`}
             data-testid="tab-by-email"
+            role="tab"
+            id="tab-by-email"
+            aria-selected={activeTab === 'email'}
+            aria-controls="panel-email"
           >
             {t('send.tabByEmail')}
           </button>
         </div>
 
+        {/* Amigos: la lista, sin teclear ni esperar a nada */}
+        {activeTab === 'friends' && (
+          <div className="p-4" role="tabpanel" id="panel-friends" aria-labelledby="tab-friends">
+            {cargandoAmigos ? (
+              <div className="py-8 text-center" data-testid="friends-loading">
+                <p className="text-sm text-gray-500">{t('send.loadingFriends')}</p>
+              </div>
+            ) : falloAlComprobarSituacion ? (
+              // Distinto de no poder cargar los amigos: los amigos están, lo que
+              // no se sabe es quién de ellos ya está invitado o dentro. Ofrecerlos
+              // igualmente sería ofrecer lo que el servidor va a rechazar
+              <div className="py-8 text-center" data-testid="friends-eligibility-error">
+                <p className="text-sm text-gray-600">{t('send.eligibilityLoadFailed')}</p>
+              </div>
+            ) : falloAlCargarAmigos ? (
+              // No es lo mismo que no tener amigos: decirlo sería afirmar lo que
+              // no se ha podido preguntar
+              <div className="py-8 text-center" data-testid="friends-error">
+                <p className="text-sm text-gray-600">{t('send.friendsLoadFailed')}</p>
+              </div>
+            ) : amigosConSuSituacion.length === 0 ? (
+              <div className="py-8 text-center" data-testid="friends-empty">
+                <p className="text-sm text-gray-600 mb-2">{t('send.noFriends')}</p>
+                <button
+                  type="button"
+                  onClick={() => handleTabChange('search')}
+                  className="text-sm font-medium text-primary hover:text-primary/80"
+                >
+                  {t('send.tabSearchUser')}
+                </button>
+              </div>
+            ) : (
+              <ul className="space-y-2 max-h-72 overflow-y-auto">
+                {amigosConSuSituacion.map((amigo) => {
+                  const noSePuede = amigo.yaInscrito || amigo.yaInvitado;
+                  return (
+                    <li key={amigo.otherUserId}>
+                      <button
+                        type="button"
+                        onClick={() => onSendByUserId(amigo.otherUserId, null)}
+                        disabled={isProcessing || noSePuede}
+                        data-testid={`invite-friend-${amigo.otherUserId}`}
+                        className="w-full flex items-center justify-between gap-3 px-3 py-2.5 text-left border border-gray-200 rounded-lg enabled:hover:bg-gray-50 disabled:cursor-default"
+                      >
+                        <span
+                          className={`min-w-0 truncate text-sm font-medium ${
+                            noSePuede ? 'text-gray-400' : 'text-gray-900'
+                          }`}
+                        >
+                          {amigo.otherUserName}
+                        </span>
+                        {amigo.yaInscrito ? (
+                          <span className="shrink-0 text-xs text-gray-500">
+                            {t('send.alreadyEnrolled')}
+                          </span>
+                        ) : amigo.yaInvitado ? (
+                          <span className="shrink-0 text-xs text-gray-500">
+                            {t('send.alreadyInvited')}
+                          </span>
+                        ) : (
+                          <UserPlus className="w-5 h-5 shrink-0 text-primary" />
+                        )}
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
+        )}
+
         {/* Search User Tab */}
         {activeTab === 'search' && (
-          <form onSubmit={handleUserSubmit} className="p-4 space-y-4">
+          <form onSubmit={handleUserSubmit} className="p-4 space-y-4" role="tabpanel" id="panel-search" aria-labelledby="tab-search-user">
             <div>
               {selectedUser ? (
                 <div className="flex items-center gap-2 px-3 py-2 bg-primary/5 border border-primary/20 rounded-md" data-testid="selected-user-chip">
@@ -500,7 +625,7 @@ const SendInvitationModalContent = ({ onClose, onSend, onSendByUserId, onSearchU
 
         {/* By Email Tab */}
         {activeTab === 'email' && (
-          <form onSubmit={handleEmailSubmit} className="p-4 space-y-4">
+          <form onSubmit={handleEmailSubmit} className="p-4 space-y-4" role="tabpanel" id="panel-email" aria-labelledby="tab-by-email">
             <div>
               <label htmlFor="invitation-email" className="block text-sm font-medium text-gray-700 mb-1">
                 {t('send.emailLabel')}
@@ -566,7 +691,21 @@ const SendInvitationModalContent = ({ onClose, onSend, onSendByUserId, onSearchU
   );
 };
 
-const SendInvitationModal = ({ isOpen, onClose, onSend, onSendByUserId, onSearchUsers, isProcessing, t }) => {
+const SendInvitationModal = ({
+  isOpen,
+  onClose,
+  onSend,
+  onSendByUserId,
+  onSearchUsers,
+  isProcessing,
+  t,
+  friends,
+  idsInvitados,
+  idsInscritos,
+  cargandoAmigos,
+  falloAlCargarAmigos,
+  falloAlComprobarSituacion,
+}) => {
   if (!isOpen) return null;
   return (
     <SendInvitationModalContent
@@ -576,6 +715,12 @@ const SendInvitationModal = ({ isOpen, onClose, onSend, onSendByUserId, onSearch
       onSearchUsers={onSearchUsers}
       isProcessing={isProcessing}
       t={t}
+      friends={friends}
+      idsInvitados={idsInvitados}
+      idsInscritos={idsInscritos}
+      cargandoAmigos={cargandoAmigos}
+      falloAlCargarAmigos={falloAlCargarAmigos}
+      falloAlComprobarSituacion={falloAlComprobarSituacion}
     />
   );
 };

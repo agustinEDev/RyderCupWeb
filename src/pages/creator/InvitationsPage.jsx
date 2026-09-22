@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useNavigate, useParams } from 'react-router';
+import { Navigate, useNavigate, useParams } from 'react-router';
 import { ArrowLeft, Plus, Mail } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import customToast from '../../utils/toast';
@@ -11,18 +11,53 @@ import SendInvitationModal from '../../components/invitation/SendInvitationModal
 import {
   getCompetitionDetailUseCase,
   listCompetitionInvitationsUseCase,
+  listEnrollmentsUseCase,
+  listFriendsUseCase,
+  searchUsersUseCase,
   sendInvitationByEmailUseCase,
   sendInvitationUseCase,
-  searchUsersUseCase,
 } from '../../composition';
 import BlockLoader from '../../components/ui/BlockLoader';
+
+// Ni `/friends/me` ni el listado de invitaciones dan más de 100 filas por
+// página. Pedir una sola dejaba fuera al amigo 101 y a la invitación pendiente
+// 101, y una pendiente que no se ve es una invitación que se manda otra vez
+const POR_PAGINA = 100;
+// Una red por si el total promete más de lo que el servidor acaba dando: sin
+// ella, un `total_count` equivocado deja el bucle dando vueltas
+const TOPE_DE_PAGINAS = 20;
+
+/**
+ * Recorre las páginas de un listado hasta tenerlo entero.
+ *
+ * @param {(page: number) => Promise<Object>} pideLaPagina
+ * @param {(res: Object) => Array} sacaLasFilas
+ * @returns {Promise<Array>}
+ */
+const todasLasPaginas = async (pideLaPagina, sacaLasFilas) => {
+  const filas = [];
+  for (let pagina = 1; pagina <= TOPE_DE_PAGINAS; pagina++) {
+    const respuesta = await pideLaPagina(pagina);
+    const lote = sacaLasFilas(respuesta);
+    filas.push(...lote);
+    // Una página incompleta ya es la última, y el total manda sobre el resto
+    if (lote.length < POR_PAGINA || filas.length >= (respuesta?.totalCount ?? filas.length)) break;
+  }
+  return filas;
+};
 
 const InvitationsPage = () => {
   const navigate = useNavigate();
   const { id } = useParams();
   const { t } = useTranslation('invitations');
   const { user, loading: isLoadingUser } = useAuth();
-  const { isAdmin, isCreator: hasCreatorRole, isLoading: isLoadingRoles } = useUserRoles(id);
+  const {
+    isAdmin,
+    isCreator: hasCreatorRole,
+    isLoading: isLoadingRoles,
+    error: falloAlPedirLosPermisos,
+    refetch: volverAPedirLosPermisos,
+  } = useUserRoles(id);
 
   const [competition, setCompetition] = useState(null);
   const [invitations, setInvitations] = useState([]);
@@ -31,6 +66,14 @@ const InvitationsPage = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [statusFilter, setStatusFilter] = useState('');
   const [showSendModal, setShowSendModal] = useState(false);
+  // Para la pestaña de amigos del modal (FE #409)
+  const [friends, setFriends] = useState([]);
+  const [idsInscritos, setIdsInscritos] = useState([]);
+  const [idsInvitados, setIdsInvitados] = useState([]);
+  const [cargandoAmigos, setCargandoAmigos] = useState(false);
+  const [falloAlCargarAmigos, setFalloAlCargarAmigos] = useState(false);
+  const [falloAlComprobarSituacion, setFalloAlComprobarSituacion] = useState(false);
+  const [falloAlCargar, setFalloAlCargar] = useState(false);
 
   const canManage = isAdmin || hasCreatorRole;
 
@@ -50,12 +93,83 @@ const InvitationsPage = () => {
     } catch (error) {
       console.error('Error loading invitations:', error);
       customToast.error(error.message || t('errors.failedToLoad'));
-      navigate(`/competitions/${id}`);
+      // Marcar y que decida el render, en vez de irse desde aquí: esta carga y
+      // la de los permisos van por su cuenta, y salir corriendo la primera se
+      // llevaba por delante el aviso de la otra (FE #656)
+      setFalloAlCargar(true);
     } finally {
       setIsLoading(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, user, statusFilter, navigate]);
+
+  // Los amigos y la situación de cada uno se piden APARTE, no dentro del
+  // `Promise.all` de arriba: colgarlos ahí haría que un fallo suyo tumbara la
+  // pantalla entera, cuando lo único que se pierde es saber a quién no ofrecer
+  // (FE #409)
+  useEffect(() => {
+    if (!user?.id || !showSendModal) return;
+
+    let vigente = true;
+    // En una microtarea y no aquí mismo: llamar a setState de forma síncrona
+    // dentro del efecto encadena renders, y el linter lo dice con razón
+    globalThis.queueMicrotask(() => {
+      if (!vigente) return;
+      setCargandoAmigos(true);
+      setFalloAlCargarAmigos(false);
+      setFalloAlComprobarSituacion(false);
+    });
+
+    const amigos = todasLasPaginas(
+      (page) => listFriendsUseCase.execute(user.id, { limit: POR_PAGINA, page }),
+      (res) => res.friendships ?? []
+    );
+
+    // Solo APPROVED: sin filtro vienen también REQUESTED, REJECTED, CANCELLED e
+    // INVITED, y quien se retiró o fue rechazado SÍ se puede volver a invitar.
+    // Marcarlos habría bloqueado a quien el backend acepta sin problema
+    const inscritos = listEnrollmentsUseCase
+      .execute(id, { status: 'APPROVED' })
+      .then((res) => {
+        const inscripciones = Array.isArray(res) ? res : (res?.enrollments ?? []);
+        return inscripciones.map((e) => e.userId ?? e.user_id).filter(Boolean);
+      });
+
+    // Las pendientes se piden aparte y sin el filtro de la pantalla:
+    // `invitations` está filtrada por lo que el creador haya elegido arriba y
+    // paginada, así que con el desplegable en «Aceptadas» no habría ninguna
+    // pendiente y se ofrecería invitar a quien ya está invitado
+    const invitados = todasLasPaginas(
+      (page) => listCompetitionInvitationsUseCase.execute(id, { status: 'PENDING', limit: POR_PAGINA, page }),
+      (res) => res.invitations ?? []
+    ).then((lista) => lista.map((inv) => inv.inviteeUserId).filter(Boolean));
+
+    // Las tres a la vez, pero la pestaña no se da por cargada hasta que están
+    // las tres: con solo los amigos, las filas salían pulsables durante un
+    // instante y se podía invitar a quien ya estaba dentro
+    Promise.allSettled([amigos, inscritos, invitados]).then(([losAmigos, losInscritos, losInvitados]) => {
+      if (!vigente) return;
+
+      // Vaciar la lista diría «no tienes amigos», que es afirmar lo que no se
+      // ha podido preguntar. Se distingue de no tenerlos
+      setFriends(losAmigos.status === 'fulfilled' ? losAmigos.value : []);
+      setFalloAlCargarAmigos(losAmigos.status === 'rejected');
+
+      setIdsInscritos(losInscritos.status === 'fulfilled' ? losInscritos.value : []);
+      setIdsInvitados(losInvitados.status === 'fulfilled' ? losInvitados.value : []);
+      // Si no se sabe quién está ya dentro, no se ofrece a nadie: darlo por
+      // vacío habilitaba justo a quien el servidor va a rechazar
+      setFalloAlComprobarSituacion(
+        losInscritos.status === 'rejected' || losInvitados.status === 'rejected'
+      );
+
+      setCargandoAmigos(false);
+    });
+
+    return () => {
+      vigente = false;
+    };
+  }, [user?.id, id, showSendModal]);
 
   useEffect(() => {
     if (user) {
@@ -112,6 +226,31 @@ const InvitationsPage = () => {
 
   const isPageLoading = isLoadingUser || isLoadingRoles || isLoading;
 
+  // `useUserRoles` deja los tres roles a false ante CUALQUIER error, así que un
+  // 500 o un corte de red se parecen a «no tienes permiso». Echar por eso sería
+  // afirmar lo que no se ha podido preguntar, y con `replace` ni siquiera
+  // quedaría el atrás para reintentar
+  if (falloAlPedirLosPermisos) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <HeaderAuth user={user} />
+        <div className="max-w-4xl mx-auto px-4 py-6">
+          <div className="py-12 text-center" data-testid="roles-error">
+            <p className="text-sm text-gray-600 mb-4">{t('errors.rolesCheckFailed')}</p>
+            <button
+              type="button"
+              onClick={volverAPedirLosPermisos}
+              data-testid="roles-retry"
+              className="px-4 py-2 text-sm font-medium text-white bg-primary rounded-lg hover:bg-primary/90 transition-colors"
+            >
+              {t('errors.retry')}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (isPageLoading) {
     // La cabecera se queda puesta durante la espera: aparecer de golpe al
     // terminar es un salto, y de eso va justamente FE #495. El dibujo si es el
@@ -124,9 +263,18 @@ const InvitationsPage = () => {
     );
   }
 
+  // Sin datos no hay pantalla que enseñar, así que se sale — pero después del
+  // aviso de permisos, que es el que sabe si se puede reintentar
+  if (falloAlCargar) {
+    return <Navigate to={`/competitions/${id}`} replace />;
+  }
+
+  // Un elemento y no `navigate()`: llamarlo aquí cambia el router en pleno
+  // render («Cannot update a component while rendering a different component»),
+  // y sin `replace` la pantalla prohibida se queda en el historial, así que
+  // atrás vuelve a ella y de ahí no se sale (FE #656)
   if (!canManage) {
-    navigate(`/competitions/${id}`);
-    return null;
+    return <Navigate to={`/competitions/${id}`} replace />;
   }
 
   return (
@@ -216,6 +364,12 @@ const InvitationsPage = () => {
         onSearchUsers={handleSearchUsers}
         isProcessing={isProcessing}
         t={t}
+        friends={friends}
+        idsInvitados={idsInvitados}
+        idsInscritos={idsInscritos}
+        cargandoAmigos={cargandoAmigos}
+        falloAlCargarAmigos={falloAlCargarAmigos}
+        falloAlComprobarSituacion={falloAlComprobarSituacion}
       />
     </div>
   );

@@ -16,7 +16,14 @@
     "personalMessagePlaceholder": "Añade un mensaje personal a la invitación...",
     "send": "Enviar invitación",
     "sending": "Enviando...",
-    "searchFailed": "No se ha podido buscar. Inténtalo otra vez."
+    "searchFailed": "No se ha podido buscar. Inténtalo otra vez.",
+    "tabFriends": "Amigos",
+    "noFriends": "Todavía no tienes amigos en la aplicación",
+    "alreadyInvited": "Ya invitado",
+    "alreadyEnrolled": "Ya está en el torneo",
+    "loadingFriends": "Cargando tus amigos…",
+    "friendsLoadFailed": "No se ha podido cargar tu lista de amigos",
+    "eligibilityLoadFailed": "No se ha podido comprobar quién está ya invitado o dentro. Ciérralo y vuelve a abrirlo"
   },
   "status": {
     "PENDING": "Pendiente",
@@ -54,7 +61,9 @@
     "failedToSend": "Error al enviar la invitación",
     "failedToRespond": "Error al responder a la invitación",
     "duplicateInvitation": "Ya se ha enviado una invitación a este email",
-    "invalidEmail": "Por favor, introduce un email válido"
+    "invalidEmail": "Por favor, introduce un email válido",
+    "rolesCheckFailed": "No se ha podido comprobar si puedes gestionar esta competición",
+    "retry": "Reintentar"
   },
   "creator": {
     "title": "Invitaciones",

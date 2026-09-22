@@ -40,6 +40,15 @@ class ApiHandicapRepository extends IHandicapRepository {
 
     return new User(data);
   }
+
+  /**
+   * @override
+   */
+  async refreshMine() {
+    const data = await apiRequest('/api/v1/handicaps/refresh-mine', { method: 'POST' });
+
+    return { needsHandicap: data.needs_handicap, handicap: data.handicap ?? null };
+  }
 }
 
 export default ApiHandicapRepository;

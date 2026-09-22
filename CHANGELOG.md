@@ -5,6 +5,58 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.36.0] - 2026-09-22
+
+Segunda tanda del rediseño de las competiciones (#409): invitar, pública o privada
+y cuándo se abren las inscripciones. Y la otra mitad del hotfix 2.20.1 del backend:
+el hándicap de la RFEG vuelve a refrescarse al entrar, sin que el login lo espere.
+Requiere el backend **2.21.0**.
+
+### Added
+
+- **Invitar desde la lista de amigos, sin teclear nada** (#657). La pestaña
+  «Amigos» sale la primera al invitar, como en las partidas rápidas.
+- **Invitar desde el propio borrador** (#660, #663). El servidor ya abría las
+  inscripciones con la primera invitación, pero la app escondía el botón en borrador.
+  Ahora se ofrece, con una línea que dice lo que hace.
+- **Elegir si el torneo es privado o está abierto a cualquiera** (#664, #665).
+  «Solo invitados» viene marcado; se puede cambiar también al editar.
+- **Al crear una pública, un modal pregunta cuándo se abren las inscripciones**
+  (#666, #676): ahora mismo, o unos días antes del torneo, enseñando la fecha que
+  sale y avisando si ya habría pasado.
+
+### Changed
+
+- **El hándicap de la RFEG se refresca en segundo plano al entrar** (#677, #684).
+  El login ya no lo espera: lo lanza y sigue, así que una RFEG lenta o caída no
+  retiene la entrada. Solo se pide una vez aunque el panel lo relance, se refresca
+  vayas a donde vayas tras entrar, y **al cerrar sesión se olvida todo lo de esa
+  cuenta**: en un móvil compartido, la siguiente persona no verá el aviso ni el
+  hándicap de la anterior.
+- **El modal del hándicap dice por qué se abre** (#684). A quien ya tiene uno le
+  dice cuál es y que hoy no se ha podido actualizar, en vez de «tu perfil no tiene
+  hándicap configurado».
+- **La ficha de una competición programada dice cuándo abre** (#678, #679), también
+  a quien la mira desde fuera. Y la etiqueta de visibilidad dice «Pública», no
+  «Abierta», que junto a «Borrador» se leía como inscripciones abiertas.
+- **Una invitación aceptada abre su competición desde su propia tarjeta** (#682,
+  #683), entera y con una flecha, en vez de una caja suelta sin título al final de la
+  lista. Y «Volver» lleva a donde se vino: las invitaciones, Explorar o las
+  competiciones.
+
+### Fixed
+
+- **La cabecera de escritorio desbordaba por debajo de ~1250 px** (#680, #681) y la
+  página se desplazaba en horizontal, con una franja blanca a la derecha. Por debajo
+  de 1280 px los enlaces y el idioma pasan al desplegable del avatar. Las tarjetas de
+  «Acciones rápidas» del panel ya no se estrujan entre 768 y 1024 px.
+- **Sin conexión, 52 avisos enseñaban el «Failed to fetch» del navegador** (#685,
+  #686). Ahora dicen «Sin conexión. Vuelve a intentarlo cuando tengas cobertura».
+  Y «Mis invitaciones» ya no dice «No hay invitaciones todavía» cuando no ha podido
+  cargarlas: lo dice y ofrece reintentar.
+- **La pantalla de invitaciones navegaba desde dentro del render** (#656, #659) y
+  atrapaba al volver atrás.
+
 ## [2.35.0] - 2026-09-20
 
 Primera tanda del rediseño de las competiciones (#409): crear un torneo era un formulario largo
