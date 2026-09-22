@@ -204,4 +204,83 @@ describe('MyInvitationsPage', () => {
     expect(tarjeta).toContainElement(accesos[0]);
     expect(accesos[0].closest('a')).toHaveAttribute('href', '/competitions/comp-123');
   });
+
+  /**
+   * Si la carga falla, la lista se quedaba vacía y la pantalla decía «No hay
+   * invitaciones todavía»: una afirmación que no se había podido comprobar
+   * (FE #685). Quien tenía una invitación pendiente entendía que no la tenía.
+   */
+  describe('si no se han podido cargar (FE #685)', () => {
+    it('E1: sin red, dice que no hay conexión y deja reintentar, no que no hay ninguna', async () => {
+      mockListMyInvitations.mockRejectedValue(new TypeError('Sin conexión'));
+
+      renderPage();
+
+      const aviso = await screen.findByTestId('invitaciones-sin-cargar');
+      expect(aviso).toHaveTextContent('common:sinConexion.aviso');
+      expect(screen.getByRole('button', { name: 'errors.retry' })).toBeInTheDocument();
+      expect(screen.queryByText('noInvitations')).not.toBeInTheDocument();
+    });
+
+    it('E2: si falla el servidor, dice que no se han podido cargar', async () => {
+      mockListMyInvitations.mockRejectedValue(
+        Object.assign(new Error('Internal Server Error'), { status: 500 })
+      );
+
+      renderPage();
+
+      expect(await screen.findByTestId('invitaciones-sin-cargar')).toHaveTextContent(
+        'errors.failedToLoad'
+      );
+      expect(screen.queryByText('noInvitations')).not.toBeInTheDocument();
+    });
+
+    it('E3: reintentar vuelve a pedirlas y, si llegan, las enseña', async () => {
+      // Falla hasta que se pulsa «Reintentar». Con respuestas de «una vez» no
+      // vale: la `useAuth` falsa de este fichero da un usuario nuevo en cada
+      // render, la carga se relanza sola y se las gasta antes del clic
+      let hayRed = false;
+      mockListMyInvitations.mockImplementation(() =>
+        hayRed
+          ? Promise.resolve({
+              invitations: [
+                {
+                  id: 'inv-1',
+                  competitionId: 'comp-1',
+                  competitionName: 'Summer Cup',
+                  inviterName: 'Creator',
+                  inviteeEmail: 'player@test.com',
+                  status: 'PENDING',
+                  isPending: true,
+                  isAccepted: false,
+                  isDeclined: false,
+                  isExpired: false,
+                  personalMessage: null,
+                  expiresAt: new Date(Date.now() + 86400000).toISOString(),
+                  respondedAt: null,
+                },
+              ],
+              totalCount: 1,
+            })
+          : Promise.reject(new TypeError('Sin conexión'))
+      );
+
+      renderPage();
+      const reintentar = await screen.findByRole('button', { name: 'errors.retry' });
+      hayRed = true;
+      fireEvent.click(reintentar);
+
+      expect(await screen.findByText('Summer Cup')).toBeInTheDocument();
+      expect(screen.queryByTestId('invitaciones-sin-cargar')).not.toBeInTheDocument();
+    });
+
+    it('E4: si cargan y no hay ninguna, sí lo dice', async () => {
+      mockListMyInvitations.mockResolvedValue({ invitations: [], totalCount: 0 });
+
+      renderPage();
+
+      expect(await screen.findByText('noInvitations')).toBeInTheDocument();
+      expect(screen.queryByTestId('invitaciones-sin-cargar')).not.toBeInTheDocument();
+    });
+  });
 });

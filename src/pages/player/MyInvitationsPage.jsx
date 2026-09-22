@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router';
-import { Mail } from 'lucide-react';
+import { Mail, WifiOff, AlertCircle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import customToast from '../../utils/toast';
+import { esFalloDeRed, mensajeDeError } from '../../utils/sinCobertura';
 import HeaderAuth from '../../components/layout/HeaderAuth';
 import { useAuth } from '../../hooks/useAuth';
 import InvitationCard from '../../components/invitation/InvitationCard';
@@ -21,6 +22,10 @@ const MyInvitationsPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [processingId, setProcessingId] = useState(null);
   const [statusFilter, setStatusFilter] = useState('');
+  // Por qué no se han podido cargar: 'red', 'otro' o null si cargaron. Sin esto
+  // la lista vacía decía «No hay invitaciones todavía» sin haberlo podido
+  // comprobar (FE #685)
+  const [cargaFallida, setCargaFallida] = useState(null);
 
   const pendingCount = invitations.filter((inv) => inv.isPending).length;
 
@@ -33,9 +38,16 @@ const MyInvitationsPage = () => {
         statusFilter ? { status: statusFilter } : {}
       );
       setInvitations(result.invitations);
+      setCargaFallida(null);
     } catch (error) {
       console.error('Error loading invitations:', error);
-      customToast.error(error.message || t('errors.failedToLoad'));
+      setCargaFallida(esFalloDeRed(error) ? 'red' : 'otro');
+      customToast.error(
+        mensajeDeError(error, {
+          sinConexion: t('common:sinConexion.mensaje'),
+          generico: t('errors.failedToLoad'),
+        })
+      );
     } finally {
       setIsLoading(false);
     }
@@ -129,7 +141,27 @@ const MyInvitationsPage = () => {
         </div>
 
         {/* Invitation List */}
-        {invitations.length === 0 ? (
+        {cargaFallida ? (
+          // En vez de la lista, que sería la de antes del fallo o una vacía que
+          // afirma algo que no se ha podido comprobar
+          <div data-testid="invitaciones-sin-cargar" className="text-center py-12">
+            {cargaFallida === 'red' ? (
+              <WifiOff className="h-12 w-12 text-gray-400 mx-auto mb-3" aria-hidden="true" />
+            ) : (
+              <AlertCircle className="h-12 w-12 text-gray-400 mx-auto mb-3" aria-hidden="true" />
+            )}
+            <p className="text-gray-700 mb-4">
+              {cargaFallida === 'red' ? t('common:sinConexion.aviso') : t('errors.failedToLoad')}
+            </p>
+            <button
+              type="button"
+              onClick={loadData}
+              className="px-4 py-2 text-sm font-medium text-white bg-primary rounded-lg hover:bg-primary/90 transition-colors"
+            >
+              {t('errors.retry')}
+            </button>
+          </div>
+        ) : invitations.length === 0 ? (
           <div className="text-center py-12">
             <Mail className="h-12 w-12 text-gray-300 mx-auto mb-3" />
             <p className="text-gray-500">{t('noInvitations')}</p>
