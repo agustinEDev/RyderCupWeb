@@ -3,16 +3,38 @@ import { Users } from 'lucide-react';
 const TeamAssignmentSection = ({
   teamAssignment,
   onAssignTeams,
+  onFillCaptain,
   canManage,
   playerNameMap,
   enrollments,
   teamNames,
   maxPlayingHandicap,
   captains,
+  status,
   t,
 }) => {
   // Quién capitanea cada equipo, y quién es su segundo (FE #692): esta es la
   // pantalla donde se preparan las sesiones, y las parejas las monta el capitán
+  // Un equipo puede quedarse sin capitán: si se retira tras el reparto y no
+  // había subcapitán, repartir otra vez pide los dos y nombrarlos ya no se
+  // puede (RyderCupAm#320). El organizador cubre el puesto desde aquí.
+  //
+  // «Sin capitán» se decide contra los que siguen inscritos, como hace el
+  // servidor: una baja con el torneo en marcha no le quita el puesto, así que
+  // al volver a CERRADA el capitán figura pero ya no juega.
+  //
+  // Y solo mientras se prepara: en juego o terminado el servidor lo rechaza,
+  // y ofrecerlo sería mandar al organizador a un error
+  const inscritos = new Set(
+    (enrollments || []).filter((e) => e.status === 'APPROVED').map((e) => e.userId)
+  );
+  const sePuedeCubrir = ['ACTIVE', 'CLOSED'].includes(status);
+  const sinCapitan = (equipo) => {
+    if (!captains || !sePuedeCubrir) return false;
+    const capitan = equipo === 'A' ? captains.teamA : captains.teamB;
+    return !capitan || !inscritos.has(capitan);
+  };
+
   // Sin el nombre del equipo: cada lista ya lo lleva en su título, y uno largo
   // dejaba la etiqueta en «Capitán de E...»
   // Mirando también en qué equipo se pinta: repartir de nuevo libera los
@@ -110,6 +132,17 @@ const TeamAssignmentSection = ({
               </li>
             ))}
           </ul>
+
+          {canManage && sinCapitan('A') && (
+            <button
+              type="button"
+              data-testid="cubrir-capitan-A"
+              onClick={() => onFillCaptain('A')}
+              className="mt-3 w-full rounded-lg border border-blue-300 bg-white px-3 py-2 text-sm font-medium text-blue-800 hover:bg-blue-100"
+            >
+              {t('teams.fillCaptain')}
+            </button>
+          )}
         </div>
 
         {/* Team B */}
@@ -132,6 +165,17 @@ const TeamAssignmentSection = ({
               </li>
             ))}
           </ul>
+
+          {canManage && sinCapitan('B') && (
+            <button
+              type="button"
+              data-testid="cubrir-capitan-B"
+              onClick={() => onFillCaptain('B')}
+              className="mt-3 w-full rounded-lg border border-red-300 bg-white px-3 py-2 text-sm font-medium text-red-800 hover:bg-red-100"
+            >
+              {t('teams.fillCaptain')}
+            </button>
+          )}
         </div>
       </div>
 

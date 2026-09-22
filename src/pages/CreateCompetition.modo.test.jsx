@@ -123,17 +123,17 @@ describe('CreateCompetition · elegir el modo de configuración (FE #695)', () =
   it('S2: al elegirlo sale el formulario de siempre', async () => {
     pinta();
 
-    await elegirTipoYModo('AUTOMATIC');
+    await elegirTipoYModo('MANUAL');
 
     expect(await screen.findByText('create.competitionDetails')).toBeInTheDocument();
     // Sigue a la vista dentro del formulario, con el elegido marcado: el modo
     // decide el resto del camino, así que se puede cambiar sin volver atrás
-    expect(screen.getByTestId('modo-AUTOMATIC')).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByTestId('modo-MANUAL')).toHaveAttribute('aria-pressed', 'true');
   });
 
   it('S3: el modo elegido viaja al crear', async () => {
     pinta();
-    await elegirTipoYModo('AUTOMATIC');
+    await elegirTipoYModo('MANUAL');
     await screen.findByText('create.competitionDetails');
     rellenarMinimo();
 
@@ -141,7 +141,7 @@ describe('CreateCompetition · elegir el modo de configuración (FE #695)', () =
 
     await vi.waitFor(() =>
       expect(createCompetitionWithGolfCoursesUseCase.execute).toHaveBeenCalledWith(
-        expect.objectContaining({ setup_mode: 'AUTOMATIC' }),
+        expect.objectContaining({ setup_mode: 'MANUAL' }),
         expect.anything()
       )
     );
@@ -179,7 +179,7 @@ describe('CreateCompetition · elegir el modo de configuración (FE #695)', () =
     await vi.waitFor(() =>
       expect(screen.getByTestId('modo-MANUAL')).toHaveAttribute('aria-pressed', 'true')
     );
-    expect(screen.getByTestId('modo-AUTOMATIC')).toHaveAttribute('aria-pressed', 'false');
+    expect(screen.getByTestId('modo-RYDER_CUP')).toHaveAttribute('aria-pressed', 'false');
   });
 
   it('S7: al editar, el cambio viaja', async () => {
@@ -187,14 +187,14 @@ describe('CreateCompetition · elegir el modo de configuración (FE #695)', () =
     await vi.waitFor(() =>
       expect(screen.getByTestId('modo-MANUAL')).toHaveAttribute('aria-pressed', 'true')
     );
-    fireEvent.click(screen.getByTestId('modo-AUTOMATIC'));
+    fireEvent.click(screen.getByTestId('modo-RYDER_CUP'));
 
     fireEvent.click(screen.getByRole('button', { name: 'edit.updateCompetition' }));
 
     await vi.waitFor(() =>
       expect(updateCompetitionUseCase.execute).toHaveBeenCalledWith(
         'c-1',
-        expect.objectContaining({ setup_mode: 'AUTOMATIC' })
+        expect.objectContaining({ setup_mode: 'RYDER_CUP' })
       )
     );
   });
@@ -203,13 +203,29 @@ describe('CreateCompetition · elegir el modo de configuración (FE #695)', () =
     // Cambiar de tipo puede cambiar lo que tiene sentido automatizar, así que
     // el modo se vuelve a preguntar. Lo escrito se queda, como con el tipo
     pinta();
-    await elegirTipoYModo('AUTOMATIC');
+    await elegirTipoYModo('MANUAL');
     await screen.findByText('create.competitionDetails');
 
     fireEvent.click(screen.getByTestId('volver-al-tipo'));
     fireEvent.click(await screen.findByTestId('tipo-RYDER_CUP'));
 
-    expect(await screen.findByTestId('modo-AUTOMATIC')).toHaveAttribute('aria-pressed', 'false');
+    expect(await screen.findByTestId('modo-MANUAL')).toHaveAttribute('aria-pressed', 'false');
+    expect(screen.queryByText('create.competitionDetails')).not.toBeInTheDocument();
+  });
+
+  it('S9: «Todo automático» se enseña pero todavía no se puede elegir', async () => {
+    // La app aún no forma los equipos ni monta la agenda sola: la tarjeta
+    // explica hacia dónde va, como Stableford y Medal en el tipo, y no miente
+    pinta();
+
+    fireEvent.click(await screen.findByTestId('tipo-RYDER_CUP'));
+
+    const automatico = await screen.findByTestId('modo-AUTOMATIC');
+    expect(automatico).toHaveAttribute('aria-disabled', 'true');
+    expect(automatico.textContent).toContain('create.type.comingSoon');
+
+    fireEvent.click(automatico);
+
     expect(screen.queryByText('create.competitionDetails')).not.toBeInTheDocument();
   });
 });

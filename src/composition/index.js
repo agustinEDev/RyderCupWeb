@@ -65,6 +65,7 @@ import GetCompetitionDetailUseCase from '../application/use_cases/competition/Ge
 import ActivateCompetitionUseCase from '../application/use_cases/competition/ActivateCompetitionUseCase';
 import CloseEnrollmentsUseCase from '../application/use_cases/competition/CloseEnrollmentsUseCase';
 import NameCaptainsUseCase from '../application/use_cases/competition/NameCaptainsUseCase';
+import FillCaptainUseCase from '../application/use_cases/competition/FillCaptainUseCase';
 import StartCompetitionUseCase from '../application/use_cases/competition/StartCompetitionUseCase';
 import CompleteCompetitionUseCase from '../application/use_cases/competition/CompleteCompetitionUseCase';
 import CancelCompetitionUseCase from '../application/use_cases/competition/CancelCompetitionUseCase';
@@ -226,6 +227,7 @@ const getCompetitionDetailUseCase = new GetCompetitionDetailUseCase({ competitio
 const activateCompetitionUseCase = new ActivateCompetitionUseCase({ competitionRepository: apiCompetitionRepository });
 const closeEnrollmentsUseCase = new CloseEnrollmentsUseCase({ competitionRepository: apiCompetitionRepository });
 const nameCaptainsUseCase = new NameCaptainsUseCase({ competitionRepository: apiCompetitionRepository });
+const fillCaptainUseCase = new FillCaptainUseCase({ competitionRepository: apiCompetitionRepository });
 const startCompetitionUseCase = new StartCompetitionUseCase({ competitionRepository: apiCompetitionRepository });
 const completeCompetitionUseCase = new CompleteCompetitionUseCase({ competitionRepository: apiCompetitionRepository });
 const cancelCompetitionUseCase = new CancelCompetitionUseCase({ competitionRepository: apiCompetitionRepository });
@@ -393,6 +395,7 @@ export {
   activateCompetitionUseCase,
   closeEnrollmentsUseCase,
   nameCaptainsUseCase,
+  fillCaptainUseCase,
   startCompetitionUseCase,
   completeCompetitionUseCase,
   cancelCompetitionUseCase,

@@ -168,6 +168,15 @@ describe('AssignTeamsModal · los capitanes van fijos en su equipo (FE #692)', (
     expect(screen.getByText('teams.captainMissing')).toBeInTheDocument();
   });
 
+  it('M9b: y con los equipos ya repartidos manda al sitio correcto', () => {
+    // «Nómbralo en la competición» deja de valer en cuanto hay equipos: ahí el
+    // servidor ya no deja nombrarlos, y se cubre desde el panel de equipos
+    pintar({ captains: { teamA: 'ana', teamB: null }, hasTeams: true });
+
+    expect(screen.getByText('teams.captainMissingWithTeams')).toBeInTheDocument();
+    expect(screen.queryByText('teams.captainMissing')).not.toBeInTheDocument();
+  });
+
   it('M10: el reparto automático también lo exige, así que el aviso sale igual', () => {
     pintar({ captains: { teamA: null, teamB: 'bea' } });
 

@@ -256,6 +256,21 @@ class ApiCompetitionRepository extends ICompetitionRepository {
   }
 
   /**
+   * Cubre el puesto de capitán de un equipo, vacío tras una baja (FE #692).
+   * @override
+   * @param {string} competitionId
+   * @param {'A'|'B'} team
+   * @param {{player_id: string}} jugador
+   * @returns {Promise<Object>} Capitanes y subcapitanes tras el cambio
+   */
+  async fillTeamCaptain(competitionId, team, jugador) {
+    return await apiRequest(`/api/v1/competitions/${competitionId}/teams/${team}/captain`, {
+      method: 'PUT',
+      body: JSON.stringify(jugador),
+    });
+  }
+
+  /**
    * Starts a competition (CLOSED → IN_PROGRESS).
    * @override
    * @param {string} competitionId

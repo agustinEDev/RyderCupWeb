@@ -14,6 +14,7 @@ import WalkoverModal from '../../components/schedule/WalkoverModal';
 import ReassignPlayersModal from '../../components/schedule/ReassignPlayersModal';
 import MatchDetailModal from '../../components/schedule/MatchDetailModal';
 import AssignTeamsModal from '../../components/schedule/AssignTeamsModal';
+import FillCaptainModal from '../../components/schedule/FillCaptainModal';
 import GenerateMatchesModal from '../../components/schedule/GenerateMatchesModal';
 import {
   getScheduleUseCase,
@@ -25,6 +26,7 @@ import {
   deleteRoundUseCase,
   generateMatchesUseCase,
   assignTeamsUseCase,
+  fillCaptainUseCase,
   updateMatchStatusUseCase,
   declareWalkoverUseCase,
   reassignPlayersUseCase,
@@ -44,6 +46,8 @@ const SchedulePage = () => {
   const [schedule, setSchedule] = useState(null);
   const [golfCourses, setGolfCourses] = useState([]);
   const [enrollments, setEnrollments] = useState([]);
+  // Cubrir el puesto de un capitán que se fue tras el reparto (FE #692)
+  const [cubriendoCapitan, setCubriendoCapitan] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
 
@@ -121,6 +125,34 @@ const SchedulePage = () => {
       loadData();
     }
   }, [user, loadData]);
+
+  const jugadoresDelEquipo = (equipo) => {
+    const lista =
+      equipo === 'A' ? teamAssignment?.teamAPlayerIds : teamAssignment?.teamBPlayerIds;
+    // Los que siguen inscritos: el reparto guarda la lista tal cual y una baja
+    // no la toca, así que quien se retiró sigue ahí y ya no puede capitanear
+    const aprobados = new Set(
+      enrollments.filter((e) => e.status === 'APPROVED').map((e) => e.userId)
+    );
+    return (lista || [])
+      .filter((id) => aprobados.has(id))
+      .map((id) => ({ userId: id, name: playerNameMap.get(id) || id }));
+  };
+
+  const cubrirCapitan = async (playerId) => {
+    setIsProcessing(true);
+    try {
+      const { captains } = await fillCaptainUseCase.execute(id, cubriendoCapitan, playerId);
+      setCompetition((prev) => ({ ...prev, captains }));
+      setCubriendoCapitan(null);
+      customToast.success(t('success.captainFilled'));
+    } catch (error) {
+      console.error('Error filling captain:', error);
+      customToast.error(error.message || t('errors.failedToFillCaptain'));
+    } finally {
+      setIsProcessing(false);
+    }
+  };
 
   const recargarCompeticion = async () => {
     try {
@@ -405,6 +437,8 @@ const SchedulePage = () => {
                 teamNames={teamNames}
                 maxPlayingHandicap={competition.maxPlayingHandicap ?? null}
                 captains={competition.captains}
+                status={competition.status}
+                onFillCaptain={setCubriendoCapitan}
                 t={t}
               />
             </motion.div>
@@ -555,6 +589,21 @@ const SchedulePage = () => {
           isProcessing={isProcessing}
           teamNames={teamNames}
           captains={competition.captains}
+          hasTeams={Boolean(teamAssignment)}
+          t={t}
+        />
+      )}
+
+      {/* Cubrir el puesto de un capitán que se fue tras el reparto (FE #692) */}
+      {cubriendoCapitan && (
+        <FillCaptainModal
+          isOpen
+          team={cubriendoCapitan}
+          teamName={cubriendoCapitan === 'A' ? teamNames.teamA : teamNames.teamB}
+          players={jugadoresDelEquipo(cubriendoCapitan)}
+          onConfirm={cubrirCapitan}
+          onClose={() => setCubriendoCapitan(null)}
+          isLoading={isProcessing}
           t={t}
         />
       )}
