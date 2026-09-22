@@ -13,11 +13,15 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
+// Objeto CONSTANTE, como el de verdad: uno nuevo en cada render cambiaba `user`,
+// relanzaba la carga sin parar y los tests acababan mirando la pantalla a medio
+// cargar (FE #685)
+const sesion = {
+  user: { id: 'user-1', first_name: 'Test', last_name: 'User' },
+  loading: false,
+};
 vi.mock('../../hooks/useAuth', () => ({
-  useAuth: () => ({
-    user: { id: 'user-1', first_name: 'Test', last_name: 'User' },
-    loading: false,
-  }),
+  useAuth: () => sesion,
 }));
 
 vi.mock('../../components/layout/HeaderAuth', () => ({
@@ -217,7 +221,9 @@ describe('MyInvitationsPage', () => {
       renderPage();
 
       const aviso = await screen.findByTestId('invitaciones-sin-cargar');
-      expect(aviso).toHaveTextContent('common:sinConexion.aviso');
+      // «mensaje» y no «aviso»: el aviso dice «lo que ves puede no estar al día»,
+      // y aquí no queda nada a la vista
+      expect(aviso).toHaveTextContent('common:sinConexion.mensaje');
       expect(screen.getByRole('button', { name: 'errors.retry' })).toBeInTheDocument();
       expect(screen.queryByText('noInvitations')).not.toBeInTheDocument();
     });
@@ -236,9 +242,7 @@ describe('MyInvitationsPage', () => {
     });
 
     it('E3: reintentar vuelve a pedirlas y, si llegan, las enseña', async () => {
-      // Falla hasta que se pulsa «Reintentar». Con respuestas de «una vez» no
-      // vale: la `useAuth` falsa de este fichero da un usuario nuevo en cada
-      // render, la carga se relanza sola y se las gasta antes del clic
+      // Falla hasta que se pulsa «Reintentar»
       let hayRed = false;
       mockListMyInvitations.mockImplementation(() =>
         hayRed
@@ -272,6 +276,39 @@ describe('MyInvitationsPage', () => {
 
       expect(await screen.findByText('Summer Cup')).toBeInTheDocument();
       expect(screen.queryByTestId('invitaciones-sin-cargar')).not.toBeInTheDocument();
+    });
+
+    it('E5: si falla tras haber cargado, el contador de pendientes no se queda a la vista', async () => {
+      // «3 pendientes» junto a «no se han podido cargar» se contradicen
+      const pendiente = {
+        id: 'inv-1',
+        competitionId: 'comp-1',
+        competitionName: 'Summer Cup',
+        inviterName: 'Creator',
+        inviteeEmail: 'player@test.com',
+        status: 'PENDING',
+        isPending: true,
+        isAccepted: false,
+        isDeclined: false,
+        isExpired: false,
+        personalMessage: null,
+        expiresAt: new Date(Date.now() + 86400000).toISOString(),
+        respondedAt: null,
+      };
+      let hayRed = true;
+      mockListMyInvitations.mockImplementation(() =>
+        hayRed
+          ? Promise.resolve({ invitations: [pendiente], totalCount: 1 })
+          : Promise.reject(new TypeError('Sin conexión'))
+      );
+
+      renderPage();
+      expect(await screen.findByText('player.pendingCount_1')).toBeInTheDocument();
+      hayRed = false;
+      fireEvent.change(screen.getByRole('combobox'), { target: { value: 'ACCEPTED' } });
+
+      await screen.findByTestId('invitaciones-sin-cargar');
+      expect(screen.queryByText('player.pendingCount_1')).not.toBeInTheDocument();
     });
 
     it('E4: si cargan y no hay ninguna, sí lo dice', async () => {

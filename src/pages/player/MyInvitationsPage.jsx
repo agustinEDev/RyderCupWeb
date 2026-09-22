@@ -115,7 +115,8 @@ const MyInvitationsPage = () => {
         <div className="mb-6">
           <div className="flex items-center gap-3">
             <h1 className="hidden md:block text-2xl font-bold text-gray-900">{t('player.title')}</h1>
-            {pendingCount > 0 && (
+            {/* Si la carga falló, el recuento es de la lista de antes */}
+            {pendingCount > 0 && !cargaFallida && (
               <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
                 {t('player.pendingCount', { count: pendingCount })}
               </span>
@@ -151,7 +152,9 @@ const MyInvitationsPage = () => {
               <AlertCircle className="h-12 w-12 text-gray-400 mx-auto mb-3" aria-hidden="true" />
             )}
             <p className="text-gray-700 mb-4">
-              {cargaFallida === 'red' ? t('common:sinConexion.aviso') : t('errors.failedToLoad')}
+              {/* «mensaje» y no «aviso»: el aviso dice que lo que se ve puede no
+                  estar al día, y aquí no queda nada a la vista */}
+              {cargaFallida === 'red' ? t('common:sinConexion.mensaje') : t('errors.failedToLoad')}
             </p>
             <button
               type="button"
