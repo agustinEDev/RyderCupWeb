@@ -1,5 +1,12 @@
 import { refreshOwnHandicapUseCase } from '../composition';
 import { consultaLaSesion } from './sesionCompartida';
+import {
+  APUNTE_REFRESCAR,
+  HANDICAP_POR_PEDIR,
+  generacionDelRefresco,
+} from './refrescoDeHandicapApuntes';
+
+export { APUNTE_REFRESCAR };
 
 /**
  * El refresco del hándicap al entrar (FE #677).
@@ -14,13 +21,13 @@ import { consultaLaSesion } from './sesionCompartida';
  * montado, por el evento; si no, lo encuentra guardado al abrirse.
  */
 
-export const APUNTE_REFRESCAR = 'refrescar_handicap';
-const HANDICAP_POR_PEDIR = 'pedir_handicap';
 export const EVENTO_HANDICAP_POR_PEDIR = 'pedir-handicap';
 
 // Uno a la vez: el login lo lanza y, un instante después, el panel ve el
-// apunte todavía puesto. Sin esto salían dos peticiones a la RFEG
+// apunte todavía puesto. Sin esto salían dos peticiones a la RFEG. Va con la
+// generación en que se lanzó: si entretanto se cerró sesión, es de otra cuenta
 let enVuelo = null;
+let generacionEnVuelo = null;
 
 const esPermanente = (error) => error?.status >= 400 && error?.status < 500;
 
@@ -34,12 +41,17 @@ const esPermanente = (error) => error?.status >= 400 && error?.status < 500;
  * @returns {Promise<void>} Resuelve siempre; los fallos se quedan aquí dentro.
  */
 export const lanzaElRefrescoDeHandicap = ({ handicapDeAntes = null } = {}) => {
-  if (enVuelo) return enVuelo;
+  const generacion = generacionDelRefresco();
+  if (enVuelo && generacionEnVuelo === generacion) return enVuelo;
+  const esDeOtraCuenta = () => generacion !== generacionDelRefresco();
 
-  enVuelo = refreshOwnHandicapUseCase
+  const peticion = refreshOwnHandicapUseCase
     .execute()
     .then(({ needsHandicap, handicap }) => {
+      if (esDeOtraCuenta()) return;
       localStorage.removeItem(APUNTE_REFRESCAR);
+      // Lo que quedara pendiente de otro día ya no vale, sea cual sea la respuesta
+      localStorage.removeItem(HANDICAP_POR_PEDIR);
       if (needsHandicap) {
         localStorage.setItem(HANDICAP_POR_PEDIR, JSON.stringify({ handicap }));
         globalThis.dispatchEvent(new globalThis.Event(EVENTO_HANDICAP_POR_PEDIR));
@@ -51,13 +63,15 @@ export const lanzaElRefrescoDeHandicap = ({ handicapDeAntes = null } = {}) => {
       // Un 4xx no se va a arreglar solo (el endpoint no existe, el usuario ya
       // no): se deja de intentar. Sin respuesta o un 5xx no se sabe nada, así
       // que no se afirma nada y el apunte se queda para reintentar
-      if (esPermanente(error)) localStorage.removeItem(APUNTE_REFRESCAR);
+      if (esPermanente(error) && !esDeOtraCuenta()) localStorage.removeItem(APUNTE_REFRESCAR);
     })
     .finally(() => {
-      enVuelo = null;
+      if (enVuelo === peticion) enVuelo = null;
     });
 
-  return enVuelo;
+  enVuelo = peticion;
+  generacionEnVuelo = generacion;
+  return peticion;
 };
 
 /**
@@ -80,4 +94,5 @@ export const recogeElHandicapPorPedir = () => {
 /** Solo para tests: el estado del módulo sobrevive de un test a otro. */
 export const reiniciaElRefrescoDeHandicap = () => {
   enVuelo = null;
+  generacionEnVuelo = null;
 };

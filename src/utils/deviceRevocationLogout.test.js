@@ -227,6 +227,16 @@ describe('deviceRevocationLogout utilities', () => {
       expect(localStorage.removeItem).toHaveBeenCalledWith('access_token');
     });
 
+    it('se lleva lo pendiente del hándicap de esa cuenta (FE #677)', () => {
+      // No pasa por `clearAuth` y recarga, pero la recarga no borra el
+      // almacenamiento: en un móvil compartido, la siguiente persona vería el
+      // modal con el hándicap de la anterior
+      handleDeviceRevocationLogout();
+
+      expect(localStorage.removeItem).toHaveBeenCalledWith('refrescar_handicap');
+      expect(localStorage.removeItem).toHaveBeenCalledWith('pedir_handicap');
+    });
+
     it('should clear Sentry user context', () => {
       handleDeviceRevocationLogout();
 

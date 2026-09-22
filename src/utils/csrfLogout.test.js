@@ -51,4 +51,14 @@ describe('handleCsrfLogout · lo guardado sin cobertura (FE #524)', () => {
     expect(loQueSeSupo('m-1')).toBeNull();
     expect(laUltimaLista()).toBeNull();
   });
+
+  it('se lleva también lo pendiente del hándicap de esa cuenta (FE #677)', () => {
+    localStorage.setItem('refrescar_handicap', 'true');
+    localStorage.setItem('pedir_handicap', JSON.stringify({ handicap: 18 }));
+
+    handleCsrfLogout();
+
+    expect(localStorage.getItem('refrescar_handicap')).toBeNull();
+    expect(localStorage.getItem('pedir_handicap')).toBeNull();
+  });
 });

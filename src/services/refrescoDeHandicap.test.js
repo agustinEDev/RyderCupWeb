@@ -37,12 +37,15 @@ const {
   lanzaElRefrescoDeHandicap,
   recogeElHandicapPorPedir,
   EVENTO_HANDICAP_POR_PEDIR,
+  reiniciaElRefrescoDeHandicap,
 } = await import('./refrescoDeHandicap');
+const { olvidaElRefrescoDeHandicap } = await import('./refrescoDeHandicapApuntes');
 
 describe('refrescoDeHandicap (FE #677)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     localStorage.clear();
+    reiniciaElRefrescoDeHandicap();
     localStorage.setItem('refrescar_handicap', 'true');
   });
 
@@ -123,5 +126,66 @@ describe('refrescoDeHandicap (FE #677)', () => {
     await lanzaElRefrescoDeHandicap();
 
     expect(refresco).toHaveBeenCalledTimes(2);
+  });
+
+  it('F9: un refresco que dice que no hace falta borra lo que quedara pendiente de antes', async () => {
+    // Si no, el modal saldría días después con un valor viejo
+    localStorage.setItem('pedir_handicap', JSON.stringify({ handicap: 18 }));
+    refresco.mockResolvedValue({ needsHandicap: false, handicap: 12.4 });
+
+    await lanzaElRefrescoDeHandicap({ handicapDeAntes: 12.4 });
+
+    expect(recogeElHandicapPorPedir()).toBeUndefined();
+  });
+
+  it('F10: al salir se olvida todo lo del hándicap de esa cuenta', () => {
+    localStorage.setItem('pedir_handicap', JSON.stringify({ handicap: 18 }));
+
+    olvidaElRefrescoDeHandicap();
+
+    expect(localStorage.getItem('refrescar_handicap')).toBeNull();
+    expect(localStorage.getItem('pedir_handicap')).toBeNull();
+  });
+
+  it('F11: la respuesta de una cuenta que ya salió no toca nada de la siguiente', async () => {
+    // Dispositivo compartido con la RFEG lenta: A entra, sale y B entra antes
+    // de que conteste lo de A. Esa respuesta no puede dejarle a B el modal con
+    // el hándicap de A, ni borrarle a B su apunte
+    let responderA;
+    refresco.mockReturnValueOnce(new Promise((resolver) => { responderA = resolver; }));
+    const deA = lanzaElRefrescoDeHandicap({ handicapDeAntes: 18 });
+
+    olvidaElRefrescoDeHandicap();
+    localStorage.setItem('refrescar_handicap', 'true');
+    let responderB;
+    refresco.mockReturnValueOnce(new Promise((resolver) => { responderB = resolver; }));
+    const deB = lanzaElRefrescoDeHandicap({ handicapDeAntes: 9 });
+
+    responderA({ needsHandicap: true, handicap: 18 });
+    await deA;
+
+    expect(refresco).toHaveBeenCalledTimes(2);
+    expect(recogeElHandicapPorPedir()).toBeUndefined();
+    expect(localStorage.getItem('refrescar_handicap')).toBe('true');
+    // Y al terminar, la de A no suelta el candado de la de B
+    lanzaElRefrescoDeHandicap({ handicapDeAntes: 9 });
+    expect(refresco).toHaveBeenCalledTimes(2);
+
+    responderB({ needsHandicap: false, handicap: 9 });
+    await deB;
+    expect(localStorage.getItem('refrescar_handicap')).toBeNull();
+  });
+
+  it('F12: tampoco un 4xx de la cuenta que salió borra el apunte de la siguiente', async () => {
+    let fallarA;
+    refresco.mockReturnValueOnce(new Promise((_, rechazar) => { fallarA = rechazar; }));
+    const deA = lanzaElRefrescoDeHandicap();
+
+    olvidaElRefrescoDeHandicap();
+    localStorage.setItem('refrescar_handicap', 'true');
+    fallarA(Object.assign(new Error('Not Found'), { status: 404 }));
+    await deA;
+
+    expect(localStorage.getItem('refrescar_handicap')).toBe('true');
   });
 });
