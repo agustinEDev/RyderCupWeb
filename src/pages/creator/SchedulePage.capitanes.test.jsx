@@ -57,7 +57,7 @@ vi.mock('../../composition', () => ({
   generateMatchesUseCase: { execute: vi.fn() },
   updateMatchStatusUseCase: { execute: vi.fn() },
   declareWalkoverUseCase: { execute: vi.fn() },
-  reassignMatchPlayersUseCase: { execute: vi.fn() },
+  reassignPlayersUseCase: { execute: vi.fn() },
   getMatchDetailUseCase: { execute: vi.fn() },
 }));
 
