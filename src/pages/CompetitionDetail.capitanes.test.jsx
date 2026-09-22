@@ -409,4 +409,54 @@ describe('CompetitionDetail · nombrar a los capitanes (FE #692)', () => {
     expect(within(modal).getByText('detail.captains.playersUnavailable')).toBeInTheDocument();
     expect(within(modal).getByRole('button', { name: 'detail.captains.confirm' })).toBeDisabled();
   });
+
+  it('K17: con capitanes y sin lista, no se puede confirmar lo que no se ve', async () => {
+    // El modal arranca con los capitanes de ahora; si la lista no cargó, los
+    // desplegables salen en blanco y confirmar mandaría lo que nadie ha elegido
+    mockGetCompetitionDetail.mockResolvedValue(
+      competicion({
+        status: 'CLOSED',
+        captains: { teamA: 'ana', teamB: 'bea', viceTeamA: null, viceTeamB: null },
+      })
+    );
+    mockListEnrollments.mockRejectedValue(new Error('boom'));
+    renderPage();
+    const modal = await abrirModal('detail.actions.changeCaptains');
+
+    expect(within(modal).getByText('detail.captains.playersUnavailable')).toBeInTheDocument();
+    expect(within(modal).getByRole('button', { name: 'detail.captains.confirm' })).toBeDisabled();
+  });
+
+  it('K18: un capitán que ya no está inscrito hay que sustituirlo antes de confirmar', async () => {
+    // Se retiró: sigue como capitán en la ficha, pero no está entre los inscritos
+    mockGetCompetitionDetail.mockResolvedValue(
+      competicion({
+        status: 'CLOSED',
+        captains: { teamA: 'quien-se-fue', teamB: 'bea', viceTeamA: null, viceTeamB: null },
+      })
+    );
+    renderPage();
+    const modal = await abrirModal('detail.actions.changeCaptains');
+    const boton = within(modal).getByRole('button', { name: 'detail.captains.confirm' });
+
+    expect(boton).toBeDisabled();
+    elegir(modal, 'Europa', 'ana');
+    expect(boton).toBeEnabled();
+  });
+
+  it('K19: y lo mismo si el que se fue es el capitán del otro equipo', async () => {
+    mockGetCompetitionDetail.mockResolvedValue(
+      competicion({
+        status: 'CLOSED',
+        captains: { teamA: 'ana', teamB: 'quien-se-fue', viceTeamA: null, viceTeamB: null },
+      })
+    );
+    renderPage();
+    const modal = await abrirModal('detail.actions.changeCaptains');
+    const boton = within(modal).getByRole('button', { name: 'detail.captains.confirm' });
+
+    expect(boton).toBeDisabled();
+    elegir(modal, 'América', 'bea');
+    expect(boton).toBeEnabled();
+  });
 });

@@ -43,7 +43,14 @@ const NameCaptainsModal = ({
   const [teamA, setTeamA] = useState(current?.teamA ?? '');
   const [teamB, setTeamB] = useState(current?.teamB ?? '');
 
-  const listo = Boolean(teamA && teamB && teamA !== teamB);
+  // Los dos, distintos, y de entre los que se ofrecen: el modal arranca con los
+  // capitanes de ahora, y si la lista no cargó —o uno se retiró— esos dos siguen
+  // en el estado sin tener opción que los represente. Confirmar mandaría lo que
+  // nadie ha elegido. Sin lista no hay disponibles, así que esto lo cubre también
+  const disponibles = new Set(players.map((p) => p.userId));
+  const listo = Boolean(
+    teamA && teamB && teamA !== teamB && disponibles.has(teamA) && disponibles.has(teamB)
+  );
 
   const selector = (id, nombreEquipo, valor, alCambiar, elegidoEnElOtro) => (
     <div className="flex flex-col gap-1 min-w-0">
