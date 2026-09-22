@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
 /**
  * Sin conexión, el mensaje del navegador llegaba tal cual a 52 toasts
@@ -21,6 +21,11 @@ describe('apiRequest · sin conexión (FE #685)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.spyOn(console, 'error').mockImplementation(() => {});
+  });
+
+  // El espía de `console.error` es global: se quita al acabar cada test
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   it.each(['Failed to fetch', 'Load failed', 'NetworkError when attempting to fetch resource.'])(
