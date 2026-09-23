@@ -224,7 +224,12 @@
       "teamAssignment": "Team Assignment:",
       "maxPlayingHandicap": "Playing Handicap Limit:",
       "maxPlayingHandicapNone": "No limit",
-      "created": "Created:"
+      "created": "Created:",
+      "assignment": {
+        "MANUAL": "Manual",
+        "AUTOMATIC": "Automatic",
+        "DRAFT": "Captains' draft"
+      }
     },
     "approvedPlayers": "Approved Players ({{count}})",
     "noApprovedPlayers": "No approved players yet",

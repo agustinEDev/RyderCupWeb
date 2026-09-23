@@ -1054,12 +1054,24 @@ const CompetitionDetail = () => {
                   </div>
                   <div>
                     <span className="text-gray-500 text-sm">{t('detail.settings.playMode')}</span>
-                    <p className="text-gray-900 font-medium">{competition.playMode}</p>
+                    {/* Salía «HANDICAP»: el valor del backend tal cual, en
+                        mayúsculas y en inglés, en una pantalla en español */}
+                    <p className="text-gray-900 font-medium">
+                      {t(`create.${String(competition.playMode || '').toLowerCase()}`, {
+                        defaultValue: competition.playMode,
+                      })}
+                    </p>
                   </div>
                   <div>
                     <span className="text-gray-500 text-sm">{t('detail.settings.teamAssignment')}</span>
+                    {/* Idem, y con respaldo: un modo que el backend añada
+                        mañana sale con su nombre, no con la clave. Manda el
+                        reparto que se hizo; sin él, el configurado */}
                     <p className="text-gray-900 font-medium">
-                      {competition.actualTeamAssignment ?? competition.teamAssignment}
+                      {t(
+                        `detail.settings.assignment.${competition.actualTeamAssignment ?? competition.teamAssignment}`,
+                        { defaultValue: competition.actualTeamAssignment ?? competition.teamAssignment }
+                      )}
                     </p>
                   </div>
                   <div>

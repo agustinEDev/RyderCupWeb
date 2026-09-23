@@ -224,7 +224,12 @@
       "teamAssignment": "Asignación de Equipos:",
       "maxPlayingHandicap": "Límite Hándicap de Juego:",
       "maxPlayingHandicapNone": "Sin límite",
-      "created": "Creado:"
+      "created": "Creado:",
+      "assignment": {
+        "MANUAL": "Manual",
+        "AUTOMATIC": "Automática",
+        "DRAFT": "Draft de capitanes"
+      }
     },
     "approvedPlayers": "Jugadores Aprobados ({{count}})",
     "noApprovedPlayers": "Aún no hay jugadores aprobados",
