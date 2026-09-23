@@ -50,7 +50,8 @@
       "FOURSOMES": "Foursomes",
       "MEDAL": "Medal",
       "STABLEFORD": "Stableford"
-    }
+    },
+    "envelopePending": "Tienes un sobre sin entregar"
   },
   "upcomingMatches": {
     "title": "Mis Próximos Partidos",

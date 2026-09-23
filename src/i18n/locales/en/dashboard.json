@@ -50,7 +50,8 @@
       "FOURSOMES": "Foursomes",
       "MEDAL": "Medal",
       "STABLEFORD": "Stableford"
-    }
+    },
+    "envelopePending": "You have an envelope to hand in"
   },
   "upcomingMatches": {
     "title": "My Upcoming Matches",

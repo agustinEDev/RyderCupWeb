@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router';
 import { motion } from 'framer-motion';
-import { Mail, Users, Flag, TrendingUp, ChevronRight, Bell, UserPlus, Zap } from 'lucide-react';
+import { Mail, Users, Flag, TrendingUp, ChevronRight, Bell, UserPlus, Zap, Inbox } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useEntryMotion } from '../../hooks/useEntryMotion';
 import { slideUp, getEntryProps } from '../../utils/animations';
@@ -10,13 +10,14 @@ import {
   listEnrollmentsUseCase,
   listPendingFriendRequestsUseCase,
   listMyQuickMatchesUseCase,
+  listMyPendingEnvelopesUseCase,
 } from '../../composition';
 import { loQueSeEnseñoAntes, recuerdaLasAccionesPendientes } from '../../services/accionesPendientes';
 import BlockLoader from '../ui/BlockLoader';
 
 const PendingActionsCard = ({ user, competitions, onHandicapAction, handicapPending = false , upcomingMatches = 0 }) => {
   const navigate = useNavigate();
-  const { t } = useTranslation('dashboard');
+  const { t, i18n } = useTranslation('dashboard');
   const { animateEntry } = useEntryMotion();
   // Arranca con lo ultimo que esta tarjeta llego a enseñar (FE #502). El panel
   // se remonta cada vez que se vuelve a Inicio desde la barra inferior, asi que
@@ -27,6 +28,7 @@ const PendingActionsCard = ({ user, competitions, onHandicapAction, handicapPend
   const [pendingEnrollments, setPendingEnrollments] = useState(recordado?.pendingEnrollments ?? []);
   const [pendingFriendRequests, setPendingFriendRequests] = useState(recordado?.pendingFriendRequests ?? 0);
   const [activeQuickMatches, setActiveQuickMatches] = useState(recordado?.activeQuickMatches ?? []);
+  const [sobresPendientes, setSobresPendientes] = useState(recordado?.sobresPendientes ?? []);
   // Solo se enseña la espera cuando NO hay nada que enseñar: con lo de antes en
   // pantalla, el refresco va en silencio
   const [isLoading, setIsLoading] = useState(false);
@@ -39,6 +41,7 @@ const PendingActionsCard = ({ user, competitions, onHandicapAction, handicapPend
     pendingEnrollments: recordado?.pendingEnrollments ?? [],
     pendingFriendRequests: recordado?.pendingFriendRequests ?? 0,
     activeQuickMatches: recordado?.activeQuickMatches ?? [],
+    sobresPendientes: recordado?.sobresPendientes ?? [],
   });
 
   const isCreator = useMemo(() => user?.is_admin ||
@@ -58,6 +61,7 @@ const PendingActionsCard = ({ user, competitions, onHandicapAction, handicapPend
           isCreator ? loadPendingEnrollments(competitions) : Promise.resolve([]),
           listPendingFriendRequestsUseCase.execute(user.id, 'received'),
           listMyQuickMatchesUseCase.execute({ status: 'IN_PROGRESS' }),
+          listMyPendingEnvelopesUseCase.execute(),
         ]);
 
         // Una respuesta que llega cuando ya nos hemos ido no escribe: antes solo
@@ -91,6 +95,10 @@ const PendingActionsCard = ({ user, competitions, onHandicapAction, handicapPend
           aplicado.activeQuickMatches = results[3].value?.quickMatches || [];
           setActiveQuickMatches(aplicado.activeQuickMatches);
         }
+        if (results[4].status === 'fulfilled') {
+          aplicado.sobresPendientes = results[4].value || [];
+          setSobresPendientes(aplicado.sobresPendientes);
+        }
 
         ultimoAplicado.current = aplicado;
         recuerdaLasAccionesPendientes({ ...aplicado });
@@ -108,7 +116,26 @@ const PendingActionsCard = ({ user, competitions, onHandicapAction, handicapPend
     };
   }, [user, competitions, isCreator]);
 
-  const totalItems = pendingInvitations + pendingEnrollments.length + (upcomingMatches > 0 ? 1 : 0) + (handicapPending ? 1 : 0) + (pendingFriendRequests > 0 ? 1 : 0) + activeQuickMatches.length;
+  // El día y la franja, con el idioma de la aplicación. `Intl` revienta con un
+  // RangeError si la fecha no se puede leer, y esto vive dentro de la tarjeta
+  // entera del panel
+  const cuandoSeJuega = (sobre) => {
+    const franja = sobre.sessionType ? t(`nextMatch.session.${sobre.sessionType}`) : '';
+    let dia = '';
+    try {
+      if (sobre.roundDate) {
+        dia = new Date(sobre.roundDate).toLocaleDateString(i18n.language, {
+          day: 'numeric',
+          month: 'short',
+        });
+      }
+    } catch {
+      dia = '';
+    }
+    return [dia, franja].filter(Boolean).join(' ');
+  };
+
+  const totalItems = pendingInvitations + pendingEnrollments.length + (upcomingMatches > 0 ? 1 : 0) + (handicapPending ? 1 : 0) + (pendingFriendRequests > 0 ? 1 : 0) + activeQuickMatches.length + sobresPendientes.length;
 
   if (isLoading) {
     return (
@@ -222,6 +249,38 @@ const PendingActionsCard = ({ user, competitions, onHandicapAction, handicapPend
                 </div>
               </div>
               <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-gray-600 transition-colors" />
+            </button>
+          ))}
+
+          {/* El sobre del capitán, que si no se entrega a tiempo lo rellena la
+              aplicación por hándicap. Aquí es donde se entera: no hay
+              notificaciones en ninguna parte del producto */}
+          {sobresPendientes.map((sobre) => (
+            <button
+              key={sobre.roundId}
+              onClick={() =>
+                navigate(`/competitions/${sobre.competitionId}/rounds/${sobre.roundId}/envelope`)
+              }
+              className="flex items-center justify-between w-full p-3 bg-white/70 rounded-lg hover:bg-white transition-colors group"
+              data-testid={`sobre-pendiente-${sobre.roundId}`}
+            >
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-amber-100 rounded-lg">
+                  <Inbox className="w-4 h-4 text-amber-600" />
+                </div>
+                <div className="min-w-0 text-left">
+                  <p className="text-sm font-semibold text-gray-900">
+                    {t('pendingActions.envelopePending')}
+                  </p>
+                  {/* De qué sesión: un Ryder de tres días son seis sobres, y
+                      sin esto salen seis botones idénticos que llevan a sitios
+                      distintos */}
+                  <p className="truncate text-xs text-gray-500">
+                    {[cuandoSeJuega(sobre), sobre.competitionName].filter(Boolean).join(' · ')}
+                  </p>
+                </div>
+              </div>
+              <ChevronRight className="w-4 h-4 shrink-0 text-gray-400 group-hover:text-gray-600 transition-colors" />
             </button>
           ))}
 

@@ -44,6 +44,14 @@ class IEnvelopeRepository {
   async resetEnvelopes(roundId) {
     throw new Error('Method not implemented');
   }
+
+  /**
+   * Las sesiones en las que capitaneo y no he entregado el sobre.
+   * @returns {Promise<Array<Object>>} De la mas proxima a la mas lejana
+   */
+  async listMyPendingEnvelopes() {
+    throw new Error('Method not implemented');
+  }
 }
 
 export default IEnvelopeRepository;

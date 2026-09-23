@@ -37,6 +37,7 @@ const mockListEnrollments = vi.fn();
 const mockGetSchedule = vi.fn();
 const mockListPendingFriendRequests = vi.fn();
 const mockListMyQuickMatches = vi.fn();
+const mockListMyPendingEnvelopes = vi.fn();
 
 vi.mock('../../composition', () => ({
   listMyInvitationsUseCase: { execute: (...args) => mockListMyInvitations(...args) },
@@ -44,6 +45,7 @@ vi.mock('../../composition', () => ({
   getScheduleUseCase: { execute: (...args) => mockGetSchedule(...args) },
   listPendingFriendRequestsUseCase: { execute: (...args) => mockListPendingFriendRequests(...args) },
   listMyQuickMatchesUseCase: { execute: (...args) => mockListMyQuickMatches(...args) },
+  listMyPendingEnvelopesUseCase: { execute: (...args) => mockListMyPendingEnvelopes(...args) },
 }));
 
 const baseUser = {
@@ -82,6 +84,9 @@ describe('PendingActionsCard', () => {
     mockGetSchedule.mockResolvedValue({ rounds: [] });
     mockListPendingFriendRequests.mockResolvedValue({ friendships: [], totalCount: 0 });
     mockListMyQuickMatches.mockResolvedValue({ quickMatches: [], totalCount: 0, page: 1, limit: 20 });
+    // Un doble de una función async devuelve lo que devuelve la de verdad: una
+    // lista. Con `undefined` revienta quien haga `.length`
+    mockListMyPendingEnvelopes.mockResolvedValue([]);
   });
 
   it('should show active quick matches and navigate to their scoring page', async () => {
@@ -241,6 +246,76 @@ describe('PendingActionsCard', () => {
     const { container } = renderCard(null);
     expect(container).toBeEmptyDOMElement();
   });
+  it('avisa al capitán del sobre que le falta por entregar', async () => {
+    // Sin esto solo se entera entrando sesión por sesión en la agenda de cada
+    // competición, y el plazo le vence sin saberlo
+    mockListMyPendingEnvelopes.mockResolvedValue([{
+        roundId: 'ronda-1',
+        competitionId: 'comp-1',
+        competitionName: 'Ryder de los amigos',
+        roundDate: '2026-06-01',
+        sessionType: 'MORNING',
+        team: 'A',
+      }]);
+
+    renderCard();
+
+    expect(await screen.findByTestId('sobre-pendiente-ronda-1')).toBeInTheDocument();
+  });
+
+  it('y al tocarlo lleva a su sobre', async () => {
+    mockListMyPendingEnvelopes.mockResolvedValue([{
+        roundId: 'ronda-1',
+        competitionId: 'comp-1',
+        competitionName: 'Ryder de los amigos',
+        roundDate: '2026-06-01',
+        sessionType: 'MORNING',
+        team: 'A',
+      }]);
+
+    renderCard();
+    fireEvent.click(await screen.findByTestId('sobre-pendiente-ronda-1'));
+
+    expect(mockNavigate).toHaveBeenCalledWith('/competitions/comp-1/rounds/ronda-1/envelope');
+  });
+
+  it('cada sobre dice de qué sesión es: seis iguales no se distinguen', async () => {
+    // Un Ryder de tres días son seis sesiones, y sin esto salen seis botones
+    // idénticos que llevan a sitios distintos
+    mockListMyPendingEnvelopes.mockResolvedValue([
+      {
+        roundId: 'ronda-1',
+        competitionId: 'comp-1',
+        competitionName: 'Ryder de los amigos',
+        roundDate: '2026-06-01',
+        sessionType: 'MORNING',
+        team: 'A',
+      },
+    ]);
+
+    renderCard();
+
+    const fila = await screen.findByTestId('sobre-pendiente-ronda-1');
+    expect(fila).toHaveTextContent('nextMatch.session.MORNING');
+    expect(fila.textContent).toMatch(/2026|jun|Jun/);
+  });
+
+  it('sin sobres pendientes no pinta nada de sobres', async () => {
+    renderCard();
+
+    await waitFor(() => expect(mockListMyPendingEnvelopes).toHaveBeenCalled());
+    expect(screen.queryByTestId('sobre-pendiente-ronda-1')).not.toBeInTheDocument();
+  });
+
+  it('si falla lo de los sobres, el resto de la tarjeta sigue en pie', async () => {
+    // `allSettled`: una petición que casca no puede vaciar los demás avisos
+    mockListMyPendingEnvelopes.mockRejectedValue(new Error('Boom'));
+    mockListMyInvitations.mockResolvedValue({ invitations: [{ id: 'inv-1' }], totalCount: 1 });
+
+    renderCard();
+
+    expect(await screen.findByTestId('pending-actions-card')).toBeInTheDocument();
+  });
 });
 
 /**
@@ -297,4 +372,5 @@ describe('PendingActionsCard al volver al panel', () => {
 
     expect(container.querySelector('.espera-anillo'), 'no debe verse la espera').toBeNull();
   });
+
 });
