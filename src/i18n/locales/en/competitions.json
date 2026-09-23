@@ -408,6 +408,7 @@
     "versus": "vs",
     "filledByTheApp": "One envelope was filled in by the app: that captain never handed his in",
     "onlyCaptains": "Envelopes are handed in by the captains. The matchups show up here once they are opened.",
-    "open": "Go to your envelope"
+    "open": "Go to your envelope",
+    "cancel": "Cancel"
   }
 }

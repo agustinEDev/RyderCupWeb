@@ -123,10 +123,38 @@ describe('SchedulePage · el acceso al sobre (FE #655)', () => {
     expect(enlace).toHaveAttribute('href', '/competitions/comp-1/rounds/ronda-1/envelope');
   });
 
-  it('O2: quien no capitanea nada no tiene sobre que entregar', async () => {
+  it('O2: quien ni capitanea ni organiza no tiene sobre que entregar', async () => {
+    mockDetalle.mockResolvedValue({
+      ...COMPETICION,
+      creatorId: 'otro',
+      captains: { teamA: 'carla', teamB: 'bea', viceTeamA: null, viceTeamB: null },
+    });
+    pintar();
+
+    await screen.findByText('Ryder de los amigos');
+    await waitFor(() =>
+      expect(screen.queryByTestId('ir-al-sobre-ronda-1')).not.toBeInTheDocument()
+    );
+  });
+
+  it('O2b: el organizador también entra: es quien los abre si un capitán no aparece', async () => {
     mockDetalle.mockResolvedValue({
       ...COMPETICION,
       captains: { teamA: 'carla', teamB: 'bea', viceTeamA: null, viceTeamB: null },
+      creatorId: 'org',
+    });
+    pintar();
+
+    expect(await screen.findByTestId('ir-al-sobre-ronda-1')).toBeInTheDocument();
+  });
+
+  it('O2c: en una sesión de parejas todavía no: el sobre de parejas no está hecho', async () => {
+    // Ofrecerlo mandaría filas de un jugador a una sesión que pide dos, y el
+    // capitán se llevaría un error sin entender nada
+    mockAgenda.mockResolvedValue({
+      ...AGENDA,
+      days: [{ date: '2026-06-01', rounds: [{ ...RONDA, matchFormat: 'FOURBALL' }] }],
+      rounds: [{ ...RONDA, matchFormat: 'FOURBALL' }],
     });
     pintar();
 

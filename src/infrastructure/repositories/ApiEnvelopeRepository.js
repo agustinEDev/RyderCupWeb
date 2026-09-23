@@ -25,17 +25,13 @@ class ApiEnvelopeRepository extends IEnvelopeRepository {
   /**
    * GET /api/v1/competitions/rounds/{roundId}/envelopes
    *
-   * El 404 no es un error: es una sesión sin sobres, y la pantalla pregunta
-   * por ellos en cuanto se abre.
+   * Una sesión sin sobres devuelve la vista vacía, no un 404: el 404 significa
+   * que la sesión no existe, y tragárselo escondía eso detrás de una pantalla
+   * con aspecto de normal.
    */
   async getEnvelopes(roundId) {
-    try {
-      const data = await apiRequest(`/api/v1/competitions/rounds/${roundId}/envelopes`);
-      return EnvelopeMapper.toEnvelopesViewDTO(data);
-    } catch (error) {
-      if (error?.status === 404) return null;
-      throw error;
-    }
+    const data = await apiRequest(`/api/v1/competitions/rounds/${roundId}/envelopes`);
+    return EnvelopeMapper.toEnvelopesViewDTO(data);
   }
 
   /**

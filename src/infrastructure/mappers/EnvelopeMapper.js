@@ -39,7 +39,18 @@ class EnvelopeMapper {
       mine: EnvelopeMapper.toEnvelopeDTO(apiData.mine),
       rival: EnvelopeMapper.toEnvelopeDTO(apiData.rival),
       rivalSubmitted: Boolean(apiData.rival_submitted),
+      // Quién puede abrirlos lo decide el servidor: la regla —el organizador
+      // siempre, un capitán solo con los dos dentro— vive en un sitio
+      canReveal: Boolean(apiData.can_reveal),
       matchups: apiData.matchups || [],
+      // Los nombres son TODO lo que la pantalla tiene: de un UUID no sale
+      // ninguno, y sin ellos el capitán ni siquiera ve su propia lista
+      myPlayers: (apiData.my_players || []).map((jugador) => ({
+        userId: jugador.user_id,
+        name: jugador.name,
+        handicap: jugador.handicap == null ? null : Number(jugador.handicap),
+      })),
+      playerNames: apiData.player_names || {},
     };
   }
 }

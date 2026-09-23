@@ -58,6 +58,7 @@ const vista = (extra = {}) => ({
   rival: null,
   rivalSubmitted: false,
   matchups: [],
+  canReveal: false,
   myPlayers: JUGADORES,
   playerNames: { ana: 'Ana Alba', bea: 'Bea Blanco', carla: 'Carla Cruz', dani: 'Dani Díaz' },
   ...extra,
@@ -162,11 +163,12 @@ describe('EnvelopePage · el sobre del capitán (FE #655)', () => {
     expect(screen.queryByTestId('orden-del-rival')).not.toBeInTheDocument();
   });
 
-  it('V8: con los dos dentro se ofrece abrirlos', async () => {
+  it('V8: se ofrece abrirlos cuando el servidor dice que se puede', async () => {
     mockVer.mockResolvedValue(
       vista({
         teamASubmitted: true,
         rivalSubmitted: true,
+        canReveal: true,
         mine: { team: 'A', entries: [['bea'], ['ana']], submitted: true, automatic: false },
       })
     );
@@ -177,13 +179,15 @@ describe('EnvelopePage · el sobre del capitán (FE #655)', () => {
     await waitFor(() => expect(mockAbrir).toHaveBeenCalledWith('ronda-1'));
   });
 
-  it('V9: mientras el rival no entregue, no se ofrece: el servidor lo rechaza', async () => {
-    // Y con razón: el relleno automático es predecible, así que abrir antes
-    // de tiempo deja armar la lista propia para ganar todos los cruces
+  it('V9: y no se ofrece cuando dice que no', async () => {
+    // El relleno automático es predecible, así que un capitán que abriera
+    // antes de que el rival entregue podría armar su lista para ganar todos
+    // los cruces. Quién puede, lo decide el servidor
     mockVer.mockResolvedValue(
       vista({
         teamASubmitted: true,
         rivalSubmitted: false,
+        canReveal: false,
         mine: { team: 'A', entries: [['bea'], ['ana']], submitted: true, automatic: false },
       })
     );
@@ -191,6 +195,31 @@ describe('EnvelopePage · el sobre del capitán (FE #655)', () => {
 
     await screen.findByTestId('sobre-entregado');
     expect(screen.queryByTestId('abrir-sobres')).not.toBeInTheDocument();
+  });
+
+  it('V9b: el organizador puede abrirlos sin haber entregado ninguno', async () => {
+    // Es la salida cuando un capitán no aparece: sin esto la sesión se
+    // quedaba atascada y generar los partidos fallaba por sobres sin abrir
+    mockVer.mockResolvedValue(vista({ myPlayers: [], canReveal: true }));
+    pintar();
+
+    fireEvent.click(await screen.findByTestId('abrir-sobres'));
+
+    await waitFor(() => expect(mockAbrir).toHaveBeenCalledWith('ronda-1'));
+  });
+
+  it('V9c: dos toques seguidos no mandan dos aperturas', async () => {
+    // La segunda se lleva un 400 «ya estaban abiertos» y el capitán ve un
+    // error en rojo aunque todo fue bien
+    mockVer.mockResolvedValue(vista({ myPlayers: [], canReveal: true }));
+    mockAbrir.mockImplementation(() => new Promise(() => {}));
+    pintar();
+    const boton = await screen.findByTestId('abrir-sobres');
+
+    fireEvent.click(boton);
+    fireEvent.click(boton);
+
+    expect(mockAbrir).toHaveBeenCalledTimes(1);
   });
 
   it('V10: abiertos, se ven los enfrentamientos con nombres', async () => {
@@ -231,6 +260,34 @@ describe('EnvelopePage · el sobre del capitán (FE #655)', () => {
 
     expect(await screen.findByTestId('solo-mirando')).toBeInTheDocument();
     expect(screen.queryByTestId('entregar-sobre')).not.toBeInTheDocument();
+  });
+
+  it('V12b: si la sesión no se puede cargar, se dice: no se finge normalidad', async () => {
+    // Antes, un 403 o un 500 dejaban la pantalla de «esto lo entregan los
+    // capitanes, aquí verás los enfrentamientos», que es tranquilizadora y
+    // falsa
+    mockVer.mockRejectedValue(new Error('No participas en esta competición'));
+    pintar();
+
+    expect(await screen.findByTestId('sobre-no-disponible')).toBeInTheDocument();
+    expect(screen.queryByTestId('solo-mirando')).not.toBeInTheDocument();
+  });
+
+  it('V12c: cambiar el orden se puede cancelar', async () => {
+    // Un toque sin querer no puede dejar al capitán sin su sobre entregado
+    // —ni sin el botón de abrir— hasta que recargue
+    mockVer.mockResolvedValue(
+      vista({
+        teamASubmitted: true,
+        mine: { team: 'A', entries: [['bea'], ['ana']], submitted: true, automatic: false },
+      })
+    );
+    pintar();
+    fireEvent.click(await screen.findByTestId('cambiar-sobre'));
+
+    fireEvent.click(await screen.findByTestId('cancelar-cambio'));
+
+    expect(await screen.findByTestId('sobre-entregado')).toBeInTheDocument();
   });
 
   it('V13: un fallo al entregar se cuenta y el orden no se pierde', async () => {

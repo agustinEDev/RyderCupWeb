@@ -47,10 +47,13 @@ describe('ApiEnvelopeRepository', () => {
     expect(vista.roundId).toBe('r1');
   });
 
-  it('S4: un 404 al mirar es «esta sesión no tiene sobres todavía», no un error', async () => {
+  it('S4: un 404 al mirar NO se traga: esa sesión no existe', async () => {
+    // Esta ruta no contesta 404 por «sin sobres» —devuelve la vista vacía—,
+    // así que tragárselo escondía una sesión que no existe detrás de una
+    // pantalla que parecía normal
     apiRequest.mockRejectedValue(Object.assign(new Error('Not Found'), { status: 404 }));
 
-    expect(await repo.getEnvelopes('r1')).toBeNull();
+    await expect(repo.getEnvelopes('r1')).rejects.toThrow('Not Found');
   });
 
   it('S5: cualquier otro error al mirar sí se propaga', async () => {

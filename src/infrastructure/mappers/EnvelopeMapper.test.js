@@ -24,7 +24,13 @@ const RESPUESTA = {
   },
   rival: null,
   rival_submitted: false,
+  can_reveal: false,
   matchups: [],
+  my_players: [
+    { user_id: 'ana', name: 'Ana Alba', handicap: '8.0' },
+    { user_id: 'bea', name: 'Bea Blanco', handicap: '14.0' },
+  ],
+  player_names: { ana: 'Ana Alba', bea: 'Bea Blanco' },
 };
 
 describe('EnvelopeMapper', () => {
@@ -48,8 +54,33 @@ describe('EnvelopeMapper', () => {
       },
       rival: null,
       rivalSubmitted: false,
+      canReveal: false,
       matchups: [],
+      myPlayers: [
+        { userId: 'ana', name: 'Ana Alba', handicap: 8 },
+        { userId: 'bea', name: 'Bea Blanco', handicap: 14 },
+      ],
+      playerNames: { ana: 'Ana Alba', bea: 'Bea Blanco' },
     });
+  });
+
+  it('E1b: los nombres y los jugadores propios son TODO lo que la pantalla tiene', () => {
+    // El servidor los manda para esto: sin ellos, el capitán no ve su lista
+    // —y acaba en la pantalla de «esto lo entregan los capitanes»— y los
+    // enfrentamientos salen como UUID. Los tests de pantalla no lo ven: usan
+    // un doble del caso de uso que ya trae los nombres puestos
+    const vista = EnvelopeMapper.toEnvelopesViewDTO(RESPUESTA);
+
+    expect(vista.myPlayers.map((j) => j.userId)).toEqual(['ana', 'bea']);
+    expect(vista.playerNames.ana).toBe('Ana Alba');
+  });
+
+  it('E1c: y quien puede abrirlos lo decide el servidor, no la pantalla', () => {
+    // La regla —el organizador siempre, un capitán solo con los dos dentro—
+    // vive en un sitio: repetirla aquí es donde se desincronizan
+    const vista = EnvelopeMapper.toEnvelopesViewDTO({ ...RESPUESTA, can_reveal: true });
+
+    expect(vista.canReveal).toBe(true);
   });
 
   it('E2: los enfrentamientos abiertos llegan con las dos filas', () => {
@@ -85,6 +116,8 @@ describe('EnvelopeMapper', () => {
 
     expect(vista.matchups).toEqual([]);
     expect(vista.mine).toBeNull();
+    expect(vista.myPlayers).toEqual([]);
+    expect(vista.playerNames).toEqual({});
   });
 
   it('E6: y un sobre suelto también se mapea, que es lo que devuelve entregar', () => {

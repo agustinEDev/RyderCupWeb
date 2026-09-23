@@ -377,10 +377,12 @@ const SchedulePage = () => {
     teamB: competition.team2Name || 'Team B',
   };
   // Quien capitanea un equipo tiene un sobre que entregar en cada sesión, y
-  // sin equipos repartidos no hay a quién ordenar (FE #655)
+  // sin equipos repartidos no hay a quién ordenar (FE #655). El organizador
+  // entra también: es quien los abre cuando un capitán no aparece
   const esCapitan =
     Boolean(user?.id) &&
     [competition.captains?.teamA, competition.captains?.teamB].includes(user.id);
+  const entraALosSobres = esCapitan || (Boolean(user?.id) && competition.creatorId === user.id);
   const hayEquipos = Boolean(teamAssignment);
 
   return (
@@ -486,7 +488,14 @@ const SchedulePage = () => {
                           y no en la ficha porque el sobre es de una sesión, no
                           de la competición; esta pantalla la ven también los
                           capitanes que no organizan, por la ruta pública */}
-                      {esCapitan && competition.setupMode === 'RYDER_CUP' && hayEquipos && (
+                      {/* Solo en individuales: el sobre de parejas —tocar dos
+                          para formar cada una— va en su propia pieza, y
+                          ofrecerlo aquí mandaría filas de un jugador a una
+                          sesión que pide dos */}
+                      {entraALosSobres &&
+                        competition.setupMode === 'RYDER_CUP' &&
+                        hayEquipos &&
+                        round.matchFormat === 'SINGLES' && (
                         <Link
                           to={`/competitions/${id}/rounds/${round.id}/envelope`}
                           data-testid={`ir-al-sobre-${round.id}`}

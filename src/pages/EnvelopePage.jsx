@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { ArrowLeft, Bot, Check, Lock, Undo2 } from 'lucide-react';
 import HeaderAuth from '../components/layout/HeaderAuth';
+import { useAuth } from '../hooks/useAuth';
 import FullScreenLoader from '../components/ui/FullScreenLoader';
 import customToast from '../utils/toast';
 import {
@@ -28,17 +29,24 @@ const EnvelopePage = () => {
   const navigate = useNavigate();
   const { id, roundId } = useParams();
   const { t } = useTranslation('competitions');
+  const { user } = useAuth();
   const [vista, setVista] = useState(null);
   const [cargando, setCargando] = useState(true);
+  const [fallo, setFallo] = useState(null);
   const [orden, setOrden] = useState([]);
   const [cambiando, setCambiando] = useState(false);
   const [enviando, setEnviando] = useState(false);
+  const [abriendo, setAbriendo] = useState(false);
 
   const cargar = useCallback(async () => {
     try {
       const datos = await getEnvelopesUseCase.execute(roundId);
       setVista(datos);
+      setFallo(null);
     } catch (error) {
+      // Y se guarda: sin esto la pantalla caía en «aquí verás los
+      // enfrentamientos en cuanto se abran», que es tranquilizador y falso
+      setFallo(error.message);
       customToast.error(error.message);
     } finally {
       setCargando(false);
@@ -53,8 +61,9 @@ const EnvelopePage = () => {
   const jugadores = useMemo(() => vista?.myPlayers || [], [vista]);
   const capitanea = jugadores.length > 0;
   const entregado = Boolean(vista?.mine?.submitted) && !cambiando;
-  const puedeAbrir =
-    capitanea && !vista?.revealed && vista?.mine?.submitted && vista?.rivalSubmitted;
+  // Lo decide el servidor: el organizador siempre, un capitán solo con los dos
+  // sobres dentro. Repetir esa regla aquí es donde se desincronizan
+  const puedeAbrir = Boolean(vista?.canReveal);
 
   const puestoDe = (userId) => orden.indexOf(userId);
 
@@ -84,11 +93,17 @@ const EnvelopePage = () => {
   };
 
   const abrir = async () => {
+    // Dos toques seguidos mandaban dos aperturas, y la segunda se llevaba un
+    // «ya estaban abiertos» que el capitán veía en rojo aunque todo fue bien
+    if (abriendo) return;
+    setAbriendo(true);
     try {
       await revealEnvelopesUseCase.execute(roundId);
       await cargar();
     } catch (error) {
       customToast.error(error.message);
+    } finally {
+      setAbriendo(false);
     }
   };
 
@@ -98,7 +113,7 @@ const EnvelopePage = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <HeaderAuth title={t('envelope.title')} backTo={`/competitions/${id}`} />
+      <HeaderAuth user={user} title={t('envelope.title')} backTo={`/competitions/${id}`} />
       <div className="mx-auto max-w-2xl px-4 py-6">
         <button
           type="button"
@@ -151,7 +166,31 @@ const EnvelopePage = () => {
           </div>
         )}
 
-        {!capitanea && !vista?.revealed && (
+        {fallo && (
+          <p
+            data-testid="sobre-no-disponible"
+            className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700"
+          >
+            {fallo}
+          </p>
+        )}
+
+        {/* Abrir los sobres no es cosa solo del capitán que entregó: el
+            organizador puede hacerlo aunque falte uno, que es la salida cuando
+            un capitán no aparece */}
+        {!fallo && puedeAbrir && (
+          <button
+            type="button"
+            data-testid="abrir-sobres"
+            onClick={abrir}
+            disabled={abriendo}
+            className="mb-3 w-full rounded-lg bg-green-600 px-4 py-3 font-semibold text-white hover:bg-green-700 disabled:opacity-50"
+          >
+            {t('envelope.reveal')}
+          </button>
+        )}
+
+        {!fallo && !capitanea && !vista?.revealed && (
           <p
             data-testid="solo-mirando"
             className="rounded-xl border border-gray-200 bg-white p-4 text-sm text-gray-600"
@@ -160,7 +199,7 @@ const EnvelopePage = () => {
           </p>
         )}
 
-        {capitanea && !vista?.revealed && entregado && (
+        {!fallo && capitanea && !vista?.revealed && entregado && (
           <div className="space-y-3">
             <div
               data-testid="sobre-entregado"
@@ -186,33 +225,21 @@ const EnvelopePage = () => {
               <Lock className="h-4 w-4 shrink-0" />
               {t(vista.rivalSubmitted ? 'envelope.rivalIn' : 'envelope.rivalPending')}
             </p>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                data-testid="cambiar-sobre"
-                onClick={() => {
-                  setCambiando(true);
-                  setOrden([]);
-                }}
-                className="flex-1 rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700"
-              >
-                {t('envelope.change')}
-              </button>
-              {puedeAbrir && (
-                <button
-                  type="button"
-                  data-testid="abrir-sobres"
-                  onClick={abrir}
-                  className="flex-1 rounded-lg bg-green-600 px-4 py-2 text-sm font-semibold text-white hover:bg-green-700"
-                >
-                  {t('envelope.reveal')}
-                </button>
-              )}
-            </div>
+            <button
+              type="button"
+              data-testid="cambiar-sobre"
+              onClick={() => {
+                setCambiando(true);
+                setOrden([]);
+              }}
+              className="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700"
+            >
+              {t('envelope.change')}
+            </button>
           </div>
         )}
 
-        {capitanea && !vista?.revealed && !entregado && (
+        {!fallo && capitanea && !vista?.revealed && !entregado && (
           <div className="space-y-3">
             <p className="text-sm text-gray-600">{t('envelope.tapInOrder')}</p>
             <ul className="divide-y divide-gray-100 rounded-xl border border-gray-200 bg-white">
@@ -251,6 +278,21 @@ const EnvelopePage = () => {
               })}
             </ul>
             <div className="flex gap-2">
+              {vista?.mine?.submitted && (
+                <button
+                  type="button"
+                  data-testid="cancelar-cambio"
+                  onClick={() => {
+                    // Un toque sin querer no puede dejarle sin su sobre
+                    // entregado hasta que recargue
+                    setCambiando(false);
+                    setOrden([]);
+                  }}
+                  className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700"
+                >
+                  {t('envelope.cancel')}
+                </button>
+              )}
               <button
                 type="button"
                 data-testid="deshacer"

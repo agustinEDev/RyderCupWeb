@@ -408,6 +408,7 @@
     "versus": "vs",
     "filledByTheApp": "Un sobre lo rellenó la aplicación: ese capitán no entregó el suyo",
     "onlyCaptains": "Los sobres los entregan los capitanes. Aquí verás los enfrentamientos en cuanto se abran.",
-    "open": "Ir a tu sobre"
+    "open": "Ir a tu sobre",
+    "cancel": "Cancelar"
   }
 }
