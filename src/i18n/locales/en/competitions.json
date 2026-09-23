@@ -391,5 +391,22 @@
     "abreEl": "Opens on {{fecha}}.",
     "abreHoy": "Opens today.",
     "creando": "Creating…"
+  },
+  "draft": {
+    "title": "Draft room",
+    "back": "Back to the competition",
+    "notStarted": "The organiser has not launched the draw yet.",
+    "start": "Launch the draw",
+    "yourTurn": "Your turn to pick",
+    "turnOf": "{{name}} is picking",
+    "teamA": "Team A",
+    "teamB": "Team B",
+    "captain": "Captain",
+    "available": "Still to pick",
+    "pick": "Pick",
+    "pickedByTheApp": "The app picked when the minute ran out",
+    "finished": "The teams are set",
+    "turnLost": "Your minute ran out and the app picked for you. It is the other captain's turn now.",
+    "open": "Go to the draft room"
   }
 }
