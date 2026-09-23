@@ -1067,7 +1067,9 @@ const CompetitionDetail = () => {
                   </div>
                   <div>
                     <span className="text-gray-500 text-sm">{t('detail.settings.teamAssignment')}</span>
-                    <p className="text-gray-900 font-medium">{competition.teamAssignment}</p>
+                    <p className="text-gray-900 font-medium">
+                      {competition.actualTeamAssignment ?? competition.teamAssignment}
+                    </p>
                   </div>
                   <div>
                     <span className="text-gray-500 text-sm">{t('detail.settings.maxPlayingHandicap')}</span>

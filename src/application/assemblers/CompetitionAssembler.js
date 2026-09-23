@@ -93,7 +93,15 @@ class CompetitionAssembler {
       enrollment_status: apiData?.user_enrollment_status || null,
       pending_enrollments_count: apiData?.pending_enrollments_count || 0,
       playMode: competition.handicapSettings.type(),
+      // El modo con el que se CONFIGURÓ: decide si se reparte solo al cerrar
       teamAssignment: competition.teamAssignment.value(),
+      // Cómo se repartieron DE VERDAD, si ya se repartieron: del tipo Ryder
+      // sale MANUAL, así que unos equipos elegidos uno a uno en la sala de
+      // draft se contaban como hechos a mano. Va aparte para no pisar el
+      // configurado: una automática rehecha a mano, al reabrir y volver a
+      // cerrar, dejaría sin equipo a los que entraron después. Solo lo manda
+      // la ficha; los listados, no
+      actualTeamAssignment: apiData?.actual_team_assignment ?? null,
       maxPlayingHandicap: apiData?.max_playing_handicap ?? null
     };
   }
