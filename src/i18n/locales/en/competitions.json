@@ -396,6 +396,7 @@
     "title": "Your envelope",
     "back": "Back to the competition",
     "tapInOrder": "Tap your players in the order you want them to play: the first one faces the rival's first.",
+    "oddTeam": "You are {{count}} and this session is pairs: somebody would be left out. Talk to the organiser before handing in.",
     "submit": "Hand in envelope",
     "submitted": "Envelope handed in",
     "undo": "Undo",

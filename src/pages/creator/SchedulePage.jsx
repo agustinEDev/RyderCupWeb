@@ -488,14 +488,9 @@ const SchedulePage = () => {
                           y no en la ficha porque el sobre es de una sesión, no
                           de la competición; esta pantalla la ven también los
                           capitanes que no organizan, por la ruta pública */}
-                      {/* Solo en individuales: el sobre de parejas —tocar dos
-                          para formar cada una— va en su propia pieza, y
-                          ofrecerlo aquí mandaría filas de un jugador a una
-                          sesión que pide dos */}
                       {entraALosSobres &&
                         competition.setupMode === 'RYDER_CUP' &&
-                        hayEquipos &&
-                        round.matchFormat === 'SINGLES' && (
+                        hayEquipos && (
                         <Link
                           to={`/competitions/${id}/rounds/${round.id}/envelope`}
                           data-testid={`ir-al-sobre-${round.id}`}

@@ -396,6 +396,7 @@
     "title": "Tu sobre",
     "back": "Volver a la competición",
     "tapInOrder": "Toca a tus jugadores en el orden en que quieres que jueguen: el primero se enfrentará al primero del rival.",
+    "oddTeam": "Sois {{count}} y esta sesión es de parejas: alguien se quedaría fuera. Habla con el organizador antes de entregar.",
     "submit": "Entregar sobre",
     "submitted": "Sobre entregado",
     "undo": "Deshacer",

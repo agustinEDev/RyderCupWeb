@@ -61,6 +61,7 @@ describe('EnvelopeMapper', () => {
       rivalWantsEarly: false,
       revealScheduledAt: '2026-06-01T00:00:00+02:00',
       canReveal: false,
+      playersPerRow: 1,
       matchups: [],
       myPlayers: [
         { userId: 'ana', name: 'Ana Alba', handicap: 8 },
@@ -149,5 +150,23 @@ describe('EnvelopeMapper', () => {
 
     expect(sobre.entries).toEqual([['ana'], ['bea']]);
     expect(sobre.automatic).toBe(false);
+  });
+
+  it('trae cuántos jugadores van por fila, que es lo que la pantalla necesita', () => {
+    // Que el front sepa «FOURBALL es de parejas» sería duplicar una regla que
+    // ya vive en el agregado del backend
+    const vista = EnvelopeMapper.toEnvelopesViewDTO({
+      round_id: 'r1',
+      revealed: false,
+      players_per_row: 2,
+    });
+
+    expect(vista.playersPerRow).toBe(2);
+  });
+
+  it('y sin ese dato asume uno por fila', () => {
+    const vista = EnvelopeMapper.toEnvelopesViewDTO({ round_id: 'r1', revealed: false });
+
+    expect(vista.playersPerRow).toBe(1);
   });
 });
