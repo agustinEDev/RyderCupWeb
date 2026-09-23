@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import CompetitionDetail from './CompetitionDetail';
 
@@ -101,6 +101,7 @@ const competicion = (extra = {}) => ({
   ...extra,
 });
 
+
 const renderPage = () =>
   render(
     <MemoryRouter initialEntries={['/competitions/comp-1']}>
@@ -124,8 +125,22 @@ describe('CompetitionDetail · el acceso a la sala de draft (FE #653)', () => {
     captains: { teamA: 'ana', teamB: 'bea', viceTeamA: null, viceTeamB: null },
   };
 
-  it('S1: con los capitanes nombrados y sin equipos, se ofrece la sala', async () => {
+  it('S1: a quien organiza, la sala es su siguiente paso', async () => {
+    // No se le repite el enlace grande: para él la sala ES lo que toca ahora,
+    // y ofrecerla dos veces es lo que venía a arreglar el FE #705
     mockGetCompetitionDetail.mockResolvedValue(competicion(CERRADA_CON_CAPITANES));
+    renderPage();
+
+    expect(await screen.findByTestId('accion-principal')).toHaveTextContent('draft.open');
+    expect(screen.queryByTestId('ir-a-la-sala-de-draft')).not.toBeInTheDocument();
+  });
+
+  it('S1b: y a quien solo mira, el enlace de siempre', async () => {
+    // La ceremonia se ve en directo desde el móvil de todo el grupo (FE #653)
+    mockRoles = { isAdmin: false, isCreator: false, isLoading: false };
+    mockGetCompetitionDetail.mockResolvedValue(
+      competicion({ ...CERRADA_CON_CAPITANES, creatorId: 'otra-persona' })
+    );
     renderPage();
 
     const enlace = await screen.findByTestId('ir-a-la-sala-de-draft');
@@ -161,6 +176,20 @@ describe('CompetitionDetail · el acceso a la sala de draft (FE #653)', () => {
 
     await screen.findByText('Ryder de los amigos');
     expect(screen.queryByTestId('ir-a-la-sala-de-draft')).not.toBeInTheDocument();
+  });
+
+  it('S7: y a quien organiza tampoco se la ofrece el menú', async () => {
+    // Revisión de la FE #707: al pasar el enlace al menú se perdió la
+    // condición de los equipos, que S4 no ve porque mira el enlace grande
+    mockGetCompetitionDetail.mockResolvedValue(
+      competicion({ ...CERRADA_CON_CAPITANES, teamsAssigned: true })
+    );
+    renderPage();
+
+    fireEvent.click(await screen.findByTestId('menu-acciones'));
+
+    expect(screen.getByTestId('accion-principal')).not.toHaveTextContent('draft.open');
+    expect(screen.queryByTestId('accion-draft')).not.toBeInTheDocument();
   });
 
   it('S5: en modo manual no hay draft, así que tampoco sala', async () => {

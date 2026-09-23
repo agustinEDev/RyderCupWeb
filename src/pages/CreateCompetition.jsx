@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { Trophy, Settings, Plus, X, ChevronDown, Flag, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { nombresPorDefectoDeLosEquipos } from './nombresPorDefectoDeLosEquipos';
 import HeaderAuth from '../components/layout/HeaderAuth';
 import { useAuth } from '../hooks/useAuth';
 import {
@@ -121,8 +122,11 @@ const CreateCompetition = () => {
   const [formData, setFormData] = useState({
     // Competition Details
     competitionName: '',
-    teamOneName: 'Europe',
-    teamTwoName: 'USA',
+    // Nacen en el idioma de la app: son texto libre del organizador, así que
+    // traducirlos al pintar le cambiaría el nombre a quien llame a su equipo
+    // «USA» a propósito
+    teamOneName: nombresPorDefectoDeLosEquipos(t).uno,
+    teamTwoName: nombresPorDefectoDeLosEquipos(t).dos,
 
     // Schedule
     startDate: '',
@@ -179,6 +183,32 @@ const CreateCompetition = () => {
       }
     };
   }, []);
+
+  // Los namespaces se cargan con `import()` y sin suspense, así que la primera
+  // renderización puede llegar con `t` sin resolver: los equipos nacerían con
+  // su respaldo en inglés y, por ser el valor inicial de `useState`, se
+  // quedarían congelados en una app en español. Aquí se corrigen en cuanto el
+  // idioma esté, y solo mientras el organizador no haya escrito el suyo.
+  //
+  // Si lo ha escrito se sabe por el campo, no por el texto: comparar con los
+  // nombres de la app tomaba por no tocado un «USA» escrito a propósito, y lo
+  // cambiaba al pasar de idioma (revisión de la FE #707)
+  //
+  // NUNCA al editar: ahí los nombres vienen del servidor, y cambiar de idioma
+  // le renombraría los equipos ya guardados a una competición en marcha
+  const nombresEditados = useRef({ teamOneName: false, teamTwoName: false });
+  useEffect(() => {
+    if (isEditMode) return;
+    const porDefecto = nombresPorDefectoDeLosEquipos(t);
+    setFormData((antes) => {
+      const uno = nombresEditados.current.teamOneName ? antes.teamOneName : porDefecto.uno;
+      const dos = nombresEditados.current.teamTwoName ? antes.teamTwoName : porDefecto.dos;
+      // Sin cambios, el MISMO objeto: uno nuevo vuelve a pintar, y si `t`
+      // cambia en cada pintada el efecto no acaba nunca
+      if (uno === antes.teamOneName && dos === antes.teamTwoName) return antes;
+      return { ...antes, teamOneName: uno, teamTwoName: dos };
+    });
+  }, [t, i18n.language, isEditMode]);
 
   useEffect(() => {
     // Fetch all countries
@@ -253,8 +283,8 @@ const CreateCompetition = () => {
         // NOTE: The mapper returns camelCase, not snake_case
         const formDataToSet = {
           competitionName: competition.name || '',
-          teamOneName: competition.team1Name || 'Europe',
-          teamTwoName: competition.team2Name || 'USA',
+          teamOneName: competition.team1Name || nombresPorDefectoDeLosEquipos(t).uno,
+          teamTwoName: competition.team2Name || nombresPorDefectoDeLosEquipos(t).dos,
           startDate: competition.startDate || '',
           endDate: competition.endDate || '',
           country: mainCountry || null,
@@ -353,6 +383,7 @@ const CreateCompetition = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
+    if (name in nombresEditados.current) nombresEditados.current[name] = true;
     setFormData(prev => ({
       ...prev,
       [name]: value

@@ -28,21 +28,23 @@ import {
   reorderGolfCoursesUseCase,
 } from '../../composition';
 import BlockLoader from '../ui/BlockLoader';
+import { etiquetaDelTipoDeCampo } from './etiquetaDelTipoDeCampo';
 import { hayQueArrancarloAMano } from '../../services/arranqueAMano';
 
 /**
- * Get course type display info
+ * El color de cada tipo de campo. El TEXTO sale de i18n: escrito aquí a mano
+ * se quedaba en inglés en una pantalla en español (visto en el Kind, 23 sep)
  */
-const getCourseTypeInfo = (courseType) => {
+const colorDelTipoDeCampo = (courseType) => {
   switch (courseType) {
     case 'STANDARD_18':
-      return { label: '18 Holes', color: 'bg-green-100 text-green-800 border-green-200' };
+      return 'bg-green-100 text-green-800 border-green-200';
     case 'PITCH_AND_PUTT':
-      return { label: 'Pitch & Putt', color: 'bg-amber-100 text-amber-800 border-amber-200' };
+      return 'bg-amber-100 text-amber-800 border-amber-200';
     case 'EXECUTIVE':
-      return { label: 'Executive', color: 'bg-blue-100 text-blue-800 border-blue-200' };
+      return 'bg-blue-100 text-blue-800 border-blue-200';
     default:
-      return { label: courseType, color: 'bg-gray-100 text-gray-800 border-gray-200' };
+      return 'bg-gray-100 text-gray-800 border-gray-200';
   }
 };
 
@@ -79,7 +81,7 @@ const SortableGolfCourseItem = ({ course, onRemove, canEdit, i18n, t, paises }) 
     opacity: isDragging ? 0.5 : 1,
   };
 
-  const courseTypeInfo = getCourseTypeInfo(course.course_type);
+  const colorDelTipo = colorDelTipoDeCampo(course.course_type);
   const teesCount = course.tees?.length || 0;
 
   return (
@@ -133,14 +135,18 @@ const SortableGolfCourseItem = ({ course, onRemove, canEdit, i18n, t, paises }) 
           {/* Stats Grid */}
           <div className="grid grid-cols-3 gap-2">
             {/* Course Type */}
-            <div className={`px-2 py-1.5 rounded-lg border text-center ${courseTypeInfo.color}`}>
-              <span className="text-xs font-semibold">{courseTypeInfo.label}</span>
+            <div className={`px-2 py-1.5 rounded-lg border text-center ${colorDelTipo}`}>
+              <span className="text-xs font-semibold">
+                {etiquetaDelTipoDeCampo(course.course_type, t)}
+              </span>
             </div>
 
             {/* Par */}
             {course.total_par > 0 && (
               <div className="px-2 py-1.5 rounded-lg border bg-purple-50 text-purple-800 border-purple-200 text-center">
-                <span className="text-xs font-semibold">Par {course.total_par}</span>
+                <span className="text-xs font-semibold">
+                  {t('detail.golfCourses.par', { count: course.total_par })}
+                </span>
               </div>
             )}
 
@@ -189,14 +195,18 @@ const SortableGolfCourseItem = ({ course, onRemove, canEdit, i18n, t, paises }) 
         {/* Badges */}
         <div className="flex items-center gap-2 shrink-0">
           {/* Course Type */}
-          <div className={`px-3 py-1.5 rounded-lg border ${courseTypeInfo.color}`}>
-            <span className="text-xs font-semibold whitespace-nowrap">{courseTypeInfo.label}</span>
+          <div className={`px-3 py-1.5 rounded-lg border ${colorDelTipo}`}>
+            <span className="text-xs font-semibold whitespace-nowrap">
+              {etiquetaDelTipoDeCampo(course.course_type, t)}
+            </span>
           </div>
 
           {/* Par */}
           {course.total_par > 0 && (
             <div className="px-3 py-1.5 rounded-lg border bg-purple-50 text-purple-800 border-purple-200">
-              <span className="text-xs font-semibold whitespace-nowrap">Par {course.total_par}</span>
+              <span className="text-xs font-semibold whitespace-nowrap">
+                {t('detail.golfCourses.par', { count: course.total_par })}
+              </span>
             </div>
           )}
 

@@ -168,7 +168,11 @@ describe('CreateCompetition · elegir el tipo primero (FE #639)', () => {
 
     fireEvent.click(screen.getByTestId('mas-opciones'));
 
-    expect(await screen.findByTestId('campo-equipo-1')).toHaveValue('Europe');
+    // El nombre por defecto sale del idioma de la app: este doble de `t`
+    // devuelve la clave y su respaldo juntos
+    expect(await screen.findByTestId('campo-equipo-1')).toHaveValue(
+      'create.defaultTeamOne Europe'
+    );
     expect(screen.getByTestId('campo-jugadores')).toBeInTheDocument();
   });
 

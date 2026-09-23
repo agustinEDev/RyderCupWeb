@@ -73,6 +73,7 @@
     "mode": "Assignment Mode",
     "manual": "Manual",
     "automatic": "Automatic",
+    "draft": "Captains' draft",
     "teamA": "Team A",
     "teamB": "Team B",
     "noTeamsAssigned": "Teams have not been assigned yet",

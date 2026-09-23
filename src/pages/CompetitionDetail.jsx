@@ -3,6 +3,8 @@ import { useNavigate, useParams, useLocation, Link } from 'react-router';
 import { motion } from 'framer-motion';
 import { Users, Calendar, CalendarClock, MapPin, Settings, ArrowLeft, Edit, Trash2, Play, CheckCircle, XCircle, AlertCircle, UserPlus, Shield, Mail, BarChart3, Undo2, Crown, Pause, Swords } from 'lucide-react';
 import customToast from '../utils/toast';
+import AccionesDeLaFicha from '../components/competition/AccionesDeLaFicha';
+import { siguientePasoDeLaCompeticion } from '../utils/siguientePasoDeLaCompeticion';
 import ConfirmModal from '../components/modals/ConfirmModal';
 import NameCaptainsModal from '../components/competition/NameCaptainsModal';
 import CaptainBadge from '../components/competition/CaptainBadge';
@@ -487,6 +489,8 @@ const CompetitionDetail = () => {
   // User is considered creator if they created the competition OR have CREATOR/ADMIN role
   const isCreator = competition.creatorId === user.id;
   const canManage = isCreator || hasCreatorRole || isAdmin;
+  // Cómo se repartieron los equipos DE VERDAD; sin reparto, el configurado
+  const repartoAMostrar = competition.actualTeamAssignment ?? competition.teamAssignment;
   // La configuración se corrige mientras haya inscripciones abiertas (BE #323):
   // quien invita antes de poner el campo de golf tiene que poder ponerlo después
   const canEdit = canManage && ['DRAFT', 'ACTIVE'].includes(competition.status);
@@ -497,6 +501,152 @@ const CompetitionDetail = () => {
   // Los que perderían su plaza, sin contar a quien borra: el creador está
   // inscrito desde que la crea, y contarlo inflaría el aviso
   const otrosInscritos = approvedEnrollments.filter((e) => e.userId !== user.id).length;
+  // Las acciones de la ficha: UNA principal —la que toca ahora— y el resto en
+  // un menú. Antes eran hasta siete botones del mismo peso en seis colores y
+  // el que de verdad tocaba se perdía entre los demás (FE #705)
+  const paso = siguientePasoDeLaCompeticion(competition, { puedeGestionar: canManage });
+
+  const accionesPosibles = {
+    activate: {
+      id: 'activate',
+      label: t('detail.actions.activate'),
+      icon: Play,
+      onClick: () => handleStatusChange('activate'),
+      disabled: isProcessing,
+      cuando: competition.status === 'DRAFT',
+    },
+    nameCaptains: {
+      id: 'nameCaptains',
+      // Lo decide si LOS HAY, no el estado: en una cerrada sin capitanes
+      // salía «Cambiar capitanes», que es justo lo que no se puede hacer
+      label: t(
+        competition.captains?.teamA && competition.captains?.teamB
+          ? 'detail.actions.changeCaptains'
+          : 'detail.actions.nameCaptains'
+      ),
+      icon: Crown,
+      onClick: () => setNombrandoCapitanes(true),
+      disabled: isProcessing,
+      // Nombrarlos es lo que cierra las inscripciones. Con equipos ya no se
+      // tocan: el servidor lo rechaza, así que no se ofrece
+      cuando: ['ACTIVE', 'CLOSED'].includes(competition.status) && !competition.teamsAssigned,
+    },
+    'close-enrollments': {
+      id: 'close-enrollments',
+      label: t('detail.actions.close-enrollments'),
+      icon: Pause,
+      onClick: () => handleStatusChange('close-enrollments'),
+      disabled: isProcessing,
+      cuando: competition.status === 'ACTIVE' && competition.teamsAssigned,
+    },
+    draft: {
+      id: 'draft',
+      label: t('draft.open'),
+      icon: Swords,
+      onClick: () => navigate(`/competitions/${id}/draft`),
+      // Sin los dos capitanes la sala no tiene quién elija, y con los equipos
+      // ya hechos la sala terminó: se ven en la agenda
+      cuando:
+        competition.status === 'CLOSED' &&
+        competition.setupMode === 'RYDER_CUP' &&
+        !competition.teamsAssigned &&
+        Boolean(competition.captains?.teamA && competition.captains?.teamB),
+    },
+    'start-competition': {
+      id: 'start-competition',
+      label: t('detail.actions.start-competition'),
+      icon: Play,
+      onClick: () => handleStatusChange('start'),
+      disabled: isProcessing,
+      cuando: competition.status === 'CLOSED',
+    },
+    'reopen-enrollments': {
+      id: 'reopen-enrollments',
+      label: t('detail.actions.reopen-enrollments'),
+      icon: Undo2,
+      onClick: () => handleStatusChange('reopen-enrollments'),
+      disabled: isProcessing,
+      cuando: competition.status === 'CLOSED',
+    },
+    complete: {
+      id: 'complete',
+      label: t('detail.actions.complete'),
+      icon: CheckCircle,
+      onClick: () => handleStatusChange('complete'),
+      disabled: isProcessing,
+      cuando: competition.status === 'IN_PROGRESS',
+    },
+    'revert-status': {
+      id: 'revert-status',
+      label: t('detail.actions.revert-status'),
+      icon: Undo2,
+      onClick: () => handleStatusChange('revert-status'),
+      disabled: isProcessing,
+      cuando: competition.status === 'IN_PROGRESS',
+    },
+    'revert-to-in-progress': {
+      id: 'revert-to-in-progress',
+      label: t('detail.actions.revert-to-in-progress'),
+      icon: Undo2,
+      onClick: () => handleStatusChange('revert-to-in-progress'),
+      disabled: isProcessing,
+      cuando: competition.status === 'COMPLETED',
+    },
+    manageSchedule: {
+      id: 'manageSchedule',
+      label: t('detail.actions.manageSchedule'),
+      icon: Calendar,
+      onClick: () => navigate(`/creator/competitions/${id}/schedule`),
+      cuando: competition.status !== 'DRAFT' && competition.status !== 'CANCELLED',
+    },
+    manageInvitations: {
+      id: 'manageInvitations',
+      label: t('detail.actions.manageInvitations'),
+      icon: Mail,
+      onClick: () => navigate(`/creator/competitions/${id}/invitations`),
+      cuando: competition.status !== 'CANCELLED',
+    },
+    edit: {
+      id: 'edit',
+      label: t('detail.actions.edit'),
+      icon: Edit,
+      onClick: () => navigate(`/competitions/${id}/edit`),
+      cuando: canEdit,
+    },
+    leaderboard: {
+      id: 'leaderboard',
+      label: t('detail.actions.leaderboard'),
+      icon: BarChart3,
+      onClick: () => navigate(`/competitions/${id}/leaderboard`, { state: { from: 'detail' } }),
+      cuando: competition.status === 'IN_PROGRESS' || competition.status === 'COMPLETED',
+    },
+  };
+
+  const disponibles = Object.values(accionesPosibles).filter((accion) => accion.cuando);
+  const accionPrincipal = disponibles.find((accion) => accion.id === paso) || null;
+  const accionesDeGestion = disponibles.filter((accion) => accion.id !== paso);
+  const accionesDestructivas = [
+    {
+      id: 'cancel',
+      label: t('detail.actions.cancel'),
+      icon: XCircle,
+      onClick: () => handleStatusChange('cancel'),
+      disabled: isProcessing,
+      cuando: !['CANCELLED', 'COMPLETED'].includes(competition.status),
+    },
+    {
+      id: 'delete',
+      label: t('detail.actions.delete'),
+      icon: Trash2,
+      onClick: handleDelete,
+      disabled: isProcessing,
+      // Lo decide el backend con la misma regla que el borrado de verdad: si
+      // se copia aquí la lista de estados, el botón sale en una cancelada ya
+      // jugada, donde siempre falla (FE #667)
+      cuando: canDelete,
+    },
+  ].filter((accion) => accion.cuando);
+
   const canEditHandicap =
     canManage && ['DRAFT', 'ACTIVE', 'CLOSED'].includes(competition.status);
 
@@ -647,8 +797,12 @@ const CompetitionDetail = () => {
                     capitanes: la gracia es que la ceremonia se vea en directo
                     desde el móvil de cada uno (FE #653). Se ofrece cuando ya hay
                     a quién elegir y todavía no hay equipos: después la sala ya
-                    terminó, y los equipos se ven en la agenda */}
-                {competition.setupMode === 'RYDER_CUP' &&
+                    terminó, y los equipos se ven en la agenda.
+
+                    A quien organiza no se le repite aquí: para él la sala es el
+                    siguiente paso y ya la ofrece el botón de arriba (FE #705) */}
+                {!canManage &&
+                  competition.setupMode === 'RYDER_CUP' &&
                   competition.status === 'CLOSED' &&
                   !competition.teamsAssigned &&
                   competition.captains?.teamA &&
@@ -743,179 +897,33 @@ const CompetitionDetail = () => {
                 transition={{ duration: 0.5, delay: 0.1 }}
                 className="p-4"
               >
-                <div className="flex flex-wrap gap-3">
-                  {canEdit && (
-                    <button
-                      onClick={() => navigate(`/competitions/${id}/edit`)}
-                      className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg font-medium hover:bg-primary/90 transition-colors shadow-md"
-                    >
-                      <Edit className="w-4 h-4" />
-                      <span>{t('detail.actions.edit')}</span>
-                    </button>
-                  )}
+                <AccionesDeLaFicha
+                  principal={accionPrincipal}
+                  acciones={accionesDeGestion}
+                  destructivas={accionesDestructivas}
+                  t={t}
+                />
 
-                  {competition.status === 'DRAFT' && (
-                    <button
-                      onClick={() => handleStatusChange('activate')}
-                      disabled={isProcessing}
-                      className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors shadow-md disabled:opacity-50"
-                    >
-                      <Play className="w-4 h-4" />
-                      <span>{t('detail.actions.activate')}</span>
-                    </button>
-                  )}
-
-                  {/* Nombrar a los capitanes es lo que cierra las inscripciones:
-                      sustituye a «Cerrar inscripciones» (FE #692). Ya cerradas,
-                      se pueden cambiar mientras no haya equipos: con ellos el
-                      servidor lo rechaza, así que no se ofrece */}
-                  {['ACTIVE', 'CLOSED'].includes(competition.status) && !competition.teamsAssigned && (
-                    <button
-                      onClick={() => setNombrandoCapitanes(true)}
-                      disabled={isProcessing}
-                      className="flex items-center gap-2 px-4 py-2 bg-yellow-600 text-white rounded-lg font-medium hover:bg-yellow-700 transition-colors shadow-md disabled:opacity-50"
-                    >
-                      <Crown className="w-4 h-4" />
-                      <span>
-                        {t(
-                          competition.status === 'ACTIVE'
-                            ? 'detail.actions.nameCaptains'
-                            : 'detail.actions.changeCaptains'
-                        )}
-                      </span>
-                    </button>
-                  )}
-
-                  {/* Reabierta con los equipos ya repartidos: reabrir no deshace
-                      el reparto y los capitanes ya no se tocan, así que para
-                      volver a cerrar queda el botón de siempre (FE #692) */}
-                  {competition.status === 'ACTIVE' && competition.teamsAssigned && (
-                    <button
-                      onClick={() => handleStatusChange('close-enrollments')}
-                      disabled={isProcessing}
-                      className="flex items-center gap-2 px-4 py-2 bg-yellow-600 text-white rounded-lg font-medium hover:bg-yellow-700 transition-colors shadow-md disabled:opacity-50"
-                    >
-                      <Pause className="w-4 h-4" />
-                      <span>{t('detail.actions.close-enrollments')}</span>
-                    </button>
-                  )}
-
-                  {competition.status === 'CLOSED' && (
-                    <button
-                      onClick={() => handleStatusChange('start')}
-                      disabled={isProcessing}
-                      className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors shadow-md disabled:opacity-50"
-                    >
-                      <Play className="w-4 h-4" />
-                      <span>{t('detail.actions.start-competition')}</span>
-                    </button>
-                  )}
-
-                  {competition.status === 'CLOSED' && (
-                    <button
-                      onClick={() => handleStatusChange('reopen-enrollments')}
-                      disabled={isProcessing}
-                      className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg font-medium hover:bg-orange-700 transition-colors shadow-md disabled:opacity-50"
-                    >
-                      <Undo2 className="w-4 h-4" />
-                      <span>{t('detail.actions.reopen-enrollments')}</span>
-                    </button>
-                  )}
-
-                  {competition.status === 'IN_PROGRESS' && (
-                    <button
-                      onClick={() => handleStatusChange('complete')}
-                      disabled={isProcessing}
-                      className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700 transition-colors shadow-md disabled:opacity-50"
-                    >
-                      <CheckCircle className="w-4 h-4" />
-                      <span>{t('detail.actions.complete')}</span>
-                    </button>
-                  )}
-
-                  {competition.status === 'IN_PROGRESS' && (
-                    <button
-                      onClick={() => handleStatusChange('revert-status')}
-                      disabled={isProcessing}
-                      className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg font-medium hover:bg-orange-700 transition-colors shadow-md disabled:opacity-50"
-                    >
-                      <Undo2 className="w-4 h-4" />
-                      <span>{t('detail.actions.revert-status')}</span>
-                    </button>
-                  )}
-
-                  {competition.status === 'COMPLETED' && (
-                    <button
-                      onClick={() => handleStatusChange('revert-to-in-progress')}
-                      disabled={isProcessing}
-                      className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg font-medium hover:bg-orange-700 transition-colors shadow-md disabled:opacity-50"
-                    >
-                      <Undo2 className="w-4 h-4" />
-                      <span>{t('detail.actions.revert-to-in-progress')}</span>
-                    </button>
-                  )}
-
-                  {competition.status !== 'CANCELLED' && competition.status !== 'COMPLETED' && (
-                    <button
-                      onClick={() => handleStatusChange('cancel')}
-                      disabled={isProcessing}
-                      className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors shadow-md disabled:opacity-50"
-                    >
-                      <XCircle className="w-4 h-4" />
-                      <span>{t('detail.actions.cancel')}</span>
-                    </button>
-                  )}
-
-                  {canDelete && (
-                    <button
-                      onClick={handleDelete}
-                      disabled={isProcessing}
-                      className="flex items-center gap-2 px-4 py-2 bg-gray-700 text-white rounded-lg font-medium hover:bg-gray-800 transition-colors shadow-md disabled:opacity-50"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                      <span>{t('detail.actions.delete')}</span>
-                    </button>
-                  )}
-
-                  {competition.status !== 'DRAFT' && competition.status !== 'CANCELLED' && (
-                    <button
-                      onClick={() => navigate(`/creator/competitions/${id}/schedule`)}
-                      className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors shadow-md"
-                    >
-                      <Calendar className="w-4 h-4" />
-                      <span>{t('detail.actions.manageSchedule')}</span>
-                    </button>
-                  )}
-
-                  {competition.status === 'DRAFT' && (
-                    // Invitar abre el torneo, y eso no se adivina mirando el botón.
-                    // También una programada: la política solo mira el estado
-                    <p
-                      className="w-full text-sm text-gray-600"
-                      data-testid="invitar-abre-inscripciones"
-                    >
-                      {fechaDeAperturaLegible
-                        ? t('detail.invitingOpensScheduled', { fecha: fechaDeAperturaLegible })
-                        : t('detail.invitingOpensEnrollment')}
-                    </p>
-                  )}
-
-                  {competition.status !== 'CANCELLED' && (
-                    <button
-                      onClick={() => navigate(`/creator/competitions/${id}/invitations`)}
-                      className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700 transition-colors shadow-md"
-                    >
-                      <Mail className="w-4 h-4" />
-                      <span>{t('detail.actions.manageInvitations')}</span>
-                    </button>
-                  )}
-
-                </div>
+                {competition.status === 'DRAFT' && (
+                  // Invitar abre el torneo, y eso no se adivina mirando el botón.
+                  // También una programada: la política solo mira el estado
+                  <p
+                    className="mt-3 w-full text-sm text-gray-600"
+                    data-testid="invitar-abre-inscripciones"
+                  >
+                    {fechaDeAperturaLegible
+                      ? t('detail.invitingOpensScheduled', { fecha: fechaDeAperturaLegible })
+                      : t('detail.invitingOpensEnrollment')}
+                  </p>
+                )}
               </motion.div>
             )}
 
-            {/* Leaderboard Button - Visible to ALL users */}
-            {(competition.status === 'IN_PROGRESS' || competition.status === 'COMPLETED') && (
+            {/* La clasificación, para todo el mundo. A quien organiza NO se le
+                repite: en un torneo en juego es su acción principal, y
+                ofrecerla dos veces es lo que venía a arreglar el FE #705 */}
+            {!canManage &&
+              (competition.status === 'IN_PROGRESS' || competition.status === 'COMPLETED') && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -1063,12 +1071,26 @@ const CompetitionDetail = () => {
                   </div>
                   <div>
                     <span className="text-gray-500 text-sm">{t('detail.settings.playMode')}</span>
-                    <p className="text-gray-900 font-medium">{competition.playMode}</p>
+                    {/* Salía «HANDICAP»: el valor del backend tal cual, en
+                        mayúsculas y en inglés, en una pantalla en español */}
+                    <p className="text-gray-900 font-medium">
+                      {competition.playMode
+                        ? t(`create.${String(competition.playMode).toLowerCase()}`, {
+                            defaultValue: competition.playMode,
+                          })
+                        : ''}
+                    </p>
                   </div>
                   <div>
                     <span className="text-gray-500 text-sm">{t('detail.settings.teamAssignment')}</span>
+                    {/* Idem, y con respaldo: un modo que el backend añada
+                        mañana sale con su nombre, no con la clave */}
                     <p className="text-gray-900 font-medium">
-                      {competition.actualTeamAssignment ?? competition.teamAssignment}
+                      {repartoAMostrar
+                        ? t(`detail.settings.assignment.${repartoAMostrar}`, {
+                            defaultValue: repartoAMostrar,
+                          })
+                        : ''}
                     </p>
                   </div>
                   <div>

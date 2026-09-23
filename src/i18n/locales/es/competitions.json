@@ -53,6 +53,8 @@
     "competitionName": "Nombre de la Competición *",
     "competitionNamePlaceholder": "Ej: Ryder Cup de amigos",
     "teamOneName": "Nombre del Equipo 1 *",
+    "defaultTeamOne": "Europa",
+    "defaultTeamTwo": "Estados Unidos",
     "teamOneNamePlaceholder": "ej., Europa",
     "teamTwoName": "Nombre del Equipo 2 *",
     "teamTwoNamePlaceholder": "ej., USA",
@@ -160,6 +162,7 @@
     "enrollmentOpensOn": "A partir del {{fecha}}",
     "actions": {
       "edit": "Editar",
+      "more": "Más acciones",
       "activate": "Activar",
       "close-enrollments": "Cerrar Inscripciones",
       "start-competition": "Iniciar Competición",
@@ -224,7 +227,12 @@
       "teamAssignment": "Asignación de Equipos:",
       "maxPlayingHandicap": "Límite Hándicap de Juego:",
       "maxPlayingHandicapNone": "Sin límite",
-      "created": "Creado:"
+      "created": "Creado:",
+      "assignment": {
+        "MANUAL": "Manual",
+        "AUTOMATIC": "Automática",
+        "DRAFT": "Draft de capitanes"
+      }
     },
     "approvedPlayers": "Jugadores Aprobados ({{count}})",
     "noApprovedPlayers": "Aún no hay jugadores aprobados",
@@ -292,7 +300,8 @@
         "title": "Este campo hay que arrancarlo a mano",
         "body": "La anotación no se abrirá sola: tiene que arrancar el partido el organizador de la competición, y necesita cobertura. Si en el campo no hay señal, mejor que lo haga antes de salir."
       },
-      "courseAlreadyAdded": "Ese campo ya está en la competición"
+      "courseAlreadyAdded": "Ese campo ya está en la competición",
+      "par": "Par {{count}}"
     },
     "visibilityPrivate": "Solo invitados",
     "visibilityPublic": "Pública",
@@ -394,7 +403,7 @@
   },
   "envelope": {
     "title": "Tu sobre",
-    "back": "Volver a la competición",
+    "back": "Volver al calendario",
     "tapInOrder": "Toca a tus jugadores en el orden en que quieres que jueguen: el primero se enfrentará al primero del rival.",
     "oddTeam": "Esta sesión es de parejas y hay un equipo impar: alguien se quedaría fuera, así que no se pueden entregar los sobres ni se abrirán solos. El organizador tiene que cambiar el formato de la sesión o rehacer los equipos.",
     "pairHalfDone": "Te falta el compañero de la última pareja.",

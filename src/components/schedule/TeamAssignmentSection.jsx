@@ -106,7 +106,14 @@ const TeamAssignmentSection = ({
         </h3>
         {teamAssignment.mode && (
           <span className="text-xs text-gray-500">
-            {t('teams.mode')}: {t(`teams.${teamAssignment.mode.toLowerCase()}`)}
+            {/* Con `defaultValue`, un modo que el backend añada mañana y
+                nadie traduzca todavía sale con su nombre en vez de con la
+                clave: i18next devuelve la clave cuando no la encuentra, y eso
+                acaba en pantalla tal cual */}
+            {t('teams.mode')}:{' '}
+            {t(`teams.${teamAssignment.mode.toLowerCase()}`, {
+              defaultValue: teamAssignment.mode,
+            })}
           </span>
         )}
       </div>
