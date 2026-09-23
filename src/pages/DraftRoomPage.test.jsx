@@ -97,6 +97,11 @@ describe('DraftRoomPage · la sala en directo (FE #653)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockDetalle.mockResolvedValue(COMPETICION);
+    // El doble tiene que devolver una promesa, como la función de verdad: la
+    // pantalla hace `abrirSala().catch(...)` para no dejar el rechazo suelto, y
+    // con un `undefined` eso revienta dentro del `onClick`. Vitest lo cuenta
+    // como «1 error» con todos los tests en verde, y el CI se cae
+    mockAbrir.mockResolvedValue(undefined);
     mockSala.mockReturnValue(estado());
   });
 
