@@ -73,6 +73,7 @@
     "mode": "Modo de Asignación",
     "manual": "Manual",
     "automatic": "Automática",
+    "draft": "Draft de capitanes",
     "teamA": "Equipo A",
     "teamB": "Equipo B",
     "noTeamsAssigned": "Los equipos aún no han sido asignados",
