@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { MoreHorizontal } from 'lucide-react';
 
 /**
@@ -25,6 +25,16 @@ import { MoreHorizontal } from 'lucide-react';
 const AccionesDeLaFicha = ({ principal, acciones = [], destructivas = [], t }) => {
   const [abierto, setAbierto] = useState(false);
   const contenedor = useRef(null);
+  const disparador = useRef(null);
+  const idDelMenu = useId();
+
+  // Al cerrarlo desde dentro —Escape o una acción— el foco vuelve al botón:
+  // si no, quien va con teclado se queda sin sitio en la página. Al pulsar
+  // fuera no, porque ahí el foco ya está donde se ha pulsado
+  const cerrarYVolver = () => {
+    setAbierto(false);
+    disparador.current?.focus();
+  };
 
   useEffect(() => {
     if (!abierto) return undefined;
@@ -33,7 +43,7 @@ const AccionesDeLaFicha = ({ principal, acciones = [], destructivas = [], t }) =
       if (!contenedor.current?.contains(evento.target)) setAbierto(false);
     };
     const alEscapar = (evento) => {
-      if (evento.key === 'Escape') setAbierto(false);
+      if (evento.key === 'Escape') cerrarYVolver();
     };
 
     document.addEventListener('mousedown', alPulsarFuera);
@@ -48,7 +58,7 @@ const AccionesDeLaFicha = ({ principal, acciones = [], destructivas = [], t }) =
   if (!principal && !hayMenu) return null;
 
   const elegir = (accion) => {
-    setAbierto(false);
+    cerrarYVolver();
     accion.onClick();
   };
 
@@ -92,11 +102,13 @@ const AccionesDeLaFicha = ({ principal, acciones = [], destructivas = [], t }) =
       {hayMenu && (
         <div className="relative">
           <button
+            ref={disparador}
             type="button"
             data-testid="menu-acciones"
             onClick={() => setAbierto((estaba) => !estaba)}
             aria-haspopup="menu"
             aria-expanded={abierto}
+            aria-controls={abierto ? idDelMenu : undefined}
             aria-label={t('detail.actions.more')}
             className="flex h-10 w-10 items-center justify-center rounded-lg border border-gray-300 text-gray-600 transition-colors hover:bg-gray-50"
           >
@@ -105,6 +117,7 @@ const AccionesDeLaFicha = ({ principal, acciones = [], destructivas = [], t }) =
 
           {abierto && (
             <div
+              id={idDelMenu}
               role="menu"
               className="absolute right-0 z-20 mt-1 w-60 overflow-hidden rounded-xl border border-gray-200 bg-white py-1 shadow-lg"
             >

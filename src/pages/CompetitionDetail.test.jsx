@@ -835,6 +835,18 @@ describe('CompetitionDetail - borrar con confirmación (FE #667)', () => {
     return screen.getByTestId('accion-delete');
   };
 
+  // Con el menú ABIERTO: cerrado, «no está» se cumple siempre y el caso no
+  // prueba nada (revisión de la FE #707). Si no hay menú es que no queda
+  // ninguna acción, y entonces tampoco la de borrar
+  const noOfreceEliminar = async () => {
+    await screen.findByText('Summer Cup');
+    abrirMenuDeAcciones();
+    if (screen.queryAllByTestId('menu-acciones').length > 0) {
+      expect(screen.getByRole('menu')).toBeInTheDocument();
+    }
+    expect(screen.queryByTestId('accion-delete')).not.toBeInTheDocument();
+  };
+
   beforeEach(() => {
     vi.clearAllMocks();
     inscritos('creator-1');
@@ -862,7 +874,7 @@ describe('CompetitionDetail - borrar con confirmación (FE #667)', () => {
     renderPage();
 
     await screen.findByText('Summer Cup');
-    expect(screen.queryByRole('button', { name: /detail\.actions\.delete/ })).not.toBeInTheDocument();
+    await noOfreceEliminar();
   });
 
   it('B3: pulsar «Eliminar» abre la confirmación y todavía no borra nada', async () => {
@@ -949,7 +961,7 @@ describe('CompetitionDetail - borrar con confirmación (FE #667)', () => {
 
     renderPage();
     await screen.findByText('Summer Cup');
-    expect(screen.queryByRole('button', { name: /detail\.actions\.delete/ })).not.toBeInTheDocument();
+    await noOfreceEliminar();
 
     ficha({ status: 'CANCELLED', canDelete: true });
     abrirMenuDeAcciones();
@@ -970,9 +982,7 @@ describe('CompetitionDetail - borrar con confirmación (FE #667)', () => {
     abrirMenuDeAcciones();
     fireEvent.click(screen.getByText('detail.actions.cancel'));
 
-    await waitFor(() =>
-      expect(screen.queryByRole('button', { name: /detail\.actions\.delete/ })).not.toBeInTheDocument()
-    );
+    await waitFor(noOfreceEliminar);
   });
 
   it('B11: si no se han podido cargar las inscripciones, no dice que no hay nadie más', async () => {
@@ -1008,7 +1018,7 @@ describe('CompetitionDetail - borrar con confirmación (FE #667)', () => {
 
     await waitFor(() => expect(mockGetCompetitionDetail).toHaveBeenCalledTimes(2));
     await new Promise((r) => setTimeout(r, 50));
-    expect(screen.queryByRole('button', { name: /detail\.actions\.delete/ })).not.toBeInTheDocument();
+    await noOfreceEliminar();
   });
 
   it('B13: el aviso de «no se ha podido comprobar» no se queda pegado al pasar a otra que sí carga', async () => {

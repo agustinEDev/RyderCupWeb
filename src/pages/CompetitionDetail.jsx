@@ -544,10 +544,12 @@ const CompetitionDetail = () => {
       label: t('draft.open'),
       icon: Swords,
       onClick: () => navigate(`/competitions/${id}/draft`),
-      // Sin los dos capitanes la sala no tiene quién elija
+      // Sin los dos capitanes la sala no tiene quién elija, y con los equipos
+      // ya hechos la sala terminó: se ven en la agenda
       cuando:
         competition.status === 'CLOSED' &&
         competition.setupMode === 'RYDER_CUP' &&
+        !competition.teamsAssigned &&
         Boolean(competition.captains?.teamA && competition.captains?.teamB),
     },
     'start-competition': {

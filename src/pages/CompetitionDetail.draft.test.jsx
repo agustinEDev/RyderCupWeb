@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import CompetitionDetail from './CompetitionDetail';
 
@@ -176,6 +176,20 @@ describe('CompetitionDetail · el acceso a la sala de draft (FE #653)', () => {
 
     await screen.findByText('Ryder de los amigos');
     expect(screen.queryByTestId('ir-a-la-sala-de-draft')).not.toBeInTheDocument();
+  });
+
+  it('S7: y a quien organiza tampoco se la ofrece el menú', async () => {
+    // Revisión de la FE #707: al pasar el enlace al menú se perdió la
+    // condición de los equipos, que S4 no ve porque mira el enlace grande
+    mockGetCompetitionDetail.mockResolvedValue(
+      competicion({ ...CERRADA_CON_CAPITANES, teamsAssigned: true })
+    );
+    renderPage();
+
+    fireEvent.click(await screen.findByTestId('menu-acciones'));
+
+    expect(screen.getByTestId('accion-principal')).not.toHaveTextContent('draft.open');
+    expect(screen.queryByTestId('accion-draft')).not.toBeInTheDocument();
   });
 
   it('S5: en modo manual no hay draft, así que tampoco sala', async () => {

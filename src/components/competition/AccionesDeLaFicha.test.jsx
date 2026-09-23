@@ -115,4 +115,39 @@ describe('AccionesDeLaFicha · una acción y un menú (FE #705)', () => {
     expect(boton).toHaveAttribute('aria-expanded', 'true');
     expect(screen.getByRole('menu')).toBeInTheDocument();
   });
+
+  it('A10: el botón dice qué menú abre', () => {
+    pintar();
+    const boton = screen.getByTestId('menu-acciones');
+    fireEvent.click(boton);
+
+    const menu = screen.getByRole('menu');
+    expect(menu.id).not.toBe('');
+    expect(boton).toHaveAttribute('aria-controls', menu.id);
+  });
+
+  it('A11: al cerrarlo con Escape, el foco vuelve al botón', () => {
+    // Si no, quien va con teclado se queda sin sitio en la página
+    pintar();
+    const boton = screen.getByTestId('menu-acciones');
+    fireEvent.click(boton);
+    screen.getByTestId('accion-edit').focus();
+
+    fireEvent.keyDown(document, { key: 'Escape' });
+
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument();
+    expect(boton).toHaveFocus();
+  });
+
+  it('A12: y al elegir una acción, también', () => {
+    pintar();
+    const boton = screen.getByTestId('menu-acciones');
+    fireEvent.click(boton);
+    screen.getByTestId('accion-edit').focus();
+
+    fireEvent.click(screen.getByTestId('accion-edit'));
+
+    expect(GESTION[0].onClick).toHaveBeenCalled();
+    expect(boton).toHaveFocus();
+  });
 });

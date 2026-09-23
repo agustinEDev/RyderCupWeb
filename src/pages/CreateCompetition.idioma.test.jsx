@@ -14,6 +14,12 @@ import { MemoryRouter, Routes, Route } from 'react-router';
  *   I1  crear; se escribe el equipo 2 y llega el español   | el 1 pasa a «Europa»
  *   I2  crear; se escribe el equipo 1 y llega el español   | el 2 pasa a «Estados Unidos»
  *   I3  editar una guardada con «Europe»/«USA»; llega el es | siguen «Europe»/«USA»
+ *   I4  crear en es; se escribe «USA» a mano en el 1; en   | sigue «USA»
+ *   I5  crear en en; se escribe «Europe» a mano en el 2; es | sigue «Europe»
+ *
+ * I4 e I5 son de la revisión de la FE #707: se decidía por el TEXTO, así que
+ * un nombre escrito a mano que coincidiera con uno de la app se tomaba por no
+ * tocado, y además por el de cualquiera de los dos equipos.
  */
 
 const TEXTOS = {
@@ -122,6 +128,34 @@ describe('CreateCompetition · los nombres de los equipos cuando llega el idioma
     const [unoAhora, dos] = await despliegaLosEquipos();
     await vi.waitFor(() => expect(dos).toHaveValue('Estados Unidos'));
     expect(unoAhora).toHaveValue('Los Pepes');
+  });
+
+  it('I4: un nombre escrito a mano no se cambia aunque coincida con uno de la app', async () => {
+    // Llamar «USA» al equipo 1 es una decisión del organizador: ni se traduce
+    // ni pasa a «Europe» por ser el primero
+    mockIdioma = 'es';
+    const { rerender } = await abreElAlta();
+    const [uno] = await despliegaLosEquipos();
+    fireEvent.change(uno, { target: { value: 'USA' } });
+
+    mockIdioma = 'en';
+    rerender(alta());
+
+    const [unoAhora, dos] = await despliegaLosEquipos();
+    await vi.waitFor(() => expect(dos).toHaveValue('USA'));
+    expect(unoAhora).toHaveValue('USA');
+  });
+
+  it('I5: tampoco el que coincide con el respaldo en inglés', async () => {
+    const { rerender } = await abreElAlta();
+    const [, dos] = await despliegaLosEquipos();
+    fireEvent.change(dos, { target: { value: 'Europe' } });
+
+    llegaElEspanol(rerender, alta);
+
+    const [uno, dosAhora] = await despliegaLosEquipos();
+    await vi.waitFor(() => expect(uno).toHaveValue('Europa'));
+    expect(dosAhora).toHaveValue('Europe');
   });
 
   it('I3: editando, los nombres guardados no se tocan aunque cambie el idioma', async () => {
