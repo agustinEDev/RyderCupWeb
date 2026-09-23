@@ -77,6 +77,7 @@ const CompleteProfile = lazyWithRetry(() => import('./pages/CompleteProfile'));
 // Public pages
 const LeaderboardPage = lazyWithRetry(() => import('./pages/public/LeaderboardPage'));
 const DraftRoomPage = lazyWithRetry(() => import('./pages/DraftRoomPage'));
+const EnvelopePage = lazyWithRetry(() => import('./pages/EnvelopePage'));
 const Pricing = lazyWithRetry(() => import('./pages/public/Pricing'));
 const Contact = lazyWithRetry(() => import('./pages/public/Contact'));
 const Terms = lazyWithRetry(() => import('./pages/public/Terms'));
@@ -295,6 +296,8 @@ function AppContent() {
         <Route path="/competitions/:id" element={<ProtectedRoute><CompetitionDetail /></ProtectedRoute>} />
         {/* La sala de draft la ve el grupo entero, no solo los capitanes (FE #653) */}
         <Route path="/competitions/:id/draft" element={<ProtectedRoute><DraftRoomPage /></ProtectedRoute>} />
+        {/* El sobre de cada capitán para una sesión (FE #655) */}
+        <Route path="/competitions/:id/rounds/:roundId/envelope" element={<ProtectedRoute><EnvelopePage /></ProtectedRoute>} />
         <Route path="/browse-competitions" element={<ProtectedRoute><BrowseCompetitions /></ProtectedRoute>} />
 
         {/* Admin routes (v2.4.0) - Protected by ADMIN role */}

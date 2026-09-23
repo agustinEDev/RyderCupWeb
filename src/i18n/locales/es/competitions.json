@@ -392,6 +392,25 @@
     "abreHoy": "Abrirán hoy.",
     "creando": "Creando…"
   },
+  "envelope": {
+    "title": "Tu sobre",
+    "back": "Volver a la competición",
+    "tapInOrder": "Toca a tus jugadores en el orden en que quieres que jueguen: el primero se enfrentará al primero del rival.",
+    "submit": "Entregar sobre",
+    "submitted": "Sobre entregado",
+    "undo": "Deshacer",
+    "change": "Cambiar mi orden",
+    "yours": "Tu sobre está entregado",
+    "rivalIn": "El rival ya ha entregado el suyo",
+    "rivalPending": "El rival todavía no ha entregado",
+    "reveal": "Abrir los sobres",
+    "matchups": "Enfrentamientos",
+    "versus": "vs",
+    "filledByTheApp": "Un sobre lo rellenó la aplicación: ese capitán no entregó el suyo",
+    "onlyCaptains": "Los sobres los entregan los capitanes. Aquí verás los enfrentamientos en cuanto se abran.",
+    "open": "Ir a tu sobre",
+    "cancel": "Cancelar"
+  },
   "draft": {
     "title": "Sala de draft",
     "back": "Volver a la competición",

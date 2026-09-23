@@ -392,6 +392,25 @@
     "abreHoy": "Opens today.",
     "creando": "Creating…"
   },
+  "envelope": {
+    "title": "Your envelope",
+    "back": "Back to the competition",
+    "tapInOrder": "Tap your players in the order you want them to play: the first one faces the rival's first.",
+    "submit": "Hand in envelope",
+    "submitted": "Envelope handed in",
+    "undo": "Undo",
+    "change": "Change my order",
+    "yours": "Your envelope is in",
+    "rivalIn": "The rival has handed his in",
+    "rivalPending": "The rival has not handed his in yet",
+    "reveal": "Open the envelopes",
+    "matchups": "Matchups",
+    "versus": "vs",
+    "filledByTheApp": "One envelope was filled in by the app: that captain never handed his in",
+    "onlyCaptains": "Envelopes are handed in by the captains. The matchups show up here once they are opened.",
+    "open": "Go to your envelope",
+    "cancel": "Cancel"
+  },
   "draft": {
     "title": "Draft room",
     "back": "Back to the competition",

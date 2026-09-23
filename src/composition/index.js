@@ -91,6 +91,10 @@ import AssignTeamsUseCase from '../application/use_cases/schedule/AssignTeamsUse
 import StartDraftUseCase from '../application/use_cases/draft/StartDraftUseCase';
 import GetDraftUseCase from '../application/use_cases/draft/GetDraftUseCase';
 import MakeDraftPickUseCase from '../application/use_cases/draft/MakeDraftPickUseCase';
+import ApiEnvelopeRepository from '../infrastructure/repositories/ApiEnvelopeRepository';
+import SubmitEnvelopeUseCase from '../application/use_cases/envelope/SubmitEnvelopeUseCase';
+import GetEnvelopesUseCase from '../application/use_cases/envelope/GetEnvelopesUseCase';
+import RevealEnvelopesUseCase from '../application/use_cases/envelope/RevealEnvelopesUseCase';
 import CreateRoundUseCase from '../application/use_cases/schedule/CreateRoundUseCase';
 import UpdateRoundUseCase from '../application/use_cases/schedule/UpdateRoundUseCase';
 import DeleteRoundUseCase from '../application/use_cases/schedule/DeleteRoundUseCase';
@@ -196,6 +200,7 @@ const apiGolfCourseRepository = new ApiGolfCourseRepository();
 const apiAdminRepository = new ApiAdminRepository();
 const apiScheduleRepository = new ApiScheduleRepository();
 const apiDraftRepository = new ApiDraftRepository();
+const apiEnvelopeRepository = new ApiEnvelopeRepository();
 const apiSupportRepository = new ApiSupportRepository();
 const apiCountryRepository = new ApiCountryRepository();
 const apiInvitationRepository = new ApiInvitationRepository();
@@ -268,6 +273,10 @@ const reassignPlayersUseCase = new ReassignPlayersUseCase({ scheduleRepository: 
 const startDraftUseCase = new StartDraftUseCase({ draftRepository: apiDraftRepository });
 const getDraftUseCase = new GetDraftUseCase({ draftRepository: apiDraftRepository });
 const makeDraftPickUseCase = new MakeDraftPickUseCase({ draftRepository: apiDraftRepository });
+// Los sobres de los capitanes (FE #655)
+const submitEnvelopeUseCase = new SubmitEnvelopeUseCase({ envelopeRepository: apiEnvelopeRepository });
+const getEnvelopesUseCase = new GetEnvelopesUseCase({ envelopeRepository: apiEnvelopeRepository });
+const revealEnvelopesUseCase = new RevealEnvelopesUseCase({ envelopeRepository: apiEnvelopeRepository });
 
 // Support Use Cases
 const submitContactFormUseCase = new SubmitContactFormUseCase({ supportRepository: apiSupportRepository });
@@ -464,6 +473,9 @@ export {
   startDraftUseCase,
   getDraftUseCase,
   makeDraftPickUseCase,
+  submitEnvelopeUseCase,
+  getEnvelopesUseCase,
+  revealEnvelopesUseCase,
   createRoundUseCase,
   updateRoundUseCase,
   deleteRoundUseCase,
