@@ -69,8 +69,22 @@ const EnvelopePage = () => {
   // Repetir esa regla aquí es donde se desincronizan
   const puedeAbrir = Boolean(vista?.canReveal);
   const faltaAlgunSobre = !vista?.teamASubmitted || !vista?.teamBSubmitted;
+  // Lo dice el servidor: 1 en individuales, 2 en los formatos de parejas.
+  // Saber aquí qué formatos son de parejas es duplicar una regla del dominio
+  const porFila = vista?.playersPerRow || 1;
+  // Lo dice el servidor mirando los DOS equipos, porque quien puede
+  // arreglarlo —el organizador, cambiando el formato o rehaciendo los
+  // equipos— no tiene sobre y no vería nada. En parejas el cruce va por
+  // posición: con un equipo impar alguien se queda fuera, no se puede
+  // entregar, el relleno automático revienta y el plazo vence sin abrir nada
+  const equipoImpar = vista != null && vista.teamsFitFormat === false;
+  // La pareja que el capitán está formando y todavía le falta el compañero
+  const parejaAMedias = orden.length % porFila !== 0;
 
   const puestoDe = (userId) => orden.indexOf(userId);
+  // El número que se ve es el de la FILA: en parejas, dos jugadores con el 1
+  // juegan juntos
+  const filaDe = (userId) => Math.floor(puestoDe(userId) / porFila) + 1;
 
   const tocar = (userId) => {
     if (orden.includes(userId)) return;
@@ -82,12 +96,13 @@ const EnvelopePage = () => {
   const entregar = async () => {
     setEnviando(true);
     try {
-      // Una fila por jugador: los formatos de parejas van en su propia pieza
-      await submitEnvelopeUseCase.execute(
-        roundId,
-        orden.map((userId) => [userId]),
-        sinEsperar
-      );
+      // De `porFila` en `porFila`: una fila por jugador en individuales, y las
+      // parejas ya formadas en los demás formatos
+      const filas = [];
+      for (let i = 0; i < orden.length; i += porFila) {
+        filas.push(orden.slice(i, i + porFila));
+      }
+      await submitEnvelopeUseCase.execute(roundId, filas, sinEsperar);
       customToast.success(t('envelope.submitted'));
       setCambiando(false);
       setOrden([]);
@@ -180,6 +195,15 @@ const EnvelopePage = () => {
           </div>
         )}
 
+        {!fallo && equipoImpar && (
+          <p
+            data-testid="equipo-impar"
+            className="mb-3 rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm text-amber-800"
+          >
+            {t('envelope.oddTeam')}
+          </p>
+        )}
+
         {fallo && (
           <p
             data-testid="sobre-no-disponible"
@@ -257,6 +281,14 @@ const EnvelopePage = () => {
                 {t('envelope.deadline', { when: plazo })}
               </p>
             )}
+            {parejaAMedias && (
+              <p
+                data-testid="pareja-a-medias"
+                className="rounded-lg bg-blue-50 p-2 text-xs text-blue-800"
+              >
+                {t('envelope.pairHalfDone')}
+              </p>
+            )}
             <ul className="divide-y divide-gray-100 rounded-xl border border-gray-200 bg-white">
               {jugadores.map((jugador) => {
                 const puesto = puestoDe(jugador.userId);
@@ -277,7 +309,7 @@ const EnvelopePage = () => {
                             data-testid={`puesto-${jugador.userId}`}
                             className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-green-600 text-xs font-bold text-white"
                           >
-                            {puesto + 1}
+                            {filaDe(jugador.userId)}
                           </span>
                         )}
                         <span className="min-w-0 truncate text-sm text-gray-900">
@@ -335,7 +367,7 @@ const EnvelopePage = () => {
                 type="button"
                 data-testid="entregar-sobre"
                 onClick={entregar}
-                disabled={orden.length !== jugadores.length || enviando}
+                disabled={orden.length !== jugadores.length || equipoImpar || enviando}
                 className="flex-1 rounded-lg bg-green-600 px-4 py-2 font-semibold text-white hover:bg-green-700 disabled:opacity-50"
               >
                 {t('envelope.submit')}

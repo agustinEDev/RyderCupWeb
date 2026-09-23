@@ -35,6 +35,15 @@ class IEnvelopeRepository {
   async revealEnvelopes(roundId) {
     throw new Error('Method not implemented');
   }
+
+  /**
+   * Tira los sobres y los partidos de la sesion para empezar de nuevo.
+   * @param {string} roundId
+   * @returns {Promise<Object>} Cuantos sobres y partidos se han ido
+   */
+  async resetEnvelopes(roundId) {
+    throw new Error('Method not implemented');
+  }
 }
 
 export default IEnvelopeRepository;

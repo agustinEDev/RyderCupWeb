@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate, useParams, Link } from 'react-router';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Plus, Calendar, Mail } from 'lucide-react';
+import { ArrowLeft, Plus, Calendar, Mail, RotateCcw } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import customToast from '../../utils/toast';
 import HeaderAuth from '../../components/layout/HeaderAuth';
@@ -16,6 +16,7 @@ import MatchDetailModal from '../../components/schedule/MatchDetailModal';
 import AssignTeamsModal from '../../components/schedule/AssignTeamsModal';
 import FillCaptainModal from '../../components/schedule/FillCaptainModal';
 import GenerateMatchesModal from '../../components/schedule/GenerateMatchesModal';
+import ResetEnvelopesModal from '../../components/schedule/ResetEnvelopesModal';
 import {
   getScheduleUseCase,
   getCompetitionDetailUseCase,
@@ -30,6 +31,7 @@ import {
   updateMatchStatusUseCase,
   declareWalkoverUseCase,
   reassignPlayersUseCase,
+  resetEnvelopesUseCase,
 } from '../../composition';
 import FullScreenLoader from '../../components/ui/FullScreenLoader';
 
@@ -54,6 +56,8 @@ const SchedulePage = () => {
   // UI state
   const [expandedRounds, setExpandedRounds] = useState({});
   const [showRoundModal, setShowRoundModal] = useState(false);
+  // La sesión cuyos sobres se van a rehacer, mientras se confirma
+  const [rehaciendoSobres, setRehaciendoSobres] = useState(null);
   const [editingRound, setEditingRound] = useState(null);
   const [showWalkoverModal, setShowWalkoverModal] = useState(false);
   const [walkoverMatch, setWalkoverMatch] = useState(null);
@@ -149,6 +153,22 @@ const SchedulePage = () => {
     } catch (error) {
       console.error('Error filling captain:', error);
       customToast.error(error.message || t('errors.failedToFillCaptain'));
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const rehacerSobres = async () => {
+    setIsProcessing(true);
+    try {
+      await resetEnvelopesUseCase.execute(rehaciendoSobres);
+      setRehaciendoSobres(null);
+      customToast.success(tComp('envelope.resetDone'));
+      await loadData();
+    } catch (error) {
+      // El servidor es quien sabe si esa sesión ya se jugó o si no había nada
+      // que rehacer: aquí se enseña lo que diga
+      customToast.error(error.message);
     } finally {
       setIsProcessing(false);
     }
@@ -488,14 +508,9 @@ const SchedulePage = () => {
                           y no en la ficha porque el sobre es de una sesión, no
                           de la competición; esta pantalla la ven también los
                           capitanes que no organizan, por la ruta pública */}
-                      {/* Solo en individuales: el sobre de parejas —tocar dos
-                          para formar cada una— va en su propia pieza, y
-                          ofrecerlo aquí mandaría filas de un jugador a una
-                          sesión que pide dos */}
                       {entraALosSobres &&
                         competition.setupMode === 'RYDER_CUP' &&
-                        hayEquipos &&
-                        round.matchFormat === 'SINGLES' && (
+                        hayEquipos && (
                         <Link
                           to={`/competitions/${id}/rounds/${round.id}/envelope`}
                           data-testid={`ir-al-sobre-${round.id}`}
@@ -504,6 +519,20 @@ const SchedulePage = () => {
                           <Mail className="h-4 w-4" />
                           {tComp('envelope.open')}
                         </Link>
+                      )}
+                      {/* Rehacer el proceso entero es cosa del organizador: el
+                          capitán que entregó a tiempo no se queda sin su lista
+                          por culpa del que se olvidó */}
+                      {canManage && competition.setupMode === 'RYDER_CUP' && hayEquipos && (
+                        <button
+                          type="button"
+                          data-testid={`rehacer-sobres-${round.id}`}
+                          onClick={() => setRehaciendoSobres(round.id)}
+                          className="flex w-full items-center justify-center gap-2 rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+                        >
+                          <RotateCcw className="h-4 w-4" />
+                          {tComp('envelope.reset')}
+                        </button>
                       )}
                     <RoundCard
                       round={round}
@@ -651,6 +680,17 @@ const SchedulePage = () => {
           teamNames={teamNames}
           playerNameMap={playerNameMap}
           t={t}
+        />
+      )}
+
+      {/* Rehacer los sobres de una sesión (FE #655) */}
+      {rehaciendoSobres && (
+        <ResetEnvelopesModal
+          isOpen={Boolean(rehaciendoSobres)}
+          onConfirm={rehacerSobres}
+          onClose={() => setRehaciendoSobres(null)}
+          isLoading={isProcessing}
+          t={tComp}
         />
       )}
     </div>

@@ -44,9 +44,16 @@ class EnvelopeMapper {
       rivalWantsEarly: Boolean(apiData.rival_wants_early),
       // El plazo: a esa hora se abren solos y lo que falte lo rellena la app
       revealScheduledAt: apiData.reveal_scheduled_at ?? null,
-      // Quién puede abrirlos lo decide el servidor: la regla —el organizador
-      // siempre, un capitán solo con los dos dentro— vive en un sitio
+      // Quién puede abrirlos lo decide el servidor: la regla —hacen falta los
+      // dos sobres dentro, sea quien sea— vive en un sitio
       canReveal: Boolean(apiData.can_reveal),
+      // 1 en individuales, 2 en los formatos de parejas. Lo dice el servidor
+      // para que la pantalla no repita qué formatos son de parejas
+      playersPerRow: Number(apiData.players_per_row) || 1,
+      // Un equipo impar en una sesión de parejas deja la sesión atascada. Si
+      // el campo no viene —backend viejo— se asume que cuadran: avisar de un
+      // atasco inventado sería peor que no avisar
+      teamsFitFormat: apiData.teams_fit_format !== false,
       matchups: apiData.matchups || [],
       // Los nombres son TODO lo que la pantalla tiene: de un UUID no sale
       // ninguno, y sin ellos el capitán ni siquiera ve su propia lista

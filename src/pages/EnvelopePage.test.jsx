@@ -47,6 +47,15 @@ const JUGADORES = [
   { userId: 'bea', name: 'Bea Blanco', handicap: 14 },
 ];
 
+const CUATRO = [
+  ...JUGADORES,
+  { userId: 'carla', name: 'Carla Cruz', handicap: 20 },
+  { userId: 'dani', name: 'Dani Díaz', handicap: 26 },
+];
+
+const enParejas = (extra = {}) =>
+  vista({ playersPerRow: 2, myPlayers: CUATRO, ...extra });
+
 const vista = (extra = {}) => ({
   roundId: 'ronda-1',
   revealed: false,
@@ -59,6 +68,8 @@ const vista = (extra = {}) => ({
   rivalSubmitted: false,
   matchups: [],
   canReveal: false,
+  playersPerRow: 1,
+  teamsFitFormat: true,
   rivalWantsEarly: false,
   revealScheduledAt: '2030-06-01T00:00:00+02:00',
   myPlayers: JUGADORES,
@@ -548,5 +559,121 @@ describe('EnvelopePage · el sobre del capitán (FE #655)', () => {
       expect(customToast.error).toHaveBeenCalledWith('Faltan jugadores del equipo')
     );
     expect(screen.getByTestId('puesto-bea')).toHaveTextContent('1');
+  });
+
+  it('P1: en parejas, los dos primeros toques son la MISMA pareja', async () => {
+    // El número es el de la pareja, no el del jugador: dos con el 1 juegan
+    // juntos. Arrastrar para agrupar se pelea con el scroll igual que ordenar
+    mockVer.mockResolvedValue(enParejas());
+    pintar();
+
+    fireEvent.click(await screen.findByTestId('jugador-bea'));
+    fireEvent.click(screen.getByTestId('jugador-ana'));
+
+    expect(screen.getByTestId('puesto-bea')).toHaveTextContent('1');
+    expect(screen.getByTestId('puesto-ana')).toHaveTextContent('1');
+  });
+
+  it('P2: el tercer toque abre ya la pareja siguiente', async () => {
+    mockVer.mockResolvedValue(enParejas());
+    pintar();
+
+    fireEvent.click(await screen.findByTestId('jugador-bea'));
+    fireEvent.click(screen.getByTestId('jugador-ana'));
+    fireEvent.click(screen.getByTestId('jugador-carla'));
+
+    expect(screen.getByTestId('puesto-carla')).toHaveTextContent('2');
+  });
+
+  it('P3: al entregar se mandan las parejas, no cuatro filas de uno', async () => {
+    mockVer.mockResolvedValue(enParejas());
+    pintar();
+
+    fireEvent.click(await screen.findByTestId('jugador-bea'));
+    fireEvent.click(screen.getByTestId('jugador-ana'));
+    fireEvent.click(screen.getByTestId('jugador-carla'));
+    fireEvent.click(screen.getByTestId('jugador-dani'));
+    fireEvent.click(screen.getByTestId('entregar-sobre'));
+
+    await waitFor(() =>
+      expect(mockEntregar).toHaveBeenCalledWith(
+        'ronda-1',
+        [
+          ['bea', 'ana'],
+          ['carla', 'dani'],
+        ],
+        false
+      )
+    );
+  });
+
+  it('P4: con la pareja a medias todavía no se puede entregar', async () => {
+    mockVer.mockResolvedValue(enParejas());
+    pintar();
+
+    fireEvent.click(await screen.findByTestId('jugador-bea'));
+    fireEvent.click(screen.getByTestId('jugador-ana'));
+    fireEvent.click(screen.getByTestId('jugador-carla'));
+
+    expect(screen.getByTestId('entregar-sobre')).toBeDisabled();
+  });
+
+  it('P5: un equipo impar en parejas se dice ANTES de entregar', async () => {
+    // Si no, el capitán coloca a los cinco y se lleva un 400 del servidor:
+    // alguien se quedaría fuera y el cruce va por posición. Lo decide el
+    // servidor, que mira los DOS equipos: el mío puede ser par y el rival no
+    mockVer.mockResolvedValue(
+      enParejas({
+        teamsFitFormat: false,
+        myPlayers: [...CUATRO, { userId: 'eva', name: 'Eva Egea', handicap: 30 }],
+      })
+    );
+    pintar();
+
+    expect(await screen.findByTestId('equipo-impar')).toBeInTheDocument();
+    expect(screen.getByTestId('entregar-sobre')).toBeDisabled();
+  });
+
+  it('P6: el equipo impar se lo dice también a quien NO capitanea', async () => {
+    // El organizador es quien puede arreglarlo —cambiar el formato o rehacer
+    // los equipos— y no tiene sobre: sin esto la sesión se atasca en silencio
+    mockVer.mockResolvedValue(vista({ myPlayers: [], teamsFitFormat: false }));
+    pintar();
+
+    expect(await screen.findByTestId('equipo-impar')).toBeInTheDocument();
+  });
+
+  it('P7: y también después de entregar, si el equipo se queda impar', async () => {
+    mockVer.mockResolvedValue(
+      enParejas({
+        teamsFitFormat: false,
+        teamASubmitted: true,
+        mine: { team: 'A', entries: [['bea', 'ana']], submitted: true, automatic: false },
+      })
+    );
+    pintar();
+
+    expect(await screen.findByTestId('equipo-impar')).toBeInTheDocument();
+  });
+
+  it('P8: una pareja a medias dice qué falta, en vez de apagar el botón sin más', async () => {
+    mockVer.mockResolvedValue(enParejas());
+    pintar();
+
+    fireEvent.click(await screen.findByTestId('jugador-bea'));
+    fireEvent.click(screen.getByTestId('jugador-ana'));
+    fireEvent.click(screen.getByTestId('jugador-carla'));
+
+    expect(screen.getByTestId('pareja-a-medias')).toBeInTheDocument();
+  });
+
+  it('P9: con las parejas completas no sobra ningún aviso', async () => {
+    mockVer.mockResolvedValue(enParejas());
+    pintar();
+
+    fireEvent.click(await screen.findByTestId('jugador-bea'));
+    fireEvent.click(screen.getByTestId('jugador-ana'));
+
+    expect(screen.queryByTestId('pareja-a-medias')).not.toBeInTheDocument();
   });
 });
