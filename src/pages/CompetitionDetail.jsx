@@ -537,10 +537,14 @@ const CompetitionDetail = () => {
     },
     draft: {
       id: 'draft',
-      label: t('detail.actions.goToDraft'),
+      label: t('draft.open'),
       icon: Swords,
       onClick: () => navigate(`/competitions/${id}/draft`),
-      cuando: competition.status === 'CLOSED' && competition.setupMode === 'RYDER_CUP',
+      // Sin los dos capitanes la sala no tiene quién elija
+      cuando:
+        competition.status === 'CLOSED' &&
+        competition.setupMode === 'RYDER_CUP' &&
+        Boolean(competition.captains?.teamA && competition.captains?.teamB),
     },
     'start-competition': {
       id: 'start-competition',
@@ -787,8 +791,12 @@ const CompetitionDetail = () => {
                     capitanes: la gracia es que la ceremonia se vea en directo
                     desde el móvil de cada uno (FE #653). Se ofrece cuando ya hay
                     a quién elegir y todavía no hay equipos: después la sala ya
-                    terminó, y los equipos se ven en la agenda */}
-                {competition.setupMode === 'RYDER_CUP' &&
+                    terminó, y los equipos se ven en la agenda.
+
+                    A quien organiza no se le repite aquí: para él la sala es el
+                    siguiente paso y ya la ofrece el botón de arriba (FE #705) */}
+                {!canManage &&
+                  competition.setupMode === 'RYDER_CUP' &&
                   competition.status === 'CLOSED' &&
                   !competition.teamsAssigned &&
                   competition.captains?.teamA &&

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { Trophy, Settings, Plus, X, ChevronDown, Flag, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { nombresPorDefectoDeLosEquipos } from './nombresPorDefectoDeLosEquipos';
 import HeaderAuth from '../components/layout/HeaderAuth';
 import { useAuth } from '../hooks/useAuth';
 import {
@@ -121,8 +122,11 @@ const CreateCompetition = () => {
   const [formData, setFormData] = useState({
     // Competition Details
     competitionName: '',
-    teamOneName: 'Europe',
-    teamTwoName: 'USA',
+    // Nacen en el idioma de la app: son texto libre del organizador, así que
+    // traducirlos al pintar le cambiaría el nombre a quien llame a su equipo
+    // «USA» a propósito
+    teamOneName: nombresPorDefectoDeLosEquipos(t).uno,
+    teamTwoName: nombresPorDefectoDeLosEquipos(t).dos,
 
     // Schedule
     startDate: '',
@@ -253,8 +257,8 @@ const CreateCompetition = () => {
         // NOTE: The mapper returns camelCase, not snake_case
         const formDataToSet = {
           competitionName: competition.name || '',
-          teamOneName: competition.team1Name || 'Europe',
-          teamTwoName: competition.team2Name || 'USA',
+          teamOneName: competition.team1Name || nombresPorDefectoDeLosEquipos(t).uno,
+          teamTwoName: competition.team2Name || nombresPorDefectoDeLosEquipos(t).dos,
           startDate: competition.startDate || '',
           endDate: competition.endDate || '',
           country: mainCountry || null,

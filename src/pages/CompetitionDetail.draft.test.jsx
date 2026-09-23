@@ -125,8 +125,22 @@ describe('CompetitionDetail · el acceso a la sala de draft (FE #653)', () => {
     captains: { teamA: 'ana', teamB: 'bea', viceTeamA: null, viceTeamB: null },
   };
 
-  it('S1: con los capitanes nombrados y sin equipos, se ofrece la sala', async () => {
+  it('S1: a quien organiza, la sala es su siguiente paso', async () => {
+    // No se le repite el enlace grande: para él la sala ES lo que toca ahora,
+    // y ofrecerla dos veces es lo que venía a arreglar el FE #705
     mockGetCompetitionDetail.mockResolvedValue(competicion(CERRADA_CON_CAPITANES));
+    renderPage();
+
+    expect(await screen.findByTestId('accion-principal')).toHaveTextContent('draft.open');
+    expect(screen.queryByTestId('ir-a-la-sala-de-draft')).not.toBeInTheDocument();
+  });
+
+  it('S1b: y a quien solo mira, el enlace de siempre', async () => {
+    // La ceremonia se ve en directo desde el móvil de todo el grupo (FE #653)
+    mockRoles = { isAdmin: false, isCreator: false, isLoading: false };
+    mockGetCompetitionDetail.mockResolvedValue(
+      competicion({ ...CERRADA_CON_CAPITANES, creatorId: 'otra-persona' })
+    );
     renderPage();
 
     const enlace = await screen.findByTestId('ir-a-la-sala-de-draft');

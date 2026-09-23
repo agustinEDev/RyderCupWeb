@@ -53,6 +53,8 @@
     "competitionName": "Nombre de la Competición *",
     "competitionNamePlaceholder": "Ej: Ryder Cup de amigos",
     "teamOneName": "Nombre del Equipo 1 *",
+    "defaultTeamOne": "Europa",
+    "defaultTeamTwo": "Estados Unidos",
     "teamOneNamePlaceholder": "ej., Europa",
     "teamTwoName": "Nombre del Equipo 2 *",
     "teamTwoNamePlaceholder": "ej., USA",
@@ -160,6 +162,7 @@
     "enrollmentOpensOn": "A partir del {{fecha}}",
     "actions": {
       "edit": "Editar",
+      "more": "Más acciones",
       "activate": "Activar",
       "close-enrollments": "Cerrar Inscripciones",
       "start-competition": "Iniciar Competición",
