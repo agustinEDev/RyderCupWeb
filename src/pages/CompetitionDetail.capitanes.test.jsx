@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, onTestFinished } from 'vitest';
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import CompetitionDetail from './CompetitionDetail';
@@ -253,6 +253,49 @@ describe('CompetitionDetail · nombrar a los capitanes (FE #692)', () => {
     await waitFor(() => expect(customToast.success).toHaveBeenCalledWith('detail.success.captainsNamed'));
     expect(mockAssignTeams).toHaveBeenCalledTimes(veces);
     if (veces) expect(mockAssignTeams).toHaveBeenCalledWith('comp-1', { mode: 'AUTOMATIC' });
+  });
+
+  it('K8c: el reparto automático lo decide el modo configurado, no el que se hizo', async () => {
+    // Una automática rehecha a mano: al reabrir y volver a cerrar, los que
+    // entraron después también tienen que quedar repartidos
+    mockGetCompetitionDetail.mockResolvedValue(
+      competicion({ teamAssignment: 'AUTOMATIC', actualTeamAssignment: 'MANUAL' })
+    );
+    renderPage();
+    const modal = await abrirModal();
+    elegir(modal, 'Europa', 'ana');
+    elegir(modal, 'América', 'bea');
+
+    confirmar(modal);
+
+    await waitFor(() => expect(mockAssignTeams).toHaveBeenCalledWith('comp-1', { mode: 'AUTOMATIC' }));
+  });
+
+  it('K8e: al volver a cerrar una reabierta, también decide el modo configurado', async () => {
+    // El botón de cerrar solo sale reabierta y con equipos: justo el caso en
+    // que el reparto real puede ser MANUAL en una competición automática
+    const confirmacion = vi.spyOn(window, 'confirm').mockReturnValue(true);
+    onTestFinished(() => confirmacion.mockRestore());
+    mockGetCompetitionDetail.mockResolvedValue(
+      competicion({ teamAssignment: 'AUTOMATIC', actualTeamAssignment: 'MANUAL', teamsAssigned: true })
+    );
+    mockCloseEnrollments.mockResolvedValue({ id: 'comp-1', status: 'CLOSED' });
+    renderPage();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'detail.actions.close-enrollments' }));
+
+    await waitFor(() => expect(mockAssignTeams).toHaveBeenCalledWith('comp-1', { mode: 'AUTOMATIC' }));
+  });
+
+  it.each([
+    ['con reparto hecho, enseña el que se hizo', { actualTeamAssignment: 'DRAFT' }, 'DRAFT'],
+    ['sin reparto, enseña el configurado', { actualTeamAssignment: null }, 'MANUAL'],
+  ])('K8d: %s', async (_caso, extra, esperado) => {
+    mockGetCompetitionDetail.mockResolvedValue(competicion(extra));
+    renderPage();
+
+    const etiqueta = await screen.findByText('detail.settings.teamAssignment');
+    expect(etiqueta.parentElement).toHaveTextContent(esperado);
   });
 
   it('K8b: si falla el reparto automático, los capitanes y el cierre se quedan', async () => {
