@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router';
 
 /**
@@ -43,6 +43,7 @@ const mockDetalle = vi.fn();
 const mockAgenda = vi.fn();
 const mockInscripciones = vi.fn();
 const mockCubrir = vi.fn();
+const mockRehacer = vi.fn();
 
 vi.mock('../../composition', () => ({
   getCompetitionDetailUseCase: { execute: (...a) => mockDetalle(...a) },
@@ -59,6 +60,7 @@ vi.mock('../../composition', () => ({
   declareWalkoverUseCase: { execute: vi.fn() },
   reassignPlayersUseCase: { execute: vi.fn() },
   getMatchDetailUseCase: { execute: vi.fn() },
+  resetEnvelopesUseCase: { execute: (...a) => mockRehacer(...a) },
 }));
 
 const SchedulePage = (await import('./SchedulePage')).default;
@@ -179,5 +181,38 @@ describe('SchedulePage · el acceso al sobre (FE #655)', () => {
     await waitFor(() =>
       expect(screen.queryByTestId('ir-al-sobre-ronda-1')).not.toBeInTheDocument()
     );
+  });
+
+  it('R1: el organizador puede rehacer los sobres de una sesión', async () => {
+    // Cuando un capitán no llega a tiempo, lo que viene después no es editar
+    // el resultado: es rehacer el proceso
+    mockRehacer.mockResolvedValue({ envelopesRemoved: 2, matchesRemoved: 6 });
+    pintar();
+
+    fireEvent.click(await screen.findByTestId('rehacer-sobres-ronda-1'));
+    fireEvent.click(await screen.findByTestId('confirmar-rehacer-sobres'));
+
+    await waitFor(() => expect(mockRehacer).toHaveBeenCalledWith('ronda-1'));
+  });
+
+  it('R2: y se pregunta antes, que se lleva los partidos por delante', async () => {
+    pintar();
+
+    fireEvent.click(await screen.findByTestId('rehacer-sobres-ronda-1'));
+
+    expect(screen.getByTestId('modal-rehacer-sobres')).toBeInTheDocument();
+    expect(mockRehacer).not.toHaveBeenCalled();
+  });
+
+  it('R3: a un capitán que no organiza no se le ofrece', async () => {
+    // El que entregó a tiempo no le tira la lista al otro: arbitra el
+    // organizador
+    mockDetalle.mockResolvedValue({ ...COMPETICION, creatorId: 'otra' });
+    ROLES.isCreator = false;
+    pintar();
+
+    await screen.findByTestId('ir-al-sobre-ronda-1');
+    expect(screen.queryByTestId('rehacer-sobres-ronda-1')).not.toBeInTheDocument();
+    ROLES.isCreator = true;
   });
 });
