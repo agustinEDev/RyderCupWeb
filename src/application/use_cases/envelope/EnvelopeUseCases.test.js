@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import SubmitEnvelopeUseCase from './SubmitEnvelopeUseCase';
 import GetEnvelopesUseCase from './GetEnvelopesUseCase';
 import RevealEnvelopesUseCase from './RevealEnvelopesUseCase';
+import ResetEnvelopesUseCase from './ResetEnvelopesUseCase';
 
 /**
  * Los tres casos de uso de los sobres (FE #655).
@@ -18,6 +19,7 @@ describe('Casos de uso de los sobres', () => {
       submitEnvelope: vi.fn().mockResolvedValue({ team: 'A' }),
       getEnvelopes: vi.fn().mockResolvedValue({ roundId: 'r1' }),
       revealEnvelopes: vi.fn().mockResolvedValue({ matchups: [] }),
+      resetEnvelopes: vi.fn().mockResolvedValue({ envelopesRemoved: 2, matchesRemoved: 6 }),
     };
   });
 
@@ -71,5 +73,18 @@ describe('Casos de uso de los sobres', () => {
       new RevealEnvelopesUseCase({ envelopeRepository }).execute()
     ).rejects.toThrow('Round ID is required');
     expect(envelopeRepository.revealEnvelopes).not.toHaveBeenCalled();
+  });
+
+  it('U8: rehacerlos manda la sesión', async () => {
+    await new ResetEnvelopesUseCase({ envelopeRepository }).execute('r1');
+
+    expect(envelopeRepository.resetEnvelopes).toHaveBeenCalledWith('r1');
+  });
+
+  it('U9: sin sesión no se rehace nada', async () => {
+    await expect(
+      new ResetEnvelopesUseCase({ envelopeRepository }).execute()
+    ).rejects.toThrow('Round ID is required');
+    expect(envelopeRepository.resetEnvelopes).not.toHaveBeenCalled();
   });
 });

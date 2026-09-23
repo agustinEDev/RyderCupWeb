@@ -89,4 +89,16 @@ describe('ApiEnvelopeRepository', () => {
     );
     expect(resultado.filledAutomatically).toEqual(['B']);
   });
+
+  it('S7: rehacerlos es otro POST, y dice qué se ha llevado', async () => {
+    apiRequest.mockResolvedValue({ round_id: 'r1', envelopes_removed: 2, matches_removed: 6 });
+
+    const resultado = await repo.resetEnvelopes('r1');
+
+    expect(apiRequest).toHaveBeenCalledWith(
+      '/api/v1/competitions/rounds/r1/envelopes/reset',
+      { method: 'POST' }
+    );
+    expect(resultado).toEqual({ roundId: 'r1', envelopesRemoved: 2, matchesRemoved: 6 });
+  });
 });

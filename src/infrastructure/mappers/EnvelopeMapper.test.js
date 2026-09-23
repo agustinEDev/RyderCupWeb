@@ -62,6 +62,7 @@ describe('EnvelopeMapper', () => {
       revealScheduledAt: '2026-06-01T00:00:00+02:00',
       canReveal: false,
       playersPerRow: 1,
+      teamsFitFormat: true,
       matchups: [],
       myPlayers: [
         { userId: 'ana', name: 'Ana Alba', handicap: 8 },
@@ -168,5 +169,19 @@ describe('EnvelopeMapper', () => {
     const vista = EnvelopeMapper.toEnvelopesViewDTO({ round_id: 'r1', revealed: false });
 
     expect(vista.playersPerRow).toBe(1);
+  });
+
+  it('trae si los equipos cuadran con el formato, y por defecto asume que sí', () => {
+    const atascada = EnvelopeMapper.toEnvelopesViewDTO({
+      round_id: 'r1',
+      revealed: false,
+      teams_fit_format: false,
+    });
+    const sinDato = EnvelopeMapper.toEnvelopesViewDTO({ round_id: 'r1', revealed: false });
+
+    expect(atascada.teamsFitFormat).toBe(false);
+    // Un backend viejo no manda el campo: avisar de un atasco inventado sería
+    // peor que no avisar
+    expect(sinDato.teamsFitFormat).toBe(true);
   });
 });

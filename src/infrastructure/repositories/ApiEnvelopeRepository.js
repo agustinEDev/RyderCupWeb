@@ -48,6 +48,23 @@ class ApiEnvelopeRepository extends IEnvelopeRepository {
       filledAutomatically: data.filled_automatically || [],
     };
   }
+
+  /**
+   * POST /api/v1/competitions/rounds/{roundId}/envelopes/reset
+   *
+   * Solo el organizador, y solo mientras no se haya jugado nada de la sesión.
+   */
+  async resetEnvelopes(roundId) {
+    const data = await apiRequest(
+      `/api/v1/competitions/rounds/${roundId}/envelopes/reset`,
+      { method: 'POST' }
+    );
+    return {
+      roundId: data.round_id,
+      envelopesRemoved: data.envelopes_removed ?? 0,
+      matchesRemoved: data.matches_removed ?? 0,
+    };
+  }
 }
 
 export default ApiEnvelopeRepository;

@@ -50,6 +50,10 @@ class EnvelopeMapper {
       // 1 en individuales, 2 en los formatos de parejas. Lo dice el servidor
       // para que la pantalla no repita qué formatos son de parejas
       playersPerRow: Number(apiData.players_per_row) || 1,
+      // Un equipo impar en una sesión de parejas deja la sesión atascada. Si
+      // el campo no viene —backend viejo— se asume que cuadran: avisar de un
+      // atasco inventado sería peor que no avisar
+      teamsFitFormat: apiData.teams_fit_format !== false,
       matchups: apiData.matchups || [],
       // Los nombres son TODO lo que la pantalla tiene: de un UUID no sale
       // ninguno, y sin ellos el capitán ni siquiera ve su propia lista

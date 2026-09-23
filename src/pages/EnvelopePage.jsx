@@ -72,10 +72,14 @@ const EnvelopePage = () => {
   // Lo dice el servidor: 1 en individuales, 2 en los formatos de parejas.
   // Saber aquí qué formatos son de parejas es duplicar una regla del dominio
   const porFila = vista?.playersPerRow || 1;
-  // En parejas el cruce va por posición, así que una fila a medias dejaría a
-  // alguien fuera. El servidor lo rechaza; decirlo antes evita colocar a los
-  // cinco para llevarse un 400 al final
-  const equipoImpar = jugadores.length % porFila !== 0;
+  // Lo dice el servidor mirando los DOS equipos, porque quien puede
+  // arreglarlo —el organizador, cambiando el formato o rehaciendo los
+  // equipos— no tiene sobre y no vería nada. En parejas el cruce va por
+  // posición: con un equipo impar alguien se queda fuera, no se puede
+  // entregar, el relleno automático revienta y el plazo vence sin abrir nada
+  const equipoImpar = vista != null && vista.teamsFitFormat === false;
+  // La pareja que el capitán está formando y todavía le falta el compañero
+  const parejaAMedias = orden.length % porFila !== 0;
 
   const puestoDe = (userId) => orden.indexOf(userId);
   // El número que se ve es el de la FILA: en parejas, dos jugadores con el 1
@@ -191,6 +195,15 @@ const EnvelopePage = () => {
           </div>
         )}
 
+        {!fallo && equipoImpar && (
+          <p
+            data-testid="equipo-impar"
+            className="mb-3 rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm text-amber-800"
+          >
+            {t('envelope.oddTeam')}
+          </p>
+        )}
+
         {fallo && (
           <p
             data-testid="sobre-no-disponible"
@@ -268,12 +281,12 @@ const EnvelopePage = () => {
                 {t('envelope.deadline', { when: plazo })}
               </p>
             )}
-            {equipoImpar && (
+            {parejaAMedias && (
               <p
-                data-testid="equipo-impar"
-                className="rounded-lg bg-amber-50 p-2 text-xs text-amber-800"
+                data-testid="pareja-a-medias"
+                className="rounded-lg bg-blue-50 p-2 text-xs text-blue-800"
               >
-                {t('envelope.oddTeam', { count: jugadores.length })}
+                {t('envelope.pairHalfDone')}
               </p>
             )}
             <ul className="divide-y divide-gray-100 rounded-xl border border-gray-200 bg-white">
