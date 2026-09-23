@@ -175,23 +175,6 @@ const EnvelopePage = () => {
           </p>
         )}
 
-        {/* Abrir los sobres no es cosa solo del capitán que entregó: el
-            organizador puede hacerlo aunque falte uno, que es la salida cuando
-            un capitán no aparece. Mientras se reordena NO: el servidor sigue
-            teniendo el sobre de antes, así que abriría ese y el orden que el
-            capitán está montando se perdería sin avisar */}
-        {!fallo && !cambiando && puedeAbrir && (
-          <button
-            type="button"
-            data-testid="abrir-sobres"
-            onClick={abrir}
-            disabled={abriendo}
-            className="mb-3 w-full rounded-lg bg-green-600 px-4 py-3 font-semibold text-white hover:bg-green-700 disabled:opacity-50"
-          >
-            {t('envelope.reveal')}
-          </button>
-        )}
-
         {!fallo && !capitanea && !vista?.revealed && (
           <p
             data-testid="solo-mirando"
@@ -317,6 +300,28 @@ const EnvelopePage = () => {
             </div>
           </div>
         )}
+
+        {/* Abrir los sobres no es cosa solo del capitán que entregó: el
+            organizador puede hacerlo aunque falte uno, que es la salida cuando
+            un capitán no aparece.
+
+            A quien TIENE un sobre y no lo ha entregado no se le ofrece: en el
+            Kind se veía el botón arriba y en verde antes de entregar nada, y un
+            toque ahí rellena los dos sobres automáticamente y tira por la borda
+            lo que venía a hacer. Mientras reordena, lo mismo: el servidor sigue
+            teniendo el sobre anterior */}
+        {!fallo && !cambiando && puedeAbrir && (!capitanea || vista?.mine?.submitted) && (
+          <button
+            type="button"
+            data-testid="abrir-sobres"
+            onClick={abrir}
+            disabled={abriendo}
+            className="mb-3 w-full rounded-lg bg-green-600 px-4 py-3 font-semibold text-white hover:bg-green-700 disabled:opacity-50"
+          >
+            {t('envelope.reveal')}
+          </button>
+        )}
+
       </div>
     </div>
   );
