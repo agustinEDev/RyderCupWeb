@@ -381,6 +381,53 @@ describe('EnvelopePage · el sobre del capitán (FE #655)', () => {
     expect(await screen.findByTestId('plazo')).toBeInTheDocument();
   });
 
+  it('V24: al cambiar el orden, la casilla conserva lo que el capitán pidió', async () => {
+    // El servidor reescribe el flag en CADA entrega: si la casilla sale
+    // apagada, corregir la lista retira la petición sin que nadie lo diga, un
+    // segundo después de leer «tú has pedido abrirlos sin esperar»
+    mockVer.mockResolvedValue(
+      vista({
+        teamASubmitted: true,
+        mine: {
+          team: 'A',
+          entries: [['bea'], ['ana']],
+          submitted: true,
+          automatic: false,
+          revealWhenBothReady: true,
+        },
+      })
+    );
+    pintar();
+
+    fireEvent.click(await screen.findByTestId('cambiar-sobre'));
+
+    expect(await screen.findByTestId('sin-esperar')).toBeChecked();
+  });
+
+  it('V25: y al volver a entregar se manda esa misma petición', async () => {
+    mockVer.mockResolvedValue(
+      vista({
+        teamASubmitted: true,
+        mine: {
+          team: 'A',
+          entries: [['bea'], ['ana']],
+          submitted: true,
+          automatic: false,
+          revealWhenBothReady: true,
+        },
+      })
+    );
+    pintar();
+    fireEvent.click(await screen.findByTestId('cambiar-sobre'));
+    for (const j of ['ana', 'bea']) fireEvent.click(await screen.findByTestId(`jugador-${j}`));
+
+    fireEvent.click(screen.getByTestId('entregar-sobre'));
+
+    await waitFor(() =>
+      expect(mockEntregar).toHaveBeenCalledWith('ronda-1', [['ana'], ['bea']], true)
+    );
+  });
+
   it('V13: un fallo al entregar se cuenta y el orden no se pierde', async () => {
     mockEntregar.mockRejectedValue(new Error('Faltan jugadores del equipo'));
     pintar();

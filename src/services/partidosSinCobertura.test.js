@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import {
+  fechaYHoraDelCampo,
   horaDelCampo,
   partidosDelProximoDia,
   precargaElProximoDia,
@@ -413,5 +414,33 @@ describe('partidosSinCobertura', () => {
       const abre = new Date(2026, 8, 17, 18, 0).toISOString();
       expect(sePuedeAnotar(partido('m', '2026-09-17', { status: 'IN_PROGRESS', scoringOpensAt: abre }), { desdeMemoria: false, ahora: HOY })).toBe(true);
     });
+  });
+});
+
+describe('fechaYHoraDelCampo', () => {
+  it('escribe el día y la hora DEL CAMPO, no los del teléfono', () => {
+    // El plazo de los sobres es una hora de reloj de pared del campo: con el
+    // huso del dispositivo, un teléfono en México enseñaba el día anterior
+    const escrito = fechaYHoraDelCampo('2026-06-01T00:00:00+02:00', 'es');
+
+    expect(escrito).toMatch(/1/);
+    expect(escrito).toMatch(/00:00/);
+  });
+
+  it('no lo mueve aunque el huso del dato sea otro', () => {
+    const madrid = fechaYHoraDelCampo('2026-06-01T00:00:00+02:00', 'es');
+    const canarias = fechaYHoraDelCampo('2026-06-01T00:00:00Z', 'es');
+
+    expect(madrid).toBe(canarias);
+  });
+
+  it('sin huso en el dato no se inventa nada', () => {
+    // Una fecha sin desfase no dice de qué reloj habla
+    expect(fechaYHoraDelCampo('2026-06-01T00:00:00', 'es')).toBeNull();
+    expect(fechaYHoraDelCampo(null, 'es')).toBeNull();
+  });
+
+  it('un idioma que Intl no entiende no tumba la pantalla', () => {
+    expect(fechaYHoraDelCampo('2026-06-01T09:30:00+02:00', 'no_es_un_idioma')).toContain('09:30');
   });
 });

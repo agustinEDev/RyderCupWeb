@@ -147,28 +147,56 @@ export const leeLosProximosPartidos = async ({ lee, userId, pideLaVista, ahora =
  * pierde el desfase, y cualquier formateo posterior sale en la hora del móvil.
  * Una marca sin desfase no dice de dónde es, y ahí no se inventa nada.
  */
-export const horaDelCampo = (iso, idioma = 'es') => {
-  const partes = /T(\d{2}):(\d{2})/.exec(String(iso ?? ''));
+/**
+ * Escribe una hora del CAMPO tal como viene, sin que el huso del dispositivo la
+ * mueva: se leen los números del propio ISO y se formatean en UTC. El idioma sí
+ * decide cómo se escriben —«18:00» en español es «6:00 PM» en inglés—.
+ *
+ * Devuelve `null` si el dato no trae desfase, porque entonces no dice de qué
+ * reloj habla.
+ */
+const escritoComoEnElCampo = (iso, idioma, opciones, respaldo) => {
+  const partes = /(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/.exec(String(iso ?? ''));
   if (!partes) return null;
   if (!/(?:Z|[+-]\d{2}:?\d{2})$/.test(String(iso).trim())) return null;
 
-  const [, hora, minuto] = partes;
-  // Una fecha de mentira con esa hora, formateada en UTC: así el huso del
-  // dispositivo no la mueve y el idioma sí decide cómo se escribe —«18:00» en
-  // español es «6:00 PM» en inglés—
-  const comoSeEscribe = new Date(Date.UTC(2000, 0, 1, Number(hora), Number(minuto)));
+  const [, anio, mes, dia, hora, minuto] = partes;
+  // Una fecha de mentira con esos números, formateada en UTC: así el huso del
+  // dispositivo no la mueve
+  const comoSeEscribe = new Date(
+    Date.UTC(Number(anio), Number(mes) - 1, Number(dia), Number(hora), Number(minuto))
+  );
   try {
     return new Intl.DateTimeFormat(String(idioma || 'es').replace(/_/g, '-'), {
-      hour: '2-digit',
-      minute: '2-digit',
+      ...opciones,
       timeZone: 'UTC',
     }).format(comoSeEscribe);
   } catch {
     // `Intl` lanza `RangeError` con una etiqueta que no entienda, y aquí eso
-    // tumbaría el render de la pantalla de anotación entera
-    return `${hora}:${minuto}`;
+    // tumbaría el render de la pantalla entera
+    return respaldo({ anio, mes, dia, hora, minuto });
   }
 };
+
+export const horaDelCampo = (iso, idioma = 'es') =>
+  escritoComoEnElCampo(
+    iso,
+    idioma,
+    { hour: '2-digit', minute: '2-digit' },
+    ({ hora, minuto }) => `${hora}:${minuto}`
+  );
+
+/**
+ * Como `horaDelCampo`, pero con el día delante: el plazo de los sobres cae de
+ * madrugada, así que sin la fecha no se entiende de qué día se habla (FE #655).
+ */
+export const fechaYHoraDelCampo = (iso, idioma = 'es') =>
+  escritoComoEnElCampo(
+    iso,
+    idioma,
+    { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' },
+    ({ dia, mes, hora, minuto }) => `${dia}/${mes} ${hora}:${minuto}`
+  );
 
 /**
  * De una lista de partidos, el instante de la PRÓXIMA apertura que queda por

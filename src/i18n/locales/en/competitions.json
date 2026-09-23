@@ -412,7 +412,7 @@
     "cancel": "Cancel",
     "revealWhenBothReady": "Open them as soon as we have both handed in, without waiting for the hour",
     "waitingForRivalToAgree": "You asked to open them early; the other captain has to tick it too.",
-    "deadline": "They open by themselves on {{when}}: whatever is missing, the app fills in."
+    "deadline": "Deadline {{when}}. After that, whatever is missing the app fills in."
   },
   "draft": {
     "title": "Draft room",

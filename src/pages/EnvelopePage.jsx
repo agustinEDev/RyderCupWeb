@@ -6,6 +6,7 @@ import HeaderAuth from '../components/layout/HeaderAuth';
 import { useAuth } from '../hooks/useAuth';
 import FullScreenLoader from '../components/ui/FullScreenLoader';
 import customToast from '../utils/toast';
+import { fechaYHoraDelCampo } from '../services/partidosSinCobertura';
 import {
   getEnvelopesUseCase,
   submitEnvelopeUseCase,
@@ -116,16 +117,10 @@ const EnvelopePage = () => {
 
   const nombreDe = (userId) => vista?.playerNames?.[userId] || userId;
 
-  // La hora del PLAZO, tal como la manda el servidor: lleva el huso del campo,
-  // así que se pinta con él y no con el del teléfono
-  const plazo = vista?.revealScheduledAt
-    ? new Date(vista.revealScheduledAt).toLocaleString(i18n.language, {
-      day: 'numeric',
-      month: 'short',
-      hour: '2-digit',
-      minute: '2-digit',
-    })
-    : null;
+  // Con el huso DEL CAMPO: `toLocaleString` la habría movido al del teléfono, y
+  // el plazo cae de madrugada, así que un dispositivo en otro huso enseñaba
+  // incluso otro día. Es el mismo caso que ya resolvió la anotación
+  const plazo = fechaYHoraDelCampo(vista?.revealScheduledAt, i18n.language);
 
   if (cargando) return <FullScreenLoader />;
 
@@ -259,6 +254,9 @@ const EnvelopePage = () => {
               onClick={() => {
                 setCambiando(true);
                 setOrden([]);
+                // Lo que ya pidió: si no, corregir la lista retiraría su
+                // petición de abrir sin esperar sin que nadie se lo diga
+                setSinEsperar(Boolean(vista?.mine?.revealWhenBothReady));
               }}
               className="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700"
             >
