@@ -177,8 +177,10 @@ const EnvelopePage = () => {
 
         {/* Abrir los sobres no es cosa solo del capitán que entregó: el
             organizador puede hacerlo aunque falte uno, que es la salida cuando
-            un capitán no aparece */}
-        {!fallo && puedeAbrir && (
+            un capitán no aparece. Mientras se reordena NO: el servidor sigue
+            teniendo el sobre de antes, así que abriría ese y el orden que el
+            capitán está montando se perdería sin avisar */}
+        {!fallo && !cambiando && puedeAbrir && (
           <button
             type="button"
             data-testid="abrir-sobres"

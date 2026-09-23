@@ -290,6 +290,25 @@ describe('EnvelopePage · el sobre del capitán (FE #655)', () => {
     expect(await screen.findByTestId('sobre-entregado')).toBeInTheDocument();
   });
 
+  it('V12d: mientras se reordena no se ofrece abrir: abriría el orden anterior', async () => {
+    // El servidor sigue teniendo el sobre de antes, así que abrir ahí revela
+    // ese, y el orden que el capitán está montando se pierde sin avisar
+    mockVer.mockResolvedValue(
+      vista({
+        teamASubmitted: true,
+        rivalSubmitted: true,
+        canReveal: true,
+        mine: { team: 'A', entries: [['bea'], ['ana']], submitted: true, automatic: false },
+      })
+    );
+    pintar();
+    expect(await screen.findByTestId('abrir-sobres')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId('cambiar-sobre'));
+
+    expect(screen.queryByTestId('abrir-sobres')).not.toBeInTheDocument();
+  });
+
   it('V13: un fallo al entregar se cuenta y el orden no se pierde', async () => {
     mockEntregar.mockRejectedValue(new Error('Faltan jugadores del equipo'));
     pintar();
