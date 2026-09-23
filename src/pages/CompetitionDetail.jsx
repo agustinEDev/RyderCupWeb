@@ -517,10 +517,12 @@ const CompetitionDetail = () => {
     },
     nameCaptains: {
       id: 'nameCaptains',
+      // Lo decide si LOS HAY, no el estado: en una cerrada sin capitanes
+      // salía «Cambiar capitanes», que es justo lo que no se puede hacer
       label: t(
-        competition.status === 'ACTIVE'
-          ? 'detail.actions.nameCaptains'
-          : 'detail.actions.changeCaptains'
+        competition.captains?.teamA && competition.captains?.teamB
+          ? 'detail.actions.changeCaptains'
+          : 'detail.actions.nameCaptains'
       ),
       icon: Crown,
       onClick: () => setNombrandoCapitanes(true),

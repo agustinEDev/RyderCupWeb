@@ -301,11 +301,6 @@
         "body": "La anotación no se abrirá sola: tiene que arrancar el partido el organizador de la competición, y necesita cobertura. Si en el campo no hay señal, mejor que lo haga antes de salir."
       },
       "courseAlreadyAdded": "Ese campo ya está en la competición",
-      "types": {
-        "STANDARD_18": "18 hoyos",
-        "PITCH_AND_PUTT": "Pitch & Putt",
-        "EXECUTIVE": "Ejecutivo"
-      },
       "par": "Par {{count}}"
     },
     "visibilityPrivate": "Solo invitados",

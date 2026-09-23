@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { nombresPorDefectoDeLosEquipos, siguenSiendoLosDePorDefecto } from './nombresPorDefectoDeLosEquipos';
+import {
+  nombresPorDefectoDeLosEquipos,
+  siguenSiendoLosDePorDefecto,
+} from './nombresPorDefectoDeLosEquipos';
+import es from '../i18n/locales/es/competitions.json';
+import en from '../i18n/locales/en/competitions.json';
 
 /**
  * Cómo se llaman los equipos mientras el organizador no diga otra cosa.
@@ -42,5 +47,29 @@ describe('siguenSiendoLosDePorDefecto', () => {
 
   it('N5: lo que escribe el organizador NO se toca', () => {
     expect(siguenSiendoLosDePorDefecto({ uno: 'Los Pepes', dos: 'USA' })).toBe(false);
+  });
+
+  it('N6: se mira cada nombre por su cuenta', () => {
+    // Exigir que los DOS sigan por defecto dejaba el otro congelado en su
+    // respaldo inglés en cuanto el organizador escribía uno
+    expect(siguenSiendoLosDePorDefecto({ uno: 'Los Pepes', dos: 'USA' }, 'dos')).toBe(true);
+    expect(siguenSiendoLosDePorDefecto({ uno: 'Los Pepes', dos: 'USA' }, 'uno')).toBe(false);
+  });
+});
+
+describe('La lista de nombres de nacimiento no se queda atrás', () => {
+  /**
+   * El conjunto repite a mano lo que dicen los locales. Si alguien retoca
+   * «Estados Unidos» —o entra un idioma nuevo— y nadie toca el conjunto, la
+   * corrección deja de reconocer el nombre y el defecto vuelve en silencio.
+   */
+  it.each([
+    ['es', es],
+    ['en', en],
+  ])('N7: los nombres por defecto de %s están reconocidos', (idioma, textos) => {
+    const uno = textos.create.defaultTeamOne;
+    const dos = textos.create.defaultTeamTwo;
+
+    expect(siguenSiendoLosDePorDefecto({ uno, dos })).toBe(true);
   });
 });

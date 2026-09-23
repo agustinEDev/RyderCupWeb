@@ -9,16 +9,21 @@ import { etiquetaDelTipoDeCampo } from './etiquetaDelTipoDeCampo';
  * escritos a mano en inglés dentro del componente.
  */
 
+// Los nombres viven en el namespace de campos de golf, que es donde ya
+// estaban: el alta de campos traduce el mismo enum. El doble resuelve cada
+// clave CON su namespace, como i18next; sin eso, leerla del namespace de la
+// pantalla —`competitions`, donde no está— pasaría igual
 const CLAVES = {
-  'detail.golfCourses.types.STANDARD_18': '18 hoyos',
-  'detail.golfCourses.types.PITCH_AND_PUTT': 'Pitch & Putt',
-  'detail.golfCourses.types.EXECUTIVE': 'Ejecutivo',
+  'golfCourses:courseTypes.STANDARD_18': 'Estándar 18 Hoyos',
+  'golfCourses:courseTypes.PITCH_AND_PUTT': 'Pitch & Putt',
+  'golfCourses:courseTypes.EXECUTIVE': 'Ejecutivo',
 };
-const t = (clave, opciones) => CLAVES[clave] ?? opciones?.defaultValue ?? clave;
+const t = (clave, opciones) =>
+  CLAVES[`${opciones?.ns ?? 'competitions'}:${clave}`] ?? opciones?.defaultValue ?? clave;
 
 describe('etiquetaDelTipoDeCampo', () => {
   it('E1: un campo de 18 hoyos se dice en español', () => {
-    expect(etiquetaDelTipoDeCampo('STANDARD_18', t)).toBe('18 hoyos');
+    expect(etiquetaDelTipoDeCampo('STANDARD_18', t)).toBe('Estándar 18 Hoyos');
   });
 
   it('E2: y los demás tipos también', () => {

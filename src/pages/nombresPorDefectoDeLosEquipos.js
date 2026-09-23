@@ -35,12 +35,19 @@ const LOS_DE_NACIMIENTO = new Set([
 ]);
 
 /**
- * Si los nombres siguen siendo los que puso la aplicación, o sea, si el
- * organizador todavía no ha escrito los suyos. Solo entonces se pueden
- * cambiar por debajo cuando el idioma acabe de cargar.
+ * Si el nombre sigue siendo el que puso la aplicación, o sea, si el
+ * organizador todavía no ha escrito el suyo. Solo entonces se puede cambiar
+ * por debajo cuando el idioma acabe de cargar.
+ *
+ * Cada uno por su cuenta: exigir que los DOS siguieran por defecto dejaba el
+ * otro congelado en su respaldo inglés en cuanto se escribía uno.
  *
  * @param {{uno: string, dos: string}} nombres
+ * @param {'uno'|'dos'|'ambos'} [cual='ambos']
  * @returns {boolean}
  */
-export const siguenSiendoLosDePorDefecto = ({ uno, dos }) =>
-  LOS_DE_NACIMIENTO.has(uno) && LOS_DE_NACIMIENTO.has(dos);
+export const siguenSiendoLosDePorDefecto = ({ uno, dos }, cual = 'ambos') => {
+  if (cual === 'uno') return LOS_DE_NACIMIENTO.has(uno);
+  if (cual === 'dos') return LOS_DE_NACIMIENTO.has(dos);
+  return LOS_DE_NACIMIENTO.has(uno) && LOS_DE_NACIMIENTO.has(dos);
+};

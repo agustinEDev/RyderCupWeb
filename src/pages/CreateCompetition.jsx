@@ -191,15 +191,23 @@ const CreateCompetition = () => {
   // renderización puede llegar con `t` sin resolver: los equipos nacerían con
   // su respaldo en inglés y, por ser el valor inicial de `useState`, se
   // quedarían congelados en una app en español. Aquí se corrigen en cuanto el
-  // idioma esté, y SOLO si el organizador no ha escrito los suyos
+  // idioma esté, y solo mientras el organizador no haya escrito el suyo.
+  //
+  // NUNCA al editar: ahí los nombres vienen del servidor, y cambiar de idioma
+  // le renombraría los equipos ya guardados a una competición en marcha
   useEffect(() => {
+    if (isEditMode) return;
     const porDefecto = nombresPorDefectoDeLosEquipos(t);
-    setFormData((antes) =>
-      siguenSiendoLosDePorDefecto({ uno: antes.teamOneName, dos: antes.teamTwoName })
-        ? { ...antes, teamOneName: porDefecto.uno, teamTwoName: porDefecto.dos }
-        : antes
-    );
-  }, [t, i18n.language]);
+    setFormData((antes) => {
+      const nombres = { uno: antes.teamOneName, dos: antes.teamTwoName };
+      const uno = siguenSiendoLosDePorDefecto(nombres, 'uno') ? porDefecto.uno : antes.teamOneName;
+      const dos = siguenSiendoLosDePorDefecto(nombres, 'dos') ? porDefecto.dos : antes.teamTwoName;
+      // Sin cambios, el MISMO objeto: uno nuevo vuelve a pintar, y si `t`
+      // cambia en cada pintada el efecto no acaba nunca
+      if (uno === antes.teamOneName && dos === antes.teamTwoName) return antes;
+      return { ...antes, teamOneName: uno, teamTwoName: dos };
+    });
+  }, [t, i18n.language, isEditMode]);
 
   useEffect(() => {
     // Fetch all countries

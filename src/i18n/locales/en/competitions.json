@@ -301,11 +301,6 @@
         "body": "Scoring will not open by itself: the competition's organiser has to start the match, and they need a connection. If the course has no signal, better done before setting off."
       },
       "courseAlreadyAdded": "That course is already in the competition",
-      "types": {
-        "STANDARD_18": "18 holes",
-        "PITCH_AND_PUTT": "Pitch & Putt",
-        "EXECUTIVE": "Executive"
-      },
       "par": "Par {{count}}"
     },
     "visibilityPrivate": "Invited only",

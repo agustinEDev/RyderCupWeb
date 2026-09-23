@@ -145,4 +145,32 @@ describe('CompetitionDetail · la configuración, en cristiano', () => {
     await screen.findByText('Asignación de Equipos:');
     expect(screen.queryByText(/assignment\.undefined/)).not.toBeInTheDocument();
   });
+
+  it('C8: cerrada y sin capitanes, el botón dice NOMBRARLOS', async () => {
+    // Lo decidía el estado, no si los había: en una cerrada caía siempre en
+    // «Cambiar capitanes», que es justo lo que no se puede hacer todavía
+    ficha({
+      status: 'CLOSED',
+      setupMode: 'RYDER_CUP',
+      teamsAssigned: false,
+      captains: { teamA: null, teamB: null, viceTeamA: null, viceTeamB: null },
+    });
+    pintar();
+
+    expect(await screen.findByTestId('accion-principal')).toHaveTextContent(
+      'detail.actions.nameCaptains'
+    );
+  });
+
+  it('C9: y con los dos puestos, cambiarlos', async () => {
+    ficha({
+      status: 'ACTIVE',
+      teamsAssigned: false,
+      captains: { teamA: 'ana', teamB: 'bea', viceTeamA: null, viceTeamB: null },
+    });
+    pintar();
+
+    await screen.findByTestId('menu-acciones');
+    expect(screen.getByText('detail.actions.changeCaptains')).toBeInTheDocument();
+  });
 });
