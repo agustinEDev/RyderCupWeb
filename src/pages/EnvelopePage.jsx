@@ -68,6 +68,7 @@ const EnvelopePage = () => {
   // Lo decide el servidor: hacen falta los dos sobres dentro, sea quien sea.
   // Repetir esa regla aquí es donde se desincronizan
   const puedeAbrir = Boolean(vista?.canReveal);
+  const faltaAlgunSobre = !vista?.teamASubmitted || !vista?.teamBSubmitted;
 
   const puestoDe = (userId) => orden.indexOf(userId);
 
@@ -350,6 +351,14 @@ const EnvelopePage = () => {
             Mientras reordena no se ofrece aunque el servidor lo permita: el
             sobre que hay guardado es el ANTERIOR, y un toque ahí lo abriría
             tirando por la borda lo que venía a cambiar */}
+        {!fallo && !cambiando && puedeAbrir && faltaAlgunSobre && !vista?.revealScheduledAt && (
+          // Esta sesión no tiene hora a la que abrirse sola —su campo no tiene
+          // zona horaria—, así que quien la abra decide también el sobre que
+          // falta. Sin decirlo, el botón parece el de siempre
+          <p data-testid="sin-plazo" className="mb-2 text-xs text-amber-700">
+            {t('envelope.noDeadline')}
+          </p>
+        )}
         {!fallo && !cambiando && puedeAbrir && (
           <button
             type="button"

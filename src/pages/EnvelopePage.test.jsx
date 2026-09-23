@@ -312,6 +312,29 @@ describe('EnvelopePage · el sobre del capitán (FE #655)', () => {
     expect(screen.queryByTestId('abrir-sobres')).not.toBeInTheDocument();
   });
 
+  it('V17: sin plazo que vencer, al organizador se le avisa de lo que va a pasar', async () => {
+    // Un campo sin zona horaria no da hora, así que esos sobres no se abren
+    // solos nunca y el organizador conserva la llave. Con el botón a secas
+    // abriría sin saber que el sobre que falta lo va a rellenar la aplicación
+    mockVer.mockResolvedValue(
+      vista({ canReveal: true, revealScheduledAt: null, teamASubmitted: true })
+    );
+    pintar();
+
+    expect(await screen.findByTestId('abrir-sobres')).toBeInTheDocument();
+    expect(screen.getByTestId('sin-plazo')).toBeInTheDocument();
+  });
+
+  it('V17b: con plazo y los dos sobres dentro no hay aviso que dar', async () => {
+    mockVer.mockResolvedValue(
+      vista({ canReveal: true, teamASubmitted: true, teamBSubmitted: true })
+    );
+    pintar();
+
+    expect(await screen.findByTestId('abrir-sobres')).toBeInTheDocument();
+    expect(screen.queryByTestId('sin-plazo')).not.toBeInTheDocument();
+  });
+
   it('V16: mientras falte un sobre no se ofrece abrir a nadie', async () => {
     // Visto en el Kind: «Abrir los sobres» salía arriba del todo y en verde,
     // ANTES de entregar. Un toque ahí rellena los dos sobres automáticamente y
