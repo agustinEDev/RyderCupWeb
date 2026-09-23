@@ -96,6 +96,7 @@ import SubmitEnvelopeUseCase from '../application/use_cases/envelope/SubmitEnvel
 import GetEnvelopesUseCase from '../application/use_cases/envelope/GetEnvelopesUseCase';
 import RevealEnvelopesUseCase from '../application/use_cases/envelope/RevealEnvelopesUseCase';
 import ResetEnvelopesUseCase from '../application/use_cases/envelope/ResetEnvelopesUseCase';
+import ListMyPendingEnvelopesUseCase from '../application/use_cases/envelope/ListMyPendingEnvelopesUseCase';
 import CreateRoundUseCase from '../application/use_cases/schedule/CreateRoundUseCase';
 import UpdateRoundUseCase from '../application/use_cases/schedule/UpdateRoundUseCase';
 import DeleteRoundUseCase from '../application/use_cases/schedule/DeleteRoundUseCase';
@@ -279,6 +280,7 @@ const submitEnvelopeUseCase = new SubmitEnvelopeUseCase({ envelopeRepository: ap
 const getEnvelopesUseCase = new GetEnvelopesUseCase({ envelopeRepository: apiEnvelopeRepository });
 const revealEnvelopesUseCase = new RevealEnvelopesUseCase({ envelopeRepository: apiEnvelopeRepository });
 const resetEnvelopesUseCase = new ResetEnvelopesUseCase({ envelopeRepository: apiEnvelopeRepository });
+const listMyPendingEnvelopesUseCase = new ListMyPendingEnvelopesUseCase({ envelopeRepository: apiEnvelopeRepository });
 
 // Support Use Cases
 const submitContactFormUseCase = new SubmitContactFormUseCase({ supportRepository: apiSupportRepository });
@@ -479,6 +481,7 @@ export {
   getEnvelopesUseCase,
   revealEnvelopesUseCase,
   resetEnvelopesUseCase,
+  listMyPendingEnvelopesUseCase,
   createRoundUseCase,
   updateRoundUseCase,
   deleteRoundUseCase,

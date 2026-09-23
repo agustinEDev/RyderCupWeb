@@ -65,6 +65,16 @@ class ApiEnvelopeRepository extends IEnvelopeRepository {
       matchesRemoved: data.matches_removed ?? 0,
     };
   }
+
+  /**
+   * GET /api/v1/competitions/me/pending-envelopes
+   *
+   * Vacío para quien no capitanea nada, que es casi todo el mundo.
+   */
+  async listMyPendingEnvelopes() {
+    const data = await apiRequest('/api/v1/competitions/me/pending-envelopes');
+    return EnvelopeMapper.toPendingEnvelopes(data);
+  }
 }
 
 export default ApiEnvelopeRepository;

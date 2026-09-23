@@ -65,6 +65,25 @@ class EnvelopeMapper {
       playerNames: apiData.player_names || {},
     };
   }
+
+  /**
+   * Los sobres que un capitan tiene sin entregar (FE #655).
+   *
+   * Una respuesta que no sea una lista se trata como «nada pendiente»: este
+   * numero se suma a un contador de avisos, y un `undefined` ahi rompe la
+   * tarjeta entera del panel.
+   */
+  static toPendingEnvelopes(apiData) {
+    if (!Array.isArray(apiData)) return [];
+    return apiData.map((pendiente) => ({
+      roundId: pendiente.round_id,
+      competitionId: pendiente.competition_id,
+      competitionName: pendiente.competition_name,
+      roundDate: pendiente.round_date,
+      sessionType: pendiente.session_type,
+      team: pendiente.team,
+    }));
+  }
 }
 
 export default EnvelopeMapper;
