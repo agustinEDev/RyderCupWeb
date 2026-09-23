@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { useNavigate, useParams } from 'react-router';
+import { useNavigate, useParams, Link } from 'react-router';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Plus, Calendar } from 'lucide-react';
+import { ArrowLeft, Plus, Calendar, Mail } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import customToast from '../../utils/toast';
 import HeaderAuth from '../../components/layout/HeaderAuth';
@@ -376,6 +376,12 @@ const SchedulePage = () => {
     teamA: competition.team1Name || 'Team A',
     teamB: competition.team2Name || 'Team B',
   };
+  // Quien capitanea un equipo tiene un sobre que entregar en cada sesión, y
+  // sin equipos repartidos no hay a quién ordenar (FE #655)
+  const esCapitan =
+    Boolean(user?.id) &&
+    [competition.captains?.teamA, competition.captains?.teamB].includes(user.id);
+  const hayEquipos = Boolean(teamAssignment);
 
   return (
     <div className="relative flex h-auto min-h-screen w-full flex-col bg-white">
@@ -475,8 +481,22 @@ const SchedulePage = () => {
               ) : (
                 <div className="space-y-4">
                   {rounds.map((round) => (
+                    <div key={round.id} className="space-y-2">
+                      {/* El sobre del capitán para ESTA sesión (FE #655). Aquí
+                          y no en la ficha porque el sobre es de una sesión, no
+                          de la competición; esta pantalla la ven también los
+                          capitanes que no organizan, por la ruta pública */}
+                      {esCapitan && competition.setupMode === 'RYDER_CUP' && hayEquipos && (
+                        <Link
+                          to={`/competitions/${id}/rounds/${round.id}/envelope`}
+                          data-testid={`ir-al-sobre-${round.id}`}
+                          className="flex items-center justify-center gap-2 rounded-lg bg-yellow-600 px-4 py-2 text-sm font-semibold text-white hover:bg-yellow-700"
+                        >
+                          <Mail className="h-4 w-4" />
+                          {tComp('envelope.open')}
+                        </Link>
+                      )}
                     <RoundCard
-                      key={round.id}
                       round={round}
                       onEdit={() => openEditRound(round)}
                       onDelete={() => handleDeleteRound(round.id)}
@@ -497,6 +517,7 @@ const SchedulePage = () => {
                       teamNames={teamNames}
                       t={t}
                     />
+                    </div>
                   ))}
                 </div>
               )}

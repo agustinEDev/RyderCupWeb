@@ -84,9 +84,13 @@ import GetCompetitionGolfCoursesUseCase from '../application/use_cases/competiti
 
 // Schedule Use Cases (v2.1.0 - Sprint 2)
 import ApiScheduleRepository from '../infrastructure/repositories/ApiScheduleRepository';
+import ApiEnvelopeRepository from '../infrastructure/repositories/ApiEnvelopeRepository';
 import GetScheduleUseCase from '../application/use_cases/schedule/GetScheduleUseCase';
 import ConfigureScheduleUseCase from '../application/use_cases/schedule/ConfigureScheduleUseCase';
 import AssignTeamsUseCase from '../application/use_cases/schedule/AssignTeamsUseCase';
+import SubmitEnvelopeUseCase from '../application/use_cases/envelope/SubmitEnvelopeUseCase';
+import GetEnvelopesUseCase from '../application/use_cases/envelope/GetEnvelopesUseCase';
+import RevealEnvelopesUseCase from '../application/use_cases/envelope/RevealEnvelopesUseCase';
 import CreateRoundUseCase from '../application/use_cases/schedule/CreateRoundUseCase';
 import UpdateRoundUseCase from '../application/use_cases/schedule/UpdateRoundUseCase';
 import DeleteRoundUseCase from '../application/use_cases/schedule/DeleteRoundUseCase';
@@ -191,6 +195,7 @@ const apiDeviceRepository = new ApiDeviceRepository();
 const apiGolfCourseRepository = new ApiGolfCourseRepository();
 const apiAdminRepository = new ApiAdminRepository();
 const apiScheduleRepository = new ApiScheduleRepository();
+const apiEnvelopeRepository = new ApiEnvelopeRepository();
 const apiSupportRepository = new ApiSupportRepository();
 const apiCountryRepository = new ApiCountryRepository();
 const apiInvitationRepository = new ApiInvitationRepository();
@@ -258,6 +263,11 @@ const getMatchDetailUseCase = new GetMatchDetailUseCase({ scheduleRepository: ap
 const updateMatchStatusUseCase = new UpdateMatchStatusUseCase({ scheduleRepository: apiScheduleRepository });
 const declareWalkoverUseCase = new DeclareWalkoverUseCase({ scheduleRepository: apiScheduleRepository });
 const reassignPlayersUseCase = new ReassignPlayersUseCase({ scheduleRepository: apiScheduleRepository });
+
+// Los sobres de los capitanes (FE #655)
+const submitEnvelopeUseCase = new SubmitEnvelopeUseCase({ envelopeRepository: apiEnvelopeRepository });
+const getEnvelopesUseCase = new GetEnvelopesUseCase({ envelopeRepository: apiEnvelopeRepository });
+const revealEnvelopesUseCase = new RevealEnvelopesUseCase({ envelopeRepository: apiEnvelopeRepository });
 
 // Support Use Cases
 const submitContactFormUseCase = new SubmitContactFormUseCase({ supportRepository: apiSupportRepository });
@@ -451,6 +461,9 @@ export {
   getScheduleUseCase,
   configureScheduleUseCase,
   assignTeamsUseCase,
+  submitEnvelopeUseCase,
+  getEnvelopesUseCase,
+  revealEnvelopesUseCase,
   createRoundUseCase,
   updateRoundUseCase,
   deleteRoundUseCase,
