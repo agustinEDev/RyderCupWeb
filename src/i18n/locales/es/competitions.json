@@ -300,7 +300,13 @@
         "title": "Este campo hay que arrancarlo a mano",
         "body": "La anotación no se abrirá sola: tiene que arrancar el partido el organizador de la competición, y necesita cobertura. Si en el campo no hay señal, mejor que lo haga antes de salir."
       },
-      "courseAlreadyAdded": "Ese campo ya está en la competición"
+      "courseAlreadyAdded": "Ese campo ya está en la competición",
+      "types": {
+        "STANDARD_18": "18 hoyos",
+        "PITCH_AND_PUTT": "Pitch & Putt",
+        "EXECUTIVE": "Ejecutivo"
+      },
+      "par": "Par {{count}}"
     },
     "visibilityPrivate": "Solo invitados",
     "visibilityPublic": "Pública",
@@ -402,7 +408,7 @@
   },
   "envelope": {
     "title": "Tu sobre",
-    "back": "Volver a la competición",
+    "back": "Volver al calendario",
     "tapInOrder": "Toca a tus jugadores en el orden en que quieres que jueguen: el primero se enfrentará al primero del rival.",
     "oddTeam": "Esta sesión es de parejas y hay un equipo impar: alguien se quedaría fuera, así que no se pueden entregar los sobres ni se abrirán solos. El organizador tiene que cambiar el formato de la sesión o rehacer los equipos.",
     "pairHalfDone": "Te falta el compañero de la última pareja.",

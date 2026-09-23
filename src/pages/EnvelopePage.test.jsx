@@ -2,6 +2,12 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router';
 
+const mockNavigate = vi.fn();
+vi.mock('react-router', async () => {
+  const actual = await vi.importActual('react-router');
+  return { ...actual, useNavigate: () => mockNavigate };
+});
+
 /**
  * El sobre de un capitán (FE #655).
  *
@@ -675,5 +681,16 @@ describe('EnvelopePage · el sobre del capitán (FE #655)', () => {
     fireEvent.click(screen.getByTestId('jugador-ana'));
 
     expect(screen.queryByTestId('pareja-a-medias')).not.toBeInTheDocument();
+  });
+
+  it('V18: volver lleva al calendario, que es de donde se viene', async () => {
+    // El sobre se abre desde la agenda de la competición, así que devolver a
+    // la ficha obliga a volver a entrar en el calendario para la sesión
+    // siguiente
+    pintar();
+
+    fireEvent.click(await screen.findByTestId('volver-al-calendario'));
+
+    expect(mockNavigate).toHaveBeenCalledWith('/competitions/comp-1/schedule');
   });
 });

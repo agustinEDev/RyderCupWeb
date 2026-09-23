@@ -142,11 +142,14 @@ const EnvelopePage = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <HeaderAuth user={user} title={t('envelope.title')} backTo={`/competitions/${id}`} />
+      {/* Al calendario, que es de donde se entra al sobre: devolver a la
+          ficha obliga a volver a entrar para la sesión siguiente */}
+      <HeaderAuth user={user} title={t('envelope.title')} backTo={`/competitions/${id}/schedule`} />
       <div className="mx-auto max-w-2xl px-4 py-6">
         <button
           type="button"
-          onClick={() => navigate(`/competitions/${id}`)}
+          data-testid="volver-al-calendario"
+          onClick={() => navigate(`/competitions/${id}/schedule`)}
           className="mb-4 flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900"
         >
           <ArrowLeft className="h-4 w-4" />
