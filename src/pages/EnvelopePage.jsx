@@ -65,9 +65,10 @@ const EnvelopePage = () => {
   const jugadores = useMemo(() => vista?.myPlayers || [], [vista]);
   const capitanea = jugadores.length > 0;
   const entregado = Boolean(vista?.mine?.submitted) && !cambiando;
-  // Lo decide el servidor: el organizador siempre, un capitán solo con los dos
-  // sobres dentro. Repetir esa regla aquí es donde se desincronizan
+  // Lo decide el servidor: hacen falta los dos sobres dentro, sea quien sea.
+  // Repetir esa regla aquí es donde se desincronizan
   const puedeAbrir = Boolean(vista?.canReveal);
+  const faltaAlgunSobre = !vista?.teamASubmitted || !vista?.teamBSubmitted;
 
   const puestoDe = (userId) => orden.indexOf(userId);
 
@@ -343,16 +344,22 @@ const EnvelopePage = () => {
           </div>
         )}
 
-        {/* Abrir los sobres no es cosa solo del capitán que entregó: el
-            organizador puede hacerlo aunque falte uno, que es la salida cuando
-            un capitán no aparece.
+        {/* Abrir es lo que desvela el orden de juego, así que hacen falta los
+            dos sobres dentro y eso ya lo dice `canReveal`. El capitán que no
+            aparece no atasca nada: al vencer el plazo se abren solos.
 
-            A quien TIENE un sobre y no lo ha entregado no se le ofrece: en el
-            Kind se veía el botón arriba y en verde antes de entregar nada, y un
-            toque ahí rellena los dos sobres automáticamente y tira por la borda
-            lo que venía a hacer. Mientras reordena, lo mismo: el servidor sigue
-            teniendo el sobre anterior */}
-        {!fallo && !cambiando && puedeAbrir && (!capitanea || vista?.mine?.submitted) && (
+            Mientras reordena no se ofrece aunque el servidor lo permita: el
+            sobre que hay guardado es el ANTERIOR, y un toque ahí lo abriría
+            tirando por la borda lo que venía a cambiar */}
+        {!fallo && !cambiando && puedeAbrir && faltaAlgunSobre && !vista?.revealScheduledAt && (
+          // Esta sesión no tiene hora a la que abrirse sola —su campo no tiene
+          // zona horaria—, así que quien la abra decide también el sobre que
+          // falta. Sin decirlo, el botón parece el de siempre
+          <p data-testid="sin-plazo" className="mb-2 text-xs text-amber-700">
+            {t('envelope.noDeadline')}
+          </p>
+        )}
+        {!fallo && !cambiando && puedeAbrir && (
           <button
             type="button"
             data-testid="abrir-sobres"

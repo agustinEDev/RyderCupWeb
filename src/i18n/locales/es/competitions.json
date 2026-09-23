@@ -412,7 +412,8 @@
     "cancel": "Cancelar",
     "revealWhenBothReady": "Abrirlos en cuanto los dos hayamos entregado, sin esperar a la hora",
     "waitingForRivalToAgree": "Tú has pedido abrirlos sin esperar; falta que el otro capitán lo marque también.",
-    "deadline": "Plazo hasta el {{when}}. Después, lo que falte lo pone la aplicación."
+    "deadline": "Plazo hasta el {{when}}. Después, lo que falte lo pone la aplicación.",
+    "noDeadline": "Esta sesión no tiene hora a la que abrirse sola: si la abres ahora, el sobre que falte lo rellenará la aplicación por hándicap."
   },
   "draft": {
     "title": "Sala de draft",
