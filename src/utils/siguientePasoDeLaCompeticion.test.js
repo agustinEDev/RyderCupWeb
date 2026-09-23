@@ -33,7 +33,26 @@ describe('siguientePasoDeLaCompeticion', () => {
   });
 
   it('S4: cerrada en modo Ryder y sin equipos, la sala de draft', () => {
-    expect(siguientePasoDeLaCompeticion(competicion({ status: 'CLOSED' }))).toBe('draft');
+    expect(
+      siguientePasoDeLaCompeticion(
+        competicion({ status: 'CLOSED', captains: { teamA: 'ana', teamB: 'bea' } })
+      )
+    ).toBe('draft');
+  });
+
+  it('S4b: pero sin capitanes, lo que toca es nombrarlos', () => {
+    // La sala no tiene quién elija, así que la acción del draft no se ofrece:
+    // sin esto la ficha se quedaba SIN botón principal y «Nombrar capitanes»
+    // enterrado en el menú, justo cuando es lo único que hay que hacer
+    expect(siguientePasoDeLaCompeticion(competicion({ status: 'CLOSED' }))).toBe('nameCaptains');
+  });
+
+  it('S4c: con un solo capitán tampoco: faltan los dos', () => {
+    expect(
+      siguientePasoDeLaCompeticion(
+        competicion({ status: 'CLOSED', captains: { teamA: 'ana', teamB: null } })
+      )
+    ).toBe('nameCaptains');
   });
 
   it('S5: en los otros modos no hay sala, se reparten en el calendario', () => {

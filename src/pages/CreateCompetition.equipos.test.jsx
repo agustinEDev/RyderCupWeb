@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { nombresPorDefectoDeLosEquipos } from './nombresPorDefectoDeLosEquipos';
+import { nombresPorDefectoDeLosEquipos, siguenSiendoLosDePorDefecto } from './nombresPorDefectoDeLosEquipos';
 
 /**
  * Cómo se llaman los equipos mientras el organizador no diga otra cosa.
@@ -22,5 +22,25 @@ describe('nombresPorDefectoDeLosEquipos', () => {
     const t = (clave, opciones) => opciones?.defaultValue ?? clave;
 
     expect(nombresPorDefectoDeLosEquipos(t)).toEqual({ uno: 'Europe', dos: 'USA' });
+  });
+});
+
+describe('siguenSiendoLosDePorDefecto', () => {
+  /**
+   * Los namespaces se cargan con `import()` y sin suspense, así que la primera
+   * renderización puede llegar con `t` aún sin resolver: entonces el nombre
+   * nace con su respaldo en inglés y, como es el valor inicial de `useState`,
+   * se queda congelado ahí aunque la app esté en español.
+   */
+  it('N3: el respaldo en inglés cuenta como no tocado', () => {
+    expect(siguenSiendoLosDePorDefecto({ uno: 'Europe', dos: 'USA' })).toBe(true);
+  });
+
+  it('N4: y el nombre ya traducido también, mientras nadie lo cambie', () => {
+    expect(siguenSiendoLosDePorDefecto({ uno: 'Europa', dos: 'Estados Unidos' })).toBe(true);
+  });
+
+  it('N5: lo que escribe el organizador NO se toca', () => {
+    expect(siguenSiendoLosDePorDefecto({ uno: 'Los Pepes', dos: 'USA' })).toBe(false);
   });
 });

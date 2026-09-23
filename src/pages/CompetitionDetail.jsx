@@ -489,6 +489,8 @@ const CompetitionDetail = () => {
   // User is considered creator if they created the competition OR have CREATOR/ADMIN role
   const isCreator = competition.creatorId === user.id;
   const canManage = isCreator || hasCreatorRole || isAdmin;
+  // Cómo se repartieron los equipos DE VERDAD; sin reparto, el configurado
+  const repartoAMostrar = competition.actualTeamAssignment ?? competition.teamAssignment;
   // La configuración se corrige mientras haya inscripciones abiertas (BE #323):
   // quien invita antes de poner el campo de golf tiene que poder ponerlo después
   const canEdit = canManage && ['DRAFT', 'ACTIVE'].includes(competition.status);
@@ -913,8 +915,11 @@ const CompetitionDetail = () => {
               </motion.div>
             )}
 
-            {/* Leaderboard Button - Visible to ALL users */}
-            {(competition.status === 'IN_PROGRESS' || competition.status === 'COMPLETED') && (
+            {/* La clasificación, para todo el mundo. A quien organiza NO se le
+                repite: en un torneo en juego es su acción principal, y
+                ofrecerla dos veces es lo que venía a arreglar el FE #705 */}
+            {!canManage &&
+              (competition.status === 'IN_PROGRESS' || competition.status === 'COMPLETED') && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -1065,21 +1070,23 @@ const CompetitionDetail = () => {
                     {/* Salía «HANDICAP»: el valor del backend tal cual, en
                         mayúsculas y en inglés, en una pantalla en español */}
                     <p className="text-gray-900 font-medium">
-                      {t(`create.${String(competition.playMode || '').toLowerCase()}`, {
-                        defaultValue: competition.playMode,
-                      })}
+                      {competition.playMode
+                        ? t(`create.${String(competition.playMode).toLowerCase()}`, {
+                            defaultValue: competition.playMode,
+                          })
+                        : ''}
                     </p>
                   </div>
                   <div>
                     <span className="text-gray-500 text-sm">{t('detail.settings.teamAssignment')}</span>
                     {/* Idem, y con respaldo: un modo que el backend añada
-                        mañana sale con su nombre, no con la clave. Manda el
-                        reparto que se hizo; sin él, el configurado */}
+                        mañana sale con su nombre, no con la clave */}
                     <p className="text-gray-900 font-medium">
-                      {t(
-                        `detail.settings.assignment.${competition.actualTeamAssignment ?? competition.teamAssignment}`,
-                        { defaultValue: competition.actualTeamAssignment ?? competition.teamAssignment }
-                      )}
+                      {repartoAMostrar
+                        ? t(`detail.settings.assignment.${repartoAMostrar}`, {
+                            defaultValue: repartoAMostrar,
+                          })
+                        : ''}
                     </p>
                   </div>
                   <div>

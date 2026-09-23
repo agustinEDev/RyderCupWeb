@@ -19,7 +19,8 @@
 export const siguientePasoDeLaCompeticion = (competition, { puedeGestionar = true } = {}) => {
   if (!competition) return null;
 
-  const { status, setupMode, teamsAssigned } = competition;
+  const { status, setupMode, teamsAssigned, captains } = competition;
+  const hayCapitanes = Boolean(captains?.teamA && captains?.teamB);
 
   // Con el torneo en marcha o terminado, lo que todo el mundo quiere ver es
   // cómo va: también quien no organiza nada
@@ -38,9 +39,14 @@ export const siguientePasoDeLaCompeticion = (competition, { puedeGestionar = tru
   }
 
   if (status === 'CLOSED') {
-    // La sala de draft es del tipo Ryder: en los otros modos los equipos se
-    // reparten desde el calendario
-    if (!teamsAssigned) return setupMode === 'RYDER_CUP' ? 'draft' : 'manageSchedule';
+    if (!teamsAssigned) {
+      // La sala de draft es del tipo Ryder, y no tiene quién elija hasta que
+      // hay capitanes: sin esto la ficha se quedaba sin acción principal
+      // —la del draft no se ofrece— justo cuando nombrarlos es lo único que
+      // hay que hacer
+      if (setupMode !== 'RYDER_CUP') return 'manageSchedule';
+      return hayCapitanes ? 'draft' : 'nameCaptains';
+    }
     return 'manageSchedule';
   }
 

@@ -2,7 +2,10 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { Trophy, Settings, Plus, X, ChevronDown, Flag, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { nombresPorDefectoDeLosEquipos } from './nombresPorDefectoDeLosEquipos';
+import {
+  nombresPorDefectoDeLosEquipos,
+  siguenSiendoLosDePorDefecto,
+} from './nombresPorDefectoDeLosEquipos';
 import HeaderAuth from '../components/layout/HeaderAuth';
 import { useAuth } from '../hooks/useAuth';
 import {
@@ -183,6 +186,20 @@ const CreateCompetition = () => {
       }
     };
   }, []);
+
+  // Los namespaces se cargan con `import()` y sin suspense, así que la primera
+  // renderización puede llegar con `t` sin resolver: los equipos nacerían con
+  // su respaldo en inglés y, por ser el valor inicial de `useState`, se
+  // quedarían congelados en una app en español. Aquí se corrigen en cuanto el
+  // idioma esté, y SOLO si el organizador no ha escrito los suyos
+  useEffect(() => {
+    const porDefecto = nombresPorDefectoDeLosEquipos(t);
+    setFormData((antes) =>
+      siguenSiendoLosDePorDefecto({ uno: antes.teamOneName, dos: antes.teamTwoName })
+        ? { ...antes, teamOneName: porDefecto.uno, teamTwoName: porDefecto.dos }
+        : antes
+    );
+  }, [t, i18n.language]);
 
   useEffect(() => {
     // Fetch all countries

@@ -17,3 +17,30 @@ export const nombresPorDefectoDeLosEquipos = (t) => ({
   uno: t('create.defaultTeamOne', { defaultValue: 'Europe' }),
   dos: t('create.defaultTeamTwo', { defaultValue: 'USA' }),
 });
+
+/**
+ * Todos los nombres con los que un equipo puede haber nacido, en cualquier
+ * idioma y contando el respaldo en inglés.
+ *
+ * Los namespaces se cargan con `import()` y sin suspense, así que la primera
+ * renderización puede llegar con `t` sin resolver: el nombre nace entonces con
+ * su respaldo en inglés y, como es el valor inicial de `useState`, se queda
+ * congelado ahí aunque la app esté en español.
+ */
+const LOS_DE_NACIMIENTO = new Set([
+  'Europe',
+  'USA',
+  'Europa',
+  'Estados Unidos',
+]);
+
+/**
+ * Si los nombres siguen siendo los que puso la aplicación, o sea, si el
+ * organizador todavía no ha escrito los suyos. Solo entonces se pueden
+ * cambiar por debajo cuando el idioma acabe de cargar.
+ *
+ * @param {{uno: string, dos: string}} nombres
+ * @returns {boolean}
+ */
+export const siguenSiendoLosDePorDefecto = ({ uno, dos }) =>
+  LOS_DE_NACIMIENTO.has(uno) && LOS_DE_NACIMIENTO.has(dos);

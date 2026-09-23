@@ -19,10 +19,10 @@ const CLAVES = {
   'detail.settings.assignment.AUTOMATIC': 'Automática',
   'detail.settings.assignment.DRAFT': 'Draft de capitanes',
 };
-const t = (clave, params) => {
-  if (params?.defaultValue !== undefined) return CLAVES[clave] ?? params.defaultValue;
-  return CLAVES[clave] ?? clave;
-};
+// Como el de i18next: si no encuentra la clave devuelve el `defaultValue`, y
+// si ese tampoco vale, LA CLAVE. Un doble más benévolo escondía justo el
+// defecto que este fichero comprueba
+const t = (clave, params) => CLAVES[clave] ?? params?.defaultValue ?? clave;
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t, i18n: { language: 'es' } }),
@@ -33,9 +33,8 @@ vi.mock('framer-motion', () => ({
 vi.mock('../components/layout/HeaderAuth', () => ({ default: () => null }));
 vi.mock('../components/ui/FullScreenLoader', () => ({ default: () => null }));
 vi.mock('../hooks/useAuth', () => ({ useAuth: () => ({ user: { id: 'creator-1' }, loading: false }) }));
-vi.mock('../hooks/useUserRoles', () => ({
-  useUserRoles: () => ({ isAdmin: false, isCreator: true, isLoading: false }),
-}));
+let roles = { isAdmin: false, isCreator: true, isLoading: false };
+vi.mock('../hooks/useUserRoles', () => ({ useUserRoles: () => roles }));
 vi.mock('../utils/toast', () => ({
   default: { success: vi.fn(), error: vi.fn(), warning: vi.fn(), info: vi.fn() },
 }));
@@ -83,7 +82,10 @@ const ficha = (extra = {}) =>
   });
 
 describe('CompetitionDetail · la configuración, en cristiano', () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    roles = { isAdmin: false, isCreator: true, isLoading: false };
+  });
 
   it('C1: el modo de juego no sale en mayúsculas y en inglés', async () => {
     ficha();
@@ -107,5 +109,40 @@ describe('CompetitionDetail · la configuración, en cristiano', () => {
 
     expect(await screen.findByText('LO_QUE_VENGA')).toBeInTheDocument();
     expect(screen.queryByText(/detail\.settings\.assignment/)).not.toBeInTheDocument();
+  });
+
+  it('C4: al organizador la clasificación no se le ofrece dos veces', async () => {
+    // Es su acción principal en un torneo en juego, y el botón de abajo
+    // —que está para TODO el mundo— se la repetía
+    ficha({ status: 'IN_PROGRESS' });
+    pintar();
+
+    await screen.findByTestId('accion-principal');
+    expect(screen.getAllByText('detail.actions.leaderboard')).toHaveLength(1);
+  });
+
+  it('C5: y a quien solo mira le sigue saliendo', async () => {
+    roles = { isAdmin: false, isCreator: false, isLoading: false };
+    ficha({ status: 'IN_PROGRESS', creatorId: 'otra-persona' });
+    pintar();
+
+    expect(await screen.findByText('detail.actions.leaderboard')).toBeInTheDocument();
+  });
+
+  it('C6: sin modo de juego no se pinta media clave', async () => {
+    // `create.` con el valor vacío: i18next devuelve la clave y salía tal cual
+    ficha({ playMode: null });
+    pintar();
+
+    await screen.findByText('Modo de Juego:');
+    expect(screen.queryByText('create.')).not.toBeInTheDocument();
+  });
+
+  it('C7: ni «assignment.undefined» sin reparto', async () => {
+    ficha({ teamAssignment: null });
+    pintar();
+
+    await screen.findByText('Asignación de Equipos:');
+    expect(screen.queryByText(/assignment\.undefined/)).not.toBeInTheDocument();
   });
 });
