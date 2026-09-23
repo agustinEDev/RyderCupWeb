@@ -279,6 +279,27 @@ describe('PendingActionsCard', () => {
     expect(mockNavigate).toHaveBeenCalledWith('/competitions/comp-1/rounds/ronda-1/envelope');
   });
 
+  it('cada sobre dice de qué sesión es: seis iguales no se distinguen', async () => {
+    // Un Ryder de tres días son seis sesiones, y sin esto salen seis botones
+    // idénticos que llevan a sitios distintos
+    mockListMyPendingEnvelopes.mockResolvedValue([
+      {
+        roundId: 'ronda-1',
+        competitionId: 'comp-1',
+        competitionName: 'Ryder de los amigos',
+        roundDate: '2026-06-01',
+        sessionType: 'MORNING',
+        team: 'A',
+      },
+    ]);
+
+    renderCard();
+
+    const fila = await screen.findByTestId('sobre-pendiente-ronda-1');
+    expect(fila).toHaveTextContent('nextMatch.session.MORNING');
+    expect(fila.textContent).toMatch(/2026|jun|Jun/);
+  });
+
   it('sin sobres pendientes no pinta nada de sobres', async () => {
     renderCard();
 

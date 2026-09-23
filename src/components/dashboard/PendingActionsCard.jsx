@@ -17,7 +17,7 @@ import BlockLoader from '../ui/BlockLoader';
 
 const PendingActionsCard = ({ user, competitions, onHandicapAction, handicapPending = false , upcomingMatches = 0 }) => {
   const navigate = useNavigate();
-  const { t } = useTranslation('dashboard');
+  const { t, i18n } = useTranslation('dashboard');
   const { animateEntry } = useEntryMotion();
   // Arranca con lo ultimo que esta tarjeta llego a enseñar (FE #502). El panel
   // se remonta cada vez que se vuelve a Inicio desde la barra inferior, asi que
@@ -115,6 +115,25 @@ const PendingActionsCard = ({ user, competitions, onHandicapAction, handicapPend
       cancelado = true;
     };
   }, [user, competitions, isCreator]);
+
+  // El día y la franja, con el idioma de la aplicación. `Intl` revienta con un
+  // RangeError si la fecha no se puede leer, y esto vive dentro de la tarjeta
+  // entera del panel
+  const cuandoSeJuega = (sobre) => {
+    const franja = sobre.sessionType ? t(`nextMatch.session.${sobre.sessionType}`) : '';
+    let dia = '';
+    try {
+      if (sobre.roundDate) {
+        dia = new Date(sobre.roundDate).toLocaleDateString(i18n.language, {
+          day: 'numeric',
+          month: 'short',
+        });
+      }
+    } catch {
+      dia = '';
+    }
+    return [dia, franja].filter(Boolean).join(' ');
+  };
 
   const totalItems = pendingInvitations + pendingEnrollments.length + (upcomingMatches > 0 ? 1 : 0) + (handicapPending ? 1 : 0) + (pendingFriendRequests > 0 ? 1 : 0) + activeQuickMatches.length + sobresPendientes.length;
 
@@ -253,7 +272,12 @@ const PendingActionsCard = ({ user, competitions, onHandicapAction, handicapPend
                   <p className="text-sm font-semibold text-gray-900">
                     {t('pendingActions.envelopePending')}
                   </p>
-                  <p className="truncate text-xs text-gray-500">{sobre.competitionName}</p>
+                  {/* De qué sesión: un Ryder de tres días son seis sobres, y
+                      sin esto salen seis botones idénticos que llevan a sitios
+                      distintos */}
+                  <p className="truncate text-xs text-gray-500">
+                    {[cuandoSeJuega(sobre), sobre.competitionName].filter(Boolean).join(' · ')}
+                  </p>
                 </div>
               </div>
               <ChevronRight className="w-4 h-4 shrink-0 text-gray-400 group-hover:text-gray-600 transition-colors" />
