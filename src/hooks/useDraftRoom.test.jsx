@@ -236,6 +236,41 @@ describe('useDraftRoom (FE #653)', () => {
     expect(result.current.sala.currentTeam).toBe('B');
   });
 
+  it('H11d: un fallo de una petición vieja no pisa la pantalla de ahora', async () => {
+    // El GET que salió antes puede fallar DESPUÉS de una elección correcta:
+    // sin comprobar la generación, la sala se queda con un error que ya no
+    // describe nada de lo que hay en pantalla
+    let fallarLaVieja;
+    const { result } = renderHook(() => useDraftRoom('c1', 'ana'));
+    await waitFor(() => expect(result.current.sala).not.toBeNull());
+    mockGet.mockImplementationOnce(
+      () => new Promise((_, reject) => { fallarLaVieja = () => reject(new Error('Boom')); })
+    );
+    await act(async () => {
+      vi.advanceTimersByTime(6000);
+    });
+    await act(async () => {
+      await result.current.elegir('dani');
+    });
+
+    await act(async () => {
+      fallarLaVieja();
+      await Promise.resolve();
+    });
+
+    expect(result.current.error).toBeNull();
+  });
+
+  it('H15: un reloj que no se entiende no pinta un contador imposible', async () => {
+    // Con una fecha ilegible `Date.parse` da NaN y la pantalla enseñaba
+    // «NaN:NaN» donde debería ir el minuto
+    mockGet.mockResolvedValue(sala({ turnStartedAt: 'no es una fecha' }));
+    const { result } = renderHook(() => useDraftRoom('c1', 'ana'));
+
+    await waitFor(() => expect(result.current.sala).not.toBeNull());
+    expect(result.current.segundosRestantes).toBeNull();
+  });
+
   it('H12: sin sala todavía, no hay contador ni error', async () => {
     mockGet.mockResolvedValue(null);
     const { result } = renderHook(() => useDraftRoom('c1', 'ana'));

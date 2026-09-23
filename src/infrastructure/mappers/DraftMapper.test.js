@@ -99,6 +99,16 @@ describe('DraftMapper', () => {
     expect([sala.teamA, sala.teamB, sala.picks, sala.availablePlayers]).toEqual([[], [], [], []]);
   });
 
+  it('M5b: ni uno que no es un número', () => {
+    // Llega de fuera: un texto acabaría pintado tal cual como «NaN»
+    const sala = DraftMapper.toDraftDTO({
+      ...RESPUESTA,
+      available_players: [{ user_id: 'a', name: 'A', handicap: 'sin hándicap' }],
+    });
+
+    expect(sala.availablePlayers[0].handicap).toBeNull();
+  });
+
   it('M5: un hándicap ausente no se convierte en NaN', () => {
     const sala = DraftMapper.toDraftDTO({
       ...RESPUESTA,

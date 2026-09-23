@@ -6,6 +6,13 @@
  * El hándicap llega como texto —la API serializa decimales así— y aquí se
  * convierte a número: ordenar por él como texto pondría «9.0» detrás de «12.0».
  */
+/** El número si lo es de verdad, y si no nada: ni «NaN» ni un cero inventado. */
+const numeroOnada = (valor) => {
+  if (valor === null || valor === undefined || valor === '') return null;
+  const numero = Number(valor);
+  return Number.isFinite(numero) ? numero : null;
+};
+
 class DraftMapper {
   /**
    * @param {Object} apiData - Respuesta de las rutas de /draft (snake_case)
@@ -41,7 +48,10 @@ class DraftMapper {
       availablePlayers: (apiData.available_players || []).map(jugador => ({
         userId: jugador.user_id,
         name: jugador.name,
-        handicap: jugador.handicap == null ? null : Number(jugador.handicap),
+        // Viene de fuera: un valor que no sea un número acabaría pintado tal
+        // cual como «NaN» al lado del nombre. Y ausente no es cero: `Number(null)`
+        // da 0, que pondría a un jugador sin hándicap el mejor de la lista
+        handicap: numeroOnada(jugador.handicap),
       })),
     };
   }

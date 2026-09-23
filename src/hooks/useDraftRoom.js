@@ -69,7 +69,10 @@ const useDraftRoom = (competitionId, userId) => {
       guardar(nueva, generacion);
       if (limpiaElAviso && generacion >= generacionRef.current) setError(null);
     } catch (e) {
-      setError(e.message);
+      // También el fallo respeta la generación: el GET que salió antes puede
+      // fallar DESPUÉS de una elección correcta, y dejaría en pantalla un
+      // error que ya no describe nada
+      if (generacion >= generacionRef.current) setError(e.message);
     } finally {
       setCargando(false);
     }
@@ -104,6 +107,12 @@ const useDraftRoom = (competitionId, userId) => {
       return undefined;
     }
     const empezo = Date.parse(sala.turnStartedAt);
+    // Una fecha que no se entiende da NaN, y de ahí salía un «NaN:NaN» en el
+    // sitio del minuto: mejor sin contador que con uno imposible
+    if (Number.isNaN(empezo) || !Number.isFinite(Number(sala.secondsPerTurn))) {
+      setSegundosRestantes(null);
+      return undefined;
+    }
     const calcular = () => {
       const pasados = (Date.now() + desfaseRef.current - empezo) / 1000;
       setSegundosRestantes(Math.max(0, Math.round(sala.secondsPerTurn - pasados)));
