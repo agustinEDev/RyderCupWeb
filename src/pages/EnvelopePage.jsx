@@ -6,6 +6,7 @@ import HeaderAuth from '../components/layout/HeaderAuth';
 import { useAuth } from '../hooks/useAuth';
 import FullScreenLoader from '../components/ui/FullScreenLoader';
 import customToast from '../utils/toast';
+import { fechaYHoraDelCampo } from '../services/partidosSinCobertura';
 import {
   getEnvelopesUseCase,
   submitEnvelopeUseCase,
@@ -28,13 +29,16 @@ import {
 const EnvelopePage = () => {
   const navigate = useNavigate();
   const { id, roundId } = useParams();
-  const { t } = useTranslation('competitions');
+  const { t, i18n } = useTranslation('competitions');
   const { user } = useAuth();
   const [vista, setVista] = useState(null);
   const [cargando, setCargando] = useState(true);
   const [fallo, setFallo] = useState(null);
   const [orden, setOrden] = useState([]);
   const [cambiando, setCambiando] = useState(false);
+  // Pedir que se abran en cuanto estén los dos, sin esperar a la hora. Hacen
+  // falta los DOS capitanes: con uno solo se espera (decidido el 23 sep)
+  const [sinEsperar, setSinEsperar] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const [abriendo, setAbriendo] = useState(false);
 
@@ -78,7 +82,11 @@ const EnvelopePage = () => {
     setEnviando(true);
     try {
       // Una fila por jugador: los formatos de parejas van en su propia pieza
-      await submitEnvelopeUseCase.execute(roundId, orden.map((userId) => [userId]));
+      await submitEnvelopeUseCase.execute(
+        roundId,
+        orden.map((userId) => [userId]),
+        sinEsperar
+      );
       customToast.success(t('envelope.submitted'));
       setCambiando(false);
       setOrden([]);
@@ -108,6 +116,11 @@ const EnvelopePage = () => {
   };
 
   const nombreDe = (userId) => vista?.playerNames?.[userId] || userId;
+
+  // Con el huso DEL CAMPO: `toLocaleString` la habría movido al del teléfono, y
+  // el plazo cae de madrugada, así que un dispositivo en otro huso enseñaba
+  // incluso otro día. Es el mismo caso que ya resolvió la anotación
+  const plazo = fechaYHoraDelCampo(vista?.revealScheduledAt, i18n.language);
 
   if (cargando) return <FullScreenLoader />;
 
@@ -203,6 +216,14 @@ const EnvelopePage = () => {
             </ol>
             {/* Del rival solo si entregó, nunca lo que puso: verlo antes de
                 tiempo es el juego entero */}
+            {vista.mine.revealWhenBothReady && !vista.rivalWantsEarly && (
+              <p
+                data-testid="falta-que-lo-marque-el-rival"
+                className="rounded-lg bg-blue-50 p-2 text-sm text-blue-800"
+              >
+                {t('envelope.waitingForRivalToAgree')}
+              </p>
+            )}
             <p
               data-testid={vista.rivalSubmitted ? 'rival-entregado' : 'rival-pendiente'}
               className="flex items-center gap-2 rounded-lg bg-gray-100 p-2 text-sm text-gray-700"
@@ -216,6 +237,9 @@ const EnvelopePage = () => {
               onClick={() => {
                 setCambiando(true);
                 setOrden([]);
+                // Lo que ya pidió: si no, corregir la lista retiraría su
+                // petición de abrir sin esperar sin que nadie se lo diga
+                setSinEsperar(Boolean(vista?.mine?.revealWhenBothReady));
               }}
               className="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700"
             >
@@ -227,6 +251,11 @@ const EnvelopePage = () => {
         {!fallo && capitanea && !vista?.revealed && !entregado && (
           <div className="space-y-3">
             <p className="text-sm text-gray-600">{t('envelope.tapInOrder')}</p>
+            {plazo && (
+              <p data-testid="plazo" className="text-xs text-gray-500">
+                {t('envelope.deadline', { when: plazo })}
+              </p>
+            )}
             <ul className="divide-y divide-gray-100 rounded-xl border border-gray-200 bg-white">
               {jugadores.map((jugador) => {
                 const puesto = puestoDe(jugador.userId);
@@ -262,6 +291,19 @@ const EnvelopePage = () => {
                 );
               })}
             </ul>
+            {/* La casilla, junto al botón de entregar: es parte de la entrega,
+                no un ajuste aparte */}
+            <label className="flex items-start gap-2 text-sm text-gray-700">
+              <input
+                type="checkbox"
+                data-testid="sin-esperar"
+                checked={sinEsperar}
+                onChange={(e) => setSinEsperar(e.target.checked)}
+                className="mt-0.5 h-4 w-4 shrink-0 rounded border-gray-300 text-green-600"
+              />
+              <span>{t('envelope.revealWhenBothReady')}</span>
+            </label>
+
             <div className="flex gap-2">
               {vista?.mine?.submitted && (
                 <button

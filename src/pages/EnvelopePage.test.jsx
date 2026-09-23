@@ -59,6 +59,8 @@ const vista = (extra = {}) => ({
   rivalSubmitted: false,
   matchups: [],
   canReveal: false,
+  rivalWantsEarly: false,
+  revealScheduledAt: '2030-06-01T00:00:00+02:00',
   myPlayers: JUGADORES,
   playerNames: { ana: 'Ana Alba', bea: 'Bea Blanco', carla: 'Carla Cruz', dani: 'Dani Díaz' },
   ...extra,
@@ -120,7 +122,8 @@ describe('EnvelopePage · el sobre del capitán (FE #655)', () => {
     fireEvent.click(screen.getByTestId('entregar-sobre'));
 
     await waitFor(() =>
-      expect(mockEntregar).toHaveBeenCalledWith('ronda-1', [['bea'], ['ana']])
+      // Sin marcar la casilla: se espera a la hora
+      expect(mockEntregar).toHaveBeenCalledWith('ronda-1', [['bea'], ['ana']], false)
     );
   });
 
@@ -341,6 +344,169 @@ describe('EnvelopePage · el sobre del capitán (FE #655)', () => {
     pintar();
 
     expect(await screen.findByTestId('abrir-sobres')).toBeInTheDocument();
+  });
+
+  it('V19: se puede pedir que no esperen a la hora, y va apagado por defecto', async () => {
+    pintar();
+    const casilla = await screen.findByTestId('sin-esperar');
+
+    expect(casilla).not.toBeChecked();
+    fireEvent.click(casilla);
+    expect(casilla).toBeChecked();
+  });
+
+  it('V20: y al entregar se manda lo que el capitán marcó', async () => {
+    pintar();
+    fireEvent.click(await screen.findByTestId('sin-esperar'));
+    for (const j of ['bea', 'ana']) fireEvent.click(screen.getByTestId(`jugador-${j}`));
+
+    fireEvent.click(screen.getByTestId('entregar-sobre'));
+
+    await waitFor(() =>
+      expect(mockEntregar).toHaveBeenCalledWith('ronda-1', [['bea'], ['ana']], true)
+    );
+  });
+
+  it('V21: entregado, se dice si el rival también lo pidió', async () => {
+    // Para que el capitán sepa si solo falta que lo marque el otro
+    mockVer.mockResolvedValue(
+      vista({
+        teamASubmitted: true,
+        rivalSubmitted: true,
+        rivalWantsEarly: false,
+        mine: {
+          team: 'A',
+          entries: [['bea'], ['ana']],
+          submitted: true,
+          automatic: false,
+          revealWhenBothReady: true,
+        },
+      })
+    );
+    pintar();
+
+    expect(await screen.findByTestId('falta-que-lo-marque-el-rival')).toBeInTheDocument();
+  });
+
+  it('V22: y cuando los dos lo han pedido no se anuncia que falte nadie', async () => {
+    mockVer.mockResolvedValue(
+      vista({
+        teamASubmitted: true,
+        rivalSubmitted: true,
+        rivalWantsEarly: true,
+        mine: {
+          team: 'A',
+          entries: [['bea'], ['ana']],
+          submitted: true,
+          automatic: false,
+          revealWhenBothReady: true,
+        },
+      })
+    );
+    pintar();
+
+    await screen.findByTestId('sobre-entregado');
+    expect(screen.queryByTestId('falta-que-lo-marque-el-rival')).not.toBeInTheDocument();
+  });
+
+  it('V23: y se dice a qué hora se abren solos, que es el plazo', async () => {
+    pintar();
+
+    expect(await screen.findByTestId('plazo')).toBeInTheDocument();
+  });
+
+  it('V24: al cambiar el orden, la casilla conserva lo que el capitán pidió', async () => {
+    // El servidor reescribe el flag en CADA entrega: si la casilla sale
+    // apagada, corregir la lista retira la petición sin que nadie lo diga, un
+    // segundo después de leer «tú has pedido abrirlos sin esperar»
+    mockVer.mockResolvedValue(
+      vista({
+        teamASubmitted: true,
+        mine: {
+          team: 'A',
+          entries: [['bea'], ['ana']],
+          submitted: true,
+          automatic: false,
+          revealWhenBothReady: true,
+        },
+      })
+    );
+    pintar();
+
+    fireEvent.click(await screen.findByTestId('cambiar-sobre'));
+
+    expect(await screen.findByTestId('sin-esperar')).toBeChecked();
+  });
+
+  it('V25: y al volver a entregar se manda esa misma petición', async () => {
+    mockVer.mockResolvedValue(
+      vista({
+        teamASubmitted: true,
+        mine: {
+          team: 'A',
+          entries: [['bea'], ['ana']],
+          submitted: true,
+          automatic: false,
+          revealWhenBothReady: true,
+        },
+      })
+    );
+    pintar();
+    fireEvent.click(await screen.findByTestId('cambiar-sobre'));
+    for (const j of ['ana', 'bea']) fireEvent.click(await screen.findByTestId(`jugador-${j}`));
+
+    fireEvent.click(screen.getByTestId('entregar-sobre'));
+
+    await waitFor(() =>
+      expect(mockEntregar).toHaveBeenCalledWith('ronda-1', [['ana'], ['bea']], true)
+    );
+  });
+
+  it('V24: al cambiar el orden, la casilla conserva lo que el capitán pidió', async () => {
+    // El servidor reescribe el flag en CADA entrega: si la casilla sale
+    // apagada, corregir la lista retira la petición sin que nadie lo diga, un
+    // segundo después de leer «tú has pedido abrirlos sin esperar»
+    mockVer.mockResolvedValue(
+      vista({
+        teamASubmitted: true,
+        mine: {
+          team: 'A',
+          entries: [['bea'], ['ana']],
+          submitted: true,
+          automatic: false,
+          revealWhenBothReady: true,
+        },
+      })
+    );
+    pintar();
+
+    fireEvent.click(await screen.findByTestId('cambiar-sobre'));
+
+    expect(await screen.findByTestId('sin-esperar')).toBeChecked();
+  });
+
+  it('V25: y al volver a entregar se manda esa misma petición', async () => {
+    mockVer.mockResolvedValue(
+      vista({
+        teamASubmitted: true,
+        mine: {
+          team: 'A',
+          entries: [['bea'], ['ana']],
+          submitted: true,
+          automatic: false,
+          revealWhenBothReady: true,
+        },
+      })
+    );
+    pintar();
+    fireEvent.click(await screen.findByTestId('cambiar-sobre'));
+    for (const j of ['ana', 'bea']) fireEvent.click(await screen.findByTestId(`jugador-${j}`));
+
+    fireEvent.click(screen.getByTestId('entregar-sobre'));
+
+    await waitFor(() =>
+      expect(mockEntregar).toHaveBeenCalledWith('ronda-1', [['ana'], ['bea']], true)
+    );
   });
 
   it('V13: un fallo al entregar se cuenta y el orden no se pierde', async () => {

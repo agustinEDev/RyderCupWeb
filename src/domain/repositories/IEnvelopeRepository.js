@@ -11,9 +11,10 @@ class IEnvelopeRepository {
    * Entrega —o corrige— el sobre del capitan.
    * @param {string} roundId
    * @param {Array<Array<string>>} entries - Las filas, en orden
+   * @param {boolean} [revealWhenBothReady] - Pide abrirlos en cuanto esten los dos
    * @returns {Promise<Object>} El sobre tal como queda
    */
-  async submitEnvelope(roundId, entries) {
+  async submitEnvelope(roundId, entries, revealWhenBothReady) {
     throw new Error('Method not implemented');
   }
 

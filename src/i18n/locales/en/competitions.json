@@ -409,7 +409,10 @@
     "filledByTheApp": "One envelope was filled in by the app: that captain never handed his in",
     "onlyCaptains": "Envelopes are handed in by the captains. The matchups show up here once they are opened.",
     "open": "Go to your envelope",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "revealWhenBothReady": "Open them as soon as we have both handed in, without waiting for the hour",
+    "waitingForRivalToAgree": "You asked to open them early; the other captain has to tick it too.",
+    "deadline": "Deadline {{when}}. After that, whatever is missing the app fills in."
   },
   "draft": {
     "title": "Draft room",

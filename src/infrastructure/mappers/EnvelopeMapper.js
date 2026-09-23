@@ -21,6 +21,8 @@ class EnvelopeMapper {
       submitted: apiSobre.submitted,
       submittedAt: apiSobre.submitted_at ?? null,
       automatic: apiSobre.automatic,
+      // Si ese capitán pidió abrirlos en cuanto estén los dos
+      revealWhenBothReady: Boolean(apiSobre.reveal_when_both_ready),
     };
   }
 
@@ -39,6 +41,9 @@ class EnvelopeMapper {
       mine: EnvelopeMapper.toEnvelopeDTO(apiData.mine),
       rival: EnvelopeMapper.toEnvelopeDTO(apiData.rival),
       rivalSubmitted: Boolean(apiData.rival_submitted),
+      rivalWantsEarly: Boolean(apiData.rival_wants_early),
+      // El plazo: a esa hora se abren solos y lo que falte lo rellena la app
+      revealScheduledAt: apiData.reveal_scheduled_at ?? null,
       // Quién puede abrirlos lo decide el servidor: la regla —el organizador
       // siempre, un capitán solo con los dos dentro— vive en un sitio
       canReveal: Boolean(apiData.can_reveal),

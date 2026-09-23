@@ -24,7 +24,13 @@ describe('Casos de uso de los sobres', () => {
   it('U1: entregar manda la sesión y las filas, en ese orden', async () => {
     await new SubmitEnvelopeUseCase({ envelopeRepository }).execute('r1', [['ana']]);
 
-    expect(envelopeRepository.submitEnvelope).toHaveBeenCalledWith('r1', [['ana']]);
+    expect(envelopeRepository.submitEnvelope).toHaveBeenCalledWith('r1', [['ana']], false);
+  });
+
+  it('U1b: y pasa la casilla de abrirlos en cuanto estén los dos', async () => {
+    await new SubmitEnvelopeUseCase({ envelopeRepository }).execute('r1', [['ana']], true);
+
+    expect(envelopeRepository.submitEnvelope).toHaveBeenCalledWith('r1', [['ana']], true);
   });
 
   it('U2: sin sesión no se llama a nadie', async () => {
