@@ -99,6 +99,16 @@ vi.mock('../utils/toast', () => ({
 
 import customToast from '../utils/toast';
 
+
+// Desde FE #705 la ficha ofrece UNA acción y el resto vive en el menú «···»:
+// para verlas hay que abrirlo. Tolerante a que no exista, porque algunos casos
+// comprueban justo que la acción NO se ofrece
+const abrirMenuDeAcciones = () => {
+  for (const boton of screen.queryAllByTestId('menu-acciones')) {
+    if (boton.getAttribute('aria-expanded') === 'false') fireEvent.click(boton);
+  }
+};
+
 const renderPage = () => {
   return render(
     <MemoryRouter initialEntries={['/competitions/comp-1']}>
@@ -296,7 +306,10 @@ describe('CompetitionDetail - reabrir torneo completado', () => {
 
     renderPage();
 
-    expect(await screen.findByText('detail.actions.revert-to-in-progress')).toBeInTheDocument();
+    await screen.findByTestId('menu-acciones');
+    abrirMenuDeAcciones();
+    abrirMenuDeAcciones();
+    expect(screen.getByText('detail.actions.revert-to-in-progress')).toBeInTheDocument();
   });
 
   it('no muestra el botón de reabrir torneo si el estado no es COMPLETED', async () => {
@@ -312,6 +325,7 @@ describe('CompetitionDetail - reabrir torneo completado', () => {
     renderPage();
 
     await waitFor(() => expect(mockListEnrollments).toHaveBeenCalled());
+    abrirMenuDeAcciones();
     expect(screen.queryByText('detail.actions.revert-to-in-progress')).not.toBeInTheDocument();
   });
 
@@ -331,13 +345,15 @@ describe('CompetitionDetail - reabrir torneo completado', () => {
 
     renderPage();
 
-    const reopenButton = await screen.findByText('detail.actions.revert-to-in-progress');
-    fireEvent.click(reopenButton);
+    await screen.findByTestId('menu-acciones');
+    abrirMenuDeAcciones();
+    fireEvent.click(screen.getByText('detail.actions.revert-to-in-progress'));
 
     await waitFor(() => {
       expect(mockRevertToInProgress).toHaveBeenCalledWith('comp-1');
     });
     expect(customToast.success).toHaveBeenCalledWith('detail.success.revertedToInProgress');
+    abrirMenuDeAcciones();
     expect(screen.getByText('detail.actions.complete')).toBeInTheDocument();
   });
 });
@@ -547,7 +563,10 @@ describe('CompetitionDetail - invitar desde el borrador (FE #660)', () => {
 
     renderPage();
 
-    expect(await screen.findByText('detail.actions.manageInvitations')).toBeInTheDocument();
+    await screen.findByTestId('menu-acciones');
+    abrirMenuDeAcciones();
+    abrirMenuDeAcciones();
+    expect(screen.getByText('detail.actions.manageInvitations')).toBeInTheDocument();
   });
 
   it('y se avisa de lo que hace, porque no es evidente', async () => {
@@ -564,6 +583,7 @@ describe('CompetitionDetail - invitar desde el borrador (FE #660)', () => {
     renderPage();
 
     await screen.findByText('Summer Cup');
+    abrirMenuDeAcciones();
     expect(screen.queryByText('detail.actions.manageInvitations')).not.toBeInTheDocument();
   });
 
@@ -574,7 +594,10 @@ describe('CompetitionDetail - invitar desde el borrador (FE #660)', () => {
 
     renderPage();
 
-    expect(await screen.findByText('detail.actions.edit')).toBeInTheDocument();
+    await screen.findByTestId('menu-acciones');
+    abrirMenuDeAcciones();
+    abrirMenuDeAcciones();
+    expect(screen.getByText('detail.actions.edit')).toBeInTheDocument();
   });
 
   it('borrar no se ofrece si el servidor no lo permite, sea cual sea el estado', async () => {
@@ -585,6 +608,7 @@ describe('CompetitionDetail - invitar desde el borrador (FE #660)', () => {
     renderPage();
 
     await screen.findByText('Summer Cup');
+    abrirMenuDeAcciones();
     expect(screen.queryByText('detail.actions.delete')).not.toBeInTheDocument();
   });
 
@@ -594,6 +618,7 @@ describe('CompetitionDetail - invitar desde el borrador (FE #660)', () => {
     renderPage();
 
     await screen.findByText('Summer Cup');
+    abrirMenuDeAcciones();
     expect(screen.queryByText('detail.actions.edit')).not.toBeInTheDocument();
   });
 });
@@ -803,7 +828,12 @@ describe('CompetitionDetail - borrar con confirmación (FE #667)', () => {
         team: null,
       }))
     );
-  const botonEliminar = () => screen.findByRole('button', { name: /detail\.actions\.delete/ });
+  // Eliminar vive en el menú «···», al final y separado (FE #705)
+  const botonEliminar = async () => {
+    await screen.findByTestId('menu-acciones');
+    abrirMenuDeAcciones();
+    return screen.getByTestId('accion-delete');
+  };
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -922,6 +952,7 @@ describe('CompetitionDetail - borrar con confirmación (FE #667)', () => {
     expect(screen.queryByRole('button', { name: /detail\.actions\.delete/ })).not.toBeInTheDocument();
 
     ficha({ status: 'CANCELLED', canDelete: true });
+    abrirMenuDeAcciones();
     fireEvent.click(screen.getByText('detail.actions.cancel'));
 
     expect(await botonEliminar()).toBeInTheDocument();
@@ -936,6 +967,7 @@ describe('CompetitionDetail - borrar con confirmación (FE #667)', () => {
     expect(await botonEliminar()).toBeInTheDocument();
 
     mockGetCompetitionDetail.mockRejectedValue(new TypeError('Sin conexión'));
+    abrirMenuDeAcciones();
     fireEvent.click(screen.getByText('detail.actions.cancel'));
 
     await waitFor(() =>
@@ -971,6 +1003,7 @@ describe('CompetitionDetail - borrar con confirmación (FE #667)', () => {
       id: 'comp-1', name: 'Summer Cup', status: 'CLOSED', creatorId: 'creator-1',
       maxPlayers: 20, countries: [], canDelete: true,
     });
+    abrirMenuDeAcciones();
     fireEvent.click(screen.getByText('detail.actions.cancel'));
 
     await waitFor(() => expect(mockGetCompetitionDetail).toHaveBeenCalledTimes(2));

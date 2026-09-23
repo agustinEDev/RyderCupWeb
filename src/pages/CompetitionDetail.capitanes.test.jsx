@@ -112,8 +112,26 @@ const renderPage = () =>
     </MemoryRouter>
   );
 
+
+// Desde FE #705 la ficha ofrece UNA acción y el resto vive en el menú «···»:
+// para tocarlas hay que abrirlo primero. Tolerante a que no exista, porque
+// algunos casos comprueban justo que la acción NO se ofrece
+const abrirMenuDeAcciones = () => {
+  for (const boton of screen.queryAllByTestId('menu-acciones')) {
+    if (boton.getAttribute('aria-expanded') === 'false') fireEvent.click(boton);
+  }
+};
+
 const abrirModal = async (boton = 'detail.actions.nameCaptains') => {
-  fireEvent.click(await screen.findByRole('button', { name: boton }));
+  // La acción puede ser la principal o vivir en el menú: se espera a que la
+  // ficha haya cargado y se abre el menú por si acaso
+  try {
+    await screen.findByTestId('menu-acciones');
+  } catch {
+    // Una ficha sin menú: la acción estará suelta, o no estará
+  }
+  abrirMenuDeAcciones();
+  fireEvent.click(await screen.findByText(boton));
   return screen.findByRole('dialog');
 };
 
@@ -144,8 +162,12 @@ describe('CompetitionDetail · nombrar a los capitanes (FE #692)', () => {
   it('K1: con las inscripciones abiertas, «Nombrar capitanes» sustituye a «Cerrar inscripciones»', async () => {
     renderPage();
 
-    expect(await screen.findByRole('button', { name: 'detail.actions.nameCaptains' })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'detail.actions.close-enrollments' })).not.toBeInTheDocument();
+    await screen.findByTestId('menu-acciones');
+    abrirMenuDeAcciones();
+    abrirMenuDeAcciones();
+    expect(screen.getByText('detail.actions.nameCaptains')).toBeInTheDocument();
+    abrirMenuDeAcciones();
+    expect(screen.queryByText('detail.actions.close-enrollments')).not.toBeInTheDocument();
   });
 
   it('K2: quien no organiza no lo ve', async () => {
@@ -154,7 +176,8 @@ describe('CompetitionDetail · nombrar a los capitanes (FE #692)', () => {
     renderPage();
 
     await screen.findByText('Ryder de los amigos');
-    expect(screen.queryByRole('button', { name: 'detail.actions.nameCaptains' })).not.toBeInTheDocument();
+    abrirMenuDeAcciones();
+    expect(screen.queryByText('detail.actions.nameCaptains')).not.toBeInTheDocument();
   });
 
   it('K3: el modal ofrece a los aprobados, el organizador incluido, con el nombre de cada equipo', async () => {
@@ -211,8 +234,12 @@ describe('CompetitionDetail · nombrar a los capitanes (FE #692)', () => {
     );
     expect(customToast.success).toHaveBeenCalledWith('detail.success.captainsNamed');
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
-    expect(await screen.findByRole('button', { name: 'detail.actions.changeCaptains' })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'detail.actions.nameCaptains' })).not.toBeInTheDocument();
+    await screen.findByTestId('menu-acciones');
+    abrirMenuDeAcciones();
+    abrirMenuDeAcciones();
+    expect(screen.getByText('detail.actions.changeCaptains')).toBeInTheDocument();
+    abrirMenuDeAcciones();
+    expect(screen.queryByText('detail.actions.nameCaptains')).not.toBeInTheDocument();
     // Y la lista marca a las recién nombradas, sin esperar a recargar
     expect(screen.getByText('detail.captains.captainOf_Europa')).toBeInTheDocument();
     expect(screen.getByText('detail.captains.captainOf_América')).toBeInTheDocument();
@@ -313,7 +340,8 @@ describe('CompetitionDetail · nombrar a los capitanes (FE #692)', () => {
     await waitFor(() => expect(customToast.error).toHaveBeenCalledWith('assign failed'));
     expect(customToast.success).toHaveBeenCalledWith('detail.success.captainsNamed');
     expect(await screen.findByText('detail.actions.start-competition')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'detail.actions.changeCaptains' })).toBeInTheDocument();
+    abrirMenuDeAcciones();
+    expect(screen.getByText('detail.actions.changeCaptains')).toBeInTheDocument();
   });
 
   it('K9: si el servidor lo rechaza, enseña su motivo y el modal sigue abierto', async () => {
@@ -331,7 +359,8 @@ describe('CompetitionDetail · nombrar a los capitanes (FE #692)', () => {
       expect(customToast.error).toHaveBeenCalledWith('Los equipos ya estan repartidos')
     );
     expect(screen.getByRole('dialog')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'detail.actions.nameCaptains' })).toBeInTheDocument();
+    abrirMenuDeAcciones();
+    expect(screen.getByText('detail.actions.nameCaptains')).toBeInTheDocument();
   });
 
   it('K10: sin conexión no dice «Failed to fetch»', async () => {
@@ -412,8 +441,12 @@ describe('CompetitionDetail · nombrar a los capitanes (FE #692)', () => {
     );
     renderPage();
 
-    expect(await screen.findByRole('button', { name: 'detail.actions.close-enrollments' })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'detail.actions.nameCaptains' })).not.toBeInTheDocument();
+    await screen.findByTestId('menu-acciones');
+    abrirMenuDeAcciones();
+    abrirMenuDeAcciones();
+    expect(screen.getByText('detail.actions.close-enrollments')).toBeInTheDocument();
+    abrirMenuDeAcciones();
+    expect(screen.queryByText('detail.actions.nameCaptains')).not.toBeInTheDocument();
   });
 
   it('K14: cerrada con equipos no ofrece cambiar capitanes, que fallaría siempre', async () => {
@@ -426,8 +459,11 @@ describe('CompetitionDetail · nombrar a los capitanes (FE #692)', () => {
     );
     renderPage();
 
-    await screen.findByRole('button', { name: 'detail.actions.start-competition' });
-    expect(screen.queryByRole('button', { name: 'detail.actions.changeCaptains' })).not.toBeInTheDocument();
+    await screen.findByTestId('menu-acciones');
+    abrirMenuDeAcciones();
+    // Iniciar la competición sí se ofrece; cambiar capitanes ya no
+    expect(screen.getByText('detail.actions.start-competition')).toBeInTheDocument();
+    expect(screen.queryByText('detail.actions.changeCaptains')).not.toBeInTheDocument();
   });
 
   it('K15: si el reparto automático sale bien, «Cambiar capitanes» desaparece', async () => {
@@ -440,8 +476,11 @@ describe('CompetitionDetail · nombrar a los capitanes (FE #692)', () => {
     confirmar(modal);
 
     await waitFor(() => expect(customToast.success).toHaveBeenCalledWith('detail.success.teamsAutoAssigned'));
-    await screen.findByRole('button', { name: 'detail.actions.start-competition' });
-    expect(screen.queryByRole('button', { name: 'detail.actions.changeCaptains' })).not.toBeInTheDocument();
+    await screen.findByTestId('menu-acciones');
+    abrirMenuDeAcciones();
+    // Iniciar la competición sí se ofrece; cambiar capitanes ya no
+    expect(screen.getByText('detail.actions.start-competition')).toBeInTheDocument();
+    expect(screen.queryByText('detail.actions.changeCaptains')).not.toBeInTheDocument();
   });
 
   it('K16: si la lista de inscritos no cargó, el modal lo dice y no deja confirmar', async () => {

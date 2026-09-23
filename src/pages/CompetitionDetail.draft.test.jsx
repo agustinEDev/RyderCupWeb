@@ -101,6 +101,7 @@ const competicion = (extra = {}) => ({
   ...extra,
 });
 
+
 const renderPage = () =>
   render(
     <MemoryRouter initialEntries={['/competitions/comp-1']}>
