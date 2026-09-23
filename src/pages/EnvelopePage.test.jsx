@@ -309,6 +309,40 @@ describe('EnvelopePage · el sobre del capitán (FE #655)', () => {
     expect(screen.queryByTestId('abrir-sobres')).not.toBeInTheDocument();
   });
 
+  it('V16: al capitán que no ha entregado no se le ofrece abrir por delante', async () => {
+    // Visto en el Kind: «Abrir los sobres» salía arriba del todo y en verde,
+    // ANTES de entregar. Un toque ahí rellena los dos sobres automáticamente y
+    // tira por la borda lo que el capitán venía a hacer
+    mockVer.mockResolvedValue(vista({ canReveal: true }));
+    pintar();
+
+    await screen.findByTestId('entregar-sobre');
+    expect(screen.queryByTestId('abrir-sobres')).not.toBeInTheDocument();
+  });
+
+  it('V17: entregado el suyo, ya sí puede abrirlos', async () => {
+    mockVer.mockResolvedValue(
+      vista({
+        teamASubmitted: true,
+        rivalSubmitted: true,
+        canReveal: true,
+        mine: { team: 'A', entries: [['bea'], ['ana']], submitted: true, automatic: false },
+      })
+    );
+    pintar();
+
+    expect(await screen.findByTestId('abrir-sobres')).toBeInTheDocument();
+  });
+
+  it('V18: y quien solo organiza lo tiene desde el principio', async () => {
+    // No capitanea, así que no tiene sobre que entregar: abrir es su único
+    // gesto aquí, y es la salida cuando un capitán no aparece
+    mockVer.mockResolvedValue(vista({ myPlayers: [], canReveal: true }));
+    pintar();
+
+    expect(await screen.findByTestId('abrir-sobres')).toBeInTheDocument();
+  });
+
   it('V13: un fallo al entregar se cuenta y el orden no se pierde', async () => {
     mockEntregar.mockRejectedValue(new Error('Faltan jugadores del equipo'));
     pintar();
