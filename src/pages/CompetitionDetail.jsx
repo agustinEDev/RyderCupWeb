@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { useNavigate, useParams, useLocation } from 'react-router';
+import { useNavigate, useParams, useLocation, Link } from 'react-router';
 import { motion } from 'framer-motion';
-import { Users, Calendar, CalendarClock, MapPin, Settings, ArrowLeft, Edit, Trash2, Play, CheckCircle, XCircle, AlertCircle, UserPlus, Shield, Mail, BarChart3, Undo2, Crown, Pause } from 'lucide-react';
+import { Users, Calendar, CalendarClock, MapPin, Settings, ArrowLeft, Edit, Trash2, Play, CheckCircle, XCircle, AlertCircle, UserPlus, Shield, Mail, BarChart3, Undo2, Crown, Pause, Swords } from 'lucide-react';
 import customToast from '../utils/toast';
 import ConfirmModal from '../components/modals/ConfirmModal';
 import NameCaptainsModal from '../components/competition/NameCaptainsModal';
@@ -642,6 +642,26 @@ const CompetitionDetail = () => {
                     </div>
                   </div>
                 </div>
+
+                {/* La sala de draft, para TODO el grupo y no solo para los dos
+                    capitanes: la gracia es que la ceremonia se vea en directo
+                    desde el móvil de cada uno (FE #653). Se ofrece cuando ya hay
+                    a quién elegir y todavía no hay equipos: después la sala ya
+                    terminó, y los equipos se ven en la agenda */}
+                {competition.setupMode === 'RYDER_CUP' &&
+                  competition.status === 'CLOSED' &&
+                  !competition.teamsAssigned &&
+                  competition.captains?.teamA &&
+                  competition.captains?.teamB && (
+                  <Link
+                    to={`/competitions/${competition.id}/draft`}
+                    data-testid="ir-a-la-sala-de-draft"
+                    className="mb-4 flex items-center justify-center gap-2 rounded-lg bg-green-600 px-4 py-3 font-semibold text-white shadow-md transition-colors hover:bg-green-700"
+                  >
+                    <Swords className="w-4 h-4" />
+                    <span>{t('draft.open')}</span>
+                  </Link>
+                )}
 
                 {/* Quick Stats */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

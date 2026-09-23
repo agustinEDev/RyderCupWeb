@@ -84,10 +84,14 @@ import GetCompetitionGolfCoursesUseCase from '../application/use_cases/competiti
 
 // Schedule Use Cases (v2.1.0 - Sprint 2)
 import ApiScheduleRepository from '../infrastructure/repositories/ApiScheduleRepository';
-import ApiEnvelopeRepository from '../infrastructure/repositories/ApiEnvelopeRepository';
+import ApiDraftRepository from '../infrastructure/repositories/ApiDraftRepository';
 import GetScheduleUseCase from '../application/use_cases/schedule/GetScheduleUseCase';
 import ConfigureScheduleUseCase from '../application/use_cases/schedule/ConfigureScheduleUseCase';
 import AssignTeamsUseCase from '../application/use_cases/schedule/AssignTeamsUseCase';
+import StartDraftUseCase from '../application/use_cases/draft/StartDraftUseCase';
+import GetDraftUseCase from '../application/use_cases/draft/GetDraftUseCase';
+import MakeDraftPickUseCase from '../application/use_cases/draft/MakeDraftPickUseCase';
+import ApiEnvelopeRepository from '../infrastructure/repositories/ApiEnvelopeRepository';
 import SubmitEnvelopeUseCase from '../application/use_cases/envelope/SubmitEnvelopeUseCase';
 import GetEnvelopesUseCase from '../application/use_cases/envelope/GetEnvelopesUseCase';
 import RevealEnvelopesUseCase from '../application/use_cases/envelope/RevealEnvelopesUseCase';
@@ -195,6 +199,7 @@ const apiDeviceRepository = new ApiDeviceRepository();
 const apiGolfCourseRepository = new ApiGolfCourseRepository();
 const apiAdminRepository = new ApiAdminRepository();
 const apiScheduleRepository = new ApiScheduleRepository();
+const apiDraftRepository = new ApiDraftRepository();
 const apiEnvelopeRepository = new ApiEnvelopeRepository();
 const apiSupportRepository = new ApiSupportRepository();
 const apiCountryRepository = new ApiCountryRepository();
@@ -264,6 +269,10 @@ const updateMatchStatusUseCase = new UpdateMatchStatusUseCase({ scheduleReposito
 const declareWalkoverUseCase = new DeclareWalkoverUseCase({ scheduleRepository: apiScheduleRepository });
 const reassignPlayersUseCase = new ReassignPlayersUseCase({ scheduleRepository: apiScheduleRepository });
 
+// Sala de draft (FE #653)
+const startDraftUseCase = new StartDraftUseCase({ draftRepository: apiDraftRepository });
+const getDraftUseCase = new GetDraftUseCase({ draftRepository: apiDraftRepository });
+const makeDraftPickUseCase = new MakeDraftPickUseCase({ draftRepository: apiDraftRepository });
 // Los sobres de los capitanes (FE #655)
 const submitEnvelopeUseCase = new SubmitEnvelopeUseCase({ envelopeRepository: apiEnvelopeRepository });
 const getEnvelopesUseCase = new GetEnvelopesUseCase({ envelopeRepository: apiEnvelopeRepository });
@@ -461,6 +470,9 @@ export {
   getScheduleUseCase,
   configureScheduleUseCase,
   assignTeamsUseCase,
+  startDraftUseCase,
+  getDraftUseCase,
+  makeDraftPickUseCase,
   submitEnvelopeUseCase,
   getEnvelopesUseCase,
   revealEnvelopesUseCase,
