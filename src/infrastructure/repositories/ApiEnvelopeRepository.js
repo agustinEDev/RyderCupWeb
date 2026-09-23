@@ -14,10 +14,10 @@ class ApiEnvelopeRepository extends IEnvelopeRepository {
    * El equipo no se manda: lo decide el servidor por quién firma la petición,
    * que si no se podría entregar el sobre del rival.
    */
-  async submitEnvelope(roundId, entries) {
+  async submitEnvelope(roundId, entries, revealWhenBothReady = false) {
     const data = await apiRequest(`/api/v1/competitions/rounds/${roundId}/envelope`, {
       method: 'PUT',
-      body: JSON.stringify({ entries }),
+      body: JSON.stringify({ entries, reveal_when_both_ready: revealWhenBothReady }),
     });
     return EnvelopeMapper.toEnvelopeDTO(data);
   }

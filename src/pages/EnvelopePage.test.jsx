@@ -59,6 +59,8 @@ const vista = (extra = {}) => ({
   rivalSubmitted: false,
   matchups: [],
   canReveal: false,
+  rivalWantsEarly: false,
+  revealScheduledAt: '2030-06-01T00:00:00+02:00',
   myPlayers: JUGADORES,
   playerNames: { ana: 'Ana Alba', bea: 'Bea Blanco', carla: 'Carla Cruz', dani: 'Dani Díaz' },
   ...extra,
@@ -120,7 +122,8 @@ describe('EnvelopePage · el sobre del capitán (FE #655)', () => {
     fireEvent.click(screen.getByTestId('entregar-sobre'));
 
     await waitFor(() =>
-      expect(mockEntregar).toHaveBeenCalledWith('ronda-1', [['bea'], ['ana']])
+      // Sin marcar la casilla: se espera a la hora
+      expect(mockEntregar).toHaveBeenCalledWith('ronda-1', [['bea'], ['ana']], false)
     );
   });
 
@@ -307,6 +310,75 @@ describe('EnvelopePage · el sobre del capitán (FE #655)', () => {
     fireEvent.click(screen.getByTestId('cambiar-sobre'));
 
     expect(screen.queryByTestId('abrir-sobres')).not.toBeInTheDocument();
+  });
+
+  it('V19: se puede pedir que no esperen a la hora, y va apagado por defecto', async () => {
+    pintar();
+    const casilla = await screen.findByTestId('sin-esperar');
+
+    expect(casilla).not.toBeChecked();
+    fireEvent.click(casilla);
+    expect(casilla).toBeChecked();
+  });
+
+  it('V20: y al entregar se manda lo que el capitán marcó', async () => {
+    pintar();
+    fireEvent.click(await screen.findByTestId('sin-esperar'));
+    for (const j of ['bea', 'ana']) fireEvent.click(screen.getByTestId(`jugador-${j}`));
+
+    fireEvent.click(screen.getByTestId('entregar-sobre'));
+
+    await waitFor(() =>
+      expect(mockEntregar).toHaveBeenCalledWith('ronda-1', [['bea'], ['ana']], true)
+    );
+  });
+
+  it('V21: entregado, se dice si el rival también lo pidió', async () => {
+    // Para que el capitán sepa si solo falta que lo marque el otro
+    mockVer.mockResolvedValue(
+      vista({
+        teamASubmitted: true,
+        rivalSubmitted: true,
+        rivalWantsEarly: false,
+        mine: {
+          team: 'A',
+          entries: [['bea'], ['ana']],
+          submitted: true,
+          automatic: false,
+          revealWhenBothReady: true,
+        },
+      })
+    );
+    pintar();
+
+    expect(await screen.findByTestId('falta-que-lo-marque-el-rival')).toBeInTheDocument();
+  });
+
+  it('V22: y cuando los dos lo han pedido no se anuncia que falte nadie', async () => {
+    mockVer.mockResolvedValue(
+      vista({
+        teamASubmitted: true,
+        rivalSubmitted: true,
+        rivalWantsEarly: true,
+        mine: {
+          team: 'A',
+          entries: [['bea'], ['ana']],
+          submitted: true,
+          automatic: false,
+          revealWhenBothReady: true,
+        },
+      })
+    );
+    pintar();
+
+    await screen.findByTestId('sobre-entregado');
+    expect(screen.queryByTestId('falta-que-lo-marque-el-rival')).not.toBeInTheDocument();
+  });
+
+  it('V23: y se dice a qué hora se abren solos, que es el plazo', async () => {
+    pintar();
+
+    expect(await screen.findByTestId('plazo')).toBeInTheDocument();
   });
 
   it('V13: un fallo al entregar se cuenta y el orden no se pierde', async () => {

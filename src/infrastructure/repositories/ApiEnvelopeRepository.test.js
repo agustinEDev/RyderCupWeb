@@ -25,9 +25,25 @@ describe('ApiEnvelopeRepository', () => {
 
     expect(apiRequest).toHaveBeenCalledWith('/api/v1/competitions/rounds/r1/envelope', {
       method: 'PUT',
-      body: JSON.stringify({ entries: [['ana']] }),
+      body: JSON.stringify({ entries: [['ana']], reveal_when_both_ready: false }),
     });
     expect(sobre.entries).toEqual([['ana']]);
+  });
+
+  it('S1b: y lleva la casilla de abrirlos en cuanto estén los dos', async () => {
+    apiRequest.mockResolvedValue({ round_id: 'r1', team: 'A', entries: [['ana']] });
+
+    await repo.submitEnvelope('r1', [['ana']], true);
+
+    expect(JSON.parse(apiRequest.mock.calls[0][1].body).reveal_when_both_ready).toBe(true);
+  });
+
+  it('S1c: y por defecto va apagada: se espera a la hora', async () => {
+    apiRequest.mockResolvedValue({ round_id: 'r1', team: 'A', entries: [['ana']] });
+
+    await repo.submitEnvelope('r1', [['ana']]);
+
+    expect(JSON.parse(apiRequest.mock.calls[0][1].body).reveal_when_both_ready).toBe(false);
   });
 
   it('S2: el equipo NO se manda: lo decide el servidor por quién firma', async () => {

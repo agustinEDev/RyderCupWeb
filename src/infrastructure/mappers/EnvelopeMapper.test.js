@@ -21,9 +21,12 @@ const RESPUESTA = {
     submitted: true,
     submitted_at: '2030-06-01T10:00:00',
     automatic: false,
+    reveal_when_both_ready: true,
   },
   rival: null,
   rival_submitted: false,
+  rival_wants_early: false,
+  reveal_scheduled_at: '2026-06-01T00:00:00+02:00',
   can_reveal: false,
   matchups: [],
   my_players: [
@@ -51,9 +54,12 @@ describe('EnvelopeMapper', () => {
         submitted: true,
         submittedAt: '2030-06-01T10:00:00',
         automatic: false,
+        revealWhenBothReady: true,
       },
       rival: null,
       rivalSubmitted: false,
+      rivalWantsEarly: false,
+      revealScheduledAt: '2026-06-01T00:00:00+02:00',
       canReveal: false,
       matchups: [],
       myPlayers: [
@@ -81,6 +87,24 @@ describe('EnvelopeMapper', () => {
     const vista = EnvelopeMapper.toEnvelopesViewDTO({ ...RESPUESTA, can_reveal: true });
 
     expect(vista.canReveal).toBe(true);
+  });
+
+  it('E1d: y lo que cada capitán pidió sobre adelantar la apertura', () => {
+    // Con que lo marquen los dos, los sobres se abren sin esperar a la hora:
+    // la pantalla necesita saber quién lo ha pedido para poder decirlo
+    const vista = EnvelopeMapper.toEnvelopesViewDTO({
+      ...RESPUESTA,
+      rival_wants_early: true,
+    });
+
+    expect(vista.mine.revealWhenBothReady).toBe(true);
+    expect(vista.rivalWantsEarly).toBe(true);
+  });
+
+  it('E1e: y la hora a la que se abren solos, que es el plazo para entregar', () => {
+    const vista = EnvelopeMapper.toEnvelopesViewDTO(RESPUESTA);
+
+    expect(vista.revealScheduledAt).toBe('2026-06-01T00:00:00+02:00');
   });
 
   it('E2: los enfrentamientos abiertos llegan con las dos filas', () => {

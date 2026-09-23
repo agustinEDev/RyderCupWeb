@@ -409,7 +409,10 @@
     "filledByTheApp": "Un sobre lo rellenó la aplicación: ese capitán no entregó el suyo",
     "onlyCaptains": "Los sobres los entregan los capitanes. Aquí verás los enfrentamientos en cuanto se abran.",
     "open": "Ir a tu sobre",
-    "cancel": "Cancelar"
+    "cancel": "Cancelar",
+    "revealWhenBothReady": "Abrirlos en cuanto los dos hayamos entregado, sin esperar a la hora",
+    "waitingForRivalToAgree": "Tú has pedido abrirlos sin esperar; falta que el otro capitán lo marque también.",
+    "deadline": "Se abren solos el {{when}}: lo que falte lo pone la aplicación."
   },
   "draft": {
     "title": "Sala de draft",
