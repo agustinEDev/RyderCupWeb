@@ -17,6 +17,7 @@ const AssignTeamsModalContent = ({
   captains,
   hasTeams,
   currentTeams = null,
+  inscritosSinCargar = false,
   t,
 }) => {
   // Con los dos capitanes nombrados, cada uno queda fijo en su equipo (FE #692):
@@ -79,8 +80,13 @@ const AssignTeamsModalContent = ({
     (p) => !manualTeamA.includes(p.userId) && !manualTeamB.includes(p.userId)
   ).length;
 
+  // Sin la lista de inscritos, los equipos de ahora se filtrarían a nada y el
+  // reparto saldría vacío (CodeRabbit en la #720)
+  const noSePuedeReasignar = reasignando && inscritosSinCargar;
+
   const handleSubmit = (e) => {
     e.preventDefault();
+    if (noSePuedeReasignar) return;
 
     if (mode === 'automatic') {
       onConfirm({ mode: 'automatic' });
@@ -120,6 +126,11 @@ const AssignTeamsModalContent = ({
           {reasignando && (
             <p data-testid="reasignar-aviso" className="text-sm text-amber-700">
               {t('teams.replaceWarning')}
+            </p>
+          )}
+          {noSePuedeReasignar && (
+            <p data-testid="reasignar-sin-inscritos" className="text-sm text-red-700">
+              {t('teams.enrollmentsNotLoaded')}
             </p>
           )}
           {/* Con equipos ya repartidos el consejo cambia: ahí el servidor no
@@ -258,7 +269,10 @@ const AssignTeamsModalContent = ({
             <button
               type="submit"
               disabled={
-                isProcessing || faltaUnCapitan || (mode === 'manual' && sinEquipo > 0)
+                isProcessing ||
+                faltaUnCapitan ||
+                noSePuedeReasignar ||
+                (mode === 'manual' && sinEquipo > 0)
               }
               className="px-4 py-2 bg-primary text-white rounded-lg font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
             >

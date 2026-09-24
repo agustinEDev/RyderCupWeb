@@ -44,10 +44,11 @@ const RoundCard = ({
     status === 'PENDING_MATCHES' &&
     (!soloReintento || Boolean(round.matchGenerationBlock));
   const matches = round.matches || [];
-  // Solo los que tienen nombre: un id suelto no le dice nada a nadie
-  const descansan = (round.restingPlayerIds || [])
-    .map((id) => playerNameMap?.get?.(id))
-    .filter(Boolean);
+  // Todos cuentan: sin su nombre (inscripciones sin cargar) se dice «un
+  // jugador», que un id suelto no le dice nada a nadie (CodeRabbit en la #720)
+  const descansan = (round.restingPlayerIds || []).map(
+    (id) => playerNameMap?.get?.(id) || t('rounds.unknownPlayer')
+  );
 
   const golfCourseName = golfCourses.find(gc => gc.id === round.golfCourseId)?.name || round.golfCourseId;
 

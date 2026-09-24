@@ -107,4 +107,15 @@ describe('AssignTeamsModal · reasignar con equipos ya hechos (#710)', () => {
       expect(textos.teams.replaceWarning, idioma).toBeTruthy();
     }
   });
+
+  it('R7: con las inscripciones sin cargar no se reasigna: mandaría equipos vacíos (CodeRabbit)', () => {
+    const onConfirm = vi.fn();
+    pintar({ hasTeams: true, currentTeams: EQUIPOS, onConfirm, inscritosSinCargar: true });
+
+    expect(screen.getByTestId('reasignar-sin-inscritos')).toHaveTextContent(
+      'teams.enrollmentsNotLoaded'
+    );
+    fireEvent.submit(screen.getByDisplayValue('manual').closest('form'));
+    expect(onConfirm).not.toHaveBeenCalled();
+  });
 });

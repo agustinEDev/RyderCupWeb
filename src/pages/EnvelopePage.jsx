@@ -50,6 +50,7 @@ const EnvelopePage = () => {
   // Cada lectura lleva su número: la que vuelve tarde no pisa a una posterior,
   // como un refresco que sale antes de dar el permiso y llega después
   const generacion = useRef(0);
+  const refrescoEnVuelo = useRef(false);
 
   const cargar = useCallback(async () => {
     const mia = ++generacion.current;
@@ -87,6 +88,9 @@ const EnvelopePage = () => {
   useEffect(() => {
     if (!esperandoAlRival) return undefined;
     const id = setInterval(async () => {
+      // Con una red lenta no se amontonan: uno a la vez (CodeRabbit en la #720)
+      if (refrescoEnVuelo.current) return;
+      refrescoEnVuelo.current = true;
       const mia = ++generacion.current;
       try {
         const datos = await getEnvelopesUseCase.execute(roundId);
@@ -95,6 +99,8 @@ const EnvelopePage = () => {
         setFallo(null);
       } catch {
         // Lo que ya había sigue valiendo: se vuelve a preguntar en el siguiente
+      } finally {
+        refrescoEnVuelo.current = false;
       }
     }, REFRESCO_MS);
     return () => clearInterval(id);

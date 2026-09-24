@@ -230,6 +230,10 @@ const InvitationsPage = () => {
 
   const isPageLoading = isLoadingUser || isLoadingRoles || isLoading;
 
+  // Si la competición deja de admitir invitaciones con el modal abierto, se
+  // cierra: si no, se mandaba una que el servidor rechaza (CodeRabbit, #720)
+  const sePuedeInvitar = !competition || SE_PUEDE_INVITAR.has(competition.status);
+
   // `useUserRoles` deja los tres roles a false ante CUALQUIER error, así que un
   // 500 o un corte de red se parecen a «no tienes permiso». Echar por eso sería
   // afirmar lo que no se ha podido preguntar, y con `replace` ni siquiera
@@ -310,7 +314,7 @@ const InvitationsPage = () => {
             {/* Cerrada la inscripción no quedan plazas: el servidor ya no deja
                 invitar (#710). La lista sigue, que es donde se ve quién se
                 quedó sin plaza */}
-            {competition && !SE_PUEDE_INVITAR.has(competition.status) ? (
+            {!sePuedeInvitar ? (
               <p data-testid="invitar-cerrada" className="text-sm text-gray-500 max-w-xs">
                 {t('creator.enrollmentClosed')}
               </p>
@@ -371,7 +375,7 @@ const InvitationsPage = () => {
 
       {/* Send Modal */}
       <SendInvitationModal
-        isOpen={showSendModal}
+        isOpen={showSendModal && sePuedeInvitar}
         onClose={() => setShowSendModal(false)}
         onSend={handleSendInvitation}
         onSendByUserId={handleSendByUserId}

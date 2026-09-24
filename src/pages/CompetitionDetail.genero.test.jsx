@@ -17,9 +17,12 @@ vi.mock('react-i18next', () => ({
 
 const mockAuthUser = { id: 'player-1', first_name: 'Test', last_name: 'Player' };
 
+// Refrescar la sesión crea un `user` nuevo con el mismo id: se simula dando
+// uno nuevo en cada render (CodeRabbit en la #720)
+let userCambiante = false;
 vi.mock('../hooks/useAuth', () => ({
   useAuth: () => ({
-    user: mockAuthUser,
+    user: userCambiante ? { ...mockAuthUser } : mockAuthUser,
     loading: false,
   }),
 }));
@@ -197,5 +200,17 @@ describe('CompetitionDetail · el género al pedir plaza', () => {
     fireEvent.click(screen.getByText('competitions:enrollment.confirm'));
 
     await waitFor(() => expect(mockRefrescarSesion).toHaveBeenCalled());
+  });
+
+  it('P5: un user nuevo con el mismo id no vuelve a cargar la ficha', async () => {
+    // Si no, refrescar la sesión al terminar recargaba la ficha entera, con su
+    // pantalla de carga, justo después del aviso de «solicitud enviada»
+    userCambiante = true;
+    renderPage();
+    await screen.findByText('detail.actions.request-to-join');
+    await new Promise((r) => setTimeout(r, 200));
+
+    expect(mockGetCompetitionDetail).toHaveBeenCalledTimes(1);
+    userCambiante = false;
   });
 });

@@ -1000,4 +1000,17 @@ describe('EnvelopePage · se entera sola de que se abrieron (#710)', () => {
 
     expect(await screen.findByTestId('dar-permiso')).toBeInTheDocument();
   });
+
+  it('S8: con una red lenta, los refrescos no se amontonan (CodeRabbit)', async () => {
+    mockVer
+      .mockResolvedValueOnce(entregadoYEsperando())
+      .mockImplementation(() => new Promise(() => {}));
+    pintar();
+    await screen.findByTestId('dar-permiso');
+
+    await pasan(35000);
+
+    // La carga y UN refresco, que sigue sin volver
+    expect(mockVer).toHaveBeenCalledTimes(2);
+  });
 });

@@ -177,6 +177,22 @@ describe('InvitationsPage', () => {
     expect(within(filtro).getByRole('option', { name: 'status.NO_ROOM' })).toBeInTheDocument();
   });
 
+  it('A6: si se cierra con el modal abierto, el modal se cierra (CodeRabbit)', async () => {
+    mockGetCompetitionDetail
+      .mockResolvedValueOnce({ id: 'comp-1', name: 'Summer Cup', status: 'ACTIVE' })
+      .mockResolvedValueOnce({ id: 'comp-1', name: 'Summer Cup', status: 'CLOSED' });
+    renderPage();
+    fireEvent.click(await screen.findByText('creator.sendNew'));
+    expect(await screen.findByText('send.title')).toBeInTheDocument();
+
+    // Cualquier recarga trae el estado nuevo: aquí, cambiar el filtro
+    fireEvent.change(screen.getByTestId('status-filter'), { target: { value: 'PENDING' } });
+
+    // Con la página de vuelta: durante la carga el modal también desaparece
+    expect(await screen.findByTestId('invitar-cerrada')).toBeInTheDocument();
+    expect(screen.queryByText('send.title')).not.toBeInTheDocument();
+  });
+
   it.each(['CLOSED', 'IN_PROGRESS', 'COMPLETED'])(
     'A5: con la inscripción cerrada (%s) no se ofrece invitar y se dice por qué',
     async (estado) => {

@@ -98,8 +98,11 @@ const CompetitionDetail = () => {
   const backLink = vuelta.to;
   const backText = t(vuelta.clave);
 
+  // Por el id y no por el objeto: refrescar la sesión crea un `user` nuevo con el
+  // mismo id, y la ficha se recargaba entera tras apuntarse (CodeRabbit, #720)
+  const userId = user?.id;
   const loadCompetition = useCallback(async () => {
-    if (!user) return;
+    if (!userId) return;
 
     setIsLoadingCompetition(true);
     try {
@@ -125,14 +128,14 @@ const CompetitionDetail = () => {
       setIsLoadingCompetition(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id, user, navigate]);
+  }, [id, userId, navigate]);
 
   useEffect(() => {
-    if (user) {
+    if (userId) {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- pre-existing pattern surfaced by eslint-plugin-react-hooks 7.1.1 bump; needs dedicated review (tracked in follow-up)
       loadCompetition();
     }
-  }, [id, user, loadCompetition]);
+  }, [id, userId, loadCompetition]);
 
   /**
    * Elegir alias o nombre legal para ESTA competición (FE #571).

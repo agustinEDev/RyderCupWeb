@@ -21,7 +21,11 @@ vi.mock('framer-motion', () => {
 vi.mock('../components/layout/HeaderAuth', () => ({ default: () => null }));
 vi.mock('../utils/toast', () => ({ default: { success: vi.fn(), error: vi.fn() } }));
 const SESION = { user: { id: 'p1' }, loading: false };
-vi.mock('../hooks/useAuth', () => ({ useAuth: () => SESION }));
+let userCambiante = false;
+vi.mock('../hooks/useAuth', () => ({
+  useAuth: () => (userCambiante ? { ...SESION, user: { id: 'p1' } } : SESION),
+}));
+const mockUnirse = vi.fn();
 
 const orden = [];
 const mockPedir = vi.fn(async () => orden.push('plaza'));
@@ -48,7 +52,9 @@ const COMPETICION = {
   countries: [],
 };
 vi.mock('../composition', () => ({
-  browseJoinableCompetitionsUseCase: { execute: vi.fn().mockResolvedValue([COMPETICION]) },
+  browseJoinableCompetitionsUseCase: {
+    execute: (...a) => mockUnirse(...a),
+  },
   browseExploreCompetitionsUseCase: { execute: vi.fn().mockResolvedValue([]) },
   requestEnrollmentUseCase: { execute: (...a) => mockPedir(...a) },
 }));
@@ -66,6 +72,17 @@ describe('BrowseCompetitions · el género al pedir plaza', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     orden.length = 0;
+    mockUnirse.mockResolvedValue([COMPETICION]);
+  });
+
+  it('X3: un user nuevo con el mismo id no vuelve a cargar la lista', async () => {
+    userCambiante = true;
+    pintar();
+    await screen.findByText('browse.card.request-to-join');
+    await new Promise((r) => setTimeout(r, 200));
+
+    expect(mockUnirse).toHaveBeenCalledTimes(1);
+    userCambiante = false;
   });
 
   it('X1: sin género se pregunta, se guarda y luego se pide la plaza', async () => {

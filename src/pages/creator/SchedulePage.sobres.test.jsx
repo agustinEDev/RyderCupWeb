@@ -345,6 +345,15 @@ describe('SchedulePage · el acceso al sobre (FE #655)', () => {
     await waitFor(() => expect(customToast.error).toHaveBeenCalledWith('Boom'));
   });
 
+  it('G8: si no se pudieron cargar las inscripciones, el modal de reasignar lo sabe', async () => {
+    mockInscripciones.mockRejectedValue(new Error('sin red'));
+    pintar();
+
+    fireEvent.click(await screen.findByText('teams.reassign'));
+
+    expect(await screen.findByTestId('reasignar-sin-inscritos')).toBeInTheDocument();
+  });
+
   it('G6: con las inscripciones reabiertas, la página no ofrece «Generar»', async () => {
     mockDetalle.mockResolvedValue({ ...COMPETICION, status: 'ACTIVE', setupMode: 'MANUAL' });
     pintar();

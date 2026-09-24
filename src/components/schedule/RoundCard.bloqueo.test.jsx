@@ -203,6 +203,14 @@ describe('RoundCard · quién descansa', () => {
     expect(screen.getByTestId('descansan')).toHaveTextContent('"count":2');
   });
 
+  it('D6: si no se sabe su nombre, se cuenta igual (CodeRabbit)', () => {
+    pintarCon(conPartidos(['u3', 'desconocido']));
+
+    const aviso = screen.getByTestId('descansan');
+    expect(aviso).toHaveTextContent('"count":2');
+    expect(aviso).toHaveTextContent('Óscar Noche, rounds.unknownPlayer');
+  });
+
   it('D4: si no descansa nadie, no hay aviso', () => {
     pintarCon(conPartidos([]));
 

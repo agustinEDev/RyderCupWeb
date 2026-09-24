@@ -43,9 +43,13 @@ const BrowseCompetitions = () => {
   const [enrollModalOpen, setEnrollModalOpen] = useState(false);
   const [enrollTargetId, setEnrollTargetId] = useState(null);
 
+  // Por el id y no por el objeto: refrescar la sesión crea un `user` nuevo con
+  // el mismo id, y la lista se recargaba tras apuntarse (CodeRabbit, #720)
+  const userId = user?.id;
+
   // Load joinable competitions
   useEffect(() => {
-    if (!user) return;
+    if (!userId) return;
 
     const loadJoinableCompetitions = async () => {
       try {
@@ -70,11 +74,11 @@ const BrowseCompetitions = () => {
     };
 
     loadJoinableCompetitions();
-  }, [user, t]);
+  }, [userId, t]);
 
   // Load explore competitions
   useEffect(() => {
-    if (!user) return;
+    if (!userId) return;
 
     const loadExploreCompetitions = async () => {
       try {
@@ -90,7 +94,7 @@ const BrowseCompetitions = () => {
     };
 
     loadExploreCompetitions();
-  }, [user, t]);
+  }, [userId, t]);
 
   // Filter joinable competitions by search AND exclude user's own competitions
   const filteredJoinableCompetitions = joinableCompetitions.filter((comp) => {
