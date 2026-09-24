@@ -3,19 +3,15 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router';
 
 /**
- * LA TABLA de la FE #664: elegir si el torneo es de los amigos o de cualquiera.
- *
- * El servidor ya decide por defecto (privada, RyderCupAM#318). Lo que falta es
- * que se pueda elegir, y que se vea lo que se está eligiendo: hoy la app no
- * manda el campo, así que todo lo que crea nace privado sin decirlo.
+ * Crear una competición inscribe al organizador como jugador, así que su
+ * género hace falta como el de cualquiera (#710, 24 sep). El formulario lo
+ * pregunta solo si le falta, y lo guarda ANTES de crearla.
  *
  *   #   caso                                  | qué pasa
- *   ----|--------------------------------------|-------------------------
- *   1   se abre el formulario                  | privada viene puesta
- *   2   se deja como está y se crea            | se manda PRIVATE
- *   3   se elige pública y se crea             | se manda PUBLIC
- *   4   se elige pública y luego privada       | manda la última
- *   5   se lee lo que significa cada una       | hay una línea que lo explica
+ *   ----|--------------------------------------|---------------------------------
+ *   C1  sin género, lo elige y crea           | se guarda y luego se crea
+ *   C2  sin género y sin elegirlo              | el navegador no lo envía: es obligatorio
+ *   C3  con género                            | ni se pregunta ni se toca el perfil
  */
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -27,6 +23,11 @@ vi.mock('react-i18next', () => ({
 
 vi.mock('../components/layout/HeaderAuth', () => ({ default: () => null }));
 vi.mock('../hooks/useAuth', () => ({ useAuth: () => ({ user: { id: 'u-1', gender: 'MALE' }, loading: false }) }));
+let faltaGenero = true;
+const mockGuardarGenero = vi.fn(async () => orden.push('genero'));
+vi.mock('../hooks/useGeneroParaApuntarse', () => ({
+  useGeneroParaApuntarse: () => ({ falta: faltaGenero, guardar: mockGuardarGenero }),
+}));
 vi.mock('../components/golf_course/GolfCourseSearchBox', () => ({ default: () => null }));
 vi.mock('../utils/toast', () => ({ default: { error: vi.fn(), success: vi.fn(), info: vi.fn() } }));
 vi.mock('../services/countries', () => ({
@@ -37,6 +38,7 @@ vi.mock('../services/countries', () => ({
 // La forma que devuelve de verdad `CreateCompetitionWithGolfCoursesUseCase`:
 // con solo `{ id }`, el componente revienta al leer `failedCourses.length` y el
 // test acaba pasando por el `catch`, dando por buena una creación que falló
+const orden = [];
 const mockCrear = vi.fn().mockResolvedValue({
   competition: { id: 'c-nueva' },
   successCount: 1,
@@ -92,108 +94,76 @@ const rellenaYCrea = async () => {
   fireEvent.click(screen.getByText('create.createCompetition'));
 };
 
-describe('CreateCompetition · de los amigos o de cualquiera (FE #664)', () => {
+describe('CreateCompetition · el género del organizador', () => {
   beforeEach(() => {
     vi.spyOn(console, 'error').mockImplementation(() => {});
     mockCrear.mockClear();
+    mockGuardarGenero.mockClear();
+    orden.length = 0;
+    mockCrear.mockImplementation(async () => {
+      orden.push('crea');
+      return { competition: { id: 'c-nueva' }, successCount: 1, failedCourses: [] };
+    });
   });
 
-  it('1: viene puesta privada, que es lo que hay hoy', async () => {
+  it('C1: sin género, lo elige, se guarda y luego se crea', async () => {
+    faltaGenero = true;
     await abreElFormulario();
 
-    expect(await screen.findByTestId('visibilidad-PRIVATE')).toHaveAttribute(
-      'aria-pressed',
-      'true'
-    );
-    expect(screen.getByTestId('visibilidad-PUBLIC')).toHaveAttribute('aria-pressed', 'false');
+    fireEvent.change(screen.getByTestId('selector-de-genero'), { target: { value: 'FEMALE' } });
+    await rellenaYCrea();
+
+    await waitFor(() => expect(mockCrear).toHaveBeenCalled());
+    expect(mockGuardarGenero).toHaveBeenCalledWith('FEMALE');
+    expect(orden).toEqual(['genero', 'crea']);
   });
 
-  it('2: sin tocar nada, se crea privada', async () => {
+  it('C2: sin género y sin elegirlo, el navegador no lo envía: es obligatorio', async () => {
+    faltaGenero = true;
     await abreElFormulario();
 
     await rellenaYCrea();
 
-    await waitFor(() => expect(mockCrear).toHaveBeenCalled());
-    expect(mockCrear.mock.calls[0][0]).toMatchObject({ visibility: 'PRIVATE' });
+    expect(screen.getByTestId('selector-de-genero').validity.valueMissing).toBe(true);
+    await new Promise((r) => setTimeout(r, 50));
+    expect(mockCrear).not.toHaveBeenCalled();
+    expect(mockGuardarGenero).not.toHaveBeenCalled();
   });
 
-  it('3: eligiendo pública, se crea pública', async () => {
+  it('C3: con género, ni se pregunta ni se toca el perfil', async () => {
+    faltaGenero = false;
     await abreElFormulario();
 
-    fireEvent.click(screen.getByTestId('visibilidad-PUBLIC'));
-    await rellenaYCrea();
-
-    // Crear una pública pasa por el modal que pregunta cuándo abren las
-    // inscripciones (FE #666): lo que se crea sale de ahí, no del submit
-    fireEvent.click(await screen.findByTestId('confirmar-apertura'));
-
-    await waitFor(() => expect(mockCrear).toHaveBeenCalled());
-    expect(mockCrear.mock.calls[0][0]).toMatchObject({ visibility: 'PUBLIC' });
-  });
-
-  it('4: y se puede cambiar de idea antes de crear', async () => {
-    await abreElFormulario();
-
-    fireEvent.click(screen.getByTestId('visibilidad-PUBLIC'));
-    fireEvent.click(screen.getByTestId('visibilidad-PRIVATE'));
+    expect(screen.queryByTestId('selector-de-genero')).not.toBeInTheDocument();
     await rellenaYCrea();
 
     await waitFor(() => expect(mockCrear).toHaveBeenCalled());
-    expect(mockCrear.mock.calls[0][0]).toMatchObject({ visibility: 'PRIVATE' });
+    expect(mockGuardarGenero).not.toHaveBeenCalled();
   });
 
-  it('5: dice lo que significa, porque «privada» solo no lo dice', async () => {
-    await abreElFormulario();
-
-    expect(await screen.findByTestId('visibilidad-explicacion')).toBeInTheDocument();
-  });
-});
-
-describe('CreateCompetition · editar no cierra un torneo abierto (FE #664)', () => {
-  const pintaEdicion = () => render(
-    <MemoryRouter initialEntries={['/competitions/c-1/edit']}>
-      <Routes>
-        <Route path="/competitions/:id/edit" element={<CreateCompetition />} />
-      </Routes>
-    </MemoryRouter>
-  );
-
-  beforeEach(() => {
-    vi.spyOn(console, 'error').mockImplementation(() => {});
-    mockActualizar.mockClear();
+  it('C4: al editar no se pregunta: ya no se crea nada ni se inscribe a nadie', async () => {
+    faltaGenero = true;
     mockDetalle.mockResolvedValue({
       id: 'c-1',
       name: 'Campeonato del club',
       startDate: '2027-06-01',
       endDate: '2027-06-03',
-      status: 'DRAFT',
+      status: 'ACTIVE',
       maxPlayers: 12,
       playMode: 'SCRATCH',
-      teamAssignment: 'AUTOMATIC',
       countries: [{ code: 'ES' }],
-      visibility: 'PUBLIC',
+      visibility: 'PRIVATE',
     });
-  });
-
-  it('se carga como está: pública sigue pública', async () => {
-    pintaEdicion();
-
-    await waitFor(() =>
-      expect(screen.getByTestId('visibilidad-PUBLIC')).toHaveAttribute('aria-pressed', 'true')
-    );
-  });
-
-  it('y guardar sin tocarla no la cierra al público', async () => {
-    // Era el peor caso: cambiar el nombre o las fechas de un torneo abierto lo
-    // volvia privado sin avisar, y desaparecia de explorar
-    pintaEdicion();
-    await waitFor(() =>
-      expect(screen.getByTestId('visibilidad-PUBLIC')).toHaveAttribute('aria-pressed', 'true')
+    render(
+      <MemoryRouter initialEntries={['/competitions/c-1/edit']}>
+        <Routes>
+          <Route path="/competitions/:id/edit" element={<CreateCompetition />} />
+        </Routes>
+      </MemoryRouter>
     );
 
-    fireEvent.click(screen.getByText('edit.updateCompetition'));
-
-    await waitFor(() => expect(mockActualizar).toHaveBeenCalled());
-    expect(mockActualizar.mock.calls[0][1]).toMatchObject({ visibility: 'PUBLIC' });
+    await waitFor(() => expect(mockDetalle).toHaveBeenCalled());
+    await screen.findByTestId('visibilidad-PRIVATE');
+    expect(screen.queryByTestId('selector-de-genero')).not.toBeInTheDocument();
   });
 });
