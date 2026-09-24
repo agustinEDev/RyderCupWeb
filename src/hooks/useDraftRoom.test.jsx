@@ -207,6 +207,39 @@ describe('useDraftRoom (FE #653)', () => {
     expect(result.current.error).toBe('turnoPerdido');
   });
 
+  it('H11d: si con su minuto agotado la sala terminó, lo dice en ese momento', async () => {
+    // La app eligió al penúltimo por él y el último entró solo: ya no le toca
+    // a nadie. Se decide con la sala que trae el 409, no al pintar: si no, un
+    // turno perdido de antes cambiaba de texto al terminar la sala el rival
+    mockPick.mockRejectedValue(Object.assign(new Error('No es tu turno'), { status: 409 }));
+    const { result } = renderHook(() => useDraftRoom('c1', 'ana'));
+    await waitFor(() => expect(result.current.sala).not.toBeNull());
+    mockGet.mockResolvedValue(sala({ status: 'COMPLETED', currentTeam: null, availablePlayers: [] }));
+
+    await act(async () => {
+      await result.current.elegir('dani');
+    });
+
+    expect(result.current.error).toBe('turnoPerdidoYTerminado');
+  });
+
+  it('H11e: y un turno perdido de antes no cambia de texto cuando la sala termina', async () => {
+    mockPick.mockRejectedValue(Object.assign(new Error('No es tu turno'), { status: 409 }));
+    const { result } = renderHook(() => useDraftRoom('c1', 'ana'));
+    await waitFor(() => expect(result.current.sala).not.toBeNull());
+    await act(async () => {
+      await result.current.elegir('dani');
+    });
+    mockGet.mockResolvedValue(sala({ status: 'COMPLETED', currentTeam: null, availablePlayers: [] }));
+
+    await act(async () => {
+      vi.advanceTimersByTime(6000);
+    });
+
+    expect(result.current.sala.status).toBe('COMPLETED');
+    expect(result.current.error).toBe('turnoPerdido');
+  });
+
   it('H11c: una respuesta atrasada no resucita al jugador ya elegido', async () => {
     // El GET que salió antes puede volver DESPUÉS del POST: sin secuenciar,
     // la sala retrocede, el elegido reaparece en «por elegir» y el capitán

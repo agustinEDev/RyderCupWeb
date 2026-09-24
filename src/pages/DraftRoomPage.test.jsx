@@ -233,7 +233,7 @@ describe('DraftRoomPage · la sala en directo (FE #653)', () => {
   it('D9b: si con su minuto agotado la sala terminó, no le manda a esperar al otro', async () => {
     mockSala.mockReturnValue(
       estado({
-        error: 'turnoPerdido',
+        error: 'turnoPerdidoYTerminado',
         sala: { ...SALA, status: 'COMPLETED', currentTeam: null, availablePlayers: [] },
         segundosRestantes: null,
         esMiTurno: false,
@@ -243,6 +243,28 @@ describe('DraftRoomPage · la sala en directo (FE #653)', () => {
 
     expect(await screen.findByText('draft.turnLostDraftOver')).toBeInTheDocument();
     expect(screen.queryByText('draft.turnLost')).not.toBeInTheDocument();
+    expect(screen.queryByText('turnoPerdidoYTerminado')).not.toBeInTheDocument();
+  });
+
+  it('D9c: el texto lo decide el hook, no el estado de la sala al pintar', async () => {
+    mockSala.mockReturnValue(
+      estado({
+        error: 'turnoPerdido',
+        sala: { ...SALA, status: 'COMPLETED', currentTeam: null, availablePlayers: [] },
+        segundosRestantes: null,
+        esMiTurno: false,
+      })
+    );
+    pintar();
+
+    expect(await screen.findByText('draft.turnLost')).toBeInTheDocument();
+  });
+
+  it('D10b: un error que se llama como algo del prototipo sigue siendo un error', async () => {
+    mockSala.mockReturnValue(estado({ error: 'toString' }));
+    pintar();
+
+    expect(await screen.findByText('toString')).toBeInTheDocument();
   });
 
   it('D10: y cualquier otro fallo se enseña tal cual', async () => {
