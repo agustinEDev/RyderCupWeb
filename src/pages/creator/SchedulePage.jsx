@@ -202,12 +202,15 @@ const SchedulePage = () => {
         // El servidor lo ha apuntado en la sesión, en claves (BE #360), y el
         // modal lo enseña en su idioma, con quién y qué. Abierto: cerrarlo
         // tiraba los emparejamientos hechos a mano. Con las inscripciones:
-        // un retirado no puede seguir ofreciéndose
+        // un retirado no puede seguir ofreciéndose. Y con la competición: si
+        // la reabrieron entretanto, «Generar» deja de ofrecerse
         try {
-          const [agenda, inscripciones] = await Promise.all([
+          const [competicion, agenda, inscripciones] = await Promise.all([
+            getCompetitionDetailUseCase.execute(id),
             getScheduleUseCase.execute(id),
             listEnrollmentsUseCase.execute(id),
           ]);
+          setCompetition(competicion);
           setSchedule(agenda);
           setEnrollments(inscripciones);
         } catch (recarga) {

@@ -750,7 +750,9 @@ describe('EnvelopePage · el permiso para abrirlos antes de hora (FE #717)', () 
   });
 
   it('E1: ya entregado, se da el permiso sin volver a ordenar', async () => {
-    mockVer.mockResolvedValue(entregado());
+    mockVer
+      .mockResolvedValueOnce(entregado())
+      .mockResolvedValue(entregado({}, { revealWhenBothReady: true }));
     pintar();
 
     fireEvent.click(await screen.findByTestId('dar-permiso'));
@@ -758,7 +760,9 @@ describe('EnvelopePage · el permiso para abrirlos antes de hora (FE #717)', () 
     await waitFor(() =>
       expect(mockEntregar).toHaveBeenCalledWith('ronda-1', [['bea'], ['ana']], true)
     );
-    expect(screen.queryByTestId('retirar-permiso')).not.toBeInTheDocument();
+    // Lo que vuelve del servidor: con el permiso dado, se puede retirar
+    expect(await screen.findByTestId('retirar-permiso')).toBeInTheDocument();
+    expect(screen.queryByTestId('dar-permiso')).not.toBeInTheDocument();
   });
 
   it('E2: con mi permiso dado, falta el del otro y se puede retirar', async () => {
@@ -767,11 +771,15 @@ describe('EnvelopePage · el permiso para abrirlos antes de hora (FE #717)', () 
 
     expect(await screen.findByTestId('falta-que-lo-marque-el-rival')).toBeInTheDocument();
     expect(screen.queryByTestId('dar-permiso')).not.toBeInTheDocument();
+    mockVer.mockResolvedValue(entregado());
     fireEvent.click(screen.getByTestId('retirar-permiso'));
 
     await waitFor(() =>
       expect(mockEntregar).toHaveBeenCalledWith('ronda-1', [['bea'], ['ana']], false)
     );
+    // Retirado: vuelve a ofrecerse darlo
+    expect(await screen.findByTestId('dar-permiso')).toBeInTheDocument();
+    expect(screen.queryByTestId('retirar-permiso')).not.toBeInTheDocument();
   });
 
   it('E3: si el otro ya dio el suyo, se dice', async () => {

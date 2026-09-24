@@ -24,9 +24,13 @@ vi.mock('react-i18next', () => ({ useTranslation: () => traduccion }));
 
 // El mismo componente en cada acceso, como el de verdad: uno nuevo cada vez
 // hacía que React volviera a montar el modal en cada render y perdiera su estado
+// Las props de animación no son atributos del DOM: se quitan por nombre
 vi.mock('framer-motion', () => {
-  const Div = ({ children, initial: _i, animate: _a, exit: _e, transition: _t, ...props }) => (
-    <div {...props}>{children}</div>
+  const DE_ANIMACION = new Set(['initial', 'animate', 'exit', 'transition']);
+  const Div = ({ children, ...props }) => (
+    <div {...Object.fromEntries(Object.entries(props).filter(([k]) => !DE_ANIMACION.has(k)))}>
+      {children}
+    </div>
   );
   return { motion: new Proxy({}, { get: () => Div }) };
 });
@@ -318,6 +322,20 @@ describe('SchedulePage · el acceso al sobre (FE #655)', () => {
     await waitFor(() =>
       expect(customToast.error).toHaveBeenCalledWith('No se pueden generar los partidos: Eva')
     );
+  });
+
+  it('G7f: y relee la competición: si la reabrieron, ya no se ofrece «Generar»', async () => {
+    // Otra sesión la reabre mientras este intento vuelve bloqueado: con el
+    // estado viejo, la tarjeta seguía ofreciendo el botón
+    mockGenerar.mockRejectedValue(bloqueado());
+    mockDetalle
+      .mockResolvedValueOnce({ ...COMPETICION, setupMode: 'MANUAL' })
+      .mockResolvedValue({ ...COMPETICION, setupMode: 'MANUAL', status: 'ACTIVE' });
+    pintar();
+    fireEvent.click(await screen.findByTitle('matches.generate'));
+    fireEvent.click(await screen.findByTestId('generate-submit'));
+
+    await waitFor(() => expect(screen.queryByTitle('matches.generate')).not.toBeInTheDocument());
   });
 
   it('G7b: cualquier otro fallo se cuenta como antes', async () => {
