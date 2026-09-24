@@ -952,4 +952,52 @@ describe('EnvelopePage · se entera sola de que se abrieron (#710)', () => {
     // Y lo que ya había sigue en pantalla
     expect(screen.getByTestId('dar-permiso')).toBeInTheDocument();
   });
+
+  it('S6: una respuesta vieja del refresco no pisa el permiso recién dado (revisión local)', async () => {
+    let devolverLaVieja;
+    mockVer
+      .mockResolvedValueOnce(entregadoYEsperando())
+      .mockImplementationOnce(() => new Promise((resolve) => { devolverLaVieja = resolve; }))
+      .mockResolvedValue(
+        vista({
+          teamASubmitted: true,
+          mine: {
+            team: 'A',
+            entries: [['ana'], ['bea']],
+            submitted: true,
+            automatic: false,
+            revealWhenBothReady: true,
+          },
+        })
+      );
+    mockEntregar.mockResolvedValue({ team: 'A', entries: [['ana'], ['bea']], automatic: false });
+    pintar();
+    await screen.findByTestId('dar-permiso');
+    await pasan(11000);
+
+    fireEvent.click(screen.getByTestId('dar-permiso'));
+    expect(await screen.findByTestId('retirar-permiso')).toBeInTheDocument();
+    await act(async () => {
+      devolverLaVieja(entregadoYEsperando());
+    });
+
+    expect(screen.getByTestId('retirar-permiso')).toBeInTheDocument();
+  });
+
+  it('S7: si el refresco vuelve a ir bien, el error de antes se va (revisión local)', async () => {
+    mockVer
+      .mockResolvedValueOnce(entregadoYEsperando())
+      .mockRejectedValueOnce(new Error('Boom'))
+      .mockResolvedValue(entregadoYEsperando());
+    mockEntregar.mockResolvedValue({ team: 'A', entries: [['ana'], ['bea']], automatic: false });
+    pintar();
+    // Dar el permiso recarga, y esa recarga falla: la pantalla enseña el error
+    fireEvent.click(await screen.findByTestId('dar-permiso'));
+    await waitFor(() => expect(customToast.error).toHaveBeenCalledWith('Boom'));
+    expect(screen.queryByTestId('dar-permiso')).not.toBeInTheDocument();
+
+    await pasan(11000);
+
+    expect(await screen.findByTestId('dar-permiso')).toBeInTheDocument();
+  });
 });

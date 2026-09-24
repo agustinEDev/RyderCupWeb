@@ -379,9 +379,13 @@ const CompetitionDetail = () => {
   const handleEnroll = async (color = null, genero = null) => {
     setShowEnrollModal(false);
     setIsProcessing(true);
+    let generoGuardado = false;
     try {
       // Antes que la plaza: sin género el servidor la rechaza (#710)
-      if (genero) await generoParaApuntarse.guardar(genero);
+      if (genero) {
+        await generoParaApuntarse.guardar(genero);
+        generoGuardado = true;
+      }
       await requestEnrollmentUseCase.execute(id, null, { color });
       customToast.success(t('detail.success.enrollmentRequested'));
       await loadCompetition();
@@ -390,6 +394,8 @@ const CompetitionDetail = () => {
       customToast.error(error.message || t('detail.failedToEnroll'));
     } finally {
       setIsProcessing(false);
+      // Al final, aunque la plaza falle: el género ya quedó guardado
+      if (generoGuardado) generoParaApuntarse.refrescar();
     }
   };
 

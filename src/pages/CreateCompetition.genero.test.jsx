@@ -25,8 +25,13 @@ vi.mock('../components/layout/HeaderAuth', () => ({ default: () => null }));
 vi.mock('../hooks/useAuth', () => ({ useAuth: () => ({ user: { id: 'u-1', gender: 'MALE' }, loading: false }) }));
 let faltaGenero = true;
 const mockGuardarGenero = vi.fn(async () => orden.push('genero'));
+const mockRefrescarSesion = vi.fn(async () => orden.push('sesion'));
 vi.mock('../hooks/useGeneroParaApuntarse', () => ({
-  useGeneroParaApuntarse: () => ({ falta: faltaGenero, guardar: mockGuardarGenero }),
+  useGeneroParaApuntarse: () => ({
+    falta: faltaGenero,
+    guardar: mockGuardarGenero,
+    refrescar: mockRefrescarSesion,
+  }),
 }));
 vi.mock('../components/golf_course/GolfCourseSearchBox', () => ({ default: () => null }));
 vi.mock('../utils/toast', () => ({ default: { error: vi.fn(), success: vi.fn(), info: vi.fn() } }));
@@ -115,7 +120,7 @@ describe('CreateCompetition · el género del organizador', () => {
 
     await waitFor(() => expect(mockCrear).toHaveBeenCalled());
     expect(mockGuardarGenero).toHaveBeenCalledWith('FEMALE');
-    expect(orden).toEqual(['genero', 'crea']);
+    await waitFor(() => expect(orden).toEqual(['genero', 'crea', 'sesion']));
   });
 
   it('C2: sin género y sin elegirlo, el navegador no lo envía: es obligatorio', async () => {

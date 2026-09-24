@@ -599,6 +599,7 @@ const CreateCompetition = () => {
     // siempre falso y devuelve el formulario a la mano justo cuando no se puede
     // tocar. Se cierra al terminar, en el `finally`
     setIsSubmitting(true);
+    let generoGuardado = false;
 
     try {
       const numPlayers = cupoDeJugadores(formData.numberOfPlayers, cupoCargado.current);
@@ -647,7 +648,10 @@ const CreateCompetition = () => {
 
       } else {
         // Antes que la competición: sin él el servidor la rechaza (#710)
-        if (pideGenero) await generoParaApuntarse.guardar(genero);
+        if (pideGenero) {
+          await generoParaApuntarse.guardar(genero);
+          generoGuardado = true;
+        }
 
         // CREATE MODE: Create new competition and attach its golf courses
         const golfCourses = formData.golfCourses.map((gc) => ({
@@ -702,6 +706,8 @@ const CreateCompetition = () => {
       // Se cierra tanto si salió bien como si falló: si falló, el aviso está en
       // el formulario, y dejarlo tapado por el modal lo esconde
       setPreguntandoApertura(false);
+      // Al final, aunque crear falle: el género ya quedó guardado (#710)
+      if (generoGuardado) generoParaApuntarse.refrescar();
     }
   };
 

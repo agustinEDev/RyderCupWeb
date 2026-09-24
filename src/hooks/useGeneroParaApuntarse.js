@@ -6,10 +6,17 @@ import { updateUserProfileUseCase } from '../composition';
  *
  * Las barras de salida se valoran por género, así que el servidor lo exige al
  * pedir plaza, aceptar una invitación o crear una competición. Se pregunta solo
- * a quien no lo tiene, en el momento, y se guarda en su perfil: la sesión se
- * refresca para que no se le vuelva a preguntar.
+ * a quien no lo tiene, en el momento, y se guarda en su perfil.
  *
- * @returns {{ falta: boolean, guardar: (genero: string|null) => Promise<void> }}
+ * La sesión se refresca aparte y AL TERMINAR la operación: refrescarla crea un
+ * `user` nuevo, y las páginas que dependen de él se recargaban en mitad de
+ * pedir plaza o aceptar (revisión local de la #710).
+ *
+ * @returns {{
+ *   falta: boolean,
+ *   guardar: (genero: string|null) => Promise<void>,
+ *   refrescar: () => Promise<void>,
+ * }}
  */
 export const useGeneroParaApuntarse = () => {
   const { user, refetch } = useAuth();
@@ -17,10 +24,12 @@ export const useGeneroParaApuntarse = () => {
   const guardar = async (genero) => {
     if (!genero || !user?.id) return;
     await updateUserProfileUseCase.execute(user.id, { gender: genero });
-    await refetch();
   };
 
-  return { falta: Boolean(user) && !user.gender, guardar };
+  // Para que no se le vuelva a preguntar
+  const refrescar = () => refetch();
+
+  return { falta: Boolean(user) && !user.gender, guardar, refrescar };
 };
 
 export default useGeneroParaApuntarse;

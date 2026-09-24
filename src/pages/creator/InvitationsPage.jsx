@@ -46,8 +46,9 @@ const todasLasPaginas = async (pideLaPagina, sacaLasFilas) => {
   return filas;
 };
 
-// Cerrada la inscripción ya no se invita: no quedan plazas (#710)
-const INSCRIPCION_CERRADA = new Set(['CLOSED', 'IN_PROGRESS']);
+// Solo se invita con la inscripción por abrir o abierta: es lo que acepta el
+// servidor (#710). Cerrada, en juego o terminada, no
+const SE_PUEDE_INVITAR = new Set(['DRAFT', 'ACTIVE']);
 
 const InvitationsPage = () => {
   const navigate = useNavigate();
@@ -309,7 +310,7 @@ const InvitationsPage = () => {
             {/* Cerrada la inscripción no quedan plazas: el servidor ya no deja
                 invitar (#710). La lista sigue, que es donde se ve quién se
                 quedó sin plaza */}
-            {INSCRIPCION_CERRADA.has(competition?.status) ? (
+            {competition && !SE_PUEDE_INVITAR.has(competition.status) ? (
               <p data-testid="invitar-cerrada" className="text-sm text-gray-500 max-w-xs">
                 {t('creator.enrollmentClosed')}
               </p>

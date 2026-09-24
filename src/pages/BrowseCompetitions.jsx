@@ -140,11 +140,15 @@ const BrowseCompetitions = () => {
   // Handle request enrollment
   const handleRequestEnrollment = async (competitionId, color = null, genero = null) => {
     setEnrollModalOpen(false);
+    let generoGuardado = false;
     try {
       setRequestingEnrollment((prev) => ({ ...prev, [competitionId]: true }));
 
       // Antes que la plaza: sin género el servidor la rechaza (#710)
-      if (genero) await generoParaApuntarse.guardar(genero);
+      if (genero) {
+        await generoParaApuntarse.guardar(genero);
+        generoGuardado = true;
+      }
 
       // Call RequestEnrollmentUseCase
       await requestEnrollmentUseCase.execute(competitionId, null, { color });
@@ -186,6 +190,8 @@ const BrowseCompetitions = () => {
       }
     } finally {
       setRequestingEnrollment((prev) => ({ ...prev, [competitionId]: false }));
+      // Al final, aunque la plaza falle: el género ya quedó guardado (#710)
+      if (generoGuardado) generoParaApuntarse.refrescar();
     }
   };
 

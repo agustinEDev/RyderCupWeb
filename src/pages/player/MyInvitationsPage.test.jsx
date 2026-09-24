@@ -38,9 +38,14 @@ const mockRespondToInvitation = vi.fn();
 // El género para apuntarse (#710): por defecto lo tiene, y los casos que no lo
 // tienen lo dicen
 const mockGuardarGenero = vi.fn();
+const mockRefrescarSesion = vi.fn();
 let faltaGenero = false;
 vi.mock('../../hooks/useGeneroParaApuntarse', () => ({
-  useGeneroParaApuntarse: () => ({ falta: faltaGenero, guardar: mockGuardarGenero }),
+  useGeneroParaApuntarse: () => ({
+    falta: faltaGenero,
+    guardar: mockGuardarGenero,
+    refrescar: mockRefrescarSesion,
+  }),
 }));
 
 vi.mock('../../composition', () => ({
@@ -150,6 +155,7 @@ describe('MyInvitationsPage', () => {
       faltaGenero = true;
       const orden = [];
       mockGuardarGenero.mockImplementation(async () => orden.push('genero'));
+      mockRefrescarSesion.mockImplementation(async () => orden.push('sesion'));
       mockRespondToInvitation.mockImplementation(async () => {
         orden.push('acepta');
         return { competitionId: 'comp-1' };
@@ -165,7 +171,7 @@ describe('MyInvitationsPage', () => {
 
       await waitFor(() => expect(mockRespondToInvitation).toHaveBeenCalledWith('inv-1', 'ACCEPT'));
       expect(mockGuardarGenero).toHaveBeenCalledWith('FEMALE');
-      expect(orden).toEqual(['genero', 'acepta']);
+      await waitFor(() => expect(orden).toEqual(['genero', 'acepta', 'sesion']));
     });
 
     it('I2: con género, aceptar acepta sin preguntar', async () => {

@@ -26,9 +26,14 @@ vi.mock('../hooks/useAuth', () => ({ useAuth: () => SESION }));
 const orden = [];
 const mockPedir = vi.fn(async () => orden.push('plaza'));
 const mockGuardarGenero = vi.fn(async () => orden.push('genero'));
+const mockRefrescarSesion = vi.fn(async () => orden.push('sesion'));
 let faltaGenero = true;
 vi.mock('../hooks/useGeneroParaApuntarse', () => ({
-  useGeneroParaApuntarse: () => ({ falta: faltaGenero, guardar: mockGuardarGenero }),
+  useGeneroParaApuntarse: () => ({
+    falta: faltaGenero,
+    guardar: mockGuardarGenero,
+    refrescar: mockRefrescarSesion,
+  }),
 }));
 
 const COMPETICION = {
@@ -75,7 +80,7 @@ describe('BrowseCompetitions · el género al pedir plaza', () => {
 
     await waitFor(() => expect(mockPedir).toHaveBeenCalled());
     expect(mockGuardarGenero).toHaveBeenCalledWith('FEMALE');
-    expect(orden).toEqual(['genero', 'plaza']);
+    await waitFor(() => expect(orden).toEqual(['genero', 'plaza', 'sesion']));
   });
 
   it('X2: con género no se pregunta', async () => {

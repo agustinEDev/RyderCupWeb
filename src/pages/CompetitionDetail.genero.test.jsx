@@ -53,9 +53,14 @@ const mockCloseEnrollments = vi.fn();
 const orden = [];
 const mockRequest = vi.fn(async () => orden.push('plaza'));
 const mockGuardarGenero = vi.fn(async () => orden.push('genero'));
+const mockRefrescarSesion = vi.fn(async () => orden.push('sesion'));
 let faltaGenero = true;
 vi.mock('../hooks/useGeneroParaApuntarse', () => ({
-  useGeneroParaApuntarse: () => ({ falta: faltaGenero, guardar: mockGuardarGenero }),
+  useGeneroParaApuntarse: () => ({
+    falta: faltaGenero,
+    guardar: mockGuardarGenero,
+    refrescar: mockRefrescarSesion,
+  }),
 }));
 const mockDelete = vi.fn();
 const mockCancel = vi.fn();
@@ -148,7 +153,8 @@ describe('CompetitionDetail · el género al pedir plaza', () => {
 
     await waitFor(() => expect(mockRequest).toHaveBeenCalled());
     expect(mockGuardarGenero).toHaveBeenCalledWith('MALE');
-    expect(orden).toEqual(['genero', 'plaza']);
+    // La sesión, al final: refrescarla antes recargaba la ficha en mitad
+    await waitFor(() => expect(orden).toEqual(['genero', 'plaza', 'sesion']));
   });
 
   it('P2: con género no se pregunta ni se toca el perfil', async () => {
@@ -176,5 +182,20 @@ describe('CompetitionDetail · el género al pedir plaza', () => {
 
     await waitFor(() => expect(customToast.error).toHaveBeenCalledWith('sin red'));
     expect(mockRequest).not.toHaveBeenCalled();
+    expect(mockRefrescarSesion).not.toHaveBeenCalled();
+  });
+
+  it('P4: si la plaza falla tras guardar el género, la sesión se pone al día igual', async () => {
+    faltaGenero = true;
+    mockRequest.mockRejectedValueOnce(new Error('llena'));
+    renderPage();
+
+    fireEvent.click(await screen.findByText('detail.actions.request-to-join'));
+    fireEvent.change(await screen.findByTestId('selector-de-genero'), {
+      target: { value: 'MALE' },
+    });
+    fireEvent.click(screen.getByText('competitions:enrollment.confirm'));
+
+    await waitFor(() => expect(mockRefrescarSesion).toHaveBeenCalled());
   });
 });

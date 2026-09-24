@@ -36,16 +36,24 @@ describe('useGeneroParaApuntarse', () => {
     expect(result.current.falta).toBe(false);
   });
 
-  it('H3: guardarlo lo pone en su perfil y refresca la sesión, en ese orden', async () => {
-    const orden = [];
-    mockActualizar.mockImplementation(async () => orden.push('perfil'));
-    mockRefrescar.mockImplementation(async () => orden.push('sesion'));
+  it('H3: guardarlo lo pone en su perfil, sin refrescar todavía la sesión', async () => {
+    // Refrescarla crea un `user` nuevo, y las páginas que dependen de él se
+    // recargan: en mitad de pedir plaza o aceptar, eso era un parpadeo o una
+    // lista vieja pisando la nueva. Se refresca al terminar (revisión local)
     const { result } = renderHook(() => useGeneroParaApuntarse());
 
     await act(() => result.current.guardar('MALE'));
 
     expect(mockActualizar).toHaveBeenCalledWith('u1', { gender: 'MALE' });
-    expect(orden).toEqual(['perfil', 'sesion']);
+    expect(mockRefrescar).not.toHaveBeenCalled();
+  });
+
+  it('H3b: refrescar pone la sesión al día, para que no se vuelva a preguntar', async () => {
+    const { result } = renderHook(() => useGeneroParaApuntarse());
+
+    await act(() => result.current.refrescar());
+
+    expect(mockRefrescar).toHaveBeenCalled();
   });
 
   it('H4: sin nada elegido no toca el perfil', async () => {

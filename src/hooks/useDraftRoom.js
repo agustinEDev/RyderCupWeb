@@ -36,6 +36,8 @@ const useDraftRoom = (competitionId, userId) => {
   const [sala, setSala] = useState(null);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState(null);
+  // Si alguna vez se pudo ver: decide si se sigue esperando el sorteo
+  const [cargadaUnaVez, setCargadaUnaVez] = useState(false);
   const [segundosRestantes, setSegundosRestantes] = useState(null);
   // El desfase entre el reloj del servidor y el del móvil, en milisegundos.
   // En una `ref` porque el contador lo lee cada segundo y cambiarlo no tiene
@@ -67,6 +69,7 @@ const useDraftRoom = (competitionId, userId) => {
     try {
       const nueva = await getDraftUseCase.execute(competitionId);
       guardar(nueva, generacion);
+      setCargadaUnaVez(true);
       if (limpiaElAviso && generacion >= generacionRef.current) setError(null);
       return nueva;
     } catch (e) {
@@ -87,9 +90,10 @@ const useDraftRoom = (competitionId, userId) => {
 
   // El refresco, mientras la sala está en marcha y también mientras se espera el
   // sorteo (#710): el capitán que entraba antes se quedaba en «todavía no se ha
-  // lanzado» con su turno corriendo en el servidor. Si la carga falló, no: una
-  // sala que no se puede ver no se pide cada cinco segundos
-  const esperandoElSorteo = !cargando && sala === null && !error;
+  // lanzado» con su turno corriendo en el servidor. Si la PRIMERA carga falló,
+  // no: una sala que no se puede ver no se pide cada cinco segundos. Un fallo
+  // después (un 429, un corte) no para la espera
+  const esperandoElSorteo = !cargando && sala === null && cargadaUnaVez;
   useEffect(() => {
     if (sala?.status !== 'IN_PROGRESS' && !esperandoElSorteo) return undefined;
     // `cargar(false)`: el refresco trae la sala nueva, pero no borra un aviso

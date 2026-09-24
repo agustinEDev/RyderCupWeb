@@ -177,7 +177,7 @@ describe('InvitationsPage', () => {
     expect(within(filtro).getByRole('option', { name: 'status.NO_ROOM' })).toBeInTheDocument();
   });
 
-  it.each(['CLOSED', 'IN_PROGRESS'])(
+  it.each(['CLOSED', 'IN_PROGRESS', 'COMPLETED'])(
     'A5: con la inscripción cerrada (%s) no se ofrece invitar y se dice por qué',
     async (estado) => {
       mockGetCompetitionDetail.mockResolvedValueOnce({ id: 'comp-1', name: 'Summer Cup', status: estado });

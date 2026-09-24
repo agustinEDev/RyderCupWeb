@@ -30,13 +30,16 @@ const AssignTeamsModalContent = ({
   // Con equipos ya hechos se abre en manual CON ellos (#710): en automático y
   // vacío, rehacer el draft que eligieron los capitanes era pulsar un botón
   const reasignando = Boolean(currentTeams);
+  // Solo los que siguen dentro: el reparto guardado no se toca al darse de
+  // baja, y con un retirado el servidor rechaza el reparto (revisión local)
+  const siguen = new Set(enrollments.filter((e) => e.status === 'APPROVED').map((e) => e.userId));
   const [mode, setMode] = useState(reasignando ? 'manual' : 'automatic');
   const [manualTeamA, setManualTeamA] = useState(() => {
-    if (reasignando) return [...currentTeams.teamAPlayerIds];
+    if (reasignando) return currentTeams.teamAPlayerIds.filter((id) => siguen.has(id));
     return hayCapitanes ? [captains.teamA] : [];
   });
   const [manualTeamB, setManualTeamB] = useState(() => {
-    if (reasignando) return [...currentTeams.teamBPlayerIds];
+    if (reasignando) return currentTeams.teamBPlayerIds.filter((id) => siguen.has(id));
     return hayCapitanes ? [captains.teamB] : [];
   });
 

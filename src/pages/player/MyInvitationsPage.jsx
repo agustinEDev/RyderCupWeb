@@ -87,6 +87,8 @@ const MyInvitationsPage = () => {
       return;
     }
     await aceptar(invitationId);
+    // Al final: refrescar la sesión antes recargaba la página en mitad
+    generoParaApuntarse.refrescar();
   };
 
   const aceptar = async (invitationId) => {

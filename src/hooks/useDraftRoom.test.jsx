@@ -142,6 +142,26 @@ describe('useDraftRoom (FE #653)', () => {
     await waitFor(() => expect(result.current.sala?.status).toBe('IN_PROGRESS'));
   });
 
+  it('H5e: un fallo mientras se espera el sorteo no para la espera (revisión local)', async () => {
+    // Un 429 del cubo compartido o un corte: el capitán se quedaba otra vez en
+    // «todavía no se ha lanzado» hasta recargar
+    mockGet
+      .mockResolvedValueOnce(null)
+      .mockRejectedValueOnce(Object.assign(new Error('Demasiadas peticiones'), { status: 429 }))
+      .mockResolvedValue(sala());
+    const { result } = renderHook(() => useDraftRoom('c1', 'ana'));
+    await waitFor(() => expect(result.current.cargando).toBe(false));
+
+    await act(async () => {
+      vi.advanceTimersByTime(6000);
+    });
+    await act(async () => {
+      vi.advanceTimersByTime(6000);
+    });
+
+    await waitFor(() => expect(result.current.sala?.status).toBe('IN_PROGRESS'));
+  });
+
   it('H5d: si no se pudo cargar, no se insiste cada cinco segundos', async () => {
     mockGet.mockRejectedValue(Object.assign(new Error('No eres de esta competición'), { status: 403 }));
     const { result } = renderHook(() => useDraftRoom('c1', 'ana'));

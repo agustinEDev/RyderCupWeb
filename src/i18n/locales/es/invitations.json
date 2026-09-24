@@ -73,7 +73,7 @@
     "sentCount_one": "{{count}} invitación enviada",
     "sentCount_other": "{{count}} invitaciones enviadas",
     "nearCapacity": "Ya hay {{accepted}} invitaciones aceptadas de {{max}} plazas. El torneo está casi lleno.",
-    "enrollmentClosed": "La inscripción está cerrada: ya no quedan plazas, así que no se puede invitar."
+    "enrollmentClosed": "La inscripción está cerrada: ya no se puede invitar."
   },
   "player": {
     "title": "Mis invitaciones",

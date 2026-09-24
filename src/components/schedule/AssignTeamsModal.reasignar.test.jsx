@@ -86,6 +86,21 @@ describe('AssignTeamsModal · reasignar con equipos ya hechos (#710)', () => {
     });
   });
 
+  it('R6: un retirado que sigue en el reparto guardado no se manda (revisión local)', () => {
+    // El reparto no se toca al darse de baja: con él dentro, el servidor
+    // rechazaba el reparto y el organizador no tenía cómo quitarlo
+    const onConfirm = vi.fn();
+    pintar({
+      hasTeams: true,
+      currentTeams: { teamAPlayerIds: ['ana', 'dani', 'eva'], teamBPlayerIds: ['bea', 'carla'] },
+      onConfirm,
+    });
+
+    fireEvent.submit(screen.getByDisplayValue('manual').closest('form'));
+
+    expect(onConfirm.mock.calls[0][0].team_a_player_ids).toEqual(['ana', 'dani']);
+  });
+
   it('R5: las dos traducciones del aviso existen', async () => {
     for (const idioma of ['es', 'en']) {
       const textos = (await import(`../../i18n/locales/${idioma}/schedule.json`)).default;
