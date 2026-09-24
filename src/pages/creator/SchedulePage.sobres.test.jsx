@@ -229,4 +229,12 @@ describe('SchedulePage · el acceso al sobre (FE #655)', () => {
 
     expect(await screen.findByTitle('matches.generate')).toBeInTheDocument();
   });
+
+  it('G6: con las inscripciones reabiertas, la página no ofrece «Generar»', async () => {
+    mockDetalle.mockResolvedValue({ ...COMPETICION, status: 'ACTIVE', setupMode: 'MANUAL' });
+    pintar();
+    await waitFor(() => expect(mockAgenda).toHaveBeenCalled());
+    expect(screen.queryByTitle('matches.generate')).not.toBeInTheDocument();
+  });
 });
+

@@ -464,6 +464,7 @@ const SchedulePage = () => {
                       round={round}
                       onGenerateMatches={() => openGenerateModal(round)}
                       soloReintento={competition.setupMode === 'RYDER_CUP'}
+                      competicionCerrada={['CLOSED', 'IN_PROGRESS'].includes(competition.status)}
                       onToggleExpand={() => toggleRoundExpand(round.id)}
                       isExpanded={!!expandedRounds[round.id]}
                       canEdit={canManage}

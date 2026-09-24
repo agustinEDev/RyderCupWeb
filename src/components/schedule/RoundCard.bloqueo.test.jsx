@@ -130,4 +130,27 @@ describe('RoundCard · «Generar» en modo Ryder (FE #711)', () => {
 
     expect(screen.getByTitle('matches.generate')).toBeInTheDocument();
   });
+
+  it('G5: con la competición aún reabierta no se ofrece: el servidor lo rechazaría', () => {
+    render(
+      <RoundCard
+        round={{ ...RONDA, matchGenerationBlock: { reason: 'ENROLLMENT_OPEN', players: [] } }}
+        canEdit
+        soloReintento
+        competicionCerrada={false}
+        isExpanded={false}
+        onToggleExpand={() => {}}
+        onGenerateMatches={() => {}}
+        golfCourses={[{ id: 'g1', name: 'Altea' }]}
+        playerNameMap={{}}
+        playerHandicapMap={{}}
+        teamNames={{}}
+        t={(clave) => clave}
+      />
+    );
+
+    expect(screen.queryByTitle('matches.generate')).not.toBeInTheDocument();
+    expect(screen.queryByText('generationBlock.retry')).not.toBeInTheDocument();
+  });
 });
+

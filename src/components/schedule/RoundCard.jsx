@@ -14,6 +14,7 @@ const RoundCard = ({
   round,
   onGenerateMatches,
   soloReintento = false,
+  competicionCerrada = true,
   onToggleExpand,
   isExpanded,
   canEdit,
@@ -35,8 +36,11 @@ const RoundCard = ({
   // los sobres emparejaría por hándicap, y con los partidos hechos los
   // capitanes ya no podrían entregar. Reintento es que se abrieron y la sesión
   // se quedó sin partidos: eso es lo que dice su motivo de bloqueo
+  // Y solo con la competición cerrada o en juego: con las inscripciones
+  // reabiertas el servidor lo rechaza siempre
   const canGenerate =
     canEdit &&
+    competicionCerrada &&
     status === 'PENDING_MATCHES' &&
     (!soloReintento || Boolean(round.matchGenerationBlock));
   const matches = round.matches || [];
