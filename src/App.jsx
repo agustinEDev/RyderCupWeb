@@ -11,7 +11,6 @@ import LazyLoadErrorBoundary from './components/errors/LazyLoadErrorBoundary';
 import { getUserData } from './hooks/useAuth';
 import { useVaciadoDeLaCola } from './hooks/useVaciadoDeLaCola';
 import { setUserContext } from './utils/sentryHelpers';
-import useInactivityLogout from './hooks/useInactivityLogout.jsx';
 import useProactiveTokenRefresh from './hooks/useProactiveTokenRefresh';
 import { onAuthEvent, EVENTS } from './utils/broadcastAuth';
 import { useLogout } from './hooks/useLogout';
@@ -167,10 +166,10 @@ function AppContent() {
   }, [isPublicRoute]);
 
   /**
-   * Función de logout que se ejecuta por inactividad y broadcast
-   * Wrapped in useCallback to prevent stale closures
+   * Cerrar sesión cuando otra pestaña de este navegador la cierra: es el mismo
+   * dispositivo, con las mismas cookies. Wrapped in useCallback to prevent stale closures
    */
-  const handleInactivityLogout = useCallback(async () => {
+  const handleLogoutFromOtherTab = useCallback(async () => {
     setIsAuthenticated(false);
     await logout();
   }, [logout]);
@@ -183,22 +182,18 @@ function AppContent() {
     // Configurar listener de eventos de broadcast
     const cleanup = onAuthEvent((event) => {
       if (event.type === EVENTS.LOGOUT) {
-        // Ejecutar logout local (mismo que inactividad)
-        handleInactivityLogout();
+        handleLogoutFromOtherTab();
       }
     });
 
     // Cleanup: remover listener al desmontar
     return cleanup;
-  }, [handleInactivityLogout]); // Dependencies: handleInactivityLogout (stable via useCallback)
+  }, [handleLogoutFromOtherTab]);
 
-  // Hook de logout por inactividad (solo activo si el usuario está autenticado)
-  useInactivityLogout({
-    timeout: 30 * 60 * 1000, // 30 minutos
-    warningTime: 2 * 60 * 1000, // 2 minutos de advertencia
-    onLogout: handleInactivityLogout,
-    enabled: isAuthenticated // Solo activo cuando hay usuario autenticado
-  });
+  // Sin cierre por inactividad en el navegador (BE #376, ADR-039): echaba a
+  // jugadores en el campo sin cobertura para volver a entrar, y con la pestaña
+  // cerrada no invalidaba nada. La inactividad (OWASP A07) la decide el
+  // servidor: 24 h sin usar este dispositivo
 
   // Hook de monitoreo de revocación de dispositivo (v1.14.0)
   // Detecta cuando el dispositivo actual fue revocado desde otro navegador
