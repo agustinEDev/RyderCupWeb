@@ -18,7 +18,9 @@
     "allowancePercentage": "% de Concesión",
     "effectiveAllowance": "Concesión Efectiva",
     "matchCount_one": "{{count}} partido",
-    "matchCount_other": "{{count}} partidos"
+    "matchCount_other": "{{count}} partidos",
+    "resting_one": "Descansa: {{names}}",
+    "resting_other": "Descansan: {{names}}"
   },
   "matches": {
     "title": "Partidos",

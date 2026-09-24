@@ -18,7 +18,9 @@
     "allowancePercentage": "Allowance %",
     "effectiveAllowance": "Effective Allowance",
     "matchCount_one": "{{count}} match",
-    "matchCount_other": "{{count}} matches"
+    "matchCount_other": "{{count}} matches",
+    "resting_one": "Resting: {{names}}",
+    "resting_other": "Resting: {{names}}"
   },
   "matches": {
     "title": "Matches",

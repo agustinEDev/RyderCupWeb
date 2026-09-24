@@ -53,6 +53,9 @@ class ScheduleMapper {
       ...siViene(apiRound, 'scoring_opens_at', 'scoringOpensAt'),
       // Por qué no tiene partidos aunque sus sobres ya se abrieron (BE #361)
       matchGenerationBlock: aBloqueoDePartidos(apiRound.match_generation_block),
+      // Quién de los equipos no juega ningún partido de la sesión (#710): el que
+      // sobra con equipos desiguales. Un servidor anterior no lo manda
+      restingPlayerIds: apiRound.resting_player_ids || [],
       sessionType: apiRound.session_type,
       matchFormat: apiRound.match_format,
       handicapMode: apiRound.handicap_mode || null,
