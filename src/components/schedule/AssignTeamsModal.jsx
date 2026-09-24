@@ -16,6 +16,7 @@ const AssignTeamsModalContent = ({
   teamNames,
   captains,
   hasTeams,
+  currentTeams = null,
   t,
 }) => {
   // Con los dos capitanes nombrados, cada uno queda fijo en su equipo (FE #692):
@@ -26,9 +27,18 @@ const AssignTeamsModalContent = ({
   // Con uno solo, el servidor rechaza el reparto en los dos modos pidiendo el
   // que falta: mejor decirlo antes que después de rellenar doce nombres
   const faltaUnCapitan = Boolean(captains?.teamA) !== Boolean(captains?.teamB);
-  const [mode, setMode] = useState('automatic');
-  const [manualTeamA, setManualTeamA] = useState(hayCapitanes ? [captains.teamA] : []);
-  const [manualTeamB, setManualTeamB] = useState(hayCapitanes ? [captains.teamB] : []);
+  // Con equipos ya hechos se abre en manual CON ellos (#710): en automático y
+  // vacío, rehacer el draft que eligieron los capitanes era pulsar un botón
+  const reasignando = Boolean(currentTeams);
+  const [mode, setMode] = useState(reasignando ? 'manual' : 'automatic');
+  const [manualTeamA, setManualTeamA] = useState(() => {
+    if (reasignando) return [...currentTeams.teamAPlayerIds];
+    return hayCapitanes ? [captains.teamA] : [];
+  });
+  const [manualTeamB, setManualTeamB] = useState(() => {
+    if (reasignando) return [...currentTeams.teamBPlayerIds];
+    return hayCapitanes ? [captains.teamB] : [];
+  });
 
   const approvedPlayers = enrollments.filter(e => e.status === 'APPROVED');
   const esCapitan = (playerId) =>
@@ -104,6 +114,11 @@ const AssignTeamsModalContent = ({
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          {reasignando && (
+            <p data-testid="reasignar-aviso" className="text-sm text-amber-700">
+              {t('teams.replaceWarning')}
+            </p>
+          )}
           {/* Con equipos ya repartidos el consejo cambia: ahí el servidor no
               deja nombrar capitanes, y el puesto se cubre desde el panel de
               equipos (FE #692) */}

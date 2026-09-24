@@ -95,7 +95,8 @@
     "fillCaptainConfirm": "Name them",
     "fillCaptainCancel": "Cancel",
     "fillCaptainNobody": "Nobody is left enrolled in that team.",
-    "captainMissingWithTeams": "One captain is missing. With the teams already assigned, use \"Name a captain\" on the team that needs one."
+    "captainMissingWithTeams": "One captain is missing. With the teams already assigned, use \"Name a captain\" on the team that needs one.",
+    "replaceWarning": "This replaces the current teams. If they came from the draft, changing them here undoes what the captains picked."
   },
   "configuration": {
     "title": "Schedule Configuration",

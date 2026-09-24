@@ -95,7 +95,8 @@
     "fillCaptainConfirm": "Nombrar",
     "fillCaptainCancel": "Cancelar",
     "fillCaptainNobody": "No queda nadie inscrito en ese equipo.",
-    "captainMissingWithTeams": "Falta nombrar un capitán. Con los equipos ya repartidos se hace desde «Nombrar capitán», en el equipo que lo necesita."
+    "captainMissingWithTeams": "Falta nombrar un capitán. Con los equipos ya repartidos se hace desde «Nombrar capitán», en el equipo que lo necesita.",
+    "replaceWarning": "Este reparto sustituye a los equipos de ahora. Si salieron del draft, cambiarlos aquí deshace lo que eligieron los capitanes."
   },
   "configuration": {
     "title": "Configuración del Calendario",

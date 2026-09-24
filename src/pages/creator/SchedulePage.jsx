@@ -581,6 +581,7 @@ const SchedulePage = () => {
           teamNames={teamNames}
           captains={competition.captains}
           hasTeams={Boolean(teamAssignment)}
+          currentTeams={teamAssignment}
           t={t}
         />
       )}
