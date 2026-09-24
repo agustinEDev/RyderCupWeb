@@ -2,6 +2,7 @@ import { siViene } from '../../../utils/campoSiViene';
 
 const SESSION_ORDER = { MORNING: 0, AFTERNOON: 1, EVENING: 2 };
 const UPCOMING_STATUSES = ['SCHEDULED', 'IN_PROGRESS'];
+const COMPETICIONES_CON_PARTIDOS = ['CLOSED', 'IN_PROGRESS'];
 
 /**
  * Use Case: Get Upcoming Matches
@@ -55,9 +56,12 @@ class GetUpcomingMatchesUseCase {
     }
 
     const all = competitions ?? (await this.#listUserCompetitionsUseCase.execute(userId));
-    // Solo las que están jugándose: en una competición sin empezar no hay
-    // partido al que ir hoy
-    const active = (all || []).filter((competition) => competition.status === 'IN_PROGRESS');
+    // Las que se juegan y las cerradas: en una cerrada los partidos ya están
+    // hechos, y es el primer golpe a su hora lo que la pone en juego
+    // (RyderCupAM#375). Sin ella en la lista, nadie tendría «Anotar» que pulsar
+    const active = (all || []).filter((competition) =>
+      COMPETICIONES_CON_PARTIDOS.includes(competition.status)
+    );
     if (active.length === 0) {
       return { matches: [], complete: true };
     }
