@@ -54,6 +54,8 @@ describe('App · sin cierre de sesión por inactividad (BE #376)', () => {
 
   afterEach(() => {
     vi.useRealTimers();
+    delete window.matchMedia;
+    window.history.pushState({}, '', '/');
   });
 
   it.each([

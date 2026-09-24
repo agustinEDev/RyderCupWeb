@@ -102,7 +102,7 @@ export const AuthProvider = ({ children }) => {
     // cierre de sesion y el siguiente componente que montara veria un usuario
     // que ya no esta (FE #489).
     //
-    // Por aqui pasan la inactividad, el aviso de otra pestaña y —desde FE
+    // Por aqui pasan el aviso de otra pestaña y —desde FE
     // #531— el boton de salir, que antes se limpiaba a medias: hacia su
     // peticion y redirigia, y el almacenamiento se quedaba entero.
     //

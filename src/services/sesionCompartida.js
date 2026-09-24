@@ -369,7 +369,8 @@ export const anotaLaSesion = (usuarioDelBackend) => {
 };
 
 /**
- * La sesión se acabó: al salir, por inactividad o porque otra pestaña lo dijo.
+ * La sesión se acabó: al salir, porque el servidor la dio por caducada o porque
+ * otra pestaña lo dijo.
  * Sin esto, lo que quedara guardado aquí sobreviviría al cierre de sesión.
  */
 export const olvidaLaSesion = () => {
@@ -378,7 +379,7 @@ export const olvidaLaSesion = () => {
   olvidaElApunte();
   // Y los fallos se cuentan desde cero. Si no, un arranque sin cobertura que
   // quemara los cuatro intentos dejaba el contador arriba, y el siguiente fallo
-  // —ya con la sesión cerrada por inactividad o por otra pestaña— se pasaba del
+  // —ya con la sesión cerrada por el servidor o por otra pestaña— se pasaba del
   // tope: sin reintento, sin apunte, y al formulario a la primera, que es
   // justo lo que no puede pasar en mitad del campo
   fallosSeguidos = 0;
