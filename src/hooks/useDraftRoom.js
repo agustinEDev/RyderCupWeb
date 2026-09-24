@@ -85,16 +85,20 @@ const useDraftRoom = (competitionId, userId) => {
     cargar();
   }, [competitionId, cargar]);
 
-  // El refresco, solo mientras la sala está en marcha
+  // El refresco, mientras la sala está en marcha y también mientras se espera el
+  // sorteo (#710): el capitán que entraba antes se quedaba en «todavía no se ha
+  // lanzado» con su turno corriendo en el servidor. Si la carga falló, no: una
+  // sala que no se puede ver no se pide cada cinco segundos
+  const esperandoElSorteo = !cargando && sala === null && !error;
   useEffect(() => {
-    if (sala?.status !== 'IN_PROGRESS') return undefined;
+    if (sala?.status !== 'IN_PROGRESS' && !esperandoElSorteo) return undefined;
     // `cargar(false)`: el refresco trae la sala nueva, pero no borra un aviso
     // que la pantalla todavía tiene que enseñar, como el turno perdido. Pasarlo
     // directo a `setInterval` lo llamaba sin argumentos y el aviso duraba tres
     // segundos
     const id = setInterval(() => cargar(false), INTERVALO_MS);
     return () => clearInterval(id);
-  }, [sala?.status, cargar]);
+  }, [sala?.status, esperandoElSorteo, cargar]);
 
   // El contador, segundo a segundo y sin volver a preguntar al servidor. Se
   // cuenta contra la hora del SERVIDOR: `Date.now()` más el desfase que dijo

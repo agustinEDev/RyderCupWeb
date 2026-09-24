@@ -127,6 +127,34 @@ describe('useDraftRoom (FE #653)', () => {
     expect(mockGet.mock.calls.length).toBeLessThanOrEqual(12);
   });
 
+  // #710: el capitán que entra antes del sorteo se quedaba en «todavía no se ha
+  // lanzado» mientras en el servidor ya corría su turno. La espera no preguntaba
+  it('H5c: antes del sorteo también se refresca, y se entera de que empezó', async () => {
+    mockGet.mockResolvedValueOnce(null);
+    const { result } = renderHook(() => useDraftRoom('c1', 'ana'));
+    await waitFor(() => expect(result.current.cargando).toBe(false));
+    expect(result.current.sala).toBeNull();
+
+    await act(async () => {
+      vi.advanceTimersByTime(6000);
+    });
+
+    await waitFor(() => expect(result.current.sala?.status).toBe('IN_PROGRESS'));
+  });
+
+  it('H5d: si no se pudo cargar, no se insiste cada cinco segundos', async () => {
+    mockGet.mockRejectedValue(Object.assign(new Error('No eres de esta competición'), { status: 403 }));
+    const { result } = renderHook(() => useDraftRoom('c1', 'ana'));
+    await waitFor(() => expect(result.current.error).toBeTruthy());
+    mockGet.mockClear();
+
+    await act(async () => {
+      vi.advanceTimersByTime(30000);
+    });
+
+    expect(mockGet).not.toHaveBeenCalled();
+  });
+
   it('H6: terminada deja de preguntar: ya no cambia nada', async () => {
     mockGet.mockResolvedValue(sala({ status: 'COMPLETED', currentTeam: null, turnStartedAt: null }));
     const { result } = renderHook(() => useDraftRoom('c1', 'ana'));
