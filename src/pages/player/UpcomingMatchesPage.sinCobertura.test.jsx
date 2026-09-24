@@ -14,7 +14,7 @@
  * solo comprueba que la pantalla la usa.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 
 const mockLee = vi.fn();
@@ -104,8 +104,17 @@ describe('Mis próximos partidos sin cobertura', () => {
     // El jugador abre la lista esperando a que abra la anotación. La página se
     // pinta UNA vez y no vuelve a hacerlo: sin un despertador, a la hora en
     // punto el botón sigue sin estar y hay que recargar —en el tee y con mala
-    // cobertura—. Aquí la apertura se pone a dos segundos y el reloj se adelanta
-    // a mano, para que el temporizador de verdad sea el que dispare el repintado
+    // cobertura—. Aquí la apertura se pone a dos segundos y el despertador de la
+    // página, con su segundo de margen, lo dispara el reloj simulado: esperarlo
+    // de verdad eran 3 s de un límite de 5, y en el CI con cobertura no cabían.
+    // `setInterval` se queda real: es con lo que `findBy` va preguntando. Y el
+    // reloj simulado avanza también solo (`shouldAdvanceTime`): Testing Library
+    // cierra cada `findBy` con un `setTimeout(0)` que solo adelanta con Jest
+    vi.useFakeTimers({
+      toFake: ['Date', 'setTimeout', 'clearTimeout'],
+      shouldAdvanceTime: true,
+    });
+    vi.setSystemTime(new Date(2026, 8, 17, 8, 0));
     const abre = new Date(Date.now() + 2000).toISOString();
     mockLee.mockResolvedValue({ matches: [partido({ scoringOpensAt: abre })], complete: true });
     mockVista.mockResolvedValue({ matchId: 'm-1', players: [{ userId: 'u-1' }] });
@@ -115,9 +124,9 @@ describe('Mis próximos partidos sin cobertura', () => {
     await screen.findByTestId('upcoming-match-card');
     expect(screen.queryByText('upcomingMatches.scoreMatch')).not.toBeInTheDocument();
 
-    vi.setSystemTime(new Date(2026, 8, 17, 9, 0));
+    await act(() => vi.advanceTimersByTimeAsync(3000));
 
-    expect(await screen.findByText('upcomingMatches.scoreMatch', {}, { timeout: 5000 })).toBeInTheDocument();
+    expect(await screen.findByText('upcomingMatches.scoreMatch')).toBeInTheDocument();
   });
 
   it('sin red y con lista guardada: la enseña, lo avisa y deja anotar el de hoy', async () => {
