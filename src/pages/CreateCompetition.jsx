@@ -3,10 +3,12 @@ import { useNavigate, useParams } from 'react-router';
 import { Trophy, Settings, Plus, X, ChevronDown, Flag, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { nombresPorDefectoDeLosEquipos } from './nombresPorDefectoDeLosEquipos';
+import { agendaPropuesta } from '../utils/agenda';
 import HeaderAuth from '../components/layout/HeaderAuth';
 import { useAuth } from '../hooks/useAuth';
 import {
   createCompetitionWithGolfCoursesUseCase,
+  configureScheduleUseCase,
   updateCompetitionUseCase,
   getCompetitionDetailUseCase,
   getCompetitionGolfCoursesUseCase,
@@ -662,6 +664,21 @@ const CreateCompetition = () => {
           );
         } else {
           customToast.error(t('create.errorAddingCourses'));
+        }
+
+        // La agenda se propone ya, con las fechas que acaba de poner (FE #654):
+        // parejas los primeros días e individuales el último, y se cambia en
+        // la ficha. Solo al estilo Ryder —en manual lo decide todo él— y con
+        // algún campo, que es de donde el servidor saca el de cada sesión.
+        // Si falla, la competición ya está creada: la ficha enseñará la
+        // agenda vacía con su aviso, y no se dice que falló el alta
+        const propuesta = agendaPropuesta(formData.startDate, formData.endDate);
+        if (formData.setupMode === 'RYDER_CUP' && successCount > 0 && propuesta) {
+          try {
+            await configureScheduleUseCase.execute(createdCompetition.id, propuesta);
+          } catch (error) {
+            console.error('No se ha podido proponer la agenda:', error);
+          }
         }
 
         // Navigate to competition detail

@@ -154,5 +154,23 @@
     "walkoverDeclared": "Walkover declared successfully",
     "playersReassigned": "Players reassigned successfully",
     "captainFilled": "Captain named"
+  },
+  "agenda": {
+    "title": "Schedule",
+    "notLoaded": "The schedule could not be loaded. Try again in a moment.",
+    "empty": "There are no sessions yet.",
+    "emptyManage": "There are no sessions yet: add the ones that will be played.",
+    "matches_one": "{{count}} match",
+    "matches_other": "{{count}} matches",
+    "format": "Session format",
+    "course": "Session course",
+    "remove": "Remove the session",
+    "add": "Add session",
+    "day": "Day",
+    "slot": "Slot",
+    "addConfirm": "Add",
+    "cancel": "Cancel",
+    "error": "The schedule could not be changed",
+    "inDetail": "Change the schedule"
   }
 }

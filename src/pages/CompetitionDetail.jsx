@@ -15,6 +15,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useUserRoles } from '../hooks/useUserRoles';
 import { CountryFlag } from '../utils/countryUtils';
 import CompetitionGolfCoursesSection from '../components/competition/CompetitionGolfCoursesSection';
+import AgendaDeLaCompeticion from '../components/competition/AgendaDeLaCompeticion';
 import EnrollmentRequestModal from '../components/enrollment/EnrollmentRequestModal';
 import {
   getCompetitionDetailUseCase,
@@ -1110,6 +1111,18 @@ const CompetitionDetail = () => {
                 </div>
               </div>
             </motion.div>
+
+            {/* La agenda: el torneo ES su agenda, a la vista de todos, y el
+                organizador la cambia aquí mismo (FE #654) */}
+            <div className="p-4" data-testid="seccion-agenda">
+              <AgendaDeLaCompeticion
+                competitionId={competition.id}
+                startDate={competition.startDate}
+                endDate={competition.endDate}
+                canManage={canManage}
+                jugadores={approvedEnrollments.length}
+              />
+            </div>
 
             {/* Golf Courses Section */}
             <motion.div

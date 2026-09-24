@@ -154,5 +154,23 @@
     "walkoverDeclared": "Walkover declarado exitosamente",
     "playersReassigned": "Jugadores reasignados exitosamente",
     "captainFilled": "Capitán nombrado"
+  },
+  "agenda": {
+    "title": "Agenda",
+    "notLoaded": "No se ha podido cargar la agenda. Vuelve a intentarlo en un momento.",
+    "empty": "Todavía no hay sesiones.",
+    "emptyManage": "Todavía no hay sesiones: añade las que se vayan a jugar.",
+    "matches_one": "{{count}} partido",
+    "matches_other": "{{count}} partidos",
+    "format": "Formato de la sesión",
+    "course": "Campo de la sesión",
+    "remove": "Quitar la sesión",
+    "add": "Añadir sesión",
+    "day": "Día",
+    "slot": "Franja",
+    "addConfirm": "Añadir",
+    "cancel": "Cancelar",
+    "error": "No se ha podido cambiar la agenda",
+    "inDetail": "Cambiar la agenda"
   }
 }

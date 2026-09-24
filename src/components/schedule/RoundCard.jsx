@@ -84,7 +84,9 @@ const RoundCard = ({
 
         <div className="flex items-center gap-2 shrink-0">
           {/* Action buttons (stop propagation to prevent toggle) */}
-          {isEditable && (
+          {/* Solo si quien la monta sabe editarla: la agenda de la ficha no
+              pasa por aquí (FE #654) */}
+          {isEditable && onEdit && onDelete && (
             <>
               <button
                 onClick={(e) => { e.stopPropagation(); onEdit(); }}
