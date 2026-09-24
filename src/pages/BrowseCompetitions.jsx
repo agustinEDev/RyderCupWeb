@@ -13,10 +13,13 @@ import {
 } from '../composition';
 import { CountryFlag } from '../utils/countryUtils';
 import { useAuth } from '../hooks/useAuth';
+import { useGeneroParaApuntarse } from '../hooks/useGeneroParaApuntarse';
 import EnrollmentRequestModal from '../components/enrollment/EnrollmentRequestModal';
 import BlockLoader from '../components/ui/BlockLoader';
 
 const BrowseCompetitions = () => {
+  // El género para apuntarse, solo a quien le falta (#710)
+  const generoParaApuntarse = useGeneroParaApuntarse();
   const navigate = useNavigate();
   const { t } = useTranslation('competitions');
 
@@ -135,10 +138,13 @@ const BrowseCompetitions = () => {
   };
 
   // Handle request enrollment
-  const handleRequestEnrollment = async (competitionId, color = null) => {
+  const handleRequestEnrollment = async (competitionId, color = null, genero = null) => {
     setEnrollModalOpen(false);
     try {
       setRequestingEnrollment((prev) => ({ ...prev, [competitionId]: true }));
+
+      // Antes que la plaza: sin género el servidor la rechaza (#710)
+      if (genero) await generoParaApuntarse.guardar(genero);
 
       // Call RequestEnrollmentUseCase
       await requestEnrollmentUseCase.execute(competitionId, null, { color });
@@ -408,8 +414,9 @@ const BrowseCompetitions = () => {
       <EnrollmentRequestModal
         isOpen={enrollModalOpen}
         onClose={() => setEnrollModalOpen(false)}
-        onConfirm={(tee) => handleRequestEnrollment(enrollTargetId, tee)}
+        onConfirm={(tee, genero) => handleRequestEnrollment(enrollTargetId, tee, genero)}
         isProcessing={!!requestingEnrollment[enrollTargetId]}
+        pideGenero={generoParaApuntarse.falta}
       />
     </div>
   );

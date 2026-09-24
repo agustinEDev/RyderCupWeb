@@ -17,6 +17,7 @@ import { CountryFlag } from '../utils/countryUtils';
 import CompetitionGolfCoursesSection from '../components/competition/CompetitionGolfCoursesSection';
 import AgendaDeLaCompeticion from '../components/competition/AgendaDeLaCompeticion';
 import { aCamposDeLaCompeticion } from '../utils/camposDeLaCompeticion';
+import { useGeneroParaApuntarse } from '../hooks/useGeneroParaApuntarse';
 import EnrollmentRequestModal from '../components/enrollment/EnrollmentRequestModal';
 import {
   getCompetitionDetailUseCase,
@@ -63,6 +64,8 @@ const CompetitionDetail = () => {
   const { id } = useParams();
   const { t, i18n } = useTranslation('competitions');
   const { user, loading: isLoadingUser } = useAuth();
+  // El género para apuntarse, solo a quien le falta (#710)
+  const generoParaApuntarse = useGeneroParaApuntarse();
   const { isAdmin, isCreator: hasCreatorRole, isLoading: isLoadingRoles } = useUserRoles(id);
   const [competition, setCompetition] = useState(null);
   const [enrollments, setEnrollments] = useState([]);
@@ -373,10 +376,12 @@ const CompetitionDetail = () => {
     }
   };
 
-  const handleEnroll = async (color = null) => {
+  const handleEnroll = async (color = null, genero = null) => {
     setShowEnrollModal(false);
     setIsProcessing(true);
     try {
+      // Antes que la plaza: sin género el servidor la rechaza (#710)
+      if (genero) await generoParaApuntarse.guardar(genero);
       await requestEnrollmentUseCase.execute(id, null, { color });
       customToast.success(t('detail.success.enrollmentRequested'));
       await loadCompetition();
@@ -1383,6 +1388,7 @@ const CompetitionDetail = () => {
         onClose={() => setShowEnrollModal(false)}
         onConfirm={handleEnroll}
         isProcessing={isProcessing}
+        pideGenero={generoParaApuntarse.falta}
       />
     </div>
   );

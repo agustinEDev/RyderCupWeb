@@ -184,5 +184,6 @@
       "saving": "Guardando…",
       "edit": "Editar tu alias"
     }
-  }
+  },
+  "genderForCompetitions": "Hace falta para apuntarte a una competición: las barras de salida se valoran por género. Se guarda en tu perfil."
 }
