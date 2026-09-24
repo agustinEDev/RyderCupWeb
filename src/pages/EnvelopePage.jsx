@@ -27,6 +27,9 @@ import BloqueoDePartidos from '../components/schedule/BloqueoDePartidos';
  * —por hándicap—, así que abrir antes de que el rival entregue dejaría armar
  * la lista propia para ganar todos los cruces.
  */
+// Cada cuánto se pregunta si ya se abrieron, mientras se espera (#710)
+const REFRESCO_MS = 10000;
+
 const EnvelopePage = () => {
   const navigate = useNavigate();
   const { id, roundId } = useParams();
@@ -67,6 +70,24 @@ const EnvelopePage = () => {
   const jugadores = useMemo(() => vista?.myPlayers || [], [vista]);
   const capitanea = jugadores.length > 0;
   const entregado = Boolean(vista?.mine?.submitted) && !cambiando;
+
+  // Con el sobre entregado y aún cerrados, se pregunta sola (#710): con los dos
+  // permisos, el capitán que da el suyo primero espera justo ese momento y no
+  // lo veía. Solo mientras espera algo: una página abierta toda la tarde no
+  // puede gastar el cupo de peticiones que comparten todos. Y en silencio: un
+  // fallo del refresco no es algo que el capitán haya hecho
+  const esperandoAlRival = !vista?.revealed && entregado;
+  useEffect(() => {
+    if (!esperandoAlRival) return undefined;
+    const id = setInterval(async () => {
+      try {
+        setVista(await getEnvelopesUseCase.execute(roundId));
+      } catch {
+        // Lo que ya había sigue valiendo: se vuelve a preguntar en el siguiente
+      }
+    }, REFRESCO_MS);
+    return () => clearInterval(id);
+  }, [esperandoAlRival, roundId]);
   // Lo decide el servidor: hacen falta los dos sobres dentro, sea quien sea.
   // Repetir esa regla aquí es donde se desincronizan
   const puedeAbrir = Boolean(vista?.canReveal);
