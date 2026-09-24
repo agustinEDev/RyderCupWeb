@@ -64,7 +64,7 @@
         "duplicatePlayer": "A player can only appear in one match",
         "noTeamAssignment": "Teams must be assigned before generating matches"
       },
-      "byEnvelopes": "The matchups come from the captains' envelopes: the matches are created from them."
+      "byEnvelopes": "In Ryder Cup mode the captains' envelopes decide the matchups. If this session's envelopes are already open, the matches come from them; otherwise players are paired by handicap."
     }
   },
   "teams": {
@@ -160,13 +160,15 @@
     "title": "This session's matches could not be created",
     "missing": {
       "GENDER": "has no gender on their profile",
-      "TEE_COLOR": "plays from tees this course does not have:"
+      "TEE_COLOR": "plays from tees this course does not have:",
+      "OTHER": "is missing something needed to play"
     },
     "reason": {
       "NOT_ENOUGH_PLAYERS": "Some matchups have players without an approved enrolment.",
       "NO_TEAMS": "The teams have not been drawn yet.",
       "NO_GOLF_COURSE": "This session has no golf course to take the tees from.",
-      "UNEXPECTED": "Something went wrong while creating them."
+      "UNEXPECTED": "Something went wrong while creating them.",
+      "PLAYERS_WITHOUT_TEE": "Some players are missing what is needed to know which tees they play from."
     },
     "retry": "Once it is fixed, press “Generate Matches” to create them."
   }

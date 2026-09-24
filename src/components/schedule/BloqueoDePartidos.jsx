@@ -4,6 +4,9 @@ import TeeColorBadge from '../golf_course/TeeColorBadge';
 
 // Los motivos que esta versión sabe contar. Uno que el servidor añada mañana
 // sale como «inesperado»: enseñar su clave no le dice nada a nadie
+// Y lo mismo con lo que le falta a cada jugador
+const FALTAS_CONOCIDAS = new Set(['GENDER', 'TEE_COLOR']);
+
 const MOTIVOS_CONOCIDOS = new Set([
   'PLAYERS_WITHOUT_TEE',
   'NOT_ENOUGH_PLAYERS',
@@ -51,7 +54,13 @@ const BloqueoDePartidos = ({ bloqueo, puedeReintentar = false }) => {
               className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1"
             >
               <span className="font-medium">{jugador.name}</span>
-              <span>{t(`generationBlock.missing.${jugador.missing}`, { defaultValue: '' })}</span>
+              <span>
+                {t(
+                  `generationBlock.missing.${
+                    FALTAS_CONOCIDAS.has(jugador.missing) ? jugador.missing : 'OTHER'
+                  }`
+                )}
+              </span>
               {jugador.teeColor && <TeeColorBadge color={jugador.teeColor} />}
             </li>
           ))}

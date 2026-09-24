@@ -16,6 +16,8 @@ import PendingActionsCard from './PendingActionsCard';
  *   D3  no hay ninguna                          | ni fila
  *   D4  la llamada falla                        | lo demás se enseña igual
  *   D5  revienta en síncrono                     | lo demás se enseña igual
+ *   D6  quien no organiza nada                   | ni pregunta
+ *   D7  quien creó alguna, aunque sin el rol     | sí
  */
 
 vi.mock('react-i18next', () => ({
@@ -161,6 +163,24 @@ describe('PendingActionsCard · sesiones sin partidos', () => {
     renderCard(creatorUser);
 
     expect(await screen.findByTestId('sobre-pendiente-r9')).toBeInTheDocument();
+  });
+
+  it('D6: quien no organiza nada ni siquiera pregunta', async () => {
+    // Cada vuelta a Inicio de cada jugador era una petición más contra el
+    // límite compartido, para una respuesta que para él siempre es vacía
+    mockListMyInvitations.mockResolvedValue({ invitations: [{ id: 'i1' }] });
+    renderCard(baseUser, []);
+
+    await screen.findAllByText(/pendingActions/);
+    expect(mockListMySessionsWithoutMatches).not.toHaveBeenCalled();
+  });
+
+  it('D7: quien ha creado alguna competición sí, aunque no tenga el rol', async () => {
+    // La tarjeta recibe las competiciones que CREÓ quien mira (`findByCreator`)
+    mockListMySessionsWithoutMatches.mockResolvedValue([SESION]);
+    renderCard(baseUser, [{ id: 'c1' }]);
+
+    expect(await screen.findByTestId('sesion-sin-partidos-r1')).toBeInTheDocument();
   });
 });
 

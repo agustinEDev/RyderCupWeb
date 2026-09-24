@@ -64,7 +64,7 @@
         "duplicatePlayer": "Un jugador solo puede aparecer en un partido",
         "noTeamAssignment": "Los equipos deben estar asignados antes de generar partidos"
       },
-      "byEnvelopes": "Los enfrentamientos salen de los sobres de los capitanes: se crean los partidos con ellos."
+      "byEnvelopes": "En modo Ryder los enfrentamientos los deciden los sobres de los capitanes. Si los de esta sesión ya están abiertos, los partidos salen de ellos; si no, se emparejan por hándicap."
     }
   },
   "teams": {
@@ -160,13 +160,15 @@
     "title": "No se han podido crear los partidos de esta sesión",
     "missing": {
       "GENDER": "no tiene el género en su perfil",
-      "TEE_COLOR": "juega de barras que este campo no tiene:"
+      "TEE_COLOR": "juega de barras que este campo no tiene:",
+      "OTHER": "le falta un dato para poder jugar"
     },
     "reason": {
       "NOT_ENOUGH_PLAYERS": "Faltan jugadores con la inscripción aprobada para los enfrentamientos.",
       "NO_TEAMS": "Todavía no hay equipos repartidos.",
       "NO_GOLF_COURSE": "Esta sesión no tiene un campo de golf del que sacar las barras.",
-      "UNEXPECTED": "Algo ha fallado al crearlos."
+      "UNEXPECTED": "Algo ha fallado al crearlos.",
+      "PLAYERS_WITHOUT_TEE": "A algunos jugadores les falta lo necesario para saber desde qué barras juegan."
     },
     "retry": "Cuando esté arreglado, pulsa «Generar Partidos» para crearlos."
   }

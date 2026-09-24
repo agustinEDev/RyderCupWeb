@@ -70,6 +70,20 @@ class EnvelopeMapper {
   }
 
   /**
+   * Qué sesión es y de qué competición: lo que comparten los avisos del panel.
+   * Uno solo para los dos, que un campo nuevo no se quede en uno de ellos.
+   */
+  static toSessionRef(api) {
+    return {
+      roundId: api.round_id,
+      competitionId: api.competition_id,
+      competitionName: api.competition_name,
+      roundDate: api.round_date,
+      sessionType: api.session_type,
+    };
+  }
+
+  /**
    * Los sobres que un capitan tiene sin entregar (FE #655).
    *
    * Una respuesta que no sea una lista se trata como «nada pendiente»: este
@@ -79,11 +93,7 @@ class EnvelopeMapper {
   static toPendingEnvelopes(apiData) {
     if (!Array.isArray(apiData)) return [];
     return apiData.map((pendiente) => ({
-      roundId: pendiente.round_id,
-      competitionId: pendiente.competition_id,
-      competitionName: pendiente.competition_name,
-      roundDate: pendiente.round_date,
-      sessionType: pendiente.session_type,
+      ...EnvelopeMapper.toSessionRef(pendiente),
       team: pendiente.team,
     }));
   }
@@ -97,11 +107,7 @@ class EnvelopeMapper {
   static toSessionsWithoutMatches(apiData) {
     if (!Array.isArray(apiData)) return [];
     return apiData.map((sesion) => ({
-      roundId: sesion.round_id,
-      competitionId: sesion.competition_id,
-      competitionName: sesion.competition_name,
-      roundDate: sesion.round_date,
-      sessionType: sesion.session_type,
+      ...EnvelopeMapper.toSessionRef(sesion),
       ...aBloqueoDePartidos({ reason: sesion.reason, players: sesion.players }),
     }));
   }

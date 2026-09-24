@@ -15,6 +15,7 @@ import {
 } from '../../composition';
 import { loQueSeEnseñoAntes, recuerdaLasAccionesPendientes } from '../../services/accionesPendientes';
 import BlockLoader from '../ui/BlockLoader';
+import { diaDeLaSesion } from '../../utils/diaDeLaSesion';
 
 const PendingActionsCard = ({ user, competitions, onHandicapAction, handicapPending = false , upcomingMatches = 0 }) => {
   const navigate = useNavigate();
@@ -53,6 +54,10 @@ const PendingActionsCard = ({ user, competitions, onHandicapAction, handicapPend
     (user?.roles && Array.isArray(user.roles) &&
       user.roles.some(r => (typeof r === 'string' ? r : r.name) === 'CREATOR' || (typeof r === 'string' ? r : r.name) === 'ADMIN')), [user]);
 
+  // Quien organiza algo (BE #361): el rol, o tener alguna competición. La
+  // lista que recibe esta tarjeta ya son las que ha CREADO (`findByCreator`)
+  const organiza = Boolean(isCreator || competitions?.length > 0);
+
   useEffect(() => {
     if (!user) return;
 
@@ -61,15 +66,20 @@ const PendingActionsCard = ({ user, competitions, onHandicapAction, handicapPend
     const loadPendingData = async () => {
       if (!loQueSeEnseñoAntes()) setIsLoading(true);
       try {
+        // Cada una dentro de su función async: si alguna fallara aunque fuera
+        // en síncrono, queda como un rechazo más y no tumba el panel entero
+        const pedir = (peticion) => (async () => peticion())();
         const results = await Promise.allSettled([
-          listMyInvitationsUseCase.execute({ status: 'PENDING' }),
-          isCreator ? loadPendingEnrollments(competitions) : Promise.resolve([]),
-          listPendingFriendRequestsUseCase.execute(user.id, 'received'),
-          listMyQuickMatchesUseCase.execute({ status: 'IN_PROGRESS' }),
-          listMyPendingEnvelopesUseCase.execute(),
-          // Dentro de una función async: si fallara aunque fuera en síncrono,
-          // queda como un rechazo más en vez de tumbar TODO el panel (BE #361)
-          (async () => listMySessionsWithoutMatchesUseCase.execute())(),
+          pedir(() => listMyInvitationsUseCase.execute({ status: 'PENDING' })),
+          isCreator ? pedir(() => loadPendingEnrollments(competitions)) : Promise.resolve([]),
+          pedir(() => listPendingFriendRequestsUseCase.execute(user.id, 'received')),
+          pedir(() => listMyQuickMatchesUseCase.execute({ status: 'IN_PROGRESS' })),
+          pedir(() => listMyPendingEnvelopesUseCase.execute()),
+          // Solo quien organiza algo: para los demás siempre es vacía, y cada
+          // vuelta a Inicio era una petición más contra el límite compartido
+          organiza
+            ? pedir(() => listMySessionsWithoutMatchesUseCase.execute())
+            : Promise.resolve([]),
         ]);
 
         // Una respuesta que llega cuando ya nos hemos ido no escribe: antes solo
@@ -126,7 +136,7 @@ const PendingActionsCard = ({ user, competitions, onHandicapAction, handicapPend
     return () => {
       cancelado = true;
     };
-  }, [user, competitions, isCreator]);
+  }, [user, competitions, isCreator, organiza]);
 
   // El día y la franja, con el idioma de la aplicación. `Intl` revienta con un
   // RangeError si la fecha no se puede leer, y esto vive dentro de la tarjeta
@@ -135,8 +145,10 @@ const PendingActionsCard = ({ user, competitions, onHandicapAction, handicapPend
     const franja = sobre.sessionType ? t(`nextMatch.session.${sobre.sessionType}`) : '';
     let dia = '';
     try {
-      if (sobre.roundDate) {
-        dia = new Date(sobre.roundDate).toLocaleDateString(i18n.language, {
+      // Como ese día en casa: leída como UTC, por detrás de UTC salía el anterior
+      const fecha = diaDeLaSesion(sobre.roundDate);
+      if (fecha) {
+        dia = fecha.toLocaleDateString(i18n.language, {
           day: 'numeric',
           month: 'short',
         });

@@ -84,5 +84,39 @@ describe('BloqueoDePartidos', () => {
     rerender(<BloqueoDePartidos bloqueo={BLOQUEO} />);
     expect(screen.getByTestId('bloqueo-de-partidos')).not.toHaveTextContent('generationBlock.retry');
   });
+
+  it('B7: cada motivo y cada falta que se pinta tiene su texto en los dos idiomas', async () => {
+    // Con el `t` de mentira no se ve: una clave que falta en el json sale
+    // cruda al organizador, como «generationBlock.reason.PLAYERS_WITHOUT_TEE»
+    const idiomas = ['es', 'en'];
+    for (const idioma of idiomas) {
+      const textos = (await import(`../../i18n/locales/${idioma}/schedule.json`)).default;
+      for (const motivo of [
+        'PLAYERS_WITHOUT_TEE',
+        'NOT_ENOUGH_PLAYERS',
+        'NO_TEAMS',
+        'NO_GOLF_COURSE',
+        'UNEXPECTED',
+      ]) {
+        expect(textos.generationBlock.reason[motivo], `${idioma}: ${motivo}`).toBeTruthy();
+      }
+      for (const falta of ['GENDER', 'TEE_COLOR', 'OTHER']) {
+        expect(textos.generationBlock.missing[falta], `${idioma}: ${falta}`).toBeTruthy();
+      }
+    }
+  });
+
+  it('B8: una falta que esta versión no conoce dice algo, no solo el nombre', () => {
+    render(
+      <BloqueoDePartidos
+        bloqueo={{
+          reason: 'PLAYERS_WITHOUT_TEE',
+          players: [{ userId: 'u9', name: 'Ana Alba', missing: 'HANDICAP', teeColor: null }],
+        }}
+      />
+    );
+
+    expect(screen.getByTestId('falta-u9')).toHaveTextContent('generationBlock.missing.OTHER');
+  });
 });
 
