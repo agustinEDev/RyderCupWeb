@@ -371,15 +371,19 @@ const SchedulePage = () => {
                   <p className="text-gray-500 text-sm mt-1">{competition.name}</p>
                 </div>
                 {/* La agenda se cambia en la ficha (FE #654): aquí se quedan los
-                    equipos, los partidos y los sobres */}
-                <Link
-                  to={`/competitions/${id}`}
-                  data-testid="agenda-en-la-ficha"
-                  className="flex items-center gap-2 rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-                >
-                  <Calendar className="w-4 h-4" />
-                  <span>{t('agenda.inDetail')}</span>
-                </Link>
+                    equipos, los partidos y los sobres. Solo para quien la puede
+                    cambiar: los demás entran aquí por la ruta pública y en la
+                    ficha no tienen nada que tocar */}
+                {canManage && (
+                  <Link
+                    to={`/competitions/${id}`}
+                    data-testid="agenda-en-la-ficha"
+                    className="flex items-center gap-2 rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                  >
+                    <Calendar className="w-4 h-4" />
+                    <span>{t('agenda.inDetail')}</span>
+                  </Link>
+                )}
               </div>
             </motion.div>
 

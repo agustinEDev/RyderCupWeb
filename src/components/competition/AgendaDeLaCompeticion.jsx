@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AlertTriangle, CalendarDays, MapPin, Plus, Trash2 } from 'lucide-react';
 import {
@@ -58,13 +58,23 @@ const AgendaDeLaCompeticion = ({
   // Lo que espera un «sí»: cambiar el formato con sobres posibles, o quitar
   const [confirmando, setConfirmando] = useState(null);
 
+  // Cuál es la última lectura pedida. Solo esa se pinta: si la competición
+  // cambia mientras se recarga tras un cambio, hay dos en vuelo, y la vieja
+  // podía llegar la última y pisar la buena (CodeRabbit en la #709). Al
+  // desmontar también se invalida lo que quede por llegar
+  const ultimaLectura = useRef(0);
+
   const cargarAgenda = useCallback(async () => {
+    const esta = ++ultimaLectura.current;
     // Dentro de su función async: un fallo, aunque sea síncrono, es un
     // rechazo más y no se lleva la ficha entera
     try {
-      setAgenda(await (async () => getScheduleUseCase.execute(competitionId))());
+      const leida = await (async () => getScheduleUseCase.execute(competitionId))();
+      if (esta !== ultimaLectura.current) return;
+      setAgenda(leida);
       setSinCargar(false);
     } catch {
+      if (esta !== ultimaLectura.current) return;
       // No se pudo preguntar: decir «no hay sesiones» sería afirmar algo que
       // no se sabe, y el organizador se pondría a crear las que ya tiene
       setSinCargar(true);
@@ -86,6 +96,10 @@ const AgendaDeLaCompeticion = ({
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- pedir la agenda al servidor es justamente el objetivo, y se repite cuando cambia la competición (`version`)
     cargarAgenda();
+    const lecturas = ultimaLectura;
+    return () => {
+      lecturas.current += 1;
+    };
   }, [cargarAgenda, version]);
 
   const sesiones = useMemo(() => agenda?.rounds || [], [agenda]);

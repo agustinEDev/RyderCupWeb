@@ -51,6 +51,7 @@ import AgendaDeLaCompeticion from './AgendaDeLaCompeticion';
  *   AG15  la competición cambia (equipos, estado)                | se vuelve a leer
  *   AG16  la sesión apunta a un campo ya retirado                | se dice, no se enseña otro
  *   AG17  tras un cambio                                         | se relee la agenda, no los campos
+ *   AG18  una lectura vieja llega después de la nueva            | no la pisa
  */
 
 const ALTEA = { golf_course: { id: 'g1', name: 'Altea' } };
@@ -318,6 +319,36 @@ describe('AgendaDeLaCompeticion · lo que cambia el organizador', () => {
 
     await waitFor(() => expect(mockVerAgenda).toHaveBeenCalledTimes(2));
     expect(mockCampos).toHaveBeenCalledTimes(1);
+  });
+
+  it('AG18: una lectura vieja que llega la última no pisa la de ahora (CodeRabbit)', async () => {
+    let soltarLaVieja;
+    mockVerAgenda
+      .mockImplementationOnce(() => new Promise((r) => { soltarLaVieja = r; }))
+      .mockResolvedValueOnce({
+        ...AGENDA,
+        rounds: [sesion({ id: 'nueva', matchFormat: 'SINGLES' })],
+      });
+    const { rerender } = pintar({ version: 'v1' });
+
+    rerender(
+      <AgendaDeLaCompeticion
+        competitionId="c1"
+        startDate="2026-10-03"
+        endDate="2026-10-04"
+        canManage
+        jugadores={12}
+        version="v2"
+      />
+    );
+    await screen.findByTestId('agenda-sesion-nueva');
+
+    // La primera, la de «v1», contesta ahora: tarde
+    soltarLaVieja({ ...AGENDA, rounds: [sesion({ id: 'vieja' })] });
+    await new Promise((r) => setTimeout(r, 20));
+
+    expect(screen.queryByTestId('agenda-sesion-vieja')).not.toBeInTheDocument();
+    expect(screen.getByTestId('agenda-sesion-nueva')).toBeInTheDocument();
   });
 });
 

@@ -14,6 +14,7 @@ import { MemoryRouter, Routes, Route } from 'react-router';
  *   AF1  el organizador                                 | sin «Crear Ronda»
  *   AF2  y en su lugar                                  | un enlace a la agenda de la ficha
  *   AF3  las sesiones                                   | sin editar ni borrar aquí
+ *   AF4  quien solo mira                                | sin el enlace: no puede cambiar nada
  */
 // `t` y el objeto que devuelve `useTranslation`, ESTABLES: la carga de la
 // pantalla es un `useCallback` que depende de `t`, así que devolviendo una
@@ -145,4 +146,20 @@ describe('SchedulePage · la agenda vive en la ficha (FE #654)', () => {
     expect(screen.queryByTitle('rounds.edit')).not.toBeInTheDocument();
     expect(screen.queryByTitle('rounds.delete')).not.toBeInTheDocument();
   });
+
+  it('AF4: a quien solo mira no se le ofrece cambiar la agenda (CodeRabbit)', async () => {
+    // Capitanes y jugadores entran aquí por la ruta pública, y en la ficha no
+    // tienen nada que cambiar: el enlace les prometía algo que no pueden hacer
+    ROLES.isCreator = false;
+    mockDetalle.mockResolvedValue({ ...COMPETICION, creatorId: 'otra-persona' });
+    try {
+      pintar();
+
+      await screen.findByText('Ryder de los amigos');
+      expect(screen.queryByTestId('agenda-en-la-ficha')).not.toBeInTheDocument();
+    } finally {
+      ROLES.isCreator = true;
+    }
+  });
 });
+
