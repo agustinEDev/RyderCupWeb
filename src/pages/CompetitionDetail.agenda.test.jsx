@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import CompetitionDetail from './CompetitionDetail';
 
@@ -11,6 +11,7 @@ import CompetitionDetail from './CompetitionDetail';
  *   FA1  el organizador                    | la agenda, con sus fechas y editable
  *   FA2  quien solo mira                   | la agenda, sin editar
  *   FA3  la cuenta de partidos             | con los inscritos aprobados
+ *   FA6  cambian los campos en la ficha    | la agenda recibe otra `versionCampos` (FE #715)
  */
 
 vi.mock('react-i18next', () => ({
@@ -40,8 +41,12 @@ vi.mock('../components/competition/AgendaDeLaCompeticion', () => ({
     return <div data-testid="agenda" />;
   },
 }));
+const mockSeccionCampos = vi.fn();
 vi.mock('../components/competition/CompetitionGolfCoursesSection', () => ({
-  default: () => <div />,
+  default: (props) => {
+    mockSeccionCampos(props);
+    return <div />;
+  },
 }));
 
 const mockGetCompetitionDetail = vi.fn();
@@ -180,5 +185,17 @@ describe('CompetitionDetail · la agenda (FE #654)', () => {
     await screen.findByTestId('agenda');
     expect(ultimasProps().version).toContain('2026-09-24T07:00:00');
   });
-});
 
+  it('FA6: si la sección de campos avisa de un cambio, la agenda los vuelve a leer', async () => {
+    renderPage();
+    await screen.findByTestId('agenda');
+    const antes = ultimasProps().versionCampos;
+    const aviso = mockSeccionCampos.mock.calls[mockSeccionCampos.mock.calls.length - 1][0]
+      .onCamposCambiados;
+
+    act(() => aviso());
+
+    expect(antes).toBeDefined();
+    expect(ultimasProps().versionCampos).not.toBe(antes);
+  });
+});
