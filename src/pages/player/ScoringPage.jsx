@@ -143,6 +143,7 @@ const ScoringPage = () => {
   );
 
   // Players who still need to submit their scorecard for the match to complete
+  const esFoursomes = scoringView?.matchFormat === 'FOURSOMES';
   const pendingPlayers = scoringView?.players?.filter(
     (p) => !scoringView?.scorecardSubmittedBy?.includes(p.userId)
   ) ?? [];
@@ -576,15 +577,23 @@ const ScoringPage = () => {
 
             {hasSubmitted && (
               <div className="text-center text-sm space-y-1">
-                <p className="text-green-600 font-medium">{t('submit.alreadySubmitted')}</p>
+                {/* En foursomes la tarjeta es de la pareja (RyderCupAM#377): el
+                    servidor ya cuenta a los dos, así que lo pendiente es la otra */}
+                <p className="text-green-600 font-medium">
+                  {t(esFoursomes ? 'submit.pairSubmitted' : 'submit.alreadySubmitted')}
+                </p>
                 {scoringView?.matchStatus === 'COMPLETED' ? (
                   <p className="text-gray-500">{t('submit.matchCompleted')}</p>
                 ) : pendingPlayers.length > 0 && (
                   <p className="text-gray-500">
-                    {t('submit.waitingForPlayers', {
-                      count: pendingPlayers.length,
-                      names: pendingPlayers.map((p) => p.userName).join(', '),
-                    })}
+                    {esFoursomes
+                      ? t('submit.waitingForPair', {
+                        names: pendingPlayers.map((p) => p.userName).join(' / '),
+                      })
+                      : t('submit.waitingForPlayers', {
+                        count: pendingPlayers.length,
+                        names: pendingPlayers.map((p) => p.userName).join(', '),
+                      })}
                   </p>
                 )}
               </div>

@@ -71,6 +71,28 @@ describe('BloqueoDePartidos', () => {
     expect(aviso).not.toHaveTextContent('ALGO_NUEVO');
   });
 
+  it('B8: abiertos con las inscripciones reabiertas, dice eso (RyderCupAM, revisión de la #711)', () => {
+    render(<BloqueoDePartidos bloqueo={{ reason: 'ENROLLMENT_OPEN', players: [] }} />);
+
+    expect(screen.getByTestId('bloqueo-de-partidos')).toHaveTextContent(
+      'generationBlock.reason.ENROLLMENT_OPEN'
+    );
+  });
+
+  it('B9: dice quién está emparejado sin la inscripción aprobada (BE #360)', () => {
+    render(
+      <BloqueoDePartidos
+        bloqueo={{
+          reason: 'NOT_ENOUGH_PLAYERS',
+          players: [{ userId: 'u9', name: 'Iván Ido', missing: 'ENROLLMENT', teeColor: null }],
+        }}
+      />
+    );
+
+    expect(screen.getByTestId('falta-u9')).toHaveTextContent('Iván Ido');
+    expect(screen.getByTestId('falta-u9')).toHaveTextContent('generationBlock.missing.ENROLLMENT');
+  });
+
   it('B5: sin motivo no pinta nada', () => {
     const { container } = render(<BloqueoDePartidos bloqueo={null} />);
 
@@ -97,10 +119,11 @@ describe('BloqueoDePartidos', () => {
         'NO_TEAMS',
         'NO_GOLF_COURSE',
         'UNEXPECTED',
+        'ENROLLMENT_OPEN',
       ]) {
         expect(textos.generationBlock.reason[motivo], `${idioma}: ${motivo}`).toBeTruthy();
       }
-      for (const falta of ['GENDER', 'TEE_COLOR', 'OTHER']) {
+      for (const falta of ['GENDER', 'TEE_COLOR', 'ENROLLMENT', 'OTHER']) {
         expect(textos.generationBlock.missing[falta], `${idioma}: ${falta}`).toBeTruthy();
       }
     }

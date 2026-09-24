@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { X, Zap, Plus, Trash2 } from 'lucide-react';
+import BloqueoDePartidos from './BloqueoDePartidos';
 
 let matchIdCounter = 0;
 const createEmptyMatch = () => ({ id: ++matchIdCounter, teamAPlayerIds: [], teamBPlayerIds: [] });
@@ -15,6 +16,7 @@ const GenerateMatchesModalContent = ({
   onClose,
   onConfirm,
   round,
+  bloqueo = null,
   enrollments,
   teamAssignment,
   isProcessing,
@@ -180,6 +182,7 @@ const GenerateMatchesModalContent = ({
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
+        data-testid="generate-matches-modal"
         className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
       >
         {/* Header */}
@@ -199,6 +202,9 @@ const GenerateMatchesModalContent = ({
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          {/* Por qué no salieron la última vez (BE #360): lo apuntado en la
+              sesión, en el idioma de la pantalla */}
+          <BloqueoDePartidos bloqueo={bloqueo} />
           {/* Warning when no teams assigned */}
           {(!teamAssignment || (!teamAssignment.teamAPlayerIds?.length && !teamAssignment.teamBPlayerIds?.length)) && (
             <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">

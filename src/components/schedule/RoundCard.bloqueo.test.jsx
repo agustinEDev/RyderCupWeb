@@ -83,3 +83,74 @@ describe('RoundCard · por qué no tiene partidos', () => {
   });
 });
 
+
+/**
+ * En modo Ryder, «Generar» solo como reintento (FE #711). Antes de abrirse los
+ * sobres empareja por hándicap, y con los partidos hechos los capitanes ya no
+ * pueden entregar: los sobres se saltaban sin querer.
+ *
+ *   #   caso                                               | «Generar»
+ *   ----|--------------------------------------------------|-----------
+ *   G1  Ryder, esperando partidos, sin motivo (sin abrir)  | no
+ *   G2  Ryder, con motivo (abiertos y sin partidos)        | sí, reintento
+ *   G3  manual                                             | sí, como siempre
+ */
+describe('RoundCard · «Generar» en modo Ryder (FE #711)', () => {
+  const tarjeta = (ronda, soloReintento) =>
+    render(
+      <RoundCard
+        round={ronda}
+        canEdit
+        soloReintento={soloReintento}
+        isExpanded={false}
+        onToggleExpand={() => {}}
+        onGenerateMatches={() => {}}
+        golfCourses={[{ id: 'g1', name: 'Altea' }]}
+        playerNameMap={{}}
+        playerHandicapMap={{}}
+        teamNames={{}}
+        t={(clave) => clave}
+      />
+    );
+
+  it('G1: en Ryder, con los sobres sin abrir, no se ofrece', () => {
+    tarjeta({ ...RONDA, matchGenerationBlock: null }, true);
+
+    expect(screen.queryByTitle('matches.generate')).not.toBeInTheDocument();
+  });
+
+  it('G2: en Ryder, abiertos y sin partidos, se ofrece para reintentar', () => {
+    tarjeta(RONDA, true);
+
+    expect(screen.getByTitle('matches.generate')).toBeInTheDocument();
+  });
+
+  it('G3: en modo manual se ofrece como siempre', () => {
+    tarjeta({ ...RONDA, matchGenerationBlock: null }, false);
+
+    expect(screen.getByTitle('matches.generate')).toBeInTheDocument();
+  });
+
+  it('G5: con la competición aún reabierta no se ofrece: el servidor lo rechazaría', () => {
+    render(
+      <RoundCard
+        round={{ ...RONDA, matchGenerationBlock: { reason: 'ENROLLMENT_OPEN', players: [] } }}
+        canEdit
+        soloReintento
+        competicionCerrada={false}
+        isExpanded={false}
+        onToggleExpand={() => {}}
+        onGenerateMatches={() => {}}
+        golfCourses={[{ id: 'g1', name: 'Altea' }]}
+        playerNameMap={{}}
+        playerHandicapMap={{}}
+        teamNames={{}}
+        t={(clave) => clave}
+      />
+    );
+
+    expect(screen.queryByTitle('matches.generate')).not.toBeInTheDocument();
+    expect(screen.queryByText('generationBlock.retry')).not.toBeInTheDocument();
+  });
+});
+

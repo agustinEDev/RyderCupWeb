@@ -58,6 +58,23 @@ describe('GetUpcomingMatchesUseCase', () => {
     expect(getScheduleUseCase.execute).not.toHaveBeenCalled();
   });
 
+  it('also lists a closed competition: its first stroke is what starts it (RyderCupAM#375)', async () => {
+    const { useCase } = buildUseCase({
+      competitions: [{ id: 'c1', name: 'Cup', status: 'CLOSED' }],
+      schedules: {
+        c1: {
+          rounds: [
+            round([{ id: 'mine', status: 'SCHEDULED', teamAPlayers: [{ userId: USER }], teamBPlayers: [{ userId: RIVAL }] }]),
+          ],
+        },
+      },
+    });
+
+    const result = await useCase.execute(USER);
+
+    expect(result.map((m) => m.id)).toEqual(['mine']);
+  });
+
   it('carries the round\'s opening hour onto each match', async () => {
     // El servidor la manda en la RONDA (BE #305) y quien decide si se ofrece
     // anotar mira el PARTIDO, así que tiene que viajar con él

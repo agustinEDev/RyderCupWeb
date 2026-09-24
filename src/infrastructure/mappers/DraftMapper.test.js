@@ -46,9 +46,22 @@ describe('DraftMapper', () => {
       teamBCaptainName: 'Bea Blanco',
       teamA: ['ana', 'carla'],
       teamB: ['bea'],
-      picks: [{ userId: 'carla', name: 'Carla Cruz', team: 'A', order: 1, automatic: false }],
+      picks: [
+        { userId: 'carla', name: 'Carla Cruz', team: 'A', order: 1, automatic: false, lastRemaining: false },
+      ],
       availablePlayers: [{ userId: 'dani', name: 'Dani Díaz', handicap: 12 }],
     });
+  });
+
+  it('M1c: el último que entra solo viaja marcado como tal', () => {
+    const sala = DraftMapper.toDraftDTO({
+      ...RESPUESTA,
+      picks: [
+        { user_id: 'carla', name: 'Carla Cruz', team: 'A', order: 1, automatic: false, last_remaining: true },
+      ],
+    });
+
+    expect(sala.picks[0].lastRemaining).toBe(true);
   });
 
   it('M1b: los nombres de la sala son lo único que hay para pintarla', () => {

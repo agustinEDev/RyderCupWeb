@@ -161,6 +161,7 @@
     "missing": {
       "GENDER": "has no gender on their profile",
       "TEE_COLOR": "plays from tees this course does not have:",
+      "ENROLLMENT": "does not have an approved enrolment",
       "OTHER": "is missing something needed to play"
     },
     "reason": {
@@ -168,7 +169,8 @@
       "NO_TEAMS": "The teams have not been drawn yet.",
       "NO_GOLF_COURSE": "This session has no golf course to take the tees from.",
       "UNEXPECTED": "Something went wrong while creating them.",
-      "PLAYERS_WITHOUT_TEE": "Some players are missing what is needed to know which tees they play from."
+      "PLAYERS_WITHOUT_TEE": "Some players are missing what is needed to know which tees they play from.",
+      "ENROLLMENT_OPEN": "They opened while enrolment was reopened: close it before creating them."
     },
     "retry": "Once it is fixed, press “Generate Matches” to create them."
   },

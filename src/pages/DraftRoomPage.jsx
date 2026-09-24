@@ -23,6 +23,12 @@ import { getCompetitionDetailUseCase } from '../composition';
  */
 const mmss = (segundos) => `${Math.floor(segundos / 60)}:${String(segundos % 60).padStart(2, '0')}`;
 
+// El turno perdido lo cuenta el hook, que sabe cómo quedó la sala al perderlo
+const TURNO_PERDIDO = {
+  turnoPerdido: 'draft.turnLost',
+  turnoPerdidoYTerminado: 'draft.turnLostDraftOver',
+};
+
 const DraftRoomPage = () => {
   const navigate = useNavigate();
   const { id } = useParams();
@@ -35,6 +41,8 @@ const DraftRoomPage = () => {
     id,
     user?.id
   );
+  // Propias y no heredadas: un mensaje de error como «toString» no es un aviso
+  const avisoDeTurno = Object.hasOwn(TURNO_PERDIDO, error ?? '') ? TURNO_PERDIDO[error] : null;
 
   const cargarCompeticion = useCallback(async () => {
     try {
@@ -94,12 +102,12 @@ const DraftRoomPage = () => {
         <h1 className="hidden md:block mb-1 text-2xl font-bold text-gray-900">{t('draft.title')}</h1>
         <p className="mb-6 text-sm text-gray-600">{competition?.name}</p>
 
-        {error && error !== 'turnoPerdido' && (
+        {error && !avisoDeTurno && (
           <p className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p>
         )}
-        {error === 'turnoPerdido' && (
+        {avisoDeTurno && (
           <p className="mb-4 rounded-lg bg-amber-50 p-3 text-sm text-amber-800">
-            {t('draft.turnLost')}
+            {t(avisoDeTurno)}
           </p>
         )}
 
@@ -200,6 +208,14 @@ const DraftRoomPage = () => {
                     {elegidosDe(equipo).map((pick) => (
                       <li key={pick.userId} className="flex min-w-0 items-center gap-1">
                         <span className="truncate text-gray-800">{pick.name}</span>
+                        {pick.lastRemaining && (
+                          <span
+                            data-testid={`ultimo-${pick.userId}`}
+                            className="shrink-0 rounded bg-gray-100 px-1 text-xs text-gray-600"
+                          >
+                            {t('draft.lastRemaining')}
+                          </span>
+                        )}
                         {pick.automatic && (
                           <Bot
                             data-testid={`automatica-${pick.userId}`}

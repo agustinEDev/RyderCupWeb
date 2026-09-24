@@ -68,6 +68,7 @@ const useDraftRoom = (competitionId, userId) => {
       const nueva = await getDraftUseCase.execute(competitionId);
       guardar(nueva, generacion);
       if (limpiaElAviso && generacion >= generacionRef.current) setError(null);
+      return nueva;
     } catch (e) {
       // También el fallo respeta la generación: el GET que salió antes puede
       // fallar DESPUÉS de una elección correcta, y dejaría en pantalla un
@@ -146,8 +147,18 @@ const useDraftRoom = (competitionId, userId) => {
         // 409: se le acabó el minuto y la aplicación eligió por él. No es un
         // fallo que contar como tal: la sala siguió sin él, y lo que toca es
         // enseñarle lo que pasó
-        setError(e?.status === 409 ? 'turnoPerdido' : e.message);
-        await cargar(false);
+        if (e?.status !== 409) {
+          setError(e.message);
+          await cargar(false);
+          return;
+        }
+        // Con la sala que trae el 409, y no al pintar: si la app eligió al
+        // penúltimo por él y el último entró solo, ya no le toca a nadie. Un
+        // turno perdido de antes no cambia de texto cuando luego la cierra el
+        // rival
+        setError('turnoPerdido');
+        const nueva = await cargar(false);
+        if (nueva?.status === 'COMPLETED') setError('turnoPerdidoYTerminado');
       }
     },
     [competitionId, guardar, cargar]

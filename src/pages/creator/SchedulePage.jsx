@@ -198,7 +198,30 @@ const SchedulePage = () => {
       await reloadSchedule();
     } catch (error) {
       console.error('Error generating matches:', error);
-      customToast.error(error.message || t('errors.failedToGenerateMatches'));
+      if (error?.errorCode === 'MATCH_GENERATION_BLOCKED') {
+        // El servidor lo ha apuntado en la sesión, en claves (BE #360), y el
+        // modal lo enseña en su idioma, con quién y qué. Abierto: cerrarlo
+        // tiraba los emparejamientos hechos a mano. Con las inscripciones:
+        // un retirado no puede seguir ofreciéndose. Y con la competición: si
+        // la reabrieron entretanto, «Generar» deja de ofrecerse
+        try {
+          const [competicion, agenda, inscripciones] = await Promise.all([
+            getCompetitionDetailUseCase.execute(id),
+            getScheduleUseCase.execute(id),
+            listEnrollmentsUseCase.execute(id),
+          ]);
+          setCompetition(competicion);
+          setSchedule(agenda);
+          setEnrollments(inscripciones);
+        } catch (recarga) {
+          // Sin la sesión recargada no hay motivo que enseñar: la frase del
+          // servidor, que también dice quién
+          console.error('Error reloading after a blocked generation:', recarga);
+          customToast.error(error.message);
+        }
+      } else {
+        customToast.error(error.message || t('errors.failedToGenerateMatches'));
+      }
     } finally {
       setIsProcessing(false);
     }
@@ -463,6 +486,8 @@ const SchedulePage = () => {
                     <RoundCard
                       round={round}
                       onGenerateMatches={() => openGenerateModal(round)}
+                      soloReintento={competition.setupMode === 'RYDER_CUP'}
+                      competicionCerrada={['CLOSED', 'IN_PROGRESS'].includes(competition.status)}
                       onToggleExpand={() => toggleRoundExpand(round.id)}
                       isExpanded={!!expandedRounds[round.id]}
                       canEdit={canManage}
@@ -581,6 +606,7 @@ const SchedulePage = () => {
           onClose={() => { setShowGenerateModal(false); setGenerateRound(null); }}
           onConfirm={(pairings) => handleGenerateMatches(generateRound.id, pairings)}
           round={generateRound}
+          bloqueo={rounds.find((r) => r.id === generateRound.id)?.matchGenerationBlock ?? null}
           enrollments={enrollments}
           teamAssignment={teamAssignment}
           isProcessing={isProcessing}

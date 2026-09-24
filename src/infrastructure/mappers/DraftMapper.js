@@ -44,6 +44,9 @@ class DraftMapper {
         team: pick.team,
         order: pick.order,
         automatic: pick.automatic,
+        // El último entra solo cuando no queda nada que elegir. No es la app
+        // eligiendo por un minuto agotado, y un servidor anterior no lo manda
+        lastRemaining: pick.last_remaining === true,
       })),
       availablePlayers: (apiData.available_players || []).map(jugador => ({
         userId: jugador.user_id,

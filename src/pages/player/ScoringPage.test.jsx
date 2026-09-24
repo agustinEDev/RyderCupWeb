@@ -333,6 +333,42 @@ describe('ScoringPage', () => {
       ];
       mockUseScoring.scoringView.scorecardSubmittedBy = [];
       mockUseScoring.scoringView.matchStatus = 'IN_PROGRESS';
+      mockUseScoring.scoringView.matchFormat = 'SINGLES';
+    });
+
+    // Foursomes: una tarjeta por pareja (RyderCupAM#377). El servidor ya manda
+    // la lista con la regla aplicada: si uno de la pareja entregó, salen los dos
+    const enFoursomes = (entregadas) => {
+      mockUseScoring.hasSubmitted = true;
+      mockUseScoring.scoringView.matchFormat = 'FOURSOMES';
+      mockUseScoring.scoringView.players = [
+        { userId: 'u1', userName: 'Player A', team: 'A' },
+        { userId: 'u2', userName: 'Player B', team: 'A' },
+        { userId: 'u3', userName: 'Player C', team: 'B' },
+        { userId: 'u4', userName: 'Player D', team: 'B' },
+      ];
+      mockUseScoring.scoringView.scorecardSubmittedBy = entregadas;
+    };
+
+    it('F1: en foursomes dice que la tarjeta de la pareja está entregada', () => {
+      enFoursomes(['u1', 'u2']);
+
+      render(<ScoringPage />);
+      fireEvent.click(screen.getByTestId('tab-scorecard'));
+
+      // «Tarjeta ya enviada» sería falso para el compañero que no la envió
+      expect(screen.getByText('submit.pairSubmitted')).toBeInTheDocument();
+      expect(screen.queryByText('submit.alreadySubmitted')).toBeNull();
+    });
+
+    it('F2: y espera a la otra pareja, no a «2 jugadores»', () => {
+      enFoursomes(['u1', 'u2']);
+
+      render(<ScoringPage />);
+      fireEvent.click(screen.getByTestId('tab-scorecard'));
+
+      expect(screen.getByText(/submit\.waitingForPair/)).toHaveTextContent('Player C / Player D');
+      expect(screen.queryByText(/submit\.waitingForPlayers/)).toBeNull();
     });
 
     it('should show the names of players still pending submission', () => {

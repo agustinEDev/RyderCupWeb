@@ -42,6 +42,7 @@ const EnvelopePage = () => {
   const [sinEsperar, setSinEsperar] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const [abriendo, setAbriendo] = useState(false);
+  const [cambiandoPermiso, setCambiandoPermiso] = useState(false);
 
   const cargar = useCallback(async () => {
     try {
@@ -114,6 +115,22 @@ const EnvelopePage = () => {
       customToast.error(error.message);
     } finally {
       setEnviando(false);
+    }
+  };
+
+  // Dar o retirar el permiso para abrirlos antes de hora, ya entregado: se
+  // reenvía el MISMO orden con el permiso cambiado, sin volver a ordenar (FE
+  // #717). Abrir antes de hora lo deciden los dos capitanes (RyderCupAM#374)
+  const cambiarPermiso = async (conPermiso) => {
+    if (cambiandoPermiso || !vista?.mine) return;
+    setCambiandoPermiso(true);
+    try {
+      await submitEnvelopeUseCase.execute(roundId, vista.mine.entries, conPermiso);
+      await cargar();
+    } catch (error) {
+      customToast.error(error.message);
+    } finally {
+      setCambiandoPermiso(false);
     }
   };
 
@@ -263,9 +280,47 @@ const EnvelopePage = () => {
               <Lock className="h-4 w-4 shrink-0" />
               {t(vista.rivalSubmitted ? 'envelope.rivalIn' : 'envelope.rivalPending')}
             </p>
+            {!vista.mine.revealWhenBothReady && vista.rivalWantsEarly && (
+              <p
+                data-testid="el-rival-ya-dio-permiso"
+                className="rounded-lg bg-blue-50 p-2 text-sm text-blue-800"
+              >
+                {t('envelope.rivalConsented')}
+              </p>
+            )}
+            {vista.mine.revealWhenBothReady ? (
+              <button
+                type="button"
+                data-testid="retirar-permiso"
+                onClick={() => cambiarPermiso(false)}
+                disabled={cambiandoPermiso}
+                className="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 disabled:opacity-50"
+              >
+                {t('envelope.withdrawConsent')}
+              </button>
+            ) : (
+              <button
+                type="button"
+                data-testid="dar-permiso"
+                onClick={() => cambiarPermiso(true)}
+                disabled={cambiandoPermiso}
+                className="w-full rounded-lg bg-green-600 px-4 py-2 text-sm font-semibold text-white hover:bg-green-700 disabled:opacity-50"
+              >
+                {t('envelope.giveConsent')}
+              </button>
+            )}
+            {/* Sin plazo —campo sin zona— no hay hora que prometer */}
+            {plazo && (
+              <p data-testid="se-abren-solos" className="text-xs text-gray-500">
+                {t('envelope.opensOnItsOwn', { when: plazo })}
+              </p>
+            )}
             <button
               type="button"
               data-testid="cambiar-sobre"
+              // Con el permiso viajando, el formulario arrancaría con el de
+              // ANTES y al entregar lo retiraría sin avisar
+              disabled={cambiandoPermiso}
               onClick={() => {
                 setCambiando(true);
                 setOrden([]);
@@ -273,7 +328,7 @@ const EnvelopePage = () => {
                 // petición de abrir sin esperar sin que nadie se lo diga
                 setSinEsperar(Boolean(vista?.mine?.revealWhenBothReady));
               }}
-              className="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700"
+              className="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 disabled:opacity-50"
             >
               {t('envelope.change')}
             </button>
@@ -383,8 +438,9 @@ const EnvelopePage = () => {
           </div>
         )}
 
-        {/* Abrir es lo que desvela el orden de juego, así que hacen falta los
-            dos sobres dentro y eso ya lo dice `canReveal`. El capitán que no
+        {/* Abrir a mano solo lo puede el organizador en una sesión sin plazo
+            (RyderCupAM#374), y eso ya lo dice `canReveal`: antes de hora, el
+            resto se abre con el permiso de los dos capitanes. El que no
             aparece no atasca nada: al vencer el plazo se abren solos.
 
             Mientras reordena no se ofrece aunque el servidor lo permita: el

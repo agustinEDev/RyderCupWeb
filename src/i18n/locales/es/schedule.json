@@ -161,6 +161,7 @@
     "missing": {
       "GENDER": "no tiene el género en su perfil",
       "TEE_COLOR": "juega de barras que este campo no tiene:",
+      "ENROLLMENT": "no tiene la inscripción aprobada",
       "OTHER": "le falta un dato para poder jugar"
     },
     "reason": {
@@ -168,7 +169,8 @@
       "NO_TEAMS": "Todavía no hay equipos repartidos.",
       "NO_GOLF_COURSE": "Esta sesión no tiene un campo de golf del que sacar las barras.",
       "UNEXPECTED": "Algo ha fallado al crearlos.",
-      "PLAYERS_WITHOUT_TEE": "A algunos jugadores les falta lo necesario para saber desde qué barras juegan."
+      "PLAYERS_WITHOUT_TEE": "A algunos jugadores les falta lo necesario para saber desde qué barras juegan.",
+      "ENROLLMENT_OPEN": "Se abrieron con las inscripciones reabiertas: ciérralas antes de crearlos."
     },
     "retry": "Cuando esté arreglado, pulsa «Generar Partidos» para crearlos."
   },

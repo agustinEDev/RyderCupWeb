@@ -5,7 +5,7 @@ import TeeColorBadge from '../golf_course/TeeColorBadge';
 // Los motivos que esta versión sabe contar. Uno que el servidor añada mañana
 // sale como «inesperado»: enseñar su clave no le dice nada a nadie
 // Y lo mismo con lo que le falta a cada jugador
-const FALTAS_CONOCIDAS = new Set(['GENDER', 'TEE_COLOR']);
+const FALTAS_CONOCIDAS = new Set(['GENDER', 'TEE_COLOR', 'ENROLLMENT']);
 
 const MOTIVOS_CONOCIDOS = new Set([
   'PLAYERS_WITHOUT_TEE',
@@ -13,6 +13,7 @@ const MOTIVOS_CONOCIDOS = new Set([
   'NO_TEAMS',
   'NO_GOLF_COURSE',
   'UNEXPECTED',
+  'ENROLLMENT_OPEN',
 ]);
 
 /**
