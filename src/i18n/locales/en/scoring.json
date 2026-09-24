@@ -108,9 +108,11 @@
     "cancel": "Cancel",
     "submitted": "Scorecard submitted",
     "alreadySubmitted": "Scorecard already submitted",
+    "pairSubmitted": "Your pair's scorecard is submitted",
     "matchCompleted": "The match has finished",
     "waitingForPlayers_one": "Waiting for {{names}} to submit their scorecard",
     "waitingForPlayers_other": "Waiting for {{count}} players to submit their scorecards: {{names}}",
+    "waitingForPair": "Waiting for {{names}} to submit their pair's scorecard",
     "allValidated": "{{count}}/{{total}} holes validated",
     "notReady": "Not all holes are validated yet"
   },
