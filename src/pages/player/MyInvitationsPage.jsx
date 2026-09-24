@@ -6,6 +6,8 @@ import customToast from '../../utils/toast';
 import { esFalloDeRed, mensajeDeError } from '../../utils/sinCobertura';
 import HeaderAuth from '../../components/layout/HeaderAuth';
 import { useAuth } from '../../hooks/useAuth';
+import GeneroParaApuntarseModal from '../../components/profile/GeneroParaApuntarseModal';
+import { useGeneroParaApuntarse } from '../../hooks/useGeneroParaApuntarse';
 import InvitationCard from '../../components/invitation/InvitationCard';
 import {
   listMyInvitationsUseCase,
@@ -21,6 +23,8 @@ const MyInvitationsPage = () => {
   const [invitations, setInvitations] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [processingId, setProcessingId] = useState(null);
+  const generoParaApuntarse = useGeneroParaApuntarse();
+  const [aceptandoSinGenero, setAceptandoSinGenero] = useState(null);
   const [statusFilter, setStatusFilter] = useState('');
   // Por qué no se han podido cargar: 'red', 'otro' o null si cargaron. Sin esto
   // la lista vacía decía «No hay invitaciones todavía» sin haberlo podido
@@ -61,7 +65,31 @@ const MyInvitationsPage = () => {
     }
   }, [user, loadData]);
 
-  const handleAccept = async (invitationId) => {
+  // Sin género no se entra: se pregunta antes de aceptar (#710)
+  const handleAccept = (invitationId) => {
+    if (generoParaApuntarse.falta) {
+      setAceptandoSinGenero(invitationId);
+      return;
+    }
+    aceptar(invitationId);
+  };
+
+  const aceptarConGenero = async (genero) => {
+    const invitationId = aceptandoSinGenero;
+    setAceptandoSinGenero(null);
+    setProcessingId(invitationId);
+    try {
+      await generoParaApuntarse.guardar(genero);
+    } catch (error) {
+      console.error('Error saving gender:', error);
+      customToast.error(error.message || t('errors.failedToRespond'));
+      setProcessingId(null);
+      return;
+    }
+    await aceptar(invitationId);
+  };
+
+  const aceptar = async (invitationId) => {
     setProcessingId(invitationId);
     try {
       const result = await respondToInvitationUseCase.execute(invitationId, 'ACCEPT');
@@ -186,6 +214,12 @@ const MyInvitationsPage = () => {
           </div>
         )}
       </div>
+
+      <GeneroParaApuntarseModal
+        isOpen={aceptandoSinGenero !== null}
+        onClose={() => setAceptandoSinGenero(null)}
+        onConfirm={aceptarConGenero}
+      />
     </div>
   );
 };

@@ -185,5 +185,10 @@
       "edit": "Edit your alias"
     }
   },
-  "genderForCompetitions": "Needed to enter a competition: tees are rated per gender. It is saved to your profile."
+  "genderForCompetitions": "Needed to enter a competition: tees are rated per gender. It is saved to your profile.",
+  "genderModal": {
+    "title": "Before you enter, tell us your gender",
+    "cancel": "Cancel",
+    "confirm": "Save and accept"
+  }
 }
