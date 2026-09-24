@@ -198,7 +198,17 @@ const SchedulePage = () => {
       await reloadSchedule();
     } catch (error) {
       console.error('Error generating matches:', error);
-      customToast.error(error.message || t('errors.failedToGenerateMatches'));
+      if (error?.errorCode === 'MATCH_GENERATION_BLOCKED') {
+        // El servidor lo ha apuntado en la sesión, en claves (BE #360): la
+        // tarjeta lo cuenta en su idioma y con quién y qué. Se recarga para
+        // que enseñe el de este intento y no el de antes
+        customToast.error(t('errors.matchGenerationBlocked'));
+        setShowGenerateModal(false);
+        setGenerateRound(null);
+        await reloadSchedule();
+      } else {
+        customToast.error(error.message || t('errors.failedToGenerateMatches'));
+      }
     } finally {
       setIsProcessing(false);
     }

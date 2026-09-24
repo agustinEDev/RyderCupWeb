@@ -44,6 +44,7 @@ const mockAgenda = vi.fn();
 const mockInscripciones = vi.fn();
 const mockCubrir = vi.fn();
 const mockRehacer = vi.fn();
+const mockGenerar = vi.fn();
 
 vi.mock('../../composition', () => ({
   getCompetitionDetailUseCase: { execute: (...a) => mockDetalle(...a) },
@@ -55,7 +56,7 @@ vi.mock('../../composition', () => ({
   createRoundUseCase: { execute: vi.fn() },
   updateRoundUseCase: { execute: vi.fn() },
   deleteRoundUseCase: { execute: vi.fn() },
-  generateMatchesUseCase: { execute: vi.fn() },
+  generateMatchesUseCase: { execute: (...a) => mockGenerar(...a) },
   updateMatchStatusUseCase: { execute: vi.fn() },
   declareWalkoverUseCase: { execute: vi.fn() },
   reassignPlayersUseCase: { execute: vi.fn() },
@@ -64,6 +65,7 @@ vi.mock('../../composition', () => ({
 }));
 
 const SchedulePage = (await import('./SchedulePage')).default;
+const customToast = (await import('../../utils/toast')).default;
 
 const COMPETICION = {
   id: 'comp-1',
@@ -228,6 +230,42 @@ describe('SchedulePage · el acceso al sobre (FE #655)', () => {
     pintar();
 
     expect(await screen.findByTitle('matches.generate')).toBeInTheDocument();
+  });
+
+  // «Generar» que falla por un motivo que la sesión sabe contar (BE #360): el
+  // servidor lo apunta en ella, en claves, y la tarjeta lo pinta en su idioma.
+  // Enseñar además la frase del servidor era repetirlo en español
+  const bloqueado = () =>
+    Object.assign(new Error('Jugadores sin barras en el campo: Eva (GENDER)'), {
+      status: 400,
+      errorCode: 'MATCH_GENERATION_BLOCKED',
+    });
+
+  const generarEnManual = async () => {
+    mockDetalle.mockResolvedValue({ ...COMPETICION, setupMode: 'MANUAL' });
+    pintar();
+    fireEvent.click(await screen.findByTitle('matches.generate'));
+    fireEvent.click(await screen.findByTestId('generate-submit'));
+  };
+
+  it('G7: si no se pudieron generar, remite al motivo de la sesión y la recarga', async () => {
+    mockGenerar.mockRejectedValue(bloqueado());
+    await generarEnManual();
+
+    await waitFor(() =>
+      expect(customToast.error).toHaveBeenCalledWith('errors.matchGenerationBlocked')
+    );
+    expect(customToast.error).not.toHaveBeenCalledWith(expect.stringContaining('GENDER'));
+    // Recargada: la tarjeta trae el motivo que acaba de apuntarse
+    await waitFor(() => expect(mockAgenda.mock.calls.length).toBeGreaterThan(1));
+    expect(screen.queryByTestId('generate-submit')).not.toBeInTheDocument();
+  });
+
+  it('G7b: cualquier otro fallo se cuenta como antes', async () => {
+    mockGenerar.mockRejectedValue(Object.assign(new Error('Boom'), { status: 400 }));
+    await generarEnManual();
+
+    await waitFor(() => expect(customToast.error).toHaveBeenCalledWith('Boom'));
   });
 
   it('G6: con las inscripciones reabiertas, la página no ofrece «Generar»', async () => {
