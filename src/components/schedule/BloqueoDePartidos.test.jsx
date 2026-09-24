@@ -71,6 +71,14 @@ describe('BloqueoDePartidos', () => {
     expect(aviso).not.toHaveTextContent('ALGO_NUEVO');
   });
 
+  it('B8: abiertos con las inscripciones reabiertas, dice eso (RyderCupAM, revisión de la #711)', () => {
+    render(<BloqueoDePartidos bloqueo={{ reason: 'ENROLLMENT_OPEN', players: [] }} />);
+
+    expect(screen.getByTestId('bloqueo-de-partidos')).toHaveTextContent(
+      'generationBlock.reason.ENROLLMENT_OPEN'
+    );
+  });
+
   it('B5: sin motivo no pinta nada', () => {
     const { container } = render(<BloqueoDePartidos bloqueo={null} />);
 

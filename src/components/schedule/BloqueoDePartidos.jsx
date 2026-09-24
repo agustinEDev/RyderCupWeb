@@ -13,6 +13,7 @@ const MOTIVOS_CONOCIDOS = new Set([
   'NO_TEAMS',
   'NO_GOLF_COURSE',
   'UNEXPECTED',
+  'ENROLLMENT_OPEN',
 ]);
 
 /**
