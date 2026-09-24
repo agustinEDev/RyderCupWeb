@@ -15,6 +15,8 @@ import { useAuth } from '../hooks/useAuth';
 import { useUserRoles } from '../hooks/useUserRoles';
 import { CountryFlag } from '../utils/countryUtils';
 import CompetitionGolfCoursesSection from '../components/competition/CompetitionGolfCoursesSection';
+import AgendaDeLaCompeticion from '../components/competition/AgendaDeLaCompeticion';
+import { aCamposDeLaCompeticion } from '../utils/camposDeLaCompeticion';
 import EnrollmentRequestModal from '../components/enrollment/EnrollmentRequestModal';
 import {
   getCompetitionDetailUseCase,
@@ -182,15 +184,7 @@ const CompetitionDetail = () => {
     if (action === 'activate') {
       try {
         const golfCoursesResult = await getCompetitionGolfCoursesUseCase.execute(id);
-        const coursesArray = Array.isArray(golfCoursesResult)
-          ? golfCoursesResult
-          : (golfCoursesResult.golf_courses || []);
-
-        const golfCourses = coursesArray.map(item => ({
-          id: item.golf_course?.id || item.golf_course_id,
-          name: item.golf_course?.name || item.name || 'Unknown',
-          approvalStatus: item.golf_course?.approval_status || item.approval_status || 'APPROVED',
-        }));
+        const golfCourses = aCamposDeLaCompeticion(golfCoursesResult);
 
         if (golfCourses.length === 0) {
           customToast.error(t('detail.errors.noGolfCourses'));
@@ -1110,6 +1104,21 @@ const CompetitionDetail = () => {
                 </div>
               </div>
             </motion.div>
+
+            {/* La agenda: el torneo ES su agenda, a la vista de todos, y el
+                organizador la cambia aquí mismo (FE #654) */}
+            <div className="p-4" data-testid="seccion-agenda">
+              <AgendaDeLaCompeticion
+                competitionId={competition.id}
+                startDate={competition.startDate}
+                endDate={competition.endDate}
+                // Terminada o cancelada ya no se toca: el servidor lo rechaza
+                canManage={canManage && !['COMPLETED', 'CANCELLED'].includes(competition.status)}
+                jugadores={approvedEnrollments.length}
+                // Cuando cambia la competición —estado, equipos— se vuelve a leer
+                version={`${competition.updatedAt}|${competition.status}|${competition.teamsAssigned}`}
+              />
+            </div>
 
             {/* Golf Courses Section */}
             <motion.div

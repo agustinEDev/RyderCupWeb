@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate, useParams, Link } from 'react-router';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Plus, Calendar, Mail, RotateCcw } from 'lucide-react';
+import { ArrowLeft, Calendar, Mail, RotateCcw } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import customToast from '../../utils/toast';
 import HeaderAuth from '../../components/layout/HeaderAuth';
@@ -9,7 +9,6 @@ import { useAuth } from '../../hooks/useAuth';
 import { useUserRoles } from '../../hooks/useUserRoles';
 import RoundCard from '../../components/schedule/RoundCard';
 import TeamAssignmentSection from '../../components/schedule/TeamAssignmentSection';
-import RoundFormModal from '../../components/schedule/RoundFormModal';
 import WalkoverModal from '../../components/schedule/WalkoverModal';
 import ReassignPlayersModal from '../../components/schedule/ReassignPlayersModal';
 import MatchDetailModal from '../../components/schedule/MatchDetailModal';
@@ -22,9 +21,6 @@ import {
   getCompetitionDetailUseCase,
   getCompetitionGolfCoursesUseCase,
   listEnrollmentsUseCase,
-  createRoundUseCase,
-  updateRoundUseCase,
-  deleteRoundUseCase,
   generateMatchesUseCase,
   assignTeamsUseCase,
   fillCaptainUseCase,
@@ -34,6 +30,7 @@ import {
   resetEnvelopesUseCase,
 } from '../../composition';
 import FullScreenLoader from '../../components/ui/FullScreenLoader';
+import { aCamposDeLaCompeticion } from '../../utils/camposDeLaCompeticion';
 
 const SchedulePage = () => {
   const navigate = useNavigate();
@@ -55,10 +52,8 @@ const SchedulePage = () => {
 
   // UI state
   const [expandedRounds, setExpandedRounds] = useState({});
-  const [showRoundModal, setShowRoundModal] = useState(false);
   // La sesión cuyos sobres se van a rehacer, mientras se confirma
   const [rehaciendoSobres, setRehaciendoSobres] = useState(null);
-  const [editingRound, setEditingRound] = useState(null);
   const [showWalkoverModal, setShowWalkoverModal] = useState(false);
   const [walkoverMatch, setWalkoverMatch] = useState(null);
   const [showReassignModal, setShowReassignModal] = useState(false);
@@ -105,13 +100,7 @@ const SchedulePage = () => {
       setCompetition(compData);
       setSchedule(scheduleData);
 
-      const courses = Array.isArray(coursesResult)
-        ? coursesResult
-        : (coursesResult?.golf_courses || []);
-      setGolfCourses(courses.map(item => ({
-        id: item.golf_course?.id || item.golf_course_id,
-        name: item.golf_course?.name || 'Unknown',
-      })));
+      setGolfCourses(aCamposDeLaCompeticion(coursesResult));
 
       setEnrollments(enrollmentsData);
     } catch (error) {
@@ -195,54 +184,6 @@ const SchedulePage = () => {
   // --- Permissions ---
   const isCreator = competition?.creatorId === user?.id;
   const canManage = isCreator || hasCreatorRole || isAdmin;
-
-  // --- Round handlers ---
-  const handleCreateRound = async (roundData) => {
-    setIsProcessing(true);
-    try {
-      await createRoundUseCase.execute(id, roundData);
-      customToast.success(t('success.roundCreated'));
-      setShowRoundModal(false);
-      await reloadSchedule();
-    } catch (error) {
-      console.error('Error creating round:', error);
-      customToast.error(error.message || t('errors.failedToCreateRound'));
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  const handleUpdateRound = async (roundData) => {
-    if (!editingRound) return;
-    setIsProcessing(true);
-    try {
-      await updateRoundUseCase.execute(editingRound.id, roundData);
-      customToast.success(t('success.roundUpdated'));
-      setShowRoundModal(false);
-      setEditingRound(null);
-      await reloadSchedule();
-    } catch (error) {
-      console.error('Error updating round:', error);
-      customToast.error(error.message || t('errors.failedToUpdateRound'));
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  const handleDeleteRound = async (roundId) => {
-    if (!window.confirm(t('rounds.confirmDelete'))) return;
-    setIsProcessing(true);
-    try {
-      await deleteRoundUseCase.execute(roundId);
-      customToast.success(t('success.roundDeleted'));
-      await reloadSchedule();
-    } catch (error) {
-      console.error('Error deleting round:', error);
-      customToast.error(error.message || t('errors.failedToDeleteRound'));
-    } finally {
-      setIsProcessing(false);
-    }
-  };
 
   const handleGenerateMatches = async (roundId, manualPairings = null) => {
     setIsProcessing(true);
@@ -355,11 +296,6 @@ const SchedulePage = () => {
     setExpandedRounds(prev => ({ ...prev, [roundId]: !prev[roundId] }));
   };
 
-  const openEditRound = (round) => {
-    setEditingRound(round);
-    setShowRoundModal(true);
-  };
-
   const openWalkover = (match) => {
     setWalkoverMatch(match);
     setShowWalkoverModal(true);
@@ -434,17 +370,19 @@ const SchedulePage = () => {
                   </h1>
                   <p className="text-gray-500 text-sm mt-1">{competition.name}</p>
                 </div>
+                {/* La agenda se cambia en la ficha (FE #654): aquí se quedan los
+                    equipos, los partidos y los sobres. Solo para quien la puede
+                    cambiar: los demás entran aquí por la ruta pública y en la
+                    ficha no tienen nada que tocar */}
                 {canManage && (
-                  <button
-                    onClick={() => {
-                      setEditingRound(null);
-                      setShowRoundModal(true);
-                    }}
-                    className="flex items-center gap-2 px-5 py-2.5 bg-primary text-white rounded-lg font-medium hover:bg-primary/90 transition-colors shadow-md"
+                  <Link
+                    to={`/competitions/${id}`}
+                    data-testid="agenda-en-la-ficha"
+                    className="flex items-center gap-2 rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
                   >
-                    <Plus className="w-4 h-4" />
-                    <span>{t('rounds.create')}</span>
-                  </button>
+                    <Calendar className="w-4 h-4" />
+                    <span>{t('agenda.inDetail')}</span>
+                  </Link>
                 )}
               </div>
             </motion.div>
@@ -487,18 +425,6 @@ const SchedulePage = () => {
                 <div className="text-center py-12 bg-gray-50 rounded-xl border border-gray-200">
                   <Calendar className="w-12 h-12 text-gray-300 mx-auto mb-3" />
                   <p className="text-gray-500">{t('rounds.noRounds')}</p>
-                  {canManage && (
-                    <button
-                      onClick={() => {
-                        setEditingRound(null);
-                        setShowRoundModal(true);
-                      }}
-                      className="mt-4 px-4 py-2 bg-primary text-white rounded-lg font-medium hover:bg-primary/90 transition-colors"
-                    >
-                      <Plus className="w-4 h-4 inline mr-1" />
-                      {t('rounds.create')}
-                    </button>
-                  )}
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -536,8 +462,6 @@ const SchedulePage = () => {
                       )}
                     <RoundCard
                       round={round}
-                      onEdit={() => openEditRound(round)}
-                      onDelete={() => handleDeleteRound(round.id)}
                       onGenerateMatches={() => openGenerateModal(round)}
                       onToggleExpand={() => toggleRoundExpand(round.id)}
                       isExpanded={!!expandedRounds[round.id]}
@@ -570,23 +494,6 @@ const SchedulePage = () => {
           </div>
         </div>
       </div>
-
-      {/* Round Form Modal */}
-      {showRoundModal && (
-        <RoundFormModal
-          isOpen={showRoundModal}
-          onClose={() => {
-            setShowRoundModal(false);
-            setEditingRound(null);
-          }}
-          onSubmit={editingRound ? handleUpdateRound : handleCreateRound}
-          initialData={editingRound}
-          golfCourses={golfCourses}
-          competition={competition}
-          isProcessing={isProcessing}
-          t={t}
-        />
-      )}
 
       {/* Walkover Modal */}
       {showWalkoverModal && walkoverMatch && (

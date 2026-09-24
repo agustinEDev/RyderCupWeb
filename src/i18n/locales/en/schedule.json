@@ -171,5 +171,28 @@
       "PLAYERS_WITHOUT_TEE": "Some players are missing what is needed to know which tees they play from."
     },
     "retry": "Once it is fixed, press “Generate Matches” to create them."
+  },
+  "agenda": {
+    "title": "Schedule",
+    "notLoaded": "The schedule could not be loaded. Try again in a moment.",
+    "empty": "There are no sessions yet.",
+    "emptyManage": "There are no sessions yet: add the ones that will be played.",
+    "matches_one": "{{count}} match",
+    "matches_other": "{{count}} matches",
+    "format": "Session format",
+    "course": "Session course",
+    "remove": "Remove the session",
+    "add": "Add session",
+    "day": "Day",
+    "slot": "Slot",
+    "addConfirm": "Add",
+    "cancel": "Cancel",
+    "error": "The schedule could not be changed",
+    "inDetail": "Change the schedule",
+    "confirmFormat": "If the captains already handed in their envelopes, changing the format discards them and they will have to hand them in again. Change it?",
+    "confirmRemove": "Remove this session?",
+    "yes": "Yes",
+    "no": "No",
+    "courseRemoved": "Course no longer in the competition"
   }
 }

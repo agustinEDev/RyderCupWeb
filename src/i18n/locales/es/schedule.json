@@ -171,5 +171,28 @@
       "PLAYERS_WITHOUT_TEE": "A algunos jugadores les falta lo necesario para saber desde qué barras juegan."
     },
     "retry": "Cuando esté arreglado, pulsa «Generar Partidos» para crearlos."
+  },
+  "agenda": {
+    "title": "Agenda",
+    "notLoaded": "No se ha podido cargar la agenda. Vuelve a intentarlo en un momento.",
+    "empty": "Todavía no hay sesiones.",
+    "emptyManage": "Todavía no hay sesiones: añade las que se vayan a jugar.",
+    "matches_one": "{{count}} partido",
+    "matches_other": "{{count}} partidos",
+    "format": "Formato de la sesión",
+    "course": "Campo de la sesión",
+    "remove": "Quitar la sesión",
+    "add": "Añadir sesión",
+    "day": "Día",
+    "slot": "Franja",
+    "addConfirm": "Añadir",
+    "cancel": "Cancelar",
+    "error": "No se ha podido cambiar la agenda",
+    "inDetail": "Cambiar la agenda",
+    "confirmFormat": "Si los capitanes ya entregaron sus sobres, cambiar el formato los tira y tendrán que volver a entregarlos. ¿Lo cambias?",
+    "confirmRemove": "¿Quitas esta sesión?",
+    "yes": "Sí",
+    "no": "No",
+    "courseRemoved": "Campo ya retirado"
   }
 }
