@@ -199,13 +199,23 @@ const SchedulePage = () => {
     } catch (error) {
       console.error('Error generating matches:', error);
       if (error?.errorCode === 'MATCH_GENERATION_BLOCKED') {
-        // El servidor lo ha apuntado en la sesión, en claves (BE #360): la
-        // tarjeta lo cuenta en su idioma y con quién y qué. Se recarga para
-        // que enseñe el de este intento y no el de antes
-        customToast.error(t('errors.matchGenerationBlocked'));
-        setShowGenerateModal(false);
-        setGenerateRound(null);
-        await reloadSchedule();
+        // El servidor lo ha apuntado en la sesión, en claves (BE #360), y el
+        // modal lo enseña en su idioma, con quién y qué. Abierto: cerrarlo
+        // tiraba los emparejamientos hechos a mano. Con las inscripciones:
+        // un retirado no puede seguir ofreciéndose
+        try {
+          const [agenda, inscripciones] = await Promise.all([
+            getScheduleUseCase.execute(id),
+            listEnrollmentsUseCase.execute(id),
+          ]);
+          setSchedule(agenda);
+          setEnrollments(inscripciones);
+        } catch (recarga) {
+          // Sin la sesión recargada no hay motivo que enseñar: la frase del
+          // servidor, que también dice quién
+          console.error('Error reloading after a blocked generation:', recarga);
+          customToast.error(error.message);
+        }
       } else {
         customToast.error(error.message || t('errors.failedToGenerateMatches'));
       }
@@ -593,6 +603,7 @@ const SchedulePage = () => {
           onClose={() => { setShowGenerateModal(false); setGenerateRound(null); }}
           onConfirm={(pairings) => handleGenerateMatches(generateRound.id, pairings)}
           round={generateRound}
+          bloqueo={rounds.find((r) => r.id === generateRound.id)?.matchGenerationBlock ?? null}
           enrollments={enrollments}
           teamAssignment={teamAssignment}
           isProcessing={isProcessing}

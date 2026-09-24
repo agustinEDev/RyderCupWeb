@@ -138,7 +138,6 @@
     "failedToUpdateRound": "Failed to update round",
     "failedToDeleteRound": "Failed to delete round",
     "failedToGenerateMatches": "Failed to generate matches",
-    "matchGenerationBlocked": "The matches could not be created: the reason is on the session.",
     "failedToAssignTeams": "Failed to assign teams",
     "failedToUpdateMatchStatus": "Failed to update match status",
     "failedToDeclareWalkover": "Failed to declare walkover",
@@ -162,7 +161,7 @@
     "missing": {
       "GENDER": "has no gender on their profile",
       "TEE_COLOR": "plays from tees this course does not have:",
-      "ENROLLMENT": "does not have an approved enrollment",
+      "ENROLLMENT": "does not have an approved enrolment",
       "OTHER": "is missing something needed to play"
     },
     "reason": {

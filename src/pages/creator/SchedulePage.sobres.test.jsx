@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent, within } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router';
 
 /**
@@ -22,9 +22,14 @@ const t = (clave, params) => {
 const traduccion = { i18n: { language: 'es' }, t };
 vi.mock('react-i18next', () => ({ useTranslation: () => traduccion }));
 
-vi.mock('framer-motion', () => ({
-  motion: new Proxy({}, { get: () => ({ children, ...props }) => <div {...props}>{children}</div> }),
-}));
+// El mismo componente en cada acceso, como el de verdad: uno nuevo cada vez
+// hacía que React volviera a montar el modal en cada render y perdiera su estado
+vi.mock('framer-motion', () => {
+  const Div = ({ children, initial: _i, animate: _a, exit: _e, transition: _t, ...props }) => (
+    <div {...props}>{children}</div>
+  );
+  return { motion: new Proxy({}, { get: () => Div }) };
+});
 
 vi.mock('../../components/layout/HeaderAuth', () => ({ default: () => null }));
 // Constantes, no objetos nuevos en cada render: la carga de esta pantalla
@@ -236,7 +241,7 @@ describe('SchedulePage · el acceso al sobre (FE #655)', () => {
   // servidor lo apunta en ella, en claves, y la tarjeta lo pinta en su idioma.
   // Enseñar además la frase del servidor era repetirlo en español
   const bloqueado = () =>
-    Object.assign(new Error('Jugadores sin barras en el campo: Eva (GENDER)'), {
+    Object.assign(new Error('No se pueden generar los partidos: Eva'), {
       status: 400,
       errorCode: 'MATCH_GENERATION_BLOCKED',
     });
@@ -248,17 +253,71 @@ describe('SchedulePage · el acceso al sobre (FE #655)', () => {
     fireEvent.click(await screen.findByTestId('generate-submit'));
   };
 
-  it('G7: si no se pudieron generar, remite al motivo de la sesión y la recarga', async () => {
+  it('G7: si no se pudieron generar, el modal sigue abierto y enseña el motivo recién apuntado', async () => {
+    // Abierto: en modo manual, cerrarlo tiraba los emparejamientos hechos a mano
     mockGenerar.mockRejectedValue(bloqueado());
+    const conMotivo = { ...RONDA, matchGenerationBlock: { reason: 'NOT_ENOUGH_PLAYERS', players: [] } };
+    mockAgenda
+      .mockResolvedValueOnce(AGENDA)
+      .mockResolvedValue({ ...AGENDA, rounds: [conMotivo], days: [{ date: '2026-06-01', rounds: [conMotivo] }] });
     await generarEnManual();
 
     await waitFor(() =>
-      expect(customToast.error).toHaveBeenCalledWith('errors.matchGenerationBlocked')
+      expect(
+        within(screen.getByTestId('generate-matches-modal')).getByTestId('bloqueo-de-partidos')
+      ).toHaveTextContent(
+        'generationBlock.reason.NOT_ENOUGH_PLAYERS'
+      )
     );
-    expect(customToast.error).not.toHaveBeenCalledWith(expect.stringContaining('GENDER'));
-    // Recargada: la tarjeta trae el motivo que acaba de apuntarse
+    expect(screen.getByTestId('generate-submit')).toBeInTheDocument();
+    expect(customToast.error).not.toHaveBeenCalled();
+  });
+
+  it('G7e: y los emparejamientos hechos a mano siguen ahí para reintentar', async () => {
+    mockGenerar.mockRejectedValue(bloqueado());
+    mockDetalle.mockResolvedValue({ ...COMPETICION, setupMode: 'MANUAL' });
+    pintar();
+    fireEvent.click(await screen.findByTitle('matches.generate'));
+    const modal = await screen.findByTestId('generate-matches-modal');
+    fireEvent.click(within(modal).getByDisplayValue('manual'));
+    const [ladoA, ladoB] = await within(modal).findAllByRole('combobox');
+    fireEvent.change(ladoA, { target: { value: 'carla' } });
+    fireEvent.change(ladoB, { target: { value: 'eva' } });
+
+    fireEvent.click(screen.getByTestId('generate-submit'));
+    await waitFor(() => expect(mockGenerar).toHaveBeenCalled());
     await waitFor(() => expect(mockAgenda.mock.calls.length).toBeGreaterThan(1));
-    expect(screen.queryByTestId('generate-submit')).not.toBeInTheDocument();
+
+    const [a2, b2] = within(screen.getByTestId('generate-matches-modal')).getAllByRole('combobox');
+    expect([a2.value, b2.value]).toEqual(['carla', 'eva']);
+  });
+
+  it('G7c: y relee las inscripciones: un retirado deja de ofrecerse', async () => {
+    mockGenerar.mockRejectedValue(bloqueado());
+    mockInscripciones
+      .mockResolvedValueOnce(INSCRITOS)
+      .mockResolvedValue(
+        INSCRITOS.map((i) => (i.userId === 'carla' ? { ...i, status: 'WITHDRAWN' } : i))
+      );
+    await generarEnManual();
+    await waitFor(() => expect(mockInscripciones).toHaveBeenCalledTimes(2));
+
+    const modal = screen.getByTestId('generate-matches-modal');
+    fireEvent.click(within(modal).getByDisplayValue('manual'));
+
+    // Primero que hay opciones: si no, «no está Carla» pasaría en vacío
+    await waitFor(() => expect(within(modal).getAllByRole('option').length).toBeGreaterThan(1));
+    expect(within(modal).queryByRole('option', { name: 'Carla Cruz' })).not.toBeInTheDocument();
+  });
+
+  it('G7d: si la recarga falla, dice lo que dijo el servidor, que nombra a quién', async () => {
+    mockGenerar.mockRejectedValue(bloqueado());
+    mockAgenda.mockResolvedValueOnce(AGENDA).mockRejectedValue(new Error('sin red'));
+    await generarEnManual();
+
+    await waitFor(() =>
+      expect(customToast.error).toHaveBeenCalledWith('No se pueden generar los partidos: Eva')
+    );
   });
 
   it('G7b: cualquier otro fallo se cuenta como antes', async () => {

@@ -138,7 +138,6 @@
     "failedToUpdateRound": "Error al actualizar la ronda",
     "failedToDeleteRound": "Error al eliminar la ronda",
     "failedToGenerateMatches": "Error al generar los partidos",
-    "matchGenerationBlocked": "No se han podido crear los partidos: el motivo está en la sesión.",
     "failedToAssignTeams": "Error al asignar los equipos",
     "failedToUpdateMatchStatus": "Error al actualizar el estado del partido",
     "failedToDeclareWalkover": "Error al declarar el walkover",
