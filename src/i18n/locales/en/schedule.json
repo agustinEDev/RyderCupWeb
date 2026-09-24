@@ -63,7 +63,8 @@
         "incompleteMatch": "All matches must have complete teams",
         "duplicatePlayer": "A player can only appear in one match",
         "noTeamAssignment": "Teams must be assigned before generating matches"
-      }
+      },
+      "byEnvelopes": "The matchups come from the captains' envelopes: the matches are created from them."
     }
   },
   "teams": {
@@ -154,5 +155,19 @@
     "walkoverDeclared": "Walkover declared successfully",
     "playersReassigned": "Players reassigned successfully",
     "captainFilled": "Captain named"
+  },
+  "generationBlock": {
+    "title": "This session's matches could not be created",
+    "missing": {
+      "GENDER": "has no gender on their profile",
+      "TEE_COLOR": "plays from tees this course does not have:"
+    },
+    "reason": {
+      "NOT_ENOUGH_PLAYERS": "Some matchups have players without an approved enrolment.",
+      "NO_TEAMS": "The teams have not been drawn yet.",
+      "NO_GOLF_COURSE": "This session has no golf course to take the tees from.",
+      "UNEXPECTED": "Something went wrong while creating them."
+    },
+    "retry": "Once it is fixed, press “Generate Matches” to create them."
   }
 }

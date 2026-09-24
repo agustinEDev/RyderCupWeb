@@ -51,7 +51,8 @@
       "MEDAL": "Medal",
       "STABLEFORD": "Stableford"
     },
-    "envelopePending": "Tienes un sobre sin entregar"
+    "envelopePending": "Tienes un sobre sin entregar",
+    "sessionWithoutMatches": "Una sesión se ha quedado sin partidos"
   },
   "upcomingMatches": {
     "title": "Mis Próximos Partidos",

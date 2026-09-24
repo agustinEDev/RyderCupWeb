@@ -38,6 +38,7 @@ const mockGetSchedule = vi.fn();
 const mockListPendingFriendRequests = vi.fn();
 const mockListMyQuickMatches = vi.fn();
 const mockListMyPendingEnvelopes = vi.fn();
+const mockListMySessionsWithoutMatches = vi.fn().mockResolvedValue([]);
 
 vi.mock('../../composition', () => ({
   listMyInvitationsUseCase: { execute: (...args) => mockListMyInvitations(...args) },
@@ -46,6 +47,7 @@ vi.mock('../../composition', () => ({
   listPendingFriendRequestsUseCase: { execute: (...args) => mockListPendingFriendRequests(...args) },
   listMyQuickMatchesUseCase: { execute: (...args) => mockListMyQuickMatches(...args) },
   listMyPendingEnvelopesUseCase: { execute: (...args) => mockListMyPendingEnvelopes(...args) },
+  listMySessionsWithoutMatchesUseCase: { execute: (...args) => mockListMySessionsWithoutMatches(...args) },
 }));
 
 const baseUser = {
@@ -87,6 +89,7 @@ describe('PendingActionsCard', () => {
     // Un doble de una función async devuelve lo que devuelve la de verdad: una
     // lista. Con `undefined` revienta quien haga `.length`
     mockListMyPendingEnvelopes.mockResolvedValue([]);
+    mockListMySessionsWithoutMatches.mockResolvedValue([]);
   });
 
   it('should show active quick matches and navigate to their scoring page', async () => {

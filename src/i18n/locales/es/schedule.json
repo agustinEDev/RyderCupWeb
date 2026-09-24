@@ -63,7 +63,8 @@
         "incompleteMatch": "Todos los partidos deben tener equipos completos",
         "duplicatePlayer": "Un jugador solo puede aparecer en un partido",
         "noTeamAssignment": "Los equipos deben estar asignados antes de generar partidos"
-      }
+      },
+      "byEnvelopes": "Los enfrentamientos salen de los sobres de los capitanes: se crean los partidos con ellos."
     }
   },
   "teams": {
@@ -154,5 +155,19 @@
     "walkoverDeclared": "Walkover declarado exitosamente",
     "playersReassigned": "Jugadores reasignados exitosamente",
     "captainFilled": "Capitán nombrado"
+  },
+  "generationBlock": {
+    "title": "No se han podido crear los partidos de esta sesión",
+    "missing": {
+      "GENDER": "no tiene el género en su perfil",
+      "TEE_COLOR": "juega de barras que este campo no tiene:"
+    },
+    "reason": {
+      "NOT_ENOUGH_PLAYERS": "Faltan jugadores con la inscripción aprobada para los enfrentamientos.",
+      "NO_TEAMS": "Todavía no hay equipos repartidos.",
+      "NO_GOLF_COURSE": "Esta sesión no tiene un campo de golf del que sacar las barras.",
+      "UNEXPECTED": "Algo ha fallado al crearlos."
+    },
+    "retry": "Cuando esté arreglado, pulsa «Generar Partidos» para crearlos."
   }
 }

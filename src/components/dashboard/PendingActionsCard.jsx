@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router';
 import { motion } from 'framer-motion';
-import { Mail, Users, Flag, TrendingUp, ChevronRight, Bell, UserPlus, Zap, Inbox } from 'lucide-react';
+import { Mail, Users, Flag, TrendingUp, ChevronRight, Bell, UserPlus, Zap, Inbox, AlertTriangle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useEntryMotion } from '../../hooks/useEntryMotion';
 import { slideUp, getEntryProps } from '../../utils/animations';
@@ -11,6 +11,7 @@ import {
   listPendingFriendRequestsUseCase,
   listMyQuickMatchesUseCase,
   listMyPendingEnvelopesUseCase,
+  listMySessionsWithoutMatchesUseCase,
 } from '../../composition';
 import { loQueSeEnseñoAntes, recuerdaLasAccionesPendientes } from '../../services/accionesPendientes';
 import BlockLoader from '../ui/BlockLoader';
@@ -29,6 +30,9 @@ const PendingActionsCard = ({ user, competitions, onHandicapAction, handicapPend
   const [pendingFriendRequests, setPendingFriendRequests] = useState(recordado?.pendingFriendRequests ?? 0);
   const [activeQuickMatches, setActiveQuickMatches] = useState(recordado?.activeQuickMatches ?? []);
   const [sobresPendientes, setSobresPendientes] = useState(recordado?.sobresPendientes ?? []);
+  const [sesionesSinPartidos, setSesionesSinPartidos] = useState(
+    recordado?.sesionesSinPartidos ?? []
+  );
   // Solo se enseña la espera cuando NO hay nada que enseñar: con lo de antes en
   // pantalla, el refresco va en silencio
   const [isLoading, setIsLoading] = useState(false);
@@ -42,6 +46,7 @@ const PendingActionsCard = ({ user, competitions, onHandicapAction, handicapPend
     pendingFriendRequests: recordado?.pendingFriendRequests ?? 0,
     activeQuickMatches: recordado?.activeQuickMatches ?? [],
     sobresPendientes: recordado?.sobresPendientes ?? [],
+    sesionesSinPartidos: recordado?.sesionesSinPartidos ?? [],
   });
 
   const isCreator = useMemo(() => user?.is_admin ||
@@ -62,6 +67,9 @@ const PendingActionsCard = ({ user, competitions, onHandicapAction, handicapPend
           listPendingFriendRequestsUseCase.execute(user.id, 'received'),
           listMyQuickMatchesUseCase.execute({ status: 'IN_PROGRESS' }),
           listMyPendingEnvelopesUseCase.execute(),
+          // Dentro de una función async: si fallara aunque fuera en síncrono,
+          // queda como un rechazo más en vez de tumbar TODO el panel (BE #361)
+          (async () => listMySessionsWithoutMatchesUseCase.execute())(),
         ]);
 
         // Una respuesta que llega cuando ya nos hemos ido no escribe: antes solo
@@ -99,6 +107,10 @@ const PendingActionsCard = ({ user, competitions, onHandicapAction, handicapPend
           aplicado.sobresPendientes = results[4].value || [];
           setSobresPendientes(aplicado.sobresPendientes);
         }
+        if (results[5].status === 'fulfilled') {
+          aplicado.sesionesSinPartidos = results[5].value || [];
+          setSesionesSinPartidos(aplicado.sesionesSinPartidos);
+        }
 
         ultimoAplicado.current = aplicado;
         recuerdaLasAccionesPendientes({ ...aplicado });
@@ -135,7 +147,7 @@ const PendingActionsCard = ({ user, competitions, onHandicapAction, handicapPend
     return [dia, franja].filter(Boolean).join(' ');
   };
 
-  const totalItems = pendingInvitations + pendingEnrollments.length + (upcomingMatches > 0 ? 1 : 0) + (handicapPending ? 1 : 0) + (pendingFriendRequests > 0 ? 1 : 0) + activeQuickMatches.length + sobresPendientes.length;
+  const totalItems = pendingInvitations + pendingEnrollments.length + (upcomingMatches > 0 ? 1 : 0) + (handicapPending ? 1 : 0) + (pendingFriendRequests > 0 ? 1 : 0) + activeQuickMatches.length + sobresPendientes.length + sesionesSinPartidos.length;
 
   if (isLoading) {
     return (
@@ -277,6 +289,33 @@ const PendingActionsCard = ({ user, competitions, onHandicapAction, handicapPend
                       distintos */}
                   <p className="truncate text-xs text-gray-500">
                     {[cuandoSeJuega(sobre), sobre.competitionName].filter(Boolean).join(' · ')}
+                  </p>
+                </div>
+              </div>
+              <ChevronRight className="w-4 h-4 shrink-0 text-gray-400 group-hover:text-gray-600 transition-colors" />
+            </button>
+          ))}
+
+          {/* La sesión que se abrió sin poder crear sus partidos (BE #361): la
+              arregla el organizador, y sin este aviso se enteraría a la hora
+              de jugar */}
+          {sesionesSinPartidos.map((sesion) => (
+            <button
+              key={sesion.roundId}
+              onClick={() => navigate(`/creator/competitions/${sesion.competitionId}/schedule`)}
+              className="flex items-center justify-between w-full p-3 bg-white/70 rounded-lg hover:bg-white transition-colors group"
+              data-testid={`sesion-sin-partidos-${sesion.roundId}`}
+            >
+              <div className="flex min-w-0 items-center gap-3">
+                <div className="p-2 bg-red-100 rounded-lg">
+                  <AlertTriangle className="w-4 h-4 text-red-600" />
+                </div>
+                <div className="min-w-0 text-left">
+                  <p className="text-sm font-semibold text-gray-900">
+                    {t('pendingActions.sessionWithoutMatches')}
+                  </p>
+                  <p className="truncate text-xs text-gray-500">
+                    {[cuandoSeJuega(sesion), sesion.competitionName].filter(Boolean).join(' · ')}
                   </p>
                 </div>
               </div>
