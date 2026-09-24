@@ -463,6 +463,7 @@ const SchedulePage = () => {
                     <RoundCard
                       round={round}
                       onGenerateMatches={() => openGenerateModal(round)}
+                      soloReintento={competition.setupMode === 'RYDER_CUP'}
                       onToggleExpand={() => toggleRoundExpand(round.id)}
                       isExpanded={!!expandedRounds[round.id]}
                       canEdit={canManage}

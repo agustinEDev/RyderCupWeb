@@ -215,4 +215,18 @@ describe('SchedulePage · el acceso al sobre (FE #655)', () => {
     expect(screen.queryByTestId('rehacer-sobres-ronda-1')).not.toBeInTheDocument();
     ROLES.isCreator = true;
   });
+
+  it('G4: en modo Ryder, sin abrir los sobres, no se ofrece «Generar» (FE #711)', async () => {
+    pintar();
+    await screen.findByTestId('ir-al-sobre-ronda-1');
+
+    expect(screen.queryByTitle('matches.generate')).not.toBeInTheDocument();
+  });
+
+  it('G4b: en modo manual, sí', async () => {
+    mockDetalle.mockResolvedValue({ ...COMPETICION, setupMode: 'MANUAL' });
+    pintar();
+
+    expect(await screen.findByTitle('matches.generate')).toBeInTheDocument();
+  });
 });
