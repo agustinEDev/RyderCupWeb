@@ -30,6 +30,10 @@ import {
 import BlockLoader from '../ui/BlockLoader';
 import { etiquetaDelTipoDeCampo } from './etiquetaDelTipoDeCampo';
 import { hayQueArrancarloAMano } from '../../services/arranqueAMano';
+import {
+  CompetitionStatus,
+  CompetitionStatusEnum,
+} from '../../domain/value_objects/CompetitionStatus';
 
 /**
  * El color de cada tipo de campo. El TEXTO sale de i18n: escrito aquí a mano
@@ -257,8 +261,8 @@ const SortableGolfCourseItem = ({ course, onRemove, canEdit, i18n, t, paises }) 
  * Features:
  * - Display golf courses ordered by display_order
  * - Drag & drop reordering (only in DRAFT status for creators)
- * - Add new golf courses (only in DRAFT status for creators)
- * - Remove golf courses (only in DRAFT status for creators)
+ * - Add new golf courses (until the competition is over, for creators)
+ * - Remove golf courses (only while enrollment is open, for creators)
  */
 const CompetitionGolfCoursesSection = ({ competition, canManage }) => {
   const { t, i18n } = useTranslation('competitions');
@@ -282,6 +286,14 @@ const CompetitionGolfCoursesSection = ({ competition, canManage }) => {
   // quien invita antes de poner el campo —y con ello abre el torneo— tiene que
   // poder ponerlo después, que es justo el caso que motivó el cambio
   const canEdit = canManage && ['DRAFT', 'ACTIVE'].includes(competition.status);
+
+  // Añadir, en cambio, vale hasta que la competición se acaba (FE #713, BE #368):
+  // con la agenda propuesta al crear, toda competición Ryder nace con sesiones.
+  // Un estado desconocido no lo permite, en vez de romper la sección
+  const canAdd =
+    canManage &&
+    Object.values(CompetitionStatusEnum).includes(competition.status) &&
+    new CompetitionStatus(competition.status).allowsAddingGolfCourses();
 
   // Get compatible countries for the search box
   // Use country code from countries array (competition.location is a display string, not a code)
@@ -417,7 +429,7 @@ const CompetitionGolfCoursesSection = ({ competition, canManage }) => {
             <Flag className="w-5 h-5 text-green-600" />
             {t('detail.golfCourses.title', { count: golfCourses.length })}
           </h3>
-          {canEdit && !showAddForm && (
+          {canAdd && !showAddForm && (
             <button
               onClick={() => setShowAddForm(true)}
               className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors"

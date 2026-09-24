@@ -51,6 +51,16 @@ export class CompetitionStatus {
   }
 
   /**
+   * Si se pueden añadir campos de golf (BE #368). Añadir solo amplía la lista:
+   * ninguna sesión cambia de campo, así que vale hasta que la competición se
+   * acaba. Quitar o reordenar tienen su propia regla.
+   * @returns {boolean}
+   */
+  allowsAddingGolfCourses() {
+    return !this.isFinal();
+  }
+
+  /**
    * @returns {string}
    */
   toString() {
