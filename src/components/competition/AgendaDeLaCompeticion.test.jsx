@@ -52,6 +52,8 @@ import AgendaDeLaCompeticion from './AgendaDeLaCompeticion';
  *   AG16  la sesión apunta a un campo ya retirado                | se dice, no se enseña otro
  *   AG17  tras un cambio                                         | se relee la agenda, no los campos
  *   AG18  una lectura vieja llega después de la nueva            | no la pisa
+ *   AG19  la ficha avisa de que cambiaron los campos (FE #715)   | se releen y se ofrece el nuevo
+ *   AG19b una lectura vieja de campos llega la última            | no pisa la de ahora
  */
 
 const ALTEA = { golf_course: { id: 'g1', name: 'Altea' } };
@@ -352,3 +354,44 @@ describe('AgendaDeLaCompeticion · lo que cambia el organizador', () => {
   });
 });
 
+describe('AgendaDeLaCompeticion · los campos que cambian en la ficha (FE #715)', () => {
+  const conCampos = (versionCampos) => (
+    <AgendaDeLaCompeticion
+      competitionId="c1"
+      startDate="2026-10-03"
+      endDate="2026-10-04"
+      canManage
+      jugadores={12}
+      versionCampos={versionCampos}
+    />
+  );
+
+  it('AG19: se añade un campo en la ficha y la agenda lo ofrece sin recargar', async () => {
+    mockCampos.mockResolvedValueOnce([ALTEA]).mockResolvedValueOnce([ALTEA, MEIS]);
+    const { rerender } = render(conCampos(0));
+    await screen.findByTestId('agenda-sesion-r1');
+    // Con un solo campo no hay selector por sesión
+    expect(screen.queryByTestId('agenda-campo-r1')).not.toBeInTheDocument();
+
+    rerender(conCampos(1));
+
+    const selector = await screen.findByTestId('agenda-campo-r1');
+    expect(within(selector).getByRole('option', { name: 'Meis' })).toBeInTheDocument();
+    expect(mockCampos).toHaveBeenCalledTimes(2);
+  });
+
+  it('AG19b: una lectura vieja de los campos que llega la última no pisa la de ahora', async () => {
+    let soltarLaVieja;
+    mockCampos
+      .mockImplementationOnce(() => new Promise((r) => { soltarLaVieja = r; }))
+      .mockResolvedValueOnce([ALTEA, MEIS]);
+    const { rerender } = render(conCampos(0));
+    rerender(conCampos(1));
+    await screen.findByTestId('agenda-campo-r1');
+
+    soltarLaVieja([ALTEA]);
+    await new Promise((r) => setTimeout(r, 20));
+
+    expect(screen.getByTestId('agenda-campo-r1')).toBeInTheDocument();
+  });
+});

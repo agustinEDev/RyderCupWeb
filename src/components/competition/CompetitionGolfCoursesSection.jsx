@@ -263,8 +263,10 @@ const SortableGolfCourseItem = ({ course, onRemove, canEdit, i18n, t, paises }) 
  * - Drag & drop reordering (only in DRAFT status for creators)
  * - Add new golf courses (until the competition is over, for creators)
  * - Remove golf courses (only while enrollment is open, for creators)
+ * - Tells the page when the server confirms a change, so the agenda re-reads
+ *   its courses (`onCamposCambiados`, FE #715)
  */
-const CompetitionGolfCoursesSection = ({ competition, canManage }) => {
+const CompetitionGolfCoursesSection = ({ competition, canManage, onCamposCambiados }) => {
   const { t, i18n } = useTranslation('competitions');
   const [golfCourses, setGolfCourses] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -358,6 +360,7 @@ const CompetitionGolfCoursesSection = ({ competition, canManage }) => {
       customToast.success(t('detail.golfCourses.courseAdded'));
       setShowAddForm(false);
       await loadGolfCourses();
+      onCamposCambiados?.();
     } catch (error) {
       console.error('Error adding golf course:', error);
       customToast.error(error.message || t('detail.golfCourses.errorAdding'));
@@ -376,6 +379,7 @@ const CompetitionGolfCoursesSection = ({ competition, canManage }) => {
       await removeGolfCourseFromCompetitionUseCase.execute(competition.id, courseId);
       customToast.success(t('detail.golfCourses.courseRemoved'));
       await loadGolfCourses();
+      onCamposCambiados?.();
     } catch (error) {
       console.error('Error removing golf course:', error);
       customToast.error(error.message || t('detail.golfCourses.errorRemoving'));
@@ -401,6 +405,7 @@ const CompetitionGolfCoursesSection = ({ competition, canManage }) => {
       const courseIds = newOrder.map(course => course.id);
       await reorderGolfCoursesUseCase.execute(competition.id, courseIds);
       customToast.success(t('detail.golfCourses.reordered'));
+      onCamposCambiados?.();
     } catch (error) {
       console.error('Error reordering golf courses:', error);
       customToast.error(t('detail.golfCourses.errorReordering'));

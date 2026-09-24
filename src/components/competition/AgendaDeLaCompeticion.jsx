@@ -38,6 +38,8 @@ const SE_PUEDE_TOCAR = new Set(['PENDING_TEAMS', 'PENDING_MATCHES']);
  * @param {string} [props.version] - Cambia cuando cambia la competición (equipos,
  *   estado): entonces la agenda se vuelve a leer, que la cuenta de partidos y lo
  *   que se puede tocar dependen de ello
+ * @param {number} [props.versionCampos] - Cambia cuando la ficha añade, quita o
+ *   reordena campos (FE #715): entonces se vuelven a leer
  */
 const AgendaDeLaCompeticion = ({
   competitionId,
@@ -46,6 +48,7 @@ const AgendaDeLaCompeticion = ({
   canManage,
   jugadores,
   version,
+  versionCampos,
 }) => {
   const { t, i18n } = useTranslation('schedule');
   const [agenda, setAgenda] = useState(null);
@@ -81,7 +84,8 @@ const AgendaDeLaCompeticion = ({
     }
   }, [competitionId]);
 
-  // Los campos, una vez: los cambios de la agenda no los tocan. Sin ellos la
+  // Los campos: los cambios de la agenda no los tocan, pero los de la sección de
+  // campos sí, y la ficha avisa con `versionCampos` (FE #715). Sin ellos la
   // agenda se sigue pudiendo enseñar
   useEffect(() => {
     let vigente = true;
@@ -91,7 +95,7 @@ const AgendaDeLaCompeticion = ({
     return () => {
       vigente = false;
     };
-  }, [competitionId]);
+  }, [competitionId, versionCampos]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- pedir la agenda al servidor es justamente el objetivo, y se repite cuando cambia la competición (`version`)

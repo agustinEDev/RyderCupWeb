@@ -84,6 +84,10 @@ const CompetitionDetail = () => {
   const [savingHandicapId, setSavingHandicapId] = useState(null);
   const [revertingHandicapId, setRevertingHandicapId] = useState(null);
   const [savingNamePreference, setSavingNamePreference] = useState(false);
+  // La agenda y la sección de campos cargan cada una los suyos; esto es el aviso
+  // de que cambiaron, para que la agenda los vuelva a leer (FE #715)
+  const [versionCampos, setVersionCampos] = useState(0);
+  const avisarDeLosCampos = useCallback(() => setVersionCampos((v) => v + 1), []);
 
   // Determine where user came from (browse or my competitions)
   const origen = location.state?.from;
@@ -1117,6 +1121,8 @@ const CompetitionDetail = () => {
                 jugadores={approvedEnrollments.length}
                 // Cuando cambia la competición —estado, equipos— se vuelve a leer
                 version={`${competition.updatedAt}|${competition.status}|${competition.teamsAssigned}`}
+                // Y sus campos, cuando cambian en la sección de abajo (FE #715)
+                versionCampos={versionCampos}
               />
             </div>
 
@@ -1129,6 +1135,7 @@ const CompetitionDetail = () => {
               <CompetitionGolfCoursesSection
                 competition={competition}
                 canManage={canManage}
+                onCamposCambiados={avisarDeLosCampos}
               />
             </motion.div>
 
