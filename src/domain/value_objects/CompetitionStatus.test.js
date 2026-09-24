@@ -63,6 +63,21 @@ describe('CompetitionStatus', () => {
     });
   });
 
+  describe('allowsAddingGolfCourses', () => {
+    // Igual que el backend (BE #368): añadir un campo solo amplía la lista y
+    // ninguna sesión cambia, así que no espera a nada salvo a que se acabe
+    it.each([
+      ['DRAFT', true],
+      ['ACTIVE', true],
+      ['CLOSED', true],
+      ['IN_PROGRESS', true],
+      ['COMPLETED', false],
+      ['CANCELLED', false],
+    ])('%s → %s', (estado, esperado) => {
+      expect(CompetitionStatus[estado].allowsAddingGolfCourses()).toBe(esperado);
+    });
+  });
+
   describe('equals', () => {
     it('should return true for two instances with the same value', () => {
       const status1 = new CompetitionStatus(CompetitionStatusEnum.DRAFT);
