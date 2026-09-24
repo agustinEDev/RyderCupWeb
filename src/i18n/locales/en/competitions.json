@@ -427,7 +427,7 @@
     "resetDone": "Envelopes and matches redone: the captains can hand in again",
     "cancel": "Cancel",
     "revealWhenBothReady": "Open them as soon as we have both handed in, without waiting for the hour",
-    "waitingForRivalToAgree": "You asked to open them early; the other captain has to tick it too.",
+    "waitingForRivalToAgree": "You have allowed opening them now; the other captain has yet to.",
     "deadline": "Deadline {{when}}. After that, whatever is missing the app fills in.",
     "noDeadline": "This session has no hour to open on its own: if you open it now, the app fills in whatever envelope is missing by handicap.",
     "giveConsent": "Allow opening them now",

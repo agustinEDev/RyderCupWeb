@@ -310,7 +310,7 @@ const EnvelopePage = () => {
               </button>
             )}
             {/* Sin plazo —campo sin zona— no hay hora que prometer */}
-            {vista.revealScheduledAt && (
+            {plazo && (
               <p data-testid="se-abren-solos" className="text-xs text-gray-500">
                 {t('envelope.opensOnItsOwn', { when: plazo })}
               </p>
@@ -318,6 +318,9 @@ const EnvelopePage = () => {
             <button
               type="button"
               data-testid="cambiar-sobre"
+              // Con el permiso viajando, el formulario arrancaría con el de
+              // ANTES y al entregar lo retiraría sin avisar
+              disabled={cambiandoPermiso}
               onClick={() => {
                 setCambiando(true);
                 setOrden([]);
@@ -325,7 +328,7 @@ const EnvelopePage = () => {
                 // petición de abrir sin esperar sin que nadie se lo diga
                 setSinEsperar(Boolean(vista?.mine?.revealWhenBothReady));
               }}
-              className="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700"
+              className="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 disabled:opacity-50"
             >
               {t('envelope.change')}
             </button>

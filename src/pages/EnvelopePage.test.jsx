@@ -812,4 +812,27 @@ describe('EnvelopePage · el permiso para abrirlos antes de hora (FE #717)', () 
 
     await waitFor(() => expect(mockEntregar).toHaveBeenCalledTimes(1));
   });
+
+  it('E7: mientras se guarda el permiso no se puede ir a cambiar el orden', async () => {
+    let soltar;
+    mockEntregar.mockImplementation(() => new Promise((r) => { soltar = r; }));
+    mockVer.mockResolvedValue(entregado());
+    pintar();
+
+    fireEvent.click(await screen.findByTestId('dar-permiso'));
+
+    // Si no, el formulario arrancaría con el permiso de ANTES y al entregar lo
+    // retiraría sin avisar
+    expect(screen.getByTestId('cambiar-sobre')).toBeDisabled();
+    soltar({ team: 'A', entries: [['bea'], ['ana']], automatic: false });
+  });
+
+  it('E8: si la hora no se puede enseñar, no sale la frase a medias', async () => {
+    mockVer.mockResolvedValue(entregado({ revealScheduledAt: '2030-06-01T00:00:00' }));
+    pintar();
+
+    await screen.findByTestId('dar-permiso');
+    expect(screen.queryByTestId('se-abren-solos')).not.toBeInTheDocument();
+  });
 });
+

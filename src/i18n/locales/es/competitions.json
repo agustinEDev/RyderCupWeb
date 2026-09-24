@@ -427,7 +427,7 @@
     "resetDone": "Sobres y partidos de la sesión rehechos: los capitanes pueden volver a entregar",
     "cancel": "Cancelar",
     "revealWhenBothReady": "Abrirlos en cuanto los dos hayamos entregado, sin esperar a la hora",
-    "waitingForRivalToAgree": "Tú has pedido abrirlos sin esperar; falta que el otro capitán lo marque también.",
+    "waitingForRivalToAgree": "Has dado permiso para abrirlos ya; falta el del otro capitán.",
     "deadline": "Plazo hasta el {{when}}. Después, lo que falte lo pone la aplicación.",
     "noDeadline": "Esta sesión no tiene hora a la que abrirse sola: si la abres ahora, el sobre que falte lo rellenará la aplicación por hándicap.",
     "giveConsent": "Dar permiso para abrirlos ya",
