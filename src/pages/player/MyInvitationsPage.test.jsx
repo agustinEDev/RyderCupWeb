@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import MyInvitationsPage from './MyInvitationsPage';
 
@@ -104,6 +104,12 @@ describe('MyInvitationsPage', () => {
     renderPage();
     expect(await screen.findByTestId('accept-button')).toBeInTheDocument();
     expect(screen.getByTestId('decline-button')).toBeInTheDocument();
+  });
+
+  it('A4: se puede filtrar por las que se quedaron sin plaza (#710)', async () => {
+    renderPage();
+    const filtro = await screen.findByTestId('status-filter');
+    expect(within(filtro).getByRole('option', { name: 'status.NO_ROOM' })).toBeInTheDocument();
   });
 
   it('should have status filter dropdown', async () => {

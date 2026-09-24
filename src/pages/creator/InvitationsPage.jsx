@@ -46,6 +46,9 @@ const todasLasPaginas = async (pideLaPagina, sacaLasFilas) => {
   return filas;
 };
 
+// Cerrada la inscripción ya no se invita: no quedan plazas (#710)
+const INSCRIPCION_CERRADA = new Set(['CLOSED', 'IN_PROGRESS']);
+
 const InvitationsPage = () => {
   const navigate = useNavigate();
   const { id } = useParams();
@@ -303,19 +306,28 @@ const InvitationsPage = () => {
               )}
             </div>
 
-            <button
-              onClick={() => {
-                const acceptedCount = invitations.filter(inv => inv.status === 'ACCEPTED').length;
-                if (competition?.maxPlayers && acceptedCount >= competition.maxPlayers - 1) {
-                  customToast.warning(t('creator.nearCapacity', { accepted: acceptedCount, max: competition.maxPlayers }));
-                }
-                setShowSendModal(true);
-              }}
-              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-primary rounded-lg hover:bg-primary/90 transition-colors"
-            >
-              <Plus className="h-4 w-4" />
-              {t('creator.sendNew')}
-            </button>
+            {/* Cerrada la inscripción no quedan plazas: el servidor ya no deja
+                invitar (#710). La lista sigue, que es donde se ve quién se
+                quedó sin plaza */}
+            {INSCRIPCION_CERRADA.has(competition?.status) ? (
+              <p data-testid="invitar-cerrada" className="text-sm text-gray-500 max-w-xs">
+                {t('creator.enrollmentClosed')}
+              </p>
+            ) : (
+              <button
+                onClick={() => {
+                  const acceptedCount = invitations.filter(inv => inv.status === 'ACCEPTED').length;
+                  if (competition?.maxPlayers && acceptedCount >= competition.maxPlayers - 1) {
+                    customToast.warning(t('creator.nearCapacity', { accepted: acceptedCount, max: competition.maxPlayers }));
+                  }
+                  setShowSendModal(true);
+                }}
+                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-primary rounded-lg hover:bg-primary/90 transition-colors"
+              >
+                <Plus className="h-4 w-4" />
+                {t('creator.sendNew')}
+              </button>
+            )}
           </div>
         </div>
 
@@ -332,6 +344,7 @@ const InvitationsPage = () => {
             <option value="ACCEPTED">{t('status.ACCEPTED')}</option>
             <option value="DECLINED">{t('status.DECLINED')}</option>
             <option value="EXPIRED">{t('status.EXPIRED')}</option>
+            <option value="NO_ROOM">{t('status.NO_ROOM')}</option>
           </select>
         </div>
 

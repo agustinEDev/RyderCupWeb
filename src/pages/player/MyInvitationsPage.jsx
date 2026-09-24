@@ -138,6 +138,7 @@ const MyInvitationsPage = () => {
             <option value="ACCEPTED">{t('status.ACCEPTED')}</option>
             <option value="DECLINED">{t('status.DECLINED')}</option>
             <option value="EXPIRED">{t('status.EXPIRED')}</option>
+            <option value="NO_ROOM">{t('status.NO_ROOM')}</option>
           </select>
         </div>
 

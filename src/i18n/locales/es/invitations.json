@@ -29,7 +29,8 @@
     "PENDING": "Pendiente",
     "ACCEPTED": "Aceptada",
     "DECLINED": "Rechazada",
-    "EXPIRED": "Expirada"
+    "EXPIRED": "Expirada",
+    "NO_ROOM": "Sin plaza"
   },
   "actions": {
     "accept": "Aceptar",
@@ -71,7 +72,8 @@
     "sendNew": "Enviar invitación",
     "sentCount_one": "{{count}} invitación enviada",
     "sentCount_other": "{{count}} invitaciones enviadas",
-    "nearCapacity": "Ya hay {{accepted}} invitaciones aceptadas de {{max}} plazas. El torneo está casi lleno."
+    "nearCapacity": "Ya hay {{accepted}} invitaciones aceptadas de {{max}} plazas. El torneo está casi lleno.",
+    "enrollmentClosed": "La inscripción está cerrada: ya no quedan plazas, así que no se puede invitar."
   },
   "player": {
     "title": "Mis invitaciones",

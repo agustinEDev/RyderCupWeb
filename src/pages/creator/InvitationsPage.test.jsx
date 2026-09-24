@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { render, screen, within, waitFor, fireEvent } from '@testing-library/react';
 import { MemoryRouter, Route, Routes, useNavigate } from 'react-router';
 
 // Envuelve el `navigate` de verdad para poder afirmar que NO se llama en pleno
@@ -168,6 +168,27 @@ describe('InvitationsPage', () => {
     renderPage();
     expect(await screen.findByText('creator.sendNew')).toBeInTheDocument();
   });
+
+  // A4 y A5 (#710): cerrada la inscripción, las pendientes se quedan sin plaza y
+  // el servidor ya no deja invitar
+  it('A4: se puede filtrar por las que se quedaron sin plaza', async () => {
+    renderPage();
+    const filtro = await screen.findByTestId('status-filter');
+    expect(within(filtro).getByRole('option', { name: 'status.NO_ROOM' })).toBeInTheDocument();
+  });
+
+  it.each(['CLOSED', 'IN_PROGRESS'])(
+    'A5: con la inscripción cerrada (%s) no se ofrece invitar y se dice por qué',
+    async (estado) => {
+      mockGetCompetitionDetail.mockResolvedValueOnce({ id: 'comp-1', name: 'Summer Cup', status: estado });
+      renderPage();
+
+      expect(await screen.findByTestId('invitar-cerrada')).toHaveTextContent('creator.enrollmentClosed');
+      expect(screen.queryByText('creator.sendNew')).not.toBeInTheDocument();
+      // La lista sigue: quién se quedó sin plaza es lo que el organizador quiere ver
+      expect(screen.getByTestId('status-filter')).toBeInTheDocument();
+    }
+  );
 
   describe('la pestaña de amigos se alimenta bien (FE #409)', () => {
     // `clearAllMocks` borra las llamadas, no las implementaciones: sin esto, el
