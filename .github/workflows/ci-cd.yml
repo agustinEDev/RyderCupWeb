@@ -692,8 +692,16 @@ jobs:
           # fired on every build and had stopped meaning "you are near the ceiling". Sentry is still
           # the one real lever (328 KB, 19%) and trimming it is still tracked separately; until that
           # happens each raise buys about six months, not a fix
-          MAX_BUNDLE_SIZE_KB=2000
-          WARNING_THRESHOLD_KB=1900
+          # 24 Sep 2026: Raised to 2200 KB, warning at 2100 KB (decided by the product owner).
+          # The competition redesign's last pieces landed together: the agenda in the
+          # competition detail (FE #654, #709) and the reason a session has no matches
+          # plus the organiser's dashboard warning (BE #361, #708). Together they left
+          # develop at 1999.4 KB, half a KB under the 2000 budget, so the next change of
+          # any size would have turned the check red. Removing RoundFormModal already
+          # took back what it could. Sentry (328 KB) is still the one real lever, and
+          # trimming it is still tracked separately.
+          MAX_BUNDLE_SIZE_KB=2200
+          WARNING_THRESHOLD_KB=2100
 
           # List all bundles with sizes
           echo ""
