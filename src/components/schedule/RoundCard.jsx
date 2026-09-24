@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronUp, Edit, Trash2, Zap } from 'lucide-react';
+import { ChevronDown, ChevronUp, Zap } from 'lucide-react';
 import MatchCard from './MatchCard';
 
 const STATUS_COLORS = {
@@ -11,8 +11,6 @@ const STATUS_COLORS = {
 
 const RoundCard = ({
   round,
-  onEdit,
-  onDelete,
   onGenerateMatches,
   onToggleExpand,
   isExpanded,
@@ -31,7 +29,6 @@ const RoundCard = ({
   t,
 }) => {
   const status = round.status;
-  const isEditable = canEdit && (status === 'PENDING_TEAMS' || status === 'PENDING_MATCHES');
   const canGenerate = canEdit && status === 'PENDING_MATCHES';
   const matches = round.matches || [];
 
@@ -84,26 +81,6 @@ const RoundCard = ({
 
         <div className="flex items-center gap-2 shrink-0">
           {/* Action buttons (stop propagation to prevent toggle) */}
-          {/* Solo si quien la monta sabe editarla: la agenda de la ficha no
-              pasa por aquí (FE #654) */}
-          {isEditable && onEdit && onDelete && (
-            <>
-              <button
-                onClick={(e) => { e.stopPropagation(); onEdit(); }}
-                className="p-2 text-gray-500 hover:text-primary hover:bg-primary/10 rounded-lg transition-colors"
-                title={t('rounds.edit')}
-              >
-                <Edit className="w-4 h-4" />
-              </button>
-              <button
-                onClick={(e) => { e.stopPropagation(); onDelete(); }}
-                className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                title={t('rounds.delete')}
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
-            </>
-          )}
           {canGenerate && (
             <button
               onClick={(e) => { e.stopPropagation(); onGenerateMatches(); }}

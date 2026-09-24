@@ -171,6 +171,11 @@
     "addConfirm": "Add",
     "cancel": "Cancel",
     "error": "The schedule could not be changed",
-    "inDetail": "Change the schedule"
+    "inDetail": "Change the schedule",
+    "confirmFormat": "If the captains already handed in their envelopes, changing the format discards them and they will have to hand them in again. Change it?",
+    "confirmRemove": "Remove this session?",
+    "yes": "Yes",
+    "no": "No",
+    "courseRemoved": "Course no longer in the competition"
   }
 }

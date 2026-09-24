@@ -171,6 +171,11 @@
     "addConfirm": "Añadir",
     "cancel": "Cancelar",
     "error": "No se ha podido cambiar la agenda",
-    "inDetail": "Cambiar la agenda"
+    "inDetail": "Cambiar la agenda",
+    "confirmFormat": "Si los capitanes ya entregaron sus sobres, cambiar el formato los tira y tendrán que volver a entregarlos. ¿Lo cambias?",
+    "confirmRemove": "¿Quitas esta sesión?",
+    "yes": "Sí",
+    "no": "No",
+    "courseRemoved": "Campo ya retirado"
   }
 }

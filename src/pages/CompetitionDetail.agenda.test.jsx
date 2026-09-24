@@ -160,4 +160,25 @@ describe('CompetitionDetail · la agenda (FE #654)', () => {
     await screen.findByTestId('agenda');
     await vi.waitFor(() => expect(ultimasProps().jugadores).toBe(4));
   });
+
+  it('FA4: cancelada o terminada no se cambia', async () => {
+    mockGetCompetitionDetail.mockResolvedValue(
+      competicion({ status: 'CANCELLED', startDate: '2026-10-03', endDate: '2026-10-04' })
+    );
+    renderPage();
+
+    await screen.findByTestId('agenda');
+    expect(ultimasProps().canManage).toBe(false);
+  });
+
+  it('FA5: se vuelve a leer cuando la competición cambia', async () => {
+    mockGetCompetitionDetail.mockResolvedValue(
+      competicion({ startDate: '2026-10-03', endDate: '2026-10-04', updatedAt: '2026-09-24T07:00:00' })
+    );
+    renderPage();
+
+    await screen.findByTestId('agenda');
+    expect(ultimasProps().version).toContain('2026-09-24T07:00:00');
+  });
 });
+

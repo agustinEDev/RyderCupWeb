@@ -46,6 +46,11 @@ import AgendaDeLaCompeticion from './AgendaDeLaCompeticion';
  *   AG10  cambiar el campo de una sesión, con varios             | PUT golf_course_id
  *   AG11  el servidor rechaza un cambio                          | su motivo, y la agenda como estaba
  *   AG12  la agenda no se puede leer                             | dice eso, NO que no hay sesiones
+ *   AG13  cambiar el formato con equipos (puede haber sobres)    | se confirma antes
+ *   AG14  quitar una sesión                                      | se confirma; «no» la deja
+ *   AG15  la competición cambia (equipos, estado)                | se vuelve a leer
+ *   AG16  la sesión apunta a un campo ya retirado                | se dice, no se enseña otro
+ *   AG17  tras un cambio                                         | se relee la agenda, no los campos
  */
 
 const ALTEA = { golf_course: { id: 'g1', name: 'Altea' } };
@@ -188,6 +193,7 @@ describe('AgendaDeLaCompeticion · lo que cambia el organizador', () => {
     pintar();
 
     fireEvent.click(await screen.findByTestId('agenda-quitar-r2'));
+    fireEvent.click(screen.getByTestId('agenda-confirmar-si-r2'));
 
     await waitFor(() => expect(mockQuitar).toHaveBeenCalledWith('r2'));
   });
@@ -248,4 +254,70 @@ describe('AgendaDeLaCompeticion · lo que cambia el organizador', () => {
     );
     expect(mockVerAgenda).toHaveBeenCalledTimes(2);
   });
+
+  it('AG13: con equipos puede haber sobres: cambiar el formato se confirma', async () => {
+    mockVerAgenda.mockResolvedValue({
+      ...AGENDA,
+      rounds: [sesion({ id: 'r1', status: 'PENDING_MATCHES' })],
+    });
+    pintar();
+
+    fireEvent.click(await screen.findByTestId('agenda-formato-r1-SINGLES'));
+    expect(mockCambiar).not.toHaveBeenCalled();
+    expect(screen.getByTestId('agenda-confirmar-r1')).toHaveTextContent('agenda.confirmFormat');
+
+    fireEvent.click(screen.getByTestId('agenda-confirmar-si-r1'));
+    await waitFor(() => expect(mockCambiar).toHaveBeenCalledWith('r1', { match_format: 'SINGLES' }));
+  });
+
+  it('AG14: quitar una sesión se confirma, y «no» la deja', async () => {
+    pintar();
+
+    fireEvent.click(await screen.findByTestId('agenda-quitar-r2'));
+    expect(mockQuitar).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByTestId('agenda-confirmar-no-r2'));
+    expect(screen.queryByTestId('agenda-confirmar-r2')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId('agenda-quitar-r2'));
+    fireEvent.click(screen.getByTestId('agenda-confirmar-si-r2'));
+    await waitFor(() => expect(mockQuitar).toHaveBeenCalledWith('r2'));
+  });
+
+  it('AG15: si la competición cambia, se vuelve a leer', async () => {
+    const { rerender } = pintar({ version: 'v1' });
+    await screen.findByTestId('agenda-sesion-r1');
+
+    rerender(
+      <AgendaDeLaCompeticion
+        competitionId="c1"
+        startDate="2026-10-03"
+        endDate="2026-10-04"
+        canManage
+        jugadores={12}
+        version="v2"
+      />
+    );
+
+    await waitFor(() => expect(mockVerAgenda).toHaveBeenCalledTimes(2));
+  });
+
+  it('AG16: un campo que ya no está en la competición no se hace pasar por otro', async () => {
+    mockCampos.mockResolvedValue([ALTEA, MEIS]);
+    mockVerAgenda.mockResolvedValue({ ...AGENDA, rounds: [sesion({ id: 'r1', golfCourseId: 'gX' })] });
+    pintar();
+
+    const selector = await screen.findByTestId('agenda-campo-r1');
+    expect(selector.value).toBe('gX');
+    expect(selector.selectedOptions[0]).toHaveTextContent('agenda.courseRemoved');
+  });
+
+  it('AG17: tras un cambio solo se relee la agenda, no los campos', async () => {
+    pintar();
+
+    fireEvent.click(await screen.findByTestId('agenda-formato-r1-SINGLES'));
+
+    await waitFor(() => expect(mockVerAgenda).toHaveBeenCalledTimes(2));
+    expect(mockCampos).toHaveBeenCalledTimes(1);
+  });
 });
+

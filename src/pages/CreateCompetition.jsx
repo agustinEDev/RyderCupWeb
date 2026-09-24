@@ -4,6 +4,7 @@ import { Trophy, Settings, Plus, X, ChevronDown, Flag, Trash2 } from 'lucide-rea
 import { useTranslation } from 'react-i18next';
 import { nombresPorDefectoDeLosEquipos } from './nombresPorDefectoDeLosEquipos';
 import { agendaPropuesta } from '../utils/agenda';
+import { aCamposDeLaCompeticion } from '../utils/camposDeLaCompeticion';
 import HeaderAuth from '../components/layout/HeaderAuth';
 import { useAuth } from '../hooks/useAuth';
 import {
@@ -268,13 +269,9 @@ const CreateCompetition = () => {
 
           // Map the result to the format expected by formData
           if (Array.isArray(coursesResult)) {
-            golfCoursesData = coursesResult.map(item => ({
-              countryCode: item.golf_course?.country_code || competition.main_country,
-              course: {
-                id: item.golf_course?.id || item.golf_course_id,
-                name: item.golf_course?.name || 'Unknown',
-                approvalStatus: item.golf_course?.approval_status || 'APPROVED'
-              }
+            golfCoursesData = aCamposDeLaCompeticion(coursesResult).map((campo) => ({
+              countryCode: campo.countryCode || competition.main_country,
+              course: { id: campo.id, name: campo.name, approvalStatus: campo.approvalStatus },
             }));
           }
         } catch (error) {

@@ -30,6 +30,7 @@ import {
   resetEnvelopesUseCase,
 } from '../../composition';
 import FullScreenLoader from '../../components/ui/FullScreenLoader';
+import { aCamposDeLaCompeticion } from '../../utils/camposDeLaCompeticion';
 
 const SchedulePage = () => {
   const navigate = useNavigate();
@@ -99,13 +100,7 @@ const SchedulePage = () => {
       setCompetition(compData);
       setSchedule(scheduleData);
 
-      const courses = Array.isArray(coursesResult)
-        ? coursesResult
-        : (coursesResult?.golf_courses || []);
-      setGolfCourses(courses.map(item => ({
-        id: item.golf_course?.id || item.golf_course_id,
-        name: item.golf_course?.name || 'Unknown',
-      })));
+      setGolfCourses(aCamposDeLaCompeticion(coursesResult));
 
       setEnrollments(enrollmentsData);
     } catch (error) {

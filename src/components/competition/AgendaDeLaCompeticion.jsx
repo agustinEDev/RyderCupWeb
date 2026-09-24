@@ -10,22 +10,13 @@ import {
 } from '../../composition';
 import customToast from '../../utils/toast';
 import { FRANJAS, diasDelTorneo, franjasLibres, partidosDeLaSesion } from '../../utils/agenda';
+import { aCamposDeLaCompeticion } from '../../utils/camposDeLaCompeticion';
 
 const FORMATOS = ['SINGLES', 'FOURBALL', 'FOURSOMES'];
 
 // Solo se toca una sesión que todavía no tiene partidos: con ellos, cambiarle
 // el formato o el campo dejaría los partidos sin relación con lo que dice
 const SE_PUEDE_TOCAR = new Set(['PENDING_TEAMS', 'PENDING_MATCHES']);
-
-const leerCampos = (resultado) => {
-  const lista = Array.isArray(resultado) ? resultado : resultado?.golf_courses || [];
-  return lista
-    .map((item) => ({
-      id: item.golf_course?.id || item.golf_course_id || item.id,
-      name: item.golf_course?.name || item.name || '',
-    }))
-    .filter((campo) => campo.id);
-};
 
 /**
  * La agenda de la competición (FE #654): el torneo ES su agenda.
@@ -44,8 +35,18 @@ const leerCampos = (resultado) => {
  * @param {string} props.endDate - YYYY-MM-DD
  * @param {boolean} props.canManage - Si quien mira la organiza
  * @param {number} props.jugadores - Inscritos aprobados, para la cuenta de partidos
+ * @param {string} [props.version] - Cambia cuando cambia la competición (equipos,
+ *   estado): entonces la agenda se vuelve a leer, que la cuenta de partidos y lo
+ *   que se puede tocar dependen de ello
  */
-const AgendaDeLaCompeticion = ({ competitionId, startDate, endDate, canManage, jugadores }) => {
+const AgendaDeLaCompeticion = ({
+  competitionId,
+  startDate,
+  endDate,
+  canManage,
+  jugadores,
+  version,
+}) => {
   const { t, i18n } = useTranslation('schedule');
   const [agenda, setAgenda] = useState(null);
   const [campos, setCampos] = useState([]);
@@ -54,30 +55,38 @@ const AgendaDeLaCompeticion = ({ competitionId, startDate, endDate, canManage, j
   const [anadiendo, setAnadiendo] = useState(false);
   const [diaNuevo, setDiaNuevo] = useState('');
   const [franjaNueva, setFranjaNueva] = useState('');
+  // Lo que espera un «sí»: cambiar el formato con sobres posibles, o quitar
+  const [confirmando, setConfirmando] = useState(null);
 
-  const cargar = useCallback(async () => {
-    // Por separado: sin los campos la agenda se sigue pudiendo enseñar
-    // Cada una dentro de su función async: un fallo, aunque sea síncrono, es
-    // un rechazo más y no se lleva la ficha entera
-    const [deLaAgenda, deLosCampos] = await Promise.allSettled([
-      (async () => getScheduleUseCase.execute(competitionId))(),
-      (async () => getCompetitionGolfCoursesUseCase.execute(competitionId))(),
-    ]);
-    if (deLosCampos.status === 'fulfilled') setCampos(leerCampos(deLosCampos.value));
-    if (deLaAgenda.status === 'fulfilled') {
-      setAgenda(deLaAgenda.value);
+  const cargarAgenda = useCallback(async () => {
+    // Dentro de su función async: un fallo, aunque sea síncrono, es un
+    // rechazo más y no se lleva la ficha entera
+    try {
+      setAgenda(await (async () => getScheduleUseCase.execute(competitionId))());
       setSinCargar(false);
-    } else {
+    } catch {
       // No se pudo preguntar: decir «no hay sesiones» sería afirmar algo que
       // no se sabe, y el organizador se pondría a crear las que ya tiene
       setSinCargar(true);
     }
   }, [competitionId]);
 
+  // Los campos, una vez: los cambios de la agenda no los tocan. Sin ellos la
+  // agenda se sigue pudiendo enseñar
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- pedir la agenda al servidor al montar es justamente el objetivo, y lo pintado es su respuesta
-    cargar();
-  }, [cargar]);
+    let vigente = true;
+    (async () => getCompetitionGolfCoursesUseCase.execute(competitionId))()
+      .then((resultado) => vigente && setCampos(aCamposDeLaCompeticion(resultado)))
+      .catch(() => {});
+    return () => {
+      vigente = false;
+    };
+  }, [competitionId]);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- pedir la agenda al servidor es justamente el objetivo, y se repite cuando cambia la competición (`version`)
+    cargarAgenda();
+  }, [cargarAgenda, version]);
 
   const sesiones = useMemo(() => agenda?.rounds || [], [agenda]);
   const dias = useMemo(() => diasDelTorneo(startDate, endDate), [startDate, endDate]);
@@ -119,12 +128,13 @@ const AgendaDeLaCompeticion = ({ competitionId, startDate, endDate, canManage, j
   // que se pinta es siempre lo que hay en el servidor
   const cambiar = async (accion) => {
     setOcupado(true);
+    setConfirmando(null);
     try {
       await accion();
     } catch (error) {
       customToast.error(error.message || t('agenda.error'));
     } finally {
-      await cargar();
+      await cargarAgenda();
       setOcupado(false);
     }
   };
@@ -236,11 +246,17 @@ const AgendaDeLaCompeticion = ({ competitionId, startDate, endDate, canManage, j
                               data-testid={`agenda-formato-${s.id}-${formato}`}
                               aria-pressed={s.matchFormat === formato}
                               disabled={ocupado || s.matchFormat === formato}
-                              onClick={() =>
-                                cambiar(() =>
-                                  updateRoundUseCase.execute(s.id, { match_format: formato })
-                                )
-                              }
+                              onClick={() => {
+                                const cambio = () =>
+                                  updateRoundUseCase.execute(s.id, { match_format: formato });
+                                // Con equipos puede haber sobres entregados, y cambiar el
+                                // formato los tira: eso no puede ser un toque de pasada
+                                if (s.status === 'PENDING_MATCHES') {
+                                  setConfirmando({ id: s.id, texto: 'agenda.confirmFormat', cambio });
+                                } else {
+                                  cambiar(cambio);
+                                }
+                              }}
                               className={`rounded-md px-2 py-1 text-xs font-medium transition-colors ${
                                 s.matchFormat === formato
                                   ? 'bg-primary text-white'
@@ -264,6 +280,12 @@ const AgendaDeLaCompeticion = ({ competitionId, startDate, endDate, canManage, j
                             }
                             className="min-w-0 max-w-full truncate rounded-lg border border-gray-200 px-2 py-1 text-xs"
                           >
+                            {/* Un campo ya retirado no se hace pasar por el primero */}
+                            {!campos.some((campo) => campo.id === s.golfCourseId) && (
+                              <option value={s.golfCourseId} disabled>
+                                {t('agenda.courseRemoved')}
+                              </option>
+                            )}
                             {campos.map((campo) => (
                               <option key={campo.id} value={campo.id}>
                                 {campo.name}
@@ -276,10 +298,41 @@ const AgendaDeLaCompeticion = ({ competitionId, startDate, endDate, canManage, j
                           data-testid={`agenda-quitar-${s.id}`}
                           aria-label={t('agenda.remove')}
                           disabled={ocupado}
-                          onClick={() => cambiar(() => deleteRoundUseCase.execute(s.id))}
+                          onClick={() =>
+                            setConfirmando({
+                              id: s.id,
+                              texto: 'agenda.confirmRemove',
+                              cambio: () => deleteRoundUseCase.execute(s.id),
+                            })
+                          }
                           className="ml-auto rounded-lg p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-600"
                         >
                           <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    )}
+
+                    {confirmando?.id === s.id && (
+                      <div
+                        data-testid={`agenda-confirmar-${s.id}`}
+                        className="flex min-w-0 flex-wrap items-center gap-2 rounded-lg bg-amber-50 p-2 text-xs text-amber-900"
+                      >
+                        <span className="min-w-0 flex-1">{t(confirmando.texto)}</span>
+                        <button
+                          type="button"
+                          data-testid={`agenda-confirmar-si-${s.id}`}
+                          onClick={() => cambiar(confirmando.cambio)}
+                          className="rounded-md bg-amber-600 px-2 py-1 font-semibold text-white"
+                        >
+                          {t('agenda.yes')}
+                        </button>
+                        <button
+                          type="button"
+                          data-testid={`agenda-confirmar-no-${s.id}`}
+                          onClick={() => setConfirmando(null)}
+                          className="rounded-md px-2 py-1 text-amber-900"
+                        >
+                          {t('agenda.no')}
                         </button>
                       </div>
                     )}
