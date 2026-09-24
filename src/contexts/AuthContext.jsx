@@ -69,6 +69,11 @@ export const AuthProvider = ({ children }) => {
     // confirmaba la sesion y volvia a mandar al destino. Un ida y vuelta sin fin
     // que solo cortaba una recarga.
     olvidaLaSesion();
+    // Y lo que enseñó el panel era de quien estuviera antes: salir ya lo
+    // olvidaba, pero entrar con otra cuenta sin salir ni recargar lo pintaba
+    // un instante, con los avisos —y desde la BE #361 las competiciones— de
+    // la otra persona
+    olvidaLasAccionesPendientes();
 
     if (userData) {
       localStorage.setItem('user', JSON.stringify(userData));

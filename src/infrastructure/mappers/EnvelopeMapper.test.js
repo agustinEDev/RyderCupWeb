@@ -69,6 +69,8 @@ describe('EnvelopeMapper', () => {
         { userId: 'bea', name: 'Bea Blanco', handicap: 14 },
       ],
       playerNames: { ana: 'Ana Alba', bea: 'Bea Blanco' },
+      // Sin motivo es null: no hay nada que avisar (BE #361)
+      matchGenerationBlock: null,
     });
   });
 

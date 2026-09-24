@@ -120,6 +120,23 @@ describe('AuthContext', () => {
       expect(JSON.parse(localStorage.getItem('user'))).toEqual(mockUser);
     });
 
+    it('entrar olvida los avisos del panel de quien estuviera antes (BE #361)', async () => {
+      // Salir ya los olvidaba; entrar con otra cuenta sin haber salido —sin
+      // recargar— pintaba un instante los de la anterior, y desde la BE #361
+      // eso incluye sesiones de competiciones que organiza otra persona
+      const { recuerdaLasAccionesPendientes, loQueSeEnseñoAntes } = await import(
+        '../services/accionesPendientes'
+      );
+      recuerdaLasAccionesPendientes({ sesionesSinPartidos: [{ roundId: 'r1' }] });
+      const { result } = renderHook(() => useAuthContext(), { wrapper: AuthProvider });
+
+      act(() => {
+        result.current.setUser({ id: 'otra', email: 'otra@example.com' });
+      });
+
+      expect(loQueSeEnseñoAntes()).toBeNull();
+    });
+
     it('should clear user when set to null', () => {
       const { result } = renderHook(() => useAuthContext(), {
         wrapper: AuthProvider,

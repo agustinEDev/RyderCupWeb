@@ -52,6 +52,14 @@ class IEnvelopeRepository {
   async listMyPendingEnvelopes() {
     throw new Error('Method not implemented');
   }
+
+  /**
+   * Las sesiones de mis competiciones que se quedaron sin partidos (BE #361).
+   * @returns {Promise<Array<Object>>} Cada una con su motivo
+   */
+  async listMySessionsWithoutMatches() {
+    throw new Error('Method not implemented');
+  }
 }
 
 export default IEnvelopeRepository;
