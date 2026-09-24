@@ -166,6 +166,31 @@ describe('DraftRoomPage · la sala en directo (FE #653)', () => {
     expect(within(equipoA).getByTestId('automatica-carla')).toBeInTheDocument();
   });
 
+  it('D5b: el último que entra solo no se cuenta como minuto agotado', async () => {
+    // Nadie lo eligió: ni el capitán ni la app por un minuto que no se agotó
+    mockSala.mockReturnValue(
+      estado({
+        sala: {
+          ...SALA,
+          status: 'COMPLETED',
+          currentTeam: null,
+          teamA: ['ana', 'carla'],
+          availablePlayers: [],
+          picks: [
+            { userId: 'carla', name: 'Carla Cruz', team: 'A', order: 1, automatic: false, lastRemaining: true },
+          ],
+        },
+        segundosRestantes: null,
+        esMiTurno: false,
+      })
+    );
+    pintar();
+
+    const equipoA = await screen.findByTestId('equipo-A');
+    expect(within(equipoA).getByTestId('ultimo-carla')).toHaveTextContent('draft.lastRemaining');
+    expect(within(equipoA).queryByTestId('automatica-carla')).not.toBeInTheDocument();
+  });
+
   it('D6: sin sala, el organizador puede lanzar el sorteo', async () => {
     mockSala.mockReturnValue(estado({ sala: null, segundosRestantes: null, esMiTurno: false }));
     pintar();
@@ -203,6 +228,21 @@ describe('DraftRoomPage · la sala en directo (FE #653)', () => {
     pintar();
 
     expect(await screen.findByText('draft.turnLost')).toBeInTheDocument();
+  });
+
+  it('D9b: si con su minuto agotado la sala terminó, no le manda a esperar al otro', async () => {
+    mockSala.mockReturnValue(
+      estado({
+        error: 'turnoPerdido',
+        sala: { ...SALA, status: 'COMPLETED', currentTeam: null, availablePlayers: [] },
+        segundosRestantes: null,
+        esMiTurno: false,
+      })
+    );
+    pintar();
+
+    expect(await screen.findByText('draft.turnLostDraftOver')).toBeInTheDocument();
+    expect(screen.queryByText('draft.turnLost')).not.toBeInTheDocument();
   });
 
   it('D10: y cualquier otro fallo se enseña tal cual', async () => {

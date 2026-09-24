@@ -97,9 +97,11 @@ const DraftRoomPage = () => {
         {error && error !== 'turnoPerdido' && (
           <p className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p>
         )}
+        {/* Si con su minuto agotado la sala terminó (la app eligió al
+            penúltimo y el último entró solo), no le toca a nadie */}
         {error === 'turnoPerdido' && (
           <p className="mb-4 rounded-lg bg-amber-50 p-3 text-sm text-amber-800">
-            {t('draft.turnLost')}
+            {t(sala?.status === 'COMPLETED' ? 'draft.turnLostDraftOver' : 'draft.turnLost')}
           </p>
         )}
 
@@ -200,6 +202,14 @@ const DraftRoomPage = () => {
                     {elegidosDe(equipo).map((pick) => (
                       <li key={pick.userId} className="flex min-w-0 items-center gap-1">
                         <span className="truncate text-gray-800">{pick.name}</span>
+                        {pick.lastRemaining && (
+                          <span
+                            data-testid={`ultimo-${pick.userId}`}
+                            className="shrink-0 rounded bg-gray-100 px-1 text-xs text-gray-600"
+                          >
+                            {t('draft.lastRemaining')}
+                          </span>
+                        )}
                         {pick.automatic && (
                           <Bot
                             data-testid={`automatica-${pick.userId}`}

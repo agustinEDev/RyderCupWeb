@@ -448,8 +448,10 @@
     "available": "Still to pick",
     "pick": "Pick",
     "pickedByTheApp": "The app picked when the minute ran out",
+    "lastRemaining": "Last one left",
     "finished": "The teams are set",
     "turnLost": "Your minute ran out and the app picked for you. It is the other captain's turn now.",
+    "turnLostDraftOver": "Your minute ran out and the app picked for you. That finished the draft.",
     "open": "Go to the draft room"
   }
 }
