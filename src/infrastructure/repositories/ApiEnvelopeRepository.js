@@ -75,6 +75,17 @@ class ApiEnvelopeRepository extends IEnvelopeRepository {
     const data = await apiRequest('/api/v1/competitions/me/pending-envelopes');
     return EnvelopeMapper.toPendingEnvelopes(data);
   }
+
+  /**
+   * GET /api/v1/competitions/me/sessions-without-matches (BE #361)
+   *
+   * Las sesiones de las competiciones que organizo que se abrieron sin poder
+   * crear sus partidos. Vacío casi siempre.
+   */
+  async listMySessionsWithoutMatches() {
+    const data = await apiRequest('/api/v1/competitions/me/sessions-without-matches');
+    return EnvelopeMapper.toSessionsWithoutMatches(data);
+  }
 }
 
 export default ApiEnvelopeRepository;

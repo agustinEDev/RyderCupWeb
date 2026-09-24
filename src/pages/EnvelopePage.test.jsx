@@ -274,6 +274,26 @@ describe('EnvelopePage · el sobre del capitán (FE #655)', () => {
     expect(screen.queryByTestId('automatico-A')).not.toBeInTheDocument();
   });
 
+  it('V11b: abiertos y sin partidos, dice por qué (BE #361)', async () => {
+    // Los partidos se crean al abrirse: si no pudieron, los enfrentamientos
+    // están a la vista y no hay nada que jugar, y hay que decir a quién le falta qué
+    mockVer.mockResolvedValue(
+      vista({
+        revealed: true,
+        teamASubmitted: true,
+        teamBSubmitted: true,
+        matchups: [[['bea'], ['carla']]],
+        matchGenerationBlock: {
+          reason: 'PLAYERS_WITHOUT_TEE',
+          players: [{ userId: 'bea', name: 'Bea Blanco', missing: 'GENDER', teeColor: null }],
+        },
+      })
+    );
+    pintar();
+
+    expect(await screen.findByTestId('bloqueo-de-partidos')).toHaveTextContent('Bea Blanco');
+  });
+
   it('V12: quien no capitanea no ve ninguna lista que ordenar', async () => {
     mockVer.mockResolvedValue(vista({ myPlayers: [] }));
     pintar();

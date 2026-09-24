@@ -679,6 +679,7 @@ const SchedulePage = () => {
           isProcessing={isProcessing}
           teamNames={teamNames}
           playerNameMap={playerNameMap}
+          setupMode={competition?.setupMode}
           t={t}
         />
       )}

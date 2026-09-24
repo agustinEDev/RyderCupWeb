@@ -1,5 +1,6 @@
 import { ChevronDown, ChevronUp, Edit, Trash2, Zap } from 'lucide-react';
 import MatchCard from './MatchCard';
+import BloqueoDePartidos from './BloqueoDePartidos';
 
 const STATUS_COLORS = {
   PENDING_TEAMS: 'bg-yellow-100 text-yellow-800',
@@ -119,6 +120,14 @@ const RoundCard = ({
           )}
         </div>
       </div>
+
+      {/* Los sobres se abrieron y los partidos no pudieron crearse (BE #361):
+          sin desplegar, que es lo primero que el organizador tiene que ver */}
+      {round.matchGenerationBlock && (
+        <div className="px-4 pb-4">
+          <BloqueoDePartidos bloqueo={round.matchGenerationBlock} puedeReintentar={canGenerate} />
+        </div>
+      )}
 
       {/* Expanded: Matches List */}
       {isExpanded && (

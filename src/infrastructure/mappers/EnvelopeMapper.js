@@ -1,4 +1,5 @@
 // src/infrastructure/mappers/EnvelopeMapper.js
+import { aBloqueoDePartidos } from './MatchGenerationBlockMapper';
 
 /**
  * Mapper de los sobres (FE #655): de la API a lo que pinta la pantalla.
@@ -63,6 +64,22 @@ class EnvelopeMapper {
         handicap: jugador.handicap == null ? null : Number(jugador.handicap),
       })),
       playerNames: apiData.player_names || {},
+      // Abiertos y sin partidos: por qué, y a quién le falta qué (BE #361)
+      matchGenerationBlock: aBloqueoDePartidos(apiData.match_generation_block),
+    };
+  }
+
+  /**
+   * Qué sesión es y de qué competición: lo que comparten los avisos del panel.
+   * Uno solo para los dos, que un campo nuevo no se quede en uno de ellos.
+   */
+  static toSessionRef(api) {
+    return {
+      roundId: api.round_id,
+      competitionId: api.competition_id,
+      competitionName: api.competition_name,
+      roundDate: api.round_date,
+      sessionType: api.session_type,
     };
   }
 
@@ -76,12 +93,22 @@ class EnvelopeMapper {
   static toPendingEnvelopes(apiData) {
     if (!Array.isArray(apiData)) return [];
     return apiData.map((pendiente) => ({
-      roundId: pendiente.round_id,
-      competitionId: pendiente.competition_id,
-      competitionName: pendiente.competition_name,
-      roundDate: pendiente.round_date,
-      sessionType: pendiente.session_type,
+      ...EnvelopeMapper.toSessionRef(pendiente),
       team: pendiente.team,
+    }));
+  }
+
+  /**
+   * Las sesiones de mis competiciones que se quedaron sin partidos (BE #361).
+   *
+   * Como con los sobres pendientes, lo que no sea una lista es «ninguna»: se
+   * suma a un contador del panel.
+   */
+  static toSessionsWithoutMatches(apiData) {
+    if (!Array.isArray(apiData)) return [];
+    return apiData.map((sesion) => ({
+      ...EnvelopeMapper.toSessionRef(sesion),
+      ...aBloqueoDePartidos({ reason: sesion.reason, players: sesion.players }),
     }));
   }
 }

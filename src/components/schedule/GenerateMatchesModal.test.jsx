@@ -272,4 +272,21 @@ describe('GenerateMatchesModal', () => {
     expect(screen.getByText('matches.pairings.validation.duplicatePlayer')).toBeInTheDocument();
     expect(baseProps.onConfirm).not.toHaveBeenCalled();
   });
+
+  // BE #361: en modo Ryder los enfrentamientos salen de los sobres y el
+  // servidor rechaza los que se manden a mano. Ofrecerlos era dejar colocar a
+  // todo el mundo para recibir un error al final
+  it('G1: en modo Ryder no se ofrece emparejar a mano', () => {
+    render(<GenerateMatchesModal isOpen={true} {...baseProps} setupMode="RYDER_CUP" />);
+
+    expect(screen.queryByDisplayValue('manual')).not.toBeInTheDocument();
+    expect(screen.getByTestId('emparejan-los-sobres')).toBeInTheDocument();
+  });
+
+  it('G2: en modo manual se sigue ofreciendo', () => {
+    render(<GenerateMatchesModal isOpen={true} {...baseProps} setupMode="MANUAL" />);
+
+    expect(screen.getByDisplayValue('manual')).toBeInTheDocument();
+    expect(screen.queryByTestId('emparejan-los-sobres')).not.toBeInTheDocument();
+  });
 });

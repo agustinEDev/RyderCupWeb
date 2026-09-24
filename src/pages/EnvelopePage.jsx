@@ -12,6 +12,7 @@ import {
   submitEnvelopeUseCase,
   revealEnvelopesUseCase,
 } from '../composition';
+import BloqueoDePartidos from '../components/schedule/BloqueoDePartidos';
 
 /**
  * El sobre de un capitán (FE #655).
@@ -195,6 +196,9 @@ const EnvelopePage = () => {
                 </li>
               ))}
             </ul>
+            {/* Los enfrentamientos a la vista y ningún partido que jugar:
+                se dice a quién le falta qué (BE #361) */}
+            <BloqueoDePartidos bloqueo={vista.matchGenerationBlock} />
           </div>
         )}
 
