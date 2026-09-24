@@ -714,3 +714,102 @@ describe('EnvelopePage · el sobre del capitán (FE #655)', () => {
     expect(mockNavigate).toHaveBeenCalledWith('/competitions/comp-1/schedule');
   });
 });
+
+/**
+ * El permiso para abrirlos antes de hora (FE #717, RyderCupAM#374): lo deciden
+ * LOS DOS capitanes. Se da o se retira ya entregado, sin volver a ordenar: se
+ * reenvía el mismo orden con el permiso cambiado.
+ *
+ *   #   caso                                          | qué se ve
+ *   ----|---------------------------------------------|------------------------------------
+ *   E1  entregado sin mi permiso                      | «Dar permiso»: reenvía el orden con permiso
+ *   E2  con mi permiso, el rival no                   | «falta el otro» y «Retirar mi permiso»
+ *   E3  el rival ya dio el suyo y yo no               | se dice, junto al botón
+ *   E4  la sesión tiene plazo                         | «si no, se abren solos» con la hora
+ *   E5  la sesión no tiene plazo                      | no se promete hora
+ *   E6  con el envío en marcha                        | un segundo toque no manda nada
+ */
+describe('EnvelopePage · el permiso para abrirlos antes de hora (FE #717)', () => {
+  const entregado = (extra = {}, mio = {}) =>
+    vista({
+      teamASubmitted: true,
+      mine: {
+        team: 'A',
+        entries: [['bea'], ['ana']],
+        submitted: true,
+        automatic: false,
+        revealWhenBothReady: false,
+        ...mio,
+      },
+      ...extra,
+    });
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockEntregar.mockResolvedValue({ team: 'A', entries: [['bea'], ['ana']], automatic: false });
+  });
+
+  it('E1: ya entregado, se da el permiso sin volver a ordenar', async () => {
+    mockVer.mockResolvedValue(entregado());
+    pintar();
+
+    fireEvent.click(await screen.findByTestId('dar-permiso'));
+
+    await waitFor(() =>
+      expect(mockEntregar).toHaveBeenCalledWith('ronda-1', [['bea'], ['ana']], true)
+    );
+    expect(screen.queryByTestId('retirar-permiso')).not.toBeInTheDocument();
+  });
+
+  it('E2: con mi permiso dado, falta el del otro y se puede retirar', async () => {
+    mockVer.mockResolvedValue(entregado({}, { revealWhenBothReady: true }));
+    pintar();
+
+    expect(await screen.findByTestId('falta-que-lo-marque-el-rival')).toBeInTheDocument();
+    expect(screen.queryByTestId('dar-permiso')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('retirar-permiso'));
+
+    await waitFor(() =>
+      expect(mockEntregar).toHaveBeenCalledWith('ronda-1', [['bea'], ['ana']], false)
+    );
+  });
+
+  it('E3: si el otro ya dio el suyo, se dice', async () => {
+    mockVer.mockResolvedValue(entregado({ rivalWantsEarly: true, rivalSubmitted: true }));
+    pintar();
+
+    expect(await screen.findByTestId('el-rival-ya-dio-permiso')).toHaveTextContent(
+      'envelope.rivalConsented'
+    );
+    expect(screen.getByTestId('dar-permiso')).toBeInTheDocument();
+  });
+
+  it('E4: con plazo, si no hay permiso de los dos se abren solos a su hora', async () => {
+    mockVer.mockResolvedValue(entregado());
+    pintar();
+
+    expect(await screen.findByTestId('se-abren-solos')).toHaveTextContent('envelope.opensOnItsOwn');
+  });
+
+  it('E5: sin plazo no se promete ninguna hora', async () => {
+    mockVer.mockResolvedValue(entregado({ revealScheduledAt: null }));
+    pintar();
+
+    await screen.findByTestId('dar-permiso');
+    expect(screen.queryByTestId('se-abren-solos')).not.toBeInTheDocument();
+  });
+
+  it('E6: con el envío en marcha, un segundo toque no manda nada', async () => {
+    let soltar;
+    mockEntregar.mockImplementation(() => new Promise((r) => { soltar = r; }));
+    mockVer.mockResolvedValue(entregado());
+    pintar();
+
+    const boton = await screen.findByTestId('dar-permiso');
+    fireEvent.click(boton);
+    fireEvent.click(boton);
+    soltar({ team: 'A', entries: [['bea'], ['ana']], automatic: false });
+
+    await waitFor(() => expect(mockEntregar).toHaveBeenCalledTimes(1));
+  });
+});

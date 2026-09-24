@@ -429,7 +429,11 @@
     "revealWhenBothReady": "Abrirlos en cuanto los dos hayamos entregado, sin esperar a la hora",
     "waitingForRivalToAgree": "Tú has pedido abrirlos sin esperar; falta que el otro capitán lo marque también.",
     "deadline": "Plazo hasta el {{when}}. Después, lo que falte lo pone la aplicación.",
-    "noDeadline": "Esta sesión no tiene hora a la que abrirse sola: si la abres ahora, el sobre que falte lo rellenará la aplicación por hándicap."
+    "noDeadline": "Esta sesión no tiene hora a la que abrirse sola: si la abres ahora, el sobre que falte lo rellenará la aplicación por hándicap.",
+    "giveConsent": "Dar permiso para abrirlos ya",
+    "withdrawConsent": "Retirar mi permiso",
+    "rivalConsented": "El otro capitán ya ha dado permiso: si tú lo das, se abren ahora.",
+    "opensOnItsOwn": "Si no lo dais los dos, se abren solos el {{when}}."
   },
   "draft": {
     "title": "Sala de draft",
