@@ -12,6 +12,8 @@ import { MemoryRouter, Routes, Route } from 'react-router';
  *   E3  abierta                                       | se edita, como siempre
  *   E4  las fechas dejan sesiones fuera               | se dice cuáles, en el idioma de quien mira
  *   E5  otro error                                    | el mensaje del servidor, como siempre
+ *   E6  de editar A a editar B con A aún cargando     | la respuesta tardía de A no redirige ni avisa (CodeRabbit)
+ *   E6b y si lo que tarda son los campos de A          | no pisan el formulario de B
  */
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -31,11 +33,12 @@ vi.mock('../services/countries', () => ({
 }));
 const mockActualizar = vi.fn();
 const mockDetalle = vi.fn();
+const mockCampos = vi.fn().mockResolvedValue([]);
 vi.mock('../composition', () => ({
   createCompetitionWithGolfCoursesUseCase: { execute: vi.fn() },
   updateCompetitionUseCase: { execute: (...args) => mockActualizar(...args) },
   getCompetitionDetailUseCase: { execute: (...args) => mockDetalle(...args) },
-  getCompetitionGolfCoursesUseCase: { execute: vi.fn().mockResolvedValue([]) },
+  getCompetitionGolfCoursesUseCase: { execute: (...args) => mockCampos(...args) },
   fetchCountriesUseCase: { execute: vi.fn().mockResolvedValue([{ code: 'ES', name_es: 'España', name_en: 'Spain' }]) },
   getAdjacentCountriesUseCase: { execute: vi.fn().mockResolvedValue([]) },
   createGolfCourseRequestUseCase: { execute: vi.fn() },
@@ -75,6 +78,10 @@ const pintaEdicion = () =>
 describe('CreateCompetition · editar (FE #710)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // E6 y E6b les ponen implementación propia: no puede pasar al siguiente
+    mockDetalle.mockReset();
+    mockCampos.mockReset();
+    mockCampos.mockResolvedValue([]);
     vi.spyOn(console, 'error').mockImplementation(() => {});
   });
 
@@ -139,5 +146,67 @@ describe('CreateCompetition · editar (FE #710)', () => {
     await waitFor(() =>
       expect(customToast.error).toHaveBeenCalledWith('Solo el creador puede actualizar')
     );
+  });
+
+  it('E6: la carga tardía de otra competición no redirige ni avisa (CodeRabbit)', async () => {
+    const { Link } = await import('react-router');
+    let resolverA;
+    mockDetalle.mockImplementation((id) =>
+      id === 'c-1'
+        ? new Promise((r) => {
+            resolverA = r;
+          })
+        : Promise.resolve({ ...competicion('ACTIVE'), id: 'c-2', name: 'La de B' })
+    );
+    render(
+      <MemoryRouter initialEntries={['/competitions/c-1/edit']}>
+        <Link to="/competitions/c-2/edit">a la B</Link>
+        <Routes>
+          <Route path="/competitions/:id/edit" element={<CreateCompetition />} />
+          <Route path="/competitions/:id" element={<p>la ficha</p>} />
+        </Routes>
+      </MemoryRouter>
+    );
+    await waitFor(() => expect(mockDetalle).toHaveBeenCalledWith('c-1'));
+
+    fireEvent.click(screen.getByText('a la B'));
+    expect(await screen.findByText('edit.updateCompetition')).toBeInTheDocument();
+    resolverA(competicion('CLOSED'));
+    await new Promise((r) => setTimeout(r, 50));
+
+    expect(customToast.error).not.toHaveBeenCalled();
+    expect(screen.queryByText('la ficha')).not.toBeInTheDocument();
+    expect(screen.getByDisplayValue('La de B')).toBeInTheDocument();
+  });
+
+  it('E6b: si lo que llega tarde son los campos de A, no pisan el formulario de B', async () => {
+    const { Link } = await import('react-router');
+    let resolverCamposDeA;
+    mockDetalle.mockImplementation((id) =>
+      Promise.resolve({ ...competicion('ACTIVE'), id, name: id === 'c-1' ? 'La de A' : 'La de B' })
+    );
+    mockCampos.mockImplementation((id) =>
+      id === 'c-1'
+        ? new Promise((r) => {
+            resolverCamposDeA = r;
+          })
+        : Promise.resolve([])
+    );
+    render(
+      <MemoryRouter initialEntries={['/competitions/c-1/edit']}>
+        <Link to="/competitions/c-2/edit">a la B</Link>
+        <Routes>
+          <Route path="/competitions/:id/edit" element={<CreateCompetition />} />
+        </Routes>
+      </MemoryRouter>
+    );
+    await waitFor(() => expect(mockCampos).toHaveBeenCalledWith('c-1'));
+
+    fireEvent.click(screen.getByText('a la B'));
+    expect(await screen.findByDisplayValue('La de B')).toBeInTheDocument();
+    resolverCamposDeA([]);
+    await new Promise((r) => setTimeout(r, 50));
+
+    expect(screen.getByDisplayValue('La de B')).toBeInTheDocument();
   });
 });

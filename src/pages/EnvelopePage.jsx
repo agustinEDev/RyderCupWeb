@@ -89,7 +89,8 @@ const EnvelopePage = () => {
     (async () => getCompetitionDetailUseCase.execute(id))()
       .then(
         (competicion) =>
-          vigente && setNombresDeLosEquipos({ A: competicion.team1Name, B: competicion.team2Name })
+          vigente &&
+          setNombresDeLosEquipos({ id, A: competicion.team1Name, B: competicion.team2Name })
       )
       .catch(() => {});
     return () => {
@@ -228,7 +229,10 @@ const EnvelopePage = () => {
   if (automaticos.length === 2) {
     avisoAutomatico = t('envelope.filledByTheAppBoth');
   } else if (automaticos.length === 1) {
-    const equipo = nombresDeLosEquipos?.[automaticos[0]];
+    // Solo los de ESTA competición: la página no se desmonta al cambiar de una
+    // a otra, y los de la anterior nombrarían a otro equipo (CodeRabbit)
+    const equipo =
+      nombresDeLosEquipos?.id === id ? nombresDeLosEquipos[automaticos[0]] : undefined;
     avisoAutomatico = equipo
       ? t('envelope.filledByTheAppTeam', { equipo })
       : t('envelope.filledByTheApp');

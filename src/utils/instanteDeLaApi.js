@@ -12,7 +12,10 @@ const CON_HUSO = /(Z|[+-]\d{2}:?\d{2})$/i;
  * @returns {Date}
  */
 export const instanteDeLaApi = (texto) => {
-  if (typeof texto !== 'string' || CON_HUSO.test(texto)) {
+  // Un día sin hora se deja como está: «2026-09-23Z» no es un formato que el
+  // estándar garantice, y un navegador puede rechazarlo (CodeRabbit en la
+  // #722). V8 lo acepta, así que ningún test de aquí lo distingue
+  if (typeof texto !== 'string' || !texto.includes('T') || CON_HUSO.test(texto)) {
     return new Date(texto);
   }
   return new Date(`${texto}Z`);

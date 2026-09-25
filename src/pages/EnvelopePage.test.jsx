@@ -1082,6 +1082,28 @@ describe('EnvelopePage · lo que se lee (FE #710)', () => {
     expect(mockCompeticion).not.toHaveBeenCalled();
   });
 
+  it('N3c: al cambiar de competición sin desmontarse, no nombra al equipo de la anterior (CodeRabbit)', async () => {
+    const { Link } = await import('react-router');
+    mockVer.mockResolvedValue(abiertos({ teamBAutomatic: true }));
+    render(
+      <MemoryRouter initialEntries={['/competitions/comp-1/rounds/ronda-1/envelope']}>
+        <Link to="/competitions/comp-2/rounds/ronda-2/envelope">otra</Link>
+        <Routes>
+          <Route path="/competitions/:id/rounds/:roundId/envelope" element={<EnvelopePage />} />
+        </Routes>
+      </MemoryRouter>
+    );
+    await waitFor(() => expect(screen.getByTestId('automatico')).toHaveTextContent('América'));
+
+    mockCompeticion.mockRejectedValue(new TypeError('Failed to fetch'));
+    fireEvent.click(screen.getByText('otra'));
+
+    await waitFor(() => expect(mockCompeticion).toHaveBeenCalledWith('comp-2'));
+    await waitFor(() =>
+      expect(screen.getByTestId('automatico').textContent).toBe('envelope.filledByTheApp')
+    );
+  });
+
   it('N4: las parejas se leen enteras, un nombre por línea', async () => {
     mockVer.mockResolvedValue(
       abiertos({ playersPerRow: 2, matchups: [[['ana', 'bea'], ['carla', 'dani']]] })

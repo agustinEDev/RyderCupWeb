@@ -231,6 +231,10 @@ const CreateCompetition = () => {
    * Load competition data when in edit mode
    */
   useEffect(() => {
+    // Pasando de editar una a editar otra el formulario no se desmonta: lo que
+    // llegue tarde de la anterior no redirige, ni avisa, ni pisa el formulario
+    // (CodeRabbit en la #722)
+    let vigente = true;
     const loadCompetitionData = async () => {
       if (!competitionId || !allCountries.length) return;
 
@@ -239,6 +243,7 @@ const CreateCompetition = () => {
       try {
         // Fetch competition details
         const competition = await getCompetitionDetailUseCase.execute(competitionId);
+        if (!vigente) return;
 
         // Por URL se llegaba al formulario de una cerrada, y solo al guardar
         // fallaba, con el estado sin traducir (FE #710). La misma regla que
@@ -316,20 +321,25 @@ const CreateCompetition = () => {
           maxPlayingHandicap: competition.maxPlayingHandicap ?? undefined
         };
 
+        if (!vigente) return;
         // Lo que había guardado: vaciar el campo no puede recortarlo
         cupoCargado.current = formDataToSet.numberOfPlayers;
         setFormData(formDataToSet);
 
       } catch (error) {
+        if (!vigente) return;
         console.error('Error loading competition:', error);
         customToast.error(t('edit.errorLoading'));
         navigate('/competitions');
       } finally {
-        setLoadingCompetition(false);
+        if (vigente) setLoadingCompetition(false);
       }
     };
 
     loadCompetitionData();
+    return () => {
+      vigente = false;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [competitionId, allCountries]);
 
