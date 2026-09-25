@@ -131,6 +131,14 @@ describe('ScorecardTable', () => {
       expect(table).toHaveTextContent('Player B1 / Player B2');
     });
 
+    it('las parejas se leen enteras: la celda parte en líneas, no corta (FE #727)', () => {
+      // «Nacho Noche / …» no decía quién jugaba con quién
+      render(<ScorecardTable holes={holes} players={foursomePlayers} currentUserId="u1" matchFormat="FOURSOMES" teamAName="Team Red" teamBName="Team Blue" />);
+      const celda = screen.getAllByText(/Player A1 \/ Player A2/)[0].closest('td');
+      expect(celda.className).not.toContain('truncate');
+      expect(celda.className).toContain('whitespace-normal');
+    });
+
     it('should show team names above player names in FOURSOMES', () => {
       render(<ScorecardTable holes={holes} players={foursomePlayers} currentUserId="u1" matchFormat="FOURSOMES" teamAName="Team Red" teamBName="Team Blue" />);
       const table = screen.getByTestId('scorecard-table');
