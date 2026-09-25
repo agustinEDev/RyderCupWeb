@@ -98,6 +98,18 @@ describe('AccionesDeLaFicha · una acción y un menú (FE #705)', () => {
     expect(screen.getByTestId('menu-acciones')).toBeInTheDocument();
   });
 
+  it.each([
+    // FE #729: sin principal el «···» está en el borde izquierdo, y abrirse
+    // hacia la izquierda lo sacaba de la pantalla
+    ['A7b: sin principal, se abre hacia la derecha', { principal: null }, 'left-0'],
+    ['A7c: con principal, hacia la izquierda, como siempre', {}, 'right-0'],
+  ])('%s', (_caso, props, lado) => {
+    pintar(props);
+    fireEvent.click(screen.getByTestId('menu-acciones'));
+
+    expect(screen.getByRole('menu').className).toContain(lado);
+  });
+
   it('A8: sin nada que ofrecer no se pinta ni el menú', () => {
     // Un jugador que solo mira: la ficha no le da botones de organizador
     pintar({ principal: null, acciones: [], destructivas: [] });
