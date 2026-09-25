@@ -50,6 +50,7 @@ const mockGetCompetitionDetail = vi.fn().mockResolvedValue({
   creatorId: 'creator-1',
   maxPlayers: 20,
   countries: [],
+  visibility: 'PUBLIC',
 });
 
 const mockCloseEnrollments = vi.fn();
@@ -139,6 +140,7 @@ describe('CompetitionDetail · el género al pedir plaza', () => {
       creatorId: 'creator-1',
       maxPlayers: 20,
       countries: [],
+      visibility: 'PUBLIC',
     });
     mockListEnrollments.mockResolvedValue([]);
   });
@@ -157,6 +159,22 @@ describe('CompetitionDetail · el género al pedir plaza', () => {
     expect(mockGuardarGenero).toHaveBeenCalledWith('MALE');
     // La sesión, al final: refrescarla antes recargaba la ficha en mitad
     await waitFor(() => expect(orden).toEqual(['genero', 'plaza', 'sesion']));
+  });
+
+  it('P9: en una privada no se ofrece pedir plaza: se entra por invitación (FE #734)', async () => {
+    mockGetCompetitionDetail.mockResolvedValue({
+      id: 'comp-1',
+      name: 'Summer Cup',
+      status: 'ACTIVE',
+      creatorId: 'creator-1',
+      maxPlayers: 20,
+      countries: [],
+      visibility: 'PRIVATE',
+    });
+    renderPage();
+
+    await screen.findByText('Summer Cup');
+    expect(screen.queryByText('detail.actions.request-to-join')).not.toBeInTheDocument();
   });
 
   it('P2: con género no se pregunta ni se toca el perfil', async () => {

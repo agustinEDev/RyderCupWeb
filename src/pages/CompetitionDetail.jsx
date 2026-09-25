@@ -1016,8 +1016,14 @@ const CompetitionDetail = () => {
               </motion.div>
             )}
 
-            {/* Enrollment Button - Show if competition is ACTIVE, user is not enrolled, not the creator, and not full */}
-            {!isCreator && competition.status === 'ACTIVE' && !hasEnrollment && !isFull && (
+            {/* Pedir plaza: abierta, pública, sin estar ya dentro ni ser quien la
+                creó, y con sitio. En una privada se entra por invitación, y el
+                servidor lo rechaza (FE #734) */}
+            {!isCreator &&
+              competition.status === 'ACTIVE' &&
+              competition.visibility === 'PUBLIC' &&
+              !hasEnrollment &&
+              !isFull && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}

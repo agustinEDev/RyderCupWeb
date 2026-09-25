@@ -465,7 +465,10 @@ const BrowseCompetitions = () => {
 // Competition Card Component
 const CompetitionCard = ({ competition, mode, onRequestEnrollment, onViewDetails, isRequesting }) => {
   const { t, i18n } = useTranslation('competitions');
-  const { id, name, startDate, endDate, status, creator, enrolledCount, maxPlayers, countries } = competition;
+  const { id, name, startDate, endDate, status, creator, enrolledCount, maxPlayers, countries, visibility } = competition;
+  // Solo en una pública se pide plaza: un admin ve también las privadas en esta
+  // lista, y en ellas se entra por invitación (FE #734)
+  const sePidePlaza = mode === 'joinable' && visibility === 'PUBLIC';
 
   // Get status badge
   const getStatusBadge = () => {
@@ -542,7 +545,7 @@ const CompetitionCard = ({ competition, mode, onRequestEnrollment, onViewDetails
 
       {/* Card Footer */}
       <div className="p-4 bg-gray-50 border-t border-gray-100">
-        {mode === 'joinable' ? (
+        {sePidePlaza ? (
           <button
             onClick={(e) => {
               e.stopPropagation(); // Prevent card click when clicking button
