@@ -553,7 +553,11 @@ const CompetitionDetail = () => {
   // Las acciones de la ficha: UNA principal —la que toca ahora— y el resto en
   // un menú. Antes eran hasta siete botones del mismo peso en seis colores y
   // el que de verdad tocaba se perdía entre los demás (FE #705)
-  const paso = siguientePasoDeLaCompeticion(competition, { puedeGestionar: canManage });
+  const paso = siguientePasoDeLaCompeticion(competition, {
+    puedeGestionar: canManage,
+    // Sin la lista no se sabe cuántos hay: se sugiere como antes
+    inscritos: inscripcionesSinCargar ? undefined : approvedEnrollments.length,
+  });
 
   const accionesPosibles = {
     activate: {

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router';
 
 /**
@@ -201,7 +201,10 @@ describe('CompetitionDetail · la configuración, en cristiano', () => {
     });
     pintar();
 
-    await screen.findByTestId('menu-acciones');
+    // Con plazas libres lo principal es invitar (#710): cambiarlos, en el menú
+    for (const boton of await screen.findAllByTestId('menu-acciones')) {
+      if (boton.getAttribute('aria-expanded') === 'false') fireEvent.click(boton);
+    }
     expect(screen.getByText('detail.actions.changeCaptains')).toBeInTheDocument();
   });
 });

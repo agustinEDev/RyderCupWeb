@@ -191,6 +191,20 @@ describe('CompetitionDetail · nombrar a los capitanes (FE #692)', () => {
     expect(textos).toEqual(['Bea Blanco (5.0)', 'Ana Alba (18.0)', 'Carla Cruz']);
   });
 
+  it.each([
+    ['K1c: con plazas libres (4 de 20), lo principal es invitar', () => {}, 'detail.actions.manageInvitations'],
+    [
+      'K1d: sin la lista de inscritos no se sabe si quedan: nombrarlos, como antes',
+      () => mockListEnrollments.mockRejectedValue(new Error('boom')),
+      'detail.actions.nameCaptains',
+    ],
+  ])('%s (#710)', async (_caso, montar, principal) => {
+    montar();
+    renderPage();
+
+    expect(await screen.findByTestId('accion-principal')).toHaveTextContent(principal);
+  });
+
   it('K2: quien no organiza no lo ve', async () => {
     mockRoles = { isAdmin: false, isCreator: false, isLoading: false };
     mockGetCompetitionDetail.mockResolvedValue(competicion({ creatorId: 'otra' }));
@@ -363,8 +377,10 @@ describe('CompetitionDetail · nombrar a los capitanes (FE #692)', () => {
 
     await waitFor(() => expect(customToast.error).toHaveBeenCalledWith('assign failed'));
     expect(customToast.success).toHaveBeenCalledWith('detail.success.captainsNamed');
-    expect(await screen.findByText('detail.actions.start-competition')).toBeInTheDocument();
+    // Con plazas libres «Nombrar» vive en el menú, que se cierra al pulsarlo (#710)
+    await screen.findByTestId('menu-acciones');
     abrirMenuDeAcciones();
+    expect(await screen.findByText('detail.actions.start-competition')).toBeInTheDocument();
     expect(screen.getByText('detail.actions.changeCaptains')).toBeInTheDocument();
   });
 

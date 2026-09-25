@@ -14,12 +14,16 @@
  * @param {Object|null} competition - La competición, tal como la trae la ficha
  * @param {Object} [opciones]
  * @param {boolean} [opciones.puedeGestionar=true] - Si quien mira la organiza
+ * @param {number} [opciones.inscritos] - Aprobados; sin él no se sabe si quedan plazas
  * @returns {string|null} El identificador del siguiente paso, o null si no hay
  */
-export const siguientePasoDeLaCompeticion = (competition, { puedeGestionar = true } = {}) => {
+export const siguientePasoDeLaCompeticion = (
+  competition,
+  { puedeGestionar = true, inscritos } = {}
+) => {
   if (!competition) return null;
 
-  const { status, setupMode, teamsAssigned, captains } = competition;
+  const { status, setupMode, teamsAssigned, captains, maxPlayers } = competition;
   const hayCapitanes = Boolean(captains?.teamA && captains?.teamB);
 
   // Con el torneo en marcha o terminado, lo que todo el mundo quiere ver es
@@ -35,7 +39,14 @@ export const siguientePasoDeLaCompeticion = (competition, { puedeGestionar = tru
     // Nombrar a los capitanes es lo que cierra las inscripciones. Con los
     // equipos ya repartidos —una reabierta— los capitanes ya no se tocan, así
     // que lo que queda es volver a cerrar
-    return teamsAssigned ? 'close-enrollments' : 'nameCaptains';
+    if (teamsAssigned) return 'close-enrollments';
+    // Con plazas libres, invitar (#710): nombrarlos cierra las inscripciones y
+    // deja sin plaza las invitaciones pendientes, y con 1 de 12 no es lo que
+    // toca. Sigue en el menú para quien quiera cerrar antes
+    // Sin saber cuántos hay o sin cupo, la comparación con `undefined` es
+    // falsa: se sugiere como antes
+    const quedanPlazas = inscritos < maxPlayers;
+    return quedanPlazas ? 'manageInvitations' : 'nameCaptains';
   }
 
   if (status === 'CLOSED') {
