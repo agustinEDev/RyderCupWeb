@@ -348,6 +348,9 @@ const CreateCompetition = () => {
     // Instantáneo, no `smooth`: comprobado en Chrome, el suave no llega a
     // ejecutarse desde aquí y el aviso se quedaba fuera de pantalla
     avisoRef.current?.scrollIntoView({ block: 'center' });
+    // Y el foco, para quien no lo ve: el botón está abajo y el aviso arriba
+    // (FE #731). Sin volver a desplazar, que ya lo ha hecho la línea de arriba
+    avisoRef.current?.focus({ preventScroll: true });
   }, [message.text]);
 
   const fetchCountries = async () => {
@@ -782,7 +785,12 @@ const CreateCompetition = () => {
 
             {/* Message Display */}
             {message.text && (
-              <div ref={avisoRef} className={`mx-4 mb-4 p-4 rounded-lg ${getMessageClassName(message.type)}`}>
+              <div
+                ref={avisoRef}
+                role={message.type === 'error' ? 'alert' : 'status'}
+                tabIndex={-1}
+                className={`mx-4 mb-4 p-4 rounded-lg outline-none ${getMessageClassName(message.type)}`}
+              >
                 {message.text}
               </div>
             )}

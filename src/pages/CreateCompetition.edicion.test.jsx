@@ -209,4 +209,24 @@ describe('CreateCompetition · editar (FE #710)', () => {
 
     expect(screen.getByDisplayValue('La de B')).toBeInTheDocument();
   });
+
+  it('E7: si falla al guardar, el aviso se lleva a la vista y recibe el foco (FE #731)', async () => {
+    // El botón está abajo y el aviso arriba: desde el botón solo se veía el toast
+    const desplazar = vi.fn();
+    const original = globalThis.Element.prototype.scrollIntoView;
+    globalThis.Element.prototype.scrollIntoView = desplazar;
+    mockDetalle.mockResolvedValueOnce(competicion('ACTIVE'));
+    mockActualizar.mockRejectedValueOnce(
+      Object.assign(new Error('Solo el creador puede actualizar'), { status: 403 })
+    );
+    pintaEdicion();
+
+    fireEvent.click(await screen.findByText('edit.updateCompetition'));
+
+    const aviso = await screen.findByRole('alert');
+    expect(aviso).toHaveTextContent('Solo el creador puede actualizar');
+    await waitFor(() => expect(desplazar).toHaveBeenCalled());
+    expect(document.activeElement).toBe(aviso);
+    globalThis.Element.prototype.scrollIntoView = original;
+  });
 });
