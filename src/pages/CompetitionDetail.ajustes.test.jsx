@@ -18,6 +18,10 @@ const CLAVES = {
   'detail.settings.assignment.MANUAL': 'Manual',
   'detail.settings.assignment.AUTOMATIC': 'Automática',
   'detail.settings.assignment.DRAFT': 'Draft de capitanes',
+  'detail.settings.assignment.PENDING': 'Sin repartir todavía',
+  'detail.settings.setupMode': 'Modo:',
+  'create.setupMode.RYDER_CUP.title': 'Estilo Ryder Cup',
+  'create.setupMode.AUTOMATIC.title': 'Todo automático',
 };
 // Como el de i18next: si no encuentra la clave devuelve el `defaultValue`, y
 // si ese tampoco vale, LA CLAVE. Un doble más benévolo escondía justo el
@@ -144,6 +148,33 @@ describe('CompetitionDetail · la configuración, en cristiano', () => {
 
     await screen.findByText('Asignación de Equipos:');
     expect(screen.queryByText(/assignment\.undefined/)).not.toBeInTheDocument();
+  });
+
+  it.each([
+    ['RYDER_CUP', 'Estilo Ryder Cup'],
+    ['AUTOMATIC', 'Todo automático'],
+  ])('C10: se ve el modo elegido (%s) (#710)', async (setupMode, texto) => {
+    ficha({ setupMode });
+    pintar();
+
+    const etiqueta = await screen.findByText('Modo:');
+    expect(etiqueta.parentElement).toHaveTextContent(texto);
+  });
+
+  it('C11: estilo Ryder sin equipos hechos no dice «Manual»: aún no están (#710)', async () => {
+    ficha({ setupMode: 'RYDER_CUP', teamAssignment: 'MANUAL', actualTeamAssignment: null });
+    pintar();
+
+    const etiqueta = await screen.findByText('Asignación de Equipos:');
+    expect(etiqueta.parentElement).toHaveTextContent('Sin repartir todavía');
+  });
+
+  it('C12: y hecho el draft, lo dice', async () => {
+    ficha({ setupMode: 'RYDER_CUP', teamAssignment: 'MANUAL', actualTeamAssignment: 'DRAFT' });
+    pintar();
+
+    const etiqueta = await screen.findByText('Asignación de Equipos:');
+    expect(etiqueta.parentElement).toHaveTextContent('Draft de capitanes');
   });
 
   it('C8: cerrada y sin capitanes, el botón dice NOMBRARLOS', async () => {

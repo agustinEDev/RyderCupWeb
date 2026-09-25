@@ -524,7 +524,11 @@ const CompetitionDetail = () => {
   const isCreator = competition.creatorId === user.id;
   const canManage = isCreator || hasCreatorRole || isAdmin;
   // Cómo se repartieron los equipos DE VERDAD; sin reparto, el configurado
-  const repartoAMostrar = competition.actualTeamAssignment ?? competition.teamAssignment;
+  // En estilo Ryder el configurado no dice nada —será draft o a mano, al
+  // nombrar capitanes—, y salía «Manual» (#710): hasta que se hace, pendiente
+  const repartoAMostrar =
+    competition.actualTeamAssignment ??
+    (competition.setupMode === 'RYDER_CUP' ? 'PENDING' : competition.teamAssignment);
   // La configuración se corrige mientras haya inscripciones abiertas (BE #323):
   // quien invita antes de poner el campo de golf tiene que poder ponerlo después
   const canEdit = canManage && new CompetitionStatus(competition.status).allowsModifications();
@@ -1133,6 +1137,17 @@ const CompetitionDetail = () => {
                         : ''}
                     </p>
                   </div>
+                  {/* El modo elegido al crearla no salía en ningún sitio (#710) */}
+                  {competition.setupMode && (
+                    <div>
+                      <span className="text-gray-500 text-sm">{t('detail.settings.setupMode')}</span>
+                      <p className="text-gray-900 font-medium">
+                        {t(`create.setupMode.${competition.setupMode}.title`, {
+                          defaultValue: competition.setupMode,
+                        })}
+                      </p>
+                    </div>
+                  )}
                   <div>
                     <span className="text-gray-500 text-sm">{t('detail.settings.teamAssignment')}</span>
                     {/* Idem, y con respaldo: un modo que el backend añada

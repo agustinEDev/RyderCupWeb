@@ -227,13 +227,15 @@
       "teamTwo": "Team 2:",
       "playMode": "Play Mode:",
       "teamAssignment": "Team Assignment:",
+      "setupMode": "Setup:",
       "maxPlayingHandicap": "Playing Handicap Limit:",
       "maxPlayingHandicapNone": "No limit",
       "created": "Created:",
       "assignment": {
         "MANUAL": "Manual",
         "AUTOMATIC": "Automatic",
-        "DRAFT": "Captains' draft"
+        "DRAFT": "Captains' draft",
+        "PENDING": "Not split yet"
       }
     },
     "approvedPlayers": "Approved Players ({{count}})",

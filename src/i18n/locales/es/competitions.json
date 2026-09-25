@@ -227,13 +227,15 @@
       "teamTwo": "Equipo 2:",
       "playMode": "Modo de Juego:",
       "teamAssignment": "Asignación de Equipos:",
+      "setupMode": "Cómo se organiza:",
       "maxPlayingHandicap": "Límite Hándicap de Juego:",
       "maxPlayingHandicapNone": "Sin límite",
       "created": "Creado:",
       "assignment": {
         "MANUAL": "Manual",
         "AUTOMATIC": "Automática",
-        "DRAFT": "Draft de capitanes"
+        "DRAFT": "Draft de capitanes",
+        "PENDING": "Sin repartir todavía"
       }
     },
     "approvedPlayers": "Jugadores Aprobados ({{count}})",
