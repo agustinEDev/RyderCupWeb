@@ -46,6 +46,13 @@ const mockCloseEnrollments = vi.fn();
 vi.mock('../composition', () => ({
   getCompetitionDetailUseCase: { execute: (...a) => mockGetCompetitionDetail(...a) },
   getCompetitionGolfCoursesUseCase: { execute: vi.fn().mockResolvedValue([]) },
+  // Una sesión: sin ninguna, iniciar no se ofrece (FE #710)
+  getScheduleUseCase: {
+    execute: vi.fn().mockResolvedValue({
+      teamAssignment: null,
+      rounds: [{ id: 'r1', roundDate: '2026-10-03', sessionType: 'MORNING', matchFormat: 'SINGLES', status: 'PENDING_TEAMS', matches: [] }],
+    }),
+  },
   activateCompetitionUseCase: { execute: vi.fn() },
   closeEnrollmentsUseCase: { execute: (...a) => mockCloseEnrollments(...a) },
   nameCaptainsUseCase: { execute: (...a) => mockNameCaptains(...a) },

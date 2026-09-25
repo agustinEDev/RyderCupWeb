@@ -95,6 +95,8 @@ const CompetitionDetail = () => {
   // de que cambiaron, para que la agenda los vuelva a leer (FE #715)
   const [versionCampos, setVersionCampos] = useState(0);
   const avisarDeLosCampos = useCallback(() => setVersionCampos((v) => v + 1), []);
+  // Cuántas sesiones tiene, según la agenda; null mientras no lo sabe
+  const [numeroDeSesiones, setNumeroDeSesiones] = useState(null);
 
   // Determine where user came from (browse or my competitions)
   const origen = location.state?.from;
@@ -589,7 +591,9 @@ const CompetitionDetail = () => {
       icon: Play,
       onClick: () => handleStatusChange('start'),
       disabled: isProcessing,
-      cuando: competition.status === 'CLOSED',
+      // Sin sesiones el servidor lo rechaza (FE #710); lo sabe la agenda, y
+      // mientras no lo ha dicho no se ofrece
+      cuando: competition.status === 'CLOSED' && numeroDeSesiones > 0,
     },
     'reopen-enrollments': {
       id: 'reopen-enrollments',
@@ -1159,6 +1163,7 @@ const CompetitionDetail = () => {
                 version={`${competition.updatedAt}|${competition.status}|${competition.teamsAssigned}`}
                 // Y sus campos, cuando cambian en la sección de abajo (FE #715)
                 versionCampos={versionCampos}
+                onSesiones={setNumeroDeSesiones}
               />
             </div>
 
