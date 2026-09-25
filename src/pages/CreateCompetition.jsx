@@ -791,7 +791,8 @@ const CreateCompetition = () => {
                 ref={avisoRef}
                 role={message.type === 'error' ? 'alert' : 'status'}
                 tabIndex={-1}
-                className={`mx-4 mb-4 p-4 rounded-lg outline-none ${getMessageClassName(message.type)}`}
+                // Recibe el foco al fallar: con un anillo que se vea (CodeRabbit)
+                className={`mx-4 mb-4 p-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 ${message.type === 'error' ? 'focus:ring-red-400' : 'focus:ring-primary-400'} ${getMessageClassName(message.type)}`}
               >
                 {message.text}
               </div>

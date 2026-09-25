@@ -678,13 +678,15 @@ const ScoringPage = () => {
       />
 
       <ConcedeMatchModal
-        isOpen={showConcedeModal && !scoringView?.isDecided}
+        // Cerrado mientras estaba abierto, ya no hay nada que conceder ni que
+        // entregar, aunque llegue sin ganador (CodeRabbit en la #735)
+        isOpen={showConcedeModal && !scoringView?.isDecided && !cerradoSinJugar}
         onConfirm={handleConcede}
         onClose={() => setShowConcedeModal(false)}
       />
 
       <SubmitScorecardModal
-        isOpen={showSubmitModal && canSubmitScorecard}
+        isOpen={showSubmitModal && canSubmitScorecard && !cerradoSinJugar}
         validatedHoles={validatedHoles}
         totalHoles={holesToSubmit}
         isSubmitting={isSubmitting}

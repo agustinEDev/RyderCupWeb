@@ -1095,6 +1095,31 @@ describe('ScoringPage · un partido cerrado sin jugarlo hasta el final (FE #732)
     expect(screen.getByText('submit.matchCompleted')).toBeInTheDocument();
   });
 
+  it('K8: si se cierra con el modal de conceder abierto, el modal se va (CodeRabbit)', () => {
+    const { rerender } = render(<ScoringPage />);
+    fireEvent.click(screen.getByText('concede.button'));
+    expect(screen.getByTestId('concede-match-modal')).toBeInTheDocument();
+
+    // Llega cerrado y sin ganador (un backend anterior): isDecided sigue false
+    mockUseScoring.scoringView.matchStatus = 'CONCEDED';
+    rerender(<ScoringPage />);
+
+    expect(screen.queryByTestId('concede-match-modal')).toBeNull();
+  });
+
+  it('K9: y el de enviar la tarjeta, igual', () => {
+    mockUseScoring.canSubmitScorecard = true;
+    const { rerender } = render(<ScoringPage />);
+    fireEvent.click(screen.getByText('tabs.scorecard'));
+    fireEvent.click(screen.getByText('submit.button'));
+    expect(screen.getByTestId('submit-scorecard-modal')).toBeInTheDocument();
+
+    mockUseScoring.scoringView.matchStatus = 'WALKOVER';
+    rerender(<ScoringPage />);
+
+    expect(screen.queryByTestId('submit-scorecard-modal')).toBeNull();
+  });
+
   it('K5: decidido por los hoyos sigue como siempre', () => {
     mockUseScoring.scoringView.isDecided = true;
     mockUseScoring.scoringView.decidedResult = { winner: 'A', score: '4&2' };

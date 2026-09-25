@@ -230,6 +230,9 @@ describe('CreateCompetition · editar (FE #710)', () => {
     expect(aviso).toHaveTextContent('Solo el creador puede actualizar');
     await waitFor(() => expect(desplazar).toHaveBeenCalled());
     expect(document.activeElement).toBe(aviso);
+    // Con un anillo que se vea al recibir el foco, no sin contorno (CodeRabbit)
+    expect(aviso.className).not.toMatch(/(^|\s)outline-none(\s|$)/);
+    expect(aviso.className).toContain('focus:ring-2');
     globalThis.Element.prototype.scrollIntoView = original;
   });
 
