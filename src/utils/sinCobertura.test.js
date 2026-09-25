@@ -9,7 +9,7 @@
  *   el navegador dice que no hay red   | sí, aunque el error no lo parezca
  */
 import { describe, it, expect, afterEach } from 'vitest';
-import { esFalloDeRed } from './sinCobertura';
+import { esFalloDeRed, mensajeDeError } from './sinCobertura';
 
 const fingeConexion = (hay) =>
   Object.defineProperty(globalThis.navigator, 'onLine', { value: hay, configurable: true });
@@ -45,5 +45,23 @@ describe('esFalloDeRed', () => {
     fingeConexion(false);
 
     expect(esFalloDeRed(new Error('lo que sea'))).toBe(true);
+  });
+});
+
+describe('mensajeDeError · un fallo del servidor (FE #710)', () => {
+  const textos = { sinConexion: 'sin red', generico: 'algo ha fallado' };
+
+  it.each([500, 502, 503])('un %i dice que algo ha fallado, no su texto crudo', (status) => {
+    fingeConexion(true);
+    const error = Object.assign(new Error('Internal Server Error'), { status });
+
+    expect(mensajeDeError(error, textos)).toBe('algo ha fallado');
+  });
+
+  it('un 4xx sigue diciendo su motivo', () => {
+    fingeConexion(true);
+    const error = Object.assign(new Error('El torneo ya ha empezado'), { status: 499 });
+
+    expect(mensajeDeError(error, textos)).toBe('El torneo ya ha empezado');
   });
 });
