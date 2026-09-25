@@ -108,4 +108,17 @@ describe('BrowseCompetitions · el género al pedir plaza', () => {
 
     expect(screen.queryByTestId('selector-de-genero')).not.toBeInTheDocument();
   });
+
+  it('X4: el motivo del servidor se lee en el modal, que sigue abierto (#710)', async () => {
+    faltaGenero = false;
+    mockPedir.mockRejectedValueOnce(
+      Object.assign(new Error('El torneo ya ha empezado.'), { status: 400 })
+    );
+    pintar();
+
+    fireEvent.click(await screen.findByText('browse.card.request-to-join'));
+    fireEvent.click(screen.getByText('competitions:enrollment.confirm'));
+
+    expect(await screen.findByTestId('apuntarse-error')).toHaveTextContent('ya ha empezado');
+  });
 });

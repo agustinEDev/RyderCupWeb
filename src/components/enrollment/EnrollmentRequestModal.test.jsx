@@ -39,4 +39,17 @@ describe('EnrollmentRequestModal · el género', () => {
 
     expect(onConfirm).toHaveBeenCalledWith(null, 'FEMALE');
   });
+
+  it('M3: si pedir plaza falló, el motivo se lee en el modal (#710)', () => {
+    render(
+      <EnrollmentRequestModal
+        isOpen
+        onClose={() => {}}
+        onConfirm={() => {}}
+        error="La competición está completa: 4 plazas ocupadas."
+      />
+    );
+
+    expect(screen.getByTestId('apuntarse-error')).toHaveTextContent('completa');
+  });
 });

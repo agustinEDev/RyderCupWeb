@@ -14,6 +14,7 @@ import {
 import { CountryFlag } from '../utils/countryUtils';
 import { useAuth } from '../hooks/useAuth';
 import { useGeneroParaApuntarse } from '../hooks/useGeneroParaApuntarse';
+import { mensajeDeError } from '../utils/sinCobertura';
 import EnrollmentRequestModal from '../components/enrollment/EnrollmentRequestModal';
 import BlockLoader from '../components/ui/BlockLoader';
 
@@ -22,6 +23,9 @@ const BrowseCompetitions = () => {
   const generoParaApuntarse = useGeneroParaApuntarse();
   const navigate = useNavigate();
   const { t } = useTranslation('competitions');
+  const { t: tComun } = useTranslation('common');
+  // Por qué no se pudo pedir plaza: se lee en el modal, que sigue abierto (#710)
+  const [errorAlApuntarse, setErrorAlApuntarse] = useState(null);
 
   // User state
   const { user, loading: isLoading } = useAuth();
@@ -137,13 +141,14 @@ const BrowseCompetitions = () => {
 
   // Open modal to request enrollment
   const openEnrollModal = (competitionId) => {
+    setErrorAlApuntarse(null);
     setEnrollTargetId(competitionId);
     setEnrollModalOpen(true);
   };
 
   // Handle request enrollment
   const handleRequestEnrollment = async (competitionId, color = null, genero = null) => {
-    setEnrollModalOpen(false);
+    setErrorAlApuntarse(null);
     let generoGuardado = false;
     try {
       setRequestingEnrollment((prev) => ({ ...prev, [competitionId]: true }));
@@ -157,6 +162,9 @@ const BrowseCompetitions = () => {
       // Call RequestEnrollmentUseCase
       await requestEnrollmentUseCase.execute(competitionId, null, { color });
 
+      // Se cierra solo si ha ido bien (#710): cerrarlo antes dejaba un fallo
+      // con cara de éxito
+      setEnrollModalOpen(false);
       customToast.success(t('browse.success.enrollmentRequested'));
 
       // Remove competition from UI immediately (optimistic update)
@@ -186,11 +194,19 @@ const BrowseCompetitions = () => {
 
       // Check if it's a duplicate enrollment error (409 Conflict)
       if (error.message?.includes('409')) {
+        setEnrollModalOpen(false);
         customToast.error(t('browse.errors.alreadyEnrolled'));
         // Remove from list since user already has enrollment
         setJoinableCompetitions((prev) => prev.filter((comp) => comp.id !== competitionId));
       } else {
-        customToast.error(error.message || t('browse.errors.failedToEnroll'));
+        // En el modal, que sigue abierto: el motivo del servidor, o «sin
+        // conexión», y no el error crudo del navegador (#710)
+        setErrorAlApuntarse(
+          mensajeDeError(error, {
+            sinConexion: tComun('sinConexion.mensaje'),
+            generico: t('browse.errors.failedToEnroll'),
+          })
+        );
       }
     } finally {
       setRequestingEnrollment((prev) => ({ ...prev, [competitionId]: false }));
@@ -427,6 +443,7 @@ const BrowseCompetitions = () => {
         onConfirm={(tee, genero) => handleRequestEnrollment(enrollTargetId, tee, genero)}
         isProcessing={!!requestingEnrollment[enrollTargetId]}
         pideGenero={generoParaApuntarse.falta}
+        error={errorAlApuntarse}
       />
     </div>
   );
