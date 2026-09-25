@@ -8,6 +8,7 @@ import { HandicapSettings } from '../../domain/value_objects/HandicapSettings';
 import { TeamAssignment } from '../../domain/value_objects/TeamAssignment';
 import { CompetitionStatus } from '../../domain/value_objects/CompetitionStatus';
 import { getCountryFlag } from '../../utils/countryUtils';
+import { instanteDeLaApi } from '../../utils/instanteDeLaApi';
 
 /**
  * Mapper to convert between API DTOs and Domain Entities
@@ -68,8 +69,8 @@ class CompetitionMapper {
       // convierte en pública una competición que no lo es (FE #664)
       visibility: apiData.visibility || 'PRIVATE',
       status: new CompetitionStatus(apiData.status || 'DRAFT'),
-      createdAt: new Date(apiData.created_at),
-      updatedAt: new Date(apiData.updated_at)
+      createdAt: instanteDeLaApi(apiData.created_at),
+      updatedAt: instanteDeLaApi(apiData.updated_at)
     });
     } catch (error) {
       throw new Error(`Failed to map competition data: ${error.message}`);
