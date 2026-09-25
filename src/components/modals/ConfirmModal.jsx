@@ -117,6 +117,7 @@ const ConfirmModal = ({
 
           <button
             type="button"
+            data-testid="confirm-modal-confirm"
             onClick={onConfirm}
             disabled={isLoading}
             className={`

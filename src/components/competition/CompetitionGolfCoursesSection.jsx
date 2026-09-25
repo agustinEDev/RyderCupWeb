@@ -28,6 +28,7 @@ import {
   reorderGolfCoursesUseCase,
 } from '../../composition';
 import BlockLoader from '../ui/BlockLoader';
+import ConfirmModal from '../modals/ConfirmModal';
 import { etiquetaDelTipoDeCampo } from './etiquetaDelTipoDeCampo';
 import { hayQueArrancarloAMano } from '../../services/arranqueAMano';
 import {
@@ -268,6 +269,7 @@ const SortableGolfCourseItem = ({ course, onRemove, canEdit, i18n, t, paises }) 
  */
 const CompetitionGolfCoursesSection = ({ competition, canManage, onCamposCambiados }) => {
   const { t, i18n } = useTranslation('competitions');
+  const { t: tComun } = useTranslation('common');
   const [golfCourses, setGolfCourses] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isAdding, setIsAdding] = useState(false);
@@ -275,6 +277,8 @@ const CompetitionGolfCoursesSection = ({ competition, canManage, onCamposCambiad
   // consulta y se apunta en el mismo suspiro, antes de que React vuelva a pintar
   const enVuelo = useRef(new Set());
   const [showAddForm, setShowAddForm] = useState(false);
+  // El campo que espera un «sí» para quitarse
+  const [quitando, setQuitando] = useState(null);
 
   // dnd-kit sensors
   const sensors = useSensors(
@@ -370,11 +374,12 @@ const CompetitionGolfCoursesSection = ({ competition, canManage, onCamposCambiad
     }
   };
 
-  const handleRemoveCourse = async (courseId) => {
-    if (!window.confirm(t('detail.golfCourses.confirmRemove'))) {
-      return;
-    }
+  // Quitar se confirma en el modal de la app, no con `window.confirm` (FE #730)
+  const handleRemoveCourse = (courseId) => setQuitando(courseId);
 
+  const quitarCampo = async () => {
+    const courseId = quitando;
+    setQuitando(null);
     try {
       await removeGolfCourseFromCompetitionUseCase.execute(competition.id, courseId);
       customToast.success(t('detail.golfCourses.courseRemoved'));
@@ -527,6 +532,17 @@ const CompetitionGolfCoursesSection = ({ competition, canManage, onCamposCambiad
           </p>
         )}
       </div>
+
+      <ConfirmModal
+        isOpen={quitando !== null}
+        title={tComun('confirm')}
+        message={t('detail.golfCourses.confirmRemove')}
+        confirmText={tComun('confirm')}
+        cancelText={tComun('cancel')}
+        onConfirm={quitarCampo}
+        onCancel={() => setQuitando(null)}
+        isDestructive
+      />
     </div>
   );
 };

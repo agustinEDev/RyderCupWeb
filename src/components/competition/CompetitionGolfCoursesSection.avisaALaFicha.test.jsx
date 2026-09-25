@@ -78,7 +78,6 @@ describe('CompetitionGolfCoursesSection · avisa a la ficha (FE #715)', () => {
     mockAnadir.mockResolvedValue({});
     mockQuitar.mockResolvedValue({});
     mockReordenar.mockResolvedValue({});
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
   });
 
   const anadirMeis = async () => {
@@ -113,9 +112,27 @@ describe('CompetitionGolfCoursesSection · avisa a la ficha (FE #715)', () => {
     pintar(aviso);
 
     fireEvent.click((await screen.findAllByTitle('Remove golf course'))[0]);
+    // Se confirma en el modal de la app, no en el diálogo nativo (FE #730)
+    fireEvent.click(await screen.findByTestId('confirm-modal-confirm'));
 
     await waitFor(() => expect(aviso).toHaveBeenCalledTimes(1));
     expect(mockQuitar).toHaveBeenCalledWith('c-1', 'g-1');
+  });
+
+  it('SC3b: si se dice que no, no se quita (FE #730)', async () => {
+    const nativo = vi.spyOn(window, 'confirm');
+    pintar(vi.fn());
+
+    fireEvent.click((await screen.findAllByTitle('Remove golf course'))[0]);
+    expect(await screen.findByText('detail.golfCourses.confirmRemove')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /cancel/i }));
+
+    await waitFor(() =>
+      expect(screen.queryByText('detail.golfCourses.confirmRemove')).not.toBeInTheDocument()
+    );
+    expect(mockQuitar).not.toHaveBeenCalled();
+    expect(nativo).not.toHaveBeenCalled();
+    nativo.mockRestore();
   });
 
   it('SC4: al reordenar, avisa: una sesión nueva nace con el primer campo', async () => {

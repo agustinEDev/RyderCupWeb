@@ -75,6 +75,9 @@ const CompetitionDetail = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   // Borrar pide confirmación en un modal que dice quién pierde su plaza (FE #667)
   const [confirmandoBorrado, setConfirmandoBorrado] = useState(false);
+  // Lo que espera un «sí» en el modal de la app, en lugar de `window.confirm`,
+  // el diálogo nativo del navegador (FE #730)
+  const [pregunta, setPregunta] = useState(null);
   // Mientras borra, el modal desactiva sus botones: eso ya impide un segundo DELETE
   const [borrando, setBorrando] = useState(false);
   // Si la lista de inscripciones no llegó, el modal no puede decir cuántos pierden
@@ -196,6 +199,14 @@ const CompetitionDetail = () => {
     [enrollments]
   );
 
+  // Abre el modal y espera la respuesta: el flujo de cada acción no cambia
+  const preguntar = (mensaje, { destructiva = false } = {}) =>
+    new Promise((responder) => setPregunta({ mensaje, destructiva, responder }));
+  const contestar = (si) => {
+    pregunta?.responder(si);
+    setPregunta(null);
+  };
+
   const handleStatusChange = async (action) => {
     // Validate golf courses approval status before activation
     if (action === 'activate') {
@@ -229,7 +240,7 @@ const CompetitionDetail = () => {
     }
 
     const confirmationKey = `detail.confirmations.${action}`;
-    if (!window.confirm(t(confirmationKey))) {
+    if (!(await preguntar(t(confirmationKey), { destructiva: action === 'cancel' }))) {
       return;
     }
 
@@ -443,7 +454,7 @@ const CompetitionDetail = () => {
   };
 
   const handleRejectEnrollment = async (enrollmentId) => {
-    if (!window.confirm(t('detail.confirmations.reject-enrollment'))) {
+    if (!(await preguntar(t('detail.confirmations.reject-enrollment'), { destructiva: true }))) {
       return;
     }
     try {
@@ -760,6 +771,17 @@ const CompetitionDetail = () => {
             pasarsela, ocultar el enlace de la pagina en movil perderia
             comportamiento en lugar de quitar ruido (FE #338) */}
         <HeaderAuth user={user} title={competition.name} backTo={backLink} />
+
+        <ConfirmModal
+          isOpen={Boolean(pregunta)}
+          title={tComun('confirm')}
+          message={pregunta?.mensaje}
+          confirmText={tComun('confirm')}
+          cancelText={tComun('cancel')}
+          onConfirm={() => contestar(true)}
+          onCancel={() => contestar(false)}
+          isDestructive={pregunta?.destructiva}
+        />
 
         <ConfirmModal
           isOpen={confirmandoBorrado}

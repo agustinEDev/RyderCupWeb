@@ -54,6 +54,7 @@ const mockDelete = vi.fn();
 const mockCancel = vi.fn();
 const mockAssignTeams = vi.fn();
 const mockRevertToInProgress = vi.fn();
+const mockRejectEnrollment = vi.fn();
 
 const mockListEnrollments = vi.fn().mockResolvedValue([
   {
@@ -86,7 +87,7 @@ vi.mock('../composition', () => ({
   listEnrollmentsUseCase: { execute: (...args) => mockListEnrollments(...args) },
   requestEnrollmentUseCase: { execute: vi.fn() },
   approveEnrollmentUseCase: { execute: vi.fn() },
-  rejectEnrollmentUseCase: { execute: vi.fn() },
+  rejectEnrollmentUseCase: { execute: (...args) => mockRejectEnrollment(...args) },
   assignTeamsUseCase: { execute: (...args) => mockAssignTeams(...args) },
   setCustomHandicapUseCase: { execute: (...args) => mockSetCustomHandicap(...args) },
   removeCustomHandicapUseCase: { execute: (...args) => mockRemoveCustomHandicap(...args) },
@@ -287,11 +288,100 @@ describe('CompetitionDetail - edición de hándicap', () => {
   });
 });
 
+/**
+ * FE #730: los cambios de estado se confirmaban con `window.confirm`, el
+ * diálogo nativo del navegador. Ahora con el modal de la app.
+ *
+ *   W1  pedir un cambio de estado       | el modal de la app, no el nativo
+ *   W2  «No» en el modal                | no se hace nada
+ *   W3  «Sí» en el modal                | se hace el cambio
+ */
+describe('CompetitionDetail · confirmar con el modal de la app (FE #730)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockListEnrollments.mockResolvedValue([]);
+    mockGetCompetitionDetail.mockResolvedValue({
+      id: 'comp-1',
+      name: 'Summer Cup',
+      status: 'COMPLETED',
+      creatorId: 'creator-1',
+      maxPlayers: 20,
+      countries: [],
+    });
+  });
+
+  const pedirReabrir = async () => {
+    await screen.findByText('Summer Cup');
+    for (const boton of screen.queryAllByTestId('menu-acciones')) {
+      if (boton.getAttribute('aria-expanded') === 'false') fireEvent.click(boton);
+    }
+    fireEvent.click(await screen.findByText('detail.actions.revert-to-in-progress'));
+  };
+
+  it('W1: sale el modal de la app y no el diálogo nativo', async () => {
+    const nativo = vi.spyOn(window, 'confirm');
+    renderPage();
+    await pedirReabrir();
+
+    expect(await screen.findByText('detail.confirmations.revert-to-in-progress')).toBeInTheDocument();
+    expect(nativo).not.toHaveBeenCalled();
+    nativo.mockRestore();
+  });
+
+  it('W2: «No» no hace nada', async () => {
+    renderPage();
+    await pedirReabrir();
+    fireEvent.click(await screen.findByRole('button', { name: /cancel/i }));
+
+    await waitFor(() =>
+      expect(screen.queryByText('detail.confirmations.revert-to-in-progress')).not.toBeInTheDocument()
+    );
+    expect(mockRevertToInProgress).not.toHaveBeenCalled();
+  });
+
+  it('W3: «Sí» lo hace', async () => {
+    mockRevertToInProgress.mockResolvedValueOnce({ status: 'IN_PROGRESS', updatedAt: '2026-09-26T08:00:00Z' });
+    renderPage();
+    await pedirReabrir();
+    fireEvent.click(await screen.findByTestId('confirm-modal-confirm'));
+
+    await waitFor(() => expect(mockRevertToInProgress).toHaveBeenCalledWith('comp-1'));
+  });
+});
+
+describe('CompetitionDetail · rechazar una solicitud se confirma en el modal (FE #730)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockGetCompetitionDetail.mockResolvedValue({
+      id: 'comp-1',
+      name: 'Summer Cup',
+      status: 'ACTIVE',
+      creatorId: 'creator-1',
+      maxPlayers: 20,
+      countries: [],
+    });
+    mockListEnrollments.mockResolvedValue([
+      { id: 'enr-9', userId: 'u-9', status: 'REQUESTED', userName: 'Nuevo Nadal', userHandicap: 12 },
+    ]);
+    mockRejectEnrollment.mockResolvedValue({});
+  });
+
+  it('R1: pregunta en el modal, y con «Sí» rechaza', async () => {
+    renderPage();
+    fireEvent.click(await screen.findByText(/detail\.reject$/));
+
+    expect(await screen.findByText('detail.confirmations.reject-enrollment')).toBeInTheDocument();
+    expect(mockRejectEnrollment).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByTestId('confirm-modal-confirm'));
+
+    await waitFor(() => expect(mockRejectEnrollment).toHaveBeenCalledWith('comp-1', 'enr-9'));
+  });
+});
+
 describe('CompetitionDetail - reabrir torneo completado', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockListEnrollments.mockResolvedValue([]);
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
   });
 
   it('muestra el botón de reabrir torneo solo cuando el estado es COMPLETED', async () => {
@@ -348,6 +438,8 @@ describe('CompetitionDetail - reabrir torneo completado', () => {
     await screen.findByTestId('menu-acciones');
     abrirMenuDeAcciones();
     fireEvent.click(screen.getByText('detail.actions.revert-to-in-progress'));
+    // Se confirma en el modal de la app (FE #730)
+    fireEvent.click(await screen.findByTestId('confirm-modal-confirm'));
 
     await waitFor(() => {
       expect(mockRevertToInProgress).toHaveBeenCalledWith('comp-1');
@@ -971,7 +1063,6 @@ describe('CompetitionDetail - borrar con confirmación (FE #667)', () => {
     // el de antes diría «se puede» de una que ya no, o al revés (RyderCupAM#347)
     ficha({ status: 'ACTIVE', canDelete: false });
     mockCancel.mockResolvedValue({ status: 'CANCELLED', updatedAt: '2026-09-22T10:00:00Z' });
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
 
     renderPage();
     await screen.findByText('Summer Cup');
@@ -980,6 +1071,8 @@ describe('CompetitionDetail - borrar con confirmación (FE #667)', () => {
     ficha({ status: 'CANCELLED', canDelete: true });
     abrirMenuDeAcciones();
     fireEvent.click(screen.getByText('detail.actions.cancel'));
+    // Se confirma en el modal de la app (FE #730)
+    fireEvent.click(await screen.findByTestId('confirm-modal-confirm'));
 
     expect(await botonEliminar()).toBeInTheDocument();
   });
@@ -987,7 +1080,6 @@ describe('CompetitionDetail - borrar con confirmación (FE #667)', () => {
   it('B10: si ese refresco falla, deja de ofrecerlo: no se ofrece lo que no se sabe', async () => {
     ficha({ status: 'ACTIVE', canDelete: true });
     mockCancel.mockResolvedValue({ status: 'CANCELLED', updatedAt: '2026-09-22T10:00:00Z' });
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
 
     renderPage();
     expect(await botonEliminar()).toBeInTheDocument();
@@ -995,6 +1087,8 @@ describe('CompetitionDetail - borrar con confirmación (FE #667)', () => {
     mockGetCompetitionDetail.mockRejectedValue(new TypeError('Sin conexión'));
     abrirMenuDeAcciones();
     fireEvent.click(screen.getByText('detail.actions.cancel'));
+    // Se confirma en el modal de la app (FE #730)
+    fireEvent.click(await screen.findByTestId('confirm-modal-confirm'));
 
     await waitFor(noOfreceEliminar);
   });
@@ -1017,7 +1111,6 @@ describe('CompetitionDetail - borrar con confirmación (FE #667)', () => {
     // estado de entonces, y no puede decidir el botón del estado actual
     ficha({ status: 'ACTIVE', canDelete: false });
     mockCancel.mockResolvedValue({ status: 'CANCELLED', updatedAt: '2026-09-22T10:00:00Z' });
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
 
     renderPage();
     await screen.findByText('Summer Cup');
@@ -1029,6 +1122,8 @@ describe('CompetitionDetail - borrar con confirmación (FE #667)', () => {
     });
     abrirMenuDeAcciones();
     fireEvent.click(screen.getByText('detail.actions.cancel'));
+    // Se confirma en el modal de la app (FE #730)
+    fireEvent.click(await screen.findByTestId('confirm-modal-confirm'));
 
     await waitFor(() => expect(mockGetCompetitionDetail).toHaveBeenCalledTimes(2));
     await new Promise((r) => setTimeout(r, 50));
