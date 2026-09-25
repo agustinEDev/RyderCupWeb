@@ -63,6 +63,7 @@ const CompetitionDetail = () => {
   const location = useLocation();
   const { id } = useParams();
   const { t, i18n } = useTranslation('competitions');
+  const { t: tComun } = useTranslation('common');
   const { user, loading: isLoadingUser } = useAuth();
   // El género para apuntarse, solo a quien le falta (#710)
   const generoParaApuntarse = useGeneroParaApuntarse();
@@ -82,6 +83,8 @@ const CompetitionDetail = () => {
   const [nombrandoCapitanes, setNombrandoCapitanes] = useState(false);
   const [guardandoCapitanes, setGuardandoCapitanes] = useState(false);
   const [showEnrollModal, setShowEnrollModal] = useState(false);
+  // Por qué no se pudo pedir plaza: se lee en el modal, que sigue abierto (#710)
+  const [errorAlApuntarse, setErrorAlApuntarse] = useState(null);
   const [editingHandicapId, setEditingHandicapId] = useState(null);
   const [handicapInput, setHandicapInput] = useState('');
   const [savingHandicapId, setSavingHandicapId] = useState(null);
@@ -380,7 +383,7 @@ const CompetitionDetail = () => {
   };
 
   const handleEnroll = async (color = null, genero = null) => {
-    setShowEnrollModal(false);
+    setErrorAlApuntarse(null);
     setIsProcessing(true);
     let generoGuardado = false;
     try {
@@ -390,11 +393,26 @@ const CompetitionDetail = () => {
         generoGuardado = true;
       }
       await requestEnrollmentUseCase.execute(id, null, { color });
+      // Se cierra solo si ha ido bien (#710): cerrarlo antes dejaba un fallo
+      // con cara de éxito
+      setShowEnrollModal(false);
       customToast.success(t('detail.success.enrollmentRequested'));
       await loadCompetition();
     } catch (error) {
       console.error('Error enrolling:', error);
-      customToast.error(error.message || t('detail.failedToEnroll'));
+      // Ya inscrito: no es un error que corregir, la ficha estaba vieja. Se
+      // cierra y se pone al día (CodeRabbit en la #721)
+      if (error?.status === 409) {
+        setShowEnrollModal(false);
+        await loadCompetition();
+        return;
+      }
+      setErrorAlApuntarse(
+        mensajeDeError(error, {
+          sinConexion: tComun('sinConexion.mensaje'),
+          generico: t('detail.failedToEnroll'),
+        })
+      );
     } finally {
       setIsProcessing(false);
       // Al final, aunque la plaza falle: el género ya quedó guardado
@@ -980,7 +998,10 @@ const CompetitionDetail = () => {
                 className="p-4"
               >
                 <button
-                  onClick={() => setShowEnrollModal(true)}
+                  onClick={() => {
+                    setErrorAlApuntarse(null);
+                    setShowEnrollModal(true);
+                  }}
                   disabled={isProcessing}
                   className="flex items-center justify-center gap-2 w-full px-6 py-3 bg-primary text-white rounded-lg font-medium hover:bg-primary/90 transition-colors shadow-md disabled:opacity-50"
                 >
@@ -1395,6 +1416,7 @@ const CompetitionDetail = () => {
       <EnrollmentRequestModal
         isOpen={showEnrollModal}
         onClose={() => setShowEnrollModal(false)}
+        error={errorAlApuntarse}
         onConfirm={handleEnroll}
         isProcessing={isProcessing}
         pideGenero={generoParaApuntarse.falta}

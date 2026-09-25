@@ -49,4 +49,43 @@ describe('PreMatchInfo', () => {
     expect(screen.getByTestId('pre-match-info')).toHaveTextContent('preMatch.title');
     expect(screen.getByTestId('pre-match-info')).toHaveTextContent('preMatch.youMark');
   });
+
+  // #710: en foursomes se juega una bola por pareja y se marca a la pareja
+  // rival. «Tú marcas a Luna» hacía dudar (Agustín, e2e del 24 sep)
+  describe('foursomes', () => {
+    const JUGADORES = [
+      { userId: 'u1', userName: 'Nacho Noche', team: 'A' },
+      { userId: 'u2', userName: 'Agustín Estévez', team: 'A' },
+      { userId: 'u3', userName: 'Luna Noche', team: 'B' },
+      { userId: 'u4', userName: 'Óscar Noche', team: 'B' },
+    ];
+    const marca = { marksUserId: 'u3', marksName: 'Luna Noche' };
+
+    it('F1: marcáis a la pareja rival, con los dos nombres', () => {
+      render(
+        <PreMatchInfo markerAssignment={marca} matchFormat="FOURSOMES" players={JUGADORES} />
+      );
+
+      const info = screen.getByTestId('pre-match-info');
+      expect(info).toHaveTextContent('preMatch.youMarkPair');
+      expect(info).toHaveTextContent('Luna Noche / Óscar Noche');
+      expect(info).not.toHaveTextContent('preMatch.youMark:');
+    });
+
+    it('F2b: en fourball, cada uno su bola: se marca a una persona', () => {
+      render(<PreMatchInfo markerAssignment={marca} matchFormat="FOURBALL" players={JUGADORES} />);
+
+      const info = screen.getByTestId('pre-match-info');
+      expect(info).not.toHaveTextContent('preMatch.youMarkPair');
+      expect(info).not.toHaveTextContent('Óscar Noche');
+    });
+
+    it('F2: en individuales sigue siendo una persona', () => {
+      render(<PreMatchInfo markerAssignment={marca} matchFormat="SINGLES" players={JUGADORES} />);
+
+      const info = screen.getByTestId('pre-match-info');
+      expect(info).toHaveTextContent('preMatch.youMark');
+      expect(info).not.toHaveTextContent('Óscar Noche');
+    });
+  });
 });

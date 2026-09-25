@@ -112,7 +112,6 @@ vi.mock('../utils/toast', () => ({
   default: { success: vi.fn(), error: vi.fn() },
 }));
 
-import customToast from '../utils/toast';
 
 
 const renderPage = () => {
@@ -183,7 +182,8 @@ describe('CompetitionDetail · el género al pedir plaza', () => {
     });
     fireEvent.click(screen.getByText('competitions:enrollment.confirm'));
 
-    await waitFor(() => expect(customToast.error).toHaveBeenCalledWith('sin red'));
+    // En el modal, que sigue abierto: el fallo no tiene estado, así que el genérico
+    expect(await screen.findByTestId('apuntarse-error')).toHaveTextContent('detail.failedToEnroll');
     expect(mockRequest).not.toHaveBeenCalled();
     expect(mockRefrescarSesion).not.toHaveBeenCalled();
   });
@@ -212,5 +212,64 @@ describe('CompetitionDetail · el género al pedir plaza', () => {
 
     expect(mockGetCompetitionDetail).toHaveBeenCalledTimes(1);
     userCambiante = false;
+  });
+
+  // #710, e2e del 24 sep: pedir plaza fallaba y el modal se cerraba como si
+  // hubiera ido bien. Sigue abierto y dice por qué
+  it('P6: el motivo del servidor se lee en el modal, que sigue abierto', async () => {
+    faltaGenero = false;
+    mockRequest.mockRejectedValueOnce(
+      Object.assign(new Error('La competición está completa: 4 plazas ocupadas.'), { status: 400 })
+    );
+    renderPage();
+
+    fireEvent.click(await screen.findByText('detail.actions.request-to-join'));
+    fireEvent.click(screen.getByText('competitions:enrollment.confirm'));
+
+    expect(await screen.findByTestId('apuntarse-error')).toHaveTextContent('completa');
+    expect(screen.getByText('competitions:enrollment.confirm')).toBeInTheDocument();
+  });
+
+  it('P7: sin conexión, lo dice así y no con el error crudo del navegador', async () => {
+    faltaGenero = false;
+    mockRequest.mockRejectedValueOnce(new TypeError('Failed to fetch'));
+    renderPage();
+
+    fireEvent.click(await screen.findByText('detail.actions.request-to-join'));
+    fireEvent.click(screen.getByText('competitions:enrollment.confirm'));
+
+    const aviso = await screen.findByTestId('apuntarse-error');
+    expect(aviso).toHaveTextContent('sinConexion.mensaje');
+    expect(aviso).not.toHaveTextContent('Failed to fetch');
+  });
+
+  it('P8: y si sale bien, el modal se cierra', async () => {
+    faltaGenero = false;
+    renderPage();
+
+    fireEvent.click(await screen.findByText('detail.actions.request-to-join'));
+    fireEvent.click(screen.getByText('competitions:enrollment.confirm'));
+
+    // Con la ficha de vuelta: mientras recarga, el modal tampoco está
+    await waitFor(() => expect(mockRequest).toHaveBeenCalled());
+    await waitFor(() => expect(mockGetCompetitionDetail).toHaveBeenCalledTimes(2));
+    await screen.findByText('detail.actions.request-to-join');
+    expect(screen.queryByText('competitions:enrollment.confirm')).not.toBeInTheDocument();
+  });
+
+  it('P9: ya inscrito (409): se cierra y la ficha se pone al día (CodeRabbit)', async () => {
+    faltaGenero = false;
+    mockRequest.mockRejectedValueOnce(
+      Object.assign(new Error('User x is already enrolled in competition y.'), { status: 409 })
+    );
+    renderPage();
+
+    fireEvent.click(await screen.findByText('detail.actions.request-to-join'));
+    fireEvent.click(screen.getByText('competitions:enrollment.confirm'));
+
+    await waitFor(() => expect(mockGetCompetitionDetail).toHaveBeenCalledTimes(2));
+    await screen.findByText('detail.actions.request-to-join');
+    expect(screen.queryByTestId('apuntarse-error')).not.toBeInTheDocument();
+    expect(screen.queryByText('competitions:enrollment.confirm')).not.toBeInTheDocument();
   });
 });

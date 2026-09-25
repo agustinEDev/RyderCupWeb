@@ -26,8 +26,15 @@ const HoleInput = ({
   onScoreChange,
   teamAName,
   teamBName,
+  matchFormat,
 }) => {
   const { t } = useTranslation('scoring');
+  // En foursomes hay una bola por pareja (#710): «Tu anotación» y «Anotación
+  // marcador» hablaban como si cada uno jugara la suya
+  const enParejas = matchFormat === 'FOURSOMES';
+  const etiquetaPropia = t(enParejas ? 'input.pairBall' : 'input.yourScore');
+  const etiquetaMarcado = t(enParejas ? 'input.rivalBall' : 'input.markerScore');
+  const etiquetaDelMarcador = t(enParejas ? 'input.rivalCount' : 'input.markerScore');
   // undefined = hole not scored yet (nothing persisted); null = explicitly picked up.
   const ownDeLaVista = playerScore?.ownSubmitted ? playerScore.ownScore : undefined;
   const markedDeLaVista = markedPlayerScore?.markerSubmitted ? markedPlayerScore.markerScore : undefined;
@@ -104,7 +111,7 @@ const HoleInput = ({
         <div className="grid grid-cols-2 gap-4">
           {/* Own score */}
           <div className="space-y-1">
-            <label className="text-xs font-medium text-gray-500">{t('input.yourScore')}</label>
+            <label className="text-xs font-medium text-gray-500">{etiquetaPropia}</label>
             {!isOwnScoreLocked ? (
               <button
                 data-testid="own-score-button"
@@ -137,7 +144,7 @@ const HoleInput = ({
                 hoyos se ponía roja por el otro, sin forma de saber por quién.
                 La tarjeta ya no la lleva, así que este es el único sitio. */}
             <div className="flex items-center justify-between gap-2">
-              <label className="text-xs font-medium text-gray-500">{t('input.markerScore')}</label>
+              <label className="text-xs font-medium text-gray-500">{etiquetaMarcado}</label>
               {markedValidationStatus && (
                 <span data-testid="marked-validation">
                   <ValidationIcon status={markedValidationStatus} />
@@ -173,11 +180,11 @@ const HoleInput = ({
       {isReadOnly && playerScore && (
         <div className="grid grid-cols-2 gap-4 text-center">
           <div>
-            <p className="text-xs text-gray-500">{t('input.yourScore')}</p>
+            <p className="text-xs text-gray-500">{etiquetaPropia}</p>
             <p className="text-xl font-bold">{displayScore(playerScore.ownScore)}</p>
           </div>
           <div>
-            <p className="text-xs text-gray-500">{t('input.markerScore')}</p>
+            <p className="text-xs text-gray-500">{etiquetaDelMarcador}</p>
             <p className="text-xl font-bold">{displayScore(playerScore.markerScore)}</p>
           </div>
         </div>
@@ -208,7 +215,7 @@ const HoleInput = ({
           value={ownValue}
           onSelect={handleOwnSelect}
           onClose={() => setOpenPanel(null)}
-          label={t('input.yourScore')}
+          label={etiquetaPropia}
           par={par}
         />
       )}
@@ -217,7 +224,7 @@ const HoleInput = ({
           value={markedValue}
           onSelect={handleMarkedSelect}
           onClose={() => setOpenPanel(null)}
-          label={t('input.markerScore')}
+          label={etiquetaMarcado}
           par={markedPar ?? par}
         />
       )}

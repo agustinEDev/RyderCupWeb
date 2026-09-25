@@ -11,8 +11,17 @@ const TEE_CATEGORIES = ['WHITE', 'YELLOW', 'BLUE', 'RED', 'GREEN'];
  * @param {boolean} [props.pideGenero=false] - Si quien se apunta no tiene el
  *   género en su perfil (#710): se le pregunta aquí y `onConfirm` lo recibe
  *   como segundo argumento, para guardarlo antes de pedir plaza
+ * @param {string|null} [props.error=null] - Por qué no se pudo pedir (#710):
+ *   el modal sigue abierto y lo dice, en vez de cerrarse como si hubiera ido bien
  */
-const EnrollmentRequestModal = ({ isOpen, onClose, onConfirm, isProcessing, pideGenero = false }) => {
+const EnrollmentRequestModal = ({
+  isOpen,
+  onClose,
+  onConfirm,
+  isProcessing,
+  pideGenero = false,
+  error = null,
+}) => {
   if (!isOpen) return null;
   return (
     <EnrollmentRequestModalContent
@@ -20,11 +29,12 @@ const EnrollmentRequestModal = ({ isOpen, onClose, onConfirm, isProcessing, pide
       onConfirm={onConfirm}
       isProcessing={isProcessing}
       pideGenero={pideGenero}
+      error={error}
     />
   );
 };
 
-const EnrollmentRequestModalContent = ({ onClose, onConfirm, isProcessing, pideGenero }) => {
+const EnrollmentRequestModalContent = ({ onClose, onConfirm, isProcessing, pideGenero, error }) => {
   const { t } = useTranslation(['competitions', 'golfCourses']);
   const [selectedTee, setSelectedTee] = useState('');
   const [genero, setGenero] = useState('');
@@ -59,6 +69,11 @@ const EnrollmentRequestModalContent = ({ onClose, onConfirm, isProcessing, pideG
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          {error && (
+            <p data-testid="apuntarse-error" role="alert" className="text-sm text-red-700">
+              {error}
+            </p>
+          )}
           {pideGenero && <SelectorDeGenero value={genero} onChange={setGenero} />}
 
           {/* Tee Category Select */}

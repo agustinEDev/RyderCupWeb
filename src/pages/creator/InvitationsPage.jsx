@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Navigate, useNavigate, useParams } from 'react-router';
 import { ArrowLeft, Plus, Mail } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -64,6 +64,7 @@ const InvitationsPage = () => {
   } = useUserRoles(id);
 
   const [competition, setCompetition] = useState(null);
+  const cargaEnCurso = useRef(0);
   const [invitations, setInvitations] = useState([]);
   const [totalCount, setTotalCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
@@ -81,28 +82,38 @@ const InvitationsPage = () => {
 
   const canManage = isAdmin || hasCreatorRole;
 
-  const loadData = useCallback(async () => {
+  // `silencioso`: tras invitar, el listado se pone al día sin la pantalla de
+  // carga, que desmontaba el modal abierto (#710)
+  const loadData = useCallback(async ({ silencioso = false } = {}) => {
     if (!user) return;
+    // Cada carga lleva su número: una que vuelve tarde no pisa a otra
+    // posterior, como dos refrescos tras invitar a dos seguidos (CodeRabbit, #721)
+    const mia = ++cargaEnCurso.current;
 
-    setIsLoading(true);
+    if (!silencioso) setIsLoading(true);
     try {
       const [compData, invResult] = await Promise.all([
         getCompetitionDetailUseCase.execute(id),
         listCompetitionInvitationsUseCase.execute(id, statusFilter ? { status: statusFilter } : {}),
       ]);
 
+      if (mia !== cargaEnCurso.current) return;
       setCompetition(compData);
       setInvitations(invResult.invitations);
       setTotalCount(invResult.totalCount);
     } catch (error) {
       console.error('Error loading invitations:', error);
+      if (mia !== cargaEnCurso.current) return;
+      // En silencio, lo que ya se veía sigue valiendo: echar de la pantalla con
+      // el modal abierto por un refresco fallido no es silencioso (revisión local)
+      if (silencioso) return;
       customToast.error(error.message || t('errors.failedToLoad'));
       // Marcar y que decida el render, en vez de irse desde aquí: esta carga y
       // la de los permisos van por su cuenta, y salir corriendo la primera se
       // llevaba por delante el aviso de la otra (FE #656)
       setFalloAlCargar(true);
     } finally {
-      setIsLoading(false);
+      if (!silencioso) setIsLoading(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, user, statusFilter, navigate]);
@@ -187,15 +198,18 @@ const InvitationsPage = () => {
     try {
       await sendInvitationByEmailUseCase.execute(id, email, personalMessage);
       customToast.success(t('success.sent'));
-      setShowSendModal(false);
-      await loadData();
+      // Abierto, para invitar al siguiente sin volver a abrirlo (#710)
+      loadData({ silencioso: true });
+      return true;
     } catch (error) {
       console.error('Error sending invitation:', error);
-      if (error.message?.includes('409')) {
+      // Por el estado: el texto del servidor no lleva «409» (revisión local)
+      if (error?.status === 409) {
         customToast.error(t('errors.duplicateInvitation'));
       } else {
         customToast.error(error.message || t('errors.failedToSend'));
       }
+      return false;
     } finally {
       setIsProcessing(false);
     }
@@ -206,15 +220,19 @@ const InvitationsPage = () => {
     try {
       await sendInvitationUseCase.execute(id, userId, personalMessage);
       customToast.success(t('success.sent'));
-      setShowSendModal(false);
-      await loadData();
+      // Abierto, y el invitado ya como tal: el siguiente sin volver a abrirlo (#710)
+      setIdsInvitados((antes) => [...antes, userId]);
+      loadData({ silencioso: true });
+      return true;
     } catch (error) {
       console.error('Error sending invitation:', error);
-      if (error.message?.includes('409')) {
+      // Por el estado: el texto del servidor no lleva «409» (revisión local)
+      if (error?.status === 409) {
         customToast.error(t('errors.duplicateInvitation'));
       } else {
         customToast.error(error.message || t('errors.failedToSend'));
       }
+      return false;
     } finally {
       setIsProcessing(false);
     }

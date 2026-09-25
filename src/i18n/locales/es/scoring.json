@@ -17,7 +17,8 @@
     "color": "Color de barras",
     "handicap": "Hándicap",
     "format": "Formato",
-    "ready": "Listo para Jugar"
+    "ready": "Listo para Jugar",
+    "youMarkPair": "Marcáis a"
   },
   "notOpenYet": {
     "title": "La anotación de este partido aún no ha abierto",
@@ -53,7 +54,10 @@
     "halved": "Empatado",
     "prevHole": "Anterior",
     "nextHole": "Siguiente",
-    "tapToScore": "Anotar"
+    "tapToScore": "Anotar",
+    "pairBall": "Vuestra bola",
+    "rivalBall": "Bola rival",
+    "rivalCount": "Según el rival"
   },
   "scorecard": {
     "title": "Tarjeta",
@@ -82,7 +86,7 @@
     "allSquare": "Empate",
     "points": "pts",
     "hole": "Hoyo",
-    "wins": "{{team}} gana {{score}}",
+    "wins": "{{score}} para {{team}}",
     "conceded": "{{team}} (Concedido)",
     "walkover": "{{team}} (Walkover)",
     "noMatches": "No hay partidos disponibles"
@@ -134,7 +138,7 @@
   },
   "earlyEnd": {
     "title": "Partido Decidido",
-    "message": "El partido ha sido decidido. {{team}} gana {{score}}.",
+    "message": "El partido ha sido decidido: {{score}} para {{team}}.",
     "confirm": "Continuar para Enviar",
     "description": "Los hoyos restantes no necesitan jugarse."
   },

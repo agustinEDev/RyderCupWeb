@@ -298,4 +298,57 @@ describe('HoleInput · el teclado del marcado usa SU par', () => {
     const marked = screen.getByRole('dialog');
     expect(within(marked).getByRole('button', { name: /5/ })).toHaveTextContent('input.par');
   });
+
+  // #710: en foursomes hay una bola por pareja. «Tu anotación» y «Anotación
+  // marcador» hablaban como si cada uno jugara la suya
+  describe('foursomes', () => {
+    const defaultProps = { holeNumber: 5, par: 4, strokeIndex: 7, onScoreChange: vi.fn() };
+
+    it('F3: las dos casillas son vuestra bola y la del rival', () => {
+      render(<HoleInput {...defaultProps} matchFormat="FOURSOMES" />);
+
+      expect(screen.getByText('input.pairBall')).toBeInTheDocument();
+      expect(screen.getByText('input.rivalBall')).toBeInTheDocument();
+      expect(screen.queryByText('input.yourScore')).not.toBeInTheDocument();
+    });
+
+    it('F4: y en solo lectura, vuestra bola y lo que apuntó el rival', () => {
+      render(
+        <HoleInput
+          {...defaultProps}
+          matchFormat="FOURSOMES"
+          isReadOnly
+          playerScore={{ ownScore: 5, markerScore: 5 }}
+        />
+      );
+
+      expect(screen.getByText('input.pairBall')).toBeInTheDocument();
+      expect(screen.getByText('input.rivalCount')).toBeInTheDocument();
+    });
+
+    it('F3b: y el teclado que se abre se titula igual (revisión local)', () => {
+      render(<HoleInput {...defaultProps} matchFormat="FOURSOMES" />);
+
+      fireEvent.click(screen.getByTestId('own-score-button'));
+
+      expect(screen.getAllByText('input.pairBall').length).toBeGreaterThan(1);
+      expect(screen.queryByText('input.yourScore')).not.toBeInTheDocument();
+    });
+
+    it('F3c: y el de la bola rival también', () => {
+      render(<HoleInput {...defaultProps} matchFormat="FOURSOMES" />);
+
+      fireEvent.click(screen.getByTestId('marked-score-button'));
+
+      expect(screen.getAllByText('input.rivalBall').length).toBeGreaterThan(1);
+      expect(screen.queryByText('input.markerScore')).not.toBeInTheDocument();
+    });
+
+    it('F5: en fourball, cada uno la suya, como siempre', () => {
+      render(<HoleInput {...defaultProps} matchFormat="FOURBALL" />);
+
+      expect(screen.getByText('input.yourScore')).toBeInTheDocument();
+      expect(screen.getByText('input.markerScore')).toBeInTheDocument();
+    });
+  });
 });

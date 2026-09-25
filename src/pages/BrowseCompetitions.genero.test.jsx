@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 
 /**
@@ -60,6 +60,7 @@ vi.mock('../composition', () => ({
 }));
 
 const BrowseCompetitions = (await import('./BrowseCompetitions')).default;
+const customToast = (await import('../utils/toast')).default;
 
 const pintar = () =>
   render(
@@ -107,5 +108,67 @@ describe('BrowseCompetitions · el género al pedir plaza', () => {
     fireEvent.click(await screen.findByText('browse.card.request-to-join'));
 
     expect(screen.queryByTestId('selector-de-genero')).not.toBeInTheDocument();
+  });
+
+  it('X4: el motivo del servidor se lee en el modal, que sigue abierto (#710)', async () => {
+    faltaGenero = false;
+    mockPedir.mockRejectedValueOnce(
+      Object.assign(new Error('El torneo ya ha empezado.'), { status: 400 })
+    );
+    pintar();
+
+    fireEvent.click(await screen.findByText('browse.card.request-to-join'));
+    fireEvent.click(screen.getByText('competitions:enrollment.confirm'));
+
+    expect(await screen.findByTestId('apuntarse-error')).toHaveTextContent('ya ha empezado');
+  });
+
+  it('X5: una llena se ve «LLENO» y no deja pedir plaza (#710)', async () => {
+    mockUnirse.mockResolvedValue([{ ...COMPETICION, enrolledCount: 4, maxPlayers: 4 }]);
+    pintar();
+
+    const boton = await screen.findByText('browse.card.full', { selector: 'button' });
+    expect(boton).toBeDisabled();
+    expect(screen.queryByText('browse.card.request-to-join')).not.toBeInTheDocument();
+  });
+
+  it('X6: ya inscrito (409): se cierra, se dice y se quita de la lista (revisión local)', async () => {
+    // El mensaje del servidor no lleva «409»: se decide por el estado
+    faltaGenero = false;
+    mockPedir.mockRejectedValueOnce(
+      Object.assign(new Error('User x is already enrolled in competition y.'), { status: 409 })
+    );
+    pintar();
+
+    fireEvent.click(await screen.findByText('browse.card.request-to-join'));
+    fireEvent.click(screen.getByText('competitions:enrollment.confirm'));
+
+    await waitFor(() =>
+      expect(customToast.error).toHaveBeenCalledWith('browse.errors.alreadyEnrolled')
+    );
+    expect(screen.queryByTestId('apuntarse-error')).not.toBeInTheDocument();
+    expect(screen.queryByText('browse.card.request-to-join')).not.toBeInTheDocument();
+  });
+
+  it('X7: el resultado de una petición no va al modal de otra competición (CodeRabbit)', async () => {
+    faltaGenero = false;
+    let terminaLaDeA;
+    mockUnirse.mockResolvedValue([
+      COMPETICION,
+      { ...COMPETICION, id: 'c2', name: 'Otra Ryder' },
+    ]);
+    mockPedir.mockImplementationOnce(() => new Promise((listo) => { terminaLaDeA = listo; }));
+    pintar();
+
+    // Pide plaza en la primera, cierra antes de que conteste y abre la segunda
+    const botones = await screen.findAllByText('browse.card.request-to-join');
+    fireEvent.click(botones[0]);
+    fireEvent.click(screen.getByText('competitions:enrollment.confirm'));
+    fireEvent.click(screen.getByText('competitions:enrollment.cancel'));
+    fireEvent.click(screen.getAllByText('browse.card.request-to-join').at(-1));
+    await act(async () => { terminaLaDeA({}); });
+
+    // El modal de la segunda sigue abierto
+    expect(screen.getByText('competitions:enrollment.confirm')).toBeInTheDocument();
   });
 });

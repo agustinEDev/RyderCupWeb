@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, within, waitFor, fireEvent } from '@testing-library/react';
+import { render, screen, within, waitFor, fireEvent, act } from '@testing-library/react';
 import { MemoryRouter, Route, Routes, useNavigate } from 'react-router';
 
 // Envuelve el `navigate` de verdad para poder afirmar que NO se llama en pleno
@@ -27,6 +27,7 @@ vi.mock('react-router', async (importarElDeVerdad) => {
   };
 });
 import InvitationsPage from './InvitationsPage';
+import customToast from '../../utils/toast';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -205,6 +206,159 @@ describe('InvitationsPage', () => {
       expect(screen.getByTestId('status-filter')).toBeInTheDocument();
     }
   );
+
+  // #710: invitar cerraba el modal tras cada invitación, e invitar a un grupo
+  // era abrirlo una y otra vez
+  describe('invitar a varios seguidos', () => {
+    beforeEach(() => {
+      mockListFriends.mockReset().mockResolvedValue({
+        friendships: [
+          { otherUserId: 'u-1', otherUserName: 'Luna Noche' },
+          { otherUserId: 'u-2', otherUserName: 'Óscar Noche' },
+        ],
+        totalCount: 2,
+      });
+      mockListEnrollments.mockReset().mockResolvedValue([]);
+      mockListCompetitionInvitations.mockReset().mockResolvedValue({ invitations: [], totalCount: 0 });
+      mockSendInvitation.mockReset().mockResolvedValue({});
+    });
+
+    it('V1: tras invitar a uno el modal sigue abierto, y ese sale como invitado', async () => {
+      renderPage();
+      fireEvent.click(await screen.findByText('creator.sendNew'));
+      fireEvent.click(await screen.findByTestId('invite-friend-u-1'));
+
+      await waitFor(() => expect(mockSendInvitation).toHaveBeenCalled());
+      await waitFor(() => expect(screen.getByTestId('invite-friend-u-1')).toBeDisabled());
+      expect(screen.getByTestId('invite-friend-u-1')).toHaveTextContent('send.alreadyInvited');
+      // Y el siguiente, sin volver a abrirlo
+      expect(screen.getByTestId('invite-friend-u-2')).not.toBeDisabled();
+      expect(screen.getByText('send.title')).toBeInTheDocument();
+    });
+
+    it('V2: si falla, el invitado no se marca como invitado', async () => {
+      mockSendInvitation.mockRejectedValue(Object.assign(new Error('Boom'), { status: 400 }));
+      renderPage();
+      fireEvent.click(await screen.findByText('creator.sendNew'));
+      fireEvent.click(await screen.findByTestId('invite-friend-u-1'));
+
+      await waitFor(() => expect(mockSendInvitation).toHaveBeenCalled());
+      await waitFor(() => expect(screen.getByTestId('invite-friend-u-1')).not.toBeDisabled());
+      expect(screen.getByTestId('invite-friend-u-1')).not.toHaveTextContent('send.alreadyInvited');
+    });
+
+    it('V4: buscando a alguien, tras invitarle se puede buscar al siguiente', async () => {
+      mockSearchUsers.mockResolvedValue([{ id: 'u-9', firstName: 'Nacho', lastName: 'Noche' }]);
+      renderPage();
+      fireEvent.click(await screen.findByText('creator.sendNew'));
+      fireEvent.click(await screen.findByTestId('tab-search-user'));
+      fireEvent.change(screen.getByTestId('user-search-input'), { target: { value: 'Nac' } });
+      fireEvent.click(await screen.findByTestId('search-result-u-9'));
+      expect(screen.getByTestId('selected-user-chip')).toBeInTheDocument();
+
+      fireEvent.click(screen.getByTestId('send-invitation-button'));
+
+      await waitFor(() => expect(mockSendInvitation).toHaveBeenCalledWith('comp-1', 'u-9', null));
+      await waitFor(() => expect(screen.queryByTestId('selected-user-chip')).not.toBeInTheDocument());
+      expect(screen.getByTestId('user-search-input')).toBeInTheDocument();
+    });
+
+    it('V5: si el email falla, lo escrito se queda para corregirlo', async () => {
+      mockSendInvitationByEmail
+        .mockReset()
+        .mockRejectedValue(Object.assign(new Error('Boom'), { status: 400 }));
+      renderPage();
+      fireEvent.click(await screen.findByText('creator.sendNew'));
+      fireEvent.click(await screen.findByTestId('tab-by-email'));
+      const campo = screen.getByTestId('invitation-email-input');
+      fireEvent.change(campo, { target: { value: 'luna@test.com' } });
+      fireEvent.submit(campo.closest('form'));
+
+      await waitFor(() => expect(mockSendInvitationByEmail).toHaveBeenCalled());
+      await new Promise((r) => setTimeout(r, 50));
+      expect(screen.getByTestId('invitation-email-input')).toHaveValue('luna@test.com');
+    });
+
+    it('V6: una invitación repetida (409) lo dice con su texto (revisión local)', async () => {
+      mockSendInvitation.mockRejectedValue(
+        Object.assign(new Error('An invitation is already pending for x.'), { status: 409 })
+      );
+      renderPage();
+      fireEvent.click(await screen.findByText('creator.sendNew'));
+      fireEvent.click(await screen.findByTestId('invite-friend-u-1'));
+
+      await waitFor(() =>
+        expect(customToast.error).toHaveBeenCalledWith('errors.duplicateInvitation')
+      );
+    });
+
+    it('V7: si falla el refresco silencioso, no se echa a nadie de la pantalla', async () => {
+      mockListCompetitionInvitations
+        .mockReset()
+        .mockResolvedValueOnce({ invitations: [], totalCount: 0 })
+        .mockResolvedValueOnce({ invitations: [], totalCount: 0 })
+        .mockRejectedValue(new Error('Boom'));
+      renderPage();
+      fireEvent.click(await screen.findByText('creator.sendNew'));
+      fireEvent.click(await screen.findByTestId('invite-friend-u-1'));
+
+      await waitFor(() => expect(mockSendInvitation).toHaveBeenCalled());
+      // Que el refresco silencioso llegó a hacerse, y falló
+      await waitFor(() => expect(mockListCompetitionInvitations).toHaveBeenCalledTimes(3));
+      await act(async () => {});
+      expect(screen.getByText('send.title')).toBeInTheDocument();
+      expect(screen.queryByText('LA COMPETICION')).not.toBeInTheDocument();
+    });
+
+    it('V8: un refresco viejo que vuelve tarde no pisa el de después (CodeRabbit)', async () => {
+      let devuelveElViejo;
+      const INVITACION = {
+        id: 'inv-9',
+        competitionName: 'Summer Cup',
+        inviteeEmail: 'oscar@test.com',
+        inviteeName: 'Óscar Noche',
+        status: 'PENDING',
+        isPending: true,
+        isAccepted: false,
+        isDeclined: false,
+        isExpired: false,
+        personalMessage: null,
+        expiresAt: new Date(Date.now() + 86400000).toISOString(),
+        respondedAt: null,
+      };
+      mockListCompetitionInvitations
+        .mockReset()
+        .mockResolvedValueOnce({ invitations: [], totalCount: 0 })
+        .mockResolvedValueOnce({ invitations: [], totalCount: 0 })
+        .mockImplementationOnce(() => new Promise((listo) => { devuelveElViejo = listo; }))
+        .mockResolvedValue({ invitations: [INVITACION], totalCount: 1 });
+      renderPage();
+      fireEvent.click(await screen.findByText('creator.sendNew'));
+      fireEvent.click(await screen.findByTestId('invite-friend-u-1'));
+      await waitFor(() => expect(mockListCompetitionInvitations).toHaveBeenCalledTimes(3));
+      fireEvent.click(screen.getByTestId('invite-friend-u-2'));
+      await waitFor(() => expect(mockListCompetitionInvitations).toHaveBeenCalledTimes(4));
+      await waitFor(() => expect(screen.getAllByTestId('invitation-card')).toHaveLength(1));
+
+      await act(async () => { devuelveElViejo({ invitations: [], totalCount: 0 }); });
+
+      expect(screen.getAllByTestId('invitation-card')).toHaveLength(1);
+    });
+
+    it('V3: por email, tras enviar se vacía el campo para el siguiente', async () => {
+      mockSendInvitationByEmail.mockReset().mockResolvedValue({});
+      renderPage();
+      fireEvent.click(await screen.findByText('creator.sendNew'));
+      fireEvent.click(await screen.findByTestId('tab-by-email'));
+      const campo = screen.getByTestId('invitation-email-input');
+      fireEvent.change(campo, { target: { value: 'luna@test.com' } });
+      fireEvent.submit(campo.closest('form'));
+
+      await waitFor(() => expect(mockSendInvitationByEmail).toHaveBeenCalled());
+      await waitFor(() => expect(screen.getByTestId('invitation-email-input')).toHaveValue(''));
+      expect(screen.getByText('send.title')).toBeInTheDocument();
+    });
+  });
 
   describe('la pestaña de amigos se alimenta bien (FE #409)', () => {
     // `clearAllMocks` borra las llamadas, no las implementaciones: sin esto, el

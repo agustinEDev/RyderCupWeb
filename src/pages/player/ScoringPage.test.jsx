@@ -895,4 +895,104 @@ describe('ScoringPage · el recuadro rojo cuenta lo que falló (FE #626)', () =>
 
     expect(screen.getByText('errors.notFound')).toBeInTheDocument();
   });
+
+  // #710, e2e del 24 sep: un foursomes 4&2 se decidió en el 16 y se jugó
+  // hasta el 18. La cabecera decía «4UP Los borrachos · 18 hoyos jugados» y
+  // quien la miraba creía que se había ganado 4 arriba en el 18
+  describe('la cabecera de un partido decidido', () => {
+    afterEach(() => {
+      mockUseScoring.scoringView.isDecided = false;
+      mockUseScoring.scoringView.decidedResult = null;
+      mockUseScoring.scoringView.matchStanding = null;
+    });
+
+    it('C1: dice el resultado del partido, no el marcador del hoyo 18', () => {
+      mockUseScoring.scoringView.isDecided = true;
+      mockUseScoring.scoringView.decidedResult = { winner: 'A', score: '4&2' };
+      mockUseScoring.scoringView.matchStanding = { status: '4UP', leadingTeam: 'A', holesPlayed: 18 };
+
+      render(<ScoringPage />);
+
+      const cabecera = screen.getByTestId('marcador-del-partido');
+      expect(cabecera).toHaveTextContent('leaderboard.wins');
+      expect(cabecera).toHaveTextContent('4&2');
+      // El que gana, no el otro
+      expect(cabecera).toHaveTextContent('Europe');
+      expect(cabecera).not.toHaveTextContent('4UP');
+      // La vuelta propia, aparte: los hoyos que se jugaron siguen contándose
+      expect(cabecera).toHaveTextContent('holesPlayed');
+    });
+
+    it('C2: sin decidir, el marcador de siempre', () => {
+      mockUseScoring.scoringView.matchStanding = { status: '2UP', leadingTeam: 'B', holesPlayed: 9 };
+
+      render(<ScoringPage />);
+
+      expect(screen.getByTestId('marcador-del-partido')).toHaveTextContent('2UP');
+    });
+  });
+
+  it('C3: «gana» no depende del número del equipo (#710)', async () => {
+    // «Los borrachos gana 4&2»: con un nombre en plural el verbo sonaba mal
+    for (const idioma of ['es', 'en']) {
+      const textos = (await import(`../../i18n/locales/${idioma}/scoring.json`)).default;
+      expect(textos.leaderboard.wins, idioma).toMatch(/^\{\{score\}\}/);
+      expect(textos.earlyEnd.message, idioma).not.toMatch(/\{\{team\}\} (gana|wins)/);
+    }
+  });
+
+  // #710, e2e del 24 sep: con el partido decidido (4&2 en el 16) se seguía
+  // ofreciendo «Conceder partido». No queda nada que conceder
+  describe('conceder un partido decidido', () => {
+    afterEach(() => {
+      mockUseScoring.scoringView.isDecided = false;
+      mockUseScoring.scoringView.matchStatus = 'IN_PROGRESS';
+    });
+
+    it('K1: decidido, ya no se ofrece conceder', () => {
+      mockUseScoring.scoringView.matchStatus = 'IN_PROGRESS';
+      mockUseScoring.scoringView.isDecided = true;
+
+      render(<ScoringPage />);
+
+      expect(screen.queryByText('concede.button')).not.toBeInTheDocument();
+    });
+
+    it('K2: sin decidir, sí', () => {
+      mockUseScoring.scoringView.matchStatus = 'IN_PROGRESS';
+      mockUseScoring.scoringView.isDecided = false;
+
+      render(<ScoringPage />);
+
+      expect(screen.getByText('concede.button')).toBeInTheDocument();
+    });
+  });
+
+  // CodeRabbit en la #721
+  it('C4: decidido sin marcador todavía, la cabecera dice el resultado igual', () => {
+    mockUseScoring.scoringView.isDecided = true;
+    mockUseScoring.scoringView.decidedResult = { winner: 'B', score: '3&2' };
+    mockUseScoring.scoringView.matchStanding = null;
+
+    render(<ScoringPage />);
+
+    expect(screen.getByTestId('marcador-del-partido')).toHaveTextContent('3&2');
+    mockUseScoring.scoringView.isDecided = false;
+    mockUseScoring.scoringView.decidedResult = null;
+  });
+
+  it('K3: si el partido se decide con el modal de conceder abierto, el modal se cierra', () => {
+    mockUseScoring.scoringView.matchStatus = 'IN_PROGRESS';
+    mockUseScoring.scoringView.isDecided = false;
+    const { rerender } = render(<ScoringPage />);
+    fireEvent.click(screen.getByText('concede.button'));
+    expect(screen.getByTestId('concede-match-modal')).toBeInTheDocument();
+
+    // El sondeo trae el partido ya decidido
+    mockUseScoring.scoringView = { ...mockUseScoring.scoringView, isDecided: true };
+    rerender(<ScoringPage />);
+
+    expect(screen.queryByTestId('concede-match-modal')).not.toBeInTheDocument();
+    mockUseScoring.scoringView = { ...mockUseScoring.scoringView, isDecided: false };
+  });
 });

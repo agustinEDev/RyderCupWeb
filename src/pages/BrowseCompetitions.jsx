@@ -1,6 +1,6 @@
 // src/pages/BrowseCompetitions.jsx
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router';
 import customToast from '../utils/toast';
 import { useTranslation } from 'react-i18next';
@@ -14,6 +14,7 @@ import {
 import { CountryFlag } from '../utils/countryUtils';
 import { useAuth } from '../hooks/useAuth';
 import { useGeneroParaApuntarse } from '../hooks/useGeneroParaApuntarse';
+import { mensajeDeError } from '../utils/sinCobertura';
 import EnrollmentRequestModal from '../components/enrollment/EnrollmentRequestModal';
 import BlockLoader from '../components/ui/BlockLoader';
 
@@ -22,6 +23,11 @@ const BrowseCompetitions = () => {
   const generoParaApuntarse = useGeneroParaApuntarse();
   const navigate = useNavigate();
   const { t } = useTranslation('competitions');
+  const { t: tComun } = useTranslation('common');
+  // Por qué no se pudo pedir plaza: se lee en el modal, que sigue abierto (#710)
+  const [errorAlApuntarse, setErrorAlApuntarse] = useState(null);
+  // De qué competición es el modal abierto, para no mezclar resultados
+  const modalAbiertoPara = useRef(null);
 
   // User state
   const { user, loading: isLoading } = useAuth();
@@ -137,13 +143,18 @@ const BrowseCompetitions = () => {
 
   // Open modal to request enrollment
   const openEnrollModal = (competitionId) => {
+    setErrorAlApuntarse(null);
+    modalAbiertoPara.current = competitionId;
     setEnrollTargetId(competitionId);
     setEnrollModalOpen(true);
   };
 
   // Handle request enrollment
   const handleRequestEnrollment = async (competitionId, color = null, genero = null) => {
-    setEnrollModalOpen(false);
+    // El resultado es de ESTA competición: si mientras tanto se cerró su modal
+    // y se abrió el de otra, no se toca el de la otra (CodeRabbit en la #721)
+    const esSuModal = () => modalAbiertoPara.current === competitionId;
+    setErrorAlApuntarse(null);
     let generoGuardado = false;
     try {
       setRequestingEnrollment((prev) => ({ ...prev, [competitionId]: true }));
@@ -157,6 +168,9 @@ const BrowseCompetitions = () => {
       // Call RequestEnrollmentUseCase
       await requestEnrollmentUseCase.execute(competitionId, null, { color });
 
+      // Se cierra solo si ha ido bien (#710): cerrarlo antes dejaba un fallo
+      // con cara de éxito. Y solo si sigue siendo el suyo (CodeRabbit, #721)
+      if (esSuModal()) setEnrollModalOpen(false);
       customToast.success(t('browse.success.enrollmentRequested'));
 
       // Remove competition from UI immediately (optimistic update)
@@ -185,12 +199,23 @@ const BrowseCompetitions = () => {
       console.error('❌ Error requesting enrollment:', error);
 
       // Check if it's a duplicate enrollment error (409 Conflict)
-      if (error.message?.includes('409')) {
+      // Por el estado: el texto del servidor no lleva «409» (revisión local)
+      if (error?.status === 409) {
+        if (esSuModal()) setEnrollModalOpen(false);
         customToast.error(t('browse.errors.alreadyEnrolled'));
         // Remove from list since user already has enrollment
         setJoinableCompetitions((prev) => prev.filter((comp) => comp.id !== competitionId));
       } else {
-        customToast.error(error.message || t('browse.errors.failedToEnroll'));
+        // En el modal, que sigue abierto: el motivo del servidor, o «sin
+        // conexión», y no el error crudo del navegador (#710)
+        if (esSuModal()) {
+          setErrorAlApuntarse(
+            mensajeDeError(error, {
+              sinConexion: tComun('sinConexion.mensaje'),
+              generico: t('browse.errors.failedToEnroll'),
+            })
+          );
+        }
       }
     } finally {
       setRequestingEnrollment((prev) => ({ ...prev, [competitionId]: false }));
@@ -423,10 +448,14 @@ const BrowseCompetitions = () => {
 
       <EnrollmentRequestModal
         isOpen={enrollModalOpen}
-        onClose={() => setEnrollModalOpen(false)}
+        onClose={() => {
+          modalAbiertoPara.current = null;
+          setEnrollModalOpen(false);
+        }}
         onConfirm={(tee, genero) => handleRequestEnrollment(enrollTargetId, tee, genero)}
         isProcessing={!!requestingEnrollment[enrollTargetId]}
         pideGenero={generoParaApuntarse.falta}
+        error={errorAlApuntarse}
       />
     </div>
   );

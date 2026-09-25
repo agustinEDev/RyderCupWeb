@@ -17,7 +17,8 @@
     "color": "Tee colour",
     "handicap": "Handicap",
     "format": "Format",
-    "ready": "Ready to Play"
+    "ready": "Ready to Play",
+    "youMarkPair": "You mark"
   },
   "notOpenYet": {
     "title": "Scoring for this match has not opened yet",
@@ -53,7 +54,10 @@
     "halved": "Halved",
     "prevHole": "Previous",
     "nextHole": "Next",
-    "tapToScore": "Add score"
+    "tapToScore": "Add score",
+    "pairBall": "Your ball",
+    "rivalBall": "Rival ball",
+    "rivalCount": "Per the rivals"
   },
   "scorecard": {
     "title": "Scorecard",
@@ -82,7 +86,7 @@
     "allSquare": "All Square",
     "points": "pts",
     "hole": "Hole",
-    "wins": "{{team}} wins {{score}}",
+    "wins": "{{score}} to {{team}}",
     "conceded": "{{team}} (Conceded)",
     "walkover": "{{team}} (Walkover)",
     "noMatches": "No matches available"
@@ -134,7 +138,7 @@
   },
   "earlyEnd": {
     "title": "Match Decided",
-    "message": "The match has been decided. {{team}} wins {{score}}.",
+    "message": "The match has been decided: {{score}} to {{team}}.",
     "confirm": "Continue to Submit",
     "description": "The remaining holes do not need to be played."
   },
