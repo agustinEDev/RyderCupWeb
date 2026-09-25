@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { instanteDeLaApi } from './instanteDeLaApi';
+import { instanteDeLaApi, instanteEnTexto } from './instanteDeLaApi';
 
 /**
  * La API manda parte de sus horas sin huso (`datetime.now()` en un servidor en
@@ -22,5 +22,28 @@ describe('instanteDeLaApi', () => {
     const fecha = new Date('2026-09-23T23:55:00Z');
     expect(instanteDeLaApi(fecha).getTime()).toBe(fecha.getTime());
     expect(Number.isNaN(instanteDeLaApi(undefined).getTime())).toBe(true);
+  });
+});
+
+/**
+ * El mismo instante, escrito en el idioma de la aplicación (FE #710: la fecha
+ * del hándicap salía en inglés y sin huso en el perfil y al editarlo).
+ */
+describe('instanteEnTexto', () => {
+  const MADRID = { timeZone: 'Europe/Madrid', year: 'numeric', month: 'long', day: 'numeric' };
+
+  it.each([
+    ['sin huso es UTC: de madrugada en España ya es el 24', '2026-09-23T23:55:00', 'es', '24 de septiembre de 2026'],
+    ['en el idioma que se le pide', '2026-09-23T23:55:00', 'en', 'September 24, 2026'],
+  ])('%s', (_caso, texto, idioma, esperado) => {
+    expect(instanteEnTexto(texto, idioma, MADRID)).toBe(esperado);
+  });
+
+  it.each([null, undefined, '', 'no es una fecha'])('sin fecha válida (%s), null', (texto) => {
+    expect(instanteEnTexto(texto, 'es', MADRID)).toBeNull();
+  });
+
+  it('un idioma que Intl no entiende no rompe la pantalla', () => {
+    expect(instanteEnTexto('2026-09-23T23:55:00', 'no_es_un_idioma!', MADRID)).toMatch(/2026/);
   });
 });

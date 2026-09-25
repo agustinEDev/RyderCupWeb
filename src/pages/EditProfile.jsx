@@ -8,9 +8,10 @@ import { ALIAS_MAX_LENGTH } from '../utils/alias';
 import { canUseRFEG } from '../utils/countryUtils';
 import CountryAutocomplete from '../components/ui/CountryAutocomplete';
 import FullScreenLoader from '../components/ui/FullScreenLoader';
+import { instanteEnTexto } from '../utils/instanteDeLaApi';
 
 const EditProfile = () => {
-  const { t } = useTranslation('profile');
+  const { t, i18n } = useTranslation('profile');
   // Toda la lógica ahora reside en el hook. Obtenemos todo lo que necesitamos de él.
   const {
     user,
@@ -64,22 +65,19 @@ const EditProfile = () => {
     return null;
   }
 
-  const formatDate = (dateString) => {
-    if (!dateString) return 'Never';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
+  // En el idioma de la app y leída como UTC: salía en `en-US` fijo y con la
+  // hora sin huso tomada por local (FE #710)
+  const currentHandicap = user.handicap !== null && user.handicap !== undefined
+    ? user.handicap
+    : t('edit.handicap.notSet');
+  const handicapUpdated =
+    instanteEnTexto(user.handicap_updated_at, i18n.language, {
       year: 'numeric',
       month: 'long',
       day: 'numeric',
       hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
-
-  const currentHandicap = user.handicap !== null && user.handicap !== undefined
-    ? user.handicap
-    : 'Not set';
-  const handicapUpdated = formatDate(user.handicap_updated_at);
+      minute: '2-digit',
+    }) ?? t('edit.handicap.never');
   
   // El JSX que sigue es idéntico al de antes, pero ahora consume los
   // estados y manejadores del hook.

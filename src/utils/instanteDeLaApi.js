@@ -17,3 +17,24 @@ export const instanteDeLaApi = (texto) => {
   }
   return new Date(`${texto}Z`);
 };
+
+/**
+ * Un instante de la API escrito en el idioma de la aplicación, no en el del
+ * navegador ni en un `en-US` fijo (FE #710). Un idioma que `Intl` no entiende
+ * lanza RangeError: entonces, el del navegador.
+ *
+ * @param {string} texto - fecha y hora ISO de la API
+ * @param {string} [idioma] - el de i18n
+ * @param {Intl.DateTimeFormatOptions} [opciones]
+ * @returns {string|null} null si no hay fecha válida
+ */
+export const instanteEnTexto = (texto, idioma, opciones) => {
+  if (!texto) return null;
+  const instante = instanteDeLaApi(texto);
+  if (Number.isNaN(instante.getTime())) return null;
+  try {
+    return instante.toLocaleString(idioma, opciones);
+  } catch {
+    return instante.toLocaleString(undefined, opciones);
+  }
+};

@@ -96,6 +96,8 @@
       "title": "Gestión de Hándicap",
       "current": "Hándicap Actual:",
       "lastUpdated": "Última actualización: {{date}}",
+      "never": "nunca",
+      "notSet": "Sin hándicap",
       "manual": "Hándicap (Manual)",
       "manualPlaceholder": "Ingresa hándicap (-10.0 a 54.0)",
       "manualHelp": "Rango: -10.0 a 54.0 (estándar RFEG/EGA)",
