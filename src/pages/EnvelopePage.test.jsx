@@ -20,6 +20,7 @@ vi.mock('react-router', async () => {
  */
 const t = (clave, params) => {
   if (params?.count !== undefined) return `${clave}_${params.count}`;
+  if (params?.equipo !== undefined) return `${clave} ${params.equipo}`;
   return clave;
 };
 const traduccion = { i18n: { language: 'es' }, t };
@@ -36,7 +37,9 @@ vi.mock('../hooks/useAuth', () => ({ useAuth: () => SESION }));
 const mockVer = vi.fn();
 const mockEntregar = vi.fn();
 const mockAbrir = vi.fn();
+const mockCompeticion = vi.fn();
 vi.mock('../composition', () => ({
+  getCompetitionDetailUseCase: { execute: (...a) => mockCompeticion(...a) },
   getEnvelopesUseCase: { execute: (...a) => mockVer(...a) },
   submitEnvelopeUseCase: { execute: (...a) => mockEntregar(...a) },
   revealEnvelopesUseCase: { execute: (...a) => mockAbrir(...a) },
@@ -101,6 +104,7 @@ describe('EnvelopePage · el sobre del capitán (FE #655)', () => {
     mockVer.mockResolvedValue(vista());
     mockEntregar.mockResolvedValue({ team: 'A', entries: [['bea'], ['ana']], automatic: false });
     mockAbrir.mockResolvedValue({ matchups: [], filledAutomatically: [] });
+    mockCompeticion.mockResolvedValue({ team1Name: 'Europa', team2Name: 'América' });
   });
 
   it('V1: el capitán ve a los suyos con su hándicap', async () => {
@@ -270,8 +274,8 @@ describe('EnvelopePage · el sobre del capitán (FE #655)', () => {
     );
     pintar();
 
-    expect(await screen.findByTestId('automatico-B')).toBeInTheDocument();
-    expect(screen.queryByTestId('automatico-A')).not.toBeInTheDocument();
+    // Un aviso que nombra al equipo B (#710); el detalle, en N1-N3
+    expect(await screen.findByTestId('automatico')).toHaveTextContent('América');
   });
 
   it('V11b: abiertos y sin partidos, dice por qué (BE #361)', async () => {
@@ -1012,5 +1016,94 @@ describe('EnvelopePage · se entera sola de que se abrieron (#710)', () => {
 
     // La carga y UN refresco, que sigue sin volver
     expect(mockVer).toHaveBeenCalledTimes(2);
+  });
+});
+
+/**
+ * LA TABLA del sobre en el bloque 3 de la FE #710.
+ *
+ *   #   caso                                        | qué pasa
+ *   ----|-------------------------------------------|--------------------------------------
+ *   N1  la app rellenó uno                          | un aviso que dice de qué equipo
+ *   N2  la app rellenó los dos                      | UN aviso para los dos, no dos iguales
+ *   N3  no se pueden leer los nombres de los equipos | el aviso sin nombre, sin romper nada
+ *   N4  las parejas en los enfrentamientos          | cada nombre en su línea, sin cortar
+ *   N5  al ir tocando                               | las elegidas suben, en su orden
+ */
+describe('EnvelopePage · lo que se lee (FE #710)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockCompeticion.mockResolvedValue({ team1Name: 'Europa', team2Name: 'América' });
+  });
+
+  const abiertos = (extra) =>
+    vista({
+      revealed: true,
+      teamASubmitted: true,
+      teamBSubmitted: true,
+      matchups: [[['bea'], ['carla']]],
+      ...extra,
+    });
+
+  it('N1: la app rellenó uno: dice de qué equipo', async () => {
+    mockVer.mockResolvedValue(abiertos({ teamBAutomatic: true }));
+    pintar();
+
+    const aviso = await screen.findByTestId('automatico');
+    await waitFor(() =>
+      expect(aviso).toHaveTextContent('envelope.filledByTheAppTeam América')
+    );
+  });
+
+  it('N2: los dos: un solo aviso', async () => {
+    mockVer.mockResolvedValue(abiertos({ teamAAutomatic: true, teamBAutomatic: true }));
+    pintar();
+
+    const avisos = await screen.findAllByTestId('automatico');
+    expect(avisos).toHaveLength(1);
+    expect(avisos[0]).toHaveTextContent('envelope.filledByTheAppBoth');
+  });
+
+  it('N3: sin los nombres de los equipos, el aviso sale igual', async () => {
+    mockCompeticion.mockRejectedValue(new TypeError('Failed to fetch'));
+    mockVer.mockResolvedValue(abiertos({ teamAAutomatic: true }));
+    pintar();
+
+    expect(await screen.findByTestId('automatico')).toHaveTextContent('envelope.filledByTheApp');
+  });
+
+  it('N3b: sin sobres rellenados por la app no se pregunta por los equipos', async () => {
+    mockVer.mockResolvedValue(abiertos());
+    pintar();
+
+    await screen.findByTestId('enfrentamiento-0');
+    expect(screen.queryByTestId('automatico')).not.toBeInTheDocument();
+    expect(mockCompeticion).not.toHaveBeenCalled();
+  });
+
+  it('N4: las parejas se leen enteras, un nombre por línea', async () => {
+    mockVer.mockResolvedValue(
+      abiertos({ playersPerRow: 2, matchups: [[['ana', 'bea'], ['carla', 'dani']]] })
+    );
+    pintar();
+
+    const fila = await screen.findByTestId('enfrentamiento-0');
+    for (const nombre of ['Ana Alba', 'Bea Blanco', 'Carla Cruz', 'Dani Díaz']) {
+      expect(within(fila).getByText(nombre)).toBeInTheDocument();
+    }
+    expect(fila.querySelector('.truncate')).toBeNull();
+  });
+
+  it('N5: al tocar, las elegidas suben en su orden', async () => {
+    mockVer.mockResolvedValue(vista({ myPlayers: CUATRO }));
+    pintar();
+
+    fireEvent.click(await screen.findByTestId('jugador-carla'));
+    fireEvent.click(screen.getByTestId('jugador-bea'));
+
+    const orden = screen
+      .getAllByTestId(/^jugador-/)
+      .map((b) => b.dataset.testid.replace('jugador-', ''));
+    expect(orden).toEqual(['carla', 'bea', 'ana', 'dani']);
   });
 });

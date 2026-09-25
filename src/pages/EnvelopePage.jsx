@@ -8,6 +8,7 @@ import FullScreenLoader from '../components/ui/FullScreenLoader';
 import customToast from '../utils/toast';
 import { fechaYHoraDelCampo } from '../services/partidosSinCobertura';
 import {
+  getCompetitionDetailUseCase,
   getEnvelopesUseCase,
   submitEnvelopeUseCase,
   revealEnvelopesUseCase,
@@ -76,6 +77,25 @@ const EnvelopePage = () => {
   }, [cargar]);
 
   const jugadores = useMemo(() => vista?.myPlayers || [], [vista]);
+
+  // Los nombres de los equipos, solo para decir de quién es el sobre que
+  // rellenó la aplicación: la vista del sobre no los trae. Sin ellos el aviso
+  // sale igual, sin nombre
+  const hayAutomatico = Boolean(vista?.teamAAutomatic || vista?.teamBAutomatic);
+  const [nombresDeLosEquipos, setNombresDeLosEquipos] = useState(null);
+  useEffect(() => {
+    if (!hayAutomatico) return undefined;
+    let vigente = true;
+    (async () => getCompetitionDetailUseCase.execute(id))()
+      .then(
+        (competicion) =>
+          vigente && setNombresDeLosEquipos({ A: competicion.team1Name, B: competicion.team2Name })
+      )
+      .catch(() => {});
+    return () => {
+      vigente = false;
+    };
+  }, [hayAutomatico, id]);
   const capitanea = jugadores.length > 0;
   const entregado = Boolean(vista?.mine?.submitted) && !cambiando;
 
@@ -122,6 +142,18 @@ const EnvelopePage = () => {
   const parejaAMedias = orden.length % porFila !== 0;
 
   const puestoDe = (userId) => orden.indexOf(userId);
+  // Las elegidas suben, en el orden en que se tocaron: si no, el «2» se
+  // quedaba encima del «1» (#710). Las demás, como vinieron
+  const jugadoresEnOrden = [...jugadores]
+    .map((jugador, i) => ({ jugador, i }))
+    .sort((a, b) => {
+      const puesto = ({ jugador, i }) => {
+        const p = orden.indexOf(jugador.userId);
+        return p >= 0 ? p : orden.length + i;
+      };
+      return puesto(a) - puesto(b);
+    })
+    .map(({ jugador }) => jugador);
   // El número que se ve es el de la FILA: en parejas, dos jugadores con el 1
   // juegan juntos
   const filaDe = (userId) => Math.floor(puestoDe(userId) / porFila) + 1;
@@ -189,6 +221,19 @@ const EnvelopePage = () => {
 
   const nombreDe = (userId) => vista?.playerNames?.[userId] || userId;
 
+  // Qué sobres rellenó la aplicación, en UN aviso que dice de quién (#710):
+  // eran dos avisos iguales, y «ese capitán» no decía cuál
+  const automaticos = ['A', 'B'].filter((equipo) => vista?.[`team${equipo}Automatic`]);
+  let avisoAutomatico = null;
+  if (automaticos.length === 2) {
+    avisoAutomatico = t('envelope.filledByTheAppBoth');
+  } else if (automaticos.length === 1) {
+    const equipo = nombresDeLosEquipos?.[automaticos[0]];
+    avisoAutomatico = equipo
+      ? t('envelope.filledByTheAppTeam', { equipo })
+      : t('envelope.filledByTheApp');
+  }
+
   // Con el huso DEL CAMPO: `toLocaleString` la habría movido al del teléfono, y
   // el plazo cae de madrugada, así que un dispositivo en otro huso enseñaba
   // incluso otro día. Es el mismo caso que ya resolvió la anotación
@@ -220,17 +265,14 @@ const EnvelopePage = () => {
         {vista?.revealed && (
           <div className="mb-4 space-y-2">
             <h2 className="text-sm font-bold text-gray-900">{t('envelope.matchups')}</h2>
-            {['A', 'B'].map((equipo) =>
-              vista[`team${equipo}Automatic`] ? (
-                <p
-                  key={equipo}
-                  data-testid={`automatico-${equipo}`}
-                  className="flex items-center gap-2 rounded-lg bg-amber-50 p-2 text-xs text-amber-800"
-                >
-                  <Bot className="h-4 w-4 shrink-0" />
-                  {t('envelope.filledByTheApp')}
-                </p>
-              ) : null
+            {avisoAutomatico && (
+              <p
+                data-testid="automatico"
+                className="flex items-center gap-2 rounded-lg bg-amber-50 p-2 text-xs text-amber-800"
+              >
+                <Bot className="h-4 w-4 shrink-0" />
+                {avisoAutomatico}
+              </p>
             )}
             <ul className="space-y-2">
               {vista.matchups.map((enfrentamiento, i) => (
@@ -239,14 +281,20 @@ const EnvelopePage = () => {
                   data-testid={`enfrentamiento-${i}`}
                   className="flex items-center justify-between gap-2 rounded-xl border border-gray-200 bg-white p-3 text-sm"
                 >
-                  <span className="min-w-0 flex-1 truncate">
-                    {enfrentamiento[0].map(nombreDe).join(' / ')}
+                  {/* Una pareja, un nombre por línea: cortados no se sabía
+                      contra quién se jugaba (#710) */}
+                  <span className="min-w-0 flex-1 break-words">
+                    {enfrentamiento[0].map((jugador) => (
+                      <span key={jugador} className="block">{nombreDe(jugador)}</span>
+                    ))}
                   </span>
                   <span className="shrink-0 text-xs font-bold text-gray-500">
                     {t('envelope.versus')}
                   </span>
-                  <span className="min-w-0 flex-1 truncate text-right">
-                    {enfrentamiento[1].map(nombreDe).join(' / ')}
+                  <span className="min-w-0 flex-1 break-words text-right">
+                    {enfrentamiento[1].map((jugador) => (
+                      <span key={jugador} className="block">{nombreDe(jugador)}</span>
+                    ))}
                   </span>
                 </li>
               ))}
@@ -297,7 +345,11 @@ const EnvelopePage = () => {
               {vista.mine.entries.map((fila, i) => (
                 <li key={fila.join('-')} className="flex items-center gap-2 text-sm">
                   <span className="w-5 shrink-0 text-xs font-bold text-gray-500">{i + 1}</span>
-                  <span className="min-w-0 truncate">{fila.map(nombreDe).join(' / ')}</span>
+                  <span className="min-w-0 break-words">
+                    {fila.map((jugador) => (
+                      <span key={jugador} className="block">{nombreDe(jugador)}</span>
+                    ))}
+                  </span>
                 </li>
               ))}
             </ol>
@@ -390,7 +442,7 @@ const EnvelopePage = () => {
               </p>
             )}
             <ul className="divide-y divide-gray-100 rounded-xl border border-gray-200 bg-white">
-              {jugadores.map((jugador) => {
+              {jugadoresEnOrden.map((jugador) => {
                 const puesto = puestoDe(jugador.userId);
                 return (
                   <li key={jugador.userId}>
