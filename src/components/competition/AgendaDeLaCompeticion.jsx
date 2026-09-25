@@ -38,8 +38,8 @@ const SE_PUEDE_TOCAR = new Set(['PENDING_TEAMS', 'PENDING_MATCHES']);
  * @param {string} [props.version] - Cambia cuando cambia la competición (equipos,
  *   estado): entonces la agenda se vuelve a leer, que la cuenta de partidos y lo
  *   que se puede tocar dependen de ello
- * @param {(n: number|null) => void} [props.onSesiones] - Cuántas sesiones hay
- *   tras cada lectura; null si no se sabe (FE #710)
+ * @param {(agenda: Object|null) => void} [props.onAgenda] - La agenda tras cada
+ *   lectura; null si no se sabe (FE #710)
  * @param {number} [props.versionCampos] - Cambia cuando la ficha añade, quita o
  *   reordena campos (FE #715): entonces se vuelven a leer
  */
@@ -51,7 +51,7 @@ const AgendaDeLaCompeticion = ({
   jugadores,
   version,
   versionCampos,
-  onSesiones,
+  onAgenda,
 }) => {
   const { t, i18n } = useTranslation('schedule');
   const [agenda, setAgenda] = useState(null);
@@ -111,11 +111,12 @@ const AgendaDeLaCompeticion = ({
 
   const sesiones = useMemo(() => agenda?.rounds || [], [agenda]);
 
-  // Cuántas hay, para la ficha: sin ninguna no se ofrece iniciar (FE #710).
-  // Mientras no se ha leído, o si no se pudo, no se sabe: null
+  // Lo leído, para la ficha: sin sesiones no se ofrece iniciar, y con el
+  // reparto dice el equipo de cada uno (FE #710). Mientras no se ha leído, o si
+  // no se pudo, no se sabe: null
   useEffect(() => {
-    onSesiones?.(agenda && !sinCargar ? sesiones.length : null);
-  }, [agenda, sinCargar, sesiones, onSesiones]);
+    onAgenda?.(agenda && !sinCargar ? agenda : null);
+  }, [agenda, sinCargar, onAgenda]);
   const dias = useMemo(() => diasDelTorneo(startDate, endDate), [startDate, endDate]);
 
   const porDia = useMemo(() => {
