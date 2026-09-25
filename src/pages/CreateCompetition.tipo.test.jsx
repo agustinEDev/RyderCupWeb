@@ -416,7 +416,7 @@ describe('CreateCompetition · elegir el tipo primero (FE #639)', () => {
       { golf_course: { id: 'g-1', name: 'La Resina', country_code: 'ES', approval_status: 'APPROVED' } },
     ]);
     getCompetitionDetailUseCase.execute.mockResolvedValue({
-      id: 'c-1', name: 'Ryder vieja', maxPlayers: 24,
+      id: 'c-1', name: 'Ryder vieja', maxPlayers: 24, status: 'ACTIVE',
       team1Name: 'Europa', team2Name: 'USA',
       startDate: '2026-10-10', endDate: '2026-10-12',
       playMode: 'HANDICAP', teamAssignment: 'AUTOMATIC', countries: [{ code: 'ES' }],

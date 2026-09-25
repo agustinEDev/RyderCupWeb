@@ -49,6 +49,7 @@ import {
 import FullScreenLoader from '../components/ui/FullScreenLoader';
 import { formatCountryName } from '../services/countries';
 import { fechaDeApertura } from '../domain/services/aperturaDeInscripciones';
+import { CompetitionStatus } from '../domain/value_objects/CompetitionStatus';
 
 // «Volver» lleva a donde se vino: explorar, las invitaciones (FE #682) o, por
 // defecto, las competiciones propias
@@ -523,7 +524,7 @@ const CompetitionDetail = () => {
   const repartoAMostrar = competition.actualTeamAssignment ?? competition.teamAssignment;
   // La configuración se corrige mientras haya inscripciones abiertas (BE #323):
   // quien invita antes de poner el campo de golf tiene que poder ponerlo después
-  const canEdit = canManage && ['DRAFT', 'ACTIVE'].includes(competition.status);
+  const canEdit = canManage && new CompetitionStatus(competition.status).allowsModifications();
   // Quién puede y cuándo lo decide el backend con la misma regla que el borrado
   // (RyderCupAM#347): estado, calendario y rol. Copiar aquí la lista de estados
   // ofrecería el botón en una cancelada ya jugada, donde siempre falla (FE #667)

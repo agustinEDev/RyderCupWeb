@@ -143,7 +143,9 @@
     "updateCompetition": "Actualizar Competición",
     "success": "¡Competición actualizada exitosamente!",
     "error": "Error al actualizar la competición",
-    "errorLoading": "Error al cargar la competición"
+    "errorLoading": "Error al cargar la competición",
+    "notEditable": "Esta competición ya no se puede editar: solo se edita mientras las inscripciones están abiertas.",
+    "datesLeaveSessionsOut": "Con esas fechas se quedan fuera estas sesiones: {{sesiones}}. Muévelas o bórralas antes de cambiar las fechas."
   },
   "detail": {
     "loadingCompetition": "Cargando competición...",

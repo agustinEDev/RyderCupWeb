@@ -163,7 +163,7 @@ describe('CreateCompetition · los nombres de los equipos cuando llega el idioma
     // los equipos por abrirla en español sería cambiarle los datos
     const { getCompetitionDetailUseCase } = await import('../composition');
     getCompetitionDetailUseCase.execute.mockResolvedValue({
-      id: 'c-1', name: 'Ryder vieja', maxPlayers: 24,
+      id: 'c-1', name: 'Ryder vieja', maxPlayers: 24, status: 'ACTIVE',
       team1Name: 'Europe', team2Name: 'USA',
       startDate: '2026-10-10', endDate: '2026-10-12',
       playMode: 'HANDICAP', teamAssignment: 'AUTOMATIC', countries: [{ code: 'ES' }],

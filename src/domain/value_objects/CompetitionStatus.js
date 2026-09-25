@@ -61,6 +61,15 @@ export class CompetitionStatus {
   }
 
   /**
+   * Si se puede editar la competición: mientras las inscripciones están
+   * abiertas, como en el backend (`allows_modifications`).
+   * @returns {boolean}
+   */
+  allowsModifications() {
+    return this.value === CompetitionStatusEnum.DRAFT || this.value === CompetitionStatusEnum.ACTIVE;
+  }
+
+  /**
    * @returns {string}
    */
   toString() {

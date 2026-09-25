@@ -143,7 +143,9 @@
     "updateCompetition": "Update Competition",
     "success": "Competition updated successfully!",
     "error": "Failed to update competition",
-    "errorLoading": "Failed to load competition"
+    "errorLoading": "Failed to load competition",
+    "notEditable": "This competition can no longer be edited: it can only be edited while enrolment is open.",
+    "datesLeaveSessionsOut": "Those dates leave these sessions out: {{sesiones}}. Move or delete them before changing the dates."
   },
   "detail": {
     "loadingCompetition": "Loading competition...",
