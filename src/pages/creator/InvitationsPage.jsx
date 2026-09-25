@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Navigate, useNavigate, useParams } from 'react-router';
 import { ArrowLeft, Plus, Mail } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -64,6 +64,7 @@ const InvitationsPage = () => {
   } = useUserRoles(id);
 
   const [competition, setCompetition] = useState(null);
+  const cargaEnCurso = useRef(0);
   const [invitations, setInvitations] = useState([]);
   const [totalCount, setTotalCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
@@ -85,6 +86,9 @@ const InvitationsPage = () => {
   // carga, que desmontaba el modal abierto (#710)
   const loadData = useCallback(async ({ silencioso = false } = {}) => {
     if (!user) return;
+    // Cada carga lleva su número: una que vuelve tarde no pisa a otra
+    // posterior, como dos refrescos tras invitar a dos seguidos (CodeRabbit, #721)
+    const mia = ++cargaEnCurso.current;
 
     if (!silencioso) setIsLoading(true);
     try {
@@ -93,11 +97,13 @@ const InvitationsPage = () => {
         listCompetitionInvitationsUseCase.execute(id, statusFilter ? { status: statusFilter } : {}),
       ]);
 
+      if (mia !== cargaEnCurso.current) return;
       setCompetition(compData);
       setInvitations(invResult.invitations);
       setTotalCount(invResult.totalCount);
     } catch (error) {
       console.error('Error loading invitations:', error);
+      if (mia !== cargaEnCurso.current) return;
       // En silencio, lo que ya se veía sigue valiendo: echar de la pantalla con
       // el modal abierto por un refresco fallido no es silencioso (revisión local)
       if (silencioso) return;

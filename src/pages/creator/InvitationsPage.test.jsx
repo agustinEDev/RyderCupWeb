@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, within, waitFor, fireEvent } from '@testing-library/react';
+import { render, screen, within, waitFor, fireEvent, act } from '@testing-library/react';
 import { MemoryRouter, Route, Routes, useNavigate } from 'react-router';
 
 // Envuelve el `navigate` de verdad para poder afirmar que NO se llama en pleno
@@ -303,9 +303,46 @@ describe('InvitationsPage', () => {
       fireEvent.click(await screen.findByTestId('invite-friend-u-1'));
 
       await waitFor(() => expect(mockSendInvitation).toHaveBeenCalled());
-      await new Promise((r) => setTimeout(r, 100));
+      // Que el refresco silencioso llegó a hacerse, y falló
+      await waitFor(() => expect(mockListCompetitionInvitations).toHaveBeenCalledTimes(3));
+      await act(async () => {});
       expect(screen.getByText('send.title')).toBeInTheDocument();
       expect(screen.queryByText('LA COMPETICION')).not.toBeInTheDocument();
+    });
+
+    it('V8: un refresco viejo que vuelve tarde no pisa el de después (CodeRabbit)', async () => {
+      let devuelveElViejo;
+      const INVITACION = {
+        id: 'inv-9',
+        competitionName: 'Summer Cup',
+        inviteeEmail: 'oscar@test.com',
+        inviteeName: 'Óscar Noche',
+        status: 'PENDING',
+        isPending: true,
+        isAccepted: false,
+        isDeclined: false,
+        isExpired: false,
+        personalMessage: null,
+        expiresAt: new Date(Date.now() + 86400000).toISOString(),
+        respondedAt: null,
+      };
+      mockListCompetitionInvitations
+        .mockReset()
+        .mockResolvedValueOnce({ invitations: [], totalCount: 0 })
+        .mockResolvedValueOnce({ invitations: [], totalCount: 0 })
+        .mockImplementationOnce(() => new Promise((listo) => { devuelveElViejo = listo; }))
+        .mockResolvedValue({ invitations: [INVITACION], totalCount: 1 });
+      renderPage();
+      fireEvent.click(await screen.findByText('creator.sendNew'));
+      fireEvent.click(await screen.findByTestId('invite-friend-u-1'));
+      await waitFor(() => expect(mockListCompetitionInvitations).toHaveBeenCalledTimes(3));
+      fireEvent.click(screen.getByTestId('invite-friend-u-2'));
+      await waitFor(() => expect(mockListCompetitionInvitations).toHaveBeenCalledTimes(4));
+      await waitFor(() => expect(screen.getAllByTestId('invitation-card')).toHaveLength(1));
+
+      await act(async () => { devuelveElViejo({ invitations: [], totalCount: 0 }); });
+
+      expect(screen.getAllByTestId('invitation-card')).toHaveLength(1);
     });
 
     it('V3: por email, tras enviar se vacía el campo para el siguiente', async () => {

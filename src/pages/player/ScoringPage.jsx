@@ -439,7 +439,7 @@ const ScoringPage = () => {
             </h1>
             <p className="text-sm text-gray-500">{scoringView?.matchFormat}</p>
           </div>
-          {scoringView?.matchStanding && (
+          {(resultadoDecidido || scoringView?.matchStanding) && (
             <div className="text-right" data-testid="marcador-del-partido">
               <p className="text-lg font-bold text-primary">
                 {/* Decidido, su resultado y no el marcador del último hoyo
@@ -450,9 +450,11 @@ const ScoringPage = () => {
                     ? t('input.allSquare')
                     : `${scoringView.matchStanding.status} ${scoringView.matchStanding.leadingTeam === 'A' ? scoringView.teamAName : scoringView.teamBName}`}
               </p>
-              <p className="text-xs text-gray-500">
-                {t('holesPlayed', { count: scoringView.matchStanding.holesPlayed })}
-              </p>
+              {scoringView?.matchStanding && (
+                <p className="text-xs text-gray-500">
+                  {t('holesPlayed', { count: scoringView.matchStanding.holesPlayed })}
+                </p>
+              )}
             </div>
           )}
         </div>
@@ -653,7 +655,7 @@ const ScoringPage = () => {
       />
 
       <ConcedeMatchModal
-        isOpen={showConcedeModal}
+        isOpen={showConcedeModal && !scoringView?.isDecided}
         onConfirm={handleConcede}
         onClose={() => setShowConcedeModal(false)}
       />

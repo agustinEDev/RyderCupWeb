@@ -967,4 +967,32 @@ describe('ScoringPage · el recuadro rojo cuenta lo que falló (FE #626)', () =>
       expect(screen.getByText('concede.button')).toBeInTheDocument();
     });
   });
+
+  // CodeRabbit en la #721
+  it('C4: decidido sin marcador todavía, la cabecera dice el resultado igual', () => {
+    mockUseScoring.scoringView.isDecided = true;
+    mockUseScoring.scoringView.decidedResult = { winner: 'B', score: '3&2' };
+    mockUseScoring.scoringView.matchStanding = null;
+
+    render(<ScoringPage />);
+
+    expect(screen.getByTestId('marcador-del-partido')).toHaveTextContent('3&2');
+    mockUseScoring.scoringView.isDecided = false;
+    mockUseScoring.scoringView.decidedResult = null;
+  });
+
+  it('K3: si el partido se decide con el modal de conceder abierto, el modal se cierra', () => {
+    mockUseScoring.scoringView.matchStatus = 'IN_PROGRESS';
+    mockUseScoring.scoringView.isDecided = false;
+    const { rerender } = render(<ScoringPage />);
+    fireEvent.click(screen.getByText('concede.button'));
+    expect(screen.getByTestId('concede-match-modal')).toBeInTheDocument();
+
+    // El sondeo trae el partido ya decidido
+    mockUseScoring.scoringView = { ...mockUseScoring.scoringView, isDecided: true };
+    rerender(<ScoringPage />);
+
+    expect(screen.queryByTestId('concede-match-modal')).not.toBeInTheDocument();
+    mockUseScoring.scoringView = { ...mockUseScoring.scoringView, isDecided: false };
+  });
 });

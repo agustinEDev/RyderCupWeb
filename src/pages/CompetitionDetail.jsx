@@ -400,6 +400,13 @@ const CompetitionDetail = () => {
       await loadCompetition();
     } catch (error) {
       console.error('Error enrolling:', error);
+      // Ya inscrito: no es un error que corregir, la ficha estaba vieja. Se
+      // cierra y se pone al día (CodeRabbit en la #721)
+      if (error?.status === 409) {
+        setShowEnrollModal(false);
+        await loadCompetition();
+        return;
+      }
       setErrorAlApuntarse(
         mensajeDeError(error, {
           sinConexion: tComun('sinConexion.mensaje'),

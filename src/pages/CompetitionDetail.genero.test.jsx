@@ -256,4 +256,20 @@ describe('CompetitionDetail · el género al pedir plaza', () => {
     await screen.findByText('detail.actions.request-to-join');
     expect(screen.queryByText('competitions:enrollment.confirm')).not.toBeInTheDocument();
   });
+
+  it('P9: ya inscrito (409): se cierra y la ficha se pone al día (CodeRabbit)', async () => {
+    faltaGenero = false;
+    mockRequest.mockRejectedValueOnce(
+      Object.assign(new Error('User x is already enrolled in competition y.'), { status: 409 })
+    );
+    renderPage();
+
+    fireEvent.click(await screen.findByText('detail.actions.request-to-join'));
+    fireEvent.click(screen.getByText('competitions:enrollment.confirm'));
+
+    await waitFor(() => expect(mockGetCompetitionDetail).toHaveBeenCalledTimes(2));
+    await screen.findByText('detail.actions.request-to-join');
+    expect(screen.queryByTestId('apuntarse-error')).not.toBeInTheDocument();
+    expect(screen.queryByText('competitions:enrollment.confirm')).not.toBeInTheDocument();
+  });
 });

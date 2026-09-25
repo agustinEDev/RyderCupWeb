@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 
 /**
@@ -148,5 +148,27 @@ describe('BrowseCompetitions · el género al pedir plaza', () => {
     );
     expect(screen.queryByTestId('apuntarse-error')).not.toBeInTheDocument();
     expect(screen.queryByText('browse.card.request-to-join')).not.toBeInTheDocument();
+  });
+
+  it('X7: el resultado de una petición no va al modal de otra competición (CodeRabbit)', async () => {
+    faltaGenero = false;
+    let terminaLaDeA;
+    mockUnirse.mockResolvedValue([
+      COMPETICION,
+      { ...COMPETICION, id: 'c2', name: 'Otra Ryder' },
+    ]);
+    mockPedir.mockImplementationOnce(() => new Promise((listo) => { terminaLaDeA = listo; }));
+    pintar();
+
+    // Pide plaza en la primera, cierra antes de que conteste y abre la segunda
+    const botones = await screen.findAllByText('browse.card.request-to-join');
+    fireEvent.click(botones[0]);
+    fireEvent.click(screen.getByText('competitions:enrollment.confirm'));
+    fireEvent.click(screen.getByText('competitions:enrollment.cancel'));
+    fireEvent.click(screen.getAllByText('browse.card.request-to-join').at(-1));
+    await act(async () => { terminaLaDeA({}); });
+
+    // El modal de la segunda sigue abierto
+    expect(screen.getByText('competitions:enrollment.confirm')).toBeInTheDocument();
   });
 });
