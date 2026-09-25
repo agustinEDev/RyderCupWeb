@@ -351,7 +351,9 @@ const CreateCompetition = () => {
     // Y el foco, para quien no lo ve: el botón está abajo y el aviso arriba
     // (FE #731). Sin volver a desplazar, que ya lo ha hecho la línea de arriba
     avisoRef.current?.focus({ preventScroll: true });
-  }, [message.text]);
+    // El mensaje entero y no su texto: el mismo error repetido es otro objeto
+    // y tiene que volver a llevar el foco (revisión local de la FE #731)
+  }, [message]);
 
   const fetchCountries = async () => {
     try {

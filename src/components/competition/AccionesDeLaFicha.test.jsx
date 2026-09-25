@@ -102,7 +102,10 @@ describe('AccionesDeLaFicha · una acción y un menú (FE #705)', () => {
     // FE #729: sin principal el «···» está en el borde izquierdo, y abrirse
     // hacia la izquierda lo sacaba de la pantalla
     ['A7b: sin principal, se abre hacia la derecha', { principal: null }, 'left-0'],
-    ['A7c: con principal, hacia la izquierda, como siempre', {}, 'right-0'],
+    ['A7c: con principal, hacia la izquierda en el móvil', {}, 'right-0'],
+    // Desde `sm` la principal ya no ocupa todo el ancho y el «···» queda cerca
+    // del borde izquierdo: ahí se abre hacia la derecha (revisión local)
+    ['A7d: con principal, hacia la derecha desde sm', {}, 'sm:left-0'],
   ])('%s', (_caso, props, lado) => {
     pintar(props);
     fireEvent.click(screen.getByTestId('menu-acciones'));
