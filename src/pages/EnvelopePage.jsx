@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { ArrowLeft, Bot, Check, Lock, Undo2 } from 'lucide-react';
@@ -27,6 +27,9 @@ import BloqueoDePartidos from '../components/schedule/BloqueoDePartidos';
  * —por hándicap—, así que abrir antes de que el rival entregue dejaría armar
  * la lista propia para ganar todos los cruces.
  */
+// Cada cuánto se pregunta si ya se abrieron, mientras se espera (#710)
+const REFRESCO_MS = 10000;
+
 const EnvelopePage = () => {
   const navigate = useNavigate();
   const { id, roundId } = useParams();
@@ -44,12 +47,20 @@ const EnvelopePage = () => {
   const [abriendo, setAbriendo] = useState(false);
   const [cambiandoPermiso, setCambiandoPermiso] = useState(false);
 
+  // Cada lectura lleva su número: la que vuelve tarde no pisa a una posterior,
+  // como un refresco que sale antes de dar el permiso y llega después
+  const generacion = useRef(0);
+  const refrescoEnVuelo = useRef(false);
+
   const cargar = useCallback(async () => {
+    const mia = ++generacion.current;
     try {
       const datos = await getEnvelopesUseCase.execute(roundId);
+      if (mia !== generacion.current) return;
       setVista(datos);
       setFallo(null);
     } catch (error) {
+      if (mia !== generacion.current) return;
       // Y se guarda: sin esto la pantalla caía en «aquí verás los
       // enfrentamientos en cuanto se abran», que es tranquilizador y falso
       setFallo(error.message);
@@ -67,6 +78,33 @@ const EnvelopePage = () => {
   const jugadores = useMemo(() => vista?.myPlayers || [], [vista]);
   const capitanea = jugadores.length > 0;
   const entregado = Boolean(vista?.mine?.submitted) && !cambiando;
+
+  // Con el sobre entregado y aún cerrados, se pregunta sola (#710): con los dos
+  // permisos, el capitán que da el suyo primero espera justo ese momento y no
+  // lo veía. Solo mientras espera algo: una página abierta toda la tarde no
+  // puede gastar el cupo de peticiones que comparten todos. Y en silencio: un
+  // fallo del refresco no es algo que el capitán haya hecho
+  const esperandoAlRival = !vista?.revealed && entregado;
+  useEffect(() => {
+    if (!esperandoAlRival) return undefined;
+    const id = setInterval(async () => {
+      // Con una red lenta no se amontonan: uno a la vez (CodeRabbit en la #720)
+      if (refrescoEnVuelo.current) return;
+      refrescoEnVuelo.current = true;
+      const mia = ++generacion.current;
+      try {
+        const datos = await getEnvelopesUseCase.execute(roundId);
+        if (mia !== generacion.current) return;
+        setVista(datos);
+        setFallo(null);
+      } catch {
+        // Lo que ya había sigue valiendo: se vuelve a preguntar en el siguiente
+      } finally {
+        refrescoEnVuelo.current = false;
+      }
+    }, REFRESCO_MS);
+    return () => clearInterval(id);
+  }, [esperandoAlRival, roundId]);
   // Lo decide el servidor: hacen falta los dos sobres dentro, sea quien sea.
   // Repetir esa regla aquí es donde se desincronizan
   const puedeAbrir = Boolean(vista?.canReveal);

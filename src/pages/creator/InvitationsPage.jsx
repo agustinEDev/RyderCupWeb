@@ -46,6 +46,10 @@ const todasLasPaginas = async (pideLaPagina, sacaLasFilas) => {
   return filas;
 };
 
+// Solo se invita con la inscripción por abrir o abierta: es lo que acepta el
+// servidor (#710). Cerrada, en juego o terminada, no
+const SE_PUEDE_INVITAR = new Set(['DRAFT', 'ACTIVE']);
+
 const InvitationsPage = () => {
   const navigate = useNavigate();
   const { id } = useParams();
@@ -226,6 +230,10 @@ const InvitationsPage = () => {
 
   const isPageLoading = isLoadingUser || isLoadingRoles || isLoading;
 
+  // Si la competición deja de admitir invitaciones con el modal abierto, se
+  // cierra: si no, se mandaba una que el servidor rechaza (CodeRabbit, #720)
+  const sePuedeInvitar = !competition || SE_PUEDE_INVITAR.has(competition.status);
+
   // `useUserRoles` deja los tres roles a false ante CUALQUIER error, así que un
   // 500 o un corte de red se parecen a «no tienes permiso». Echar por eso sería
   // afirmar lo que no se ha podido preguntar, y con `replace` ni siquiera
@@ -303,19 +311,28 @@ const InvitationsPage = () => {
               )}
             </div>
 
-            <button
-              onClick={() => {
-                const acceptedCount = invitations.filter(inv => inv.status === 'ACCEPTED').length;
-                if (competition?.maxPlayers && acceptedCount >= competition.maxPlayers - 1) {
-                  customToast.warning(t('creator.nearCapacity', { accepted: acceptedCount, max: competition.maxPlayers }));
-                }
-                setShowSendModal(true);
-              }}
-              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-primary rounded-lg hover:bg-primary/90 transition-colors"
-            >
-              <Plus className="h-4 w-4" />
-              {t('creator.sendNew')}
-            </button>
+            {/* Cerrada la inscripción no quedan plazas: el servidor ya no deja
+                invitar (#710). La lista sigue, que es donde se ve quién se
+                quedó sin plaza */}
+            {!sePuedeInvitar ? (
+              <p data-testid="invitar-cerrada" className="text-sm text-gray-500 max-w-xs">
+                {t('creator.enrollmentClosed')}
+              </p>
+            ) : (
+              <button
+                onClick={() => {
+                  const acceptedCount = invitations.filter(inv => inv.status === 'ACCEPTED').length;
+                  if (competition?.maxPlayers && acceptedCount >= competition.maxPlayers - 1) {
+                    customToast.warning(t('creator.nearCapacity', { accepted: acceptedCount, max: competition.maxPlayers }));
+                  }
+                  setShowSendModal(true);
+                }}
+                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-primary rounded-lg hover:bg-primary/90 transition-colors"
+              >
+                <Plus className="h-4 w-4" />
+                {t('creator.sendNew')}
+              </button>
+            )}
           </div>
         </div>
 
@@ -332,6 +349,7 @@ const InvitationsPage = () => {
             <option value="ACCEPTED">{t('status.ACCEPTED')}</option>
             <option value="DECLINED">{t('status.DECLINED')}</option>
             <option value="EXPIRED">{t('status.EXPIRED')}</option>
+            <option value="NO_ROOM">{t('status.NO_ROOM')}</option>
           </select>
         </div>
 
@@ -357,7 +375,7 @@ const InvitationsPage = () => {
 
       {/* Send Modal */}
       <SendInvitationModal
-        isOpen={showSendModal}
+        isOpen={showSendModal && sePuedeInvitar}
         onClose={() => setShowSendModal(false)}
         onSend={handleSendInvitation}
         onSendByUserId={handleSendByUserId}

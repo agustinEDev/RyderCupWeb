@@ -25,6 +25,8 @@ import { getDraftUseCase, startDraftUseCase, makeDraftPickUseCase } from '../com
 // ella el turno agotado, que lo resuelve justo este GET—. El resto de pollings
 // del producto van a 10 s, 30 s y 60 s; aquí se baja a 5 porque lo que se
 // espera es la elección del rival, y el contador no depende de esto
+// Los avisos que cuentan lo que pasó: un refresco no los borra
+const AVISOS_QUE_SE_QUEDAN = new Set(['turnoPerdido', 'turnoPerdidoYTerminado']);
 const INTERVALO_MS = 5000;
 
 /**
@@ -36,6 +38,8 @@ const useDraftRoom = (competitionId, userId) => {
   const [sala, setSala] = useState(null);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState(null);
+  // Qué competición se pudo ver alguna vez: decide si se sigue esperando el sorteo
+  const [cargadaPara, setCargadaPara] = useState(null);
   const [segundosRestantes, setSegundosRestantes] = useState(null);
   // El desfase entre el reloj del servidor y el del móvil, en milisegundos.
   // En una `ref` porque el contador lo lee cada segundo y cambiarlo no tiene
@@ -67,7 +71,14 @@ const useDraftRoom = (competitionId, userId) => {
     try {
       const nueva = await getDraftUseCase.execute(competitionId);
       guardar(nueva, generacion);
-      if (limpiaElAviso && generacion >= generacionRef.current) setError(null);
+      if (generacion >= generacionRef.current) {
+        // De ESTA competición: si se cambia de una a otra, lo cargado de la
+        // anterior no dice nada de la nueva (CodeRabbit en la #720)
+        setCargadaPara(competitionId);
+        // El refresco no borra el aviso del turno perdido, pero sí un error de
+        // red que ya se ha superado
+        setError((antes) => (limpiaElAviso || !AVISOS_QUE_SE_QUEDAN.has(antes) ? null : antes));
+      }
       return nueva;
     } catch (e) {
       // También el fallo respeta la generación: el GET que salió antes puede
@@ -85,16 +96,21 @@ const useDraftRoom = (competitionId, userId) => {
     cargar();
   }, [competitionId, cargar]);
 
-  // El refresco, solo mientras la sala está en marcha
+  // El refresco, mientras la sala está en marcha y también mientras se espera el
+  // sorteo (#710): el capitán que entraba antes se quedaba en «todavía no se ha
+  // lanzado» con su turno corriendo en el servidor. Si la PRIMERA carga falló,
+  // no: una sala que no se puede ver no se pide cada cinco segundos. Un fallo
+  // después (un 429, un corte) no para la espera
+  const esperandoElSorteo = !cargando && sala === null && cargadaPara === competitionId;
   useEffect(() => {
-    if (sala?.status !== 'IN_PROGRESS') return undefined;
+    if (sala?.status !== 'IN_PROGRESS' && !esperandoElSorteo) return undefined;
     // `cargar(false)`: el refresco trae la sala nueva, pero no borra un aviso
     // que la pantalla todavía tiene que enseñar, como el turno perdido. Pasarlo
     // directo a `setInterval` lo llamaba sin argumentos y el aviso duraba tres
     // segundos
     const id = setInterval(() => cargar(false), INTERVALO_MS);
     return () => clearInterval(id);
-  }, [sala?.status, cargar]);
+  }, [sala?.status, esperandoElSorteo, cargar]);
 
   // El contador, segundo a segundo y sin volver a preguntar al servidor. Se
   // cuenta contra la hora del SERVIDOR: `Date.now()` más el desfase que dijo

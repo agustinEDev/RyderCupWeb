@@ -2,27 +2,37 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { X, UserPlus } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import SelectorDeGenero from '../profile/SelectorDeGenero';
 
 const TEE_CATEGORIES = ['WHITE', 'YELLOW', 'BLUE', 'RED', 'GREEN'];
 
-const EnrollmentRequestModal = ({ isOpen, onClose, onConfirm, isProcessing }) => {
+/**
+ * @param {Object} props
+ * @param {boolean} [props.pideGenero=false] - Si quien se apunta no tiene el
+ *   género en su perfil (#710): se le pregunta aquí y `onConfirm` lo recibe
+ *   como segundo argumento, para guardarlo antes de pedir plaza
+ */
+const EnrollmentRequestModal = ({ isOpen, onClose, onConfirm, isProcessing, pideGenero = false }) => {
   if (!isOpen) return null;
   return (
     <EnrollmentRequestModalContent
       onClose={onClose}
       onConfirm={onConfirm}
       isProcessing={isProcessing}
+      pideGenero={pideGenero}
     />
   );
 };
 
-const EnrollmentRequestModalContent = ({ onClose, onConfirm, isProcessing }) => {
+const EnrollmentRequestModalContent = ({ onClose, onConfirm, isProcessing, pideGenero }) => {
   const { t } = useTranslation(['competitions', 'golfCourses']);
   const [selectedTee, setSelectedTee] = useState('');
+  const [genero, setGenero] = useState('');
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onConfirm(selectedTee || null);
+    if (pideGenero && !genero) return;
+    onConfirm(selectedTee || null, pideGenero ? genero : null);
   };
 
   return (
@@ -49,6 +59,8 @@ const EnrollmentRequestModalContent = ({ onClose, onConfirm, isProcessing }) => 
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          {pideGenero && <SelectorDeGenero value={genero} onChange={setGenero} />}
+
           {/* Tee Category Select */}
           <div>
             <label
@@ -86,7 +98,7 @@ const EnrollmentRequestModalContent = ({ onClose, onConfirm, isProcessing }) => 
             </button>
             <button
               type="submit"
-              disabled={isProcessing}
+              disabled={isProcessing || (pideGenero && !genero)}
               className="px-4 py-2 bg-primary text-white rounded-lg font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
             >
               {isProcessing ? '...' : t('competitions:enrollment.confirm')}

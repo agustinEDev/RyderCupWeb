@@ -5,6 +5,7 @@ const STATUS_COLORS = {
   ACCEPTED: 'bg-green-100 text-green-800',
   DECLINED: 'bg-red-100 text-red-800',
   EXPIRED: 'bg-gray-100 text-gray-600',
+  NO_ROOM: 'bg-orange-100 text-orange-800',
 };
 
 const InvitationBadge = ({ status }) => {

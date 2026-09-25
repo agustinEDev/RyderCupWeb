@@ -13,10 +13,13 @@ import {
 } from '../composition';
 import { CountryFlag } from '../utils/countryUtils';
 import { useAuth } from '../hooks/useAuth';
+import { useGeneroParaApuntarse } from '../hooks/useGeneroParaApuntarse';
 import EnrollmentRequestModal from '../components/enrollment/EnrollmentRequestModal';
 import BlockLoader from '../components/ui/BlockLoader';
 
 const BrowseCompetitions = () => {
+  // El género para apuntarse, solo a quien le falta (#710)
+  const generoParaApuntarse = useGeneroParaApuntarse();
   const navigate = useNavigate();
   const { t } = useTranslation('competitions');
 
@@ -40,9 +43,13 @@ const BrowseCompetitions = () => {
   const [enrollModalOpen, setEnrollModalOpen] = useState(false);
   const [enrollTargetId, setEnrollTargetId] = useState(null);
 
+  // Por el id y no por el objeto: refrescar la sesión crea un `user` nuevo con
+  // el mismo id, y la lista se recargaba tras apuntarse (CodeRabbit, #720)
+  const userId = user?.id;
+
   // Load joinable competitions
   useEffect(() => {
-    if (!user) return;
+    if (!userId) return;
 
     const loadJoinableCompetitions = async () => {
       try {
@@ -67,11 +74,11 @@ const BrowseCompetitions = () => {
     };
 
     loadJoinableCompetitions();
-  }, [user, t]);
+  }, [userId, t]);
 
   // Load explore competitions
   useEffect(() => {
-    if (!user) return;
+    if (!userId) return;
 
     const loadExploreCompetitions = async () => {
       try {
@@ -87,7 +94,7 @@ const BrowseCompetitions = () => {
     };
 
     loadExploreCompetitions();
-  }, [user, t]);
+  }, [userId, t]);
 
   // Filter joinable competitions by search AND exclude user's own competitions
   const filteredJoinableCompetitions = joinableCompetitions.filter((comp) => {
@@ -135,10 +142,17 @@ const BrowseCompetitions = () => {
   };
 
   // Handle request enrollment
-  const handleRequestEnrollment = async (competitionId, color = null) => {
+  const handleRequestEnrollment = async (competitionId, color = null, genero = null) => {
     setEnrollModalOpen(false);
+    let generoGuardado = false;
     try {
       setRequestingEnrollment((prev) => ({ ...prev, [competitionId]: true }));
+
+      // Antes que la plaza: sin género el servidor la rechaza (#710)
+      if (genero) {
+        await generoParaApuntarse.guardar(genero);
+        generoGuardado = true;
+      }
 
       // Call RequestEnrollmentUseCase
       await requestEnrollmentUseCase.execute(competitionId, null, { color });
@@ -180,6 +194,8 @@ const BrowseCompetitions = () => {
       }
     } finally {
       setRequestingEnrollment((prev) => ({ ...prev, [competitionId]: false }));
+      // Al final, aunque la plaza falle: el género ya quedó guardado (#710)
+      if (generoGuardado) generoParaApuntarse.refrescar();
     }
   };
 
@@ -408,8 +424,9 @@ const BrowseCompetitions = () => {
       <EnrollmentRequestModal
         isOpen={enrollModalOpen}
         onClose={() => setEnrollModalOpen(false)}
-        onConfirm={(tee) => handleRequestEnrollment(enrollTargetId, tee)}
+        onConfirm={(tee, genero) => handleRequestEnrollment(enrollTargetId, tee, genero)}
         isProcessing={!!requestingEnrollment[enrollTargetId]}
+        pideGenero={generoParaApuntarse.falta}
       />
     </div>
   );

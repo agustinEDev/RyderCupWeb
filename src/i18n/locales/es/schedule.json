@@ -18,7 +18,10 @@
     "allowancePercentage": "% de Concesión",
     "effectiveAllowance": "Concesión Efectiva",
     "matchCount_one": "{{count}} partido",
-    "matchCount_other": "{{count}} partidos"
+    "matchCount_other": "{{count}} partidos",
+    "resting_one": "Descansa: {{names}}",
+    "resting_other": "Descansan: {{names}}",
+    "unknownPlayer": "un jugador"
   },
   "matches": {
     "title": "Partidos",
@@ -93,7 +96,9 @@
     "fillCaptainConfirm": "Nombrar",
     "fillCaptainCancel": "Cancelar",
     "fillCaptainNobody": "No queda nadie inscrito en ese equipo.",
-    "captainMissingWithTeams": "Falta nombrar un capitán. Con los equipos ya repartidos se hace desde «Nombrar capitán», en el equipo que lo necesita."
+    "captainMissingWithTeams": "Falta nombrar un capitán. Con los equipos ya repartidos se hace desde «Nombrar capitán», en el equipo que lo necesita.",
+    "replaceWarning": "Este reparto sustituye a los equipos de ahora. Si salieron del draft, cambiarlos aquí deshace lo que eligieron los capitanes.",
+    "enrollmentsNotLoaded": "No se han podido cargar los inscritos: recarga la página antes de reasignar, o los equipos saldrían vacíos."
   },
   "configuration": {
     "title": "Configuración del Calendario",

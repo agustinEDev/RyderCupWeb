@@ -127,6 +127,96 @@ describe('useDraftRoom (FE #653)', () => {
     expect(mockGet.mock.calls.length).toBeLessThanOrEqual(12);
   });
 
+  // #710: el capitán que entra antes del sorteo se quedaba en «todavía no se ha
+  // lanzado» mientras en el servidor ya corría su turno. La espera no preguntaba
+  it('H5c: antes del sorteo también se refresca, y se entera de que empezó', async () => {
+    mockGet.mockResolvedValueOnce(null);
+    const { result } = renderHook(() => useDraftRoom('c1', 'ana'));
+    await waitFor(() => expect(result.current.cargando).toBe(false));
+    expect(result.current.sala).toBeNull();
+
+    await act(async () => {
+      vi.advanceTimersByTime(6000);
+    });
+
+    await waitFor(() => expect(result.current.sala?.status).toBe('IN_PROGRESS'));
+  });
+
+  it('H5e: un fallo mientras se espera el sorteo no para la espera (revisión local)', async () => {
+    // Un 429 del cubo compartido o un corte: el capitán se quedaba otra vez en
+    // «todavía no se ha lanzado» hasta recargar
+    mockGet
+      .mockResolvedValueOnce(null)
+      .mockRejectedValueOnce(Object.assign(new Error('Demasiadas peticiones'), { status: 429 }))
+      .mockResolvedValue(sala());
+    const { result } = renderHook(() => useDraftRoom('c1', 'ana'));
+    await waitFor(() => expect(result.current.cargando).toBe(false));
+
+    await act(async () => {
+      vi.advanceTimersByTime(6000);
+    });
+    await act(async () => {
+      vi.advanceTimersByTime(6000);
+    });
+
+    await waitFor(() => expect(result.current.sala?.status).toBe('IN_PROGRESS'));
+  });
+
+  it('H5f: un error del refresco que se recupera se quita de la pantalla (CodeRabbit)', async () => {
+    mockGet
+      .mockResolvedValueOnce(null)
+      .mockRejectedValueOnce(Object.assign(new Error('Demasiadas peticiones'), { status: 429 }))
+      .mockResolvedValue(sala());
+    const { result } = renderHook(() => useDraftRoom('c1', 'ana'));
+    await waitFor(() => expect(result.current.cargando).toBe(false));
+
+    await act(async () => {
+      vi.advanceTimersByTime(6000);
+    });
+    await waitFor(() => expect(result.current.error).toBe('Demasiadas peticiones'));
+    await act(async () => {
+      vi.advanceTimersByTime(6000);
+    });
+
+    await waitFor(() => expect(result.current.sala?.status).toBe('IN_PROGRESS'));
+    expect(result.current.error).toBeNull();
+  });
+
+  it('H5g: al cambiar de competición, lo cargado de la anterior no vale (CodeRabbit)', async () => {
+    // Cargada la c1 (sin sorteo aún), la c2 da 403: no se insiste con ella
+    mockGet.mockImplementation(async (id) => {
+      if (id === 'c1') return null;
+      throw Object.assign(new Error('No eres de esta competición'), { status: 403 });
+    });
+    const { result, rerender } = renderHook(({ id }) => useDraftRoom(id, 'ana'), {
+      initialProps: { id: 'c1' },
+    });
+    await waitFor(() => expect(result.current.cargando).toBe(false));
+
+    rerender({ id: 'c2' });
+    await waitFor(() => expect(result.current.error).toBeTruthy());
+    const llamadasC2 = () => mockGet.mock.calls.filter(([id]) => id === 'c2').length;
+    const antes = llamadasC2();
+    await act(async () => {
+      vi.advanceTimersByTime(30000);
+    });
+
+    expect(llamadasC2()).toBe(antes);
+  });
+
+  it('H5d: si no se pudo cargar, no se insiste cada cinco segundos', async () => {
+    mockGet.mockRejectedValue(Object.assign(new Error('No eres de esta competición'), { status: 403 }));
+    const { result } = renderHook(() => useDraftRoom('c1', 'ana'));
+    await waitFor(() => expect(result.current.error).toBeTruthy());
+    mockGet.mockClear();
+
+    await act(async () => {
+      vi.advanceTimersByTime(30000);
+    });
+
+    expect(mockGet).not.toHaveBeenCalled();
+  });
+
   it('H6: terminada deja de preguntar: ya no cambia nada', async () => {
     mockGet.mockResolvedValue(sala({ status: 'COMPLETED', currentTeam: null, turnStartedAt: null }));
     const { result } = renderHook(() => useDraftRoom('c1', 'ana'));

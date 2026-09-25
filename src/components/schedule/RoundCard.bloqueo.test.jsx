@@ -154,3 +154,74 @@ describe('RoundCard · «Generar» en modo Ryder (FE #711)', () => {
   });
 });
 
+
+
+/**
+ * Quién descansa en la sesión (#710). Con equipos desiguales el que sobra se
+ * quedaba sin partido y nadie lo decía.
+ */
+describe('RoundCard · quién descansa', () => {
+  const nombres = new Map([
+    ['u3', 'Óscar Noche'],
+    ['u4', 'Luna Noche'],
+  ]);
+  const conPartidos = (restingPlayerIds) => ({
+    ...RONDA,
+    status: 'SCHEDULED',
+    matchGenerationBlock: null,
+    restingPlayerIds,
+  });
+  const pintarCon = (ronda) =>
+    render(
+      <RoundCard
+        round={ronda}
+        canEdit
+        isExpanded={false}
+        onToggleExpand={() => {}}
+        onGenerateMatches={() => {}}
+        golfCourses={[{ id: 'g1', name: 'Altea' }]}
+        playerNameMap={nombres}
+        playerHandicapMap={{}}
+        teamNames={{}}
+        t={(clave, opts) => `${clave}${opts ? JSON.stringify(opts) : ''}`}
+      />
+    );
+
+  it('D2: el que descansa se nombra sin desplegar la sesión', () => {
+    pintarCon(conPartidos(['u3']));
+
+    const aviso = screen.getByTestId('descansan');
+    expect(aviso).toHaveTextContent('rounds.resting');
+    expect(aviso).toHaveTextContent('Óscar Noche');
+    expect(aviso).toHaveTextContent('"count":1');
+  });
+
+  it('D3: con dos, los dos y en plural', () => {
+    pintarCon(conPartidos(['u3', 'u4']));
+
+    expect(screen.getByTestId('descansan')).toHaveTextContent('Óscar Noche, Luna Noche');
+    expect(screen.getByTestId('descansan')).toHaveTextContent('"count":2');
+  });
+
+  it('D6: si no se sabe su nombre, se cuenta igual (CodeRabbit)', () => {
+    pintarCon(conPartidos(['u3', 'desconocido']));
+
+    const aviso = screen.getByTestId('descansan');
+    expect(aviso).toHaveTextContent('"count":2');
+    expect(aviso).toHaveTextContent('Óscar Noche, rounds.unknownPlayer');
+  });
+
+  it('D4: si no descansa nadie, no hay aviso', () => {
+    pintarCon(conPartidos([]));
+
+    expect(screen.queryByTestId('descansan')).not.toBeInTheDocument();
+  });
+
+  it('D5: las dos traducciones existen, en singular y plural', async () => {
+    for (const idioma of ['es', 'en']) {
+      const textos = (await import(`../../i18n/locales/${idioma}/schedule.json`)).default;
+      expect(textos.rounds.resting_one, idioma).toContain('{{names}}');
+      expect(textos.rounds.resting_other, idioma).toContain('{{names}}');
+    }
+  });
+});

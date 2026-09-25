@@ -7,6 +7,8 @@ import { agendaPropuesta } from '../utils/agenda';
 import { aCamposDeLaCompeticion } from '../utils/camposDeLaCompeticion';
 import HeaderAuth from '../components/layout/HeaderAuth';
 import { useAuth } from '../hooks/useAuth';
+import { useGeneroParaApuntarse } from '../hooks/useGeneroParaApuntarse';
+import SelectorDeGenero from '../components/profile/SelectorDeGenero';
 import {
   createCompetitionWithGolfCoursesUseCase,
   configureScheduleUseCase,
@@ -76,6 +78,10 @@ const CreateCompetition = () => {
   // de tipo— y al enviar creaba una competición nueva en vez de editar la que
   // se había abierto (`/code-review`)
   const isEditMode = Boolean(competitionId);
+  // El género del organizador, que juega: solo al crear y solo si le falta (#710)
+  const generoParaApuntarse = useGeneroParaApuntarse();
+  const pideGenero = !isEditMode && generoParaApuntarse.falta;
+  const [genero, setGenero] = useState('');
   // El tipo se elige ANTES de rellenar nada (FE #639). Editando no se pregunta:
   // esa competición ya existe y su tipo no se cambia aquí
   const [tipoElegido, setTipoElegido] = useState(null);
@@ -593,6 +599,7 @@ const CreateCompetition = () => {
     // siempre falso y devuelve el formulario a la mano justo cuando no se puede
     // tocar. Se cierra al terminar, en el `finally`
     setIsSubmitting(true);
+    let generoGuardado = false;
 
     try {
       const numPlayers = cupoDeJugadores(formData.numberOfPlayers, cupoCargado.current);
@@ -640,6 +647,12 @@ const CreateCompetition = () => {
         }, 1000);
 
       } else {
+        // Antes que la competición: sin él el servidor la rechaza (#710)
+        if (pideGenero) {
+          await generoParaApuntarse.guardar(genero);
+          generoGuardado = true;
+        }
+
         // CREATE MODE: Create new competition and attach its golf courses
         const golfCourses = formData.golfCourses.map((gc) => ({
           id: gc.course.id,
@@ -693,6 +706,8 @@ const CreateCompetition = () => {
       // Se cierra tanto si salió bien como si falló: si falló, el aviso está en
       // el formulario, y dejarlo tapado por el modal lo esconde
       setPreguntandoApertura(false);
+      // Al final, aunque crear falle: el género ya quedó guardado (#710)
+      if (generoGuardado) generoParaApuntarse.refrescar();
     }
   };
 
@@ -771,6 +786,13 @@ const CreateCompetition = () => {
               <div className="border border-gray-200 rounded-xl p-4">
                 <SetupModeChooser value={formData.setupMode} onSelect={eligeElModo} />
               </div>
+
+              {/* El organizador juega: su género, solo si le falta (#710) */}
+              {pideGenero && (
+                <div className="border border-gray-200 rounded-xl p-4">
+                  <SelectorDeGenero value={genero} onChange={setGenero} />
+                </div>
+              )}
 
               <div data-testid="bloque-basico" className="border border-gray-200 rounded-xl p-4">
                 <div className="flex items-center gap-3 mb-3">

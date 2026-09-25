@@ -135,8 +135,30 @@ describe('InvitationStatus', () => {
       expect(InvitationStatus.isValid('INVALID')).toBe(false);
     });
 
-    it('getAllValues returns all 4 values', () => {
-      expect(InvitationStatus.getAllValues()).toEqual(['PENDING', 'ACCEPTED', 'DECLINED', 'EXPIRED']);
+    it('getAllValues returns all 5 values', () => {
+      expect(InvitationStatus.getAllValues()).toEqual([
+        'PENDING',
+        'ACCEPTED',
+        'DECLINED',
+        'EXPIRED',
+        'NO_ROOM',
+      ]);
+    });
+  });
+
+  // A1 (#710): al cerrar la inscripción, las pendientes se quedan sin plaza.
+  // Sin conocerlo, una sola rompía la lista entera
+  describe('NO_ROOM', () => {
+    it('es un estado válido y final', () => {
+      const sinPlaza = InvitationStatus.fromString('NO_ROOM');
+      expect(sinPlaza.toString()).toBe('NO_ROOM');
+      expect(sinPlaza.isTerminal()).toBe(true);
+    });
+
+    it('se llega desde PENDING', () => {
+      expect(
+        InvitationStatus.pending().canTransitionTo(InvitationStatus.fromString('NO_ROOM'))
+      ).toBe(true);
     });
   });
 });

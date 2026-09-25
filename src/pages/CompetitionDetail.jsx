@@ -17,6 +17,7 @@ import { CountryFlag } from '../utils/countryUtils';
 import CompetitionGolfCoursesSection from '../components/competition/CompetitionGolfCoursesSection';
 import AgendaDeLaCompeticion from '../components/competition/AgendaDeLaCompeticion';
 import { aCamposDeLaCompeticion } from '../utils/camposDeLaCompeticion';
+import { useGeneroParaApuntarse } from '../hooks/useGeneroParaApuntarse';
 import EnrollmentRequestModal from '../components/enrollment/EnrollmentRequestModal';
 import {
   getCompetitionDetailUseCase,
@@ -63,6 +64,8 @@ const CompetitionDetail = () => {
   const { id } = useParams();
   const { t, i18n } = useTranslation('competitions');
   const { user, loading: isLoadingUser } = useAuth();
+  // El género para apuntarse, solo a quien le falta (#710)
+  const generoParaApuntarse = useGeneroParaApuntarse();
   const { isAdmin, isCreator: hasCreatorRole, isLoading: isLoadingRoles } = useUserRoles(id);
   const [competition, setCompetition] = useState(null);
   const [enrollments, setEnrollments] = useState([]);
@@ -95,8 +98,11 @@ const CompetitionDetail = () => {
   const backLink = vuelta.to;
   const backText = t(vuelta.clave);
 
+  // Por el id y no por el objeto: refrescar la sesión crea un `user` nuevo con el
+  // mismo id, y la ficha se recargaba entera tras apuntarse (CodeRabbit, #720)
+  const userId = user?.id;
   const loadCompetition = useCallback(async () => {
-    if (!user) return;
+    if (!userId) return;
 
     setIsLoadingCompetition(true);
     try {
@@ -122,14 +128,14 @@ const CompetitionDetail = () => {
       setIsLoadingCompetition(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id, user, navigate]);
+  }, [id, userId, navigate]);
 
   useEffect(() => {
-    if (user) {
+    if (userId) {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- pre-existing pattern surfaced by eslint-plugin-react-hooks 7.1.1 bump; needs dedicated review (tracked in follow-up)
       loadCompetition();
     }
-  }, [id, user, loadCompetition]);
+  }, [id, userId, loadCompetition]);
 
   /**
    * Elegir alias o nombre legal para ESTA competición (FE #571).
@@ -373,10 +379,16 @@ const CompetitionDetail = () => {
     }
   };
 
-  const handleEnroll = async (color = null) => {
+  const handleEnroll = async (color = null, genero = null) => {
     setShowEnrollModal(false);
     setIsProcessing(true);
+    let generoGuardado = false;
     try {
+      // Antes que la plaza: sin género el servidor la rechaza (#710)
+      if (genero) {
+        await generoParaApuntarse.guardar(genero);
+        generoGuardado = true;
+      }
       await requestEnrollmentUseCase.execute(id, null, { color });
       customToast.success(t('detail.success.enrollmentRequested'));
       await loadCompetition();
@@ -385,6 +397,8 @@ const CompetitionDetail = () => {
       customToast.error(error.message || t('detail.failedToEnroll'));
     } finally {
       setIsProcessing(false);
+      // Al final, aunque la plaza falle: el género ya quedó guardado
+      if (generoGuardado) generoParaApuntarse.refrescar();
     }
   };
 
@@ -1383,6 +1397,7 @@ const CompetitionDetail = () => {
         onClose={() => setShowEnrollModal(false)}
         onConfirm={handleEnroll}
         isProcessing={isProcessing}
+        pideGenero={generoParaApuntarse.falta}
       />
     </div>
   );

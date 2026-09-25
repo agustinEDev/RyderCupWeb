@@ -44,6 +44,11 @@ const RoundCard = ({
     status === 'PENDING_MATCHES' &&
     (!soloReintento || Boolean(round.matchGenerationBlock));
   const matches = round.matches || [];
+  // Todos cuentan: sin su nombre (inscripciones sin cargar) se dice «un
+  // jugador», que un id suelto no le dice nada a nadie (CodeRabbit en la #720)
+  const descansan = (round.restingPlayerIds || []).map(
+    (id) => playerNameMap?.get?.(id) || t('rounds.unknownPlayer')
+  );
 
   const golfCourseName = golfCourses.find(gc => gc.id === round.golfCourseId)?.name || round.golfCourseId;
 
@@ -118,6 +123,14 @@ const RoundCard = ({
         <div className="px-4 pb-4">
           <BloqueoDePartidos bloqueo={round.matchGenerationBlock} puedeReintentar={canGenerate} />
         </div>
+      )}
+
+      {/* Quién descansa (#710): con equipos desiguales el que sobra se quedaba
+          sin partido y nadie lo decía. Sin desplegar, como el motivo */}
+      {descansan.length > 0 && (
+        <p data-testid="descansan" className="px-4 pb-3 text-sm text-gray-600">
+          {t('rounds.resting', { count: descansan.length, names: descansan.join(', ') })}
+        </p>
       )}
 
       {/* Expanded: Matches List */}

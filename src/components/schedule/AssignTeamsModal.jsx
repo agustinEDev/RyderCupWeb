@@ -16,6 +16,8 @@ const AssignTeamsModalContent = ({
   teamNames,
   captains,
   hasTeams,
+  currentTeams = null,
+  inscritosSinCargar = false,
   t,
 }) => {
   // Con los dos capitanes nombrados, cada uno queda fijo en su equipo (FE #692):
@@ -26,9 +28,21 @@ const AssignTeamsModalContent = ({
   // Con uno solo, el servidor rechaza el reparto en los dos modos pidiendo el
   // que falta: mejor decirlo antes que después de rellenar doce nombres
   const faltaUnCapitan = Boolean(captains?.teamA) !== Boolean(captains?.teamB);
-  const [mode, setMode] = useState('automatic');
-  const [manualTeamA, setManualTeamA] = useState(hayCapitanes ? [captains.teamA] : []);
-  const [manualTeamB, setManualTeamB] = useState(hayCapitanes ? [captains.teamB] : []);
+  // Con equipos ya hechos se abre en manual CON ellos (#710): en automático y
+  // vacío, rehacer el draft que eligieron los capitanes era pulsar un botón
+  const reasignando = Boolean(currentTeams);
+  // Solo los que siguen dentro: el reparto guardado no se toca al darse de
+  // baja, y con un retirado el servidor rechaza el reparto (revisión local)
+  const siguen = new Set(enrollments.filter((e) => e.status === 'APPROVED').map((e) => e.userId));
+  const [mode, setMode] = useState(reasignando ? 'manual' : 'automatic');
+  const [manualTeamA, setManualTeamA] = useState(() => {
+    if (reasignando) return currentTeams.teamAPlayerIds.filter((id) => siguen.has(id));
+    return hayCapitanes ? [captains.teamA] : [];
+  });
+  const [manualTeamB, setManualTeamB] = useState(() => {
+    if (reasignando) return currentTeams.teamBPlayerIds.filter((id) => siguen.has(id));
+    return hayCapitanes ? [captains.teamB] : [];
+  });
 
   const approvedPlayers = enrollments.filter(e => e.status === 'APPROVED');
   const esCapitan = (playerId) =>
@@ -66,8 +80,13 @@ const AssignTeamsModalContent = ({
     (p) => !manualTeamA.includes(p.userId) && !manualTeamB.includes(p.userId)
   ).length;
 
+  // Sin la lista de inscritos, los equipos de ahora se filtrarían a nada y el
+  // reparto saldría vacío (CodeRabbit en la #720)
+  const noSePuedeReasignar = reasignando && inscritosSinCargar;
+
   const handleSubmit = (e) => {
     e.preventDefault();
+    if (noSePuedeReasignar) return;
 
     if (mode === 'automatic') {
       onConfirm({ mode: 'automatic' });
@@ -104,6 +123,16 @@ const AssignTeamsModalContent = ({
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          {reasignando && (
+            <p data-testid="reasignar-aviso" className="text-sm text-amber-700">
+              {t('teams.replaceWarning')}
+            </p>
+          )}
+          {noSePuedeReasignar && (
+            <p data-testid="reasignar-sin-inscritos" className="text-sm text-red-700">
+              {t('teams.enrollmentsNotLoaded')}
+            </p>
+          )}
           {/* Con equipos ya repartidos el consejo cambia: ahí el servidor no
               deja nombrar capitanes, y el puesto se cubre desde el panel de
               equipos (FE #692) */}
@@ -240,7 +269,10 @@ const AssignTeamsModalContent = ({
             <button
               type="submit"
               disabled={
-                isProcessing || faltaUnCapitan || (mode === 'manual' && sinEquipo > 0)
+                isProcessing ||
+                faltaUnCapitan ||
+                noSePuedeReasignar ||
+                (mode === 'manual' && sinEquipo > 0)
               }
               className="px-4 py-2 bg-primary text-white rounded-lg font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
             >

@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { render, screen, fireEvent, waitFor, within, act } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router';
 
 const mockNavigate = vi.fn();
@@ -844,3 +844,173 @@ describe('EnvelopePage · el permiso para abrirlos antes de hora (FE #717)', () 
   });
 });
 
+
+
+/**
+ * La página se entera sola de que se abrieron (#710). Con los dos permisos, el
+ * capitán que da el suyo primero espera justo ese momento y no lo veía: seguía
+ * leyendo «el rival todavía no ha entregado» con los partidos ya creados.
+ *
+ *   #   caso                                       | refresco
+ *   ----|-------------------------------------------|-------------------------
+ *   S1  cerrados y el mío entregado               | sí, y ve los enfrentamientos
+ *   S2  cerrados y el mío sin entregar            | no: está ordenando
+ *   S3  ya abiertos                               | no: ya no cambia nada
+ *   S4  la carga falló                            | no se insiste
+ *   S5  falla una consulta del refresco           | sin aviso: no ha hecho nada
+ */
+describe('EnvelopePage · se entera sola de que se abrieron (#710)', () => {
+  const entregadoYEsperando = () =>
+    vista({
+      teamASubmitted: true,
+      mine: { team: 'A', entries: [['ana'], ['bea']], submitted: true, automatic: false },
+    });
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  const pasan = async (ms) => {
+    await act(async () => {
+      vi.advanceTimersByTime(ms);
+    });
+  };
+
+  it('S1: con el mío entregado y cerrados, pregunta sola y ve los enfrentamientos', async () => {
+    mockVer
+      .mockResolvedValueOnce(entregadoYEsperando())
+      .mockResolvedValue(
+        vista({
+          revealed: true,
+          teamASubmitted: true,
+          teamBSubmitted: true,
+          mine: { team: 'A', entries: [['ana'], ['bea']], submitted: true, automatic: false },
+          matchups: [[['ana'], ['carla']]],
+        })
+      );
+    pintar();
+    await screen.findByTestId('dar-permiso');
+
+    await pasan(11000);
+
+    expect(await screen.findByText('envelope.matchups')).toBeInTheDocument();
+  });
+
+  it('S2: sin haber entregado no pregunta: está ordenando', async () => {
+    mockVer.mockResolvedValue(vista());
+    pintar();
+    await waitFor(() => expect(mockVer).toHaveBeenCalledTimes(1));
+
+    await pasan(30000);
+
+    expect(mockVer).toHaveBeenCalledTimes(1);
+  });
+
+  it('S3: ya abiertos no pregunta más', async () => {
+    // Con el mío entregado: si no, no preguntaría por esa otra razón
+    mockVer.mockResolvedValue(
+      vista({
+        revealed: true,
+        teamASubmitted: true,
+        teamBSubmitted: true,
+        mine: { team: 'A', entries: [['ana'], ['bea']], submitted: true, automatic: false },
+        matchups: [[['ana'], ['carla']]],
+      })
+    );
+    pintar();
+    await waitFor(() => expect(mockVer).toHaveBeenCalledTimes(1));
+
+    await pasan(30000);
+
+    expect(mockVer).toHaveBeenCalledTimes(1);
+  });
+
+  it('S4: si la carga falló no insiste', async () => {
+    mockVer.mockRejectedValue(new Error('Boom'));
+    pintar();
+    await waitFor(() => expect(mockVer).toHaveBeenCalledTimes(1));
+
+    await pasan(30000);
+
+    expect(mockVer).toHaveBeenCalledTimes(1);
+  });
+
+  it('S5: un fallo del refresco no salta como error', async () => {
+    mockVer.mockResolvedValueOnce(entregadoYEsperando()).mockRejectedValue(new Error('sin red'));
+    pintar();
+    await screen.findByTestId('dar-permiso');
+
+    await pasan(11000);
+
+    await waitFor(() => expect(mockVer).toHaveBeenCalledTimes(2));
+    expect(customToast.error).not.toHaveBeenCalled();
+    // Y lo que ya había sigue en pantalla
+    expect(screen.getByTestId('dar-permiso')).toBeInTheDocument();
+  });
+
+  it('S6: una respuesta vieja del refresco no pisa el permiso recién dado (revisión local)', async () => {
+    let devolverLaVieja;
+    mockVer
+      .mockResolvedValueOnce(entregadoYEsperando())
+      .mockImplementationOnce(() => new Promise((resolve) => { devolverLaVieja = resolve; }))
+      .mockResolvedValue(
+        vista({
+          teamASubmitted: true,
+          mine: {
+            team: 'A',
+            entries: [['ana'], ['bea']],
+            submitted: true,
+            automatic: false,
+            revealWhenBothReady: true,
+          },
+        })
+      );
+    mockEntregar.mockResolvedValue({ team: 'A', entries: [['ana'], ['bea']], automatic: false });
+    pintar();
+    await screen.findByTestId('dar-permiso');
+    await pasan(11000);
+
+    fireEvent.click(screen.getByTestId('dar-permiso'));
+    expect(await screen.findByTestId('retirar-permiso')).toBeInTheDocument();
+    await act(async () => {
+      devolverLaVieja(entregadoYEsperando());
+    });
+
+    expect(screen.getByTestId('retirar-permiso')).toBeInTheDocument();
+  });
+
+  it('S7: si el refresco vuelve a ir bien, el error de antes se va (revisión local)', async () => {
+    mockVer
+      .mockResolvedValueOnce(entregadoYEsperando())
+      .mockRejectedValueOnce(new Error('Boom'))
+      .mockResolvedValue(entregadoYEsperando());
+    mockEntregar.mockResolvedValue({ team: 'A', entries: [['ana'], ['bea']], automatic: false });
+    pintar();
+    // Dar el permiso recarga, y esa recarga falla: la pantalla enseña el error
+    fireEvent.click(await screen.findByTestId('dar-permiso'));
+    await waitFor(() => expect(customToast.error).toHaveBeenCalledWith('Boom'));
+    expect(screen.queryByTestId('dar-permiso')).not.toBeInTheDocument();
+
+    await pasan(11000);
+
+    expect(await screen.findByTestId('dar-permiso')).toBeInTheDocument();
+  });
+
+  it('S8: con una red lenta, los refrescos no se amontonan (CodeRabbit)', async () => {
+    mockVer
+      .mockResolvedValueOnce(entregadoYEsperando())
+      .mockImplementation(() => new Promise(() => {}));
+    pintar();
+    await screen.findByTestId('dar-permiso');
+
+    await pasan(35000);
+
+    // La carga y UN refresco, que sigue sin volver
+    expect(mockVer).toHaveBeenCalledTimes(2);
+  });
+});
