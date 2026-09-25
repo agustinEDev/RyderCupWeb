@@ -938,4 +938,31 @@ describe('ScoringPage · el recuadro rojo cuenta lo que falló (FE #626)', () =>
       expect(textos.earlyEnd.message, idioma).not.toMatch(/\{\{team\}\} (gana|wins)/);
     }
   });
+
+  // #710, e2e del 24 sep: con el partido decidido (4&2 en el 16) se seguía
+  // ofreciendo «Conceder partido». No queda nada que conceder
+  describe('conceder un partido decidido', () => {
+    afterEach(() => {
+      mockUseScoring.scoringView.isDecided = false;
+      mockUseScoring.scoringView.matchStatus = 'IN_PROGRESS';
+    });
+
+    it('K1: decidido, ya no se ofrece conceder', () => {
+      mockUseScoring.scoringView.matchStatus = 'IN_PROGRESS';
+      mockUseScoring.scoringView.isDecided = true;
+
+      render(<ScoringPage />);
+
+      expect(screen.queryByText('concede.button')).not.toBeInTheDocument();
+    });
+
+    it('K2: sin decidir, sí', () => {
+      mockUseScoring.scoringView.matchStatus = 'IN_PROGRESS';
+      mockUseScoring.scoringView.isDecided = false;
+
+      render(<ScoringPage />);
+
+      expect(screen.getByText('concede.button')).toBeInTheDocument();
+    });
+  });
 });

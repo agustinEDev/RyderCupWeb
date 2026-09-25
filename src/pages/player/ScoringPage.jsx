@@ -548,8 +548,11 @@ const ScoringPage = () => {
               </button>
             </div>
 
-            {/* Concede button */}
-            {canScore && !hasSubmitted && scoringView?.matchStatus === 'IN_PROGRESS' && (
+            {/* Concede button. Decidido, no queda nada que conceder (#710) */}
+            {canScore &&
+              !hasSubmitted &&
+              scoringView?.matchStatus === 'IN_PROGRESS' &&
+              !scoringView?.isDecided && (
               <button
                 onClick={() => setShowConcedeModal(true)}
                 className="w-full px-4 py-2 text-red-600 border border-red-200 rounded-lg text-sm font-medium hover:bg-red-50"
