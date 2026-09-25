@@ -133,6 +133,15 @@ const ScoringPage = () => {
   // Derived: show early end modal when match is decided and user hasn't dismissed.
   // Not shown once the player has already submitted — the "continue to submit" CTA
   // no longer applies, and re-showing it on every revisit is just noise.
+  // El resultado de un partido ya decidido, con el nombre del equipo que gana
+  const ganadorDecidido = scoringView?.decidedResult?.winner;
+  const resultadoDecidido =
+    ganadorDecidido === 'A' || ganadorDecidido === 'B'
+      ? {
+        team: ganadorDecidido === 'A' ? scoringView.teamAName : scoringView.teamBName,
+        score: scoringView.decidedResult.score,
+      }
+      : null;
   const showEarlyEnd = !!scoringView?.isDecided && !earlyEndDismissed && !matchSummary && !hasSubmitted;
 
   const currentUserId = user?.id;
@@ -431,11 +440,15 @@ const ScoringPage = () => {
             <p className="text-sm text-gray-500">{scoringView?.matchFormat}</p>
           </div>
           {scoringView?.matchStanding && (
-            <div className="text-right">
+            <div className="text-right" data-testid="marcador-del-partido">
               <p className="text-lg font-bold text-primary">
-                {scoringView.matchStanding.status === 'AS'
-                  ? t('input.allSquare')
-                  : `${scoringView.matchStanding.status} ${scoringView.matchStanding.leadingTeam === 'A' ? scoringView.teamAName : scoringView.teamBName}`}
+                {/* Decidido, su resultado y no el marcador del último hoyo
+                    jugado: un 4&2 que siguió hasta el 18 decía «4UP» (#710) */}
+                {resultadoDecidido
+                  ? t('leaderboard.wins', resultadoDecidido)
+                  : scoringView.matchStanding.status === 'AS'
+                    ? t('input.allSquare')
+                    : `${scoringView.matchStanding.status} ${scoringView.matchStanding.leadingTeam === 'A' ? scoringView.teamAName : scoringView.teamBName}`}
               </p>
               <p className="text-xs text-gray-500">
                 {t('holesPlayed', { count: scoringView.matchStanding.holesPlayed })}

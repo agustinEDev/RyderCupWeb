@@ -86,7 +86,7 @@
     "allSquare": "All Square",
     "points": "pts",
     "hole": "Hole",
-    "wins": "{{team}} wins {{score}}",
+    "wins": "{{score}} to {{team}}",
     "conceded": "{{team}} (Conceded)",
     "walkover": "{{team}} (Walkover)",
     "noMatches": "No matches available"
@@ -138,7 +138,7 @@
   },
   "earlyEnd": {
     "title": "Match Decided",
-    "message": "The match has been decided. {{team}} wins {{score}}.",
+    "message": "The match has been decided: {{score}} to {{team}}.",
     "confirm": "Continue to Submit",
     "description": "The remaining holes do not need to be played."
   },

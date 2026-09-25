@@ -86,7 +86,7 @@
     "allSquare": "Empate",
     "points": "pts",
     "hole": "Hoyo",
-    "wins": "{{team}} gana {{score}}",
+    "wins": "{{score}} para {{team}}",
     "conceded": "{{team}} (Concedido)",
     "walkover": "{{team}} (Walkover)",
     "noMatches": "No hay partidos disponibles"
@@ -138,7 +138,7 @@
   },
   "earlyEnd": {
     "title": "Partido Decidido",
-    "message": "El partido ha sido decidido. {{team}} gana {{score}}.",
+    "message": "El partido ha sido decidido: {{score}} para {{team}}.",
     "confirm": "Continuar para Enviar",
     "description": "Los hoyos restantes no necesitan jugarse."
   },

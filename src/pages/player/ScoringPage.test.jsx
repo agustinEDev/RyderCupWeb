@@ -895,4 +895,47 @@ describe('ScoringPage · el recuadro rojo cuenta lo que falló (FE #626)', () =>
 
     expect(screen.getByText('errors.notFound')).toBeInTheDocument();
   });
+
+  // #710, e2e del 24 sep: un foursomes 4&2 se decidió en el 16 y se jugó
+  // hasta el 18. La cabecera decía «4UP Los borrachos · 18 hoyos jugados» y
+  // quien la miraba creía que se había ganado 4 arriba en el 18
+  describe('la cabecera de un partido decidido', () => {
+    afterEach(() => {
+      mockUseScoring.scoringView.isDecided = false;
+      mockUseScoring.scoringView.decidedResult = null;
+      mockUseScoring.scoringView.matchStanding = null;
+    });
+
+    it('C1: dice el resultado del partido, no el marcador del hoyo 18', () => {
+      mockUseScoring.scoringView.isDecided = true;
+      mockUseScoring.scoringView.decidedResult = { winner: 'A', score: '4&2' };
+      mockUseScoring.scoringView.matchStanding = { status: '4UP', leadingTeam: 'A', holesPlayed: 18 };
+
+      render(<ScoringPage />);
+
+      const cabecera = screen.getByTestId('marcador-del-partido');
+      expect(cabecera).toHaveTextContent('leaderboard.wins');
+      expect(cabecera).toHaveTextContent('4&2');
+      expect(cabecera).not.toHaveTextContent('4UP');
+      // La vuelta propia, aparte: los hoyos que se jugaron siguen contándose
+      expect(cabecera).toHaveTextContent('holesPlayed');
+    });
+
+    it('C2: sin decidir, el marcador de siempre', () => {
+      mockUseScoring.scoringView.matchStanding = { status: '2UP', leadingTeam: 'B', holesPlayed: 9 };
+
+      render(<ScoringPage />);
+
+      expect(screen.getByTestId('marcador-del-partido')).toHaveTextContent('2UP');
+    });
+  });
+
+  it('C3: «gana» no depende del número del equipo (#710)', async () => {
+    // «Los borrachos gana 4&2»: con un nombre en plural el verbo sonaba mal
+    for (const idioma of ['es', 'en']) {
+      const textos = (await import(`../../i18n/locales/${idioma}/scoring.json`)).default;
+      expect(textos.leaderboard.wins, idioma).toMatch(/^\{\{score\}\}/);
+      expect(textos.earlyEnd.message, idioma).not.toMatch(/\{\{team\}\} (gana|wins)/);
+    }
+  });
 });
