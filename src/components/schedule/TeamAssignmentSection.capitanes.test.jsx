@@ -123,3 +123,16 @@ describe('TeamAssignmentSection · los capitanes se ven en el reparto (FE #692)'
     expect(screen.queryByTestId('cubrir-capitan-A')).not.toBeInTheDocument();
   });
 });
+
+describe('TeamAssignmentSection · el hándicap no se parte (FE #710)', () => {
+  it('H1: «HCP 18.0» no encoge ni salta de línea junto a un nombre largo', () => {
+    // A 360 px se partía en dos líneas: el nombre largo le quitaba el sitio
+    pintar(null, {
+      enrollments: INSCRITOS.map((e) => ({ ...e, userHandicap: 18 })),
+    });
+
+    const hcp = within(filaDe('Ana Alba')).getByText('HCP 18.0').parentElement;
+    expect(hcp.className).toContain('shrink-0');
+    expect(hcp.className).toContain('whitespace-nowrap');
+  });
+});

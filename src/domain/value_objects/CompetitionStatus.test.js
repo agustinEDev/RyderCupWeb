@@ -78,6 +78,21 @@ describe('CompetitionStatus', () => {
     });
   });
 
+  describe('allowsModifications', () => {
+    // Igual que el backend: el montaje se corrige mientras las inscripciones
+    // están abiertas (FE #710: editar una cerrada se abría por URL)
+    it.each([
+      ['DRAFT', true],
+      ['ACTIVE', true],
+      ['CLOSED', false],
+      ['IN_PROGRESS', false],
+      ['COMPLETED', false],
+      ['CANCELLED', false],
+    ])('%s → %s', (estado, esperado) => {
+      expect(CompetitionStatus[estado].allowsModifications()).toBe(esperado);
+    });
+  });
+
   describe('equals', () => {
     it('should return true for two instances with the same value', () => {
       const status1 = new CompetitionStatus(CompetitionStatusEnum.DRAFT);

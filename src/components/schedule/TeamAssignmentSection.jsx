@@ -62,8 +62,10 @@ const TeamAssignmentSection = ({
     if (!handicapMap.has(playerId)) return null;
     const hcp = handicapMap.get(playerId);
     const isLimited = maxPlayingHandicap != null && hcp > maxPlayingHandicap;
+    // Sin encoger ni partirse: junto a un nombre largo, a 360 px, «HCP 18.0»
+    // saltaba a dos líneas (#710)
     return (
-      <span className="flex items-center gap-1">
+      <span className="flex shrink-0 items-center gap-1 whitespace-nowrap">
         <span className={`text-xs ${colorClass} font-medium`}>HCP {hcp.toFixed(1)}</span>
         {isLimited && (
           <span className="text-xs text-amber-600 font-medium">| {maxPlayingHandicap} Lim.</span>

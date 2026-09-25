@@ -143,7 +143,9 @@
     "updateCompetition": "Actualizar Competición",
     "success": "¡Competición actualizada exitosamente!",
     "error": "Error al actualizar la competición",
-    "errorLoading": "Error al cargar la competición"
+    "errorLoading": "Error al cargar la competición",
+    "notEditable": "Esta competición ya no se puede editar: solo se edita mientras las inscripciones están abiertas.",
+    "datesLeaveSessionsOut": "Con esas fechas se quedan fuera estas sesiones: {{sesiones}}. Muévelas o bórralas antes de cambiar las fechas."
   },
   "detail": {
     "loadingCompetition": "Cargando competición...",
@@ -225,13 +227,15 @@
       "teamTwo": "Equipo 2:",
       "playMode": "Modo de Juego:",
       "teamAssignment": "Asignación de Equipos:",
+      "setupMode": "Cómo se organiza:",
       "maxPlayingHandicap": "Límite Hándicap de Juego:",
       "maxPlayingHandicapNone": "Sin límite",
       "created": "Creado:",
       "assignment": {
         "MANUAL": "Manual",
         "AUTOMATIC": "Automática",
-        "DRAFT": "Draft de capitanes"
+        "DRAFT": "Draft de capitanes",
+        "PENDING": "Sin repartir todavía"
       }
     },
     "approvedPlayers": "Jugadores Aprobados ({{count}})",
@@ -311,6 +315,7 @@
       "closesEnrollment": "Al nombrarlos se cierran las inscripciones: ya no podrá apuntarse nadie más.",
       "teamLabel": "Capitán de {{team}}",
       "choose": "Elige un jugador",
+      "sameForBoth": "Un jugador no puede capitanear los dos equipos: elige a otro para uno de ellos.",
       "cancel": "Cancelar",
       "confirm": "Nombrar",
       "uneven_one": "Hay {{count}} jugador: los equipos no saldrán iguales. Los capitanes quedan nombrados, pero para repartir los equipos hará falta un número par.",
@@ -417,7 +422,9 @@
     "reveal": "Abrir los sobres",
     "matchups": "Enfrentamientos",
     "versus": "vs",
-    "filledByTheApp": "Un sobre lo rellenó la aplicación: ese capitán no entregó el suyo",
+    "filledByTheApp": "Un sobre lo rellenó la aplicación: su capitán no lo entregó a tiempo",
+    "filledByTheAppTeam": "El sobre de {{equipo}} lo rellenó la aplicación: su capitán no lo entregó a tiempo",
+    "filledByTheAppBoth": "Los dos sobres los rellenó la aplicación: ningún capitán entregó el suyo a tiempo",
     "onlyCaptains": "Los sobres los entregan los capitanes. Aquí verás los enfrentamientos en cuanto se abran.",
     "open": "Ir a tu sobre",
     "reset": "Rehacer los sobres",
@@ -439,6 +446,7 @@
     "title": "Sala de draft",
     "back": "Volver a la competición",
     "notStarted": "El organizador todavía no ha lanzado el sorteo.",
+    "notStartedYouLaunch": "Todavía no has lanzado el sorteo. Cuando lo lances, empieza el turno del primer capitán.",
     "start": "Lanzar el sorteo",
     "yourTurn": "Te toca elegir",
     "turnOf": "Elige {{name}}",

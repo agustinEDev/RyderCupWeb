@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { act, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import CompetitionDetail from './CompetitionDetail';
 
@@ -12,6 +12,11 @@ import CompetitionDetail from './CompetitionDetail';
  *   FA2  quien solo mira                   | la agenda, sin editar
  *   FA3  la cuenta de partidos             | con los inscritos aprobados
  *   FA6  cambian los campos en la ficha    | la agenda recibe otra `versionCampos` (FE #715)
+ *   FA7  cerrada y sin sesiones            | no se ofrece iniciarla: el servidor lo rechaza (FE #710)
+ *   FA8  cerrada y con alguna              | sí
+ *   FA9  la agenda no ha dicho nada        | no: no se sabe si hay
+ *   FA10 con los equipos hechos            | cada aprobado dice el suyo; el capitán, solo su insignia
+ *   FA11 sin reparto                       | nadie dice equipo
  */
 
 vi.mock('react-i18next', () => ({
@@ -184,6 +189,85 @@ describe('CompetitionDetail · la agenda (FE #654)', () => {
 
     await screen.findByTestId('agenda');
     expect(ultimasProps().version).toContain('2026-09-24T07:00:00');
+  });
+
+  describe('iniciar pide alguna sesión (FE #710)', () => {
+    const cerrada = () =>
+      mockGetCompetitionDetail.mockResolvedValue(
+        competicion({
+          status: 'CLOSED',
+          teamsAssigned: true,
+          startDate: '2026-10-03',
+          endDate: '2026-10-04',
+        })
+      );
+    const abrirMenu = async () => {
+      await screen.findByTestId('agenda');
+      for (const boton of await screen.findAllByTestId('menu-acciones')) {
+        if (boton.getAttribute('aria-expanded') === 'false') fireEvent.click(boton);
+      }
+    };
+
+    it.each([
+      ['FA7: sin sesiones, no', 0, false],
+      ['FA8: con alguna, sí', 2, true],
+    ])('%s', async (_caso, sesiones, seOfrece) => {
+      cerrada();
+      renderPage();
+      await screen.findByTestId('agenda');
+
+      act(() => ultimasProps().onAgenda({ teamAssignment: null, rounds: Array(sesiones).fill({}) }));
+      await abrirMenu();
+
+      expect(!!screen.queryByText('detail.actions.start-competition')).toBe(seOfrece);
+    });
+
+    it('FA9: mientras la agenda no ha dicho cuántas hay, no', async () => {
+      cerrada();
+      renderPage();
+
+      await abrirMenu();
+
+      expect(screen.queryByText('detail.actions.start-competition')).not.toBeInTheDocument();
+    });
+  });
+
+  describe('el equipo de cada aprobado (FE #710)', () => {
+    it('FA10: con los equipos hechos, cada uno dice el suyo', async () => {
+      mockGetCompetitionDetail.mockResolvedValue(
+        competicion({
+          status: 'CLOSED',
+          teamsAssigned: true,
+          captains: { teamA: 'org', teamB: 'bea', viceTeamA: null, viceTeamB: null },
+          startDate: '2026-10-03',
+          endDate: '2026-10-04',
+        })
+      );
+      renderPage();
+      await screen.findByTestId('agenda');
+
+      act(() =>
+        ultimasProps().onAgenda({
+          rounds: [],
+          teamAssignment: { teamAPlayerIds: ['org', 'ana'], teamBPlayerIds: ['bea', 'carla'] },
+        })
+      );
+
+      expect(await within(screen.getByTestId('aprobado-ana')).findByText('Europa')).toBeInTheDocument();
+      expect(within(screen.getByTestId('aprobado-carla')).getByText('América')).toBeInTheDocument();
+      // El capitán ya lo dice con su insignia: no dos veces
+      expect(within(screen.getByTestId('aprobado-bea')).queryByTestId('equipo-del-aprobado')).toBeNull();
+    });
+
+    it('FA11: sin reparto, nadie dice equipo', async () => {
+      renderPage();
+      await screen.findByTestId('agenda');
+
+      act(() => ultimasProps().onAgenda({ rounds: [], teamAssignment: null }));
+
+      await screen.findByTestId('aprobado-ana');
+      expect(screen.queryByTestId('equipo-del-aprobado')).toBeNull();
+    });
   });
 
   it('FA6: si la sección de campos avisa de un cambio, la agenda los vuelve a leer', async () => {

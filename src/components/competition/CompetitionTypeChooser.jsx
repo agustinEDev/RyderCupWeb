@@ -44,7 +44,9 @@ const CompetitionTypeChooser = ({ onSelect }) => {
             onClick={disponible ? () => onSelect(id) : undefined}
             aria-disabled={disponible ? undefined : 'true'}
             tabIndex={disponible ? undefined : -1}
-            className={`w-full rounded-xl border p-4 text-left transition-colors ${
+            // Arriba en todas: un botón centra su contenido, y la tarjeta de
+            // «próximamente», más alta, desalineaba los iconos (#710)
+            className={`flex w-full flex-col items-start justify-start rounded-xl border p-4 text-left transition-colors ${
               disponible
                 ? 'border-gray-200 bg-white hover:border-green-500 hover:bg-green-50'
                 // Fondo apagado, NO `opacity` sobre la tarjeta: atenuar el

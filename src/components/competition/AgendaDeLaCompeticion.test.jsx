@@ -54,6 +54,8 @@ import AgendaDeLaCompeticion from './AgendaDeLaCompeticion';
  *   AG18  una lectura vieja llega después de la nueva            | no la pisa
  *   AG19  la ficha avisa de que cambiaron los campos (FE #715)   | se releen y se ofrece el nuevo
  *   AG19b una lectura vieja de campos llega la última            | no pisa la de ahora
+ *   AG20  cada lectura (FE #710)                                 | se la pasa a la ficha
+ *   AG21  no se puede leer                                       | dice que no se sabe (null)
  */
 
 const ALTEA = { golf_course: { id: 'g1', name: 'Altea' } };
@@ -393,5 +395,42 @@ describe('AgendaDeLaCompeticion · los campos que cambian en la ficha (FE #715)'
     await new Promise((r) => setTimeout(r, 20));
 
     expect(screen.getByTestId('agenda-campo-r1')).toBeInTheDocument();
+  });
+});
+
+describe('AgendaDeLaCompeticion · lo leído, para la ficha (FE #710)', () => {
+  it('AG20: al leerla lo dice, y otra vez al releerla tras un cambio', async () => {
+    const onAgenda = vi.fn();
+    pintar({ onAgenda });
+
+    await waitFor(() => expect(onAgenda).toHaveBeenLastCalledWith(AGENDA));
+
+    const sinLaR2 = { ...AGENDA, rounds: AGENDA.rounds.slice(0, 2) };
+    mockVerAgenda.mockResolvedValue(sinLaR2);
+    fireEvent.click(await screen.findByTestId('agenda-quitar-r2'));
+    fireEvent.click(screen.getByTestId('agenda-confirmar-si-r2'));
+
+    await waitFor(() => expect(onAgenda).toHaveBeenLastCalledWith(sinLaR2));
+  });
+
+  it('AG21b: si falla una relectura, tampoco se sabe ya', async () => {
+    const onAgenda = vi.fn();
+    pintar({ onAgenda });
+    await waitFor(() => expect(onAgenda).toHaveBeenLastCalledWith(AGENDA));
+
+    mockVerAgenda.mockRejectedValue(new TypeError('Sin conexión'));
+    fireEvent.click(await screen.findByTestId('agenda-quitar-r2'));
+    fireEvent.click(screen.getByTestId('agenda-confirmar-si-r2'));
+
+    await waitFor(() => expect(onAgenda).toHaveBeenLastCalledWith(null));
+  });
+
+  it('AG21: si no se puede leer, dice que no se sabe', async () => {
+    mockVerAgenda.mockRejectedValue(new TypeError('Sin conexión'));
+    const onAgenda = vi.fn();
+    pintar({ onAgenda });
+
+    await screen.findByTestId('agenda-sin-cargar');
+    expect(onAgenda).toHaveBeenLastCalledWith(null);
   });
 });

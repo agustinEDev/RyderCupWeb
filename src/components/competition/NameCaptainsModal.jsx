@@ -16,7 +16,8 @@ import ModalShell from '../ui/ModalShell';
  *
  * @param {Object} props
  * @param {boolean} props.isOpen
- * @param {{userId: string, name: string}[]} props.players - Los inscritos aprobados
+ * @param {{userId: string, name: string, handicap?: number|null}[]} props.players -
+ *   Los inscritos aprobados, con el hándicap que cuenta en la competición
  * @param {{a: string, b: string}} props.teamNames
  * @param {{teamA: string|null, teamB: string|null}} props.current - Los de ahora
  * @param {boolean} props.closesEnrollment - Si nombrarlos va a cerrar las inscripciones
@@ -48,6 +49,16 @@ const NameCaptainsModal = ({
   // en el estado sin tener opción que los represente. Confirmar mandaría lo que
   // nadie ha elegido. Sin lista no hay disponibles, así que esto lo cubre también
   const disponibles = new Set(players.map((p) => p.userId));
+  // El mismo en los dos: «Nombrar» se apaga, y se dice por qué (#710)
+  const elMismo = Boolean(teamA) && teamA === teamB;
+  // Por hándicap, de menor a mayor, y a la vista: es con lo que se elige (#710)
+  const enOrden = [...players].sort(
+    (a, b) => (a.handicap ?? Infinity) - (b.handicap ?? Infinity)
+  );
+  const etiqueta = (p) =>
+    p.handicap === null || p.handicap === undefined
+      ? p.name
+      : `${p.name} (${Number(p.handicap).toFixed(1)})`;
   const listo = Boolean(
     teamA && teamB && teamA !== teamB && disponibles.has(teamA) && disponibles.has(teamB)
   );
@@ -65,9 +76,9 @@ const NameCaptainsModal = ({
         className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
       >
         <option value="">{t('detail.captains.choose')}</option>
-        {players.map((p) => (
+        {enOrden.map((p) => (
           <option key={p.userId} value={p.userId} disabled={p.userId === elegidoEnElOtro}>
-            {p.name}
+            {etiqueta(p)}
           </option>
         ))}
       </select>
@@ -108,6 +119,11 @@ const NameCaptainsModal = ({
       <div className="px-6 py-4 flex flex-col gap-4">
         {selector('capitan-a', teamNames.a, teamA, setTeamA, teamB)}
         {selector('capitan-b', teamNames.b, teamB, setTeamB, teamA)}
+        {elMismo && (
+          <p data-testid="capitanes-el-mismo" role="alert" className="text-sm text-amber-700">
+            {t('detail.captains.sameForBoth')}
+          </p>
+        )}
       </div>
 
       <div className="px-6 pb-6 flex flex-col-reverse sm:flex-row gap-3 sm:justify-end">

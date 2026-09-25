@@ -25,6 +25,36 @@ describe('siguientePasoDeLaCompeticion', () => {
     expect(siguientePasoDeLaCompeticion(competicion())).toBe('nameCaptains');
   });
 
+  describe('con plazas libres, invitar (FE #710)', () => {
+    // Nombrar a los capitanes cierra las inscripciones, y cerrar deja sin plaza
+    // las invitaciones pendientes: con 1 de 12 no puede ser lo que se sugiere
+    const opciones = (inscritos) => ({ puedeGestionar: true, inscritos });
+
+    it.each([
+      ['S2b: 1 de 12, invitar', 1, 'manageInvitations'],
+      ['S2c: 11 de 12, invitar', 11, 'manageInvitations'],
+      ['S2d: lleno, nombrar a los capitanes', 12, 'nameCaptains'],
+      ['S2e: sin saber cuántos hay, como antes', undefined, 'nameCaptains'],
+    ])('%s', (_caso, inscritos, esperado) => {
+      expect(
+        siguientePasoDeLaCompeticion(competicion({ maxPlayers: 12 }), opciones(inscritos))
+      ).toBe(esperado);
+    });
+
+    it('S2f: sin cupo conocido, como antes', () => {
+      expect(siguientePasoDeLaCompeticion(competicion(), opciones(1))).toBe('nameCaptains');
+    });
+
+    it('S2g: reabierta con los equipos hechos sigue siendo volver a cerrar', () => {
+      expect(
+        siguientePasoDeLaCompeticion(
+          competicion({ maxPlayers: 12, teamsAssigned: true }),
+          opciones(1)
+        )
+      ).toBe('close-enrollments');
+    });
+  });
+
   it('S3: reabierta con los equipos ya hechos, volver a cerrar', () => {
     // Reabrir no deshace el reparto y los capitanes ya no se tocan
     expect(siguientePasoDeLaCompeticion(competicion({ teamsAssigned: true }))).toBe(

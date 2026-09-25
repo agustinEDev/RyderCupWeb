@@ -51,7 +51,9 @@ const SetupModeChooser = ({ value, onSelect }) => {
               aria-disabled={disponible ? undefined : 'true'}
               tabIndex={disponible ? undefined : -1}
               onClick={disponible ? () => onSelect(id) : undefined}
-              className={`w-full rounded-xl border p-4 text-left transition-colors ${
+              // Arriba en todas: un botón centra su contenido, y la tarjeta de
+              // «próximamente», más alta, desalineaba los iconos (#710)
+              className={`flex w-full flex-col items-start justify-start rounded-xl border p-4 text-left transition-colors ${
                 !disponible
                   // Fondo apagado y NO `opacity`: atenuar la tarjeta entera se
                   // lleva por delante el texto, que es lo que viene a decir. Y

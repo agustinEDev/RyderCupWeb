@@ -46,6 +46,13 @@ const mockCloseEnrollments = vi.fn();
 vi.mock('../composition', () => ({
   getCompetitionDetailUseCase: { execute: (...a) => mockGetCompetitionDetail(...a) },
   getCompetitionGolfCoursesUseCase: { execute: vi.fn().mockResolvedValue([]) },
+  // Una sesión: sin ninguna, iniciar no se ofrece (FE #710)
+  getScheduleUseCase: {
+    execute: vi.fn().mockResolvedValue({
+      teamAssignment: null,
+      rounds: [{ id: 'r1', roundDate: '2026-10-03', sessionType: 'MORNING', matchFormat: 'SINGLES', status: 'PENDING_TEAMS', matches: [] }],
+    }),
+  },
   activateCompetitionUseCase: { execute: vi.fn() },
   closeEnrollmentsUseCase: { execute: (...a) => mockCloseEnrollments(...a) },
   nameCaptainsUseCase: { execute: (...a) => mockNameCaptains(...a) },
@@ -170,6 +177,34 @@ describe('CompetitionDetail · nombrar a los capitanes (FE #692)', () => {
     expect(screen.queryByText('detail.actions.close-enrollments')).not.toBeInTheDocument();
   });
 
+  it('K1b: los desplegables llevan el hándicap que cuenta en la competición (#710)', async () => {
+    mockListEnrollments.mockResolvedValue([
+      { ...inscrito('ana', 'Ana Alba'), userHandicap: 18 },
+      { ...inscrito('bea', 'Bea Blanco'), userHandicap: 30, hasCustomHandicap: true, customHandicap: 5 },
+      { ...inscrito('carla', 'Carla Cruz'), userHandicap: null },
+    ]);
+    renderPage();
+    const modal = await abrirModal();
+
+    const desplegable = within(modal).getByLabelText('detail.captains.teamLabel_Europa');
+    const textos = within(desplegable).getAllByRole('option').slice(1).map((o) => o.textContent);
+    expect(textos).toEqual(['Bea Blanco (5.0)', 'Ana Alba (18.0)', 'Carla Cruz']);
+  });
+
+  it.each([
+    ['K1c: con plazas libres (4 de 20), lo principal es invitar', () => {}, 'detail.actions.manageInvitations'],
+    [
+      'K1d: sin la lista de inscritos no se sabe si quedan: nombrarlos, como antes',
+      () => mockListEnrollments.mockRejectedValue(new Error('boom')),
+      'detail.actions.nameCaptains',
+    ],
+  ])('%s (#710)', async (_caso, montar, principal) => {
+    montar();
+    renderPage();
+
+    expect(await screen.findByTestId('accion-principal')).toHaveTextContent(principal);
+  });
+
   it('K2: quien no organiza no lo ve', async () => {
     mockRoles = { isAdmin: false, isCreator: false, isLoading: false };
     mockGetCompetitionDetail.mockResolvedValue(competicion({ creatorId: 'otra' }));
@@ -186,7 +221,10 @@ describe('CompetitionDetail · nombrar a los capitanes (FE #692)', () => {
 
     const selectorA = within(modal).getByLabelText('detail.captains.teamLabel_Europa');
     const opciones = within(selectorA).getAllByRole('option').map((o) => o.textContent);
-    expect(opciones).toEqual(expect.arrayContaining(['Olga Organiza', 'Ana Alba', 'Bea Blanco', 'Carla Cruz']));
+    // Con su hándicap detrás (#710)
+    expect(opciones).toEqual(
+      expect.arrayContaining(['Olga Organiza (10.0)', 'Ana Alba (10.0)', 'Bea Blanco (10.0)', 'Carla Cruz (10.0)'])
+    );
     expect(within(modal).getByLabelText('detail.captains.teamLabel_América')).toBeInTheDocument();
   });
 
@@ -199,7 +237,7 @@ describe('CompetitionDetail · nombrar a los capitanes (FE #692)', () => {
     elegir(modal, 'Europa', 'ana');
     expect(boton).toBeDisabled();
     const anaEnB = within(within(modal).getByLabelText('detail.captains.teamLabel_América'))
-      .getByRole('option', { name: 'Ana Alba' });
+      .getByRole('option', { name: 'Ana Alba (10.0)' });
     expect(anaEnB).toBeDisabled();
     elegir(modal, 'América', 'bea');
     expect(boton).toBeEnabled();
@@ -339,8 +377,10 @@ describe('CompetitionDetail · nombrar a los capitanes (FE #692)', () => {
 
     await waitFor(() => expect(customToast.error).toHaveBeenCalledWith('assign failed'));
     expect(customToast.success).toHaveBeenCalledWith('detail.success.captainsNamed');
-    expect(await screen.findByText('detail.actions.start-competition')).toBeInTheDocument();
+    // Con plazas libres «Nombrar» vive en el menú, que se cierra al pulsarlo (#710)
+    await screen.findByTestId('menu-acciones');
     abrirMenuDeAcciones();
+    expect(await screen.findByText('detail.actions.start-competition')).toBeInTheDocument();
     expect(screen.getByText('detail.actions.changeCaptains')).toBeInTheDocument();
   });
 

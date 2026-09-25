@@ -17,6 +17,7 @@ import { useGeneroParaApuntarse } from '../hooks/useGeneroParaApuntarse';
 import { mensajeDeError } from '../utils/sinCobertura';
 import EnrollmentRequestModal from '../components/enrollment/EnrollmentRequestModal';
 import BlockLoader from '../components/ui/BlockLoader';
+import { formatDateRange } from '../services/competitions';
 
 const BrowseCompetitions = () => {
   // El género para apuntarse, solo a quien le falta (#710)
@@ -463,14 +464,8 @@ const BrowseCompetitions = () => {
 
 // Competition Card Component
 const CompetitionCard = ({ competition, mode, onRequestEnrollment, onViewDetails, isRequesting }) => {
-  const { t } = useTranslation('competitions');
+  const { t, i18n } = useTranslation('competitions');
   const { id, name, startDate, endDate, status, creator, enrolledCount, maxPlayers, countries } = competition;
-
-  // Format dates
-  const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-  };
 
   // Get status badge
   const getStatusBadge = () => {
@@ -523,7 +518,7 @@ const CompetitionCard = ({ competition, mode, onRequestEnrollment, onViewDetails
         <div className="flex items-center text-sm text-gray-600">
           <Calendar className="w-4 h-4 mr-2 text-gray-400" />
           <span>
-            {formatDate(startDate)} - {formatDate(endDate)}
+            {formatDateRange(startDate, endDate, i18n.language)}
           </span>
         </div>
 

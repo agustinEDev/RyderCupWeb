@@ -49,6 +49,7 @@ import {
 import FullScreenLoader from '../components/ui/FullScreenLoader';
 import { formatCountryName } from '../services/countries';
 import { fechaDeApertura } from '../domain/services/aperturaDeInscripciones';
+import { CompetitionStatus } from '../domain/value_objects/CompetitionStatus';
 
 // «Volver» lleva a donde se vino: explorar, las invitaciones (FE #682) o, por
 // defecto, las competiciones propias
@@ -94,6 +95,9 @@ const CompetitionDetail = () => {
   // de que cambiaron, para que la agenda los vuelva a leer (FE #715)
   const [versionCampos, setVersionCampos] = useState(0);
   const avisarDeLosCampos = useCallback(() => setVersionCampos((v) => v + 1), []);
+  // La agenda que leyó su sección: sesiones y reparto. null mientras no se sabe
+  const [agendaLeida, setAgendaLeida] = useState(null);
+  const numeroDeSesiones = agendaLeida?.rounds?.length ?? null;
 
   // Determine where user came from (browse or my competitions)
   const origen = location.state?.from;
@@ -520,10 +524,25 @@ const CompetitionDetail = () => {
   const isCreator = competition.creatorId === user.id;
   const canManage = isCreator || hasCreatorRole || isAdmin;
   // Cómo se repartieron los equipos DE VERDAD; sin reparto, el configurado
-  const repartoAMostrar = competition.actualTeamAssignment ?? competition.teamAssignment;
+  // En estilo Ryder el configurado no dice nada —será draft o a mano, al
+  // nombrar capitanes—, y salía «Manual» (#710): hasta que se hace, pendiente
+  const repartoAMostrar =
+    competition.actualTeamAssignment ??
+    (competition.setupMode === 'RYDER_CUP' ? 'PENDING' : competition.teamAssignment);
   // La configuración se corrige mientras haya inscripciones abiertas (BE #323):
   // quien invita antes de poner el campo de golf tiene que poder ponerlo después
-  const canEdit = canManage && ['DRAFT', 'ACTIVE'].includes(competition.status);
+  const canEdit = canManage && new CompetitionStatus(competition.status).allowsModifications();
+  // El equipo de cada uno sale del reparto que leyó la agenda (#710)
+  const equipoDe = (userId) => {
+    const reparto = agendaLeida?.teamAssignment;
+    if (reparto?.teamAPlayerIds?.includes(userId)) return competition.team1Name;
+    if (reparto?.teamBPlayerIds?.includes(userId)) return competition.team2Name;
+    return null;
+  };
+  // Capitanes y subcapitanes: su insignia ya dice el equipo
+  const esCapitan = (userId) =>
+    Boolean(userId) &&
+    ['teamA', 'teamB', 'viceTeamA', 'viceTeamB'].some((papel) => competition.captains?.[papel] === userId);
   // Quién puede y cuándo lo decide el backend con la misma regla que el borrado
   // (RyderCupAM#347): estado, calendario y rol. Copiar aquí la lista de estados
   // ofrecería el botón en una cancelada ya jugada, donde siempre falla (FE #667)
@@ -534,7 +553,11 @@ const CompetitionDetail = () => {
   // Las acciones de la ficha: UNA principal —la que toca ahora— y el resto en
   // un menú. Antes eran hasta siete botones del mismo peso en seis colores y
   // el que de verdad tocaba se perdía entre los demás (FE #705)
-  const paso = siguientePasoDeLaCompeticion(competition, { puedeGestionar: canManage });
+  const paso = siguientePasoDeLaCompeticion(competition, {
+    puedeGestionar: canManage,
+    // Sin la lista no se sabe cuántos hay: se sugiere como antes
+    inscritos: inscripcionesSinCargar ? undefined : approvedEnrollments.length,
+  });
 
   const accionesPosibles = {
     activate: {
@@ -588,7 +611,9 @@ const CompetitionDetail = () => {
       icon: Play,
       onClick: () => handleStatusChange('start'),
       disabled: isProcessing,
-      cuando: competition.status === 'CLOSED',
+      // Sin sesiones el servidor lo rechaza (FE #710); lo sabe la agenda, y
+      // mientras no lo ha dicho no se ofrece
+      cuando: competition.status === 'CLOSED' && numeroDeSesiones > 0,
     },
     'reopen-enrollments': {
       id: 'reopen-enrollments',
@@ -760,6 +785,8 @@ const CompetitionDetail = () => {
           players={approvedEnrollments.map((e) => ({
             userId: e.userId,
             name: e.userName || t('detail.unknownUser'),
+            // El que cuenta aquí: el propio de la competición, si se le puso
+            handicap: e.hasCustomHandicap ? e.customHandicap : (e.userHandicap ?? null),
           }))}
           teamNames={{ a: competition.team1Name, b: competition.team2Name }}
           current={competition.captains}
@@ -854,7 +881,7 @@ const CompetitionDetail = () => {
                     <div>
                       <p className="text-xs text-gray-500">{t('detail.dates')}</p>
                       <p className="text-sm font-medium">
-                        {formatDateRange(competition.startDate, competition.endDate)}
+                        {formatDateRange(competition.startDate, competition.endDate, i18n.language)}
                       </p>
                     </div>
                   </div>
@@ -1114,6 +1141,17 @@ const CompetitionDetail = () => {
                         : ''}
                     </p>
                   </div>
+                  {/* El modo elegido al crearla no salía en ningún sitio (#710) */}
+                  {competition.setupMode && (
+                    <div>
+                      <span className="text-gray-500 text-sm">{t('detail.settings.setupMode')}</span>
+                      <p className="text-gray-900 font-medium">
+                        {t(`create.setupMode.${competition.setupMode}.title`, {
+                          defaultValue: competition.setupMode,
+                        })}
+                      </p>
+                    </div>
+                  )}
                   <div>
                     <span className="text-gray-500 text-sm">{t('detail.settings.teamAssignment')}</span>
                     {/* Idem, y con respaldo: un modo que el backend añada
@@ -1158,6 +1196,7 @@ const CompetitionDetail = () => {
                 version={`${competition.updatedAt}|${competition.status}|${competition.teamsAssigned}`}
                 // Y sus campos, cuando cambian en la sección de abajo (FE #715)
                 versionCampos={versionCampos}
+                onAgenda={setAgendaLeida}
               />
             </div>
 
@@ -1205,6 +1244,7 @@ const CompetitionDetail = () => {
                       .map((enrollment) => (
                         <div
                           key={enrollment.id}
+                          data-testid={`aprobado-${enrollment.userId}`}
                           className="flex items-center justify-between p-4 border border-gray-200 rounded-lg bg-green-50 hover:bg-green-100 transition-colors"
                         >
                           {/* `min-w-0`: sin él, la etiqueta de capitán con el nombre
@@ -1219,6 +1259,17 @@ const CompetitionDetail = () => {
                               captains={competition.captains}
                               teamNames={{ a: competition.team1Name, b: competition.team2Name }}
                             />
+                            {/* Con el reparto hecho, el equipo de cada uno: sin esto
+                                solo los capitanes lo decían (#710). El capitán ya
+                                lo dice con su insignia */}
+                            {equipoDe(enrollment.userId) && !esCapitan(enrollment.userId) && (
+                              <span
+                                data-testid="equipo-del-aprobado"
+                                className="inline-flex mt-1 px-2 py-0.5 rounded-full bg-gray-100 text-gray-700 text-xs font-medium max-w-full"
+                              >
+                                <span className="truncate min-w-0">{equipoDe(enrollment.userId)}</span>
+                              </span>
+                            )}
                             <div className="flex items-center gap-2 mt-1">
                               {editingHandicapId === enrollment.id ? (
                                 <div className="flex items-center gap-1.5">

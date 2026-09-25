@@ -143,7 +143,9 @@
     "updateCompetition": "Update Competition",
     "success": "Competition updated successfully!",
     "error": "Failed to update competition",
-    "errorLoading": "Failed to load competition"
+    "errorLoading": "Failed to load competition",
+    "notEditable": "This competition can no longer be edited: it can only be edited while enrolment is open.",
+    "datesLeaveSessionsOut": "Those dates leave these sessions out: {{sesiones}}. Move or delete them before changing the dates."
   },
   "detail": {
     "loadingCompetition": "Loading competition...",
@@ -225,13 +227,15 @@
       "teamTwo": "Team 2:",
       "playMode": "Play Mode:",
       "teamAssignment": "Team Assignment:",
+      "setupMode": "Setup:",
       "maxPlayingHandicap": "Playing Handicap Limit:",
       "maxPlayingHandicapNone": "No limit",
       "created": "Created:",
       "assignment": {
         "MANUAL": "Manual",
         "AUTOMATIC": "Automatic",
-        "DRAFT": "Captains' draft"
+        "DRAFT": "Captains' draft",
+        "PENDING": "Not split yet"
       }
     },
     "approvedPlayers": "Approved Players ({{count}})",
@@ -311,6 +315,7 @@
       "closesEnrollment": "Naming them closes enrolment: nobody else will be able to join.",
       "teamLabel": "{{team}} captain",
       "choose": "Choose a player",
+      "sameForBoth": "One player cannot captain both teams: pick someone else for one of them.",
       "cancel": "Cancel",
       "confirm": "Name them",
       "uneven_one": "There is {{count}} player: the teams will not come out even. The captains stay named, but assigning the teams will need an even number.",
@@ -417,7 +422,9 @@
     "reveal": "Open the envelopes",
     "matchups": "Matchups",
     "versus": "vs",
-    "filledByTheApp": "One envelope was filled in by the app: that captain never handed his in",
+    "filledByTheApp": "One envelope was filled in by the app: its captain did not hand it in on time",
+    "filledByTheAppTeam": "{{equipo}}'s envelope was filled in by the app: its captain did not hand it in on time",
+    "filledByTheAppBoth": "Both envelopes were filled in by the app: neither captain handed theirs in on time",
     "onlyCaptains": "Envelopes are handed in by the captains. The matchups show up here once they are opened.",
     "open": "Go to your envelope",
     "reset": "Redo the envelopes",
@@ -439,6 +446,7 @@
     "title": "Draft room",
     "back": "Back to the competition",
     "notStarted": "The organiser has not launched the draw yet.",
+    "notStartedYouLaunch": "You haven't launched the draw yet. Once you do, the first captain's turn starts.",
     "start": "Launch the draw",
     "yourTurn": "Your turn to pick",
     "turnOf": "{{name}} is picking",

@@ -18,6 +18,16 @@ const baseApiData = () => ({
 
 describe('QuickMatchMapper', () => {
   describe('toDomain', () => {
+    it('reads a created_at with no timezone as UTC (FE #710)', () => {
+      const quickMatch = QuickMatchMapper.toDomain({
+        ...baseApiData(),
+        created_at: '2026-09-23T23:55:00',
+        updated_at: '2026-09-23T23:56:00.5',
+      });
+      expect(quickMatch.createdAt.toISOString()).toBe('2026-09-23T23:55:00.000Z');
+      expect(quickMatch.updatedAt.toISOString()).toBe('2026-09-23T23:56:00.500Z');
+    });
+
     it('should convert a base API response to a QuickMatch entity', () => {
       const quickMatch = QuickMatchMapper.toDomain(baseApiData());
       expect(quickMatch).toBeInstanceOf(QuickMatch);

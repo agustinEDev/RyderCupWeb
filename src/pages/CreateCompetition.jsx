@@ -31,6 +31,8 @@ import FullScreenLoader from '../components/ui/FullScreenLoader';
 import CompetitionTypeChooser from '../components/competition/CompetitionTypeChooser';
 import SetupModeChooser from '../components/competition/SetupModeChooser';
 import { cupoDeJugadores, CUPO_POR_DEFECTO } from '../utils/cupoDeJugadores';
+import { CompetitionStatus } from '../domain/value_objects/CompetitionStatus';
+import { diaDeLaSesion } from '../utils/diaDeLaSesion';
 
 
 // Helper function to get message className
@@ -229,6 +231,10 @@ const CreateCompetition = () => {
    * Load competition data when in edit mode
    */
   useEffect(() => {
+    // Pasando de editar una a editar otra el formulario no se desmonta: lo que
+    // llegue tarde de la anterior no redirige, ni avisa, ni pisa el formulario
+    // (CodeRabbit en la #722)
+    let vigente = true;
     const loadCompetitionData = async () => {
       if (!competitionId || !allCountries.length) return;
 
@@ -237,6 +243,16 @@ const CreateCompetition = () => {
       try {
         // Fetch competition details
         const competition = await getCompetitionDetailUseCase.execute(competitionId);
+        if (!vigente) return;
+
+        // Por URL se llegaba al formulario de una cerrada, y solo al guardar
+        // fallaba, con el estado sin traducir (FE #710). La misma regla que
+        // ofrece «Editar» en la ficha
+        if (!new CompetitionStatus(competition.status).allowsModifications()) {
+          customToast.error(t('edit.notEditable'));
+          navigate(`/competitions/${competitionId}`, { replace: true });
+          return;
+        }
 
         // Extract main country code from location
         // The mapper returns location as a string or we need to extract from countries array
@@ -305,20 +321,25 @@ const CreateCompetition = () => {
           maxPlayingHandicap: competition.maxPlayingHandicap ?? undefined
         };
 
+        if (!vigente) return;
         // Lo que había guardado: vaciar el campo no puede recortarlo
         cupoCargado.current = formDataToSet.numberOfPlayers;
         setFormData(formDataToSet);
 
       } catch (error) {
+        if (!vigente) return;
         console.error('Error loading competition:', error);
         customToast.error(t('edit.errorLoading'));
         navigate('/competitions');
       } finally {
-        setLoadingCompetition(false);
+        if (vigente) setLoadingCompetition(false);
       }
     };
 
     loadCompetitionData();
+    return () => {
+      vigente = false;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [competitionId, allCountries]);
 
@@ -547,6 +568,26 @@ const CreateCompetition = () => {
     return formData.golfCourses.filter(gc => gc.countryCode === countryCode);
   };
 
+  // Acortar las fechas con sesiones fuera: el servidor dice cuáles y aquí se
+  // escriben en el idioma de quien mira (FE #710). null si es otro error
+  const sesionesQueQuedanFuera = (error) => {
+    const fuera = error?.errorCode === 'DATES_LEAVE_SESSIONS_OUT' && error.data?.sessions_outside;
+    if (!Array.isArray(fuera) || fuera.length === 0) return null;
+    const dia = (iso) => {
+      const fecha = diaDeLaSesion(iso);
+      if (!fecha) return iso;
+      try {
+        return fecha.toLocaleDateString(i18n.language, { weekday: 'short', day: 'numeric', month: 'short' });
+      } catch {
+        return fecha.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' });
+      }
+    };
+    const sesiones = fuera
+      .map((s) => `${dia(s.round_date)} · ${t(`schedule:sessions.${s.session_type}`)}`)
+      .join(', ');
+    return t('edit.datesLeaveSessionsOut', { sesiones });
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setMessage({ type: '', text: '' });
@@ -699,8 +740,12 @@ const CreateCompetition = () => {
 
     } catch (error) {
       console.error(`Error ${isEditMode ? 'updating' : 'creating'} competition:`, error);
-      customToast.error(error.message || t(isEditMode ? 'edit.error' : 'create.error'));
-      setMessage({ type: 'error', text: error.message || t(isEditMode ? 'edit.error' : 'create.error') });
+      const texto =
+        sesionesQueQuedanFuera(error) ||
+        error.message ||
+        t(isEditMode ? 'edit.error' : 'create.error');
+      customToast.error(texto);
+      setMessage({ type: 'error', text: texto });
     } finally {
       setIsSubmitting(false);
       // Se cierra tanto si salió bien como si falló: si falló, el aviso está en

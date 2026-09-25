@@ -16,7 +16,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useStandalone } from '../hooks/useStandalone';
 import { useLogout } from '../hooks/useLogout';
 import { CountryFlag } from '../utils/countryUtils';
-import { formatFullDate } from '../utils/dateFormatters';
+import { instanteEnTexto } from '../utils/instanteDeLaApi';
 import { fetchCountriesUseCase, listUserCompetitionsUseCase } from '../composition';
 import FullScreenLoader from '../components/ui/FullScreenLoader';
 import { formatCountryName } from '../services/countries';
@@ -105,13 +105,15 @@ const Profile = () => {
 
   const fullName = `${user.first_name} ${user.last_name}`;
   const email = user.email || 'No email';
-  const handicap = user.handicap !== null && user.handicap !== undefined
-    ? user.handicap
-    : 'Not set';
-  const handicapUpdated = user.handicap_updated_at
-    ? formatFullDate(user.handicap_updated_at)
-    : 'Never';
-  const memberSince = formatFullDate(user.created_at);
+  // Las fechas en el idioma de la app y leídas como UTC; y si hay hándicap,
+  // un booleano: era el texto «Not set» el que lo decidía (FE #710)
+  const tieneHandicap = user.handicap !== null && user.handicap !== undefined;
+  const handicap = tieneHandicap ? user.handicap : t('edit.handicap.notSet');
+  const fechaLarga = { year: 'numeric', month: 'long', day: 'numeric' };
+  const handicapUpdated =
+    instanteEnTexto(user.handicap_updated_at, i18n.language, fechaLarga) ??
+    t('edit.handicap.never');
+  const memberSince = instanteEnTexto(user.created_at, i18n.language, fechaLarga) ?? '';
 
   return (
     <div className="relative flex h-auto min-h-screen w-full flex-col bg-white">
@@ -180,7 +182,7 @@ const Profile = () => {
                         {t('activeAccount')}
                       </span>
 
-                      {handicap !== 'Not set' && (
+                      {tieneHandicap && (
                         <span className="inline-flex items-center gap-1 px-3 py-1 bg-accent-100 text-accent-700 rounded-full text-xs font-semibold">
                           <Award className="w-3 h-3" />
                           {t('handicapRegistered')}
@@ -204,7 +206,7 @@ const Profile = () => {
                     {/* Last Updated */}
                     <div className="flex items-center gap-2 text-gray-600 mb-2">
                       <Clock className="w-4 h-4" />
-                      <span className="text-sm">{t('lastUpdated', { date: formatFullDate(user.updated_at) })}</span>
+                      <span className="text-sm">{t('lastUpdated', { date: instanteEnTexto(user.updated_at, i18n.language, fechaLarga) ?? '' })}</span>
                     </div>
 
                     {/* Nationality */}
@@ -242,7 +244,7 @@ const Profile = () => {
                         <span className="text-xs text-gray-500 font-medium">{t('handicapLabel')}</span>
                       </div>
                       <p className="text-2xl font-bold text-gray-900">{handicap}</p>
-                      {handicap !== 'Not set' && (
+                      {tieneHandicap && (
                         <p className="text-xs text-gray-500 mt-1">{t('updatedOn', { date: handicapUpdated })}</p>
                       )}
                     </div>
