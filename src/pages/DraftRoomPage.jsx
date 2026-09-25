@@ -71,6 +71,13 @@ const DraftRoomPage = () => {
 
   const elegidosDe = (equipo) => (sala?.picks || []).filter((pick) => pick.team === equipo);
 
+  // Por hándicap, de menor a mayor, que es como se elige; sin él, al final
+  // (#710). El mapper ya lo deja en número o null
+  const hcp = (jugador) => jugador.handicap ?? Infinity;
+  const porElegir = [...(sala?.availablePlayers || [])].sort((a, b) => hcp(a) - hcp(b));
+
+  const organiza = Boolean(user?.id) && competition?.creatorId === user.id;
+
   const alElegir = async (playerId) => {
     setEligiendo(playerId);
     try {
@@ -84,7 +91,9 @@ const DraftRoomPage = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <HeaderAuth title={t('draft.title')} backTo={`/competitions/${id}`} />
+      {/* Con la sesión: sin ella la cabecera pintaba «?» y sin la insignia
+          de administrador (#710) */}
+      <HeaderAuth user={user} title={t('draft.title')} backTo={`/competitions/${id}`} />
       <div className="mx-auto max-w-3xl px-4 py-6">
         <button
           type="button"
@@ -114,12 +123,14 @@ const DraftRoomPage = () => {
         {!sala && (
           <div className="rounded-xl border border-gray-200 bg-white p-5 text-center">
             <p className="mb-4 text-sm text-gray-600" data-testid="sin-sorteo">
-              {t('draft.notStarted')}
+              {/* Quien lo lanza no lee «el organizador todavía no…» al lado
+                  de su propio botón (#710) */}
+              {t(organiza ? 'draft.notStartedYouLaunch' : 'draft.notStarted')}
             </p>
             {/* `user?.id &&` por delante: sin sesión hidratada y sin ficha,
                 los dos lados valían `undefined` y el botón salía para
                 cualquiera, para que el servidor lo rechazara con un 403 */}
-            {user?.id && competition?.creatorId === user.id && (
+            {organiza && (
               <button
                 type="button"
                 data-testid="lanzar-sorteo"
@@ -197,8 +208,10 @@ const DraftRoomPage = () => {
                     {nombreDe(equipo)}
                   </h2>
                   <ul className="space-y-1 text-sm">
-                    <li className="flex min-w-0 items-center gap-1">
-                      <span className="truncate font-semibold text-gray-900">
+                    {/* Los nombres se parten en líneas: a 360 px la insignia
+                        les comía el sitio y se cortaban (#710) */}
+                    <li className="flex min-w-0 items-start gap-1">
+                      <span className="min-w-0 break-words font-semibold text-gray-900">
                         {capitanDe(equipo)}
                       </span>
                       <span className="shrink-0 rounded bg-gray-100 px-1 text-xs text-gray-600">
@@ -206,8 +219,8 @@ const DraftRoomPage = () => {
                       </span>
                     </li>
                     {elegidosDe(equipo).map((pick) => (
-                      <li key={pick.userId} className="flex min-w-0 items-center gap-1">
-                        <span className="truncate text-gray-800">{pick.name}</span>
+                      <li key={pick.userId} className="flex min-w-0 items-start gap-1">
+                        <span className="min-w-0 break-words text-gray-800">{pick.name}</span>
                         {pick.lastRemaining && (
                           <span
                             data-testid={`ultimo-${pick.userId}`}
@@ -234,7 +247,7 @@ const DraftRoomPage = () => {
               <div className="rounded-xl border border-gray-200 bg-white p-3">
                 <h2 className="mb-2 text-sm font-bold text-gray-900">{t('draft.available')}</h2>
                 <ul className="divide-y divide-gray-100">
-                  {sala.availablePlayers.map((jugador) => (
+                  {porElegir.map((jugador) => (
                     <li
                       key={jugador.userId}
                       data-testid={`disponible-${jugador.userId}`}

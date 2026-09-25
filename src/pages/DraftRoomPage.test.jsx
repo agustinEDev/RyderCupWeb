@@ -24,7 +24,13 @@ vi.mock('react-i18next', () => ({ useTranslation: () => traduccion }));
 vi.mock('framer-motion', () => ({
   motion: new Proxy({}, { get: () => ({ children, ...props }) => <div {...props}>{children}</div> }),
 }));
-vi.mock('../components/layout/HeaderAuth', () => ({ default: () => null }));
+const mockCabecera = vi.fn();
+vi.mock('../components/layout/HeaderAuth', () => ({
+  default: (props) => {
+    mockCabecera(props);
+    return null;
+  },
+}));
 vi.mock('../components/ui/FullScreenLoader', () => ({ default: () => null }));
 
 const SESION = { user: { id: 'ana' }, loading: false };
@@ -338,5 +344,81 @@ describe('DraftRoomPage · la sala en directo (FE #653)', () => {
     const fila = await screen.findByTestId('disponible-carla');
     expect(within(fila).getByText('Carla Cruz')).toBeInTheDocument();
     expect(within(fila).getByText('8')).toBeInTheDocument();
+  });
+});
+
+/**
+ * LA TABLA de la sala en el bloque 3 de la FE #710.
+ *
+ *   #    caso                                  | qué pasa
+ *   -----|-------------------------------------|---------------------------------------
+ *   DR1  la cabecera                           | recibe la sesión: iniciales e insignia, no «?»
+ *   DR2  «Por elegir»                          | por hándicap, de menor a mayor; sin él, al final
+ *   DR3  nombres largos en los equipos a 360   | se parten en líneas, no se cortan
+ *   DR4  el organizador, antes del sorteo      | no lee «el organizador todavía no…» junto a su botón
+ */
+describe('DraftRoomPage · lo que se lee (FE #710)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockDetalle.mockResolvedValue(COMPETICION);
+    mockSala.mockReturnValue(estado());
+  });
+
+  it('DR1: la cabecera recibe la sesión', async () => {
+    pintar();
+
+    await screen.findByTestId('sala-de-draft');
+    expect(mockCabecera).toHaveBeenLastCalledWith(expect.objectContaining({ user: SESION.user }));
+  });
+
+  it('DR2: «Por elegir» va por hándicap, y sin él al final', async () => {
+    mockSala.mockReturnValue(
+      estado({
+        sala: {
+          ...SALA,
+          availablePlayers: [
+            { userId: 'dani', name: 'Dani Díaz', handicap: 20 },
+            { userId: 'eva', name: 'Eva Esteve', handicap: null },
+            { userId: 'carla', name: 'Carla Cruz', handicap: 8 },
+            { userId: 'fer', name: 'Fer Fuentes', handicap: 15.4 },
+          ],
+        },
+      })
+    );
+    pintar();
+
+    await screen.findByTestId('sala-de-draft');
+    const orden = screen
+      .getAllByTestId(/^disponible-/)
+      .map((fila) => fila.dataset.testid.replace('disponible-', ''));
+    expect(orden).toEqual(['carla', 'fer', 'dani', 'eva']);
+  });
+
+  it('DR3: en los equipos los nombres se parten, no se cortan', async () => {
+    mockSala.mockReturnValue(
+      estado({
+        sala: {
+          ...SALA,
+          picks: [{ userId: 'carla', name: 'Carla Cruz', team: 'A', lastRemaining: true }],
+        },
+      })
+    );
+    pintar();
+
+    const equipo = await screen.findByTestId('equipo-A');
+    expect(within(equipo).getByText('Ana Alba').className).not.toContain('truncate');
+    expect(within(equipo).getByText('Carla Cruz').className).not.toContain('truncate');
+  });
+
+  it.each([
+    ['DR4: el organizador lee que lo lanza él', 'ana', 'draft.notStartedYouLaunch'],
+    ['DR4b: los demás, que lo lanzará el organizador', 'bea', 'draft.notStarted'],
+  ])('%s', async (_caso, creador, texto) => {
+    mockDetalle.mockResolvedValue({ ...COMPETICION, creatorId: creador });
+    mockSala.mockReturnValue(estado({ sala: null }));
+    pintar();
+
+    await waitFor(() => expect(screen.getByTestId('sin-sorteo')).toHaveTextContent(texto));
+    expect(screen.getByTestId('sin-sorteo').textContent).toBe(texto);
   });
 });

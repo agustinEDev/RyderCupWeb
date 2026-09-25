@@ -443,6 +443,7 @@
     "title": "Draft room",
     "back": "Back to the competition",
     "notStarted": "The organiser has not launched the draw yet.",
+    "notStartedYouLaunch": "You haven't launched the draw yet. Once you do, the first captain's turn starts.",
     "start": "Launch the draw",
     "yourTurn": "Your turn to pick",
     "turnOf": "{{name}} is picking",

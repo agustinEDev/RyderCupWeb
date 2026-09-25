@@ -443,6 +443,7 @@
     "title": "Sala de draft",
     "back": "Volver a la competición",
     "notStarted": "El organizador todavía no ha lanzado el sorteo.",
+    "notStartedYouLaunch": "Todavía no has lanzado el sorteo. Cuando lo lances, empieza el turno del primer capitán.",
     "start": "Lanzar el sorteo",
     "yourTurn": "Te toca elegir",
     "turnOf": "Elige {{name}}",
