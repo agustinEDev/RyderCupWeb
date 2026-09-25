@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router';
 
@@ -193,8 +193,63 @@ describe('DraftRoomPage · la sala en directo (FE #653)', () => {
     pintar();
 
     const equipoA = await screen.findByTestId('equipo-A');
-    expect(within(equipoA).getByTestId('ultimo-carla')).toHaveTextContent('draft.lastRemaining');
     expect(within(equipoA).queryByTestId('automatica-carla')).not.toBeInTheDocument();
+  });
+
+  /**
+   * FE #723 (decidido por Agustín, 26 sep): sin etiqueta «Último». Solo el
+   * capitán del equipo que lo recibe lee, debajo de los equipos, que ese jugador
+   * entró al ser la última elección.
+   *
+   *   U1  lo mira el capitán que lo recibe     | la línea con el nombre, sin etiqueta
+   *   U2  lo mira el otro capitán              | nada
+   *   U3  lo mira quien no capitanea           | nada
+   */
+  describe('el último jugador (FE #723)', () => {
+    const conUltimo = () =>
+      mockSala.mockReturnValue(
+        estado({
+          sala: {
+            ...SALA,
+            status: 'COMPLETED',
+            currentTeam: null,
+            teamA: ['ana', 'carla'],
+            availablePlayers: [],
+            picks: [
+              { userId: 'carla', name: 'Carla Cruz', team: 'A', order: 1, automatic: false, lastRemaining: true },
+            ],
+          },
+          segundosRestantes: null,
+          esMiTurno: false,
+        })
+      );
+
+    afterEach(() => {
+      SESION.user = { id: 'ana' };
+    });
+
+    it('U1: el capitán que lo recibe lo lee debajo de los equipos, sin etiqueta', async () => {
+      conUltimo();
+      pintar();
+
+      expect(await screen.findByTestId('ultimo-incluido')).toHaveTextContent(
+        'draft.lastIncluded_Carla Cruz'
+      );
+      expect(screen.queryByText('draft.lastRemaining')).not.toBeInTheDocument();
+    });
+
+    it.each([
+      ['U2: el otro capitán', 'bea'],
+      ['U3: quien no capitanea', 'dani'],
+    ])('%s no lo lee', async (_caso, quien) => {
+      SESION.user = { id: quien };
+      conUltimo();
+      pintar();
+
+      await screen.findByTestId('equipo-A');
+      expect(screen.queryByTestId('ultimo-incluido')).not.toBeInTheDocument();
+      expect(screen.queryByText('draft.lastRemaining')).not.toBeInTheDocument();
+    });
   });
 
   it('D6: sin sala, el organizador puede lanzar el sorteo', async () => {

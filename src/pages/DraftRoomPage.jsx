@@ -78,6 +78,17 @@ const DraftRoomPage = () => {
 
   const organiza = Boolean(user?.id) && competition?.creatorId === user.id;
 
+  // El equipo que capitanea quien mira, y el último que entró solo en él (#723)
+  const capitaneo =
+    user?.id && sala?.teamACaptainId === user.id
+      ? 'A'
+      : user?.id && sala?.teamBCaptainId === user.id
+        ? 'B'
+        : null;
+  const ultimoParaMi = (sala?.picks || []).find(
+    (pick) => pick.lastRemaining && pick.team === capitaneo
+  );
+
   const alElegir = async (playerId) => {
     setEligiendo(playerId);
     try {
@@ -221,14 +232,6 @@ const DraftRoomPage = () => {
                     {elegidosDe(equipo).map((pick) => (
                       <li key={pick.userId} className="flex min-w-0 items-start gap-1">
                         <span className="min-w-0 break-words text-gray-800">{pick.name}</span>
-                        {pick.lastRemaining && (
-                          <span
-                            data-testid={`ultimo-${pick.userId}`}
-                            className="shrink-0 rounded bg-gray-100 px-1 text-xs text-gray-600"
-                          >
-                            {t('draft.lastRemaining')}
-                          </span>
-                        )}
                         {pick.automatic && (
                           <Bot
                             data-testid={`automatica-${pick.userId}`}
@@ -242,6 +245,14 @@ const DraftRoomPage = () => {
                 </div>
               ))}
             </div>
+
+            {/* El último entra solo, y solo lo lee el capitán que lo recibe: al
+                resto no le cuenta nada y la etiqueta cortaba el nombre (#723) */}
+            {ultimoParaMi && (
+              <p data-testid="ultimo-incluido" className="text-sm text-gray-600">
+                {t('draft.lastIncluded', { name: ultimoParaMi.name })}
+              </p>
+            )}
 
             {sala.availablePlayers.length > 0 && (
               <div className="rounded-xl border border-gray-200 bg-white p-3">
