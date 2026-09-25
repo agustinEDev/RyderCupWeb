@@ -199,6 +199,8 @@
     "activeMatch": "Partido Activo"
   },
   "closed": {
+    "title": "Partido cerrado",
+    "generic": "Este partido se cerró antes de terminar. Ya no queda nada que anotar.",
     "conceded": "Partido concedido: gana {{team}}. Ya no queda nada que anotar.",
     "walkover": "{{team}} gana por walkover: el rival no se presentó. No hay nada que anotar."
   }

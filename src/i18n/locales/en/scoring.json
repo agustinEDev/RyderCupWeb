@@ -199,6 +199,8 @@
     "activeMatch": "Active Match"
   },
   "closed": {
+    "title": "Match closed",
+    "generic": "This match was closed before the end. There is nothing left to score.",
     "conceded": "Match conceded: {{team}} wins. There is nothing left to score.",
     "walkover": "{{team}} wins by walkover: the opponent did not show up. There is nothing to score."
   }

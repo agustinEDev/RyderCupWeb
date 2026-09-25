@@ -1024,7 +1024,9 @@ describe('ScoringPage · un partido cerrado sin jugarlo hasta el final (FE #732)
     mockUseScoring.scoringView.matchStatus = 'IN_PROGRESS';
     mockUseScoring.scoringView.isDecided = false;
     mockUseScoring.scoringView.decidedResult = null;
+    mockUseScoring.scoringView.matchStanding = null;
     mockUseScoring.canSubmitScorecard = false;
+    mockUseScoring.hasSubmitted = false;
   });
 
   it.each([
@@ -1064,6 +1066,33 @@ describe('ScoringPage · un partido cerrado sin jugarlo hasta el final (FE #732)
     fireEvent.click(screen.getByText('tabs.scorecard'));
 
     expect(screen.queryByText('submit.notReady')).toBeNull();
+  });
+
+  it('K6: cerrado sin ganador (backend anterior a RyderCupAM#384): aviso genérico, sin el marcador de los hoyos', () => {
+    mockUseScoring.scoringView.matchStatus = 'CONCEDED';
+    mockUseScoring.scoringView.matchStanding = { status: '2UP', leadingTeam: 'A', holesPlayed: 5 };
+    render(<ScoringPage />);
+
+    expect(screen.getByTestId('partido-cerrado')).toHaveTextContent('closed.generic');
+    expect(screen.getByTestId('marcador-del-partido')).toHaveTextContent('closed.title');
+    expect(screen.getByTestId('marcador-del-partido')).not.toHaveTextContent('2UP');
+    expect(screen.queryByTestId('hole-input')).toBeNull();
+  });
+
+  it('K6b: y sin marcador de hoyos también lo dice arriba', () => {
+    mockUseScoring.scoringView.matchStatus = 'WALKOVER';
+    render(<ScoringPage />);
+
+    expect(screen.getByTestId('marcador-del-partido')).toHaveTextContent('closed.title');
+  });
+
+  it('K7: entregada su tarjeta y cerrado después por walkover, ya no espera a nadie', () => {
+    cerrar('WALKOVER', 'W/O');
+    mockUseScoring.hasSubmitted = true;
+    render(<ScoringPage />);
+    fireEvent.click(screen.getByText('tabs.scorecard'));
+
+    expect(screen.getByText('submit.matchCompleted')).toBeInTheDocument();
   });
 
   it('K5: decidido por los hoyos sigue como siempre', () => {

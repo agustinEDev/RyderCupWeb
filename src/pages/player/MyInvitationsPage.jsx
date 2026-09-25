@@ -91,6 +91,18 @@ const MyInvitationsPage = () => {
     generoParaApuntarse.refrescar();
   };
 
+  // Aceptar o rechazar: si se quedó sin plaza al cerrarse, el servidor lo dice
+  // con su código a las dos respuestas. Se dice en su idioma y la lista se relee,
+  // porque esa invitación ya no está pendiente (FE #733)
+  const avisarDelFallo = (error) => {
+    if (error?.errorCode === 'INVITATION_NO_ROOM') {
+      customToast.error(t('errors.noRoom'));
+      loadData();
+      return;
+    }
+    customToast.error(error.message || t('errors.failedToRespond'));
+  };
+
   const aceptar = async (invitationId) => {
     setProcessingId(invitationId);
     try {
@@ -102,14 +114,7 @@ const MyInvitationsPage = () => {
       }
     } catch (error) {
       console.error('Error accepting invitation:', error);
-      if (error?.errorCode === 'INVITATION_NO_ROOM') {
-        // Se quedó sin plaza al cerrarse: se dice en su idioma, y la lista se
-        // relee porque esa invitación ya no está pendiente (FE #733)
-        customToast.error(t('errors.noRoom'));
-        loadData();
-      } else {
-        customToast.error(error.message || t('errors.failedToRespond'));
-      }
+      avisarDelFallo(error);
     } finally {
       setProcessingId(null);
     }
@@ -123,7 +128,7 @@ const MyInvitationsPage = () => {
       await loadData();
     } catch (error) {
       console.error('Error declining invitation:', error);
-      customToast.error(error.message || t('errors.failedToRespond'));
+      avisarDelFallo(error);
     } finally {
       setProcessingId(null);
     }
