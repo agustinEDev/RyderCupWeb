@@ -665,6 +665,20 @@ describe('EnvelopePage · el sobre del capitán (FE #655)', () => {
     expect(screen.getByTestId('entregar-sobre')).toBeDisabled();
   });
 
+  it('P5b: con el equipo impar no promete que la app lo rellene tras el plazo (FE #726)', async () => {
+    // La sesión está bloqueada: a esa hora no se abre ni se rellena nada
+    mockVer.mockResolvedValue(
+      enParejas({
+        teamsFitFormat: false,
+        myPlayers: [...CUATRO, { userId: 'eva', name: 'Eva Egea', handicap: 30 }],
+      })
+    );
+    pintar();
+
+    await screen.findByTestId('equipo-impar');
+    expect(screen.queryByTestId('plazo')).not.toBeInTheDocument();
+  });
+
   it('P6: el equipo impar se lo dice también a quien NO capitanea', async () => {
     // El organizador es quien puede arreglarlo —cambiar el formato o rehacer
     // los equipos— y no tiene sobre: sin esto la sesión se atasca en silencio

@@ -432,7 +432,9 @@ const EnvelopePage = () => {
         {!fallo && capitanea && !vista?.revealed && !entregado && (
           <div className="space-y-3">
             <p className="text-sm text-gray-600">{t('envelope.tapInOrder')}</p>
-            {plazo && (
+            {/* Con el equipo impar la sesión está bloqueada: a esa hora no se
+                abre ni se rellena nada, así que no se promete (FE #726) */}
+            {plazo && !equipoImpar && (
               <p data-testid="plazo" className="text-xs text-gray-500">
                 {t('envelope.deadline', { when: plazo })}
               </p>
