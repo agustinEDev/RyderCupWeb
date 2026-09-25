@@ -121,4 +121,13 @@ describe('BrowseCompetitions · el género al pedir plaza', () => {
 
     expect(await screen.findByTestId('apuntarse-error')).toHaveTextContent('ya ha empezado');
   });
+
+  it('X5: una llena se ve «LLENO» y no deja pedir plaza (#710)', async () => {
+    mockUnirse.mockResolvedValue([{ ...COMPETICION, enrolledCount: 4, maxPlayers: 4 }]);
+    pintar();
+
+    const boton = await screen.findByText('browse.card.full', { selector: 'button' });
+    expect(boton).toBeDisabled();
+    expect(screen.queryByText('browse.card.request-to-join')).not.toBeInTheDocument();
+  });
 });
