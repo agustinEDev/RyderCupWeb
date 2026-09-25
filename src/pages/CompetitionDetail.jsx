@@ -854,7 +854,7 @@ const CompetitionDetail = () => {
                     <div>
                       <p className="text-xs text-gray-500">{t('detail.dates')}</p>
                       <p className="text-sm font-medium">
-                        {formatDateRange(competition.startDate, competition.endDate)}
+                        {formatDateRange(competition.startDate, competition.endDate, i18n.language)}
                       </p>
                     </div>
                   </div>

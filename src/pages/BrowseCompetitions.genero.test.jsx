@@ -123,6 +123,12 @@ describe('BrowseCompetitions · el género al pedir plaza', () => {
     expect(await screen.findByTestId('apuntarse-error')).toHaveTextContent('ya ha empezado');
   });
 
+  it('X7: las fechas de la tarjeta salen en el idioma de quien mira (#710)', async () => {
+    pintar();
+
+    expect(await screen.findByText('1 jun 2030 - 2 jun 2030')).toBeInTheDocument();
+  });
+
   it('X5: una llena se ve «LLENO» y no deja pedir plaza (#710)', async () => {
     mockUnirse.mockResolvedValue([{ ...COMPETICION, enrolledCount: 4, maxPlayers: 4 }]);
     pintar();

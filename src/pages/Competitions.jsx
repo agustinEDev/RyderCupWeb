@@ -238,7 +238,7 @@ const Competitions = () => {
               {/* Dates */}
               <div className="flex items-center gap-2 text-gray-600 text-sm">
                 <Calendar className="w-4 h-4" />
-                <span>{formatDateRange(competition.startDate, competition.endDate)}</span>
+                <span>{formatDateRange(competition.startDate, competition.endDate, i18n.language)}</span>
               </div>
 
               {/* Location */}
