@@ -197,5 +197,9 @@
     "annotate": "Score",
     "leaderboard": "Leaderboard",
     "activeMatch": "Active Match"
+  },
+  "closed": {
+    "conceded": "Match conceded: {{team}} wins. There is nothing left to score.",
+    "walkover": "{{team}} wins by walkover: the opponent did not show up. There is nothing to score."
   }
 }

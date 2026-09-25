@@ -197,5 +197,9 @@
     "annotate": "Anotar",
     "leaderboard": "Clasificación",
     "activeMatch": "Partido Activo"
+  },
+  "closed": {
+    "conceded": "Partido concedido: gana {{team}}. Ya no queda nada que anotar.",
+    "walkover": "{{team}} gana por walkover: el rival no se presentó. No hay nada que anotar."
   }
 }
