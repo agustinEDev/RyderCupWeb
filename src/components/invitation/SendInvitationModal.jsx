@@ -257,7 +257,7 @@ const SendInvitationModalContent = ({
     yaInvitado: idsInvitados.includes(amigo.otherUserId),
   }));
 
-  const handleEmailSubmit = (e) => {
+  const handleEmailSubmit = async (e) => {
     e.preventDefault();
     setError('');
 
@@ -267,10 +267,11 @@ const SendInvitationModalContent = ({
       return;
     }
 
-    onSend(trimmedEmail, personalMessage.trim() || null);
+    // Enviada, el campo queda listo para el siguiente (#710)
+    if (await onSend(trimmedEmail, personalMessage.trim() || null)) setEmail('');
   };
 
-  const handleUserSubmit = (e) => {
+  const handleUserSubmit = async (e) => {
     e.preventDefault();
     setError('');
 
@@ -279,7 +280,9 @@ const SendInvitationModalContent = ({
       return;
     }
 
-    onSendByUserId(selectedUser.id, personalMessage.trim() || null);
+    if (await onSendByUserId(selectedUser.id, personalMessage.trim() || null)) {
+      setSelectedUser(null);
+    }
   };
 
   const handleSelectUser = (user) => {

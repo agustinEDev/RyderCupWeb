@@ -81,10 +81,12 @@ const InvitationsPage = () => {
 
   const canManage = isAdmin || hasCreatorRole;
 
-  const loadData = useCallback(async () => {
+  // `silencioso`: tras invitar, el listado se pone al día sin la pantalla de
+  // carga, que desmontaba el modal abierto (#710)
+  const loadData = useCallback(async ({ silencioso = false } = {}) => {
     if (!user) return;
 
-    setIsLoading(true);
+    if (!silencioso) setIsLoading(true);
     try {
       const [compData, invResult] = await Promise.all([
         getCompetitionDetailUseCase.execute(id),
@@ -102,7 +104,7 @@ const InvitationsPage = () => {
       // llevaba por delante el aviso de la otra (FE #656)
       setFalloAlCargar(true);
     } finally {
-      setIsLoading(false);
+      if (!silencioso) setIsLoading(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, user, statusFilter, navigate]);
@@ -187,8 +189,9 @@ const InvitationsPage = () => {
     try {
       await sendInvitationByEmailUseCase.execute(id, email, personalMessage);
       customToast.success(t('success.sent'));
-      setShowSendModal(false);
-      await loadData();
+      // Abierto, para invitar al siguiente sin volver a abrirlo (#710)
+      loadData({ silencioso: true });
+      return true;
     } catch (error) {
       console.error('Error sending invitation:', error);
       if (error.message?.includes('409')) {
@@ -196,6 +199,7 @@ const InvitationsPage = () => {
       } else {
         customToast.error(error.message || t('errors.failedToSend'));
       }
+      return false;
     } finally {
       setIsProcessing(false);
     }
@@ -206,8 +210,10 @@ const InvitationsPage = () => {
     try {
       await sendInvitationUseCase.execute(id, userId, personalMessage);
       customToast.success(t('success.sent'));
-      setShowSendModal(false);
-      await loadData();
+      // Abierto, y el invitado ya como tal: el siguiente sin volver a abrirlo (#710)
+      setIdsInvitados((antes) => [...antes, userId]);
+      loadData({ silencioso: true });
+      return true;
     } catch (error) {
       console.error('Error sending invitation:', error);
       if (error.message?.includes('409')) {
@@ -215,6 +221,7 @@ const InvitationsPage = () => {
       } else {
         customToast.error(error.message || t('errors.failedToSend'));
       }
+      return false;
     } finally {
       setIsProcessing(false);
     }

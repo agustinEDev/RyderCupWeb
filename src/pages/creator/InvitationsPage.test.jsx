@@ -206,6 +206,93 @@ describe('InvitationsPage', () => {
     }
   );
 
+  // #710: invitar cerraba el modal tras cada invitación, e invitar a un grupo
+  // era abrirlo una y otra vez
+  describe('invitar a varios seguidos', () => {
+    beforeEach(() => {
+      mockListFriends.mockReset().mockResolvedValue({
+        friendships: [
+          { otherUserId: 'u-1', otherUserName: 'Luna Noche' },
+          { otherUserId: 'u-2', otherUserName: 'Óscar Noche' },
+        ],
+        totalCount: 2,
+      });
+      mockListEnrollments.mockReset().mockResolvedValue([]);
+      mockListCompetitionInvitations.mockReset().mockResolvedValue({ invitations: [], totalCount: 0 });
+      mockSendInvitation.mockReset().mockResolvedValue({});
+    });
+
+    it('V1: tras invitar a uno el modal sigue abierto, y ese sale como invitado', async () => {
+      renderPage();
+      fireEvent.click(await screen.findByText('creator.sendNew'));
+      fireEvent.click(await screen.findByTestId('invite-friend-u-1'));
+
+      await waitFor(() => expect(mockSendInvitation).toHaveBeenCalled());
+      await waitFor(() => expect(screen.getByTestId('invite-friend-u-1')).toBeDisabled());
+      expect(screen.getByTestId('invite-friend-u-1')).toHaveTextContent('send.alreadyInvited');
+      // Y el siguiente, sin volver a abrirlo
+      expect(screen.getByTestId('invite-friend-u-2')).not.toBeDisabled();
+      expect(screen.getByText('send.title')).toBeInTheDocument();
+    });
+
+    it('V2: si falla, el invitado no se marca como invitado', async () => {
+      mockSendInvitation.mockRejectedValue(Object.assign(new Error('Boom'), { status: 400 }));
+      renderPage();
+      fireEvent.click(await screen.findByText('creator.sendNew'));
+      fireEvent.click(await screen.findByTestId('invite-friend-u-1'));
+
+      await waitFor(() => expect(mockSendInvitation).toHaveBeenCalled());
+      await waitFor(() => expect(screen.getByTestId('invite-friend-u-1')).not.toBeDisabled());
+      expect(screen.getByTestId('invite-friend-u-1')).not.toHaveTextContent('send.alreadyInvited');
+    });
+
+    it('V4: buscando a alguien, tras invitarle se puede buscar al siguiente', async () => {
+      mockSearchUsers.mockResolvedValue([{ id: 'u-9', firstName: 'Nacho', lastName: 'Noche' }]);
+      renderPage();
+      fireEvent.click(await screen.findByText('creator.sendNew'));
+      fireEvent.click(await screen.findByTestId('tab-search-user'));
+      fireEvent.change(screen.getByTestId('user-search-input'), { target: { value: 'Nac' } });
+      fireEvent.click(await screen.findByTestId('search-result-u-9'));
+      expect(screen.getByTestId('selected-user-chip')).toBeInTheDocument();
+
+      fireEvent.click(screen.getByTestId('send-invitation-button'));
+
+      await waitFor(() => expect(mockSendInvitation).toHaveBeenCalledWith('comp-1', 'u-9', null));
+      await waitFor(() => expect(screen.queryByTestId('selected-user-chip')).not.toBeInTheDocument());
+      expect(screen.getByTestId('user-search-input')).toBeInTheDocument();
+    });
+
+    it('V5: si el email falla, lo escrito se queda para corregirlo', async () => {
+      mockSendInvitationByEmail
+        .mockReset()
+        .mockRejectedValue(Object.assign(new Error('Boom'), { status: 400 }));
+      renderPage();
+      fireEvent.click(await screen.findByText('creator.sendNew'));
+      fireEvent.click(await screen.findByTestId('tab-by-email'));
+      const campo = screen.getByTestId('invitation-email-input');
+      fireEvent.change(campo, { target: { value: 'luna@test.com' } });
+      fireEvent.submit(campo.closest('form'));
+
+      await waitFor(() => expect(mockSendInvitationByEmail).toHaveBeenCalled());
+      await new Promise((r) => setTimeout(r, 50));
+      expect(screen.getByTestId('invitation-email-input')).toHaveValue('luna@test.com');
+    });
+
+    it('V3: por email, tras enviar se vacía el campo para el siguiente', async () => {
+      mockSendInvitationByEmail.mockReset().mockResolvedValue({});
+      renderPage();
+      fireEvent.click(await screen.findByText('creator.sendNew'));
+      fireEvent.click(await screen.findByTestId('tab-by-email'));
+      const campo = screen.getByTestId('invitation-email-input');
+      fireEvent.change(campo, { target: { value: 'luna@test.com' } });
+      fireEvent.submit(campo.closest('form'));
+
+      await waitFor(() => expect(mockSendInvitationByEmail).toHaveBeenCalled());
+      await waitFor(() => expect(screen.getByTestId('invitation-email-input')).toHaveValue(''));
+      expect(screen.getByText('send.title')).toBeInTheDocument();
+    });
+  });
+
   describe('la pestaña de amigos se alimenta bien (FE #409)', () => {
     // `clearAllMocks` borra las llamadas, no las implementaciones: sin esto, el
     // `mockImplementation` de un test se cuela en el siguiente y lo hace fallar
