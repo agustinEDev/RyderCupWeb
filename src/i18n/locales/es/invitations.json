@@ -61,6 +61,7 @@
     "failedToLoad": "Error al cargar las invitaciones",
     "failedToSend": "Error al enviar la invitación",
     "failedToRespond": "Error al responder a la invitación",
+    "noRoom": "Esta invitación se quedó sin plaza al cerrarse la inscripción.",
     "duplicateInvitation": "Ya se ha enviado una invitación a este email",
     "invalidEmail": "Por favor, introduce un email válido",
     "rolesCheckFailed": "No se ha podido comprobar si puedes gestionar esta competición",

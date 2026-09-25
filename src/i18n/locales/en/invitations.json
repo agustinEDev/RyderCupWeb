@@ -61,6 +61,7 @@
     "failedToLoad": "Failed to load invitations",
     "failedToSend": "Failed to send invitation",
     "failedToRespond": "Failed to respond to invitation",
+    "noRoom": "This invitation ran out of room when enrolment closed.",
     "duplicateInvitation": "An invitation has already been sent to this email",
     "invalidEmail": "Please enter a valid email address",
     "rolesCheckFailed": "Could not check whether you can manage this competition",

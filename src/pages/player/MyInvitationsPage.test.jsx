@@ -183,6 +183,37 @@ describe('MyInvitationsPage', () => {
       expect(screen.queryByTestId('selector-de-genero')).not.toBeInTheDocument();
     });
 
+    // FE #733 · el motivo de «sin plaza» sale del código, en el idioma de la app
+    //   I4  INVITATION_NO_ROOM   → su texto traducido y la lista se relee (ya es NO_ROOM)
+    //   I5  otro error           → el mensaje del servidor, como siempre
+    it('I4: sin plaza, lo dice en su idioma y relee la lista', async () => {
+      mockRespondToInvitation.mockRejectedValueOnce(
+        Object.assign(new Error('Esta invitación se quedó sin plaza al cerrarse la inscripción'), {
+          status: 409,
+          errorCode: 'INVITATION_NO_ROOM',
+        })
+      );
+      renderPage();
+      await screen.findByTestId('accept-button');
+      const lecturas = mockListMyInvitations.mock.calls.length;
+
+      fireEvent.click(screen.getByTestId('accept-button'));
+
+      await waitFor(() => expect(customToast.error).toHaveBeenCalledWith('errors.noRoom'));
+      await waitFor(() => expect(mockListMyInvitations.mock.calls.length).toBeGreaterThan(lecturas));
+    });
+
+    it('I5: otro error, el mensaje del servidor', async () => {
+      mockRespondToInvitation.mockRejectedValueOnce(
+        Object.assign(new Error('Invitation has expired'), { status: 409 })
+      );
+      renderPage();
+
+      fireEvent.click(await screen.findByTestId('accept-button'));
+
+      await waitFor(() => expect(customToast.error).toHaveBeenCalledWith('Invitation has expired'));
+    });
+
     it('I3: si no se pudo guardar el género, no se acepta', async () => {
       faltaGenero = true;
       mockGuardarGenero.mockRejectedValueOnce(new Error('sin red'));
