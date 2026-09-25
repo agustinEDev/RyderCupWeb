@@ -275,7 +275,8 @@ describe('EnvelopePage · el sobre del capitán (FE #655)', () => {
     pintar();
 
     // Un aviso que nombra al equipo B (#710); el detalle, en N1-N3
-    expect(await screen.findByTestId('automatico')).toHaveTextContent('América');
+    // Los nombres llegan después del aviso: se espera al texto
+    await waitFor(() => expect(screen.getByTestId('automatico')).toHaveTextContent('América'));
   });
 
   it('V11b: abiertos y sin partidos, dice por qué (BE #361)', async () => {

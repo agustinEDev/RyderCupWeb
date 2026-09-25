@@ -777,6 +777,8 @@ const CompetitionDetail = () => {
           players={approvedEnrollments.map((e) => ({
             userId: e.userId,
             name: e.userName || t('detail.unknownUser'),
+            // El que cuenta aquí: el propio de la competición, si se le puso
+            handicap: e.hasCustomHandicap ? e.customHandicap : (e.userHandicap ?? null),
           }))}
           teamNames={{ a: competition.team1Name, b: competition.team2Name }}
           current={competition.captains}

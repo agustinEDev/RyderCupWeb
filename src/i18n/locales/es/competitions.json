@@ -313,6 +313,7 @@
       "closesEnrollment": "Al nombrarlos se cierran las inscripciones: ya no podrá apuntarse nadie más.",
       "teamLabel": "Capitán de {{team}}",
       "choose": "Elige un jugador",
+      "sameForBoth": "Un jugador no puede capitanear los dos equipos: elige a otro para uno de ellos.",
       "cancel": "Cancelar",
       "confirm": "Nombrar",
       "uneven_one": "Hay {{count}} jugador: los equipos no saldrán iguales. Los capitanes quedan nombrados, pero para repartir los equipos hará falta un número par.",

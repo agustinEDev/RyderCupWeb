@@ -313,6 +313,7 @@
       "closesEnrollment": "Naming them closes enrolment: nobody else will be able to join.",
       "teamLabel": "{{team}} captain",
       "choose": "Choose a player",
+      "sameForBoth": "One player cannot captain both teams: pick someone else for one of them.",
       "cancel": "Cancel",
       "confirm": "Name them",
       "uneven_one": "There is {{count}} player: the teams will not come out even. The captains stay named, but assigning the teams will need an even number.",
