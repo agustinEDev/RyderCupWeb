@@ -188,6 +188,9 @@
       "unknownOthers": "It will be deleted for good, with its enrolments, schedule and teams. Who else is enrolled could not be checked.",
       "othersLosePlace_one": "It will be deleted for good, with its schedule and teams, and {{count}} other player will lose their place.",
       "othersLosePlace_other": "It will be deleted for good, with its schedule and teams, and {{count}} other players will lose their place.",
+      "nobodyEnrolled": "It will be deleted for good, with its schedule and teams. Nobody is enrolled.",
+      "playersLosePlace_one": "It will be deleted for good, with its schedule and teams, and {{count}} player will lose their place.",
+      "playersLosePlace_other": "It will be deleted for good, with its schedule and teams, and {{count}} players will lose their place.",
       "confirm": "Delete",
       "keep": "No, keep it"
     },

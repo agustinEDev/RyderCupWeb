@@ -188,6 +188,9 @@
       "unknownOthers": "Se borrará para siempre, con sus inscripciones, su calendario y sus equipos. No se ha podido comprobar quién más está inscrito.",
       "othersLosePlace_one": "Se borrará para siempre, con su calendario y sus equipos, y {{count}} jugador más perderá su plaza.",
       "othersLosePlace_other": "Se borrará para siempre, con su calendario y sus equipos, y {{count}} jugadores más perderán su plaza.",
+      "nobodyEnrolled": "Se borrará para siempre, con su calendario y sus equipos. No hay nadie inscrito.",
+      "playersLosePlace_one": "Se borrará para siempre, con su calendario y sus equipos, y {{count}} jugador perderá su plaza.",
+      "playersLosePlace_other": "Se borrará para siempre, con su calendario y sus equipos, y {{count}} jugadores perderán su plaza.",
       "confirm": "Eliminar",
       "keep": "No, mantenerla"
     },

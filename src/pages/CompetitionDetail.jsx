@@ -550,6 +550,7 @@ const CompetitionDetail = () => {
   // Los que perderían su plaza, sin contar a quien borra: el creador está
   // inscrito desde que la crea, y contarlo inflaría el aviso
   const otrosInscritos = approvedEnrollments.filter((e) => e.userId !== user.id).length;
+  const estoyInscrito = approvedEnrollments.some((e) => e.userId === user.id);
   // Las acciones de la ficha: UNA principal —la que toca ahora— y el resto en
   // un menú. Antes eran hasta siete botones del mismo peso en seis colores y
   // el que de verdad tocaba se perdía entre los demás (FE #705)
@@ -766,9 +767,14 @@ const CompetitionDetail = () => {
           message={
             inscripcionesSinCargar
               ? t('detail.deleteModal.unknownOthers')
-              : otrosInscritos === 0
-                ? t('detail.deleteModal.nobodyElse')
-                : t('detail.deleteModal.othersLosePlace', { count: otrosInscritos })
+              : estoyInscrito
+                ? otrosInscritos === 0
+                  ? t('detail.deleteModal.nobodyElse')
+                  : t('detail.deleteModal.othersLosePlace', { count: otrosInscritos })
+                // Quien borra no está dentro (un admin): «más» no encaja (FE #728)
+                : otrosInscritos === 0
+                  ? t('detail.deleteModal.nobodyEnrolled')
+                  : t('detail.deleteModal.playersLosePlace', { count: otrosInscritos })
           }
           confirmText={t('detail.deleteModal.confirm')}
           cancelText={t('detail.deleteModal.keep')}

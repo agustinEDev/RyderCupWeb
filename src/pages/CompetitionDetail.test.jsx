@@ -919,6 +919,20 @@ describe('CompetitionDetail - borrar con confirmación (FE #667)', () => {
     expect(await screen.findByText('detail.deleteModal.othersLosePlace_2')).toBeInTheDocument();
   });
 
+  it.each([
+    // FE #728: un admin que no está inscrito; «más» solo encaja si quien borra está dentro
+    ['B6b: quien borra no está inscrito, sin «más»', ['jugador-2', 'jugador-3'], 'detail.deleteModal.playersLosePlace_2'],
+    ['B5b: y si no hay nadie inscrito, lo dice así', [], 'detail.deleteModal.nobodyEnrolled'],
+  ])('%s', async (_caso, ids, texto) => {
+    ficha();
+    inscritos(...ids);
+
+    renderPage();
+    fireEvent.click(await botonEliminar());
+
+    expect(await screen.findByText(texto)).toBeInTheDocument();
+  });
+
   it('B7: confirmar borra una sola vez, aunque se pulse dos veces', async () => {
     ficha();
     let terminar;
