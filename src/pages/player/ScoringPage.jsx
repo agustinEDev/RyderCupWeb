@@ -471,6 +471,7 @@ const ScoringPage = () => {
                 markerAssignment={markerAssignment}
                 matchFormat={scoringView?.matchFormat}
                 currentUserId={currentUserId}
+                players={scoringView?.players}
               />
             )}
 
@@ -494,6 +495,7 @@ const ScoringPage = () => {
             {currentHoleData && !aunNoAbre && (
               <HoleInput
                 key={currentHole}
+                matchFormat={scoringView?.matchFormat}
                 holeNumber={currentHole}
                 par={currentHoleData.par}
                 markedPar={holeFor(markerAssignment?.marksUserId)?.par ?? courseHoleData?.par ?? null}

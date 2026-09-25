@@ -17,7 +17,8 @@
     "color": "Tee colour",
     "handicap": "Handicap",
     "format": "Format",
-    "ready": "Ready to Play"
+    "ready": "Ready to Play",
+    "youMarkPair": "You mark"
   },
   "notOpenYet": {
     "title": "Scoring for this match has not opened yet",
@@ -53,7 +54,10 @@
     "halved": "Halved",
     "prevHole": "Previous",
     "nextHole": "Next",
-    "tapToScore": "Add score"
+    "tapToScore": "Add score",
+    "pairBall": "Your ball",
+    "rivalBall": "Rival ball",
+    "rivalCount": "Per the rivals"
   },
   "scorecard": {
     "title": "Scorecard",
