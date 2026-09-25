@@ -27,6 +27,7 @@ vi.mock('react-router', async (importarElDeVerdad) => {
   };
 });
 import InvitationsPage from './InvitationsPage';
+import customToast from '../../utils/toast';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -276,6 +277,35 @@ describe('InvitationsPage', () => {
       await waitFor(() => expect(mockSendInvitationByEmail).toHaveBeenCalled());
       await new Promise((r) => setTimeout(r, 50));
       expect(screen.getByTestId('invitation-email-input')).toHaveValue('luna@test.com');
+    });
+
+    it('V6: una invitación repetida (409) lo dice con su texto (revisión local)', async () => {
+      mockSendInvitation.mockRejectedValue(
+        Object.assign(new Error('An invitation is already pending for x.'), { status: 409 })
+      );
+      renderPage();
+      fireEvent.click(await screen.findByText('creator.sendNew'));
+      fireEvent.click(await screen.findByTestId('invite-friend-u-1'));
+
+      await waitFor(() =>
+        expect(customToast.error).toHaveBeenCalledWith('errors.duplicateInvitation')
+      );
+    });
+
+    it('V7: si falla el refresco silencioso, no se echa a nadie de la pantalla', async () => {
+      mockListCompetitionInvitations
+        .mockReset()
+        .mockResolvedValueOnce({ invitations: [], totalCount: 0 })
+        .mockResolvedValueOnce({ invitations: [], totalCount: 0 })
+        .mockRejectedValue(new Error('Boom'));
+      renderPage();
+      fireEvent.click(await screen.findByText('creator.sendNew'));
+      fireEvent.click(await screen.findByTestId('invite-friend-u-1'));
+
+      await waitFor(() => expect(mockSendInvitation).toHaveBeenCalled());
+      await new Promise((r) => setTimeout(r, 100));
+      expect(screen.getByText('send.title')).toBeInTheDocument();
+      expect(screen.queryByText('LA COMPETICION')).not.toBeInTheDocument();
     });
 
     it('V3: por email, tras enviar se vacía el campo para el siguiente', async () => {

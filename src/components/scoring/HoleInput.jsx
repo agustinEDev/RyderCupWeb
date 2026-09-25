@@ -215,7 +215,7 @@ const HoleInput = ({
           value={ownValue}
           onSelect={handleOwnSelect}
           onClose={() => setOpenPanel(null)}
-          label={t('input.yourScore')}
+          label={etiquetaPropia}
           par={par}
         />
       )}
@@ -224,7 +224,7 @@ const HoleInput = ({
           value={markedValue}
           onSelect={handleMarkedSelect}
           onClose={() => setOpenPanel(null)}
-          label={t('input.markerScore')}
+          label={etiquetaMarcado}
           par={markedPar ?? par}
         />
       )}

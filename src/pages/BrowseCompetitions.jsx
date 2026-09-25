@@ -193,7 +193,8 @@ const BrowseCompetitions = () => {
       console.error('❌ Error requesting enrollment:', error);
 
       // Check if it's a duplicate enrollment error (409 Conflict)
-      if (error.message?.includes('409')) {
+      // Por el estado: el texto del servidor no lleva «409» (revisión local)
+      if (error?.status === 409) {
         setEnrollModalOpen(false);
         customToast.error(t('browse.errors.alreadyEnrolled'));
         // Remove from list since user already has enrollment

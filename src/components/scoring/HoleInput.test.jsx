@@ -326,6 +326,24 @@ describe('HoleInput · el teclado del marcado usa SU par', () => {
       expect(screen.getByText('input.rivalCount')).toBeInTheDocument();
     });
 
+    it('F3b: y el teclado que se abre se titula igual (revisión local)', () => {
+      render(<HoleInput {...defaultProps} matchFormat="FOURSOMES" />);
+
+      fireEvent.click(screen.getByTestId('own-score-button'));
+
+      expect(screen.getAllByText('input.pairBall').length).toBeGreaterThan(1);
+      expect(screen.queryByText('input.yourScore')).not.toBeInTheDocument();
+    });
+
+    it('F3c: y el de la bola rival también', () => {
+      render(<HoleInput {...defaultProps} matchFormat="FOURSOMES" />);
+
+      fireEvent.click(screen.getByTestId('marked-score-button'));
+
+      expect(screen.getAllByText('input.rivalBall').length).toBeGreaterThan(1);
+      expect(screen.queryByText('input.markerScore')).not.toBeInTheDocument();
+    });
+
     it('F5: en fourball, cada uno la suya, como siempre', () => {
       render(<HoleInput {...defaultProps} matchFormat="FOURBALL" />);
 

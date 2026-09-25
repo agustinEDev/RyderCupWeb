@@ -98,6 +98,9 @@ const InvitationsPage = () => {
       setTotalCount(invResult.totalCount);
     } catch (error) {
       console.error('Error loading invitations:', error);
+      // En silencio, lo que ya se veía sigue valiendo: echar de la pantalla con
+      // el modal abierto por un refresco fallido no es silencioso (revisión local)
+      if (silencioso) return;
       customToast.error(error.message || t('errors.failedToLoad'));
       // Marcar y que decida el render, en vez de irse desde aquí: esta carga y
       // la de los permisos van por su cuenta, y salir corriendo la primera se
@@ -194,7 +197,8 @@ const InvitationsPage = () => {
       return true;
     } catch (error) {
       console.error('Error sending invitation:', error);
-      if (error.message?.includes('409')) {
+      // Por el estado: el texto del servidor no lleva «409» (revisión local)
+      if (error?.status === 409) {
         customToast.error(t('errors.duplicateInvitation'));
       } else {
         customToast.error(error.message || t('errors.failedToSend'));
@@ -216,7 +220,8 @@ const InvitationsPage = () => {
       return true;
     } catch (error) {
       console.error('Error sending invitation:', error);
-      if (error.message?.includes('409')) {
+      // Por el estado: el texto del servidor no lleva «409» (revisión local)
+      if (error?.status === 409) {
         customToast.error(t('errors.duplicateInvitation'));
       } else {
         customToast.error(error.message || t('errors.failedToSend'));

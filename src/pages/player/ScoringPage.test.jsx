@@ -916,6 +916,8 @@ describe('ScoringPage · el recuadro rojo cuenta lo que falló (FE #626)', () =>
       const cabecera = screen.getByTestId('marcador-del-partido');
       expect(cabecera).toHaveTextContent('leaderboard.wins');
       expect(cabecera).toHaveTextContent('4&2');
+      // El que gana, no el otro
+      expect(cabecera).toHaveTextContent('Europe');
       expect(cabecera).not.toHaveTextContent('4UP');
       // La vuelta propia, aparte: los hoyos que se jugaron siguen contándose
       expect(cabecera).toHaveTextContent('holesPlayed');

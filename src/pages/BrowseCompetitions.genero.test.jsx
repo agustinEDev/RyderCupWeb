@@ -60,6 +60,7 @@ vi.mock('../composition', () => ({
 }));
 
 const BrowseCompetitions = (await import('./BrowseCompetitions')).default;
+const customToast = (await import('../utils/toast')).default;
 
 const pintar = () =>
   render(
@@ -128,6 +129,24 @@ describe('BrowseCompetitions · el género al pedir plaza', () => {
 
     const boton = await screen.findByText('browse.card.full', { selector: 'button' });
     expect(boton).toBeDisabled();
+    expect(screen.queryByText('browse.card.request-to-join')).not.toBeInTheDocument();
+  });
+
+  it('X6: ya inscrito (409): se cierra, se dice y se quita de la lista (revisión local)', async () => {
+    // El mensaje del servidor no lleva «409»: se decide por el estado
+    faltaGenero = false;
+    mockPedir.mockRejectedValueOnce(
+      Object.assign(new Error('User x is already enrolled in competition y.'), { status: 409 })
+    );
+    pintar();
+
+    fireEvent.click(await screen.findByText('browse.card.request-to-join'));
+    fireEvent.click(screen.getByText('competitions:enrollment.confirm'));
+
+    await waitFor(() =>
+      expect(customToast.error).toHaveBeenCalledWith('browse.errors.alreadyEnrolled')
+    );
+    expect(screen.queryByTestId('apuntarse-error')).not.toBeInTheDocument();
     expect(screen.queryByText('browse.card.request-to-join')).not.toBeInTheDocument();
   });
 });
