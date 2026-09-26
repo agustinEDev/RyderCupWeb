@@ -1,7 +1,8 @@
-import { Fragment, useState } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import GolfFigure from './GolfFigure';
 import CarruselDeTarjetas from './CarruselDeTarjetas';
+import TarjetaVertical from './TarjetaVertical';
 import { useEsMovil } from '../../hooks/useEsMovil';
 import { conLaMiaPrimero, conMiNombrePrimero } from '../../utils/ordenDeLasTarjetas';
 
@@ -197,67 +198,33 @@ const ScorecardTable = ({ holes = [], scores = [], players = [], currentUserId, 
   // FE #739 · en el móvil, una tarjeta por participante con los hoyos de arriba
   // abajo: la horizontal no cabía a 360 px y se desplazaba de lado
   const tarjetaVertical = (row) => {
-    const filaDeSuma = (clave, etiqueta, rango) => (
-      <tr className="bg-gray-50 border-y border-gray-200">
-        <td colSpan={3} className="px-3 py-1.5 text-left text-[11px] font-bold text-gray-600">{etiqueta}</td>
-        <td data-testid={`suma-${clave}`} className="py-1.5 text-center font-bold text-gray-800">
-          {sumRowScores(rango, row) || '-'}
-        </td>
-        <td />
-      </tr>
-    );
-    const cabecera = row.team === 'A'
-      ? 'bg-blue-50 border-b-2 border-blue-500'
-      : row.team === 'B' ? 'bg-red-50 border-b-2 border-red-500' : 'bg-gray-50 border-b border-gray-200';
+    const nombreDelEquipo = row.team === 'A' ? teamAName : row.team === 'B' ? teamBName : null;
     return (
-      <div data-testid={`tarjeta-vertical-${row.id}`} className="rounded-xl border border-gray-200 bg-white overflow-hidden">
-        <div className={`px-3 py-2 ${cabecera}`}>
-          <p className="text-sm font-bold text-gray-900 break-words">{row.label}</p>
-          {(row.team === 'A' ? teamAName : row.team === 'B' ? teamBName : null) && (
-            <p className="text-[11px] text-gray-500">{row.team === 'A' ? teamAName : teamBName}</p>
-          )}
-        </div>
-        <table className="w-full text-xs tabular-nums">
-          <thead>
-            <tr className="border-b border-gray-200 text-[11px] text-gray-500">
-              <th className="py-1.5 font-semibold">{t('scorecard.hole')}</th>
-              <th className="py-1.5 font-semibold">{t('scorecard.par')}</th>
-              <th className="py-1.5 font-semibold">{t('scorecard.si')}</th>
-              <th className="py-1.5 font-semibold">{t('scorecard.strokes')}</th>
-              <th className="py-1.5 font-semibold">{t('scorecard.result')}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {holes.map((h) => {
-              const resultado = resultadoPara(h.holeNumber, row);
-              const mejor = esMejorBola(h.holeNumber, row);
-              return [
-                <tr
-                  key={h.holeNumber}
-                  data-testid={`fila-${row.id}-${h.holeNumber}`}
-                  data-mejor-bola={String(mejor)}
-                  className={`border-b border-gray-100 ${mejor ? 'bg-yellow-50' : ''}`}
-                >
-                  <td className="w-10 py-0.5 text-center font-bold text-gray-700">{h.holeNumber}</td>
-                  <td data-testid="par" className="w-10 py-0.5 text-center text-gray-400">
-                    {parFor(row.playerIds, h.holeNumber, h.par)}
-                  </td>
-                  <td data-testid="hcp" className="w-10 py-0.5 text-center text-gray-400">{h.strokeIndex}</td>
-                  <td className="py-0.5 text-center">{casillaDeGolpes(h, row)}</td>
-                  <td className="w-16 py-0.5 pr-2 text-center">
-                    <span data-testid="resultado" className={`block rounded-md py-0.5 text-[10.5px] font-bold ${resultado.clase}`}>
-                      {resultado.texto}
-                    </span>
-                  </td>
-                </tr>,
-                h.holeNumber === 9 && <Fragment key="ida">{filaDeSuma('ida', t('scorecard.out'), outHoles)}</Fragment>,
-              ];
-            })}
-            {inHoles.length > 0 && filaDeSuma('vuelta', t('scorecard.in'), inHoles)}
-            {filaDeSuma('total', t('scorecard.total'), holes)}
-          </tbody>
-        </table>
-      </div>
+      <TarjetaVertical
+        clave={row.id}
+        testId={`tarjeta-vertical-${row.id}`}
+        equipo={row.team}
+        conResultado
+        cabecera={
+          <>
+            <p className="text-sm font-bold text-gray-900 break-words">{row.label}</p>
+            {nombreDelEquipo && <p className="text-[11px] text-gray-500">{nombreDelEquipo}</p>}
+          </>
+        }
+        hoyos={holes.map((h) => ({
+          holeNumber: h.holeNumber,
+          par: parFor(row.playerIds, h.holeNumber, h.par),
+          strokeIndex: h.strokeIndex,
+          casilla: casillaDeGolpes(h, row),
+          resultado: resultadoPara(h.holeNumber, row),
+          mejorBola: esMejorBola(h.holeNumber, row),
+        }))}
+        sumas={{
+          ida: inHoles.length > 0 ? sumRowScores(outHoles, row) : undefined,
+          vuelta: inHoles.length > 0 ? sumRowScores(inHoles, row) : undefined,
+          total: sumRowScores(holes, row),
+        }}
+      />
     );
   };
 
