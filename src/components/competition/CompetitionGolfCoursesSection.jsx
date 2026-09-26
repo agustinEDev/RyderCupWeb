@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Flag, Plus, Trash2, GripVertical, MapPin, Loader } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import NumeroDeLaSeccion from '../ui/NumeroDeLaSeccion';
+import TituloConNumero from '../ui/TituloConNumero';
 import {
   DndContext,
   closestCenter,
@@ -445,9 +445,7 @@ const CompetitionGolfCoursesSection = ({ competition, canManage, onCamposCambiad
           <h3 className="text-gray-900 font-bold text-base sm:text-lg flex items-center gap-2">
             <Flag className="w-5 h-5 flex-none text-green-600" />
             <span className="whitespace-nowrap">
-              <span>{t('detail.golfCourses.title')}</span>
-              {'\u00a0'}
-              <NumeroDeLaSeccion numero={golfCourses.length} />
+              <TituloConNumero texto={t('detail.golfCourses.title')} numero={golfCourses.length} />
             </span>
           </h3>
           {canAdd && !showAddForm && (

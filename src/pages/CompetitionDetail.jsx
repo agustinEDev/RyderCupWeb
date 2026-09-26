@@ -3,7 +3,7 @@ import { useNavigate, useParams, useLocation, Link } from 'react-router';
 import { motion } from 'framer-motion';
 import { Users, Calendar, CalendarClock, MapPin, Settings, ArrowLeft, Edit, Trash2, Play, CheckCircle, XCircle, AlertCircle, UserPlus, Shield, Mail, BarChart3, Undo2, Crown, Pause, Swords, UserX, ChevronRight } from 'lucide-react';
 import customToast from '../utils/toast';
-import NumeroDeLaSeccion from '../components/ui/NumeroDeLaSeccion';
+import TituloConNumero from '../components/ui/TituloConNumero';
 import AccionesDeLaFicha from '../components/competition/AccionesDeLaFicha';
 import { siguientePasoDeLaCompeticion } from '../utils/siguientePasoDeLaCompeticion';
 import ConfirmModal from '../components/modals/ConfirmModal';
@@ -1263,9 +1263,7 @@ const CompetitionDetail = () => {
                 <h3 className="text-gray-900 font-bold text-base sm:text-lg mb-4 flex items-center gap-2">
                   <Users className="w-5 h-5 flex-none text-green-600" />
                   <span className="min-w-0">
-                    <span>{t('detail.approvedPlayers')}</span>
-                    {'\u00a0'}
-                    <NumeroDeLaSeccion numero={approvedEnrollments.length} />
+                    <TituloConNumero texto={t('detail.approvedPlayers')} numero={approvedEnrollments.length} />
                   </span>
                 </h3>
 
@@ -1411,9 +1409,10 @@ const CompetitionDetail = () => {
                     <h3 className="text-gray-900 font-bold text-base sm:text-lg mb-4 flex items-center gap-2">
                       <AlertCircle className="w-5 h-5 flex-none text-orange-600" />
                       <span className="min-w-0">
-                        <span>{t('detail.pendingRequests')}</span>
-                        {'\u00a0'}
-                        <NumeroDeLaSeccion numero={enrollments.filter(e => e.status === 'REQUESTED').length} />
+                        <TituloConNumero
+                          texto={t('detail.pendingRequests')}
+                          numero={enrollments.filter(e => e.status === 'REQUESTED').length}
+                        />
                       </span>
                     </h3>
 
@@ -1479,9 +1478,10 @@ const CompetitionDetail = () => {
                         <UserX className="h-4 w-4" aria-hidden="true" />
                       </span>
                       <span className="min-w-0 flex-1 font-semibold text-gray-700">
-                        <span>{t('detail.rejectedRequests')}</span>
-                        {'\u00a0'}
-                        <NumeroDeLaSeccion numero={enrollments.filter(e => e.status === 'REJECTED').length} />
+                        <TituloConNumero
+                          texto={t('detail.rejectedRequests')}
+                          numero={enrollments.filter(e => e.status === 'REJECTED').length}
+                        />
                       </span>
                       <ChevronRight className="h-4 w-4 flex-none text-gray-400 transition-transform group-open:rotate-90 motion-reduce:transition-none" aria-hidden="true" />
                     </summary>

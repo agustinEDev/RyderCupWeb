@@ -1317,6 +1317,8 @@ describe('CompetitionDetail · títulos con su número aparte', () => {
     expect(texto.parentElement).toContainElement(numero);
     expect(texto.parentElement.textContent).toBe('detail.approvedPlayers\u00a03');
     expect(numero).toHaveClass('inline-block');
+    // Con la última palabra, en un bloque que no se parte: el número no cae solo
+    expect(texto.parentElement).toHaveClass('whitespace-nowrap');
   });
 
   it('N4: rechazadas, con la misma pastilla', async () => {
