@@ -107,6 +107,7 @@
   },
   "submit": {
     "matchOver": "Partido terminado",
+    "keepPlaying": "Podéis seguir jugando; entregadla cuando acabéis.",
     "title": "Enviar Tarjeta",
     "confirm": "¿Estás seguro de que quieres enviar tu tarjeta? Esta acción no se puede deshacer.",
     "button": "Enviar Tarjeta",

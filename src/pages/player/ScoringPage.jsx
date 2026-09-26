@@ -650,6 +650,8 @@ const ScoringPage = () => {
               pendientes={pendingPlayers.map((p) => p.userName)}
               // Concedido o walkover también lo terminan: ya no se espera a nadie
               completado={scoringView?.matchStatus === 'COMPLETED' || cerradoSinJugar}
+              // Decidido no es acabado: se puede seguir jugando hasta el 18
+              sePuedeSeguir={Boolean(scoringView?.isDecided) && holesToSubmit < totalHoles}
             />
           </>
         )}

@@ -107,6 +107,7 @@
   },
   "submit": {
     "matchOver": "Match over",
+    "keepPlaying": "You can keep playing; hand it in when you finish.",
     "title": "Submit Scorecard",
     "confirm": "Are you sure you want to submit your scorecard? This action cannot be undone.",
     "button": "Submit Scorecard",

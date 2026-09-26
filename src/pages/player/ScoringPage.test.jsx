@@ -1228,4 +1228,21 @@ describe('ScoringPage · la barra de entregar la tarjeta (FE #745)', () => {
 
     expect(screen.getByTestId('hueco-de-la-barra')).toBeInTheDocument();
   });
+
+  it('P7: decidido en el 11, la barra dice que se puede seguir jugando', () => {
+    acabado();
+    mockUseScoring.holesToSubmit = 11;
+    render(<ScoringPage />);
+
+    expect(within(screen.getByTestId('barra-de-entrega')).getByText('submit.keepPlaying')).toBeInTheDocument();
+    mockUseScoring.holesToSubmit = 18;
+  });
+
+  it('P8: con los 18 jugados, ya no', () => {
+    acabado();
+    mockUseScoring.holesToSubmit = 18;
+    render(<ScoringPage />);
+
+    expect(within(screen.getByTestId('barra-de-entrega')).queryByText('submit.keepPlaying')).toBeNull();
+  });
 });

@@ -15,6 +15,9 @@ import { useTranslation } from 'react-i18next';
  * @param {boolean} [esFoursomes] - La tarjeta es de la pareja
  * @param {string[]} [pendientes] - Quién falta por entregar
  * @param {boolean} [completado] - Ya no se espera a nadie
+ * @param {boolean} [sePuedeSeguir] - Decidido con hoyos por jugar: se avisa de que
+ *   se puede seguir, porque quien entrega a mitad deja fuera de su tarjeta los
+ *   hoyos que anote después
  */
 const BarraDeEntrega = ({
   estado,
@@ -24,6 +27,7 @@ const BarraDeEntrega = ({
   esFoursomes = false,
   pendientes = [],
   completado = false,
+  sePuedeSeguir = false,
 }) => {
   const { t } = useTranslation('scoring');
 
@@ -72,6 +76,9 @@ const BarraDeEntrega = ({
               </button>
             ) : (
               <p className="text-center text-sm text-gray-500">{t('submit.notReady')}</p>
+            )}
+            {sePuedeSeguir && (
+              <p className="text-center text-xs text-gray-500">{t('submit.keepPlaying')}</p>
             )}
           </>
         )}
