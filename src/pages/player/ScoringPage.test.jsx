@@ -314,6 +314,25 @@ describe('ScoringPage', () => {
       expect(screen.getByTestId('early-end-modal')).toBeInTheDocument();
     });
 
+    // FE #740 · a quien mira un partido que no juega no le toca entregar nada:
+    // Nacho abría el de Óscar contra Agustín y le salía «Continuar para Enviar»
+    it('E2: a un espectador no le sale, aunque el partido esté decidido', () => {
+      const jugadores = mockUseScoring.scoringView.players;
+      mockUseScoring.scoringView.players = [
+        { userId: 'u3', userName: 'Óscar', team: 'A' },
+        { userId: 'u4', userName: 'Agustín', team: 'B' },
+      ];
+      mockUseScoring.hasSubmitted = false;
+      mockUseScoring.scoringView.isDecided = true;
+
+      try {
+        render(<ScoringPage />);
+        expect(screen.queryByTestId('early-end-modal')).toBeNull();
+      } finally {
+        mockUseScoring.scoringView.players = jugadores;
+      }
+    });
+
     it('should not show the early end modal once the player has already submitted', () => {
       mockUseScoring.hasSubmitted = true;
       mockUseScoring.scoringView.isDecided = true;

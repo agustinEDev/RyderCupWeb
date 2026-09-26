@@ -148,8 +148,16 @@ const ScoringPage = () => {
     scoringView?.matchStatus === 'CONCEDED' || scoringView?.matchStatus === 'WALKOVER';
   const claveDelCierre = scoringView?.matchStatus === 'WALKOVER' ? 'walkover' : 'conceded';
   const cierre = cerradoSinJugar && resultadoDecidido ? { team: resultadoDecidido.team } : null;
+  // Solo quien juega tiene una tarjeta que entregar: al que mira un partido
+  // ajeno el aviso le pedía «Continuar para Enviar» (FE #740)
+  const juegaElPartido = !!scoringView?.players?.some((p) => p.userId === user?.id);
   const showEarlyEnd =
-    !!scoringView?.isDecided && !cerradoSinJugar && !earlyEndDismissed && !matchSummary && !hasSubmitted;
+    !!scoringView?.isDecided &&
+    juegaElPartido &&
+    !cerradoSinJugar &&
+    !earlyEndDismissed &&
+    !matchSummary &&
+    !hasSubmitted;
 
   const currentUserId = user?.id;
 
