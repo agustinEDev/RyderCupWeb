@@ -394,6 +394,46 @@ describe('useScoring', () => {
       expect(result.current.canSubmitScorecard).toBe(false);
     });
 
+    // FE #745 · cuándo se ha acabado el partido, para avisar de entregar la
+    // tarjeta: decidido, o jugados los 18 aunque no se decidiera antes
+    describe('partidoAcabado (#745)', () => {
+      it('A1: decidido antes del 18, acabado', async () => {
+        getScoringViewUseCase.execute.mockResolvedValue({
+          ...mockScoringView,
+          isDecided: true,
+          decidedResult: { winner: 'A', score: '9&7' },
+          scores: scoredHoles(11),
+        });
+        const { result } = renderHook(() => useScoring('m-1', 'u1'));
+        await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+        expect(result.current.partidoAcabado).toBe(true);
+      });
+
+      it('A2: los 18 jugados, acabado aunque quede alguno por validar', async () => {
+        getScoringViewUseCase.execute.mockResolvedValue({
+          ...mockScoringView,
+          scores: [...scoredHoles(17), ...scoredHoles(1, { validated: false, from: 18 })],
+        });
+        const { result } = renderHook(() => useScoring('m-1', 'u1'));
+        await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+        expect(result.current.partidoAcabado).toBe(true);
+        expect(result.current.canSubmitScorecard).toBe(false);
+      });
+
+      it('A3: a medias y sin decidir, no', async () => {
+        getScoringViewUseCase.execute.mockResolvedValue({
+          ...mockScoringView,
+          scores: scoredHoles(12),
+        });
+        const { result } = renderHook(() => useScoring('m-1', 'u1'));
+        await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+        expect(result.current.partidoAcabado).toBe(false);
+      });
+    });
+
     it('does not offer to submit twice', async () => {
       getScoringViewUseCase.execute.mockResolvedValue({
         ...mockScoringView,
