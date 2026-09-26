@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from 'react';
+import { escucharConsulta } from '../utils/escucharConsulta';
 
 // El `sm` de Tailwind: por debajo, pantalla de móvil
 const CONSULTA = '(max-width: 639px)';
@@ -7,9 +8,7 @@ const hayMatchMedia = () => typeof window.matchMedia === 'function';
 
 const suscribir = (avisar) => {
   if (!hayMatchMedia()) return () => {};
-  const consulta = window.matchMedia(CONSULTA);
-  consulta.addEventListener('change', avisar);
-  return () => consulta.removeEventListener('change', avisar);
+  return escucharConsulta(window.matchMedia(CONSULTA), avisar);
 };
 
 const leer = () => hayMatchMedia() && window.matchMedia(CONSULTA).matches;

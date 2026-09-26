@@ -726,6 +726,23 @@ describe('EnvelopePage · el sobre del capitán (FE #655)', () => {
     expect(screen.queryByTestId('retirar-permiso')).not.toBeInTheDocument();
   });
 
+  it('P7c: con el equipo impar tampoco se ofrece abrirlos a mano, aunque el servidor lo permita (CodeRabbit)', async () => {
+    mockVer.mockResolvedValue(
+      enParejas({
+        teamsFitFormat: false,
+        canReveal: true,
+        revealScheduledAt: null,
+        teamASubmitted: true,
+        mine: { team: 'A', entries: [['bea', 'ana']], submitted: true, automatic: false },
+      })
+    );
+    pintar();
+
+    await screen.findByTestId('equipo-impar');
+    expect(screen.queryByRole('button', { name: 'envelope.reveal' })).not.toBeInTheDocument();
+    expect(screen.queryByTestId('sin-plazo')).not.toBeInTheDocument();
+  });
+
   it('P8: una pareja a medias dice qué falta, en vez de apagar el botón sin más', async () => {
     mockVer.mockResolvedValue(enParejas());
     pintar();

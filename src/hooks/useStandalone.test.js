@@ -150,6 +150,26 @@ describe('useStandalone', () => {
     expect(media.listenerCount()).toBe(0);
   });
 
+  it('en un Safari anterior al 14, sin addEventListener, escucha con addListener (CodeRabbit)', () => {
+    const listeners = new Set();
+    const query = {
+      matches: false,
+      addListener: (handler) => listeners.add(handler),
+      removeListener: (handler) => listeners.delete(handler),
+    };
+    window.matchMedia = vi.fn(() => query);
+    const { result, unmount } = renderHook(() => useStandalone());
+
+    act(() => {
+      query.matches = true;
+      listeners.forEach((handler) => handler({ matches: true }));
+    });
+
+    expect(result.current).toBe(true);
+    unmount();
+    expect(listeners.size).toBe(0);
+  });
+
   it('survives an environment without matchMedia', () => {
     window.matchMedia = undefined;
 

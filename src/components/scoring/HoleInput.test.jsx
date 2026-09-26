@@ -428,4 +428,21 @@ describe('HoleInput · el teclado del marcado usa SU par', () => {
       expect(suyo).toBe(screen.getByTestId('marked-score-button'));
     });
   });
+
+  // CodeRabbit en la #747 · con los dos huecos vacíos, los dos botones se
+  // anunciaban «Anotar»: un lector de pantalla no sabía cuál era el tuyo
+  describe('cada hueco se llama como su etiqueta (CodeRabbit, #747)', () => {
+    const defaultProps = { holeNumber: 5, par: 4, strokeIndex: 7, onScoreChange: vi.fn() };
+
+    it('C1: el tuyo y el del marcado se distinguen por su nombre', () => {
+      render(<HoleInput {...defaultProps} />);
+
+      expect(screen.getByRole('button', { name: 'input.yourScore' })).toBe(
+        screen.getByTestId('own-score-button')
+      );
+      expect(screen.getByRole('button', { name: 'input.markerScore' })).toBe(
+        screen.getByTestId('marked-score-button')
+      );
+    });
+  });
 });

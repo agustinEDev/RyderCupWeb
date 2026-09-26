@@ -49,6 +49,26 @@ describe('useEsMovil', () => {
     expect(result.current).toBe(true);
   });
 
+  it('M5: en un Safari anterior al 14, sin addEventListener, sigue al ancho con addListener (CodeRabbit)', () => {
+    const oyentes = new Set();
+    const consulta = {
+      matches: false,
+      addListener: (f) => oyentes.add(f),
+      removeListener: (f) => oyentes.delete(f),
+    };
+    window.matchMedia = vi.fn(() => consulta);
+    const { result, unmount } = renderHook(() => useEsMovil());
+
+    act(() => {
+      consulta.matches = true;
+      oyentes.forEach((f) => f());
+    });
+
+    expect(result.current).toBe(true);
+    unmount();
+    expect(oyentes.size).toBe(0);
+  });
+
   it('M4: sin matchMedia, se queda en la vista de siempre', () => {
     window.matchMedia = undefined;
     expect(renderHook(() => useEsMovil()).result.current).toBe(false);

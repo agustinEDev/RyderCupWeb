@@ -555,7 +555,7 @@ const EnvelopePage = () => {
             Mientras reordena no se ofrece aunque el servidor lo permita: el
             sobre que hay guardado es el ANTERIOR, y un toque ahí lo abriría
             tirando por la borda lo que venía a cambiar */}
-        {!fallo && !reordenando && puedeAbrir && faltaAlgunSobre && !vista?.revealScheduledAt && (
+        {!fallo && !reordenando && !equipoImpar && puedeAbrir && faltaAlgunSobre && !vista?.revealScheduledAt && (
           // Esta sesión no tiene hora a la que abrirse sola —su campo no tiene
           // zona horaria—, así que quien la abra decide también el sobre que
           // falta. Sin decirlo, el botón parece el de siempre
@@ -563,7 +563,9 @@ const EnvelopePage = () => {
             {t('envelope.noDeadline')}
           </p>
         )}
-        {!fallo && !reordenando && puedeAbrir && (
+        {/* Con el equipo impar la sesión está bloqueada: abrirlos a mano tampoco
+            lleva a nada, aunque el servidor diga que se puede (CodeRabbit, #747) */}
+        {!fallo && !reordenando && !equipoImpar && puedeAbrir && (
           <button
             type="button"
             data-testid="abrir-sobres"

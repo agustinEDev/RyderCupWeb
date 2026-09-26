@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { escucharConsulta } from '../utils/escucharConsulta';
 
 /**
  * Detecta si la aplicacion corre instalada (standalone) en lugar de en una
@@ -47,8 +48,8 @@ export function useStandalone() {
     const query = window.matchMedia('(display-mode: standalone)');
     const handler = () => setIsStandalone(detectStandalone());
 
-    query.addEventListener('change', handler);
-    return () => query.removeEventListener('change', handler);
+    // Con el respaldo de Safari anterior al 14, que no tiene addEventListener
+    return escucharConsulta(query, handler);
   }, []);
 
   return isStandalone;

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import ValidationIcon from './ValidationIcon';
 import ScoreInputPanel from './ScoreInputPanel';
@@ -31,6 +31,11 @@ const HoleInput = ({
   matchFormat,
 }) => {
   const { t } = useTranslation('scoring');
+  // Cada etiqueta, atada a su botón: con los dos huecos vacíos los dos se
+  // anunciaban «Anotar» y un lector de pantalla no sabía cuál era el tuyo
+  // (CodeRabbit en la #747)
+  const idPropio = useId();
+  const idMarcado = useId();
   // En foursomes hay una bola por pareja (#710): «Tu anotación» y «Anotación
   // marcador» hablaban como si cada uno jugara la suya
   const enParejas = matchFormat === 'FOURSOMES';
@@ -123,14 +128,14 @@ const HoleInput = ({
         // la cabecera del marcado lleva su marca y es más alta que la tuya, y con
         // una columna por jugador su hueco quedaba más abajo. Así comparten fila
         <div data-testid="huecos-del-hoyo" className="grid grid-cols-2 gap-x-4 gap-y-1 items-end">
-          <label className="text-xs font-medium text-gray-500">{etiquetaPropia}</label>
+          <label htmlFor={idPropio} className="text-xs font-medium text-gray-500">{etiquetaPropia}</label>
           {/* La marca del jugador al que anotas va aquí y no en la cabecera:
               la de arriba es la de TU resultado, y son dos acuerdos distintos.
               Sin esta, un anotador veía su tick verde mientras la tira de
               hoyos se ponía roja por el otro, sin forma de saber por quién.
               La tarjeta ya no la lleva, así que este es el único sitio. */}
           <div className="flex items-center justify-between gap-2">
-            <label className="text-xs font-medium text-gray-500">{etiquetaMarcado}</label>
+            <label htmlFor={idMarcado} className="text-xs font-medium text-gray-500">{etiquetaMarcado}</label>
             {markedValidationStatus && (
               <span data-testid="marked-validation">
                 <ValidationIcon status={markedValidationStatus} />
@@ -141,6 +146,7 @@ const HoleInput = ({
           {/* Own score */}
           {!isOwnScoreLocked ? (
             <button
+              id={idPropio}
               data-testid="own-score-button"
               onClick={() => setOpenPanel('own')}
               className={`w-full h-12 flex items-center justify-center rounded-xl transition-colors ${
@@ -166,6 +172,7 @@ const HoleInput = ({
           {/* Marker score */}
           {!isMarkerScoreLocked ? (
             <button
+              id={idMarcado}
               data-testid="marked-score-button"
               onClick={() => setOpenPanel('marked')}
               className={`w-full h-12 flex items-center justify-center rounded-xl transition-colors ${
