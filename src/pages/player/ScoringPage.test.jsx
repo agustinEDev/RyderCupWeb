@@ -317,11 +317,8 @@ describe('ScoringPage', () => {
     // FE #740 · a quien mira un partido que no juega no le toca entregar nada:
     // Nacho abría el de Óscar contra Agustín y le salía «Continuar para Enviar»
     it('E2: a un espectador no le sale, aunque el partido esté decidido', () => {
-      const jugadores = mockUseScoring.scoringView.players;
-      mockUseScoring.scoringView.players = [
-        { userId: 'u3', userName: 'Óscar', team: 'A' },
-        { userId: 'u4', userName: 'Agustín', team: 'B' },
-      ];
+      // Quién juega lo decide `useScoring` (`isMatchPlayer`): no se repite aquí
+      mockUseScoring.isMatchPlayer = false;
       mockUseScoring.hasSubmitted = false;
       mockUseScoring.scoringView.isDecided = true;
 
@@ -329,7 +326,7 @@ describe('ScoringPage', () => {
         render(<ScoringPage />);
         expect(screen.queryByTestId('early-end-modal')).toBeNull();
       } finally {
-        mockUseScoring.scoringView.players = jugadores;
+        mockUseScoring.isMatchPlayer = true;
       }
     });
 

@@ -52,6 +52,7 @@ const ScoringPage = () => {
     pendingQueueSize,
     avisoDelVaciado,
     pintadoDeMemoria,
+    isMatchPlayer,
     canScore,
     hasSubmitted,
     isOwnScoreLocked,
@@ -150,10 +151,9 @@ const ScoringPage = () => {
   const cierre = cerradoSinJugar && resultadoDecidido ? { team: resultadoDecidido.team } : null;
   // Solo quien juega tiene una tarjeta que entregar: al que mira un partido
   // ajeno el aviso le pedía «Continuar para Enviar» (FE #740)
-  const juegaElPartido = !!scoringView?.players?.some((p) => p.userId === user?.id);
   const showEarlyEnd =
     !!scoringView?.isDecided &&
-    juegaElPartido &&
+    isMatchPlayer &&
     !cerradoSinJugar &&
     !earlyEndDismissed &&
     !matchSummary &&
