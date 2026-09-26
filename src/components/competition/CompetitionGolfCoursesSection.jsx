@@ -438,15 +438,14 @@ const CompetitionGolfCoursesSection = ({ competition, canManage, onCamposCambiad
   return (
     <div className="p-4">
       <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
-        {/* El título no se parte: a 360 px, con el botón al lado, se estrujaba en
-            tres líneas (CodeRabbit en la #749). En el móvil el botón va debajo,
-            de lado a lado; desde tablet, al lado del título */}
+        {/* A 360 px, con el botón al lado, el título se estrujaba en tres líneas
+            (CodeRabbit en la #749). En el móvil el título ocupa la fila, con su
+            número al borde derecho, y el botón va debajo, de lado a lado; desde
+            tablet, al lado del título */}
         <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-          <h3 className="text-gray-900 font-bold text-base sm:text-lg flex items-center gap-2">
+          <h3 className="w-full sm:w-auto sm:flex-1 text-gray-900 font-bold text-base sm:text-lg flex items-center gap-2">
             <Flag className="w-5 h-5 flex-none text-green-600" />
-            <span className="whitespace-nowrap">
-              <TituloConNumero texto={t('detail.golfCourses.title')} numero={golfCourses.length} />
-            </span>
+            <TituloConNumero texto={t('detail.golfCourses.title')} numero={golfCourses.length} />
           </h3>
           {canAdd && !showAddForm && (
             <button

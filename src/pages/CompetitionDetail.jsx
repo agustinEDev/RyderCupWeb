@@ -1262,9 +1262,7 @@ const CompetitionDetail = () => {
               <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
                 <h3 className="text-gray-900 font-bold text-base sm:text-lg mb-4 flex items-center gap-2">
                   <Users className="w-5 h-5 flex-none text-green-600" />
-                  <span className="min-w-0">
-                    <TituloConNumero texto={t('detail.approvedPlayers')} numero={approvedEnrollments.length} />
-                  </span>
+                  <TituloConNumero texto={t('detail.approvedPlayers')} numero={approvedEnrollments.length} />
                 </h3>
 
                 {approvedEnrollments.length === 0 ? (
@@ -1408,12 +1406,10 @@ const CompetitionDetail = () => {
                   <div className="bg-white border border-orange-200 rounded-xl p-6 shadow-sm">
                     <h3 className="text-gray-900 font-bold text-base sm:text-lg mb-4 flex items-center gap-2">
                       <AlertCircle className="w-5 h-5 flex-none text-orange-600" />
-                      <span className="min-w-0">
-                        <TituloConNumero
-                          texto={t('detail.pendingRequests')}
-                          numero={enrollments.filter(e => e.status === 'REQUESTED').length}
-                        />
-                      </span>
+                      <TituloConNumero
+                        texto={t('detail.pendingRequests')}
+                        numero={enrollments.filter(e => e.status === 'REQUESTED').length}
+                      />
                     </h3>
 
                     <div className="space-y-3">
@@ -1477,12 +1473,11 @@ const CompetitionDetail = () => {
                       <span className="grid h-8 w-8 flex-none place-items-center rounded-lg bg-gray-100 text-gray-500">
                         <UserX className="h-4 w-4" aria-hidden="true" />
                       </span>
-                      <span className="min-w-0 flex-1 font-semibold text-gray-700">
-                        <TituloConNumero
-                          texto={t('detail.rejectedRequests')}
-                          numero={enrollments.filter(e => e.status === 'REJECTED').length}
-                        />
-                      </span>
+                      <TituloConNumero
+                        texto={t('detail.rejectedRequests')}
+                        numero={enrollments.filter(e => e.status === 'REJECTED').length}
+                        claseDelTexto="font-semibold text-gray-700"
+                      />
                       <ChevronRight className="h-4 w-4 flex-none text-gray-400 transition-transform group-open:rotate-90 motion-reduce:transition-none" aria-hidden="true" />
                     </summary>
                     <div className="space-y-2 border-t border-gray-100 px-4 pb-4 pt-3">

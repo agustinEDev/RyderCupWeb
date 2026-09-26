@@ -104,9 +104,9 @@ describe('CompetitionGolfCoursesSection · poner el campo después de invitar', 
     render(<CompetitionGolfCoursesSection competition={competicion('ACTIVE')} canManage={true} />);
 
     const texto = await screen.findByText('detail.golfCourses.title');
-    // El título y su número, juntos y sin partir
-    expect(texto.parentElement).toHaveClass('whitespace-nowrap');
-    expect(texto.parentElement).toContainElement(screen.getByTestId('numero-de-la-seccion'));
+    // El título ocupa la fila en el móvil y su número va al borde derecho
+    expect(texto.closest('h3')).toHaveClass('w-full');
+    expect(texto).toHaveClass('flex-1');
     expect(texto.closest('h3').parentElement).toHaveClass('flex-wrap');
     // En el móvil, de lado a lado y con el texto centrado (Agustín, ronda 2):
     // alineado a la derecha no quedaba bien. Desde tablet, a su tamaño
