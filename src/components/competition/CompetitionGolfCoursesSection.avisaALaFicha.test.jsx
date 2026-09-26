@@ -111,7 +111,7 @@ describe('CompetitionGolfCoursesSection · avisa a la ficha (FE #715)', () => {
     const aviso = vi.fn();
     pintar(aviso);
 
-    fireEvent.click((await screen.findAllByTitle('Remove golf course'))[0]);
+    fireEvent.click((await screen.findAllByTitle('detail.golfCourses.remove'))[0]);
     // Se confirma en el modal de la app, no en el diálogo nativo (FE #730)
     fireEvent.click(await screen.findByTestId('confirm-modal-confirm'));
 
@@ -123,7 +123,7 @@ describe('CompetitionGolfCoursesSection · avisa a la ficha (FE #715)', () => {
     const nativo = vi.spyOn(window, 'confirm');
     pintar(vi.fn());
 
-    fireEvent.click((await screen.findAllByTitle('Remove golf course'))[0]);
+    fireEvent.click((await screen.findAllByTitle('detail.golfCourses.remove'))[0]);
     expect(await screen.findByText('detail.golfCourses.confirmRemove')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /cancel/i }));
 

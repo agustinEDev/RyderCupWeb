@@ -308,7 +308,9 @@
         "body": "La anotación no se abrirá sola: tiene que arrancar el partido el organizador de la competición, y necesita cobertura. Si en el campo no hay señal, mejor que lo haga antes de salir."
       },
       "courseAlreadyAdded": "Ese campo ya está en la competición",
-      "par": "Par {{count}}"
+      "par": "Par {{count}}",
+      "remove": "Quitar {{name}} de la competición",
+      "unnamed": "Campo sin nombre"
     },
     "visibilityPrivate": "Solo invitados",
     "visibilityPublic": "Pública",

@@ -113,14 +113,15 @@ const SortableGolfCourseItem = ({ course, onRemove, canEdit, i18n, t, paises }) 
                 </div>
               )}
               <h4 className="font-bold text-gray-900 leading-tight line-clamp-2">
-                {course.name || `Golf Course`}
+                {course.name || t('detail.golfCourses.unnamed')}
               </h4>
             </div>
             {canEdit && (
               <button
                 onClick={() => onRemove(course.id)}
                 className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors shrink-0"
-                title="Remove golf course"
+                aria-label={t('detail.golfCourses.remove', { name: course.name || t('detail.golfCourses.unnamed') })}
+                title={t('detail.golfCourses.remove', { name: course.name || t('detail.golfCourses.unnamed') })}
               >
                 <Trash2 className="w-4 h-4" />
               </button>
@@ -188,7 +189,7 @@ const SortableGolfCourseItem = ({ course, onRemove, canEdit, i18n, t, paises }) 
         {/* Course Info */}
         <div className="flex-1 min-w-0">
           <h4 className="font-bold text-gray-900 truncate mb-1">
-            {course.name || `Golf Course`}
+            {course.name || t('detail.golfCourses.unnamed')}
           </h4>
           {course.country_code && (
             <p className="text-sm text-gray-500 truncate">
@@ -228,7 +229,8 @@ const SortableGolfCourseItem = ({ course, onRemove, canEdit, i18n, t, paises }) 
           <button
             onClick={() => onRemove(course.id)}
             className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors shrink-0"
-            title="Remove golf course"
+            aria-label={t('detail.golfCourses.remove', { name: course.name || t('detail.golfCourses.unnamed') })}
+            title={t('detail.golfCourses.remove', { name: course.name || t('detail.golfCourses.unnamed') })}
           >
             <Trash2 className="w-5 h-5" />
           </button>

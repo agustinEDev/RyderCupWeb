@@ -308,7 +308,9 @@
         "body": "Scoring will not open by itself: the competition's organiser has to start the match, and they need a connection. If the course has no signal, better done before setting off."
       },
       "courseAlreadyAdded": "That course is already in the competition",
-      "par": "Par {{count}}"
+      "par": "Par {{count}}",
+      "remove": "Remove {{name}} from the competition",
+      "unnamed": "Unnamed course"
     },
     "visibilityPrivate": "Invited only",
     "visibilityPublic": "Public",
