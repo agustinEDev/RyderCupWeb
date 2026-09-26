@@ -9,26 +9,31 @@
  * - ACCEPTED: Invitee accepted the invitation
  * - DECLINED: Invitee declined the invitation
  * - EXPIRED: Invitation expired (7-day TTL)
+ * - NO_ROOM: Enrolment closed while it was pending (RyderCupWeb#710)
  *
  * Transitions:
- * - PENDING -> ACCEPTED | DECLINED | EXPIRED
- * - ACCEPTED, DECLINED, EXPIRED -> (terminal states)
+ * - PENDING -> ACCEPTED | DECLINED | EXPIRED | NO_ROOM
+ * - ACCEPTED, DECLINED, EXPIRED, NO_ROOM -> (terminal states)
  */
 class InvitationStatus {
   static PENDING = 'PENDING';
   static ACCEPTED = 'ACCEPTED';
   static DECLINED = 'DECLINED';
   static EXPIRED = 'EXPIRED';
+  // Al cerrar la inscripción, las pendientes se quedan sin plaza (#710)
+  static NO_ROOM = 'NO_ROOM';
 
   static VALID_TRANSITIONS = {
     [InvitationStatus.PENDING]: [
       InvitationStatus.ACCEPTED,
       InvitationStatus.DECLINED,
       InvitationStatus.EXPIRED,
+      InvitationStatus.NO_ROOM,
     ],
     [InvitationStatus.ACCEPTED]: [],
     [InvitationStatus.DECLINED]: [],
     [InvitationStatus.EXPIRED]: [],
+    [InvitationStatus.NO_ROOM]: [],
   };
 
   #value;
@@ -73,6 +78,7 @@ class InvitationStatus {
       InvitationStatus.ACCEPTED,
       InvitationStatus.DECLINED,
       InvitationStatus.EXPIRED,
+      InvitationStatus.NO_ROOM,
     ];
   }
 
@@ -114,7 +120,8 @@ class InvitationStatus {
     return (
       this.#value === InvitationStatus.ACCEPTED ||
       this.#value === InvitationStatus.DECLINED ||
-      this.#value === InvitationStatus.EXPIRED
+      this.#value === InvitationStatus.EXPIRED ||
+      this.#value === InvitationStatus.NO_ROOM
     );
   }
 

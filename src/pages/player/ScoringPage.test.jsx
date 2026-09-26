@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, within } from '@testing-library/react';
 
 // Mock dependencies
 vi.mock('react-router', () => ({
@@ -63,6 +63,7 @@ const mockUseScoring = {
   totalHoles: 18,
   holesToSubmit: 18,
   canSubmitScorecard: false,
+  partidoAcabado: false,
   setCurrentHole: vi.fn(),
   submitScore: vi.fn(),
   submitScorecard: vi.fn(),
@@ -127,8 +128,8 @@ vi.mock('../../components/scoring/SessionBlockedModal', () => ({
   default: ({ isOpen }) => isOpen ? <div data-testid="session-blocked-modal">SessionBlocked</div> : null,
 }));
 vi.mock('../../components/scoring/EarlyEndModal', () => ({
-  default: ({ isOpen, onConfirm }) => isOpen ? (
-    <div data-testid="early-end-modal">
+  default: ({ isOpen, onConfirm, listaParaEnviar }) => isOpen ? (
+    <div data-testid="early-end-modal" data-lista={String(listaParaEnviar)}>
       EarlyEnd
       <button data-testid="early-end-confirm" onClick={onConfirm}>continue</button>
     </div>
@@ -314,6 +315,22 @@ describe('ScoringPage', () => {
       expect(screen.getByTestId('early-end-modal')).toBeInTheDocument();
     });
 
+    // FE #740 · a quien mira un partido que no juega no le toca entregar nada:
+    // Nacho abría el de Óscar contra Agustín y le salía «Continuar para Enviar»
+    it('E2: a un espectador no le sale, aunque el partido esté decidido', () => {
+      // Quién juega lo decide `useScoring` (`isMatchPlayer`): no se repite aquí
+      mockUseScoring.isMatchPlayer = false;
+      mockUseScoring.hasSubmitted = false;
+      mockUseScoring.scoringView.isDecided = true;
+
+      try {
+        render(<ScoringPage />);
+        expect(screen.queryByTestId('early-end-modal')).toBeNull();
+      } finally {
+        mockUseScoring.isMatchPlayer = true;
+      }
+    });
+
     it('should not show the early end modal once the player has already submitted', () => {
       mockUseScoring.hasSubmitted = true;
       mockUseScoring.scoringView.isDecided = true;
@@ -333,6 +350,42 @@ describe('ScoringPage', () => {
       ];
       mockUseScoring.scoringView.scorecardSubmittedBy = [];
       mockUseScoring.scoringView.matchStatus = 'IN_PROGRESS';
+      mockUseScoring.scoringView.matchFormat = 'SINGLES';
+    });
+
+    // Foursomes: una tarjeta por pareja (RyderCupAM#377). El servidor ya manda
+    // la lista con la regla aplicada: si uno de la pareja entregó, salen los dos
+    const enFoursomes = (entregadas) => {
+      mockUseScoring.hasSubmitted = true;
+      mockUseScoring.scoringView.matchFormat = 'FOURSOMES';
+      mockUseScoring.scoringView.players = [
+        { userId: 'u1', userName: 'Player A', team: 'A' },
+        { userId: 'u2', userName: 'Player B', team: 'A' },
+        { userId: 'u3', userName: 'Player C', team: 'B' },
+        { userId: 'u4', userName: 'Player D', team: 'B' },
+      ];
+      mockUseScoring.scoringView.scorecardSubmittedBy = entregadas;
+    };
+
+    it('F1: en foursomes dice que la tarjeta de la pareja está entregada', () => {
+      enFoursomes(['u1', 'u2']);
+
+      render(<ScoringPage />);
+      fireEvent.click(screen.getByTestId('tab-scorecard'));
+
+      // «Tarjeta ya enviada» sería falso para el compañero que no la envió
+      expect(screen.getByText('submit.pairSubmitted')).toBeInTheDocument();
+      expect(screen.queryByText('submit.alreadySubmitted')).toBeNull();
+    });
+
+    it('F2: y espera a la otra pareja, no a «2 jugadores»', () => {
+      enFoursomes(['u1', 'u2']);
+
+      render(<ScoringPage />);
+      fireEvent.click(screen.getByTestId('tab-scorecard'));
+
+      expect(screen.getByText(/submit\.waitingForPair/)).toHaveTextContent('Player C / Player D');
+      expect(screen.queryByText(/submit\.waitingForPlayers/)).toBeNull();
     });
 
     it('should show the names of players still pending submission', () => {
@@ -398,6 +451,7 @@ describe('ScoringPage', () => {
       mockUseScoring.hasSubmitted = false;
       mockUseScoring.validatedHoles = 0;
       mockUseScoring.holesToSubmit = 18;
+      mockUseScoring.partidoAcabado = false;
     });
 
     it('takes "continue to submit" to the tab where the submit button lives', () => {
@@ -413,8 +467,20 @@ describe('ScoringPage', () => {
       expect(screen.getByText('submit.button')).toBeInTheDocument();
     });
 
+    it('R3: le dice al aviso si la tarjeta se puede enviar ya', () => {
+      mockUseScoring.scoringView.isDecided = true;
+      mockUseScoring.canSubmitScorecard = false;
+      const { rerender } = render(<ScoringPage />);
+      expect(screen.getByTestId('early-end-modal').dataset.lista).toBe('false');
+
+      mockUseScoring.canSubmitScorecard = true;
+      rerender(<ScoringPage />);
+      expect(screen.getByTestId('early-end-modal').dataset.lista).toBe('true');
+    });
+
     it('says why the card is not ready instead of showing nothing', () => {
       mockUseScoring.scoringView.isDecided = true;
+      mockUseScoring.partidoAcabado = true;
       mockUseScoring.canSubmitScorecard = false;
 
       render(<ScoringPage />);
@@ -858,5 +924,336 @@ describe('ScoringPage · el recuadro rojo cuenta lo que falló (FE #626)', () =>
     render(<ScoringPage />);
 
     expect(screen.getByText('errors.notFound')).toBeInTheDocument();
+  });
+
+  // #710, e2e del 24 sep: un foursomes 4&2 se decidió en el 16 y se jugó
+  // hasta el 18. La cabecera decía «4UP Los borrachos · 18 hoyos jugados» y
+  // quien la miraba creía que se había ganado 4 arriba en el 18
+  describe('la cabecera de un partido decidido', () => {
+    afterEach(() => {
+      mockUseScoring.scoringView.isDecided = false;
+      mockUseScoring.scoringView.decidedResult = null;
+      mockUseScoring.scoringView.matchStanding = null;
+    });
+
+    it('C1: dice el resultado del partido, no el marcador del hoyo 18', () => {
+      mockUseScoring.scoringView.isDecided = true;
+      mockUseScoring.scoringView.decidedResult = { winner: 'A', score: '4&2' };
+      mockUseScoring.scoringView.matchStanding = { status: '4UP', leadingTeam: 'A', holesPlayed: 18 };
+
+      render(<ScoringPage />);
+
+      const cabecera = screen.getByTestId('marcador-del-partido');
+      expect(cabecera).toHaveTextContent('leaderboard.wins');
+      expect(cabecera).toHaveTextContent('4&2');
+      // El que gana, no el otro
+      expect(cabecera).toHaveTextContent('Europe');
+      expect(cabecera).not.toHaveTextContent('4UP');
+      // La vuelta propia, aparte: los hoyos que se jugaron siguen contándose
+      expect(cabecera).toHaveTextContent('holesPlayed');
+    });
+
+    it('C2: sin decidir, el marcador de siempre', () => {
+      mockUseScoring.scoringView.matchStanding = { status: '2UP', leadingTeam: 'B', holesPlayed: 9 };
+
+      render(<ScoringPage />);
+
+      expect(screen.getByTestId('marcador-del-partido')).toHaveTextContent('2UP');
+    });
+  });
+
+  it('C3: «gana» no depende del número del equipo (#710)', async () => {
+    // «Los borrachos gana 4&2»: con un nombre en plural el verbo sonaba mal
+    for (const idioma of ['es', 'en']) {
+      const textos = (await import(`../../i18n/locales/${idioma}/scoring.json`)).default;
+      expect(textos.leaderboard.wins, idioma).toMatch(/^\{\{score\}\}/);
+      expect(textos.earlyEnd.message, idioma).not.toMatch(/\{\{team\}\} (gana|wins)/);
+    }
+  });
+
+  // #710, e2e del 24 sep: con el partido decidido (4&2 en el 16) se seguía
+  // ofreciendo «Conceder partido». No queda nada que conceder
+  describe('conceder un partido decidido', () => {
+    afterEach(() => {
+      mockUseScoring.scoringView.isDecided = false;
+      mockUseScoring.scoringView.matchStatus = 'IN_PROGRESS';
+    });
+
+    it('K1: decidido, ya no se ofrece conceder', () => {
+      mockUseScoring.scoringView.matchStatus = 'IN_PROGRESS';
+      mockUseScoring.scoringView.isDecided = true;
+
+      render(<ScoringPage />);
+
+      expect(screen.queryByText('concede.button')).not.toBeInTheDocument();
+    });
+
+    it('K2: sin decidir, sí', () => {
+      mockUseScoring.scoringView.matchStatus = 'IN_PROGRESS';
+      mockUseScoring.scoringView.isDecided = false;
+
+      render(<ScoringPage />);
+
+      expect(screen.getByText('concede.button')).toBeInTheDocument();
+    });
+  });
+
+  // CodeRabbit en la #721
+  it('C4: decidido sin marcador todavía, la cabecera dice el resultado igual', () => {
+    mockUseScoring.scoringView.isDecided = true;
+    mockUseScoring.scoringView.decidedResult = { winner: 'B', score: '3&2' };
+    mockUseScoring.scoringView.matchStanding = null;
+
+    render(<ScoringPage />);
+
+    expect(screen.getByTestId('marcador-del-partido')).toHaveTextContent('3&2');
+    mockUseScoring.scoringView.isDecided = false;
+    mockUseScoring.scoringView.decidedResult = null;
+  });
+
+  it('K3: si el partido se decide con el modal de conceder abierto, el modal se cierra', () => {
+    mockUseScoring.scoringView.matchStatus = 'IN_PROGRESS';
+    mockUseScoring.scoringView.isDecided = false;
+    const { rerender } = render(<ScoringPage />);
+    fireEvent.click(screen.getByText('concede.button'));
+    expect(screen.getByTestId('concede-match-modal')).toBeInTheDocument();
+
+    // El sondeo trae el partido ya decidido
+    mockUseScoring.scoringView = { ...mockUseScoring.scoringView, isDecided: true };
+    rerender(<ScoringPage />);
+
+    expect(screen.queryByTestId('concede-match-modal')).not.toBeInTheDocument();
+    mockUseScoring.scoringView = { ...mockUseScoring.scoringView, isDecided: false };
+  });
+});
+
+/**
+ * LA TABLA de la FE #732: un partido cerrado sin jugarlo hasta el final.
+ *
+ * Tras conceder, la pantalla seguía en «Empate · 0 hoyos» con la anotación
+ * abierta. Con RyderCupAM#384 la vista trae el ganador (`decidedResult` con
+ * score CONCEDED o W/O).
+ *
+ *   #   caso                        | qué pasa
+ *   ----|---------------------------|-----------------------------------------------
+ *   K1  concedido                   | cabecera «Europa (Concedido)», no «CONCEDED para…»
+ *   K2  walkover                    | cabecera «… (Walkover)»
+ *   K3  cerrado                     | aviso en lugar de la casilla; sin modal de decidido
+ *   K4  cerrado                     | ni «Enviar tarjeta» ni «Conceder»
+ *   K5  decidido por los hoyos      | como siempre: «4&2 para …» y su modal
+ */
+describe('ScoringPage · un partido cerrado sin jugarlo hasta el final (FE #732)', () => {
+  const cerrar = (matchStatus, score, winner = 'A') => {
+    mockUseScoring.scoringView.matchStatus = matchStatus;
+    mockUseScoring.scoringView.isDecided = true;
+    mockUseScoring.scoringView.decidedResult = { winner, score };
+    mockUseScoring.canSubmitScorecard = true;
+  };
+
+  afterEach(() => {
+    mockUseScoring.scoringView.matchStatus = 'IN_PROGRESS';
+    mockUseScoring.scoringView.isDecided = false;
+    mockUseScoring.scoringView.decidedResult = null;
+    mockUseScoring.scoringView.matchStanding = null;
+    mockUseScoring.canSubmitScorecard = false;
+    mockUseScoring.hasSubmitted = false;
+  });
+
+  it.each([
+    ['K1: concedido', 'CONCEDED', 'CONCEDED', 'leaderboard.conceded {"team":"Europe"}'],
+    ['K2: walkover', 'WALKOVER', 'W/O', 'leaderboard.walkover {"team":"Europe"}'],
+  ])('%s: la cabecera lo dice como la clasificación', (_caso, estado, score, texto) => {
+    cerrar(estado, score);
+    render(<ScoringPage />);
+
+    expect(screen.getByTestId('marcador-del-partido')).toHaveTextContent(texto);
+  });
+
+  it('K3: en lugar de la casilla, un aviso; y sin el modal de «decidido»', () => {
+    cerrar('CONCEDED', 'CONCEDED', 'B');
+    render(<ScoringPage />);
+
+    expect(screen.getByTestId('partido-cerrado')).toHaveTextContent(
+      'closed.conceded {"team":"USA"}'
+    );
+    expect(screen.queryByTestId('hole-input')).toBeNull();
+    expect(screen.queryByTestId('early-end-modal')).toBeNull();
+  });
+
+  it('K4: ni enviar tarjeta ni conceder', () => {
+    cerrar('WALKOVER', 'W/O');
+    render(<ScoringPage />);
+    fireEvent.click(screen.getByText('tabs.scorecard'));
+
+    expect(screen.queryByText('submit.button')).toBeNull();
+    expect(screen.queryByText('concede.button')).toBeNull();
+  });
+
+  it('K4b: ni el aviso de «la tarjeta no está lista»: no hay tarjeta que entregar', () => {
+    cerrar('CONCEDED', 'CONCEDED');
+    mockUseScoring.canSubmitScorecard = false;
+    render(<ScoringPage />);
+    fireEvent.click(screen.getByText('tabs.scorecard'));
+
+    expect(screen.queryByText('submit.notReady')).toBeNull();
+  });
+
+  it('K6: cerrado sin ganador (backend anterior a RyderCupAM#384): aviso genérico, sin el marcador de los hoyos', () => {
+    mockUseScoring.scoringView.matchStatus = 'CONCEDED';
+    mockUseScoring.scoringView.matchStanding = { status: '2UP', leadingTeam: 'A', holesPlayed: 5 };
+    render(<ScoringPage />);
+
+    expect(screen.getByTestId('partido-cerrado')).toHaveTextContent('closed.generic');
+    expect(screen.getByTestId('marcador-del-partido')).toHaveTextContent('closed.title');
+    expect(screen.getByTestId('marcador-del-partido')).not.toHaveTextContent('2UP');
+    expect(screen.queryByTestId('hole-input')).toBeNull();
+  });
+
+  it('K6b: y sin marcador de hoyos también lo dice arriba', () => {
+    mockUseScoring.scoringView.matchStatus = 'WALKOVER';
+    render(<ScoringPage />);
+
+    expect(screen.getByTestId('marcador-del-partido')).toHaveTextContent('closed.title');
+  });
+
+  it('K7: entregada su tarjeta y cerrado después por walkover, ya no espera a nadie', () => {
+    cerrar('WALKOVER', 'W/O');
+    mockUseScoring.hasSubmitted = true;
+    render(<ScoringPage />);
+    fireEvent.click(screen.getByText('tabs.scorecard'));
+
+    expect(screen.getByText('submit.matchCompleted')).toBeInTheDocument();
+  });
+
+  it('K8: si se cierra con el modal de conceder abierto, el modal se va (CodeRabbit)', () => {
+    const { rerender } = render(<ScoringPage />);
+    fireEvent.click(screen.getByText('concede.button'));
+    expect(screen.getByTestId('concede-match-modal')).toBeInTheDocument();
+
+    // Llega cerrado y sin ganador (un backend anterior): isDecided sigue false
+    mockUseScoring.scoringView.matchStatus = 'CONCEDED';
+    rerender(<ScoringPage />);
+
+    expect(screen.queryByTestId('concede-match-modal')).toBeNull();
+  });
+
+  it('K9: y el de enviar la tarjeta, igual', () => {
+    mockUseScoring.canSubmitScorecard = true;
+    const { rerender } = render(<ScoringPage />);
+    fireEvent.click(screen.getByText('tabs.scorecard'));
+    fireEvent.click(screen.getByText('submit.button'));
+    expect(screen.getByTestId('submit-scorecard-modal')).toBeInTheDocument();
+
+    mockUseScoring.scoringView.matchStatus = 'WALKOVER';
+    rerender(<ScoringPage />);
+
+    expect(screen.queryByTestId('submit-scorecard-modal')).toBeNull();
+  });
+
+  it('K5: decidido por los hoyos sigue como siempre', () => {
+    mockUseScoring.scoringView.isDecided = true;
+    mockUseScoring.scoringView.decidedResult = { winner: 'A', score: '4&2' };
+    render(<ScoringPage />);
+
+    expect(screen.getByTestId('marcador-del-partido')).toHaveTextContent(
+      'leaderboard.wins {"team":"Europe","score":"4&2"}'
+    );
+    expect(screen.getByTestId('hole-input')).toBeInTheDocument();
+    expect(screen.getByTestId('early-end-modal')).toBeInTheDocument();
+  });
+});
+
+/**
+ * FE #745 · al acabar, entregar la tarjeta desde cualquier pestaña. El botón
+ * vivía solo en Tarjeta y la pantalla abre en Anotar: quien acababa el 18 no
+ * veía nada, y los partidos se quedaban abiertos.
+ *
+ *   P1  acabado y listo, en Anotar   | la barra, y su botón abre la confirmación
+ *   P2  a medias                     | sin barra
+ *   P3  espectador                   | sin barra
+ *   P4  concedido o walkover         | sin barra: lo dice su aviso
+ *   P5  pestaña Tarjeta              | un solo botón de enviar, el de la barra
+ *   P6  con la barra                 | la página deja hueco para que no tape nada
+ */
+describe('ScoringPage · la barra de entregar la tarjeta (FE #745)', () => {
+  const acabado = () => {
+    mockUseScoring.partidoAcabado = true;
+    mockUseScoring.scoringView.isDecided = true;
+    mockUseScoring.scoringView.decidedResult = { winner: 'A', score: '3&2' };
+    mockUseScoring.canSubmitScorecard = true;
+  };
+
+  afterEach(() => {
+    mockUseScoring.partidoAcabado = false;
+    mockUseScoring.scoringView.isDecided = false;
+    mockUseScoring.scoringView.decidedResult = null;
+    mockUseScoring.scoringView.matchStatus = 'IN_PROGRESS';
+    mockUseScoring.canSubmitScorecard = false;
+    mockUseScoring.isMatchPlayer = true;
+  });
+
+  it('P1: acabado y listo, la barra sale en Anotar y su botón abre la confirmación', () => {
+    acabado();
+    render(<ScoringPage />);
+
+    const barra = screen.getByTestId('barra-de-entrega');
+    fireEvent.click(within(barra).getByRole('button', { name: 'submit.button' }));
+    expect(screen.getByTestId('submit-scorecard-modal')).toBeInTheDocument();
+  });
+
+  it('P2: a medias, sin barra', () => {
+    render(<ScoringPage />);
+
+    expect(screen.queryByTestId('barra-de-entrega')).toBeNull();
+  });
+
+  it('P3: a un espectador no le sale', () => {
+    acabado();
+    mockUseScoring.isMatchPlayer = false;
+    mockUseScoring.canSubmitScorecard = false;
+    render(<ScoringPage />);
+
+    expect(screen.queryByTestId('barra-de-entrega')).toBeNull();
+  });
+
+  it('P4: concedido, sin barra: ya lo dice su aviso', () => {
+    acabado();
+    mockUseScoring.scoringView.matchStatus = 'CONCEDED';
+    render(<ScoringPage />);
+
+    expect(screen.queryByTestId('barra-de-entrega')).toBeNull();
+  });
+
+  it('P5: en la pestaña Tarjeta hay un solo botón de enviar, el de la barra', () => {
+    acabado();
+    render(<ScoringPage />);
+    fireEvent.click(screen.getByTestId('tab-scorecard'));
+
+    expect(screen.getAllByText('submit.button')).toHaveLength(1);
+    expect(within(screen.getByTestId('barra-de-entrega')).getByText('submit.button')).toBeInTheDocument();
+  });
+
+  it('P6: con la barra, la página deja hueco abajo para que no tape nada', () => {
+    acabado();
+    render(<ScoringPage />);
+
+    expect(screen.getByTestId('hueco-de-la-barra')).toBeInTheDocument();
+  });
+
+  it('P7: decidido en el 11, la barra dice que se puede seguir jugando', () => {
+    acabado();
+    mockUseScoring.holesToSubmit = 11;
+    render(<ScoringPage />);
+
+    expect(within(screen.getByTestId('barra-de-entrega')).getByText('submit.keepPlaying')).toBeInTheDocument();
+    mockUseScoring.holesToSubmit = 18;
+  });
+
+  it('P8: con los 18 jugados, ya no', () => {
+    acabado();
+    mockUseScoring.holesToSubmit = 18;
+    render(<ScoringPage />);
+
+    expect(within(screen.getByTestId('barra-de-entrega')).queryByText('submit.keepPlaying')).toBeNull();
   });
 });

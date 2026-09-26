@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { X, Zap, Plus, Trash2 } from 'lucide-react';
+import BloqueoDePartidos from './BloqueoDePartidos';
 
 let matchIdCounter = 0;
 const createEmptyMatch = () => ({ id: ++matchIdCounter, teamAPlayerIds: [], teamBPlayerIds: [] });
@@ -15,13 +16,19 @@ const GenerateMatchesModalContent = ({
   onClose,
   onConfirm,
   round,
+  bloqueo = null,
   enrollments,
   teamAssignment,
   isProcessing,
   teamNames,
   playerNameMap,
+  setupMode,
   t,
 }) => {
+  // En modo Ryder los enfrentamientos salen de los sobres de los capitanes, y
+  // el servidor rechaza los que se manden a mano: ofrecerlos era dejar colocar
+  // a todo el mundo para recibir un error al final (BE #361)
+  const emparejanLosSobres = setupMode === 'RYDER_CUP';
   const [mode, setMode] = useState('automatic');
   const [matches, setMatches] = useState([createEmptyMatch()]);
   const [validationError, setValidationError] = useState(null);
@@ -175,6 +182,7 @@ const GenerateMatchesModalContent = ({
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
+        data-testid="generate-matches-modal"
         className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
       >
         {/* Header */}
@@ -194,6 +202,9 @@ const GenerateMatchesModalContent = ({
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          {/* Por qué no salieron la última vez (BE #360): lo apuntado en la
+              sesión, en el idioma de la pantalla */}
+          <BloqueoDePartidos bloqueo={bloqueo} />
           {/* Warning when no teams assigned */}
           {(!teamAssignment || (!teamAssignment.teamAPlayerIds?.length && !teamAssignment.teamBPlayerIds?.length)) && (
             <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
@@ -202,45 +213,54 @@ const GenerateMatchesModalContent = ({
             </div>
           )}
 
-          {/* Mode selection */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              {t('matches.pairings.mode')}
-            </label>
-            <div className="space-y-2">
-              <label className="flex items-start gap-3 cursor-pointer p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors">
-                <input
-                  type="radio"
-                  name="pairingMode"
-                  value="automatic"
-                  checked={mode === 'automatic'}
-                  onChange={() => { setMode('automatic'); setValidationError(null); }}
-                  className="mt-0.5 text-primary focus:ring-primary"
-                />
-                <div>
-                  <span className="text-sm font-medium">{t('matches.pairings.automatic')}</span>
-                  <p className="text-xs text-gray-500 mt-0.5">{t('matches.pairings.automaticDesc')}</p>
-                </div>
+          {/* Mode selection: en modo Ryder no hay nada que elegir */}
+          {emparejanLosSobres ? (
+            <p
+              data-testid="emparejan-los-sobres"
+              className="rounded-lg border border-gray-200 bg-gray-50 p-3 text-sm text-gray-700"
+            >
+              {t('matches.pairings.byEnvelopes')}
+            </p>
+          ) : (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                {t('matches.pairings.mode')}
               </label>
-              <label className="flex items-start gap-3 cursor-pointer p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors">
-                <input
-                  type="radio"
-                  name="pairingMode"
-                  value="manual"
-                  checked={mode === 'manual'}
-                  onChange={() => { setMode('manual'); setValidationError(null); }}
-                  className="mt-0.5 text-primary focus:ring-primary"
-                />
-                <div>
-                  <span className="text-sm font-medium">{t('matches.pairings.manual')}</span>
-                  <p className="text-xs text-gray-500 mt-0.5">{t('matches.pairings.manualDesc')}</p>
-                </div>
-              </label>
+              <div className="space-y-2">
+                <label className="flex items-start gap-3 cursor-pointer p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors">
+                  <input
+                    type="radio"
+                    name="pairingMode"
+                    value="automatic"
+                    checked={mode === 'automatic'}
+                    onChange={() => { setMode('automatic'); setValidationError(null); }}
+                    className="mt-0.5 text-primary focus:ring-primary"
+                  />
+                  <div>
+                    <span className="text-sm font-medium">{t('matches.pairings.automatic')}</span>
+                    <p className="text-xs text-gray-500 mt-0.5">{t('matches.pairings.automaticDesc')}</p>
+                  </div>
+                </label>
+                <label className="flex items-start gap-3 cursor-pointer p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors">
+                  <input
+                    type="radio"
+                    name="pairingMode"
+                    value="manual"
+                    checked={mode === 'manual'}
+                    onChange={() => { setMode('manual'); setValidationError(null); }}
+                    className="mt-0.5 text-primary focus:ring-primary"
+                  />
+                  <div>
+                    <span className="text-sm font-medium">{t('matches.pairings.manual')}</span>
+                    <p className="text-xs text-gray-500 mt-0.5">{t('matches.pairings.manualDesc')}</p>
+                  </div>
+                </label>
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Manual matches UI */}
-          {mode === 'manual' && (
+          {!emparejanLosSobres && mode === 'manual' && (
             <div className="space-y-4">
               {matches.map((match, matchIndex) => (
                 <div key={match.id} className="border border-gray-200 rounded-lg p-4 space-y-3">

@@ -1,0 +1,1245 @@
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { render, screen, fireEvent, waitFor, within, act } from '@testing-library/react';
+import { MemoryRouter, Routes, Route } from 'react-router';
+
+const mockNavigate = vi.fn();
+vi.mock('react-router', async () => {
+  const actual = await vi.importActual('react-router');
+  return { ...actual, useNavigate: () => mockNavigate };
+});
+
+/**
+ * El sobre de un capitán (FE #655).
+ *
+ * Se ordena tocando: el primer toque es el primero que juega. En un teléfono
+ * eso es lo único que funciona bien —arrastrar filas con el dedo se pelea con
+ * el scroll— y además deja claro el orden mientras se construye.
+ *
+ * Lo que la pantalla no puede hacer: enseñar la lista del rival antes de que
+ * se abran los sobres, ni ofrecer abrirlos a quien el servidor va a rechazar.
+ */
+const t = (clave, params) => {
+  if (params?.count !== undefined) return `${clave}_${params.count}`;
+  if (params?.equipo !== undefined) return `${clave} ${params.equipo}`;
+  return clave;
+};
+const traduccion = { i18n: { language: 'es' }, t };
+vi.mock('react-i18next', () => ({ useTranslation: () => traduccion }));
+vi.mock('framer-motion', () => ({
+  motion: new Proxy({}, { get: () => ({ children, ...props }) => <div {...props}>{children}</div> }),
+}));
+vi.mock('../components/layout/HeaderAuth', () => ({ default: () => null }));
+vi.mock('../components/ui/FullScreenLoader', () => ({ default: () => null }));
+
+const SESION = { user: { id: 'ana' }, loading: false };
+vi.mock('../hooks/useAuth', () => ({ useAuth: () => SESION }));
+
+const mockVer = vi.fn();
+const mockEntregar = vi.fn();
+const mockAbrir = vi.fn();
+const mockCompeticion = vi.fn();
+vi.mock('../composition', () => ({
+  getCompetitionDetailUseCase: { execute: (...a) => mockCompeticion(...a) },
+  getEnvelopesUseCase: { execute: (...a) => mockVer(...a) },
+  submitEnvelopeUseCase: { execute: (...a) => mockEntregar(...a) },
+  revealEnvelopesUseCase: { execute: (...a) => mockAbrir(...a) },
+}));
+vi.mock('../utils/toast', () => ({
+  default: { success: vi.fn(), error: vi.fn(), warning: vi.fn(), info: vi.fn() },
+}));
+import customToast from '../utils/toast';
+
+const EnvelopePage = (await import('./EnvelopePage')).default;
+
+const JUGADORES = [
+  { userId: 'ana', name: 'Ana Alba', handicap: 8 },
+  { userId: 'bea', name: 'Bea Blanco', handicap: 14 },
+];
+
+const CUATRO = [
+  ...JUGADORES,
+  { userId: 'carla', name: 'Carla Cruz', handicap: 20 },
+  { userId: 'dani', name: 'Dani Díaz', handicap: 26 },
+];
+
+const enParejas = (extra = {}) =>
+  vista({ playersPerRow: 2, myPlayers: CUATRO, ...extra });
+
+const vista = (extra = {}) => ({
+  roundId: 'ronda-1',
+  revealed: false,
+  teamASubmitted: false,
+  teamBSubmitted: false,
+  teamAAutomatic: false,
+  teamBAutomatic: false,
+  mine: null,
+  rival: null,
+  rivalSubmitted: false,
+  matchups: [],
+  canReveal: false,
+  playersPerRow: 1,
+  teamsFitFormat: true,
+  rivalWantsEarly: false,
+  revealScheduledAt: '2030-06-01T00:00:00+02:00',
+  myPlayers: JUGADORES,
+  playerNames: { ana: 'Ana Alba', bea: 'Bea Blanco', carla: 'Carla Cruz', dani: 'Dani Díaz' },
+  ...extra,
+});
+
+const pintar = () =>
+  render(
+    <MemoryRouter initialEntries={['/competitions/comp-1/rounds/ronda-1/envelope']}>
+      <Routes>
+        <Route
+          path="/competitions/:id/rounds/:roundId/envelope"
+          element={<EnvelopePage />}
+        />
+      </Routes>
+    </MemoryRouter>
+  );
+
+describe('EnvelopePage · el sobre del capitán (FE #655)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockVer.mockResolvedValue(vista());
+    mockEntregar.mockResolvedValue({ team: 'A', entries: [['bea'], ['ana']], automatic: false });
+    mockAbrir.mockResolvedValue({ matchups: [], filledAutomatically: [] });
+    mockCompeticion.mockResolvedValue({ team1Name: 'Europa', team2Name: 'América' });
+  });
+
+  it('V1: el capitán ve a los suyos con su hándicap', async () => {
+    pintar();
+
+    const fila = await screen.findByTestId('jugador-ana');
+    expect(within(fila).getByText('Ana Alba')).toBeInTheDocument();
+    expect(within(fila).getByText('8')).toBeInTheDocument();
+  });
+
+  it('V2: el orden se construye tocando, y se ve el número de cada uno', async () => {
+    pintar();
+
+    fireEvent.click(await screen.findByTestId('jugador-bea'));
+
+    expect(screen.getByTestId('puesto-bea')).toHaveTextContent('1');
+    expect(screen.queryByTestId('puesto-ana')).not.toBeInTheDocument();
+  });
+
+  it('V3: no se entrega hasta que están todos', async () => {
+    pintar();
+    const entregar = async () => screen.findByTestId('entregar-sobre');
+
+    expect(await entregar()).toBeDisabled();
+    fireEvent.click(screen.getByTestId('jugador-bea'));
+    expect(await entregar()).toBeDisabled();
+    fireEvent.click(screen.getByTestId('jugador-ana'));
+    expect(await entregar()).toBeEnabled();
+  });
+
+  it('V4: al entregar se manda el orden tocado, no el de la lista', async () => {
+    pintar();
+    fireEvent.click(await screen.findByTestId('jugador-bea'));
+    fireEvent.click(screen.getByTestId('jugador-ana'));
+
+    fireEvent.click(screen.getByTestId('entregar-sobre'));
+
+    await waitFor(() =>
+      // Sin marcar la casilla: se espera a la hora
+      expect(mockEntregar).toHaveBeenCalledWith('ronda-1', [['bea'], ['ana']], false)
+    );
+  });
+
+  it('V5: se puede deshacer el último toque', async () => {
+    pintar();
+    fireEvent.click(await screen.findByTestId('jugador-bea'));
+    fireEvent.click(screen.getByTestId('jugador-ana'));
+
+    fireEvent.click(screen.getByTestId('deshacer'));
+
+    expect(screen.queryByTestId('puesto-ana')).not.toBeInTheDocument();
+    expect(screen.getByTestId('puesto-bea')).toHaveTextContent('1');
+  });
+
+  it('V6: entregado, se ve el orden guardado y se puede cambiar', async () => {
+    mockVer.mockResolvedValue(
+      vista({
+        teamASubmitted: true,
+        mine: { team: 'A', entries: [['bea'], ['ana']], submitted: true, automatic: false },
+      })
+    );
+    pintar();
+
+    expect(await screen.findByTestId('sobre-entregado')).toBeInTheDocument();
+    expect(screen.getByTestId('orden-guardado')).toHaveTextContent('Bea Blanco');
+    expect(screen.getByTestId('cambiar-sobre')).toBeInTheDocument();
+  });
+
+  it('V7: se dice si el rival ya entregó, pero NUNCA lo que puso', async () => {
+    mockVer.mockResolvedValue(
+      vista({
+        teamASubmitted: true,
+        rivalSubmitted: true,
+        mine: { team: 'A', entries: [['bea'], ['ana']], submitted: true, automatic: false },
+      })
+    );
+    pintar();
+
+    expect(await screen.findByTestId('rival-entregado')).toBeInTheDocument();
+    expect(screen.queryByTestId('orden-del-rival')).not.toBeInTheDocument();
+  });
+
+  it('V8: se ofrece abrirlos cuando el servidor dice que se puede', async () => {
+    mockVer.mockResolvedValue(
+      vista({
+        teamASubmitted: true,
+        rivalSubmitted: true,
+        canReveal: true,
+        mine: { team: 'A', entries: [['bea'], ['ana']], submitted: true, automatic: false },
+      })
+    );
+    pintar();
+
+    fireEvent.click(await screen.findByTestId('abrir-sobres'));
+
+    await waitFor(() => expect(mockAbrir).toHaveBeenCalledWith('ronda-1'));
+  });
+
+  it('V9: y no se ofrece cuando dice que no', async () => {
+    // El relleno automático es predecible, así que un capitán que abriera
+    // antes de que el rival entregue podría armar su lista para ganar todos
+    // los cruces. Quién puede, lo decide el servidor
+    mockVer.mockResolvedValue(
+      vista({
+        teamASubmitted: true,
+        rivalSubmitted: false,
+        canReveal: false,
+        mine: { team: 'A', entries: [['bea'], ['ana']], submitted: true, automatic: false },
+      })
+    );
+    pintar();
+
+    await screen.findByTestId('sobre-entregado');
+    expect(screen.queryByTestId('abrir-sobres')).not.toBeInTheDocument();
+  });
+
+  it('V9b: el organizador puede abrirlos sin haber entregado ninguno', async () => {
+    // Es la salida cuando un capitán no aparece: sin esto la sesión se
+    // quedaba atascada y generar los partidos fallaba por sobres sin abrir
+    mockVer.mockResolvedValue(vista({ myPlayers: [], canReveal: true }));
+    pintar();
+
+    fireEvent.click(await screen.findByTestId('abrir-sobres'));
+
+    await waitFor(() => expect(mockAbrir).toHaveBeenCalledWith('ronda-1'));
+  });
+
+  it('V9c: dos toques seguidos no mandan dos aperturas', async () => {
+    // La segunda se lleva un 400 «ya estaban abiertos» y el capitán ve un
+    // error en rojo aunque todo fue bien
+    mockVer.mockResolvedValue(vista({ myPlayers: [], canReveal: true }));
+    mockAbrir.mockImplementation(() => new Promise(() => {}));
+    pintar();
+    const boton = await screen.findByTestId('abrir-sobres');
+
+    fireEvent.click(boton);
+    fireEvent.click(boton);
+
+    expect(mockAbrir).toHaveBeenCalledTimes(1);
+  });
+
+  it('V10: abiertos, se ven los enfrentamientos con nombres', async () => {
+    mockVer.mockResolvedValue(
+      vista({
+        revealed: true,
+        teamASubmitted: true,
+        teamBSubmitted: true,
+        matchups: [[['bea'], ['carla']], [['ana'], ['dani']]],
+      })
+    );
+    pintar();
+
+    const primero = await screen.findByTestId('enfrentamiento-0');
+    expect(within(primero).getByText('Bea Blanco')).toBeInTheDocument();
+    expect(within(primero).getByText('Carla Cruz')).toBeInTheDocument();
+  });
+
+  it('V11: y se dice cuál lo rellenó la aplicación', async () => {
+    mockVer.mockResolvedValue(
+      vista({
+        revealed: true,
+        teamASubmitted: true,
+        teamBSubmitted: true,
+        teamBAutomatic: true,
+        matchups: [[['bea'], ['carla']]],
+      })
+    );
+    pintar();
+
+    // Un aviso que nombra al equipo B (#710); el detalle, en N1-N3
+    // Los nombres llegan después del aviso: se espera al texto
+    await waitFor(() => expect(screen.getByTestId('automatico')).toHaveTextContent('América'));
+  });
+
+  it('V11b: abiertos y sin partidos, dice por qué (BE #361)', async () => {
+    // Los partidos se crean al abrirse: si no pudieron, los enfrentamientos
+    // están a la vista y no hay nada que jugar, y hay que decir a quién le falta qué
+    mockVer.mockResolvedValue(
+      vista({
+        revealed: true,
+        teamASubmitted: true,
+        teamBSubmitted: true,
+        matchups: [[['bea'], ['carla']]],
+        matchGenerationBlock: {
+          reason: 'PLAYERS_WITHOUT_TEE',
+          players: [{ userId: 'bea', name: 'Bea Blanco', missing: 'GENDER', teeColor: null }],
+        },
+      })
+    );
+    pintar();
+
+    expect(await screen.findByTestId('bloqueo-de-partidos')).toHaveTextContent('Bea Blanco');
+  });
+
+  it('V12: quien no capitanea no ve ninguna lista que ordenar', async () => {
+    mockVer.mockResolvedValue(vista({ myPlayers: [] }));
+    pintar();
+
+    expect(await screen.findByTestId('solo-mirando')).toBeInTheDocument();
+    expect(screen.queryByTestId('entregar-sobre')).not.toBeInTheDocument();
+  });
+
+  it('V12b: si la sesión no se puede cargar, se dice: no se finge normalidad', async () => {
+    // Antes, un 403 o un 500 dejaban la pantalla de «esto lo entregan los
+    // capitanes, aquí verás los enfrentamientos», que es tranquilizadora y
+    // falsa
+    mockVer.mockRejectedValue(new Error('No participas en esta competición'));
+    pintar();
+
+    expect(await screen.findByTestId('sobre-no-disponible')).toBeInTheDocument();
+    expect(screen.queryByTestId('solo-mirando')).not.toBeInTheDocument();
+  });
+
+  it('V12c: cambiar el orden se puede cancelar', async () => {
+    // Un toque sin querer no puede dejar al capitán sin su sobre entregado
+    // —ni sin el botón de abrir— hasta que recargue
+    mockVer.mockResolvedValue(
+      vista({
+        teamASubmitted: true,
+        mine: { team: 'A', entries: [['bea'], ['ana']], submitted: true, automatic: false },
+      })
+    );
+    pintar();
+    fireEvent.click(await screen.findByTestId('cambiar-sobre'));
+
+    fireEvent.click(await screen.findByTestId('cancelar-cambio'));
+
+    expect(await screen.findByTestId('sobre-entregado')).toBeInTheDocument();
+  });
+
+  it('V12d: mientras se reordena no se ofrece abrir: abriría el orden anterior', async () => {
+    // El servidor sigue teniendo el sobre de antes, así que abrir ahí revela
+    // ese, y el orden que el capitán está montando se pierde sin avisar
+    mockVer.mockResolvedValue(
+      vista({
+        teamASubmitted: true,
+        rivalSubmitted: true,
+        canReveal: true,
+        mine: { team: 'A', entries: [['bea'], ['ana']], submitted: true, automatic: false },
+      })
+    );
+    pintar();
+    expect(await screen.findByTestId('abrir-sobres')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId('cambiar-sobre'));
+
+    expect(screen.queryByTestId('abrir-sobres')).not.toBeInTheDocument();
+  });
+
+  it('V17: sin plazo que vencer, al organizador se le avisa de lo que va a pasar', async () => {
+    // Un campo sin zona horaria no da hora, así que esos sobres no se abren
+    // solos nunca y el organizador conserva la llave. Con el botón a secas
+    // abriría sin saber que el sobre que falta lo va a rellenar la aplicación
+    mockVer.mockResolvedValue(
+      vista({ canReveal: true, revealScheduledAt: null, teamASubmitted: true })
+    );
+    pintar();
+
+    expect(await screen.findByTestId('abrir-sobres')).toBeInTheDocument();
+    expect(screen.getByTestId('sin-plazo')).toBeInTheDocument();
+  });
+
+  it('V17b: con plazo y los dos sobres dentro no hay aviso que dar', async () => {
+    mockVer.mockResolvedValue(
+      vista({ canReveal: true, teamASubmitted: true, teamBSubmitted: true })
+    );
+    pintar();
+
+    expect(await screen.findByTestId('abrir-sobres')).toBeInTheDocument();
+    expect(screen.queryByTestId('sin-plazo')).not.toBeInTheDocument();
+  });
+
+  it('V16: mientras falte un sobre no se ofrece abrir a nadie', async () => {
+    // Visto en el Kind: «Abrir los sobres» salía arriba del todo y en verde,
+    // ANTES de entregar. Un toque ahí rellena los dos sobres automáticamente y
+    // tira por la borda lo que el capitán venía a hacer.
+    //
+    // Desde el 23 sep hacen falta los dos sobres dentro sea quien sea —abrir es
+    // lo que desvela el orden de juego—, así que el servidor manda `canReveal`
+    // en falso y la pantalla no lo ofrece ni al organizador
+    mockVer.mockResolvedValue(vista({ canReveal: false }));
+    pintar();
+
+    await screen.findByTestId('entregar-sobre');
+    expect(screen.queryByTestId('abrir-sobres')).not.toBeInTheDocument();
+  });
+
+  it('V17: entregado el suyo, ya sí puede abrirlos', async () => {
+    mockVer.mockResolvedValue(
+      vista({
+        teamASubmitted: true,
+        rivalSubmitted: true,
+        canReveal: true,
+        mine: { team: 'A', entries: [['bea'], ['ana']], submitted: true, automatic: false },
+      })
+    );
+    pintar();
+
+    expect(await screen.findByTestId('abrir-sobres')).toBeInTheDocument();
+  });
+
+  it('V18: y quien solo organiza lo tiene desde el principio', async () => {
+    // No capitanea, así que no tiene sobre que entregar: abrir es su único
+    // gesto aquí, y es la salida cuando un capitán no aparece
+    mockVer.mockResolvedValue(vista({ myPlayers: [], canReveal: true }));
+    pintar();
+
+    expect(await screen.findByTestId('abrir-sobres')).toBeInTheDocument();
+  });
+
+  it('V19: se puede pedir que no esperen a la hora, y va apagado por defecto', async () => {
+    pintar();
+    const casilla = await screen.findByTestId('sin-esperar');
+
+    expect(casilla).not.toBeChecked();
+    fireEvent.click(casilla);
+    expect(casilla).toBeChecked();
+  });
+
+  it('V20: y al entregar se manda lo que el capitán marcó', async () => {
+    pintar();
+    fireEvent.click(await screen.findByTestId('sin-esperar'));
+    for (const j of ['bea', 'ana']) fireEvent.click(screen.getByTestId(`jugador-${j}`));
+
+    fireEvent.click(screen.getByTestId('entregar-sobre'));
+
+    await waitFor(() =>
+      expect(mockEntregar).toHaveBeenCalledWith('ronda-1', [['bea'], ['ana']], true)
+    );
+  });
+
+  it('V21: entregado, se dice si el rival también lo pidió', async () => {
+    // Para que el capitán sepa si solo falta que lo marque el otro
+    mockVer.mockResolvedValue(
+      vista({
+        teamASubmitted: true,
+        rivalSubmitted: true,
+        rivalWantsEarly: false,
+        mine: {
+          team: 'A',
+          entries: [['bea'], ['ana']],
+          submitted: true,
+          automatic: false,
+          revealWhenBothReady: true,
+        },
+      })
+    );
+    pintar();
+
+    expect(await screen.findByTestId('falta-que-lo-marque-el-rival')).toBeInTheDocument();
+  });
+
+  it('V22: y cuando los dos lo han pedido no se anuncia que falte nadie', async () => {
+    mockVer.mockResolvedValue(
+      vista({
+        teamASubmitted: true,
+        rivalSubmitted: true,
+        rivalWantsEarly: true,
+        mine: {
+          team: 'A',
+          entries: [['bea'], ['ana']],
+          submitted: true,
+          automatic: false,
+          revealWhenBothReady: true,
+        },
+      })
+    );
+    pintar();
+
+    await screen.findByTestId('sobre-entregado');
+    expect(screen.queryByTestId('falta-que-lo-marque-el-rival')).not.toBeInTheDocument();
+  });
+
+  it('V23: y se dice a qué hora se abren solos, que es el plazo', async () => {
+    pintar();
+
+    expect(await screen.findByTestId('plazo')).toBeInTheDocument();
+  });
+
+  it('V24: al cambiar el orden, la casilla conserva lo que el capitán pidió', async () => {
+    // El servidor reescribe el flag en CADA entrega: si la casilla sale
+    // apagada, corregir la lista retira la petición sin que nadie lo diga, un
+    // segundo después de leer «tú has pedido abrirlos sin esperar»
+    mockVer.mockResolvedValue(
+      vista({
+        teamASubmitted: true,
+        mine: {
+          team: 'A',
+          entries: [['bea'], ['ana']],
+          submitted: true,
+          automatic: false,
+          revealWhenBothReady: true,
+        },
+      })
+    );
+    pintar();
+
+    fireEvent.click(await screen.findByTestId('cambiar-sobre'));
+
+    expect(await screen.findByTestId('sin-esperar')).toBeChecked();
+  });
+
+  it('V25: y al volver a entregar se manda esa misma petición', async () => {
+    mockVer.mockResolvedValue(
+      vista({
+        teamASubmitted: true,
+        mine: {
+          team: 'A',
+          entries: [['bea'], ['ana']],
+          submitted: true,
+          automatic: false,
+          revealWhenBothReady: true,
+        },
+      })
+    );
+    pintar();
+    fireEvent.click(await screen.findByTestId('cambiar-sobre'));
+    for (const j of ['ana', 'bea']) fireEvent.click(await screen.findByTestId(`jugador-${j}`));
+
+    fireEvent.click(screen.getByTestId('entregar-sobre'));
+
+    await waitFor(() =>
+      expect(mockEntregar).toHaveBeenCalledWith('ronda-1', [['ana'], ['bea']], true)
+    );
+  });
+
+  it('V24: al cambiar el orden, la casilla conserva lo que el capitán pidió', async () => {
+    // El servidor reescribe el flag en CADA entrega: si la casilla sale
+    // apagada, corregir la lista retira la petición sin que nadie lo diga, un
+    // segundo después de leer «tú has pedido abrirlos sin esperar»
+    mockVer.mockResolvedValue(
+      vista({
+        teamASubmitted: true,
+        mine: {
+          team: 'A',
+          entries: [['bea'], ['ana']],
+          submitted: true,
+          automatic: false,
+          revealWhenBothReady: true,
+        },
+      })
+    );
+    pintar();
+
+    fireEvent.click(await screen.findByTestId('cambiar-sobre'));
+
+    expect(await screen.findByTestId('sin-esperar')).toBeChecked();
+  });
+
+  it('V25: y al volver a entregar se manda esa misma petición', async () => {
+    mockVer.mockResolvedValue(
+      vista({
+        teamASubmitted: true,
+        mine: {
+          team: 'A',
+          entries: [['bea'], ['ana']],
+          submitted: true,
+          automatic: false,
+          revealWhenBothReady: true,
+        },
+      })
+    );
+    pintar();
+    fireEvent.click(await screen.findByTestId('cambiar-sobre'));
+    for (const j of ['ana', 'bea']) fireEvent.click(await screen.findByTestId(`jugador-${j}`));
+
+    fireEvent.click(screen.getByTestId('entregar-sobre'));
+
+    await waitFor(() =>
+      expect(mockEntregar).toHaveBeenCalledWith('ronda-1', [['ana'], ['bea']], true)
+    );
+  });
+
+  it('V13: un fallo al entregar se cuenta y el orden no se pierde', async () => {
+    mockEntregar.mockRejectedValue(new Error('Faltan jugadores del equipo'));
+    pintar();
+    fireEvent.click(await screen.findByTestId('jugador-bea'));
+    fireEvent.click(screen.getByTestId('jugador-ana'));
+
+    fireEvent.click(screen.getByTestId('entregar-sobre'));
+
+    await waitFor(() =>
+      expect(customToast.error).toHaveBeenCalledWith('Faltan jugadores del equipo')
+    );
+    expect(screen.getByTestId('puesto-bea')).toHaveTextContent('1');
+  });
+
+  it('P1: en parejas, los dos primeros toques son la MISMA pareja', async () => {
+    // El número es el de la pareja, no el del jugador: dos con el 1 juegan
+    // juntos. Arrastrar para agrupar se pelea con el scroll igual que ordenar
+    mockVer.mockResolvedValue(enParejas());
+    pintar();
+
+    fireEvent.click(await screen.findByTestId('jugador-bea'));
+    fireEvent.click(screen.getByTestId('jugador-ana'));
+
+    expect(screen.getByTestId('puesto-bea')).toHaveTextContent('1');
+    expect(screen.getByTestId('puesto-ana')).toHaveTextContent('1');
+  });
+
+  it('P2: el tercer toque abre ya la pareja siguiente', async () => {
+    mockVer.mockResolvedValue(enParejas());
+    pintar();
+
+    fireEvent.click(await screen.findByTestId('jugador-bea'));
+    fireEvent.click(screen.getByTestId('jugador-ana'));
+    fireEvent.click(screen.getByTestId('jugador-carla'));
+
+    expect(screen.getByTestId('puesto-carla')).toHaveTextContent('2');
+  });
+
+  it('P3: al entregar se mandan las parejas, no cuatro filas de uno', async () => {
+    mockVer.mockResolvedValue(enParejas());
+    pintar();
+
+    fireEvent.click(await screen.findByTestId('jugador-bea'));
+    fireEvent.click(screen.getByTestId('jugador-ana'));
+    fireEvent.click(screen.getByTestId('jugador-carla'));
+    fireEvent.click(screen.getByTestId('jugador-dani'));
+    fireEvent.click(screen.getByTestId('entregar-sobre'));
+
+    await waitFor(() =>
+      expect(mockEntregar).toHaveBeenCalledWith(
+        'ronda-1',
+        [
+          ['bea', 'ana'],
+          ['carla', 'dani'],
+        ],
+        false
+      )
+    );
+  });
+
+  it('P4: con la pareja a medias todavía no se puede entregar', async () => {
+    mockVer.mockResolvedValue(enParejas());
+    pintar();
+
+    fireEvent.click(await screen.findByTestId('jugador-bea'));
+    fireEvent.click(screen.getByTestId('jugador-ana'));
+    fireEvent.click(screen.getByTestId('jugador-carla'));
+
+    expect(screen.getByTestId('entregar-sobre')).toBeDisabled();
+  });
+
+  it('P5: un equipo impar en parejas se dice ANTES de entregar', async () => {
+    // Si no, el capitán coloca a los cinco y se lleva un 400 del servidor:
+    // alguien se quedaría fuera y el cruce va por posición. Lo decide el
+    // servidor, que mira los DOS equipos: el mío puede ser par y el rival no
+    mockVer.mockResolvedValue(
+      enParejas({
+        teamsFitFormat: false,
+        myPlayers: [...CUATRO, { userId: 'eva', name: 'Eva Egea', handicap: 30 }],
+      })
+    );
+    pintar();
+
+    expect(await screen.findByTestId('equipo-impar')).toBeInTheDocument();
+    // FE #741 · y solo el aviso: con la sesión bloqueada no hay nada que
+    // ordenar, y una lista tocable debajo invita a hacerlo para nada
+    expect(screen.queryByTestId('entregar-sobre')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('jugador-bea')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('sin-esperar')).not.toBeInTheDocument();
+    expect(screen.queryByText('envelope.tapInOrder')).not.toBeInTheDocument();
+  });
+
+  it('P5b: con el equipo impar no promete que la app lo rellene tras el plazo (FE #726)', async () => {
+    // La sesión está bloqueada: a esa hora no se abre ni se rellena nada
+    mockVer.mockResolvedValue(
+      enParejas({
+        teamsFitFormat: false,
+        myPlayers: [...CUATRO, { userId: 'eva', name: 'Eva Egea', handicap: 30 }],
+      })
+    );
+    pintar();
+
+    await screen.findByTestId('equipo-impar');
+    expect(screen.queryByTestId('plazo')).not.toBeInTheDocument();
+  });
+
+  it('P6: el equipo impar se lo dice también a quien NO capitanea', async () => {
+    // El organizador es quien puede arreglarlo —cambiar el formato o rehacer
+    // los equipos— y no tiene sobre: sin esto la sesión se atasca en silencio
+    mockVer.mockResolvedValue(vista({ myPlayers: [], teamsFitFormat: false }));
+    pintar();
+
+    expect(await screen.findByTestId('equipo-impar')).toBeInTheDocument();
+  });
+
+  // Ronda 2 de pruebas · lo que ve quien no capitanea (el organizador, o un
+  // jugador que solo mira): no es «su» sobre, y con el equipo impar no se va a
+  // abrir nada, así que no se le promete verlo
+  it('O1: quien no capitanea ve «Los sobres», no «Tu sobre»', async () => {
+    mockVer.mockResolvedValue(vista({ myPlayers: [] }));
+    pintar();
+
+    expect(await screen.findByRole('heading', { name: 'envelope.titleOthers' })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'envelope.title' })).toBeNull();
+  });
+
+  it('O2: con el equipo impar, a quien no capitanea solo le queda el aviso', async () => {
+    mockVer.mockResolvedValue(vista({ myPlayers: [], teamsFitFormat: false }));
+    pintar();
+
+    await screen.findByTestId('equipo-impar');
+    expect(screen.queryByText('envelope.onlyCaptains')).toBeNull();
+  });
+
+  it('O3: con los equipos bien, sigue diciéndole que los entregan los capitanes', async () => {
+    mockVer.mockResolvedValue(vista({ myPlayers: [] }));
+    pintar();
+
+    expect(await screen.findByText('envelope.onlyCaptains')).toBeInTheDocument();
+  });
+
+  it('O4: el capitán sigue viendo «Tu sobre»', async () => {
+    mockVer.mockResolvedValue(vista());
+    pintar();
+
+    expect(await screen.findByRole('heading', { name: 'envelope.title' })).toBeInTheDocument();
+  });
+
+  it('P7: y también después de entregar, si el equipo se queda impar', async () => {
+    mockVer.mockResolvedValue(
+      enParejas({
+        teamsFitFormat: false,
+        teamASubmitted: true,
+        mine: { team: 'A', entries: [['bea', 'ana']], submitted: true, automatic: false },
+      })
+    );
+    pintar();
+
+    expect(await screen.findByTestId('equipo-impar')).toBeInTheDocument();
+  });
+
+  it('P7b: entregado y con el equipo impar, ni «Cambiar» ni promesa de abrirse solos (FE #741)', async () => {
+    // Cambiar llevaría a un formulario que no se puede entregar, y a su hora
+    // no se abre nada: la sesión está bloqueada
+    mockVer.mockResolvedValue(
+      enParejas({
+        teamsFitFormat: false,
+        teamASubmitted: true,
+        mine: { team: 'A', entries: [['bea', 'ana']], submitted: true, automatic: false },
+      })
+    );
+    pintar();
+
+    await screen.findByTestId('equipo-impar');
+    expect(screen.queryByTestId('cambiar-sobre')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('se-abren-solos')).not.toBeInTheDocument();
+    // Revisión local: el permiso para abrirlos antes tampoco lleva a nada
+    expect(screen.queryByTestId('dar-permiso')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('retirar-permiso')).not.toBeInTheDocument();
+  });
+
+  it('P7c: con el equipo impar tampoco se ofrece abrirlos a mano, aunque el servidor lo permita (CodeRabbit)', async () => {
+    mockVer.mockResolvedValue(
+      enParejas({
+        teamsFitFormat: false,
+        canReveal: true,
+        revealScheduledAt: null,
+        teamASubmitted: true,
+        mine: { team: 'A', entries: [['bea', 'ana']], submitted: true, automatic: false },
+      })
+    );
+    pintar();
+
+    await screen.findByTestId('equipo-impar');
+    expect(screen.queryByRole('button', { name: 'envelope.reveal' })).not.toBeInTheDocument();
+    expect(screen.queryByTestId('sin-plazo')).not.toBeInTheDocument();
+  });
+
+  it('P8: una pareja a medias dice qué falta, en vez de apagar el botón sin más', async () => {
+    mockVer.mockResolvedValue(enParejas());
+    pintar();
+
+    fireEvent.click(await screen.findByTestId('jugador-bea'));
+    fireEvent.click(screen.getByTestId('jugador-ana'));
+    fireEvent.click(screen.getByTestId('jugador-carla'));
+
+    expect(screen.getByTestId('pareja-a-medias')).toBeInTheDocument();
+  });
+
+  it('P9: con las parejas completas no sobra ningún aviso', async () => {
+    mockVer.mockResolvedValue(enParejas());
+    pintar();
+
+    fireEvent.click(await screen.findByTestId('jugador-bea'));
+    fireEvent.click(screen.getByTestId('jugador-ana'));
+
+    expect(screen.queryByTestId('pareja-a-medias')).not.toBeInTheDocument();
+  });
+
+  it('V18: volver lleva al calendario, que es de donde se viene', async () => {
+    // El sobre se abre desde la agenda de la competición, así que devolver a
+    // la ficha obliga a volver a entrar en el calendario para la sesión
+    // siguiente
+    pintar();
+
+    fireEvent.click(await screen.findByTestId('volver-al-calendario'));
+
+    expect(mockNavigate).toHaveBeenCalledWith('/competitions/comp-1/schedule');
+  });
+});
+
+/**
+ * El permiso para abrirlos antes de hora (FE #717, RyderCupAM#374): lo deciden
+ * LOS DOS capitanes. Se da o se retira ya entregado, sin volver a ordenar: se
+ * reenvía el mismo orden con el permiso cambiado.
+ *
+ *   #   caso                                          | qué se ve
+ *   ----|---------------------------------------------|------------------------------------
+ *   E1  entregado sin mi permiso                      | «Dar permiso»: reenvía el orden con permiso
+ *   E2  con mi permiso, el rival no                   | «falta el otro» y «Retirar mi permiso»
+ *   E3  el rival ya dio el suyo y yo no               | se dice, junto al botón
+ *   E4  la sesión tiene plazo                         | «si no, se abren solos» con la hora
+ *   E5  la sesión no tiene plazo                      | no se promete hora
+ *   E6  con el envío en marcha                        | un segundo toque no manda nada
+ */
+describe('EnvelopePage · el permiso para abrirlos antes de hora (FE #717)', () => {
+  const entregado = (extra = {}, mio = {}) =>
+    vista({
+      teamASubmitted: true,
+      mine: {
+        team: 'A',
+        entries: [['bea'], ['ana']],
+        submitted: true,
+        automatic: false,
+        revealWhenBothReady: false,
+        ...mio,
+      },
+      ...extra,
+    });
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockEntregar.mockResolvedValue({ team: 'A', entries: [['bea'], ['ana']], automatic: false });
+  });
+
+  it('E1: ya entregado, se da el permiso sin volver a ordenar', async () => {
+    mockVer
+      .mockResolvedValueOnce(entregado())
+      .mockResolvedValue(entregado({}, { revealWhenBothReady: true }));
+    pintar();
+
+    fireEvent.click(await screen.findByTestId('dar-permiso'));
+
+    await waitFor(() =>
+      expect(mockEntregar).toHaveBeenCalledWith('ronda-1', [['bea'], ['ana']], true)
+    );
+    // Lo que vuelve del servidor: con el permiso dado, se puede retirar
+    expect(await screen.findByTestId('retirar-permiso')).toBeInTheDocument();
+    expect(screen.queryByTestId('dar-permiso')).not.toBeInTheDocument();
+  });
+
+  it('E2: con mi permiso dado, falta el del otro y se puede retirar', async () => {
+    mockVer.mockResolvedValue(entregado({}, { revealWhenBothReady: true }));
+    pintar();
+
+    expect(await screen.findByTestId('falta-que-lo-marque-el-rival')).toBeInTheDocument();
+    expect(screen.queryByTestId('dar-permiso')).not.toBeInTheDocument();
+    mockVer.mockResolvedValue(entregado());
+    fireEvent.click(screen.getByTestId('retirar-permiso'));
+
+    await waitFor(() =>
+      expect(mockEntregar).toHaveBeenCalledWith('ronda-1', [['bea'], ['ana']], false)
+    );
+    // Retirado: vuelve a ofrecerse darlo
+    expect(await screen.findByTestId('dar-permiso')).toBeInTheDocument();
+    expect(screen.queryByTestId('retirar-permiso')).not.toBeInTheDocument();
+  });
+
+  it('E3: si el otro ya dio el suyo, se dice', async () => {
+    mockVer.mockResolvedValue(entregado({ rivalWantsEarly: true, rivalSubmitted: true }));
+    pintar();
+
+    expect(await screen.findByTestId('el-rival-ya-dio-permiso')).toHaveTextContent(
+      'envelope.rivalConsented'
+    );
+    expect(screen.getByTestId('dar-permiso')).toBeInTheDocument();
+  });
+
+  it('E4: con plazo, si no hay permiso de los dos se abren solos a su hora', async () => {
+    mockVer.mockResolvedValue(entregado());
+    pintar();
+
+    expect(await screen.findByTestId('se-abren-solos')).toHaveTextContent('envelope.opensOnItsOwn');
+  });
+
+  it('E5: sin plazo no se promete ninguna hora', async () => {
+    mockVer.mockResolvedValue(entregado({ revealScheduledAt: null }));
+    pintar();
+
+    await screen.findByTestId('dar-permiso');
+    expect(screen.queryByTestId('se-abren-solos')).not.toBeInTheDocument();
+  });
+
+  it('E6: con el envío en marcha, un segundo toque no manda nada', async () => {
+    let soltar;
+    mockEntregar.mockImplementation(() => new Promise((r) => { soltar = r; }));
+    mockVer.mockResolvedValue(entregado());
+    pintar();
+
+    const boton = await screen.findByTestId('dar-permiso');
+    fireEvent.click(boton);
+    fireEvent.click(boton);
+    soltar({ team: 'A', entries: [['bea'], ['ana']], automatic: false });
+
+    await waitFor(() => expect(mockEntregar).toHaveBeenCalledTimes(1));
+  });
+
+  it('E7: mientras se guarda el permiso no se puede ir a cambiar el orden', async () => {
+    let soltar;
+    mockEntregar.mockImplementation(() => new Promise((r) => { soltar = r; }));
+    mockVer.mockResolvedValue(entregado());
+    pintar();
+
+    fireEvent.click(await screen.findByTestId('dar-permiso'));
+
+    // Si no, el formulario arrancaría con el permiso de ANTES y al entregar lo
+    // retiraría sin avisar
+    expect(screen.getByTestId('cambiar-sobre')).toBeDisabled();
+    soltar({ team: 'A', entries: [['bea'], ['ana']], automatic: false });
+  });
+
+  it('E8: si la hora no se puede enseñar, no sale la frase a medias', async () => {
+    mockVer.mockResolvedValue(entregado({ revealScheduledAt: '2030-06-01T00:00:00' }));
+    pintar();
+
+    await screen.findByTestId('dar-permiso');
+    expect(screen.queryByTestId('se-abren-solos')).not.toBeInTheDocument();
+  });
+});
+
+
+
+/**
+ * La página se entera sola de que se abrieron (#710). Con los dos permisos, el
+ * capitán que da el suyo primero espera justo ese momento y no lo veía: seguía
+ * leyendo «el rival todavía no ha entregado» con los partidos ya creados.
+ *
+ *   #   caso                                       | refresco
+ *   ----|-------------------------------------------|-------------------------
+ *   S1  cerrados y el mío entregado               | sí, y ve los enfrentamientos
+ *   S2  cerrados y el mío sin entregar            | no: está ordenando
+ *   S3  ya abiertos                               | no: ya no cambia nada
+ *   S4  la carga falló                            | no se insiste
+ *   S5  falla una consulta del refresco           | sin aviso: no ha hecho nada
+ */
+describe('EnvelopePage · se entera sola de que se abrieron (#710)', () => {
+  const entregadoYEsperando = () =>
+    vista({
+      teamASubmitted: true,
+      mine: { team: 'A', entries: [['ana'], ['bea']], submitted: true, automatic: false },
+    });
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  const pasan = async (ms) => {
+    await act(async () => {
+      vi.advanceTimersByTime(ms);
+    });
+  };
+
+  it('S1: con el mío entregado y cerrados, pregunta sola y ve los enfrentamientos', async () => {
+    mockVer
+      .mockResolvedValueOnce(entregadoYEsperando())
+      .mockResolvedValue(
+        vista({
+          revealed: true,
+          teamASubmitted: true,
+          teamBSubmitted: true,
+          mine: { team: 'A', entries: [['ana'], ['bea']], submitted: true, automatic: false },
+          matchups: [[['ana'], ['carla']]],
+        })
+      );
+    pintar();
+    await screen.findByTestId('dar-permiso');
+
+    await pasan(11000);
+
+    expect(await screen.findByText('envelope.matchups')).toBeInTheDocument();
+  });
+
+  it('S9: si al pulsar «Cambiar» llega el equipo impar, vuelve a verse el entregado (revisión local, FE #741)', async () => {
+    // Una consulta del refresco en vuelo al tocar «Cambiar» que vuelve con el
+    // equipo impar: sin formulario (#741) y sin el entregado, la pantalla se
+    // quedaba solo con el aviso hasta recargar
+    let responder;
+    mockVer
+      .mockResolvedValueOnce(entregadoYEsperando())
+      .mockImplementationOnce(() => new Promise((r) => { responder = r; }));
+    pintar();
+    await screen.findByTestId('dar-permiso');
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(11000);
+    });
+    await waitFor(() => expect(mockVer).toHaveBeenCalledTimes(2));
+    fireEvent.click(screen.getByTestId('cambiar-sobre'));
+    await act(async () => {
+      responder({ ...entregadoYEsperando(), teamsFitFormat: false });
+    });
+
+    expect(await screen.findByTestId('equipo-impar')).toBeInTheDocument();
+    expect(screen.getByTestId('sobre-entregado')).toBeInTheDocument();
+  });
+
+  it('S2: sin haber entregado no pregunta: está ordenando', async () => {
+    mockVer.mockResolvedValue(vista());
+    pintar();
+    await waitFor(() => expect(mockVer).toHaveBeenCalledTimes(1));
+
+    await pasan(30000);
+
+    expect(mockVer).toHaveBeenCalledTimes(1);
+  });
+
+  it('S3: ya abiertos no pregunta más', async () => {
+    // Con el mío entregado: si no, no preguntaría por esa otra razón
+    mockVer.mockResolvedValue(
+      vista({
+        revealed: true,
+        teamASubmitted: true,
+        teamBSubmitted: true,
+        mine: { team: 'A', entries: [['ana'], ['bea']], submitted: true, automatic: false },
+        matchups: [[['ana'], ['carla']]],
+      })
+    );
+    pintar();
+    await waitFor(() => expect(mockVer).toHaveBeenCalledTimes(1));
+
+    await pasan(30000);
+
+    expect(mockVer).toHaveBeenCalledTimes(1);
+  });
+
+  it('S4: si la carga falló no insiste', async () => {
+    mockVer.mockRejectedValue(new Error('Boom'));
+    pintar();
+    await waitFor(() => expect(mockVer).toHaveBeenCalledTimes(1));
+
+    await pasan(30000);
+
+    expect(mockVer).toHaveBeenCalledTimes(1);
+  });
+
+  it('S5: un fallo del refresco no salta como error', async () => {
+    mockVer.mockResolvedValueOnce(entregadoYEsperando()).mockRejectedValue(new Error('sin red'));
+    pintar();
+    await screen.findByTestId('dar-permiso');
+
+    await pasan(11000);
+
+    await waitFor(() => expect(mockVer).toHaveBeenCalledTimes(2));
+    expect(customToast.error).not.toHaveBeenCalled();
+    // Y lo que ya había sigue en pantalla
+    expect(screen.getByTestId('dar-permiso')).toBeInTheDocument();
+  });
+
+  it('S6: una respuesta vieja del refresco no pisa el permiso recién dado (revisión local)', async () => {
+    let devolverLaVieja;
+    mockVer
+      .mockResolvedValueOnce(entregadoYEsperando())
+      .mockImplementationOnce(() => new Promise((resolve) => { devolverLaVieja = resolve; }))
+      .mockResolvedValue(
+        vista({
+          teamASubmitted: true,
+          mine: {
+            team: 'A',
+            entries: [['ana'], ['bea']],
+            submitted: true,
+            automatic: false,
+            revealWhenBothReady: true,
+          },
+        })
+      );
+    mockEntregar.mockResolvedValue({ team: 'A', entries: [['ana'], ['bea']], automatic: false });
+    pintar();
+    await screen.findByTestId('dar-permiso');
+    await pasan(11000);
+
+    fireEvent.click(screen.getByTestId('dar-permiso'));
+    expect(await screen.findByTestId('retirar-permiso')).toBeInTheDocument();
+    await act(async () => {
+      devolverLaVieja(entregadoYEsperando());
+    });
+
+    expect(screen.getByTestId('retirar-permiso')).toBeInTheDocument();
+  });
+
+  it('S7: si el refresco vuelve a ir bien, el error de antes se va (revisión local)', async () => {
+    mockVer
+      .mockResolvedValueOnce(entregadoYEsperando())
+      .mockRejectedValueOnce(new Error('Boom'))
+      .mockResolvedValue(entregadoYEsperando());
+    mockEntregar.mockResolvedValue({ team: 'A', entries: [['ana'], ['bea']], automatic: false });
+    pintar();
+    // Dar el permiso recarga, y esa recarga falla: la pantalla enseña el error
+    fireEvent.click(await screen.findByTestId('dar-permiso'));
+    await waitFor(() => expect(customToast.error).toHaveBeenCalledWith('Boom'));
+    expect(screen.queryByTestId('dar-permiso')).not.toBeInTheDocument();
+
+    await pasan(11000);
+
+    expect(await screen.findByTestId('dar-permiso')).toBeInTheDocument();
+  });
+
+  it('S8: con una red lenta, los refrescos no se amontonan (CodeRabbit)', async () => {
+    mockVer
+      .mockResolvedValueOnce(entregadoYEsperando())
+      .mockImplementation(() => new Promise(() => {}));
+    pintar();
+    await screen.findByTestId('dar-permiso');
+
+    await pasan(35000);
+
+    // La carga y UN refresco, que sigue sin volver
+    expect(mockVer).toHaveBeenCalledTimes(2);
+  });
+});
+
+/**
+ * LA TABLA del sobre en el bloque 3 de la FE #710.
+ *
+ *   #   caso                                        | qué pasa
+ *   ----|-------------------------------------------|--------------------------------------
+ *   N1  la app rellenó uno                          | un aviso que dice de qué equipo
+ *   N2  la app rellenó los dos                      | UN aviso para los dos, no dos iguales
+ *   N3  no se pueden leer los nombres de los equipos | el aviso sin nombre, sin romper nada
+ *   N4  las parejas en los enfrentamientos          | cada nombre en su línea, sin cortar
+ *   N5  al ir tocando                               | las elegidas suben, en su orden
+ */
+describe('EnvelopePage · lo que se lee (FE #710)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockCompeticion.mockResolvedValue({ team1Name: 'Europa', team2Name: 'América' });
+  });
+
+  const abiertos = (extra) =>
+    vista({
+      revealed: true,
+      teamASubmitted: true,
+      teamBSubmitted: true,
+      matchups: [[['bea'], ['carla']]],
+      ...extra,
+    });
+
+  it('N1: la app rellenó uno: dice de qué equipo', async () => {
+    mockVer.mockResolvedValue(abiertos({ teamBAutomatic: true }));
+    pintar();
+
+    const aviso = await screen.findByTestId('automatico');
+    await waitFor(() =>
+      expect(aviso).toHaveTextContent('envelope.filledByTheAppTeam América')
+    );
+  });
+
+  it('N2: los dos: un solo aviso', async () => {
+    mockVer.mockResolvedValue(abiertos({ teamAAutomatic: true, teamBAutomatic: true }));
+    pintar();
+
+    const avisos = await screen.findAllByTestId('automatico');
+    expect(avisos).toHaveLength(1);
+    expect(avisos[0]).toHaveTextContent('envelope.filledByTheAppBoth');
+  });
+
+  it('N3: sin los nombres de los equipos, el aviso sale igual', async () => {
+    mockCompeticion.mockRejectedValue(new TypeError('Failed to fetch'));
+    mockVer.mockResolvedValue(abiertos({ teamAAutomatic: true }));
+    pintar();
+
+    expect(await screen.findByTestId('automatico')).toHaveTextContent('envelope.filledByTheApp');
+  });
+
+  it('N3b: sin sobres rellenados por la app no se pregunta por los equipos', async () => {
+    mockVer.mockResolvedValue(abiertos());
+    pintar();
+
+    await screen.findByTestId('enfrentamiento-0');
+    expect(screen.queryByTestId('automatico')).not.toBeInTheDocument();
+    expect(mockCompeticion).not.toHaveBeenCalled();
+  });
+
+  it('N3c: al cambiar de competición sin desmontarse, no nombra al equipo de la anterior (CodeRabbit)', async () => {
+    const { Link } = await import('react-router');
+    mockVer.mockResolvedValue(abiertos({ teamBAutomatic: true }));
+    render(
+      <MemoryRouter initialEntries={['/competitions/comp-1/rounds/ronda-1/envelope']}>
+        <Link to="/competitions/comp-2/rounds/ronda-2/envelope">otra</Link>
+        <Routes>
+          <Route path="/competitions/:id/rounds/:roundId/envelope" element={<EnvelopePage />} />
+        </Routes>
+      </MemoryRouter>
+    );
+    await waitFor(() => expect(screen.getByTestId('automatico')).toHaveTextContent('América'));
+
+    mockCompeticion.mockRejectedValue(new TypeError('Failed to fetch'));
+    fireEvent.click(screen.getByText('otra'));
+
+    await waitFor(() => expect(mockCompeticion).toHaveBeenCalledWith('comp-2'));
+    await waitFor(() =>
+      expect(screen.getByTestId('automatico').textContent).toBe('envelope.filledByTheApp')
+    );
+  });
+
+  it('N4: las parejas se leen enteras, un nombre por línea', async () => {
+    mockVer.mockResolvedValue(
+      abiertos({ playersPerRow: 2, matchups: [[['ana', 'bea'], ['carla', 'dani']]] })
+    );
+    pintar();
+
+    const fila = await screen.findByTestId('enfrentamiento-0');
+    for (const nombre of ['Ana Alba', 'Bea Blanco', 'Carla Cruz', 'Dani Díaz']) {
+      expect(within(fila).getByText(nombre)).toBeInTheDocument();
+    }
+    expect(fila.querySelector('.truncate')).toBeNull();
+  });
+
+  it('N5: al tocar, las elegidas suben en su orden', async () => {
+    mockVer.mockResolvedValue(vista({ myPlayers: CUATRO }));
+    pintar();
+
+    fireEvent.click(await screen.findByTestId('jugador-carla'));
+    fireEvent.click(screen.getByTestId('jugador-bea'));
+
+    const orden = screen
+      .getAllByTestId(/^jugador-/)
+      .map((b) => b.dataset.testid.replace('jugador-', ''));
+    expect(orden).toEqual(['carla', 'bea', 'ana', 'dani']);
+  });
+});

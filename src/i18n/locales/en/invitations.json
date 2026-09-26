@@ -29,7 +29,8 @@
     "PENDING": "Pending",
     "ACCEPTED": "Accepted",
     "DECLINED": "Declined",
-    "EXPIRED": "Expired"
+    "EXPIRED": "Expired",
+    "NO_ROOM": "No room left"
   },
   "actions": {
     "accept": "Accept",
@@ -60,6 +61,7 @@
     "failedToLoad": "Failed to load invitations",
     "failedToSend": "Failed to send invitation",
     "failedToRespond": "Failed to respond to invitation",
+    "noRoom": "This invitation ran out of room when enrolment closed.",
     "duplicateInvitation": "An invitation has already been sent to this email",
     "invalidEmail": "Please enter a valid email address",
     "rolesCheckFailed": "Could not check whether you can manage this competition",
@@ -71,7 +73,8 @@
     "sendNew": "Send Invitation",
     "sentCount_one": "{{count}} invitation sent",
     "sentCount_other": "{{count}} invitations sent",
-    "nearCapacity": "Already {{accepted}} accepted invitations out of {{max}} spots. The tournament is nearly full."
+    "nearCapacity": "Already {{accepted}} accepted invitations out of {{max}} spots. The tournament is nearly full.",
+    "enrollmentClosed": "Enrolment is closed: nobody can be invited any more."
   },
   "player": {
     "title": "My Invitations",

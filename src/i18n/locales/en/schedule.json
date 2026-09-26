@@ -18,7 +18,10 @@
     "allowancePercentage": "Allowance %",
     "effectiveAllowance": "Effective Allowance",
     "matchCount_one": "{{count}} match",
-    "matchCount_other": "{{count}} matches"
+    "matchCount_other": "{{count}} matches",
+    "resting_one": "Resting: {{names}}",
+    "resting_other": "Resting: {{names}}",
+    "unknownPlayer": "a player"
   },
   "matches": {
     "title": "Matches",
@@ -63,7 +66,8 @@
         "incompleteMatch": "All matches must have complete teams",
         "duplicatePlayer": "A player can only appear in one match",
         "noTeamAssignment": "Teams must be assigned before generating matches"
-      }
+      },
+      "byEnvelopes": "In Ryder Cup mode the captains' envelopes decide the matchups. If this session's envelopes are already open, the matches come from them; otherwise players are paired by handicap."
     }
   },
   "teams": {
@@ -73,11 +77,28 @@
     "mode": "Assignment Mode",
     "manual": "Manual",
     "automatic": "Automatic",
+    "draft": "Captains' draft",
     "teamA": "Team A",
     "teamB": "Team B",
     "noTeamsAssigned": "Teams have not been assigned yet",
     "playersCount_one": "{{count}} player",
-    "playersCount_other": "{{count}} players"
+    "playersCount_other": "{{count}} players",
+    "captainsFixed": "The captains are already on their team and cannot be moved.",
+    "captainTag": "Captain",
+    "viceCaptainTag": "Vice-captain",
+    "everyoneNeedsTeam_one": "{{count}} player still has no team: in a Ryder everybody plays.",
+    "everyoneNeedsTeam_other": "{{count}} players still have no team: in a Ryder everybody plays.",
+    "captainMissing": "One captain is missing. Name them in the competition before assigning the teams.",
+    "fillCaptain": "Name a captain",
+    "fillCaptainTitle": "Name the {{team}} captain",
+    "fillCaptainExplanation": "That team has no captain: either they withdrew or none was ever named. Pick a player from that team.",
+    "fillCaptainChoose": "Choose a player",
+    "fillCaptainConfirm": "Name them",
+    "fillCaptainCancel": "Cancel",
+    "fillCaptainNobody": "Nobody is left enrolled in that team.",
+    "captainMissingWithTeams": "One captain is missing. With the teams already assigned, use \"Name a captain\" on the team that needs one.",
+    "replaceWarning": "This replaces the current teams. If they came from the draft, changing them here undoes what the captains picked.",
+    "enrollmentsNotLoaded": "The players could not be loaded: reload the page before reassigning, or the teams would come out empty."
   },
   "configuration": {
     "title": "Schedule Configuration",
@@ -126,7 +147,8 @@
     "failedToUpdateMatchStatus": "Failed to update match status",
     "failedToDeclareWalkover": "Failed to declare walkover",
     "failedToReassignPlayers": "Failed to reassign players",
-    "failedToLoadMatch": "Failed to load match details"
+    "failedToLoadMatch": "Failed to load match details",
+    "failedToFillCaptain": "The captain could not be named"
   },
   "success": {
     "roundCreated": "Round created successfully",
@@ -136,6 +158,48 @@
     "teamsAssigned": "Teams assigned successfully",
     "matchStatusUpdated": "Match status updated successfully",
     "walkoverDeclared": "Walkover declared successfully",
-    "playersReassigned": "Players reassigned successfully"
+    "playersReassigned": "Players reassigned successfully",
+    "captainFilled": "Captain named"
+  },
+  "generationBlock": {
+    "title": "This session's matches could not be created",
+    "missing": {
+      "GENDER": "has no gender on their profile",
+      "TEE_COLOR": "plays from tees this course does not have:",
+      "ENROLLMENT": "does not have an approved enrolment",
+      "OTHER": "is missing something needed to play"
+    },
+    "reason": {
+      "NOT_ENOUGH_PLAYERS": "Some matchups have players without an approved enrolment.",
+      "NO_TEAMS": "The teams have not been drawn yet.",
+      "NO_GOLF_COURSE": "This session has no golf course to take the tees from.",
+      "UNEXPECTED": "Something went wrong while creating them.",
+      "PLAYERS_WITHOUT_TEE": "Some players are missing what is needed to know which tees they play from.",
+      "ENROLLMENT_OPEN": "They opened while enrolment was reopened: close it before creating them."
+    },
+    "retry": "Once it is fixed, press “Generate Matches” to create them."
+  },
+  "agenda": {
+    "title": "Schedule",
+    "notLoaded": "The schedule could not be loaded. Try again in a moment.",
+    "empty": "There are no sessions yet.",
+    "emptyManage": "There are no sessions yet: add the ones that will be played.",
+    "matches_one": "{{count}} match",
+    "matches_other": "{{count}} matches",
+    "format": "Session format",
+    "course": "Session course",
+    "remove": "Remove the session",
+    "add": "Add session",
+    "day": "Day",
+    "slot": "Slot",
+    "addConfirm": "Add",
+    "cancel": "Cancel",
+    "error": "The schedule could not be changed",
+    "inDetail": "Change the schedule",
+    "confirmFormat": "If the captains already handed in their envelopes, changing the format discards them and they will have to hand them in again. Change it?",
+    "confirmRemove": "Remove this session?",
+    "yes": "Yes",
+    "no": "No",
+    "courseRemoved": "Course no longer in the competition"
   }
 }

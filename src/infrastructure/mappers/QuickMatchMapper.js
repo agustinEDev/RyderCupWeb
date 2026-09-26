@@ -1,5 +1,6 @@
 import QuickMatch from '../../domain/entities/QuickMatch';
 import QuickMatchStatus from '../../domain/value_objects/QuickMatchStatus';
+import { instanteDeLaApi } from '../../utils/instanteDeLaApi';
 
 /**
  * QuickMatchMapper - Anti-Corruption Layer
@@ -98,8 +99,8 @@ class QuickMatchMapper {
       scoringAssignments,
       participantStrokes,
       excludedFromStats: apiData.excluded_from_stats ?? false,
-      createdAt: apiData.created_at,
-      updatedAt: apiData.updated_at,
+      createdAt: apiData.created_at && instanteDeLaApi(apiData.created_at),
+      updatedAt: apiData.updated_at && instanteDeLaApi(apiData.updated_at),
     });
   }
 

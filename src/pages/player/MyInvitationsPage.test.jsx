@@ -1,7 +1,8 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import MyInvitationsPage from './MyInvitationsPage';
+import customToast from '../../utils/toast';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -34,6 +35,18 @@ const mockListMyInvitations = vi.fn().mockResolvedValue({
 });
 
 const mockRespondToInvitation = vi.fn();
+// El género para apuntarse (#710): por defecto lo tiene, y los casos que no lo
+// tienen lo dicen
+const mockGuardarGenero = vi.fn();
+const mockRefrescarSesion = vi.fn();
+let faltaGenero = false;
+vi.mock('../../hooks/useGeneroParaApuntarse', () => ({
+  useGeneroParaApuntarse: () => ({
+    falta: faltaGenero,
+    guardar: mockGuardarGenero,
+    refrescar: mockRefrescarSesion,
+  }),
+}));
 
 vi.mock('../../composition', () => ({
   listMyInvitationsUseCase: { execute: (...args) => mockListMyInvitations(...args) },
@@ -104,6 +117,149 @@ describe('MyInvitationsPage', () => {
     renderPage();
     expect(await screen.findByTestId('accept-button')).toBeInTheDocument();
     expect(screen.getByTestId('decline-button')).toBeInTheDocument();
+  });
+
+  it('A4: se puede filtrar por las que se quedaron sin plaza (#710)', async () => {
+    renderPage();
+    const filtro = await screen.findByTestId('status-filter');
+    expect(within(filtro).getByRole('option', { name: 'status.NO_ROOM' })).toBeInTheDocument();
+  });
+
+  describe('aceptar sin género (#710)', () => {
+    const PENDIENTE = {
+      id: 'inv-1',
+      competitionId: 'comp-1',
+      competitionName: 'Summer Cup',
+      inviterName: 'Creator',
+      inviteeEmail: 'player@test.com',
+      status: 'PENDING',
+      isPending: true,
+      isAccepted: false,
+      isDeclined: false,
+      isExpired: false,
+      personalMessage: null,
+      expiresAt: new Date(Date.now() + 86400000).toISOString(),
+      respondedAt: null,
+    };
+
+    beforeEach(() => {
+      mockListMyInvitations.mockResolvedValue({ invitations: [PENDIENTE], totalCount: 1 });
+      mockRespondToInvitation.mockResolvedValue({ competitionId: 'comp-1' });
+    });
+
+    afterEach(() => {
+      faltaGenero = false;
+    });
+
+    it('I1: sin género, aceptar lo pregunta antes, lo guarda y luego acepta', async () => {
+      faltaGenero = true;
+      const orden = [];
+      mockGuardarGenero.mockImplementation(async () => orden.push('genero'));
+      mockRefrescarSesion.mockImplementation(async () => orden.push('sesion'));
+      mockRespondToInvitation.mockImplementation(async () => {
+        orden.push('acepta');
+        return { competitionId: 'comp-1' };
+      });
+      renderPage();
+
+      fireEvent.click(await screen.findByTestId('accept-button'));
+      expect(mockRespondToInvitation).not.toHaveBeenCalled();
+      fireEvent.change(await screen.findByTestId('selector-de-genero'), {
+        target: { value: 'FEMALE' },
+      });
+      fireEvent.click(screen.getByTestId('genero-confirmar'));
+
+      await waitFor(() => expect(mockRespondToInvitation).toHaveBeenCalledWith('inv-1', 'ACCEPT'));
+      expect(mockGuardarGenero).toHaveBeenCalledWith('FEMALE');
+      await waitFor(() => expect(orden).toEqual(['genero', 'acepta', 'sesion']));
+    });
+
+    it('I2: con género, aceptar acepta sin preguntar', async () => {
+      renderPage();
+
+      fireEvent.click(await screen.findByTestId('accept-button'));
+
+      await waitFor(() => expect(mockRespondToInvitation).toHaveBeenCalledWith('inv-1', 'ACCEPT'));
+      expect(screen.queryByTestId('selector-de-genero')).not.toBeInTheDocument();
+    });
+
+    // FE #733 · el motivo de «sin plaza» sale del código, en el idioma de la app
+    //   I4  INVITATION_NO_ROOM   → su texto traducido y la lista se relee (ya es NO_ROOM)
+    //   I5  otro error           → el mensaje del servidor, como siempre
+    it('I4: sin plaza, lo dice en su idioma y relee la lista', async () => {
+      mockRespondToInvitation.mockRejectedValueOnce(
+        Object.assign(new Error('Esta invitación se quedó sin plaza al cerrarse la inscripción'), {
+          status: 409,
+          errorCode: 'INVITATION_NO_ROOM',
+        })
+      );
+      renderPage();
+      await screen.findByTestId('accept-button');
+      const lecturas = mockListMyInvitations.mock.calls.length;
+
+      fireEvent.click(screen.getByTestId('accept-button'));
+
+      await waitFor(() => expect(customToast.error).toHaveBeenCalledWith('errors.noRoom'));
+      await waitFor(() => expect(mockListMyInvitations.mock.calls.length).toBeGreaterThan(lecturas));
+    });
+
+    // FE #737 · rechazar una que se quedó sin plaza NO es un fallo: el jugador no
+    // iba a jugarla y ya no la juega. Ni error ni «rechazada»: se relee y la
+    // tarjeta dice «Sin plaza», que es lo que pasó
+    it('I4b: rechazar una que ya está sin plaza no da error: solo relee la lista', async () => {
+      mockRespondToInvitation.mockRejectedValueOnce(
+        Object.assign(new Error('Esta invitación se quedó sin plaza al cerrarse la inscripción'), {
+          status: 409,
+          errorCode: 'INVITATION_NO_ROOM',
+        })
+      );
+      renderPage();
+      await screen.findByTestId('decline-button');
+      const lecturas = mockListMyInvitations.mock.calls.length;
+
+      fireEvent.click(screen.getByTestId('decline-button'));
+
+      await waitFor(() => expect(mockListMyInvitations.mock.calls.length).toBeGreaterThan(lecturas));
+      expect(customToast.error).not.toHaveBeenCalled();
+      expect(customToast.success).not.toHaveBeenCalled();
+    });
+
+    it('I5b: rechazar con otro error sí lo dice, con el mensaje del servidor', async () => {
+      mockRespondToInvitation.mockRejectedValueOnce(
+        Object.assign(new Error('Invitation has expired'), { status: 409 })
+      );
+      renderPage();
+
+      fireEvent.click(await screen.findByTestId('decline-button'));
+
+      await waitFor(() => expect(customToast.error).toHaveBeenCalledWith('Invitation has expired'));
+    });
+
+    it('I5: otro error, el mensaje del servidor', async () => {
+      mockRespondToInvitation.mockRejectedValueOnce(
+        Object.assign(new Error('Invitation has expired'), { status: 409 })
+      );
+      renderPage();
+
+      fireEvent.click(await screen.findByTestId('accept-button'));
+
+      await waitFor(() => expect(customToast.error).toHaveBeenCalledWith('Invitation has expired'));
+    });
+
+    it('I3: si no se pudo guardar el género, no se acepta', async () => {
+      faltaGenero = true;
+      mockGuardarGenero.mockRejectedValueOnce(new Error('sin red'));
+      renderPage();
+
+      fireEvent.click(await screen.findByTestId('accept-button'));
+      fireEvent.change(await screen.findByTestId('selector-de-genero'), {
+        target: { value: 'MALE' },
+      });
+      fireEvent.click(screen.getByTestId('genero-confirmar'));
+
+      await waitFor(() => expect(customToast.error).toHaveBeenCalledWith('sin red'));
+      expect(mockRespondToInvitation).not.toHaveBeenCalled();
+    });
   });
 
   it('should have status filter dropdown', async () => {

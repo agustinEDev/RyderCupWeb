@@ -1,6 +1,6 @@
 // src/pages/BrowseCompetitions.jsx
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router';
 import customToast from '../utils/toast';
 import { useTranslation } from 'react-i18next';
@@ -13,12 +13,22 @@ import {
 } from '../composition';
 import { CountryFlag } from '../utils/countryUtils';
 import { useAuth } from '../hooks/useAuth';
+import { useGeneroParaApuntarse } from '../hooks/useGeneroParaApuntarse';
+import { mensajeDeError } from '../utils/sinCobertura';
 import EnrollmentRequestModal from '../components/enrollment/EnrollmentRequestModal';
 import BlockLoader from '../components/ui/BlockLoader';
+import { formatDateRange } from '../services/competitions';
 
 const BrowseCompetitions = () => {
+  // El género para apuntarse, solo a quien le falta (#710)
+  const generoParaApuntarse = useGeneroParaApuntarse();
   const navigate = useNavigate();
   const { t } = useTranslation('competitions');
+  const { t: tComun } = useTranslation('common');
+  // Por qué no se pudo pedir plaza: se lee en el modal, que sigue abierto (#710)
+  const [errorAlApuntarse, setErrorAlApuntarse] = useState(null);
+  // De qué competición es el modal abierto, para no mezclar resultados
+  const modalAbiertoPara = useRef(null);
 
   // User state
   const { user, loading: isLoading } = useAuth();
@@ -40,9 +50,13 @@ const BrowseCompetitions = () => {
   const [enrollModalOpen, setEnrollModalOpen] = useState(false);
   const [enrollTargetId, setEnrollTargetId] = useState(null);
 
+  // Por el id y no por el objeto: refrescar la sesión crea un `user` nuevo con
+  // el mismo id, y la lista se recargaba tras apuntarse (CodeRabbit, #720)
+  const userId = user?.id;
+
   // Load joinable competitions
   useEffect(() => {
-    if (!user) return;
+    if (!userId) return;
 
     const loadJoinableCompetitions = async () => {
       try {
@@ -67,11 +81,11 @@ const BrowseCompetitions = () => {
     };
 
     loadJoinableCompetitions();
-  }, [user, t]);
+  }, [userId, t]);
 
   // Load explore competitions
   useEffect(() => {
-    if (!user) return;
+    if (!userId) return;
 
     const loadExploreCompetitions = async () => {
       try {
@@ -87,7 +101,7 @@ const BrowseCompetitions = () => {
     };
 
     loadExploreCompetitions();
-  }, [user, t]);
+  }, [userId, t]);
 
   // Filter joinable competitions by search AND exclude user's own competitions
   const filteredJoinableCompetitions = joinableCompetitions.filter((comp) => {
@@ -130,19 +144,34 @@ const BrowseCompetitions = () => {
 
   // Open modal to request enrollment
   const openEnrollModal = (competitionId) => {
+    setErrorAlApuntarse(null);
+    modalAbiertoPara.current = competitionId;
     setEnrollTargetId(competitionId);
     setEnrollModalOpen(true);
   };
 
   // Handle request enrollment
-  const handleRequestEnrollment = async (competitionId, color = null) => {
-    setEnrollModalOpen(false);
+  const handleRequestEnrollment = async (competitionId, color = null, genero = null) => {
+    // El resultado es de ESTA competición: si mientras tanto se cerró su modal
+    // y se abrió el de otra, no se toca el de la otra (CodeRabbit en la #721)
+    const esSuModal = () => modalAbiertoPara.current === competitionId;
+    setErrorAlApuntarse(null);
+    let generoGuardado = false;
     try {
       setRequestingEnrollment((prev) => ({ ...prev, [competitionId]: true }));
+
+      // Antes que la plaza: sin género el servidor la rechaza (#710)
+      if (genero) {
+        await generoParaApuntarse.guardar(genero);
+        generoGuardado = true;
+      }
 
       // Call RequestEnrollmentUseCase
       await requestEnrollmentUseCase.execute(competitionId, null, { color });
 
+      // Se cierra solo si ha ido bien (#710): cerrarlo antes dejaba un fallo
+      // con cara de éxito. Y solo si sigue siendo el suyo (CodeRabbit, #721)
+      if (esSuModal()) setEnrollModalOpen(false);
       customToast.success(t('browse.success.enrollmentRequested'));
 
       // Remove competition from UI immediately (optimistic update)
@@ -171,15 +200,28 @@ const BrowseCompetitions = () => {
       console.error('❌ Error requesting enrollment:', error);
 
       // Check if it's a duplicate enrollment error (409 Conflict)
-      if (error.message?.includes('409')) {
+      // Por el estado: el texto del servidor no lleva «409» (revisión local)
+      if (error?.status === 409) {
+        if (esSuModal()) setEnrollModalOpen(false);
         customToast.error(t('browse.errors.alreadyEnrolled'));
         // Remove from list since user already has enrollment
         setJoinableCompetitions((prev) => prev.filter((comp) => comp.id !== competitionId));
       } else {
-        customToast.error(error.message || t('browse.errors.failedToEnroll'));
+        // En el modal, que sigue abierto: el motivo del servidor, o «sin
+        // conexión», y no el error crudo del navegador (#710)
+        if (esSuModal()) {
+          setErrorAlApuntarse(
+            mensajeDeError(error, {
+              sinConexion: tComun('sinConexion.mensaje'),
+              generico: t('browse.errors.failedToEnroll'),
+            })
+          );
+        }
       }
     } finally {
       setRequestingEnrollment((prev) => ({ ...prev, [competitionId]: false }));
+      // Al final, aunque la plaza falle: el género ya quedó guardado (#710)
+      if (generoGuardado) generoParaApuntarse.refrescar();
     }
   };
 
@@ -407,9 +449,14 @@ const BrowseCompetitions = () => {
 
       <EnrollmentRequestModal
         isOpen={enrollModalOpen}
-        onClose={() => setEnrollModalOpen(false)}
-        onConfirm={(tee) => handleRequestEnrollment(enrollTargetId, tee)}
+        onClose={() => {
+          modalAbiertoPara.current = null;
+          setEnrollModalOpen(false);
+        }}
+        onConfirm={(tee, genero) => handleRequestEnrollment(enrollTargetId, tee, genero)}
         isProcessing={!!requestingEnrollment[enrollTargetId]}
+        pideGenero={generoParaApuntarse.falta}
+        error={errorAlApuntarse}
       />
     </div>
   );
@@ -417,14 +464,11 @@ const BrowseCompetitions = () => {
 
 // Competition Card Component
 const CompetitionCard = ({ competition, mode, onRequestEnrollment, onViewDetails, isRequesting }) => {
-  const { t } = useTranslation('competitions');
-  const { id, name, startDate, endDate, status, creator, enrolledCount, maxPlayers, countries } = competition;
-
-  // Format dates
-  const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-  };
+  const { t, i18n } = useTranslation('competitions');
+  const { id, name, startDate, endDate, status, creator, enrolledCount, maxPlayers, countries, visibility } = competition;
+  // Solo en una pública se pide plaza: un admin ve también las privadas en esta
+  // lista, y en ellas se entra por invitación (FE #734)
+  const sePidePlaza = mode === 'joinable' && visibility === 'PUBLIC';
 
   // Get status badge
   const getStatusBadge = () => {
@@ -477,7 +521,7 @@ const CompetitionCard = ({ competition, mode, onRequestEnrollment, onViewDetails
         <div className="flex items-center text-sm text-gray-600">
           <Calendar className="w-4 h-4 mr-2 text-gray-400" />
           <span>
-            {formatDate(startDate)} - {formatDate(endDate)}
+            {formatDateRange(startDate, endDate, i18n.language)}
           </span>
         </div>
 
@@ -501,7 +545,7 @@ const CompetitionCard = ({ competition, mode, onRequestEnrollment, onViewDetails
 
       {/* Card Footer */}
       <div className="p-4 bg-gray-50 border-t border-gray-100">
-        {mode === 'joinable' ? (
+        {sePidePlaza ? (
           <button
             onClick={(e) => {
               e.stopPropagation(); // Prevent card click when clicking button

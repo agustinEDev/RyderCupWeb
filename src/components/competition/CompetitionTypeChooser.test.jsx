@@ -126,3 +126,17 @@ describe('CompetitionTypeChooser', () => {
     expect(screen.getByTestId('tipo-RYDER_CUP')).not.toHaveAttribute('aria-disabled', 'true');
   });
 });
+
+describe('CompetitionTypeChooser · las tarjetas alineadas (FE #710)', () => {
+  it('el contenido de todas empieza arriba: la de «próximamente» es más alta', () => {
+    // Un botón centra su contenido en vertical: las bajas quedaban centradas y
+    // la alta arriba, y los iconos no se alineaban
+    render(<CompetitionTypeChooser onSelect={vi.fn()} />);
+
+    for (const id of ['RYDER_CUP', 'STABLEFORD', 'MEDAL']) {
+      const clases = screen.getByTestId(`tipo-${id}`).className;
+      expect(clases).toContain('flex-col');
+      expect(clases).toContain('justify-start');
+    }
+  });
+});

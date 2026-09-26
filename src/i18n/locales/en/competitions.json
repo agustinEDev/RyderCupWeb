@@ -53,6 +53,8 @@
     "competitionName": "Competition Name *",
     "competitionNamePlaceholder": "e.g. Ryder Cup with friends",
     "teamOneName": "Team 1 Name *",
+    "defaultTeamOne": "Europe",
+    "defaultTeamTwo": "USA",
     "teamOneNamePlaceholder": "e.g., Europe",
     "teamTwoName": "Team 2 Name *",
     "teamTwoNamePlaceholder": "e.g., USA",
@@ -82,9 +84,6 @@
     "handicap": "Handicap",
     "numberOfPlayers": "Number of Players",
     "numberOfPlayersPlaceholder": "Enter total number of players",
-    "teamAssignment": "Team Assignment",
-    "manual": "Manual",
-    "automatic": "Automatic",
     "maxPlayingHandicap": "Playing Handicap Limit",
     "maxPlayingHandicapPlaceholder": "No limit (e.g. 28)",
     "maxPlayingHandicapHint": "Max 1–54. Leave empty for no limit.",
@@ -111,9 +110,7 @@
     "errorAddingCourses": "Competition created, but golf courses could not be added. You can add them manually from the detail page.",
     "error": "Failed to create competition",
     "moreOptions": "More options",
-    "moreOptionsSummary": "{{equipo1}} and {{equipo2}} · {{asignacion}} · {{handicap}}",
-    "summaryAutomatic": "automatic teams",
-    "summaryManual": "teams by hand",
+    "moreOptionsSummary": "{{equipo1}} and {{equipo2}} · {{handicap}}",
     "summaryHandicapLimit": "handicap limit {{limite}}",
     "summaryNoHandicapLimit": "no handicap limit",
     "moreOptionsIncomplete": "Some options are missing: expand them to fill them in",
@@ -121,7 +118,23 @@
     "visibilityPrivate": "Invited only",
     "visibilityPublic": "Anyone",
     "visibilityPrivateHelp": "It does not show when exploring: the people you invite are the ones who get in",
-    "visibilityPublicHelp": "It shows when exploring and anyone can ask for a place; you still decide who gets in"
+    "visibilityPublicHelp": "It shows when exploring and anyone can ask for a place; you still decide who gets in",
+    "setupMode": {
+      "title": "How much should the app do",
+      "subtitle": "You can change it while enrolment is open.",
+      "AUTOMATIC": {
+        "title": "Fully automatic",
+        "blurb": "The app builds the teams, names the captains and creates the matches. It only asks which days are played, in which slot and on which course."
+      },
+      "MANUAL": {
+        "title": "Fully manual",
+        "blurb": "You decide everything: teams, captains, rounds, matches and matchups."
+      },
+      "RYDER_CUP": {
+        "title": "Ryder Cup style",
+        "blurb": "A live player draft (or teams by hand), captains you name, configurable rounds and matchups from envelopes."
+      }
+    }
   },
   "edit": {
     "title": "Edit Competition",
@@ -130,7 +143,9 @@
     "updateCompetition": "Update Competition",
     "success": "Competition updated successfully!",
     "error": "Failed to update competition",
-    "errorLoading": "Failed to load competition"
+    "errorLoading": "Failed to load competition",
+    "notEditable": "This competition can no longer be edited: it can only be edited while enrolment is open.",
+    "datesLeaveSessionsOut": "Those dates leave these sessions out: {{sesiones}}. Move or delete them before changing the dates."
   },
   "detail": {
     "loadingCompetition": "Loading competition...",
@@ -149,6 +164,7 @@
     "enrollmentOpensOn": "From {{fecha}}",
     "actions": {
       "edit": "Edit",
+      "more": "More actions",
       "activate": "Activate",
       "close-enrollments": "Close Enrollments",
       "start-competition": "Start Competition",
@@ -156,25 +172,83 @@
       "cancel": "Cancel",
       "delete": "Delete",
       "request-to-join": "Request to Join",
-      "manageSchedule": "Manage Schedule",
+      "manageSchedule": "Teams and matches",
       "viewSchedule": "View Schedule",
       "manageInvitations": "Invitations",
       "leaderboard": "Leaderboard",
       "reopen-enrollments": "Reopen Enrollments",
       "revert-status": "Revert to Closed",
-      "revert-to-in-progress": "Reopen Tournament"
+      "revert-to-in-progress": "Reopen Tournament",
+      "nameCaptains": "Name captains",
+      "changeCaptains": "Change captains"
     },
-    "confirmations": {
-      "activate": "Are you sure you want to activate this competition?",
-      "close-enrollments": "Are you sure you want to close enrollments for this competition?",
-      "start": "Are you sure you want to start this competition?",
-      "complete": "Are you sure you want to complete this competition?",
-      "cancel": "Are you sure you want to cancel this competition?",
-      "delete": "Are you sure you want to delete this competition? This action cannot be undone.",
-      "reject-enrollment": "Are you sure you want to reject this enrollment?",
-      "reopen-enrollments": "Are you sure you want to reopen enrollments? The competition will go back to ACTIVE status.",
-      "revert-status": "Are you sure you want to revert to CLOSED status? This will allow you to modify the schedule.",
-      "revert-to-in-progress": "Are you sure you want to reopen this tournament? It will go back to IN_PROGRESS status so you can, for example, add another round. Completed matches will not be affected."
+    "deleteModal": {
+      "title": "Delete the competition?",
+      "nobodyElse": "It will be deleted for good, with its schedule and teams. Nobody else is enrolled.",
+      "unknownOthers": "It will be deleted for good, with its enrolments, schedule and teams. Who else is enrolled could not be checked.",
+      "othersLosePlace_one": "It will be deleted for good, with its schedule and teams, and {{count}} other player will lose their place.",
+      "othersLosePlace_other": "It will be deleted for good, with its schedule and teams, and {{count}} other players will lose their place.",
+      "nobodyEnrolled": "It will be deleted for good, with its schedule and teams. Nobody is enrolled.",
+      "playersLosePlace_one": "It will be deleted for good, with its schedule and teams, and {{count}} player will lose their place.",
+      "playersLosePlace_other": "It will be deleted for good, with its schedule and teams, and {{count}} players will lose their place.",
+      "confirm": "Delete",
+      "keep": "No, keep it"
+    },
+    "confirmDialogs": {
+      "activate": {
+        "title": "Activate the competition?",
+        "body": "Enrolment opens and people can sign up.",
+        "confirm": "Yes, activate it",
+        "keep": "Not yet"
+      },
+      "close-enrollments": {
+        "title": "Close enrolment?",
+        "body": "Nobody else can sign up, and invitations still pending lose their place.",
+        "confirm": "Yes, close it",
+        "keep": "No, keep it open"
+      },
+      "start": {
+        "title": "Start the competition?",
+        "body": "The competition becomes in progress.",
+        "confirm": "Yes, start it",
+        "keep": "Not yet"
+      },
+      "complete": {
+        "title": "Mark the competition as finished?",
+        "body": "It becomes completed.",
+        "confirm": "Yes, finish it",
+        "keep": "Not yet"
+      },
+      "cancel": {
+        "title": "Cancel the competition?",
+        "body": "It is called off for everyone enrolled and cannot be undone.",
+        "confirm": "Yes, cancel it",
+        "keep": "No, keep it"
+      },
+      "reject-enrollment": {
+        "title": "Reject {{name}}'s request?",
+        "body": "They will not join the competition.",
+        "confirm": "Yes, reject it",
+        "keep": "No, leave it pending"
+      },
+      "reopen-enrollments": {
+        "title": "Reopen enrolment?",
+        "body": "The competition becomes active again and people can sign up.",
+        "confirm": "Yes, reopen it",
+        "keep": "No, keep it closed"
+      },
+      "revert-status": {
+        "title": "Go back to closed?",
+        "body": "You will be able to change the schedule again.",
+        "confirm": "Yes, go back",
+        "keep": "No, leave it"
+      },
+      "revert-to-in-progress": {
+        "title": "Reopen the tournament?",
+        "body": "It goes back to in progress so you can, for example, add another round. Completed matches do not change.",
+        "confirm": "Yes, reopen it",
+        "keep": "No, keep it finished"
+      }
     },
     "errors": {
       "golfCoursePendingApproval": "Cannot activate competition: Golf course is pending approval",
@@ -200,14 +274,21 @@
       "teamTwo": "Team 2:",
       "playMode": "Play Mode:",
       "teamAssignment": "Team Assignment:",
+      "setupMode": "Setup:",
       "maxPlayingHandicap": "Playing Handicap Limit:",
       "maxPlayingHandicapNone": "No limit",
-      "created": "Created:"
+      "created": "Created:",
+      "assignment": {
+        "MANUAL": "Manual",
+        "AUTOMATIC": "Automatic",
+        "DRAFT": "Captains' draft",
+        "PENDING": "Not split yet"
+      }
     },
-    "approvedPlayers": "Approved Players ({{count}})",
+    "approvedPlayers": "Approved players",
     "noApprovedPlayers": "No approved players yet",
-    "pendingRequests": "Pending Requests ({{count}})",
-    "rejectedEnrollments": "Rejected Enrollments ({{count}})",
+    "pendingRequests": "Pending requests",
+    "rejectedRequests": "Rejected requests",
     "approve": "Approve",
     "reject": "Reject",
     "noEmail": "No email",
@@ -237,7 +318,9 @@
       "enrollmentRequested": "Enrollment request sent successfully",
       "enrollmentsReopened": "Enrollments reopened successfully",
       "statusReverted": "Competition reverted to CLOSED status successfully",
-      "revertedToInProgress": "Tournament reopened and back to IN_PROGRESS status"
+      "revertedToInProgress": "Tournament reopened and back to IN_PROGRESS status",
+      "captainsNamed": "Captains named. Enrolment is now closed.",
+      "captainsChanged": "Captains changed."
     },
     "failedToApprove": "Failed to approve enrollment",
     "competitionFull": "The competition is full. Maximum number of players ({{max}}) has been reached.",
@@ -248,14 +331,19 @@
     "failedToEnroll": "Failed to enroll",
     "failedToLoadCompetitions": "Failed to load competitions",
     "golfCourses": {
-      "title": "Golf Courses ({{count}})",
+      "title": "Golf courses",
       "addCourse": "Add Course",
       "selectCourse": "Select Golf Course",
       "noCourses": "No golf courses associated with this competition",
       "errorLoading": "Failed to load golf courses",
       "courseAdded": "Golf course added successfully",
       "errorAdding": "Failed to add golf course",
-      "confirmRemove": "Are you sure you want to remove this golf course from the competition?",
+      "removeDialog": {
+        "title": "Remove {{name}}?",
+        "body": "It will no longer be one of this competition's courses.",
+        "confirm": "Yes, remove it",
+        "keep": "No, keep it"
+      },
       "courseRemoved": "Golf course removed successfully",
       "errorRemoving": "Failed to remove golf course",
       "reordered": "Golf courses reordered successfully",
@@ -268,10 +356,29 @@
         "title": "This course has to be started by hand",
         "body": "Scoring will not open by itself: the competition's organiser has to start the match, and they need a connection. If the course has no signal, better done before setting off."
       },
-      "courseAlreadyAdded": "That course is already in the competition"
+      "courseAlreadyAdded": "That course is already in the competition",
+      "par": "Par {{count}}",
+      "remove": "Remove {{name}} from the competition",
+      "unnamed": "Unnamed course"
     },
     "visibilityPrivate": "Invited only",
-    "visibilityPublic": "Public"
+    "visibilityPublic": "Public",
+    "captains": {
+      "title": "Name the captains",
+      "explanation": "One per team, from the enrolled players. Captains play too, and you can be one.",
+      "closesEnrollment": "Naming them closes enrolment: nobody else will be able to join.",
+      "teamLabel": "{{team}} captain",
+      "choose": "Choose a player",
+      "sameForBoth": "One player cannot captain both teams: pick someone else for one of them.",
+      "cancel": "Cancel",
+      "confirm": "Name them",
+      "uneven_one": "There is {{count}} player: the teams will not come out even. The captains stay named, but assigning the teams will need an even number.",
+      "uneven_other": "There are {{count}} players: the teams will not come out even. The captains stay named, but assigning the teams will need an even number.",
+      "failed": "The captains could not be named.",
+      "captainOf": "{{team}} captain",
+      "viceCaptainOf": "{{team}} vice-captain",
+      "playersUnavailable": "The list of enrolled players could not be loaded. Open the competition again to retry."
+    }
   },
   "browse": {
     "title": "Browse Competitions",
@@ -352,5 +459,62 @@
     "abreEl": "Opens on {{fecha}}.",
     "abreHoy": "Opens today.",
     "creando": "Creating…"
+  },
+  "envelope": {
+    "title": "Your envelope",
+    "titleOthers": "The envelopes",
+    "back": "Back to the schedule",
+    "tapInOrder": "Tap your players in the order you want them to play: the first one faces the rival's first.",
+    "oddTeam": "This session is pairs and one team has an odd number of players: somebody would be left out, so the envelopes cannot be handed in and will not open on their own. The organiser has to change the session format or redo the teams.",
+    "pairHalfDone": "The last pair is still missing a partner.",
+    "submit": "Hand in envelope",
+    "submitted": "Envelope handed in",
+    "undo": "Undo",
+    "change": "Change my order",
+    "yours": "Your envelope is in",
+    "rivalIn": "The rival has handed his in",
+    "rivalPending": "The rival has not handed his in yet",
+    "reveal": "Open the envelopes",
+    "matchups": "Matchups",
+    "versus": "vs",
+    "filledByTheApp": "One envelope was filled in by the app: its captain did not hand it in on time",
+    "filledByTheAppTeam": "{{equipo}}'s envelope was filled in by the app: its captain did not hand it in on time",
+    "filledByTheAppBoth": "Both envelopes were filled in by the app: neither captain handed theirs in on time",
+    "onlyCaptains": "Envelopes are handed in by the captains. The matchups show up here once they are opened.",
+    "open": "Go to your envelope",
+    "reset": "Redo the envelopes",
+    "resetTitle": "Redo this session’s envelopes?",
+    "resetExplanation": "Both envelopes and this session’s matches are thrown away, and the captains hand in again. Only while nothing has been played.",
+    "resetConfirm": "Yes, redo them",
+    "resetDone": "Envelopes and matches redone: the captains can hand in again",
+    "cancel": "Cancel",
+    "revealWhenBothReady": "Open them as soon as we have both handed in, without waiting for the hour",
+    "waitingForRivalToAgree": "You have allowed opening them now; the other captain has yet to.",
+    "deadline": "Deadline {{when}}. After that, whatever is missing the app fills in.",
+    "noDeadline": "This session has no hour to open on its own: if you open it now, the app fills in whatever envelope is missing by handicap.",
+    "giveConsent": "Allow opening them now",
+    "withdrawConsent": "Withdraw my permission",
+    "rivalConsented": "The other captain has already given permission: if you do too, they open now.",
+    "opensOnItsOwn": "Unless you both allow it, they open on their own on {{when}}."
+  },
+  "draft": {
+    "title": "Draft room",
+    "back": "Back to the competition",
+    "notStarted": "The organiser has not launched the draw yet.",
+    "notStartedYouLaunch": "You haven't launched the draw yet. Once you do, the first captain's turn starts.",
+    "start": "Launch the draw",
+    "yourTurn": "Your turn to pick",
+    "turnOf": "{{name}} is picking",
+    "teamA": "Team A",
+    "teamB": "Team B",
+    "captain": "Captain",
+    "available": "Still to pick",
+    "pick": "Pick",
+    "pickedByTheApp": "The app picked when the minute ran out",
+    "lastIncluded": "{{name}} joined your team as the last pick.",
+    "finished": "The teams are set",
+    "turnLost": "Your minute ran out and the app picked for you. It is the other captain's turn now.",
+    "turnLostDraftOver": "Your minute ran out and the app picked for you. That finished the draft.",
+    "open": "Go to the draft room"
   }
 }

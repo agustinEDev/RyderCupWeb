@@ -6,6 +6,9 @@ import {
   sideEntryOf,
 } from '../../domain/services/FoursomesSides';
 import GolfFigure from '../scoring/GolfFigure';
+import CarruselDeTarjetas from '../scoring/CarruselDeTarjetas';
+import TarjetaVertical from '../scoring/TarjetaVertical';
+import { useEsMovil } from '../../hooks/useEsMovil';
 import StablefordCalculator from '../../domain/services/StablefordCalculator';
 
 // Doble bogey BRUTO: lo que suma al total de golpes un hoyo que no se terminó.
@@ -51,6 +54,7 @@ const QuickMatchScorecardTable = ({
   const { t } = useTranslation('quickMatch');
   const { t: ts } = useTranslation('scoring');
   const { t: tCourses } = useTranslation('golfCourses');
+  const esMovil = useEsMovil();
 
   const isStableford = scoringFormat === 'STABLEFORD';
   const isMedal = scoringFormat === 'MEDAL';
@@ -284,8 +288,89 @@ const QuickMatchScorecardTable = ({
       return score != null ? sum + score : sum;
     }, 0);
 
+  // Lo que se pinta en la casilla de un hoyo: la figura, los puntos o el neto
+  // del hoyo y los puntitos de los golpes. La comparten la tarjeta horizontal
+  // y la vertical del móvil (FE #739)
+  // Lo que se sabe de un hoyo de una tarjeta: su golpe (o la raya) y lo que
+  // recibe. Lo leen la casilla y la columna de puntos o neto
+  const datosDelHoyo = (h, card) => {
+    const entry = getEntry(h.holeNumber, card.members);
+    const strokesReceived = getStrokesReceived(h.holeNumber, card.strokesId);
+    // La raya es un hoyo anotado sin número: se pinta como raya y
+    // puntúa cero. Para los puntos del hoyo se usa el doble bogey
+    // NETO —lo que el WHS computa en un hoyo no terminado—, que no es
+    // lo mismo que el `par + 2` bruto con el que suma al total de la
+    // fila: el bruto no lleva golpes recibidos y el neto sí. Sin
+    // entrada no hay hoyo que pintar.
+    const isPickedUp = entry != null && entry.score == null;
+    const score = isPickedUp
+      ? StablefordCalculator.netDoubleBogey(h.par, strokesReceived)
+      : (entry?.score ?? null);
+    const dotCount = Math.min(Math.abs(strokesReceived), MAX_STROKE_DOTS);
+    return { isPickedUp, score, strokesReceived, dotCount };
+  };
+
+  // Los puntos Stableford o el neto en Medal. En la tarjeta del móvil van en
+  // su propia columna; en la horizontal, bajo la figura
+  const extraDelHoyo = (h, card) => {
+    const { score, strokesReceived } = datosDelHoyo(h, card);
+    if (score == null) return null;
+    if (isStableford) {
+      const puntos = StablefordCalculator.holePoints(score, h.par, strokesReceived);
+      return (
+        <span
+          data-testid="hole-points"
+          className="text-[10px] font-semibold text-primary"
+          title={t('scoring.scorecard.holePoints', { count: puntos })}
+        >
+          {puntos}
+        </span>
+      );
+    }
+    if (isMedal) {
+      return (
+        <span
+          data-testid="hole-net-strokes"
+          className="text-[10px] font-semibold text-primary"
+          title={t('scoring.scorecard.holeNetStrokes', { count: score - strokesReceived })}
+        >
+          {score - strokesReceived}
+        </span>
+      );
+    }
+    return null;
+  };
+
+  const casilla = (h, card, { conExtra = true } = {}) => {
+    const { isPickedUp, score, strokesReceived, dotCount } = datosDelHoyo(h, card);
+    return (
+      <div className="flex flex-col items-center gap-0.5">
+        <GolfFigure score={isPickedUp ? null : score} par={h.par} pickedUp={isPickedUp} />
+        {conExtra && extraDelHoyo(h, card)}
+        {dotCount > 0 && (
+          <div
+            className="flex gap-0.5"
+            data-testid="stroke-dots"
+            title={
+              strokesReceived > 0
+                ? t('scoring.scorecard.strokeReceived', { count: strokesReceived })
+                : t('scoring.scorecard.strokeGiven', { count: Math.abs(strokesReceived) })
+            }
+          >
+            {Array.from({ length: dotCount }).map((_, i) => (
+              <span
+                key={i}
+                className={`w-1.5 h-1.5 rounded-full ${strokesReceived > 0 ? 'bg-primary' : 'bg-amber-500'}`}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   const renderSection = (sectionHoles, label, card) => (
-    <div className="overflow-x-auto">
+    <div data-testid="vuelta-horizontal" className="overflow-x-auto">
       <table className="min-w-full text-xs">
         <thead>
           <tr className="bg-gray-50">
@@ -319,70 +404,15 @@ const QuickMatchScorecardTable = ({
             <th scope="row" className="px-2 py-1.5 text-left font-medium text-gray-400 sr-only">
               {label}
             </th>
-            {sectionHoles.map((h) => {
-              const entry = getEntry(h.holeNumber, card.members);
-              const strokesReceived = getStrokesReceived(h.holeNumber, card.strokesId);
-              // La raya es un hoyo anotado sin número: se pinta como raya y
-              // puntúa cero. Para los puntos del hoyo se usa el doble bogey
-              // NETO —lo que el WHS computa en un hoyo no terminado—, que no es
-              // lo mismo que el `par + 2` bruto con el que suma al total de la
-              // fila: el bruto no lleva golpes recibidos y el neto sí. Sin
-              // entrada no hay hoyo que pintar.
-              const isPickedUp = entry != null && entry.score == null;
-              const score = isPickedUp
-                ? StablefordCalculator.netDoubleBogey(h.par, strokesReceived)
-                : (entry?.score ?? null);
-              const dotCount = Math.min(Math.abs(strokesReceived), MAX_STROKE_DOTS);
-              return (
-                <td
-                  key={h.holeNumber}
-                  data-testid={`quick-match-score-cell-${card.key}-${h.holeNumber}`}
-                  className="px-1 py-1 text-center align-top"
-                >
-                  <div className="flex flex-col items-center gap-0.5">
-                    <GolfFigure score={isPickedUp ? null : score} par={h.par} pickedUp={isPickedUp} />
-                    {score != null && isStableford && (
-                      <span
-                        data-testid="hole-points"
-                        className="text-[10px] font-semibold text-primary"
-                        title={t('scoring.scorecard.holePoints', {
-                          count: StablefordCalculator.holePoints(score, h.par, strokesReceived),
-                        })}
-                      >
-                        {StablefordCalculator.holePoints(score, h.par, strokesReceived)}
-                      </span>
-                    )}
-                    {score != null && isMedal && (
-                      <span
-                        data-testid="hole-net-strokes"
-                        className="text-[10px] font-semibold text-primary"
-                        title={t('scoring.scorecard.holeNetStrokes', { count: score - strokesReceived })}
-                      >
-                        {score - strokesReceived}
-                      </span>
-                    )}
-                    {dotCount > 0 && (
-                      <div
-                        className="flex gap-0.5"
-                        data-testid="stroke-dots"
-                        title={
-                          strokesReceived > 0
-                            ? t('scoring.scorecard.strokeReceived', { count: strokesReceived })
-                            : t('scoring.scorecard.strokeGiven', { count: Math.abs(strokesReceived) })
-                        }
-                      >
-                        {Array.from({ length: dotCount }).map((_, i) => (
-                          <span
-                            key={i}
-                            className={`w-1.5 h-1.5 rounded-full ${strokesReceived > 0 ? 'bg-primary' : 'bg-amber-500'}`}
-                          />
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </td>
-              );
-            })}
+            {sectionHoles.map((h) => (
+              <td
+                key={h.holeNumber}
+                data-testid={`quick-match-score-cell-${card.key}-${h.holeNumber}`}
+                className="px-1 py-1 text-center align-top"
+              >
+                {casilla(h, card)}
+              </td>
+            ))}
             <td className="px-2 py-1 text-center font-bold">
               {sumStrokes(sectionHoles, card.members) || '-'}
             </td>
@@ -391,6 +421,87 @@ const QuickMatchScorecardTable = ({
       </table>
     </div>
   );
+
+  // Quién es, desde qué barra juega y con qué hándicap: la comparten la
+  // tarjeta horizontal y la vertical del móvil
+  const cabeceraDe = (card) => (
+    <>
+      <span className="text-sm font-semibold text-gray-800">
+        {card.title}
+        {card.isMine && (
+          <span className="ml-1.5 text-xs font-normal text-primary">
+            ({t('scoring.classification.you')})
+          </span>
+        )}
+      </span>
+      <p
+        className="text-xs text-gray-500 leading-tight"
+        data-testid={`quick-match-player-handicap-${card.key}`}
+      >
+        {playMode === 'SCRATCH'
+          ? t('scoring.scorecard.scratchMatch')
+          : [
+              renderTeeLabel(card.teeParticipant),
+              card.playingHandicap != null
+                ? t('scoring.scorecard.playingHandicap', {
+                    value: card.playingHandicap,
+                  })
+                : null,
+              describeStrokes(totalStrokesFor(card.strokesId)),
+            ]
+              .filter(Boolean)
+              .join(' · ')}
+      </p>
+    </>
+  );
+
+  const conIda = (card) => card.holes.some((h) => h.holeNumber > 9);
+  const tarjetaVertical = (card) => (
+    <TarjetaVertical
+      clave={card.key}
+      testId={`quick-match-player-card-${card.key}`}
+      equipo={card.members[0]?.team === 'A' || card.members[0]?.team === 'B' ? card.members[0].team : null}
+      cabecera={cabeceraDe(card)}
+      // Los puntos o el neto en su columna, no apilados bajo la figura: hay
+      // sitio y la fila queda más baja (ronda 2 de pruebas)
+      columnaExtra={
+        isStableford
+          ? t('scoring.scorecard.pointsShort')
+          : isMedal
+            ? t('scoring.scorecard.netShort')
+            : undefined
+      }
+      hoyos={card.holes.map((h) => ({
+        holeNumber: h.holeNumber,
+        par: h.par,
+        strokeIndex: h.strokeIndex,
+        casilla: casilla(h, card, { conExtra: false }),
+        extra: extraDelHoyo(h, card),
+      }))}
+      sumas={{
+        ida: conIda(card) ? sumStrokes(card.holes.filter((h) => h.holeNumber <= 9), card.members) : undefined,
+        vuelta: conIda(card) ? sumStrokes(card.holes.filter((h) => h.holeNumber > 9), card.members) : undefined,
+        total: sumStrokes(card.holes, card.members),
+      }}
+    />
+  );
+
+  // FE #739 · en el móvil, las tarjetas de arriba abajo y deslizables, como en
+  // competición: la horizontal no cabía a 360 px
+  if (esMovil) {
+    return (
+      <div data-testid="quick-match-scorecard-table">
+        <CarruselDeTarjetas
+          tarjetas={cards.map((card) => ({
+            clave: card.key,
+            nombre: card.title,
+            equipo: card.members[0]?.team === 'A' || card.members[0]?.team === 'B' ? card.members[0].team : undefined,
+            contenido: tarjetaVertical(card),
+          }))}
+        />
+      </div>
+    );
+  }
 
   return (
     <div data-testid="quick-match-scorecard-table" className="space-y-3">
@@ -403,32 +514,7 @@ const QuickMatchScorecardTable = ({
           }`}
         >
           <div className="px-3 py-1.5 bg-gray-50 border-b border-gray-200">
-            <span className="text-sm font-semibold text-gray-800">
-              {card.title}
-              {card.isMine && (
-                <span className="ml-1.5 text-xs font-normal text-primary">
-                  ({t('scoring.classification.you')})
-                </span>
-              )}
-            </span>
-            <p
-              className="text-xs text-gray-500 leading-tight"
-              data-testid={`quick-match-player-handicap-${card.key}`}
-            >
-              {playMode === 'SCRATCH'
-                ? t('scoring.scorecard.scratchMatch')
-                : [
-                    renderTeeLabel(card.teeParticipant),
-                    card.playingHandicap != null
-                      ? t('scoring.scorecard.playingHandicap', {
-                          value: card.playingHandicap,
-                        })
-                      : null,
-                    describeStrokes(totalStrokesFor(card.strokesId)),
-                  ]
-                    .filter(Boolean)
-                    .join(' · ')}
-            </p>
+            {cabeceraDe(card)}
           </div>
           <div className="p-2 space-y-2">
             {renderSection(

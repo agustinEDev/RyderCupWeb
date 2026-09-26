@@ -1,5 +1,6 @@
 import Friendship from '../../domain/entities/Friendship';
 import FriendshipStatus from '../../domain/value_objects/FriendshipStatus';
+import { instanteDeLaApi } from '../../utils/instanteDeLaApi';
 
 /**
  * FriendshipMapper - Anti-Corruption Layer
@@ -30,9 +31,9 @@ class FriendshipMapper {
       requesterId: apiData.requester_id,
       addresseeId: apiData.addressee_id,
       status: FriendshipStatus.fromString(apiData.status),
-      respondedAt: apiData.responded_at || null,
-      createdAt: apiData.created_at,
-      updatedAt: apiData.updated_at,
+      respondedAt: apiData.responded_at ? instanteDeLaApi(apiData.responded_at) : null,
+      createdAt: apiData.created_at && instanteDeLaApi(apiData.created_at),
+      updatedAt: apiData.updated_at && instanteDeLaApi(apiData.updated_at),
     });
   }
 

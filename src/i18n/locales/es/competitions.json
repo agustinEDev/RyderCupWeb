@@ -53,6 +53,8 @@
     "competitionName": "Nombre de la Competición *",
     "competitionNamePlaceholder": "Ej: Ryder Cup de amigos",
     "teamOneName": "Nombre del Equipo 1 *",
+    "defaultTeamOne": "Europa",
+    "defaultTeamTwo": "Estados Unidos",
     "teamOneNamePlaceholder": "ej., Europa",
     "teamTwoName": "Nombre del Equipo 2 *",
     "teamTwoNamePlaceholder": "ej., USA",
@@ -82,9 +84,6 @@
     "handicap": "Hándicap",
     "numberOfPlayers": "Número de Jugadores",
     "numberOfPlayersPlaceholder": "Ingresa el número total de jugadores",
-    "teamAssignment": "Asignación de Equipos",
-    "manual": "Manual",
-    "automatic": "Automática",
     "maxPlayingHandicap": "Límite de Hándicap de Juego",
     "maxPlayingHandicapPlaceholder": "Sin límite (ej: 28)",
     "maxPlayingHandicapHint": "Máximo 1–54. Deja vacío para no aplicar límite.",
@@ -111,9 +110,7 @@
     "errorAddingCourses": "Competición creada, pero no se pudieron añadir los campos de golf. Puedes añadirlos manualmente desde la página de detalle.",
     "error": "Error al crear la competición",
     "moreOptions": "Más opciones",
-    "moreOptionsSummary": "{{equipo1}} y {{equipo2}} · {{asignacion}} · {{handicap}}",
-    "summaryAutomatic": "equipos automáticos",
-    "summaryManual": "equipos a mano",
+    "moreOptionsSummary": "{{equipo1}} y {{equipo2}} · {{handicap}}",
     "summaryHandicapLimit": "límite de hándicap {{limite}}",
     "summaryNoHandicapLimit": "sin límite de hándicap",
     "moreOptionsIncomplete": "Faltan datos en las opciones: despliégalas para completarlas",
@@ -121,7 +118,23 @@
     "visibilityPrivate": "Solo invitados",
     "visibilityPublic": "Cualquiera",
     "visibilityPrivateHelp": "No aparece al explorar: entran las personas a las que invites",
-    "visibilityPublicHelp": "Aparece al explorar y cualquiera puede pedir plaza; tú decides a quién aceptas"
+    "visibilityPublicHelp": "Aparece al explorar y cualquiera puede pedir plaza; tú decides a quién aceptas",
+    "setupMode": {
+      "title": "Cuánto quieres que haga la app",
+      "subtitle": "Puedes cambiarlo mientras las inscripciones sigan abiertas.",
+      "AUTOMATIC": {
+        "title": "Todo automático",
+        "blurb": "La app forma los equipos, nombra capitanes y crea los partidos. Solo te pregunta qué días se juega, en qué franja y en qué campo."
+      },
+      "MANUAL": {
+        "title": "Todo manual",
+        "blurb": "Tú decides cada cosa: equipos, capitanes, rondas, partidos y enfrentamientos."
+      },
+      "RYDER_CUP": {
+        "title": "Estilo Ryder Cup",
+        "blurb": "Draft de jugadores en directo (o equipos a mano), capitanes que eliges tú, rondas configurables y enfrentamientos por sobres."
+      }
+    }
   },
   "edit": {
     "title": "Editar Competición",
@@ -130,7 +143,9 @@
     "updateCompetition": "Actualizar Competición",
     "success": "¡Competición actualizada exitosamente!",
     "error": "Error al actualizar la competición",
-    "errorLoading": "Error al cargar la competición"
+    "errorLoading": "Error al cargar la competición",
+    "notEditable": "Esta competición ya no se puede editar: solo se edita mientras las inscripciones están abiertas.",
+    "datesLeaveSessionsOut": "Con esas fechas se quedan fuera estas sesiones: {{sesiones}}. Muévelas o bórralas antes de cambiar las fechas."
   },
   "detail": {
     "loadingCompetition": "Cargando competición...",
@@ -149,6 +164,7 @@
     "enrollmentOpensOn": "A partir del {{fecha}}",
     "actions": {
       "edit": "Editar",
+      "more": "Más acciones",
       "activate": "Activar",
       "close-enrollments": "Cerrar Inscripciones",
       "start-competition": "Iniciar Competición",
@@ -156,25 +172,83 @@
       "cancel": "Cancelar",
       "delete": "Eliminar",
       "request-to-join": "Solicitar Unirse",
-      "manageSchedule": "Gestionar Calendario",
+      "manageSchedule": "Equipos y partidos",
       "viewSchedule": "Ver Calendario",
       "manageInvitations": "Invitaciones",
       "leaderboard": "Clasificación",
       "reopen-enrollments": "Reabrir Inscripciones",
       "revert-status": "Volver a Cerrada",
-      "revert-to-in-progress": "Reabrir Torneo"
+      "revert-to-in-progress": "Reabrir Torneo",
+      "nameCaptains": "Nombrar capitanes",
+      "changeCaptains": "Cambiar capitanes"
     },
-    "confirmations": {
-      "activate": "¿Estás seguro de que quieres activar esta competición?",
-      "close-enrollments": "¿Estás seguro de que quieres cerrar las inscripciones de esta competición?",
-      "start": "¿Estás seguro de que quieres iniciar esta competición?",
-      "complete": "¿Estás seguro de que quieres completar esta competición?",
-      "cancel": "¿Estás seguro de que quieres cancelar esta competición?",
-      "delete": "¿Estás seguro de que quieres eliminar esta competición? Esta acción no se puede deshacer.",
-      "reject-enrollment": "¿Estás seguro de que quieres rechazar esta inscripción?",
-      "reopen-enrollments": "¿Estás seguro de que quieres reabrir las inscripciones? La competición volverá al estado ACTIVA.",
-      "revert-status": "¿Estás seguro de que quieres volver al estado CERRADA? Esto te permitirá modificar el calendario.",
-      "revert-to-in-progress": "¿Estás seguro de que quieres reabrir este torneo? Volverá al estado EN CURSO para, por ejemplo, poder añadir otra ronda. Los partidos ya completados no se verán afectados."
+    "deleteModal": {
+      "title": "¿Eliminar la competición?",
+      "nobodyElse": "Se borrará para siempre, con su calendario y sus equipos. No hay nadie más inscrito.",
+      "unknownOthers": "Se borrará para siempre, con sus inscripciones, su calendario y sus equipos. No se ha podido comprobar quién más está inscrito.",
+      "othersLosePlace_one": "Se borrará para siempre, con su calendario y sus equipos, y {{count}} jugador más perderá su plaza.",
+      "othersLosePlace_other": "Se borrará para siempre, con su calendario y sus equipos, y {{count}} jugadores más perderán su plaza.",
+      "nobodyEnrolled": "Se borrará para siempre, con su calendario y sus equipos. No hay nadie inscrito.",
+      "playersLosePlace_one": "Se borrará para siempre, con su calendario y sus equipos, y {{count}} jugador perderá su plaza.",
+      "playersLosePlace_other": "Se borrará para siempre, con su calendario y sus equipos, y {{count}} jugadores perderán su plaza.",
+      "confirm": "Eliminar",
+      "keep": "No, mantenerla"
+    },
+    "confirmDialogs": {
+      "activate": {
+        "title": "¿Activar la competición?",
+        "body": "Se abrirán las inscripciones y la gente podrá apuntarse.",
+        "confirm": "Sí, activarla",
+        "keep": "No, todavía no"
+      },
+      "close-enrollments": {
+        "title": "¿Cerrar las inscripciones?",
+        "body": "Nadie más podrá apuntarse, y las invitaciones que sigan pendientes se quedarán sin plaza.",
+        "confirm": "Sí, cerrarlas",
+        "keep": "No, dejarlas abiertas"
+      },
+      "start": {
+        "title": "¿Iniciar la competición?",
+        "body": "La competición pasará a estar en curso.",
+        "confirm": "Sí, iniciarla",
+        "keep": "No, todavía no"
+      },
+      "complete": {
+        "title": "¿Dar la competición por terminada?",
+        "body": "Pasará a completada.",
+        "confirm": "Sí, terminarla",
+        "keep": "No, todavía no"
+      },
+      "cancel": {
+        "title": "¿Cancelar la competición?",
+        "body": "Se suspende para todos los inscritos y no se puede deshacer.",
+        "confirm": "Sí, cancelarla",
+        "keep": "No, mantenerla"
+      },
+      "reject-enrollment": {
+        "title": "¿Rechazar la solicitud de {{name}}?",
+        "body": "No entrará en la competición.",
+        "confirm": "Sí, rechazarla",
+        "keep": "No, dejarla pendiente"
+      },
+      "reopen-enrollments": {
+        "title": "¿Reabrir las inscripciones?",
+        "body": "La competición volverá a estar activa y se podrá apuntar gente otra vez.",
+        "confirm": "Sí, reabrirlas",
+        "keep": "No, dejarlas cerradas"
+      },
+      "revert-status": {
+        "title": "¿Volver a cerrada?",
+        "body": "Podrás volver a modificar el calendario.",
+        "confirm": "Sí, volver a cerrada",
+        "keep": "No, dejarla así"
+      },
+      "revert-to-in-progress": {
+        "title": "¿Reabrir el torneo?",
+        "body": "Volverá a estar en curso para, por ejemplo, añadir otra ronda. Los partidos ya completados no cambian.",
+        "confirm": "Sí, reabrirlo",
+        "keep": "No, dejarlo terminado"
+      }
     },
     "errors": {
       "golfCoursePendingApproval": "No se puede activar la competición: El campo de golf está pendiente de aprobación",
@@ -200,14 +274,21 @@
       "teamTwo": "Equipo 2:",
       "playMode": "Modo de Juego:",
       "teamAssignment": "Asignación de Equipos:",
+      "setupMode": "Cómo se organiza:",
       "maxPlayingHandicap": "Límite Hándicap de Juego:",
       "maxPlayingHandicapNone": "Sin límite",
-      "created": "Creado:"
+      "created": "Creado:",
+      "assignment": {
+        "MANUAL": "Manual",
+        "AUTOMATIC": "Automática",
+        "DRAFT": "Draft de capitanes",
+        "PENDING": "Sin repartir todavía"
+      }
     },
-    "approvedPlayers": "Jugadores Aprobados ({{count}})",
+    "approvedPlayers": "Jugadores aprobados",
     "noApprovedPlayers": "Aún no hay jugadores aprobados",
-    "pendingRequests": "Solicitudes Pendientes ({{count}})",
-    "rejectedEnrollments": "Inscripciones Rechazadas ({{count}})",
+    "pendingRequests": "Solicitudes pendientes",
+    "rejectedRequests": "Solicitudes rechazadas",
     "approve": "Aprobar",
     "reject": "Rechazar",
     "noEmail": "Sin email",
@@ -223,7 +304,7 @@
     "revertToRfegHandicap": "Actualizar con la RFEG",
     "handicapReverted": "Hándicap actualizado con la RFEG",
     "failedToRevertHandicap": "Error al actualizar el hándicap con la RFEG",
-    "rejected": "RECHAZADO",
+    "rejected": "RECHAZADA",
     "enrollmentApproved": "Inscripción aprobada",
     "enrollmentRejected": "Inscripción rechazada",
     "success": {
@@ -237,7 +318,9 @@
       "enrollmentRequested": "Solicitud de inscripción enviada correctamente",
       "enrollmentsReopened": "Inscripciones reabiertas correctamente",
       "statusReverted": "Competición revertida al estado CERRADA correctamente",
-      "revertedToInProgress": "Torneo reabierto y de vuelta al estado EN CURSO"
+      "revertedToInProgress": "Torneo reabierto y de vuelta al estado EN CURSO",
+      "captainsNamed": "Capitanes nombrados. Las inscripciones quedan cerradas.",
+      "captainsChanged": "Capitanes cambiados."
     },
     "failedToApprove": "Error al aprobar la inscripción",
     "competitionFull": "La competición está completa. Se ha alcanzado el número máximo de jugadores ({{max}}).",
@@ -248,14 +331,19 @@
     "failedToEnroll": "Error al solicitar inscripción",
     "failedToLoadCompetitions": "Error al cargar las competiciones",
     "golfCourses": {
-      "title": "Campos de Golf ({{count}})",
+      "title": "Campos de golf",
       "addCourse": "Añadir Campo",
       "selectCourse": "Seleccionar Campo de Golf",
       "noCourses": "No hay campos de golf asociados a esta competición",
       "errorLoading": "Error al cargar los campos de golf",
       "courseAdded": "Campo de golf añadido exitosamente",
       "errorAdding": "Error al añadir el campo de golf",
-      "confirmRemove": "¿Estás seguro de que quieres eliminar este campo de golf de la competición?",
+      "removeDialog": {
+        "title": "¿Quitar {{name}}?",
+        "body": "Dejará de ser uno de los campos de esta competición.",
+        "confirm": "Sí, quitarlo",
+        "keep": "No, mantenerlo"
+      },
       "courseRemoved": "Campo de golf eliminado exitosamente",
       "errorRemoving": "Error al eliminar el campo de golf",
       "reordered": "Campos de golf reordenados exitosamente",
@@ -268,10 +356,29 @@
         "title": "Este campo hay que arrancarlo a mano",
         "body": "La anotación no se abrirá sola: tiene que arrancar el partido el organizador de la competición, y necesita cobertura. Si en el campo no hay señal, mejor que lo haga antes de salir."
       },
-      "courseAlreadyAdded": "Ese campo ya está en la competición"
+      "courseAlreadyAdded": "Ese campo ya está en la competición",
+      "par": "Par {{count}}",
+      "remove": "Quitar {{name}} de la competición",
+      "unnamed": "Campo sin nombre"
     },
     "visibilityPrivate": "Solo invitados",
-    "visibilityPublic": "Pública"
+    "visibilityPublic": "Pública",
+    "captains": {
+      "title": "Nombrar capitanes",
+      "explanation": "Uno por equipo, entre los jugadores inscritos. Los capitanes también juegan, y tú puedes ser uno.",
+      "closesEnrollment": "Al nombrarlos se cierran las inscripciones: ya no podrá apuntarse nadie más.",
+      "teamLabel": "Capitán de {{team}}",
+      "choose": "Elige un jugador",
+      "sameForBoth": "Un jugador no puede capitanear los dos equipos: elige a otro para uno de ellos.",
+      "cancel": "Cancelar",
+      "confirm": "Nombrar",
+      "uneven_one": "Hay {{count}} jugador: los equipos no saldrán iguales. Los capitanes quedan nombrados, pero para repartir los equipos hará falta un número par.",
+      "uneven_other": "Hay {{count}} jugadores: los equipos no saldrán iguales. Los capitanes quedan nombrados, pero para repartir los equipos hará falta un número par.",
+      "failed": "No se han podido nombrar los capitanes.",
+      "captainOf": "Capitán de {{team}}",
+      "viceCaptainOf": "Subcapitán de {{team}}",
+      "playersUnavailable": "No se ha podido cargar la lista de inscritos. Vuelve a abrir la competición para intentarlo de nuevo."
+    }
   },
   "browse": {
     "title": "Explorar Competiciones",
@@ -352,5 +459,62 @@
     "abreEl": "Abrirán el {{fecha}}.",
     "abreHoy": "Abrirán hoy.",
     "creando": "Creando…"
+  },
+  "envelope": {
+    "title": "Tu sobre",
+    "titleOthers": "Los sobres",
+    "back": "Volver al calendario",
+    "tapInOrder": "Toca a tus jugadores en el orden en que quieres que jueguen: el primero se enfrentará al primero del rival.",
+    "oddTeam": "Esta sesión es de parejas y hay un equipo impar: alguien se quedaría fuera, así que no se pueden entregar los sobres ni se abrirán solos. El organizador tiene que cambiar el formato de la sesión o rehacer los equipos.",
+    "pairHalfDone": "Te falta el compañero de la última pareja.",
+    "submit": "Entregar sobre",
+    "submitted": "Sobre entregado",
+    "undo": "Deshacer",
+    "change": "Cambiar mi orden",
+    "yours": "Tu sobre está entregado",
+    "rivalIn": "El rival ya ha entregado el suyo",
+    "rivalPending": "El rival todavía no ha entregado",
+    "reveal": "Abrir los sobres",
+    "matchups": "Enfrentamientos",
+    "versus": "vs",
+    "filledByTheApp": "Un sobre lo rellenó la aplicación: su capitán no lo entregó a tiempo",
+    "filledByTheAppTeam": "El sobre de {{equipo}} lo rellenó la aplicación: su capitán no lo entregó a tiempo",
+    "filledByTheAppBoth": "Los dos sobres los rellenó la aplicación: ningún capitán entregó el suyo a tiempo",
+    "onlyCaptains": "Los sobres los entregan los capitanes. Aquí verás los enfrentamientos en cuanto se abran.",
+    "open": "Ir a tu sobre",
+    "reset": "Rehacer los sobres",
+    "resetTitle": "¿Rehacer los sobres de esta sesión?",
+    "resetExplanation": "Se tiran los dos sobres y los partidos de esta sesión, y los capitanes vuelven a entregar. Solo se puede mientras no se haya jugado nada.",
+    "resetConfirm": "Sí, rehacerlos",
+    "resetDone": "Sobres y partidos de la sesión rehechos: los capitanes pueden volver a entregar",
+    "cancel": "Cancelar",
+    "revealWhenBothReady": "Abrirlos en cuanto los dos hayamos entregado, sin esperar a la hora",
+    "waitingForRivalToAgree": "Has dado permiso para abrirlos ya; falta el del otro capitán.",
+    "deadline": "Plazo hasta el {{when}}. Después, lo que falte lo pone la aplicación.",
+    "noDeadline": "Esta sesión no tiene hora a la que abrirse sola: si la abres ahora, el sobre que falte lo rellenará la aplicación por hándicap.",
+    "giveConsent": "Dar permiso para abrirlos ya",
+    "withdrawConsent": "Retirar mi permiso",
+    "rivalConsented": "El otro capitán ya ha dado permiso: si tú lo das, se abren ahora.",
+    "opensOnItsOwn": "Si no lo dais los dos, se abren solos el {{when}}."
+  },
+  "draft": {
+    "title": "Sala de draft",
+    "back": "Volver a la competición",
+    "notStarted": "El organizador todavía no ha lanzado el sorteo.",
+    "notStartedYouLaunch": "Todavía no has lanzado el sorteo. Cuando lo lances, empieza el turno del primer capitán.",
+    "start": "Lanzar el sorteo",
+    "yourTurn": "Te toca elegir",
+    "turnOf": "Elige {{name}}",
+    "teamA": "Equipo A",
+    "teamB": "Equipo B",
+    "captain": "Capitán",
+    "available": "Por elegir",
+    "pick": "Elegir",
+    "pickedByTheApp": "Lo eligió la aplicación al agotarse el minuto",
+    "lastIncluded": "{{name}} se incluyó en tu equipo al ser la última elección.",
+    "finished": "Los equipos ya están hechos",
+    "turnLost": "Se te acabó el minuto y la aplicación eligió por ti. Ahora le toca al otro capitán.",
+    "turnLostDraftOver": "Se te acabó el minuto y la aplicación eligió por ti. Con eso el draft ha terminado.",
+    "open": "Ir a la sala de draft"
   }
 }

@@ -66,9 +66,8 @@ export const getUserData = async () => {
 
   // Lo que sepa el estado al final, y no lo que devuelva ESTA consulta: si otra
   // la adelanta —un login, un refresco forzado—, la superada resuelve a `null`,
-  // y `App.jsx` lo lee como «no hay sesion». Se quedaba sin cierre por
-  // inactividad, sin vigilancia de dispositivo revocado y sin refresco proactivo
-  // el resto de la visita
+  // y `App.jsx` lo lee como «no hay sesion». Se quedaba sin vigilancia de
+  // dispositivo revocado y sin refresco proactivo el resto de la visita
   return loQueHaySobreLaSesion().user;
 };
 

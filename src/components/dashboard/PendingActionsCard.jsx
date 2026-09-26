@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router';
 import { motion } from 'framer-motion';
-import { Mail, Users, Flag, TrendingUp, ChevronRight, Bell, UserPlus, Zap } from 'lucide-react';
+import { Mail, Users, Flag, TrendingUp, ChevronRight, Bell, UserPlus, Zap, Inbox, AlertTriangle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useEntryMotion } from '../../hooks/useEntryMotion';
 import { slideUp, getEntryProps } from '../../utils/animations';
@@ -10,13 +10,16 @@ import {
   listEnrollmentsUseCase,
   listPendingFriendRequestsUseCase,
   listMyQuickMatchesUseCase,
+  listMyPendingEnvelopesUseCase,
+  listMySessionsWithoutMatchesUseCase,
 } from '../../composition';
 import { loQueSeEnseñoAntes, recuerdaLasAccionesPendientes } from '../../services/accionesPendientes';
 import BlockLoader from '../ui/BlockLoader';
+import { diaDeLaSesion } from '../../utils/diaDeLaSesion';
 
 const PendingActionsCard = ({ user, competitions, onHandicapAction, handicapPending = false , upcomingMatches = 0 }) => {
   const navigate = useNavigate();
-  const { t } = useTranslation('dashboard');
+  const { t, i18n } = useTranslation('dashboard');
   const { animateEntry } = useEntryMotion();
   // Arranca con lo ultimo que esta tarjeta llego a enseñar (FE #502). El panel
   // se remonta cada vez que se vuelve a Inicio desde la barra inferior, asi que
@@ -27,6 +30,10 @@ const PendingActionsCard = ({ user, competitions, onHandicapAction, handicapPend
   const [pendingEnrollments, setPendingEnrollments] = useState(recordado?.pendingEnrollments ?? []);
   const [pendingFriendRequests, setPendingFriendRequests] = useState(recordado?.pendingFriendRequests ?? 0);
   const [activeQuickMatches, setActiveQuickMatches] = useState(recordado?.activeQuickMatches ?? []);
+  const [sobresPendientes, setSobresPendientes] = useState(recordado?.sobresPendientes ?? []);
+  const [sesionesSinPartidos, setSesionesSinPartidos] = useState(
+    recordado?.sesionesSinPartidos ?? []
+  );
   // Solo se enseña la espera cuando NO hay nada que enseñar: con lo de antes en
   // pantalla, el refresco va en silencio
   const [isLoading, setIsLoading] = useState(false);
@@ -39,11 +46,17 @@ const PendingActionsCard = ({ user, competitions, onHandicapAction, handicapPend
     pendingEnrollments: recordado?.pendingEnrollments ?? [],
     pendingFriendRequests: recordado?.pendingFriendRequests ?? 0,
     activeQuickMatches: recordado?.activeQuickMatches ?? [],
+    sobresPendientes: recordado?.sobresPendientes ?? [],
+    sesionesSinPartidos: recordado?.sesionesSinPartidos ?? [],
   });
 
   const isCreator = useMemo(() => user?.is_admin ||
     (user?.roles && Array.isArray(user.roles) &&
       user.roles.some(r => (typeof r === 'string' ? r : r.name) === 'CREATOR' || (typeof r === 'string' ? r : r.name) === 'ADMIN')), [user]);
+
+  // Quien organiza algo (BE #361): el rol, o tener alguna competición. La
+  // lista que recibe esta tarjeta ya son las que ha CREADO (`findByCreator`)
+  const organiza = Boolean(isCreator || competitions?.length > 0);
 
   useEffect(() => {
     if (!user) return;
@@ -53,11 +66,20 @@ const PendingActionsCard = ({ user, competitions, onHandicapAction, handicapPend
     const loadPendingData = async () => {
       if (!loQueSeEnseñoAntes()) setIsLoading(true);
       try {
+        // Cada una dentro de su función async: si alguna fallara aunque fuera
+        // en síncrono, queda como un rechazo más y no tumba el panel entero
+        const pedir = (peticion) => (async () => peticion())();
         const results = await Promise.allSettled([
-          listMyInvitationsUseCase.execute({ status: 'PENDING' }),
-          isCreator ? loadPendingEnrollments(competitions) : Promise.resolve([]),
-          listPendingFriendRequestsUseCase.execute(user.id, 'received'),
-          listMyQuickMatchesUseCase.execute({ status: 'IN_PROGRESS' }),
+          pedir(() => listMyInvitationsUseCase.execute({ status: 'PENDING' })),
+          isCreator ? pedir(() => loadPendingEnrollments(competitions)) : Promise.resolve([]),
+          pedir(() => listPendingFriendRequestsUseCase.execute(user.id, 'received')),
+          pedir(() => listMyQuickMatchesUseCase.execute({ status: 'IN_PROGRESS' })),
+          pedir(() => listMyPendingEnvelopesUseCase.execute()),
+          // Solo quien organiza algo: para los demás siempre es vacía, y cada
+          // vuelta a Inicio era una petición más contra el límite compartido
+          organiza
+            ? pedir(() => listMySessionsWithoutMatchesUseCase.execute())
+            : Promise.resolve([]),
         ]);
 
         // Una respuesta que llega cuando ya nos hemos ido no escribe: antes solo
@@ -91,6 +113,14 @@ const PendingActionsCard = ({ user, competitions, onHandicapAction, handicapPend
           aplicado.activeQuickMatches = results[3].value?.quickMatches || [];
           setActiveQuickMatches(aplicado.activeQuickMatches);
         }
+        if (results[4].status === 'fulfilled') {
+          aplicado.sobresPendientes = results[4].value || [];
+          setSobresPendientes(aplicado.sobresPendientes);
+        }
+        if (results[5].status === 'fulfilled') {
+          aplicado.sesionesSinPartidos = results[5].value || [];
+          setSesionesSinPartidos(aplicado.sesionesSinPartidos);
+        }
 
         ultimoAplicado.current = aplicado;
         recuerdaLasAccionesPendientes({ ...aplicado });
@@ -106,9 +136,30 @@ const PendingActionsCard = ({ user, competitions, onHandicapAction, handicapPend
     return () => {
       cancelado = true;
     };
-  }, [user, competitions, isCreator]);
+  }, [user, competitions, isCreator, organiza]);
 
-  const totalItems = pendingInvitations + pendingEnrollments.length + (upcomingMatches > 0 ? 1 : 0) + (handicapPending ? 1 : 0) + (pendingFriendRequests > 0 ? 1 : 0) + activeQuickMatches.length;
+  // El día y la franja, con el idioma de la aplicación. `Intl` revienta con un
+  // RangeError si la fecha no se puede leer, y esto vive dentro de la tarjeta
+  // entera del panel
+  const cuandoSeJuega = (sobre) => {
+    const franja = sobre.sessionType ? t(`nextMatch.session.${sobre.sessionType}`) : '';
+    let dia = '';
+    try {
+      // Como ese día en casa: leída como UTC, por detrás de UTC salía el anterior
+      const fecha = diaDeLaSesion(sobre.roundDate);
+      if (fecha) {
+        dia = fecha.toLocaleDateString(i18n.language, {
+          day: 'numeric',
+          month: 'short',
+        });
+      }
+    } catch {
+      dia = '';
+    }
+    return [dia, franja].filter(Boolean).join(' ');
+  };
+
+  const totalItems = pendingInvitations + pendingEnrollments.length + (upcomingMatches > 0 ? 1 : 0) + (handicapPending ? 1 : 0) + (pendingFriendRequests > 0 ? 1 : 0) + activeQuickMatches.length + sobresPendientes.length + sesionesSinPartidos.length;
 
   if (isLoading) {
     return (
@@ -222,6 +273,65 @@ const PendingActionsCard = ({ user, competitions, onHandicapAction, handicapPend
                 </div>
               </div>
               <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-gray-600 transition-colors" />
+            </button>
+          ))}
+
+          {/* El sobre del capitán, que si no se entrega a tiempo lo rellena la
+              aplicación por hándicap. Aquí es donde se entera: no hay
+              notificaciones en ninguna parte del producto */}
+          {sobresPendientes.map((sobre) => (
+            <button
+              key={sobre.roundId}
+              onClick={() =>
+                navigate(`/competitions/${sobre.competitionId}/rounds/${sobre.roundId}/envelope`)
+              }
+              className="flex items-center justify-between w-full p-3 bg-white/70 rounded-lg hover:bg-white transition-colors group"
+              data-testid={`sobre-pendiente-${sobre.roundId}`}
+            >
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-amber-100 rounded-lg">
+                  <Inbox className="w-4 h-4 text-amber-600" />
+                </div>
+                <div className="min-w-0 text-left">
+                  <p className="text-sm font-semibold text-gray-900">
+                    {t('pendingActions.envelopePending')}
+                  </p>
+                  {/* De qué sesión: un Ryder de tres días son seis sobres, y
+                      sin esto salen seis botones idénticos que llevan a sitios
+                      distintos */}
+                  <p className="truncate text-xs text-gray-500">
+                    {[cuandoSeJuega(sobre), sobre.competitionName].filter(Boolean).join(' · ')}
+                  </p>
+                </div>
+              </div>
+              <ChevronRight className="w-4 h-4 shrink-0 text-gray-400 group-hover:text-gray-600 transition-colors" />
+            </button>
+          ))}
+
+          {/* La sesión que se abrió sin poder crear sus partidos (BE #361): la
+              arregla el organizador, y sin este aviso se enteraría a la hora
+              de jugar */}
+          {sesionesSinPartidos.map((sesion) => (
+            <button
+              key={sesion.roundId}
+              onClick={() => navigate(`/creator/competitions/${sesion.competitionId}/schedule`)}
+              className="flex items-center justify-between w-full p-3 bg-white/70 rounded-lg hover:bg-white transition-colors group"
+              data-testid={`sesion-sin-partidos-${sesion.roundId}`}
+            >
+              <div className="flex min-w-0 items-center gap-3">
+                <div className="p-2 bg-red-100 rounded-lg">
+                  <AlertTriangle className="w-4 h-4 text-red-600" />
+                </div>
+                <div className="min-w-0 text-left">
+                  <p className="text-sm font-semibold text-gray-900">
+                    {t('pendingActions.sessionWithoutMatches')}
+                  </p>
+                  <p className="truncate text-xs text-gray-500">
+                    {[cuandoSeJuega(sesion), sesion.competitionName].filter(Boolean).join(' · ')}
+                  </p>
+                </div>
+              </div>
+              <ChevronRight className="w-4 h-4 shrink-0 text-gray-400 group-hover:text-gray-600 transition-colors" />
             </button>
           ))}
 

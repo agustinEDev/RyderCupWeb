@@ -1,5 +1,6 @@
-import { ChevronDown, ChevronUp, Edit, Trash2, Zap } from 'lucide-react';
+import { ChevronDown, ChevronUp, Zap } from 'lucide-react';
 import MatchCard from './MatchCard';
+import BloqueoDePartidos from './BloqueoDePartidos';
 
 const STATUS_COLORS = {
   PENDING_TEAMS: 'bg-yellow-100 text-yellow-800',
@@ -11,9 +12,9 @@ const STATUS_COLORS = {
 
 const RoundCard = ({
   round,
-  onEdit,
-  onDelete,
   onGenerateMatches,
+  soloReintento = false,
+  competicionCerrada = true,
   onToggleExpand,
   isExpanded,
   canEdit,
@@ -31,9 +32,23 @@ const RoundCard = ({
   t,
 }) => {
   const status = round.status;
-  const isEditable = canEdit && (status === 'PENDING_TEAMS' || status === 'PENDING_MATCHES');
-  const canGenerate = canEdit && status === 'PENDING_MATCHES';
+  // En modo Ryder, «Generar» solo es un reintento (FE #711): antes de abrirse
+  // los sobres emparejaría por hándicap, y con los partidos hechos los
+  // capitanes ya no podrían entregar. Reintento es que se abrieron y la sesión
+  // se quedó sin partidos: eso es lo que dice su motivo de bloqueo
+  // Y solo con la competición cerrada o en juego: con las inscripciones
+  // reabiertas el servidor lo rechaza siempre
+  const canGenerate =
+    canEdit &&
+    competicionCerrada &&
+    status === 'PENDING_MATCHES' &&
+    (!soloReintento || Boolean(round.matchGenerationBlock));
   const matches = round.matches || [];
+  // Todos cuentan: sin su nombre (inscripciones sin cargar) se dice «un
+  // jugador», que un id suelto no le dice nada a nadie (CodeRabbit en la #720)
+  const descansan = (round.restingPlayerIds || []).map(
+    (id) => playerNameMap?.get?.(id) || t('rounds.unknownPlayer')
+  );
 
   const golfCourseName = golfCourses.find(gc => gc.id === round.golfCourseId)?.name || round.golfCourseId;
 
@@ -84,24 +99,6 @@ const RoundCard = ({
 
         <div className="flex items-center gap-2 shrink-0">
           {/* Action buttons (stop propagation to prevent toggle) */}
-          {isEditable && (
-            <>
-              <button
-                onClick={(e) => { e.stopPropagation(); onEdit(); }}
-                className="p-2 text-gray-500 hover:text-primary hover:bg-primary/10 rounded-lg transition-colors"
-                title={t('rounds.edit')}
-              >
-                <Edit className="w-4 h-4" />
-              </button>
-              <button
-                onClick={(e) => { e.stopPropagation(); onDelete(); }}
-                className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                title={t('rounds.delete')}
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
-            </>
-          )}
           {canGenerate && (
             <button
               onClick={(e) => { e.stopPropagation(); onGenerateMatches(); }}
@@ -119,6 +116,22 @@ const RoundCard = ({
           )}
         </div>
       </div>
+
+      {/* Los sobres se abrieron y los partidos no pudieron crearse (BE #361):
+          sin desplegar, que es lo primero que el organizador tiene que ver */}
+      {round.matchGenerationBlock && (
+        <div className="px-4 pb-4">
+          <BloqueoDePartidos bloqueo={round.matchGenerationBlock} puedeReintentar={canGenerate} />
+        </div>
+      )}
+
+      {/* Quién descansa (#710): con equipos desiguales el que sobra se quedaba
+          sin partido y nadie lo decía. Sin desplegar, como el motivo */}
+      {descansan.length > 0 && (
+        <p data-testid="descansan" className="px-4 pb-3 text-sm text-gray-600">
+          {t('rounds.resting', { count: descansan.length, names: descansan.join(', ') })}
+        </p>
+      )}
 
       {/* Expanded: Matches List */}
       {isExpanded && (

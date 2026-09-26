@@ -76,12 +76,12 @@ describe('HoleInput', () => {
     expect(screen.getByTestId('hole-input')).toHaveTextContent('7');
   });
 
-  it('should leave the box empty (not the par) when no score has been submitted yet', () => {
-    // Hueco, no guion: el guion se confundia con la raya, que es un hoyo ya
-    // cerrado. Queda solo el texto para lectores de pantalla.
+  it('should invite to score, not show the par or a dash, when nothing is entered yet (FE #725)', () => {
+    // Ni el par ni un guion: el guion se confundia con la raya, que es un hoyo
+    // ya cerrado. Y un hueco vacío parecía desactivado: ahora dice «Anotar»
     render(<HoleInput {...defaultProps} />);
-    expect(screen.getByTestId('own-score-value')).toHaveTextContent('input.notEntered');
-    expect(screen.getByTestId('own-score-value').querySelector('.sr-only')).not.toBeNull();
+    expect(screen.getByTestId('own-score-button')).toHaveTextContent('input.tapToScore');
+    expect(screen.getByTestId('own-score-button')).not.toHaveTextContent('4');
   });
 
   it('should show the actual submitted score, styled differently from the unset state', () => {
@@ -97,10 +97,48 @@ describe('HoleInput', () => {
     expect(screen.getByTestId('own-score-button').className).not.toContain('border-dashed');
   });
 
-  it('should style the unset own score button as a dashed placeholder', () => {
+  /**
+   * FE #725 (opción B, solo los botones): el primer hueco vacío del hoyo —el
+   * tuyo antes que el del rival— es el siguiente; los demás, en borde verde.
+   *
+   *   B1  nada anotado                  | tu golpe es el siguiente, el rival en borde
+   *   B2  tu golpe anotado              | el del rival es el siguiente
+   *   B3  los dos anotados              | ningún botón de anotar
+   *   B4  tu bola recogida (la raya)    | cuenta como anotada: el siguiente es el rival
+   */
+  it('B1: nada anotado, tu golpe es el siguiente', () => {
     render(<HoleInput {...defaultProps} />);
-    expect(screen.getByTestId('own-score-button').className).toContain('border-dashed');
-    expect(screen.getByTestId('own-score-value').className).toContain('text-gray-400');
+    expect(within(screen.getByTestId('own-score-button')).getByTestId('anotar-siguiente')).toBeInTheDocument();
+    expect(within(screen.getByTestId('marked-score-button')).getByTestId('anotar')).toBeInTheDocument();
+  });
+
+  it('B2: con tu golpe anotado, el siguiente es el del rival', () => {
+    render(<HoleInput {...defaultProps} playerScore={{ ownScore: 4, ownSubmitted: true }} />);
+    expect(within(screen.getByTestId('marked-score-button')).getByTestId('anotar-siguiente')).toBeInTheDocument();
+    expect(screen.getByTestId('own-score-value')).toHaveTextContent('4');
+  });
+
+  it('B3: los dos anotados, ningún botón de anotar', () => {
+    render(
+      <HoleInput
+        {...defaultProps}
+        playerScore={{ ownScore: 4, ownSubmitted: true }}
+        markedPlayerScore={{ markerScore: 5, markerSubmitted: true }}
+      />
+    );
+    expect(screen.queryByTestId('anotar-siguiente')).toBeNull();
+    expect(screen.queryByTestId('anotar')).toBeNull();
+  });
+
+  it('B5: con tu golpe bloqueado y vacío, el siguiente es el del rival', () => {
+    render(<HoleInput {...defaultProps} isOwnScoreLocked />);
+    expect(within(screen.getByTestId('marked-score-button')).getByTestId('anotar-siguiente')).toBeInTheDocument();
+  });
+
+  it('B4: la raya cuenta como anotada', () => {
+    render(<HoleInput {...defaultProps} playerScore={{ ownScore: null, ownSubmitted: true }} />);
+    expect(screen.getByTestId('own-score-value')).toHaveTextContent('—');
+    expect(within(screen.getByTestId('marked-score-button')).getByTestId('anotar-siguiente')).toBeInTheDocument();
   });
 
   it('should open panel on own score button click and select a value', () => {
@@ -220,7 +258,7 @@ describe('HoleInput · una vista más nueva llega a la casilla (FE #606)', () =>
     // Lo que se vio en Chrome: la vista carga antes de que el vaciado de
     // entrada mande el golpe, y la casilla seguía vacía hasta cambiar de hoyo
     const { rerender } = render(<HoleInput {...base} playerScore={sinAnotar} />);
-    expect(screen.getByTestId('own-score-value')).toHaveTextContent('input.notEntered');
+    expect(screen.getByTestId('own-score-button')).toHaveTextContent('input.tapToScore');
 
     rerender(<HoleInput {...base} playerScore={{ ownSubmitted: true, ownScore: 5 }} />);
 
@@ -297,5 +335,114 @@ describe('HoleInput · el teclado del marcado usa SU par', () => {
     fireEvent.click(screen.getByTestId('marked-score-button'));
     const marked = screen.getByRole('dialog');
     expect(within(marked).getByRole('button', { name: /5/ })).toHaveTextContent('input.par');
+  });
+
+  // #710: en foursomes hay una bola por pareja. «Tu anotación» y «Anotación
+  // marcador» hablaban como si cada uno jugara la suya
+  describe('foursomes', () => {
+    const defaultProps = { holeNumber: 5, par: 4, strokeIndex: 7, onScoreChange: vi.fn() };
+
+    it('F3: las dos casillas son vuestra bola y la del rival', () => {
+      render(<HoleInput {...defaultProps} matchFormat="FOURSOMES" />);
+
+      expect(screen.getByText('input.pairBall')).toBeInTheDocument();
+      expect(screen.getByText('input.rivalBall')).toBeInTheDocument();
+      expect(screen.queryByText('input.yourScore')).not.toBeInTheDocument();
+    });
+
+    it('F4: y en solo lectura, vuestra bola y lo que apuntó el rival', () => {
+      render(
+        <HoleInput
+          {...defaultProps}
+          matchFormat="FOURSOMES"
+          isReadOnly
+          playerScore={{ ownScore: 5, markerScore: 5 }}
+        />
+      );
+
+      expect(screen.getByText('input.pairBall')).toBeInTheDocument();
+      expect(screen.getByText('input.rivalCount')).toBeInTheDocument();
+    });
+
+    it('F3b: y el teclado que se abre se titula igual (revisión local)', () => {
+      render(<HoleInput {...defaultProps} matchFormat="FOURSOMES" />);
+
+      fireEvent.click(screen.getByTestId('own-score-button'));
+
+      expect(screen.getAllByText('input.pairBall').length).toBeGreaterThan(1);
+      expect(screen.queryByText('input.yourScore')).not.toBeInTheDocument();
+    });
+
+    it('F3c: y el de la bola rival también', () => {
+      render(<HoleInput {...defaultProps} matchFormat="FOURSOMES" />);
+
+      fireEvent.click(screen.getByTestId('marked-score-button'));
+
+      expect(screen.getAllByText('input.rivalBall').length).toBeGreaterThan(1);
+      expect(screen.queryByText('input.markerScore')).not.toBeInTheDocument();
+    });
+
+    it('F5: en fourball, cada uno la suya, como siempre', () => {
+      render(<HoleInput {...defaultProps} matchFormat="FOURBALL" />);
+
+      expect(screen.getByText('input.yourScore')).toBeInTheDocument();
+      expect(screen.getByText('input.markerScore')).toBeInTheDocument();
+    });
+  });
+
+  // FE #736 · los dos huecos a la misma altura. La cabecera del marcado lleva
+  // la marca de validación y es más alta que la tuya: con una columna por
+  // jugador, su hueco quedaba 4 px más abajo. Etiquetas en una fila de la
+  // rejilla y huecos en la siguiente: comparten fila, midan lo que midan
+  describe('los dos huecos a la misma altura (#736)', () => {
+    const defaultProps = { holeNumber: 5, par: 4, strokeIndex: 7, onScoreChange: vi.fn() };
+    const filaDeLosHuecos = () => {
+      const rejilla = screen.getByTestId('huecos-del-hoyo');
+      return [...rejilla.children].slice(2);
+    };
+
+    it('A1: con la marca del marcado, los dos huecos van en la misma fila', () => {
+      render(<HoleInput {...defaultProps} markedValidationStatus="match" />);
+      const [tuyo, suyo] = filaDeLosHuecos();
+      expect(tuyo).toBe(screen.getByTestId('own-score-button'));
+      expect(suyo).toBe(screen.getByTestId('marked-score-button'));
+    });
+
+    it('A2: sin marca, igual', () => {
+      render(<HoleInput {...defaultProps} />);
+      const [tuyo, suyo] = filaDeLosHuecos();
+      expect(tuyo).toBe(screen.getByTestId('own-score-button'));
+      expect(suyo).toBe(screen.getByTestId('marked-score-button'));
+    });
+
+    it('A3: un hueco bloqueado sigue en su sitio de la fila', () => {
+      render(
+        <HoleInput
+          {...defaultProps}
+          isOwnScoreLocked
+          playerScore={{ ownScore: 4, ownSubmitted: true }}
+        />
+      );
+      const [tuyo, suyo] = filaDeLosHuecos();
+      expect(tuyo).toBe(screen.getByTestId('own-score-value'));
+      expect(suyo).toBe(screen.getByTestId('marked-score-button'));
+    });
+  });
+
+  // CodeRabbit en la #747 · con los dos huecos vacíos, los dos botones se
+  // anunciaban «Anotar»: un lector de pantalla no sabía cuál era el tuyo
+  describe('cada hueco se llama como su etiqueta (CodeRabbit, #747)', () => {
+    const defaultProps = { holeNumber: 5, par: 4, strokeIndex: 7, onScoreChange: vi.fn() };
+
+    it('C1: el tuyo y el del marcado se distinguen por su nombre', () => {
+      render(<HoleInput {...defaultProps} />);
+
+      expect(screen.getByRole('button', { name: 'input.yourScore' })).toBe(
+        screen.getByTestId('own-score-button')
+      );
+      expect(screen.getByRole('button', { name: 'input.markerScore' })).toBe(
+        screen.getByTestId('marked-score-button')
+      );
+    });
   });
 });

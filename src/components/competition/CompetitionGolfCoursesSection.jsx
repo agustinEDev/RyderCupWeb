@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Flag, Plus, Trash2, GripVertical, MapPin, Loader } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import TituloConNumero from '../ui/TituloConNumero';
 import {
   DndContext,
   closestCenter,
@@ -28,21 +29,28 @@ import {
   reorderGolfCoursesUseCase,
 } from '../../composition';
 import BlockLoader from '../ui/BlockLoader';
+import ConfirmModal from '../modals/ConfirmModal';
+import { etiquetaDelTipoDeCampo } from './etiquetaDelTipoDeCampo';
 import { hayQueArrancarloAMano } from '../../services/arranqueAMano';
+import {
+  CompetitionStatus,
+  CompetitionStatusEnum,
+} from '../../domain/value_objects/CompetitionStatus';
 
 /**
- * Get course type display info
+ * El color de cada tipo de campo. El TEXTO sale de i18n: escrito aquí a mano
+ * se quedaba en inglés en una pantalla en español (visto en el Kind, 23 sep)
  */
-const getCourseTypeInfo = (courseType) => {
+const colorDelTipoDeCampo = (courseType) => {
   switch (courseType) {
     case 'STANDARD_18':
-      return { label: '18 Holes', color: 'bg-green-100 text-green-800 border-green-200' };
+      return 'bg-green-100 text-green-800 border-green-200';
     case 'PITCH_AND_PUTT':
-      return { label: 'Pitch & Putt', color: 'bg-amber-100 text-amber-800 border-amber-200' };
+      return 'bg-amber-100 text-amber-800 border-amber-200';
     case 'EXECUTIVE':
-      return { label: 'Executive', color: 'bg-blue-100 text-blue-800 border-blue-200' };
+      return 'bg-blue-100 text-blue-800 border-blue-200';
     default:
-      return { label: courseType, color: 'bg-gray-100 text-gray-800 border-gray-200' };
+      return 'bg-gray-100 text-gray-800 border-gray-200';
   }
 };
 
@@ -79,7 +87,7 @@ const SortableGolfCourseItem = ({ course, onRemove, canEdit, i18n, t, paises }) 
     opacity: isDragging ? 0.5 : 1,
   };
 
-  const courseTypeInfo = getCourseTypeInfo(course.course_type);
+  const colorDelTipo = colorDelTipoDeCampo(course.course_type);
   const teesCount = course.tees?.length || 0;
 
   return (
@@ -106,14 +114,15 @@ const SortableGolfCourseItem = ({ course, onRemove, canEdit, i18n, t, paises }) 
                 </div>
               )}
               <h4 className="font-bold text-gray-900 leading-tight line-clamp-2">
-                {course.name || `Golf Course`}
+                {course.name || t('detail.golfCourses.unnamed')}
               </h4>
             </div>
             {canEdit && (
               <button
                 onClick={() => onRemove(course.id)}
                 className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors shrink-0"
-                title="Remove golf course"
+                aria-label={t('detail.golfCourses.remove', { name: course.name || t('detail.golfCourses.unnamed') })}
+                title={t('detail.golfCourses.remove', { name: course.name || t('detail.golfCourses.unnamed') })}
               >
                 <Trash2 className="w-4 h-4" />
               </button>
@@ -133,14 +142,18 @@ const SortableGolfCourseItem = ({ course, onRemove, canEdit, i18n, t, paises }) 
           {/* Stats Grid */}
           <div className="grid grid-cols-3 gap-2">
             {/* Course Type */}
-            <div className={`px-2 py-1.5 rounded-lg border text-center ${courseTypeInfo.color}`}>
-              <span className="text-xs font-semibold">{courseTypeInfo.label}</span>
+            <div className={`px-2 py-1.5 rounded-lg border text-center ${colorDelTipo}`}>
+              <span className="text-xs font-semibold">
+                {etiquetaDelTipoDeCampo(course.course_type, t)}
+              </span>
             </div>
 
             {/* Par */}
             {course.total_par > 0 && (
               <div className="px-2 py-1.5 rounded-lg border bg-purple-50 text-purple-800 border-purple-200 text-center">
-                <span className="text-xs font-semibold">Par {course.total_par}</span>
+                <span className="text-xs font-semibold">
+                  {t('detail.golfCourses.par', { count: course.total_par })}
+                </span>
               </div>
             )}
 
@@ -177,7 +190,7 @@ const SortableGolfCourseItem = ({ course, onRemove, canEdit, i18n, t, paises }) 
         {/* Course Info */}
         <div className="flex-1 min-w-0">
           <h4 className="font-bold text-gray-900 truncate mb-1">
-            {course.name || `Golf Course`}
+            {course.name || t('detail.golfCourses.unnamed')}
           </h4>
           {course.country_code && (
             <p className="text-sm text-gray-500 truncate">
@@ -189,14 +202,18 @@ const SortableGolfCourseItem = ({ course, onRemove, canEdit, i18n, t, paises }) 
         {/* Badges */}
         <div className="flex items-center gap-2 shrink-0">
           {/* Course Type */}
-          <div className={`px-3 py-1.5 rounded-lg border ${courseTypeInfo.color}`}>
-            <span className="text-xs font-semibold whitespace-nowrap">{courseTypeInfo.label}</span>
+          <div className={`px-3 py-1.5 rounded-lg border ${colorDelTipo}`}>
+            <span className="text-xs font-semibold whitespace-nowrap">
+              {etiquetaDelTipoDeCampo(course.course_type, t)}
+            </span>
           </div>
 
           {/* Par */}
           {course.total_par > 0 && (
             <div className="px-3 py-1.5 rounded-lg border bg-purple-50 text-purple-800 border-purple-200">
-              <span className="text-xs font-semibold whitespace-nowrap">Par {course.total_par}</span>
+              <span className="text-xs font-semibold whitespace-nowrap">
+                {t('detail.golfCourses.par', { count: course.total_par })}
+              </span>
             </div>
           )}
 
@@ -213,7 +230,8 @@ const SortableGolfCourseItem = ({ course, onRemove, canEdit, i18n, t, paises }) 
           <button
             onClick={() => onRemove(course.id)}
             className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors shrink-0"
-            title="Remove golf course"
+            aria-label={t('detail.golfCourses.remove', { name: course.name || t('detail.golfCourses.unnamed') })}
+            title={t('detail.golfCourses.remove', { name: course.name || t('detail.golfCourses.unnamed') })}
           >
             <Trash2 className="w-5 h-5" />
           </button>
@@ -247,10 +265,12 @@ const SortableGolfCourseItem = ({ course, onRemove, canEdit, i18n, t, paises }) 
  * Features:
  * - Display golf courses ordered by display_order
  * - Drag & drop reordering (only in DRAFT status for creators)
- * - Add new golf courses (only in DRAFT status for creators)
- * - Remove golf courses (only in DRAFT status for creators)
+ * - Add new golf courses (until the competition is over, for creators)
+ * - Remove golf courses (only while enrollment is open, for creators)
+ * - Tells the page when the server confirms a change, so the agenda re-reads
+ *   its courses (`onCamposCambiados`, FE #715)
  */
-const CompetitionGolfCoursesSection = ({ competition, canManage }) => {
+const CompetitionGolfCoursesSection = ({ competition, canManage, onCamposCambiados }) => {
   const { t, i18n } = useTranslation('competitions');
   const [golfCourses, setGolfCourses] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -259,6 +279,8 @@ const CompetitionGolfCoursesSection = ({ competition, canManage }) => {
   // consulta y se apunta en el mismo suspiro, antes de que React vuelva a pintar
   const enVuelo = useRef(new Set());
   const [showAddForm, setShowAddForm] = useState(false);
+  // El campo que espera un «sí» para quitarse
+  const [quitando, setQuitando] = useState(null);
 
   // dnd-kit sensors
   const sensors = useSensors(
@@ -272,6 +294,14 @@ const CompetitionGolfCoursesSection = ({ competition, canManage }) => {
   // quien invita antes de poner el campo —y con ello abre el torneo— tiene que
   // poder ponerlo después, que es justo el caso que motivó el cambio
   const canEdit = canManage && ['DRAFT', 'ACTIVE'].includes(competition.status);
+
+  // Añadir, en cambio, vale hasta que la competición se acaba (FE #713, BE #368):
+  // con la agenda propuesta al crear, toda competición Ryder nace con sesiones.
+  // Un estado desconocido no lo permite, en vez de romper la sección
+  const canAdd =
+    canManage &&
+    Object.values(CompetitionStatusEnum).includes(competition.status) &&
+    new CompetitionStatus(competition.status).allowsAddingGolfCourses();
 
   // Get compatible countries for the search box
   // Use country code from countries array (competition.location is a display string, not a code)
@@ -336,6 +366,7 @@ const CompetitionGolfCoursesSection = ({ competition, canManage }) => {
       customToast.success(t('detail.golfCourses.courseAdded'));
       setShowAddForm(false);
       await loadGolfCourses();
+      onCamposCambiados?.();
     } catch (error) {
       console.error('Error adding golf course:', error);
       customToast.error(error.message || t('detail.golfCourses.errorAdding'));
@@ -345,15 +376,19 @@ const CompetitionGolfCoursesSection = ({ competition, canManage }) => {
     }
   };
 
-  const handleRemoveCourse = async (courseId) => {
-    if (!window.confirm(t('detail.golfCourses.confirmRemove'))) {
-      return;
-    }
+  // Quitar se confirma en el modal de la app, no con `window.confirm` (FE #730)
+  const handleRemoveCourse = (courseId) => setQuitando(courseId);
+  const campoQueSeQuita = golfCourses.find((c) => c.id === quitando);
+  const nombreDelQueSeQuita = campoQueSeQuita?.name || t('detail.golfCourses.unnamed');
 
+  const quitarCampo = async () => {
+    const courseId = quitando;
+    setQuitando(null);
     try {
       await removeGolfCourseFromCompetitionUseCase.execute(competition.id, courseId);
       customToast.success(t('detail.golfCourses.courseRemoved'));
       await loadGolfCourses();
+      onCamposCambiados?.();
     } catch (error) {
       console.error('Error removing golf course:', error);
       customToast.error(error.message || t('detail.golfCourses.errorRemoving'));
@@ -379,6 +414,7 @@ const CompetitionGolfCoursesSection = ({ competition, canManage }) => {
       const courseIds = newOrder.map(course => course.id);
       await reorderGolfCoursesUseCase.execute(competition.id, courseIds);
       customToast.success(t('detail.golfCourses.reordered'));
+      onCamposCambiados?.();
     } catch (error) {
       console.error('Error reordering golf courses:', error);
       customToast.error(t('detail.golfCourses.errorReordering'));
@@ -402,15 +438,19 @@ const CompetitionGolfCoursesSection = ({ competition, canManage }) => {
   return (
     <div className="p-4">
       <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-gray-900 font-bold text-lg flex items-center gap-2">
-            <Flag className="w-5 h-5 text-green-600" />
-            {t('detail.golfCourses.title', { count: golfCourses.length })}
+        {/* A 360 px, con el botón al lado, el título se estrujaba en tres líneas
+            (CodeRabbit en la #749). En el móvil el título ocupa la fila, con su
+            número al borde derecho, y el botón va debajo, de lado a lado; desde
+            tablet, al lado del título */}
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+          <h3 className="w-full sm:w-auto sm:flex-1 text-gray-900 font-bold text-base sm:text-lg flex items-center gap-2">
+            <Flag className="w-5 h-5 flex-none text-green-600" />
+            <TituloConNumero texto={t('detail.golfCourses.title')} numero={golfCourses.length} />
           </h3>
-          {canEdit && !showAddForm && (
+          {canAdd && !showAddForm && (
             <button
               onClick={() => setShowAddForm(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors"
+              className="flex w-full sm:w-auto flex-none items-center justify-center gap-2 whitespace-nowrap px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors"
             >
               <Plus className="w-4 h-4" />
               {t('detail.golfCourses.addCourse')}
@@ -500,6 +540,18 @@ const CompetitionGolfCoursesSection = ({ competition, canManage }) => {
           </p>
         )}
       </div>
+
+      <ConfirmModal
+        isOpen={quitando !== null}
+        // Con sus palabras, no «Confirmar» / «Cancelar» (FE #742)
+        title={t('detail.golfCourses.removeDialog.title', { name: nombreDelQueSeQuita })}
+        message={t('detail.golfCourses.removeDialog.body')}
+        confirmText={t('detail.golfCourses.removeDialog.confirm')}
+        cancelText={t('detail.golfCourses.removeDialog.keep')}
+        onConfirm={quitarCampo}
+        onCancel={() => setQuitando(null)}
+        isDestructive
+      />
     </div>
   );
 };

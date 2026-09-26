@@ -17,7 +17,8 @@
     "color": "Color de barras",
     "handicap": "Hándicap",
     "format": "Formato",
-    "ready": "Listo para Jugar"
+    "ready": "Listo para Jugar",
+    "youMarkPair": "Marcáis a"
   },
   "notOpenYet": {
     "title": "La anotación de este partido aún no ha abierto",
@@ -53,7 +54,10 @@
     "halved": "Empatado",
     "prevHole": "Anterior",
     "nextHole": "Siguiente",
-    "tapToScore": "Anotar"
+    "tapToScore": "Anotar",
+    "pairBall": "Vuestra bola",
+    "rivalBall": "Bola rival",
+    "rivalCount": "Según el rival"
   },
   "scorecard": {
     "title": "Tarjeta",
@@ -69,6 +73,8 @@
     "validation": "Val",
     "result": "Res",
     "halved": "=",
+    "holeWon": "Gana",
+    "holeLost": "Pierde",
     "and": "y",
     "out": "IDA",
     "in": "VUELTA",
@@ -82,7 +88,7 @@
     "allSquare": "Empate",
     "points": "pts",
     "hole": "Hoyo",
-    "wins": "{{team}} gana {{score}}",
+    "wins": "{{score}} para {{team}}",
     "conceded": "{{team}} (Concedido)",
     "walkover": "{{team}} (Walkover)",
     "noMatches": "No hay partidos disponibles"
@@ -100,6 +106,8 @@
     "doubleBogey": "Doble Bogey+"
   },
   "submit": {
+    "matchOver": "Partido terminado",
+    "keepPlaying": "Podéis seguir jugando; entregadla cuando acabéis.",
     "title": "Enviar Tarjeta",
     "confirm": "¿Estás seguro de que quieres enviar tu tarjeta? Esta acción no se puede deshacer.",
     "button": "Enviar Tarjeta",
@@ -108,9 +116,11 @@
     "cancel": "Cancelar",
     "submitted": "Tarjeta enviada",
     "alreadySubmitted": "Tarjeta ya enviada",
+    "pairSubmitted": "La tarjeta de vuestra pareja está entregada",
     "matchCompleted": "La partida ha finalizado",
     "waitingForPlayers_one": "Esperando a que {{names}} entregue su tarjeta",
     "waitingForPlayers_other": "Esperando a que {{count}} jugadores entreguen su tarjeta: {{names}}",
+    "waitingForPair": "Esperando a que {{names}} entreguen la tarjeta de su pareja",
     "allValidated": "{{count}}/{{total}} hoyos validados",
     "notReady": "No todos los hoyos están validados"
   },
@@ -132,8 +142,9 @@
   },
   "earlyEnd": {
     "title": "Partido Decidido",
-    "message": "El partido ha sido decidido. {{team}} gana {{score}}.",
+    "message": "El partido ha sido decidido: {{score}} para {{team}}.",
     "confirm": "Continuar para Enviar",
+    "review": "Revisar la tarjeta",
     "description": "Los hoyos restantes no necesitan jugarse."
   },
   "concede": {
@@ -191,5 +202,11 @@
     "annotate": "Anotar",
     "leaderboard": "Clasificación",
     "activeMatch": "Partido Activo"
+  },
+  "closed": {
+    "title": "Partido cerrado",
+    "generic": "Este partido se cerró antes de terminar. Ya no queda nada que anotar.",
+    "conceded": "Partido concedido: gana {{team}}. Ya no queda nada que anotar.",
+    "walkover": "{{team}} gana por walkover: el rival no se presentó. No hay nada que anotar."
   }
 }

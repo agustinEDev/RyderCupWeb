@@ -1,8 +1,9 @@
 /**
  * Lo último que enseñó «Requiere tu Atención», guardado entre montajes (FE #502).
  *
- * Esa tarjeta hace cuatro peticiones propias —invitaciones, inscripciones,
- * solicitudes de amistad y partidas rápidas—, y como el panel se remonta cada vez
+ * Esa tarjeta hace hasta seis peticiones propias —invitaciones, inscripciones,
+ * solicitudes de amistad, partidas rápidas, sobres sin entregar y, para quien
+ * organiza, sesiones sin partidos (BE #361)—, y como el panel se remonta cada vez
  * que se vuelve a Inicio desde la barra inferior, cada vuelta empezaba de cero y
  * pintaba su esqueleto amarillo. Antes quedaba escondido detrás de la espera a
  * pantalla completa del panel; al quitar esa espera (FE #495) se quedó a la vista.

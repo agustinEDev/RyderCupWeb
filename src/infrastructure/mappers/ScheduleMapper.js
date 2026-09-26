@@ -1,4 +1,5 @@
 import { siViene } from '../../utils/campoSiViene';
+import { aBloqueoDePartidos } from './MatchGenerationBlockMapper';
 
 // src/infrastructure/mappers/ScheduleMapper.js
 
@@ -50,6 +51,11 @@ class ScheduleMapper {
       // a la BE #305». Con `?? null` un frontend desplegado antes que su
       // backend dejaba TODO partido programado sin boton de anotar
       ...siViene(apiRound, 'scoring_opens_at', 'scoringOpensAt'),
+      // Por qué no tiene partidos aunque sus sobres ya se abrieron (BE #361)
+      matchGenerationBlock: aBloqueoDePartidos(apiRound.match_generation_block),
+      // Quién de los equipos no juega ningún partido de la sesión (#710): el que
+      // sobra con equipos desiguales. Un servidor anterior no lo manda
+      restingPlayerIds: apiRound.resting_player_ids || [],
       sessionType: apiRound.session_type,
       matchFormat: apiRound.match_format,
       handicapMode: apiRound.handicap_mode || null,

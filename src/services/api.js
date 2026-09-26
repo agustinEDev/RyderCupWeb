@@ -149,6 +149,9 @@ export const apiRequest = async (endpoint, options = {}) => {
       error.status = response.status;
       error.statusCode = response.status; // Alias for compatibility
       error.errorCode = errorData.error_code || null;
+      // Lo que el servidor manda además del mensaje, para que la pantalla lo
+      // diga en su idioma (claves siempre, BE #360)
+      error.data = errorData;
       throw error;
     }
 

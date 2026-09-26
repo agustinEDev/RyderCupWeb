@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Navigate, useNavigate, useParams } from 'react-router';
 import { ArrowLeft, Plus, Mail } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -46,6 +46,10 @@ const todasLasPaginas = async (pideLaPagina, sacaLasFilas) => {
   return filas;
 };
 
+// Solo se invita con la inscripción por abrir o abierta: es lo que acepta el
+// servidor (#710). Cerrada, en juego o terminada, no
+const SE_PUEDE_INVITAR = new Set(['DRAFT', 'ACTIVE']);
+
 const InvitationsPage = () => {
   const navigate = useNavigate();
   const { id } = useParams();
@@ -60,6 +64,7 @@ const InvitationsPage = () => {
   } = useUserRoles(id);
 
   const [competition, setCompetition] = useState(null);
+  const cargaEnCurso = useRef(0);
   const [invitations, setInvitations] = useState([]);
   const [totalCount, setTotalCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
@@ -77,28 +82,38 @@ const InvitationsPage = () => {
 
   const canManage = isAdmin || hasCreatorRole;
 
-  const loadData = useCallback(async () => {
+  // `silencioso`: tras invitar, el listado se pone al día sin la pantalla de
+  // carga, que desmontaba el modal abierto (#710)
+  const loadData = useCallback(async ({ silencioso = false } = {}) => {
     if (!user) return;
+    // Cada carga lleva su número: una que vuelve tarde no pisa a otra
+    // posterior, como dos refrescos tras invitar a dos seguidos (CodeRabbit, #721)
+    const mia = ++cargaEnCurso.current;
 
-    setIsLoading(true);
+    if (!silencioso) setIsLoading(true);
     try {
       const [compData, invResult] = await Promise.all([
         getCompetitionDetailUseCase.execute(id),
         listCompetitionInvitationsUseCase.execute(id, statusFilter ? { status: statusFilter } : {}),
       ]);
 
+      if (mia !== cargaEnCurso.current) return;
       setCompetition(compData);
       setInvitations(invResult.invitations);
       setTotalCount(invResult.totalCount);
     } catch (error) {
       console.error('Error loading invitations:', error);
+      if (mia !== cargaEnCurso.current) return;
+      // En silencio, lo que ya se veía sigue valiendo: echar de la pantalla con
+      // el modal abierto por un refresco fallido no es silencioso (revisión local)
+      if (silencioso) return;
       customToast.error(error.message || t('errors.failedToLoad'));
       // Marcar y que decida el render, en vez de irse desde aquí: esta carga y
       // la de los permisos van por su cuenta, y salir corriendo la primera se
       // llevaba por delante el aviso de la otra (FE #656)
       setFalloAlCargar(true);
     } finally {
-      setIsLoading(false);
+      if (!silencioso) setIsLoading(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, user, statusFilter, navigate]);
@@ -183,15 +198,18 @@ const InvitationsPage = () => {
     try {
       await sendInvitationByEmailUseCase.execute(id, email, personalMessage);
       customToast.success(t('success.sent'));
-      setShowSendModal(false);
-      await loadData();
+      // Abierto, para invitar al siguiente sin volver a abrirlo (#710)
+      loadData({ silencioso: true });
+      return true;
     } catch (error) {
       console.error('Error sending invitation:', error);
-      if (error.message?.includes('409')) {
+      // Por el estado: el texto del servidor no lleva «409» (revisión local)
+      if (error?.status === 409) {
         customToast.error(t('errors.duplicateInvitation'));
       } else {
         customToast.error(error.message || t('errors.failedToSend'));
       }
+      return false;
     } finally {
       setIsProcessing(false);
     }
@@ -202,15 +220,19 @@ const InvitationsPage = () => {
     try {
       await sendInvitationUseCase.execute(id, userId, personalMessage);
       customToast.success(t('success.sent'));
-      setShowSendModal(false);
-      await loadData();
+      // Abierto, y el invitado ya como tal: el siguiente sin volver a abrirlo (#710)
+      setIdsInvitados((antes) => [...antes, userId]);
+      loadData({ silencioso: true });
+      return true;
     } catch (error) {
       console.error('Error sending invitation:', error);
-      if (error.message?.includes('409')) {
+      // Por el estado: el texto del servidor no lleva «409» (revisión local)
+      if (error?.status === 409) {
         customToast.error(t('errors.duplicateInvitation'));
       } else {
         customToast.error(error.message || t('errors.failedToSend'));
       }
+      return false;
     } finally {
       setIsProcessing(false);
     }
@@ -225,6 +247,10 @@ const InvitationsPage = () => {
   };
 
   const isPageLoading = isLoadingUser || isLoadingRoles || isLoading;
+
+  // Si la competición deja de admitir invitaciones con el modal abierto, se
+  // cierra: si no, se mandaba una que el servidor rechaza (CodeRabbit, #720)
+  const sePuedeInvitar = !competition || SE_PUEDE_INVITAR.has(competition.status);
 
   // `useUserRoles` deja los tres roles a false ante CUALQUIER error, así que un
   // 500 o un corte de red se parecen a «no tienes permiso». Echar por eso sería
@@ -303,19 +329,28 @@ const InvitationsPage = () => {
               )}
             </div>
 
-            <button
-              onClick={() => {
-                const acceptedCount = invitations.filter(inv => inv.status === 'ACCEPTED').length;
-                if (competition?.maxPlayers && acceptedCount >= competition.maxPlayers - 1) {
-                  customToast.warning(t('creator.nearCapacity', { accepted: acceptedCount, max: competition.maxPlayers }));
-                }
-                setShowSendModal(true);
-              }}
-              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-primary rounded-lg hover:bg-primary/90 transition-colors"
-            >
-              <Plus className="h-4 w-4" />
-              {t('creator.sendNew')}
-            </button>
+            {/* Cerrada la inscripción no quedan plazas: el servidor ya no deja
+                invitar (#710). La lista sigue, que es donde se ve quién se
+                quedó sin plaza */}
+            {!sePuedeInvitar ? (
+              <p data-testid="invitar-cerrada" className="text-sm text-gray-500 max-w-xs">
+                {t('creator.enrollmentClosed')}
+              </p>
+            ) : (
+              <button
+                onClick={() => {
+                  const acceptedCount = invitations.filter(inv => inv.status === 'ACCEPTED').length;
+                  if (competition?.maxPlayers && acceptedCount >= competition.maxPlayers - 1) {
+                    customToast.warning(t('creator.nearCapacity', { accepted: acceptedCount, max: competition.maxPlayers }));
+                  }
+                  setShowSendModal(true);
+                }}
+                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-primary rounded-lg hover:bg-primary/90 transition-colors"
+              >
+                <Plus className="h-4 w-4" />
+                {t('creator.sendNew')}
+              </button>
+            )}
           </div>
         </div>
 
@@ -332,6 +367,7 @@ const InvitationsPage = () => {
             <option value="ACCEPTED">{t('status.ACCEPTED')}</option>
             <option value="DECLINED">{t('status.DECLINED')}</option>
             <option value="EXPIRED">{t('status.EXPIRED')}</option>
+            <option value="NO_ROOM">{t('status.NO_ROOM')}</option>
           </select>
         </div>
 
@@ -357,7 +393,7 @@ const InvitationsPage = () => {
 
       {/* Send Modal */}
       <SendInvitationModal
-        isOpen={showSendModal}
+        isOpen={showSendModal && sePuedeInvitar}
         onClose={() => setShowSendModal(false)}
         onSend={handleSendInvitation}
         onSendByUserId={handleSendByUserId}

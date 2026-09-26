@@ -227,4 +227,56 @@ describe('LeaderboardView', () => {
     render(<LeaderboardView leaderboard={empty} />);
     expect(screen.getByTestId('leaderboard-view')).toHaveTextContent('leaderboard.noMatches');
   });
+
+  // FE #738 · con varias sesiones salían dos «#2 - SINGLES» seguidos (sábado
+  // por la mañana en juego, viernes por la mañana completado) sin distinguirlos
+  describe('de qué sesión es cada partido (#738)', () => {
+    const partido = (id, extra) => ({
+      matchId: id,
+      matchNumber: 2,
+      matchFormat: 'SINGLES',
+      status: 'COMPLETED',
+      currentHole: 18,
+      standing: null,
+      leadingTeam: null,
+      teamAPlayers: [{ userId: 'a', userName: 'Óscar' }],
+      teamBPlayers: [{ userId: 'b', userName: 'Agustín' }],
+      result: { winner: 'A', score: '10&8' },
+      ...extra,
+    });
+
+    it('L2 y L3: cada partido dice su fecha y su franja', () => {
+      render(
+        <LeaderboardView
+          leaderboard={{
+            ...mockLeaderboard,
+            matches: [
+              partido('viernes', { roundDate: '2026-09-25', sessionType: 'MORNING' }),
+              partido('sabado', { roundDate: '2026-09-26', sessionType: 'AFTERNOON' }),
+            ],
+          }}
+        />
+      );
+
+      const viernes = screen.getByTestId('sesion-viernes');
+      expect(viernes).toHaveTextContent('Fri, Sep 25');
+      expect(viernes).toHaveTextContent('sessions.MORNING');
+      const sabado = screen.getByTestId('sesion-sabado');
+      expect(sabado).toHaveTextContent('Sat, Sep 26');
+      expect(sabado).toHaveTextContent('sessions.AFTERNOON');
+    });
+
+    it('L4: sin sesión, como antes: ni «undefined» ni separadores sueltos', () => {
+      render(
+        <LeaderboardView
+          leaderboard={{ ...mockLeaderboard, matches: [partido('viejo', { roundDate: null, sessionType: null })] }}
+        />
+      );
+
+      expect(screen.queryByTestId('sesion-viejo')).not.toBeInTheDocument();
+      const tarjeta = screen.getByTestId('leaderboard-match-viejo');
+      expect(tarjeta).toHaveTextContent('#2 - SINGLES');
+      expect(tarjeta).not.toHaveTextContent('undefined');
+    });
+  });
 });

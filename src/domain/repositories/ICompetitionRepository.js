@@ -170,6 +170,27 @@ class ICompetitionRepository {
   }
 
   /**
+   * Nombra a los dos capitanes; con las inscripciones abiertas, las cierra (FE #692).
+   * @param {string} competitionId
+   * @param {{team_a_captain_id: string, team_b_captain_id: string}} capitanes
+   * @returns {Promise<Object>}
+   */
+  async nameCaptains(competitionId, capitanes) {
+    throw new Error('ICompetitionRepository.nameCaptains must be implemented');
+  }
+
+  /**
+   * Cubre el puesto de capitán de un equipo, vacío tras una baja (FE #692).
+   * @param {string} competitionId
+   * @param {'A'|'B'} team
+   * @param {{player_id: string}} jugador
+   * @returns {Promise<Object>}
+   */
+  async fillTeamCaptain(competitionId, team, jugador) {
+    throw new Error('ICompetitionRepository.fillTeamCaptain must be implemented');
+  }
+
+  /**
    * Starts a competition (CLOSED → IN_PROGRESS).
    * @param {string} competitionId
    * @returns {Promise<Object>} Updated competition data

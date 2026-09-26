@@ -2,10 +2,16 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { Trophy, Settings, Plus, X, ChevronDown, Flag, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { nombresPorDefectoDeLosEquipos } from './nombresPorDefectoDeLosEquipos';
+import { agendaPropuesta } from '../utils/agenda';
+import { aCamposDeLaCompeticion } from '../utils/camposDeLaCompeticion';
 import HeaderAuth from '../components/layout/HeaderAuth';
 import { useAuth } from '../hooks/useAuth';
+import { useGeneroParaApuntarse } from '../hooks/useGeneroParaApuntarse';
+import SelectorDeGenero from '../components/profile/SelectorDeGenero';
 import {
   createCompetitionWithGolfCoursesUseCase,
+  configureScheduleUseCase,
   updateCompetitionUseCase,
   getCompetitionDetailUseCase,
   getCompetitionGolfCoursesUseCase,
@@ -23,7 +29,10 @@ import EnrollmentOpeningModal from '../components/competition/EnrollmentOpeningM
 import customToast from '../utils/toast';
 import FullScreenLoader from '../components/ui/FullScreenLoader';
 import CompetitionTypeChooser from '../components/competition/CompetitionTypeChooser';
+import SetupModeChooser from '../components/competition/SetupModeChooser';
 import { cupoDeJugadores, CUPO_POR_DEFECTO } from '../utils/cupoDeJugadores';
+import { CompetitionStatus } from '../domain/value_objects/CompetitionStatus';
+import { diaDeLaSesion } from '../utils/diaDeLaSesion';
 
 
 // Helper function to get message className
@@ -71,6 +80,10 @@ const CreateCompetition = () => {
   // de tipo— y al enviar creaba una competición nueva en vez de editar la que
   // se había abierto (`/code-review`)
   const isEditMode = Boolean(competitionId);
+  // El género del organizador, que juega: solo al crear y solo si le falta (#710)
+  const generoParaApuntarse = useGeneroParaApuntarse();
+  const pideGenero = !isEditMode && generoParaApuntarse.falta;
+  const [genero, setGenero] = useState('');
   // El tipo se elige ANTES de rellenar nada (FE #639). Editando no se pregunta:
   // esa competición ya existe y su tipo no se cambia aquí
   const [tipoElegido, setTipoElegido] = useState(null);
@@ -86,6 +99,12 @@ const CreateCompetition = () => {
   // campo de todos
   const eligeElTipo = (tipo) => {
     setTipoElegido(tipo);
+    globalThis.scrollTo?.(0, 0);
+  };
+
+  // Igual que el tipo: al elegir, el formulario empieza por arriba
+  const eligeElModo = (modo) => {
+    setFormData(prev => ({ ...prev, setupMode: modo }));
     globalThis.scrollTo?.(0, 0);
   };
   const [message, setMessage] = useState({ type: '', text: '' });
@@ -114,8 +133,11 @@ const CreateCompetition = () => {
   const [formData, setFormData] = useState({
     // Competition Details
     competitionName: '',
-    teamOneName: 'Europe',
-    teamTwoName: 'USA',
+    // Nacen en el idioma de la app: son texto libre del organizador, así que
+    // traducirlos al pintar le cambiaría el nombre a quien llame a su equipo
+    // «USA» a propósito
+    teamOneName: nombresPorDefectoDeLosEquipos(t).uno,
+    teamTwoName: nombresPorDefectoDeLosEquipos(t).dos,
 
     // Schedule
     startDate: '',
@@ -135,7 +157,9 @@ const CreateCompetition = () => {
     playMode: 'HANDICAP',
     visibility: 'PRIVATE',
     numberOfPlayers: CUPO_POR_DEFECTO,
-    teamAssignment: 'automatic',
+    // Cuánto monta la app por su cuenta (FE #695). Al crear se elige en su paso;
+    // el reparto de equipos sale de él, así que ya no se pregunta aparte
+    setupMode: null,
     maxPlayingHandicap: undefined
   });
 
@@ -171,6 +195,32 @@ const CreateCompetition = () => {
     };
   }, []);
 
+  // Los namespaces se cargan con `import()` y sin suspense, así que la primera
+  // renderización puede llegar con `t` sin resolver: los equipos nacerían con
+  // su respaldo en inglés y, por ser el valor inicial de `useState`, se
+  // quedarían congelados en una app en español. Aquí se corrigen en cuanto el
+  // idioma esté, y solo mientras el organizador no haya escrito el suyo.
+  //
+  // Si lo ha escrito se sabe por el campo, no por el texto: comparar con los
+  // nombres de la app tomaba por no tocado un «USA» escrito a propósito, y lo
+  // cambiaba al pasar de idioma (revisión de la FE #707)
+  //
+  // NUNCA al editar: ahí los nombres vienen del servidor, y cambiar de idioma
+  // le renombraría los equipos ya guardados a una competición en marcha
+  const nombresEditados = useRef({ teamOneName: false, teamTwoName: false });
+  useEffect(() => {
+    if (isEditMode) return;
+    const porDefecto = nombresPorDefectoDeLosEquipos(t);
+    setFormData((antes) => {
+      const uno = nombresEditados.current.teamOneName ? antes.teamOneName : porDefecto.uno;
+      const dos = nombresEditados.current.teamTwoName ? antes.teamTwoName : porDefecto.dos;
+      // Sin cambios, el MISMO objeto: uno nuevo vuelve a pintar, y si `t`
+      // cambia en cada pintada el efecto no acaba nunca
+      if (uno === antes.teamOneName && dos === antes.teamTwoName) return antes;
+      return { ...antes, teamOneName: uno, teamTwoName: dos };
+    });
+  }, [t, i18n.language, isEditMode]);
+
   useEffect(() => {
     // Fetch all countries
     // eslint-disable-next-line react-hooks/immutability -- pre-existing pattern surfaced by eslint-plugin-react-hooks 7.1.1 bump; needs dedicated review (tracked in follow-up)
@@ -181,6 +231,10 @@ const CreateCompetition = () => {
    * Load competition data when in edit mode
    */
   useEffect(() => {
+    // Pasando de editar una a editar otra el formulario no se desmonta: lo que
+    // llegue tarde de la anterior no redirige, ni avisa, ni pisa el formulario
+    // (CodeRabbit en la #722)
+    let vigente = true;
     const loadCompetitionData = async () => {
       if (!competitionId || !allCountries.length) return;
 
@@ -189,6 +243,16 @@ const CreateCompetition = () => {
       try {
         // Fetch competition details
         const competition = await getCompetitionDetailUseCase.execute(competitionId);
+        if (!vigente) return;
+
+        // Por URL se llegaba al formulario de una cerrada, y solo al guardar
+        // fallaba, con el estado sin traducir (FE #710). La misma regla que
+        // ofrece «Editar» en la ficha
+        if (!new CompetitionStatus(competition.status).allowsModifications()) {
+          customToast.error(t('edit.notEditable'));
+          navigate(`/competitions/${competitionId}`, { replace: true });
+          return;
+        }
 
         // Extract main country code from location
         // The mapper returns location as a string or we need to extract from countries array
@@ -227,13 +291,9 @@ const CreateCompetition = () => {
 
           // Map the result to the format expected by formData
           if (Array.isArray(coursesResult)) {
-            golfCoursesData = coursesResult.map(item => ({
-              countryCode: item.golf_course?.country_code || competition.main_country,
-              course: {
-                id: item.golf_course?.id || item.golf_course_id,
-                name: item.golf_course?.name || 'Unknown',
-                approvalStatus: item.golf_course?.approval_status || 'APPROVED'
-              }
+            golfCoursesData = aCamposDeLaCompeticion(coursesResult).map((campo) => ({
+              countryCode: campo.countryCode || competition.main_country,
+              course: { id: campo.id, name: campo.name, approvalStatus: campo.approvalStatus },
             }));
           }
         } catch (error) {
@@ -244,8 +304,8 @@ const CreateCompetition = () => {
         // NOTE: The mapper returns camelCase, not snake_case
         const formDataToSet = {
           competitionName: competition.name || '',
-          teamOneName: competition.team1Name || 'Europe',
-          teamTwoName: competition.team2Name || 'USA',
+          teamOneName: competition.team1Name || nombresPorDefectoDeLosEquipos(t).uno,
+          teamTwoName: competition.team2Name || nombresPorDefectoDeLosEquipos(t).dos,
           startDate: competition.startDate || '',
           endDate: competition.endDate || '',
           country: mainCountry || null,
@@ -257,24 +317,29 @@ const CreateCompetition = () => {
           playMode: competition.playMode || 'HANDICAP',
           visibility: competition.visibility || 'PRIVATE',
           numberOfPlayers: competition.maxPlayers || CUPO_POR_DEFECTO,
-          teamAssignment: competition.teamAssignment?.toLowerCase() || 'automatic',
+          setupMode: competition.setupMode || 'RYDER_CUP',
           maxPlayingHandicap: competition.maxPlayingHandicap ?? undefined
         };
 
+        if (!vigente) return;
         // Lo que había guardado: vaciar el campo no puede recortarlo
         cupoCargado.current = formDataToSet.numberOfPlayers;
         setFormData(formDataToSet);
 
       } catch (error) {
+        if (!vigente) return;
         console.error('Error loading competition:', error);
         customToast.error(t('edit.errorLoading'));
         navigate('/competitions');
       } finally {
-        setLoadingCompetition(false);
+        if (vigente) setLoadingCompetition(false);
       }
     };
 
     loadCompetitionData();
+    return () => {
+      vigente = false;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [competitionId, allCountries]);
 
@@ -283,7 +348,12 @@ const CreateCompetition = () => {
     // Instantáneo, no `smooth`: comprobado en Chrome, el suave no llega a
     // ejecutarse desde aquí y el aviso se quedaba fuera de pantalla
     avisoRef.current?.scrollIntoView({ block: 'center' });
-  }, [message.text]);
+    // Y el foco, para quien no lo ve: el botón está abajo y el aviso arriba
+    // (FE #731). Sin volver a desplazar, que ya lo ha hecho la línea de arriba
+    avisoRef.current?.focus({ preventScroll: true });
+    // El mensaje entero y no su texto: el mismo error repetido es otro objeto
+    // y tiene que volver a llevar el foco (revisión local de la FE #731)
+  }, [message]);
 
   const fetchCountries = async () => {
     try {
@@ -344,6 +414,7 @@ const CreateCompetition = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
+    if (name in nombresEditados.current) nombresEditados.current[name] = true;
     setFormData(prev => ({
       ...prev,
       [name]: value
@@ -502,6 +573,26 @@ const CreateCompetition = () => {
     return formData.golfCourses.filter(gc => gc.countryCode === countryCode);
   };
 
+  // Acortar las fechas con sesiones fuera: el servidor dice cuáles y aquí se
+  // escriben en el idioma de quien mira (FE #710). null si es otro error
+  const sesionesQueQuedanFuera = (error) => {
+    const fuera = error?.errorCode === 'DATES_LEAVE_SESSIONS_OUT' && error.data?.sessions_outside;
+    if (!Array.isArray(fuera) || fuera.length === 0) return null;
+    const dia = (iso) => {
+      const fecha = diaDeLaSesion(iso);
+      if (!fecha) return iso;
+      try {
+        return fecha.toLocaleDateString(i18n.language, { weekday: 'short', day: 'numeric', month: 'short' });
+      } catch {
+        return fecha.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' });
+      }
+    };
+    const sesiones = fuera
+      .map((s) => `${dia(s.round_date)} · ${t(`schedule:sessions.${s.session_type}`)}`)
+      .join(', ');
+    return t('edit.datesLeaveSessionsOut', { sesiones });
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setMessage({ type: '', text: '' });
@@ -554,6 +645,7 @@ const CreateCompetition = () => {
     // siempre falso y devuelve el formulario a la mano justo cuando no se puede
     // tocar. Se cierra al terminar, en el `finally`
     setIsSubmitting(true);
+    let generoGuardado = false;
 
     try {
       const numPlayers = cupoDeJugadores(formData.numberOfPlayers, cupoCargado.current);
@@ -576,7 +668,8 @@ const CreateCompetition = () => {
         play_mode: formData.playMode.toUpperCase(),
         visibility: formData.visibility,
         number_of_players: numPlayers,
-        team_assignment: formData.teamAssignment.toUpperCase(),
+        // El reparto no se manda: lo deriva el servidor del modo (RyderCupAm#351)
+        setup_mode: formData.setupMode,
         max_playing_handicap: formData.maxPlayingHandicap
           ? parseInt(formData.maxPlayingHandicap, 10)
           : null,
@@ -600,6 +693,12 @@ const CreateCompetition = () => {
         }, 1000);
 
       } else {
+        // Antes que la competición: sin él el servidor la rechaza (#710)
+        if (pideGenero) {
+          await generoParaApuntarse.guardar(genero);
+          generoGuardado = true;
+        }
+
         // CREATE MODE: Create new competition and attach its golf courses
         const golfCourses = formData.golfCourses.map((gc) => ({
           id: gc.course.id,
@@ -623,6 +722,21 @@ const CreateCompetition = () => {
           customToast.error(t('create.errorAddingCourses'));
         }
 
+        // La agenda se propone ya, con las fechas que acaba de poner (FE #654):
+        // parejas los primeros días e individuales el último, y se cambia en
+        // la ficha. Solo al estilo Ryder —en manual lo decide todo él— y con
+        // algún campo, que es de donde el servidor saca el de cada sesión.
+        // Si falla, la competición ya está creada: la ficha enseñará la
+        // agenda vacía con su aviso, y no se dice que falló el alta
+        const propuesta = agendaPropuesta(formData.startDate, formData.endDate);
+        if (formData.setupMode === 'RYDER_CUP' && successCount > 0 && propuesta) {
+          try {
+            await configureScheduleUseCase.execute(createdCompetition.id, propuesta);
+          } catch (error) {
+            console.error('No se ha podido proponer la agenda:', error);
+          }
+        }
+
         // Navigate to competition detail
         navigationTimerRef.current = setTimeout(() => {
           navigate(`/competitions/${createdCompetition.id}`);
@@ -631,13 +745,19 @@ const CreateCompetition = () => {
 
     } catch (error) {
       console.error(`Error ${isEditMode ? 'updating' : 'creating'} competition:`, error);
-      customToast.error(error.message || t(isEditMode ? 'edit.error' : 'create.error'));
-      setMessage({ type: 'error', text: error.message || t(isEditMode ? 'edit.error' : 'create.error') });
+      const texto =
+        sesionesQueQuedanFuera(error) ||
+        error.message ||
+        t(isEditMode ? 'edit.error' : 'create.error');
+      customToast.error(texto);
+      setMessage({ type: 'error', text: texto });
     } finally {
       setIsSubmitting(false);
       // Se cierra tanto si salió bien como si falló: si falló, el aviso está en
       // el formulario, y dejarlo tapado por el modal lo esconde
       setPreguntandoApertura(false);
+      // Al final, aunque crear falle: el género ya quedó guardado (#710)
+      if (generoGuardado) generoParaApuntarse.refrescar();
     }
   };
 
@@ -667,7 +787,13 @@ const CreateCompetition = () => {
 
             {/* Message Display */}
             {message.text && (
-              <div ref={avisoRef} className={`mx-4 mb-4 p-4 rounded-lg ${getMessageClassName(message.type)}`}>
+              <div
+                ref={avisoRef}
+                role={message.type === 'error' ? 'alert' : 'status'}
+                tabIndex={-1}
+                // Recibe el foco al fallar: con un anillo que se vea (CodeRabbit)
+                className={`mx-4 mb-4 p-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 ${message.type === 'error' ? 'focus:ring-red-400' : 'focus:ring-primary-400'} ${getMessageClassName(message.type)}`}
+              >
                 {message.text}
               </div>
             )}
@@ -678,7 +804,16 @@ const CreateCompetition = () => {
               </div>
             )}
 
-            {(isEditMode || tipoElegido) && (
+            {/* Y detrás del tipo, cuánto hace la app por su cuenta (FE #695).
+                Editando no es un paso: la competición ya existe y el modo se
+                cambia dentro del formulario, como el resto de su configuración */}
+            {!isEditMode && tipoElegido && !formData.setupMode && (
+              <div className="px-4">
+                <SetupModeChooser onSelect={eligeElModo} />
+              </div>
+            )}
+
+            {(isEditMode || (tipoElegido && formData.setupMode)) && (
             <form onSubmit={handleSubmit} className="flex flex-col gap-6 px-4">
               {/* Volver a elegir el tipo. Lo escrito se queda: `formData` no se
                   toca al cambiar de paso, que perder el formulario por mirar
@@ -687,7 +822,10 @@ const CreateCompetition = () => {
                 <button
                   type="button"
                   data-testid="volver-al-tipo"
-                  onClick={() => setTipoElegido(null)}
+                  onClick={() => {
+                    setTipoElegido(null);
+                    setFormData(prev => ({ ...prev, setupMode: null }));
+                  }}
                   className="self-start text-sm text-gray-600 hover:text-gray-900"
                 >
                   {t('create.type.back')}
@@ -697,6 +835,21 @@ const CreateCompetition = () => {
               {/* Lo básico de la competición, en UNA tarjeta: nombre, fechas y
                   país eran tres, y cada una pagaba su icono y su marco. Medido a
                   360 px, ese adorno costaba 230 px de scroll (Agustín, 19 sep) */}
+              {/* El modo, a la vista y no dentro de «más opciones»: decide qué
+                  pasos existen después, así que esconderlo sería esconder el
+                  resto del camino (FE #695). Al crear ya viene elegido del paso
+                  anterior; aquí se cambia */}
+              <div className="border border-gray-200 rounded-xl p-4">
+                <SetupModeChooser value={formData.setupMode} onSelect={eligeElModo} />
+              </div>
+
+              {/* El organizador juega: su género, solo si le falta (#710) */}
+              {pideGenero && (
+                <div className="border border-gray-200 rounded-xl p-4">
+                  <SelectorDeGenero value={genero} onChange={setGenero} />
+                </div>
+              )}
+
               <div data-testid="bloque-basico" className="border border-gray-200 rounded-xl p-4">
                 <div className="flex items-center gap-3 mb-3">
                   <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
@@ -1211,10 +1364,11 @@ const CreateCompetition = () => {
                   <p data-testid="resumen-opciones" className="px-4 pb-4 text-sm text-gray-600">
                     {faltaAlgoPlegado
                       ? t('create.moreOptionsIncomplete')
+                      // Sin el reparto de equipos: ya no se decide aquí, lo
+                      // decide el modo, que está a la vista arriba (FE #695)
                       : t('create.moreOptionsSummary', {
                         equipo1: formData.teamOneName,
                         equipo2: formData.teamTwoName,
-                        asignacion: t(`create.summary${formData.teamAssignment === 'automatic' ? 'Automatic' : 'Manual'}`),
                         handicap: formData.maxPlayingHandicap
                           ? t('create.summaryHandicapLimit', { limite: formData.maxPlayingHandicap })
                           : t('create.summaryNoHandicapLimit'),
@@ -1257,30 +1411,6 @@ const CreateCompetition = () => {
                       />
                     </div>
                   </div>
-                  {/* Team Assignment */}
-                  <div>
-                    <span className="block text-sm font-medium text-gray-700 mb-2">
-                      {t('create.teamAssignment')}
-                    </span>
-                    <div className="flex flex-wrap gap-2">
-                      {['manual', 'automatic'].map(mode => (
-                        <button
-                          key={mode}
-                          type="button"
-                          aria-pressed={formData.teamAssignment === mode}
-                          onClick={() => setFormData(prev => ({ ...prev, teamAssignment: mode }))}
-                          className={`border-2 rounded-lg text-sm px-3 py-2 transition-colors ${
-                            formData.teamAssignment === mode
-                              ? 'bg-primary text-white border-primary'
-                              : 'bg-white text-gray-600 border-gray-200 hover:border-primary hover:text-primary'
-                          }`}
-                        >
-                          {t(`create.${mode}`)}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
                   {/* Max Playing Handicap */}
                   <div>
                     <label htmlFor="maxPlayingHandicap" className="block text-sm font-medium text-gray-700 mb-1">

@@ -4,6 +4,7 @@
  */
 
 import { apiRequest } from './api';
+import { diaDeLaSesion } from '../utils/diaDeLaSesion';
 
 /**
  * Competition endpoints
@@ -284,18 +285,27 @@ export const getEnrollmentStatusColor = (status) => {
 };
 
 /**
- * Format date range
- * @param {string} startDate - Start date
- * @param {string} endDate - End date
- * @returns {string} Formatted date range
+ * Las fechas de una competición, «3 oct 2026 - 4 oct 2026», en el idioma de
+ * quien mira (antes, siempre en inglés: FE #710).
+ *
+ * Cada fecha es un día sin hora, leído en el huso de quien mira. Un idioma que
+ * `Intl` no entiende lanza RangeError; entonces, el del navegador.
+ *
+ * @param {string} startDate - YYYY-MM-DD
+ * @param {string} endDate - YYYY-MM-DD
+ * @param {string} [idioma] - el de i18n
+ * @returns {string}
  */
-export const formatDateRange = (startDate, endDate) => {
-  const start = new Date(startDate);
-  const end = new Date(endDate);
+export const formatDateRange = (startDate, endDate, idioma) => {
+  const opciones = { year: 'numeric', month: 'short', day: 'numeric' };
+  const dia = (iso) => {
+    const fecha = diaDeLaSesion(iso) ?? new Date(iso);
+    try {
+      return fecha.toLocaleDateString(idioma, opciones);
+    } catch {
+      return fecha.toLocaleDateString(undefined, opciones);
+    }
+  };
 
-  const options = { year: 'numeric', month: 'short', day: 'numeric' };
-  const startFormatted = start.toLocaleDateString('en-US', options);
-  const endFormatted = end.toLocaleDateString('en-US', options);
-
-  return `${startFormatted} - ${endFormatted}`;
+  return `${dia(startDate)} - ${dia(endDate)}`;
 };

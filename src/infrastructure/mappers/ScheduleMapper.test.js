@@ -37,6 +37,15 @@ describe('ScheduleMapper', () => {
       expect(dto.matches).toEqual([]);
     });
 
+    it('D1: quién descansa viaja en la sesión, y un servidor anterior no lo manda (#710)', () => {
+      const base = { id: 'r1', matches: [] };
+
+      expect(ScheduleMapper.toRoundDTO({ ...base, resting_player_ids: ['u3'] }).restingPlayerIds).toEqual([
+        'u3',
+      ]);
+      expect(ScheduleMapper.toRoundDTO(base).restingPlayerIds).toEqual([]);
+    });
+
     it('should handle null optional fields', () => {
       const apiRound = {
         id: 'r-1',

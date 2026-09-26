@@ -6,6 +6,8 @@ import customToast from '../../utils/toast';
 import { esFalloDeRed, mensajeDeError } from '../../utils/sinCobertura';
 import HeaderAuth from '../../components/layout/HeaderAuth';
 import { useAuth } from '../../hooks/useAuth';
+import GeneroParaApuntarseModal from '../../components/profile/GeneroParaApuntarseModal';
+import { useGeneroParaApuntarse } from '../../hooks/useGeneroParaApuntarse';
 import InvitationCard from '../../components/invitation/InvitationCard';
 import {
   listMyInvitationsUseCase,
@@ -21,6 +23,8 @@ const MyInvitationsPage = () => {
   const [invitations, setInvitations] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [processingId, setProcessingId] = useState(null);
+  const generoParaApuntarse = useGeneroParaApuntarse();
+  const [aceptandoSinGenero, setAceptandoSinGenero] = useState(null);
   const [statusFilter, setStatusFilter] = useState('');
   // Por qué no se han podido cargar: 'red', 'otro' o null si cargaron. Sin esto
   // la lista vacía decía «No hay invitaciones todavía» sin haberlo podido
@@ -61,7 +65,45 @@ const MyInvitationsPage = () => {
     }
   }, [user, loadData]);
 
-  const handleAccept = async (invitationId) => {
+  // Sin género no se entra: se pregunta antes de aceptar (#710)
+  const handleAccept = (invitationId) => {
+    if (generoParaApuntarse.falta) {
+      setAceptandoSinGenero(invitationId);
+      return;
+    }
+    aceptar(invitationId);
+  };
+
+  const aceptarConGenero = async (genero) => {
+    const invitationId = aceptandoSinGenero;
+    setAceptandoSinGenero(null);
+    setProcessingId(invitationId);
+    try {
+      await generoParaApuntarse.guardar(genero);
+    } catch (error) {
+      console.error('Error saving gender:', error);
+      customToast.error(error.message || t('errors.failedToRespond'));
+      setProcessingId(null);
+      return;
+    }
+    await aceptar(invitationId);
+    // Al final: refrescar la sesión antes recargaba la página en mitad
+    generoParaApuntarse.refrescar();
+  };
+
+  // Aceptar o rechazar: si se quedó sin plaza al cerrarse, el servidor lo dice
+  // con su código a las dos respuestas. Se dice en su idioma y la lista se relee,
+  // porque esa invitación ya no está pendiente (FE #733)
+  const avisarDelFallo = (error) => {
+    if (error?.errorCode === 'INVITATION_NO_ROOM') {
+      customToast.error(t('errors.noRoom'));
+      loadData();
+      return;
+    }
+    customToast.error(error.message || t('errors.failedToRespond'));
+  };
+
+  const aceptar = async (invitationId) => {
     setProcessingId(invitationId);
     try {
       const result = await respondToInvitationUseCase.execute(invitationId, 'ACCEPT');
@@ -72,7 +114,7 @@ const MyInvitationsPage = () => {
       }
     } catch (error) {
       console.error('Error accepting invitation:', error);
-      customToast.error(error.message || t('errors.failedToRespond'));
+      avisarDelFallo(error);
     } finally {
       setProcessingId(null);
     }
@@ -85,8 +127,14 @@ const MyInvitationsPage = () => {
       customToast.success(t('success.declined'));
       await loadData();
     } catch (error) {
+      // Rechazar una que se quedó sin plaza no es un fallo: no iba a jugarla y ya
+      // no la juega. Sin aviso; la lista releída la enseña «Sin plaza» (FE #737)
+      if (error?.errorCode === 'INVITATION_NO_ROOM') {
+        await loadData();
+        return;
+      }
       console.error('Error declining invitation:', error);
-      customToast.error(error.message || t('errors.failedToRespond'));
+      avisarDelFallo(error);
     } finally {
       setProcessingId(null);
     }
@@ -138,6 +186,7 @@ const MyInvitationsPage = () => {
             <option value="ACCEPTED">{t('status.ACCEPTED')}</option>
             <option value="DECLINED">{t('status.DECLINED')}</option>
             <option value="EXPIRED">{t('status.EXPIRED')}</option>
+            <option value="NO_ROOM">{t('status.NO_ROOM')}</option>
           </select>
         </div>
 
@@ -185,6 +234,12 @@ const MyInvitationsPage = () => {
           </div>
         )}
       </div>
+
+      <GeneroParaApuntarseModal
+        isOpen={aceptandoSinGenero !== null}
+        onClose={() => setAceptandoSinGenero(null)}
+        onConfirm={aceptarConGenero}
+      />
     </div>
   );
 };

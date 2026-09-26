@@ -32,7 +32,7 @@ vi.mock('react-i18next', () => ({
 }));
 
 vi.mock('../components/layout/HeaderAuth', () => ({ default: () => null }));
-vi.mock('../hooks/useAuth', () => ({ useAuth: () => ({ user: { id: 'u-1' }, loading: false }) }));
+vi.mock('../hooks/useAuth', () => ({ useAuth: () => ({ user: { id: 'u-1', gender: 'MALE' }, loading: false }) }));
 vi.mock('../components/golf_course/GolfCourseSearchBox', () => ({ default: () => null }));
 const mockToastError = vi.fn();
 vi.mock('../utils/toast', () => ({
@@ -102,6 +102,9 @@ const enDias = (dias) => {
 const abreElFormulario = async () => {
   render(<MemoryRouter><CreateCompetition /></MemoryRouter>);
   fireEvent.click(await screen.findByTestId('tipo-RYDER_CUP'));
+  // Y el modo de configuración, que es el paso siguiente (FE #695). Estilo
+  // RyderCup es lo que estas pantallas daban por hecho
+  fireEvent.click(await screen.findByTestId('modo-RYDER_CUP'));
   await screen.findByText('create.competitionDetails');
 };
 

@@ -60,6 +60,24 @@ class CompetitionAssembler {
       // Cuántos días antes del torneo abren solas las inscripciones, o null si
       // se abren al invitar (FE #678). Sin esto la ficha no puede decir cuándo
       enrollmentOpensDaysBefore: apiData?.enrollment_opens_days_before ?? null,
+      // Si quien la mira puede borrarla ahora (FE #667). Lo decide el backend con la
+      // misma regla que el borrado —estado, nada jugado y quién— y solo lo manda la
+      // ficha (RyderCupAM#347); sin el campo, no se ofrece
+      canDelete: apiData?.can_delete === true,
+      // Cuánto monta la app por su cuenta (FE #695). De él sale además cómo se
+      // reparten los equipos, que ya no se pregunta aparte (RyderCupAm#351)
+      setupMode: apiData?.setup_mode || 'RYDER_CUP',
+      // Si ya hay equipos repartidos: con ellos los capitanes no se cambian, y una
+      // reabierta se vuelve a cerrar con «Cerrar inscripciones» (FE #692). Solo lo
+      // manda la ficha; sin el campo, no se afirma un reparto que nadie ha dicho
+      teamsAssigned: apiData?.teams_assigned === true,
+      // Capitanes y subcapitanes, uno por equipo (FE #692, RyderCupAM#320)
+      captains: {
+        teamA: apiData?.team_a_captain_id ?? null,
+        teamB: apiData?.team_b_captain_id ?? null,
+        viceTeamA: apiData?.team_a_vice_captain_id ?? null,
+        viceTeamB: apiData?.team_b_vice_captain_id ?? null,
+      },
       enrolledCount: apiData?.enrolled_count || 0,
       isCreator: apiData?.is_creator || false,
       creatorId: competition.creatorId,
@@ -75,7 +93,15 @@ class CompetitionAssembler {
       enrollment_status: apiData?.user_enrollment_status || null,
       pending_enrollments_count: apiData?.pending_enrollments_count || 0,
       playMode: competition.handicapSettings.type(),
+      // El modo con el que se CONFIGURÓ: decide si se reparte solo al cerrar
       teamAssignment: competition.teamAssignment.value(),
+      // Cómo se repartieron DE VERDAD, si ya se repartieron: del tipo Ryder
+      // sale MANUAL, así que unos equipos elegidos uno a uno en la sala de
+      // draft se contaban como hechos a mano. Va aparte para no pisar el
+      // configurado: una automática rehecha a mano, al reabrir y volver a
+      // cerrar, dejaría sin equipo a los que entraron después. Solo lo manda
+      // la ficha; los listados, no
+      actualTeamAssignment: apiData?.actual_team_assignment ?? null,
       maxPlayingHandicap: apiData?.max_playing_handicap ?? null
     };
   }

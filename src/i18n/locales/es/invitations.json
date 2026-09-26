@@ -29,7 +29,8 @@
     "PENDING": "Pendiente",
     "ACCEPTED": "Aceptada",
     "DECLINED": "Rechazada",
-    "EXPIRED": "Expirada"
+    "EXPIRED": "Expirada",
+    "NO_ROOM": "Sin plaza"
   },
   "actions": {
     "accept": "Aceptar",
@@ -60,6 +61,7 @@
     "failedToLoad": "Error al cargar las invitaciones",
     "failedToSend": "Error al enviar la invitación",
     "failedToRespond": "Error al responder a la invitación",
+    "noRoom": "Esta invitación se quedó sin plaza al cerrarse la inscripción.",
     "duplicateInvitation": "Ya se ha enviado una invitación a este email",
     "invalidEmail": "Por favor, introduce un email válido",
     "rolesCheckFailed": "No se ha podido comprobar si puedes gestionar esta competición",
@@ -71,7 +73,8 @@
     "sendNew": "Enviar invitación",
     "sentCount_one": "{{count}} invitación enviada",
     "sentCount_other": "{{count}} invitaciones enviadas",
-    "nearCapacity": "Ya hay {{accepted}} invitaciones aceptadas de {{max}} plazas. El torneo está casi lleno."
+    "nearCapacity": "Ya hay {{accepted}} invitaciones aceptadas de {{max}} plazas. El torneo está casi lleno.",
+    "enrollmentClosed": "La inscripción está cerrada: ya no se puede invitar."
   },
   "player": {
     "title": "Mis invitaciones",

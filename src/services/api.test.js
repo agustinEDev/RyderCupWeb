@@ -277,6 +277,33 @@ describe('apiRequest - CSRF Protection', () => {
     });
   });
 
+  describe('el cuerpo del error (FE #710)', () => {
+    it('conserva lo que trae además del mensaje y el código', async () => {
+      // Acortar las fechas dice qué sesiones quedan fuera: la pantalla las
+      // escribe en su idioma, y sin el cuerpo no tiene de dónde sacarlas
+      CsrfTokenSync.getCsrfToken.mockReturnValue('valid-token');
+      const cuerpo = {
+        detail: 'Hay sesiones fuera de las fechas',
+        error_code: 'DATES_LEAVE_SESSIONS_OUT',
+        sessions_outside: [{ id: 'r1', round_date: '2026-10-04', session_type: 'MORNING' }],
+      };
+      TokenRefreshInterceptor.fetchWithTokenRefresh.mockResolvedValue({
+        ok: false,
+        status: 400,
+        json: async () => cuerpo,
+      });
+      vi.spyOn(console, 'error').mockImplementation(() => {});
+
+      const error = await apiRequest('/api/v1/competitions/c1', {
+        method: 'PUT',
+        body: '{}',
+      }).catch((e) => e);
+
+      expect(error.errorCode).toBe('DATES_LEAVE_SESSIONS_OUT');
+      expect(error.data).toEqual(cuerpo);
+    });
+  });
+
   describe('credentials: include', () => {
     it('should always include credentials for httpOnly cookies', async () => {
       CsrfTokenSync.getCsrfToken.mockReturnValue('token-123');

@@ -17,7 +17,8 @@
     "color": "Tee colour",
     "handicap": "Handicap",
     "format": "Format",
-    "ready": "Ready to Play"
+    "ready": "Ready to Play",
+    "youMarkPair": "You mark"
   },
   "notOpenYet": {
     "title": "Scoring for this match has not opened yet",
@@ -53,7 +54,10 @@
     "halved": "Halved",
     "prevHole": "Previous",
     "nextHole": "Next",
-    "tapToScore": "Add score"
+    "tapToScore": "Add score",
+    "pairBall": "Your ball",
+    "rivalBall": "Rival ball",
+    "rivalCount": "Per the rivals"
   },
   "scorecard": {
     "title": "Scorecard",
@@ -69,6 +73,8 @@
     "validation": "Val",
     "result": "Result",
     "halved": "=",
+    "holeWon": "Won",
+    "holeLost": "Lost",
     "and": "&",
     "out": "OUT",
     "in": "IN",
@@ -82,7 +88,7 @@
     "allSquare": "All Square",
     "points": "pts",
     "hole": "Hole",
-    "wins": "{{team}} wins {{score}}",
+    "wins": "{{score}} to {{team}}",
     "conceded": "{{team}} (Conceded)",
     "walkover": "{{team}} (Walkover)",
     "noMatches": "No matches available"
@@ -100,6 +106,8 @@
     "doubleBogey": "Double Bogey+"
   },
   "submit": {
+    "matchOver": "Match over",
+    "keepPlaying": "You can keep playing; hand it in when you finish.",
     "title": "Submit Scorecard",
     "confirm": "Are you sure you want to submit your scorecard? This action cannot be undone.",
     "button": "Submit Scorecard",
@@ -108,9 +116,11 @@
     "cancel": "Cancel",
     "submitted": "Scorecard submitted",
     "alreadySubmitted": "Scorecard already submitted",
+    "pairSubmitted": "Your pair's scorecard is submitted",
     "matchCompleted": "The match has finished",
     "waitingForPlayers_one": "Waiting for {{names}} to submit their scorecard",
     "waitingForPlayers_other": "Waiting for {{count}} players to submit their scorecards: {{names}}",
+    "waitingForPair": "Waiting for {{names}} to submit their pair's scorecard",
     "allValidated": "{{count}}/{{total}} holes validated",
     "notReady": "Not all holes are validated yet"
   },
@@ -132,8 +142,9 @@
   },
   "earlyEnd": {
     "title": "Match Decided",
-    "message": "The match has been decided. {{team}} wins {{score}}.",
+    "message": "The match has been decided: {{score}} to {{team}}.",
     "confirm": "Continue to Submit",
+    "review": "Review the scorecard",
     "description": "The remaining holes do not need to be played."
   },
   "concede": {
@@ -191,5 +202,11 @@
     "annotate": "Score",
     "leaderboard": "Leaderboard",
     "activeMatch": "Active Match"
+  },
+  "closed": {
+    "title": "Match closed",
+    "generic": "This match was closed before the end. There is nothing left to score.",
+    "conceded": "Match conceded: {{team}} wins. There is nothing left to score.",
+    "walkover": "{{team}} wins by walkover: the opponent did not show up. There is nothing to score."
   }
 }

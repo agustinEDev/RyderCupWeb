@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { MemoryRouter, Route, Routes } from 'react-router';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
+import { MemoryRouter, Route, Routes, Link } from 'react-router';
 import CompetitionDetail from './CompetitionDetail';
 
 vi.mock('react-i18next', () => ({
@@ -10,6 +10,7 @@ vi.mock('react-i18next', () => ({
       if (params?.count !== undefined) return `${key}_${params.count}`;
       if (params?.handicap !== undefined) return `${key}_${params.handicap}`;
       if (params?.fecha !== undefined) return `${key}_${params.fecha}`;
+      if (params?.name !== undefined) return `${key}_${params.name}`;
       return key;
     },
   }),
@@ -50,8 +51,11 @@ const mockGetCompetitionDetail = vi.fn().mockResolvedValue({
 });
 
 const mockCloseEnrollments = vi.fn();
+const mockDelete = vi.fn();
+const mockCancel = vi.fn();
 const mockAssignTeams = vi.fn();
 const mockRevertToInProgress = vi.fn();
+const mockRejectEnrollment = vi.fn();
 
 const mockListEnrollments = vi.fn().mockResolvedValue([
   {
@@ -76,15 +80,15 @@ vi.mock('../composition', () => ({
   closeEnrollmentsUseCase: { execute: (...args) => mockCloseEnrollments(...args) },
   startCompetitionUseCase: { execute: vi.fn() },
   completeCompetitionUseCase: { execute: vi.fn() },
-  cancelCompetitionUseCase: { execute: vi.fn() },
-  deleteCompetitionUseCase: { execute: vi.fn() },
+  cancelCompetitionUseCase: { execute: (...args) => mockCancel(...args) },
+  deleteCompetitionUseCase: { execute: (...args) => mockDelete(...args) },
   reopenEnrollmentsUseCase: { execute: vi.fn() },
   revertCompetitionStatusUseCase: { execute: vi.fn() },
   revertCompetitionToInProgressUseCase: { execute: (...args) => mockRevertToInProgress(...args) },
   listEnrollmentsUseCase: { execute: (...args) => mockListEnrollments(...args) },
   requestEnrollmentUseCase: { execute: vi.fn() },
   approveEnrollmentUseCase: { execute: vi.fn() },
-  rejectEnrollmentUseCase: { execute: vi.fn() },
+  rejectEnrollmentUseCase: { execute: (...args) => mockRejectEnrollment(...args) },
   assignTeamsUseCase: { execute: (...args) => mockAssignTeams(...args) },
   setCustomHandicapUseCase: { execute: (...args) => mockSetCustomHandicap(...args) },
   removeCustomHandicapUseCase: { execute: (...args) => mockRemoveCustomHandicap(...args) },
@@ -96,6 +100,16 @@ vi.mock('../utils/toast', () => ({
 }));
 
 import customToast from '../utils/toast';
+
+
+// Desde FE #705 la ficha ofrece UNA acción y el resto vive en el menú «···»:
+// para verlas hay que abrirlo. Tolerante a que no exista, porque algunos casos
+// comprueban justo que la acción NO se ofrece
+const abrirMenuDeAcciones = () => {
+  for (const boton of screen.queryAllByTestId('menu-acciones')) {
+    if (boton.getAttribute('aria-expanded') === 'false') fireEvent.click(boton);
+  }
+};
 
 const renderPage = () => {
   return render(
@@ -275,7 +289,91 @@ describe('CompetitionDetail - edición de hándicap', () => {
   });
 });
 
-describe('CompetitionDetail - cierre de inscripciones con asignación automática', () => {
+/**
+ * FE #730: los cambios de estado se confirmaban con `window.confirm`, el
+ * diálogo nativo del navegador. Ahora con el modal de la app.
+ *
+ *   W1  pedir un cambio de estado       | el modal de la app, no el nativo
+ *   W2  «No» en el modal                | no se hace nada
+ *   W3  «Sí» en el modal                | se hace el cambio
+ */
+describe('CompetitionDetail · confirmar con el modal de la app (FE #730)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockListEnrollments.mockResolvedValue([]);
+    mockGetCompetitionDetail.mockResolvedValue({
+      id: 'comp-1',
+      name: 'Summer Cup',
+      status: 'COMPLETED',
+      creatorId: 'creator-1',
+      maxPlayers: 20,
+      countries: [],
+    });
+  });
+
+  const pedirReabrir = async () => {
+    await screen.findByText('Summer Cup');
+    for (const boton of screen.queryAllByTestId('menu-acciones')) {
+      if (boton.getAttribute('aria-expanded') === 'false') fireEvent.click(boton);
+    }
+    fireEvent.click(await screen.findByText('detail.actions.revert-to-in-progress'));
+  };
+
+  it('W1: sale el modal de la app y no el diálogo nativo', async () => {
+    const nativo = vi.spyOn(window, 'confirm');
+    renderPage();
+    await pedirReabrir();
+
+    expect(
+      await screen.findByText('detail.confirmDialogs.revert-to-in-progress.title')
+    ).toBeInTheDocument();
+    expect(nativo).not.toHaveBeenCalled();
+    nativo.mockRestore();
+  });
+
+  it('W2: «No» no hace nada', async () => {
+    renderPage();
+    await pedirReabrir();
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'detail.confirmDialogs.revert-to-in-progress.keep' })
+    );
+
+    await waitFor(() =>
+      expect(
+        screen.queryByText('detail.confirmDialogs.revert-to-in-progress.title')
+      ).not.toBeInTheDocument()
+    );
+    expect(mockRevertToInProgress).not.toHaveBeenCalled();
+  });
+
+  it('W3: «Sí» lo hace', async () => {
+    mockRevertToInProgress.mockResolvedValueOnce({ status: 'IN_PROGRESS', updatedAt: '2026-09-26T08:00:00Z' });
+    renderPage();
+    await pedirReabrir();
+    fireEvent.click(await screen.findByTestId('confirm-modal-confirm'));
+
+    await waitFor(() => expect(mockRevertToInProgress).toHaveBeenCalledWith('comp-1'));
+  });
+
+  // FE #742 · cada acción con sus palabras. «¿Cancelar la competición?» con los
+  // botones «Cancelar» y «Confirmar» hacía pulsar «Cancelar» a quien quería
+  // cancelarla, y eso cerraba el modal sin hacer nada
+  it('V1: título, consecuencia y botones propios de la acción; nada genérico', async () => {
+    renderPage();
+    await pedirReabrir();
+
+    const dialogo = await screen.findByRole('dialog');
+    expect(within(dialogo).getByText('detail.confirmDialogs.revert-to-in-progress.title')).toBeInTheDocument();
+    expect(within(dialogo).getByText('detail.confirmDialogs.revert-to-in-progress.body')).toBeInTheDocument();
+    expect(
+      within(dialogo).getByRole('button', { name: 'detail.confirmDialogs.revert-to-in-progress.confirm' })
+    ).toBeInTheDocument();
+    expect(within(dialogo).queryByText('confirm')).not.toBeInTheDocument();
+    expect(within(dialogo).queryByText('cancel')).not.toBeInTheDocument();
+  });
+});
+
+describe('CompetitionDetail · rechazar una solicitud se confirma en el modal (FE #730)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockGetCompetitionDetail.mockResolvedValue({
@@ -284,32 +382,29 @@ describe('CompetitionDetail - cierre de inscripciones con asignación automátic
       status: 'ACTIVE',
       creatorId: 'creator-1',
       maxPlayers: 20,
-      teamAssignment: 'AUTOMATIC',
       countries: [],
     });
-    mockListEnrollments.mockResolvedValue([]);
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    mockListEnrollments.mockResolvedValue([
+      { id: 'enr-9', userId: 'u-9', status: 'REQUESTED', userName: 'Nuevo Nadal', userHandicap: 12 },
+    ]);
+    mockRejectEnrollment.mockResolvedValue({});
   });
 
-  it('actualiza el estado a CLOSED aunque falle la asignación automática de equipos', async () => {
-    mockCloseEnrollments.mockResolvedValue({ status: 'CLOSED', updatedAt: '2026-07-05T00:00:00Z' });
-    mockAssignTeams.mockRejectedValue(new Error('assign failed'));
-
+  it('R1: pregunta en el modal, y con «Sí» rechaza', async () => {
     renderPage();
+    fireEvent.click(await screen.findByText(/detail\.reject$/));
 
-    const closeButton = await screen.findByText('detail.actions.close-enrollments');
-    fireEvent.click(closeButton);
+    // FE #742 · dice a quién se rechaza, con sus propios botones
+    expect(
+      await screen.findByText('detail.confirmDialogs.reject-enrollment.title_Nuevo Nadal')
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'detail.confirmDialogs.reject-enrollment.keep' })
+    ).toBeInTheDocument();
+    expect(mockRejectEnrollment).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByTestId('confirm-modal-confirm'));
 
-    await waitFor(() => {
-      expect(mockAssignTeams).toHaveBeenCalledWith('comp-1', { mode: 'AUTOMATIC' });
-    });
-
-    // Status update from closeEnrollments must survive the assignTeams failure
-    await waitFor(() => {
-      expect(screen.getByText('detail.actions.start-competition')).toBeInTheDocument();
-    });
-    expect(customToast.error).toHaveBeenCalledWith('assign failed');
-    expect(customToast.success).toHaveBeenCalledWith('detail.success.enrollmentsClosed');
+    await waitFor(() => expect(mockRejectEnrollment).toHaveBeenCalledWith('comp-1', 'enr-9'));
   });
 });
 
@@ -317,7 +412,6 @@ describe('CompetitionDetail - reabrir torneo completado', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockListEnrollments.mockResolvedValue([]);
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
   });
 
   it('muestra el botón de reabrir torneo solo cuando el estado es COMPLETED', async () => {
@@ -332,7 +426,10 @@ describe('CompetitionDetail - reabrir torneo completado', () => {
 
     renderPage();
 
-    expect(await screen.findByText('detail.actions.revert-to-in-progress')).toBeInTheDocument();
+    await screen.findByTestId('menu-acciones');
+    abrirMenuDeAcciones();
+    abrirMenuDeAcciones();
+    expect(screen.getByText('detail.actions.revert-to-in-progress')).toBeInTheDocument();
   });
 
   it('no muestra el botón de reabrir torneo si el estado no es COMPLETED', async () => {
@@ -348,6 +445,7 @@ describe('CompetitionDetail - reabrir torneo completado', () => {
     renderPage();
 
     await waitFor(() => expect(mockListEnrollments).toHaveBeenCalled());
+    abrirMenuDeAcciones();
     expect(screen.queryByText('detail.actions.revert-to-in-progress')).not.toBeInTheDocument();
   });
 
@@ -367,13 +465,17 @@ describe('CompetitionDetail - reabrir torneo completado', () => {
 
     renderPage();
 
-    const reopenButton = await screen.findByText('detail.actions.revert-to-in-progress');
-    fireEvent.click(reopenButton);
+    await screen.findByTestId('menu-acciones');
+    abrirMenuDeAcciones();
+    fireEvent.click(screen.getByText('detail.actions.revert-to-in-progress'));
+    // Se confirma en el modal de la app (FE #730)
+    fireEvent.click(await screen.findByTestId('confirm-modal-confirm'));
 
     await waitFor(() => {
       expect(mockRevertToInProgress).toHaveBeenCalledWith('comp-1');
     });
     expect(customToast.success).toHaveBeenCalledWith('detail.success.revertedToInProgress');
+    abrirMenuDeAcciones();
     expect(screen.getByText('detail.actions.complete')).toBeInTheDocument();
   });
 });
@@ -583,7 +685,10 @@ describe('CompetitionDetail - invitar desde el borrador (FE #660)', () => {
 
     renderPage();
 
-    expect(await screen.findByText('detail.actions.manageInvitations')).toBeInTheDocument();
+    await screen.findByTestId('menu-acciones');
+    abrirMenuDeAcciones();
+    abrirMenuDeAcciones();
+    expect(screen.getByText('detail.actions.manageInvitations')).toBeInTheDocument();
   });
 
   it('y se avisa de lo que hace, porque no es evidente', async () => {
@@ -600,6 +705,7 @@ describe('CompetitionDetail - invitar desde el borrador (FE #660)', () => {
     renderPage();
 
     await screen.findByText('Summer Cup');
+    abrirMenuDeAcciones();
     expect(screen.queryByText('detail.actions.manageInvitations')).not.toBeInTheDocument();
   });
 
@@ -610,16 +716,21 @@ describe('CompetitionDetail - invitar desde el borrador (FE #660)', () => {
 
     renderPage();
 
-    expect(await screen.findByText('detail.actions.edit')).toBeInTheDocument();
+    await screen.findByTestId('menu-acciones');
+    abrirMenuDeAcciones();
+    abrirMenuDeAcciones();
+    expect(screen.getByText('detail.actions.edit')).toBeInTheDocument();
   });
 
-  it('pero borrar sigue siendo solo del borrador', async () => {
-    // Con gente invitada o dentro, lo que toca es cancelar
+  it('borrar no se ofrece si el servidor no lo permite, sea cual sea el estado', async () => {
+    // Quién puede y cuándo lo decide el backend (can_delete, RyderCupAM#347):
+    // la pantalla ya no copia la lista de estados (FE #667)
     conEstado('ACTIVE');
 
     renderPage();
 
     await screen.findByText('Summer Cup');
+    abrirMenuDeAcciones();
     expect(screen.queryByText('detail.actions.delete')).not.toBeInTheDocument();
   });
 
@@ -629,6 +740,7 @@ describe('CompetitionDetail - invitar desde el borrador (FE #660)', () => {
     renderPage();
 
     await screen.findByText('Summer Cup');
+    abrirMenuDeAcciones();
     expect(screen.queryByText('detail.actions.edit')).not.toBeInTheDocument();
   });
 });
@@ -808,5 +920,406 @@ describe('CompetitionDetail - la vuelta lleva a donde se vino (FE #682)', () => 
     fireEvent.click(await screen.findByText('detail.backToCompetitions'));
 
     expect(await screen.findByTestId('en-competiciones')).toBeInTheDocument();
+  });
+});
+
+
+describe('CompetitionDetail - borrar con confirmación (FE #667)', () => {
+  const ficha = (extra = {}) => {
+    mockGetCompetitionDetail.mockResolvedValue({
+      id: 'comp-1',
+      name: 'Summer Cup',
+      status: 'ACTIVE',
+      creatorId: 'creator-1',
+      maxPlayers: 20,
+      countries: [],
+      canDelete: true,
+      ...extra,
+    });
+  };
+  const inscritos = (...userIds) =>
+    mockListEnrollments.mockResolvedValue(
+      userIds.map((userId, i) => ({
+        id: `enr-${i}`,
+        userId,
+        status: 'APPROVED',
+        userName: `Jugador ${i}`,
+        userHandicap: 10,
+        hasCustomHandicap: false,
+        customHandicap: null,
+        team: null,
+      }))
+    );
+  // Eliminar vive en el menú «···», al final y separado (FE #705)
+  const botonEliminar = async () => {
+    await screen.findByTestId('menu-acciones');
+    abrirMenuDeAcciones();
+    return screen.getByTestId('accion-delete');
+  };
+
+  // Con el menú ABIERTO: cerrado, «no está» se cumple siempre y el caso no
+  // prueba nada (revisión de la FE #707). Si no hay menú es que no queda
+  // ninguna acción, y entonces tampoco la de borrar
+  const noOfreceEliminar = async () => {
+    await screen.findByText('Summer Cup');
+    abrirMenuDeAcciones();
+    if (screen.queryAllByTestId('menu-acciones').length > 0) {
+      expect(screen.getByRole('menu')).toBeInTheDocument();
+    }
+    expect(screen.queryByTestId('accion-delete')).not.toBeInTheDocument();
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    inscritos('creator-1');
+  });
+
+  it('B1: si el servidor lo permite, se ofrece también en una abierta', async () => {
+    ficha({ status: 'ACTIVE' });
+
+    renderPage();
+
+    expect(await botonEliminar()).toBeInTheDocument();
+  });
+
+  it('B1b: y en una cancelada', async () => {
+    ficha({ status: 'CANCELLED' });
+
+    renderPage();
+
+    expect(await botonEliminar()).toBeInTheDocument();
+  });
+
+  it('B2: si no lo permite, no se ofrece aunque sea un borrador del creador', async () => {
+    ficha({ status: 'DRAFT', canDelete: false });
+
+    renderPage();
+
+    await screen.findByText('Summer Cup');
+    await noOfreceEliminar();
+  });
+
+  it('B3: pulsar «Eliminar» abre la confirmación y todavía no borra nada', async () => {
+    ficha();
+
+    renderPage();
+    fireEvent.click(await botonEliminar());
+
+    expect(await screen.findByText('detail.deleteModal.title')).toBeInTheDocument();
+    expect(mockDelete).not.toHaveBeenCalled();
+  });
+
+  it('B4: cancelar en la confirmación no borra', async () => {
+    ficha();
+
+    renderPage();
+    fireEvent.click(await botonEliminar());
+    fireEvent.click(await screen.findByRole('button', { name: 'detail.deleteModal.keep' }));
+
+    await waitFor(() => expect(screen.queryByText('detail.deleteModal.title')).not.toBeInTheDocument());
+    expect(mockDelete).not.toHaveBeenCalled();
+  });
+
+  it('B5: si no hay nadie más inscrito, lo dice así', async () => {
+    ficha();
+    inscritos('creator-1');
+
+    renderPage();
+    fireEvent.click(await botonEliminar());
+
+    expect(await screen.findByText('detail.deleteModal.nobodyElse')).toBeInTheDocument();
+  });
+
+  it('B6: con más gente, dice cuántos pierden su plaza, sin contar a quien borra', async () => {
+    // El creador está inscrito desde que la crea: contarlo inflaría el aviso
+    ficha();
+    inscritos('creator-1', 'jugador-2', 'jugador-3');
+
+    renderPage();
+    fireEvent.click(await botonEliminar());
+
+    expect(await screen.findByText('detail.deleteModal.othersLosePlace_2')).toBeInTheDocument();
+  });
+
+  it.each([
+    // FE #728: un admin que no está inscrito; «más» solo encaja si quien borra está dentro
+    ['B6b: quien borra no está inscrito, sin «más»', ['jugador-2', 'jugador-3'], 'detail.deleteModal.playersLosePlace_2'],
+    ['B5b: y si no hay nadie inscrito, lo dice así', [], 'detail.deleteModal.nobodyEnrolled'],
+  ])('%s', async (_caso, ids, texto) => {
+    ficha();
+    inscritos(...ids);
+
+    renderPage();
+    fireEvent.click(await botonEliminar());
+
+    expect(await screen.findByText(texto)).toBeInTheDocument();
+  });
+
+  it('B7: confirmar borra una sola vez, aunque se pulse dos veces', async () => {
+    ficha();
+    let terminar;
+    mockDelete.mockReturnValue(new Promise((resolver) => { terminar = resolver; }));
+
+    renderPage();
+    fireEvent.click(await botonEliminar());
+    const confirmar = await screen.findByRole('button', { name: 'detail.deleteModal.confirm' });
+    fireEvent.click(confirmar);
+    fireEvent.click(confirmar);
+    terminar();
+
+    await waitFor(() => expect(mockDelete).toHaveBeenCalledTimes(1));
+  });
+
+  it('B8: si el borrado falla, avisa con el motivo del servidor y la competición sigue', async () => {
+    ficha();
+    mockDelete.mockRejectedValue(
+      Object.assign(new Error('No se puede eliminar una competición que ya tiene calendario'), { status: 400 })
+    );
+
+    renderPage();
+    fireEvent.click(await botonEliminar());
+    fireEvent.click(await screen.findByRole('button', { name: 'detail.deleteModal.confirm' }));
+
+    await waitFor(() =>
+      expect(customToast.error).toHaveBeenCalledWith(
+        'No se puede eliminar una competición que ya tiene calendario'
+      )
+    );
+    expect(screen.getByText('Summer Cup')).toBeInTheDocument();
+  });
+
+  it('B9: tras cambiar de estado, vuelve a preguntar si se puede borrar', async () => {
+    // Las respuestas de los cambios de estado no traen can_delete: quedarse con
+    // el de antes diría «se puede» de una que ya no, o al revés (RyderCupAM#347)
+    ficha({ status: 'ACTIVE', canDelete: false });
+    mockCancel.mockResolvedValue({ status: 'CANCELLED', updatedAt: '2026-09-22T10:00:00Z' });
+
+    renderPage();
+    await screen.findByText('Summer Cup');
+    await noOfreceEliminar();
+
+    ficha({ status: 'CANCELLED', canDelete: true });
+    abrirMenuDeAcciones();
+    fireEvent.click(screen.getByText('detail.actions.cancel'));
+    // Se confirma en el modal de la app (FE #730)
+    fireEvent.click(await screen.findByTestId('confirm-modal-confirm'));
+
+    expect(await botonEliminar()).toBeInTheDocument();
+  });
+
+  it('B10: si ese refresco falla, deja de ofrecerlo: no se ofrece lo que no se sabe', async () => {
+    ficha({ status: 'ACTIVE', canDelete: true });
+    mockCancel.mockResolvedValue({ status: 'CANCELLED', updatedAt: '2026-09-22T10:00:00Z' });
+
+    renderPage();
+    expect(await botonEliminar()).toBeInTheDocument();
+
+    mockGetCompetitionDetail.mockRejectedValue(new TypeError('Sin conexión'));
+    abrirMenuDeAcciones();
+    fireEvent.click(screen.getByText('detail.actions.cancel'));
+    // Se confirma en el modal de la app (FE #730)
+    fireEvent.click(await screen.findByTestId('confirm-modal-confirm'));
+
+    await waitFor(noOfreceEliminar);
+  });
+
+  it('B11: si no se han podido cargar las inscripciones, no dice que no hay nadie más', async () => {
+    // Afirmaría algo que no se ha podido comprobar, y el creador borraría
+    // creyendo que no afecta a nadie
+    ficha();
+    mockListEnrollments.mockRejectedValue(new TypeError('Sin conexión'));
+
+    renderPage();
+    fireEvent.click(await botonEliminar());
+
+    expect(await screen.findByText('detail.deleteModal.unknownOthers')).toBeInTheDocument();
+    expect(screen.queryByText('detail.deleteModal.nobodyElse')).not.toBeInTheDocument();
+  });
+
+  it('B12: una respuesta atrasada del refresco no pisa el estado de ahora', async () => {
+    // Dos cambios seguidos: la ficha pedida tras el primero llega tarde, con el
+    // estado de entonces, y no puede decidir el botón del estado actual
+    ficha({ status: 'ACTIVE', canDelete: false });
+    mockCancel.mockResolvedValue({ status: 'CANCELLED', updatedAt: '2026-09-22T10:00:00Z' });
+
+    renderPage();
+    await screen.findByText('Summer Cup');
+
+    // La ficha que llega es la de un estado que ya no es el actual
+    mockGetCompetitionDetail.mockResolvedValue({
+      id: 'comp-1', name: 'Summer Cup', status: 'CLOSED', creatorId: 'creator-1',
+      maxPlayers: 20, countries: [], canDelete: true,
+    });
+    abrirMenuDeAcciones();
+    fireEvent.click(screen.getByText('detail.actions.cancel'));
+    // Se confirma en el modal de la app (FE #730)
+    fireEvent.click(await screen.findByTestId('confirm-modal-confirm'));
+
+    await waitFor(() => expect(mockGetCompetitionDetail).toHaveBeenCalledTimes(2));
+    await new Promise((r) => setTimeout(r, 50));
+    await noOfreceEliminar();
+  });
+
+  it('B13: el aviso de «no se ha podido comprobar» no se queda pegado al pasar a otra que sí carga', async () => {
+    ficha();
+    mockListEnrollments.mockRejectedValueOnce(new TypeError('Sin conexión'));
+    render(
+      <MemoryRouter initialEntries={['/competitions/comp-1']}>
+        <Routes>
+          <Route
+            path="/competitions/:id"
+            element={
+              <>
+                <CompetitionDetail />
+                <Link to="/competitions/comp-2">otra</Link>
+              </>
+            }
+          />
+        </Routes>
+      </MemoryRouter>
+    );
+    await botonEliminar();
+
+    inscritos('creator-1');
+    fireEvent.click(screen.getByText('otra'));
+    await waitFor(() => expect(mockListEnrollments).toHaveBeenCalledTimes(2));
+    fireEvent.click(await botonEliminar());
+
+    expect(await screen.findByText('detail.deleteModal.nobodyElse')).toBeInTheDocument();
+  });
+});
+
+/**
+ * FE #744 · la sección de solicitudes rechazadas. Se veía mal (Agustín, 26 sep):
+ * el triángulo del navegador suelto en una línea, un círculo rojo de error
+ * debajo y el título partido; abierta, la etiqueta «RECHAZADO» se salía 42 px de
+ * su tarjeta a 360 px porque el correo no se partía.
+ *
+ *   S1  plegada                    | su título, el número aparte, nada rojo
+ *   S2  abierta                    | nombre, correo que se parte, etiqueta dentro
+ *   S3  gemelo: rechazar pendiente | la ayuda del botón, traducida
+ *   S4  gemelo: correo pendiente   | también se parte
+ */
+describe('CompetitionDetail · solicitudes rechazadas (FE #744)', () => {
+  const CORREO_LARGO = 'bartolome.fernandez.villaverde@correo-muy-largo.example.com';
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockGetCompetitionDetail.mockResolvedValue({
+      id: 'comp-1',
+      name: 'Summer Cup',
+      status: 'ACTIVE',
+      creatorId: 'creator-1',
+      maxPlayers: 20,
+      countries: [],
+    });
+    mockListEnrollments.mockResolvedValue([
+      { id: 'enr-r', userId: 'u-r', status: 'REJECTED', userName: 'Óscar Noche', userEmail: CORREO_LARGO },
+      { id: 'enr-p', userId: 'u-p', status: 'REQUESTED', userName: 'Pepa Pérez', userEmail: CORREO_LARGO },
+    ]);
+  });
+
+  it('S1: plegada, con su título y el número aparte, sin nada rojo', async () => {
+    renderPage();
+
+    const seccion = await screen.findByTestId('solicitudes-rechazadas');
+    expect(within(seccion).getByText('detail.rejectedRequests')).toBeInTheDocument();
+    expect(within(seccion).getByTestId('numero-de-la-seccion')).toHaveTextContent('1');
+    expect(seccion.querySelector('.text-red-600')).toBeNull();
+    expect(seccion.open).toBe(false);
+  });
+
+  it('S2: abierta, cada una con su nombre, su correo partible y la etiqueta dentro', async () => {
+    renderPage();
+
+    const seccion = await screen.findByTestId('solicitudes-rechazadas');
+    fireEvent.click(within(seccion).getByText('detail.rejectedRequests'));
+
+    const fila = within(seccion).getByTestId('rechazada-u-r');
+    expect(within(fila).getByText('Óscar Noche')).toBeInTheDocument();
+    // jsdom no maqueta: se comprueba lo que evita el desborde. El texto puede
+    // encogerse y el correo partirse por cualquier sitio
+    expect(within(fila).getByText(CORREO_LARGO).parentElement).toHaveClass('min-w-0');
+    expect(within(fila).getByText(CORREO_LARGO)).toHaveClass('[overflow-wrap:anywhere]');
+    expect(within(fila).getByText('detail.rejected')).toHaveClass('flex-none');
+  });
+
+  it('S3: el botón de rechazar una pendiente tiene su ayuda traducida', async () => {
+    renderPage();
+
+    const boton = await screen.findByText(/detail\.reject$/);
+    expect(boton.closest('button')).toHaveAttribute('title', 'detail.reject');
+  });
+
+  it('S4: el correo de una pendiente también se parte', async () => {
+    renderPage();
+
+    const pendiente = await screen.findByTestId('pendiente-u-p');
+    expect(within(pendiente).getByText(CORREO_LARGO)).toHaveClass('[overflow-wrap:anywhere]');
+    expect(within(pendiente).getByText(CORREO_LARGO).parentElement).toHaveClass('min-w-0');
+  });
+});
+
+/**
+ * Ronda 2 de pruebas · los títulos con número de la ficha. A 360 px,
+ * «Solicitudes Pendientes (1)» dejaba el «(1)» solo en la línea siguiente. El
+ * número va aparte, en una pastilla que no se separa, igual en todas.
+ *
+ *   N1  pendientes  | texto sin paréntesis, el número en su pastilla
+ *   N2  aprobados   | igual
+ *   N4  rechazadas  | la misma pastilla
+ */
+describe('CompetitionDetail · títulos con su número aparte', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockGetCompetitionDetail.mockResolvedValue({
+      id: 'comp-1',
+      name: 'Summer Cup',
+      status: 'ACTIVE',
+      creatorId: 'creator-1',
+      maxPlayers: 20,
+      countries: [],
+    });
+    mockListEnrollments.mockResolvedValue([
+      { id: 'a1', userId: 'u-a1', status: 'APPROVED', userName: 'Ana', userHandicap: 10 },
+      { id: 'a2', userId: 'u-a2', status: 'APPROVED', userName: 'Bea', userHandicap: 12 },
+      { id: 'a3', userId: 'u-a3', status: 'APPROVED', userName: 'Carla', userHandicap: 14 },
+      { id: 'p1', userId: 'u-p1', status: 'REQUESTED', userName: 'Pepa', userHandicap: 20 },
+      { id: 'r1', userId: 'u-r1', status: 'REJECTED', userName: 'Rosa', userHandicap: 22 },
+    ]);
+  });
+
+  it('N1: pendientes, el número en su pastilla y no entre paréntesis', async () => {
+    renderPage();
+
+    const titulo = (await screen.findByText('detail.pendingRequests')).closest('h3');
+    expect(within(titulo).getByTestId('numero-de-la-seccion')).toHaveTextContent('1');
+    expect(titulo.textContent).not.toMatch(/\(/);
+  });
+
+  it('N2: aprobados, igual', async () => {
+    renderPage();
+
+    const titulo = (await screen.findByText('detail.approvedPlayers')).closest('h3');
+    expect(within(titulo).getByTestId('numero-de-la-seccion')).toHaveTextContent('3');
+  });
+
+  // Ronda 2 de pruebas (Agustín): el número, al borde derecho de la fila del
+  // título, centrado en altura; el texto a la izquierda, partiéndose si no cabe
+  it('N5: el número va aparte, al borde derecho del título', async () => {
+    renderPage();
+
+    const texto = await screen.findByText('detail.approvedPlayers');
+    const numero = within(texto.closest('h3')).getByTestId('numero-de-la-seccion');
+    expect(texto).toHaveClass('flex-1', 'min-w-0');
+    expect(texto).not.toContainElement(numero);
+    expect(numero).toHaveClass('flex-none');
+  });
+
+  it('N4: rechazadas, con la misma pastilla', async () => {
+    renderPage();
+
+    const seccion = await screen.findByTestId('solicitudes-rechazadas');
+    expect(within(seccion).getByTestId('numero-de-la-seccion')).toHaveTextContent('1');
   });
 });
