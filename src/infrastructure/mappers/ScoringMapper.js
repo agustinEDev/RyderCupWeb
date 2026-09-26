@@ -128,6 +128,10 @@ class ScoringMapper {
         matchId: m.match_id,
         matchNumber: m.match_number,
         matchFormat: m.match_format,
+        // De qué sesión es: el número de partido se repite entre sesiones
+        // (FE #738). Sin ellos en rondas antiguas o un backend anterior
+        roundDate: m.round_date ?? null,
+        sessionType: m.session_type ?? null,
         status: m.status,
         currentHole: m.current_hole ?? null,
         standing: m.standing ?? null,

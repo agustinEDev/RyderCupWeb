@@ -294,6 +294,23 @@ describe('ScoringMapper', () => {
       ],
     };
 
+    // FE #738 · de qué sesión es cada partido: el número se repite entre sesiones
+    it('L1: la fecha y la franja de cada partido, o null si no vienen', () => {
+      const conSesion = {
+        ...fullLeaderboard,
+        matches: [
+          { ...fullLeaderboard.matches[0], round_date: '2026-09-25', session_type: 'MORNING' },
+          fullLeaderboard.matches[1],
+        ],
+      };
+      const dto = ScoringMapper.toLeaderboardDTO(conSesion);
+
+      expect(dto.matches[0].roundDate).toBe('2026-09-25');
+      expect(dto.matches[0].sessionType).toBe('MORNING');
+      expect(dto.matches[1].roundDate).toBeNull();
+      expect(dto.matches[1].sessionType).toBeNull();
+    });
+
     it('should map full leaderboard response', () => {
       const dto = ScoringMapper.toLeaderboardDTO(fullLeaderboard);
 

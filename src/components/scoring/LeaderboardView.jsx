@@ -11,8 +11,22 @@ const formatMatchPlayResult = (score, currentHole) => {
   return score;
 };
 
+// «vie, 25 sept» en el idioma de la app. Un idioma que Intl no conozca no
+// puede tumbar la clasificación: se enseña la fecha tal cual
+const fechaCorta = (dia, idioma) => {
+  try {
+    return new Date(`${dia}T00:00:00`).toLocaleDateString(idioma, {
+      weekday: 'short',
+      day: 'numeric',
+      month: 'short',
+    });
+  } catch {
+    return dia;
+  }
+};
+
 const LeaderboardView = ({ leaderboard }) => {
-  const { t } = useTranslation('scoring');
+  const { t, i18n } = useTranslation(['scoring', 'schedule']);
 
   if (!leaderboard) return null;
 
@@ -32,7 +46,15 @@ const LeaderboardView = ({ leaderboard }) => {
     return (
       <div key={match.matchId} data-testid={`leaderboard-match-${match.matchId}`} className="bg-white rounded-lg border border-gray-200 p-4">
         <div className="flex items-center justify-between mb-3">
-          <span className="text-xs font-medium text-gray-500">
+          <span className="min-w-0 text-xs font-medium text-gray-500">
+            {/* Con varias sesiones el número se repite: dos «#2» seguidos no
+                decían cuál era cuál (FE #738) */}
+            {match.roundDate && match.sessionType && (
+              <span data-testid={`sesion-${match.matchId}`}>
+                {fechaCorta(match.roundDate, i18n.language)} ·{' '}
+                {t(`sessions.${match.sessionType}`, { ns: 'schedule' })} ·{' '}
+              </span>
+            )}
             #{match.matchNumber} - {match.matchFormat}
           </span>
           {match.status === 'IN_PROGRESS' && match.currentHole && (
