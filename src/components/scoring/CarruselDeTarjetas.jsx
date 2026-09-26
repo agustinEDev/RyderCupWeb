@@ -85,13 +85,16 @@ const CarruselDeTarjetas = ({ tarjetas, inicial }) => {
         </div>
       )}
 
+      {/* `relative`: lo absoluto de dentro (los textos para lectores de pantalla
+          de una figura) se recorta con su antepasado posicionado. Sin él, los de
+          la segunda tarjeta escapaban y el móvil alejaba la vista a 522 px */}
       <div
         ref={carril}
         data-testid="carril-de-tarjetas"
         tabIndex={varias ? 0 : undefined}
         onScroll={alDeslizar}
         onKeyDown={varias ? alTeclear : undefined}
-        className="flex snap-x snap-mandatory overflow-x-auto overscroll-x-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-xl"
+        className="relative flex snap-x snap-mandatory overflow-x-auto overscroll-x-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-xl"
       >
         {tarjetas.map((tarjeta) => (
           <div

@@ -5,6 +5,183 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.37.0] - 2026-09-26
+
+El resto del rediseño de las competiciones (#409) y su pulido (#710): la sala de draft,
+los sobres de los capitanes, la agenda dentro de la ficha, nombrar capitanes, el género
+para inscribirse, las invitaciones que se quedan sin plaza y el cierre de sesión por
+dispositivo. Y lo que salió en las rondas de pruebas de principio a fin del 24 al 26 de
+septiembre. Requiere el backend **2.22.0**, pero esta vez **el frontend se despliega
+primero**: el de producción falla ante el estado de invitación nuevo, `NO_ROOM`, y
+«Mis invitaciones» dejaría de cargar.
+
+### Added
+
+- **La sala de draft, en directo en el móvil de todos** (#653, #698). La ceremonia la
+  ve el grupo entero, no solo los capitanes: a cada uno le dice si es su turno, quién
+  está eligiendo o que los equipos ya están hechos, y solo ofrece elegir a quien puede.
+  Cada jugador sale con su nombre y su hándicap, nada más. La cuenta atrás va con el
+  reloj del servidor, así que un móvil adelantado no da su turno por perdido antes de
+  tiempo, y lo que eligió la app al agotarse el minuto va marcado.
+- **Los sobres de los capitanes, ordenados a toques** (#655, #699). Cada capitán
+  entrega su lista sin ver la del rival y los partidos salen de cruzarlas por posición.
+  El orden se construye tocando (el primer toque juega el primero), que en un móvil
+  funciona mejor que arrastrar; «Deshacer» quita el último, y si el envío falla el
+  orden sigue en pantalla.
+- **El sobre de parejas y «Rehacer los sobres»** (#703). En las sesiones por parejas,
+  dos jugadores con el mismo número juegan juntos. El organizador puede rehacer los
+  sobres de una sesión, avisado de que se lleva sus partidos. El aviso de equipo impar
+  lo ve cualquiera que entre, también el organizador, que es quien puede arreglarlo.
+- **Abrir los sobres sin esperar a la hora, con permiso de los dos** (#701, #702,
+  #717, #719). El capitán ve el plazo, en la hora del campo y no en la del móvil, y
+  cada uno puede «Dar permiso» o «Retirarlo» para abrirlos antes; la página dice si el
+  rival ya lo ha dado. Para abrirlos tienen que estar los dos sobres entregados, y si
+  el organizador abre uno sin plazo con un sobre sin entregar, se le avisa de que
+  también está decidiendo ese.
+- **«Requiere tu atención» avisa del sobre que debes** (#704), con el día y la sesión,
+  y te lleva directo a él. Antes solo te enterabas recorriendo el calendario, y el
+  plazo pasaba sin saberlo.
+- **Nombrar capitanes en lugar de «Cerrar inscripciones»** (#692, #693). Un
+  desplegable por equipo con los jugadores aprobados; nombrarlos cierra las
+  inscripciones. La lista de aprobados marca al capitán y al subcapitán de cada equipo.
+- **Al repartir a mano, los capitanes ya están en su equipo** (#694) y no se pueden
+  mover. Y todo jugador aprobado tiene que quedar en un equipo: en una Ryder juegan
+  todos.
+- **Un equipo que se queda sin capitán puede nombrar otro** (#697). Si el capitán se
+  retira con los equipos ya hechos y no había subcapitán, el calendario ofrece
+  «Nombrar capitán» entre los jugadores que siguen inscritos en ese equipo.
+- **Elegir al crear cuánto hace la app** (#695, #696, #697). Tras el tipo, tres
+  tarjetas que dicen lo que hará la app en cada caso. El modo se ve dentro del
+  formulario y se puede cambiar al editar. «Todo automático» sale como «Próximamente».
+- **La agenda del torneo, en la propia ficha** (#654, #709). Días, sesiones, formato,
+  campo y cuántos partidos saldrán, a la vista de todos. El organizador la edita ahí
+  mismo: formato de un toque, campo entre los añadidos, añadir o quitar sesiones. Lo
+  que tira trabajo (cambiar el formato con equipos hechos, que descarta los sobres, o
+  borrar una sesión) pregunta antes. Al crear una Ryder se propone una agenda a partir
+  de las fechas. La pantalla de calendario pasa a llamarse «Equipos y partidos».
+- **Por qué una sesión se quedó sin partidos** (#708). Se ve en la tarjeta de la
+  sesión y en la página del sobre, con quién falta y qué le falta, y el organizador
+  tiene una fila en «Requiere tu atención» por cada sesión así.
+- **La tarjeta de la sesión dice quién descansa** (#720). Con equipos desiguales, el
+  jugador que sobra ya no desaparece.
+- **Borrar también competiciones activas y canceladas** (#667, #691). Un modal dice
+  lo que se pierde: cuántos jugadores más pierden su plaza y que la agenda y los
+  equipos se van con ella. El botón sale solo cuando el servidor lo permitiría, y si
+  el borrado falla se dice por qué.
+- **El género, obligatorio para inscribirse** (#720). Se pide solo si falta, y justo
+  donde hace falta: al pedir plaza (en la ficha y en Explorar), al aceptar una
+  invitación y al crear una competición, porque el organizador también juega.
+- **Invitaciones «Sin plaza»** (#720, #733, #737). Al cerrar las inscripciones, las
+  invitaciones pendientes se quedan sin plaza, con su etiqueta y su filtro. Aceptar
+  una así explica por qué no se puede, en tu idioma, y rechazarla ya no se trata como
+  un error: la lista se recarga sin más. «Nueva invitación» solo se ofrece mientras
+  el servidor la acepta.
+- **La clasificación dice en qué sesión va cada partido** (#738): el día, la franja y
+  el número de partido.
+- **En el móvil, la tarjeta es vertical: una por participante** (#739), con los hoyos
+  de arriba abajo, y se pasa de una a otra deslizando en horizontal, con chips con los
+  nombres y puntos. Igual en competición y en partida rápida. La tablet y el
+  escritorio mantienen la tarjeta horizontal.
+- **Una barra abajo pide entregar la tarjeta al acabar el partido** (#745), decidido
+  o con los 18 hoyos jugados, en las tres pestañas. Avisa si queda un hoyo sin
+  validar y, una vez entregada, de quién falta.
+- **Los ajustes dicen cómo se hicieron de verdad los equipos** (#706, #722): por
+  sorteo, a mano o en el draft, en vez del modo con el que nació la competición. Cada
+  jugador aprobado muestra su equipo cuando ya existe el reparto.
+
+### Changed
+
+- **La ficha ofrece un solo paso siguiente** (#705, #707, #722, #729). La acción que
+  hace avanzar la competición va sola y el resto pasa a un menú. Mientras queden
+  plazas libres, lo principal es «Invitar», porque nombrar capitanes cierra las
+  inscripciones y deja las invitaciones sin plaza.
+- **Los ajustes, en palabras** (#707): nada de `AUTOMATIC` o `STANDARD_18`. Los
+  nombres de equipo por defecto salen en el idioma de la app («Europa», «Estados
+  Unidos»), pero nunca se renombran al editar los que ya están guardados.
+- **Se acaba el cierre de sesión a los 30 minutos sin tocar la app** (#718). En el
+  campo echaba a los jugadores sin avisar. Ahora la inactividad la decide el servidor,
+  por dispositivo y a las 24 horas; cerrar sesión en otra pestaña del mismo navegador
+  sigue cerrando esta.
+- **«Generar partidos», en modo Ryder, solo como reintento** (#708, #711, #719). Los
+  partidos salen de los sobres, así que se ofrece solo cuando la sesión tiene un
+  motivo apuntado, y nunca con las inscripciones reabiertas. Si el servidor lo
+  bloquea, el modal sigue abierto con el motivo y las parejas hechas a mano se quedan.
+- **Reasignar equipos parte de los equipos actuales** (#720) y avisa de que los
+  sustituye: deshacer el draft ya no es un clic.
+- **Abrir los sobres va después de entregar el tuyo** (#700, #702). Un capitán que
+  aún no ha entregado no ve el botón, ni mientras cambia su orden, porque abriría el
+  sobre anterior y perdería el nuevo.
+- **Los sobres, más legibles** (#722, #726, #741). El aviso de relleno automático
+  nombra el equipo, las parejas se parten en dos líneas en vez de cortarse y los
+  jugadores tocados suben. Con un equipo impar que bloquea una sesión de parejas solo
+  se ve el aviso: ni formulario, ni plazo, ni botones de permiso.
+- **La sala de draft, pulida** (#719, #722, #723). «Por elegir» va ordenado por
+  hándicap, los nombres largos se parten a 360 px y el organizador lee que es él quien
+  lanza el sorteo. El último jugador entra solo, y solo el capitán que lo recibe lee
+  que se incluyó en su equipo; al que pierde el penúltimo turno se le dice que el draft
+  ha terminado.
+- **Los desplegables de capitanes muestran y ordenan por hándicap de competición**
+  (#722), y si eliges al mismo jugador para los dos equipos se dice por qué «Nombrar»
+  está desactivado.
+- **En foursomes se habla de la pareja** (#719, #721): «Marcáis a: …», «Vuestra
+  bola» y «Bola rival», y «La tarjeta de vuestra pareja está entregada», en vez de
+  «Tarjeta ya enviada» al compañero que no la envió.
+- **Un partido decidido enseña su resultado** (#721): «4&2 para Los borrachos» en
+  vez de «4UP · 18 hoyos jugados», que vale sea cual sea el nombre del equipo. Y ya no
+  se ofrece concederlo.
+- **El hueco para anotar parece un botón** (#725): el siguiente vacío es un «+
+  Anotar» verde y relleno, y los demás van con borde verde. Igual en competición y en
+  partida rápida.
+- **Los partidos de una competición cerrada salen entre los próximos** (#719): el
+  primer golpe la inicia.
+- **«Solicitar unirse» solo en las competiciones públicas** (#734), en la ficha y en
+  Explorar. El servidor ya rechazaba las privadas.
+- **Se pueden añadir campos hasta que la competición acaba** (#713, #714). Quitar y
+  reordenar sigue igual.
+- **«Iniciar competición» solo con alguna sesión en la agenda** (#722). Una
+  competición cerrada ya no se abre en el formulario de edición por URL, y acortar las
+  fechas dice qué sesiones se quedan fuera.
+- **Invitar a varios seguidos** (#721). El modal se queda abierto, el amigo invitado
+  pasa a «Invitado» y el campo se vacía para el siguiente; si falla, no se borra nada.
+  La invitación duplicada lo vuelve a decir.
+- **Cada confirmación, con sus propias palabras y en el modal de la app** (#730,
+  #742): cambiar el estado, rechazar una solicitud o quitar un campo dicen qué pasa,
+  a quién o a qué, con verbos propios («Sí, cancelarla» / «No, mantenerla»), en vez
+  del `window.confirm` del navegador.
+- **Las solicitudes rechazadas, rediseñadas** (#744): una sección gris plegable con
+  filas que nunca desbordan. En las pendientes, el correo largo ya no desborda.
+
+### Fixed
+
+- **La cabecera de la portada se desplazaba en horizontal entre 768 y 1024 px**
+  (#689, #690). El menú compacto dura ahora hasta 1024 px.
+- **Las fechas de la API se leían en la hora local** (#708, #722). «Creado: 23/9» para
+  algo del 24, y al oeste de UTC el panel enseñaba las sesiones un día antes. Además,
+  las fechas de las competiciones y del perfil salían en inglés o en el idioma del
+  navegador: ahora van en el de la app.
+- **La agenda no veía un campo recién añadido** hasta recargar (#715, #716).
+- **Un error 5xx enseñaba el mensaje crudo del servidor** (#722). Ahora sale el texto
+  genérico.
+- **Un partido concedido o por walkover no se veía como acabado** al anotar (#732).
+  Ahora la cabecera lo dice como la clasificación, no se ofrece anotar ni entregar, y
+  quien ya había entregado no espera a nadie.
+- **Pedir plaza podía fallar en silencio** (#721). El modal solo se cierra si sale
+  bien; si no, dice por qué. Y en Explorar, «ya inscrito» se reconoce y la tarjeta se
+  va de la lista.
+- **La sala de draft y los sobres no se refrescaban solos** (#720). El draft sigue
+  preguntando mientras espera al sorteo, y el sobre cada 10 s mientras el tuyo está
+  entregado y siguen cerrados.
+- **Las dos casillas del resultado quedaban a distinta altura** (#736).
+- **El diálogo de «partido decidido» salía a quien no jugaba** el partido (#740).
+- **El botón de quitar un campo estaba en inglés** (#743) y ahora dice cuál quita;
+  igual el «Golf Course» de reserva.
+- **Nombres que se cortaban**: las filas de la tarjeta (#727) y el «HCP 18.0», que se
+  partía en dos líneas (#722).
+- **Un error al guardar la edición no se anunciaba** (#731): ahora recibe el foco,
+  también cuando se repite el mismo.
+- **Al entrar con otra cuenta sin cerrar sesión**, «Requiere tu atención» pintaba un
+  instante lo de la anterior (#708).
+
 ## [2.36.0] - 2026-09-22
 
 Segunda tanda del rediseño de las competiciones (#409): invitar, pública o privada

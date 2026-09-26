@@ -1224,7 +1224,7 @@ describe('CompetitionDetail · solicitudes rechazadas (FE #744)', () => {
 
     const seccion = await screen.findByTestId('solicitudes-rechazadas');
     expect(within(seccion).getByText('detail.rejectedRequests')).toBeInTheDocument();
-    expect(within(seccion).getByTestId('numero-de-rechazadas')).toHaveTextContent('1');
+    expect(within(seccion).getByTestId('numero-de-la-seccion')).toHaveTextContent('1');
     expect(seccion.querySelector('.text-red-600')).toBeNull();
     expect(seccion.open).toBe(false);
   });
@@ -1257,5 +1257,69 @@ describe('CompetitionDetail · solicitudes rechazadas (FE #744)', () => {
     const pendiente = await screen.findByTestId('pendiente-u-p');
     expect(within(pendiente).getByText(CORREO_LARGO)).toHaveClass('[overflow-wrap:anywhere]');
     expect(within(pendiente).getByText(CORREO_LARGO).parentElement).toHaveClass('min-w-0');
+  });
+});
+
+/**
+ * Ronda 2 de pruebas · los títulos con número de la ficha. A 360 px,
+ * «Solicitudes Pendientes (1)» dejaba el «(1)» solo en la línea siguiente. El
+ * número va aparte, en una pastilla que no se separa, igual en todas.
+ *
+ *   N1  pendientes  | texto sin paréntesis, el número en su pastilla
+ *   N2  aprobados   | igual
+ *   N4  rechazadas  | la misma pastilla
+ */
+describe('CompetitionDetail · títulos con su número aparte', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockGetCompetitionDetail.mockResolvedValue({
+      id: 'comp-1',
+      name: 'Summer Cup',
+      status: 'ACTIVE',
+      creatorId: 'creator-1',
+      maxPlayers: 20,
+      countries: [],
+    });
+    mockListEnrollments.mockResolvedValue([
+      { id: 'a1', userId: 'u-a1', status: 'APPROVED', userName: 'Ana', userHandicap: 10 },
+      { id: 'a2', userId: 'u-a2', status: 'APPROVED', userName: 'Bea', userHandicap: 12 },
+      { id: 'a3', userId: 'u-a3', status: 'APPROVED', userName: 'Carla', userHandicap: 14 },
+      { id: 'p1', userId: 'u-p1', status: 'REQUESTED', userName: 'Pepa', userHandicap: 20 },
+      { id: 'r1', userId: 'u-r1', status: 'REJECTED', userName: 'Rosa', userHandicap: 22 },
+    ]);
+  });
+
+  it('N1: pendientes, el número en su pastilla y no entre paréntesis', async () => {
+    renderPage();
+
+    const titulo = (await screen.findByText('detail.pendingRequests')).closest('h3');
+    expect(within(titulo).getByTestId('numero-de-la-seccion')).toHaveTextContent('1');
+    expect(titulo.textContent).not.toMatch(/\(/);
+  });
+
+  it('N2: aprobados, igual', async () => {
+    renderPage();
+
+    const titulo = (await screen.findByText('detail.approvedPlayers')).closest('h3');
+    expect(within(titulo).getByTestId('numero-de-la-seccion')).toHaveTextContent('3');
+  });
+
+  // Ronda 2 de pruebas (Agustín): el número, al borde derecho de la fila del
+  // título, centrado en altura; el texto a la izquierda, partiéndose si no cabe
+  it('N5: el número va aparte, al borde derecho del título', async () => {
+    renderPage();
+
+    const texto = await screen.findByText('detail.approvedPlayers');
+    const numero = within(texto.closest('h3')).getByTestId('numero-de-la-seccion');
+    expect(texto).toHaveClass('flex-1', 'min-w-0');
+    expect(texto).not.toContainElement(numero);
+    expect(numero).toHaveClass('flex-none');
+  });
+
+  it('N4: rechazadas, con la misma pastilla', async () => {
+    renderPage();
+
+    const seccion = await screen.findByTestId('solicitudes-rechazadas');
+    expect(within(seccion).getByTestId('numero-de-la-seccion')).toHaveTextContent('1');
   });
 });
