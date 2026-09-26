@@ -662,7 +662,12 @@ describe('EnvelopePage · el sobre del capitán (FE #655)', () => {
     pintar();
 
     expect(await screen.findByTestId('equipo-impar')).toBeInTheDocument();
-    expect(screen.getByTestId('entregar-sobre')).toBeDisabled();
+    // FE #741 · y solo el aviso: con la sesión bloqueada no hay nada que
+    // ordenar, y una lista tocable debajo invita a hacerlo para nada
+    expect(screen.queryByTestId('entregar-sobre')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('jugador-bea')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('sin-esperar')).not.toBeInTheDocument();
+    expect(screen.queryByText('envelope.tapInOrder')).not.toBeInTheDocument();
   });
 
   it('P5b: con el equipo impar no promete que la app lo rellene tras el plazo (FE #726)', async () => {
@@ -699,6 +704,23 @@ describe('EnvelopePage · el sobre del capitán (FE #655)', () => {
     pintar();
 
     expect(await screen.findByTestId('equipo-impar')).toBeInTheDocument();
+  });
+
+  it('P7b: entregado y con el equipo impar, ni «Cambiar» ni promesa de abrirse solos (FE #741)', async () => {
+    // Cambiar llevaría a un formulario que no se puede entregar, y a su hora
+    // no se abre nada: la sesión está bloqueada
+    mockVer.mockResolvedValue(
+      enParejas({
+        teamsFitFormat: false,
+        teamASubmitted: true,
+        mine: { team: 'A', entries: [['bea', 'ana']], submitted: true, automatic: false },
+      })
+    );
+    pintar();
+
+    await screen.findByTestId('equipo-impar');
+    expect(screen.queryByTestId('cambiar-sobre')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('se-abren-solos')).not.toBeInTheDocument();
   });
 
   it('P8: una pareja a medias dice qué falta, en vez de apagar el botón sin más', async () => {

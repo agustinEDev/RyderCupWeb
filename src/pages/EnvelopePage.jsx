@@ -403,38 +403,45 @@ const EnvelopePage = () => {
                 {t('envelope.giveConsent')}
               </button>
             )}
-            {/* Sin plazo —campo sin zona— no hay hora que prometer */}
-            {plazo && (
+            {/* Sin plazo —campo sin zona— no hay hora que prometer; con el
+                equipo impar tampoco: la sesión está bloqueada (FE #741) */}
+            {plazo && !equipoImpar && (
               <p data-testid="se-abren-solos" className="text-xs text-gray-500">
                 {t('envelope.opensOnItsOwn', { when: plazo })}
               </p>
             )}
-            <button
-              type="button"
-              data-testid="cambiar-sobre"
-              // Con el permiso viajando, el formulario arrancaría con el de
-              // ANTES y al entregar lo retiraría sin avisar
-              disabled={cambiandoPermiso}
-              onClick={() => {
-                setCambiando(true);
-                setOrden([]);
-                // Lo que ya pidió: si no, corregir la lista retiraría su
-                // petición de abrir sin esperar sin que nadie se lo diga
-                setSinEsperar(Boolean(vista?.mine?.revealWhenBothReady));
-              }}
-              className="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 disabled:opacity-50"
-            >
-              {t('envelope.change')}
-            </button>
+            {/* Con el equipo impar no se puede volver a entregar: cambiar
+                llevaría a un formulario sin salida (FE #741) */}
+            {!equipoImpar && (
+              <button
+                type="button"
+                data-testid="cambiar-sobre"
+                // Con el permiso viajando, el formulario arrancaría con el de
+                // ANTES y al entregar lo retiraría sin avisar
+                disabled={cambiandoPermiso}
+                onClick={() => {
+                  setCambiando(true);
+                  setOrden([]);
+                  // Lo que ya pidió: si no, corregir la lista retiraría su
+                  // petición de abrir sin esperar sin que nadie se lo diga
+                  setSinEsperar(Boolean(vista?.mine?.revealWhenBothReady));
+                }}
+                className="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 disabled:opacity-50"
+              >
+                {t('envelope.change')}
+              </button>
+            )}
           </div>
         )}
 
-        {!fallo && capitanea && !vista?.revealed && !entregado && (
+        {/* Con el equipo impar la sesión está bloqueada: no se entrega, no se
+            abre ni se rellena nada a su hora. Solo queda el aviso de arriba;
+            una lista tocable debajo invitaba a ordenarla para nada (FE #726,
+            FE #741) */}
+        {!fallo && capitanea && !vista?.revealed && !entregado && !equipoImpar && (
           <div className="space-y-3">
             <p className="text-sm text-gray-600">{t('envelope.tapInOrder')}</p>
-            {/* Con el equipo impar la sesión está bloqueada: a esa hora no se
-                abre ni se rellena nada, así que no se promete (FE #726) */}
-            {plazo && !equipoImpar && (
+            {plazo && (
               <p data-testid="plazo" className="text-xs text-gray-500">
                 {t('envelope.deadline', { when: plazo })}
               </p>
@@ -525,7 +532,7 @@ const EnvelopePage = () => {
                 type="button"
                 data-testid="entregar-sobre"
                 onClick={entregar}
-                disabled={orden.length !== jugadores.length || equipoImpar || enviando}
+                disabled={orden.length !== jugadores.length || enviando}
                 className="flex-1 rounded-lg bg-green-600 px-4 py-2 font-semibold text-white hover:bg-green-700 disabled:opacity-50"
               >
                 {t('envelope.submit')}
