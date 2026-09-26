@@ -288,7 +288,7 @@
     "approvedPlayers": "Jugadores Aprobados ({{count}})",
     "noApprovedPlayers": "Aún no hay jugadores aprobados",
     "pendingRequests": "Solicitudes Pendientes ({{count}})",
-    "rejectedEnrollments": "Inscripciones Rechazadas ({{count}})",
+    "rejectedRequests": "Solicitudes rechazadas",
     "approve": "Aprobar",
     "reject": "Rechazar",
     "noEmail": "Sin email",
@@ -304,7 +304,7 @@
     "revertToRfegHandicap": "Actualizar con la RFEG",
     "handicapReverted": "Hándicap actualizado con la RFEG",
     "failedToRevertHandicap": "Error al actualizar el hándicap con la RFEG",
-    "rejected": "RECHAZADO",
+    "rejected": "RECHAZADA",
     "enrollmentApproved": "Inscripción aprobada",
     "enrollmentRejected": "Inscripción rechazada",
     "success": {

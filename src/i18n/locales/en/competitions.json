@@ -288,7 +288,7 @@
     "approvedPlayers": "Approved Players ({{count}})",
     "noApprovedPlayers": "No approved players yet",
     "pendingRequests": "Pending Requests ({{count}})",
-    "rejectedEnrollments": "Rejected Enrollments ({{count}})",
+    "rejectedRequests": "Rejected requests",
     "approve": "Approve",
     "reject": "Reject",
     "noEmail": "No email",

@@ -1188,3 +1188,74 @@ describe('CompetitionDetail - borrar con confirmación (FE #667)', () => {
     expect(await screen.findByText('detail.deleteModal.nobodyElse')).toBeInTheDocument();
   });
 });
+
+/**
+ * FE #744 · la sección de solicitudes rechazadas. Se veía mal (Agustín, 26 sep):
+ * el triángulo del navegador suelto en una línea, un círculo rojo de error
+ * debajo y el título partido; abierta, la etiqueta «RECHAZADO» se salía 42 px de
+ * su tarjeta a 360 px porque el correo no se partía.
+ *
+ *   S1  plegada                    | su título, el número aparte, nada rojo
+ *   S2  abierta                    | nombre, correo que se parte, etiqueta dentro
+ *   S3  gemelo: rechazar pendiente | la ayuda del botón, traducida
+ *   S4  gemelo: correo pendiente   | también se parte
+ */
+describe('CompetitionDetail · solicitudes rechazadas (FE #744)', () => {
+  const CORREO_LARGO = 'bartolome.fernandez.villaverde@correo-muy-largo.example.com';
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockGetCompetitionDetail.mockResolvedValue({
+      id: 'comp-1',
+      name: 'Summer Cup',
+      status: 'ACTIVE',
+      creatorId: 'creator-1',
+      maxPlayers: 20,
+      countries: [],
+    });
+    mockListEnrollments.mockResolvedValue([
+      { id: 'enr-r', userId: 'u-r', status: 'REJECTED', userName: 'Óscar Noche', userEmail: CORREO_LARGO },
+      { id: 'enr-p', userId: 'u-p', status: 'REQUESTED', userName: 'Pepa Pérez', userEmail: CORREO_LARGO },
+    ]);
+  });
+
+  it('S1: plegada, con su título y el número aparte, sin nada rojo', async () => {
+    renderPage();
+
+    const seccion = await screen.findByTestId('solicitudes-rechazadas');
+    expect(within(seccion).getByText('detail.rejectedRequests')).toBeInTheDocument();
+    expect(within(seccion).getByTestId('numero-de-rechazadas')).toHaveTextContent('1');
+    expect(seccion.querySelector('.text-red-600')).toBeNull();
+    expect(seccion.open).toBe(false);
+  });
+
+  it('S2: abierta, cada una con su nombre, su correo partible y la etiqueta dentro', async () => {
+    renderPage();
+
+    const seccion = await screen.findByTestId('solicitudes-rechazadas');
+    fireEvent.click(within(seccion).getByText('detail.rejectedRequests'));
+
+    const fila = within(seccion).getByTestId('rechazada-u-r');
+    expect(within(fila).getByText('Óscar Noche')).toBeInTheDocument();
+    // jsdom no maqueta: se comprueba lo que evita el desborde. El texto puede
+    // encogerse y el correo partirse por cualquier sitio
+    expect(within(fila).getByText(CORREO_LARGO).parentElement).toHaveClass('min-w-0');
+    expect(within(fila).getByText(CORREO_LARGO)).toHaveClass('[overflow-wrap:anywhere]');
+    expect(within(fila).getByText('detail.rejected')).toHaveClass('flex-none');
+  });
+
+  it('S3: el botón de rechazar una pendiente tiene su ayuda traducida', async () => {
+    renderPage();
+
+    const boton = await screen.findByText(/detail\.reject$/);
+    expect(boton.closest('button')).toHaveAttribute('title', 'detail.reject');
+  });
+
+  it('S4: el correo de una pendiente también se parte', async () => {
+    renderPage();
+
+    const pendiente = await screen.findByTestId('pendiente-u-p');
+    expect(within(pendiente).getByText(CORREO_LARGO)).toHaveClass('[overflow-wrap:anywhere]');
+    expect(within(pendiente).getByText(CORREO_LARGO).parentElement).toHaveClass('min-w-0');
+  });
+});

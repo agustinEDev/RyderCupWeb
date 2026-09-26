@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate, useParams, useLocation, Link } from 'react-router';
 import { motion } from 'framer-motion';
-import { Users, Calendar, CalendarClock, MapPin, Settings, ArrowLeft, Edit, Trash2, Play, CheckCircle, XCircle, AlertCircle, UserPlus, Shield, Mail, BarChart3, Undo2, Crown, Pause, Swords } from 'lucide-react';
+import { Users, Calendar, CalendarClock, MapPin, Settings, ArrowLeft, Edit, Trash2, Play, CheckCircle, XCircle, AlertCircle, UserPlus, Shield, Mail, BarChart3, Undo2, Crown, Pause, Swords, UserX, ChevronRight } from 'lucide-react';
 import customToast from '../utils/toast';
 import AccionesDeLaFicha from '../components/competition/AccionesDeLaFicha';
 import { siguientePasoDeLaCompeticion } from '../utils/siguientePasoDeLaCompeticion';
@@ -1414,13 +1414,16 @@ const CompetitionDetail = () => {
                         .map((enrollment) => (
                           <div
                             key={enrollment.id}
+                            data-testid={`pendiente-${enrollment.userId}`}
                             className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 border border-orange-200 rounded-lg bg-orange-50 hover:bg-orange-100 transition-colors"
                           >
-                            <div className="flex-1">
-                              <p className="text-gray-900 font-semibold">
+                            {/* `min-w-0` y el correo partible: uno largo se salía
+                                de la tarjeta (FE #744, gemelo de las rechazadas) */}
+                            <div className="flex-1 min-w-0">
+                              <p className="text-gray-900 font-semibold break-words">
                                 {enrollment.userName || t('detail.unknownUser')}
                               </p>
-                              <p className="text-gray-600 text-sm">
+                              <p className="text-gray-600 text-sm [overflow-wrap:anywhere]">
                                 {enrollment.userEmail || t('detail.noEmail')}
                               </p>
                               {enrollment.userHandicap !== null && enrollment.userHandicap !== undefined && (
@@ -1445,7 +1448,7 @@ const CompetitionDetail = () => {
                               <button
                                 onClick={() => handleRejectEnrollment(enrollment.id)}
                                 className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 transition-colors shadow-sm"
-                                title="Reject enrollment"
+                                title={t('detail.reject')}
                               >
                                 ✗ {t('detail.reject')}
                               </button>
@@ -1456,32 +1459,40 @@ const CompetitionDetail = () => {
                   </div>
                 )}
 
-                {/* Rejected Enrollments Section - Collapsible */}
-                {enrollments.filter(e => e.status === 'REJECTED').length > 0 && (
-                  <details className="bg-white border border-gray-200 rounded-xl shadow-sm">
-                    <summary className="p-6 cursor-pointer hover:bg-gray-50 transition-colors">
-                      <h3 className="text-gray-700 font-semibold text-md inline-flex items-center gap-2">
-                        <XCircle className="w-5 h-5 text-red-600" />
-                        {t('detail.rejectedEnrollments', { count: enrollments.filter(e => e.status === 'REJECTED').length })}
-                      </h3>
+                {/* Solicitudes rechazadas, plegadas (FE #744). En gris: un rechazo
+                    no es un error. Flecha propia en vez del triángulo del
+                    navegador, que iba suelto en su línea, y filas que no se
+                    salen de su tarjeta aunque el correo sea largo */}
+                {enrollments.some(e => e.status === 'REJECTED') && (
+                  <details data-testid="solicitudes-rechazadas" className="group bg-white border border-gray-200 rounded-xl shadow-sm">
+                    <summary className="flex items-center gap-3 p-4 cursor-pointer list-none rounded-xl hover:bg-gray-50 [&::-webkit-details-marker]:hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-primary">
+                      <span className="grid h-8 w-8 flex-none place-items-center rounded-lg bg-gray-100 text-gray-500">
+                        <UserX className="h-4 w-4" aria-hidden="true" />
+                      </span>
+                      <span className="min-w-0 flex-1 font-semibold text-gray-700">{t('detail.rejectedRequests')}</span>
+                      <span data-testid="numero-de-rechazadas" className="flex-none rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-500">
+                        {enrollments.filter(e => e.status === 'REJECTED').length}
+                      </span>
+                      <ChevronRight className="h-4 w-4 flex-none text-gray-400 transition-transform group-open:rotate-90 motion-reduce:transition-none" aria-hidden="true" />
                     </summary>
-                    <div className="px-6 pb-6 space-y-3">
+                    <div className="space-y-2 border-t border-gray-100 px-4 pb-4 pt-3">
                       {enrollments
                         .filter(e => e.status === 'REJECTED')
                         .map((enrollment) => (
                           <div
                             key={enrollment.id}
-                            className="flex items-center justify-between p-4 border border-gray-200 rounded-lg bg-gray-50"
+                            data-testid={`rechazada-${enrollment.userId}`}
+                            className="flex items-start gap-3 rounded-lg border border-gray-100 bg-gray-50 p-3"
                           >
-                            <div className="flex-1">
-                              <p className="text-gray-700 font-medium">
+                            <div className="min-w-0 flex-1">
+                              <p className="font-medium text-gray-700 break-words">
                                 {enrollment.userName || t('detail.unknownUser')}
                               </p>
-                              <p className="text-gray-500 text-sm">
+                              <p className="text-xs text-gray-500 [overflow-wrap:anywhere]">
                                 {enrollment.userEmail || t('detail.noEmail')}
                               </p>
                             </div>
-                            <span className="px-3 py-1 bg-red-100 text-red-800 rounded-full text-xs font-semibold">
+                            <span className="flex-none rounded-full bg-gray-200 px-2 py-0.5 text-[10.5px] font-bold tracking-wide text-gray-600">
                               {t('detail.rejected')}
                             </span>
                           </div>
