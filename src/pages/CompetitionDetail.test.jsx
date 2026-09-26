@@ -1304,6 +1304,21 @@ describe('CompetitionDetail · títulos con su número aparte', () => {
     expect(within(titulo).getByTestId('numero-de-la-seccion')).toHaveTextContent('3');
   });
 
+  // Visto en el Kind a 360 px: «Jugadores aprobados» se partía y la pastilla,
+  // detrás de la caja del texto, se iba sola al borde derecho. Va dentro del
+  // propio texto, unida a la última palabra: si se parte, «aprobados 3»
+  it('N5: el número va pegado a la última palabra del título, no detrás de su caja', async () => {
+    renderPage();
+
+    const texto = await screen.findByText('detail.approvedPlayers');
+    const numero = within(texto.closest('h3')).getByTestId('numero-de-la-seccion');
+    // Texto y número en el mismo bloque de texto, unidos por un espacio que no
+    // se parte: la pastilla sigue a «aprobados», no a la caja entera
+    expect(texto.parentElement).toContainElement(numero);
+    expect(texto.parentElement.textContent).toBe('detail.approvedPlayers\u00a03');
+    expect(numero).toHaveClass('inline-block');
+  });
+
   it('N4: rechazadas, con la misma pastilla', async () => {
     renderPage();
 

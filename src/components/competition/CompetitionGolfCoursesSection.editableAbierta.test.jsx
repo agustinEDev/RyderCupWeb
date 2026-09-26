@@ -104,9 +104,14 @@ describe('CompetitionGolfCoursesSection · poner el campo después de invitar', 
     render(<CompetitionGolfCoursesSection competition={competicion('ACTIVE')} canManage={true} />);
 
     const texto = await screen.findByText('detail.golfCourses.title');
-    expect(texto).toHaveClass('whitespace-nowrap');
+    // El título y su número, juntos y sin partir
+    expect(texto.parentElement).toHaveClass('whitespace-nowrap');
+    expect(texto.parentElement).toContainElement(screen.getByTestId('numero-de-la-seccion'));
     expect(texto.closest('h3').parentElement).toHaveClass('flex-wrap');
-    expect(screen.getByText('detail.golfCourses.addCourse').closest('button')).toHaveClass('ml-auto');
+    // En el móvil, de lado a lado y con el texto centrado (Agustín, ronda 2):
+    // alineado a la derecha no quedaba bien. Desde tablet, a su tamaño
+    const boton = screen.getByText('detail.golfCourses.addCourse').closest('button');
+    expect(boton).toHaveClass('w-full', 'justify-center', 'sm:w-auto');
   });
 
   it('y quien no gestiona no añade nada', async () => {
