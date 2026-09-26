@@ -73,6 +73,8 @@
     "validation": "Val",
     "result": "Result",
     "halved": "=",
+    "holeWon": "Won",
+    "holeLost": "Lost",
     "and": "&",
     "out": "OUT",
     "in": "IN",
@@ -104,6 +106,7 @@
     "doubleBogey": "Double Bogey+"
   },
   "submit": {
+    "matchOver": "Match over",
     "title": "Submit Scorecard",
     "confirm": "Are you sure you want to submit your scorecard? This action cannot be undone.",
     "button": "Submit Scorecard",

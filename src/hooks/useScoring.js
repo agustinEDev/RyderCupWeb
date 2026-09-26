@@ -166,6 +166,11 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
     !hasSubmitted &&
     (scoringView?.isDecided ? everyPlayedHoleValidated : validatedHoles >= totalHoles);
 
+  // Acabado: decidido, o con los 18 jugados aunque no se decidiera antes. Es
+  // cuando toca entregar la tarjeta y la pantalla lo pide (FE #745); si queda
+  // algún hoyo sin validar, `canSubmitScorecard` sigue en false y se dice cuál
+  const partidoAcabado = Boolean(scoringView?.isDecided) || playedHoles.length >= totalHoles;
+
   // What the confirmation dialog counts against: in a decided match the card is
   // complete at the hole it ended on, so "12/18" would read as unfinished
   const holesToSubmit = scoringView?.isDecided ? playedHoles.length : totalHoles;
@@ -869,6 +874,7 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
     totalHoles,
     holesToSubmit,
     canSubmitScorecard,
+    partidoAcabado,
 
     // Actions
     setCurrentHole,

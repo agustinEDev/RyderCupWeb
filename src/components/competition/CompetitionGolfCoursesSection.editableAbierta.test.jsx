@@ -16,7 +16,10 @@ vi.mock('../../composition', () => ({
 }));
 
 vi.mock('react-i18next', () => ({
-  useTranslation: () => ({ t: (clave) => clave, i18n: { language: 'es' } }),
+  useTranslation: () => ({
+    t: (clave, opciones) => (opciones?.name ? `${clave}:${opciones.name}` : clave),
+    i18n: { language: 'es' },
+  }),
 }));
 
 vi.mock('../golf_course/GolfCourseSearchBox', () => ({ default: () => null }));
@@ -75,7 +78,9 @@ describe('CompetitionGolfCoursesSection · poner el campo después de invitar', 
     render(<CompetitionGolfCoursesSection competition={competicion('CLOSED')} canManage={true} />);
 
     await screen.findAllByText('Altea');
-    expect(screen.queryAllByTitle('Remove golf course')).toHaveLength(0);
+    expect(
+      screen.queryAllByRole('button', { name: /detail\.golfCourses\.remove/ })
+    ).toHaveLength(0);
     expect(screen.queryByText('detail.golfCourses.dragToReorder')).not.toBeInTheDocument();
   });
 

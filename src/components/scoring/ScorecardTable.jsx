@@ -1,6 +1,9 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import GolfFigure from './GolfFigure';
+import CarruselDeTarjetas from './CarruselDeTarjetas';
+import TarjetaVertical from './TarjetaVertical';
+import { useEsMovil } from '../../hooks/useEsMovil';
 import { conLaMiaPrimero, conMiNombrePrimero } from '../../utils/ordenDeLasTarjetas';
 
 /**
@@ -14,6 +17,7 @@ import { conLaMiaPrimero, conMiNombrePrimero } from '../../utils/ordenDeLasTarje
 const ScorecardTable = ({ holes = [], scores = [], players = [], currentUserId, teamAName, teamBName, matchFormat }) => {
   const { t } = useTranslation('scoring');
   const [showNet, setShowNet] = useState(false);
+  const esMovil = useEsMovil();
 
   // El par es de la barra de cada jugador —el backend lo manda resuelto por
   // jugador desde RyderCupAm#213— y esta rejilla lo comparte entre todas las
@@ -135,8 +139,97 @@ const ScorecardTable = ({ holes = [], scores = [], players = [], currentUserId, 
     return team === 'A' ? 'border-l-4 border-l-blue-500' : 'border-l-4 border-l-red-500';
   };
 
+  // En fourball, si la bola de esta fila fue la que contó en el hoyo. En
+  // foursomes la bola es del bando entero y no hay nada que resaltar
+  const esMejorBola = (holeNumber, row) => {
+    if (matchFormat === 'FOURSOMES') return false;
+    const result = getHoleResult(holeNumber);
+    return Boolean(
+      (row.team === 'A' && result?.bestBallPlayerA?.includes(row.playerIds[0])) ||
+      (row.team === 'B' && result?.bestBallPlayerB?.includes(row.playerIds[0]))
+    );
+  };
+
+  // Lo que se pinta en la casilla de un hoyo: la figura con los golpes (bruto o
+  // neto) y los puntitos de los golpes recibidos. La comparten la tarjeta
+  // horizontal y la vertical del móvil
+  const casillaDeGolpes = (h, row) => {
+    const ps = getRowScore(h.holeNumber, row);
+    if (!ps) {
+      // Sin anotación: hueco. Un guion aquí se confundía con la raya, que
+      // significa lo contrario.
+      return <span className="inline-flex w-7 h-7" />;
+    }
+    const displayScore = showNet ? (ps?.netScore ?? ps?.ownScore) : ps?.ownScore;
+    // La raya: hoyo anotado (`ownSubmitted`) y sin número porque el jugador
+    // recogió. No es lo mismo que un hoyo pendiente, aunque los dos lleguen
+    // aquí sin golpes, y con el mismo guion gris para ambos no había forma de
+    // saber cuál era cuál.
+    const isPickedUp = Boolean(ps?.ownSubmitted) && ps?.ownScore == null;
+    const strokeCount = ps?.strokesReceivedThisHole ?? 0;
+    return (
+      <div className="flex flex-col items-center">
+        {showNet && strokeCount > 0 && (
+          <div className="flex gap-px justify-center">
+            {Array.from({ length: strokeCount }).map((_, i) => (
+              <span key={i} className="block w-1.5 h-1.5 bg-blue-500 rounded-full" />
+            ))}
+          </div>
+        )}
+        <GolfFigure
+          score={isPickedUp ? null : displayScore}
+          par={parFor(row.playerIds, h.holeNumber, h.par)}
+          pickedUp={isPickedUp}
+        />
+      </div>
+    );
+  };
+
+  // Quién se llevó el hoyo, visto desde esta tarjeta
+  const resultadoPara = (holeNumber, row) => {
+    const result = getHoleResult(holeNumber);
+    if (!result) return { texto: '', clase: '' };
+    if (result.winner === 'HALVED') return { texto: t('scorecard.halved'), clase: 'text-gray-500' };
+    return result.winner === row.team
+      ? { texto: t('scorecard.holeWon'), clase: 'bg-green-100 text-green-800' }
+      : { texto: t('scorecard.holeLost'), clase: 'bg-red-100 text-red-700' };
+  };
+
+  // FE #739 · en el móvil, una tarjeta por participante con los hoyos de arriba
+  // abajo: la horizontal no cabía a 360 px y se desplazaba de lado
+  const tarjetaVertical = (row) => {
+    const nombreDelEquipo = row.team === 'A' ? teamAName : row.team === 'B' ? teamBName : null;
+    return (
+      <TarjetaVertical
+        clave={row.id}
+        testId={`tarjeta-vertical-${row.id}`}
+        equipo={row.team}
+        conResultado
+        cabecera={
+          <>
+            <p className="text-sm font-bold text-gray-900 break-words">{row.label}</p>
+            {nombreDelEquipo && <p className="text-[11px] text-gray-500">{nombreDelEquipo}</p>}
+          </>
+        }
+        hoyos={holes.map((h) => ({
+          holeNumber: h.holeNumber,
+          par: parFor(row.playerIds, h.holeNumber, h.par),
+          strokeIndex: h.strokeIndex,
+          casilla: casillaDeGolpes(h, row),
+          resultado: resultadoPara(h.holeNumber, row),
+          mejorBola: esMejorBola(h.holeNumber, row),
+        }))}
+        sumas={{
+          ida: inHoles.length > 0 ? sumRowScores(outHoles, row) : undefined,
+          vuelta: inHoles.length > 0 ? sumRowScores(inHoles, row) : undefined,
+          total: sumRowScores(holes, row),
+        }}
+      />
+    );
+  };
+
   const renderSection = (sectionHoles, label) => (
-    <div className="overflow-x-auto">
+    <div data-testid="vuelta-horizontal" className="overflow-x-auto">
       <table className="min-w-full text-xs">
         <thead>
           <tr className="bg-gray-50">
@@ -178,45 +271,11 @@ const ScorecardTable = ({ holes = [], scores = [], players = [], currentUserId, 
                   )}
                   {row.label}
                 </td>
-                {sectionHoles.map(h => {
-                  const ps = getRowScore(h.holeNumber, row);
-                  const displayScore = showNet ? (ps?.netScore ?? ps?.ownScore) : ps?.ownScore;
-                  // La raya: hoyo anotado (`ownSubmitted`) y sin número porque
-                  // el jugador recogió. No es lo mismo que un hoyo pendiente,
-                  // aunque los dos lleguen aquí sin golpes, y con el mismo guion
-                  // gris para ambos no había forma de saber cuál era cuál.
-                  const isPickedUp = Boolean(ps?.ownSubmitted) && ps?.ownScore == null;
-                  const strokeCount = ps?.strokesReceivedThisHole ?? 0;
-                  const result = getHoleResult(h.holeNumber);
-                  const isBestBall = matchFormat !== 'FOURSOMES' && (
-                    (row.team === 'A' && result?.bestBallPlayerA?.includes(row.playerIds[0])) ||
-                    (row.team === 'B' && result?.bestBallPlayerB?.includes(row.playerIds[0]))
-                  );
-                  return (
-                    <td key={h.holeNumber} className={`px-1 py-1 text-center ${isBestBall ? 'bg-yellow-50' : ''}`}>
-                      {ps ? (
-                        <div className="flex flex-col items-center">
-                          {showNet && strokeCount > 0 && (
-                            <div className="flex gap-px justify-center">
-                              {Array.from({ length: strokeCount }).map((_, i) => (
-                                <span key={i} className="block w-1.5 h-1.5 bg-blue-500 rounded-full" />
-                              ))}
-                            </div>
-                          )}
-                          <GolfFigure
-                            score={isPickedUp ? null : displayScore}
-                            par={parFor(row.playerIds, h.holeNumber, h.par)}
-                            pickedUp={isPickedUp}
-                          />
-                        </div>
-                      ) : (
-                        // Sin anotación: hueco. Un guion aquí se confundía con
-                        // la raya, que significa lo contrario.
-                        <span className="inline-flex w-7 h-7" />
-                      )}
-                    </td>
-                  );
-                })}
+                {sectionHoles.map(h => (
+                  <td key={h.holeNumber} className={`px-1 py-1 text-center ${esMejorBola(h.holeNumber, row) ? 'bg-yellow-50' : ''}`}>
+                    {casillaDeGolpes(h, row)}
+                  </td>
+                ))}
                 <td className="px-2 py-1 text-center font-bold">
                   {sumRowScores(sectionHoles, row) || '-'}
                 </td>
@@ -286,8 +345,21 @@ const ScorecardTable = ({ holes = [], scores = [], players = [], currentUserId, 
           <span className="text-xs text-gray-500">{t('scorecard.net')}</span>
         </div>
       )}
-      {renderSection(outHoles, t('scorecard.out'))}
-      {inHoles.length > 0 && renderSection(inHoles, t('scorecard.in'))}
+      {esMovil ? (
+        <CarruselDeTarjetas
+          tarjetas={filasOrdenadas.map((row) => ({
+            clave: row.id,
+            nombre: row.label,
+            equipo: row.team,
+            contenido: tarjetaVertical(row),
+          }))}
+        />
+      ) : (
+        <>
+          {renderSection(outHoles, t('scorecard.out'))}
+          {inHoles.length > 0 && renderSection(inHoles, t('scorecard.in'))}
+        </>
+      )}
     </div>
   );
 };

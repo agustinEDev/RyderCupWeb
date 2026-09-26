@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes, Link } from 'react-router';
 import CompetitionDetail from './CompetitionDetail';
 
@@ -10,6 +10,7 @@ vi.mock('react-i18next', () => ({
       if (params?.count !== undefined) return `${key}_${params.count}`;
       if (params?.handicap !== undefined) return `${key}_${params.handicap}`;
       if (params?.fecha !== undefined) return `${key}_${params.fecha}`;
+      if (params?.name !== undefined) return `${key}_${params.name}`;
       return key;
     },
   }),
@@ -323,7 +324,9 @@ describe('CompetitionDetail · confirmar con el modal de la app (FE #730)', () =
     renderPage();
     await pedirReabrir();
 
-    expect(await screen.findByText('detail.confirmations.revert-to-in-progress')).toBeInTheDocument();
+    expect(
+      await screen.findByText('detail.confirmDialogs.revert-to-in-progress.title')
+    ).toBeInTheDocument();
     expect(nativo).not.toHaveBeenCalled();
     nativo.mockRestore();
   });
@@ -331,10 +334,14 @@ describe('CompetitionDetail · confirmar con el modal de la app (FE #730)', () =
   it('W2: «No» no hace nada', async () => {
     renderPage();
     await pedirReabrir();
-    fireEvent.click(await screen.findByRole('button', { name: /cancel/i }));
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'detail.confirmDialogs.revert-to-in-progress.keep' })
+    );
 
     await waitFor(() =>
-      expect(screen.queryByText('detail.confirmations.revert-to-in-progress')).not.toBeInTheDocument()
+      expect(
+        screen.queryByText('detail.confirmDialogs.revert-to-in-progress.title')
+      ).not.toBeInTheDocument()
     );
     expect(mockRevertToInProgress).not.toHaveBeenCalled();
   });
@@ -346,6 +353,23 @@ describe('CompetitionDetail · confirmar con el modal de la app (FE #730)', () =
     fireEvent.click(await screen.findByTestId('confirm-modal-confirm'));
 
     await waitFor(() => expect(mockRevertToInProgress).toHaveBeenCalledWith('comp-1'));
+  });
+
+  // FE #742 · cada acción con sus palabras. «¿Cancelar la competición?» con los
+  // botones «Cancelar» y «Confirmar» hacía pulsar «Cancelar» a quien quería
+  // cancelarla, y eso cerraba el modal sin hacer nada
+  it('V1: título, consecuencia y botones propios de la acción; nada genérico', async () => {
+    renderPage();
+    await pedirReabrir();
+
+    const dialogo = await screen.findByRole('dialog');
+    expect(within(dialogo).getByText('detail.confirmDialogs.revert-to-in-progress.title')).toBeInTheDocument();
+    expect(within(dialogo).getByText('detail.confirmDialogs.revert-to-in-progress.body')).toBeInTheDocument();
+    expect(
+      within(dialogo).getByRole('button', { name: 'detail.confirmDialogs.revert-to-in-progress.confirm' })
+    ).toBeInTheDocument();
+    expect(within(dialogo).queryByText('confirm')).not.toBeInTheDocument();
+    expect(within(dialogo).queryByText('cancel')).not.toBeInTheDocument();
   });
 });
 
@@ -370,7 +394,13 @@ describe('CompetitionDetail · rechazar una solicitud se confirma en el modal (F
     renderPage();
     fireEvent.click(await screen.findByText(/detail\.reject$/));
 
-    expect(await screen.findByText('detail.confirmations.reject-enrollment')).toBeInTheDocument();
+    // FE #742 · dice a quién se rechaza, con sus propios botones
+    expect(
+      await screen.findByText('detail.confirmDialogs.reject-enrollment.title_Nuevo Nadal')
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'detail.confirmDialogs.reject-enrollment.keep' })
+    ).toBeInTheDocument();
     expect(mockRejectEnrollment).not.toHaveBeenCalled();
     fireEvent.click(screen.getByTestId('confirm-modal-confirm'));
 
@@ -1156,5 +1186,76 @@ describe('CompetitionDetail - borrar con confirmación (FE #667)', () => {
     fireEvent.click(await botonEliminar());
 
     expect(await screen.findByText('detail.deleteModal.nobodyElse')).toBeInTheDocument();
+  });
+});
+
+/**
+ * FE #744 · la sección de solicitudes rechazadas. Se veía mal (Agustín, 26 sep):
+ * el triángulo del navegador suelto en una línea, un círculo rojo de error
+ * debajo y el título partido; abierta, la etiqueta «RECHAZADO» se salía 42 px de
+ * su tarjeta a 360 px porque el correo no se partía.
+ *
+ *   S1  plegada                    | su título, el número aparte, nada rojo
+ *   S2  abierta                    | nombre, correo que se parte, etiqueta dentro
+ *   S3  gemelo: rechazar pendiente | la ayuda del botón, traducida
+ *   S4  gemelo: correo pendiente   | también se parte
+ */
+describe('CompetitionDetail · solicitudes rechazadas (FE #744)', () => {
+  const CORREO_LARGO = 'bartolome.fernandez.villaverde@correo-muy-largo.example.com';
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockGetCompetitionDetail.mockResolvedValue({
+      id: 'comp-1',
+      name: 'Summer Cup',
+      status: 'ACTIVE',
+      creatorId: 'creator-1',
+      maxPlayers: 20,
+      countries: [],
+    });
+    mockListEnrollments.mockResolvedValue([
+      { id: 'enr-r', userId: 'u-r', status: 'REJECTED', userName: 'Óscar Noche', userEmail: CORREO_LARGO },
+      { id: 'enr-p', userId: 'u-p', status: 'REQUESTED', userName: 'Pepa Pérez', userEmail: CORREO_LARGO },
+    ]);
+  });
+
+  it('S1: plegada, con su título y el número aparte, sin nada rojo', async () => {
+    renderPage();
+
+    const seccion = await screen.findByTestId('solicitudes-rechazadas');
+    expect(within(seccion).getByText('detail.rejectedRequests')).toBeInTheDocument();
+    expect(within(seccion).getByTestId('numero-de-rechazadas')).toHaveTextContent('1');
+    expect(seccion.querySelector('.text-red-600')).toBeNull();
+    expect(seccion.open).toBe(false);
+  });
+
+  it('S2: abierta, cada una con su nombre, su correo partible y la etiqueta dentro', async () => {
+    renderPage();
+
+    const seccion = await screen.findByTestId('solicitudes-rechazadas');
+    fireEvent.click(within(seccion).getByText('detail.rejectedRequests'));
+
+    const fila = within(seccion).getByTestId('rechazada-u-r');
+    expect(within(fila).getByText('Óscar Noche')).toBeInTheDocument();
+    // jsdom no maqueta: se comprueba lo que evita el desborde. El texto puede
+    // encogerse y el correo partirse por cualquier sitio
+    expect(within(fila).getByText(CORREO_LARGO).parentElement).toHaveClass('min-w-0');
+    expect(within(fila).getByText(CORREO_LARGO)).toHaveClass('[overflow-wrap:anywhere]');
+    expect(within(fila).getByText('detail.rejected')).toHaveClass('flex-none');
+  });
+
+  it('S3: el botón de rechazar una pendiente tiene su ayuda traducida', async () => {
+    renderPage();
+
+    const boton = await screen.findByText(/detail\.reject$/);
+    expect(boton.closest('button')).toHaveAttribute('title', 'detail.reject');
+  });
+
+  it('S4: el correo de una pendiente también se parte', async () => {
+    renderPage();
+
+    const pendiente = await screen.findByTestId('pendiente-u-p');
+    expect(within(pendiente).getByText(CORREO_LARGO)).toHaveClass('[overflow-wrap:anywhere]');
+    expect(within(pendiente).getByText(CORREO_LARGO).parentElement).toHaveClass('min-w-0');
   });
 });

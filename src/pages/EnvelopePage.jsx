@@ -98,7 +98,17 @@ const EnvelopePage = () => {
     };
   }, [hayAutomatico, id]);
   const capitanea = jugadores.length > 0;
-  const entregado = Boolean(vista?.mine?.submitted) && !cambiando;
+  // Lo dice el servidor mirando los DOS equipos, porque quien puede
+  // arreglarlo —el organizador, cambiando el formato o rehaciendo los
+  // equipos— no tiene sobre y no vería nada. En parejas el cruce va por
+  // posición: con un equipo impar alguien se queda fuera, no se puede
+  // entregar, el relleno automático revienta y el plazo vence sin abrir nada
+  const equipoImpar = vista != null && vista.teamsFitFormat === false;
+  // Cambiar solo tiene sentido con los equipos cuadrando: si la vista llega
+  // con el equipo impar a media corrección, el formulario ya no se pinta
+  // (FE #741) y, sin esto, tampoco el sobre entregado: solo quedaba el aviso
+  const reordenando = cambiando && !equipoImpar;
+  const entregado = Boolean(vista?.mine?.submitted) && !reordenando;
 
   // Con el sobre entregado y aún cerrados, se pregunta sola (#710): con los dos
   // permisos, el capitán que da el suyo primero espera justo ese momento y no
@@ -133,12 +143,6 @@ const EnvelopePage = () => {
   // Lo dice el servidor: 1 en individuales, 2 en los formatos de parejas.
   // Saber aquí qué formatos son de parejas es duplicar una regla del dominio
   const porFila = vista?.playersPerRow || 1;
-  // Lo dice el servidor mirando los DOS equipos, porque quien puede
-  // arreglarlo —el organizador, cambiando el formato o rehaciendo los
-  // equipos— no tiene sobre y no vería nada. En parejas el cruce va por
-  // posición: con un equipo impar alguien se queda fuera, no se puede
-  // entregar, el relleno automático revienta y el plazo vence sin abrir nada
-  const equipoImpar = vista != null && vista.teamsFitFormat === false;
   // La pareja que el capitán está formando y todavía le falta el compañero
   const parejaAMedias = orden.length % porFila !== 0;
 
@@ -382,7 +386,9 @@ const EnvelopePage = () => {
                 {t('envelope.rivalConsented')}
               </p>
             )}
-            {vista.mine.revealWhenBothReady ? (
+            {/* Con el equipo impar no se abre nada: el permiso no lleva a ningún
+                sitio (revisión local, FE #741) */}
+            {equipoImpar ? null : vista.mine.revealWhenBothReady ? (
               <button
                 type="button"
                 data-testid="retirar-permiso"
@@ -403,38 +409,45 @@ const EnvelopePage = () => {
                 {t('envelope.giveConsent')}
               </button>
             )}
-            {/* Sin plazo —campo sin zona— no hay hora que prometer */}
-            {plazo && (
+            {/* Sin plazo —campo sin zona— no hay hora que prometer; con el
+                equipo impar tampoco: la sesión está bloqueada (FE #741) */}
+            {plazo && !equipoImpar && (
               <p data-testid="se-abren-solos" className="text-xs text-gray-500">
                 {t('envelope.opensOnItsOwn', { when: plazo })}
               </p>
             )}
-            <button
-              type="button"
-              data-testid="cambiar-sobre"
-              // Con el permiso viajando, el formulario arrancaría con el de
-              // ANTES y al entregar lo retiraría sin avisar
-              disabled={cambiandoPermiso}
-              onClick={() => {
-                setCambiando(true);
-                setOrden([]);
-                // Lo que ya pidió: si no, corregir la lista retiraría su
-                // petición de abrir sin esperar sin que nadie se lo diga
-                setSinEsperar(Boolean(vista?.mine?.revealWhenBothReady));
-              }}
-              className="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 disabled:opacity-50"
-            >
-              {t('envelope.change')}
-            </button>
+            {/* Con el equipo impar no se puede volver a entregar: cambiar
+                llevaría a un formulario sin salida (FE #741) */}
+            {!equipoImpar && (
+              <button
+                type="button"
+                data-testid="cambiar-sobre"
+                // Con el permiso viajando, el formulario arrancaría con el de
+                // ANTES y al entregar lo retiraría sin avisar
+                disabled={cambiandoPermiso}
+                onClick={() => {
+                  setCambiando(true);
+                  setOrden([]);
+                  // Lo que ya pidió: si no, corregir la lista retiraría su
+                  // petición de abrir sin esperar sin que nadie se lo diga
+                  setSinEsperar(Boolean(vista?.mine?.revealWhenBothReady));
+                }}
+                className="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 disabled:opacity-50"
+              >
+                {t('envelope.change')}
+              </button>
+            )}
           </div>
         )}
 
-        {!fallo && capitanea && !vista?.revealed && !entregado && (
+        {/* Con el equipo impar la sesión está bloqueada: no se entrega, no se
+            abre ni se rellena nada a su hora. Solo queda el aviso de arriba;
+            una lista tocable debajo invitaba a ordenarla para nada (FE #726,
+            FE #741) */}
+        {!fallo && capitanea && !vista?.revealed && !entregado && !equipoImpar && (
           <div className="space-y-3">
             <p className="text-sm text-gray-600">{t('envelope.tapInOrder')}</p>
-            {/* Con el equipo impar la sesión está bloqueada: a esa hora no se
-                abre ni se rellena nada, así que no se promete (FE #726) */}
-            {plazo && !equipoImpar && (
+            {plazo && (
               <p data-testid="plazo" className="text-xs text-gray-500">
                 {t('envelope.deadline', { when: plazo })}
               </p>
@@ -525,7 +538,7 @@ const EnvelopePage = () => {
                 type="button"
                 data-testid="entregar-sobre"
                 onClick={entregar}
-                disabled={orden.length !== jugadores.length || equipoImpar || enviando}
+                disabled={orden.length !== jugadores.length || enviando}
                 className="flex-1 rounded-lg bg-green-600 px-4 py-2 font-semibold text-white hover:bg-green-700 disabled:opacity-50"
               >
                 {t('envelope.submit')}
@@ -542,7 +555,7 @@ const EnvelopePage = () => {
             Mientras reordena no se ofrece aunque el servidor lo permita: el
             sobre que hay guardado es el ANTERIOR, y un toque ahí lo abriría
             tirando por la borda lo que venía a cambiar */}
-        {!fallo && !cambiando && puedeAbrir && faltaAlgunSobre && !vista?.revealScheduledAt && (
+        {!fallo && !reordenando && !equipoImpar && puedeAbrir && faltaAlgunSobre && !vista?.revealScheduledAt && (
           // Esta sesión no tiene hora a la que abrirse sola —su campo no tiene
           // zona horaria—, así que quien la abra decide también el sobre que
           // falta. Sin decirlo, el botón parece el de siempre
@@ -550,7 +563,9 @@ const EnvelopePage = () => {
             {t('envelope.noDeadline')}
           </p>
         )}
-        {!fallo && !cambiando && puedeAbrir && (
+        {/* Con el equipo impar la sesión está bloqueada: abrirlos a mano tampoco
+            lleva a nada, aunque el servidor diga que se puede (CodeRabbit, #747) */}
+        {!fallo && !reordenando && !equipoImpar && puedeAbrir && (
           <button
             type="button"
             data-testid="abrir-sobres"

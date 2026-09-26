@@ -73,6 +73,8 @@
     "validation": "Val",
     "result": "Res",
     "halved": "=",
+    "holeWon": "Gana",
+    "holeLost": "Pierde",
     "and": "y",
     "out": "IDA",
     "in": "VUELTA",
@@ -104,6 +106,7 @@
     "doubleBogey": "Doble Bogey+"
   },
   "submit": {
+    "matchOver": "Partido terminado",
     "title": "Enviar Tarjeta",
     "confirm": "¿Estás seguro de que quieres enviar tu tarjeta? Esta acción no se puede deshacer.",
     "button": "Enviar Tarjeta",

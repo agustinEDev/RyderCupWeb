@@ -16,6 +16,7 @@ import MatchSummaryCard from '../../components/scoring/MatchSummaryCard';
 import OfflineBanner from '../../components/scoring/OfflineBanner';
 import SessionBlockedModal from '../../components/scoring/SessionBlockedModal';
 import EarlyEndModal from '../../components/scoring/EarlyEndModal';
+import BarraDeEntrega from '../../components/scoring/BarraDeEntrega';
 import ConcedeMatchModal from '../../components/scoring/ConcedeMatchModal';
 import SubmitScorecardModal from '../../components/scoring/SubmitScorecardModal';
 import BlockLoader from '../../components/ui/BlockLoader';
@@ -52,6 +53,7 @@ const ScoringPage = () => {
     pendingQueueSize,
     avisoDelVaciado,
     pintadoDeMemoria,
+    isMatchPlayer,
     canScore,
     hasSubmitted,
     isOwnScoreLocked,
@@ -61,6 +63,7 @@ const ScoringPage = () => {
     totalHoles,
     holesToSubmit,
     canSubmitScorecard,
+    partidoAcabado,
     setCurrentHole,
     submitScore,
     submitScorecard,
@@ -148,10 +151,51 @@ const ScoringPage = () => {
     scoringView?.matchStatus === 'CONCEDED' || scoringView?.matchStatus === 'WALKOVER';
   const claveDelCierre = scoringView?.matchStatus === 'WALKOVER' ? 'walkover' : 'conceded';
   const cierre = cerradoSinJugar && resultadoDecidido ? { team: resultadoDecidido.team } : null;
+  // Solo quien juega tiene una tarjeta que entregar: al que mira un partido
+  // ajeno el aviso le pedía «Continuar para Enviar» (FE #740)
   const showEarlyEnd =
-    !!scoringView?.isDecided && !cerradoSinJugar && !earlyEndDismissed && !matchSummary && !hasSubmitted;
+    !!scoringView?.isDecided &&
+    isMatchPlayer &&
+    !cerradoSinJugar &&
+    !earlyEndDismissed &&
+    !matchSummary &&
+    !hasSubmitted;
 
   const currentUserId = user?.id;
+
+  // El marcador de la cabecera, que repite la barra de entregar (FE #745).
+  // Decidido, su resultado y no el marcador del último hoyo jugado: un 4&2 que
+  // siguió hasta el 18 decía «4UP» (#710)
+  const textoDelMarcador = cierre
+    ? t(`leaderboard.${claveDelCierre}`, cierre)
+    : cerradoSinJugar
+    // Sin ganador (un backend anterior): cerrado, sin el marcador de los
+    // hoyos, que puede dar por ganador a quien concedió
+    ? t('closed.title')
+    : resultadoDecidido
+    ? t('leaderboard.wins', resultadoDecidido)
+    : !scoringView?.matchStanding
+    ? null
+    : scoringView.matchStanding.status === 'AS'
+    ? t('input.allSquare')
+    : `${scoringView.matchStanding.status} ${scoringView.matchStanding.leadingTeam === 'A' ? scoringView.teamAName : scoringView.teamBName}`;
+
+  // La barra de entregar la tarjeta, en las tres pestañas (FE #745): el botón
+  // vivía solo en Tarjeta y la pantalla abre en Anotar, así que quien acababa
+  // el 18 no veía nada. Solo para quien juega. En un partido cerrado sin
+  // jugar no se pide entregar —ya tiene su aviso—, pero quien entregó antes del
+  // cierre sí lee que está entregada y que ya no se espera a nadie
+  const estadoDeEntrega = !isMatchPlayer
+    ? null
+    : hasSubmitted
+    ? 'entregada'
+    : cerradoSinJugar
+    ? null
+    : canSubmitScorecard
+    ? 'entregar'
+    : partidoAcabado
+    ? 'faltaValidar'
+    : null;
 
   // Find current user's marker assignment
   const markerAssignment = scoringView?.markerAssignments?.find(
@@ -448,21 +492,7 @@ const ScoringPage = () => {
           </div>
           {(resultadoDecidido || cerradoSinJugar || scoringView?.matchStanding) && (
             <div className="text-right" data-testid="marcador-del-partido">
-              <p className="text-lg font-bold text-primary">
-                {/* Decidido, su resultado y no el marcador del último hoyo
-                    jugado: un 4&2 que siguió hasta el 18 decía «4UP» (#710) */}
-                {cierre
-                  ? t(`leaderboard.${claveDelCierre}`, cierre)
-                  : cerradoSinJugar
-                  // Sin ganador (un backend anterior): cerrado, sin el marcador
-                  // de los hoyos, que puede dar por ganador a quien concedió
-                  ? t('closed.title')
-                  : resultadoDecidido
-                  ? t('leaderboard.wins', resultadoDecidido)
-                  : scoringView.matchStanding.status === 'AS'
-                    ? t('input.allSquare')
-                    : `${scoringView.matchStanding.status} ${scoringView.matchStanding.leadingTeam === 'A' ? scoringView.teamAName : scoringView.teamBName}`}
-              </p>
+              <p className="text-lg font-bold text-primary">{textoDelMarcador}</p>
               {scoringView?.matchStanding && (
                 <p className="text-xs text-gray-500">
                   {t('holesPlayed', { count: scoringView.matchStanding.holesPlayed })}
@@ -599,54 +629,29 @@ const ScoringPage = () => {
               teamBName={scoringView?.teamBName}
               matchFormat={scoringView?.matchFormat}
             />
-
-            {canSubmitScorecard && !cerradoSinJugar && (
-              <button
-                onClick={() => setShowSubmitModal(true)}
-                disabled={isSubmitting}
-                className="w-full px-4 py-3 bg-primary text-white rounded-lg font-medium hover:bg-primary/90 disabled:opacity-50"
-              >
-                {t('submit.button')}
-              </button>
-            )}
-
-            {/* Un partido decidido con algún hoyo sin validar no se puede
-                entregar. Sin este aviso, «no puedo entregar porque falta un
-                hoyo» se ve igual que «no puedo entregar y no sé por qué» */}
-            {scoringView?.isDecided && !cerradoSinJugar && canScore && !hasSubmitted && !canSubmitScorecard && (
-              <p className="text-center text-sm text-gray-500">{t('submit.notReady')}</p>
-            )}
-
-            {hasSubmitted && (
-              <div className="text-center text-sm space-y-1">
-                {/* En foursomes la tarjeta es de la pareja (RyderCupAM#377): el
-                    servidor ya cuenta a los dos, así que lo pendiente es la otra */}
-                <p className="text-green-600 font-medium">
-                  {t(esFoursomes ? 'submit.pairSubmitted' : 'submit.alreadySubmitted')}
-                </p>
-                {/* Concedido o walkover también lo terminan: ya no se espera a nadie */}
-                {scoringView?.matchStatus === 'COMPLETED' || cerradoSinJugar ? (
-                  <p className="text-gray-500">{t('submit.matchCompleted')}</p>
-                ) : pendingPlayers.length > 0 && (
-                  <p className="text-gray-500">
-                    {esFoursomes
-                      ? t('submit.waitingForPair', {
-                        names: pendingPlayers.map((p) => p.userName).join(' / '),
-                      })
-                      : t('submit.waitingForPlayers', {
-                        count: pendingPlayers.length,
-                        names: pendingPlayers.map((p) => p.userName).join(', '),
-                      })}
-                  </p>
-                )}
-              </div>
-            )}
           </div>
         )}
 
         {/* Tab: Leaderboard */}
         {activeTab === 'leaderboard' && (
           <LeaderboardView leaderboard={leaderboard} />
+        )}
+
+        {estadoDeEntrega && (
+          <>
+            {/* Lo que ocupa la barra fija, para que no tape lo último */}
+            <div data-testid="hueco-de-la-barra" className="h-36" aria-hidden="true" />
+            <BarraDeEntrega
+              estado={estadoDeEntrega}
+              marcador={textoDelMarcador}
+              onEntregar={() => setShowSubmitModal(true)}
+              enviando={isSubmitting}
+              esFoursomes={esFoursomes}
+              pendientes={pendingPlayers.map((p) => p.userName)}
+              // Concedido o walkover también lo terminan: ya no se espera a nadie
+              completado={scoringView?.matchStatus === 'COMPLETED' || cerradoSinJugar}
+            />
+          </>
         )}
       </div>
 
@@ -669,9 +674,9 @@ const ScoringPage = () => {
         } : null}
         onConfirm={() => {
           setEarlyEndDismissed(true);
-          // El botón de entregar vive en la pestaña de la tarjeta, y la pantalla
-          // abre en la de anotar: sin esto, «Continuar para Enviar» devolvía al
-          // jugador a los hoyos sin nada que pulsar
+          // A la tarjeta, para repasarla antes de entregar: el botón está en la
+          // barra de abajo en todas las pestañas (FE #745), pero lo que se firma
+          // se lee en esta
           setActiveTab('scorecard');
         }}
         onClose={() => setEarlyEndDismissed(true)}

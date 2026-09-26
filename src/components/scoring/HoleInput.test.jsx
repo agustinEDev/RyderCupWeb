@@ -389,4 +389,60 @@ describe('HoleInput · el teclado del marcado usa SU par', () => {
       expect(screen.getByText('input.markerScore')).toBeInTheDocument();
     });
   });
+
+  // FE #736 · los dos huecos a la misma altura. La cabecera del marcado lleva
+  // la marca de validación y es más alta que la tuya: con una columna por
+  // jugador, su hueco quedaba 4 px más abajo. Etiquetas en una fila de la
+  // rejilla y huecos en la siguiente: comparten fila, midan lo que midan
+  describe('los dos huecos a la misma altura (#736)', () => {
+    const defaultProps = { holeNumber: 5, par: 4, strokeIndex: 7, onScoreChange: vi.fn() };
+    const filaDeLosHuecos = () => {
+      const rejilla = screen.getByTestId('huecos-del-hoyo');
+      return [...rejilla.children].slice(2);
+    };
+
+    it('A1: con la marca del marcado, los dos huecos van en la misma fila', () => {
+      render(<HoleInput {...defaultProps} markedValidationStatus="match" />);
+      const [tuyo, suyo] = filaDeLosHuecos();
+      expect(tuyo).toBe(screen.getByTestId('own-score-button'));
+      expect(suyo).toBe(screen.getByTestId('marked-score-button'));
+    });
+
+    it('A2: sin marca, igual', () => {
+      render(<HoleInput {...defaultProps} />);
+      const [tuyo, suyo] = filaDeLosHuecos();
+      expect(tuyo).toBe(screen.getByTestId('own-score-button'));
+      expect(suyo).toBe(screen.getByTestId('marked-score-button'));
+    });
+
+    it('A3: un hueco bloqueado sigue en su sitio de la fila', () => {
+      render(
+        <HoleInput
+          {...defaultProps}
+          isOwnScoreLocked
+          playerScore={{ ownScore: 4, ownSubmitted: true }}
+        />
+      );
+      const [tuyo, suyo] = filaDeLosHuecos();
+      expect(tuyo).toBe(screen.getByTestId('own-score-value'));
+      expect(suyo).toBe(screen.getByTestId('marked-score-button'));
+    });
+  });
+
+  // CodeRabbit en la #747 · con los dos huecos vacíos, los dos botones se
+  // anunciaban «Anotar»: un lector de pantalla no sabía cuál era el tuyo
+  describe('cada hueco se llama como su etiqueta (CodeRabbit, #747)', () => {
+    const defaultProps = { holeNumber: 5, par: 4, strokeIndex: 7, onScoreChange: vi.fn() };
+
+    it('C1: el tuyo y el del marcado se distinguen por su nombre', () => {
+      render(<HoleInput {...defaultProps} />);
+
+      expect(screen.getByRole('button', { name: 'input.yourScore' })).toBe(
+        screen.getByTestId('own-score-button')
+      );
+      expect(screen.getByRole('button', { name: 'input.markerScore' })).toBe(
+        screen.getByTestId('marked-score-button')
+      );
+    });
+  });
 });

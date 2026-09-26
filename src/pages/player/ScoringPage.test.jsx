@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, within } from '@testing-library/react';
 
 // Mock dependencies
 vi.mock('react-router', () => ({
@@ -63,6 +63,7 @@ const mockUseScoring = {
   totalHoles: 18,
   holesToSubmit: 18,
   canSubmitScorecard: false,
+  partidoAcabado: false,
   setCurrentHole: vi.fn(),
   submitScore: vi.fn(),
   submitScorecard: vi.fn(),
@@ -314,6 +315,22 @@ describe('ScoringPage', () => {
       expect(screen.getByTestId('early-end-modal')).toBeInTheDocument();
     });
 
+    // FE #740 · a quien mira un partido que no juega no le toca entregar nada:
+    // Nacho abría el de Óscar contra Agustín y le salía «Continuar para Enviar»
+    it('E2: a un espectador no le sale, aunque el partido esté decidido', () => {
+      // Quién juega lo decide `useScoring` (`isMatchPlayer`): no se repite aquí
+      mockUseScoring.isMatchPlayer = false;
+      mockUseScoring.hasSubmitted = false;
+      mockUseScoring.scoringView.isDecided = true;
+
+      try {
+        render(<ScoringPage />);
+        expect(screen.queryByTestId('early-end-modal')).toBeNull();
+      } finally {
+        mockUseScoring.isMatchPlayer = true;
+      }
+    });
+
     it('should not show the early end modal once the player has already submitted', () => {
       mockUseScoring.hasSubmitted = true;
       mockUseScoring.scoringView.isDecided = true;
@@ -434,6 +451,7 @@ describe('ScoringPage', () => {
       mockUseScoring.hasSubmitted = false;
       mockUseScoring.validatedHoles = 0;
       mockUseScoring.holesToSubmit = 18;
+      mockUseScoring.partidoAcabado = false;
     });
 
     it('takes "continue to submit" to the tab where the submit button lives', () => {
@@ -451,6 +469,7 @@ describe('ScoringPage', () => {
 
     it('says why the card is not ready instead of showing nothing', () => {
       mockUseScoring.scoringView.isDecided = true;
+      mockUseScoring.partidoAcabado = true;
       mockUseScoring.canSubmitScorecard = false;
 
       render(<ScoringPage />);
@@ -1130,5 +1149,83 @@ describe('ScoringPage · un partido cerrado sin jugarlo hasta el final (FE #732)
     );
     expect(screen.getByTestId('hole-input')).toBeInTheDocument();
     expect(screen.getByTestId('early-end-modal')).toBeInTheDocument();
+  });
+});
+
+/**
+ * FE #745 · al acabar, entregar la tarjeta desde cualquier pestaña. El botón
+ * vivía solo en Tarjeta y la pantalla abre en Anotar: quien acababa el 18 no
+ * veía nada, y los partidos se quedaban abiertos.
+ *
+ *   P1  acabado y listo, en Anotar   | la barra, y su botón abre la confirmación
+ *   P2  a medias                     | sin barra
+ *   P3  espectador                   | sin barra
+ *   P4  concedido o walkover         | sin barra: lo dice su aviso
+ *   P5  pestaña Tarjeta              | un solo botón de enviar, el de la barra
+ *   P6  con la barra                 | la página deja hueco para que no tape nada
+ */
+describe('ScoringPage · la barra de entregar la tarjeta (FE #745)', () => {
+  const acabado = () => {
+    mockUseScoring.partidoAcabado = true;
+    mockUseScoring.scoringView.isDecided = true;
+    mockUseScoring.scoringView.decidedResult = { winner: 'A', score: '3&2' };
+    mockUseScoring.canSubmitScorecard = true;
+  };
+
+  afterEach(() => {
+    mockUseScoring.partidoAcabado = false;
+    mockUseScoring.scoringView.isDecided = false;
+    mockUseScoring.scoringView.decidedResult = null;
+    mockUseScoring.scoringView.matchStatus = 'IN_PROGRESS';
+    mockUseScoring.canSubmitScorecard = false;
+    mockUseScoring.isMatchPlayer = true;
+  });
+
+  it('P1: acabado y listo, la barra sale en Anotar y su botón abre la confirmación', () => {
+    acabado();
+    render(<ScoringPage />);
+
+    const barra = screen.getByTestId('barra-de-entrega');
+    fireEvent.click(within(barra).getByRole('button', { name: 'submit.button' }));
+    expect(screen.getByTestId('submit-scorecard-modal')).toBeInTheDocument();
+  });
+
+  it('P2: a medias, sin barra', () => {
+    render(<ScoringPage />);
+
+    expect(screen.queryByTestId('barra-de-entrega')).toBeNull();
+  });
+
+  it('P3: a un espectador no le sale', () => {
+    acabado();
+    mockUseScoring.isMatchPlayer = false;
+    mockUseScoring.canSubmitScorecard = false;
+    render(<ScoringPage />);
+
+    expect(screen.queryByTestId('barra-de-entrega')).toBeNull();
+  });
+
+  it('P4: concedido, sin barra: ya lo dice su aviso', () => {
+    acabado();
+    mockUseScoring.scoringView.matchStatus = 'CONCEDED';
+    render(<ScoringPage />);
+
+    expect(screen.queryByTestId('barra-de-entrega')).toBeNull();
+  });
+
+  it('P5: en la pestaña Tarjeta hay un solo botón de enviar, el de la barra', () => {
+    acabado();
+    render(<ScoringPage />);
+    fireEvent.click(screen.getByTestId('tab-scorecard'));
+
+    expect(screen.getAllByText('submit.button')).toHaveLength(1);
+    expect(within(screen.getByTestId('barra-de-entrega')).getByText('submit.button')).toBeInTheDocument();
+  });
+
+  it('P6: con la barra, la página deja hueco abajo para que no tape nada', () => {
+    acabado();
+    render(<ScoringPage />);
+
+    expect(screen.getByTestId('hueco-de-la-barra')).toBeInTheDocument();
   });
 });

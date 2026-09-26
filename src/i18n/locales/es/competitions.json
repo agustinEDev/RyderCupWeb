@@ -194,17 +194,61 @@
       "confirm": "Eliminar",
       "keep": "No, mantenerla"
     },
-    "confirmations": {
-      "activate": "¿Estás seguro de que quieres activar esta competición?",
-      "close-enrollments": "¿Estás seguro de que quieres cerrar las inscripciones de esta competición?",
-      "start": "¿Estás seguro de que quieres iniciar esta competición?",
-      "complete": "¿Estás seguro de que quieres completar esta competición?",
-      "cancel": "¿Estás seguro de que quieres cancelar esta competición?",
-      "delete": "¿Estás seguro de que quieres eliminar esta competición? Esta acción no se puede deshacer.",
-      "reject-enrollment": "¿Estás seguro de que quieres rechazar esta inscripción?",
-      "reopen-enrollments": "¿Estás seguro de que quieres reabrir las inscripciones? La competición volverá al estado ACTIVA.",
-      "revert-status": "¿Estás seguro de que quieres volver al estado CERRADA? Esto te permitirá modificar el calendario.",
-      "revert-to-in-progress": "¿Estás seguro de que quieres reabrir este torneo? Volverá al estado EN CURSO para, por ejemplo, poder añadir otra ronda. Los partidos ya completados no se verán afectados."
+    "confirmDialogs": {
+      "activate": {
+        "title": "¿Activar la competición?",
+        "body": "Se abrirán las inscripciones y la gente podrá apuntarse.",
+        "confirm": "Sí, activarla",
+        "keep": "No, todavía no"
+      },
+      "close-enrollments": {
+        "title": "¿Cerrar las inscripciones?",
+        "body": "Nadie más podrá apuntarse, y las invitaciones que sigan pendientes se quedarán sin plaza.",
+        "confirm": "Sí, cerrarlas",
+        "keep": "No, dejarlas abiertas"
+      },
+      "start": {
+        "title": "¿Iniciar la competición?",
+        "body": "La competición pasará a estar en curso.",
+        "confirm": "Sí, iniciarla",
+        "keep": "No, todavía no"
+      },
+      "complete": {
+        "title": "¿Dar la competición por terminada?",
+        "body": "Pasará a completada.",
+        "confirm": "Sí, terminarla",
+        "keep": "No, todavía no"
+      },
+      "cancel": {
+        "title": "¿Cancelar la competición?",
+        "body": "Se suspende para todos los inscritos y no se puede deshacer.",
+        "confirm": "Sí, cancelarla",
+        "keep": "No, mantenerla"
+      },
+      "reject-enrollment": {
+        "title": "¿Rechazar la solicitud de {{name}}?",
+        "body": "No entrará en la competición.",
+        "confirm": "Sí, rechazarla",
+        "keep": "No, dejarla pendiente"
+      },
+      "reopen-enrollments": {
+        "title": "¿Reabrir las inscripciones?",
+        "body": "La competición volverá a estar activa y se podrá apuntar gente otra vez.",
+        "confirm": "Sí, reabrirlas",
+        "keep": "No, dejarlas cerradas"
+      },
+      "revert-status": {
+        "title": "¿Volver a cerrada?",
+        "body": "Podrás volver a modificar el calendario.",
+        "confirm": "Sí, volver a cerrada",
+        "keep": "No, dejarla así"
+      },
+      "revert-to-in-progress": {
+        "title": "¿Reabrir el torneo?",
+        "body": "Volverá a estar en curso para, por ejemplo, añadir otra ronda. Los partidos ya completados no cambian.",
+        "confirm": "Sí, reabrirlo",
+        "keep": "No, dejarlo terminado"
+      }
     },
     "errors": {
       "golfCoursePendingApproval": "No se puede activar la competición: El campo de golf está pendiente de aprobación",
@@ -244,7 +288,7 @@
     "approvedPlayers": "Jugadores Aprobados ({{count}})",
     "noApprovedPlayers": "Aún no hay jugadores aprobados",
     "pendingRequests": "Solicitudes Pendientes ({{count}})",
-    "rejectedEnrollments": "Inscripciones Rechazadas ({{count}})",
+    "rejectedRequests": "Solicitudes rechazadas",
     "approve": "Aprobar",
     "reject": "Rechazar",
     "noEmail": "Sin email",
@@ -260,7 +304,7 @@
     "revertToRfegHandicap": "Actualizar con la RFEG",
     "handicapReverted": "Hándicap actualizado con la RFEG",
     "failedToRevertHandicap": "Error al actualizar el hándicap con la RFEG",
-    "rejected": "RECHAZADO",
+    "rejected": "RECHAZADA",
     "enrollmentApproved": "Inscripción aprobada",
     "enrollmentRejected": "Inscripción rechazada",
     "success": {
@@ -294,7 +338,12 @@
       "errorLoading": "Error al cargar los campos de golf",
       "courseAdded": "Campo de golf añadido exitosamente",
       "errorAdding": "Error al añadir el campo de golf",
-      "confirmRemove": "¿Estás seguro de que quieres eliminar este campo de golf de la competición?",
+      "removeDialog": {
+        "title": "¿Quitar {{name}}?",
+        "body": "Dejará de ser uno de los campos de esta competición.",
+        "confirm": "Sí, quitarlo",
+        "keep": "No, mantenerlo"
+      },
       "courseRemoved": "Campo de golf eliminado exitosamente",
       "errorRemoving": "Error al eliminar el campo de golf",
       "reordered": "Campos de golf reordenados exitosamente",
@@ -308,7 +357,9 @@
         "body": "La anotación no se abrirá sola: tiene que arrancar el partido el organizador de la competición, y necesita cobertura. Si en el campo no hay señal, mejor que lo haga antes de salir."
       },
       "courseAlreadyAdded": "Ese campo ya está en la competición",
-      "par": "Par {{count}}"
+      "par": "Par {{count}}",
+      "remove": "Quitar {{name}} de la competición",
+      "unnamed": "Campo sin nombre"
     },
     "visibilityPrivate": "Solo invitados",
     "visibilityPublic": "Pública",
