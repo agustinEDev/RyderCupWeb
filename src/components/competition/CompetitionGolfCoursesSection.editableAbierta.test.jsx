@@ -97,6 +97,18 @@ describe('CompetitionGolfCoursesSection · poner el campo después de invitar', 
     expect(screen.getByText('detail.golfCourses.addCourse').closest('button')).toHaveClass('whitespace-nowrap');
   });
 
+  // CodeRabbit en la #749, visto a 360 px: con el botón al lado, el título se
+  // estrujaba en tres líneas («Campos / de / golf») y «Campos» no cabía en su
+  // caja. El título no se parte; si no cabe, el botón baja a su fila
+  it('N3b: el título entero en una línea; el botón baja si no cabe', async () => {
+    render(<CompetitionGolfCoursesSection competition={competicion('ACTIVE')} canManage={true} />);
+
+    const texto = await screen.findByText('detail.golfCourses.title');
+    expect(texto).toHaveClass('whitespace-nowrap');
+    expect(texto.closest('h3').parentElement).toHaveClass('flex-wrap');
+    expect(screen.getByText('detail.golfCourses.addCourse').closest('button')).toHaveClass('ml-auto');
+  });
+
   it('y quien no gestiona no añade nada', async () => {
     render(<CompetitionGolfCoursesSection competition={competicion('ACTIVE')} canManage={false} />);
 
