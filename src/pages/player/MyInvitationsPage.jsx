@@ -127,6 +127,12 @@ const MyInvitationsPage = () => {
       customToast.success(t('success.declined'));
       await loadData();
     } catch (error) {
+      // Rechazar una que se quedó sin plaza no es un fallo: no iba a jugarla y ya
+      // no la juega. Sin aviso; la lista releída la enseña «Sin plaza» (FE #737)
+      if (error?.errorCode === 'INVITATION_NO_ROOM') {
+        await loadData();
+        return;
+      }
       console.error('Error declining invitation:', error);
       avisarDelFallo(error);
     } finally {

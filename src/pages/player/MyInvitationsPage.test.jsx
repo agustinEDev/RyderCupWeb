@@ -203,8 +203,10 @@ describe('MyInvitationsPage', () => {
       await waitFor(() => expect(mockListMyInvitations.mock.calls.length).toBeGreaterThan(lecturas));
     });
 
-    it('I4b: rechazar una que ya está sin plaza, igual: su motivo y la lista releída', async () => {
-      // Revisión local: el backend contesta INVITATION_NO_ROOM a ACCEPT y a DECLINE
+    // FE #737 · rechazar una que se quedó sin plaza NO es un fallo: el jugador no
+    // iba a jugarla y ya no la juega. Ni error ni «rechazada»: se relee y la
+    // tarjeta dice «Sin plaza», que es lo que pasó
+    it('I4b: rechazar una que ya está sin plaza no da error: solo relee la lista', async () => {
       mockRespondToInvitation.mockRejectedValueOnce(
         Object.assign(new Error('Esta invitación se quedó sin plaza al cerrarse la inscripción'), {
           status: 409,
@@ -217,8 +219,20 @@ describe('MyInvitationsPage', () => {
 
       fireEvent.click(screen.getByTestId('decline-button'));
 
-      await waitFor(() => expect(customToast.error).toHaveBeenCalledWith('errors.noRoom'));
       await waitFor(() => expect(mockListMyInvitations.mock.calls.length).toBeGreaterThan(lecturas));
+      expect(customToast.error).not.toHaveBeenCalled();
+      expect(customToast.success).not.toHaveBeenCalled();
+    });
+
+    it('I5b: rechazar con otro error sí lo dice, con el mensaje del servidor', async () => {
+      mockRespondToInvitation.mockRejectedValueOnce(
+        Object.assign(new Error('Invitation has expired'), { status: 409 })
+      );
+      renderPage();
+
+      fireEvent.click(await screen.findByTestId('decline-button'));
+
+      await waitFor(() => expect(customToast.error).toHaveBeenCalledWith('Invitation has expired'));
     });
 
     it('I5: otro error, el mensaje del servidor', async () => {
